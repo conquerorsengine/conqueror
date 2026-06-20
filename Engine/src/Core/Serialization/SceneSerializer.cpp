@@ -13,6 +13,14 @@
 #include <yaml-cpp/yaml.h>
 #include <fstream>
 
+#ifdef _WIN32
+#include <windows.h>
+#include <libloaderapi.h>
+#else
+#include <unistd.h>
+#include <linux/limits.h>
+#endif
+
 namespace YAML
 {
     template<>
@@ -90,6 +98,24 @@ namespace YAML
 
 namespace Conqueror
 {
+    static std::filesystem::path GetEngineDirectory()
+    {
+#ifdef _WIN32
+        char buffer[MAX_PATH] = { 0 };
+        GetModuleFileNameA(NULL, buffer, MAX_PATH);
+        return std::filesystem::path(buffer).parent_path();
+#else
+        char buffer[PATH_MAX] = { 0 };
+        ssize_t len = readlink("/proc/self/exe", buffer, sizeof(buffer) - 1);
+        if (len != -1)
+        {
+            buffer[len] = '\0';
+            return std::filesystem::path(buffer).parent_path();
+        }
+        return std::filesystem::current_path();
+#endif
+    }
+
     static std::string ResolveScriptPath(const std::string& scriptPath)
     {
         if (scriptPath.empty())
@@ -111,6 +137,50 @@ namespace Conqueror
         }
 
         return scriptPath;
+    }
+
+    static std::string ToSerializablePath(const std::string& absolutePath)
+    {
+        if (absolutePath.empty())
+            return absolutePath;
+
+        auto projectDir = Project::GetActiveProjectDirectory();
+        if (!projectDir.empty())
+        {
+            std::error_code ec;
+            auto relative = std::filesystem::relative(absolutePath, projectDir, ec);
+            if (!ec && !relative.empty() && relative.native()[0] != '.')
+                return relative.string();
+        }
+
+        auto engineDir = GetEngineDirectory();
+        std::error_code ec;
+        auto relative = std::filesystem::relative(absolutePath, engineDir, ec);
+        if (!ec && !relative.empty() && relative.native()[0] != '.')
+        {
+            std::string relStr = relative.string();
+            if (relStr.find("Resources/") == 0 || relStr.find("Resources\\") == 0)
+                return "CQ:" + relStr;
+        }
+
+        return absolutePath;
+    }
+
+    static std::string ResolveSerializablePath(const std::string& path)
+    {
+        if (path.empty())
+            return path;
+
+        if (path.size() > 3 && path[0] == 'C' && path[1] == 'Q' && path[2] == ':')
+        {
+            std::string relative = path.substr(3);
+            auto engineDir = GetEngineDirectory();
+            auto absolute = engineDir / std::filesystem::path(relative);
+            if (std::filesystem::exists(absolute))
+                return absolute.string();
+        }
+
+        return ResolveScriptPath(path);
     }
 
     YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec2& v)
@@ -206,7 +276,7 @@ namespace Conqueror
             // Texture path kaydet
             if (spriteRenderer.Texture)
             {
-                out << YAML::Key << "TexturePath" << YAML::Value << spriteRenderer.Texture->GetPath();
+                out << YAML::Key << "TexturePath" << YAML::Value << ToSerializablePath(spriteRenderer.Texture->GetPath());
             }
 
             out << YAML::EndMap;
@@ -1280,7 +1350,7 @@ namespace Conqueror
                     // Texture yükle
                     if (spriteRendererComponent["TexturePath"])
                     {
-                        std::string texturePath = spriteRendererComponent["TexturePath"].as<std::string>();
+                        std::string texturePath = ResolveSerializablePath(spriteRendererComponent["TexturePath"].as<std::string>());
                         if (!texturePath.empty())
                         {
                             src.Texture = Texture2D::Create(texturePath);
