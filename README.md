@@ -1,6 +1,6 @@
 # Conqueror's Engine
 
-A 2D/3D game engine built with C++ and OpenGL.
+A 2D/3D game engine built with C++ and OpenGL, with experimental Vulkan support.
 
 **Version:** 0.110
 
