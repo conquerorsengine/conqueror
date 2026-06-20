@@ -36,8 +36,8 @@ A 2D/3D game engine built with C++ and OpenGL, with experimental Vulkan support.
 sudo dnf install cmake gcc-c++ mesa-libGL-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel wayland-devel libxkbcommon-devel
 
 # Clone the repository
-git clone https://github.com/FazliOzlemis/Conqueror-s_Engine.git
-cd Conqueror-s_Engine
+git clone https://github.com/FazliOzlemis/conqueror.git
+cd conqueror
 
 # Build
 cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc
@@ -48,8 +48,8 @@ cmake --build build -j$(nproc)
 
 ```bash
 # Clone the repository
-git clone https://github.com/FazliOzlemis/Conqueror-s_Engine.git
-cd Conqueror-s_Engine
+git clone https://github.com/FazliOzlemis/conqueror.git
+cd conqueror
 
 # Build
 cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc
@@ -62,16 +62,21 @@ After building, the editor executable will be in the `build/bin/` directory:
 
 ```bash
 cd build/bin
-./ConquerorEditor
+./ConquerorEngine
 ```
 
 ## Creating a Project
 
-1. Launch the editor
+1. Launch the Launcher
 2. Click "New Project"
 3. Choose a template (2D, 3D, or Empty)
 4. Select a location and name your project
 5. Click "Create"
+
+```bash
+cd build/bin
+./ConquerorLauncher
+```
 
 ## Project Structure
 
