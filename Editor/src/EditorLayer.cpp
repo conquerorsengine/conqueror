@@ -15,7 +15,6 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <nfd.h>
-#include <sstream>
 
 #ifdef CQ_PLATFORM_LINUX
 #include <unistd.h>
@@ -700,25 +699,9 @@ namespace Conqueror::Editor
         
         if (editorState.IsEditing())
         {
-            // Editor scene'i memory'de serialize et
-            std::stringstream buffer;
-            SceneSerializer serializer(m_EditorScene);
-            serializer.SerializeToStream(buffer);
-
-            // Buffer'ı temp dosyaya yaz (deserialize tam versiyonu kullanabilmek için)
-            std::filesystem::path tempPath = std::filesystem::temp_directory_path() / "conqueror_runtime_scene.cqscene";
-            {
-                std::ofstream out(tempPath);
-                out << buffer.rdbuf();
-            }
-            
-            // Yeni runtime scene oluştur ve temp file'dan yükle
+            // Editor scene'i direkt memory'den klonla (YAML yok, disk I/O yok)
             m_RuntimeScene = std::make_shared<Scene>();
-            SceneSerializer runtimeSerializer(m_RuntimeScene);
-            runtimeSerializer.Deserialize(tempPath);
-            
-            // Temp file'ı sil
-            std::filesystem::remove(tempPath);
+            m_RuntimeScene->CloneSceneFrom(m_EditorScene);
             
             // Active scene'i runtime'a çevir
             m_ActiveScene = m_RuntimeScene;

@@ -26,6 +26,7 @@ namespace Conqueror
         Entity CreateEntityWithUUID(uint64_t uuid, const std::string& name = std::string());
         void DestroyEntity(Entity entity);
         Entity DuplicateEntity(Entity source, const std::string& newName = "");
+        void CloneSceneFrom(const std::shared_ptr<Scene>& source);
 
         void OnUpdateRuntime(Timestep ts, bool renderOnly = false);
         void OnUpdateSimulation(Timestep ts);

@@ -1152,141 +1152,6 @@ namespace Conqueror
             return false;
 
         std::string sceneName = data["Scene"].as<std::string>();
-        CQ_CORE_TRACE("Deserializing scene from stream: {0}", sceneName);
-
-        // Entity UUID -> entt::entity mapping
-        std::unordered_map<uint64_t, entt::entity> entityMap;
-
-        auto entities = data["Entities"];
-        if (entities)
-        {
-            for (auto entity : entities)
-            {
-                uint64_t uuid = entity["Entity"].as<uint64_t>();
-
-                std::string name;
-                auto tagComponent = entity["TagComponent"];
-                if (tagComponent)
-                    name = tagComponent["Tag"].as<std::string>();
-
-                CQ_CORE_TRACE("Deserialized entity: {0} with ID {1}", name, uuid);
-
-                Entity deserializedEntity = m_Scene->CreateEntityWithUUID(uuid, name);
-                entityMap[uuid] = deserializedEntity;
-
-                // TagComponent
-                if (tagComponent)
-                {
-                    auto& tag = deserializedEntity.GetComponent<TagComponent>();
-                    tag.Tag = tagComponent["Tag"].as<std::string>();
-                    if (tagComponent["GameTag"])
-                        tag.GameTag = tagComponent["GameTag"].as<std::string>();
-                }
-
-                // TransformComponent
-                auto transformComponent = entity["TransformComponent"];
-                if (transformComponent)
-                {
-                    auto& tc = deserializedEntity.GetComponent<TransformComponent>();
-                    tc.Position = transformComponent["Position"].as<glm::vec3>();
-                    tc.Rotation = transformComponent["Rotation"].as<glm::vec3>();
-                    tc.Scale = transformComponent["Scale"].as<glm::vec3>();
-                }
-
-                // Diğer componentler için deserialize kodu buraya eklenecek
-                // (CameraComponent, SpriteRendererComponent, vs.)
-                // Tam deserialize kodu için Deserialize() metoduna bakın
-                
-                // Kısa versiyon - sadece temel componentler
-                auto cameraComponent = entity["CameraComponent"];
-                if (cameraComponent)
-                {
-                    auto& cc = deserializedEntity.AddComponent<CameraComponent>();
-                    auto cameraProps = cameraComponent["Camera"];
-                    cc.Camera.SetProjectionType((SceneCamera::ProjectionType)cameraProps["ProjectionType"].as<int>());
-                    cc.Camera.SetPerspectiveVerticalFOV(cameraProps["PerspectiveFOV"].as<float>());
-                    cc.Camera.SetPerspectiveNearClip(cameraProps["PerspectiveNear"].as<float>());
-                    cc.Camera.SetPerspectiveFarClip(cameraProps["PerspectiveFar"].as<float>());
-                    cc.Camera.SetOrthographicSize(cameraProps["OrthographicSize"].as<float>());
-                    cc.Camera.SetOrthographicNearClip(cameraProps["OrthographicNear"].as<float>());
-                    cc.Camera.SetOrthographicFarClip(cameraProps["OrthographicFar"].as<float>());
-                    cc.Primary = cameraComponent["Primary"].as<bool>();
-                    cc.FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();
-                }
-
-                // Physics components
-                auto rigidbodyComponent = entity["RigidbodyComponent"];
-                if (rigidbodyComponent)
-                {
-                    auto& rb = deserializedEntity.AddComponent<RigidbodyComponent>();
-                    rb.Type = (RigidbodyComponent::BodyType)rigidbodyComponent["BodyType"].as<int>();
-                    rb.Mass = rigidbodyComponent["Mass"].as<float>();
-                    rb.LinearDrag = rigidbodyComponent["LinearDrag"].as<float>();
-                    rb.AngularDrag = rigidbodyComponent["AngularDrag"].as<float>();
-                    rb.GravityScale = rigidbodyComponent["GravityScale"].as<float>();
-                    rb.FreezeRotation = rigidbodyComponent["FreezeRotation"].as<bool>();
-                    rb.Friction = rigidbodyComponent["Friction"].as<float>();
-                    rb.Restitution = rigidbodyComponent["Restitution"].as<float>();
-                }
-
-                auto boxColliderComponent = entity["BoxColliderComponent"];
-                if (boxColliderComponent)
-                {
-                    auto& bc = deserializedEntity.AddComponent<BoxColliderComponent>();
-                    bc.Offset = boxColliderComponent["Offset"].as<glm::vec3>();
-                    bc.Size = boxColliderComponent["Size"].as<glm::vec3>();
-                    bc.IsTrigger = boxColliderComponent["IsTrigger"].as<bool>();
-                }
-
-                auto sphereColliderComponent = entity["SphereColliderComponent"];
-                if (sphereColliderComponent)
-                {
-                    auto& sc = deserializedEntity.AddComponent<SphereColliderComponent>();
-                    sc.Offset = sphereColliderComponent["Offset"].as<glm::vec3>();
-                    sc.Radius = sphereColliderComponent["Radius"].as<float>();
-                    sc.IsTrigger = sphereColliderComponent["IsTrigger"].as<bool>();
-                }
-            }
-        }
-
-        // Hierarchy yükle
-        auto hierarchy = data["Hierarchy"];
-        if (hierarchy)
-        {
-            for (auto relation : hierarchy)
-            {
-                uint64_t childUUID = relation["Child"].as<uint64_t>();
-                uint64_t parentUUID = relation["Parent"].as<uint64_t>();
-                
-                if (entityMap.find(childUUID) != entityMap.end() && entityMap.find(parentUUID) != entityMap.end())
-                {
-                    Entity childEntity = { entityMap[childUUID], m_Scene.get() };
-                    Entity parentEntity = { entityMap[parentUUID], m_Scene.get() };
-                    m_Scene->SetEntityParent(childEntity, parentEntity);
-                }
-            }
-        }
-
-        return true;
-    }
-
-    bool SceneSerializer::Deserialize(const std::filesystem::path& filepath)
-    {
-        std::ifstream stream(filepath);
-        if (!stream.is_open())
-        {
-            CQ_CORE_ERROR("Failed to open scene file: {0}", filepath.string());
-            return false;
-        }
-
-        std::stringstream strStream;
-        strStream << stream.rdbuf();
-
-        YAML::Node data = YAML::Load(strStream.str());
-        if (!data["Scene"])
-            return false;
-
-        std::string sceneName = data["Scene"].as<std::string>();
         CQ_CORE_INFO("Deserializing scene '{0}'", sceneName);
 
         auto entities = data["Entities"];
@@ -1347,7 +1212,6 @@ namespace Conqueror
                     src.Color = spriteRendererComponent["Color"].as<glm::vec4>();
                     src.TilingFactor = spriteRendererComponent["TilingFactor"].as<float>();
                     
-                    // Texture yükle
                     if (spriteRendererComponent["TexturePath"])
                     {
                         std::string texturePath = ResolveSerializablePath(spriteRendererComponent["TexturePath"].as<std::string>());
@@ -1558,7 +1422,6 @@ namespace Conqueror
                         ac.CurrentTime = animatorComponent["CurrentTime"].as<float>();
                 }
 
-                // Deserializing dynamic script keys
                 for (auto component : entity)
                 {
                     std::string compName = component.first.as<std::string>();
@@ -1620,7 +1483,6 @@ namespace Conqueror
                     ic.Color = imageComponent["Color"].as<glm::vec4>();
                     ic.TilingFactor = imageComponent["TilingFactor"].as<float>();
                     
-                    // Texture yükle
                     if (imageComponent["TexturePath"])
                     {
                         std::string texturePath = ResolveScriptPath(imageComponent["TexturePath"].as<std::string>());
@@ -1642,7 +1504,6 @@ namespace Conqueror
                     bc.ColorMultiplier = buttonComponent["ColorMultiplier"].as<float>();
                     bc.TransitionSpeed = buttonComponent["TransitionSpeed"].as<float>();
                     
-                    // Renkler
                     bc.BackgroundNormalColor = buttonComponent["BackgroundNormalColor"].as<glm::vec4>();
                     bc.BackgroundHoverColor = buttonComponent["BackgroundHoverColor"].as<glm::vec4>();
                     bc.BackgroundPressedColor = buttonComponent["BackgroundPressedColor"].as<glm::vec4>();
@@ -1715,7 +1576,6 @@ namespace Conqueror
                     cc2d.RestitutionThreshold = circleCollider2DComponent["RestitutionThreshold"].as<float>();
                 }
 
-                // 3D Physics Components
                 auto rigidbodyComponent = entity["RigidbodyComponent"];
                 if (rigidbodyComponent)
                 {
@@ -1766,7 +1626,6 @@ namespace Conqueror
                     mc.IsTrigger = meshColliderComponent["IsTrigger"].as<bool>();
                 }
 
-                // Audio Components
                 auto audioSourceComponent = entity["AudioSourceComponent"];
                 if (audioSourceComponent)
                 {
@@ -1917,17 +1776,14 @@ namespace Conqueror
             }
         }
         
-        // Scene Environment ayarlarını yükle
         auto environment = data["Environment"];
         if (environment)
         {
-            // Skybox
             if (environment["SkyboxPath"])
             {
                 std::string skyboxPath = ResolveSerializablePath(environment["SkyboxPath"].as<std::string>());
                 if (!skyboxPath.empty())
                 {
-                    // HDR skybox yükle (default 512 resolution)
                     auto skybox = Cubemap::CreateFromEquirectangular(skyboxPath, 512);
                     m_Scene->SetSkybox(skybox);
                 }
@@ -1939,7 +1795,6 @@ namespace Conqueror
             if (environment["SkyboxTint"])
                 m_Scene->SetSkyboxTint(environment["SkyboxTint"].as<glm::vec3>());
             
-            // Ambient Light
             if (environment["EnvironmentLightingSource"])
                 m_Scene->SetEnvironmentLightingSource((Scene::EnvironmentLightingSource)environment["EnvironmentLightingSource"].as<int>());
             if (environment["AmbientColor"])
@@ -1953,7 +1808,6 @@ namespace Conqueror
             if (environment["AmbientIntensity"])
                 m_Scene->SetAmbientIntensity(environment["AmbientIntensity"].as<float>());
             
-            // Fog
             if (environment["FogEnabled"])
                 m_Scene->SetFogEnabled(environment["FogEnabled"].as<bool>());
             if (environment["FogColor"])
@@ -1965,11 +1819,9 @@ namespace Conqueror
             if (environment["FogEnd"])
                 m_Scene->SetFogEnd(environment["FogEnd"].as<float>());
             
-            // Sun Source
             if (environment["SunSource"])
                 m_Scene->SetSunSource(environment["SunSource"].as<uint64_t>());
             
-            // Halo/Flare
             if (environment["HaloEnabled"])
                 m_Scene->SetHaloEnabled(environment["HaloEnabled"].as<bool>());
             if (environment["HaloStrength"])
@@ -1981,7 +1833,6 @@ namespace Conqueror
             if (environment["FlareStrength"])
                 m_Scene->SetFlareStrength(environment["FlareStrength"].as<float>());
             
-            // Flare Elements
             auto flareElements = environment["FlareElements"];
             if (flareElements)
             {
@@ -1998,37 +1849,16 @@ namespace Conqueror
                 }
             }
         }
-        
-        // Editor Camera yükle
-        auto editorCamera = data["EditorCamera"];
-        if (editorCamera && m_EditorCamera)
-        {
-            if (editorCamera["CameraMode"])
-                m_EditorCamera->SetCameraMode((EditorCameraMode)editorCamera["CameraMode"].as<int>());
-            if (editorCamera["Position"])
-                m_EditorCamera->SetPosition(editorCamera["Position"].as<glm::vec3>());
-            if (editorCamera["Distance"])
-                m_EditorCamera->SetDistance(editorCamera["Distance"].as<float>());
-            if (editorCamera["Pitch"])
-                m_EditorCamera->SetPitch(editorCamera["Pitch"].as<float>());
-            if (editorCamera["Yaw"])
-                m_EditorCamera->SetYaw(editorCamera["Yaw"].as<float>());
-            if (editorCamera["OrthographicSize"])
-                m_EditorCamera->SetOrthographicSize(editorCamera["OrthographicSize"].as<float>());
-        }
-        
-        // Hierarchy (parent-child ilişkileri) yükle
+
         auto hierarchy = data["Hierarchy"];
         if (hierarchy)
         {
-            // UUID -> entt::entity map'i oluştur
             std::unordered_map<uint64_t, entt::entity> uuidToEntity;
             m_Scene->m_Registry.view<IDComponent>().each([&](auto entity, auto& idComponent)
             {
                 uuidToEntity[idComponent.ID] = entity;
             });
             
-            // Parent-child ilişkilerini kur
             for (auto relation : hierarchy)
             {
                 uint64_t childUUID = relation["Child"].as<uint64_t>();
@@ -2039,13 +1869,11 @@ namespace Conqueror
                 {
                     Entity childEntity = { uuidToEntity[childUUID], m_Scene.get() };
                     Entity parentEntity = { uuidToEntity[parentUUID], m_Scene.get() };
-                    
                     m_Scene->SetEntityParent(childEntity, parentEntity);
                 }
             }
         }
-        
-        // NavMesh yükle
+
         auto navMeshNode = data["NavMesh"];
         if (navMeshNode)
         {
@@ -2063,11 +1891,21 @@ namespace Conqueror
                     navMesh.AddTriangle(v0, v1, v2, area);
                 }
                 navMesh.BuildConnectivity();
-                CQ_CORE_INFO("NavMesh deserialized with {0} triangles", navMesh.GetTriangles().size());
             }
         }
 
         return true;
+    }
+
+    bool SceneSerializer::Deserialize(const std::filesystem::path& filepath)
+    {
+        std::ifstream stream(filepath);
+        if (!stream.is_open())
+        {
+            CQ_CORE_ERROR("Failed to open scene file: {0}", filepath.string());
+            return false;
+        }
+        return DeserializeFromStream(stream);
     }
 
     bool SceneSerializer::DeserializeRuntime(const std::filesystem::path& filepath)

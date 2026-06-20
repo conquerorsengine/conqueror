@@ -3,6 +3,7 @@
 #include "Components.h"
 #include "Entity.h"
 #include "Scripting/ScriptableEntity.h"
+#include "Scripting/ScriptEngine.h"
 #include "Scripting/ConquerorScript/CQSEngine.h"
 #include "Renderer/Renderer2D.h"
 #include "Renderer/TextRenderer.h"
@@ -352,6 +353,274 @@ namespace Conqueror
         dest.GetComponent<TagComponent>().GameTag = source.GetComponent<TagComponent>().GameTag;
 
         return dest;
+    }
+
+    void Scene::CloneSceneFrom(const std::shared_ptr<Scene>& source)
+    {
+        if (!source) return;
+
+        std::unordered_map<uint64_t, entt::entity> uuidMap;
+        std::vector<entt::entity> physicsEntities;
+
+        source->m_Registry.view<IDComponent>().each([&](auto entityID, auto& idComp)
+        {
+            Entity srcEntity{ entityID, source.get() };
+            std::string name = srcEntity.GetComponent<TagComponent>().Tag;
+            Entity newEntity = CreateEntityWithUUID(idComp.ID, name);
+            uuidMap[idComp.ID] = newEntity;
+        });
+
+        auto& reg = m_Registry;
+
+        source->m_Registry.view<IDComponent>().each([&](auto entityID, auto& idComp)
+        {
+            Entity srcEntity{ entityID, source.get() };
+            entt::entity dstHandle = uuidMap[idComp.ID];
+
+            if (srcEntity.HasComponent<TransformComponent>())
+                reg.get<TransformComponent>(dstHandle) = srcEntity.GetComponent<TransformComponent>();
+
+            if (srcEntity.HasComponent<LayerComponent>())
+                reg.get<LayerComponent>(dstHandle) = srcEntity.GetComponent<LayerComponent>();
+
+            if (srcEntity.HasComponent<TagComponent>())
+                reg.get<TagComponent>(dstHandle).GameTag = srcEntity.GetComponent<TagComponent>().GameTag;
+
+            if (srcEntity.HasComponent<SpriteRendererComponent>())
+                reg.emplace<SpriteRendererComponent>(dstHandle) = srcEntity.GetComponent<SpriteRendererComponent>();
+
+            if (srcEntity.HasComponent<MeshRendererComponent>())
+                reg.emplace<MeshRendererComponent>(dstHandle) = srcEntity.GetComponent<MeshRendererComponent>();
+
+            if (srcEntity.HasComponent<CameraComponent>())
+                reg.emplace<CameraComponent>(dstHandle) = srcEntity.GetComponent<CameraComponent>();
+
+            if (srcEntity.HasComponent<TextRendererComponent>())
+                reg.emplace<TextRendererComponent>(dstHandle) = srcEntity.GetComponent<TextRendererComponent>();
+
+            if (srcEntity.HasComponent<ImageComponent>())
+                reg.emplace<ImageComponent>(dstHandle) = srcEntity.GetComponent<ImageComponent>();
+
+            if (srcEntity.HasComponent<ButtonComponent>())
+                reg.emplace<ButtonComponent>(dstHandle) = srcEntity.GetComponent<ButtonComponent>();
+
+            if (srcEntity.HasComponent<CanvasComponent>())
+                reg.emplace<CanvasComponent>(dstHandle) = srcEntity.GetComponent<CanvasComponent>();
+
+            if (srcEntity.HasComponent<CanvasScalerComponent>())
+                reg.emplace<CanvasScalerComponent>(dstHandle) = srcEntity.GetComponent<CanvasScalerComponent>();
+
+            if (srcEntity.HasComponent<GraphicRaycasterComponent>())
+                reg.emplace<GraphicRaycasterComponent>(dstHandle) = srcEntity.GetComponent<GraphicRaycasterComponent>();
+
+            if (srcEntity.HasComponent<ModelComponent>())
+            {
+                auto& src = srcEntity.GetComponent<ModelComponent>();
+                auto& dst = reg.emplace<ModelComponent>(dstHandle);
+                dst.ModelData = src.ModelData;
+                dst.FilePath = src.FilePath;
+            }
+
+            if (srcEntity.HasComponent<AnimatorComponent>())
+                reg.emplace<AnimatorComponent>(dstHandle) = srcEntity.GetComponent<AnimatorComponent>();
+
+            if (srcEntity.HasComponent<DirectionalLightComponent>())
+                reg.emplace<DirectionalLightComponent>(dstHandle) = srcEntity.GetComponent<DirectionalLightComponent>();
+
+            if (srcEntity.HasComponent<PointLightComponent>())
+                reg.emplace<PointLightComponent>(dstHandle) = srcEntity.GetComponent<PointLightComponent>();
+
+            if (srcEntity.HasComponent<SpotLightComponent>())
+                reg.emplace<SpotLightComponent>(dstHandle) = srcEntity.GetComponent<SpotLightComponent>();
+
+            if (srcEntity.HasComponent<RigidBody2DComponent>())
+            {
+                auto& src = srcEntity.GetComponent<RigidBody2DComponent>();
+                auto& dst = reg.emplace<RigidBody2DComponent>(dstHandle);
+                dst.Type = src.Type;
+                dst.FixedRotation = src.FixedRotation;
+            }
+
+            if (srcEntity.HasComponent<BoxCollider2DComponent>())
+                reg.emplace<BoxCollider2DComponent>(dstHandle) = srcEntity.GetComponent<BoxCollider2DComponent>();
+
+            if (srcEntity.HasComponent<CircleCollider2DComponent>())
+                reg.emplace<CircleCollider2DComponent>(dstHandle) = srcEntity.GetComponent<CircleCollider2DComponent>();
+
+            if (srcEntity.HasComponent<RigidbodyComponent>())
+            {
+                auto& src = srcEntity.GetComponent<RigidbodyComponent>();
+                auto& dst = reg.emplace<RigidbodyComponent>(dstHandle);
+                dst.Type = src.Type;
+                dst.Mass = src.Mass;
+                dst.LinearDrag = src.LinearDrag;
+                dst.AngularDrag = src.AngularDrag;
+                dst.GravityScale = src.GravityScale;
+                dst.FreezeRotation = src.FreezeRotation;
+                dst.Friction = src.Friction;
+                dst.Restitution = src.Restitution;
+                physicsEntities.push_back(dstHandle);
+            }
+
+            if (srcEntity.HasComponent<BoxColliderComponent>())
+                reg.emplace<BoxColliderComponent>(dstHandle) = srcEntity.GetComponent<BoxColliderComponent>();
+
+            if (srcEntity.HasComponent<SphereColliderComponent>())
+                reg.emplace<SphereColliderComponent>(dstHandle) = srcEntity.GetComponent<SphereColliderComponent>();
+
+            if (srcEntity.HasComponent<CapsuleColliderComponent>())
+                reg.emplace<CapsuleColliderComponent>(dstHandle) = srcEntity.GetComponent<CapsuleColliderComponent>();
+
+            if (srcEntity.HasComponent<MeshColliderComponent>())
+            {
+                auto& src = srcEntity.GetComponent<MeshColliderComponent>();
+                auto& dst = reg.emplace<MeshColliderComponent>(dstHandle);
+                dst.IsConvex = src.IsConvex;
+                dst.IsTrigger = src.IsTrigger;
+            }
+
+            if (srcEntity.HasComponent<AudioSourceComponent>())
+            {
+                auto& src = srcEntity.GetComponent<AudioSourceComponent>();
+                auto& dst = reg.emplace<AudioSourceComponent>(dstHandle);
+                dst.FilePath = src.FilePath;
+                dst.PlayOnAwake = src.PlayOnAwake;
+                dst.Loop = src.Loop;
+                dst.Mute = src.Mute;
+                dst.Volume = src.Volume;
+                dst.Pitch = src.Pitch;
+                dst.Pan = src.Pan;
+                dst.Is3D = src.Is3D;
+                dst.MinDistance = src.MinDistance;
+                dst.MaxDistance = src.MaxDistance;
+                dst.DopplerLevel = src.DopplerLevel;
+                dst.Attenuation = src.Attenuation;
+                dst.RolloffFactor = src.RolloffFactor;
+                dst.GraphNodes = src.GraphNodes;
+                dst.GraphLinks = src.GraphLinks;
+                dst.NextGraphNodeID = src.NextGraphNodeID;
+                dst.NextGraphLinkID = src.NextGraphLinkID;
+            }
+
+            if (srcEntity.HasComponent<AudioListenerComponent>())
+                reg.emplace<AudioListenerComponent>(dstHandle) = srcEntity.GetComponent<AudioListenerComponent>();
+
+            if (srcEntity.HasComponent<AudioChorusFilterComponent>())
+                reg.emplace<AudioChorusFilterComponent>(dstHandle) = srcEntity.GetComponent<AudioChorusFilterComponent>();
+
+            if (srcEntity.HasComponent<AudioDistortionFilterComponent>())
+                reg.emplace<AudioDistortionFilterComponent>(dstHandle) = srcEntity.GetComponent<AudioDistortionFilterComponent>();
+
+            if (srcEntity.HasComponent<AudioEchoFilterComponent>())
+                reg.emplace<AudioEchoFilterComponent>(dstHandle) = srcEntity.GetComponent<AudioEchoFilterComponent>();
+
+            if (srcEntity.HasComponent<AudioHighPassFilterComponent>())
+                reg.emplace<AudioHighPassFilterComponent>(dstHandle) = srcEntity.GetComponent<AudioHighPassFilterComponent>();
+
+            if (srcEntity.HasComponent<AudioLowPassFilterComponent>())
+                reg.emplace<AudioLowPassFilterComponent>(dstHandle) = srcEntity.GetComponent<AudioLowPassFilterComponent>();
+
+            if (srcEntity.HasComponent<AudioReverbFilterComponent>())
+                reg.emplace<AudioReverbFilterComponent>(dstHandle) = srcEntity.GetComponent<AudioReverbFilterComponent>();
+
+            if (srcEntity.HasComponent<AudioReverbZoneComponent>())
+                reg.emplace<AudioReverbZoneComponent>(dstHandle) = srcEntity.GetComponent<AudioReverbZoneComponent>();
+
+            if (srcEntity.HasComponent<AudioGainComponent>())
+                reg.emplace<AudioGainComponent>(dstHandle) = srcEntity.GetComponent<AudioGainComponent>();
+
+            if (srcEntity.HasComponent<AudioPanComponent>())
+                reg.emplace<AudioPanComponent>(dstHandle) = srcEntity.GetComponent<AudioPanComponent>();
+
+            if (srcEntity.HasComponent<ConquerorScriptComponent>())
+            {
+                auto& src = srcEntity.GetComponent<ConquerorScriptComponent>();
+                auto& dst = reg.emplace<ConquerorScriptComponent>(dstHandle);
+                for (auto& script : src.Scripts)
+                {
+                    ConquerorScriptData data;
+                    data.ScriptPath = script.ScriptPath;
+                    data.ClassName = script.ClassName;
+                    dst.Scripts.push_back(data);
+                }
+            }
+
+            if (srcEntity.HasComponent<NavMeshAgentComponent>())
+                reg.emplace<NavMeshAgentComponent>(dstHandle) = srcEntity.GetComponent<NavMeshAgentComponent>();
+
+            if (srcEntity.HasComponent<NavMeshObstacleComponent>())
+                reg.emplace<NavMeshObstacleComponent>(dstHandle) = srcEntity.GetComponent<NavMeshObstacleComponent>();
+
+            if (srcEntity.HasComponent<NavMeshSurfaceComponent>())
+                reg.emplace<NavMeshSurfaceComponent>(dstHandle) = srcEntity.GetComponent<NavMeshSurfaceComponent>();
+
+            if (srcEntity.HasComponent<NativeScriptComponent>())
+            {
+                auto& src = srcEntity.GetComponent<NativeScriptComponent>();
+                auto& dst = reg.emplace<NativeScriptComponent>(dstHandle);
+                for (auto& script : src.Scripts)
+                {
+                    NativeScriptData data;
+                    data.ModuleName = script.ModuleName;
+                    data.ClassName = script.ClassName;
+                    data.ScriptPath = script.ScriptPath;
+
+                    if (!data.ScriptPath.empty() && !ScriptEngine::IsModuleLoaded(data.ModuleName))
+                        ScriptEngine::LoadModule(data.ModuleName, data.ScriptPath);
+
+                    if (!data.ModuleName.empty() && !data.ClassName.empty() && ScriptEngine::IsModuleLoaded(data.ModuleName))
+                    {
+                        data.InstantiateScript = [moduleName = data.ModuleName, className = data.ClassName]() {
+                            return ScriptEngine::CreateScriptInstance(moduleName, className);
+                        };
+                    }
+                    dst.Scripts.push_back(data);
+                }
+            }
+        });
+
+        for (auto& [srcChild, srcParent] : source->m_EntityParent)
+        {
+            Entity srcChildEntity{ srcChild, source.get() };
+            uint64_t childUUID = srcChildEntity.GetComponent<IDComponent>().ID;
+
+            Entity srcParentEntity{ srcParent, source.get() };
+            uint64_t parentUUID = srcParentEntity.GetComponent<IDComponent>().ID;
+
+            if (uuidMap.count(childUUID) && uuidMap.count(parentUUID))
+                SetEntityParent({ uuidMap[childUUID], this }, { uuidMap[parentUUID], this });
+        }
+
+        for (auto handle : physicsEntities)
+        {
+            Entity e{ handle, this };
+            if (m_PhysicsWorld3D) m_PhysicsWorld3D->CreateBody(e);
+            if (m_PhysicsWorld2D) m_PhysicsWorld2D->CreateBody(e);
+        }
+
+        SetSkybox(source->GetSkybox());
+        SetSkyboxExposure(source->GetSkyboxExposure());
+        SetSkyboxRotation(source->GetSkyboxRotation());
+        SetSkyboxTint(source->GetSkyboxTint());
+        SetEnvironmentLightingSource(source->GetEnvironmentLightingSource());
+        SetAmbientColor(source->GetAmbientColor());
+        SetAmbientSkyColor(source->GetAmbientSkyColor());
+        SetAmbientEquatorColor(source->GetAmbientEquatorColor());
+        SetAmbientGroundColor(source->GetAmbientGroundColor());
+        SetAmbientIntensity(source->GetAmbientIntensity());
+        SetFogEnabled(source->IsFogEnabled());
+        SetFogColor(source->GetFogColor());
+        SetFogDensity(source->GetFogDensity());
+        SetFogStart(source->GetFogStart());
+        SetFogEnd(source->GetFogEnd());
+        SetSunSource(source->GetSunSource());
+        SetHaloEnabled(source->IsHaloEnabled());
+        SetHaloStrength(source->GetHaloStrength());
+        SetFlareEnabled(source->IsFlareEnabled());
+        SetFlareFadeSpeed(source->GetFlareFadeSpeed());
+        SetFlareStrength(source->GetFlareStrength());
+
+        m_Layers = source->GetLayers();
     }
 
     void Scene::OnUpdateRuntime([[maybe_unused]] Timestep ts, bool renderOnly)
