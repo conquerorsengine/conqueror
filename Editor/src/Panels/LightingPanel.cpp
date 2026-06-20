@@ -2,6 +2,7 @@
 #include "Renderer/RHI/Cubemap.h"
 #include "Renderer/RHI/Texture.h"
 #include "Core/Logging/Log.h"
+#include "Core/Project/Project.h"
 #include "Scene/Entity.h"
 #include "Scene/Components.h"
 
@@ -12,8 +13,90 @@
 #include <filesystem>
 #include <algorithm>
 
+#ifdef _WIN32
+#include <windows.h>
+#include <libloaderapi.h>
+#else
+#include <unistd.h>
+#include <linux/limits.h>
+#endif
+
 namespace Conqueror::Editor
 {
+    static std::filesystem::path GetEngineDirectory()
+    {
+#ifdef _WIN32
+        char buffer[MAX_PATH] = { 0 };
+        GetModuleFileNameA(NULL, buffer, MAX_PATH);
+        return std::filesystem::path(buffer).parent_path();
+#else
+        char buffer[PATH_MAX] = { 0 };
+        ssize_t len = readlink("/proc/self/exe", buffer, sizeof(buffer) - 1);
+        if (len != -1)
+        {
+            buffer[len] = '\0';
+            return std::filesystem::path(buffer).parent_path();
+        }
+        return std::filesystem::current_path();
+#endif
+    }
+
+    static std::string ToSerializablePath(const std::string& absolutePath)
+    {
+        if (absolutePath.empty())
+            return absolutePath;
+
+        auto projectDir = Project::GetActiveProjectDirectory();
+        if (!projectDir.empty())
+        {
+            std::error_code ec;
+            auto relative = std::filesystem::relative(absolutePath, projectDir, ec);
+            if (!ec && !relative.empty() && relative.native()[0] != '.')
+                return relative.string();
+        }
+
+        auto engineDir = GetEngineDirectory();
+        std::error_code ec;
+        auto relative = std::filesystem::relative(absolutePath, engineDir, ec);
+        if (!ec && !relative.empty() && relative.native()[0] != '.')
+        {
+            std::string relStr = relative.string();
+            if (relStr.find("Resources/") == 0 || relStr.find("Resources\\") == 0)
+                return "CQ:" + relStr;
+        }
+
+        return absolutePath;
+    }
+
+    static std::string ResolveSerializablePath(const std::string& path)
+    {
+        if (path.empty())
+            return path;
+
+        if (path.size() > 3 && path[0] == 'C' && path[1] == 'Q' && path[2] == ':')
+        {
+            std::string relative = path.substr(3);
+            auto engineDir = GetEngineDirectory();
+            auto absolute = engineDir / std::filesystem::path(relative);
+            if (std::filesystem::exists(absolute))
+                return absolute.string();
+        }
+
+        auto projectDir = Project::GetActiveProjectDirectory();
+        if (!projectDir.empty())
+        {
+            std::filesystem::path p(path);
+            if (p.is_relative())
+            {
+                auto absolute = projectDir / p;
+                if (std::filesystem::exists(absolute))
+                    return absolute.string();
+            }
+        }
+
+        return path;
+    }
+
     void LightingPanel::OnImGuiRender()
     {
         ImGui::Begin("Lighting");
@@ -64,98 +147,145 @@ namespace Conqueror::Editor
                 
                 ImGui::Spacing();
                 ImGui::Separator();
-                
-                if (ImGui::Button("Remove Skybox"))
-                {
-                    m_Context->SetSkybox(nullptr);
-                }
-            }
-            else
-            {
-                ImGui::Text("No skybox loaded");
-                
-                // Resolution dropdown
-                const char* resolutions[] = { "512x512", "1024x1024", "2048x2048", "4096x4096", "Original (HDR size)" };
-                ImGui::Text("Cubemap Resolution:");
-                ImGui::Combo("##SkyboxResolution", &m_SkyboxResolutionIndex, resolutions, 5);
             }
 
-            if (ImGui::Button("Load HDR Skybox..."))
+            // Resolution dropdown
+            const char* resolutions[] = { "512x512", "1024x1024", "2048x2048", "4096x4096", "Original (HDR size)" };
+            ImGui::Text("Cubemap Resolution:");
+            ImGui::Combo("##SkyboxResolution", &m_SkyboxResolutionIndex, resolutions, 5);
+
+            // Skybox dropdown (Resources/skybox klasöründeki HDR'ler)
             {
-                nfdchar_t* outPath = nullptr;
-                nfdfilteritem_t filters[1] = { { "HDR Images", "hdr,exr" } };
-                nfdresult_t result = NFD_OpenDialog(&outPath, filters, 1, nullptr);
-                
-                if (result == NFD_OKAY)
+                std::vector<std::string> skyboxFiles;
+                skyboxFiles.push_back("None");
+
+                std::string skyboxDir = "Resources/skybox";
+                if (std::filesystem::exists(skyboxDir))
                 {
-                    int resolution;
-                    
-                    if (m_SkyboxResolutionIndex == 4) // Original
+                    for (const auto& entry : std::filesystem::directory_iterator(skyboxDir))
                     {
-                        // HDR boyutunu oku
-                        int width, height, channels;
-                        stbi_info(outPath, &width, &height, &channels);
-                        resolution = std::max(width, height); // En büyük boyutu al
-                        CQ_CORE_INFO("HDR original size: {0}x{1}, using {2}x{2} for cubemap", width, height, resolution);
-                    }
-                    else
-                    {
-                        int resolutions[] = { 512, 1024, 2048, 4096 };
-                        resolution = resolutions[m_SkyboxResolutionIndex];
-                    }
-                    
-                    auto newSkybox = Cubemap::CreateFromEquirectangular(outPath, resolution);
-                    if (newSkybox)
-                    {
-                        m_Context->SetSkybox(newSkybox);
-                        CQ_CORE_INFO("Skybox loaded: {0} (resolution: {1}x{1})", outPath, resolution);
-                    }
-                    NFD_FreePath(outPath);
-                }
-                else if (result == NFD_CANCEL)
-                {
-                    CQ_CORE_INFO("Skybox load cancelled");
-                }
-                else
-                {
-                    CQ_CORE_ERROR("NFD Error: {0}", NFD_GetError());
-                }
-            }
-            
-            // Drag & Drop target (Skybox text üzerine)
-            if (ImGui::BeginDragDropTarget())
-            {
-                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
-                {
-                    std::string droppedPath((const char*)payload->Data, payload->DataSize - 1);
-                    std::filesystem::path path(droppedPath);
-                    std::string ext = path.extension().string();
-                    
-                    if (ext == ".hdr" || ext == ".exr")
-                    {
-                        int resolution;
-                        
-                        if (m_SkyboxResolutionIndex == 4)
+                        if (entry.is_regular_file())
                         {
-                            int width, height, channels;
-                            stbi_info(droppedPath.c_str(), &width, &height, &channels);
-                            resolution = std::max(width, height);
-                        }
-                        else
-                        {
-                            int resolutions[] = { 512, 1024, 2048, 4096 };
-                            resolution = resolutions[m_SkyboxResolutionIndex];
-                        }
-                        
-                        auto newSkybox = Cubemap::CreateFromEquirectangular(droppedPath, resolution);
-                        if (newSkybox)
-                        {
-                            m_Context->SetSkybox(newSkybox);
-                            CQ_CORE_INFO("Skybox loaded: {0}", droppedPath);
+                            std::string ext = entry.path().extension().string();
+                            if (ext == ".hdr" || ext == ".exr")
+                                skyboxFiles.push_back(entry.path().stem().string());
                         }
                     }
+                    std::sort(skyboxFiles.begin() + 1, skyboxFiles.end());
                 }
-                ImGui::EndDragDropTarget();
+
+                std::string currentSkybox = "None";
+                if (skybox)
+                {
+                    std::string skyboxPath = skybox->GetPath();
+                    std::string displayPath = ToSerializablePath(skyboxPath);
+                    currentSkybox = std::filesystem::path(displayPath).stem().string();
+                }
+
+                if (ImGui::BeginCombo("Skybox", currentSkybox.c_str()))
+                {
+                    for (const auto& name : skyboxFiles)
+                    {
+                        bool isSelected = (currentSkybox == name);
+                        if (ImGui::Selectable(name.c_str(), isSelected))
+                        {
+                            if (name == "None")
+                            {
+                                m_Context->SetSkybox(nullptr);
+                            }
+                            else
+                            {
+                                std::string fullPath = GetEngineDirectory().string() + "/Resources/skybox/" + name + ".hdr";
+                                int resolution;
+                                if (m_SkyboxResolutionIndex == 4)
+                                {
+                                    int width, height, channels;
+                                    stbi_info(fullPath.c_str(), &width, &height, &channels);
+                                    resolution = std::max(width, height);
+                                }
+                                else
+                                {
+                                    int res[] = { 512, 1024, 2048, 4096 };
+                                    resolution = res[m_SkyboxResolutionIndex];
+                                }
+                                auto newSkybox = Cubemap::CreateFromEquirectangular(fullPath, resolution);
+                                if (newSkybox)
+                                    m_Context->SetSkybox(newSkybox);
+                            }
+                        }
+                    }
+
+                    ImGui::Separator();
+
+                    if (ImGui::Selectable("Browse...", false))
+                    {
+                        nfdchar_t* outPath = nullptr;
+                        nfdfilteritem_t filters[1] = { { "HDR Images", "hdr,exr" } };
+                        nfdresult_t result = NFD_OpenDialog(&outPath, filters, 1, nullptr);
+
+                        if (result == NFD_OKAY)
+                        {
+                            int resolution;
+                            if (m_SkyboxResolutionIndex == 4)
+                            {
+                                int width, height, channels;
+                                stbi_info(outPath, &width, &height, &channels);
+                                resolution = std::max(width, height);
+                            }
+                            else
+                            {
+                                int res[] = { 512, 1024, 2048, 4096 };
+                                resolution = res[m_SkyboxResolutionIndex];
+                            }
+
+                            auto newSkybox = Cubemap::CreateFromEquirectangular(outPath, resolution);
+                            if (newSkybox)
+                            {
+                                m_Context->SetSkybox(newSkybox);
+                                CQ_CORE_INFO("Skybox loaded: {0} (resolution: {1}x{1})", outPath, resolution);
+                            }
+                            NFD_FreePath(outPath);
+                        }
+                    }
+
+                    ImGui::EndCombo();
+                }
+
+                // Drag & Drop target (dropdown üzerine)
+                if (ImGui::BeginDragDropTarget())
+                {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                    {
+                        std::string droppedPath((const char*)payload->Data, payload->DataSize - 1);
+                        std::filesystem::path path(droppedPath);
+                        std::string ext = path.extension().string();
+
+                        if (ext == ".hdr" || ext == ".exr")
+                        {
+                            int resolution;
+
+                            if (m_SkyboxResolutionIndex == 4)
+                            {
+                                int width, height, channels;
+                                stbi_info(droppedPath.c_str(), &width, &height, &channels);
+                                resolution = std::max(width, height);
+                            }
+                            else
+                            {
+                                int res[] = { 512, 1024, 2048, 4096 };
+                                resolution = res[m_SkyboxResolutionIndex];
+                            }
+
+                            auto newSkybox = Cubemap::CreateFromEquirectangular(droppedPath, resolution);
+                            if (newSkybox)
+                            {
+                                m_Context->SetSkybox(newSkybox);
+                                CQ_CORE_INFO("Skybox loaded: {0}", droppedPath);
+                            }
+                        }
+                    }
+                    ImGui::EndDragDropTarget();
+                }
             }
 
             ImGui::Spacing();

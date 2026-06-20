@@ -14,8 +14,34 @@
 #include <filesystem>
 #include <nfd.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#include <libloaderapi.h>
+#else
+#include <unistd.h>
+#include <linux/limits.h>
+#endif
+
 namespace Conqueror::Editor
 {
+    static std::filesystem::path GetEngineDirectory()
+    {
+#ifdef _WIN32
+        char buffer[MAX_PATH] = { 0 };
+        GetModuleFileNameA(NULL, buffer, MAX_PATH);
+        return std::filesystem::path(buffer).parent_path();
+#else
+        char buffer[PATH_MAX] = { 0 };
+        ssize_t len = readlink("/proc/self/exe", buffer, sizeof(buffer) - 1);
+        if (len != -1)
+        {
+            buffer[len] = '\0';
+            return std::filesystem::path(buffer).parent_path();
+        }
+        return std::filesystem::current_path();
+#endif
+    }
+
     static std::string ToRelativeIfInsideProject(const std::string& absolutePath)
     {
         auto projectDir = Project::GetActiveProjectDirectory();
@@ -28,6 +54,33 @@ namespace Conqueror::Editor
         {
             CQ_CORE_INFO("InspectorPanel: Script path made relative: {0}", relative.string());
             return relative.string();
+        }
+
+        return absolutePath;
+    }
+
+    static std::string ToSerializablePath(const std::string& absolutePath)
+    {
+        if (absolutePath.empty())
+            return absolutePath;
+
+        auto projectDir = Project::GetActiveProjectDirectory();
+        if (!projectDir.empty())
+        {
+            std::error_code ec;
+            auto relative = std::filesystem::relative(absolutePath, projectDir, ec);
+            if (!ec && !relative.empty() && relative.native()[0] != '.')
+                return relative.string();
+        }
+
+        auto engineDir = GetEngineDirectory();
+        std::error_code ec;
+        auto relative = std::filesystem::relative(absolutePath, engineDir, ec);
+        if (!ec && !relative.empty() && relative.native()[0] != '.')
+        {
+            std::string relStr = relative.string();
+            if (relStr.find("Resources/") == 0 || relStr.find("Resources\\") == 0)
+                return "CQ:" + relStr;
         }
 
         return absolutePath;
@@ -607,7 +660,8 @@ namespace Conqueror::Editor
             ImGui::Text("Albedo Texture");
             if (!component.TexturePath.empty())
             {
-                ImGui::Text("%s", component.TexturePath.c_str());
+                std::string displayPath = ToSerializablePath(component.TexturePath);
+                ImGui::Text("%s", displayPath.c_str());
                 ImGui::SameLine();
                 if (ImGui::Button("X##RemoveTexMR"))
                 {
@@ -638,21 +692,29 @@ namespace Conqueror::Editor
                 if (result == NFD_OKAY)
                 {
                     std::string loadedPathStr(outPath);
-                    std::filesystem::path loadedPath(loadedPathStr);
-                    std::filesystem::path texDir = std::filesystem::current_path() / "Resources" / "Textures";
-                    std::string relPath;
-                    if (loadedPath.lexically_normal().string().find(texDir.lexically_normal().string()) == 0)
-                    {
-                        relPath = "Resources/Textures/" + loadedPath.filename().string();
-                    }
-                    else
-                    {
-                        relPath = loadedPathStr;
-                    }
-                    component.Texture = Texture2D::Create(relPath);
-                    component.TexturePath = relPath;
+                    component.Texture = Texture2D::Create(loadedPathStr);
+                    component.TexturePath = ToRelativeIfInsideProject(loadedPathStr);
                     NFD_FreePathU8(outPath);
                 }
+            }
+
+            // Drag & Drop target
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                {
+                    std::string droppedPath((const char*)payload->Data, payload->DataSize - 1);
+                    std::filesystem::path path(droppedPath);
+                    std::string ext = path.extension().string();
+                    
+                    if (ext == ".png" || ext == ".jpg" || ext == ".jpeg")
+                    {
+                        component.Texture = Texture2D::Create(droppedPath);
+                        component.TexturePath = ToRelativeIfInsideProject(droppedPath);
+                        CQ_CORE_INFO("MeshRenderer texture set: {0}", droppedPath);
+                    }
+                }
+                ImGui::EndDragDropTarget();
             }
 
             ImGui::Separator();

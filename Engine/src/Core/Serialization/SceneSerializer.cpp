@@ -356,7 +356,7 @@ namespace Conqueror
             out << YAML::Key << "Metallic" << YAML::Value << meshRenderer.Metallic;
             out << YAML::Key << "Roughness" << YAML::Value << meshRenderer.Roughness;
             out << YAML::Key << "AO" << YAML::Value << meshRenderer.AO;
-            out << YAML::Key << "TexturePath" << YAML::Value << meshRenderer.TexturePath;
+            out << YAML::Key << "TexturePath" << YAML::Value << ToSerializablePath(meshRenderer.TexturePath);
 
             if (meshRenderer.MaterialInstance)
             {
@@ -392,7 +392,7 @@ namespace Conqueror
                     out << YAML::Key << "FloatValue" << YAML::Value << node.FloatValue;
                     out << YAML::Key << "Vec2Value" << YAML::Value << node.Vec2Value;
                     out << YAML::Key << "Vec3Value" << YAML::Value << node.Vec3Value;
-                    out << YAML::Key << "TexturePath" << YAML::Value << node.TexturePath;
+                    out << YAML::Key << "TexturePath" << YAML::Value << ToSerializablePath(node.TexturePath);
                     
                     out << YAML::EndMap;
                 }
@@ -925,7 +925,7 @@ namespace Conqueror
         // Skybox
         if (m_Scene->GetSkybox())
         {
-            out << YAML::Key << "SkyboxPath" << YAML::Value << m_Scene->GetSkybox()->GetPath();
+            out << YAML::Key << "SkyboxPath" << YAML::Value << ToSerializablePath(m_Scene->GetSkybox()->GetPath());
         }
         out << YAML::Key << "SkyboxExposure" << YAML::Value << m_Scene->GetSkyboxExposure();
         out << YAML::Key << "SkyboxRotation" << YAML::Value << m_Scene->GetSkyboxRotation();
@@ -1061,7 +1061,7 @@ namespace Conqueror
         // Skybox
         if (m_Scene->GetSkybox())
         {
-            out << YAML::Key << "SkyboxPath" << YAML::Value << m_Scene->GetSkybox()->GetPath();
+            out << YAML::Key << "SkyboxPath" << YAML::Value << ToSerializablePath(m_Scene->GetSkybox()->GetPath());
         }
         out << YAML::Key << "SkyboxExposure" << YAML::Value << m_Scene->GetSkyboxExposure();
         out << YAML::Key << "SkyboxRotation" << YAML::Value << m_Scene->GetSkyboxRotation();
@@ -1420,7 +1420,7 @@ namespace Conqueror
 
                     if (meshRendererComponent["TexturePath"])
                     {
-                        mrc.TexturePath = meshRendererComponent["TexturePath"].as<std::string>();
+                        mrc.TexturePath = ResolveSerializablePath(meshRendererComponent["TexturePath"].as<std::string>());
                         if (!mrc.TexturePath.empty())
                             mrc.Texture = Texture2D::Create(mrc.TexturePath);
                         else
@@ -1468,7 +1468,7 @@ namespace Conqueror
                                 if (node["FloatValue"]) sNode.FloatValue = node["FloatValue"].as<float>();
                                 if (node["Vec2Value"]) sNode.Vec2Value = node["Vec2Value"].as<glm::vec2>();
                                 if (node["Vec3Value"]) sNode.Vec3Value = node["Vec3Value"].as<glm::vec3>();
-                                if (node["TexturePath"]) sNode.TexturePath = node["TexturePath"].as<std::string>();
+                                if (node["TexturePath"]) sNode.TexturePath = ResolveSerializablePath(node["TexturePath"].as<std::string>());
 
                                 mat->GraphNodes.push_back(sNode);
                             }
@@ -1924,7 +1924,7 @@ namespace Conqueror
             // Skybox
             if (environment["SkyboxPath"])
             {
-                std::string skyboxPath = environment["SkyboxPath"].as<std::string>();
+                std::string skyboxPath = ResolveSerializablePath(environment["SkyboxPath"].as<std::string>());
                 if (!skyboxPath.empty())
                 {
                     // HDR skybox yükle (default 512 resolution)
