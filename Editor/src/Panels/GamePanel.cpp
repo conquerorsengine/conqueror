@@ -48,10 +48,7 @@ namespace Conqueror::Editor
                         cc.Camera.SetViewportSize(width, height);
                 }
 
-                if (isPlaying)
-                    m_Context->OnUpdateRuntime(ts);
-                else
-                    m_Context->OnUpdateRuntime(ts, true);
+                m_Context->OnUpdateRuntime(ts, true);
             }
 
             PostProcess::EndScene();

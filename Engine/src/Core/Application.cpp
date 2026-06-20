@@ -99,6 +99,7 @@ namespace Conqueror
             m_LastFrameTime = time;
 
             TimeManager::Update(timestep);
+            timestep = TimeManager::GetUnscaledDeltaTime();
             Input::Update();
 
             if (!m_Minimized)

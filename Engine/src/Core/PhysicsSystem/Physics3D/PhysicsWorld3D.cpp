@@ -1,5 +1,6 @@
 #include "PhysicsWorld3D.h"
 #include "Core/Logging/Log.h"
+#include "Core/Tiering/QualitySettings.h"
 #include "Scene/Entity.h"
 #include "Scene/Components.h"
 
@@ -175,7 +176,7 @@ namespace Conqueror
         if (!m_Initialized)
             return;
 
-        const int cCollisionSteps = 1;
+        const int cCollisionSteps = QualitySettings::GetPreset().PhysicsIterations;
         m_PhysicsSystem->Update(ts.GetSeconds(), cCollisionSteps, m_TempAllocator, m_JobSystem);
 
         SyncTransformsFromPhysics();
@@ -297,11 +298,9 @@ namespace Conqueror
 
         if (rb.Type == RigidbodyComponent::BodyType::Dynamic)
         {
-            // Mass ve inertia'yı shape'den hesapla
+            bodySettings.mMotionQuality = JPH::EMotionQuality::LinearCast;
             bodySettings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateMassAndInertia;
             bodySettings.mMassPropertiesOverride.mMass = rb.Mass;
-            
-            CQ_CORE_INFO("PhysicsWorld3D::CreateBody - Creating Dynamic body with mass: {0}", rb.Mass);
         }
 
         JPH::Body* body = m_PhysicsSystem->GetBodyInterface().CreateBody(bodySettings);
