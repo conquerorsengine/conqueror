@@ -1,0 +1,55 @@
+#language GLSL
+#type vertex
+#version 450 core
+
+layout(location = 0) in vec3 a_Position;
+
+out vec3 v_TexCoords;
+
+uniform mat4 u_Projection;
+uniform mat4 u_View;
+uniform float u_Rotation = 0.0;
+
+void main()
+{
+    // Rotation matrix (Y axis)
+    float c = cos(u_Rotation);
+    float s = sin(u_Rotation);
+    mat3 rotMat = mat3(
+        c, 0.0, s,
+        0.0, 1.0, 0.0,
+        -s, 0.0, c
+    );
+    
+    v_TexCoords = rotMat * a_Position;
+    vec4 pos = u_Projection * u_View * vec4(a_Position, 1.0);
+    gl_Position = pos.xyww; // Depth trick: z = w (depth = 1.0)
+}
+
+#type fragment
+#version 450 core
+
+out vec4 FragColor;
+
+in vec3 v_TexCoords;
+
+uniform samplerCube u_Skybox;
+uniform float u_Exposure = 1.0;
+uniform float u_Gamma = 2.2;
+uniform vec3 u_Tint = vec3(1.0);
+
+void main()
+{
+    vec3 color = texture(u_Skybox, v_TexCoords).rgb;
+    
+    // Tint uygula
+    color *= u_Tint;
+    
+    // Exposure tone mapping
+    color = vec3(1.0) - exp(-color * u_Exposure);
+    
+    // Gamma correction
+    color = pow(color, vec3(1.0 / u_Gamma));
+    
+    FragColor = vec4(color, 1.0);
+}

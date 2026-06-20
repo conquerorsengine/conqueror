@@ -1,0 +1,87 @@
+# Conqueror's Engine - Input Configuration Map
+# Format:
+# Context:ContextName
+# BindAction:ActionName,KeyCode
+# BindCombo:ComboName,KeyCode1,KeyCode2,...
+
+# ----------------------------------------------------
+# 1. GAMEPLAY
+# ----------------------------------------------------
+Context:Gameplay
+
+# Movement
+BindAction:MoveForward,87
+BindAction:MoveBackward,83
+BindAction:MoveLeft,65
+BindAction:MoveRight,68
+BindAction:MoveX,68
+
+# Core Actions
+BindAction:Jump,32
+BindChord:SuperJump,340,32
+BindAction:Sprint,340
+BindAction:Crouch,341
+BindAction:Interact,69
+BindAction:Reload,82
+BindAction:Melee,70
+BindAction:DropItem,71
+
+# Gamepad Desteği (Analog, Deadzone, Buton)
+BindGamepadButton:GamepadJump,0
+BindGamepadAxis:GamepadMoveY,1,0.2
+
+# Advanced Yeni Özellikler (Hold, Scale, PlayerIndex)
+BindAction:ChargedAttack,67
+ActionHoldTime:ChargedAttack,1.5
+
+BindGamepadButton:P2_Jump,0
+ActionPlayerIndex:P2_Jump,1
+
+BindGamepadAxis:InvertedMoveY,1,0.2
+ActionScale:InvertedMoveY,-1.0
+
+# Quick Menus
+BindAction:ToggleInventory,73
+BindAction:ToggleMap,77
+BindAction:PauseGame,256
+
+# ----------------------------------------------------
+# 2. VEHICLE
+# ----------------------------------------------------
+Context:Vehicle
+
+BindAction:Accelerate,87
+BindAction:Brake,83
+BindAction:SteerLeft,65
+BindAction:SteerRight,68
+BindAction:Handbrake,32
+BindAction:Horn,70
+BindAction:ExitVehicle,69
+BindAction:ChangeCamera,67
+
+# ----------------------------------------------------
+# 3. UI
+# ----------------------------------------------------
+Context:UI
+
+BindAction:UI_Up,265
+BindAction:UI_Down,264
+BindAction:UI_Left,263
+BindAction:UI_Right,262
+BindAction:UI_Accept,257
+BindAction:UI_Cancel,256
+BindAction:UI_NextTab,69
+BindAction:UI_PrevTab,81
+
+# ----------------------------------------------------
+# 4. COMBAT
+# ----------------------------------------------------
+Context:Combat
+
+BindAction:ToggleWeapon,81
+BindAction:LockTarget,84
+
+# Combos
+BindCombo:Hadouken,264,262,74
+BindCombo:Shoryuken,262,264,262,74
+BindCombo:UltimateSkill,81,69,82

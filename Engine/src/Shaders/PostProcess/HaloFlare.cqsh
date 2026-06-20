@@ -1,0 +1,178 @@
+#language GLSL
+#type vertex
+#version 450 core
+
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+
+out vec2 v_TexCoord;
+
+void main()
+{
+    v_TexCoord = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+
+layout(location = 0) out vec4 FragColor;
+
+in vec2 v_TexCoord;
+
+uniform sampler2D u_SceneTexture;
+uniform sampler2D u_DepthTexture;
+uniform sampler2D u_HaloTexture;
+uniform int u_HasHaloTexture;
+uniform int u_HaloEnabled;
+uniform float u_HaloStrength;
+uniform int u_FlareEnabled;
+uniform float u_FlareStrength;
+uniform vec2 u_LightScreenPos;
+uniform vec3 u_LightColor;
+uniform int u_LightVisible;
+uniform vec2 u_ViewportSize;
+
+// Flare Elements (max 10)
+uniform int u_FlareElementCount;
+uniform vec3 u_FlareColors[10];
+uniform float u_FlareSizes[10];
+uniform float u_FlareOffsets[10];
+uniform float u_FlareIntensities[10];
+
+// Occlusion test: Light pozisyonundan merkeze ray marching
+float calculateOcclusion(vec2 lightPos)
+{
+    // Ekran merkezi
+    vec2 screenCenter = vec2(0.5, 0.5);
+    
+    // Light'tan merkeze doğru ray direction
+    vec2 rayDir = screenCenter - lightPos;
+    float rayLength = length(rayDir);
+    
+    // Normalize
+    if (rayLength > 0.0)
+        rayDir = normalize(rayDir);
+    else
+        return 1.0; // Light tam merkezde
+    
+    // Ray marching: Light'tan merkeze doğru depth sample'ları al
+    int sampleCount = 16; // 16 sample
+    float stepSize = rayLength / float(sampleCount);
+    
+    float occlusionSum = 0.0;
+    int validSamples = 0;
+    
+    for (int i = 0; i < sampleCount; i++)
+    {
+        float t = float(i) / float(sampleCount);
+        vec2 samplePos = lightPos + rayDir * (t * rayLength);
+        
+        // Ekran sınırları içinde mi?
+        if (samplePos.x >= 0.0 && samplePos.x <= 1.0 && samplePos.y >= 0.0 && samplePos.y <= 1.0)
+        {
+            float depth = texture(u_DepthTexture, samplePos).r;
+            
+            // Depth 0.99'dan küçükse (obje var) → engellenmiş
+            if (depth < 0.99)
+            {
+                // Obje bulundu, occlusion arttır
+                occlusionSum += 1.0;
+            }
+            
+            validSamples++;
+        }
+    }
+    
+    // Eğer ray üzerinde obje varsa occlusion uygula
+    if (validSamples > 0)
+    {
+        float occlusionRatio = occlusionSum / float(validSamples);
+        
+        // Occlusion ratio > 0.5 ise (yarıdan fazla sample engellenmiş) → tamamen kapat
+        if (occlusionRatio > 0.3)
+            return 0.0;
+        
+        // Soft fade
+        return 1.0 - (occlusionRatio * 3.0);
+    }
+    
+    return 1.0; // Hiç sample alınamadıysa tam görünür
+}
+
+void main()
+{
+    vec3 finalColor = vec3(0.0);
+    
+    // Aspect ratio düzeltmesi (yuvarlak flare için)
+    float aspectRatio = u_ViewportSize.x / u_ViewportSize.y;
+    vec2 aspectCorrection = vec2(aspectRatio, 1.0);
+    
+    if (u_LightVisible == 1)
+    {
+        // Occlusion test
+        float occlusion = calculateOcclusion(u_LightScreenPos);
+        
+        // Eğer tamamen engellenmiş ise hiçbir şey çizme
+        if (occlusion < 0.01)
+        {
+            FragColor = vec4(0.0);
+            return;
+        }
+        vec2 toLight = u_LightScreenPos - v_TexCoord;
+        float distToLight = length(toLight);
+        
+        // HALO: 3 lens ghost (ekran merkezinden light'a)
+        if (u_HaloEnabled == 1 && u_HaloStrength > 0.0)
+        {
+            vec2 haloDir = normalize(toLight);
+            
+            for (int i = 1; i <= 3; i++)
+            {
+                float t = float(i) * 0.2;
+                vec2 haloPos = u_LightScreenPos - haloDir * t;
+                
+                // Aspect ratio düzeltmesi ile mesafe hesapla
+                vec2 diff = (v_TexCoord - haloPos) * aspectCorrection;
+                float haloDist = length(diff);
+                
+                float haloSize = 0.05 * float(i);
+                float haloIntensity = smoothstep(haloSize, 0.0, haloDist);
+                
+                finalColor += u_LightColor * haloIntensity * u_HaloStrength * 0.3 * occlusion;
+            }
+        }
+        
+        // FLARE: Yumuşak parlama (texture-based glow) - dynamic element count
+        if (u_FlareEnabled == 1 && u_HasHaloTexture == 1 && u_FlareStrength > 0.0 && u_FlareElementCount > 0)
+        {
+            // Ekran merkezi
+            vec2 screenCenter = vec2(0.5, 0.5);
+            vec2 lightToCenter = screenCenter - u_LightScreenPos;
+            
+            for (int i = 0; i < u_FlareElementCount; i++)
+            {
+                // Light'tan merkeze doğru farklı mesafelerde yerleştir
+                vec2 flareCenter = u_LightScreenPos + lightToCenter * u_FlareOffsets[i];
+                
+                // Aspect ratio düzeltmesi ile mesafe hesapla (yuvarlak flare)
+                vec2 diff = (v_TexCoord - flareCenter) * aspectCorrection;
+                float flareDist = length(diff);
+                
+                float flareSize = u_FlareSizes[i];
+                float flareFalloff = smoothstep(flareSize, 0.0, flareDist);
+                
+                // Texture sampling (aspect ratio düzeltmesi ile)
+                vec2 flareUV = diff / flareSize + 0.5;
+                vec3 flareColor = texture(u_HaloTexture, flareUV).rgb;
+                
+                // Color multiplier uygula
+                flareColor *= u_FlareColors[i];
+                
+                finalColor += flareColor * u_LightColor * flareFalloff * u_FlareStrength * u_FlareIntensities[i] * occlusion;
+            }
+        }
+    }
+    
+    FragColor = vec4(finalColor, 1.0);
+}

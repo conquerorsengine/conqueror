@@ -1,0 +1,36 @@
+using Conqueror;
+
+script PlayerController : ConquerorScript
+{
+    var moveSpeed = 5.0;
+    var jumpForce = 5.0;
+
+    func OnCreate()
+    {
+        LogInfo("PlayerController baslatildi. Hiz: " + moveSpeed);
+    }
+
+    func OnUpdate(ts)
+    {
+        var vel = GetLinearVelocity2D();
+        var vx = vel.x;
+        var vy = vel.y;
+
+        var moveX = 0.0;
+
+        if (IsKeyPressed(Key.A)) { moveX = -1.0; }
+        if (IsKeyPressed(Key.D)) { moveX = 1.0; }
+
+        vx = moveX * moveSpeed;
+
+        if (IsKeyPressed(Key.Space))
+        {
+            if (vy * vy < 0.01)
+            {
+                vy = jumpForce;
+            }
+        }
+
+        SetLinearVelocity2D(vx, vy);
+    }
+}

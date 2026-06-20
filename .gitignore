@@ -1,0 +1,41 @@
+# Build directories
+build/
+Builds/
+cmake-build-*/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Compiled files
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+
+# Build outputs
+ConquerorEngine
+ConquerorEditor
+ConquerorRuntime
+
+# Project specific
+recent_projects.yaml
+imgui.ini
+*.log
+scratch.cpp
+
+# Temporary files
+*.tmp
+*.bak
+*.orig
+.kiro/

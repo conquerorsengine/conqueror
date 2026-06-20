@@ -1,0 +1,3432 @@
+Scene: Untitled
+Entities:
+  - Entity: 295646865113441037
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [0, 7.351743, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.6, 0.6, 0.6]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 0, 0, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: ""
+    PlayerController_ConquerorScriptComponent:
+      ScriptPath: /home/fazli/Masaüstü/Conqueror's_Engine/Resources/DefaultProjects/3d/Assets/Scripts/PlayerController.cqs
+      ClassName: PlayerController
+    RigidbodyComponent:
+      BodyType: 1
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 1280297612961939349
+    TagComponent:
+      Tag: Staircase FLoor2
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-4.121569, 1.788686, -4.533548]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.20000005, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 5445702660384711067
+    TagComponent:
+      Tag: Box
+      GameTag: Untagged
+    TransformComponent:
+      Position: [3.6061509, 1.4236372, 3.964894]
+      Rotation: [0, -0, 0]
+      Scale: [0.5, 0.5, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: /home/fazli/Masaüstü/Conqueror's_Engine/Resources/DefaultProjects/3d/Assets/Textures/box.jpg
+    RigidbodyComponent:
+      BodyType: 1
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 884529628674011163
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-4.1110525, 1.243216, 6.5399146]
+      Rotation: [-0.35604715, -0.19024087, -0.3525565]
+      Scale: [1.7, 0.20000005, 2.2]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.074238606, 0.6409266, 0.109246284, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 5613396020961336834
+    TagComponent:
+      Tag: Staircase FLoor
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-4.121569, 1.788686, -3.6919613]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.20000005, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 7717795530532387395
+    TagComponent:
+      Tag: Stairs
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-4.121569, 1.3162438, -1.9623085]
+      Rotation: [0.5253436, -0, 0]
+      Scale: [1, 0.20000005, 0.99999976]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 4690347984980931093
+    TagComponent:
+      Tag: Box2
+      GameTag: Untagged
+    TransformComponent:
+      Position: [1.9810913, 1.4236372, 3.964894]
+      Rotation: [0, -0, 0]
+      Scale: [0.5, 0.5, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: /home/fazli/Masaüstü/Conqueror's_Engine/Resources/DefaultProjects/3d/Assets/Textures/box.jpg
+    RigidbodyComponent:
+      BodyType: 1
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 5116840167753996150
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-0.006226301, 2, -5.997614]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 5863875333295954473
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [7.858938, 2, -4.7174115]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 4488328829644026889
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [7.858938, 2, -3.798986]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 6578386646234779500
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [7.858938, 2, -1.8529491]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 5712486641521178614
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [7.858938, 2, 0.1430459]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 5949352933705248945
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [7.858938, 2, 2.1461306]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 3840529952111344102
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [7.858938, 2, 4.088575]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 7810531547150983613
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [7.858938, 2, 6.0817914]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 890558157220034001
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-5.9368043, 2, -5.6742835]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 6106374663053163126
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-5.9368043, 2, -3.8111982]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 1743673554494037815
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-5.9368043, 2, -1.8558754]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 8635443836953470041
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-5.9368043, 2, 0.11446333]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 7425727081022990688
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-5.9368043, 2, 2.0721798]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 7588717985888051891
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-5.9368043, 2, 4.036838]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 7441443922973462354
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-5.9368043, 2, 6.023683]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 2170583082993021859
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-5.9368043, 2, 8]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 5897492891795062322
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-3.9685612, 2, 8]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 2573042794324477936
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-2.0005646, 2, 8]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 1173234917298105053
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [1.9492733, 2, 8]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 6497750838826471016
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [0, 2, 8]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 1390962146107730056
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [3.8918533, 2, 8]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 5526159455511221994
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [5.8576016, 2, 8]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 9125599619256526356
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [7.858938, 2, 8]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 1023594228226627255
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [7.858938, 2, -5.997614]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 2162815223336629145
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [5.8576016, 2, -5.997614]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 1238677775167394316
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [3.8918533, 2, -5.997614]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 989614744691345136
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [1.9896808, 2, -5.997614]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 627430101261305434
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-5.927391, 2, -5.997614]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 809268819578810437
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-4, 2, -6]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 5938593578675534901
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-2, 2, -5.997614]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 4403834823691772068
+    TagComponent:
+      Tag: Wall
+      GameTag: Untagged
+    TransformComponent:
+      Position: [0, 0, 0.022531629]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 5134918673117414002
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [0, 0, -1.998698]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 5701979108685705220
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [7.869639, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 7401327929624184012
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [7.869639, 0, -1.998698]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 2868842679732874478
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [7.869639, 0, -5.9794097]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 1553229021622557651
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [7.869639, 0, -3.980712]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 941028454404309471
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [5.8895154, 0, -3.980712]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 6882370708780992900
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [5.8895154, 0, -5.9794097]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 52792530768942359
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [5.8895154, 0, -1.998698]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 2414771960564829260
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [5.8895154, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 8944479009270625282
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [1.9297905, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 6337808489183827230
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [1.9297905, 0, -1.998698]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 5383058201755084156
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [1.9297905, 0, -5.9794097]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 746505464186106778
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [1.9297905, 0, -3.980712]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 6997262942413674699
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [3.909914, 0, -3.980712]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 2700149610874344310
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [3.909914, 0, -5.9794097]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 5705748220480114380
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [3.909914, 0, -1.998698]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 3045948727165071667
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [3.909914, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 2376181944985284212
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [3.909914, 0, 7.9537582]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 5519182047958331508
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [3.909914, 0, 5.9550605]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 7122185544524996530
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [3.909914, 0, 1.9743485]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 3774580582593272947
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [3.909914, 0, 3.9730463]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 429054741831527879
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [1.9297905, 0, 3.9730463]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 8257870900282592378
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [1.9297905, 0, 1.9743485]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 2373330365975725937
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [1.9297905, 0, 5.9550605]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 4661591441671741657
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [1.9297905, 0, 7.9537582]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 5282801888127316566
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [5.8895154, 0, 7.9537582]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 4384574000163733435
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [5.8895154, 0, 5.9550605]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 8042968542339512147
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [5.8895154, 0, 1.9743485]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 2359350771337278324
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [5.8895154, 0, 3.9730463]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 6679179941033197560
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [7.869639, 0, 3.9730463]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 6422231447279727984
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [7.869639, 0, 1.9743485]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 2935312345152117218
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [7.869639, 0, 5.9550605]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 4222266799071048515
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [7.869639, 0, 7.9537582]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 7764512429481001113
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [0, 0, 7.9537582]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 487917182079615470
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [0, 0, 5.9550605]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 2463296660498113712
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [0, 0, 1.9743485]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 1192432699558970710
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [0, 0, 3.9730463]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 7586805478628100430
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-1.9801233, 0, 3.9730463]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 9268529324311315
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-1.9801233, 0, 1.9743485]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 6622908272660789745
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-1.9801233, 0, 5.9550605]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 1177452285635858660
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-1.9801233, 0, 7.9537582]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 9212429046532481599
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-5.939848, 0, 7.9537582]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 4393599462733704647
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-5.939848, 0, 5.9550605]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 3134551741370414905
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-5.939848, 0, 1.9743485]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 6617751664441265522
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-5.939848, 0, 3.9730463]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 4452841315484054591
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-3.959725, 0, 3.9730463]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 2852785205385617545
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-3.959725, 0, 1.9743485]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 5269716496163057910
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-3.959725, 0, 5.9550605]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 6255605782527176782
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-3.959725, 0, 7.9537582]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 6421394184720717271
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-3.959725, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 7450740521736068030
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-3.959725, 0, -1.998698]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 587264666467681432
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-3.959725, 0, -5.9794097]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 915519637343042664
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-3.959725, 0, -3.980712]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 660435760224883385
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-5.939848, 0, -3.980712]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 1922113654536041330
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-5.939848, 0, -5.9794097]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 764085127568000350
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-5.939848, 0, -1.998698]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 5324832868394558716
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-5.939848, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 7014412299184438249
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-1.9801233, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 3894446835149494734
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-1.9801233, 0, -1.998698]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 2711663453959117286
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-1.9801233, 0, -5.9794097]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 4266179986940385798
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-1.9801233, 0, -3.980712]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 3625977573098970304
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [0, 0, -3.980712]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 7785113517779829843
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [0, 0, -5.9794097]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 8972862906734534913
+    TagComponent:
+      Tag: Cube
+      GameTag: Untagged
+    TransformComponent:
+      Position: [0, 0, -1.998698]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+  - Entity: 8300660015788940776
+    TagComponent:
+      Tag: Ground
+      GameTag: Untagged
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: Resources/Textures/texture_grid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+Environment:
+  SkyboxPath: /home/fazli/Masaüstü/Conqueror's_Engine/Resources/skybox/skybox_1.hdr
+  SkyboxExposure: 1
+  SkyboxRotation: 0
+  SkyboxTint: [1, 1, 1]
+  EnvironmentLightingSource: 0
+  AmbientColor: [0.3, 0.3, 0.3]
+  AmbientSkyColor: [0.5, 0.6, 0.7]
+  AmbientEquatorColor: [0.3, 0.3, 0.3]
+  AmbientGroundColor: [0.2, 0.15, 0.1]
+  AmbientIntensity: 1
+  FogEnabled: false
+  FogColor: [0.5, 0.6, 0.7]
+  FogDensity: 0.02
+  FogStart: 10
+  FogEnd: 100
+  SunSource: 0
+  HaloEnabled: false
+  HaloStrength: 0.5
+  FlareEnabled: false
+  FlareFadeSpeed: 3
+  FlareStrength: 1
+  FlareElements:
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.08
+      Offset: 0.3
+      Intensity: 1
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.06
+      Offset: 0.6
+      Intensity: 0.8
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.05
+      Offset: 0.9
+      Intensity: 0.6
+EditorCamera:
+  CameraMode: 0
+  Position: [7.2823486, 13.007093, -2.973685]
+  Distance: 15.200653
+  Pitch: 1.0268886
+  Yaw: 10.607898
+  OrthographicSize: 10
+Hierarchy:
+  - Child: 3894446835149494734
+    Parent: 8300660015788940776
+  - Child: 6255605782527176782
+    Parent: 8300660015788940776
+  - Child: 8972862906734534913
+    Parent: 8300660015788940776
+  - Child: 1553229021622557651
+    Parent: 8300660015788940776
+  - Child: 7785113517779829843
+    Parent: 8300660015788940776
+  - Child: 2868842679732874478
+    Parent: 8300660015788940776
+  - Child: 3625977573098970304
+    Parent: 8300660015788940776
+  - Child: 7401327929624184012
+    Parent: 8300660015788940776
+  - Child: 4266179986940385798
+    Parent: 8300660015788940776
+  - Child: 5701979108685705220
+    Parent: 8300660015788940776
+  - Child: 2711663453959117286
+    Parent: 8300660015788940776
+  - Child: 5134918673117414002
+    Parent: 8300660015788940776
+  - Child: 1177452285635858660
+    Parent: 8300660015788940776
+  - Child: 7425727081022990688
+    Parent: 4403834823691772068
+  - Child: 6622908272660789745
+    Parent: 8300660015788940776
+  - Child: 8635443836953470041
+    Parent: 4403834823691772068
+  - Child: 9268529324311315
+    Parent: 8300660015788940776
+  - Child: 1743673554494037815
+    Parent: 4403834823691772068
+  - Child: 7586805478628100430
+    Parent: 8300660015788940776
+  - Child: 6106374663053163126
+    Parent: 4403834823691772068
+  - Child: 1192432699558970710
+    Parent: 8300660015788940776
+  - Child: 890558157220034001
+    Parent: 4403834823691772068
+  - Child: 2463296660498113712
+    Parent: 8300660015788940776
+  - Child: 7810531547150983613
+    Parent: 4403834823691772068
+  - Child: 3840529952111344102
+    Parent: 4403834823691772068
+  - Child: 5949352933705248945
+    Parent: 4403834823691772068
+  - Child: 5712486641521178614
+    Parent: 4403834823691772068
+  - Child: 6578386646234779500
+    Parent: 4403834823691772068
+  - Child: 4488328829644026889
+    Parent: 4403834823691772068
+  - Child: 5863875333295954473
+    Parent: 4403834823691772068
+  - Child: 5116840167753996150
+    Parent: 4403834823691772068
+  - Child: 7014412299184438249
+    Parent: 8300660015788940776
+  - Child: 5938593578675534901
+    Parent: 4403834823691772068
+  - Child: 9212429046532481599
+    Parent: 8300660015788940776
+  - Child: 7588717985888051891
+    Parent: 4403834823691772068
+  - Child: 7764512429481001113
+    Parent: 8300660015788940776
+  - Child: 4222266799071048515
+    Parent: 8300660015788940776
+  - Child: 2935312345152117218
+    Parent: 8300660015788940776
+  - Child: 6422231447279727984
+    Parent: 8300660015788940776
+  - Child: 6679179941033197560
+    Parent: 8300660015788940776
+  - Child: 2359350771337278324
+    Parent: 8300660015788940776
+  - Child: 8042968542339512147
+    Parent: 8300660015788940776
+  - Child: 4384574000163733435
+    Parent: 8300660015788940776
+  - Child: 5282801888127316566
+    Parent: 8300660015788940776
+  - Child: 4661591441671741657
+    Parent: 8300660015788940776
+  - Child: 2373330365975725937
+    Parent: 8300660015788940776
+  - Child: 8257870900282592378
+    Parent: 8300660015788940776
+  - Child: 429054741831527879
+    Parent: 8300660015788940776
+  - Child: 3774580582593272947
+    Parent: 8300660015788940776
+  - Child: 7122185544524996530
+    Parent: 8300660015788940776
+  - Child: 5519182047958331508
+    Parent: 8300660015788940776
+  - Child: 941028454404309471
+    Parent: 8300660015788940776
+  - Child: 6882370708780992900
+    Parent: 8300660015788940776
+  - Child: 52792530768942359
+    Parent: 8300660015788940776
+  - Child: 2414771960564829260
+    Parent: 8300660015788940776
+  - Child: 8944479009270625282
+    Parent: 8300660015788940776
+  - Child: 6337808489183827230
+    Parent: 8300660015788940776
+  - Child: 5383058201755084156
+    Parent: 8300660015788940776
+  - Child: 746505464186106778
+    Parent: 8300660015788940776
+  - Child: 6997262942413674699
+    Parent: 8300660015788940776
+  - Child: 2700149610874344310
+    Parent: 8300660015788940776
+  - Child: 5705748220480114380
+    Parent: 8300660015788940776
+  - Child: 3045948727165071667
+    Parent: 8300660015788940776
+  - Child: 2376181944985284212
+    Parent: 8300660015788940776
+  - Child: 487917182079615470
+    Parent: 8300660015788940776
+  - Child: 587264666467681432
+    Parent: 8300660015788940776
+  - Child: 1023594228226627255
+    Parent: 4403834823691772068
+  - Child: 915519637343042664
+    Parent: 8300660015788940776
+  - Child: 2162815223336629145
+    Parent: 4403834823691772068
+  - Child: 1390962146107730056
+    Parent: 4403834823691772068
+  - Child: 660435760224883385
+    Parent: 8300660015788940776
+  - Child: 1238677775167394316
+    Parent: 4403834823691772068
+  - Child: 1922113654536041330
+    Parent: 8300660015788940776
+  - Child: 989614744691345136
+    Parent: 4403834823691772068
+  - Child: 809268819578810437
+    Parent: 4403834823691772068
+  - Child: 5324832868394558716
+    Parent: 8300660015788940776
+  - Child: 627430101261305434
+    Parent: 4403834823691772068
+  - Child: 764085127568000350
+    Parent: 8300660015788940776
+  - Child: 9125599619256526356
+    Parent: 4403834823691772068
+  - Child: 7450740521736068030
+    Parent: 8300660015788940776
+  - Child: 5526159455511221994
+    Parent: 4403834823691772068
+  - Child: 6421394184720717271
+    Parent: 8300660015788940776
+  - Child: 6497750838826471016
+    Parent: 4403834823691772068
+  - Child: 5269716496163057910
+    Parent: 8300660015788940776
+  - Child: 1173234917298105053
+    Parent: 4403834823691772068
+  - Child: 2852785205385617545
+    Parent: 8300660015788940776
+  - Child: 2573042794324477936
+    Parent: 4403834823691772068
+  - Child: 4452841315484054591
+    Parent: 8300660015788940776
+  - Child: 5897492891795062322
+    Parent: 4403834823691772068
+  - Child: 6617751664441265522
+    Parent: 8300660015788940776
+  - Child: 2170583082993021859
+    Parent: 4403834823691772068
+  - Child: 3134551741370414905
+    Parent: 8300660015788940776
+  - Child: 7441443922973462354
+    Parent: 4403834823691772068
+  - Child: 4393599462733704647
+    Parent: 8300660015788940776
+NavMesh:
+  Triangles:
+    []

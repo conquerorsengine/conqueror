@@ -1,0 +1,313 @@
+#language GLSL
+#type vertex
+#version 450 core
+
+#define MAX_BONES 128
+
+layout(location = 0) in vec3 a_Position;
+layout(location = 1) in vec3 a_Normal;
+layout(location = 2) in vec3 a_Tangent;
+layout(location = 3) in vec2 a_TexCoord;
+layout(location = 4) in ivec4 a_BoneIDs;
+layout(location = 5) in vec4 a_BoneWeights;
+
+uniform mat4 u_ViewProjection;
+uniform mat4 u_Transform;
+uniform mat4 u_BoneTransforms[MAX_BONES];
+
+out VS_OUT {
+    vec3 FragPos;
+    vec3 Normal;
+    vec3 Tangent;
+    vec2 TexCoord;
+    mat3 TBN;
+} vs_out;
+
+void main()
+{
+    mat4 skinMatrix = mat4(0.0);
+    for (int i = 0; i < 4; i++)
+    {
+        float w = a_BoneWeights[i];
+        if (w <= 0.0)
+            continue;
+        int bid = a_BoneIDs[i];
+        if (bid < 0 || bid >= MAX_BONES)
+            continue;
+        skinMatrix += u_BoneTransforms[bid] * w;
+    }
+    if (length(vec4(skinMatrix[0])) < 1e-8)
+        skinMatrix = mat4(1.0);
+
+    vec4 localPos = skinMatrix * vec4(a_Position, 1.0);
+    vec4 worldPos = u_Transform * localPos;
+    vs_out.FragPos = worldPos.xyz;
+
+    mat3 boneRot = mat3(skinMatrix);
+
+    mat3 normalMatrix = transpose(inverse(mat3(u_Transform)));
+    vs_out.Normal = normalize(normalMatrix * boneRot * a_Normal);
+    vs_out.Tangent = normalize(normalMatrix * boneRot * a_Tangent);
+
+    vec3 T = normalize(vs_out.Tangent);
+    vec3 N = normalize(vs_out.Normal);
+    T = normalize(T - dot(T, N) * N);
+    vec3 B = cross(N, T);
+    vs_out.TBN = mat3(T, B, N);
+
+    vs_out.TexCoord = a_TexCoord;
+
+    gl_Position = u_ViewProjection * worldPos;
+}
+
+#type fragment
+#version 450 core
+
+layout(location = 0) out vec4 FragColor;
+
+in VS_OUT {
+    vec3 FragPos;
+    vec3 Normal;
+    vec3 Tangent;
+    vec2 TexCoord;
+    mat3 TBN;
+} fs_in;
+
+struct Material {
+    vec3 Albedo;
+    float Metallic;
+    float Roughness;
+    float AO;
+};
+
+uniform Material u_Material;
+uniform sampler2D u_AlbedoMap;
+uniform sampler2D u_NormalMap;
+uniform sampler2D u_MetallicMap;
+uniform sampler2D u_RoughnessMap;
+uniform sampler2D u_AOMap;
+
+uniform bool u_UseAlbedoMap;
+uniform bool u_UseNormalMap;
+uniform bool u_UseMetallicMap;
+uniform bool u_UseRoughnessMap;
+uniform bool u_UseAOMap;
+
+uniform vec3 u_CameraPos;
+
+#define MAX_POINT_LIGHTS 16
+#define MAX_SPOT_LIGHTS 8
+
+struct DirectionalLight {
+    vec3 Direction;
+    vec3 Color;
+    float Intensity;
+};
+
+struct PointLight {
+    vec3 Position;
+    vec3 Color;
+    float Intensity;
+    float Range;
+    float Constant;
+    float Linear;
+    float Quadratic;
+};
+
+struct SpotLight {
+    vec3 Position;
+    vec3 Direction;
+    vec3 Color;
+    float Intensity;
+    float Range;
+    float InnerCutoff;
+    float OuterCutoff;
+    float Constant;
+    float Linear;
+    float Quadratic;
+};
+
+uniform DirectionalLight u_DirLight;
+uniform int u_NumPointLights;
+uniform PointLight u_PointLights[MAX_POINT_LIGHTS];
+uniform int u_NumSpotLights;
+uniform SpotLight u_SpotLights[MAX_SPOT_LIGHTS];
+
+uniform int u_AmbientLightingSource = 0;
+uniform vec3 u_AmbientColor = vec3(0.3);
+uniform vec3 u_AmbientSkyColor = vec3(0.5, 0.6, 0.7);
+uniform vec3 u_AmbientEquatorColor = vec3(0.3);
+uniform vec3 u_AmbientGroundColor = vec3(0.2, 0.15, 0.1);
+uniform float u_AmbientIntensity = 1.0;
+
+uniform bool u_FogEnabled = false;
+uniform vec3 u_FogColor = vec3(0.5, 0.6, 0.7);
+uniform float u_FogDensity = 0.02;
+uniform float u_FogStart = 10.0;
+uniform float u_FogEnd = 100.0;
+
+const float PI = 3.14159265359;
+
+float DistributionGGX(vec3 N, vec3 H, float roughness)
+{
+    float a = roughness * roughness;
+    float a2 = a * a;
+    float NdotH = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH * NdotH;
+    float nom = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = PI * denom * denom;
+    return nom / max(denom, 0.0001);
+}
+
+float GeometrySchlickGGX(float NdotV, float roughness)
+{
+    float r = (roughness + 1.0);
+    float k = (r * r) / 8.0;
+    float nom = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+    return nom / max(denom, 0.0001);
+}
+
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+{
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+    return ggx1 * ggx2;
+}
+
+vec3 FresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+{
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+vec3 CalculatePBR(vec3 N, vec3 V, vec3 L, vec3 radiance, vec3 albedo, float metallic, float roughness, vec3 F0)
+{
+    vec3 H = normalize(V + L);
+    float NDF = DistributionGGX(N, H, roughness);
+    float G = GeometrySmith(N, V, L, roughness);
+    vec3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);
+    vec3 numerator = NDF * G * F;
+    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
+    vec3 specular = numerator / denominator;
+    vec3 kS = F;
+    vec3 kD = vec3(1.0) - kS;
+    kD *= 1.0 - metallic;
+    float NdotL = max(dot(N, L), 0.0);
+    return (kD * albedo / PI + specular) * radiance * NdotL;
+}
+
+vec3 CalculateDirectionalLight(DirectionalLight light, vec3 N, vec3 V, vec3 albedo, float metallic, float roughness, vec3 F0)
+{
+    vec3 L = normalize(-light.Direction);
+    vec3 radiance = light.Color * light.Intensity;
+    return CalculatePBR(N, V, L, radiance, albedo, metallic, roughness, F0);
+}
+
+vec3 CalculatePointLight(PointLight light, vec3 N, vec3 V, vec3 FragPos, vec3 albedo, float metallic, float roughness, vec3 F0)
+{
+    vec3 L = normalize(light.Position - FragPos);
+    float distance = length(light.Position - FragPos);
+    if (distance > light.Range)
+        return vec3(0.0);
+    float attenuation = 1.0 / (light.Constant + light.Linear * distance + light.Quadratic * (distance * distance));
+    vec3 radiance = light.Color * light.Intensity * attenuation;
+    return CalculatePBR(N, V, L, radiance, albedo, metallic, roughness, F0);
+}
+
+vec3 CalculateSpotLight(SpotLight light, vec3 N, vec3 V, vec3 FragPos, vec3 albedo, float metallic, float roughness, vec3 F0)
+{
+    vec3 L = normalize(light.Position - FragPos);
+    float distance = length(light.Position - FragPos);
+    if (distance > light.Range)
+        return vec3(0.0);
+    float theta = dot(L, normalize(-light.Direction));
+    float epsilon = light.InnerCutoff - light.OuterCutoff;
+    float intensity = clamp((theta - light.OuterCutoff) / epsilon, 0.0, 1.0);
+    if (intensity <= 0.0)
+        return vec3(0.0);
+    float attenuation = 1.0 / (light.Constant + light.Linear * distance + light.Quadratic * (distance * distance));
+    vec3 radiance = light.Color * light.Intensity * attenuation * intensity;
+    return CalculatePBR(N, V, L, radiance, albedo, metallic, roughness, F0);
+}
+
+vec3 ACESFilm(vec3 x)
+{
+    float a = 2.51;
+    float b = 0.03;
+    float c = 2.43;
+    float d = 0.59;
+    float e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+}
+
+void main()
+{
+    vec3 albedo = u_UseAlbedoMap ? texture(u_AlbedoMap, fs_in.TexCoord).rgb * u_Material.Albedo : u_Material.Albedo;
+    albedo = pow(albedo, vec3(2.2));
+    float metallic = u_UseMetallicMap ? texture(u_MetallicMap, fs_in.TexCoord).r : u_Material.Metallic;
+    float roughness = u_UseRoughnessMap ? texture(u_RoughnessMap, fs_in.TexCoord).r : u_Material.Roughness;
+    roughness = max(roughness, 0.04);
+    float ao = u_UseAOMap ? texture(u_AOMap, fs_in.TexCoord).r : u_Material.AO;
+
+    vec3 N;
+    if (u_UseNormalMap)
+    {
+        vec3 tangentNormal = texture(u_NormalMap, fs_in.TexCoord).xyz * 2.0 - 1.0;
+        N = normalize(fs_in.TBN * tangentNormal);
+    }
+    else
+        N = normalize(fs_in.Normal);
+
+    vec3 V = normalize(u_CameraPos - fs_in.FragPos);
+    vec3 F0 = vec3(0.04);
+    F0 = mix(F0, albedo, metallic);
+
+    vec3 Lo = vec3(0.0);
+    Lo += CalculateDirectionalLight(u_DirLight, N, V, albedo, metallic, roughness, F0);
+    for (int i = 0; i < u_NumPointLights && i < MAX_POINT_LIGHTS; i++)
+        Lo += CalculatePointLight(u_PointLights[i], N, V, fs_in.FragPos, albedo, metallic, roughness, F0);
+    for (int i = 0; i < u_NumSpotLights && i < MAX_SPOT_LIGHTS; i++)
+        Lo += CalculateSpotLight(u_SpotLights[i], N, V, fs_in.FragPos, albedo, metallic, roughness, F0);
+
+    vec3 F = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
+    vec3 kS = F;
+    vec3 kD = 1.0 - kS;
+    kD *= 1.0 - metallic;
+
+    vec3 irradiance;
+    if (u_AmbientLightingSource == 0)
+        irradiance = u_AmbientColor * u_AmbientIntensity * 0.3;
+    else if (u_AmbientLightingSource == 1)
+        irradiance = u_AmbientColor * u_AmbientIntensity * 0.3;
+    else
+    {
+        float skyWeight = max(0.0, N.y);
+        float groundWeight = max(0.0, -N.y);
+        vec3 hemisphereColor = mix(u_AmbientEquatorColor, u_AmbientSkyColor, skyWeight);
+        hemisphereColor = mix(hemisphereColor, u_AmbientGroundColor, groundWeight);
+        irradiance = hemisphereColor * u_AmbientIntensity * 0.3;
+    }
+
+    vec3 diffuse = irradiance * albedo;
+    vec3 ambient = (kD * diffuse) * ao;
+    vec3 color = ambient + Lo;
+    color = ACESFilm(color);
+    color = pow(color, vec3(1.0/2.2));
+
+    if (u_FogEnabled)
+    {
+        float distance = length(u_CameraPos - fs_in.FragPos);
+        float fogFactor = clamp((u_FogEnd - distance) / (u_FogEnd - u_FogStart), 0.0, 1.0);
+        color = mix(u_FogColor, color, fogFactor);
+    }
+
+    FragColor = vec4(color, 1.0);
+}

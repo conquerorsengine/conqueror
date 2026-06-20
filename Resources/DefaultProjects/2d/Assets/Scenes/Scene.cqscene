@@ -1,0 +1,313 @@
+Scene: Untitled
+Entities:
+  - Entity: 3625969169881714297
+    TagComponent:
+      Tag: Rock
+      GameTag: Untagged
+    TransformComponent:
+      Position: [9.1, -1.3055903, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.7, 5.5, 1]
+    SpriteRendererComponent:
+      Color: [0.24895619, 0.25096524, 0.2480583, 1]
+      TilingFactor: 1
+      TexturePath: /home/fazli/Masaüstü/Conqueror's_Engine/build/bin/Resources/test/Square.png
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: -8
+    RigidBody2DComponent:
+      BodyType: 0
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+  - Entity: 7785122571245001382
+    TagComponent:
+      Tag: Rock
+      GameTag: Untagged
+    TransformComponent:
+      Position: [5.2913384, -2.0614958, 0]
+      Rotation: [0, 0, 0]
+      Scale: [2.5, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.24895619, 0.25096524, 0.2480583, 1]
+      TilingFactor: 1
+      TexturePath: /home/fazli/Masaüstü/Conqueror's_Engine/build/bin/Resources/test/Square.png
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: -8
+    RigidBody2DComponent:
+      BodyType: 0
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+  - Entity: 8972872008453963315
+    TagComponent:
+      Tag: Rock
+      GameTag: Untagged
+    TransformComponent:
+      Position: [5.2913384, -2.0614958, 0]
+      Rotation: [0, 0, 0]
+      Scale: [2.5, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.24895619, 0.25096524, 0.2480583, 1]
+      TilingFactor: 1
+      TexturePath: /home/fazli/Masaüstü/Conqueror's_Engine/build/bin/Resources/test/Square.png
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: -8
+    RigidBody2DComponent:
+      BodyType: 0
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+  - Entity: 8300651631364628020
+    TagComponent:
+      Tag: Rock
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-9.091922, -1.3055903, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.7, 5.5, 1]
+    SpriteRendererComponent:
+      Color: [0.24895619, 0.25096524, 0.2480583, 1]
+      TilingFactor: 1
+      TexturePath: /home/fazli/Masaüstü/Conqueror's_Engine/build/bin/Resources/test/Square.png
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: -8
+    RigidBody2DComponent:
+      BodyType: 0
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+  - Entity: 8300641162491366342
+    TagComponent:
+      Tag: Rock
+      GameTag: Untagged
+    TransformComponent:
+      Position: [8.14567, -0.43, 0]
+      Rotation: [0, 0, -0.54105204]
+      Scale: [0.91, 2.5, 1]
+    SpriteRendererComponent:
+      Color: [0.24895619, 0.25096524, 0.2480583, 1]
+      TilingFactor: 1
+      TexturePath: /home/fazli/Masaüstü/Conqueror's_Engine/build/bin/Resources/test/Square.png
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: -8
+    RigidBody2DComponent:
+      BodyType: 0
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+  - Entity: 8300627640208548418
+    TagComponent:
+      Tag: Ground
+      GameTag: Untagged
+    TransformComponent:
+      Position: [0, -3.75, 0]
+      Rotation: [0, 0, 0]
+      Scale: [6.4, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.26640928, 0.12546228, 0.05040176, 1]
+      TilingFactor: 1
+      TexturePath: /home/fazli/Masaüstü/Conqueror's_Engine/build/bin/Resources/test/Square.png
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    RigidBody2DComponent:
+      BodyType: 0
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+  - Entity: 3894426041868835536
+    TagComponent:
+      Tag: Rock
+      GameTag: Untagged
+    TransformComponent:
+      Position: [3.6377952, -3.0693698, 0]
+      Rotation: [0, 0, 0]
+      Scale: [2.5, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.24895619, 0.25096524, 0.2480583, 1]
+      TilingFactor: 1
+      TexturePath: /home/fazli/Masaüstü/Conqueror's_Engine/build/bin/Resources/test/Square.png
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: -8
+    RigidBody2DComponent:
+      BodyType: 0
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+  - Entity: 7785133315187338898
+    TagComponent:
+      Tag: Camera
+      GameTag: Untagged
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera:
+        ProjectionType: 1
+        PerspectiveFOV: 0.7853982
+        PerspectiveNear: 0.01
+        PerspectiveFar: 1000
+        OrthographicSize: 10
+        OrthographicNear: -1
+        OrthographicFar: 1
+      Primary: true
+      FixedAspectRatio: false
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 3625980011731636824
+    TagComponent:
+      Tag: Player
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-6.6949067, -1.8301091, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.5, 1]
+    SpriteRendererComponent:
+      Color: [0.6486486, 0, 0, 1]
+      TilingFactor: 1
+      TexturePath: /home/fazli/Masaüstü/Conqueror's_Engine/build/bin/Resources/test/Square.png
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    PlayerController_ConquerorScriptComponent:
+      ScriptPath: /home/fazli/Masaüstü/Conqueror's_Engine/Resources/DefaultProjects/2d/Assets/Scripts/PlayerController.cqs
+      ClassName: PlayerController
+    RigidBody2DComponent:
+      BodyType: 1
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+  - Entity: 4266204941918643647
+    TagComponent:
+      Tag: Sky
+      GameTag: Untagged
+    TransformComponent:
+      Position: [-0.28346577, 2.2062206, 0]
+      Rotation: [0, 0, 0]
+      Scale: [9, 5, 1]
+    SpriteRendererComponent:
+      Color: [0.6756757, 0.36001253, 0.36001253, 1]
+      TilingFactor: 1
+      TexturePath: /home/fazli/Masaüstü/Conqueror's_Engine/build/bin/Resources/test/Square.png
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: -26
+  - Entity: 2711691842429684583
+    TagComponent:
+      Tag: Rock
+      GameTag: Untagged
+    TransformComponent:
+      Position: [5.2913384, -2.0614958, 0]
+      Rotation: [0, 0, 0]
+      Scale: [2.5, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.24895619, 0.25096524, 0.2480583, 1]
+      TilingFactor: 1
+      TexturePath: /home/fazli/Masaüstü/Conqueror's_Engine/build/bin/Resources/test/Square.png
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: -8
+    RigidBody2DComponent:
+      BodyType: 0
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+Environment:
+  SkyboxExposure: 1
+  SkyboxRotation: 0
+  SkyboxTint: [1, 1, 1]
+  EnvironmentLightingSource: 0
+  AmbientColor: [0.3, 0.3, 0.3]
+  AmbientSkyColor: [0.5, 0.6, 0.7]
+  AmbientEquatorColor: [0.3, 0.3, 0.3]
+  AmbientGroundColor: [0.2, 0.15, 0.1]
+  AmbientIntensity: 1
+  FogEnabled: false
+  FogColor: [0.5, 0.6, 0.7]
+  FogDensity: 0.02
+  FogStart: 10
+  FogEnd: 100
+  SunSource: 0
+  HaloEnabled: false
+  HaloStrength: 0.5
+  FlareEnabled: false
+  FlareFadeSpeed: 3
+  FlareStrength: 1
+  FlareElements:
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.08
+      Offset: 0.3
+      Intensity: 1
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.06
+      Offset: 0.6
+      Intensity: 0.8
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.05
+      Offset: 0.9
+      Intensity: 0.6
+EditorCamera:
+  CameraMode: 1
+  Position: [0, 0, 10]
+  Distance: 10
+  Pitch: 0
+  Yaw: 0
+  OrthographicSize: 5.019219
+Hierarchy:
+  []
+NavMesh:
+  Triangles:
+    []

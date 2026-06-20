@@ -1,0 +1,8 @@
+Project:
+  Name: UntitledProjected
+  Organization: MyCompany
+  Version: 1.0.0
+  TargetPlatform: Linux
+  StartScene: Assets/Scenes/Scene.cqscene
+  AssetDirectory: Assets
+  ScriptModulePath: ""

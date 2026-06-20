@@ -1,0 +1,119 @@
+#language GLSL
+#type vertex
+#version 450 core
+
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+
+out vec2 v_TexCoord;
+
+void main()
+{
+    v_TexCoord = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+
+layout(location = 0) out vec4 FragColor;
+
+in vec2 v_TexCoord;
+
+uniform sampler2D u_ScreenTexture;
+uniform sampler2D u_EdgeTexture;
+uniform vec2 u_InverseScreenSize;
+
+#define MAX_SEARCH_STEPS 32
+
+void main()
+{
+    vec2 edges = texture(u_EdgeTexture, v_TexCoord).rg;
+    vec4 color = texture(u_ScreenTexture, v_TexCoord);
+    
+    if (edges.x < 0.5 && edges.y < 0.5) {
+        FragColor = color;
+        return;
+    }
+
+    vec2 blendWeight = vec2(0.0);
+
+    // Yatay kenar blending
+    if (edges.y > 0.5) {
+        float distLeft = 0.0;
+        for (int i = 1; i <= MAX_SEARCH_STEPS; ++i) {
+            vec2 uv = v_TexCoord + vec2(-float(i) * u_InverseScreenSize.x, 0.0);
+            if (texture(u_EdgeTexture, uv).y < 0.5) break;
+            distLeft += 1.0;
+        }
+        float distRight = 0.0;
+        for (int i = 1; i <= MAX_SEARCH_STEPS; ++i) {
+            vec2 uv = v_TexCoord + vec2(float(i) * u_InverseScreenSize.x, 0.0);
+            if (texture(u_EdgeTexture, uv).y < 0.5) break;
+            distRight += 1.0;
+        }
+        
+        float totalDist = distLeft + distRight;
+        if (totalDist > 0.0) {
+            float weight = distLeft / (totalDist + 1.0);
+            blendWeight.y = 0.5 - abs(weight - 0.5);
+            blendWeight.y = blendWeight.y * blendWeight.y * 2.5; 
+            blendWeight.y = clamp(blendWeight.y, 0.0, 0.5);
+        }
+    }
+
+    // Dikey kenar blending
+    if (edges.x > 0.5) {
+        float distTop = 0.0;
+        for (int i = 1; i <= MAX_SEARCH_STEPS; ++i) {
+            vec2 uv = v_TexCoord + vec2(0.0, -float(i) * u_InverseScreenSize.y);
+            if (texture(u_EdgeTexture, uv).x < 0.5) break;
+            distTop += 1.0;
+        }
+        float distBottom = 0.0;
+        for (int i = 1; i <= MAX_SEARCH_STEPS; ++i) {
+            vec2 uv = v_TexCoord + vec2(0.0, float(i) * u_InverseScreenSize.y);
+            if (texture(u_EdgeTexture, uv).x < 0.5) break;
+            distBottom += 1.0;
+        }
+        
+        float totalDist = distTop + distBottom;
+        if (totalDist > 0.0) {
+            float weight = distTop / (totalDist + 1.0);
+            blendWeight.x = 0.5 - abs(weight - 0.5);
+            blendWeight.x = blendWeight.x * blendWeight.x * 2.5;
+            blendWeight.x = clamp(blendWeight.x, 0.0, 0.5);
+        }
+    }
+
+    // Gerçek blending islemi
+    if (blendWeight.y > blendWeight.x && blendWeight.y > 0.0) {
+        vec4 colorTop = texture(u_ScreenTexture, v_TexCoord + vec2(0.0, -u_InverseScreenSize.y));
+        vec4 colorBottom = texture(u_ScreenTexture, v_TexCoord + vec2(0.0, u_InverseScreenSize.y));
+        
+        float lumaC = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+        float lumaT = dot(colorTop.rgb, vec3(0.299, 0.587, 0.114));
+        float lumaB = dot(colorBottom.rgb, vec3(0.299, 0.587, 0.114));
+        
+        if (abs(lumaT - lumaC) > abs(lumaB - lumaC)) {
+            FragColor = mix(color, colorTop, blendWeight.y);
+        } else {
+            FragColor = mix(color, colorBottom, blendWeight.y);
+        }
+    } else if (blendWeight.x > 0.0) {
+        vec4 colorLeft = texture(u_ScreenTexture, v_TexCoord + vec2(-u_InverseScreenSize.x, 0.0));
+        vec4 colorRight = texture(u_ScreenTexture, v_TexCoord + vec2(u_InverseScreenSize.x, 0.0));
+        
+        float lumaC = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+        float lumaL = dot(colorLeft.rgb, vec3(0.299, 0.587, 0.114));
+        float lumaR = dot(colorRight.rgb, vec3(0.299, 0.587, 0.114));
+        
+        if (abs(lumaL - lumaC) > abs(lumaR - lumaC)) {
+            FragColor = mix(color, colorLeft, blendWeight.x);
+        } else {
+            FragColor = mix(color, colorRight, blendWeight.x);
+        }
+    } else {
+        FragColor = color;
+    }
+}

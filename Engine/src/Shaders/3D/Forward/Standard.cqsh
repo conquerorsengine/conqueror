@@ -1,0 +1,196 @@
+#language GLSL
+#type vertex
+#version 450 core
+
+layout(location = 0) in vec3 a_Position;
+layout(location = 1) in vec3 a_Normal;
+layout(location = 2) in vec3 a_Tangent;
+layout(location = 3) in vec2 a_TexCoord;
+
+uniform mat4 u_ViewProjection;
+uniform mat4 u_Transform;
+
+out VS_OUT {
+    vec3 FragPos;
+    vec3 Normal;
+    vec2 TexCoord;
+} vs_out;
+
+void main()
+{
+    vec4 worldPos = u_Transform * vec4(a_Position, 1.0);
+    vs_out.FragPos = worldPos.xyz;
+    
+    mat3 normalMatrix = transpose(inverse(mat3(u_Transform)));
+    vs_out.Normal = normalize(normalMatrix * a_Normal);
+    vs_out.TexCoord = a_TexCoord;
+    
+    gl_Position = u_ViewProjection * worldPos;
+}
+
+#type fragment
+#version 450 core
+
+layout(location = 0) out vec4 FragColor;
+
+in VS_OUT {
+    vec3 FragPos;
+    vec3 Normal;
+    vec2 TexCoord;
+} fs_in;
+
+// Material
+uniform vec3 u_Albedo = vec3(1.0);
+uniform sampler2D u_AlbedoMap;
+uniform bool u_UseAlbedoMap = false;
+
+uniform float u_Smoothness = 0.5;
+uniform float u_Metallic = 0.0;
+
+// Camera
+uniform vec3 u_CameraPos;
+
+// Lights
+#define MAX_POINT_LIGHTS 16
+#define MAX_SPOT_LIGHTS 8
+
+struct DirectionalLight {
+    vec3 Direction;
+    vec3 Color;
+    float Intensity;
+};
+
+struct PointLight {
+    vec3 Position;
+    vec3 Color;
+    float Intensity;
+    float Range;
+    float Constant;
+    float Linear;
+    float Quadratic;
+};
+
+struct SpotLight {
+    vec3 Position;
+    vec3 Direction;
+    vec3 Color;
+    float Intensity;
+    float Range;
+    float InnerCutoff;
+    float OuterCutoff;
+    float Constant;
+    float Linear;
+    float Quadratic;
+};
+
+uniform DirectionalLight u_DirLight;
+uniform int u_NumPointLights;
+uniform PointLight u_PointLights[MAX_POINT_LIGHTS];
+uniform int u_NumSpotLights;
+uniform SpotLight u_SpotLights[MAX_SPOT_LIGHTS];
+
+// Blinn-Phong lighting
+vec3 CalculateDirectionalLight(DirectionalLight light, vec3 N, vec3 V, vec3 albedo, float smoothness, float metallic)
+{
+    vec3 L = normalize(-light.Direction);
+    vec3 H = normalize(V + L);
+    
+    // Diffuse
+    float diff = max(dot(N, L), 0.0);
+    vec3 diffuse = diff * albedo * light.Color * light.Intensity;
+    
+    // Specular (Blinn-Phong)
+    float spec = pow(max(dot(N, H), 0.0), smoothness * 128.0);
+    vec3 specular = spec * mix(vec3(0.04), albedo, metallic) * light.Color * light.Intensity;
+    
+    return diffuse + specular;
+}
+
+vec3 CalculatePointLight(PointLight light, vec3 N, vec3 V, vec3 FragPos, vec3 albedo, float smoothness, float metallic)
+{
+    vec3 L = normalize(light.Position - FragPos);
+    vec3 H = normalize(V + L);
+    float distance = length(light.Position - FragPos);
+    
+    if (distance > light.Range)
+        return vec3(0.0);
+    
+    // Attenuation
+    float attenuation = 1.0 / (light.Constant + light.Linear * distance + light.Quadratic * (distance * distance));
+    
+    // Diffuse
+    float diff = max(dot(N, L), 0.0);
+    vec3 diffuse = diff * albedo * light.Color * light.Intensity * attenuation;
+    
+    // Specular
+    float spec = pow(max(dot(N, H), 0.0), smoothness * 128.0);
+    vec3 specular = spec * mix(vec3(0.04), albedo, metallic) * light.Color * light.Intensity * attenuation;
+    
+    return diffuse + specular;
+}
+
+vec3 CalculateSpotLight(SpotLight light, vec3 N, vec3 V, vec3 FragPos, vec3 albedo, float smoothness, float metallic)
+{
+    vec3 L = normalize(light.Position - FragPos);
+    vec3 H = normalize(V + L);
+    float distance = length(light.Position - FragPos);
+    
+    if (distance > light.Range)
+        return vec3(0.0);
+    
+    // Spot cone
+    float theta = dot(L, normalize(-light.Direction));
+    float epsilon = light.InnerCutoff - light.OuterCutoff;
+    float intensity = clamp((theta - light.OuterCutoff) / epsilon, 0.0, 1.0);
+    
+    if (intensity <= 0.0)
+        return vec3(0.0);
+    
+    // Attenuation
+    float attenuation = 1.0 / (light.Constant + light.Linear * distance + light.Quadratic * (distance * distance));
+    
+    // Diffuse
+    float diff = max(dot(N, L), 0.0);
+    vec3 diffuse = diff * albedo * light.Color * light.Intensity * attenuation * intensity;
+    
+    // Specular
+    float spec = pow(max(dot(N, H), 0.0), smoothness * 128.0);
+    vec3 specular = spec * mix(vec3(0.04), albedo, metallic) * light.Color * light.Intensity * attenuation * intensity;
+    
+    return diffuse + specular;
+}
+
+void main()
+{
+    vec3 albedo = u_UseAlbedoMap ? texture(u_AlbedoMap, fs_in.TexCoord).rgb * u_Albedo : u_Albedo;
+    albedo = pow(albedo, vec3(2.2)); // sRGB to linear
+    
+    vec3 N = normalize(fs_in.Normal);
+    vec3 V = normalize(u_CameraPos - fs_in.FragPos);
+    
+    vec3 result = vec3(0.0);
+    
+    // Directional light
+    result += CalculateDirectionalLight(u_DirLight, N, V, albedo, u_Smoothness, u_Metallic);
+    
+    // Point lights
+    for (int i = 0; i < u_NumPointLights && i < MAX_POINT_LIGHTS; i++)
+    {
+        result += CalculatePointLight(u_PointLights[i], N, V, fs_in.FragPos, albedo, u_Smoothness, u_Metallic);
+    }
+    
+    // Spot lights
+    for (int i = 0; i < u_NumSpotLights && i < MAX_SPOT_LIGHTS; i++)
+    {
+        result += CalculateSpotLight(u_SpotLights[i], N, V, fs_in.FragPos, albedo, u_Smoothness, u_Metallic);
+    }
+    
+    // Ambient
+    vec3 ambient = vec3(0.03) * albedo;
+    result += ambient;
+    
+    // Gamma correction
+    result = pow(result, vec3(1.0/2.2));
+    
+    FragColor = vec4(result, 1.0);
+}
