@@ -8,6 +8,7 @@
 #include "Renderer/TextRenderer.h"
 #include "Renderer/Utilities/Renderer3D/Renderer3D.h"
 #include "Renderer/Utilities/Renderer3D/Material.h"
+#include "Core/Project/Project.h"
 #include "Renderer/Utilities/Renderer3D/ModelLoader.h"
 #include "Core/Input/Input.h"
 #include "Core/Audio/AudioEngine.h"
@@ -3031,8 +3032,16 @@ namespace Conqueror
             // RuntimeSound yoksa ve dosya yolu varsa yükle
             if (!audioSource.RuntimeSound && !audioSource.FilePath.empty())
             {
+                std::string loadPath = audioSource.FilePath;
+                if (std::filesystem::path(loadPath).is_relative())
+                {
+                    auto projectDir = Project::GetActiveProjectDirectory();
+                    if (!projectDir.empty())
+                        loadPath = (projectDir / loadPath).string();
+                }
+
                 AudioSource* source = new AudioSource();
-                if (source->LoadFromFile(audioSource.FilePath))
+                if (source->LoadFromFile(loadPath))
                 {
                     audioSource.RuntimeSound = source;
                     audioSource.NeedsReconnection = true; // İlk yüklemede bağla

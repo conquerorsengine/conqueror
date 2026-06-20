@@ -462,7 +462,16 @@ namespace Conqueror
             // Texture path kaydet
             if (image.Texture)
             {
-                out << YAML::Key << "TexturePath" << YAML::Value << image.Texture->GetPath();
+                std::string texPath = image.Texture->GetPath();
+                auto projectDir = Project::GetActiveProjectDirectory();
+                if (!projectDir.empty())
+                {
+                    std::error_code ec;
+                    auto relative = std::filesystem::relative(texPath, projectDir, ec);
+                    if (!ec && !relative.empty() && relative.native()[0] != '.')
+                        texPath = relative.string();
+                }
+                out << YAML::Key << "TexturePath" << YAML::Value << texPath;
             }
 
             out << YAML::EndMap;
@@ -1455,7 +1464,7 @@ namespace Conqueror
                 if (modelComponent)
                 {
                     auto& mc = deserializedEntity.AddComponent<ModelComponent>();
-                    mc.FilePath = modelComponent["FilePath"].as<std::string>();
+                    mc.FilePath = ResolveScriptPath(modelComponent["FilePath"].as<std::string>());
                     
                     if (!mc.FilePath.empty())
                     {
@@ -1544,7 +1553,7 @@ namespace Conqueror
                     // Texture yükle
                     if (imageComponent["TexturePath"])
                     {
-                        std::string texturePath = imageComponent["TexturePath"].as<std::string>();
+                        std::string texturePath = ResolveScriptPath(imageComponent["TexturePath"].as<std::string>());
                         if (!texturePath.empty())
                         {
                             ic.Texture = Texture2D::Create(texturePath);
@@ -1692,7 +1701,7 @@ namespace Conqueror
                 if (audioSourceComponent)
                 {
                     auto& audio = deserializedEntity.AddComponent<AudioSourceComponent>();
-                    audio.FilePath = audioSourceComponent["FilePath"].as<std::string>();
+                    audio.FilePath = ResolveScriptPath(audioSourceComponent["FilePath"].as<std::string>());
                     audio.PlayOnAwake = audioSourceComponent["PlayOnAwake"].as<bool>();
                     audio.Loop = audioSourceComponent["Loop"].as<bool>();
                     audio.Mute = audioSourceComponent["Mute"].as<bool>();

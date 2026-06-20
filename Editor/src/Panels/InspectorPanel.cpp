@@ -731,7 +731,7 @@ namespace Conqueror::Editor
                 
                 if (result == NFD_OKAY)
                 {
-                    component.FilePath = outPath;
+                    component.FilePath = ToRelativeIfInsideProject(outPath);
                     component.ModelData = ModelLoader::Load(outPath);
                     NFD_FreePathU8(outPath);
                 }
@@ -756,7 +756,7 @@ namespace Conqueror::Editor
                     
                     if (ext == ".obj" || ext == ".fbx" || ext == ".gltf" || ext == ".glb")
                     {
-                        component.FilePath = droppedPath;
+                        component.FilePath = ToRelativeIfInsideProject(droppedPath);
                         component.ModelData = ModelLoader::Load(droppedPath);
                         CQ_CORE_INFO("Model loaded: {0}", droppedPath);
                     }
@@ -840,17 +840,40 @@ namespace Conqueror::Editor
         {
             ImGui::ColorEdit4("Color", glm::value_ptr(component.Color));
 
-            // Texture path
+            // Texture path input
+            ImGui::Text("Texture:");
+            ImGui::SameLine();
+            
+            char imgPathBuffer[256];
+            memset(imgPathBuffer, 0, sizeof(imgPathBuffer));
             if (component.Texture)
             {
-                ImGui::Text("Texture: %s", component.Texture->GetPath().c_str());
+                std::string texPath = component.Texture->GetPath();
+                auto projectDir = Project::GetActiveProjectDirectory();
+                if (!projectDir.empty())
+                {
+                    std::error_code ec;
+                    auto relative = std::filesystem::relative(texPath, projectDir, ec);
+                    if (!ec && !relative.empty() && relative.native()[0] != '.')
+                        texPath = relative.string();
+                }
+                strncpy(imgPathBuffer, texPath.c_str(), sizeof(imgPathBuffer) - 1);
             }
-            else
+            
+            if (ImGui::InputText("##ImagePath", imgPathBuffer, sizeof(imgPathBuffer)))
             {
-                ImGui::Text("Texture: None");
+                std::string inputPath = std::string(imgPathBuffer);
+                if (std::filesystem::path(inputPath).is_relative())
+                {
+                    auto projectDir = Project::GetActiveProjectDirectory();
+                    if (!projectDir.empty())
+                        inputPath = (projectDir / inputPath).string();
+                }
+                if (!inputPath.empty() && std::filesystem::exists(inputPath))
+                    component.Texture = Texture2D::Create(inputPath);
             }
 
-            if (ImGui::Button("Load Texture..."))
+            if (ImGui::Button("Browse..."))
             {
                 nfdu8char_t* outPath = nullptr;
                 nfdfilteritem_t filters[1] = { { "Images", "png,jpg,jpeg,bmp,tga" } };
@@ -1330,7 +1353,7 @@ namespace Conqueror::Editor
             
             if (ImGui::InputText("##AudioFilePath", pathBuffer, sizeof(pathBuffer)))
             {
-                component.FilePath = std::string(pathBuffer);
+                component.FilePath = ToRelativeIfInsideProject(std::string(pathBuffer));
             }
             
             ImGui::SameLine();
@@ -1343,11 +1366,29 @@ namespace Conqueror::Editor
                 
                 if (result == NFD_OKAY)
                 {
-                    component.FilePath = std::string(outPath);
+                    component.FilePath = ToRelativeIfInsideProject(std::string(outPath));
                     NFD_FreePath(outPath);
                 }
             }
             
+            // Drag & Drop target
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                {
+                    std::string droppedPath((const char*)payload->Data, payload->DataSize - 1);
+                    std::filesystem::path path(droppedPath);
+                    std::string ext = path.extension().string();
+                    
+                    if (ext == ".wav" || ext == ".mp3" || ext == ".ogg" || ext == ".flac")
+                    {
+                        component.FilePath = ToRelativeIfInsideProject(droppedPath);
+                        CQ_CORE_INFO("Audio loaded: {0}", droppedPath);
+                    }
+                }
+                ImGui::EndDragDropTarget();
+            }
+
             // Temel kontroller
             ImGui::Checkbox("Play On Awake", &component.PlayOnAwake);
             ImGui::Checkbox("Loop", &component.Loop);
@@ -1550,6 +1591,34 @@ namespace Conqueror::Editor
                         }
                     }
                     
+                    // Drag & Drop target
+                    if (ImGui::BeginDragDropTarget())
+                    {
+                        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                        {
+                            std::string droppedPath((const char*)payload->Data, payload->DataSize - 1);
+                            std::filesystem::path path(droppedPath);
+                            std::string ext = path.extension().string();
+                            
+                            if (ext == ".dll" || ext == ".so")
+                            {
+                                std::filesystem::path fpath(droppedPath);
+                                script.ModuleName = fpath.stem().string();
+                                script.ClassName = script.ModuleName;
+                                script.ScriptPath = ToRelativeIfInsideProject(droppedPath);
+                                
+                                if (ScriptEngine::LoadModule(script.ModuleName, droppedPath))
+                                {
+                                    script.InstantiateScript = [moduleName = script.ModuleName, className = script.ClassName]() {
+                                        return ScriptEngine::CreateScriptInstance(moduleName, className);
+                                    };
+                                }
+                                CQ_CORE_INFO("Native script loaded: {0}", droppedPath);
+                            }
+                        }
+                        ImGui::EndDragDropTarget();
+                    }
+                    
                     ImGui::Separator();
                     
                     if (script.Instance)
@@ -1674,6 +1743,40 @@ namespace Conqueror::Editor
                             }
                             NFD_FreePath(outPath);
                         }
+                    }
+
+                    // Drag & Drop target
+                    if (ImGui::BeginDragDropTarget())
+                    {
+                        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                        {
+                            std::string droppedPath((const char*)payload->Data, payload->DataSize - 1);
+                            std::filesystem::path path(droppedPath);
+                            std::string ext = path.extension().string();
+                            
+                            if (ext == ".cqs")
+                            {
+                                script.ScriptPath = ToRelativeIfInsideProject(droppedPath);
+                                
+                                std::ifstream file(droppedPath);
+                                std::string line;
+                                while (std::getline(file, line)) {
+                                    size_t pos = line.find("script ");
+                                    if (pos != std::string::npos) {
+                                        size_t start = pos + 7;
+                                        while (start < line.length() && isspace(line[start])) start++;
+                                        size_t end = start;
+                                        while (end < line.length() && (isalnum(line[end]) || line[end] == '_')) end++;
+                                        if (end > start) {
+                                            script.ClassName = line.substr(start, end - start);
+                                            break;
+                                        }
+                                    }
+                                }
+                                CQ_CORE_INFO("ConquerorScript loaded: {0}", droppedPath);
+                            }
+                        }
+                        ImGui::EndDragDropTarget();
                     }
 
                     if (script.Instance)
