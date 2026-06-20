@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <unordered_map>
 
 namespace Conqueror
 {
@@ -29,11 +30,14 @@ namespace Conqueror
     {
     public:
         static std::shared_ptr<Model> Load(const std::string& path);
+        static void ClearCache() { s_Cache.clear(); }
 
     private:
         static void ProcessNode(void* node, const void* scene, std::shared_ptr<Model> model);
         static std::shared_ptr<Mesh> ProcessStaticMesh(void* mesh, const void* scene);
         static std::shared_ptr<SkinnedMesh> ProcessSkinnedMesh(void* mesh, std::shared_ptr<Model> model);
         static std::shared_ptr<Material> ProcessMaterial(void* material, const void* scene, const std::string& directory);
+
+        static inline std::unordered_map<std::string, std::weak_ptr<Model>> s_Cache;
     };
 }

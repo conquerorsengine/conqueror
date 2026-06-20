@@ -18,6 +18,13 @@ namespace Conqueror
 
     std::shared_ptr<Texture2D> Texture2D::Create(const std::string& path)
     {
+        auto it = s_Cache.find(path);
+        if (it != s_Cache.end())
+        {
+            if (auto cached = it->second.lock())
+                return cached;
+        }
+
         switch (Renderer::GetAPI())
         {
             case RendererAPI::API::None:    CQ_CORE_ASSERT(false, "RendererAPI::None is currently not supported!"); return nullptr;
@@ -26,6 +33,7 @@ namespace Conqueror
                 auto tex = std::make_shared<OpenGLTexture2D>(path);
                 if (!tex->GetRendererID())
                     return nullptr;
+                s_Cache[path] = tex;
                 return tex;
             }
         }

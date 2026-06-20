@@ -3,6 +3,8 @@
 #include "Core/Base/Base.h"
 
 #include <string>
+#include <unordered_map>
+#include <memory>
 
 namespace Conqueror
 {
@@ -32,5 +34,11 @@ namespace Conqueror
         static std::shared_ptr<Texture2D> CreateFromCompressedImageMemory(const unsigned char* data, uint32_t byteSize);
         /// Assimp sıkıştırılmamış gömülü doku (BGRA)
         static std::shared_ptr<Texture2D> CreateFromRawBGRA(uint32_t width, uint32_t height, const unsigned char* bgraPixels);
+
+        static void ClearCache() { s_Cache.clear(); }
+        static std::unordered_map<std::string, std::weak_ptr<Texture2D>>& GetCache() { return s_Cache; }
+
+    private:
+        static inline std::unordered_map<std::string, std::weak_ptr<Texture2D>> s_Cache;
     };
 }

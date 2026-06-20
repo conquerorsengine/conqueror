@@ -413,6 +413,13 @@ namespace Conqueror
 
     std::shared_ptr<Model> ModelLoader::Load(const std::string& path)
     {
+        auto it = s_Cache.find(path);
+        if (it != s_Cache.end())
+        {
+            if (auto cached = it->second.lock())
+                return cached;
+        }
+
         Assimp::Importer importer;
         // FBX PreRotation/PostRotation/Pivots'ı ara node olarak tutma,
         // bunları hem node transform'a hem animasyon keyframe'lerine bake et.
@@ -453,6 +460,7 @@ namespace Conqueror
         else
             CQ_CORE_INFO("Model loaded: {0} ({1} meshes)", path, model->Meshes.size());
 
+        s_Cache[path] = model;
         return model;
     }
 
