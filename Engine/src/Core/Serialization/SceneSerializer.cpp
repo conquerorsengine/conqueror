@@ -3,6 +3,7 @@
 #include "Scene/Components.h"
 #include "Scene/EditorCamera.h"
 #include "Core/Logging/Log.h"
+#include "Core/Project/Project.h"
 #include "Renderer/RHI/Texture.h"
 #include "Renderer/RHI/Cubemap.h"
 #include "Renderer/Utilities/Renderer3D/ModelLoader.h"
@@ -89,6 +90,29 @@ namespace YAML
 
 namespace Conqueror
 {
+    static std::string ResolveScriptPath(const std::string& scriptPath)
+    {
+        if (scriptPath.empty())
+            return scriptPath;
+
+        std::filesystem::path p(scriptPath);
+        if (p.is_relative())
+        {
+            auto projectDir = Project::GetActiveProjectDirectory();
+            if (!projectDir.empty())
+            {
+                auto absolute = projectDir / p;
+                if (std::filesystem::exists(absolute))
+                {
+                    CQ_CORE_INFO("SceneSerializer: Resolved relative script path to: {0}", absolute.string());
+                    return absolute.string();
+                }
+            }
+        }
+
+        return scriptPath;
+    }
+
     YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec2& v)
     {
         out << YAML::Flow;
@@ -1472,7 +1496,7 @@ namespace Conqueror
                         data.ClassName = nativeScriptComponent["ClassName"].as<std::string>();
                         
                         if (nativeScriptComponent["ScriptPath"])
-                            data.ScriptPath = nativeScriptComponent["ScriptPath"].as<std::string>();
+                            data.ScriptPath = ResolveScriptPath(nativeScriptComponent["ScriptPath"].as<std::string>());
                             
                         if (data.ClassName.empty() && !data.ModuleName.empty())
                         {
@@ -1503,7 +1527,7 @@ namespace Conqueror
                                    deserializedEntity.AddComponent<ConquerorScriptComponent>();
                         
                         ConquerorScriptData data;
-                        data.ScriptPath = conquerorScriptComponent["ScriptPath"].as<std::string>();
+                        data.ScriptPath = ResolveScriptPath(conquerorScriptComponent["ScriptPath"].as<std::string>());
                         data.ClassName = conquerorScriptComponent["ClassName"].as<std::string>();
                         
                         sc.Scripts.push_back(data);

@@ -5,6 +5,8 @@
 #include "Renderer/Utilities/Renderer3D/ModelLoader.h"
 #include "Renderer/Utilities/Renderer3D/Material.h"
 #include "Scripting/ScriptEngine.h"
+#include "Core/Project/Project.h"
+#include "Core/Logging/Log.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -14,6 +16,23 @@
 
 namespace Conqueror::Editor
 {
+    static std::string ToRelativeIfInsideProject(const std::string& absolutePath)
+    {
+        auto projectDir = Project::GetActiveProjectDirectory();
+        if (projectDir.empty())
+            return absolutePath;
+
+        std::error_code ec;
+        auto relative = std::filesystem::relative(absolutePath, projectDir, ec);
+        if (!ec && !relative.empty() && relative.native()[0] != '.')
+        {
+            CQ_CORE_INFO("InspectorPanel: Script path made relative: {0}", relative.string());
+            return relative.string();
+        }
+
+        return absolutePath;
+    }
+
     void InspectorPanel::SetSelectedEntity(Entity entity)
     {
         m_SelectionContext = entity;
@@ -1520,7 +1539,7 @@ namespace Conqueror::Editor
                             std::filesystem::path path(dllPath);
                             script.ModuleName = path.stem().string();
                             script.ClassName = script.ModuleName;
-                            script.ScriptPath = dllPath;
+                            script.ScriptPath = ToRelativeIfInsideProject(dllPath);
                             
                             if (ScriptEngine::LoadModule(script.ModuleName, dllPath))
                             {
@@ -1607,8 +1626,10 @@ namespace Conqueror::Editor
                     
                     if (ImGui::InputText("##CQSPath", pathBuffer, sizeof(pathBuffer)))
                     {
-                        script.ScriptPath = std::string(pathBuffer);
-                        std::ifstream file(script.ScriptPath);
+                        script.ScriptPath = ToRelativeIfInsideProject(std::string(pathBuffer));
+                        std::string resolvePath = std::filesystem::path(pathBuffer).is_relative() ?
+                            (Project::GetActiveProjectDirectory() / pathBuffer).string() : std::string(pathBuffer);
+                        std::ifstream file(resolvePath);
                         std::string line;
                         while (std::getline(file, line)) {
                             size_t pos = line.find("script ");
@@ -1634,7 +1655,7 @@ namespace Conqueror::Editor
                         
                         if (result == NFD_OKAY)
                         {
-                            script.ScriptPath = std::string(outPath);
+                            script.ScriptPath = ToRelativeIfInsideProject(std::string(outPath));
                             
                             std::ifstream file(outPath);
                             std::string line;
