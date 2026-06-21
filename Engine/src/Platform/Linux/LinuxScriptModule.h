@@ -2,6 +2,8 @@
 
 #include "Scripting/ScriptModule.h"
 #include <dlfcn.h>
+#include <string>
+#include <vector>
 
 namespace Conqueror
 {
@@ -15,8 +17,10 @@ namespace Conqueror
         virtual void Unload() override;
         virtual bool IsLoaded() const override { return m_ModuleHandle != nullptr; }
         virtual void* GetFunction(const std::string& name) override;
+        virtual std::vector<std::string> GetExportedClassNames() override;
 
     private:
         void* m_ModuleHandle = nullptr;
+        std::string m_LoadPath;
     };
 }

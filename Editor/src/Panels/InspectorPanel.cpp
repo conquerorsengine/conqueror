@@ -1641,11 +1641,13 @@ namespace Conqueror::Editor
                             
                             std::filesystem::path path(dllPath);
                             script.ModuleName = path.stem().string();
-                            script.ClassName = script.ModuleName;
                             script.ScriptPath = ToRelativeIfInsideProject(dllPath);
                             
                             if (ScriptEngine::LoadModule(script.ModuleName, dllPath))
                             {
+                                auto classNames = ScriptEngine::GetModuleClassNames(script.ModuleName);
+                                script.ClassName = classNames.empty() ? script.ModuleName : classNames.front();
+
                                 script.InstantiateScript = [moduleName = script.ModuleName, className = script.ClassName]() {
                                     return ScriptEngine::CreateScriptInstance(moduleName, className);
                                 };
@@ -1666,11 +1668,13 @@ namespace Conqueror::Editor
                             {
                                 std::filesystem::path fpath(droppedPath);
                                 script.ModuleName = fpath.stem().string();
-                                script.ClassName = script.ModuleName;
                                 script.ScriptPath = ToRelativeIfInsideProject(droppedPath);
                                 
                                 if (ScriptEngine::LoadModule(script.ModuleName, droppedPath))
                                 {
+                                    auto classNames = ScriptEngine::GetModuleClassNames(script.ModuleName);
+                                    script.ClassName = classNames.empty() ? script.ModuleName : classNames.front();
+
                                     script.InstantiateScript = [moduleName = script.ModuleName, className = script.ClassName]() {
                                         return ScriptEngine::CreateScriptInstance(moduleName, className);
                                     };

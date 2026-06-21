@@ -1442,9 +1442,11 @@ namespace Conqueror
                             
                         if (data.ClassName.empty() && !data.ModuleName.empty())
                         {
-                            data.ClassName = data.ModuleName;
-                            if (data.ClassName.find("lib") == 0)
-                                data.ClassName = data.ClassName.substr(3);
+                            if (!data.ScriptPath.empty() && !ScriptEngine::IsModuleLoaded(data.ModuleName))
+                                ScriptEngine::LoadModule(data.ModuleName, data.ScriptPath);
+
+                            auto classNames = ScriptEngine::GetModuleClassNames(data.ModuleName);
+                            data.ClassName = classNames.empty() ? data.ModuleName : classNames.front();
                         }
                         
                         if (!data.ScriptPath.empty() && !ScriptEngine::IsModuleLoaded(data.ModuleName))

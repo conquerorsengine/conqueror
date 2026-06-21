@@ -3,6 +3,7 @@
 #include "Core/Base/Base.h"
 #include <string>
 #include <memory>
+#include <vector>
 
 namespace Conqueror
 {
@@ -25,6 +26,9 @@ namespace Conqueror
         
         // Fonksiyon pointer'ı al
         virtual void* GetFunction(const std::string& name) = 0;
+
+        // Export edilen Create* fonksiyonlarının class adlarını döndür
+        virtual std::vector<std::string> GetExportedClassNames() = 0;
 
         // Platform-specific modül oluştur
         static std::unique_ptr<ScriptModule> Create();

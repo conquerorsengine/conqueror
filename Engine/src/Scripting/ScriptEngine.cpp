@@ -115,4 +115,15 @@ namespace Conqueror
         CQ_CORE_INFO("Created script instance: {0}::{1}", moduleName, className);
         return instance;
     }
+
+    std::vector<std::string> ScriptEngine::GetModuleClassNames(const std::string& moduleName)
+    {
+        auto it = s_Modules.find(moduleName);
+        if (it == s_Modules.end())
+        {
+            CQ_CORE_ERROR("ScriptEngine::GetModuleClassNames - Module not loaded: {0}", moduleName);
+            return {};
+        }
+        return it->second->GetExportedClassNames();
+    }
 }

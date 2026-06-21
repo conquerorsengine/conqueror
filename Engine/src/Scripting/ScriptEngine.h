@@ -27,6 +27,9 @@ namespace Conqueror
         // Script instance oluştur
         static ScriptableEntity* CreateScriptInstance(const std::string& moduleName, const std::string& className);
 
+        // Modülün export ettiği Create* class adlarını döndür
+        static std::vector<std::string> GetModuleClassNames(const std::string& moduleName);
+
     private:
         static std::unordered_map<std::string, std::unique_ptr<ScriptModule>> s_Modules;
     };
