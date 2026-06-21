@@ -33,8 +33,48 @@ namespace Conqueror::CQS
 
         std::stringstream buffer;
         buffer << file.rdbuf();
+        std::string source = buffer.str();
+
+        std::string sourceHash = std::to_string(std::hash<std::string>{}(source));
+
+        auto it = s_Cache.find(path);
+        if (it != s_Cache.end() && it->second.SourceHash == sourceHash)
+        {
+            CQ_CORE_INFO("[CQS] Script cache hit: {0}", path);
+            return s_VM->Run(it->second.Chunk) == VMResult::Success;
+        }
+
         CQ_CORE_INFO("[CQS] Script yukleniyor: {0}", path);
-        return ExecuteString(buffer.str());
+
+        CQSLexer lexer;
+        auto tokens = lexer.Tokenize(source);
+        if (lexer.HasErrors())
+        {
+            CQ_CORE_ERROR("[CQS] Lexer hatalari:");
+            for (auto& err : lexer.GetErrors()) CQ_CORE_ERROR("  - {0}", err);
+            return false;
+        }
+
+        CQSParser parser;
+        auto ast = parser.Parse(tokens);
+        if (parser.HasErrors())
+        {
+            CQ_CORE_ERROR("[CQS] Parser hatalari:");
+            for (auto& err : parser.GetErrors()) CQ_CORE_ERROR("  - {0}", err);
+            return false;
+        }
+
+        CQSCompiler compiler;
+        auto chunk = compiler.Compile(ast);
+        if (compiler.HasErrors())
+        {
+            CQ_CORE_ERROR("[CQS] Compiler hatalari:");
+            for (const auto& err : compiler.GetErrors()) CQ_CORE_ERROR("  - {0}", err);
+            return false;
+        }
+
+        s_Cache[path] = { chunk, sourceHash };
+        return s_VM->Run(chunk) == VMResult::Success;
     }
 
     bool CQSEngine::ExecuteString(const std::string& source)

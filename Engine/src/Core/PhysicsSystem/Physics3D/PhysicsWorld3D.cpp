@@ -20,6 +20,11 @@
 
 namespace Conqueror
 {
+    // Static globals
+    JPH::TempAllocator* PhysicsWorld3D::s_TempAllocator = nullptr;
+    JPH::JobSystem* PhysicsWorld3D::s_JobSystem = nullptr;
+    bool PhysicsWorld3D::s_GlobalsInitialized = false;
+
     // Jolt layer sistemi
     namespace Layers
     {
@@ -116,21 +121,42 @@ namespace Conqueror
         Shutdown();
     }
 
+    void PhysicsWorld3D::InitGlobals()
+    {
+        if (s_GlobalsInitialized) return;
+
+        JPH::RegisterDefaultAllocator();
+        JPH::Factory::sInstance = new JPH::Factory();
+        JPH::RegisterTypes();
+
+        s_TempAllocator = new JPH::TempAllocatorImpl(10 * 1024 * 1024);
+        s_JobSystem = new JPH::JobSystemThreadPool(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, std::thread::hardware_concurrency() - 1);
+
+        s_GlobalsInitialized = true;
+        CQ_CORE_INFO("Physics3D globals initialized");
+    }
+
+    void PhysicsWorld3D::ShutdownGlobals()
+    {
+        if (!s_GlobalsInitialized) return;
+
+        delete s_JobSystem;
+        s_JobSystem = nullptr;
+        delete s_TempAllocator;
+        s_TempAllocator = nullptr;
+        delete JPH::Factory::sInstance;
+        JPH::Factory::sInstance = nullptr;
+
+        s_GlobalsInitialized = false;
+        CQ_CORE_INFO("Physics3D globals shutdown");
+    }
+
     void PhysicsWorld3D::Initialize()
     {
         if (m_Initialized)
             return;
 
-        // Jolt'u başlat
-        JPH::RegisterDefaultAllocator();
-        JPH::Factory::sInstance = new JPH::Factory();
-        JPH::RegisterTypes();
-
-        // Temp allocator
-        m_TempAllocator = new JPH::TempAllocatorImpl(10 * 1024 * 1024);
-
-        // Job system
-        m_JobSystem = new JPH::JobSystemThreadPool(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, std::thread::hardware_concurrency() - 1);
+        InitGlobals();
 
         // Layer interfaces
         m_BroadPhaseLayerInterface = new BPLayerInterfaceImpl();
@@ -162,10 +188,11 @@ namespace Conqueror
         delete m_ObjectLayerPairFilter;
         delete m_ObjectVsBroadPhaseLayerFilter;
         delete m_BroadPhaseLayerInterface;
-        delete m_JobSystem;
-        delete m_TempAllocator;
-        delete JPH::Factory::sInstance;
-        JPH::Factory::sInstance = nullptr;
+
+        m_PhysicsSystem = nullptr;
+        m_BroadPhaseLayerInterface = nullptr;
+        m_ObjectVsBroadPhaseLayerFilter = nullptr;
+        m_ObjectLayerPairFilter = nullptr;
 
         m_Initialized = false;
         CQ_CORE_INFO("Physics3D shutdown");
@@ -177,7 +204,7 @@ namespace Conqueror
             return;
 
         const int cCollisionSteps = QualitySettings::GetPreset().PhysicsIterations;
-        m_PhysicsSystem->Update(ts.GetSeconds(), cCollisionSteps, m_TempAllocator, m_JobSystem);
+        m_PhysicsSystem->Update(ts.GetSeconds(), cCollisionSteps, s_TempAllocator, s_JobSystem);
 
         SyncTransformsFromPhysics();
     }

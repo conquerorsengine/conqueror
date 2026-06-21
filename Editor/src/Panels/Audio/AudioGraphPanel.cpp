@@ -348,7 +348,6 @@ namespace Conqueror::Editor
 
     AudioGraphPanel::~AudioGraphPanel()
     {
-        ImNodes::DestroyContext();
     }
 
     void AudioGraphPanel::SetContext(Scene* scene)

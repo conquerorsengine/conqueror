@@ -5,6 +5,8 @@
 #include "CQSCompiler.h"
 #include "CQSVM.h"
 #include <string>
+#include <unordered_map>
+#include <memory>
 
 namespace Conqueror::CQS
 {
@@ -14,7 +16,6 @@ namespace Conqueror::CQS
         static void Init();
         static void Shutdown();
 
-        // Script dosyasını çalıştır
         static bool ExecuteString(const std::string& source);
         static bool ExecuteFile(const std::string& path);
         
@@ -26,5 +27,12 @@ namespace Conqueror::CQS
     private:
         static std::unique_ptr<CQSVM> s_VM;
         static void* s_ActiveScene;
+
+        struct CachedScript
+        {
+            std::shared_ptr<CQSChunk> Chunk;
+            std::string SourceHash;
+        };
+        static inline std::unordered_map<std::string, CachedScript> s_Cache;
     };
 }

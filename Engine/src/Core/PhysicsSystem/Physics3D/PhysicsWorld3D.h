@@ -30,6 +30,9 @@ namespace Conqueror
         void Initialize();
         void Shutdown();
 
+        static void InitGlobals();
+        static void ShutdownGlobals();
+
         void Step(Timestep ts);
 
         // Gravity
@@ -59,9 +62,11 @@ namespace Conqueror
         void SyncTransformsToPhysics();
 
     private:
+        static JPH::TempAllocator* s_TempAllocator;
+        static JPH::JobSystem* s_JobSystem;
+        static bool s_GlobalsInitialized;
+
         JPH::PhysicsSystem* m_PhysicsSystem = nullptr;
-        JPH::TempAllocator* m_TempAllocator = nullptr;
-        JPH::JobSystem* m_JobSystem = nullptr;
         JPH::BroadPhaseLayerInterface* m_BroadPhaseLayerInterface = nullptr;
         JPH::ObjectVsBroadPhaseLayerFilter* m_ObjectVsBroadPhaseLayerFilter = nullptr;
         JPH::ObjectLayerPairFilter* m_ObjectLayerPairFilter = nullptr;
@@ -69,7 +74,7 @@ namespace Conqueror
         glm::vec3 m_Gravity = glm::vec3(0.0f, -9.81f, 0.0f);
         bool m_Initialized = false;
 
-        class Scene* m_Scene = nullptr; // Entity'lere erişim için
+        class Scene* m_Scene = nullptr;
 
         friend class Scene;
     };

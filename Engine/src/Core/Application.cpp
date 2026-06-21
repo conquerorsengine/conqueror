@@ -4,6 +4,7 @@
 #include "Core/Audio/AudioEngine.h"
 #include "Renderer/Renderer.h"
 #include "Core/Time/TimeManager.h"
+#include "Core/PhysicsSystem/Physics3D/PhysicsWorld3D.h"
 #include "Core/Utils/Platform.h"
 #include <filesystem>
 
@@ -42,6 +43,7 @@ namespace Conqueror
         m_Window->SetEventCallback(CQ_BIND_EVENT_FN(Application::OnEvent));
 
         Renderer::Init();
+        PhysicsWorld3D::InitGlobals();
         AudioEngine::Init();
         TimeManager::Init();
 
@@ -56,6 +58,7 @@ namespace Conqueror
     Application::~Application()
     {
         AudioEngine::Shutdown();
+        PhysicsWorld3D::ShutdownGlobals();
         Renderer::Shutdown();
     }
 
