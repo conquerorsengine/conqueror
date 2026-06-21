@@ -180,7 +180,7 @@ namespace Conqueror
                 return absolute.string();
         }
 
-        return ResolveScriptPath(path);
+        return ResolveSerializablePath(path);
     }
 
     YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec2& v)
@@ -1398,7 +1398,7 @@ namespace Conqueror
                 if (modelComponent)
                 {
                     auto& mc = deserializedEntity.AddComponent<ModelComponent>();
-                    mc.FilePath = ResolveScriptPath(modelComponent["FilePath"].as<std::string>());
+                    mc.FilePath = ResolveSerializablePath(modelComponent["FilePath"].as<std::string>());
                     
                     if (!mc.FilePath.empty())
                     {
@@ -1438,7 +1438,7 @@ namespace Conqueror
                         data.ClassName = nativeScriptComponent["ClassName"].as<std::string>();
                         
                         if (nativeScriptComponent["ScriptPath"])
-                            data.ScriptPath = ResolveScriptPath(nativeScriptComponent["ScriptPath"].as<std::string>());
+                            data.ScriptPath = ResolveSerializablePath(nativeScriptComponent["ScriptPath"].as<std::string>());
                             
                         if (data.ClassName.empty() && !data.ModuleName.empty())
                         {
@@ -1471,7 +1471,7 @@ namespace Conqueror
                                    deserializedEntity.AddComponent<ConquerorScriptComponent>();
                         
                         ConquerorScriptData data;
-                        data.ScriptPath = ResolveScriptPath(conquerorScriptComponent["ScriptPath"].as<std::string>());
+                        data.ScriptPath = ResolveSerializablePath(conquerorScriptComponent["ScriptPath"].as<std::string>());
                         data.ClassName = conquerorScriptComponent["ClassName"].as<std::string>();
                         
                         sc.Scripts.push_back(data);
@@ -1487,7 +1487,7 @@ namespace Conqueror
                     
                     if (imageComponent["TexturePath"])
                     {
-                        std::string texturePath = ResolveScriptPath(imageComponent["TexturePath"].as<std::string>());
+                        std::string texturePath = ResolveSerializablePath(imageComponent["TexturePath"].as<std::string>());
                         if (!texturePath.empty())
                         {
                             ic.Texture = Texture2D::Create(texturePath);
@@ -1632,7 +1632,7 @@ namespace Conqueror
                 if (audioSourceComponent)
                 {
                     auto& audio = deserializedEntity.AddComponent<AudioSourceComponent>();
-                    audio.FilePath = ResolveScriptPath(audioSourceComponent["FilePath"].as<std::string>());
+                    audio.FilePath = ResolveSerializablePath(audioSourceComponent["FilePath"].as<std::string>());
                     audio.PlayOnAwake = audioSourceComponent["PlayOnAwake"].as<bool>();
                     audio.Loop = audioSourceComponent["Loop"].as<bool>();
                     audio.Mute = audioSourceComponent["Mute"].as<bool>();

@@ -3310,7 +3310,13 @@ namespace Conqueror
             if (!audioSource.RuntimeSound && !audioSource.FilePath.empty())
             {
                 std::string loadPath = audioSource.FilePath;
-                if (std::filesystem::path(loadPath).is_relative())
+                if (loadPath.size() > 3 && loadPath[0] == 'C' && loadPath[1] == 'Q' && loadPath[2] == ':')
+                {
+                    std::string relative = loadPath.substr(3);
+                    auto engineDir = std::filesystem::current_path();
+                    loadPath = (engineDir / std::filesystem::path(relative)).string();
+                }
+                else if (std::filesystem::path(loadPath).is_relative())
                 {
                     static std::unordered_map<std::string, std::string> s_AudioPathCache;
                     auto it = s_AudioPathCache.find(loadPath);

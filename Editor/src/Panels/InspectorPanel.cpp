@@ -42,23 +42,6 @@ namespace Conqueror::Editor
 #endif
     }
 
-    static std::string ToRelativeIfInsideProject(const std::string& absolutePath)
-    {
-        auto projectDir = Project::GetActiveProjectDirectory();
-        if (projectDir.empty())
-            return absolutePath;
-
-        std::error_code ec;
-        auto relative = std::filesystem::relative(absolutePath, projectDir, ec);
-        if (!ec && !relative.empty() && relative.native()[0] != '.')
-        {
-            CQ_CORE_INFO("InspectorPanel: Script path made relative: {0}", relative.string());
-            return relative.string();
-        }
-
-        return absolutePath;
-    }
-
     static std::string ToSerializablePath(const std::string& absolutePath)
     {
         if (absolutePath.empty())
@@ -693,7 +676,7 @@ namespace Conqueror::Editor
                 {
                     std::string loadedPathStr(outPath);
                     component.Texture = Texture2D::Create(loadedPathStr);
-                    component.TexturePath = ToRelativeIfInsideProject(loadedPathStr);
+                    component.TexturePath = ToSerializablePath(loadedPathStr);
                     NFD_FreePathU8(outPath);
                 }
             }
@@ -710,7 +693,7 @@ namespace Conqueror::Editor
                     if (ext == ".png" || ext == ".jpg" || ext == ".jpeg")
                     {
                         component.Texture = Texture2D::Create(droppedPath);
-                        component.TexturePath = ToRelativeIfInsideProject(droppedPath);
+                        component.TexturePath = ToSerializablePath(droppedPath);
                         CQ_CORE_INFO("MeshRenderer texture set: {0}", droppedPath);
                     }
                 }
@@ -793,7 +776,7 @@ namespace Conqueror::Editor
                 
                 if (result == NFD_OKAY)
                 {
-                    component.FilePath = ToRelativeIfInsideProject(outPath);
+                    component.FilePath = ToSerializablePath(outPath);
                     component.ModelData = ModelLoader::Load(outPath);
                     NFD_FreePathU8(outPath);
                 }
@@ -818,7 +801,7 @@ namespace Conqueror::Editor
                     
                     if (ext == ".obj" || ext == ".fbx" || ext == ".gltf" || ext == ".glb")
                     {
-                        component.FilePath = ToRelativeIfInsideProject(droppedPath);
+                        component.FilePath = ToSerializablePath(droppedPath);
                         component.ModelData = ModelLoader::Load(droppedPath);
                         CQ_CORE_INFO("Model loaded: {0}", droppedPath);
                     }
@@ -1415,7 +1398,7 @@ namespace Conqueror::Editor
             
             if (ImGui::InputText("##AudioFilePath", pathBuffer, sizeof(pathBuffer)))
             {
-                component.FilePath = ToRelativeIfInsideProject(std::string(pathBuffer));
+                component.FilePath = ToSerializablePath(std::string(pathBuffer));
             }
             
             ImGui::SameLine();
@@ -1428,7 +1411,7 @@ namespace Conqueror::Editor
                 
                 if (result == NFD_OKAY)
                 {
-                    component.FilePath = ToRelativeIfInsideProject(std::string(outPath));
+                    component.FilePath = ToSerializablePath(std::string(outPath));
                     NFD_FreePath(outPath);
                 }
             }
@@ -1444,7 +1427,7 @@ namespace Conqueror::Editor
                     
                     if (ext == ".wav" || ext == ".mp3" || ext == ".ogg" || ext == ".flac")
                     {
-                        component.FilePath = ToRelativeIfInsideProject(droppedPath);
+                        component.FilePath = ToSerializablePath(droppedPath);
                         CQ_CORE_INFO("Audio loaded: {0}", droppedPath);
                     }
                 }
@@ -1641,7 +1624,7 @@ namespace Conqueror::Editor
                             
                             std::filesystem::path path(dllPath);
                             script.ModuleName = path.stem().string();
-                            script.ScriptPath = ToRelativeIfInsideProject(dllPath);
+                            script.ScriptPath = ToSerializablePath(dllPath);
                             
                             if (ScriptEngine::LoadModule(script.ModuleName, dllPath))
                             {
@@ -1668,7 +1651,7 @@ namespace Conqueror::Editor
                             {
                                 std::filesystem::path fpath(droppedPath);
                                 script.ModuleName = fpath.stem().string();
-                                script.ScriptPath = ToRelativeIfInsideProject(droppedPath);
+                                script.ScriptPath = ToSerializablePath(droppedPath);
                                 
                                 if (ScriptEngine::LoadModule(script.ModuleName, droppedPath))
                                 {
@@ -1761,7 +1744,7 @@ namespace Conqueror::Editor
                     
                     if (ImGui::InputText("##CQSPath", pathBuffer, sizeof(pathBuffer)))
                     {
-                        script.ScriptPath = ToRelativeIfInsideProject(std::string(pathBuffer));
+                        script.ScriptPath = ToSerializablePath(std::string(pathBuffer));
                         std::string resolvePath = std::filesystem::path(pathBuffer).is_relative() ?
                             (Project::GetActiveProjectDirectory() / pathBuffer).string() : std::string(pathBuffer);
                         std::ifstream file(resolvePath);
@@ -1790,7 +1773,7 @@ namespace Conqueror::Editor
                         
                         if (result == NFD_OKAY)
                         {
-                            script.ScriptPath = ToRelativeIfInsideProject(std::string(outPath));
+                            script.ScriptPath = ToSerializablePath(std::string(outPath));
                             
                             std::ifstream file(outPath);
                             std::string line;
@@ -1822,7 +1805,7 @@ namespace Conqueror::Editor
                             
                             if (ext == ".cqs")
                             {
-                                script.ScriptPath = ToRelativeIfInsideProject(droppedPath);
+                                script.ScriptPath = ToSerializablePath(droppedPath);
                                 
                                 std::ifstream file(droppedPath);
                                 std::string line;
