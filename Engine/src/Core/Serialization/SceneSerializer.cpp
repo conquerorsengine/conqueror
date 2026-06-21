@@ -180,7 +180,19 @@ namespace Conqueror
                 return absolute.string();
         }
 
-        return ResolveSerializablePath(path);
+        auto projectDir = Project::GetActiveProjectDirectory();
+        if (!projectDir.empty())
+        {
+            std::filesystem::path p(path);
+            if (p.is_relative())
+            {
+                auto absolute = projectDir / p;
+                if (std::filesystem::exists(absolute))
+                    return absolute.string();
+            }
+        }
+
+        return path;
     }
 
     YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec2& v)
