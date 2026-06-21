@@ -3,6 +3,8 @@
 #include "Core/Input/Input.h"
 #include "Core/KeyCodes.h"
 #include "Core/Serialization/SceneSerializer.h"
+
+#include <imnodes.h>
 #include "Core/Logging/Log.h"
 #include "Core/Debug/DebugDraw.h"
 #include "Scene/Components.h"
@@ -306,6 +308,7 @@ namespace Conqueror::Editor
 
     void EditorLayer::OnDetach()
     {
+        ImNodes::DestroyContext();
         DebugDraw::Shutdown();
     }
 

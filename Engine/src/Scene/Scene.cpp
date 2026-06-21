@@ -26,6 +26,7 @@
 #include <glm/glm.hpp>
 #include <glad/glad.h>
 #include <chrono>
+#include <unordered_map>
 
 namespace Conqueror
 {
@@ -672,8 +673,15 @@ namespace Conqueror
         UpdateAudioSystem(ts);
 
         // Update physics
-        m_PhysicsWorld2D->Step(ts);
-        m_PhysicsWorld3D->Step(ts);
+        if (m_PhysicsWarmedUp)
+        {
+            m_PhysicsWorld2D->Step(ts);
+            m_PhysicsWorld3D->Step(ts);
+        }
+        else
+        {
+            m_PhysicsWarmedUp = true;
+        }
 
         // Animasyon: ViewportPanel her karede OnUpdateEditor ile çiziyor; burada da güncellenirse zaman 2× hızlanır.
 
@@ -3304,9 +3312,21 @@ namespace Conqueror
                 std::string loadPath = audioSource.FilePath;
                 if (std::filesystem::path(loadPath).is_relative())
                 {
-                    auto projectDir = Project::GetActiveProjectDirectory();
-                    if (!projectDir.empty())
-                        loadPath = (projectDir / loadPath).string();
+                    static std::unordered_map<std::string, std::string> s_AudioPathCache;
+                    auto it = s_AudioPathCache.find(loadPath);
+                    if (it != s_AudioPathCache.end())
+                    {
+                        loadPath = it->second;
+                    }
+                    else
+                    {
+                        auto projectDir = Project::GetActiveProjectDirectory();
+                        if (!projectDir.empty())
+                        {
+                            loadPath = (projectDir / loadPath).string();
+                            s_AudioPathCache[audioSource.FilePath] = loadPath;
+                        }
+                    }
                 }
 
                 AudioSource* source = new AudioSource();

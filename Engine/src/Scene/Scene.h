@@ -229,6 +229,7 @@ namespace Conqueror
         // Physics
         std::unique_ptr<PhysicsWorld2D> m_PhysicsWorld2D;
         std::unique_ptr<PhysicsWorld3D> m_PhysicsWorld3D;
+        bool m_PhysicsWarmedUp = false;
 
         // AI
         NavMesh m_NavMesh;
