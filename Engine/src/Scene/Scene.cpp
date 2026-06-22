@@ -22,6 +22,7 @@
 #include "Core/Debug/DebugGridDraw.h"
 #include "Core/Debug/DebugPalette.h"
 #include "Core/Animation/Animator.h"
+#include "Core/Animation/AnimationController.h"
 
 #include <glm/glm.hpp>
 #include <glad/glad.h>
@@ -425,6 +426,9 @@ namespace Conqueror
             if (srcEntity.HasComponent<AnimatorComponent>())
                 reg.emplace<AnimatorComponent>(dstHandle) = srcEntity.GetComponent<AnimatorComponent>();
 
+            if (srcEntity.HasComponent<AnimationComponent>())
+                reg.emplace<AnimationComponent>(dstHandle) = srcEntity.GetComponent<AnimationComponent>();
+
             if (srcEntity.HasComponent<DirectionalLightComponent>())
                 reg.emplace<DirectionalLightComponent>(dstHandle) = srcEntity.GetComponent<DirectionalLightComponent>();
 
@@ -747,6 +751,10 @@ namespace Conqueror
                 }
             }
         }
+
+        // Animators
+        UpdateAnimators(ts);
+
         } // !renderOnly
 
         // Render Scene (Runtime)
@@ -881,6 +889,8 @@ namespace Conqueror
                         const std::vector<glm::mat4>* bones = nullptr;
                         if (ren.HasComponent<AnimatorComponent>())
                             bones = &ren.GetComponent<AnimatorComponent>().BoneMatricesGPU;
+                        else if (ren.HasComponent<AnimationComponent>())
+                            bones = &ren.GetComponent<AnimationComponent>().BoneMatricesGPU;
                         if (bones && bones->size() == modelComp.ModelData->SkeletonData->GetBoneCount())
                             Renderer3D::DrawSkinnedModel(transform.WorldTransform, modelComp.ModelData, *bones);
                         else
@@ -1208,7 +1218,6 @@ namespace Conqueror
         // Buton input sistemi
         UpdateButtonInput(camera, ts, viewportBounds);
 
-        UpdateAnimators(ts);
         UpdateAudioSystem(ts);
 
         // 3D Rendering
@@ -1313,6 +1322,8 @@ namespace Conqueror
                     const std::vector<glm::mat4>* bones = nullptr;
                     if (ren.HasComponent<AnimatorComponent>())
                         bones = &ren.GetComponent<AnimatorComponent>().BoneMatricesGPU;
+                    else if (ren.HasComponent<AnimationComponent>())
+                        bones = &ren.GetComponent<AnimationComponent>().BoneMatricesGPU;
                     if (bones && bones->size() == modelComp.ModelData->SkeletonData->GetBoneCount())
                         Renderer3D::DrawSkinnedModel(transform.WorldTransform, modelComp.ModelData, *bones);
                     else
@@ -2112,6 +2123,11 @@ namespace Conqueror
 
     template<>
     void Scene::OnComponentAdded<AnimatorComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AnimatorComponent& component)
+    {
+    }
+
+    template<>
+    void Scene::OnComponentAdded<AnimationComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AnimationComponent& component)
     {
     }
 
@@ -3523,6 +3539,234 @@ namespace Conqueror
                 anim.CurrentTime += ts.GetSeconds() * anim.Speed;
 
             Animator::ComputeBoneMatrices(*mc.ModelData->SkeletonData, *clipPtr, anim.CurrentTime, anim.BoneMatricesGPU);
+        }
+
+        // AnimationComponent state machine
+        auto animView = m_Registry.view<AnimationComponent, ModelComponent>();
+        for (auto entity : animView)
+        {
+            auto& ac = animView.get<AnimationComponent>(entity);
+            auto& mc = animView.get<ModelComponent>(entity);
+
+            if (!ac.Controller)
+                continue;
+
+            if (!ac.Playing && ac.PlayOnAwake)
+                ac.Playing = true;
+
+            if (!ac.Playing)
+                continue;
+
+            if (!mc.ModelData || !mc.ModelData->IsSkinned || !mc.ModelData->SkeletonData || mc.ModelData->Animations.empty())
+                continue;
+
+            if (ac.Controller->Layers.empty())
+                continue;
+
+            auto& layer = ac.Controller->Layers[0];
+
+            // Initialize current state if empty
+            if (ac.CurrentStateName.empty())
+            {
+                ac.CurrentStateName = layer.DefaultState;
+                ac.CurrentTime = 0.f;
+            }
+
+            // Find current state
+            AnimState* currentState = ac.Controller->GetState(layer, ac.CurrentStateName);
+            if (!currentState)
+            {
+                ac.CurrentStateName = layer.DefaultState;
+                currentState = ac.Controller->GetState(layer, ac.CurrentStateName);
+                if (!currentState) continue;
+                ac.CurrentTime = 0.f;
+            }
+
+            // Check transitions
+            if (!ac.IsTransitioning)
+            {
+                for (const auto& trans : layer.Transitions)
+                {
+                    if (trans.FromState != ac.CurrentStateName)
+                        continue;
+
+                    bool conditionsMet = true;
+                    for (const auto& cond : trans.Conditions)
+                    {
+                        bool found = false;
+                        for (const auto& param : ac.Parameters)
+                        {
+                            if (param.Name == cond.ParameterName)
+                            {
+                                found = true;
+                                switch (param.Type)
+                                {
+                                case AnimParameterType::Float:
+                                    switch (cond.Mode)
+                                    {
+                                    case AnimConditionMode::Greater: conditionsMet = param.FloatValue > cond.Threshold; break;
+                                    case AnimConditionMode::Less: conditionsMet = param.FloatValue < cond.Threshold; break;
+                                    case AnimConditionMode::Equals: conditionsMet = std::abs(param.FloatValue - cond.Threshold) < 0.001f; break;
+                                    case AnimConditionMode::NotEquals: conditionsMet = std::abs(param.FloatValue - cond.Threshold) >= 0.001f; break;
+                                    }
+                                    break;
+                                case AnimParameterType::Bool:
+                                    conditionsMet = param.BoolValue == (cond.Threshold > 0.5f);
+                                    break;
+                                case AnimParameterType::Int:
+                                    switch (cond.Mode)
+                                    {
+                                    case AnimConditionMode::Greater: conditionsMet = param.IntValue > static_cast<int>(cond.Threshold); break;
+                                    case AnimConditionMode::Less: conditionsMet = param.IntValue < static_cast<int>(cond.Threshold); break;
+                                    case AnimConditionMode::Equals: conditionsMet = param.IntValue == static_cast<int>(cond.Threshold); break;
+                                    case AnimConditionMode::NotEquals: conditionsMet = param.IntValue != static_cast<int>(cond.Threshold); break;
+                                    }
+                                    break;
+                                case AnimParameterType::Trigger:
+                                    conditionsMet = param.FloatValue > 0.5f;
+                                    break;
+                                }
+                                break;
+                            }
+                        }
+                        if (!found || !conditionsMet) break;
+                    }
+
+                    if (conditionsMet)
+                    {
+                        // Check exit time
+                        if (trans.HasExitTime && currentState)
+                        {
+                            float clipDuration = 0.f;
+                            if (currentState->ClipIndex >= 0 && currentState->ClipIndex < static_cast<int>(mc.ModelData->Animations.size()))
+                            {
+                                auto& clip = mc.ModelData->Animations[currentState->ClipIndex];
+                                if (clip)
+                                    clipDuration = clip->DurationSeconds();
+                            }
+
+                            if (clipDuration > 0.f)
+                            {
+                                float normalizedTime = ac.CurrentTime / clipDuration;
+                                if (normalizedTime < trans.ExitTime)
+                                    continue;
+                            }
+                        }
+
+                        // Start transition
+                        ac.IsTransitioning = true;
+                        ac.nextStateName = trans.ToState;
+                        ac.TransitionProgress = 0.f;
+                        ac.TransitionDuration = trans.Duration;
+
+                        // Reset trigger parameters
+                        for (auto& param : ac.Parameters)
+                        {
+                            if (param.Type == AnimParameterType::Trigger)
+                                param.FloatValue = 0.f;
+                        }
+
+                        break;
+                    }
+                }
+            }
+
+            // Process transition
+            if (ac.IsTransitioning)
+            {
+                ac.TransitionProgress += ts.GetSeconds();
+                if (ac.TransitionProgress >= ac.TransitionDuration)
+                {
+                    ac.CurrentStateName = ac.nextStateName;
+                    ac.IsTransitioning = false;
+                    ac.TransitionProgress = 0.f;
+                    ac.CurrentTime = 0.f;
+                    ac.nextStateName.clear();
+                }
+            }
+
+            // Advance time
+            currentState = ac.Controller->GetState(layer, ac.CurrentStateName);
+            if (currentState && ac.Playing)
+            {
+                float stateSpeed = currentState->Speed * ac.Speed;
+                ac.CurrentTime += ts.GetSeconds() * stateSpeed;
+
+                // Loop or clamp
+                if (currentState->ClipIndex >= 0 && currentState->ClipIndex < static_cast<int>(mc.ModelData->Animations.size()))
+                {
+                    auto& clip = mc.ModelData->Animations[currentState->ClipIndex];
+                    if (clip)
+                    {
+                        float clipDuration = clip->DurationSeconds();
+                        if (clipDuration > 0.f)
+                        {
+                            if (currentState->Loop)
+                            {
+                                while (ac.CurrentTime >= clipDuration)
+                                    ac.CurrentTime -= clipDuration;
+                            }
+                            else
+                            {
+                                if (ac.CurrentTime > clipDuration)
+                                    ac.CurrentTime = clipDuration;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Compute bone matrices
+            currentState = ac.Controller->GetState(layer, ac.CurrentStateName);
+            if (currentState && currentState->ClipIndex >= 0 && currentState->ClipIndex < static_cast<int>(mc.ModelData->Animations.size()))
+            {
+                auto& clip = mc.ModelData->Animations[currentState->ClipIndex];
+                if (clip)
+                {
+                    if (ac.IsTransitioning && ac.TransitionDuration > 0.f)
+                    {
+                        // Crossfade: compute source and target, blend
+                        AnimState* sourceState = ac.Controller->GetState(layer, ac.CurrentStateName);
+                        AnimState* targetState = ac.Controller->GetState(layer, ac.nextStateName);
+
+                        float blendFactor = ac.TransitionProgress / ac.TransitionDuration;
+                        blendFactor = glm::clamp(blendFactor, 0.f, 1.f);
+
+                        std::vector<glm::mat4> sourceMatrices, targetMatrices;
+
+                        if (sourceState && sourceState->ClipIndex >= 0 && sourceState->ClipIndex < static_cast<int>(mc.ModelData->Animations.size()))
+                        {
+                            auto& sourceClip = mc.ModelData->Animations[sourceState->ClipIndex];
+                            if (sourceClip)
+                                Animator::ComputeBoneMatrices(*mc.ModelData->SkeletonData, *sourceClip, ac.CurrentTime, sourceMatrices);
+                        }
+
+                        if (targetState && targetState->ClipIndex >= 0 && targetState->ClipIndex < static_cast<int>(mc.ModelData->Animations.size()))
+                        {
+                            auto& targetClip = mc.ModelData->Animations[targetState->ClipIndex];
+                            if (targetClip)
+                            {
+                                float targetTime = 0.f;
+                                Animator::ComputeBoneMatrices(*mc.ModelData->SkeletonData, *targetClip, targetTime, targetMatrices);
+                            }
+                        }
+
+                        // Blend matrices
+                        uint32_t boneCount = mc.ModelData->SkeletonData->GetBoneCount();
+                        ac.BoneMatricesGPU.resize(boneCount);
+                        for (uint32_t i = 0; i < boneCount; i++)
+                        {
+                            glm::mat4 src = (i < sourceMatrices.size()) ? sourceMatrices[i] : glm::mat4(1.f);
+                            glm::mat4 dst = (i < targetMatrices.size()) ? targetMatrices[i] : glm::mat4(1.f);
+                            ac.BoneMatricesGPU[i] = src + blendFactor * (dst - src);
+                        }
+                    }
+                    else
+                    {
+                        Animator::ComputeBoneMatrices(*mc.ModelData->SkeletonData, *clip, ac.CurrentTime, ac.BoneMatricesGPU);
+                    }
+                }
+            }
         }
     }
 

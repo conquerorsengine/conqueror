@@ -12,6 +12,7 @@
 #include "Panels/ProjectSettingsPanel.h"
 #include "Panels/StatsPanel.h"
 #include "Panels/Audio/AudioGraphPanel.h"
+#include "Panels/Animator/AnimatorPanel.h"
 #include "Panels/Shader/ShaderEditorPanel.h"
 #include "Panels/CodeEditorPanel.h"
 #include "UndoRedo/UndoRedoManager.h"
@@ -97,6 +98,7 @@ namespace Conqueror::Editor
         std::unique_ptr<ProjectSettingsPanel> m_ProjectSettingsPanel;
         std::unique_ptr<StatsPanel> m_StatsPanel;
         std::unique_ptr<AudioGraphPanel> m_AudioGraphPanel;
+        std::unique_ptr<AnimatorPanel> m_AnimatorPanel;
         std::unique_ptr<ShaderEditorPanel> m_ShaderEditorPanel;
         std::unique_ptr<CodeEditorPanel> m_CodeEditorPanel;
 
@@ -111,6 +113,7 @@ namespace Conqueror::Editor
         bool m_ShowProjectSettings = true;
         bool m_ShowStats = true;
         bool m_ShowAudioGraph = false;
+        bool m_ShowAnimator = false;
         bool m_ShowShaderGraph = false;
         bool m_ShowNavigation = false;
         bool m_ShowAbout = false;

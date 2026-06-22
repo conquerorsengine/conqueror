@@ -218,6 +218,66 @@ namespace
         }
     };
     static PointLightComponent_ReflectionRegistrar s_PointLightComponent_Registrar;
+
+    // SpotLightComponent
+    struct SpotLightComponent_ReflectionRegistrar
+    {
+        SpotLightComponent_ReflectionRegistrar()
+        {
+            using T = Conqueror::SpotLightComponent;
+            Conqueror::Reflection::TypeRegistrar<T> registrar("SpotLightComponent");
+            registrar.Property("Direction", &T::Direction);
+            registrar.Property("Color", &T::Color);
+            registrar.Property("Intensity", &T::Intensity);
+            registrar.Property("Range", &T::Range);
+            registrar.Property("InnerConeAngle", &T::InnerConeAngle);
+            registrar.Property("OuterConeAngle", &T::OuterConeAngle);
+            registrar.Property("Constant", &T::Constant);
+            registrar.Property("Linear", &T::Linear);
+            registrar.Property("Quadratic", &T::Quadratic);
+            registrar.Property("CastShadows", &T::CastShadows);
+        }
+    };
+    static SpotLightComponent_ReflectionRegistrar s_SpotLightComponent_Registrar;
+
+    // ReflectionProbeComponent
+    struct ReflectionProbeComponent_ReflectionRegistrar
+    {
+        ReflectionProbeComponent_ReflectionRegistrar()
+        {
+            using T = Conqueror::ReflectionProbeComponent;
+            Conqueror::Reflection::TypeRegistrar<T> registrar("ReflectionProbeComponent");
+            registrar.Property("BoxOffset", &T::BoxOffset);
+            registrar.Property("BoxSize", &T::BoxSize);
+            registrar.Property("Resolution", &T::Resolution);
+            registrar.Property("Intensity", &T::Intensity);
+            registrar.Property("Bounces", &T::Bounces);
+            registrar.Property("RealtimeUpdate", &T::RealtimeUpdate);
+            registrar.Property("CubemapPath", &T::CubemapPath);
+        }
+    };
+    static ReflectionProbeComponent_ReflectionRegistrar s_ReflectionProbeComponent_Registrar;
+
+    // AdaptiveProbeVolumeComponent
+    struct AdaptiveProbeVolumeComponent_ReflectionRegistrar
+    {
+        AdaptiveProbeVolumeComponent_ReflectionRegistrar()
+        {
+            using T = Conqueror::AdaptiveProbeVolumeComponent;
+            Conqueror::Reflection::TypeRegistrar<T> registrar("AdaptiveProbeVolumeComponent");
+            registrar.Property("ProbeOffset", &T::ProbeOffset);
+            registrar.Property("MinSpacing", &T::MinSpacing);
+            registrar.Property("MaxSpacing", &T::MaxSpacing);
+            registrar.Property("BakingMode", &T::BakingMode);
+            registrar.Property("Dilation", &T::Dilation);
+            registrar.Property("VirtualOffset", &T::VirtualOffset);
+            registrar.Property("ValidityThreshold", &T::ValidityThreshold);
+            registrar.Property("SearchDistanceMultiplier", &T::SearchDistanceMultiplier);
+            registrar.Property("GeometryBias", &T::GeometryBias);
+            registrar.Property("RayOriginBias", &T::RayOriginBias);
+        }
+    };
+    static AdaptiveProbeVolumeComponent_ReflectionRegistrar s_AdaptiveProbeVolumeComponent_Registrar;
     
     // AudioSourceComponent
     struct AudioSourceComponent_ReflectionRegistrar

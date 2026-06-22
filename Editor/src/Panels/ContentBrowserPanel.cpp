@@ -362,7 +362,7 @@ namespace Conqueror::Editor
             return;
 
         std::string ext = path.extension().string();
-        if (ext == ".cpp" || ext == ".h" || ext == ".cqs" || ext == ".cqsh")
+        if (ext == ".cpp" || ext == ".h" || ext == ".cqs" || ext == ".cqsh" || ext == ".cqcont")
         {
             if (m_FileOpenCallback)
             {
@@ -853,6 +853,8 @@ namespace Conqueror::Editor
             return m_ImageIcon;
         else if (ext == ".cqscene")
             return m_SceneIcon;
+        else if (ext == ".cqcont")
+            return m_SceneIcon;
         else
             return m_FileIcon;
     }
@@ -872,6 +874,8 @@ namespace Conqueror::Editor
             return "[IMG]";
         else if (ext == ".cqscene")
             return "[SCN]";
+        else if (ext == ".cqcont")
+            return "[ANM]";
         else
             return "[FILE]";
     }

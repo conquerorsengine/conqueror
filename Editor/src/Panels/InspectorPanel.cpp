@@ -7,6 +7,7 @@
 #include "Scripting/ScriptEngine.h"
 #include "Core/Project/Project.h"
 #include "Core/Logging/Log.h"
+#include "Core/Animation/AnimationController.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -255,6 +256,7 @@ namespace Conqueror::Editor
             if (animOpen || !searchString.empty())
             {
                 drawEntry("Animator", [&]() { DrawAddComponentEntry<AnimatorComponent>("Animator"); });
+                drawEntry("Animation", [&]() { DrawAddComponentEntry<AnimationComponent>("Animation"); });
                 endCategory(animOpen);
             }
 
@@ -880,6 +882,113 @@ namespace Conqueror::Editor
             ImGui::DragInt("Clip Index", &component.ActiveClipIndex, 0.1f, 0, 64);
             ImGui::Text("Time: %.2f s", component.CurrentTime);
         });
+
+        // AnimationComponent - needs entity access for model clips
+        if (entity.HasComponent<AnimationComponent>())
+        {
+            auto& component = entity.GetComponent<AnimationComponent>();
+            ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
+
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+            float lineHeight = ImGui::GetTextLineHeight() + GImGui->Style.FramePadding.y * 2.0f;
+            ImGui::Separator();
+            bool open = ImGui::TreeNodeEx((void*)typeid(AnimationComponent).hash_code(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_FramePadding, "Animation");
+            ImGui::PopStyleVar();
+
+            ImGui::SameLine(contentRegionAvailable.x - lineHeight * 0.5f);
+            if (ImGui::Button("+", ImVec2{ lineHeight, lineHeight }))
+            {
+                ImGui::OpenPopup("ComponentSettings");
+            }
+
+            bool removeComponent = false;
+            if (ImGui::BeginPopup("ComponentSettings"))
+            {
+                if (ImGui::MenuItem("Remove component"))
+                    removeComponent = true;
+                ImGui::EndPopup();
+            }
+
+            if (open)
+            {
+                // Controller file path
+                ImGui::Text("Controller:");
+                ImGui::SameLine();
+                char ctrlPathBuf[512];
+                memset(ctrlPathBuf, 0, sizeof(ctrlPathBuf));
+                strncpy(ctrlPathBuf, component.ControllerFilePath.c_str(), sizeof(ctrlPathBuf) - 1);
+                if (ImGui::InputText("##ctrlpath", ctrlPathBuf, sizeof(ctrlPathBuf)))
+                {
+                    std::string newPath = ctrlPathBuf;
+                    if (newPath != component.ControllerFilePath)
+                    {
+                        component.ControllerFilePath = newPath;
+                        if (!newPath.empty())
+                            component.Controller = AnimationController::Deserialize(newPath);
+                    }
+                }
+
+                ImGui::SameLine();
+                if (ImGui::SmallButton("..."))
+                {
+                    auto projectDir = Project::GetActiveProjectDirectory();
+                    if (!projectDir.empty())
+                    {
+                        nfdchar_t* outPath = nullptr;
+                        nfdfilteritem_t filterItem[] = { { "Animation Controller", "cqcont" } };
+                        nfdresult_t result = NFD_OpenDialog(&outPath, filterItem, 1, projectDir.string().c_str());
+                        if (result == NFD_OKAY)
+                        {
+                            component.ControllerFilePath = outPath;
+                            component.Controller = AnimationController::Deserialize(outPath);
+                            NFD_FreePath(outPath);
+                        }
+                    }
+                }
+
+                ImGui::Checkbox("Play On Awake", &component.PlayOnAwake);
+                ImGui::DragFloat("Speed", &component.Speed, 0.05f, -5.f, 5.f);
+
+                // Parameters
+                if (component.Controller && !component.Parameters.empty())
+                {
+                    ImGui::Separator();
+                    ImGui::TextDisabled("Parameters");
+
+                    for (auto& param : component.Parameters)
+                    {
+                        ImGui::PushID(param.Name.c_str());
+
+                        if (param.Type == AnimParameterType::Float)
+                        {
+                            ImGui::DragFloat(param.Name.c_str(), &param.FloatValue, 0.01f);
+                        }
+                        else if (param.Type == AnimParameterType::Bool)
+                        {
+                            ImGui::Checkbox(param.Name.c_str(), &param.BoolValue);
+                        }
+                        else if (param.Type == AnimParameterType::Int)
+                        {
+                            ImGui::DragInt(param.Name.c_str(), &param.IntValue);
+                        }
+                        else if (param.Type == AnimParameterType::Trigger)
+                        {
+                            if (ImGui::Button(param.Name.c_str()))
+                            {
+                                param.FloatValue = 1.f;
+                            }
+                        }
+
+                        ImGui::PopID();
+                    }
+                }
+
+                ImGui::TreePop();
+            }
+
+            if (removeComponent)
+                entity.RemoveComponent<AnimationComponent>();
+        }
 
         DrawComponent<ImageComponent>("Image", entity, [](auto& component)
         {

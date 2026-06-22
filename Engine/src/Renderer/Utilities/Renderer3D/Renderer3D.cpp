@@ -3,6 +3,7 @@
 #include "ModelLoader.h"
 #include "Renderer/RHI/RenderCommand.h"
 #include "Renderer/RHI/Cubemap.h"
+#include "Scene/Scene.h"
 
 #include <algorithm>
 
@@ -11,6 +12,7 @@
 namespace Conqueror
 {
     Renderer3D::SceneData* Renderer3D::s_SceneData = nullptr;
+    ShadowPass Renderer3D::s_ShadowPass;
     std::shared_ptr<Mesh> Renderer3D::s_CubeMesh = nullptr;
     std::shared_ptr<Mesh> Renderer3D::s_PlaneMesh = nullptr;
     std::shared_ptr<Mesh> Renderer3D::s_CylinderMesh = nullptr;
@@ -59,10 +61,14 @@ namespace Conqueror
 
         // Skybox shader yükle
         s_SkyboxShader = Shader::Create("Engine/src/Shaders/3D/Skybox.cqsh");
+
+        // Shadow pass初始化
+        s_ShadowPass.Init();
     }
 
     void Renderer3D::Shutdown()
     {
+        s_ShadowPass.Shutdown();
         delete s_SceneData;
     }
 
@@ -163,6 +169,54 @@ namespace Conqueror
         s_SceneData->SpotLights.clear();
     }
 
+    void Renderer3D::ExecuteShadowPass(Scene* scene, const DirectionalLightComponent& dirLight,
+                                        const glm::vec3& lightDirection)
+    {
+        s_ShadowPass.Execute(scene, dirLight, lightDirection);
+    }
+
+    void Renderer3D::AddReflectionProbe(const glm::vec3& position, const glm::vec3& boxOffset,
+                                         const glm::vec3& boxSize, std::shared_ptr<Cubemap> cubemap)
+    {
+        SceneData::ReflectionProbeData probe;
+        probe.Position = position;
+        probe.BoxOffset = boxOffset;
+        probe.BoxSize = boxSize;
+        probe.ProbeCubemap = cubemap;
+        s_SceneData->ReflectionProbes.push_back(probe);
+    }
+
+    void Renderer3D::ClearReflectionProbes()
+    {
+        s_SceneData->ReflectionProbes.clear();
+    }
+
+    void Renderer3D::AddLightProbe(const glm::vec3& position, const glm::vec3& shR,
+                                    const glm::vec3& shG, const glm::vec3& shB)
+    {
+        SceneData::LightProbeData probe;
+        probe.Position = position;
+        probe.SH_R = shR;
+        probe.SH_G = shG;
+        probe.SH_B = shB;
+        s_SceneData->LightProbes.push_back(probe);
+    }
+
+    void Renderer3D::ClearLightProbes()
+    {
+        s_SceneData->LightProbes.clear();
+    }
+
+    void Renderer3D::SetLightProbeEnabled(bool enabled)
+    {
+        s_SceneData->LightProbeEnabled = enabled;
+    }
+
+    void Renderer3D::SetLightmap(std::shared_ptr<Texture2D> lightmap)
+    {
+        s_SceneData->Lightmap = lightmap;
+    }
+
     void Renderer3D::BindLightsToShader(std::shared_ptr<Shader> shader)
     {
         shader->Bind();
@@ -212,6 +266,63 @@ namespace Conqueror
         }
     }
 
+    void Renderer3D::BindReflectionProbesToShader(std::shared_ptr<Shader> shader)
+    {
+        if (!shader) return;
+        shader->Bind();
+
+        int numProbes = std::min((int)s_SceneData->ReflectionProbes.size(), 16);
+        shader->SetInt("u_NumReflectionProbes", numProbes);
+
+        for (int i = 0; i < numProbes; i++)
+        {
+            const auto& probe = s_SceneData->ReflectionProbes[i];
+            std::string base = "u_ReflectionProbePositions[" + std::to_string(i) + "]";
+            shader->SetFloat3("u_ReflectionProbePositions[" + std::to_string(i) + "]", probe.Position);
+            shader->SetFloat3("u_ReflectionProbeBoxOffsets[" + std::to_string(i) + "]", probe.BoxOffset);
+            shader->SetFloat3("u_ReflectionProbeBoxSizes[" + std::to_string(i) + "]", probe.BoxSize);
+
+            if (probe.ProbeCubemap)
+            {
+                glActiveTexture(GL_TEXTURE10 + i);
+                glBindTexture(GL_TEXTURE_CUBE_MAP, probe.ProbeCubemap->GetRendererID());
+                shader->SetInt("u_ReflectionProbeCubemaps[" + std::to_string(i) + "]", 10 + i);
+            }
+        }
+    }
+
+    void Renderer3D::BindLightProbesToShader(std::shared_ptr<Shader> shader)
+    {
+        if (!shader) return;
+        shader->Bind();
+
+        int numProbes = std::min((int)s_SceneData->LightProbes.size(), 64);
+        shader->SetInt("u_NumLightProbes", numProbes);
+        shader->SetInt("u_LightProbeEnabled", s_SceneData->LightProbeEnabled ? 1 : 0);
+
+        for (int i = 0; i < numProbes; i++)
+        {
+            const auto& probe = s_SceneData->LightProbes[i];
+            shader->SetFloat3("u_LightProbePositions[" + std::to_string(i) + "]", probe.Position);
+            shader->SetFloat3("u_LightProbeSHR[" + std::to_string(i) + "]", probe.SH_R);
+            shader->SetFloat3("u_LightProbeSHG[" + std::to_string(i) + "]", probe.SH_G);
+            shader->SetFloat3("u_LightProbeSHB[" + std::to_string(i) + "]", probe.SH_B);
+        }
+
+        // Lightmap
+        if (s_SceneData->Lightmap)
+        {
+            glActiveTexture(GL_TEXTURE9);
+            glBindTexture(GL_TEXTURE_2D, s_SceneData->Lightmap->GetRendererID());
+            shader->SetInt("u_Lightmap", 9);
+            shader->SetInt("u_HasLightmap", 1);
+        }
+        else
+        {
+            shader->SetInt("u_HasLightmap", 0);
+        }
+    }
+
     void Renderer3D::DrawCube(const glm::mat4& transform, std::shared_ptr<Material> material)
     {
         if (!material)
@@ -225,6 +336,9 @@ namespace Conqueror
         activeShader->SetFloat3("u_CameraPos", s_SceneData->CameraPosition);
 
         BindLightsToShader(activeShader);
+        s_ShadowPass.BindShadowMapsToShader(activeShader);
+        BindReflectionProbesToShader(activeShader);
+        BindLightProbesToShader(activeShader);
 
         material->Bind(activeShader);
 
@@ -252,6 +366,9 @@ namespace Conqueror
         activeShader->SetFloat3("u_CameraPos", s_SceneData->CameraPosition);
 
         BindLightsToShader(activeShader);
+        s_ShadowPass.BindShadowMapsToShader(activeShader);
+        BindReflectionProbesToShader(activeShader);
+        BindLightProbesToShader(activeShader);
 
         material->Bind(activeShader);
 
@@ -279,6 +396,9 @@ namespace Conqueror
         activeShader->SetFloat3("u_CameraPos", s_SceneData->CameraPosition);
 
         BindLightsToShader(activeShader);
+        s_ShadowPass.BindShadowMapsToShader(activeShader);
+        BindReflectionProbesToShader(activeShader);
+        BindLightProbesToShader(activeShader);
 
         material->Bind(activeShader);
 
@@ -306,6 +426,9 @@ namespace Conqueror
         activeShader->SetFloat3("u_CameraPos", s_SceneData->CameraPosition);
 
         BindLightsToShader(activeShader);
+        s_ShadowPass.BindShadowMapsToShader(activeShader);
+        BindReflectionProbesToShader(activeShader);
+        BindLightProbesToShader(activeShader);
 
         material->Bind(activeShader);
 
@@ -330,6 +453,9 @@ namespace Conqueror
 
         // Light'ları bind et
         BindLightsToShader(s_PBRShader);
+        s_ShadowPass.BindShadowMapsToShader(s_PBRShader);
+        BindReflectionProbesToShader(s_PBRShader);
+        BindLightProbesToShader(s_PBRShader);
 
         for (size_t i = 0; i < model->Meshes.size(); i++)
         {
@@ -389,6 +515,9 @@ namespace Conqueror
         s_PBRSkinnedShader->SetMat4Array("u_BoneTransforms", s_BoneMatrixScratch.data(), palette);
 
         BindLightsToShader(s_PBRSkinnedShader);
+        s_ShadowPass.BindShadowMapsToShader(s_PBRSkinnedShader);
+        BindReflectionProbesToShader(s_PBRSkinnedShader);
+        BindLightProbesToShader(s_PBRSkinnedShader);
 
         for (size_t i = 0; i < model->SkinnedMeshes.size(); ++i)
         {

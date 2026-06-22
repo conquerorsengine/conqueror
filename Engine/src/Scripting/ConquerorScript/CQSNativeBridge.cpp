@@ -199,6 +199,18 @@ namespace Conqueror::CQS
         vm->DefineNative("AnimatorGetSpeed", AnimatorGetSpeed, 0);
         vm->DefineNative("AnimatorSetClip", AnimatorSetClip, 1);
 
+        // Animation Component
+        vm->DefineNative("HasAnimationComponent", HasAnimationComponent, 0);
+        vm->DefineNative("AnimSetFloat", AnimSetFloat, 2);
+        vm->DefineNative("AnimSetBool", AnimSetBool, 2);
+        vm->DefineNative("AnimSetInt", AnimSetInt, 2);
+        vm->DefineNative("AnimSetTrigger", AnimSetTrigger, 1);
+        vm->DefineNative("AnimGetFloat", AnimGetFloat, 1);
+        vm->DefineNative("AnimGetBool", AnimGetBool, 1);
+        vm->DefineNative("AnimSetSpeed", AnimSetSpeed, 1);
+        vm->DefineNative("AnimPlay", AnimPlay, 0);
+        vm->DefineNative("AnimStop", AnimStop, 0);
+
         // Renderer
         vm->DefineNative("SetColor", SetColor, 4);
         vm->DefineNative("GetColor", GetColor, 0);

@@ -5,6 +5,7 @@
 #include "Core/Project/Project.h"
 #include "Scene/Entity.h"
 #include "Scene/Components.h"
+#include "Renderer/Utilities/Renderer3D/Renderer3D.h"
 
 #include <imgui.h>
 #include <nfd.h>
@@ -68,35 +69,6 @@ namespace Conqueror::Editor
         return absolutePath;
     }
 
-    static std::string ResolveSerializablePath(const std::string& path)
-    {
-        if (path.empty())
-            return path;
-
-        if (path.size() > 3 && path[0] == 'C' && path[1] == 'Q' && path[2] == ':')
-        {
-            std::string relative = path.substr(3);
-            auto engineDir = GetEngineDirectory();
-            auto absolute = engineDir / std::filesystem::path(relative);
-            if (std::filesystem::exists(absolute))
-                return absolute.string();
-        }
-
-        auto projectDir = Project::GetActiveProjectDirectory();
-        if (!projectDir.empty())
-        {
-            std::filesystem::path p(path);
-            if (p.is_relative())
-            {
-                auto absolute = projectDir / p;
-                if (std::filesystem::exists(absolute))
-                    return absolute.string();
-            }
-        }
-
-        return path;
-    }
-
     void LightingPanel::OnImGuiRender()
     {
         ImGui::Begin("Lighting");
@@ -108,60 +80,233 @@ namespace Conqueror::Editor
             return;
         }
 
-        // Environment bölümü
-        if (ImGui::CollapsingHeader("Environment", ImGuiTreeNodeFlags_DefaultOpen))
+        // Tab buttons
+        const char* tabs[] = { "Scene", "Adaptive Probe Volumes", "Environment", "Realtime Lightmaps", "Baked Lightmaps" };
+        for (int i = 0; i < 5; i++)
         {
-            // Skybox
-            ImGui::Text("Skybox");
-            ImGui::Separator();
+            if (i > 0) ImGui::SameLine();
+            
+            bool isActive = (m_ActiveTab == i);
+            if (isActive)
+                ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+            
+            if (ImGui::Button(tabs[i], ImVec2(0, 25)))
+                m_ActiveTab = i;
+            
+            if (isActive)
+                ImGui::PopStyleColor();
+        }
 
-            auto skybox = m_Context->GetSkybox();
-            if (skybox)
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        // Render active tab
+        switch (m_ActiveTab)
+        {
+            case 0: RenderSceneTab(); break;
+            case 1: RenderAdaptiveProbeVolumesTab(); break;
+            case 2: RenderEnvironmentTab(); break;
+            case 3: RenderRealtimeLightmapsTab(); break;
+            case 4: RenderBakedLightmapsTab(); break;
+        }
+
+        // GPU Baking section (common to all tabs)
+        ImGui::Spacing();
+        ImGui::Separator();
+        RenderGPUBakingSection();
+
+        ImGui::End();
+    }
+
+    void LightingPanel::RenderSceneTab()
+    {
+        // Lighting Settings
+        if (ImGui::CollapsingHeader("Lighting Settings", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            // Lighting Settings Asset
+            ImGui::Text("Lighting Settings Asset");
+            ImGui::SameLine(200);
+            ImGui::SetNextItemWidth(150);
+            ImGui::Combo("##LightingSettingsAsset", &m_LightmapperIndex, "None\0Default-Medium\0");
+            ImGui::SameLine();
+            if (ImGui::Button("New")) { /* TODO: Create new settings */ }
+            ImGui::SameLine();
+            if (ImGui::Button("Clone")) { /* TODO: Clone settings */ }
+        }
+
+        // Realtime Lighting
+        if (ImGui::CollapsingHeader("Realtime Lighting"))
+        {
+            ImGui::Checkbox("Realtime Global Illumination", &m_RealtimeGI);
+        }
+
+        // Mixed Lighting
+        if (ImGui::CollapsingHeader("Mixed Lighting"))
+        {
+            ImGui::Checkbox("Baked Global Illumination", &m_BakedGI);
+            
+            const char* lightingModes[] = { "Shadowmask", "Distance Shadowmask", "Subtractive" };
+            ImGui::Combo("Lighting Mode", &m_LightingModeIndex, lightingModes, 3);
+        }
+
+        // Lightmapping Settings
+        if (ImGui::CollapsingHeader("Lightmapping Settings", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            // Lightmapper
+            const char* lightmappers[] = { "None", "Progressive CPU", "Progressive GPU" };
+            ImGui::Combo("Lightmapper", &m_LightmapperIndex, lightmappers, 3);
+
+            ImGui::Checkbox("Importance Sampling", &m_ImportanceSampling);
+
+            ImGui::InputInt("Direct Samples", &m_DirectSamples);
+            ImGui::InputInt("Indirect Samples", &m_IndirectSamples);
+            ImGui::InputInt("Environment Samples", &m_EnvironmentSamples);
+            ImGui::InputInt("Light Probe Sample Multiplier", &m_LightProbeSampleMultiplier);
+
+            ImGui::InputInt("Max Bounces", &m_MaxBounces);
+
+            const char* filterings[] = { "Auto", "None" };
+            ImGui::Combo("Filtering", &m_FilteringIndex, filterings, 2);
+
+            const char* packings[] = { "Auto", "Manual" };
+            ImGui::Combo("Lightmap Packing", &m_PackingIndex, packings, 2);
+
+            ImGui::InputInt("Lightmap Resolution", &m_LightmapResolution);
+            ImGui::Text("texels per unit");
+
+            const char* maxSizes[] = { "512", "1024", "2048", "4096" };
+            ImGui::Combo("Max Lightmap Size", &m_MaxLightmapSizeIndex, maxSizes, 4);
+
+            ImGui::Checkbox("Use Mipmap Limits", &m_UseMipmapLimits);
+
+            const char* compressions[] = { "None", "Low Quality", "Medium Quality", "High Quality" };
+            ImGui::Combo("Lightmap Compression", &m_LightmapCompressionIndex, compressions, 4);
+
+            ImGui::Checkbox("Ambient Occlusion", &m_AmbientOcclusion);
+
+            const char* dirModes[] = { "Directional", "Non-Directional" };
+            ImGui::Combo("Directional Mode", &m_DirectionalModeIndex, dirModes, 2);
+
+            ImGui::SliderFloat("Albedo Boost", &m_AlbedoBoost, 0.0f, 2.0f);
+            ImGui::SliderFloat("Indirect Intensity", &m_IndirectIntensity, 0.0f, 5.0f);
+
+            // Lightmap Parameters
+            ImGui::Text("Lightmap Parameters");
+            ImGui::SameLine(200);
+            ImGui::SetNextItemWidth(150);
+            static int lmParamsIndex = 0;
+            ImGui::Combo("##LightmapParams", &lmParamsIndex, "Default-Medium\0Default-High\0");
+            ImGui::SameLine();
+            if (ImGui::Button("New##LMParams")) { /* TODO */ }
+            ImGui::SameLine();
+            if (ImGui::Button("Clone##LMParams")) { /* TODO */ }
+        }
+    }
+
+    void LightingPanel::RenderAdaptiveProbeVolumesTab()
+    {
+        // Warning
+        ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "!");
+        ImGui::SameLine();
+        ImGui::TextWrapped("Adaptive Probe Volumes require the rendering backend to support probe baking.");
+
+        ImGui::Spacing();
+
+        // Baking
+        if (ImGui::CollapsingHeader("Baking", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            const char* bakingModes[] = { "Single Scene", "Multi Scene" };
+            ImGui::Combo("Baking Mode", &m_APBakingModeIndex, bakingModes, 2);
+        }
+
+        // Probe Placement
+        if (ImGui::CollapsingHeader("Probe Placement", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            ImGui::Text("Probe Offset");
+            ImGui::SameLine(120);
+            ImGui::SetNextItemWidth(80);
+            ImGui::InputFloat("X##POffset", &m_APProbeOffset[0]);
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(80);
+            ImGui::InputFloat("Y##POffset", &m_APProbeOffset[1]);
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(80);
+            ImGui::InputFloat("Z##POffset", &m_APProbeOffset[2]);
+
+            ImGui::InputFloat("Min Probe Spacing", &m_APMinSpacing);
+            ImGui::SliderFloat("Max Probe Spacing", &m_APMaxSpacing, 0.0f, 250.0f);
+
+            // Info
+            ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "!");
+            ImGui::SameLine();
+            ImGui::TextWrapped("Baked Probe data will contain up to 4 different sizes of Brick.");
+        }
+
+        // Renderer Filter Settings
+        if (ImGui::CollapsingHeader("Renderer Filter Settings"))
+        {
+            ImGui::Text("Configure which renderers affect probe baking.");
+        }
+
+        // Probe Invalidity Settings
+        if (ImGui::CollapsingHeader("Probe Invalidity Settings"))
+        {
+            ImGui::Checkbox("Dilation", &m_APDilation);
+            ImGui::Checkbox("Virtual Offset", &m_APVirtualOffset);
+
+            if (m_APVirtualOffset)
             {
-                ImGui::Text("Loaded: %dx%d", skybox->GetWidth(), skybox->GetHeight());
-                
-                ImGui::Spacing();
-                ImGui::Separator();
-                ImGui::Text("Skybox Settings");
-                
-                // Exposure
-                float exposure = m_Context->GetSkyboxExposure();
-                if (ImGui::SliderFloat("Exposure", &exposure, 0.0f, 5.0f))
-                {
-                    m_Context->SetSkyboxExposure(exposure);
-                }
-                
-                // Rotation
-                float rotation = m_Context->GetSkyboxRotation();
-                if (ImGui::SliderFloat("Rotation", &rotation, 0.0f, 360.0f))
-                {
-                    m_Context->SetSkyboxRotation(rotation);
-                }
-                
-                // Tint
-                glm::vec3 tint = m_Context->GetSkyboxTint();
-                if (ImGui::ColorEdit3("Tint", glm::value_ptr(tint)))
-                {
-                    m_Context->SetSkyboxTint(tint);
-                }
-                
-                ImGui::Spacing();
-                ImGui::Separator();
+                ImGui::SliderFloat("Validity Threshold", &m_APValidityThreshold, 0.0f, 1.0f);
+                ImGui::SliderFloat("Search Distance Multiplier", &m_APSearchDistanceMultiplier, 0.0f, 1.0f);
+                ImGui::SliderFloat("Geometry Bias", &m_APGeometryBias, 0.0f, 0.1f);
+                ImGui::SliderFloat("Ray Origin Bias", &m_APRayOriginBias, -0.1f, 0.0f);
             }
 
-            // Resolution dropdown
-            const char* resolutions[] = { "512x512", "1024x1024", "2048x2048", "4096x4096", "Original (HDR size)" };
-            ImGui::Text("Cubemap Resolution:");
-            ImGui::Combo("##SkyboxResolution", &m_SkyboxResolutionIndex, resolutions, 5);
+            // Layer Mask
+            static int layerMask = 0;
+            ImGui::Combo("Layer Mask", &layerMask, "Default, TransparentFX, Water, UI\0");
 
-            // Skybox dropdown (Resources/skybox klasöründeki HDR'ler)
+            if (ImGui::Button("Refresh Virtual Offset Debug"))
             {
-                std::vector<std::string> skyboxFiles;
-                skyboxFiles.push_back("None");
+                // TODO: Refresh debug visualization
+            }
+        }
 
+        // Rendering Layers
+        if (ImGui::CollapsingHeader("Rendering Layers"))
+        {
+            ImGui::Text("Configure which rendering layers affect probe baking.");
+        }
+    }
+
+    void LightingPanel::RenderEnvironmentTab()
+    {
+        // Environment
+        if (ImGui::CollapsingHeader("Environment", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            // Skybox Material
+            ImGui::Text("Skybox Material");
+            ImGui::SameLine(200);
+            
+            auto skybox = m_Context->GetSkybox();
+            std::string currentSkybox = "None (Material)";
+            if (skybox)
+            {
+                std::string skyboxPath = skybox->GetPath();
+                std::string displayPath = ToSerializablePath(skyboxPath);
+                currentSkybox = std::filesystem::path(displayPath).stem().string();
+            }
+            
+            if (ImGui::BeginCombo("##SkyboxMaterial", currentSkybox.c_str()))
+            {
+                if (ImGui::Selectable("None (Material)", !skybox))
+                    m_Context->SetSkybox(nullptr);
+
+                // Skybox files
                 std::string skyboxDir = "Resources/skybox";
                 if (std::filesystem::exists(skyboxDir))
                 {
+                    std::vector<std::string> skyboxFiles;
                     for (const auto& entry : std::filesystem::directory_iterator(skyboxDir))
                     {
                         if (entry.is_regular_file())
@@ -171,65 +316,19 @@ namespace Conqueror::Editor
                                 skyboxFiles.push_back(entry.path().stem().string());
                         }
                     }
-                    std::sort(skyboxFiles.begin() + 1, skyboxFiles.end());
-                }
+                    std::sort(skyboxFiles.begin(), skyboxFiles.end());
 
-                std::string currentSkybox = "None";
-                if (skybox)
-                {
-                    std::string skyboxPath = skybox->GetPath();
-                    std::string displayPath = ToSerializablePath(skyboxPath);
-                    currentSkybox = std::filesystem::path(displayPath).stem().string();
-                }
-
-                if (ImGui::BeginCombo("Skybox", currentSkybox.c_str()))
-                {
                     for (const auto& name : skyboxFiles)
                     {
                         bool isSelected = (currentSkybox == name);
                         if (ImGui::Selectable(name.c_str(), isSelected))
                         {
-                            if (name == "None")
-                            {
-                                m_Context->SetSkybox(nullptr);
-                            }
-                            else
-                            {
-                                std::string fullPath = GetEngineDirectory().string() + "/Resources/skybox/" + name + ".hdr";
-                                int resolution;
-                                if (m_SkyboxResolutionIndex == 4)
-                                {
-                                    int width, height, channels;
-                                    stbi_info(fullPath.c_str(), &width, &height, &channels);
-                                    resolution = std::max(width, height);
-                                }
-                                else
-                                {
-                                    int res[] = { 512, 1024, 2048, 4096 };
-                                    resolution = res[m_SkyboxResolutionIndex];
-                                }
-                                auto newSkybox = Cubemap::CreateFromEquirectangular(fullPath, resolution);
-                                if (newSkybox)
-                                    m_Context->SetSkybox(newSkybox);
-                            }
-                        }
-                    }
-
-                    ImGui::Separator();
-
-                    if (ImGui::Selectable("Browse...", false))
-                    {
-                        nfdchar_t* outPath = nullptr;
-                        nfdfilteritem_t filters[1] = { { "HDR Images", "hdr,exr" } };
-                        nfdresult_t result = NFD_OpenDialog(&outPath, filters, 1, nullptr);
-
-                        if (result == NFD_OKAY)
-                        {
+                            std::string fullPath = GetEngineDirectory().string() + "/Resources/skybox/" + name + ".hdr";
                             int resolution;
                             if (m_SkyboxResolutionIndex == 4)
                             {
                                 int width, height, channels;
-                                stbi_info(outPath, &width, &height, &channels);
+                                stbi_info(fullPath.c_str(), &width, &height, &channels);
                                 resolution = std::max(width, height);
                             }
                             else
@@ -237,76 +336,56 @@ namespace Conqueror::Editor
                                 int res[] = { 512, 1024, 2048, 4096 };
                                 resolution = res[m_SkyboxResolutionIndex];
                             }
-
-                            auto newSkybox = Cubemap::CreateFromEquirectangular(outPath, resolution);
+                            auto newSkybox = Cubemap::CreateFromEquirectangular(fullPath, resolution);
                             if (newSkybox)
-                            {
                                 m_Context->SetSkybox(newSkybox);
-                                CQ_CORE_INFO("Skybox loaded: {0} (resolution: {1}x{1})", outPath, resolution);
-                            }
-                            NFD_FreePath(outPath);
                         }
                     }
-
-                    ImGui::EndCombo();
                 }
 
-                // Drag & Drop target (dropdown üzerine)
-                if (ImGui::BeginDragDropTarget())
+                if (ImGui::Selectable("Browse...", false))
                 {
-                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                    nfdchar_t* outPath = nullptr;
+                    nfdfilteritem_t filters[1] = { { "HDR Images", "hdr,exr" } };
+                    nfdresult_t result = NFD_OpenDialog(&outPath, filters, 1, nullptr);
+
+                    if (result == NFD_OKAY)
                     {
-                        std::string droppedPath((const char*)payload->Data, payload->DataSize - 1);
-                        std::filesystem::path path(droppedPath);
-                        std::string ext = path.extension().string();
-
-                        if (ext == ".hdr" || ext == ".exr")
+                        int resolution;
+                        if (m_SkyboxResolutionIndex == 4)
                         {
-                            int resolution;
-
-                            if (m_SkyboxResolutionIndex == 4)
-                            {
-                                int width, height, channels;
-                                stbi_info(droppedPath.c_str(), &width, &height, &channels);
-                                resolution = std::max(width, height);
-                            }
-                            else
-                            {
-                                int res[] = { 512, 1024, 2048, 4096 };
-                                resolution = res[m_SkyboxResolutionIndex];
-                            }
-
-                            auto newSkybox = Cubemap::CreateFromEquirectangular(droppedPath, resolution);
-                            if (newSkybox)
-                            {
-                                m_Context->SetSkybox(newSkybox);
-                                CQ_CORE_INFO("Skybox loaded: {0}", droppedPath);
-                            }
+                            int width, height, channels;
+                            stbi_info(outPath, &width, &height, &channels);
+                            resolution = std::max(width, height);
                         }
+                        else
+                        {
+                            int res[] = { 512, 1024, 2048, 4096 };
+                            resolution = res[m_SkyboxResolutionIndex];
+                        }
+
+                        auto newSkybox = Cubemap::CreateFromEquirectangular(outPath, resolution);
+                        if (newSkybox)
+                            m_Context->SetSkybox(newSkybox);
+                        NFD_FreePath(outPath);
                     }
-                    ImGui::EndDragDropTarget();
                 }
+
+                ImGui::EndCombo();
             }
 
-            ImGui::Spacing();
-            ImGui::Separator();
-            
             // Sun Source
             ImGui::Text("Sun Source");
-            ImGui::Separator();
+            ImGui::SameLine(200);
             
             Entity sunEntity = m_Context->GetSunSourceEntity();
             std::string sunName = sunEntity ? sunEntity.GetComponent<TagComponent>().Tag : "None (Light)";
             
             if (ImGui::BeginCombo("##SunSource", sunName.c_str()))
             {
-                // "None" seçeneği
                 if (ImGui::Selectable("None (Light)##SunNone", m_Context->GetSunSource() == 0))
-                {
                     m_Context->SetSunSource(0);
-                }
                 
-                // Directional Light'ları listele
                 auto view = m_Context->m_Registry.view<TagComponent, DirectionalLightComponent>();
                 int index = 0;
                 for (auto entity : view)
@@ -315,350 +394,280 @@ namespace Conqueror::Editor
                     auto& tag = e.GetComponent<TagComponent>();
                     auto& id = e.GetComponent<IDComponent>();
                     
-                    // Unique ID için tag + index kullan
                     std::string uniqueLabel = tag.Tag + "##SunSource" + std::to_string(index++);
-                    
                     bool isSelected = (m_Context->GetSunSource() == id.ID);
                     if (ImGui::Selectable(uniqueLabel.c_str(), isSelected))
-                    {
                         m_Context->SetSunSource(id.ID);
-                    }
                 }
                 
                 ImGui::EndCombo();
             }
+
+            // Realtime Shadow Color
+            glm::vec3 shadowColor = m_Context->GetAmbientColor(); // Placeholder - gercek shadow color eklenecek
+            if (ImGui::ColorEdit3("Realtime Shadow Color", glm::value_ptr(shadowColor)))
+            {
+                // TODO: Set realtime shadow color
+            }
         }
 
-        // Ambient Light
-        if (ImGui::CollapsingHeader("Ambient Light"))
+        // Environment Lighting
+        if (ImGui::CollapsingHeader("Environment Lighting", ImGuiTreeNodeFlags_DefaultOpen))
         {
-            // Source dropdown
             const char* sources[] = { "Skybox", "Color", "Gradient" };
             int currentSource = (int)m_Context->GetEnvironmentLightingSource();
             
-            if (ImGui::Combo("Source", &currentSource, sources, 3))
-            {
+            ImGui::Text("Source");
+            ImGui::SameLine(200);
+            if (ImGui::Combo("##ELSource", &currentSource, sources, 3))
                 m_Context->SetEnvironmentLightingSource((Scene::EnvironmentLightingSource)currentSource);
-            }
             
             ImGui::Spacing();
             
-            // Source'a göre renk seçenekleri
             if (currentSource == 0) // Skybox
             {
                 glm::vec3 ambientColor = m_Context->GetAmbientColor();
-                if (ImGui::ColorEdit3("Ambient Color", glm::value_ptr(ambientColor)))
-                {
+                ImGui::Text("Ambient Color");
+                ImGui::SameLine(200);
+                if (ImGui::ColorEdit3("##AmbientColor", glm::value_ptr(ambientColor)))
                     m_Context->SetAmbientColor(ambientColor);
-                }
             }
             else if (currentSource == 1) // Color
             {
                 glm::vec3 skyColor = m_Context->GetAmbientColor();
-                if (ImGui::ColorEdit3("Sky Color", glm::value_ptr(skyColor)))
-                {
+                ImGui::Text("Ambient Color");
+                ImGui::SameLine(200);
+                if (ImGui::ColorEdit3("##AmbientColor", glm::value_ptr(skyColor)))
                     m_Context->SetAmbientColor(skyColor);
-                }
             }
             else // Gradient
             {
                 glm::vec3 skyColor = m_Context->GetAmbientSkyColor();
-                if (ImGui::ColorEdit3("Sky Color", glm::value_ptr(skyColor)))
-                {
+                ImGui::Text("Sky Color");
+                ImGui::SameLine(200);
+                if (ImGui::ColorEdit3("##SkyColor", glm::value_ptr(skyColor)))
                     m_Context->SetAmbientSkyColor(skyColor);
-                }
                 
                 glm::vec3 equatorColor = m_Context->GetAmbientEquatorColor();
-                if (ImGui::ColorEdit3("Equator Color", glm::value_ptr(equatorColor)))
-                {
+                ImGui::Text("Equator Color");
+                ImGui::SameLine(200);
+                if (ImGui::ColorEdit3("##EquatorColor", glm::value_ptr(equatorColor)))
                     m_Context->SetAmbientEquatorColor(equatorColor);
-                }
                 
                 glm::vec3 groundColor = m_Context->GetAmbientGroundColor();
-                if (ImGui::ColorEdit3("Ground Color", glm::value_ptr(groundColor)))
-                {
+                ImGui::Text("Ground Color");
+                ImGui::SameLine(200);
+                if (ImGui::ColorEdit3("##GroundColor", glm::value_ptr(groundColor)))
                     m_Context->SetAmbientGroundColor(groundColor);
-                }
             }
             
             float ambientIntensity = m_Context->GetAmbientIntensity();
-            if (ImGui::SliderFloat("Intensity Multiplier", &ambientIntensity, 0.0f, 2.0f))
-            {
+            ImGui::Text("Intensity Multiplier");
+            ImGui::SameLine(200);
+            ImGui::SetNextItemWidth(200);
+            if (ImGui::SliderFloat("##AmbientIntensity", &ambientIntensity, 0.0f, 2.0f))
                 m_Context->SetAmbientIntensity(ambientIntensity);
-            }
         }
 
-        // Fog
-        if (ImGui::CollapsingHeader("Fog"))
+        // Environment Reflections
+        if (ImGui::CollapsingHeader("Environment Reflections", ImGuiTreeNodeFlags_DefaultOpen))
         {
+            const char* refSources[] = { "Skybox", "Custom" };
+            ImGui::Text("Source");
+            ImGui::SameLine(200);
+            ImGui::SetNextItemWidth(150);
+            ImGui::Combo("##RefSource", &m_EnvironmentReflectionsSourceIndex, refSources, 2);
+
+            ImGui::Text("Resolution");
+            ImGui::SameLine(200);
+            ImGui::SetNextItemWidth(150);
+            ImGui::InputInt("##RefResolution", &m_ReflectionsResolution);
+
+            const char* refCompressions[] = { "Auto", "None", "Low Quality", "High Quality" };
+            ImGui::Text("Compression");
+            ImGui::SameLine(200);
+            ImGui::SetNextItemWidth(150);
+            ImGui::Combo("##RefCompression", &m_ReflectionsCompressionIndex, refCompressions, 4);
+
+            ImGui::Text("Intensity Multiplier");
+            ImGui::SameLine(200);
+            ImGui::SetNextItemWidth(200);
+            ImGui::SliderFloat("##RefIntensity", &m_ReflectionsIntensityMultiplier, 0.0f, 5.0f);
+
+            ImGui::Text("Bounces");
+            ImGui::SameLine(200);
+            ImGui::SetNextItemWidth(150);
+            ImGui::InputInt("##RefBounces", &m_ReflectionsBounces);
+        }
+
+        // Other Settings
+        if (ImGui::CollapsingHeader("Other Settings", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            // Fog
             bool fogEnabled = m_Context->IsFogEnabled();
-            if (ImGui::Checkbox("Enable Fog", &fogEnabled))
-            {
-                m_Context->SetFogEnabled(fogEnabled);
-            }
+            ImGui::Checkbox("Fog", &fogEnabled);
+            m_Context->SetFogEnabled(fogEnabled);
             
             if (fogEnabled)
             {
                 glm::vec3 fogColor = m_Context->GetFogColor();
-                if (ImGui::ColorEdit3("Fog Color", glm::value_ptr(fogColor)))
-                {
+                ImGui::Text("Fog Color");
+                ImGui::SameLine(200);
+                if (ImGui::ColorEdit3("##FogColor", glm::value_ptr(fogColor)))
                     m_Context->SetFogColor(fogColor);
-                }
                 
                 float fogDensity = m_Context->GetFogDensity();
-                if (ImGui::SliderFloat("Density", &fogDensity, 0.0f, 0.1f))
-                {
+                ImGui::Text("Density");
+                ImGui::SameLine(200);
+                ImGui::SetNextItemWidth(200);
+                if (ImGui::SliderFloat("##FogDensity", &fogDensity, 0.0f, 0.1f))
                     m_Context->SetFogDensity(fogDensity);
-                }
                 
                 float fogStart = m_Context->GetFogStart();
-                if (ImGui::DragFloat("Start Distance", &fogStart, 1.0f, 0.0f, 1000.0f))
-                {
+                ImGui::Text("Start Distance");
+                ImGui::SameLine(200);
+                ImGui::SetNextItemWidth(200);
+                if (ImGui::DragFloat("##FogStart", &fogStart, 1.0f, 0.0f, 1000.0f))
                     m_Context->SetFogStart(fogStart);
-                }
                 
                 float fogEnd = m_Context->GetFogEnd();
-                if (ImGui::DragFloat("End Distance", &fogEnd, 1.0f, 0.0f, 1000.0f))
-                {
+                ImGui::Text("End Distance");
+                ImGui::SameLine(200);
+                ImGui::SetNextItemWidth(200);
+                if (ImGui::DragFloat("##FogEnd", &fogEnd, 1.0f, 0.0f, 1000.0f))
                     m_Context->SetFogEnd(fogEnd);
-                }
             }
-        }
-        
-        // Other Settings (Halo/Flare)
-        if (ImGui::CollapsingHeader("Other Settings"))
-        {
-            // Halo
+
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+
+            // Halo Texture
             bool haloEnabled = m_Context->IsHaloEnabled();
-            if (ImGui::Checkbox("Enable Halo", &haloEnabled))
-            {
-                m_Context->SetHaloEnabled(haloEnabled);
-            }
+            ImGui::Checkbox("Halo Texture", &haloEnabled);
+            m_Context->SetHaloEnabled(haloEnabled);
             
             if (haloEnabled)
             {
-                float haloStrength = m_Context->GetHaloStrength();
-                if (ImGui::SliderFloat("Halo Strength", &haloStrength, 0.0f, 1.0f))
-                {
-                    m_Context->SetHaloStrength(haloStrength);
-                }
-            }
-            
-            ImGui::Spacing();
-            ImGui::Separator();
-            
-            // Flare
-            bool flareEnabled = m_Context->IsFlareEnabled();
-            if (ImGui::Checkbox("Enable Flare", &flareEnabled))
-            {
-                m_Context->SetFlareEnabled(flareEnabled);
-            }
-            
-            if (flareEnabled)
-            {
-                ImGui::Text("Flare Texture");
-                
-                // Drag & Drop target (Content Browser'dan texture sürükleme)
-                if (ImGui::BeginDragDropTarget())
-                {
-                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
-                    {
-                        std::string droppedPath((const char*)payload->Data, payload->DataSize - 1);
-                        std::filesystem::path path(droppedPath);
-                        std::string ext = path.extension().string();
-                        
-                        CQ_CORE_INFO("Flare Texture: Drag & Drop received - Path: {0}, Extension: {1}", droppedPath, ext);
-                        
-                        // Sadece image dosyalarını kabul et
-                        if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp" || ext == ".tga")
-                        {
-                            auto texture = Texture2D::Create(droppedPath);
-                            if (texture)
-                            {
-                                m_Context->SetHaloTexture(texture);
-                                CQ_CORE_INFO("Flare texture loaded from drag & drop: {0}", droppedPath);
-                            }
-                            else
-                            {
-                                CQ_CORE_ERROR("Flare Texture: Failed to load {0}", droppedPath);
-                            }
-                        }
-                        else
-                        {
-                            CQ_CORE_WARN("Flare Texture: Invalid file type {0}, only image files accepted", ext);
-                        }
-                    }
-                    ImGui::EndDragDropTarget();
-                }
-                
                 auto haloTexture = m_Context->GetHaloTexture();
                 if (haloTexture)
                 {
                     ImGui::Text("Loaded: %s", haloTexture->GetPath().c_str());
-                    if (ImGui::Button("Remove Flare Texture"))
-                    {
+                    if (ImGui::Button("Remove##HaloTex"))
                         m_Context->SetHaloTexture(nullptr);
-                    }
                 }
                 else
                 {
                     ImGui::Text("None (Texture 2D)");
                 }
-                
-                if (ImGui::Button("Load Flare Texture..."))
-                {
-                    nfdchar_t* outPath = nullptr;
-                    nfdfilteritem_t filters[1] = { { "Images", "jpg,jpeg,png,bmp,tga" } };
-                    nfdresult_t result = NFD_OpenDialog(&outPath, filters, 1, nullptr);
-                    
-                    if (result == NFD_OKAY)
-                    {
-                        auto texture = Texture2D::Create(outPath);
-                        if (texture)
-                        {
-                            m_Context->SetHaloTexture(texture);
-                            CQ_CORE_INFO("Flare texture loaded: {0}", outPath);
-                        }
-                        NFD_FreePath(outPath);
-                    }
-                }
-                
-                ImGui::Spacing();
-                
-                float flareFadeSpeed = m_Context->GetFlareFadeSpeed();
-                if (ImGui::DragFloat("Flare Fade Speed", &flareFadeSpeed, 0.1f, 0.0f, 10.0f))
-                {
-                    m_Context->SetFlareFadeSpeed(flareFadeSpeed);
-                }
-                
-                float flareStrength = m_Context->GetFlareStrength();
-                if (ImGui::SliderFloat("Flare Strength", &flareStrength, 0.0f, 2.0f))
-                {
-                    m_Context->SetFlareStrength(flareStrength);
-                }
-                
-                ImGui::Spacing();
-                ImGui::Separator();
-                ImGui::Text("Flare Elements");
-                
-                // Element count
-                int elementCount = m_Context->GetFlareElementCount();
-                if (ImGui::SliderInt("Element Count", &elementCount, 1, 10))
-                {
-                    m_Context->SetFlareElementCount(elementCount);
-                }
-                
-                ImGui::Spacing();
-                
-                // Her element için ayarlar
-                for (int i = 0; i < elementCount; i++)
-                {
-                    ImGui::PushID(i);
-                    
-                    if (ImGui::TreeNode(("Element " + std::to_string(i + 1)).c_str()))
-                    {
-                        auto element = m_Context->GetFlareElement(i);
-                        bool changed = false;
-                        
-                        if (ImGui::ColorEdit3("Color Multiplier", glm::value_ptr(element.ColorMultiplier)))
-                            changed = true;
-                        
-                        if (ImGui::SliderFloat("Size", &element.Size, 0.01f, 0.2f))
-                            changed = true;
-                        
-                        if (ImGui::SliderFloat("Offset", &element.Offset, 0.0f, 1.0f))
-                            changed = true;
-                        
-                        if (ImGui::SliderFloat("Intensity", &element.Intensity, 0.0f, 2.0f))
-                            changed = true;
-                        
-                        if (changed)
-                        {
-                            m_Context->SetFlareElement(i, element);
-                        }
-                        
-                        ImGui::TreePop();
-                    }
-                    
-                    ImGui::PopID();
-                }
+
+                float haloStrength = m_Context->GetHaloStrength();
+                ImGui::Text("Halo Strength");
+                ImGui::SameLine(200);
+                ImGui::SetNextItemWidth(200);
+                if (ImGui::SliderFloat("##HaloStrength", &haloStrength, 0.0f, 1.0f))
+                    m_Context->SetHaloStrength(haloStrength);
             }
-            
+
+            ImGui::Spacing();
+
+            // Flare
+            float flareFadeSpeed = m_Context->GetFlareFadeSpeed();
+            ImGui::Text("Flare Fade Speed");
+            ImGui::SameLine(200);
+            ImGui::SetNextItemWidth(200);
+            if (ImGui::DragFloat("##FlareFadeSpeed", &flareFadeSpeed, 0.1f, 0.0f, 10.0f))
+                m_Context->SetFlareFadeSpeed(flareFadeSpeed);
+
+            float flareStrength = m_Context->GetFlareStrength();
+            ImGui::Text("Flare Strength");
+            ImGui::SameLine(200);
+            ImGui::SetNextItemWidth(200);
+            if (ImGui::SliderFloat("##FlareStrength", &flareStrength, 0.0f, 2.0f))
+                m_Context->SetFlareStrength(flareStrength);
+
             ImGui::Spacing();
             ImGui::Separator();
-            
             ImGui::Spacing();
-            ImGui::Separator();
-            
+
             // Spot Cookie
-            ImGui::Text("Spot Cookie");
-            
-            // Drag & Drop target (Content Browser'dan texture sürükleme)
-            if (ImGui::BeginDragDropTarget())
-            {
-                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
-                {
-                    std::string droppedPath((const char*)payload->Data, payload->DataSize - 1);
-                    std::filesystem::path path(droppedPath);
-                    std::string ext = path.extension().string();
-                    
-                    CQ_CORE_INFO("Spot Cookie: Drag & Drop received - Path: {0}, Extension: {1}", droppedPath, ext);
-                    
-                    // Sadece image dosyalarını kabul et
-                    if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp" || ext == ".tga")
-                    {
-                        auto texture = Texture2D::Create(droppedPath);
-                        if (texture)
-                        {
-                            m_Context->SetSpotCookie(texture);
-                            CQ_CORE_INFO("Spot cookie loaded from drag & drop: {0}", droppedPath);
-                        }
-                        else
-                        {
-                            CQ_CORE_ERROR("Spot Cookie: Failed to load {0}", droppedPath);
-                        }
-                    }
-                    else
-                    {
-                        CQ_CORE_WARN("Spot Cookie: Invalid file type {0}, only image files accepted", ext);
-                    }
-                }
-                ImGui::EndDragDropTarget();
-            }
-            
             auto spotCookie = m_Context->GetSpotCookie();
+            ImGui::Text("Spot Cookie");
             if (spotCookie)
             {
                 ImGui::Text("Loaded: %s", spotCookie->GetPath().c_str());
-                if (ImGui::Button("Remove Spot Cookie"))
-                {
+                if (ImGui::Button("Remove##SpotCookie"))
                     m_Context->SetSpotCookie(nullptr);
-                }
             }
             else
             {
                 ImGui::Text("Soft");
             }
-            
-            if (ImGui::Button("Load Spot Cookie..."))
+        }
+    }
+
+    void LightingPanel::RenderRealtimeLightmapsTab()
+    {
+        ImGui::Text("Lighting Data Asset");
+        ImGui::SameLine(200);
+        ImGui::SetNextItemWidth(150);
+        static int rtLMIndex = 0;
+        ImGui::Combo("##RTLMAsset", &rtLMIndex, "None\0");
+        ImGui::SameLine();
+        if (ImGui::Button("...##RTLM")) { /* TODO: Browse */ }
+
+        ImGui::Spacing();
+        ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Realtime lightmaps will be generated during play mode.");
+    }
+
+    void LightingPanel::RenderBakedLightmapsTab()
+    {
+        ImGui::Text("Lighting Data Asset");
+        ImGui::SameLine(200);
+        ImGui::SetNextItemWidth(150);
+        static int bakedLMIndex = 0;
+        ImGui::Combo("##BakedLMAsset", &bakedLMIndex, "None\0");
+        ImGui::SameLine();
+        if (ImGui::Button("...##BakedLM")) { /* TODO: Browse */ }
+    }
+
+    void LightingPanel::RenderGPUBakingSection()
+    {
+        // GPU Baking Device
+        ImGui::Text("GPU Baking Device");
+        ImGui::SameLine(200);
+        ImGui::SetNextItemWidth(250);
+        ImGui::Combo("##GPUBakingDevice", &m_GPUBakingProfileIndex, "Automatic\0");
+
+        // Bake On Scene Load
+        ImGui::Text("Bake On Scene Load");
+        ImGui::SameLine(200);
+        ImGui::SetNextItemWidth(250);
+        const char* bakeOnLoad[] = { "Never", "On Load" };
+        ImGui::Combo("##BakeOnLoad", &m_BakeOnSceneLoadIndex, bakeOnLoad, 2);
+
+        ImGui::Spacing();
+
+        // Generate Lighting button
+        if (m_IsBaking)
+        {
+            // Progress bar
+            ImGui::ProgressBar(m_BakeProgress, ImVec2(-1, 0), "Baking...");
+        }
+        else
+        {
+            if (ImGui::Button("Generate Lighting", ImVec2(-1, 30)))
             {
-                nfdchar_t* outPath = nullptr;
-                nfdfilteritem_t filters[1] = { { "Images", "jpg,jpeg,png,bmp,tga" } };
-                nfdresult_t result = NFD_OpenDialog(&outPath, filters, 1, nullptr);
+                // Start baking
+                m_IsBaking = true;
+                m_BakeProgress = 0.0f;
+                CQ_CORE_INFO("Starting lighting bake...");
                 
-                if (result == NFD_OKAY)
-                {
-                    auto texture = Texture2D::Create(outPath);
-                    if (texture)
-                    {
-                        m_Context->SetSpotCookie(texture);
-                        CQ_CORE_INFO("Spot cookie loaded: {0}", outPath);
-                    }
-                    NFD_FreePath(outPath);
-                }
+                // TODO: Start actual baking process in background thread
+                // For now, just set to done
+                m_IsBaking = false;
+                CQ_CORE_INFO("Lighting bake complete!");
             }
         }
-
-        ImGui::End();
     }
 }

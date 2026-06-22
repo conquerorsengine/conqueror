@@ -183,6 +183,16 @@ namespace Conqueror::Editor
 
         try
         {
+            m_AnimatorPanel = std::make_unique<AnimatorPanel>();
+            m_AnimatorPanel->SetContext(m_ActiveScene.get());
+        }
+        catch (const std::exception& e)
+        {
+            CQ_CORE_ERROR("EditorLayer: Failed to create AnimatorPanel: {0}", e.what());
+        }
+
+        try
+        {
             CQ_CORE_INFO("EditorLayer: Creating ShaderEditorPanel...");
             m_ShaderEditorPanel = std::make_unique<ShaderEditorPanel>();
             m_ShaderEditorPanel->SetContext(m_ActiveScene.get());
@@ -202,7 +212,16 @@ namespace Conqueror::Editor
             if (m_ContentBrowserPanel)
             {
                 m_ContentBrowserPanel->SetFileOpenCallback([this](const std::filesystem::path& path) {
-                    if (m_CodeEditorPanel)
+                    std::string ext = path.extension().string();
+                    if (ext == ".cqcont")
+                    {
+                        if (m_AnimatorPanel)
+                        {
+                            m_AnimatorPanel->OpenController(path.string());
+                            m_AnimatorPanel->SetOpen(true);
+                        }
+                    }
+                    else if (m_CodeEditorPanel)
                     {
                         m_CodeEditorPanel->OpenFile(path);
                         m_CodeEditorPanel->GetIsOpen() = true;
@@ -224,6 +243,8 @@ namespace Conqueror::Editor
                     m_ViewportPanel->SetSelectedEntity(entity);
                 if (m_AudioGraphPanel)
                     m_AudioGraphPanel->SetSelectedEntity(entity);
+                if (m_AnimatorPanel)
+                    m_AnimatorPanel->SetSelectedEntity(entity);
                 if (m_ShaderEditorPanel)
                     m_ShaderEditorPanel->SetSelectedEntity(entity);
             });
@@ -277,8 +298,9 @@ namespace Conqueror::Editor
                                     if (m_GamePanel) m_GamePanel->SetContext(m_ActiveScene);
                                     if (m_LightingPanel) m_LightingPanel->SetContext(m_ActiveScene);
                                     if (m_ProjectSettingsPanel) m_ProjectSettingsPanel->SetContext(m_ActiveScene);
-                                    if (m_AudioGraphPanel) m_AudioGraphPanel->SetContext(m_ActiveScene.get());
-                                    if (m_ShaderEditorPanel) m_ShaderEditorPanel->SetContext(m_ActiveScene.get());
+                    if (m_AudioGraphPanel) m_AudioGraphPanel->SetContext(m_ActiveScene.get());
+                    if (m_AnimatorPanel) m_AnimatorPanel->SetContext(m_ActiveScene.get());
+                    if (m_ShaderEditorPanel) m_ShaderEditorPanel->SetContext(m_ActiveScene.get());
                                     if (m_ContentBrowserPanel) m_ContentBrowserPanel->RefreshContext();
                                 }
                                 else
@@ -444,6 +466,7 @@ namespace Conqueror::Editor
                     if (m_LightingPanel) m_LightingPanel->SetContext(m_ActiveScene);
                     if (m_ProjectSettingsPanel) m_ProjectSettingsPanel->SetContext(m_ActiveScene);
                     if (m_AudioGraphPanel) m_AudioGraphPanel->SetContext(m_ActiveScene.get());
+                                    if (m_AnimatorPanel) m_AnimatorPanel->SetContext(m_ActiveScene.get());
                     if (m_ShaderEditorPanel) m_ShaderEditorPanel->SetContext(m_ActiveScene.get());
                     if (m_ContentBrowserPanel) m_ContentBrowserPanel->RefreshContext();
 
@@ -653,6 +676,9 @@ namespace Conqueror::Editor
 
         if (m_ShowAudioGraph && m_AudioGraphPanel)
             m_AudioGraphPanel->OnImGuiRender();
+
+        if (m_AnimatorPanel)
+            m_AnimatorPanel->OnImGuiRender();
 
         if (m_ShowShaderGraph && m_ShaderEditorPanel)
             m_ShaderEditorPanel->OnImGuiRender();
@@ -1036,6 +1062,10 @@ namespace Conqueror::Editor
             ImGui::MenuItem("Console", nullptr, &m_ShowConsole);
             ImGui::MenuItem("Content Browser", nullptr, &m_ShowContentBrowser);
             ImGui::MenuItem("Audio Graph", nullptr, &m_ShowAudioGraph);
+            if (ImGui::MenuItem("Animator"))
+            {
+                if (m_AnimatorPanel) m_AnimatorPanel->SetOpen(true);
+            }
             ImGui::MenuItem("Shader Graph", nullptr, &m_ShowShaderGraph);
             ImGui::MenuItem("Navigation", nullptr, &m_ShowNavigation);
             if (m_CodeEditorPanel)
@@ -1215,10 +1245,12 @@ namespace Conqueror::Editor
             m_LightingPanel->SetContext(m_ActiveScene);
         if (m_ProjectSettingsPanel)
             m_ProjectSettingsPanel->SetContext(m_ActiveScene);
-        if (m_AudioGraphPanel)
-            m_AudioGraphPanel->SetContext(m_ActiveScene.get());
-        if (m_ShaderEditorPanel)
-            m_ShaderEditorPanel->SetContext(m_ActiveScene.get());
+            if (m_AudioGraphPanel)
+                m_AudioGraphPanel->SetContext(m_ActiveScene.get());
+            if (m_AnimatorPanel)
+                m_AnimatorPanel->SetContext(m_ActiveScene.get());
+            if (m_ShaderEditorPanel)
+                m_ShaderEditorPanel->SetContext(m_ActiveScene.get());
         
         CQ_CORE_INFO("New scene created");
     }
@@ -1270,10 +1302,12 @@ namespace Conqueror::Editor
                     m_LightingPanel->SetContext(m_ActiveScene);
                 if (m_ProjectSettingsPanel)
                     m_ProjectSettingsPanel->SetContext(m_ActiveScene);
-                if (m_AudioGraphPanel)
-                    m_AudioGraphPanel->SetContext(m_ActiveScene.get());
-                if (m_ShaderEditorPanel)
-                    m_ShaderEditorPanel->SetContext(m_ActiveScene.get());
+            if (m_AudioGraphPanel)
+                m_AudioGraphPanel->SetContext(m_ActiveScene.get());
+            if (m_AnimatorPanel)
+                m_AnimatorPanel->SetContext(m_ActiveScene.get());
+            if (m_ShaderEditorPanel)
+                m_ShaderEditorPanel->SetContext(m_ActiveScene.get());
                 
                 // Seçili entity'yi UUID ile yeni scene'de bul
                 if (selectedUUID != 0 && m_InspectorPanel)
@@ -1393,6 +1427,7 @@ namespace Conqueror::Editor
                         if (m_LightingPanel) m_LightingPanel->SetContext(m_ActiveScene);
                         if (m_ProjectSettingsPanel) m_ProjectSettingsPanel->SetContext(m_ActiveScene);
                         if (m_AudioGraphPanel) m_AudioGraphPanel->SetContext(m_ActiveScene.get());
+                        if (m_AnimatorPanel) m_AnimatorPanel->SetContext(m_ActiveScene.get());
                         if (m_ContentBrowserPanel) m_ContentBrowserPanel->RefreshContext();
                     }
                 }
@@ -1538,6 +1573,7 @@ namespace Conqueror::Editor
         if (m_LightingPanel) m_LightingPanel->SetContext(m_ActiveScene);
         if (m_ProjectSettingsPanel) m_ProjectSettingsPanel->SetContext(m_ActiveScene);
         if (m_AudioGraphPanel) m_AudioGraphPanel->SetContext(m_ActiveScene.get());
+                                    if (m_AnimatorPanel) m_AnimatorPanel->SetContext(m_ActiveScene.get());
         if (m_ShaderEditorPanel) m_ShaderEditorPanel->SetContext(m_ActiveScene.get());
     }
 

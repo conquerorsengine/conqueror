@@ -129,6 +129,18 @@ namespace Conqueror::CQS
         static Value AnimatorGetSpeed(int argCount, Value* args);
         static Value AnimatorSetClip(int argCount, Value* args);
 
+        // ── Animation Component ──
+        static Value HasAnimationComponent(int argCount, Value* args);
+        static Value AnimSetFloat(int argCount, Value* args);
+        static Value AnimSetBool(int argCount, Value* args);
+        static Value AnimSetInt(int argCount, Value* args);
+        static Value AnimSetTrigger(int argCount, Value* args);
+        static Value AnimGetFloat(int argCount, Value* args);
+        static Value AnimGetBool(int argCount, Value* args);
+        static Value AnimSetSpeed(int argCount, Value* args);
+        static Value AnimPlay(int argCount, Value* args);
+        static Value AnimStop(int argCount, Value* args);
+
         // ── Renderer ──
         static Value SetColor(int argCount, Value* args);
         static Value GetColor(int argCount, Value* args);

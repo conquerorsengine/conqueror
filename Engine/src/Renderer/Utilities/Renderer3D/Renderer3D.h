@@ -7,6 +7,7 @@
 #include "Renderer/RHI/Cubemap.h"
 #include "Scene/EditorCamera.h"
 #include "Scene/Components.h"
+#include "Renderer/Shadow/ShadowPass.h"
 
 #include <glm/glm.hpp>
 
@@ -42,6 +43,25 @@ namespace Conqueror
         static void AddSpotLight(const glm::vec3& position, const SpotLightComponent& light);
         static void ClearLights();
 
+        // Shadow sistemi
+        static void ExecuteShadowPass(Scene* scene, const DirectionalLightComponent& dirLight,
+                                      const glm::vec3& lightDirection);
+        static ShadowPass& GetShadowPass() { return s_ShadowPass; }
+
+        // Reflection Probe sistemi
+        static void AddReflectionProbe(const glm::vec3& position, const glm::vec3& boxOffset,
+                                       const glm::vec3& boxSize, std::shared_ptr<Cubemap> cubemap);
+        static void ClearReflectionProbes();
+
+        // Light Probe sistemi
+        static void AddLightProbe(const glm::vec3& position, const glm::vec3& shR,
+                                  const glm::vec3& shG, const glm::vec3& shB);
+        static void ClearLightProbes();
+        static void SetLightProbeEnabled(bool enabled);
+
+        // Lightmap
+        static void SetLightmap(std::shared_ptr<Texture2D> lightmap);
+
         // Cube çizme
         static void DrawCube(const glm::mat4& transform, std::shared_ptr<Material> material);
 
@@ -63,6 +83,12 @@ namespace Conqueror
         // Skybox
         static void DrawSkybox(std::shared_ptr<Cubemap> skybox, float exposure = 1.0f, float rotation = 0.0f, const glm::vec3& tint = glm::vec3(1.0f));
 
+        // Mesh getters (shadow pass icin)
+        static std::shared_ptr<Mesh> GetCubeMesh() { return s_CubeMesh; }
+        static std::shared_ptr<Mesh> GetSphereMesh() { return s_SphereMesh; }
+        static std::shared_ptr<Mesh> GetPlaneMesh() { return s_PlaneMesh; }
+        static std::shared_ptr<Mesh> GetCylinderMesh() { return s_CylinderMesh; }
+
     private:
         struct SceneData
         {
@@ -73,11 +99,36 @@ namespace Conqueror
             DirectionalLightComponent DirectionalLight;
             std::vector<std::pair<glm::vec3, PointLightComponent>> PointLights;
             std::vector<std::pair<glm::vec3, SpotLightComponent>> SpotLights;
+
+            // Reflection Probes
+            struct ReflectionProbeData
+            {
+                glm::vec3 Position;
+                glm::vec3 BoxOffset;
+                glm::vec3 BoxSize;
+                std::shared_ptr<class Cubemap> ProbeCubemap;
+            };
+            std::vector<ReflectionProbeData> ReflectionProbes;
+
+            // Light Probes
+            struct LightProbeData
+            {
+                glm::vec3 Position;
+                glm::vec3 SH_R, SH_G, SH_B;
+            };
+            std::vector<LightProbeData> LightProbes;
+            bool LightProbeEnabled = false;
+
+            // Lightmap
+            std::shared_ptr<Texture2D> Lightmap;
         };
 
         static void BindLightsToShader(std::shared_ptr<Shader> shader);
+        static void BindReflectionProbesToShader(std::shared_ptr<Shader> shader);
+        static void BindLightProbesToShader(std::shared_ptr<Shader> shader);
 
         static SceneData* s_SceneData;
+        static ShadowPass s_ShadowPass;
         static std::shared_ptr<Mesh> s_CubeMesh;
         static std::shared_ptr<Mesh> s_PlaneMesh;
         static std::shared_ptr<Mesh> s_CylinderMesh;

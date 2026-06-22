@@ -4,6 +4,7 @@
 #include "Scene/EditorCamera.h"
 #include "Core/Logging/Log.h"
 #include "Core/Project/Project.h"
+#include "Core/Animation/AnimationController.h"
 #include "Renderer/RHI/Texture.h"
 #include "Renderer/RHI/Cubemap.h"
 #include "Renderer/Utilities/Renderer3D/ModelLoader.h"
@@ -532,6 +533,31 @@ namespace Conqueror
             out << YAML::EndMap;
         }
 
+        if (entity.HasComponent<AnimationComponent>())
+        {
+            out << YAML::Key << "AnimationComponent";
+            out << YAML::BeginMap;
+            auto& ac = entity.GetComponent<AnimationComponent>();
+            out << YAML::Key << "ControllerPath" << YAML::Value << ToSerializablePath(ac.ControllerFilePath);
+            out << YAML::Key << "Speed" << YAML::Value << ac.Speed;
+            out << YAML::Key << "PlayOnAwake" << YAML::Value << ac.PlayOnAwake;
+
+            out << YAML::Key << "Parameters" << YAML::Value << YAML::BeginSeq;
+            for (const auto& param : ac.Parameters)
+            {
+                out << YAML::BeginMap;
+                out << YAML::Key << "Name" << YAML::Value << param.Name;
+                out << YAML::Key << "Type" << YAML::Value << static_cast<int>(param.Type);
+                out << YAML::Key << "FloatValue" << YAML::Value << param.FloatValue;
+                out << YAML::Key << "BoolValue" << YAML::Value << param.BoolValue;
+                out << YAML::Key << "IntValue" << YAML::Value << param.IntValue;
+                out << YAML::EndMap;
+            }
+            out << YAML::EndSeq;
+
+            out << YAML::EndMap;
+        }
+
         if (entity.HasComponent<ImageComponent>())
         {
             out << YAML::Key << "ImageComponent";
@@ -982,6 +1008,17 @@ namespace Conqueror
         }
         out << YAML::EndSeq;
         
+        // Shadow settings
+        out << YAML::Key << "ShadowEnabled" << YAML::Value << m_Scene->IsShadowEnabled();
+        out << YAML::Key << "ShadowIntensity" << YAML::Value << m_Scene->GetShadowIntensity();
+        
+        // Environment Reflections
+        out << YAML::Key << "ReflectionSource" << YAML::Value << (int)m_Scene->GetReflectionSource();
+        out << YAML::Key << "ReflectionResolution" << YAML::Value << m_Scene->GetReflectionResolution();
+        out << YAML::Key << "ReflectionCompression" << YAML::Value << m_Scene->GetReflectionCompression();
+        out << YAML::Key << "ReflectionIntensityMultiplier" << YAML::Value << m_Scene->GetReflectionIntensityMultiplier();
+        out << YAML::Key << "ReflectionBounces" << YAML::Value << m_Scene->GetReflectionBounces();
+        
         out << YAML::EndMap; // Environment
         
         // Editor Camera kaydet
@@ -1117,6 +1154,17 @@ namespace Conqueror
             out << YAML::EndMap;
         }
         out << YAML::EndSeq;
+        
+        // Shadow settings
+        out << YAML::Key << "ShadowEnabled" << YAML::Value << m_Scene->IsShadowEnabled();
+        out << YAML::Key << "ShadowIntensity" << YAML::Value << m_Scene->GetShadowIntensity();
+        
+        // Environment Reflections
+        out << YAML::Key << "ReflectionSource" << YAML::Value << (int)m_Scene->GetReflectionSource();
+        out << YAML::Key << "ReflectionResolution" << YAML::Value << m_Scene->GetReflectionResolution();
+        out << YAML::Key << "ReflectionCompression" << YAML::Value << m_Scene->GetReflectionCompression();
+        out << YAML::Key << "ReflectionIntensityMultiplier" << YAML::Value << m_Scene->GetReflectionIntensityMultiplier();
+        out << YAML::Key << "ReflectionBounces" << YAML::Value << m_Scene->GetReflectionBounces();
         
         out << YAML::EndMap; // Environment
         
@@ -1432,6 +1480,61 @@ namespace Conqueror
                         ac.ActiveClipIndex = animatorComponent["ActiveClipIndex"].as<int>();
                     if (animatorComponent["CurrentTime"])
                         ac.CurrentTime = animatorComponent["CurrentTime"].as<float>();
+                }
+
+                auto animationComponent = entity["AnimationComponent"];
+                if (animationComponent)
+                {
+                    auto& ac = deserializedEntity.AddComponent<AnimationComponent>();
+                    if (animationComponent["ControllerPath"])
+                        ac.ControllerFilePath = ResolveSerializablePath(animationComponent["ControllerPath"].as<std::string>());
+                    if (animationComponent["Speed"])
+                        ac.Speed = animationComponent["Speed"].as<float>();
+                    if (animationComponent["PlayOnAwake"])
+                        ac.PlayOnAwake = animationComponent["PlayOnAwake"].as<bool>();
+
+                    if (!ac.ControllerFilePath.empty())
+                    {
+                        ac.Controller = AnimationController::Deserialize(ac.ControllerFilePath);
+                        if (ac.Controller && !ac.Controller->Layers.empty())
+                        {
+                            auto& layer = ac.Controller->Layers[0];
+                            ac.CurrentStateName = layer.DefaultState;
+
+                            for (const auto& param : ac.Controller->Parameters)
+                            {
+                                AnimParameterRuntimeValue rtParam;
+                                rtParam.Name = param.Name;
+                                rtParam.Type = param.Type;
+                                rtParam.FloatValue = param.DefaultValue;
+                                rtParam.BoolValue = param.DefaultValue > 0.5f;
+                                rtParam.IntValue = static_cast<int>(param.DefaultValue);
+                                ac.Parameters.push_back(rtParam);
+                            }
+                        }
+                    }
+
+                    auto paramsNode = animationComponent["Parameters"];
+                    if (paramsNode)
+                    {
+                        for (auto paramNode : paramsNode)
+                        {
+                            std::string name = paramNode["Name"].as<std::string>();
+                            for (auto& rtParam : ac.Parameters)
+                            {
+                                if (rtParam.Name == name)
+                                {
+                                    if (paramNode["FloatValue"])
+                                        rtParam.FloatValue = paramNode["FloatValue"].as<float>();
+                                    if (paramNode["BoolValue"])
+                                        rtParam.BoolValue = paramNode["BoolValue"].as<bool>();
+                                    if (paramNode["IntValue"])
+                                        rtParam.IntValue = paramNode["IntValue"].as<int>();
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
 
                 for (auto component : entity)
@@ -1862,6 +1965,24 @@ namespace Conqueror
                     m_Scene->SetFlareElement(index++, element);
                 }
             }
+            
+            // Shadow settings
+            if (environment["ShadowEnabled"])
+                m_Scene->SetShadowEnabled(environment["ShadowEnabled"].as<bool>());
+            if (environment["ShadowIntensity"])
+                m_Scene->SetShadowIntensity(environment["ShadowIntensity"].as<float>());
+            
+            // Environment Reflections
+            if (environment["ReflectionSource"])
+                m_Scene->SetReflectionSource((Scene::ReflectionSource)environment["ReflectionSource"].as<int>());
+            if (environment["ReflectionResolution"])
+                m_Scene->SetReflectionResolution(environment["ReflectionResolution"].as<int>());
+            if (environment["ReflectionCompression"])
+                m_Scene->SetReflectionCompression(environment["ReflectionCompression"].as<int>());
+            if (environment["ReflectionIntensityMultiplier"])
+                m_Scene->SetReflectionIntensityMultiplier(environment["ReflectionIntensityMultiplier"].as<float>());
+            if (environment["ReflectionBounces"])
+                m_Scene->SetReflectionBounces(environment["ReflectionBounces"].as<int>());
         }
 
         auto hierarchy = data["Hierarchy"];

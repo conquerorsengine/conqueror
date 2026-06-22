@@ -410,6 +410,142 @@ namespace Conqueror::CQS
     }
 
     // ════════════════════════════════════════
+    //  ANIMATION COMPONENT
+    // ════════════════════════════════════════
+    Value CQSNativeBridge::HasAnimationComponent(int, Value*)
+    {
+        Entity e = GetCurrentEntity_S(); if (!e) return Value::MakeBool(false);
+        return Value::MakeBool(e.HasComponent<AnimationComponent>());
+    }
+
+    Value CQSNativeBridge::AnimSetFloat(int argCount, Value* args)
+    {
+        if (argCount < 2) return Value::MakeNull();
+        Entity e = GetCurrentEntity_S(); if (!e) return Value::MakeNull();
+        if (!e.HasComponent<AnimationComponent>()) return Value::MakeNull();
+        auto& ac = e.GetComponent<AnimationComponent>();
+        std::string name = args[0].ToString();
+        float value = (float)args[1].ToNumber();
+        for (auto& param : ac.Parameters)
+        {
+            if (param.Name == name && param.Type == AnimParameterType::Float)
+            {
+                param.FloatValue = value;
+                break;
+            }
+        }
+        return Value::MakeNull();
+    }
+
+    Value CQSNativeBridge::AnimSetBool(int argCount, Value* args)
+    {
+        if (argCount < 2) return Value::MakeNull();
+        Entity e = GetCurrentEntity_S(); if (!e) return Value::MakeNull();
+        if (!e.HasComponent<AnimationComponent>()) return Value::MakeNull();
+        auto& ac = e.GetComponent<AnimationComponent>();
+        std::string name = args[0].ToString();
+        bool value = args[1].IsTruthy();
+        for (auto& param : ac.Parameters)
+        {
+            if (param.Name == name && param.Type == AnimParameterType::Bool)
+            {
+                param.BoolValue = value;
+                break;
+            }
+        }
+        return Value::MakeNull();
+    }
+
+    Value CQSNativeBridge::AnimSetInt(int argCount, Value* args)
+    {
+        if (argCount < 2) return Value::MakeNull();
+        Entity e = GetCurrentEntity_S(); if (!e) return Value::MakeNull();
+        if (!e.HasComponent<AnimationComponent>()) return Value::MakeNull();
+        auto& ac = e.GetComponent<AnimationComponent>();
+        std::string name = args[0].ToString();
+        int value = (int)args[1].ToNumber();
+        for (auto& param : ac.Parameters)
+        {
+            if (param.Name == name && param.Type == AnimParameterType::Int)
+            {
+                param.IntValue = value;
+                break;
+            }
+        }
+        return Value::MakeNull();
+    }
+
+    Value CQSNativeBridge::AnimSetTrigger(int argCount, Value* args)
+    {
+        if (argCount < 1) return Value::MakeNull();
+        Entity e = GetCurrentEntity_S(); if (!e) return Value::MakeNull();
+        if (!e.HasComponent<AnimationComponent>()) return Value::MakeNull();
+        auto& ac = e.GetComponent<AnimationComponent>();
+        std::string name = args[0].ToString();
+        for (auto& param : ac.Parameters)
+        {
+            if (param.Name == name && param.Type == AnimParameterType::Trigger)
+            {
+                param.FloatValue = 1.f;
+                break;
+            }
+        }
+        return Value::MakeNull();
+    }
+
+    Value CQSNativeBridge::AnimGetFloat(int argCount, Value* args)
+    {
+        if (argCount < 1) return Value::MakeFloat(0.0);
+        Entity e = GetCurrentEntity_S(); if (!e) return Value::MakeFloat(0.0);
+        if (!e.HasComponent<AnimationComponent>()) return Value::MakeFloat(0.0);
+        auto& ac = e.GetComponent<AnimationComponent>();
+        std::string name = args[0].ToString();
+        for (const auto& param : ac.Parameters)
+        {
+            if (param.Name == name && param.Type == AnimParameterType::Float)
+                return Value::MakeFloat(param.FloatValue);
+        }
+        return Value::MakeFloat(0.0);
+    }
+
+    Value CQSNativeBridge::AnimGetBool(int argCount, Value* args)
+    {
+        if (argCount < 1) return Value::MakeBool(false);
+        Entity e = GetCurrentEntity_S(); if (!e) return Value::MakeBool(false);
+        if (!e.HasComponent<AnimationComponent>()) return Value::MakeBool(false);
+        auto& ac = e.GetComponent<AnimationComponent>();
+        std::string name = args[0].ToString();
+        for (const auto& param : ac.Parameters)
+        {
+            if (param.Name == name && param.Type == AnimParameterType::Bool)
+                return Value::MakeBool(param.BoolValue);
+        }
+        return Value::MakeBool(false);
+    }
+
+    Value CQSNativeBridge::AnimSetSpeed(int argCount, Value* args)
+    {
+        if (argCount < 1) return Value::MakeNull();
+        Entity e = GetCurrentEntity_S(); if (!e) return Value::MakeNull();
+        if (e.HasComponent<AnimationComponent>()) e.GetComponent<AnimationComponent>().Speed = (float)args[0].ToNumber();
+        return Value::MakeNull();
+    }
+
+    Value CQSNativeBridge::AnimPlay(int, Value*)
+    {
+        Entity e = GetCurrentEntity_S(); if (!e) return Value::MakeNull();
+        if (e.HasComponent<AnimationComponent>()) e.GetComponent<AnimationComponent>().Playing = true;
+        return Value::MakeNull();
+    }
+
+    Value CQSNativeBridge::AnimStop(int, Value*)
+    {
+        Entity e = GetCurrentEntity_S(); if (!e) return Value::MakeNull();
+        if (e.HasComponent<AnimationComponent>()) e.GetComponent<AnimationComponent>().Playing = false;
+        return Value::MakeNull();
+    }
+
+    // ════════════════════════════════════════
     //  RENDERER
     // ════════════════════════════════════════
     Value CQSNativeBridge::SetColor(int argCount, Value* args)

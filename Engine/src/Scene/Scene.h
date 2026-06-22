@@ -12,6 +12,7 @@ namespace Conqueror
     class Entity;
     class EditorCamera;
     class Cubemap;
+    struct AnimationComponent;
 
     class PhysicsWorld2D;
     class PhysicsWorld3D;
@@ -82,6 +83,9 @@ namespace Conqueror
         // Ambient Light
         enum class EnvironmentLightingSource { Skybox = 0, Color, Gradient };
         
+        // Environment Reflections
+        enum class ReflectionSource { Skybox = 0, Custom };
+
         void SetEnvironmentLightingSource(EnvironmentLightingSource source) { m_EnvironmentLightingSource = source; }
         EnvironmentLightingSource GetEnvironmentLightingSource() const { return m_EnvironmentLightingSource; }
         
@@ -159,6 +163,29 @@ namespace Conqueror
         void SetSpotCookie(std::shared_ptr<class Texture2D> texture) { m_SpotCookie = texture; }
         std::shared_ptr<class Texture2D> GetSpotCookie() const { return m_SpotCookie; }
 
+        // Shadow settings
+        void SetShadowEnabled(bool enabled) { m_ShadowEnabled = enabled; }
+        bool IsShadowEnabled() const { return m_ShadowEnabled; }
+        
+        void SetShadowIntensity(float intensity) { m_ShadowIntensity = intensity; }
+        float GetShadowIntensity() const { return m_ShadowIntensity; }
+
+        // Environment Reflections
+        void SetReflectionSource(ReflectionSource source) { m_ReflectionSource = source; }
+        ReflectionSource GetReflectionSource() const { return m_ReflectionSource; }
+        
+        void SetReflectionResolution(int resolution) { m_ReflectionResolution = resolution; }
+        int GetReflectionResolution() const { return m_ReflectionResolution; }
+        
+        void SetReflectionCompression(int compression) { m_ReflectionCompression = compression; }
+        int GetReflectionCompression() const { return m_ReflectionCompression; }
+        
+        void SetReflectionIntensityMultiplier(float multiplier) { m_ReflectionIntensityMultiplier = multiplier; }
+        float GetReflectionIntensityMultiplier() const { return m_ReflectionIntensityMultiplier; }
+        
+        void SetReflectionBounces(int bounces) { m_ReflectionBounces = bounces; }
+        int GetReflectionBounces() const { return m_ReflectionBounces; }
+
         // Physics
         PhysicsWorld2D* GetPhysicsWorld2D() const { return m_PhysicsWorld2D.get(); }
         PhysicsWorld3D* GetPhysicsWorld3D() const { return m_PhysicsWorld3D.get(); }
@@ -169,7 +196,7 @@ namespace Conqueror
     private:
         template<typename T>
         void OnComponentAdded(Entity entity, T& component);
-        
+
         void UpdateTransformHierarchy(Entity entity, const glm::mat4& parentTransform);
         void UpdateButtonInput(class EditorCamera& camera, Timestep ts, const glm::vec2* viewportBounds);
         Entity FindNextButton(bool up, bool down, bool left, bool right);
@@ -226,6 +253,17 @@ namespace Conqueror
         std::vector<FlareElement> m_FlareElements;
         std::shared_ptr<class Texture2D> m_SpotCookie;
 
+        // Shadow settings
+        bool m_ShadowEnabled = true;
+        float m_ShadowIntensity = 1.0f;
+
+        // Environment Reflections
+        ReflectionSource m_ReflectionSource = ReflectionSource::Skybox;
+        int m_ReflectionResolution = 128;
+        int m_ReflectionCompression = 0; // Auto
+        float m_ReflectionIntensityMultiplier = 1.0f;
+        int m_ReflectionBounces = 1;
+
         // Physics
         std::unique_ptr<PhysicsWorld2D> m_PhysicsWorld2D;
         std::unique_ptr<PhysicsWorld3D> m_PhysicsWorld3D;
@@ -237,4 +275,8 @@ namespace Conqueror
         friend class Entity;
         friend class SceneSerializer;
     };
+
+    // Explicit specialization declaration for AnimationComponent
+    template<>
+    void Scene::OnComponentAdded<AnimationComponent>(Entity entity, AnimationComponent& component);
 }

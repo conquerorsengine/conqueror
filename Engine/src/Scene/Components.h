@@ -2,6 +2,7 @@
 
 #include "SceneCamera.h"
 #include "Core/Base/Base.h"
+#include "Core/Animation/AnimationController.h"
 #include "../AISystem/Components/NavComponents.h"
 
 #include <glm/glm.hpp>
@@ -371,6 +372,39 @@ namespace Conqueror
         AnimatorComponent(const AnimatorComponent&) = default;
     };
 
+    struct AnimParameterRuntimeValue
+    {
+        std::string Name;
+        AnimParameterType Type = AnimParameterType::Float;
+        float FloatValue = 0.f;
+        bool BoolValue = false;
+        int IntValue = 0;
+    };
+
+    struct AnimationComponent
+    {
+        std::string ControllerFilePath;
+        std::shared_ptr<AnimationController> Controller;
+
+        float Speed = 1.f;
+        bool PlayOnAwake = true;
+        bool Playing = false;
+
+        int ActiveLayerIndex = 0;
+        std::string CurrentStateName;
+        std::string nextStateName;
+        float TransitionProgress = 0.f;
+        float TransitionDuration = 0.f;
+        bool IsTransitioning = false;
+
+        float CurrentTime = 0.f;
+        std::vector<AnimParameterRuntimeValue> Parameters;
+        std::vector<glm::mat4> BoneMatricesGPU;
+
+        AnimationComponent() = default;
+        AnimationComponent(const AnimationComponent&) = default;
+    };
+
     // Light Component'leri
     struct DirectionalLightComponent
     {
@@ -420,6 +454,43 @@ namespace Conqueror
 
         SpotLightComponent() = default;
         SpotLightComponent(const SpotLightComponent&) = default;
+    };
+
+    // Reflection Probe Component
+    struct ReflectionProbeComponent
+    {
+        glm::vec3 BoxOffset = glm::vec3(-1.0f, -1.0f, -1.0f);
+        glm::vec3 BoxSize = glm::vec3(1.0f, 1.0f, 1.0f);
+        uint32_t Resolution = 128;
+        float Intensity = 1.0f;
+        int Bounces = 1;
+        bool RealtimeUpdate = false;
+
+        // Captured cubemap path
+        std::string CubemapPath;
+
+        ReflectionProbeComponent() = default;
+        ReflectionProbeComponent(const ReflectionProbeComponent&) = default;
+    };
+
+    // Adaptive Probe Volume Component
+    struct AdaptiveProbeVolumeComponent
+    {
+        glm::vec3 ProbeOffset = glm::vec3(0.0f);
+        float MinSpacing = 1.0f;
+        float MaxSpacing = 9.0f;
+        int BakingMode = 0; // 0 = Single Scene, 1 = Multi Scene
+
+        // Probe invalidity settings
+        bool Dilation = false;
+        bool VirtualOffset = true;
+        float ValidityThreshold = 0.75f;
+        float SearchDistanceMultiplier = 0.2f;
+        float GeometryBias = 0.01f;
+        float RayOriginBias = -0.001f;
+
+        AdaptiveProbeVolumeComponent() = default;
+        AdaptiveProbeVolumeComponent(const AdaptiveProbeVolumeComponent&) = default;
     };
 
     struct NativeScriptData
