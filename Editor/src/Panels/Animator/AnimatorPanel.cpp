@@ -175,30 +175,29 @@ namespace Conqueror::Editor
         if (!m_Controller)
         {
             ImGui::TextUnformatted("No Animation Controller loaded.");
-            ImGui::Text("Drop a .cqcont file or use Open button.");
-            DrawToolbar();
             ImGui::End();
             return;
         }
 
-        DrawToolbar();
-        ImGui::Separator();
+        float availW = ImGui::GetContentRegionAvail().x;
+        float paramsW = 160.f;
+        float propsW = 200.f;
+        float graphW = availW - paramsW - propsW;
+        if (graphW < 100.f) graphW = 100.f;
 
-        ImGui::Columns(3, "AnimatorColumns", true);
-
-        ImGui::SetColumnWidth(0, 220.f);
+        ImGui::BeginChild("##params", ImVec2(paramsW, 0));
         DrawParameters();
+        ImGui::EndChild();
 
-        ImGui::NextColumn();
-
+        ImGui::SameLine();
+        ImGui::BeginChild("##graph", ImVec2(graphW, 0));
         DrawNodeEditor();
+        ImGui::EndChild();
 
-        ImGui::NextColumn();
-
-        ImGui::SetColumnWidth(2, 250.f);
+        ImGui::SameLine();
+        ImGui::BeginChild("##props", ImVec2(0, 0));
         DrawStateProperties();
-
-        ImGui::Columns(1);
+        ImGui::EndChild();
 
         ImGui::End();
     }
@@ -250,7 +249,6 @@ namespace Conqueror::Editor
             param.DefaultValue = 0.f;
             m_Controller->Parameters.push_back(param);
         }
-        ImGui::SameLine();
         if (ImGui::Button("+ Trigger"))
         {
             AnimParameter param;
