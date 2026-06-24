@@ -43,13 +43,21 @@ namespace Conqueror
         int ClipIndex = 0;
         float Speed = 1.f;
         bool Loop = true;
+        float CycleOffset = 0.f;
+        bool Mirror = false;
+        bool FootIK = false;
+        bool WriteDefaults = true;
+        std::string MotionTimeParameter;
         glm::vec2 EditorPosition{ 0.f };
+        std::vector<std::string> Behaviours;
     };
 
     struct AnimLayer
     {
         std::string Name = "Base Layer";
         float Weight = 1.f;
+        bool Solo = false;
+        bool Mute = false;
         std::string DefaultState;
         std::vector<AnimState> States;
         std::vector<AnimTransition> Transitions;
@@ -62,11 +70,23 @@ namespace Conqueror
         float DefaultValue = 0.f;
     };
 
+    struct AnimSubStateData
+    {
+        std::string Name;
+        std::vector<AnimState> States;
+        std::vector<AnimTransition> Transitions;
+        std::vector<AnimSubStateData> SubStates;
+        std::string DefaultState;
+        glm::vec2 EditorPosition = {0.f, 0.f};
+        std::vector<AnimLayer> Layers;
+    };
+
     class CQ_API AnimationController
     {
     public:
         std::vector<AnimLayer> Layers;
         std::vector<AnimParameter> Parameters;
+        std::vector<AnimSubStateData> SubStates;
         int NextNodeID = 1;
 
         bool Serialize(const std::string& filepath) const;

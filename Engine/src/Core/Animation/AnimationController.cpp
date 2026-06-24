@@ -98,6 +98,8 @@ namespace Conqueror
             out << YAML::BeginMap;
             out << YAML::Key << "Name" << YAML::Value << layer.Name;
             out << YAML::Key << "Weight" << YAML::Value << layer.Weight;
+            out << YAML::Key << "Solo" << YAML::Value << layer.Solo;
+            out << YAML::Key << "Mute" << YAML::Value << layer.Mute;
             out << YAML::Key << "DefaultState" << YAML::Value << layer.DefaultState;
 
             // States
@@ -110,8 +112,17 @@ namespace Conqueror
                 out << YAML::Key << "ClipIndex" << YAML::Value << state.ClipIndex;
                 out << YAML::Key << "Speed" << YAML::Value << state.Speed;
                 out << YAML::Key << "Loop" << YAML::Value << state.Loop;
+                out << YAML::Key << "CycleOffset" << YAML::Value << state.CycleOffset;
+                out << YAML::Key << "Mirror" << YAML::Value << state.Mirror;
+                out << YAML::Key << "FootIK" << YAML::Value << state.FootIK;
+                out << YAML::Key << "WriteDefaults" << YAML::Value << state.WriteDefaults;
+                out << YAML::Key << "MotionTimeParameter" << YAML::Value << state.MotionTimeParameter;
                 out << YAML::Key << "EditorPosX" << YAML::Value << state.EditorPosition.x;
                 out << YAML::Key << "EditorPosY" << YAML::Value << state.EditorPosition.y;
+                out << YAML::Key << "Behaviours" << YAML::Value << YAML::BeginSeq;
+                for (const auto& b : state.Behaviours)
+                    out << b;
+                out << YAML::EndSeq;
                 out << YAML::EndMap;
             }
             out << YAML::EndSeq;
@@ -154,6 +165,48 @@ namespace Conqueror
             out << YAML::Key << "Name" << YAML::Value << param.Name;
             out << YAML::Key << "Type" << YAML::Value << AnimParameterTypeToString(param.Type);
             out << YAML::Key << "Default" << YAML::Value << param.DefaultValue;
+            out << YAML::EndMap;
+        }
+        out << YAML::EndSeq;
+
+        // SubStates
+        out << YAML::Key << "SubStates" << YAML::Value << YAML::BeginSeq;
+        for (const auto& ss : SubStates)
+        {
+            out << YAML::BeginMap;
+            out << YAML::Key << "Name" << YAML::Value << ss.Name;
+            out << YAML::Key << "EditorPosX" << YAML::Value << ss.EditorPosition.x;
+            out << YAML::Key << "EditorPosY" << YAML::Value << ss.EditorPosition.y;
+            out << YAML::Key << "DefaultState" << YAML::Value << ss.DefaultState;
+
+            out << YAML::Key << "States" << YAML::Value << YAML::BeginSeq;
+            for (const auto& state : ss.States)
+            {
+                out << YAML::BeginMap;
+                out << YAML::Key << "Name" << YAML::Value << state.Name;
+                out << YAML::Key << "ClipName" << YAML::Value << state.ClipName;
+                out << YAML::Key << "ClipIndex" << YAML::Value << state.ClipIndex;
+                out << YAML::Key << "Speed" << YAML::Value << state.Speed;
+                out << YAML::Key << "Loop" << YAML::Value << state.Loop;
+                out << YAML::Key << "EditorPosX" << YAML::Value << state.EditorPosition.x;
+                out << YAML::Key << "EditorPosY" << YAML::Value << state.EditorPosition.y;
+                out << YAML::EndMap;
+            }
+            out << YAML::EndSeq;
+
+            out << YAML::Key << "Transitions" << YAML::Value << YAML::BeginSeq;
+            for (const auto& trans : ss.Transitions)
+            {
+                out << YAML::BeginMap;
+                out << YAML::Key << "From" << YAML::Value << trans.FromState;
+                out << YAML::Key << "To" << YAML::Value << trans.ToState;
+                out << YAML::Key << "Duration" << YAML::Value << trans.Duration;
+                out << YAML::Key << "ExitTime" << YAML::Value << trans.ExitTime;
+                out << YAML::Key << "HasExitTime" << YAML::Value << trans.HasExitTime;
+                out << YAML::EndMap;
+            }
+            out << YAML::EndSeq;
+
             out << YAML::EndMap;
         }
         out << YAML::EndSeq;
@@ -207,6 +260,8 @@ namespace Conqueror
                 AnimLayer layer;
                 layer.Name = layerNode["Name"].as<std::string>();
                 layer.Weight = layerNode["Weight"].as<float>();
+                if (layerNode["Solo"]) layer.Solo = layerNode["Solo"].as<bool>();
+                if (layerNode["Mute"]) layer.Mute = layerNode["Mute"].as<bool>();
                 layer.DefaultState = layerNode["DefaultState"].as<std::string>();
 
                 auto statesNode = layerNode["States"];
@@ -220,10 +275,21 @@ namespace Conqueror
                         state.ClipIndex = stateNode["ClipIndex"].as<int>();
                         state.Speed = stateNode["Speed"].as<float>();
                         state.Loop = stateNode["Loop"].as<bool>();
+                        if (stateNode["CycleOffset"]) state.CycleOffset = stateNode["CycleOffset"].as<float>();
+                        if (stateNode["Mirror"]) state.Mirror = stateNode["Mirror"].as<bool>();
+                        if (stateNode["FootIK"]) state.FootIK = stateNode["FootIK"].as<bool>();
+                        if (stateNode["WriteDefaults"]) state.WriteDefaults = stateNode["WriteDefaults"].as<bool>();
+                        if (stateNode["MotionTimeParameter"]) state.MotionTimeParameter = stateNode["MotionTimeParameter"].as<std::string>();
                         if (stateNode["EditorPosX"])
                             state.EditorPosition.x = stateNode["EditorPosX"].as<float>();
                         if (stateNode["EditorPosY"])
                             state.EditorPosition.y = stateNode["EditorPosY"].as<float>();
+                        auto behavioursNode = stateNode["Behaviours"];
+                        if (behavioursNode)
+                        {
+                            for (auto bNode : behavioursNode)
+                                state.Behaviours.push_back(bNode.as<std::string>());
+                        }
                         layer.States.push_back(state);
                     }
                 }
@@ -273,6 +339,65 @@ namespace Conqueror
                 param.Type = AnimParameterTypeFromString(paramNode["Type"].as<std::string>());
                 param.DefaultValue = paramNode["Default"].as<float>();
                 controller->Parameters.push_back(param);
+            }
+        }
+
+        // SubStates
+        auto subStatesNode = acNode["SubStates"];
+        if (subStatesNode)
+        {
+            for (auto ssNode : subStatesNode)
+            {
+                AnimSubStateData ss;
+                ss.Name = ssNode["Name"].as<std::string>();
+                if (ssNode["EditorPosX"])
+                    ss.EditorPosition.x = ssNode["EditorPosX"].as<float>();
+                if (ssNode["EditorPosY"])
+                    ss.EditorPosition.y = ssNode["EditorPosY"].as<float>();
+                if (ssNode["DefaultState"])
+                    ss.DefaultState = ssNode["DefaultState"].as<std::string>();
+
+                auto ssStatesNode = ssNode["States"];
+                if (ssStatesNode)
+                {
+                    for (auto stateNode : ssStatesNode)
+                    {
+                        AnimState state;
+                        state.Name = stateNode["Name"].as<std::string>();
+                        state.ClipName = stateNode["ClipName"].as<std::string>();
+                        state.ClipIndex = stateNode["ClipIndex"].as<int>();
+                        state.Speed = stateNode["Speed"].as<float>();
+                        state.Loop = stateNode["Loop"].as<bool>();
+                        if (stateNode["CycleOffset"]) state.CycleOffset = stateNode["CycleOffset"].as<float>();
+                        if (stateNode["Mirror"]) state.Mirror = stateNode["Mirror"].as<bool>();
+                        if (stateNode["FootIK"]) state.FootIK = stateNode["FootIK"].as<bool>();
+                        if (stateNode["WriteDefaults"]) state.WriteDefaults = stateNode["WriteDefaults"].as<bool>();
+                        if (stateNode["MotionTimeParameter"]) state.MotionTimeParameter = stateNode["MotionTimeParameter"].as<std::string>();
+                        if (stateNode["EditorPosX"])
+                            state.EditorPosition.x = stateNode["EditorPosX"].as<float>();
+                        if (stateNode["EditorPosY"])
+                            state.EditorPosition.y = stateNode["EditorPosY"].as<float>();
+                        ss.States.push_back(state);
+                    }
+                }
+
+                auto ssTransNode = ssNode["Transitions"];
+                if (ssTransNode)
+                {
+                    for (auto transNode : ssTransNode)
+                    {
+                        AnimTransition transition;
+                        transition.FromState = transNode["From"].as<std::string>();
+                        transition.ToState = transNode["To"].as<std::string>();
+                        transition.Duration = transNode["Duration"].as<float>();
+                        transition.ExitTime = transNode["ExitTime"].as<float>();
+                        if (transNode["HasExitTime"])
+                            transition.HasExitTime = transNode["HasExitTime"].as<bool>();
+                        ss.Transitions.push_back(transition);
+                    }
+                }
+
+                controller->SubStates.push_back(ss);
             }
         }
 

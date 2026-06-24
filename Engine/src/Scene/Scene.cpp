@@ -839,7 +839,20 @@ namespace Conqueror
             
             // Light count'u stats'a ekle
             Renderer::GetStats().LightCount = lightCount;
-            
+
+            // Shadow pass
+            if (m_ShadowEnabled && Renderer3D::GetShadowPass().IsReady())
+            {
+                Entity sunSrc = GetSunSourceEntity();
+                if (sunSrc && sunSrc.HasComponent<DirectionalLightComponent>())
+                {
+                    auto& dl = sunSrc.GetComponent<DirectionalLightComponent>();
+                    glm::vec3 camPos = glm::vec3(cameraTransform[3]);
+                    glm::mat4 camVP = camera.GetProjection() * glm::inverse(cameraTransform);
+                    Renderer3D::ExecuteShadowPass(this, dl, dl.Direction, camPos, camVP);
+                }
+            }
+
             // 3D objeleri render et (MeshRendererComponent)
             auto meshView = m_Registry.view<TransformComponent, MeshRendererComponent>();
             for (auto entity : meshView)
@@ -1274,6 +1287,19 @@ namespace Conqueror
         
         // Light count'u stats'a ekle
         Renderer::GetStats().LightCount = lightCount;
+
+        // Shadow pass (editor)
+        if (m_ShadowEnabled && Renderer3D::GetShadowPass().IsReady())
+        {
+            Entity sunSrc = GetSunSourceEntity();
+            if (sunSrc && sunSrc.HasComponent<DirectionalLightComponent>())
+            {
+                auto& dl = sunSrc.GetComponent<DirectionalLightComponent>();
+                glm::vec3 camPos = camera.GetPosition();
+                glm::mat4 camVP = camera.GetViewProjection();
+                Renderer3D::ExecuteShadowPass(this, dl, dl.Direction, camPos, camVP);
+            }
+        }
         
         // 3D objeleri render et (MeshRendererComponent)
         auto meshView = m_Registry.view<TransformComponent, MeshRendererComponent>();
@@ -3585,88 +3611,101 @@ namespace Conqueror
             // Check transitions
             if (!ac.IsTransitioning)
             {
-                for (const auto& trans : layer.Transitions)
+                auto checkTransitions = [&](const std::vector<AnimTransition>& transitions) -> bool
                 {
-                    if (trans.FromState != ac.CurrentStateName)
-                        continue;
-
-                    bool conditionsMet = true;
-                    for (const auto& cond : trans.Conditions)
+                    for (const auto& trans : transitions)
                     {
-                        bool found = false;
-                        for (const auto& param : ac.Parameters)
+                        if (trans.FromState != ac.CurrentStateName)
+                            continue;
+
+                        bool conditionsMet = true;
+                        for (const auto& cond : trans.Conditions)
                         {
-                            if (param.Name == cond.ParameterName)
+                            bool found = false;
+                            for (const auto& param : ac.Parameters)
                             {
-                                found = true;
-                                switch (param.Type)
+                                if (param.Name == cond.ParameterName)
                                 {
-                                case AnimParameterType::Float:
-                                    switch (cond.Mode)
+                                    found = true;
+                                    switch (param.Type)
                                     {
-                                    case AnimConditionMode::Greater: conditionsMet = param.FloatValue > cond.Threshold; break;
-                                    case AnimConditionMode::Less: conditionsMet = param.FloatValue < cond.Threshold; break;
-                                    case AnimConditionMode::Equals: conditionsMet = std::abs(param.FloatValue - cond.Threshold) < 0.001f; break;
-                                    case AnimConditionMode::NotEquals: conditionsMet = std::abs(param.FloatValue - cond.Threshold) >= 0.001f; break;
+                                    case AnimParameterType::Float:
+                                        switch (cond.Mode)
+                                        {
+                                        case AnimConditionMode::Greater: conditionsMet = param.FloatValue > cond.Threshold; break;
+                                        case AnimConditionMode::Less: conditionsMet = param.FloatValue < cond.Threshold; break;
+                                        case AnimConditionMode::Equals: conditionsMet = std::abs(param.FloatValue - cond.Threshold) < 0.001f; break;
+                                        case AnimConditionMode::NotEquals: conditionsMet = std::abs(param.FloatValue - cond.Threshold) >= 0.001f; break;
+                                        }
+                                        break;
+                                    case AnimParameterType::Bool:
+                                        conditionsMet = param.BoolValue == (cond.Threshold > 0.5f);
+                                        break;
+                                    case AnimParameterType::Int:
+                                        switch (cond.Mode)
+                                        {
+                                        case AnimConditionMode::Greater: conditionsMet = param.IntValue > static_cast<int>(cond.Threshold); break;
+                                        case AnimConditionMode::Less: conditionsMet = param.IntValue < static_cast<int>(cond.Threshold); break;
+                                        case AnimConditionMode::Equals: conditionsMet = param.IntValue == static_cast<int>(cond.Threshold); break;
+                                        case AnimConditionMode::NotEquals: conditionsMet = param.IntValue != static_cast<int>(cond.Threshold); break;
+                                        }
+                                        break;
+                                    case AnimParameterType::Trigger:
+                                        conditionsMet = param.FloatValue > 0.5f;
+                                        break;
                                     }
-                                    break;
-                                case AnimParameterType::Bool:
-                                    conditionsMet = param.BoolValue == (cond.Threshold > 0.5f);
-                                    break;
-                                case AnimParameterType::Int:
-                                    switch (cond.Mode)
-                                    {
-                                    case AnimConditionMode::Greater: conditionsMet = param.IntValue > static_cast<int>(cond.Threshold); break;
-                                    case AnimConditionMode::Less: conditionsMet = param.IntValue < static_cast<int>(cond.Threshold); break;
-                                    case AnimConditionMode::Equals: conditionsMet = param.IntValue == static_cast<int>(cond.Threshold); break;
-                                    case AnimConditionMode::NotEquals: conditionsMet = param.IntValue != static_cast<int>(cond.Threshold); break;
-                                    }
-                                    break;
-                                case AnimParameterType::Trigger:
-                                    conditionsMet = param.FloatValue > 0.5f;
                                     break;
                                 }
-                                break;
                             }
+                            if (!found || !conditionsMet) break;
                         }
-                        if (!found || !conditionsMet) break;
+
+                        if (conditionsMet)
+                        {
+                            if (trans.HasExitTime && currentState)
+                            {
+                                float clipDuration = 0.f;
+                                if (currentState->ClipIndex >= 0 && currentState->ClipIndex < static_cast<int>(mc.ModelData->Animations.size()))
+                                {
+                                    auto& clip = mc.ModelData->Animations[currentState->ClipIndex];
+                                    if (clip)
+                                        clipDuration = clip->DurationSeconds();
+                                }
+
+                                if (clipDuration > 0.f)
+                                {
+                                    float normalizedTime = ac.CurrentTime / clipDuration;
+                                    if (normalizedTime < trans.ExitTime)
+                                        continue;
+                                }
+                            }
+
+                            ac.IsTransitioning = true;
+                            ac.nextStateName = trans.ToState;
+                            ac.TransitionProgress = 0.f;
+                            ac.TransitionDuration = trans.Duration;
+
+                            for (auto& param : ac.Parameters)
+                            {
+                                if (param.Type == AnimParameterType::Trigger)
+                                    param.FloatValue = 0.f;
+                            }
+
+                            return true;
+                        }
                     }
+                    return false;
+                };
 
-                    if (conditionsMet)
+                if (!checkTransitions(layer.Transitions))
+                {
+                    for (auto& ss : ac.Controller->SubStates)
                     {
-                        // Check exit time
-                        if (trans.HasExitTime && currentState)
+                        if (!ss.Transitions.empty())
                         {
-                            float clipDuration = 0.f;
-                            if (currentState->ClipIndex >= 0 && currentState->ClipIndex < static_cast<int>(mc.ModelData->Animations.size()))
-                            {
-                                auto& clip = mc.ModelData->Animations[currentState->ClipIndex];
-                                if (clip)
-                                    clipDuration = clip->DurationSeconds();
-                            }
-
-                            if (clipDuration > 0.f)
-                            {
-                                float normalizedTime = ac.CurrentTime / clipDuration;
-                                if (normalizedTime < trans.ExitTime)
-                                    continue;
-                            }
+                            if (checkTransitions(ss.Transitions))
+                                break;
                         }
-
-                        // Start transition
-                        ac.IsTransitioning = true;
-                        ac.nextStateName = trans.ToState;
-                        ac.TransitionProgress = 0.f;
-                        ac.TransitionDuration = trans.Duration;
-
-                        // Reset trigger parameters
-                        for (auto& param : ac.Parameters)
-                        {
-                            if (param.Type == AnimParameterType::Trigger)
-                                param.FloatValue = 0.f;
-                        }
-
-                        break;
                     }
                 }
             }
@@ -3677,11 +3716,72 @@ namespace Conqueror
                 ac.TransitionProgress += ts.GetSeconds();
                 if (ac.TransitionProgress >= ac.TransitionDuration)
                 {
-                    ac.CurrentStateName = ac.nextStateName;
+                    std::string completedTarget = ac.nextStateName;
                     ac.IsTransitioning = false;
                     ac.TransitionProgress = 0.f;
-                    ac.CurrentTime = 0.f;
                     ac.nextStateName.clear();
+
+                    if (completedTarget == "Exit")
+                    {
+                        if (!ac.SubStateStack.empty())
+                        {
+                            auto& entry = ac.SubStateStack.back();
+                            ac.CurrentStateName = entry.StateName;
+                            ac.CurrentTime = entry.CurrentTime;
+                            ac.SubStateStack.pop_back();
+                        }
+                        else
+                        {
+                            ac.CurrentStateName = layer.DefaultState;
+                            ac.CurrentTime = 0.f;
+                        }
+                    }
+                    else
+                    {
+                        bool isSubState = false;
+                        for (const auto& ss : ac.Controller->SubStates)
+                        {
+                            if (ss.Name == completedTarget) { isSubState = true; break; }
+                        }
+                        if (!isSubState)
+                        {
+                            for (const auto& lyr : ac.Controller->Layers)
+                            {
+                                if (lyr.Name == completedTarget) { isSubState = true; break; }
+                            }
+                        }
+
+                        if (isSubState)
+                        {
+                            AnimSubStateData* targetSS = nullptr;
+                            for (auto& ss : ac.Controller->SubStates)
+                            {
+                                if (ss.Name == completedTarget) { targetSS = &ss; break; }
+                            }
+
+                            AnimationComponent::SubStateStackEntry stackEntry;
+                            stackEntry.SubStateName = ac.CurrentStateName;
+                            stackEntry.StateName = ac.CurrentStateName;
+                            stackEntry.CurrentTime = ac.CurrentTime;
+                            stackEntry.IsInSubState = !ac.SubStateStack.empty();
+                            ac.SubStateStack.push_back(stackEntry);
+
+                            if (targetSS && !targetSS->DefaultState.empty())
+                            {
+                                ac.CurrentStateName = targetSS->DefaultState;
+                            }
+                            else
+                            {
+                                ac.CurrentStateName = completedTarget;
+                            }
+                            ac.CurrentTime = 0.f;
+                        }
+                        else
+                        {
+                            ac.CurrentStateName = completedTarget;
+                            ac.CurrentTime = 0.f;
+                        }
+                    }
                 }
             }
 

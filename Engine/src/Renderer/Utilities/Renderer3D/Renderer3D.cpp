@@ -170,9 +170,10 @@ namespace Conqueror
     }
 
     void Renderer3D::ExecuteShadowPass(Scene* scene, const DirectionalLightComponent& dirLight,
-                                        const glm::vec3& lightDirection)
+                                         const glm::vec3& lightDirection, const glm::vec3& cameraPosition,
+                                         const glm::mat4& cameraViewProj)
     {
-        s_ShadowPass.Execute(scene, dirLight, lightDirection);
+        s_ShadowPass.Execute(scene, dirLight, lightDirection, cameraPosition, cameraViewProj);
     }
 
     void Renderer3D::AddReflectionProbe(const glm::vec3& position, const glm::vec3& boxOffset,

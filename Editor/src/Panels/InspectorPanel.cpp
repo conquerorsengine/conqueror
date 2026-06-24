@@ -8,6 +8,7 @@
 #include "Core/Project/Project.h"
 #include "Core/Logging/Log.h"
 #include "Core/Animation/AnimationController.h"
+#include "Panels/Animator/AnimatorPanel.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -73,13 +74,239 @@ namespace Conqueror::Editor
     void InspectorPanel::SetSelectedEntity(Entity entity)
     {
         m_SelectionContext = entity;
+        // Entity silindiyse veya geçersizse tamamen temizle
+        if (!m_SelectionContext)
+            m_SelectionContext = Entity();
     }
 
     void InspectorPanel::OnImGuiRender()
     {
         ImGui::Begin("Inspector");
 
-        if (m_SelectionContext)
+        auto& selInfo = AnimatorPanel::GetSelectionInfo();
+        auto* controller = AnimatorPanel::GetActiveController();
+
+        // Animator seçimi varsa sadece onu göster, yoksa entity component'lerini göster
+        if (selInfo.HasSelection && controller)
+        {
+            ImGui::TextDisabled("Animator Selection");
+
+            if (selInfo.IsState)
+            {
+                ImGui::Text("State: %s", selInfo.StateName.c_str());
+
+                for (auto& layer : controller->Layers)
+                {
+                    for (auto& state : layer.States)
+                    {
+                        if (state.Name == selInfo.StateName)
+                        {
+                            char nameBuf[128];
+                            strncpy(nameBuf, state.Name.c_str(), sizeof(nameBuf) - 1);
+                            nameBuf[sizeof(nameBuf) - 1] = '\0';
+                            if (ImGui::InputText("Name", nameBuf, sizeof(nameBuf)))
+                            {
+                                std::string oldName = state.Name;
+                                state.Name = nameBuf;
+                                for (auto& t : layer.Transitions)
+                                {
+                                    if (t.FromState == oldName) t.FromState = nameBuf;
+                                    if (t.ToState == oldName) t.ToState = nameBuf;
+                                }
+                                if (layer.DefaultState == oldName) layer.DefaultState = nameBuf;
+                            }
+
+                            ImGui::DragFloat("Speed", &state.Speed, 0.05f, -5.f, 5.f);
+                            ImGui::Checkbox("Loop", &state.Loop);
+
+                            ImGui::Separator();
+                            ImGui::TextDisabled("Motion");
+
+                            // Clip seçimi — tüm entity'lerdeki ModelComponent'leri kontrol et
+                            bool foundModel = false;
+                            if (m_Context)
+                            {
+                                m_Context->m_Registry.view<ModelComponent>().each([&](auto entityID, auto& mc)
+                                {
+                                    if (!foundModel && mc.ModelData && !mc.ModelData->Animations.empty())
+                                    {
+                                        foundModel = true;
+                                        std::string preview = state.ClipName.empty() ? "(none)" : state.ClipName;
+                                        if (ImGui::BeginCombo("##clip", preview.c_str()))
+                                        {
+                                            for (int i = 0; i < (int)mc.ModelData->Animations.size(); i++)
+                                            {
+                                                auto& clip = mc.ModelData->Animations[i];
+                                                if (!clip) continue;
+                                                bool selected = (state.ClipIndex == i);
+                                                if (ImGui::Selectable(clip->Name.c_str(), selected))
+                                                {
+                                                    state.ClipIndex = i;
+                                                    state.ClipName = clip->Name;
+                                                }
+                                                if (selected) ImGui::SetItemDefaultFocus();
+                                            }
+                                            ImGui::EndCombo();
+                                        }
+                                    }
+                                });
+                            }
+                            if (!foundModel)
+                            {
+                                ImGui::TextDisabled("No model with animations found");
+                            }
+
+                            ImGui::DragFloat("Cycle Offset", &state.CycleOffset, 0.01f, 0.f, 1.f);
+                            ImGui::Checkbox("Mirror", &state.Mirror);
+                            ImGui::Checkbox("Foot IK", &state.FootIK);
+                            ImGui::Checkbox("Write Defaults", &state.WriteDefaults);
+
+                            ImGui::Separator();
+                            ImGui::TextDisabled("Parameters");
+
+                            // Motion Time Parameter
+                            {
+                                ImGui::Text("Motion Time");
+                                ImGui::SameLine(100.f);
+                                ImGui::PushItemWidth(120.f);
+                                char mtBuf[128];
+                                strncpy(mtBuf, state.MotionTimeParameter.c_str(), sizeof(mtBuf) - 1);
+                                mtBuf[sizeof(mtBuf) - 1] = '\0';
+                                if (ImGui::InputText("##mt", mtBuf, sizeof(mtBuf)))
+                                    state.MotionTimeParameter = mtBuf;
+                                ImGui::PopItemWidth();
+                            }
+
+                            ImGui::Separator();
+
+                            bool isDefault = (layer.DefaultState == state.Name);
+                            if (isDefault)
+                                ImGui::TextColored(ImVec4(0.2f, 0.8f, 0.2f, 1.f), "Default State");
+                            else if (ImGui::Button("Set as Default"))
+                                layer.DefaultState = state.Name;
+
+                            ImGui::Separator();
+
+                            // Behaviours
+                            ImGui::TextDisabled("Behaviours");
+                            if (ImGui::Button("+ Add Behaviour"))
+                            {
+                                state.Behaviours.push_back("NewBehaviour");
+                            }
+                            int bhvToRemove = -1;
+                            for (int bi = 0; bi < (int)state.Behaviours.size(); bi++)
+                            {
+                                ImGui::PushID(bi + 7000);
+                                char bhvBuf[128];
+                                strncpy(bhvBuf, state.Behaviours[bi].c_str(), sizeof(bhvBuf) - 1);
+                                bhvBuf[sizeof(bhvBuf) - 1] = '\0';
+                                if (ImGui::InputText("##bhv", bhvBuf, sizeof(bhvBuf)))
+                                    state.Behaviours[bi] = bhvBuf;
+                                ImGui::SameLine();
+                                if (ImGui::SmallButton("X"))
+                                    bhvToRemove = bi;
+                                ImGui::PopID();
+                            }
+                            if (bhvToRemove >= 0 && bhvToRemove < (int)state.Behaviours.size())
+                                state.Behaviours.erase(state.Behaviours.begin() + bhvToRemove);
+
+                            ImGui::Separator();
+
+                            if (ImGui::Button("Delete State"))
+                            {
+                                layer.States.erase(std::remove_if(layer.States.begin(), layer.States.end(),
+                                    [&state](const AnimState& s) { return s.Name == state.Name; }), layer.States.end());
+                                layer.Transitions.erase(std::remove_if(layer.Transitions.begin(), layer.Transitions.end(),
+                                    [&state](const AnimTransition& t) { return t.FromState == state.Name || t.ToState == state.Name; }), layer.Transitions.end());
+                                if (layer.DefaultState == state.Name && !layer.States.empty())
+                                    layer.DefaultState = layer.States[0].Name;
+
+                                auto& info = AnimatorPanel::GetSelectionInfo();
+                                info.HasSelection = false;
+                                info.IsState = false;
+                                info.StateName.clear();
+                            }
+                        }
+                    }
+                }
+            }
+            else if (selInfo.IsTransition)
+            {
+                ImGui::Text("Transition");
+                ImGui::Text("From: %s", selInfo.TransitionFrom.c_str());
+                ImGui::Text("To: %s", selInfo.TransitionTo.c_str());
+
+                for (auto& layer : controller->Layers)
+                {
+                    for (auto& trans : layer.Transitions)
+                    {
+                        if (trans.FromState == selInfo.TransitionFrom && trans.ToState == selInfo.TransitionTo)
+                        {
+                            ImGui::Separator();
+                            ImGui::DragFloat("Duration", &trans.Duration, 0.01f, 0.f, 5.f);
+                            ImGui::Checkbox("Has Exit Time", &trans.HasExitTime);
+                            if (trans.HasExitTime)
+                                ImGui::DragFloat("Exit Time", &trans.ExitTime, 0.01f, 0.f, 1.f);
+
+                            ImGui::Separator();
+                            ImGui::TextDisabled("Conditions");
+                            if (ImGui::Button("+ Condition"))
+                            {
+                                AnimCondition cond;
+                                cond.ParameterName = controller->Parameters.empty() ? "" : controller->Parameters[0].Name;
+                                cond.Mode = AnimConditionMode::Greater;
+                                cond.Threshold = 0.f;
+                                trans.Conditions.push_back(cond);
+                            }
+
+                            int condToRemove = -1;
+                            for (int ci = 0; ci < (int)trans.Conditions.size(); ci++)
+                            {
+                                auto& cond = trans.Conditions[ci];
+                                ImGui::PushID(ci + 5000);
+
+                                char idBuf[64];
+                                char paramPreview[128];
+                                strncpy(paramPreview, cond.ParameterName.c_str(), sizeof(paramPreview) - 1);
+                                paramPreview[sizeof(paramPreview) - 1] = '\0';
+                                snprintf(idBuf, sizeof(idBuf), "##cond_param_%d", ci);
+                                if (ImGui::BeginCombo(idBuf, paramPreview))
+                                {
+                                    for (auto& p : controller->Parameters)
+                                    {
+                                        bool selected = (cond.ParameterName == p.Name);
+                                        if (ImGui::Selectable(p.Name.c_str(), selected))
+                                            cond.ParameterName = p.Name;
+                                        if (selected) ImGui::SetItemDefaultFocus();
+                                    }
+                                    ImGui::EndCombo();
+                                }
+
+                                const char* modes[] = { "Greater", "Less", "Equals", "NotEquals" };
+                                int modeIdx = static_cast<int>(cond.Mode);
+                                snprintf(idBuf, sizeof(idBuf), "##cond_mode_%d", ci);
+                                if (ImGui::Combo(idBuf, &modeIdx, modes, 4))
+                                    cond.Mode = static_cast<AnimConditionMode>(modeIdx);
+
+                                snprintf(idBuf, sizeof(idBuf), "##cond_thresh_%d", ci);
+                                ImGui::DragFloat(idBuf, &cond.Threshold, 0.01f);
+
+                                ImGui::SameLine();
+                                snprintf(idBuf, sizeof(idBuf), "X##cond_%d", ci);
+                                if (ImGui::SmallButton(idBuf))
+                                    condToRemove = ci;
+
+                                ImGui::PopID();
+                            }
+
+                            if (condToRemove >= 0 && condToRemove < (int)trans.Conditions.size())
+                                trans.Conditions.erase(trans.Conditions.begin() + condToRemove);
+                        }
+                    }
+                }
+            }
+        }
+        else if (m_SelectionContext && m_SelectionContext.GetScene() && m_SelectionContext.GetScene()->m_Registry.valid(m_SelectionContext))
         {
             DrawComponents(m_SelectionContext);
         }

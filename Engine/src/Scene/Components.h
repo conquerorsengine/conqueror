@@ -366,6 +366,8 @@ namespace Conqueror
         float Speed = 1.f;
         int ActiveClipIndex = 0;
         float CurrentTime = 0.f;
+        std::string MultiplierParameter;
+        std::string MotionTimeParameter;
         std::vector<glm::mat4> BoneMatricesGPU;
 
         AnimatorComponent() = default;
@@ -400,6 +402,15 @@ namespace Conqueror
         float CurrentTime = 0.f;
         std::vector<AnimParameterRuntimeValue> Parameters;
         std::vector<glm::mat4> BoneMatricesGPU;
+
+        struct SubStateStackEntry
+        {
+            std::string SubStateName;
+            std::string StateName;
+            float CurrentTime = 0.f;
+            bool IsInSubState = false;
+        };
+        std::vector<SubStateStackEntry> SubStateStack;
 
         AnimationComponent() = default;
         AnimationComponent(const AnimationComponent&) = default;

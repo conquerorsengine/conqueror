@@ -247,6 +247,15 @@ namespace Conqueror::Editor
                     m_AnimatorPanel->SetSelectedEntity(entity);
                 if (m_ShaderEditorPanel)
                     m_ShaderEditorPanel->SetSelectedEntity(entity);
+
+                // Entity seçilince animator seçimini temizle
+                auto& selInfo = AnimatorPanel::GetSelectionInfo();
+                selInfo.HasSelection = false;
+                selInfo.IsState = false;
+                selInfo.IsTransition = false;
+                selInfo.StateName.clear();
+                selInfo.TransitionFrom.clear();
+                selInfo.TransitionTo.clear();
             });
             
             // Inspector'a scene context'i ver
@@ -570,8 +579,9 @@ namespace Conqueror::Editor
                 ImGui::DockBuilderDockWindow("Project Settings", dock_id_right);
                 ImGui::DockBuilderDockWindow("Content Browser", dock_id_down);
                 ImGui::DockBuilderDockWindow("Console", dock_id_down);
-                ImGui::DockBuilderDockWindow("Game", dockspace_id);
                 ImGui::DockBuilderDockWindow("Viewport", dockspace_id);
+                ImGui::DockBuilderDockWindow("Game", dockspace_id);
+                ImGui::DockBuilderDockWindow("Animator", dockspace_id);
                 ImGui::DockBuilderDockWindow("Audio Graph Editor", dockspace_id);
                 ImGui::DockBuilderDockWindow("Shader Graph Editor", dockspace_id);
                 ImGui::DockBuilderDockWindow("Code Editor###CodeEditor", dockspace_id);
@@ -1693,6 +1703,17 @@ namespace Conqueror::Editor
         UpdateHierarchySelection();
         if (m_InspectorPanel)
             m_InspectorPanel->SetSelectedEntity({});
+
+        // Animator seçimini de temizle
+        {
+            auto& selInfo = AnimatorPanel::GetSelectionInfo();
+            selInfo.HasSelection = false;
+            selInfo.IsState = false;
+            selInfo.IsTransition = false;
+            selInfo.StateName.clear();
+            selInfo.TransitionFrom.clear();
+            selInfo.TransitionTo.clear();
+        }
 
         CQ_CORE_INFO("Deleted {0} entity/entities", count);
     }
