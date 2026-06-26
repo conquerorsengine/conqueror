@@ -335,6 +335,22 @@ namespace Conqueror::CQS
         vm->DefineNative("DebugDrawClear", DebugDrawClear, 0);
         vm->DefineNative("DebugDrawClearTimed", DebugDrawClearTimed, 0);
         vm->DefineNative("DebugDrawSetEnabled", DebugDrawSetEnabled, 1);
+        vm->DefineNative("DebugDrawSetLineWidth", DebugDrawSetLineWidth, 1);
+
+        // DebugDraw with color
+        vm->DefineNative("DebugDrawLineC", DebugDrawLineC, 4);
+        vm->DefineNative("DebugDrawSolidBoxC", DebugDrawSolidBoxC, 4);
+        vm->DefineNative("DebugDrawSolidSphereC", DebugDrawSolidSphereC, 4);
+        vm->DefineNative("DebugDrawTriangleC", DebugDrawTriangleC, 5);
+        vm->DefineNative("DebugDrawSolidTriangleC", DebugDrawSolidTriangleC, 5);
+        vm->DefineNative("DebugDrawPointC", DebugDrawPointC, 4);
+
+        // Viewport helpers
+        vm->DefineNative("IsViewportHovered", IsViewportHovered, 0);
+        vm->DefineNative("ViewportScreenToWorld", ViewportScreenToWorld, 3);
+        vm->DefineNative("GetViewportBoundsMin", GetViewportBoundsMin, 0);
+        vm->DefineNative("GetViewportBoundsMax", GetViewportBoundsMax, 0);
+        vm->DefineNative("GetViewportSize", GetViewportSize, 0);
 
         // Vec helpers
         vm->DefineNative("Vec3Length", Vec3Length, 1);
@@ -1376,7 +1392,7 @@ namespace Conqueror::CQS
     {
         if (argCount < 2 || !args[0].IsList()) return Value::MakeNull();
         args[0].AsList()->Elements.push_back(args[1]);
-        return Value::MakeNull();
+        return args[0];
     }
     Value CQSNativeBridge::ListRemoveAt(int argCount, Value* args)
     {

@@ -13,6 +13,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <filesystem>
 #include <algorithm>
+#include <chrono>
+#include <iterator>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -81,17 +83,26 @@ namespace Conqueror::Editor
         }
 
         // Tab buttons
-        const char* tabs[] = { "Scene", "Adaptive Probe Volumes", "Environment", "Realtime Lightmaps", "Baked Lightmaps" };
+        const char* tabLabels[] = { "Scene", "Adaptive Probe Volumes", "Environment", "Realtime Lightmaps", "Baked Lightmaps" };
+        float avail = ImGui::GetContentRegionAvail().x;
+        float tabX = 0;
         for (int i = 0; i < 5; i++)
         {
-            if (i > 0) ImGui::SameLine();
+            float btnW = ImGui::CalcTextSize(tabLabels[i]).x + ImGui::GetStyle().FramePadding.x * 2 + ImGui::GetStyle().ItemSpacing.x;
+            if (i > 0 && tabX + btnW > avail)
+                tabX = 0;
+            if (i > 0 && tabX > 0)
+                ImGui::SameLine(0, ImGui::GetStyle().ItemSpacing.x);
+            tabX += btnW;
             
             bool isActive = (m_ActiveTab == i);
             if (isActive)
                 ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
             
-            if (ImGui::Button(tabs[i], ImVec2(0, 25)))
+            ImGui::PushID(i);
+            if (ImGui::Button(tabLabels[i], ImVec2(0, 25)))
                 m_ActiveTab = i;
+            ImGui::PopID();
             
             if (isActive)
                 ImGui::PopStyleColor();
@@ -152,7 +163,6 @@ namespace Conqueror::Editor
         // Lightmapping Settings
         if (ImGui::CollapsingHeader("Lightmapping Settings", ImGuiTreeNodeFlags_DefaultOpen))
         {
-            // Lightmapper
             const char* lightmappers[] = { "None", "Progressive CPU", "Progressive GPU" };
             ImGui::Combo("Lightmapper", &m_LightmapperIndex, lightmappers, 3);
 
@@ -161,7 +171,6 @@ namespace Conqueror::Editor
             ImGui::InputInt("Direct Samples", &m_DirectSamples);
             ImGui::InputInt("Indirect Samples", &m_IndirectSamples);
             ImGui::InputInt("Environment Samples", &m_EnvironmentSamples);
-            ImGui::InputInt("Light Probe Sample Multiplier", &m_LightProbeSampleMultiplier);
 
             ImGui::InputInt("Max Bounces", &m_MaxBounces);
 
@@ -174,8 +183,8 @@ namespace Conqueror::Editor
             ImGui::InputInt("Lightmap Resolution", &m_LightmapResolution);
             ImGui::Text("texels per unit");
 
-            const char* maxSizes[] = { "512", "1024", "2048", "4096" };
-            ImGui::Combo("Max Lightmap Size", &m_MaxLightmapSizeIndex, maxSizes, 4);
+            const char* maxSizes[] = { "256", "512", "1024", "2048", "4096" };
+            ImGui::Combo("Max Lightmap Size", &m_MaxLightmapSizeIndex, maxSizes, 5);
 
             ImGui::Checkbox("Use Mipmap Limits", &m_UseMipmapLimits);
 
@@ -189,17 +198,6 @@ namespace Conqueror::Editor
 
             ImGui::SliderFloat("Albedo Boost", &m_AlbedoBoost, 0.0f, 2.0f);
             ImGui::SliderFloat("Indirect Intensity", &m_IndirectIntensity, 0.0f, 5.0f);
-
-            // Lightmap Parameters
-            ImGui::Text("Lightmap Parameters");
-            ImGui::SameLine(200);
-            ImGui::SetNextItemWidth(150);
-            static int lmParamsIndex = 0;
-            ImGui::Combo("##LightmapParams", &lmParamsIndex, "Default-Medium\0Default-High\0");
-            ImGui::SameLine();
-            if (ImGui::Button("New##LMParams")) { /* TODO */ }
-            ImGui::SameLine();
-            if (ImGui::Button("Clone##LMParams")) { /* TODO */ }
         }
     }
 
@@ -281,8 +279,9 @@ namespace Conqueror::Editor
 
     void LightingPanel::RenderEnvironmentTab()
     {
+        ImGui::PushID("EnvironmentTab");
         // Environment
-        if (ImGui::CollapsingHeader("Environment", ImGuiTreeNodeFlags_DefaultOpen))
+        if (ImGui::CollapsingHeader("Environment##EnvTab", ImGuiTreeNodeFlags_DefaultOpen))
         {
             // Skybox Material
             ImGui::Text("Skybox Material");
@@ -412,7 +411,7 @@ namespace Conqueror::Editor
         }
 
         // Environment Lighting
-        if (ImGui::CollapsingHeader("Environment Lighting", ImGuiTreeNodeFlags_DefaultOpen))
+        if (ImGui::CollapsingHeader("Environment Lighting##EnvTab", ImGuiTreeNodeFlags_DefaultOpen))
         {
             const char* sources[] = { "Skybox", "Color", "Gradient" };
             int currentSource = (int)m_Context->GetEnvironmentLightingSource();
@@ -604,31 +603,215 @@ namespace Conqueror::Editor
                 ImGui::Text("Soft");
             }
         }
+
+        ImGui::PopID();
     }
 
     void LightingPanel::RenderRealtimeLightmapsTab()
     {
-        ImGui::Text("Lighting Data Asset");
-        ImGui::SameLine(200);
-        ImGui::SetNextItemWidth(150);
-        static int rtLMIndex = 0;
-        ImGui::Combo("##RTLMAsset", &rtLMIndex, "None\0");
-        ImGui::SameLine();
-        if (ImGui::Button("...##RTLM")) { /* TODO: Browse */ }
+        ImGui::PushID("RealtimeLightmapTab");
+
+        if (ImGui::CollapsingHeader("Realtime Lightmap Data", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            if (m_IsBaking && m_BakeMode == 1)
+            {
+                ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Status: Baking realtime lightmaps...");
+                ImGui::ProgressBar(m_BakeProgress, ImVec2(-1, 0), "Baking...");
+                ImGui::Text("Step: %s", m_BakeStep.c_str());
+            }
+            else if (m_RealtimeBaked)
+            {
+                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Status: Baked");
+                ImGui::Text("Atlas Size: %dx%d", m_RealtimeAtlasWidth, m_RealtimeAtlasHeight);
+                ImGui::Text("Texels: %d", (int)m_RealtimeTexelCount);
+
+                ImGui::Spacing();
+                ImGui::Text("Lightmap Texture:");
+                if (m_RealtimeLightmapTexture)
+                    ImGui::Image((ImTextureID)(intptr_t)m_RealtimeLightmapTexture->GetRendererID(), ImVec2(200, 200));
+                else
+                    ImGui::Text("No texture generated");
+
+                ImGui::Spacing();
+                if (ImGui::Button("Clear Realtime Lightmaps", ImVec2(-1, 25)))
+                {
+                    m_RealtimeBaked = false;
+                    m_RealtimeLightmapTexture.reset();
+                    Renderer3D::SetLightmap(nullptr);
+                }
+            }
+            else
+            {
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No realtime lightmaps baked yet.");
+            }
+        }
 
         ImGui::Spacing();
-        ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Realtime lightmaps will be generated during play mode.");
+
+        if (m_IsBaking && m_BakeMode == 1)
+        {
+            if (ImGui::Button("Cancel Bake", ImVec2(-1, 35)))
+            {
+                m_IsBaking = false;
+                m_BakeProgress = 0.0f;
+            }
+        }
+        else
+        {
+            if (ImGui::Button("Generate Realtime Lightmaps", ImVec2(-1, 35)))
+            {
+                if (!m_Context) { ImGui::PopID(); return; }
+
+                m_IsBaking = true;
+                m_BakeMode = 1;
+                m_BakeProgress = 0.0f;
+
+                auto baker = LightmapBaker::Create();
+                LightmapSettings settings;
+                settings.Lightmapper = m_LightmapperIndex;
+                settings.Resolution = m_LightmapResolution;
+                settings.MaxLightmapSize = (m_MaxLightmapSizeIndex + 1) * 256;
+                settings.MaxBounces = m_MaxBounces;
+                settings.DirectSamples = m_DirectSamples;
+                settings.IndirectSamples = m_IndirectSamples;
+                settings.AmbientOcclusion = m_AmbientOcclusion;
+                settings.Filtering = m_FilteringIndex;
+                baker->SetSettings(settings);
+
+                baker->SetProgressCallback([this](float progress, const std::string& step) {
+                    m_BakeProgress = progress;
+                    m_BakeStep = step;
+                });
+
+                baker->Bake(m_Context.get());
+
+                m_BakeProgress = 1.0f;
+                m_RealtimeBaked = true;
+                m_RealtimeAtlasWidth = baker->GetAtlas().Width;
+                m_RealtimeAtlasHeight = baker->GetAtlas().Height;
+                m_RealtimeTexelCount = (int)baker->GetAtlas().Texels.size();
+                m_RealtimeLightmapTexture = baker->CreateLightmapTexture();
+                if (m_RealtimeLightmapTexture)
+                    Renderer3D::SetLightmap(m_RealtimeLightmapTexture);
+                m_IsBaking = false;
+            }
+        }
+
+        ImGui::PopID();
     }
 
     void LightingPanel::RenderBakedLightmapsTab()
     {
-        ImGui::Text("Lighting Data Asset");
-        ImGui::SameLine(200);
-        ImGui::SetNextItemWidth(150);
-        static int bakedLMIndex = 0;
-        ImGui::Combo("##BakedLMAsset", &bakedLMIndex, "None\0");
-        ImGui::SameLine();
-        if (ImGui::Button("...##BakedLM")) { /* TODO: Browse */ }
+        ImGui::PushID("BakedLightmapTab");
+
+        if (ImGui::CollapsingHeader("Baked Lightmap Data", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            if (m_IsBaking && m_BakeMode == 0)
+            {
+                ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Status: Baking baked lightmaps...");
+                ImGui::ProgressBar(m_BakeProgress, ImVec2(-1, 0), "Baking...");
+                ImGui::Text("Step: %s", m_BakeStep.c_str());
+            }
+            else if (m_BakedLightmapBaked)
+            {
+                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Status: Baked");
+                ImGui::Text("Atlas Size: %dx%d", m_BakedAtlasWidth, m_BakedAtlasHeight);
+                ImGui::Text("Texels: %d", (int)m_BakedTexelCount);
+                ImGui::Text("Static Objects: %d", m_BakedObjectCount);
+                ImGui::Text("Total Bake Time: %.2fs", m_BakedBakeTime);
+
+                ImGui::Spacing();
+                ImGui::Text("Lightmap Texture:");
+                if (m_BakedLightmapTexture)
+                    ImGui::Image((ImTextureID)(intptr_t)m_BakedLightmapTexture->GetRendererID(), ImVec2(200, 200));
+                else
+                    ImGui::Text("No texture generated");
+
+                ImGui::Spacing();
+                if (ImGui::Button("Clear Baked Lightmaps", ImVec2(-1, 25)))
+                {
+                    m_BakedLightmapBaked = false;
+                    m_BakedLightmapTexture.reset();
+                    Renderer3D::SetLightmap(nullptr);
+                }
+            }
+            else
+            {
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No baked lightmaps generated yet.");
+            }
+        }
+
+        ImGui::Spacing();
+
+        if (m_IsBaking && m_BakeMode == 0)
+        {
+            if (ImGui::Button("Cancel Bake", ImVec2(-1, 35)))
+            {
+                m_IsBaking = false;
+                m_BakeProgress = 0.0f;
+            }
+        }
+        else
+        {
+            if (ImGui::Button("Generate Baked Lightmaps", ImVec2(-1, 35)))
+            {
+                if (!m_Context) { ImGui::PopID(); return; }
+
+                m_IsBaking = true;
+                m_BakeMode = 0;
+                m_BakeProgress = 0.0f;
+
+                auto baker = LightmapBaker::Create();
+                LightmapSettings settings;
+                settings.Lightmapper = m_LightmapperIndex;
+                settings.ImportanceSampling = m_ImportanceSampling;
+                settings.Resolution = m_LightmapResolution;
+                settings.MaxLightmapSize = (m_MaxLightmapSizeIndex + 1) * 256;
+                settings.MaxBounces = m_MaxBounces;
+                settings.DirectSamples = m_DirectSamples;
+                settings.IndirectSamples = m_IndirectSamples;
+                settings.EnvironmentSamples = m_EnvironmentSamples;
+                settings.Filtering = m_FilteringIndex;
+                settings.Compression = m_LightmapCompressionIndex;
+                settings.AmbientOcclusion = m_AmbientOcclusion;
+                settings.DirectionalMode = m_DirectionalModeIndex;
+                settings.AlbedoBoost = m_AlbedoBoost;
+                settings.IndirectIntensity = m_IndirectIntensity;
+                baker->SetSettings(settings);
+
+                baker->SetProgressCallback([this](float progress, const std::string& step) {
+                    m_BakeProgress = progress;
+                    m_BakeStep = step;
+                });
+
+                auto startTime = std::chrono::high_resolution_clock::now();
+                baker->Bake(m_Context.get());
+                auto endTime = std::chrono::high_resolution_clock::now();
+                float bakeTime = std::chrono::duration<float>(endTime - startTime).count();
+
+                m_BakeProgress = 1.0f;
+                m_BakedLightmapBaked = true;
+                m_BakedAtlasWidth = baker->GetAtlas().Width;
+                m_BakedAtlasHeight = baker->GetAtlas().Height;
+                m_BakedTexelCount = (int)baker->GetAtlas().Texels.size();
+                m_BakedBakeTime = bakeTime;
+                m_BakedLightmapTexture = baker->CreateLightmapTexture();
+                if (m_BakedLightmapTexture)
+                    Renderer3D::SetLightmap(m_BakedLightmapTexture);
+
+                auto& registry = m_Context->m_Registry;
+                int objCount = 0;
+                auto meshView = registry.view<TransformComponent, MeshRendererComponent>();
+                objCount += (int)std::distance(meshView.begin(), meshView.end());
+                auto modelView = registry.view<TransformComponent, ModelComponent>();
+                objCount += (int)std::distance(modelView.begin(), modelView.end());
+                m_BakedObjectCount = objCount;
+
+                m_IsBaking = false;
+            }
+        }
+
+        ImGui::PopID();
     }
 
     void LightingPanel::RenderGPUBakingSection()

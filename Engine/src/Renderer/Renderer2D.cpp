@@ -98,6 +98,28 @@ namespace Conqueror
         s_Data.TextureShader->SetMat4("u_ViewProjection", viewProj);
     }
 
+    void Renderer2D::BeginScene(const glm::mat4& viewProjection, bool enableDepthTest)
+    {
+        // Depth test kapalı (UI her zaman en önde)
+        if (enableDepthTest)
+        {
+            glEnable(GL_DEPTH_TEST);
+            glDepthFunc(GL_LEQUAL);
+        }
+        else
+        {
+            glDisable(GL_DEPTH_TEST);
+        }
+        
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        
+        s_Data.TextureShader->Bind();
+        s_Data.TextureShader->SetMat4("u_ViewProjection", viewProjection);
+    }
+
+
+
     void Renderer2D::EndScene()
     {
         // Stats'ı Renderer'a aktar

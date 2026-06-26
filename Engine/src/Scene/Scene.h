@@ -207,6 +207,21 @@ namespace Conqueror
     public:
         entt::registry m_Registry;
         uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
+
+        // Viewport bounds for scripts (set by editor)
+        glm::vec2 m_ViewportBoundsMin = { 0.0f, 0.0f };
+        glm::vec2 m_ViewportBoundsMax = { 0.0f, 0.0f };
+        bool m_ViewportHovered = false;
+        glm::mat4 m_EditorViewProjection{1.0f};
+        bool m_HasEditorCamera = false;
+        bool m_UseEditorCameraForScripts = true;
+
+        void SetViewportBounds(const glm::vec2& min, const glm::vec2& max) { m_ViewportBoundsMin = min; m_ViewportBoundsMax = max; }
+        void SetViewportHovered(bool hovered) { m_ViewportHovered = hovered; }
+        bool IsViewportHovered() const { return m_ViewportHovered; }
+        void SetEditorViewProjection(const glm::mat4& vp) { m_EditorViewProjection = vp; m_HasEditorCamera = true; }
+        void SetUseEditorCameraForScripts(bool use) { m_UseEditorCameraForScripts = use; }
+        bool GetUseEditorCameraForScripts() const { return m_UseEditorCameraForScripts; }
         
     private:
         static std::vector<std::string> s_AvailableTags;

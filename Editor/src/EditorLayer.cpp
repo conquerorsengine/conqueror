@@ -363,10 +363,19 @@ namespace Conqueror::Editor
             }
         }
         
+        // Viewport bilgilerini her modda set et (script'ler için)
+        if (m_ViewportPanel && m_ActiveScene)
+        {
+            m_ActiveScene->SetViewportBounds(m_ViewportPanel->GetViewportBounds()[0], m_ViewportPanel->GetViewportBounds()[1]);
+            m_ActiveScene->SetViewportHovered(m_ViewportPanel->IsViewportHovered());
+            m_ActiveScene->SetEditorViewProjection(m_ViewportPanel->GetEditorCamera().GetViewProjection());
+            m_ActiveScene->SetUseEditorCameraForScripts(true);
+        }
+
         // Update active scene
         if (editorState.IsPlaying())
         {
-            m_ActiveScene->OnUpdateRuntime(ts);
+            // Play modunda OnUpdateRuntime GamePanel tarafından çağrılıyor
         }
         else if (editorState.IsSimulating())
         {
@@ -376,7 +385,9 @@ namespace Conqueror::Editor
         {
             // Pass EditorCamera to scene for rendering
             if (m_ViewportPanel)
+            {
                 m_ActiveScene->OnUpdateEditor(ts, m_ViewportPanel->GetEditorCamera(), m_ViewportPanel->GetViewportBounds());
+            }
         }
 
         // Update viewport

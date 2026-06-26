@@ -16,6 +16,8 @@ namespace Conqueror
 
         static void BeginScene(const EditorCamera& camera, bool enableDepthTest = false, bool enableDepthWrite = true);
         static void BeginScene(const SceneCamera& camera, const glm::mat4& transform, bool enableDepthTest = false, bool enableDepthWrite = true);
+        // Ham ViewProjection matrisi ile BeginScene (Screen-Space UI render için)
+        static void BeginScene(const glm::mat4& viewProjection, bool enableDepthTest = false);
         static void EndScene();
         static void Flush();
 

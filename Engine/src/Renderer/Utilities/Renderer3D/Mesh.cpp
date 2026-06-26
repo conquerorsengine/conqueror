@@ -27,7 +27,8 @@ namespace Conqueror
             { ShaderDataType::Float3, "a_Position" },
             { ShaderDataType::Float3, "a_Normal" },
             { ShaderDataType::Float3, "a_Tangent" },
-            { ShaderDataType::Float2, "a_TexCoord" }
+            { ShaderDataType::Float2, "a_TexCoord" },
+            { ShaderDataType::Float2, "a_TexCoord2" }
         };
         m_VertexBuffer->SetLayout(layout);
         m_VertexArray->AddVertexBuffer(m_VertexBuffer);
@@ -47,47 +48,60 @@ namespace Conqueror
         m_VertexArray->Unbind();
     }
 
+    void Mesh::UpdateUV2(const std::vector<glm::vec2>& newUV2)
+    {
+        if (newUV2.size() != m_Vertices.size()) return;
+
+        for (size_t i = 0; i < m_Vertices.size(); i++)
+            m_Vertices[i].TexCoords2 = newUV2[i];
+
+        // GPU'ya yeniden yukle
+        m_VertexBuffer->Bind();
+        m_VertexBuffer->SetData(m_Vertices.data(), (uint32_t)(m_Vertices.size() * sizeof(Vertex)));
+        m_VertexBuffer->Unbind();
+    }
+
     std::shared_ptr<Mesh> Mesh::CreateCube()
     {
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;
 
-        // Cube vertices (24 vertex - her yüz için 4) 2x
+        // Cube vertices (24 vertex - her yüz için 4)
         // Front face
-        vertices.push_back({ {-1.0f, -1.0f,  1.0f}, { 0.0f,  0.0f,  1.0f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 0.0f} });
-        vertices.push_back({ { 1.0f, -1.0f,  1.0f}, { 0.0f,  0.0f,  1.0f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 0.0f} });
-        vertices.push_back({ { 1.0f,  1.0f,  1.0f}, { 0.0f,  0.0f,  1.0f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 1.0f} });
-        vertices.push_back({ {-1.0f,  1.0f,  1.0f}, { 0.0f,  0.0f,  1.0f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 1.0f} });
+        vertices.push_back({ {-1.0f, -1.0f,  1.0f}, { 0.0f,  0.0f,  1.0f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f} });
+        vertices.push_back({ { 1.0f, -1.0f,  1.0f}, { 0.0f,  0.0f,  1.0f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 0.0f}, {1.0f, 0.0f} });
+        vertices.push_back({ { 1.0f,  1.0f,  1.0f}, { 0.0f,  0.0f,  1.0f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 1.0f}, {1.0f, 1.0f} });
+        vertices.push_back({ {-1.0f,  1.0f,  1.0f}, { 0.0f,  0.0f,  1.0f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 1.0f}, {0.0f, 1.0f} });
 
         // Back face
-        vertices.push_back({ { 1.0f, -1.0f, -1.0f}, { 0.0f,  0.0f, -1.0f}, {-1.0f,  0.0f,  0.0f}, {0.0f, 0.0f} });
-        vertices.push_back({ {-1.0f, -1.0f, -1.0f}, { 0.0f,  0.0f, -1.0f}, {-1.0f,  0.0f,  0.0f}, {1.0f, 0.0f} });
-        vertices.push_back({ {-1.0f,  1.0f, -1.0f}, { 0.0f,  0.0f, -1.0f}, {-1.0f,  0.0f,  0.0f}, {1.0f, 1.0f} });
-        vertices.push_back({ { 1.0f,  1.0f, -1.0f}, { 0.0f,  0.0f, -1.0f}, {-1.0f,  0.0f,  0.0f}, {0.0f, 1.0f} });
+        vertices.push_back({ { 1.0f, -1.0f, -1.0f}, { 0.0f,  0.0f, -1.0f}, {-1.0f,  0.0f,  0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f} });
+        vertices.push_back({ {-1.0f, -1.0f, -1.0f}, { 0.0f,  0.0f, -1.0f}, {-1.0f,  0.0f,  0.0f}, {1.0f, 0.0f}, {1.0f, 0.0f} });
+        vertices.push_back({ {-1.0f,  1.0f, -1.0f}, { 0.0f,  0.0f, -1.0f}, {-1.0f,  0.0f,  0.0f}, {1.0f, 1.0f}, {1.0f, 1.0f} });
+        vertices.push_back({ { 1.0f,  1.0f, -1.0f}, { 0.0f,  0.0f, -1.0f}, {-1.0f,  0.0f,  0.0f}, {0.0f, 1.0f}, {0.0f, 1.0f} });
 
         // Top face
-        vertices.push_back({ {-1.0f,  1.0f,  1.0f}, { 0.0f,  1.0f,  0.0f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 0.0f} });
-        vertices.push_back({ { 1.0f,  1.0f,  1.0f}, { 0.0f,  1.0f,  0.0f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 0.0f} });
-        vertices.push_back({ { 1.0f,  1.0f, -1.0f}, { 0.0f,  1.0f,  0.0f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 1.0f} });
-        vertices.push_back({ {-1.0f,  1.0f, -1.0f}, { 0.0f,  1.0f,  0.0f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 1.0f} });
+        vertices.push_back({ {-1.0f,  1.0f,  1.0f}, { 0.0f,  1.0f,  0.0f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f} });
+        vertices.push_back({ { 1.0f,  1.0f,  1.0f}, { 0.0f,  1.0f,  0.0f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 0.0f}, {1.0f, 0.0f} });
+        vertices.push_back({ { 1.0f,  1.0f, -1.0f}, { 0.0f,  1.0f,  0.0f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 1.0f}, {1.0f, 1.0f} });
+        vertices.push_back({ {-1.0f,  1.0f, -1.0f}, { 0.0f,  1.0f,  0.0f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 1.0f}, {0.0f, 1.0f} });
 
         // Bottom face
-        vertices.push_back({ {-1.0f, -1.0f, -1.0f}, { 0.0f, -1.0f,  0.0f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 0.0f} });
-        vertices.push_back({ { 1.0f, -1.0f, -1.0f}, { 0.0f, -1.0f,  0.0f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 0.0f} });
-        vertices.push_back({ { 1.0f, -1.0f,  1.0f}, { 0.0f, -1.0f,  0.0f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 1.0f} });
-        vertices.push_back({ {-1.0f, -1.0f,  1.0f}, { 0.0f, -1.0f,  0.0f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 1.0f} });
+        vertices.push_back({ {-1.0f, -1.0f, -1.0f}, { 0.0f, -1.0f,  0.0f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f} });
+        vertices.push_back({ { 1.0f, -1.0f, -1.0f}, { 0.0f, -1.0f,  0.0f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 0.0f}, {1.0f, 0.0f} });
+        vertices.push_back({ { 1.0f, -1.0f,  1.0f}, { 0.0f, -1.0f,  0.0f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 1.0f}, {1.0f, 1.0f} });
+        vertices.push_back({ {-1.0f, -1.0f,  1.0f}, { 0.0f, -1.0f,  0.0f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 1.0f}, {0.0f, 1.0f} });
 
         // Right face
-        vertices.push_back({ { 1.0f, -1.0f,  1.0f}, { 1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f, -1.0f}, {0.0f, 0.0f} });
-        vertices.push_back({ { 1.0f, -1.0f, -1.0f}, { 1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f, -1.0f}, {1.0f, 0.0f} });
-        vertices.push_back({ { 1.0f,  1.0f, -1.0f}, { 1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f, -1.0f}, {1.0f, 1.0f} });
-        vertices.push_back({ { 1.0f,  1.0f,  1.0f}, { 1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f, -1.0f}, {0.0f, 1.0f} });
+        vertices.push_back({ { 1.0f, -1.0f,  1.0f}, { 1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f, -1.0f}, {0.0f, 0.0f}, {0.0f, 0.0f} });
+        vertices.push_back({ { 1.0f, -1.0f, -1.0f}, { 1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f, -1.0f}, {1.0f, 0.0f}, {1.0f, 0.0f} });
+        vertices.push_back({ { 1.0f,  1.0f, -1.0f}, { 1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f, -1.0f}, {1.0f, 1.0f}, {1.0f, 1.0f} });
+        vertices.push_back({ { 1.0f,  1.0f,  1.0f}, { 1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f, -1.0f}, {0.0f, 1.0f}, {0.0f, 1.0f} });
 
         // Left face
-        vertices.push_back({ {-1.0f, -1.0f, -1.0f}, {-1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f,  1.0f}, {0.0f, 0.0f} });
-        vertices.push_back({ {-1.0f, -1.0f,  1.0f}, {-1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f,  1.0f}, {1.0f, 0.0f} });
-        vertices.push_back({ {-1.0f,  1.0f,  1.0f}, {-1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f,  1.0f}, {1.0f, 1.0f} });
-        vertices.push_back({ {-1.0f,  1.0f, -1.0f}, {-1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f,  1.0f}, {0.0f, 1.0f} });
+        vertices.push_back({ {-1.0f, -1.0f, -1.0f}, {-1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f,  1.0f}, {0.0f, 0.0f}, {0.0f, 0.0f} });
+        vertices.push_back({ {-1.0f, -1.0f,  1.0f}, {-1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f,  1.0f}, {1.0f, 0.0f}, {1.0f, 0.0f} });
+        vertices.push_back({ {-1.0f,  1.0f,  1.0f}, {-1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f,  1.0f}, {1.0f, 1.0f}, {1.0f, 1.0f} });
+        vertices.push_back({ {-1.0f,  1.0f, -1.0f}, {-1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f,  1.0f}, {0.0f, 1.0f}, {0.0f, 1.0f} });
 
         // Indices (her yüz için 2 triangle = 6 index)
         for (uint32_t i = 0; i < 6; i++)
@@ -124,6 +138,7 @@ namespace Conqueror
                 vertex.Position = glm::vec3(xPos, yPos, zPos) * radius;
                 vertex.Normal = glm::normalize(glm::vec3(xPos, yPos, zPos));
                 vertex.TexCoords = glm::vec2(xSegment, ySegment);
+                vertex.TexCoords2 = glm::vec2(xSegment, ySegment);
                 vertex.Tangent = glm::vec3(0.0f);
                 vertices.push_back(vertex);
             }
@@ -169,6 +184,7 @@ namespace Conqueror
                 vertex.Normal = glm::vec3(0.0f, 1.0f, 0.0f);
                 vertex.Tangent = glm::vec3(1.0f, 0.0f, 0.0f);
                 vertex.TexCoords = glm::vec2(u, v);
+                vertex.TexCoords2 = glm::vec2(u, v);
                 vertices.push_back(vertex);
             }
         }
@@ -216,6 +232,7 @@ namespace Conqueror
             bottom.Normal = normal;
             bottom.Tangent = glm::vec3(0.0f);
             bottom.TexCoords = glm::vec2(u, 0.0f);
+            bottom.TexCoords2 = glm::vec2(u, 0.0f);
             vertices.push_back(bottom);
 
             Vertex top;
@@ -223,6 +240,7 @@ namespace Conqueror
             top.Normal = normal;
             top.Tangent = glm::vec3(0.0f);
             top.TexCoords = glm::vec2(u, 1.0f);
+            top.TexCoords2 = glm::vec2(u, 1.0f);
             vertices.push_back(top);
         }
 
@@ -247,6 +265,7 @@ namespace Conqueror
         tc.Normal = glm::vec3(0.0f, 1.0f, 0.0f);
         tc.Tangent = glm::vec3(1.0f, 0.0f, 0.0f);
         tc.TexCoords = glm::vec2(0.5f, 0.5f);
+        tc.TexCoords2 = glm::vec2(0.5f, 0.5f);
         vertices.push_back(tc);
 
         for (uint32_t i = 0; i <= segments; i++)
@@ -257,6 +276,7 @@ namespace Conqueror
             v.Normal = glm::vec3(0.0f, 1.0f, 0.0f);
             v.Tangent = glm::vec3(1.0f, 0.0f, 0.0f);
             v.TexCoords = glm::vec2(std::cos(angle) * 0.5f + 0.5f, std::sin(angle) * 0.5f + 0.5f);
+            v.TexCoords2 = v.TexCoords;
             vertices.push_back(v);
         }
 
@@ -274,6 +294,7 @@ namespace Conqueror
         bc.Normal = glm::vec3(0.0f, -1.0f, 0.0f);
         bc.Tangent = glm::vec3(1.0f, 0.0f, 0.0f);
         bc.TexCoords = glm::vec2(0.5f, 0.5f);
+        bc.TexCoords2 = glm::vec2(0.5f, 0.5f);
         vertices.push_back(bc);
 
         for (uint32_t i = 0; i <= segments; i++)
@@ -284,6 +305,7 @@ namespace Conqueror
             v.Normal = glm::vec3(0.0f, -1.0f, 0.0f);
             v.Tangent = glm::vec3(1.0f, 0.0f, 0.0f);
             v.TexCoords = glm::vec2(std::cos(angle) * 0.5f + 0.5f, std::sin(angle) * 0.5f + 0.5f);
+            v.TexCoords2 = v.TexCoords;
             vertices.push_back(v);
         }
 
@@ -308,6 +330,7 @@ namespace Conqueror
         apex.Normal = glm::vec3(0.0f, 1.0f, 0.0f);
         apex.Tangent = glm::vec3(1.0f, 0.0f, 0.0f);
         apex.TexCoords = glm::vec2(0.5f, 1.0f);
+        apex.TexCoords2 = glm::vec2(0.5f, 1.0f);
         vertices.push_back(apex);
 
         // Taban merkezi
@@ -316,6 +339,7 @@ namespace Conqueror
         baseCenter.Normal = glm::vec3(0.0f, -1.0f, 0.0f);
         baseCenter.Tangent = glm::vec3(1.0f, 0.0f, 0.0f);
         baseCenter.TexCoords = glm::vec2(0.5f, 0.0f);
+        baseCenter.TexCoords2 = glm::vec2(0.5f, 0.0f);
         vertices.push_back(baseCenter);
 
         // Taban çevresi
@@ -333,6 +357,7 @@ namespace Conqueror
             sideVertex.Normal = glm::normalize(glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), radial) + toApex);
             sideVertex.Tangent = glm::vec3(0.0f);
             sideVertex.TexCoords = glm::vec2((float)i / (float)segments, 0.0f);
+            sideVertex.TexCoords2 = sideVertex.TexCoords;
             vertices.push_back(sideVertex);
 
             // Taban için vertex
@@ -341,6 +366,7 @@ namespace Conqueror
             baseVertex.Normal = glm::vec3(0.0f, -1.0f, 0.0f);
             baseVertex.Tangent = glm::vec3(1.0f, 0.0f, 0.0f);
             baseVertex.TexCoords = glm::vec2((float)i / (float)segments, 0.0f);
+            baseVertex.TexCoords2 = baseVertex.TexCoords;
             vertices.push_back(baseVertex);
         }
 
@@ -388,6 +414,7 @@ namespace Conqueror
             bottom.Normal = normal;
             bottom.Tangent = glm::vec3(0.0f);
             bottom.TexCoords = glm::vec2((float)i / (float)segments, 0.0f);
+            bottom.TexCoords2 = bottom.TexCoords;
             vertices.push_back(bottom);
 
             // Üst
@@ -396,6 +423,7 @@ namespace Conqueror
             top.Normal = normal;
             top.Tangent = glm::vec3(0.0f);
             top.TexCoords = glm::vec2((float)i / (float)segments, 1.0f);
+            top.TexCoords2 = top.TexCoords;
             vertices.push_back(top);
         }
 
@@ -422,6 +450,7 @@ namespace Conqueror
         headApex.Normal = glm::vec3(0.0f, 1.0f, 0.0f);
         headApex.Tangent = glm::vec3(1.0f, 0.0f, 0.0f);
         headApex.TexCoords = glm::vec2(0.5f, 1.0f);
+        headApex.TexCoords2 = glm::vec2(0.5f, 1.0f);
         vertices.push_back(headApex);
 
         for (uint32_t i = 0; i <= segments; i++)
@@ -437,6 +466,7 @@ namespace Conqueror
             headBase.Normal = glm::normalize(glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), radial) + toApex);
             headBase.Tangent = glm::vec3(0.0f);
             headBase.TexCoords = glm::vec2((float)i / (float)segments, 0.0f);
+            headBase.TexCoords2 = headBase.TexCoords;
             vertices.push_back(headBase);
         }
 

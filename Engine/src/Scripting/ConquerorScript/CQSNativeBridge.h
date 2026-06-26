@@ -214,6 +214,22 @@ namespace Conqueror::CQS
         static Value DebugDrawClear(int argCount, Value* args);
         static Value DebugDrawClearTimed(int argCount, Value* args);
         static Value DebugDrawSetEnabled(int argCount, Value* args);
+        static Value DebugDrawSetLineWidth(int argCount, Value* args);
+
+        // ── DebugDraw (with color) ──
+        static Value DebugDrawLineC(int argCount, Value* args);
+        static Value DebugDrawSolidBoxC(int argCount, Value* args);
+        static Value DebugDrawSolidSphereC(int argCount, Value* args);
+        static Value DebugDrawTriangleC(int argCount, Value* args);
+        static Value DebugDrawSolidTriangleC(int argCount, Value* args);
+        static Value DebugDrawPointC(int argCount, Value* args);
+
+        // ── Viewport Helpers ──
+        static Value IsViewportHovered(int argCount, Value* args);
+        static Value ViewportScreenToWorld(int argCount, Value* args);
+        static Value GetViewportBoundsMin(int argCount, Value* args);
+        static Value GetViewportBoundsMax(int argCount, Value* args);
+        static Value GetViewportSize(int argCount, Value* args);
 
         // ── Vec3 Helpers ──
         static Value Vec3Length(int argCount, Value* args);

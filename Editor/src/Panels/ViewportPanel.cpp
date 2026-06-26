@@ -233,12 +233,20 @@ namespace Conqueror::Editor
                 // Canvas world position
                 glm::vec3 canvasWorldPos = glm::vec3(transform.WorldTransform[3]);
                 
-                // Canvas boyutu = viewport boyutu * transform scale
-                float baseWidth = (float)m_Context->m_ViewportWidth / 100.0f;
-                float baseHeight = (float)m_Context->m_ViewportHeight / 100.0f;
+                // Canvas boyutu sabit olmalı (Referans çözünürlük 1920x1080, panel küçülünce küçülmemesi için)
+                float baseWidth = 1920.0f / 100.0f;
+                float baseHeight = 1080.0f / 100.0f;
                 
-                float scaledWidth = baseWidth * transform.Scale.x;
-                float scaledHeight = baseHeight * transform.Scale.y;
+                // 10x büyüme efekti için debug çizgisini de 10 kat büyüt
+                float scaledWidth = baseWidth * transform.Scale.x * 10.0f;
+                float scaledHeight = baseHeight * transform.Scale.y * 10.0f;
+                
+                // Scale 0 ise çizgi nokta kadar olur, gözükmez! Fallback ekleyelim.
+                if (scaledWidth <= 0.001f || scaledHeight <= 0.001f)
+                {
+                    scaledWidth = baseWidth;
+                    scaledHeight = baseHeight;
+                }
                 
                 float halfWidth = scaledWidth * 0.5f;
                 float halfHeight = scaledHeight * 0.5f;
@@ -253,30 +261,47 @@ namespace Conqueror::Editor
                 
                 // World space -> Screen space
                 glm::mat4 viewProj = m_EditorCamera.GetViewProjection();
-                ImVec2 screenCorners[4];
-                
+                ImU32 color = IM_COL32(0, 255, 0, 200);
+
+                // 4 kenarı tek tek işle ve near plane'e göre clip yap
                 for (int i = 0; i < 4; i++)
                 {
-                    glm::vec4 clipSpace = viewProj * glm::vec4(corners[i], 1.0f);
-                    glm::vec3 ndc = glm::vec3(clipSpace) / clipSpace.w;
-                    
+                    glm::vec4 p1 = viewProj * glm::vec4(corners[i], 1.0f);
+                    glm::vec4 p2 = viewProj * glm::vec4(corners[(i + 1) % 4], 1.0f);
+
+                    // Near plane (w = 0.001f) clipping
+                    float nearZ = 0.001f;
+                    if (p1.w < nearZ && p2.w < nearZ)
+                        continue; // İkisi de kameranın arkasında, bu kenarı çizme
+
+                    if (p1.w < nearZ || p2.w < nearZ)
+                    {
+                        // Biri önde biri arkada, kesişim noktasını bul
+                        float t = (p1.w - nearZ) / (p1.w - p2.w);
+                        glm::vec4 pIntersect = p1 + t * (p2 - p1);
+                        
+                        if (p1.w < nearZ) p1 = pIntersect;
+                        else p2 = pIntersect;
+                    }
+
+                    // NDC'ye çevir (artık ikisi de w >= 0.001f)
+                    glm::vec3 ndc1 = glm::vec3(p1) / p1.w;
+                    glm::vec3 ndc2 = glm::vec3(p2) / p2.w;
+
                     // NDC -> Screen
-                    float screenX = (ndc.x * 0.5f + 0.5f) * m_ViewportSize.x;
-                    float screenY = (1.0f - (ndc.y * 0.5f + 0.5f)) * m_ViewportSize.y;
+                    float screenX1 = (ndc1.x * 0.5f + 0.5f) * m_ViewportSize.x;
+                    float screenY1 = (1.0f - (ndc1.y * 0.5f + 0.5f)) * m_ViewportSize.y;
                     
-                    screenCorners[i] = ImVec2(
-                        m_ViewportBounds[0].x + screenX,
-                        m_ViewportBounds[0].y + screenY
-                    );
-                }
-                
-                // Yeşil rect çiz
-                ImU32 color = IM_COL32(0, 255, 0, 255);
-                for (int i = 0; i < 4; i++)
-                {
-                    drawList->AddLine(screenCorners[i], screenCorners[(i + 1) % 4], color, 2.0f);
+                    float screenX2 = (ndc2.x * 0.5f + 0.5f) * m_ViewportSize.x;
+                    float screenY2 = (1.0f - (ndc2.y * 0.5f + 0.5f)) * m_ViewportSize.y;
+
+                    ImVec2 start(m_ViewportBounds[0].x + screenX1, m_ViewportBounds[0].y + screenY1);
+                    ImVec2 end(m_ViewportBounds[0].x + screenX2, m_ViewportBounds[0].y + screenY2);
+
+                    drawList->AddLine(start, end, color, 2.0f);
                 }
             }
+
         }
 
         // Gizmo render (seçili entity varsa)
@@ -294,8 +319,19 @@ namespace Conqueror::Editor
                              m_ViewportBounds[1].y - m_ViewportBounds[0].y);
 
             auto& tc = primaryEntity.GetComponent<TransformComponent>();
-            glm::mat4 oldTransform = tc.GetTransform();
-            glm::mat4 transform = oldTransform;
+            glm::mat4 oldLocalTransform = tc.GetTransform();
+            
+            // Gizmo için parent matrisi bul (Gizmo'yu Dünya koordinatında çizmek için)
+            glm::mat4 parentTransform = glm::mat4(1.0f);
+            Entity parent = m_Context->GetEntityParent(primaryEntity);
+            if (parent && parent.HasComponent<TransformComponent>())
+            {
+                parentTransform = parent.GetComponent<TransformComponent>().WorldTransform;
+            }
+
+            // Gizmo'ya vermek üzere Dünya (World) matrisini oluştur
+            glm::mat4 transform = parentTransform * oldLocalTransform;
+            glm::mat4 oldWorldTransform = transform;
 
             glm::mat4 cameraProjection = m_EditorCamera.GetProjectionMatrix();
             glm::mat4 cameraView = m_EditorCamera.GetViewMatrix();
@@ -305,14 +341,18 @@ namespace Conqueror::Editor
 
             if (ImGuizmo::IsUsing())
             {
+                // Manipüle edilmiş Dünya matrisini geri Yerel (Local) matrise çevir
+                glm::mat4 newLocalTransform = glm::inverse(parentTransform) * transform;
+
                 glm::vec3 position, rotation, scale;
-                ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(transform), 
+                ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(newLocalTransform), 
                                                      glm::value_ptr(position), 
                                                      glm::value_ptr(rotation), 
                                                      glm::value_ptr(scale));
                 
+                // Delta hesaplamak için oldLocal'ı parçala
                 glm::vec3 oldPos, oldRot, oldScale;
-                ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(oldTransform), 
+                ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(oldLocalTransform), 
                                                      glm::value_ptr(oldPos), 
                                                      glm::value_ptr(oldRot), 
                                                      glm::value_ptr(oldScale));

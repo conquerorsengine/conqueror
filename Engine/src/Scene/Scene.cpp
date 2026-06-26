@@ -1,4 +1,5 @@
 #include "Scene.h"
+#include "Core/Math/Math.h"
 #include "Renderer/Renderer.h"
 #include "Components.h"
 #include "Entity.h"
@@ -662,7 +663,21 @@ namespace Conqueror
                     if (!script.Instance && !script.ScriptPath.empty() && !script.bLoaded)
                     {
                         script.bLoaded = true; // Sadece bir kez dene
-                        if (CQS::CQSEngine::ExecuteFile(script.ScriptPath))
+
+                        std::string resolvedPath = script.ScriptPath;
+                        std::filesystem::path p(script.ScriptPath);
+                        if (p.is_relative())
+                        {
+                            auto projectDir = Project::GetActiveProjectDirectory();
+                            if (!projectDir.empty())
+                            {
+                                auto absolute = projectDir / p;
+                                if (std::filesystem::exists(absolute))
+                                    resolvedPath = absolute.string();
+                            }
+                        }
+
+                        if (CQS::CQSEngine::ExecuteFile(resolvedPath))
                         {
                             script.Instance = CQS::CQSEngine::Instantiate(script.ClassName, (uint32_t)entity);
                             if (script.Instance)
@@ -839,20 +854,7 @@ namespace Conqueror
             
             // Light count'u stats'a ekle
             Renderer::GetStats().LightCount = lightCount;
-
-            // Shadow pass
-            if (m_ShadowEnabled && Renderer3D::GetShadowPass().IsReady())
-            {
-                Entity sunSrc = GetSunSourceEntity();
-                if (sunSrc && sunSrc.HasComponent<DirectionalLightComponent>())
-                {
-                    auto& dl = sunSrc.GetComponent<DirectionalLightComponent>();
-                    glm::vec3 camPos = glm::vec3(cameraTransform[3]);
-                    glm::mat4 camVP = camera.GetProjection() * glm::inverse(cameraTransform);
-                    Renderer3D::ExecuteShadowPass(this, dl, dl.Direction, camPos, camVP);
-                }
-            }
-
+            
             // 3D objeleri render et (MeshRendererComponent)
             auto meshView = m_Registry.view<TransformComponent, MeshRendererComponent>();
             for (auto entity : meshView)
@@ -1041,19 +1043,28 @@ namespace Conqueror
                 });
 
             // TÜM objeleri render et (Canvas kontrolü ile depth test)
+            // Screen-Space Ortho VP: Canvas'ın dünya konumundan bağımsız olarak
+            // GamePanel'e tam sığacak şekilde render edilmesi için kullanılır.
+            // Referans canvas boyutu: 1920 x 1080 birim (world-unit cinsinden 19.2 x 10.8)
+            // 10x visual scale uygulandığı için ortho'yu da 10x genişletiyoruz
+            float uiHalfW = 1920.0f / 200.0f * 10.0f; // 96.0
+            float uiHalfH = 1080.0f / 200.0f * 10.0f; // 54.0
+            glm::mat4 screenSpaceVP = glm::ortho(-uiHalfW, uiHalfW, -uiHalfH, uiHalfH, -100.0f, 100.0f);
+
             for (auto& item : renderItems)
             {
                 Entity itemEntity{ item.Entity, this };
                 bool isCanvasChild = IsCanvasOrCanvasChild(itemEntity);
                 
                 bool depthTestEnabled = true;
+                bool isScreenSpace = false;
+                glm::vec3 canvasWorldPos(0.0f);
+
                 if (isCanvasChild)
                 {
                     Entity canvasEntity = itemEntity;
                     while (canvasEntity && !canvasEntity.HasComponent<CanvasComponent>())
-                    {
                         canvasEntity = GetEntityParent(canvasEntity);
-                    }
                     
                     if (canvasEntity && canvasEntity.HasComponent<CanvasComponent>())
                     {
@@ -1061,11 +1072,24 @@ namespace Conqueror
                         if (canvas.Mode == CanvasComponent::RenderMode::WorldSpace)
                             depthTestEnabled = true;
                         else
+                        {
                             depthTestEnabled = false;
+                            isScreenSpace = true;
+                            // Canvas'ın dünya pozisyonunu al (relative transform için)
+                            canvasWorldPos = glm::vec3(canvasEntity.GetComponent<TransformComponent>().WorldTransform[3]);
+                        }
                     }
                 }
                 
-                if (!depthTestEnabled)
+                if (isScreenSpace)
+                {
+                    // Screen-Space: sabit ortho VP ile render et, depth test kapalı
+                    Renderer2D::EndScene();
+                    TextRenderer::EndScene();
+                    Renderer2D::BeginScene(screenSpaceVP, false);
+                    TextRenderer::BeginScene(screenSpaceVP, false);
+                }
+                else if (!depthTestEnabled)
                 {
                     Renderer2D::EndScene();
                     TextRenderer::EndScene();
@@ -1078,13 +1102,20 @@ namespace Conqueror
                 {
                     Entity canvasEntity = itemEntity;
                     while (canvasEntity && !canvasEntity.HasComponent<CanvasComponent>())
-                    {
                         canvasEntity = GetEntityParent(canvasEntity);
-                    }
                     
                     if (canvasEntity && canvasEntity.HasComponent<CanvasComponent>())
                     {
                         auto& canvas = canvasEntity.GetComponent<CanvasComponent>();
+
+                        if (isScreenSpace)
+                        {
+                            // Canvas'ın dünya konumundan bağımsız: child'ın Canvas'a göreli konumunu al
+                            // finalTransform[3] = child worldPos - canvasWorldPos → canvas-local pos
+                            finalTransform[3][0] -= canvasWorldPos.x;
+                            finalTransform[3][1] -= canvasWorldPos.y;
+                            finalTransform[3][2]  = 0.0f; // UI'ı Z=0'a sabitle
+                        }
                         
                         if (canvasEntity.HasComponent<CanvasScalerComponent>())
                         {
@@ -1099,7 +1130,10 @@ namespace Conqueror
                             }
                             else if (scaler.ScaleMode == CanvasScalerComponent::UIScaleMode::ScaleWithScreenSize)
                             {
-                                float screenScale = (float)m_ViewportWidth / 1920.0f;
+                                // Hem genişlik hem yüksekliği kullan (aspect-ratio aware, 1920x1080 referans)
+                                float scaleX = (float)m_ViewportWidth  / 1920.0f;
+                                float scaleY = (float)m_ViewportHeight / 1080.0f;
+                                float screenScale = glm::sqrt(scaleX * scaleY);
                                 screenScale *= scaler.ScaleFactor * pixelToWorldScale;
                                 glm::vec3 scale = glm::vec3(finalTransform[0][0], finalTransform[1][1], finalTransform[2][2]);
                                 scale *= screenScale;
@@ -1107,11 +1141,13 @@ namespace Conqueror
                             }
                             else if (scaler.ScaleMode == CanvasScalerComponent::UIScaleMode::ConstantPhysicalSize)
                             {
-                                float dpi = 96.0f;
-                                float dpiScale = dpi / 96.0f;
-                                dpiScale *= scaler.ScaleFactor * pixelToWorldScale;
+                                float viewportDiagPixels = glm::sqrt(
+                                    (float)(m_ViewportWidth * m_ViewportWidth + m_ViewportHeight * m_ViewportHeight));
+                                float refDiagPixels = glm::sqrt(1920.0f * 1920.0f + 1080.0f * 1080.0f);
+                                float physicalScale = viewportDiagPixels / refDiagPixels;
+                                physicalScale *= scaler.ScaleFactor * pixelToWorldScale;
                                 glm::vec3 scale = glm::vec3(finalTransform[0][0], finalTransform[1][1], finalTransform[2][2]);
-                                scale *= dpiScale;
+                                scale *= physicalScale;
                                 finalTransform[0][0] = scale.x; finalTransform[1][1] = scale.y; finalTransform[2][2] = scale.z;
                             }
                         }
@@ -1121,6 +1157,13 @@ namespace Conqueror
                             finalTransform[3][0] = glm::round(finalTransform[3][0]);
                             finalTransform[3][1] = glm::round(finalTransform[3][1]);
                         }
+                    }
+                    
+                    // Ekranda 10 kat büyük görünsün (Transform değeri değişmeden)
+                    for (int i = 0; i < 3; i++) {
+                        finalTransform[i][0] *= 10.0f;
+                        finalTransform[i][1] *= 10.0f;
+                        finalTransform[i][2] *= 10.0f;
                     }
                 }
                 
@@ -1192,6 +1235,7 @@ namespace Conqueror
                     TextRenderer::BeginScene(camera, cameraTransform, true);
                 }
             }
+
 
             Renderer2D::EndScene();
             TextRenderer::EndScene();
@@ -1287,19 +1331,6 @@ namespace Conqueror
         
         // Light count'u stats'a ekle
         Renderer::GetStats().LightCount = lightCount;
-
-        // Shadow pass (editor)
-        if (m_ShadowEnabled && Renderer3D::GetShadowPass().IsReady())
-        {
-            Entity sunSrc = GetSunSourceEntity();
-            if (sunSrc && sunSrc.HasComponent<DirectionalLightComponent>())
-            {
-                auto& dl = sunSrc.GetComponent<DirectionalLightComponent>();
-                glm::vec3 camPos = camera.GetPosition();
-                glm::mat4 camVP = camera.GetViewProjection();
-                Renderer3D::ExecuteShadowPass(this, dl, dl.Direction, camPos, camVP);
-            }
-        }
         
         // 3D objeleri render et (MeshRendererComponent)
         auto meshView = m_Registry.view<TransformComponent, MeshRendererComponent>();
@@ -1666,6 +1697,16 @@ namespace Conqueror
                         // Pozisyonu tam piksele yuvarla
                         finalTransform[3][0] = glm::round(finalTransform[3][0]);
                         finalTransform[3][1] = glm::round(finalTransform[3][1]);
+                    }
+                }
+                
+                if (isCanvasChild)
+                {
+                    // Ekranda 10 kat büyük görünsün (Transform değeri değişmeden)
+                    for (int i = 0; i < 3; i++) {
+                        finalTransform[i][0] *= 10.0f;
+                        finalTransform[i][1] *= 10.0f;
+                        finalTransform[i][2] *= 10.0f;
                     }
                 }
             }
@@ -2178,12 +2219,28 @@ namespace Conqueror
         entt::entity entityHandle = entity;
         entt::entity parentHandle = parent;
 
-        // Eski parent'tan çıkar
+        // Eski parent'tan çıkar (Bu işlem entity'nin Local Transform'unu Dünya Transform'una eşitler)
         RemoveEntityParent(entity);
 
         // Yeni parent'a ekle
         m_EntityParent[entityHandle] = parentHandle;
         m_EntityChildren[parentHandle].push_back(entityHandle);
+
+        // Yeni parent varsa, entity'nin dünyadaki konumunu korumak için yeni parent'a göre Local hesapla
+        if (entity.HasComponent<TransformComponent>() && parent.HasComponent<TransformComponent>())
+        {
+            auto& tc = entity.GetComponent<TransformComponent>();
+            glm::mat4 parentWorld = parent.GetComponent<TransformComponent>().WorldTransform;
+            glm::mat4 worldTransform = tc.GetTransform(); // RemoveEntityParent sonrası bu değer zaten world pozisyonu
+            
+            glm::mat4 newLocal = glm::inverse(parentWorld) * worldTransform;
+            
+            glm::vec3 pos, rot, scale;
+            Math::DecomposeTransform(newLocal, pos, rot, scale);
+            tc.Position = pos;
+            tc.Rotation = rot;
+            tc.Scale = scale;
+        }
     }
 
     void Scene::RemoveEntityParent(Entity entity)
@@ -2201,6 +2258,17 @@ namespace Conqueror
 
             // Parent ilişkisini sil
             m_EntityParent.erase(it);
+
+            // Dünyadaki konumunu koru (Keep World Transform)
+            if (entity.HasComponent<TransformComponent>())
+            {
+                auto& tc = entity.GetComponent<TransformComponent>();
+                glm::vec3 pos, rot, scale;
+                Math::DecomposeTransform(tc.WorldTransform, pos, rot, scale);
+                tc.Position = pos;
+                tc.Rotation = rot;
+                tc.Scale = scale;
+            }
         }
     }
 
@@ -3611,101 +3679,88 @@ namespace Conqueror
             // Check transitions
             if (!ac.IsTransitioning)
             {
-                auto checkTransitions = [&](const std::vector<AnimTransition>& transitions) -> bool
+                for (const auto& trans : layer.Transitions)
                 {
-                    for (const auto& trans : transitions)
-                    {
-                        if (trans.FromState != ac.CurrentStateName)
-                            continue;
+                    if (trans.FromState != ac.CurrentStateName)
+                        continue;
 
-                        bool conditionsMet = true;
-                        for (const auto& cond : trans.Conditions)
+                    bool conditionsMet = true;
+                    for (const auto& cond : trans.Conditions)
+                    {
+                        bool found = false;
+                        for (const auto& param : ac.Parameters)
                         {
-                            bool found = false;
-                            for (const auto& param : ac.Parameters)
+                            if (param.Name == cond.ParameterName)
                             {
-                                if (param.Name == cond.ParameterName)
+                                found = true;
+                                switch (param.Type)
                                 {
-                                    found = true;
-                                    switch (param.Type)
+                                case AnimParameterType::Float:
+                                    switch (cond.Mode)
                                     {
-                                    case AnimParameterType::Float:
-                                        switch (cond.Mode)
-                                        {
-                                        case AnimConditionMode::Greater: conditionsMet = param.FloatValue > cond.Threshold; break;
-                                        case AnimConditionMode::Less: conditionsMet = param.FloatValue < cond.Threshold; break;
-                                        case AnimConditionMode::Equals: conditionsMet = std::abs(param.FloatValue - cond.Threshold) < 0.001f; break;
-                                        case AnimConditionMode::NotEquals: conditionsMet = std::abs(param.FloatValue - cond.Threshold) >= 0.001f; break;
-                                        }
-                                        break;
-                                    case AnimParameterType::Bool:
-                                        conditionsMet = param.BoolValue == (cond.Threshold > 0.5f);
-                                        break;
-                                    case AnimParameterType::Int:
-                                        switch (cond.Mode)
-                                        {
-                                        case AnimConditionMode::Greater: conditionsMet = param.IntValue > static_cast<int>(cond.Threshold); break;
-                                        case AnimConditionMode::Less: conditionsMet = param.IntValue < static_cast<int>(cond.Threshold); break;
-                                        case AnimConditionMode::Equals: conditionsMet = param.IntValue == static_cast<int>(cond.Threshold); break;
-                                        case AnimConditionMode::NotEquals: conditionsMet = param.IntValue != static_cast<int>(cond.Threshold); break;
-                                        }
-                                        break;
-                                    case AnimParameterType::Trigger:
-                                        conditionsMet = param.FloatValue > 0.5f;
-                                        break;
+                                    case AnimConditionMode::Greater: conditionsMet = param.FloatValue > cond.Threshold; break;
+                                    case AnimConditionMode::Less: conditionsMet = param.FloatValue < cond.Threshold; break;
+                                    case AnimConditionMode::Equals: conditionsMet = std::abs(param.FloatValue - cond.Threshold) < 0.001f; break;
+                                    case AnimConditionMode::NotEquals: conditionsMet = std::abs(param.FloatValue - cond.Threshold) >= 0.001f; break;
                                     }
                                     break;
+                                case AnimParameterType::Bool:
+                                    conditionsMet = param.BoolValue == (cond.Threshold > 0.5f);
+                                    break;
+                                case AnimParameterType::Int:
+                                    switch (cond.Mode)
+                                    {
+                                    case AnimConditionMode::Greater: conditionsMet = param.IntValue > static_cast<int>(cond.Threshold); break;
+                                    case AnimConditionMode::Less: conditionsMet = param.IntValue < static_cast<int>(cond.Threshold); break;
+                                    case AnimConditionMode::Equals: conditionsMet = param.IntValue == static_cast<int>(cond.Threshold); break;
+                                    case AnimConditionMode::NotEquals: conditionsMet = param.IntValue != static_cast<int>(cond.Threshold); break;
+                                    }
+                                    break;
+                                case AnimParameterType::Trigger:
+                                    conditionsMet = param.FloatValue > 0.5f;
+                                    break;
                                 }
-                            }
-                            if (!found || !conditionsMet) break;
-                        }
-
-                        if (conditionsMet)
-                        {
-                            if (trans.HasExitTime && currentState)
-                            {
-                                float clipDuration = 0.f;
-                                if (currentState->ClipIndex >= 0 && currentState->ClipIndex < static_cast<int>(mc.ModelData->Animations.size()))
-                                {
-                                    auto& clip = mc.ModelData->Animations[currentState->ClipIndex];
-                                    if (clip)
-                                        clipDuration = clip->DurationSeconds();
-                                }
-
-                                if (clipDuration > 0.f)
-                                {
-                                    float normalizedTime = ac.CurrentTime / clipDuration;
-                                    if (normalizedTime < trans.ExitTime)
-                                        continue;
-                                }
-                            }
-
-                            ac.IsTransitioning = true;
-                            ac.nextStateName = trans.ToState;
-                            ac.TransitionProgress = 0.f;
-                            ac.TransitionDuration = trans.Duration;
-
-                            for (auto& param : ac.Parameters)
-                            {
-                                if (param.Type == AnimParameterType::Trigger)
-                                    param.FloatValue = 0.f;
-                            }
-
-                            return true;
-                        }
-                    }
-                    return false;
-                };
-
-                if (!checkTransitions(layer.Transitions))
-                {
-                    for (auto& ss : ac.Controller->SubStates)
-                    {
-                        if (!ss.Transitions.empty())
-                        {
-                            if (checkTransitions(ss.Transitions))
                                 break;
+                            }
                         }
+                        if (!found || !conditionsMet) break;
+                    }
+
+                    if (conditionsMet)
+                    {
+                        // Check exit time
+                        if (trans.HasExitTime && currentState)
+                        {
+                            float clipDuration = 0.f;
+                            if (currentState->ClipIndex >= 0 && currentState->ClipIndex < static_cast<int>(mc.ModelData->Animations.size()))
+                            {
+                                auto& clip = mc.ModelData->Animations[currentState->ClipIndex];
+                                if (clip)
+                                    clipDuration = clip->DurationSeconds();
+                            }
+
+                            if (clipDuration > 0.f)
+                            {
+                                float normalizedTime = ac.CurrentTime / clipDuration;
+                                if (normalizedTime < trans.ExitTime)
+                                    continue;
+                            }
+                        }
+
+                        // Start transition
+                        ac.IsTransitioning = true;
+                        ac.nextStateName = trans.ToState;
+                        ac.TransitionProgress = 0.f;
+                        ac.TransitionDuration = trans.Duration;
+
+                        // Reset trigger parameters
+                        for (auto& param : ac.Parameters)
+                        {
+                            if (param.Type == AnimParameterType::Trigger)
+                                param.FloatValue = 0.f;
+                        }
+
+                        break;
                     }
                 }
             }
@@ -3716,72 +3771,11 @@ namespace Conqueror
                 ac.TransitionProgress += ts.GetSeconds();
                 if (ac.TransitionProgress >= ac.TransitionDuration)
                 {
-                    std::string completedTarget = ac.nextStateName;
+                    ac.CurrentStateName = ac.nextStateName;
                     ac.IsTransitioning = false;
                     ac.TransitionProgress = 0.f;
+                    ac.CurrentTime = 0.f;
                     ac.nextStateName.clear();
-
-                    if (completedTarget == "Exit")
-                    {
-                        if (!ac.SubStateStack.empty())
-                        {
-                            auto& entry = ac.SubStateStack.back();
-                            ac.CurrentStateName = entry.StateName;
-                            ac.CurrentTime = entry.CurrentTime;
-                            ac.SubStateStack.pop_back();
-                        }
-                        else
-                        {
-                            ac.CurrentStateName = layer.DefaultState;
-                            ac.CurrentTime = 0.f;
-                        }
-                    }
-                    else
-                    {
-                        bool isSubState = false;
-                        for (const auto& ss : ac.Controller->SubStates)
-                        {
-                            if (ss.Name == completedTarget) { isSubState = true; break; }
-                        }
-                        if (!isSubState)
-                        {
-                            for (const auto& lyr : ac.Controller->Layers)
-                            {
-                                if (lyr.Name == completedTarget) { isSubState = true; break; }
-                            }
-                        }
-
-                        if (isSubState)
-                        {
-                            AnimSubStateData* targetSS = nullptr;
-                            for (auto& ss : ac.Controller->SubStates)
-                            {
-                                if (ss.Name == completedTarget) { targetSS = &ss; break; }
-                            }
-
-                            AnimationComponent::SubStateStackEntry stackEntry;
-                            stackEntry.SubStateName = ac.CurrentStateName;
-                            stackEntry.StateName = ac.CurrentStateName;
-                            stackEntry.CurrentTime = ac.CurrentTime;
-                            stackEntry.IsInSubState = !ac.SubStateStack.empty();
-                            ac.SubStateStack.push_back(stackEntry);
-
-                            if (targetSS && !targetSS->DefaultState.empty())
-                            {
-                                ac.CurrentStateName = targetSS->DefaultState;
-                            }
-                            else
-                            {
-                                ac.CurrentStateName = completedTarget;
-                            }
-                            ac.CurrentTime = 0.f;
-                        }
-                        else
-                        {
-                            ac.CurrentStateName = completedTarget;
-                            ac.CurrentTime = 0.f;
-                        }
-                    }
                 }
             }
 

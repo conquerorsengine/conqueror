@@ -737,6 +737,12 @@ namespace Conqueror::CQS
                         else
                             Push(list->Elements[idx]);
                     }
+                    else if (object.IsMap())
+                    {
+                        auto* map = object.AsMap();
+                        auto it = map->Entries.find(index.ToString());
+                        Push(it != map->Entries.end() ? it->second : Value::MakeNull());
+                    }
                     else if (object.IsString())
                     {
                         int64_t idx = static_cast<int64_t>(index.ToNumber());

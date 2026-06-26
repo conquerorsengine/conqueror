@@ -25,30 +25,6 @@ namespace Conqueror::Editor
         constexpr float ARROW_SIZE = 8.f;
         constexpr float HIT_THRESHOLD = 12.f;
 
-        AnimSubStateData* FindSubStateInList(std::vector<AnimSubStateData>& list, const std::string& name)
-        {
-            for (auto& ss : list)
-            {
-                if (ss.Name == name) return &ss;
-            }
-            for (auto& ss : list)
-            {
-                AnimSubStateData* found = FindSubStateInList(ss.SubStates, name);
-                if (found) return found;
-            }
-            return nullptr;
-        }
-
-        AnimSubStateData* FindSubStateRecursive(AnimationController* controller, const std::string& name)
-        {
-            return FindSubStateInList(controller->SubStates, name);
-        }
-
-        AnimSubStateData* FindSubStateRecursive(AnimSubStateData* ss, const std::string& name)
-        {
-            return FindSubStateInList(ss->SubStates, name);
-        }
-
         enum class AnimNodeType
         {
             Entry, State, AnyState, Exit, SubState, UpNode, BlendTree
@@ -103,6 +79,28 @@ namespace Conqueror::Editor
             {
                 if (node.StateName == name)
                     return &node;
+            }
+            return nullptr;
+        }
+
+        AnimSubStateData* FindSubStateRecursive(std::vector<AnimSubStateData>& subStates, const std::string& name)
+        {
+            for (auto& ss : subStates)
+            {
+                if (ss.Name == name) return &ss;
+                auto* found = FindSubStateRecursive(ss.SubStates, name);
+                if (found) return found;
+            }
+            return nullptr;
+        }
+
+        const AnimSubStateData* FindSubStateRecursive(const std::vector<AnimSubStateData>& subStates, const std::string& name)
+        {
+            for (const auto& ss : subStates)
+            {
+                if (ss.Name == name) return &ss;
+                auto* found = FindSubStateRecursive(ss.SubStates, name);
+                if (found) return found;
             }
             return nullptr;
         }
@@ -187,11 +185,14 @@ namespace Conqueror::Editor
             int exitID = s_NextGraphID++;
             s_Nodes.emplace_back(exitID, AnimNodeType::Exit, "Exit", glm::vec2(700.f, 300.f));
 
-            // SubState node'larını controller'dan yükle
-            for (const auto& ss : controller.SubStates)
+            // SubState node'larını layer'dan yükle
+            if (!controller.Layers.empty() && layerIndex < (int)controller.Layers.size())
             {
-                int ssNodeID = s_NextGraphID++;
-                s_Nodes.emplace_back(ssNodeID, AnimNodeType::SubState, ss.Name, ss.EditorPosition);
+                for (const auto& ss : controller.Layers[layerIndex].SubStates)
+                {
+                    int ssNodeID = s_NextGraphID++;
+                    s_Nodes.emplace_back(ssNodeID, AnimNodeType::SubState, ss.Name, ss.EditorPosition);
+                }
             }
 
             if (!controller.Layers.empty() && layerIndex < (int)controller.Layers.size())
@@ -201,7 +202,7 @@ namespace Conqueror::Editor
                 for (const auto& state : layer.States)
                 {
                     int stateID = s_NextGraphID++;
-                    s_Nodes.emplace_back(stateID, AnimNodeType::State, state.Name, state.EditorPosition);
+                    s_Nodes.emplace_back(stateID, state.Type == AnimStateType::BlendTree ? AnimNodeType::BlendTree : AnimNodeType::State, state.Name, state.EditorPosition);
                 }
 
                 for (const auto& trans : layer.Transitions)
@@ -241,36 +242,33 @@ namespace Conqueror::Editor
         }
     }
 
-    std::vector<AnimTransition>* AnimatorPanel::GetCurrentTransitions()
+    void AnimatorPanel::RebuildGraphFromSubState(int subStateNodeID)
     {
-        if (!m_Controller || m_Controller->Layers.empty()) return nullptr;
+        if (!m_Controller) return;
 
-        if (m_InSubStateView && !m_CurrentSubStateName.empty())
+        std::string subStateName;
+        for (auto& node : s_Nodes)
         {
-            for (auto& lyr : m_Controller->Layers)
+            if (node.ID == subStateNodeID)
             {
-                if (lyr.Name == m_CurrentSubStateName) return &lyr.Transitions;
-            }
-            auto* ss = GetCurrentSubStateData();
-            if (ss)
-            {
-                if (!ss->Layers.empty() && m_SelectedLayerIndex < (int)ss->Layers.size())
-                    return &ss->Layers[m_SelectedLayerIndex].Transitions;
-                return &ss->Transitions;
+                subStateName = node.StateName;
+                break;
             }
         }
-        return &m_Controller->Layers[m_SelectedLayerIndex].Transitions;
-    }
-
-    AnimTransition* AnimatorPanel::FindCurrentTransition(const std::string& from, const std::string& to)
-    {
-        auto* transitions = GetCurrentTransitions();
-        if (!transitions) return nullptr;
-        for (auto& t : *transitions)
+        if (subStateName.empty())
         {
-            if (t.FromState == from && t.ToState == to) return &t;
+            for (const auto& entry : m_NavigationStack)
+            {
+                if (entry.NodeID == subStateNodeID)
+                {
+                    subStateName = entry.Name;
+                    break;
+                }
+            }
         }
-        return nullptr;
+        if (subStateName.empty()) return;
+
+        RebuildGraphFromSubStateByName(subStateName);
     }
 
     void AnimatorPanel::RebuildGraphFromSubStateByName(const std::string& subStateName)
@@ -294,7 +292,7 @@ namespace Conqueror::Editor
         }
         if (!targetLayer)
         {
-            subData = FindSubStateRecursive(m_Controller.get(), subStateName);
+            subData = const_cast<AnimSubStateData*>(FindSubStateRecursive(m_Controller->Layers[m_SelectedLayerIndex].SubStates, subStateName));
         }
 
         std::string upName;
@@ -330,6 +328,7 @@ namespace Conqueror::Editor
                 int stateID = s_NextGraphID++;
                 s_Nodes.emplace_back(stateID, AnimNodeType::State, state.Name, state.EditorPosition);
             }
+
             for (const auto& trans : targetLayer->Transitions)
             {
                 bool found = false;
@@ -337,7 +336,10 @@ namespace Conqueror::Editor
                 {
                     if ((edge.LeftState == trans.FromState && edge.RightState == trans.ToState) ||
                         (edge.LeftState == trans.ToState && edge.RightState == trans.FromState))
-                    { found = true; break; }
+                    {
+                        found = true;
+                        break;
+                    }
                 }
                 if (!found)
                 {
@@ -347,9 +349,15 @@ namespace Conqueror::Editor
                     {
                         TransitionEdge edge;
                         if (fromNode->EditorPosition.x <= toNode->EditorPosition.x)
-                        { edge.LeftState = trans.FromState; edge.RightState = trans.ToState; }
+                        {
+                            edge.LeftState = trans.FromState;
+                            edge.RightState = trans.ToState;
+                        }
                         else
-                        { edge.LeftState = trans.ToState; edge.RightState = trans.FromState; }
+                        {
+                            edge.LeftState = trans.ToState;
+                            edge.RightState = trans.FromState;
+                        }
                         s_TransitionEdges.push_back(edge);
                     }
                 }
@@ -357,11 +365,18 @@ namespace Conqueror::Editor
         }
         else if (subData)
         {
+            for (const auto& nestedSS : subData->SubStates)
+            {
+                int ssNodeID = s_NextGraphID++;
+                s_Nodes.emplace_back(ssNodeID, AnimNodeType::SubState, nestedSS.Name, nestedSS.EditorPosition);
+            }
+
             for (const auto& state : subData->States)
             {
                 int stateID = s_NextGraphID++;
                 s_Nodes.emplace_back(stateID, AnimNodeType::State, state.Name, state.EditorPosition);
             }
+
             for (const auto& trans : subData->Transitions)
             {
                 bool found = false;
@@ -369,7 +384,10 @@ namespace Conqueror::Editor
                 {
                     if ((edge.LeftState == trans.FromState && edge.RightState == trans.ToState) ||
                         (edge.LeftState == trans.ToState && edge.RightState == trans.FromState))
-                    { found = true; break; }
+                    {
+                        found = true;
+                        break;
+                    }
                 }
                 if (!found)
                 {
@@ -379,43 +397,20 @@ namespace Conqueror::Editor
                     {
                         TransitionEdge edge;
                         if (fromNode->EditorPosition.x <= toNode->EditorPosition.x)
-                        { edge.LeftState = trans.FromState; edge.RightState = trans.ToState; }
+                        {
+                            edge.LeftState = trans.FromState;
+                            edge.RightState = trans.ToState;
+                        }
                         else
-                        { edge.LeftState = trans.ToState; edge.RightState = trans.FromState; }
+                        {
+                            edge.LeftState = trans.ToState;
+                            edge.RightState = trans.FromState;
+                        }
                         s_TransitionEdges.push_back(edge);
                     }
                 }
             }
         }
-    }
-
-    void AnimatorPanel::RebuildGraphFromSubState(int subStateNodeID)
-    {
-        if (!m_Controller) return;
-
-        std::string subStateName;
-        for (auto& node : s_Nodes)
-        {
-            if (node.ID == subStateNodeID)
-            {
-                subStateName = node.StateName;
-                break;
-            }
-        }
-        if (subStateName.empty())
-        {
-            for (const auto& entry : m_NavigationStack)
-            {
-                if (entry.NodeID == subStateNodeID)
-                {
-                    subStateName = entry.Name;
-                    break;
-                }
-            }
-        }
-        if (subStateName.empty()) return;
-
-        RebuildGraphFromSubStateByName(subStateName);
     }
 
     int AnimatorPanel::GetCurrentSubStateID()
@@ -442,38 +437,6 @@ namespace Conqueror::Editor
 
     AnimatorPanel::~AnimatorPanel()
     {
-    }
-
-    AnimSubStateData* AnimatorPanel::GetCurrentSubStateData()
-    {
-        if (!m_Controller || m_NavigationStack.empty()) return nullptr;
-
-        AnimSubStateData* current = nullptr;
-        for (auto& ss : m_Controller->SubStates)
-        {
-            if (ss.Name == m_NavigationStack[0].Name)
-            {
-                current = &ss;
-                break;
-            }
-        }
-        if (!current) return nullptr;
-
-        for (size_t i = 1; i < m_NavigationStack.size(); i++)
-        {
-            AnimSubStateData* next = nullptr;
-            for (auto& child : current->SubStates)
-            {
-                if (child.Name == m_NavigationStack[i].Name)
-                {
-                    next = &child;
-                    break;
-                }
-            }
-            if (!next) return nullptr;
-            current = next;
-        }
-        return current;
     }
 
     void AnimatorPanel::SetContext(Scene* scene)
@@ -521,35 +484,18 @@ namespace Conqueror::Editor
                         // SubState içinde mi yoksa layer'da mı?
                         if (m_InSubStateView && !m_CurrentSubStateName.empty())
                         {
-                            bool isLayer = false;
-                            for (const auto& lyr : m_Controller->Layers)
+                            auto* ss = FindSubStateRecursive(m_Controller->Layers[m_SelectedLayerIndex].SubStates, m_CurrentSubStateName);
+                            if (ss)
                             {
-                                if (lyr.Name == m_CurrentSubStateName) { isLayer = true; break; }
-                            }
-                            if (isLayer)
-                            {
-                                for (auto& lyr : m_Controller->Layers)
+                                for (auto& s : ss->States)
                                 {
-                                    if (lyr.Name == m_CurrentSubStateName)
-                                    {
-                                        for (auto& s : lyr.States)
-                                        {
-                                            if (s.Name == node.StateName) { s.EditorPosition = node.EditorPosition; break; }
-                                        }
-                                        break;
-                                    }
+                                    if (s.Name == node.StateName) { s.EditorPosition = node.EditorPosition; break; }
                                 }
                             }
                             else
                             {
-                                auto* ss = GetCurrentSubStateData();
-                                if (ss)
-                                {
-                                    for (auto& s : ss->States)
-                                    {
-                                        if (s.Name == node.StateName) { s.EditorPosition = node.EditorPosition; break; }
-                                    }
-                                }
+                                auto* state = m_Controller->GetState(m_Controller->Layers[m_SelectedLayerIndex], node.StateName);
+                                if (state) state->EditorPosition = node.EditorPosition;
                             }
                         }
                         else
@@ -560,8 +506,11 @@ namespace Conqueror::Editor
                     }
                     else if (node.Type == AnimNodeType::SubState)
                     {
-                        auto* ss = FindSubStateRecursive(m_Controller.get(), node.StateName);
-                        if (ss) ss->EditorPosition = node.EditorPosition;
+                        auto* ss = FindSubStateRecursive(m_Controller->Layers[m_SelectedLayerIndex].SubStates, node.StateName);
+                        if (ss)
+                        {
+                            const_cast<AnimSubStateData*>(ss)->EditorPosition = node.EditorPosition;
+                        }
                     }
                 }
                 m_Controller->NextNodeID = s_NextGraphID;
@@ -845,6 +794,28 @@ namespace Conqueror::Editor
         ImVec2 canvasPos = ImGui::GetCursorScreenPos();
         ImVec2 canvasSize = ImGui::GetContentRegionAvail();
 
+        std::vector<AnimTransition>* currentTransitions = &layer.Transitions;
+        std::string currentDefaultState = layer.DefaultState;
+        if (m_InSubStateView && !m_CurrentSubStateName.empty())
+        {
+            auto* subSS = FindSubStateRecursive(m_Controller->Layers[m_SelectedLayerIndex].SubStates, m_CurrentSubStateName);
+            if (subSS)
+            {
+                currentTransitions = const_cast<std::vector<AnimTransition>*>(&subSS->Transitions);
+                currentDefaultState = subSS->DefaultState;
+                static int lastTransCount = -1;
+                if (lastTransCount != (int)subSS->Transitions.size())
+                {
+                    CQ_CORE_INFO("SubState '{0}': {1} states, {2} transitions", m_CurrentSubStateName, (int)subSS->States.size(), (int)subSS->Transitions.size());
+                    lastTransCount = (int)subSS->Transitions.size();
+                }
+            }
+            else
+            {
+                CQ_CORE_WARN("SubState '{0}' NOT found by FindSubStateRecursive!", m_CurrentSubStateName);
+            }
+        }
+
         // Escape ile BlendTree/SubState'ten çık
         if (ImGui::IsKeyPressed(ImGuiKey_Escape))
         {
@@ -947,9 +918,6 @@ namespace Conqueror::Editor
         }
 
         // Draw transitions
-        auto* currentTransitions = GetCurrentTransitions();
-        if (currentTransitions)
-        {
         for (int ti = 0; ti < (int)currentTransitions->size(); ti++)
         {
             auto& trans = (*currentTransitions)[ti];
@@ -998,6 +966,7 @@ namespace Conqueror::Editor
             }
             else
             {
+                // Kaydedilmiş kenar bilgisini bul
                 std::string leftState, rightState;
                 bool found = false;
                 for (auto& edge : s_TransitionEdges)
@@ -1055,44 +1024,17 @@ namespace Conqueror::Editor
                 }
             }
         }
-        } // end currentTransitions
 
-        // Draw Entry → DefaultState line (parent layer view)
-        if (!m_InSubStateView && !layer.DefaultState.empty())
+        // Draw Entry → DefaultState line
+        if (!currentDefaultState.empty())
         {
             auto* entryNode = FindNodeByStateName("Entry");
-            auto* defaultNode = FindNodeByStateName(layer.DefaultState);
+            auto* defaultNode = FindNodeByStateName(currentDefaultState);
             if (entryNode && defaultNode)
             {
                 ImVec2 fromPt = ImVec2(canvasPos.x + entryNode->EditorPosition.x + NODE_W, canvasPos.y + entryNode->EditorPosition.y + NODE_H / 2.f);
                 ImVec2 toPt = ImVec2(canvasPos.x + defaultNode->EditorPosition.x, canvasPos.y + defaultNode->EditorPosition.y + NODE_H / 2.f);
                 DrawTransitionLine(dl, fromPt, toPt, IM_COL32(80, 200, 80, 200), 0.f);
-            }
-        }
-
-        // Draw Entry → DefaultState line (SubState view)
-        if (m_InSubStateView && !m_CurrentSubStateName.empty())
-        {
-            std::string subDefaultState;
-            for (const auto& lyr : m_Controller->Layers)
-            {
-                if (lyr.Name == m_CurrentSubStateName) { subDefaultState = lyr.DefaultState; break; }
-            }
-            if (subDefaultState.empty())
-            {
-                auto* ss = GetCurrentSubStateData();
-                if (ss) subDefaultState = ss->DefaultState;
-            }
-            if (!subDefaultState.empty())
-            {
-                auto* entryNode = FindNodeByStateName("Entry");
-                auto* defaultNode = FindNodeByStateName(subDefaultState);
-                if (entryNode && defaultNode)
-                {
-                    ImVec2 fromPt = ImVec2(canvasPos.x + entryNode->EditorPosition.x + NODE_W, canvasPos.y + entryNode->EditorPosition.y + NODE_H / 2.f);
-                    ImVec2 toPt = ImVec2(canvasPos.x + defaultNode->EditorPosition.x, canvasPos.y + defaultNode->EditorPosition.y + NODE_H / 2.f);
-                    DrawTransitionLine(dl, fromPt, toPt, IM_COL32(80, 200, 80, 200), 0.f);
-                }
             }
         }
 
@@ -1135,7 +1077,7 @@ namespace Conqueror::Editor
             }
             else
             {
-                bool isDefault = (layer.DefaultState == node.StateName);
+                bool isDefault = (currentDefaultState == node.StateName);
                 bool isSelected = false;
                 for (int id : m_SelectedNodeIDs)
                 {
@@ -1161,60 +1103,66 @@ namespace Conqueror::Editor
             }
             else if (node.Type == AnimNodeType::BlendTree)
             {
-                float btW = 220.f;
-                float btH = 80.f;
-                ImVec2 btPos = ImVec2(pos.x + (NODE_W - btW) * 0.5f, pos.y + (NODE_H - btH) * 0.5f);
-
-                dl->AddRectFilled(btPos, ImVec2(btPos.x + btW, btPos.y + btH), bgColor, 4.f);
-                dl->AddRect(btPos, ImVec2(btPos.x + btW, btPos.y + btH), borderColor, 4.f, 0, 1.5f);
-
-                // Başlık
-                dl->AddRectFilled(btPos, ImVec2(btPos.x + btW, btPos.y + NODE_TITLE_H), IM_COL32(0, 0, 0, 60), 4.f);
-                ImVec2 textSize = ImGui::CalcTextSize("Blend Tree");
-                dl->AddText(ImVec2(btPos.x + (btW - textSize.x) * 0.5f, btPos.y + 5.f), IM_COL32(255, 255, 255, 255), "Blend Tree");
-
-                // Etkileşimli parametreler — node'un içinde sabit
-                if (m_Controller && !m_Controller->Parameters.empty())
+                if (m_BlendTreeView)
                 {
-                    ImGui::SetCursorScreenPos(ImVec2(btPos.x + 8.f, btPos.y + NODE_TITLE_H + 6.f));
-                    ImGui::BeginChild("##bt_params", ImVec2(btW - 16.f, btH - NODE_TITLE_H - 10.f), false, ImGuiWindowFlags_NoScrollbar);
-                    for (int pi = 0; pi < (int)m_Controller->Parameters.size() && pi < 3; pi++)
+                    float btW = 220.f;
+                    float btH = 80.f;
+                    ImVec2 btPos = ImVec2(pos.x + (NODE_W - btW) * 0.5f, pos.y + (NODE_H - btH) * 0.5f);
+
+                    dl->AddRectFilled(btPos, ImVec2(btPos.x + btW, btPos.y + btH), bgColor, 4.f);
+                    dl->AddRect(btPos, ImVec2(btPos.x + btW, btPos.y + btH), borderColor, 4.f, 0, 1.5f);
+
+                    dl->AddRectFilled(btPos, ImVec2(btPos.x + btW, btPos.y + NODE_TITLE_H), IM_COL32(0, 0, 0, 60), 4.f);
+                    ImVec2 btTextSize = ImGui::CalcTextSize("Blend Tree");
+                    dl->AddText(ImVec2(btPos.x + (btW - btTextSize.x) * 0.5f, btPos.y + 5.f), IM_COL32(255, 255, 255, 255), "Blend Tree");
+
+                    if (m_Controller && !m_Controller->Parameters.empty())
                     {
-                        auto& param = m_Controller->Parameters[pi];
-                        ImGui::PushID(pi + node.ID * 100);
-
-                        ImGui::Text("%s", param.Name.c_str());
-                        ImGui::SameLine(85.f);
-                        ImGui::PushItemWidth(btW - 100.f);
-
-                        if (param.Type == AnimParameterType::Float)
+                        ImGui::SetCursorScreenPos(ImVec2(btPos.x + 8.f, btPos.y + NODE_TITLE_H + 6.f));
+                        ImGui::BeginChild("##bt_params", ImVec2(btW - 16.f, btH - NODE_TITLE_H - 10.f), false, ImGuiWindowFlags_NoScrollbar);
+                        for (int pi = 0; pi < (int)m_Controller->Parameters.size() && pi < 3; pi++)
                         {
-                            if (ImGui::DragFloat("##val", &param.DefaultValue, 0.01f))
-                                m_Dirty = true;
-                        }
-                        else if (param.Type == AnimParameterType::Int)
-                        {
-                            int intVal = (int)param.DefaultValue;
-                            if (ImGui::DragInt("##val", &intVal))
+                            auto& param = m_Controller->Parameters[pi];
+                            ImGui::PushID(pi + node.ID * 100);
+
+                            ImGui::Text("%s", param.Name.c_str());
+                            ImGui::SameLine(85.f);
+                            ImGui::PushItemWidth(btW - 100.f);
+
+                            if (param.Type == AnimParameterType::Float)
                             {
-                                param.DefaultValue = (float)intVal;
-                                m_Dirty = true;
+                                if (ImGui::DragFloat("##val", &param.DefaultValue, 0.01f))
+                                    m_Dirty = true;
                             }
-                        }
-                        else if (param.Type == AnimParameterType::Bool)
-                        {
-                            bool boolVal = param.DefaultValue > 0.5f;
-                            if (ImGui::Checkbox("##val", &boolVal))
+                            else if (param.Type == AnimParameterType::Int)
                             {
-                                param.DefaultValue = boolVal ? 1.f : 0.f;
-                                m_Dirty = true;
+                                int intVal = (int)param.DefaultValue;
+                                if (ImGui::DragInt("##val", &intVal))
+                                {
+                                    param.DefaultValue = (float)intVal;
+                                    m_Dirty = true;
+                                }
                             }
-                        }
+                            else if (param.Type == AnimParameterType::Bool)
+                            {
+                                bool boolVal = param.DefaultValue > 0.5f;
+                                if (ImGui::Checkbox("##val", &boolVal))
+                                {
+                                    param.DefaultValue = boolVal ? 1.f : 0.f;
+                                    m_Dirty = true;
+                                }
+                            }
 
-                        ImGui::PopItemWidth();
-                        ImGui::PopID();
+                            ImGui::PopItemWidth();
+                            ImGui::PopID();
+                        }
+                        ImGui::EndChild();
                     }
-                    ImGui::EndChild();
+                }
+                else
+                {
+                    dl->AddRectFilled(pos, ImVec2(pos.x + size.x, pos.y + size.y), bgColor, 4.f);
+                    dl->AddRect(pos, ImVec2(pos.x + size.x, pos.y + size.y), borderColor, 4.f, 0, 1.5f);
                 }
             }
             else
@@ -1242,7 +1190,7 @@ namespace Conqueror::Editor
                 float textY = pos.y + size.y * 0.5f - textSize.y * 0.5f;
                 dl->AddText(ImVec2(textX, textY), IM_COL32(255, 255, 255, 255), label);
             }
-            else
+            else if (!(node.Type == AnimNodeType::BlendTree && m_BlendTreeView))
             {
                 dl->AddText(ImVec2(pos.x + 8.f, pos.y + 5.f), IM_COL32(255, 255, 255, 255), label);
             }
@@ -1274,11 +1222,19 @@ namespace Conqueror::Editor
                     }
 
                     {
-                        bool isDefault = (layer.DefaultState == node->StateName);
+                        bool isDefault = (currentDefaultState == node->StateName);
                         if (isDefault) ImGui::BeginDisabled();
                         if (ImGui::MenuItem("Set as Layer Default State"))
                         {
-                            layer.DefaultState = node->StateName;
+                            if (m_InSubStateView && !m_CurrentSubStateName.empty())
+                            {
+                                auto* subSS = FindSubStateRecursive(m_Controller->Layers[m_SelectedLayerIndex].SubStates, m_CurrentSubStateName);
+                                if (subSS) const_cast<AnimSubStateData*>(subSS)->DefaultState = node->StateName;
+                            }
+                            else
+                            {
+                                layer.DefaultState = node->StateName;
+                            }
                             m_Dirty = true;
                         }
                         if (isDefault) ImGui::EndDisabled();
@@ -1374,10 +1330,10 @@ namespace Conqueror::Editor
                     if (ImGui::MenuItem("Delete"))
                     {
                         // Controller'dan sil
-                        m_Controller->SubStates.erase(
-                            std::remove_if(m_Controller->SubStates.begin(), m_Controller->SubStates.end(),
+                        m_Controller->Layers[m_SelectedLayerIndex].SubStates.erase(
+                            std::remove_if(m_Controller->Layers[m_SelectedLayerIndex].SubStates.begin(), m_Controller->Layers[m_SelectedLayerIndex].SubStates.end(),
                                 [node](const AnimSubStateData& ss) { return ss.Name == node->StateName; }),
-                            m_Controller->SubStates.end());
+                            m_Controller->Layers[m_SelectedLayerIndex].SubStates.end());
 
                         s_Nodes.erase(
                             std::remove_if(s_Nodes.begin(), s_Nodes.end(),
@@ -1428,7 +1384,32 @@ namespace Conqueror::Editor
                     if (ImGui::MenuItem("From New Blend Tree"))
                     {
                         std::string name = "BlendTree_" + std::to_string(s_NextGraphID);
-                        AddState(name.c_str(), localMouse.x, localMouse.y);
+                        int nodeID = s_NextGraphID++;
+                        AnimState newState;
+                        newState.Name = name;
+                        newState.Type = AnimStateType::BlendTree;
+                        newState.EditorPosition = { localMouse.x, localMouse.y };
+
+                        if (m_InSubStateView && !m_CurrentSubStateName.empty())
+                        {
+                            auto* targetSS = FindSubStateRecursive(m_Controller->Layers[m_SelectedLayerIndex].SubStates, m_CurrentSubStateName);
+                            if (targetSS)
+                            {
+                                auto* mutableSS = const_cast<AnimSubStateData*>(targetSS);
+                                bool isFirst = mutableSS->States.empty();
+                                mutableSS->States.push_back(newState);
+                                if (isFirst) mutableSS->DefaultState = name;
+                            }
+                        }
+                        else
+                        {
+                            auto& layer = m_Controller->Layers[m_SelectedLayerIndex];
+                            bool isFirst = layer.States.empty();
+                            layer.States.push_back(newState);
+                            if (isFirst) layer.DefaultState = name;
+                        }
+
+                        s_Nodes.emplace_back(nodeID, AnimNodeType::BlendTree, name, glm::vec2(localMouse.x, localMouse.y));
                         m_Dirty = true;
                     }
 
@@ -1443,7 +1424,19 @@ namespace Conqueror::Editor
                     AnimSubStateData ss;
                     ss.Name = name;
                     ss.EditorPosition = { localMouse.x, localMouse.y };
-                    m_Controller->SubStates.push_back(ss);
+
+                    if (m_InSubStateView && !m_CurrentSubStateName.empty())
+                    {
+                        auto* parentSS = FindSubStateRecursive(m_Controller->Layers[m_SelectedLayerIndex].SubStates, m_CurrentSubStateName);
+                        if (parentSS)
+                        {
+                            const_cast<AnimSubStateData*>(parentSS)->SubStates.push_back(ss);
+                        }
+                    }
+                    else
+                    {
+                        m_Controller->Layers[m_SelectedLayerIndex].SubStates.push_back(ss);
+                    }
                     m_Dirty = true;
                 }
 
@@ -1457,43 +1450,41 @@ namespace Conqueror::Editor
                         {
                             int nodeID = s_NextGraphID++;
                             s_Nodes.emplace_back(nodeID, AnimNodeType::SubState, m_ClipboardStateName, glm::vec2(localMouse.x, localMouse.y));
-                            AnimSubStateData newSS;
-                            newSS.Name = m_ClipboardStateName;
-                            newSS.EditorPosition = { localMouse.x, localMouse.y };
-                            newSS.States = m_ClipboardStates;
-                            newSS.Transitions = m_ClipboardTransitions;
-                            newSS.SubStates = m_ClipboardSubStates;
-                            m_Controller->SubStates.push_back(newSS);
+                            AnimSubStateData ss;
+                            ss.Name = m_ClipboardStateName;
+                            ss.EditorPosition = { localMouse.x, localMouse.y };
+                            ss.States = m_ClipboardStates;
+                            ss.Transitions = m_ClipboardTransitions;
+                            ss.SubStates = m_ClipboardSubStates;
+
+                            if (m_InSubStateView && !m_CurrentSubStateName.empty())
+                            {
+                                auto* parentSS = FindSubStateRecursive(m_Controller->Layers[m_SelectedLayerIndex].SubStates, m_CurrentSubStateName);
+                                if (parentSS)
+                                {
+                                    const_cast<AnimSubStateData*>(parentSS)->SubStates.push_back(ss);
+                                }
+                            }
+                            else
+                            {
+                                m_Controller->Layers[m_SelectedLayerIndex].SubStates.push_back(ss);
+                            }
                         }
                         else
                         {
-                            AnimState newState;
-                            bool found = false;
-                            for (auto& s : m_ClipboardStates)
+                            for (auto& s : layer.States)
                             {
                                 if (s.Name == m_ClipboardStateName)
                                 {
-                                    newState = s;
-                                    found = true;
+                                    std::string newName = s.Name + "_copy";
+                                    AnimState newState = s;
+                                    newState.Name = newName;
+                                    newState.EditorPosition = { localMouse.x, localMouse.y };
+                                    layer.States.push_back(newState);
+                                    int nodeID = s_NextGraphID++;
+                                    s_Nodes.emplace_back(nodeID, AnimNodeType::State, newName, glm::vec2(localMouse.x, localMouse.y));
                                     break;
                                 }
-                            }
-                            if (found)
-                            {
-                                std::string newName = newState.Name + "_copy";
-                                newState.Name = newName;
-                                newState.EditorPosition = { localMouse.x, localMouse.y };
-                                if (m_InSubStateView && !m_CurrentSubStateName.empty())
-                                {
-                                    auto* ss = GetCurrentSubStateData();
-                                    if (ss) ss->States.push_back(newState);
-                                }
-                                else
-                                {
-                                    layer.States.push_back(newState);
-                                }
-                                int nodeID = s_NextGraphID++;
-                                s_Nodes.emplace_back(nodeID, AnimNodeType::State, newName, glm::vec2(localMouse.x, localMouse.y));
                             }
                         }
                         m_Dirty = true;
@@ -1521,7 +1512,7 @@ namespace Conqueror::Editor
                     {
                         m_ClipboardTransitions.push_back(t);
                     }
-                    for (auto& ss : m_Controller->SubStates)
+                    for (auto& ss : m_Controller->Layers[m_SelectedLayerIndex].SubStates)
                     {
                         m_ClipboardSubStates.push_back(ss);
                     }
@@ -1563,7 +1554,7 @@ namespace Conqueror::Editor
                         m_SelectedTransitionFrom.clear();
                         m_SelectedTransitionTo.clear();
                     }
-                    else if (node && node->Type == AnimNodeType::State && m_NavigationStack.empty())
+                    else if (node && node->Type == AnimNodeType::BlendTree && m_NavigationStack.empty())
                     {
                         // BlendTree görünümüne gir
                         m_BlendTreeView = true;
@@ -1821,30 +1812,7 @@ namespace Conqueror::Editor
             if (node && node->Type == AnimNodeType::State && m_Controller && !m_Controller->Layers.empty())
             {
                 auto& layer = m_Controller->Layers[m_SelectedLayerIndex];
-                AnimState* state = m_Controller->GetState(layer, node->StateName);
-
-                if (!state && m_InSubStateView && !m_CurrentSubStateName.empty())
-                {
-                    for (auto& lyr : m_Controller->Layers)
-                    {
-                        if (lyr.Name == m_CurrentSubStateName)
-                        {
-                            state = m_Controller->GetState(lyr, node->StateName);
-                            if (state) break;
-                        }
-                    }
-                    if (!state)
-                    {
-                        auto* ss = GetCurrentSubStateData();
-                        if (ss)
-                        {
-                            for (auto& s : ss->States)
-                            {
-                                if (s.Name == node->StateName) { state = &s; break; }
-                            }
-                        }
-                    }
-                }
+                auto* state = m_Controller->GetState(layer, node->StateName);
 
                 if (state)
                 {
@@ -1858,28 +1826,12 @@ namespace Conqueror::Editor
                         std::string oldName = state->Name;
                         state->Name = nameBuf;
                         node->StateName = nameBuf;
-                        auto* transitions = GetCurrentTransitions();
-                        if (transitions)
+                        for (auto& trans : layer.Transitions)
                         {
-                            for (auto& trans : *transitions)
-                            {
-                                if (trans.FromState == oldName) trans.FromState = nameBuf;
-                                if (trans.ToState == oldName) trans.ToState = nameBuf;
-                            }
+                            if (trans.FromState == oldName) trans.FromState = nameBuf;
+                            if (trans.ToState == oldName) trans.ToState = nameBuf;
                         }
-                        if (m_InSubStateView && !m_CurrentSubStateName.empty())
-                        {
-                            for (auto& lyr : m_Controller->Layers)
-                            {
-                                if (lyr.Name == m_CurrentSubStateName && lyr.DefaultState == oldName) { lyr.DefaultState = nameBuf; break; }
-                            }
-                            auto* ss = GetCurrentSubStateData();
-                            if (ss && ss->DefaultState == oldName) ss->DefaultState = nameBuf;
-                        }
-                        else
-                        {
-                            if (layer.DefaultState == oldName) layer.DefaultState = nameBuf;
-                        }
+                        if (layer.DefaultState == oldName) layer.DefaultState = nameBuf;
                         m_Dirty = true;
                     }
 
@@ -1921,25 +1873,7 @@ namespace Conqueror::Editor
 
                     ImGui::Separator();
 
-                    std::string currentDefaultState;
-                    if (m_InSubStateView && !m_CurrentSubStateName.empty())
-                    {
-                        for (const auto& lyr : m_Controller->Layers)
-                        {
-                            if (lyr.Name == m_CurrentSubStateName) { currentDefaultState = lyr.DefaultState; break; }
-                        }
-                        if (currentDefaultState.empty())
-                        {
-                            auto* ss = GetCurrentSubStateData();
-                            if (ss) currentDefaultState = ss->DefaultState;
-                        }
-                    }
-                    else
-                    {
-                        currentDefaultState = layer.DefaultState;
-                    }
-
-                    bool isDefault = (currentDefaultState == state->Name);
+                    bool isDefault = (layer.DefaultState == state->Name);
                     if (isDefault)
                     {
                         ImGui::TextColored(ImVec4(0.2f, 0.8f, 0.2f, 1.f), "Default State");
@@ -1948,19 +1882,7 @@ namespace Conqueror::Editor
                     {
                     if (ImGui::Button("Set as Default"))
                     {
-                        if (m_InSubStateView && !m_CurrentSubStateName.empty())
-                        {
-                            for (auto& lyr : m_Controller->Layers)
-                            {
-                                if (lyr.Name == m_CurrentSubStateName) { lyr.DefaultState = state->Name; break; }
-                            }
-                            auto* ss = GetCurrentSubStateData();
-                            if (ss) ss->DefaultState = state->Name;
-                        }
-                        else
-                        {
-                            layer.DefaultState = state->Name;
-                        }
+                        layer.DefaultState = state->Name;
                         m_Dirty = true;
                     }
                     }
@@ -1980,18 +1902,7 @@ namespace Conqueror::Editor
             {
                 ImGui::Text("Entry Node");
                 ImGui::TextDisabled("Connects to Default State");
-                if (m_InSubStateView && !m_CurrentSubStateName.empty())
-                {
-                    for (const auto& lyr : m_Controller->Layers)
-                    {
-                        if (lyr.Name == m_CurrentSubStateName) { ImGui::Text("Default: %s", lyr.DefaultState.c_str()); break; }
-                    }
-                    {
-                        auto* ss = GetCurrentSubStateData();
-                        if (ss) ImGui::Text("Default: %s", ss->DefaultState.c_str());
-                    }
-                }
-                else if (m_Controller && !m_Controller->Layers.empty())
+                if (m_Controller && !m_Controller->Layers.empty())
                 {
                     ImGui::Text("Default: %s", m_Controller->Layers[m_SelectedLayerIndex].DefaultState.c_str());
                 }
@@ -2012,7 +1923,16 @@ namespace Conqueror::Editor
             ImGui::Text("From: %s", m_SelectedTransitionFrom.c_str());
             ImGui::Text("To: %s", m_SelectedTransitionTo.c_str());
 
-            AnimTransition* trans = FindCurrentTransition(m_SelectedTransitionFrom, m_SelectedTransitionTo);
+            auto& layer = m_Controller->Layers[m_SelectedLayerIndex];
+            AnimTransition* trans = nullptr;
+            for (auto& t : layer.Transitions)
+            {
+                if (t.FromState == m_SelectedTransitionFrom && t.ToState == m_SelectedTransitionTo)
+                {
+                    trans = &t;
+                    break;
+                }
+            }
 
             if (trans)
             {
@@ -2097,16 +2017,12 @@ namespace Conqueror::Editor
 
                 if (ImGui::Button("Delete Transition"))
                 {
-                    auto* delTransitions = GetCurrentTransitions();
-                    if (delTransitions)
-                    {
-                        delTransitions->erase(
-                            std::remove_if(delTransitions->begin(), delTransitions->end(),
-                                [&](const AnimTransition& t) {
-                                    return t.FromState == m_SelectedTransitionFrom && t.ToState == m_SelectedTransitionTo;
-                                }),
-                            delTransitions->end());
-                    }
+                    layer.Transitions.erase(
+                        std::remove_if(layer.Transitions.begin(), layer.Transitions.end(),
+                            [&](const AnimTransition& t) {
+                                return t.FromState == m_SelectedTransitionFrom && t.ToState == m_SelectedTransitionTo;
+                            }),
+                        layer.Transitions.end());
 
                     s_TransitionEdges.erase(
                         std::remove_if(s_TransitionEdges.begin(), s_TransitionEdges.end(),
@@ -2154,13 +2070,19 @@ namespace Conqueror::Editor
             }
 
             // SubState içine ekle
-            auto* ss = GetCurrentSubStateData();
-            if (ss)
+            auto* targetSS = FindSubStateRecursive(m_Controller->Layers[m_SelectedLayerIndex].SubStates, m_CurrentSubStateName);
+            if (targetSS)
             {
+                auto* mutableSS = const_cast<AnimSubStateData*>(targetSS);
+                bool isFirst = mutableSS->States.empty();
                 AnimState newState;
                 newState.Name = name;
                 newState.EditorPosition = { x, y };
-                ss->States.push_back(newState);
+                mutableSS->States.push_back(newState);
+                if (isFirst)
+                {
+                    mutableSS->DefaultState = name;
+                }
                 int nodeID = s_NextGraphID++;
                 s_Nodes.emplace_back(nodeID, AnimNodeType::State, name, glm::vec2(x, y));
                 return;
@@ -2170,7 +2092,13 @@ namespace Conqueror::Editor
         AnimState state;
         state.Name = name;
         state.EditorPosition = { x, y };
-        m_Controller->Layers[targetLayerIdx].States.push_back(state);
+        auto& targetLayer = m_Controller->Layers[targetLayerIdx];
+        bool isFirst = targetLayer.States.empty();
+        targetLayer.States.push_back(state);
+        if (isFirst)
+        {
+            targetLayer.DefaultState = name;
+        }
 
         int nodeID = s_NextGraphID++;
         s_Nodes.emplace_back(nodeID, AnimNodeType::State, name, glm::vec2(x, y));
@@ -2182,91 +2110,77 @@ namespace Conqueror::Editor
 
         if (m_InSubStateView && !m_CurrentSubStateName.empty())
         {
-            bool isLayer = false;
-            for (const auto& lyr : m_Controller->Layers)
+            auto* targetSS = FindSubStateRecursive(m_Controller->Layers[m_SelectedLayerIndex].SubStates, m_CurrentSubStateName);
+            if (targetSS)
             {
-                if (lyr.Name == m_CurrentSubStateName) { isLayer = true; break; }
-            }
-
-            if (isLayer)
-            {
-                for (auto& lyr : m_Controller->Layers)
+                for (const auto& t : targetSS->Transitions)
                 {
-                    if (lyr.Name == m_CurrentSubStateName)
-                    {
-                        for (const auto& t : lyr.Transitions)
-                        {
-                            if (t.FromState == from && t.ToState == to) return;
-                        }
-                        AnimTransition trans;
-                        trans.FromState = from;
-                        trans.ToState = to;
-                        trans.Duration = 0.25f;
-                        trans.ExitTime = 0.8f;
-                        lyr.Transitions.push_back(trans);
+                    if (t.FromState == from && t.ToState == to) return;
+                }
+                AnimTransition trans;
+                trans.FromState = from;
+                trans.ToState = to;
+                trans.Duration = 0.25f;
+                trans.ExitTime = 0.8f;
+                const_cast<AnimSubStateData*>(targetSS)->Transitions.push_back(trans);
 
-                        bool foundEdge = false;
-                        for (auto& edge : s_TransitionEdges)
-                        {
-                            if ((edge.LeftState == from && edge.RightState == to) || (edge.LeftState == to && edge.RightState == from))
-                            { foundEdge = true; break; }
-                        }
-                        if (!foundEdge)
-                        {
-                            auto* fromNode = FindNodeByStateName(from);
-                            auto* toNode = FindNodeByStateName(to);
-                            if (fromNode && toNode)
-                            {
-                                TransitionEdge edge;
-                                if (fromNode->EditorPosition.x <= toNode->EditorPosition.x)
-                                { edge.LeftState = from; edge.RightState = to; }
-                                else
-                                { edge.LeftState = to; edge.RightState = from; }
-                                s_TransitionEdges.push_back(edge);
-                            }
-                        }
-                        return;
+                bool foundEdge = false;
+                for (auto& edge : s_TransitionEdges)
+                {
+                    if ((edge.LeftState == from && edge.RightState == to) || (edge.LeftState == to && edge.RightState == from))
+                    { foundEdge = true; break; }
+                }
+                if (!foundEdge)
+                {
+                    auto* fromNode = FindNodeByStateName(from);
+                    auto* toNode = FindNodeByStateName(to);
+                    if (fromNode && toNode)
+                    {
+                        TransitionEdge edge;
+                        if (fromNode->EditorPosition.x <= toNode->EditorPosition.x)
+                        { edge.LeftState = from; edge.RightState = to; }
+                        else
+                        { edge.LeftState = to; edge.RightState = from; }
+                        s_TransitionEdges.push_back(edge);
                     }
                 }
+                return;
             }
-            else
+            auto* targetLayer = m_Controller->GetLayer(m_CurrentSubStateName);
+            if (targetLayer)
             {
-                auto* ss = GetCurrentSubStateData();
-                if (ss)
+                for (const auto& t : targetLayer->Transitions)
                 {
-                    for (const auto& t : ss->Transitions)
-                    {
-                        if (t.FromState == from && t.ToState == to) return;
-                    }
-                    AnimTransition trans;
-                    trans.FromState = from;
-                    trans.ToState = to;
-                    trans.Duration = 0.25f;
-                    trans.ExitTime = 0.8f;
-                    ss->Transitions.push_back(trans);
-
-                    bool foundEdge = false;
-                    for (auto& edge : s_TransitionEdges)
-                    {
-                        if ((edge.LeftState == from && edge.RightState == to) || (edge.LeftState == to && edge.RightState == from))
-                        { foundEdge = true; break; }
-                    }
-                    if (!foundEdge)
-                    {
-                        auto* fromNode = FindNodeByStateName(from);
-                        auto* toNode = FindNodeByStateName(to);
-                        if (fromNode && toNode)
-                        {
-                            TransitionEdge edge;
-                            if (fromNode->EditorPosition.x <= toNode->EditorPosition.x)
-                            { edge.LeftState = from; edge.RightState = to; }
-                            else
-                            { edge.LeftState = to; edge.RightState = from; }
-                            s_TransitionEdges.push_back(edge);
-                        }
-                    }
-                    return;
+                    if (t.FromState == from && t.ToState == to) return;
                 }
+                AnimTransition trans;
+                trans.FromState = from;
+                trans.ToState = to;
+                trans.Duration = 0.25f;
+                trans.ExitTime = 0.8f;
+                targetLayer->Transitions.push_back(trans);
+
+                bool foundEdge = false;
+                for (auto& edge : s_TransitionEdges)
+                {
+                    if ((edge.LeftState == from && edge.RightState == to) || (edge.LeftState == to && edge.RightState == from))
+                    { foundEdge = true; break; }
+                }
+                if (!foundEdge)
+                {
+                    auto* fromNode = FindNodeByStateName(from);
+                    auto* toNode = FindNodeByStateName(to);
+                    if (fromNode && toNode)
+                    {
+                        TransitionEdge edge;
+                        if (fromNode->EditorPosition.x <= toNode->EditorPosition.x)
+                        { edge.LeftState = from; edge.RightState = to; }
+                        else
+                        { edge.LeftState = to; edge.RightState = from; }
+                        s_TransitionEdges.push_back(edge);
+                    }
+                }
+                return;
             }
             return;
         }
@@ -2325,33 +2239,22 @@ namespace Conqueror::Editor
 
         if (m_InSubStateView && !m_CurrentSubStateName.empty())
         {
-            bool isLayer = false;
-            for (const auto& lyr : m_Controller->Layers)
+            auto* targetSS = FindSubStateRecursive(m_Controller->Layers[m_SelectedLayerIndex].SubStates, m_CurrentSubStateName);
+            if (targetSS)
             {
-                if (lyr.Name == m_CurrentSubStateName) { isLayer = true; break; }
-            }
-
-            if (isLayer)
-            {
-                for (auto& lyr : m_Controller->Layers)
-                {
-                    if (lyr.Name == m_CurrentSubStateName)
-                    {
-                        lyr.States.erase(std::remove_if(lyr.States.begin(), lyr.States.end(), [name](const AnimState& s) { return s.Name == name; }), lyr.States.end());
-                        lyr.Transitions.erase(std::remove_if(lyr.Transitions.begin(), lyr.Transitions.end(), [name](const AnimTransition& t) { return t.FromState == name || t.ToState == name; }), lyr.Transitions.end());
-                        if (lyr.DefaultState == name && !lyr.States.empty()) lyr.DefaultState = lyr.States[0].Name;
-                        break;
-                    }
-                }
+                auto* ss = const_cast<AnimSubStateData*>(targetSS);
+                ss->States.erase(std::remove_if(ss->States.begin(), ss->States.end(), [name](const AnimState& s) { return s.Name == name; }), ss->States.end());
+                ss->Transitions.erase(std::remove_if(ss->Transitions.begin(), ss->Transitions.end(), [name](const AnimTransition& t) { return t.FromState == name || t.ToState == name; }), ss->Transitions.end());
+                if (ss->DefaultState == name && !ss->States.empty()) ss->DefaultState = ss->States[0].Name;
             }
             else
             {
-                auto* ss = GetCurrentSubStateData();
-                if (ss)
+                auto* lyr = m_Controller->GetLayer(m_CurrentSubStateName);
+                if (lyr)
                 {
-                    ss->States.erase(std::remove_if(ss->States.begin(), ss->States.end(), [name](const AnimState& s) { return s.Name == name; }), ss->States.end());
-                    ss->Transitions.erase(std::remove_if(ss->Transitions.begin(), ss->Transitions.end(), [name](const AnimTransition& t) { return t.FromState == name || t.ToState == name; }), ss->Transitions.end());
-                    if (ss->DefaultState == name && !ss->States.empty()) ss->DefaultState = ss->States[0].Name;
+                    lyr->States.erase(std::remove_if(lyr->States.begin(), lyr->States.end(), [name](const AnimState& s) { return s.Name == name; }), lyr->States.end());
+                    lyr->Transitions.erase(std::remove_if(lyr->Transitions.begin(), lyr->Transitions.end(), [name](const AnimTransition& t) { return t.FromState == name || t.ToState == name; }), lyr->Transitions.end());
+                    if (lyr->DefaultState == name && !lyr->States.empty()) lyr->DefaultState = lyr->States[0].Name;
                 }
             }
         }

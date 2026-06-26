@@ -38,6 +38,7 @@ namespace Conqueror::Editor
 
         glm::vec2 GetViewportSize() const { return m_ViewportSize; }
         const glm::vec2* GetViewportBounds() const { return m_ViewportBounds; }
+        bool IsViewportHovered() const { return m_ViewportHovered; }
         std::shared_ptr<Framebuffer> GetFramebuffer() const { return m_Framebuffer; }
         EditorCamera& GetEditorCamera() { return m_EditorCamera; }
 

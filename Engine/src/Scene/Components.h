@@ -403,15 +403,6 @@ namespace Conqueror
         std::vector<AnimParameterRuntimeValue> Parameters;
         std::vector<glm::mat4> BoneMatricesGPU;
 
-        struct SubStateStackEntry
-        {
-            std::string SubStateName;
-            std::string StateName;
-            float CurrentTime = 0.f;
-            bool IsInSubState = false;
-        };
-        std::vector<SubStateStackEntry> SubStateStack;
-
         AnimationComponent() = default;
         AnimationComponent(const AnimationComponent&) = default;
     };

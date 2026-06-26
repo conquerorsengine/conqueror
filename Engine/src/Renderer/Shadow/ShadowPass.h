@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Base/Base.h"
+#include "ShadowMap.h"
 #include "Renderer/RHI/Shader.h"
 #include "Scene/Components.h"
 
@@ -11,6 +12,7 @@
 namespace Conqueror
 {
     class Scene;
+    class Entity;
 
     class CQ_API ShadowPass
     {
@@ -18,28 +20,36 @@ namespace Conqueror
         ShadowPass();
         ~ShadowPass() = default;
 
-        bool Init();
+        void Init();
         void Shutdown();
 
         void Execute(Scene* scene, const DirectionalLightComponent& dirLight,
-                     const glm::vec3& lightDirection, const glm::vec3& cameraPosition,
-                     const glm::mat4& cameraViewProj);
+                     const glm::vec3& lightDirection);
 
         void BindShadowMapsToShader(std::shared_ptr<Shader> shader);
 
-        bool IsReady() const { return m_Ready; }
+        std::shared_ptr<ShadowMap> GetDirectionalShadowMap() const { return m_DirectionalShadowMap; }
+        const std::vector<glm::mat4>& GetLightSpaceMatrices() const { return m_LightSpaceMatrices; }
 
+        // Cascade settings
+        int CascadeCount = 4;
+        float CascadeSplitLambda = 0.75f;
+        float CascadeNearPlane = 0.1f;
+        float CascadeFarPlane = 100.0f;
         float ShadowBias = 0.005f;
         float NormalBias = 0.02f;
-        float ShadowDistance = 60.0f;
 
     private:
-        bool m_Ready = false;
-        uint32_t m_ShadowFBO = 0;
-        uint32_t m_ShadowDepthTex = 0;
-        uint32_t m_ShadowWidth = 2048;
-        uint32_t m_ShadowHeight = 2048;
+        void CalculateCascadeSplits(float nearPlane, float farPlane, std::vector<float>& splits);
+        glm::mat4 CalculateLightSpaceMatrix(const glm::vec3& lightDir,
+                                             const glm::vec3& center, float radius,
+                                             float nearZ, float farZ);
+        void CalculateFrustumCorners(const glm::mat4& viewProj, glm::vec3* corners);
+        float CalculateFitRadius(const glm::vec3* corners, const glm::vec3& lightDir);
+
+        std::shared_ptr<ShadowMap> m_DirectionalShadowMap;
         std::shared_ptr<Shader> m_DepthShader;
-        glm::mat4 m_LightSpaceMatrix = glm::mat4(1.0f);
+        std::vector<glm::mat4> m_LightSpaceMatrices;
+        std::vector<float> m_CascadeSplits;
     };
 }

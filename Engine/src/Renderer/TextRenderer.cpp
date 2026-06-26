@@ -78,6 +78,14 @@ namespace Conqueror
         s_Data.ViewProjection = camera.GetProjection() * glm::inverse(transform);
     }
 
+    void TextRenderer::BeginScene(const glm::mat4& viewProjection, bool enableDepthTest)
+    {
+        s_DepthTestEnabled = enableDepthTest;
+        s_Data.ViewProjection = viewProjection;
+    }
+
+
+
     void TextRenderer::EndScene()
     {
     }

@@ -14,6 +14,7 @@
 #include "Networking/NetworkManager.h"
 #include "Networking/RPC/RPCSystem.h"
 #include "Core/Debug/DebugDraw.h"
+#include "Core/Debug/DebugSolidDraw.h"
 #include "Core/Debug/DebugPalette.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -1268,5 +1269,239 @@ namespace Conqueror::CQS
 
         DebugDraw::SetEnabled(args[0].IsTruthy());
         return Value::MakeNull();
+    }
+
+    Value CQSNativeBridge::DebugDrawSetLineWidth(int argCount, Value* args)
+    {
+        if (argCount < 1)
+            return Value::MakeNull();
+
+        float width = CQSDebugToFloat(args[0], 2.0f);
+        DebugDraw::SetLineWidth(width);
+        return Value::MakeNull();
+    }
+
+    // ── DebugDraw with color ──
+    static glm::vec4 CQSDebugToColor(const Value& value, const glm::vec4& fallback = glm::vec4(1.0f))
+    {
+        if (value.IsMap())
+        {
+            auto* map = value.AsMap();
+            auto read = [&](const char* key, float def) {
+                auto it = map->Entries.find(key);
+                return it != map->Entries.end() ? static_cast<float>(it->second.ToNumber()) : def;
+            };
+            return glm::vec4(read("r", fallback.r), read("g", fallback.g), read("b", fallback.b), read("a", fallback.a));
+        }
+        return fallback;
+    }
+
+    Value CQSNativeBridge::DebugDrawLineC(int argCount, Value* args)
+    {
+        if (argCount < 3) return Value::MakeNull();
+        glm::vec3 start = CQSDebugToVec3(args[0]);
+        glm::vec3 end = CQSDebugToVec3(args[1]);
+        float duration = CQSDebugToFloat(args[2], 0.0f);
+        glm::vec4 color = argCount >= 4 ? CQSDebugToColor(args[3]) : DebugPalette::White;
+        DebugDraw::Line(start, end, color, duration, true);
+        return Value::MakeNull();
+    }
+
+    Value CQSNativeBridge::DebugDrawSolidBoxC(int argCount, Value* args)
+    {
+        if (argCount < 3) return Value::MakeNull();
+        glm::vec3 center = CQSDebugToVec3(args[0]);
+        glm::vec3 size = CQSDebugToVec3(args[1], glm::vec3(1.0f));
+        float duration = CQSDebugToFloat(args[2], 0.0f);
+        glm::vec4 color = argCount >= 4 ? CQSDebugToColor(args[3]) : DebugPalette::SolidBounds;
+        glm::mat4 transform = glm::translate(glm::mat4(1.0f), center) * glm::scale(glm::mat4(1.0f), size);
+        DebugDraw::SolidBox(transform, color, duration, true);
+        return Value::MakeNull();
+    }
+
+    Value CQSNativeBridge::DebugDrawSolidSphereC(int argCount, Value* args)
+    {
+        if (argCount < 3) return Value::MakeNull();
+        glm::vec3 center = CQSDebugToVec3(args[0]);
+        float radius = CQSDebugToFloat(args[1], 0.5f);
+        float duration = CQSDebugToFloat(args[2], 0.0f);
+        glm::vec4 color = argCount >= 4 ? CQSDebugToColor(args[3]) : DebugPalette::SolidBounds;
+        DebugDraw::SolidSphere(center, radius, color, duration, true);
+        return Value::MakeNull();
+    }
+
+    Value CQSNativeBridge::DebugDrawTriangleC(int argCount, Value* args)
+    {
+        if (argCount < 4) return Value::MakeNull();
+        glm::vec3 a = CQSDebugToVec3(args[0]);
+        glm::vec3 b = CQSDebugToVec3(args[1]);
+        glm::vec3 c = CQSDebugToVec3(args[2]);
+        float duration = CQSDebugToFloat(args[3], 0.0f);
+        glm::vec4 color = argCount >= 5 ? CQSDebugToColor(args[4]) : DebugPalette::White;
+        DebugDraw::Triangle(a, b, c, color, duration, true);
+        return Value::MakeNull();
+    }
+
+    Value CQSNativeBridge::DebugDrawSolidTriangleC(int argCount, Value* args)
+    {
+        if (argCount < 4) return Value::MakeNull();
+        glm::vec3 a = CQSDebugToVec3(args[0]);
+        glm::vec3 b = CQSDebugToVec3(args[1]);
+        glm::vec3 c = CQSDebugToVec3(args[2]);
+        float duration = CQSDebugToFloat(args[3], 0.0f);
+        glm::vec4 color = argCount >= 5 ? CQSDebugToColor(args[4]) : DebugPalette::White;
+        DebugSolidDraw::Triangle(a, b, c, color, true);
+        return Value::MakeNull();
+    }
+
+    Value CQSNativeBridge::DebugDrawPointC(int argCount, Value* args)
+    {
+        if (argCount < 3) return Value::MakeNull();
+        glm::vec3 pos = CQSDebugToVec3(args[0]);
+        float size = CQSDebugToFloat(args[1], 0.1f);
+        float duration = CQSDebugToFloat(args[2], 0.0f);
+        glm::vec4 color = argCount >= 4 ? CQSDebugToColor(args[3]) : DebugPalette::White;
+        DebugDraw::Point(pos, size, color, duration, true);
+        return Value::MakeNull();
+    }
+
+    // ── Viewport Helpers ──
+    Value CQSNativeBridge::IsViewportHovered(int, Value*)
+    {
+        auto* scene = static_cast<Scene*>(CQSEngine::GetActiveScene());
+        if (!scene) return Value::MakeBool(false);
+        return Value::MakeBool(scene->m_ViewportHovered);
+    }
+
+    Value CQSNativeBridge::ViewportScreenToWorld(int argCount, Value* args)
+    {
+        if (argCount < 2) return Value::MakeNull();
+        auto* scene = static_cast<Scene*>(CQSEngine::GetActiveScene());
+        if (!scene) return Value::MakeNull();
+
+        float sx = CQSDebugToFloat(args[0]);
+        float sy = CQSDebugToFloat(args[1]);
+        float planeZ = argCount >= 3 ? CQSDebugToFloat(args[2], 0.0f) : 0.0f;
+
+        float vw = scene->m_ViewportBoundsMax.x - scene->m_ViewportBoundsMin.x;
+        float vh = scene->m_ViewportBoundsMax.y - scene->m_ViewportBoundsMin.y;
+        if (vw <= 0 || vh <= 0) return Value::MakeNull();
+
+        float rx = sx - scene->m_ViewportBoundsMin.x;
+        float ry = sy - scene->m_ViewportBoundsMin.y;
+
+        if (rx < 0 || ry < 0 || rx >= vw || ry >= vh)
+            return Value::MakeNull();
+
+        glm::mat4 viewProj{1.0f};
+        bool found = false;
+
+        if (scene->GetUseEditorCameraForScripts() && scene->m_HasEditorCamera)
+        {
+            viewProj = scene->m_EditorViewProjection;
+            found = true;
+        }
+
+        if (!found)
+        {
+            auto camView = scene->m_Registry.view<CameraComponent>();
+            for (auto entity : camView)
+            {
+                auto& cc = camView.get<CameraComponent>(entity);
+                if (cc.Primary)
+                {
+                    auto& tc = scene->m_Registry.get<TransformComponent>(entity);
+                    glm::mat4 view = glm::inverse(tc.WorldTransform);
+                    glm::mat4 proj = cc.Camera.GetProjection();
+                    viewProj = proj * view;
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        if (!found && scene->m_HasEditorCamera)
+        {
+            viewProj = scene->m_EditorViewProjection;
+            found = true;
+        }
+
+        if (!found) return Value::MakeNull();
+
+        glm::mat4 invVP = glm::inverse(viewProj);
+
+        glm::vec2 ndc;
+        ndc.x = (2.0f * rx) / vw - 1.0f;
+        ndc.y = 1.0f - (2.0f * ry) / vh;
+
+        glm::vec4 nearPoint = invVP * glm::vec4(ndc.x, ndc.y, -1.0f, 1.0f);
+        nearPoint /= nearPoint.w;
+
+        glm::vec4 farPoint = invVP * glm::vec4(ndc.x, ndc.y, 1.0f, 1.0f);
+        farPoint /= farPoint.w;
+
+        glm::vec3 rayOrigin = glm::vec3(nearPoint);
+        glm::vec3 rayEnd = glm::vec3(farPoint);
+        glm::vec3 rayDir = rayEnd - rayOrigin;
+
+        float denom = rayDir.z;
+        if (std::abs(denom) < 1e-6f)
+        {
+            rayDir = glm::normalize(rayDir);
+            if (std::abs(rayDir.y) > 1e-6f)
+            {
+                float tY = (planeZ - rayOrigin.y) / rayDir.y;
+                glm::vec3 worldPos = rayOrigin + tY * rayDir;
+                auto* map = new CQSMapObject();
+                map->Entries["x"] = Value::MakeFloat(worldPos.x);
+                map->Entries["y"] = Value::MakeFloat(worldPos.y);
+                map->Entries["z"] = Value::MakeFloat(planeZ);
+                return Value::MakeObject(map);
+            }
+            return Value::MakeNull();
+        }
+
+        float t = (planeZ - rayOrigin.z) / denom;
+        glm::vec3 worldPos = rayOrigin + t * rayDir;
+
+        if (std::isnan(worldPos.x) || std::isinf(worldPos.x) ||
+            std::isnan(worldPos.y) || std::isinf(worldPos.y))
+            return Value::MakeNull();
+
+        auto* map = new CQSMapObject();
+        map->Entries["x"] = Value::MakeFloat(worldPos.x);
+        map->Entries["y"] = Value::MakeFloat(worldPos.y);
+        map->Entries["z"] = Value::MakeFloat(planeZ);
+        return Value::MakeObject(map);
+    }
+
+    Value CQSNativeBridge::GetViewportBoundsMin(int, Value*)
+    {
+        auto* scene = static_cast<Scene*>(CQSEngine::GetActiveScene());
+        if (!scene) return Value::MakeNull();
+        auto* map = new CQSMapObject();
+        map->Entries["x"] = Value::MakeFloat(scene->m_ViewportBoundsMin.x);
+        map->Entries["y"] = Value::MakeFloat(scene->m_ViewportBoundsMin.y);
+        return Value::MakeObject(map);
+    }
+
+    Value CQSNativeBridge::GetViewportBoundsMax(int, Value*)
+    {
+        auto* scene = static_cast<Scene*>(CQSEngine::GetActiveScene());
+        if (!scene) return Value::MakeNull();
+        auto* map = new CQSMapObject();
+        map->Entries["x"] = Value::MakeFloat(scene->m_ViewportBoundsMax.x);
+        map->Entries["y"] = Value::MakeFloat(scene->m_ViewportBoundsMax.y);
+        return Value::MakeObject(map);
+    }
+
+    Value CQSNativeBridge::GetViewportSize(int, Value*)
+    {
+        auto* scene = static_cast<Scene*>(CQSEngine::GetActiveScene());
+        if (!scene) return Value::MakeNull();
+        auto* map = new CQSMapObject();
+        map->Entries["x"] = Value::MakeFloat((double)scene->m_ViewportWidth);
+        map->Entries["y"] = Value::MakeFloat((double)scene->m_ViewportHeight);
+        return Value::MakeObject(map);
     }
 }

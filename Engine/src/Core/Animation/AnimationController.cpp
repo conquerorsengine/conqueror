@@ -85,6 +85,206 @@ namespace Conqueror
         return AnimConditionMode::Greater;
     }
 
+    static void SerializeSubState(YAML::Emitter& out, const AnimSubStateData& ss)
+    {
+        out << YAML::BeginMap;
+        out << YAML::Key << "Name" << YAML::Value << ss.Name;
+        out << YAML::Key << "EditorPosX" << YAML::Value << ss.EditorPosition.x;
+        out << YAML::Key << "EditorPosY" << YAML::Value << ss.EditorPosition.y;
+        out << YAML::Key << "DefaultState" << YAML::Value << ss.DefaultState;
+
+        out << YAML::Key << "States" << YAML::Value << YAML::BeginSeq;
+        for (const auto& state : ss.States)
+        {
+            out << YAML::BeginMap;
+            out << YAML::Key << "Name" << YAML::Value << state.Name;
+            out << YAML::Key << "ClipName" << YAML::Value << state.ClipName;
+            out << YAML::Key << "ClipIndex" << YAML::Value << state.ClipIndex;
+            out << YAML::Key << "Speed" << YAML::Value << state.Speed;
+            out << YAML::Key << "Loop" << YAML::Value << state.Loop;
+            out << YAML::Key << "EditorPosX" << YAML::Value << state.EditorPosition.x;
+            out << YAML::Key << "EditorPosY" << YAML::Value << state.EditorPosition.y;
+            out << YAML::EndMap;
+        }
+        out << YAML::EndSeq;
+
+        out << YAML::Key << "Transitions" << YAML::Value << YAML::BeginSeq;
+        for (const auto& trans : ss.Transitions)
+        {
+            out << YAML::BeginMap;
+            out << YAML::Key << "From" << YAML::Value << trans.FromState;
+            out << YAML::Key << "To" << YAML::Value << trans.ToState;
+            out << YAML::Key << "Duration" << YAML::Value << trans.Duration;
+            out << YAML::Key << "ExitTime" << YAML::Value << trans.ExitTime;
+            out << YAML::Key << "HasExitTime" << YAML::Value << trans.HasExitTime;
+            out << YAML::EndMap;
+        }
+        out << YAML::EndSeq;
+
+        out << YAML::Key << "Layers" << YAML::Value << YAML::BeginSeq;
+        for (const auto& layer : ss.Layers)
+        {
+            out << YAML::BeginMap;
+            out << YAML::Key << "Name" << YAML::Value << layer.Name;
+            out << YAML::Key << "Weight" << YAML::Value << layer.Weight;
+            out << YAML::Key << "Solo" << YAML::Value << layer.Solo;
+            out << YAML::Key << "Mute" << YAML::Value << layer.Mute;
+            out << YAML::Key << "DefaultState" << YAML::Value << layer.DefaultState;
+
+            out << YAML::Key << "States" << YAML::Value << YAML::BeginSeq;
+            for (const auto& state : layer.States)
+            {
+                out << YAML::BeginMap;
+                out << YAML::Key << "Name" << YAML::Value << state.Name;
+                out << YAML::Key << "Type" << YAML::Value << (state.Type == AnimStateType::BlendTree ? "BlendTree" : "State");
+                out << YAML::Key << "ClipName" << YAML::Value << state.ClipName;
+                out << YAML::Key << "ClipIndex" << YAML::Value << state.ClipIndex;
+                out << YAML::Key << "Speed" << YAML::Value << state.Speed;
+                out << YAML::Key << "Loop" << YAML::Value << state.Loop;
+                out << YAML::Key << "EditorPosX" << YAML::Value << state.EditorPosition.x;
+                out << YAML::Key << "EditorPosY" << YAML::Value << state.EditorPosition.y;
+                out << YAML::EndMap;
+            }
+            out << YAML::EndSeq;
+
+            out << YAML::Key << "Transitions" << YAML::Value << YAML::BeginSeq;
+            for (const auto& transition : layer.Transitions)
+            {
+                out << YAML::BeginMap;
+                out << YAML::Key << "From" << YAML::Value << transition.FromState;
+                out << YAML::Key << "To" << YAML::Value << transition.ToState;
+                out << YAML::Key << "Duration" << YAML::Value << transition.Duration;
+                out << YAML::Key << "ExitTime" << YAML::Value << transition.ExitTime;
+                out << YAML::Key << "HasExitTime" << YAML::Value << transition.HasExitTime;
+                out << YAML::EndMap;
+            }
+            out << YAML::EndSeq;
+
+            out << YAML::EndMap;
+        }
+        out << YAML::EndSeq;
+
+        out << YAML::Key << "SubStates" << YAML::Value << YAML::BeginSeq;
+        for (const auto& nestedSS : ss.SubStates)
+        {
+            SerializeSubState(out, nestedSS);
+        }
+        out << YAML::EndSeq;
+
+        out << YAML::EndMap;
+    }
+
+    static AnimSubStateData DeserializeSubState(const YAML::Node& ssNode)
+    {
+        AnimSubStateData ss;
+        ss.Name = ssNode["Name"].as<std::string>();
+        if (ssNode["EditorPosX"])
+            ss.EditorPosition.x = ssNode["EditorPosX"].as<float>();
+        if (ssNode["EditorPosY"])
+            ss.EditorPosition.y = ssNode["EditorPosY"].as<float>();
+        if (ssNode["DefaultState"])
+            ss.DefaultState = ssNode["DefaultState"].as<std::string>();
+
+        auto statesNode = ssNode["States"];
+        if (statesNode)
+        {
+            for (auto stateNode : statesNode)
+            {
+                AnimState state;
+                state.Name = stateNode["Name"].as<std::string>();
+                if (stateNode["Type"])
+                    state.Type = stateNode["Type"].as<std::string>() == "BlendTree" ? AnimStateType::BlendTree : AnimStateType::State;
+                state.ClipName = stateNode["ClipName"].as<std::string>();
+                state.ClipIndex = stateNode["ClipIndex"].as<int>();
+                state.Speed = stateNode["Speed"].as<float>();
+                state.Loop = stateNode["Loop"].as<bool>();
+                if (stateNode["EditorPosX"])
+                    state.EditorPosition.x = stateNode["EditorPosX"].as<float>();
+                if (stateNode["EditorPosY"])
+                    state.EditorPosition.y = stateNode["EditorPosY"].as<float>();
+                ss.States.push_back(state);
+            }
+        }
+
+        auto transNode = ssNode["Transitions"];
+        if (transNode)
+        {
+            for (auto tNode : transNode)
+            {
+                AnimTransition transition;
+                transition.FromState = tNode["From"].as<std::string>();
+                transition.ToState = tNode["To"].as<std::string>();
+                transition.Duration = tNode["Duration"].as<float>();
+                transition.ExitTime = tNode["ExitTime"].as<float>();
+                if (tNode["HasExitTime"])
+                    transition.HasExitTime = tNode["HasExitTime"].as<bool>();
+                ss.Transitions.push_back(transition);
+            }
+        }
+
+        auto layersNode = ssNode["Layers"];
+        if (layersNode)
+        {
+            for (auto layerNode : layersNode)
+            {
+                AnimLayer layer;
+                layer.Name = layerNode["Name"].as<std::string>();
+                layer.Weight = layerNode["Weight"].as<float>();
+                if (layerNode["Solo"]) layer.Solo = layerNode["Solo"].as<bool>();
+                if (layerNode["Mute"]) layer.Mute = layerNode["Mute"].as<bool>();
+                layer.DefaultState = layerNode["DefaultState"].as<std::string>();
+
+                auto layerStatesNode = layerNode["States"];
+                if (layerStatesNode)
+                {
+                    for (auto stateNode : layerStatesNode)
+                    {
+                        AnimState state;
+                        state.Name = stateNode["Name"].as<std::string>();
+                        state.ClipName = stateNode["ClipName"].as<std::string>();
+                        state.ClipIndex = stateNode["ClipIndex"].as<int>();
+                        state.Speed = stateNode["Speed"].as<float>();
+                        state.Loop = stateNode["Loop"].as<bool>();
+                        if (stateNode["EditorPosX"])
+                            state.EditorPosition.x = stateNode["EditorPosX"].as<float>();
+                        if (stateNode["EditorPosY"])
+                            state.EditorPosition.y = stateNode["EditorPosY"].as<float>();
+                        layer.States.push_back(state);
+                    }
+                }
+
+                auto layerTransNode = layerNode["Transitions"];
+                if (layerTransNode)
+                {
+                    for (auto tNode : layerTransNode)
+                    {
+                        AnimTransition transition;
+                        transition.FromState = tNode["From"].as<std::string>();
+                        transition.ToState = tNode["To"].as<std::string>();
+                        transition.Duration = tNode["Duration"].as<float>();
+                        transition.ExitTime = tNode["ExitTime"].as<float>();
+                        if (tNode["HasExitTime"])
+                            transition.HasExitTime = tNode["HasExitTime"].as<bool>();
+                        layer.Transitions.push_back(transition);
+                    }
+                }
+
+                ss.Layers.push_back(layer);
+            }
+        }
+
+        auto nestedSSNode = ssNode["SubStates"];
+        if (nestedSSNode)
+        {
+            for (auto nssNode : nestedSSNode)
+            {
+                ss.SubStates.push_back(DeserializeSubState(nssNode));
+            }
+        }
+
+        return ss;
+    }
+
     bool AnimationController::Serialize(const std::string& filepath) const
     {
         YAML::Emitter out;
@@ -108,6 +308,7 @@ namespace Conqueror
             {
                 out << YAML::BeginMap;
                 out << YAML::Key << "Name" << YAML::Value << state.Name;
+                out << YAML::Key << "Type" << YAML::Value << (state.Type == AnimStateType::BlendTree ? "BlendTree" : "State");
                 out << YAML::Key << "ClipName" << YAML::Value << state.ClipName;
                 out << YAML::Key << "ClipIndex" << YAML::Value << state.ClipIndex;
                 out << YAML::Key << "Speed" << YAML::Value << state.Speed;
@@ -149,6 +350,14 @@ namespace Conqueror
                 }
                 out << YAML::EndSeq;
 
+                // Layer SubStates
+                out << YAML::Key << "SubStates" << YAML::Value << YAML::BeginSeq;
+                for (const auto& ss : layer.SubStates)
+                {
+                    SerializeSubState(out, ss);
+                }
+                out << YAML::EndSeq;
+
                 out << YAML::EndMap;
             }
             out << YAML::EndSeq;
@@ -156,6 +365,8 @@ namespace Conqueror
             out << YAML::EndMap;
         }
         out << YAML::EndSeq;
+
+        // SubStates (root level removed, now per-layer)
 
         // Parameters
         out << YAML::Key << "Parameters" << YAML::Value << YAML::BeginSeq;
@@ -165,48 +376,6 @@ namespace Conqueror
             out << YAML::Key << "Name" << YAML::Value << param.Name;
             out << YAML::Key << "Type" << YAML::Value << AnimParameterTypeToString(param.Type);
             out << YAML::Key << "Default" << YAML::Value << param.DefaultValue;
-            out << YAML::EndMap;
-        }
-        out << YAML::EndSeq;
-
-        // SubStates
-        out << YAML::Key << "SubStates" << YAML::Value << YAML::BeginSeq;
-        for (const auto& ss : SubStates)
-        {
-            out << YAML::BeginMap;
-            out << YAML::Key << "Name" << YAML::Value << ss.Name;
-            out << YAML::Key << "EditorPosX" << YAML::Value << ss.EditorPosition.x;
-            out << YAML::Key << "EditorPosY" << YAML::Value << ss.EditorPosition.y;
-            out << YAML::Key << "DefaultState" << YAML::Value << ss.DefaultState;
-
-            out << YAML::Key << "States" << YAML::Value << YAML::BeginSeq;
-            for (const auto& state : ss.States)
-            {
-                out << YAML::BeginMap;
-                out << YAML::Key << "Name" << YAML::Value << state.Name;
-                out << YAML::Key << "ClipName" << YAML::Value << state.ClipName;
-                out << YAML::Key << "ClipIndex" << YAML::Value << state.ClipIndex;
-                out << YAML::Key << "Speed" << YAML::Value << state.Speed;
-                out << YAML::Key << "Loop" << YAML::Value << state.Loop;
-                out << YAML::Key << "EditorPosX" << YAML::Value << state.EditorPosition.x;
-                out << YAML::Key << "EditorPosY" << YAML::Value << state.EditorPosition.y;
-                out << YAML::EndMap;
-            }
-            out << YAML::EndSeq;
-
-            out << YAML::Key << "Transitions" << YAML::Value << YAML::BeginSeq;
-            for (const auto& trans : ss.Transitions)
-            {
-                out << YAML::BeginMap;
-                out << YAML::Key << "From" << YAML::Value << trans.FromState;
-                out << YAML::Key << "To" << YAML::Value << trans.ToState;
-                out << YAML::Key << "Duration" << YAML::Value << trans.Duration;
-                out << YAML::Key << "ExitTime" << YAML::Value << trans.ExitTime;
-                out << YAML::Key << "HasExitTime" << YAML::Value << trans.HasExitTime;
-                out << YAML::EndMap;
-            }
-            out << YAML::EndSeq;
-
             out << YAML::EndMap;
         }
         out << YAML::EndSeq;
@@ -324,6 +493,16 @@ namespace Conqueror
                     }
                 }
 
+                // Layer SubStates
+                auto layerSubStatesNode = layerNode["SubStates"];
+                if (layerSubStatesNode)
+                {
+                    for (auto ssNode : layerSubStatesNode)
+                    {
+                        layer.SubStates.push_back(DeserializeSubState(ssNode));
+                    }
+                }
+
                 controller->Layers.push_back(layer);
             }
         }
@@ -339,65 +518,6 @@ namespace Conqueror
                 param.Type = AnimParameterTypeFromString(paramNode["Type"].as<std::string>());
                 param.DefaultValue = paramNode["Default"].as<float>();
                 controller->Parameters.push_back(param);
-            }
-        }
-
-        // SubStates
-        auto subStatesNode = acNode["SubStates"];
-        if (subStatesNode)
-        {
-            for (auto ssNode : subStatesNode)
-            {
-                AnimSubStateData ss;
-                ss.Name = ssNode["Name"].as<std::string>();
-                if (ssNode["EditorPosX"])
-                    ss.EditorPosition.x = ssNode["EditorPosX"].as<float>();
-                if (ssNode["EditorPosY"])
-                    ss.EditorPosition.y = ssNode["EditorPosY"].as<float>();
-                if (ssNode["DefaultState"])
-                    ss.DefaultState = ssNode["DefaultState"].as<std::string>();
-
-                auto ssStatesNode = ssNode["States"];
-                if (ssStatesNode)
-                {
-                    for (auto stateNode : ssStatesNode)
-                    {
-                        AnimState state;
-                        state.Name = stateNode["Name"].as<std::string>();
-                        state.ClipName = stateNode["ClipName"].as<std::string>();
-                        state.ClipIndex = stateNode["ClipIndex"].as<int>();
-                        state.Speed = stateNode["Speed"].as<float>();
-                        state.Loop = stateNode["Loop"].as<bool>();
-                        if (stateNode["CycleOffset"]) state.CycleOffset = stateNode["CycleOffset"].as<float>();
-                        if (stateNode["Mirror"]) state.Mirror = stateNode["Mirror"].as<bool>();
-                        if (stateNode["FootIK"]) state.FootIK = stateNode["FootIK"].as<bool>();
-                        if (stateNode["WriteDefaults"]) state.WriteDefaults = stateNode["WriteDefaults"].as<bool>();
-                        if (stateNode["MotionTimeParameter"]) state.MotionTimeParameter = stateNode["MotionTimeParameter"].as<std::string>();
-                        if (stateNode["EditorPosX"])
-                            state.EditorPosition.x = stateNode["EditorPosX"].as<float>();
-                        if (stateNode["EditorPosY"])
-                            state.EditorPosition.y = stateNode["EditorPosY"].as<float>();
-                        ss.States.push_back(state);
-                    }
-                }
-
-                auto ssTransNode = ssNode["Transitions"];
-                if (ssTransNode)
-                {
-                    for (auto transNode : ssTransNode)
-                    {
-                        AnimTransition transition;
-                        transition.FromState = transNode["From"].as<std::string>();
-                        transition.ToState = transNode["To"].as<std::string>();
-                        transition.Duration = transNode["Duration"].as<float>();
-                        transition.ExitTime = transNode["ExitTime"].as<float>();
-                        if (transNode["HasExitTime"])
-                            transition.HasExitTime = transNode["HasExitTime"].as<bool>();
-                        ss.Transitions.push_back(transition);
-                    }
-                }
-
-                controller->SubStates.push_back(ss);
             }
         }
 

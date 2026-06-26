@@ -51,9 +51,6 @@ namespace Conqueror::Editor
         void RebuildGraphFromSubStateByName(const std::string& subStateName);
         void RebuildGraphFromBlendTree(const std::string& stateName);
         int GetCurrentSubStateID();
-
-        struct AnimTransition* FindCurrentTransition(const std::string& from, const std::string& to);
-        std::vector<AnimTransition>* GetCurrentTransitions();
         void AddState(const char* name, float x, float y);
         void AddTransition(const char* from, const char* to);
         void RemoveState(const char* name);
@@ -88,7 +85,5 @@ namespace Conqueror::Editor
         std::string m_CurrentSubStateName;
         bool m_BlendTreeView = false;
         std::string m_BlendTreeStateName;
-
-        AnimSubStateData* GetCurrentSubStateData();
     };
 }

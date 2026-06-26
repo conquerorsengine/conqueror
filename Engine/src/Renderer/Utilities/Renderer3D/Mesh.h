@@ -16,6 +16,7 @@ namespace Conqueror
         glm::vec3 Normal;
         glm::vec3 Tangent;
         glm::vec2 TexCoords;
+        glm::vec2 TexCoords2; // Lightmap UV
     };
 
     class Mesh
@@ -33,6 +34,9 @@ namespace Conqueror
 
         const std::vector<Vertex>& GetVertices() const { return m_Vertices; }
         const std::vector<uint32_t>& GetIndices() const { return m_Indices; }
+
+        // Lightmap UV2 guncelle + GPU'ya yukle
+        void UpdateUV2(const std::vector<glm::vec2>& newUV2);
 
         // Cube mesh oluştur
         static std::shared_ptr<Mesh> CreateCube();

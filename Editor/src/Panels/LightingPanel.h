@@ -4,9 +4,11 @@
 #include "Renderer/Lightmap/LightmapBaker.h"
 #include "Renderer/Probe/ReflectionProbe.h"
 #include "Renderer/Probe/AdaptiveProbeVolume.h"
+#include "Renderer/RHI/Texture.h"
 
 #include <memory>
 #include <string>
+#include <chrono>
 
 namespace Conqueror::Editor
 {
@@ -90,5 +92,26 @@ namespace Conqueror::Editor
         // Baking state
         bool m_IsBaking = false;
         float m_BakeProgress = 0.0f;
+        int m_BakeMode = 0; // 0=Baked, 1=Realtime
+        std::string m_BakeStep;
+
+        // Realtime lightmap state
+        bool m_RealtimeBaked = false;
+        int m_RealtimeAtlasWidth = 0;
+        int m_RealtimeAtlasHeight = 0;
+        int m_RealtimeTexelCount = 0;
+        int m_RealtimeObjectCount = 0;
+        float m_RealtimeBakeTime = 0.0f;
+        std::shared_ptr<Texture2D> m_RealtimeLightmapTexture;
+
+        // Baked lightmap state
+        bool m_BakedLightmapBaked = false;
+        int m_BakedAtlasWidth = 0;
+        int m_BakedAtlasHeight = 0;
+        int m_BakedTexelCount = 0;
+        int m_BakedObjectCount = 0;
+        int m_BakedProbeCount = 0;
+        float m_BakedBakeTime = 0.0f;
+        std::shared_ptr<Texture2D> m_BakedLightmapTexture;
     };
 }

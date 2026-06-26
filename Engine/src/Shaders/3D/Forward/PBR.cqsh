@@ -6,6 +6,7 @@ layout(location = 0) in vec3 a_Position;
 layout(location = 1) in vec3 a_Normal;
 layout(location = 2) in vec3 a_Tangent;
 layout(location = 3) in vec2 a_TexCoord;
+layout(location = 4) in vec2 a_TexCoord2;
 
 uniform mat4 u_ViewProjection;
 uniform mat4 u_Transform;
@@ -15,6 +16,7 @@ out VS_OUT {
     vec3 Normal;
     vec3 Tangent;
     vec2 TexCoord;
+    vec2 TexCoord2;
     mat3 TBN;
 } vs_out;
 
@@ -36,6 +38,7 @@ void main()
     vs_out.TBN = mat3(T, B, N);
     
     vs_out.TexCoord = a_TexCoord;
+    vs_out.TexCoord2 = a_TexCoord2;
     
     gl_Position = u_ViewProjection * worldPos;
 }
@@ -50,6 +53,7 @@ in VS_OUT {
     vec3 Normal;
     vec3 Tangent;
     vec2 TexCoord;
+    vec2 TexCoord2;
     mat3 TBN;
 } fs_in;
 
@@ -570,12 +574,12 @@ void main()
     
     vec3 color = ambient + Lo;
     
-    // Lightmap ekle (varsa)
+    // Lightmap replaces ambient
     if (u_HasLightmap == 1)
     {
-        vec2 lmUV = fs_in.TexCoord; // Lightmap UV kullanilacak (farkli kanal)
+        vec2 lmUV = fs_in.TexCoord2;
         vec3 lightmapColor = texture(u_Lightmap, lmUV).rgb;
-        color += lightmapColor * albedo;
+        color = Lo + lightmapColor * albedo;
     }
     
     // HDR tonemapping (ACES)
