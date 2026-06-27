@@ -797,7 +797,20 @@ namespace Conqueror::Editor
                 m_BakedBakeTime = bakeTime;
                 m_BakedLightmapTexture = baker->CreateLightmapTexture();
                 if (m_BakedLightmapTexture)
+                {
                     Renderer3D::SetLightmap(m_BakedLightmapTexture);
+
+                    // Save to disk
+                    auto projectDir = Project::GetActiveProjectDirectory();
+                    if (!projectDir.empty())
+                    {
+                        std::string lmDir = projectDir + "/Assets/Lightmaps";
+                        std::filesystem::create_directories(lmDir);
+                        std::string lmPath = lmDir + "/baked_lightmap.png";
+                        baker->SaveToFile(lmPath);
+                        m_Context->SetBakedLightmapPath("Assets/Lightmaps/baked_lightmap.png");
+                    }
+                }
 
                 auto& registry = m_Context->m_Registry;
                 int objCount = 0;

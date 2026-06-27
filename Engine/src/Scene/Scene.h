@@ -186,6 +186,26 @@ namespace Conqueror
         void SetReflectionBounces(int bounces) { m_ReflectionBounces = bounces; }
         int GetReflectionBounces() const { return m_ReflectionBounces; }
 
+        // Baked Lightmap
+        void SetBakedLightmapPath(const std::string& path) { m_BakedLightmapPath = path; }
+        const std::string& GetBakedLightmapPath() const { return m_BakedLightmapPath; }
+        void SetBakedLightmapTexture(std::shared_ptr<class Texture2D> tex) { m_BakedLightmapTexture = tex; }
+        std::shared_ptr<class Texture2D> GetBakedLightmapTexture() const { return m_BakedLightmapTexture; }
+        void SetLightmapResolution(int r) { m_LightmapResolution = r; }
+        int GetLightmapResolution() const { return m_LightmapResolution; }
+        void SetMaxLightmapSize(int s) { m_MaxLightmapSize = s; }
+        int GetMaxLightmapSize() const { return m_MaxLightmapSize; }
+        void SetMaxBounces(int b) { m_MaxBounces = b; }
+        int GetMaxBounces() const { return m_MaxBounces; }
+        void SetDirectSamples(int s) { m_DirectSamples = s; }
+        int GetDirectSamples() const { return m_DirectSamples; }
+        void SetIndirectSamples(int s) { m_IndirectSamples = s; }
+        int GetIndirectSamples() const { return m_IndirectSamples; }
+        void SetAmbientOcclusion(bool ao) { m_AmbientOcclusion = ao; }
+        bool IsAmbientOcclusion() const { return m_AmbientOcclusion; }
+        void SetFiltering(int f) { m_Filtering = f; }
+        int GetFiltering() const { return m_Filtering; }
+
         // Physics
         PhysicsWorld2D* GetPhysicsWorld2D() const { return m_PhysicsWorld2D.get(); }
         PhysicsWorld3D* GetPhysicsWorld3D() const { return m_PhysicsWorld3D.get(); }
@@ -278,6 +298,17 @@ namespace Conqueror
         int m_ReflectionCompression = 0; // Auto
         float m_ReflectionIntensityMultiplier = 1.0f;
         int m_ReflectionBounces = 1;
+
+        // Baked Lightmap
+        std::string m_BakedLightmapPath;
+        std::shared_ptr<class Texture2D> m_BakedLightmapTexture;
+        int m_LightmapResolution = 40;
+        int m_MaxLightmapSize = 1024;
+        int m_MaxBounces = 2;
+        int m_DirectSamples = 32;
+        int m_IndirectSamples = 512;
+        bool m_AmbientOcclusion = true;
+        int m_Filtering = 0;
 
         // Physics
         std::unique_ptr<PhysicsWorld2D> m_PhysicsWorld2D;

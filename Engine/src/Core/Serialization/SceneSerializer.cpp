@@ -8,6 +8,7 @@
 #include "Renderer/RHI/Texture.h"
 #include "Renderer/RHI/Cubemap.h"
 #include "Renderer/Utilities/Renderer3D/ModelLoader.h"
+#include "Renderer/Utilities/Renderer3D/Renderer3D.h"
 #include "Scripting/ScriptEngine.h"
 #include "AISystem/Navigation/NavMesh.h"
 
@@ -1019,6 +1020,16 @@ namespace Conqueror
         out << YAML::Key << "ReflectionIntensityMultiplier" << YAML::Value << m_Scene->GetReflectionIntensityMultiplier();
         out << YAML::Key << "ReflectionBounces" << YAML::Value << m_Scene->GetReflectionBounces();
         
+        // Baked Lightmap
+        out << YAML::Key << "BakedLightmapPath" << YAML::Value << m_Scene->GetBakedLightmapPath();
+        out << YAML::Key << "LightmapResolution" << YAML::Value << m_Scene->GetLightmapResolution();
+        out << YAML::Key << "MaxLightmapSize" << YAML::Value << m_Scene->GetMaxLightmapSize();
+        out << YAML::Key << "MaxBounces" << YAML::Value << m_Scene->GetMaxBounces();
+        out << YAML::Key << "DirectSamples" << YAML::Value << m_Scene->GetDirectSamples();
+        out << YAML::Key << "IndirectSamples" << YAML::Value << m_Scene->GetIndirectSamples();
+        out << YAML::Key << "AmbientOcclusion" << YAML::Value << m_Scene->IsAmbientOcclusion();
+        out << YAML::Key << "LightmapFiltering" << YAML::Value << m_Scene->GetFiltering();
+        
         out << YAML::EndMap; // Environment
         
         // Editor Camera kaydet
@@ -1983,6 +1994,40 @@ namespace Conqueror
                 m_Scene->SetReflectionIntensityMultiplier(environment["ReflectionIntensityMultiplier"].as<float>());
             if (environment["ReflectionBounces"])
                 m_Scene->SetReflectionBounces(environment["ReflectionBounces"].as<int>());
+            
+            // Baked Lightmap
+            if (environment["BakedLightmapPath"])
+                m_Scene->SetBakedLightmapPath(environment["BakedLightmapPath"].as<std::string>());
+            if (environment["LightmapResolution"])
+                m_Scene->SetLightmapResolution(environment["LightmapResolution"].as<int>());
+            if (environment["MaxLightmapSize"])
+                m_Scene->SetMaxLightmapSize(environment["MaxLightmapSize"].as<int>());
+            if (environment["MaxBounces"])
+                m_Scene->SetMaxBounces(environment["MaxBounces"].as<int>());
+            if (environment["DirectSamples"])
+                m_Scene->SetDirectSamples(environment["DirectSamples"].as<int>());
+            if (environment["IndirectSamples"])
+                m_Scene->SetIndirectSamples(environment["IndirectSamples"].as<int>());
+            if (environment["AmbientOcclusion"])
+                m_Scene->SetAmbientOcclusion(environment["AmbientOcclusion"].as<bool>());
+            if (environment["LightmapFiltering"])
+                m_Scene->SetFiltering(environment["LightmapFiltering"].as<int>());
+            
+            // Load lightmap texture from disk
+            std::string lmPath = m_Scene->GetBakedLightmapPath();
+            if (!lmPath.empty())
+            {
+                std::string resolvedPath = ResolveSerializablePath(lmPath);
+                if (!resolvedPath.empty())
+                {
+                    auto lmTex = Texture2D::Create(resolvedPath);
+                    if (lmTex)
+                    {
+                        m_Scene->SetBakedLightmapTexture(lmTex);
+                        Renderer3D::SetLightmap(lmTex);
+                    }
+                }
+            }
         }
 
         auto hierarchy = data["Hierarchy"];

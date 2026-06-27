@@ -12,6 +12,9 @@
 #include <random>
 #include <limits>
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
 namespace Conqueror
 {
     struct BakeTriangle
@@ -215,10 +218,9 @@ namespace Conqueror
         // Farkli mesh'ler icin UV offset kullan
         // Cube icin: 6 face * 2 tri = 12 tri. Her face'in UV1'i [0,1] arasi
         // Biz atlas'ta her face'e farkli bolge verecegiz
-        // Basit: mesh'in triangle sayisina gore atlas'i bol
+        // Basit: her face'e 1 kolon, 1 satir ata
         for (int i = 0; i < (int)tris.size(); i++)
         {
-            // Her triangle icin: mesh'in icerigindeki index
             int localIdx = 0;
             for (int j = i - 1; j >= 0; j--)
             {
@@ -226,7 +228,6 @@ namespace Conqueror
                 localIdx++;
             }
 
-            // Mesh icindeki face sayisi (cube icin 6)
             int meshTriCount = 0;
             for (int j = 0; j < (int)tris.size(); j++)
             {
@@ -237,15 +238,17 @@ namespace Conqueror
 
             int faceIdx = localIdx / 2;
             int col = faceIdx;
-            float pad = 0.02f;
-            float u0 = (float)col / (float)faceCount + pad / (float)faceCount;
-            float u1 = (float)(col + 1) / (float)faceCount - pad / (float)faceCount;
-            float v0 = pad;
-            float v1 = 1.0f - pad;
 
-            tris[i].uv0 = glm::vec2(u0, v0);
-            tris[i].uv1 = glm::vec2(u1, v0);
-            tris[i].uv2 = glm::vec2(u1, v1);
+            float padU = 0.0f;
+            float padV = 0.0f;
+            float uMin = (float)col / (float)faceCount + padU;
+            float uMax = (float)(col + 1) / (float)faceCount - padU;
+            float vMin = padV;
+            float vMax = 1.0f - padV;
+
+            tris[i].uv0 = glm::vec2(uMin + tris[i].uv0.x * (uMax - uMin), vMin + tris[i].uv0.y * (vMax - vMin));
+            tris[i].uv1 = glm::vec2(uMin + tris[i].uv1.x * (uMax - uMin), vMin + tris[i].uv1.y * (vMax - vMin));
+            tris[i].uv2 = glm::vec2(uMin + tris[i].uv2.x * (uMax - uMin), vMin + tris[i].uv2.y * (vMax - vMin));
         }
 
         // Mesh TexCoords2'leri guncelle - cube icin her face'in atlas UV'si
@@ -264,16 +267,18 @@ namespace Conqueror
                     if (triBase >= (int)tris.size()) break;
                     if (tris[triBase].meshID != 0) continue;
 
-                    glm::vec2 auv0 = tris[triBase].uv0;
-                    glm::vec2 auv1 = tris[triBase].uv1;
+                    float uMin = tris[triBase].uv0.x;
+                    float uMax = tris[triBase].uv1.x;
+                    float vMin = tris[triBase].uv0.y;
+                    float vMax = tris[triBase].uv2.y;
 
                     int vi = face * 4;
                     if (vi + 3 < (int)newUV2.size())
                     {
-                        newUV2[vi + 0] = auv0;
-                        newUV2[vi + 1] = glm::vec2(auv1.x, auv0.y);
-                        newUV2[vi + 2] = auv1;
-                        newUV2[vi + 3] = glm::vec2(auv0.x, auv1.y);
+                        newUV2[vi + 0] = glm::vec2(uMin, vMin); // sol alt
+                        newUV2[vi + 1] = glm::vec2(uMax, vMin); // sag alt
+                        newUV2[vi + 2] = glm::vec2(uMax, vMax); // sag ust
+                        newUV2[vi + 3] = glm::vec2(uMin, vMax); // sol ust
                     }
                 }
                 cubeMesh->UpdateUV2(newUV2);
@@ -302,16 +307,8 @@ namespace Conqueror
                     glm::vec3 wp = tri.v0 * b0 + tri.v1 * b1 + tri.v2 * b2;
                     glm::vec3 n = glm::normalize(tri.n0 * b0 + tri.n1 * b1 + tri.n2 * b2);
 
-                    // Self-shadow engeli: ayni mesh'i atla
-                    bool shadow = AnyHitExcl(wp + n * 0.02f, -lightDir, tris, 500, tri.meshID);
-                    glm::vec3 light(0);
-                    if (!shadow)
-                        light = lightColor * lightIntensity * std::max(0.0f, glm::dot(n, -lightDir));
-
-                    // Ambient: her face'e minimum isik
-                    float upward = std::max(0.0f, glm::dot(n, glm::vec3(0, 1, 0)));
-                    glm::vec3 ambientContrib = ambient * (0.01f + upward * 0.02f);
-                    light += ambientContrib;
+                    // Sadece ambient - direkt isik PBR shader'da hesaplaniyor
+                    glm::vec3 light = ambient;
 
                     m_Atlas.Texels[py * W + px] = light * tri.albedo;
                     break;
@@ -359,7 +356,17 @@ namespace Conqueror
             }
         }
         for (size_t i = 0; i < m_Atlas.Texels.size(); i++)
-            m_Atlas.Texels[i] += ind[i] * 0.25f;
+            m_Atlas.Texels[i] += ind[i] * 1.0f;
+
+        // IndirectIntensity + AlbedoBoost uygula
+        for (size_t i = 0; i < m_Atlas.Texels.size(); i++)
+        {
+            glm::vec3 c = m_Atlas.Texels[i];
+            c *= m_Settings.IndirectIntensity;
+            if (m_Settings.AlbedoBoost != 1.0f)
+                c = glm::mix(glm::vec3(glm::dot(c, glm::vec3(0.299f, 0.587f, 0.114f))), c, m_Settings.AlbedoBoost);
+            m_Atlas.Texels[i] = c;
+        }
 
         // AO
         if (m_Settings.AmbientOcclusion)
@@ -440,6 +447,30 @@ namespace Conqueror
         auto tex = Texture2D::Create(m_Atlas.Width, m_Atlas.Height);
         if (tex) tex->SetData(px.data(), (uint32_t)px.size());
         return tex;
+    }
+
+    bool LightmapBaker::SaveToFile(const std::string& path) const
+    {
+        if (!m_Atlas.Width || !m_Atlas.Height || m_Atlas.Texels.empty()) return false;
+
+        std::vector<uint8_t> px(m_Atlas.Width * m_Atlas.Height * 4);
+        for (size_t i = 0; i < m_Atlas.Texels.size(); i++)
+        {
+            glm::vec3 c = glm::clamp(m_Atlas.Texels[i], glm::vec3(0), glm::vec3(10));
+            c = glm::pow(c, glm::vec3(1.0f / 2.2f));
+            px[i * 4 + 0] = (uint8_t)(glm::clamp(c.r, 0.f, 1.f) * 255);
+            px[i * 4 + 1] = (uint8_t)(glm::clamp(c.g, 0.f, 1.f) * 255);
+            px[i * 4 + 2] = (uint8_t)(glm::clamp(c.b, 0.f, 1.f) * 255);
+            px[i * 4 + 3] = 255;
+        }
+
+        int result = stbi_write_png(path.c_str(), m_Atlas.Width, m_Atlas.Height, 4, px.data(), m_Atlas.Width * 4);
+        if (result)
+            CQ_CORE_INFO("Lightmap saved to: {0}", path);
+        else
+            CQ_CORE_ERROR("Failed to save lightmap to: {0}", path);
+
+        return result != 0;
     }
 
     std::shared_ptr<LightmapBaker> LightmapBaker::Create(const LightmapSettings& settings)

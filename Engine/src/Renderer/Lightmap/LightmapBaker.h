@@ -63,6 +63,7 @@ namespace Conqueror
         void SetProgressCallback(LightmapProgressCallback callback) { m_ProgressCallback = callback; }
 
         std::shared_ptr<Texture2D> CreateLightmapTexture() const;
+        bool SaveToFile(const std::string& path) const;
 
         static std::shared_ptr<LightmapBaker> Create(const LightmapSettings& settings = {});
 
