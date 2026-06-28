@@ -106,11 +106,18 @@ namespace Conqueror
         std::vector<BakeTriangle> tris;
         auto& reg = scene->m_Registry;
 
-        // Collect geometry
+        // Collect geometry - sadece IsStatic = true olan entity'ler
         int meshCounter = 0;
         auto meshView = reg.view<TransformComponent, MeshRendererComponent>();
         for (auto e : meshView)
         {
+            // IsStatic kontrolu
+            if (reg.all_of<TagComponent>(e))
+            {
+                auto& tc = reg.get<TagComponent>(e);
+                if (!tc.IsStatic) continue;
+            }
+
             auto [tf, mr] = meshView.get<TransformComponent, MeshRendererComponent>(e);
             glm::mat4 wt = tf.GetTransform();
             glm::mat3 nm = glm::mat3(glm::transpose(glm::inverse(wt)));
@@ -151,6 +158,12 @@ namespace Conqueror
         auto modelView = reg.view<TransformComponent, ModelComponent>();
         for (auto e : modelView)
         {
+            if (reg.all_of<TagComponent>(e))
+            {
+                auto& tc = reg.get<TagComponent>(e);
+                if (!tc.IsStatic) continue;
+            }
+
             auto [tf, mc] = modelView.get<TransformComponent, ModelComponent>(e);
             if (!mc.ModelData) continue;
             glm::mat4 wt = tf.GetTransform();
@@ -190,17 +203,20 @@ namespace Conqueror
         if (tris.empty()) { m_IsBaking = false; ReportProgress(1, "No geometry!"); return; }
         CQ_CORE_INFO("Lightmap: {0} triangles, {1} meshes", tris.size(), meshCounter);
 
-        // Light collection
+        // Light collection - sadece Baked veya Mixed moddaki isiklar
         glm::vec3 lightDir(0, -1, 0);
-        glm::vec3 lightColor(1, 0.95f, 0.9f);
-        float lightIntensity = 1.0f;
+        glm::vec3 lightColor(0, 0, 0);
+        float lightIntensity = 0.0f;
         Entity sun = scene->GetSunSourceEntity();
         if (sun && sun.HasComponent<DirectionalLightComponent>())
         {
             auto& dl = sun.GetComponent<DirectionalLightComponent>();
-            lightDir = glm::normalize(dl.Direction);
-            lightColor = dl.Color;
-            lightIntensity = dl.Intensity;
+            if (dl.Mode != LightMode::Realtime)
+            {
+                lightDir = glm::normalize(dl.Direction);
+                lightColor = dl.Color;
+                lightIntensity = dl.Intensity;
+            }
         }
 
         // Atlas - her triangle icin ayri bolge
@@ -286,7 +302,7 @@ namespace Conqueror
         }
 
         std::mt19937 gen(42);
-        glm::vec3 ambient = scene->GetAmbientColor() * scene->GetAmbientIntensity();
+        glm::vec3 ambient = scene->GetAmbientColor() * scene->GetAmbientIntensity() * 0.01f;
 
         // Direct lighting
         ReportProgress(0.05f, "Direct lighting...");
@@ -307,8 +323,10 @@ namespace Conqueror
                     glm::vec3 wp = tri.v0 * b0 + tri.v1 * b1 + tri.v2 * b2;
                     glm::vec3 n = glm::normalize(tri.n0 * b0 + tri.n1 * b1 + tri.n2 * b2);
 
-                    // Sadece ambient - direkt isik PBR shader'da hesaplaniyor
-                    glm::vec3 light = ambient;
+                    // Direkt isik + ambient
+                    bool shadow = AnyHitExcl(wp + n * 0.02f, -lightDir, tris, 500, tri.meshID);
+                    float direct = shadow ? 0.0f : std::max(0.0f, glm::dot(n, -lightDir));
+                    glm::vec3 light = ambient + lightColor * lightIntensity * direct;
 
                     m_Atlas.Texels[py * W + px] = light * tri.albedo;
                     break;
@@ -346,7 +364,7 @@ namespace Conqueror
                             glm::vec3 hn = glm::normalize(ht.n0 * (1 - cu - cv) + ht.n1 * cu + ht.n2 * cv);
                             bool sh = AnyHitExcl(hp + hn * 0.02f, -lightDir, tris, 500, ht.meshID);
                             float nl = std::max(0.0f, glm::dot(hn, -lightDir));
-                            glm::vec3 hitLight = sh ? glm::vec3(0.01f) : lightColor * lightIntensity * nl + glm::vec3(0.01f);
+                            glm::vec3 hitLight = sh ? glm::vec3(1.0f) : lightColor * lightIntensity * nl + glm::vec3(1.0f);
                             il += ht.albedo * hitLight;
                         }
                     }
@@ -435,10 +453,9 @@ namespace Conqueror
         std::vector<uint8_t> px(m_Atlas.Width * m_Atlas.Height * 4);
         for (size_t i = 0; i < m_Atlas.Texels.size(); i++)
         {
-            // Linear data, tonemapping yok - shader yapacak
-            glm::vec3 c = glm::clamp(m_Atlas.Texels[i], glm::vec3(0), glm::vec3(10));
-            // sRGB gamma encode (texture saklama icin)
-            c = glm::pow(c, glm::vec3(1.0f / 2.2f));
+            glm::vec3 c = m_Atlas.Texels[i];
+            // Hafif gamma - 8-bit icin gerekiyor
+            c = glm::pow(glm::clamp(c, glm::vec3(0), glm::vec3(10)), glm::vec3(0.4f));
             px[i * 4 + 0] = (uint8_t)(glm::clamp(c.r, 0.f, 1.f) * 255);
             px[i * 4 + 1] = (uint8_t)(glm::clamp(c.g, 0.f, 1.f) * 255);
             px[i * 4 + 2] = (uint8_t)(glm::clamp(c.b, 0.f, 1.f) * 255);
@@ -456,8 +473,8 @@ namespace Conqueror
         std::vector<uint8_t> px(m_Atlas.Width * m_Atlas.Height * 4);
         for (size_t i = 0; i < m_Atlas.Texels.size(); i++)
         {
-            glm::vec3 c = glm::clamp(m_Atlas.Texels[i], glm::vec3(0), glm::vec3(10));
-            c = glm::pow(c, glm::vec3(1.0f / 2.2f));
+            glm::vec3 c = m_Atlas.Texels[i];
+            c = glm::pow(glm::clamp(c, glm::vec3(0), glm::vec3(10)), glm::vec3(0.4f));
             px[i * 4 + 0] = (uint8_t)(glm::clamp(c.r, 0.f, 1.f) * 255);
             px[i * 4 + 1] = (uint8_t)(glm::clamp(c.g, 0.f, 1.f) * 255);
             px[i * 4 + 2] = (uint8_t)(glm::clamp(c.b, 0.f, 1.f) * 255);

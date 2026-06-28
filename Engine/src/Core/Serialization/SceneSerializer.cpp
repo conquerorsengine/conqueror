@@ -236,6 +236,7 @@ namespace Conqueror
             auto& tag = entity.GetComponent<TagComponent>();
             out << YAML::Key << "Tag" << YAML::Value << tag.Tag;
             out << YAML::Key << "GameTag" << YAML::Value << tag.GameTag;
+            out << YAML::Key << "IsStatic" << YAML::Value << tag.IsStatic;
 
             out << YAML::EndMap;
         }
@@ -441,6 +442,7 @@ namespace Conqueror
             out << YAML::Key << "Color" << YAML::Value << light.Color;
             out << YAML::Key << "Intensity" << YAML::Value << light.Intensity;
             out << YAML::Key << "CastShadows" << YAML::Value << light.CastShadows;
+            out << YAML::Key << "Mode" << YAML::Value << (int)light.Mode;
 
             out << YAML::EndMap;
         }
@@ -458,6 +460,7 @@ namespace Conqueror
             out << YAML::Key << "Linear" << YAML::Value << light.Linear;
             out << YAML::Key << "Quadratic" << YAML::Value << light.Quadratic;
             out << YAML::Key << "CastShadows" << YAML::Value << light.CastShadows;
+            out << YAML::Key << "Mode" << YAML::Value << (int)light.Mode;
 
             out << YAML::EndMap;
         }
@@ -478,6 +481,7 @@ namespace Conqueror
             out << YAML::Key << "Linear" << YAML::Value << light.Linear;
             out << YAML::Key << "Quadratic" << YAML::Value << light.Quadratic;
             out << YAML::Key << "CastShadows" << YAML::Value << light.CastShadows;
+            out << YAML::Key << "Mode" << YAML::Value << (int)light.Mode;
 
             out << YAML::EndMap;
         }
@@ -1245,6 +1249,8 @@ namespace Conqueror
                 {
                     auto& tag = deserializedEntity.GetComponent<TagComponent>();
                     tag.GameTag = tagComponent["GameTag"].as<std::string>();
+                    if (tagComponent["IsStatic"])
+                        tag.IsStatic = tagComponent["IsStatic"].as<bool>();
                 }
 
                 auto transformComponent = entity["TransformComponent"];
@@ -1434,6 +1440,8 @@ namespace Conqueror
                     dlc.Color = directionalLightComponent["Color"].as<glm::vec3>();
                     dlc.Intensity = directionalLightComponent["Intensity"].as<float>();
                     dlc.CastShadows = directionalLightComponent["CastShadows"].as<bool>();
+                    if (directionalLightComponent["Mode"])
+                        dlc.Mode = (LightMode)directionalLightComponent["Mode"].as<int>();
                 }
 
                 auto pointLightComponent = entity["PointLightComponent"];
@@ -1447,6 +1455,8 @@ namespace Conqueror
                     plc.Linear = pointLightComponent["Linear"].as<float>();
                     plc.Quadratic = pointLightComponent["Quadratic"].as<float>();
                     plc.CastShadows = pointLightComponent["CastShadows"].as<bool>();
+                    if (pointLightComponent["Mode"])
+                        plc.Mode = (LightMode)pointLightComponent["Mode"].as<int>();
                 }
 
                 auto spotLightComponent = entity["SpotLightComponent"];
@@ -1463,6 +1473,8 @@ namespace Conqueror
                     slc.Linear = spotLightComponent["Linear"].as<float>();
                     slc.Quadratic = spotLightComponent["Quadratic"].as<float>();
                     slc.CastShadows = spotLightComponent["CastShadows"].as<bool>();
+                    if (spotLightComponent["Mode"])
+                        slc.Mode = (LightMode)spotLightComponent["Mode"].as<int>();
                 }
 
                 auto modelComponent = entity["ModelComponent"];

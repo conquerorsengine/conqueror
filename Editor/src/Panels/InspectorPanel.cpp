@@ -439,8 +439,20 @@ namespace Conqueror::Editor
         }
 
         ImGui::SameLine();
-        ImGui::PushItemWidth(-1);
+        ImGui::Text("Static");
+        ImGui::SameLine();
+        if (entity.HasComponent<TagComponent>())
+        {
+            auto& tagComp = entity.GetComponent<TagComponent>();
+            bool isStatic = tagComp.IsStatic;
+            if (ImGui::Checkbox("##StaticCheck", &isStatic))
+            {
+                tagComp.IsStatic = isStatic;
+            }
+        }
 
+        ImGui::SameLine();
+        ImGui::PushItemWidth(-1);
         if (ImGui::Button("Add Component"))
             ImGui::OpenPopup("AddComponent");
 
@@ -1578,6 +1590,11 @@ namespace Conqueror::Editor
             ImGui::ColorEdit3("Color", glm::value_ptr(component.Color));
             ImGui::DragFloat("Intensity", &component.Intensity, 0.1f, 0.0f, 10.0f);
             ImGui::Checkbox("Cast Shadows", &component.CastShadows);
+
+            const char* lightModes[] = { "Realtime", "Mixed", "Baked" };
+            int modeIdx = (int)component.Mode;
+            if (ImGui::Combo("Mode", &modeIdx, lightModes, 3))
+                component.Mode = (LightMode)modeIdx;
         });
 
         DrawComponent<PointLightComponent>("Point Light", entity, [](auto& component)
@@ -1593,6 +1610,11 @@ namespace Conqueror::Editor
             ImGui::DragFloat("Quadratic", &component.Quadratic, 0.0001f, 0.0f, 1.0f);
             
             ImGui::Checkbox("Cast Shadows", &component.CastShadows);
+
+            const char* lightModes[] = { "Realtime", "Mixed", "Baked" };
+            int modeIdx = (int)component.Mode;
+            if (ImGui::Combo("Mode", &modeIdx, lightModes, 3))
+                component.Mode = (LightMode)modeIdx;
         });
 
         DrawComponent<SpotLightComponent>("Spot Light", entity, [](auto& component)
@@ -1618,6 +1640,11 @@ namespace Conqueror::Editor
             ImGui::DragFloat("Quadratic", &component.Quadratic, 0.0001f, 0.0f, 1.0f);
             
             ImGui::Checkbox("Cast Shadows", &component.CastShadows);
+
+            const char* lightModes[] = { "Realtime", "Mixed", "Baked" };
+            int modeIdx = (int)component.Mode;
+            if (ImGui::Combo("Mode", &modeIdx, lightModes, 3))
+                component.Mode = (LightMode)modeIdx;
         });
 
         // 2D Physics Components

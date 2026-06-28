@@ -613,87 +613,16 @@ namespace Conqueror::Editor
 
         if (ImGui::CollapsingHeader("Realtime Lightmap Data", ImGuiTreeNodeFlags_DefaultOpen))
         {
-            if (m_IsBaking && m_BakeMode == 1)
+            if (m_IsBaking)
             {
                 ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Status: Baking realtime lightmaps...");
                 ImGui::ProgressBar(m_BakeProgress, ImVec2(-1, 0), "Baking...");
                 ImGui::Text("Step: %s", m_BakeStep.c_str());
             }
-            else if (m_RealtimeBaked)
-            {
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Status: Baked");
-                ImGui::Text("Atlas Size: %dx%d", m_RealtimeAtlasWidth, m_RealtimeAtlasHeight);
-                ImGui::Text("Texels: %d", (int)m_RealtimeTexelCount);
-
-                ImGui::Spacing();
-                ImGui::Text("Lightmap Texture:");
-                if (m_RealtimeLightmapTexture)
-                    ImGui::Image((ImTextureID)(intptr_t)m_RealtimeLightmapTexture->GetRendererID(), ImVec2(200, 200));
-                else
-                    ImGui::Text("No texture generated");
-
-                ImGui::Spacing();
-                if (ImGui::Button("Clear Realtime Lightmaps", ImVec2(-1, 25)))
-                {
-                    m_RealtimeBaked = false;
-                    m_RealtimeLightmapTexture.reset();
-                    Renderer3D::SetLightmap(nullptr);
-                }
-            }
             else
             {
-                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No realtime lightmaps baked yet.");
-            }
-        }
-
-        ImGui::Spacing();
-
-        if (m_IsBaking && m_BakeMode == 1)
-        {
-            if (ImGui::Button("Cancel Bake", ImVec2(-1, 35)))
-            {
-                m_IsBaking = false;
-                m_BakeProgress = 0.0f;
-            }
-        }
-        else
-        {
-            if (ImGui::Button("Generate Realtime Lightmaps", ImVec2(-1, 35)))
-            {
-                if (!m_Context) { ImGui::PopID(); return; }
-
-                m_IsBaking = true;
-                m_BakeMode = 1;
-                m_BakeProgress = 0.0f;
-
-                auto baker = LightmapBaker::Create();
-                LightmapSettings settings;
-                settings.Lightmapper = m_LightmapperIndex;
-                settings.Resolution = m_LightmapResolution;
-                settings.MaxLightmapSize = (m_MaxLightmapSizeIndex + 1) * 256;
-                settings.MaxBounces = m_MaxBounces;
-                settings.DirectSamples = m_DirectSamples;
-                settings.IndirectSamples = m_IndirectSamples;
-                settings.AmbientOcclusion = m_AmbientOcclusion;
-                settings.Filtering = m_FilteringIndex;
-                baker->SetSettings(settings);
-
-                baker->SetProgressCallback([this](float progress, const std::string& step) {
-                    m_BakeProgress = progress;
-                    m_BakeStep = step;
-                });
-
-                baker->Bake(m_Context.get());
-
-                m_BakeProgress = 1.0f;
-                m_RealtimeBaked = true;
-                m_RealtimeAtlasWidth = baker->GetAtlas().Width;
-                m_RealtimeAtlasHeight = baker->GetAtlas().Height;
-                m_RealtimeTexelCount = (int)baker->GetAtlas().Texels.size();
-                m_RealtimeLightmapTexture = baker->CreateLightmapTexture();
-                if (m_RealtimeLightmapTexture)
-                    Renderer3D::SetLightmap(m_RealtimeLightmapTexture);
-                m_IsBaking = false;
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Realtime lightmaps are generated automatically.");
+                ImGui::Text("No manual bake needed.");
             }
         }
 
@@ -741,24 +670,39 @@ namespace Conqueror::Editor
             }
         }
 
+        ImGui::PopID();
+    }
+
+    void LightingPanel::RenderGPUBakingSection()
+    {
+        // GPU Baking Device
+        ImGui::Text("GPU Baking Device");
+        ImGui::SameLine(200);
+        ImGui::SetNextItemWidth(250);
+        ImGui::Combo("##GPUBakingDevice", &m_GPUBakingProfileIndex, "Automatic\0");
+
+        // Bake On Scene Load
+        ImGui::Text("Bake On Scene Load");
+        ImGui::SameLine(200);
+        ImGui::SetNextItemWidth(250);
+        const char* bakeOnLoad[] = { "Never", "On Load" };
+        ImGui::Combo("##BakeOnLoad", &m_BakeOnSceneLoadIndex, bakeOnLoad, 2);
+
         ImGui::Spacing();
 
-        if (m_IsBaking && m_BakeMode == 0)
+        // Progress bar veya Generate Lighting butonu
+        if (m_IsBaking)
         {
-            if (ImGui::Button("Cancel Bake", ImVec2(-1, 35)))
-            {
-                m_IsBaking = false;
-                m_BakeProgress = 0.0f;
-            }
+            ImGui::ProgressBar(m_BakeProgress, ImVec2(-1, 0), "Baking...");
+            ImGui::Text("Step: %s", m_BakeStep.c_str());
         }
         else
         {
-            if (ImGui::Button("Generate Baked Lightmaps", ImVec2(-1, 35)))
+            if (ImGui::Button("Generate Lighting", ImVec2(-1, 30)))
             {
-                if (!m_Context) { ImGui::PopID(); return; }
+                if (!m_Context) return;
 
                 m_IsBaking = true;
-                m_BakeMode = 0;
                 m_BakeProgress = 0.0f;
 
                 auto baker = LightmapBaker::Create();
@@ -800,11 +744,10 @@ namespace Conqueror::Editor
                 {
                     Renderer3D::SetLightmap(m_BakedLightmapTexture);
 
-                    // Save to disk
                     auto projectDir = Project::GetActiveProjectDirectory();
                     if (!projectDir.empty())
                     {
-                        std::string lmDir = projectDir + "/Assets/Lightmaps";
+                        std::string lmDir = projectDir.string() + "/Assets/Lightmaps";
                         std::filesystem::create_directories(lmDir);
                         std::string lmPath = lmDir + "/baked_lightmap.png";
                         baker->SaveToFile(lmPath);
@@ -821,48 +764,6 @@ namespace Conqueror::Editor
                 m_BakedObjectCount = objCount;
 
                 m_IsBaking = false;
-            }
-        }
-
-        ImGui::PopID();
-    }
-
-    void LightingPanel::RenderGPUBakingSection()
-    {
-        // GPU Baking Device
-        ImGui::Text("GPU Baking Device");
-        ImGui::SameLine(200);
-        ImGui::SetNextItemWidth(250);
-        ImGui::Combo("##GPUBakingDevice", &m_GPUBakingProfileIndex, "Automatic\0");
-
-        // Bake On Scene Load
-        ImGui::Text("Bake On Scene Load");
-        ImGui::SameLine(200);
-        ImGui::SetNextItemWidth(250);
-        const char* bakeOnLoad[] = { "Never", "On Load" };
-        ImGui::Combo("##BakeOnLoad", &m_BakeOnSceneLoadIndex, bakeOnLoad, 2);
-
-        ImGui::Spacing();
-
-        // Generate Lighting button
-        if (m_IsBaking)
-        {
-            // Progress bar
-            ImGui::ProgressBar(m_BakeProgress, ImVec2(-1, 0), "Baking...");
-        }
-        else
-        {
-            if (ImGui::Button("Generate Lighting", ImVec2(-1, 30)))
-            {
-                // Start baking
-                m_IsBaking = true;
-                m_BakeProgress = 0.0f;
-                CQ_CORE_INFO("Starting lighting bake...");
-                
-                // TODO: Start actual baking process in background thread
-                // For now, just set to done
-                m_IsBaking = false;
-                CQ_CORE_INFO("Lighting bake complete!");
             }
         }
     }

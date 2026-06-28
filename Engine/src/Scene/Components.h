@@ -36,6 +36,7 @@ namespace Conqueror
     {
         std::string Tag;
         std::string GameTag = "Untagged";
+        bool IsStatic = false;
 
         TagComponent() = default;
         TagComponent(const TagComponent&) = default;
@@ -407,6 +408,8 @@ namespace Conqueror
         AnimationComponent(const AnimationComponent&) = default;
     };
 
+    enum class LightMode { Realtime = 0, Mixed = 1, Baked = 2 };
+
     // Light Component'leri
     struct DirectionalLightComponent
     {
@@ -414,6 +417,7 @@ namespace Conqueror
         glm::vec3 Color = glm::vec3(1.0f, 1.0f, 1.0f);
         float Intensity = 1.0f;
         bool CastShadows = true;
+        LightMode Mode = LightMode::Realtime;
 
         DirectionalLightComponent() = default;
         DirectionalLightComponent(const DirectionalLightComponent&) = default;
@@ -431,6 +435,7 @@ namespace Conqueror
         float Quadratic = 0.032f;
         
         bool CastShadows = false;
+        LightMode Mode = LightMode::Realtime;
 
         PointLightComponent() = default;
         PointLightComponent(const PointLightComponent&) = default;
@@ -453,6 +458,7 @@ namespace Conqueror
         float Quadratic = 0.032f;
         
         bool CastShadows = false;
+        LightMode Mode = LightMode::Realtime;
 
         SpotLightComponent() = default;
         SpotLightComponent(const SpotLightComponent&) = default;

@@ -221,19 +221,35 @@ namespace Conqueror
     {
         shader->Bind();
 
-        // Directional light
-        shader->SetFloat3("u_DirLight.Direction", s_SceneData->DirectionalLight.Direction);
-        shader->SetFloat3("u_DirLight.Color", s_SceneData->DirectionalLight.Color);
-        shader->SetFloat("u_DirLight.Intensity", s_SceneData->DirectionalLight.Intensity);
+        // Directional light - sadece Realtime veya Mixed
+        if (s_SceneData->DirectionalLight.Mode != LightMode::Baked)
+        {
+            shader->SetFloat3("u_DirLight.Direction", s_SceneData->DirectionalLight.Direction);
+            shader->SetFloat3("u_DirLight.Color", s_SceneData->DirectionalLight.Color);
+            shader->SetFloat("u_DirLight.Intensity", s_SceneData->DirectionalLight.Intensity);
+        }
+        else
+        {
+            shader->SetFloat3("u_DirLight.Direction", glm::vec3(0));
+            shader->SetFloat3("u_DirLight.Color", glm::vec3(0));
+            shader->SetFloat("u_DirLight.Intensity", 0.0f);
+        }
 
-        // Point lights
-        int numPointLights = std::min((int)s_SceneData->PointLights.size(), 16);
+        // Point lights - sadece Realtime veya Mixed
+        std::vector<std::pair<glm::vec3, PointLightComponent>> activePointLights;
+        for (auto& [pos, light] : s_SceneData->PointLights)
+        {
+            if (light.Mode != LightMode::Baked)
+                activePointLights.push_back({pos, light});
+        }
+
+        int numPointLights = std::min((int)activePointLights.size(), 16);
         shader->SetInt("u_NumPointLights", numPointLights);
 
         for (int i = 0; i < numPointLights; i++)
         {
             std::string base = "u_PointLights[" + std::to_string(i) + "]";
-            const auto& [pos, light] = s_SceneData->PointLights[i];
+            const auto& [pos, light] = activePointLights[i];
 
             shader->SetFloat3(base + ".Position", pos);
             shader->SetFloat3(base + ".Color", light.Color);
@@ -244,8 +260,15 @@ namespace Conqueror
             shader->SetFloat(base + ".Quadratic", light.Quadratic);
         }
 
-        // Spot lights
-        int numSpotLights = std::min((int)s_SceneData->SpotLights.size(), 8);
+        // Spot lights - sadece Realtime veya Mixed
+        std::vector<std::pair<glm::vec3, SpotLightComponent>> activeSpotLights;
+        for (auto& [pos, light] : s_SceneData->SpotLights)
+        {
+            if (light.Mode != LightMode::Baked)
+                activeSpotLights.push_back({pos, light});
+        }
+
+        int numSpotLights = std::min((int)activeSpotLights.size(), 8);
         shader->SetInt("u_NumSpotLights", numSpotLights);
 
         for (int i = 0; i < numSpotLights; i++)

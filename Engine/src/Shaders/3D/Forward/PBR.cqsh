@@ -574,11 +574,13 @@ void main()
     
     vec3 color = ambient + Lo;
     
-    // Lightmap replaces ambient
+    // Lightmap replaces ambient + Lo for baked lights
     if (u_HasLightmap == 1)
     {
         vec2 lmUV = fs_in.TexCoord2;
         vec3 lightmapColor = texture(u_Lightmap, lmUV).rgb;
+        // Lightmap contains: ambient + direct baked + indirect baked
+        // Lo contains: realtime direct lights
         color = Lo + lightmapColor * albedo;
     }
     
