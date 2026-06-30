@@ -36,7 +36,7 @@ A 2D/3D game engine built with C++ and OpenGL, with experimental Vulkan support.
 sudo dnf install cmake gcc-c++ mesa-libGL-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel wayland-devel libxkbcommon-devel
 
 # Clone the repository
-git clone https://github.com/FazliOzlemis/conqueror.git
+git clone https://github.com/conquerorsengine/conqueror.git
 cd conqueror
 
 # Build
@@ -48,7 +48,7 @@ cmake --build build -j$(nproc)
 
 ```bash
 # Clone the repository
-git clone https://github.com/FazliOzlemis/conqueror.git
+git clone https://github.com/conquerorsengine/conqueror.git
 cd conqueror
 
 # Build
