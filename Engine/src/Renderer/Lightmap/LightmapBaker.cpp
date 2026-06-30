@@ -230,11 +230,8 @@ namespace Conqueror
         m_Atlas.Height = H;
         m_Atlas.Texels.resize(W * H, glm::vec3(0));
 
-        // Her triangle icin UV1'i dogrudan kullan (cube face'leri zaten [0,1] arasi)
-        // Farkli mesh'ler icin UV offset kullan
-        // Cube icin: 6 face * 2 tri = 12 tri. Her face'in UV1'i [0,1] arasi
-        // Biz atlas'ta her face'e farkli bolge verecegiz
-        // Basit: her face'e 1 kolon, 1 satir ata
+        // Her triangle icin face index hesapla
+        std::vector<int> triFaceIdx(tris.size(), 0);
         for (int i = 0; i < (int)tris.size(); i++)
         {
             int localIdx = 0;
@@ -243,7 +240,6 @@ namespace Conqueror
                 if (tris[j].meshID != tris[i].meshID) break;
                 localIdx++;
             }
-
             int meshTriCount = 0;
             for (int j = 0; j < (int)tris.size(); j++)
             {
@@ -251,33 +247,46 @@ namespace Conqueror
             }
             int faceCount = meshTriCount / 2;
             if (faceCount < 1) faceCount = 1;
+            triFaceIdx[i] = localIdx / 2;
+        }
 
-            int faceIdx = localIdx / 2;
-            int col = faceIdx;
+        // Grid layout: her face'e ozel bolge (cols x rows)
+        int maxFaceCount = 1;
+        for (int i = 0; i < (int)tris.size(); i++)
+        {
+            int meshTriCount = 0;
+            for (int j = 0; j < (int)tris.size(); j++)
+            {
+                if (tris[j].meshID == tris[i].meshID) meshTriCount++;
+            }
+            int fc = meshTriCount / 2;
+            if (fc > maxFaceCount) maxFaceCount = fc;
+        }
 
-            float padU = 0.0f;
-            float padV = 0.0f;
-            float uMin = (float)col / (float)faceCount + padU;
-            float uMax = (float)(col + 1) / (float)faceCount - padU;
-            float vMin = padV;
-            float vMax = 1.0f - padV;
+        int gridCols = (int)std::ceil(std::sqrt((float)maxFaceCount));
+        int gridRows = (maxFaceCount + gridCols - 1) / gridCols;
+
+        for (int i = 0; i < (int)tris.size(); i++)
+        {
+            int col = triFaceIdx[i] % gridCols;
+            int row = triFaceIdx[i] / gridCols;
+            float uMin = (float)col / (float)gridCols;
+            float uMax = (float)(col + 1) / (float)gridCols;
+            float vMin = (float)row / (float)gridRows;
+            float vMax = (float)(row + 1) / (float)gridRows;
 
             tris[i].uv0 = glm::vec2(uMin + tris[i].uv0.x * (uMax - uMin), vMin + tris[i].uv0.y * (vMax - vMin));
             tris[i].uv1 = glm::vec2(uMin + tris[i].uv1.x * (uMax - uMin), vMin + tris[i].uv1.y * (vMax - vMin));
             tris[i].uv2 = glm::vec2(uMin + tris[i].uv2.x * (uMax - uMin), vMin + tris[i].uv2.y * (vMax - vMin));
         }
 
-        // Mesh TexCoords2'leri guncelle - cube icin her face'in atlas UV'si
+        // Mesh TexCoords2'leri guncelle - cube icin
         {
             auto cubeMesh = Renderer3D::GetCubeMesh();
             if (cubeMesh && (int)tris.size() >= 12)
             {
                 std::vector<glm::vec2> newUV2(cubeMesh->GetVertexCount(), glm::vec2(0.5f));
-                int cubeTriCount = 0;
-                for (auto& t : tris) { if (t.meshID == 0) cubeTriCount++; }
-                int cubeFaces = cubeTriCount / 2;
-
-                for (int face = 0; face < 6 && face < cubeFaces; face++)
+                for (int face = 0; face < 6; face++)
                 {
                     int triBase = face * 2;
                     if (triBase >= (int)tris.size()) break;
@@ -291,10 +300,10 @@ namespace Conqueror
                     int vi = face * 4;
                     if (vi + 3 < (int)newUV2.size())
                     {
-                        newUV2[vi + 0] = glm::vec2(uMin, vMin); // sol alt
-                        newUV2[vi + 1] = glm::vec2(uMax, vMin); // sag alt
-                        newUV2[vi + 2] = glm::vec2(uMax, vMax); // sag ust
-                        newUV2[vi + 3] = glm::vec2(uMin, vMax); // sol ust
+                        newUV2[vi + 0] = glm::vec2(uMin, vMin);
+                        newUV2[vi + 1] = glm::vec2(uMax, vMin);
+                        newUV2[vi + 2] = glm::vec2(uMax, vMax);
+                        newUV2[vi + 3] = glm::vec2(uMin, vMax);
                     }
                 }
                 cubeMesh->UpdateUV2(newUV2);

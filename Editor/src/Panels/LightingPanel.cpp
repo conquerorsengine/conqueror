@@ -693,6 +693,9 @@ namespace Conqueror::Editor
         // Progress bar veya Generate Lighting butonu
         if (m_IsBaking)
         {
+            m_BakeProgress = m_BakeThreadProgress.load();
+            m_BakeStep = m_BakeThreadStep;
+
             ImGui::ProgressBar(m_BakeProgress, ImVec2(-1, 0), "Baking...");
             ImGui::Text("Step: %s", m_BakeStep.c_str());
         }
@@ -704,6 +707,8 @@ namespace Conqueror::Editor
 
                 m_IsBaking = true;
                 m_BakeProgress = 0.0f;
+                m_BakeMode = (m_ActiveTab == 3) ? 1 : 0;
+                m_BakeThreadDone = false;
 
                 auto baker = LightmapBaker::Create();
                 LightmapSettings settings;
@@ -728,42 +733,19 @@ namespace Conqueror::Editor
                     m_BakeStep = step;
                 });
 
-                auto startTime = std::chrono::high_resolution_clock::now();
-                baker->Bake(m_Context.get());
-                auto endTime = std::chrono::high_resolution_clock::now();
-                float bakeTime = std::chrono::duration<float>(endTime - startTime).count();
+                m_PendingBaker = baker;
+                auto* bakerPtr = baker.get();
+                auto* progressPtr = &m_BakeProgress;
+                auto* stepPtr = &m_BakeStep;
+                auto* doneFlag = &m_BakeThreadDone;
+                auto* timePtr = &m_BakeTimeRecord;
+                auto scenePtr = m_Context.get();
 
-                m_BakeProgress = 1.0f;
-                m_BakedLightmapBaked = true;
-                m_BakedAtlasWidth = baker->GetAtlas().Width;
-                m_BakedAtlasHeight = baker->GetAtlas().Height;
-                m_BakedTexelCount = (int)baker->GetAtlas().Texels.size();
-                m_BakedBakeTime = bakeTime;
-                m_BakedLightmapTexture = baker->CreateLightmapTexture();
-                if (m_BakedLightmapTexture)
+                m_BakeThread = std::thread([bakerPtr, scenePtr, progressPtr, stepPtr, doneFlag, timePtr]()
                 {
-                    Renderer3D::SetLightmap(m_BakedLightmapTexture);
-
-                    auto projectDir = Project::GetActiveProjectDirectory();
-                    if (!projectDir.empty())
-                    {
-                        std::string lmDir = projectDir.string() + "/Assets/Lightmaps";
-                        std::filesystem::create_directories(lmDir);
-                        std::string lmPath = lmDir + "/baked_lightmap.png";
-                        baker->SaveToFile(lmPath);
-                        m_Context->SetBakedLightmapPath("Assets/Lightmaps/baked_lightmap.png");
-                    }
-                }
-
-                auto& registry = m_Context->m_Registry;
-                int objCount = 0;
-                auto meshView = registry.view<TransformComponent, MeshRendererComponent>();
-                objCount += (int)std::distance(meshView.begin(), meshView.end());
-                auto modelView = registry.view<TransformComponent, ModelComponent>();
-                objCount += (int)std::distance(modelView.begin(), modelView.end());
-                m_BakedObjectCount = objCount;
-
-                m_IsBaking = false;
+                    bakerPtr->Bake(scenePtr);
+                    *doneFlag = true;
+                });
             }
         }
     }

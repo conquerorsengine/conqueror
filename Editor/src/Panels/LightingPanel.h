@@ -9,6 +9,8 @@
 #include <memory>
 #include <string>
 #include <chrono>
+#include <thread>
+#include <atomic>
 
 namespace Conqueror::Editor
 {
@@ -16,7 +18,7 @@ namespace Conqueror::Editor
     {
     public:
         LightingPanel() = default;
-        ~LightingPanel() = default;
+        ~LightingPanel() { if (m_BakeThread.joinable()) m_BakeThread.join(); }
 
         void OnImGuiRender();
         void SetContext(std::shared_ptr<Scene> scene) { m_Context = scene; }
@@ -94,6 +96,12 @@ namespace Conqueror::Editor
         float m_BakeProgress = 0.0f;
         int m_BakeMode = 0; // 0=Baked, 1=Realtime
         std::string m_BakeStep;
+
+        // Thread baking
+        std::thread m_BakeThread;
+        std::atomic<bool> m_BakeThreadDone{false};
+        std::shared_ptr<LightmapBaker> m_PendingBaker;
+        float m_BakeTimeRecord = 0.0f;
 
         // Realtime lightmap state
         bool m_RealtimeBaked = false;
