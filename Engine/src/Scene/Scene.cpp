@@ -10,6 +10,7 @@
 #include "Renderer/TextRenderer.h"
 #include "Renderer/Utilities/Renderer3D/Renderer3D.h"
 #include "Renderer/Utilities/Renderer3D/Material.h"
+#include "Renderer/Shadow/ShadowPass.h"
 #include "Core/Project/Project.h"
 #include "Renderer/Utilities/Renderer3D/ModelLoader.h"
 #include "Core/Input/Input.h"
@@ -855,6 +856,29 @@ namespace Conqueror
             // Light count'u stats'a ekle
             Renderer::GetStats().LightCount = lightCount;
             
+            // Shadow pass
+            {
+                GLint prevViewport[4];
+                GLint prevFBO;
+                glGetIntegerv(GL_VIEWPORT, prevViewport);
+                glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFBO);
+
+                DirectionalLightComponent dl;
+                Entity sunSrc = GetSunSourceEntity();
+                if (sunSrc && sunSrc.HasComponent<DirectionalLightComponent>())
+                    dl = sunSrc.GetComponent<DirectionalLightComponent>();
+                else
+                {
+                    dl.Direction = glm::vec3(-0.5f, -1.0f, -0.3f);
+                    dl.Color = glm::vec3(1.0f);
+                    dl.Intensity = 0.5f;
+                }
+                Renderer3D::GetShadowPass().Execute(this, dl, dl.Direction);
+
+                glBindFramebuffer(GL_FRAMEBUFFER, prevFBO);
+                glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
+            }
+            
             // 3D objeleri render et (MeshRendererComponent)
             auto meshView = m_Registry.view<TransformComponent, MeshRendererComponent>();
             for (auto entity : meshView)
@@ -1331,6 +1355,29 @@ namespace Conqueror
         
         // Light count'u stats'a ekle
         Renderer::GetStats().LightCount = lightCount;
+        
+        // Shadow pass
+        {
+            GLint prevViewport[4];
+            GLint prevFBO;
+            glGetIntegerv(GL_VIEWPORT, prevViewport);
+            glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFBO);
+
+            DirectionalLightComponent dl;
+            Entity sunSrc = GetSunSourceEntity();
+            if (sunSrc && sunSrc.HasComponent<DirectionalLightComponent>())
+                dl = sunSrc.GetComponent<DirectionalLightComponent>();
+            else
+            {
+                dl.Direction = glm::vec3(-0.5f, -1.0f, -0.3f);
+                dl.Color = glm::vec3(1.0f);
+                dl.Intensity = 0.5f;
+            }
+            Renderer3D::GetShadowPass().Execute(this, dl, dl.Direction);
+
+            glBindFramebuffer(GL_FRAMEBUFFER, prevFBO);
+            glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
+        }
         
         // 3D objeleri render et (MeshRendererComponent)
         auto meshView = m_Registry.view<TransformComponent, MeshRendererComponent>();

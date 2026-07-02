@@ -12,6 +12,8 @@
 #include <random>
 #include <limits>
 
+#include <glad/glad.h>
+
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
@@ -24,6 +26,7 @@ namespace Conqueror
         glm::vec2 uv0, uv1, uv2; // atlas UV
         glm::vec3 albedo;
         int meshID;
+        float cellUMin, cellUMax, cellVMin, cellVMax;
     };
 
     static bool RayTriTest(const glm::vec3& o, const glm::vec3& d,
@@ -90,7 +93,7 @@ namespace Conqueror
         b1 = (d11*d20 - d01*d21) / den;
         b2 = (d00*d21 - d01*d20) / den;
         b0 = 1 - b1 - b2;
-        return b0 >= -0.001f && b1 >= -0.001f && b2 >= -0.001f;
+        return b0 >= 0.0f && b1 >= 0.0f && b2 >= 0.0f;
     }
 
     LightmapBaker::LightmapBaker(const LightmapSettings& settings) : m_Settings(settings) {}
@@ -265,6 +268,8 @@ namespace Conqueror
 
         int gridCols = (int)std::ceil(std::sqrt((float)maxFaceCount));
         int gridRows = (maxFaceCount + gridCols - 1) / gridCols;
+        m_GridCols = gridCols;
+        m_GridRows = gridRows;
 
         for (int i = 0; i < (int)tris.size(); i++)
         {
@@ -275,38 +280,46 @@ namespace Conqueror
             float vMin = (float)row / (float)gridRows;
             float vMax = (float)(row + 1) / (float)gridRows;
 
+            tris[i].cellUMin = uMin;
+            tris[i].cellUMax = uMax;
+            tris[i].cellVMin = vMin;
+            tris[i].cellVMax = vMax;
+
             tris[i].uv0 = glm::vec2(uMin + tris[i].uv0.x * (uMax - uMin), vMin + tris[i].uv0.y * (vMax - vMin));
             tris[i].uv1 = glm::vec2(uMin + tris[i].uv1.x * (uMax - uMin), vMin + tris[i].uv1.y * (vMax - vMin));
             tris[i].uv2 = glm::vec2(uMin + tris[i].uv2.x * (uMax - uMin), vMin + tris[i].uv2.y * (vMax - vMin));
         }
 
-        // Mesh TexCoords2'leri guncelle - cube icin
+        // Mesh TexCoords2'leri hesapla - main thread'de uygulanacak
         {
             auto cubeMesh = Renderer3D::GetCubeMesh();
             if (cubeMesh && (int)tris.size() >= 12)
             {
-                std::vector<glm::vec2> newUV2(cubeMesh->GetVertexCount(), glm::vec2(0.5f));
+                float halfTexelU = 4.0f / (float)W;
+                float halfTexelV = 4.0f / (float)H;
+
+                m_PendingUV2.resize(cubeMesh->GetVertexCount(), glm::vec2(0.5f));
                 for (int face = 0; face < 6; face++)
                 {
                     int triBase = face * 2;
                     if (triBase >= (int)tris.size()) break;
                     if (tris[triBase].meshID != 0) continue;
 
-                    float uMin = tris[triBase].uv0.x;
-                    float uMax = tris[triBase].uv1.x;
-                    float vMin = tris[triBase].uv0.y;
-                    float vMax = tris[triBase].uv2.y;
+                    float uMin = tris[triBase].uv0.x + halfTexelU;
+                    float uMax = tris[triBase].uv1.x - halfTexelU;
+                    float vMin = tris[triBase].uv0.y + halfTexelV;
+                    float vMax = tris[triBase].uv2.y - halfTexelV;
 
                     int vi = face * 4;
-                    if (vi + 3 < (int)newUV2.size())
+                    if (vi + 3 < (int)m_PendingUV2.size())
                     {
-                        newUV2[vi + 0] = glm::vec2(uMin, vMin);
-                        newUV2[vi + 1] = glm::vec2(uMax, vMin);
-                        newUV2[vi + 2] = glm::vec2(uMax, vMax);
-                        newUV2[vi + 3] = glm::vec2(uMin, vMax);
+                        m_PendingUV2[vi + 0] = glm::vec2(uMin, vMin);
+                        m_PendingUV2[vi + 1] = glm::vec2(uMax, vMin);
+                        m_PendingUV2[vi + 2] = glm::vec2(uMax, vMax);
+                        m_PendingUV2[vi + 3] = glm::vec2(uMin, vMax);
                     }
                 }
-                cubeMesh->UpdateUV2(newUV2);
+                m_HasPendingUV2 = true;
             }
         }
 
@@ -335,7 +348,7 @@ namespace Conqueror
                     // Direkt isik + ambient
                     bool shadow = AnyHitExcl(wp + n * 0.02f, -lightDir, tris, 500, tri.meshID);
                     float direct = shadow ? 0.0f : std::max(0.0f, glm::dot(n, -lightDir));
-                    glm::vec3 light = ambient + lightColor * lightIntensity * direct;
+                    glm::vec3 light = ambient + lightColor * lightIntensity * 0.2f * direct;
 
                     m_Atlas.Texels[py * W + px] = light * tri.albedo;
                     break;
@@ -429,6 +442,34 @@ namespace Conqueror
 
         ReportProgress(0.85f, "Filtering...");
         ApplyFiltering();
+
+        ReportProgress(0.9f, "Edge clamp...");
+        {
+            int cellW = (int)W / m_GridCols;
+            int cellH = (int)H / m_GridRows;
+            for (int row = 0; row < m_GridRows; row++)
+            {
+                for (int col = 0; col < m_GridCols; col++)
+                {
+                    int ox = col * cellW;
+                    int oy = row * cellH;
+                    for (int y = 0; y < cellH; y++)
+                    {
+                        for (int x = 0; x < cellW; x++)
+                        {
+                            bool isEdge = (x <= 3 || x >= cellW - 4 || y <= 3 || y >= cellH - 4);
+                            if (isEdge)
+                            {
+                                int cx = glm::clamp(x, 4, cellW - 5);
+                                int cy = glm::clamp(y, 4, cellH - 5);
+                                m_Atlas.Texels[(oy + y) * W + (ox + x)] = m_Atlas.Texels[(oy + cy) * W + (ox + cx)];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         ReportProgress(1.0f, "Done!");
         m_IsBaking = false;
         CQ_CORE_INFO("Lightmap done: {0}x{1}, {2} tris, {3} meshes", W, H, tris.size(), meshCounter);
@@ -440,15 +481,33 @@ namespace Conqueror
         uint32_t w = m_Atlas.Width, h = m_Atlas.Height;
         if (w < 3 || h < 3) return;
         auto f = m_Atlas.Texels;
+
+        int cellW = (int)w / m_GridCols;
+        int cellH = (int)h / m_GridRows;
+
         for (uint32_t y = 1; y < h - 1; y++)
             for (uint32_t x = 1; x < w - 1; x++)
             {
+                int cellCol = (int)x / cellW;
+                int cellRow = (int)y / cellH;
+                int localX = (int)x - cellCol * cellW;
+                int localY = (int)y - cellRow * cellH;
+
+                if (localX <= 0 || localX >= cellW - 1 || localY <= 0 || localY >= cellH - 1)
+                    continue;
+
                 glm::vec3 s(0); float wt = 0;
                 for (int ky = -1; ky <= 1; ky++)
                     for (int kx = -1; kx <= 1; kx++)
                     {
+                        int nx = localX + kx;
+                        int ny = localY + ky;
+                        if (nx < 0 || nx >= cellW || ny < 0 || ny >= cellH)
+                            continue;
+                        uint32_t gx = (uint32_t)(cellCol * cellW + nx);
+                        uint32_t gy = (uint32_t)(cellRow * cellH + ny);
                         float fw = 1.0f / (1 + std::abs((float)kx) + std::abs((float)ky));
-                        s += m_Atlas.Texels[(y + ky) * w + (x + kx)] * fw;
+                        s += m_Atlas.Texels[gy * w + gx] * fw;
                         wt += fw;
                     }
                 f[y * w + x] = s / wt;
@@ -463,7 +522,6 @@ namespace Conqueror
         for (size_t i = 0; i < m_Atlas.Texels.size(); i++)
         {
             glm::vec3 c = m_Atlas.Texels[i];
-            // Hafif gamma - 8-bit icin gerekiyor
             c = glm::pow(glm::clamp(c, glm::vec3(0), glm::vec3(10)), glm::vec3(0.4f));
             px[i * 4 + 0] = (uint8_t)(glm::clamp(c.r, 0.f, 1.f) * 255);
             px[i * 4 + 1] = (uint8_t)(glm::clamp(c.g, 0.f, 1.f) * 255);
@@ -471,7 +529,12 @@ namespace Conqueror
             px[i * 4 + 3] = 255;
         }
         auto tex = Texture2D::Create(m_Atlas.Width, m_Atlas.Height);
-        if (tex) tex->SetData(px.data(), (uint32_t)px.size());
+        if (tex) {
+            tex->SetData(px.data(), (uint32_t)px.size());
+            glBindTexture(GL_TEXTURE_2D, tex->GetRendererID());
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        }
         return tex;
     }
 
@@ -497,6 +560,15 @@ namespace Conqueror
             CQ_CORE_ERROR("Failed to save lightmap to: {0}", path);
 
         return result != 0;
+    }
+
+    void LightmapBaker::ApplyUV2ToMeshes()
+    {
+        if (!m_HasPendingUV2 || m_PendingUV2.empty()) return;
+        auto cubeMesh = Renderer3D::GetCubeMesh();
+        if (cubeMesh)
+            cubeMesh->UpdateUV2(m_PendingUV2);
+        m_HasPendingUV2 = false;
     }
 
     std::shared_ptr<LightmapBaker> LightmapBaker::Create(const LightmapSettings& settings)

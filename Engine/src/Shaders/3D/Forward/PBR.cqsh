@@ -547,11 +547,11 @@ void main()
     
     if (u_AmbientLightingSource == 0) // Skybox
     {
-        irradiance = u_AmbientColor * u_AmbientIntensity * 0.3;
+        irradiance = u_AmbientColor * u_AmbientIntensity * 0.5;
     }
     else if (u_AmbientLightingSource == 1) // Color
     {
-        irradiance = u_AmbientColor * u_AmbientIntensity * 0.3;
+        irradiance = u_AmbientColor * u_AmbientIntensity * 0.5;
     }
     else // Gradient (Hemisphere Lighting)
     {
@@ -561,7 +561,7 @@ void main()
         vec3 hemisphereColor = mix(u_AmbientEquatorColor, u_AmbientSkyColor, skyWeight);
         hemisphereColor = mix(hemisphereColor, u_AmbientGroundColor, groundWeight);
         
-        irradiance = hemisphereColor * u_AmbientIntensity * 0.3;
+        irradiance = hemisphereColor * u_AmbientIntensity * 0.5;
     }
     
     vec3 diffuse = irradiance * albedo;
@@ -579,8 +579,6 @@ void main()
     {
         vec2 lmUV = fs_in.TexCoord2;
         vec3 lightmapColor = texture(u_Lightmap, lmUV).rgb;
-        // Lightmap contains: ambient + direct baked + indirect baked
-        // Lo contains: realtime direct lights
         color = Lo + lightmapColor * albedo;
     }
     

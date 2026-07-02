@@ -64,6 +64,7 @@ namespace Conqueror
 
         std::shared_ptr<Texture2D> CreateLightmapTexture() const;
         bool SaveToFile(const std::string& path) const;
+        void ApplyUV2ToMeshes();
 
         static std::shared_ptr<LightmapBaker> Create(const LightmapSettings& settings = {});
 
@@ -76,5 +77,10 @@ namespace Conqueror
         bool m_IsBaking = false;
         float m_Progress = 0.0f;
         LightmapProgressCallback m_ProgressCallback;
+
+        std::vector<glm::vec2> m_PendingUV2;
+        bool m_HasPendingUV2 = false;
+        int m_GridCols = 1;
+        int m_GridRows = 1;
     };
 }
