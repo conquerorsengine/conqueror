@@ -122,6 +122,10 @@ namespace Conqueror
             }
 
             auto [tf, mr] = meshView.get<TransformComponent, MeshRendererComponent>(e);
+
+            // Realtime modda sadece RealtimeGI=true olan entity'ler
+            if (m_RealtimeMode && !mr.RealtimeGI) continue;
+
             glm::mat4 wt = tf.GetTransform();
             glm::mat3 nm = glm::mat3(glm::transpose(glm::inverse(wt)));
             std::shared_ptr<Mesh> mesh;
@@ -169,6 +173,7 @@ namespace Conqueror
 
             auto [tf, mc] = modelView.get<TransformComponent, ModelComponent>(e);
             if (!mc.ModelData) continue;
+            if (m_RealtimeMode && !mc.RealtimeGI) continue;
             glm::mat4 wt = tf.GetTransform();
             glm::mat3 nm = glm::mat3(glm::transpose(glm::inverse(wt)));
             for (size_t m = 0; m < mc.ModelData->Meshes.size(); m++)
@@ -206,7 +211,7 @@ namespace Conqueror
         if (tris.empty()) { m_IsBaking = false; ReportProgress(1, "No geometry!"); return; }
         CQ_CORE_INFO("Lightmap: {0} triangles, {1} meshes", tris.size(), meshCounter);
 
-        // Light collection - sadece Baked veya Mixed moddaki isiklar
+        // Light collection
         glm::vec3 lightDir(0, -1, 0);
         glm::vec3 lightColor(0, 0, 0);
         float lightIntensity = 0.0f;
@@ -214,7 +219,7 @@ namespace Conqueror
         if (sun && sun.HasComponent<DirectionalLightComponent>())
         {
             auto& dl = sun.GetComponent<DirectionalLightComponent>();
-            if (dl.Mode != LightMode::Realtime)
+            if (m_RealtimeMode || dl.Mode != LightMode::Realtime)
             {
                 lightDir = glm::normalize(dl.Direction);
                 lightColor = dl.Color;
@@ -350,7 +355,7 @@ namespace Conqueror
                     float direct = shadow ? 0.0f : std::max(0.0f, glm::dot(n, -lightDir));
                     glm::vec3 light = ambient + lightColor * lightIntensity * 0.2f * direct;
 
-                    m_Atlas.Texels[py * W + px] = light * tri.albedo;
+                    m_Atlas.Texels[py * W + px] = light;
                     break;
                 }
             }

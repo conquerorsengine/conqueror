@@ -101,6 +101,9 @@ namespace Conqueror
         std::shared_ptr<Texture2D> Texture;
         std::string TexturePath;
 
+        // Realtime GI
+        bool RealtimeGI = false;
+
         MeshRendererComponent() = default;
         MeshRendererComponent(const MeshRendererComponent&) = default;
         MeshRendererComponent(const glm::vec4& color) : Color(color) {}
@@ -356,6 +359,7 @@ namespace Conqueror
     {
         std::shared_ptr<struct Model> ModelData;
         std::string FilePath;
+        bool RealtimeGI = false;
 
         ModelComponent() = default;
         ModelComponent(const ModelComponent&) = default;

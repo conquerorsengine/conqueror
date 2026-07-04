@@ -5,6 +5,7 @@
 #include "Material.h"
 #include "Renderer/RHI/Shader.h"
 #include "Renderer/RHI/Cubemap.h"
+#include "Renderer/Probe/AdaptiveProbeVolume.h"
 #include "Scene/EditorCamera.h"
 #include "Scene/Components.h"
 #include "Renderer/Shadow/ShadowPass.h"
@@ -61,6 +62,9 @@ namespace Conqueror
 
         // Lightmap
         static void SetLightmap(std::shared_ptr<Texture2D> lightmap);
+
+        // Adaptive Probe Volumes
+        static void SetAdaptiveProbeVolume(std::shared_ptr<AdaptiveProbeVolume> apv);
 
         // Cube çizme
         static void DrawCube(const glm::mat4& transform, std::shared_ptr<Material> material);
@@ -121,11 +125,15 @@ namespace Conqueror
 
             // Lightmap
             std::shared_ptr<Texture2D> Lightmap;
+
+            // Adaptive Probe Volume
+            std::shared_ptr<AdaptiveProbeVolume> APV;
         };
 
         static void BindLightsToShader(std::shared_ptr<Shader> shader);
         static void BindReflectionProbesToShader(std::shared_ptr<Shader> shader);
         static void BindLightProbesToShader(std::shared_ptr<Shader> shader);
+        static void BindAPVToShader(std::shared_ptr<Shader> shader);
 
         static SceneData* s_SceneData;
         static ShadowPass s_ShadowPass;
@@ -144,5 +152,10 @@ namespace Conqueror
 
         // Skybox resources
         static std::shared_ptr<Shader> s_SkyboxShader;
+
+        // APV textures
+        static uint32_t s_APVPositionTex;
+        static uint32_t s_APVSHTex;
+        static int s_APVLastProbeCount;
     };
 }

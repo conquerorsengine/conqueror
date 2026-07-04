@@ -55,6 +55,8 @@ namespace Conqueror
         bool IsBaking() const { return m_IsBaking; }
         float GetProgress() const { return m_Progress; }
 
+        void SetRealtimeMode(bool enabled) { m_RealtimeMode = enabled; }
+
         const LightmapSettings& GetSettings() const { return m_Settings; }
         void SetSettings(const LightmapSettings& settings) { m_Settings = settings; }
 
@@ -77,6 +79,8 @@ namespace Conqueror
         bool m_IsBaking = false;
         float m_Progress = 0.0f;
         LightmapProgressCallback m_ProgressCallback;
+
+        bool m_RealtimeMode = false;
 
         std::vector<glm::vec2> m_PendingUV2;
         bool m_HasPendingUV2 = false;

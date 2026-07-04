@@ -995,6 +995,9 @@ namespace Conqueror::Editor
                 ImGui::SliderFloat("Roughness##MR", &component.Roughness, 0.0f, 1.0f);
                 ImGui::SliderFloat("AO##MR", &component.AO, 0.0f, 1.0f);
             }
+
+            ImGui::Separator();
+            ImGui::Checkbox("Realtime GI", &component.RealtimeGI);
         });
 
         DrawComponent<ModelComponent>("Model", entity, [](auto& component)
@@ -1112,6 +1115,9 @@ namespace Conqueror::Editor
                     component.ModelData->Materials.push_back(Material::CreateDefault());
                 }
             }
+
+            ImGui::Separator();
+            ImGui::Checkbox("Realtime GI", &component.RealtimeGI);
         });
 
         DrawComponent<AnimatorComponent>("Animator", entity, [](auto& component)

@@ -100,6 +100,7 @@ namespace Conqueror::Editor
         float m_BakeProgress = 0.0f;
         int m_BakeMode = 0; // 0=Baked, 1=Realtime
         std::string m_BakeStep;
+        bool m_IsAutoUpdate = false;
 
         // Background baking
         std::thread m_BakeThread;
@@ -107,6 +108,7 @@ namespace Conqueror::Editor
         std::atomic<float> m_BakeThreadProgress{0.0f};
         std::string m_BakeThreadStep;
         std::shared_ptr<LightmapBaker> m_ActiveBaker;
+        std::chrono::high_resolution_clock::time_point m_BakeStartTime;
 
         // Realtime lightmap state
         bool m_RealtimeBaked = false;
@@ -117,6 +119,19 @@ namespace Conqueror::Editor
         float m_RealtimeBakeTime = 0.0f;
         std::shared_ptr<Texture2D> m_RealtimeLightmapTexture;
 
+        // Realtime lightmap settings
+        int m_RealtimeResolution = 20;
+        int m_RealtimeIndirectSamples = 256;
+        int m_RealtimeMaxBounces = 1;
+
+        // Realtime lightmap auto-update
+        bool m_RealtimeAutoUpdate = true;
+        glm::vec3 m_LastLightDir = glm::vec3(0);
+        glm::vec3 m_LastLightColor = glm::vec3(0);
+        float m_LastLightIntensity = 0.0f;
+        std::chrono::high_resolution_clock::time_point m_LastAutoUpdateTime;
+        bool m_HasAutoBakedOnce = false;
+
         // Baked lightmap state
         bool m_BakedLightmapBaked = false;
         int m_BakedAtlasWidth = 0;
@@ -126,5 +141,13 @@ namespace Conqueror::Editor
         int m_BakedProbeCount = 0;
         float m_BakedBakeTime = 0.0f;
         std::shared_ptr<Texture2D> m_BakedLightmapTexture;
+
+        // APV bake state
+        bool m_APBaked = false;
+        int m_APVProbeCount = 0;
+        int m_APVBrickCount = 0;
+        int m_APVLevelCount = 0;
+        float m_APVBakeTime = 0.0f;
+        std::shared_ptr<AdaptiveProbeVolume> m_ActiveAPV;
     };
 }

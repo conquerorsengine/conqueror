@@ -82,6 +82,80 @@ namespace Conqueror::Editor
             return;
         }
 
+        // Realtime lightmap auto-update: ışık değiştiyse yeniden bake et (throttle: 2sn)
+        if (m_RealtimeAutoUpdate && m_RealtimeBaked && !m_IsBaking)
+        {
+            auto now = std::chrono::high_resolution_clock::now();
+            float timeSinceLast = std::chrono::duration<float>(now - m_LastAutoUpdateTime).count();
+            if (timeSinceLast < 2.0f) return;
+
+            Entity sunSource = m_Context->GetSunSourceEntity();
+            if (sunSource && sunSource.HasComponent<DirectionalLightComponent>())
+            {
+                auto& dl = sunSource.GetComponent<DirectionalLightComponent>();
+                glm::vec3 curDir = dl.Direction;
+                glm::vec3 curColor = dl.Color;
+                float curIntensity = dl.Intensity;
+
+                if (curDir != m_LastLightDir || curColor != m_LastLightColor || curIntensity != m_LastLightIntensity)
+                {
+                    float dirDiff = glm::length(curDir - m_LastLightDir);
+                    float colorDiff = glm::length(curColor - m_LastLightColor);
+                    float intensityDiff = std::abs(curIntensity - m_LastLightIntensity);
+                    if (dirDiff < 0.01f && colorDiff < 0.01f && intensityDiff < 0.01f) return;
+
+                    m_LastLightDir = curDir;
+                    m_LastLightColor = curColor;
+                    m_LastLightIntensity = curIntensity;
+                    m_LastAutoUpdateTime = now;
+
+                    m_IsBaking = true;
+                    m_IsAutoUpdate = true;
+                    m_BakeMode = 1;
+                    m_BakeProgress = 0.0f;
+                    m_BakeThreadDone.store(false);
+                    m_BakeThreadProgress.store(0.0f);
+                    m_BakeThreadStep = "Starting...";
+                    m_BakeStartTime = std::chrono::high_resolution_clock::now();
+
+                    m_ActiveBaker = LightmapBaker::Create();
+                    LightmapSettings settings;
+                    settings.Lightmapper = m_LightmapperIndex;
+                    settings.ImportanceSampling = m_ImportanceSampling;
+                    settings.Resolution = 10;
+                    settings.MaxLightmapSize = 256;
+                    settings.MaxBounces = 1;
+                    settings.DirectSamples = 8;
+                    settings.IndirectSamples = 32;
+                    settings.EnvironmentSamples = 16;
+                    settings.Filtering = m_FilteringIndex;
+                    settings.Compression = m_LightmapCompressionIndex;
+                    settings.AmbientOcclusion = m_AmbientOcclusion;
+                    settings.DirectionalMode = m_DirectionalModeIndex;
+                    settings.AlbedoBoost = m_AlbedoBoost;
+                    settings.IndirectIntensity = m_IndirectIntensity;
+                    m_ActiveBaker->SetSettings(settings);
+                    m_ActiveBaker->SetRealtimeMode(true);
+
+                    auto bakerPtr = m_ActiveBaker.get();
+                    auto progressPtr = &m_BakeThreadProgress;
+                    auto stepPtr = &m_BakeThreadStep;
+                    auto donePtr = &m_BakeThreadDone;
+                    auto scenePtr = m_Context.get();
+
+                    m_ActiveBaker->SetProgressCallback([progressPtr, stepPtr](float progress, const std::string& step) {
+                        progressPtr->store(progress);
+                        *stepPtr = step;
+                    });
+
+                    m_BakeThread = std::thread([bakerPtr, scenePtr, donePtr]() {
+                        bakerPtr->Bake(scenePtr);
+                        donePtr->store(true);
+                    });
+                }
+            }
+        }
+
         // Tab buttons
         const char* tabLabels[] = { "Scene", "Adaptive Probe Volumes", "Environment", "Realtime Lightmaps", "Baked Lightmaps" };
         float avail = ImGui::GetContentRegionAvail().x;
@@ -134,15 +208,11 @@ namespace Conqueror::Editor
         // Lighting Settings
         if (ImGui::CollapsingHeader("Lighting Settings", ImGuiTreeNodeFlags_DefaultOpen))
         {
-            // Lighting Settings Asset
+            const char* lightmappers[] = { "None", "Default-Medium" };
             ImGui::Text("Lighting Settings Asset");
             ImGui::SameLine(200);
             ImGui::SetNextItemWidth(150);
-            ImGui::Combo("##LightingSettingsAsset", &m_LightmapperIndex, "None\0Default-Medium\0");
-            ImGui::SameLine();
-            if (ImGui::Button("New")) { /* TODO: Create new settings */ }
-            ImGui::SameLine();
-            if (ImGui::Button("Clone")) { /* TODO: Clone settings */ }
+            ImGui::Combo("##LightingSettingsAsset", &m_LightmapperIndex, lightmappers, 2);
         }
 
         // Realtime Lighting
@@ -155,7 +225,7 @@ namespace Conqueror::Editor
         if (ImGui::CollapsingHeader("Mixed Lighting"))
         {
             ImGui::Checkbox("Baked Global Illumination", &m_BakedGI);
-            
+
             const char* lightingModes[] = { "Shadowmask", "Distance Shadowmask", "Subtractive" };
             ImGui::Combo("Lighting Mode", &m_LightingModeIndex, lightingModes, 3);
         }
@@ -199,6 +269,15 @@ namespace Conqueror::Editor
             ImGui::SliderFloat("Albedo Boost", &m_AlbedoBoost, 0.0f, 2.0f);
             ImGui::SliderFloat("Indirect Intensity", &m_IndirectIntensity, 0.0f, 5.0f);
         }
+
+        // Realtime Lightmapping Settings
+        if (ImGui::CollapsingHeader("Realtime Lightmapping Settings", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            ImGui::InputInt("Realtime Resolution", &m_RealtimeResolution);
+            ImGui::Text("texels per unit");
+            ImGui::InputInt("Realtime Indirect Samples", &m_RealtimeIndirectSamples);
+            ImGui::InputInt("Realtime Max Bounces", &m_RealtimeMaxBounces);
+        }
     }
 
     void LightingPanel::RenderAdaptiveProbeVolumesTab()
@@ -206,8 +285,34 @@ namespace Conqueror::Editor
         // Warning
         ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "!");
         ImGui::SameLine();
-        ImGui::TextWrapped("Adaptive Probe Volumes require the rendering backend to support probe baking.");
+        ImGui::TextWrapped("Adaptive Probe Volumes bake indirect lighting using SH L2 probes placed in a hierarchical brick structure.");
 
+        ImGui::Spacing();
+
+        // Bake status
+        if (m_APBaked)
+        {
+            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Status: Baked");
+            ImGui::Text("Probes: %d", m_APVProbeCount);
+            ImGui::Text("Levels: %d", m_APVLevelCount);
+            ImGui::Text("Total Bake Time: %.2fs", m_APVBakeTime);
+
+            ImGui::Spacing();
+            if (ImGui::Button("Clear APV Data", ImVec2(-1, 25)))
+            {
+                m_APBaked = false;
+                m_ActiveAPV.reset();
+                Renderer3D::SetAdaptiveProbeVolume(nullptr);
+            }
+        }
+        else
+        {
+            ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No APV data baked yet.");
+            ImGui::Text("Configure settings below and press Generate Lighting.");
+        }
+
+        ImGui::Spacing();
+        ImGui::Separator();
         ImGui::Spacing();
 
         // Baking
@@ -613,16 +718,36 @@ namespace Conqueror::Editor
 
         if (ImGui::CollapsingHeader("Realtime Lightmap Data", ImGuiTreeNodeFlags_DefaultOpen))
         {
-            if (m_IsBaking)
+            if (m_IsBaking && m_BakeMode == 1 && !m_IsAutoUpdate)
             {
-                ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Status: Baking realtime lightmaps...");
-                ImGui::ProgressBar(m_BakeProgress, ImVec2(-1, 0), "Baking...");
-                ImGui::Text("Step: %s", m_BakeStep.c_str());
+                ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Status: Baking...");
+            }
+            else if (m_RealtimeBaked)
+            {
+                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Status: Baked");
+                ImGui::Text("Atlas Size: %dx%d", m_RealtimeAtlasWidth, m_RealtimeAtlasHeight);
+                ImGui::Text("Texels: %d", (int)m_RealtimeTexelCount);
+                ImGui::Text("Realtime GI Objects: %d", m_RealtimeObjectCount);
+                ImGui::Text("Total Bake Time: %.2fs", m_RealtimeBakeTime);
+
+                ImGui::Spacing();
+                ImGui::Text("Lightmap Texture:");
+                if (m_RealtimeLightmapTexture)
+                    ImGui::Image((ImTextureID)(intptr_t)m_RealtimeLightmapTexture->GetRendererID(), ImVec2(200, 200));
+                else
+                    ImGui::Text("No texture generated");
+
+                ImGui::Spacing();
+                if (ImGui::Button("Clear Realtime Lightmaps", ImVec2(-1, 25)))
+                {
+                    m_RealtimeBaked = false;
+                    m_RealtimeLightmapTexture.reset();
+                    Renderer3D::SetLightmap(nullptr);
+                }
             }
             else
             {
-                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Realtime lightmaps are generated automatically.");
-                ImGui::Text("No manual bake needed.");
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No realtime lightmaps generated yet.");
             }
         }
 
@@ -690,62 +815,106 @@ namespace Conqueror::Editor
 
         if (m_IsBaking)
         {
-            m_BakeProgress = m_BakeThreadProgress.load();
-            m_BakeStep = m_BakeThreadStep;
+            if (!m_IsAutoUpdate)
+            {
+                m_BakeProgress = m_BakeThreadProgress.load();
+                m_BakeStep = m_BakeThreadStep;
 
-            ImGui::ProgressBar(m_BakeProgress, ImVec2(-1, 0), "Baking...");
-            ImGui::Text("Step: %s", m_BakeStep.c_str());
-<<<<<<< HEAD
-=======
+                ImGui::ProgressBar(m_BakeProgress, ImVec2(-1, 0), "Baking...");
+                ImGui::Text("Step: %s", m_BakeStep.c_str());
+            }
 
             if (m_BakeThreadDone.load())
             {
                 if (m_BakeThread.joinable())
                     m_BakeThread.join();
 
-                if (m_ActiveBaker)
+                if (m_BakeMode == 2 && m_ActiveAPV)
+                {
+                    // APV bake complete
+                    m_APBaked = true;
+                    m_APVProbeCount = m_ActiveAPV->GetTotalProbeCount();
+                    m_APVLevelCount = m_ActiveAPV->GetNumLevels();
+                    m_APVBrickCount = 0;
+                    for (int l = 0; l < m_APVLevelCount; l++)
+                        m_APVBrickCount += m_ActiveAPV->GetBrickCount(l);
+
+                    auto endTime = std::chrono::high_resolution_clock::now();
+                    m_APVBakeTime = std::chrono::duration<float>(endTime - m_BakeStartTime).count();
+
+                    Renderer3D::SetAdaptiveProbeVolume(m_ActiveAPV);
+                }
+                else if (m_ActiveBaker)
                 {
                     m_ActiveBaker->ApplyUV2ToMeshes();
 
-                    auto startTime = std::chrono::high_resolution_clock::now();
-                    m_BakedLightmapBaked = true;
-                    m_BakedAtlasWidth = m_ActiveBaker->GetAtlas().Width;
-                    m_BakedAtlasHeight = m_ActiveBaker->GetAtlas().Height;
-                    m_BakedTexelCount = (int)m_ActiveBaker->GetAtlas().Texels.size();
+                    auto texture = m_ActiveBaker->CreateLightmapTexture();
 
-                    m_BakedLightmapTexture = m_ActiveBaker->CreateLightmapTexture();
-                    if (m_BakedLightmapTexture)
+                    if (m_BakeMode == 1)
                     {
-                        Renderer3D::SetLightmap(m_BakedLightmapTexture);
+                        // Realtime lightmap
+                        m_RealtimeBaked = true;
+                        m_RealtimeAtlasWidth = m_ActiveBaker->GetAtlas().Width;
+                        m_RealtimeAtlasHeight = m_ActiveBaker->GetAtlas().Height;
+                        m_RealtimeTexelCount = (int)m_ActiveBaker->GetAtlas().Texels.size();
+                        m_RealtimeLightmapTexture = texture;
+                        if (m_RealtimeLightmapTexture)
+                            Renderer3D::SetLightmap(m_RealtimeLightmapTexture);
 
-                        auto projectDir = Project::GetActiveProjectDirectory();
-                        if (!projectDir.empty())
+                        auto& registry = m_Context->m_Registry;
+                        int objCount = 0;
+                        auto meshView = registry.view<TransformComponent, MeshRendererComponent>();
+                        for (auto e : meshView)
                         {
-                            std::string lmDir = projectDir.string() + "/Assets/Lightmaps";
-                            std::filesystem::create_directories(lmDir);
-                            std::string lmPath = lmDir + "/baked_lightmap.png";
-                            m_ActiveBaker->SaveToFile(lmPath);
-                            m_Context->SetBakedLightmapPath("Assets/Lightmaps/baked_lightmap.png");
+                            auto& mr = meshView.get<MeshRendererComponent>(e);
+                            if (mr.RealtimeGI) objCount++;
                         }
+                        m_RealtimeObjectCount = objCount;
+                    }
+                    else
+                    {
+                        // Baked lightmap
+                        m_BakedLightmapBaked = true;
+                        m_BakedAtlasWidth = m_ActiveBaker->GetAtlas().Width;
+                        m_BakedAtlasHeight = m_ActiveBaker->GetAtlas().Height;
+                        m_BakedTexelCount = (int)m_ActiveBaker->GetAtlas().Texels.size();
+                        m_BakedLightmapTexture = texture;
+                        if (m_BakedLightmapTexture)
+                        {
+                            Renderer3D::SetLightmap(m_BakedLightmapTexture);
+
+                            auto projectDir = Project::GetActiveProjectDirectory();
+                            if (!projectDir.empty())
+                            {
+                                std::string lmDir = projectDir.string() + "/Assets/Lightmaps";
+                                std::filesystem::create_directories(lmDir);
+                                std::string lmPath = lmDir + "/baked_lightmap.png";
+                                m_ActiveBaker->SaveToFile(lmPath);
+                                m_Context->SetBakedLightmapPath("Assets/Lightmaps/baked_lightmap.png");
+                            }
+                        }
+
+                        auto& registry = m_Context->m_Registry;
+                        int objCount = 0;
+                        auto meshView = registry.view<TransformComponent, MeshRendererComponent>();
+                        objCount += (int)std::distance(meshView.begin(), meshView.end());
+                        auto modelView = registry.view<TransformComponent, ModelComponent>();
+                        objCount += (int)std::distance(modelView.begin(), modelView.end());
+                        m_BakedObjectCount = objCount;
                     }
 
                     auto endTime = std::chrono::high_resolution_clock::now();
-                    m_BakedBakeTime = std::chrono::duration<float>(endTime - startTime).count();
-
-                    auto& registry = m_Context->m_Registry;
-                    int objCount = 0;
-                    auto meshView = registry.view<TransformComponent, MeshRendererComponent>();
-                    objCount += (int)std::distance(meshView.begin(), meshView.end());
-                    auto modelView = registry.view<TransformComponent, ModelComponent>();
-                    objCount += (int)std::distance(modelView.begin(), modelView.end());
-                    m_BakedObjectCount = objCount;
+                    if (m_BakeMode == 1)
+                        m_RealtimeBakeTime = std::chrono::duration<float>(endTime - m_BakeStartTime).count();
+                    else
+                        m_BakedBakeTime = std::chrono::duration<float>(endTime - m_BakeStartTime).count();
 
                     m_ActiveBaker.reset();
                 }
 
                 m_IsBaking = false;
+                m_IsAutoUpdate = false;
             }
->>>>>>> d6d94f9 (fix: bugs fixed, line issue resolved)
         }
         else
         {
@@ -753,52 +922,92 @@ namespace Conqueror::Editor
             {
                 if (!m_Context) return;
 
+                m_BakeMode = (m_ActiveTab == 3) ? 1 : 0;
                 m_IsBaking = true;
+                m_IsAutoUpdate = false;
                 m_BakeProgress = 0.0f;
                 m_BakeThreadDone.store(false);
                 m_BakeThreadProgress.store(0.0f);
                 m_BakeThreadStep = "Starting...";
+                m_BakeStartTime = std::chrono::high_resolution_clock::now();
 
-                m_ActiveBaker = LightmapBaker::Create();
-                LightmapSettings settings;
-                settings.Lightmapper = m_LightmapperIndex;
-                settings.ImportanceSampling = m_ImportanceSampling;
-                settings.Resolution = m_LightmapResolution;
-                settings.MaxLightmapSize = (m_MaxLightmapSizeIndex + 1) * 256;
-                settings.MaxBounces = m_MaxBounces;
-                settings.DirectSamples = m_DirectSamples;
-                settings.IndirectSamples = m_IndirectSamples;
-                settings.EnvironmentSamples = m_EnvironmentSamples;
-                settings.Filtering = m_FilteringIndex;
-                settings.Compression = m_LightmapCompressionIndex;
-                settings.AmbientOcclusion = m_AmbientOcclusion;
-                settings.DirectionalMode = m_DirectionalModeIndex;
-                settings.AlbedoBoost = m_AlbedoBoost;
-                settings.IndirectIntensity = m_IndirectIntensity;
-                m_ActiveBaker->SetSettings(settings);
-
-                auto bakerPtr = m_ActiveBaker.get();
-                auto progressPtr = &m_BakeThreadProgress;
-                auto stepPtr = &m_BakeThreadStep;
-                auto donePtr = &m_BakeThreadDone;
-                auto scenePtr = m_Context.get();
-
-<<<<<<< HEAD
-                m_BakeThread = std::thread([bakerPtr, scenePtr, progressPtr, stepPtr, doneFlag, timePtr]()
+                if (m_BakeMode == 2)
                 {
-                    bakerPtr->Bake(scenePtr);
-                    *doneFlag = true;
-=======
-                m_ActiveBaker->SetProgressCallback([progressPtr, stepPtr](float progress, const std::string& step) {
-                    progressPtr->store(progress);
-                    *stepPtr = step;
-                });
+                    // APV bake
+                    AdaptiveProbeVolumeSettings apvSettings;
+                    apvSettings.Origin = m_Context->GetAmbientColor() * 0.0f; // TODO: Use volume bounds from component
+                    apvSettings.Size = glm::vec3(10.0f, 10.0f, 10.0f);
+                    apvSettings.ProbeOffset = glm::vec3(m_APProbeOffset[0], m_APProbeOffset[1], m_APProbeOffset[2]);
+                    apvSettings.MinSpacing = m_APMinSpacing;
+                    apvSettings.MaxSpacing = m_APMaxSpacing;
+                    apvSettings.BakingMode = m_APBakingModeIndex;
+                    apvSettings.ProbeResolution = 32;
 
-                m_BakeThread = std::thread([bakerPtr, scenePtr, donePtr]() {
-                    bakerPtr->Bake(scenePtr);
-                    donePtr->store(true);
->>>>>>> d6d94f9 (fix: bugs fixed, line issue resolved)
-                });
+                    m_ActiveAPV = AdaptiveProbeVolume::Create(apvSettings);
+
+                    ProbeInvaliditySettings invaliditySettings;
+                    invaliditySettings.Dilation = m_APDilation;
+                    invaliditySettings.VirtualOffset = m_APVirtualOffset;
+                    invaliditySettings.ValidityThreshold = m_APValidityThreshold;
+                    invaliditySettings.SearchDistanceMultiplier = m_APSearchDistanceMultiplier;
+                    invaliditySettings.GeometryBias = m_APGeometryBias;
+                    invaliditySettings.RayOriginBias = m_APRayOriginBias;
+                    m_ActiveAPV->SetInvaliditySettings(invaliditySettings);
+
+                    auto apvPtr = m_ActiveAPV.get();
+                    auto scenePtr = m_Context.get();
+                    auto progressPtr = &m_BakeThreadProgress;
+                    auto stepPtr = &m_BakeThreadStep;
+                    auto donePtr = &m_BakeThreadDone;
+
+                    apvPtr->SetProgressCallback([progressPtr, stepPtr](float progress, const std::string& step) {
+                        progressPtr->store(progress);
+                        *stepPtr = step;
+                    });
+
+                    m_BakeThread = std::thread([apvPtr, scenePtr, donePtr]() {
+                        apvPtr->Bake(scenePtr);
+                        donePtr->store(true);
+                    });
+                }
+                else
+                {
+                    // Lightmap bake
+                    m_ActiveBaker = LightmapBaker::Create();
+                    LightmapSettings settings;
+                    settings.Lightmapper = m_LightmapperIndex;
+                    settings.ImportanceSampling = m_ImportanceSampling;
+                    settings.Resolution = (m_BakeMode == 1) ? m_RealtimeResolution : m_LightmapResolution;
+                    settings.MaxLightmapSize = (m_MaxLightmapSizeIndex + 1) * 256;
+                    settings.MaxBounces = (m_BakeMode == 1) ? m_RealtimeMaxBounces : m_MaxBounces;
+                    settings.DirectSamples = m_DirectSamples;
+                    settings.IndirectSamples = (m_BakeMode == 1) ? m_RealtimeIndirectSamples : m_IndirectSamples;
+                    settings.EnvironmentSamples = m_EnvironmentSamples;
+                    settings.Filtering = m_FilteringIndex;
+                    settings.Compression = m_LightmapCompressionIndex;
+                    settings.AmbientOcclusion = m_AmbientOcclusion;
+                    settings.DirectionalMode = m_DirectionalModeIndex;
+                    settings.AlbedoBoost = m_AlbedoBoost;
+                    settings.IndirectIntensity = m_IndirectIntensity;
+                    m_ActiveBaker->SetSettings(settings);
+                    m_ActiveBaker->SetRealtimeMode(m_BakeMode == 1);
+
+                    auto bakerPtr = m_ActiveBaker.get();
+                    auto progressPtr = &m_BakeThreadProgress;
+                    auto stepPtr = &m_BakeThreadStep;
+                    auto donePtr = &m_BakeThreadDone;
+                    auto scenePtr = m_Context.get();
+
+                    m_ActiveBaker->SetProgressCallback([progressPtr, stepPtr](float progress, const std::string& step) {
+                        progressPtr->store(progress);
+                        *stepPtr = step;
+                    });
+
+                    m_BakeThread = std::thread([bakerPtr, scenePtr, donePtr]() {
+                        bakerPtr->Bake(scenePtr);
+                        donePtr->store(true);
+                    });
+                }
             }
         }
     }

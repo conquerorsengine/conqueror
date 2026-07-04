@@ -24,6 +24,9 @@ namespace Conqueror
     std::shared_ptr<Mesh> Renderer3D::s_ArrowMesh = nullptr;
     std::shared_ptr<Shader> Renderer3D::s_UnlitShader = nullptr;
     std::shared_ptr<Shader> Renderer3D::s_SkyboxShader = nullptr;
+    uint32_t Renderer3D::s_APVPositionTex = 0;
+    uint32_t Renderer3D::s_APVSHTex = 0;
+    int Renderer3D::s_APVLastProbeCount = 0;
 
     void Renderer3D::Init()
     {
@@ -217,12 +220,21 @@ namespace Conqueror
         s_SceneData->Lightmap = lightmap;
     }
 
+    void Renderer3D::SetAdaptiveProbeVolume(std::shared_ptr<AdaptiveProbeVolume> apv)
+    {
+        s_SceneData->APV = apv;
+    }
+
     void Renderer3D::BindLightsToShader(std::shared_ptr<Shader> shader)
     {
         shader->Bind();
 
-        // Directional light - sadece Realtime veya Mixed
-        if (s_SceneData->DirectionalLight.Mode != LightMode::Baked)
+        // Directional light
+        // Baked mode + lightmap varsa → ışığı kapat (sadece lightmap kullanılır)
+        // Baked mode + lightmap yoksa → normal ışık ver (pişirmeden önce)
+        // Realtime/Mixed mode → her zaman normal ışık ver
+        bool useBakedLight = (s_SceneData->DirectionalLight.Mode == LightMode::Baked && s_SceneData->Lightmap);
+        if (!useBakedLight)
         {
             shader->SetFloat3("u_DirLight.Direction", s_SceneData->DirectionalLight.Direction);
             shader->SetFloat3("u_DirLight.Color", s_SceneData->DirectionalLight.Color);
@@ -235,11 +247,12 @@ namespace Conqueror
             shader->SetFloat("u_DirLight.Intensity", 0.0f);
         }
 
-        // Point lights - sadece Realtime veya Mixed
+        // Point lights
         std::vector<std::pair<glm::vec3, PointLightComponent>> activePointLights;
         for (auto& [pos, light] : s_SceneData->PointLights)
         {
-            if (light.Mode != LightMode::Baked)
+            bool bakedWithLightmap = (light.Mode == LightMode::Baked && s_SceneData->Lightmap);
+            if (!bakedWithLightmap)
                 activePointLights.push_back({pos, light});
         }
 
@@ -260,11 +273,12 @@ namespace Conqueror
             shader->SetFloat(base + ".Quadratic", light.Quadratic);
         }
 
-        // Spot lights - sadece Realtime veya Mixed
+        // Spot lights
         std::vector<std::pair<glm::vec3, SpotLightComponent>> activeSpotLights;
         for (auto& [pos, light] : s_SceneData->SpotLights)
         {
-            if (light.Mode != LightMode::Baked)
+            bool bakedWithLightmap = (light.Mode == LightMode::Baked && s_SceneData->Lightmap);
+            if (!bakedWithLightmap)
                 activeSpotLights.push_back({pos, light});
         }
 
@@ -346,6 +360,96 @@ namespace Conqueror
         }
     }
 
+    void Renderer3D::BindAPVToShader(std::shared_ptr<Shader> shader)
+    {
+        if (!shader) return;
+        shader->Bind();
+
+        if (!s_SceneData->APV || !s_SceneData->APV->IsBaked())
+        {
+            shader->SetInt("u_APVEnabled", 0);
+            return;
+        }
+
+        auto& apv = s_SceneData->APV;
+        shader->SetInt("u_APVEnabled", 1);
+
+        shader->SetFloat3("u_APVOrigin", apv->GetSettings().Origin);
+        shader->SetFloat3("u_APVSize", apv->GetSettings().Size);
+        shader->SetFloat3("u_APVProbeOffset", apv->GetSettings().ProbeOffset);
+        shader->SetFloat("u_APVMinSpacing", apv->GetSettings().MinSpacing);
+
+        int numProbes = std::min(apv->GetTotalProbeCount(), APV_MAX_PROBES);
+        shader->SetInt("u_APVNumProbes", numProbes);
+        shader->SetInt("u_APVSHWidth", APV_SH_COEFFS);
+
+        bool needsRecreate = (s_APVLastProbeCount != numProbes);
+
+        if (needsRecreate)
+        {
+            if (s_APVPositionTex) glDeleteTextures(1, &s_APVPositionTex);
+            if (s_APVSHTex) glDeleteTextures(1, &s_APVSHTex);
+
+            glGenTextures(1, &s_APVPositionTex);
+            glGenTextures(1, &s_APVSHTex);
+
+            glBindTexture(GL_TEXTURE_2D, s_APVPositionTex);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, numProbes, 1, 0, GL_RGBA, GL_FLOAT, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+
+            glBindTexture(GL_TEXTURE_2D, s_APVSHTex);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, APV_SH_COEFFS, numProbes, 0, GL_RGBA, GL_FLOAT, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+            s_APVLastProbeCount = numProbes;
+        }
+
+        // Update position data
+        std::vector<float> posData(numProbes * 4);
+        for (int i = 0; i < numProbes; i++)
+        {
+            const auto& probe = apv->GetProbes()[i];
+            posData[i * 4 + 0] = probe.Position.x;
+            posData[i * 4 + 1] = probe.Position.y;
+            posData[i * 4 + 2] = probe.Position.z;
+            posData[i * 4 + 3] = probe.Valid ? 1.0f : 0.0f;
+        }
+
+        glBindTexture(GL_TEXTURE_2D, s_APVPositionTex);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, numProbes, 1, GL_RGBA, GL_FLOAT, posData.data());
+
+        // Update SH data
+        std::vector<float> shData(numProbes * APV_SH_COEFFS * 4);
+        for (int i = 0; i < numProbes; i++)
+        {
+            const auto& probe = apv->GetProbes()[i];
+            for (int sh = 0; sh < APV_SH_COEFFS; sh++)
+            {
+                int idx = (i * APV_SH_COEFFS + sh) * 4;
+                shData[idx + 0] = probe.SH.Coeffs[sh].x;
+                shData[idx + 1] = probe.SH.Coeffs[sh].y;
+                shData[idx + 2] = probe.SH.Coeffs[sh].z;
+                shData[idx + 3] = 0.0f;
+            }
+        }
+
+        glBindTexture(GL_TEXTURE_2D, s_APVSHTex);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, APV_SH_COEFFS, numProbes, GL_RGBA, GL_FLOAT, shData.data());
+
+        glActiveTexture(GL_TEXTURE20);
+        glBindTexture(GL_TEXTURE_2D, s_APVPositionTex);
+        shader->SetInt("u_APVPositionTex", 20);
+
+        glActiveTexture(GL_TEXTURE21);
+        glBindTexture(GL_TEXTURE_2D, s_APVSHTex);
+        shader->SetInt("u_APVSHTex", 21);
+    }
+
     void Renderer3D::DrawCube(const glm::mat4& transform, std::shared_ptr<Material> material)
     {
         if (!material)
@@ -362,6 +466,7 @@ namespace Conqueror
         s_ShadowPass.BindShadowMapsToShader(activeShader);
         BindReflectionProbesToShader(activeShader);
         BindLightProbesToShader(activeShader);
+        BindAPVToShader(activeShader);
 
         material->Bind(activeShader);
 
@@ -392,6 +497,7 @@ namespace Conqueror
         s_ShadowPass.BindShadowMapsToShader(activeShader);
         BindReflectionProbesToShader(activeShader);
         BindLightProbesToShader(activeShader);
+        BindAPVToShader(activeShader);
 
         material->Bind(activeShader);
 
@@ -422,6 +528,7 @@ namespace Conqueror
         s_ShadowPass.BindShadowMapsToShader(activeShader);
         BindReflectionProbesToShader(activeShader);
         BindLightProbesToShader(activeShader);
+        BindAPVToShader(activeShader);
 
         material->Bind(activeShader);
 
@@ -452,6 +559,7 @@ namespace Conqueror
         s_ShadowPass.BindShadowMapsToShader(activeShader);
         BindReflectionProbesToShader(activeShader);
         BindLightProbesToShader(activeShader);
+        BindAPVToShader(activeShader);
 
         material->Bind(activeShader);
 
@@ -479,6 +587,7 @@ namespace Conqueror
         s_ShadowPass.BindShadowMapsToShader(s_PBRShader);
         BindReflectionProbesToShader(s_PBRShader);
         BindLightProbesToShader(s_PBRShader);
+        BindAPVToShader(s_PBRShader);
 
         for (size_t i = 0; i < model->Meshes.size(); i++)
         {
@@ -541,6 +650,7 @@ namespace Conqueror
         s_ShadowPass.BindShadowMapsToShader(s_PBRSkinnedShader);
         BindReflectionProbesToShader(s_PBRSkinnedShader);
         BindLightProbesToShader(s_PBRSkinnedShader);
+        BindAPVToShader(s_PBRSkinnedShader);
 
         for (size_t i = 0; i < model->SkinnedMeshes.size(); ++i)
         {
