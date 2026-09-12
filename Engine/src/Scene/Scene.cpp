@@ -873,7 +873,7 @@ namespace Conqueror
                     dl.Color = glm::vec3(1.0f);
                     dl.Intensity = 0.5f;
                 }
-                Renderer3D::GetShadowPass().Execute(this, dl, dl.Direction);
+                Renderer3D::GetShadowPass().Execute(this, dl, dl.Direction, glm::inverse(cameraTransform), camera.GetProjection(), glm::vec3(cameraTransform[3]));
 
                 glBindFramebuffer(GL_FRAMEBUFFER, prevFBO);
                 glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
@@ -1373,7 +1373,7 @@ namespace Conqueror
                 dl.Color = glm::vec3(1.0f);
                 dl.Intensity = 0.5f;
             }
-            Renderer3D::GetShadowPass().Execute(this, dl, dl.Direction);
+            Renderer3D::GetShadowPass().Execute(this, dl, dl.Direction, camera.GetViewMatrix(), camera.GetProjectionMatrix(), camera.GetPosition());
 
             glBindFramebuffer(GL_FRAMEBUFFER, prevFBO);
             glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);

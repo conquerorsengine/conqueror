@@ -46,7 +46,10 @@ namespace Conqueror
 
         // Shadow sistemi
         static void ExecuteShadowPass(Scene* scene, const DirectionalLightComponent& dirLight,
-                                      const glm::vec3& lightDirection);
+                                      const glm::vec3& lightDirection,
+                                      const glm::mat4& cameraView = glm::mat4(1.0f),
+                                      const glm::mat4& cameraProj = glm::mat4(1.0f),
+                                      const glm::vec3& cameraPos = glm::vec3(0.0f));
         static ShadowPass& GetShadowPass() { return s_ShadowPass; }
 
         // Reflection Probe sistemi

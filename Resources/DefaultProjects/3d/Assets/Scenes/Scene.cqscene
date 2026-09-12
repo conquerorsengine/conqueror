@@ -1,12 +1,13 @@
 Scene: Untitled
 Entities:
-  - Entity: 8973230777052124529
+  - Entity: 8300660015788940776
     TagComponent:
-      Tag: Cube
+      Tag: Ground
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [0, 3.8927784, 0]
-      Rotation: [0, -0, 0]
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -18,29 +19,27 @@ Entities:
       Roughness: 0.5
       AO: 1
       TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 8300288870096165179
-    TagComponent:
-      Tag: Directional Light
-      GameTag: Untagged
-    TransformComponent:
-      Position: [0, 9.372253, 0]
-      Rotation: [0, -0, 0]
-      Scale: [1, 1, 1]
-    LayerComponent:
-      Layer: 0
-      OrderInLayer: 0
-    DirectionalLightComponent:
-      Direction: [-0.8, -1, 0]
-      Color: [1, 0.70980394, 1]
-      Intensity: 1
-      CastShadows: true
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
   - Entity: 295646865113441037
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [0, 7.351743, 0]
-      Rotation: [0, -0, 0]
+      Position: [-1.7170067, 1.7188765, -1.1821806]
+      Rotation: [2.9507098, -1.3548243, 0.18660082]
       Scale: [0.6, 0.6, 0.6]
     LayerComponent:
       Layer: 0
@@ -72,6 +71,7 @@ Entities:
     TagComponent:
       Tag: Staircase FLoor2
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-4.121569, 1.788686, -4.533548]
       Rotation: [0, -0, 0]
@@ -103,9 +103,10 @@ Entities:
     TagComponent:
       Tag: Box
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [3.6061509, 1.5, 3.964894]
-      Rotation: [0, -0, 0]
+      Position: [-4.3544765, 1.5000001, 3.1933317]
+      Rotation: [1.5707966, 0.14252636, -3.1415927]
       Scale: [0.5, 0.5, 0.5]
     LayerComponent:
       Layer: 0
@@ -134,6 +135,7 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-4.1110525, 1.243216, 6.5399146]
       Rotation: [-0.35604715, -0.19024087, -0.3525565]
@@ -165,6 +167,7 @@ Entities:
     TagComponent:
       Tag: Staircase FLoor
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-4.121569, 1.788686, -3.6919613]
       Rotation: [0, -0, 0]
@@ -196,6 +199,7 @@ Entities:
     TagComponent:
       Tag: Stairs
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-4.121569, 1.3162438, -1.9623085]
       Rotation: [0.5253436, -0, 0]
@@ -227,9 +231,10 @@ Entities:
     TagComponent:
       Tag: Box2
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [1.9810913, 1.5, 3.964894]
-      Rotation: [0, -0, 0]
+      Position: [3.1933987, 1.4999992, 6.28556]
+      Rotation: [1.570798, 0.32874948, -2.1488509e-08]
       Scale: [0.5, 0.5, 0.5]
     LayerComponent:
       Layer: 0
@@ -258,8 +263,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [-0.006226301, 2, -5.997614]
+      Position: [-0.006226301, 2, -6.0201454]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -289,8 +295,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [7.858938, 2, -4.7174115]
+      Position: [7.858938, 2, -4.739943]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -320,8 +327,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [7.858938, 2, -3.798986]
+      Position: [7.858938, 2, -3.8215175]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -351,8 +359,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [7.858938, 2, -1.8529491]
+      Position: [7.858938, 2, -1.8754808]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -382,8 +391,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [7.858938, 2, 0.1430459]
+      Position: [7.858938, 2, 0.12051427]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -413,8 +423,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [7.858938, 2, 2.1461306]
+      Position: [7.858938, 2, 2.123599]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -444,8 +455,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [7.858938, 2, 4.088575]
+      Position: [7.858938, 2, 4.0660434]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -475,8 +487,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [7.858938, 2, 6.0817914]
+      Position: [7.858938, 2, 6.05926]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -506,8 +519,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [-5.9368043, 2, -5.6742835]
+      Position: [-5.9368043, 2, -5.696815]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -537,8 +551,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [-5.9368043, 2, -3.8111982]
+      Position: [-5.9368043, 2, -3.8337297]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -568,8 +583,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [-5.9368043, 2, -1.8558754]
+      Position: [-5.9368043, 2, -1.878407]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -599,8 +615,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [-5.9368043, 2, 0.11446333]
+      Position: [-5.9368043, 2, 0.0919317]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -630,8 +647,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [-5.9368043, 2, 2.0721798]
+      Position: [-5.9368043, 2, 2.0496483]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -661,8 +679,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [-5.9368043, 2, 4.036838]
+      Position: [-5.9368043, 2, 4.0143065]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -692,8 +711,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [-5.9368043, 2, 6.023683]
+      Position: [-5.9368043, 2, 6.0011516]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -723,8 +743,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [-5.9368043, 2, 8]
+      Position: [-5.9368043, 2, 7.9774685]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -754,8 +775,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [-3.9685612, 2, 8]
+      Position: [-3.9685612, 2, 7.9774685]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -785,8 +807,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [-2.0005646, 2, 8]
+      Position: [-2.0005646, 2, 7.9774685]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -816,8 +839,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [1.9492733, 2, 8]
+      Position: [1.9492733, 2, 7.9774685]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -847,8 +871,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [0, 2, 8]
+      Position: [0, 2, 7.9774685]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -878,8 +903,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [3.8918533, 2, 8]
+      Position: [3.8918533, 2, 7.9774685]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -909,8 +935,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [5.8576016, 2, 8]
+      Position: [5.8576016, 2, 7.9774685]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -940,8 +967,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [7.858938, 2, 8]
+      Position: [7.858938, 2, 7.9774685]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -971,8 +999,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [7.858938, 2, -5.997614]
+      Position: [7.858938, 2, -6.0201454]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -1002,8 +1031,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [5.8576016, 2, -5.997614]
+      Position: [5.8576016, 2, -6.0201454]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -1033,8 +1063,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [3.8918533, 2, -5.997614]
+      Position: [3.8918533, 2, -6.0201454]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -1064,8 +1095,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [1.9896808, 2, -5.997614]
+      Position: [1.9896808, 2, -6.0201454]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -1095,8 +1127,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [-5.927391, 2, -5.997614]
+      Position: [-5.927391, 2, -6.0201454]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -1126,8 +1159,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [-4, 2, -6]
+      Position: [-4, 2, -6.0225315]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -1157,8 +1191,9 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [-2, 2, -5.997614]
+      Position: [-2, 2, -6.0201454]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
@@ -1188,6 +1223,7 @@ Entities:
     TagComponent:
       Tag: Wall
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [0, 0, 0.022531629]
       Rotation: [0, -0, 0]
@@ -1219,6 +1255,7 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [0, 0, -1.998698]
       Rotation: [0, -0, 0]
@@ -1250,9 +1287,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [7.869639, 0, 0]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1281,9 +1319,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [7.869639, 0, -1.998698]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1312,9 +1351,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [7.869639, 0, -5.9794097]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1343,9 +1383,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [7.869639, 0, -3.980712]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1374,9 +1415,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [5.8895154, 0, -3.980712]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1405,9 +1447,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [5.8895154, 0, -5.9794097]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1436,9 +1479,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [5.8895154, 0, -1.998698]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1467,9 +1511,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [5.8895154, 0, 0]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1498,9 +1543,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [1.9297905, 0, 0]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1529,9 +1575,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [1.9297905, 0, -1.998698]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1560,9 +1607,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [1.9297905, 0, -5.9794097]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1591,9 +1639,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [1.9297905, 0, -3.980712]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1622,9 +1671,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [3.909914, 0, -3.980712]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1653,9 +1703,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [3.909914, 0, -5.9794097]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1684,9 +1735,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [3.909914, 0, -1.998698]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1715,9 +1767,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [3.909914, 0, 0]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1746,9 +1799,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [3.909914, 0, 7.9537582]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1777,9 +1831,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [3.909914, 0, 5.9550605]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1808,9 +1863,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [3.909914, 0, 1.9743485]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1839,9 +1895,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [3.909914, 0, 3.9730463]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1870,9 +1927,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [1.9297905, 0, 3.9730463]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1901,9 +1959,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [1.9297905, 0, 1.9743485]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1932,9 +1991,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [1.9297905, 0, 5.9550605]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1963,9 +2023,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [1.9297905, 0, 7.9537582]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1994,9 +2055,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [5.8895154, 0, 7.9537582]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2025,9 +2087,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [5.8895154, 0, 5.9550605]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2056,9 +2119,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [5.8895154, 0, 1.9743485]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2087,9 +2151,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [5.8895154, 0, 3.9730463]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2118,9 +2183,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [7.869639, 0, 3.9730463]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2149,9 +2215,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [7.869639, 0, 1.9743485]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2180,9 +2247,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [7.869639, 0, 5.9550605]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2211,6 +2279,7 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [7.869639, 0, 7.9537582]
       Rotation: [0, -0, 0]
@@ -2242,9 +2311,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [0, 0, 7.9537582]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2273,9 +2343,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [0, 0, 5.9550605]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2304,9 +2375,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [0, 0, 1.9743485]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2335,9 +2407,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [0, 0, 3.9730463]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2366,9 +2439,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-1.9801233, 0, 3.9730463]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2397,9 +2471,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-1.9801233, 0, 1.9743485]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2428,9 +2503,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-1.9801233, 0, 5.9550605]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2459,9 +2535,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-1.9801233, 0, 7.9537582]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2490,9 +2567,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-5.939848, 0, 7.9537582]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2521,9 +2599,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-5.939848, 0, 5.9550605]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2552,9 +2631,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-5.939848, 0, 1.9743485]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2583,9 +2663,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-5.939848, 0, 3.9730463]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2614,9 +2695,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-3.959725, 0, 3.9730463]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2645,9 +2727,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-3.959725, 0, 1.9743485]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2676,9 +2759,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-3.959725, 0, 5.9550605]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2707,6 +2791,7 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-3.959725, 0, 7.9537582]
       Rotation: [0, -0, 0]
@@ -2738,9 +2823,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-3.959725, 0, 0]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2769,9 +2855,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-3.959725, 0, -1.998698]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2800,9 +2887,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-3.959725, 0, -5.9794097]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2831,9 +2919,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-3.959725, 0, -3.980712]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2862,9 +2951,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-5.939848, 0, -3.980712]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2893,9 +2983,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-5.939848, 0, -5.9794097]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2924,9 +3015,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-5.939848, 0, -1.998698]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2955,6 +3047,7 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-5.939848, 0, 0]
       Rotation: [0, -0, 0]
@@ -2986,9 +3079,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-1.9801233, 0, 0]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -3017,9 +3111,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-1.9801233, 0, -1.998698]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -3048,9 +3143,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-1.9801233, 0, -5.9794097]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -3079,6 +3175,7 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [-1.9801233, 0, -3.980712]
       Rotation: [0, -0, 0]
@@ -3110,9 +3207,10 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [0, 0, -3.980712]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -3141,6 +3239,7 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [0, 0, -5.9794097]
       Rotation: [0, -0, 0]
@@ -3172,6 +3271,7 @@ Entities:
     TagComponent:
       Tag: Cube
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
       Position: [0, 0, -1.998698]
       Rotation: [0, -0, 0]
@@ -3199,37 +3299,24 @@ Entities:
       Offset: [0, 0, 0]
       Size: [2, 2, 2]
       IsTrigger: false
-  - Entity: 8300660015788940776
+  - Entity: 9005636988626444367
     TagComponent:
-      Tag: Ground
+      Tag: Directional Light
       GameTag: Untagged
+      IsStatic: false
     TransformComponent:
-      Position: [0, 0, 0]
-      Rotation: [0, 0, 0]
+      Position: [0, 0, -1.126504]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-    MeshRendererComponent:
-      MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-    RigidbodyComponent:
-      BodyType: 0
-      Mass: 1
-      LinearDrag: 0.05
-      AngularDrag: 0.05
-      GravityScale: 1
-      FreezeRotation: false
-      Friction: 0.5
-      Restitution: 0
-    BoxColliderComponent:
-      Offset: [0, 0, 0]
-      Size: [2, 2, 2]
-      IsTrigger: false
+    DirectionalLightComponent:
+      Direction: [-1.3, -1.6, 1.2]
+      Color: [1, 1, 1]
+      Intensity: 1.1
+      CastShadows: true
+      Mode: 0
 Environment:
   SkyboxPath: /home/fazli/Masaüstü/Conqueror's_Engine/Resources/skybox/skybox_1.hdr
   SkyboxExposure: 1
@@ -3272,80 +3359,170 @@ Environment:
   ReflectionCompression: 0
   ReflectionIntensityMultiplier: 1
   ReflectionBounces: 1
+  BakedLightmapPath: ""
+  LightmapResolution: 40
+  MaxLightmapSize: 1024
+  MaxBounces: 2
+  DirectSamples: 32
+  IndirectSamples: 512
+  AmbientOcclusion: true
+  LightmapFiltering: 0
 EditorCamera:
   CameraMode: 0
-  Position: [15.246159, 7.6838264, 6.924007]
-  Distance: 18.423584
-  Pitch: 0.43021333
-  Yaw: 5.1386867
+  Position: [-4.98908, 9.182302, 7.363583]
+  Distance: 12.783895
+  Pitch: 0.80131435
+  Yaw: 0.5954887
   OrthographicSize: 10
 Hierarchy:
-  - Child: 746505464186106778
+  - Child: 2868842679732874478
     Parent: 8300660015788940776
-  - Child: 5383058201755084156
+  - Child: 7764512429481001113
     Parent: 8300660015788940776
-  - Child: 6337808489183827230
+  - Child: 5949352933705248945
+    Parent: 4403834823691772068
+  - Child: 1177452285635858660
     Parent: 8300660015788940776
-  - Child: 8944479009270625282
+  - Child: 7425727081022990688
+    Parent: 4403834823691772068
+  - Child: 3625977573098970304
     Parent: 8300660015788940776
-  - Child: 2414771960564829260
+  - Child: 7401327929624184012
     Parent: 8300660015788940776
-  - Child: 52792530768942359
+  - Child: 4222266799071048515
+    Parent: 8300660015788940776
+  - Child: 5712486641521178614
+    Parent: 4403834823691772068
+  - Child: 6622908272660789745
+    Parent: 8300660015788940776
+  - Child: 8635443836953470041
+    Parent: 4403834823691772068
+  - Child: 9268529324311315
+    Parent: 8300660015788940776
+  - Child: 1743673554494037815
+    Parent: 4403834823691772068
+  - Child: 7586805478628100430
+    Parent: 8300660015788940776
+  - Child: 6106374663053163126
+    Parent: 4403834823691772068
+  - Child: 1192432699558970710
+    Parent: 8300660015788940776
+  - Child: 890558157220034001
+    Parent: 4403834823691772068
+  - Child: 7810531547150983613
+    Parent: 4403834823691772068
+  - Child: 2463296660498113712
+    Parent: 8300660015788940776
+  - Child: 6997262942413674699
+    Parent: 8300660015788940776
+  - Child: 2700149610874344310
+    Parent: 8300660015788940776
+  - Child: 5705748220480114380
+    Parent: 8300660015788940776
+  - Child: 3045948727165071667
+    Parent: 8300660015788940776
+  - Child: 2376181944985284212
+    Parent: 8300660015788940776
+  - Child: 3774580582593272947
     Parent: 8300660015788940776
   - Child: 6882370708780992900
+    Parent: 8300660015788940776
+  - Child: 7122185544524996530
     Parent: 8300660015788940776
   - Child: 941028454404309471
     Parent: 8300660015788940776
   - Child: 5519182047958331508
     Parent: 8300660015788940776
-  - Child: 7122185544524996530
+  - Child: 7441443922973462354
+    Parent: 4403834823691772068
+  - Child: 4393599462733704647
     Parent: 8300660015788940776
-  - Child: 3774580582593272947
+  - Child: 5526159455511221994
+    Parent: 4403834823691772068
+  - Child: 6421394184720717271
     Parent: 8300660015788940776
-  - Child: 429054741831527879
+  - Child: 2170583082993021859
+    Parent: 4403834823691772068
+  - Child: 3134551741370414905
     Parent: 8300660015788940776
-  - Child: 8257870900282592378
+  - Child: 6255605782527176782
     Parent: 8300660015788940776
-  - Child: 2373330365975725937
+  - Child: 1390962146107730056
+    Parent: 4403834823691772068
+  - Child: 5269716496163057910
     Parent: 8300660015788940776
-  - Child: 4661591441671741657
+  - Child: 6497750838826471016
+    Parent: 4403834823691772068
+  - Child: 2852785205385617545
     Parent: 8300660015788940776
-  - Child: 5282801888127316566
+  - Child: 1173234917298105053
+    Parent: 4403834823691772068
+  - Child: 6422231447279727984
+    Parent: 8300660015788940776
+  - Child: 4488328829644026889
+    Parent: 4403834823691772068
+  - Child: 3894446835149494734
+    Parent: 8300660015788940776
+  - Child: 6679179941033197560
+    Parent: 8300660015788940776
+  - Child: 5863875333295954473
+    Parent: 4403834823691772068
+  - Child: 2359350771337278324
+    Parent: 8300660015788940776
+  - Child: 5116840167753996150
+    Parent: 4403834823691772068
+  - Child: 7014412299184438249
+    Parent: 8300660015788940776
+  - Child: 5938593578675534901
+    Parent: 4403834823691772068
+  - Child: 8042968542339512147
     Parent: 8300660015788940776
   - Child: 4384574000163733435
     Parent: 8300660015788940776
-  - Child: 8042968542339512147
+  - Child: 52792530768942359
+    Parent: 8300660015788940776
+  - Child: 429054741831527879
+    Parent: 8300660015788940776
+  - Child: 2414771960564829260
+    Parent: 8300660015788940776
+  - Child: 8257870900282592378
+    Parent: 8300660015788940776
+  - Child: 8944479009270625282
+    Parent: 8300660015788940776
+  - Child: 6337808489183827230
+    Parent: 8300660015788940776
+  - Child: 2373330365975725937
     Parent: 8300660015788940776
   - Child: 7588717985888051891
     Parent: 4403834823691772068
   - Child: 9212429046532481599
     Parent: 8300660015788940776
-  - Child: 5938593578675534901
+  - Child: 5383058201755084156
+    Parent: 8300660015788940776
+  - Child: 4661591441671741657
+    Parent: 8300660015788940776
+  - Child: 5282801888127316566
+    Parent: 8300660015788940776
+  - Child: 746505464186106778
+    Parent: 8300660015788940776
+  - Child: 8972862906734534913
+    Parent: 8300660015788940776
+  - Child: 1553229021622557651
+    Parent: 8300660015788940776
+  - Child: 487917182079615470
+    Parent: 8300660015788940776
+  - Child: 3840529952111344102
     Parent: 4403834823691772068
-  - Child: 7014412299184438249
-    Parent: 8300660015788940776
-  - Child: 2359350771337278324
-    Parent: 8300660015788940776
-  - Child: 5116840167753996150
-    Parent: 4403834823691772068
-  - Child: 6679179941033197560
-    Parent: 8300660015788940776
-  - Child: 5863875333295954473
-    Parent: 4403834823691772068
-  - Child: 3894446835149494734
-    Parent: 8300660015788940776
-  - Child: 6422231447279727984
-    Parent: 8300660015788940776
-  - Child: 4488328829644026889
-    Parent: 4403834823691772068
-  - Child: 5134918673117414002
+  - Child: 7785113517779829843
     Parent: 8300660015788940776
   - Child: 2711663453959117286
     Parent: 8300660015788940776
-  - Child: 2935312345152117218
+  - Child: 5134918673117414002
     Parent: 8300660015788940776
   - Child: 6578386646234779500
     Parent: 4403834823691772068
+  - Child: 2935312345152117218
+    Parent: 8300660015788940776
   - Child: 5701979108685705220
     Parent: 8300660015788940776
   - Child: 4266179986940385798
@@ -3374,100 +3551,18 @@ Hierarchy:
     Parent: 4403834823691772068
   - Child: 764085127568000350
     Parent: 8300660015788940776
+  - Child: 4452841315484054591
+    Parent: 8300660015788940776
+  - Child: 2573042794324477936
+    Parent: 4403834823691772068
+  - Child: 6617751664441265522
+    Parent: 8300660015788940776
+  - Child: 5897492891795062322
+    Parent: 4403834823691772068
   - Child: 7450740521736068030
     Parent: 8300660015788940776
   - Child: 9125599619256526356
     Parent: 4403834823691772068
-  - Child: 5526159455511221994
-    Parent: 4403834823691772068
-  - Child: 6421394184720717271
-    Parent: 8300660015788940776
-  - Child: 7441443922973462354
-    Parent: 4403834823691772068
-  - Child: 4393599462733704647
-    Parent: 8300660015788940776
-  - Child: 2170583082993021859
-    Parent: 4403834823691772068
-  - Child: 3134551741370414905
-    Parent: 8300660015788940776
-  - Child: 5897492891795062322
-    Parent: 4403834823691772068
-  - Child: 6617751664441265522
-    Parent: 8300660015788940776
-  - Child: 2573042794324477936
-    Parent: 4403834823691772068
-  - Child: 4452841315484054591
-    Parent: 8300660015788940776
-  - Child: 1173234917298105053
-    Parent: 4403834823691772068
-  - Child: 2852785205385617545
-    Parent: 8300660015788940776
-  - Child: 1390962146107730056
-    Parent: 4403834823691772068
-  - Child: 6255605782527176782
-    Parent: 8300660015788940776
-  - Child: 5269716496163057910
-    Parent: 8300660015788940776
-  - Child: 6497750838826471016
-    Parent: 4403834823691772068
-  - Child: 487917182079615470
-    Parent: 8300660015788940776
-  - Child: 3840529952111344102
-    Parent: 4403834823691772068
-  - Child: 2376181944985284212
-    Parent: 8300660015788940776
-  - Child: 3045948727165071667
-    Parent: 8300660015788940776
-  - Child: 5705748220480114380
-    Parent: 8300660015788940776
-  - Child: 2700149610874344310
-    Parent: 8300660015788940776
-  - Child: 6997262942413674699
-    Parent: 8300660015788940776
-  - Child: 2463296660498113712
-    Parent: 8300660015788940776
-  - Child: 7810531547150983613
-    Parent: 4403834823691772068
-  - Child: 890558157220034001
-    Parent: 4403834823691772068
-  - Child: 1192432699558970710
-    Parent: 8300660015788940776
-  - Child: 6106374663053163126
-    Parent: 4403834823691772068
-  - Child: 7586805478628100430
-    Parent: 8300660015788940776
-  - Child: 1743673554494037815
-    Parent: 4403834823691772068
-  - Child: 9268529324311315
-    Parent: 8300660015788940776
-  - Child: 8635443836953470041
-    Parent: 4403834823691772068
-  - Child: 6622908272660789745
-    Parent: 8300660015788940776
-  - Child: 7425727081022990688
-    Parent: 4403834823691772068
-  - Child: 1177452285635858660
-    Parent: 8300660015788940776
-  - Child: 8972862906734534913
-    Parent: 8300660015788940776
-  - Child: 1553229021622557651
-    Parent: 8300660015788940776
-  - Child: 7785113517779829843
-    Parent: 8300660015788940776
-  - Child: 2868842679732874478
-    Parent: 8300660015788940776
-  - Child: 5949352933705248945
-    Parent: 4403834823691772068
-  - Child: 7764512429481001113
-    Parent: 8300660015788940776
-  - Child: 3625977573098970304
-    Parent: 8300660015788940776
-  - Child: 7401327929624184012
-    Parent: 8300660015788940776
-  - Child: 5712486641521178614
-    Parent: 4403834823691772068
-  - Child: 4222266799071048515
-    Parent: 8300660015788940776
 NavMesh:
   Triangles:
     []

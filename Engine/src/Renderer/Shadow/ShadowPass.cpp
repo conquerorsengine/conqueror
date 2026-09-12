@@ -55,19 +55,17 @@ namespace Conqueror
     }
 
     void ShadowPass::Execute(Scene* scene, const DirectionalLightComponent& dirLight,
-                              const glm::vec3& lightDirection)
+                              const glm::vec3& lightDirection,
+                              const glm::mat4& cameraView,
+                              const glm::mat4& cameraProj,
+                              const glm::vec3& cameraPos)
     {
         if (!scene || !m_DirectionalShadowMap || !m_DepthShader)
             return;
 
-        // Camera bilgisini al
         auto& registry = scene->m_Registry;
 
-        // View proj matrix hesapla (editor veya runtime camera'dan)
-        // Su an icin scene'in camera bilgisini kullaniyoruz
-        glm::mat4 viewProj = glm::mat4(1.0f);
-
-        // Cascade split'leri hesapla
+        // Cascade splits hesapla
         CalculateCascadeSplits(CascadeNearPlane, CascadeFarPlane, m_CascadeSplits);
 
         // Her cascade icin shadow map render et
@@ -77,39 +75,48 @@ namespace Conqueror
 
         glm::vec3 lightDir = glm::normalize(lightDirection);
 
+        // Unproject camera frustum NDC corners
+        glm::mat4 invCamVP = glm::inverse(cameraProj * cameraView);
+        glm::vec3 ndcNear[4] = {
+            glm::vec3(-1.0f, -1.0f, -1.0f),
+            glm::vec3( 1.0f, -1.0f, -1.0f),
+            glm::vec3( 1.0f,  1.0f, -1.0f),
+            glm::vec3(-1.0f,  1.0f, -1.0f)
+        };
+        glm::vec3 ndcFar[4] = {
+            glm::vec3(-1.0f, -1.0f,  1.0f),
+            glm::vec3( 1.0f, -1.0f,  1.0f),
+            glm::vec3( 1.0f,  1.0f,  1.0f),
+            glm::vec3(-1.0f,  1.0f,  1.0f)
+        };
+
+        glm::vec3 worldNear[4], worldFar[4];
+        for (int k = 0; k < 4; k++)
+        {
+            glm::vec4 wN = invCamVP * glm::vec4(ndcNear[k], 1.0f);
+            worldNear[k] = glm::vec3(wN) / wN.w;
+            glm::vec4 wF = invCamVP * glm::vec4(ndcFar[k], 1.0f);
+            worldFar[k] = glm::vec3(wF) / wF.w;
+        }
+
         for (int i = 0; i < CascadeCount; i++)
         {
-            float nearZ = (i == 0) ? CascadeNearPlane : m_CascadeSplits[i - 1];
-            float farZ = m_CascadeSplits[i];
+            float prevSplit = (i == 0) ? CascadeNearPlane : m_CascadeSplits[i - 1];
+            float split = m_CascadeSplits[i];
 
-            // Bu cascade'in view-proj matrix'ini hesapla
-            glm::mat4 lightView = glm::lookAt(
-                glm::vec3(0.0f),
-                lightDir,
-                glm::vec3(0.0f, 1.0f, 0.0f)
-            );
+            float tn = (prevSplit - CascadeNearPlane) / (CascadeFarPlane - CascadeNearPlane);
+            float tf = (split - CascadeNearPlane) / (CascadeFarPlane - CascadeNearPlane);
+            tn = glm::clamp(tn, 0.0f, 1.0f);
+            tf = glm::clamp(tf, 0.0f, 1.0f);
 
-            // Frustum corners hesapla (simplified)
-            float tanHalfFov = glm::radians(45.0f);
-            float aspect = 1.0f;
+            glm::vec3 corners[8];
+            for (int k = 0; k < 4; k++)
+            {
+                corners[k]     = glm::mix(worldNear[k], worldFar[k], tn);
+                corners[k + 4] = glm::mix(worldNear[k], worldFar[k], tf);
+            }
 
-            float nearHeight = nearZ * tanHalfFov;
-            float nearWidth = nearHeight * aspect;
-            float farHeight = farZ * tanHalfFov;
-            float farWidth = farHeight * aspect;
-
-            glm::vec3 corners[8] = {
-                glm::vec3(-nearWidth, -nearHeight, -nearZ),
-                glm::vec3( nearWidth, -nearHeight, -nearZ),
-                glm::vec3( nearWidth,  nearHeight, -nearZ),
-                glm::vec3(-nearWidth,  nearHeight, -nearZ),
-                glm::vec3(-farWidth,  -farHeight,  -farZ),
-                glm::vec3( farWidth,  -farHeight,  -farZ),
-                glm::vec3( farWidth,   farHeight,  -farZ),
-                glm::vec3(-farWidth,   farHeight,  -farZ),
-            };
-
-            // Center ve radius hesapla
+            // Center ve radius
             glm::vec3 center(0.0f);
             for (int j = 0; j < 8; j++)
                 center += corners[j];
@@ -118,25 +125,33 @@ namespace Conqueror
             float radius = 0.0f;
             for (int j = 0; j < 8; j++)
                 radius = glm::max(radius, glm::length(corners[j] - center));
-            radius = glm::ceil(radius * 16.0f) / 16.0f;
+            radius = glm::max(radius, 5.0f);
 
-            // Light space matrix
-            glm::mat4 lightProjection = glm::ortho(-radius, radius, -radius, radius, 0.0f, radius * 2.0f);
-            glm::vec3 shadowCenter = center - lightDir * radius;
-            glm::mat4 shadowView = glm::lookAt(shadowCenter, center, glm::vec3(0.0f, 1.0f, 0.0f));
+            // Texel snapping to stabilize shadow map
+            float cascadeTexWidth = (float)(m_DirectionalShadowMap->GetWidth() / CascadeCount);
+            float texelSize = (radius * 2.0f) / cascadeTexWidth;
 
-            m_LightSpaceMatrices[i] = lightProjection * shadowView;
+            glm::mat4 lightView = glm::lookAt(center - lightDir * radius * 2.0f, center, glm::vec3(0.0f, 1.0f, 0.0f));
+            glm::vec4 centerLS = lightView * glm::vec4(center, 1.0f);
+            centerLS.x = std::floor(centerLS.x / texelSize) * texelSize;
+            centerLS.y = std::floor(centerLS.y / texelSize) * texelSize;
+            center = glm::vec3(glm::inverse(lightView) * centerLS);
+
+            lightView = glm::lookAt(center - lightDir * radius * 2.0f, center, glm::vec3(0.0f, 1.0f, 0.0f));
+            glm::mat4 lightProjection = glm::ortho(-radius, radius, -radius, radius, 0.0f, radius * 4.0f);
+
+            m_LightSpaceMatrices[i] = lightProjection * lightView;
 
             // Viewport ayarla (cascade'e gore)
             uint32_t cascadeWidth = m_DirectionalShadowMap->GetWidth() / CascadeCount;
             uint32_t cascadeHeight = m_DirectionalShadowMap->GetHeight();
             glViewport(i * cascadeWidth, 0, cascadeWidth, cascadeHeight);
 
-            // Shadow pass shader'i bind et
+            // Depth shader bind
             m_DepthShader->Bind();
             m_DepthShader->SetMat4("u_LightSpaceMatrix", m_LightSpaceMatrices[i]);
 
-            // Tum mesh renderer'lari render et (depth-only)
+            // Mesh renderer'lari render et
             auto meshView = registry.view<TransformComponent, MeshRendererComponent>();
             for (auto entity : meshView)
             {
@@ -144,7 +159,6 @@ namespace Conqueror
 
                 m_DepthShader->SetMat4("u_Transform", transform.GetTransform());
 
-                // MeshType'e gore render
                 switch (meshRenderer.Type)
                 {
                     case MeshType::Sphere:   RenderCommand::DrawIndexed(Renderer3D::GetSphereMesh()->GetVertexArray(), Renderer3D::GetSphereMesh()->GetIndexCount()); break;
@@ -154,7 +168,7 @@ namespace Conqueror
                 }
             }
 
-            // Model renderer'lari da render et
+            // Model renderer'lari render et
             auto modelView = registry.view<TransformComponent, ModelComponent>();
             for (auto entity : modelView)
             {
@@ -174,9 +188,6 @@ namespace Conqueror
         }
 
         m_DirectionalShadowMap->Unbind();
-
-        // Viewport'u geri yukle
-        // (Editor veya window size'a gore)
     }
 
     void ShadowPass::BindShadowMapsToShader(std::shared_ptr<Shader> shader)

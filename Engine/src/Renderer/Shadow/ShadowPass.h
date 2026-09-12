@@ -24,7 +24,10 @@ namespace Conqueror
         void Shutdown();
 
         void Execute(Scene* scene, const DirectionalLightComponent& dirLight,
-                     const glm::vec3& lightDirection);
+                     const glm::vec3& lightDirection,
+                     const glm::mat4& cameraView = glm::mat4(1.0f),
+                     const glm::mat4& cameraProj = glm::mat4(1.0f),
+                     const glm::vec3& cameraPos = glm::vec3(0.0f));
 
         void BindShadowMapsToShader(std::shared_ptr<Shader> shader);
 
@@ -35,9 +38,9 @@ namespace Conqueror
         int CascadeCount = 4;
         float CascadeSplitLambda = 0.75f;
         float CascadeNearPlane = 0.1f;
-        float CascadeFarPlane = 100.0f;
-        float ShadowBias = 0.005f;
-        float NormalBias = 0.02f;
+        float CascadeFarPlane = 300.0f;
+        float ShadowBias = 0.0015f;
+        float NormalBias = 0.015f;
 
     private:
         void CalculateCascadeSplits(float nearPlane, float farPlane, std::vector<float>& splits);
