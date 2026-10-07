@@ -1,5 +1,6 @@
 #include "WindowsWindow.h"
 #include "Core/Logging/Log.h"
+#include "Core/Input/Input.h"
 #include "Core/Events/ApplicationEvent.h"
 #include "Core/Events/KeyEvent.h"
 #include "Core/Events/MouseEvent.h"
@@ -140,6 +141,9 @@ namespace Conqueror
         glfwSetScrollCallback(m_Window, [](GLFWwindow* window, double xOffset, double yOffset)
         {
             WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+
+            // Poll yoluyla da okunabilsin diye biriktir (ImGui event yutmasından bağımsız)
+            Input::AddMouseScrollDelta((float)yOffset);
 
             MouseScrolledEvent event((float)xOffset, (float)yOffset);
             data.EventCallback(event);

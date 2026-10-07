@@ -77,6 +77,19 @@ namespace Conqueror
 
     void OpenGLRendererAPI::SetLineWidth(float width)
     {
+        // Core profile'da taşınabilir tek çizgi genişliği 1.0'dır; daha büyük
+        // değerler deprecated'tir ve sürücü her çağrıda uyarı basar. Sebebi
+        // ortadan kaldır: kelepçele (ilk seferde tek satır bilgi ver).
+        if (width != 1.0f)
+        {
+            static bool s_Warned = false;
+            if (!s_Warned)
+            {
+                s_Warned = true;
+                CQ_CORE_WARN("OpenGL core profile only supports line width 1.0; clamping {0}", width);
+            }
+            width = 1.0f;
+        }
         glLineWidth(width);
     }
 }

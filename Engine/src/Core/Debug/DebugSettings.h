@@ -40,7 +40,7 @@ namespace Conqueror
         bool DepthTestLines = true;
         bool DepthTestSolids = true;
         bool DepthTestText = false;
-        float LineWidth = 2.0f;
+        float LineWidth = 1.0f;
         float DefaultDuration = 0.0f;
         uint32_t MaxLineVertices = 250000;
         uint32_t MaxSolidVertices = 100000;

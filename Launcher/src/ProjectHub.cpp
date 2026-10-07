@@ -10,10 +10,6 @@
 #include <yaml-cpp/yaml.h>
 #include <nfd.h>
 
-#include <glad/glad.h>
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
 namespace Conqueror::Editor
 {
     ProjectHub::ProjectHub()
@@ -51,22 +47,15 @@ namespace Conqueror::Editor
         
         CQ_CORE_INFO("ProjectHub: Constructor completed");
 
-        // Logo yükle (Resources dizini exe yanına kopyalanıyor)
+        // Logo yükle (Resources dizini exe yanına kopyalanıyor).
+        // Engine'in Texture2D API'si kullanılır: ham GL çağrısı exe'deki
+        // yüklenmemiş glad kopyasına düşerdi (null function pointer -> AV).
         std::filesystem::path logoPath = std::filesystem::current_path() / "Resources" / "Logo" / "Conqueror_Logo.png";
         if (std::filesystem::exists(logoPath))
         {
-            int w, h, channels;
-            unsigned char* data = stbi_load(logoPath.string().c_str(), &w, &h, &channels, 4);
-            if (data)
-            {
-                glGenTextures(1, &m_LogoTexture);
-                glBindTexture(GL_TEXTURE_2D, m_LogoTexture);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-                stbi_image_free(data);
-                CQ_CORE_INFO("ProjectHub: Logo loaded ({0}x{1})", w, h);
-            }
+            m_LogoTexture = Texture2D::Create(logoPath.string());
+            if (m_LogoTexture)
+                CQ_CORE_INFO("ProjectHub: Logo loaded ({0}x{1})", m_LogoTexture->GetWidth(), m_LogoTexture->GetHeight());
         }
         else
         {
@@ -76,53 +65,17 @@ namespace Conqueror::Editor
         // 3D template resmi yükle
         std::filesystem::path template3DPath = std::filesystem::current_path() / "Resources" / "EngineImages" / "3d.png";
         if (std::filesystem::exists(template3DPath))
-        {
-            int w, h, channels;
-            unsigned char* data = stbi_load(template3DPath.string().c_str(), &w, &h, &channels, 4);
-            if (data)
-            {
-                glGenTextures(1, &m_3DTemplateTexture);
-                glBindTexture(GL_TEXTURE_2D, m_3DTemplateTexture);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-                stbi_image_free(data);
-            }
-        }
+            m_3DTemplateTexture = Texture2D::Create(template3DPath.string());
 
         // 2D template resmi yükle
         std::filesystem::path template2DPath = std::filesystem::current_path() / "Resources" / "EngineImages" / "2d.png";
         if (std::filesystem::exists(template2DPath))
-        {
-            int w, h, channels;
-            unsigned char* data = stbi_load(template2DPath.string().c_str(), &w, &h, &channels, 4);
-            if (data)
-            {
-                glGenTextures(1, &m_2DTemplateTexture);
-                glBindTexture(GL_TEXTURE_2D, m_2DTemplateTexture);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-                stbi_image_free(data);
-            }
-        }
+            m_2DTemplateTexture = Texture2D::Create(template2DPath.string());
 
         // Empty template resmi yükle
         std::filesystem::path templateEmptyPath = std::filesystem::current_path() / "Resources" / "EngineImages" / "empty.png";
         if (std::filesystem::exists(templateEmptyPath))
-        {
-            int w, h, channels;
-            unsigned char* data = stbi_load(templateEmptyPath.string().c_str(), &w, &h, &channels, 4);
-            if (data)
-            {
-                glGenTextures(1, &m_EmptyTemplateTexture);
-                glBindTexture(GL_TEXTURE_2D, m_EmptyTemplateTexture);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-                stbi_image_free(data);
-            }
-        }
+            m_EmptyTemplateTexture = Texture2D::Create(templateEmptyPath.string());
     }
 
     void ProjectHub::OnImGuiRender()
@@ -232,7 +185,7 @@ namespace Conqueror::Editor
                 if (m_EmptyTemplateTexture)
                 {
                     ImGui::SetCursorPos(ImVec2(cursorPos.x + 10, cursorPos.y + 10));
-                    ImGui::Image((ImTextureID)(intptr_t)m_EmptyTemplateTexture, ImVec2(cardWidth - 20, cardHeight - 55));
+                    ImGui::Image((ImTextureID)(intptr_t)m_EmptyTemplateTexture->GetRendererID(), ImVec2(cardWidth - 20, cardHeight - 55), ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
                 }
                 
                 ImGui::SetCursorPos(ImVec2(cursorPos.x + 10, cursorPos.y + cardHeight - 35));
@@ -268,7 +221,7 @@ namespace Conqueror::Editor
                 if (m_2DTemplateTexture)
                 {
                     ImGui::SetCursorPos(ImVec2(cursorPos.x + 10, cursorPos.y + 10));
-                    ImGui::Image((ImTextureID)(intptr_t)m_2DTemplateTexture, ImVec2(cardWidth - 20, cardHeight - 55));
+                    ImGui::Image((ImTextureID)(intptr_t)m_2DTemplateTexture->GetRendererID(), ImVec2(cardWidth - 20, cardHeight - 55), ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
                 }
                 
                 ImGui::SetCursorPos(ImVec2(cursorPos.x + 10, cursorPos.y + cardHeight - 35));
@@ -304,7 +257,7 @@ namespace Conqueror::Editor
                 if (m_3DTemplateTexture)
                 {
                     ImGui::SetCursorPos(ImVec2(cursorPos.x + 10, cursorPos.y + 10));
-                    ImGui::Image((ImTextureID)(intptr_t)m_3DTemplateTexture, ImVec2(cardWidth - 20, cardHeight - 55));
+                    ImGui::Image((ImTextureID)(intptr_t)m_3DTemplateTexture->GetRendererID(), ImVec2(cardWidth - 20, cardHeight - 55), ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
                 }
                 
                 ImGui::SetCursorPos(ImVec2(cursorPos.x + 10, cursorPos.y + cardHeight - 35));
@@ -571,6 +524,9 @@ namespace Conqueror::Editor
             m_ProjectOpenCallback(project);
 
         std::string enginePath = std::filesystem::current_path().string() + "/ConquerorEngine";
+#ifdef _WIN32
+        enginePath += ".exe";
+#endif
         std::string projectPath = project.Path.string();
         
         CQ_CORE_INFO("[OpenProject] Engine path: {0}", enginePath);
@@ -785,7 +741,7 @@ namespace Conqueror::Editor
         // Conqueror's Engine logosu
         if (m_LogoTexture)
         {
-            ImGui::Image((ImTextureID)(intptr_t)m_LogoTexture, ImVec2(370, 130));
+            ImGui::Image((ImTextureID)(intptr_t)m_LogoTexture->GetRendererID(), ImVec2(370, 130), ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
         }
         else
         {

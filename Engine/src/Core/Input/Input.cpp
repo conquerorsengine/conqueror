@@ -17,6 +17,12 @@ namespace Conqueror
     glm::vec2 Input::s_MousePosition = glm::vec2(0.0f);
     glm::vec2 Input::s_PreviousMousePosition = glm::vec2(0.0f);
     float Input::s_MouseScrollDelta = 0.0f;
+    float Input::s_MouseScrollAccumulator = 0.0f;
+
+    void Input::AddMouseScrollDelta(float delta)
+    {
+        s_MouseScrollAccumulator += delta;
+    }
     
     std::unordered_map<int, Input::GamepadState> Input::s_GamepadStates;
     std::unordered_map<std::string, InputContext> Input::s_Contexts;
@@ -284,7 +290,10 @@ namespace Conqueror
 
         s_PreviousMousePosition = s_MousePosition;
         s_MousePosition = GetMousePosition();
-        s_MouseScrollDelta = 0.0f;
+        // Callback'lerde biriken scroll bu frame'in değeri olur, sonra sıfırlanır.
+        // (Run döngüsü: Update -> katman OnUpdate'leri, o yüzden okuma güncel kalır.)
+        s_MouseScrollDelta = s_MouseScrollAccumulator;
+        s_MouseScrollAccumulator = 0.0f;
         
         if (s_Recording && (s_MousePosition != s_PreviousMousePosition)) {
             InputEvent ev; ev.EventType = InputEvent::Type::MouseMove;

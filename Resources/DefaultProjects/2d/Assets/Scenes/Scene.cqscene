@@ -11,7 +11,7 @@ Entities:
     SpriteRendererComponent:
       Color: [0.24895619, 0.25096524, 0.2480583, 1]
       TilingFactor: 1
-      TexturePath: /home/fazli/Masaüstü/Conqueror's_Engine/build/bin/Resources/test/Square.png
+      TexturePath: CQ:Resources/test/Square.png
     LayerComponent:
       Layer: 0
       OrderInLayer: -8
@@ -36,7 +36,7 @@ Entities:
     SpriteRendererComponent:
       Color: [0.24895619, 0.25096524, 0.2480583, 1]
       TilingFactor: 1
-      TexturePath: /home/fazli/Masaüstü/Conqueror's_Engine/build/bin/Resources/test/Square.png
+      TexturePath: CQ:Resources/test/Square.png
     LayerComponent:
       Layer: 0
       OrderInLayer: -8
@@ -61,7 +61,7 @@ Entities:
     SpriteRendererComponent:
       Color: [0.24895619, 0.25096524, 0.2480583, 1]
       TilingFactor: 1
-      TexturePath: /home/fazli/Masaüstü/Conqueror's_Engine/build/bin/Resources/test/Square.png
+      TexturePath: CQ:Resources/test/Square.png
     LayerComponent:
       Layer: 0
       OrderInLayer: -8
@@ -86,7 +86,7 @@ Entities:
     SpriteRendererComponent:
       Color: [0.24895619, 0.25096524, 0.2480583, 1]
       TilingFactor: 1
-      TexturePath: /home/fazli/Masaüstü/Conqueror's_Engine/build/bin/Resources/test/Square.png
+      TexturePath: CQ:Resources/test/Square.png
     LayerComponent:
       Layer: 0
       OrderInLayer: -8
@@ -111,7 +111,7 @@ Entities:
     SpriteRendererComponent:
       Color: [0.24895619, 0.25096524, 0.2480583, 1]
       TilingFactor: 1
-      TexturePath: /home/fazli/Masaüstü/Conqueror's_Engine/build/bin/Resources/test/Square.png
+      TexturePath: CQ:Resources/test/Square.png
     LayerComponent:
       Layer: 0
       OrderInLayer: -8
@@ -136,7 +136,7 @@ Entities:
     SpriteRendererComponent:
       Color: [0.26640928, 0.12546228, 0.05040176, 1]
       TilingFactor: 1
-      TexturePath: /home/fazli/Masaüstü/Conqueror's_Engine/build/bin/Resources/test/Square.png
+      TexturePath: CQ:Resources/test/Square.png
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
@@ -161,7 +161,7 @@ Entities:
     SpriteRendererComponent:
       Color: [0.24895619, 0.25096524, 0.2480583, 1]
       TilingFactor: 1
-      TexturePath: /home/fazli/Masaüstü/Conqueror's_Engine/build/bin/Resources/test/Square.png
+      TexturePath: CQ:Resources/test/Square.png
     LayerComponent:
       Layer: 0
       OrderInLayer: -8
@@ -208,12 +208,12 @@ Entities:
     SpriteRendererComponent:
       Color: [0.6486486, 0, 0, 1]
       TilingFactor: 1
-      TexturePath: /home/fazli/Masaüstü/Conqueror's_Engine/build/bin/Resources/test/Square.png
+      TexturePath: CQ:Resources/test/Square.png
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
     PlayerController_ConquerorScriptComponent:
-      ScriptPath: /home/fazli/Masaüstü/Conqueror's_Engine/Resources/DefaultProjects/2d/Assets/Scripts/PlayerController.cqs
+      ScriptPath: Assets/Scripts/PlayerController.cqs
       ClassName: PlayerController
     RigidBody2DComponent:
       BodyType: 1
@@ -236,7 +236,7 @@ Entities:
     SpriteRendererComponent:
       Color: [0.6756757, 0.36001253, 0.36001253, 1]
       TilingFactor: 1
-      TexturePath: /home/fazli/Masaüstü/Conqueror's_Engine/build/bin/Resources/test/Square.png
+      TexturePath: CQ:Resources/test/Square.png
     LayerComponent:
       Layer: 0
       OrderInLayer: -26
@@ -251,7 +251,7 @@ Entities:
     SpriteRendererComponent:
       Color: [0.24895619, 0.25096524, 0.2480583, 1]
       TilingFactor: 1
-      TexturePath: /home/fazli/Masaüstü/Conqueror's_Engine/build/bin/Resources/test/Square.png
+      TexturePath: CQ:Resources/test/Square.png
     LayerComponent:
       Layer: 0
       OrderInLayer: -8

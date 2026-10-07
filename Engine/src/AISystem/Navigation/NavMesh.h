@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Core/Base/Base.h"
 #include <glm/glm.hpp>
 #include <vector>
 
@@ -18,7 +19,7 @@ namespace Conqueror
         int AreaType = 0; // 0 = Walkable vb.
     };
 
-    class NavMesh
+    class CQ_API NavMesh
     {
     public:
         NavMesh() = default;
@@ -38,7 +39,7 @@ namespace Conqueror
         std::vector<NavTriangle> m_Triangles;
     };
 
-    class NavMeshBuilder
+    class CQ_API NavMeshBuilder
     {
     public:
         // Scene'deki NavMeshSurfaceComponent olan objeleri toplayıp NavMesh oluşturur

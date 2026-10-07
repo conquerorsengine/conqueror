@@ -46,6 +46,7 @@ namespace Conqueror
         static std::shared_ptr<VertexBuffer> s_QuadVB;
         static std::shared_ptr<IndexBuffer> s_QuadIB;
 
-        static uint32_t s_Width, s_Height;
+        static uint32_t s_Width;
+        static uint32_t s_Height;
     };
 }

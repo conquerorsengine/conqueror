@@ -14,6 +14,11 @@
 #include <nfd.h>
 
 #ifdef _WIN32
+    #ifndef WIN32_LEAN_AND_MEAN
+        #define WIN32_LEAN_AND_MEAN
+    #endif
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
     #include <windows.h>
     #include <psapi.h>
     #pragma comment(lib, "ws2_32.lib")
@@ -383,7 +388,7 @@ namespace Conqueror
 #ifdef _WIN32
         WSADATA wsaData;
         if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) return;
-        s_NetworkSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+        s_NetworkSocket = static_cast<int>(socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP));
 #else
         s_NetworkSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 #endif
@@ -403,7 +408,7 @@ namespace Conqueror
         {
             s_NetworkEnabled = false;
 #ifdef _WIN32
-            if (s_NetworkSocket >= 0) closesocket(s_NetworkSocket);
+            if (s_NetworkSocket >= 0) closesocket(static_cast<SOCKET>(s_NetworkSocket));
             WSACleanup();
 #else
             if (s_NetworkSocket >= 0) close(s_NetworkSocket);
@@ -429,7 +434,7 @@ namespace Conqueror
         
 #ifdef _WIN32
         broadcastAddr.sin_addr.s_addr = INADDR_BROADCAST;
-        sendto(s_NetworkSocket, payload.c_str(), (int)payload.length(), 0, (struct sockaddr*)&broadcastAddr, sizeof(broadcastAddr));
+        sendto(static_cast<SOCKET>(s_NetworkSocket), payload.c_str(), (int)payload.length(), 0, (struct sockaddr*)&broadcastAddr, sizeof(broadcastAddr));
 #else
         inet_pton(AF_INET, "255.255.255.255", &broadcastAddr.sin_addr);
         sendto(s_NetworkSocket, payload.c_str(), payload.length(), 0, (struct sockaddr*)&broadcastAddr, sizeof(broadcastAddr));

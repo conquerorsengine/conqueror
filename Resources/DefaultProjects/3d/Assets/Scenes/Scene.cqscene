@@ -52,7 +52,7 @@ Entities:
       AO: 1
       TexturePath: ""
     PlayerController_ConquerorScriptComponent:
-      ScriptPath: /home/fazli/Masaüstü/Conqueror's_Engine/Resources/DefaultProjects/3d/Assets/Scripts/PlayerController.cqs
+      ScriptPath: Assets/Scripts/PlayerController.cqs
       ClassName: PlayerController
     RigidbodyComponent:
       BodyType: 1
@@ -3318,7 +3318,7 @@ Entities:
       CastShadows: true
       Mode: 0
 Environment:
-  SkyboxPath: /home/fazli/Masaüstü/Conqueror's_Engine/Resources/skybox/skybox_1.hdr
+  SkyboxPath: CQ:Resources/skybox/skybox_1.hdr
   SkyboxExposure: 1
   SkyboxRotation: 0
   SkyboxTint: [1, 1, 1]

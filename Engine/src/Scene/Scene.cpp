@@ -2062,39 +2062,39 @@ namespace Conqueror
     }
 
     template<>
-    void Scene::OnComponentAdded<IDComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] IDComponent& component)
+    CQ_API void Scene::OnComponentAdded<IDComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] IDComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<TransformComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] TransformComponent& component)
+    CQ_API void Scene::OnComponentAdded<TransformComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] TransformComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<TagComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] TagComponent& component)
+    CQ_API void Scene::OnComponentAdded<TagComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] TagComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<CameraComponent>([[maybe_unused]] Entity entity, CameraComponent& component)
+    CQ_API void Scene::OnComponentAdded<CameraComponent>([[maybe_unused]] Entity entity, CameraComponent& component)
     {
         if (m_ViewportWidth > 0 && m_ViewportHeight > 0)
             component.Camera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
     }
 
     template<>
-    void Scene::OnComponentAdded<SpriteRendererComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] SpriteRendererComponent& component)
+    CQ_API void Scene::OnComponentAdded<SpriteRendererComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] SpriteRendererComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<ImageComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] ImageComponent& component)
+    CQ_API void Scene::OnComponentAdded<ImageComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] ImageComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<MeshRendererComponent>(Entity entity, MeshRendererComponent& component)
+    CQ_API void Scene::OnComponentAdded<MeshRendererComponent>(Entity entity, MeshRendererComponent& component)
     {
         std::string defaultTex = "Resources/Textures/texture_grid.png";
         component.TexturePath = defaultTex;
@@ -2102,7 +2102,7 @@ namespace Conqueror
     }
 
     template<>
-    void Scene::OnComponentAdded<RigidBody2DComponent>(Entity entity, [[maybe_unused]] RigidBody2DComponent& component)
+    CQ_API void Scene::OnComponentAdded<RigidBody2DComponent>(Entity entity, [[maybe_unused]] RigidBody2DComponent& component)
     {
         CQ_CORE_INFO("Scene::OnComponentAdded<RigidBody2DComponent> - Entity: {0}", (uint32_t)entity);
         // Fizik body'yi oluştur
@@ -2119,7 +2119,7 @@ namespace Conqueror
     }
 
     template<>
-    void Scene::OnComponentAdded<BoxCollider2DComponent>(Entity entity, [[maybe_unused]] BoxCollider2DComponent& component)
+    CQ_API void Scene::OnComponentAdded<BoxCollider2DComponent>(Entity entity, [[maybe_unused]] BoxCollider2DComponent& component)
     {
         CQ_CORE_INFO("Scene::OnComponentAdded<BoxCollider2DComponent> - Entity: {0}", (uint32_t)entity);
         // Rigidbody varsa body'yi yeniden oluştur
@@ -2136,7 +2136,7 @@ namespace Conqueror
     }
 
     template<>
-    void Scene::OnComponentAdded<CircleCollider2DComponent>(Entity entity, [[maybe_unused]] CircleCollider2DComponent& component)
+    CQ_API void Scene::OnComponentAdded<CircleCollider2DComponent>(Entity entity, [[maybe_unused]] CircleCollider2DComponent& component)
     {
         // Rigidbody varsa body'yi yeniden oluştur
         if (entity.HasComponent<RigidBody2DComponent>() && m_PhysicsWorld2D)
@@ -2147,7 +2147,7 @@ namespace Conqueror
     }
 
     template<>
-    void Scene::OnComponentAdded<RigidbodyComponent>(Entity entity, [[maybe_unused]] RigidbodyComponent& component)
+    CQ_API void Scene::OnComponentAdded<RigidbodyComponent>(Entity entity, [[maybe_unused]] RigidbodyComponent& component)
     {
         // 3D fizik body'yi oluştur
         if (m_PhysicsWorld3D)
@@ -2157,7 +2157,7 @@ namespace Conqueror
     }
 
     template<>
-    void Scene::OnComponentAdded<BoxColliderComponent>(Entity entity, [[maybe_unused]] BoxColliderComponent& component)
+    CQ_API void Scene::OnComponentAdded<BoxColliderComponent>(Entity entity, [[maybe_unused]] BoxColliderComponent& component)
     {
         // Rigidbody varsa body'yi yeniden oluştur
         if (entity.HasComponent<RigidbodyComponent>() && m_PhysicsWorld3D)
@@ -2168,7 +2168,7 @@ namespace Conqueror
     }
 
     template<>
-    void Scene::OnComponentAdded<SphereColliderComponent>(Entity entity, [[maybe_unused]] SphereColliderComponent& component)
+    CQ_API void Scene::OnComponentAdded<SphereColliderComponent>(Entity entity, [[maybe_unused]] SphereColliderComponent& component)
     {
         // Rigidbody varsa body'yi yeniden oluştur
         if (entity.HasComponent<RigidbodyComponent>() && m_PhysicsWorld3D)
@@ -2179,7 +2179,7 @@ namespace Conqueror
     }
 
     template<>
-    void Scene::OnComponentAdded<CapsuleColliderComponent>(Entity entity, [[maybe_unused]] CapsuleColliderComponent& component)
+    CQ_API void Scene::OnComponentAdded<CapsuleColliderComponent>(Entity entity, [[maybe_unused]] CapsuleColliderComponent& component)
     {
         // Rigidbody varsa body'yi yeniden oluştur
         if (entity.HasComponent<RigidbodyComponent>() && m_PhysicsWorld3D)
@@ -2190,7 +2190,7 @@ namespace Conqueror
     }
 
     template<>
-    void Scene::OnComponentAdded<MeshColliderComponent>(Entity entity, [[maybe_unused]] MeshColliderComponent& component)
+    CQ_API void Scene::OnComponentAdded<MeshColliderComponent>(Entity entity, [[maybe_unused]] MeshColliderComponent& component)
     {
         // Rigidbody varsa body'yi yeniden oluştur
         if (entity.HasComponent<RigidbodyComponent>() && m_PhysicsWorld3D)
@@ -2201,62 +2201,62 @@ namespace Conqueror
     }
 
     template<>
-    void Scene::OnComponentAdded<TextRendererComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] TextRendererComponent& component)
+    CQ_API void Scene::OnComponentAdded<TextRendererComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] TextRendererComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<LayerComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] LayerComponent& component)
+    CQ_API void Scene::OnComponentAdded<LayerComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] LayerComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<ButtonComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] ButtonComponent& component)
+    CQ_API void Scene::OnComponentAdded<ButtonComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] ButtonComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<CanvasComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] CanvasComponent& component)
+    CQ_API void Scene::OnComponentAdded<CanvasComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] CanvasComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<CanvasScalerComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] CanvasScalerComponent& component)
+    CQ_API void Scene::OnComponentAdded<CanvasScalerComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] CanvasScalerComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<GraphicRaycasterComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] GraphicRaycasterComponent& component)
+    CQ_API void Scene::OnComponentAdded<GraphicRaycasterComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] GraphicRaycasterComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<ModelComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] ModelComponent& component)
+    CQ_API void Scene::OnComponentAdded<ModelComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] ModelComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<AnimatorComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AnimatorComponent& component)
+    CQ_API void Scene::OnComponentAdded<AnimatorComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AnimatorComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<AnimationComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AnimationComponent& component)
+    CQ_API void Scene::OnComponentAdded<AnimationComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AnimationComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<DirectionalLightComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] DirectionalLightComponent& component)
+    CQ_API void Scene::OnComponentAdded<DirectionalLightComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] DirectionalLightComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<PointLightComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] PointLightComponent& component)
+    CQ_API void Scene::OnComponentAdded<PointLightComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] PointLightComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<SpotLightComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] SpotLightComponent& component)
+    CQ_API void Scene::OnComponentAdded<SpotLightComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] SpotLightComponent& component)
     {
     }
 
@@ -3361,82 +3361,82 @@ namespace Conqueror
     }
 
     template<>
-    void Scene::OnComponentAdded<NativeScriptComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] NativeScriptComponent& component)
+    CQ_API void Scene::OnComponentAdded<NativeScriptComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] NativeScriptComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<ConquerorScriptComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] ConquerorScriptComponent& component)
+    CQ_API void Scene::OnComponentAdded<ConquerorScriptComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] ConquerorScriptComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<AudioSourceComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AudioSourceComponent& component)
+    CQ_API void Scene::OnComponentAdded<AudioSourceComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AudioSourceComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<AudioListenerComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AudioListenerComponent& component)
+    CQ_API void Scene::OnComponentAdded<AudioListenerComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AudioListenerComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<AudioChorusFilterComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AudioChorusFilterComponent& component)
+    CQ_API void Scene::OnComponentAdded<AudioChorusFilterComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AudioChorusFilterComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<AudioDistortionFilterComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AudioDistortionFilterComponent& component)
+    CQ_API void Scene::OnComponentAdded<AudioDistortionFilterComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AudioDistortionFilterComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<AudioEchoFilterComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AudioEchoFilterComponent& component)
+    CQ_API void Scene::OnComponentAdded<AudioEchoFilterComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AudioEchoFilterComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<AudioHighPassFilterComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AudioHighPassFilterComponent& component)
+    CQ_API void Scene::OnComponentAdded<AudioHighPassFilterComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AudioHighPassFilterComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<AudioLowPassFilterComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AudioLowPassFilterComponent& component)
+    CQ_API void Scene::OnComponentAdded<AudioLowPassFilterComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AudioLowPassFilterComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<AudioReverbFilterComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AudioReverbFilterComponent& component)
+    CQ_API void Scene::OnComponentAdded<AudioReverbFilterComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AudioReverbFilterComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<AudioReverbZoneComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AudioReverbZoneComponent& component)
+    CQ_API void Scene::OnComponentAdded<AudioReverbZoneComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AudioReverbZoneComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<AudioGainComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AudioGainComponent& component)
+    CQ_API void Scene::OnComponentAdded<AudioGainComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AudioGainComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<AudioPanComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AudioPanComponent& component)
+    CQ_API void Scene::OnComponentAdded<AudioPanComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AudioPanComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<NavMeshAgentComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] NavMeshAgentComponent& component)
+    CQ_API void Scene::OnComponentAdded<NavMeshAgentComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] NavMeshAgentComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<NavMeshObstacleComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] NavMeshObstacleComponent& component)
+    CQ_API void Scene::OnComponentAdded<NavMeshObstacleComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] NavMeshObstacleComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<NavMeshSurfaceComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] NavMeshSurfaceComponent& component)
+    CQ_API void Scene::OnComponentAdded<NavMeshSurfaceComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] NavMeshSurfaceComponent& component)
     {
     }
 

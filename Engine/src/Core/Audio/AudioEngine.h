@@ -10,7 +10,7 @@ typedef struct ma_sound ma_sound;
 namespace Conqueror
 {
     // Audio Engine - Singleton pattern ile tek instance
-    class AudioEngine
+    class CQ_API AudioEngine
     {
     public:
         static void Init();

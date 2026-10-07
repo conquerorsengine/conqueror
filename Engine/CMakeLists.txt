@@ -16,6 +16,13 @@ file(GLOB_RECURSE ENGINE_SOURCES
     "src/Networking/RPC/*.cpp"
 )
 
+# Platforma özel kaynakları ayıkla (işlev kaldırılmadı, sadece yanlış platformda derlenmesin)
+# NOT: Platform/Windows altındaki dosyalar portable GLFW kodudur, Linux'ta da derlenir;
+# yalnızca dlfcn.h isteyen Linux/ klasörü Windows'ta hariç tutulur.
+if(WIN32)
+    list(FILTER ENGINE_SOURCES EXCLUDE REGEX "src/Platform/Linux/.*")
+endif()
+
 # Linux: shared libEngine.so is easy to shadow with another copy on LD_LIBRARY_PATH / ld.so cache.
 # Static linking ships all renderer code inside the executable so you always run what you compiled.
 if(UNIX AND NOT APPLE)
@@ -86,6 +93,9 @@ endif()
 
 if(TARGET libzstd_static)
     target_link_libraries(${PROJECT_NAME} PUBLIC libzstd_static)
+    target_include_directories(${PROJECT_NAME} PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/../External/zstd/lib
+    )
 else()
     target_link_libraries(${PROJECT_NAME} PUBLIC zstd)
 endif()
@@ -100,11 +110,11 @@ if(TARGET enet)
 endif()
 
 # mbedTLS (Encryption)
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../External/mbedtls/include)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../External/mbedtls/include")
     target_link_libraries(${PROJECT_NAME} PUBLIC mbedtls mbedcrypto mbedx509)
     target_compile_definitions(${PROJECT_NAME} PUBLIC CQ_ENCRYPTION_ENABLED)
     target_include_directories(${PROJECT_NAME} PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/../External/mbedtls/include
+        "${CMAKE_CURRENT_SOURCE_DIR}/../External/mbedtls/include"
     )
 endif()
 
@@ -134,6 +144,7 @@ endif()
 # Platform specific
 if(WIN32)
     target_compile_definitions(${PROJECT_NAME} PUBLIC CQ_PLATFORM_WINDOWS)
+    target_link_libraries(${PROJECT_NAME} PUBLIC ws2_32 winmm)
 else()
     target_link_libraries(${PROJECT_NAME} PUBLIC dl)
 endif()

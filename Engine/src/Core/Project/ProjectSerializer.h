@@ -4,7 +4,7 @@
 
 namespace Conqueror {
 
-    class ProjectSerializer
+    class CQ_API ProjectSerializer
     {
     public:
         ProjectSerializer(Ref<Project> project);

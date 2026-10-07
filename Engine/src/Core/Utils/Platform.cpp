@@ -14,8 +14,52 @@
     #include <limits.h>
     #include <cstring>
 #elif defined(CQ_PLATFORM_WINDOWS)
+    #ifndef WIN32_LEAN_AND_MEAN
+        #define WIN32_LEAN_AND_MEAN
+    #endif
+    #ifndef NOMINMAX
+        #define NOMINMAX
+    #endif
     #include <windows.h>
     #include <shlobj.h>
+    #include <lmcons.h>
+    // windows.h makroları (GetComputerName, GetUserName, ...) Conqueror::Platform üyeleriyle çakışır
+    #ifdef GetComputerName
+        #undef GetComputerName
+    #endif
+    #ifdef GetUserName
+        #undef GetUserName
+    #endif
+    #ifdef SetEnvironmentVariable
+        #undef SetEnvironmentVariable
+    #endif
+    #ifdef GetEnvironmentVariable
+        #undef GetEnvironmentVariable
+    #endif
+    #ifdef GetCurrentDirectory
+        #undef GetCurrentDirectory
+    #endif
+    #ifdef SetCurrentDirectory
+        #undef SetCurrentDirectory
+    #endif
+    #ifdef GetTempPath
+        #undef GetTempPath
+    #endif
+    #ifdef GetTickCount
+        #undef GetTickCount
+    #endif
+    #ifdef Sleep
+        #undef Sleep
+    #endif
+    #ifdef DebugBreak
+        #undef DebugBreak
+    #endif
+    #ifdef MessageBox
+        #undef MessageBox
+    #endif
+    #ifdef ShowMessageBox
+        #undef ShowMessageBox
+    #endif
 #endif
 
 namespace Conqueror
@@ -81,7 +125,7 @@ namespace Conqueror
 #elif defined(CQ_PLATFORM_WINDOWS)
             char computerName[MAX_COMPUTERNAME_LENGTH + 1];
             DWORD size = sizeof(computerName);
-            if (GetComputerNameA(computerName, &size))
+            if (::GetComputerNameA(computerName, &size))
                 return std::string(computerName);
 #endif
             return "Unknown";
@@ -96,7 +140,7 @@ namespace Conqueror
 #elif defined(CQ_PLATFORM_WINDOWS)
             char username[UNLEN + 1];
             DWORD size = sizeof(username);
-            if (GetUserNameA(username, &size))
+            if (::GetUserNameA(username, &size))
                 return std::string(username);
 #endif
             return "Unknown";

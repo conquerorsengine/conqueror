@@ -48,7 +48,8 @@ namespace Conqueror::Math
         static float Gaussian(float mean, float stddev);
 
     private:
-        static thread_local std::mt19937 s_RandomEngine;
-        static thread_local std::uniform_real_distribution<float> s_Distribution;
+        // MSVC: thread_local üyeler dll-export edilemez (C2492), fonksiyon-içi thread_local ile davranış korunur
+        static std::mt19937& GetEngine();
+        static std::uniform_real_distribution<float>& GetDistribution();
     };
 }

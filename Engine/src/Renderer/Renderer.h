@@ -1,12 +1,13 @@
 #pragma once
 
+#include "Core/Base/Base.h"
 #include "RHI/RenderCommand.h"
 #include "RHI/RendererAPI.h"
 #include "Core/Debug/RendererStats.h"
 
 namespace Conqueror
 {
-    class Renderer
+    class CQ_API Renderer
     {
     public:
         static void Init();

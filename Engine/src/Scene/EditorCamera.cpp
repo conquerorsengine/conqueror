@@ -127,6 +127,17 @@ namespace Conqueror
             }
         }
 
+        // Scroll zoom: poll yoluyla okunur (ImGui'nin event yutmasından bağımsız).
+        // Event yolu (OnMouseScroll) bilerek boştur, çift uygulamamak için.
+        float scrollDelta = Input::GetMouseScrollDelta();
+        if (scrollDelta != 0.0f)
+        {
+            if (m_CameraMode == EditorCameraMode::Orthographic2D)
+                MouseZoom2D(-scrollDelta * 0.1f);
+            else
+                MouseZoom(scrollDelta * 0.1f);
+        }
+
         UpdateView();
     }
 
@@ -136,14 +147,10 @@ namespace Conqueror
         dispatcher.Dispatch<MouseScrolledEvent>(CQ_BIND_EVENT_FN(EditorCamera::OnMouseScroll));
     }
 
-    bool EditorCamera::OnMouseScroll(MouseScrolledEvent& e)
+    bool EditorCamera::OnMouseScroll([[maybe_unused]] MouseScrolledEvent& e)
     {
-        float delta = e.GetYOffset() * 0.1f;
-        if (m_CameraMode == EditorCameraMode::Orthographic2D)
-            MouseZoom2D(-delta);
-        else
-            MouseZoom(delta);
-        UpdateView();
+        // Bilerek boş: scroll, OnUpdate içinde poll yoluyla uygulanır.
+        // Event yolu da açık kalsa çift zoom olurdu (ImGui yutmadığında).
         return false;
     }
 

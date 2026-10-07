@@ -3,17 +3,26 @@
 
 namespace Conqueror::Math
 {
-    thread_local std::mt19937 Random::s_RandomEngine(std::random_device{}());
-    thread_local std::uniform_real_distribution<float> Random::s_Distribution(0.0f, 1.0f);
+    std::mt19937& Random::GetEngine()
+    {
+        thread_local std::mt19937 engine(std::random_device{}());
+        return engine;
+    }
+
+    std::uniform_real_distribution<float>& Random::GetDistribution()
+    {
+        thread_local std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+        return dist;
+    }
 
     void Random::SetSeed(uint32_t seed)
     {
-        s_RandomEngine.seed(seed);
+        GetEngine().seed(seed);
     }
 
     float Random::Float()
     {
-        return s_Distribution(s_RandomEngine);
+        return GetDistribution()(GetEngine());
     }
 
     float Random::Float(float min, float max)

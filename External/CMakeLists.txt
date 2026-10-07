@@ -22,13 +22,30 @@ add_subdirectory(glm)
 add_subdirectory(spdlog)
 
 # ImGui
-add_library(imgui STATIC
-    imgui/imgui.cpp
-    imgui/imgui_demo.cpp
-    imgui/imgui_draw.cpp
-    imgui/imgui_tables.cpp
-    imgui/imgui_widgets.cpp
-)
+# Windows'ta Engine.dll + exe aynı ImGui context'ini (GImGui) paylaşmalı;
+# yoksa exe'deki statik kopyanın context'i NULL kalır ve ilk SetNextWindow*'da AV verir.
+# Bu yüzden Windows'ta imgui paylaşılan DLL, Linux'ta eskisi gibi statik.
+if(WIN32)
+    add_library(imgui SHARED
+        imgui/imgui.cpp
+        imgui/imgui_demo.cpp
+        imgui/imgui_draw.cpp
+        imgui/imgui_tables.cpp
+        imgui/imgui_widgets.cpp
+    )
+    # NOT: target_compile_definitions parantezli değeri VS vcxproj'da bölüyor;
+    # /D bayrağı compile_options ile verbatim geçilir.
+    target_compile_options(imgui PRIVATE "/DIMGUI_API=__declspec(dllexport)")
+    target_compile_options(imgui INTERFACE "/DIMGUI_API=__declspec(dllimport)")
+else()
+    add_library(imgui STATIC
+        imgui/imgui.cpp
+        imgui/imgui_demo.cpp
+        imgui/imgui_draw.cpp
+        imgui/imgui_tables.cpp
+        imgui/imgui_widgets.cpp
+    )
+endif()
 target_include_directories(imgui PUBLIC imgui)
 
 # ImNodes
@@ -56,9 +73,21 @@ add_subdirectory(yaml-cpp)
 add_subdirectory(entt)
 
 # ImGuizmo
-add_library(imguizmo STATIC
-    ImGuizmo/ImGuizmo.cpp
-)
+# ImGuizmo.h eskiden kendi API'si için IMGUI_API makrosunu yeniden kullanıyordu;
+# imgui paylaşılan DLL olunca bu makro dllimport'a dönüşüp statik imguizmo
+# linkini bozuyordu. ImGuizmo.h artık IMGUZMO_API kullanıyor, Windows'ta
+# imguizmo da paylaşılan DLL yapılır (tek state, tek context).
+if(WIN32)
+    add_library(imguizmo SHARED
+        ImGuizmo/ImGuizmo.cpp
+    )
+    target_compile_options(imguizmo PRIVATE "/DIMGUZMO_API=__declspec(dllexport)")
+    target_compile_options(imguizmo INTERFACE "/DIMGUZMO_API=__declspec(dllimport)")
+else()
+    add_library(imguizmo STATIC
+        ImGuizmo/ImGuizmo.cpp
+    )
+endif()
 target_include_directories(imguizmo PUBLIC ImGuizmo)
 target_link_libraries(imguizmo PUBLIC imgui)
 
@@ -74,9 +103,34 @@ set(FT_DISABLE_BZIP2 ON CACHE BOOL "" FORCE)
 set(FT_DISABLE_PNG ON CACHE BOOL "" FORCE)
 set(FT_DISABLE_HARFBUZZ ON CACHE BOOL "" FORCE)
 set(FT_DISABLE_BROTLI ON CACHE BOOL "" FORCE)
+# FreeType FT_DISABLE_ZLIB ile kendi gömülü zlib'siz derlenir;
+# önceki cache'den kalma ZLIB_* freetype'i bozmasın diye burada temizle
+unset(ZLIB_FOUND CACHE)
+unset(ZLIB_FOUND)
+unset(ZLIB_INCLUDE_DIR CACHE)
+unset(ZLIB_INCLUDE_DIRS CACHE)
+unset(ZLIB_LIBRARY CACHE)
+unset(ZLIB_LIBRARIES CACHE)
 add_subdirectory(freetype)
 
-# Assimp
+# zlib — External'deki hali kullanılacak (Windows'ta sistem zlib yok, Assimp de bunu kullanır)
+# FreeType FT_DISABLE_ZLIB ile derlendiği için ZLIB beklemez; Assimp için ZLIB_* burada verilir.
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib/CMakeLists.txt")
+    set(ZLIB_BUILD_TESTING OFF CACHE BOOL "" FORCE)
+    set(ZLIB_BUILD_SHARED ON CACHE BOOL "" FORCE)
+    set(ZLIB_BUILD_STATIC ON CACHE BOOL "" FORCE)
+    set(ZLIB_INSTALL OFF CACHE BOOL "" FORCE)
+    add_subdirectory(zlib)
+else()
+    message(WARNING "zlib not found in External/zlib")
+endif()
+
+# Assimp (External/zlib'i kullanır)
+set(ZLIB_FOUND TRUE)
+set(ZLIB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/zlib;${CMAKE_CURRENT_BINARY_DIR}/zlib")
+set(ZLIB_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/zlib;${CMAKE_CURRENT_BINARY_DIR}/zlib")
+set(ZLIB_LIBRARY zlibstatic)
+set(ZLIB_LIBRARIES zlibstatic)
 set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
@@ -106,16 +160,33 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/JoltPhysics/Build/CMakeLists.txt)
     set(TARGET_PERFORMANCE_TEST OFF CACHE BOOL "" FORCE)
     set(TARGET_SAMPLES OFF CACHE BOOL "" FORCE)
     set(TARGET_VIEWER OFF CACHE BOOL "" FORCE)
+    # Projenin geri kalanı /MD (dinamik CRT) kullanır; Jolt varsayılan /MT ile LNK2038 verir
+    set(USE_STATIC_MSVC_RUNTIME_LIBRARY OFF CACHE BOOL "" FORCE)
     add_subdirectory(JoltPhysics/Build)
 else()
     message(WARNING "JoltPhysics not found in External/JoltPhysics - 3D physics will not be available")
 endif()
 
 # zstd
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/zstd/build/cmake/CMakeLists.txt)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zstd/build/cmake/CMakeLists.txt")
     set(ZSTD_BUILD_PROGRAMS OFF CACHE BOOL "" FORCE)
     set(ZSTD_BUILD_TESTS OFF CACHE BOOL "" FORCE)
     add_subdirectory(zstd/build/cmake)
+elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zstd/lib/zstd.h")
+    # build/cmake altmodülü eksikse External/zstd/lib kaynaklarından minimal statik lib kur
+    # (Windows'ta sistem zstd yok, kaldırmadan devam etmek için)
+    file(GLOB ZSTD_COMMON_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/zstd/lib/common/*.c")
+    file(GLOB ZSTD_COMPRESS_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/zstd/lib/compress/*.c")
+    file(GLOB ZSTD_DECOMPRESS_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/zstd/lib/decompress/*.c")
+    file(GLOB ZSTD_DICT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/zstd/lib/dictBuilder/*.c")
+    add_library(libzstd_static STATIC
+        ${ZSTD_COMMON_SOURCES}
+        ${ZSTD_COMPRESS_SOURCES}
+        ${ZSTD_DECOMPRESS_SOURCES}
+        ${ZSTD_DICT_SOURCES}
+    )
+    target_include_directories(libzstd_static PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/zstd/lib")
+    message(STATUS "zstd build/cmake missing - using External/zstd/lib fallback (libzstd_static)")
 else()
     message(WARNING "zstd not found - using system zstd")
 endif()
@@ -128,14 +199,16 @@ else()
 endif()
 
 # mbedTLS (Encryption)
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/mbedtls/CMakeLists.txt)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/mbedtls/CMakeLists.txt")
     set(ENABLE_TESTING OFF CACHE BOOL "" FORCE)
     set(ENABLE_PROGRAMS OFF CACHE BOOL "" FORCE)
     
     # GCC 15 support: Disable false positive warnings on unterminated strings & zero-init union warnings
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unterminated-string-initialization -fzero-init-padding-bits=unions")
+    if(NOT MSVC)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unterminated-string-initialization -fzero-init-padding-bits=unions")
+    endif()
     
-    add_subdirectory(mbedtls)
+    add_subdirectory("mbedtls")
 else()
     message(WARNING "mbedTLS not found in External/mbedtls - Encryption will not be available")
 endif()

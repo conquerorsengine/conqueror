@@ -6,6 +6,33 @@
 #include <functional>
 #include <filesystem>
 
+// windows.h önce include edildiyse makrolar (DeleteFile->DeleteFileA vb.) buradaki
+// bildirimleri bozar; header her durumda makro-dirençli olsun
+#ifdef DeleteFile
+    #undef DeleteFile
+#endif
+#ifdef CopyFile
+    #undef CopyFile
+#endif
+#ifdef MoveFile
+    #undef MoveFile
+#endif
+#ifdef CreateDirectory
+    #undef CreateDirectory
+#endif
+#ifdef RemoveDirectory
+    #undef RemoveDirectory
+#endif
+#ifdef GetCurrentDirectory
+    #undef GetCurrentDirectory
+#endif
+#ifdef SetCurrentDirectory
+    #undef SetCurrentDirectory
+#endif
+#ifdef GetTempPath
+    #undef GetTempPath
+#endif
+
 namespace Conqueror
 {
     namespace FileSystem

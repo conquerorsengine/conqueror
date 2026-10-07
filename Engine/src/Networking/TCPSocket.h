@@ -7,7 +7,7 @@
 
 namespace Conqueror
 {
-    /// Simple blocking TCP socket wrapper using POSIX sockets.
+    /// Simple blocking TCP socket wrapper (POSIX + Windows/Winsock).
     /// Used for lobby, chat, file transfer — NOT for real-time gameplay.
     class TCPSocket
     {

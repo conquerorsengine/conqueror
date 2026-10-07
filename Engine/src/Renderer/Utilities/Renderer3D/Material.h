@@ -137,7 +137,7 @@ namespace Conqueror
     };
 
     // ── Material sınıfı ────────────────────────────────────────────────
-    class Material
+    class CQ_API Material
     {
     public:
         Material();

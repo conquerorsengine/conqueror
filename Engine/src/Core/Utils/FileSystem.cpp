@@ -5,9 +5,40 @@
 #include <sstream>
 
 #ifdef _WIN32
+    #ifndef WIN32_LEAN_AND_MEAN
+        #define WIN32_LEAN_AND_MEAN
+    #endif
+    #ifndef NOMINMAX
+        #define NOMINMAX
+    #endif
     #include <windows.h>
     #include <direct.h>
     #define getcwd _getcwd
+    // windows.h makroları FileSystem üyeleriyle çakışır (DeleteFile->DeleteFileA vb.)
+    #ifdef DeleteFile
+        #undef DeleteFile
+    #endif
+    #ifdef CopyFile
+        #undef CopyFile
+    #endif
+    #ifdef MoveFile
+        #undef MoveFile
+    #endif
+    #ifdef CreateDirectory
+        #undef CreateDirectory
+    #endif
+    #ifdef RemoveDirectory
+        #undef RemoveDirectory
+    #endif
+    #ifdef GetCurrentDirectory
+        #undef GetCurrentDirectory
+    #endif
+    #ifdef SetCurrentDirectory
+        #undef SetCurrentDirectory
+    #endif
+    #ifdef GetTempPath
+        #undef GetTempPath
+    #endif
 #else
     #include <unistd.h>
     #include <limits.h>

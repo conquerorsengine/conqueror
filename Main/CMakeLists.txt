@@ -24,9 +24,9 @@ if(UNIX AND NOT APPLE)
         INSTALL_RPATH "$ORIGIN/../lib")
 endif()
 
-# Set runtime library to MultiThreadedDebugDLL for Debug
+# Set runtime library to dynamic (/MD) for all configs
 set_target_properties(${PROJECT_NAME} PROPERTIES
-    MSVC_RUNTIME_LIBRARY "MultiThreadedDebug$<$<CONFIG:Debug>:DLL>"
+    MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
 )
 
 # Set as startup project in Visual Studio

@@ -496,7 +496,7 @@ namespace Conqueror
                 out << YAML::BeginMap;
                 out << YAML::Key << "ModuleName" << YAML::Value << script.ModuleName;
                 out << YAML::Key << "ClassName" << YAML::Value << script.ClassName;
-                out << YAML::Key << "ScriptPath" << YAML::Value << script.ScriptPath;
+                out << YAML::Key << "ScriptPath" << YAML::Value << ToSerializablePath(script.ScriptPath);
                 out << YAML::EndMap;
             }
         }
@@ -509,7 +509,7 @@ namespace Conqueror
                 std::string keyName = script.ClassName.empty() ? "ConquerorScriptComponent" : script.ClassName + "_ConquerorScriptComponent";
                 out << YAML::Key << keyName;
                 out << YAML::BeginMap;
-                out << YAML::Key << "ScriptPath" << YAML::Value << script.ScriptPath;
+                out << YAML::Key << "ScriptPath" << YAML::Value << ToSerializablePath(script.ScriptPath);
                 out << YAML::Key << "ClassName" << YAML::Value << script.ClassName;
                 out << YAML::EndMap;
             }
@@ -1922,10 +1922,14 @@ namespace Conqueror
             if (environment["SkyboxPath"])
             {
                 std::string skyboxPath = ResolveSerializablePath(environment["SkyboxPath"].as<std::string>());
-                if (!skyboxPath.empty())
+                if (!skyboxPath.empty() && std::filesystem::exists(skyboxPath))
                 {
                     auto skybox = Cubemap::CreateFromEquirectangular(skyboxPath, 512);
                     m_Scene->SetSkybox(skybox);
+                }
+                else if (!skyboxPath.empty())
+                {
+                    CQ_CORE_WARN("SceneSerializer: Skybox file not found, skipping: {0}", skyboxPath);
                 }
             }
             if (environment["SkyboxExposure"])

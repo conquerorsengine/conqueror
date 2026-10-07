@@ -98,6 +98,9 @@ namespace Conqueror
         static float GetMouseX();
         static float GetMouseY();
         static float GetMouseScrollDelta();
+        // GLFW scroll callback'i buraya biriktirir; Input::Update frame başında
+        // kopyalayıp sıfırlar. Böylece scroll, ImGui event yutmasından bağımsız okunur.
+        static void AddMouseScrollDelta(float delta);
         
         // Gamepad support
         static bool IsGamepadConnected(int gamepadID = 0);
@@ -193,6 +196,7 @@ namespace Conqueror
         static glm::vec2 s_MousePosition;
         static glm::vec2 s_PreviousMousePosition;
         static float s_MouseScrollDelta;
+        static float s_MouseScrollAccumulator;
         
         // Gamepad state
         struct GamepadState

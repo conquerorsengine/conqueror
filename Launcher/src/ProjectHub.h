@@ -1,9 +1,12 @@
 #pragma once
 
+#include "Renderer/RHI/Texture.h"
+
 #include <string>
 #include <vector>
 #include <filesystem>
 #include <functional>
+#include <memory>
 
 namespace Conqueror::Editor
 {
@@ -91,12 +94,13 @@ namespace Conqueror::Editor
         // Launch command (post-shutdown)
         std::string m_LaunchCommand;
 
-        // Logo texture
-        uint32_t m_LogoTexture = 0;
+        // Logo texture (Engine'in Texture2D'si kullanılır — exe'deki glad
+        // pointer'ları yüklenmediği için burada ham GL çağrısı yapılmaz)
+        std::shared_ptr<Texture2D> m_LogoTexture;
 
         // Template textures
-        uint32_t m_3DTemplateTexture = 0;
-        uint32_t m_2DTemplateTexture = 0;
-        uint32_t m_EmptyTemplateTexture = 0;
+        std::shared_ptr<Texture2D> m_3DTemplateTexture;
+        std::shared_ptr<Texture2D> m_2DTemplateTexture;
+        std::shared_ptr<Texture2D> m_EmptyTemplateTexture;
     };
 }

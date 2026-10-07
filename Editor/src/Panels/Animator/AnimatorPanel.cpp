@@ -1337,7 +1337,7 @@ namespace Conqueror::Editor
 
                         s_Nodes.erase(
                             std::remove_if(s_Nodes.begin(), s_Nodes.end(),
-                                [rightClickNodeID](const AnimGraphNode& n) { return n.ID == rightClickNodeID; }),
+                                [=](const AnimGraphNode& n) { return n.ID == rightClickNodeID; }),
                             s_Nodes.end());
                         m_SelectedNodeID = -1;
                         m_SelectedStateName.clear();

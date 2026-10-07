@@ -6,8 +6,12 @@ namespace Conqueror::DateUtils
 {
     static std::tm GetTM(double ms) {
         time_t sec = static_cast<time_t>(ms / 1000.0);
-        std::tm tm_val;
+        std::tm tm_val{};
+#ifdef _WIN32
+        localtime_s(&tm_val, &sec);
+#else
         localtime_r(&sec, &tm_val);
+#endif
         return tm_val;
     }
 

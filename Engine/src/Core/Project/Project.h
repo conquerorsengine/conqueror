@@ -23,7 +23,7 @@ namespace Conqueror {
         std::string ScriptModulePath;
     };
 
-    class Project
+    class CQ_API Project
     {
     public:
         Project();
