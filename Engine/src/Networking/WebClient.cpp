@@ -7,6 +7,16 @@
 #include <vector>
 #include <sstream>
 
+// Windows uyumluluğu (Linux kodu aynen durur): MSVC CRT'de popen/pclose yoktur,
+// _popen/_pclose aynı imzayla vardır.
+#ifdef _WIN32
+#define CQ_POPEN(cmd, mode) _popen(cmd, mode)
+#define CQ_PCLOSE(stream) _pclose(stream)
+#else
+#define CQ_POPEN(cmd, mode) popen(cmd, mode)
+#define CQ_PCLOSE(stream) pclose(stream)
+#endif
+
 
 namespace Conqueror::Networking {
 
@@ -211,7 +221,7 @@ namespace Conqueror::Networking {
 
         cmd += " '" + url + "'";
 
-        FILE* pipe = popen(cmd.c_str(), "r");
+        FILE* pipe = CQ_POPEN(cmd.c_str(), "r");
         if (!pipe)
         {
             response.Body = "Failed to run curl binary";
@@ -224,7 +234,7 @@ namespace Conqueror::Networking {
         {
             rawOutput += buffer;
         }
-        pclose(pipe);
+        CQ_PCLOSE(pipe);
 
         // Extract HTTP status code from the last line (added by -w "\n%{http_code}")
         size_t lastNewline = rawOutput.rfind('\n');
@@ -283,7 +293,7 @@ namespace Conqueror::Networking {
 
         cmd += " '" + url + "'";
 
-        FILE* pipe = popen(cmd.c_str(), "r");
+        FILE* pipe = CQ_POPEN(cmd.c_str(), "r");
         if (!pipe)
         {
             response.Status = 0;
@@ -316,7 +326,7 @@ namespace Conqueror::Networking {
                 }
             }
         }
-        pclose(pipe);
+        CQ_PCLOSE(pipe);
 
         if (!currentLine.empty() && onLineReceived)
         {

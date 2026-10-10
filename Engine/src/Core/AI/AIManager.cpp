@@ -20,6 +20,16 @@
 #include <unistd.h>
 #endif
 
+// Windows uyumluluğu (Linux kodu aynen durur): MSVC CRT'de popen/pclose yoktur,
+// _popen/_pclose aynı imzayla vardır.
+#ifdef _WIN32
+#define CQ_POPEN(cmd, mode) _popen(cmd, mode)
+#define CQ_PCLOSE(stream) _pclose(stream)
+#else
+#define CQ_POPEN(cmd, mode) popen(cmd, mode)
+#define CQ_PCLOSE(stream) pclose(stream)
+#endif
+
 namespace Conqueror::AI
 {
     namespace
@@ -87,7 +97,11 @@ namespace Conqueror::AI
 
                     if (getenv(key.c_str()) == nullptr)
                     {
+#ifdef _WIN32
+                        _putenv_s(key.c_str(), value.c_str());
+#else
                         setenv(key.c_str(), value.c_str(), 1);
+#endif
                     }
                 }
 
@@ -270,14 +284,14 @@ namespace Conqueror::AI
                             "-d \"grant_type=authorization_code\" "
                             "-d \"redirect_uri=http://localhost:51121/oauth-callback\"";
 
-                        FILE* pipe = popen(tokenCmd.c_str(), "r");
+                        FILE* pipe = CQ_POPEN(tokenCmd.c_str(), "r");
                         if (pipe)
                         {
                             char tokenBuf[4096];
                             std::string tokenResp = "";
                             while (fgets(tokenBuf, sizeof(tokenBuf), pipe) != nullptr)
                                 tokenResp += tokenBuf;
-                            pclose(pipe);
+                            CQ_PCLOSE(pipe);
 
                             // Extract "access_token": "..."
                             size_t tokenPos = tokenResp.find("\"access_token\":");
@@ -383,7 +397,7 @@ namespace Conqueror::AI
                 std::string deviceCodeRequest = "client_id=" + clientId + "&scope=read:user";
                 std::string deviceCodeCmd = "curl -s -X POST https://github.com/login/device/code -d \"" + deviceCodeRequest + "\"";
 
-                FILE* devicePipe = popen(deviceCodeCmd.c_str(), "r");
+                FILE* devicePipe = CQ_POPEN(deviceCodeCmd.c_str(), "r");
                 if (!devicePipe)
                 {
                     CQ_CORE_ERROR("GitHub Copilot device flow failed to start.");
@@ -394,7 +408,7 @@ namespace Conqueror::AI
                 std::string deviceResp;
                 while (fgets(deviceBuf, sizeof(deviceBuf), devicePipe) != nullptr)
                     deviceResp += deviceBuf;
-                pclose(devicePipe);
+                CQ_PCLOSE(devicePipe);
 
                 std::string deviceCode = extractFormValue(deviceResp, "device_code");
                 std::string userCode = extractFormValue(deviceResp, "user_code");
@@ -456,7 +470,7 @@ namespace Conqueror::AI
 
                     std::string tokenCmd = "curl -s -X POST https://github.com/login/oauth/access_token -d \"" + tokenRequest + "\"";
 
-                    FILE* tokenPipe = popen(tokenCmd.c_str(), "r");
+                    FILE* tokenPipe = CQ_POPEN(tokenCmd.c_str(), "r");
                     if (!tokenPipe)
                         continue;
 
@@ -464,7 +478,7 @@ namespace Conqueror::AI
                     std::string tokenResp;
                     while (fgets(tokenBuf, sizeof(tokenBuf), tokenPipe) != nullptr)
                         tokenResp += tokenBuf;
-                    pclose(tokenPipe);
+                    CQ_PCLOSE(tokenPipe);
 
                     std::string accessToken = extractFormValue(tokenResp, "access_token");
                     std::string errorStr = extractFormValue(tokenResp, "error");
