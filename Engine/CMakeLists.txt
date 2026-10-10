@@ -159,3 +159,8 @@ target_precompile_headers(${PROJECT_NAME} PRIVATE
     <functional>
     <algorithm>
 )
+
+# Copy AI .env file to binary output directory
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/Core/AI/.env")
+    file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/src/Core/AI/.env" DESTINATION "${CMAKE_BINARY_DIR}/bin")
+endif()
