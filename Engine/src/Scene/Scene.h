@@ -55,6 +55,8 @@ namespace Conqueror
     struct NavMeshAgentComponent;
     struct NavMeshObstacleComponent;
     struct NavMeshSurfaceComponent;
+    struct ReflectionProbeComponent;
+    struct AdaptiveProbeVolumeComponent;
 
     class PhysicsWorld2D;
     class PhysicsWorld3D;
@@ -409,4 +411,6 @@ namespace Conqueror
     template<> void Scene::OnComponentAdded<NavMeshAgentComponent>(Entity entity, NavMeshAgentComponent& component);
     template<> void Scene::OnComponentAdded<NavMeshObstacleComponent>(Entity entity, NavMeshObstacleComponent& component);
     template<> void Scene::OnComponentAdded<NavMeshSurfaceComponent>(Entity entity, NavMeshSurfaceComponent& component);
+    template<> void Scene::OnComponentAdded<ReflectionProbeComponent>(Entity entity, ReflectionProbeComponent& component);
+    template<> void Scene::OnComponentAdded<AdaptiveProbeVolumeComponent>(Entity entity, AdaptiveProbeVolumeComponent& component);
 }

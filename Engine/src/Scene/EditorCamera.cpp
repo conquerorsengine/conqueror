@@ -103,12 +103,13 @@ namespace Conqueror
 
     void EditorCamera::OnUpdate([[maybe_unused]] Timestep ts)
     {
+        const glm::vec2& mouse{ Input::GetMouseX(), Input::GetMouseY() };
+        glm::vec2 delta = (mouse - m_InitialMousePosition) * 0.003f;
+        m_InitialMousePosition = mouse;
+
+        // 1. Alt Tuşu İle Fare Kontrolü (Orbit, Pan, Zoom)
         if (Input::IsKeyPressed(Key::LeftAlt))
         {
-            const glm::vec2& mouse{ Input::GetMouseX(), Input::GetMouseY() };
-            glm::vec2 delta = (mouse - m_InitialMousePosition) * 0.003f;
-            m_InitialMousePosition = mouse;
-
             if (m_CameraMode == EditorCameraMode::Orthographic2D)
             {
                 if (Input::IsMouseButtonPressed(Mouse::ButtonMiddle))
@@ -125,6 +126,46 @@ namespace Conqueror
                 else if (Input::IsMouseButtonPressed(Mouse::ButtonRight))
                     MouseZoom(delta.y);
             }
+        }
+        // 2. Sağ Tık Serbest Serbest Bakış (Unreal / Unity Stili RMB Rotate)
+        else if (Input::IsMouseButtonPressed(Mouse::ButtonRight))
+        {
+            if (m_CameraMode == EditorCameraMode::Perspective3D)
+                MouseRotate(delta);
+            else
+                MousePan2D(delta);
+        }
+
+        // 3. WASD + QE Kamera Gezinmesi (W: İleri, S: Geri, A: Sol, D: Sağ, E: Yukarı, Q: Aşağı)
+        float moveSpeed = 12.0f;
+        if (m_CameraMode == EditorCameraMode::Orthographic2D)
+            moveSpeed = m_OrthographicSize * 2.0f;
+
+        if (Input::IsKeyPressed(Key::LeftShift))
+            moveSpeed *= 2.5f;
+
+        glm::vec3 moveDir(0.0f);
+        if (m_CameraMode == EditorCameraMode::Perspective3D)
+        {
+            if (Input::IsKeyPressed(Key::W)) moveDir += GetForwardDirection();
+            if (Input::IsKeyPressed(Key::S)) moveDir -= GetForwardDirection();
+            if (Input::IsKeyPressed(Key::A)) moveDir -= GetRightDirection();
+            if (Input::IsKeyPressed(Key::D)) moveDir += GetRightDirection();
+            if (Input::IsKeyPressed(Key::E)) moveDir += GetUpDirection();
+            if (Input::IsKeyPressed(Key::Q)) moveDir -= GetUpDirection();
+        }
+        else // Orthographic2D
+        {
+            if (Input::IsKeyPressed(Key::W)) moveDir.y += 1.0f;
+            if (Input::IsKeyPressed(Key::S)) moveDir.y -= 1.0f;
+            if (Input::IsKeyPressed(Key::A)) moveDir.x -= 1.0f;
+            if (Input::IsKeyPressed(Key::D)) moveDir.x += 1.0f;
+        }
+
+        if (glm::length(moveDir) > 0.001f)
+        {
+            moveDir = glm::normalize(moveDir);
+            m_FocalPoint += moveDir * moveSpeed * (float)ts;
         }
 
         // Scroll zoom: poll yoluyla okunur (ImGui'nin event yutmasından bağımsız).

@@ -315,10 +315,63 @@ namespace Conqueror::CQS
 
             // String literal
             case '"': return ScanString();
+            case '\'': return ScanSingleQuoteString();
 
             default:
+                if ((static_cast<unsigned char>(c) & 0x80) != 0)
+                {
+                    // Skip remaining UTF-8 continuation bytes if any
+                    while (!IsAtEnd() && (static_cast<unsigned char>(Peek()) & 0xC0) == 0x80)
+                    {
+                        Advance();
+                    }
+                    return ScanToken();
+                }
                 return ErrorToken("Unexpected character '" + std::string(1, c) + "'");
         }
+    }
+
+    // ── Single Quote String / Char Literal ──
+    Token CQSLexer::ScanSingleQuoteString()
+    {
+        std::string result = "";
+        while (!IsAtEnd() && Peek() != '\'')
+        {
+            char c = Peek();
+            if (c == '\n')
+            {
+                m_Line++;
+                m_Column = 0;
+            }
+            
+            if (c == '\\')
+            {
+                Advance(); // Skip '\'
+                if (IsAtEnd()) return ErrorToken("Unterminated string after escape");
+                char escape = Peek();
+                switch (escape) {
+                    case 'n': result += '\n'; break;
+                    case 't': result += '\t'; break;
+                    case 'r': result += '\r'; break;
+                    case '\\': result += '\\'; break;
+                    case '\'': result += '\''; break;
+                    default: result += escape; break;
+                }
+            }
+            else
+            {
+                result += c;
+            }
+            Advance();
+        }
+
+        if (IsAtEnd())
+        {
+            return ErrorToken("Unterminated string");
+        }
+
+        Advance(); // Closing '\''
+        return Token(TokenType::StringLiteral, result, m_Line, m_Column);
     }
 
     // ── String Literal ──

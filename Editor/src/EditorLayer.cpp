@@ -3,6 +3,7 @@
 #include "Core/Input/Input.h"
 #include "Core/KeyCodes.h"
 #include "Core/Serialization/SceneSerializer.h"
+#include "Core/AI/AIManager.h"
 
 #include <imnodes.h>
 #include "Core/Logging/Log.h"
@@ -161,6 +162,9 @@ namespace Conqueror::Editor
 
         try
         {
+            AI::AIManager::Get().Init();
+            m_AIPanel = std::make_unique<AIPanel>();
+            m_AIPanel->SetContext(m_ActiveScene);
             m_StatsPanel = std::make_unique<StatsPanel>();
             CQ_CORE_INFO("EditorLayer: StatsPanel created");
         }
@@ -310,6 +314,8 @@ namespace Conqueror::Editor
                     if (m_AudioGraphPanel) m_AudioGraphPanel->SetContext(m_ActiveScene.get());
                     if (m_AnimatorPanel) m_AnimatorPanel->SetContext(m_ActiveScene.get());
                     if (m_ShaderEditorPanel) m_ShaderEditorPanel->SetContext(m_ActiveScene.get());
+                    if (m_AIPanel) m_AIPanel->SetContext(m_ActiveScene);
+                    if (m_AIPanel) m_AIPanel->SetContext(m_ActiveScene);
                                     if (m_ContentBrowserPanel) m_ContentBrowserPanel->RefreshContext();
                                 }
                                 else
@@ -339,12 +345,15 @@ namespace Conqueror::Editor
 
     void EditorLayer::OnDetach()
     {
+        AI::AIManager::Get().Shutdown();
         ImNodes::DestroyContext();
         DebugDraw::Shutdown();
     }
 
     void EditorLayer::OnUpdate(Timestep ts)
     {
+        AI::AIManager::Get().Update();
+
         auto& editorState = EditorState::Get();
         
         // FPS hesapla
@@ -488,6 +497,8 @@ namespace Conqueror::Editor
                     if (m_AudioGraphPanel) m_AudioGraphPanel->SetContext(m_ActiveScene.get());
                                     if (m_AnimatorPanel) m_AnimatorPanel->SetContext(m_ActiveScene.get());
                     if (m_ShaderEditorPanel) m_ShaderEditorPanel->SetContext(m_ActiveScene.get());
+                    if (m_AIPanel) m_AIPanel->SetContext(m_ActiveScene);
+                    if (m_AIPanel) m_AIPanel->SetContext(m_ActiveScene);
                     if (m_ContentBrowserPanel) m_ContentBrowserPanel->RefreshContext();
 
                     CQ_CORE_INFO("New project created at: {0}", projectPath.string());
@@ -588,6 +599,7 @@ namespace Conqueror::Editor
                 ImGui::DockBuilderDockWindow("Inspector", dock_id_right);
                 ImGui::DockBuilderDockWindow("Lighting", dock_id_right);
                 ImGui::DockBuilderDockWindow("Project Settings", dock_id_right);
+                ImGui::DockBuilderDockWindow("AI Assistant", dock_id_right);
                 ImGui::DockBuilderDockWindow("Content Browser", dock_id_down);
                 ImGui::DockBuilderDockWindow("Console", dock_id_down);
                 ImGui::DockBuilderDockWindow("Viewport", dockspace_id);
@@ -614,6 +626,19 @@ namespace Conqueror::Editor
             WindowMenu();
             HelpMenu();
             BuildMenu();
+
+            float buttonWidth = 50.0f;
+            float rightX = ImGui::GetWindowWidth() - buttonWidth - 10.0f;
+            if (rightX > ImGui::GetCursorPosX())
+            {
+                ImGui::SameLine(rightX);
+            }
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.5f, 0.8f, 0.9f));
+            if (ImGui::Button(" AI ", ImVec2(buttonWidth, 0)))
+            {
+                m_ShowAIPanel = !m_ShowAIPanel;
+            }
+            ImGui::PopStyleColor();
 
             ImGui::EndMenuBar();
         }
@@ -709,6 +734,12 @@ namespace Conqueror::Editor
             m_CodeEditorPanel->OnImGuiRender();
         }
 
+        if (m_ShowAIPanel && m_AIPanel)
+        {
+            m_AIPanel->SetContext(m_ActiveScene);
+            m_AIPanel->OnImGuiRender(&m_ShowAIPanel);
+        }
+
         if (m_ShowNavigation)
         {
             ImGui::Begin("Navigation", &m_ShowNavigation);
@@ -773,6 +804,8 @@ namespace Conqueror::Editor
                 m_AudioGraphPanel->SetContext(m_ActiveScene.get());
             if (m_ShaderEditorPanel)
                 m_ShaderEditorPanel->SetContext(m_ActiveScene.get());
+            if (m_AIPanel)
+                m_AIPanel->SetContext(m_ActiveScene);
             
             editorState.SetSceneState(SceneState::Play);
         }
@@ -838,6 +871,8 @@ namespace Conqueror::Editor
                 m_AudioGraphPanel->SetContext(m_ActiveScene.get());
             if (m_ShaderEditorPanel)
                 m_ShaderEditorPanel->SetContext(m_ActiveScene.get());
+            if (m_AIPanel)
+                m_AIPanel->SetContext(m_ActiveScene);
             
             // Seçili entity'yi UUID ile yeniden bul
             if (selectedUUID != 0 && m_InspectorPanel)
@@ -1091,6 +1126,7 @@ namespace Conqueror::Editor
             ImGui::MenuItem("Navigation", nullptr, &m_ShowNavigation);
             if (m_CodeEditorPanel)
                 ImGui::MenuItem("Code Editor", nullptr, &m_CodeEditorPanel->GetIsOpen());
+            ImGui::MenuItem("AI Assistant", nullptr, &m_ShowAIPanel);
             ImGui::MenuItem("Stats", nullptr, &m_ShowStats);
             ImGui::MenuItem("Game", nullptr, &m_ShowGame);
             ImGui::MenuItem("Viewport", nullptr, &m_ShowViewport);
@@ -1272,6 +1308,8 @@ namespace Conqueror::Editor
                 m_AnimatorPanel->SetContext(m_ActiveScene.get());
             if (m_ShaderEditorPanel)
                 m_ShaderEditorPanel->SetContext(m_ActiveScene.get());
+            if (m_AIPanel)
+                m_AIPanel->SetContext(m_ActiveScene);
         
         CQ_CORE_INFO("New scene created");
     }
@@ -1329,6 +1367,8 @@ namespace Conqueror::Editor
                 m_AnimatorPanel->SetContext(m_ActiveScene.get());
             if (m_ShaderEditorPanel)
                 m_ShaderEditorPanel->SetContext(m_ActiveScene.get());
+            if (m_AIPanel)
+                m_AIPanel->SetContext(m_ActiveScene);
                 
                 // Seçili entity'yi UUID ile yeni scene'de bul
                 if (selectedUUID != 0 && m_InspectorPanel)
@@ -1596,6 +1636,8 @@ namespace Conqueror::Editor
         if (m_AudioGraphPanel) m_AudioGraphPanel->SetContext(m_ActiveScene.get());
                                     if (m_AnimatorPanel) m_AnimatorPanel->SetContext(m_ActiveScene.get());
         if (m_ShaderEditorPanel) m_ShaderEditorPanel->SetContext(m_ActiveScene.get());
+                    if (m_AIPanel) m_AIPanel->SetContext(m_ActiveScene);
+        if (m_AIPanel) m_AIPanel->SetContext(m_ActiveScene);
     }
 
     void EditorLayer::UpdateHierarchySelection()

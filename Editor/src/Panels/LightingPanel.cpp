@@ -676,19 +676,78 @@ namespace Conqueror::Editor
             ImGui::Spacing();
 
             // Flare
-            float flareFadeSpeed = m_Context->GetFlareFadeSpeed();
-            ImGui::Text("Flare Fade Speed");
-            ImGui::SameLine(200);
-            ImGui::SetNextItemWidth(200);
-            if (ImGui::DragFloat("##FlareFadeSpeed", &flareFadeSpeed, 0.1f, 0.0f, 10.0f))
-                m_Context->SetFlareFadeSpeed(flareFadeSpeed);
+            bool flareEnabled = m_Context->IsFlareEnabled();
+            if (ImGui::Checkbox("Flare Enabled", &flareEnabled))
+                m_Context->SetFlareEnabled(flareEnabled);
 
-            float flareStrength = m_Context->GetFlareStrength();
-            ImGui::Text("Flare Strength");
-            ImGui::SameLine(200);
-            ImGui::SetNextItemWidth(200);
-            if (ImGui::SliderFloat("##FlareStrength", &flareStrength, 0.0f, 2.0f))
-                m_Context->SetFlareStrength(flareStrength);
+            if (flareEnabled)
+            {
+                float flareFadeSpeed = m_Context->GetFlareFadeSpeed();
+                ImGui::Text("Flare Fade Speed");
+                ImGui::SameLine(200);
+                ImGui::SetNextItemWidth(200);
+                if (ImGui::DragFloat("##FlareFadeSpeed", &flareFadeSpeed, 0.1f, 0.0f, 10.0f))
+                    m_Context->SetFlareFadeSpeed(flareFadeSpeed);
+
+                float flareStrength = m_Context->GetFlareStrength();
+                ImGui::Text("Flare Strength");
+                ImGui::SameLine(200);
+                ImGui::SetNextItemWidth(200);
+                if (ImGui::SliderFloat("##FlareStrength", &flareStrength, 0.0f, 5.0f))
+                    m_Context->SetFlareStrength(flareStrength);
+
+                ImGui::Spacing();
+                if (ImGui::TreeNode("Flare Elements"))
+                {
+                    int elementCount = m_Context->GetFlareElementCount();
+                    if (elementCount == 0)
+                    {
+                        if (ImGui::Button("Add Default Flare Elements"))
+                        {
+                            m_Context->SetFlareElementCount(3);
+                        }
+                    }
+                    else
+                    {
+                        if (ImGui::Button("Add Element"))
+                        {
+                            m_Context->SetFlareElementCount(elementCount + 1);
+                        }
+                        ImGui::SameLine();
+                        if (ImGui::Button("Remove Element") && elementCount > 0)
+                        {
+                            m_Context->SetFlareElementCount(elementCount - 1);
+                        }
+
+                        elementCount = m_Context->GetFlareElementCount();
+                        for (int i = 0; i < elementCount; i++)
+                        {
+                            ImGui::PushID(i);
+                            auto element = m_Context->GetFlareElement(i);
+                            std::string elemHeader = "Element " + std::to_string(i + 1);
+                            if (ImGui::TreeNode(elemHeader.c_str()))
+                            {
+                                bool changed = false;
+                                if (ImGui::ColorEdit3("Color", glm::value_ptr(element.ColorMultiplier)))
+                                    changed = true;
+                                if (ImGui::SliderFloat("Size", &element.Size, 0.01f, 0.5f))
+                                    changed = true;
+                                if (ImGui::SliderFloat("Offset", &element.Offset, -1.0f, 2.0f))
+                                    changed = true;
+                                if (ImGui::SliderFloat("Intensity", &element.Intensity, 0.0f, 2.0f))
+                                    changed = true;
+
+                                if (changed)
+                                    m_Context->SetFlareElement(i, element);
+
+                                ImGui::TreePop();
+                            }
+                            ImGui::PopID();
+                        }
+                    }
+                    ImGui::TreePop();
+                }
+            }
 
             ImGui::Spacing();
             ImGui::Separator();

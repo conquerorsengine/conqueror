@@ -30,6 +30,7 @@
 #include <glad/glad.h>
 #include <chrono>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace Conqueror
 {
@@ -891,6 +892,18 @@ namespace Conqueror
                 {
                     // Atanmış material'ı kullan
                     material = meshRenderer.MaterialInstance;
+                    {
+                        static std::unordered_set<uint32_t> loggedMatOverride;
+                        if (loggedMatOverride.find((uint32_t)entity) == loggedMatOverride.end())
+                        {
+                            auto tag = m_Registry.try_get<TagComponent>(entity);
+                            std::string eName = tag ? tag->Tag : "?";
+                            CQ_CORE_WARN("[Render] Entity '{0}' has MaterialInstance (overrides mr.Color!). mat.Albedo=({1},{2},{3}), mr.Color=({4},{5},{6},{7})",
+                                eName, material->Albedo.r, material->Albedo.g, material->Albedo.b,
+                                meshRenderer.Color.r, meshRenderer.Color.g, meshRenderer.Color.b, meshRenderer.Color.a);
+                            loggedMatOverride.insert((uint32_t)entity);
+                        }
+                    }
                 }
                 else
                 {
@@ -900,6 +913,17 @@ namespace Conqueror
                     material->Metallic = meshRenderer.Metallic;
                     material->Roughness = meshRenderer.Roughness;
                     material->AO = meshRenderer.AO;
+                    {
+                        static std::unordered_set<uint32_t> loggedFallback;
+                        if (loggedFallback.find((uint32_t)entity) == loggedFallback.end())
+                        {
+                            auto tag = m_Registry.try_get<TagComponent>(entity);
+                            std::string eName = tag ? tag->Tag : "?";
+                            CQ_CORE_INFO("[Render] Entity '{0}' using fallback material from mr.Color=({1},{2},{3},{4})",
+                                eName, meshRenderer.Color.r, meshRenderer.Color.g, meshRenderer.Color.b, meshRenderer.Color.a);
+                            loggedFallback.insert((uint32_t)entity);
+                        }
+                    }
                 }
 
                 if (meshRenderer.Texture && !material->AlbedoMap)
@@ -3437,6 +3461,16 @@ namespace Conqueror
 
     template<>
     CQ_API void Scene::OnComponentAdded<NavMeshSurfaceComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] NavMeshSurfaceComponent& component)
+    {
+    }
+
+    template<>
+    void Scene::OnComponentAdded<ReflectionProbeComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] ReflectionProbeComponent& component)
+    {
+    }
+
+    template<>
+    void Scene::OnComponentAdded<AdaptiveProbeVolumeComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] AdaptiveProbeVolumeComponent& component)
     {
     }
 

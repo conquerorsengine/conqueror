@@ -185,6 +185,8 @@ elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zstd/lib/zstd.h")
         ${ZSTD_DECOMPRESS_SOURCES}
         ${ZSTD_DICT_SOURCES}
     )
+    target_compile_definitions(libzstd_static PRIVATE ZSTD_DISABLE_ASM=1)
+    set_target_properties(libzstd_static PROPERTIES POSITION_INDEPENDENT_CODE ON)
     target_include_directories(libzstd_static PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/zstd/lib")
     message(STATUS "zstd build/cmake missing - using External/zstd/lib fallback (libzstd_static)")
 else()

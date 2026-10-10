@@ -53,6 +53,7 @@ namespace Conqueror::CQS
         // ── Scanning ──
         Token ScanToken();
         Token ScanString();
+        Token ScanSingleQuoteString();
         Token ScanInterpolatedString();
         Token ScanNumber();
         Token ScanIdentifier();

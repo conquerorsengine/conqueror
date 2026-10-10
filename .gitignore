@@ -40,3 +40,6 @@ scratch.cpp
 *.bak
 *.orig
 .kiro/
+.freebuff/
+.env
+*.env

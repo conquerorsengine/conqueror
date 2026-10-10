@@ -143,8 +143,8 @@ void main()
             }
         }
         
-        // FLARE: Yumuşak parlama (texture-based glow) - dynamic element count
-        if (u_FlareEnabled == 1 && u_HasHaloTexture == 1 && u_FlareStrength > 0.0 && u_FlareElementCount > 0)
+        // FLARE: Yumuşak parlama (texture-based or procedural glow) - dynamic element count
+        if (u_FlareEnabled == 1 && u_FlareStrength > 0.0 && u_FlareElementCount > 0)
         {
             // Ekran merkezi
             vec2 screenCenter = vec2(0.5, 0.5);
@@ -162,9 +162,13 @@ void main()
                 float flareSize = u_FlareSizes[i];
                 float flareFalloff = smoothstep(flareSize, 0.0, flareDist);
                 
-                // Texture sampling (aspect ratio düzeltmesi ile)
-                vec2 flareUV = diff / flareSize + 0.5;
-                vec3 flareColor = texture(u_HaloTexture, flareUV).rgb;
+                vec3 flareColor = vec3(1.0);
+                if (u_HasHaloTexture == 1)
+                {
+                    vec2 flareUV = diff / flareSize + 0.5;
+                    if (flareUV.x >= 0.0 && flareUV.x <= 1.0 && flareUV.y >= 0.0 && flareUV.y <= 1.0)
+                        flareColor = texture(u_HaloTexture, flareUV).rgb;
+                }
                 
                 // Color multiplier uygula
                 flareColor *= u_FlareColors[i];

@@ -84,6 +84,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     nfd
 )
 
+
 # Compression libraries
 if(TARGET zlibstatic)
     target_link_libraries(${PROJECT_NAME} PUBLIC zlibstatic)

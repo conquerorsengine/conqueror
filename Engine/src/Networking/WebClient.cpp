@@ -5,6 +5,8 @@
 #include "Core/Logging/Log.h"
 #include <unordered_map>
 #include <vector>
+#include <sstream>
+
 
 namespace Conqueror::Networking {
 
@@ -171,4 +173,158 @@ namespace Conqueror::Networking {
             s_WebSockets.erase(wsId);
         }
     }
+
+    HttpResponse WebClient::HttpsRequest(const std::string& url,
+                                          const std::string& method,
+                                          const std::string& body,
+                                          const std::unordered_map<std::string, std::string>& headers)
+    {
+        HttpResponse response;
+        response.Status = 0;
+
+        // Construct curl command
+        std::string cmd = "curl -s -w \"\\n%{http_code}\" -X " + method;
+
+        for (const auto& [key, value] : headers)
+        {
+            // Escape double quotes in header values
+            std::string val = value;
+            size_t pos = 0;
+            while ((pos = val.find('"', pos)) != std::string::npos) {
+                val.replace(pos, 1, "\\\"");
+                pos += 2;
+            }
+            cmd += " -H \"" + key + ": " + val + "\"";
+        }
+
+        if (!body.empty())
+        {
+            // Escape body for single quote bash shell passing or use temporary data
+            std::string escapedBody = body;
+            size_t pos = 0;
+            while ((pos = escapedBody.find('\'', pos)) != std::string::npos) {
+                escapedBody.replace(pos, 1, "'\\''");
+                pos += 4;
+            }
+            cmd += " -d '" + escapedBody + "'";
+        }
+
+        cmd += " '" + url + "'";
+
+        FILE* pipe = popen(cmd.c_str(), "r");
+        if (!pipe)
+        {
+            response.Body = "Failed to run curl binary";
+            return response;
+        }
+
+        char buffer[4096];
+        std::string rawOutput = "";
+        while (fgets(buffer, sizeof(buffer), pipe) != nullptr)
+        {
+            rawOutput += buffer;
+        }
+        pclose(pipe);
+
+        // Extract HTTP status code from the last line (added by -w "\n%{http_code}")
+        size_t lastNewline = rawOutput.rfind('\n');
+        if (lastNewline != std::string::npos && lastNewline + 1 < rawOutput.size())
+        {
+            std::string codeStr = rawOutput.substr(lastNewline + 1);
+            // Trim whitespace/newlines
+            codeStr.erase(codeStr.find_last_not_of(" \n\r\t") + 1);
+            try {
+                response.Status = std::stoi(codeStr);
+            } catch (...) {}
+
+            response.Body = rawOutput.substr(0, lastNewline);
+        }
+        else
+        {
+            response.Body = rawOutput;
+        }
+
+        return response;
+    }
+
+    HttpResponse WebClient::HttpsStreamRequest(const std::string& url,
+                                                 const std::string& method,
+                                                 const std::string& body,
+                                                 const std::unordered_map<std::string, std::string>& headers,
+                                                 std::function<void(const std::string& line)> onLineReceived)
+    {
+        HttpResponse response;
+        response.Status = 200;
+
+        // Use curl -N (no buffer) and -s (silent) to get real-time stream lines
+        std::string cmd = "curl -N -s -X " + method;
+
+        for (const auto& [key, value] : headers)
+        {
+            std::string val = value;
+            size_t pos = 0;
+            while ((pos = val.find('"', pos)) != std::string::npos) {
+                val.replace(pos, 1, "\\\"");
+                pos += 2;
+            }
+            cmd += " -H \"" + key + ": " + val + "\"";
+        }
+
+        if (!body.empty())
+        {
+            std::string escapedBody = body;
+            size_t pos = 0;
+            while ((pos = escapedBody.find('\'', pos)) != std::string::npos) {
+                escapedBody.replace(pos, 1, "'\\''");
+                pos += 4;
+            }
+            cmd += " -d '" + escapedBody + "'";
+        }
+
+        cmd += " '" + url + "'";
+
+        FILE* pipe = popen(cmd.c_str(), "r");
+        if (!pipe)
+        {
+            response.Status = 0;
+            response.Body = "Failed to run curl binary";
+            return response;
+        }
+
+        char buffer[1024];
+        std::string currentLine = "";
+        std::string fullBody = "";
+
+        while (fgets(buffer, sizeof(buffer), pipe) != nullptr)
+        {
+            std::string chunk(buffer);
+            fullBody += chunk;
+            currentLine += chunk;
+
+            size_t nlPos;
+            while ((nlPos = currentLine.find('\n')) != std::string::npos)
+            {
+                std::string line = currentLine.substr(0, nlPos);
+                currentLine.erase(0, nlPos + 1);
+
+                if (!line.empty() && line.back() == '\r')
+                    line.pop_back();
+
+                if (onLineReceived)
+                {
+                    onLineReceived(line);
+                }
+            }
+        }
+        pclose(pipe);
+
+        if (!currentLine.empty() && onLineReceived)
+        {
+            onLineReceived(currentLine);
+        }
+
+        response.Body = fullBody;
+        return response;
+    }
+
 }

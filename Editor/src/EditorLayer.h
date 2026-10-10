@@ -15,6 +15,7 @@
 #include "Panels/Animator/AnimatorPanel.h"
 #include "Panels/Shader/ShaderEditorPanel.h"
 #include "Panels/CodeEditorPanel.h"
+#include "Panels/AIPanel.h"
 #include "UndoRedo/UndoRedoManager.h"
 #include "Scene/Scene.h"
 
@@ -101,6 +102,7 @@ namespace Conqueror::Editor
         std::unique_ptr<AnimatorPanel> m_AnimatorPanel;
         std::unique_ptr<ShaderEditorPanel> m_ShaderEditorPanel;
         std::unique_ptr<CodeEditorPanel> m_CodeEditorPanel;
+        std::unique_ptr<AIPanel> m_AIPanel;
 
         // Panel visibility
         bool m_ShowHierarchy = true;
@@ -117,6 +119,7 @@ namespace Conqueror::Editor
         bool m_ShowShaderGraph = false;
         bool m_ShowNavigation = false;
         bool m_ShowAbout = false;
+        bool m_ShowAIPanel = false;
 
         // Scene file path
         std::filesystem::path m_CurrentScenePath;
