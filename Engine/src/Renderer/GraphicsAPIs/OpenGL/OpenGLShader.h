@@ -28,6 +28,7 @@ namespace Conqueror
         void SetMat4Array(const std::string& name, const glm::mat4* matrices, uint32_t count) override;
 
         const std::string& GetName() const override { return m_Name; }
+        bool IsValid() const override { return m_RendererID != 0; }
 
         void UploadUniformInt(const std::string& name, int value);
         void UploadUniformIntArray(const std::string& name, int* values, uint32_t count);
@@ -47,7 +48,7 @@ namespace Conqueror
         int GetLocationCached(const std::string& name) const;
 
     private:
-        uint32_t m_RendererID;
+        uint32_t m_RendererID = 0;
         std::string m_Name;
         mutable std::unordered_map<std::string, int> m_UniformLocationCache;
     };

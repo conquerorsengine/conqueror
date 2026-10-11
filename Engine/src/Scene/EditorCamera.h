@@ -20,7 +20,7 @@ namespace Conqueror
         EditorCamera() = default;
         EditorCamera(float fov, float aspectRatio, float nearClip, float farClip);
 
-        void OnUpdate(Timestep ts);
+        void OnUpdate(Timestep ts, bool allowKeyMovement = true);
         void OnEvent(Event& e);
 
         void SetCameraMode(EditorCameraMode mode);

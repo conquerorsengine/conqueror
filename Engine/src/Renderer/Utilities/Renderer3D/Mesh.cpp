@@ -144,18 +144,18 @@ namespace Conqueror
             }
         }
 
-        // Sphere indices
+        // Sphere indices (dışa doğru CCW sarım: arka yüz eleme ile uyumlu)
         for (uint32_t y = 0; y < segments; y++)
         {
             for (uint32_t x = 0; x < segments; x++)
             {
                 indices.push_back(y * (segments + 1) + x);
-                indices.push_back((y + 1) * (segments + 1) + x);
                 indices.push_back((y + 1) * (segments + 1) + x + 1);
+                indices.push_back((y + 1) * (segments + 1) + x);
 
                 indices.push_back(y * (segments + 1) + x);
-                indices.push_back((y + 1) * (segments + 1) + x + 1);
                 indices.push_back(y * (segments + 1) + x + 1);
+                indices.push_back((y + 1) * (segments + 1) + x + 1);
             }
         }
 
@@ -250,12 +250,12 @@ namespace Conqueror
             uint32_t next = (i + 1) * 2;
 
             indices.push_back(current);
-            indices.push_back(next);
             indices.push_back(current + 1);
+            indices.push_back(next);
 
             indices.push_back(current + 1);
-            indices.push_back(next);
             indices.push_back(next + 1);
+            indices.push_back(next);
         }
 
         // Üst kapak
@@ -283,8 +283,8 @@ namespace Conqueror
         for (uint32_t i = 0; i < segments; i++)
         {
             indices.push_back(topCenter);
-            indices.push_back(topCenter + 1 + i);
             indices.push_back(topCenter + 1 + i + 1);
+            indices.push_back(topCenter + 1 + i);
         }
 
         // Alt kapak
@@ -312,8 +312,8 @@ namespace Conqueror
         for (uint32_t i = 0; i < segments; i++)
         {
             indices.push_back(botCenter);
-            indices.push_back(botCenter + 1 + i + 1);
             indices.push_back(botCenter + 1 + i);
+            indices.push_back(botCenter + 1 + i + 1);
         }
 
         return std::make_shared<Mesh>(vertices, indices);

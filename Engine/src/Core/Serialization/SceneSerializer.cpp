@@ -241,6 +241,17 @@ namespace Conqueror
             out << YAML::EndMap;
         }
 
+        if (entity.HasComponent<ActiveComponent>())
+        {
+            out << YAML::Key << "ActiveComponent";
+            out << YAML::BeginMap;
+
+            auto& active = entity.GetComponent<ActiveComponent>();
+            out << YAML::Key << "Active" << YAML::Value << active.Active;
+
+            out << YAML::EndMap;
+        }
+
         if (entity.HasComponent<TransformComponent>())
         {
             out << YAML::Key << "TransformComponent";
@@ -1251,6 +1262,13 @@ namespace Conqueror
                     tag.GameTag = tagComponent["GameTag"].as<std::string>();
                     if (tagComponent["IsStatic"])
                         tag.IsStatic = tagComponent["IsStatic"].as<bool>();
+                }
+
+                auto activeComponent = entity["ActiveComponent"];
+                if (activeComponent && activeComponent["Active"])
+                {
+                    auto& ac = deserializedEntity.AddComponent<ActiveComponent>();
+                    ac.Active = activeComponent["Active"].as<bool>();
                 }
 
                 auto transformComponent = entity["TransformComponent"];

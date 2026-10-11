@@ -22,8 +22,20 @@ namespace Conqueror
     }
 
     OpenGLShader::OpenGLShader(const std::string& filepath)
+        : m_RendererID(0)
     {
         CQShaderSource cqSource = CQShaderLoader::Load(filepath);
+
+        if (cqSource.Source.empty())
+        {
+            CQ_CORE_ERROR("OpenGLShader: Empty source, skipping compile for '{0}'", filepath);
+            auto lastSlash = filepath.find_last_of("/\\");
+            lastSlash = lastSlash == std::string::npos ? 0 : lastSlash + 1;
+            auto lastDot = filepath.rfind('.');
+            auto count = lastDot == std::string::npos ? filepath.size() - lastSlash : lastDot - lastSlash;
+            m_Name = filepath.substr(lastSlash, count);
+            return;
+        }
 
         if (cqSource.Language != ShaderLanguage::GLSL)
         {
@@ -53,7 +65,8 @@ namespace Conqueror
 
     OpenGLShader::~OpenGLShader()
     {
-        glDeleteProgram(m_RendererID);
+        if (m_RendererID)
+            glDeleteProgram(m_RendererID);
     }
 
     std::string OpenGLShader::ReadFile(const std::string& filepath)
@@ -110,9 +123,15 @@ namespace Conqueror
 
     void OpenGLShader::Compile(const std::unordered_map<GLenum, std::string>& shaderSources)
     {
+        if (shaderSources.empty())
+        {
+            CQ_CORE_ERROR("OpenGLShader: No shader stages to compile (empty source)");
+            m_RendererID = 0;
+            return;
+        }
         GLuint program = glCreateProgram();
         CQ_CORE_ASSERT(shaderSources.size() <= 2, "We only support 2 shaders for now");
-        std::array<GLenum, 2> glShaderIDs;
+        std::array<GLenum, 2> glShaderIDs = { 0, 0 };
         int glShaderIDIndex = 0;
 
         for (auto& kv : shaderSources)
@@ -168,16 +187,23 @@ namespace Conqueror
             // We don't need the program anymore.
             glDeleteProgram(program);
 
-            for (auto id : glShaderIDs)
-                glDeleteShader(id);
+            for (int i = 0; i < glShaderIDIndex; ++i)
+            {
+                if (glShaderIDs[i])
+                    glDeleteShader(glShaderIDs[i]);
+            }
 
             CQ_CORE_ERROR("{0}", infoLog.data());
             CQ_CORE_ASSERT(false, "Shader link failure!");
+            m_RendererID = 0;
             return;
         }
 
-        for (auto id : glShaderIDs)
+        for (int i = 0; i < glShaderIDIndex; ++i)
         {
+            GLuint id = glShaderIDs[i];
+            if (!id)
+                continue;
             glDetachShader(program, id);
             glDeleteShader(id);
         }
@@ -185,6 +211,8 @@ namespace Conqueror
 
     void OpenGLShader::Bind() const
     {
+        if (!m_RendererID)
+            return;
         glUseProgram(m_RendererID);
     }
 

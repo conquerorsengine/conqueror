@@ -382,21 +382,12 @@ namespace Conqueror::Editor
         }
 
         // Update active scene
-        if (editorState.IsPlaying())
-        {
-            // Play modunda OnUpdateRuntime GamePanel tarafından çağrılıyor
-        }
-        else if (editorState.IsSimulating())
+        // NOT: Editör sahne render'ı yalnızca ViewportPanel::OnUpdate içinden yapılır
+        // (burada ayrıca OnUpdateEditor çağırmak sahneyi/shadow'u frame başına 2 kez
+        // çizip stats'ı bozuyordu). Play modunda OnUpdateRuntime GamePanel'dedir.
+        if (editorState.IsSimulating())
         {
             m_ActiveScene->OnUpdateSimulation(ts);
-        }
-        else
-        {
-            // Pass EditorCamera to scene for rendering
-            if (m_ViewportPanel)
-            {
-                m_ActiveScene->OnUpdateEditor(ts, m_ViewportPanel->GetEditorCamera(), m_ViewportPanel->GetViewportBounds());
-            }
         }
 
         // Update viewport
@@ -1174,7 +1165,7 @@ namespace Conqueror::Editor
             ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Conqueror's Engine").x) * 0.5f);
             ImGui::Text("Conqueror's Engine");
             ImGui::Separator();
-            ImGui::TextWrapped("Hi, I'm Fazli. I started developing Conqueror's Engine when I was 14, and now at 15 I've decided to publish it under Vertex and Heuronic companies. I hope you like it. Thank you very much <3");
+            ImGui::TextWrapped("Hi, I'm Fazli. I started developing Conqueror's Engine when I was 14, and now at 15 I've decided to publish it under my own company, Heuronic. I hope you like it. Thank you very much <3");
             ImGui::Spacing();
 
             float buttonWidth = 160.0f;
@@ -1256,6 +1247,34 @@ namespace Conqueror::Editor
 
                         if (std::filesystem::exists(projectPath / "Packages"))
                             std::filesystem::copy(projectPath / "Packages", buildPackagesPath, std::filesystem::copy_options::recursive);
+
+                        // Standalone exe CWD'den bağımsız resource bulabilsin:
+                        // Engine shader'ları + font/texture/skybox + input config'i build klasörüne koy.
+                        // (FileSystem::ResolveResourcePath exe dizininden yukarı doğru arar.)
+                        try
+                        {
+                            auto copyTree = [&](const std::filesystem::path& src, const std::filesystem::path& dst)
+                            {
+                                if (!std::filesystem::exists(src))
+                                {
+                                    CQ_CORE_WARN("Build: engine resource missing, skipping: {0}", src.string());
+                                    return;
+                                }
+                                std::filesystem::create_directories(dst.parent_path());
+                                if (std::filesystem::exists(dst))
+                                    std::filesystem::remove_all(dst);
+                                std::filesystem::copy(src, dst, std::filesystem::copy_options::recursive);
+                            };
+                            copyTree(engineRoot / "Engine" / "src" / "Shaders", buildDir / "Engine" / "src" / "Shaders");
+                            copyTree(engineRoot / "Engine" / "src" / "Core" / "Input", buildDir / "Engine" / "src" / "Core" / "Input");
+                            copyTree(engineRoot / "Resources" / "Fonts", buildDir / "Resources" / "Fonts");
+                            copyTree(engineRoot / "Resources" / "Textures", buildDir / "Resources" / "Textures");
+                            copyTree(engineRoot / "Resources" / "skybox", buildDir / "Resources" / "skybox");
+                        }
+                        catch (const std::exception& e)
+                        {
+                            CQ_CORE_ERROR("Build: engine resource copy failed: {0}", e.what());
+                        }
 
                         for (const auto& entry : std::filesystem::directory_iterator(projectPath))
                         {

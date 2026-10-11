@@ -573,12 +573,20 @@ namespace Conqueror::CQS
     }
     Value CQSNativeBridge::SetVisible(int argCount, Value* args)
     {
-        // Visibility toggle via scale hack (engine doesn't have a Visible flag)
+        // ActiveComponent bayrağını kullanır: kapalı obje hiçbir kameraya
+        // çizilmez, gölge bırakmaz. Bayrak yoksa eski scale hilesine düşülür.
         if (argCount < 1) return Value::MakeNull();
         Entity e = GetCurrentEntity_S(); if (!e) return Value::MakeNull();
-        auto& t = e.GetComponent<TransformComponent>();
         bool vis = args[0].IsTruthy();
-        if (!vis) t.Scale = glm::vec3(0.0f);
+        if (!vis)
+        {
+            if (!e.HasComponent<ActiveComponent>())
+                e.AddComponent<ActiveComponent>();
+            e.GetComponent<ActiveComponent>().Active = false;
+            return Value::MakeNull();
+        }
+        if (e.HasComponent<ActiveComponent>())
+            e.GetComponent<ActiveComponent>().Active = true;
         return Value::MakeNull();
     }
 

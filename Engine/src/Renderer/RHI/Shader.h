@@ -26,6 +26,7 @@ namespace Conqueror
         virtual void SetMat4Array(const std::string& name, const glm::mat4* matrices, uint32_t count) = 0;
 
         virtual const std::string& GetName() const = 0;
+        virtual bool IsValid() const { return true; }
 
         static std::shared_ptr<Shader> Create(const std::string& filepath);
         static std::shared_ptr<Shader> Create(const std::string& name, const std::string& vertexSrc, const std::string& fragmentSrc);

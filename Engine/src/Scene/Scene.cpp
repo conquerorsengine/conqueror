@@ -153,6 +153,9 @@ namespace Conqueror
         if (source.HasComponent<LayerComponent>())
             dest.GetComponent<LayerComponent>() = source.GetComponent<LayerComponent>();
 
+        if (source.HasComponent<ActiveComponent>())
+            dest.AddComponent<ActiveComponent>() = source.GetComponent<ActiveComponent>();
+
         if (source.HasComponent<SpriteRendererComponent>())
             dest.AddComponent<SpriteRendererComponent>() = source.GetComponent<SpriteRendererComponent>();
 
@@ -885,6 +888,9 @@ namespace Conqueror
             for (auto entity : meshView)
             {
                 auto [transform, meshRenderer] = meshView.get<TransformComponent, MeshRendererComponent>(entity);
+                // Kapalı obje (göz düğmesi): hiçbir kameraya çizme
+                if (!IsEntityActive(entity))
+                    continue;
                 
                 std::shared_ptr<Material> material;
                 
@@ -943,6 +949,8 @@ namespace Conqueror
             for (auto entity : modelView)
             {
                 auto [transform, modelComp] = modelView.get<TransformComponent, ModelComponent>(entity);
+                if (!IsEntityActive(entity))
+                    continue;
                 
                 if (modelComp.ModelData)
                 {
@@ -994,6 +1002,8 @@ namespace Conqueror
             for (auto entity : spriteGroup)
             {
                 auto [transform, sprite] = spriteGroup.get<TransformComponent, SpriteRendererComponent>(entity);
+                if (!IsEntityActive(entity))
+                    continue;
 
                 if (!sprite.Texture)
                     continue;
@@ -1015,6 +1025,8 @@ namespace Conqueror
             for (auto entity : imageView)
             {
                 auto [transform, image] = imageView.get<TransformComponent, ImageComponent>(entity);
+                if (!IsEntityActive(entity))
+                    continue;
 
                 if (!image.Texture)
                     continue;
@@ -1036,6 +1048,8 @@ namespace Conqueror
             for (auto entity : textView)
             {
                 auto [transform, text] = textView.get<TransformComponent, TextRendererComponent>(entity);
+                if (!IsEntityActive(entity))
+                    continue;
 
                 int32_t layer = 5;
                 int32_t orderInLayer = 0;
@@ -1408,6 +1422,9 @@ namespace Conqueror
         for (auto entity : meshView)
         {
             auto [transform, meshRenderer] = meshView.get<TransformComponent, MeshRendererComponent>(entity);
+            // Kapalı obje (Hierarchy gözü): hiçbir kameraya çizme
+            if (!IsEntityActive(entity))
+                continue;
             
             std::shared_ptr<Material> material;
             
@@ -1441,6 +1458,8 @@ namespace Conqueror
         for (auto entity : modelView)
         {
             auto [transform, modelComp] = modelView.get<TransformComponent, ModelComponent>(entity);
+            if (!IsEntityActive(entity))
+                continue;
             
             if (modelComp.ModelData)
             {
@@ -1532,6 +1551,8 @@ namespace Conqueror
         for (auto entity : spriteGroup)
         {
             auto [transform, sprite] = spriteGroup.get<TransformComponent, SpriteRendererComponent>(entity);
+            if (!IsEntityActive(entity))
+                continue;
 
             if (!sprite.Texture)
                 continue;
@@ -1561,6 +1582,8 @@ namespace Conqueror
         for (auto entity : imageView)
         {
             auto [transform, image] = imageView.get<TransformComponent, ImageComponent>(entity);
+            if (!IsEntityActive(entity))
+                continue;
 
             if (!image.Texture)
                 continue;
@@ -1590,6 +1613,8 @@ namespace Conqueror
         for (auto entity : textView)
         {
             auto [transform, text] = textView.get<TransformComponent, TextRendererComponent>(entity);
+            if (!IsEntityActive(entity))
+                continue;
 
             int32_t layer = 5; // Default UI layer
             int32_t orderInLayer = 0;
@@ -2101,6 +2126,11 @@ namespace Conqueror
     }
 
     template<>
+    CQ_API void Scene::OnComponentAdded<ActiveComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] ActiveComponent& component)
+    {
+    }
+
+    template<>
     CQ_API void Scene::OnComponentAdded<CameraComponent>([[maybe_unused]] Entity entity, CameraComponent& component)
     {
         if (m_ViewportWidth > 0 && m_ViewportHeight > 0)
@@ -2123,6 +2153,13 @@ namespace Conqueror
         std::string defaultTex = "Resources/Textures/texture_grid.png";
         component.TexturePath = defaultTex;
         component.Texture = Texture2D::Create(defaultTex);
+        if (!component.Texture)
+        {
+            // Dosya bulunamazsa beyaz fallback üret, render null patlamasın.
+            component.Texture = Texture2D::Create(1, 1);
+            uint32_t white = 0xffffffff;
+            component.Texture->SetData(&white, sizeof(white));
+        }
     }
 
     template<>
@@ -2351,6 +2388,26 @@ namespace Conqueror
             return Entity{ it->second, const_cast<Scene*>(this) };
         
         return Entity{}; // Null entity
+    }
+
+    bool Scene::IsEntityActive(entt::entity entity) const
+    {
+        // Zincir yukarı yürünür: üstlerden biri kapalıysa çocuk da kapalıdır.
+        // (Döngü güvenliği için derinlik sınırlı.)
+        entt::entity current = entity;
+        for (int depth = 0; depth < 64; ++depth)
+        {
+            if (!m_Registry.valid(current))
+                return false;
+            auto active = m_Registry.try_get<ActiveComponent>(current);
+            if (active && !active->Active)
+                return false;
+            auto it = m_EntityParent.find(current);
+            if (it == m_EntityParent.end())
+                return true;
+            current = it->second;
+        }
+        return true;
     }
 
     std::vector<Entity> Scene::GetEntityChildren(Entity entity) const

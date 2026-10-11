@@ -1,6 +1,7 @@
 #include "OpenGLTexture.h"
 #include "Renderer/Renderer.h"
 #include "Core/Logging/Log.h"
+#include "Core/Utils/FileSystem.h"
 
 #include <stb_image.h>
 
@@ -71,7 +72,8 @@ namespace Conqueror
     {
         namespace fs = std::filesystem;
 
-        fs::path filePath = fs::path(path).lexically_normal();
+        std::string resolved = FileSystem::ResolveResourcePath(path);
+        fs::path filePath = fs::path(resolved).lexically_normal();
         m_Path = filePath.string();
 
         std::error_code ec;

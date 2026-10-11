@@ -9,7 +9,8 @@ namespace Conqueror
     CQShaderSource CQShaderLoader::Load(const std::string& filepath)
     {
         std::string rawContent;
-        if (!FileSystem::ReadFile(filepath, rawContent))
+        std::string resolved = FileSystem::ResolveResourcePath(filepath);
+        if (!FileSystem::ReadFile(resolved, rawContent))
         {
             CQ_CORE_ERROR("CQShaderLoader: Could not read file '{0}'", filepath);
             return {};

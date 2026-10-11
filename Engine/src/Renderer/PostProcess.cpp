@@ -98,7 +98,7 @@ namespace Conqueror
 
     void PostProcess::ApplyFXAA()
     {
-        if (!s_FXAAShader || !s_SceneFramebuffer)
+        if (!s_FXAAShader || !s_FXAAShader->IsValid() || !s_SceneFramebuffer)
             return;
 
         s_FXAAShader->Bind();
@@ -115,7 +115,7 @@ namespace Conqueror
 
     void PostProcess::ApplySMAA()
     {
-        if (!s_SMAAEdgeShader || !s_SMAABlendShader || !s_SceneFramebuffer || !s_SMAAEdgeFramebuffer)
+        if (!s_SMAAEdgeShader || !s_SMAAEdgeShader->IsValid() || !s_SMAABlendShader || !s_SMAABlendShader->IsValid() || !s_SceneFramebuffer || !s_SMAAEdgeFramebuffer)
             return;
 
         // 1. Edge Detection Pass
@@ -156,7 +156,7 @@ namespace Conqueror
                                       float haloStrength, bool flareEnabled, float flareStrength,
                                       const std::vector<Scene::FlareElement>& flareElements)
     {
-        if (!s_HaloFlareShader || !s_SceneFramebuffer)
+        if (!s_HaloFlareShader || !s_HaloFlareShader->IsValid() || !s_SceneFramebuffer)
             return;
         
         if (!haloEnabled && !flareEnabled)

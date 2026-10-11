@@ -424,6 +424,21 @@ namespace Conqueror::Editor
 
     void InspectorPanel::DrawComponents(Entity entity)
     {
+        // Görünürlük gözü: ismin solu, varsayılan açık.
+        // Kapalı obje Viewport'ta da oyunda da çizilmez, gölge bırakmaz.
+        bool visible = true;
+        if (entity.HasComponent<ActiveComponent>())
+            visible = entity.GetComponent<ActiveComponent>().Active;
+        ImGui::PushID((int)(uint32_t)entity);
+        if (ImGui::Checkbox("##visible", &visible))
+        {
+            if (!entity.HasComponent<ActiveComponent>())
+                entity.AddComponent<ActiveComponent>();
+            entity.GetComponent<ActiveComponent>().Active = visible;
+        }
+        ImGui::PopID();
+        ImGui::SameLine();
+
         // Entity ismi
         if (entity.HasComponent<TagComponent>())
         {

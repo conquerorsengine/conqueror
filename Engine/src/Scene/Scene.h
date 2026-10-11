@@ -15,6 +15,7 @@ namespace Conqueror
     struct IDComponent;
     struct TransformComponent;
     struct TagComponent;
+    struct ActiveComponent;
     struct CameraComponent;
     struct SpriteRendererComponent;
     struct ImageComponent;
@@ -110,6 +111,8 @@ namespace Conqueror
         Entity GetEntityParent(Entity entity) const;
         std::vector<Entity> GetEntityChildren(Entity entity) const;
         bool HasChildren(Entity entity) const;
+        // Görünürlük (Hierarchy göz düğmesi): bileşen yoksa görünür
+        bool IsEntityActive(entt::entity entity) const;
 
         // Environment
         void SetSkybox(std::shared_ptr<Cubemap> skybox) { m_Skybox = skybox; }
@@ -370,7 +373,8 @@ namespace Conqueror
     // Tanımlar Scene.cpp'de CQ_API (dllexport) ile.
     template<> void Scene::OnComponentAdded<IDComponent>(Entity entity, IDComponent& component);
     template<> void Scene::OnComponentAdded<TransformComponent>(Entity entity, TransformComponent& component);
-    template<> void Scene::OnComponentAdded<TagComponent>(Entity entity, TagComponent& component);
+        template<> void Scene::OnComponentAdded<TagComponent>(Entity entity, TagComponent& component);
+        template<> void Scene::OnComponentAdded<ActiveComponent>(Entity entity, ActiveComponent& component);
     template<> void Scene::OnComponentAdded<CameraComponent>(Entity entity, CameraComponent& component);
     template<> void Scene::OnComponentAdded<SpriteRendererComponent>(Entity entity, SpriteRendererComponent& component);
     template<> void Scene::OnComponentAdded<ImageComponent>(Entity entity, ImageComponent& component);

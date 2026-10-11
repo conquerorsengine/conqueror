@@ -74,6 +74,8 @@ namespace Conqueror
         CQ_API std::string NormalizePath(const std::string& path);
         CQ_API bool IsAbsolutePath(const std::string& path);
         CQ_API bool IsRelativePath(const std::string& path);
+        // CWD/exe konumundan bağımsız resource bulma (Engine/src/..., Resources/..., CQ:...)
+        CQ_API std::string ResolveResourcePath(const std::string& path);
 
         // Dizin listeleme
         CQ_API std::vector<std::string> ListFiles(const std::string& directory, bool recursive = false);

@@ -22,9 +22,14 @@ namespace Conqueror::Editor
 
     void ViewportPanel::OnUpdate(Timestep ts)
     {
-        // Gizmo kullanılıyorsa kamera update'ini engelle
-        if (m_ViewportFocused && !ImGuizmo::IsUsing())
-            m_EditorCamera.OnUpdate(ts);
+        // Play modunda sadece WASD/QE tuş gezinmesi kapalıdır; orbit/pan/zoom
+        // dahil tüm fare hareketleri çalışmaya devam eder.
+        // Gizmo kullanılıyorsa, viewport odakta değilse veya ImGui text girişi
+        // aktifse kamera güncellenmez (yazı yazarken kamera kaçmasın).
+        const bool playing = EditorState::Get().IsPlaying();
+        const bool wantText = ImGui::GetIO().WantTextInput;
+        if (m_ViewportFocused && !ImGuizmo::IsUsing() && !wantText)
+            m_EditorCamera.OnUpdate(ts, !playing);
 
         // Render sadece geçerli framebuffer varsa
         if (m_Framebuffer && m_ViewportSize.x > 0 && m_ViewportSize.y > 0)

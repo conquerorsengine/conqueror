@@ -265,6 +265,52 @@ namespace Conqueror
             return std::filesystem::path(path).is_absolute();
         }
 
+        std::string ResolveResourcePath(const std::string& path)
+        {
+            if (path.empty())
+                return path;
+
+            std::string clean = path;
+            // "CQ:" sanal öneki dosya sisteminde geçersizdir, sıyır.
+            if (clean.rfind("CQ:", 0) == 0)
+                clean = clean.substr(3);
+            // Windows ayraçlarını normalize et
+            for (char& c : clean)
+                if (c == '\\') c = '/';
+            while (!clean.empty() && clean[0] == '/')
+                clean.erase(clean.begin());
+
+            std::error_code ec;
+            std::filesystem::path direct(clean);
+            if (std::filesystem::is_regular_file(direct, ec))
+                return direct.string();
+
+            std::vector<std::filesystem::path> bases;
+            try { bases.push_back(std::filesystem::current_path()); } catch (...) {}
+            std::string exeDir = GetExecutableDirectory();
+            if (!exeDir.empty())
+                bases.push_back(std::filesystem::path(exeDir));
+
+            for (const auto& base : bases)
+            {
+                std::filesystem::path probe = base;
+                for (int level = 0; level < 8; ++level)
+                {
+                    std::filesystem::path candidate = probe / clean;
+                    std::error_code e2;
+                    if (std::filesystem::is_regular_file(candidate, e2))
+                        return candidate.string();
+                    if (!probe.has_parent_path())
+                        break;
+                    auto parent = probe.parent_path();
+                    if (parent == probe)
+                        break;
+                    probe = parent;
+                }
+            }
+            return path;
+        }
+
         std::vector<std::string> ListFiles(const std::string& directory, bool recursive)
         {
             std::vector<std::string> files;

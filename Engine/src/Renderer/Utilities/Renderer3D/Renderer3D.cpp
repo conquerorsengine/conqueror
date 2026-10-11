@@ -28,6 +28,19 @@ namespace Conqueror
     uint32_t Renderer3D::s_APVSHTex = 0;
     int Renderer3D::s_APVLastProbeCount = 0;
 
+    // Unity davranışı: katı cisimlerin iç yüzeyleri çizilmez. Kamera bir küpün
+    // içindeyse iç duvarlar görünmez, arkadaki oda görünür. Her çizim kendi
+    // eleme durumunu açıp kapatır, başka pass'lara sızmaz.
+    static void EnableSolidCulling()
+    {
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+    }
+    static void DisableCulling()
+    {
+        glDisable(GL_CULL_FACE);
+    }
+
     void Renderer3D::Init()
     {
         s_SceneData = new SceneData();
@@ -458,6 +471,8 @@ namespace Conqueror
         if (!material)
             material = Material::CreateDefault();
 
+        EnableSolidCulling();
+
         auto activeShader = material->MaterialShader ? material->MaterialShader : s_PBRShader;
         activeShader->Bind();
 
@@ -477,6 +492,7 @@ namespace Conqueror
             material->BindGraphUniforms(activeShader);
 
         RenderCommand::DrawIndexed(s_CubeMesh->GetVertexArray(), s_CubeMesh->GetIndexCount());
+        DisableCulling();
         
         Renderer::GetStats().DrawCalls++;
         Renderer::GetStats().MeshCount++;
@@ -488,6 +504,8 @@ namespace Conqueror
     {
         if (!material)
             material = Material::CreateDefault();
+
+        EnableSolidCulling();
 
         auto activeShader = material->MaterialShader ? material->MaterialShader : s_PBRShader;
         activeShader->Bind();
@@ -508,6 +526,7 @@ namespace Conqueror
             material->BindGraphUniforms(activeShader);
 
         RenderCommand::DrawIndexed(s_SphereMesh->GetVertexArray(), s_SphereMesh->GetIndexCount());
+        DisableCulling();
         
         Renderer::GetStats().DrawCalls++;
         Renderer::GetStats().MeshCount++;
@@ -519,6 +538,8 @@ namespace Conqueror
     {
         if (!material)
             material = Material::CreateDefault();
+
+        EnableSolidCulling();
 
         auto activeShader = material->MaterialShader ? material->MaterialShader : s_PBRShader;
         activeShader->Bind();
@@ -539,6 +560,7 @@ namespace Conqueror
             material->BindGraphUniforms(activeShader);
 
         RenderCommand::DrawIndexed(s_PlaneMesh->GetVertexArray(), s_PlaneMesh->GetIndexCount());
+        DisableCulling();
         
         Renderer::GetStats().DrawCalls++;
         Renderer::GetStats().MeshCount++;
@@ -550,6 +572,8 @@ namespace Conqueror
     {
         if (!material)
             material = Material::CreateDefault();
+
+        EnableSolidCulling();
 
         auto activeShader = material->MaterialShader ? material->MaterialShader : s_PBRShader;
         activeShader->Bind();
@@ -570,6 +594,7 @@ namespace Conqueror
             material->BindGraphUniforms(activeShader);
 
         RenderCommand::DrawIndexed(s_CylinderMesh->GetVertexArray(), s_CylinderMesh->GetIndexCount());
+        DisableCulling();
         
         Renderer::GetStats().DrawCalls++;
         Renderer::GetStats().MeshCount++;
@@ -582,6 +607,7 @@ namespace Conqueror
         if (!model)
             return;
 
+        EnableSolidCulling();
         s_PBRShader->Bind();
         s_PBRShader->SetMat4("u_Transform", transform);
 
@@ -610,6 +636,7 @@ namespace Conqueror
                 material->BindGraphUniforms(activeShader);
 
             RenderCommand::DrawIndexed(mesh->GetVertexArray(), mesh->GetIndexCount());
+            DisableCulling();
             
             // Stats güncelle
             Renderer::GetStats().DrawCalls++;
@@ -655,10 +682,10 @@ namespace Conqueror
         BindLightProbesToShader(s_PBRSkinnedShader);
         BindAPVToShader(s_PBRSkinnedShader);
 
+        EnableSolidCulling();
         for (size_t i = 0; i < model->SkinnedMeshes.size(); ++i)
         {
-            auto& mesh = model->SkinnedMeshes[i];
-            auto material = (i < model->Materials.size()) ? model->Materials[i] : Material::CreateDefault();
+            auto& mesh = model->SkinnedMeshes[i];            auto material = (i < model->Materials.size()) ? model->Materials[i] : Material::CreateDefault();
 
             auto activeShader = material->MaterialShader ? material->MaterialShader : s_PBRSkinnedShader;
             if (activeShader != s_PBRSkinnedShader)
@@ -680,6 +707,7 @@ namespace Conqueror
             Renderer::GetStats().Vertices += mesh->GetVertexCount();
             Renderer::GetStats().Triangles += mesh->GetIndexCount() / 3;
         }
+        DisableCulling();
     }
 
     void Renderer3D::DrawLightGizmo(const glm::vec3& position, const glm::vec3& color, float size)

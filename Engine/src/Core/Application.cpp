@@ -6,6 +6,7 @@
 #include "Core/Time/TimeManager.h"
 #include "Core/PhysicsSystem/Physics3D/PhysicsWorld3D.h"
 #include "Core/Utils/Platform.h"
+#include "Core/Utils/FileSystem.h"
 #include <filesystem>
 
 #include <GLFW/glfw3.h>
@@ -49,7 +50,9 @@ namespace Conqueror
 
         std::filesystem::path exePath = Platform::GetProcessPath();
         std::filesystem::path configPath = exePath.parent_path() / "../../Engine/src/Core/Input/default.cqinput";
-        Input::LoadConfig(configPath.string());
+        std::string resolvedInput = FileSystem::ResolveResourcePath("Engine/src/Core/Input/default.cqinput");
+        if (!Input::LoadConfig(resolvedInput))
+            Input::LoadConfig(configPath.string());
 
         m_ImGuiLayer = new ImGuiLayer();
         PushOverlay(m_ImGuiLayer);

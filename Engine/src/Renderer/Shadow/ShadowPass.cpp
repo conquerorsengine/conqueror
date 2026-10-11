@@ -40,10 +40,11 @@ namespace Conqueror
 
     void ShadowPass::Init()
     {
-        m_DirectionalShadowMap = ShadowMap::Create(2048, 2048);
+        m_DirectionalShadowMap = ShadowMap::Create(4096, 4096);
         m_DepthShader = Shader::Create("ShadowDepthShader", s_DepthVertexSrc, s_DepthFragmentSrc);
         m_LightSpaceMatrices.resize(CascadeCount);
         m_CascadeSplits.resize(CascadeCount);
+        m_CascadeTexelWorld.resize(CascadeCount, 0.05f);
     }
 
     void ShadowPass::Shutdown()
@@ -52,6 +53,7 @@ namespace Conqueror
         m_DepthShader.reset();
         m_LightSpaceMatrices.clear();
         m_CascadeSplits.clear();
+        m_CascadeTexelWorld.clear();
     }
 
     void ShadowPass::Execute(Scene* scene, const DirectionalLightComponent& dirLight,
@@ -68,10 +70,75 @@ namespace Conqueror
         // Cascade splits hesapla
         CalculateCascadeSplits(CascadeNearPlane, CascadeFarPlane, m_CascadeSplits);
 
+        // Son (uzak) cascade için sahne-merkezli fit: sahnedeki caster
+        // pozisyonlarından merkez + yayılım bulunur. Frustum dilimi yerine
+        // sahneye oturan sabit orto kullanılır -> zoom uzaklaşınca da keskin kalır.
+        // (Yakın cascade frustum yolunda kalır, yakın kaliteye dokunulmaz.)
+        glm::vec3 sceneCenter(0.0f);
+        float sceneSpread = 0.0f;
+        {
+            glm::vec3 sum(0.0f);
+            size_t count = 0;
+            auto addPos = [&](const glm::vec3& p)
+            {
+                sum += p;
+                count++;
+            };
+            auto meshBoundsView = registry.view<TransformComponent, MeshRendererComponent>();
+            for (auto entity : meshBoundsView)
+            {
+                if (!scene->IsEntityActive(entity))
+                    continue;
+                auto [transform, meshRenderer] = meshBoundsView.get<TransformComponent, MeshRendererComponent>(entity);
+                addPos(glm::vec3(transform.WorldTransform[3]));
+            }
+            auto modelBoundsView = registry.view<TransformComponent, ModelComponent>();
+            for (auto entity : modelBoundsView)
+            {
+                if (!scene->IsEntityActive(entity))
+                    continue;
+                auto [transform, modelComponent] = modelBoundsView.get<TransformComponent, ModelComponent>(entity);
+                if (!modelComponent.ModelData || modelComponent.ModelData->Meshes.empty())
+                    continue;
+                addPos(glm::vec3(transform.WorldTransform[3]));
+            }
+            if (count > 0)
+            {
+                sceneCenter = sum / (float)count;
+                float maxD = 0.0f;
+                for (auto entity : meshBoundsView)
+                {
+                    if (!scene->IsEntityActive(entity))
+                        continue;
+                    auto [transform, meshRenderer] = meshBoundsView.get<TransformComponent, MeshRendererComponent>(entity);
+                    maxD = glm::max(maxD, glm::length(glm::vec3(transform.WorldTransform[3]) - sceneCenter));
+                }
+                for (auto entity : modelBoundsView)
+                {
+                    if (!scene->IsEntityActive(entity))
+                        continue;
+                    auto [transform, modelComponent] = modelBoundsView.get<TransformComponent, ModelComponent>(entity);
+                    if (!modelComponent.ModelData || modelComponent.ModelData->Meshes.empty())
+                        continue;
+                    maxD = glm::max(maxD, glm::length(glm::vec3(transform.WorldTransform[3]) - sceneCenter));
+                }
+                sceneSpread = maxD;
+            }
+        }
+        float sceneFitRadius = glm::clamp(sceneSpread * 1.5f + 2.0f, 6.0f, 28.0f);
+
         // Her cascade icin shadow map render et
         m_DirectionalShadowMap->Bind();
         glViewport(0, 0, m_DirectionalShadowMap->GetWidth(), m_DirectionalShadowMap->GetHeight());
         glClear(GL_DEPTH_BUFFER_BIT);
+        // Depth pass'te arka yüzleri ele (ön yüzler yazılır): gölge bırakan cisim
+        // ışık gözünden tam boy görünür, gölge geriye çekilmez (beyaz hale önlenir).
+        // Acne, depth + normal bias ile tutulur.
+        GLboolean cullWasEnabled = glIsEnabled(GL_CULL_FACE);
+        GLint prevCullMode = GL_BACK;
+        glGetIntegerv(GL_CULL_FACE_MODE, &prevCullMode);
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
 
         glm::vec3 lightDir = glm::normalize(lightDirection);
 
@@ -90,13 +157,18 @@ namespace Conqueror
             glm::vec3(-1.0f,  1.0f,  1.0f)
         };
 
-        glm::vec3 worldNear[4], worldFar[4];
-        for (int k = 0; k < 4; k++)
+        glm::vec3 worldNear[4], worldFar[4];for (int k = 0; k < 4; k++)
         {
             glm::vec4 wN = invCamVP * glm::vec4(ndcNear[k], 1.0f);
             worldNear[k] = glm::vec3(wN) / wN.w;
             glm::vec4 wF = invCamVP * glm::vec4(ndcFar[k], 1.0f);
             worldFar[k] = glm::vec3(wF) / wF.w;
+            // Kamera far düzlemi (editörde 100000) shadow hesabını bozmasın:
+            // ışınları CascadeFarPlane'de kırp, cascade'ler kamera-far'dan bağımsız olsun.
+            glm::vec3 ray = worldFar[k] - cameraPos;
+            float rayLen = glm::length(ray);
+            if (rayLen > CascadeFarPlane && rayLen > 0.0001f)
+                worldFar[k] = cameraPos + ray * (CascadeFarPlane / rayLen);
         }
 
         for (int i = 0; i < CascadeCount; i++)
@@ -126,10 +198,24 @@ namespace Conqueror
             for (int j = 0; j < 8; j++)
                 radius = glm::max(radius, glm::length(corners[j] - center));
             radius = glm::max(radius, 5.0f);
+            // Radius'u kaba adımlara yuvarla: kamera kıpırdayınca orto boyutu
+            // sürekli değişmesin, gölge yüzmesin/kaynaktan oynamasın.
+            float quantStep = CascadeFarPlane / 64.0f;
+            radius = glm::ceil(radius / quantStep) * quantStep;
 
-            // Texel snapping to stabilize shadow map
+            // Son cascade sahneye fitlenir (frustum dilimi değil): uzak
+            // kamerada da aynı keskinlik. İlk cascade'ler frustum yolunda.
+            bool useSceneFit = (i == CascadeCount - 1) && (sceneSpread > 0.0f);
+            if (useSceneFit)
+            {
+                center = sceneCenter;
+                radius = sceneFitRadius;
+            }
+
+            // Texel snapping to stabilize shadow map (yatay 4'lü şerit atlas)
             float cascadeTexWidth = (float)(m_DirectionalShadowMap->GetWidth() / CascadeCount);
             float texelSize = (radius * 2.0f) / cascadeTexWidth;
+            m_CascadeTexelWorld[i] = texelSize;
 
             glm::mat4 lightView = glm::lookAt(center - lightDir * radius * 2.0f, center, glm::vec3(0.0f, 1.0f, 0.0f));
             glm::vec4 centerLS = lightView * glm::vec4(center, 1.0f);
@@ -142,7 +228,7 @@ namespace Conqueror
 
             m_LightSpaceMatrices[i] = lightProjection * lightView;
 
-            // Viewport ayarla (cascade'e gore)
+            // Viewport ayarla (cascade'e gore, yatay şerit)
             uint32_t cascadeWidth = m_DirectionalShadowMap->GetWidth() / CascadeCount;
             uint32_t cascadeHeight = m_DirectionalShadowMap->GetHeight();
             glViewport(i * cascadeWidth, 0, cascadeWidth, cascadeHeight);
@@ -156,6 +242,8 @@ namespace Conqueror
             for (auto entity : meshView)
             {
                 auto [transform, meshRenderer] = meshView.get<TransformComponent, MeshRendererComponent>(entity);
+                if (scene && !scene->IsEntityActive(entity))
+                    continue;
 
                 m_DepthShader->SetMat4("u_Transform", transform.GetTransform());
 
@@ -173,6 +261,8 @@ namespace Conqueror
             for (auto entity : modelView)
             {
                 auto [transform, modelComponent] = modelView.get<TransformComponent, ModelComponent>(entity);
+                if (scene && !scene->IsEntityActive(entity))
+                    continue;
 
                 if (!modelComponent.ModelData || modelComponent.ModelData->Meshes.empty())
                     continue;
@@ -187,6 +277,9 @@ namespace Conqueror
             }
         }
 
+        if (!cullWasEnabled)
+            glDisable(GL_CULL_FACE);
+        glCullFace(prevCullMode);
         m_DirectionalShadowMap->Unbind();
     }
 
@@ -216,9 +309,17 @@ namespace Conqueror
             shader->SetFloat(name, m_CascadeSplits[i]);
         }
 
+        // Cascade başına dünya texel boyutu (texel-farkında bias için)
+        for (int i = 0; i < CascadeCount; i++)
+        {
+            std::string name = "u_CascadeTexelWorld[" + std::to_string(i) + "]";
+            shader->SetFloat(name, m_CascadeTexelWorld[i]);
+        }
+
         shader->SetInt("u_CascadeCount", CascadeCount);
         shader->SetFloat("u_ShadowBias", ShadowBias);
         shader->SetFloat("u_NormalBias", NormalBias);
+        shader->SetFloat("u_CascadeFade", CascadeFade);
     }
 
     void ShadowPass::CalculateCascadeSplits(float nearPlane, float farPlane, std::vector<float>& splits)

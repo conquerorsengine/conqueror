@@ -101,7 +101,7 @@ namespace Conqueror
         return std::max(speed, 0.5f);
     }
 
-    void EditorCamera::OnUpdate([[maybe_unused]] Timestep ts)
+    void EditorCamera::OnUpdate([[maybe_unused]] Timestep ts, bool allowKeyMovement)
     {
         const glm::vec2& mouse{ Input::GetMouseX(), Input::GetMouseY() };
         glm::vec2 delta = (mouse - m_InitialMousePosition) * 0.003f;
@@ -137,6 +137,9 @@ namespace Conqueror
         }
 
         // 3. WASD + QE Kamera Gezinmesi (W: İleri, S: Geri, A: Sol, D: Sağ, E: Yukarı, Q: Aşağı)
+        // Play modunda tuşla gezinme kapalıdır (orbit/pan/zoom çalışmaya devam eder).
+        if (allowKeyMovement)
+        {
         float moveSpeed = 12.0f;
         if (m_CameraMode == EditorCameraMode::Orthographic2D)
             moveSpeed = m_OrthographicSize * 2.0f;
@@ -166,6 +169,7 @@ namespace Conqueror
         {
             moveDir = glm::normalize(moveDir);
             m_FocalPoint += moveDir * moveSpeed * (float)ts;
+        }
         }
 
         // Scroll zoom: poll yoluyla okunur (ImGui'nin event yutmasından bağımsız).

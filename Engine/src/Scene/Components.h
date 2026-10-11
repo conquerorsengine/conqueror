@@ -43,6 +43,17 @@ namespace Conqueror
         TagComponent(const std::string& tag) : Tag(tag) {}
     };
 
+    // Unity'deki GameObject aktifliği: kapalı obje Viewport'ta da oyunda da
+    // çizilmez, gölge de bırakmaz. Bileşen yoksa obje görünür sayılır.
+    struct ActiveComponent
+    {
+        bool Active = true;
+
+        ActiveComponent() = default;
+        ActiveComponent(const ActiveComponent&) = default;
+        ActiveComponent(bool active) : Active(active) {}
+    };
+
     struct TransformComponent
     {
         glm::vec3 Position = { 0.0f, 0.0f, 0.0f };
