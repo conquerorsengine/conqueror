@@ -271,10 +271,10 @@ namespace Conqueror
                 return path;
 
             std::string clean = path;
-            // "CQ:" sanal öneki dosya sisteminde geçersizdir, sıyır.
+            // The "CQ:" virtual prefix is invalid on the filesystem, strip it.
             if (clean.rfind("CQ:", 0) == 0)
                 clean = clean.substr(3);
-            // Windows ayraçlarını normalize et
+            // Normalize Windows separators
             for (char& c : clean)
                 if (c == '\\') c = '/';
             while (!clean.empty() && clean[0] == '/')

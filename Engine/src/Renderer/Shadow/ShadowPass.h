@@ -34,16 +34,16 @@ namespace Conqueror
         std::shared_ptr<ShadowMap> GetDirectionalShadowMap() const { return m_DirectionalShadowMap; }
         const std::vector<glm::mat4>& GetLightSpaceMatrices() const { return m_LightSpaceMatrices; }
 
-        // Cascade settings (oda ölçekli sahneler için 2 cascade:
-        // 4096 map 2'ye bölününce tile başına 2048px düşer, kenarlar pürüzsüzleşir)
+        // Cascade settings (2 cascades for room-scale scenes:
+        // a 4096 map split in 2 gives 2048px per tile, smoother edges)
         int CascadeCount = 2;
         float CascadeSplitLambda = 0.75f;
         float CascadeNearPlane = 0.1f;
         float CascadeFarPlane = 80.0f;
         float ShadowBias = 0.005f;
         float NormalBias = 0.015f;
-        // Cascade geçiş yumuşatma bandı (dünya birimi): kamera hareketinde
-        // cascade atlaması sert patlamasın diye.
+        // Cascade transition smoothing band (world units): keeps cascade
+        // switches from popping while the camera moves.
         float CascadeFade = 1.5f;
 
     private:
@@ -58,7 +58,7 @@ namespace Conqueror
         std::shared_ptr<Shader> m_DepthShader;
         std::vector<glm::mat4> m_LightSpaceMatrices;
         std::vector<float> m_CascadeSplits;
-        // Cascade başına dünya-birimi texel boyutu (bias tabanı için shader'a gönderilir)
+        // Per-cascade world-space texel size (sent to the shader as bias floor)
         std::vector<float> m_CascadeTexelWorld;
     };
 }

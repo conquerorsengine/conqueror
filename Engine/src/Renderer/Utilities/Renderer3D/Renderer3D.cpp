@@ -28,9 +28,9 @@ namespace Conqueror
     uint32_t Renderer3D::s_APVSHTex = 0;
     int Renderer3D::s_APVLastProbeCount = 0;
 
-    // Unity davranışı: katı cisimlerin iç yüzeyleri çizilmez. Kamera bir küpün
-    // içindeyse iç duvarlar görünmez, arkadaki oda görünür. Her çizim kendi
-    // eleme durumunu açıp kapatır, başka pass'lara sızmaz.
+    // Unity behavior: interior faces of solids are not drawn. When the camera
+    // is inside a cube, inner walls stay invisible and the room behind shows.
+    // Each draw enables/disables its own culling, never leaking into other passes.
     static void EnableSolidCulling()
     {
         glEnable(GL_CULL_FACE);

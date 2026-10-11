@@ -326,6 +326,12 @@ namespace Conqueror
         auto it = m_UniformLocationCache.find(name);
         if (it != m_UniformLocationCache.end())
             return it->second;
+        // Never call GL with an invalid program (silently ignore uncompiled shaders)
+        if (!m_RendererID)
+        {
+            m_UniformLocationCache[name] = -1;
+            return -1;
+        }
         GLint location = glGetUniformLocation(m_RendererID, name.c_str());
         m_UniformLocationCache[name] = location;
         return location;

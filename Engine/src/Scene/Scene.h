@@ -111,7 +111,7 @@ namespace Conqueror
         Entity GetEntityParent(Entity entity) const;
         std::vector<Entity> GetEntityChildren(Entity entity) const;
         bool HasChildren(Entity entity) const;
-        // Görünürlük (Hierarchy göz düğmesi): bileşen yoksa görünür
+        // Visibility (Inspector eye toggle): visible when the component is absent
         bool IsEntityActive(entt::entity entity) const;
 
         // Environment

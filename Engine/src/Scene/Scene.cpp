@@ -888,7 +888,7 @@ namespace Conqueror
             for (auto entity : meshView)
             {
                 auto [transform, meshRenderer] = meshView.get<TransformComponent, MeshRendererComponent>(entity);
-                // Kapalı obje (göz düğmesi): hiçbir kameraya çizme
+                // Closed object (eye toggle): draw to no camera
                 if (!IsEntityActive(entity))
                     continue;
                 

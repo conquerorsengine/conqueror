@@ -338,9 +338,9 @@ float CalculateShadow(vec3 fragPos, vec3 normal, vec3 lightDir)
         }
     }
 
-    // Bias: depth terimi depth-biriminde tabanlı (acne önlenir),
-    // normal terimi dünya-biriminde ve küçük tutulur (beyaz hale önlenir).
-    // NOT: ikisinin birimi farklı, karıştırma!
+    // Bias: depth term has a depth-unit floor (stops acne),
+    // normal term is world-unit and kept small (stops white halo).
+    // NOTE: different units, don't mix them!
     float texelWorld = u_CascadeTexelWorld[cascadeIndex];
     float ndl = max(dot(normal, lightDir), 0.0);
     float bias = max(u_ShadowBias * (1.0 - ndl), 0.001);
@@ -353,7 +353,7 @@ float CalculateShadow(vec3 fragPos, vec3 normal, vec3 lightDir)
     vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
     projCoords = projCoords * 0.5 + 0.5;
 
-    // Frustum dışıysa gölge yok (tile remap ÖNCESİ ham koordinatta bak)
+    // Outside the frustum: no shadow (check raw coords BEFORE tile remap)
     if (projCoords.z > 1.0 || projCoords.z < 0.0)
         return 1.0;
     if (projCoords.x < 0.0 || projCoords.x > 1.0 ||
@@ -378,7 +378,7 @@ float CalculateShadow(vec3 fragPos, vec3 normal, vec3 lightDir)
         for (int y = -1; y <= 1; y++)
         {
             vec2 sampleUV = projCoords.xy + vec2(x, y) * texelSize;
-            // Komşu cascade tile'ına taşmayı engelle
+            // Clamp taps to this cascade tile
             sampleUV.x = clamp(sampleUV.x, tileMinX, tileMaxX);
             sampleUV.y = clamp(sampleUV.y, 0.0, 1.0);
             float pcfDepth = texture(u_ShadowMap, sampleUV).r;
@@ -387,11 +387,11 @@ float CalculateShadow(vec3 fragPos, vec3 normal, vec3 lightDir)
     }
     shadow /= 9.0;
 
-    // Cascade sınırı yumuşatma: kamera hareketinde split çizgisi
-    // sahnede gezerken sert patlama olmasın.
+    // Cascade border smoothing: keeps the split line from popping while
+    // it sweeps the scene during camera moves.
     if (cascadeIndex + 1 < u_CascadeCount && u_CascadeFade > 0.0)
     {
-        // Sonraki cascade'in gölgesini aynı noktada örnekle
+        // Sample the next cascade's shadow at the same point
         vec4 nsp = u_LightSpaceMatrices[cascadeIndex + 1] * vec4(biasedPos, 1.0);
         if (nsp.w > 0.0)
         {

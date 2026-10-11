@@ -144,7 +144,7 @@ namespace Conqueror
             }
         }
 
-        // Sphere indices (dışa doğru CCW sarım: arka yüz eleme ile uyumlu)
+        // Sphere indices (outward CCW winding: backface-culling compatible)
         for (uint32_t y = 0; y < segments; y++)
         {
             for (uint32_t x = 0; x < segments; x++)

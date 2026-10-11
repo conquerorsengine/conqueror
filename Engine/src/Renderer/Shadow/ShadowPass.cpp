@@ -70,10 +70,10 @@ namespace Conqueror
         // Cascade splits hesapla
         CalculateCascadeSplits(CascadeNearPlane, CascadeFarPlane, m_CascadeSplits);
 
-        // Son (uzak) cascade için sahne-merkezli fit: sahnedeki caster
-        // pozisyonlarından merkez + yayılım bulunur. Frustum dilimi yerine
-        // sahneye oturan sabit orto kullanılır -> zoom uzaklaşınca da keskin kalır.
-        // (Yakın cascade frustum yolunda kalır, yakın kaliteye dokunulmaz.)
+        // Scene-fitted far (last) cascade: center + spread are derived from
+        // caster positions in the scene. A fixed ortho fitted to the scene is
+        // used instead of the frustum slice -> stays sharp when zooming out.
+        // (Near cascades keep the frustum path, near quality untouched.)
         glm::vec3 sceneCenter(0.0f);
         float sceneSpread = 0.0f;
         {
@@ -131,8 +131,8 @@ namespace Conqueror
         m_DirectionalShadowMap->Bind();
         glViewport(0, 0, m_DirectionalShadowMap->GetWidth(), m_DirectionalShadowMap->GetHeight());
         glClear(GL_DEPTH_BUFFER_BIT);
-        // Depth pass'te arka yüzleri ele (ön yüzler yazılır): gölge bırakan cisim
-        // ışık gözünden tam boy görünür, gölge geriye çekilmez (beyaz hale önlenir).
+        // Cull back faces in the depth pass (front faces are written): occluders
+        // appear full-size from the light, shadows don't pull back (no white halo).
         // Acne, depth + normal bias ile tutulur.
         GLboolean cullWasEnabled = glIsEnabled(GL_CULL_FACE);
         GLint prevCullMode = GL_BACK;
@@ -163,8 +163,8 @@ namespace Conqueror
             worldNear[k] = glm::vec3(wN) / wN.w;
             glm::vec4 wF = invCamVP * glm::vec4(ndcFar[k], 1.0f);
             worldFar[k] = glm::vec3(wF) / wF.w;
-            // Kamera far düzlemi (editörde 100000) shadow hesabını bozmasın:
-            // ışınları CascadeFarPlane'de kırp, cascade'ler kamera-far'dan bağımsız olsun.
+            // Clamp rays to CascadeFarPlane so the camera far plane
+            // (100000 in the editor) can't break the shadow math.
             glm::vec3 ray = worldFar[k] - cameraPos;
             float rayLen = glm::length(ray);
             if (rayLen > CascadeFarPlane && rayLen > 0.0001f)
@@ -198,13 +198,13 @@ namespace Conqueror
             for (int j = 0; j < 8; j++)
                 radius = glm::max(radius, glm::length(corners[j] - center));
             radius = glm::max(radius, 5.0f);
-            // Radius'u kaba adımlara yuvarla: kamera kıpırdayınca orto boyutu
-            // sürekli değişmesin, gölge yüzmesin/kaynaktan oynamasın.
+            // Quantize radius to coarse steps so small camera moves don't
+            // constantly rescale the ortho (no shadow swimming).
             float quantStep = CascadeFarPlane / 64.0f;
             radius = glm::ceil(radius / quantStep) * quantStep;
 
-            // Son cascade sahneye fitlenir (frustum dilimi değil): uzak
-            // kamerada da aynı keskinlik. İlk cascade'ler frustum yolunda.
+            // Last cascade is scene-fitted (not a frustum slice): same sharpness
+            // for distant cameras. First cascades use the frustum path.
             bool useSceneFit = (i == CascadeCount - 1) && (sceneSpread > 0.0f);
             if (useSceneFit)
             {
@@ -212,7 +212,7 @@ namespace Conqueror
                 radius = sceneFitRadius;
             }
 
-            // Texel snapping to stabilize shadow map (yatay 4'lü şerit atlas)
+            // Texel snapping to stabilize shadow map (horizontal strip atlas)
             float cascadeTexWidth = (float)(m_DirectionalShadowMap->GetWidth() / CascadeCount);
             float texelSize = (radius * 2.0f) / cascadeTexWidth;
             m_CascadeTexelWorld[i] = texelSize;
@@ -228,7 +228,7 @@ namespace Conqueror
 
             m_LightSpaceMatrices[i] = lightProjection * lightView;
 
-            // Viewport ayarla (cascade'e gore, yatay şerit)
+            // Set viewport per cascade (horizontal strip)
             uint32_t cascadeWidth = m_DirectionalShadowMap->GetWidth() / CascadeCount;
             uint32_t cascadeHeight = m_DirectionalShadowMap->GetHeight();
             glViewport(i * cascadeWidth, 0, cascadeWidth, cascadeHeight);
@@ -309,7 +309,7 @@ namespace Conqueror
             shader->SetFloat(name, m_CascadeSplits[i]);
         }
 
-        // Cascade başına dünya texel boyutu (texel-farkında bias için)
+        // Per-cascade world-space texel size (bias floor sent to the shader)
         for (int i = 0; i < CascadeCount; i++)
         {
             std::string name = "u_CascadeTexelWorld[" + std::to_string(i) + "]";

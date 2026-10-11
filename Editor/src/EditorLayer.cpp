@@ -14,6 +14,7 @@
 #include "Renderer/Utilities/Renderer3D/Renderer3D.h"
 #include "Core/Project/Project.h"
 #include "Core/Project/ProjectSerializer.h"
+#include "Core/Utils/FileSystem.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -1215,6 +1216,39 @@ namespace Conqueror::Editor
                 std::string buildScript = "cmake --build \"" + engineRoot.string() + "\" --target ConquerorRuntime -j8";
                 int result = system(buildScript.c_str());
 
+                // Engine source root: first ancestor containing Engine/src/Shaders
+                // (the editor may run from build/bin, so parent_path() alone is wrong).
+                auto findSourceRoot = []() -> std::filesystem::path
+                {
+                    std::vector<std::filesystem::path> starts;
+                    try { starts.push_back(std::filesystem::current_path()); } catch (...) {}
+                    std::string exeDir = Conqueror::FileSystem::GetExecutableDirectory();
+                    if (!exeDir.empty())
+                        starts.push_back(std::filesystem::path(exeDir));
+                    for (const auto& start : starts)
+                    {
+                        std::filesystem::path probe = start;
+                        for (int level = 0; level < 8; ++level)
+                        {
+                            std::error_code ec;
+                            if (std::filesystem::is_directory(probe / "Engine" / "src" / "Shaders", ec))
+                                return probe;
+                            if (!probe.has_parent_path())
+                                break;
+                            auto parent = probe.parent_path();
+                            if (parent == probe)
+                                break;
+                            probe = parent;
+                        }
+                    }
+                    return std::filesystem::path();
+                };
+                std::filesystem::path engineSourceRoot = findSourceRoot();
+                if (engineSourceRoot.empty())
+                {
+                    CQ_CORE_ERROR("Build: engine source root not found, skipping engine resource copy.");
+                }
+
                 if (result == 0)
                 {
                     std::filesystem::path buildDir = project->GetProjectDirectory() / "Builds" / platform;
@@ -1227,7 +1261,18 @@ namespace Conqueror::Editor
                         std::replace(outName.begin(), outName.end(), ' ', '_');
 
                         std::filesystem::path destPath = buildDir / outName;
-                        std::filesystem::copy_file(exePath, destPath, std::filesystem::copy_options::overwrite_existing);
+                        try
+                        {
+                            std::filesystem::copy_file(exePath, destPath, std::filesystem::copy_options::overwrite_existing);
+                        }
+                        catch (const std::filesystem::filesystem_error& e)
+                        {
+                            // Cannot overwrite a running game binary (Text file busy):
+                            // don't crash the editor, tell the user to close the game.
+                            CQ_CORE_ERROR("Build failed: could not copy '{0}' ({1}). Close the running game and Build again.", destPath.string(), e.what());
+                            ImGui::EndMenu();
+                            return;
+                        }
 
                         if (platform == "Linux")
                         {
@@ -1243,14 +1288,22 @@ namespace Conqueror::Editor
                         if (std::filesystem::exists(buildPackagesPath)) std::filesystem::remove_all(buildPackagesPath);
 
                         if (std::filesystem::exists(projectPath / "Assets"))
-                            std::filesystem::copy(projectPath / "Assets", buildAssetsPath, std::filesystem::copy_options::recursive);
+                        {
+                            try { std::filesystem::copy(projectPath / "Assets", buildAssetsPath, std::filesystem::copy_options::recursive); }
+                            catch (const std::filesystem::filesystem_error& e)
+                            { CQ_CORE_ERROR("Build: could not copy Assets: {0}", e.what()); }
+                        }
 
                         if (std::filesystem::exists(projectPath / "Packages"))
-                            std::filesystem::copy(projectPath / "Packages", buildPackagesPath, std::filesystem::copy_options::recursive);
+                        {
+                            try { std::filesystem::copy(projectPath / "Packages", buildPackagesPath, std::filesystem::copy_options::recursive); }
+                            catch (const std::filesystem::filesystem_error& e)
+                            { CQ_CORE_ERROR("Build: could not copy Packages: {0}", e.what()); }
+                        }
 
-                        // Standalone exe CWD'den bağımsız resource bulabilsin:
-                        // Engine shader'ları + font/texture/skybox + input config'i build klasörüne koy.
-                        // (FileSystem::ResolveResourcePath exe dizininden yukarı doğru arar.)
+                        // Standalone exe finds resources next to itself:
+                        // engine shaders + fonts/textures/skybox + input config go to the build folder.
+                        // (FileSystem::ResolveResourcePath searches upward from the exe directory.)
                         try
                         {
                             auto copyTree = [&](const std::filesystem::path& src, const std::filesystem::path& dst)
@@ -1265,11 +1318,12 @@ namespace Conqueror::Editor
                                     std::filesystem::remove_all(dst);
                                 std::filesystem::copy(src, dst, std::filesystem::copy_options::recursive);
                             };
-                            copyTree(engineRoot / "Engine" / "src" / "Shaders", buildDir / "Engine" / "src" / "Shaders");
-                            copyTree(engineRoot / "Engine" / "src" / "Core" / "Input", buildDir / "Engine" / "src" / "Core" / "Input");
-                            copyTree(engineRoot / "Resources" / "Fonts", buildDir / "Resources" / "Fonts");
-                            copyTree(engineRoot / "Resources" / "Textures", buildDir / "Resources" / "Textures");
-                            copyTree(engineRoot / "Resources" / "skybox", buildDir / "Resources" / "skybox");
+                            const std::filesystem::path& srcRoot = engineSourceRoot.empty() ? engineRoot : engineSourceRoot;
+                            copyTree(srcRoot / "Engine" / "src" / "Shaders", buildDir / "Engine" / "src" / "Shaders");
+                            copyTree(srcRoot / "Engine" / "src" / "Core" / "Input", buildDir / "Engine" / "src" / "Core" / "Input");
+                            copyTree(srcRoot / "Resources" / "Fonts", buildDir / "Resources" / "Fonts");
+                            copyTree(srcRoot / "Resources" / "Textures", buildDir / "Resources" / "Textures");
+                            copyTree(srcRoot / "Resources" / "skybox", buildDir / "Resources" / "skybox");
                         }
                         catch (const std::exception& e)
                         {
