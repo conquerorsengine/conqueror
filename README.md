@@ -14,8 +14,8 @@ Guides and generated reference pages are in [Docs/](Docs/README.md): [getting st
 
 ## Images
 
-![Screenshot 1](Resources/EngineImages/EI/1.png)
-![Screenshot 10](Resources/EngineImages/EI/10.png)
+![Conqueror Engine Editor](Resources/EngineImages/EI/Editor.png)
+![Conqueror Launcher](Resources/EngineImages/EI/Launcher.png)
 
 ## Features
 
@@ -110,9 +110,9 @@ Two complete games made only with the engine live in `Samples/` (open the `.cqpr
 
 | | |
 |---|---|
-| ![Tetris](Samples/Tetris/Library/thumbnail.png) | **[Tetris](Samples/Tetris/README.md)** — modern-guideline falling blocks: SRS rotation with wall kicks, 7-bag, hold, ghost, lock delay, T-spins, back-to-back, combos, perfect clears, effects, menus and saved best score. |
-| ![Parkour](Samples/Parkour/Library/thumbnail.png) | **[Parkour](Samples/Parkour/README.md)** — first-person time trial with 24 levels in six themed worlds and a level-select menu: sprint, double jump, wall-run, wall-jump, slide, ledge mantle, jump pads, moving platforms, checkpoints with splits, medals and saved records. |
-| ![Ember Trail](Samples/EmberTrail/Library/thumbnail.png) | **[Ember Trail](Samples/EmberTrail/README.md)** — original 2D pixel-art platformer: six levels in three worlds, autotiled tilemaps, dash, stomp, springs, moving and crumbling platforms, 2D-lit caves, sun shards, medals and a level-select screen. |
+| ![Tetris](Resources/EngineImages/Samples/Tetris.png) | **[Tetris](Samples/Tetris/README.md)** — modern-guideline falling blocks: SRS rotation with wall kicks, 7-bag, hold, ghost, lock delay, T-spins, back-to-back, combos, perfect clears, effects, menus and saved best score. |
+| ![Parkour](Resources/EngineImages/Samples/Parkour.png) | **[Parkour](Samples/Parkour/README.md)** — first-person time trial with 24 levels in six themed worlds and a level-select menu: sprint, double jump, wall-run, wall-jump, slide, ledge mantle, jump pads, moving platforms, checkpoints with splits, medals and saved records. |
+| ![Ember Trail](Resources/EngineImages/Samples/EmberTrail.png) | **[Ember Trail](Samples/EmberTrail/README.md)** — original 2D pixel-art platformer: six levels in three worlds, autotiled tilemaps, dash, stomp, springs, moving and crumbling platforms, 2D-lit caves, sun shards, medals and a level-select screen. |
 
 All three are covered by the automated tests (every Parkour and Ember Trail level is completed end-to-end by a scripted autopilot; Ember Trail's solutions are found by a solver and replay tick-exact in the engine).
 
