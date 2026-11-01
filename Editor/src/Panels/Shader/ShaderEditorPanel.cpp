@@ -209,6 +209,11 @@ namespace Conqueror::Editor
 
     void ShaderEditorPanel::SetMaterialAsset(const std::string& path)
     {
+        if (MaterialAsset::IsReadOnly(path))
+        {
+            CQ_CORE_WARN("Shader Graph: built-in package materials are read-only; make a copy with New first");
+            return;
+        }
         m_MaterialAssetPath = path;
         m_AssetMaterial = path.empty() ? nullptr : MaterialAsset::Load(path);
         if (!path.empty() && !m_AssetMaterial)
@@ -406,7 +411,9 @@ namespace Conqueror::Editor
             }
         };
 
-        if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByPopup) && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+        // Düğüm ekleme menüsü yalnız graph alanında (önceki karenin üzerinde-olma bilgisi)
+        if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) && ImGui::IsMouseClicked(ImGuiMouseButton_Right) &&
+            ImGui::IsMouseHoveringRect(m_GraphRectMin, m_GraphRectMax, false))
         {
             int hoveredNodeID = 0;
             if (ImNodes::IsNodeHovered(&hoveredNodeID))
@@ -950,6 +957,8 @@ namespace Conqueror::Editor
 
         ImNodes::MiniMap(0.2f, ImNodesMiniMapLocation_BottomRight);
         ImNodes::EndNodeEditor();
+        m_GraphRectMin = ImGui::GetItemRectMin();   // graph alt penceresi
+        m_GraphRectMax = ImGui::GetItemRectMax();
 
         // Update positions
         for (auto& node : material->GraphNodes)
@@ -1020,7 +1029,8 @@ namespace Conqueror::Editor
 
         // Node context menu (right-click on selected node -> delete)
         const int selectedNodeCount = ImNodes::NumSelectedNodes();
-        if (selectedNodeCount > 0 && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+        // Yalnız graph alanında sağ tık (eskiden seçili düğüm varken Viewport'ta sağ tık da bu menüyü açıyordu)
+        if (selectedNodeCount > 0 && ImNodes::IsEditorHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
         {
             std::vector<int> selectedNodes((size_t)selectedNodeCount);
             ImNodes::GetSelectedNodes(selectedNodes.data());
@@ -1144,7 +1154,7 @@ namespace Conqueror::Editor
         m_CodeCacheKey = 0;
         // Malzeme bir .cqmat varlığıysa graph değişikliği dosyaya yazılır (sahneyi kaydetmeden kalıcı)
         const std::string assetPath = MaterialAsset::PathOf(material);
-        if (!assetPath.empty())
+        if (!assetPath.empty() && !MaterialAsset::IsReadOnly(assetPath))
             if (auto shared = MaterialAsset::Load(assetPath))
                 MaterialAsset::Save(shared, assetPath);
     }

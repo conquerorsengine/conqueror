@@ -270,6 +270,10 @@ if(TARGET Jolt)
 endif()
 
 # Platform specific
+# GL işlevleri ve türleri glad'dan gelir: glfw3.h sistemin GL/gl.h başlığını aramasın (PUBLIC: oyuncu, editör ve
+# başlatıcı da). AGL / Yocto, BSD gibi yalnız GLES / Wayland kurulu sistemlerde o başlık yoktur (CI linux-embedded)
+target_compile_definitions(${PROJECT_NAME} PUBLIC GLFW_INCLUDE_NONE)
+
 if(WIN32)
     target_compile_definitions(${PROJECT_NAME} PUBLIC CQ_PLATFORM_WINDOWS)
     # ImGui arka uçları (ImGuiBuild.cpp) motorun içinde derlenir; bildirimleri imgui.dll içe aktarımı sanmasın

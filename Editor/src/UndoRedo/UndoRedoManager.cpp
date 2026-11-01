@@ -10,6 +10,7 @@ namespace Conqueror::Editor
         command->Execute();
         m_UndoStack.push_back(command);
         m_RedoStack.clear();
+        ++m_Version;
 
         if (m_UndoStack.size() > s_MaxStack)
             m_UndoStack.erase(m_UndoStack.begin());
@@ -25,6 +26,7 @@ namespace Conqueror::Editor
 
         command->Unexecute();
         m_RedoStack.push_back(command);
+        ++m_Version;
     }
 
     void UndoRedoManager::Redo()
@@ -37,6 +39,7 @@ namespace Conqueror::Editor
 
         command->Execute();
         m_UndoStack.push_back(command);
+        ++m_Version;
     }
 
     std::string UndoRedoManager::GetUndoDescription() const
@@ -57,5 +60,6 @@ namespace Conqueror::Editor
     {
         m_UndoStack.clear();
         m_RedoStack.clear();
+        ++m_Version;
     }
 }

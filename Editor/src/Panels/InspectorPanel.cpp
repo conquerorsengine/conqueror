@@ -2,6 +2,7 @@
 #include "Scripting/NativeScriptCompiler.h"
 #include "AssetInspector.h"
 #include "MaterialEditorUI.h"
+#include "ObjectPicker.h"
 #include "Core/Serialization/SceneSerializer.h"
 #include "UndoRedo/UndoRedoManager.h"
 #include "UndoRedo/EntitySnapshotCommand.h"
@@ -1344,29 +1345,20 @@ namespace Conqueror::Editor
                 ImGui::TextUnformatted(texName.c_str());
                 if (component.Texture)
                     ImGui::TextDisabled("%u x %u", component.Texture->GetWidth(), component.Texture->GetHeight());
-                if (ImGui::SmallButton(ICON_FA_SHAPES " Shapes"))
-                    ImGui::OpenPopup("##builtinsprites");
+                // Unity Object Picker: Assets / Packages (Square, Circle, Triangle ...) / Scene
+                const ImGuiID spritePick = ImGui::GetID("##spritepick");
+                if (ImGui::SmallButton(ICON_FA_BULLSEYE " Select"))
+                    ObjectPicker::Open(spritePick, "Sprite", ObjectPicker::ImageExtensions(), component.Texture ? component.Texture->GetPath() : std::string());
+                if (std::string picked; ObjectPicker::Consume(spritePick, picked))
+                {
+                    component.Texture = picked.empty() ? nullptr : Texture2D::Create(picked);
+                    component.SpriteName.clear();
+                }
                 ImGui::SameLine();
                 if (component.Texture && ImGui::SmallButton(ICON_FA_XMARK "##cleartex"))
                 {
                     component.Texture = nullptr;
                     component.SpriteName.clear();
-                }
-                if (ImGui::BeginPopup("##builtinsprites"))
-                {
-                    std::vector<std::string> files;
-                    std::error_code ec;
-                    for (const auto& e : std::filesystem::directory_iterator("Resources/test", ec))
-                        if (e.path().extension() == ".png")
-                            files.push_back(e.path().stem().string());
-                    std::sort(files.begin(), files.end());
-                    for (const auto& f : files)
-                        if (ImGui::MenuItem(f.c_str()))
-                        {
-                            component.Texture = Texture2D::Create("Resources/test/" + f + ".png");
-                            component.SpriteName.clear();
-                        }
-                    ImGui::EndPopup();
                 }
                 ImGui::EndGroup();
                 UI::EndProperty();

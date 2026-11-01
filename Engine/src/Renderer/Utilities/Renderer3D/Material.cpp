@@ -264,8 +264,7 @@ namespace Conqueror
         {
             if (albedoSource->Type == ShaderGraphNodeType::Color)
             {
-                Albedo = glm::vec3(albedoSource->ColorValue);
-                AlbedoMap = nullptr;
+                Albedo = glm::vec3(albedoSource->ColorValue);   // Base Map korunur: renk onu çarpar (Unity Lit)
                 CQ_CORE_INFO("Material '{0}': Albedo updated from Graph Color Node to ({1}, {2}, {3})", Name, Albedo.r, Albedo.g, Albedo.b);
             }
             else if (albedoSource->Type == ShaderGraphNodeType::TextureSample)
@@ -278,7 +277,6 @@ namespace Conqueror
             else if (albedoSource->Type == ShaderGraphNodeType::Vec3)
             {
                 Albedo = albedoSource->Vec3Value;
-                AlbedoMap = nullptr;
             }
         }
 

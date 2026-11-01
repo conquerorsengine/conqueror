@@ -844,7 +844,7 @@ namespace Conqueror::Editor
                 if (ImGui::MenuItem(spriteName))
                 {
                     auto& sprite = make(spriteName).AddComponent<SpriteRendererComponent>();
-                    sprite.Texture = Texture2D::Create("Resources/test/" + std::string(spriteName) + ".png");
+                    sprite.Texture = Texture2D::Create("Resources/Packages/Core/Sprites/" + std::string(spriteName) + ".png");
                 }
             }
             ImGui::Separator();
@@ -875,7 +875,7 @@ namespace Conqueror::Editor
             if (ImGui::MenuItem("Dynamic Sprite (Rigidbody 2D + Box)"))
             {
                 auto e = make("Dynamic Sprite");
-                e.AddComponent<SpriteRendererComponent>().Texture = Texture2D::Create("Resources/test/Square.png");
+                e.AddComponent<SpriteRendererComponent>().Texture = Texture2D::Create("Resources/Packages/Core/Sprites/Square.png");
                 e.AddComponent<RigidBody2DComponent>();
                 e.AddComponent<BoxCollider2DComponent>();
             }

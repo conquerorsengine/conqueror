@@ -21,6 +21,10 @@ namespace Conqueror
         EditorCamera(float fov, float aspectRatio, float nearClip, float farClip);
 
         void OnUpdate(Timestep ts, bool allowKeyMovement = true);
+        // Tekerlekle yakınlaştırma yalnız fare görünümün üstündeyken
+        void SetScrollEnabled(bool enabled) { m_ScrollEnabled = enabled; }
+        // Görünüm odakta değil ama fare üstünde: yalnız tekerlek
+        void UpdateScrollOnly();
         void OnEvent(Event& e);
 
         void SetCameraMode(EditorCameraMode mode);
@@ -77,6 +81,8 @@ namespace Conqueror
         float ZoomSpeed() const;
 
     private:
+        void ApplyScroll();
+        bool m_ScrollEnabled = true;
         float m_FOV = 45.0f, m_AspectRatio = 1.778f, m_NearClip = 0.1f, m_FarClip = 100000.0f;
 
         glm::mat4 m_ViewMatrix{ 1.0f };

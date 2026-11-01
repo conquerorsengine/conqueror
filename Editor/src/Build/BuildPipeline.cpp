@@ -34,7 +34,7 @@ namespace Conqueror::Editor
     namespace
     {
         // Derlenmiş oyuna kopyalanan motor kaynakları (çalışma zamanı FileSystem::ResolveResourcePath yukarı doğru arar)
-        const char* kEngineResourceDirs[] = { "Resources/Fonts", "Resources/Textures", "Resources/skybox", "Resources/test", "Resources/Scripting",
+        const char* kEngineResourceDirs[] = { "Resources/Fonts", "Resources/Textures", "Resources/skybox", "Resources/test", "Resources/Packages", "Resources/Scripting",
                                               "Resources/Logo" };   // açılış ekranı logosu, varsayılan uygulama simgesi
         const char* kBuildMarker = "build_info.yaml";
 

@@ -181,6 +181,15 @@ namespace Conqueror
 
         // Scroll zoom: poll yoluyla okunur (ImGui'nin event yutmasından bağımsız).
         // Event yolu (OnMouseScroll) bilerek boştur, çift uygulamamak için.
+        // Yalnız fare görünümün üstündeyken (Unity: tekerlek, altındaki pencereyi kaydırır)
+        if (m_ScrollEnabled)
+            ApplyScroll();
+
+        UpdateView();
+    }
+
+    void EditorCamera::ApplyScroll()
+    {
         float scrollDelta = Input::GetMouseScrollDelta();
         if (scrollDelta != 0.0f)
         {
@@ -189,7 +198,11 @@ namespace Conqueror
             else
                 MouseZoom(scrollDelta * 0.1f);
         }
+    }
 
+    void EditorCamera::UpdateScrollOnly()
+    {
+        ApplyScroll();
         UpdateView();
     }
 

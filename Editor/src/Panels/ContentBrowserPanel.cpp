@@ -158,6 +158,31 @@ namespace Conqueror::Editor
         m_Dirty = true;
     }
 
+    // Motorla gelen paketler (Resources/Packages): Content Browser'da proje Packages klasörünün altında, salt okunur
+    static const fs::path& EnginePackagesDir()
+    {
+        static const fs::path dir = fs::path(SceneSerializer::ResolveAssetPath("CQ:Resources/Packages")).lexically_normal();
+        return dir;
+    }
+
+    static bool IsUnder(const fs::path& path, const fs::path& root)
+    {
+        const std::string p = path.lexically_normal().generic_string(), r = root.lexically_normal().generic_string();
+        return !r.empty() && (p == r || (p.size() > r.size() && p.compare(0, r.size(), r) == 0 && p[r.size()] == '/'));
+    }
+
+    bool ContentBrowserPanel::IsReadOnly(const fs::path& path)
+    {
+        return IsUnder(path, EnginePackagesDir());
+    }
+
+    fs::path ContentBrowserPanel::WritableDirectory() const
+    {
+        if (!IsReadOnly(m_CurrentDirectory))
+            return m_CurrentDirectory;
+        return Project::GetActive() ? Project::GetAssetDirectory() : m_BaseDirectory / "Assets";
+    }
+
     void ContentBrowserPanel::NavigateTo(const fs::path& directory, bool recordHistory)
     {
         std::error_code ec;
@@ -355,7 +380,7 @@ namespace Conqueror::Editor
         ImGui::SameLine();
         if (iconButton(ICON_FA_ARROW_UP, "Up one folder", m_CurrentDirectory != m_BaseDirectory && m_CurrentDirectory.has_parent_path() &&
                                                            m_CurrentDirectory.parent_path() != m_BaseDirectory.parent_path()))
-            NavigateTo(m_CurrentDirectory.parent_path());
+            NavigateTo(m_CurrentDirectory.parent_path() == EnginePackagesDir() ? m_BaseDirectory / "Packages" : m_CurrentDirectory.parent_path());
         ImGui::SameLine();
         if (iconButton(ICON_FA_ARROWS_ROTATE, "Refresh"))
         {
@@ -367,8 +392,16 @@ namespace Conqueror::Editor
         // Konum çubuğu (breadcrumb)
         {
             std::vector<fs::path> parts;
+            const bool inEngine = IsReadOnly(m_CurrentDirectory);
             for (fs::path p = m_CurrentDirectory; ; p = p.parent_path())
             {
+                // Motor paketi: "<proje> > Packages > Core > ..." gibi gösterilir
+                if (inEngine && p == EnginePackagesDir())
+                {
+                    parts.push_back(m_BaseDirectory / "Packages");
+                    parts.push_back(m_BaseDirectory);
+                    break;
+                }
                 parts.push_back(p);
                 if (p == m_BaseDirectory || !p.has_parent_path() || p.parent_path() == p)
                     break;
@@ -441,6 +474,11 @@ namespace Conqueror::Editor
         std::sort(subdirs.begin(), subdirs.end(), [](const fs::path& a, const fs::path& b) {
             return ToLower(a.filename().string()) < ToLower(b.filename().string());
         });
+        // Proje Packages klasörü: motor paketleri de burada listelenir (Unity'nin yerleşik paketleri gibi, kopyalanmaz)
+        if (depth == 0 && path == m_BaseDirectory / "Packages")
+            for (fs::directory_iterator it(EnginePackagesDir(), fs::directory_options::skip_permission_denied, ec), end; !ec && it != end; it.increment(ec))
+                if (std::error_code ec2; it->is_directory(ec2))
+                    subdirs.push_back(it->path());
 
         ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth |
                                    ImGuiTreeNodeFlags_FramePadding;
@@ -460,7 +498,8 @@ namespace Conqueror::Editor
         const ImVec2 min = ImGui::GetItemRectMin();
         if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
             NavigateTo(path);
-        if (ImGui::BeginDragDropTarget())
+        const bool readOnly = IsReadOnly(path);
+        if (!readOnly && ImGui::BeginDragDropTarget())
         {
             if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
                 MoveInto(fs::path((const char*)payload->Data), path);
@@ -468,15 +507,20 @@ namespace Conqueror::Editor
                 CreatePrefabFrom(*(const Entity*)payload->Data, path);
             ImGui::EndDragDropTarget();
         }
+        if (readOnly && path.parent_path() == EnginePackagesDir() && ImGui::IsItemHovered())
+            ImGui::SetTooltip("Built-in package (read-only)");
 
         // İkon + ad
         ImDrawList* dl = ImGui::GetWindowDrawList();
         float x = min.x + ImGui::GetTreeNodeToLabelSpacing();
         float y = min.y + ImGui::GetStyle().FramePadding.y;
+        const bool packageRoot = readOnly && path.parent_path() == EnginePackagesDir();
         const char* icon = depth == 0 ? (path.filename() == "Packages" ? ICON_FA_BOX_OPEN : ICON_FA_FOLDER_TREE)
-                                      : (opened && !subdirs.empty() ? ICON_FA_FOLDER_OPEN : ICON_FA_FOLDER);
-        dl->AddText(ImVec2(x, y), IM_COL32(232, 184, 76, 255), icon);
-        dl->AddText(ImVec2(x + ImGui::GetFontSize() * 1.45f, y), ImGui::GetColorU32(ImGuiCol_Text), path.filename().string().c_str());
+                         : packageRoot ? ICON_FA_BOX
+                                       : (opened && !subdirs.empty() ? ICON_FA_FOLDER_OPEN : ICON_FA_FOLDER);
+        dl->AddText(ImVec2(x, y), packageRoot ? IM_COL32(150, 190, 240, 255) : IM_COL32(232, 184, 76, 255), icon);
+        const std::string label = packageRoot ? "Conqueror " + path.filename().string() : path.filename().string();
+        dl->AddText(ImVec2(x + ImGui::GetFontSize() * 1.45f, y), ImGui::GetColorU32(readOnly ? ImGuiCol_TextDisabled : ImGuiCol_Text), label.c_str());
 
         if (opened)
         {
@@ -788,9 +832,16 @@ namespace Conqueror::Editor
             if (m_RenamingPath != entry.Path)
                 m_RenamingPath.clear();
             m_SelectedPath = entry.Path;
-            // Inspector dosyayı gösterir (dokular: içe aktarma ayarları)
+            // Inspector dosyayı fare BIRAKILINCA gösterir, sürükleme başladıysa göstermez (Unity): seçili nesnenin bir
+            // yuvasına sürüklerken Inspector o nesnede kalır
             if (!entry.IsDirectory && ImGui::IsItemClicked(ImGuiMouseButton_Left))
+                m_PendingInspectorAsset = entry.Path;
+        }
+        if (!m_PendingInspectorAsset.empty() && m_PendingInspectorAsset == entry.Path && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+        {
+            if (hovered)
                 EditorState::Get().SelectAsset(entry.Path.string());
+            m_PendingInspectorAsset.clear();
         }
         if (hovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
         {
@@ -816,6 +867,8 @@ namespace Conqueror::Editor
         // Sürükle: diğer panellere (Inspector, Viewport, Lighting) ve klasörlere
         if (ImGui::BeginDragDropSource())
         {
+            if (m_PendingInspectorAsset == entry.Path)
+                m_PendingInspectorAsset.clear();   // sürükleme: seçim Inspector'a geçmez
             std::string itemPath = entry.Path.string();
             ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath.c_str(), itemPath.size() + 1);
             AssetTypeInfo info = GetAssetTypeInfo(entry.Path, entry.IsDirectory);
@@ -865,7 +918,7 @@ namespace Conqueror::Editor
         if (!entry.IsDirectory && IsImage(entry.Extension) && ImGui::MenuItem(ICON_FA_CIRCLE_HALF_STROKE "  Create Material"))
         {
             // Unreal: dokuya sağ tık > Create Material (doku taban haritası olur)
-            fs::path created = MakeUniquePath(m_CurrentDirectory / (entry.Path.stem().string() + ".cqmat"));
+            fs::path created = MakeUniquePath(WritableDirectory() / (entry.Path.stem().string() + ".cqmat"));
             Material m;
             m.AlbedoMap = Texture2D::Create(entry.Path.string());
             if (MaterialAsset::Create(created.string(), &m)) { m_Dirty = true; m_SelectedPath = created; EditorState::Get().SelectAsset(created.string()); }
@@ -880,13 +933,16 @@ namespace Conqueror::Editor
             ImGui::SetClipboardText(fs::relative(entry.Path, m_BaseDirectory, ec).string().c_str());
         }
         ImGui::Separator();
-        if (ImGui::MenuItem(ICON_FA_PEN "  Rename", "F2"))
+        const bool readOnly = IsReadOnly(entry.Path);
+        if (readOnly)
+            ImGui::TextDisabled(ICON_FA_LOCK "  Built-in package (read-only)");
+        if (!readOnly && ImGui::MenuItem(ICON_FA_PEN "  Rename", "F2"))
             BeginRename(entry.Path);
-        if (ImGui::MenuItem(ICON_FA_CLONE "  Duplicate", "Ctrl+D"))
+        if (!readOnly && ImGui::MenuItem(ICON_FA_CLONE "  Duplicate", "Ctrl+D"))
             DuplicatePath(entry.Path);
         ImGui::Separator();
         ImGui::PushStyleColor(ImGuiCol_Text, UI::Colors::Error);
-        if (ImGui::MenuItem(ICON_FA_TRASH "  Delete", "Del"))
+        if (!readOnly && ImGui::MenuItem(ICON_FA_TRASH "  Delete", "Del"))
         {
             m_PendingDelete = entry.Path;
             m_OpenDeleteModal = true;
@@ -901,7 +957,7 @@ namespace Conqueror::Editor
             return;
         DrawCreateMenu();
         ImGui::Separator();
-        if (ImGui::MenuItem(ICON_FA_FILE_IMPORT "  Import File..."))
+        if (!IsReadOnly(m_CurrentDirectory) && ImGui::MenuItem(ICON_FA_FILE_IMPORT "  Import File..."))
             ImportFile();
         if (ImGui::MenuItem(ICON_FA_UP_RIGHT_FROM_SQUARE "  Show in File Manager"))
             RevealInFileManager(m_CurrentDirectory);
@@ -915,6 +971,11 @@ namespace Conqueror::Editor
 
     void ContentBrowserPanel::DrawCreateMenu()
     {
+        if (IsReadOnly(m_CurrentDirectory))
+        {
+            ImGui::TextDisabled(ICON_FA_LOCK "  Built-in packages are read-only");
+            return;
+        }
         fs::path created;
         if (ImGui::MenuItem(ICON_FA_FOLDER "  Folder")) created = CreateAsset("folder");
         ImGui::Separator();
@@ -1049,7 +1110,7 @@ namespace Conqueror::Editor
         {
             if (ImGui::IsKeyPressed(ImGuiKey_F2, false))
                 BeginRename(m_SelectedPath);
-            else if (ImGui::IsKeyPressed(ImGuiKey_Delete, false))
+            else if (ImGui::IsKeyPressed(ImGuiKey_Delete, false) && !IsReadOnly(m_SelectedPath))
             {
                 m_PendingDelete = m_SelectedPath;
                 m_OpenDeleteModal = true;
@@ -1153,6 +1214,11 @@ namespace Conqueror::Editor
         std::error_code ec;
         if (source.empty() || !fs::exists(source, ec) || !fs::is_directory(directory, ec))
             return false;
+        if (IsReadOnly(source) || IsReadOnly(directory))
+        {
+            CQ_CORE_WARN("Built-in packages are read-only");
+            return false;
+        }
         if (source.parent_path() == directory)
             return false;
         // Klasörü kendi içine taşıma
@@ -1190,6 +1256,8 @@ namespace Conqueror::Editor
 
     void ContentBrowserPanel::BeginRename(const fs::path& path)
     {
+        if (IsReadOnly(path))
+            return;
         m_RenamingPath = path;
         m_RenameFrame = 0;
         std::error_code ec;
@@ -1269,6 +1337,8 @@ namespace Conqueror::Editor
 
     void ContentBrowserPanel::DuplicatePath(const fs::path& path)
     {
+        if (IsReadOnly(path))
+            return;
         std::error_code ec;
         if (!fs::exists(path, ec))
             return;
@@ -1287,6 +1357,8 @@ namespace Conqueror::Editor
 
     void ContentBrowserPanel::DeletePath(const fs::path& path)
     {
+        if (IsReadOnly(path))
+            return;
         std::error_code ec;
         if (path.empty() || !fs::exists(path, ec))
             return;
@@ -1312,29 +1384,30 @@ namespace Conqueror::Editor
 
     fs::path ContentBrowserPanel::CreateAsset(const std::string& kind)
     {
+        const fs::path dir = WritableDirectory();   // paket klasöründeyken Assets'e
         std::error_code ec;
         fs::path path;
         try
         {
             if (kind == "folder")
             {
-                path = MakeUniquePath(m_CurrentDirectory / "New Folder");
+                path = MakeUniquePath(dir / "New Folder");
                 fs::create_directory(path, ec);
             }
             else if (kind == "scene")
             {
-                path = MakeUniquePath(m_CurrentDirectory / "New Scene.cqscene");
+                path = MakeUniquePath(dir / "New Scene.cqscene");
                 auto scene = std::make_shared<Scene>();
                 SceneSerializer(scene).Serialize(path);
             }
             else if (kind == "controller")
             {
-                path = MakeUniquePath(m_CurrentDirectory / "New Animator Controller.cqcont");
+                path = MakeUniquePath(dir / "New Animator Controller.cqcont");
                 AnimationController::CreateDefault()->Serialize(path.string());
             }
             else if (kind == "montage")
             {
-                path = MakeUniquePath(m_CurrentDirectory / "New Montage.cqmontage");
+                path = MakeUniquePath(dir / "New Montage.cqmontage");
                 AnimMontage montage;
                 montage.Name = path.stem().string();
                 montage.ClipIndex = 0;
@@ -1344,7 +1417,7 @@ namespace Conqueror::Editor
             else if (kind == "prefab")
             {
                 // Boş prefab (tek kök nesne); sahneye sürüklenip doldurulur
-                path = MakeUniquePath(m_CurrentDirectory / "New Prefab.cqprefab");
+                path = MakeUniquePath(dir / "New Prefab.cqprefab");
                 auto scene = std::make_shared<Scene>();
                 Entity root = scene->CreateEntity(path.stem().string());
                 if (!PrefabSerializer::Serialize(root, path))
@@ -1352,7 +1425,7 @@ namespace Conqueror::Editor
             }
             else if (kind == "material" || kind == "shadergraph")
             {
-                path = MakeUniquePath(m_CurrentDirectory / (kind == "material" ? "New Material.cqmat" : "New Shader Graph.cqmat"));
+                path = MakeUniquePath(dir / (kind == "material" ? "New Material.cqmat" : "New Shader Graph.cqmat"));
                 Material m;
                 if (kind == "shadergraph")
                 {
@@ -1375,7 +1448,7 @@ namespace Conqueror::Editor
                 auto parent = MaterialAsset::Load(parentPath.string());
                 if (parent)
                 {
-                    path = MakeUniquePath(m_CurrentDirectory / (parentPath.stem().string() + " Variant.cqmat"));
+                    path = MakeUniquePath(dir / (parentPath.stem().string() + " Variant.cqmat"));
                     Material m = *parent;
                     m.ParentPath = MaterialAsset::PathOf(parent.get());
                     if (!MaterialAsset::Create(path.string(), &m))
@@ -1384,26 +1457,26 @@ namespace Conqueror::Editor
             }
             else if (kind == "rendertexture")
             {
-                path = MakeUniquePath(m_CurrentDirectory / "New Render Texture.cqrt");
+                path = MakeUniquePath(dir / "New Render Texture.cqrt");
                 if (!RenderTargetRegistry::WriteAsset(path.string(), 512, 512))
                     path.clear();
             }
             else if (kind == "physicsmaterial")
             {
-                path = MakeUniquePath(m_CurrentDirectory / "New Physics Material.cqphysmat");
+                path = MakeUniquePath(dir / "New Physics Material.cqphysmat");
                 if (!PhysicsMaterials::Save(PhysicsMaterialAsset{}, path.string()))
                     path.clear();
             }
             else if (kind == "timeline")
             {
-                path = MakeUniquePath(m_CurrentDirectory / "New Timeline.cqtimeline");
+                path = MakeUniquePath(dir / "New Timeline.cqtimeline");
                 TimelineAsset timeline;
                 if (!timeline.Save(path))
                     path.clear();
             }
             else if (kind == "visualscript")
             {
-                path = MakeUniquePath(m_CurrentDirectory / "NewVisualScript.cqgraph");
+                path = MakeUniquePath(dir / "NewVisualScript.cqgraph");
                 Visual::Graph graph;
                 graph.Name = path.stem().string();
                 graph.AddNode("event.start", 80.0f, 80.0f);
@@ -1413,7 +1486,7 @@ namespace Conqueror::Editor
             }
             else if (kind == "shader")
             {
-                path = MakeUniquePath(m_CurrentDirectory / "NewShader.cqsh");
+                path = MakeUniquePath(dir / "NewShader.cqsh");
                 std::ofstream f(path);
                 f << "// Conqueror shader: PBR yüzey fonksiyonu ile özel shader\n"
                      "#type vertex\n#version 460 core\n"
@@ -1443,7 +1516,7 @@ namespace Conqueror::Editor
                 auto* runtime = Scripting::ScriptRuntimes::ForLanguage(kind.substr(7));
                 if (runtime)
                 {
-                    path = MakeUniquePath(m_CurrentDirectory / ("NewScript" + runtime->GetExtensions().front()));
+                    path = MakeUniquePath(dir / ("NewScript" + runtime->GetExtensions().front()));
                     std::string name = path.stem().string();
                     name.erase(std::remove_if(name.begin(), name.end(), [](char c) { return !std::isalnum((unsigned char)c) && c != '_'; }), name.end());
                     std::ofstream f(path);
@@ -1454,7 +1527,7 @@ namespace Conqueror::Editor
             }
             else if (kind == "cqs")
             {
-                path = MakeUniquePath(m_CurrentDirectory / "NewScript.cqs");
+                path = MakeUniquePath(dir / "NewScript.cqs");
                 std::string name = path.stem().string();
                 name.erase(std::remove(name.begin(), name.end(), ' '), name.end());
                 std::ofstream f(path);
@@ -1466,7 +1539,7 @@ namespace Conqueror::Editor
             }
             else if (kind == "cpp")
             {
-                path = MakeUniquePath(m_CurrentDirectory / "NewBehaviour.cpp");
+                path = MakeUniquePath(dir / "NewBehaviour.cpp");
                 std::string name = path.stem().string();
                 name.erase(std::remove(name.begin(), name.end(), ' '), name.end());
                 std::ofstream f(path);
@@ -1484,7 +1557,7 @@ namespace Conqueror::Editor
             }
             else if (kind == "text")
             {
-                path = MakeUniquePath(m_CurrentDirectory / "New Text.txt");
+                path = MakeUniquePath(dir / "New Text.txt");
                 std::ofstream f(path);
             }
         }
@@ -1519,7 +1592,8 @@ namespace Conqueror::Editor
         const std::string ext = ToLower(path.extension().string());
         if (ext == ".cqmat")
         {
-            MaterialEditorUI::OpenGraph(path.string());   // Unreal: malzeme çift tıkla Material Editor'de açılır
+            if (!IsReadOnly(path))
+                MaterialEditorUI::OpenGraph(path.string());   // Unreal: malzeme çift tıkla Material Editor'de açılır
             return;
         }
         static const char* internal[] = { ".cpp", ".h", ".hpp", ".c", ".cs", ".cqs", ".cqsh", ".glsl", ".cqcont", ".cqscene",
@@ -1570,7 +1644,7 @@ namespace Conqueror::Editor
                 continue;
             fs::path source(outPath);
             NFD_PathSet_FreePathU8(outPath);
-            fs::path dest = MakeUniquePath(m_CurrentDirectory / source.filename());
+            fs::path dest = MakeUniquePath(WritableDirectory() / source.filename());
             std::error_code ec;
             fs::copy(source, dest, fs::copy_options::recursive, ec);
             if (ec)

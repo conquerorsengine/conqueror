@@ -836,6 +836,7 @@ namespace Conqueror
                 break;
             case InputStepType::MouseWheel:
                 io.AddMouseWheelEvent(0.0f, step.Y);
+                Input::AddMouseScrollDelta(step.Y);   // gerçek tekerlek gibi motorun Input'una da (kamera yakınlaştırma)
                 break;
             case InputStepType::Key:
                 if (ImGuiKey mod = ModKeyFor(step.Key); mod != ImGuiKey_None)

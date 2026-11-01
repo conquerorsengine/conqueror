@@ -203,7 +203,7 @@ EntitySetColor(endGroup, 0, 0, 0, 0);
 EntitySetComponentField(endGroup, "UIImage", "RaycastTarget", false);
 UISetSize(endGroup, 10, 10);
 TitleText("End Name", endGroup, "THE LANTERN", 50, 56, 1.0);
-TitleText("End Line", endGroup, "Made with Conqueror Engine  -  Timeline, Plaza set, Human characters", -20, 26, 0.85);
+TitleText("End Line", endGroup, "Made with Conqueror Engine  -  Timeline, Plaza set, Mannequin characters", -20, 26, 0.85);
 TitleText("End Hint", endGroup, "Edit it in Window > Timeline. Record it with Record (Fixed Time Step).", -62, 22, 0.6);
 UISetAlpha(endGroup, 0);
 var fade = HudImage("Fade", titles, "", 0, 0, 0, 0, 0, 0);

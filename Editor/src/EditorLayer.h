@@ -1,4 +1,5 @@
 #pragma once
+#include <unordered_set>
 
 #include "Core/Layer.h"
 #include "EditorState.h"
@@ -80,6 +81,11 @@ namespace Conqueror::Editor
         void EditDelete();
         void EditSelectAll();
         void SaveUndoState();
+        void TrackCreatedEntities();
+        Scene* m_TrackScene = nullptr;
+        size_t m_TrackCount = 0;
+        uint64_t m_TrackVersion = 0;
+        std::unordered_set<uint64_t> m_TrackIDs;
         void PerformUndo();
         void PerformRedo();
         void RefreshAllPanels();

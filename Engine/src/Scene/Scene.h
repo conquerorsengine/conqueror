@@ -136,6 +136,8 @@ namespace Conqueror
     // Malzemesiz Mesh Renderer'ın gömülü alanlarından (renk, doku, normal, maske, ışıma, kırpma) malzeme doldurur.
     // "Create New Material" de aynı dönüşümü kullanır: dosyaya çevrilen malzeme aynı görünür.
     CQ_API void FillMaterialFromMeshRenderer(Material& material, const MeshRendererComponent& meshRenderer);
+    // Varsayılan (Default Grid) malzemeli nesneye renk / doku / ışıma verildiyse gömülü malzemeye çevir. Değiştiyse true
+    CQ_API bool NormalizeDefaultMaterial(MeshRendererComponent& meshRenderer);
 
     class CQ_API Scene
     {

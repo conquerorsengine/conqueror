@@ -1,4 +1,5 @@
 #include <yaml-cpp/yaml.h>
+#include "Core/Project/Project.h"
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
@@ -90,9 +91,12 @@ namespace Conqueror
         {
             if (!IsAsset(path))
                 return false;
+            std::filesystem::path file(path);
+            if (file.is_relative() && Project::GetActive())
+                file = Project::GetActiveProjectDirectory() / file;   // "Assets/Monitor.cqrt"
             try
             {
-                YAML::Node n = YAML::LoadFile(path)["RenderTexture"];
+                YAML::Node n = YAML::LoadFile(file.string())["RenderTexture"];
                 if (!n)
                     return false;
                 outName = std::filesystem::path(path).stem().string();

@@ -27,6 +27,8 @@ namespace Conqueror::Editor
         std::string GetRedoDescription() const;
 
         void Clear();
+        // Her Execute / Undo / Redo / Clear'da artar: bu karede bir komut işlendi mi (oluşturma algılayıcısı)
+        uint64_t GetVersion() const { return m_Version; }
 
     private:
         UndoRedoManager() = default;
@@ -34,5 +36,6 @@ namespace Conqueror::Editor
         std::vector<std::shared_ptr<EditorCommand>> m_UndoStack;
         std::vector<std::shared_ptr<EditorCommand>> m_RedoStack;
         static constexpr size_t s_MaxStack = 100;
+        uint64_t m_Version = 0;
     };
 }

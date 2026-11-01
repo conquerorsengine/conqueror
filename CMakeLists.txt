@@ -28,7 +28,8 @@ endforeach()
 
 # Global compiler flags
 if(MSVC)
-    add_compile_options(/W4 /WX- /MP)
+    # /utf-8: kaynaklar UTF-8 (Türkçe yorumlar, simge karakterleri); /bigobj: büyük çeviri birimleri (EditorLayer, SceneSerializer)
+    add_compile_options(/W4 /WX- /MP /utf-8 /bigobj)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS NOMINMAX WIN32_LEAN_AND_MEAN)
 else()
     # Dağıtılan oyunlar aynı derlemeden gelir: -march=native başka CPU'larda "illegal instruction" verir.

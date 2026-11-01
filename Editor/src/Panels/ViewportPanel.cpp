@@ -128,8 +128,12 @@ namespace Conqueror::Editor
         // aktifse kamera güncellenmez (yazı yazarken kamera kaçmasın).
         const bool playing = EditorState::Get().IsPlaying();
         const bool wantText = ImGui::GetIO().WantTextInput;
+        // Tekerlek: yalnız fare görünümün üstündeyken (odak başka paneldeyken de; Inspector'da kaydırınca kamera oynamaz)
+        m_EditorCamera.SetScrollEnabled(m_ViewportHovered);
         if (m_ViewportFocused && !ImGuizmo::IsUsing() && !ImGuizmo::IsUsingViewManipulate() && !wantText)
             m_EditorCamera.OnUpdate(ts, !playing);
+        else if (m_ViewportHovered && !wantText)
+            m_EditorCamera.UpdateScrollOnly();
 
         if (!m_Framebuffer || m_ViewportSize.x <= 0 || m_ViewportSize.y <= 0)
             return;

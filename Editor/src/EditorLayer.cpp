@@ -1,6 +1,8 @@
 // glad diğer başlıklardan (GLFW) önce: gpu_probe GL geri okuma çağrıları
 #define GLFW_INCLUDE_NONE
 #include "Panels/MaterialEditorUI.h"
+#include "Panels/ObjectPicker.h"
+#include "Renderer/Utilities/Renderer3D/Material.h"
 #include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
@@ -350,6 +352,35 @@ namespace Conqueror::Editor
             CQ_CORE_INFO("EditorLayer: Creating ShaderEditorPanel...");
             m_ShaderEditorPanel = std::make_unique<ShaderEditorPanel>();
             m_ShaderEditorPanel->SetContext(m_ActiveScene.get());
+            // Nesne seçici "Scene" sekmesi: açık sahnenin kullandığı dosyalar
+            ObjectPicker::SetSceneProvider([this]() {
+                std::vector<std::string> out;
+                if (!m_ActiveScene)
+                    return out;
+                auto& reg = m_ActiveScene->m_Registry;
+                for (auto e : reg.view<MeshRendererComponent>())
+                {
+                    auto& mr = reg.get<MeshRendererComponent>(e);
+                    if (!mr.MaterialPath.empty()) out.push_back(mr.MaterialPath);
+                    for (const auto* t : { &mr.Texture, &mr.NormalMap, &mr.MaskMap })
+                        if (*t && !(*t)->GetPath().empty()) out.push_back((*t)->GetPath());
+                    if (mr.MaterialInstance)
+                        for (const auto* t : { &mr.MaterialInstance->AlbedoMap, &mr.MaterialInstance->NormalMap, &mr.MaterialInstance->EmissionMap })
+                            if (*t && !(*t)->GetPath().empty()) out.push_back((*t)->GetPath());
+                }
+                for (auto e : reg.view<SpriteRendererComponent>())
+                    if (auto& t = reg.get<SpriteRendererComponent>(e).Texture; t && !t->GetPath().empty())
+                        out.push_back(t->GetPath());
+                for (auto e : reg.view<BoxColliderComponent>())
+                    if (auto& p = reg.get<BoxColliderComponent>(e).PhysicsMaterial; !p.empty()) out.push_back(p);
+                for (auto e : reg.view<SphereColliderComponent>())
+                    if (auto& p = reg.get<SphereColliderComponent>(e).PhysicsMaterial; !p.empty()) out.push_back(p);
+                for (auto e : reg.view<CapsuleColliderComponent>())
+                    if (auto& p = reg.get<CapsuleColliderComponent>(e).PhysicsMaterial; !p.empty()) out.push_back(p);
+                for (auto& p : out)
+                    p = std::filesystem::path(p).lexically_normal().string();
+                return out;
+            });
             MaterialEditorUI::SetOpenGraphCallback([this](const std::string& materialPath) {
                 m_ShowShaderGraph = true;
                 if (m_ShaderEditorPanel)
@@ -611,9 +642,73 @@ namespace Conqueror::Editor
         return std::system(line.c_str()) == 0;
     }
 
+    void EditorLayer::TrackCreatedEntities()
+    {
+        // Düzenleme modunda komut kaydedilmeden ortaya çıkan nesneler (Create menüsü, Insert araç çubuğu, sürükle-bırak,
+        // eklentiler, otomasyon) geri alınabilir "Create" adımı olur (Unity'de nesne oluşturmak Ctrl+Z ile geri alınır)
+        auto& undo = UndoRedoManager::Get();
+        Scene* scene = m_ActiveScene.get();
+        if (!scene || !EditorState::Get().IsEditing())
+        {
+            m_TrackScene = nullptr;
+            return;
+        }
+        auto ids = scene->m_Registry.view<IDComponent>();
+        const size_t count = ids.size();
+        auto rebuild = [&]() {
+            m_TrackIDs.clear();
+            for (auto e : ids)
+                m_TrackIDs.insert((uint64_t)ids.get<IDComponent>(e).ID);
+            m_TrackCount = count;
+            m_TrackScene = scene;
+            m_TrackVersion = undo.GetVersion();
+        };
+        if (scene != m_TrackScene || undo.GetVersion() != m_TrackVersion || count < m_TrackCount)
+        {
+            rebuild();
+            return;
+        }
+        if (count == m_TrackCount)
+            return;
+        std::vector<uint64_t> created;
+        for (auto e : ids)
+        {
+            const uint64_t id = (uint64_t)ids.get<IDComponent>(e).ID;
+            if (!m_TrackIDs.count(id))
+                created.push_back(id);
+        }
+        std::unordered_set<uint64_t> createdSet(created.begin(), created.end());
+        std::vector<uint64_t> roots;
+        std::string label;
+        for (uint64_t id : created)
+        {
+            Entity e = scene->FindEntityByUUID(id);
+            Entity parent = e ? e.GetParent() : Entity{};
+            if (e && (!parent || !createdSet.count((uint64_t)parent.GetComponent<IDComponent>().ID)))
+            {
+                roots.push_back(id);
+                if (label.empty())
+                    label = "Create " + e.GetComponent<TagComponent>().Tag;
+            }
+        }
+        rebuild();
+        if (roots.empty())
+            return;
+        if (roots.size() > 1)
+            label += " (+" + std::to_string(roots.size() - 1) + ")";
+        std::shared_ptr<Scene> shared = m_ActiveScene;
+        undo.Execute(std::make_shared<CreateEntitiesCommand>(shared, std::move(roots), std::move(created), SceneSnapshotCommand::Capture(shared), label,
+                                                             [this]() {
+                                                                 SelectEntityEverywhere({});
+                                                                 RefreshAllPanels();
+                                                             }));
+        m_TrackVersion = undo.GetVersion();
+    }
+
     void EditorLayer::OnUpdate(Timestep ts)
     {
         SyncPanelContexts();
+        TrackCreatedEntities();
         FeedGameInput();
         // Project Settings > Editor > Auto Save: kayıtlı ve değişmiş sahneyi belirli aralıkla kaydet
         if (const int minutes = ProjectSettings::Editor().AutoSaveMinutes; minutes > 0 && EditorState::Get().IsEditing() && !Automation::IsActive())
@@ -1780,6 +1875,7 @@ namespace Conqueror::Editor
 
         if (m_ShowShaderGraph && m_ShaderEditorPanel)
             m_ShaderEditorPanel->OnImGuiRender();
+        ObjectPicker::Draw();
 
         if (m_CodeEditorPanel && m_CodeEditorPanel->GetIsOpen())
         {
@@ -4541,6 +4637,32 @@ namespace Conqueror::Editor
         Automation::RegisterCommand("frame_selected", [this](const Args&, std::string&) {
             if (m_ViewportPanel) m_ViewportPanel->FrameSelected();
             return true;
+        });
+        Automation::RegisterCommand("material", [this, findByName](const Args& a, std::string& err) {
+            // material assign <entity> <path.cqmat|path.cqphysmat>   (Content Browser'dan nesneye bırakmakla aynı)
+            // material expect <entity> <path|none>
+            if (a.size() < 4 && !(a.size() == 3 && a[1] == "expect")) { err = "material assign|expect <entity> <path>"; return false; }
+            Entity e = findByName(a[2]);
+            if (!e) { err = "entity '" + a[2] + "' not found"; return false; }
+            std::string path = a.size() > 3 ? a[3] : std::string();
+            for (size_t i = 4; i < a.size(); ++i) path += " " + a[i];
+            if (!path.empty() && path != "none" && std::filesystem::path(path).is_relative() && Project::GetActive())
+                path = (Project::GetActiveProjectDirectory() / path).string();
+            if (a[1] == "assign")
+            {
+                if (!AssetActions::ApplyToEntity(e, path)) { err = "cannot apply " + path; return false; }
+                return true;
+            }
+            if (a[1] == "expect")
+            {
+                std::string have = e.HasComponent<MeshRendererComponent>() ? e.GetComponent<MeshRendererComponent>().MaterialPath : std::string();
+                bool ok = (path == "none" || path.empty()) ? have.empty()
+                        : std::filesystem::weakly_canonical(have) == std::filesystem::weakly_canonical(path);
+                if (!ok) err = "material is '" + have + "'";
+                return ok;
+            }
+            err = "unknown material command";
+            return false;
         });
         Automation::RegisterCommand("view_option", [this](const Args& a, std::string& err) {
             if (a.size() < 3 || !m_ViewportPanel) { err = "view_option <grid|gizmos|skybox|fog|shadows|post|sprites|realtime> <on|off>"; return false; }

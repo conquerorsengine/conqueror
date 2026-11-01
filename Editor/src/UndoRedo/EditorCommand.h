@@ -32,6 +32,8 @@ namespace Conqueror::Editor
         bool m_Created = false;
     };
 
+    // Silme: nesne, tüm bileşenleri ve çocuklarıyla AYNI kimlikle (UUID) yedeklenir; geri alınca aynı üst nesnenin altına
+    // döner (eskiden yalnız ad, Transform ve Layer geri geliyordu: Mesh Renderer, betikler, çocuklar kayboluyordu)
     class DestroyEntityCommand : public EditorCommand
     {
     public:
@@ -40,18 +42,15 @@ namespace Conqueror::Editor
         void Unexecute() override;
         std::string GetDescription() const override { return "Delete Entity: " + m_EntityName; }
 
+        // Alt ağacı başka bir sahneye aynı UUID'lerle kopyala
+        static Entity CloneTree(Scene& destination, Entity source, Entity parent);
+
     private:
         std::shared_ptr<Scene> m_Scene;
-        Entity m_Entity;
+        uint64_t m_RootUUID = 0, m_ParentUUID = 0;
         std::string m_EntityName;
-
-        struct ComponentSnapshot
-        {
-            TransformComponent Transform;
-            LayerComponent Layer;
-        };
-
-        ComponentSnapshot m_Snapshot;
+        std::shared_ptr<Scene> m_Backup;
+        uint64_t m_BackupRoot = 0;
         bool m_Destroyed = false;
     };
 
@@ -64,7 +63,8 @@ namespace Conqueror::Editor
         std::string GetDescription() const override { return "Rename: " + m_OldName + " -> " + m_NewName; }
 
     private:
-        Entity m_Entity;
+        Scene* m_Scene = nullptr;
+        uint64_t m_UUID = 0;
         std::string m_OldName;
         std::string m_NewName;
     };
@@ -78,10 +78,8 @@ namespace Conqueror::Editor
         std::string GetDescription() const override { return "Reparent Entity"; }
 
     private:
-        Entity m_Entity;
-        Entity m_NewParent;
-        Entity m_OldParent;
-        bool m_HadOldParent = false;
+        Scene* m_Scene = nullptr;
+        uint64_t m_UUID = 0, m_NewParent = 0, m_OldParent = 0;   // 0 = kök
     };
 
     class DuplicateEntityCommand : public EditorCommand
@@ -95,7 +93,7 @@ namespace Conqueror::Editor
 
     private:
         std::shared_ptr<Scene> m_Scene;
-        Entity m_Source;
+        uint64_t m_SourceUUID = 0, m_NewUUID = 0;
         Entity m_NewEntity;
         bool m_Created = false;
     };

@@ -31,6 +31,12 @@ namespace Conqueror
         // Dosya taşındı / yeniden adlandırıldı: önbellek anahtarı ve varyantların üst yolu güncellenir
         CQ_API void OnFileMoved(const std::string& from, const std::string& to);
 
+        // Motorla gelen salt okunur paket (Packages/Core): yeni 3D nesnelerin varsayılan malzemesi (Unreal WorldGridMaterial)
+        CQ_API const std::string& DefaultGridPath();
+        CQ_API std::shared_ptr<Material> DefaultGrid();
+        // Motor kaynaklarındaki dosyalar (Packages) düzenlenemez
+        CQ_API bool IsReadOnly(const std::string& path);
+
         // YAML metni (sahneye gömülü malzeme ve dosya aynı biçimi kullanır)
         CQ_API std::string ToYaml(const Material& material);
         CQ_API bool FromYaml(const std::string& text, Material& material, std::string* error = nullptr);

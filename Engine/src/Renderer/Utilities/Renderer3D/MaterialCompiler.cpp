@@ -484,7 +484,22 @@ namespace Conqueror
         std::string aoOut = getMasterInput(4);
         std::string emissionOut = getMasterInput(5);
 
-        if (!albedoOut.empty()) injectedEvaluation += "albedo = vec3(" + albedoOut + ");\n";
+        // Albedo'ya düz bir renk (Color / Vec3 düğümü) bağlıysa Unity Lit gibi taban rengi olur: malzemenin Base Map'i
+        // varsa onunla çarpılır (eskiden renk dokuyu siliyordu). Doku / hesap bağlıysa graph sonucu olduğu gibi kullanılır.
+        const ShaderGraphNode* albedoNode = nullptr;
+        for (const auto& link : GraphLinks)
+            if (link.ToNodeID == masterNode->ID && link.ToPinIndex == 0)
+                for (const auto& n : GraphNodes)
+                    if (n.ID == link.FromNodeID)
+                        albedoNode = &n;
+        const bool albedoIsConstant = albedoNode && (albedoNode->Type == ShaderGraphNodeType::Color || albedoNode->Type == ShaderGraphNodeType::Vec3);
+        if (!albedoOut.empty())
+        {
+            if (albedoIsConstant)
+                injectedEvaluation += "albedo = vec3(" + albedoOut + ") * (u_UseAlbedoMap ? SRGBToLinear(albedoSample.rgb) : vec3(1.0));\n";
+            else
+                injectedEvaluation += "albedo = vec3(" + albedoOut + ");\n";
+        }
         if (!normalOut.empty()) injectedEvaluation += "N = normalize(fs_in.TBN * (vec3(" + normalOut + ") * 2.0 - 1.0));\n";
         if (!metallicOut.empty()) injectedEvaluation += "metallic = float(" + metallicOut + ".r);\n";
         if (!roughnessOut.empty()) injectedEvaluation += "roughness = float(" + roughnessOut + ".r);\n";

@@ -1,3 +1,4 @@
+#include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
 #include "Scene.h"
 #include "Scripting/NativeScriptCompiler.h"
 #include "Core/Console/ConsoleVariables.h"
@@ -93,6 +94,29 @@
 
 namespace Conqueror
 {
+    bool NormalizeDefaultMaterial(MeshRendererComponent& mr)
+    {
+        if (mr.MaterialPath.empty() || mr.MaterialPath != MaterialAsset::DefaultGridPath())
+            return false;
+        static const MeshRendererComponent defaults = [] { MeshRendererComponent d; return d; }();
+        const bool customized = mr.Color != defaults.Color || mr.Metallic != defaults.Metallic || mr.Roughness != defaults.Roughness ||
+                                mr.AO != defaults.AO || mr.EmissionColor != defaults.EmissionColor || mr.EmissionStrength != defaults.EmissionStrength ||
+                                mr.EmissionFromTexture || mr.Tiling != defaults.Tiling || mr.Offset != defaults.Offset || mr.WorldAlignedUV ||
+                                mr.AlignToObject || mr.Texture || mr.NormalMap || mr.MaskMap || mr.Unlit || mr.AlphaClip;
+        if (!customized)
+            return false;
+        // Gömülü malzemeye geç; doku verilmediyse dama korunur (eski görünüm: renkli dama)
+        if (!mr.Texture && mr.MaterialInstance && mr.MaterialInstance->AlbedoMap)
+        {
+            mr.Texture = mr.MaterialInstance->AlbedoMap;
+            mr.TexturePath = mr.Texture->GetPath();
+        }
+        mr.MaterialInstance = nullptr;
+        mr.MaterialPath.clear();
+        mr.RuntimeMaterial.reset();
+        return true;
+    }
+
     void FillMaterialFromMeshRenderer(Material& material, const MeshRendererComponent& meshRenderer)
     {
         material.Albedo = glm::vec3(meshRenderer.Color);
@@ -2832,6 +2856,7 @@ namespace Conqueror
             // Malzeme atanmışsa YALNIZ o çizilir (Unity: doku, renk, ışıma ve Shader Graph malzemenin içinde). Eskiden
             // Mesh Renderer dokusu varken malzemenin bir kopyası önbelleklenip ona doku ekleniyordu; sonradan derlenen
             // Shader Graph o kopyaya hiç ulaşmıyordu (küp damalı kalıyordu).
+            NormalizeDefaultMaterial(meshRenderer);
             std::shared_ptr<Material> material;
             if (meshRenderer.MaterialInstance)
             {
@@ -3313,16 +3338,15 @@ namespace Conqueror
     template<>
     CQ_API void Scene::OnComponentAdded<MeshRendererComponent>(Entity entity, MeshRendererComponent& component)
     {
-        std::string defaultTex = "Resources/Textures/texture_grid.png";
-        component.TexturePath = defaultTex;
-        component.Texture = Texture2D::Create(defaultTex);
-        if (!component.Texture)
-        {
-            // Dosya bulunamazsa beyaz fallback üret, render null patlamasın.
-            component.Texture = Texture2D::Create(1, 1);
-            uint32_t white = 0xffffffff;
-            component.Texture->SetData(&white, sizeof(white));
-        }
+        // Varsayılan malzeme (Unreal WorldGridMaterial gibi): dama dokusu Mesh Renderer'da değil, motorla gelen
+        // "Packages/Core/Materials/Default Grid" malzemesinin içinde. Betik / Inspector renk ya da doku verirse
+        // NormalizeDefaultMaterial nesneyi kendi (gömülü) malzemesine çevirir.
+        component.Texture = nullptr;
+        component.TexturePath.clear();
+        component.MaterialPath = MaterialAsset::DefaultGridPath();
+        component.MaterialInstance = MaterialAsset::DefaultGrid();
+        if (!component.MaterialInstance)
+            component.MaterialPath.clear();
     }
 
     template<>

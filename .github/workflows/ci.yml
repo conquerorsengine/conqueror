@@ -15,7 +15,7 @@ jobs:
     name: Linux (GCC 14, editor + player)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -30,7 +30,7 @@ jobs:
     name: Linux player for AGL / Yocto (Wayland only, OpenGL ES default)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -47,7 +47,7 @@ jobs:
     name: Windows (MSVC)
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Configure
         run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
       - name: Build
@@ -55,11 +55,11 @@ jobs:
 
   macos:
     name: macOS (Apple Silicon)
-    runs-on: macos-14
+    runs-on: macos-15
     # macOS port is not finished yet: the job reports problems without failing the workflow
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install dependencies
         run: brew install ninja
       - name: Configure
@@ -72,7 +72,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 300
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Build inside FreeBSD
         uses: vmactions/freebsd-vm@v1
         with:
@@ -89,7 +89,7 @@ jobs:
     name: Android (NDK, arm64-v8a player)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y ninja-build
       - name: Configure

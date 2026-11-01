@@ -65,6 +65,7 @@ namespace Conqueror::Editor
         Entity m_SelectedEntity;
         int m_SelectedMaterialIndex = 0;
         std::string m_MaterialAssetPath;
+        ImVec2 m_GraphRectMin{ 0, 0 }, m_GraphRectMax{ 0, 0 };   // düğüm ekleme menüsü yalnız bu alanda
         std::shared_ptr<Conqueror::Material> m_AssetMaterial;
     };
 }

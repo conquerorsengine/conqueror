@@ -53,6 +53,10 @@ namespace Conqueror::Editor
             ImU32 Color;
             const char* Label;
         };
+        // Motor paketleri (Packages/Core) salt okunur
+        static bool IsReadOnly(const std::filesystem::path& path);
+        // Yeni varlıkların yazılacağı klasör (paket içindeyken proje Assets)
+        std::filesystem::path WritableDirectory() const;
         static AssetTypeInfo GetAssetTypeInfo(const std::filesystem::path& path, bool isDirectory);
 
     private:
@@ -129,6 +133,7 @@ namespace Conqueror::Editor
 
         // Seçim / yeniden adlandırma
         std::filesystem::path m_SelectedPath;
+        std::filesystem::path m_PendingInspectorAsset;   // tıklandı, bırakılınca Inspector'da açılacak
         std::filesystem::path m_RenamingPath;
         char m_RenameBuffer[256] = {};
         int m_RenameFrame = 0;

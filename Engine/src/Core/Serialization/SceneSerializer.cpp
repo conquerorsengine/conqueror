@@ -1351,6 +1351,7 @@ namespace Conqueror
             out << YAML::BeginMap;
 
             auto& meshRenderer = entity.GetComponent<MeshRendererComponent>();
+            NormalizeDefaultMaterial(meshRenderer);   // varsayılan malzemeye renk / doku verildiyse gömülü yazılır
             out << YAML::Key << "MeshType" << YAML::Value << static_cast<int>(meshRenderer.Type);
             out << YAML::Key << "Color" << YAML::Value << meshRenderer.Color;
             out << YAML::Key << "Metallic" << YAML::Value << meshRenderer.Metallic;
@@ -2456,6 +2457,9 @@ namespace Conqueror
                 if (meshRendererComponent)
                 {
                     auto& mrc = deserializedEntity.AddComponent<MeshRendererComponent>();
+                    // Dosyada "MaterialAsset" yoksa gömülü malzeme (eski sahneler): eklemedeki varsayılan malzeme kaldırılır
+                    mrc.MaterialInstance = nullptr;
+                    mrc.MaterialPath.clear();
                     if (meshRendererComponent["MeshType"])
                         mrc.Type = static_cast<MeshType>(meshRendererComponent["MeshType"].as<int>());
                     mrc.Color = meshRendererComponent["Color"].as<glm::vec4>();

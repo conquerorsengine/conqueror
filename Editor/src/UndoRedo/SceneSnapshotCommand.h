@@ -6,6 +6,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace Conqueror::Editor
 {
@@ -32,6 +33,30 @@ namespace Conqueror::Editor
     private:
         std::shared_ptr<Scene> m_Scene;
         std::string m_Before, m_After, m_Label;
+        std::function<void()> m_OnRestored;
+        bool m_SkipFirstExecute = true;
+    };
+
+    // Düzenleyicide komutsuz oluşturulan nesneler (menüler, araç çubuğu, sürükle-bırak, eklentiler): geri al = bu
+    // nesneleri (alt ağaçlarıyla) sil, ileri al = oluşturma sonrası anlık görüntüyü geri yükle
+    class CreateEntitiesCommand : public EditorCommand
+    {
+    public:
+        CreateEntitiesCommand(std::shared_ptr<Scene> scene, std::vector<uint64_t> roots, std::vector<uint64_t> created, std::string after,
+                              std::string label, std::function<void()> onRestored)
+            : m_Scene(std::move(scene)), m_Roots(std::move(roots)), m_Created(std::move(created)), m_After(std::move(after)), m_Label(std::move(label)),
+              m_OnRestored(std::move(onRestored))
+        {
+        }
+
+        void Execute() override;
+        void Unexecute() override;
+        std::string GetDescription() const override { return m_Label; }
+
+    private:
+        std::shared_ptr<Scene> m_Scene;
+        std::vector<uint64_t> m_Roots, m_Created;
+        std::string m_After, m_Label;
         std::function<void()> m_OnRestored;
         bool m_SkipFirstExecute = true;
     };

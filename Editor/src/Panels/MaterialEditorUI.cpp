@@ -8,6 +8,7 @@
 #include "Scene/Components.h"
 #include "Scene/Scene.h"
 #include "UI/EditorUI.h"
+#include "ObjectPicker.h"
 
 #include <IconsFontAwesome6.h>
 #include <imgui.h>
@@ -63,7 +64,7 @@ namespace Conqueror::Editor::MaterialEditorUI
             }
             ImGui::SameLine();
             std::string shown = tex && !tex->GetPath().empty() ? fs::path(tex->GetPath()).filename().string() : std::string("None (Texture)");
-            const float clearW = tex ? h + ImGui::GetStyle().ItemSpacing.x : 0.0f;
+            const float clearW = (tex ? 2.0f : 1.0f) * (h + ImGui::GetStyle().ItemSpacing.x);
             if (ImGui::Button((shown + "##slot").c_str(), ImVec2(ImGui::GetContentRegionAvail().x - clearW, 0.0f)))
             {
                 nfdu8char_t* outPath = nullptr;
@@ -91,6 +92,17 @@ namespace Conqueror::Editor::MaterialEditorUI
                 }
                 ImGui::EndDragDropTarget();
             }
+            ImGui::SameLine();
+            const ImGuiID pickId = ImGui::GetID("##texpick");
+            if (ImGui::Button(ICON_FA_BULLSEYE "##texpick", ImVec2(h, 0)))
+                ObjectPicker::Open(pickId, "Texture", ObjectPicker::ImageExtensions(), tex ? tex->GetPath() : std::string());
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Select Texture");
+            if (std::string picked; ObjectPicker::Consume(pickId, picked))
+            {
+                tex = picked.empty() ? nullptr : Texture2D::Create(picked);
+                changed = true;
+            }
             if (tex)
             {
                 ImGui::SameLine();
@@ -106,23 +118,6 @@ namespace Conqueror::Editor::MaterialEditorUI
             return changed;
         }
 
-        std::vector<std::string> ProjectMaterials()
-        {
-            std::vector<std::string> out;
-            if (!Project::GetActive())
-                return out;
-            std::error_code ec;
-            for (fs::recursive_directory_iterator it(Project::GetAssetDirectory(), fs::directory_options::skip_permission_denied, ec), end;
-                 it != end; it.increment(ec))
-            {
-                if (ec)
-                    break;
-                if (it->is_regular_file(ec) && MaterialAsset::IsMaterialFile(it->path().string()))
-                    out.push_back(it->path().string());
-            }
-            std::sort(out.begin(), out.end());
-            return out;
-        }
     }
 
     bool DrawProperties(Material& m, const Options& options)
@@ -318,8 +313,6 @@ namespace Conqueror::Editor::MaterialEditorUI
 
     bool AssetPathSlot(const char* label, std::string& path, const char* extension, const char* typeName, const char* tooltip)
     {
-        static std::vector<std::string> s_List;
-        static char s_Filter[64] = {};
         bool changed = false;
         UI::BeginProperty(label, tooltip);
         const float h = ImGui::GetFrameHeight();
@@ -344,53 +337,15 @@ namespace Conqueror::Editor::MaterialEditorUI
             ImGui::EndDragDropTarget();
         }
         ImGui::SameLine();
+        const ImGuiID pickId = ImGui::GetID("##assetpick");
         if (ImGui::Button(ICON_FA_BULLSEYE "##assetpick", ImVec2(h, 0)))
-        {
-            s_List.clear();
-            s_Filter[0] = 0;
-            if (Project::GetActive())
-            {
-                std::error_code ec;
-                for (fs::recursive_directory_iterator it(Project::GetAssetDirectory(), fs::directory_options::skip_permission_denied, ec), end;
-                     it != end; it.increment(ec))
-                {
-                    if (ec) break;
-                    if (it->is_regular_file(ec) && Lower(it->path().extension().string()) == extension)
-                        s_List.push_back(it->path().string());
-                }
-                std::sort(s_List.begin(), s_List.end());
-            }
-            ImGui::OpenPopup("##assetpicker");
-        }
+            ObjectPicker::Open(pickId, typeName, { extension }, path);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select %s", typeName);
-        if (ImGui::BeginPopup("##assetpicker"))
+        if (std::string picked; ObjectPicker::Consume(pickId, picked))
         {
-            ImGui::SetNextItemWidth(240.0f);
-            if (ImGui::IsWindowAppearing())
-                ImGui::SetKeyboardFocusHere();
-            ImGui::InputTextWithHint("##filter", ICON_FA_MAGNIFYING_GLASS " Search", s_Filter, sizeof(s_Filter));
-            ImGui::Separator();
-            if (ImGui::Selectable("None", path.empty()))
-            {
-                path.clear();
-                changed = true;
-            }
-            const std::string filter = Lower(s_Filter);
-            for (const auto& p : s_List)
-            {
-                std::string name = fs::path(p).stem().string();
-                if (!filter.empty() && Lower(name).find(filter) == std::string::npos)
-                    continue;
-                if (ImGui::Selectable((name + "##" + p).c_str(), path == p))
-                {
-                    path = p;
-                    changed = true;
-                }
-            }
-            if (s_List.empty())
-                ImGui::TextDisabled("No %s files in Assets", extension);
-            ImGui::EndPopup();
+            path = picked;
+            changed = true;
         }
         if (!path.empty())
         {
@@ -443,8 +398,6 @@ namespace Conqueror::Editor::MaterialEditorUI
 
     void DrawMeshRendererMaterials(MeshRendererComponent& component, const std::string& entityName)
     {
-        static std::vector<std::string> s_PickerList;
-        static char s_PickerFilter[64] = {};
 
         if (component.MaterialInstance && !component.MaterialPath.empty())
             if (std::string now = MaterialAsset::PathOf(component.MaterialInstance.get()); !now.empty())
@@ -454,8 +407,9 @@ namespace Conqueror::Editor::MaterialEditorUI
         UI::BeginProperty("Material", "The material asset (.cqmat) this renderer draws with. Drag one from the Content Browser.");
         const float h = ImGui::GetFrameHeight();
         std::string shown = component.MaterialInstance
-            ? (component.MaterialPath.empty() ? component.MaterialInstance->Name + " (Scene)" : fs::path(component.MaterialPath).stem().string())
-            : std::string("Default-Material (Built-in)");
+            ? (component.MaterialPath.empty() ? component.MaterialInstance->Name + " (Scene)"
+                                              : fs::path(component.MaterialPath).stem().string() + (MaterialAsset::IsReadOnly(component.MaterialPath) ? " (Packages)" : ""))
+            : std::string("Scene Material");
         ImGui::PushStyleColor(ImGuiCol_Text, component.MaterialPath.empty() ? UI::Colors::TextDim : ImGui::GetStyleColorVec4(ImGuiCol_Text));
         ImGui::Button((std::string(ICON_FA_CIRCLE_HALF_STROKE "  ") + shown + "##matslot").c_str(),
                       ImVec2(ImGui::GetContentRegionAvail().x - h - ImGui::GetStyle().ItemSpacing.x, 0.0f));
@@ -473,41 +427,20 @@ namespace Conqueror::Editor::MaterialEditorUI
             ImGui::EndDragDropTarget();
         }
         ImGui::SameLine();
+        const ImGuiID matPickId = ImGui::GetID("##matpick");
         if (ImGui::Button(ICON_FA_BULLSEYE "##matpick", ImVec2(h, 0)))
-        {
-            s_PickerList = ProjectMaterials();
-            s_PickerFilter[0] = 0;
-            ImGui::OpenPopup("##MaterialPicker");
-        }
+            ObjectPicker::Open(matPickId, "Material", { ".cqmat" }, component.MaterialPath);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select Material");
-        if (ImGui::BeginPopup("##MaterialPicker"))
+        if (std::string picked; ObjectPicker::Consume(matPickId, picked))
         {
-            ImGui::SetNextItemWidth(260.0f);
-            if (ImGui::IsWindowAppearing())
-                ImGui::SetKeyboardFocusHere();
-            ImGui::InputTextWithHint("##filter", ICON_FA_MAGNIFYING_GLASS " Search materials", s_PickerFilter, sizeof(s_PickerFilter));
-            ImGui::Separator();
-            if (ImGui::Selectable("None (Built-in)", !component.MaterialInstance))
+            if (picked.empty())
             {
                 component.MaterialInstance = nullptr;
                 component.MaterialPath.clear();
             }
-            const std::string filter = Lower(s_PickerFilter);
-            for (const auto& p : s_PickerList)
-            {
-                std::string name = fs::path(p).stem().string();
-                if (!filter.empty() && Lower(name).find(filter) == std::string::npos)
-                    continue;
-                std::string rel = Project::GetActive() ? fs::relative(p, Project::GetAssetDirectory()).generic_string() : p;
-                if (ImGui::Selectable((name + "##" + p).c_str(), component.MaterialPath == p))
-                    AssignMaterial(component, p);
-                if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("%s", rel.c_str());
-            }
-            if (s_PickerList.empty())
-                ImGui::TextDisabled("No .cqmat files in Assets");
-            ImGui::EndPopup();
+            else
+                AssignMaterial(component, picked);
         }
         UI::EndProperty();
 
@@ -535,7 +468,13 @@ namespace Conqueror::Editor::MaterialEditorUI
         if (component.MaterialInstance)
         {
             ImGui::SameLine();
-            if (ImGui::Button(ICON_FA_DIAGRAM_PROJECT " Graph"))
+            const bool packaged = MaterialAsset::IsReadOnly(component.MaterialPath);
+            ImGui::BeginDisabled(packaged);
+            const bool openGraph = ImGui::Button(ICON_FA_DIAGRAM_PROJECT " Graph");
+            ImGui::EndDisabled();
+            if (packaged && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                ImGui::SetTooltip("Built-in material: click New to make an editable copy first");
+            if (openGraph)
             {
                 if (component.MaterialPath.empty())
                     OpenGraph(std::string());
@@ -567,12 +506,23 @@ namespace Conqueror::Editor::MaterialEditorUI
             if (component.MaterialPath.empty())
                 UI::InfoBox("This material lives inside the scene. Use New Material to save it as an asset you can share.",
                             UI::InfoType::Warning);
-            if (DrawProperties(mat))
+            if (MaterialAsset::IsReadOnly(component.MaterialPath))
+            {
+                // Paket malzemesi (Unity Default-Material gibi): düzenlenemez, "New" ile kopyası çıkarılır
+                UI::InfoBox("Built-in material from Packages (read-only). Click New to make an editable copy in your project.",
+                            UI::InfoType::Info);
+                ImGui::BeginDisabled();
+                DrawProperties(mat);
+                ImGui::EndDisabled();
+            }
+            else if (DrawProperties(mat))
                 MarkDirty(component.MaterialInstance, component.MaterialPath);
         }
         else
         {
-            ImGui::TextColored(UI::Colors::TextDim, ICON_FA_CIRCLE_HALF_STROKE "  Default-Material (Built-in)");
+            ImGui::TextColored(UI::Colors::TextDim, ICON_FA_CIRCLE_HALF_STROKE "  Scene Material");
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("This object's own material, stored in the scene. Click New to save it as a material asset.");
             Material temp;
             FillMaterialFromMeshRenderer(temp, component);
             Options opt;
@@ -626,11 +576,20 @@ namespace Conqueror::Editor::MaterialEditorUI
             }
             ImGui::TextDisabled("Variant: stores only the values you change.");
         }
+        ImGui::BeginDisabled(MaterialAsset::IsReadOnly(path));
         if (ImGui::Button(ICON_FA_DIAGRAM_PROJECT " Open Shader Graph"))
             OpenGraph(path);
+        ImGui::EndDisabled();
         if (!mat->GraphNodes.empty() && mat->GraphInitialized && mat->MaterialShader)
             UI::InfoBox("Shader Graph material: inputs wired in the graph override these values.", UI::InfoType::Info);
-        if (DrawProperties(*mat))
+        if (MaterialAsset::IsReadOnly(path))
+        {
+            UI::InfoBox("Built-in material from Packages (read-only).", UI::InfoType::Info);
+            ImGui::BeginDisabled();
+            DrawProperties(*mat);
+            ImGui::EndDisabled();
+        }
+        else if (DrawProperties(*mat))
             MarkDirty(mat, path);
     }
 }

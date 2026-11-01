@@ -1,5 +1,6 @@
 #include "MaterialAsset.h"
 #include "Material.h"
+#include "Core/Serialization/SceneSerializer.h"
 
 #include "Core/Logging/Log.h"
 
@@ -192,6 +193,28 @@ namespace Conqueror
                 }
             for (auto& [k, e] : cache)
                 e.Mat->Name = std::filesystem::path(k).stem().string();
+        }
+
+        const std::string& DefaultGridPath()
+        {
+            static const std::string path =
+                std::filesystem::path(SceneSerializer::ResolveAssetPath("CQ:Resources/Packages/Core/Materials/Default Grid.cqmat")).lexically_normal().string();
+            return path;
+        }
+
+        std::shared_ptr<Material> DefaultGrid()
+        {
+            return Load(DefaultGridPath());
+        }
+
+        bool IsReadOnly(const std::string& path)
+        {
+            if (path.empty())
+                return false;
+            static const std::string root =
+                Key(std::filesystem::path(SceneSerializer::ResolveAssetPath("CQ:Resources/Packages")).string());
+            const std::string k = Key(path);
+            return k.rfind(root + "/", 0) == 0;
         }
 
         int CheckFileChanges()

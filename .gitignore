@@ -48,3 +48,7 @@ build-*/
 # Editor recovery snapshots / crash reports
 **/Library/Recovery/
 crash_dumps/
+
+# Python bytecode caches (tool scripts: Tools/Templates, Tools/Branding ...)
+__pycache__/
+*.py[cod]

@@ -422,21 +422,24 @@ def build():
     shot(31.2, 34.6,
          lambda t, u: SEAT_LEO + v3(0, 1.28, 0) + LEFT * 0.5 - BENCH_FRONT * 0.1 + BENCH_FRONT * 0.1 * u,
          lambda t, u: mira_at(t, 1.5), 30.0, fstop=2.0)
-    # 7  the box, from behind the bench: Mira bends to open it, warm light spills out
-    shot(34.6, 41.2,
+    # 7  the box, from behind the bench: Mira bends to open it, warm light spills out. Cuts before the lantern appears:
+    #    from here it would rise right in front of Leo's face
+    t_cut8 = t_rise - 0.35
+    shot(34.6, t_cut8,
          lambda t, u: BOX_ON_BENCH - LEFT * 1.55 + BENCH_FRONT * 0.75 + v3(0, 0.5, 0) + LEFT * 0.2 * u,
          lambda t, u: lerp(BOX_ON_BENCH + v3(0, 0.15, 0), mira_at(t, 1.3), 0.42) + v3(0, 0.3 * smooth((t - 38.0) / 3.0), 0), 40.0,
          focus_on=lambda t: lerp(BOX_ON_BENCH, mira_at(t, 1.2), 0.5), fstop=2.4)
     # 8  low angle from the fountain side: the lantern rises between them
-    shot(41.2, 50.2,
+    shot(t_cut8, 50.2,
          lambda t, u: BOX_ON_BENCH + BENCH_FRONT * 2.7 + LEFT * 0.6 + v3(0, 0.05, 0) + v3(0, 0.3, 0) * u,
          lambda t, u: np.asarray(evaluate_position(lantern, t)) * 0.5 + (BOX_ON_BENCH + v3(0, 1.3, 0)) * 0.5, (50.0, 54.0),
          focus_on=lambda t: np.asarray(evaluate_position(lantern, t)), fstop=2.8, ease=True)
     # 9  wide: the plaza lights up one lamp after another, Mira dances
+    #    (camera outside the fountain basin: it used to sit under the upper bowl, in the spray)
     shot(50.2, 58.4,
-         lambda t, u: lerp(BENCH + v3(-5.6, 1.9, -3.4), BENCH + v3(-4.6, 2.3, -2.4), u),
-         lambda t, u: lerp(BENCH + v3(-0.6, 1.2, 0.2), BENCH + v3(-0.6, 1.8, 0.4), u), 44.0,
-         focus_on=lambda t: BENCH + v3(-0.8, 1.2, -0.2), fstop=4.0, ease=True)
+         lambda t, u: lerp(BENCH + BENCH_FRONT * 2.6 + LEFT * 4.4 + v3(0, 2.3, 0), BENCH + BENCH_FRONT * 3.0 + LEFT * 3.6 + v3(0, 2.8, 0), u),
+         lambda t, u: lerp(BENCH + BENCH_FRONT * 0.2 - LEFT * 0.8 + v3(0, 1.6, 0), BENCH + BENCH_FRONT * 0.2 - LEFT * 0.8 + v3(0, 2.1, 0), u), 50.0,
+         focus_on=lambda t: BENCH + BENCH_FRONT * 0.6 + v3(0, 1.2, 0), fstop=4.0, ease=True)
     # 10 the lantern drifts away: crane up from behind them into the evening sky
     shot(58.4, DURATION + FRAME,
          lambda t, u: lerp(BENCH + v3(3.0, 1.6, 2.2), BENCH + v3(5.5, 5.0, 6.0), u),
@@ -736,11 +739,11 @@ def leo_rule(x, h, z):
     c = np.tile(lin(0.80, 0.60, 0.47), (len(h), 1))                     # skin
     arm = (ax > 0.2) & (h > 0.62)                                       # T-pose arms at shoulder height
     sweater = (~arm & (h >= 0.535) & (h < 0.80)) | (arm & (ax < 0.69) & (h > 0.70))
-    knit = lin(0.70, 0.52, 0.22) * (1.0 + 0.06 * np.sin(ax * 400.0))[:, None]
+    knit = lin(0.13, 0.22, 0.42) * (1.0 + 0.06 * np.sin(ax * 400.0))[:, None]   # navy sweater (ochre read as skin)
     c = np.where(sweater[:, None], knit, c)
-    c = np.where((~arm & (h >= 0.80) & (h < 0.815) & (z > -0.02))[:, None], lin(0.62, 0.45, 0.18), c)    # collar
+    c = np.where((~arm & (h >= 0.80) & (h < 0.815) & (z > -0.02))[:, None], lin(0.09, 0.15, 0.30), c)    # collar
     c = np.where((~arm & (h >= 0.52) & (h < 0.535))[:, None], lin(0.20, 0.13, 0.08), c)                  # belt
-    c = np.where((~arm & (h >= 0.085) & (h < 0.52))[:, None], lin(0.20, 0.23, 0.30), c)                  # trousers
+    c = np.where((~arm & (h >= 0.085) & (h < 0.52))[:, None], lin(0.36, 0.29, 0.20), c)                  # trousers (khaki)
     c = np.where((h < 0.085)[:, None], lin(0.24, 0.15, 0.09), c)                                        # shoes
     c = np.where((h < 0.012)[:, None], lin(0.08, 0.07, 0.07), c)                                        # soles
     hair = (~arm & (h > 0.968)) | (~arm & (h > 0.95) & (z < 0.04)) | (~arm & (h > 0.87) & (z < -0.045))
