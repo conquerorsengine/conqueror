@@ -1,0 +1,62 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: Idle
+      States:
+        - Name: Idle
+          ClipIndex: 0
+          ClipName: idle
+          Loop: true
+          Speed: 1.0
+          EditorPosX: 260
+          EditorPosY: 170
+        - Name: Talk
+          ClipIndex: 26
+          ClipName: talk
+          Loop: true
+          Speed: 1.0
+          EditorPosX: 520
+          EditorPosY: 170
+        - Name: Nod
+          ClipIndex: 47
+          ClipName: yes
+          Loop: false
+          Speed: 1.0
+          EditorPosX: 390
+          EditorPosY: 330
+      Transitions:
+        - From: Idle
+          To: Talk
+          HasExitTime: false
+          Duration: 0.35
+          Conditions:
+            - Parameter: Talking
+              Mode: If
+        - From: Talk
+          To: Idle
+          HasExitTime: false
+          Duration: 0.5
+          Conditions:
+            - Parameter: Talking
+              Mode: IfNot
+        - From: Idle
+          To: Nod
+          HasExitTime: false
+          Duration: 0.25
+          Conditions:
+            - Parameter: Nod
+              Mode: If
+        - From: Nod
+          To: Idle
+          HasExitTime: true
+          ExitTime: 0.85
+          Duration: 0.35
+  Parameters:
+    - Name: Talking
+      Type: Bool
+      Default: 0
+    - Name: Nod
+      Type: Trigger
+      Default: 0

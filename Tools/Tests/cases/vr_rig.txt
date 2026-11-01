@@ -1,0 +1,17 @@
+# template: vr
+# VR şablonu: Q 45 derece adımlı dönüş, V iki göz önizlemesi (XR Device Simulator)
+wait 30
+focus Game
+script_errors mark
+play
+wait 60
+key Q
+wait 10
+run_cqs_file "{dir}/checks/vr_snap_turn.cqs"
+entity expect_active RegressionCheckOK true
+key V
+wait 10
+script expect "XR Origin" stereo true
+script_errors expect 0
+stop
+quit

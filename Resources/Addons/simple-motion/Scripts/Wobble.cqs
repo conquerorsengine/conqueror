@@ -1,0 +1,25 @@
+using nativebridge;
+
+// Sallanma: başlangıç dönüşü etrafında gürültülü küçük açılar (asılı tabelalar, jöle, rüzgârdaki nesneler).
+script Wobble : ConquerorScript
+{
+    public float angle = 8.0;
+    public float speed = 1.5;
+    public int seed = 1;
+
+    // Çalışma zamanı bilgisi
+    public float current = 0.0;
+
+    private var baseRot = null;
+    private float t = 0.0;
+
+    func Update(dt)
+    {
+        if (baseRot == null) { baseRot = GetRotation(); }
+        t += dt;
+        var ax = NoisePerlin2D(t * speed, seed * 1.7, seed) * angle * 2.0;
+        var az = NoisePerlin2D(t * speed, seed * 5.3 + 11.0, seed) * angle * 2.0;
+        current = ax;
+        SetRotation(baseRot.x + ax, baseRot.y, baseRot.z + az);
+    }
+}

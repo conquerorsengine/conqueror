@@ -1,0 +1,10 @@
+Template assets in this folder are by Kenney (www.kenney.nl) and are released under
+Creative Commons Zero (CC0 1.0 Universal): http://creativecommons.org/publicdomain/zero/1.0/
+
+  Characters/  Mini Characters 1.0      (character-male-a/c, character-female-a/d, Textures/colormap.png)
+  Cars/        Car Kit                  (sedan-sports, suv, race, police, taxi, hatchback-sports)
+  Furniture/   Furniture Kit            (all models)
+  City/        City Kit (Commercial)    (building-a..h, building-skyscraper-a/c)
+
+CC0 needs no attribution; it is given here as thanks. Project templates copy the files they use into the new
+project's Assets/ folder.

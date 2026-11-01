@@ -1,0 +1,99 @@
+using nativebridge;
+
+// Üçüncü şahıs karakter: hareket kameranın baktığı yöne göredir, karakter gittiği yöne yumuşakça döner.
+// Gereken: Character Controller. Kamera "cameraName" adlı varlıktır (ThirdPersonCamera betiği önerilir).
+script ThirdPersonController : ConquerorScript
+{
+    public float walkSpeed = 4.0;
+    public float sprintSpeed = 7.0;
+    public float acceleration = 10.0;
+    public float turnSpeed = 720.0;
+    public float jumpHeight = 1.3;
+    public float gravity = 20.0;
+    public float airControl = 0.4;
+    public string cameraName = "TP Camera";
+
+    // Çalışma zamanı bilgisi
+    public float speed = 0.0;
+    public bool grounded = false;
+    public int jumps = 0;
+    public float facing = 0.0;
+    public float distanceMoved = 0.0;
+
+    private var cam = null;
+    private float vx = 0.0;
+    private float vy = 0.0;
+    private float vz = 0.0;
+
+    func Start()
+    {
+        cam = FindEntity(cameraName);
+        facing = GetRotation().y;
+    }
+
+    // Kameranın yatay açısı (derece): kamera betiği varsa onun yaw değeri, yoksa dönüşü
+    func CameraYaw()
+    {
+        if (cam == null) { return 0.0; }
+        var y = GetScriptField(cam, "yaw");
+        if (y != null) { return y; }
+        return EntityGetRotation(cam).y;
+    }
+
+    func Update(dt)
+    {
+        if (dt <= 0) { return; }
+        if (dt > 0.1) { dt = 0.1; }
+        var ix = 0.0;
+        var iz = 0.0;
+        if (IsKeyPressed(Key.W) || IsKeyPressed(Key.Up)) { iz += 1.0; }
+        if (IsKeyPressed(Key.S) || IsKeyPressed(Key.Down)) { iz -= 1.0; }
+        if (IsKeyPressed(Key.D) || IsKeyPressed(Key.Right)) { ix += 1.0; }
+        if (IsKeyPressed(Key.A) || IsKeyPressed(Key.Left)) { ix -= 1.0; }
+        var il = MathSqrt(ix * ix + iz * iz);
+        if (il > 1.0) { ix /= il; iz /= il; }
+
+        var r = MathDegToRad(CameraYaw());
+        var fx = -MathSin(r);
+        var fz = -MathCos(r);
+        var rx = MathCos(r);
+        var rz = -MathSin(r);
+        var target = IsKeyPressed(Key.LeftShift) ? sprintSpeed : walkSpeed;
+        var dirX = fx * iz + rx * ix;
+        var dirZ = fz * iz + rz * ix;
+        var k = 1.0 - MathExp(-acceleration * dt * (grounded ? 1.0 : airControl));
+        vx = MathLerp(vx, dirX * target, k);
+        vz = MathLerp(vz, dirZ * target, k);
+
+        // Gidilen yöne dön (ileri -Z: yaw = atan2(-x, -z))
+        if (il > 0.01)
+        {
+            var want = MathRadToDeg(MathAtan2(-dirX, -dirZ));
+            var diff = MathNormalizeAngle(want - facing);
+            var step = turnSpeed * dt;
+            if (diff > step) { diff = step; }
+            if (diff < -step) { diff = -step; }
+            facing = MathNormalizeAngle(facing + diff);
+            SetRotation(0, facing, 0);
+        }
+
+        if (grounded && IsKeyDown(Key.Space))
+        {
+            vy = MathSqrt(2.0 * gravity * jumpHeight);
+            grounded = false;
+            jumps++;
+        }
+        vy -= gravity * dt;
+        var before = GetPosition();
+        var flags = CharacterMove(vx * dt, vy * dt, vz * dt);
+        var after = GetPosition();
+        grounded = CharacterIsGrounded();
+        if (grounded && vy < 0) { vy = -2.0; }
+        if ((flags & 2) != 0 && vy > 0) { vy = 0.0; }
+        var dx = after.x - before.x;
+        var dz = after.z - before.z;
+        var moved = MathSqrt(dx * dx + dz * dz);
+        distanceMoved += moved;
+        speed = moved / dt;
+    }
+}

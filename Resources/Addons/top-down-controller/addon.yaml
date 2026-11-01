@@ -1,0 +1,19 @@
+Id: conqueror.top-down-controller
+Name: Top Down Controller
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Twin-stick style top down movement for 3D (Character Controller) and 2D (Rigidbody 2D):
+  8-way movement with smoothing, face the movement direction or the mouse cursor, and a dash
+  with cooldown. Comes with a follow camera that keeps a fixed angle above the player.
+Category: Characters
+Icon: arrows-up-down-left-right
+Tags: [top-down, twin-stick, controller, character, camera, 2d, 3d]
+Components:
+  - Scripts/TopDownController.cqs
+  - Scripts/TopDownCamera.cqs
+Inserts:
+  - Name: Top Down Player
+    Icon: arrows-up-down-left-right
+    Prefab: Prefabs/TopDownPlayer.cqprefab
+    Tooltip: Character with the Top Down Controller and a follow camera

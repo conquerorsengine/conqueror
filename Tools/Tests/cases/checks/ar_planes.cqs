@@ -1,0 +1,6 @@
+using nativebridge;
+var s = FindEntity("AR Session");
+var planes = GetScriptField(s, "planeCount");
+var state = GetScriptField(s, "trackingState");
+LogInfo("REGRESSION ar_planes planes=" + planes + " state=" + state);
+if (planes >= 2 && state == "Tracking") { CreateEntity("RegressionCheckOK"); }

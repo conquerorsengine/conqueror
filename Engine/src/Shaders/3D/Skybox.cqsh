@@ -2,54 +2,57 @@
 #type vertex
 #version 450 core
 
-layout(location = 0) in vec3 a_Position;
+#include "Include/FrameData.glsl"
+
+// Tam ekran üçgen. Yönler CPU'nun kurduğu perspektif "gökyüzü izdüşümünün" tersinden gelir:
+// ortografik (2D) kameralarda da gökyüzü tüm ekranı kaplar (birim küp yöntemi küçük bir kare çiziyordu).
+uniform mat4 u_SkyInvViewProj;
 
 out vec3 v_TexCoords;
 
-uniform mat4 u_Projection;
-uniform mat4 u_View;
-uniform float u_Rotation = 0.0;
-
 void main()
 {
-    // Rotation matrix (Y axis)
-    float c = cos(u_Rotation);
-    float s = sin(u_Rotation);
-    mat3 rotMat = mat3(
-        c, 0.0, s,
-        0.0, 1.0, 0.0,
-        -s, 0.0, c
-    );
-    
-    v_TexCoords = rotMat * a_Position;
-    vec4 pos = u_Projection * u_View * vec4(a_Position, 1.0);
-    gl_Position = pos.xyww; // Depth trick: z = w (depth = 1.0)
+    vec2 pos = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)) * 2.0 - 1.0;
+    vec4 world = u_SkyInvViewProj * vec4(pos, 1.0, 1.0);
+    vec3 d = world.xyz / world.w;
+
+    // Gökyüzü dönüşü (CPU'dan IBLParams.zw ile gelir; IBL ile aynı yön)
+    float c = CQ_Frame.IBLParams.z;
+    float s = CQ_Frame.IBLParams.w;
+    v_TexCoords = vec3(c * d.x - s * d.z, d.y, s * d.x + c * d.z);
+    gl_Position = vec4(pos, 1.0, 1.0); // derinlik = 1.0 (en arkada)
 }
 
 #type fragment
 #version 450 core
 
-out vec4 FragColor;
+#include "Include/Common.glsl"
+#include "Include/FrameData.glsl"
+
+layout(location = 0) out vec4 FragColor;
 
 in vec3 v_TexCoords;
 
 uniform samplerCube u_Skybox;
 uniform float u_Exposure = 1.0;
-uniform float u_Gamma = 2.2;
 uniform vec3 u_Tint = vec3(1.0);
 
 void main()
 {
-    vec3 color = texture(u_Skybox, v_TexCoords).rgb;
-    
-    // Tint uygula
-    color *= u_Tint;
-    
-    // Exposure tone mapping
-    color = vec3(1.0) - exp(-color * u_Exposure);
-    
-    // Gamma correction
-    color = pow(color, vec3(1.0 / u_Gamma));
-    
+    vec3 dir = normalize(v_TexCoords);
+    vec3 color = textureLod(u_Skybox, dir, 0.0).rgb * u_Tint * u_Exposure;
+
+    // Sis gökyüzünü de etkiler (ufka doğru)
+    if (CQ_Frame.FogColor.a > 0.5)
+    {
+        float horizon = 1.0 - Saturate(abs(dir.y) * 4.0);
+        color = mix(color, CQ_Frame.FogColor.rgb, horizon * 0.85);
+    }
+
+    if (CQ_Frame.FeatureFlags.x == 0)
+    {
+        color = vec3(1.0) - exp(-color);
+        color = LinearToSRGB(color);
+    }
     FragColor = vec4(color, 1.0);
 }

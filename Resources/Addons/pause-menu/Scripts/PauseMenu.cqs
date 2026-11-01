@@ -1,0 +1,62 @@
+using nativebridge;
+
+// Duraklatma: Esc / P / gamepad Start. "Pause Panel" görünür olur, zaman ölçeği 0, imleç serbest.
+// Düğmeler: "Resume Button", "Restart Button", "Menu Button" (menuScene sahnesini yükler).
+script PauseMenu : ConquerorScript
+{
+    public string panelName = "Pause Panel";
+    public string menuScene = "";
+    public bool releaseCursor = true;
+
+    // Çalışma zamanı bilgisi
+    public bool paused = false;
+    public int pauses = 0;
+
+    private float savedTimeScale = 1.0;
+
+    func Start() { SetPanel(false); }
+
+    func SetPanel(on)
+    {
+        var p = FindEntity(panelName);
+        if (p != null) { UISetVisible(p, on); }
+        if (on) { var r = FindEntity("Resume Button"); if (r != null) { UISetSelected(r); } }
+    }
+
+    func Pause()
+    {
+        if (paused) { return; }
+        paused = true;
+        pauses++;
+        savedTimeScale = GetTimeScale();
+        SetTimeScale(0.0);
+        if (releaseCursor) { SetCursorMode(0); }
+        SetPanel(true);
+        BroadcastMessage("OnPause");
+    }
+
+    func Resume()
+    {
+        if (!paused) { return; }
+        paused = false;
+        SetTimeScale(savedTimeScale > 0 ? savedTimeScale : 1.0);
+        SetPanel(false);
+        BroadcastMessage("OnResume");
+    }
+
+    func Toggle() { if (paused) { Resume(); } else { Pause(); } }
+
+    func Update(dt)
+    {
+        var startButton = IsGamepadConnected(0) && IsGamepadButtonPressed(0, 7);
+        if (IsKeyDown(Key.Escape) || IsKeyDown(Key.P) || startButton) { Toggle(); return; }
+        if (!paused) { return; }
+        if (UIWasClicked(FindEntity("Resume Button"))) { Resume(); }
+        if (UIWasClicked(FindEntity("Restart Button"))) { Resume(); ReloadScene(); }
+        if (UIWasClicked(FindEntity("Menu Button")))
+        {
+            Resume();
+            if (menuScene != "") { LoadScene(menuScene); } else { LoadScene(0); }
+        }
+    }
+}

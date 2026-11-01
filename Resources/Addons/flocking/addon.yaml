@@ -1,0 +1,19 @@
+Id: conqueror.flocking
+Name: Flocking (Boids)
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Schools of fish, flocks of birds and swarms: a flock manager spawns boids from a template
+  and steers them with separation, alignment and cohesion inside a bounding box, avoids
+  obstacles with look-ahead rays, can follow a target and keeps every boid facing its velocity.
+  A spatial grid keeps a few hundred boids cheap.
+Category: AI
+Icon: dove
+Tags: [boids, flocking, swarm, birds, fish, ai]
+Components:
+  - Scripts/Flock.cqs
+Inserts:
+  - Name: Flock
+    Icon: dove
+    Prefab: Prefabs/Flock.cqprefab
+    Tooltip: 40 boids flying inside a 20 m box

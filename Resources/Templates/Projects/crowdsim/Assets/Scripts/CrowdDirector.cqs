@@ -1,0 +1,161 @@
+using nativebridge;
+
+// Kalabalık yönetmeni: bank yerleri ("Seat") ve vitrin önleri ("Window Spot") için rezervasyon, iki yayayı sohbete
+// eşleştirme, sokak uçları ("Exit"), meydanda rastgele yürünebilir nokta. Yukarı / aşağı ok tuşları kalabalığı
+// büyütür / küçültür (yaya kopyalanır / silinir). Arayüzde anlık sayım: yürüyen, oturan, sohbet eden, vitrine bakan.
+script CrowdDirector : ConquerorScript
+{
+    public float plazaHalfX = 18.5;
+    public float plazaHalfZ = 13.5;
+    public int minPeople = 8;
+    public int maxPeople = 90;
+    [Header("State")]
+    public int people = 0;
+    public int walking = 0;
+    public int sitting = 0;
+    public int talking = 0;
+    public int shopping = 0;
+
+    private var seats = [];
+    private var spots = [];
+    private var exits = [];
+    private var taken = Map();
+    private float statTimer = 0.0;
+    private var palette = [];
+
+    func Start()
+    {
+        seats = FindEntitiesWithTag("Seat");
+        spots = FindEntitiesWithTag("Window Spot");
+        exits = FindEntitiesWithTag("Exit");
+        palette = [{r: 0.24, g: 0.3, b: 0.48}, {r: 0.32, g: 0.33, b: 0.36}, {r: 0.78, g: 0.7, b: 0.56}, {r: 0.42, g: 0.46, b: 0.3},
+                   {r: 0.56, g: 0.24, b: 0.26}, {r: 0.36, g: 0.5, b: 0.66}, {r: 1.15, g: 1.12, b: 1.05}, {r: 0.7, g: 0.5, b: 0.34},
+                   {r: 0.46, g: 0.5, b: 0.56}, {r: 0.74, g: 0.52, b: 0.55}, {r: 0.2, g: 0.2, b: 0.22}, {r: 0.58, g: 0.62, b: 0.5}];
+        // Her yayaya farklı kıyafet rengi (Model.Tint; malzeme paylaşılır)
+        var i = 0;
+        foreach (var p in FindEntitiesWithTag("Pedestrian"))
+        {
+            EntitySetComponentField(p, "Model", "Tint", palette[(i * 5 + 3) % len(palette)]);
+            i++;
+        }
+    }
+
+    func Free(e) { return !taken.ContainsKey("" + e); }
+
+    func Reserve(list, who)
+    {
+        var free = [];
+        foreach (var e in list) { if (Free(e)) { free.Add(e); } }
+        if (len(free) == 0) { return -1; }
+        var pick = free[MathRandomInt(0, len(free) - 1)];
+        taken["" + pick] = who;
+        return pick;
+    }
+
+    func ReserveSeat(who) { return Reserve(seats, who); }
+    func ReserveSpot(who) { return Reserve(spots, who); }
+    func ReleaseSeat(e) { taken.Remove("" + e); }
+    func ReleaseSpot(e) { taken.Remove("" + e); }
+
+    // Aynı bankın diğer yerinde oturan var mı ("Seat <n> A" / "Seat <n> B")
+    func NeighborSeated(seat)
+    {
+        var name = EntityGetName(seat);
+        var other = StringEndsWith(name, " A") ? StringRemoveSuffix(name, " A") + " B" : StringRemoveSuffix(name, " B") + " A";
+        var o = FindEntity(other);
+        if (o == null || o < 0 || Free(o)) { return false; }
+        var who = taken["" + o];
+        return GetScriptField(who, "activity") >= 3;
+    }
+
+    func RandomExit(except)
+    {
+        if (len(exits) == 0) { return -1; }
+        return exits[MathRandomInt(0, len(exits) - 1)];
+    }
+
+    // Meydanda (çeşme ve bankların dışında) rastgele yürünebilir nokta
+    func RandomPoint()
+    {
+        for (var k = 0; k < 12; k++)
+        {
+            var x = RandomRange(-plazaHalfX, plazaHalfX);
+            var z = RandomRange(-plazaHalfZ, plazaHalfZ);
+            if (x * x + z * z < 49.0) { continue; }
+            var s = NavSamplePosition(x, 0, z, 1.5);
+            if (s != null) { return {x: s.x, z: s.z}; }
+        }
+        return {x: RandomRange(-8.0, 8.0), z: 10.0};
+    }
+
+    // Yakında gezinen biriyle buluşma: ikisi ortada, 1.3 m arayla birbirine dönük durur
+    func RequestChat(who)
+    {
+        var a = EntityGetWorldPosition(who);
+        var best = -1;
+        var bestD = 400.0;
+        foreach (var p in FindEntitiesWithTag("Pedestrian"))
+        {
+            if (p == who) { continue; }
+            var t = GetScriptField(p, "task");
+            if (t != "Wander" && t != "Pause" && t != "Idle") { continue; }
+            var b = EntityGetWorldPosition(p);
+            var d = (a.x - b.x) * (a.x - b.x) + (a.z - b.z) * (a.z - b.z);
+            if (d < bestD) { best = p; bestD = d; }
+        }
+        if (best < 0) { return false; }
+        var b2 = EntityGetWorldPosition(best);
+        var m = NavSamplePosition((a.x + b2.x) * 0.5, 0, (a.z + b2.z) * 0.5, 3.0);
+        if (m == null) { return false; }
+        var ang = RandomRange(0.0, 6.2831853);
+        var ox = MathCos(ang) * 0.65;
+        var oz = MathSin(ang) * 0.65;
+        var secs = RandomRange(8.0, 16.0);
+        InvokeMethod(who, "JoinChat", best, m.x + ox, m.z + oz, m.x - ox, m.z - oz, secs);
+        InvokeMethod(best, "JoinChat", who, m.x - ox, m.z - oz, m.x + ox, m.z + oz, secs);
+        return true;
+    }
+
+    func Update(dt)
+    {
+        var list = FindEntitiesWithTag("Pedestrian");
+        if (IsKeyDown("Up") && len(list) < maxPeople)
+        {
+            for (var k = 0; k < 5 && len(list) + k < maxPeople; k++)
+            {
+                var src = list[MathRandomInt(0, len(list) - 1)];
+                var ex = exits[MathRandomInt(0, len(exits) - 1)];
+                var e = EntityGetWorldPosition(ex);
+                var c = Instantiate(src, e.x + RandomRange(-1.5, 1.5), 0, e.z + RandomRange(-1.5, 1.5));
+                EntitySetComponentField(c, "Model", "Tint", palette[MathRandomInt(0, len(palette) - 1)]);
+            }
+        }
+        if (IsKeyDown("Down") && len(list) > minPeople)
+        {
+            for (var k = 0; k < 5 && len(list) - k > minPeople; k++)
+            {
+                var victim = list[len(list) - 1 - k];
+                InvokeMethod(victim, "Release");
+                EntityDestroy(victim);
+            }
+        }
+        statTimer -= dt;
+        if (statTimer > 0.0) { return; }
+        statTimer = 0.25;
+        people = len(list);
+        walking = 0;
+        sitting = 0;
+        talking = 0;
+        shopping = 0;
+        foreach (var p in list)
+        {
+            var a = GetScriptField(p, "activity");
+            var t = GetScriptField(p, "task");
+            if (a == 3 || a == 4) { sitting++; }
+            else if (a == 1) { talking++; }
+            else if (t == "Window" && a != 0) { shopping++; }
+            else if (GetScriptField(p, "speed") > 0.3) { walking++; }
+        }
+        UISetText("CrowdStats", "PEOPLE " + people + "     WALKING " + walking + "     SITTING " + sitting + "     TALKING " + talking + "     WINDOW SHOPPING " + shopping);
+    }
+}

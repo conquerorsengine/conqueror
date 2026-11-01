@@ -1,36 +1,37 @@
-using Conqueror;
+using nativebridge;
 
+// 2D oyuncu kontrolcüsü: A/D ile yürü, Space ile zıpla.
+// Public alanlar Inspector'da düzenlenebilir (sahneyle kaydedilir).
 script PlayerController : ConquerorScript
 {
-    var moveSpeed = 5.0;
-    var jumpForce = 5.0;
+    [Tooltip("Yatay hareket hızı (birim/saniye)")]
+    [Range(0, 20)]
+    public float moveSpeed = 5.0;
 
-    func OnCreate()
+    [Range(0, 30)]
+    public float jumpForce = 7.0;
+
+    private int jumps = 0;
+
+    func Start()
     {
-        LogInfo("PlayerController baslatildi. Hiz: " + moveSpeed);
+        LogInfo($"PlayerController started (speed {moveSpeed:F1})");
     }
 
-    func OnUpdate(ts)
+    func Update(dt)
     {
         var vel = GetLinearVelocity2D();
-        var vx = vel.x;
-        var vy = vel.y;
-
         var moveX = 0.0;
+        if (IsKeyPressed(Key.A) || IsKeyPressed(Key.Left))  moveX -= 1.0;
+        if (IsKeyPressed(Key.D) || IsKeyPressed(Key.Right)) moveX += 1.0;
 
-        if (IsKeyPressed(Key.A)) { moveX = -1.0; }
-        if (IsKeyPressed(Key.D)) { moveX = 1.0; }
-
-        vx = moveX * moveSpeed;
-
-        if (IsKeyPressed(Key.Space))
+        var vy = vel.y;
+        // Yerdeyken (dikey hız ~0) zıpla
+        if (IsKeyPressed(Key.Space) && MathAbs(vy) < 0.01)
         {
-            if (vy * vy < 0.01)
-            {
-                vy = jumpForce;
-            }
+            vy = jumpForce;
+            jumps++;
         }
-
-        SetLinearVelocity2D(vx, vy);
+        SetLinearVelocity2D(moveX * moveSpeed, vy);
     }
 }

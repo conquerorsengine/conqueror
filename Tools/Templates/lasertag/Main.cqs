@@ -1,0 +1,72 @@
+// Laser Tag (Roblox Laser Tag şablonu gibi): Mavi (sen + 3 bot) - Kırmızı (4 bot), lazer silahları, ışıklı yelekler,
+// karanlık neon arena; ilk 25 vuruşa ulaşan takım kazanır, vurulan oyuncu 3 sn sonra üssünde doğar.
+// @EditorCamera 26 10 20 0 1.5 0   (proje açıldığında editör görünümü: uzaklık, eğim, yön, odak)
+var sun = OutdoorLighting(-60, 20);
+EntitySetComponentField(sun, "DirectionalLight", "Intensity", 0.7);
+EntitySetComponentField(sun, "DirectionalLight", "Color", {r: 0.55, g: 0.6, b: 1.0});
+RenderSettingSet("Environment.Sky", "SolidColor");
+RenderSettingSet("Environment.BackgroundColor", {r: 0.01, g: 0.01, b: 0.02});
+RenderSettingSet("Environment.SkyboxIntensity", 0.5);
+RenderSettingSet("Post.VolumetricClouds", false);
+RenderSettingSet("Fog.Color", {r: 0.03, g: 0.03, b: 0.06});
+RenderSettingSet("Fog.Density", 0.02);
+RenderSettingSet("Post.BloomIntensity", 0.7);
+RenderSettingSet("Post.Exposure", 1.1);
+ShooterFX();
+CombatArena(GRID_DARK, GRID_DARK, GRID, GRID_DARK);
+// Neon şeritler: duvar dipleri ve siperlerin üstü (takım üsleri renginde)
+func Neon(name, x, y, z, sx, sy, sz, c)
+{
+    var e = Mesh(name, "Cube", x, y, z, sx, sy, sz, "", {r: c.r, g: c.g, b: c.b, a: 1});
+    EntitySetComponentField(e, "MeshRenderer", "EmissionColor", c);
+    EntitySetComponentField(e, "MeshRenderer", "EmissionStrength", 6.0);
+    EntitySetComponentField(e, "MeshRenderer", "CastShadows", false);
+    return e;
+}
+var blue = {r: 0.15, g: 0.55, b: 1.0};
+var red = {r: 1.0, g: 0.15, b: 0.1};
+var pink = {r: 1.0, g: 0.2, b: 0.8};
+Neon("Neon South", 0, 0.15, 31.9, 64, 0.08, 0.1, blue);
+Neon("Neon North", 0, 0.15, -31.9, 64, 0.08, 0.1, red);
+Neon("Neon East", 31.9, 0.15, 0, 0.1, 0.08, 64, pink);
+Neon("Neon West", -31.9, 0.15, 0, 0.1, 0.08, 64, pink);
+// Ortadaki kule: üst yüzün tamamı değil yalnızca kenarları neon şerit (gerçek lazer tag salonları gibi; göz almaz)
+foreach (var ts in [{n: "N", x: 0, z: -4.0, sx: 8.1, sz: 0.1}, {n: "S", x: 0, z: 4.0, sx: 8.1, sz: 0.1},
+                    {n: "E", x: 4.0, z: 0, sx: 0.1, sz: 8.1}, {n: "W", x: -4.0, z: 0, sx: 0.1, sz: 8.1}])
+{
+    var trim = Neon("Neon Tower " + ts.n, ts.x, 3.04, ts.z, ts.sx, 0.08, ts.sz, pink);
+    EntitySetComponentField(trim, "MeshRenderer", "EmissionStrength", 4.0);
+}
+// Kapalı salon: tavan, tavan kirişleri ve ışık panelleri (siyah boşluk yerine gerçek bir iç mekân)
+Box("Ceiling", 0, 7.5, 0, 66, 0.5, 66, GRID_DARK);
+for (var bi = 0; bi < 5; bi++)
+{
+    Box("Ceiling Beam " + bi, -24 + bi * 12, 6.9, 0, 0.6, 0.6, 64, GRID_DARK);
+    var panel = Neon("Ceiling Light " + bi, -24 + bi * 12, 6.86, 0, 0.35, 0.04, 56, {r: 0.75, g: 0.8, b: 1.0});
+    EntitySetComponentField(panel, "MeshRenderer", "EmissionStrength", 1.3);
+}
+Box("Wall Upper North", 0, 5, -32.5, 66, 2.5, 1, GRID_DARK);
+Box("Wall Upper South", 0, 5, 32.5, 66, 2.5, 1, GRID_DARK);
+Box("Wall Upper East", 32.5, 5, 0, 1, 2.5, 64, GRID_DARK);
+Box("Wall Upper West", -32.5, 5, 0, 1, 2.5, 64, GRID_DARK);
+for (var i = 0; i < 8; i++)
+{
+    var lx = -28 + i * 8;
+    var l = CreateEntity("Light " + i);
+    EntitySetPosition(l, lx, 4.2, i % 2 == 0 ? 20 : -20);
+    EntityAddComponent(l, "PointLight");
+    EntitySetComponentField(l, "PointLight", "Color", i % 2 == 0 ? blue : red);
+    EntitySetComponentField(l, "PointLight", "Intensity", 30.0);
+    EntitySetComponentField(l, "PointLight", "Range", 22.0);
+}
+for (var i = 0; i < 4; i++)
+{
+    SpawnPoint("Blue", i, -9 + i * 6, 28, 0);
+    SpawnPoint("Red", i, -9 + i * 6, -28, 180);
+}
+for (var i = 0; i < 3; i++) { Bot("Blue Bot " + (i + 1), -6 + i * 6, 0, 25, 0, i % 2 == 0 ? "Mannequin_Female" : "Mannequin_Male", "Laser", "Blue", 3.0); }
+for (var i = 0; i < 4; i++) { Bot("Red Bot " + (i + 1), -9 + i * 6, 0, -27, 180, i % 2 == 0 ? "Mannequin_Male" : "Mannequin_Female", "Laser", "Red", 3.0); }
+FPPlayer("Player", 0, 0, 28, 0, ["Laser"], "Blue", 100, 3);
+Game("LaserTag", 25, 480);
+ShooterHUD();
+UISetText("HintText", "WASD MOVE   SHIFT SPRINT   SPACE JUMP   LMB TAG   RMB AIM   TAGGED PLAYERS RESPAWN AT BASE");

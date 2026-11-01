@@ -1,0 +1,101 @@
+#language GLSL
+// Ekran uzayı ortam örtmesi (yarım çözünürlük). Normaller derinlikten yeniden kurulur.
+#type vertex
+#version 450 core
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+out vec2 v_UV;
+void main()
+{
+    v_UV = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+
+#include "Include/Common.glsl"
+
+layout(location = 0) out float FragAO;
+in vec2 v_UV;
+
+uniform sampler2D u_Depth;
+uniform mat4 u_Projection;
+uniform mat4 u_InvProjection;
+uniform vec2 u_DepthTexel;     // tam çözünürlük derinlik 1/boyut
+uniform float u_Radius = 0.6;
+uniform float u_Intensity = 1.0;
+uniform float u_Power = 1.5;
+uniform float u_Time = 0.0;
+
+vec3 ViewPos(vec2 uv)
+{
+    float d = SampleDepth(u_Depth, uv);
+    vec4 clip = vec4(uv * 2.0 - 1.0, d * 2.0 - 1.0, 1.0);
+    vec4 v = u_InvProjection * clip;
+    return v.xyz / v.w;
+}
+
+vec3 ReconstructNormal(vec2 uv, vec3 p)
+{
+    // En küçük türevli komşuyu seç: kenarlarda doğru normal
+    vec3 r = ViewPos(uv + vec2(u_DepthTexel.x, 0.0)) - p;
+    vec3 l = p - ViewPos(uv - vec2(u_DepthTexel.x, 0.0));
+    vec3 t = ViewPos(uv + vec2(0.0, u_DepthTexel.y)) - p;
+    vec3 b = p - ViewPos(uv - vec2(0.0, u_DepthTexel.y));
+    vec3 dx = abs(r.z) < abs(l.z) ? r : l;
+    vec3 dy = abs(t.z) < abs(b.z) ? t : b;
+    return normalize(cross(dx, dy));
+}
+
+const vec3 KERNEL[16] = vec3[](
+    vec3( 0.5381, 0.1856, 0.4319), vec3( 0.1379, 0.2486, 0.4430),
+    vec3( 0.3371, 0.5679, 0.0057), vec3(-0.6999,-0.0451, 0.0019),
+    vec3( 0.0689,-0.1598, 0.8547), vec3( 0.0560, 0.0069, 0.1843),
+    vec3(-0.0146, 0.1402, 0.0762), vec3( 0.0100,-0.1924, 0.0344),
+    vec3(-0.3577,-0.5301, 0.4358), vec3(-0.3169, 0.1063, 0.0158),
+    vec3( 0.0103,-0.5869, 0.0046), vec3(-0.0897,-0.4940, 0.3287),
+    vec3( 0.7119,-0.0154, 0.0918), vec3(-0.0533, 0.0596, 0.5411),
+    vec3( 0.0352,-0.0631, 0.5460), vec3(-0.4776, 0.2847, 0.0271)
+);
+
+void main()
+{
+    // Yarım çözünürlüklü piksel merkezi tam çözünürlüklü derinliğin iki dokusu arasına düşer: en yakın doku merkezine
+    // hizala. Komşu farkları (normal kurulumu) böylece tam bir dokuya karşılık gelir; OpenGL ES'de derinlik dokuları
+    // doğrusal filtrelenemediği (NEAREST) için hizasız okumada komşu ile merkez aynı dokuya düşüp normal bozuluyordu.
+    vec2 uv = (floor(v_UV / u_DepthTexel) + 0.5) * u_DepthTexel;
+    float depth = texture(u_Depth, uv).r;
+    if (depth >= 0.99999)
+    {
+        FragAO = 1.0;
+        return;
+    }
+    vec3 p = ViewPos(uv);
+    vec3 n = ReconstructNormal(uv, p);
+
+    float noise = InterleavedGradientNoise(gl_FragCoord.xy) * 6.2831853;
+    vec3 rnd = vec3(cos(noise), sin(noise), 0.0);
+    vec3 tangent = normalize(rnd - n * dot(rnd, n));
+    vec3 bitangent = cross(n, tangent);
+    mat3 tbn = mat3(tangent, bitangent, n);
+
+    float radius = u_Radius;
+    float occlusion = 0.0;
+    for (int i = 0; i < 16; ++i)
+    {
+        float scale = float(i + 1) / 16.0;
+        scale = mix(0.1, 1.0, scale * scale);
+        vec3 samplePos = p + tbn * KERNEL[i] * radius * scale;
+        vec4 offset = u_Projection * vec4(samplePos, 1.0);
+        offset.xy /= offset.w;
+        vec2 suv = offset.xy * 0.5 + 0.5;
+        if (any(lessThan(suv, vec2(0.0))) || any(greaterThan(suv, vec2(1.0))))
+            continue;
+        float sceneZ = ViewPos(suv).z;
+        float rangeCheck = smoothstep(0.0, 1.0, radius / max(abs(p.z - sceneZ), 1e-4));
+        occlusion += (sceneZ >= samplePos.z + 0.02 ? 1.0 : 0.0) * rangeCheck;
+    }
+    float ao = 1.0 - (occlusion / 16.0) * u_Intensity;
+    FragAO = pow(clamp(ao, 0.0, 1.0), u_Power);
+}

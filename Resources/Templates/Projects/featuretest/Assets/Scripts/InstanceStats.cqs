@@ -1,0 +1,45 @@
+using nativebridge;
+
+// Instancing + LOD istasyonu: Multi Mesh'in örnek / çizim çağrısı sayısını ve her LOD Group'un o anki seviyesini
+// yazılara döker (ekrandaki boyuta göre değişir: yaklaşınca LOD 0, uzaklaşınca LOD 2).
+script InstanceStats : ConquerorScript
+{
+    public string multiMeshName = "Instanced Field";
+    public string lodPrefix = "LOD Object ";
+    public string lodLabelPrefix = "LOD Label ";
+
+    private var mm = -1;
+    private var lods = [];
+    private var labels = [];
+    private float timer = 0.0;
+
+    func Start()
+    {
+        mm = FindEntity(multiMeshName);
+        for (var i = 0; i < 8; i++)
+        {
+            var e = FindEntity(lodPrefix + i);
+            if (e == null || e < 0) { break; }
+            lods.Add(e);
+            labels.Add(FindEntity(lodLabelPrefix + i));
+        }
+    }
+
+    func Update(dt)
+    {
+        timer -= dt;
+        if (timer > 0.0) { return; }
+        timer = 0.2;
+        if (mm != null && mm >= 0)
+        {
+            var n = EntityGetComponentField(mm, "MultiMesh", "Instances");
+            var dc = EntityGetComponentField(mm, "MultiMesh", "DrawCalls");
+            EntitySetComponentField(GetEntityId(), "TextRenderer", "Text", n + " INSTANCES  /  " + dc + (dc == 1 ? " DRAW CALL" : " DRAW CALLS"));
+        }
+        for (var i = 0; i < lods.Count; i++)
+        {
+            var lod = EntityGetComponentField(lods[i], "LODGroup", "CurrentLOD");
+            if (labels[i] != null && labels[i] >= 0) { EntitySetComponentField(labels[i], "TextRenderer", "Text", "LOD " + lod); }
+        }
+    }
+}

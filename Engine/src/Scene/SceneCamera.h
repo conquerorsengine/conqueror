@@ -42,13 +42,15 @@ namespace Conqueror
         void RecalculateProjection();
 
     private:
-        ProjectionType m_ProjectionType = ProjectionType::Orthographic;
+        // Unity gibi yeni kameralar perspektif; 2D sahneler ortografiği açıkça seçer (tür her zaman serileştirilir)
+        ProjectionType m_ProjectionType = ProjectionType::Perspective;
 
         float m_PerspectiveFOV = glm::radians(45.0f);
         float m_PerspectiveNear = 0.01f, m_PerspectiveFar = 1000.0f;
 
         float m_OrthographicSize = 10.0f;
-        float m_OrthographicNear = -1.0f, m_OrthographicFar = 1.0f;
+        // Geniş simetrik aralık: kamera z=0 ya da geride (z=10) iken 2D sahne görünür (eski -1/1 siyah ekran veriyordu)
+        float m_OrthographicNear = -1000.0f, m_OrthographicFar = 1000.0f;
 
         float m_AspectRatio = 0.0f;
 

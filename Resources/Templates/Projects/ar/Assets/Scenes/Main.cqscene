@@ -1,0 +1,3324 @@
+Scene: Untitled
+Entities:
+  - Entity: 8316177736411589612
+    TagComponent:
+      Tag: AR Simulation Environment
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 8997948622370469112
+    TagComponent:
+      Tag: Floor
+      GameTag: AR Surface
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.1, 0]
+      Rotation: [0, -0, 0]
+      Scale: [3.7, 0.1, 3.2]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.45
+      AO: 1
+      Tiling: [0.45, 0.45]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/laminate_floor_02.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 7805695421709735793
+    TagComponent:
+      Tag: Ceiling
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 2.8, 0]
+      Rotation: [0, -0, 0]
+      Scale: [3.7, 0.1, 3.2]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.95, 0.95, 0.94, 1]
+      Metallic: 0
+      Roughness: 0.9
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 3606027304258932405
+    TagComponent:
+      Tag: Wall North
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.35, -3.1]
+      Rotation: [0, -0, 0]
+      Scale: [3.7, 1.35, 0.1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.85
+      AO: 1
+      Tiling: [0.5, 0.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/white_plaster.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 4282261173961522830
+    TagComponent:
+      Tag: Wall South
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.35, 3.1]
+      Rotation: [0, -0, 0]
+      Scale: [3.7, 1.35, 0.1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.85
+      AO: 1
+      Tiling: [0.5, 0.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/white_plaster.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2736185583160538597
+    TagComponent:
+      Tag: Wall West
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.6, 1.35, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.1, 1.35, 3]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.85
+      AO: 1
+      Tiling: [0.5, 0.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/white_plaster.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 3914467013933175164
+    TagComponent:
+      Tag: Wall East North
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [3.6, 1.35, -2.2]
+      Rotation: [0, -0, 0]
+      Scale: [0.1, 1.35, 0.8]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.85
+      AO: 1
+      Tiling: [0.5, 0.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/white_plaster.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6989889070570026501
+    TagComponent:
+      Tag: Wall East South
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [3.6, 1.35, 2.2]
+      Rotation: [0, -0, 0]
+      Scale: [0.1, 1.35, 0.8]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.85
+      AO: 1
+      Tiling: [0.5, 0.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/white_plaster.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 5313326772860782945
+    TagComponent:
+      Tag: Window Sill Wall
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [3.6, 0.225, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.1, 0.225, 1.4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.85
+      AO: 1
+      Tiling: [0.5, 0.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/white_plaster.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 775659979925826210
+    TagComponent:
+      Tag: Window Header
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [3.6, 2.525, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.1, 0.175, 1.4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.85
+      AO: 1
+      Tiling: [0.5, 0.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/white_plaster.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 1942628049740412242
+    TagComponent:
+      Tag: Window Frame Bottom
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [3.6, 0.47, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.06, 0.025, 1.4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.09, 1]
+      Metallic: 0
+      Roughness: 0.4
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 681018910578943882
+    TagComponent:
+      Tag: Window Frame Top
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [3.6, 2.33, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.06, 0.025, 1.4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.09, 1]
+      Metallic: 0
+      Roughness: 0.4
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 931600285600690582
+    TagComponent:
+      Tag: Window Mullion
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [3.6, 1.4, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.06, 0.93, 0.025]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.09, 1]
+      Metallic: 0
+      Roughness: 0.4
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 612282695664933171
+    TagComponent:
+      Tag: Window Glass
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [3.6, 1.4, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.01, 0.93, 1.375]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.02, 0.03, 0.03, 0.15]
+      Metallic: 0
+      Roughness: 0.02
+      AO: 1
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 7439797889277374705
+    TagComponent:
+      Tag: Window Ledge
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [3.43, 0.465, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.08, 0.015, 1.45]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.95, 0.95, 0.94, 1]
+      Metallic: 0
+      Roughness: 0.4
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6432404952249273749
+    TagComponent:
+      Tag: Skirting
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.05, -2.99]
+      Rotation: [0, -0, 0]
+      Scale: [3.5, 0.05, 0.01]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.96, 0.96, 0.95, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6235587271716792340
+    TagComponent:
+      Tag: Skirting
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.05, 2.99]
+      Rotation: [0, -0, 0]
+      Scale: [3.5, 0.05, 0.01]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.96, 0.96, 0.95, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 5294239736175276971
+    TagComponent:
+      Tag: Skirting
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.49, 0.05, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.01, 0.05, 3]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.96, 0.96, 0.95, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2868230842970257215
+    TagComponent:
+      Tag: Garden Lawn
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [23.5, -0.32, 0]
+      Rotation: [0, -0, 0]
+      Scale: [20, 0.15, 30]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.92, 1, 0.88, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      Tiling: [0.3, 0.3]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/lawn_grass.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 4436760673291602396
+    TagComponent:
+      Tag: Rug
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.2, 0.002, -1.25]
+      Rotation: [0, -0, 0]
+      Scale: [1.4, 0.002, 0.95]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      Tiling: [1.5, 1]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/fabric_pattern_07.jpg
+  - Entity: 6597733688300870948
+    TagComponent:
+      Tag: Sofa
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.2, 0, -2.5]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/sofa_03.glb
+  - Entity: 3159569761546495398
+    TagComponent:
+      Tag: Throw Pillows
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.2, 0.45, -2.45]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/throw_pillows_01.glb
+  - Entity: 4368512151725315161
+    TagComponent:
+      Tag: Sofa Seat
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.2, 0.22, -2.45]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2.6, 0.44, 0.85]
+      IsTrigger: false
+      Version: 2
+  - Entity: 9187412157957772660
+    TagComponent:
+      Tag: Sofa Back
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.2, 0.5, -2.82]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2.7, 1, 0.26]
+      IsTrigger: false
+      Version: 2
+  - Entity: 1156870242980130287
+    TagComponent:
+      Tag: Coffee Table
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.2, 0, -1.25]
+      Rotation: [0, 1.570451, 0]
+      Scale: [0.99999994, 1, 0.99999994]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/modern_coffee_table_01.glb
+  - Entity: 6606897464592597874
+    TagComponent:
+      Tag: Coffee Table Top
+      GameTag: AR Surface
+      IsStatic: false
+    TransformComponent:
+      Position: [0.2, 0.195, -1.25]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [1.2, 0.39, 0.6]
+      IsTrigger: false
+      Version: 2
+  - Entity: 34283233786940925
+    TagComponent:
+      Tag: Coffee Table Vase
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.62, 0.39, -1.18]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/ceramic_vase_03.glb
+  - Entity: 7570725401182922459
+    TagComponent:
+      Tag: Side Table
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [1.9, 0, -2.6]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/side_table_01.glb
+  - Entity: 1213015304999454059
+    TagComponent:
+      Tag: Side Table Top
+      GameTag: AR Surface
+      IsStatic: false
+    TransformComponent:
+      Position: [1.9, 0.2755, -2.6]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [0.55, 0.551, 0.45]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2483245380101785721
+    TagComponent:
+      Tag: Picture Frame
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [1.85, 0.551, -2.62]
+      Rotation: [0, -0.43633232, 0]
+      Scale: [0.99999994, 1, 0.99999994]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/standing_picture_frame_01.glb
+  - Entity: 476343420767120264
+    TagComponent:
+      Tag: Painting
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.2, 1.22, -2.98]
+      Rotation: [0, -0, 0]
+      Scale: [1.2, 1.2, 1.2]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/hanging_picture_frame_01.glb
+  - Entity: 7753007421389263810
+    TagComponent:
+      Tag: Corner Plant
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.95, 0, -2.45]
+      Rotation: [0, 0.5235988, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/potted_plant_01.glb
+  - Entity: 4233841596574664030
+    TagComponent:
+      Tag: Corner Plant Pot
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.95, 0.6, -2.45]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [0.55, 1.2, 0.55]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2946887760998390631
+    TagComponent:
+      Tag: Sideboard
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.26, 0, 0]
+      Rotation: [0, 1.570451, 0]
+      Scale: [0.84999996, 0.85, 0.84999996]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/modern_wooden_cabinet.glb
+  - Entity: 6447317043267129916
+    TagComponent:
+      Tag: Sideboard Top
+      GameTag: AR Surface
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.26, 0.289, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [0.44, 0.578, 2.07]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6694626187839340619
+    TagComponent:
+      Tag: Sideboard Vase
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.26, 0.578, 0.65]
+      Rotation: [0, -0, 0]
+      Scale: [0.8, 0.8, 0.8]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/ceramic_vase_01.glb
+  - Entity: 2370926186823586983
+    TagComponent:
+      Tag: Sideboard Plant
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.26, 0.578, -0.6]
+      Rotation: [0, -0, 0]
+      Scale: [1.3, 1.3, 1.3]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/potted_plant_04.glb
+  - Entity: 8054543408915302024
+    TagComponent:
+      Tag: Wall Painting
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.48, 1.45, 0]
+      Rotation: [0, 1.570451, 0]
+      Scale: [1.3999999, 1.4, 1.3999999]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/hanging_picture_frame_02.glb
+  - Entity: 4359487850532105807
+    TagComponent:
+      Tag: Dining Table
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [1.9, 0, 1.6]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/dining_table.glb
+  - Entity: 5262853755145511449
+    TagComponent:
+      Tag: Dining Table Top
+      GameTag: AR Surface
+      IsStatic: false
+    TransformComponent:
+      Position: [1.9, 0.857, 1.6]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2.2, 0.04, 1.34]
+      IsTrigger: false
+      Version: 2
+  - Entity: 4677108607335542867
+    TagComponent:
+      Tag: Dining Chair
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [1.35, 0, 0.66]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/dining_chair_02.glb
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0.48668885, -0.042813756]
+      Size: [0.43357077, 0.9733777, 0.5764201]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2357320683803806130
+    TagComponent:
+      Tag: Dining Chair
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2.45, 0, 0.66]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/dining_chair_02.glb
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0.48668885, -0.042813756]
+      Size: [0.43357077, 0.9733777, 0.5764201]
+      IsTrigger: false
+      Version: 2
+  - Entity: 8268881716087778633
+    TagComponent:
+      Tag: Dining Chair
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [1.35, 0, 2.56]
+      Rotation: [3.1415927, -8.742278e-08, 3.1415927]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/dining_chair_02.glb
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0.48668885, -0.042813756]
+      Size: [0.43357077, 0.9733777, 0.5764201]
+      IsTrigger: false
+      Version: 2
+  - Entity: 409104959740644295
+    TagComponent:
+      Tag: Dining Chair
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2.45, 0, 2.56]
+      Rotation: [3.1415927, -8.742278e-08, 3.1415927]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/dining_chair_02.glb
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0.48668885, -0.042813756]
+      Size: [0.43357077, 0.9733777, 0.5764201]
+      IsTrigger: false
+      Version: 2
+  - Entity: 3763637932209942276
+    TagComponent:
+      Tag: Table Plant
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [1.9, 0.877, 1.6]
+      Rotation: [0, -0, 0]
+      Scale: [1.4, 1.4, 1.4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/potted_plant_04.glb
+  - Entity: 7101675012263023053
+    TagComponent:
+      Tag: Ceiling Lamp
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [1.9, 1.75, 1.6]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/modern_ceiling_lamp_01.glb
+  - Entity: 5530758013232129608
+    TagComponent:
+      Tag: Lamp Light
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [1.9, 1.75, 1.6]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    PointLightComponent:
+      Color: [1, 0.8, 0.56]
+      Intensity: 0.6
+      Range: 6
+      Constant: 1
+      Linear: 0.09
+      Quadratic: 0.032
+      CastShadows: true
+      Mode: 0
+  - Entity: 2351095794078499611
+    TagComponent:
+      Tag: Sun
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 4, 0]
+      Rotation: [-0.5934119, 1.9547688, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    DirectionalLightComponent:
+      Direction: [-0.7686703, -0.5591929, 0.31056297]
+      FromRotation: true
+      Color: [1, 0.95, 0.88]
+      Intensity: 4.5
+      CastShadows: true
+      Mode: 0
+  - Entity: 3034374956020985845
+    TagComponent:
+      Tag: Window Light
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [3.4, 1.4, 0]
+      Rotation: [0, 1.5707964, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    AreaLightComponent:
+      Shape: 0
+      Color: [0.86, 0.92, 1]
+      Intensity: 2.2
+      Size: [2.8, 1.9]
+      Range: 10
+      TwoSided: false
+  - Entity: 5726258816680005860
+    TagComponent:
+      Tag: AR Session
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Scripts/ARSession.cqs
+      ClassName: ""
+  - Entity: 2675694580582830226
+    TagComponent:
+      Tag: AR Feature Points
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ParticleSystemComponent:
+      Duration: 5
+      Looping: true
+      Prewarm: false
+      PlayOnAwake: true
+      StopAction: 0
+      StartDelay: 0
+      StartLifetime: [0.5, 1.1]
+      StartSpeed: [0, 0]
+      StartSize: [0.016, 0.026]
+      StartRotation: [0, 0]
+      StartColorA: [1, 0.86, 0.3, 1]
+      StartColorB: [1, 0.95, 0.6, 1]
+      GravityModifier: 0
+      SimulationSpeed: 1
+      MaxParticles: 1200
+      SimulationSpace: 1
+      EmissionEnabled: false
+      RateOverTime: 0
+      RateOverDistance: 0
+      ShapeEnabled: true
+      Radius: 0.001
+      Angle: 25
+      BoxSize: [1, 1, 1]
+      EmitFromShell: false
+      RandomizeDirection: 0
+      Shape: 0
+      VelocityEnabled: false
+      VelocityOverLifetime: [0, 0, 0]
+      OrbitalSpeed: 0
+      LimitVelocityEnabled: false
+      Drag: 0
+      SpeedLimit: 100
+      NoiseEnabled: false
+      NoiseStrength: 1
+      NoiseFrequency: 0.5
+      NoiseScrollSpeed: 0.5
+      ColorOverLifetimeEnabled: true
+      SizeOverLifetimeEnabled: false
+      RotationOverLifetimeEnabled: false
+      AngularVelocity: 45
+      CollisionEnabled: false
+      CollisionPlaneY: 0
+      Bounce: 0.5
+      LifetimeLoss: 0
+      TextureSheetEnabled: false
+      AnimationCycles: 1
+      RandomStartFrame: false
+      Tiles: [1, 1]
+      RenderMode: 0
+      Blend: 1
+      Texture: Assets/AR/feature_point.png
+      LengthScale: 2
+      SpeedScale: 0.1
+      SortByDistance: true
+      EmissiveIntensity: 4
+      Bursts:
+        []
+      ColorOverLifetime:
+        - [0, 1, 1, 1, 0]
+        - [0.15, 1, 1, 1, 1]
+        - [0.7, 1, 1, 1, 1]
+        - [1, 1, 1, 1, 0]
+      SizeOverLifetime:
+        - [0, 1]
+        - [1, 1]
+  - Entity: 7008274307943173128
+    TagComponent:
+      Tag: XR Origin (AR)
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-1.2, 1.4, 2]
+      Rotation: [0, -0.31415927, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Scripts/ARDevice.cqs
+      ClassName: ""
+  - Entity: 722052631747591575
+    TagComponent:
+      Tag: AR Camera
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [-0.47123888, 0, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera:
+        ProjectionType: 0
+        PerspectiveFOV: 0.9599311
+        PerspectiveNear: 0.05
+        PerspectiveFar: 1000
+        OrthographicSize: 10
+        OrthographicNear: -1000
+        OrthographicFar: 1000
+      Primary: true
+      FixedAspectRatio: false
+      Background: 0
+      BackgroundColor: [0.192, 0.302, 0.475, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    AudioListenerComponent:
+      IsActive: true
+  - Entity: 5399067328740351276
+    TagComponent:
+      Tag: AR Interaction
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Scripts/ARPlacement.cqs
+      ClassName: ""
+  - Entity: 6317788269795847902
+    TagComponent:
+      Tag: Placement Reticle
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0, 0.01, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.11, 0.5, 0.11]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.95]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/AR/reticle.png
+  - Entity: 8968933554326991364
+    TagComponent:
+      Tag: Selection Ring
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0, 0.01, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.5, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [0.25, 0.7, 1, 0.9]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/AR/selection_ring.png
+  - Entity: 2439789387318738144
+    TagComponent:
+      Tag: AR Catalog
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 63806095659660280
+    TagComponent:
+      Tag: Lounge Chair
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 6906892872991622637
+    TagComponent:
+      Tag: Model
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/mid_century_lounge_chair.glb
+  - Entity: 960979398968765128
+    TagComponent:
+      Tag: Ottoman
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.9, 0.9, 0.9]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 1573740168566907767
+    TagComponent:
+      Tag: Model
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/Ottoman_01.glb
+  - Entity: 2848822529036393592
+    TagComponent:
+      Tag: Floor Plant
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 7417407974758516036
+    TagComponent:
+      Tag: Model
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/potted_plant_01.glb
+  - Entity: 5726430285782609134
+    TagComponent:
+      Tag: Shelves
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5123905559105373243
+    TagComponent:
+      Tag: Model
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/wooden_display_shelves_01.glb
+  - Entity: 4414848179972262276
+    TagComponent:
+      Tag: Side Table
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5923146213669223932
+    TagComponent:
+      Tag: Model
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/side_table_01.glb
+  - Entity: 820280522915347541
+    TagComponent:
+      Tag: Vase
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 642947370445562858
+    TagComponent:
+      Tag: Model
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/ceramic_vase_01.glb
+  - Entity: 1000626204000362950
+    TagComponent:
+      Tag: HUD
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    CanvasComponent:
+      RenderMode: 0
+      PixelPerfect: false
+      SortOrder: 0
+    CanvasScalerComponent:
+      ScaleMode: 1
+      ScaleFactor: 1
+      ReferencePixelsPerUnit: 100
+      ReferenceResolution: [1920, 1080]
+      MatchWidthOrHeight: 0.5
+    GraphicRaycasterComponent:
+      IgnoreReversedGraphics: true
+      BlockingObjects: 0
+      BlockingMask: 4294967295
+  - Entity: 1254687593667453162
+    TagComponent:
+      Tag: Instruction Back
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 1]
+      AnchorMax: [0.5, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -70]
+      SizeDelta: [1240, 66]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.03, 0.035, 0.04, 0.55]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 33
+  - Entity: 2187339382212381424
+    TagComponent:
+      Tag: ScanIcon
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 1]
+      AnchorMax: [0.5, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-560, -70]
+      SizeDelta: [64, 64]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 1, 1, 1]
+      TexturePath: Assets/AR/scan_phone.png
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 1039672835112812568
+    TagComponent:
+      Tag: InstructionText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 1]
+      AnchorMax: [0.5, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [30, -70]
+      SizeDelta: [1100, 50]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: STARTING THE AR SESSION...
+      FontPath: ""
+      FontSize: 26
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 9150617275681199741
+    TagComponent:
+      Tag: Status Back
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 1]
+      AnchorMax: [0, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [330, -150]
+      SizeDelta: [600, 46]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.03, 0.035, 0.04, 0.45]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 23
+  - Entity: 5542240006620552479
+    TagComponent:
+      Tag: StatusDot
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 1]
+      AnchorMax: [0, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [58, -150]
+      SizeDelta: [16, 16]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 0.72, 0.15, 1]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 8
+  - Entity: 5276670187527867942
+    TagComponent:
+      Tag: StatusText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 1]
+      AnchorMax: [0, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [350, -150]
+      SizeDelta: [540, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: AR SESSION  INITIALIZING
+      FontPath: ""
+      FontSize: 22
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 0
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 1374884196505696113
+    TagComponent:
+      Tag: DeviceText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 1]
+      AnchorMax: [0, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [350, -192]
+      SizeDelta: [540, 32]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: NO AR CAMERA  -  AR SIMULATION ENVIRONMENT
+      FontPath: ""
+      FontSize: 22
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 0
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 6518261903368788453
+    TagComponent:
+      Tag: Planes
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [1, 1]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-330, -150]
+      SizeDelta: [200, 50]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.1, 0.11, 0.13, 0.78]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 14
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 1157719422898768923
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: PLANES  ON
+      FontPath: ""
+      FontSize: 20
+      Color: [0.95, 0.95, 0.97, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 2588559923326041240
+    TagComponent:
+      Tag: Reset
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [1, 1]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-130, -150]
+      SizeDelta: [160, 50]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.1, 0.11, 0.13, 0.78]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 14
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 5873041132634817775
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: RESET
+      FontPath: ""
+      FontSize: 20
+      Color: [0.95, 0.95, 0.97, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 2181524065908519748
+    TagComponent:
+      Tag: Catalog Back
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 128]
+      SizeDelta: [1500, 104]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.03, 0.035, 0.04, 0.5]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 52
+  - Entity: 7429937598659153260
+    TagComponent:
+      Tag: Item Lounge Chair
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-600, 128]
+      SizeDelta: [186, 72]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.1, 0.11, 0.13, 0.78]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 14
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 7568769736541835517
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: LOUNGE CHAIR
+      FontPath: ""
+      FontSize: 21
+      Color: [0.95, 0.95, 0.97, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 7445675428618444224
+    TagComponent:
+      Tag: Item Ottoman
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-400, 128]
+      SizeDelta: [186, 72]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.1, 0.11, 0.13, 0.78]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 14
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 8614932385940725417
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: OTTOMAN
+      FontPath: ""
+      FontSize: 21
+      Color: [0.95, 0.95, 0.97, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 1759751777577882455
+    TagComponent:
+      Tag: Item Floor Plant
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-200, 128]
+      SizeDelta: [186, 72]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.1, 0.11, 0.13, 0.78]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 14
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 6117878819821259752
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: FLOOR PLANT
+      FontPath: ""
+      FontSize: 21
+      Color: [0.95, 0.95, 0.97, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 865470421538011857
+    TagComponent:
+      Tag: Item Shelves
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 128]
+      SizeDelta: [186, 72]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.1, 0.11, 0.13, 0.78]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 14
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 7799588123736301865
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: SHELVES
+      FontPath: ""
+      FontSize: 21
+      Color: [0.95, 0.95, 0.97, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 3825082997056738004
+    TagComponent:
+      Tag: Item Side Table
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [200, 128]
+      SizeDelta: [186, 72]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.1, 0.11, 0.13, 0.78]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 14
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 5965433207035645101
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: SIDE TABLE
+      FontPath: ""
+      FontSize: 21
+      Color: [0.95, 0.95, 0.97, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 5701545357650095166
+    TagComponent:
+      Tag: Item Vase
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [400, 128]
+      SizeDelta: [186, 72]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.1, 0.11, 0.13, 0.78]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 14
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 6562376679194162614
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: VASE
+      FontPath: ""
+      FontSize: 21
+      Color: [0.95, 0.95, 0.97, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 4472248470681764262
+    TagComponent:
+      Tag: Delete
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [820, 128]
+      SizeDelta: [150, 72]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.62, 0.12, 0.1, 0.85]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 14
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 5852861529158957681
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: DELETE
+      FontPath: ""
+      FontSize: 21
+      Color: [0.95, 0.95, 0.97, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 5141859509517689645
+    TagComponent:
+      Tag: Clear
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-820, 128]
+      SizeDelta: [150, 72]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.1, 0.11, 0.13, 0.78]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 14
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 2047755650435139086
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: CLEAR ALL
+      FontPath: ""
+      FontSize: 19
+      Color: [0.95, 0.95, 0.97, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 8233764907224848810
+    TagComponent:
+      Tag: HintText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 30]
+      SizeDelta: [1880, 30]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: RMB + MOUSE LOOK   WASD MOVE   Q / E DOWN / UP   CLICK PLACE / SELECT   DRAG MOVE   WHEEL SIZE   SHIFT + WHEEL ROTATE   1-6 ITEMS
+      FontPath: ""
+      FontSize: 22
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+Environment:
+  SkyboxExposure: 1
+  SkyboxRotation: 0
+  SkyboxTint: [1, 1, 1]
+  EnvironmentLightingSource: 0
+  AmbientColor: [0.3, 0.3, 0.3]
+  AmbientSkyColor: [0.5, 0.6, 0.7]
+  AmbientEquatorColor: [0.3, 0.3, 0.3]
+  AmbientGroundColor: [0.2, 0.15, 0.1]
+  AmbientIntensity: 1
+  FogEnabled: false
+  FogColor: [0.5, 0.6, 0.7]
+  FogDensity: 0.02
+  FogStart: 10
+  FogEnd: 100
+  SunSource: 0
+  HaloEnabled: false
+  HaloStrength: 0.5
+  FlareEnabled: false
+  FlareFadeSpeed: 3
+  FlareStrength: 1
+  FlareElements:
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.08
+      Offset: 0.3
+      Intensity: 1
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.06
+      Offset: 0.6
+      Intensity: 0.8
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.05
+      Offset: 0.9
+      Intensity: 0.6
+  ShadowEnabled: true
+  ShadowIntensity: 1
+  ReflectionSource: 0
+  ReflectionResolution: 128
+  ReflectionCompression: 0
+  ReflectionIntensityMultiplier: 1
+  ReflectionBounces: 1
+  BakedLightmapPath: ""
+  LightmapResolution: 40
+  MaxLightmapSize: 1024
+  MaxBounces: 2
+  DirectSamples: 32
+  IndirectSamples: 512
+  AmbientOcclusion: true
+  LightmapFiltering: 0
+  RenderSettings:
+    Shadows:
+      Enabled: true
+      Quality: 1
+      Resolution: 4096
+      Distance: 25
+      CascadeCount: 2
+      CascadeSplitLambda: 0.75
+      Strength: 1
+      Softness: 1
+      DepthBias: 0.005
+      NormalBias: 0.015
+      Color: [0, 0, 0]
+    Fog:
+      Enabled: false
+      Mode: 2
+      Color: [0.5, 0.6, 0.7]
+      Density: 0.02
+      Start: 10
+      End: 100
+      HeightFalloff: 0
+      BaseHeight: 0
+    Post:
+      Enabled: true
+      Tonemapper: 2
+      Exposure: 0.3
+      Bloom: true
+      BloomThreshold: 1
+      BloomKnee: 0.5
+      BloomIntensity: 0.15
+      BloomScatter: 0.7
+      BloomTint: [1, 1, 1]
+      AmbientOcclusion: true
+      AORadius: 0.5
+      AOIntensity: 1.1
+      AOPower: 1.5
+      ColorGrading: true
+      Contrast: 1
+      Saturation: 1
+      Temperature: 0
+      Tint: 0
+      Lift: [0, 0, 0]
+      Gamma: [1, 1, 1]
+      Gain: [1, 1, 1]
+      Vignette: true
+      VignetteIntensity: 0.12
+      VignetteSmoothness: 0.4
+      VignetteColor: [0, 0, 0]
+      ChromaticAberration: false
+      ChromaticAberrationIntensity: 0.3
+      FilmGrain: false
+      FilmGrainIntensity: 0.15
+      Sharpen: false
+      SharpenAmount: 0.3
+      AntiAliasing: 3
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: true
+      SSRIntensity: 0.6
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: true
+      SSGIIntensity: 1.3
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: false
+      CloudCoverage: 0.45
+      CloudDensity: 1
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: false
+      FocusDistance: 10
+      Aperture: 2.8
+      FocalLength: 50
+      DOFMaxBlur: 10
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
+    Environment:
+      Sky: 3
+      BackgroundColor: [0.1, 0.1, 0.1]
+      ImageBasedLighting: true
+      ReflectionIntensity: 1
+      SkyboxIntensity: 0.6
+      SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
+    Bake:
+      RealtimeGI: false
+      BakedGI: true
+      LightingMode: 0
+      Lightmapper: 1
+      ImportanceSampling: true
+      DirectSamples: 32
+      IndirectSamples: 512
+      EnvironmentSamples: 256
+      MaxBounces: 2
+      Filtering: 0
+      Packing: 0
+      Resolution: 40
+      MaxLightmapSize: 1024
+      UseMipmapLimits: true
+      Compression: 2
+      AmbientOcclusion: true
+      DirectionalMode: 0
+      AlbedoBoost: 1
+      IndirectIntensity: 1
+      RealtimeResolution: 20
+      RealtimeIndirectSamples: 256
+      RealtimeMaxBounces: 1
+      AutoGenerate: false
+      BakeOnSceneLoad: 0
+      APVFitToScene: true
+      APVOrigin: [-10, -1, -10]
+      APVSize: [20, 10, 20]
+      APVProbeOffset: [0, 0, 0]
+      APVMinSpacing: 1
+      APVMaxSpacing: 9
+      APVBakingMode: 0
+      APVDilation: false
+      APVVirtualOffset: true
+      APVValidityThreshold: 0.75
+      APVSearchDistanceMultiplier: 0.2
+      APVGeometryBias: 0.01
+      APVRayOriginBias: -0.001
+EditorCamera:
+  CameraMode: 0
+  Position: [-1.9420487, 1.8338786, 2.007928]
+  Distance: 3.9
+  Pitch: 0.34906584
+  Yaw: 0.55850536
+  OrthographicSize: 10
+Hierarchy:
+  - Child: 8614932385940725417
+    Parent: 7445675428618444224
+  - Child: 7568769736541835517
+    Parent: 7429937598659153260
+  - Child: 8997948622370469112
+    Parent: 8316177736411589612
+  - Child: 7805695421709735793
+    Parent: 8316177736411589612
+  - Child: 3606027304258932405
+    Parent: 8316177736411589612
+  - Child: 4282261173961522830
+    Parent: 8316177736411589612
+  - Child: 2736185583160538597
+    Parent: 8316177736411589612
+  - Child: 3914467013933175164
+    Parent: 8316177736411589612
+  - Child: 6989889070570026501
+    Parent: 8316177736411589612
+  - Child: 5313326772860782945
+    Parent: 8316177736411589612
+  - Child: 775659979925826210
+    Parent: 8316177736411589612
+  - Child: 1942628049740412242
+    Parent: 8316177736411589612
+  - Child: 681018910578943882
+    Parent: 8316177736411589612
+  - Child: 931600285600690582
+    Parent: 8316177736411589612
+  - Child: 612282695664933171
+    Parent: 8316177736411589612
+  - Child: 7439797889277374705
+    Parent: 8316177736411589612
+  - Child: 6432404952249273749
+    Parent: 8316177736411589612
+  - Child: 6235587271716792340
+    Parent: 8316177736411589612
+  - Child: 5294239736175276971
+    Parent: 8316177736411589612
+  - Child: 2868230842970257215
+    Parent: 8316177736411589612
+  - Child: 4436760673291602396
+    Parent: 8316177736411589612
+  - Child: 6597733688300870948
+    Parent: 8316177736411589612
+  - Child: 3159569761546495398
+    Parent: 8316177736411589612
+  - Child: 4368512151725315161
+    Parent: 8316177736411589612
+  - Child: 9187412157957772660
+    Parent: 8316177736411589612
+  - Child: 1156870242980130287
+    Parent: 8316177736411589612
+  - Child: 6606897464592597874
+    Parent: 8316177736411589612
+  - Child: 34283233786940925
+    Parent: 8316177736411589612
+  - Child: 7570725401182922459
+    Parent: 8316177736411589612
+  - Child: 1213015304999454059
+    Parent: 8316177736411589612
+  - Child: 2483245380101785721
+    Parent: 8316177736411589612
+  - Child: 476343420767120264
+    Parent: 8316177736411589612
+  - Child: 7753007421389263810
+    Parent: 8316177736411589612
+  - Child: 4233841596574664030
+    Parent: 8316177736411589612
+  - Child: 2946887760998390631
+    Parent: 8316177736411589612
+  - Child: 6447317043267129916
+    Parent: 8316177736411589612
+  - Child: 6694626187839340619
+    Parent: 8316177736411589612
+  - Child: 2370926186823586983
+    Parent: 8316177736411589612
+  - Child: 8054543408915302024
+    Parent: 8316177736411589612
+  - Child: 4359487850532105807
+    Parent: 8316177736411589612
+  - Child: 5262853755145511449
+    Parent: 8316177736411589612
+  - Child: 4677108607335542867
+    Parent: 8316177736411589612
+  - Child: 2357320683803806130
+    Parent: 8316177736411589612
+  - Child: 8268881716087778633
+    Parent: 8316177736411589612
+  - Child: 409104959740644295
+    Parent: 8316177736411589612
+  - Child: 3763637932209942276
+    Parent: 8316177736411589612
+  - Child: 7101675012263023053
+    Parent: 8316177736411589612
+  - Child: 5530758013232129608
+    Parent: 8316177736411589612
+  - Child: 2351095794078499611
+    Parent: 8316177736411589612
+  - Child: 3034374956020985845
+    Parent: 8316177736411589612
+  - Child: 5852861529158957681
+    Parent: 4472248470681764262
+  - Child: 5923146213669223932
+    Parent: 4414848179972262276
+  - Child: 2675694580582830226
+    Parent: 5726258816680005860
+  - Child: 722052631747591575
+    Parent: 7008274307943173128
+  - Child: 1157719422898768923
+    Parent: 6518261903368788453
+  - Child: 63806095659660280
+    Parent: 2439789387318738144
+  - Child: 960979398968765128
+    Parent: 2439789387318738144
+  - Child: 2848822529036393592
+    Parent: 2439789387318738144
+  - Child: 5726430285782609134
+    Parent: 2439789387318738144
+  - Child: 4414848179972262276
+    Parent: 2439789387318738144
+  - Child: 820280522915347541
+    Parent: 2439789387318738144
+  - Child: 1254687593667453162
+    Parent: 1000626204000362950
+  - Child: 2187339382212381424
+    Parent: 1000626204000362950
+  - Child: 1039672835112812568
+    Parent: 1000626204000362950
+  - Child: 9150617275681199741
+    Parent: 1000626204000362950
+  - Child: 5542240006620552479
+    Parent: 1000626204000362950
+  - Child: 5276670187527867942
+    Parent: 1000626204000362950
+  - Child: 1374884196505696113
+    Parent: 1000626204000362950
+  - Child: 6518261903368788453
+    Parent: 1000626204000362950
+  - Child: 2588559923326041240
+    Parent: 1000626204000362950
+  - Child: 2181524065908519748
+    Parent: 1000626204000362950
+  - Child: 7429937598659153260
+    Parent: 1000626204000362950
+  - Child: 7445675428618444224
+    Parent: 1000626204000362950
+  - Child: 1759751777577882455
+    Parent: 1000626204000362950
+  - Child: 865470421538011857
+    Parent: 1000626204000362950
+  - Child: 3825082997056738004
+    Parent: 1000626204000362950
+  - Child: 5701545357650095166
+    Parent: 1000626204000362950
+  - Child: 4472248470681764262
+    Parent: 1000626204000362950
+  - Child: 5141859509517689645
+    Parent: 1000626204000362950
+  - Child: 8233764907224848810
+    Parent: 1000626204000362950
+  - Child: 6117878819821259752
+    Parent: 1759751777577882455
+  - Child: 6906892872991622637
+    Parent: 63806095659660280
+  - Child: 7799588123736301865
+    Parent: 865470421538011857
+  - Child: 1573740168566907767
+    Parent: 960979398968765128
+  - Child: 5965433207035645101
+    Parent: 3825082997056738004
+  - Child: 7417407974758516036
+    Parent: 2848822529036393592
+  - Child: 6562376679194162614
+    Parent: 5701545357650095166
+  - Child: 5123905559105373243
+    Parent: 5726430285782609134
+  - Child: 2047755650435139086
+    Parent: 5141859509517689645
+  - Child: 642947370445562858
+    Parent: 820280522915347541
+  - Child: 5873041132634817775
+    Parent: 2588559923326041240

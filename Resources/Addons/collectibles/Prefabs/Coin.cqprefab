@@ -1,0 +1,265 @@
+Scene: Untitled
+Entities:
+  - Entity: 2646894640436569197
+    TagComponent:
+      Tag: Coin
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.8, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    Collectible_ConquerorScriptComponent:
+      ScriptPath: Packages/collectibles/Scripts/Collectible.cqs
+      ClassName: Collectible
+    SphereColliderComponent:
+      Offset: [0, 0, 0]
+      Radius: 0.55
+      IsTrigger: true
+      Version: 2
+  - Entity: 6934790645679971110
+    TagComponent:
+      Tag: Coin Mesh
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [1.5707964, 0, 0]
+      Scale: [0.35, 0.05, 0.35]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [1, 0.78, 0.15, 1]
+      Metallic: 0.9
+      Roughness: 0.25
+      AO: 1
+      EmissionColor: [1, 0.7, 0.1]
+      EmissionStrength: 0.4
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 3742408496096963789
+    TagComponent:
+      Tag: Sparkle
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ParticleSystemComponent:
+      Duration: 5
+      Looping: false
+      Prewarm: false
+      PlayOnAwake: false
+      StopAction: 0
+      StartDelay: 0
+      StartLifetime: [0.3, 0.6]
+      StartSpeed: [2, 4]
+      StartSize: [0.06, 0.14]
+      StartRotation: [0, 0]
+      StartColorA: [1, 0.85, 0.3, 1]
+      StartColorB: [1, 0.85, 0.3, 1]
+      GravityModifier: 0
+      SimulationSpeed: 1
+      MaxParticles: 1000
+      SimulationSpace: 1
+      EmissionEnabled: true
+      RateOverTime: 20
+      RateOverDistance: 0
+      ShapeEnabled: true
+      Radius: 0.5
+      Angle: 25
+      BoxSize: [1, 1, 1]
+      EmitFromShell: false
+      RandomizeDirection: 0
+      Shape: 2
+      VelocityEnabled: false
+      VelocityOverLifetime: [0, 0, 0]
+      OrbitalSpeed: 0
+      LimitVelocityEnabled: false
+      Drag: 0
+      SpeedLimit: 100
+      NoiseEnabled: false
+      NoiseStrength: 1
+      NoiseFrequency: 0.5
+      NoiseScrollSpeed: 0.5
+      ColorOverLifetimeEnabled: true
+      SizeOverLifetimeEnabled: false
+      RotationOverLifetimeEnabled: false
+      AngularVelocity: 45
+      CollisionEnabled: false
+      CollisionPlaneY: 0
+      Bounce: 0.5
+      LifetimeLoss: 0
+      TextureSheetEnabled: false
+      AnimationCycles: 1
+      RandomStartFrame: false
+      Tiles: [1, 1]
+      RenderMode: 0
+      Blend: 0
+      Texture: ""
+      LengthScale: 2
+      SpeedScale: 0.1
+      SortByDistance: true
+      EmissiveIntensity: 1
+      Bursts:
+        []
+      ColorOverLifetime:
+        - [0, 1, 1, 1, 1]
+        - [1, 1, 1, 1, 1]
+      SizeOverLifetime:
+        - [0, 1]
+        - [1, 1]
+Environment:
+  SkyboxExposure: 1
+  SkyboxRotation: 0
+  SkyboxTint: [1, 1, 1]
+  EnvironmentLightingSource: 0
+  AmbientColor: [0.3, 0.3, 0.3]
+  AmbientSkyColor: [0.5, 0.6, 0.7]
+  AmbientEquatorColor: [0.3, 0.3, 0.3]
+  AmbientGroundColor: [0.2, 0.15, 0.1]
+  AmbientIntensity: 1
+  FogEnabled: false
+  FogColor: [0.5, 0.6, 0.7]
+  FogDensity: 0.02
+  FogStart: 10
+  FogEnd: 100
+  SunSource: 0
+  HaloEnabled: false
+  HaloStrength: 0.5
+  FlareEnabled: false
+  FlareFadeSpeed: 3
+  FlareStrength: 1
+  FlareElements:
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.08
+      Offset: 0.3
+      Intensity: 1
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.06
+      Offset: 0.6
+      Intensity: 0.8
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.05
+      Offset: 0.9
+      Intensity: 0.6
+  ShadowEnabled: true
+  ShadowIntensity: 1
+  ReflectionSource: 0
+  ReflectionResolution: 128
+  ReflectionCompression: 0
+  ReflectionIntensityMultiplier: 1
+  ReflectionBounces: 1
+  RenderSettings:
+    Shadows:
+      Enabled: true
+      Quality: 1
+      Resolution: 4096
+      Distance: 80
+      CascadeCount: 2
+      CascadeSplitLambda: 0.75
+      Strength: 1
+      Softness: 1
+      DepthBias: 0.005
+      NormalBias: 0.015
+      Color: [0, 0, 0]
+    Fog:
+      Enabled: false
+      Mode: 2
+      Color: [0.5, 0.6, 0.7]
+      Density: 0.02
+      Start: 10
+      End: 100
+      HeightFalloff: 0
+      BaseHeight: 0
+    Post:
+      Enabled: true
+      Tonemapper: 1
+      Exposure: 0
+      Bloom: true
+      BloomThreshold: 1
+      BloomKnee: 0.5
+      BloomIntensity: 0.6
+      BloomScatter: 0.7
+      BloomTint: [1, 1, 1]
+      AmbientOcclusion: true
+      AORadius: 0.6
+      AOIntensity: 1
+      AOPower: 1.5
+      ColorGrading: true
+      Contrast: 1
+      Saturation: 1
+      Temperature: 0
+      Tint: 0
+      Lift: [0, 0, 0]
+      Gamma: [1, 1, 1]
+      Gain: [1, 1, 1]
+      Vignette: false
+      VignetteIntensity: 0.3
+      VignetteSmoothness: 0.4
+      VignetteColor: [0, 0, 0]
+      ChromaticAberration: false
+      ChromaticAberrationIntensity: 0.3
+      FilmGrain: false
+      FilmGrainIntensity: 0.15
+      Sharpen: false
+      SharpenAmount: 0.3
+      AntiAliasing: 1
+    Environment:
+      Sky: 0
+      BackgroundColor: [0.1, 0.1, 0.1]
+      ImageBasedLighting: true
+      ReflectionIntensity: 1
+      SkyboxIntensity: 1
+      SpecularOcclusion: true
+    Bake:
+      RealtimeGI: false
+      BakedGI: true
+      LightingMode: 0
+      Lightmapper: 1
+      ImportanceSampling: true
+      DirectSamples: 32
+      IndirectSamples: 512
+      EnvironmentSamples: 256
+      MaxBounces: 2
+      Filtering: 0
+      Packing: 0
+      Resolution: 40
+      MaxLightmapSize: 1024
+      UseMipmapLimits: true
+      Compression: 2
+      AmbientOcclusion: true
+      DirectionalMode: 0
+      AlbedoBoost: 1
+      IndirectIntensity: 1
+      RealtimeResolution: 20
+      RealtimeIndirectSamples: 256
+      RealtimeMaxBounces: 1
+      AutoGenerate: false
+      BakeOnSceneLoad: 0
+      APVFitToScene: true
+      APVOrigin: [-10, -1, -10]
+      APVSize: [20, 10, 20]
+      APVProbeOffset: [0, 0, 0]
+      APVMinSpacing: 1
+      APVMaxSpacing: 9
+      APVBakingMode: 0
+      APVDilation: false
+      APVVirtualOffset: true
+      APVValidityThreshold: 0.75
+      APVSearchDistanceMultiplier: 0.2
+      APVGeometryBias: 0.01
+      APVRayOriginBias: -0.001
+Hierarchy:
+  - Child: 6934790645679971110
+    Parent: 2646894640436569197
+  - Child: 3742408496096963789
+    Parent: 2646894640436569197

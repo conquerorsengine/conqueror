@@ -1,0 +1,193 @@
+#language GLSL
+// Fiziksel esinli prosedürel gökyüzü (Rayleigh + Mie yaklaşımı + güneş diski).
+// Sahnede skybox yokken varsayılan gökyüzü ve IBL kaynağı olarak küp haritaya çizilir.
+#type vertex
+#version 450 core
+
+layout(location = 0) in vec3 a_Position;
+uniform mat4 u_Projection;
+uniform mat4 u_View;
+out vec3 v_Dir;
+
+void main()
+{
+    v_Dir = a_Position;
+    gl_Position = u_Projection * u_View * vec4(a_Position, 1.0);
+}
+
+#type fragment
+#version 450 core
+
+#include "Include/Common.glsl"
+
+layout(location = 0) out vec4 FragColor;
+in vec3 v_Dir;
+
+uniform vec3 u_SunDirection;      // ışığın GİTTİĞİ yön
+uniform vec3 u_SunColor = vec3(1.0);
+uniform float u_SunIntensity = 1.0;
+uniform vec3 u_ZenithColor = vec3(0.16, 0.36, 0.78);
+uniform vec3 u_HorizonColor = vec3(0.65, 0.78, 0.92);
+uniform vec3 u_GroundColor = vec3(0.30, 0.28, 0.26);
+uniform float u_SunSize = 0.9995;  // cos(açısal yarıçap)
+uniform float u_Turbidity = 2.0;
+
+// ---- Fiziksel atmosfer (Sky Atmosphere): Dünya ölçekli gezegen, tek saçılma (Rayleigh + Mie + ozon soğurması)
+uniform int u_Physical = 0;
+uniform float u_Rayleigh = 1.0;
+uniform float u_Mie = 1.0;
+uniform float u_MieG = 0.8;
+uniform float u_Ozone = 1.0;
+uniform float u_SunDiskScale = 1.0;
+uniform vec3 u_GroundAlbedo = vec3(0.3);
+
+const float kPlanetRadius = 6360e3;
+const float kAtmosphereRadius = 6460e3;
+const vec3 kRayleighBeta = vec3(5.802e-6, 13.558e-6, 33.1e-6);
+const float kRayleighHeight = 8000.0;
+const float kMieBeta = 3.996e-6;
+const float kMieExtinction = 4.40e-6;
+const float kMieHeight = 1200.0;
+const vec3 kOzoneBeta = vec3(0.650e-6, 1.881e-6, 0.085e-6);
+const float kSunRadiance = 22.0;      // HDR ölçeği: öğle göğü ~0.5 parlaklık
+
+// Işın-küre kesişimi (merkez orijin): x giriş, y çıkış uzaklığı; kesişme yoksa y < 0
+vec2 RaySphere(vec3 ro, vec3 rd, float radius)
+{
+    float b = dot(ro, rd);
+    float c = dot(ro, ro) - radius * radius;
+    float h = b * b - c;
+    if (h < 0.0)
+        return vec2(1.0, -1.0);
+    h = sqrt(h);
+    return vec2(-b - h, -b + h);
+}
+
+// Yükseklikte yoğunluklar: x Rayleigh, y Mie, z ozon
+vec3 Densities(float height)
+{
+    float ozone = max(0.0, 1.0 - abs(height - 25000.0) / 15000.0);
+    return vec3(exp(-height / kRayleighHeight), exp(-height / kMieHeight), ozone);
+}
+
+vec3 Extinction(vec3 optical)
+{
+    return kRayleighBeta * u_Rayleigh * optical.x + vec3(kMieExtinction * u_Mie) * optical.y + kOzoneBeta * u_Ozone * optical.z;
+}
+
+// Noktadan güneşe optik derinlik (gezegen gölgesindeyse büyük değer)
+vec3 SunOpticalDepth(vec3 p, vec3 toSun)
+{
+    vec2 planet = RaySphere(p, toSun, kPlanetRadius);
+    if (planet.x > 0.0 && planet.y > 0.0)
+        return vec3(1e9);
+    float len = RaySphere(p, toSun, kAtmosphereRadius).y;
+    const int kSteps = 8;
+    float ds = len / float(kSteps);
+    vec3 optical = vec3(0.0);
+    for (int i = 0; i < kSteps; ++i)
+    {
+        vec3 q = p + toSun * ((float(i) + 0.5) * ds);
+        optical += Densities(length(q) - kPlanetRadius) * ds;
+    }
+    return optical;
+}
+
+vec3 PhysicalSky(vec3 dir, vec3 toSun)
+{
+    vec3 origin = vec3(0.0, kPlanetRadius + 2.0, 0.0);
+    vec2 atmo = RaySphere(origin, dir, kAtmosphereRadius);
+    vec2 ground = RaySphere(origin, dir, kPlanetRadius);
+    bool hitsGround = ground.x > 0.0;
+    float rayLength = hitsGround ? ground.x : atmo.y;
+
+    const int kSteps = 32;
+    float ds = rayLength / float(kSteps);
+    vec3 optical = vec3(0.0);
+    vec3 rayleigh = vec3(0.0), mie = vec3(0.0);
+    for (int i = 0; i < kSteps; ++i)
+    {
+        vec3 p = origin + dir * ((float(i) + 0.5) * ds);
+        vec3 d = Densities(length(p) - kPlanetRadius) * ds;
+        optical += d;
+        vec3 sunOptical = SunOpticalDepth(p, toSun);
+        vec3 transmittance = exp(-Extinction(optical + sunOptical));
+        rayleigh += transmittance * d.x;
+        mie += transmittance * d.y;
+    }
+    float mu = dot(dir, toSun);
+    float phaseR = 3.0 / (16.0 * PI) * (1.0 + mu * mu);
+    float g = u_MieG;
+    float phaseM = 3.0 / (8.0 * PI) * ((1.0 - g * g) * (1.0 + mu * mu)) / ((2.0 + g * g) * pow(max(1.0 + g * g - 2.0 * g * mu, 1e-4), 1.5));
+    vec3 color = kSunRadiance * (rayleigh * kRayleighBeta * u_Rayleigh * phaseR + mie * kMieBeta * u_Mie * phaseM);
+
+    vec3 viewTransmittance = exp(-Extinction(optical));
+    if (hitsGround)
+    {
+        // Zemin: güneş ışığı (geçirgenlikle) + gökyüzü ışığı yaklaşımı, izleyiciye kadar söner
+        vec3 p = origin + dir * ground.x;
+        vec3 n = normalize(p);
+        vec3 sunAtGround = exp(-Extinction(SunOpticalDepth(p + n * 1.0, toSun)));
+        float ndl = max(dot(n, toSun), 0.0);
+        vec3 skyAmbient = kSunRadiance * 0.04 * vec3(0.4, 0.55, 0.9) * clamp(toSun.y + 0.2, 0.0, 1.0);
+        color += u_GroundAlbedo / PI * (kSunRadiance * sunAtGround * ndl + skyAmbient) * viewTransmittance;
+    }
+    else
+    {
+        // Güneş diski (HDR; bloom yakalar), ufka yakınken kızarır
+        float radius = 0.0125 * max(u_SunDiskScale, 0.05);
+        float cosDisk = cos(radius);
+        float disk = smoothstep(cosDisk - radius * radius * 0.15, cosDisk, mu);
+        color += kSunRadiance * 60.0 * disk * viewTransmittance;
+    }
+    // Gece: çok hafif mavi taban (tam siyah olmasın)
+    color += vec3(0.0015, 0.002, 0.004);
+    return color;
+}
+
+void main()
+{
+    vec3 dir = normalize(v_Dir);
+    if (u_Physical == 1)
+    {
+        vec3 sky = PhysicalSky(dir, normalize(-u_SunDirection)) * u_SunIntensity * u_SunColor;
+        FragColor = vec4(max(sky, vec3(0.0)), 1.0);
+        return;
+    }
+    vec3 toSun = normalize(-u_SunDirection);
+    float sunHeight = toSun.y;
+
+    // Gün batımında renkler ısınır, gece kararır
+    float day = smoothstep(-0.25, 0.25, sunHeight);
+    float sunset = 1.0 - smoothstep(0.0, 0.45, abs(sunHeight));
+    vec3 zenith = mix(vec3(0.01, 0.015, 0.04), u_ZenithColor, day);
+    vec3 horizon = mix(vec3(0.03, 0.035, 0.06), u_HorizonColor, day);
+    horizon = mix(horizon, vec3(1.0, 0.55, 0.30), sunset * 0.65);
+
+    float up = dir.y;
+    vec3 sky;
+    if (up >= 0.0)
+    {
+        float t = pow(1.0 - up, 4.0);
+        sky = mix(zenith, horizon, t);
+    }
+    else
+    {
+        float t = pow(1.0 + up, 6.0);
+        vec3 ground = u_GroundColor * mix(0.05, 1.0, day);
+        sky = mix(ground, horizon * 0.8, t);
+    }
+
+    // Mie benzeri güneş halesi (ufukta daha geniş)
+    float cosSun = dot(dir, toSun);
+    float mie = pow(Saturate(cosSun), mix(8.0, 48.0, Saturate(sunHeight * 2.0 + 0.2))) * (0.35 + 0.25 * u_Turbidity * 0.25);
+    sky += u_SunColor * mie * day;
+
+    // Güneş diski (HDR, bloom yakalar)
+    float disk = smoothstep(u_SunSize - 0.0004, u_SunSize, cosSun);
+    if (up > -0.02)
+        sky += u_SunColor * disk * 40.0 * max(sunHeight + 0.1, 0.0);
+
+    sky *= u_SunIntensity;
+    FragColor = vec4(max(sky, vec3(0.0)), 1.0);
+}

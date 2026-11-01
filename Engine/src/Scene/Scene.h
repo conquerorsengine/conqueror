@@ -3,9 +3,23 @@
 #include "Core/Base/Base.h"
 #include "Core/Time/Timestep.h"
 #include "AISystem/Navigation/NavMesh.h"
+#include "Renderer/RenderSettings.h"
 
 #include <glm/glm.hpp>
 #include <entt/entt.hpp>
+
+#include <unordered_map>
+#include <unordered_set>
+
+namespace Conqueror::CQS
+{
+    class Value;
+}
+
+namespace Conqueror::Scripting
+{
+    class ScriptRuntime;
+}
 
 namespace Conqueror
 {
@@ -58,9 +72,70 @@ namespace Conqueror
     struct NavMeshSurfaceComponent;
     struct ReflectionProbeComponent;
     struct AdaptiveProbeVolumeComponent;
+    struct TerrainComponent;
+    struct ParticleSystemComponent;
+    struct CharacterControllerComponent; struct FixedJointComponent; struct HingeJointComponent; struct SliderJointComponent;
+    struct SpringJointComponent; struct CharacterJointComponent; struct BallJointComponent; struct ConstantForceComponent;
+    struct CapsuleCollider2DComponent; struct PolygonCollider2DComponent; struct EdgeCollider2DComponent; struct DistanceJoint2DComponent;
+    struct SpringJoint2DComponent; struct HingeJoint2DComponent; struct SliderJoint2DComponent; struct WheelJoint2DComponent;
+    struct FixedJoint2DComponent; struct PlatformEffector2DComponent; struct AreaEffector2DComponent; struct PointEffector2DComponent; struct CompositeCollider2DComponent; struct ClothComponent;
+    struct SurfaceEffector2DComponent; struct BuoyancyEffector2DComponent; struct WheelColliderComponent; struct ConfigurableJointComponent;
+    struct FrictionJoint2DComponent; struct RelativeJoint2DComponent; struct TargetJoint2DComponent; struct ConstantForce2DComponent;
+    struct LineRendererComponent; struct TrailRendererComponent; struct LODGroupComponent; struct LookAtConstraintComponent;
+    struct AimConstraintComponent; struct PositionConstraintComponent; struct RotationConstraintComponent; struct ScaleConstraintComponent;
+    struct ParentConstraintComponent; struct WindZoneComponent; struct CameraFollowComponent; struct RotatorComponent;
+    struct ParticleForceFieldComponent; struct SplineContainerComponent; struct SplineAnimateComponent; struct SplineExtrudeComponent; struct SplineInstantiateComponent;
+    struct VirtualCameraComponent; struct CameraBrainComponent; struct ImpulseSourceComponent; struct PostProcessVolumeComponent; struct DecalProjectorComponent;
+    struct Light2DComponent; struct ShadowCaster2DComponent; struct SpriteMaskComponent; struct PixelPerfectCameraComponent;
+    struct BillboardRendererComponent; struct HaloComponent; struct LensFlareComponent; struct CameraSkyboxComponent; struct AreaLightComponent;
+    struct PlayerInputComponent; struct PlayerInputManagerComponent;
+    struct NavMeshModifierComponent; struct NavMeshModifierVolumeComponent; struct NavMeshLinkComponent;
+    struct VideoPlayerComponent;
+    struct GameplayTagsComponent; struct AbilitySystemComponent;
+    struct PlayerStartComponent; struct GameModeComponent; struct SpringArmComponent; struct BoneAttachmentComponent;
+    struct StreamedLevelComponent; struct LevelStreamingVolumeComponent;
+    struct AutoLODComponent;
+    struct SoundOcclusionComponent; struct SoundConcurrencyComponent;
+    struct VertexPaintComponent; struct FractureComponent; struct RagdollComponent; struct VirtualGeometryComponent; struct CharacterCustomizerComponent; struct SignalConnectionsComponent; struct CSGShapeComponent; struct MultiMeshComponent; struct RemoteTransformComponent; struct RayCastComponent; struct VisibleOnScreenNotifierComponent; struct Parallax2DComponent; struct RenderTargetComponent; struct Bone2DComponent; struct IK2DComponent;
+    struct RigComponent; struct TwoBoneIKConstraintComponent; struct MultiAimConstraintComponent; struct ChainIKConstraintComponent; struct DampedTransformComponent;
+    struct ProjectileMovementComponent; struct SortingGroupComponent; struct PrefabInstanceComponent;
+    struct GridComponent; struct TilemapComponent; struct TilemapCollider2DComponent;
+    struct NetworkManagerComponent; struct NetworkObjectComponent; struct NetworkTransformComponent; struct NetworkRigidbodyComponent; struct NetworkAnimatorComponent;
+    struct PlayableDirectorComponent;
+    struct RectTransformComponent; struct UIImageComponent; struct UITextComponent; struct UIButtonComponent; struct UIToggleComponent;
+    struct UISliderComponent; struct UIInputFieldComponent; struct UIDropdownComponent; struct UIScrollRectComponent; struct UILayoutGroupComponent;
+    struct UICanvasGroupComponent; struct UIRectMask2DComponent; struct UIMaskComponent; struct UIRawImageComponent; struct UIContentSizeFitterComponent;
+    struct UIAspectRatioFitterComponent; struct UILayoutElementComponent; struct UIScrollbarComponent; struct UIEventTriggerComponent; struct UIEventSystemComponent; struct UIShadowComponent; struct UIOutlineComponent;
 
     class PhysicsWorld2D;
     class PhysicsWorld3D;
+    class AdaptiveProbeVolume;
+    struct RenderCamera;
+    struct SceneEnvironment;
+
+    // Editör (Scene) görünümüne özel çizim seçenekleri; oyun görünümünü etkilemez.
+    struct EditorViewOptions
+    {
+        bool Grid = true;
+        bool Gizmos = true;        // ışık/kamera simgeleri
+        bool Skybox = true;
+        bool Fog = true;
+        bool Shadows = true;
+        bool PostEffects = true;
+        bool Sprites2D = true;     // sprite/görsel/yazı
+        bool UI = true;            // ekran üstü canvas'lar (sahne görünümü)
+        bool Colliders = true;     // seçili varlıkların çarpıştırıcı/eklem/karakter gizmo'ları
+        bool AllColliders = false; // tüm çarpıştırıcılar (fizik hata ayıklama)
+        // Unreal "Realtime" / Unity "Always Refresh": tüm parçacıklar ve zamana bağlı malzemeler düzenleyicide canlı.
+        // Kapalıyken (varsayılan) yalnızca seçili parçacık sistemi önizlenir, malzeme zamanı durur.
+        bool Realtime = false;
+    };
+
+    struct MeshRendererComponent;
+    class Material;
+    // Malzemesiz Mesh Renderer'ın gömülü alanlarından (renk, doku, normal, maske, ışıma, kırpma) malzeme doldurur.
+    // "Create New Material" de aynı dönüşümü kullanır: dosyaya çevrilen malzeme aynı görünür.
+    CQ_API void FillMaterialFromMeshRenderer(Material& material, const MeshRendererComponent& meshRenderer);
 
     class CQ_API Scene
     {
@@ -71,17 +146,84 @@ namespace Conqueror
         Entity CreateEntity(const std::string& name = std::string());
         Entity CreateEntityWithUUID(uint64_t uuid, const std::string& name = std::string());
         void DestroyEntity(Entity entity);
+        // Alt ağacı (çocuklarla) kopyalar; kopya kaynağın ebeveyni altında kardeş olur, EntityRef alanları kopyaya eşlenir
         Entity DuplicateEntity(Entity source, const std::string& newName = "");
+        // Tüm bileşenleri kopyala (sahneler arası da çalışır; çalışma zamanı tutamaçları kopyalanmaz)
+        void CopyEntityComponents(Entity source, Entity destination, bool shareRuntimeResources = false);
+        // Alt ağacı bu sahneye kopyala (isim korunur, newName yalnızca kök için); uuidMap: eski -> yeni UUID
+        Entity DuplicateEntityTree(Entity source, const std::string& newName, Entity parent, std::unordered_map<uint64_t, uint64_t>* uuidMap = nullptr);
+        // Alt ağaçtaki EntityRef alanlarını eşleme tablosuna göre yeniden yönlendir
+        void RemapEntityReferences(Entity root, const std::unordered_map<uint64_t, uint64_t>& uuidMap);
+        // Oyun sırasında oluşturulan alt ağaç: fizik gövdelerini kurulmak üzere işaretle
+        void OnEntityTreeSpawned(Entity root);
+        // Tüm varlıkları sil (sahne anlık görüntüsünü geri yüklemeden önce; ortam ayarları korunur)
+        void ClearEntities();
+        // reference'ta olmayan bileşenleri target'tan kaldır (anlık görüntüden geri yükleme: eklenen bileşenler geri alınır)
+        void RemoveComponentsNotIn(Entity reference, Entity target);
         void CloneSceneFrom(const std::shared_ptr<Scene>& source);
 
         void OnUpdateRuntime(Timestep ts, bool renderOnly = false);
+        // Oyun modu başlangıç/bitiş (betik VM'i, OnDestroy)
+        // newPlaySession=false: oyun içi sahne geçişi (betik çalışma zamanları sıfırlanmaz, statik durum korunur)
+        void OnRuntimeStart(bool newPlaySession = true);
+        void OnRuntimeStop(bool endPlaySession = true);
+        // Herhangi bir bileşen kaldırıldığında (fizik yeniden değerlendirir)
+        void OnComponentRemovedAny(Entity entity);
+        // Bir varlığın tüm betik örneklerinde yöntemi çağır (yoksa yok sayılır)
+        void InvokeScriptMethod(uint32_t entity, const char* method, const CQS::Value* args, int argc);
+        // Etkin betik örnekleri, Project Settings > Script Execution Order sırasıyla
+        void CollectScriptInstances(std::vector<std::pair<Scripting::ScriptRuntime*, void*>>& instances);
+        // Unity OnMouseEnter/Over/Exit/Down/Drag/Up/UpAsButton: oyun kamerasından fare ışınıyla çarpıştırıcılı varlıklara
+        void UpdateMouseEvents();
+        uint32_t GetMouseHoverEntity() const { return m_MouseHoverEntity; }
         void OnUpdateSimulation(Timestep ts);
         void OnUpdateEditor(Timestep ts, EditorCamera& camera);
         void OnUpdateEditor(Timestep ts, EditorCamera& camera, const glm::vec2* viewportBounds);
+        // Editör seçimi (çarpıştırıcı gizmo'ları için)
+        void SetEditorSelection(std::vector<uint32_t> selection) { m_EditorSelection = std::move(selection); }
+        void DrawPhysicsGizmos();
         
         void StopAllAudio();
 
         void OnViewportResize(uint32_t width, uint32_t height);
+
+        // 3D sahneyi verilen kameradan çizer (gölge, gökyüzü, ışıklar, meshler, şeffaflar).
+        // editorView: editör kamerası (gizmo'lar ayrıca çizilir)
+        void RenderScene3D(const RenderCamera& camera, bool editorView);
+        // Render hedefi kamerası: 3D sahneyi o kameradan (arka planı dahil) bağlı çerçeve tamponuna çizer
+        void RenderSceneFromCamera(entt::entity cameraEntity, uint32_t width, uint32_t height);
+        // Sahnenin ortam ayarlarından renderer ortamını oluşturur
+        SceneEnvironment BuildRenderEnvironment(bool hdrOutput) const;
+
+        // Oyun görünümünün arka planı (Unity Camera "Background Type"): gökyüzü mü, düz renk mi.
+        // Color sRGB'dir. Ortam ayarı "Solid Color" ise her kamerayı geçersiz kılar.
+        struct CameraBackground { bool DrawSky = true; glm::vec3 Color{ 0.1f }; };
+        CameraBackground ResolveCameraBackground(Entity cameraEntity);
+        // Editör: 2D görünümde gökyüzü çizilmez (Unity Scene görünümü gibi düz arka plan)
+        static glm::vec3 EditorBackground2D() { return glm::vec3(0.278f); }
+        // Yansıma problarını bir sonraki karede yeniden yakala
+        void InvalidateReflectionProbes();
+        // Birincil oyun kamerasından render kamerası (yoksa false)
+        bool GetRuntimeRenderCamera(uint32_t width, uint32_t height, RenderCamera& out);
+        bool HasRenderable3D() const;
+        // Tüm dünya matrislerini hiyerarşiden yeniden hesapla
+        void UpdateWorldTransforms();
+        // Işığın dünya ileri yönü (-Z)
+        static glm::vec3 LightForward(const glm::mat4& world);
+        void UpdateParticles(float dt, bool editorPreviewOnly);
+        // Oyun modu kopyası mı (CloneSceneFrom ile oluşturulan çalışma zamanı sahnesi)
+        bool IsRuntimeScene() const { return m_IsRuntimeScene; }
+        // Yerel dönüşüm zincirinden taze dünya matrisi (önbellek beklemeden)
+        glm::mat4 ComputeWorldMatrix(entt::entity entity) const;
+        // Dünya konumu (ve isteğe bağlı dönüşü) ebeveyne göre yerel dönüşüme çevirerek yazar; ölçek korunur
+        void SetEntityWorldPose(Entity entity, const glm::vec3& position, const glm::quat* rotation = nullptr);
+        void SetRuntimeScene(bool runtime) { m_IsRuntimeScene = runtime; }
+        // UI canvas'larının editörde/oyunda kullandığı ekran boyutu (Game görünümü çözünürlüğü)
+        void SetUIScreenSize(const glm::vec2& size) { m_UIScreenSize = glm::max(size, glm::vec2(1.0f)); }
+        const glm::vec2& GetUIScreenSize() const { return m_UIScreenSize; }
+
+        void SetAdaptiveProbeVolume(std::shared_ptr<AdaptiveProbeVolume> apv) { m_APV = apv; }
+        std::shared_ptr<AdaptiveProbeVolume> GetAdaptiveProbeVolume() const { return m_APV; }
 
         Entity GetPrimaryCameraEntity();
 
@@ -90,6 +232,9 @@ namespace Conqueror
         std::vector<Entity> FindEntitiesWithTag(const std::string& tag);
         Entity FindEntityByUUID(uint64_t uuid);
         static const std::vector<std::string>& GetAvailableTags();
+        // Proje etiketleri: yerleşikler (Untagged, Player, ...) + Project Settings > Tags & Layers'ta eklenenler
+        static void SetCustomTags(const std::vector<std::string>& custom);
+        static size_t GetBuiltinTagCount();
 
         // Layer sistemi
         struct LayerInfo
@@ -106,7 +251,9 @@ namespace Conqueror
         int32_t GetNextLayerID() const;
 
         // Hierarchy sistemi
-        void SetEntityParent(Entity entity, Entity parent);
+        // keepWorldTransform: çocuğun dünya konumunu koru (düzenleyicide sürükle-bırak). false: yerel değerler
+        // zaten yeni ebeveyne göredir (sahne yükleme, oyun modu kopyası)
+        void SetEntityParent(Entity entity, Entity parent, bool keepWorldTransform = true);
         void RemoveEntityParent(Entity entity);
         Entity GetEntityParent(Entity entity) const;
         std::vector<Entity> GetEntityChildren(Entity entity) const;
@@ -151,21 +298,28 @@ namespace Conqueror
         void SetAmbientIntensity(float intensity) { m_AmbientIntensity = intensity; }
         float GetAmbientIntensity() const { return m_AmbientIntensity; }
         
-        // Fog
-        void SetFogEnabled(bool enabled) { m_FogEnabled = enabled; }
-        bool IsFogEnabled() const { return m_FogEnabled; }
+        // Render ayarları (gölge, sis, post-process, ortam)
+        RenderSettings& GetRenderSettings() { return m_RenderSettings; }
+        const RenderSettings& GetRenderSettings() const { return m_RenderSettings; }
+        // Editör görünümü seçenekleri (her OnUpdateEditor çağrısından önce ayarlanır)
+        void SetEditorViewOptions(const EditorViewOptions& options) { m_EditorViewOptions = options; }
+        const EditorViewOptions& GetEditorViewOptions() const { return m_EditorViewOptions; }
+
+        // Fog (RenderSettings.Fog'a yönlendirilir)
+        void SetFogEnabled(bool enabled) { m_RenderSettings.Fog.Enabled = enabled; }
+        bool IsFogEnabled() const { return m_RenderSettings.Fog.Enabled; }
         
-        void SetFogColor(const glm::vec3& color) { m_FogColor = color; }
-        glm::vec3 GetFogColor() const { return m_FogColor; }
+        void SetFogColor(const glm::vec3& color) { m_RenderSettings.Fog.Color = color; }
+        glm::vec3 GetFogColor() const { return m_RenderSettings.Fog.Color; }
         
-        void SetFogDensity(float density) { m_FogDensity = density; }
-        float GetFogDensity() const { return m_FogDensity; }
+        void SetFogDensity(float density) { m_RenderSettings.Fog.Density = density; }
+        float GetFogDensity() const { return m_RenderSettings.Fog.Density; }
         
-        void SetFogStart(float start) { m_FogStart = start; }
-        float GetFogStart() const { return m_FogStart; }
+        void SetFogStart(float start) { m_RenderSettings.Fog.Start = start; }
+        float GetFogStart() const { return m_RenderSettings.Fog.Start; }
         
-        void SetFogEnd(float end) { m_FogEnd = end; }
-        float GetFogEnd() const { return m_FogEnd; }
+        void SetFogEnd(float end) { m_RenderSettings.Fog.End = end; }
+        float GetFogEnd() const { return m_RenderSettings.Fog.End; }
         
         // Sun Source
         void SetSunSource(uint64_t uuid) { m_SunSourceUUID = uuid; }
@@ -211,11 +365,11 @@ namespace Conqueror
         std::shared_ptr<class Texture2D> GetSpotCookie() const { return m_SpotCookie; }
 
         // Shadow settings
-        void SetShadowEnabled(bool enabled) { m_ShadowEnabled = enabled; }
-        bool IsShadowEnabled() const { return m_ShadowEnabled; }
+        void SetShadowEnabled(bool enabled) { m_RenderSettings.Shadows.Enabled = enabled; }
+        bool IsShadowEnabled() const { return m_RenderSettings.Shadows.Enabled; }
         
-        void SetShadowIntensity(float intensity) { m_ShadowIntensity = intensity; }
-        float GetShadowIntensity() const { return m_ShadowIntensity; }
+        void SetShadowIntensity(float intensity) { m_RenderSettings.Shadows.Strength = intensity; }
+        float GetShadowIntensity() const { return m_RenderSettings.Shadows.Strength; }
 
         // Environment Reflections
         void SetReflectionSource(ReflectionSource source) { m_ReflectionSource = source; }
@@ -227,8 +381,8 @@ namespace Conqueror
         void SetReflectionCompression(int compression) { m_ReflectionCompression = compression; }
         int GetReflectionCompression() const { return m_ReflectionCompression; }
         
-        void SetReflectionIntensityMultiplier(float multiplier) { m_ReflectionIntensityMultiplier = multiplier; }
-        float GetReflectionIntensityMultiplier() const { return m_ReflectionIntensityMultiplier; }
+        void SetReflectionIntensityMultiplier(float multiplier) { m_RenderSettings.Environment.ReflectionIntensity = multiplier; }
+        float GetReflectionIntensityMultiplier() const { return m_RenderSettings.Environment.ReflectionIntensity; }
         
         void SetReflectionBounces(int bounces) { m_ReflectionBounces = bounces; }
         int GetReflectionBounces() const { return m_ReflectionBounces; }
@@ -259,6 +413,9 @@ namespace Conqueror
 
         // AI Navigation
         NavMesh& GetNavMesh() { return m_NavMesh; }
+        // Editör: pişmiş gezinme ağını sahne görünümünde göster (Navigation penceresi açıkken)
+        void SetShowNavMesh(bool show) { m_ShowNavMesh = show; }
+        bool IsShowingNavMesh() const { return m_ShowNavMesh; }
 
     private:
         template<typename T>
@@ -270,6 +427,8 @@ namespace Conqueror
         bool IsCanvasOrCanvasChild(Entity entity) const;
         void UpdateAudioSystem(Timestep ts);
         void UpdateAnimators(Timestep ts);
+        // Editörde (oynamıyorken) animasyonlu karakterlerin çizim pozu: bekleme durumu (Unreal gibi, T-poz yerine)
+        void UpdateEditorAnimationPreview(float dt);
 
     public:
         entt::registry m_Registry;
@@ -281,6 +440,22 @@ namespace Conqueror
         bool m_ViewportHovered = false;
         glm::mat4 m_EditorViewProjection{1.0f};
         bool m_HasEditorCamera = false;
+        EditorViewOptions m_EditorViewOptions;
+        float m_EditorClock = 0.0f;   // düzenleyicideki çizim zamanı (yalnızca Realtime açıkken ilerler)
+        uint32_t m_MouseHoverEntity = 0xFFFFFFFFu;  // OnMouse*: imlecin üstünde olduğu çarpıştırıcı
+        uint32_t m_MouseDownEntity = 0xFFFFFFFFu;   // OnMouse*: basılı tutulan
+        bool m_IsRuntimeScene = false;
+
+        void DestroyScriptInstances(bool callOnDestroy);
+        // Silinen varlığın betikleri: OnDestroy + örneği kare sonunda yok edilmek üzere emekliye ayır
+        void RetireEntityScripts(entt::entity entity);
+        // Betik örneği yüklenip Awake/OnCreate/Start çağrılmamış betikler (oyun sırasında eklenen/oluşturulan varlıklar dahil)
+        void StartPendingScripts();
+        void DispatchUIEventsToScripts(const std::vector<std::pair<Scripting::ScriptRuntime*, void*>>& instances);
+        void InvokeScriptsFixedUpdate(float dt);
+        void DispatchPhysicsEvents();
+        void DispatchPhysicsEvents2D();
+        glm::vec2 m_UIScreenSize{ 1920.0f, 1080.0f };
         bool m_UseEditorCameraForScripts = true;
 
         void SetViewportBounds(const glm::vec2& min, const glm::vec2& max) { m_ViewportBoundsMin = min; m_ViewportBoundsMax = max; }
@@ -300,6 +475,10 @@ namespace Conqueror
 
         // UI Navigation
         entt::entity m_SelectedButton = entt::null; // Klavye ile seçili buton
+        std::vector<uint32_t> m_EditorSelection;
+        std::unordered_set<uint32_t> m_LODHidden;
+        // DestroyEntity içinde olan varlıklar (OnDestroy içinden tekrar silmeye karşı)
+        std::unordered_set<uint32_t> m_DestroyingEntities;
 
         // Environment
         std::shared_ptr<Cubemap> m_Skybox;
@@ -315,17 +494,14 @@ namespace Conqueror
         glm::vec3 m_AmbientGroundColor = glm::vec3(0.2f, 0.15f, 0.1f); // Gradient: Ground
         float m_AmbientIntensity = 1.0f;
         
-        // Fog
-        bool m_FogEnabled = false;
-        glm::vec3 m_FogColor = glm::vec3(0.5f, 0.6f, 0.7f);
-        float m_FogDensity = 0.02f;
-        float m_FogStart = 10.0f;
-        float m_FogEnd = 100.0f;
+        // Render ayarları (sis, gölge, post, ortam)
+        RenderSettings m_RenderSettings;
         
         // Sun Source
         uint64_t m_SunSourceUUID = 0; // 0 = None (ilk directional light kullanılır)
         
         // Halo/Flare
+        bool m_ShowNavMesh = false;
         bool m_HaloEnabled = false;
         std::shared_ptr<class Texture2D> m_HaloTexture;
         float m_HaloStrength = 0.5f;
@@ -335,15 +511,11 @@ namespace Conqueror
         std::vector<FlareElement> m_FlareElements;
         std::shared_ptr<class Texture2D> m_SpotCookie;
 
-        // Shadow settings
-        bool m_ShadowEnabled = true;
-        float m_ShadowIntensity = 1.0f;
 
         // Environment Reflections
         ReflectionSource m_ReflectionSource = ReflectionSource::Skybox;
         int m_ReflectionResolution = 128;
         int m_ReflectionCompression = 0; // Auto
-        float m_ReflectionIntensityMultiplier = 1.0f;
         int m_ReflectionBounces = 1;
 
         // Baked Lightmap
@@ -364,6 +536,13 @@ namespace Conqueror
 
         // AI
         NavMesh m_NavMesh;
+
+        // Işık verisi (sahneye bağlı; sahne değişince eski lightmap kalmaz)
+        std::shared_ptr<AdaptiveProbeVolume> m_APV;
+        bool m_CapturingProbes = false;
+        bool m_EditorView2D = false;                     // editör kamerası 2D modunda
+        entt::entity m_BackgroundCamera = entt::null;    // oyun görünümünün arka planını belirleyen kamera
+        void CaptureReflectionProbes();
 
         friend class Entity;
         friend class SceneSerializer;
@@ -417,4 +596,85 @@ namespace Conqueror
     template<> void Scene::OnComponentAdded<NavMeshSurfaceComponent>(Entity entity, NavMeshSurfaceComponent& component);
     template<> void Scene::OnComponentAdded<ReflectionProbeComponent>(Entity entity, ReflectionProbeComponent& component);
     template<> void Scene::OnComponentAdded<AdaptiveProbeVolumeComponent>(Entity entity, AdaptiveProbeVolumeComponent& component);
+    template<> void Scene::OnComponentAdded<TerrainComponent>(Entity entity, TerrainComponent& component);
+    template<> void Scene::OnComponentAdded<ParticleSystemComponent>(Entity entity, ParticleSystemComponent& component);
+    template<> void Scene::OnComponentAdded<CharacterControllerComponent>(Entity, CharacterControllerComponent&);
+    template<> void Scene::OnComponentAdded<FixedJointComponent>(Entity, FixedJointComponent&);
+    template<> void Scene::OnComponentAdded<HingeJointComponent>(Entity, HingeJointComponent&);
+    template<> void Scene::OnComponentAdded<SliderJointComponent>(Entity, SliderJointComponent&);
+    template<> void Scene::OnComponentAdded<SpringJointComponent>(Entity, SpringJointComponent&);
+    template<> void Scene::OnComponentAdded<CharacterJointComponent>(Entity, CharacterJointComponent&);
+    template<> void Scene::OnComponentAdded<BallJointComponent>(Entity, BallJointComponent&);
+    template<> void Scene::OnComponentAdded<ConstantForceComponent>(Entity, ConstantForceComponent&);
+#define CQ_DECL_ADDED(T) template<> void Scene::OnComponentAdded<T>(Entity, T&);
+    CQ_DECL_ADDED(CapsuleCollider2DComponent) CQ_DECL_ADDED(PolygonCollider2DComponent) CQ_DECL_ADDED(EdgeCollider2DComponent)
+    CQ_DECL_ADDED(DistanceJoint2DComponent) CQ_DECL_ADDED(SpringJoint2DComponent) CQ_DECL_ADDED(HingeJoint2DComponent)
+    CQ_DECL_ADDED(SliderJoint2DComponent) CQ_DECL_ADDED(WheelJoint2DComponent) CQ_DECL_ADDED(FixedJoint2DComponent)
+    CQ_DECL_ADDED(PlatformEffector2DComponent) CQ_DECL_ADDED(AreaEffector2DComponent) CQ_DECL_ADDED(PointEffector2DComponent) CQ_DECL_ADDED(CompositeCollider2DComponent) CQ_DECL_ADDED(ClothComponent)
+    CQ_DECL_ADDED(SurfaceEffector2DComponent) CQ_DECL_ADDED(BuoyancyEffector2DComponent)
+    CQ_DECL_ADDED(LineRendererComponent) CQ_DECL_ADDED(TrailRendererComponent) CQ_DECL_ADDED(LODGroupComponent)
+    CQ_DECL_ADDED(LookAtConstraintComponent) CQ_DECL_ADDED(AimConstraintComponent) CQ_DECL_ADDED(PositionConstraintComponent)
+    CQ_DECL_ADDED(RotationConstraintComponent) CQ_DECL_ADDED(ScaleConstraintComponent) CQ_DECL_ADDED(ParentConstraintComponent)
+    CQ_DECL_ADDED(WindZoneComponent) CQ_DECL_ADDED(CameraFollowComponent) CQ_DECL_ADDED(RotatorComponent) CQ_DECL_ADDED(ParticleForceFieldComponent)
+    CQ_DECL_ADDED(SplineContainerComponent) CQ_DECL_ADDED(SplineAnimateComponent) CQ_DECL_ADDED(SplineExtrudeComponent) CQ_DECL_ADDED(SplineInstantiateComponent)
+    CQ_DECL_ADDED(VirtualCameraComponent) CQ_DECL_ADDED(CameraBrainComponent) CQ_DECL_ADDED(ImpulseSourceComponent) CQ_DECL_ADDED(PostProcessVolumeComponent) CQ_DECL_ADDED(DecalProjectorComponent)
+    CQ_DECL_ADDED(Light2DComponent) CQ_DECL_ADDED(ShadowCaster2DComponent) CQ_DECL_ADDED(SpriteMaskComponent) CQ_DECL_ADDED(PixelPerfectCameraComponent)
+    CQ_DECL_ADDED(BillboardRendererComponent) CQ_DECL_ADDED(HaloComponent) CQ_DECL_ADDED(LensFlareComponent) CQ_DECL_ADDED(CameraSkyboxComponent)
+    CQ_DECL_ADDED(AreaLightComponent) CQ_DECL_ADDED(PlayerInputComponent) CQ_DECL_ADDED(PlayerInputManagerComponent)
+    CQ_DECL_ADDED(NavMeshModifierComponent) CQ_DECL_ADDED(NavMeshModifierVolumeComponent) CQ_DECL_ADDED(NavMeshLinkComponent)
+    CQ_DECL_ADDED(VideoPlayerComponent)
+    CQ_DECL_ADDED(GameplayTagsComponent)
+    CQ_DECL_ADDED(AbilitySystemComponent)
+    CQ_DECL_ADDED(PlayerStartComponent)
+    CQ_DECL_ADDED(GameModeComponent)
+    CQ_DECL_ADDED(SpringArmComponent)
+    CQ_DECL_ADDED(StreamedLevelComponent)
+    CQ_DECL_ADDED(LevelStreamingVolumeComponent)
+    CQ_DECL_ADDED(AutoLODComponent)
+    CQ_DECL_ADDED(SoundOcclusionComponent)
+    CQ_DECL_ADDED(SoundConcurrencyComponent)
+    CQ_DECL_ADDED(VertexPaintComponent)
+    CQ_DECL_ADDED(FractureComponent)
+    CQ_DECL_ADDED(RagdollComponent)
+    CQ_DECL_ADDED(VirtualGeometryComponent)
+    CQ_DECL_ADDED(CharacterCustomizerComponent)
+    CQ_DECL_ADDED(SignalConnectionsComponent)
+    CQ_DECL_ADDED(CSGShapeComponent)
+    CQ_DECL_ADDED(MultiMeshComponent)
+    CQ_DECL_ADDED(RemoteTransformComponent)
+    CQ_DECL_ADDED(RayCastComponent)
+    CQ_DECL_ADDED(VisibleOnScreenNotifierComponent)
+    CQ_DECL_ADDED(Parallax2DComponent)
+    CQ_DECL_ADDED(RenderTargetComponent)
+    CQ_DECL_ADDED(Bone2DComponent)
+    CQ_DECL_ADDED(IK2DComponent)
+    CQ_DECL_ADDED(RigComponent) CQ_DECL_ADDED(TwoBoneIKConstraintComponent) CQ_DECL_ADDED(MultiAimConstraintComponent) CQ_DECL_ADDED(ChainIKConstraintComponent) CQ_DECL_ADDED(DampedTransformComponent)
+    CQ_DECL_ADDED(ProjectileMovementComponent) CQ_DECL_ADDED(SortingGroupComponent) CQ_DECL_ADDED(PrefabInstanceComponent)
+    CQ_DECL_ADDED(GridComponent) CQ_DECL_ADDED(TilemapComponent) CQ_DECL_ADDED(TilemapCollider2DComponent)
+    CQ_DECL_ADDED(NetworkManagerComponent) CQ_DECL_ADDED(NetworkObjectComponent) CQ_DECL_ADDED(NetworkTransformComponent) CQ_DECL_ADDED(NetworkRigidbodyComponent) CQ_DECL_ADDED(NetworkAnimatorComponent)
+    CQ_DECL_ADDED(PlayableDirectorComponent) CQ_DECL_ADDED(WheelColliderComponent) CQ_DECL_ADDED(ConfigurableJointComponent)
+    CQ_DECL_ADDED(FrictionJoint2DComponent) CQ_DECL_ADDED(RelativeJoint2DComponent) CQ_DECL_ADDED(TargetJoint2DComponent) CQ_DECL_ADDED(ConstantForce2DComponent)
+#undef CQ_DECL_ADDED
+    template<> void Scene::OnComponentAdded<RectTransformComponent>(Entity, RectTransformComponent&);
+    template<> void Scene::OnComponentAdded<UIImageComponent>(Entity, UIImageComponent&);
+    template<> void Scene::OnComponentAdded<UITextComponent>(Entity, UITextComponent&);
+    template<> void Scene::OnComponentAdded<UIButtonComponent>(Entity, UIButtonComponent&);
+    template<> void Scene::OnComponentAdded<UIToggleComponent>(Entity, UIToggleComponent&);
+    template<> void Scene::OnComponentAdded<UISliderComponent>(Entity, UISliderComponent&);
+    template<> void Scene::OnComponentAdded<UIInputFieldComponent>(Entity, UIInputFieldComponent&);
+    template<> void Scene::OnComponentAdded<UIDropdownComponent>(Entity, UIDropdownComponent&);
+    template<> void Scene::OnComponentAdded<UIScrollRectComponent>(Entity, UIScrollRectComponent&);
+    template<> void Scene::OnComponentAdded<UILayoutGroupComponent>(Entity, UILayoutGroupComponent&);
+    template<> void Scene::OnComponentAdded<UICanvasGroupComponent>(Entity, UICanvasGroupComponent&);
+    template<> void Scene::OnComponentAdded<UIRectMask2DComponent>(Entity, UIRectMask2DComponent&);
+    template<> void Scene::OnComponentAdded<UIMaskComponent>(Entity, UIMaskComponent&);
+    template<> void Scene::OnComponentAdded<UIRawImageComponent>(Entity, UIRawImageComponent&);
+    template<> void Scene::OnComponentAdded<UIContentSizeFitterComponent>(Entity, UIContentSizeFitterComponent&);
+    template<> void Scene::OnComponentAdded<UIAspectRatioFitterComponent>(Entity, UIAspectRatioFitterComponent&);
+    template<> void Scene::OnComponentAdded<UILayoutElementComponent>(Entity, UILayoutElementComponent&);
+    template<> void Scene::OnComponentAdded<UIScrollbarComponent>(Entity, UIScrollbarComponent&);
+    template<> void Scene::OnComponentAdded<UIEventTriggerComponent>(Entity, UIEventTriggerComponent&);
+    template<> void Scene::OnComponentAdded<UIEventSystemComponent>(Entity, UIEventSystemComponent&);
+    template<> void Scene::OnComponentAdded<UIShadowComponent>(Entity, UIShadowComponent&);
+    template<> void Scene::OnComponentAdded<UIOutlineComponent>(Entity, UIOutlineComponent&);
 }

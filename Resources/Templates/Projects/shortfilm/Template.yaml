@@ -1,0 +1,5 @@
+# Short Film (Unreal cinematic samples / Unity Timeline sample): "The Lantern", a one-minute film told with the Timeline
+Shared: [Mannequin, Plaza]
+StartScene: Assets/Scenes/Main.cqscene
+Scenes:
+  - Assets/Scenes/Main.cqscene

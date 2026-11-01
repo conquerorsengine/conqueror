@@ -1,0 +1,34 @@
+using nativebridge;
+
+// Serbest sürüş HUD'u: hız, vites, devir çubuğu (Offroad). Yarış sahnesinde TimeTrial aynı alanları günceller.
+script VehicleHud : ConquerorScript
+{
+    public string vehicleName = "Vehicle";
+    public float redline = 6500.0;
+
+    private var vehicle = -1;
+    private float hintTimer = 4.5;
+
+    func Start()
+    {
+        vehicle = FindEntity(vehicleName);
+    }
+
+    func Update(dt)
+    {
+        if (vehicle == null || vehicle < 0) { return; }
+        UISetText("SpeedText", "" + int(MathAbs(GetScriptField(vehicle, "speedKmh"))));
+        var gear = GetScriptField(vehicle, "gear");
+        UISetText("GearText", gear < 0 ? "R" : (gear == 0 ? "N" : "" + gear));
+        var rpm = GetScriptField(vehicle, "rpm");
+        UISetFill("RpmFill", MathClamp01(rpm / 7500.0));
+        UISetColor("RpmFill", 1.0, rpm > redline ? 0.25 : 0.85, rpm > redline ? 0.2 : 0.3, 0.95);
+        // Açılışta kısa ipucu: 3.5 sn görünür, son 1 sn'de solar
+        if (hintTimer > 0.0)
+        {
+            hintTimer -= dt;
+            UISetText("CenterText", hintTimer > 0.0 ? "EXPLORE THE VALLEY" : "");
+            UISetAlpha("CenterText", MathClamp01(hintTimer));
+        }
+    }
+}

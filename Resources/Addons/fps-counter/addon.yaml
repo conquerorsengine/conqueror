@@ -1,0 +1,17 @@
+Id: conqueror.fps-counter
+Name: FPS Counter
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  On-screen performance readout for builds and testing: average FPS and frame time over a
+  short window, the worst frame, color coded against a target frame rate, toggled with F3.
+Category: UI
+Icon: gauge-high
+Tags: [ui, fps, performance, debug, profiler]
+Components:
+  - Scripts/FPSCounter.cqs
+Inserts:
+  - Name: FPS Counter
+    Icon: gauge-high
+    Prefab: Prefabs/FPSCounter.cqprefab
+    Tooltip: Corner text with FPS and frame time

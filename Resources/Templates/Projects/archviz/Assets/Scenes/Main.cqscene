@@ -1,0 +1,3852 @@
+Scene: Untitled
+Entities:
+  - Entity: 8316140862244892267
+    TagComponent:
+      Tag: Floor
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.1, 0]
+      Rotation: [0, 0, 0]
+      Scale: [5.3, 0.1, 4.3]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.45
+      AO: 1
+      Tiling: [0.45, 0.45]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/laminate_floor_02.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 8997913896114451885
+    TagComponent:
+      Tag: Ceiling
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 3, 0]
+      Rotation: [0, 0, 0]
+      Scale: [5.3, 0.1, 4.3]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.95, 0.95, 0.94, 1]
+      Metallic: 0
+      Roughness: 0.9
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 7805660900143781743
+    TagComponent:
+      Tag: Wall South L
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.8, 1.45, 4.1]
+      Rotation: [0, 0, 0]
+      Scale: [2.4, 1.45, 0.1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.85
+      AO: 1
+      Tiling: [0.5, 0.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/white_plaster.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 3605992560014140698
+    TagComponent:
+      Tag: Wall South R
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2.9, 1.45, 4.1]
+      Rotation: [0, 0, 0]
+      Scale: [2.3, 1.45, 0.1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.85
+      AO: 1
+      Tiling: [0.5, 0.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/white_plaster.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 4282224247870075283
+    TagComponent:
+      Tag: Wall South Door Top
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.1, 2.5, 4.1]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.4, 0.1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.85
+      AO: 1
+      Tiling: [0.5, 0.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/white_plaster.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2736152075776978977
+    TagComponent:
+      Tag: Door Jamb L
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.375, 1.05, 4.1]
+      Rotation: [0, 0, 0]
+      Scale: [0.025, 1.05, 0.12]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.16, 0.13, 0.11, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 3914431376286327199
+    TagComponent:
+      Tag: Door Jamb R
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.575, 1.05, 4.1]
+      Rotation: [0, 0, 0]
+      Scale: [0.025, 1.05, 0.12]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.16, 0.13, 0.11, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6989923664237092728
+    TagComponent:
+      Tag: Door Head
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.1, 2.125, 4.1]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.025, 0.12]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.16, 0.13, 0.11, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 5313292183393849151
+    TagComponent:
+      Tag: Front Door
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.1, 1.05, 4.1]
+      Rotation: [0, 0, 0]
+      Scale: [0.45, 1.05, 0.0225]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.78, 0.66, 0.55, 1]
+      Metallic: 0
+      Roughness: 0.55
+      AO: 1
+      Tiling: [0.9, 0.9]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/laminate_floor_02.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 775625459306523828
+    TagComponent:
+      Tag: Door Handle
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.46, 1, 4.05]
+      Rotation: [0, 0, 0]
+      Scale: [0.07, 0.0125, 0.0125]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.75, 0.75, 0.74, 1]
+      Metallic: 1
+      Roughness: 0.25
+      AO: 1
+      TexturePath: ""
+  - Entity: 1942661612941187670
+    TagComponent:
+      Tag: Wall East
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [5.1, 1.45, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.1, 1.45, 4.2]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.85
+      AO: 1
+      Tiling: [0.5, 0.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/white_plaster.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 680983135603792672
+    TagComponent:
+      Tag: Wall West
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-5.1, 1.45, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.1, 1.45, 4.2]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.85
+      AO: 1
+      Tiling: [0.5, 0.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/white_plaster.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 931563548378671948
+    TagComponent:
+      Tag: Wall North Pier W
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-4.25, 1.45, -4.1]
+      Rotation: [0, 0, 0]
+      Scale: [0.75, 1.45, 0.1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.85
+      AO: 1
+      Tiling: [0.5, 0.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/white_plaster.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 612316121433588442
+    TagComponent:
+      Tag: Wall North Pier C
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.45, -4.1]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 1.45, 0.1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.85
+      AO: 1
+      Tiling: [0.5, 0.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/white_plaster.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 7439763351349068828
+    TagComponent:
+      Tag: Wall North Pier E
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [4.25, 1.45, -4.1]
+      Rotation: [0, 0, 0]
+      Scale: [0.75, 1.45, 0.1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.85
+      AO: 1
+      Tiling: [0.5, 0.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/white_plaster.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6432371324875530238
+    TagComponent:
+      Tag: Wall North Sill -2.0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2, 0.2, -4.1]
+      Rotation: [0, 0, 0]
+      Scale: [1.5, 0.2, 0.1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.85
+      AO: 1
+      Tiling: [0.5, 0.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/white_plaster.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6235620766008338250
+    TagComponent:
+      Tag: Wall North Header -2.0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2, 2.7, -4.1]
+      Rotation: [0, 0, 0]
+      Scale: [1.5, 0.2, 0.1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.85
+      AO: 1
+      Tiling: [0.5, 0.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/white_plaster.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 5294205008996380426
+    TagComponent:
+      Tag: Window Frame Bottom -2.0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2, 0.42, -4.1]
+      Rotation: [0, 0, 0]
+      Scale: [1.5, 0.025, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.09, 1]
+      Metallic: 0
+      Roughness: 0.4
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2868266691147746380
+    TagComponent:
+      Tag: Window Frame Top -2.0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2, 2.48, -4.1]
+      Rotation: [0, 0, 0]
+      Scale: [1.5, 0.025, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.09, 1]
+      Metallic: 0
+      Roughness: 0.4
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 4436797465913548347
+    TagComponent:
+      Tag: Window Mullion -2.0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2, 1.45, -4.1]
+      Rotation: [0, 0, 0]
+      Scale: [0.025, 1.025, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.09, 1]
+      Metallic: 0
+      Roughness: 0.4
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6597767199554942014
+    TagComponent:
+      Tag: Window Glass -2.0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2, 1.45, -4.1]
+      Rotation: [0, 0, 0]
+      Scale: [1.475, 1, 0.01]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.02, 0.03, 0.03, 0.15]
+      Metallic: 0
+      Roughness: 0.02
+      AO: 1
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 3159603273312880605
+    TagComponent:
+      Tag: Wall North Sill 2.0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2, 0.2, -4.1]
+      Rotation: [0, 0, 0]
+      Scale: [1.5, 0.2, 0.1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.85
+      AO: 1
+      Tiling: [0.5, 0.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/white_plaster.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 4368547930774564248
+    TagComponent:
+      Tag: Wall North Header 2.0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2, 2.7, -4.1]
+      Rotation: [0, 0, 0]
+      Scale: [1.5, 0.2, 0.1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.85
+      AO: 1
+      Tiling: [0.5, 0.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/white_plaster.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 9187377551634330494
+    TagComponent:
+      Tag: Window Frame Bottom 2.0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2, 0.42, -4.1]
+      Rotation: [0, 0, 0]
+      Scale: [1.5, 0.025, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.09, 1]
+      Metallic: 0
+      Roughness: 0.4
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 1156904768322585336
+    TagComponent:
+      Tag: Window Frame Top 2.0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2, 2.48, -4.1]
+      Rotation: [0, 0, 0]
+      Scale: [1.5, 0.025, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.09, 1]
+      Metallic: 0
+      Roughness: 0.4
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6606863836810471465
+    TagComponent:
+      Tag: Window Mullion 2.0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2, 1.45, -4.1]
+      Rotation: [0, 0, 0]
+      Scale: [0.025, 1.025, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.09, 1]
+      Metallic: 0
+      Roughness: 0.4
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 34320095677119387
+    TagComponent:
+      Tag: Window Glass 2.0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2, 1.45, -4.1]
+      Rotation: [0, 0, 0]
+      Scale: [1.475, 1, 0.01]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.02, 0.03, 0.03, 0.15]
+      Metallic: 0
+      Roughness: 0.02
+      AO: 1
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 7570761249019341227
+    TagComponent:
+      Tag: Skirting East
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [4.99, 0.05, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.01, 0.05, 4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.95, 0.95, 0.95, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 1212980560456326833
+    TagComponent:
+      Tag: Skirting West
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-4.99, 0.05, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.01, 0.05, 4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.95, 0.95, 0.95, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2483281227929022734
+    TagComponent:
+      Tag: Patio
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.25, -6.8]
+      Rotation: [0, 0, 0]
+      Scale: [7, 0.1, 2.6]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.95, 0.95, 0.93, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      Tiling: [0.45, 0.45]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/patio_stone.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 476376932628641880
+    TagComponent:
+      Tag: Patio Kerb
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.2, -9.45]
+      Rotation: [0, 0, 0]
+      Scale: [7.15, 0.07, 0.09]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.62, 0.62, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 7752971732817071897
+    TagComponent:
+      Tag: Lawn
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.4, -20]
+      Rotation: [0, 0, 0]
+      Scale: [90, 0.15, 60]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.92, 1, 0.88, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      Tiling: [0.3, 0.3]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/lawn_grass.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 4233807077140902268
+    TagComponent:
+      Tag: Hedge North
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.85, -16]
+      Rotation: [0, 0, 0]
+      Scale: [12, 1.1, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.9
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/hedge_leaves.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2946853154766913589
+    TagComponent:
+      Tag: Hedge West
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-11.5, 0.85, -10.2]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 1.1, 5.8]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.9
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/hedge_leaves.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6447282386853012051
+    TagComponent:
+      Tag: Hedge East
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [11.5, 0.85, -10.2]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 1.1, 5.8]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.9
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/hedge_leaves.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6694660866704157284
+    TagComponent:
+      Tag: Garden Shrub
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-9.753667, -0.3, -14.658885]
+      Rotation: [0, 0.54806817, 0]
+      Scale: [0.84522486, 0.84522486, 0.84522486]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Exterior/shrub_02.glb
+  - Entity: 2370891580754399567
+    TagComponent:
+      Tag: Garden Shrub
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-6.607932, -0.3, -14.623003]
+      Rotation: [0, 3.334334, 0]
+      Scale: [0.7944952, 0.7944952, 0.7944952]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Exterior/shrub_02.glb
+  - Entity: 8054508803029949230
+    TagComponent:
+      Tag: Garden Shrub
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-4.048484, -0.3, -14.7300825]
+      Rotation: [0, 2.3846374, 0]
+      Scale: [1.049449, 1.049449, 1.049449]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Exterior/shrub_02.glb
+  - Entity: 4359522376440599136
+    TagComponent:
+      Tag: Garden Shrub
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-1.4362006, -0.3, -15.010019]
+      Rotation: [0, 4.2928686, 0]
+      Scale: [0.9278178, 0.9278178, 0.9278178]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Exterior/shrub_02.glb
+  - Entity: 5262816811338092337
+    TagComponent:
+      Tag: Garden Shrub
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [1.1179206, -0.3, -14.800982]
+      Rotation: [0, 4.8072195, 0]
+      Scale: [0.96993494, 0.96993494, 0.96993494]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Exterior/shrub_02.glb
+  - Entity: 4677072762235092494
+    TagComponent:
+      Tag: Garden Shrub
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [4.258759, -0.3, -14.645659]
+      Rotation: [0, 3.9059927, 0]
+      Scale: [0.93101764, 0.93101764, 0.93101764]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Exterior/shrub_02.glb
+  - Entity: 2357286094895429498
+    TagComponent:
+      Tag: Garden Shrub
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [6.9022737, -0.3, -14.680793]
+      Rotation: [0, 3.856861, 0]
+      Scale: [0.9769976, 0.9769976, 0.9769976]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Exterior/shrub_02.glb
+  - Entity: 8268848087999211993
+    TagComponent:
+      Tag: Garden Shrub
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [9.403005, -0.3, -15.00574]
+      Rotation: [0, 0.81522, 0]
+      Scale: [0.9275902, 0.9275902, 0.9275902]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Exterior/shrub_02.glb
+  - Entity: 409070353739822898
+    TagComponent:
+      Tag: Garden Table
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2.6, -0.15, -6.8]
+      Rotation: [0, 0.34906584, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Exterior/outdoor_table_chair_set_01.glb
+  - Entity: 3763603394852202102
+    TagComponent:
+      Tag: Garden Fill Light
+      GameTag: Garden Light
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 3.2, -5.2]
+      Rotation: [-0.20943952, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    AreaLightComponent:
+      Shape: 0
+      Color: [0.9, 0.94, 1]
+      Intensity: 1.2
+      Size: [22, 4]
+      Range: 24
+      TwoSided: false
+  - Entity: 7101638225279887515
+    TagComponent:
+      Tag: Garden Planter
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-5.6, -0.15, -4.8]
+      Rotation: [0, 1.5707964, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Exterior/planter_box_02.glb
+  - Entity: 5530722187680180637
+    TagComponent:
+      Tag: Planter Shrub
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-5.6, 0.25, -4.4]
+      Rotation: [0, 0, 0]
+      Scale: [1.6, 1.6, 1.6]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Exterior/shrub_03.glb
+  - Entity: 2351130457335460099
+    TagComponent:
+      Tag: Planter Shrub
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-5.6, 0.25, -4.8]
+      Rotation: [0, 1.2217305, 0]
+      Scale: [1.6, 1.6, 1.6]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Exterior/shrub_03.glb
+  - Entity: 3034408450644425601
+    TagComponent:
+      Tag: Planter Shrub
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-5.6, 0.25, -5.2]
+      Rotation: [0, 2.443461, 0]
+      Scale: [1.6, 1.6, 1.6]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Exterior/shrub_03.glb
+  - Entity: 5726295678985675766
+    TagComponent:
+      Tag: Garden Planter
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [5.6, -0.15, -4.8]
+      Rotation: [0, 1.5707964, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Exterior/planter_box_02.glb
+  - Entity: 2675661073208647329
+    TagComponent:
+      Tag: Planter Shrub
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [5.6, 0.25, -4.4]
+      Rotation: [0, 0, 0]
+      Scale: [1.6, 1.6, 1.6]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Exterior/shrub_03.glb
+  - Entity: 7008240664057453494
+    TagComponent:
+      Tag: Planter Shrub
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [5.6, 0.25, -4.8]
+      Rotation: [0, 1.2217305, 0]
+      Scale: [1.6, 1.6, 1.6]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Exterior/shrub_03.glb
+  - Entity: 722016926411772714
+    TagComponent:
+      Tag: Planter Shrub
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [5.6, 0.25, -5.2]
+      Rotation: [0, 2.443461, 0]
+      Scale: [1.6, 1.6, 1.6]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Exterior/shrub_03.glb
+  - Entity: 5399102077896730322
+    TagComponent:
+      Tag: Lawn Shrub
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.4, -0.25, -10.88363]
+      Rotation: [0, -2.3736477, 0]
+      Scale: [2.2, 2.2, 2.2]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Exterior/shrub_04.glb
+  - Entity: 6317823980593171973
+    TagComponent:
+      Tag: Lawn Shrub
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-1, -0.25, -11.411991]
+      Rotation: [0, -0.6981317, 0]
+      Scale: [2.2, 2.2, 2.2]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Exterior/shrub_04.glb
+  - Entity: 8968967134668499950
+    TagComponent:
+      Tag: Lawn Shrub
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [1.4, -0.25, -11.585974]
+      Rotation: [0, 0.9773844, 0]
+      Scale: [2.2, 2.2, 2.2]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Exterior/shrub_04.glb
+  - Entity: 2439823035935129932
+    TagComponent:
+      Tag: Lawn Shrub
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [4.2, -0.25, -10.754082]
+      Rotation: [0, 2.9321532, 0]
+      Scale: [2.2, 2.2, 2.2]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Exterior/shrub_04.glb
+  - Entity: 63770389747080554
+    TagComponent:
+      Tag: Rug
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2.8, 0.005, 0.6]
+      Rotation: [0, 0, 0]
+      Scale: [1.6, 0.005, 1.2]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      Tiling: [1.5, 1]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/fabric_pattern_07.jpg
+  - Entity: 6906859246496371174
+    TagComponent:
+      Tag: Sofa
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [1, 0, 0.6]
+      Rotation: [0, 1.5707964, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/sofa_03.glb
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0.55913204, -0.0013414472]
+      Size: [2.7311773, 1.1182641, 0.92508423]
+      IsTrigger: false
+      Version: 2
+  - Entity: 961012980229587666
+    TagComponent:
+      Tag: Throw Pillows
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [1.05, 0.45, 0.6]
+      Rotation: [0, 1.5707964, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/throw_pillows_01.glb
+  - Entity: 1573776909766963231
+    TagComponent:
+      Tag: Coffee Table
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2.7, 0, 0.6]
+      Rotation: [0, 1.5707964, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/modern_coffee_table_01.glb
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [1.1920929e-07, 0.195, 0.00024598837]
+      Size: [0.6, 0.39, 1.20183]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2848858154077172705
+    TagComponent:
+      Tag: Vase
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2.7, 0.39, 0.85]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/ceramic_vase_03.glb
+  - Entity: 7417372355063252479
+    TagComponent:
+      Tag: TV Cabinet
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [4.6, 0, 0.6]
+      Rotation: [0, -1.5707964, 0]
+      Scale: [0.85, 0.85, 0.85]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/modern_wooden_cabinet.glb
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [5.9604645e-08, 0.34008807, -0.010000005]
+      Size: [2.4400005, 0.6801425, 0.52]
+      IsTrigger: false
+      Version: 2
+  - Entity: 5726467233856272361
+    TagComponent:
+      Tag: Television
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [4.97, 1.3, 0.6]
+      Rotation: [0, 0, 0]
+      Scale: [0.02, 0.36, 0.625]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.035, 1]
+      Metallic: 0.4
+      Roughness: 0.35
+      AO: 1
+      TexturePath: ""
+  - Entity: 5123941270065932136
+    TagComponent:
+      Tag: Television Screen
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [4.948, 1.305, 0.6]
+      Rotation: [0, 0, 0]
+      Scale: [0.002, 0.345, 0.6075]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.006, 0.006, 0.008, 1]
+      Metallic: 0
+      Roughness: 0.06
+      AO: 1
+      TexturePath: ""
+  - Entity: 4414812542045446182
+    TagComponent:
+      Tag: Soundbar
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [4.62, 0.62, 0.6]
+      Rotation: [0, 0, 0]
+      Scale: [0.045, 0.035, 0.475]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.05, 0.05, 0.055, 1]
+      Metallic: 0
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 5923112585713218118
+    TagComponent:
+      Tag: Lounge Chair
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [3.6, 0, -2.6]
+      Rotation: [0, -2.443461, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/mid_century_lounge_chair.glb
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [2.9802322e-08, 0.58454233, -0.06620714]
+      Size: [1.0086143, 1.1690847, 1.1903107]
+      IsTrigger: false
+      Version: 2
+  - Entity: 820245915736154170
+    TagComponent:
+      Tag: Ottoman
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2.6, 0, -2.2]
+      Rotation: [0, 0, 0]
+      Scale: [0.9, 0.9, 0.9]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/Ottoman_01.glb
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0.0020796657, 0.31216195, 0.00092053413]
+      Size: [0.8845578, 0.6243239, 0.62114847]
+      IsTrigger: false
+      Version: 2
+  - Entity: 642911526482294329
+    TagComponent:
+      Tag: Side Table
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.6, 0, 2.2]
+      Rotation: [0, 1.5707964, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/side_table_01.glb
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0.27533114, 0]
+      Size: [0.5500001, 0.5506623, 0.45000002]
+      IsTrigger: false
+      Version: 2
+  - Entity: 1000592559820946174
+    TagComponent:
+      Tag: Picture Frame
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.6, 0.55, 2.2]
+      Rotation: [0, 2.0943952, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/standing_picture_frame_01.glb
+  - Entity: 1254721036830825648
+    TagComponent:
+      Tag: Plant Corner
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [4.5, 0, -3.5]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/potted_plant_01.glb
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [-0.044674374, 0.6613754, -0.046896383]
+      Size: [0.58738714, 1.3501639, 0.63356483]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2187302524617449278
+    TagComponent:
+      Tag: Shelves
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [4.75, 0, 2.9]
+      Rotation: [0, -1.5707964, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/wooden_display_shelves_01.glb
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0.7780919, 0]
+      Size: [0.37150964, 1.5561838, 1.0777609]
+      IsTrigger: false
+      Version: 2
+  - Entity: 1039638228502488638
+    TagComponent:
+      Tag: Vase Shelf
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [4.75, 1.56, 2.9]
+      Rotation: [0, 0, 0]
+      Scale: [0.8, 0.8, 0.8]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/ceramic_vase_01.glb
+  - Entity: 9150650838787316429
+    TagComponent:
+      Tag: Dining Table
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.6, 0, 0.6]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/dining_table.glb
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [-0.0049410462, 0.43849462, 0.016923964]
+      Size: [2.255896, 0.87698925, 1.390236]
+      IsTrigger: false
+      Version: 2
+  - Entity: 5542203218063158566
+    TagComponent:
+      Tag: Dining Chair
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.35, 0, -0.25]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/dining_chair_02.glb
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0.48668885, -0.042813756]
+      Size: [0.43357077, 0.9733777, 0.5764201]
+      IsTrigger: false
+      Version: 2
+  - Entity: 5276633333578841893
+    TagComponent:
+      Tag: Dining Chair
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.6, 0, -0.25]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/dining_chair_02.glb
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0.48668885, -0.042813756]
+      Size: [0.43357077, 0.9733777, 0.5764201]
+      IsTrigger: false
+      Version: 2
+  - Entity: 1374917846056439480
+    TagComponent:
+      Tag: Dining Chair
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-1.85, 0, -0.25]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/dining_chair_02.glb
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0.48668885, -0.042813756]
+      Size: [0.43357077, 0.9733777, 0.5764201]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6518297665741831652
+    TagComponent:
+      Tag: Dining Chair
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.35, 0, 1.45]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/dining_chair_02.glb
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0.48668885, -0.042813756]
+      Size: [0.43357077, 0.9733777, 0.5764201]
+      IsTrigger: false
+      Version: 2
+  - Entity: 1157752986783586133
+    TagComponent:
+      Tag: Dining Chair
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.6, 0, 1.45]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/dining_chair_02.glb
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0.48668885, -0.042813756]
+      Size: [0.43357077, 0.9733777, 0.5764201]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2588523129726556237
+    TagComponent:
+      Tag: Dining Chair
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-1.85, 0, 1.45]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/dining_chair_02.glb
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0.48668885, -0.042813756]
+      Size: [0.43357077, 0.9733777, 0.5764201]
+      IsTrigger: false
+      Version: 2
+  - Entity: 5873004321584931779
+    TagComponent:
+      Tag: Table Plant
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.6, 0.88, 0.6]
+      Rotation: [0, 0, 0]
+      Scale: [1.4, 1.4, 1.4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/potted_plant_04.glb
+  - Entity: 2181559777327362433
+    TagComponent:
+      Tag: Planter
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-4.3, 0, -3.6]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/planter_box_01.glb
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [-0.00041009486, 0.21248412, -0.00030079484]
+      Size: [0.91261137, 0.42496824, 0.41366798]
+      IsTrigger: false
+      Version: 2
+  - Entity: 7429903070032328477
+    TagComponent:
+      Tag: Painting A
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2.2, 1.2, 3.98]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [1.2, 1.2, 1.2]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/hanging_picture_frame_01.glb
+  - Entity: 7568732802306837257
+    TagComponent:
+      Tag: Painting B
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-4.98, 1.4, 0.6]
+      Rotation: [0, 1.5707964, 0]
+      Scale: [1.4, 1.4, 1.4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/hanging_picture_frame_02.glb
+  - Entity: 7445712153121978381
+    TagComponent:
+      Tag: Kitchen Base
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.3, 0.45, 3.65]
+      Rotation: [0, 0, 0]
+      Scale: [1.6, 0.45, 0.3]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.22, 0.25, 0.27, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 8614896560162701573
+    TagComponent:
+      Tag: Kitchen Top
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.3, 0.92, 3.62]
+      Rotation: [0, 0, 0]
+      Scale: [1.625, 0.02, 0.33]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.2
+      AO: 1
+      Tiling: [1.2, 1.2]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/marble_01.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 1759717165908148639
+    TagComponent:
+      Tag: Kitchen Upper
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.3, 2.15, 3.8]
+      Rotation: [0, 0, 0]
+      Scale: [1.6, 0.35, 0.175]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.22, 0.25, 0.27, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6117915535754133244
+    TagComponent:
+      Tag: Kitchen Splash
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.3, 1.45, 3.88]
+      Rotation: [0, 0, 0]
+      Scale: [1.6, 0.5, 0.01]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.25
+      AO: 1
+      Tiling: [1.2, 1.2]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/marble_01.jpg
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 865506245193548151
+    TagComponent:
+      Tag: Ceiling Lamp
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.1, 1.95, 0.6]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/modern_ceiling_lamp_01.glb
+  - Entity: 7799554542939569620
+    TagComponent:
+      Tag: Lamp Light
+      GameTag: Lamp
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.1, 1.95, 0.6]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    PointLightComponent:
+      Color: [1, 0.78, 0.52]
+      Intensity: 0.6
+      Range: 6
+      Constant: 1
+      Linear: 0.09
+      Quadratic: 0.032
+      CastShadows: true
+      Mode: 0
+  - Entity: 3825048272790988499
+    TagComponent:
+      Tag: Lamp Glow
+      GameTag: Lamp Glow
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.1, 2, 0.6]
+      Rotation: [0, 0, 0]
+      Scale: [0.04, 0.04, 0.04]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.85, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.8, 0.55]
+      EmissionStrength: 1
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 5965396480204086416
+    TagComponent:
+      Tag: Ceiling Lamp
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.1, 1.95, 0.6]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/modern_ceiling_lamp_01.glb
+  - Entity: 5701509643491181242
+    TagComponent:
+      Tag: Lamp Light
+      GameTag: Lamp
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.1, 1.95, 0.6]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    PointLightComponent:
+      Color: [1, 0.78, 0.52]
+      Intensity: 0.6
+      Range: 6
+      Constant: 1
+      Linear: 0.09
+      Quadratic: 0.032
+      CastShadows: true
+      Mode: 0
+  - Entity: 6562342007504615727
+    TagComponent:
+      Tag: Lamp Glow
+      GameTag: Lamp Glow
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.1, 2, 0.6]
+      Rotation: [0, 0, 0]
+      Scale: [0.04, 0.04, 0.04]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.85, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.8, 0.55]
+      EmissionStrength: 1
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 4472285336028127454
+    TagComponent:
+      Tag: Ceiling Lamp
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2.7, 1.95, 0.6]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/modern_ceiling_lamp_01.glb
+  - Entity: 5852897303524875660
+    TagComponent:
+      Tag: Lamp Light
+      GameTag: Lamp
+      IsStatic: false
+    TransformComponent:
+      Position: [2.7, 1.95, 0.6]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    PointLightComponent:
+      Color: [1, 0.78, 0.52]
+      Intensity: 0.6
+      Range: 6
+      Constant: 1
+      Linear: 0.09
+      Quadratic: 0.032
+      CastShadows: true
+      Mode: 0
+  - Entity: 5141892929159479709
+    TagComponent:
+      Tag: Lamp Glow
+      GameTag: Lamp Glow
+      IsStatic: false
+    TransformComponent:
+      Position: [2.7, 2, 0.6]
+      Rotation: [0, 0, 0]
+      Scale: [0.04, 0.04, 0.04]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.85, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.8, 0.55]
+      EmissionStrength: 1
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 2047791415197592317
+    TagComponent:
+      Tag: Curtain Rod -2.0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2, 2.79, -3.86]
+      Rotation: [0, 0, 1.5707964]
+      Scale: [0.013, 1.9, 0.013]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [0.12, 0.12, 0.13, 1]
+      Metallic: 0.9
+      Roughness: 0.35
+      AO: 1
+      TexturePath: ""
+  - Entity: 8233728096702616022
+    TagComponent:
+      Tag: Curtain Finial
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.92, 2.79, -3.86]
+      Rotation: [0, 0, 0]
+      Scale: [0.025, 0.025, 0.025]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [0.12, 0.12, 0.13, 1]
+      Metallic: 0.9
+      Roughness: 0.35
+      AO: 1
+      TexturePath: ""
+  - Entity: 8585199628688500506
+    TagComponent:
+      Tag: Curtain
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.45, 0.04, -3.86]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/linen_curtain.glb
+  - Entity: 7331160436937785687
+    TagComponent:
+      Tag: Curtain Finial
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.08, 2.79, -3.86]
+      Rotation: [0, 0, 0]
+      Scale: [0.025, 0.025, 0.025]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [0.12, 0.12, 0.13, 1]
+      Metallic: 0.9
+      Roughness: 0.35
+      AO: 1
+      TexturePath: ""
+  - Entity: 7728767880987554360
+    TagComponent:
+      Tag: Curtain
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.55, 0.04, -3.86]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/linen_curtain.glb
+  - Entity: 5602423914953610926
+    TagComponent:
+      Tag: Curtain Rod 2.0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2, 2.79, -3.86]
+      Rotation: [0, 0, 1.5707964]
+      Scale: [0.013, 1.9, 0.013]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [0.12, 0.12, 0.13, 1]
+      Metallic: 0.9
+      Roughness: 0.35
+      AO: 1
+      TexturePath: ""
+  - Entity: 873553353073248594
+    TagComponent:
+      Tag: Curtain Finial
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.08, 2.79, -3.86]
+      Rotation: [0, 0, 0]
+      Scale: [0.025, 0.025, 0.025]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [0.12, 0.12, 0.13, 1]
+      Metallic: 0.9
+      Roughness: 0.35
+      AO: 1
+      TexturePath: ""
+  - Entity: 7578021000130909094
+    TagComponent:
+      Tag: Curtain
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.55, 0.04, -3.86]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/linen_curtain.glb
+  - Entity: 5461180053698473002
+    TagComponent:
+      Tag: Curtain Finial
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [3.92, 2.79, -3.86]
+      Rotation: [0, 0, 0]
+      Scale: [0.025, 0.025, 0.025]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [0.12, 0.12, 0.13, 1]
+      Metallic: 0.9
+      Roughness: 0.35
+      AO: 1
+      TexturePath: ""
+  - Entity: 5220042580877078118
+    TagComponent:
+      Tag: Curtain
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [3.45, 0.04, -3.86]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Furniture/linen_curtain.glb
+  - Entity: 4705823275707305690
+    TagComponent:
+      Tag: Dining Rug
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.6, 0.005, 0.6]
+      Rotation: [0, 0, 0]
+      Scale: [1.55, 0.005, 1.35]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      TexturePath: Assets/Textures/rug_wool.jpg
+  - Entity: 3672341172902208807
+    TagComponent:
+      Tag: Kitchen LED Strip
+      GameTag: Lamp Glow
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.3, 1.793, 3.68]
+      Rotation: [0, 0, 0]
+      Scale: [1.5, 0.006, 0.015]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 0.92, 0.8, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.86, 0.66]
+      EmissionStrength: 1.5
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 1269311567676914269
+    TagComponent:
+      Tag: Kitchen Under Cabinet Light
+      GameTag: Evening Light
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.3, 1.77, 3.6]
+      Rotation: [-1.5707964, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    AreaLightComponent:
+      Shape: 0
+      Color: [1, 0.84, 0.62]
+      Intensity: 0.4
+      Size: [3, 0.2]
+      Range: 3
+      TwoSided: false
+  - Entity: 307193177779928142
+    TagComponent:
+      Tag: Floor Lamp Base
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.55, 0.015, -0.85]
+      Rotation: [0, 0, 0]
+      Scale: [0.16, 0.015, 0.16]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [0.1, 0.1, 0.11, 1]
+      Metallic: 0.8
+      Roughness: 0.4
+      AO: 1
+      TexturePath: ""
+  - Entity: 6466521484256409466
+    TagComponent:
+      Tag: Floor Lamp Pole
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.55, 0.78, -0.85]
+      Rotation: [0, 0, 0]
+      Scale: [0.0125, 0.75, 0.0125]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [0.62, 0.5, 0.32, 1]
+      Metallic: 1
+      Roughness: 0.3
+      AO: 1
+      TexturePath: ""
+  - Entity: 4268270910342099108
+    TagComponent:
+      Tag: Floor Lamp Shade
+      GameTag: Shade Glow
+      IsStatic: false
+    TransformComponent:
+      Position: [0.55, 1.56, -0.85]
+      Rotation: [0, 0, 0]
+      Scale: [0.22, 0.16, 0.22]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [0.95, 0.9, 0.8, 1]
+      Metallic: 0
+      Roughness: 0.9
+      AO: 1
+      EmissionColor: [1, 0.78, 0.5]
+      EmissionStrength: 0
+      TexturePath: Assets/Textures/linen.jpg
+  - Entity: 4968426182693962379
+    TagComponent:
+      Tag: Floor Lamp Light
+      GameTag: Evening Light
+      IsStatic: false
+    TransformComponent:
+      Position: [0.55, 1.5, -0.85]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    PointLightComponent:
+      Color: [1, 0.76, 0.5]
+      Intensity: 0
+      Range: 5
+      Constant: 1
+      Linear: 0.09
+      Quadratic: 0.032
+      CastShadows: true
+      Mode: 0
+  - Entity: 2646439556515060816
+    TagComponent:
+      Tag: Downlight Trim
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-4.2, 2.896, 3.1]
+      Rotation: [0, 0, 0]
+      Scale: [0.07, 0.004, 0.07]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [0.9, 0.9, 0.9, 1]
+      Metallic: 0.6
+      Roughness: 0.3
+      AO: 1
+      TexturePath: ""
+  - Entity: 6934682775502704210
+    TagComponent:
+      Tag: Downlight Lens
+      GameTag: Downlight Glow
+      IsStatic: false
+    TransformComponent:
+      Position: [-4.2, 2.891, 3.1]
+      Rotation: [0, 0, 0]
+      Scale: [0.045, 0.002, 0.045]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [1, 0.95, 0.88, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.84, 0.64]
+      EmissionStrength: 0
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 3741953446388969390
+    TagComponent:
+      Tag: Downlight
+      GameTag: Downlight
+      IsStatic: false
+    TransformComponent:
+      Position: [-4.2, 2.87, 3.1]
+      Rotation: [-1.5707964, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    SpotLightComponent:
+      Direction: [0, -1, -5.960465e-08]
+      FromRotation: true
+      Color: [1, 0.84, 0.64]
+      Intensity: 0
+      Range: 5
+      InnerConeAngle: 20
+      OuterConeAngle: 42
+      Constant: 1
+      Linear: 0.09
+      Quadratic: 0.032
+      CastShadows: false
+      Mode: 0
+  - Entity: 3422096755036575737
+    TagComponent:
+      Tag: Downlight Trim
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.4, 2.896, 3.1]
+      Rotation: [0, 0, 0]
+      Scale: [0.07, 0.004, 0.07]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [0.9, 0.9, 0.9, 1]
+      Metallic: 0.6
+      Roughness: 0.3
+      AO: 1
+      TexturePath: ""
+  - Entity: 3802318262011561469
+    TagComponent:
+      Tag: Downlight Lens
+      GameTag: Downlight Glow
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.4, 2.891, 3.1]
+      Rotation: [0, 0, 0]
+      Scale: [0.045, 0.002, 0.045]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [1, 0.95, 0.88, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.84, 0.64]
+      EmissionStrength: 0
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 8233754633527954202
+    TagComponent:
+      Tag: Downlight
+      GameTag: Downlight
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.4, 2.87, 3.1]
+      Rotation: [-1.5707964, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    SpotLightComponent:
+      Direction: [0, -1, -5.960465e-08]
+      FromRotation: true
+      Color: [1, 0.84, 0.64]
+      Intensity: 0
+      Range: 5
+      InnerConeAngle: 20
+      OuterConeAngle: 42
+      Constant: 1
+      Linear: 0.09
+      Quadratic: 0.032
+      CastShadows: false
+      Mode: 0
+  - Entity: 5662823932647443569
+    TagComponent:
+      Tag: Downlight Trim
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.1, 2.896, 3]
+      Rotation: [0, 0, 0]
+      Scale: [0.07, 0.004, 0.07]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [0.9, 0.9, 0.9, 1]
+      Metallic: 0.6
+      Roughness: 0.3
+      AO: 1
+      TexturePath: ""
+  - Entity: 2689644964248558959
+    TagComponent:
+      Tag: Downlight Lens
+      GameTag: Downlight Glow
+      IsStatic: false
+    TransformComponent:
+      Position: [0.1, 2.891, 3]
+      Rotation: [0, 0, 0]
+      Scale: [0.045, 0.002, 0.045]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [1, 0.95, 0.88, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.84, 0.64]
+      EmissionStrength: 0
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 4883651907622344289
+    TagComponent:
+      Tag: Downlight
+      GameTag: Downlight
+      IsStatic: false
+    TransformComponent:
+      Position: [0.1, 2.87, 3]
+      Rotation: [-1.5707964, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    SpotLightComponent:
+      Direction: [0, -1, -5.960465e-08]
+      FromRotation: true
+      Color: [1, 0.84, 0.64]
+      Intensity: 0
+      Range: 5
+      InnerConeAngle: 20
+      OuterConeAngle: 42
+      Constant: 1
+      Linear: 0.09
+      Quadratic: 0.032
+      CastShadows: false
+      Mode: 0
+  - Entity: 6301794334611745998
+    TagComponent:
+      Tag: Downlight Trim
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [4.3, 2.896, -0.4]
+      Rotation: [0, 0, 0]
+      Scale: [0.07, 0.004, 0.07]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [0.9, 0.9, 0.9, 1]
+      Metallic: 0.6
+      Roughness: 0.3
+      AO: 1
+      TexturePath: ""
+  - Entity: 3179242425559352799
+    TagComponent:
+      Tag: Downlight Lens
+      GameTag: Downlight Glow
+      IsStatic: false
+    TransformComponent:
+      Position: [4.3, 2.891, -0.4]
+      Rotation: [0, 0, 0]
+      Scale: [0.045, 0.002, 0.045]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [1, 0.95, 0.88, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.84, 0.64]
+      EmissionStrength: 0
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 5665553062978596474
+    TagComponent:
+      Tag: Downlight
+      GameTag: Downlight
+      IsStatic: false
+    TransformComponent:
+      Position: [4.3, 2.87, -0.4]
+      Rotation: [-1.5707964, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    SpotLightComponent:
+      Direction: [0, -1, -5.960465e-08]
+      FromRotation: true
+      Color: [1, 0.84, 0.64]
+      Intensity: 0
+      Range: 5
+      InnerConeAngle: 20
+      OuterConeAngle: 42
+      Constant: 1
+      Linear: 0.09
+      Quadratic: 0.032
+      CastShadows: false
+      Mode: 0
+  - Entity: 3786913304011140417
+    TagComponent:
+      Tag: Downlight Trim
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [4.3, 2.896, 1.6]
+      Rotation: [0, 0, 0]
+      Scale: [0.07, 0.004, 0.07]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [0.9, 0.9, 0.9, 1]
+      Metallic: 0.6
+      Roughness: 0.3
+      AO: 1
+      TexturePath: ""
+  - Entity: 6130724164615147803
+    TagComponent:
+      Tag: Downlight Lens
+      GameTag: Downlight Glow
+      IsStatic: false
+    TransformComponent:
+      Position: [4.3, 2.891, 1.6]
+      Rotation: [0, 0, 0]
+      Scale: [0.045, 0.002, 0.045]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [1, 0.95, 0.88, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.84, 0.64]
+      EmissionStrength: 0
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 5002110928925866931
+    TagComponent:
+      Tag: Downlight
+      GameTag: Downlight
+      IsStatic: false
+    TransformComponent:
+      Position: [4.3, 2.87, 1.6]
+      Rotation: [-1.5707964, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    SpotLightComponent:
+      Direction: [0, -1, -5.960465e-08]
+      FromRotation: true
+      Color: [1, 0.84, 0.64]
+      Intensity: 0
+      Range: 5
+      InnerConeAngle: 20
+      OuterConeAngle: 42
+      Constant: 1
+      Linear: 0.09
+      Quadratic: 0.032
+      CastShadows: false
+      Mode: 0
+  - Entity: 5054504151842815893
+    TagComponent:
+      Tag: Window Light -2.0
+      GameTag: Window Light
+      IsStatic: false
+    TransformComponent:
+      Position: [-2, 1.45, -3.9]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    AreaLightComponent:
+      Shape: 0
+      Color: [0.85, 0.92, 1]
+      Intensity: 2
+      Size: [2.9, 2]
+      Range: 12
+      TwoSided: false
+  - Entity: 7855156127990078498
+    TagComponent:
+      Tag: Window Light 2.0
+      GameTag: Window Light
+      IsStatic: false
+    TransformComponent:
+      Position: [2, 1.45, -3.9]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    AreaLightComponent:
+      Shape: 0
+      Color: [0.85, 0.92, 1]
+      Intensity: 2
+      Size: [2.9, 2]
+      Range: 12
+      TwoSided: false
+  - Entity: 5438762026230696776
+    TagComponent:
+      Tag: Sun
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [-0.6632251, 2.1816616, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    DirectionalLightComponent:
+      Direction: [-0.64550066, -0.61566156, 0.4519843]
+      FromRotation: true
+      Color: [1, 1, 1]
+      Intensity: 5
+      CastShadows: true
+      Mode: 0
+  - Entity: 6684641405681560131
+    TagComponent:
+      Tag: View 1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.4, 0.9, 3.2]
+      Rotation: [-0.10471976, 0.34906584, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 4158069128034109874
+    TagComponent:
+      Tag: View 2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [3.8, 0.9, 3]
+      Rotation: [-0.13962634, 0.2617994, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5706459185219924918
+    TagComponent:
+      Tag: View 3
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-4.2, 0.9, -2.6]
+      Rotation: [-0.10471976, -2.1816616, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 1647715769602741526
+    TagComponent:
+      Tag: View 4
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.2, 0.9, -3]
+      Rotation: [-0.08726646, 2.8797932, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5851132247672731186
+    TagComponent:
+      Tag: Visitor
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.4, 0.9, 3.2]
+      Rotation: [0, 0.34906584, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    CharacterControllerComponent:
+      SlopeLimit: 45
+      StepOffset: 0.3
+      SkinWidth: 0.02
+      MinMoveDistance: 0
+      Center: [0, 0, 0]
+      Radius: 0.25
+      Height: 1.8
+      Mass: 70
+      PushRigidbodies: true
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Scripts/ArchvizWalker.cqs
+      ClassName: ""
+  - Entity: 5598575323999539869
+    TagComponent:
+      Tag: Camera
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.72, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera:
+        ProjectionType: 0
+        PerspectiveFOV: 1.3089969
+        PerspectiveNear: 0.05
+        PerspectiveFar: 1000
+        OrthographicSize: 10
+        OrthographicNear: -1000
+        OrthographicFar: 1000
+      Primary: true
+      FixedAspectRatio: false
+      Background: 0
+      BackgroundColor: [0.192, 0.302, 0.475, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    AudioListenerComponent:
+      IsActive: true
+  - Entity: 8912566656461226283
+    TagComponent:
+      Tag: HUD
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    CanvasComponent:
+      RenderMode: 0
+      PixelPerfect: false
+      SortOrder: 0
+    CanvasScalerComponent:
+      ScaleMode: 1
+      ScaleFactor: 1
+      ReferencePixelsPerUnit: 100
+      ReferenceResolution: [1920, 1080]
+      MatchWidthOrHeight: 0.5
+    GraphicRaycasterComponent:
+      IgnoreReversedGraphics: true
+      BlockingObjects: 0
+      BlockingMask: 4294967295
+  - Entity: 3662039225810579238
+    TagComponent:
+      Tag: HintText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 26]
+      SizeDelta: [1800, 30]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: WASD WALK     SHIFT FASTER     MOUSE LOOK     1-4 VIEWPOINTS     G DAY / EVENING     F FLY (Q / E)
+      FontPath: ""
+      FontSize: 22
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+Environment:
+  SkyboxPath: Assets/Sky/day.hdr
+  SkyboxExposure: 1
+  SkyboxRotation: 0
+  SkyboxTint: [1, 1, 1]
+  EnvironmentLightingSource: 0
+  AmbientColor: [0.3, 0.3, 0.3]
+  AmbientSkyColor: [0.5, 0.6, 0.7]
+  AmbientEquatorColor: [0.3, 0.3, 0.3]
+  AmbientGroundColor: [0.2, 0.15, 0.1]
+  AmbientIntensity: 1
+  FogEnabled: false
+  FogColor: [0.5, 0.6, 0.7]
+  FogDensity: 0.02
+  FogStart: 10
+  FogEnd: 100
+  SunSource: 0
+  HaloEnabled: false
+  HaloStrength: 0.5
+  FlareEnabled: false
+  FlareFadeSpeed: 3
+  FlareStrength: 1
+  FlareElements:
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.08
+      Offset: 0.3
+      Intensity: 1
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.06
+      Offset: 0.6
+      Intensity: 0.8
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.05
+      Offset: 0.9
+      Intensity: 0.6
+  ShadowEnabled: true
+  ShadowIntensity: 1
+  ReflectionSource: 0
+  ReflectionResolution: 128
+  ReflectionCompression: 0
+  ReflectionIntensityMultiplier: 1
+  ReflectionBounces: 1
+  BakedLightmapPath: ""
+  LightmapResolution: 40
+  MaxLightmapSize: 1024
+  MaxBounces: 2
+  DirectSamples: 32
+  IndirectSamples: 512
+  AmbientOcclusion: true
+  LightmapFiltering: 0
+  RenderSettings:
+    Shadows:
+      Enabled: true
+      Quality: 1
+      Resolution: 4096
+      Distance: 30
+      CascadeCount: 2
+      CascadeSplitLambda: 0.75
+      Strength: 1
+      Softness: 1
+      DepthBias: 0.005
+      NormalBias: 0.015
+      Color: [0, 0, 0]
+    Fog:
+      Enabled: false
+      Mode: 2
+      Color: [0.5, 0.6, 0.7]
+      Density: 0.02
+      Start: 10
+      End: 100
+      HeightFalloff: 0
+      BaseHeight: 0
+    Post:
+      Enabled: true
+      Tonemapper: 2
+      Exposure: 0.25
+      Bloom: true
+      BloomThreshold: 1
+      BloomKnee: 0.5
+      BloomIntensity: 0.2
+      BloomScatter: 0.7
+      BloomTint: [1, 1, 1]
+      AmbientOcclusion: true
+      AORadius: 0.6
+      AOIntensity: 1.1
+      AOPower: 1.5
+      ColorGrading: true
+      Contrast: 1
+      Saturation: 1
+      Temperature: 0
+      Tint: 0
+      Lift: [0, 0, 0]
+      Gamma: [1, 1, 1]
+      Gain: [1, 1, 1]
+      Vignette: true
+      VignetteIntensity: 0.15
+      VignetteSmoothness: 0.4
+      VignetteColor: [0, 0, 0]
+      ChromaticAberration: false
+      ChromaticAberrationIntensity: 0.3
+      FilmGrain: false
+      FilmGrainIntensity: 0.15
+      Sharpen: false
+      SharpenAmount: 0.3
+      AntiAliasing: 3
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: true
+      SSRIntensity: 0.8
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: true
+      SSGIIntensity: 1.4
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: false
+      CloudCoverage: 0.45
+      CloudDensity: 1
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: false
+      FocusDistance: 10
+      Aperture: 2.8
+      FocalLength: 50
+      DOFMaxBlur: 10
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
+    Environment:
+      Sky: 0
+      BackgroundColor: [0.1, 0.1, 0.1]
+      ImageBasedLighting: true
+      ReflectionIntensity: 1
+      SkyboxIntensity: 0.5
+      SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
+    Bake:
+      RealtimeGI: false
+      BakedGI: true
+      LightingMode: 0
+      Lightmapper: 1
+      ImportanceSampling: true
+      DirectSamples: 32
+      IndirectSamples: 512
+      EnvironmentSamples: 256
+      MaxBounces: 2
+      Filtering: 0
+      Packing: 0
+      Resolution: 40
+      MaxLightmapSize: 1024
+      UseMipmapLimits: true
+      Compression: 2
+      AmbientOcclusion: true
+      DirectionalMode: 0
+      AlbedoBoost: 1
+      IndirectIntensity: 1
+      RealtimeResolution: 20
+      RealtimeIndirectSamples: 256
+      RealtimeMaxBounces: 1
+      AutoGenerate: false
+      BakeOnSceneLoad: 0
+      APVFitToScene: true
+      APVOrigin: [-10, -1, -10]
+      APVSize: [20, 10, 20]
+      APVProbeOffset: [0, 0, 0]
+      APVMinSpacing: 1
+      APVMaxSpacing: 9
+      APVBakingMode: 0
+      APVDilation: false
+      APVVirtualOffset: true
+      APVValidityThreshold: 0.75
+      APVSearchDistanceMultiplier: 0.2
+      APVGeometryBias: 0.01
+      APVRayOriginBias: -0.001
+EditorCamera:
+  CameraMode: 0
+  Position: [0, 2.2352762, 3.3637033]
+  Distance: 4
+  Pitch: 0.2617994
+  Yaw: 0
+  OrthographicSize: 10
+Hierarchy:
+  - Child: 3662039225810579238
+    Parent: 8912566656461226283
+  - Child: 5598575323999539869
+    Parent: 5851132247672731186

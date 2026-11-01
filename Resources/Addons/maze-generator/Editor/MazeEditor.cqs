@@ -1,0 +1,157 @@
+using nativebridge;
+
+// Editör: sahneye labirent kurar (Maze/Generate, geri alınabilir). Ayarlar panelden.
+script MazeEditor : ConquerorScript
+{
+    public int width = 8;
+    public int height = 8;
+    public float cellSize = 3.0;
+    public float wallHeight = 2.5;
+    public int seed = 1;
+    public bool buildFloor = true;
+
+    // Bilgi
+    public int lastWalls = 0;
+    public int lastPath = 0;
+
+    func OnLoad()
+    {
+        EditorAddMenuItem("Maze/Generate", "Generate");
+        EditorAddPanel("Maze Generator", "DrawPanel");
+    }
+
+    func Generate()
+    {
+        var cells = MazeCarve(width, height, seed);
+        var root = MazeBuild(cells, width, height, cellSize, wallHeight, 0.3, buildFloor, true);
+        EntitySetName(root, "Maze " + str(width) + "x" + str(height));
+        var c = EditorGetCameraTarget();
+        EntitySetPosition(root, c.x, 0, c.z);
+        lastWalls = MazeWallCount(root);
+        lastPath = MazeSolve(cells, width, height);
+        EditorSetSelection(root);
+        EditorNotify("Maze: " + str(lastWalls) + " walls, solution " + str(lastPath) + " cells");
+    }
+
+    func DrawPanel()
+    {
+        width = GuiSliderInt("Width", width, 2, 60);
+        height = GuiSliderInt("Height", height, 2, 60);
+        cellSize = GuiSliderFloat("Cell Size", cellSize, 1.0, 10.0);
+        wallHeight = GuiSliderFloat("Wall Height", wallHeight, 0.5, 10.0);
+        seed = GuiSliderInt("Seed", seed, 0, 99999);
+        buildFloor = GuiCheckbox("Floor", buildFloor);
+        if (GuiButton("Generate", -1)) { EditorRunUndoable("Generate Maze", "Generate"); }
+        if (lastWalls > 0) { GuiTextDisabled(str(lastWalls) + " walls, shortest path " + str(lastPath) + " cells"); }
+    }
+}
+
+// Hücre duvarları: bit 1 kuzey (+z), 2 doğu (+x), 4 güney (-z), 8 batı (-x); 15 = dört duvar
+func MazeCarve(w, h, seed)
+{
+    var cells = [];
+    var visited = [];
+    for (var i = 0; i < w * h; i++) { cells.Add(15); visited.Add(false); }
+    var rng = seed != 0 ? seed : MathRandomInt(1, 1000000);
+    var stack = [0];
+    visited[0] = true;
+    while (stack.Count > 0)
+    {
+        var c = stack[stack.Count - 1];
+        var cx = c % w;
+        var cy = int(c / w);
+        var options = [];
+        if (cy + 1 < h && !visited[c + w]) { options.Add(0); }
+        if (cx + 1 < w && !visited[c + 1]) { options.Add(1); }
+        if (cy - 1 >= 0 && !visited[c - w]) { options.Add(2); }
+        if (cx - 1 >= 0 && !visited[c - 1]) { options.Add(3); }
+        if (options.Count == 0) { ListPop(stack); continue; }
+        rng = (rng * 1103515245 + 12345) % 2147483648;
+        var dir = options[rng % options.Count];
+        var n = dir == 0 ? c + w : (dir == 1 ? c + 1 : (dir == 2 ? c - w : c - 1));
+        var bit = dir == 0 ? 1 : (dir == 1 ? 2 : (dir == 2 ? 4 : 8));
+        var opposite = dir == 0 ? 4 : (dir == 1 ? 8 : (dir == 2 ? 1 : 2));
+        cells[c] = cells[c] - bit;
+        cells[n] = cells[n] - opposite;
+        visited[n] = true;
+        stack.Add(n);
+    }
+    // Giriş (0. hücrenin güneyi) ve çıkış (son hücrenin kuzeyi)
+    cells[0] = cells[0] - 4;
+    cells[w * h - 1] = cells[w * h - 1] - 1;
+    return cells;
+}
+
+func MazeWall(parent, name, x, y, z, sx, sy, sz, colliders)
+{
+    var e = CreateEntity(name);
+    EntityAddComponent(e, "MeshRenderer");
+    EntitySetPosition(e, x, y, z);
+    EntitySetScale(e, sx * 0.5, sy * 0.5, sz * 0.5);
+    EntitySetColor(e, 0.62, 0.6, 0.56, 1);
+    if (colliders)
+    {
+        EntityAddComponent(e, "BoxCollider");
+        EntityAddComponent(e, "Rigidbody");
+        EntitySetComponentField(e, "Rigidbody", "BodyType", "Static");
+    }
+    EntitySetParent(e, parent, false);
+    return e;
+}
+
+// Duvarları kur: güney ve batı duvarları her hücrede, kuzey/doğu yalnızca son satır/sütunda (çift duvar olmaz)
+func MazeBuild(cells, w, h, size, wallH, thick, floor, colliders)
+{
+    var root = CreateEntity("Maze Walls");
+    var ox = -w * size * 0.5;
+    var oz = -h * size * 0.5;
+    for (var y = 0; y < h; y++)
+    {
+        for (var x = 0; x < w; x++)
+        {
+            var c = cells[y * w + x];
+            var x0 = ox + x * size;
+            var z0 = oz + y * size;
+            if ((c & 4) != 0) { MazeWall(root, "Wall", x0 + size * 0.5, wallH * 0.5, z0, size + thick, wallH, thick, colliders); }
+            if ((c & 8) != 0) { MazeWall(root, "Wall", x0, wallH * 0.5, z0 + size * 0.5, thick, wallH, size + thick, colliders); }
+            if (y == h - 1 && (c & 1) != 0) { MazeWall(root, "Wall", x0 + size * 0.5, wallH * 0.5, z0 + size, size + thick, wallH, thick, colliders); }
+            if (x == w - 1 && (c & 2) != 0) { MazeWall(root, "Wall", x0 + size, wallH * 0.5, z0 + size * 0.5, thick, wallH, size + thick, colliders); }
+        }
+    }
+    if (floor)
+    {
+        var f = MazeWall(root, "Maze Floor", 0, -0.1, 0, w * size + 2, 0.2, h * size + 2, colliders);
+        EntitySetColor(f, 0.32, 0.36, 0.3, 1);
+    }
+    return root;
+}
+
+func MazeWallCount(root)
+{
+    var n = 0;
+    for (var c in EntityGetChildren(root)) { if (EntityGetName(c) == "Wall") { n++; } }
+    return n;
+}
+
+// Giriş hücresinden çıkışa en kısa yol (hücre sayısı), yoksa 0
+func MazeSolve(cells, w, h)
+{
+    var dist = [];
+    for (var i = 0; i < w * h; i++) { dist.Add(-1); }
+    var queue = [0];
+    dist[0] = 1;
+    var head = 0;
+    while (head < queue.Count)
+    {
+        var c = queue[head];
+        head++;
+        var cx = c % w;
+        var cy = int(c / w);
+        var walls = cells[c];
+        if ((walls & 1) == 0 && cy + 1 < h && dist[c + w] < 0) { dist[c + w] = dist[c] + 1; queue.Add(c + w); }
+        if ((walls & 2) == 0 && cx + 1 < w && dist[c + 1] < 0) { dist[c + 1] = dist[c] + 1; queue.Add(c + 1); }
+        if ((walls & 4) == 0 && cy - 1 >= 0 && dist[c - w] < 0) { dist[c - w] = dist[c] + 1; queue.Add(c - w); }
+        if ((walls & 8) == 0 && cx - 1 >= 0 && dist[c - 1] < 0) { dist[c - 1] = dist[c] + 1; queue.Add(c - 1); }
+    }
+    return dist[w * h - 1] > 0 ? dist[w * h - 1] : 0;
+}

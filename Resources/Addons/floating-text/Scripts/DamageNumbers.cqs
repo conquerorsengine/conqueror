@@ -1,0 +1,40 @@
+using nativebridge;
+
+// Health olan nesneye eklenir: OnDamaged / OnHealed olaylarında başının üstünde sayı gösterir.
+script DamageNumbers : ConquerorScript
+{
+    public float heightOffset = 2.2;
+    public float criticalThreshold = 50.0;
+    public float fontSize = 0.6;
+
+    // Çalışma zamanı bilgisi
+    public int spawned = 0;
+
+    func OnDamaged(amount)
+    {
+        var p = EntityGetWorldPosition(GetEntityId());
+        var crit = amount >= criticalThreshold;
+        var text = (crit ? "!" : "") + "-" + str(int(MathRound(amount)));
+        SpawnFloatingText(text, p.x, p.y + heightOffset, p.z, 1.0, crit ? 0.85 : 0.25, crit ? 0.1 : 0.2, crit ? fontSize * 1.5 : fontSize);
+        spawned++;
+    }
+
+    func OnHealed(amount)
+    {
+        var p = EntityGetWorldPosition(GetEntityId());
+        SpawnFloatingText("+" + str(int(MathRound(amount))), p.x, p.y + heightOffset, p.z, 0.3, 1.0, 0.4, fontSize);
+        spawned++;
+    }
+}
+
+func SpawnFloatingText(text, x, y, z, r, g, b, size)
+{
+    var e = CreateEntity("Floating Text");
+    EntitySetPosition(e, x, y, z);
+    EntityAddComponent(e, "TextRenderer");
+    EntitySetComponentField(e, "TextRenderer", "Text", text);
+    EntitySetComponentField(e, "TextRenderer", "Color", [r, g, b, 1.0]);
+    EntitySetComponentField(e, "TextRenderer", "FontSize", size);
+    AddScript(e, "Packages/floating-text/Scripts/FloatingText.cqs");
+    return e;
+}

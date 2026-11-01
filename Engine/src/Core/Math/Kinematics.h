@@ -7,8 +7,8 @@
 namespace Conqueror::Math {
     struct Joint {
         CQVec3 position;
-        CQQuat rotation;
-        float length;
+        CQQuat rotation{};
+        float length{};
     };
 
     class CQ_API Kinematics {

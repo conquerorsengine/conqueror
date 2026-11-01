@@ -1,0 +1,6 @@
+Track/*: textures written by Tools/Templates/make_track.py from Poly Haven asphalt_track, sparse_grass, gravel_floor
+  (CC0, https://polyhaven.com) plus generated kerb / barrier / checker images. The track itself is built in the scene
+  from the "Racing Line" spline with Spline Extrude profiles.
+Props/Tyre.glb (old_tyre), Props/StreetLamp.glb (street_lamp_01), Props/ConcreteBarrier.glb (concrete_road_barrier):
+  Poly Haven, CC0.
+Props/WoodPlanks.jpg (brown_planks_03): Poly Haven, CC0.

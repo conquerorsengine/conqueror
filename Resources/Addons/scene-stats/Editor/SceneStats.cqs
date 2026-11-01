@@ -1,0 +1,113 @@
+using nativebridge;
+
+// Scene Stats: sahnedeki nesne türlerinin canlı sayımı ve türe göre seçim.
+script SceneStats : ConquerorScript
+{
+    public int total = 0;
+    public int roots = 0;
+    public int deepest = 0;
+    public float refresh = 0.0;
+    public string summary = "";
+    var counts = null;
+    var kinds = null;
+
+    func OnLoad()
+    {
+        counts = Map();
+        kinds = [
+            ["Mesh Renderers", "MeshRenderer"], ["Sprites", "SpriteRenderer"], ["Directional Lights", "DirectionalLight"],
+            ["Point Lights", "PointLight"], ["Spot Lights", "SpotLight"], ["Rigidbodies", "Rigidbody"], ["Rigidbodies 2D", "Rigidbody2D"],
+            ["Box Colliders", "BoxCollider"], ["Character Controllers", "CharacterController"], ["Audio Sources", "AudioSource"],
+            ["Tilemaps", "Tilemap"], ["Line Renderers", "LineRenderer"], ["Trail Renderers", "TrailRenderer"], ["Prefab Instances", "PrefabInstance"]
+        ];
+        EditorAddPanel("Scene Stats", "DrawPanel");
+        EditorAddMenuItem("Scene Stats/Log Summary", "LogSummary");
+        EditorAddToolButton("Stats", "chart-simple", "LogSummary", "Write a scene summary to the Log");
+        Recount();
+    }
+
+    func Depth(e)
+    {
+        var d = 0;
+        var p = EntityGetParent(e);
+        while (p >= 0)
+        {
+            d++;
+            p = EntityGetParent(p);
+        }
+        return d;
+    }
+
+    func Recount()
+    {
+        var all = EditorGetAllEntities();
+        total = len(all);
+        roots = 0;
+        deepest = 0;
+        counts = Map();
+        for (var k in kinds) { counts[k[1]] = 0; }
+        for (var e in all)
+        {
+            if (EntityGetParent(e) < 0) { roots++; }
+            var d = Depth(e);
+            if (d > deepest) { deepest = d; }
+            for (var k in kinds)
+            {
+                if (EntityHasComponent(e, k[1])) { counts[k[1]] = counts[k[1]] + 1; }
+            }
+        }
+        summary = str(total) + " objects, " + str(roots) + " roots, depth " + str(deepest);
+    }
+
+    func OnEditorUpdate(dt)
+    {
+        refresh -= dt;
+        if (refresh <= 0.0)
+        {
+            refresh = 0.5;
+            Recount();
+        }
+    }
+
+    func SelectKind(component)
+    {
+        var picked = List();
+        for (var e in EditorGetAllEntities())
+        {
+            if (EntityHasComponent(e, component)) { ListAdd(picked, e); }
+        }
+        EditorSetSelection(picked);
+        EditorNotify("Selected " + str(len(picked)) + " x " + component);
+    }
+
+    func LogSummary()
+    {
+        Recount();
+        var text = "Scene: " + summary;
+        for (var k in kinds)
+        {
+            var n = counts[k[1]];
+            if (n > 0) { text = text + " | " + k[0] + ": " + str(n); }
+        }
+        EditorNotify(text);
+    }
+
+    func DrawPanel()
+    {
+        GuiText(summary);
+        GuiProgress(MathMin(1.0, total / 2000.0), str(total) + " / 2000 objects");
+        GuiSeparator();
+        for (var k in kinds)
+        {
+            var n = counts[k[1]];
+            if (n == 0) { continue; }
+            GuiText(k[0] + ": " + str(n));
+            GuiSameLine();
+            if (GuiButton("Select##" + k[1])) { SelectKind(k[1]); }
+        }
+        if (total > 2000) { GuiInfo("Large scene: consider LOD Groups, static batching or splitting into prefabs.", "warning"); }
+        if (deepest > 12) { GuiInfo("Very deep hierarchy (" + str(deepest) + " levels) - transforms update slower.", "warning"); }
+        GuiSeparator();
+        if (GuiButton("Log Summary", -1)) { LogSummary(); }
+    }
+}

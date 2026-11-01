@@ -1,0 +1,105 @@
+using nativebridge;
+
+// Oyuncuya eklenir: kameradan ileri ışınla (yoksa yakındaki) Interactable nesneyi bulur, istemi gösterir,
+// E'ye basınca Interact çağırır. İstem: promptTextName adlı UI Text ("Press E to <prompt>").
+script Interactor : ConquerorScript
+{
+    public string cameraName = "";
+    public float rayDistance = 3.0;
+    public float nearbyRadius = 1.6;
+    public string promptTextName = "Prompt Text";
+    public string promptFormat = "[E] {0}";
+
+    // Çalışma zamanı bilgisi
+    public string focusName = "";
+    public string promptShown = "";
+    public int interactions = 0;
+
+    private var focus = null;
+
+    func Eye()
+    {
+        if (cameraName != "") { var c = FindEntity(cameraName); if (c != null) { return c; } }
+        for (var ch in EntityGetChildren(GetEntityId())) { if (EntityHasComponent(ch, "Camera")) { return ch; } }
+        return GetMainCamera();
+    }
+
+    func IsMine(e)
+    {
+        var cur = e;
+        for (var i = 0; i < 16; i++)
+        {
+            if (cur == null || cur < 0) { return false; }
+            if (cur == GetEntityId()) { return true; }
+            cur = EntityGetParent(cur);
+        }
+        return false;
+    }
+
+    // Işının çarptığı nesne ya da atalarından Interactable olanı
+    func InteractableOf(e)
+    {
+        var cur = e;
+        for (var i = 0; i < 8; i++)
+        {
+            if (cur == null || cur < 0) { return null; }
+            if (HasScript(cur, "Interactable")) { return cur; }
+            cur = EntityGetParent(cur);
+        }
+        return null;
+    }
+
+    func FindFocus()
+    {
+        var eye = Eye();
+        if (eye != null)
+        {
+            var o = EntityGetWorldPosition(eye);
+            var f = EntityGetForward(eye);
+            for (var h in RaycastAll(o.x, o.y, o.z, f.x, f.y, f.z, rayDistance))
+            {
+                if (IsMine(h.entity)) { continue; }
+                var it = InteractableOf(h.entity);
+                if (it != null && h.distance <= GetScriptField(it, "range")) { return it; }
+                if (!h.isTrigger) { break; }
+            }
+        }
+        // Yakın çevre (ışın ıskaladıysa)
+        var p = EntityGetWorldPosition(GetEntityId());
+        var best = null;
+        var bestD = nearbyRadius;
+        for (var e in FindEntitiesWithScript("Interactable"))
+        {
+            var q = EntityGetWorldPosition(e);
+            var d = MathSqrt((q.x - p.x) * (q.x - p.x) + (q.z - p.z) * (q.z - p.z));
+            if (d < bestD) { bestD = d; best = e; }
+        }
+        return best;
+    }
+
+    func Update(dt)
+    {
+        focus = FindFocus();
+        var text = "";
+        if (focus != null)
+        {
+            var pr = InvokeMethod(focus, "Prompt");
+            if (pr != null && pr != "") { text = StringReplace(promptFormat, "{0}", pr); }
+        }
+        focusName = focus != null ? EntityGetName(focus) : "";
+        if (text != promptShown)
+        {
+            promptShown = text;
+            var t = FindEntity(promptTextName);
+            if (t != null) { UISetText(t, text); UISetVisible(t, text != ""); }
+        }
+        if (focus != null && IsKeyDown(Key.E)) { Use(); }
+    }
+
+    func Use()
+    {
+        if (focus == null) { return false; }
+        if (InvokeMethod(focus, "Interact", GetEntityId())) { interactions++; return true; }
+        return false;
+    }
+}

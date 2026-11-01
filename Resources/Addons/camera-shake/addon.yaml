@@ -1,0 +1,14 @@
+Id: conqueror.camera-shake
+Name: Camera Shake
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Trauma based camera shake with smooth Perlin noise: call Shake(amount) from any script
+  (SendMessage or InvokeMethod), or let explosions shake every camera nearby with
+  ShakeAt(x, y, z, amount, radius). Position and rotation shake, decay and frequency are
+  configurable and the camera always returns exactly to its rest pose.
+Category: Camera
+Icon: wave-square
+Tags: [camera, shake, juice, feedback, noise]
+Components:
+  - Scripts/CameraShake.cqs

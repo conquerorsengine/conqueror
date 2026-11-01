@@ -13,9 +13,15 @@ namespace Conqueror
         // Color
         RGBA8,
         RED_INTEGER,
-        
+        RGBA16F,     // HDR sahne rengi
+        RGBA32F,
+        RG16F,       // velocity / normal
+        R16F,        // SSAO, luminance
+        R8,
+
         // Depth/Stencil
         DEPTH24STENCIL8,
+        DEPTH32F,    // örneklenebilir derinlik (SSAO, yumuşak parçacık)
         
         // Defaults
         Depth = DEPTH24STENCIL8

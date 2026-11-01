@@ -1,0 +1,10 @@
+using nativebridge;
+var root = CreateEntity("Bounds Root");
+var child = CreateEntity("Bounds Child");
+EntityAddComponent(child, "MeshRenderer");
+EntitySetPosition(child, 2, 0, 0);
+EntitySetParent(child, root, false);
+var own = EntityGetBounds(root);
+var all = EntityGetBounds(root, true);
+LogInfo("REGRESSION bounds_children own=" + (own == null ? "null" : "set") + " all=" + (all == null ? "null" : ("" + all.center.x)));
+if (own == null && all != null && MathAbs(all.center.x - 2.0) < 0.01) { CreateEntity("RegressionCheckOK"); }

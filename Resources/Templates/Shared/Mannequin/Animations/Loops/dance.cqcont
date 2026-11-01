@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: dance
+      States:
+        - Name: dance
+          ClipIndex: 28
+          ClipName: dance
+  Parameters: []

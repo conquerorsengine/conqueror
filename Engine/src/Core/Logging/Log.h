@@ -44,8 +44,8 @@ namespace Conqueror
     struct LogCategory
     {
         std::string Name;
-        LogLevel Level;
-        bool Enabled;
+        LogLevel Level{};
+        bool Enabled{};
         std::vector<LogTag> DefaultTags;
     };
 
@@ -57,14 +57,14 @@ namespace Conqueror
         std::string Time;
         
         // Gelişmiş Telemetri Verileri
-        uint32_t ThreadID;
+        uint32_t ThreadID{};
         std::string ThreadName;
-        size_t MemoryUsageMB;
+        size_t MemoryUsageMB{};
         std::vector<LogTag> Tags;
         
         // Olay Bağlamı (Context) ve Routing (Yönlendirme)
         std::string ContextStack;
-        uint64_t CategoryBitmask;
+        uint64_t CategoryBitmask{};
     };
 
     struct LogConfig
@@ -145,6 +145,8 @@ namespace Conqueror
         static LogLevel GetGlobalLevel();
 
         static void FlushAll();
+        // Etkin günlük dosyası (çalışma klasörü yazılamıyorsa kullanıcı veri klasöründe); dosya yoksa boş
+        static const std::string& GetLogFilePath();
         static void RotateLogFile();
 
         // Olay Bağlamı (Context Yığıtı)

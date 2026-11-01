@@ -1,4 +1,7 @@
 #include "OpenGLCubemap.h"
+#include <vector>
+#include <cmath>
+#include <algorithm>
 #include "Core/Logging/Log.h"
 #include "Renderer/RHI/Shader.h"
 #include "Renderer/RHI/VertexArray.h"
@@ -45,7 +48,8 @@ namespace Conqueror
         // HDR texture yükle
         stbi_set_flip_vertically_on_load(true);
         int width, height, channels;
-        float* data = stbi_loadf(path.c_str(), &width, &height, &channels, 0);
+        // Her zaman 3 kanal iste: alfa kanallı (RGBA) PNG/JPG'ler GL_RGB yüklemesinde satırları kaydırıyordu
+        float* data = stbi_loadf(path.c_str(), &width, &height, &channels, 3);
 
         if (!data)
         {
@@ -54,6 +58,58 @@ namespace Conqueror
         }
 
         CQ_CORE_INFO("Loaded HDR: {0} ({1}x{2}, {3} channels)", path, width, height, channels);
+
+        // HDR gökyüzleri göreli birimlerle gelir (ortalama 0.5 de olabilir 50 de). Unreal bunu otomatik
+        // pozlamayla çözer; burada yüklerken alan ağırlıklı medyan parlaklık ~0.45 olacak şekilde ölçeklenir
+        // (0.25 ufku düzeltiyordu ama gökyüzünü fazla karartıyordu).
+        // Gökyüzü ve ondan üretilen ortam ışığı birlikte ölçeklendiği için sahne tutarlı kalır; ince ayar
+        // Lighting panelindeki Skybox Exposure ile yapılır. LDR (PNG/JPG) görüntüler olduğu gibi kalır.
+        if (stbi_is_hdr(path.c_str()) && width > 0 && height > 0)
+        {
+            const int step = std::max(1, (int)std::sqrt((double)width * height / 200000.0));
+            std::vector<std::pair<float, float>> samples;   // (parlaklık, alan ağırlığı)
+            samples.reserve((size_t)(width / step + 1) * (height / step + 1));
+            double totalWeight = 0.0;
+            for (int y = 0; y < height; y += step)
+            {
+                const float latitude = ((y + 0.5f) / height - 0.5f) * 3.14159265f;
+                const float w = std::cos(latitude);
+                for (int x = 0; x < width; x += step)
+                {
+                    const float* px = data + ((size_t)y * width + x) * 3;
+                    const float lum = 0.2126f * px[0] + 0.7152f * px[1] + 0.0722f * px[2];
+                    if (std::isfinite(lum))
+                    {
+                        samples.emplace_back(lum, w);
+                        totalWeight += w;
+                    }
+                }
+            }
+            std::sort(samples.begin(), samples.end());
+            double acc = 0.0;
+            float median = 0.0f;
+            for (const auto& [lum, w] : samples)
+            {
+                acc += w;
+                if (acc >= totalWeight * 0.5) { median = lum; break; }
+            }
+            if (median > 1e-6f)
+            {
+                m_SourceScale = std::clamp(0.45f / median, 1e-4f, 1e4f);
+                const size_t count = (size_t)width * height * 3;
+                for (size_t i = 0; i < count; ++i)
+                    data[i] *= m_SourceScale;
+                CQ_CORE_INFO("Skybox normalized: median luminance {0:.3f} -> x{1:.3f}", median, m_SourceScale);
+            }
+        }
+
+        // RGB16F en çok 65504 tutar: güneşli HDR'lerde (puresky) güneş pikselleri sonsuza taşar, filtrelenmiş ortam
+        // ışığı NaN olur ve tüm sahne siyah görünür. Değerler sınırlanır (güneş yine çok parlak kalır), NaN atılır.
+        {
+            const size_t count = (size_t)width * height * 3;
+            for (size_t i = 0; i < count; ++i)
+                data[i] = std::isfinite(data[i]) ? std::clamp(data[i], 0.0f, 20000.0f) : 0.0f;
+        }
 
         // Equirectangular texture oluştur
         uint32_t hdrTexture;

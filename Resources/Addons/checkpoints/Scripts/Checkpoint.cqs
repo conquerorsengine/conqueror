@@ -1,0 +1,43 @@
+using nativebridge;
+
+// Kontrol noktası: dokunan oyuncunun Respawner'ına (yoksa genel değişkene) yeni doğma noktası yazılır.
+// Etkinleşince "Flag" çocuğunun rengi değişir; order daha küçük olan noktaya geri dönülmez (isteğe bağlı).
+script Checkpoint : ConquerorScript
+{
+    public string requiredTag = "";
+    public int order = 0;
+    public bool onlyForward = true;
+    public float spawnHeight = 0.2;
+    public float activeR = 0.2;
+    public float activeG = 1.0;
+    public float activeB = 0.35;
+
+    // Çalışma zamanı bilgisi
+    public bool activated = false;
+
+    func OnTriggerEnter(other, name)
+    {
+        if (requiredTag != "" && EntityGetTag(other) != requiredTag) { return; }
+        if (!EntityHasComponent(other, "CharacterController") && !EntityHasComponent(other, "Rigidbody")) { return; }
+        if (onlyForward && order < GlobalGet("checkpoint.order", -999999)) { return; }
+        var p = EntityGetWorldPosition(GetEntityId());
+        var yaw = EntityGetRotation(GetEntityId()).y;
+        GlobalSet("checkpoint.x", p.x);
+        GlobalSet("checkpoint.y", p.y + spawnHeight);
+        GlobalSet("checkpoint.z", p.z);
+        GlobalSet("checkpoint.yaw", yaw);
+        GlobalSet("checkpoint.order", order);
+        GlobalSet("checkpoint.name", GetEntityName());
+        if (HasScript(other, "Respawner")) { SendMessage(other, "SetSpawn", p.x, p.y + spawnHeight, p.z, yaw); }
+        if (!activated)
+        {
+            activated = true;
+            var flag = EntityFindChild(GetEntityId(), "Flag");
+            if (flag != null && flag >= 0) { EntitySetColor(flag, activeR, activeG, activeB, 1); }
+            for (var c in EntityGetChildren(GetEntityId()))
+            {
+                if (EntityHasComponent(c, "ParticleSystem")) { ParticleEmit(c, 30); }
+            }
+        }
+    }
+}

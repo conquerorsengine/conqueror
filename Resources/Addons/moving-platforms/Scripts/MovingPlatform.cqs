@@ -1,0 +1,148 @@
+using nativebridge;
+
+// Yol noktaları arasında giden platform. Yol: "pathName" nesnesinin çocukları (dünya konumları);
+// boşsa başlangıç ile başlangıç + (offsetX, offsetY, offsetZ) arası. Üstündekiler platformla taşınır.
+// mode: 0 git-gel, 1 döngü (sondan başa), 2 bir kez (Activate ile yeniden başlar)
+script MovingPlatform : ConquerorScript
+{
+    public string pathName = "";
+    public float offsetX = 6.0;
+    public float offsetY = 0.0;
+    public float offsetZ = 0.0;
+    public float speed = 2.0;
+    public float waitTime = 1.0;
+    public int mode = 0;
+    public bool smooth = true;
+    public bool activeOnStart = true;
+    public bool carryRiders = true;
+    public float riderCheckHeight = 0.6;
+
+    // Çalışma zamanı bilgisi (başka betikler de okuyabilir: bu karedeki yer değiştirme)
+    public float dx = 0.0;
+    public float dy = 0.0;
+    public float dz = 0.0;
+    public int legs = 0;
+    public int targetIndex = 1;
+    public int riders = 0;
+    public bool moving = false;
+
+    private var points = [];
+    private int fromIndex = 0;
+    private int direction = 1;
+    private float t = 0.0;
+    private float legLength = 1.0;
+    private float wait = 0.0;
+    private bool active = true;
+
+    func Start()
+    {
+        var start = EntityGetWorldPosition(GetEntityId());
+        points = [];
+        if (pathName != "")
+        {
+            var path = FindEntity(pathName);
+            if (path != null)
+            {
+                for (var c in EntityGetChildren(path)) { points.Add(EntityGetWorldPosition(c)); }
+            }
+        }
+        if (points.Count < 2)
+        {
+            points = [start, {x: start.x + offsetX, y: start.y + offsetY, z: start.z + offsetZ}];
+        }
+        fromIndex = 0;
+        targetIndex = 1;
+        legLength = Distance(points[0], points[1]);
+        active = activeOnStart;
+        // Yolun ilk noktasından başla
+        EntitySetWorldPosition(GetEntityId(), points[0].x, points[0].y, points[0].z);
+    }
+
+    // Bir kez modunda (ya da durdurulmuşsa) yeniden harekete geçir
+    func Activate() { active = true; wait = 0; }
+    func Stop() { active = false; }
+
+    func Distance(a, b)
+    {
+        return MathSqrt((b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y) + (b.z - a.z) * (b.z - a.z));
+    }
+
+    func NextIndex(i)
+    {
+        var n = i + direction;
+        if (n >= points.Count || n < 0)
+        {
+            if (mode == 1) { return 0; }
+            direction = -direction;
+            n = i + direction;
+            if (mode == 2) { active = false; }
+        }
+        return n;
+    }
+
+    func Update(dt)
+    {
+        dx = 0; dy = 0; dz = 0;
+        moving = false;
+        if (dt <= 0 || !active || points.Count < 2) { return; }
+        if (wait > 0) { wait -= dt; return; }
+        var before = EntityGetWorldPosition(GetEntityId());
+        t += speed * dt / MathMax(0.001, legLength);
+        var arrived = false;
+        if (t >= 1.0) { t = 1.0; arrived = true; }
+        var a = points[fromIndex];
+        var b = points[targetIndex];
+        var k = smooth ? MathSmoothStep(0.0, 1.0, t) : t;
+        var nx = MathLerp(a.x, b.x, k);
+        var ny = MathLerp(a.y, b.y, k);
+        var nz = MathLerp(a.z, b.z, k);
+        dx = nx - before.x;
+        dy = ny - before.y;
+        dz = nz - before.z;
+        moving = true;
+        var carried = carryRiders ? FindRiders(before) : [];
+        EntitySetWorldPosition(GetEntityId(), nx, ny, nz);
+        for (var r in carried)
+        {
+            var rp = EntityGetWorldPosition(r);
+            EntitySetWorldPosition(r, rp.x + dx, rp.y + dy, rp.z + dz);
+        }
+        riders = carried.Count;
+        if (arrived)
+        {
+            legs++;
+            t = 0;
+            wait = waitTime;
+            fromIndex = targetIndex;
+            if (mode == 2 && (targetIndex + direction >= points.Count || targetIndex + direction < 0))
+            {
+                active = false;
+                direction = -direction;
+                targetIndex = fromIndex + direction;
+            }
+            else { targetIndex = NextIndex(fromIndex); }
+            legLength = Distance(points[fromIndex], points[targetIndex]);
+        }
+    }
+
+    // Üst yüzeyin hemen üstündeki karakterler / taşınabilir nesneler (kendisi ve alt nesneleri hariç)
+    func FindRiders(p)
+    {
+        var s = GetScale();
+        var hx = MathAbs(s.x) * 0.95;
+        var hy = MathAbs(s.y);
+        var hz = MathAbs(s.z) * 0.95;
+        var found = OverlapBox(p.x, p.y + hy + riderCheckHeight * 0.5, p.z, hx, riderCheckHeight * 0.5, hz);
+        var list = [];
+        var me = GetEntityId();
+        for (var e in found)
+        {
+            if (e == me || EntityGetParent(e) == me) { continue; }
+            if (EntityHasComponent(e, "CharacterController") || !EntityHasComponent(e, "Rigidbody"))
+            {
+                if (!ListContains(list, e)) { list.Add(e); }
+            }
+        }
+        return list;
+    }
+}

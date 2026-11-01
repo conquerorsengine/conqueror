@@ -1,0 +1,20 @@
+using nativebridge;
+
+// Efekt üretici: Spawn("Explosion", x, y, z) — vfx-pack prefablarını adla örnekler.
+// Başka betiklerden: SendMessage(FindEntity("VFX Spawner"), "Spawn", "Sparks", x, y, z)
+script VFXSpawner : ConquerorScript
+{
+    public string folder = "Packages/vfx-pack/Prefabs/";
+
+    // Çalışma zamanı bilgisi
+    public int spawned = 0;
+
+    func Spawn(name, x, y, z)
+    {
+        var file = StringReplace(name, " ", "") + ".cqprefab";
+        var e = Instantiate(folder + file, x, y, z);
+        if (e == null) { LogWarn("VFXSpawner: no effect named " + name); return null; }
+        spawned++;
+        return e;
+    }
+}

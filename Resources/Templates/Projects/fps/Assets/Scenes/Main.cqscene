@@ -1,0 +1,6524 @@
+Scene: Untitled
+Entities:
+  - Entity: 8316084832352546640
+    TagComponent:
+      Tag: Directional Light
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 10, 0]
+      Rotation: [-0.87266463, -0.6981317, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    DirectionalLightComponent:
+      Direction: [0.4131759, -0.76604456, -0.49240398]
+      FromRotation: true
+      Color: [1, 0.96, 0.9]
+      Intensity: 3.2
+      CastShadows: true
+      Mode: 0
+  - Entity: 8998040419084982570
+    TagComponent:
+      Tag: Impacts
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/Impacts.cqs
+      ClassName: ""
+  - Entity: 7805637752737798608
+    TagComponent:
+      Tag: FX Sparks
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ParticleSystemComponent:
+      Duration: 5
+      Looping: false
+      Prewarm: false
+      PlayOnAwake: false
+      StopAction: 0
+      StartDelay: 0
+      StartLifetime: [0.1, 0.35]
+      StartSpeed: [3, 9]
+      StartSize: [0.015, 0.04]
+      StartRotation: [0, 0]
+      StartColorA: [1, 0.85, 0.5, 1]
+      StartColorB: [1, 0.6, 0.25, 1]
+      GravityModifier: 1.2
+      SimulationSpeed: 1
+      MaxParticles: 400
+      SimulationSpace: 1
+      EmissionEnabled: false
+      RateOverTime: 0
+      RateOverDistance: 0
+      ShapeEnabled: true
+      Radius: 0.02
+      Angle: 25
+      BoxSize: [1, 1, 1]
+      EmitFromShell: false
+      RandomizeDirection: 0
+      Shape: 0
+      VelocityEnabled: false
+      VelocityOverLifetime: [0, 0, 0]
+      OrbitalSpeed: 0
+      LimitVelocityEnabled: false
+      Drag: 0
+      SpeedLimit: 100
+      NoiseEnabled: false
+      NoiseStrength: 1
+      NoiseFrequency: 0.5
+      NoiseScrollSpeed: 0.5
+      ColorOverLifetimeEnabled: true
+      SizeOverLifetimeEnabled: false
+      RotationOverLifetimeEnabled: false
+      AngularVelocity: 45
+      CollisionEnabled: false
+      CollisionPlaneY: 0
+      Bounce: 0.5
+      LifetimeLoss: 0
+      TextureSheetEnabled: false
+      AnimationCycles: 1
+      RandomStartFrame: false
+      Tiles: [1, 1]
+      RenderMode: 0
+      Blend: 1
+      Texture: Assets/Weapons/Textures/soft_glow.png
+      LengthScale: 2
+      SpeedScale: 0.1
+      SortByDistance: true
+      EmissiveIntensity: 6
+      Bursts:
+        []
+      ColorOverLifetime:
+        - [0, 1, 1, 1, 1]
+        - [1, 1, 1, 1, 1]
+      SizeOverLifetime:
+        - [0, 1]
+        - [1, 1]
+  - Entity: 3606110296341083363
+    TagComponent:
+      Tag: FX Dust
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ParticleSystemComponent:
+      Duration: 5
+      Looping: false
+      Prewarm: false
+      PlayOnAwake: false
+      StopAction: 0
+      StartDelay: 0
+      StartLifetime: [0.4, 0.9]
+      StartSpeed: [0.4, 1.6]
+      StartSize: [0.08, 0.22]
+      StartRotation: [0, 0]
+      StartColorA: [0.75, 0.74, 0.72, 0.6]
+      StartColorB: [0.6, 0.6, 0.6, 0.4]
+      GravityModifier: -0.05
+      SimulationSpeed: 1
+      MaxParticles: 300
+      SimulationSpace: 1
+      EmissionEnabled: false
+      RateOverTime: 0
+      RateOverDistance: 0
+      ShapeEnabled: true
+      Radius: 0.05
+      Angle: 25
+      BoxSize: [1, 1, 1]
+      EmitFromShell: false
+      RandomizeDirection: 0
+      Shape: 0
+      VelocityEnabled: false
+      VelocityOverLifetime: [0, 0, 0]
+      OrbitalSpeed: 0
+      LimitVelocityEnabled: false
+      Drag: 3
+      SpeedLimit: 100
+      NoiseEnabled: false
+      NoiseStrength: 1
+      NoiseFrequency: 0.5
+      NoiseScrollSpeed: 0.5
+      ColorOverLifetimeEnabled: true
+      SizeOverLifetimeEnabled: true
+      RotationOverLifetimeEnabled: false
+      AngularVelocity: 45
+      CollisionEnabled: false
+      CollisionPlaneY: 0
+      Bounce: 0.5
+      LifetimeLoss: 0
+      TextureSheetEnabled: false
+      AnimationCycles: 1
+      RandomStartFrame: false
+      Tiles: [1, 1]
+      RenderMode: 0
+      Blend: 0
+      Texture: Assets/Weapons/Textures/soft_glow.png
+      LengthScale: 2
+      SpeedScale: 0.1
+      SortByDistance: true
+      EmissiveIntensity: 1
+      Bursts:
+        []
+      ColorOverLifetime:
+        - [0, 1, 1, 1, 1]
+        - [1, 1, 1, 1, 0]
+      SizeOverLifetime:
+        - [0, 0.6]
+        - [1, 2]
+  - Entity: 4282344173559227762
+    TagComponent:
+      Tag: FX Hit
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ParticleSystemComponent:
+      Duration: 5
+      Looping: false
+      Prewarm: false
+      PlayOnAwake: false
+      StopAction: 0
+      StartDelay: 0
+      StartLifetime: [0.2, 0.5]
+      StartSpeed: [1, 4]
+      StartSize: [0.03, 0.07]
+      StartRotation: [0, 0]
+      StartColorA: [0.9, 0.9, 0.95, 1]
+      StartColorB: [0.7, 0.75, 0.8, 1]
+      GravityModifier: 0.8
+      SimulationSpeed: 1
+      MaxParticles: 300
+      SimulationSpace: 1
+      EmissionEnabled: false
+      RateOverTime: 0
+      RateOverDistance: 0
+      ShapeEnabled: true
+      Radius: 0.05
+      Angle: 25
+      BoxSize: [1, 1, 1]
+      EmitFromShell: false
+      RandomizeDirection: 0
+      Shape: 0
+      VelocityEnabled: false
+      VelocityOverLifetime: [0, 0, 0]
+      OrbitalSpeed: 0
+      LimitVelocityEnabled: false
+      Drag: 0
+      SpeedLimit: 100
+      NoiseEnabled: false
+      NoiseStrength: 1
+      NoiseFrequency: 0.5
+      NoiseScrollSpeed: 0.5
+      ColorOverLifetimeEnabled: true
+      SizeOverLifetimeEnabled: false
+      RotationOverLifetimeEnabled: false
+      AngularVelocity: 45
+      CollisionEnabled: false
+      CollisionPlaneY: 0
+      Bounce: 0.5
+      LifetimeLoss: 0
+      TextureSheetEnabled: false
+      AnimationCycles: 1
+      RandomStartFrame: false
+      Tiles: [1, 1]
+      RenderMode: 0
+      Blend: 0
+      Texture: Assets/Weapons/Textures/soft_glow.png
+      LengthScale: 2
+      SpeedScale: 0.1
+      SortByDistance: true
+      EmissiveIntensity: 1
+      Bursts:
+        []
+      ColorOverLifetime:
+        - [0, 1, 1, 1, 1]
+        - [1, 1, 1, 1, 1]
+      SizeOverLifetime:
+        - [0, 1]
+        - [1, 1]
+  - Entity: 2736137732200966013
+    TagComponent:
+      Tag: FX Muzzle
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ParticleSystemComponent:
+      Duration: 5
+      Looping: false
+      Prewarm: false
+      PlayOnAwake: false
+      StopAction: 0
+      StartDelay: 0
+      StartLifetime: [0.3, 0.7]
+      StartSpeed: [0.2, 0.8]
+      StartSize: [0.05, 0.12]
+      StartRotation: [0, 0]
+      StartColorA: [0.85, 0.85, 0.85, 0.35]
+      StartColorB: [0.7, 0.7, 0.7, 0.2]
+      GravityModifier: -0.1
+      SimulationSpeed: 1
+      MaxParticles: 200
+      SimulationSpace: 1
+      EmissionEnabled: false
+      RateOverTime: 0
+      RateOverDistance: 0
+      ShapeEnabled: true
+      Radius: 0.02
+      Angle: 25
+      BoxSize: [1, 1, 1]
+      EmitFromShell: false
+      RandomizeDirection: 0
+      Shape: 0
+      VelocityEnabled: false
+      VelocityOverLifetime: [0, 0, 0]
+      OrbitalSpeed: 0
+      LimitVelocityEnabled: false
+      Drag: 2
+      SpeedLimit: 100
+      NoiseEnabled: false
+      NoiseStrength: 1
+      NoiseFrequency: 0.5
+      NoiseScrollSpeed: 0.5
+      ColorOverLifetimeEnabled: true
+      SizeOverLifetimeEnabled: true
+      RotationOverLifetimeEnabled: false
+      AngularVelocity: 45
+      CollisionEnabled: false
+      CollisionPlaneY: 0
+      Bounce: 0.5
+      LifetimeLoss: 0
+      TextureSheetEnabled: false
+      AnimationCycles: 1
+      RandomStartFrame: false
+      Tiles: [1, 1]
+      RenderMode: 0
+      Blend: 0
+      Texture: Assets/Weapons/Textures/soft_glow.png
+      LengthScale: 2
+      SpeedScale: 0.1
+      SortByDistance: true
+      EmissiveIntensity: 1
+      Bursts:
+        []
+      ColorOverLifetime:
+        - [0, 1, 1, 1, 1]
+        - [1, 1, 1, 1, 0]
+      SizeOverLifetime:
+        - [0, 0.5]
+        - [1, 2.5]
+  - Entity: 3914384047363988297
+    TagComponent:
+      Tag: FX Laser
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ParticleSystemComponent:
+      Duration: 5
+      Looping: false
+      Prewarm: false
+      PlayOnAwake: false
+      StopAction: 0
+      StartDelay: 0
+      StartLifetime: [0.15, 0.4]
+      StartSpeed: [1, 5]
+      StartSize: [0.03, 0.08]
+      StartRotation: [0, 0]
+      StartColorA: [0.3, 0.8, 1, 1]
+      StartColorB: [1, 1, 1, 1]
+      GravityModifier: 0
+      SimulationSpeed: 1
+      MaxParticles: 300
+      SimulationSpace: 1
+      EmissionEnabled: false
+      RateOverTime: 0
+      RateOverDistance: 0
+      ShapeEnabled: true
+      Radius: 0.03
+      Angle: 25
+      BoxSize: [1, 1, 1]
+      EmitFromShell: false
+      RandomizeDirection: 0
+      Shape: 0
+      VelocityEnabled: false
+      VelocityOverLifetime: [0, 0, 0]
+      OrbitalSpeed: 0
+      LimitVelocityEnabled: false
+      Drag: 0
+      SpeedLimit: 100
+      NoiseEnabled: false
+      NoiseStrength: 1
+      NoiseFrequency: 0.5
+      NoiseScrollSpeed: 0.5
+      ColorOverLifetimeEnabled: true
+      SizeOverLifetimeEnabled: false
+      RotationOverLifetimeEnabled: false
+      AngularVelocity: 45
+      CollisionEnabled: false
+      CollisionPlaneY: 0
+      Bounce: 0.5
+      LifetimeLoss: 0
+      TextureSheetEnabled: false
+      AnimationCycles: 1
+      RandomStartFrame: false
+      Tiles: [1, 1]
+      RenderMode: 0
+      Blend: 1
+      Texture: Assets/Weapons/Textures/soft_glow.png
+      LengthScale: 2
+      SpeedScale: 0.1
+      SortByDistance: true
+      EmissiveIntensity: 8
+      Bursts:
+        []
+      ColorOverLifetime:
+        - [0, 1, 1, 1, 1]
+        - [1, 1, 1, 1, 1]
+      SizeOverLifetime:
+        - [0, 1]
+        - [1, 1]
+  - Entity: 6989946833965925675
+    TagComponent:
+      Tag: Floor
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.5, 0]
+      Rotation: [0, 0, 0]
+      Scale: [30, 0.5, 30]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 5313383358574730919
+    TagComponent:
+      Tag: Wall North
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 2, -30.5]
+      Rotation: [0, 0, 0]
+      Scale: [31, 2, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGridDark.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 775716634494697057
+    TagComponent:
+      Tag: Wall South
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 2, 30.5]
+      Rotation: [0, 0, 0]
+      Scale: [31, 2, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGridDark.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 1942684644165737996
+    TagComponent:
+      Tag: Wall East
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [30.5, 2, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 2, 30]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGridDark.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 680927106147734731
+    TagComponent:
+      Tag: Wall West
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-30.5, 2, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 2, 30]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGridDark.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 931648127545741010
+    TagComponent:
+      Tag: Platform
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [10, 1.5, -12]
+      Rotation: [0, 0, 0]
+      Scale: [6, 1.5, 5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 612233711216294922
+    TagComponent:
+      Tag: Ramp
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [10, 0.20978, -4.0529513]
+      Rotation: [-0.4048918, 3.1415927, 0]
+      Scale: [2, 1.4037175, 3.8078866]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 7439713814809656280
+    TagComponent:
+      Tag: High Platform
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-11, 1.5, -14]
+      Rotation: [0, 0, 0]
+      Scale: [4, 1.5, 4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6432313130753280300
+    TagComponent:
+      Tag: Steps0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-11, 0.125, -4.25]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [2, 0.125, 0.25]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6235538356794180806
+    TagComponent:
+      Tag: Steps1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-11, 0.25, -4.75]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [2, 0.25, 0.25]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 5294190759900696814
+    TagComponent:
+      Tag: Steps2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-11, 0.375, -5.25]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [2, 0.375, 0.25]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2868322708791514152
+    TagComponent:
+      Tag: Steps3
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-11, 0.5, -5.75]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [2, 0.5, 0.25]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 4436853621013288245
+    TagComponent:
+      Tag: Steps4
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-11, 0.625, -6.25]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [2, 0.625, 0.25]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6597649597442421537
+    TagComponent:
+      Tag: Steps5
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-11, 0.75, -6.75]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [2, 0.75, 0.25]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 3159661593059100244
+    TagComponent:
+      Tag: Steps6
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-11, 0.875, -7.25]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [2, 0.875, 0.25]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 4368568772669283444
+    TagComponent:
+      Tag: Steps7
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-11, 1, -7.75]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [2, 1, 0.25]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 9187459931804038794
+    TagComponent:
+      Tag: Steps8
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-11, 1.125, -8.25]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [2, 1.125, 0.25]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 1156954326335494796
+    TagComponent:
+      Tag: Steps9
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-11, 1.25, -8.75]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [2, 1.25, 0.25]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6606849587716009916
+    TagComponent:
+      Tag: Steps10
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-11, 1.375, -9.25]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [2, 1.375, 0.25]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 34226578670242529
+    TagComponent:
+      Tag: Steps11
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-11.000001, 1.5, -9.75]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [2, 1.5, 0.25]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 7570773260433750215
+    TagComponent:
+      Tag: Bridge
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.5, 2.8, -14]
+      Rotation: [0, 0, 0]
+      Scale: [6.5, 0.2, 1.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 1212922339486564712
+    TagComponent:
+      Tag: Cylinder A
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [18, 1.25, 10]
+      Rotation: [0, 0, 0]
+      Scale: [2.5, 1.25, 2.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    CapsuleColliderComponent:
+      Offset: [0, 0, 0]
+      Radius: 1
+      Height: 2
+      Direction: 1
+      IsTrigger: false
+      Version: 2
+  - Entity: 2483196481239213286
+    TagComponent:
+      Tag: Cylinder B
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-20, 1.75, 8]
+      Rotation: [0, 0, 0]
+      Scale: [2, 1.75, 2]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    CapsuleColliderComponent:
+      Offset: [0, 0, 0]
+      Radius: 1
+      Height: 2
+      Direction: 1
+      IsTrigger: false
+      Version: 2
+  - Entity: 476285753279176077
+    TagComponent:
+      Tag: Cube 0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-3, 0.5, 2]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.5, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.45
+      AO: 1
+      Tiling: [1, 1]
+      Offset: [0.5, 0.5]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Prototype/WorldGridBlue.png
+    RigidbodyComponent:
+      BodyType: 1
+      Mass: 30
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 7753056312007879331
+    TagComponent:
+      Tag: Cube 1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-1.95, 0.5, 2]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.5, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.45
+      AO: 1
+      Tiling: [1, 1]
+      Offset: [0.5, 0.5]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Prototype/WorldGridBlue.png
+    RigidbodyComponent:
+      BodyType: 1
+      Mass: 30
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 4233933471064770085
+    TagComponent:
+      Tag: Cube 2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.9, 0.5, 2]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.5, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.45
+      AO: 1
+      Tiling: [1, 1]
+      Offset: [0.5, 0.5]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Prototype/WorldGridBlue.png
+    RigidbodyComponent:
+      BodyType: 1
+      Mass: 30
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2946803593506089879
+    TagComponent:
+      Tag: Cube 3
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.15, 0.5, 2]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.5, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.45
+      AO: 1
+      Tiling: [1, 1]
+      Offset: [0.5, 0.5]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Prototype/WorldGridBlue.png
+    RigidbodyComponent:
+      BodyType: 1
+      Mass: 30
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6447232987729200801
+    TagComponent:
+      Tag: Cube 4
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.475, 1.5, 2]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.5, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.45
+      AO: 1
+      Tiling: [1, 1]
+      Offset: [0.5, 0.5]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Prototype/WorldGridBlue.png
+    RigidbodyComponent:
+      BodyType: 1
+      Mass: 30
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6694675076037427879
+    TagComponent:
+      Tag: Cube 5
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-1.425, 1.5, 2]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.5, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.45
+      AO: 1
+      Tiling: [1, 1]
+      Offset: [0.5, 0.5]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Prototype/WorldGridBlue.png
+    RigidbodyComponent:
+      BodyType: 1
+      Mass: 30
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2370982757179739916
+    TagComponent:
+      Tag: Cube 6
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.375, 1.5, 2]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.5, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.45
+      AO: 1
+      Tiling: [1, 1]
+      Offset: [0.5, 0.5]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Prototype/WorldGridBlue.png
+    RigidbodyComponent:
+      BodyType: 1
+      Mass: 30
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 8054450444835766561
+    TagComponent:
+      Tag: Cube 7
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-1.95, 2.5, 2]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.5, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.45
+      AO: 1
+      Tiling: [1, 1]
+      Offset: [0.5, 0.5]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Prototype/WorldGridBlue.png
+    RigidbodyComponent:
+      BodyType: 1
+      Mass: 30
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 4359580738295809742
+    TagComponent:
+      Tag: Cube 8
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.9, 2.5, 2]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.5, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.45
+      AO: 1
+      Tiling: [1, 1]
+      Offset: [0.5, 0.5]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Prototype/WorldGridBlue.png
+    RigidbodyComponent:
+      BodyType: 1
+      Mass: 30
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 5262804796342994940
+    TagComponent:
+      Tag: Cube 9
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-1.425, 3.5, 2]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.5, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.45
+      AO: 1
+      Tiling: [1, 1]
+      Offset: [0.5, 0.5]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Prototype/WorldGridBlue.png
+    RigidbodyComponent:
+      BodyType: 1
+      Mass: 30
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 4677051916258548671
+    TagComponent:
+      Tag: Target 0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-12, 0, -27]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/ShootingTarget.cqs
+      ClassName: ""
+      Fields:
+        moving:
+          Bool: false
+        radius:
+          Float: 0.31
+  - Entity: 2357271718385517714
+    TagComponent:
+      Tag: Foot
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.015, -0.05]
+      Rotation: [0, -0, 0]
+      Scale: [0.25, 0.015, 0.18]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.2, 0.2, 0.22, 1]
+      Metallic: 0.85
+      Roughness: 0.45
+      AO: 1
+      TexturePath: ""
+  - Entity: 8268798664012939944
+    TagComponent:
+      Tag: Hinge
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.03, -0.099]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 409047206900132984
+    TagComponent:
+      Tag: Hinge Bracket
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.055, -0.064]
+      Rotation: [0, -0, 0]
+      Scale: [0.05, 0.025, 0.05]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.16, 0.16, 0.18, 1]
+      Metallic: 0.9
+      Roughness: 0.4
+      AO: 1
+      TexturePath: ""
+  - Entity: 3763729789031022793
+    TagComponent:
+      Tag: Post
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.8, 0.035]
+      Rotation: [0, -0, 0]
+      Scale: [0.035, 0.8, 0.035]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 7101722803118938934
+    TagComponent:
+      Tag: Batten
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.0825]
+      Rotation: [0, -0, 0]
+      Scale: [0.33, 0.03, 0.0125]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 5530815700248614402
+    TagComponent:
+      Tag: Back
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.104]
+      Rotation: [0, -0, 0]
+      Scale: [0.36, 0.36, 0.009]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      Tiling: [1.3, 1.3]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/plywood.jpg
+    RigidbodyComponent:
+      BodyType: 2
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2351039140937298741
+    TagComponent:
+      Tag: Frame Top
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.7775, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.3925, 0.0175, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 3034326076446597958
+    TagComponent:
+      Tag: Frame Bottom
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0625, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.3925, 0.0175, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 5726210933961178426
+    TagComponent:
+      Tag: Frame Left
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.375, 1.42, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.0175, 0.3575, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 2675611536079366131
+    TagComponent:
+      Tag: Frame Right
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.375, 1.42, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.0175, 0.3575, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 7008217663453235143
+    TagComponent:
+      Tag: Board
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.1145]
+      Rotation: [1.5707964, 0, 0]
+      Scale: [0.31, 0.5, 0.31]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.9
+      AO: 1
+      AlphaClip: true
+      AlphaClipThreshold: 0.5
+      TexturePath: Assets/Weapons/Textures/target.png
+  - Entity: 722101531947025814
+    TagComponent:
+      Tag: Target 1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-7.2, 0, -27]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/ShootingTarget.cqs
+      ClassName: ""
+      Fields:
+        moving:
+          Bool: false
+        radius:
+          Float: 0.31
+  - Entity: 5398975574960475739
+    TagComponent:
+      Tag: Foot
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.015, -0.05]
+      Rotation: [0, -0, 0]
+      Scale: [0.25, 0.015, 0.18]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.2, 0.2, 0.22, 1]
+      Metallic: 0.85
+      Roughness: 0.45
+      AO: 1
+      TexturePath: ""
+  - Entity: 6317739362210439686
+    TagComponent:
+      Tag: Hinge
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.03, -0.099]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 8969016527876331201
+    TagComponent:
+      Tag: Hinge Bracket
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.055, -0.064]
+      Rotation: [0, -0, 0]
+      Scale: [0.05, 0.025, 0.05]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.16, 0.16, 0.18, 1]
+      Metallic: 0.9
+      Roughness: 0.4
+      AO: 1
+      TexturePath: ""
+  - Entity: 2439696498568332540
+    TagComponent:
+      Tag: Post
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.8, 0.035]
+      Rotation: [0, -0, 0]
+      Scale: [0.035, 0.8, 0.035]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 63890151806918614
+    TagComponent:
+      Tag: Batten
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.0825]
+      Rotation: [0, -0, 0]
+      Scale: [0.33, 0.03, 0.0125]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 6906941788253575767
+    TagComponent:
+      Tag: Back
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.104]
+      Rotation: [0, -0, 0]
+      Scale: [0.36, 0.36, 0.009]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      Tiling: [1.3, 1.3]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/plywood.jpg
+    RigidbodyComponent:
+      BodyType: 2
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 961027191160624033
+    TagComponent:
+      Tag: Frame Top
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.7775, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.3925, 0.0175, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 1573824275642747771
+    TagComponent:
+      Tag: Frame Bottom
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0625, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.3925, 0.0175, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 2848905479118211197
+    TagComponent:
+      Tag: Frame Left
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.375, 1.42, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.0175, 0.3575, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 7417351407853133690
+    TagComponent:
+      Tag: Frame Right
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.375, 1.42, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.0175, 0.3575, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 5726338532143948130
+    TagComponent:
+      Tag: Board
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.1145]
+      Rotation: [1.5707964, 0, 0]
+      Scale: [0.31, 0.5, 0.31]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.9
+      AO: 1
+      AlphaClip: true
+      AlphaClipThreshold: 0.5
+      TexturePath: Assets/Weapons/Textures/target.png
+  - Entity: 5123847855369527916
+    TagComponent:
+      Tag: Target 2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.4, 0, -27]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/ShootingTarget.cqs
+      ClassName: ""
+      Fields:
+        moving:
+          Bool: false
+        radius:
+          Float: 0.31
+  - Entity: 4414905907358521276
+    TagComponent:
+      Tag: Foot
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.015, -0.05]
+      Rotation: [0, -0, 0]
+      Scale: [0.25, 0.015, 0.18]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.2, 0.2, 0.22, 1]
+      Metallic: 0.85
+      Roughness: 0.45
+      AO: 1
+      TexturePath: ""
+  - Entity: 5923195127772683246
+    TagComponent:
+      Tag: Hinge
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.03, -0.099]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 820337127156290173
+    TagComponent:
+      Tag: Hinge Bracket
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.055, -0.064]
+      Rotation: [0, -0, 0]
+      Scale: [0.05, 0.025, 0.05]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.16, 0.16, 0.18, 1]
+      Metallic: 0.9
+      Roughness: 0.4
+      AO: 1
+      TexturePath: ""
+  - Entity: 642996278639564412
+    TagComponent:
+      Tag: Post
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.8, 0.035]
+      Rotation: [0, -0, 0]
+      Scale: [0.035, 0.8, 0.035]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 1000543161683275078
+    TagComponent:
+      Tag: Batten
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.0825]
+      Rotation: [0, -0, 0]
+      Scale: [0.33, 0.03, 0.0125]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 1254779400401468300
+    TagComponent:
+      Tag: Back
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.104]
+      Rotation: [0, -0, 0]
+      Scale: [0.36, 0.36, 0.009]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      Tiling: [1.3, 1.3]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/plywood.jpg
+    RigidbodyComponent:
+      BodyType: 2
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2187246503693170811
+    TagComponent:
+      Tag: Frame Top
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.7775, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.3925, 0.0175, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 1039764578583769871
+    TagComponent:
+      Tag: Frame Bottom
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0625, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.3925, 0.0175, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 9150700233899163292
+    TagComponent:
+      Tag: Frame Left
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.375, 1.42, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.0175, 0.3575, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 5542147061024716269
+    TagComponent:
+      Tag: Frame Right
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.375, 1.42, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.0175, 0.3575, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 5276577310186673165
+    TagComponent:
+      Tag: Board
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.1145]
+      Rotation: [1.5707964, 0, 0]
+      Scale: [0.31, 0.5, 0.31]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.9
+      AO: 1
+      AlphaClip: true
+      AlphaClipThreshold: 0.5
+      TexturePath: Assets/Weapons/Textures/target.png
+  - Entity: 1374940850069864689
+    TagComponent:
+      Tag: Target 3
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2.4, 0, -27]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/ShootingTarget.cqs
+      ClassName: ""
+      Fields:
+        moving:
+          Bool: false
+        radius:
+          Float: 0.31
+  - Entity: 6518344893036363508
+    TagComponent:
+      Tag: Foot
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.015, -0.05]
+      Rotation: [0, -0, 0]
+      Scale: [0.25, 0.015, 0.18]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.2, 0.2, 0.22, 1]
+      Metallic: 0.85
+      Roughness: 0.45
+      AO: 1
+      TexturePath: ""
+  - Entity: 1157811174838732959
+    TagComponent:
+      Tag: Hinge
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.03, -0.099]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 2588510983486241622
+    TagComponent:
+      Tag: Hinge Bracket
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.055, -0.064]
+      Rotation: [0, -0, 0]
+      Scale: [0.05, 0.025, 0.05]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.16, 0.16, 0.18, 1]
+      Metallic: 0.9
+      Roughness: 0.4
+      AO: 1
+      TexturePath: ""
+  - Entity: 5873097728719980758
+    TagComponent:
+      Tag: Post
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.8, 0.035]
+      Rotation: [0, -0, 0]
+      Scale: [0.035, 0.8, 0.035]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 2181431185998766199
+    TagComponent:
+      Tag: Batten
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.0825]
+      Rotation: [0, -0, 0]
+      Scale: [0.33, 0.03, 0.0125]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 7429853540410639558
+    TagComponent:
+      Tag: Back
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.104]
+      Rotation: [0, -0, 0]
+      Scale: [0.36, 0.36, 0.009]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      Tiling: [1.3, 1.3]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/plywood.jpg
+    RigidbodyComponent:
+      BodyType: 2
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 7568861531508248773
+    TagComponent:
+      Tag: Frame Top
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.7775, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.3925, 0.0175, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 7445592392161427202
+    TagComponent:
+      Tag: Frame Bottom
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0625, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.3925, 0.0175, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 8614884516629186210
+    TagComponent:
+      Tag: Frame Left
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.375, 1.42, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.0175, 0.3575, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 1759694025011725572
+    TagComponent:
+      Tag: Frame Right
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.375, 1.42, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.0175, 0.3575, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 6117936478429257202
+    TagComponent:
+      Tag: Board
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.1145]
+      Rotation: [1.5707964, 0, 0]
+      Scale: [0.31, 0.5, 0.31]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.9
+      AO: 1
+      AlphaClip: true
+      AlphaClipThreshold: 0.5
+      TexturePath: Assets/Weapons/Textures/target.png
+  - Entity: 865412735548826125
+    TagComponent:
+      Tag: Target 4
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [7.2, 0, -27]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/ShootingTarget.cqs
+      ClassName: ""
+      Fields:
+        moving:
+          Bool: false
+        radius:
+          Float: 0.31
+  - Entity: 7799637091983190111
+    TagComponent:
+      Tag: Foot
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.015, -0.05]
+      Rotation: [0, -0, 0]
+      Scale: [0.25, 0.015, 0.18]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.2, 0.2, 0.22, 1]
+      Metallic: 0.85
+      Roughness: 0.45
+      AO: 1
+      TexturePath: ""
+  - Entity: 3825025268639834084
+    TagComponent:
+      Tag: Hinge
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.03, -0.099]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5965349115615412039
+    TagComponent:
+      Tag: Hinge Bracket
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.055, -0.064]
+      Rotation: [0, -0, 0]
+      Scale: [0.05, 0.025, 0.05]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.16, 0.16, 0.18, 1]
+      Metallic: 0.9
+      Roughness: 0.4
+      AO: 1
+      TexturePath: ""
+  - Entity: 5701453516460165443
+    TagComponent:
+      Tag: Post
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.8, 0.035]
+      Rotation: [0, -0, 0]
+      Scale: [0.035, 0.8, 0.035]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 6562424556509085580
+    TagComponent:
+      Tag: Batten
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.0825]
+      Rotation: [0, -0, 0]
+      Scale: [0.33, 0.03, 0.0125]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 4472297379349810140
+    TagComponent:
+      Tag: Back
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.104]
+      Rotation: [0, -0, 0]
+      Scale: [0.36, 0.36, 0.009]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      Tiling: [1.3, 1.3]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/plywood.jpg
+    RigidbodyComponent:
+      BodyType: 2
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 5852953293019832168
+    TagComponent:
+      Tag: Frame Top
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.7775, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.3925, 0.0175, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 5141942493387583832
+    TagComponent:
+      Tag: Frame Bottom
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0625, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.3925, 0.0175, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 2047803458517895708
+    TagComponent:
+      Tag: Frame Left
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.375, 1.42, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.0175, 0.3575, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 8233812673445350667
+    TagComponent:
+      Tag: Frame Right
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.375, 1.42, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.0175, 0.3575, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 8585185283326649948
+    TagComponent:
+      Tag: Board
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.1145]
+      Rotation: [1.5707964, 0, 0]
+      Scale: [0.31, 0.5, 0.31]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.9
+      AO: 1
+      AlphaClip: true
+      AlphaClipThreshold: 0.5
+      TexturePath: Assets/Weapons/Textures/target.png
+  - Entity: 7331286829500063113
+    TagComponent:
+      Tag: Target 5
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [12, 0, -27]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/ShootingTarget.cqs
+      ClassName: ""
+      Fields:
+        moving:
+          Bool: false
+        radius:
+          Float: 0.31
+  - Entity: 7728859089218009916
+    TagComponent:
+      Tag: Foot
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.015, -0.05]
+      Rotation: [0, -0, 0]
+      Scale: [0.25, 0.015, 0.18]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.2, 0.2, 0.22, 1]
+      Metallic: 0.85
+      Roughness: 0.45
+      AO: 1
+      TexturePath: ""
+  - Entity: 5602402938561273406
+    TagComponent:
+      Tag: Hinge
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.03, -0.099]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 873426960470457080
+    TagComponent:
+      Tag: Hinge Bracket
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.055, -0.064]
+      Rotation: [0, -0, 0]
+      Scale: [0.05, 0.025, 0.05]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.16, 0.16, 0.18, 1]
+      Metallic: 0.9
+      Roughness: 0.4
+      AO: 1
+      TexturePath: ""
+  - Entity: 7578147392199138582
+    TagComponent:
+      Tag: Post
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.8, 0.035]
+      Rotation: [0, -0, 0]
+      Scale: [0.035, 0.8, 0.035]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 5461308645265067788
+    TagComponent:
+      Tag: Batten
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.0825]
+      Rotation: [0, -0, 0]
+      Scale: [0.33, 0.03, 0.0125]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 5219993051619474549
+    TagComponent:
+      Tag: Back
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.104]
+      Rotation: [0, -0, 0]
+      Scale: [0.36, 0.36, 0.009]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      Tiling: [1.3, 1.3]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/plywood.jpg
+    RigidbodyComponent:
+      BodyType: 2
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 4705703342805165218
+    TagComponent:
+      Tag: Frame Top
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.7775, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.3925, 0.0175, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 3672320196593067871
+    TagComponent:
+      Tag: Frame Bottom
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0625, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.3925, 0.0175, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 1269440262368696393
+    TagComponent:
+      Tag: Frame Left
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.375, 1.42, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.0175, 0.3575, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 307137051372042895
+    TagComponent:
+      Tag: Frame Right
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.375, 1.42, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.0175, 0.3575, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 6466542426813665690
+    TagComponent:
+      Tag: Board
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.1145]
+      Rotation: [1.5707964, 0, 0]
+      Scale: [0.31, 0.5, 0.31]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.9
+      AO: 1
+      AlphaClip: true
+      AlphaClipThreshold: 0.5
+      TexturePath: Assets/Weapons/Textures/target.png
+  - Entity: 4268151114884561108
+    TagComponent:
+      Tag: Moving Target 0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-8, 0, -22]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/ShootingTarget.cqs
+      ClassName: ""
+      Fields:
+        moving:
+          Bool: true
+        radius:
+          Float: 0.31
+  - Entity: 4968332809864145261
+    TagComponent:
+      Tag: Foot
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.015, -0.05]
+      Rotation: [0, -0, 0]
+      Scale: [0.25, 0.015, 0.18]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.2, 0.2, 0.22, 1]
+      Metallic: 0.85
+      Roughness: 0.45
+      AO: 1
+      TexturePath: ""
+  - Entity: 2646568284980261619
+    TagComponent:
+      Tag: Hinge
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.03, -0.099]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 6934562843081510055
+    TagComponent:
+      Tag: Hinge Bracket
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.055, -0.064]
+      Rotation: [0, -0, 0]
+      Scale: [0.05, 0.025, 0.05]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.16, 0.16, 0.18, 1]
+      Metallic: 0.9
+      Roughness: 0.4
+      AO: 1
+      TexturePath: ""
+  - Entity: 3742038022639661314
+    TagComponent:
+      Tag: Post
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.8, 0.035]
+      Rotation: [0, -0, 0]
+      Scale: [0.035, 0.8, 0.035]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 3422119758638501247
+    TagComponent:
+      Tag: Batten
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.0825]
+      Rotation: [0, -0, 0]
+      Scale: [0.33, 0.03, 0.0125]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 3802438057415076669
+    TagComponent:
+      Tag: Back
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.104]
+      Rotation: [0, -0, 0]
+      Scale: [0.36, 0.36, 0.009]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      Tiling: [1.3, 1.3]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/plywood.jpg
+    RigidbodyComponent:
+      BodyType: 2
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 8233804025826548936
+    TagComponent:
+      Tag: Frame Top
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.7775, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.3925, 0.0175, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 5662732587456042805
+    TagComponent:
+      Tag: Frame Bottom
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0625, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.3925, 0.0175, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 2689771356507491584
+    TagComponent:
+      Tag: Frame Left
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.375, 1.42, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.0175, 0.3575, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 4883664088133642317
+    TagComponent:
+      Tag: Frame Right
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.375, 1.42, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.0175, 0.3575, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 6301676738334294433
+    TagComponent:
+      Tag: Board
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.1145]
+      Rotation: [1.5707964, 0, 0]
+      Scale: [0.31, 0.5, 0.31]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.9
+      AO: 1
+      AlphaClip: true
+      AlphaClipThreshold: 0.5
+      TexturePath: Assets/Weapons/Textures/target.png
+  - Entity: 3179124829383560976
+    TagComponent:
+      Tag: Moving Target 1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -22]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/ShootingTarget.cqs
+      ClassName: ""
+      Fields:
+        moving:
+          Bool: true
+        radius:
+          Float: 0.31
+  - Entity: 5665637639234699586
+    TagComponent:
+      Tag: Foot
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.015, -0.05]
+      Rotation: [0, -0, 0]
+      Scale: [0.25, 0.015, 0.18]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.2, 0.2, 0.22, 1]
+      Metallic: 0.85
+      Roughness: 0.45
+      AO: 1
+      TexturePath: ""
+  - Entity: 3786863740058441956
+    TagComponent:
+      Tag: Hinge
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.03, -0.099]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 6130736310536298237
+    TagComponent:
+      Tag: Hinge Bracket
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.055, -0.064]
+      Rotation: [0, -0, 0]
+      Scale: [0.05, 0.025, 0.05]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.16, 0.16, 0.18, 1]
+      Metallic: 0.9
+      Roughness: 0.4
+      AO: 1
+      TexturePath: ""
+  - Entity: 5002202274387862632
+    TagComponent:
+      Tag: Post
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.8, 0.035]
+      Rotation: [0, -0, 0]
+      Scale: [0.035, 0.8, 0.035]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 5054518359627545932
+    TagComponent:
+      Tag: Batten
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.0825]
+      Rotation: [0, -0, 0]
+      Scale: [0.33, 0.03, 0.0125]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 7855240876256719805
+    TagComponent:
+      Tag: Back
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.104]
+      Rotation: [0, -0, 0]
+      Scale: [0.36, 0.36, 0.009]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      Tiling: [1.3, 1.3]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/plywood.jpg
+    RigidbodyComponent:
+      BodyType: 2
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 5438703665975844118
+    TagComponent:
+      Tag: Frame Top
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.7775, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.3925, 0.0175, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 6684723817592256521
+    TagComponent:
+      Tag: Frame Bottom
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0625, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.3925, 0.0175, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 4157975583419261179
+    TagComponent:
+      Tag: Frame Left
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.375, 1.42, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.0175, 0.3575, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 5706376773476602911
+    TagComponent:
+      Tag: Frame Right
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.375, 1.42, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.0175, 0.3575, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 1647659780589777914
+    TagComponent:
+      Tag: Board
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.1145]
+      Rotation: [1.5707964, 0, 0]
+      Scale: [0.31, 0.5, 0.31]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.9
+      AO: 1
+      AlphaClip: true
+      AlphaClipThreshold: 0.5
+      TexturePath: Assets/Weapons/Textures/target.png
+  - Entity: 5851038840806160467
+    TagComponent:
+      Tag: Moving Target 2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [8, 0, -22]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/ShootingTarget.cqs
+      ClassName: ""
+      Fields:
+        moving:
+          Bool: true
+        radius:
+          Float: 0.31
+  - Entity: 5598633546491332470
+    TagComponent:
+      Tag: Foot
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.015, -0.05]
+      Rotation: [0, -0, 0]
+      Scale: [0.25, 0.015, 0.18]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.2, 0.2, 0.22, 1]
+      Metallic: 0.85
+      Roughness: 0.45
+      AO: 1
+      TexturePath: ""
+  - Entity: 8912545817190112068
+    TagComponent:
+      Tag: Hinge
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.03, -0.099]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 3662086556394619246
+    TagComponent:
+      Tag: Hinge Bracket
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.055, -0.064]
+      Rotation: [0, -0, 0]
+      Scale: [0.05, 0.025, 0.05]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.16, 0.16, 0.18, 1]
+      Metallic: 0.9
+      Roughness: 0.4
+      AO: 1
+      TexturePath: ""
+  - Entity: 7285825248148765924
+    TagComponent:
+      Tag: Post
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.8, 0.035]
+      Rotation: [0, -0, 0]
+      Scale: [0.035, 0.8, 0.035]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 8143666574417039042
+    TagComponent:
+      Tag: Batten
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.0825]
+      Rotation: [0, -0, 0]
+      Scale: [0.33, 0.03, 0.0125]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 68986362321551123
+    TagComponent:
+      Tag: Back
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.104]
+      Rotation: [0, -0, 0]
+      Scale: [0.36, 0.36, 0.009]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      Tiling: [1.3, 1.3]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/plywood.jpg
+    RigidbodyComponent:
+      BodyType: 2
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 7086259877594529211
+    TagComponent:
+      Tag: Frame Top
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.7775, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.3925, 0.0175, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 8720271646504763773
+    TagComponent:
+      Tag: Frame Bottom
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0625, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.3925, 0.0175, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 1685032357034666964
+    TagComponent:
+      Tag: Frame Left
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.375, 1.42, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.0175, 0.3575, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 3009119037967018303
+    TagComponent:
+      Tag: Frame Right
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.375, 1.42, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.0175, 0.3575, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 6941745811530580968
+    TagComponent:
+      Tag: Board
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.1145]
+      Rotation: [1.5707964, 0, 0]
+      Scale: [0.31, 0.5, 0.31]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.9
+      AO: 1
+      AlphaClip: true
+      AlphaClipThreshold: 0.5
+      TexturePath: Assets/Weapons/Textures/target.png
+  - Entity: 8552514504990004432
+    TagComponent:
+      Tag: Platform Target
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [10, 3, -16]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/ShootingTarget.cqs
+      ClassName: ""
+      Fields:
+        moving:
+          Bool: false
+        radius:
+          Float: 0.31
+  - Entity: 9040240005741091838
+    TagComponent:
+      Tag: Foot
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.015, -0.05]
+      Rotation: [0, -0, 0]
+      Scale: [0.25, 0.015, 0.18]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.2, 0.2, 0.22, 1]
+      Metallic: 0.85
+      Roughness: 0.45
+      AO: 1
+      TexturePath: ""
+  - Entity: 4534669856315590508
+    TagComponent:
+      Tag: Hinge
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.03, -0.099]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 7821838100439945423
+    TagComponent:
+      Tag: Hinge Bracket
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.055, -0.064]
+      Rotation: [0, -0, 0]
+      Scale: [0.05, 0.025, 0.05]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.16, 0.16, 0.18, 1]
+      Metallic: 0.9
+      Roughness: 0.4
+      AO: 1
+      TexturePath: ""
+  - Entity: 2819464882555836008
+    TagComponent:
+      Tag: Post
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.8, 0.035]
+      Rotation: [0, -0, 0]
+      Scale: [0.035, 0.8, 0.035]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 880129346388251705
+    TagComponent:
+      Tag: Batten
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.0825]
+      Rotation: [0, -0, 0]
+      Scale: [0.33, 0.03, 0.0125]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 8523461985192406737
+    TagComponent:
+      Tag: Back
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.104]
+      Rotation: [0, -0, 0]
+      Scale: [0.36, 0.36, 0.009]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      Tiling: [1.3, 1.3]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/plywood.jpg
+    RigidbodyComponent:
+      BodyType: 2
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2574553173363591679
+    TagComponent:
+      Tag: Frame Top
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.7775, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.3925, 0.0175, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 2855213492326213883
+    TagComponent:
+      Tag: Frame Bottom
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0625, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.3925, 0.0175, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 1151766417225583505
+    TagComponent:
+      Tag: Frame Left
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.375, 1.42, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.0175, 0.3575, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 5027055531215539917
+    TagComponent:
+      Tag: Frame Right
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.375, 1.42, 0.111]
+      Rotation: [0, -0, 0]
+      Scale: [0.0175, 0.3575, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.9, 0.82, 0.72, 1]
+      Metallic: 0
+      Roughness: 0.65
+      AO: 1
+      Tiling: [2.5, 2.5]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
+  - Entity: 6183800699821896373
+    TagComponent:
+      Tag: Board
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.42, 0.1145]
+      Rotation: [1.5707964, 0, 0]
+      Scale: [0.31, 0.5, 0.31]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.9
+      AO: 1
+      AlphaClip: true
+      AlphaClipThreshold: 0.5
+      TexturePath: Assets/Weapons/Textures/target.png
+  - Entity: 8332811879225771391
+    TagComponent:
+      Tag: Player
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.9, 14]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    CharacterControllerComponent:
+      SlopeLimit: 45
+      StepOffset: 0.45
+      SkinWidth: 0.02
+      MinMoveDistance: 0
+      Center: [0, 0, 0]
+      Radius: 0.34
+      Height: 1.8
+      Mass: 70
+      PushRigidbodies: true
+    NavMeshModifierComponent:
+      IgnoreFromBuild: true
+      OverrideArea: true
+      Area: 1
+      ApplyToChildren: true
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/Health.cqs
+      ClassName: ""
+      Fields:
+        health:
+          Int: 100
+        maxHealth:
+          Int: 100
+        regenDelay:
+          Float: 4
+        regenRate:
+          Float: 12
+        respawnDelay:
+          Int: 3
+        spawnProtection:
+          Float: 3
+        team:
+          String: Blue
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/FirstPersonShooter.cqs
+      ClassName: ""
+  - Entity: 1021312771842218989
+    TagComponent:
+      Tag: Camera
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.72, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera:
+        ProjectionType: 0
+        PerspectiveFOV: 1.3962634
+        PerspectiveNear: 0.03
+        PerspectiveFar: 1000
+        OrthographicSize: 10
+        OrthographicNear: -1000
+        OrthographicFar: 1000
+      Primary: true
+      FixedAspectRatio: false
+      Background: 0
+      BackgroundColor: [0.192, 0.302, 0.475, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    AudioListenerComponent:
+      IsActive: true
+  - Entity: 2822702148596576895
+    TagComponent:
+      Tag: ViewModel
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.05, -0.03, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 671637005191401286
+    TagComponent:
+      Tag: Arms
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -1.62, 0.04]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Mannequin/Models/Arms_Male.glb
+    AnimationComponent:
+      ControllerPath: Assets/Mannequin/Animations/FPArms.cqcont
+      Speed: 1
+      PlayOnAwake: true
+      Parameters:
+        []
+  - Entity: 3562533012832316186
+    TagComponent:
+      Tag: Pistol
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.145, -0.175, -0.4]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/Weapon.cqs
+      ClassName: ""
+      Fields:
+        aimFov:
+          Float: 62
+        aimSpread:
+          Float: 0.12
+        ammo:
+          Int: 12
+        damage:
+          Float: 26
+        fireMode:
+          String: Semi
+        fireRate:
+          Float: 7
+        hipSpread:
+          Float: 1
+        impulse:
+          Float: 6
+        magazine:
+          Int: 12
+        moveSpread:
+          Float: 1.2
+        recoilPitch:
+          Float: 1.7
+        recoilYaw:
+          Float: 0.5
+        reloadTime:
+          Float: 1.5
+        reserve:
+          Int: 84
+        shotSound:
+          String: Assets/Weapons/Audio/pistol_shot.wav
+        weaponName:
+          String: Pistol
+  - Entity: 7830308243415078999
+    TagComponent:
+      Tag: Model
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.02, 0.03]
+      Rotation: [0, 1.5707964, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Weapons/Models/Pistol/service_pistol_1k.gltf
+  - Entity: 8358331724500419160
+    TagComponent:
+      Tag: Sight
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.062, 0.035]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 2854353789591383864
+    TagComponent:
+      Tag: Muzzle
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.02, -0.21]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    PointLightComponent:
+      Color: [1, 0.75, 0.4]
+      Intensity: 0
+      Range: 3.5
+      Constant: 1
+      Linear: 0.09
+      Quadratic: 0.032
+      CastShadows: false
+      Mode: 0
+  - Entity: 3069943703462630001
+    TagComponent:
+      Tag: Muzzle Flash
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0, 0, -0.01]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 6128328026794024733
+    TagComponent:
+      Tag: Flash Front
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.012]
+      Rotation: [1.5707964, 0, 0]
+      Scale: [0.055, 0.5, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_flash.png
+  - Entity: 844547453342710432
+    TagComponent:
+      Tag: Flash Side A
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.08]
+      Rotation: [0, 0, 0]
+      Scale: [0.025, 0.5, 0.08]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_side.png
+  - Entity: 1526182103332478772
+    TagComponent:
+      Tag: Flash Side B
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.08]
+      Rotation: [0, 0, 1.5707964]
+      Scale: [0.025, 0.5, 0.08]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_side.png
+  - Entity: 3920820991150310750
+    TagComponent:
+      Tag: IK R
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.0495, -0.0388, 0.0925]
+      Rotation: [-1.3852679, 0.030019663, -0.0418879]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 3641503076481095357
+    TagComponent:
+      Tag: IK L
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.0662, -0.0987, 0.0995]
+      Rotation: [-1.7257816, -0.2947861, 0.82466805]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 3337522205588173739
+    TagComponent:
+      Tag: Rifle
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0.145, -0.12, -0.22]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/Weapon.cqs
+      ClassName: ""
+      Fields:
+        aimFov:
+          Float: 22
+        aimSpread:
+          Float: 0.02
+        ammo:
+          Int: 5
+        boltTime:
+          Float: 0
+        damage:
+          Float: 95
+        eyeRelief:
+          Float: 0.12
+        fireMode:
+          String: Bolt
+        fireRate:
+          Float: 1.4
+        headshotMultiplier:
+          Float: 2.5
+        hipSpread:
+          Float: 3
+        impulse:
+          Float: 18
+        magazine:
+          Int: 5
+        moveSpread:
+          Float: 3
+        range:
+          Float: 400
+        recoilPitch:
+          Float: 5.5
+        recoilYaw:
+          Float: 1.2
+        reloadTime:
+          Float: 2.6
+        reserve:
+          Int: 30
+        scoped:
+          Bool: true
+        shotSound:
+          String: Assets/Weapons/Audio/rifle_shot.wav
+        shotVolume:
+          Float: 1
+        weaponName:
+          String: Marksman Rifle
+  - Entity: 5931662951783608055
+    TagComponent:
+      Tag: Model
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.05, -0.33]
+      Rotation: [0, 1.5707964, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Weapons/Models/Rifle/bolt_action_rifle_7_62_1k.gltf
+  - Entity: 5526516209777265381
+    TagComponent:
+      Tag: Sight
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.008, 0.0205, -0.12]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 2776450037211274830
+    TagComponent:
+      Tag: Muzzle
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.02, -0.95]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    PointLightComponent:
+      Color: [1, 0.75, 0.4]
+      Intensity: 0
+      Range: 3.5
+      Constant: 1
+      Linear: 0.09
+      Quadratic: 0.032
+      CastShadows: false
+      Mode: 0
+  - Entity: 7630427831967491318
+    TagComponent:
+      Tag: Muzzle Flash
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0, 0, -0.01]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 6532356520290789631
+    TagComponent:
+      Tag: Flash Front
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.0186]
+      Rotation: [1.5707964, 0, 0]
+      Scale: [0.08525, 0.5, 0.08525]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_flash.png
+  - Entity: 6898893495766850386
+    TagComponent:
+      Tag: Flash Side A
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.124]
+      Rotation: [0, 0, 0]
+      Scale: [0.03875, 0.5, 0.124]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_side.png
+  - Entity: 8275539357145979180
+    TagComponent:
+      Tag: Flash Side B
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.124]
+      Rotation: [0, 0, 1.5707964]
+      Scale: [0.03875, 0.5, 0.124]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_side.png
+  - Entity: 551116107349952896
+    TagComponent:
+      Tag: IK R
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.0495, -0.0938, 0.0525]
+      Rotation: [-1.3852679, 0.030019663, -0.0418879]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5023842128830232327
+    TagComponent:
+      Tag: IK L
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.0174, -0.1014, -0.1315]
+      Rotation: [-1.5793484, -0.17819811, 1.0311406]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 7416458795588910700
+    TagComponent:
+      Tag: Elbow Hint R
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.42, -0.55, 0.05]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 7638297679851970434
+    TagComponent:
+      Tag: IK Arm R
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.050001226, 0.029999971, 14.04]
+      Rotation: [3.1415927, 8.742278e-08, 3.1415927]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    TwoBoneIKConstraintComponent:
+      Weight: 1
+      Root: upperarm_r
+      Mid: lowerarm_r
+      Tip: hand_r
+      Target: 0
+      Hint: 7416458795588910700
+      TargetPositionWeight: 1
+      TargetRotationWeight: 1
+  - Entity: 3204131382599162510
+    TagComponent:
+      Tag: Elbow Hint L
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.32, -0.55, 0.05]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 8980595360970797746
+    TagComponent:
+      Tag: IK Arm L
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.050001226, 0.029999971, 14.04]
+      Rotation: [3.1415927, 8.742278e-08, 3.1415927]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    TwoBoneIKConstraintComponent:
+      Weight: 1
+      Root: upperarm_l
+      Mid: lowerarm_l
+      Tip: hand_l
+      Target: 0
+      Hint: 3204131382599162510
+      TargetPositionWeight: 1
+      TargetRotationWeight: 1
+  - Entity: 4428393363407650611
+    TagComponent:
+      Tag: NavMesh Surface
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    NavMeshSurfaceComponent:
+      CollectObjects: 0
+      AreaType: 0
+      AgentRadius: 0.4
+      AgentHeight: 1.8
+      MaxSlope: 45
+      StepHeight: 0.45
+      OverrideVoxelSize: false
+      VoxelSize: 0.166
+      BakeOnPlay: true
+  - Entity: 8514677674499342647
+    TagComponent:
+      Tag: Game
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/ShooterGame.cqs
+      ClassName: ""
+      Fields:
+        mode:
+          String: Range
+        scoreLimit:
+          Int: 0
+        timeLimit:
+          Int: 0
+  - Entity: 2209326659026730607
+    TagComponent:
+      Tag: HUD
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    CanvasComponent:
+      RenderMode: 0
+      PixelPerfect: false
+      SortOrder: 0
+    CanvasScalerComponent:
+      ScaleMode: 1
+      ScaleFactor: 1
+      ReferencePixelsPerUnit: 100
+      ReferenceResolution: [1920, 1080]
+      MatchWidthOrHeight: 0.5
+    GraphicRaycasterComponent:
+      IgnoreReversedGraphics: true
+      BlockingObjects: 0
+      BlockingMask: 4294967295
+  - Entity: 7396990410821180438
+    TagComponent:
+      Tag: DamageVignette
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    UICanvasGroupComponent:
+      Alpha: 0
+      Interactable: true
+      BlocksRaycasts: true
+      IgnoreParentGroups: false
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [0, 0]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 1, 1, 1]
+      TexturePath: Assets/Weapons/Textures/damage_vignette.png
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 152515843824324134
+    TagComponent:
+      Tag: Crosshair
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [10, 10]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0, 0, 0, 0]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 14
+  - Entity: 8529162897038332895
+    TagComponent:
+      Tag: CrossDot
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [8, 8]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 1, 1, 1]
+      TexturePath: Assets/Weapons/Textures/crosshair_dot.png
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 1467528709852340801
+    TagComponent:
+      Tag: CrossTop
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 19]
+      SizeDelta: [8, 16]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 1, 1, 1]
+      TexturePath: Assets/Weapons/Textures/crosshair_line.png
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 4486643102885463858
+    TagComponent:
+      Tag: CrossBottom
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -19]
+      SizeDelta: [8, 16]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 1, 1, 1]
+      TexturePath: Assets/Weapons/Textures/crosshair_line.png
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 9183826036250832986
+    TagComponent:
+      Tag: CrossLeft
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-19, 0]
+      SizeDelta: [8, 16]
+      Rotation: 90
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 1, 1, 1]
+      TexturePath: Assets/Weapons/Textures/crosshair_line.png
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 2194445632964074532
+    TagComponent:
+      Tag: CrossRight
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [19, 0]
+      SizeDelta: [8, 16]
+      Rotation: 90
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 1, 1, 1]
+      TexturePath: Assets/Weapons/Textures/crosshair_line.png
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 2483034458947502343
+    TagComponent:
+      Tag: ScopeOverlay
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    UICanvasGroupComponent:
+      Alpha: 0
+      Interactable: true
+      BlocksRaycasts: true
+      IgnoreParentGroups: false
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [1080, 1080]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 1, 1, 1]
+      TexturePath: Assets/Weapons/Textures/scope_overlay.png
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 4644930324022181074
+    TagComponent:
+      Tag: ScopeLeft
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    UICanvasGroupComponent:
+      Alpha: 0
+      Interactable: true
+      BlocksRaycasts: true
+      IgnoreParentGroups: false
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-1540, 0]
+      SizeDelta: [2000, 1200]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0, 0, 0, 1]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 1719503863839931161
+    TagComponent:
+      Tag: ScopeRight
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    UICanvasGroupComponent:
+      Alpha: 0
+      Interactable: true
+      BlocksRaycasts: true
+      IgnoreParentGroups: false
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [1540, 0]
+      SizeDelta: [2000, 1200]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0, 0, 0, 1]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 5977220736828151177
+    TagComponent:
+      Tag: Hitmarker
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    UICanvasGroupComponent:
+      Alpha: 0
+      Interactable: true
+      BlocksRaycasts: true
+      IgnoreParentGroups: false
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [44, 44]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 1, 1, 1]
+      TexturePath: Assets/Weapons/Textures/hitmarker.png
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 6109589299349232676
+    TagComponent:
+      Tag: HealthBack
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [0, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [230, 70]
+      SizeDelta: [340, 18]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0, 0, 0, 0.45]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 4472423092616944433
+    TagComponent:
+      Tag: HealthFill
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [0, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [230, 70]
+      SizeDelta: [340, 18]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.95, 0.95, 0.95, 0.95]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 3
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 2730122170613238875
+    TagComponent:
+      Tag: HealthText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [0, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [110, 118]
+      SizeDelta: [160, 60]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: 100
+      FontPath: ""
+      FontSize: 46
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 0
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 6262383892140158897
+    TagComponent:
+      Tag: HealthLabel
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [0, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [268, 114]
+      SizeDelta: [200, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: HEALTH
+      FontPath: ""
+      FontSize: 24
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 0
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 6330684600890700179
+    TagComponent:
+      Tag: AmmoText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [1, 0]
+      AnchorMax: [1, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-250, 100]
+      SizeDelta: [200, 90]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: 12
+      FontPath: ""
+      FontSize: 72
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 2
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 363555878789926604
+    TagComponent:
+      Tag: ReserveText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [1, 0]
+      AnchorMax: [1, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-90, 92]
+      SizeDelta: [120, 60]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: / 72
+      FontPath: ""
+      FontSize: 32
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 0
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 1160619461025596503
+    TagComponent:
+      Tag: WeaponText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [1, 0]
+      AnchorMax: [1, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-230, 44]
+      SizeDelta: [400, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: PISTOL
+      FontPath: ""
+      FontSize: 22
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 2
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 7989202117238188053
+    TagComponent:
+      Tag: CenterText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 160]
+      SizeDelta: [1400, 80]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: ""
+      FontSize: 48
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 2687134104820753799
+    TagComponent:
+      Tag: ScoreText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 1]
+      AnchorMax: [0.5, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -50]
+      SizeDelta: [1200, 50]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: ""
+      FontSize: 30
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 8156153078677523480
+    TagComponent:
+      Tag: InfoText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 1]
+      AnchorMax: [0.5, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -95]
+      SizeDelta: [1200, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: ""
+      FontSize: 22
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 3844788711226784141
+    TagComponent:
+      Tag: HintText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 26]
+      SizeDelta: [1800, 30]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: WASD MOVE   SHIFT SPRINT   SPACE JUMP   C CROUCH   LMB FIRE   RMB AIM   R RELOAD   1 / 2 WEAPONS
+      FontPath: ""
+      FontSize: 22
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+Environment:
+  SkyboxExposure: 1
+  SkyboxRotation: 0
+  SkyboxTint: [1, 1, 1]
+  EnvironmentLightingSource: 0
+  AmbientColor: [0.3, 0.3, 0.3]
+  AmbientSkyColor: [0.5, 0.6, 0.7]
+  AmbientEquatorColor: [0.3, 0.3, 0.3]
+  AmbientGroundColor: [0.2, 0.15, 0.1]
+  AmbientIntensity: 1
+  FogEnabled: true
+  FogColor: [0.62, 0.72, 0.85]
+  FogDensity: 0.0025
+  FogStart: 10
+  FogEnd: 100
+  SunSource: 0
+  HaloEnabled: false
+  HaloStrength: 0.5
+  FlareEnabled: false
+  FlareFadeSpeed: 3
+  FlareStrength: 1
+  FlareElements:
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.08
+      Offset: 0.3
+      Intensity: 1
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.06
+      Offset: 0.6
+      Intensity: 0.8
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.05
+      Offset: 0.9
+      Intensity: 0.6
+  ShadowEnabled: true
+  ShadowIntensity: 1
+  ReflectionSource: 0
+  ReflectionResolution: 128
+  ReflectionCompression: 0
+  ReflectionIntensityMultiplier: 1
+  ReflectionBounces: 1
+  BakedLightmapPath: ""
+  LightmapResolution: 40
+  MaxLightmapSize: 1024
+  MaxBounces: 2
+  DirectSamples: 32
+  IndirectSamples: 512
+  AmbientOcclusion: true
+  LightmapFiltering: 0
+  RenderSettings:
+    Shadows:
+      Enabled: true
+      Quality: 2
+      Resolution: 4096
+      Distance: 120
+      CascadeCount: 4
+      CascadeSplitLambda: 0.75
+      Strength: 1
+      Softness: 1
+      DepthBias: 0.005
+      NormalBias: 0.015
+      Color: [0, 0, 0]
+    Fog:
+      Enabled: true
+      Mode: 1
+      Color: [0.62, 0.72, 0.85]
+      Density: 0.0025
+      Start: 10
+      End: 100
+      HeightFalloff: 0.08
+      BaseHeight: 0
+    Post:
+      Enabled: true
+      Tonemapper: 2
+      Exposure: 0
+      Bloom: true
+      BloomThreshold: 1
+      BloomKnee: 0.5
+      BloomIntensity: 0.25
+      BloomScatter: 0.7
+      BloomTint: [1, 1, 1]
+      AmbientOcclusion: true
+      AORadius: 0.6
+      AOIntensity: 1
+      AOPower: 1.5
+      ColorGrading: true
+      Contrast: 1
+      Saturation: 1
+      Temperature: 0
+      Tint: 0
+      Lift: [0, 0, 0]
+      Gamma: [1, 1, 1]
+      Gain: [1, 1, 1]
+      Vignette: true
+      VignetteIntensity: 0.15
+      VignetteSmoothness: 0.4
+      VignetteColor: [0, 0, 0]
+      ChromaticAberration: false
+      ChromaticAberrationIntensity: 0.3
+      FilmGrain: false
+      FilmGrainIntensity: 0.15
+      Sharpen: false
+      SharpenAmount: 0.3
+      AntiAliasing: 3
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: false
+      SSRIntensity: 1
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: true
+      SSGIIntensity: 0.8
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: true
+      CloudCoverage: 0.45
+      CloudDensity: 0.6
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: false
+      FocusDistance: 10
+      Aperture: 2.8
+      FocalLength: 50
+      DOFMaxBlur: 10
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
+    Environment:
+      Sky: 3
+      BackgroundColor: [0.1, 0.1, 0.1]
+      ImageBasedLighting: true
+      ReflectionIntensity: 1
+      SkyboxIntensity: 1
+      SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
+    Bake:
+      RealtimeGI: false
+      BakedGI: true
+      LightingMode: 0
+      Lightmapper: 1
+      ImportanceSampling: true
+      DirectSamples: 32
+      IndirectSamples: 512
+      EnvironmentSamples: 256
+      MaxBounces: 2
+      Filtering: 0
+      Packing: 0
+      Resolution: 40
+      MaxLightmapSize: 1024
+      UseMipmapLimits: true
+      Compression: 2
+      AmbientOcclusion: true
+      DirectionalMode: 0
+      AlbedoBoost: 1
+      IndirectIntensity: 1
+      RealtimeResolution: 20
+      RealtimeIndirectSamples: 256
+      RealtimeMaxBounces: 1
+      AutoGenerate: false
+      BakeOnSceneLoad: 0
+      APVFitToScene: true
+      APVOrigin: [-10, -1, -10]
+      APVSize: [20, 10, 20]
+      APVProbeOffset: [0, 0, 0]
+      APVMinSpacing: 1
+      APVMaxSpacing: 9
+      APVBakingMode: 0
+      APVDilation: false
+      APVVirtualOffset: true
+      APVValidityThreshold: 0.75
+      APVSearchDistanceMultiplier: 0.2
+      APVGeometryBias: 0.01
+      APVRayOriginBias: -0.001
+EditorCamera:
+  CameraMode: 0
+  Position: [0, 22.785563, 33.54682]
+  Distance: 40
+  Pitch: 0.57595867
+  Yaw: 0
+  OrthographicSize: 10
+Hierarchy:
+  - Child: 8529162897038332895
+    Parent: 152515843824324134
+  - Child: 1467528709852340801
+    Parent: 152515843824324134
+  - Child: 4486643102885463858
+    Parent: 152515843824324134
+  - Child: 9183826036250832986
+    Parent: 152515843824324134
+  - Child: 2194445632964074532
+    Parent: 152515843824324134
+  - Child: 7396990410821180438
+    Parent: 2209326659026730607
+  - Child: 152515843824324134
+    Parent: 2209326659026730607
+  - Child: 2483034458947502343
+    Parent: 2209326659026730607
+  - Child: 4644930324022181074
+    Parent: 2209326659026730607
+  - Child: 1719503863839931161
+    Parent: 2209326659026730607
+  - Child: 5977220736828151177
+    Parent: 2209326659026730607
+  - Child: 6109589299349232676
+    Parent: 2209326659026730607
+  - Child: 4472423092616944433
+    Parent: 2209326659026730607
+  - Child: 2730122170613238875
+    Parent: 2209326659026730607
+  - Child: 6262383892140158897
+    Parent: 2209326659026730607
+  - Child: 6330684600890700179
+    Parent: 2209326659026730607
+  - Child: 363555878789926604
+    Parent: 2209326659026730607
+  - Child: 1160619461025596503
+    Parent: 2209326659026730607
+  - Child: 7989202117238188053
+    Parent: 2209326659026730607
+  - Child: 2687134104820753799
+    Parent: 2209326659026730607
+  - Child: 8156153078677523480
+    Parent: 2209326659026730607
+  - Child: 3844788711226784141
+    Parent: 2209326659026730607
+  - Child: 7638297679851970434
+    Parent: 671637005191401286
+  - Child: 8980595360970797746
+    Parent: 671637005191401286
+  - Child: 4968332809864145261
+    Parent: 4268151114884561108
+  - Child: 2646568284980261619
+    Parent: 4268151114884561108
+  - Child: 6934562843081510055
+    Parent: 4268151114884561108
+  - Child: 2439696498568332540
+    Parent: 6317739362210439686
+  - Child: 63890151806918614
+    Parent: 6317739362210439686
+  - Child: 6906941788253575767
+    Parent: 6317739362210439686
+  - Child: 961027191160624033
+    Parent: 6317739362210439686
+  - Child: 1573824275642747771
+    Parent: 6317739362210439686
+  - Child: 2848905479118211197
+    Parent: 6317739362210439686
+  - Child: 7417351407853133690
+    Parent: 6317739362210439686
+  - Child: 5726338532143948130
+    Parent: 6317739362210439686
+  - Child: 7728859089218009916
+    Parent: 7331286829500063113
+  - Child: 5602402938561273406
+    Parent: 7331286829500063113
+  - Child: 873426960470457080
+    Parent: 7331286829500063113
+  - Child: 7799637091983190111
+    Parent: 865412735548826125
+  - Child: 3825025268639834084
+    Parent: 865412735548826125
+  - Child: 5965349115615412039
+    Parent: 865412735548826125
+  - Child: 3763729789031022793
+    Parent: 8268798664012939944
+  - Child: 7101722803118938934
+    Parent: 8268798664012939944
+  - Child: 5530815700248614402
+    Parent: 8268798664012939944
+  - Child: 2351039140937298741
+    Parent: 8268798664012939944
+  - Child: 3034326076446597958
+    Parent: 8268798664012939944
+  - Child: 5726210933961178426
+    Parent: 8268798664012939944
+  - Child: 2675611536079366131
+    Parent: 8268798664012939944
+  - Child: 7008217663453235143
+    Parent: 8268798664012939944
+  - Child: 1021312771842218989
+    Parent: 8332811879225771391
+  - Child: 6518344893036363508
+    Parent: 1374940850069864689
+  - Child: 1157811174838732959
+    Parent: 1374940850069864689
+  - Child: 2588510983486241622
+    Parent: 1374940850069864689
+  - Child: 5701453516460165443
+    Parent: 3825025268639834084
+  - Child: 6562424556509085580
+    Parent: 3825025268639834084
+  - Child: 4472297379349810140
+    Parent: 3825025268639834084
+  - Child: 5852953293019832168
+    Parent: 3825025268639834084
+  - Child: 5141942493387583832
+    Parent: 3825025268639834084
+  - Child: 2047803458517895708
+    Parent: 3825025268639834084
+  - Child: 8233812673445350667
+    Parent: 3825025268639834084
+  - Child: 8585185283326649948
+    Parent: 3825025268639834084
+  - Child: 9040240005741091838
+    Parent: 8552514504990004432
+  - Child: 4534669856315590508
+    Parent: 8552514504990004432
+  - Child: 7821838100439945423
+    Parent: 8552514504990004432
+  - Child: 7630427831967491318
+    Parent: 2776450037211274830
+  - Child: 4414905907358521276
+    Parent: 5123847855369527916
+  - Child: 5923195127772683246
+    Parent: 5123847855369527916
+  - Child: 820337127156290173
+    Parent: 5123847855369527916
+  - Child: 5873097728719980758
+    Parent: 1157811174838732959
+  - Child: 2181431185998766199
+    Parent: 1157811174838732959
+  - Child: 7429853540410639558
+    Parent: 1157811174838732959
+  - Child: 7568861531508248773
+    Parent: 1157811174838732959
+  - Child: 7445592392161427202
+    Parent: 1157811174838732959
+  - Child: 8614884516629186210
+    Parent: 1157811174838732959
+  - Child: 1759694025011725572
+    Parent: 1157811174838732959
+  - Child: 6117936478429257202
+    Parent: 1157811174838732959
+  - Child: 5598633546491332470
+    Parent: 5851038840806160467
+  - Child: 8912545817190112068
+    Parent: 5851038840806160467
+  - Child: 3662086556394619246
+    Parent: 5851038840806160467
+  - Child: 5398975574960475739
+    Parent: 722101531947025814
+  - Child: 6317739362210439686
+    Parent: 722101531947025814
+  - Child: 8969016527876331201
+    Parent: 722101531947025814
+  - Child: 6128328026794024733
+    Parent: 3069943703462630001
+  - Child: 844547453342710432
+    Parent: 3069943703462630001
+  - Child: 1526182103332478772
+    Parent: 3069943703462630001
+  - Child: 642996278639564412
+    Parent: 5923195127772683246
+  - Child: 1000543161683275078
+    Parent: 5923195127772683246
+  - Child: 1254779400401468300
+    Parent: 5923195127772683246
+  - Child: 2187246503693170811
+    Parent: 5923195127772683246
+  - Child: 1039764578583769871
+    Parent: 5923195127772683246
+  - Child: 9150700233899163292
+    Parent: 5923195127772683246
+  - Child: 5542147061024716269
+    Parent: 5923195127772683246
+  - Child: 5276577310186673165
+    Parent: 5923195127772683246
+  - Child: 5665637639234699586
+    Parent: 3179124829383560976
+  - Child: 3786863740058441956
+    Parent: 3179124829383560976
+  - Child: 6130736310536298237
+    Parent: 3179124829383560976
+  - Child: 2357271718385517714
+    Parent: 4677051916258548671
+  - Child: 8268798664012939944
+    Parent: 4677051916258548671
+  - Child: 409047206900132984
+    Parent: 4677051916258548671
+  - Child: 3742038022639661314
+    Parent: 2646568284980261619
+  - Child: 3422119758638501247
+    Parent: 2646568284980261619
+  - Child: 3802438057415076669
+    Parent: 2646568284980261619
+  - Child: 8233804025826548936
+    Parent: 2646568284980261619
+  - Child: 5662732587456042805
+    Parent: 2646568284980261619
+  - Child: 2689771356507491584
+    Parent: 2646568284980261619
+  - Child: 4883664088133642317
+    Parent: 2646568284980261619
+  - Child: 6301676738334294433
+    Parent: 2646568284980261619
+  - Child: 5002202274387862632
+    Parent: 3786863740058441956
+  - Child: 5054518359627545932
+    Parent: 3786863740058441956
+  - Child: 7855240876256719805
+    Parent: 3786863740058441956
+  - Child: 5438703665975844118
+    Parent: 3786863740058441956
+  - Child: 6684723817592256521
+    Parent: 3786863740058441956
+  - Child: 4157975583419261179
+    Parent: 3786863740058441956
+  - Child: 5706376773476602911
+    Parent: 3786863740058441956
+  - Child: 1647659780589777914
+    Parent: 3786863740058441956
+  - Child: 7285825248148765924
+    Parent: 8912545817190112068
+  - Child: 8143666574417039042
+    Parent: 8912545817190112068
+  - Child: 68986362321551123
+    Parent: 8912545817190112068
+  - Child: 7086259877594529211
+    Parent: 8912545817190112068
+  - Child: 8720271646504763773
+    Parent: 8912545817190112068
+  - Child: 1685032357034666964
+    Parent: 8912545817190112068
+  - Child: 3009119037967018303
+    Parent: 8912545817190112068
+  - Child: 6941745811530580968
+    Parent: 8912545817190112068
+  - Child: 3069943703462630001
+    Parent: 2854353789591383864
+  - Child: 2819464882555836008
+    Parent: 4534669856315590508
+  - Child: 880129346388251705
+    Parent: 4534669856315590508
+  - Child: 8523461985192406737
+    Parent: 4534669856315590508
+  - Child: 2574553173363591679
+    Parent: 4534669856315590508
+  - Child: 2855213492326213883
+    Parent: 4534669856315590508
+  - Child: 1151766417225583505
+    Parent: 4534669856315590508
+  - Child: 5027055531215539917
+    Parent: 4534669856315590508
+  - Child: 6183800699821896373
+    Parent: 4534669856315590508
+  - Child: 7578147392199138582
+    Parent: 5602402938561273406
+  - Child: 5461308645265067788
+    Parent: 5602402938561273406
+  - Child: 5219993051619474549
+    Parent: 5602402938561273406
+  - Child: 4705703342805165218
+    Parent: 5602402938561273406
+  - Child: 3672320196593067871
+    Parent: 5602402938561273406
+  - Child: 1269440262368696393
+    Parent: 5602402938561273406
+  - Child: 307137051372042895
+    Parent: 5602402938561273406
+  - Child: 6466542426813665690
+    Parent: 5602402938561273406
+  - Child: 2822702148596576895
+    Parent: 1021312771842218989
+  - Child: 671637005191401286
+    Parent: 2822702148596576895
+  - Child: 3562533012832316186
+    Parent: 2822702148596576895
+  - Child: 3337522205588173739
+    Parent: 2822702148596576895
+  - Child: 7416458795588910700
+    Parent: 2822702148596576895
+  - Child: 3204131382599162510
+    Parent: 2822702148596576895
+  - Child: 7830308243415078999
+    Parent: 3562533012832316186
+  - Child: 8358331724500419160
+    Parent: 3562533012832316186
+  - Child: 2854353789591383864
+    Parent: 3562533012832316186
+  - Child: 3920820991150310750
+    Parent: 3562533012832316186
+  - Child: 3641503076481095357
+    Parent: 3562533012832316186
+  - Child: 5931662951783608055
+    Parent: 3337522205588173739
+  - Child: 5526516209777265381
+    Parent: 3337522205588173739
+  - Child: 2776450037211274830
+    Parent: 3337522205588173739
+  - Child: 551116107349952896
+    Parent: 3337522205588173739
+  - Child: 5023842128830232327
+    Parent: 3337522205588173739
+  - Child: 6532356520290789631
+    Parent: 7630427831967491318
+  - Child: 6898893495766850386
+    Parent: 7630427831967491318
+  - Child: 8275539357145979180
+    Parent: 7630427831967491318

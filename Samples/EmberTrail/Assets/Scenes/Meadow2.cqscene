@@ -1,0 +1,5288 @@
+Scene: Untitled
+Entities:
+  - Entity: 7854950217009513175
+    TagComponent:
+      Tag: MainCamera
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [13, 7.5, 10]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera:
+        ProjectionType: 1
+        PerspectiveFOV: 0.7853982
+        PerspectiveNear: 0.01
+        PerspectiveFar: 1000
+        OrthographicSize: 15
+        OrthographicNear: -1000
+        OrthographicFar: 1000
+      Primary: true
+      FixedAspectRatio: false
+      Background: 2
+      BackgroundColor: [0.53, 0.78, 0.98, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5438976453866918686
+    TagComponent:
+      Tag: BgFar
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [79, 6, -2]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.75, 0.75, 0.85, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/bg_meadow_far.png
+      Rect: [0, 0, 0, 0]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 2
+      Size: [238, 10]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 6684996108324945575
+    TagComponent:
+      Tag: BgNear
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [79, 5, -1]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/bg_meadow_near.png
+      Rect: [0, 0, 0, 0]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 2
+      Size: [238, 10]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 4158248165136832750
+    TagComponent:
+      Tag: Terrain
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.5, 0.5, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    GridComponent:
+      Layout: 0
+      CellSize: [1, 1]
+      CellGap: [0, 0]
+      Plane: 0
+      ShowGridInEditor: true
+      EditorGridExtent: 12
+    TilemapComponent:
+      Tint: [1, 1, 1, 1]
+      OrderInLayer: 0
+      Render3D: false
+      Outline: false
+      Palette:
+        - Name: Grass
+          Color: [0.36, 0.72, 0.33, 1]
+          Texture: ""
+          Solid: false
+          Walkable: true
+          Cost: 1
+          Height: 0.25
+        - Name: Water
+          Color: [0.22, 0.48, 0.86, 1]
+          Texture: ""
+          Solid: false
+          Walkable: false
+          Cost: 1
+          Height: 0.12
+        - Name: Stone
+          Color: [0.55, 0.55, 0.6, 1]
+          Texture: ""
+          Solid: true
+          Walkable: true
+          Cost: 2
+          Height: 0.4
+        - Name: Wall
+          Color: [0.35, 0.3, 0.28, 1]
+          Texture: ""
+          Solid: true
+          Walkable: false
+          Cost: 1
+          Height: 1
+        - Name: Ground
+          Color: [1, 1, 1, 1]
+          Texture: Assets/Textures/tiles_meadow.png
+          Solid: true
+          Walkable: true
+          Cost: 1
+          Height: 0.25
+          Autotile: 1
+      Cells:
+        - [0, 0, 4]
+        - [1, 0, 4]
+        - [2, 0, 4]
+        - [3, 0, 4]
+        - [4, 0, 4]
+        - [5, 0, 4]
+        - [6, 0, 4]
+        - [7, 0, 4]
+        - [8, 0, 4]
+        - [9, 0, 4]
+        - [10, 0, 4]
+        - [11, 0, 4]
+        - [12, 0, 4]
+        - [13, 0, 4]
+        - [14, 0, 4]
+        - [15, 0, 4]
+        - [16, 0, 4]
+        - [17, 0, 4]
+        - [18, 0, 4]
+        - [19, 0, 4]
+        - [20, 0, 4]
+        - [21, 0, 4]
+        - [22, 0, 4]
+        - [23, 0, 4]
+        - [28, 0, 4]
+        - [29, 0, 4]
+        - [30, 0, 4]
+        - [31, 0, 4]
+        - [42, 0, 4]
+        - [43, 0, 4]
+        - [44, 0, 4]
+        - [45, 0, 4]
+        - [46, 0, 4]
+        - [47, 0, 4]
+        - [48, 0, 4]
+        - [49, 0, 4]
+        - [50, 0, 4]
+        - [51, 0, 4]
+        - [52, 0, 4]
+        - [53, 0, 4]
+        - [54, 0, 4]
+        - [55, 0, 4]
+        - [56, 0, 4]
+        - [57, 0, 4]
+        - [58, 0, 4]
+        - [59, 0, 4]
+        - [60, 0, 4]
+        - [61, 0, 4]
+        - [62, 0, 4]
+        - [63, 0, 4]
+        - [64, 0, 4]
+        - [65, 0, 4]
+        - [66, 0, 4]
+        - [73, 0, 4]
+        - [74, 0, 4]
+        - [75, 0, 4]
+        - [76, 0, 4]
+        - [77, 0, 4]
+        - [83, 0, 4]
+        - [84, 0, 4]
+        - [85, 0, 4]
+        - [86, 0, 4]
+        - [87, 0, 4]
+        - [88, 0, 4]
+        - [89, 0, 4]
+        - [90, 0, 4]
+        - [91, 0, 4]
+        - [92, 0, 4]
+        - [93, 0, 4]
+        - [94, 0, 4]
+        - [95, 0, 4]
+        - [96, 0, 4]
+        - [97, 0, 4]
+        - [98, 0, 4]
+        - [99, 0, 4]
+        - [106, 0, 4]
+        - [107, 0, 4]
+        - [108, 0, 4]
+        - [109, 0, 4]
+        - [110, 0, 4]
+        - [111, 0, 4]
+        - [112, 0, 4]
+        - [113, 0, 4]
+        - [114, 0, 4]
+        - [115, 0, 4]
+        - [116, 0, 4]
+        - [117, 0, 4]
+        - [122, 0, 4]
+        - [123, 0, 4]
+        - [124, 0, 4]
+        - [125, 0, 4]
+        - [126, 0, 4]
+        - [127, 0, 4]
+        - [138, 0, 4]
+        - [139, 0, 4]
+        - [140, 0, 4]
+        - [141, 0, 4]
+        - [142, 0, 4]
+        - [143, 0, 4]
+        - [144, 0, 4]
+        - [145, 0, 4]
+        - [146, 0, 4]
+        - [147, 0, 4]
+        - [148, 0, 4]
+        - [149, 0, 4]
+        - [150, 0, 4]
+        - [151, 0, 4]
+        - [152, 0, 4]
+        - [153, 0, 4]
+        - [154, 0, 4]
+        - [155, 0, 4]
+        - [156, 0, 4]
+        - [157, 0, 4]
+        - [0, 1, 4]
+        - [1, 1, 4]
+        - [2, 1, 4]
+        - [3, 1, 4]
+        - [4, 1, 4]
+        - [5, 1, 4]
+        - [6, 1, 4]
+        - [7, 1, 4]
+        - [8, 1, 4]
+        - [9, 1, 4]
+        - [10, 1, 4]
+        - [11, 1, 4]
+        - [12, 1, 4]
+        - [13, 1, 4]
+        - [14, 1, 4]
+        - [15, 1, 4]
+        - [16, 1, 4]
+        - [17, 1, 4]
+        - [18, 1, 4]
+        - [19, 1, 4]
+        - [20, 1, 4]
+        - [21, 1, 4]
+        - [22, 1, 4]
+        - [23, 1, 4]
+        - [28, 1, 4]
+        - [29, 1, 4]
+        - [30, 1, 4]
+        - [31, 1, 4]
+        - [42, 1, 4]
+        - [43, 1, 4]
+        - [44, 1, 4]
+        - [45, 1, 4]
+        - [46, 1, 4]
+        - [47, 1, 4]
+        - [48, 1, 4]
+        - [49, 1, 4]
+        - [50, 1, 4]
+        - [51, 1, 4]
+        - [52, 1, 4]
+        - [53, 1, 4]
+        - [54, 1, 4]
+        - [55, 1, 4]
+        - [56, 1, 4]
+        - [57, 1, 4]
+        - [58, 1, 4]
+        - [59, 1, 4]
+        - [60, 1, 4]
+        - [61, 1, 4]
+        - [62, 1, 4]
+        - [63, 1, 4]
+        - [64, 1, 4]
+        - [65, 1, 4]
+        - [66, 1, 4]
+        - [73, 1, 4]
+        - [74, 1, 4]
+        - [75, 1, 4]
+        - [76, 1, 4]
+        - [77, 1, 4]
+        - [83, 1, 4]
+        - [84, 1, 4]
+        - [85, 1, 4]
+        - [86, 1, 4]
+        - [87, 1, 4]
+        - [88, 1, 4]
+        - [89, 1, 4]
+        - [90, 1, 4]
+        - [91, 1, 4]
+        - [92, 1, 4]
+        - [93, 1, 4]
+        - [94, 1, 4]
+        - [95, 1, 4]
+        - [96, 1, 4]
+        - [97, 1, 4]
+        - [98, 1, 4]
+        - [99, 1, 4]
+        - [106, 1, 4]
+        - [107, 1, 4]
+        - [108, 1, 4]
+        - [109, 1, 4]
+        - [110, 1, 4]
+        - [111, 1, 4]
+        - [112, 1, 4]
+        - [113, 1, 4]
+        - [114, 1, 4]
+        - [115, 1, 4]
+        - [116, 1, 4]
+        - [117, 1, 4]
+        - [122, 1, 4]
+        - [123, 1, 4]
+        - [124, 1, 4]
+        - [125, 1, 4]
+        - [126, 1, 4]
+        - [127, 1, 4]
+        - [138, 1, 4]
+        - [139, 1, 4]
+        - [140, 1, 4]
+        - [141, 1, 4]
+        - [142, 1, 4]
+        - [143, 1, 4]
+        - [144, 1, 4]
+        - [145, 1, 4]
+        - [146, 1, 4]
+        - [147, 1, 4]
+        - [148, 1, 4]
+        - [149, 1, 4]
+        - [150, 1, 4]
+        - [151, 1, 4]
+        - [152, 1, 4]
+        - [153, 1, 4]
+        - [154, 1, 4]
+        - [155, 1, 4]
+        - [156, 1, 4]
+        - [157, 1, 4]
+        - [0, 2, 4]
+        - [1, 2, 4]
+        - [2, 2, 4]
+        - [3, 2, 4]
+        - [4, 2, 4]
+        - [5, 2, 4]
+        - [6, 2, 4]
+        - [7, 2, 4]
+        - [8, 2, 4]
+        - [9, 2, 4]
+        - [10, 2, 4]
+        - [11, 2, 4]
+        - [12, 2, 4]
+        - [13, 2, 4]
+        - [14, 2, 4]
+        - [15, 2, 4]
+        - [16, 2, 4]
+        - [17, 2, 4]
+        - [18, 2, 4]
+        - [19, 2, 4]
+        - [20, 2, 4]
+        - [21, 2, 4]
+        - [22, 2, 4]
+        - [23, 2, 4]
+        - [28, 2, 4]
+        - [29, 2, 4]
+        - [30, 2, 4]
+        - [31, 2, 4]
+        - [42, 2, 4]
+        - [43, 2, 4]
+        - [44, 2, 4]
+        - [45, 2, 4]
+        - [46, 2, 4]
+        - [47, 2, 4]
+        - [48, 2, 4]
+        - [49, 2, 4]
+        - [50, 2, 4]
+        - [51, 2, 4]
+        - [52, 2, 4]
+        - [53, 2, 4]
+        - [54, 2, 4]
+        - [55, 2, 4]
+        - [56, 2, 4]
+        - [57, 2, 4]
+        - [58, 2, 4]
+        - [59, 2, 4]
+        - [60, 2, 4]
+        - [61, 2, 4]
+        - [62, 2, 4]
+        - [63, 2, 4]
+        - [64, 2, 4]
+        - [65, 2, 4]
+        - [66, 2, 4]
+        - [73, 2, 4]
+        - [74, 2, 4]
+        - [75, 2, 4]
+        - [76, 2, 4]
+        - [77, 2, 4]
+        - [83, 2, 4]
+        - [84, 2, 4]
+        - [85, 2, 4]
+        - [86, 2, 4]
+        - [87, 2, 4]
+        - [88, 2, 4]
+        - [89, 2, 4]
+        - [90, 2, 4]
+        - [91, 2, 4]
+        - [92, 2, 4]
+        - [93, 2, 4]
+        - [94, 2, 4]
+        - [95, 2, 4]
+        - [96, 2, 4]
+        - [97, 2, 4]
+        - [98, 2, 4]
+        - [99, 2, 4]
+        - [106, 2, 4]
+        - [107, 2, 4]
+        - [108, 2, 4]
+        - [109, 2, 4]
+        - [110, 2, 4]
+        - [111, 2, 4]
+        - [112, 2, 4]
+        - [113, 2, 4]
+        - [114, 2, 4]
+        - [115, 2, 4]
+        - [116, 2, 4]
+        - [117, 2, 4]
+        - [122, 2, 4]
+        - [123, 2, 4]
+        - [124, 2, 4]
+        - [125, 2, 4]
+        - [126, 2, 4]
+        - [127, 2, 4]
+        - [138, 2, 4]
+        - [139, 2, 4]
+        - [140, 2, 4]
+        - [141, 2, 4]
+        - [142, 2, 4]
+        - [143, 2, 4]
+        - [144, 2, 4]
+        - [145, 2, 4]
+        - [146, 2, 4]
+        - [147, 2, 4]
+        - [148, 2, 4]
+        - [149, 2, 4]
+        - [150, 2, 4]
+        - [151, 2, 4]
+        - [152, 2, 4]
+        - [153, 2, 4]
+        - [154, 2, 4]
+        - [155, 2, 4]
+        - [156, 2, 4]
+        - [157, 2, 4]
+        - [0, 3, 4]
+        - [1, 3, 4]
+        - [2, 3, 4]
+        - [3, 3, 4]
+        - [4, 3, 4]
+        - [5, 3, 4]
+        - [6, 3, 4]
+        - [7, 3, 4]
+        - [8, 3, 4]
+        - [9, 3, 4]
+        - [10, 3, 4]
+        - [11, 3, 4]
+        - [12, 3, 4]
+        - [13, 3, 4]
+        - [14, 3, 4]
+        - [15, 3, 4]
+        - [16, 3, 4]
+        - [17, 3, 4]
+        - [18, 3, 4]
+        - [19, 3, 4]
+        - [20, 3, 4]
+        - [21, 3, 4]
+        - [22, 3, 4]
+        - [23, 3, 4]
+        - [28, 3, 4]
+        - [29, 3, 4]
+        - [30, 3, 4]
+        - [31, 3, 4]
+        - [42, 3, 4]
+        - [43, 3, 4]
+        - [44, 3, 4]
+        - [45, 3, 4]
+        - [46, 3, 4]
+        - [47, 3, 4]
+        - [48, 3, 4]
+        - [49, 3, 4]
+        - [50, 3, 4]
+        - [51, 3, 4]
+        - [52, 3, 4]
+        - [53, 3, 4]
+        - [54, 3, 4]
+        - [55, 3, 4]
+        - [56, 3, 4]
+        - [57, 3, 4]
+        - [58, 3, 4]
+        - [59, 3, 4]
+        - [60, 3, 4]
+        - [61, 3, 4]
+        - [62, 3, 4]
+        - [63, 3, 4]
+        - [64, 3, 4]
+        - [65, 3, 4]
+        - [66, 3, 4]
+        - [73, 3, 4]
+        - [74, 3, 4]
+        - [75, 3, 4]
+        - [76, 3, 4]
+        - [77, 3, 4]
+        - [83, 3, 4]
+        - [84, 3, 4]
+        - [85, 3, 4]
+        - [86, 3, 4]
+        - [87, 3, 4]
+        - [88, 3, 4]
+        - [89, 3, 4]
+        - [90, 3, 4]
+        - [91, 3, 4]
+        - [92, 3, 4]
+        - [93, 3, 4]
+        - [94, 3, 4]
+        - [95, 3, 4]
+        - [96, 3, 4]
+        - [97, 3, 4]
+        - [98, 3, 4]
+        - [99, 3, 4]
+        - [106, 3, 4]
+        - [107, 3, 4]
+        - [108, 3, 4]
+        - [109, 3, 4]
+        - [110, 3, 4]
+        - [111, 3, 4]
+        - [112, 3, 4]
+        - [113, 3, 4]
+        - [114, 3, 4]
+        - [115, 3, 4]
+        - [116, 3, 4]
+        - [117, 3, 4]
+        - [122, 3, 4]
+        - [123, 3, 4]
+        - [124, 3, 4]
+        - [125, 3, 4]
+        - [126, 3, 4]
+        - [127, 3, 4]
+        - [138, 3, 4]
+        - [139, 3, 4]
+        - [140, 3, 4]
+        - [141, 3, 4]
+        - [142, 3, 4]
+        - [143, 3, 4]
+        - [144, 3, 4]
+        - [145, 3, 4]
+        - [146, 3, 4]
+        - [147, 3, 4]
+        - [148, 3, 4]
+        - [149, 3, 4]
+        - [150, 3, 4]
+        - [151, 3, 4]
+        - [152, 3, 4]
+        - [153, 3, 4]
+        - [154, 3, 4]
+        - [155, 3, 4]
+        - [156, 3, 4]
+        - [157, 3, 4]
+        - [20, 4, 4]
+        - [21, 4, 4]
+        - [22, 4, 4]
+        - [23, 4, 4]
+        - [28, 4, 4]
+        - [29, 4, 4]
+        - [30, 4, 4]
+        - [31, 4, 4]
+        - [42, 4, 4]
+        - [43, 4, 4]
+        - [44, 4, 4]
+        - [45, 4, 4]
+        - [46, 4, 4]
+        - [47, 4, 4]
+        - [48, 4, 4]
+        - [49, 4, 4]
+        - [50, 4, 4]
+        - [51, 4, 4]
+        - [52, 4, 4]
+        - [53, 4, 4]
+        - [54, 4, 4]
+        - [55, 4, 4]
+        - [56, 4, 4]
+        - [57, 4, 4]
+        - [58, 4, 4]
+        - [59, 4, 4]
+        - [60, 4, 4]
+        - [61, 4, 4]
+        - [62, 4, 4]
+        - [63, 4, 4]
+        - [64, 4, 4]
+        - [65, 4, 4]
+        - [66, 4, 4]
+        - [73, 4, 4]
+        - [74, 4, 4]
+        - [75, 4, 4]
+        - [76, 4, 4]
+        - [77, 4, 4]
+        - [83, 4, 4]
+        - [84, 4, 4]
+        - [85, 4, 4]
+        - [86, 4, 4]
+        - [87, 4, 4]
+        - [88, 4, 4]
+        - [89, 4, 4]
+        - [90, 4, 4]
+        - [91, 4, 4]
+        - [92, 4, 4]
+        - [93, 4, 4]
+        - [94, 4, 4]
+        - [95, 4, 4]
+        - [96, 4, 4]
+        - [97, 4, 4]
+        - [98, 4, 4]
+        - [99, 4, 4]
+        - [106, 4, 4]
+        - [107, 4, 4]
+        - [108, 4, 4]
+        - [109, 4, 4]
+        - [110, 4, 4]
+        - [111, 4, 4]
+        - [112, 4, 4]
+        - [113, 4, 4]
+        - [114, 4, 4]
+        - [115, 4, 4]
+        - [116, 4, 4]
+        - [117, 4, 4]
+        - [122, 4, 4]
+        - [123, 4, 4]
+        - [124, 4, 4]
+        - [125, 4, 4]
+        - [126, 4, 4]
+        - [127, 4, 4]
+        - [138, 4, 4]
+        - [139, 4, 4]
+        - [140, 4, 4]
+        - [141, 4, 4]
+        - [142, 4, 4]
+        - [143, 4, 4]
+        - [144, 4, 4]
+        - [145, 4, 4]
+        - [146, 4, 4]
+        - [147, 4, 4]
+        - [148, 4, 4]
+        - [149, 4, 4]
+        - [150, 4, 4]
+        - [151, 4, 4]
+        - [152, 4, 4]
+        - [153, 4, 4]
+        - [154, 4, 4]
+        - [155, 4, 4]
+        - [156, 4, 4]
+        - [157, 4, 4]
+        - [20, 5, 4]
+        - [21, 5, 4]
+        - [22, 5, 4]
+        - [23, 5, 4]
+        - [28, 5, 4]
+        - [29, 5, 4]
+        - [30, 5, 4]
+        - [31, 5, 4]
+        - [42, 5, 4]
+        - [43, 5, 4]
+        - [44, 5, 4]
+        - [45, 5, 4]
+        - [46, 5, 4]
+        - [47, 5, 4]
+        - [48, 5, 4]
+        - [49, 5, 4]
+        - [50, 5, 4]
+        - [51, 5, 4]
+        - [52, 5, 4]
+        - [53, 5, 4]
+        - [54, 5, 4]
+        - [55, 5, 4]
+        - [56, 5, 4]
+        - [57, 5, 4]
+        - [58, 5, 4]
+        - [59, 5, 4]
+        - [60, 5, 4]
+        - [61, 5, 4]
+        - [62, 5, 4]
+        - [63, 5, 4]
+        - [64, 5, 4]
+        - [65, 5, 4]
+        - [66, 5, 4]
+        - [73, 5, 4]
+        - [74, 5, 4]
+        - [75, 5, 4]
+        - [76, 5, 4]
+        - [77, 5, 4]
+        - [83, 5, 4]
+        - [84, 5, 4]
+        - [85, 5, 4]
+        - [86, 5, 4]
+        - [87, 5, 4]
+        - [88, 5, 4]
+        - [89, 5, 4]
+        - [90, 5, 4]
+        - [91, 5, 4]
+        - [92, 5, 4]
+        - [93, 5, 4]
+        - [94, 5, 4]
+        - [95, 5, 4]
+        - [96, 5, 4]
+        - [97, 5, 4]
+        - [98, 5, 4]
+        - [99, 5, 4]
+        - [106, 5, 4]
+        - [107, 5, 4]
+        - [108, 5, 4]
+        - [109, 5, 4]
+        - [110, 5, 4]
+        - [111, 5, 4]
+        - [112, 5, 4]
+        - [113, 5, 4]
+        - [114, 5, 4]
+        - [115, 5, 4]
+        - [116, 5, 4]
+        - [117, 5, 4]
+        - [122, 5, 4]
+        - [123, 5, 4]
+        - [124, 5, 4]
+        - [125, 5, 4]
+        - [126, 5, 4]
+        - [127, 5, 4]
+        - [138, 5, 4]
+        - [139, 5, 4]
+        - [140, 5, 4]
+        - [141, 5, 4]
+        - [142, 5, 4]
+        - [143, 5, 4]
+        - [144, 5, 4]
+        - [145, 5, 4]
+        - [146, 5, 4]
+        - [147, 5, 4]
+        - [148, 5, 4]
+        - [149, 5, 4]
+        - [150, 5, 4]
+        - [151, 5, 4]
+        - [152, 5, 4]
+        - [153, 5, 4]
+        - [154, 5, 4]
+        - [155, 5, 4]
+        - [156, 5, 4]
+        - [157, 5, 4]
+        - [20, 6, 4]
+        - [21, 6, 4]
+        - [22, 6, 4]
+        - [23, 6, 4]
+        - [28, 6, 4]
+        - [29, 6, 4]
+        - [30, 6, 4]
+        - [31, 6, 4]
+        - [42, 6, 4]
+        - [43, 6, 4]
+        - [44, 6, 4]
+        - [45, 6, 4]
+        - [46, 6, 4]
+        - [47, 6, 4]
+        - [48, 6, 4]
+        - [49, 6, 4]
+        - [50, 6, 4]
+        - [51, 6, 4]
+        - [52, 6, 4]
+        - [53, 6, 4]
+        - [54, 6, 4]
+        - [55, 6, 4]
+        - [56, 6, 4]
+        - [57, 6, 4]
+        - [58, 6, 4]
+        - [59, 6, 4]
+        - [60, 6, 4]
+        - [61, 6, 4]
+        - [62, 6, 4]
+        - [63, 6, 4]
+        - [64, 6, 4]
+        - [65, 6, 4]
+        - [66, 6, 4]
+        - [73, 6, 4]
+        - [74, 6, 4]
+        - [75, 6, 4]
+        - [76, 6, 4]
+        - [77, 6, 4]
+        - [83, 6, 4]
+        - [84, 6, 4]
+        - [85, 6, 4]
+        - [86, 6, 4]
+        - [87, 6, 4]
+        - [88, 6, 4]
+        - [89, 6, 4]
+        - [90, 6, 4]
+        - [91, 6, 4]
+        - [92, 6, 4]
+        - [93, 6, 4]
+        - [94, 6, 4]
+        - [95, 6, 4]
+        - [96, 6, 4]
+        - [97, 6, 4]
+        - [98, 6, 4]
+        - [99, 6, 4]
+        - [106, 6, 4]
+        - [107, 6, 4]
+        - [108, 6, 4]
+        - [109, 6, 4]
+        - [110, 6, 4]
+        - [111, 6, 4]
+        - [112, 6, 4]
+        - [113, 6, 4]
+        - [114, 6, 4]
+        - [115, 6, 4]
+        - [116, 6, 4]
+        - [117, 6, 4]
+        - [122, 6, 4]
+        - [123, 6, 4]
+        - [124, 6, 4]
+        - [125, 6, 4]
+        - [126, 6, 4]
+        - [127, 6, 4]
+        - [138, 6, 4]
+        - [139, 6, 4]
+        - [140, 6, 4]
+        - [141, 6, 4]
+        - [142, 6, 4]
+        - [143, 6, 4]
+        - [144, 6, 4]
+        - [145, 6, 4]
+        - [146, 6, 4]
+        - [147, 6, 4]
+        - [148, 6, 4]
+        - [149, 6, 4]
+        - [150, 6, 4]
+        - [151, 6, 4]
+        - [152, 6, 4]
+        - [153, 6, 4]
+        - [154, 6, 4]
+        - [155, 6, 4]
+        - [156, 6, 4]
+        - [157, 6, 4]
+        - [20, 7, 4]
+        - [21, 7, 4]
+        - [22, 7, 4]
+        - [23, 7, 4]
+        - [95, 7, 4]
+        - [96, 7, 4]
+        - [97, 7, 4]
+        - [98, 7, 4]
+        - [99, 7, 4]
+        - [106, 7, 4]
+        - [107, 7, 4]
+        - [108, 7, 4]
+        - [109, 7, 4]
+        - [110, 7, 4]
+        - [111, 7, 4]
+        - [112, 7, 4]
+        - [113, 7, 4]
+        - [114, 7, 4]
+        - [115, 7, 4]
+        - [116, 7, 4]
+        - [117, 7, 4]
+        - [122, 7, 4]
+        - [123, 7, 4]
+        - [124, 7, 4]
+        - [125, 7, 4]
+        - [126, 7, 4]
+        - [127, 7, 4]
+        - [138, 7, 4]
+        - [139, 7, 4]
+        - [140, 7, 4]
+        - [141, 7, 4]
+        - [142, 7, 4]
+        - [143, 7, 4]
+        - [144, 7, 4]
+        - [145, 7, 4]
+        - [146, 7, 4]
+        - [147, 7, 4]
+        - [148, 7, 4]
+        - [149, 7, 4]
+        - [150, 7, 4]
+        - [151, 7, 4]
+        - [152, 7, 4]
+        - [153, 7, 4]
+        - [154, 7, 4]
+        - [155, 7, 4]
+        - [156, 7, 4]
+        - [157, 7, 4]
+        - [20, 8, 4]
+        - [21, 8, 4]
+        - [22, 8, 4]
+        - [23, 8, 4]
+        - [95, 8, 4]
+        - [96, 8, 4]
+        - [97, 8, 4]
+        - [98, 8, 4]
+        - [99, 8, 4]
+        - [106, 8, 4]
+        - [107, 8, 4]
+        - [108, 8, 4]
+        - [109, 8, 4]
+        - [110, 8, 4]
+        - [111, 8, 4]
+        - [112, 8, 4]
+        - [113, 8, 4]
+        - [114, 8, 4]
+        - [115, 8, 4]
+        - [116, 8, 4]
+        - [117, 8, 4]
+        - [122, 8, 4]
+        - [123, 8, 4]
+        - [124, 8, 4]
+        - [125, 8, 4]
+        - [126, 8, 4]
+        - [127, 8, 4]
+        - [138, 8, 4]
+        - [139, 8, 4]
+        - [140, 8, 4]
+        - [141, 8, 4]
+        - [142, 8, 4]
+        - [143, 8, 4]
+        - [144, 8, 4]
+        - [145, 8, 4]
+        - [146, 8, 4]
+        - [147, 8, 4]
+        - [148, 8, 4]
+        - [149, 8, 4]
+        - [150, 8, 4]
+        - [151, 8, 4]
+        - [152, 8, 4]
+        - [153, 8, 4]
+        - [154, 8, 4]
+        - [155, 8, 4]
+        - [156, 8, 4]
+        - [157, 8, 4]
+        - [20, 9, 4]
+        - [21, 9, 4]
+        - [22, 9, 4]
+        - [23, 9, 4]
+        - [95, 9, 4]
+        - [96, 9, 4]
+        - [97, 9, 4]
+        - [98, 9, 4]
+        - [99, 9, 4]
+        - [106, 9, 4]
+        - [107, 9, 4]
+        - [108, 9, 4]
+        - [109, 9, 4]
+        - [110, 9, 4]
+        - [111, 9, 4]
+        - [112, 9, 4]
+        - [113, 9, 4]
+        - [114, 9, 4]
+        - [115, 9, 4]
+        - [116, 9, 4]
+        - [117, 9, 4]
+        - [122, 9, 4]
+        - [123, 9, 4]
+        - [124, 9, 4]
+        - [125, 9, 4]
+        - [126, 9, 4]
+        - [127, 9, 4]
+        - [138, 9, 4]
+        - [139, 9, 4]
+        - [140, 9, 4]
+        - [141, 9, 4]
+        - [142, 9, 4]
+        - [143, 9, 4]
+        - [144, 9, 4]
+        - [145, 9, 4]
+        - [146, 9, 4]
+        - [147, 9, 4]
+        - [148, 9, 4]
+        - [149, 9, 4]
+        - [150, 9, 4]
+        - [151, 9, 4]
+        - [152, 9, 4]
+        - [153, 9, 4]
+        - [154, 9, 4]
+        - [155, 9, 4]
+        - [156, 9, 4]
+        - [157, 9, 4]
+        - [95, 10, 4]
+        - [96, 10, 4]
+        - [97, 10, 4]
+        - [98, 10, 4]
+        - [99, 10, 4]
+        - [106, 10, 4]
+        - [107, 10, 4]
+        - [108, 10, 4]
+        - [109, 10, 4]
+        - [110, 10, 4]
+        - [111, 10, 4]
+        - [112, 10, 4]
+        - [113, 10, 4]
+        - [114, 10, 4]
+        - [115, 10, 4]
+        - [116, 10, 4]
+        - [117, 10, 4]
+        - [155, 10, 4]
+        - [156, 10, 4]
+        - [157, 10, 4]
+        - [95, 11, 4]
+        - [96, 11, 4]
+        - [97, 11, 4]
+        - [98, 11, 4]
+        - [99, 11, 4]
+        - [106, 11, 4]
+        - [107, 11, 4]
+        - [108, 11, 4]
+        - [109, 11, 4]
+        - [110, 11, 4]
+        - [111, 11, 4]
+        - [112, 11, 4]
+        - [113, 11, 4]
+        - [114, 11, 4]
+        - [115, 11, 4]
+        - [116, 11, 4]
+        - [117, 11, 4]
+        - [155, 11, 4]
+        - [156, 11, 4]
+        - [157, 11, 4]
+        - [95, 12, 4]
+        - [96, 12, 4]
+        - [97, 12, 4]
+        - [98, 12, 4]
+        - [99, 12, 4]
+        - [106, 12, 4]
+        - [107, 12, 4]
+        - [108, 12, 4]
+        - [109, 12, 4]
+        - [110, 12, 4]
+        - [111, 12, 4]
+        - [112, 12, 4]
+        - [113, 12, 4]
+        - [114, 12, 4]
+        - [115, 12, 4]
+        - [116, 12, 4]
+        - [117, 12, 4]
+        - [155, 12, 4]
+        - [156, 12, 4]
+        - [157, 12, 4]
+        - [95, 13, 4]
+        - [96, 13, 4]
+        - [97, 13, 4]
+        - [98, 13, 4]
+        - [99, 13, 4]
+        - [106, 13, 4]
+        - [107, 13, 4]
+        - [108, 13, 4]
+        - [109, 13, 4]
+        - [110, 13, 4]
+        - [111, 13, 4]
+        - [112, 13, 4]
+        - [113, 13, 4]
+        - [114, 13, 4]
+        - [115, 13, 4]
+        - [116, 13, 4]
+        - [117, 13, 4]
+        - [155, 13, 4]
+        - [156, 13, 4]
+        - [157, 13, 4]
+        - [155, 14, 4]
+        - [156, 14, 4]
+        - [157, 14, 4]
+        - [155, 15, 4]
+        - [156, 15, 4]
+        - [157, 15, 4]
+        - [155, 16, 4]
+        - [156, 16, 4]
+        - [157, 16, 4]
+        - [155, 17, 4]
+        - [156, 17, 4]
+        - [157, 17, 4]
+        - [155, 18, 4]
+        - [156, 18, 4]
+        - [157, 18, 4]
+        - [155, 19, 4]
+        - [156, 19, 4]
+        - [157, 19, 4]
+        - [155, 20, 4]
+        - [156, 20, 4]
+        - [157, 20, 4]
+        - [155, 21, 4]
+        - [156, 21, 4]
+        - [157, 21, 4]
+  - Entity: 5706086148603658060
+    TagComponent:
+      Tag: Plank
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [13.5, 6.5, 0.05]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [160, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 1647369377990707726
+    TagComponent:
+      Tag: Plank
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [14.5, 6.5, 0.05]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [160, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5850766065824000571
+    TagComponent:
+      Tag: Plank
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [15.5, 6.5, 0.05]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [160, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5598924192834779368
+    TagComponent:
+      Tag: Spikes
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [60.5, 7.5, 0.05]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [144, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 8912255723830701637
+    TagComponent:
+      Tag: Spikes
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [61.5, 7.5, 0.05]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [144, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 3662359147774366086
+    TagComponent:
+      Tag: Spikes
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [62.5, 7.5, 0.05]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [144, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 7286115122458849803
+    TagComponent:
+      Tag: Spikes
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [63.5, 7.5, 0.05]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [144, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 8143939645745014668
+    TagComponent:
+      Tag: Plank
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [17.5, 9.5, 0.05]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [160, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 68713792437538731
+    TagComponent:
+      Tag: Plank
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [18.5, 9.5, 0.05]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [160, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 7085987127324281243
+    TagComponent:
+      Tag: Plank
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [19.5, 9.5, 0.05]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [160, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 8720561744180897264
+    TagComponent:
+      Tag: Crumble0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [100.5, 13.5, 0.05]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [176, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 1685323107553743410
+    TagComponent:
+      Tag: Crumble1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [101.5, 13.5, 0.05]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [176, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 3009391628279547715
+    TagComponent:
+      Tag: Crumble2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [102.5, 13.5, 0.05]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [176, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 6942018891567656140
+    TagComponent:
+      Tag: Crumble3
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [103.5, 13.5, 0.05]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [176, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 8552804971923734124
+    TagComponent:
+      Tag: Crumble4
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [104.5, 13.5, 0.05]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [176, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 9039966955915608110
+    TagComponent:
+      Tag: Crumble5
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [105.5, 13.5, 0.05]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [176, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 4534960287810062492
+    TagComponent:
+      Tag: Spring0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [93.5, 7, 0.06]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [80, 0, 16, 16]
+      Pivot: [0.5, 0]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 7822128171291406972
+    TagComponent:
+      Tag: Plat0
+      GameTag: H
+      IsStatic: false
+    TransformComponent:
+      Position: [133.5, 10, 0.1]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/platform.png
+      Rect: [0, 0, 0, 0]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 2819754954413794132
+    TagComponent:
+      Tag: Plat1
+      GameTag: H
+      IsStatic: false
+    TransformComponent:
+      Position: [37.5, 7, 0.1]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/platform.png
+      Rect: [0, 0, 0, 0]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 880401592987434879
+    TagComponent:
+      Tag: Checkpoint0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [57.5, 7, 0.04]
+      Rotation: [0, 0, 0]
+      Scale: [1.5, 1.5, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [112, 0, 16, 16]
+      Pivot: [0.5, 0]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 8523172158145114350
+    TagComponent:
+      Tag: Checkpoint1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [89.5, 7, 0.04]
+      Rotation: [0, 0, 0]
+      Scale: [1.5, 1.5, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [112, 0, 16, 16]
+      Pivot: [0.5, 0]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 2574843029505564467
+    TagComponent:
+      Tag: Goal
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [149, 10, 0.04]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/goal.png
+      Rect: [0, 0, 32, 48]
+      Pivot: [0.5, 0]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 2854941197439324648
+    TagComponent:
+      Tag: Enemy0
+      GameTag: K
+      IsStatic: false
+    TransformComponent:
+      Position: [114.5, 14.25, 0.15]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/enemies.png
+      Rect: [64, 0, 16, 16]
+      Pivot: [0.5, 0]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 1151493358813873970
+    TagComponent:
+      Tag: Enemy1
+      GameTag: S
+      IsStatic: false
+    TransformComponent:
+      Position: [50.5, 7.25, 0.15]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/enemies.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5026782653132392727
+    TagComponent:
+      Tag: Enemy2
+      GameTag: M
+      IsStatic: false
+    TransformComponent:
+      Position: [80.5, 9.5, 0.15]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/enemies.png
+      Rect: [32, 0, 16, 16]
+      Pivot: [0.5, 0]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 6183527597398666856
+    TagComponent:
+      Tag: Ember0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [111.5, 17.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 8333084479274249165
+    TagComponent:
+      Tag: Ember1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [113.5, 17.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 1021585809967095202
+    TagComponent:
+      Tag: Ember2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [115.5, 17.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 2822992572732356238
+    TagComponent:
+      Tag: Ember3
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [118.5, 17.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 671927101852517697
+    TagComponent:
+      Tag: Ember4
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [119.5, 17.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 3562805293811942673
+    TagComponent:
+      Tag: Ember5
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [120.5, 17.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 7830598341256965863
+    TagComponent:
+      Tag: Ember6
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [121.5, 17.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 8358621555617087021
+    TagComponent:
+      Tag: Ember7
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [117.5, 16.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 2854644213337992514
+    TagComponent:
+      Tag: Ember8
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [96.5, 15.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 3070234384454353072
+    TagComponent:
+      Tag: Ember9
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [98.5, 15.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 6128618098479130528
+    TagComponent:
+      Tag: Ember10
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [100.5, 15.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 844819657952753663
+    TagComponent:
+      Tag: Ember11
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [102.5, 15.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 1526472775652663174
+    TagComponent:
+      Tag: Ember12
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [104.5, 15.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 3920530280127236423
+    TagComponent:
+      Tag: Ember13
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [107.5, 15.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 3641230318396599050
+    TagComponent:
+      Tag: Ember14
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [24.5, 13.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 3337249429787659501
+    TagComponent:
+      Tag: Ember15
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [25.5, 13.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5931390691974923757
+    TagComponent:
+      Tag: Ember16
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [26.5, 13.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5526806633487133670
+    TagComponent:
+      Tag: Ember17
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [27.5, 13.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 2776160167356882132
+    TagComponent:
+      Tag: Ember18
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [93.5, 13.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 7630700585646394378
+    TagComponent:
+      Tag: Ember19
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [23.5, 12.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 6532084002304475309
+    TagComponent:
+      Tag: Ember20
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [93.5, 12.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 6898603660197613368
+    TagComponent:
+      Tag: Ember21
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [130.5, 12.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 8275812213822834900
+    TagComponent:
+      Tag: Ember22
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [132.5, 12.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 550843512669501447
+    TagComponent:
+      Tag: Ember23
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [134.5, 12.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5024132225600045040
+    TagComponent:
+      Tag: Ember24
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [61.5, 11.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 7416731034627045780
+    TagComponent:
+      Tag: Ember25
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [62.5, 11.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 7638570244573754611
+    TagComponent:
+      Tag: Ember26
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [93.5, 11.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 3203841556208686982
+    TagComponent:
+      Tag: Ember27
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [123.5, 11.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 8980304692745231797
+    TagComponent:
+      Tag: Ember28
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [125.5, 11.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 4428683452290172698
+    TagComponent:
+      Tag: Ember29
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [139.5, 11.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 8514968054974409767
+    TagComponent:
+      Tag: Ember30
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [141.5, 11.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 2209036007779197466
+    TagComponent:
+      Tag: Ember31
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [18.5, 10.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 7396718159091794245
+    TagComponent:
+      Tag: Ember32
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [47.5, 10.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 152225415865134841
+    TagComponent:
+      Tag: Ember33
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [49.5, 10.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 8528872220519329802
+    TagComponent:
+      Tag: Ember34
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [51.5, 10.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 1467256457971146759
+    TagComponent:
+      Tag: Ember35
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [53.5, 10.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 4486370619043789674
+    TagComponent:
+      Tag: Ember36
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [60.5, 10.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 9183553707011066385
+    TagComponent:
+      Tag: Ember37
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [63.5, 10.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 2194718404262296714
+    TagComponent:
+      Tag: Ember38
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [93.5, 10.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 2482761855336312089
+    TagComponent:
+      Tag: Ember39
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [34.5, 9.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 4645203438720999666
+    TagComponent:
+      Tag: Ember40
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [36.5, 9.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 1719794279188003135
+    TagComponent:
+      Tag: Ember41
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [38.5, 9.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5976930884624144254
+    TagComponent:
+      Tag: Ember42
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [59.5, 9.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 6109299430216974942
+    TagComponent:
+      Tag: Ember43
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [68.5, 9.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 4472133205583366580
+    TagComponent:
+      Tag: Ember44
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [69.5, 9.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 2729849643842922512
+    TagComponent:
+      Tag: Ember45
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [70.5, 9.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 6262673748869828431
+    TagComponent:
+      Tag: Ember46
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [71.5, 9.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 6330394723237713658
+    TagComponent:
+      Tag: Ember47
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [93.5, 9.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 363265769144890505
+    TagComponent:
+      Tag: Ember48
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [29.5, 8.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 1160329119500668203
+    TagComponent:
+      Tag: Ember49
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [43.5, 8.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 7988911371216536929
+    TagComponent:
+      Tag: Ember50
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [74.5, 8.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 2687406893099061584
+    TagComponent:
+      Tag: Ember51
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [76.5, 8.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 8156426210875920229
+    TagComponent:
+      Tag: Ember52
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [84.5, 8.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 3844498042495650281
+    TagComponent:
+      Tag: Ember53
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [93.5, 8.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 3815266074573054314
+    TagComponent:
+      Tag: Ember54
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [14.5, 7.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5529298581618301919
+    TagComponent:
+      Tag: Ember55
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [9.5, 5.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 4041518586430584502
+    TagComponent:
+      Tag: Shard0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [110.5, 17.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1.25, 1.25, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [64, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5259484832551781801
+    TagComponent:
+      Tag: Shard1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [22.5, 13.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1.25, 1.25, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [64, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 4581087231229484520
+    TagComponent:
+      Tag: Shard2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [75.5, 10.5, 0.08]
+      Rotation: [0, 0, 0]
+      Scale: [1.25, 1.25, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/items.png
+      Rect: [64, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 124512029568175536
+    TagComponent:
+      Tag: Spawn
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2.5, 4, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 1650954736285876840
+    TagComponent:
+      Tag: Player
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2.5, 4, 0.2]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/wick.png
+      Rect: [0, 0, 16, 20]
+      Pivot: [0.5, 0]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 8990255355067673171
+    TagComponent:
+      Tag: FX_Spark
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ParticleSystemComponent:
+      Duration: 5
+      Looping: false
+      Prewarm: false
+      PlayOnAwake: false
+      StopAction: 0
+      StartDelay: 0
+      StartLifetime: [0.35, 0.8]
+      StartSpeed: [2, 6]
+      StartSize: [0.08, 0.18]
+      StartRotation: [0, 0]
+      StartColorA: [1, 0.85, 0.35, 1]
+      StartColorB: [1, 0.5, 0.2, 1]
+      GravityModifier: 0.6
+      SimulationSpeed: 1
+      MaxParticles: 600
+      SimulationSpace: 1
+      EmissionEnabled: false
+      RateOverTime: 0
+      RateOverDistance: 0
+      ShapeEnabled: true
+      Radius: 0.2
+      Angle: 25
+      BoxSize: [1, 1, 1]
+      EmitFromShell: false
+      RandomizeDirection: 0
+      Shape: 0
+      VelocityEnabled: false
+      VelocityOverLifetime: [0, 0, 0]
+      OrbitalSpeed: 0
+      LimitVelocityEnabled: false
+      Drag: 1.5
+      SpeedLimit: 100
+      NoiseEnabled: false
+      NoiseStrength: 1
+      NoiseFrequency: 0.5
+      NoiseScrollSpeed: 0.5
+      ColorOverLifetimeEnabled: true
+      SizeOverLifetimeEnabled: false
+      RotationOverLifetimeEnabled: false
+      AngularVelocity: 45
+      CollisionEnabled: false
+      CollisionPlaneY: 0
+      Bounce: 0.5
+      LifetimeLoss: 0
+      TextureSheetEnabled: false
+      AnimationCycles: 1
+      RandomStartFrame: false
+      Tiles: [1, 1]
+      RenderMode: 0
+      Blend: 1
+      Texture: Assets/Textures/glow.png
+      LengthScale: 2
+      SpeedScale: 0.1
+      SortByDistance: true
+      EmissiveIntensity: 2
+      Bursts:
+        []
+      ColorOverLifetime:
+        - [0, 1, 1, 1, 1]
+        - [1, 1, 1, 1, 1]
+      SizeOverLifetime:
+        - [0, 1]
+        - [1, 1]
+  - Entity: 92257231132128314
+    TagComponent:
+      Tag: FX_Dust
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ParticleSystemComponent:
+      Duration: 5
+      Looping: false
+      Prewarm: false
+      PlayOnAwake: false
+      StopAction: 0
+      StartDelay: 0
+      StartLifetime: [0.25, 0.5]
+      StartSpeed: [0.6, 1.8]
+      StartSize: [0.15, 0.3]
+      StartRotation: [0, 0]
+      StartColorA: [1, 1, 1, 0.7]
+      StartColorB: [0.9, 0.85, 0.8, 0.5]
+      GravityModifier: -0.05
+      SimulationSpeed: 1
+      MaxParticles: 200
+      SimulationSpace: 1
+      EmissionEnabled: false
+      RateOverTime: 0
+      RateOverDistance: 0
+      ShapeEnabled: true
+      Radius: 0.2
+      Angle: 25
+      BoxSize: [1, 1, 1]
+      EmitFromShell: false
+      RandomizeDirection: 0
+      Shape: 4
+      VelocityEnabled: false
+      VelocityOverLifetime: [0, 0, 0]
+      OrbitalSpeed: 0
+      LimitVelocityEnabled: false
+      Drag: 4
+      SpeedLimit: 100
+      NoiseEnabled: false
+      NoiseStrength: 1
+      NoiseFrequency: 0.5
+      NoiseScrollSpeed: 0.5
+      ColorOverLifetimeEnabled: true
+      SizeOverLifetimeEnabled: false
+      RotationOverLifetimeEnabled: false
+      AngularVelocity: 45
+      CollisionEnabled: false
+      CollisionPlaneY: 0
+      Bounce: 0.5
+      LifetimeLoss: 0
+      TextureSheetEnabled: false
+      AnimationCycles: 1
+      RandomStartFrame: false
+      Tiles: [1, 1]
+      RenderMode: 0
+      Blend: 0
+      Texture: Assets/Textures/glow.png
+      LengthScale: 2
+      SpeedScale: 0.1
+      SortByDistance: true
+      EmissiveIntensity: 1
+      Bursts:
+        []
+      ColorOverLifetime:
+        - [0, 1, 1, 1, 1]
+        - [1, 1, 1, 1, 1]
+      SizeOverLifetime:
+        - [0, 1]
+        - [1, 1]
+  - Entity: 3496373775140897811
+    TagComponent:
+      Tag: FX_Dash
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ParticleSystemComponent:
+      Duration: 5
+      Looping: false
+      Prewarm: false
+      PlayOnAwake: false
+      StopAction: 0
+      StartDelay: 0
+      StartLifetime: [0.2, 0.45]
+      StartSpeed: [0.5, 2.5]
+      StartSize: [0.2, 0.4]
+      StartRotation: [0, 0]
+      StartColorA: [1, 0.6, 0.2, 0.9]
+      StartColorB: [1, 0.9, 0.4, 0.8]
+      GravityModifier: 0
+      SimulationSpeed: 1
+      MaxParticles: 200
+      SimulationSpace: 1
+      EmissionEnabled: false
+      RateOverTime: 0
+      RateOverDistance: 0
+      ShapeEnabled: true
+      Radius: 0.3
+      Angle: 25
+      BoxSize: [1, 1, 1]
+      EmitFromShell: false
+      RandomizeDirection: 0
+      Shape: 0
+      VelocityEnabled: false
+      VelocityOverLifetime: [0, 0, 0]
+      OrbitalSpeed: 0
+      LimitVelocityEnabled: false
+      Drag: 3
+      SpeedLimit: 100
+      NoiseEnabled: false
+      NoiseStrength: 1
+      NoiseFrequency: 0.5
+      NoiseScrollSpeed: 0.5
+      ColorOverLifetimeEnabled: true
+      SizeOverLifetimeEnabled: false
+      RotationOverLifetimeEnabled: false
+      AngularVelocity: 45
+      CollisionEnabled: false
+      CollisionPlaneY: 0
+      Bounce: 0.5
+      LifetimeLoss: 0
+      TextureSheetEnabled: false
+      AnimationCycles: 1
+      RandomStartFrame: false
+      Tiles: [1, 1]
+      RenderMode: 0
+      Blend: 1
+      Texture: Assets/Textures/glow.png
+      LengthScale: 2
+      SpeedScale: 0.1
+      SortByDistance: true
+      EmissiveIntensity: 2
+      Bursts:
+        []
+      ColorOverLifetime:
+        - [0, 1, 1, 1, 1]
+        - [1, 1, 1, 1, 1]
+      SizeOverLifetime:
+        - [0, 1]
+        - [1, 1]
+  - Entity: 392833980437562964
+    TagComponent:
+      Tag: Game
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Scripts/EmberGame.cqs
+      ClassName: ""
+      Fields:
+        demo:
+          String: ifccffifffcffflcfcfflffefflcffcffffcflfceffffflffffcfccfcfffflffffffcffffffcffffeecceflffcfcccffffcffffffclffcfclffffflffffflffffflfffffcfccflfcfcclffffflffff
+        demoTime:
+          Float: 15.7167
+        levelId:
+          String: meadow2
+        levelName:
+          String: WINDY HILLS
+        mapData:
+          String: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111/00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111/00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111/00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111/00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111/00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111/00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111/00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111/00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111112222221111111111110000000000000000000000000000000000000111/00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111110000001111111111110000000000000000000000000000000000000111/00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111110000001111111111110000000000000000000000000000000000000111/00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111110000001111111111110000000000000000000000000000000000000111/00000000000000000333111100000000000000000000000000000000000000000000000000000000000000000000000111110000001111111111110000111111000000000011111111111111111111/00000000000000000000111100000000000000000000000000000000000000000000000000000000000000000000000111110000001111111111110000111111000000000011111111111111111111/00000000000000000000111100000000000000000000000000000000000044440000000000000000000000000000000111110000001111111111110000111111000000000011111111111111111111/00000000000003330000111100001111000000000011111111111111111111111110000001111100000111111111111111110000001111111111110000111111000000000011111111111111111111/00000000000000000000111100001111000000000011111111111111111111111110000001111100000111111111111111110000001111111111110000111111000000000011111111111111111111/00000000000000000000111100001111000000000011111111111111111111111110000001111100000111111111111111110000001111111111110000111111000000000011111111111111111111/11111111111111111111111100001111000000000011111111111111111111111110000001111100000111111111111111110000001111111111110000111111000000000011111111111111111111/11111111111111111111111100001111000000000011111111111111111111111110000001111100000111111111111111110000001111111111110000111111000000000011111111111111111111/11111111111111111111111100001111000000000011111111111111111111111110000001111100000111111111111111110000001111111111110000111111000000000011111111111111111111/11111111111111111111111100001111000000000011111111111111111111111110000001111100000111111111111111110000001111111111110000111111000000000011111111111111111111
+        nextLevel:
+          String: Cave1
+        worldName:
+          String: SUNNY MEADOW  1-2
+    AudioSourceComponent:
+      FilePath: Assets/Music/meadow.mp3
+      PlayOnAwake: true
+      Loop: true
+      Mute: false
+      Volume: 0.55
+      Pitch: 1
+      Pan: 0
+      Is3D: false
+      MinDistance: 1
+      MaxDistance: 100
+      DopplerLevel: 1
+      Attenuation: 1
+      RolloffFactor: 1
+      OutputGroup: Music
+      NextGraphNodeID: 1
+      NextGraphLinkID: 1
+      GraphInitialized: false
+      GraphNodes:
+        []
+      GraphLinks:
+        []
+  - Entity: 6689721430918352853
+    TagComponent:
+      Tag: HUD
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    CanvasComponent:
+      RenderMode: 0
+      PixelPerfect: false
+      SortOrder: 0
+    CanvasScalerComponent:
+      ScaleMode: 1
+      ScaleFactor: 1
+      ReferencePixelsPerUnit: 100
+      ReferenceResolution: [1920, 1080]
+      MatchWidthOrHeight: 0.5
+    GraphicRaycasterComponent:
+      IgnoreReversedGraphics: true
+      BlockingObjects: 0
+      BlockingMask: 4294967295
+  - Entity: 6914613074253327043
+    TagComponent:
+      Tag: HudRoot
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [0, 0]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.06, 0.03, 0.1, 0]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 2902633501785531289
+    TagComponent:
+      Tag: EmberIcon
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 1]
+      AnchorMax: [0, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [70, -60]
+      SizeDelta: [64, 64]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 1, 1, 1]
+      TexturePath: Assets/Textures/icon_ember.png
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 4608724054052527812
+    TagComponent:
+      Tag: EmberText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 1]
+      AnchorMax: [0, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [210, -60]
+      SizeDelta: [180, 64]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: 0
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 52
+      Color: [1, 0.96, 0.86, 1]
+      AlignH: 0
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 4158132798522344876
+    TagComponent:
+      Tag: ShardIcon0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 1]
+      AnchorMax: [0, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [350, -60]
+      SizeDelta: [60, 60]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 1, 1, 1]
+      TexturePath: Assets/Textures/icon_shard.png
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 6796120596251822535
+    TagComponent:
+      Tag: ShardIcon1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 1]
+      AnchorMax: [0, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [420, -60]
+      SizeDelta: [60, 60]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 1, 1, 1]
+      TexturePath: Assets/Textures/icon_shard.png
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 5705076273397400585
+    TagComponent:
+      Tag: ShardIcon2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 1]
+      AnchorMax: [0, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [490, -60]
+      SizeDelta: [60, 60]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 1, 1, 1]
+      TexturePath: Assets/Textures/icon_shard.png
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 4733829938712807946
+    TagComponent:
+      Tag: TimeText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [1, 1]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-180, -60]
+      SizeDelta: [320, 64]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: 0:00.00
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 48
+      Color: [1, 0.96, 0.86, 1]
+      AlignH: 2
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 5354388460796412985
+    TagComponent:
+      Tag: DeathIcon
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [1, 1]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-70, -140]
+      SizeDelta: [52, 52]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 1, 1, 1]
+      TexturePath: Assets/Textures/icon_death.png
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 6690907826509402619
+    TagComponent:
+      Tag: DeathText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [1, 1]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-190, -140]
+      SizeDelta: [160, 50]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: 0
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 38
+      Color: [0.85, 0.78, 0.92, 1]
+      AlignH: 2
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 6326332087418660706
+    TagComponent:
+      Tag: CardUI
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [0, 0]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.06, 0.03, 0.1, 0.55]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 0
+  - Entity: 6538193218955589352
+    TagComponent:
+      Tag: CardWorld
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 140]
+      SizeDelta: [1400, 70]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: WORLD
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 46
+      Color: [1, 0.74, 0.3, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 3943451955157694312
+    TagComponent:
+      Tag: CardName
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 40]
+      SizeDelta: [1600, 130]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: LEVEL
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 104
+      Color: [1, 0.96, 0.86, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 9099077753033944762
+    TagComponent:
+      Tag: CardHint
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -110]
+      SizeDelta: [1600, 50]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ARROWS / WASD  MOVE     SPACE  JUMP     X / SHIFT  DASH
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 28
+      Color: [0.85, 0.78, 0.92, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 825154054908529989
+    TagComponent:
+      Tag: PauseUI
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [0, 0]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.06, 0.03, 0.1, 0.7]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 0
+  - Entity: 1207007580622945831
+    TagComponent:
+      Tag: PauseTitle
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 250]
+      SizeDelta: [900, 120]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: PAUSED
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 96
+      Color: [1, 0.96, 0.86, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 63391904758530674
+    TagComponent:
+      Tag: ResumeBtn
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 80]
+      SizeDelta: [420, 70]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.16, 0.12, 0.22, 0.92]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 18
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 4702199632318447602
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: RESUME
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 30
+      Color: [1, 0.96, 0.88, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 1785122160801866828
+    TagComponent:
+      Tag: RestartBtn
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -10]
+      SizeDelta: [420, 70]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.16, 0.12, 0.22, 0.92]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 18
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 4607453824536664115
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: RESTART LEVEL
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 30
+      Color: [1, 0.96, 0.88, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 5404878331818229777
+    TagComponent:
+      Tag: QuitBtn
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -100]
+      SizeDelta: [420, 70]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.16, 0.12, 0.22, 0.92]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 18
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 1140163285334532503
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: LEVEL SELECT
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 30
+      Color: [1, 0.96, 0.88, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 5587155132799001038
+    TagComponent:
+      Tag: ResultUI
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [0, 0]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.06, 0.03, 0.1, 0.72]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 0
+  - Entity: 5439672161418121121
+    TagComponent:
+      Tag: ResultTitle
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 330]
+      SizeDelta: [1400, 120]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: LANTERN LIT!
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 96
+      Color: [1, 0.74, 0.3, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 7614112892616978402
+    TagComponent:
+      Tag: ResultMedal
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 225]
+      SizeDelta: [900, 70]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 52
+      Color: [1, 0.96, 0.86, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 936683932702642062
+    TagComponent:
+      Tag: ResultTimeL
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-200, 130]
+      SizeDelta: [360, 54]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: TIME
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 36
+      Color: [0.85, 0.78, 0.92, 1]
+      AlignH: 2
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 8284833265986826358
+    TagComponent:
+      Tag: ResultTime
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [210, 130]
+      SizeDelta: [360, 54]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 44
+      Color: [1, 0.96, 0.86, 1]
+      AlignH: 0
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 7735268710381140886
+    TagComponent:
+      Tag: ResultEmbersL
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-200, 70]
+      SizeDelta: [360, 54]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: EMBERS
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 36
+      Color: [0.85, 0.78, 0.92, 1]
+      AlignH: 2
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 3070692331177952738
+    TagComponent:
+      Tag: ResultEmbers
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [210, 70]
+      SizeDelta: [360, 54]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 44
+      Color: [1, 0.96, 0.86, 1]
+      AlignH: 0
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 8636216068426286481
+    TagComponent:
+      Tag: ResultShardsL
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-200, 10]
+      SizeDelta: [360, 54]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: SUN SHARDS
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 36
+      Color: [0.85, 0.78, 0.92, 1]
+      AlignH: 2
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 5076927350337879440
+    TagComponent:
+      Tag: ResultShards
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [210, 10]
+      SizeDelta: [360, 54]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 44
+      Color: [1, 0.96, 0.86, 1]
+      AlignH: 0
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 374978428054229214
+    TagComponent:
+      Tag: ResultDeathsL
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-200, -50]
+      SizeDelta: [360, 54]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: FALLS
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 36
+      Color: [0.85, 0.78, 0.92, 1]
+      AlignH: 2
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 6806989101141318139
+    TagComponent:
+      Tag: ResultDeaths
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [210, -50]
+      SizeDelta: [360, 54]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 44
+      Color: [1, 0.96, 0.86, 1]
+      AlignH: 0
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 2858201998262229692
+    TagComponent:
+      Tag: ResultBest
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -115]
+      SizeDelta: [1200, 50]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 32
+      Color: [1, 0.74, 0.3, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 6978191819273722153
+    TagComponent:
+      Tag: NextBtn
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -200]
+      SizeDelta: [420, 70]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.16, 0.12, 0.22, 0.92]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 18
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 8131060831423720254
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: NEXT LEVEL
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 30
+      Color: [1, 0.96, 0.88, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 5547817767985989064
+    TagComponent:
+      Tag: RetryBtn
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -285]
+      SizeDelta: [420, 70]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.16, 0.12, 0.22, 0.92]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 18
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 8010526567061565107
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: PLAY AGAIN
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 30
+      Color: [1, 0.96, 0.88, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 8578153037135816676
+    TagComponent:
+      Tag: MenuBtn
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -370]
+      SizeDelta: [420, 70]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.16, 0.12, 0.22, 0.92]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 18
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 5278391072353148376
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: LEVEL SELECT
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 30
+      Color: [1, 0.96, 0.88, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 8909215884413624559
+    TagComponent:
+      Tag: Fade
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [0, 0]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0, 0, 0, 1]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+Environment:
+  SkyboxExposure: 1
+  SkyboxRotation: 0
+  SkyboxTint: [1, 1, 1]
+  EnvironmentLightingSource: 0
+  AmbientColor: [0.3, 0.3, 0.3]
+  AmbientSkyColor: [0.5, 0.6, 0.7]
+  AmbientEquatorColor: [0.3, 0.3, 0.3]
+  AmbientGroundColor: [0.2, 0.15, 0.1]
+  AmbientIntensity: 1
+  FogEnabled: false
+  FogColor: [0.5, 0.6, 0.7]
+  FogDensity: 0.02
+  FogStart: 10
+  FogEnd: 100
+  SunSource: 0
+  HaloEnabled: false
+  HaloStrength: 0.5
+  FlareEnabled: false
+  FlareFadeSpeed: 3
+  FlareStrength: 1
+  FlareElements:
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.08
+      Offset: 0.3
+      Intensity: 1
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.06
+      Offset: 0.6
+      Intensity: 0.8
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.05
+      Offset: 0.9
+      Intensity: 0.6
+  ShadowEnabled: true
+  ShadowIntensity: 1
+  ReflectionSource: 0
+  ReflectionResolution: 128
+  ReflectionCompression: 0
+  ReflectionIntensityMultiplier: 1
+  ReflectionBounces: 1
+  BakedLightmapPath: ""
+  LightmapResolution: 40
+  MaxLightmapSize: 1024
+  MaxBounces: 2
+  DirectSamples: 32
+  IndirectSamples: 512
+  AmbientOcclusion: true
+  LightmapFiltering: 0
+  RenderSettings:
+    Shadows:
+      Enabled: true
+      Quality: 1
+      Resolution: 4096
+      Distance: 80
+      CascadeCount: 2
+      CascadeSplitLambda: 0.75
+      Strength: 1
+      Softness: 1
+      DepthBias: 0.005
+      NormalBias: 0.015
+      Color: [0, 0, 0]
+    Fog:
+      Enabled: false
+      Mode: 2
+      Color: [0.5, 0.6, 0.7]
+      Density: 0.02
+      Start: 10
+      End: 100
+      HeightFalloff: 0
+      BaseHeight: 0
+    Post:
+      Enabled: true
+      Tonemapper: 0
+      Exposure: 0
+      Bloom: true
+      BloomThreshold: 1.1
+      BloomKnee: 0.5
+      BloomIntensity: 0.35
+      BloomScatter: 0.7
+      BloomTint: [1, 1, 1]
+      AmbientOcclusion: false
+      AORadius: 0.6
+      AOIntensity: 1
+      AOPower: 1.5
+      ColorGrading: true
+      Contrast: 1
+      Saturation: 1
+      Temperature: 0
+      Tint: 0
+      Lift: [0, 0, 0]
+      Gamma: [1, 1, 1]
+      Gain: [1, 1, 1]
+      Vignette: true
+      VignetteIntensity: 0.18
+      VignetteSmoothness: 0.4
+      VignetteColor: [0, 0, 0]
+      ChromaticAberration: false
+      ChromaticAberrationIntensity: 0.3
+      FilmGrain: false
+      FilmGrainIntensity: 0.15
+      Sharpen: false
+      SharpenAmount: 0.3
+      AntiAliasing: 1
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: false
+      SSRIntensity: 1
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: false
+      SSGIIntensity: 1
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: false
+      CloudCoverage: 0.45
+      CloudDensity: 1
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: false
+      FocusDistance: 10
+      Aperture: 2.8
+      FocalLength: 50
+      DOFMaxBlur: 10
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
+    Environment:
+      Sky: 2
+      BackgroundColor: [0.53, 0.78, 0.98]
+      ImageBasedLighting: true
+      ReflectionIntensity: 1
+      SkyboxIntensity: 1
+      SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
+    Bake:
+      RealtimeGI: false
+      BakedGI: true
+      LightingMode: 0
+      Lightmapper: 1
+      ImportanceSampling: true
+      DirectSamples: 32
+      IndirectSamples: 512
+      EnvironmentSamples: 256
+      MaxBounces: 2
+      Filtering: 0
+      Packing: 0
+      Resolution: 40
+      MaxLightmapSize: 1024
+      UseMipmapLimits: true
+      Compression: 2
+      AmbientOcclusion: true
+      DirectionalMode: 0
+      AlbedoBoost: 1
+      IndirectIntensity: 1
+      RealtimeResolution: 20
+      RealtimeIndirectSamples: 256
+      RealtimeMaxBounces: 1
+      AutoGenerate: false
+      BakeOnSceneLoad: 0
+      APVFitToScene: true
+      APVOrigin: [-10, -1, -10]
+      APVSize: [20, 10, 20]
+      APVProbeOffset: [0, 0, 0]
+      APVMinSpacing: 1
+      APVMaxSpacing: 9
+      APVBakingMode: 0
+      APVDilation: false
+      APVVirtualOffset: true
+      APVValidityThreshold: 0.75
+      APVSearchDistanceMultiplier: 0.2
+      APVGeometryBias: 0.01
+      APVRayOriginBias: -0.001
+EditorCamera:
+  CameraMode: 0
+  Position: [-6.1237245, 4.999999, 6.123725]
+  Distance: 10
+  Pitch: 0.5235987
+  Yaw: 0.7853981
+  OrthographicSize: 10
+Hierarchy:
+  - Child: 5278391072353148376
+    Parent: 8578153037135816676
+  - Child: 8131060831423720254
+    Parent: 6978191819273722153
+  - Child: 5439672161418121121
+    Parent: 5587155132799001038
+  - Child: 7614112892616978402
+    Parent: 5587155132799001038
+  - Child: 936683932702642062
+    Parent: 5587155132799001038
+  - Child: 8284833265986826358
+    Parent: 5587155132799001038
+  - Child: 7735268710381140886
+    Parent: 5587155132799001038
+  - Child: 3070692331177952738
+    Parent: 5587155132799001038
+  - Child: 8636216068426286481
+    Parent: 5587155132799001038
+  - Child: 5076927350337879440
+    Parent: 5587155132799001038
+  - Child: 374978428054229214
+    Parent: 5587155132799001038
+  - Child: 6806989101141318139
+    Parent: 5587155132799001038
+  - Child: 2858201998262229692
+    Parent: 5587155132799001038
+  - Child: 6978191819273722153
+    Parent: 5587155132799001038
+  - Child: 5547817767985989064
+    Parent: 5587155132799001038
+  - Child: 8578153037135816676
+    Parent: 5587155132799001038
+  - Child: 1140163285334532503
+    Parent: 5404878331818229777
+  - Child: 4607453824536664115
+    Parent: 1785122160801866828
+  - Child: 4702199632318447602
+    Parent: 63391904758530674
+  - Child: 8010526567061565107
+    Parent: 5547817767985989064
+  - Child: 6538193218955589352
+    Parent: 6326332087418660706
+  - Child: 3943451955157694312
+    Parent: 6326332087418660706
+  - Child: 9099077753033944762
+    Parent: 6326332087418660706
+  - Child: 1207007580622945831
+    Parent: 825154054908529989
+  - Child: 63391904758530674
+    Parent: 825154054908529989
+  - Child: 1785122160801866828
+    Parent: 825154054908529989
+  - Child: 5404878331818229777
+    Parent: 825154054908529989
+  - Child: 2902633501785531289
+    Parent: 6914613074253327043
+  - Child: 4608724054052527812
+    Parent: 6914613074253327043
+  - Child: 4158132798522344876
+    Parent: 6914613074253327043
+  - Child: 6796120596251822535
+    Parent: 6914613074253327043
+  - Child: 5705076273397400585
+    Parent: 6914613074253327043
+  - Child: 4733829938712807946
+    Parent: 6914613074253327043
+  - Child: 5354388460796412985
+    Parent: 6914613074253327043
+  - Child: 6690907826509402619
+    Parent: 6914613074253327043
+  - Child: 6914613074253327043
+    Parent: 6689721430918352853
+  - Child: 6326332087418660706
+    Parent: 6689721430918352853
+  - Child: 825154054908529989
+    Parent: 6689721430918352853
+  - Child: 5587155132799001038
+    Parent: 6689721430918352853
+  - Child: 8909215884413624559
+    Parent: 6689721430918352853

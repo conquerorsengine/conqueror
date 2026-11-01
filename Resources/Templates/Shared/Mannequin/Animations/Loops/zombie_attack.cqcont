@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: zombie_attack
+      States:
+        - Name: zombie_attack
+          ClipIndex: 46
+          ClipName: zombie_attack
+  Parameters: []

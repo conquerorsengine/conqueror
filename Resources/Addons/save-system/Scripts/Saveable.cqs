@@ -1,0 +1,13 @@
+using nativebridge;
+
+// Kaydedilecek nesneyi işaretler. saveId boşsa varlığın adı kullanılır.
+// fields: aynı varlıktaki betiklerin kaydedilecek alanları (virgülle: "health,ammo").
+script Saveable : ConquerorScript
+{
+    public string saveId = "";
+    public bool saveTransform = true;
+    public bool saveActive = true;
+    public string fields = "";
+
+    func Id() { return saveId != "" ? saveId : GetEntityName(); }
+}

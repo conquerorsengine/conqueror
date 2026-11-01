@@ -1,0 +1,29 @@
+Id: conqueror.weapon-system
+Name: Weapon System
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Hitscan and projectile weapons with fire rate, semi/full auto, magazines, reserve ammo and
+  timed reloads, spread, impact force on rigidbodies, muzzle flash and impact particles.
+  Damage is delivered through the Health component's "Damage" message, so any script can
+  react. Projectiles sweep each frame so fast shots never pass through thin walls.
+Category: Gameplay
+Icon: gun
+Tags: [weapon, shooting, fps, combat, projectile, hitscan]
+Dependencies: [conqueror.health-system]
+Components:
+  - Scripts/Weapon.cqs
+  - Scripts/Projectile.cqs
+Inserts:
+  - Name: Hitscan Rifle
+    Icon: gun
+    Prefab: Prefabs/HitscanRifle.cqprefab
+    Tooltip: Automatic hitscan weapon (parent it to your camera)
+  - Name: Projectile Launcher
+    Icon: rocket
+    Prefab: Prefabs/ProjectileLauncher.cqprefab
+    Tooltip: Fires physical projectiles
+  - Name: Shooting Target
+    Icon: bullseye
+    Prefab: Prefabs/ShootingTarget.cqprefab
+    Tooltip: Target with Health that respawns

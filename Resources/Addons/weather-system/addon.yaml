@@ -1,0 +1,19 @@
+Id: conqueror.weather-system
+Name: Weather System
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Dynamic weather around the camera: clear, cloudy, rain, storm, snow and fog presets with
+  smooth transitions of particle rates, fog density and sun intensity, lightning flashes with
+  random intervals during storms and an optional automatic cycle. Rain and snow follow the
+  active camera so the effect is always around the player.
+Category: Environment
+Icon: cloud-rain
+Tags: [weather, rain, snow, fog, storm, lightning, environment]
+Components:
+  - Scripts/Weather.cqs
+Inserts:
+  - Name: Weather
+    Icon: cloud-showers-heavy
+    Prefab: Prefabs/Weather.cqprefab
+    Tooltip: Weather controller with rain and snow emitters

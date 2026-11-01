@@ -1,0 +1,94 @@
+using nativebridge;
+
+// Görev günlüğü (sahnede bir tane, adı "Quest Log"). Görevler: {id, title, goal, progress, state, next}
+// state: 1 etkin, 2 tamamlandı. API: StartQuest(id, title, goal, next), AddProgress(id, n), CompleteQuest(id),
+// IsActive(id), IsComplete(id), GetProgress(id). trackerTextName adlı UI Text'e etkin görevler yazılır.
+script QuestLog : ConquerorScript
+{
+    public string trackerTextName = "Quest Tracker";
+    public string header = "Quests";
+    public bool showCompleted = false;
+
+    // Çalışma zamanı bilgisi
+    public int activeCount = 0;
+    public int completedCount = 0;
+    public string trackerText = "";
+    public string lastCompleted = "";
+
+    private var quests = [];
+
+    func Find(id)
+    {
+        for (var q in quests) { if (q.id == id) { return q; } }
+        return null;
+    }
+
+    func StartQuest(id, title = "", goal = 1, next = "")
+    {
+        var q = Find(id);
+        if (q != null) { return false; }
+        quests.Add({id: id, title: title == "" ? id : title, goal: int(MathMax(1, goal)), progress: 0, state: 1, next: next});
+        BroadcastMessage("OnQuestStarted", id);
+        Refresh();
+        return true;
+    }
+
+    func AddProgress(id, amount = 1)
+    {
+        var q = Find(id);
+        if (q == null || q.state != 1) { return false; }
+        q.progress = int(MathMin(q.goal, q.progress + amount));
+        if (q.progress >= q.goal) { CompleteQuest(id); }
+        else { Refresh(); }
+        return true;
+    }
+
+    func CompleteQuest(id)
+    {
+        var q = Find(id);
+        if (q == null || q.state == 2) { return false; }
+        q.state = 2;
+        q.progress = q.goal;
+        lastCompleted = id;
+        BroadcastMessage("OnQuestCompleted", id);
+        Refresh();
+        return true;
+    }
+
+    func IsActive(id) { var q = Find(id); return q != null && q.state == 1; }
+    func IsComplete(id) { var q = Find(id); return q != null && q.state == 2; }
+    func GetProgress(id) { var q = Find(id); return q != null ? q.progress : 0; }
+
+    func Refresh()
+    {
+        activeCount = 0;
+        completedCount = 0;
+        var text = header;
+        for (var q in quests)
+        {
+            if (q.state == 1) { activeCount++; }
+            if (q.state == 2) { completedCount++; }
+            if (q.state == 1 || (showCompleted && q.state == 2))
+            {
+                var mark = q.state == 2 ? " (done)" : (q.goal > 1 ? " (" + str(q.progress) + "/" + str(q.goal) + ")" : "");
+                text = text + "\n- " + q.title + mark;
+            }
+        }
+        trackerText = text;
+        var t = FindEntity(trackerTextName);
+        if (t != null) { UISetText(t, text); }
+    }
+
+    // Zincirleme görevler: bir görev bitince "next" tanımlıysa onu veren QuestGiver'a haber verilir
+    func Update(dt)
+    {
+        for (var q in quests)
+        {
+            if (q.state == 2 && q.next != "" && Find(q.next) == null)
+            {
+                BroadcastMessage("OnQuestChainReady", q.next);
+                q.next = "";
+            }
+        }
+    }
+}

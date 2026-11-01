@@ -1246,8 +1246,13 @@ static void setCursorImage(_GLFWwindow* window,
         if (!buffer)
             return;
 
-        timer.it_value.tv_sec = image->delay / 1000;
-        timer.it_value.tv_nsec = (image->delay % 1000) * 1000000;
+        // Conqueror: only animated cursors need the frame timer. Static theme cursors also carry a delay
+        // (Adwaita: 50 ms), which used to re-send the cursor image 20 times a second forever.
+        if (wlCursor->image_count > 1)
+        {
+            timer.it_value.tv_sec = image->delay / 1000;
+            timer.it_value.tv_nsec = (image->delay % 1000) * 1000000;
+        }
         timerfd_settime(_glfw.wl.cursorTimerfd, 0, &timer, NULL);
 
         cursorWayland->width = image->width;
@@ -1272,6 +1277,11 @@ static void incrementCursorImage(_GLFWwindow* window)
     _GLFWcursor* cursor;
 
     if (!window || !window->wl.hovered)
+        return;
+
+    // Conqueror: a pending animation tick must never show a hidden or disabled (locked) cursor again;
+    // the compositor would draw it frozen at the lock position
+    if (window->cursorMode != GLFW_CURSOR_NORMAL && window->cursorMode != GLFW_CURSOR_CAPTURED)
         return;
 
     cursor = window->wl.currentCursor;
@@ -2724,6 +2734,17 @@ void _glfwGetCursorPosWayland(_GLFWwindow* window, double* xpos, double* ypos)
 
 void _glfwSetCursorPosWayland(_GLFWwindow* window, double x, double y)
 {
+    // Conqueror: while the pointer is locked, the position becomes the lock's cursor position hint;
+    // the compositor shows the cursor there once the lock is released (double-buffered: applied on commit)
+    if (window->wl.lockedPointer)
+    {
+        zwp_locked_pointer_v1_set_cursor_position_hint(window->wl.lockedPointer,
+                                                       wl_fixed_from_double(x),
+                                                       wl_fixed_from_double(y));
+        wl_surface_commit(window->wl.surface);
+        return;
+    }
+
     _glfwInputError(GLFW_FEATURE_UNAVAILABLE,
                     "Wayland: The platform does not support setting the cursor position");
 }
@@ -3134,6 +3155,9 @@ void _glfwSetCursorWayland(_GLFWwindow* window, _GLFWcursor* cursor)
     else if (window->cursorMode == GLFW_CURSOR_HIDDEN ||
              window->cursorMode == GLFW_CURSOR_DISABLED)
     {
+        // Conqueror: stop any cursor animation before hiding
+        const struct itimerspec stop = {0};
+        timerfd_settime(_glfw.wl.cursorTimerfd, 0, &stop, NULL);
         wl_pointer_set_cursor(_glfw.wl.pointer, _glfw.wl.pointerEnterSerial, NULL, 0, 0);
     }
 }

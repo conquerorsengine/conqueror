@@ -1,0 +1,90 @@
+using nativebridge;
+
+// Ölçüm: 1 seçim -> sınır boyutu, 2 seçim -> mesafe ve eksen farkları, 3+ -> sıralı yol uzunluğu (ve 3'te açı).
+script MeasureTool : ConquerorScript
+{
+    public bool drawLines = true;
+
+    // Bilgi
+    public int selected = 0;
+    public float distance = 0.0;
+    public float dx = 0.0;
+    public float dy = 0.0;
+    public float dz = 0.0;
+    public float sizeX = 0.0;
+    public float sizeY = 0.0;
+    public float sizeZ = 0.0;
+    public float pathLength = 0.0;
+    public float angle = 0.0;
+
+    func OnLoad()
+    {
+        EditorAddPanel("Measure", "DrawPanel");
+        EditorAddMenuItem("Measure/Measure Selection", "Measure");
+    }
+
+    func Measure()
+    {
+        var sel = EditorGetSelection();
+        selected = len(sel);
+        distance = 0; dx = 0; dy = 0; dz = 0; pathLength = 0; angle = 0;
+        sizeX = 0; sizeY = 0; sizeZ = 0;
+        if (selected == 1)
+        {
+            var b = EntityGetBounds(sel[0]);
+            if (b != null) { sizeX = b.size.x; sizeY = b.size.y; sizeZ = b.size.z; }
+        }
+        if (selected >= 2)
+        {
+            var a = EntityGetWorldPosition(sel[0]);
+            var c = EntityGetWorldPosition(sel[1]);
+            dx = c.x - a.x; dy = c.y - a.y; dz = c.z - a.z;
+            distance = MathSqrt(dx * dx + dy * dy + dz * dz);
+            for (var i = 1; i < selected; i++)
+            {
+                var p = EntityGetWorldPosition(sel[i - 1]);
+                var q = EntityGetWorldPosition(sel[i]);
+                pathLength += MathSqrt((q.x - p.x) * (q.x - p.x) + (q.y - p.y) * (q.y - p.y) + (q.z - p.z) * (q.z - p.z));
+            }
+        }
+        if (selected == 3)
+        {
+            var p0 = EntityGetWorldPosition(sel[0]);
+            var p1 = EntityGetWorldPosition(sel[1]);
+            var p2 = EntityGetWorldPosition(sel[2]);
+            var ux = p0.x - p1.x; var uy = p0.y - p1.y; var uz = p0.z - p1.z;
+            var vx = p2.x - p1.x; var vy = p2.y - p1.y; var vz = p2.z - p1.z;
+            var lu = MathSqrt(ux * ux + uy * uy + uz * uz);
+            var lv = MathSqrt(vx * vx + vy * vy + vz * vz);
+            if (lu > 0 && lv > 0) { angle = MathRadToDeg(MathAcos(MathClamp((ux * vx + uy * vy + uz * vz) / (lu * lv), -1.0, 1.0))); }
+        }
+    }
+
+    func OnEditorUpdate(dt)
+    {
+        Measure();
+        if (!drawLines) { return; }
+        var sel = EditorGetSelection();
+        for (var i = 1; i < len(sel); i++)
+        {
+            DebugDrawLineC(EntityGetWorldPosition(sel[i - 1]), EntityGetWorldPosition(sel[i]), 0.0, {r: 1.0, g: 0.85, b: 0.2, a: 1.0});
+        }
+    }
+
+    func Fmt(v) { return str(MathRound(v * 1000.0) / 1000.0); }
+
+    func DrawPanel()
+    {
+        Measure();
+        if (selected == 0) { GuiTextDisabled("Select one object for its size, two for distance, three for an angle."); return; }
+        if (selected == 1) { GuiText("Size: " + Fmt(sizeX) + " x " + Fmt(sizeY) + " x " + Fmt(sizeZ) + " m"); }
+        if (selected >= 2)
+        {
+            GuiText("Distance: " + Fmt(distance) + " m");
+            GuiTextDisabled("dX " + Fmt(dx) + "   dY " + Fmt(dy) + "   dZ " + Fmt(dz));
+        }
+        if (selected > 2) { GuiText("Path length: " + Fmt(pathLength) + " m"); }
+        if (selected == 3) { GuiText("Angle at 2nd point: " + Fmt(angle) + " deg"); }
+        drawLines = GuiCheckbox("Draw Lines", drawLines);
+    }
+}

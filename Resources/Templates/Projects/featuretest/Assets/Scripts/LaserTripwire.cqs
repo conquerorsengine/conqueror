@@ -1,0 +1,74 @@
+using nativebridge;
+
+// Lazer: her karede +X yönünde Raycast; ışın (Line Renderer) çarptığı yere kadar çizilir, uçta parlak nokta.
+// Işın alıcıya ulaşıyorsa lamba yeşil; araya bir şey girerse kırmızı ve alarm sesi.
+script LaserTripwire : ConquerorScript
+{
+    public float range = 12.0;
+    public string beamName = "Laser Beam";
+    public string dotName = "Laser Dot";
+    public string receiverName = "Laser Receiver";
+    public string lampName = "Alarm Lamp";
+    public string alarmSound = "Assets/Audio/alarm_beep.wav";
+    [Header("State")]
+    public bool blocked = false;
+    public int alarms = 0;
+    public string hitName = "";
+
+    private var beam = -1;
+    private var dot = -1;
+    private var receiver = -1;
+    private var lamp = -1;
+    private int state = -1;
+
+    func Start()
+    {
+        beam = FindEntity(beamName);
+        dot = FindEntity(dotName);
+        receiver = FindEntity(receiverName);
+        lamp = FindEntity(lampName);
+    }
+
+    func Update(dt)
+    {
+        var p = EntityGetWorldPosition(GetEntityId());
+        var f = EntityGetRight(GetEntityId());
+        var ox = p.x + f.x * 0.16;
+        var oy = p.y + f.y * 0.16;
+        var oz = p.z + f.z * 0.16;
+        var hit = Raycast(ox, oy, oz, f.x, f.y, f.z, range, -1, true);
+        var ex = ox + f.x * range;
+        var ey = oy + f.y * range;
+        var ez = oz + f.z * range;
+        var hitReceiver = false;
+        hitName = "";
+        if (hit != null)
+        {
+            ex = hit.point.x;
+            ey = hit.point.y;
+            ez = hit.point.z;
+            hitName = hit.name;
+            hitReceiver = hit.entity == receiver;
+        }
+        if (beam != null && beam >= 0) { EntitySetComponentField(beam, "LineRenderer", "Positions", [{x: ox, y: oy, z: oz}, {x: ex, y: ey, z: ez}]); }
+        if (dot != null && dot >= 0) { EntitySetPosition(dot, ex - f.x * 0.02, ey - f.y * 0.02, ez - f.z * 0.02); }
+        var now = hitReceiver ? 0 : 1;
+        if (now != state)
+        {
+            state = now;
+            blocked = now == 1;
+            if (lamp != null && lamp >= 0)
+            {
+                var c = blocked ? {r: 1.0, g: 0.08, b: 0.05} : {r: 0.1, g: 1.0, b: 0.3};
+                EntitySetComponentField(lamp, "MeshRenderer", "EmissionColor", c);
+                EntitySetColor(lamp, c.r, c.g, c.b, 1.0);
+                if (EntityHasComponent(lamp, "PointLight")) { EntitySetComponentField(lamp, "PointLight", "Color", c); }
+            }
+            if (blocked)
+            {
+                alarms++;
+                AudioPlayOneShotAt(alarmSound, ex, ey, ez, 0.5);
+            }
+        }
+    }
+}

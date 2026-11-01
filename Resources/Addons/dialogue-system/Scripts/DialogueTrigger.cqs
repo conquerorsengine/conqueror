@@ -1,0 +1,48 @@
+using nativebridge;
+
+// NPC'ye eklenir: oyuncu tetikleyici alana girince (requireKey açıksa E'ye basınca) konuşmayı başlatır.
+script DialogueTrigger : ConquerorScript
+{
+    public string runnerName = "Dialogue Box";
+    public string dialogueFile = "";
+    public string startLabel = "start";
+    public bool requireKey = true;
+    public bool once = false;
+    public string requiredTag = "";
+
+    // Çalışma zamanı bilgisi
+    public bool inRange = false;
+    public int conversations = 0;
+
+    private var visitor = null;
+
+    func OnTriggerEnter(other, name)
+    {
+        if (!EntityHasComponent(other, "CharacterController")) { return; }
+        if (requiredTag != "" && EntityGetTag(other) != requiredTag) { return; }
+        inRange = true;
+        visitor = other;
+        if (!requireKey) { Talk(); }
+    }
+
+    func OnTriggerExit(other, name)
+    {
+        if (other == visitor) { inRange = false; visitor = null; }
+    }
+
+    func Update(dt)
+    {
+        if (inRange && requireKey && IsKeyDown(Key.E)) { Talk(); }
+    }
+
+    func Talk()
+    {
+        if (once && conversations > 0) { return; }
+        var runner = FindEntity(runnerName);
+        if (runner == null || !HasScript(runner, "DialogueRunner")) { LogWarn("DialogueTrigger: no DialogueRunner named '" + runnerName + "'"); return; }
+        if (GetScriptField(runner, "active")) { return; }
+        if (dialogueFile != "") { SendMessage(runner, "SetSource", dialogueFile, ""); }
+        SendMessage(runner, "StartDialogue", startLabel);
+        conversations++;
+    }
+}

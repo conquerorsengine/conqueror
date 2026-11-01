@@ -8,6 +8,7 @@
 #include <vector>
 #include <string>
 #include <functional>
+#include <atomic>
 
 namespace Conqueror
 {
@@ -16,7 +17,7 @@ namespace Conqueror
     // Spherical Harmonics L2 - 9 coefficients per channel
     struct SHL2Coefficients
     {
-        glm::vec3 Coeffs[9]; // L00, L1-1, L10, L11, L2-2, L2-1, L20, L21, L22
+        glm::vec3 Coeffs[9]{}; // L00, L1-1, L10, L11, L2-2, L2-1, L20, L21, L22
 
         SHL2Coefficients() { for (int i = 0; i < 9; i++) Coeffs[i] = glm::vec3(0.0f); }
 
@@ -95,6 +96,8 @@ namespace Conqueror
         ~AdaptiveProbeVolume() = default;
 
         void Bake(Scene* scene);
+        void RequestCancel() { m_CancelRequested.store(true); }
+        bool WasCancelled() const { return m_Cancelled; }
         void SetProgressCallback(APVBakeProgressCallback callback) { m_ProgressCallback = callback; }
 
         // Brick hierarchy
@@ -141,6 +144,9 @@ namespace Conqueror
         bool IsProbeValid(const APVProbe& probe) const;
 
         void ReportProgress(float progress, const std::string& step);
+        void BakeInternal(Scene* scene);
+        std::atomic<bool> m_CancelRequested{ false };
+        bool m_Cancelled = false;
 
         AdaptiveProbeVolumeSettings m_Settings;
         ProbeInvaliditySettings m_InvaliditySettings;

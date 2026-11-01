@@ -1,0 +1,33 @@
+using nativebridge;
+
+// Işık titremesi (ateş, meşale): Point / Spot Light şiddeti gürültüyle oynar. fadeOut > 0 ise söner (patlama flaşı).
+script FlickerLight : ConquerorScript
+{
+    public float baseIntensity = 2.0;
+    public float flicker = 0.35;
+    public float speed = 9.0;
+    public float fadeOut = 0.0;
+    public int seed = 1;
+
+    // Çalışma zamanı bilgisi
+    public float intensity = 0.0;
+
+    private float t = 0.0;
+    private string lightType = "";
+
+    func Start()
+    {
+        lightType = HasComponent("PointLight") ? "PointLight" : (HasComponent("SpotLight") ? "SpotLight" : "");
+        t = seed * 13.7;
+    }
+
+    func Update(dt)
+    {
+        if (lightType == "") { return; }
+        t += dt;
+        var n = NoisePerlin2D(t * speed, seed * 3.1, seed) * 0.5 + NoisePerlin2D(t * speed * 2.3, seed * 7.7, seed) * 0.25;
+        var k = fadeOut > 0 ? MathMax(0.0, 1.0 - t / fadeOut) : 1.0;
+        intensity = MathMax(0.0, baseIntensity * (1.0 + n * flicker * 2.0) * k);
+        SetComponentField(lightType, "Intensity", intensity);
+    }
+}

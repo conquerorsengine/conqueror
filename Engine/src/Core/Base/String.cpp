@@ -8,14 +8,14 @@ namespace Conqueror::StringUtils
     std::string ToLower(const std::string& str)
     {
         std::string result = str;
-        std::transform(result.begin(), result.end(), result.begin(), ::tolower);
+        std::transform(result.begin(), result.end(), result.begin(), [](char c) { return (c >= 'A' && c <= 'Z') ? (char)(c + 32) : c; });
         return result;
     }
 
     std::string ToUpper(const std::string& str)
     {
         std::string result = str;
-        std::transform(result.begin(), result.end(), result.begin(), ::toupper);
+        std::transform(result.begin(), result.end(), result.begin(), [](char c) { return (c >= 'a' && c <= 'z') ? (char)(c - 32) : c; });
         return result;
     }
 

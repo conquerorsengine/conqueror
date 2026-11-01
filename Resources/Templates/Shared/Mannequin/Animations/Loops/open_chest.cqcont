@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: open_chest
+      States:
+        - Name: open_chest
+          ClipIndex: 49
+          ClipName: open_chest
+  Parameters: []

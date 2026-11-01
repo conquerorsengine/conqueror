@@ -1,0 +1,180 @@
+using nativebridge;
+
+// Unreal Top Down şablonu karşılığı: farenin altındaki zemine sol tıkla / basılı tut = oraya yürü (NavMesh yolu),
+// kısa tıkta hedefte tıklama efekti; WASD ile doğrudan yürüme; imlecin altında zemine yansıyan halka (Decal).
+// Kamera: sabit açılı yüksek kamera, karakteri yumuşakça izler, tekerlek ile yakınlaş. Manken animasyonu için
+// MannequinAnimation'ın okuduğu alanları (speed, grounded, crouching, aim01, jumps, dead) günceller.
+script TopDownController : ConquerorScript
+{
+    public float walkSpeed = 3.0;
+    public float runSpeed = 5.6;
+    public float acceleration = 12.0;
+    public float turnRate = 12.0;
+    public float gravity = 20.0;
+    public float cameraPitch = 58.0;
+    public float cameraYaw = 0.0;
+    public float cameraDistance = 11.0;
+    public float minDistance = 8.0;
+    public float maxDistance = 26.0;
+    public string cameraName = "Top Down Camera";
+    public string cursorName = "Cursor Decal";
+    public string clickFxName = "FX Click";
+
+    [Header("State (MannequinAnimation)")]
+    public float speed = 0.0;
+    private float turnSign = 0.0;
+    public bool grounded = true;
+    public bool crouching = false;
+    public float aim01 = 0.0;
+    public int jumps = 0;
+    public bool dead = false;
+    public bool moving = false;
+
+    private var path = [];
+    private int pathIndex = 0;
+    private float vx = 0.0;
+    private float vz = 0.0;
+    private float vy = 0.0;
+    private float yaw = 0.0;
+    private float holdTime = 0.0;
+    private float repath = 0.0;
+    private var goal = null;
+    private var cam = -1;
+    private var cursor = -1;
+    private float camDist = 15.0;
+
+    func Start()
+    {
+        yaw = GetRotation().y;
+        cam = FindEntity(cameraName);
+        cursor = FindEntity(cursorName);
+        camDist = cameraDistance;
+        SetCursorMode(0);
+    }
+
+    // Test / yapay zekâ: belirli noktaya yürü
+    func MoveTo(x, y, z)
+    {
+        var p = EntityGetWorldPosition(GetEntityId());
+        goal = NavSamplePosition(x, y, z, 3.0);
+        if (goal == null) { goal = {x: x, y: y, z: z}; }
+        path = NavFindPath(p.x, p.y - 0.9, p.z, goal.x, goal.y, goal.z);
+        if (path.Count == 0) { path = [goal]; }
+        pathIndex = 0;
+    }
+
+    func GroundUnderMouse()
+    {
+        var mp = GetMousePosition();
+        var hit = RaycastFromScreen(mp.x, mp.y, 500.0);
+        if (hit != null) { return hit.point; }
+        return ScreenToGroundPoint(mp.x, mp.y, 0.0);
+    }
+
+    func Update(dt)
+    {
+        if (dt > 0.1) { dt = 0.1; }
+        var p = EntityGetWorldPosition(GetEntityId());
+        var under = UIIsPointerOver() ? null : GroundUnderMouse();
+        // İmleç halkası: farenin altındaki zemin
+        if (cursor != null && cursor >= 0)
+        {
+            if (under != null)
+            {
+                EntitySetActive(cursor, true);
+                EntitySetWorldPosition(cursor, under.x, under.y + 0.5, under.z);
+            }
+            else { EntitySetActive(cursor, false); }
+        }
+        // Tıkla / basılı tut: hedef (basılıyken sürekli güncellenir, Unreal gibi)
+        if (IsMouseButtonPressed(0) && under != null)
+        {
+            holdTime += dt;
+            repath -= dt;
+            if (IsMouseButtonDown(0) || repath <= 0.0)
+            {
+                MoveTo(under.x, under.y, under.z);
+                repath = 0.15;
+            }
+        }
+        else if (holdTime > 0.0)
+        {
+            // Kısa tık: hedefte efekt
+            if (holdTime < 0.3 && goal != null) { ParticleEmitAt(clickFxName, goal.x, goal.y + 0.05, goal.z, 16); }
+            holdTime = 0.0;
+        }
+
+        // WASD: kamera yönüne göre doğrudan yürüme (yolu iptal eder)
+        var ix = 0.0;
+        var iz = 0.0;
+        if (IsKeyPressed("W") || IsKeyPressed("Up")) { iz += 1.0; }
+        if (IsKeyPressed("S") || IsKeyPressed("Down")) { iz -= 1.0; }
+        if (IsKeyPressed("D") || IsKeyPressed("Right")) { ix += 1.0; }
+        if (IsKeyPressed("A") || IsKeyPressed("Left")) { ix -= 1.0; }
+        var mx = 0.0;
+        var mz = 0.0;
+        var cr = MathDegToRad(cameraYaw);
+        if (MathAbs(ix) + MathAbs(iz) > 0.0)
+        {
+            path = [];
+            var fx = -MathSin(cr);
+            var fz = -MathCos(cr);
+            mx = fx * iz + MathCos(cr) * ix;
+            mz = fz * iz - MathSin(cr) * ix;
+            var l = MathSqrt(mx * mx + mz * mz);
+            mx /= l;
+            mz /= l;
+        }
+        else if (pathIndex < path.Count)
+        {
+            var wp = path[pathIndex];
+            var dx = wp.x - p.x;
+            var dz = wp.z - p.z;
+            var d = MathSqrt(dx * dx + dz * dz);
+            var last = pathIndex == path.Count - 1;
+            if (d < (last ? 0.15 : 0.45)) { pathIndex += 1; }
+            else
+            {
+                mx = dx / d;
+                mz = dz / d;
+                // Varışta yavaşla
+                if (last && d < 1.2) { mx *= d / 1.2 + 0.15; mz *= d / 1.2 + 0.15; }
+            }
+        }
+        var want = IsKeyPressed("LeftShift") ? runSpeed : walkSpeed;
+        var k = 1.0 - MathExp(-acceleration * dt);
+        vx += (mx * want - vx) * k;
+        vz += (mz * want - vz) * k;
+        speed = MathSqrt(vx * vx + vz * vz);
+        moving = speed > 0.1;
+        if (speed > 0.2)
+        {
+            var target = MathRadToDeg(MathAtan2(vx, vz));
+            // Ters yöne ani dönüşte fark ±180 arasında gidip gelir (dönüş yönü her kare değişip titrer): başlayan dönüş
+            // yönü korunur (MannequinCharacter / Unreal Orient Rotation To Movement gibi tek yönde döner)
+            var diff = MathNormalizeAngle(target - yaw);
+            if (MathAbs(diff) > 150.0 && turnSign != 0.0) { diff = turnSign * MathAbs(diff); }
+            else if (MathAbs(diff) > 1.0) { turnSign = diff > 0.0 ? 1.0 : -1.0; }
+            yaw = MathNormalizeAngle(yaw + diff * (1.0 - MathExp(-turnRate * dt)));
+        }
+        SetRotation(0, yaw, 0);
+        grounded = CharacterIsGrounded();
+        vy = grounded ? -2.0 : vy - gravity * dt;
+        CharacterMove(vx * dt, vy * dt, vz * dt);
+
+        // Kamera
+        var wheel = UIIsPointerOver() ? 0.0 : GetMouseScrollDelta();
+        if (wheel != 0.0) { camDist = MathClamp(camDist * (1.0 - wheel * 0.1), minDistance, maxDistance); }
+        if (cam != null && cam >= 0)
+        {
+            var pr = MathDegToRad(cameraPitch);
+            var tx = p.x + MathSin(cr) * MathCos(pr) * camDist;
+            var ty = p.y + MathSin(pr) * camDist;
+            var tz = p.z + MathCos(cr) * MathCos(pr) * camDist;
+            var c = EntityGetWorldPosition(cam);
+            var kc = 1.0 - MathExp(-6.0 * dt);
+            EntitySetWorldPosition(cam, MathLerp(c.x, tx, kc), MathLerp(c.y, ty, kc), MathLerp(c.z, tz, kc));
+            EntitySetRotation(cam, -cameraPitch, cameraYaw, 0);
+        }
+    }
+}

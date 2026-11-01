@@ -1,0 +1,10 @@
+AnimMontage:
+  Name: Interact
+  ClipName: interact
+  ClipIndex: 21
+  Rate: 1.0
+  BlendIn: 0.2
+  BlendOut: 0.25
+  FromBone: ""
+  Sections: []
+  Notifies: []

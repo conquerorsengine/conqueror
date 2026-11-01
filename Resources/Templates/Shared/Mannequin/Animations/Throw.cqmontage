@@ -1,0 +1,10 @@
+AnimMontage:
+  Name: Throw
+  ClipName: throw
+  ClipIndex: 42
+  Rate: 1.1
+  BlendIn: 0.12
+  BlendOut: 0.2
+  FromBone: "spine_01"
+  Sections: []
+  Notifies: []

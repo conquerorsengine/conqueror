@@ -1,0 +1,131 @@
+using nativebridge;
+
+// Görüş sensörü: targetTag etiketli nesneleri menzil + görüş açısı + engelsiz ışınla izler.
+// Yeni görülen / kaybedilen her nesne için aynı varlığa OnTargetSeen(e) / OnTargetLost(e) iletir.
+// Göz: "eyeName" adlı çocuk (yoksa bu varlık); bakış yönü gözün ileri (-Z) yönüdür.
+script VisionSensor : ConquerorScript
+{
+    public string targetTag = "Player";
+    public float range = 12.0;
+    public float angle = 70.0;
+    public float targetHeight = 1.0;
+    public float checkInterval = 0.1;
+    public string eyeName = "";
+    public bool drawCone = false;
+
+    // Çalışma zamanı bilgisi
+    public int visibleCount = 0;
+    public string closestName = "";
+    public float closestDistance = 0.0;
+    public int sightings = 0;
+
+    private var visible = [];
+    private float timer = 0.0;
+    private var eye = null;
+
+    func Start()
+    {
+        eye = eyeName != "" ? EntityFindChild(GetEntityId(), eyeName) : null;
+        if (eye == null || eye < 0) { eye = GetEntityId(); }
+    }
+
+    func IsMine(e)
+    {
+        var cur = e;
+        for (var i = 0; i < 16; i++)
+        {
+            if (cur == null || cur < 0) { return false; }
+            if (cur == GetEntityId()) { return true; }
+            cur = EntityGetParent(cur);
+        }
+        return false;
+    }
+
+    func IsOrChildOf(e, root)
+    {
+        var cur = e;
+        for (var i = 0; i < 16; i++)
+        {
+            if (cur == null || cur < 0) { return false; }
+            if (cur == root) { return true; }
+            cur = EntityGetParent(cur);
+        }
+        return false;
+    }
+
+    func CanSee(e)
+    {
+        var o = EntityGetWorldPosition(eye);
+        var f = EntityGetForward(eye);
+        var t = EntityGetWorldPosition(e);
+        var dx = t.x - o.x;
+        var dy = t.y + targetHeight - o.y;
+        var dz = t.z - o.z;
+        var d = MathSqrt(dx * dx + dy * dy + dz * dz);
+        if (d > range || d < 0.001) { return false; }
+        var cosA = (f.x * dx + f.y * dy + f.z * dz) / d;
+        if (cosA < MathCos(MathDegToRad(angle * 0.5))) { return false; }
+        for (var h in RaycastAll(o.x, o.y, o.z, dx / d, dy / d, dz / d, d + 0.3))
+        {
+            if (h.isTrigger || IsMine(h.entity)) { continue; }
+            return IsOrChildOf(h.entity, e);
+        }
+        return true;
+    }
+
+    func IsVisible(e) { return ListContains(visible, e); }
+    func GetVisible() { return visible; }
+
+    func Update(dt)
+    {
+        if (drawCone) { DrawCone(); }
+        timer -= dt;
+        if (timer > 0) { return; }
+        timer = checkInterval;
+        var now = [];
+        var best = null;
+        var bestD = 1e9;
+        var o = EntityGetWorldPosition(eye);
+        for (var e in FindEntitiesWithTag(targetTag))
+        {
+            if (IsMine(e) || !CanSee(e)) { continue; }
+            now.Add(e);
+            var p = EntityGetWorldPosition(e);
+            var d = MathSqrt((p.x - o.x) * (p.x - o.x) + (p.y - o.y) * (p.y - o.y) + (p.z - o.z) * (p.z - o.z));
+            if (d < bestD) { bestD = d; best = e; }
+        }
+        for (var e2 in now)
+        {
+            if (!ListContains(visible, e2)) { sightings++; SendMessage(GetEntityId(), "OnTargetSeen", e2); }
+        }
+        for (var e3 in visible)
+        {
+            if (!ListContains(now, e3)) { SendMessage(GetEntityId(), "OnTargetLost", e3); }
+        }
+        visible = now;
+        visibleCount = now.Count;
+        closestName = best != null ? EntityGetName(best) : "";
+        closestDistance = best != null ? bestD : 0.0;
+    }
+
+    func DrawCone()
+    {
+        var o = EntityGetWorldPosition(eye);
+        var f = EntityGetForward(eye);
+        var r = EntityGetRight(eye);
+        var u = EntityGetUp(eye);
+        var half = MathDegToRad(angle * 0.5);
+        var c = visibleCount > 0 ? {r: 1.0, g: 0.2, b: 0.2, a: 1.0} : {r: 1.0, g: 0.9, b: 0.3, a: 1.0};
+        for (var k = 0; k < 8; k++)
+        {
+            var a = k * 6.2831853 / 8;
+            var sx = MathCos(a) * MathSin(half);
+            var sy = MathSin(a) * MathSin(half);
+            var cz = MathCos(half);
+            var dx = f.x * cz + r.x * sx + u.x * sy;
+            var dy = f.y * cz + r.y * sx + u.y * sy;
+            var dz = f.z * cz + r.z * sx + u.z * sy;
+            DebugDrawLineC(o, {x: o.x + dx * range, y: o.y + dy * range, z: o.z + dz * range}, 0.0, c);
+        }
+    }
+}

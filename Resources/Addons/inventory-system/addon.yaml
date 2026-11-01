@@ -1,0 +1,24 @@
+Id: conqueror.inventory-system
+Name: Inventory System
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Slot based inventory with stacking: add, remove, count and query items from any script,
+  a capacity limit with overflow handling, pickups that fly into the inventory of whoever
+  touches them, a simple on-screen item list and save/load through player prefs (JSON).
+Category: Gameplay
+Icon: box-open
+Tags: [inventory, items, pickup, rpg, survival]
+Components:
+  - Scripts/Inventory.cqs
+  - Scripts/ItemPickup.cqs
+  - Scripts/InventoryText.cqs
+Inserts:
+  - Name: Item Pickup
+    Icon: box
+    Prefab: Prefabs/ItemPickup.cqprefab
+    Tooltip: Spinning pickup that adds 1 "Crystal" to the inventory that touches it
+  - Name: Inventory HUD
+    Icon: list
+    Prefab: Prefabs/InventoryHUD.cqprefab
+    Tooltip: Canvas text that lists the items of "Player"

@@ -1,0 +1,6 @@
+# Vehicle (Unreal Vehicle template): Time Trial race track and Offroad valley, CarConcept car with Wheel Colliders
+Shared: [Vehicles]
+StartScene: Assets/Scenes/Main.cqscene
+Scenes:
+  - Assets/Scenes/Main.cqscene
+  - Assets/Scenes/Offroad.cqscene

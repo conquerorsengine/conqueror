@@ -1,0 +1,152 @@
+[
+ {
+  "category": "SKYLINE",
+  "levels": [
+   {
+    "scene": "Skyline1",
+    "id": "skyline-1",
+    "name": "FIRST STEPS"
+   },
+   {
+    "scene": "Skyline2",
+    "id": "skyline-2",
+    "name": "ROOFTOP DASH"
+   },
+   {
+    "scene": "Skyline3",
+    "id": "skyline-3",
+    "name": "CRANE HOPS"
+   },
+   {
+    "scene": "Main",
+    "id": "skyline-4",
+    "name": "SKYLINE RUN"
+   }
+  ]
+ },
+ {
+  "category": "NEON NIGHT",
+  "levels": [
+   {
+    "scene": "Neon1",
+    "id": "neon-1",
+    "name": "NEON ALLEY"
+   },
+   {
+    "scene": "Neon2",
+    "id": "neon-2",
+    "name": "LIGHT TRAILS"
+   },
+   {
+    "scene": "Neon3",
+    "id": "neon-3",
+    "name": "SIGNAL BOOST"
+   },
+   {
+    "scene": "Neon4",
+    "id": "neon-4",
+    "name": "OVERDRIVE"
+   }
+  ]
+ },
+ {
+  "category": "DESERT RUINS",
+  "levels": [
+   {
+    "scene": "Desert1",
+    "id": "desert-1",
+    "name": "DUNE HOPPER"
+   },
+   {
+    "scene": "Desert2",
+    "id": "desert-2",
+    "name": "MESA CROSSING"
+   },
+   {
+    "scene": "Desert3",
+    "id": "desert-3",
+    "name": "SANDSTORM"
+   },
+   {
+    "scene": "Desert4",
+    "id": "desert-4",
+    "name": "SUN TEMPLE"
+   }
+  ]
+ },
+ {
+  "category": "ARCTIC PEAKS",
+  "levels": [
+   {
+    "scene": "Arctic1",
+    "id": "arctic-1",
+    "name": "FROST LINE"
+   },
+   {
+    "scene": "Arctic2",
+    "id": "arctic-2",
+    "name": "DRIFTING FLOES"
+   },
+   {
+    "scene": "Arctic3",
+    "id": "arctic-3",
+    "name": "ICE BRIDGES"
+   },
+   {
+    "scene": "Arctic4",
+    "id": "arctic-4",
+    "name": "GLACIER SUMMIT"
+   }
+  ]
+ },
+ {
+  "category": "FOUNDRY",
+  "levels": [
+   {
+    "scene": "Industrial1",
+    "id": "industrial-1",
+    "name": "FIRST SHIFT"
+   },
+   {
+    "scene": "Industrial2",
+    "id": "industrial-2",
+    "name": "CONVEYOR LINE"
+   },
+   {
+    "scene": "Industrial3",
+    "id": "industrial-3",
+    "name": "SMELTER"
+   },
+   {
+    "scene": "Industrial4",
+    "id": "industrial-4",
+    "name": "BLAST FURNACE"
+   }
+  ]
+ },
+ {
+  "category": "JUNGLE TEMPLE",
+  "levels": [
+   {
+    "scene": "Jungle1",
+    "id": "jungle-1",
+    "name": "CANOPY TRAIL"
+   },
+   {
+    "scene": "Jungle2",
+    "id": "jungle-2",
+    "name": "VINE WALLS"
+   },
+   {
+    "scene": "Jungle3",
+    "id": "jungle-3",
+    "name": "RIVER CROSSING"
+   },
+   {
+    "scene": "Jungle4",
+    "id": "jungle-4",
+    "name": "LOST TEMPLE"
+   }
+  ]
+ }
+]

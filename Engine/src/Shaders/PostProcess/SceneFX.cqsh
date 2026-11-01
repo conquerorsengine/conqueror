@@ -1,0 +1,116 @@
+#language GLSL
+// Sahne efektleri birleştirme (HDR): AO + SSR (Fresnel ağırlıklı) + bulutlar (gökyüzü) + hacimsel sis
+#type vertex
+#version 450 core
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+out vec2 v_UV;
+void main()
+{
+    v_UV = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+
+#include "Include/Common.glsl"
+
+layout(location = 0) out vec4 FragColor;
+in vec2 v_UV;
+
+uniform sampler2D u_Scene;
+uniform sampler2D u_Depth;
+uniform sampler2D u_AO;
+uniform sampler2D u_SSR;
+uniform sampler2D u_GNormal;
+uniform sampler2D u_Clouds;
+uniform sampler2D u_Fog;
+uniform sampler2D u_GI;           // yarım çözünürlük dolaylı ışınım (rgb)
+uniform sampler2D u_GAlbedo;      // doğrusal albedo (metalik değil), a = AO
+uniform int u_UseGI = 0;
+uniform float u_GIIntensity = 1.0;
+uniform int u_UseAO = 0;
+uniform int u_UseSSR = 0;
+uniform int u_UseClouds = 0;
+uniform int u_UseFog = 0;
+uniform float u_SSRIntensity = 1.0;
+uniform mat4 u_InvViewProj;
+uniform vec3 u_CameraPos;
+uniform vec2 u_FullSize;
+uniform vec2 u_FogSize;
+
+vec3 OctDecode(vec2 e)
+{
+    vec3 n = vec3(e, 1.0 - abs(e.x) - abs(e.y));
+    float t = max(-n.z, 0.0);
+    n.x += n.x >= 0.0 ? -t : t;
+    n.y += n.y >= 0.0 ? -t : t;
+    return normalize(n);
+}
+
+// Düşük çözünürlüklü hacim sonucunu derinliğe duyarlı büyüt (silüetlerde hale olmasın)
+vec4 UpsampleDepthAware(sampler2D low, vec2 lowSize, vec2 uv, float depth)
+{
+    vec2 p = uv * lowSize - 0.5;
+    vec2 base = floor(p);
+    vec4 best = texture(low, uv);
+    float bestDiff = 1e9;
+    bool consistent = true;
+    vec4 samples[4];
+    for (int i = 0; i < 4; ++i)
+    {
+        vec2 o = vec2(i & 1, i >> 1);
+        vec2 suv = (base + o + 0.5) / lowSize;
+        samples[i] = textureLod(low, suv, 0.0);
+        float d = abs(textureLod(u_Depth, suv, 0.0).r - depth);
+        if (d > 0.002) consistent = false;
+        if (d < bestDiff) { bestDiff = d; best = samples[i]; }
+    }
+    return consistent ? texture(low, uv) : best;
+}
+
+void main()
+{
+    vec3 color = texture(u_Scene, v_UV).rgb;
+    if (any(isnan(color)) || any(isinf(color)))
+        color = vec3(0.0);
+    float depth = texture(u_Depth, v_UV).r;
+    if (u_UseGI == 1 && depth < 1.0)
+    {
+        // Dolaylı yayınık ışık: albedo x toplanan ışınım (Lumen ekran izi benzeri tek sıçrama)
+        vec4 albedo = texture(u_GAlbedo, v_UV);
+        vec3 indirect = texture(u_GI, v_UV).rgb;
+        color += albedo.rgb * indirect * u_GIIntensity * mix(1.0, albedo.a, 0.5);
+    }
+    if (u_UseAO == 1)
+        color *= texture(u_AO, v_UV).r;
+    if (u_UseSSR == 1)
+    {
+        vec4 g = texture(u_GNormal, v_UV);
+        vec4 r = texture(u_SSR, v_UV);
+        if (g.w > 1.5 && r.a > 0.0)
+        {
+            vec4 world = u_InvViewProj * vec4(v_UV * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+            vec3 V = normalize(u_CameraPos - world.xyz / world.w);
+            vec3 N = OctDecode(g.xy);
+            float metallic = clamp(g.w - 2.0, 0.0, 1.0);
+            float roughness = g.z;
+            float f0 = mix(0.04, 0.75, metallic);
+            float NdotV = clamp(dot(N, V), 0.0, 1.0);
+            float fresnel = f0 + (max(1.0 - roughness, f0) - f0) * pow(1.0 - NdotV, 5.0);
+            color += r.rgb * fresnel * r.a * u_SSRIntensity * (1.0 - roughness);
+        }
+    }
+    if (u_UseClouds == 1 && depth >= 1.0)
+    {
+        vec4 c = texture(u_Clouds, v_UV);
+        color = color * c.a + c.rgb;
+    }
+    if (u_UseFog == 1)
+    {
+        vec4 f = UpsampleDepthAware(u_Fog, u_FogSize, v_UV, depth);
+        color = color * f.a + f.rgb;
+    }
+    FragColor = vec4(color, 1.0);
+}

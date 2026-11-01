@@ -3,11 +3,22 @@
 # Tüm external library'leri -fPIC ile derle (shared library desteği için)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+# Üçüncü taraf kitaplıklar statik. (Masaüstünde ilk tanımlayan GLFW'nin OFF seçeneğiydi; GLFW'siz derlemelerde
+# — Android — Assimp'in ON varsayılanı önbelleğe yazılıp spdlog/glslang/Jolt'u paylaşımlı yapıyordu.)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
+
 # GLFW
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-add_subdirectory(glfw)
+if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "QNX")
+    # Android / QNX'te GLFW yok: motor aynı API'yi Engine/src/Platform/Android/GLFWAndroid.cpp (NativeActivity + EGL) ve
+    # Engine/src/Platform/QNX/GLFWQnx.cpp (Screen + EGL) ile sağlar
+    add_library(glfw INTERFACE)
+    target_include_directories(glfw INTERFACE glfw/include)
+else()
+    set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+    set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    add_subdirectory(glfw)
+endif()
 
 # GLAD
 add_library(glad STATIC
@@ -18,25 +29,52 @@ target_include_directories(glad PUBLIC glad/include)
 # GLM
 add_subdirectory(glm)
 
+# glslang (GLSL -> SPIR-V derleyici; shader önbelleği ve Vulkan/Metal/DX yolu)
+set(ENABLE_OPT OFF CACHE BOOL "" FORCE)
+set(BUILD_EXTERNAL OFF CACHE BOOL "" FORCE)
+set(GLSLANG_TESTS OFF CACHE BOOL "" FORCE)
+set(GLSLANG_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+set(ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "" FORCE)
+set(ENABLE_HLSL OFF CACHE BOOL "" FORCE)
+set(ENABLE_PCH OFF CACHE BOOL "" FORCE)
+add_subdirectory(glslang)
+
+# SPIRV-Cross (yansıtma + GLSL/HLSL/MSL'ye çapraz derleme)
+set(SPIRV_CROSS_CLI OFF CACHE BOOL "" FORCE)
+set(SPIRV_CROSS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+set(SPIRV_CROSS_SHARED OFF CACHE BOOL "" FORCE)
+set(SPIRV_CROSS_STATIC ON CACHE BOOL "" FORCE)
+set(SPIRV_CROSS_ENABLE_C_API OFF CACHE BOOL "" FORCE)
+set(SPIRV_CROSS_ENABLE_CPP OFF CACHE BOOL "" FORCE)
+set(SPIRV_CROSS_ENABLE_UTIL OFF CACHE BOOL "" FORCE)
+set(SPIRV_CROSS_SKIP_INSTALL ON CACHE BOOL "" FORCE)
+add_subdirectory(SPIRV-Cross)
+
 # spdlog
 add_subdirectory(spdlog)
 
 # ImGui
-# Windows'ta Engine.dll + exe aynı ImGui context'ini (GImGui) paylaşmalı;
-# yoksa exe'deki statik kopyanın context'i NULL kalır ve ilk SetNextWindow*'da AV verir.
-# Bu yüzden Windows'ta imgui paylaşılan DLL, Linux'ta eskisi gibi statik.
-if(WIN32)
+# Motor DLL olarak derlenirse Engine.dll + exe aynı ImGui context'ini (GImGui) paylaşmalı; o durumda imgui
+# paylaşılan DLL olur. Varsayılan: motor Windows/macOS'ta statik (tek kopya), imgui de statik.
+option(CQ_IMGUI_SHARED "Build ImGui/ImGuizmo as DLLs (only needed with a DLL engine on Windows)" OFF)
+if(WIN32 AND CQ_IMGUI_SHARED)
     add_library(imgui SHARED
         imgui/imgui.cpp
         imgui/imgui_demo.cpp
         imgui/imgui_draw.cpp
         imgui/imgui_tables.cpp
         imgui/imgui_widgets.cpp
+        imgui_automation/CQImGuiAutomation.cpp
     )
     # NOT: target_compile_definitions parantezli değeri VS vcxproj'da bölüyor;
-    # /D bayrağı compile_options ile verbatim geçilir.
-    target_compile_options(imgui PRIVATE "/DIMGUI_API=__declspec(dllexport)")
-    target_compile_options(imgui INTERFACE "/DIMGUI_API=__declspec(dllimport)")
+    # /D bayrağı compile_options ile verbatim geçilir. MinGW (GCC/Clang) normal tanım kullanır.
+    if(MSVC)
+        target_compile_options(imgui PRIVATE "/DIMGUI_API=__declspec(dllexport)")
+        target_compile_options(imgui INTERFACE "/DIMGUI_API=__declspec(dllimport)")
+    else()
+        target_compile_definitions(imgui PRIVATE "IMGUI_API=__declspec(dllexport)")
+        target_compile_definitions(imgui INTERFACE "IMGUI_API=__declspec(dllimport)")
+    endif()
 else()
     add_library(imgui STATIC
         imgui/imgui.cpp
@@ -44,9 +82,12 @@ else()
         imgui/imgui_draw.cpp
         imgui/imgui_tables.cpp
         imgui/imgui_widgets.cpp
+        imgui_automation/CQImGuiAutomation.cpp
     )
 endif()
-target_include_directories(imgui PUBLIC imgui)
+target_include_directories(imgui PUBLIC imgui imgui_automation)
+# UI otomasyon kancaları (Engine Automation sistemi widget'ları etiketle bulur/tıklar)
+target_compile_definitions(imgui PUBLIC IMGUI_ENABLE_TEST_ENGINE)
 
 # ImNodes
 add_library(imnodes STATIC
@@ -77,12 +118,17 @@ add_subdirectory(entt)
 # imgui paylaşılan DLL olunca bu makro dllimport'a dönüşüp statik imguizmo
 # linkini bozuyordu. ImGuizmo.h artık IMGUZMO_API kullanıyor, Windows'ta
 # imguizmo da paylaşılan DLL yapılır (tek state, tek context).
-if(WIN32)
+if(WIN32 AND CQ_IMGUI_SHARED)
     add_library(imguizmo SHARED
         ImGuizmo/ImGuizmo.cpp
     )
-    target_compile_options(imguizmo PRIVATE "/DIMGUZMO_API=__declspec(dllexport)")
-    target_compile_options(imguizmo INTERFACE "/DIMGUZMO_API=__declspec(dllimport)")
+    if(MSVC)
+        target_compile_options(imguizmo PRIVATE "/DIMGUZMO_API=__declspec(dllexport)")
+        target_compile_options(imguizmo INTERFACE "/DIMGUZMO_API=__declspec(dllimport)")
+    else()
+        target_compile_definitions(imguizmo PRIVATE "IMGUZMO_API=__declspec(dllexport)")
+        target_compile_definitions(imguizmo INTERFACE "IMGUZMO_API=__declspec(dllimport)")
+    endif()
 else()
     add_library(imguizmo STATIC
         ImGuizmo/ImGuizmo.cpp
@@ -138,10 +184,20 @@ set(ASSIMP_NO_EXPORT ON CACHE BOOL "" FORCE)
 set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_ZLIB OFF CACHE BOOL "" FORCE)
 add_subdirectory(assimp)
+# MinGW (msvcrt): assimp eski CRT sürümünde _fstat32'yi seçiyor, msvcrt.dll bunu vermiyor; _fstat64 yolunu seçtir
+if(MINGW AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_definitions(assimp PRIVATE __MSVCRT_VERSION__=0x0601)
+endif()
 
-# NFD (Native File Dialog)
-set(NFD_PORTAL OFF CACHE BOOL "" FORCE)
-add_subdirectory(nativefiledialog-extended)
+# NFD (Native File Dialog) — yalnızca editör/başlatıcı kullanır; oyuncuda dosya iletişim kutusu yok (Android, QNX ve
+# yalnız oyuncu derlemelerinde GTK / X11 bağımlılığı gelmesin)
+if(ANDROID OR CQ_RUNTIME_ONLY OR CMAKE_SYSTEM_NAME STREQUAL "QNX")
+    add_library(nfd INTERFACE)
+    target_include_directories(nfd INTERFACE nativefiledialog-extended/src/include)
+else()
+    set(NFD_PORTAL OFF CACHE BOOL "" FORCE)
+    add_subdirectory(nativefiledialog-extended)
+endif()
 
 # Box2D (2D Physics)
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/box2d/CMakeLists.txt)
@@ -154,15 +210,41 @@ else()
 endif()
 
 # JoltPhysics (3D Physics)
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/JoltPhysics/Build/CMakeLists.txt)
+# QNX: Jolt platformu tanımıyor (Core.h "Unknown platform"); QNX'te 3B fizik varsayılan kapalı, 2B fizik (Box2D) açık
+set(_cq_jolt_default ON)
+if(CMAKE_SYSTEM_NAME STREQUAL "QNX")
+    set(_cq_jolt_default OFF)
+endif()
+option(CQ_ENABLE_JOLT "Build JoltPhysics (3D physics backend)" ${_cq_jolt_default})
+if(CQ_ENABLE_JOLT AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/JoltPhysics/Build/CMakeLists.txt)
     set(TARGET_UNIT_TESTS OFF CACHE BOOL "" FORCE)
     set(TARGET_HELLO_WORLD OFF CACHE BOOL "" FORCE)
     set(TARGET_PERFORMANCE_TEST OFF CACHE BOOL "" FORCE)
     set(TARGET_SAMPLES OFF CACHE BOOL "" FORCE)
     set(TARGET_VIEWER OFF CACHE BOOL "" FORCE)
+    if(ANDROID)
+        # Android (API < 29) öykünmeli TLS kullanır; Jolt'un ThinLTO nesneleri bağlamada yerel TLS üretip
+        # motorun öykünmeli TLS başvurularıyla (ProfileThread::sInstance) çakışıyordu
+        set(INTERPROCEDURAL_OPTIMIZATION OFF CACHE BOOL "" FORCE)
+    endif()
     # Projenin geri kalanı /MD (dinamik CRT) kullanır; Jolt varsayılan /MT ile LNK2038 verir
     set(USE_STATIC_MSVC_RUNTIME_LIBRARY OFF CACHE BOOL "" FORCE)
+    # Jolt'un GPU hesaplama arka uçları (saç simülasyonu vb.) motorda kullanılmıyor: gölgelendirici derleyicisi
+    # (glslc/dxc) gerektirmesin ve ikiliye girmesin
+    foreach(_jolt_gpu JPH_USE_DX12 JPH_USE_VK JPH_USE_MTL JPH_USE_CPU_COMPUTE)
+        set(${_jolt_gpu} OFF CACHE BOOL "" FORCE)
+    endforeach()
+    # Dağıtılabilir ikili: AVX/AVX2/FMA/F16C gerektirmesin (x86-64-v2 tabanı); yerel derlemede tam hız
+    if(NOT CQ_NATIVE_ARCH)
+        foreach(_jolt_opt USE_AVX USE_AVX2 USE_AVX512 USE_LZCNT USE_TZCNT USE_F16C USE_FMADD)
+            set(${_jolt_opt} OFF CACHE BOOL "" FORCE)
+        endforeach()
+    endif()
     add_subdirectory(JoltPhysics/Build)
+    # MinGW GCC: Jolt'un -Werror'u Windows API işlev işaretçisi dönüşümünü hata sayıyor
+    if(MINGW AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        target_compile_options(Jolt PRIVATE -Wno-cast-function-type)
+    endif()
 else()
     message(WARNING "JoltPhysics not found in External/JoltPhysics - 3D physics will not be available")
 endif()
@@ -204,10 +286,22 @@ endif()
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/mbedtls/CMakeLists.txt")
     set(ENABLE_TESTING OFF CACHE BOOL "" FORCE)
     set(ENABLE_PROGRAMS OFF CACHE BOOL "" FORCE)
+    # Üçüncü taraf kodda derleyiciye özgü yeni uyarılar derlemeyi kırmasın (-Werror kapalı)
+    set(MBEDTLS_FATAL_WARNINGS OFF CACHE BOOL "" FORCE)
     
     # GCC 15 support: Disable false positive warnings on unterminated strings & zero-init union warnings
-    if(NOT MSVC)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unterminated-string-initialization -fzero-init-padding-bits=unions")
+    # (yalnızca GCC bu bayrakları tanır; Clang/MinGW-Clang hata verir)
+    if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unterminated-string-initialization")
+        if(CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 15)
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fzero-init-padding-bits=unions")
+        endif()
+    elseif(CMAKE_C_COMPILER_ID MATCHES "Clang")
+        include(CheckCCompilerFlag)
+        check_c_compiler_flag(-Wunterminated-string-initialization CQ_CLANG_HAS_UNTERMINATED_WARNING)
+        if(CQ_CLANG_HAS_UNTERMINATED_WARNING)
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unterminated-string-initialization")
+        endif()
     endif()
     
     add_subdirectory("mbedtls")
@@ -225,3 +319,17 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/miniupnpc/CMakeLists.txt)
 else()
     message(WARNING "miniupnpc not found in External/miniupnpc - NAT traversal will not be available")
 endif()
+
+# Luau (Roblox Lua lehçesi): betik dili VM + derleyici + yerel kod üretici
+set(LUAU_BUILD_CLI OFF CACHE BOOL "" FORCE)
+set(LUAU_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(LUAU_BUILD_WEB OFF CACHE BOOL "" FORCE)
+set(LUAU_WERROR OFF CACHE BOOL "" FORCE)
+set(LUAU_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+add_subdirectory(luau)
+foreach(luau_target Luau.Common Luau.Ast Luau.Bytecode Luau.Inliner Luau.Compiler Luau.Config Luau.Analysis Luau.CodeGen Luau.VM Luau.Require Luau.CLI.lib isocline)
+    if(TARGET ${luau_target})
+        set_target_properties(${luau_target} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    endif()
+endforeach()
+

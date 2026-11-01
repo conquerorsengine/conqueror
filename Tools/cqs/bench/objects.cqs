@@ -1,0 +1,13 @@
+class Particle {
+    var x = 0.0; var v = 1.0;
+    func Step(dt) { v -= 9.8 * dt; x += v * dt; if (x < 0) { x = 0; v = -v * 0.9; } }
+}
+func sim() {
+    var ps = [];
+    for (var i = 0; i < 1000; i++) ps.Add(new Particle());
+    for (var f = 0; f < 1000; f++) { foreach (var p in ps) p.Step(0.016); }
+    var s = 0.0;
+    foreach (var p in ps) s += p.x;
+    return s;
+}
+print(sim());

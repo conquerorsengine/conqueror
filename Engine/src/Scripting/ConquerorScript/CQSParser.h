@@ -1,107 +1,108 @@
 #pragma once
 
-#include "CQSToken.h"
 #include "CQSAST.h"
-#include <vector>
+#include "CQSToken.h"
+
 #include <string>
+#include <vector>
 
 namespace Conqueror::CQS
 {
+    // Özyinelemeli iniş ayrıştırıcısı. Hatalarda senkronize olup devam eder
+    // (birden çok hata tek seferde raporlanır), her hata durumunda ilerleme garanti edilir.
     class CQSParser
     {
     public:
         CQSParser() = default;
 
-        // Token dizisini parse et, AST döndür
         ASTNodePtr Parse(const std::vector<Token>& tokens);
+        // Tek bir ifade (string interpolation, konsol): tüm token'lar tüketilmeli
+        ASTNodePtr ParseSingleExpression(const std::vector<Token>& tokens);
 
-        bool HasErrors() const { return m_HasError; }
+        bool HasErrors() const { return !m_Errors.empty(); }
         const std::vector<std::string>& GetErrors() const { return m_Errors; }
 
     private:
-        std::vector<Token>       m_Tokens;
-        int                      m_Current = 0;
-        bool                     m_HasError = false;
-        std::vector<std::string> m_Errors;
+        struct ParseError {};
 
-        // ── Token Navigation ──
-        const Token& Peek() const;
+        std::vector<Token> m_Tokens;
+        size_t m_Current = 0;
+        std::vector<std::string> m_Errors;
+        int m_FunctionDepth = 0;
+
+        // ── Token helpers ──
+        const Token& Peek(size_t ahead = 0) const;
         const Token& Previous() const;
         const Token& Advance();
-        bool         IsAtEnd() const;
-        bool         Check(TokenType type) const;
-        bool         Match(TokenType type);
-        bool         Match(std::initializer_list<TokenType> types);
+        bool IsAtEnd() const;
+        bool Check(TokenType type) const;
+        bool CheckAhead(size_t ahead, TokenType type) const;
+        bool Match(TokenType type);
+        bool Match(std::initializer_list<TokenType> types);
         const Token& Consume(TokenType type, const std::string& message);
+        std::string ConsumeIdentifier(const std::string& message);
+        [[noreturn]] void ErrorAt(const Token& token, const std::string& message);
+        void Report(const Token& token, const std::string& message);
+        void Synchronize();
 
-        // ── Error Handling ──
-        void Error(const Token& token, const std::string& message);
-        void Synchronize(); // Hata recovery
-
-        // ── Top-Level Parsing ──
-        ASTNodePtr ParseProgram();
+        // ── Declarations ──
         ASTNodePtr ParseDeclaration();
-        ASTNodePtr ParseUsingStatement();
-        ASTNodePtr ParseNamespaceDeclaration();
-
-        // ── Type Declarations ──
-        ASTNodePtr ParseScriptDeclaration(bool isPublic);
-        ASTNodePtr ParseClassDeclaration(bool isPublic);
-        ASTNodePtr ParseStructDeclaration(bool isPublic);
-        ASTNodePtr ParseEnumDeclaration(bool isPublic);
-        ASTNodePtr ParseInterfaceDeclaration();
-
-        // ── Members ──
-        ASTNodePtr ParseMember(bool isPublic, bool isPrivate, bool isStatic,
-                               const std::vector<std::string>& attributes);
-        ASTNodePtr ParseFuncDeclaration(bool isPublic, bool isPrivate, bool isStatic);
-        ASTNodePtr ParseVarDeclaration(bool isPublic, bool isStatic,
-                                       const std::vector<std::string>& attributes);
+        ASTNodePtr ParseUsing();
+        ASTNodePtr ParseNamespace();
+        ASTNodePtr ParseClass(NodeType type, bool isPublic);
+        ASTNodePtr ParseMember(const std::string& className);
+        ASTNodePtr ParseEnum(bool isPublic);
+        ASTNodePtr ParseInterface();
+        ASTNodePtr ParseFunction(const std::string& name, int line, bool isPublic, bool isPrivate, bool isStatic, const std::string& returnType);
+        ASTNodePtr ParseVar(bool isPublic, bool isPrivate, bool isStatic, const std::vector<std::string>& attributes, const std::string& typeName = "");
+        ASTNodePtr ParseTypedVar(const std::string& typeName, const std::string& name, int line, bool isPublic, bool isPrivate, bool isStatic, const std::vector<std::string>& attributes);
         std::vector<ASTNodePtr> ParseParameters();
-        std::string ParseTypeName();
-
-        // ── Attributes ──
         std::vector<std::string> ParseAttributes();
+        std::string ParseTypeName();
+        bool TryParseTypeName(std::string& out);      // geri sarabilir
+        bool LooksLikeTypedDeclaration(size_t& nameIndex) const;
 
         // ── Statements ──
         ASTNodePtr ParseStatement();
         ASTNodePtr ParseBlock();
-        ASTNodePtr ParseIfStatement();
-        ASTNodePtr ParseWhileStatement();
-        ASTNodePtr ParseForStatement();
-        ASTNodePtr ParseForeachStatement();
-        ASTNodePtr ParseSwitchStatement();
-        ASTNodePtr ParseReturnStatement();
-        ASTNodePtr ParseBreakStatement();
-        ASTNodePtr ParseContinueStatement();
-        ASTNodePtr ParseYieldStatement();
-        ASTNodePtr ParseTryCatchStatement();
-        ASTNodePtr ParseThrowStatement();
+        ASTNodePtr ParseIf();
+        ASTNodePtr ParseWhile();
+        ASTNodePtr ParseDoWhile();
+        ASTNodePtr ParseFor();
+        ASTNodePtr ParseForeach(int line, bool hadParen);
+        ASTNodePtr ParseSwitch();
+        ASTNodePtr ParseReturn();
+        ASTNodePtr ParseTry();
+        ASTNodePtr ParseThrow();
+        ASTNodePtr ParseYield();
         ASTNodePtr ParseExpressionStatement();
 
-        // ── Expressions (Pratt Parser / Precedence Climbing) ──
+        // ── Expressions ──
         ASTNodePtr ParseExpression();
         ASTNodePtr ParseAssignment();
         ASTNodePtr ParseTernary();
         ASTNodePtr ParseNullCoalesce();
         ASTNodePtr ParseOr();
         ASTNodePtr ParseAnd();
-        ASTNodePtr ParseBitwiseOr();
-        ASTNodePtr ParseBitwiseXor();
-        ASTNodePtr ParseBitwiseAnd();
+        ASTNodePtr ParseBitOr();
+        ASTNodePtr ParseBitXor();
+        ASTNodePtr ParseBitAnd();
         ASTNodePtr ParseEquality();
-        ASTNodePtr ParseComparison();
+        ASTNodePtr ParseRelational();
+        ASTNodePtr ParseRange();
         ASTNodePtr ParseShift();
-        ASTNodePtr ParseAddition();
-        ASTNodePtr ParseMultiplication();
+        ASTNodePtr ParseAdditive();
+        ASTNodePtr ParseMultiplicative();
         ASTNodePtr ParseUnary();
         ASTNodePtr ParsePostfix();
-        ASTNodePtr ParseCall();
         ASTNodePtr ParsePrimary();
-
-        // ── Expression Helpers ──
+        ASTNodePtr FinishCall(ASTNodePtr callee, bool nullConditional);
+        ASTNodePtr ParseLambda(int line);
         ASTNodePtr ParseListLiteral();
         ASTNodePtr ParseMapLiteral();
-        ASTNodePtr FinishCall(ASTNodePtr callee);
+        ASTNodePtr ParseInterpolated(const Token& token);
+        bool IsLambdaAhead() const;
+        bool IsGenericCallAhead(std::vector<std::string>& genericArgs, size_t& endIndex) const;
+        bool IsCastAhead() const;
     };
 }

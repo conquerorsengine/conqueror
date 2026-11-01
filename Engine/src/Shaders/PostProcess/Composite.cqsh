@@ -1,0 +1,206 @@
+#language GLSL
+// HDR birleştirme: AO + bloom + pozlama + ton eşleme + renk derecelendirme + vinyet + CA + gren -> sRGB
+#type vertex
+#version 450 core
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+out vec2 v_UV;
+void main()
+{
+    v_UV = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+
+#include "Include/Common.glsl"
+
+layout(location = 0) out vec4 FragColor;
+in vec2 v_UV;
+
+uniform sampler2D u_Scene;
+uniform sampler2D u_Bloom;
+uniform sampler2D u_AO;
+uniform sampler2D u_Depth;
+uniform int u_UseBloom = 0;
+uniform int u_UseAO = 0;
+uniform float u_BloomIntensity = 0.6;
+uniform vec3 u_BloomTint = vec3(1.0);
+uniform float u_Exposure = 1.0;        // doğrusal çarpan
+uniform sampler2D u_AutoExposure;      // 1x1: uyumlanmış ortalama log parlaklık
+uniform int u_UseAutoExposure = 0;
+uniform vec2 u_AutoExposureRange = vec2(-3.0, 3.0);   // EV
+uniform float u_AutoExposureCompensation = 0.0;
+uniform int u_Tonemapper = 1;          // 0 yok, 1 nötr, 2 ACES, 3 AgX, 4 Reinhard
+uniform int u_LitScene = 1;            // 1: aydınlatılmış 3D içerik var, 0: saf 2D sahne (sprite / karo / UI)
+
+uniform int u_UseGrading = 0;
+uniform float u_Contrast = 1.0;
+uniform float u_Saturation = 1.0;
+uniform vec3 u_WhiteBalance = vec3(1.0);
+uniform vec3 u_Lift = vec3(0.0);
+uniform vec3 u_Gamma = vec3(1.0);
+uniform vec3 u_Gain = vec3(1.0);
+
+uniform int u_UseVignette = 0;
+uniform float u_VignetteIntensity = 0.3;
+uniform float u_VignetteSmoothness = 0.4;
+uniform vec3 u_VignetteColor = vec3(0.0);
+
+uniform int u_UseCA = 0;
+uniform float u_CAIntensity = 0.3;
+uniform int u_UseGrain = 0;
+uniform float u_GrainIntensity = 0.15;
+uniform float u_Time = 0.0;
+uniform vec2 u_ScreenSize;
+
+// Khronos PBR Neutral. Karanlık tondaki "offset" PBR'ın %4 Fresnel speküler katkısını telafi eder; bu yüzden
+// yalnızca aydınlatılmış geometriye uygulanır, arka plan (temizleme rengi / gökyüzü) yazıldığı renkte kalır.
+// Saf 2D sahnede nötr ton eşleme hiç uygulanmaz (Unity 2D gibi): sprite renkleri piksel piksel korunur.
+vec3 TonemapNeutral(vec3 color, float toe)
+{
+    const float startCompression = 0.8 - 0.04;
+    const float desaturation = 0.15;
+    float x = min(color.r, min(color.g, color.b));
+    float offset = x < 0.08 ? x - 6.25 * x * x : 0.04;
+    color -= offset * toe;
+    float peak = max(color.r, max(color.g, color.b));
+    if (peak < startCompression)
+        return color;
+    const float d = 1.0 - startCompression;
+    float newPeak = 1.0 - d * d / (peak + d - startCompression);
+    color *= newPeak / peak;
+    float g = 1.0 - 1.0 / (desaturation * (peak - newPeak) + 1.0);
+    return mix(color, newPeak * vec3(1.0), g);
+}
+
+// ACES (Hill fit, RRT+ODT)
+vec3 RRTAndODTFit(vec3 v)
+{
+    vec3 a = v * (v + 0.0245786) - 0.000090537;
+    vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081;
+    return a / b;
+}
+vec3 TonemapACES(vec3 color)
+{
+    const mat3 ACESInput = mat3(0.59719, 0.07600, 0.02840, 0.35458, 0.90834, 0.13383, 0.04823, 0.01566, 0.83777);
+    const mat3 ACESOutput = mat3(1.60475, -0.10208, -0.00327, -0.53108, 1.10813, -0.07276, -0.07367, -0.00605, 1.07602);
+    color = ACESInput * color;
+    color = RRTAndODTFit(color);
+    return clamp(ACESOutput * color, 0.0, 1.0);
+}
+
+// AgX (Troy Sobotka; minimal polinom yaklaşımı)
+vec3 AgxDefaultContrast(vec3 x)
+{
+    vec3 x2 = x * x;
+    vec3 x4 = x2 * x2;
+    return 15.5 * x4 * x2 - 40.14 * x4 * x + 31.96 * x4 - 6.868 * x2 * x + 0.4298 * x2 + 0.1191 * x - 0.00232;
+}
+vec3 TonemapAgX(vec3 color)
+{
+    const mat3 agxIn = mat3(0.842479062253094, 0.0423282422610123, 0.0423756549057051,
+                            0.0784335999999992, 0.878468636469772, 0.0784336,
+                            0.0792237451477643, 0.0791661274605434, 0.879142973793104);
+    const mat3 agxOut = mat3(1.19687900512017, -0.0528968517574562, -0.0529716355144438,
+                             -0.0980208811401368, 1.15190312990417, -0.0980434501171241,
+                             -0.0990297440797205, -0.0989611768448433, 1.15107367264116);
+    const float minEv = -12.47393;
+    const float maxEv = 4.026069;
+    color = agxIn * max(color, vec3(1e-10));
+    color = clamp(log2(color), minEv, maxEv);
+    color = (color - minEv) / (maxEv - minEv);
+    color = AgxDefaultContrast(color);
+    color = agxOut * color;
+    // AgX çıktısı ekran kodlu; doğrusala çevir (sonda tekrar sRGB'ye kodlanır)
+    return SRGBToLinear(clamp(color, 0.0, 1.0));
+}
+
+vec3 Tonemap(vec3 c, float toe)
+{
+    if (u_Tonemapper == 1) return TonemapNeutral(c, toe);
+    if (u_Tonemapper == 2) return TonemapACES(c);
+    if (u_Tonemapper == 3) return TonemapAgX(c);
+    if (u_Tonemapper == 4) return c / (1.0 + Luminance(c));
+    return clamp(c, 0.0, 1.0);
+}
+
+void main()
+{
+    vec2 uv = v_UV;
+    vec3 color;
+    if (u_UseCA == 1)
+    {
+        vec2 dir = uv - 0.5;
+        float amount = u_CAIntensity * 0.012 * dot(dir, dir) * 4.0;
+        color.r = texture(u_Scene, uv - dir * amount).r;
+        color.g = texture(u_Scene, uv).g;
+        color.b = texture(u_Scene, uv + dir * amount).b;
+    }
+    else
+    {
+        color = texture(u_Scene, uv).rgb;
+    }
+    if (any(isnan(color)) || any(isinf(color)))
+        color = vec3(0.0);
+
+    if (u_UseAO == 1)
+        color *= texture(u_AO, uv).r;
+    if (u_UseBloom == 1)
+        color += texture(u_Bloom, uv).rgb * u_BloomIntensity * u_BloomTint;
+
+    color *= u_Exposure;
+    if (u_UseAutoExposure == 1)
+    {
+        // Ortalama parlaklığı orta griye (0.18) taşıyan pozlama, EV aralığında
+        float avgLum = exp(texture(u_AutoExposure, vec2(0.5)).r);
+        float ev = clamp(log2(0.18 / max(avgLum, 1e-5)), u_AutoExposureRange.x, u_AutoExposureRange.y);
+        color *= exp2(ev + u_AutoExposureCompensation);
+    }
+
+    if (u_UseGrading == 1)
+        color *= u_WhiteBalance;
+
+    // Arka plan pikselleri derinlik tamponunda 1.0'da kalır (gökyüzü LEQUAL ile derinlik yazmadan çizilir)
+    if (u_Tonemapper == 1 && u_LitScene == 0)
+        color = clamp(color, 0.0, 1.0);
+    else
+        color = Tonemap(color, (u_Tonemapper == 1 && texture(u_Depth, uv).r < 0.99999) ? 1.0 : 0.0);
+
+    if (u_UseGrading == 1)
+    {
+        // Lift / Gamma / Gain (ASC-CDL benzeri, ekran uzayına yakın uygulanır)
+        color = max(color * u_Gain + u_Lift * (1.0 - color), vec3(0.0));
+        color = pow(color, 1.0 / max(u_Gamma, vec3(0.01)));
+        // Kontrast (orta gri etrafında, log benzeri) ve doygunluk
+        color = (color - 0.18) * u_Contrast + 0.18;
+        float luma = Luminance(color);
+        color = mix(vec3(luma), color, u_Saturation);
+        color = max(color, vec3(0.0));
+    }
+
+    if (u_UseVignette == 1)
+    {
+        vec2 d = (uv - 0.5) * vec2(u_ScreenSize.x / max(u_ScreenSize.y, 1.0), 1.0);
+        float dist = length(d);
+        float inner = mix(0.95, 0.15, clamp(u_VignetteIntensity, 0.0, 1.0));
+        float outer = inner + max(u_VignetteSmoothness, 0.01);
+        float v = smoothstep(inner, outer, dist);
+        color = mix(color, u_VignetteColor, v);
+    }
+
+    vec3 srgb = LinearToSRGB(clamp(color, 0.0, 1.0));
+
+    if (u_UseGrain == 1)
+    {
+        float n = InterleavedGradientNoise(gl_FragCoord.xy + fract(u_Time * 7.31) * 113.0) - 0.5;
+        float lumaMask = 1.0 - abs(Luminance(srgb) * 2.0 - 1.0);
+        srgb += n * u_GrainIntensity * 0.25 * (0.4 + 0.6 * lumaMask);
+    }
+
+    // 8-bit bantlaşmayı önlemek için hafif titreşim
+    srgb += (InterleavedGradientNoise(gl_FragCoord.xy) - 0.5) / 255.0;
+
+    FragColor = vec4(clamp(srgb, 0.0, 1.0), 1.0);
+}

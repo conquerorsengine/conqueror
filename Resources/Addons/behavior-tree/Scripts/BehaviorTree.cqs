@@ -1,0 +1,171 @@
+using nativebridge;
+
+// Metin tanımlı davranış ağacı. Yapraklar aynı varlıktaki betiğin yöntemlerini çağırır:
+//   condition X  -> X() true/false
+//   action X     -> X(dt) "success" | "failure" | "running" (true/false da olur)
+// Ağaç: treeFile (proje içi dosya) ya da treeText ("|" ile satırlar, girinti 2 boşluk).
+script BehaviorTree : ConquerorScript
+{
+    public string treeFile = "";
+    public string treeText = "";
+    public float tickInterval = 0.0;
+    public bool enabled = true;
+
+    // Çalışma zamanı bilgisi
+    public int ticks = 0;
+    public string lastResult = "";
+    public string activePath = "";
+    public int nodeCount = 0;
+
+    private var nodes = [];
+    private float accum = 0.0;
+    private float lastTickTime = 0.0;
+
+    func Start() { Load(); }
+
+    func Load()
+    {
+        var src = treeText;
+        if (treeFile != "")
+        {
+            var t = FileReadText(treeFile);
+            if (t != null && t != "") { src = t; }
+        }
+        nodes = [];
+        var stack = [];   // {depth, index}
+        var raw = StringContains(src, "\n") ? StringSplit(src, "\n") : StringSplit(src, "|");
+        for (var r in raw)
+        {
+            var line = StringTrimRight(r);
+            var trimmed = StringTrim(line);
+            if (trimmed == "" || StringStartsWith(trimmed, "//")) { continue; }
+            var depth = 0;
+            while (depth < StringLength(line) && StringCharAt(line, depth) == " ") { depth++; }
+            depth = int(depth / 2);
+            var parts = StringSplit(trimmed, " ");
+            var node = {type: parts[0], arg: parts.Count > 1 ? parts[1] : "", children: [], state: 0, timer: 0.0, count: 0, running: -1};
+            var index = nodes.Count;
+            nodes.Add(node);
+            while (stack.Count > 0 && stack[stack.Count - 1].depth >= depth) { ListPop(stack); }
+            if (stack.Count > 0) { nodes[stack[stack.Count - 1].index].children.Add(index); }
+            stack.Add({depth: depth, index: index});
+        }
+        nodeCount = nodes.Count;
+    }
+
+    func Update(dt)
+    {
+        if (!enabled || nodes.Count == 0 || dt <= 0) { return; }
+        accum += dt;
+        if (tickInterval > 0 && accum < tickInterval) { return; }
+        var step = accum;
+        accum = 0.0;
+        ticks++;
+        activePath = "";
+        lastResult = Tick(0, step);
+    }
+
+    // Düğümün ve alt ağacının çalışma belleğini temizle
+    func ResetNode(i)
+    {
+        var n = nodes[i];
+        n.running = -1;
+        n.timer = 0.0;
+        n.count = 0;
+        for (var c in n.children) { ResetNode(c); }
+    }
+
+    // Düğüm çalıştır: "success" | "failure" | "running"
+    func Tick(i, dt)
+    {
+        var n = nodes[i];
+        var t = n.type;
+        activePath = activePath + (activePath == "" ? "" : " > ") + t + (n.arg != "" ? " " + n.arg : "");
+        if (t == "selector")
+        {
+            // Tepkisel seçici: her tikte en yüksek öncelikten başlar; daha öncelikli dal devralınca
+            // yarıda kalan alt dalın belleği (süreçteki sıra, bekleme süreleri) sıfırlanır
+            for (var c = 0; c < n.children.Count; c++)
+            {
+                var r = Tick(n.children[c], dt);
+                if (r == "failure") { continue; }
+                if (n.running >= 0 && n.running != c) { ResetNode(n.children[n.running]); }
+                n.running = r == "running" ? c : -1;
+                return r;
+            }
+            if (n.running >= 0) { ResetNode(n.children[n.running]); }
+            n.running = -1;
+            return "failure";
+        }
+        if (t == "sequence")
+        {
+            var start = n.running >= 0 ? n.running : 0;
+            for (var c = start; c < n.children.Count; c++)
+            {
+                var r = Tick(n.children[c], dt);
+                if (r == "running") { n.running = c; return "running"; }
+                if (r == "failure") { n.running = -1; return "failure"; }
+            }
+            n.running = -1;
+            return "success";
+        }
+        if (t == "parallel")
+        {
+            var anyRunning = false;
+            var anyFail = false;
+            for (var c2 in n.children)
+            {
+                var r2 = Tick(c2, dt);
+                if (r2 == "running") { anyRunning = true; }
+                if (r2 == "failure") { anyFail = true; }
+            }
+            return anyFail ? "failure" : (anyRunning ? "running" : "success");
+        }
+        if (t == "inverter")
+        {
+            var r3 = Tick(n.children[0], dt);
+            return r3 == "success" ? "failure" : (r3 == "failure" ? "success" : "running");
+        }
+        if (t == "succeeder")
+        {
+            var r4 = Tick(n.children[0], dt);
+            return r4 == "running" ? "running" : "success";
+        }
+        if (t == "repeat")
+        {
+            var times = n.arg != "" ? ParseInt(n.arg) : 0;
+            var r5 = Tick(n.children[0], dt);
+            if (r5 == "running") { return "running"; }
+            n.count = n.count + 1;
+            if (times > 0 && n.count >= times) { n.count = 0; return "success"; }
+            return "running";
+        }
+        if (t == "cooldown")
+        {
+            if (n.timer > 0) { n.timer = n.timer - dt; return "failure"; }
+            var r6 = Tick(n.children[0], dt);
+            if (r6 != "running") { n.timer = ParseFloat(n.arg); }
+            return r6;
+        }
+        if (t == "wait")
+        {
+            n.timer = n.timer + dt;
+            if (n.timer >= ParseFloat(n.arg)) { n.timer = 0.0; return "success"; }
+            return "running";
+        }
+        if (t == "condition")
+        {
+            var ok = InvokeMethod(GetEntityId(), n.arg);
+            return ok == true || ok == "success" ? "success" : "failure";
+        }
+        if (t == "action")
+        {
+            var res = InvokeMethod(GetEntityId(), n.arg, dt);
+            if (res == true || res == null) { return "success"; }
+            if (res == false) { return "failure"; }
+            return str(res);
+        }
+        LogWarn("BehaviorTree: unknown node '" + t + "'");
+        return "failure";
+    }
+}

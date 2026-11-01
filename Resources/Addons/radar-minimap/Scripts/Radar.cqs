@@ -1,0 +1,97 @@
+using nativebridge;
+
+// Radar: bu canvas'taki "Radar Disc" görüntüsünün üstünde blip'ler. Oyuncu: playerName ya da "Player" etiketli.
+// tags: "Etiket:r,g,b; ..." biçiminde (ör. "Enemy:1,0.2,0.2;Pickup:1,0.85,0.2").
+script Radar : ConquerorScript
+{
+    public string playerName = "";
+    public string tags = "Enemy:1,0.25,0.2;Pickup:1,0.85,0.2;Objective:0.3,0.7,1";
+    public float range = 40.0;
+    public bool rotateWithPlayer = true;
+    public float blipSize = 12.0;
+    public float refreshInterval = 0.05;
+
+    // Çalışma zamanı bilgisi
+    public int blipCount = 0;
+    public float lastBlipX = 0.0;
+    public float lastBlipY = 0.0;
+
+    private var disc = null;
+    private var pool = [];
+    private float timer = 0.0;
+    private var tagList = [];
+
+    func Start()
+    {
+        disc = FindEntity("Radar Disc");
+        tagList = [];
+        for (var part in StringSplit(tags, ";"))
+        {
+            var kv = StringSplit(StringTrim(part), ":");
+            if (kv.Count < 2) { continue; }
+            var c = StringSplit(kv[1], ",");
+            tagList.Add({tag: StringTrim(kv[0]), r: ParseFloat(c[0]), g: ParseFloat(c[1]), b: ParseFloat(c[2])});
+        }
+    }
+
+    func Player()
+    {
+        if (playerName != "") { return FindEntity(playerName); }
+        for (var e in FindEntitiesWithTag("Player")) { return e; }
+        return null;
+    }
+
+    func Blip(i)
+    {
+        while (pool.Count <= i)
+        {
+            var b = UICreateElement("Image", disc, "Blip");
+            UISetSize(b, blipSize, blipSize);
+            EntitySetComponentField(b, "Image", "CornerRadius", blipSize * 0.5);
+            pool.Add(b);
+        }
+        return pool[i];
+    }
+
+    func Update(dt)
+    {
+        if (disc == null) { return; }
+        timer -= GetUnscaledDeltaTime();
+        if (timer > 0) { return; }
+        timer = refreshInterval;
+        var player = Player();
+        if (player == null) { return; }
+        var p = EntityGetWorldPosition(player);
+        var yaw = rotateWithPlayer ? MathDegToRad(EntityGetRotation(player).y) : 0.0;
+        var size = UIGetSize(disc);
+        var radius = MathMin(size.x, size.y) * 0.5 - blipSize * 0.5;
+        var n = 0;
+        for (var t in tagList)
+        {
+            for (var e in FindEntitiesWithTag(t.tag))
+            {
+                if (e == player) { continue; }
+                var q = EntityGetWorldPosition(e);
+                var dx = q.x - p.x;
+                var dz = q.z - p.z;
+                // Oyuncunun bakışına göre döndür: ileri (-Z) radarın yukarısı
+                var rx = dx * MathCos(yaw) - dz * MathSin(yaw);
+                var rz = dx * MathSin(yaw) + dz * MathCos(yaw);
+                var sx = rx / range * radius;
+                var sy = -rz / range * radius;
+                var d = MathSqrt(sx * sx + sy * sy);
+                var edge = d > radius;
+                if (edge) { sx = sx / d * radius; sy = sy / d * radius; }
+                var b = Blip(n);
+                UISetVisible(b, true);
+                UISetPosition(b, sx, sy);
+                UISetColor(b, t.r, t.g, t.b, edge ? 0.5 : 1.0);
+                lastBlipX = sx;
+                lastBlipY = sy;
+                n++;
+            }
+        }
+        for (var i = n; i < pool.Count; i++) { UISetVisible(pool[i], false); }
+        blipCount = n;
+    }
+}

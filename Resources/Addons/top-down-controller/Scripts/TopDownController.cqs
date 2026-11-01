@@ -1,0 +1,138 @@
+using nativebridge;
+
+// Yukarıdan bakışlı hareket. 3D: Character Controller (XZ düzlemi). 2D: Rigidbody 2D (XY düzlemi).
+// faceMouse açıkken karakter fare imlecine döner (3D'de zemin düzlemiyle kesişim), kapalıysa gittiği yöne.
+script TopDownController : ConquerorScript
+{
+    public float moveSpeed = 6.0;
+    public float smoothing = 14.0;
+    public bool faceMouse = false;
+    public float turnSpeed = 900.0;
+    public float dashSpeed = 18.0;
+    public float dashDuration = 0.15;
+    public float dashCooldown = 0.6;
+    public float gravity = 20.0;
+
+    // Çalışma zamanı bilgisi
+    public bool dashing = false;
+    public int dashes = 0;
+    public float facing = 0.0;
+    public float distanceMoved = 0.0;
+    public bool is2D = false;
+
+    private float vx = 0.0;
+    private float vy = 0.0;
+    private float vz = 0.0;
+    private float dashTimer = 0.0;
+    private float cooldown = 0.0;
+    private float dashX = 0.0;
+    private float dashZ = 0.0;
+    private float lastX = 0.0;
+    private float lastZ = -1.0;
+    private bool dashRequest = false;
+
+    func Start()
+    {
+        is2D = HasComponent("Rigidbody2D");
+        if (is2D) { SetComponentField("Rigidbody2D", "GravityScale", 0.0); SetComponentField("Rigidbody2D", "FixedRotation", true); }
+        facing = is2D ? GetRotation().z : GetRotation().y;
+    }
+
+    // Kod / test için atılma
+    func Dash() { dashRequest = true; }
+
+    func Update(dt)
+    {
+        if (dt <= 0) { return; }
+        if (dt > 0.1) { dt = 0.1; }
+        var ix = 0.0;
+        var iy = 0.0;
+        if (IsKeyPressed(Key.W) || IsKeyPressed(Key.Up)) { iy += 1.0; }
+        if (IsKeyPressed(Key.S) || IsKeyPressed(Key.Down)) { iy -= 1.0; }
+        if (IsKeyPressed(Key.D) || IsKeyPressed(Key.Right)) { ix += 1.0; }
+        if (IsKeyPressed(Key.A) || IsKeyPressed(Key.Left)) { ix -= 1.0; }
+        var il = MathSqrt(ix * ix + iy * iy);
+        if (il > 1.0) { ix /= il; iy /= il; }
+        // Dünya yönü: 3D'de ileri -Z, 2D'de yukarı +Y
+        var mx = ix;
+        var mz = is2D ? iy : -iy;
+        if (il > 0.01) { lastX = mx; lastZ = mz; }
+
+        cooldown -= dt;
+        if ((IsKeyDown(Key.Space) || dashRequest) && cooldown <= 0)
+        {
+            dashRequest = false;
+            dashTimer = dashDuration;
+            cooldown = dashCooldown;
+            var dl = MathSqrt(lastX * lastX + lastZ * lastZ);
+            dashX = dl > 0 ? lastX / dl : 0.0;
+            dashZ = dl > 0 ? lastZ / dl : -1.0;
+            dashes++;
+        }
+        dashRequest = false;
+        dashing = dashTimer > 0;
+        var k = 1.0 - MathExp(-smoothing * dt);
+        if (dashing)
+        {
+            dashTimer -= dt;
+            vx = dashX * dashSpeed;
+            vz = dashZ * dashSpeed;
+        }
+        else
+        {
+            vx = MathLerp(vx, mx * moveSpeed, k);
+            vz = MathLerp(vz, mz * moveSpeed, k);
+        }
+
+        var before = GetPosition();
+        if (is2D)
+        {
+            SetLinearVelocity2D(vx, vz);
+        }
+        else
+        {
+            vy -= gravity * dt;
+            CharacterMove(vx * dt, vy * dt, vz * dt);
+            if (CharacterIsGrounded() && vy < 0) { vy = -2.0; }
+        }
+        var after = GetPosition();
+        var dx = after.x - before.x;
+        var dz = is2D ? after.y - before.y : after.z - before.z;
+        distanceMoved += MathSqrt(dx * dx + dz * dz);
+        UpdateFacing(dt, mx, mz, il);
+    }
+
+    func UpdateFacing(dt, mx, mz, il)
+    {
+        var want = facing;
+        var have = false;
+        if (faceMouse)
+        {
+            var m = GetMousePosition();
+            var p = GetPosition();
+            if (is2D)
+            {
+                var w = ViewportScreenToWorld(m.x, m.y);
+                if (w != null) { want = MathRadToDeg(MathAtan2(w.y - p.y, w.x - p.x)) - 90.0; have = true; }
+            }
+            else
+            {
+                var g = ScreenToGroundPoint(m.x, m.y, p.y);
+                if (g != null) { want = MathRadToDeg(MathAtan2(-(g.x - p.x), -(g.z - p.z))); have = true; }
+            }
+        }
+        if (!have && il > 0.01)
+        {
+            want = is2D ? MathRadToDeg(MathAtan2(mz, mx)) - 90.0 : MathRadToDeg(MathAtan2(-mx, -mz));
+            have = true;
+        }
+        if (!have) { return; }
+        var diff = MathNormalizeAngle(want - facing);
+        var step = turnSpeed * dt;
+        if (diff > step) { diff = step; }
+        if (diff < -step) { diff = -step; }
+        facing = MathNormalizeAngle(facing + diff);
+        if (is2D) { SetRotation(0, 0, facing); }
+        else { SetRotation(0, facing, 0); }
+    }
+}

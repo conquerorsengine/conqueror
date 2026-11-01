@@ -1,0 +1,88 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      Solo: false
+      Mute: false
+      Blending: 0
+      DefaultState: New State
+      EditorPosition: [0, 0]
+      EntryPosition: [180, 80]
+      AnyStatePosition: [260, 250]
+      ExitPosition: [550, 140]
+      ParentPosition: [420, 60]
+      States:
+        - Name: New State
+          Type: State
+          ClipName: ""
+          ClipIndex: 0
+          Speed: 1
+          Loop: true
+          CycleOffset: 0
+          Mirror: false
+          FootIK: false
+          WriteDefaults: true
+          MotionTimeParameter: ""
+          SpeedParameter: ""
+          Tag: ""
+          EditorPosX: 410
+          EditorPosY: 30
+          Behaviours:
+            []
+        - Name: Blend Tree
+          Type: BlendTree
+          ClipName: ""
+          ClipIndex: 0
+          Speed: 1
+          Loop: true
+          CycleOffset: 0
+          Mirror: false
+          FootIK: false
+          WriteDefaults: true
+          MotionTimeParameter: ""
+          SpeedParameter: ""
+          Tag: ""
+          EditorPosX: 340
+          EditorPosY: 140
+          Behaviours:
+            []
+          BlendType: 0
+          BlendParameter: Blend
+          BlendParameterY: ""
+          BlendChildren:
+            []
+      Transitions:
+        - From: Entry
+          To: New State
+          Duration: 0
+          ExitTime: 0.75
+          HasExitTime: false
+          FixedDuration: true
+          Offset: 0
+          Interruption: 0
+          OrderedInterruption: true
+          CanTransitionToSelf: false
+          Mute: false
+          Solo: false
+          Conditions:
+            []
+      SubStates:
+        - Name: New StateMachine
+          DefaultState: ""
+          EditorPosition: [360, -40]
+          EntryPosition: [50, 200]
+          AnyStatePosition: [50, 330]
+          ExitPosition: [760, 200]
+          ParentPosition: [420, 100]
+          States:
+            []
+          Transitions:
+            []
+          SubStates:
+            []
+  Parameters:
+    - Name: Blend
+      Type: Float
+      Default: 0
+  NextNodeID: 1

@@ -1,0 +1,227 @@
+using nativebridge;
+
+// AR oturumu (Unity AR Foundation ARSession + ARPlaneManager + ARPointCloudManager + ARRaycastManager, Unreal
+// ARSessionConfig + ARTrackedGeometry karşılığı). Cihaz kamerası yokken AR Simulation çalışır: "AR Simulation
+// Environment" altındaki oda gerçek dünyanın yerini tutar. Her karede kameradan görüş alanına rastgele ışınlar atılır:
+// çarptıkları yerde öznitelik noktaları (feature points) belirir, "AR Surface" etiketli yatay yüzeylerde düzlem bulunur
+// ve kamera gezdikçe büyür (ARCore / ARKit gibi). Yerleştirme RaycastPlanes ile yalnız bulunan düzlemlere ışın atar.
+// Cihaz hızlı sallanınca izleme "Limited" olur ve algılama durur.
+script ARSession : ConquerorScript
+{
+    public int raysPerFrame = 14;
+    public float maxRange = 4.5;            // derinlik algılama menzili (m)
+    public float minPlaneSize = 0.3;        // bu boyuttan küçük düzlem gösterilmez (m)
+    public float initTime = 1.2;            // oturum açılışı (s)
+    public bool showPlanes = true;
+    public string surfaceTag = "AR Surface";
+    [Header("State")]
+    public string trackingState = "Initializing";
+    public int planeCount = 0;
+    public int featurePoints = 0;
+    public float sessionTime = 0.0;
+
+    private var cam = -1;
+    private var points = -1;
+    private var planes = Map();             // yüzey varlığı -> düzlem
+    private var keys = [];
+    private var lastPos = null;
+    private var lastFwd = null;
+    private float limited = 0.0;
+    private int emitTick = 0;
+
+    func Start()
+    {
+        cam = FindEntity("AR Camera");
+        points = EntityFindChild(GetEntityId(), "AR Feature Points");
+    }
+
+    // Kamera görüş alanında rastgele yön (dikey FOV ~55, 16:9)
+    func RandomRay()
+    {
+        var f = EntityGetForward(cam);
+        var r = EntityGetRight(cam);
+        var u = EntityGetUp(cam);
+        var sx = RandomRange(-0.9, 0.9) * 0.92;
+        var sy = RandomRange(-0.9, 0.9) * 0.52;
+        var d = {x: f.x + r.x * sx + u.x * sy, y: f.y + r.y * sx + u.y * sy, z: f.z + r.z * sx + u.z * sy};
+        var l = MathSqrt(d.x * d.x + d.y * d.y + d.z * d.z);
+        return {x: d.x / l, y: d.y / l, z: d.z / l};
+    }
+
+    func Track(dt)
+    {
+        var p = EntityGetWorldPosition(cam);
+        var f = EntityGetForward(cam);
+        if (lastPos != null && dt > 0.0)
+        {
+            var dx = p.x - lastPos.x;
+            var dy = p.y - lastPos.y;
+            var dz = p.z - lastPos.z;
+            var speed = MathSqrt(dx * dx + dy * dy + dz * dz) / dt;
+            var dot = MathClamp(f.x * lastFwd.x + f.y * lastFwd.y + f.z * lastFwd.z, -1.0, 1.0);
+            var turn = MathRadToDeg(MathAcos(dot)) / dt;
+            if (speed > 3.0 || turn > 360.0) { limited = 0.6; }   // ani savurma (fareyle normal bakış izlemeyi bozmaz)
+        }
+        lastPos = p;
+        lastFwd = f;
+        limited = MathMax(0.0, limited - dt);
+        if (sessionTime < initTime) { trackingState = "Initializing"; }
+        else if (limited > 0.0) { trackingState = "Limited"; }
+        else { trackingState = "Tracking"; }
+    }
+
+    func AddPoint(key, p)
+    {
+        var pl = planes[key];
+        if (pl == null)
+        {
+            pl = {minX: p.x, maxX: p.x, minZ: p.z, maxZ: p.z, y: p.y, n: 0, vis: -1, border: -1, age: 0.0,
+                  dx0: p.x, dx1: p.x, dz0: p.z, dz1: p.z};
+            planes[key] = pl;
+            keys.Add(key);
+        }
+        pl.minX = MathMin(pl.minX, p.x);
+        pl.maxX = MathMax(pl.maxX, p.x);
+        pl.minZ = MathMin(pl.minZ, p.z);
+        pl.maxZ = MathMax(pl.maxZ, p.z);
+        pl.n++;
+    }
+
+    func Detect()
+    {
+        var o = EntityGetWorldPosition(cam);
+        for (var i = 0; i < raysPerFrame; i++)
+        {
+            var d = RandomRay();
+            var hit = Raycast(o.x, o.y, o.z, d.x, d.y, d.z, maxRange, -1, false);
+            if (hit == null || hit.distance < 0.15) { continue; }
+            // Öznitelik noktaları her yüzeyde (duvar, mobilya) görünür; düzlemler yalnız yatay AR yüzeylerinde
+            emitTick++;
+            if (showPlanes && points >= 0 && emitTick % 2 == 0)
+            {
+                ParticleEmitAt(points, hit.point.x + hit.normal.x * 0.004, hit.point.y + hit.normal.y * 0.004, hit.point.z + hit.normal.z * 0.004, 1);
+                featurePoints++;
+            }
+            if (hit.normal.y > 0.92 && EntityGetTag(hit.entity) == surfaceTag) { AddPoint("" + hit.entity, hit.point); }
+        }
+    }
+
+    func MakeVisual(pl)
+    {
+        planeCount++;
+        var e = CreateEntity("AR Plane " + planeCount);
+        EntityAddComponent(e, "MeshRenderer");
+        EntitySetComponentField(e, "MeshRenderer", "Mesh", "Plane");
+        EntitySetComponentField(e, "MeshRenderer", "Texture", "Assets/AR/plane_dots.png");
+        EntitySetComponentField(e, "MeshRenderer", "WorldAlignedUV", true);
+        EntitySetComponentField(e, "MeshRenderer", "Tiling", {x: 3, y: 3});      // 4 x 4 nokta / 33 cm: ~8 cm aralık
+        EntitySetComponentField(e, "MeshRenderer", "Unlit", true);
+        EntitySetComponentField(e, "MeshRenderer", "CastShadows", false);
+        EntitySetColor(e, {r: 1, g: 1, b: 1, a: 0.01});
+        EntitySetTag(e, "AR Plane");
+        pl.vis = e;
+        var b = CreateEntity("AR Plane " + planeCount + " Boundary");
+        EntityAddComponent(b, "LineRenderer");
+        EntitySetComponentField(b, "LineRenderer", "UseWorldSpace", true);
+        EntitySetComponentField(b, "LineRenderer", "Loop", true);
+        EntitySetComponentField(b, "LineRenderer", "StartWidth", 0.006);
+        EntitySetComponentField(b, "LineRenderer", "EndWidth", 0.006);
+        EntitySetComponentField(b, "LineRenderer", "Emissive", 1.0);
+        pl.border = b;
+        // Görünen dikdörtgen bulunan noktaların ortasından başlar ve onlara doğru büyür
+        var cx = (pl.minX + pl.maxX) * 0.5;
+        var cz = (pl.minZ + pl.maxZ) * 0.5;
+        pl.dx0 = cx;
+        pl.dx1 = cx;
+        pl.dz0 = cz;
+        pl.dz1 = cz;
+    }
+
+    func UpdateVisual(pl, dt)
+    {
+        var k = 1.0 - MathExp(-3.0 * dt);
+        pl.dx0 = MathLerp(pl.dx0, pl.minX, k);
+        pl.dx1 = MathLerp(pl.dx1, pl.maxX, k);
+        pl.dz0 = MathLerp(pl.dz0, pl.minZ, k);
+        pl.dz1 = MathLerp(pl.dz1, pl.maxZ, k);
+        pl.age += dt;
+        var a = MathClamp01(pl.age / 0.6);
+        var y = pl.y + 0.006;
+        EntitySetActive(pl.vis, showPlanes);
+        EntitySetActive(pl.border, showPlanes);
+        if (!showPlanes) { return; }
+        EntitySetPosition(pl.vis, (pl.dx0 + pl.dx1) * 0.5, y, (pl.dz0 + pl.dz1) * 0.5);
+        EntitySetScale(pl.vis, MathMax(0.01, (pl.dx1 - pl.dx0) * 0.5), 1, MathMax(0.01, (pl.dz1 - pl.dz0) * 0.5));
+        EntitySetColor(pl.vis, {r: 1, g: 1, b: 1, a: 0.55 * a + 0.01});
+        var yb = y + 0.002;
+        EntitySetComponentField(pl.border, "LineRenderer", "Positions", [{x: pl.dx0, y: yb, z: pl.dz0}, {x: pl.dx1, y: yb, z: pl.dz0},
+                                                                          {x: pl.dx1, y: yb, z: pl.dz1}, {x: pl.dx0, y: yb, z: pl.dz1}]);
+        var c = {r: 1, g: 1, b: 1, a: 0.9 * a};
+        EntitySetComponentField(pl.border, "LineRenderer", "StartColor", c);
+        EntitySetComponentField(pl.border, "LineRenderer", "EndColor", c);
+    }
+
+    func Update(dt)
+    {
+        if (cam < 0) { return; }
+        sessionTime += dt;
+        Track(dt);
+        if (trackingState == "Tracking") { Detect(); }
+        foreach (var key in keys)
+        {
+            var pl = planes[key];
+            if (pl.vis < 0)
+            {
+                if (pl.n >= 8 && pl.maxX - pl.minX >= minPlaneSize && pl.maxZ - pl.minZ >= minPlaneSize) { MakeVisual(pl); }
+                else { continue; }
+            }
+            UpdateVisual(pl, dt);
+        }
+    }
+
+    // Bulunan düzlemlere ışın (ARRaycastManager): en yakın {point, key, y} ya da null
+    func RaycastPlanes(ox, oy, oz, dx, dy, dz)
+    {
+        var best = null;
+        var bestT = 1000.0;
+        foreach (var key in keys)
+        {
+            var pl = planes[key];
+            if (pl.vis < 0 || MathAbs(dy) < 0.00001) { continue; }
+            var t = (pl.y - oy) / dy;
+            if (t <= 0.0 || t >= bestT) { continue; }
+            var px = ox + dx * t;
+            var pz = oz + dz * t;
+            if (px < pl.dx0 || px > pl.dx1 || pz < pl.dz0 || pz > pl.dz1) { continue; }
+            bestT = t;
+            best = {point: {x: px, y: pl.y, z: pz}, key: key, y: pl.y};
+        }
+        return best;
+    }
+
+    // Düzlemin görünen sınırları (sürüklemede nesne düzlemde kalsın)
+    func PlaneBounds(key)
+    {
+        var pl = planes[key];
+        if (pl == null) { return null; }
+        return {minX: pl.dx0, maxX: pl.dx1, minZ: pl.dz0, maxZ: pl.dz1, y: pl.y};
+    }
+
+    func SetShowPlanes(on) { showPlanes = on; }
+
+    // Oturumu sıfırla (ARSession.Reset): düzlemler yeniden aranır
+    func ResetSession()
+    {
+        foreach (var key in keys)
+        {
+            var pl = planes[key];
+            if (pl.vis >= 0) { EntityDestroy(pl.vis); EntityDestroy(pl.border); }
+        }
+        planes = Map();
+        keys = [];
+        planeCount = 0;
+        featurePoints = 0;
+        sessionTime = 0.0;
+        trackingState = "Initializing";
+    }
+}

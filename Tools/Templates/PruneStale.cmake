@@ -1,0 +1,18 @@
+# Proje şablonlarının çıktı kopyasını aynalar: SRC'de artık olmayan dosyalar DST'den silinir.
+# (copy_directory_if_different yalnızca kopyalar; silinen bir şablon dosyası yoksa her yeni projeye taşınırdı.)
+# Kullanım: cmake -DSRC=<kaynak klasör> -DDST=<çıktı klasörü> -P PruneStale.cmake
+if(NOT SRC OR NOT DST OR NOT IS_DIRECTORY "${DST}")
+    return()
+endif()
+# Klasörler de (taşınan / silinen bir klasör boş kalıp her yeni projeye kopyalanmasın)
+file(GLOB_RECURSE stale RELATIVE "${DST}" LIST_DIRECTORIES true "${DST}/*")
+foreach(f IN LISTS stale)
+    if(NOT EXISTS "${SRC}/${f}" AND EXISTS "${DST}/${f}")
+        if(IS_DIRECTORY "${DST}/${f}")
+            file(REMOVE_RECURSE "${DST}/${f}")
+        else()
+            file(REMOVE "${DST}/${f}")
+        endif()
+        message(STATUS "Removed stale template file: ${f}")
+    endif()
+endforeach()

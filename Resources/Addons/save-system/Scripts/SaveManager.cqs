@@ -1,0 +1,131 @@
+using nativebridge;
+
+// Kayıt yöneticisi: Save(slot) / Load(slot). Saveable betiği olan nesneler ve globalKeys (virgülle)
+// genel değerleri JSON olarak kalıcı veri klasörüne yazılır (StateSaveGame). F5 / F9 hızlı kayıt / yükleme.
+script SaveManager : ConquerorScript
+{
+    public string defaultSlot = "slot1";
+    public string globalKeys = "score";
+    public bool quickKeys = true;
+    public float autosaveInterval = 0.0;
+
+    // Çalışma zamanı bilgisi
+    public int saves = 0;
+    public int loads = 0;
+    public int lastObjectCount = 0;
+    public string lastSlot = "";
+    public string lastError = "";
+
+    private float autosaveTimer = 0.0;
+
+    func FileName(slot) { return "save_" + slot + ".json"; }
+
+    func Collect()
+    {
+        var list = [];
+        for (var e in AllSaveables())
+        {
+            var id = InvokeMethod(e, "Id");
+            var rec = {id: id};
+            if (GetScriptField(e, "saveTransform"))
+            {
+                var p = EntityGetPosition(e);
+                var r = EntityGetRotation(e);
+                var s = EntityGetScale(e);
+                rec.p = [p.x, p.y, p.z];
+                rec.r = [r.x, r.y, r.z];
+                rec.s = [s.x, s.y, s.z];
+            }
+            var f = Map();
+            var names = GetScriptField(e, "fields");
+            if (names != null && names != "")
+            {
+                for (var n in StringSplit(names, ","))
+                {
+                    var key = StringTrim(n);
+                    if (key == "") { continue; }
+                    f[key] = GetScriptField(e, key);
+                }
+            }
+            rec.f = f;
+            list.Add(rec);
+        }
+        return list;
+    }
+
+    func AllSaveables() { return FindEntitiesWithScript("Saveable"); }
+
+    func Save(slot = "")
+    {
+        var s = slot == "" ? defaultSlot : slot;
+        var data = Map();
+        data["version"] = 1;
+        data["scene"] = GetSceneName();
+        data["time"] = DateFormat(DateNow(), "%Y-%m-%d %H:%M:%S");
+        data["objects"] = Collect();
+        var g = Map();
+        for (var k in StringSplit(globalKeys, ","))
+        {
+            var key = StringTrim(k);
+            if (key != "" && GlobalHas(key)) { g[key] = GlobalGet(key); }
+        }
+        data["globals"] = g;
+        var ok = StateSaveGame(FileName(s), JSONStringify(data));
+        if (!ok) { lastError = "write failed"; return false; }
+        saves++;
+        lastSlot = s;
+        lastObjectCount = data["objects"].Count;
+        return true;
+    }
+
+    func Load(slot = "")
+    {
+        var s = slot == "" ? defaultSlot : slot;
+        var text = StateLoadGame(FileName(s));
+        if (text == null || text == "") { lastError = "no save in " + s; return false; }
+        var data = JSONParse(text);
+        if (data == null) { lastError = "corrupt save"; return false; }
+        var byId = Map();
+        for (var e in AllSaveables()) { byId[InvokeMethod(e, "Id")] = e; }
+        var applied = 0;
+        for (var rec in data["objects"])
+        {
+            if (!MapHasKey(byId, rec.id)) { continue; }
+            var e = byId[rec.id];
+            if (MapHasKey(rec, "p"))
+            {
+                EntitySetPosition(e, rec.p[0], rec.p[1], rec.p[2]);
+                EntitySetRotation(e, rec.r[0], rec.r[1], rec.r[2]);
+                EntitySetScale(e, rec.s[0], rec.s[1], rec.s[2]);
+                if (EntityHasComponent(e, "Rigidbody")) { SetLinearVelocity(e, 0, 0, 0); SetAngularVelocity(e, 0, 0, 0); }
+            }
+            for (var key in MapKeys(rec.f)) { SetScriptField(e, key, rec.f[key]); }
+            SendMessage(e, "OnLoaded");
+            applied++;
+        }
+        var g = data["globals"];
+        if (g != null) { for (var key in MapKeys(g)) { GlobalSet(key, g[key]); } }
+        loads++;
+        lastSlot = s;
+        lastObjectCount = applied;
+        BroadcastMessage("OnGameLoaded", s);
+        return true;
+    }
+
+    func HasSave(slot = "")
+    {
+        var text = StateLoadGame(FileName(slot == "" ? defaultSlot : slot));
+        return text != null && text != "";
+    }
+
+    func Update(dt)
+    {
+        if (quickKeys && IsKeyDown(Key.F5)) { Save(); }
+        if (quickKeys && IsKeyDown(Key.F9)) { Load(); }
+        if (autosaveInterval > 0)
+        {
+            autosaveTimer += dt;
+            if (autosaveTimer >= autosaveInterval) { autosaveTimer = 0; Save("autosave"); }
+        }
+    }
+}

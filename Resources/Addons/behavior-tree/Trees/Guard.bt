@@ -1,0 +1,11 @@
+// Davranış ağacı: her satır bir düğüm, girinti (2 boşluk) çocukları belirler.
+// Düğümler: selector, sequence, parallel, inverter, succeeder, repeat <n>, cooldown <s>, wait <s>,
+//           condition <Yöntem>, action <Yöntem>
+selector
+  sequence
+    condition PlayerNearby
+    action ChasePlayer
+  sequence
+    action PickWanderPoint
+    action WalkToWanderPoint
+    wait 1.0

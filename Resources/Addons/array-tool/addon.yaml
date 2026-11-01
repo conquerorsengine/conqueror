@@ -1,0 +1,12 @@
+Id: conqueror.array-tool
+Name: Array Tool
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Duplicate the selection in patterns: linear rows with an offset step, 2D or 3D grids with
+  spacing, and radial rings around a center that can face outward. Results are grouped under
+  one parent and the whole operation is a single undo step.
+Category: Level Design
+Icon: grip
+Tags: [editor, array, duplicate, grid, radial, level-design]
+Editor: Editor/ArrayTool.cqs

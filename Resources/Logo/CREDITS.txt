@@ -1,0 +1,5 @@
+Conqueror's Engine logo
+- Emblem ("CQ"): original artwork (Tools/Branding/Conqueror_Logo_Source.png), traced to vectors by Tools/Branding/make_logo_svg.py.
+- Wordmark: set in Montserrat ExtraBold by The Montserrat Project Authors, SIL Open Font License 1.1
+  (https://github.com/JulietaUla/Montserrat), converted to outlines. The font itself is not shipped.
+- App icons: Tools/Branding/make_icons.py from Conqueror_Emblem.svg.

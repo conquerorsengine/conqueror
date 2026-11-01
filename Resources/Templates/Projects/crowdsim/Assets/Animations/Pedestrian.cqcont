@@ -1,0 +1,146 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: Locomotion
+      States:
+        - Name: Locomotion
+          Type: BlendTree
+          EditorPosX: 260
+          EditorPosY: 170
+          BlendType: 0
+          BlendParameter: Speed
+          BlendChildren:
+            - ClipIndex: 0
+              ClipName: idle
+              Threshold: 0
+            - ClipIndex: 1
+              ClipName: walk
+              Threshold: 1.3
+            - ClipIndex: 2
+              ClipName: jog
+              Threshold: 3.4
+        - Name: Talk
+          ClipIndex: 26
+          ClipName: talk
+          Loop: true
+          Speed: 1.0
+          EditorPosX: 560
+          EditorPosY: 60
+        - Name: Phone
+          ClipIndex: 36
+          ClipName: phone
+          Loop: true
+          Speed: 1.0
+          EditorPosX: 560
+          EditorPosY: 150
+        - Name: Sit
+          ClipIndex: 24
+          ClipName: sit_idle
+          Loop: true
+          Speed: 1.0
+          EditorPosX: 560
+          EditorPosY: 240
+        - Name: SitTalk
+          ClipIndex: 25
+          ClipName: sit_talk
+          Loop: true
+          Speed: 1.0
+          EditorPosX: 560
+          EditorPosY: 330
+        - Name: Wait
+          ClipIndex: 35
+          ClipName: idle_arms_folded
+          Loop: true
+          Speed: 1.0
+          EditorPosX: 560
+          EditorPosY: 420
+      Transitions:
+        - From: Locomotion
+          To: Talk
+          HasExitTime: false
+          Duration: 0.35
+          Conditions:
+            - Parameter: Activity
+              Mode: Equals
+              Threshold: 1
+        - From: Talk
+          To: Locomotion
+          HasExitTime: false
+          Duration: 0.35
+          Conditions:
+            - Parameter: Activity
+              Mode: NotEquals
+              Threshold: 1
+        - From: Locomotion
+          To: Phone
+          HasExitTime: false
+          Duration: 0.35
+          Conditions:
+            - Parameter: Activity
+              Mode: Equals
+              Threshold: 2
+        - From: Phone
+          To: Locomotion
+          HasExitTime: false
+          Duration: 0.35
+          Conditions:
+            - Parameter: Activity
+              Mode: NotEquals
+              Threshold: 2
+        - From: Locomotion
+          To: Sit
+          HasExitTime: false
+          Duration: 0.35
+          Conditions:
+            - Parameter: Activity
+              Mode: Equals
+              Threshold: 3
+        - From: Sit
+          To: Locomotion
+          HasExitTime: false
+          Duration: 0.35
+          Conditions:
+            - Parameter: Activity
+              Mode: NotEquals
+              Threshold: 3
+        - From: Locomotion
+          To: SitTalk
+          HasExitTime: false
+          Duration: 0.35
+          Conditions:
+            - Parameter: Activity
+              Mode: Equals
+              Threshold: 4
+        - From: SitTalk
+          To: Locomotion
+          HasExitTime: false
+          Duration: 0.35
+          Conditions:
+            - Parameter: Activity
+              Mode: NotEquals
+              Threshold: 4
+        - From: Locomotion
+          To: Wait
+          HasExitTime: false
+          Duration: 0.35
+          Conditions:
+            - Parameter: Activity
+              Mode: Equals
+              Threshold: 5
+        - From: Wait
+          To: Locomotion
+          HasExitTime: false
+          Duration: 0.35
+          Conditions:
+            - Parameter: Activity
+              Mode: NotEquals
+              Threshold: 5
+  Parameters:
+    - Name: Speed
+      Type: Float
+      Default: 0
+    - Name: Activity
+      Type: Int
+      Default: 0

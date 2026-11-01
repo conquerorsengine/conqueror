@@ -1,0 +1,18 @@
+Id: conqueror.teleporters
+Name: Teleporters
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Linked teleport pads: step into one and come out of its partner, facing the partner's
+  direction, with velocity kept or reset, a tag filter, cooldowns that prevent ping-ponging,
+  one-way pads and an optional particle burst on arrival.
+Category: Gameplay
+Icon: shuffle
+Tags: [teleport, portal, trigger, level-design]
+Components:
+  - Scripts/Teleporter.cqs
+Inserts:
+  - Name: Teleporter Pair
+    Icon: shuffle
+    Prefab: Prefabs/TeleporterPair.cqprefab
+    Tooltip: Two linked pads ("Teleporter A" and "Teleporter B") 10 m apart

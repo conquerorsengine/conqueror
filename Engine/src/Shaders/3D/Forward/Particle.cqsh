@@ -1,0 +1,109 @@
+#language GLSL
+// Conqueror's Engine - Parçacık: örneklenmiş (instanced) billboard'lar
+#type vertex
+#version 450 core
+
+#include "Include/FrameData.glsl"
+
+layout(location = 0) in vec2 a_Corner;          // -0.5..0.5
+layout(location = 1) in vec4 i_PosSize;         // xyz dünya, w boyut
+layout(location = 2) in vec4 i_Color;
+layout(location = 3) in vec4 i_Params;          // x dönüş, y kare indisi, z hız uzunluğu
+layout(location = 4) in vec4 i_Velocity;        // xyz yön (gerilmiş mod)
+
+uniform int u_RenderMode = 0;                   // 0 billboard, 1 gerilmiş, 2 yatay, 3 dikey
+uniform float u_LengthScale = 2.0;
+uniform float u_SpeedScale = 0.1;
+uniform vec2 u_Tiles = vec2(1.0);
+
+out vec2 v_UV;
+out vec4 v_Color;
+
+void main()
+{
+    vec3 camRight = CQ_Frame.InvView[0].xyz;
+    vec3 camUp = CQ_Frame.InvView[1].xyz;
+    vec3 camPos = CQ_Frame.CameraPosTime.xyz;
+    vec3 center = i_PosSize.xyz;
+    float size = i_PosSize.w;
+
+    vec2 c = a_Corner;
+    float s = sin(i_Params.x), co = cos(i_Params.x);
+    vec2 rc = vec2(c.x * co - c.y * s, c.x * s + c.y * co);
+
+    vec3 world;
+    if (u_RenderMode == 1)
+    {
+        vec3 dir = i_Velocity.xyz;
+        float len = length(dir);
+        dir = len > 1e-5 ? dir / len : camUp;
+        vec3 toCam = normalize(camPos - center);
+        vec3 side = normalize(cross(dir, toCam) + vec3(1e-5));
+        float stretch = size * (u_LengthScale + i_Params.z * u_SpeedScale);
+        world = center + side * c.x * size + dir * (c.y * stretch);
+    }
+    else if (u_RenderMode == 2)
+        world = center + vec3(rc.x, 0.0, rc.y) * size;
+    else if (u_RenderMode == 3)
+    {
+        vec3 toCam = camPos - center;
+        toCam.y = 0.0;
+        vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), normalize(toCam + vec3(1e-5))));
+        world = center + (right * rc.x + vec3(0.0, 1.0, 0.0) * rc.y) * size;
+    }
+    else
+        world = center + (camRight * rc.x + camUp * rc.y) * size;
+
+    // Doku sayfası (kare indisi soldan sağa, yukarıdan aşağı)
+    vec2 uv = a_Corner + 0.5;
+    int frame = int(i_Params.y);
+    int tx = max(int(u_Tiles.x + 0.5), 1), ty = max(int(u_Tiles.y + 0.5), 1);
+    int fx = frame % tx, fy = (frame / tx) % ty;
+    v_UV = vec2((float(fx) + uv.x) / float(tx), 1.0 - (float(fy) + 1.0 - uv.y) / float(ty));
+
+    v_Color = i_Color;
+    gl_Position = CQ_Frame.ViewProjection * vec4(world, 1.0);
+}
+
+#type fragment
+#version 450 core
+
+#include "Include/Common.glsl"
+#include "Include/FrameData.glsl"
+
+in vec2 v_UV;
+in vec4 v_Color;
+layout(location = 0) out vec4 FragColor;
+
+uniform sampler2D u_Texture;
+uniform int u_HasTexture = 0;
+uniform int u_Blend = 0;                // 0 alfa, 1 eklemeli, 2 önceden çarpılmış
+uniform float u_Emissive = 1.0;
+
+void main()
+{
+    vec4 tex;
+    if (u_HasTexture == 1)
+        tex = texture(u_Texture, v_UV);
+    else
+    {
+        // Yumuşak daire (doku yoksa)
+        float d = length(v_UV - 0.5) * 2.0;
+        float a = 1.0 - smoothstep(0.0, 1.0, d);
+        tex = vec4(1.0, 1.0, 1.0, a * a);
+    }
+    vec4 c = tex * v_Color;
+    if (c.a < 0.003)
+        discard;
+
+    vec3 rgb = c.rgb;
+    if (CQ_Frame.FeatureFlags.x == 1)
+        rgb = SRGBToLinear(rgb) * u_Emissive;
+
+    if (u_Blend == 1)
+        FragColor = vec4(rgb * c.a, 1.0);      // ONE, ONE
+    else if (u_Blend == 2)
+        FragColor = vec4(rgb * c.a, c.a);      // ONE, ONE_MINUS_SRC_ALPHA
+    else
+        FragColor = vec4(rgb, c.a);
+}

@@ -1,0 +1,60 @@
+using nativebridge;
+
+// Yüzen yazı: Text Renderer'lı nesne yükselir, büyüyüp küçülür, sönümlenir ve kameraya döner; ömrü dolunca silinir.
+script FloatingText : ConquerorScript
+{
+    public float lifetime = 1.2;
+    public float riseSpeed = 1.4;
+    public float popScale = 1.4;
+    public float drift = 0.4;
+
+    // Çalışma zamanı bilgisi
+    public float age = 0.0;
+
+    private var baseScale = null;
+    private var color = null;
+    private float driftX = 0.0;
+
+    func Start()
+    {
+        baseScale = GetScale();
+        color = GetComponentField("TextRenderer", "Color");
+        driftX = (MathRandom() * 2.0 - 1.0) * drift;
+    }
+
+    func Update(dt)
+    {
+        age += dt;
+        if (age >= lifetime) { DestroyEntity(); return; }
+        var k = age / lifetime;
+        var p = GetPosition();
+        SetPosition(p.x + driftX * dt, p.y + riseSpeed * dt * (1.0 - k), p.z);
+        var s = k < 0.15 ? MathLerp(0.6, popScale, k / 0.15) : MathLerp(popScale, 1.0, MathMin(1.0, (k - 0.15) / 0.3));
+        SetScale(baseScale.x * s, baseScale.y * s, baseScale.z * s);
+        if (color != null)
+        {
+            var a = k < 0.6 ? 1.0 : 1.0 - (k - 0.6) / 0.4;
+            SetComponentField("TextRenderer", "Color", [color.r, color.g, color.b, a]);
+        }
+        var cam = GetMainCamera();
+        if (cam != null)
+        {
+            var c = EntityGetWorldPosition(cam);
+            var me = EntityGetWorldPosition(GetEntityId());
+            SetRotation(0, MathRadToDeg(MathAtan2(c.x - me.x, c.z - me.z)), 0);
+        }
+    }
+}
+
+// Yazıyı oluştur (yardımcı): dünya konumunda renkli metin
+func SpawnFloatingText(text, x, y, z, r, g, b, size)
+{
+    var e = CreateEntity("Floating Text");
+    EntitySetPosition(e, x, y, z);
+    EntityAddComponent(e, "TextRenderer");
+    EntitySetComponentField(e, "TextRenderer", "Text", text);
+    EntitySetComponentField(e, "TextRenderer", "Color", [r, g, b, 1.0]);
+    EntitySetComponentField(e, "TextRenderer", "FontSize", size);
+    AddScript(e, "Packages/floating-text/Scripts/FloatingText.cqs");
+    return e;
+}

@@ -8,6 +8,7 @@
 #include <vector>
 #include <functional>
 #include <string>
+#include <atomic>
 
 namespace Conqueror
 {
@@ -53,6 +54,9 @@ namespace Conqueror
 
         void Bake(Scene* scene);
         bool IsBaking() const { return m_IsBaking; }
+        // Thread güvenli iptal isteği (bir sonraki ilerleme bildiriminde durur)
+        void RequestCancel() { m_CancelRequested.store(true); }
+        bool WasCancelled() const { return m_Cancelled; }
         float GetProgress() const { return m_Progress; }
 
         void SetRealtimeMode(bool enabled) { m_RealtimeMode = enabled; }
@@ -72,6 +76,7 @@ namespace Conqueror
 
     private:
         void ReportProgress(float progress, const std::string& step);
+        void BakeInternal(Scene* scene);
         void ApplyFiltering();
 
         LightmapSettings m_Settings;
@@ -81,6 +86,8 @@ namespace Conqueror
         LightmapProgressCallback m_ProgressCallback;
 
         bool m_RealtimeMode = false;
+        std::atomic<bool> m_CancelRequested{ false };
+        bool m_Cancelled = false;
 
         std::vector<glm::vec2> m_PendingUV2;
         bool m_HasPendingUV2 = false;

@@ -1,6 +1,10 @@
 #include "CQSNativeBridge.h"
+#include <algorithm>
+#include <cctype>
+#include "Core/Input/GameInput.h"
 #include "CQSVM.h"
 #include "CQSEngine.h"
+#include "Scripting/ScriptContext.h"
 #include "Core/Logging/Log.h"
 #include "Core/Input/Input.h"
 #include "Core/Time/TimeManager.h"
@@ -11,6 +15,7 @@
 #include "Scene/Scene.h"
 #include "AISystem/Pathfinding/AStar.h"
 #include "AISystem/Navigation/NavMesh.h"
+#include "AISystem/Navigation/NavAgents.h"
 #include "Networking/NetworkManager.h"
 #include "Networking/RPC/RPCSystem.h"
 #include "Core/Debug/DebugDraw.h"
@@ -45,6 +50,16 @@ namespace Conqueror::CQS
             {"Space", Key::Space}, {"Enter", Key::Enter}, {"Escape", Key::Escape},
             {"Backspace", Key::Backspace}, {"Tab", Key::Tab},
             {"ArrowUp", Key::Up}, {"ArrowDown", Key::Down}, {"ArrowLeft", Key::Left}, {"ArrowRight", Key::Right},
+            // Yaygın diğer adlar (Unity / Godot alışkanlıkları)
+            {"Up", Key::Up}, {"Down", Key::Down}, {"Left", Key::Left}, {"Right", Key::Right},
+            {"UpArrow", Key::Up}, {"DownArrow", Key::Down}, {"LeftArrow", Key::Left}, {"RightArrow", Key::Right},
+            {"Return", Key::Enter}, {"Esc", Key::Escape}, {"Delete", Key::Delete}, {"Insert", Key::Insert},
+            {"Home", Key::Home}, {"End", Key::End}, {"PageUp", Key::PageUp}, {"PageDown", Key::PageDown},
+            {"Comma", Key::Comma}, {"Minus", Key::Minus}, {"Period", Key::Period}, {"Slash", Key::Slash},
+            {"Semicolon", Key::Semicolon}, {"Equal", Key::Equal}, {"Control", Key::LeftControl},
+            {"Keypad0", Key::KP0}, {"Keypad1", (KeyCode)321}, {"Keypad2", (KeyCode)322}, {"Keypad3", (KeyCode)323},
+            {"Keypad4", (KeyCode)324}, {"Keypad5", (KeyCode)325}, {"Keypad6", (KeyCode)326}, {"Keypad7", (KeyCode)327},
+            {"Keypad8", (KeyCode)328}, {"Keypad9", (KeyCode)329}, {"KeypadEnter", (KeyCode)335},
             
             // Function Keys
             {"F1", Key::F1}, {"F2", Key::F2}, {"F3", Key::F3}, {"F4", Key::F4}, {"F5", Key::F5},
@@ -54,6 +69,17 @@ namespace Conqueror::CQS
         
         auto it = keyMap.find(keyName);
         if (it != keyMap.end()) return it->second;
+        // Büyük/küçük harf duyarsız ikinci deneme ("space", "leftshift")
+        {
+            std::string lower = keyName;
+            std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return (char)std::tolower(c); });
+            for (const auto& [name, code] : keyMap)
+            {
+                std::string n = name;
+                std::transform(n.begin(), n.end(), n.begin(), [](unsigned char c) { return (char)std::tolower(c); });
+                if (n == lower) return code;
+            }
+        }
         
         try {
             return (KeyCode)std::stoi(keyName);
@@ -65,20 +91,11 @@ namespace Conqueror::CQS
     // Duplicate helper — same as in main .cpp (internal linkage)
     static Entity GetCurrentEntity_S()
     {
-        auto* vm = CQSEngine::GetVM();
-        auto* scene = static_cast<Scene*>(CQSEngine::GetActiveScene());
-        if (!vm || !scene) return Entity{};
-        auto* inst = vm->GetCurrentInstance();
-        if (!inst) { CQ_CORE_ERROR("[CQS] No current instance!"); return Entity{}; }
-        if (inst->EntityHandle == 0xFFFFFFFF) { CQ_CORE_ERROR("[CQS] EntityHandle is 0xFFFFFFFF (Null)!"); return Entity{}; }
-        
-        entt::entity handle = static_cast<entt::entity>(inst->EntityHandle);
-        if (!scene->m_Registry.valid(handle)) 
-        { 
-            // CQ_CORE_ERROR("[CQS] Entity handle {0} is INVALID in registry!", inst->EntityHandle); 
-            // return Entity{}; 
-            // Geçiçi olarak valid kontrolünü geçelim çünkü EnTT versioning kafa karıştırabiliyor
-        }
+        auto* scene = ScriptContext::GetActiveScene();
+        uint32_t id = ScriptContext::GetCurrentEntity();
+        if (!scene || id == ScriptContext::NullEntity) return Entity{};
+        entt::entity handle = static_cast<entt::entity>(id);
+        if (!scene->m_Registry.valid(handle)) return Entity{};
         return Entity{ handle, scene };
     }
 
@@ -98,9 +115,9 @@ namespace Conqueror::CQS
         if (argCount > 0)
         {
             if (args[0].IsString())
-                return Value::MakeBool(Input::IsKeyPressed(StringToKeyCode(args[0].AsString()->Value)));
+                return Value::MakeBool(GameInput::IsKeyHeld(StringToKeyCode(args[0].AsString()->Value)));
             else if (args[0].IsNumber())
-                return Value::MakeBool(Input::IsKeyPressed(static_cast<KeyCode>((int)args[0].ToNumber())));
+                return Value::MakeBool(GameInput::IsKeyHeld(static_cast<KeyCode>((int)args[0].ToNumber())));
         }
         return Value::MakeBool(false);
     }
@@ -109,9 +126,9 @@ namespace Conqueror::CQS
         if (argCount > 0)
         {
             if (args[0].IsString())
-                return Value::MakeBool(Input::IsKeyDown(StringToKeyCode(args[0].AsString()->Value)));
+                return Value::MakeBool(GameInput::IsKeyDown(StringToKeyCode(args[0].AsString()->Value)));
             else if (args[0].IsNumber())
-                return Value::MakeBool(Input::IsKeyDown(static_cast<KeyCode>((int)args[0].ToNumber())));
+                return Value::MakeBool(GameInput::IsKeyDown(static_cast<KeyCode>((int)args[0].ToNumber())));
         }
         return Value::MakeBool(false);
     }
@@ -120,9 +137,9 @@ namespace Conqueror::CQS
         if (argCount > 0)
         {
             if (args[0].IsString())
-                return Value::MakeBool(Input::IsKeyUp(StringToKeyCode(args[0].AsString()->Value)));
+                return Value::MakeBool(GameInput::IsKeyUp(StringToKeyCode(args[0].AsString()->Value)));
             else if (args[0].IsNumber())
-                return Value::MakeBool(Input::IsKeyUp(static_cast<KeyCode>((int)args[0].ToNumber())));
+                return Value::MakeBool(GameInput::IsKeyUp(static_cast<KeyCode>((int)args[0].ToNumber())));
         }
         return Value::MakeBool(false);
     }
@@ -133,34 +150,34 @@ namespace Conqueror::CQS
     Value CQSNativeBridge::IsMouseButtonPressed(int argCount, Value* args)
     {
         if (argCount > 0 && args[0].IsNumber())
-            return Value::MakeBool(Input::IsMouseButtonPressed(static_cast<MouseCode>((int)args[0].ToNumber())));
+            return Value::MakeBool(GameInput::IsMouseHeld(static_cast<MouseCode>((int)args[0].ToNumber())));
         return Value::MakeBool(false);
     }
     Value CQSNativeBridge::IsMouseButtonDown(int argCount, Value* args)
     {
         if (argCount > 0 && args[0].IsNumber())
-            return Value::MakeBool(Input::IsMouseButtonDown(static_cast<MouseCode>((int)args[0].ToNumber())));
+            return Value::MakeBool(GameInput::IsMouseDown(static_cast<MouseCode>((int)args[0].ToNumber())));
         return Value::MakeBool(false);
     }
     Value CQSNativeBridge::IsMouseButtonUp(int argCount, Value* args)
     {
         if (argCount > 0 && args[0].IsNumber())
-            return Value::MakeBool(Input::IsMouseButtonUp(static_cast<MouseCode>((int)args[0].ToNumber())));
+            return Value::MakeBool(GameInput::IsMouseUp(static_cast<MouseCode>((int)args[0].ToNumber())));
         return Value::MakeBool(false);
     }
     Value CQSNativeBridge::GetMousePosition(int, Value*)
     {
-        glm::vec2 p = Input::GetMousePosition();
+        glm::vec2 p = GameInput::GetMousePosition();
         return Value::MakeObject(MakeV2(p.x, p.y));
     }
-    Value CQSNativeBridge::GetMouseX(int, Value*) { return Value::MakeFloat(Input::GetMouseX()); }
-    Value CQSNativeBridge::GetMouseY(int, Value*) { return Value::MakeFloat(Input::GetMouseY()); }
+    Value CQSNativeBridge::GetMouseX(int, Value*) { return Value::MakeFloat(GameInput::GetMousePosition().x); }
+    Value CQSNativeBridge::GetMouseY(int, Value*) { return Value::MakeFloat(GameInput::GetMousePosition().y); }
     Value CQSNativeBridge::GetMouseDelta(int, Value*)
     {
-        glm::vec2 d = Input::GetMouseDelta();
+        glm::vec2 d = GameInput::GetMouseDelta();
         return Value::MakeObject(MakeV2(d.x, d.y));
     }
-    Value CQSNativeBridge::GetMouseScrollDelta(int, Value*) { return Value::MakeFloat(Input::GetMouseScrollDelta()); }
+    Value CQSNativeBridge::GetMouseScrollDelta(int, Value*) { return Value::MakeFloat(GameInput::GetScroll()); }
     Value CQSNativeBridge::SetCursorMode(int argCount, Value* args)
     {
         if (argCount > 0 && args[0].IsNumber()) Input::SetCursorMode((int)args[0].ToNumber());
@@ -170,31 +187,55 @@ namespace Conqueror::CQS
     // ════════════════════════════════════════
     //  INPUT: GAMEPAD
     // ════════════════════════════════════════
-    Value CQSNativeBridge::IsGamepadConnected(int, Value*) { return Value::MakeBool(Input::IsGamepadConnected(0)); }
+    // (pad, button) belgelenen sıra; tek argümanla (button) 0 numaralı kol kullanılır.
+    // Eksik argümanlar VM tarafından null ile doldurulur.
+    static bool GamepadArgs(int argCount, Value* args, int& pad, int& index)
+    {
+        if (argCount >= 2 && args[0].IsNumber() && args[1].IsNumber())
+        {
+            pad = (int)args[0].ToNumber();
+            index = (int)args[1].ToNumber();
+            return true;
+        }
+        if (argCount >= 1 && args[0].IsNumber())
+        {
+            pad = 0;
+            index = (int)args[0].ToNumber();
+            return true;
+        }
+        return false;
+    }
+    static int GamepadPad(int argCount, Value* args)
+    {
+        return (argCount > 0 && args[0].IsNumber()) ? (int)args[0].ToNumber() : 0;
+    }
+    Value CQSNativeBridge::IsGamepadConnected(int argCount, Value* args) { return Value::MakeBool(Input::IsGamepadConnected(GamepadPad(argCount, args))); }
     Value CQSNativeBridge::IsGamepadButtonPressed(int argCount, Value* args)
     {
-        if (argCount > 0 && args[0].IsNumber())
-            return Value::MakeBool(Input::IsGamepadButtonPressed((int)args[0].ToNumber(), 0));
+        int pad = 0, button = 0;
+        if (GamepadArgs(argCount, args, pad, button))
+            return Value::MakeBool(Input::IsGamepadButtonPressed(button, pad));
         return Value::MakeBool(false);
     }
     Value CQSNativeBridge::GetGamepadAxis(int argCount, Value* args)
     {
-        if (argCount > 0 && args[0].IsNumber())
-            return Value::MakeFloat(Input::GetGamepadAxis((int)args[0].ToNumber(), 0));
+        int pad = 0, axis = 0;
+        if (GamepadArgs(argCount, args, pad, axis))
+            return Value::MakeFloat(Input::GetGamepadAxis(axis, pad));
         return Value::MakeFloat(0.0);
     }
-    Value CQSNativeBridge::GetGamepadLeftStick(int, Value*)
+    Value CQSNativeBridge::GetGamepadLeftStick(int argCount, Value* args)
     {
-        glm::vec2 s = Input::GetGamepadLeftStick(0);
+        glm::vec2 s = Input::GetGamepadLeftStick(GamepadPad(argCount, args));
         return Value::MakeObject(MakeV2(s.x, s.y));
     }
-    Value CQSNativeBridge::GetGamepadRightStick(int, Value*)
+    Value CQSNativeBridge::GetGamepadRightStick(int argCount, Value* args)
     {
-        glm::vec2 s = Input::GetGamepadRightStick(0);
+        glm::vec2 s = Input::GetGamepadRightStick(GamepadPad(argCount, args));
         return Value::MakeObject(MakeV2(s.x, s.y));
     }
-    Value CQSNativeBridge::GetGamepadLeftTrigger(int, Value*) { return Value::MakeFloat(Input::GetGamepadLeftTrigger(0)); }
-    Value CQSNativeBridge::GetGamepadRightTrigger(int, Value*) { return Value::MakeFloat(Input::GetGamepadRightTrigger(0)); }
+    Value CQSNativeBridge::GetGamepadLeftTrigger(int argCount, Value* args) { return Value::MakeFloat(Input::GetGamepadLeftTrigger(GamepadPad(argCount, args))); }
+    Value CQSNativeBridge::GetGamepadRightTrigger(int argCount, Value* args) { return Value::MakeFloat(Input::GetGamepadRightTrigger(GamepadPad(argCount, args))); }
     Value CQSNativeBridge::SetGamepadVibration(int argCount, Value* args)
     {
         if (argCount >= 2) Input::SetGamepadVibration((float)args[0].ToNumber(), (float)args[1].ToNumber(), 0);
@@ -310,7 +351,7 @@ namespace Conqueror::CQS
     Value CQSNativeBridge::FindEntityByTag(int argCount, Value* args)
     {
         if (argCount < 1) return Value::MakeNull();
-        auto* scene = static_cast<Scene*>(CQSEngine::GetActiveScene());
+        auto* scene = ScriptContext::GetActiveScene();
         if (!scene) return Value::MakeNull();
         std::string tag = args[0].ToString();
         Entity found = scene->FindEntityByTag(tag);
@@ -337,13 +378,13 @@ namespace Conqueror::CQS
     Value CQSNativeBridge::DestroyEntity(int, Value*)
     {
         Entity e = GetCurrentEntity_S(); if (!e) return Value::MakeNull();
-        auto* scene = static_cast<Scene*>(CQSEngine::GetActiveScene());
+        auto* scene = ScriptContext::GetActiveScene();
         if (scene) scene->DestroyEntity(e);
         return Value::MakeNull();
     }
     Value CQSNativeBridge::CreateEntity(int argCount, Value* args)
     {
-        auto* scene = static_cast<Scene*>(CQSEngine::GetActiveScene());
+        auto* scene = ScriptContext::GetActiveScene();
         if (!scene) return Value::MakeNull();
         std::string name = (argCount > 0) ? args[0].ToString() : "New Entity";
         Entity created = scene->CreateEntity(name);
@@ -613,58 +654,34 @@ namespace Conqueror::CQS
     // ════════════════════════════════════════
     Value CQSNativeBridge::NavSetDestination(int argCount, Value* args)
     {
-        CQ_CORE_INFO("[Nav] NavSetDestination baslatildi.");
-        if (argCount < 3) return Value::MakeNull();
-        Entity e = GetCurrentEntity_S(); if (!e) return Value::MakeNull();
-        if (!e.HasComponent<NavMeshAgentComponent>()) 
+        if (argCount < 3) return Value::MakeBool(false);
+        Entity e = GetCurrentEntity_S(); if (!e) return Value::MakeBool(false);
+        auto* scene = ScriptContext::GetActiveScene();
+        if (!scene || !e.HasComponent<NavMeshAgentComponent>())
         {
-            CQ_CORE_ERROR("[Nav] Entity '{0}' does NOT have NavMeshAgentComponent!", e.GetComponent<TagComponent>().Tag);
-            return Value::MakeNull();
+            CQ_CORE_WARN("[Nav] '{0}' has no NavMesh Agent", e.GetComponent<TagComponent>().Tag);
+            return Value::MakeBool(false);
         }
-
-        auto* scene = static_cast<Scene*>(CQSEngine::GetActiveScene());
-        auto& agent = e.GetComponent<NavMeshAgentComponent>();
-        auto& transform = e.GetComponent<TransformComponent>();
-
-        float tx = (float)args[0].ToNumber();
-        float ty = (float)args[1].ToNumber();
-        float tz = (float)args[2].ToNumber();
-        glm::vec3 target(tx, ty, tz);
-        
-        const auto& navMesh = scene->GetNavMesh();
-        int startTri = navMesh.FindClosestTriangle(transform.Position);
-        int endTri = navMesh.FindClosestTriangle(target);
-
-        CQ_CORE_INFO("[Nav] Start: {0}, {1}, {2} | End: {3}, {4}, {5}", transform.Position.x, transform.Position.y, transform.Position.z, tx, ty, tz);
-        CQ_CORE_INFO("[Nav] Triangles -> Start: {0}, End: {1}", startTri, endTri);
-
-        bool found = AStar::FindPath(navMesh, transform.Position, target, agent.Path);
-        if (found)
-        {
-            agent.HasPath = true;
-            agent.CurrentPathIndex = 0;
-            agent.IsStopped = false;
-        }
-        
-        CQ_CORE_INFO("[Nav] AStar sonucu: {0}", found ? "TRUE" : "FALSE");
-        return Value::MakeBool(found);
+        glm::vec3 target((float)args[0].ToNumber(), (float)args[1].ToNumber(), (float)args[2].ToNumber());
+        return Value::MakeBool(NavAgents::SetDestination(*scene, (uint32_t)e, target));
     }
 
     Value CQSNativeBridge::NavBake(int, Value*)
     {
-        auto* scene = static_cast<Scene*>(CQSEngine::GetActiveScene());
+        auto* scene = ScriptContext::GetActiveScene();
         if (!scene) return Value::MakeNull();
-        
-        NavMeshBuilder::Bake(scene, scene->GetNavMesh());
-        CQ_CORE_INFO("[Script] NavMesh Baked via script. Total Triangles: {0}", scene->GetNavMesh().GetTriangles().size());
-        
-        return Value::MakeNull();
+        NavAgents::Bake(*scene);
+        return Value::MakeInt((int64_t)scene->GetNavMesh().GetCellCount());
     }
 
     Value CQSNativeBridge::NavStop(int, Value*)
     {
         Entity e = GetCurrentEntity_S(); if (!e) return Value::MakeNull();
-        if (e.HasComponent<NavMeshAgentComponent>()) e.GetComponent<NavMeshAgentComponent>().IsStopped = true;
+        if (e.HasComponent<NavMeshAgentComponent>())
+        {
+            auto& a = e.GetComponent<NavMeshAgentComponent>();
+            a.IsStopped = true;
+        }
         return Value::MakeNull();
     }
 
@@ -1376,15 +1393,91 @@ namespace Conqueror::CQS
     // ── Viewport Helpers ──
     Value CQSNativeBridge::IsViewportHovered(int, Value*)
     {
-        auto* scene = static_cast<Scene*>(CQSEngine::GetActiveScene());
+        auto* scene = ScriptContext::GetActiveScene();
         if (!scene) return Value::MakeBool(false);
         return Value::MakeBool(scene->m_ViewportHovered);
+    }
+
+    // Betiklerin gördüğü kamera: editör kamerası seçiliyse o, değilse Primary kamera, o da yoksa editör kamerası
+    static bool ScriptViewProjection(Scene* scene, glm::mat4& viewProj)
+    {
+        bool found = false;
+        if (scene->GetUseEditorCameraForScripts() && scene->m_HasEditorCamera)
+        {
+            viewProj = scene->m_EditorViewProjection;
+            found = true;
+        }
+        if (!found)
+        {
+            auto camView = scene->m_Registry.view<CameraComponent>();
+            for (auto entity : camView)
+            {
+                auto& cc = camView.get<CameraComponent>(entity);
+                if (!cc.Primary)
+                    continue;
+                auto& tc = scene->m_Registry.get<TransformComponent>(entity);
+                viewProj = cc.Camera.GetProjection() * glm::inverse(tc.WorldTransform);
+                found = true;
+                break;
+            }
+        }
+        if (!found && scene->m_HasEditorCamera)
+        {
+            viewProj = scene->m_EditorViewProjection;
+            found = true;
+        }
+        return found;
+    }
+
+    bool ScreenPointToWorldRay(Scene* scene, float sx, float sy, glm::vec3& origin, glm::vec3& direction)
+    {
+        if (!scene)
+            return false;
+        float vw = scene->m_ViewportBoundsMax.x - scene->m_ViewportBoundsMin.x;
+        float vh = scene->m_ViewportBoundsMax.y - scene->m_ViewportBoundsMin.y;
+        if (vw <= 0 || vh <= 0)
+            return false;
+        float rx = sx - scene->m_ViewportBoundsMin.x;
+        float ry = sy - scene->m_ViewportBoundsMin.y;
+        glm::mat4 viewProj{ 1.0f };
+        if (!ScriptViewProjection(scene, viewProj))
+            return false;
+        glm::mat4 inv = glm::inverse(viewProj);
+        glm::vec2 ndc((2.0f * rx) / vw - 1.0f, 1.0f - (2.0f * ry) / vh);
+        glm::vec4 n = inv * glm::vec4(ndc, -1.0f, 1.0f), f = inv * glm::vec4(ndc, 1.0f, 1.0f);
+        if (std::abs(n.w) < 1e-8f || std::abs(f.w) < 1e-8f)
+            return false;
+        origin = glm::vec3(n) / n.w;
+        glm::vec3 d = glm::vec3(f) / f.w - origin;
+        if (glm::dot(d, d) < 1e-12f)
+            return false;
+        direction = glm::normalize(d);
+        return true;
+    }
+
+    bool WorldToScreenPoint(Scene* scene, const glm::vec3& world, glm::vec2& screen, glm::vec2& uv, float& depth)
+    {
+        if (!scene)
+            return false;
+        float vw = scene->m_ViewportBoundsMax.x - scene->m_ViewportBoundsMin.x;
+        float vh = scene->m_ViewportBoundsMax.y - scene->m_ViewportBoundsMin.y;
+        glm::mat4 viewProj{ 1.0f };
+        if (vw <= 0 || vh <= 0 || !ScriptViewProjection(scene, viewProj))
+            return false;
+        glm::vec4 clip = viewProj * glm::vec4(world, 1.0f);
+        depth = clip.w;
+        if (std::abs(clip.w) < 1e-8f)
+            return false;
+        glm::vec3 ndc = glm::vec3(clip) / clip.w;
+        uv = { (ndc.x + 1.0f) * 0.5f, (1.0f - ndc.y) * 0.5f };
+        screen = { scene->m_ViewportBoundsMin.x + uv.x * vw, scene->m_ViewportBoundsMin.y + uv.y * vh };
+        return clip.w > 0.0f;
     }
 
     Value CQSNativeBridge::ViewportScreenToWorld(int argCount, Value* args)
     {
         if (argCount < 2) return Value::MakeNull();
-        auto* scene = static_cast<Scene*>(CQSEngine::GetActiveScene());
+        auto* scene = ScriptContext::GetActiveScene();
         if (!scene) return Value::MakeNull();
 
         float sx = CQSDebugToFloat(args[0]);
@@ -1485,7 +1578,7 @@ namespace Conqueror::CQS
 
     Value CQSNativeBridge::GetViewportBoundsMin(int, Value*)
     {
-        auto* scene = static_cast<Scene*>(CQSEngine::GetActiveScene());
+        auto* scene = ScriptContext::GetActiveScene();
         if (!scene) return Value::MakeNull();
         auto* map = new CQSMapObject();
         map->Entries["x"] = Value::MakeFloat(scene->m_ViewportBoundsMin.x);
@@ -1495,7 +1588,7 @@ namespace Conqueror::CQS
 
     Value CQSNativeBridge::GetViewportBoundsMax(int, Value*)
     {
-        auto* scene = static_cast<Scene*>(CQSEngine::GetActiveScene());
+        auto* scene = ScriptContext::GetActiveScene();
         if (!scene) return Value::MakeNull();
         auto* map = new CQSMapObject();
         map->Entries["x"] = Value::MakeFloat(scene->m_ViewportBoundsMax.x);
@@ -1505,7 +1598,7 @@ namespace Conqueror::CQS
 
     Value CQSNativeBridge::GetViewportSize(int, Value*)
     {
-        auto* scene = static_cast<Scene*>(CQSEngine::GetActiveScene());
+        auto* scene = ScriptContext::GetActiveScene();
         if (!scene) return Value::MakeNull();
         auto* map = new CQSMapObject();
         map->Entries["x"] = Value::MakeFloat((double)scene->m_ViewportWidth);

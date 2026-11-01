@@ -1,0 +1,84 @@
+using nativebridge;
+
+// Yüzeye oturt: nesnenin sınırlarının altından aşağı ışın (kendisi hariç), alt yüzü çarpılan noktaya getirir.
+script SnapToSurface : ConquerorScript
+{
+    public bool alignToNormal = false;
+    public float gridSize = 1.0;
+    public float rotationStep = 90.0;
+    public float maxDrop = 1000.0;
+
+    // Bilgi
+    public int snapped = 0;
+    public float lastDrop = 0.0;
+
+    func OnLoad()
+    {
+        EditorAddMenuItem("Snap/Drop To Surface", "Drop");
+        EditorAddMenuItem("Snap/Snap Position To Grid", "SnapGrid");
+        EditorAddMenuItem("Snap/Snap Rotation", "SnapRotation");
+        EditorAddToolButton("Surface", "magnet", "Drop", "Drop the selection onto the surface below");
+        EditorAddPanel("Snap", "DrawPanel");
+    }
+
+    func Drop()
+    {
+        snapped = 0;
+        for (var e in EditorGetSelection())
+        {
+            var b = EntityGetBounds(e);
+            var p = EntityGetWorldPosition(e);
+            var bottom = b != null ? b.min.y : p.y;
+            var cx = b != null ? b.center.x : p.x;
+            var cz = b != null ? b.center.z : p.z;
+            var hit = SceneRaycast(cx, bottom - 0.001, cz, 0, -1, 0, maxDrop, e);
+            if (hit == null) { continue; }
+            var drop = bottom - hit.point.y;
+            EntitySetWorldPosition(e, p.x, p.y - drop, p.z);
+            lastDrop = drop;
+            if (alignToNormal)
+            {
+                var r = EntityGetRotation(e);
+                EntitySetRotation(e, MathRadToDeg(MathAtan2(hit.normal.z, hit.normal.y)), r.y, -MathRadToDeg(MathAtan2(hit.normal.x, hit.normal.y)));
+            }
+            snapped++;
+        }
+        EditorNotify("Dropped " + str(snapped) + " object(s)");
+    }
+
+    func SnapGrid()
+    {
+        snapped = 0;
+        for (var e in EditorGetSelection())
+        {
+            var p = EntityGetPosition(e);
+            var g = MathMax(0.001, gridSize);
+            EntitySetPosition(e, MathRound(p.x / g) * g, MathRound(p.y / g) * g, MathRound(p.z / g) * g);
+            snapped++;
+        }
+    }
+
+    func SnapRotation()
+    {
+        snapped = 0;
+        for (var e in EditorGetSelection())
+        {
+            var r = EntityGetRotation(e);
+            var s = MathMax(0.1, rotationStep);
+            EntitySetRotation(e, MathRound(r.x / s) * s, MathRound(r.y / s) * s, MathRound(r.z / s) * s);
+            snapped++;
+        }
+    }
+
+    func DrawPanel()
+    {
+        GuiTextDisabled(str(len(EditorGetSelection())) + " selected");
+        alignToNormal = GuiCheckbox("Align To Surface", alignToNormal);
+        if (GuiButton("Drop To Surface", -1)) { EditorRunUndoable("Drop To Surface", "Drop"); }
+        GuiSeparator();
+        gridSize = GuiSliderFloat("Grid", gridSize, 0.05, 10.0);
+        if (GuiButton("Snap To Grid", -1)) { EditorRunUndoable("Snap To Grid", "SnapGrid"); }
+        rotationStep = GuiSliderFloat("Rotation Step", rotationStep, 1.0, 90.0);
+        if (GuiButton("Snap Rotation", -1)) { EditorRunUndoable("Snap Rotation", "SnapRotation"); }
+    }
+}

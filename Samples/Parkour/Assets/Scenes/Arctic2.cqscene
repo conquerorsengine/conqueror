@@ -1,0 +1,7364 @@
+Scene: Untitled
+Entities:
+  - Entity: 7982679521394364046
+    TagComponent:
+      Tag: Level
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 2015188443423359827
+    TagComponent:
+      Tag: Sun
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [-0.41887903, 2.7925267, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    DirectionalLightComponent:
+      Direction: [-0.31245103, -0.40673667, 0.85845196]
+      FromRotation: true
+      Color: [0.86, 0.92, 1]
+      Intensity: 3
+      CastShadows: true
+      Mode: 0
+  - Entity: 5061709094169994298
+    TagComponent:
+      Tag: Start
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.6, 0]
+      Rotation: [0, -0, 0]
+      Scale: [7, 0.6, 7]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.92, 0.97, 1, 1]
+      Metallic: 0
+      Roughness: 0.22
+      AO: 1
+      Tiling: [4.6666665, 4.6666665]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 7211536501402038782
+    TagComponent:
+      Tag: Start EdgeN
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0333333, -0.98857147]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.066666655, 0.011428571]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 6220339540789286089
+    TagComponent:
+      Tag: Start EdgeS
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0333333, 0.98857147]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.066666655, 0.011428571]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 5129766776411376084
+    TagComponent:
+      Tag: Start EdgeW
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.98857147, 1.0333333, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.011428571, 0.066666655, 0.97714293]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 8497580667028121176
+    TagComponent:
+      Tag: Start EdgeE
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.98857147, 1.0333333, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.011428571, 0.066666655, 0.97714293]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 8868874658148863572
+    TagComponent:
+      Tag: Start BandS
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.58333313, 1.0014286]
+      Rotation: [0, -0, 0]
+      Scale: [0.96000004, 0.049999993, 0.0028571428]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 3
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 537608552805082280
+    TagComponent:
+      Tag: Start Pillar0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -30.2, 0]
+      Rotation: [0, -0, 0]
+      Scale: [2.24, 29, 2.24]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.55, 0.66, 0.8, 1]
+      Metallic: 0.6
+      Roughness: 0.5
+      AO: 1
+      Tiling: [1, 14]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 7289030693874073001
+    TagComponent:
+      Tag: P1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.54, -0.79, -16.53]
+      Rotation: [0, -0, 0]
+      Scale: [4, 0.6, 4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.92, 0.97, 1, 1]
+      Metallic: 0
+      Roughness: 0.22
+      AO: 1
+      Tiling: [2.6666667, 2.6666667]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 7030847514800416947
+    TagComponent:
+      Tag: P1 EdgeN
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0333334, -0.98]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.06666666, 0.02]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 5667231528166788091
+    TagComponent:
+      Tag: P1 EdgeS
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0333334, 0.98000026]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.06666666, 0.02]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 6359104870468298468
+    TagComponent:
+      Tag: P1 EdgeW
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.98, 1.0333334, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.02, 0.06666666, 0.96]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 5739109415759820339
+    TagComponent:
+      Tag: P1 EdgeE
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.98, 1.0333334, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.02, 0.06666666, 0.96]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 7981633286035039215
+    TagComponent:
+      Tag: P1 BandS
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.58333325, 1.0025]
+      Rotation: [0, -0, 0]
+      Scale: [0.96, 0.049999997, 0.005]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 3
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 1026251288897271051
+    TagComponent:
+      Tag: P1 Pillar0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.54, -30.39, -16.53]
+      Rotation: [0, -0, 0]
+      Scale: [1.28, 29, 1.28]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.55, 0.66, 0.8, 1]
+      Metallic: 0.6
+      Roughness: 0.5
+      AO: 1
+      Tiling: [1, 14]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 7597201676531339792
+    TagComponent:
+      Tag: Checkpoint1 PostL
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.46, 2.01, -15.53]
+      Rotation: [0, -0, 0]
+      Scale: [0.175, 2.2, 0.175]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [1, 0.45, 0.2]
+      EmissionStrength: 2.4
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 1826252843808160104
+    TagComponent:
+      Tag: Checkpoint1 PostR
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [3.54, 2.01, -15.53]
+      Rotation: [0, -0, 0]
+      Scale: [0.175, 2.2, 0.175]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [1, 0.45, 0.2]
+      EmissionStrength: 2.4
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 6658206277705223466
+    TagComponent:
+      Tag: Checkpoint1 Beam
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.54, 4.21, -15.53]
+      Rotation: [0, -0, 0]
+      Scale: [3.175, 0.175, 0.175]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [1, 0.45, 0.2]
+      EmissionStrength: 3
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 8987191949972867059
+    TagComponent:
+      Tag: Checkpoint1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.54, 0.81, -15.53]
+      Rotation: [0, -0, 0]
+      Scale: [6, 4.4, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 6057503015579467231
+    TagComponent:
+      Tag: Checkpoint1 FX
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.54, -0.04, -15.53]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ParticleSystemComponent:
+      Duration: 4
+      Looping: true
+      Prewarm: true
+      PlayOnAwake: true
+      StopAction: 0
+      StartDelay: 0
+      StartLifetime: [1.4, 2.6]
+      StartSpeed: [0.5, 1.4]
+      StartSize: [0.07, 0.18]
+      StartRotation: [0, 0]
+      StartColorA: [1, 0.45, 0.2, 1]
+      StartColorB: [1, 1, 1, 1]
+      GravityModifier: -0.05
+      SimulationSpeed: 1
+      MaxParticles: 240
+      SimulationSpace: 1
+      EmissionEnabled: true
+      RateOverTime: 16
+      RateOverDistance: 0
+      ShapeEnabled: true
+      Radius: 0.5
+      Angle: 25
+      BoxSize: [6, 0.1, 0.5]
+      EmitFromShell: false
+      RandomizeDirection: 0
+      Shape: 3
+      VelocityEnabled: false
+      VelocityOverLifetime: [0, 0, 0]
+      OrbitalSpeed: 0
+      LimitVelocityEnabled: false
+      Drag: 0
+      SpeedLimit: 100
+      NoiseEnabled: false
+      NoiseStrength: 1
+      NoiseFrequency: 0.5
+      NoiseScrollSpeed: 0.5
+      ColorOverLifetimeEnabled: true
+      SizeOverLifetimeEnabled: true
+      RotationOverLifetimeEnabled: false
+      AngularVelocity: 45
+      CollisionEnabled: false
+      CollisionPlaneY: 0
+      Bounce: 0.5
+      LifetimeLoss: 0
+      TextureSheetEnabled: false
+      AnimationCycles: 1
+      RandomStartFrame: false
+      Tiles: [1, 1]
+      RenderMode: 0
+      Blend: 1
+      Texture: Assets/Textures/spark.png
+      LengthScale: 2
+      SpeedScale: 0.1
+      SortByDistance: true
+      EmissiveIntensity: 3
+      Bursts:
+        []
+      ColorOverLifetime:
+        - [0, 1, 1, 1, 1]
+        - [1, 1, 1, 1, 1]
+      SizeOverLifetime:
+        - [0, 1]
+        - [1, 1]
+  - Entity: 4462629450937552256
+    TagComponent:
+      Tag: Mover1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.54, -0.79, -27.53]
+      Rotation: [0, -0, 0]
+      Scale: [2, 0.6, 2]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.92, 0.97, 1, 1]
+      Metallic: 0
+      Roughness: 0.22
+      AO: 1
+      Tiling: [1.3333334, 1.3333334]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Scripts/MovingPlatform.cqs
+      ClassName: ""
+      Fields:
+        amplitude:
+          Float: 3.5
+        axis:
+          String: x
+        period:
+          Float: 5
+        phase:
+          Float: 0
+    RigidbodyComponent:
+      BodyType: 2
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6453252942447717843
+    TagComponent:
+      Tag: Mover1 EdgeN
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0333334, -0.9599991]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.06666666, 0.04]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 4601990800448255028
+    TagComponent:
+      Tag: Mover1 EdgeS
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0333334, 0.960001]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.06666666, 0.04]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 3213706974651895960
+    TagComponent:
+      Tag: Mover1 EdgeW
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.96000004, 1.0333334, 9.536743e-07]
+      Rotation: [0, -0, 0]
+      Scale: [0.04, 0.06666666, 0.92]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 2449772128111323273
+    TagComponent:
+      Tag: Mover1 EdgeE
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.96000004, 1.0333334, 9.536743e-07]
+      Rotation: [0, -0, 0]
+      Scale: [0.04, 0.06666666, 0.92]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 3544691443198388654
+    TagComponent:
+      Tag: Mover1 BandS
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.58333325, 1.0050011]
+      Rotation: [0, -0, 0]
+      Scale: [0.96, 0.049999997, 0.01]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 3
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 9215105801652328638
+    TagComponent:
+      Tag: Mover2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.54, -0.09, -36.53]
+      Rotation: [0, -0, 0]
+      Scale: [2, 0.6, 2]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.92, 0.97, 1, 1]
+      Metallic: 0
+      Roughness: 0.22
+      AO: 1
+      Tiling: [1.3333334, 1.3333334]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Scripts/MovingPlatform.cqs
+      ClassName: ""
+      Fields:
+        amplitude:
+          Float: 3.5
+        axis:
+          String: x
+        period:
+          Float: 4.4
+        phase:
+          Float: 1.1
+    RigidbodyComponent:
+      BodyType: 2
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 5525828874046194945
+    TagComponent:
+      Tag: Mover2 EdgeN
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0333333, -0.960001]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.06666666, 0.04]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 7961950673332013756
+    TagComponent:
+      Tag: Mover2 EdgeS
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0333333, 0.9599991]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.06666666, 0.04]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 8342040664345463600
+    TagComponent:
+      Tag: Mover2 EdgeW
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.96000004, 1.0333333, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.04, 0.06666666, 0.92]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 3325733434112202614
+    TagComponent:
+      Tag: Mover2 EdgeE
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.96000004, 1.0333333, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.04, 0.06666666, 0.92]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 4580927332874129870
+    TagComponent:
+      Tag: Mover2 BandS
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.58333325, 1.0049992]
+      Rotation: [0, -0, 0]
+      Scale: [0.96, 0.049999997, 0.01]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 3
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 3889389321456914854
+    TagComponent:
+      Tag: Mover3
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.54, 0.61, -45.53]
+      Rotation: [0, -0, 0]
+      Scale: [2, 0.6, 2]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.92, 0.97, 1, 1]
+      Metallic: 0
+      Roughness: 0.22
+      AO: 1
+      Tiling: [1.3333334, 1.3333334]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Scripts/MovingPlatform.cqs
+      ClassName: ""
+      Fields:
+        amplitude:
+          Float: 1.4
+        axis:
+          String: y
+        period:
+          Float: 3.6
+        phase:
+          Float: 0.4
+    RigidbodyComponent:
+      BodyType: 2
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 3445482410541415799
+    TagComponent:
+      Tag: Mover3 EdgeN
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0333333, -0.960001]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.06666666, 0.04]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 7478750451299263423
+    TagComponent:
+      Tag: Mover3 EdgeS
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0333333, 0.9599991]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.06666666, 0.04]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 5567353880421849860
+    TagComponent:
+      Tag: Mover3 EdgeW
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.96000004, 1.0333333, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.04, 0.06666666, 0.92]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 2793520548504069658
+    TagComponent:
+      Tag: Mover3 EdgeE
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.96000004, 1.0333333, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.04, 0.06666666, 0.92]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 3879926237354619225
+    TagComponent:
+      Tag: Mover3 BandS
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.5833334, 1.0049992]
+      Rotation: [0, -0, 0]
+      Scale: [0.96, 0.049999997, 0.01]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 3
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 6986041749623940487
+    TagComponent:
+      Tag: P2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.54, 1.21, -55.03]
+      Rotation: [0, -0, 0]
+      Scale: [4, 0.6, 3.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.92, 0.97, 1, 1]
+      Metallic: 0
+      Roughness: 0.22
+      AO: 1
+      Tiling: [2.6666667, 2.3333333]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 1335548399440340905
+    TagComponent:
+      Tag: P2 EdgeN
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0333331, -0.97714233]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.066666655, 0.02285714]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 1675488158988927749
+    TagComponent:
+      Tag: P2 EdgeS
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0333331, 0.9771433]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.066666655, 0.02285714]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 6373553124106800110
+    TagComponent:
+      Tag: P2 EdgeW
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.98, 1.0333331, 9.536743e-07]
+      Rotation: [0, -0, 0]
+      Scale: [0.02, 0.066666655, 0.9542856]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 456763855025638031
+    TagComponent:
+      Tag: P2 EdgeE
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.98, 1.0333331, 9.536743e-07]
+      Rotation: [0, -0, 0]
+      Scale: [0.02, 0.066666655, 0.9542856]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 3172828557995259233
+    TagComponent:
+      Tag: P2 BandS
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.5833334, 1.0028572]
+      Rotation: [0, -0, 0]
+      Scale: [0.96, 0.049999993, 0.005714285]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 3
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 5166165778424450677
+    TagComponent:
+      Tag: P2 Pillar0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.54, -28.39, -55.03]
+      Rotation: [0, -0, 0]
+      Scale: [1.12, 29, 1.12]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.55, 0.66, 0.8, 1]
+      Metallic: 0.6
+      Roughness: 0.5
+      AO: 1
+      Tiling: [1, 14]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 4190916195828816684
+    TagComponent:
+      Tag: P3
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.92, 1.35, -67.29]
+      Rotation: [0, -0, 0]
+      Scale: [4, 0.6, 4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.92, 0.97, 1, 1]
+      Metallic: 0
+      Roughness: 0.22
+      AO: 1
+      Tiling: [2.6666667, 2.6666667]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 7215117630790317885
+    TagComponent:
+      Tag: P3 EdgeN
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-1.4901161e-08, 1.0333333, -0.97999954]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.06666666, 0.02]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 6231710094536050002
+    TagComponent:
+      Tag: P3 EdgeS
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-1.4901161e-08, 1.0333333, 0.9800005]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.06666666, 0.02]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 3374321944774927225
+    TagComponent:
+      Tag: P3 EdgeW
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.98, 1.0333333, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.02, 0.06666666, 0.96]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 2573339273919675006
+    TagComponent:
+      Tag: P3 EdgeE
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.98, 1.0333333, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.02, 0.06666666, 0.96]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 1230261102460352848
+    TagComponent:
+      Tag: P3 BandS
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-1.4901161e-08, -0.5833334, 1.0025005]
+      Rotation: [0, -0, 0]
+      Scale: [0.96, 0.049999997, 0.005]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 3
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 4715562757448079203
+    TagComponent:
+      Tag: P3 Pillar0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.92, -28.25, -67.29]
+      Rotation: [0, -0, 0]
+      Scale: [1.28, 29, 1.28]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.55, 0.66, 0.8, 1]
+      Metallic: 0.6
+      Roughness: 0.5
+      AO: 1
+      Tiling: [1, 14]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 3523535933390868411
+    TagComponent:
+      Tag: Checkpoint2 PostL
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.08, 4.15, -66.29]
+      Rotation: [0, -0, 0]
+      Scale: [0.175, 2.2, 0.175]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 2.4
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 3863759431729604735
+    TagComponent:
+      Tag: Checkpoint2 PostR
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [3.92, 4.15, -66.29]
+      Rotation: [0, -0, 0]
+      Scale: [0.175, 2.2, 0.175]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 2.4
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 8099195367498614963
+    TagComponent:
+      Tag: Checkpoint2 Beam
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.92, 6.35, -66.29]
+      Rotation: [0, -0, 0]
+      Scale: [3.175, 0.175, 0.175]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 3
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 5307235095017395021
+    TagComponent:
+      Tag: Checkpoint2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.92, 2.95, -66.29]
+      Rotation: [0, -0, 0]
+      Scale: [6, 4.4, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 8413037414679765408
+    TagComponent:
+      Tag: Checkpoint2 FX
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.92, 2.1, -66.29]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ParticleSystemComponent:
+      Duration: 4
+      Looping: true
+      Prewarm: true
+      PlayOnAwake: true
+      StopAction: 0
+      StartDelay: 0
+      StartLifetime: [1.4, 2.6]
+      StartSpeed: [0.5, 1.4]
+      StartSize: [0.07, 0.18]
+      StartRotation: [0, 0]
+      StartColorA: [0.7, 0.4, 1, 1]
+      StartColorB: [1, 1, 1, 1]
+      GravityModifier: -0.05
+      SimulationSpeed: 1
+      MaxParticles: 240
+      SimulationSpace: 1
+      EmissionEnabled: true
+      RateOverTime: 16
+      RateOverDistance: 0
+      ShapeEnabled: true
+      Radius: 0.5
+      Angle: 25
+      BoxSize: [6, 0.1, 0.5]
+      EmitFromShell: false
+      RandomizeDirection: 0
+      Shape: 3
+      VelocityEnabled: false
+      VelocityOverLifetime: [0, 0, 0]
+      OrbitalSpeed: 0
+      LimitVelocityEnabled: false
+      Drag: 0
+      SpeedLimit: 100
+      NoiseEnabled: false
+      NoiseStrength: 1
+      NoiseFrequency: 0.5
+      NoiseScrollSpeed: 0.5
+      ColorOverLifetimeEnabled: true
+      SizeOverLifetimeEnabled: true
+      RotationOverLifetimeEnabled: false
+      AngularVelocity: 45
+      CollisionEnabled: false
+      CollisionPlaneY: 0
+      Bounce: 0.5
+      LifetimeLoss: 0
+      TextureSheetEnabled: false
+      AnimationCycles: 1
+      RandomStartFrame: false
+      Tiles: [1, 1]
+      RenderMode: 0
+      Blend: 1
+      Texture: Assets/Textures/spark.png
+      LengthScale: 2
+      SpeedScale: 0.1
+      SortByDistance: true
+      EmissiveIntensity: 3
+      Bursts:
+        []
+      ColorOverLifetime:
+        - [0, 1, 1, 1, 1]
+        - [1, 1, 1, 1, 1]
+      SizeOverLifetime:
+        - [0, 1]
+        - [1, 1]
+  - Entity: 8514937600779057715
+    TagComponent:
+      Tag: Beam3
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.92, 1.65, -77.44]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.3, 6.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.92, 0.97, 1, 1]
+      Metallic: 0
+      Roughness: 0.22
+      AO: 1
+      Tiling: [1, 4.1]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 4491287443977146732
+    TagComponent:
+      Tag: Beam3 EdgeL
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.96000004, 1.0666667, -9.536744e-07]
+      Rotation: [0, -0, 0]
+      Scale: [0.04, 0.099999994, 1.0000001]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 6
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 4092240734979286781
+    TagComponent:
+      Tag: Beam3 EdgeR
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.96, 1.0666667, -9.536744e-07]
+      Rotation: [0, -0, 0]
+      Scale: [0.04, 0.099999994, 1.0000001]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 6
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 6567630008002492888
+    TagComponent:
+      Tag: P4
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.92, 1.35, -87.59]
+      Rotation: [0, -0, 0]
+      Scale: [4, 0.6, 4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.92, 0.97, 1, 1]
+      Metallic: 0
+      Roughness: 0.22
+      AO: 1
+      Tiling: [2.6666667, 2.6666667]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 342380911659171347
+    TagComponent:
+      Tag: P4 EdgeN
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-1.4901161e-08, 1.0333333, -0.98000145]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.06666666, 0.02]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 1572445445293585306
+    TagComponent:
+      Tag: P4 EdgeS
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-1.4901161e-08, 1.0333333, 0.97999954]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.06666666, 0.02]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 8253937526792649171
+    TagComponent:
+      Tag: P4 EdgeW
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.98, 1.0333333, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.02, 0.06666666, 0.96]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 7524048776103830446
+    TagComponent:
+      Tag: P4 EdgeE
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.98, 1.0333333, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.02, 0.06666666, 0.96]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 6944304696444356440
+    TagComponent:
+      Tag: P4 BandS
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-1.4901161e-08, -0.5833334, 1.0024986]
+      Rotation: [0, -0, 0]
+      Scale: [0.96, 0.049999997, 0.005]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.7, 0.4, 1]
+      EmissionStrength: 3
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 3339016621297312257
+    TagComponent:
+      Tag: P4 Pillar0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.92, -28.25, -87.59]
+      Rotation: [0, -0, 0]
+      Scale: [1.28, 29, 1.28]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.55, 0.66, 0.8, 1]
+      Metallic: 0.6
+      Roughness: 0.5
+      AO: 1
+      Tiling: [1, 14]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 6515670490292691692
+    TagComponent:
+      Tag: P5
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2.25, 1.69, -100.8]
+      Rotation: [0, -0, 0]
+      Scale: [4, 0.6, 4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.92, 0.97, 1, 1]
+      Metallic: 0
+      Roughness: 0.22
+      AO: 1
+      Tiling: [2.6666667, 2.6666667]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 4738602234275155342
+    TagComponent:
+      Tag: P5 EdgeN
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0333333, -0.97999954]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.06666666, 0.02]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 7362636249812218220
+    TagComponent:
+      Tag: P5 EdgeS
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0333333, 0.98000145]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.06666666, 0.02]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 4544806239825602145
+    TagComponent:
+      Tag: P5 EdgeW
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.98, 1.0333333, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.02, 0.06666666, 0.96]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 2391127755477138802
+    TagComponent:
+      Tag: P5 EdgeE
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.98, 1.0333333, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.02, 0.06666666, 0.96]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 8722972872073062173
+    TagComponent:
+      Tag: P5 BandS
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.58333325, 1.0025005]
+      Rotation: [0, -0, 0]
+      Scale: [0.96, 0.049999997, 0.005]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 3
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 436489796450105015
+    TagComponent:
+      Tag: P5 Pillar0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2.25, -27.91, -100.8]
+      Rotation: [0, -0, 0]
+      Scale: [1.28, 29, 1.28]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.55, 0.66, 0.8, 1]
+      Metallic: 0.6
+      Roughness: 0.5
+      AO: 1
+      Tiling: [1, 14]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 6100623011529603951
+    TagComponent:
+      Tag: P6
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2.25, 2.69, -115.8]
+      Rotation: [0, -0, 0]
+      Scale: [3, 0.6, 3]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.92, 0.97, 1, 1]
+      Metallic: 0
+      Roughness: 0.22
+      AO: 1
+      Tiling: [2, 2]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 1607661953240399894
+    TagComponent:
+      Tag: P6 EdgeN
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0333333, -0.97333527]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.06666666, 0.026666667]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 1939888174936333119
+    TagComponent:
+      Tag: P6 EdgeS
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.0333333, 0.97333145]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.06666666, 0.026666667]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 5222415478456471689
+    TagComponent:
+      Tag: P6 EdgeW
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.97333336, 1.0333333, -3.8146973e-06]
+      Rotation: [0, -0, 0]
+      Scale: [0.026666667, 0.06666666, 0.94666666]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 967857030811650685
+    TagComponent:
+      Tag: P6 EdgeE
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.97333336, 1.0333333, -3.8146973e-06]
+      Rotation: [0, -0, 0]
+      Scale: [0.026666667, 0.06666666, 0.94666666]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 5366423571674694677
+    TagComponent:
+      Tag: P6 BandS
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.58333325, 1.0033302]
+      Rotation: [0, -0, 0]
+      Scale: [0.96000004, 0.049999997, 0.006666667]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [0.3, 0.8, 1]
+      EmissionStrength: 3
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 8656116168311554802
+    TagComponent:
+      Tag: P6 Pillar0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2.25, -26.91, -115.8]
+      Rotation: [0, -0, 0]
+      Scale: [0.96, 29, 0.96]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.55, 0.66, 0.8, 1]
+      Metallic: 0.6
+      Roughness: 0.5
+      AO: 1
+      Tiling: [1, 14]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 1760422609915628977
+    TagComponent:
+      Tag: Finish
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2.25, 3.19, -129.8]
+      Rotation: [0, -0, 0]
+      Scale: [6, 0.6, 5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.92, 0.97, 1, 1]
+      Metallic: 0
+      Roughness: 0.22
+      AO: 1
+      Tiling: [4, 3.3333333]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 380994033477645550
+    TagComponent:
+      Tag: Finish EdgeN
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.9802322e-08, 1.0333328, -0.98399925]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.06666666, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [1, 0.78, 0.25]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 7984151141248797964
+    TagComponent:
+      Tag: Finish EdgeS
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.9802322e-08, 1.0333328, 0.98400116]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.06666666, 0.016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [1, 0.78, 0.25]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 3154491825958329201
+    TagComponent:
+      Tag: Finish EdgeW
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.9866667, 1.0333328, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.013333334, 0.06666666, 0.96800005]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [1, 0.78, 0.25]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 2347027227594754611
+    TagComponent:
+      Tag: Finish EdgeE
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.9866667, 1.0333328, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.013333334, 0.06666666, 0.96800005]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [1, 0.78, 0.25]
+      EmissionStrength: 7
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 6770727106597804732
+    TagComponent:
+      Tag: Finish BandS
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.9802322e-08, -0.58333397, 1.0020008]
+      Rotation: [0, -0, 0]
+      Scale: [0.96000004, 0.049999997, 0.004]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [1, 0.78, 0.25]
+      EmissionStrength: 3
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 8631657430887118505
+    TagComponent:
+      Tag: Finish Pillar0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2.25, -26.41, -129.8]
+      Rotation: [0, -0, 0]
+      Scale: [1.6, 29, 1.6]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.55, 0.66, 0.8, 1]
+      Metallic: 0.6
+      Roughness: 0.5
+      AO: 1
+      Tiling: [1, 14]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 157641119334949195
+    TagComponent:
+      Tag: FinishGate PostL
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-1.75, 5.99, -127.8]
+      Rotation: [0, -0, 0]
+      Scale: [0.175, 2.2, 0.175]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [1, 0.78, 0.25]
+      EmissionStrength: 2.4
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 3983384981584920431
+    TagComponent:
+      Tag: FinishGate PostR
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [6.25, 5.99, -127.8]
+      Rotation: [0, -0, 0]
+      Scale: [0.175, 2.2, 0.175]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [1, 0.78, 0.25]
+      EmissionStrength: 2.4
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 6183149854654584053
+    TagComponent:
+      Tag: FinishGate Beam
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2.25, 8.19, -127.8]
+      Rotation: [0, -0, 0]
+      Scale: [4.175, 0.175, 0.175]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.08, 0.08, 0.1, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [1, 0.78, 0.25]
+      EmissionStrength: 3
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 8056263886016775018
+    TagComponent:
+      Tag: FinishGate
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2.25, 4.79, -127.8]
+      Rotation: [0, -0, 0]
+      Scale: [8, 4.4, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 8196709617366561407
+    TagComponent:
+      Tag: FinishGate FX
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2.25, 3.94, -127.8]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ParticleSystemComponent:
+      Duration: 4
+      Looping: true
+      Prewarm: true
+      PlayOnAwake: true
+      StopAction: 0
+      StartDelay: 0
+      StartLifetime: [1.4, 2.6]
+      StartSpeed: [0.5, 1.4]
+      StartSize: [0.07, 0.18]
+      StartRotation: [0, 0]
+      StartColorA: [1, 0.78, 0.25, 1]
+      StartColorB: [1, 1, 1, 1]
+      GravityModifier: -0.05
+      SimulationSpeed: 1
+      MaxParticles: 240
+      SimulationSpace: 1
+      EmissionEnabled: true
+      RateOverTime: 16
+      RateOverDistance: 0
+      ShapeEnabled: true
+      Radius: 0.5
+      Angle: 25
+      BoxSize: [8, 0.1, 0.5]
+      EmitFromShell: false
+      RandomizeDirection: 0
+      Shape: 3
+      VelocityEnabled: false
+      VelocityOverLifetime: [0, 0, 0]
+      OrbitalSpeed: 0
+      LimitVelocityEnabled: false
+      Drag: 0
+      SpeedLimit: 100
+      NoiseEnabled: false
+      NoiseStrength: 1
+      NoiseFrequency: 0.5
+      NoiseScrollSpeed: 0.5
+      ColorOverLifetimeEnabled: true
+      SizeOverLifetimeEnabled: true
+      RotationOverLifetimeEnabled: false
+      AngularVelocity: 45
+      CollisionEnabled: false
+      CollisionPlaneY: 0
+      Bounce: 0.5
+      LifetimeLoss: 0
+      TextureSheetEnabled: false
+      AnimationCycles: 1
+      RandomStartFrame: false
+      Tiles: [1, 1]
+      RenderMode: 0
+      Blend: 1
+      Texture: Assets/Textures/spark.png
+      LengthScale: 2
+      SpeedScale: 0.1
+      SortByDistance: true
+      EmissiveIntensity: 3
+      Bursts:
+        []
+      ColorOverLifetime:
+        - [0, 1, 1, 1, 1]
+        - [1, 1, 1, 1, 1]
+      SizeOverLifetime:
+        - [0, 1]
+        - [1, 1]
+  - Entity: 5083494838314965796
+    TagComponent:
+      Tag: FinishConfetti
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2.25, 7.99, -127.8]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ParticleSystemComponent:
+      Duration: 5
+      Looping: false
+      Prewarm: false
+      PlayOnAwake: false
+      StopAction: 0
+      StartDelay: 0
+      StartLifetime: [1.6, 3.2]
+      StartSpeed: [5, 12]
+      StartSize: [0.12, 0.3]
+      StartRotation: [0, 0]
+      StartColorA: [1, 0.8, 0.2, 1]
+      StartColorB: [0.3, 0.9, 1, 1]
+      GravityModifier: 0.45
+      SimulationSpeed: 1
+      MaxParticles: 1500
+      SimulationSpace: 1
+      EmissionEnabled: false
+      RateOverTime: 0
+      RateOverDistance: 0
+      ShapeEnabled: true
+      Radius: 0.5
+      Angle: 25
+      BoxSize: [1, 1, 1]
+      EmitFromShell: false
+      RandomizeDirection: 0
+      Shape: 0
+      VelocityEnabled: false
+      VelocityOverLifetime: [0, 0, 0]
+      OrbitalSpeed: 0
+      LimitVelocityEnabled: false
+      Drag: 0.8
+      SpeedLimit: 100
+      NoiseEnabled: false
+      NoiseStrength: 1
+      NoiseFrequency: 0.5
+      NoiseScrollSpeed: 0.5
+      ColorOverLifetimeEnabled: true
+      SizeOverLifetimeEnabled: false
+      RotationOverLifetimeEnabled: false
+      AngularVelocity: 45
+      CollisionEnabled: false
+      CollisionPlaneY: 0
+      Bounce: 0.5
+      LifetimeLoss: 0
+      TextureSheetEnabled: false
+      AnimationCycles: 1
+      RandomStartFrame: false
+      Tiles: [1, 1]
+      RenderMode: 0
+      Blend: 1
+      Texture: Assets/Textures/spark.png
+      LengthScale: 2
+      SpeedScale: 0.1
+      SortByDistance: true
+      EmissiveIntensity: 2.5
+      Bursts:
+        []
+      ColorOverLifetime:
+        - [0, 1, 1, 1, 1]
+        - [1, 1, 1, 1, 1]
+      SizeOverLifetime:
+        - [0, 1]
+        - [1, 1]
+  - Entity: 1886324280945025723
+    TagComponent:
+      Tag: FX_Dust
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ParticleSystemComponent:
+      Duration: 5
+      Looping: false
+      Prewarm: false
+      PlayOnAwake: false
+      StopAction: 0
+      StartDelay: 0
+      StartLifetime: [0.35, 0.75]
+      StartSpeed: [0.6, 2.4]
+      StartSize: [0.18, 0.42]
+      StartRotation: [0, 0]
+      StartColorA: [0.92, 0.86, 0.8, 0.55]
+      StartColorB: [1, 0.95, 0.9, 0.4]
+      GravityModifier: -0.04
+      SimulationSpeed: 1
+      MaxParticles: 600
+      SimulationSpace: 1
+      EmissionEnabled: false
+      RateOverTime: 0
+      RateOverDistance: 0
+      ShapeEnabled: true
+      Radius: 0.3
+      Angle: 25
+      BoxSize: [1, 1, 1]
+      EmitFromShell: false
+      RandomizeDirection: 0
+      Shape: 4
+      VelocityEnabled: false
+      VelocityOverLifetime: [0, 0, 0]
+      OrbitalSpeed: 0
+      LimitVelocityEnabled: false
+      Drag: 3
+      SpeedLimit: 100
+      NoiseEnabled: false
+      NoiseStrength: 1
+      NoiseFrequency: 0.5
+      NoiseScrollSpeed: 0.5
+      ColorOverLifetimeEnabled: true
+      SizeOverLifetimeEnabled: true
+      RotationOverLifetimeEnabled: false
+      AngularVelocity: 45
+      CollisionEnabled: false
+      CollisionPlaneY: 0
+      Bounce: 0.5
+      LifetimeLoss: 0
+      TextureSheetEnabled: false
+      AnimationCycles: 1
+      RandomStartFrame: false
+      Tiles: [1, 1]
+      RenderMode: 0
+      Blend: 0
+      Texture: Assets/Textures/glow.png
+      LengthScale: 2
+      SpeedScale: 0.1
+      SortByDistance: true
+      EmissiveIntensity: 1
+      Bursts:
+        []
+      ColorOverLifetime:
+        - [0, 1, 1, 1, 1]
+        - [0.6, 1, 1, 1, 0.6]
+        - [1, 1, 1, 1, 0]
+      SizeOverLifetime:
+        - [0, 0.6]
+        - [1, 1.8]
+  - Entity: 2027180472290138141
+    TagComponent:
+      Tag: Berg0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [28.927635, -0.51635545, 78.66458]
+      Rotation: [0.034119174, 1.2353708, -0.07113014]
+      Scale: [16.626228, 39.483646, 14.832994]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [3.3252456, 7.896729]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 7242128840249017075
+    TagComponent:
+      Tag: Berg0 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [28.927635, 38.96729, 78.66458]
+      Rotation: [0, -0, 0]
+      Scale: [14.963605, 5.8191795, 14.963605]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 7199775532209546037
+    TagComponent:
+      Tag: Berg1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-59.441402, 1.5616798, -119.83129]
+      Rotation: [-0.0028255791, 0.6217803, -0.08573385]
+      Scale: [8.813238, 41.56168, 6.6685486]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [1.7626476, 8.312336]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 5802938715534872014
+    TagComponent:
+      Tag: Berg1 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-59.441402, 43.12336, -119.83129]
+      Rotation: [0, -0, 0]
+      Scale: [7.9319143, 3.0846334, 7.9319143]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 592335278693775032
+    TagComponent:
+      Tag: Berg2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-65.07013, 11.919131, -36.14732]
+      Rotation: [-0.018853301, 1.4355828, -0.0035685445]
+      Scale: [11.4842825, 51.919132, 13.151634]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [2.2968564, 10.383826]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 9139396209228821628
+    TagComponent:
+      Tag: Berg2 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-65.07013, 63.83826, -36.14732]
+      Rotation: [0, -0, 0]
+      Scale: [10.335854, 4.019499, 10.335854]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 5640121548336936963
+    TagComponent:
+      Tag: Berg3
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [102.796814, -2.368139, -56.562096]
+      Rotation: [0.02204394, 1.4640526, -0.04476379]
+      Scale: [14.095852, 37.631863, 16.413269]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [2.8191705, 7.5263724]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 2550493396094946941
+    TagComponent:
+      Tag: Berg3 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [102.796814, 35.26372, -56.562096]
+      Rotation: [0, -0, 0]
+      Scale: [12.686267, 4.9335485, 12.686267]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 5381648345166012765
+    TagComponent:
+      Tag: Berg4
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [130.70612, 17.813696, -220.91116]
+      Rotation: [0.014982205, 1.3566812, -0.049639784]
+      Scale: [8.756175, 57.813698, 9.153836]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [1.751235, 11.562739]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 5407465226756441135
+    TagComponent:
+      Tag: Berg4 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [130.70612, 75.627396, -220.91116]
+      Rotation: [0, -0, 0]
+      Scale: [7.8805575, 3.0646613, 7.8805575]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 2709586223315095341
+    TagComponent:
+      Tag: Berg5
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-98.17483, -7.887478, -99.87215]
+      Rotation: [0.032571916, 1.2320104, -0.0820731]
+      Scale: [7.2369304, 32.112522, 5.5494437]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [1.4473861, 6.4225044]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 6388305504582273245
+    TagComponent:
+      Tag: Berg5 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-98.17483, 24.225044, -99.87215]
+      Rotation: [0, -0, 0]
+      Scale: [6.5132375, 2.5329256, 6.5132375]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 7541705622682388596
+    TagComponent:
+      Tag: Berg6
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-175.29626, -18.918627, 16.906025]
+      Rotation: [0.01062224, 0.22971064, 0.079784885]
+      Scale: [17.359968, 21.081373, 19.361187]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [3.4719934, 4.2162747]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 7246426396247045191
+    TagComponent:
+      Tag: Berg6 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-175.29626, 2.1627471, 16.906025]
+      Rotation: [0, -0, 0]
+      Scale: [15.623971, 6.075989, 15.623971]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 3527669306427818853
+    TagComponent:
+      Tag: Berg7
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-55.2171, 18.516869, -1.2113994]
+      Rotation: [-0.022966688, 0.312387, -0.060194343]
+      Scale: [17.759026, 58.51687, 18.035831]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [3.5518053, 11.703374]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 7432747645400337076
+    TagComponent:
+      Tag: Berg7 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-55.2171, 77.03374, -1.2113994]
+      Rotation: [0, -0, 0]
+      Scale: [15.983124, 6.215659, 15.983124]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 8804897727541676593
+    TagComponent:
+      Tag: Berg8
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [131.25972, -15.466216, -150.1957]
+      Rotation: [-0.034674555, 0.870449, -0.03121554]
+      Scale: [9.03752, 24.533785, 6.5965023]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [1.807504, 4.906757]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 3083318268647240868
+    TagComponent:
+      Tag: Berg8 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [131.25972, 9.067568, -150.1957]
+      Rotation: [0, -0, 0]
+      Scale: [8.133768, 3.1631322, 8.133768]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 1068776460417685653
+    TagComponent:
+      Tag: Berg9
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-59.559822, -4.1584682, -118.73536]
+      Rotation: [0.011667146, 0.7274673, -0.078886695]
+      Scale: [19.214567, 35.841534, 14.149964]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [3.8429136, 7.1683064]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 6338530763276807031
+    TagComponent:
+      Tag: Berg9 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-59.559822, 31.683064, -118.73536]
+      Rotation: [0, -0, 0]
+      Scale: [17.293112, 6.7250986, 17.293112]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 7982099840129967958
+    TagComponent:
+      Tag: Berg10
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [58.715183, -3.8732314, -169.14632]
+      Rotation: [0.047651794, 0.667468, 0.051858436]
+      Scale: [14.0994835, 36.12677, 14.518389]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [2.8198967, 7.2253537]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 7547753368893116953
+    TagComponent:
+      Tag: Berg10 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [58.715183, 32.253536, -169.14632]
+      Rotation: [0, -0, 0]
+      Scale: [12.689535, 4.934819, 12.689535]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 8679966110420565328
+    TagComponent:
+      Tag: Berg11
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-16.755484, -10.328756, -284.48343]
+      Rotation: [0.01814596, 1.2418871, -0.0518986]
+      Scale: [12.786961, 29.671244, 13.080955]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [2.5573921, 5.934249]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 755618799655001084
+    TagComponent:
+      Tag: Berg11 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-16.755484, 19.342487, -284.48343]
+      Rotation: [0, -0, 0]
+      Scale: [11.508265, 4.475436, 11.508265]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 1919168607588592870
+    TagComponent:
+      Tag: Berg12
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [109.726006, 13.051019, 69.405365]
+      Rotation: [0.049686417, 1.4626194, -0.020937823]
+      Scale: [19.94188, 53.051018, 15.409592]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [3.988376, 10.610204]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 3187077159677481011
+    TagComponent:
+      Tag: Berg12 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [109.726006, 66.102036, 69.405365]
+      Rotation: [0, -0, 0]
+      Scale: [17.947693, 6.979658, 17.947693]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 2268715826870885378
+    TagComponent:
+      Tag: Berg13
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [52.31514, 11.210686, -6.602604]
+      Rotation: [0.07346174, 1.2257077, -0.06812103]
+      Scale: [8.07666, 51.210686, 7.1941466]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [1.615332, 10.242137]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 7819244978546512917
+    TagComponent:
+      Tag: Berg13 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [52.31514, 62.42137, -6.602604]
+      Rotation: [0, -0, 0]
+      Scale: [7.2689943, 2.826831, 7.2689943]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 461144003807291338
+    TagComponent:
+      Tag: Berg14
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-66.58382, -22.087416, 106.1652]
+      Rotation: [-0.04992391, 1.1824884, 0.069032244]
+      Scale: [8.703595, 17.912584, 9.955219]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [1.7407191, 3.5825167]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 6793325454237022819
+    TagComponent:
+      Tag: Berg14 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-66.58382, -4.1748323, 106.1652]
+      Rotation: [0, -0, 0]
+      Scale: [7.8332357, 3.0462582, 7.8332357]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 7563521130315217058
+    TagComponent:
+      Tag: Berg15
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [99.55319, 0.5610224, -75.202705]
+      Rotation: [-0.0784378, 0.05819387, 0.06955719]
+      Scale: [13.362202, 40.561024, 9.898863]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [2.6724403, 8.112205]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 7750977825705414563
+    TagComponent:
+      Tag: Berg15 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [99.55319, 41.122044, -75.202705]
+      Rotation: [0, -0, 0]
+      Scale: [12.025982, 4.6767707, 12.025982]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 6517661690097318577
+    TagComponent:
+      Tag: Berg16
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [143.59065, -15.598504, 15.24752]
+      Rotation: [-0.005619764, 0.41358313, 0.042834483]
+      Scale: [9.521562, 24.401497, 7.6867943]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [1.9043123, 4.880299]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 2893379700778390044
+    TagComponent:
+      Tag: Berg16 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [143.59065, 8.802992, 15.24752]
+      Rotation: [0, -0, 0]
+      Scale: [8.569406, 3.3325465, 8.569406]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 4094353476206210255
+    TagComponent:
+      Tag: Berg17
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [78.11516, 1.094905, -9.058678]
+      Rotation: [-0.0012682898, 0.85845613, -0.050231755]
+      Scale: [8.357665, 41.094906, 8.755795]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [1.6715331, 8.218981]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 7439661125314513771
+    TagComponent:
+      Tag: Berg17 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [78.11516, 42.18981, -9.058678]
+      Rotation: [0, -0, 0]
+      Scale: [7.5218987, 2.9251828, 7.5218987]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 3298856469973884056
+    TagComponent:
+      Tag: Berg18
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [80.73672, 1.6667733, -112.61661]
+      Rotation: [-0.024877364, 1.4205865, 0.04934491]
+      Scale: [12.405758, 41.666775, 13.578913]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [2.4811516, 8.333355]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 8918093992161124187
+    TagComponent:
+      Tag: Berg18 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [80.73672, 43.333546, -112.61661]
+      Rotation: [0, -0, 0]
+      Scale: [11.165182, 4.3420153, 11.165182]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 359466919481580485
+    TagComponent:
+      Tag: Berg19
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-102.156204, 18.831469, -81.703064]
+      Rotation: [0.015511299, 0.07892422, -0.07288797]
+      Scale: [14.087679, 58.831467, 14.740827]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [2.8175359, 11.766294]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 5782763502315036156
+    TagComponent:
+      Tag: Berg19 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-102.156204, 77.66293, -81.703064]
+      Rotation: [0, -0, 0]
+      Scale: [12.678911, 4.930688, 12.678911]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 4947802927169239114
+    TagComponent:
+      Tag: Berg20
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-46.50366, 3.691417, 157.61766]
+      Rotation: [0.08263941, 0.8814232, -0.054698553]
+      Scale: [12.114211, 43.691418, 14.433189]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [2.422842, 8.738283]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 5114788657006562390
+    TagComponent:
+      Tag: Berg20 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-46.50366, 47.382835, 157.61766]
+      Rotation: [0, -0, 0]
+      Scale: [10.90279, 4.2399735, 10.90279]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 7671113518729317893
+    TagComponent:
+      Tag: Berg21
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-72.99094, -5.16526, -128.67422]
+      Rotation: [-0.013847961, 1.2636762, -0.006336982]
+      Scale: [19.762417, 34.83474, 17.759727]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [3.9524834, 6.966948]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 4842230136267478204
+    TagComponent:
+      Tag: Berg21 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-72.99094, 29.66948, -128.67422]
+      Rotation: [0, -0, 0]
+      Scale: [17.786177, 6.9168463, 17.786177]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 6605695553143618115
+    TagComponent:
+      Tag: Berg22
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-124.81731, -13.685562, 53.18342]
+      Rotation: [0.07627612, 0.52996886, 0.0020487732]
+      Scale: [9.628802, 26.314438, 9.439697]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [1.9257605, 5.2628875]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 5716225113638188235
+    TagComponent:
+      Tag: Berg22 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-124.81731, 12.628877, 53.18342]
+      Rotation: [0, -0, 0]
+      Scale: [8.665922, 3.370081, 8.665922]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 8087775008733899536
+    TagComponent:
+      Tag: Berg23
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [19.391024, 0.99586105, 93.22974]
+      Rotation: [-0.08098109, 1.2763356, -0.07348877]
+      Scale: [19.3807, 40.99586, 19.072548]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [3.8761399, 8.199172]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 2210286628550118997
+    TagComponent:
+      Tag: Berg23 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [19.391024, 41.991722, 93.22974]
+      Rotation: [0, -0, 0]
+      Scale: [17.44263, 6.783245, 17.44263]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 7504592226671146736
+    TagComponent:
+      Tag: Berg24
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [46.449398, -2.0720143, 16.002762]
+      Rotation: [0.074855275, 1.0863672, 0.0062362025]
+      Scale: [10.785414, 37.927986, 9.6707325]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [2.1570828, 7.585597]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 2078546847412023006
+    TagComponent:
+      Tag: Berg24 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [46.449398, 35.855972, 16.002762]
+      Rotation: [0, -0, 0]
+      Scale: [9.706873, 3.774895, 9.706873]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 3318969737734416868
+    TagComponent:
+      Tag: Berg25
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-143.94011, -7.529786, -131.39679]
+      Rotation: [-0.060137793, 0.870667, -0.05556763]
+      Scale: [18.937103, 32.470215, 15.324053]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [3.7874207, 6.494043]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 4588904924115087958
+    TagComponent:
+      Tag: Berg25 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-143.94011, 24.940428, -131.39679]
+      Rotation: [0, -0, 0]
+      Scale: [17.043394, 6.6279864, 17.043394]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 7832357389240557014
+    TagComponent:
+      Tag: Berg26
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-55.13407, -2.242784, 152.75798]
+      Rotation: [-0.086936876, 1.0318989, -0.0642425]
+      Scale: [14.994746, 37.757217, 15.367049]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [2.9989493, 7.551443]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 1814223642218288192
+    TagComponent:
+      Tag: Berg26 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-55.13407, 35.51443, 152.75798]
+      Rotation: [0, -0, 0]
+      Scale: [13.495272, 5.2481613, 13.495272]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 1787089282939755263
+    TagComponent:
+      Tag: Berg27
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [112.0554, -16.961226, -261.42093]
+      Rotation: [-0.035969276, 0.57507867, 0.013865291]
+      Scale: [18.662607, 23.038774, 20.591204]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [3.7325215, 4.6077547]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 3905234950240249985
+    TagComponent:
+      Tag: Berg27 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [112.0554, 6.077548, -261.42093]
+      Rotation: [0, -0, 0]
+      Scale: [16.796347, 6.5319123, 16.796347]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 6849509786351853713
+    TagComponent:
+      Tag: Berg28
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.6285237, -16.105373, -244.0568]
+      Rotation: [0.011268964, 0.7339044, -0.011999161]
+      Scale: [14.045709, 23.894627, 11.851293]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [2.8091419, 4.7789254]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 6377739854804886607
+    TagComponent:
+      Tag: Berg28 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.6285237, 7.7892547, -244.0568]
+      Rotation: [0, -0, 0]
+      Scale: [12.641138, 4.915998, 12.641138]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 5154194394270260120
+    TagComponent:
+      Tag: Berg29
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-122.59454, 4.3243136, -38.950058]
+      Rotation: [0.016978934, 0.54675585, -0.031355284]
+      Scale: [19.880299, 44.324314, 14.000703]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [3.97606, 8.864862]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 5999530660988493214
+    TagComponent:
+      Tag: Berg29 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-122.59454, 48.64863, -38.950058]
+      Rotation: [0, -0, 0]
+      Scale: [17.89227, 6.9581046, 17.89227]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 2759155896900351034
+    TagComponent:
+      Tag: Berg30
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-58.386295, -19.287985, -167.38998]
+      Rotation: [-0.027258286, 0.09032605, 0.08594227]
+      Scale: [15.139321, 20.712015, 17.553677]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [3.0278642, 4.142403]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 5691224851834671995
+    TagComponent:
+      Tag: Berg30 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-58.386295, 1.4240313, -167.38998]
+      Rotation: [0, -0, 0]
+      Scale: [13.625389, 5.2987623, 13.625389]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 8530786664993968627
+    TagComponent:
+      Tag: Berg31
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-59.503, -12.333598, -253.55931]
+      Rotation: [-0.049348928, 0.37531063, -0.07548305]
+      Scale: [19.01288, 27.666403, 18.929024]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [3.8025758, 5.5332804]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 5340090739675410730
+    TagComponent:
+      Tag: Berg31 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-59.503, 15.332804, -253.55931]
+      Rotation: [0, -0, 0]
+      Scale: [17.111591, 6.6545076, 17.111591]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 835732256144074760
+    TagComponent:
+      Tag: Berg32
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-5.6478047, 10.735474, -214.35802]
+      Rotation: [0.045363072, 1.4749511, -0.05640441]
+      Scale: [13.263712, 50.735474, 13.829032]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [2.6527424, 10.147095]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 7540026387694303342
+    TagComponent:
+      Tag: Berg32 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-5.6478047, 61.470947, -214.35802]
+      Rotation: [0, -0, 0]
+      Scale: [11.937341, 4.642299, 11.937341]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 4875336869559263897
+    TagComponent:
+      Tag: Berg33
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [127.361336, 5.996405, 0.46562144]
+      Rotation: [0.0325297, 0.45722917, -0.0044761165]
+      Scale: [18.957655, 45.996407, 16.008007]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [3.791531, 9.199281]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 3359367640574593914
+    TagComponent:
+      Tag: Berg33 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [127.361336, 51.99281, 0.46562144]
+      Rotation: [0, -0, 0]
+      Scale: [17.06189, 6.6351795, 17.06189]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 4115296618208822916
+    TagComponent:
+      Tag: Berg34
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-4.761097, -23.47961, -258.51755]
+      Rotation: [-0.034653064, 0.11628461, 0.0041267695]
+      Scale: [15.5691185, 16.52039, 11.926181]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [3.113824, 3.304078]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 8712517113609081232
+    TagComponent:
+      Tag: Berg34 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-4.761097, -6.95922, -258.51755]
+      Rotation: [0, -0, 0]
+      Scale: [14.012207, 5.4491916, 14.012207]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 1900268539938095286
+    TagComponent:
+      Tag: Berg35
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [47.107372, 5.479024, -133.88336]
+      Rotation: [-0.06185251, 0.8788809, 0.0032609445]
+      Scale: [14.461546, 45.479023, 12.242377]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [2.8923092, 9.095805]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 7369453857428648925
+    TagComponent:
+      Tag: Berg35 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [47.107372, 50.95805, -133.88336]
+      Rotation: [0, -0, 0]
+      Scale: [13.015391, 5.061541, 13.015391]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 226780408405467988
+    TagComponent:
+      Tag: Berg36
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [77.32404, -21.209478, -163.37524]
+      Rotation: [0.04384006, 0.19596583, 0.04022417]
+      Scale: [16.424295, 18.790522, 18.891403]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [3.2848592, 3.7581046]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 2147299201454496284
+    TagComponent:
+      Tag: Berg36 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [77.32404, -2.4189548, -163.37524]
+      Rotation: [0, -0, 0]
+      Scale: [14.781866, 5.7485037, 14.781866]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 4888807865844559727
+    TagComponent:
+      Tag: Berg37
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [95.18845, -22.778946, -44.304638]
+      Rotation: [0.036176328, 0.12860458, -0.06867895]
+      Scale: [9.605069, 17.221054, 8.9167185]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [1.9210137, 3.4442105]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 361202125321031162
+    TagComponent:
+      Tag: Berg37 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [95.18845, -5.5578938, -44.304638]
+      Rotation: [0, -0, 0]
+      Scale: [8.644562, 3.361774, 8.644562]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 7838350384580556465
+    TagComponent:
+      Tag: Berg38
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-34.13722, -1.5517906, -214.41579]
+      Rotation: [-0.006952248, 1.5704547, -0.025073849]
+      Scale: [13.160445, 38.448208, 11.233457]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [2.6320891, 7.689642]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 6451466892784968321
+    TagComponent:
+      Tag: Berg38 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-34.13722, 36.89642, -214.41579]
+      Rotation: [0, -0, 0]
+      Scale: [11.844401, 4.606156, 11.844401]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 5224666874937094111
+    TagComponent:
+      Tag: Berg39
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-131.36322, -11.975049, -206.75569]
+      Rotation: [-0.083863206, 1.4381372, -0.08215855]
+      Scale: [18.562897, 28.02495, 13.943043]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [3.7125793, 5.60499]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 6418370330088924966
+    TagComponent:
+      Tag: Berg39 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-131.36322, 16.049902, -206.75569]
+      Rotation: [0, -0, 0]
+      Scale: [16.706606, 6.4970136, 16.706606]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 8319692253865274923
+    TagComponent:
+      Tag: Berg40
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [49.638107, -4.702429, -194.09018]
+      Rotation: [0.04657604, 0.73997444, -0.01455042]
+      Scale: [18.48301, 35.29757, 17.238604]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [3.6966019, 7.059514]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 3939152800753585871
+    TagComponent:
+      Tag: Berg40 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [49.638107, 30.595142, -194.09018]
+      Rotation: [0, -0, 0]
+      Scale: [16.634708, 6.4690533, 16.634708]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 5846280213897486759
+    TagComponent:
+      Tag: Berg41
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-141.83946, 8.698669, -80.75772]
+      Rotation: [-0.06293971, 0.6674083, -0.029811556]
+      Scale: [11.410588, 48.69867, 8.191841]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [2.2821176, 9.739734]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 1053715233878190467
+    TagComponent:
+      Tag: Berg41 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-141.83946, 57.39734, -80.75772]
+      Rotation: [0, -0, 0]
+      Scale: [10.269529, 3.993706, 10.269529]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 428653173269274746
+    TagComponent:
+      Tag: Berg42
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-60.454597, 10.415115, -109.80249]
+      Rotation: [-0.05439705, 0.84626126, 0.043538313]
+      Scale: [11.150745, 50.415115, 12.751158]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [2.230149, 10.083023]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 1516810711824309700
+    TagComponent:
+      Tag: Berg42 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-60.454597, 60.83023, -109.80249]
+      Rotation: [0, -0, 0]
+      Scale: [10.03567, 3.9027607, 10.03567]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 2127723200439894456
+    TagComponent:
+      Tag: Berg43
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [79.87948, -19.56898, 76.06398]
+      Rotation: [-0.08505098, 1.3186399, -0.024603924]
+      Scale: [9.194991, 20.43102, 7.904367]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [1.8389982, 4.086204]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 8258085753853729376
+    TagComponent:
+      Tag: Berg43 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [79.87948, 0.8620415, 76.06398]
+      Rotation: [0, -0, 0]
+      Scale: [8.275492, 3.218247, 8.275492]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 6016677311726872383
+    TagComponent:
+      Tag: Berg44
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [136.12798, -15.054292, -131.53668]
+      Rotation: [-0.07543344, 0.40149766, 0.07696209]
+      Scale: [19.967335, 24.945707, 14.2535]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [3.9934669, 4.9891415]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 340116748303863467
+    TagComponent:
+      Tag: Berg44 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [136.12798, 9.891417, -131.53668]
+      Rotation: [0, -0, 0]
+      Scale: [17.9706, 6.988567, 17.9706]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 6383723092085800961
+    TagComponent:
+      Tag: Berg45
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-79.993645, -10.833323, -69.60818]
+      Rotation: [-0.026376007, 0.9882279, 0.02741534]
+      Scale: [13.94537, 29.166677, 14.261254]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [2.789074, 5.8333354]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 6365909827135427516
+    TagComponent:
+      Tag: Berg45 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-79.993645, 18.333355, -69.60818]
+      Rotation: [0, -0, 0]
+      Scale: [12.550833, 4.8808794, 12.550833]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 3951110226923300696
+    TagComponent:
+      Tag: Berg46
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-97.427216, -20.522423, 101.146805]
+      Rotation: [-0.008783343, 0.16054606, -0.052300055]
+      Scale: [11.656378, 19.477577, 12.011974]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [2.3312755, 3.8955154]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 1126104575801186142
+    TagComponent:
+      Tag: Berg46 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-97.427216, -1.0448465, 101.146805]
+      Rotation: [0, -0, 0]
+      Scale: [10.49074, 4.0797324, 10.49074]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 1039022171990233179
+    TagComponent:
+      Tag: Berg47
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [112.95755, -10.01883, -112.791626]
+      Rotation: [-0.0006903612, 1.3805689, 0.05623173]
+      Scale: [13.548413, 29.98117, 14.310433]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.86, 0.93, 1, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      Tiling: [2.7096827, 5.996234]
+      Offset: [0, 0]
+      TexturePath: Assets/Textures/ice.png
+  - Entity: 8833916012960714075
+    TagComponent:
+      Tag: Berg47 Snow
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [112.95755, 19.96234, -112.791626]
+      Rotation: [0, -0, 0]
+      Scale: [12.193572, 4.7419443, 12.193572]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.8
+      AO: 1
+      TexturePath: CQ:Resources/Textures/texture_grid.png
+  - Entity: 1406937352463124989
+    TagComponent:
+      Tag: Player
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1, 4.5]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    CharacterControllerComponent:
+      SlopeLimit: 50
+      StepOffset: 0.35
+      SkinWidth: 0.02
+      MinMoveDistance: 0
+      Center: [0, 0, 0]
+      Radius: 0.35
+      Height: 1.8
+      Mass: 70
+      PushRigidbodies: true
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Scripts/Player.cqs
+      ClassName: ""
+    AudioSourceComponent:
+      FilePath: Assets/Audio/wind_loop.wav
+      PlayOnAwake: true
+      Loop: true
+      Mute: false
+      Volume: 0
+      Pitch: 1
+      Pan: 0
+      Is3D: false
+      MinDistance: 1
+      MaxDistance: 100
+      DopplerLevel: 1
+      Attenuation: 1
+      RolloffFactor: 1
+      OutputGroup: SFX
+      NextGraphNodeID: 1
+      NextGraphLinkID: 1
+      GraphInitialized: false
+      GraphNodes:
+        []
+      GraphLinks:
+        []
+  - Entity: 5900164671468411956
+    TagComponent:
+      Tag: PlayerCamera
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.70000005, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera:
+        ProjectionType: 0
+        PerspectiveFOV: 1.4835298
+        PerspectiveNear: 0.05
+        PerspectiveFar: 1500
+        OrthographicSize: 10
+        OrthographicNear: -1000
+        OrthographicFar: 1000
+      Primary: false
+      FixedAspectRatio: false
+      Background: 0
+      BackgroundColor: [0.192, 0.302, 0.475, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 7882885217689169754
+    TagComponent:
+      Tag: SpeedMotes
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ParticleSystemComponent:
+      Duration: 5
+      Looping: true
+      Prewarm: true
+      PlayOnAwake: true
+      StopAction: 0
+      StartDelay: 0
+      StartLifetime: [2.5, 4]
+      StartSpeed: [0.05, 0.3]
+      StartSize: [0.05, 0.12]
+      StartRotation: [0, 0]
+      StartColorA: [1, 1, 1, 0.9]
+      StartColorB: [0.85, 0.92, 1, 0.7]
+      GravityModifier: 0.03
+      SimulationSpeed: 1
+      MaxParticles: 400
+      SimulationSpace: 1
+      EmissionEnabled: true
+      RateOverTime: 120
+      RateOverDistance: 0
+      ShapeEnabled: true
+      Radius: 0.5
+      Angle: 25
+      BoxSize: [26, 12, 26]
+      EmitFromShell: false
+      RandomizeDirection: 0
+      Shape: 3
+      VelocityEnabled: false
+      VelocityOverLifetime: [0, 0, 0]
+      OrbitalSpeed: 0
+      LimitVelocityEnabled: false
+      Drag: 0
+      SpeedLimit: 100
+      NoiseEnabled: false
+      NoiseStrength: 1
+      NoiseFrequency: 0.5
+      NoiseScrollSpeed: 0.5
+      ColorOverLifetimeEnabled: true
+      SizeOverLifetimeEnabled: false
+      RotationOverLifetimeEnabled: false
+      AngularVelocity: 45
+      CollisionEnabled: false
+      CollisionPlaneY: 0
+      Bounce: 0.5
+      LifetimeLoss: 0
+      TextureSheetEnabled: false
+      AnimationCycles: 1
+      RandomStartFrame: false
+      Tiles: [1, 1]
+      RenderMode: 0
+      Blend: 0
+      Texture: Assets/Textures/glow.png
+      LengthScale: 2
+      SpeedScale: 0.1
+      SortByDistance: false
+      EmissiveIntensity: 1.5
+      Bursts:
+        []
+      ColorOverLifetime:
+        - [0, 1, 1, 1, 1]
+        - [1, 1, 1, 1, 1]
+      SizeOverLifetime:
+        - [0, 1]
+        - [1, 1]
+  - Entity: 6343309133061239572
+    TagComponent:
+      Tag: TitleCamera
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [21, 17, 14]
+      Rotation: [-0.35953784, 0.5061455, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera:
+        ProjectionType: 0
+        PerspectiveFOV: 0.87266463
+        PerspectiveNear: 0.01
+        PerspectiveFar: 1500
+        OrthographicSize: 10
+        OrthographicNear: -1000
+        OrthographicFar: 1000
+      Primary: true
+      FixedAspectRatio: false
+      Background: 0
+      BackgroundColor: [0.192, 0.302, 0.475, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5686748085391185338
+    TagComponent:
+      Tag: Game
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Scripts/ParkourGame.cqs
+      ClassName: ""
+      Fields:
+        bronzeTime:
+          Int: 41
+        category:
+          String: ARCTIC PEAKS
+        courseLength:
+          Float: 134.8
+        goldTime:
+          Int: 22
+        hintData:
+          String: "9,-6,SPACE TO JUMP   /   HOLD SHIFT TO SPRINT|-13.53,-22.53,WAIT FOR THE PLATFORM, THEN JUMP|-67.29,-73.29,STAY ON THE BEAM|-99.8,-108.8,DOUBLE JUMP: PRESS SPACE AGAIN IN THE AIR"
+        levelId:
+          String: arctic-2
+        levelName:
+          String: DRIFTING FLOES
+        nextLevel:
+          String: Arctic3
+        routeData:
+          String: go,0,1;jump,0.27,-6.4;go,0.54,-15.03;cp,1;stop,0.54,-18.13;wait,m1@0.54@-2.19;leap,Mover1,-20.13,-27.53;wait,m2@0.54@-2.19;leap,Mover2,-29.13,-36.53;wait,m3low@0.54@-2.19;leap,Mover3,-38.13,-45.53;wait,m3high@0.54@-2.19;go,0.54,-47.13;jump,0.54,-47.13;go,0.54,-50.03;jump,0.54,-50.03;go,0.54,-53.53;go,0.54,-54.03;jump,0.73,-57.93;go,0.92,-65.79;cp,2;go,0.92,-70.49;go,0.92,-87.09;go,0.92,-86.59;jump,1.59,-90.99;go,2.25,-104.2;jump,2.25,-104.2;go,2.25,-108.3;jump,2.25,-108.3;go,2.25,-118.2;jump,2.25,-118.2;go,2.25,-121.8;jump,2.25,-121.8;go,2.25,-132.8
+        silverTime:
+          Int: 29
+    AudioSourceComponent:
+      FilePath: Assets/Music/theme.mp3
+      PlayOnAwake: true
+      Loop: true
+      Mute: false
+      Volume: 0.6
+      Pitch: 1
+      Pan: 0
+      Is3D: false
+      MinDistance: 1
+      MaxDistance: 100
+      DopplerLevel: 1
+      Attenuation: 1
+      RolloffFactor: 1
+      OutputGroup: Music
+      NextGraphNodeID: 1
+      NextGraphLinkID: 1
+      GraphInitialized: false
+      GraphNodes:
+        []
+      GraphLinks:
+        []
+  - Entity: 3064532790304911127
+    TagComponent:
+      Tag: HUD
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    CanvasComponent:
+      RenderMode: 0
+      PixelPerfect: false
+      SortOrder: 0
+    CanvasScalerComponent:
+      ScaleMode: 1
+      ScaleFactor: 1
+      ReferencePixelsPerUnit: 100
+      ReferenceResolution: [1920, 1080]
+      MatchWidthOrHeight: 0.5
+    GraphicRaycasterComponent:
+      IgnoreReversedGraphics: true
+      BlockingObjects: 0
+      BlockingMask: 4294967295
+  - Entity: 4866827852027997158
+    TagComponent:
+      Tag: HudRoot
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [0, 0]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.02, 0.02, 0.06, 0]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 7241747013900094688
+    TagComponent:
+      Tag: Crosshair
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [28, 28]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 1, 1, 0.8]
+      TexturePath: Assets/Textures/crosshair.png
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 1469995714283097311
+    TagComponent:
+      Tag: TimerText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 1]
+      AnchorMax: [0.5, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -70]
+      SizeDelta: [500, 80]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: 0:00.00
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 60
+      Color: [0.95, 0.97, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 6142761479259141089
+    TagComponent:
+      Tag: BestText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 1]
+      AnchorMax: [0.5, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -126]
+      SizeDelta: [500, 34]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 22
+      Color: [0.74, 0.78, 0.9, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 5464784958299082031
+    TagComponent:
+      Tag: CheckpointLabel
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 1]
+      AnchorMax: [0, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [250, -58]
+      SizeDelta: [360, 30]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: CHECKPOINT
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 20
+      Color: [0.74, 0.78, 0.9, 1]
+      AlignH: 0
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 1834691690869488139
+    TagComponent:
+      Tag: CheckpointText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 1]
+      AnchorMax: [0, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [250, -100]
+      SizeDelta: [360, 50]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: 0 / 2
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 40
+      Color: [0.95, 0.97, 1, 1]
+      AlignH: 0
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 603228630564082181
+    TagComponent:
+      Tag: FallsText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [1, 1]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-250, -58]
+      SizeDelta: [360, 30]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 20
+      Color: [0.74, 0.78, 0.9, 1]
+      AlignH: 2
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 1793991421700527889
+    TagComponent:
+      Tag: SpeedText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 92]
+      SizeDelta: [300, 70]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: 0
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 50
+      Color: [0.95, 0.97, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 7703656447506647391
+    TagComponent:
+      Tag: SpeedUnit
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 50]
+      SizeDelta: [300, 30]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: KM/H
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 18
+      Color: [0.74, 0.78, 0.9, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 3569860638486613778
+    TagComponent:
+      Tag: HintText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 170]
+      SizeDelta: [1500, 44]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 24
+      Color: [1, 0.82, 0.35, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 7756898584664071049
+    TagComponent:
+      Tag: PopupText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 250]
+      SizeDelta: [1400, 70]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 46
+      Color: [0.95, 0.97, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 5365579347854286875
+    TagComponent:
+      Tag: PopupSub
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 196]
+      SizeDelta: [1400, 44]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 30
+      Color: [1, 0.82, 0.35, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 5264313266979690534
+    TagComponent:
+      Tag: CountdownText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 60]
+      SizeDelta: [700, 240]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 180
+      Color: [0.95, 0.97, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 7171660122647592122
+    TagComponent:
+      Tag: TitleUI
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [0, 0]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.02, 0.02, 0.06, 0.2]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 0
+  - Entity: 8840055497412444174
+    TagComponent:
+      Tag: TitleText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 250]
+      SizeDelta: [1600, 190]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: PARKOUR
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 150
+      Color: [0.95, 0.97, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 1983631966200552078
+    TagComponent:
+      Tag: TitleSub
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 128]
+      SizeDelta: [1000, 60]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: DRIFTING FLOES
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 40
+      Color: [1, 0.82, 0.35, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 5928270435690910842
+    TagComponent:
+      Tag: PressStart
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -120]
+      SizeDelta: [1200, 60]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: PRESS ENTER TO START
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 34
+      Color: [0.95, 0.97, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 8960326868374927447
+    TagComponent:
+      Tag: TitleBest
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -186]
+      SizeDelta: [900, 50]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 28
+      Color: [0.74, 0.78, 0.9, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 7015951372775600
+    TagComponent:
+      Tag: StartBtn
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -280]
+      SizeDelta: [320, 62]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.08, 0.1, 0.2, 0.9]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 12
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 4378793796882826909
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: START
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 24
+      Color: [0.9, 0.94, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 6472697256603015770
+    TagComponent:
+      Tag: TitleHint
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 60]
+      SizeDelta: [1800, 36]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: WASD MOVE   MOUSE LOOK   SHIFT SPRINT   SPACE JUMP / DOUBLE JUMP / WALL JUMP   CTRL SLIDE   ESC PAUSE
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 18
+      Color: [0.74, 0.78, 0.9, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 8464777699244773787
+    TagComponent:
+      Tag: PauseUI
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [0, 0]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.02, 0.02, 0.06, 0.62]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 0
+  - Entity: 2769787327087429458
+    TagComponent:
+      Tag: PausedText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 290]
+      SizeDelta: [900, 120]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: PAUSED
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 90
+      Color: [0.95, 0.97, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 7049440471941192580
+    TagComponent:
+      Tag: ResumeBtn
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 130]
+      SizeDelta: [380, 62]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.08, 0.1, 0.2, 0.9]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 12
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 5242620332339311910
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: RESUME
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 24
+      Color: [0.9, 0.94, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 3956803879318176935
+    TagComponent:
+      Tag: CheckpointBtn
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 50]
+      SizeDelta: [380, 62]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.08, 0.1, 0.2, 0.9]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 12
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 1002146236564617938
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: LAST CHECKPOINT
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 24
+      Color: [0.9, 0.94, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 3807331510428158510
+    TagComponent:
+      Tag: RestartBtn
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -30]
+      SizeDelta: [380, 62]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.08, 0.1, 0.2, 0.9]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 12
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 935394061560748436
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: RESTART RUN
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 24
+      Color: [0.9, 0.94, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 1589227785630044382
+    TagComponent:
+      Tag: MenuBtn
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -110]
+      SizeDelta: [380, 62]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.08, 0.1, 0.2, 0.9]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 12
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 5584710040500852133
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: LEVEL SELECT
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 24
+      Color: [0.9, 0.94, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 3242124565627255803
+    TagComponent:
+      Tag: SensLabel
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-230, -230]
+      SizeDelta: [300, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: MOUSE
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 22
+      Color: [0.74, 0.78, 0.9, 1]
+      AlignH: 2
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 772320131502486413
+    TagComponent:
+      Tag: SensSlider
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [110, -230]
+      SizeDelta: [360, 30]
+      Rotation: 0
+      Scale: [1, 1]
+    UISliderComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      MinValue: 0.03
+      MaxValue: 0.4
+      Value: 0.5
+      WholeNumbers: false
+      Direction: 0
+      BackgroundColor: [0.12, 0.14, 0.28, 1]
+      FillColor: [1, 0.6, 0.2, 1]
+      HandleColor: [1, 1, 1, 1]
+      HandleSize: 22
+      OnValueChanged: ""
+  - Entity: 8058321666482234687
+    TagComponent:
+      Tag: SensValue
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [340, -230]
+      SizeDelta: [120, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 22
+      Color: [0.95, 0.97, 1, 1]
+      AlignH: 0
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 6022357252077425685
+    TagComponent:
+      Tag: FovLabel
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-230, -290]
+      SizeDelta: [300, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: FIELD OF VIEW
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 22
+      Color: [0.74, 0.78, 0.9, 1]
+      AlignH: 2
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 1125717084168112975
+    TagComponent:
+      Tag: FovSlider
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [110, -290]
+      SizeDelta: [360, 30]
+      Rotation: 0
+      Scale: [1, 1]
+    UISliderComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      MinValue: 60
+      MaxValue: 110
+      Value: 0.5
+      WholeNumbers: true
+      Direction: 0
+      BackgroundColor: [0.12, 0.14, 0.28, 1]
+      FillColor: [1, 0.6, 0.2, 1]
+      HandleColor: [1, 1, 1, 1]
+      HandleSize: 22
+      OnValueChanged: ""
+  - Entity: 6482215882852966021
+    TagComponent:
+      Tag: FovValue
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [340, -290]
+      SizeDelta: [120, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 22
+      Color: [0.95, 0.97, 1, 1]
+      AlignH: 0
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 5075835210770538952
+    TagComponent:
+      Tag: FinishUI
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [0, 0]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.02, 0.02, 0.06, 0.55]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 0
+  - Entity: 7663888082370260175
+    TagComponent:
+      Tag: FinishTitle
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 310]
+      SizeDelta: [1200, 130]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: FINISHED!
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 100
+      Color: [1, 0.82, 0.35, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 2928966231992865038
+    TagComponent:
+      Tag: FinishTime
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 180]
+      SizeDelta: [900, 110]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: 0:00.00
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 92
+      Color: [0.95, 0.97, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 7099184111440533403
+    TagComponent:
+      Tag: FinishMedal
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 86]
+      SizeDelta: [900, 60]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 42
+      Color: [1, 0.82, 0.35, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 2208461851063393932
+    TagComponent:
+      Tag: FinishBest
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 28]
+      SizeDelta: [900, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 26
+      Color: [0.74, 0.78, 0.9, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 5049035840071243249
+    TagComponent:
+      Tag: FinishStats
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -22]
+      SizeDelta: [1300, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 22
+      Color: [0.74, 0.78, 0.9, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -3]
+      ShadowColor: [0, 0, 0, 0.55]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 7965247611388827464
+    TagComponent:
+      Tag: NextBtn
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -110]
+      SizeDelta: [380, 62]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.08, 0.1, 0.2, 0.9]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 12
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 4824200898471572616
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: NEXT LEVEL
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 24
+      Color: [0.9, 0.94, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 8184967547597435958
+    TagComponent:
+      Tag: AgainBtn
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -190]
+      SizeDelta: [380, 62]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.08, 0.1, 0.2, 0.9]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 12
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 1101909127212415307
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: RUN AGAIN
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 24
+      Color: [0.9, 0.94, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 6313802415840452627
+    TagComponent:
+      Tag: FinMenuBtn
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -270]
+      SizeDelta: [380, 62]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.08, 0.1, 0.2, 0.9]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 12
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 3353606027963884894
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: LEVEL SELECT
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 24
+      Color: [0.9, 0.94, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 5597611353197725046
+    TagComponent:
+      Tag: Fade
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [0, 0]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0, 0, 0, 0]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+Environment:
+  SkyboxExposure: 1
+  SkyboxRotation: 0
+  SkyboxTint: [1, 1, 1]
+  EnvironmentLightingSource: 0
+  AmbientColor: [0.3, 0.3, 0.3]
+  AmbientSkyColor: [0.5, 0.6, 0.7]
+  AmbientEquatorColor: [0.3, 0.3, 0.3]
+  AmbientGroundColor: [0.2, 0.15, 0.1]
+  AmbientIntensity: 1
+  FogEnabled: true
+  FogColor: [0.8, 0.87, 0.96]
+  FogDensity: 0.0085
+  FogStart: 10
+  FogEnd: 100
+  SunSource: 0
+  HaloEnabled: false
+  HaloStrength: 0.5
+  FlareEnabled: false
+  FlareFadeSpeed: 3
+  FlareStrength: 1
+  FlareElements:
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.08
+      Offset: 0.3
+      Intensity: 1
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.06
+      Offset: 0.6
+      Intensity: 0.8
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.05
+      Offset: 0.9
+      Intensity: 0.6
+  ShadowEnabled: true
+  ShadowIntensity: 1
+  ReflectionSource: 0
+  ReflectionResolution: 128
+  ReflectionCompression: 0
+  ReflectionIntensityMultiplier: 1
+  ReflectionBounces: 1
+  BakedLightmapPath: ""
+  LightmapResolution: 40
+  MaxLightmapSize: 1024
+  MaxBounces: 2
+  DirectSamples: 32
+  IndirectSamples: 512
+  AmbientOcclusion: true
+  LightmapFiltering: 0
+  RenderSettings:
+    Shadows:
+      Enabled: true
+      Quality: 1
+      Resolution: 4096
+      Distance: 120
+      CascadeCount: 3
+      CascadeSplitLambda: 0.75
+      Strength: 1
+      Softness: 1
+      DepthBias: 0.005
+      NormalBias: 0.015
+      Color: [0, 0, 0]
+    Fog:
+      Enabled: true
+      Mode: 1
+      Color: [0.8, 0.87, 0.96]
+      Density: 0.0085
+      Start: 10
+      End: 100
+      HeightFalloff: 0.035
+      BaseHeight: -12
+    Post:
+      Enabled: true
+      Tonemapper: 2
+      Exposure: 0
+      Bloom: true
+      BloomThreshold: 1
+      BloomKnee: 0.5
+      BloomIntensity: 0.6
+      BloomScatter: 0.7
+      BloomTint: [1, 1, 1]
+      AmbientOcclusion: true
+      AORadius: 0.7
+      AOIntensity: 1
+      AOPower: 1.5
+      ColorGrading: true
+      Contrast: 1.04
+      Saturation: 0.95
+      Temperature: -0.22
+      Tint: 0
+      Lift: [0, 0, 0]
+      Gamma: [1, 1, 1]
+      Gain: [1, 1, 1]
+      Vignette: true
+      VignetteIntensity: 0.24
+      VignetteSmoothness: 0.4
+      VignetteColor: [0, 0, 0]
+      ChromaticAberration: false
+      ChromaticAberrationIntensity: 0.3
+      FilmGrain: false
+      FilmGrainIntensity: 0.15
+      Sharpen: false
+      SharpenAmount: 0.3
+      AntiAliasing: 2
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: false
+      SSRIntensity: 1
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: false
+      SSGIIntensity: 1
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: false
+      CloudCoverage: 0.45
+      CloudDensity: 1
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: false
+      FocusDistance: 10
+      Aperture: 2.8
+      FocalLength: 50
+      DOFMaxBlur: 10
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
+    Environment:
+      Sky: 1
+      BackgroundColor: [0.1, 0.1, 0.1]
+      ImageBasedLighting: true
+      ReflectionIntensity: 1
+      SkyboxIntensity: 1.2
+      SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
+    Bake:
+      RealtimeGI: false
+      BakedGI: true
+      LightingMode: 0
+      Lightmapper: 1
+      ImportanceSampling: true
+      DirectSamples: 32
+      IndirectSamples: 512
+      EnvironmentSamples: 256
+      MaxBounces: 2
+      Filtering: 0
+      Packing: 0
+      Resolution: 40
+      MaxLightmapSize: 1024
+      UseMipmapLimits: true
+      Compression: 2
+      AmbientOcclusion: true
+      DirectionalMode: 0
+      AlbedoBoost: 1
+      IndirectIntensity: 1
+      RealtimeResolution: 20
+      RealtimeIndirectSamples: 256
+      RealtimeMaxBounces: 1
+      AutoGenerate: false
+      BakeOnSceneLoad: 0
+      APVFitToScene: true
+      APVOrigin: [-10, -1, -10]
+      APVSize: [20, 10, 20]
+      APVProbeOffset: [0, 0, 0]
+      APVMinSpacing: 1
+      APVMaxSpacing: 9
+      APVBakingMode: 0
+      APVDilation: false
+      APVVirtualOffset: true
+      APVValidityThreshold: 0.75
+      APVSearchDistanceMultiplier: 0.2
+      APVGeometryBias: 0.01
+      APVRayOriginBias: -0.001
+EditorCamera:
+  CameraMode: 0
+  Position: [-6.1237245, 4.999999, 6.123725]
+  Distance: 10
+  Pitch: 0.5235987
+  Yaw: 0.7853981
+  OrthographicSize: 10
+Hierarchy:
+  - Child: 1101909127212415307
+    Parent: 8184967547597435958
+  - Child: 935394061560748436
+    Parent: 3807331510428158510
+  - Child: 1002146236564617938
+    Parent: 3956803879318176935
+  - Child: 2769787327087429458
+    Parent: 8464777699244773787
+  - Child: 7049440471941192580
+    Parent: 8464777699244773787
+  - Child: 3956803879318176935
+    Parent: 8464777699244773787
+  - Child: 3807331510428158510
+    Parent: 8464777699244773787
+  - Child: 1589227785630044382
+    Parent: 8464777699244773787
+  - Child: 3242124565627255803
+    Parent: 8464777699244773787
+  - Child: 772320131502486413
+    Parent: 8464777699244773787
+  - Child: 8058321666482234687
+    Parent: 8464777699244773787
+  - Child: 6022357252077425685
+    Parent: 8464777699244773787
+  - Child: 1125717084168112975
+    Parent: 8464777699244773787
+  - Child: 6482215882852966021
+    Parent: 8464777699244773787
+  - Child: 3353606027963884894
+    Parent: 6313802415840452627
+  - Child: 4378793796882826909
+    Parent: 7015951372775600
+  - Child: 8840055497412444174
+    Parent: 7171660122647592122
+  - Child: 1983631966200552078
+    Parent: 7171660122647592122
+  - Child: 5928270435690910842
+    Parent: 7171660122647592122
+  - Child: 8960326868374927447
+    Parent: 7171660122647592122
+  - Child: 7015951372775600
+    Parent: 7171660122647592122
+  - Child: 6472697256603015770
+    Parent: 7171660122647592122
+  - Child: 4866827852027997158
+    Parent: 3064532790304911127
+  - Child: 5264313266979690534
+    Parent: 3064532790304911127
+  - Child: 7171660122647592122
+    Parent: 3064532790304911127
+  - Child: 8464777699244773787
+    Parent: 3064532790304911127
+  - Child: 5075835210770538952
+    Parent: 3064532790304911127
+  - Child: 5597611353197725046
+    Parent: 3064532790304911127
+  - Child: 5242620332339311910
+    Parent: 7049440471941192580
+  - Child: 5900164671468411956
+    Parent: 1406937352463124989
+  - Child: 7882885217689169754
+    Parent: 1406937352463124989
+  - Child: 7211536501402038782
+    Parent: 5061709094169994298
+  - Child: 6220339540789286089
+    Parent: 5061709094169994298
+  - Child: 5129766776411376084
+    Parent: 5061709094169994298
+  - Child: 8497580667028121176
+    Parent: 5061709094169994298
+  - Child: 8868874658148863572
+    Parent: 5061709094169994298
+  - Child: 4824200898471572616
+    Parent: 7965247611388827464
+  - Child: 7030847514800416947
+    Parent: 7289030693874073001
+  - Child: 5667231528166788091
+    Parent: 7289030693874073001
+  - Child: 6359104870468298468
+    Parent: 7289030693874073001
+  - Child: 5739109415759820339
+    Parent: 7289030693874073001
+  - Child: 7981633286035039215
+    Parent: 7289030693874073001
+  - Child: 7663888082370260175
+    Parent: 5075835210770538952
+  - Child: 2928966231992865038
+    Parent: 5075835210770538952
+  - Child: 7099184111440533403
+    Parent: 5075835210770538952
+  - Child: 2208461851063393932
+    Parent: 5075835210770538952
+  - Child: 5049035840071243249
+    Parent: 5075835210770538952
+  - Child: 7965247611388827464
+    Parent: 5075835210770538952
+  - Child: 8184967547597435958
+    Parent: 5075835210770538952
+  - Child: 6313802415840452627
+    Parent: 5075835210770538952
+  - Child: 342380911659171347
+    Parent: 6567630008002492888
+  - Child: 1572445445293585306
+    Parent: 6567630008002492888
+  - Child: 8253937526792649171
+    Parent: 6567630008002492888
+  - Child: 7524048776103830446
+    Parent: 6567630008002492888
+  - Child: 6944304696444356440
+    Parent: 6567630008002492888
+  - Child: 6453252942447717843
+    Parent: 4462629450937552256
+  - Child: 4601990800448255028
+    Parent: 4462629450937552256
+  - Child: 3213706974651895960
+    Parent: 4462629450937552256
+  - Child: 2449772128111323273
+    Parent: 4462629450937552256
+  - Child: 3544691443198388654
+    Parent: 4462629450937552256
+  - Child: 5525828874046194945
+    Parent: 9215105801652328638
+  - Child: 7961950673332013756
+    Parent: 9215105801652328638
+  - Child: 8342040664345463600
+    Parent: 9215105801652328638
+  - Child: 3325733434112202614
+    Parent: 9215105801652328638
+  - Child: 4580927332874129870
+    Parent: 9215105801652328638
+  - Child: 3445482410541415799
+    Parent: 3889389321456914854
+  - Child: 7478750451299263423
+    Parent: 3889389321456914854
+  - Child: 5567353880421849860
+    Parent: 3889389321456914854
+  - Child: 2793520548504069658
+    Parent: 3889389321456914854
+  - Child: 3879926237354619225
+    Parent: 3889389321456914854
+  - Child: 5061709094169994298
+    Parent: 7982679521394364046
+  - Child: 537608552805082280
+    Parent: 7982679521394364046
+  - Child: 7289030693874073001
+    Parent: 7982679521394364046
+  - Child: 1026251288897271051
+    Parent: 7982679521394364046
+  - Child: 7597201676531339792
+    Parent: 7982679521394364046
+  - Child: 1826252843808160104
+    Parent: 7982679521394364046
+  - Child: 6658206277705223466
+    Parent: 7982679521394364046
+  - Child: 8987191949972867059
+    Parent: 7982679521394364046
+  - Child: 6057503015579467231
+    Parent: 7982679521394364046
+  - Child: 4462629450937552256
+    Parent: 7982679521394364046
+  - Child: 9215105801652328638
+    Parent: 7982679521394364046
+  - Child: 3889389321456914854
+    Parent: 7982679521394364046
+  - Child: 6986041749623940487
+    Parent: 7982679521394364046
+  - Child: 5166165778424450677
+    Parent: 7982679521394364046
+  - Child: 4190916195828816684
+    Parent: 7982679521394364046
+  - Child: 4715562757448079203
+    Parent: 7982679521394364046
+  - Child: 3523535933390868411
+    Parent: 7982679521394364046
+  - Child: 3863759431729604735
+    Parent: 7982679521394364046
+  - Child: 8099195367498614963
+    Parent: 7982679521394364046
+  - Child: 5307235095017395021
+    Parent: 7982679521394364046
+  - Child: 8413037414679765408
+    Parent: 7982679521394364046
+  - Child: 8514937600779057715
+    Parent: 7982679521394364046
+  - Child: 6567630008002492888
+    Parent: 7982679521394364046
+  - Child: 3339016621297312257
+    Parent: 7982679521394364046
+  - Child: 6515670490292691692
+    Parent: 7982679521394364046
+  - Child: 436489796450105015
+    Parent: 7982679521394364046
+  - Child: 6100623011529603951
+    Parent: 7982679521394364046
+  - Child: 8656116168311554802
+    Parent: 7982679521394364046
+  - Child: 1760422609915628977
+    Parent: 7982679521394364046
+  - Child: 8631657430887118505
+    Parent: 7982679521394364046
+  - Child: 157641119334949195
+    Parent: 7982679521394364046
+  - Child: 3983384981584920431
+    Parent: 7982679521394364046
+  - Child: 6183149854654584053
+    Parent: 7982679521394364046
+  - Child: 8056263886016775018
+    Parent: 7982679521394364046
+  - Child: 8196709617366561407
+    Parent: 7982679521394364046
+  - Child: 5083494838314965796
+    Parent: 7982679521394364046
+  - Child: 1886324280945025723
+    Parent: 7982679521394364046
+  - Child: 2027180472290138141
+    Parent: 7982679521394364046
+  - Child: 7242128840249017075
+    Parent: 7982679521394364046
+  - Child: 7199775532209546037
+    Parent: 7982679521394364046
+  - Child: 5802938715534872014
+    Parent: 7982679521394364046
+  - Child: 592335278693775032
+    Parent: 7982679521394364046
+  - Child: 9139396209228821628
+    Parent: 7982679521394364046
+  - Child: 5640121548336936963
+    Parent: 7982679521394364046
+  - Child: 2550493396094946941
+    Parent: 7982679521394364046
+  - Child: 5381648345166012765
+    Parent: 7982679521394364046
+  - Child: 5407465226756441135
+    Parent: 7982679521394364046
+  - Child: 2709586223315095341
+    Parent: 7982679521394364046
+  - Child: 6388305504582273245
+    Parent: 7982679521394364046
+  - Child: 7541705622682388596
+    Parent: 7982679521394364046
+  - Child: 7246426396247045191
+    Parent: 7982679521394364046
+  - Child: 3527669306427818853
+    Parent: 7982679521394364046
+  - Child: 7432747645400337076
+    Parent: 7982679521394364046
+  - Child: 8804897727541676593
+    Parent: 7982679521394364046
+  - Child: 3083318268647240868
+    Parent: 7982679521394364046
+  - Child: 1068776460417685653
+    Parent: 7982679521394364046
+  - Child: 6338530763276807031
+    Parent: 7982679521394364046
+  - Child: 7982099840129967958
+    Parent: 7982679521394364046
+  - Child: 7547753368893116953
+    Parent: 7982679521394364046
+  - Child: 8679966110420565328
+    Parent: 7982679521394364046
+  - Child: 755618799655001084
+    Parent: 7982679521394364046
+  - Child: 1919168607588592870
+    Parent: 7982679521394364046
+  - Child: 3187077159677481011
+    Parent: 7982679521394364046
+  - Child: 2268715826870885378
+    Parent: 7982679521394364046
+  - Child: 7819244978546512917
+    Parent: 7982679521394364046
+  - Child: 461144003807291338
+    Parent: 7982679521394364046
+  - Child: 6793325454237022819
+    Parent: 7982679521394364046
+  - Child: 7563521130315217058
+    Parent: 7982679521394364046
+  - Child: 7750977825705414563
+    Parent: 7982679521394364046
+  - Child: 6517661690097318577
+    Parent: 7982679521394364046
+  - Child: 2893379700778390044
+    Parent: 7982679521394364046
+  - Child: 4094353476206210255
+    Parent: 7982679521394364046
+  - Child: 7439661125314513771
+    Parent: 7982679521394364046
+  - Child: 3298856469973884056
+    Parent: 7982679521394364046
+  - Child: 8918093992161124187
+    Parent: 7982679521394364046
+  - Child: 359466919481580485
+    Parent: 7982679521394364046
+  - Child: 5782763502315036156
+    Parent: 7982679521394364046
+  - Child: 4947802927169239114
+    Parent: 7982679521394364046
+  - Child: 5114788657006562390
+    Parent: 7982679521394364046
+  - Child: 7671113518729317893
+    Parent: 7982679521394364046
+  - Child: 4842230136267478204
+    Parent: 7982679521394364046
+  - Child: 6605695553143618115
+    Parent: 7982679521394364046
+  - Child: 5716225113638188235
+    Parent: 7982679521394364046
+  - Child: 8087775008733899536
+    Parent: 7982679521394364046
+  - Child: 2210286628550118997
+    Parent: 7982679521394364046
+  - Child: 7504592226671146736
+    Parent: 7982679521394364046
+  - Child: 2078546847412023006
+    Parent: 7982679521394364046
+  - Child: 3318969737734416868
+    Parent: 7982679521394364046
+  - Child: 4588904924115087958
+    Parent: 7982679521394364046
+  - Child: 7832357389240557014
+    Parent: 7982679521394364046
+  - Child: 1814223642218288192
+    Parent: 7982679521394364046
+  - Child: 1787089282939755263
+    Parent: 7982679521394364046
+  - Child: 3905234950240249985
+    Parent: 7982679521394364046
+  - Child: 6849509786351853713
+    Parent: 7982679521394364046
+  - Child: 6377739854804886607
+    Parent: 7982679521394364046
+  - Child: 5154194394270260120
+    Parent: 7982679521394364046
+  - Child: 5999530660988493214
+    Parent: 7982679521394364046
+  - Child: 2759155896900351034
+    Parent: 7982679521394364046
+  - Child: 5691224851834671995
+    Parent: 7982679521394364046
+  - Child: 8530786664993968627
+    Parent: 7982679521394364046
+  - Child: 5340090739675410730
+    Parent: 7982679521394364046
+  - Child: 835732256144074760
+    Parent: 7982679521394364046
+  - Child: 7540026387694303342
+    Parent: 7982679521394364046
+  - Child: 4875336869559263897
+    Parent: 7982679521394364046
+  - Child: 3359367640574593914
+    Parent: 7982679521394364046
+  - Child: 4115296618208822916
+    Parent: 7982679521394364046
+  - Child: 8712517113609081232
+    Parent: 7982679521394364046
+  - Child: 1900268539938095286
+    Parent: 7982679521394364046
+  - Child: 7369453857428648925
+    Parent: 7982679521394364046
+  - Child: 226780408405467988
+    Parent: 7982679521394364046
+  - Child: 2147299201454496284
+    Parent: 7982679521394364046
+  - Child: 4888807865844559727
+    Parent: 7982679521394364046
+  - Child: 361202125321031162
+    Parent: 7982679521394364046
+  - Child: 7838350384580556465
+    Parent: 7982679521394364046
+  - Child: 6451466892784968321
+    Parent: 7982679521394364046
+  - Child: 5224666874937094111
+    Parent: 7982679521394364046
+  - Child: 6418370330088924966
+    Parent: 7982679521394364046
+  - Child: 8319692253865274923
+    Parent: 7982679521394364046
+  - Child: 3939152800753585871
+    Parent: 7982679521394364046
+  - Child: 5846280213897486759
+    Parent: 7982679521394364046
+  - Child: 1053715233878190467
+    Parent: 7982679521394364046
+  - Child: 428653173269274746
+    Parent: 7982679521394364046
+  - Child: 1516810711824309700
+    Parent: 7982679521394364046
+  - Child: 2127723200439894456
+    Parent: 7982679521394364046
+  - Child: 8258085753853729376
+    Parent: 7982679521394364046
+  - Child: 6016677311726872383
+    Parent: 7982679521394364046
+  - Child: 340116748303863467
+    Parent: 7982679521394364046
+  - Child: 6383723092085800961
+    Parent: 7982679521394364046
+  - Child: 6365909827135427516
+    Parent: 7982679521394364046
+  - Child: 3951110226923300696
+    Parent: 7982679521394364046
+  - Child: 1126104575801186142
+    Parent: 7982679521394364046
+  - Child: 1039022171990233179
+    Parent: 7982679521394364046
+  - Child: 8833916012960714075
+    Parent: 7982679521394364046
+  - Child: 4491287443977146732
+    Parent: 8514937600779057715
+  - Child: 4092240734979286781
+    Parent: 8514937600779057715
+  - Child: 1335548399440340905
+    Parent: 6986041749623940487
+  - Child: 1675488158988927749
+    Parent: 6986041749623940487
+  - Child: 6373553124106800110
+    Parent: 6986041749623940487
+  - Child: 456763855025638031
+    Parent: 6986041749623940487
+  - Child: 3172828557995259233
+    Parent: 6986041749623940487
+  - Child: 4738602234275155342
+    Parent: 6515670490292691692
+  - Child: 7362636249812218220
+    Parent: 6515670490292691692
+  - Child: 4544806239825602145
+    Parent: 6515670490292691692
+  - Child: 2391127755477138802
+    Parent: 6515670490292691692
+  - Child: 8722972872073062173
+    Parent: 6515670490292691692
+  - Child: 7215117630790317885
+    Parent: 4190916195828816684
+  - Child: 6231710094536050002
+    Parent: 4190916195828816684
+  - Child: 3374321944774927225
+    Parent: 4190916195828816684
+  - Child: 2573339273919675006
+    Parent: 4190916195828816684
+  - Child: 1230261102460352848
+    Parent: 4190916195828816684
+  - Child: 1607661953240399894
+    Parent: 6100623011529603951
+  - Child: 1939888174936333119
+    Parent: 6100623011529603951
+  - Child: 5222415478456471689
+    Parent: 6100623011529603951
+  - Child: 967857030811650685
+    Parent: 6100623011529603951
+  - Child: 5366423571674694677
+    Parent: 6100623011529603951
+  - Child: 5584710040500852133
+    Parent: 1589227785630044382
+  - Child: 7241747013900094688
+    Parent: 4866827852027997158
+  - Child: 1469995714283097311
+    Parent: 4866827852027997158
+  - Child: 6142761479259141089
+    Parent: 4866827852027997158
+  - Child: 5464784958299082031
+    Parent: 4866827852027997158
+  - Child: 1834691690869488139
+    Parent: 4866827852027997158
+  - Child: 603228630564082181
+    Parent: 4866827852027997158
+  - Child: 1793991421700527889
+    Parent: 4866827852027997158
+  - Child: 7703656447506647391
+    Parent: 4866827852027997158
+  - Child: 3569860638486613778
+    Parent: 4866827852027997158
+  - Child: 7756898584664071049
+    Parent: 4866827852027997158
+  - Child: 5365579347854286875
+    Parent: 4866827852027997158
+  - Child: 380994033477645550
+    Parent: 1760422609915628977
+  - Child: 7984151141248797964
+    Parent: 1760422609915628977
+  - Child: 3154491825958329201
+    Parent: 1760422609915628977
+  - Child: 2347027227594754611
+    Parent: 1760422609915628977
+  - Child: 6770727106597804732
+    Parent: 1760422609915628977

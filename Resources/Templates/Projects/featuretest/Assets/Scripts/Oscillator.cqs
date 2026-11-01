@@ -1,0 +1,22 @@
+using nativebridge;
+
+// Başlangıç konumu etrafında bir eksen boyunca sinüs hareketi (kinematik engel, asansör ...)
+script Oscillator : ConquerorScript
+{
+    public float axisX = 0.0;
+    public float axisY = 1.0;
+    public float axisZ = 0.0;
+    public float amplitude = 0.8;
+    public float period = 3.0;
+    private var start = null;
+    private float t = 0.0;
+
+    func Start() { start = GetPosition(); }
+
+    func Update(dt)
+    {
+        t += dt;
+        var s = MathSin(t / period * 6.2831853) * amplitude;
+        SetPosition(start.x + axisX * s, start.y + axisY * s, start.z + axisZ * s);
+    }
+}

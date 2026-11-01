@@ -1,6 +1,12 @@
 #include "Font.h"
 #include "Core/Logging/Log.h"
 
+#include <glad/glad.h>
+
+#include <algorithm>
+#include <cstdlib>
+#include <vector>
+
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
@@ -63,33 +69,55 @@ namespace Conqueror
             return Glyph{ nullptr, glm::ivec2(0), glm::ivec2(0), 0 };
         }
 
-        std::shared_ptr<Texture2D> texture = Texture2D::Create(
-            face->glyph->bitmap.width,
-            face->glyph->bitmap.rows
-        );
+        const FT_Bitmap& bitmap = face->glyph->bitmap;
+        const int w = (int)bitmap.width, h = (int)bitmap.rows;
+        Glyph glyph;
+        glyph.Size = glm::ivec2(w, h);
+        glyph.Bearing = glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top);
+        glyph.Advance = static_cast<uint32_t>(face->glyph->advance.x);
 
-        if (face->glyph->bitmap.buffer && face->glyph->bitmap.width > 0 && face->glyph->bitmap.rows > 0)
+        // Kapsama değeri dört kanala (gölgelendirici .r okur); satır adımı FreeType'ın pitch'i
+        std::vector<uint32_t> rgba((size_t)std::max(w, 1) * (size_t)std::max(h, 1), 0u);
+        if (bitmap.buffer && w > 0 && h > 0)
+            for (int y = 0; y < h; ++y)
+                for (int x = 0; x < w; ++x)
+                {
+                    const uint32_t value = bitmap.buffer[(size_t)y * (size_t)std::abs(bitmap.pitch) + (size_t)x];
+                    rgba[(size_t)y * (size_t)w + (size_t)x] = (value << 24) | (value << 16) | (value << 8) | value;
+                }
+
+        if (w > 0 && h > 0)
         {
-            uint32_t pixelCount = face->glyph->bitmap.width * face->glyph->bitmap.rows;
-            uint32_t* rgbaData = new uint32_t[pixelCount];
-            
-            for (uint32_t i = 0; i < pixelCount; i++)
+            if (!m_Atlas)
             {
-                uint8_t value = face->glyph->bitmap.buffer[i];
-                rgbaData[i] = (value << 24) | (value << 16) | (value << 8) | value;
+                m_Atlas = Texture2D::Create(kAtlasSize, kAtlasSize);
+                std::vector<uint32_t> clear((size_t)kAtlasSize * kAtlasSize, 0u);
+                m_Atlas->SetData(clear.data(), (uint32_t)(clear.size() * sizeof(uint32_t)));
             }
-            
-            texture->SetData(rgbaData, pixelCount * sizeof(uint32_t));
-            delete[] rgbaData;
+            // Raf yerleşimi, glifler arasında 1 piksel boşluk (çift doğrusal süzme komşuya taşmasın)
+            if (m_AtlasX + w + 1 > kAtlasSize)
+            {
+                m_AtlasX = 1;
+                m_AtlasY += m_AtlasRowHeight + 1;
+                m_AtlasRowHeight = 0;
+            }
+            if (m_AtlasY + h + 1 <= kAtlasSize && w + 2 <= kAtlasSize)
+            {
+                glTextureSubImage2D(m_Atlas->GetRendererID(), 0, m_AtlasX, m_AtlasY, w, h, GL_RGBA, GL_UNSIGNED_BYTE, rgba.data());
+                glyph.Texture = m_Atlas;
+                glyph.UV0 = glm::vec2((float)m_AtlasX, (float)m_AtlasY) / (float)kAtlasSize;
+                glyph.UV1 = glm::vec2((float)(m_AtlasX + w), (float)(m_AtlasY + h)) / (float)kAtlasSize;
+                m_AtlasX += w + 1;
+                m_AtlasRowHeight = std::max(m_AtlasRowHeight, h);
+                return glyph;
+            }
         }
 
-        Glyph glyph = {
-            texture,
-            glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
-            glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
-            static_cast<uint32_t>(face->glyph->advance.x)
-        };
-
+        // Boş glif (boşluk): yalnız ilerleme, doku yok. Atlas doluysa glifin kendi dokusu
+        if (w <= 0 || h <= 0)
+            return glyph;
+        glyph.Texture = Texture2D::Create((uint32_t)w, (uint32_t)h);
+        glyph.Texture->SetData(rgba.data(), (uint32_t)((size_t)w * (size_t)h * sizeof(uint32_t)));
         return glyph;
     }
 

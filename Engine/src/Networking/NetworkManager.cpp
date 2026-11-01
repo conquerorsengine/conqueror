@@ -4,6 +4,9 @@
 #include "Core/Logging/Log.h"
 
 #include <algorithm>
+#ifndef _WIN32
+    #include <unistd.h>   // close()
+#endif
 
 namespace Conqueror
 {

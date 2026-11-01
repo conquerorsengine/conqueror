@@ -1,0 +1,100 @@
+#language GLSL
+// GGX önem örneklemesi ile speküler ön filtreleme (split-sum, Karis 2013).
+// Kaynak mip'lerinden örnekleyerek (filtered importance sampling) ateşböceği yok.
+#type vertex
+#version 450 core
+
+layout(location = 0) in vec3 a_Position;
+uniform mat4 u_Projection;
+uniform mat4 u_View;
+out vec3 v_Dir;
+
+void main()
+{
+    v_Dir = a_Position;
+    gl_Position = u_Projection * u_View * vec4(a_Position, 1.0);
+}
+
+#type fragment
+#version 450 core
+
+#include "Include/Common.glsl"
+
+layout(location = 0) out vec4 FragColor;
+in vec3 v_Dir;
+
+uniform samplerCube u_Environment;
+uniform float u_Roughness;
+uniform float u_SourceResolution;
+uniform int u_SampleCount = 128;
+
+float RadicalInverse_VdC(uint bits)
+{
+    bits = (bits << 16u) | (bits >> 16u);
+    bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
+    bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
+    bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
+    bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
+    return float(bits) * 2.3283064365386963e-10;
+}
+
+vec2 Hammersley(uint i, uint N) { return vec2(float(i) / float(N), RadicalInverse_VdC(i)); }
+
+vec3 ImportanceSampleGGX(vec2 Xi, vec3 N, float roughness)
+{
+    float a = roughness * roughness;
+    float phi = 2.0 * PI * Xi.x;
+    float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (a * a - 1.0) * Xi.y));
+    float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+    vec3 H = vec3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
+    vec3 up = abs(N.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    vec3 tangent = normalize(cross(up, N));
+    vec3 bitangent = cross(N, tangent);
+    return normalize(tangent * H.x + bitangent * H.y + N * H.z);
+}
+
+float DistributionGGX(float NdotH, float roughness)
+{
+    float a = roughness * roughness;
+    float a2 = a * a;
+    float d = NdotH * NdotH * (a2 - 1.0) + 1.0;
+    return a2 / (PI * d * d);
+}
+
+void main()
+{
+    vec3 N = normalize(v_Dir);
+    vec3 R = N;
+    vec3 V = R;
+
+    if (u_Roughness < 0.001)
+    {
+        FragColor = vec4(textureLod(u_Environment, N, 0.0).rgb, 1.0);
+        return;
+    }
+
+    uint sampleCount = uint(u_SampleCount);
+    vec3 prefiltered = vec3(0.0);
+    float totalWeight = 0.0;
+    float saTexel = 4.0 * PI / (6.0 * u_SourceResolution * u_SourceResolution);
+
+    for (uint i = 0u; i < sampleCount; ++i)
+    {
+        vec2 Xi = Hammersley(i, sampleCount);
+        vec3 H = ImportanceSampleGGX(Xi, N, u_Roughness);
+        vec3 L = normalize(2.0 * dot(V, H) * H - V);
+        float NdotL = dot(N, L);
+        if (NdotL > 0.0)
+        {
+            float NdotH = Saturate(dot(N, H));
+            float HdotV = Saturate(dot(H, V));
+            float D = DistributionGGX(NdotH, u_Roughness);
+            float pdf = D * NdotH / (4.0 * HdotV) + 0.0001;
+            float saSample = 1.0 / (float(sampleCount) * pdf + 0.0001);
+            float mip = 0.5 * log2(saSample / saTexel) + 1.0;
+            prefiltered += textureLod(u_Environment, L, max(mip, 0.0)).rgb * NdotL;
+            totalWeight += NdotL;
+        }
+    }
+    FragColor = vec4(prefiltered / max(totalWeight, 1e-4), 1.0);
+}

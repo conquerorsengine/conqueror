@@ -1,0 +1,52 @@
+using nativebridge;
+
+// Genel durum makinesi. Aynı varlıktaki betik şu yöntemleri yazar (isteğe bağlı):
+//   Enter_<Durum>()  Update_<Durum>(dt)  Exit_<Durum>()
+// Durum değiştirmek: SendMessage(varlık, "ChangeState", "Durum") ya da kendi betiğinden InvokeMethod.
+// Update_X "Durum" adını döndürürse o duruma geçilir (null / "" dönerse kalınır).
+script StateMachine : ConquerorScript
+{
+    public string initialState = "Idle";
+    public bool logChanges = false;
+
+    // Çalışma zamanı bilgisi
+    public string currentState = "";
+    public string previousState = "";
+    public float timeInState = 0.0;
+    public int transitions = 0;
+
+    private string pending = "";
+
+    func Start()
+    {
+        if (initialState != "") { ChangeState(initialState); }
+    }
+
+    func ChangeState(name)
+    {
+        if (name == null || name == "" || name == currentState) { return false; }
+        if (currentState != "") { InvokeMethod(GetEntityId(), "Exit_" + currentState); }
+        previousState = currentState;
+        currentState = name;
+        timeInState = 0.0;
+        transitions++;
+        if (logChanges) { LogInfo(GetEntityName() + ": " + previousState + " -> " + currentState); }
+        InvokeMethod(GetEntityId(), "Enter_" + currentState);
+        SendMessage(GetEntityId(), "OnStateChanged", previousState, currentState);
+        return true;
+    }
+
+    // Bir sonraki karede geçiş (Update_X içinden güvenli)
+    func QueueState(name) { pending = name; }
+
+    func IsInState(name) { return currentState == name; }
+
+    func Update(dt)
+    {
+        if (pending != "") { var p = pending; pending = ""; ChangeState(p); }
+        if (currentState == "") { return; }
+        timeInState += dt;
+        var next = InvokeMethod(GetEntityId(), "Update_" + currentState, dt);
+        if (next != null && next != "" && next != currentState) { ChangeState(next); }
+    }
+}

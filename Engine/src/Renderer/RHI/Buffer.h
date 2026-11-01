@@ -38,10 +38,10 @@ namespace Conqueror
     struct BufferElement
     {
         std::string Name;
-        ShaderDataType Type;
-        uint32_t Size;
-        size_t Offset;
-        bool Normalized;
+        ShaderDataType Type{};
+        uint32_t Size{};
+        size_t Offset{};
+        bool Normalized{};
 
         BufferElement() = default;
 
@@ -119,6 +119,8 @@ namespace Conqueror
         virtual void Unbind() const = 0;
 
         virtual void SetData(const void* data, uint32_t size) = 0;
+        // Tamponun bir bölümünü güncelle (bayt ofseti); kapasite aşılmamalı
+        virtual void SetSubData(const void* data, uint32_t offset, uint32_t size) = 0;
 
         virtual const BufferLayout& GetLayout() const = 0;
         virtual void SetLayout(const BufferLayout& layout) = 0;

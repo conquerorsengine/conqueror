@@ -1,0 +1,7 @@
+// nativebridge kayıt tablosu: VM'ler yeniden oluşturulsa da paylaşılan sabitler canlı kalmalı
+collectgarbage();
+print(Key.A, Key.Space > 0, typeof(Mouse), typeof(Math));
+print(nativebridge.MathClamp(5, 0, 3), MathMax(2, 9));
+var keys = [];
+foreach (var k in Key) if (k == "W" || k == "A") keys.Add(k);
+print(keys);

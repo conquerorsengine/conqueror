@@ -1,0 +1,20 @@
+Id: conqueror.turret
+Name: Turret
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Automatic defense turret: picks the nearest visible target with a tag inside its range,
+  turns its head and barrel with limited speed and pitch, leads moving targets, fires
+  hitscan bursts or projectiles once the aim is close enough, and idles with a scanning sweep
+  when nothing is around.
+Category: AI
+Icon: crosshairs
+Tags: [turret, defense, ai, tower-defense, shooting]
+Dependencies: [conqueror.health-system]
+Components:
+  - Scripts/Turret.cqs
+Inserts:
+  - Name: Turret
+    Icon: crosshairs
+    Prefab: Prefabs/Turret.cqprefab
+    Tooltip: Rotating turret that shoots everything tagged "Enemy"

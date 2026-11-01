@@ -52,6 +52,10 @@ namespace Conqueror::Editor
         bool HasSelection() const { return !m_SelectedEntities.empty(); }
         size_t GetSelectionCount() const { return m_SelectedEntities.size(); }
 
+        // Varlık (dosya) seçimi: Inspector varlık yerine dosyayı gösterir (Unity: Project penceresi seçimi)
+        void SelectAsset(const std::string& path) { m_SelectedAsset = path; if (!path.empty()) m_SelectedEntities.clear(); }
+        const std::string& GetSelectedAsset() const { return m_SelectedAsset; }
+
         // Copy/Paste clipboard
         void CopyEntities(const std::vector<Entity>& entities);
         void CutEntities(const std::vector<Entity>& entities);
@@ -123,6 +127,7 @@ namespace Conqueror::Editor
     private:
         // Selection
         std::vector<Entity> m_SelectedEntities;
+        std::string m_SelectedAsset;
 
         // Clipboard
         std::vector<Entity> m_ClipboardEntities;

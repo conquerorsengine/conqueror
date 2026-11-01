@@ -1,0 +1,20 @@
+Id: conqueror.vision-sensor
+Name: Vision Sensor
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Perception for AI and security systems: a view cone with range, angle and line of sight
+  that tracks every visible object with a given tag, sends OnTargetSeen / OnTargetLost
+  messages, exposes the closest target and can drive an alarm light. Includes a sweeping
+  security camera prefab.
+Category: AI
+Icon: eye
+Tags: [ai, perception, vision, stealth, security]
+Components:
+  - Scripts/VisionSensor.cqs
+  - Scripts/SecurityCamera.cqs
+Inserts:
+  - Name: Security Camera
+    Icon: video
+    Prefab: Prefabs/SecurityCamera.cqprefab
+    Tooltip: Wall camera that sweeps, spots the player and turns its light red

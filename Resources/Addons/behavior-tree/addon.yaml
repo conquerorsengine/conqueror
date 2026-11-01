@@ -1,0 +1,20 @@
+Id: conqueror.behavior-tree
+Name: Behavior Tree
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Behavior trees written as indented text: selector, sequence, parallel, inverter, succeeder,
+  repeat, cooldown and wait nodes; leaves call condition / action methods of your own script,
+  which return success, failure or running. Trees are ticked at a configurable rate and the
+  active path is shown for debugging. Includes a guard example.
+Category: AI
+Icon: sitemap
+Tags: [behavior-tree, ai, logic, npc]
+Components:
+  - Scripts/BehaviorTree.cqs
+  - Scripts/GuardBrain.cqs
+Inserts:
+  - Name: Guard (Behavior Tree)
+    Icon: user-shield
+    Prefab: Prefabs/GuardBT.cqprefab
+    Tooltip: Guard that idles, wanders and chases the player using a behavior tree

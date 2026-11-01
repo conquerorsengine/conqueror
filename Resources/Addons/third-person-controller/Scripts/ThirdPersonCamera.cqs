@@ -1,0 +1,94 @@
+using nativebridge;
+
+// Takip eden yörünge kamerası: hedefin çevresinde fareyle döner, tekerlekle yakınlaşır,
+// araya duvar girerse hedefe yaklaşır (kamera duvarın içine girmez).
+script ThirdPersonCamera : ConquerorScript
+{
+    public string targetName = "TP Player";
+    public float distance = 5.0;
+    public float minDistance = 1.5;
+    public float maxDistance = 12.0;
+    public float pivotHeight = 1.4;
+    public float yaw = 0.0;
+    public float pitch = -15.0;
+    public float minPitch = -70.0;
+    public float maxPitch = 60.0;
+    public float mouseSensitivity = 0.15;
+    public bool requireRightMouse = false;
+    public float followSharpness = 15.0;
+    public float collisionRadius = 0.25;
+    public bool lockCursor = false;
+
+    // Çalışma zamanı bilgisi
+    public float currentDistance = 5.0;
+    public bool blocked = false;
+
+    private var target = null;
+    private float px = 0.0;
+    private float py = 0.0;
+    private float pz = 0.0;
+    private bool started = false;
+
+    func Start()
+    {
+        target = FindEntity(targetName);
+        currentDistance = distance;
+        if (lockCursor) { SetCursorMode(2); }
+    }
+
+    func LateUpdate(dt)
+    {
+        if (target == null) { target = FindEntity(targetName); if (target == null) { return; } }
+        if (!requireRightMouse || IsMouseButtonPressed(1))
+        {
+            var md = GetMouseDelta();
+            yaw -= md.x * mouseSensitivity;
+            pitch -= md.y * mouseSensitivity;
+        }
+        pitch = MathClamp(pitch, minPitch, maxPitch);
+        var scroll = GetMouseScrollDelta();
+        if (scroll != 0) { distance = MathClamp(distance - scroll * 0.8, minDistance, maxDistance); }
+
+        var tp = EntityGetWorldPosition(target);
+        var k = started ? 1.0 - MathExp(-followSharpness * dt) : 1.0;
+        started = true;
+        px = MathLerp(px, tp.x, k);
+        py = MathLerp(py, tp.y + pivotHeight, k);
+        pz = MathLerp(pz, tp.z, k);
+
+        // Kameranın geriye bakan yönü: ileri vektörün tersi
+        var yr = MathDegToRad(yaw);
+        var pr = MathDegToRad(pitch);
+        var fx = -MathSin(yr) * MathCos(pr);
+        var fy = MathSin(pr);
+        var fz = -MathCos(yr) * MathCos(pr);
+        var want = distance;
+        blocked = false;
+        var hits = RaycastAll(px, py, pz, -fx, -fy, -fz, distance + collisionRadius);
+        for (var h in hits)
+        {
+            if (h.isTrigger || IsTargetOrChild(h.entity)) { continue; }
+            want = MathMax(minDistance * 0.5, h.distance - collisionRadius);
+            blocked = true;
+            break;
+        }
+        // Engel varken hemen yaklaş, açılınca yumuşakça uzaklaş
+        if (want < currentDistance) { currentDistance = want; }
+        else { currentDistance = MathLerp(currentDistance, want, 1.0 - MathExp(-6.0 * dt)); }
+
+        EntitySetWorldPosition(GetEntityId(), px - fx * currentDistance, py - fy * currentDistance, pz - fz * currentDistance);
+        SetRotation(pitch, yaw, 0);
+    }
+
+    func IsTargetOrChild(e)
+    {
+        var cur = e;
+        for (var i = 0; i < 16; i++)
+        {
+            if (cur == null || cur < 0) { return false; }
+            if (cur == target) { return true; }
+            cur = EntityGetParent(cur);
+        }
+        return false;
+    }
+}

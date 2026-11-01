@@ -1,0 +1,19 @@
+Id: conqueror.hud-kit
+Name: HUD Kit
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Game HUD that wires itself up: a health bar and number read from the player's Health,
+  ammo and reserve from the active Weapon, the score, a crosshair, a red damage flash when the
+  player gets hurt and a low-health pulse. Rename the bound objects in the inspector to use it
+  with your own player and weapon.
+Category: UI
+Icon: gauge
+Tags: [ui, hud, health-bar, ammo, crosshair, score]
+Components:
+  - Scripts/HUD.cqs
+Inserts:
+  - Name: HUD
+    Icon: gauge
+    Prefab: Prefabs/HUD.cqprefab
+    Tooltip: Health bar, ammo, score, crosshair and damage flash

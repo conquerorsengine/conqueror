@@ -1,0 +1,29 @@
+Id: conqueror.quest-system
+Name: Quest System
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Quests with counted objectives: givers hand them out, objectives report progress when you
+  reach a place, collect an item or defeat a target, and a tracker text lists the active
+  quests with their progress. Quests can chain (start the next one on completion) and every
+  change is broadcast so other scripts can react (OnQuestStarted / OnQuestCompleted).
+Category: Gameplay
+Icon: scroll
+Tags: [quest, objectives, rpg, mission, ui]
+Components:
+  - Scripts/QuestLog.cqs
+  - Scripts/QuestGiver.cqs
+  - Scripts/QuestObjective.cqs
+Inserts:
+  - Name: Quest Log
+    Icon: scroll
+    Prefab: Prefabs/QuestLog.cqprefab
+    Tooltip: Quest manager with an on-screen tracker
+  - Name: Quest Giver
+    Icon: user-tag
+    Prefab: Prefabs/QuestGiver.cqprefab
+    Tooltip: NPC that starts a quest when touched
+  - Name: Quest Marker
+    Icon: location-dot
+    Prefab: Prefabs/QuestMarker.cqprefab
+    Tooltip: "Objective - reach this place"

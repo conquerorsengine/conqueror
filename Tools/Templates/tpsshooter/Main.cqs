@@ -1,0 +1,25 @@
+// Third Person Shooter (CryEngine TPS / Unreal Lyra benzeri): omuz kamerası, sağ tık nişan, sol tık ateş,
+// yapay zekâ nişancılar, siperli arena.
+// @EditorCamera 52 35 0 0 1 0   (proje açıldığında editör görünümü: uzaklık, eğim, yön, odak)
+OutdoorLighting(-40, 150);
+ShooterFX();
+CombatArena(GRID, GRID_DARK, GRID, GRID_ORANGE);
+var bots = [[-20, -20], [20, -20], [-20, 20], [20, 12], [0, -26]];
+for (var i = 0; i < bots.Count; i++)
+{
+    Bot("Bot " + (i + 1), bots[i][0], 0, bots[i][1], RandomRange(0, 360), i % 2 == 0 ? "Mannequin_Female" : "Mannequin_Male", "Pistol", "", 4.0);
+}
+var player = Mannequin("Player", 0, 0, 27, 180, "Mannequin_Male", true);
+AddScript(player, "Assets/Mannequin/Scripts/MannequinCharacter.cqs");
+SetFields(player, {canAim: true, aimArmLength: 1.6});
+AddScript(player, "Assets/Weapons/Scripts/Health.cqs");
+SetFields(player, {maxHealth: 100.0, health: 100.0, team: "", respawnDelay: 3.0, regenDelay: 4.0, regenRate: 15.0, spawnProtection: 3.0});   // herkes herkese karşı
+AddScript(player, "Assets/Weapons/Scripts/ThirdPersonShooter.cqs");
+var pw = WeaponEntity("Pistol", "Pistol", EntityGetChildren(player)[0]);
+EntityAddComponent(pw, "BoneAttachment");
+EntitySetComponentField(pw, "BoneAttachment", "Bone", "hand_r");
+EntitySetComponentField(pw, "BoneAttachment", "PositionOffset", HAND_POS);
+EntitySetComponentField(pw, "BoneAttachment", "RotationOffset", HAND_ROT);
+Game("Arena", 15, 600);
+ShooterHUD();
+UISetText("HintText", "WASD MOVE   MOUSE LOOK   SHIFT SPRINT   SPACE JUMP   C CROUCH   RMB AIM   LMB FIRE   R RELOAD");

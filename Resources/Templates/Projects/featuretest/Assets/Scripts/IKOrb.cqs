@@ -1,0 +1,62 @@
+using nativebridge;
+
+// IK istasyonu: parlak küre mankenin önünde dolaşır. Baş (Multi-Aim) hep küreye bakar; küre bir tarafa geçince o
+// taraftaki el (Two Bone IK) uzanıp küreye dokunur. El hedefleri kürenin omuza bakan yüzeyindedir (avuç içine girmez).
+script IKOrb : ConquerorScript
+{
+    public string actorName = "IK Mannequin";
+    public float speed = 1.0;
+    public float radius = 0.13;          // kürenin yarıçapı
+    public float reach = 0.7;            // omuzdan bu uzaklığa kadar el uzanır
+    [Header("State")]
+    public float rightWeight = 0.0;
+    public float leftWeight = 0.0;
+
+    private var actor = -1;
+    private var ikR = -1;
+    private var ikL = -1;
+    private var tgtR = -1;
+    private var tgtL = -1;
+    private var center = null;
+    private float t = 0.0;
+
+    func Start()
+    {
+        center = GetPosition();
+        actor = FindEntity(actorName);
+        ikR = EntityFindChild(actor, "IK Hand R");
+        ikL = EntityFindChild(actor, "IK Hand L");
+        tgtR = FindEntity("IK Target R");
+        tgtL = FindEntity("IK Target L");
+    }
+
+    func Hand(ik, tgt, bone, wantSide, weight, dt)
+    {
+        var o = GetPosition();
+        var sh = GetBonePosition(actor, bone);
+        var dx = sh.x - o.x;
+        var dy = sh.y - o.y;
+        var dz = sh.z - o.z;
+        var d = MathMax(MathSqrt(dx * dx + dy * dy + dz * dz), 0.001);
+        // Avuç kürenin omuza bakan yüzeyinde
+        EntitySetPosition(tgt, o.x + dx / d * (radius + 0.04), o.y + dy / d * (radius + 0.04), o.z + dz / d * (radius + 0.04));
+        var want = MathClamp((wantSide + 0.08) / 0.3, 0.0, 1.0) * MathClamp((reach - d) / 0.12 + 1.0, 0.0, 1.0);
+        weight += (want - weight) * MathMin(1.0, dt * 5.0);
+        EntitySetComponentField(ik, "TwoBoneIKConstraint", "Weight", weight);
+        return weight;
+    }
+
+    func Update(dt)
+    {
+        t += dt * speed;
+        var x = center.x + 0.55 * MathSin(0.9 * t);
+        var y = center.y + 0.3 * MathSin(1.7 * t + 0.6);
+        var z = center.z + 0.08 * MathCos(0.9 * t);
+        SetPosition(x, y, z);
+        if (actor == null || actor < 0) { return; }
+        // Manken izleyiciye dönük (-Z): sağ eli +X tarafında
+        var side = x - center.x;
+        rightWeight = Hand(ikR, tgtR, "upperarm_r", side, rightWeight, dt);
+        leftWeight = Hand(ikL, tgtL, "upperarm_l", -side, leftWeight, dt);
+    }
+}

@@ -835,6 +835,10 @@ GLFWAPI void glfwSetCursorPos(GLFWwindow* handle, double xpos, double ypos)
         // Only update the accumulated position if the cursor is disabled
         window->virtualCursorPosX = xpos;
         window->virtualCursorPosY = ypos;
+        // Conqueror: on Wayland this also sets the pointer lock's position hint,
+        // which is where the cursor reappears once the lock is released
+        if (_glfw.platform.platformID == GLFW_PLATFORM_WAYLAND)
+            _glfw.platform.setCursorPos(window, xpos, ypos);
     }
     else
     {

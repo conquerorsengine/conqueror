@@ -1,44 +1,70 @@
 #pragma once
 
+#include "Core/Utils/ProcessRunner.h"
+
+#include <imgui.h>
+
+#include <deque>
+#include <filesystem>
+#include <memory>
 #include <string>
 #include <vector>
 
 namespace Conqueror::Editor
 {
-    enum class ConsoleMessageType
-    {
-        Info = 0,
-        Warning,
-        Error
-    };
-
-    struct ConsoleMessage
-    {
-        std::string Message;
-        ConsoleMessageType Type;
-        int Count = 1;
-
-        ConsoleMessage(const std::string& message, ConsoleMessageType type)
-            : Message(message), Type(type) {}
-    };
-
+    // Gömülü terminal: komutlar proje kökünde (veya 'cd' ile değiştirilen dizinde)
+    // sistem kabuğunda çalışır. '/' ile başlayan satırlar editör komutlarıdır
+    // (/play, /stop, /select <ad>, /panel <ad>, /help ...).
     class ConsolePanel
     {
     public:
-        ConsolePanel() = default;
+        ConsolePanel();
         ~ConsolePanel() = default;
 
-        void OnImGuiRender();
-        
-        void AddMessage(const std::string& message, ConsoleMessageType type = ConsoleMessageType::Info);
-        void AddMessageFromLog(const std::string& message, int level); // spdlog'dan gelen mesajlar için
-        void Clear();
+        void OnImGuiRender(bool* open = nullptr);
+        void SetWorkingDirectory(const std::filesystem::path& dir);
+        const std::filesystem::path& GetWorkingDirectory() const { return m_WorkingDirectory; }
+
+        // Programatik çalıştırma (menüler, otomasyon)
+        void Execute(const std::string& commandLine);
 
     private:
-        std::vector<ConsoleMessage> m_Messages;
+        struct Span
+        {
+            std::string Text;
+            ImU32 Color;
+            bool Bold = false;
+        };
+        struct Line
+        {
+            std::vector<Span> Spans;
+        };
+
+        void AppendOutput(const std::string& text, ImU32 defaultColor);
+        void AppendLine(const std::string& text, ImU32 color);
+        void PollProcess();
+        bool HandleBuiltin(const std::string& command);
+        void SyncProjectDirectory();
+
+        static int InputCallback(ImGuiInputTextCallbackData* data);
+        int OnInputCallback(ImGuiInputTextCallbackData* data);
+
+        std::deque<Line> m_Lines;
+        std::string m_PartialLine;        // satır sonu gelmemiş çıktı
+        ImU32 m_CurrentColor = 0;
+        bool m_CurrentBold = false;
+        static constexpr size_t kMaxLines = 8000;
+
+        std::unique_ptr<ProcessRunner> m_Process;
+        std::string m_RunningCommand;
+        std::filesystem::path m_WorkingDirectory;
+        std::filesystem::path m_LastProjectDirectory;
+
+        char m_Input[1024] = {};
+        std::vector<std::string> m_History;
+        int m_HistoryPos = -1;
+        bool m_ScrollToBottom = false;
+        bool m_FocusInput = false;
         bool m_AutoScroll = true;
-        bool m_ShowInfo = true;
-        bool m_ShowWarnings = true;
-        bool m_ShowErrors = true;
     };
 }

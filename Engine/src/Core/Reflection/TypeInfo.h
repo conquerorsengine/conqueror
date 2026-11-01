@@ -118,7 +118,8 @@ namespace Conqueror::Reflection
     {
     public:
         std::string Name;
-        std::type_index ReturnType;
+        // Windows'ta dışa aktarılan sınıfın örtük kurucusu üretilir: type_index'in varsayılan kurucusu yok
+        std::type_index ReturnType = typeid(void);
         std::vector<std::type_index> ParameterTypes;
         
         // Invoke (type-erased)

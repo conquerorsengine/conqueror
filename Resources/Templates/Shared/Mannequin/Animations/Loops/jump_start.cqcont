@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: jump_start
+      States:
+        - Name: jump_start
+          ClipIndex: 4
+          ClipName: jump_start
+  Parameters: []

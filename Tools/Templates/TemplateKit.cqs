@@ -1,0 +1,1317 @@
+using nativebridge;
+
+// Ortak şablon sahne kurucuları (Tools/Templates/build_templates.py her Build.cqs'in önüne ekler).
+// Birimler metre. Motorun küpü 2 birim olduğundan ölçek = boyut / 2.
+
+var GRID = "Assets/Prototype/WorldGrid.png";
+var GRID_DARK = "Assets/Prototype/WorldGridDark.png";
+var GRID_BLUE = "Assets/Prototype/WorldGridBlue.png";
+var GRID_ORANGE = "Assets/Prototype/WorldGridOrange.png";
+var WHITE = {r: 1, g: 1, b: 1, a: 1};
+
+func Mesh(name, kind, x, y, z, sx, sy, sz, tex, color)
+{
+    var e = CreateEntity(name);
+    EntityAddComponent(e, "MeshRenderer");
+    EntitySetComponentField(e, "MeshRenderer", "Mesh", kind);
+    EntitySetPosition(e, x, y, z);
+    EntitySetScale(e, sx / 2.0, sy / 2.0, sz / 2.0);
+    EntitySetColor(e, color);
+    if (tex != "")
+    {
+        EntitySetComponentField(e, "MeshRenderer", "Texture", tex);
+        EntitySetComponentField(e, "MeshRenderer", "WorldAlignedUV", true);
+        EntitySetComponentField(e, "MeshRenderer", "Tiling", {x: 1, y: 1});
+    }
+    else { EntitySetComponentField(e, "MeshRenderer", "Texture", ""); }   // varsayılan ızgara dokusu olmasın
+    EntitySetComponentField(e, "MeshRenderer", "Roughness", 0.75);
+    return e;
+}
+
+func Static(e)
+{
+    EntityAddComponent(e, "Rigidbody");
+    EntitySetComponentField(e, "Rigidbody", "BodyType", "Static");
+    EntityAddComponent(e, "BoxCollider");
+    return e;
+}
+
+// Statik blok: merkez (x, y, z), boyut, isteğe bağlı Y açısı
+func Block(name, x, y, z, sx, sy, sz, tex, yaw)
+{
+    var e = Static(Mesh(name, "Cube", x, y, z, sx, sy, sz, tex, WHITE));
+    EntitySetRotation(e, 0, yaw, 0);
+    return e;
+}
+
+// Zemine oturan blok: (x, z) merkez, alt yüzey y0
+func Box(name, x, y0, z, sx, sy, sz, tex) { return Block(name, x, y0 + sy / 2.0, z, sx, sy, sz, tex, 0); }
+
+// Rampa: alt kenar (x, y0, z), yatay uzunluk, yükseklik, genişlik, yön (derece, +Z'ye göre)
+func Ramp(name, x, y0, z, length, height, width, yaw, tex)
+{
+    // Dolu kama: üst yüzü rampa olan kalın kutu; altta kalan kısmı zemine, arkası platforma gömülür, yandan üçgen görünür
+    // (ince levha gibi havada duran kenar ya da zemine oturmayan uç kalmaz)
+    var slope = MathSqrt(length * length + height * height);
+    var a = MathAtan2(height, length);
+    var ang = MathRadToDeg(a);
+    var thick = length * height / slope + 0.05;
+    var r = MathDegToRad(yaw);
+    // Üst yüz merkezi rampanın ortası; kutu merkezi yüzeyin normali boyunca thick / 2 aşağıda
+    var along = length / 2.0 + MathSin(a) * thick / 2.0;
+    var cy = y0 + height / 2.0 - MathCos(a) * thick / 2.0;
+    var e = Static(Mesh(name, "Cube", x + MathSin(r) * along, cy, z + MathCos(r) * along, width, thick, slope, tex, WHITE));
+    EntitySetRotation(e, -ang, yaw, 0);
+    return e;
+}
+
+// Merdiven: ilk basamağın ön kenarı (x, y0, z), +Z yönünde (yaw ile döner)
+func Stairs(name, x, y0, z, steps, stepH, stepD, width, yaw, tex)
+{
+    var r = MathDegToRad(yaw);
+    for (var i = 0; i < steps; i++)
+    {
+        var d = (i + 0.5) * stepD;
+        var h = (i + 1) * stepH;
+        var s = Static(Mesh(name + i, "Cube", x + MathSin(r) * d, y0 + h / 2.0, z + MathCos(r) * d, width, h, stepD, tex, WHITE));
+        EntitySetRotation(s, 0, yaw, 0);
+    }
+}
+
+func Cylinder(name, x, y0, z, radius, height, tex)
+{
+    var e = Mesh(name, "Cylinder", x, y0 + height / 2.0, z, radius * 2.0, height, radius * 2.0, tex, WHITE);
+    EntityAddComponent(e, "Rigidbody");
+    EntitySetComponentField(e, "Rigidbody", "BodyType", "Static");
+    EntityAddComponent(e, "CapsuleCollider");
+    EntitySetComponentField(e, "CapsuleCollider", "Radius", 1.0);
+    EntitySetComponentField(e, "CapsuleCollider", "Height", 2.0);
+    return e;
+}
+
+// Fiziksel küp (Unreal şablonlarındaki mavi küpler)
+func PhysicsCube(name, x, y0, z, size, mass)
+{
+    var e = Mesh(name, "Cube", x, y0 + size / 2.0, z, size, size, size, GRID_BLUE, WHITE);
+    EntitySetComponentField(e, "MeshRenderer", "Roughness", 0.45);
+    // Hareket eden nesne: ızgara nesneyle gider (dünyada sabit kalmaz); kenarlar ızgara çizgisine otursun
+    EntitySetComponentField(e, "MeshRenderer", "AlignToObject", true);
+    EntitySetComponentField(e, "MeshRenderer", "Offset", {x: 0.5, y: 0.5});
+    EntityAddComponent(e, "Rigidbody");
+    EntitySetComponentField(e, "Rigidbody", "BodyType", "Dynamic");
+    EntitySetComponentField(e, "Rigidbody", "Mass", mass);
+    EntityAddComponent(e, "BoxCollider");
+    return e;
+}
+
+// Unreal şablon aydınlatması: fiziksel gökyüzü + hacimsel bulutlar + yumuşak gölge + SSGI + TAA
+func OutdoorLighting(sunPitch, sunYaw)
+{
+    var sun = CreateEntity("Directional Light");
+    // Konum ışığı etkilemez; simgesi sahnenin üstünde dursun (dünya merkezindeki nesnelerin içinden geçmesin)
+    EntitySetPosition(sun, 0, 10, 0);
+    EntityAddComponent(sun, "DirectionalLight");
+    EntitySetComponentField(sun, "DirectionalLight", "Color", {r: 1.0, g: 0.96, b: 0.9});
+    EntitySetComponentField(sun, "DirectionalLight", "Intensity", 3.2);
+    EntitySetComponentField(sun, "DirectionalLight", "CastShadows", true);
+    EntitySetRotation(sun, sunPitch, sunYaw, 0);
+    RenderSettingSet("Environment.Sky", "Atmosphere");
+    RenderSettingSet("Environment.AtmosphereIntensity", 1.0);
+    RenderSettingSet("Environment.SkyboxIntensity", 1.0);
+    RenderSettingSet("Shadows.Enabled", true);
+    RenderSettingSet("Shadows.Quality", "VerySoft");
+    RenderSettingSet("Shadows.CascadeCount", 4);
+    RenderSettingSet("Shadows.Distance", 120);
+    RenderSettingSet("Post.Tonemap", "ACES");
+    RenderSettingSet("Post.Exposure", 0.0);
+    RenderSettingSet("Post.AntiAliasing", "TAA");
+    RenderSettingSet("Post.AmbientOcclusion", true);
+    RenderSettingSet("Post.AORadius", 0.6);
+    RenderSettingSet("Post.AOIntensity", 1.0);
+    RenderSettingSet("Post.ScreenSpaceGI", true);
+    RenderSettingSet("Post.SSGIIntensity", 0.8);
+    RenderSettingSet("Post.Bloom", true);
+    RenderSettingSet("Post.BloomIntensity", 0.25);
+    RenderSettingSet("Post.VolumetricClouds", true);
+    RenderSettingSet("Post.CloudCoverage", 0.45);
+    RenderSettingSet("Post.CloudDensity", 0.6);
+    RenderSettingSet("Post.Vignette", true);
+    RenderSettingSet("Post.VignetteIntensity", 0.15);
+    RenderSettingSet("Fog.Enabled", true);
+    RenderSettingSet("Fog.Mode", "Exponential");
+    RenderSettingSet("Fog.Color", {r: 0.62, g: 0.72, b: 0.85});
+    RenderSettingSet("Fog.Density", 0.0025);
+    RenderSettingSet("Fog.HeightFalloff", 0.08);
+    return sun;
+}
+
+// Hareket eden karakterler NavMesh'e engel olarak pişirilmesin (alt öğeleri dahil)
+func IgnoreFromNav(e)
+{
+    EntityAddComponent(e, "NavMeshModifier");
+    EntitySetComponentField(e, "NavMeshModifier", "IgnoreFromBuild", true);
+    EntitySetComponentField(e, "NavMeshModifier", "ApplyToChildren", true);
+}
+
+// Sahnenin tamamından NavMesh (oyun başında pişer; yapay zekâ yol bulması)
+func NavSurface()
+{
+    var n = CreateEntity("NavMesh Surface");
+    EntityAddComponent(n, "NavMeshSurface");
+    EntitySetComponentField(n, "NavMeshSurface", "CollectObjects", "All Game Objects");
+    EntitySetComponentField(n, "NavMeshSurface", "AgentRadius", 0.4);
+    EntitySetComponentField(n, "NavMeshSurface", "AgentHeight", 1.8);
+    EntitySetComponentField(n, "NavMeshSurface", "StepHeight", 0.45);
+    EntitySetComponentField(n, "NavMeshSurface", "MaxSlope", 45);
+    EntitySetComponentField(n, "NavMeshSurface", "BakeOnPlay", true);
+    return n;
+}
+
+// Manken: kök (Character Controller + betik) / Mesh / CameraBoom / FollowCamera
+// body: "Mannequin_Male", "Mannequin_Female", "Human_Male", "Human_Female"
+func Mannequin(name, x, y0, z, yaw, body, withCamera)
+{
+    // Dikkat: EntitySetParent dünya dönüşümünü korur; kök, çocuklar eklendikten sonra döndürülür
+    var root = CreateEntity(name);
+    EntitySetPosition(root, x, y0 + 0.9, z);
+    EntityAddComponent(root, "CharacterController");
+    EntitySetComponentField(root, "CharacterController", "Height", 1.8);
+    EntitySetComponentField(root, "CharacterController", "Radius", 0.34);
+    EntitySetComponentField(root, "CharacterController", "StepOffset", 0.45);
+    EntitySetComponentField(root, "CharacterController", "SlopeLimit", 46);
+    IgnoreFromNav(root);
+    var mesh = CreateEntity("Mesh");
+    EntitySetParent(mesh, root);
+    EntitySetPosition(mesh, 0, -0.9, 0);
+    EntityAddComponent(mesh, "Model");
+    EntitySetComponentField(mesh, "Model", "FilePath", "Assets/Mannequin/Models/" + body + ".glb");
+    EntityAddComponent(mesh, "Animation");
+    EntitySetComponentField(mesh, "Animation", "ControllerPath", "Assets/Mannequin/Animations/Mannequin.cqcont");
+    AddScript(mesh, "Assets/Mannequin/Scripts/MannequinAnimation.cqs");
+    if (withCamera)
+    {
+        var boom = CreateEntity("CameraBoom");
+        EntitySetParent(boom, root);
+        EntitySetPosition(boom, 0, 0.65, 0);
+        EntityAddComponent(boom, "SpringArm");
+        EntitySetComponentField(boom, "SpringArm", "TargetArmLength", 3.4);
+        EntitySetComponentField(boom, "SpringArm", "UseControlRotation", true);
+        EntitySetComponentField(boom, "SpringArm", "ControlYaw", yaw + 180);
+        EntitySetComponentField(boom, "SpringArm", "ControlPitch", -12);
+        EntitySetComponentField(boom, "SpringArm", "EnableCameraLag", true);
+        EntitySetComponentField(boom, "SpringArm", "CameraLagSpeed", 14);
+        var cam = CreateEntity("FollowCamera");
+        EntitySetParent(cam, boom);
+        EntityAddComponent(cam, "Camera");
+        EntitySetComponentField(cam, "Camera", "Primary", true);
+        EntitySetComponentField(cam, "Camera", "FieldOfView", 70);
+        EntityAddComponent(cam, "AudioListener");
+    }
+    EntitySetRotation(root, 0, yaw, 0);
+    return root;
+}
+
+// Sahnedeki figüran: tek animasyon döngüsü (Assets/Mannequin/Animations/Loops/<clip>.cqcont)
+func Actor(name, x, y0, z, yaw, body, clip)
+{
+    var e = CreateEntity(name);
+    EntitySetPosition(e, x, y0, z);
+    EntitySetRotation(e, 0, yaw, 0);
+    EntityAddComponent(e, "Model");
+    EntitySetComponentField(e, "Model", "FilePath", "Assets/Mannequin/Models/" + body + ".glb");
+    EntityAddComponent(e, "Animation");
+    EntitySetComponentField(e, "Animation", "ControllerPath", "Assets/Mannequin/Animations/Loops/" + clip + ".cqcont");
+    return e;
+}
+
+// ---------------------------------------------------------------------------------------------- atıcı (shooter)
+
+func Particles(name, parent, props)
+{
+    var fx = CreateEntity(name);
+    if (parent != null) { EntitySetParent(fx, parent); }
+    EntityAddComponent(fx, "ParticleSystem");
+    foreach (var k, v in props) { EntitySetComponentField(fx, "ParticleSystem", k, v); }
+    return fx;
+}
+
+// İsabet efektleri yöneticisi ("Impacts" + parçacık sistemleri)
+func ShooterFX()
+{
+    var im = CreateEntity("Impacts");
+    AddScript(im, "Assets/Weapons/Scripts/Impacts.cqs");
+    var burst = {PlayOnAwake: false, Looping: false, EmissionEnabled: false, RateOverTime: 0, SimulationSpace: "World"};
+    var p = Particles("FX Sparks", null, burst);
+    foreach (var k, v in {StartLifetime: {x: 0.1, y: 0.35}, StartSpeed: {x: 3, y: 9}, StartSize: {x: 0.015, y: 0.04},
+        StartColorA: {r: 1, g: 0.85, b: 0.5, a: 1}, StartColorB: {r: 1, g: 0.6, b: 0.25, a: 1}, Shape: "Sphere", Radius: 0.02,
+        GravityModifier: 1.2, Blend: "Additive", Texture: "Assets/Weapons/Textures/soft_glow.png", EmissiveIntensity: 6, MaxParticles: 400}) { EntitySetComponentField(p, "ParticleSystem", k, v); }
+    p = Particles("FX Dust", null, burst);
+    foreach (var k, v in {StartLifetime: {x: 0.4, y: 0.9}, StartSpeed: {x: 0.4, y: 1.6}, StartSize: {x: 0.08, y: 0.22},
+        StartColorA: {r: 0.75, g: 0.74, b: 0.72, a: 0.6}, StartColorB: {r: 0.6, g: 0.6, b: 0.6, a: 0.4}, Shape: "Sphere", Radius: 0.05,
+        GravityModifier: -0.05, Drag: 3, Blend: "Alpha", Texture: "Assets/Weapons/Textures/soft_glow.png", MaxParticles: 300,
+        ColorOverLifetimeEnabled: true, ColorOverLifetimeKeys: "0:1,1,1,1; 1:1,1,1,0", SizeOverLifetimeEnabled: true, SizeOverLifetimeKeys: "0:0.6; 1:2"}) { EntitySetComponentField(p, "ParticleSystem", k, v); }
+    p = Particles("FX Hit", null, burst);
+    foreach (var k, v in {StartLifetime: {x: 0.2, y: 0.5}, StartSpeed: {x: 1, y: 4}, StartSize: {x: 0.03, y: 0.07},
+        StartColorA: {r: 0.9, g: 0.9, b: 0.95, a: 1}, StartColorB: {r: 0.7, g: 0.75, b: 0.8, a: 1}, Shape: "Sphere", Radius: 0.05,
+        GravityModifier: 0.8, Blend: "Alpha", Texture: "Assets/Weapons/Textures/soft_glow.png", MaxParticles: 300}) { EntitySetComponentField(p, "ParticleSystem", k, v); }
+    p = Particles("FX Muzzle", null, burst);
+    foreach (var k, v in {StartLifetime: {x: 0.3, y: 0.7}, StartSpeed: {x: 0.2, y: 0.8}, StartSize: {x: 0.05, y: 0.12},
+        StartColorA: {r: 0.85, g: 0.85, b: 0.85, a: 0.35}, StartColorB: {r: 0.7, g: 0.7, b: 0.7, a: 0.2}, Shape: "Sphere", Radius: 0.02,
+        GravityModifier: -0.1, Drag: 2, Blend: "Alpha", Texture: "Assets/Weapons/Textures/soft_glow.png", MaxParticles: 200,
+        ColorOverLifetimeEnabled: true, ColorOverLifetimeKeys: "0:1,1,1,1; 1:1,1,1,0", SizeOverLifetimeEnabled: true, SizeOverLifetimeKeys: "0:0.5; 1:2.5"}) { EntitySetComponentField(p, "ParticleSystem", k, v); }
+    p = Particles("FX Laser", null, burst);
+    foreach (var k, v in {StartLifetime: {x: 0.15, y: 0.4}, StartSpeed: {x: 1, y: 5}, StartSize: {x: 0.03, y: 0.08},
+        StartColorA: {r: 0.3, g: 0.8, b: 1.0, a: 1}, StartColorB: {r: 1, g: 1, b: 1, a: 1}, Shape: "Sphere", Radius: 0.03,
+        GravityModifier: 0, Blend: "Additive", Texture: "Assets/Weapons/Textures/soft_glow.png", EmissiveIntensity: 8, MaxParticles: 300}) { EntitySetComponentField(p, "ParticleSystem", k, v); }
+    return im;
+}
+
+func SetFields(e, fields)
+{
+    foreach (var k, v in fields) { SetScriptField(e, k, v); }
+}
+
+// Silah: kind "Pistol" | "Rifle" | "Laser"; namlu yönü silahın -Z'si (Muzzle orada)
+// Lazer silahı parçaları (ilkel şekiller)
+func WeaponPart(model, n, kindMesh, x, y, z, sx, sy, sz, c, rough, metal)
+{
+    var e = Mesh(n, kindMesh, x, y, z, sx, sy, sz, "", c);
+    EntitySetParent(e, model);
+    EntitySetPosition(e, x, y, z);
+    EntitySetComponentField(e, "MeshRenderer", "Roughness", rough);
+    EntitySetComponentField(e, "MeshRenderer", "Metallic", metal);
+    return e;
+}
+func WeaponGlow(model, n, x, y, z, sx, sy, sz, glow)
+{
+    var e = WeaponPart(model, n, "Cube", x, y, z, sx, sy, sz, {r: glow.r, g: glow.g, b: glow.b, a: 1}, 0.3, 0.0);
+    EntitySetComponentField(e, "MeshRenderer", "EmissionColor", glow);
+    EntitySetComponentField(e, "MeshRenderer", "EmissionStrength", 3.0);
+    EntitySetComponentField(e, "MeshRenderer", "CastShadows", false);
+    return e;
+}
+
+func WeaponEntity(name, kind, parent)
+{
+    var w = CreateEntity(name);
+    if (parent != null) { EntitySetParent(w, parent); }
+    AddScript(w, "Assets/Weapons/Scripts/Weapon.cqs");
+    var model = CreateEntity("Model");
+    EntitySetParent(model, w);
+    var muzzleZ = -0.2;
+    if (kind == "Pistol")
+    {
+        EntityAddComponent(model, "Model");
+        EntitySetComponentField(model, "Model", "FilePath", "Assets/Weapons/Models/Pistol/service_pistol_1k.gltf");
+        // Model namlusu +X'te: -Z'ye çevir
+        EntitySetRotation(model, 0, 90, 0);
+        EntitySetPosition(model, 0, -0.02, 0.03);
+        muzzleZ = -0.21;
+        SetFields(w, {weaponName: "Pistol", fireMode: "Semi", fireRate: 7.0, damage: 26.0, magazine: 12, ammo: 12, reserve: 84, reloadTime: 1.5,
+            hipSpread: 1.0, aimSpread: 0.12, moveSpread: 1.2, recoilPitch: 1.7, recoilYaw: 0.5, aimFov: 62.0, impulse: 6.0,
+            shotSound: "Assets/Weapons/Audio/pistol_shot.wav"});
+    }
+    else if (kind == "Rifle")
+    {
+        EntityAddComponent(model, "Model");
+        EntitySetComponentField(model, "Model", "FilePath", "Assets/Weapons/Models/Rifle/bolt_action_rifle_7_62_1k.gltf");
+        EntitySetRotation(model, 0, 90, 0);
+        // Kabza (tetik arkası) model x = -0.35 civarı, namlu ucu x = +0.6: kabza elde, namlu -Z'de
+        EntitySetPosition(model, 0, -0.05, -0.33);
+        muzzleZ = -0.95;
+        SetFields(w, {weaponName: "Marksman Rifle", fireMode: "Bolt", fireRate: 1.4, boltTime: 0.0, damage: 95.0, headshotMultiplier: 2.5,
+            magazine: 5, ammo: 5, reserve: 30, reloadTime: 2.6, hipSpread: 3.0, aimSpread: 0.02, moveSpread: 3.0, recoilPitch: 5.5, recoilYaw: 1.2,
+            aimFov: 22.0, eyeRelief: 0.12, scoped: true, impulse: 18.0, range: 400.0, shotSound: "Assets/Weapons/Audio/rifle_shot.wav", shotVolume: 1.0});
+    }
+    else
+    {
+        // Lazer silahı (lazer etiket tabancası): açık gri gövde, koyu kabza ve namlu, iki yanda ve üstte ışıyan
+        // takım şeritleri, namluda ışıyan halka, üstte holografik nişangah. Kabza elde (z = 0), namlu -Z'de
+        var LIGHT = {r: 0.78, g: 0.8, b: 0.83, a: 1};
+        var DARKG = {r: 0.08, g: 0.085, b: 0.095, a: 1};
+        var GLOW = {r: 0.2, g: 0.7, b: 1.0};
+        WeaponPart(model, "Body", "Cube", 0, 0.018, -0.1, 0.044, 0.05, 0.26, LIGHT, 0.4, 0.0);
+        WeaponPart(model, "Body Rear", "Cube", 0, 0.005, 0.035, 0.036, 0.03, 0.03, DARKG, 0.6, 0.2);
+        var barrel = WeaponPart(model, "Barrel", "Cylinder", 0, 0.02, -0.26, 0.03, 0.08, 0.03, DARKG, 0.35, 0.6);
+        EntitySetRotation(barrel, 90, 0, 0);
+        var ring = WeaponGlow(model, "Glow Ring", 0, 0.02, -0.295, 0.036, 0.036, 0.008, GLOW);
+        var grip = WeaponPart(model, "Grip", "Cube", 0, -0.045, 0.012, 0.034, 0.1, 0.042, DARKG, 0.75, 0.0);
+        EntitySetRotation(grip, -14, 0, 0);
+        var guard = WeaponPart(model, "Trigger Guard", "Cube", 0, -0.012, -0.035, 0.012, 0.012, 0.05, DARKG, 0.6, 0.2);
+        WeaponGlow(model, "Glow Left", -0.0235, 0.02, -0.1, 0.004, 0.012, 0.2, GLOW);
+        WeaponGlow(model, "Glow Right", 0.0235, 0.02, -0.1, 0.004, 0.012, 0.2, GLOW);
+        WeaponGlow(model, "Glow Top", 0, 0.0445, -0.17, 0.014, 0.004, 0.1, GLOW);
+        // Holografik nişangah: koyu çerçeve + ışıyan nokta (nişan alınca göz hizasına gelir)
+        WeaponPart(model, "Sight Base", "Cube", 0, 0.049, -0.04, 0.044, 0.01, 0.03, DARKG, 0.5, 0.3);
+        WeaponPart(model, "Sight Frame L", "Cube", -0.019, 0.066, -0.04, 0.006, 0.032, 0.006, DARKG, 0.5, 0.3);
+        WeaponPart(model, "Sight Frame R", "Cube", 0.019, 0.066, -0.04, 0.006, 0.032, 0.006, DARKG, 0.5, 0.3);
+        WeaponPart(model, "Sight Frame T", "Cube", 0, 0.084, -0.04, 0.044, 0.006, 0.006, DARKG, 0.5, 0.3);
+        var dot = WeaponGlow(model, "Sight Dot", 0, 0.065, -0.04, 0.0035, 0.0035, 0.001, GLOW);
+        EntitySetComponentField(dot, "MeshRenderer", "EmissionColor", {r: 1.0, g: 0.25, b: 0.15});
+        EntitySetComponentField(dot, "MeshRenderer", "EmissionStrength", 6.0);
+        muzzleZ = -0.3;
+        SetFields(w, {weaponName: "Laser Tagger", fireMode: "Auto", fireRate: 5.0, damage: 34.0, headshotMultiplier: 1.5, magazine: 20, ammo: 20,
+            reserve: 0, infiniteAmmo: true, reloadTime: 1.2, hipSpread: 0.6, aimSpread: 0.05, moveSpread: 0.6, recoilPitch: 0.5, recoilYaw: 0.2,
+            aimFov: 55.0, eyeRelief: 0.2, impulse: 1.0, laser: true, tracerR: 0.25, tracerG: 0.75, tracerB: 1.0,
+            shotSound: "Assets/Weapons/Audio/laser_shot.wav", shotVolume: 0.7});
+    }
+    // Gez / dürbün: nişan alırken göz hizasına gelen nokta (FirstPersonShooter hesaplar)
+    var sight = CreateEntity("Sight");
+    EntitySetParent(sight, w);
+    if (kind == "Pistol") { EntitySetPosition(sight, 0, 0.062, 0.035); }
+    else if (kind == "Rifle") { EntitySetPosition(sight, -0.008, 0.0205, -0.12); }   // dürbün ekseni
+    else { EntitySetPosition(sight, 0, 0.065, 0.0); }
+    var muzzle = CreateEntity("Muzzle");
+    EntitySetParent(muzzle, w);
+    EntitySetPosition(muzzle, 0, 0.02, muzzleZ);
+    EntityAddComponent(muzzle, "PointLight");
+    EntitySetComponentField(muzzle, "PointLight", "Color", kind == "Laser" ? {r: 0.3, g: 0.8, b: 1.0} : {r: 1.0, g: 0.75, b: 0.4});
+    EntitySetComponentField(muzzle, "PointLight", "Intensity", 0.0);
+    EntitySetComponentField(muzzle, "PointLight", "Range", 3.5);
+    EntitySetComponentField(muzzle, "PointLight", "CastShadows", false);
+    if (kind != "Laser")
+    {
+        // Namlu alevi (oyunlardaki gibi): önden küçük yıldız + yandan namlu eksenini içeren çapraz iki ince alev.
+        // Kök her atışta namlu ekseni etrafında rastgele döner ve boyu değişir; 2 kare görünür (Weapon.cqs).
+        var fRoot = CreateEntity("Muzzle Flash");
+        EntitySetParent(fRoot, muzzle);
+        EntitySetPosition(fRoot, 0, 0, -0.01);
+        var fs = kind == "Rifle" ? 1.55 : 1.0;
+        var front = Mesh("Flash Front", "Plane", 0, 0, 0, 0.11 * fs, 1, 0.11 * fs, "", {r: 1, g: 1, b: 1, a: 0.99});
+        EntitySetParent(front, fRoot);
+        EntitySetPosition(front, 0, 0, -0.012 * fs);
+        EntitySetRotation(front, 90, 0, 0);
+        EntitySetComponentField(front, "MeshRenderer", "Texture", "Assets/Weapons/Textures/muzzle_flash.png");
+        var sides = [{n: "Flash Side A", r: 0}, {n: "Flash Side B", r: 90}];
+        foreach (var sd in sides)
+        {
+            var side = Mesh(sd.n, "Plane", 0, 0, 0, 0.05 * fs, 1, 0.16 * fs, "", {r: 1, g: 1, b: 1, a: 0.99});
+            EntitySetParent(side, fRoot);
+            EntitySetPosition(side, 0, 0, -0.08 * fs);
+            EntitySetRotation(side, 0, 0, sd.r);
+            EntitySetComponentField(side, "MeshRenderer", "Texture", "Assets/Weapons/Textures/muzzle_side.png");
+        }
+        foreach (var part in [front, EntityFindChild(fRoot, "Flash Side A"), EntityFindChild(fRoot, "Flash Side B")])
+        {
+            EntitySetComponentField(part, "MeshRenderer", "EmissionColor", {r: 1.0, g: 0.68, b: 0.32});
+            EntitySetComponentField(part, "MeshRenderer", "EmissionStrength", 10.0);
+            EntitySetComponentField(part, "MeshRenderer", "EmissionFromTexture", true);
+            EntitySetComponentField(part, "MeshRenderer", "CastShadows", false);
+        }
+        EntitySetActive(fRoot, false);
+        return w;
+    }
+    var flash = Mesh("Muzzle Flash", "Plane", 0, 0, -0.04, kind == "Rifle" ? 0.34 : 0.22, 1, kind == "Rifle" ? 0.34 : 0.22, "", {r: 1, g: 1, b: 1, a: 0.99});
+    EntitySetParent(flash, muzzle);
+    // Namlu ucunun 4 cm önü (silah dünya merkezinde kurulurken korunan dünya konumu alevi gövdeye koyuyordu)
+    EntitySetPosition(flash, 0, 0, -0.04);
+    EntitySetRotation(flash, 90, 0, 0);
+    EntitySetComponentField(flash, "MeshRenderer", "Texture", "Assets/Weapons/Textures/muzzle_flash.png");
+    EntitySetComponentField(flash, "MeshRenderer", "EmissionColor", kind == "Laser" ? {r: 0.3, g: 0.8, b: 1.0} : {r: 1.0, g: 0.7, b: 0.35});
+    EntitySetComponentField(flash, "MeshRenderer", "EmissionStrength", 12.0);
+    EntitySetComponentField(flash, "MeshRenderer", "EmissionFromTexture", true);
+    EntitySetActive(flash, false);      // ateşte Weapon kısa süre açar; editörde görünmez
+    EntitySetComponentField(flash, "MeshRenderer", "CastShadows", false);
+    return w;
+}
+
+// Birinci şahıs oyuncu: kapsül + Health + kamera + kollar + silahlar (kinds: ["Pistol", "Rifle"])
+func FPPlayer(name, x, y0, z, yaw, kinds, team, maxHealth, respawn)
+{
+    var root = CreateEntity(name);
+    EntitySetPosition(root, x, y0 + 0.9, z);
+    EntityAddComponent(root, "CharacterController");
+    EntitySetComponentField(root, "CharacterController", "Height", 1.8);
+    EntitySetComponentField(root, "CharacterController", "Radius", 0.34);
+    EntitySetComponentField(root, "CharacterController", "StepOffset", 0.45);
+    IgnoreFromNav(root);
+    AddScript(root, "Assets/Weapons/Scripts/Health.cqs");
+    SetFields(root, {maxHealth: maxHealth, health: maxHealth, team: team, respawnDelay: respawn, regenDelay: 4.0, regenRate: 12.0, spawnProtection: 3.0});
+    AddScript(root, "Assets/Weapons/Scripts/FirstPersonShooter.cqs");
+    var cam = CreateEntity("Camera");
+    EntitySetParent(cam, root);
+    EntitySetPosition(cam, 0, 0.72, 0);
+    EntityAddComponent(cam, "Camera");
+    EntitySetComponentField(cam, "Camera", "Primary", true);
+    EntitySetComponentField(cam, "Camera", "FieldOfView", 80);
+    EntitySetComponentField(cam, "Camera", "NearClip", 0.03);
+    EntityAddComponent(cam, "AudioListener");
+    var vm = CreateEntity("ViewModel");
+    EntitySetParent(vm, cam);
+    // Kalça pozu (FirstPersonShooter oyunda her kare buraya + sallanma koyar): editörde de kollar ve silah kameranın önünde
+    // durur (Unreal First Person gibi); dünya merkezinde (bağlarken korunan dünya konumu) kalmaz
+    EntitySetPosition(vm, -0.05, -0.03, 0);
+    var arms = CreateEntity("Arms");
+    EntitySetParent(arms, vm);
+    EntityAddComponent(arms, "Model");
+    EntitySetComponentField(arms, "Model", "FilePath", "Assets/Mannequin/Models/Arms_Male.glb");
+    EntityAddComponent(arms, "Animation");
+    EntitySetComponentField(arms, "Animation", "ControllerPath", "Assets/Mannequin/Animations/FPArms.cqcont");
+    EntitySetPosition(arms, FP_ARMS_X, FP_ARMS_Y, FP_ARMS_Z);
+    EntitySetRotation(arms, 0, 180, 0);
+    // Silahlar görünüm modelinin (kameranın) çocuğu; eller iki kemikli IK ile silahın kabzasına / önüne uzanır
+    // (Unreal First Person şablonu gibi: tepme, şarjör değiştirme, nişan silaha uygulanır, kollar onu izler)
+    var weaponIndex = 0;
+    foreach (var k in kinds)
+    {
+        var w = WeaponEntity(k, k, vm);
+        // Oyun ilk silahla başlar: ötekiler sahnede de gizli kaydedilir (editörde iki silah üst üste görünmesin;
+        // FirstPersonShooter gizli silahları da bulur, Weapon betiklerinin Start'ı gizliyken de çalışır)
+        if (weaponIndex > 0) { EntitySetActive(w, false); }
+        weaponIndex++;
+        if (k == "Laser" && team != "") { TintWeapon(w, TeamColor(team)); }
+        var wp = WeaponHold(k);
+        EntitySetPosition(w, wp.x, wp.y, wp.z);
+        var gr = GripTargets(k);
+        var tr = CreateEntity("IK R");
+        EntitySetParent(tr, w);
+        EntitySetPosition(tr, gr.r.x, gr.r.y, gr.r.z);
+        EntitySetRotation(tr, HAND_R_ROT.x, HAND_R_ROT.y, HAND_R_ROT.z);
+        var tl = CreateEntity("IK L");
+        EntitySetParent(tl, w);
+        EntitySetPosition(tl, gr.l.x, gr.l.y, gr.l.z);
+        EntitySetRotation(tl, gr.lr.x, gr.lr.y, gr.lr.z);
+    }
+    for (var side = 0; side < 2; side++)
+    {
+        var sfx = side == 0 ? "r" : "l";
+        var hint = CreateEntity("Elbow Hint " + StringToUpper(sfx));
+        EntitySetParent(hint, vm);
+        EntitySetPosition(hint, side == 0 ? 0.42 : -0.32, -0.55, 0.05);
+        var ik = CreateEntity("IK Arm " + StringToUpper(sfx));
+        EntitySetParent(ik, arms);
+        EntityAddComponent(ik, "TwoBoneIKConstraint");
+        EntitySetComponentField(ik, "TwoBoneIKConstraint", "Root", "upperarm_" + sfx);
+        EntitySetComponentField(ik, "TwoBoneIKConstraint", "Mid", "lowerarm_" + sfx);
+        EntitySetComponentField(ik, "TwoBoneIKConstraint", "Tip", "hand_" + sfx);
+        EntitySetComponentField(ik, "TwoBoneIKConstraint", "Hint", hint);
+        EntitySetComponentField(ik, "TwoBoneIKConstraint", "TargetRotationWeight", 1.0);
+    }
+    EntitySetRotation(root, 0, yaw, 0);
+    return root;
+}
+
+// Kollar kameraya göre (göz = model kafası) ve silahın el kemiğine göre yerleşimi
+var FP_ARMS_X = 0.0;
+var FP_ARMS_Y = -1.62;
+var FP_ARMS_Z = 0.04;
+// Nişan pozunda (pistol_aim) sağ elin +Y ekseni ileri, +Z ekseni yukarı: silahın -Z namlusu el +Y, +Y üstü el +Z
+var HAND_POS = {x: 0, y: 0.075, z: -0.02};
+// Silahın görünüm modelindeki yeri (kamera önünde, sağ alt) ve el hedefleri (silahın yerel uzayında).
+// Değerler nişan pozunda (pistol_aim) ellerin ölçülen konum / dönüşlerinden: sağ el kabzayı kavrar, sol el destekler.
+var HAND_R_ROT = {x: -79.37, y: 1.72, z: -2.40};
+var HAND_L_ROT = {x: -98.88, y: -16.89, z: 47.25};
+func WeaponHold(kind)
+{
+    if (kind == "Rifle") { return {x: 0.145, y: -0.12, z: -0.22}; }   // omuza yakın: sol el ön tahtaya rahat uzanır
+    if (kind == "Laser") { return {x: 0.145, y: -0.17, z: -0.36}; }
+    return {x: 0.145, y: -0.175, z: -0.40};
+}
+func GripTargets(kind)
+{
+    if (kind == "Rifle") { return {r: {x: 0.0495, y: -0.0938, z: 0.0525}, l: {x: 0.0174, y: -0.1014, z: -0.1315}, lr: {x: -90.49, y: -10.21, z: 59.08}}; }   // avuç ön tahtanın altında, parmaklar sağ yanı sarar
+    if (kind == "Laser") { return {r: {x: 0.0495, y: -0.0438, z: 0.0525}, l: {x: -0.0662, y: -0.0437, z: 0.0595}, lr: HAND_L_ROT}; }
+    return {r: {x: 0.0495, y: -0.0388, z: 0.0925}, l: {x: -0.0662, y: -0.0987, z: 0.0995}, lr: HAND_L_ROT};
+}
+var HAND_ROT = {x: 79.3, y: 0, z: 0};   // -10.7°: nişan pozunda el ileri-yukarı eğik
+
+func HudText(name, parent, text, x, y, w, h, size, align, ax, ay)
+{
+    var t = UICreateElement("Text", parent, name);
+    UISetText(t, text);
+    UISetPosition(t, x, y);
+    UISetSize(t, w, h);
+    // Editörün küçük oyun görünümünde (tuval ölçeği ~0.5) de okunsun: en az 22
+    EntitySetComponentField(t, "UIText", "FontSize", MathMax(size, 22));
+    EntitySetComponentField(t, "UIText", "AlignH", align);
+    EntitySetComponentField(t, "UIText", "AlignV", "Middle");
+    EntitySetComponentField(t, "UIText", "WordWrap", false);
+    EntitySetComponentField(t, "UIText", "Color", {r: 0.96, g: 0.96, b: 0.96, a: 1});
+    EntitySetComponentField(t, "UIText", "Shadow", true);
+    EntitySetComponentField(t, "UIText", "ShadowColor", {r: 0, g: 0, b: 0, a: 0.6});
+    EntitySetComponentField(t, "UIText", "ShadowOffset", {x: 2, y: -2});
+    EntitySetComponentField(t, "RectTransform", "AnchorMin", {x: ax, y: ay});
+    EntitySetComponentField(t, "RectTransform", "AnchorMax", {x: ax, y: ay});
+    return t;
+}
+
+func HudImage(name, parent, tex, x, y, w, h, ax, ay)
+{
+    var i = UICreateElement("Image", parent, name);
+    if (tex != "") { UISetImage(i, tex); }
+    UISetPosition(i, x, y);
+    UISetSize(i, w, h);
+    EntitySetComponentField(i, "UIImage", "RaycastTarget", false);
+    EntitySetComponentField(i, "RectTransform", "AnchorMin", {x: ax, y: ay});
+    EntitySetComponentField(i, "RectTransform", "AnchorMax", {x: ax, y: ay});
+    return i;
+}
+
+// Nişancı HUD'u: nişangah, isabet işareti, can, cephane, hasar vinyeti, orta mesaj, skor satırı
+func ShooterHUD()
+{
+    var canvas = UICreateCanvas("HUD");
+    EntitySetComponentField(canvas, "CanvasScaler", "ReferenceResolution", {x: 1920, y: 1080});
+    EntitySetComponentField(canvas, "CanvasScaler", "MatchWidthOrHeight", 0.5);
+    var vig = HudImage("DamageVignette", canvas, "Assets/Weapons/Textures/damage_vignette.png", 0, 0, 0, 0, 0, 0);
+    EntitySetComponentField(vig, "RectTransform", "AnchorMax", {x: 1, y: 1});
+    EntitySetComponentField(vig, "RectTransform", "SizeDelta", {x: 0, y: 0});
+    UISetAlpha(vig, 0);
+    var cross = UICreateElement("Panel", canvas, "Crosshair");
+    UISetSize(cross, 10, 10);
+    EntitySetColor(cross, 0, 0, 0, 0);
+    EntitySetComponentField(cross, "UIImage", "RaycastTarget", false);
+    HudImage("CrossDot", cross, "Assets/Weapons/Textures/crosshair_dot.png", 0, 0, 8, 8, 0.5, 0.5);
+    var ct = HudImage("CrossTop", cross, "Assets/Weapons/Textures/crosshair_line.png", 0, 19, 8, 16, 0.5, 0.5);
+    var cb = HudImage("CrossBottom", cross, "Assets/Weapons/Textures/crosshair_line.png", 0, -19, 8, 16, 0.5, 0.5);
+    var cl = HudImage("CrossLeft", cross, "Assets/Weapons/Textures/crosshair_line.png", -19, 0, 8, 16, 0.5, 0.5);
+    var cr = HudImage("CrossRight", cross, "Assets/Weapons/Textures/crosshair_line.png", 19, 0, 8, 16, 0.5, 0.5);
+    UISetRotation(cl, 90);
+    UISetRotation(cr, 90);
+    // Dürbün görüntüsü (tam nişanda): ortada kare mercek, iki yanda siyah şeritler
+    var scope = HudImage("ScopeOverlay", canvas, "Assets/Weapons/Textures/scope_overlay.png", 0, 0, 1080, 1080, 0.5, 0.5);
+    UISetAlpha(scope, 0);
+    var sl = HudImage("ScopeLeft", canvas, "", -1540, 0, 2000, 1200, 0.5, 0.5);
+    EntitySetColor(sl, 0, 0, 0, 1);
+    UISetAlpha(sl, 0);
+    var sr = HudImage("ScopeRight", canvas, "", 1540, 0, 2000, 1200, 0.5, 0.5);
+    EntitySetColor(sr, 0, 0, 0, 1);
+    UISetAlpha(sr, 0);
+    var hm = HudImage("Hitmarker", canvas, "Assets/Weapons/Textures/hitmarker.png", 0, 0, 44, 44, 0.5, 0.5);
+    UISetAlpha(hm, 0);
+    // Can (sol alt)
+    var hb = HudImage("HealthBack", canvas, "", 230, 70, 340, 18, 0, 0);
+    EntitySetColor(hb, 0, 0, 0, 0.45);
+    var hf = HudImage("HealthFill", canvas, "", 230, 70, 340, 18, 0, 0);
+    EntitySetColor(hf, 0.95, 0.95, 0.95, 0.95);
+    EntitySetComponentField(hf, "UIImage", "ImageType", "Filled");
+    EntitySetComponentField(hf, "UIImage", "FillMethod", "Horizontal");
+    HudText("HealthText", canvas, "100", 110, 118, 160, 60, 46, "Left", 0, 0);
+    HudText("HealthLabel", canvas, "HEALTH", 268, 114, 200, 40, 24, "Left", 0, 0);
+    // Cephane (sağ alt)
+    // Sağ alt: büyük şarjör sayısı (sağ kenarı x = -150), yanında yedek
+    HudText("AmmoText", canvas, "12", -250, 100, 200, 90, 72, "Right", 1, 0);
+    HudText("ReserveText", canvas, "/ 72", -90, 92, 120, 60, 32, "Left", 1, 0);
+    // Silah adı: sağ kenarı yedek cephaneyle hizalı (x = -30); kutu merkezlidir, taşarsa ad kesilir ("P", "Marksman")
+    HudText("WeaponText", canvas, "PISTOL", -230, 44, 400, 40, 22, "Right", 1, 0);
+    HudText("CenterText", canvas, "", 0, 160, 1400, 80, 48, "Center", 0.5, 0.5);
+    HudText("ScoreText", canvas, "", 0, -50, 1200, 50, 30, "Center", 0.5, 1);
+    HudText("InfoText", canvas, "", 0, -95, 1200, 40, 22, "Center", 0.5, 1);
+    HudText("HintText", canvas, "WASD MOVE   SHIFT SPRINT   SPACE JUMP   C CROUCH   LMB FIRE   RMB AIM   R RELOAD   1 / 2 WEAPONS", 0, 26, 1800, 30, 18, "Center", 0.5, 0);
+    return canvas;
+}
+
+// Hedef standının bir parçası (kökün çocuğu); dokulu parçalar nesneyle birlikte döner / kayar (nesne uzayı izdüşümü)
+func TargetPart(root, partName, px, py, pz, sx, sy, sz, tex, tiling, color, rough, metal)
+{
+    var e = Mesh(partName, "Cube", 0, 0, 0, sx, sy, sz, "", color);
+    EntitySetParent(e, root);
+    EntitySetPosition(e, px, py, pz);
+    if (tex != "")
+    {
+        EntitySetComponentField(e, "MeshRenderer", "Texture", tex);
+        EntitySetComponentField(e, "MeshRenderer", "WorldAlignedUV", true);
+        EntitySetComponentField(e, "MeshRenderer", "AlignToObject", true);
+        EntitySetComponentField(e, "MeshRenderer", "Tiling", {x: tiling, y: tiling});
+    }
+    EntitySetComponentField(e, "MeshRenderer", "Roughness", rough);
+    EntitySetComponentField(e, "MeshRenderer", "Metallic", metal);
+    return e;
+}
+
+// Atış hedefi (sabit taban + menteşeli stant + halkalı kâğıt hedef)
+func Target(name, x, y0, z, yaw, moving)
+{
+    // Atış poligonunun devrilen hedefi (gerçek "pop-up" hedef gibi): çelik taban plakası yerde sabit durur. Vernikli ahşap
+    // direk, arkadaki çapraz çıta, kontrplak destek levhası, ahşap çerçeve ve öndeki zımbalı kâğıt hedef, tabandaki
+    // menteşenin ("Hinge": taban plakasının üstünde, direğin arka yüzünde) çocuklarıdır. Vurulunca menteşe etrafında arkaya
+    // yatar: direk tabandan yere uzanır, tahta yüzü yukarı bakar; süre dolunca kaldırma motoru yeniden dikeltir.
+    var root = CreateEntity(name);
+    EntitySetPosition(root, x, y0, z);
+    AddScript(root, "Assets/Weapons/Scripts/ShootingTarget.cqs");
+    SetFields(root, {moving: moving, radius: 0.31});
+    var WOOD = "Assets/Weapons/Textures/stained_wood.jpg";
+    var PLY = "Assets/Weapons/Textures/plywood.jpg";
+    var wood = {r: 0.9, g: 0.82, b: 0.72, a: 1};
+    TargetPart(root, "Foot", 0, 0.015, -0.05, 0.5, 0.03, 0.36, "", 1, {r: 0.2, g: 0.2, b: 0.22, a: 1}, 0.45, 0.85);
+    var hinge = CreateEntity("Hinge");
+    EntitySetParent(hinge, root);
+    EntitySetPosition(hinge, 0, 0.03, -0.099);
+    // Menteşe yuvası: taban üstünde direğin dibini tutan çelik bilezik
+    TargetPart(root, "Hinge Bracket", 0, 0.055, -0.064, 0.1, 0.05, 0.1, "", 1, {r: 0.16, g: 0.16, b: 0.18, a: 1}, 0.4, 0.9);
+    // Parçalar menteşeye göre (kökteki konum - (0, 0.03, -0.099))
+    TargetPart(hinge, "Post", 0, 0.80, 0.035, 0.07, 1.6, 0.07, WOOD, 2.5, wood, 0.7, 0.0);
+    TargetPart(hinge, "Batten", 0, 1.42, 0.0825, 0.66, 0.06, 0.025, WOOD, 2.5, wood, 0.7, 0.0);
+    var back = TargetPart(hinge, "Back", 0, 1.42, 0.104, 0.72, 0.72, 0.018, PLY, 1.3, {r: 1, g: 1, b: 1, a: 1}, 0.8, 0.0);
+    EntityAddComponent(back, "Rigidbody");
+    EntitySetComponentField(back, "Rigidbody", "BodyType", "Kinematic");
+    EntityAddComponent(back, "BoxCollider");
+    foreach (var f in [{n: "Top", px: 0, py: 1.7775, sx: 0.785, sy: 0.035}, {n: "Bottom", px: 0, py: 1.0625, sx: 0.785, sy: 0.035},
+                       {n: "Left", px: -0.375, py: 1.42, sx: 0.035, sy: 0.715}, {n: "Right", px: 0.375, py: 1.42, sx: 0.035, sy: 0.715}])
+    {
+        TargetPart(hinge, "Frame " + f.n, f.px, f.py, 0.111, f.sx, f.sy, 0.032, WOOD, 2.5, wood, 0.65, 0.0);
+    }
+    var board = Mesh("Board", "Plane", 0, 0, 0, 0.62, 1, 0.62, "", WHITE);
+    EntitySetParent(board, hinge);
+    EntitySetPosition(board, 0, 1.42, 0.1145);
+    EntitySetRotation(board, 90, 0, 0);
+    EntitySetComponentField(board, "MeshRenderer", "Texture", "Assets/Weapons/Textures/target.png");
+    // Yuvarlak kâğıt: dokunun alfasıyla kırpılır (opak geçiş); üstündeki yarı saydam mermi izleri her zaman görünür
+    EntitySetComponentField(board, "MeshRenderer", "AlphaClip", true);
+    EntitySetComponentField(board, "MeshRenderer", "AlphaClipThreshold", 0.5);
+    EntitySetComponentField(board, "MeshRenderer", "Roughness", 0.9);
+    EntitySetRotation(root, 0, yaw, 0);
+    return root;
+}
+
+// Yapay zekâ nişancı (team "" = oyuncuya düşman; "Red" / "Blue" Laser Tag). kind: "Pistol" | "Laser"
+func Bot(name, x, y0, z, yaw, body, kind, team, respawn)
+{
+    // Önce dönüşsüz kur (çocuklar yerel dönüşsüz eklensin), en sonda döndür
+    var root = Mannequin(name, x, y0, z, 0, body, false);
+    AddScript(root, "Assets/Weapons/Scripts/Health.cqs");
+    SetFields(root, {maxHealth: 100.0, health: 100.0, team: team, respawnDelay: respawn});
+    AddScript(root, "Assets/Weapons/Scripts/ShooterAI.cqs");
+    var mesh = EntityGetChildren(root)[0];
+    var w = WeaponEntity("Weapon", kind, mesh);
+    EntityAddComponent(w, "BoneAttachment");
+    EntitySetComponentField(w, "BoneAttachment", "Bone", "hand_r");
+    EntitySetComponentField(w, "BoneAttachment", "PositionOffset", HAND_POS);
+    EntitySetComponentField(w, "BoneAttachment", "RotationOffset", HAND_ROT);
+    if (kind == "Pistol") { SetFields(w, {damage: 12.0, reserve: 9999}); }
+    if (team != "")
+    {
+        // Laser Tag yeleği: göğüste takım renginde ışıyan plaka + omuz ışıkları
+        var c = team == "Red" ? {r: 1.0, g: 0.15, b: 0.1} : {r: 0.15, g: 0.55, b: 1.0};
+        TeamVest(mesh, c);
+        if (kind == "Laser") { TintWeapon(w, c); }
+    }
+    EntitySetRotation(root, 0, yaw, 0);
+    return root;
+}
+
+// Lazer silahının ışıyan şeritleri ve ışını takım renginde
+func TintWeapon(w, c)
+{
+    foreach (var m in EntityGetChildren(w))
+    {
+        foreach (var part in EntityGetChildren(m))
+        {
+            var n = EntityGetName(part);
+            if (StringStartsWith(n, "Glow"))
+            {
+                EntitySetColor(part, c.r, c.g, c.b, 1);
+                EntitySetComponentField(part, "MeshRenderer", "EmissionColor", c);
+            }
+        }
+    }
+    SetFields(w, {tracerR: c.r, tracerG: c.g, tracerB: c.b});
+}
+
+func TeamColor(team) { return team == "Red" ? {r: 1.0, g: 0.15, b: 0.1} : {r: 0.15, g: 0.55, b: 1.0}; }
+
+func VestPart(vest, n, x, y, z, sx, sy, sz, pitch, col, glow)
+{
+    var e = Mesh(n, "Cube", 0, 0, 0, sx, sy, sz, "", col);
+    EntitySetParent(e, vest);
+    EntitySetPosition(e, x, y, z);
+    EntitySetRotation(e, pitch, 0, 0);
+    EntitySetComponentField(e, "MeshRenderer", "Roughness", glow ? 0.3 : 0.55);
+    EntitySetComponentField(e, "MeshRenderer", "Metallic", 0.0);
+    if (glow)
+    {
+        EntitySetComponentField(e, "MeshRenderer", "EmissionColor", col);
+        EntitySetComponentField(e, "MeshRenderer", "EmissionStrength", 8.0);
+        EntitySetComponentField(e, "MeshRenderer", "CastShadows", false);
+    }
+    return e;
+}
+
+// Lazer tag yeleği (spine_03'e bağlı; kemik uzayında +X yan, +Y omurga boyunca yukarı, +Z göğüs). Gövde kesiti iki
+// mankenden (erkek / kadın) yükseklik dilimleriyle ölçüldü: göğüs önü y 0'da +0.145 (yukarı doğru +0.11'e iner), sırt
+// -0.155, yarı genişlik 0.18-0.22, omuz üstü +0.25 m. Plakalar gövdeye 1-2 cm mesafede ve göğüs / sırt eğimine uyacak
+// kadar yatık; alt kenar karnın üstünde (yürürken bükülen göbek bölgesine girmez). Kayışlar omzun üstünden geçer.
+func TeamVest(mesh, c)
+{
+    var vest = CreateEntity("Vest");
+    EntitySetParent(vest, mesh);
+    EntityAddComponent(vest, "BoneAttachment");
+    EntitySetComponentField(vest, "BoneAttachment", "Bone", "spine_03");
+    var shell = {r: 0.07, g: 0.075, b: 0.085, a: 1};
+    var strap = {r: 0.03, g: 0.03, b: 0.035, a: 1};
+    var col = {r: c.r, g: c.g, b: c.b, a: 1};
+    // Göğüs ve sırt kabukları
+    VestPart(vest, "Chest Plate", 0, 0.04, 0.166, 0.3, 0.2, 0.025, -14, shell, false);
+    VestPart(vest, "Back Plate", 0, 0.07, -0.18, 0.32, 0.22, 0.025, 10, shell, false);
+    // Yan kayışlar (kaburgaların yanı) ve omuz kayışları (göğüs plakasından omuz üstünden sırta)
+    VestPart(vest, "Side Strap L", -0.214, 0.0, -0.005, 0.016, 0.05, 0.31, 0, strap, false);
+    VestPart(vest, "Side Strap R", 0.214, 0.0, -0.005, 0.016, 0.05, 0.31, 0, strap, false);
+    foreach (var sx in [-0.115, 0.115])
+    {
+        var side = sx < 0.0 ? "L" : "R";
+        VestPart(vest, "Shoulder Front " + side, sx, 0.192, 0.112, 0.055, 0.12, 0.016, -36, strap, false);
+        VestPart(vest, "Shoulder Strap " + side, sx, 0.258, -0.015, 0.055, 0.016, 0.17, 0, strap, false);
+        VestPart(vest, "Shoulder Back " + side, sx, 0.212, -0.14, 0.055, 0.1, 0.016, 32, strap, false);
+        VestPart(vest, "Shoulder Sensor " + side, sx, 0.271, -0.01, 0.05, 0.012, 0.06, 0, col, true);
+    }
+    // Takım renginde sensörler (önde ortada şerit + halka, arkada şerit)
+    VestPart(vest, "Glow", 0, 0.045, 0.181, 0.12, 0.05, 0.01, -14, col, true);
+    VestPart(vest, "Glow Ring", 0, 0.045, 0.179, 0.24, 0.012, 0.008, -14, col, true);
+    VestPart(vest, "GlowBack", 0, 0.08, -0.195, 0.12, 0.05, 0.01, 10, col, true);
+    return vest;
+}
+
+func Game(mode, scoreLimit, timeLimit)
+{
+    NavSurface();
+    var g = CreateEntity("Game");
+    AddScript(g, "Assets/Weapons/Scripts/ShooterGame.cqs");
+    SetFields(g, {mode: mode, scoreLimit: scoreLimit, timeLimit: timeLimit});
+    return g;
+}
+
+// Çatışma arenası: 64 x 64 m, duvarlar, ortada kule, siper blokları, rampalar (Arena Shooter / TPS / Laser Tag)
+func CombatArena(floorTex, wallTex, coverTex, accentTex)
+{
+    Box("Floor", 0, -1, 0, 64, 1, 64, floorTex);
+    Box("Wall North", 0, 0, -32.5, 66, 5, 1, wallTex);
+    Box("Wall South", 0, 0, 32.5, 66, 5, 1, wallTex);
+    Box("Wall East", 32.5, 0, 0, 1, 5, 64, wallTex);
+    Box("Wall West", -32.5, 0, 0, 1, 5, 64, wallTex);
+    // Orta kule: iki kat, rampalı
+    Box("Tower", 0, 0, 0, 8, 3, 8, coverTex);
+    Ramp("Tower Ramp N", 0, 0, -11, 7, 3, 3, 0, coverTex);
+    Ramp("Tower Ramp S", 0, 0, 11, 7, 3, 3, 180, coverTex);
+    Box("Tower Wall A", -3.75, 3, 0, 0.5, 1.1, 8, accentTex);
+    Box("Tower Wall B", 3.75, 3, 0, 0.5, 1.1, 8, accentTex);
+    // Siperler: alçak duvarlar ve kasalar
+    var covers = [[-14, -14, 6, 1.2, 1], [14, 14, 6, 1.2, 1], [-14, 14, 1, 1.2, 6], [14, -14, 1, 1.2, 6],
+                  [-22, 0, 1, 2.2, 8], [22, 0, 1, 2.2, 8], [0, -22, 8, 2.2, 1], [0, 22, 8, 2.2, 1],
+                  [-8, -24, 2, 2, 2], [8, 24, 2, 2, 2], [-24, -8, 2, 2, 2], [24, 8, 2, 2, 2],
+                  [-26, -26, 3, 3, 3], [26, 26, 3, 3, 3], [-26, 26, 3, 1.5, 3], [26, -26, 3, 1.5, 3]];
+    var n = 0;
+    foreach (var c in covers)
+    {
+        Box("Cover " + n, c[0], 0, c[1], c[2], c[3], c[4], n % 4 == 3 ? accentTex : coverTex);
+        n += 1;
+    }
+    Cylinder("Pillar NE", 18, 0, -20, 1.2, 5, coverTex);
+    Cylinder("Pillar SW", -18, 0, 20, 1.2, 5, coverTex);
+    Cylinder("Pillar NW", -20, 0, -18, 1.2, 5, coverTex);
+    Cylinder("Pillar SE", 20, 0, 18, 1.2, 5, coverTex);
+}
+
+// Takım doğuş noktaları ("Spawn <takım> <i>"): Health.Respawn buradan seçer
+func SpawnPoint(team, i, x, z, yaw)
+{
+    var s = CreateEntity("Spawn " + team + " " + i);
+    EntitySetPosition(s, x, 0.9, z);
+    EntitySetRotation(s, 0, yaw, 0);
+    return s;
+}
+
+// ---------------------------------------------------------------------------------------------- araç (vehicle)
+
+// Araç (Vehicle şablonları): kök (Rigidbody + Box Collider + VehicleController) / Body / tekerlekler (Wheel Collider) / görsel tekerlekler
+func VehicleCar(name, x, y, z, yaw, paint, offroad)
+{
+    var car = CreateEntity(name);
+    EntitySetPosition(car, x, y, z);
+    EntityAddComponent(car, "Rigidbody");
+    EntitySetComponentField(car, "Rigidbody", "BodyType", "Dynamic");
+    EntitySetComponentField(car, "Rigidbody", "Mass", 1450);
+    EntitySetComponentField(car, "Rigidbody", "LinearDrag", 0.01);
+    EntitySetComponentField(car, "Rigidbody", "AngularDrag", 0.25);
+    EntitySetComponentField(car, "Rigidbody", "Interpolate", true);
+    EntitySetComponentField(car, "Rigidbody", "AllowSleep", false);
+    EntityAddComponent(car, "BoxCollider");
+    EntitySetComponentField(car, "BoxCollider", "Offset", {x: 0, y: 0.62, z: -0.1});
+    EntitySetComponentField(car, "BoxCollider", "Size", {x: 1.96, y: 0.62, z: 4.2});
+    AddScript(car, "Assets/Vehicles/Scripts/VehicleController.cqs");
+    // Arazi ayarı: dört çeker, uzun süspansiyon, yumuşak yay, düşük hızda çok tork
+    if (offroad) { SetFields(car, {driveMode: 2, maxSpeedKmh: 150, finalDrive: 4.6, downforce: 0.0, highSpeedSteerAngle: 14, antiRoll: 4000}); }
+    IgnoreFromNav(car);
+    var body = CreateEntity("Body");
+    EntitySetParent(body, car);
+    EntitySetPosition(body, 0, 0, 0);
+    EntityAddComponent(body, "Model");
+    EntitySetComponentField(body, "Model", "FilePath", "Assets/Vehicles/Models/ConceptCar/Body_" + paint + ".glb");
+    // İç döşeme ve fren kaliperleri ayrı modeller (Car Configurator bunları ayrı ayrı değiştirir)
+    foreach (var part in [{n: "Interior", f: "Interior_" + paint}, {n: "Calipers", f: "Calipers_Red"}])
+    {
+        var pe = CreateEntity(part.n);
+        EntitySetParent(pe, car);
+        EntitySetPosition(pe, 0, 0, 0);
+        EntityAddComponent(pe, "Model");
+        EntitySetComponentField(pe, "Model", "FilePath", "Assets/Vehicles/Models/ConceptCar/" + part.f + ".glb");
+    }
+    var wheels = [{n: "FL", x: -0.976, z: -1.485}, {n: "FR", x: 0.977, z: -1.484}, {n: "RL", x: -0.982, z: 1.314}, {n: "RR", x: 0.982, z: 1.314}];
+    foreach (var w in wheels)
+    {
+        var vis = CreateEntity("Wheel" + w.n + " Mesh");
+        EntitySetParent(vis, car);
+        EntitySetPosition(vis, w.x, 0.384, w.z);
+        EntityAddComponent(vis, "Model");
+        EntitySetComponentField(vis, "Model", "FilePath", "Assets/Vehicles/Models/ConceptCar/Wheel_" + w.n + ".glb");
+        var rim = CreateEntity("Rim");
+        EntitySetParent(rim, vis);
+        EntitySetPosition(rim, 0, 0, 0);
+        EntityAddComponent(rim, "Model");
+        EntitySetComponentField(rim, "Model", "FilePath", "Assets/Vehicles/Models/ConceptCar/Rim_" + w.n + "_Chrome.glb");
+        var wc = CreateEntity("Wheel" + w.n);
+        EntitySetParent(wc, car);
+        EntitySetPosition(wc, w.x, offroad ? 0.68 : 0.55, w.z);
+        EntityAddComponent(wc, "WheelCollider");
+        EntitySetComponentField(wc, "WheelCollider", "Radius", 0.384);
+        EntitySetComponentField(wc, "WheelCollider", "Mass", 22);
+        EntitySetComponentField(wc, "WheelCollider", "SuspensionDistance", offroad ? 0.42 : 0.3);
+        EntitySetComponentField(wc, "WheelCollider", "TargetPosition", 0.25);
+        EntitySetComponentField(wc, "WheelCollider", "Spring", offroad ? 42000 : 60000);
+        EntitySetComponentField(wc, "WheelCollider", "Damper", offroad ? 3800 : 5200);
+        EntitySetComponentField(wc, "WheelCollider", "ForceAppPointDistance", 0.12);
+        EntitySetComponentField(wc, "WheelCollider", "FwdExtremumValue", 1.25);
+        EntitySetComponentField(wc, "WheelCollider", "SideExtremumValue", offroad ? 1.05 : 1.3);
+        EntitySetComponentField(wc, "WheelCollider", "SideAsymptoteValue", 0.9);
+        EntitySetComponentField(wc, "WheelCollider", "WheelModel", vis);
+    }
+    for (var s = -1; s <= 1; s += 2)
+    {
+        var bl = CreateEntity("Brake Light " + (s < 0 ? "L" : "R"));
+        EntitySetParent(bl, car);
+        EntitySetPosition(bl, s * 0.68, 0.82, 2.02);
+        EntityAddComponent(bl, "PointLight");
+        EntitySetComponentField(bl, "PointLight", "Color", {r: 1.0, g: 0.05, b: 0.03});
+        EntitySetComponentField(bl, "PointLight", "Intensity", 0.6);
+        EntitySetComponentField(bl, "PointLight", "Range", 3.5);
+        EntitySetComponentField(bl, "PointLight", "CastShadows", false);
+    }
+    var eng = CreateEntity("Engine Audio");
+    EntitySetParent(eng, car);
+    EntitySetPosition(eng, 0, 0.6, -1.6);
+    EntityAddComponent(eng, "AudioSource");
+    EntitySetComponentField(eng, "AudioSource", "Clip", "Assets/Vehicles/Audio/engine_loop.wav");
+    EntitySetComponentField(eng, "AudioSource", "Loop", true);
+    EntitySetComponentField(eng, "AudioSource", "PlayOnAwake", true);
+    EntitySetComponentField(eng, "AudioSource", "Is3D", false);
+    EntitySetComponentField(eng, "AudioSource", "Volume", 0.5);
+    EntitySetComponentField(eng, "AudioSource", "Pitch", 0.45);
+    var skid = CreateEntity("Skid Audio");
+    EntitySetParent(skid, car);
+    EntityAddComponent(skid, "AudioSource");
+    EntitySetComponentField(skid, "AudioSource", "Clip", "Assets/Vehicles/Audio/skid_loop.wav");
+    EntitySetComponentField(skid, "AudioSource", "Loop", true);
+    EntitySetComponentField(skid, "AudioSource", "PlayOnAwake", true);
+    EntitySetComponentField(skid, "AudioSource", "Is3D", false);
+    EntitySetComponentField(skid, "AudioSource", "Volume", 0.0);
+    EntitySetRotation(car, 0, yaw, 0);
+    return car;
+}
+
+// Araç kamerası (VehicleCamera betiği: takip, etrafa bakma, C ile görünüm)
+func VehicleCameraRig(x, y, z, yaw)
+{
+    var cam = CreateEntity("Camera");
+    var cr = MathDegToRad(yaw);
+    EntitySetPosition(cam, x + MathSin(cr) * 6.2, y + 2.0, z + MathCos(cr) * 6.2);
+    EntityAddComponent(cam, "Camera");
+    EntitySetComponentField(cam, "Camera", "Primary", true);
+    EntitySetComponentField(cam, "Camera", "FieldOfView", 62);
+    EntitySetComponentField(cam, "Camera", "FarClip", 2000);
+    EntityAddComponent(cam, "AudioListener");
+    AddScript(cam, "Assets/Vehicles/Scripts/VehicleCamera.cqs");
+    EntitySetRotation(cam, -8, yaw, 0);
+    return cam;
+}
+
+// Araç HUD'u: sağ alt hız + vites + devir çubuğu; race = true ise sol üst tur / süre, fark, sonuç paneli
+func VehicleHUD(race, hint)
+{
+    var hud = UICreateCanvas("HUD");
+    EntitySetComponentField(hud, "CanvasScaler", "ReferenceResolution", {x: 1920, y: 1080});
+    EntitySetComponentField(hud, "CanvasScaler", "MatchWidthOrHeight", 0.5);
+    if (race)
+    {
+        HudText("LapText", hud, "LAP 1 / 3", 230, -50, 360, 44, 34, "Left", 0, 1);
+        HudText("TimeText", hud, "0:00.000", 230, -98, 360, 56, 50, "Left", 0, 1);
+        HudText("BestText", hud, "BEST --:--.---", 230, -142, 360, 30, 22, "Left", 0, 1);
+        HudText("TotalText", hud, "", 230, -170, 360, 26, 18, "Left", 0, 1);
+        HudText("DeltaText", hud, "", 0, 230, 600, 50, 38, "Center", 0.5, 0.5);
+    }
+    HudText("SpeedText", hud, "0", -270, 128, 260, 110, 96, "Right", 1, 0);
+    HudText("SpeedUnit", hud, "KM/H", -95, 100, 90, 30, 22, "Left", 1, 0);
+    HudText("GearText", hud, "1", -470, 132, 80, 80, 64, "Center", 1, 0);
+    HudText("GearLabel", hud, "GEAR", -470, 84, 80, 26, 18, "Center", 1, 0);
+    var rb = HudImage("RpmBack", hud, "", -230, 42, 360, 12, 1, 0);
+    EntitySetColor(rb, 1, 1, 1, 0.15);
+    var rf = HudImage("RpmFill", hud, "", -230, 42, 360, 12, 1, 0);
+    EntitySetColor(rf, 1, 0.85, 0.3, 0.95);
+    EntitySetComponentField(rf, "UIImage", "ImageType", "Filled");
+    EntitySetComponentField(rf, "UIImage", "FillMethod", "Horizontal");
+    HudText("CenterText", hud, "", 0, 120, 1400, 120, 96, "Center", 0.5, 0.5);
+    if (race)
+    {
+        var rp = HudImage("ResultsPanel", hud, "", 0, 0, 640, 420, 0.5, 0.5);
+        EntitySetColor(rp, 0, 0, 0, 0.72);
+        UISetAlpha(rp, 0);
+        var rt = HudText("ResultsText", hud, "", 0, 0, 600, 400, 34, "Center", 0.5, 0.5);
+        EntitySetComponentField(rt, "UIText", "WordWrap", true);
+    }
+    HudText("HintText", hud, hint, 0, 26, 1800, 30, 18, "Center", 0.5, 0);
+    return hud;
+}
+
+// ---------------------------------------------------------------------------------------------- şehir meydanı
+// Crowd ve Short Film şablonlarının ortak seti (Resources/Templates/Shared/Plaza): taş döşeli meydan, dükkânlı iki-üç
+// katlı binalar, tenteler, ağaçlar, sokak lambaları, çeşme, banklar, kafe ve çiçeklikler. PlazaSet() hepsini kurar.
+var PLAZA = "Assets/Plaza/";
+// Kurulan sokak lambası başlıkları ve duvar fenerleri (Short Film ışıkları bunlara ekler)
+var PLAZA_LAMP_HEADS = [];
+var PLAZA_WALL_LANTERNS = [];
+var PLAZA_STONE = {r: 0.86, g: 0.83, b: 0.77, a: 1};
+var PLAZA_ROOF = {r: 0.28, g: 0.29, b: 0.31, a: 1};
+var PLAZA_FACADES = [PLAZA + "Textures/facade_cream.jpg", PLAZA + "Textures/facade_terracotta.jpg", PLAZA + "Textures/facade_gray.jpg"];
+var PLAZA_SHOPS = [PLAZA + "Textures/shop_a.jpg", PLAZA + "Textures/shop_b.jpg"];
+
+func PlazaSurface(name, x, y, z, sx, sy, sz, tex, tiling, color, rough)
+{
+    var e = Static(Mesh(name, "Cube", x, y, z, sx, sy, sz, "", color));
+    EntitySetComponentField(e, "MeshRenderer", "Texture", tex);
+    EntitySetComponentField(e, "MeshRenderer", "WorldAlignedUV", true);
+    EntitySetComponentField(e, "MeshRenderer", "Tiling", {x: tiling, y: tiling});
+    EntitySetComponentField(e, "MeshRenderer", "Roughness", rough);
+    return e;
+}
+
+// Cephe kutusu: dünya hizalı doku; yatayda 10 m = 1 tekrar, dikeyde kat yüksekliği (ox / oy: bölme ve kat hizası)
+func PlazaFacadeBox(name, x0, x1, z0, z1, y0, h, tex, tilingY, ox)
+{
+    var e = Static(Mesh(name, "Cube", (x0 + x1) / 2.0, y0 + h / 2.0, (z0 + z1) / 2.0, x1 - x0, h, z1 - z0, "", {r: 1, g: 1, b: 1, a: 1}));
+    EntitySetComponentField(e, "MeshRenderer", "Texture", tex);
+    EntitySetComponentField(e, "MeshRenderer", "WorldAlignedUV", true);
+    EntitySetComponentField(e, "MeshRenderer", "Tiling", {x: 0.1, y: tilingY});
+    EntitySetComponentField(e, "MeshRenderer", "Offset", {x: ox, y: -y0 * tilingY});
+    EntitySetComponentField(e, "MeshRenderer", "Roughness", 0.8);
+    IgnoreFromNav(e);            // yürünebilir alanı zemin kutuları belirler (çatılar NavMesh'e girmez, pişirme hızlı)
+    return e;
+}
+
+// Bina: zemin kat dükkân (4.5 m) + 2 ya da 3 konut katı (3.2 m) + taş korniş + düz çatı
+var plazaBuildingCount = 0;
+func PlazaBuilding(x0, x1, z0, z1, floors, ox, withShop)
+{
+    plazaBuildingCount++;
+    var n = "Building " + plazaBuildingCount;
+    var fac = PLAZA_FACADES[plazaBuildingCount % 3];
+    var shop = PLAZA_SHOPS[plazaBuildingCount % 2];
+    if (withShop) { PlazaFacadeBox(n + " Shops", x0, x1, z0, z1, 0.0, 4.5, shop, 1.0 / 4.5, ox); }
+    else { PlazaFacadeBox(n + " Ground", x0, x1, z0, z1, 0.0, 4.5, fac, 1.0 / 6.4, ox); }
+    var h = floors * 3.2;
+    PlazaFacadeBox(n + " Floors", x0, x1, z0, z1, 4.5, h, fac, 1.0 / 6.4, ox);
+    var top = 4.5 + h;
+    var cor = Mesh(n + " Cornice", "Cube", (x0 + x1) / 2.0, top + 0.18, (z0 + z1) / 2.0, x1 - x0 + 0.5, 0.36, z1 - z0 + 0.5, "", PLAZA_STONE);
+    EntitySetComponentField(cor, "MeshRenderer", "Roughness", 0.75);
+    IgnoreFromNav(cor);
+    var roof = Mesh(n + " Roof", "Cube", (x0 + x1) / 2.0, top + 0.4, (z0 + z1) / 2.0, x1 - x0 - 0.6, 0.12, z1 - z0 - 0.6, "", PLAZA_ROOF);
+    EntitySetComponentField(roof, "MeshRenderer", "Roughness", 0.9);
+    IgnoreFromNav(roof);
+    return top;
+}
+
+// Duvar feneri (Poly Haven, CC0): kol +Z yönünde 0.8 m; cepheye monte
+func PlazaWallLantern(x, y, z, yaw)
+{
+    var l = CreateEntity("Wall Lantern");
+    EntitySetModel(l, PLAZA + "Props/wall_lantern.glb");
+    EntitySetPosition(l, x, y, z);
+    EntitySetRotation(l, 0, yaw, 0);
+    PLAZA_WALL_LANTERNS.Add(l);
+}
+
+// Vitrin önü (yaya buraya gelip cepheye döner)
+var plazaSpotCount = 0;
+func PlazaWindowSpot(x, z, yaw)
+{
+    plazaSpotCount++;
+    var s = CreateEntity("Window Spot " + plazaSpotCount);
+    EntitySetPosition(s, x, 0, z);
+    EntitySetRotation(s, 0, yaw, 0);
+    EntitySetTag(s, "Window Spot");
+}
+
+// Çizgili kanvas tente: cepheden 22 derece eğimle dışarı uzanır, ön kenarda sarkan saçak (make_plaza_props.py dokuları)
+var PLAZA_AWNINGS = [PLAZA + "Textures/awning_red.png", PLAZA + "Textures/awning_green.png", PLAZA + "Textures/awning_navy.png", PLAZA + "Textures/awning_terracotta.png"];
+var plazaAwningCount = 0;
+func PlazaAwning(wx, wz, yaw)
+{
+    var tex = PLAZA_AWNINGS[plazaAwningCount % 4];
+    plazaAwningCount++;
+    var r = MathDegToRad(yaw);
+    var ox = MathSin(r);
+    var oz = MathCos(r);
+    var depth = 1.45;
+    var slope = MathDegToRad(22.0);
+    var reach = depth * MathCos(slope);
+    var drop = depth * MathSin(slope);
+    var top = 3.62;
+    var canvas = Mesh("Awning " + plazaAwningCount, "Cube", wx + ox * reach * 0.5, top - drop * 0.5, wz + oz * reach * 0.5, 9.0, 0.035, depth, "", {r: 1, g: 1, b: 1, a: 1});
+    EntitySetComponentField(canvas, "MeshRenderer", "Texture", tex);
+    EntitySetComponentField(canvas, "MeshRenderer", "Tiling", {x: 4.5, y: 1});
+    EntitySetComponentField(canvas, "MeshRenderer", "Roughness", 0.85);
+    EntitySetRotation(canvas, 22, yaw, 0);
+    IgnoreFromNav(canvas);
+    var valance = Mesh("Awning Valance " + plazaAwningCount, "Cube", wx + ox * reach, top - drop - 0.14, wz + oz * reach, 9.0, 0.28, 0.02, "", {r: 1, g: 1, b: 1, a: 1});
+    EntitySetComponentField(valance, "MeshRenderer", "Texture", tex);
+    EntitySetComponentField(valance, "MeshRenderer", "Tiling", {x: 4.5, y: 0.25});
+    EntitySetComponentField(valance, "MeshRenderer", "Roughness", 0.85);
+    EntitySetRotation(valance, 0, yaw, 0);
+    IgnoreFromNav(valance);
+}
+
+// Ağaç (make_plaza_props.py): NavMesh'ten hariç (taç kartları yürünebilir ada oluşturmasın); gövdenin içinde gizli
+// silindir NavMesh'te engel olur. Dibinde dökme demir ızgara.
+var plazaTreeCount = 0;
+func PlazaTree(x, z)
+{
+    plazaTreeCount++;
+    var t = CreateEntity("Plaza Tree " + plazaTreeCount);
+    EntitySetModel(t, PLAZA + "Props/plaza_tree.glb");
+    EntitySetPosition(t, x, 0, z);
+    EntitySetRotation(t, 0, plazaTreeCount * 67 % 360, 0);
+    var sc = 0.9 + (plazaTreeCount * 37 % 20) / 100.0;
+    EntitySetScale(t, sc, sc, sc);
+    IgnoreFromNav(t);
+    var core = Mesh("Plaza Tree Core " + plazaTreeCount, "Cylinder", x, 1.2, z, 0.24, 2.4, 0.24, "", {r: 0.3, g: 0.26, b: 0.22, a: 1});
+    var grate = Mesh("Tree Grate " + plazaTreeCount, "Cube", x, 0.012, z, 1.5, 0.024, 1.5, "", {r: 0.07, g: 0.07, b: 0.075, a: 1});
+    EntitySetComponentField(grate, "MeshRenderer", "Metallic", 0.7);
+    EntitySetComponentField(grate, "MeshRenderer", "Roughness", 0.55);
+    IgnoreFromNav(grate);
+}
+
+// Zemin: taş döşeme, çeşme çevresinde granit halka, üç sokak, altta geniş zemin
+func PlazaGround()
+{
+    PlazaSurface("Plaza", 0, -0.1, 0, 40, 0.2, 30, PLAZA + "Textures/plaza_pavers.jpg", 0.45, {r: 0.76, g: 0.74, b: 0.7, a: 1}, 0.75);
+    // Çeşmenin çevresinde koyu granit halka (taş zemin düzlüğünü böler)
+    var ring = Mesh("Granite Ring", "Cylinder", 0, 0.005, 0, 11.2, 0.01, 11.2, PLAZA + "Textures/cobble.jpg", {r: 0.5, g: 0.5, b: 0.52, a: 1});
+    EntitySetComponentField(ring, "MeshRenderer", "Tiling", {x: 0.6, y: 0.6});
+    EntitySetComponentField(ring, "MeshRenderer", "Roughness", 0.55);
+    PlazaSurface("Street South", 5, -0.1, 25.5, 10, 0.2, 21, PLAZA + "Textures/cobble.jpg", 0.5, {r: 0.9, g: 0.9, b: 0.9, a: 1}, 0.8);
+    PlazaSurface("Street West", -30.5, -0.1, 0, 21, 0.2, 10, PLAZA + "Textures/cobble.jpg", 0.5, {r: 0.9, g: 0.9, b: 0.9, a: 1}, 0.8);
+    PlazaSurface("Street East", 30.5, -0.1, 0, 21, 0.2, 10, PLAZA + "Textures/cobble.jpg", 0.5, {r: 0.9, g: 0.9, b: 0.9, a: 1}, 0.8);
+    var under = Mesh("Ground", "Cube", 0, -0.35, 0, 400, 0.4, 400, "", {r: 0.24, g: 0.24, b: 0.25, a: 1});
+    EntitySetComponentField(under, "MeshRenderer", "Roughness", 0.95);
+    IgnoreFromNav(under);
+}
+
+// Binalar: dört yanda sıralar, köşe blokları, sis içindeki uzak siluet
+func PlazaBuildings()
+{
+    // Kuzey sırası (cephe z = -15, meydana bakar), arkası derin
+    for (var i = 0; i < 4; i++) { PlazaBuilding(-20 + i * 10, -10 + i * 10, -35, -15, i % 2 == 0 ? 2 : 3, 0.0, true); }
+    // Güney sırası (cephe z = 15), x 0..10 sokak
+    PlazaBuilding(-20, -10, 15, 35, 3, 0.0, true);
+    PlazaBuilding(-10, 0, 15, 35, 2, 0.0, true);
+    PlazaBuilding(10, 20, 15, 35, 2, 0.0, true);
+    PlazaBuilding(-10, 20, 35, 45, 3, 0.0, false);          // sokağın sonunu kapatan bina
+    // Batı / doğu sıraları (cephe x = ±20), z -5..5 sokak; ±X yüzleri için bölme hizası ox 0.5
+    foreach (var side in [-1, 1])
+    {
+        PlazaBuilding(side < 0 ? -40 : 20, side < 0 ? -20 : 40, -15, -5, 2, 0.5, true);
+        PlazaBuilding(side < 0 ? -40 : 20, side < 0 ? -20 : 40, 5, 15, 3, 0.5, true);
+        PlazaBuilding(side < 0 ? -50 : 40, side < 0 ? -40 : 50, -15, 15, 3, 0.5, false);   // sokak sonu
+    }
+    // Köşe blokları (yukarıdan bakınca çatılar kesintisiz)
+    PlazaBuilding(-40, -20, -35, -15, 3, 0.5, false);
+    PlazaBuilding(20, 40, -35, -15, 2, 0.5, false);
+    PlazaBuilding(-40, -20, 15, 35, 2, 0.0, false);
+    PlazaBuilding(20, 40, 15, 35, 3, 0.0, false);
+    // Uzak siluet: daha yüksek bloklar (sis içinde şehir devam eder)
+    var skyline = [{x: -70, z: -60, w: 24, d: 20, f: 5}, {x: -30, z: -70, w: 30, d: 18, f: 6}, {x: 15, z: -65, w: 26, d: 22, f: 4},
+                   {x: 60, z: -55, w: 22, d: 26, f: 6}, {x: 75, z: 5, w: 20, d: 30, f: 5}, {x: 65, z: 60, w: 26, d: 20, f: 4},
+                   {x: 10, z: 75, w: 30, d: 20, f: 6}, {x: -45, z: 65, w: 24, d: 24, f: 5}, {x: -78, z: 10, w: 20, d: 30, f: 6}];
+    foreach (var b in skyline) { PlazaBuilding(b.x - b.w / 2.0, b.x + b.w / 2.0, b.z - b.d / 2.0, b.z + b.d / 2.0, b.f, 0.0, false); }
+}
+
+// Vitrin önleri (yaya hedefleri) ve duvar fenerleri
+func PlazaShopfronts()
+{
+    // Dükkân bölmeleri: 0, 2, 3 vitrin; 1 kapı (doku: shop_a / shop_b)
+    for (var m = 0; m < 4; m++)
+    {
+        var mx = -20 + m * 10;
+        PlazaWindowSpot(mx + 1.25, -13.9, 180);
+        PlazaWindowSpot(mx + 6.25, -13.9, 180);
+        PlazaWallLantern(mx + 5.0, 2.4, -15.0, 0);
+    }
+    foreach (var smx in [-20, -10, 10])
+    {
+        PlazaWindowSpot(smx + 1.25, 13.9, 0);
+        PlazaWindowSpot(smx + 8.75, 13.9, 0);
+        PlazaWallLantern(smx + 5.0, 2.4, 15.0, 180);
+    }
+    foreach (var side in [-1, 1])
+    {
+        foreach (var mz in [-15, 5])
+        {
+            PlazaWindowSpot(side * 18.9, mz + 1.25, side < 0 ? -90 : 90);
+            PlazaWindowSpot(side * 18.9, mz + 6.25, side < 0 ? -90 : 90);
+            PlazaWallLantern(side * 20.0, 2.4, mz + 5.0, side < 0 ? 90 : -90);
+        }
+    }
+}
+
+// Dükkân tenteleri
+func PlazaAwnings()
+{
+    for (var aw = 0; aw < 4; aw++) { PlazaAwning(-15 + aw * 10, -15.0, 0); }
+    foreach (var asx in [-15, -5, 15]) { PlazaAwning(asx, 15.0, 180); }
+    foreach (var asz in [-10, 10])
+    {
+        PlazaAwning(-20.0, asz, 90);
+        PlazaAwning(20.0, asz, -90);
+    }
+}
+
+// Ağaçlar ve sokak lambaları
+func PlazaTreesAndLamps()
+{
+    foreach (var tp in [{x: -10.5, z: -10.2}, {x: 10.8, z: -9.6}, {x: -10.8, z: 10.2}, {x: 10.5, z: 10.4}, {x: -16.2, z: -3.2}, {x: 16.2, z: 3.2}])
+    {
+        PlazaTree(tp.x, tp.z);
+    }
+    // Sokak lambası: koyu yeşil döküm direk, fener başlığı (gündüz kapalı cam)
+    foreach (var lp in [{x: 6.0, z: 6.0}, {x: -6.0, z: 6.0}, {x: 6.0, z: -6.0}, {x: -6.0, z: -6.0}])
+    {
+        var post = Mesh("Street Lamp Post", "Cylinder", lp.x * 1.42, 2.0, lp.z * 1.42, 0.13, 4.0, 0.13, "", {r: 0.08, g: 0.13, b: 0.1, a: 1});
+        EntitySetComponentField(post, "MeshRenderer", "Metallic", 0.6);
+        EntitySetComponentField(post, "MeshRenderer", "Roughness", 0.45);
+        var foot = Mesh("Street Lamp Base", "Cylinder", lp.x * 1.42, 0.3, lp.z * 1.42, 0.3, 0.6, 0.3, "", {r: 0.08, g: 0.13, b: 0.1, a: 1});
+        EntitySetComponentField(foot, "MeshRenderer", "Metallic", 0.6);
+        var head = Mesh("Street Lamp Lantern", "Cube", lp.x * 1.42, 4.2, lp.z * 1.42, 0.34, 0.5, 0.34, "", {r: 0.95, g: 0.9, b: 0.75, a: 1});
+        EntitySetComponentField(head, "MeshRenderer", "Roughness", 0.15);
+        EntitySetComponentField(head, "MeshRenderer", "EmissionColor", {r: 1.0, g: 0.85, b: 0.6});
+        EntitySetComponentField(head, "MeshRenderer", "EmissionStrength", 0.3);
+        var cap = Mesh("Street Lamp Cap", "Cylinder", lp.x * 1.42, 4.52, lp.z * 1.42, 0.5, 0.14, 0.5, "", {r: 0.08, g: 0.13, b: 0.1, a: 1});
+        EntitySetComponentField(cap, "MeshRenderer", "Metallic", 0.6);
+        IgnoreFromNav(head);
+        IgnoreFromNav(cap);
+        PLAZA_LAMP_HEADS.Add(head);
+    }
+}
+
+// Çeşme: havuz, sütun, çanak, su jetleri (parçacık)
+func PlazaFountain()
+{
+    var basin = Static(Mesh("Fountain Basin", "Cylinder", 0, 0.28, 0, 7.0, 0.56, 7.0, "", PLAZA_STONE));
+    EntitySetComponentField(basin, "MeshRenderer", "Roughness", 0.6);
+    var water = Mesh("Fountain Water", "Cylinder", 0, 0.47, 0, 6.5, 0.04, 6.5, "", {r: 0.12, g: 0.28, b: 0.3, a: 1});
+    EntitySetComponentField(water, "MeshRenderer", "Roughness", 0.04);
+    EntitySetComponentField(water, "MeshRenderer", "Metallic", 0.1);
+    var pillar = Mesh("Fountain Pillar", "Cylinder", 0, 1.05, 0, 0.7, 1.6, 0.7, "", PLAZA_STONE);
+    var bowl = Mesh("Fountain Bowl", "Cylinder", 0, 1.9, 0, 2.2, 0.22, 2.2, "", PLAZA_STONE);
+    var bowlWater = Mesh("Fountain Bowl Water", "Cylinder", 0, 2.0, 0, 1.95, 0.04, 1.95, "", {r: 0.12, g: 0.28, b: 0.3, a: 1});
+    EntitySetComponentField(bowlWater, "MeshRenderer", "Roughness", 0.04);
+    var spray = Particles("Fountain Jet", null, {RateOverTime: 420, StartLifetime: {x: 0.9, y: 1.25}, StartSpeed: {x: 3.6, y: 4.4},
+        StartSize: {x: 0.1, y: 0.22}, StartColorA: {r: 0.92, g: 0.96, b: 1, a: 0.75}, StartColorB: {r: 0.78, g: 0.88, b: 0.96, a: 0.6},
+        Shape: "Cone", Radius: 0.06, GravityModifier: 1.0, Blend: "Alpha", Texture: PLAZA + "Textures/soft_glow.png", MaxParticles: 900,
+        ColorOverLifetimeEnabled: true, ColorOverLifetimeKeys: "0:1,1,1,1; 1:1,1,1,0.3", SizeOverLifetimeEnabled: true, SizeOverLifetimeKeys: "0:0.7; 1:1.4"});
+    EntitySetPosition(spray, 0, 2.1, 0);
+    EntitySetRotation(spray, -90, 0, 0);
+    var fall = Particles("Fountain Fall", null, {RateOverTime: 520, StartLifetime: {x: 0.32, y: 0.45}, StartSpeed: {x: 0.5, y: 0.9},
+        StartSize: {x: 0.08, y: 0.16}, StartColorA: {r: 0.9, g: 0.95, b: 1, a: 0.6}, StartColorB: {r: 0.75, g: 0.87, b: 0.96, a: 0.45},
+        Shape: "Circle", Radius: 1.05, GravityModifier: 1.0, Blend: "Alpha", Texture: PLAZA + "Textures/soft_glow.png", MaxParticles: 400});
+    EntitySetPosition(fall, 0, 1.95, 0);
+    EntitySetRotation(fall, -90, 0, 0);
+}
+
+// Çeşmeye dönük banklar; her bankta iki oturma yeri ("Seat" etiketli)
+func PlazaBenches()
+{
+    for (var bi = 0; bi < 8; bi++)
+    {
+        var ang = (bi + 0.5) * 45.0;
+        var r = MathDegToRad(ang);
+        var bx = MathSin(r) * 6.4;
+        var bz = MathCos(r) * 6.4;
+        var yaw = ang + 180.0;
+        var bench = CreateEntity("Bench " + (bi + 1));
+        EntityAddComponent(bench, "Model");
+        EntitySetComponentField(bench, "Model", "FilePath", PLAZA + "Props/painted_wooden_bench.glb");
+        Static(bench);   // çarpıştırıcı modele sığar (model önce)
+        EntitySetPosition(bench, bx, 0, bz);
+        EntitySetRotation(bench, 0, yaw, 0);
+        EntitySetScale(bench, 1.25, 1.0, 1.0);
+        var yr = MathDegToRad(yaw);
+        foreach (var sd in [{n: "A", s: -0.36}, {n: "B", s: 0.36}])
+        {
+            // Yerel (s, 0, 0.27) -> dünya: oturan kişi bankın önüne doğru bakar
+            var seat = CreateEntity("Seat " + (bi + 1) + " " + sd.n);
+            EntitySetPosition(seat, bx + MathCos(yr) * sd.s + MathSin(yr) * 0.27, 0, bz - MathSin(yr) * sd.s + MathCos(yr) * 0.27);
+            EntitySetRotation(seat, 0, yaw, 0);
+            EntitySetTag(seat, "Seat");
+        }
+    }
+}
+
+// Kafe masaları, çiçeklikler, çiçek kutuları
+func PlazaCafeAndPlanters()
+{
+    foreach (var cx in [2.0, 5.2, 8.4])
+    {
+        var cafe = CreateEntity("Cafe Table");
+        EntityAddComponent(cafe, "Model");
+        EntitySetComponentField(cafe, "Model", "FilePath", PLAZA + "Exterior/outdoor_table_chair_set_01.glb");
+        Static(cafe);
+        EntitySetPosition(cafe, cx, 0, -12.2);
+        EntitySetRotation(cafe, 0, cx * 23.0, 0);
+    }
+    foreach (var pc in [{x: -14, z: -9}, {x: 14, z: -9}, {x: -14, z: 9}, {x: 14, z: 9}])
+    {
+        var box = Static(Mesh("Planter", "Cube", pc.x, 0.3, pc.z, 2.2, 0.6, 2.2, "", PLAZA_STONE));
+        EntitySetComponentField(box, "MeshRenderer", "Roughness", 0.7);
+        var soil = Mesh("Planter Soil", "Cube", pc.x, 0.6, pc.z, 1.9, 0.04, 1.9, "", {r: 0.2, g: 0.15, b: 0.11, a: 1});
+        // Budanmış şimşir (çiçeklik içinde), hafif yuvarlatılmış: alt geniş gövde + üst daha dar katman
+        var hedge = Mesh("Planter Hedge", "Cube", pc.x, 1.02, pc.z, 1.85, 0.84, 1.85, PLAZA + "Textures/hedge_leaves.jpg", {r: 1, g: 1, b: 1, a: 1});
+        EntitySetComponentField(hedge, "MeshRenderer", "Roughness", 0.9);
+        var hedgeTop = Mesh("Planter Hedge Top", "Cube", pc.x, 1.5, pc.z, 1.55, 0.2, 1.55, PLAZA + "Textures/hedge_leaves.jpg", {r: 1, g: 1, b: 1, a: 1});
+        EntitySetComponentField(hedgeTop, "MeshRenderer", "Roughness", 0.9);
+    }
+    foreach (var pb in [{x: -6.5, z: -13.6}, {x: 6.5, z: 13.6}, {x: -18.6, z: 9.5}, {x: 18.6, z: -9.5}])
+    {
+        var pl = CreateEntity("Flower Box");
+        EntityAddComponent(pl, "Model");
+        EntitySetComponentField(pl, "Model", "FilePath", PLAZA + "Exterior/planter_box_02.glb");
+        Static(pl);
+        EntitySetPosition(pl, pb.x, 0, pb.z);
+        EntitySetRotation(pl, 0, MathAbs(pb.x) > 18 ? 90 : 0, 0);
+        // Kutuda budanmış şimşir
+        var along18 = MathAbs(pb.x) > 18;
+        var bh = Mesh("Flower Box Hedge", "Cube", pb.x, 0.56, pb.z, along18 ? 0.36 : 1.12, 0.26, along18 ? 1.12 : 0.36, PLAZA + "Textures/hedge_leaves.jpg", {r: 1, g: 1, b: 1, a: 1});
+        EntitySetComponentField(bh, "MeshRenderer", "Roughness", 0.9);
+    }
+}
+
+// Sokak uçları ("Exit" etiketli)
+func PlazaExits()
+{
+    foreach (var ex in [{x: 5, z: 31.5}, {x: -36.5, z: 0}, {x: 36.5, z: 0}])
+    {
+        var e = CreateEntity("Exit");
+        EntitySetPosition(e, ex.x, 0, ex.z);
+        EntitySetTag(e, "Exit");
+    }
+}
+
+// Meydanın tamamı (aydınlatma ayrı: şablon kendi ışığını kurar)
+func PlazaSet()
+{
+    PlazaGround();
+    PlazaBuildings();
+    PlazaShopfronts();
+    PlazaAwnings();
+    PlazaTreesAndLamps();
+    PlazaFountain();
+    PlazaBenches();
+    PlazaCafeAndPlanters();
+    PlazaExits();
+}

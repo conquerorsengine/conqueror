@@ -1,0 +1,5189 @@
+Scene: Untitled
+Entities:
+  - Entity: 8316163652240217307
+    TagComponent:
+      Tag: Directional Light
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 10, 0]
+      Rotation: [-0.7330383, -0.5235988, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    DirectionalLightComponent:
+      Direction: [0.3715724, -0.6691306, -0.6435824]
+      FromRotation: true
+      Color: [1, 0.96, 0.9]
+      Intensity: 3.2
+      CastShadows: true
+      Mode: 0
+  - Entity: 8997963123889722751
+    TagComponent:
+      Tag: Impacts
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/Impacts.cqs
+      ClassName: ""
+  - Entity: 7805701265399781196
+    TagComponent:
+      Tag: FX Sparks
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ParticleSystemComponent:
+      Duration: 5
+      Looping: false
+      Prewarm: false
+      PlayOnAwake: false
+      StopAction: 0
+      StartDelay: 0
+      StartLifetime: [0.1, 0.35]
+      StartSpeed: [3, 9]
+      StartSize: [0.015, 0.04]
+      StartRotation: [0, 0]
+      StartColorA: [1, 0.85, 0.5, 1]
+      StartColorB: [1, 0.6, 0.25, 1]
+      GravityModifier: 1.2
+      SimulationSpeed: 1
+      MaxParticles: 400
+      SimulationSpace: 1
+      EmissionEnabled: false
+      RateOverTime: 0
+      RateOverDistance: 0
+      ShapeEnabled: true
+      Radius: 0.02
+      Angle: 25
+      BoxSize: [1, 1, 1]
+      EmitFromShell: false
+      RandomizeDirection: 0
+      Shape: 0
+      VelocityEnabled: false
+      VelocityOverLifetime: [0, 0, 0]
+      OrbitalSpeed: 0
+      LimitVelocityEnabled: false
+      Drag: 0
+      SpeedLimit: 100
+      NoiseEnabled: false
+      NoiseStrength: 1
+      NoiseFrequency: 0.5
+      NoiseScrollSpeed: 0.5
+      ColorOverLifetimeEnabled: true
+      SizeOverLifetimeEnabled: false
+      RotationOverLifetimeEnabled: false
+      AngularVelocity: 45
+      CollisionEnabled: false
+      CollisionPlaneY: 0
+      Bounce: 0.5
+      LifetimeLoss: 0
+      TextureSheetEnabled: false
+      AnimationCycles: 1
+      RandomStartFrame: false
+      Tiles: [1, 1]
+      RenderMode: 0
+      Blend: 1
+      Texture: Assets/Weapons/Textures/soft_glow.png
+      LengthScale: 2
+      SpeedScale: 0.1
+      SortByDistance: true
+      EmissiveIntensity: 6
+      Bursts:
+        []
+      ColorOverLifetime:
+        - [0, 1, 1, 1, 1]
+        - [1, 1, 1, 1, 1]
+      SizeOverLifetime:
+        - [0, 1]
+        - [1, 1]
+  - Entity: 3606015417553911026
+    TagComponent:
+      Tag: FX Dust
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ParticleSystemComponent:
+      Duration: 5
+      Looping: false
+      Prewarm: false
+      PlayOnAwake: false
+      StopAction: 0
+      StartDelay: 0
+      StartLifetime: [0.4, 0.9]
+      StartSpeed: [0.4, 1.6]
+      StartSize: [0.08, 0.22]
+      StartRotation: [0, 0]
+      StartColorA: [0.75, 0.74, 0.72, 0.6]
+      StartColorB: [0.6, 0.6, 0.6, 0.4]
+      GravityModifier: -0.05
+      SimulationSpeed: 1
+      MaxParticles: 300
+      SimulationSpace: 1
+      EmissionEnabled: false
+      RateOverTime: 0
+      RateOverDistance: 0
+      ShapeEnabled: true
+      Radius: 0.05
+      Angle: 25
+      BoxSize: [1, 1, 1]
+      EmitFromShell: false
+      RandomizeDirection: 0
+      Shape: 0
+      VelocityEnabled: false
+      VelocityOverLifetime: [0, 0, 0]
+      OrbitalSpeed: 0
+      LimitVelocityEnabled: false
+      Drag: 3
+      SpeedLimit: 100
+      NoiseEnabled: false
+      NoiseStrength: 1
+      NoiseFrequency: 0.5
+      NoiseScrollSpeed: 0.5
+      ColorOverLifetimeEnabled: true
+      SizeOverLifetimeEnabled: true
+      RotationOverLifetimeEnabled: false
+      AngularVelocity: 45
+      CollisionEnabled: false
+      CollisionPlaneY: 0
+      Bounce: 0.5
+      LifetimeLoss: 0
+      TextureSheetEnabled: false
+      AnimationCycles: 1
+      RandomStartFrame: false
+      Tiles: [1, 1]
+      RenderMode: 0
+      Blend: 0
+      Texture: Assets/Weapons/Textures/soft_glow.png
+      LengthScale: 2
+      SpeedScale: 0.1
+      SortByDistance: true
+      EmissiveIntensity: 1
+      Bursts:
+        []
+      ColorOverLifetime:
+        - [0, 1, 1, 1, 1]
+        - [1, 1, 1, 1, 0]
+      SizeOverLifetime:
+        - [0, 0.6]
+        - [1, 2]
+  - Entity: 4282264129569165383
+    TagComponent:
+      Tag: FX Hit
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ParticleSystemComponent:
+      Duration: 5
+      Looping: false
+      Prewarm: false
+      PlayOnAwake: false
+      StopAction: 0
+      StartDelay: 0
+      StartLifetime: [0.2, 0.5]
+      StartSpeed: [1, 4]
+      StartSize: [0.03, 0.07]
+      StartRotation: [0, 0]
+      StartColorA: [0.9, 0.9, 0.95, 1]
+      StartColorB: [0.7, 0.75, 0.8, 1]
+      GravityModifier: 0.8
+      SimulationSpeed: 1
+      MaxParticles: 300
+      SimulationSpace: 1
+      EmissionEnabled: false
+      RateOverTime: 0
+      RateOverDistance: 0
+      ShapeEnabled: true
+      Radius: 0.05
+      Angle: 25
+      BoxSize: [1, 1, 1]
+      EmitFromShell: false
+      RandomizeDirection: 0
+      Shape: 0
+      VelocityEnabled: false
+      VelocityOverLifetime: [0, 0, 0]
+      OrbitalSpeed: 0
+      LimitVelocityEnabled: false
+      Drag: 0
+      SpeedLimit: 100
+      NoiseEnabled: false
+      NoiseStrength: 1
+      NoiseFrequency: 0.5
+      NoiseScrollSpeed: 0.5
+      ColorOverLifetimeEnabled: true
+      SizeOverLifetimeEnabled: false
+      RotationOverLifetimeEnabled: false
+      AngularVelocity: 45
+      CollisionEnabled: false
+      CollisionPlaneY: 0
+      Bounce: 0.5
+      LifetimeLoss: 0
+      TextureSheetEnabled: false
+      AnimationCycles: 1
+      RandomStartFrame: false
+      Tiles: [1, 1]
+      RenderMode: 0
+      Blend: 0
+      Texture: Assets/Weapons/Textures/soft_glow.png
+      LengthScale: 2
+      SpeedScale: 0.1
+      SortByDistance: true
+      EmissiveIntensity: 1
+      Bursts:
+        []
+      ColorOverLifetime:
+        - [0, 1, 1, 1, 1]
+        - [1, 1, 1, 1, 1]
+      SizeOverLifetime:
+        - [0, 1]
+        - [1, 1]
+  - Entity: 2736199670786793713
+    TagComponent:
+      Tag: FX Muzzle
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ParticleSystemComponent:
+      Duration: 5
+      Looping: false
+      Prewarm: false
+      PlayOnAwake: false
+      StopAction: 0
+      StartDelay: 0
+      StartLifetime: [0.3, 0.7]
+      StartSpeed: [0.2, 0.8]
+      StartSize: [0.05, 0.12]
+      StartRotation: [0, 0]
+      StartColorA: [0.85, 0.85, 0.85, 0.35]
+      StartColorB: [0.7, 0.7, 0.7, 0.2]
+      GravityModifier: -0.1
+      SimulationSpeed: 1
+      MaxParticles: 200
+      SimulationSpace: 1
+      EmissionEnabled: false
+      RateOverTime: 0
+      RateOverDistance: 0
+      ShapeEnabled: true
+      Radius: 0.02
+      Angle: 25
+      BoxSize: [1, 1, 1]
+      EmitFromShell: false
+      RandomizeDirection: 0
+      Shape: 0
+      VelocityEnabled: false
+      VelocityOverLifetime: [0, 0, 0]
+      OrbitalSpeed: 0
+      LimitVelocityEnabled: false
+      Drag: 2
+      SpeedLimit: 100
+      NoiseEnabled: false
+      NoiseStrength: 1
+      NoiseFrequency: 0.5
+      NoiseScrollSpeed: 0.5
+      ColorOverLifetimeEnabled: true
+      SizeOverLifetimeEnabled: true
+      RotationOverLifetimeEnabled: false
+      AngularVelocity: 45
+      CollisionEnabled: false
+      CollisionPlaneY: 0
+      Bounce: 0.5
+      LifetimeLoss: 0
+      TextureSheetEnabled: false
+      AnimationCycles: 1
+      RandomStartFrame: false
+      Tiles: [1, 1]
+      RenderMode: 0
+      Blend: 0
+      Texture: Assets/Weapons/Textures/soft_glow.png
+      LengthScale: 2
+      SpeedScale: 0.1
+      SortByDistance: true
+      EmissiveIntensity: 1
+      Bursts:
+        []
+      ColorOverLifetime:
+        - [0, 1, 1, 1, 1]
+        - [1, 1, 1, 1, 0]
+      SizeOverLifetime:
+        - [0, 0.5]
+        - [1, 2.5]
+  - Entity: 3914461860636642887
+    TagComponent:
+      Tag: FX Laser
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ParticleSystemComponent:
+      Duration: 5
+      Looping: false
+      Prewarm: false
+      PlayOnAwake: false
+      StopAction: 0
+      StartDelay: 0
+      StartLifetime: [0.15, 0.4]
+      StartSpeed: [1, 5]
+      StartSize: [0.03, 0.08]
+      StartRotation: [0, 0]
+      StartColorA: [0.3, 0.8, 1, 1]
+      StartColorB: [1, 1, 1, 1]
+      GravityModifier: 0
+      SimulationSpeed: 1
+      MaxParticles: 300
+      SimulationSpace: 1
+      EmissionEnabled: false
+      RateOverTime: 0
+      RateOverDistance: 0
+      ShapeEnabled: true
+      Radius: 0.03
+      Angle: 25
+      BoxSize: [1, 1, 1]
+      EmitFromShell: false
+      RandomizeDirection: 0
+      Shape: 0
+      VelocityEnabled: false
+      VelocityOverLifetime: [0, 0, 0]
+      OrbitalSpeed: 0
+      LimitVelocityEnabled: false
+      Drag: 0
+      SpeedLimit: 100
+      NoiseEnabled: false
+      NoiseStrength: 1
+      NoiseFrequency: 0.5
+      NoiseScrollSpeed: 0.5
+      ColorOverLifetimeEnabled: true
+      SizeOverLifetimeEnabled: false
+      RotationOverLifetimeEnabled: false
+      AngularVelocity: 45
+      CollisionEnabled: false
+      CollisionPlaneY: 0
+      Bounce: 0.5
+      LifetimeLoss: 0
+      TextureSheetEnabled: false
+      AnimationCycles: 1
+      RandomStartFrame: false
+      Tiles: [1, 1]
+      RenderMode: 0
+      Blend: 1
+      Texture: Assets/Weapons/Textures/soft_glow.png
+      LengthScale: 2
+      SpeedScale: 0.1
+      SortByDistance: true
+      EmissiveIntensity: 8
+      Bursts:
+        []
+      ColorOverLifetime:
+        - [0, 1, 1, 1, 1]
+        - [1, 1, 1, 1, 1]
+      SizeOverLifetime:
+        - [0, 1]
+        - [1, 1]
+  - Entity: 6989901372568896739
+    TagComponent:
+      Tag: Floor
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.5, 0]
+      Rotation: [0, 0, 0]
+      Scale: [32, 0.5, 32]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 5313323818326506305
+    TagComponent:
+      Tag: Wall North
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 2.5, -32.5]
+      Rotation: [0, 0, 0]
+      Scale: [33, 2.5, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGridDark.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 775674618100860214
+    TagComponent:
+      Tag: Wall South
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 2.5, 32.5]
+      Rotation: [0, 0, 0]
+      Scale: [33, 2.5, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGridDark.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 1942622348576792270
+    TagComponent:
+      Tag: Wall East
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [32.5, 2.5, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 2.5, 32]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGridDark.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 681022417014295862
+    TagComponent:
+      Tag: Wall West
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-32.5, 2.5, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 2.5, 32]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGridDark.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 931603931085054088
+    TagComponent:
+      Tag: Tower
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.5, 0]
+      Rotation: [0, 0, 0]
+      Scale: [4, 1.5, 4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 612294449775370047
+    TagComponent:
+      Tag: Tower Ramp N
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.20978, -6.9470487]
+      Rotation: [-0.4048918, 0, 0]
+      Scale: [1.5, 1.4037175, 3.8078866]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 7439794387127264771
+    TagComponent:
+      Tag: Tower Ramp S
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.543203e-07, 0.20978, 6.9470487]
+      Rotation: [-0.4048918, 3.1415927, 0]
+      Scale: [1.5, 1.4037175, 3.8078866]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6432393065788562966
+    TagComponent:
+      Tag: Tower Wall A
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.75, 3.55, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.25, 0.55, 4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGridOrange.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6235599576391062349
+    TagComponent:
+      Tag: Tower Wall B
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [3.75, 3.55, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.25, 0.55, 4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGridOrange.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 5294236094718822307
+    TagComponent:
+      Tag: Cover 0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-14, 0.6, -14]
+      Rotation: [0, 0, 0]
+      Scale: [3, 0.6, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2868244931963548577
+    TagComponent:
+      Tag: Cover 1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [14, 0.6, 14]
+      Rotation: [0, 0, 0]
+      Scale: [3, 0.6, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 4436757032898195413
+    TagComponent:
+      Tag: Cover 2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-14, 0.6, 14]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.6, 3]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6597727848873051996
+    TagComponent:
+      Tag: Cover 3
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [14, 0.6, -14]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.6, 3]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGridOrange.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 3159563922075454527
+    TagComponent:
+      Tag: Cover 4
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-22, 1.1, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 1.1, 4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 4368526792782139973
+    TagComponent:
+      Tag: Cover 5
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [22, 1.1, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 1.1, 4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 9187400408586534293
+    TagComponent:
+      Tag: Cover 6
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.1, -22]
+      Rotation: [0, 0, 0]
+      Scale: [4, 1.1, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 1156873199583621958
+    TagComponent:
+      Tag: Cover 7
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.1, 22]
+      Rotation: [0, 0, 0]
+      Scale: [4, 1.1, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGridOrange.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6606894374926023120
+    TagComponent:
+      Tag: Cover 8
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-8, 1, -24]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 34270933540120654
+    TagComponent:
+      Tag: Cover 9
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [8, 1, 24]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 7570713654017802678
+    TagComponent:
+      Tag: Cover 10
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-24, 1, -8]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 1213002869397723452
+    TagComponent:
+      Tag: Cover 11
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [24, 1, 8]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGridOrange.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2483260020244739402
+    TagComponent:
+      Tag: Cover 12
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-26, 1.5, -26]
+      Rotation: [0, 0, 0]
+      Scale: [1.5, 1.5, 1.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 476328785290950960
+    TagComponent:
+      Tag: Cover 13
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [26, 1.5, 26]
+      Rotation: [0, 0, 0]
+      Scale: [1.5, 1.5, 1.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 7753011065909986939
+    TagComponent:
+      Tag: Cover 14
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-26, 0.75, 26]
+      Rotation: [0, 0, 0]
+      Scale: [1.5, 0.75, 1.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 4233856236034753652
+    TagComponent:
+      Tag: Cover 15
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [26, 0.75, -26]
+      Rotation: [0, 0, 0]
+      Scale: [1.5, 0.75, 1.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGridOrange.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2946901850874570137
+    TagComponent:
+      Tag: Pillar NE
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [18, 2.5, -20]
+      Rotation: [0, 0, 0]
+      Scale: [1.2, 2.5, 1.2]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    CapsuleColliderComponent:
+      Offset: [0, 0, 0]
+      Radius: 1
+      Height: 2
+      Direction: 1
+      IsTrigger: false
+      Version: 2
+  - Entity: 6447313953154637796
+    TagComponent:
+      Tag: Pillar SW
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-18, 2.5, 20]
+      Rotation: [0, 0, 0]
+      Scale: [1.2, 2.5, 1.2]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    CapsuleColliderComponent:
+      Offset: [0, 0, 0]
+      Radius: 1
+      Height: 2
+      Direction: 1
+      IsTrigger: false
+      Version: 2
+  - Entity: 6694629832240444599
+    TagComponent:
+      Tag: Pillar NW
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-20, 2.5, -18]
+      Rotation: [0, 0, 0]
+      Scale: [1.2, 2.5, 1.2]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    CapsuleColliderComponent:
+      Offset: [0, 0, 0]
+      Radius: 1
+      Height: 2
+      Direction: 1
+      IsTrigger: false
+      Version: 2
+  - Entity: 2370922684504210728
+    TagComponent:
+      Tag: Pillar SE
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [20, 2.5, 18]
+      Rotation: [0, 0, 0]
+      Scale: [1.2, 2.5, 1.2]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    CapsuleColliderComponent:
+      Offset: [0, 0, 0]
+      Radius: 1
+      Height: 2
+      Direction: 1
+      IsTrigger: false
+      Version: 2
+  - Entity: 8054531659103223703
+    TagComponent:
+      Tag: Bot 1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-20, 0.9, -20]
+      Rotation: [0, 0.110000804, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    CharacterControllerComponent:
+      SlopeLimit: 46
+      StepOffset: 0.45
+      SkinWidth: 0.02
+      MinMoveDistance: 0
+      Center: [0, 0, 0]
+      Radius: 0.34
+      Height: 1.8
+      Mass: 70
+      PushRigidbodies: true
+    NavMeshModifierComponent:
+      IgnoreFromBuild: true
+      OverrideArea: true
+      Area: 1
+      ApplyToChildren: true
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/Health.cqs
+      ClassName: ""
+      Fields:
+        health:
+          Float: 100
+        maxHealth:
+          Float: 100
+        respawnDelay:
+          Float: 4
+        team:
+          String: ""
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/ShooterAI.cqs
+      ClassName: ""
+  - Entity: 4359500152537167108
+    TagComponent:
+      Tag: Mesh
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.9, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Mannequin/Scripts/MannequinAnimation.cqs
+      ClassName: ""
+    ModelComponent:
+      FilePath: Assets/Mannequin/Models/Mannequin_Male.glb
+    AnimationComponent:
+      ControllerPath: Assets/Mannequin/Animations/Mannequin.cqcont
+      Speed: 1
+      PlayOnAwake: true
+      Parameters:
+        - Name: Speed
+          Type: 0
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Grounded
+          Type: 1
+          FloatValue: 0
+          BoolValue: true
+          IntValue: 1
+        - Name: Crouch
+          Type: 1
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Jump
+          Type: 3
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Aim
+          Type: 0
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Dead
+          Type: 1
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+  - Entity: 5262848466671070428
+    TagComponent:
+      Tag: Weapon
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [20, 0, 20]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    BoneAttachmentComponent:
+      Bone: hand_r
+      PositionOffset: [0, 0.075, -0.02]
+      RotationOffset: [79.3, 0, 0]
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/Weapon.cqs
+      ClassName: ""
+      Fields:
+        aimFov:
+          Float: 62
+        aimSpread:
+          Float: 0.12
+        ammo:
+          Int: 12
+        damage:
+          Float: 12
+        fireMode:
+          String: Semi
+        fireRate:
+          Float: 7
+        hipSpread:
+          Float: 1
+        impulse:
+          Float: 6
+        magazine:
+          Int: 12
+        moveSpread:
+          Float: 1.2
+        recoilPitch:
+          Float: 1.7
+        recoilYaw:
+          Float: 0.5
+        reloadTime:
+          Float: 1.5
+        reserve:
+          Int: 9999
+        shotSound:
+          String: Assets/Weapons/Audio/pistol_shot.wav
+        weaponName:
+          String: Pistol
+  - Entity: 4677093971406407238
+    TagComponent:
+      Tag: Model
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.02, 0.03]
+      Rotation: [0, 1.5707964, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Weapons/Models/Pistol/service_pistol_1k.gltf
+  - Entity: 2357335323052796111
+    TagComponent:
+      Tag: Sight
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.062, 0.035]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 8268878626005804057
+    TagComponent:
+      Tag: Muzzle
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.02, -0.21]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    PointLightComponent:
+      Color: [1, 0.75, 0.4]
+      Intensity: 0
+      Range: 3.5
+      Constant: 1
+      Linear: 0.09
+      Quadratic: 0.032
+      CastShadows: false
+      Mode: 0
+  - Entity: 409092660980591034
+    TagComponent:
+      Tag: Muzzle Flash
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0, 0, -0.01]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 3763652021711339543
+    TagComponent:
+      Tag: Flash Front
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.012]
+      Rotation: [1.5707964, 0, 0]
+      Scale: [0.055, 0.5, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_flash.png
+  - Entity: 7101678106930103358
+    TagComponent:
+      Tag: Flash Side A
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.08]
+      Rotation: [0, 0, 0]
+      Scale: [0.025, 0.5, 0.08]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_side.png
+  - Entity: 5530770315839456681
+    TagComponent:
+      Tag: Flash Side B
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.08]
+      Rotation: [0, 0, 1.5707964]
+      Scale: [0.025, 0.5, 0.08]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_side.png
+  - Entity: 2351099438544529781
+    TagComponent:
+      Tag: Bot 2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [20, 0.9, -20]
+      Rotation: [0, 3.4959443, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    CharacterControllerComponent:
+      SlopeLimit: 46
+      StepOffset: 0.45
+      SkinWidth: 0.02
+      MinMoveDistance: 0
+      Center: [0, 0, 0]
+      Radius: 0.34
+      Height: 1.8
+      Mass: 70
+      PushRigidbodies: true
+    NavMeshModifierComponent:
+      IgnoreFromBuild: true
+      OverrideArea: true
+      Area: 1
+      ApplyToChildren: true
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/Health.cqs
+      ClassName: ""
+      Fields:
+        health:
+          Float: 100
+        maxHealth:
+          Float: 100
+        respawnDelay:
+          Float: 4
+        team:
+          String: ""
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/ShooterAI.cqs
+      ClassName: ""
+  - Entity: 3034386708983246387
+    TagComponent:
+      Tag: Mesh
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.9, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Mannequin/Scripts/MannequinAnimation.cqs
+      ClassName: ""
+    ModelComponent:
+      FilePath: Assets/Mannequin/Models/Mannequin_Female.glb
+    AnimationComponent:
+      ControllerPath: Assets/Mannequin/Animations/Mannequin.cqcont
+      Speed: 1
+      PlayOnAwake: true
+      Parameters:
+        - Name: Speed
+          Type: 0
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Grounded
+          Type: 1
+          FloatValue: 0
+          BoolValue: true
+          IntValue: 1
+        - Name: Crouch
+          Type: 1
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Jump
+          Type: 3
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Aim
+          Type: 0
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Dead
+          Type: 1
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+  - Entity: 5726273456513910225
+    TagComponent:
+      Tag: Weapon
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-20, 0, 20]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    BoneAttachmentComponent:
+      Bone: hand_r
+      PositionOffset: [0, 0.075, -0.02]
+      RotationOffset: [79.3, 0, 0]
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/Weapon.cqs
+      ClassName: ""
+      Fields:
+        aimFov:
+          Float: 62
+        aimSpread:
+          Float: 0.12
+        ammo:
+          Int: 12
+        damage:
+          Float: 12
+        fireMode:
+          String: Semi
+        fireRate:
+          Float: 7
+        hipSpread:
+          Float: 1
+        impulse:
+          Float: 6
+        magazine:
+          Int: 12
+        moveSpread:
+          Float: 1.2
+        recoilPitch:
+          Float: 1.7
+        recoilYaw:
+          Float: 0.5
+        reloadTime:
+          Float: 1.5
+        reserve:
+          Int: 9999
+        shotSound:
+          String: Assets/Weapons/Audio/pistol_shot.wav
+        weaponName:
+          String: Pistol
+  - Entity: 2675691627900086333
+    TagComponent:
+      Tag: Model
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.02, 0.03]
+      Rotation: [0, 1.5707964, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Weapons/Models/Pistol/service_pistol_1k.gltf
+  - Entity: 7008279464464403687
+    TagComponent:
+      Tag: Sight
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.062, 0.035]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 722038684287802339
+    TagComponent:
+      Tag: Muzzle
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.02, -0.21]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    PointLightComponent:
+      Color: [1, 0.75, 0.4]
+      Intensity: 0
+      Range: 3.5
+      Constant: 1
+      Linear: 0.09
+      Quadratic: 0.032
+      CastShadows: false
+      Mode: 0
+  - Entity: 5399070973366152136
+    TagComponent:
+      Tag: Muzzle Flash
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0, 0, -0.01]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 6317784629624403774
+    TagComponent:
+      Tag: Flash Front
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.012]
+      Rotation: [1.5707964, 0, 0]
+      Scale: [0.055, 0.5, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_flash.png
+  - Entity: 8968919606234519317
+    TagComponent:
+      Tag: Flash Side A
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.08]
+      Rotation: [0, 0, 0]
+      Scale: [0.025, 0.5, 0.08]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_side.png
+  - Entity: 2439775439461658287
+    TagComponent:
+      Tag: Flash Side B
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.08]
+      Rotation: [0, 0, 1.5707964]
+      Scale: [0.025, 0.5, 0.08]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_side.png
+  - Entity: 63791597945837884
+    TagComponent:
+      Tag: Bot 3
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-20, 0.9, 20]
+      Rotation: [0, 3.4585552, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    CharacterControllerComponent:
+      SlopeLimit: 46
+      StepOffset: 0.45
+      SkinWidth: 0.02
+      MinMoveDistance: 0
+      Center: [0, 0, 0]
+      Radius: 0.34
+      Height: 1.8
+      Mass: 70
+      PushRigidbodies: true
+    NavMeshModifierComponent:
+      IgnoreFromBuild: true
+      OverrideArea: true
+      Area: 1
+      ApplyToChildren: true
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/Health.cqs
+      ClassName: ""
+      Fields:
+        health:
+          Float: 100
+        maxHealth:
+          Float: 100
+        respawnDelay:
+          Float: 4
+        team:
+          String: ""
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/ShooterAI.cqs
+      ClassName: ""
+  - Entity: 6906898029448660104
+    TagComponent:
+      Tag: Mesh
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.9, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Mannequin/Scripts/MannequinAnimation.cqs
+      ClassName: ""
+    ModelComponent:
+      FilePath: Assets/Mannequin/Models/Mannequin_Male.glb
+    AnimationComponent:
+      ControllerPath: Assets/Mannequin/Animations/Mannequin.cqcont
+      Speed: 1
+      PlayOnAwake: true
+      Parameters:
+        - Name: Speed
+          Type: 0
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Grounded
+          Type: 1
+          FloatValue: 0
+          BoolValue: true
+          IntValue: 1
+        - Name: Crouch
+          Type: 1
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Jump
+          Type: 3
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Aim
+          Type: 0
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Dead
+          Type: 1
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+  - Entity: 960983043663084225
+    TagComponent:
+      Tag: Weapon
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [20, 0, -20]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    BoneAttachmentComponent:
+      Bone: hand_r
+      PositionOffset: [0, 0.075, -0.02]
+      RotationOffset: [79.3, 0, 0]
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/Weapon.cqs
+      ClassName: ""
+      Fields:
+        aimFov:
+          Float: 62
+        aimSpread:
+          Float: 0.12
+        ammo:
+          Int: 12
+        damage:
+          Float: 12
+        fireMode:
+          String: Semi
+        fireRate:
+          Float: 7
+        hipSpread:
+          Float: 1
+        impulse:
+          Float: 6
+        magazine:
+          Int: 12
+        moveSpread:
+          Float: 1.2
+        recoilPitch:
+          Float: 1.7
+        recoilYaw:
+          Float: 0.5
+        reloadTime:
+          Float: 1.5
+        reserve:
+          Int: 9999
+        shotSound:
+          String: Assets/Weapons/Audio/pistol_shot.wav
+        weaponName:
+          String: Pistol
+  - Entity: 1573727732897379233
+    TagComponent:
+      Tag: Model
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.02, 0.03]
+      Rotation: [0, 1.5707964, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Weapons/Models/Pistol/service_pistol_1k.gltf
+  - Entity: 2848810092784368742
+    TagComponent:
+      Tag: Sight
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.062, 0.035]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 7417393477506105479
+    TagComponent:
+      Tag: Muzzle
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.02, -0.21]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    PointLightComponent:
+      Color: [1, 0.75, 0.4]
+      Intensity: 0
+      Range: 3.5
+      Constant: 1
+      Linear: 0.09
+      Quadratic: 0.032
+      CastShadows: false
+      Mode: 0
+  - Entity: 5726418537261553829
+    TagComponent:
+      Tag: Muzzle Flash
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0, 0, -0.01]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5123910714835334754
+    TagComponent:
+      Tag: Flash Front
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.012]
+      Rotation: [1.5707964, 0, 0]
+      Scale: [0.055, 0.5, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_flash.png
+  - Entity: 4414860620612400653
+    TagComponent:
+      Tag: Flash Side A
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.08]
+      Rotation: [0, 0, 0]
+      Scale: [0.025, 0.5, 0.08]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_side.png
+  - Entity: 5923134327620581671
+    TagComponent:
+      Tag: Flash Side B
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.08]
+      Rotation: [0, 0, 1.5707964]
+      Scale: [0.025, 0.5, 0.08]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_side.png
+  - Entity: 820277020695452453
+    TagComponent:
+      Tag: Bot 4
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [20, 0.9, 12]
+      Rotation: [0, 2.2247086, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    CharacterControllerComponent:
+      SlopeLimit: 46
+      StepOffset: 0.45
+      SkinWidth: 0.02
+      MinMoveDistance: 0
+      Center: [0, 0, 0]
+      Radius: 0.34
+      Height: 1.8
+      Mass: 70
+      PushRigidbodies: true
+    NavMeshModifierComponent:
+      IgnoreFromBuild: true
+      OverrideArea: true
+      Area: 1
+      ApplyToChildren: true
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/Health.cqs
+      ClassName: ""
+      Fields:
+        health:
+          Float: 100
+        maxHealth:
+          Float: 100
+        respawnDelay:
+          Float: 4
+        team:
+          String: ""
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/ShooterAI.cqs
+      ClassName: ""
+  - Entity: 642950877070604461
+    TagComponent:
+      Tag: Mesh
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.9, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Mannequin/Scripts/MannequinAnimation.cqs
+      ClassName: ""
+    ModelComponent:
+      FilePath: Assets/Mannequin/Models/Mannequin_Female.glb
+    AnimationComponent:
+      ControllerPath: Assets/Mannequin/Animations/Mannequin.cqcont
+      Speed: 1
+      PlayOnAwake: true
+      Parameters:
+        - Name: Speed
+          Type: 0
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Grounded
+          Type: 1
+          FloatValue: 0
+          BoolValue: true
+          IntValue: 1
+        - Name: Crouch
+          Type: 1
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Jump
+          Type: 3
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Aim
+          Type: 0
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Dead
+          Type: 1
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+  - Entity: 1000640706205154941
+    TagComponent:
+      Tag: Weapon
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-20, 0, -12]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    BoneAttachmentComponent:
+      Bone: hand_r
+      PositionOffset: [0, 0.075, -0.02]
+      RotationOffset: [79.3, 0, 0]
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/Weapon.cqs
+      ClassName: ""
+      Fields:
+        aimFov:
+          Float: 62
+        aimSpread:
+          Float: 0.12
+        ammo:
+          Int: 12
+        damage:
+          Float: 12
+        fireMode:
+          String: Semi
+        fireRate:
+          Float: 7
+        hipSpread:
+          Float: 1
+        impulse:
+          Float: 6
+        magazine:
+          Int: 12
+        moveSpread:
+          Float: 1.2
+        recoilPitch:
+          Float: 1.7
+        recoilYaw:
+          Float: 0.5
+        reloadTime:
+          Float: 1.5
+        reserve:
+          Int: 9999
+        shotSound:
+          String: Assets/Weapons/Audio/pistol_shot.wav
+        weaponName:
+          String: Pistol
+  - Entity: 1254682304738244548
+    TagComponent:
+      Tag: Model
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.02, 0.03]
+      Rotation: [0, 1.5707964, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Weapons/Models/Pistol/service_pistol_1k.gltf
+  - Entity: 2187325296552764400
+    TagComponent:
+      Tag: Sight
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.062, 0.035]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 1039669332796806817
+    TagComponent:
+      Tag: Muzzle
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.02, -0.21]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    PointLightComponent:
+      Color: [1, 0.75, 0.4]
+      Intensity: 0
+      Range: 3.5
+      Constant: 1
+      Linear: 0.09
+      Quadratic: 0.032
+      CastShadows: false
+      Mode: 0
+  - Entity: 9150620370502724543
+    TagComponent:
+      Tag: Muzzle Flash
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0, 0, -0.01]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5542225509188940618
+    TagComponent:
+      Tag: Flash Front
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.012]
+      Rotation: [1.5707964, 0, 0]
+      Scale: [0.055, 0.5, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_flash.png
+  - Entity: 5276656101949000773
+    TagComponent:
+      Tag: Flash Side A
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.08]
+      Rotation: [0, 0, 0]
+      Scale: [0.025, 0.5, 0.08]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_side.png
+  - Entity: 1374896087433948703
+    TagComponent:
+      Tag: Flash Side B
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.08]
+      Rotation: [0, 0, 1.5707964]
+      Scale: [0.025, 0.5, 0.08]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_side.png
+  - Entity: 6518267746719958412
+    TagComponent:
+      Tag: Bot 5
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.9, -26]
+      Rotation: [0, 4.019004, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    CharacterControllerComponent:
+      SlopeLimit: 46
+      StepOffset: 0.45
+      SkinWidth: 0.02
+      MinMoveDistance: 0
+      Center: [0, 0, 0]
+      Radius: 0.34
+      Height: 1.8
+      Mass: 70
+      PushRigidbodies: true
+    NavMeshModifierComponent:
+      IgnoreFromBuild: true
+      OverrideArea: true
+      Area: 1
+      ApplyToChildren: true
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/Health.cqs
+      ClassName: ""
+      Fields:
+        health:
+          Float: 100
+        maxHealth:
+          Float: 100
+        respawnDelay:
+          Float: 4
+        team:
+          String: ""
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/ShooterAI.cqs
+      ClassName: ""
+  - Entity: 1157714271129413784
+    TagComponent:
+      Tag: Mesh
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.9, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Mannequin/Scripts/MannequinAnimation.cqs
+      ClassName: ""
+    ModelComponent:
+      FilePath: Assets/Mannequin/Models/Mannequin_Male.glb
+    AnimationComponent:
+      ControllerPath: Assets/Mannequin/Animations/Mannequin.cqcont
+      Speed: 1
+      PlayOnAwake: true
+      Parameters:
+        - Name: Speed
+          Type: 0
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Grounded
+          Type: 1
+          FloatValue: 0
+          BoolValue: true
+          IntValue: 1
+        - Name: Crouch
+          Type: 1
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Jump
+          Type: 3
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Aim
+          Type: 0
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Dead
+          Type: 1
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+  - Entity: 2588554771563583784
+    TagComponent:
+      Tag: Weapon
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 26]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    BoneAttachmentComponent:
+      Bone: hand_r
+      PositionOffset: [0, 0.075, -0.02]
+      RotationOffset: [79.3, 0, 0]
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/Weapon.cqs
+      ClassName: ""
+      Fields:
+        aimFov:
+          Float: 62
+        aimSpread:
+          Float: 0.12
+        ammo:
+          Int: 12
+        damage:
+          Float: 12
+        fireMode:
+          String: Semi
+        fireRate:
+          Float: 7
+        hipSpread:
+          Float: 1
+        impulse:
+          Float: 6
+        magazine:
+          Int: 12
+        moveSpread:
+          Float: 1.2
+        recoilPitch:
+          Float: 1.7
+        recoilYaw:
+          Float: 0.5
+        reloadTime:
+          Float: 1.5
+        reserve:
+          Int: 9999
+        shotSound:
+          String: Assets/Weapons/Audio/pistol_shot.wav
+        weaponName:
+          String: Pistol
+  - Entity: 5873035430847131110
+    TagComponent:
+      Tag: Model
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.02, 0.03]
+      Rotation: [0, 1.5707964, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Weapons/Models/Pistol/service_pistol_1k.gltf
+  - Entity: 2181529771703355203
+    TagComponent:
+      Tag: Sight
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.062, 0.035]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 7429951688364377110
+    TagComponent:
+      Tag: Muzzle
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.02, -0.21]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    PointLightComponent:
+      Color: [1, 0.75, 0.4]
+      Intensity: 0
+      Range: 3.5
+      Constant: 1
+      Linear: 0.09
+      Quadratic: 0.032
+      CastShadows: false
+      Mode: 0
+  - Entity: 7568763897334483094
+    TagComponent:
+      Tag: Muzzle Flash
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0, 0, -0.01]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 7445671788564475172
+    TagComponent:
+      Tag: Flash Front
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.012]
+      Rotation: [1.5707964, 0, 0]
+      Scale: [0.055, 0.5, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_flash.png
+  - Entity: 8614944139198929367
+    TagComponent:
+      Tag: Flash Side A
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.08]
+      Rotation: [0, 0, 0]
+      Scale: [0.025, 0.5, 0.08]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_side.png
+  - Entity: 1759757071061869325
+    TagComponent:
+      Tag: Flash Side B
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.08]
+      Rotation: [0, 0, 1.5707964]
+      Scale: [0.025, 0.5, 0.08]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_side.png
+  - Entity: 6117892771934401234
+    TagComponent:
+      Tag: Bot 6
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-26, 0.9, 4]
+      Rotation: [0, 2.5629706, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    CharacterControllerComponent:
+      SlopeLimit: 46
+      StepOffset: 0.45
+      SkinWidth: 0.02
+      MinMoveDistance: 0
+      Center: [0, 0, 0]
+      Radius: 0.34
+      Height: 1.8
+      Mass: 70
+      PushRigidbodies: true
+    NavMeshModifierComponent:
+      IgnoreFromBuild: true
+      OverrideArea: true
+      Area: 1
+      ApplyToChildren: true
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/Health.cqs
+      ClassName: ""
+      Fields:
+        health:
+          Float: 100
+        maxHealth:
+          Float: 100
+        respawnDelay:
+          Float: 4
+        team:
+          String: ""
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/ShooterAI.cqs
+      ClassName: ""
+  - Entity: 865475714829259560
+    TagComponent:
+      Tag: Mesh
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.9, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Mannequin/Scripts/MannequinAnimation.cqs
+      ClassName: ""
+    ModelComponent:
+      FilePath: Assets/Mannequin/Models/Mannequin_Female.glb
+    AnimationComponent:
+      ControllerPath: Assets/Mannequin/Animations/Mannequin.cqcont
+      Speed: 1
+      PlayOnAwake: true
+      Parameters:
+        - Name: Speed
+          Type: 0
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Grounded
+          Type: 1
+          FloatValue: 0
+          BoolValue: true
+          IntValue: 1
+        - Name: Crouch
+          Type: 1
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Jump
+          Type: 3
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Aim
+          Type: 0
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Dead
+          Type: 1
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+  - Entity: 7799593829687011792
+    TagComponent:
+      Tag: Weapon
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [26, 0, -4]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    BoneAttachmentComponent:
+      Bone: hand_r
+      PositionOffset: [0, 0.075, -0.02]
+      RotationOffset: [79.3, 0, 0]
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/Weapon.cqs
+      ClassName: ""
+      Fields:
+        aimFov:
+          Float: 62
+        aimSpread:
+          Float: 0.12
+        ammo:
+          Int: 12
+        damage:
+          Float: 12
+        fireMode:
+          String: Semi
+        fireRate:
+          Float: 7
+        hipSpread:
+          Float: 1
+        impulse:
+          Float: 6
+        magazine:
+          Int: 12
+        moveSpread:
+          Float: 1.2
+        recoilPitch:
+          Float: 1.7
+        recoilYaw:
+          Float: 0.5
+        reloadTime:
+          Float: 1.5
+        reserve:
+          Int: 9999
+        shotSound:
+          String: Assets/Weapons/Audio/pistol_shot.wav
+        weaponName:
+          String: Pistol
+  - Entity: 3825071110610648485
+    TagComponent:
+      Tag: Model
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.02, 0.03]
+      Rotation: [0, 1.5707964, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Weapons/Models/Pistol/service_pistol_1k.gltf
+  - Entity: 5965427505569618044
+    TagComponent:
+      Tag: Sight
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.062, 0.035]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5701548452416953054
+    TagComponent:
+      Tag: Muzzle
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.02, -0.21]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    PointLightComponent:
+      Color: [1, 0.75, 0.4]
+      Intensity: 0
+      Range: 3.5
+      Constant: 1
+      Linear: 0.09
+      Quadratic: 0.032
+      CastShadows: false
+      Mode: 0
+  - Entity: 6562364242951142331
+    TagComponent:
+      Tag: Muzzle Flash
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0, 0, -0.01]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 4472236172210107265
+    TagComponent:
+      Tag: Flash Front
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.012]
+      Rotation: [1.5707964, 0, 0]
+      Scale: [0.055, 0.5, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_flash.png
+  - Entity: 5852858576203830162
+    TagComponent:
+      Tag: Flash Side A
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.08]
+      Rotation: [0, 0, 0]
+      Scale: [0.025, 0.5, 0.08]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_side.png
+  - Entity: 5141844874237487954
+    TagComponent:
+      Tag: Flash Side B
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.08]
+      Rotation: [0, 0, 1.5707964]
+      Scale: [0.025, 0.5, 0.08]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_side.png
+  - Entity: 2047760944139359812
+    TagComponent:
+      Tag: Player
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.9, 27]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    CharacterControllerComponent:
+      SlopeLimit: 45
+      StepOffset: 0.45
+      SkinWidth: 0.02
+      MinMoveDistance: 0
+      Center: [0, 0, 0]
+      Radius: 0.34
+      Height: 1.8
+      Mass: 70
+      PushRigidbodies: true
+    NavMeshModifierComponent:
+      IgnoreFromBuild: true
+      OverrideArea: true
+      Area: 1
+      ApplyToChildren: true
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/Health.cqs
+      ClassName: ""
+      Fields:
+        health:
+          Int: 100
+        maxHealth:
+          Int: 100
+        regenDelay:
+          Float: 4
+        regenRate:
+          Float: 15
+        respawnDelay:
+          Int: 3
+        spawnProtection:
+          Float: 3
+        team:
+          String: ""
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/FirstPersonShooter.cqs
+      ClassName: ""
+  - Entity: 8233768551355518850
+    TagComponent:
+      Tag: Camera
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.72, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera:
+        ProjectionType: 0
+        PerspectiveFOV: 1.3962634
+        PerspectiveNear: 0.03
+        PerspectiveFar: 1000
+        OrthographicSize: 10
+        OrthographicNear: -1000
+        OrthographicFar: 1000
+      Primary: true
+      FixedAspectRatio: false
+      Background: 0
+      BackgroundColor: [0.192, 0.302, 0.475, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    AudioListenerComponent:
+      IsActive: true
+  - Entity: 8585247754546629744
+    TagComponent:
+      Tag: ViewModel
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.05, -0.03, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 7331208563791158993
+    TagComponent:
+      Tag: Arms
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -1.62, 0.04]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Mannequin/Models/Arms_Male.glb
+    AnimationComponent:
+      ControllerPath: Assets/Mannequin/Animations/FPArms.cqcont
+      Speed: 1
+      PlayOnAwake: true
+      Parameters:
+        []
+  - Entity: 7728798990064900058
+    TagComponent:
+      Tag: Pistol
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.145, -0.175, -0.4]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/Weapon.cqs
+      ClassName: ""
+      Fields:
+        aimFov:
+          Float: 62
+        aimSpread:
+          Float: 0.12
+        ammo:
+          Int: 12
+        damage:
+          Float: 26
+        fireMode:
+          String: Semi
+        fireRate:
+          Float: 7
+        hipSpread:
+          Float: 1
+        impulse:
+          Float: 6
+        magazine:
+          Int: 12
+        moveSpread:
+          Float: 1.2
+        recoilPitch:
+          Float: 1.7
+        recoilYaw:
+          Float: 0.5
+        reloadTime:
+          Float: 1.5
+        reserve:
+          Int: 84
+        shotSound:
+          String: Assets/Weapons/Audio/pistol_shot.wav
+        weaponName:
+          String: Pistol
+  - Entity: 5602445044607327526
+    TagComponent:
+      Tag: Model
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.02, 0.03]
+      Rotation: [0, 1.5707964, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Weapons/Models/Pistol/service_pistol_1k.gltf
+  - Entity: 873505838312498913
+    TagComponent:
+      Tag: Sight
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.062, 0.035]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 7578050987005248442
+    TagComponent:
+      Tag: Muzzle
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.02, -0.21]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    PointLightComponent:
+      Color: [1, 0.75, 0.4]
+      Intensity: 0
+      Range: 3.5
+      Constant: 1
+      Linear: 0.09
+      Quadratic: 0.032
+      CastShadows: false
+      Mode: 0
+  - Entity: 5461228732341129190
+    TagComponent:
+      Tag: Muzzle Flash
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0, 0, -0.01]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5220091817930966124
+    TagComponent:
+      Tag: Flash Front
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.012]
+      Rotation: [1.5707964, 0, 0]
+      Scale: [0.055, 0.5, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_flash.png
+  - Entity: 4705801593107124802
+    TagComponent:
+      Tag: Flash Side A
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.08]
+      Rotation: [0, 0, 0]
+      Scale: [0.025, 0.5, 0.08]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_side.png
+  - Entity: 3672379955932936469
+    TagComponent:
+      Tag: Flash Side B
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.08]
+      Rotation: [0, 0, 1.5707964]
+      Scale: [0.025, 0.5, 0.08]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_side.png
+  - Entity: 1269360811099832555
+    TagComponent:
+      Tag: IK R
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.0495, -0.0388, 0.0925]
+      Rotation: [-1.3852679, 0.030019663, -0.0418879]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 307214933403678648
+    TagComponent:
+      Tag: IK L
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.0662, -0.0987, 0.0995]
+      Rotation: [-1.7257816, -0.2947861, 0.82466805]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 6466500340647318510
+    TagComponent:
+      Tag: Rifle
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0.145, -0.12, -0.22]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/Weapon.cqs
+      ClassName: ""
+      Fields:
+        aimFov:
+          Float: 22
+        aimSpread:
+          Float: 0.02
+        ammo:
+          Int: 5
+        boltTime:
+          Float: 0
+        damage:
+          Float: 95
+        eyeRelief:
+          Float: 0.12
+        fireMode:
+          String: Bolt
+        fireRate:
+          Float: 1.4
+        headshotMultiplier:
+          Float: 2.5
+        hipSpread:
+          Float: 3
+        impulse:
+          Float: 18
+        magazine:
+          Int: 5
+        moveSpread:
+          Float: 3
+        range:
+          Float: 400
+        recoilPitch:
+          Float: 5.5
+        recoilYaw:
+          Float: 1.2
+        reloadTime:
+          Float: 2.6
+        reserve:
+          Int: 30
+        scoped:
+          Bool: true
+        shotSound:
+          String: Assets/Weapons/Audio/rifle_shot.wav
+        shotVolume:
+          Float: 1
+        weaponName:
+          String: Marksman Rifle
+  - Entity: 4268248118585704089
+    TagComponent:
+      Tag: Model
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.05, -0.33]
+      Rotation: [0, 1.5707964, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Weapons/Models/Rifle/bolt_action_rifle_7_62_1k.gltf
+  - Entity: 4968395628244715229
+    TagComponent:
+      Tag: Sight
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.008, 0.0205, -0.12]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 2646469560936915015
+    TagComponent:
+      Tag: Muzzle
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.02, -0.95]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    PointLightComponent:
+      Color: [1, 0.75, 0.4]
+      Intensity: 0
+      Range: 3.5
+      Constant: 1
+      Linear: 0.09
+      Quadratic: 0.032
+      CastShadows: false
+      Mode: 0
+  - Entity: 6934661567273763855
+    TagComponent:
+      Tag: Muzzle Flash
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0, 0, -0.01]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 3741992247086747378
+    TagComponent:
+      Tag: Flash Front
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.0186]
+      Rotation: [1.5707964, 0, 0]
+      Scale: [0.08525, 0.5, 0.08525]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_flash.png
+  - Entity: 3422056304580227691
+    TagComponent:
+      Tag: Flash Side A
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.124]
+      Rotation: [0, 0, 0]
+      Scale: [0.03875, 0.5, 0.124]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_side.png
+  - Entity: 3802340570021099183
+    TagComponent:
+      Tag: Flash Side B
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -0.124]
+      Rotation: [0, 0, 1.5707964]
+      Scale: [0.03875, 0.5, 0.124]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [1, 1, 1, 0.99]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.68, 0.32]
+      EmissionStrength: 10
+      EmissionFromTexture: true
+      CastShadows: false
+      TexturePath: Assets/Weapons/Textures/muzzle_side.png
+  - Entity: 8233707105872885525
+    TagComponent:
+      Tag: IK R
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.0495, -0.0938, 0.0525]
+      Rotation: [-1.3852679, 0.030019663, -0.0418879]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5662793395882987374
+    TagComponent:
+      Tag: IK L
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.0174, -0.1014, -0.1315]
+      Rotation: [-1.5793484, -0.17819811, 1.0311406]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 2689674899816116976
+    TagComponent:
+      Tag: Elbow Hint R
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.42, -0.55, 0.05]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 4883620820851070867
+    TagComponent:
+      Tag: IK Arm R
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.050002366, 0.029999971, 27.04]
+      Rotation: [3.1415927, 8.742278e-08, 3.1415927]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    TwoBoneIKConstraintComponent:
+      Weight: 1
+      Root: upperarm_r
+      Mid: lowerarm_r
+      Tip: hand_r
+      Target: 0
+      Hint: 2689674899816116976
+      TargetPositionWeight: 1
+      TargetRotationWeight: 1
+  - Entity: 6301754434043032840
+    TagComponent:
+      Tag: Elbow Hint L
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.32, -0.55, 0.05]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 3179221303253929487
+    TagComponent:
+      Tag: IK Arm L
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.050002366, 0.029999971, 27.04]
+      Rotation: [3.1415927, 8.742278e-08, 3.1415927]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    TwoBoneIKConstraintComponent:
+      Weight: 1
+      Root: upperarm_l
+      Mid: lowerarm_l
+      Tip: hand_l
+      Target: 0
+      Hint: 6301754434043032840
+      TargetPositionWeight: 1
+      TargetRotationWeight: 1
+  - Entity: 5665592877383384317
+    TagComponent:
+      Tag: NavMesh Surface
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    NavMeshSurfaceComponent:
+      CollectObjects: 0
+      AreaType: 0
+      AgentRadius: 0.4
+      AgentHeight: 1.8
+      MaxSlope: 45
+      StepHeight: 0.45
+      OverrideVoxelSize: false
+      VoxelSize: 0.166
+      BakeOnPlay: true
+  - Entity: 3786961433608534306
+    TagComponent:
+      Tag: Game
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Weapons/Scripts/ShooterGame.cqs
+      ClassName: ""
+      Fields:
+        mode:
+          String: Arena
+        scoreLimit:
+          Int: 15
+        timeLimit:
+          Int: 600
+  - Entity: 6130694245951481281
+    TagComponent:
+      Tag: HUD
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    CanvasComponent:
+      RenderMode: 0
+      PixelPerfect: false
+      SortOrder: 0
+    CanvasScalerComponent:
+      ScaleMode: 1
+      ScaleFactor: 1
+      ReferencePixelsPerUnit: 100
+      ReferenceResolution: [1920, 1080]
+      MatchWidthOrHeight: 0.5
+    GraphicRaycasterComponent:
+      IgnoreReversedGraphics: true
+      BlockingObjects: 0
+      BlockingMask: 4294967295
+  - Entity: 5002159607959175977
+    TagComponent:
+      Tag: DamageVignette
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    UICanvasGroupComponent:
+      Alpha: 0
+      Interactable: true
+      BlocksRaycasts: true
+      IgnoreParentGroups: false
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [0, 0]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 1, 1, 1]
+      TexturePath: Assets/Weapons/Textures/damage_vignette.png
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 5054473048084538731
+    TagComponent:
+      Tag: Crosshair
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [10, 10]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0, 0, 0, 0]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 14
+  - Entity: 7855177336731859222
+    TagComponent:
+      Tag: CrossDot
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [8, 8]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 1, 1, 1]
+      TexturePath: Assets/Weapons/Textures/crosshair_dot.png
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 5438784797699605596
+    TagComponent:
+      Tag: CrossTop
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 19]
+      SizeDelta: [8, 16]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 1, 1, 1]
+      TexturePath: Assets/Weapons/Textures/crosshair_line.png
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 6684662614145346019
+    TagComponent:
+      Tag: CrossBottom
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -19]
+      SizeDelta: [8, 16]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 1, 1, 1]
+      TexturePath: Assets/Weapons/Textures/crosshair_line.png
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 4158019950726772689
+    TagComponent:
+      Tag: CrossLeft
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-19, 0]
+      SizeDelta: [8, 16]
+      Rotation: 90
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 1, 1, 1]
+      TexturePath: Assets/Weapons/Textures/crosshair_line.png
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 5706419920552541416
+    TagComponent:
+      Tag: CrossRight
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [19, 0]
+      SizeDelta: [8, 16]
+      Rotation: 90
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 1, 1, 1]
+      TexturePath: Assets/Weapons/Textures/crosshair_line.png
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 1647736960838027901
+    TagComponent:
+      Tag: ScopeOverlay
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    UICanvasGroupComponent:
+      Alpha: 0
+      Interactable: true
+      BlocksRaycasts: true
+      IgnoreParentGroups: false
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [1080, 1080]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 1, 1, 1]
+      TexturePath: Assets/Weapons/Textures/scope_overlay.png
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 5851100662404661077
+    TagComponent:
+      Tag: ScopeLeft
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    UICanvasGroupComponent:
+      Alpha: 0
+      Interactable: true
+      BlocksRaycasts: true
+      IgnoreParentGroups: false
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-1540, 0]
+      SizeDelta: [2000, 1200]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0, 0, 0, 1]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 5598553032673964000
+    TagComponent:
+      Tag: ScopeRight
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    UICanvasGroupComponent:
+      Alpha: 0
+      Interactable: true
+      BlocksRaycasts: true
+      IgnoreParentGroups: false
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [1540, 0]
+      SizeDelta: [2000, 1200]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0, 0, 0, 1]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 8912589496649301343
+    TagComponent:
+      Tag: Hitmarker
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    UICanvasGroupComponent:
+      Alpha: 0
+      Interactable: true
+      BlocksRaycasts: true
+      IgnoreParentGroups: false
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [44, 44]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 1, 1, 1]
+      TexturePath: Assets/Weapons/Textures/hitmarker.png
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 3661991148283005241
+    TagComponent:
+      Tag: HealthBack
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [0, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [230, 70]
+      SizeDelta: [340, 18]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0, 0, 0, 0.45]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 7285745198292019741
+    TagComponent:
+      Tag: HealthFill
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [0, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [230, 70]
+      SizeDelta: [340, 18]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.95, 0.95, 0.95, 0.95]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 3
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 8143709085815828911
+    TagComponent:
+      Tag: HealthText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [0, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [110, 118]
+      SizeDelta: [160, 60]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: 100
+      FontPath: ""
+      FontSize: 46
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 0
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 69048665370348103
+    TagComponent:
+      Tag: HealthLabel
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [0, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [268, 114]
+      SizeDelta: [200, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: HEALTH
+      FontPath: ""
+      FontSize: 24
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 0
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 7086178780218996171
+    TagComponent:
+      Tag: AmmoText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [1, 0]
+      AnchorMax: [1, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-250, 100]
+      SizeDelta: [200, 90]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: 12
+      FontPath: ""
+      FontSize: 72
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 2
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 8720368567045345114
+    TagComponent:
+      Tag: ReserveText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [1, 0]
+      AnchorMax: [1, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-90, 92]
+      SizeDelta: [120, 60]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: / 72
+      FontPath: ""
+      FontSize: 32
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 0
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 1684955245450665883
+    TagComponent:
+      Tag: WeaponText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [1, 0]
+      AnchorMax: [1, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-230, 44]
+      SizeDelta: [400, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: PISTOL
+      FontPath: ""
+      FontSize: 22
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 2
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 3009196252728981054
+    TagComponent:
+      Tag: CenterText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 160]
+      SizeDelta: [1400, 80]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: ""
+      FontSize: 48
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 6941824761882981559
+    TagComponent:
+      Tag: ScoreText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 1]
+      AnchorMax: [0.5, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -50]
+      SizeDelta: [1200, 50]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: ""
+      FontSize: 30
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 8552612215764153731
+    TagComponent:
+      Tag: InfoText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 1]
+      AnchorMax: [0.5, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -95]
+      SizeDelta: [1200, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: ""
+      FontSize: 22
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 9040197511064733944
+    TagComponent:
+      Tag: HintText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 26]
+      SizeDelta: [1800, 30]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: WASD MOVE   SHIFT SPRINT   SPACE JUMP   C CROUCH   LMB FIRE   RMB AIM   R RELOAD   1 / 2 WEAPONS
+      FontPath: ""
+      FontSize: 22
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+Environment:
+  SkyboxExposure: 1
+  SkyboxRotation: 0
+  SkyboxTint: [1, 1, 1]
+  EnvironmentLightingSource: 0
+  AmbientColor: [0.3, 0.3, 0.3]
+  AmbientSkyColor: [0.5, 0.6, 0.7]
+  AmbientEquatorColor: [0.3, 0.3, 0.3]
+  AmbientGroundColor: [0.2, 0.15, 0.1]
+  AmbientIntensity: 1
+  FogEnabled: true
+  FogColor: [0.62, 0.72, 0.85]
+  FogDensity: 0.0025
+  FogStart: 10
+  FogEnd: 100
+  SunSource: 0
+  HaloEnabled: false
+  HaloStrength: 0.5
+  FlareEnabled: false
+  FlareFadeSpeed: 3
+  FlareStrength: 1
+  FlareElements:
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.08
+      Offset: 0.3
+      Intensity: 1
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.06
+      Offset: 0.6
+      Intensity: 0.8
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.05
+      Offset: 0.9
+      Intensity: 0.6
+  ShadowEnabled: true
+  ShadowIntensity: 1
+  ReflectionSource: 0
+  ReflectionResolution: 128
+  ReflectionCompression: 0
+  ReflectionIntensityMultiplier: 1
+  ReflectionBounces: 1
+  BakedLightmapPath: ""
+  LightmapResolution: 40
+  MaxLightmapSize: 1024
+  MaxBounces: 2
+  DirectSamples: 32
+  IndirectSamples: 512
+  AmbientOcclusion: true
+  LightmapFiltering: 0
+  RenderSettings:
+    Shadows:
+      Enabled: true
+      Quality: 2
+      Resolution: 4096
+      Distance: 120
+      CascadeCount: 4
+      CascadeSplitLambda: 0.75
+      Strength: 1
+      Softness: 1
+      DepthBias: 0.005
+      NormalBias: 0.015
+      Color: [0, 0, 0]
+    Fog:
+      Enabled: true
+      Mode: 1
+      Color: [0.62, 0.72, 0.85]
+      Density: 0.0025
+      Start: 10
+      End: 100
+      HeightFalloff: 0.08
+      BaseHeight: 0
+    Post:
+      Enabled: true
+      Tonemapper: 2
+      Exposure: 0
+      Bloom: true
+      BloomThreshold: 1
+      BloomKnee: 0.5
+      BloomIntensity: 0.25
+      BloomScatter: 0.7
+      BloomTint: [1, 1, 1]
+      AmbientOcclusion: true
+      AORadius: 0.6
+      AOIntensity: 1
+      AOPower: 1.5
+      ColorGrading: true
+      Contrast: 1
+      Saturation: 1
+      Temperature: 0
+      Tint: 0
+      Lift: [0, 0, 0]
+      Gamma: [1, 1, 1]
+      Gain: [1, 1, 1]
+      Vignette: true
+      VignetteIntensity: 0.15
+      VignetteSmoothness: 0.4
+      VignetteColor: [0, 0, 0]
+      ChromaticAberration: false
+      ChromaticAberrationIntensity: 0.3
+      FilmGrain: false
+      FilmGrainIntensity: 0.15
+      Sharpen: false
+      SharpenAmount: 0.3
+      AntiAliasing: 3
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: false
+      SSRIntensity: 1
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: true
+      SSGIIntensity: 0.8
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: true
+      CloudCoverage: 0.45
+      CloudDensity: 0.6
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: false
+      FocusDistance: 10
+      Aperture: 2.8
+      FocalLength: 50
+      DOFMaxBlur: 10
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
+    Environment:
+      Sky: 3
+      BackgroundColor: [0.1, 0.1, 0.1]
+      ImageBasedLighting: true
+      ReflectionIntensity: 1
+      SkyboxIntensity: 1
+      SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
+    Bake:
+      RealtimeGI: false
+      BakedGI: true
+      LightingMode: 0
+      Lightmapper: 1
+      ImportanceSampling: true
+      DirectSamples: 32
+      IndirectSamples: 512
+      EnvironmentSamples: 256
+      MaxBounces: 2
+      Filtering: 0
+      Packing: 0
+      Resolution: 40
+      MaxLightmapSize: 1024
+      UseMipmapLimits: true
+      Compression: 2
+      AmbientOcclusion: true
+      DirectionalMode: 0
+      AlbedoBoost: 1
+      IndirectIntensity: 1
+      RealtimeResolution: 20
+      RealtimeIndirectSamples: 256
+      RealtimeMaxBounces: 1
+      AutoGenerate: false
+      BakeOnSceneLoad: 0
+      APVFitToScene: true
+      APVOrigin: [-10, -1, -10]
+      APVSize: [20, 10, 20]
+      APVProbeOffset: [0, 0, 0]
+      APVMinSpacing: 1
+      APVMaxSpacing: 9
+      APVBakingMode: 0
+      APVDilation: false
+      APVVirtualOffset: true
+      APVValidityThreshold: 0.75
+      APVSearchDistanceMultiplier: 0.2
+      APVGeometryBias: 0.01
+      APVRayOriginBias: -0.001
+EditorCamera:
+  CameraMode: 0
+  Position: [0, 30.825972, 42.595905]
+  Distance: 52
+  Pitch: 0.61086524
+  Yaw: 0
+  OrthographicSize: 10
+Hierarchy:
+  - Child: 7855177336731859222
+    Parent: 5054473048084538731
+  - Child: 5438784797699605596
+    Parent: 5054473048084538731
+  - Child: 6684662614145346019
+    Parent: 5054473048084538731
+  - Child: 4158019950726772689
+    Parent: 5054473048084538731
+  - Child: 5706419920552541416
+    Parent: 5054473048084538731
+  - Child: 4883620820851070867
+    Parent: 7331208563791158993
+  - Child: 3179221303253929487
+    Parent: 7331208563791158993
+  - Child: 3741992247086747378
+    Parent: 6934661567273763855
+  - Child: 3422056304580227691
+    Parent: 6934661567273763855
+  - Child: 3802340570021099183
+    Parent: 6934661567273763855
+  - Child: 6934661567273763855
+    Parent: 2646469560936915015
+  - Child: 5220091817930966124
+    Parent: 5461228732341129190
+  - Child: 4705801593107124802
+    Parent: 5461228732341129190
+  - Child: 3672379955932936469
+    Parent: 5461228732341129190
+  - Child: 5461228732341129190
+    Parent: 7578050987005248442
+  - Child: 7331208563791158993
+    Parent: 8585247754546629744
+  - Child: 7728798990064900058
+    Parent: 8585247754546629744
+  - Child: 6466500340647318510
+    Parent: 8585247754546629744
+  - Child: 2689674899816116976
+    Parent: 8585247754546629744
+  - Child: 6301754434043032840
+    Parent: 8585247754546629744
+  - Child: 4472236172210107265
+    Parent: 6562364242951142331
+  - Child: 5852858576203830162
+    Parent: 6562364242951142331
+  - Child: 5141844874237487954
+    Parent: 6562364242951142331
+  - Child: 1573727732897379233
+    Parent: 960983043663084225
+  - Child: 2848810092784368742
+    Parent: 960983043663084225
+  - Child: 7417393477506105479
+    Parent: 960983043663084225
+  - Child: 7799593829687011792
+    Parent: 865475714829259560
+  - Child: 960983043663084225
+    Parent: 6906898029448660104
+  - Child: 865475714829259560
+    Parent: 6117892771934401234
+  - Child: 6906898029448660104
+    Parent: 63791597945837884
+  - Child: 6317784629624403774
+    Parent: 5399070973366152136
+  - Child: 8968919606234519317
+    Parent: 5399070973366152136
+  - Child: 2439775439461658287
+    Parent: 5399070973366152136
+  - Child: 7568763897334483094
+    Parent: 7429951688364377110
+  - Child: 2675691627900086333
+    Parent: 5726273456513910225
+  - Child: 7008279464464403687
+    Parent: 5726273456513910225
+  - Child: 722038684287802339
+    Parent: 5726273456513910225
+  - Child: 2588554771563583784
+    Parent: 1157714271129413784
+  - Child: 5726273456513910225
+    Parent: 3034386708983246387
+  - Child: 1157714271129413784
+    Parent: 6518267746719958412
+  - Child: 3034386708983246387
+    Parent: 2351099438544529781
+  - Child: 3763652021711339543
+    Parent: 409092660980591034
+  - Child: 7101678106930103358
+    Parent: 409092660980591034
+  - Child: 5530770315839456681
+    Parent: 409092660980591034
+  - Child: 9150620370502724543
+    Parent: 1039669332796806817
+  - Child: 5602445044607327526
+    Parent: 7728798990064900058
+  - Child: 873505838312498913
+    Parent: 7728798990064900058
+  - Child: 7578050987005248442
+    Parent: 7728798990064900058
+  - Child: 1269360811099832555
+    Parent: 7728798990064900058
+  - Child: 307214933403678648
+    Parent: 7728798990064900058
+  - Child: 409092660980591034
+    Parent: 8268878626005804057
+  - Child: 4268248118585704089
+    Parent: 6466500340647318510
+  - Child: 4968395628244715229
+    Parent: 6466500340647318510
+  - Child: 2646469560936915015
+    Parent: 6466500340647318510
+  - Child: 8233707105872885525
+    Parent: 6466500340647318510
+  - Child: 5662793395882987374
+    Parent: 6466500340647318510
+  - Child: 5399070973366152136
+    Parent: 722038684287802339
+  - Child: 8585247754546629744
+    Parent: 8233768551355518850
+  - Child: 4677093971406407238
+    Parent: 5262848466671070428
+  - Child: 2357335323052796111
+    Parent: 5262848466671070428
+  - Child: 8268878626005804057
+    Parent: 5262848466671070428
+  - Child: 5002159607959175977
+    Parent: 6130694245951481281
+  - Child: 5054473048084538731
+    Parent: 6130694245951481281
+  - Child: 1647736960838027901
+    Parent: 6130694245951481281
+  - Child: 5851100662404661077
+    Parent: 6130694245951481281
+  - Child: 5598553032673964000
+    Parent: 6130694245951481281
+  - Child: 8912589496649301343
+    Parent: 6130694245951481281
+  - Child: 3661991148283005241
+    Parent: 6130694245951481281
+  - Child: 7285745198292019741
+    Parent: 6130694245951481281
+  - Child: 8143709085815828911
+    Parent: 6130694245951481281
+  - Child: 69048665370348103
+    Parent: 6130694245951481281
+  - Child: 7086178780218996171
+    Parent: 6130694245951481281
+  - Child: 8720368567045345114
+    Parent: 6130694245951481281
+  - Child: 1684955245450665883
+    Parent: 6130694245951481281
+  - Child: 3009196252728981054
+    Parent: 6130694245951481281
+  - Child: 6941824761882981559
+    Parent: 6130694245951481281
+  - Child: 8552612215764153731
+    Parent: 6130694245951481281
+  - Child: 9040197511064733944
+    Parent: 6130694245951481281
+  - Child: 1000640706205154941
+    Parent: 642950877070604461
+  - Child: 8233768551355518850
+    Parent: 2047760944139359812
+  - Child: 5262848466671070428
+    Parent: 4359500152537167108
+  - Child: 642950877070604461
+    Parent: 820277020695452453
+  - Child: 4359500152537167108
+    Parent: 8054531659103223703
+  - Child: 5726418537261553829
+    Parent: 7417393477506105479
+  - Child: 5123910714835334754
+    Parent: 5726418537261553829
+  - Child: 4414860620612400653
+    Parent: 5726418537261553829
+  - Child: 5923134327620581671
+    Parent: 5726418537261553829
+  - Child: 6562364242951142331
+    Parent: 5701548452416953054
+  - Child: 1254682304738244548
+    Parent: 1000640706205154941
+  - Child: 2187325296552764400
+    Parent: 1000640706205154941
+  - Child: 1039669332796806817
+    Parent: 1000640706205154941
+  - Child: 5542225509188940618
+    Parent: 9150620370502724543
+  - Child: 5276656101949000773
+    Parent: 9150620370502724543
+  - Child: 1374896087433948703
+    Parent: 9150620370502724543
+  - Child: 5873035430847131110
+    Parent: 2588554771563583784
+  - Child: 2181529771703355203
+    Parent: 2588554771563583784
+  - Child: 7429951688364377110
+    Parent: 2588554771563583784
+  - Child: 7445671788564475172
+    Parent: 7568763897334483094
+  - Child: 8614944139198929367
+    Parent: 7568763897334483094
+  - Child: 1759757071061869325
+    Parent: 7568763897334483094
+  - Child: 3825071110610648485
+    Parent: 7799593829687011792
+  - Child: 5965427505569618044
+    Parent: 7799593829687011792
+  - Child: 5701548452416953054
+    Parent: 7799593829687011792

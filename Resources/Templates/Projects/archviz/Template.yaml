@@ -1,0 +1,6 @@
+# Archviz Interior (Unreal Archviz template): furnished apartment, sun through windows, GI, first-person walkthrough
+# Furniture: Resources/Templates/Shared/Furniture -> Assets/Furniture (shared with the AR template)
+Shared: [Furniture]
+StartScene: Assets/Scenes/Main.cqscene
+Scenes:
+  - Assets/Scenes/Main.cqscene

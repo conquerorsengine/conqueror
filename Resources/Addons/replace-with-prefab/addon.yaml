@@ -1,0 +1,12 @@
+Id: conqueror.replace-with-prefab
+Name: Replace With Prefab
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Swap placeholder blocks for finished assets: replace every selected object with an instance
+  of a prefab (or with copies of the first selected object), keeping position, rotation,
+  optionally scale, parent and name. One undo step for the whole swap.
+Category: Productivity
+Icon: arrow-right-arrow-left
+Tags: [editor, prefab, replace, level-design, productivity]
+Editor: Editor/ReplaceWithPrefab.cqs

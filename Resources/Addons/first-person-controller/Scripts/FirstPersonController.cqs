@@ -1,0 +1,161 @@
+using nativebridge;
+
+// Birinci şahıs karakter denetleyicisi.
+// Gereken: bu varlıkta Character Controller; kamera "cameraName" adlı alt nesne (yoksa Camera bileşenli ilk çocuk).
+// Tuşlar: WASD / ok tuşları yürüme, Shift koşu, Ctrl ya da C çömelme, Space zıplama, Esc imleci serbest bırakır.
+script FirstPersonController : ConquerorScript
+{
+    public float walkSpeed = 4.5;
+    public float sprintSpeed = 7.5;
+    public float crouchSpeed = 2.2;
+    public float acceleration = 14.0;
+    public float airControl = 0.35;
+    public float jumpHeight = 1.2;
+    public float gravity = 20.0;
+    public float mouseSensitivity = 0.12;
+    public bool invertY = false;
+    public float maxPitch = 85.0;
+    public float eyeHeight = 1.6;
+    public float crouchEyeHeight = 1.0;
+    public bool lockCursor = true;
+    public bool headBob = true;
+    public float bobAmount = 0.05;
+    public string cameraName = "FPS Camera";
+
+    // Çalışma zamanı bilgisi
+    public float speed = 0.0;
+    public bool grounded = false;
+    public bool crouching = false;
+    public int jumps = 0;
+    public float distanceMoved = 0.0;
+
+    private var cam = null;
+    private float yaw = 0.0;
+    private float pitch = 0.0;
+    private float vx = 0.0;
+    private float vy = 0.0;
+    private float vz = 0.0;
+    private float eye = 1.6;
+    private float bobTime = 0.0;
+    private bool cursorLocked = false;
+
+    func Start()
+    {
+        cam = EntityFindChild(GetEntityId(), cameraName);
+        if (cam == null || cam < 0)
+        {
+            cam = null;
+            for (var c in EntityGetChildren(GetEntityId()))
+            {
+                if (EntityHasComponent(c, "Camera")) { cam = c; break; }
+            }
+        }
+        yaw = GetRotation().y;
+        eye = eyeHeight;
+        if (lockCursor) { SetCursorLocked(true); }
+    }
+
+    func SetCursorLocked(locked)
+    {
+        cursorLocked = locked;
+        SetCursorMode(locked ? 2 : 0);
+    }
+
+    // Bakış yönünü kod ile ayarla (derece)
+    func SetLook(newYaw, newPitch)
+    {
+        yaw = newYaw;
+        pitch = MathClamp(newPitch, -maxPitch, maxPitch);
+        ApplyLook();
+    }
+
+    // Dış kuvvetler (kanca, platform fırlatması) için: biriken hızı sıfırla
+    func ResetVelocity()
+    {
+        vx = 0.0;
+        vy = 0.0;
+        vz = 0.0;
+    }
+
+    func ApplyLook()
+    {
+        SetRotation(0, yaw, 0);
+        if (cam != null) { EntitySetRotation(cam, pitch, 0, 0); }
+    }
+
+    func Update(dt)
+    {
+        if (dt <= 0) { return; }
+        if (dt > 0.1) { dt = 0.1; }
+        if (IsKeyDown(Key.Escape)) { SetCursorLocked(!cursorLocked); }
+        if (cursorLocked || !lockCursor)
+        {
+            var md = GetMouseDelta();
+            yaw -= md.x * mouseSensitivity;
+            pitch -= md.y * mouseSensitivity * (invertY ? -1.0 : 1.0);
+            pitch = MathClamp(pitch, -maxPitch, maxPitch);
+        }
+        ApplyLook();
+
+        // Girdi (yerel): ix sağ, iz ileri
+        var ix = 0.0;
+        var iz = 0.0;
+        if (IsKeyPressed(Key.W) || IsKeyPressed(Key.Up)) { iz += 1.0; }
+        if (IsKeyPressed(Key.S) || IsKeyPressed(Key.Down)) { iz -= 1.0; }
+        if (IsKeyPressed(Key.D) || IsKeyPressed(Key.Right)) { ix += 1.0; }
+        if (IsKeyPressed(Key.A) || IsKeyPressed(Key.Left)) { ix -= 1.0; }
+        var il = MathSqrt(ix * ix + iz * iz);
+        if (il > 1.0) { ix /= il; iz /= il; }
+
+        crouching = IsKeyPressed(Key.LeftControl) || IsKeyPressed(Key.C);
+        var target = crouching ? crouchSpeed : (IsKeyPressed(Key.LeftShift) ? sprintSpeed : walkSpeed);
+
+        // Yaw'a göre dünya yönleri (ileri -Z)
+        var r = MathDegToRad(yaw);
+        var fx = -MathSin(r);
+        var fz = -MathCos(r);
+        var rx = MathCos(r);
+        var rz = -MathSin(r);
+        var wantX = (fx * iz + rx * ix) * target;
+        var wantZ = (fz * iz + rz * ix) * target;
+        var k = 1.0 - MathExp(-acceleration * dt * (grounded ? 1.0 : airControl));
+        vx = MathLerp(vx, wantX, k);
+        vz = MathLerp(vz, wantZ, k);
+
+        if (grounded && IsKeyDown(Key.Space) && !crouching)
+        {
+            vy = MathSqrt(2.0 * gravity * jumpHeight);
+            grounded = false;
+            jumps++;
+        }
+        vy -= gravity * dt;
+
+        var before = GetPosition();
+        var flags = CharacterMove(vx * dt, vy * dt, vz * dt);
+        var after = GetPosition();
+        grounded = CharacterIsGrounded();
+        if (grounded && vy < 0) { vy = -2.0; }
+        if ((flags & 2) != 0 && vy > 0) { vy = 0.0; }
+
+        var dx = after.x - before.x;
+        var dz = after.z - before.z;
+        var moved = MathSqrt(dx * dx + dz * dz);
+        distanceMoved += moved;
+        speed = moved / dt;
+
+        // Göz yüksekliği (çömelme) + yürürken baş sallanması
+        eye = MathLerp(eye, crouching ? crouchEyeHeight : eyeHeight, 1.0 - MathExp(-12.0 * dt));
+        var bob = 0.0;
+        if (headBob && grounded && speed > 0.5)
+        {
+            bobTime += dt * (6.0 + speed);
+            bob = MathSin(bobTime) * bobAmount * MathMin(speed / walkSpeed, 1.5);
+        }
+        if (cam != null) { EntitySetPosition(cam, 0, eye + bob, 0); }
+    }
+
+    func OnDestroy()
+    {
+        if (cursorLocked) { SetCursorMode(0); }
+    }
+}

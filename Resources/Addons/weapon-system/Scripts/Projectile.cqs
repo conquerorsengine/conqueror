@@ -1,0 +1,92 @@
+using nativebridge;
+
+// Mermi: her karede gideceği yolu küre taramasıyla yoklar (ince duvarlardan geçmez), çarpınca hasar verir.
+// Havuzdan geliyorsa (PooledObject) silinmek yerine havuza döner.
+script Projectile : ConquerorScript
+{
+    public float speed = 40.0;
+    public float dirX = 0.0;
+    public float dirY = 0.0;
+    public float dirZ = -1.0;
+    public float damage = 25.0;
+    public float gravity = 0.0;
+    public float radius = 0.08;
+    public float lifetime = 4.0;
+    public float impactForce = 3.0;
+    public int ownerId = -1;
+
+    // Çalışma zamanı bilgisi
+    public bool hit = false;
+    public string hitName = "";
+    public float traveled = 0.0;
+
+    private float vx = 0.0;
+    private float vy = 0.0;
+    private float vz = 0.0;
+    private float age = 0.0;
+
+    func Start() { Launch(dirX, dirY, dirZ, speed); }
+
+    func Launch(dx, dy, dz, spd)
+    {
+        var l = MathSqrt(dx * dx + dy * dy + dz * dz);
+        if (l < 0.0001) { l = 1; dz = -1; }
+        vx = dx / l * spd;
+        vy = dy / l * spd;
+        vz = dz / l * spd;
+        age = 0.0;
+        hit = false;
+        // Yöne bak
+        SetRotation(MathRadToDeg(MathAsin(MathClamp(vy / MathMax(spd, 0.0001), -1.0, 1.0))), MathRadToDeg(MathAtan2(-vx, -vz)), 0);
+    }
+
+    func OnSpawned() { Launch(dirX, dirY, dirZ, speed); }
+
+    func Update(dt)
+    {
+        if (dt <= 0 || hit) { return; }
+        age += dt;
+        if (age >= lifetime) { Finish(); return; }
+        vy -= gravity * dt;
+        var p = EntityGetWorldPosition(GetEntityId());
+        var step = MathSqrt(vx * vx + vy * vy + vz * vz) * dt;
+        if (step <= 0) { return; }
+        var dx = vx * dt / step;
+        var dy = vy * dt / step;
+        var dz = vz * dt / step;
+        var h = SphereCast(p.x, p.y, p.z, radius, dx, dy, dz, step, -1, true);
+        if (h != null && !h.isTrigger && !IsOwner(h.entity))
+        {
+            hit = true;
+            hitName = h.name;
+            SendMessage(h.entity, "Damage", damage, ownerId >= 0 ? EntityGetName(ownerId) : "Projectile");
+            if (impactForce > 0 && EntityHasComponent(h.entity, "Rigidbody"))
+            {
+                EntityAddImpulse(h.entity, dx * impactForce, dy * impactForce, dz * impactForce, h.point.x, h.point.y, h.point.z);
+            }
+            EntitySetWorldPosition(GetEntityId(), h.point.x, h.point.y, h.point.z);
+            Finish();
+            return;
+        }
+        EntitySetWorldPosition(GetEntityId(), p.x + vx * dt, p.y + vy * dt, p.z + vz * dt);
+        traveled += step;
+    }
+
+    func IsOwner(e)
+    {
+        var cur = e;
+        for (var i = 0; i < 32; i++)
+        {
+            if (cur == null || cur < 0) { return false; }
+            if (cur == ownerId) { return true; }
+            cur = EntityGetParent(cur);
+        }
+        return false;
+    }
+
+    func Finish()
+    {
+        if (HasScript(GetEntityId(), "PooledObject")) { InvokeMethod(GetEntityId(), "Release"); }
+        else { EntityDestroy(GetEntityId()); }
+    }
+}

@@ -26,7 +26,7 @@ namespace Conqueror::Math
         
     private:
         static constexpr int PERMUTATION_SIZE = 512;
-        int m_Permutation[PERMUTATION_SIZE];
+        int m_Permutation[PERMUTATION_SIZE]{};
         
         float Fade(float t) const;
         float Lerp(float t, float a, float b) const;

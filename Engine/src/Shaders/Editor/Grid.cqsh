@@ -1,0 +1,175 @@
+#language GLSL
+// Sonsuz editör ızgarası: tam ekran üçgen + ışın/düzlem kesişimi.
+// 10'luk LOD seviyeleri: her seviyenin görünürlüğü, hücresinin ekrandaki piksel boyutunun SÜREKLİ
+// bir fonksiyonu; bu yüzden seviye geçişlerinde sınır/sıçrama olmaz (Unity sahne ızgarası gibi).
+// Eksenler renklidir (X kırmızı, Z mavi, 2D'de Y yeşil).
+#type vertex
+#version 450 core
+
+uniform mat4 u_InvViewProjection;
+out vec3 v_Near;
+out vec3 v_Mid;
+
+vec3 Unproject(vec2 ndc, float z)
+{
+    vec4 p = u_InvViewProjection * vec4(ndc, z, 1.0);
+    return p.xyz / p.w;
+}
+
+void main()
+{
+    vec2 pos = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)) * 2.0 - 1.0;
+    // Uzak düzlem (z=+1) kullanılmaz: 100 km'lik uzak düzlemde w, iki büyük sayının farkıdır ve
+    // ~%4 hata verir -> ışın her karede oynar, eksen çizgileri titrer. z=0 noktası iyi koşulludur.
+    v_Near = Unproject(pos, -1.0);
+    v_Mid = Unproject(pos, 0.0);
+    gl_Position = vec4(pos, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+
+#include "Include/Common.glsl"
+
+layout(location = 0) out vec4 FragColor;
+
+in vec3 v_Near;
+in vec3 v_Mid;
+
+uniform mat4 u_ViewProjection;
+uniform vec3 u_CameraPos;
+uniform int u_Plane = 0;              // 0 XZ (3D zemin), 1 XY (2D)
+uniform float u_BaseSize = 1.0;       // en küçük temel hücre (m)
+uniform float u_Opacity = 1.0;
+uniform float u_FadeDistance = 0.0;   // 0 = otomatik
+uniform int u_LinearOutput = 1;
+uniform int u_Orthographic = 0;
+uniform vec3 u_MinorColor = vec3(0.86);
+uniform vec3 u_MajorColor = vec3(1.0);
+uniform int u_Background = 0;         // 1: arka plan katmanı (2D görünüm; her şey ızgaranın önünde)
+uniform float u_DepthErrorQuad = 0.0;   // derinlik kuantalamasının mesafe hatası: d² · bu (perspektif)
+uniform float u_DepthErrorConst = 0.0;  // ortografik: sabit
+
+// Ben Golus "pristine grid" uyarlaması: AA'lı, moiré'siz, SABİT piksel kalınlığında çizgiler.
+// (Hücre oranlı kalınlık üst LOD seviyelerinde çizgileri metrelerce kalınlaştırırdı.)
+float GridLines(vec2 uv, float pixelWidth)
+{
+    vec2 deriv = fwidth(uv) * 2.0;                 // gridUV birimi = yarım hücre
+    vec2 gridUV = 1.0 - abs(fract(uv) * 2.0 - 1.0); // çizgide 0
+    vec2 target = clamp(deriv * pixelWidth, vec2(0.0), vec2(0.5));
+    vec2 drawWidth = max(target, deriv);
+    vec2 aa = deriv * 1.5;
+    vec2 g = smoothstep(drawWidth + aa, drawWidth - aa, gridUV);
+    g *= clamp(target / drawWidth, 0.0, 1.0);
+    // Hücreler pikselden küçülünce ortalama yoğunluğa düş (moiré yok)
+    g = mix(g, target, clamp(deriv * 2.0 - 1.0, 0.0, 1.0));
+    return mix(g.x, 1.0, g.y);
+}
+
+// Tek bir eksen çizgisi (piksel genişliği sabit)
+float AxisLine(float coord, float pixels)
+{
+    float d = fwidth(coord);
+    return 1.0 - smoothstep(d * pixels * 0.5, d * (pixels * 0.5 + 1.0), abs(coord));
+}
+
+void main()
+{
+    vec3 dir = v_Mid - v_Near;
+    float denom = (u_Plane == 0) ? dir.y : dir.z;
+    if (abs(denom) < 1e-8)
+        discard;
+    float t = (u_Plane == 0) ? -v_Near.y / denom : -v_Near.z / denom;
+    if (t < 0.0)
+        discard;
+
+    vec3 world = v_Near + t * dir;
+    vec2 coord = (u_Plane == 0) ? world.xz : world.xy;
+
+    vec4 clip = u_ViewProjection * vec4(world, 1.0);
+    float ndcDepth = clip.z / clip.w;
+    if (ndcDepth > 1.0)
+        discard;
+    float gridDepth = ndcDepth * 0.5 + 0.5;
+    if (u_Background == 0)
+    {
+        // Zeminle eşit derinlik yarışı (z-fighting) olmasın: ızgara kameraya doğru yalnızca gerektiği kadar öne alınır:
+        //   - örnek konumları (MSAA, TAA titreşimi) pikselin merkezinden yarım piksele kadar uzakta: o sürede zeminin ışın
+        //     boyunca uzaklığı fwidth(gridDist) / 2 kadar değişir (yatık bakışta büyük, tepeden bakışta küçük),
+        //   - derinlik tamponunun kuantalama hatası (mesafenin karesiyle büyür).
+        // Eskiden mesafeyle doğrusal (%0.15) pay vardı: 20 m'den sonra 3 cm'yi aşıp y = 0'ın birkaç cm üstündeki yüzeylerin
+        // (ör. pistin asfaltı) içinden ızgarayı gösteriyordu; kamera hareket ettikçe sınır kaydığı için yanıp sönüyordu.
+        // Derinlik testi örnek başına yapıldığından duvar, kutu, merdiven gibi nesnelerin kenarları temiz kalır.
+        float gridDist = length(world - u_CameraPos);
+        float slope = min(fwidth(gridDist), gridDist * 0.05);
+        float pull = max(0.002, 0.75 * slope) + (u_DepthErrorQuad * gridDist * gridDist + u_DepthErrorConst) * 2.0;
+        vec4 pc = u_ViewProjection * vec4(world - normalize(dir) * pull, 1.0);
+        gridDepth = clamp(pc.z / pc.w * 0.5 + 0.5, 0.0, 1.0);
+    }
+    // Arka plan modunda ızgara gökyüzünün hemen önünde durur: sahnedeki her şey onun önünde görünür
+    gl_FragDepth = u_Background == 1 ? 0.99999 : gridDepth;
+
+    // LOD. Seviye k'nin hücresi u_BaseSize * 10^k; görünürlüğü yalnızca o hücrenin ekrandaki piksel
+    // boyutuna bağlı (6 px altında yok, 40 px üstünde tam). En küçük görünür seviyeden başlayıp 4 seviye
+    // değerlendirilir: aralık dışında kalanların ağırlığı zaten 0 (alt) ya da çizgileri üsttekilerle
+    // çakışıyor (üst), bu yüzden aralığın kayması görünür bir değişiklik yaratmaz.
+    vec2 dCoord = fwidth(coord);
+    float worldPerPixel = max(max(dCoord.x, dCoord.y), 1e-7);
+    float firstLevel = max(floor(log(worldPerPixel * 4.0 / u_BaseSize) / log(10.0)), 0.0);
+
+    float alpha = 0.0;
+    float majorness = 0.0;
+    for (int i = 0; i < 4; ++i)
+    {
+        float size = u_BaseSize * pow(10.0, firstLevel + float(i));
+        float cellPixels = size / worldPerPixel;
+        float visible = smoothstep(4.0, 28.0, cellPixels);
+        if (visible <= 0.0)
+            continue;
+        // Büyük hücreli seviyeler daha belirgin (her 10. çizgi): biraz kalın ve daha opak; bu da piksel
+        // boyutunun sürekli fonksiyonu olduğundan LOD geçişinde sıçrama yok
+        float emphasis = smoothstep(60.0, 500.0, cellPixels);
+        float lines = GridLines(coord / size, mix(1.0, 1.6, emphasis)) * visible;
+        alpha = max(alpha, lines * mix(0.5, 0.85, emphasis));
+        majorness = max(majorness, lines * emphasis);
+    }
+    vec3 color = mix(u_MinorColor, u_MajorColor, clamp(majorness, 0.0, 1.0));
+    // 2D görünümün koyu gri zemininde aynı opaklık fazla parlak kalır (karıştırma doğrusal uzayda olduğundan
+    // açık çizgiler daha da parlak görünür); eksen çizgileri etkilenmez
+    if (u_Plane == 1)
+        alpha *= 0.25;
+
+    // Eksen çizgileri
+    vec3 xAxisColor = vec3(0.93, 0.26, 0.28);
+    vec3 secondAxisColor = (u_Plane == 0) ? vec3(0.25, 0.48, 0.96) : vec3(0.42, 0.85, 0.30);
+    float axisA = AxisLine(coord.y, 2.0);   // X ekseni boyunca (z=0 / y=0)
+    float axisB = AxisLine(coord.x, 2.0);   // Z (ya da Y) ekseni boyunca (x=0)
+    if (axisA > 0.0 || axisB > 0.0)
+    {
+        vec3 axisColor = axisA >= axisB ? xAxisColor : secondAxisColor;
+        float a = max(axisA, axisB);
+        color = mix(color, axisColor, a);
+        alpha = max(alpha, a * 0.95);
+    }
+
+    // Uzaklık solması (kamera yüksekliğine göre ölçeklenir)
+    if (u_Orthographic == 0)
+    {
+        float height = abs((u_Plane == 0) ? u_CameraPos.y : u_CameraPos.z);
+        float fadeEnd = u_FadeDistance > 0.0 ? u_FadeDistance : max(150.0, height * 80.0);
+        float dist = length(world - u_CameraPos);
+        alpha *= 1.0 - smoothstep(fadeEnd * 0.35, fadeEnd, dist);
+
+        // Ufka yakın açılarda ızgarayı söndür (titreme olmasın)
+        float grazing = abs(normalize(dir)[(u_Plane == 0) ? 1 : 2]);
+        alpha *= smoothstep(0.0, 0.06, grazing);
+    }
+
+    alpha *= u_Opacity;
+    if (alpha < 0.002)
+        discard;
+
+    if (u_LinearOutput == 1)
+        color = SRGBToLinear(color);
+    FragColor = vec4(color, alpha);
+}

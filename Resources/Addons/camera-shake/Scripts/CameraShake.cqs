@@ -1,0 +1,92 @@
+using nativebridge;
+
+// Travma tabanlı kamera sarsıntısı (Perlin gürültüsü). Kameraya (ya da kamera tutucusuna) ekleyin.
+// Başka betikten: SendMessage(kamera, "Shake", 0.6)  ya da  BroadcastMessage("ShakeAt", x, y, z, 1.0, 20.0)
+// Sarsıntı, varlığın "dinlenme" konum/dönüşü üzerine eklenir; başka bir betik kamerayı taşıyorsa
+// sarsıntıyı alt nesneye (ör. kamera) koyun.
+script CameraShake : ConquerorScript
+{
+    public float maxOffset = 0.35;
+    public float maxAngle = 4.0;
+    public float frequency = 18.0;
+    public float decay = 1.4;
+    public float traumaPower = 2.0;
+    public int seed = 7;
+
+    // Çalışma zamanı bilgisi
+    public float trauma = 0.0;
+    public float shakeAmount = 0.0;
+    public int shakes = 0;
+
+    private float time = 0.0;
+    private float lastOx = 0.0;
+    private float lastOy = 0.0;
+    private float lastOz = 0.0;
+    private float lastRx = 0.0;
+    private float lastRy = 0.0;
+    private float lastRz = 0.0;
+    private var written = null;
+    private var writtenRot = null;
+
+    func Shake(amount)
+    {
+        trauma = MathClamp01(trauma + amount);
+        shakes++;
+    }
+
+    // Dünya noktasında patlama: uzaklığa göre zayıflar
+    func ShakeAt(x, y, z, amount, radius)
+    {
+        var p = EntityGetWorldPosition(GetEntityId());
+        var d = MathSqrt((p.x - x) * (p.x - x) + (p.y - y) * (p.y - y) + (p.z - z) * (p.z - z));
+        if (radius <= 0 || d >= radius) { return; }
+        Shake(amount * (1.0 - d / radius));
+    }
+
+    func LateUpdate(dt)
+    {
+        // Önceki karenin sarsıntısını geri al. Başka bir betik bu karede konumu yeniden yazdıysa
+        // (yazdığımız değer değiştiyse) o değer yeni dinlenme pozudur.
+        var p = GetPosition();
+        var r = GetRotation();
+        var bx = p.x;
+        var by = p.y;
+        var bz = p.z;
+        if (written != null && Near(p.x, written.x) && Near(p.y, written.y) && Near(p.z, written.z))
+        {
+            bx -= lastOx; by -= lastOy; bz -= lastOz;
+        }
+        var brx = r.x;
+        var bry = r.y;
+        var brz = r.z;
+        if (writtenRot != null && Near(r.x, writtenRot.x) && Near(r.y, writtenRot.y) && Near(r.z, writtenRot.z))
+        {
+            brx -= lastRx; bry -= lastRy; brz -= lastRz;
+        }
+        time += dt;
+        trauma = MathMax(0.0, trauma - decay * dt);
+        shakeAmount = MathPow(trauma, traumaPower);
+        if (shakeAmount <= 0.0001)
+        {
+            lastOx = 0; lastOy = 0; lastOz = 0; lastRx = 0; lastRy = 0; lastRz = 0;
+            SetPosition(bx, by, bz);
+            SetRotation(brx, bry, brz);
+            written = GetPosition();
+            writtenRot = GetRotation();
+            return;
+        }
+        var t = time * frequency;
+        lastOx = maxOffset * shakeAmount * NoisePerlin2D(t, 0.5, seed);
+        lastOy = maxOffset * shakeAmount * NoisePerlin2D(t, 10.5, seed);
+        lastOz = maxOffset * shakeAmount * 0.5 * NoisePerlin2D(t, 20.5, seed);
+        lastRx = maxAngle * shakeAmount * NoisePerlin2D(t, 30.5, seed);
+        lastRy = maxAngle * shakeAmount * NoisePerlin2D(t, 40.5, seed);
+        lastRz = maxAngle * shakeAmount * NoisePerlin2D(t, 50.5, seed);
+        SetPosition(bx + lastOx, by + lastOy, bz + lastOz);
+        SetRotation(brx + lastRx, bry + lastRy, brz + lastRz);
+        written = GetPosition();
+        writtenRot = GetRotation();
+    }
+
+    func Near(a, b) { return MathAbs(a - b) < 0.0001; }
+}

@@ -1,0 +1,70 @@
+using nativebridge;
+
+// Güvenlik kamerası: "Camera Head" çocuğu sağa sola tarar; aynı varlıktaki VisionSensor bir hedef görünce
+// hedefe kilitlenir ve "Alarm Light" (Point Light) kırmızıya döner. alarmRaised ilk görüşte true olur.
+script SecurityCamera : ConquerorScript
+{
+    public float sweepAngle = 50.0;
+    public float sweepSpeed = 0.5;
+    public float trackSpeed = 120.0;
+    public bool broadcastAlarm = true;
+
+    // Çalışma zamanı bilgisi
+    public bool alarmRaised = false;
+    public bool tracking = false;
+    public float headYaw = 0.0;
+
+    private var head = null;
+    private var light = null;
+    private float t = 0.0;
+    private var tracked = null;
+
+    func Start()
+    {
+        head = EntityFindChild(GetEntityId(), "Camera Head");
+        light = EntityFindChild(GetEntityId(), "Alarm Light");
+        SetLight(false);
+    }
+
+    func SetLight(alarm)
+    {
+        if (light == null || light < 0) { return; }
+        EntitySetComponentField(light, "PointLight", "Color", alarm ? [1.0, 0.1, 0.05] : [0.2, 1.0, 0.3]);
+    }
+
+    func OnTargetSeen(e)
+    {
+        tracked = e;
+        tracking = true;
+        SetLight(true);
+        if (!alarmRaised && broadcastAlarm) { BroadcastMessage("OnAlarm", GetEntityName()); }
+        alarmRaised = true;
+    }
+
+    func OnTargetLost(e)
+    {
+        if (e == tracked) { tracked = null; tracking = false; SetLight(false); }
+    }
+
+    func Update(dt)
+    {
+        if (head == null || head < 0) { return; }
+        var parentYaw = EntityGetRotation(GetEntityId()).y;
+        var want = headYaw;
+        if (tracking && tracked != null && EntityIsValid(tracked))
+        {
+            var o = EntityGetWorldPosition(head);
+            var p = EntityGetWorldPosition(tracked);
+            want = MathNormalizeAngle(MathRadToDeg(MathAtan2(-(p.x - o.x), -(p.z - o.z))) - parentYaw);
+            want = MathClamp(want, -sweepAngle * 1.5, sweepAngle * 1.5);
+        }
+        else
+        {
+            t += dt;
+            want = MathSin(t * sweepSpeed * 3.14159) * sweepAngle;
+        }
+        headYaw = headYaw + MathClamp(MathNormalizeAngle(want - headYaw), -trackSpeed * dt, trackSpeed * dt);
+        var r = EntityGetRotation(head);
+        EntitySetRotation(head, r.x, headYaw, r.z);
+    }
+}

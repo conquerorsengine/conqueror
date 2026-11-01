@@ -1,0 +1,72 @@
+using nativebridge;
+
+// Kinematik hareketli platform: başlangıç konumu çevresinde sinüs salınımı.
+// Üzerinde duran oyuncu bu karedeki yer değiştirmeyi (dx, dy, dz) okuyup kendi hareketine ekler;
+// zıplarken de platform hızını (vx, vy, vz) devralır.
+script MovingPlatform : ConquerorScript
+{
+    [Header("Salınım")]
+    [Tooltip("Hareket ekseni: x, y veya z")]
+    public string axis = "x";
+    [Tooltip("Merkezden en uzak nokta (m)")]
+    [Range(0, 20)]
+    public float amplitude = 3.0;
+    [Tooltip("Bir tam gidiş-dönüş süresi (s)")]
+    [Range(0.5, 20)]
+    public float period = 4.0;
+    [Tooltip("Başlangıç zaman kayması (s)")]
+    public float phase = 0.0;
+
+    [Header("Çalışma zamanı (salt okunur)")]
+    public float dx = 0;
+    public float dy = 0;
+    public float dz = 0;
+    public float vx = 0;
+    public float vy = 0;
+    public float vz = 0;
+    [Tooltip("Salınım zamanı (s); öngörü için okunabilir")]
+    public float time = 0;
+
+    private var origin = null;
+    private float offset = 0;
+
+    func Start()
+    {
+        origin = GetPosition();
+        time = phase;
+        offset = Offset(time);
+        Place(offset);
+    }
+
+    func Update(dt)
+    {
+        if (dt <= 0)
+        {
+            dx = 0; dy = 0; dz = 0;
+            vx = 0; vy = 0; vz = 0;
+            return;
+        }
+        time += dt;
+        var next = Offset(time);
+        var d = next - offset;
+        offset = next;
+        Place(offset);
+        dx = 0; dy = 0; dz = 0;
+        if (axis == "y") { dy = d; }
+        else if (axis == "z") { dz = d; }
+        else { dx = d; }
+        vx = dx / dt; vy = dy / dt; vz = dz / dt;
+    }
+
+    func Offset(time)
+    {
+        return amplitude * MathSin(time / period * 6.2831853);
+    }
+
+    func Place(o)
+    {
+        if (axis == "y") { SetPosition(origin.x, origin.y + o, origin.z); }
+        else if (axis == "z") { SetPosition(origin.x, origin.y, origin.z + o); }
+        else { SetPosition(origin.x + o, origin.y, origin.z); }
+    }
+}

@@ -49,6 +49,7 @@ namespace Conqueror
         {
             CQ_CORE_ASSERT(HasComponent<T>(), "Entity does not have component!");
             m_Scene->m_Registry.remove<T>(m_EntityHandle);
+            m_Scene->OnComponentRemovedAny(*this);
         }
 
         operator bool() const { return m_EntityHandle != entt::null && m_Scene != nullptr; }

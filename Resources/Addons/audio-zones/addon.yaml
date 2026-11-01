@@ -1,0 +1,23 @@
+Id: conqueror.audio-zones
+Name: Ambient Audio Zones
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Place ambience in the level: box or sphere zones fade their looping sound in when the
+  listener (the main camera or the player) enters and out when it leaves, with a soft border
+  and an optional mixer snapshot (for example muffled audio in caves). Includes wind, stream
+  and machine hum loops.
+Category: Audio
+Icon: volume-high
+Tags: [audio, ambience, zones, environment, sound]
+Components:
+  - Scripts/AmbientZone.cqs
+Inserts:
+  - Name: Wind Zone (Audio)
+    Icon: wind
+    Prefab: Prefabs/WindZoneAudio.cqprefab
+    Tooltip: 20 m box that plays a wind loop inside
+  - Name: Stream Zone (Audio)
+    Icon: water
+    Prefab: Prefabs/StreamZoneAudio.cqprefab
+    Tooltip: 8 m sphere that plays a stream loop

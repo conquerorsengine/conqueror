@@ -1,0 +1,91 @@
+using nativebridge;
+
+// Nesne havuzu: prefab örneklerini önceden oluşturup etkin / devre dışı yaparak yeniden kullanır.
+// InvokeMethod(havuz, "Spawn", x, y, z) -> varlık (havuz boşsa ve büyüyemiyorsa null); SendMessage(havuz, "Despawn", e)
+script ObjectPool : ConquerorScript
+{
+    public string prefab = "Packages/object-pool/Prefabs/PooledBall.cqprefab";
+    public int initialSize = 10;
+    public int maxSize = 50;
+    public bool canGrow = true;
+    public float defaultLifetime = 0.0;
+    public bool recycleOldest = false;
+
+    // Çalışma zamanı bilgisi
+    public int activeCount = 0;
+    public int inactiveCount = 0;
+    public int created = 0;
+    public int spawns = 0;
+
+    private var free = [];
+    private var used = [];
+
+    func Start()
+    {
+        for (var i = 0; i < initialSize; i++) { CreateOne(); }
+        Count();
+    }
+
+    func CreateOne()
+    {
+        var e = Instantiate(prefab, 0, -10000, 0);
+        if (e == null) { LogError("ObjectPool: cannot instantiate " + prefab); return null; }
+        created++;
+        EntitySetActive(e, false);
+        if (HasScript(e, "PooledObject")) { SetScriptField(e, "pool", GetEntityId()); }
+        free.Add(e);
+        return e;
+    }
+
+    func Spawn(x, y, z, rx = 0, ry = 0, rz = 0)
+    {
+        if (free.Count == 0)
+        {
+            if (canGrow && (maxSize <= 0 || created < maxSize)) { CreateOne(); }
+            else if (recycleOldest && used.Count > 0) { Despawn(used[0]); }
+        }
+        if (free.Count == 0) { return null; }
+        var e = ListPop(free);
+        used.Add(e);
+        EntitySetPosition(e, x, y, z);
+        EntitySetRotation(e, rx, ry, rz);
+        EntitySetActive(e, true);
+        if (EntityHasComponent(e, "Rigidbody")) { SetLinearVelocity(e, 0, 0, 0); SetAngularVelocity(e, 0, 0, 0); }
+        if (HasScript(e, "PooledObject"))
+        {
+            SetScriptField(e, "pool", GetEntityId());
+            if (defaultLifetime > 0 && GetScriptField(e, "lifetime") <= 0) { SetScriptField(e, "lifetime", defaultLifetime); }
+        }
+        SendMessage(e, "OnSpawned");
+        spawns++;
+        Count();
+        return e;
+    }
+
+    func Despawn(e)
+    {
+        var i = ListIndexOf(used, e);
+        if (i < 0) { return false; }
+        ListRemoveAt(used, i);
+        SendMessage(e, "OnDespawned");
+        EntitySetActive(e, false);
+        EntitySetPosition(e, 0, -10000, 0);
+        free.Add(e);
+        Count();
+        return true;
+    }
+
+    func DespawnAll()
+    {
+        while (used.Count > 0) { Despawn(used[0]); }
+    }
+
+    func Count()
+    {
+        // Havuz dışında silinen nesneleri at
+        for (var i = used.Count - 1; i >= 0; i--) { if (!EntityIsValid(used[i])) { ListRemoveAt(used, i); } }
+        for (var j = free.Count - 1; j >= 0; j--) { if (!EntityIsValid(free[j])) { ListRemoveAt(free, j); } }
+        activeCount = used.Count;
+        inactiveCount = free.Count;
+    }
+}

@@ -1,153 +1,128 @@
 #pragma once
 
 #include "Scene/Scene.h"
+#include "Scene/Entity.h"
 #include "Renderer/Lightmap/LightmapBaker.h"
-#include "Renderer/Probe/ReflectionProbe.h"
 #include "Renderer/Probe/AdaptiveProbeVolume.h"
 #include "Renderer/RHI/Texture.h"
 
-#include <memory>
-#include <string>
-#include <chrono>
-#include <thread>
 #include <atomic>
+#include <chrono>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <thread>
+#include <vector>
 
 namespace Conqueror::Editor
 {
+    // Unity "Lighting" penceresinin karşılığı:
+    //  Scene        : GI modları, lightmapper, örnek sayıları, çözünürlük, otomatik üretim
+    //  Environment  : gökyüzü (skybox / prosedürel / düz renk), güneş, ortam ışığı, yansımalar, sis, hale/parlama
+    //  Shadows      : kalite, çözünürlük, mesafe, cascade'ler (önizlemeli), bias
+    //  Post FX      : ton eşleme, pozlama, bloom, SSAO, renk derecelendirme, vinyet, CA, gren, AA (+ hazır ayarlar)
+    //  Lightmaps    : pişirilmiş / gerçek zamanlı lightmap durumu ve önizleme
+    //  Probes       : Adaptive Probe Volume + yansıma probları
+    //  Light Explorer: sahnedeki tüm ışıkların tablo halinde düzenlenmesi
     class LightingPanel
     {
     public:
         LightingPanel() = default;
-        ~LightingPanel()
-        {
-            if (m_BakeThread.joinable())
-                m_BakeThread.join();
-        }
+        ~LightingPanel();
 
-        void OnImGuiRender();
-        void SetContext(std::shared_ptr<Scene> scene) { m_Context = scene; }
+        void OnImGuiRender(bool* open = nullptr);
+        void SetContext(std::shared_ptr<Scene> scene);
+        void SetSelectionCallback(std::function<void(Entity)> callback) { m_SelectCallback = std::move(callback); }
+
+        bool IsBaking() const { return m_Bake.Active; }
+        // Otomasyon / menü erişimi
+        void GenerateLighting();
+        void ClearBakedData();
+        void SelectTab(int tab) { m_RequestedTab = tab; }
 
     private:
-        // Tab rendering
-        void RenderSceneTab();
-        void RenderAdaptiveProbeVolumesTab();
-        void RenderEnvironmentTab();
-        void RenderRealtimeLightmapsTab();
-        void RenderBakedLightmapsTab();
+        enum class BakeKind { None, BakedLightmap, RealtimeLightmap, APV };
 
-        // Helper
-        void RenderGPUBakingSection();
+        struct BakeJob
+        {
+            bool Active = false;
+            BakeKind Kind = BakeKind::None;
+            std::thread Worker;
+            std::atomic<bool> Done{ true };
+            std::atomic<float> Progress{ 0.0f };
+            std::mutex StepMutex;
+            std::string Step;
+            std::shared_ptr<Scene> Snapshot;           // bake thread'i yalnızca bu kopyayı okur
+            std::shared_ptr<LightmapBaker> Baker;
+            std::shared_ptr<AdaptiveProbeVolume> APV;
+            std::chrono::steady_clock::time_point Start;
+            bool Silent = false;                       // otomatik (arka plan) bake
+        };
+
+        struct BakeResultInfo
+        {
+            bool Valid = false;
+            int AtlasWidth = 0;
+            int AtlasHeight = 0;
+            int Texels = 0;
+            int Objects = 0;
+            float Seconds = 0.0f;
+            std::string When;
+        };
+
+        // Sekmeler
+        void DrawToolbar();
+        void DrawSceneTab();
+        void DrawEnvironmentTab();
+        void DrawShadowsTab();
+        void DrawPostTab();
+        void DrawLightmapsTab();
+        void DrawProbesTab();
+        void DrawLightExplorerTab();
+
+        // Yardımcılar
+        void DrawSkyboxPicker();
+        void DrawTexturePicker(const char* label, std::shared_ptr<Texture2D> texture, const std::function<void(std::shared_ptr<Texture2D>)>& setter);
+        void DrawCascadePreview();
+        void ApplyPostPreset(int preset);
+
+        // Bake
+        void StartBake(BakeKind kind, bool silent = false);
+        void PollBake();
+        void CancelBake();
+        void FinishBake();
+        void JoinWorker();
+        void UpdateAutoGenerate();
+        uint64_t ComputeLightingHash() const;
+        std::shared_ptr<Scene> CreateSnapshot() const;
+        LightmapSettings MakeLightmapSettings(bool realtime) const;
 
         std::shared_ptr<Scene> m_Context;
+        std::function<void(Entity)> m_SelectCallback;
+        int m_RequestedTab = -1;
 
-        // Active tab
-        int m_ActiveTab = 0; // 0=Scene, 1=APV, 2=Environment, 3=RealtimeLM, 4=BakedLM
-
-        // Scene tab settings
-        int m_LightmapperIndex = 1; // 0=None, 1=Progressive CPU, 2=Progressive GPU
-        bool m_ImportanceSampling = true;
-        int m_DirectSamples = 32;
-        int m_IndirectSamples = 512;
-        int m_EnvironmentSamples = 256;
-        int m_LightProbeSampleMultiplier = 4;
-        int m_MaxBounces = 2;
-        int m_FilteringIndex = 0; // 0=Auto, 1=None
-        int m_PackingIndex = 0; // 0=Auto, 1=Manual
-        int m_LightmapResolution = 40;
-        int m_MaxLightmapSizeIndex = 1; // 0=512, 1=1024, 2=2048, 3=4096
-        bool m_UseMipmapLimits = true;
-        int m_LightmapCompressionIndex = 2; // 0=None, 1=Low, 2=Medium, 3=High
-        bool m_AmbientOcclusion = true;
-        int m_DirectionalModeIndex = 0; // 0=Directional, 1=Non-Directional
-        float m_AlbedoBoost = 1.0f;
-        float m_IndirectIntensity = 1.0f;
-
-        // Realtime Lighting
-        bool m_RealtimeGI = false;
-
-        // Mixed Lighting
-        bool m_BakedGI = false;
-        int m_LightingModeIndex = 0; // 0=Shadowmask, 1=DistanceShadowmask, 2=Subtractive
-
-        // APV tab settings
-        int m_APBakingModeIndex = 0;
-        float m_APProbeOffset[3] = { 0.0f, 0.0f, 0.0f };
-        float m_APMinSpacing = 1.0f;
-        float m_APMaxSpacing = 9.0f;
-        bool m_APDilation = false;
-        bool m_APVirtualOffset = true;
-        float m_APValidityThreshold = 0.75f;
-        float m_APSearchDistanceMultiplier = 0.2f;
-        float m_APGeometryBias = 0.01f;
-        float m_APRayOriginBias = -0.001f;
-
-        // Environment tab settings
-        int m_EnvironmentReflectionsSourceIndex = 0;
-        int m_ReflectionsResolution = 128;
-        int m_ReflectionsCompressionIndex = 0;
-        float m_ReflectionsIntensityMultiplier = 1.0f;
-        int m_ReflectionsBounces = 1;
-
-        // Skybox resolution
-        int m_SkyboxResolutionIndex = 4;
-
-        // GPU Baking
-        int m_GPUBakingProfileIndex = 0;
-        int m_BakeOnSceneLoadIndex = 0;
-
-        // Baking state
-        bool m_IsBaking = false;
-        float m_BakeProgress = 0.0f;
-        int m_BakeMode = 0; // 0=Baked, 1=Realtime
-        std::string m_BakeStep;
-        bool m_IsAutoUpdate = false;
-
-        // Background baking
-        std::thread m_BakeThread;
-        std::atomic<bool> m_BakeThreadDone{true};
-        std::atomic<float> m_BakeThreadProgress{0.0f};
-        std::string m_BakeThreadStep;
-        std::shared_ptr<LightmapBaker> m_ActiveBaker;
-        std::chrono::high_resolution_clock::time_point m_BakeStartTime;
-
-        // Realtime lightmap state
-        bool m_RealtimeBaked = false;
-        int m_RealtimeAtlasWidth = 0;
-        int m_RealtimeAtlasHeight = 0;
-        int m_RealtimeTexelCount = 0;
-        int m_RealtimeObjectCount = 0;
-        float m_RealtimeBakeTime = 0.0f;
-        std::shared_ptr<Texture2D> m_RealtimeLightmapTexture;
-
-        // Realtime lightmap settings
-        int m_RealtimeResolution = 20;
-        int m_RealtimeIndirectSamples = 256;
-        int m_RealtimeMaxBounces = 1;
-
-        // Realtime lightmap auto-update
-        bool m_RealtimeAutoUpdate = true;
-        glm::vec3 m_LastLightDir = glm::vec3(0);
-        glm::vec3 m_LastLightColor = glm::vec3(0);
-        float m_LastLightIntensity = 0.0f;
-        std::chrono::high_resolution_clock::time_point m_LastAutoUpdateTime;
-        bool m_HasAutoBakedOnce = false;
-
-        // Baked lightmap state
-        bool m_BakedLightmapBaked = false;
-        int m_BakedAtlasWidth = 0;
-        int m_BakedAtlasHeight = 0;
-        int m_BakedTexelCount = 0;
-        int m_BakedObjectCount = 0;
-        int m_BakedProbeCount = 0;
-        float m_BakedBakeTime = 0.0f;
-        std::shared_ptr<Texture2D> m_BakedLightmapTexture;
-
-        // APV bake state
-        bool m_APBaked = false;
+        BakeJob m_Bake;
+        BakeResultInfo m_BakedInfo;
+        BakeResultInfo m_RealtimeInfo;
+        BakeResultInfo m_APVInfo;
         int m_APVProbeCount = 0;
-        int m_APVBrickCount = 0;
-        int m_APVLevelCount = 0;
-        float m_APVBakeTime = 0.0f;
-        std::shared_ptr<AdaptiveProbeVolume> m_ActiveAPV;
+        int m_APVLevels = 0;
+        std::shared_ptr<Texture2D> m_RealtimeLightmap;
+
+        // Otomatik üretim
+        uint64_t m_LastLightingHash = 0;
+        bool m_AutoPending = false;
+        std::chrono::steady_clock::time_point m_AutoChangeTime{};
+
+        // Skybox
+        int m_SkyboxResolutionIndex = 2; // 0 512, 1 1024, 2 2048, 3 4096, 4 kaynak
+        std::vector<std::string> m_SkyboxCandidates;
+        std::chrono::steady_clock::time_point m_LastSkyboxScan{};
+
+        // Light Explorer filtresi
+        char m_LightFilter[64] = {};
+        std::string m_StatusMessage;
+        std::chrono::steady_clock::time_point m_StatusTime{};
     };
 }

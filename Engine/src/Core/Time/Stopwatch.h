@@ -14,8 +14,8 @@ namespace Conqueror
         struct Lap
         {
             std::string Name;
-            double Time; // seconds
-            uint32_t Index;
+            double Time{}; // seconds
+            uint32_t Index{};
         };
 
         Stopwatch();

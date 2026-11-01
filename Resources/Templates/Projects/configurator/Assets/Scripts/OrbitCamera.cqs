@@ -1,0 +1,111 @@
+using nativebridge;
+
+// Sergi kamerası: sol / sağ fare sürükle = etrafında dön, tekerlek = yakınlaş, boşta kalınca yavaşça kendiliğinden döner.
+// Configurator hazır açılar için GoTo(yaw, pitch, distance) çağırır (yumuşak geçiş). Arayüz üstündeyken fare yok sayılır.
+script OrbitCamera : ConquerorScript
+{
+    public float targetX = 0.0;
+    public float targetY = 0.75;
+    public float targetZ = 0.0;
+    public float yaw = 145.0;
+    public float pitch = 12.0;
+    public float distance = 7.2;
+    public float minDistance = 2.0;
+    public float maxDistance = 13.0;
+    public float sensitivity = 0.25;
+    public float idleSpin = 4.0;              // derece / s (boştayken)
+    public float sharpness = 6.0;
+
+    private float wantYaw = 145.0;
+    private float wantPitch = 12.0;
+    private float wantDist = 7.2;
+    private float idle = 0.0;
+    private float fov = 45.0;
+    private float wantFov = 45.0;
+    private float wantTY = 0.75;
+    private bool interior = false;
+
+    func Start()
+    {
+        wantYaw = yaw;
+        wantPitch = pitch;
+        wantDist = distance;
+        wantTY = targetY;
+    }
+
+    func GoTo(y, p, d)
+    {
+        wantYaw = y;
+        wantPitch = p;
+        wantDist = d;
+        wantFov = 45.0;
+        wantTY = 0.75;
+        interior = false;
+        idle = -4.0;
+    }
+
+    // Detay görünümü (jant, far): hedef yüksekliği de değişir
+    func GoToPoint(y, p, d, ty)
+    {
+        GoTo(y, p, d);
+        wantTY = ty;
+    }
+
+    // Sürücü koltuğu: hedef aracın içinde, kamera hedefin çevresinde değil hedefin yerinde döner
+    func Interior()
+    {
+        interior = true;
+        wantYaw = 0.0;
+        wantPitch = -6.0;
+        wantDist = 0.01;
+        wantFov = 70.0;
+        wantTY = 1.06;
+        idle = -1000.0;
+    }
+
+    func LateUpdate(dt)
+    {
+        var overUI = UIIsPointerOver();
+        var drag = !overUI && (IsMouseButtonPressed(0) || IsMouseButtonPressed(1));
+        var md = GetMouseDelta();
+        if (drag && (MathAbs(md.x) + MathAbs(md.y) > 0.0))
+        {
+            wantYaw -= md.x * sensitivity;
+            wantPitch = MathClamp(wantPitch + md.y * sensitivity * 0.6, interior ? -40.0 : 2.0, interior ? 30.0 : 70.0);
+            idle = interior ? -1000.0 : 0.0;
+        }
+        var wheel = overUI ? 0.0 : GetMouseScrollDelta();
+        if (wheel != 0.0 && !interior)
+        {
+            wantDist = MathClamp(wantDist * (1.0 - wheel * 0.1), minDistance, maxDistance);
+            idle = 0.0;
+        }
+        idle += dt;
+        if (idle > 3.0 && !interior) { wantYaw += idleSpin * dt; }
+        var k = 1.0 - MathExp(-sharpness * dt);
+        yaw = yaw + MathNormalizeAngle(wantYaw - yaw) * k;
+        pitch = MathLerp(pitch, wantPitch, k);
+        distance = MathLerp(distance, wantDist, k);
+        fov = MathLerp(fov, wantFov, k);
+        targetY = MathLerp(targetY, wantTY, k);
+        var yr = MathDegToRad(yaw);
+        var pr = MathDegToRad(pitch);
+        if (interior)
+        {
+            // Sürücü göz hizası (ortadaki koltuk), ileri bakış
+            EntitySetWorldPosition(GetEntityId(), targetX, targetY, targetZ - 0.22);
+            SetRotation(pitch, yaw, 0);
+        }
+        else
+        {
+            var cx = targetX + MathSin(yr) * MathCos(pr) * distance;
+            var cy = targetY + MathSin(pr) * distance;
+            var cz = targetZ + MathCos(yr) * MathCos(pr) * distance;
+            EntitySetWorldPosition(GetEntityId(), cx, cy, cz);
+            SetRotation(-pitch, yaw, 0);
+        }
+        EntitySetComponentField(GetEntityId(), "Camera", "FieldOfView", fov);
+        // Odak mesafesi (alan derinliği)
+        RenderSettingSet("Post.FocusDistance", interior ? 1.0 : distance);
+    }
+}

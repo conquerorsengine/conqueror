@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: pistol_aim_up
+      States:
+        - Name: pistol_aim_up
+          ClipIndex: 12
+          ClipName: pistol_aim_up
+  Parameters: []

@@ -1,0 +1,152 @@
+using nativebridge;
+
+// 2D platform denetleyicisi (Rigidbody 2D ile): A/D ya da oklar yürür, Space / W / Yukarı zıplar.
+// Zıplama tuşu erken bırakılırsa zıplama kısalır; kenardan düştükten hemen sonra da zıplanabilir (coyote time).
+script PlatformerController2D : ConquerorScript
+{
+    public float moveSpeed = 7.0;
+    public float acceleration = 60.0;
+    public float deceleration = 70.0;
+    public float airAccelerationMultiplier = 0.65;
+    public float jumpHeight = 3.2;
+    public float gravity = 35.0;
+    public float fallGravityMultiplier = 1.6;
+    public float maxFallSpeed = 22.0;
+    public float jumpCutMultiplier = 0.45;
+    public float coyoteTime = 0.12;
+    public float jumpBufferTime = 0.12;
+    public int extraJumps = 0;
+    public float groundCheckDistance = 0.08;
+    public bool flipSprite = true;
+
+    // Çalışma zamanı bilgisi
+    public bool grounded = false;
+    public int jumps = 0;
+    public float velocityX = 0.0;
+    public float velocityY = 0.0;
+    public int facing = 1;
+
+    private float coyote = 0.0;
+    private float buffer = 0.0;
+    private int airJumpsLeft = 0;
+    private float halfHeight = 0.5;
+    private float halfWidth = 0.5;
+    private bool jumping = false;
+    private float inputOverride = 0.0;
+    private float overrideTime = 0.0;
+    private float holdTime = 0.0;
+
+    func Start()
+    {
+        var s = GetScale();
+        var size = GetComponentField("BoxCollider2D", "Size");
+        var sx = 1.0;
+        var sy = 1.0;
+        if (size != null) { sx = size.x; sy = size.y; }
+        halfHeight = MathAbs(s.y) * sy * 0.5;
+        halfWidth = MathAbs(s.x) * sx * 0.5;
+        // Yerçekimini betik uygular (hassas zıplama eğrisi)
+        SetComponentField("Rigidbody2D", "GravityScale", 0.0);
+        SetComponentField("Rigidbody2D", "FixedRotation", true);
+        airJumpsLeft = extraJumps;
+    }
+
+    // Kod / test için: belirli süre yatay girdi ver (-1..1)
+    func Steer(x, seconds)
+    {
+        inputOverride = x;
+        overrideTime = seconds;
+    }
+
+    // Kod / test için: tam yükseklikte zıpla (tuş basılı sayılır)
+    func Jump()
+    {
+        buffer = jumpBufferTime;
+        holdTime = 0.35;
+    }
+
+    func CheckGround()
+    {
+        var p = GetPosition();
+        // Ayakların iki köşesinden ve ortasından aşağı ışın
+        var reach = halfHeight + groundCheckDistance;
+        var offsets = [-halfWidth * 0.9, 0.0, halfWidth * 0.9];
+        for (var o in offsets)
+        {
+            var hit = Raycast2D(p.x + o, p.y, 0, -1, reach, -1, true);
+            if (hit != null && !hit.isTrigger) { return true; }
+        }
+        return false;
+    }
+
+    func Update(dt)
+    {
+        if (dt <= 0) { return; }
+        if (dt > 0.05) { dt = 0.05; }
+        var input = 0.0;
+        if (IsKeyPressed(Key.A) || IsKeyPressed(Key.Left)) { input -= 1.0; }
+        if (IsKeyPressed(Key.D) || IsKeyPressed(Key.Right)) { input += 1.0; }
+        if (overrideTime > 0) { input = inputOverride; overrideTime -= dt; }
+        var jumpPressed = IsKeyDown(Key.Space) || IsKeyDown(Key.W) || IsKeyDown(Key.Up);
+        var jumpHeld = IsKeyPressed(Key.Space) || IsKeyPressed(Key.W) || IsKeyPressed(Key.Up) || holdTime > 0;
+        holdTime -= dt;
+        if (jumpPressed) { buffer = jumpBufferTime; }
+
+        var v = GetLinearVelocity2D();
+        var vx = v.x;
+        var vy = v.y;
+        grounded = vy <= 0.05 && CheckGround();
+        if (grounded) { coyote = coyoteTime; airJumpsLeft = extraJumps; jumping = false; }
+        else { coyote -= dt; }
+        buffer -= dt;
+
+        // Yatay: hedef hıza ivmelen / fren yap
+        var target = input * moveSpeed;
+        var rate = MathAbs(input) > 0.01 ? acceleration : deceleration;
+        if (!grounded) { rate *= airAccelerationMultiplier; }
+        var step = rate * dt;
+        if (vx < target) { vx = MathMin(vx + step, target); }
+        else if (vx > target) { vx = MathMax(vx - step, target); }
+
+        // Zıplama (tampon + coyote time + ekstra zıplamalar)
+        if (buffer > 0)
+        {
+            if (coyote > 0)
+            {
+                vy = MathSqrt(2.0 * gravity * jumpHeight);
+                coyote = 0;
+                buffer = 0;
+                jumping = true;
+                jumps++;
+            }
+            else if (airJumpsLeft > 0)
+            {
+                vy = MathSqrt(2.0 * gravity * jumpHeight * 0.8);
+                airJumpsLeft--;
+                buffer = 0;
+                jumping = true;
+                jumps++;
+            }
+        }
+        // Tuş erken bırakılınca kısa zıplama
+        if (jumping && !jumpHeld && vy > 0) { vy *= jumpCutMultiplier; jumping = false; }
+
+        // Yerçekimi: düşerken daha güçlü
+        if (!grounded || vy > 0)
+        {
+            var g = vy < 0 ? gravity * fallGravityMultiplier : gravity;
+            vy -= g * dt;
+            if (vy < -maxFallSpeed) { vy = -maxFallSpeed; }
+        }
+        else if (vy < 0) { vy = 0; }
+        SetLinearVelocity2D(vx, vy);
+        velocityX = vx;
+        velocityY = vy;
+
+        if (MathAbs(input) > 0.01)
+        {
+            facing = input > 0 ? 1 : -1;
+            if (flipSprite && HasComponent("SpriteRenderer")) { SetComponentField("SpriteRenderer", "FlipX", facing < 0); }
+        }
+    }
+}

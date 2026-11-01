@@ -1,0 +1,69 @@
+using nativebridge;
+
+// HUD: playerName nesnesindeki Health (health / maxHealth), weaponName nesnesindeki Weapon (ammo / reserveAmmo)
+// ve GlobalGet("score") değerlerini gösterir. Öğeler adla: "Health Fill", "Health Text", "Ammo Text",
+// "Score Text", "Crosshair", "Damage Flash".
+script HUD : ConquerorScript
+{
+    public string playerName = "FPS Player";
+    public string weaponName = "";
+    public float lowHealth = 0.3;
+    public float flashFade = 2.5;
+
+    // Çalışma zamanı bilgisi
+    public float healthFraction = 1.0;
+    public float flashAlpha = 0.0;
+    public string ammoText = "";
+    public int score = 0;
+
+    private float lastHealth = -1.0;
+    private float t = 0.0;
+
+    func SetText(name, text)
+    {
+        var e = FindEntity(name);
+        if (e != null) { UISetText(e, text); }
+    }
+
+    func Update(dt)
+    {
+        t += GetUnscaledDeltaTime();
+        var player = FindEntity(playerName);
+        if (player != null)
+        {
+            var hp = GetScriptField(player, "health");
+            var max = GetScriptField(player, "maxHealth");
+            if (hp != null && max != null && max > 0)
+            {
+                healthFraction = MathClamp01(hp / max);
+                var fill = FindEntity("Health Fill");
+                if (fill != null)
+                {
+                    UISetFill(fill, healthFraction);
+                    var low = healthFraction <= lowHealth;
+                    var pulse = low ? 0.6 + 0.4 * MathAbs(MathSin(t * 6.0)) : 1.0;
+                    UISetColor(fill, MathClamp01(2.0 * (1.0 - healthFraction)) * pulse, MathClamp01(2.0 * healthFraction) * pulse, 0.15, 1);
+                }
+                SetText("Health Text", str(int(MathCeil(hp))) + " / " + str(int(max)));
+                if (lastHealth >= 0 && hp < lastHealth) { flashAlpha = MathMin(0.6, flashAlpha + 0.25 + (lastHealth - hp) / max); }
+                lastHealth = hp;
+            }
+        }
+        var weapon = weaponName != "" ? FindEntity(weaponName) : null;
+        if (weapon == null) { for (var w in FindEntitiesWithScript("Weapon")) { weapon = w; break; } }
+        if (weapon != null)
+        {
+            var ammo = GetScriptField(weapon, "ammo");
+            var reserve = GetScriptField(weapon, "reserveAmmo");
+            var reloading = GetScriptField(weapon, "reloading");
+            ammoText = reloading ? "Reloading..." : str(ammo) + " / " + str(reserve);
+        }
+        else { ammoText = ""; }
+        SetText("Ammo Text", ammoText);
+        score = int(GlobalGet("score", 0));
+        SetText("Score Text", "Score " + str(score));
+        flashAlpha = MathMax(0.0, flashAlpha - flashFade * GetUnscaledDeltaTime() * 0.4);
+        var flash = FindEntity("Damage Flash");
+        if (flash != null) { UISetAlpha(flash, flashAlpha); }
+    }
+}

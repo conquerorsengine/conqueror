@@ -1,0 +1,22 @@
+Id: conqueror.moving-platforms
+Name: Moving Platforms
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Platforms that travel between waypoints (ping-pong, loop or one-shot) with eased starts
+  and stops, wait times and an activation switch. Characters and props standing on top ride
+  along. Waypoints are the children of a path object, or a simple offset from the start.
+Category: Gameplay
+Icon: elevator
+Tags: [platform, elevator, waypoints, level-design, platformer]
+Components:
+  - Scripts/MovingPlatform.cqs
+Inserts:
+  - Name: Moving Platform
+    Icon: elevator
+    Prefab: Prefabs/MovingPlatform.cqprefab
+    Tooltip: Kinematic platform that moves 6 m sideways and back
+  - Name: Elevator
+    Icon: up-down
+    Prefab: Prefabs/Elevator.cqprefab
+    Tooltip: Platform that goes up 5 m and back with pauses

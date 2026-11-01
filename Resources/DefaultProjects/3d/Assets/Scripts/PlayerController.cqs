@@ -1,41 +1,39 @@
-using Conqueror;
+using nativebridge;
 
+// 3D oyuncu kontrolcüsü: WASD ile yürü, Space ile zıpla.
+// Public alanlar Inspector'da düzenlenebilir (sahneyle kaydedilir).
 script PlayerController : ConquerorScript
 {
-    var moveSpeed = 5.0;
-    var jumpForce = 5.0;
+    [Tooltip("Yürüme hızı (birim/saniye)")]
+    [Range(0, 20)]
+    public float moveSpeed = 5.0;
 
-    func OnCreate()
+    [Range(0, 30)]
+    public float jumpForce = 5.0;
+
+    func Start()
     {
-        LogInfo("PlayerController baslatildi. Hiz: " + moveSpeed);
+        LogInfo($"PlayerController started (speed {moveSpeed:F1})");
     }
 
-    func OnUpdate(ts)
+    func Update(dt)
     {
         var vel = GetLinearVelocity();
-        var vx = vel.x;
-        var vy = vel.y;
-        var vz = vel.z;
-
         var moveX = 0.0;
         var moveZ = 0.0;
+        if (IsKeyPressed(Key.W)) moveZ -= 1.0;
+        if (IsKeyPressed(Key.S)) moveZ += 1.0;
+        if (IsKeyPressed(Key.A)) moveX -= 1.0;
+        if (IsKeyPressed(Key.D)) moveX += 1.0;
 
-        if (IsKeyPressed(Key.W)) { moveZ = -1.0; }
-        if (IsKeyPressed(Key.S)) { moveZ = 1.0; }
-        if (IsKeyPressed(Key.A)) { moveX = -1.0; }
-        if (IsKeyPressed(Key.D)) { moveX = 1.0; }
+        // Çaprazda hızlanmayı önle
+        var len = MathSqrt(moveX * moveX + moveZ * moveZ);
+        if (len > 1.0) { moveX /= len; moveZ /= len; }
 
-        vx = moveX * moveSpeed;
-        vz = moveZ * moveSpeed;
+        var vy = vel.y;
+        if (IsKeyPressed(Key.Space) && MathAbs(vy) < 0.01)
+            vy = jumpForce;
 
-        if (IsKeyPressed(Key.Space))
-        {
-            if (vy * vy < 0.01)
-            {
-                vy = jumpForce;
-            }
-        }
-
-        SetLinearVelocity(vx, vy, vz);
+        SetLinearVelocity(moveX * moveSpeed, vy, moveZ * moveSpeed);
     }
 }

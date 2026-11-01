@@ -1,0 +1,223 @@
+using nativebridge;
+
+// Araç yapılandırıcı (Unreal Automotive / Product Configurator karşılığı, Variant Manager mantığıyla):
+//   Boya, İç döşeme, Jant, Kaliper varyant setleri (her biri ilgili parçanın modelini değiştirir), fiyat hesabı,
+//   hazır kamera açıları + sürücü koltuğu, ortam (beyaz stüdyo / koyu stüdyo / dış mekân), döner platform, farlar,
+//   araç üstünde tıklanabilir noktalar (hotspot: jant, kokpit, farlar).
+// Arayüz düğmeleri "<Set> <Seçenek>" adlarını taşır (Paint Carmine, Interior Pearl, Rims Black, Calipers Yellow,
+// View Front, Env Outdoor, Turntable, Lights). Klavye: 1-3 boya, F / S / R / T / I / O görünüm, Space platform, L farlar.
+script Configurator : ConquerorScript
+{
+    public string modelPath = "Assets/Vehicles/Models/ConceptCar/";
+    public float basePrice = 64900.0;
+    public float turntableSpeed = 9.0;
+    [Header("State")]
+    public string paint = "Carmine";
+    public string interior = "Carmine";
+    public string rims = "Chrome";
+    public string calipers = "Red";
+    public string environment = "Studio";
+    public bool turntable = true;
+    public bool lights = false;
+    public string view = "Orbit";
+
+    private var body = -1;
+    private var interiorE = -1;
+    private var calipersE = -1;
+    private var rimEntities = [];
+    private var table = -1;
+    private var cam = -1;
+    private var studioCyc = -1;
+    private var darkCyc = -1;
+    private var ground = -1;
+    private float pulse = 0.0;
+    private var softboxes = [];
+    private var headlights = [];
+    private var hotspots = [];
+    private float angle = 0.0;
+    private float flash = 0.0;
+
+    func Start()
+    {
+        body = FindEntity("Car Body");
+        interiorE = FindEntity("Car Interior");
+        calipersE = FindEntity("Car Calipers");
+        foreach (var w in ["FL", "FR", "RL", "RR"]) { rimEntities.Add(FindEntity("Rim " + w)); }
+        table = FindEntity("Turntable");
+        cam = FindEntity("Camera");
+        studioCyc = FindEntity("Studio Cyc");
+        darkCyc = FindEntity("Dark Cyc");
+        ground = FindEntity("Outdoor Ground");
+        foreach (var e in FindEntitiesWithTag("Headlight")) { headlights.Add(e); }
+        foreach (var e in FindEntitiesWithTag("Softbox")) { softboxes.Add(e); }
+        foreach (var e in FindEntitiesWithTag("Hotspot")) { hotspots.Add(e); }
+        Apply();
+        SetEnvironment(environment);
+        SetLights(false);
+    }
+
+    func Price()
+    {
+        var p = basePrice;
+        if (paint == "Pearl") { p += 2500.0; }
+        if (paint == "Graphite") { p += 1000.0; }
+        if (interior == "Pearl") { p += 1800.0; }
+        if (interior == "Graphite") { p += 900.0; }
+        if (rims == "Black") { p += 1200.0; }
+        if (rims == "Bronze") { p += 1600.0; }
+        if (calipers != "Red") { p += 600.0; }
+        return p;
+    }
+
+    func FormatPrice(p)
+    {
+        var whole = int(p);
+        var th = int(whole / 1000);
+        var rest = whole - th * 1000;
+        return th + " " + StringPadLeft("" + rest, 3, "0") + " EUR";
+    }
+
+    // Seçili varyantları modellere uygula
+    func Apply()
+    {
+        EntitySetComponentField(body, "Model", "FilePath", modelPath + "Body_" + paint + ".glb");
+        EntitySetComponentField(interiorE, "Model", "FilePath", modelPath + "Interior_" + interior + ".glb");
+        EntitySetComponentField(calipersE, "Model", "FilePath", modelPath + "Calipers_" + calipers + ".glb");
+        var names = ["FL", "FR", "RL", "RR"];
+        for (var i = 0; i < rimEntities.Count; i++)
+        {
+            EntitySetComponentField(rimEntities[i], "Model", "FilePath", modelPath + "Rim_" + names[i] + "_" + rims + ".glb");
+        }
+        flash = 0.25;
+        Refresh();
+    }
+
+    func SetOption(set, option)
+    {
+        if (set == "Paint") { paint = option; }
+        else if (set == "Interior") { interior = option; }
+        else if (set == "Rims") { rims = option; }
+        else if (set == "Calipers") { calipers = option; }
+        else { return; }
+        Apply();
+    }
+
+    func SetLights(on)
+    {
+        lights = on;
+        foreach (var h in headlights) { EntitySetComponentField(h, "SpotLight", "Intensity", on ? 14.0 : 0.0); }
+        Refresh();
+    }
+
+    // Ortam: beyaz siklorama stüdyo, koyu (parlak siyah zeminli) stüdyo, dış mekân (HDR gökyüzü + geniş zemin)
+    func SetEnvironment(env)
+    {
+        environment = env;
+        var outdoor = env == "Outdoor";
+        SceneSetSkybox(outdoor ? "Assets/Studio/outdoor_sky.hdr" : "Assets/Studio/studio_small_09.hdr");
+        var bg = env == "Dark" ? {r: 0.02, g: 0.021, b: 0.024, a: 1} : {r: 0.8, g: 0.805, b: 0.81, a: 1};
+        EntitySetComponentField(cam, "Camera", "Background", outdoor ? "Skybox" : "SolidColor");
+        EntitySetComponentField(cam, "Camera", "BackgroundColor", bg);
+        RenderSettingSet("Fog.Enabled", false);
+        if (studioCyc >= 0) { EntitySetActive(studioCyc, env == "Studio"); }
+        if (darkCyc >= 0) { EntitySetActive(darkCyc, env == "Dark"); }
+        if (ground >= 0) { EntitySetActive(ground, outdoor); }
+        foreach (var sbx in softboxes) { EntitySetActive(sbx, !outdoor); }
+        RenderSettingSet("Post.Exposure", outdoor ? 0.0 : (env == "Dark" ? -0.05 : -0.35));
+        Refresh();
+    }
+
+    func SetView(v)
+    {
+        view = v;
+        // Hazır açılar araca göre (platform durur); araç önü -Z: ön = 180°, yan = 90°, arka = 0°
+        if (v != "Orbit") { turntable = false; }
+        if (v == "Front") { InvokeMethod(cam, "GoTo", angle + 180.0, 8.0, 6.4); }
+        else if (v == "Side") { InvokeMethod(cam, "GoTo", angle + 90.0, 6.0, 7.0); }
+        else if (v == "Rear") { InvokeMethod(cam, "GoTo", angle + 25.0, 14.0, 6.8); }
+        else if (v == "Top") { InvokeMethod(cam, "GoTo", angle + 150.0, 62.0, 9.0); }
+        else if (v == "Wheel") { InvokeMethod(cam, "GoToPoint", angle + 118.0, 4.0, 2.4, 0.42); }
+        else if (v == "Lights") { InvokeMethod(cam, "GoToPoint", angle + 162.0, 8.0, 3.0, 0.7); }
+        else if (v == "Interior") { InvokeMethod(cam, "Interior"); }
+        else
+        {
+            turntable = true;
+            InvokeMethod(cam, "GoTo", angle + 145.0, 12.0, 7.2);
+        }
+        foreach (var hs in hotspots) { EntitySetActive(hs, v != "Interior"); }
+        // Sürücü koltuğunda alan derinliği kapalı (yakın gösterge ve direksiyon bulanıklaşıyordu)
+        RenderSettingSet("Post.DepthOfField", v != "Interior");
+        Refresh();
+    }
+
+    func Highlight(name, on)
+    {
+        UISetColor(name, on ? 0.95 : 0.12, on ? 0.95 : 0.13, on ? 0.97 : 0.15, on ? 0.95 : 0.8);
+        UISetTextColor(name, on ? 0.05 : 0.92, on ? 0.05 : 0.92, on ? 0.06 : 0.94, 1.0);
+    }
+
+    func Refresh()
+    {
+        UISetText("ModelName", "CONCEPT GT");
+        var pn = paint == "Carmine" ? "CARMINE RED" : (paint == "Pearl" ? "PEARL WHITE" : "GRAPHITE GREY");
+        UISetText("PaintName", pn + "   /   " + StringToUpper(rims) + " WHEELS   /   " + StringToUpper(calipers) + " CALIPERS");
+        UISetText("PriceText", "FROM  " + FormatPrice(Price()));
+        foreach (var o in ["Carmine", "Pearl", "Graphite"])
+        {
+            UISetAlpha("Paint Ring " + o, o == paint ? 1.0 : 0.0);
+            UISetAlpha("Interior Ring " + o, o == interior ? 1.0 : 0.0);
+        }
+        foreach (var o in ["Chrome", "Black", "Bronze"]) { UISetAlpha("Rims Ring " + o, o == rims ? 1.0 : 0.0); }
+        foreach (var o in ["Red", "Yellow", "Black"]) { UISetAlpha("Calipers Ring " + o, o == calipers ? 1.0 : 0.0); }
+        foreach (var v in ["Orbit", "Front", "Side", "Rear", "Top", "Interior"]) { Highlight("View " + v, v == view); }
+        foreach (var e in ["Studio", "Dark", "Outdoor"]) { Highlight("Env " + e, e == environment); }
+        UISetText("Turntable", turntable ? "TURNTABLE  ON" : "TURNTABLE  OFF");
+        UISetText("Lights", lights ? "HEADLIGHTS  ON" : "HEADLIGHTS  OFF");
+    }
+
+    func Update(dt)
+    {
+        foreach (var ev in UIGetEvents())
+        {
+            if (ev.type != "Click") { continue; }
+            var n = ev.name;
+            var parts = StringSplit(n, " ");
+            if (parts.Count == 2 && (parts[0] == "Paint" || parts[0] == "Interior" || parts[0] == "Rims" || parts[0] == "Calipers")) { SetOption(parts[0], parts[1]); }
+            else if (StringStartsWith(n, "View ")) { SetView(StringRemovePrefix(n, "View ")); }
+            else if (StringStartsWith(n, "Env ")) { SetEnvironment(StringRemovePrefix(n, "Env ")); }
+            else if (n == "Turntable") { turntable = !turntable; Refresh(); }
+            else if (n == "Lights") { SetLights(!lights); }
+        }
+        // Hotspot: araç üstündeki noktalara tıklayınca o detaya geçiş
+        if (IsMouseButtonDown(0) && !UIIsPointerOver())
+        {
+            var mp = GetMousePosition();
+            var hit = RaycastFromScreen(mp.x, mp.y, 50.0);
+            if (hit != null && StringStartsWith(hit.name, "Hotspot ")) { SetView(StringRemovePrefix(hit.name, "Hotspot ")); }
+        }
+        if (IsKeyDown("1")) { SetOption("Paint", "Carmine"); }
+        if (IsKeyDown("2")) { SetOption("Paint", "Pearl"); }
+        if (IsKeyDown("3")) { SetOption("Paint", "Graphite"); }
+        if (IsKeyDown("F")) { SetView("Front"); }
+        if (IsKeyDown("S")) { SetView("Side"); }
+        if (IsKeyDown("R")) { SetView("Rear"); }
+        if (IsKeyDown("T")) { SetView("Top"); }
+        if (IsKeyDown("I")) { SetView("Interior"); }
+        if (IsKeyDown("O")) { SetView("Orbit"); }
+        if (IsKeyDown("Space")) { turntable = !turntable; Refresh(); }
+        if (IsKeyDown("L")) { SetLights(!lights); }
+
+        if (turntable) { angle = MathNormalizeAngle(angle + turntableSpeed * dt); }
+        else if (view == "Interior") { angle = angle * MathExp(-6.0 * dt); }
+        if (table >= 0) { EntitySetRotation(table, 0, angle, 0); }
+        // Hotspot simgeleri hafifçe nabız gibi atar
+        pulse += dt;
+        var hsz = 0.24 + 0.03 * MathSin(pulse * 3.2);
+        foreach (var hs in hotspots) { EntitySetComponentField(hs, "BillboardRenderer", "Size", {x: hsz, y: hsz}); }
+        if (flash > 0.0)
+        {
+            flash -= dt;
+            UISetAlpha("Flash", MathMax(flash, 0.0) * 1.2);
+        }
+    }
+}

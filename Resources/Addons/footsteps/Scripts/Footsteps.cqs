@@ -1,0 +1,89 @@
+using nativebridge;
+
+// Ayak sesleri: yerde yürürken her stepDistance metrede bir ses. Zemin türü: zeminin etiketi ya da adı
+// "Grass" / "Metal" / "Wood" içeriyorsa o set, değilse taş. Character Controller ya da aşağı ışınla zemin denetimi.
+script Footsteps : ConquerorScript
+{
+    public float stepDistance = 1.7;
+    public float volume = 0.6;
+    public float pitchVariation = 0.08;
+    public float landSpeed = 6.0;
+    public string soundFolder = "Packages/footsteps/Sounds/";
+    public float groundCheck = 0.25;
+
+    // Çalışma zamanı bilgisi
+    public int steps = 0;
+    public int landings = 0;
+    public string surface = "stone";
+    public bool grounded = false;
+
+    private float walked = 0.0;
+    private var last = null;
+    private bool wasGrounded = true;
+    private float fallSpeed = 0.0;
+    private int lastIndex = -1;
+
+    func Update(dt)
+    {
+        if (dt <= 0) { return; }
+        var p = EntityGetWorldPosition(GetEntityId());
+        if (last == null) { last = p; }
+        var dx = p.x - last.x;
+        var dz = p.z - last.z;
+        var vy = (p.y - last.y) / dt;
+        last = p;
+        var ground = CheckGround(p);
+        grounded = ground != null;
+        if (!grounded) { fallSpeed = MathMax(fallSpeed, -vy); }
+        if (grounded && !wasGrounded && fallSpeed >= landSpeed)
+        {
+            landings++;
+            AudioPlayOneShotAt(soundFolder + "land.wav", p.x, p.y, p.z, volume, 1.0);
+        }
+        if (grounded) { fallSpeed = 0.0; }
+        wasGrounded = grounded;
+        if (!grounded) { return; }
+        walked += MathSqrt(dx * dx + dz * dz);
+        if (walked >= stepDistance)
+        {
+            walked = 0.0;
+            Step(ground, p);
+        }
+    }
+
+    func CheckGround(p)
+    {
+        if (HasComponent("CharacterController"))
+        {
+            if (!CharacterIsGrounded()) { return null; }
+            var g = CharacterGetGroundEntity();
+            return g != null && g >= 0 ? g : -1;
+        }
+        var hit = Raycast(p.x, p.y + 0.1, p.z, 0, -1, 0, groundCheck + 0.1, -1, true);
+        return hit != null ? hit.entity : null;
+    }
+
+    func SurfaceOf(e)
+    {
+        if (e == null || e < 0) { return "stone"; }
+        var tag = StringToLower(EntityGetTag(e));
+        var name = StringToLower(EntityGetName(e));
+        if (StringContains(tag, "grass") || StringContains(name, "grass") || StringContains(name, "terrain")) { return "grass"; }
+        if (StringContains(tag, "metal") || StringContains(name, "metal")) { return "metal"; }
+        if (StringContains(tag, "wood") || StringContains(name, "wood") || StringContains(name, "plank")) { return "wood"; }
+        return "stone";
+    }
+
+    func Step(ground, p)
+    {
+        surface = SurfaceOf(ground);
+        var count = surface == "stone" ? 4 : 3;
+        var i = MathRandomInt(1, count);
+        if (i == lastIndex) { i = i % count + 1; }
+        lastIndex = i;
+        var pitch = 1.0 + MathRandomRange(-pitchVariation, pitchVariation);
+        AudioPlayOneShotAt(soundFolder + "step_" + surface + "_" + str(i) + ".wav", p.x, p.y, p.z, volume * MathRandomRange(0.85, 1.0), pitch);
+        steps++;
+        SendMessage(GetEntityId(), "OnFootstep", surface);
+    }
+}

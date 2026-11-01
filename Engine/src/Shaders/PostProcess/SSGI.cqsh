@@ -1,0 +1,190 @@
+#language GLSL
+// Ekran uzayı küresel aydınlatma (Lumen ekran izleri benzeri, yarım çözünürlük): her pikselden kosinüs ağırlıklı
+// yarım küre ışınları görüş uzayında yürütülür; çarpılan yüzeyin ışıklı rengi dolaylı ışık olarak toplanır.
+// u_Mode 0 = iz, 1 = zamansal birikim (yeniden izdüşüm), 2 = derinlik/normal duyarlı uzamsal süzgeç
+#type vertex
+#version 450 core
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+out vec2 v_UV;
+void main()
+{
+    v_UV = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+
+#include "Include/Common.glsl"
+
+layout(location = 0) out vec4 FragColor;
+in vec2 v_UV;
+
+uniform int u_Mode = 0;
+uniform sampler2D u_Scene;
+uniform sampler2D u_Depth;
+uniform sampler2D u_GNormal;
+uniform sampler2D u_Source;       // mod 1/2: önceki adımın çıktısı
+uniform sampler2D u_History;      // mod 1
+uniform mat4 u_Projection;
+uniform mat4 u_InvProjection;
+uniform mat4 u_View;
+uniform mat4 u_InvViewProj;
+uniform mat4 u_PrevViewProj;
+uniform float u_Radius = 4.0;
+uniform int u_Rays = 4;
+uniform float u_Frame = 0.0;
+uniform float u_Feedback = 0.9;
+uniform int u_HistoryValid = 0;
+uniform vec2 u_Texel;             // kaynak dokunun texel boyutu
+
+vec3 OctDecode(vec2 e)
+{
+    vec3 n = vec3(e, 1.0 - abs(e.x) - abs(e.y));
+    float t = max(-n.z, 0.0);
+    n.x += n.x >= 0.0 ? -t : t;
+    n.y += n.y >= 0.0 ? -t : t;
+    return normalize(n);
+}
+
+vec3 ViewPosition(vec2 uv, float depth)
+{
+    vec4 p = u_InvProjection * vec4(uv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+    return p.xyz / p.w;
+}
+
+vec2 Project(vec3 viewPos)
+{
+    vec4 clip = u_Projection * vec4(viewPos, 1.0);
+    return clip.xy / clip.w * 0.5 + 0.5;
+}
+
+float Hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+
+vec4 Trace()
+{
+    vec4 g = texture(u_GNormal, v_UV);
+    float depth = texture(u_Depth, v_UV).r;
+    if (g.w < 1.5 || depth >= 1.0)
+        return vec4(0.0);
+    vec3 P = ViewPosition(v_UV, depth);
+    vec3 N = normalize(mat3(u_View) * OctDecode(g.xy));
+    vec3 T = normalize(abs(N.y) < 0.99 ? cross(N, vec3(0.0, 1.0, 0.0)) : cross(N, vec3(1.0, 0.0, 0.0)));
+    vec3 B = cross(N, T);
+    float noise = InterleavedGradientNoise(gl_FragCoord.xy + vec2(u_Frame * 5.588, u_Frame * 3.31));
+    float noise2 = Hash(gl_FragCoord.xy + u_Frame);
+    vec3 sum = vec3(0.0);
+    float hits = 0.0;
+    int rays = clamp(u_Rays, 1, 16);
+    const int kSteps = 14;
+    for (int r = 0; r < rays; ++r)
+    {
+        // Kosinüs ağırlıklı yön (her piksel ve karede döner)
+        float u1 = fract(noise + float(r) / float(rays));
+        float u2 = fract(noise2 + float(r) * 0.618034);
+        float rad = sqrt(u1);
+        float phi = 6.2831853 * u2;
+        vec3 dir = normalize(T * (rad * cos(phi)) + B * (rad * sin(phi)) + N * sqrt(max(1.0 - u1, 0.0)));
+        float stepLen = u_Radius / float(kSteps) * (0.5 + noise);
+        vec3 pos = P + N * 0.03;
+        vec3 prev = pos;
+        for (int i = 0; i < kSteps; ++i)
+        {
+            pos += dir * stepLen;
+            stepLen *= 1.12;
+            if (pos.z > -0.05)
+                break;
+            vec2 uv = Project(pos);
+            if (any(lessThan(uv, vec2(0.0))) || any(greaterThan(uv, vec2(1.0))))
+                break;
+            float sd = textureLod(u_Depth, uv, 0.0).r;
+            if (sd >= 1.0)
+                continue;
+            float sceneZ = ViewPosition(uv, sd).z;
+            float diff = sceneZ - pos.z;
+            if (diff > 0.0 && diff < max(0.4, stepLen * 1.5))
+            {
+                vec3 c = textureLod(u_Scene, uv, 0.0).rgb;
+                if (!any(isnan(c)) && !any(isinf(c)))
+                {
+                    // Çok uzak çarpmalar zayıflar (ekran dışı bilgi eksikliğini yumuşatır)
+                    float fade = 1.0 - smoothstep(0.6, 1.0, length(pos - P) / u_Radius);
+                    sum += min(c, vec3(32.0)) * fade;
+                    hits += 1.0;
+                }
+                break;
+            }
+            prev = pos;
+        }
+    }
+    return vec4(sum / float(rays), hits / float(rays));
+}
+
+void main()
+{
+    if (u_Mode == 0)
+    {
+        FragColor = Trace();
+        return;
+    }
+    if (u_Mode == 1)
+    {
+        vec4 current = texture(u_Source, v_UV);
+        float depth = texture(u_Depth, v_UV).r;
+        if (u_HistoryValid == 0 || depth >= 1.0)
+        {
+            FragColor = current;
+            return;
+        }
+        vec4 world = u_InvViewProj * vec4(v_UV * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+        world /= world.w;
+        vec4 prev = u_PrevViewProj * world;
+        vec2 prevUV = prev.xy / prev.w * 0.5 + 0.5;
+        if (prev.w <= 0.0 || any(lessThan(prevUV, vec2(0.0))) || any(greaterThan(prevUV, vec2(1.0))))
+        {
+            FragColor = current;
+            return;
+        }
+        vec4 history = texture(u_History, prevUV);
+        // Komşuluk sınırlaması (hızlı değişimde iz bırakmasın)
+        vec4 mn = current, mx = current;
+        for (int y = -1; y <= 1; ++y)
+        for (int x = -1; x <= 1; ++x)
+        {
+            vec4 s = texture(u_Source, v_UV + vec2(x, y) * u_Texel);
+            mn = min(mn, s);
+            mx = max(mx, s);
+        }
+        history = clamp(history, mn - (mx - mn) * 0.5, mx + (mx - mn) * 0.5);
+        FragColor = mix(current, history, u_Feedback);
+        return;
+    }
+    // Uzamsal süzgeç: 5x5, derinlik ve normal benzerliği ağırlıklı
+    float depth = texture(u_Depth, v_UV).r;
+    vec4 g = texture(u_GNormal, v_UV);
+    if (depth >= 1.0 || g.w < 1.5)
+    {
+        FragColor = vec4(0.0);
+        return;
+    }
+    vec3 n = OctDecode(g.xy);
+    float z = ViewPosition(v_UV, depth).z;
+    vec4 sum = vec4(0.0);
+    float wsum = 0.0;
+    for (int y = -2; y <= 2; ++y)
+    for (int x = -2; x <= 2; ++x)
+    {
+        vec2 uv = v_UV + vec2(x, y) * u_Texel * 1.5;
+        float sd = texture(u_Depth, uv).r;
+        vec4 sg = texture(u_GNormal, uv);
+        if (sd >= 1.0 || sg.w < 1.5)
+            continue;
+        float sz = ViewPosition(uv, sd).z;
+        float w = exp(-abs(sz - z) / max(abs(z) * 0.03, 0.02)) * pow(max(dot(OctDecode(sg.xy), n), 0.0), 8.0)
+                * exp(-float(x * x + y * y) / 8.0);
+        sum += texture(u_Source, uv) * w;
+        wsum += w;
+    }
+    FragColor = wsum > 1e-4 ? sum / wsum : texture(u_Source, v_UV);
+}

@@ -28,7 +28,14 @@ namespace Conqueror
         bool Is2D() const { return m_CameraMode == EditorCameraMode::Orthographic2D; }
 
         float GetDistance() const { return m_Distance; }
-        void SetDistance(float distance) { m_Distance = distance; }
+        void SetDistance(float distance) { m_Distance = distance; UpdateView(); }
+        const glm::vec3& GetFocalPoint() const { return m_FocalPoint; }
+        void SetFocalPoint(const glm::vec3& point) { m_FocalPoint = point; UpdateView(); }
+        float GetFOV() const { return m_FOV; }
+        void SetFOV(float fovDegrees) { m_FOV = fovDegrees; UpdateProjection(); }
+        float GetNearClip() const { return m_NearClip; }
+        float GetFarClip() const { return m_FarClip; }
+        void SetClipPlanes(float nearClip, float farClip) { m_NearClip = nearClip; m_FarClip = farClip; UpdateProjection(); }
         
         void SetPosition(const glm::vec3& position) { m_Position = position; UpdateView(); }
         void SetPitch(float pitch) { m_Pitch = pitch; UpdateView(); }
@@ -72,7 +79,7 @@ namespace Conqueror
     private:
         float m_FOV = 45.0f, m_AspectRatio = 1.778f, m_NearClip = 0.1f, m_FarClip = 100000.0f;
 
-        glm::mat4 m_ViewMatrix;
+        glm::mat4 m_ViewMatrix{ 1.0f };
         glm::mat4 m_Projection{ 1.0f };
         glm::vec3 m_Position = { 0.0f, 0.0f, 0.0f };
         glm::vec3 m_FocalPoint = { 0.0f, 0.0f, 0.0f };

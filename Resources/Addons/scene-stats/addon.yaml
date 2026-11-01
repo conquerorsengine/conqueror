@@ -1,0 +1,11 @@
+Id: conqueror.scene-stats
+Name: Scene Stats
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  A live overview of the open scene: object counts per kind (meshes, lights, physics,
+  scripts, UI, particles), heaviest hierarchies and one-click "select all of this kind".
+Category: Analysis
+Icon: chart-simple
+Tags: [analysis, optimization, selection]
+Editor: Editor/SceneStats.cqs

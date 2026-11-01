@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: phone
+      States:
+        - Name: phone
+          ClipIndex: 36
+          ClipName: phone
+  Parameters: []

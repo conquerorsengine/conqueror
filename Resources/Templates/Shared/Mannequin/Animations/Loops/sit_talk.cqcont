@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: sit_talk
+      States:
+        - Name: sit_talk
+          ClipIndex: 25
+          ClipName: sit_talk
+  Parameters: []

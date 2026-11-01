@@ -25,6 +25,8 @@ int main(int argc, char** argv)
     auto app = Conqueror::CreateApplication({ argc, argv });
     app->Run();
     delete app;
+    // Eşzamansız günlüğün kuyruğu dosyaya yazılsın (yoksa kapanıştan önceki son satırlar kayboluyordu)
+    Conqueror::Log::Shutdown();
 
     return 0;
 }

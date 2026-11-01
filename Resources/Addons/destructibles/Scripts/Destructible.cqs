@@ -1,0 +1,91 @@
+using nativebridge;
+
+// Kırılabilir nesne: health biter (Damage iletisi) ya da breakImpulse'tan güçlü çarpışma olursa parçalanır.
+// Parçalar: pieces^3 küçük küp (nesnenin rengi ve boyutuyla), dışa itilir, fragmentLifetime sonra küçülüp silinir.
+script Destructible : ConquerorScript
+{
+    public float health = 50.0;
+    public float breakImpulse = 0.0;
+    public int pieces = 2;
+    public float explosionForce = 6.0;
+    public float fragmentLifetime = 4.0;
+    public string lootPrefab = "";
+
+    // Çalışma zamanı bilgisi
+    public bool broken = false;
+    public int fragmentsSpawned = 0;
+
+    func Damage(amount, attacker = null)
+    {
+        if (broken) { return; }
+        health -= amount;
+        if (health <= 0) { Break(); }
+    }
+
+    func OnCollisionEnter(other, name)
+    {
+        if (breakImpulse > 0 && GetContactImpulse() >= breakImpulse) { Break(); }
+    }
+
+    func Break()
+    {
+        if (broken) { return; }
+        broken = true;
+        var p = EntityGetWorldPosition(GetEntityId());
+        var s = GetScale();
+        var c = GetColor();
+        var n = MathClamp(pieces, 1, 5);
+        var size = {x: MathAbs(s.x) / n, y: MathAbs(s.y) / n, z: MathAbs(s.z) / n};
+        var r = EntityGetRight(GetEntityId());
+        var u = EntityGetUp(GetEntityId());
+        var f = EntityGetForward(GetEntityId());
+        var rot = GetRotation();
+        for (var i = 0; i < n; i++)
+        {
+            for (var j = 0; j < n; j++)
+            {
+                for (var k = 0; k < n; k++)
+                {
+                    // Küp 2 birim: yerel konum -s..s aralığında hücre merkezleri
+                    var lx = (-1.0 + (2.0 * i + 1.0) / n) * MathAbs(s.x);
+                    var ly = (-1.0 + (2.0 * j + 1.0) / n) * MathAbs(s.y);
+                    var lz = (-1.0 + (2.0 * k + 1.0) / n) * MathAbs(s.z);
+                    var wx = p.x + r.x * lx + u.x * ly - f.x * lz;
+                    var wy = p.y + r.y * lx + u.y * ly - f.y * lz;
+                    var wz = p.z + r.z * lx + u.z * ly - f.z * lz;
+                    var e = CreateEntity(GetEntityName() + " Fragment");
+                    EntityAddComponent(e, "MeshRenderer");
+                    EntitySetPosition(e, wx, wy, wz);
+                    EntitySetRotation(e, rot.x, rot.y, rot.z);
+                    EntitySetScale(e, size.x * 0.96, size.y * 0.96, size.z * 0.96);
+                    if (c != null) { EntitySetColor(e, c.r, c.g, c.b, c.a); }
+                    EntityAddComponent(e, "Rigidbody");
+                    EntitySetComponentField(e, "Rigidbody", "Mass", MathMax(0.1, GetMass() / (n * n * n)));
+                    EntityAddComponent(e, "BoxCollider");
+                    AddScript(e, "Packages/destructibles/Scripts/Fragment.cqs");
+                    SetScriptField(e, "lifetime", fragmentLifetime + MathRandom() * 0.5);
+                    // Patlama yönünde ilk hız (gövde bir sonraki karede kurulur: parça betiği Start'ta uygular)
+                    var dx = wx - p.x; var dy = wy - p.y + 0.3; var dz = wz - p.z;
+                    var dl = MathMax(0.001, MathSqrt(dx * dx + dy * dy + dz * dz));
+                    SetScriptField(e, "launchX", dx / dl * explosionForce);
+                    SetScriptField(e, "launchY", dy / dl * explosionForce);
+                    SetScriptField(e, "launchZ", dz / dl * explosionForce);
+                    fragmentsSpawned++;
+                }
+            }
+        }
+        if (lootPrefab != "") { Instantiate(lootPrefab, p.x, p.y, p.z); }
+        for (var ch in EntityGetChildren(GetEntityId()))
+        {
+            if (EntityHasComponent(ch, "ParticleSystem"))
+            {
+                EntitySetParent(ch, -1, true);
+                EntitySetComponentField(ch, "ParticleSystem", "StopAction", 2);
+                ParticleEmit(ch, 30);
+            }
+        }
+        SendMessage(GetEntityId(), "OnBroken");
+        BroadcastMessage("OnObjectDestroyed", GetEntityName());
+        EntityDestroy(GetEntityId());
+    }
+}

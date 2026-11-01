@@ -1,0 +1,87 @@
+using nativebridge;
+
+// Strateji tahtası kamerası (RTS): sağ fare sürükle = adanın çevresinde dön, tekerlek = yakınlaş, WASD / oklar = kaydır,
+// Q / E = döndür, F = taşa odaklan. Sol tık oyuna (taşı yürütmeye) kalır. Tüm hareketler yumuşatılır.
+script BoardCamera : ConquerorScript
+{
+    public float yaw = 30.0;
+    public float pitch = 52.0;
+    public float distance = 17.0;
+    public float minDistance = 5.0;
+    public float maxDistance = 32.0;
+    public float panSpeed = 9.0;
+    public float sensitivity = 0.25;
+    public float sharpness = 7.0;
+    public float boardRadius = 9.0;            // odak bu yarıçapın dışına kaymaz
+    public string focusTarget = "Knight";
+
+    private float wantYaw = 30.0;
+    private float wantPitch = 52.0;
+    private float wantDist = 17.0;
+    private float fx = 0.0;
+    private float fz = 0.0;
+    private float wantFx = 0.0;
+    private float wantFz = 0.0;
+
+    func Start()
+    {
+        wantYaw = yaw;
+        wantPitch = pitch;
+        wantDist = distance;
+    }
+
+    func Focus(x, z)
+    {
+        wantFx = x;
+        wantFz = z;
+    }
+
+    func LateUpdate(dt)
+    {
+        var overUI = UIIsPointerOver();
+        var md = GetMouseDelta();
+        if (!overUI && IsMouseButtonPressed(1) && (MathAbs(md.x) + MathAbs(md.y) > 0.0))
+        {
+            wantYaw -= md.x * sensitivity;
+            wantPitch = MathClamp(wantPitch + md.y * sensitivity * 0.6, 18.0, 85.0);
+        }
+        var wheel = overUI ? 0.0 : GetMouseScrollDelta();
+        if (wheel != 0.0) { wantDist = MathClamp(wantDist * (1.0 - wheel * 0.12), minDistance, maxDistance); }
+        if (IsKeyPressed("Q")) { wantYaw += 70.0 * dt; }
+        if (IsKeyPressed("E")) { wantYaw -= 70.0 * dt; }
+        // Kaydırma kameranın baktığı yöne göre (yakınken yavaş, uzakken hızlı)
+        var ix = 0.0;
+        var iz = 0.0;
+        if (IsKeyPressed("W") || IsKeyPressed("Up")) { iz -= 1.0; }
+        if (IsKeyPressed("S") || IsKeyPressed("Down")) { iz += 1.0; }
+        if (IsKeyPressed("D") || IsKeyPressed("Right")) { ix += 1.0; }
+        if (IsKeyPressed("A") || IsKeyPressed("Left")) { ix -= 1.0; }
+        if (ix != 0.0 || iz != 0.0)
+        {
+            var r = MathDegToRad(wantYaw);
+            var s = panSpeed * dt * (wantDist / 17.0);
+            wantFx += (MathCos(r) * ix + MathSin(r) * iz) * s;
+            wantFz += (-MathSin(r) * ix + MathCos(r) * iz) * s;
+        }
+        if (IsKeyDown("F"))
+        {
+            var t = FindEntity(focusTarget);
+            if (t != null && t >= 0) { var p = EntityGetWorldPosition(t); Focus(p.x, p.z); }
+        }
+        var fl = MathSqrt(wantFx * wantFx + wantFz * wantFz);
+        if (fl > boardRadius) { wantFx *= boardRadius / fl; wantFz *= boardRadius / fl; }
+
+        var k = 1.0 - MathExp(-sharpness * dt);
+        yaw = yaw + MathNormalizeAngle(wantYaw - yaw) * k;
+        pitch = MathLerp(pitch, wantPitch, k);
+        distance = MathLerp(distance, wantDist, k);
+        fx = MathLerp(fx, wantFx, k);
+        fz = MathLerp(fz, wantFz, k);
+        var yr = MathDegToRad(yaw);
+        var pr = MathDegToRad(pitch);
+        EntitySetWorldPosition(GetEntityId(), fx + MathSin(yr) * MathCos(pr) * distance, MathSin(pr) * distance,
+                               fz + MathCos(yr) * MathCos(pr) * distance);
+        SetRotation(-pitch, yaw, 0);
+        RenderSettingSet("Post.FocusDistance", distance);
+    }
+}

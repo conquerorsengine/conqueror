@@ -1,0 +1,5 @@
+# Crowd (Unreal City Sample / Mass crowd): a city plaza where pedestrians wander, window-shop, sit on benches, meet and chat
+Shared: [Mannequin, Plaza]
+StartScene: Assets/Scenes/Main.cqscene
+Scenes:
+  - Assets/Scenes/Main.cqscene

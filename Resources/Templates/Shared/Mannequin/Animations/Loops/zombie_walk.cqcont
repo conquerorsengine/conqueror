@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: zombie_walk
+      States:
+        - Name: zombie_walk
+          ClipIndex: 44
+          ClipName: zombie_walk
+  Parameters: []

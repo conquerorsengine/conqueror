@@ -1,3 +1,6 @@
+#include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
+#include "Panels/MaterialEditorUI.h"
+#include "Core/Project/Project.h"
 #include "ShaderEditorPanel.h"
 
 #include "Scene/Components.h"
@@ -5,8 +8,20 @@
 #include "Renderer/Utilities/Renderer3D/ModelLoader.h"
 #include "Renderer/RHI/Texture.h"
 
+#include "Renderer/RHI/Framebuffer.h"
+#include "Renderer/RHI/RenderCommand.h"
+#include "Renderer/Utilities/Renderer3D/Renderer3D.h"
+#include "Renderer/ShaderCompiler/ShaderCompiler.h"
+#include "Scene/Scene.h"
+#include "Core/Time/TimeManager.h"
+#include "UI/EditorUI.h"
+#include "Core/ImGui/ImGuiLayer.h"
+
 #include <imgui.h>
 #include <imnodes.h>
+#include <IconsFontAwesome6.h>
+#include <glm/gtc/matrix_transform.hpp>
+#include <chrono>
 
 #include <algorithm>
 #include <string>
@@ -166,13 +181,19 @@ namespace Conqueror::Editor
 
     ShaderEditorPanel::ShaderEditorPanel()
     {
-        ImNodes::CreateContext();
+        // Panel kendi ImNodes bağlamına sahiptir (diğer düğüm editörleriyle karışmaz)
+        ImNodesContext* previous = ImNodes::GetCurrentContext();
+        m_NodesContext = ImNodes::CreateContext();
         ImNodes::GetStyle().Colors[ImNodesCol_GridBackground] = IM_COL32(15, 15, 18, 200);
+        if (previous)
+            ImNodes::SetCurrentContext(previous);
     }
 
     ShaderEditorPanel::~ShaderEditorPanel()
     {
-        ImNodes::DestroyContext();
+        if (m_NodesContext)
+            ImNodes::DestroyContext(m_NodesContext);
+        m_NodesContext = nullptr;
     }
 
     void ShaderEditorPanel::SetContext(Scene* scene)
@@ -186,9 +207,35 @@ namespace Conqueror::Editor
         m_SelectedMaterialIndex = 0;
     }
 
+    void ShaderEditorPanel::SetMaterialAsset(const std::string& path)
+    {
+        m_MaterialAssetPath = path;
+        m_AssetMaterial = path.empty() ? nullptr : MaterialAsset::Load(path);
+        if (!path.empty() && !m_AssetMaterial)
+            CQ_CORE_WARN("Shader Graph: material '{0}' could not be opened", path);
+    }
+
     void ShaderEditorPanel::OnImGuiRender()
     {
+        ImNodes::SetCurrentContext(m_NodesContext);
         ImGui::Begin("Shader Graph Editor");
+
+        // Varlık modu (Unity: Shader Graph bir dosyayı düzenler): seçimden bağımsız
+        Material* material = nullptr;
+        if (m_AssetMaterial)
+        {
+            material = m_AssetMaterial.get();
+            ImGui::TextDisabled(ICON_FA_FILE " %s", std::filesystem::path(m_MaterialAssetPath).filename().string().c_str());
+            ImGui::SameLine();
+            if (ImGui::SmallButton(ICON_FA_XMARK " Close Asset"))
+            {
+                m_AssetMaterial = nullptr;
+                m_MaterialAssetPath.clear();
+                ImGui::End();
+                return;
+            }
+            goto haveMaterial;
+        }
 
         if (!m_Context)
         {
@@ -205,7 +252,6 @@ namespace Conqueror::Editor
         }
 
         // ModelComponent için material seçimi
-        Material* material = nullptr;
         if (m_SelectedEntity.HasComponent<ModelComponent>())
         {
             auto& modelComp = m_SelectedEntity.GetComponent<ModelComponent>();
@@ -260,12 +306,25 @@ namespace Conqueror::Editor
             auto& meshRenderer = m_SelectedEntity.GetComponent<MeshRendererComponent>();
             if (!meshRenderer.MaterialInstance)
             {
-                if (ImGui::Button("Create Material"))
+                ImGui::TextUnformatted("This Mesh Renderer uses the built-in material.");
+                if (ImGui::Button(ICON_FA_PLUS " Create Material Asset"))
                 {
-                    meshRenderer.MaterialInstance = Material::CreateDefault();
-                    EnsureMasterNode(meshRenderer.MaterialInstance.get());
-                    meshRenderer.MaterialInstance->CompileShaderGraph();
-                    meshRenderer.MaterialInstance->ApplyGraphToProperties();
+                    // Gerçek .cqmat dosyası (Assets/Materials), mevcut görünüm kopyalanır
+                    std::string name = m_SelectedEntity.HasComponent<TagComponent>() ? m_SelectedEntity.GetComponent<TagComponent>().Tag : "New Material";
+                    std::string dir = Project::GetActive() ? (Project::GetAssetDirectory() / "Materials").string() : std::string("Materials");
+                    std::string path = Editor::MaterialEditorUI::UniqueMaterialPath(dir, name);
+                    Material from;
+                    FillMaterialFromMeshRenderer(from, meshRenderer);
+                    EnsureMasterNode(&from);
+                    from.GraphInitialized = true;
+                    if (auto mat = MaterialAsset::Create(path, &from))
+                    {
+                        meshRenderer.MaterialInstance = mat;
+                        meshRenderer.MaterialPath = path;
+                        mat->CompileShaderGraph();
+                        mat->ApplyGraphToProperties();
+                        MaterialAsset::Save(mat, path);
+                    }
                 }
                 ImGui::End();
                 return;
@@ -279,6 +338,7 @@ namespace Conqueror::Editor
             return;
         }
 
+    haveMaterial:
         if (!material)
         {
             ImGui::TextUnformatted("No material selected.");
@@ -292,18 +352,47 @@ namespace Conqueror::Editor
             material->GraphInitialized = true;
         }
 
-        ImGui::Text("Material: %s", material->Name.c_str());
+        // ---- Araç çubuğu
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextColored(UI::Colors::Accent, ICON_FA_DIAGRAM_PROJECT);
         ImGui::SameLine();
-        if (ImGui::Button("Apply Graph"))
+        ImGui::Text("%s", material->Name.c_str());
+        ImGui::SameLine(0, 16);
+        if (UI::AccentButton(ICON_FA_HAMMER " Compile"))
+            Recompile(material);
+        ImGui::SameLine();
+        ImGui::Checkbox("Auto", &m_AutoCompile);
+        ImGui::SameLine();
+        if (ImGui::Button(ICON_FA_MAGNIFYING_GLASS " Add Node"))
         {
-            CQ_CORE_INFO("[ShaderEditor] Apply Graph pressed - Material: '{0}'", material->Name);
-            CQ_CORE_INFO("[ShaderEditor] Graph node count: {0}, link count: {1}", material->GraphNodes.size(), material->GraphLinks.size());
-            material->CompileShaderGraph();
-            material->ApplyGraphToProperties();
-            if (!material->LastCompiledFragmentSrc.empty())
+            m_SearchSpawnPos = ImGui::GetMousePos();
+            ImGui::OpenPopup("##NodeSearch");
+        }
+        ImGui::SameLine(0, 16);
+        bool ok = material->MaterialShader && material->MaterialShader->IsValid();
+        if (!m_CompileStatus.empty())
+        {
+            ImGui::AlignTextToFramePadding();
+            ImGui::TextColored(ok ? UI::Colors::Success : UI::Colors::Error, "%s %s", ok ? ICON_FA_CIRCLE_CHECK : ICON_FA_CIRCLE_XMARK, m_CompileStatus.c_str());
+        }
+        DrawNodeSearch(material);
+
+        // Otomatik derleme: graf değişti ve 0.35 sn boşta
+        {
+            uint64_t h = HashGraph(material);
+            if (h != m_LastGraphHash)
             {
-                CQ_CORE_INFO("[ShaderEditor] === COMPILED FRAGMENT SHADER START ===\n{0}", material->LastCompiledFragmentSrc);
-                CQ_CORE_INFO("[ShaderEditor] === COMPILED FRAGMENT SHADER END ===");
+                m_LastGraphHash = h;
+                m_DirtyTimer = 0.0f;
+            }
+            if (m_DirtyTimer >= 0.0f)
+            {
+                m_DirtyTimer += ImGui::GetIO().DeltaTime;
+                if (m_AutoCompile && m_DirtyTimer > 0.35f && !ImGui::IsMouseDown(ImGuiMouseButton_Left))
+                {
+                    Recompile(material);
+                    m_DirtyTimer = -1.0f;
+                }
             }
         }
 
@@ -444,7 +533,32 @@ namespace Conqueror::Editor
 
         ImGui::Separator();
 
+        ImGui::BeginChild("##GraphArea", ImVec2(std::max(200.0f, ImGui::GetContentRegionAvail().x - m_SideWidth - 6.0f), 0), ImGuiChildFlags_None,
+                          ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+        m_GraphOrigin = ImGui::GetCursorScreenPos();
+        if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) && !ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(ImGuiKey_Space, false))
+        {
+            m_SearchSpawnPos = ImGui::GetMousePos();
+            ImGui::OpenPopup("##NodeSearch");
+        }
+        DrawNodeSearch(material);
+
         ImNodes::BeginNodeEditor();
+
+        // Malzeme değişince düğümleri kadraja al
+        if (material != m_LastMaterial && !material->GraphNodes.empty())
+        {
+            m_LastMaterial = material;
+            glm::vec2 mn(1e9f), mx(-1e9f);
+            for (const auto& n : material->GraphNodes)
+            {
+                mn = glm::min(mn, n.EditorPosition);
+                mx = glm::max(mx, n.EditorPosition + glm::vec2(160.0f, 120.0f));
+            }
+            ImVec2 area = ImGui::GetContentRegionAvail();
+            glm::vec2 center = (mn + mx) * 0.5f;
+            ImNodes::EditorContextResetPanning(ImVec2(area.x * 0.5f - center.x, area.y * 0.5f - center.y));
+        }
 
         for (auto& node : material->GraphNodes)
         {
@@ -955,6 +1069,354 @@ namespace Conqueror::Editor
             ImGui::EndPopup();
         }
 
+        // Delete: seçili düğümleri sil (Master hariç)
+        if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(ImGuiKey_Delete, false))
+        {
+            int n = ImNodes::NumSelectedNodes();
+            if (n > 0)
+            {
+                std::vector<int> ids((size_t)n);
+                ImNodes::GetSelectedNodes(ids.data());
+                for (int id : ids)
+                {
+                    auto* node = FindNodeByID(material->GraphNodes, id);
+                    if (!node || node->Type == ShaderGraphNodeType::MasterOutput)
+                        continue;
+                    material->GraphLinks.erase(std::remove_if(material->GraphLinks.begin(), material->GraphLinks.end(),
+                        [id](const ShaderGraphLink& l) { return l.FromNodeID == id || l.ToNodeID == id; }), material->GraphLinks.end());
+                    material->GraphNodes.erase(std::remove_if(material->GraphNodes.begin(), material->GraphNodes.end(),
+                        [id](const ShaderGraphNode& nd) { return nd.ID == id; }), material->GraphNodes.end());
+                }
+                ImNodes::ClearNodeSelection();
+            }
+        }
+        ImGui::EndChild();
+
+        // Ayırıcı + yan panel
+        ImGui::SameLine(0, 0);
+        ImGui::InvisibleButton("##sideSplit", ImVec2(6.0f, ImGui::GetContentRegionAvail().y));
+        if (ImGui::IsItemHovered() || ImGui::IsItemActive()) ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+        if (ImGui::IsItemActive()) m_SideWidth = std::clamp(m_SideWidth - ImGui::GetIO().MouseDelta.x, 240.0f, 900.0f);
+        ImGui::SameLine(0, 0);
+        ImGui::BeginChild("##ShaderSide", ImVec2(0, 0));
+        DrawSidePanel(material);
+        ImGui::EndChild();
+
         ImGui::End();
+    }
+
+    // ------------------------------------------------------------------ Yan panel
+
+    uint64_t ShaderEditorPanel::HashGraph(const Material* m) const
+    {
+        uint64_t h = 1469598103934665603ull;
+        auto mix = [&](const void* data, size_t n) {
+            const unsigned char* p = (const unsigned char*)data;
+            for (size_t i = 0; i < n; ++i) { h ^= p[i]; h *= 1099511628211ull; }
+        };
+        for (const auto& n : m->GraphNodes)
+        {
+            mix(&n.ID, sizeof(n.ID)); mix(&n.Type, sizeof(n.Type));
+            mix(&n.ColorValue, sizeof(n.ColorValue)); mix(&n.FloatValue, sizeof(n.FloatValue));
+            mix(&n.Vec2Value, sizeof(n.Vec2Value)); mix(&n.Vec3Value, sizeof(n.Vec3Value)); mix(&n.IntValue, sizeof(n.IntValue));
+            mix(n.TexturePath.data(), n.TexturePath.size()); mix(n.CustomCode.data(), n.CustomCode.size());
+        }
+        for (const auto& l : m->GraphLinks)
+        {
+            mix(&l.FromNodeID, sizeof(int)); mix(&l.FromPinIndex, sizeof(int)); mix(&l.ToNodeID, sizeof(int)); mix(&l.ToPinIndex, sizeof(int));
+        }
+        return h;
+    }
+
+    void ShaderEditorPanel::Recompile(Material* material)
+    {
+        auto t0 = std::chrono::steady_clock::now();
+        material->CompileShaderGraph();
+        material->ApplyGraphToProperties();
+        m_LastCompileMs = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - t0).count();
+        bool ok = material->MaterialShader && material->MaterialShader->IsValid();
+        char buf[128];
+        if (ok)
+            snprintf(buf, sizeof(buf), "Compiled in %.1f ms%s", m_LastCompileMs, material->MaterialShader->IsCompiledFromSPIRV() ? " (SPIR-V)" : "");
+        else
+            snprintf(buf, sizeof(buf), "Compile failed - see Code tab");
+        m_CompileStatus = buf;
+        m_CodeCacheKey = 0;
+        // Malzeme bir .cqmat varlığıysa graph değişikliği dosyaya yazılır (sahneyi kaydetmeden kalıcı)
+        const std::string assetPath = MaterialAsset::PathOf(material);
+        if (!assetPath.empty())
+            if (auto shared = MaterialAsset::Load(assetPath))
+                MaterialAsset::Save(shared, assetPath);
+    }
+
+    void ShaderEditorPanel::DrawNodeSearch(Material* material)
+    {
+        ImGui::SetNextWindowPos(m_SearchSpawnPos, ImGuiCond_Appearing);
+        ImGui::SetNextWindowSize(ImVec2(260, 340), ImGuiCond_Appearing);
+        if (!ImGui::BeginPopup("##NodeSearch"))
+            return;
+        if (ImGui::IsWindowAppearing())
+        {
+            m_SearchBuffer[0] = '\0';
+            ImGui::SetKeyboardFocusHere();
+        }
+        ImGui::SetNextItemWidth(-1.0f);
+        bool enter = ImGui::InputTextWithHint("##q", ICON_FA_MAGNIFYING_GLASS "  Search nodes...", m_SearchBuffer, sizeof(m_SearchBuffer), ImGuiInputTextFlags_EnterReturnsTrue);
+        std::string q = m_SearchBuffer;
+        std::transform(q.begin(), q.end(), q.begin(), ::tolower);
+        ImGui::Separator();
+        ImGui::BeginChild("##results", ImVec2(0, 280));
+        int shown = 0;
+        for (int t = 1; t <= (int)ShaderGraphNodeType::CustomExpression; ++t)
+        {
+            auto type = (ShaderGraphNodeType)t;
+            std::string name = ShaderNodeTypeToString(type);
+            if (name == "Unknown" || type == ShaderGraphNodeType::MasterOutput)
+                continue;
+            std::string lower = name;
+            std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+            if (!q.empty() && lower.find(q) == std::string::npos)
+                continue;
+            if (ImGui::Selectable(name.c_str()) || (enter && shown == 0))
+            {
+                // Fare konumuna (ızgara uzayı) yerleştir
+                ImVec2 panning = ImNodes::EditorContextGetPanning();
+                ImVec2 origin = m_GraphOrigin;
+                glm::vec2 pos(m_SearchSpawnPos.x - origin.x - panning.x, m_SearchSpawnPos.y - origin.y - panning.y);
+                material->GraphNodes.emplace_back(material->NextGraphNodeID++, type, glm::vec2(std::max(0.0f, pos.x), std::max(0.0f, pos.y)));
+                ImGui::CloseCurrentPopup();
+                break;
+            }
+            ++shown;
+        }
+        if (shown == 0)
+            ImGui::TextDisabled("No matching nodes");
+        ImGui::EndChild();
+        ImGui::EndPopup();
+    }
+
+    void ShaderEditorPanel::DrawSidePanel(Material* material)
+    {
+        const char* tabs[] = { ICON_FA_EYE " Preview", ICON_FA_SLIDERS " Properties", ICON_FA_CODE " Code" };
+        if (ImGui::BeginTabBar("##sidetabs"))
+        {
+            for (int i = 0; i < 3; ++i)
+            {
+                if (ImGui::BeginTabItem(tabs[i]))
+                {
+                    m_SideTab = i;
+                    ImGui::EndTabItem();
+                }
+            }
+            ImGui::EndTabBar();
+        }
+        if (m_SideTab == 0) DrawPreview(material);
+        else if (m_SideTab == 1) DrawProperties(material);
+        else DrawCode(material);
+    }
+
+    void ShaderEditorPanel::DrawPreview(Material* material)
+    {
+        const float size = std::floor(std::min(ImGui::GetContentRegionAvail().x, 512.0f));
+        const uint32_t px = (uint32_t)std::max(64.0f, size);
+        if (!m_PreviewFramebuffer)
+        {
+            FramebufferSpecification spec;
+            spec.Width = px;
+            spec.Height = px;
+            spec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::Depth };
+            m_PreviewFramebuffer = Framebuffer::Create(spec);
+        }
+        else if (m_PreviewFramebuffer->GetSpecification().Width != px)
+            m_PreviewFramebuffer->Resize(px, px);
+
+        // Kamera (yörünge)
+        m_PreviewTime += ImGui::GetIO().DeltaTime;
+        if (m_PreviewRotate)
+            m_PreviewYaw += ImGui::GetIO().DeltaTime * 0.4f;
+        glm::vec3 eye(std::cos(m_PreviewPitch) * std::sin(m_PreviewYaw), std::sin(m_PreviewPitch), std::cos(m_PreviewPitch) * std::cos(m_PreviewYaw));
+        eye *= m_PreviewDistance;
+        RenderCamera cam;
+        cam.View = glm::lookAt(eye, glm::vec3(0.0f), glm::vec3(0, 1, 0));
+        cam.Projection = glm::perspective(glm::radians(35.0f), 1.0f, 0.05f, 100.0f);
+        cam.Position = eye;
+        cam.NearClip = 0.05f;
+        cam.FarClip = 100.0f;
+        cam.ViewportWidth = px;
+        cam.ViewportHeight = px;
+
+        SceneEnvironment env = m_Context ? m_Context->BuildRenderEnvironment(true) : SceneEnvironment{};
+        env.Settings.Shadows.Enabled = false;
+        env.Settings.Fog.Enabled = false;
+        env.UseProceduralSky = env.UseProceduralSky || !env.Skybox;
+
+        m_PreviewPost.BeginScene(px, px);
+        RenderCommand::SetClearColor({ 0.05f, 0.05f, 0.06f, 1.0f });
+        RenderCommand::Clear();
+        Renderer3D::BeginFrame(cam, env);
+        DirectionalLightComponent sun;
+        sun.Direction = glm::normalize(glm::vec3(-0.5f, -0.8f, -0.4f));
+        sun.Color = glm::vec3(1.0f);
+        sun.Intensity = 2.5f;
+        if (m_Context)
+        {
+            Entity s = m_Context->GetSunSourceEntity();
+            if (s && s.HasComponent<DirectionalLightComponent>())
+                sun = s.GetComponent<DirectionalLightComponent>();
+        }
+        Renderer3D::SetDirectionalLight(sun);
+        Renderer3D::DrawEnvironment();
+        std::shared_ptr<Material> mat(material, [](Material*) {});
+        glm::mat4 xf(1.0f);
+        switch (m_PreviewMesh)
+        {
+            case 1: Renderer3D::DrawCube(glm::scale(xf, glm::vec3(0.6f)), mat); break;
+            case 2: Renderer3D::DrawPlane(glm::rotate(glm::scale(xf, glm::vec3(1.1f)), glm::radians(90.0f), glm::vec3(1, 0, 0)), mat); break;
+            case 3: Renderer3D::DrawCylinder(glm::scale(xf, glm::vec3(0.8f)), mat); break;
+            default: Renderer3D::DrawSphere(glm::scale(xf, glm::vec3(1.0f)), mat); break;
+        }
+        Renderer3D::EndScene();
+        m_PreviewPost.EndScene();
+        m_PreviewFramebuffer->Bind();
+        RenderCommand::Clear();
+        PostProcessSettings post = m_Context ? m_Context->GetRenderSettings().Post : PostProcessSettings{};
+        post.AmbientOcclusion = false;
+        m_PreviewPost.Render(post, cam, m_PreviewTime);
+        m_PreviewFramebuffer->Unbind();
+
+        ImVec2 p = ImGui::GetCursorScreenPos();
+        ImGui::Image((ImTextureID)(uint64_t)m_PreviewFramebuffer->GetColorAttachmentRendererID(0), ImVec2(size, size), ImVec2(0, 1), ImVec2(1, 0));
+        if (ImGui::IsItemHovered())
+        {
+            if (ImGui::IsMouseDragging(ImGuiMouseButton_Left))
+            {
+                m_PreviewYaw -= ImGui::GetIO().MouseDelta.x * 0.01f;
+                m_PreviewPitch = std::clamp(m_PreviewPitch + ImGui::GetIO().MouseDelta.y * 0.01f, -1.4f, 1.4f);
+                m_PreviewRotate = false;
+            }
+            if (ImGui::GetIO().MouseWheel != 0.0f)
+                m_PreviewDistance = std::clamp(m_PreviewDistance * std::pow(0.9f, ImGui::GetIO().MouseWheel), 1.5f, 12.0f);
+        }
+        ImGui::GetWindowDrawList()->AddRect(p, ImVec2(p.x + size, p.y + size), IM_COL32(0, 0, 0, 160));
+
+        const char* meshes[] = { ICON_FA_CIRCLE " Sphere", ICON_FA_CUBE " Cube", ICON_FA_SQUARE " Plane", ICON_FA_DATABASE " Cylinder" };
+        for (int i = 0; i < 4; ++i)
+        {
+            if (i > 0) ImGui::SameLine();
+            if (ImGui::RadioButton(meshes[i], m_PreviewMesh == i)) m_PreviewMesh = i;
+        }
+        ImGui::Checkbox("Auto Rotate", &m_PreviewRotate);
+        ImGui::TextDisabled("Drag to orbit, wheel to zoom");
+    }
+
+    void ShaderEditorPanel::DrawProperties(Material* m)
+    {
+        UI::InputText("Name", m->Name);
+        if (UI::BeginSection("Surface", true, ICON_FA_PALETTE))
+        {
+            UI::Color3("Albedo", m->Albedo);
+            UI::SliderFloat("Metallic", m->Metallic, 0.0f, 1.0f);
+            UI::SliderFloat("Roughness", m->Roughness, 0.0f, 1.0f);
+            UI::SliderFloat("Occlusion", m->AO, 0.0f, 1.0f);
+            UI::Color3("Emission", m->EmissionColor);
+            UI::DragFloat("Emission Strength", m->EmissionStrength, 0.05f, 0.0f, 100.0f);
+            UI::Vec2("Tiling", m->Tiling, 0.01f);
+            UI::Vec2("Offset", m->Offset, 0.01f);
+            UI::EndSection();
+        }
+        if (UI::BeginSection("Shading Model", true, ICON_FA_USER))
+        {
+            const char* models[] = { "Default Lit", "Subsurface (Skin)", "Hair", "Cloth", "Unlit" };
+            UI::ComboEnum("Shading Model", m->Shading, models, 5,
+                          "Default Lit: standard PBR. Subsurface: soft skin with light bleeding (MetaHuman-style). Hair: anisotropic strand highlights. Cloth: velvet sheen. Unlit: no lighting, base color + emission (screens, LED walls).");
+            switch (m->Shading)
+            {
+                case Material::ShadingModel::Subsurface:
+                    UI::Color3("Scatter Color", m->SubsurfaceColor, "Color of light scattered under the surface (reddish for skin)");
+                    UI::SliderFloat("Subsurface", m->SubsurfaceAmount, 0.0f, 1.0f);
+                    break;
+                case Material::ShadingModel::Hair:
+                    UI::Color3("Secondary Highlight", m->SubsurfaceColor, "Tint of the second (colored) highlight");
+                    UI::SliderFloat("Highlight Shift", m->SubsurfaceAmount, 0.0f, 1.0f);
+                    break;
+                case Material::ShadingModel::Cloth:
+                    UI::Color3("Sheen Color", m->SubsurfaceColor);
+                    UI::SliderFloat("Sheen", m->SubsurfaceAmount, 0.0f, 1.0f);
+                    break;
+                default:
+                    break;
+            }
+            UI::EndSection();
+        }
+        if (UI::BeginSection("Render State", true, ICON_FA_LAYER_GROUP))
+        {
+            const char* modes[] = { "Opaque", "Cutout", "Transparent" };
+            UI::ComboEnum("Render Mode", m->Rendering, modes, 3);
+            if (m->Rendering == Material::RenderMode::Cutout)
+                UI::SliderFloat("Alpha Clip", m->AlphaClip, 0.0f, 1.0f);
+            const char* culls[] = { "Back", "Front", "Off (Two Sided)" };
+            UI::ComboEnum("Cull Mode", m->Culling, culls, 3);
+            UI::EndSection();
+        }
+        if (UI::BeginSection("Shader Uniforms (reflection)", false, ICON_FA_LIST))
+        {
+            const ShaderReflection* r = m->MaterialShader ? m->MaterialShader->GetReflection() : nullptr;
+            if (!r)
+                ImGui::TextDisabled("No reflection data (compile the graph).");
+            else if (ImGui::BeginTable("##refl", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp))
+            {
+                ImGui::TableSetupColumn("Name");
+                ImGui::TableSetupColumn("Type");
+                ImGui::TableSetupColumn("Stages");
+                ImGui::TableHeadersRow();
+                for (const auto& u : r->Uniforms)
+                {
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::TextColored(u.IsBlock ? UI::Colors::Accent : (u.IsSampler ? UI::Colors::Success : ImGui::GetStyleColorVec4(ImGuiCol_Text)), "%s", u.Name.c_str());
+                    ImGui::TableSetColumnIndex(1);
+                    if (u.IsBlock) ImGui::TextDisabled("block %u B", u.Size);
+                    else ImGui::TextDisabled("%s%s", u.Type.c_str(), u.ArraySize > 1 ? ("[" + std::to_string(u.ArraySize) + "]").c_str() : "");
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::TextDisabled("%s%s", (u.StageMask & 1) ? "V" : "", (u.StageMask & 2) ? "F" : "");
+                }
+                ImGui::EndTable();
+                ImGui::TextDisabled("SPIR-V size: %u words", r->InstructionCount);
+            }
+            UI::EndSection();
+        }
+    }
+
+    void ShaderEditorPanel::DrawCode(Material* m)
+    {
+        const char* views[] = { "Graph Source", "GLSL (from SPIR-V)", "SPIR-V", "HLSL (DirectX)", "MSL (Metal)" };
+        const char* viewKeys[] = { "source", "glsl", "spirv", "hlsl", "msl" };
+        ImGui::SetNextItemWidth(170.0f);
+        ImGui::Combo("##view", &m_CodeView, views, 5);
+        ImGui::SameLine();
+        ImGui::RadioButton("Vertex", &m_CodeStage, 0);
+        ImGui::SameLine();
+        ImGui::RadioButton("Fragment", &m_CodeStage, 1);
+        ImGui::SameLine();
+        if (ImGui::SmallButton(ICON_FA_COPY))
+            ImGui::SetClipboardText(m_CodeCache.c_str());
+
+        auto shader = m->MaterialShader;
+        uint64_t key = (uint64_t)(uintptr_t)shader.get() * 31 + (uint64_t)m_CodeView * 7 + (uint64_t)m_CodeStage + 1;
+        if (key != m_CodeCacheKey)
+        {
+            m_CodeCacheKey = key;
+            if (!shader)
+                m_CodeCache = m_CodeView == 0 ? (m_CodeStage == 1 ? m->LastCompiledFragmentSrc : m->LastCompiledVertexSrc) : "// Compile the graph first";
+            else if (!shader->IsValid())
+                m_CodeCache = "// Compile errors:\n" + shader->GetLastError();
+            else
+                m_CodeCache = shader->GetStageCode(m_CodeStage, viewKeys[m_CodeView]);
+            if (m_CodeCache.empty())
+                m_CodeCache = m_CodeStage == 1 ? m->LastCompiledFragmentSrc : m->LastCompiledVertexSrc;
+        }
+        ImGui::PushFont(ImGuiLayer::GetFont(ImGuiLayer::FontRole::Mono));
+        ImGui::InputTextMultiline("##code", m_CodeCache.data(), m_CodeCache.size() + 1, ImVec2(-1, -1), ImGuiInputTextFlags_ReadOnly);
+        ImGui::PopFont();
     }
 }

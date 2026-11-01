@@ -452,6 +452,23 @@ namespace Conqueror::Math
         return t * r * s;
     }
 
+    glm::vec3 ForwardFromEuler(const glm::vec3& eulerRadians)
+    {
+        return glm::normalize(glm::quat(eulerRadians) * glm::vec3(0.0f, 0.0f, -1.0f));
+    }
+
+    glm::vec3 EulerForForward(const glm::vec3& forward)
+    {
+        if (glm::dot(forward, forward) < 1e-12f)
+            return glm::vec3(0.0f);
+        const glm::vec3 d = glm::normalize(forward);
+        // Yuvarlanmasız (roll = 0) yönelim: önce sapma (Y), sonra eğim (X)
+        const float pitch = std::asin(std::clamp(d.y, -1.0f, 1.0f));
+        const float yaw = std::atan2(-d.x, -d.z);
+        glm::quat q = glm::angleAxis(yaw, glm::vec3(0, 1, 0)) * glm::angleAxis(pitch, glm::vec3(1, 0, 0));
+        return glm::eulerAngles(q);
+    }
+
     glm::mat4 LookAt(const glm::vec3& eye, const glm::vec3& center, const glm::vec3& up) { return glm::lookAt(eye, center, up); }
     glm::mat4 Perspective(float fov, float aspect, float near, float far) { return glm::perspective(fov, aspect, near, far); }
     glm::mat4 Orthographic(float left, float right, float bottom, float top, float near, float far) { return glm::ortho(left, right, bottom, top, near, far); }
@@ -625,7 +642,12 @@ namespace Conqueror::Math
         return rgb;
     }
     glm::vec3 LinearToSRGB(const glm::vec3& linear) { return glm::pow(linear, glm::vec3(1.0f/2.2f)); }
-    glm::vec3 SRGBToLinear(const glm::vec3& srgb) { return glm::pow(srgb, glm::vec3(2.2f)); }
+    glm::vec3 SRGBToLinear(const glm::vec3& srgb)
+    {
+        // Tam sRGB eğrisi (shader'lardaki SRGBToLinear / LinearToSRGB ile birebir; pow 2.2 koyu tonları karartır)
+        auto ch = [](float c) { return c <= 0.04045f ? c / 12.92f : std::pow((c + 0.055f) / 1.055f, 2.4f); };
+        return { ch(srgb.r), ch(srgb.g), ch(srgb.b) };
+    }
 
     float Remap(float value, float fromMin, float fromMax, float toMin, float toMax)
     {

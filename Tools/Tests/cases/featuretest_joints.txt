@@ -1,0 +1,13 @@
+# template: featuretest
+# Feature Test eklem istasyonu: yıkım topu sallanırken Ball Joint zincirinin halkaları ayrılmaz (eklem yeniden kurulumu,
+# Teleport'un taze dönüşü)
+wait 30
+focus Game
+script_errors mark
+play
+wait 600
+run_cqs_file "{dir}/checks/chain_intact.cqs"
+entity expect_active RegressionCheckOK true
+script_errors expect 0
+stop
+quit

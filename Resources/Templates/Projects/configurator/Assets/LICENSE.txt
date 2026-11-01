@@ -1,0 +1,3 @@
+Studio/studio_small_09.hdr: Poly Haven (CC0), https://polyhaven.com/a/studio_small_09
+Car: see Assets/Vehicles/LICENSE.txt (CarConcept, CC-BY 4.0, Khronos Group / Eric Chadwick)
+Studio/outdoor_sky.hdr (kloofendal_48d_partly_cloudy_puresky): Poly Haven (CC0)

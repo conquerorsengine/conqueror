@@ -134,6 +134,9 @@ namespace Conqueror::Math
     CQ_API bool DecomposeTransform(const glm::mat4& transform, glm::vec3& translation, glm::vec3& rotation, glm::vec3& scale);
     CQ_API glm::mat4 ComposeTransform(const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale);
     CQ_API glm::mat4 ComposeTransform(const glm::vec3& translation, const glm::quat& rotation, const glm::vec3& scale);
+    // Motor ileri yönü -Z: Euler (radyan) -> ileri vektör ve tersi (ışık / kamera yönlendirme)
+    CQ_API glm::vec3 ForwardFromEuler(const glm::vec3& eulerRadians);
+    CQ_API glm::vec3 EulerForForward(const glm::vec3& forward);
     
     // Matrix utilities
     CQ_API glm::mat4 LookAt(const glm::vec3& eye, const glm::vec3& center, const glm::vec3& up);

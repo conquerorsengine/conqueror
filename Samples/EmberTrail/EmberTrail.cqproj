@@ -1,0 +1,90 @@
+Project:
+  Name: Ember Trail
+  Organization: Conqueror Samples
+  Version: 1.0.0
+  TargetPlatform: Linux
+  StartScene: Assets/Scenes/Menu.cqscene
+  AssetDirectory: Assets
+  ScriptModulePath: ""
+Player:
+  Width: 1600
+  Height: 900
+  FullscreenMode: 0
+  Resizable: true
+  VSync: true
+  RunInBackground: false
+  Icon: ""
+  GraphicsAPI: Auto
+Build:
+  OutputDirectory: Builds
+  DevelopmentBuild: false
+  Scenes:
+    - Path: Assets/Scenes/Menu.cqscene
+      Enabled: true
+    - Path: Assets/Scenes/Meadow1.cqscene
+      Enabled: true
+    - Path: Assets/Scenes/Meadow2.cqscene
+      Enabled: true
+    - Path: Assets/Scenes/Cave1.cqscene
+      Enabled: true
+    - Path: Assets/Scenes/Cave2.cqscene
+      Enabled: true
+    - Path: Assets/Scenes/Sky1.cqscene
+      Enabled: true
+    - Path: Assets/Scenes/Sky2.cqscene
+      Enabled: true
+Physics:
+  Backend: Jolt
+  Gravity: [0, -9.81, 0]
+  Gravity2D: [0, -9.81]
+  FixedTimestep: 0.016666668
+  MaxSubSteps: 8
+  CollisionSteps: 1
+  VelocityIterations: 10
+  PositionIterations: 2
+  Interpolation: true
+  DefaultFriction: 0.6
+  DefaultRestitution: 0
+  SleepThreshold: 0.05
+  QueriesHitTriggers: true
+  AutoSyncTransforms: true
+  CollisionMatrix: [4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295]
+  MuJoCoLibraryPath: ""
+  MuJoCoIntegrator: 3
+  MuJoCoIterations: 50
+  MuJoCoTimestepScale: 1
+Audio:
+  GlobalVolume: 1
+  DopplerFactor: 1
+  RolloffScale: 1
+  DisableAudio: false
+Quality:
+  Level: 2
+  TargetFrameRate: 0
+  Custom:
+    ShadowResolution: 1024
+    ShadowCascades: 4
+    ShadowDistance: 100
+    EnableSSAO: true
+    EnableBloom: true
+    AntiAliasing: 4
+    LODBias: 1
+    TextureQuality: 2
+    AnisotropicFiltering: 16
+    MaxParticles: 10000
+Graphics:
+  DefaultTonemapper: 1
+  DefaultSky: 0
+Navigation:
+  Areas:
+    - {Index: 0, Name: Walkable, Cost: 1}
+    - {Index: 1, Name: Not Walkable, Cost: 1}
+    - {Index: 2, Name: Jump, Cost: 2}
+Editor:
+  DefaultBehaviorMode: 0
+  NewSceneWithCameraAndLight: true
+  AutoSaveMinutes: 0
+  ExternalScriptEditor: ""
+ScriptExecutionOrder:
+  []
+Tags: []

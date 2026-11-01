@@ -1,4 +1,7 @@
 #include "OpenGLFramebuffer.h"
+
+#include <algorithm>
+#include "GLProfile.h"
 #include "Core/Logging/Log.h"
 
 #include <glad/glad.h>
@@ -24,7 +27,7 @@ namespace Conqueror
             glBindTexture(TextureTarget(multisampled), id);
         }
 
-        static void AttachColorTexture(uint32_t id, int samples, GLenum internalFormat, GLenum format, uint32_t width, uint32_t height, int index)
+        static void AttachColorTexture(uint32_t id, int samples, GLenum internalFormat, GLenum format, uint32_t width, uint32_t height, int index, GLenum type = GL_UNSIGNED_BYTE)
         {
             bool multisampled = samples > 1;
             if (multisampled)
@@ -33,7 +36,7 @@ namespace Conqueror
             }
             else
             {
-                glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, GL_UNSIGNED_BYTE, nullptr);
+                glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, type, nullptr);
 
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -71,6 +74,8 @@ namespace Conqueror
             switch (format)
             {
                 case FramebufferTextureFormat::DEPTH24STENCIL8:  return true;
+                case FramebufferTextureFormat::DEPTH32F:         return true;
+                default: break;
             }
 
             return false;
@@ -80,8 +85,14 @@ namespace Conqueror
         {
             switch (format)
             {
-                case FramebufferTextureFormat::RGBA8:       return GL_RGBA8;
+                case FramebufferTextureFormat::RGBA8:       return GL_RGBA;
                 case FramebufferTextureFormat::RED_INTEGER: return GL_RED_INTEGER;
+                case FramebufferTextureFormat::RGBA16F:
+                case FramebufferTextureFormat::RGBA32F:     return GL_RGBA;
+                case FramebufferTextureFormat::RG16F:       return GL_RG;
+                case FramebufferTextureFormat::R16F:
+                case FramebufferTextureFormat::R8:          return GL_RED;
+                default: break;
             }
 
             CQ_CORE_ASSERT(false, "Unknown FramebufferTextureFormat!");
@@ -113,6 +124,19 @@ namespace Conqueror
 
     void OpenGLFramebuffer::Invalidate()
     {
+        // Boyutsuz (henüz yerleşmemiş panel, 0 boyutlu render hedefi) framebuffer: GL 0 boyutlu doku kabul etmez
+        // (GL_INVALID_VALUE). En az 1 x 1 oluşturulur; gerçek boyut Resize ile gelir.
+        if (m_Specification.Width == 0 || m_Specification.Height == 0)
+        {
+            static bool s_Warned = false;
+            if (!s_Warned)
+            {
+                CQ_CORE_WARN("[Framebuffer] created with size {0}x{1}; using 1x1 until resized", m_Specification.Width, m_Specification.Height);
+                s_Warned = true;
+            }
+            m_Specification.Width = std::max(m_Specification.Width, 1u);
+            m_Specification.Height = std::max(m_Specification.Height, 1u);
+        }
         if (m_RendererID)
         {
             glDeleteFramebuffers(1, &m_RendererID);
@@ -126,6 +150,9 @@ namespace Conqueror
         glCreateFramebuffers(1, &m_RendererID);
         glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID);
 
+        // OpenGL ES 3.0 (WebGL 2 düzeyi) çoklu örnekli doku desteklemez: tek örnek
+        if (m_Specification.Samples > 1 && !GLProfile::Current().MultisampleTextures)
+            m_Specification.Samples = 1;
         bool multisample = m_Specification.Samples > 1;
 
         // Attachments
@@ -143,7 +170,30 @@ namespace Conqueror
                         Utils::AttachColorTexture(m_ColorAttachments[i], m_Specification.Samples, GL_RGBA8, GL_RGBA, m_Specification.Width, m_Specification.Height, (int)i);
                         break;
                     case FramebufferTextureFormat::RED_INTEGER:
-                        Utils::AttachColorTexture(m_ColorAttachments[i], m_Specification.Samples, GL_R32I, GL_RED_INTEGER, m_Specification.Width, m_Specification.Height, (int)i);
+                        Utils::AttachColorTexture(m_ColorAttachments[i], m_Specification.Samples, GL_R32I, GL_RED_INTEGER, m_Specification.Width, m_Specification.Height, (int)i, GL_INT);
+                        // Tamsayı dokular doğrusal filtrelenemez (picking için NEAREST şart)
+                        if (m_Specification.Samples <= 1)
+                        {
+                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                        }
+                        break;
+                    case FramebufferTextureFormat::RGBA16F:
+                        Utils::AttachColorTexture(m_ColorAttachments[i], m_Specification.Samples, GL_RGBA16F, GL_RGBA, m_Specification.Width, m_Specification.Height, (int)i, GL_FLOAT);
+                        break;
+                    case FramebufferTextureFormat::RGBA32F:
+                        Utils::AttachColorTexture(m_ColorAttachments[i], m_Specification.Samples, GL_RGBA32F, GL_RGBA, m_Specification.Width, m_Specification.Height, (int)i, GL_FLOAT);
+                        break;
+                    case FramebufferTextureFormat::RG16F:
+                        Utils::AttachColorTexture(m_ColorAttachments[i], m_Specification.Samples, GL_RG16F, GL_RG, m_Specification.Width, m_Specification.Height, (int)i, GL_FLOAT);
+                        break;
+                    case FramebufferTextureFormat::R16F:
+                        Utils::AttachColorTexture(m_ColorAttachments[i], m_Specification.Samples, GL_R16F, GL_RED, m_Specification.Width, m_Specification.Height, (int)i, GL_FLOAT);
+                        break;
+                    case FramebufferTextureFormat::R8:
+                        Utils::AttachColorTexture(m_ColorAttachments[i], m_Specification.Samples, GL_R8, GL_RED, m_Specification.Width, m_Specification.Height, (int)i);
+                        break;
+                    default:
                         break;
                 }
             }
@@ -157,6 +207,11 @@ namespace Conqueror
             {
                 case FramebufferTextureFormat::DEPTH24STENCIL8:
                     Utils::AttachDepthTexture(m_DepthAttachment, m_Specification.Samples, GL_DEPTH24_STENCIL8, GL_DEPTH_STENCIL_ATTACHMENT, m_Specification.Width, m_Specification.Height);
+                    break;
+                case FramebufferTextureFormat::DEPTH32F:
+                    Utils::AttachDepthTexture(m_DepthAttachment, m_Specification.Samples, GL_DEPTH_COMPONENT32F, GL_DEPTH_ATTACHMENT, m_Specification.Width, m_Specification.Height);
+                    break;
+                default:
                     break;
             }
         }
@@ -217,7 +272,14 @@ namespace Conqueror
         CQ_CORE_ASSERT(attachmentIndex < m_ColorAttachments.size(), "Attachment index out of range!");
 
         auto& spec = m_ColorAttachmentSpecifications[attachmentIndex];
-        glClearTexImage(m_ColorAttachments[attachmentIndex], 0,
-            Utils::ConquerorFBTextureFormatToGL(spec.TextureFormat), GL_INT, &value);
+        if (spec.TextureFormat == FramebufferTextureFormat::RED_INTEGER)
+        {
+            glClearTexImage(m_ColorAttachments[attachmentIndex], 0, GL_RED_INTEGER, GL_INT, &value);
+        }
+        else
+        {
+            const float v[4] = { (float)value, (float)value, (float)value, (float)value };
+            glClearTexImage(m_ColorAttachments[attachmentIndex], 0, Utils::ConquerorFBTextureFormatToGL(spec.TextureFormat), GL_FLOAT, v);
+        }
     }
 }

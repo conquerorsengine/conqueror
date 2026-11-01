@@ -1,0 +1,44 @@
+using nativebridge;
+
+// Slider Joint + motor: piston başı ileri - geri sürülür (JointSetMotor), yaylı kapıyı (Hinge Joint + spring) iter.
+// Piston kolu (görsel) gövdeden başa uzanır, her karede yeniden boyutlanır.
+script PistonDemo : ConquerorScript
+{
+    public float speed = 1.6;            // m/s
+    public float force = 4000.0;         // N
+    public float stroke = 3.0;           // bir yönde geçen süre (s)
+    public string rodName = "Piston Rod";
+    public float rodStartX = 89.2;       // kol gövdeden (dünya X) çıkar
+    [Header("State")]
+    public int strokes = 0;
+
+    private float timer = 0.0;
+    private float dir = -1.0;
+    private var rod = -1;
+
+    func Start()
+    {
+        rod = FindEntity(rodName);
+        timer = stroke;
+        JointSetMotor(true, dir * speed, force);
+    }
+
+    func Update(dt)
+    {
+        timer -= dt;
+        if (timer <= 0.0)
+        {
+            timer = stroke;
+            dir = -dir;
+            JointSetMotor(true, dir * speed, force);
+            strokes++;
+        }
+        if (rod != null && rod >= 0)
+        {
+            var p = EntityGetWorldPosition(GetEntityId());
+            var len = MathMax(rodStartX - p.x, 0.05);
+            EntitySetPosition(rod, rodStartX - len * 0.5, p.y, p.z);
+            EntitySetScale(rod, 0.07, len * 0.5, 0.07);
+        }
+    }
+}

@@ -1,18 +1,46 @@
 #pragma once
 
 #include "CQSValue.h"
+#include <glm/glm.hpp>
 #include <string>
 #include <vector>
+
+namespace Conqueror
+{
+    class Scene;
+}
+
+namespace Conqueror::Scripting
+{
+    class NativeRegistry;
+}
 
 namespace Conqueror::CQS
 {
     class CQSVM;
 
+    // CQSNativeBridge_Physics.cpp
+    void RegisterPhysicsNatives(Scripting::NativeRegistry* vm);
+    // CQSNativeBridge_Grid.cpp
+    void RegisterGridNatives(Scripting::NativeRegistry* vm);
+    void RegisterNetNatives(Scripting::NativeRegistry* vm);
+    // CQSNativeBridge_UI.cpp: UI öğeleri, parçacıklar, PlayerPrefs
+    void RegisterUINatives(Scripting::NativeRegistry* vm);
+    // CQSNativeBridge_Render.cpp: sahne görüntü ayarları (sis, bloom, gölge...), kamera
+    void RegisterRenderNatives(Scripting::NativeRegistry* vm);
+    // CQSNativeBridge_Gameplay.cpp: Gameplay Tags, Data Tables, Ability System
+    void RegisterGameplayNatives(Scripting::NativeRegistry* vm);
+    // Ekran (pencere/viewport piksel) noktasından dünya ışını: betik kamerası (Primary ya da editör kamerası)
+    bool ScreenPointToWorldRay(Conqueror::Scene* scene, float sx, float sy, glm::vec3& origin, glm::vec3& direction);
+    // Dünya noktası -> ekran pikseli (GetMousePosition ile aynı uzay) ve viewport içi 0..1 (sol üst köşe 0,0).
+    // Nokta kameranın arkasındaysa false döner (yine de hesaplanan değerler doldurulur).
+    bool WorldToScreenPoint(Conqueror::Scene* scene, const glm::vec3& world, glm::vec2& screen, glm::vec2& uv, float& depth);
+
     class CQSNativeBridge
     {
     public:
         // Engine fonksiyonlarını VM'e kaydet
-        static void RegisterGlobals(CQSVM* vm);
+        static void RegisterGlobals(Scripting::NativeRegistry* vm);
 
     private:
         // ── Logging ──

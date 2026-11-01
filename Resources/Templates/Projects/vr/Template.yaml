@@ -1,0 +1,7 @@
+# Virtual Reality (Unreal VR Template / Unity VR Core): XR Origin with head and two motion controllers, teleport arc,
+# snap turn, grab / throw, a grab-able pistol and pop-up targets. Runs in the XR Device Simulator (mouse + keyboard)
+# when no headset is connected.
+Shared: [Prototype, Weapons]
+StartScene: Assets/Scenes/Main.cqscene
+Scenes:
+  - Assets/Scenes/Main.cqscene

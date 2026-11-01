@@ -1,0 +1,68 @@
+using nativebridge;
+
+// Puan yöneticisi: AddScore(n) ile artar, en yüksek puan PlayerPrefs'te saklanır.
+// Hızlı art arda toplamalar kombo çarpanı verir (comboWindow saniye içinde).
+script ScoreManager : ConquerorScript
+{
+    public string scoreTextName = "Score Text";
+    public string format = "Score: {0}   Best: {1}";
+    public string highScoreKey = "HighScore";
+    public float comboWindow = 0.0;
+    public int maxCombo = 5;
+
+    // Çalışma zamanı bilgisi
+    public int score = 0;
+    public int highScore = 0;
+    public int combo = 1;
+    public int collected = 0;
+
+    private float comboTimer = 0.0;
+
+    func Start()
+    {
+        highScore = PrefsGetInt(highScoreKey, 0);
+        GlobalSet("score", score);
+        UpdateText();
+    }
+
+    func AddScore(points)
+    {
+        if (comboWindow > 0)
+        {
+            combo = comboTimer > 0 ? int(MathMin(combo + 1, maxCombo)) : 1;
+            comboTimer = comboWindow;
+        }
+        score += int(points * combo);
+        collected++;
+        if (score > highScore)
+        {
+            highScore = score;
+            PrefsSetInt(highScoreKey, highScore);
+        }
+        GlobalSet("score", score);
+        UpdateText();
+    }
+
+    func ResetScore()
+    {
+        score = 0;
+        combo = 1;
+        collected = 0;
+        GlobalSet("score", 0);
+        UpdateText();
+    }
+
+    func Update(dt)
+    {
+        if (comboTimer > 0) { comboTimer -= dt; if (comboTimer <= 0) { combo = 1; } }
+    }
+
+    func UpdateText()
+    {
+        var t = FindEntity(scoreTextName);
+        if (t == null) { return; }
+        UISetText(t, StringReplace(StringReplace(format, "{0}", str(score)), "{1}", str(highScore)));
+    }
+
+    func OnDestroy() { PrefsSave(); }
+}

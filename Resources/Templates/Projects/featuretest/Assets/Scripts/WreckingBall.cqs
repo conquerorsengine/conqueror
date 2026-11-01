@@ -1,0 +1,74 @@
+using nativebridge;
+
+// Eklemler istasyonu: Ball Joint zinciri ucundaki yıkım topu sola çekilip bırakılır, sandık yığınına çarpar.
+// Birkaç saniyede bir zincir yeniden kaldırılır ve sandıklar dizilir (istasyona ne zaman gelinirse gelinsin görülür).
+// Bu varlık zincirin asılma noktasındadır; halkalar "Chain Link 0..", top "Wrecking Ball" (hepsinde PhysicsReset).
+script WreckingBall : ConquerorScript
+{
+    public float interval = 9.0;
+    public float holdTime = 1.0;         // kaldırılmış pozda bekleme
+    public float raiseAngle = -68.0;     // derece, Z ekseni etrafında (izleyiciye göre sola)
+    public float linkLength = 0.36;
+    public float ballRadius = 0.45;
+    public string linkPrefix = "Chain Link ";
+    public string ballName = "Wrecking Ball";
+    public string cratePrefix = "Joint Crate";
+    [Header("State")]
+    public int swings = 0;
+
+    private var chain = [];
+    private var crates = [];
+    private var ball = -1;
+    private float timer = 0.3;
+    private float hold = 0.0;
+
+    func Start()
+    {
+        for (var i = 0; i < 64; i++)
+        {
+            var l = FindEntity(linkPrefix + i);
+            if (l == null || l < 0) { break; }
+            chain.Add(l);
+        }
+        ball = FindEntity(ballName);
+        foreach (var e in FindEntitiesWithScript("PhysicsReset"))
+        {
+            if (StringStartsWith(EntityGetName(e), cratePrefix)) { crates.Add(e); }
+        }
+    }
+
+    func Raise()
+    {
+        var p = EntityGetWorldPosition(GetEntityId());
+        var a = MathDegToRad(raiseAngle);
+        var s = MathSin(a);
+        var c = MathCos(a);
+        for (var i = 0; i < chain.Count; i++)
+        {
+            var d = (i + 0.5) * linkLength;
+            InvokeMethod(chain[i], "Place", p.x + d * s, p.y - d * c, p.z, 0, 0, raiseAngle);
+        }
+        if (ball != null && ball >= 0)
+        {
+            var db = chain.Count * linkLength + ballRadius;
+            InvokeMethod(ball, "Place", p.x + db * s, p.y - db * c, p.z, 0, 0, raiseAngle);
+        }
+    }
+
+    func Update(dt)
+    {
+        timer -= dt;
+        if (timer <= 0.0)
+        {
+            timer = interval;
+            hold = holdTime;
+            foreach (var cr in crates) { InvokeMethod(cr, "ResetBody"); }
+            swings++;
+        }
+        if (hold > 0.0)
+        {
+            hold -= dt;
+            Raise();   // bırakılana kadar her karede (zincir kaldırılmış pozda sabit)
+        }
+    }
+}

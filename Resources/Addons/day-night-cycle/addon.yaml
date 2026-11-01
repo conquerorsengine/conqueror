@@ -1,0 +1,19 @@
+Id: conqueror.day-night-cycle
+Name: Day / Night Cycle
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  A sun that moves across the sky in real time: drives a Directional Light's angle, color
+  and intensity through dawn, noon, dusk and night. Includes a Time of Day preview panel
+  for the editor and a ready-made "Sun" prefab.
+Category: Environment
+Icon: cloud-sun
+Tags: [lighting, environment, sky, time]
+Editor: Editor/DayNightEditor.cqs
+Components:
+  - Scripts/DayNightCycle.cqs
+Inserts:
+  - Name: Sun (Day/Night)
+    Icon: sun
+    Prefab: Prefabs/Sun.cqprefab
+    Tooltip: Directional light driven by the Day/Night Cycle component

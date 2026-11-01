@@ -1,0 +1,290 @@
+using nativebridge;
+
+// Silah: atış modu, cephane, şarjör değiştirme, dağılma, sekme, ışın izleme (hitscan) isabeti, hasar ve efektler.
+// Kullanan (oyuncu ya da yapay zekâ) Fire(...) çağırır; Weapon kimin ateş ettiğini (instigator) bilir, kendine isabet etmez.
+// Çocuk "Muzzle": namlu ucu (Point Light namlu alevi için yanıp söner, "Muzzle Flash" çocuğu kısa süre görünür).
+script Weapon : ConquerorScript
+{
+    [Header("Weapon")]
+    public string weaponName = "Pistol";
+    [Tooltip("Semi: tıklama başına bir atış. Auto: basılı tutunca. Bolt: atıştan sonra mekanizma (bolt) süresi")]
+    public string fireMode = "Semi";
+    public float fireRate = 6.0;            // atış / saniye
+    public float damage = 25.0;
+    public float headshotMultiplier = 2.0;
+    public float range = 200.0;
+    public float impulse = 8.0;             // fizik nesnelerine itki
+    public int pellets = 1;                 // pompalı için > 1
+
+    [Header("Accuracy (degrees)")]
+    public float hipSpread = 1.2;
+    public float aimSpread = 0.15;
+    public float moveSpread = 1.5;          // tam hızda koşarken eklenen
+    public float recoilPitch = 1.6;         // kameraya tepme
+    public float recoilYaw = 0.5;
+
+    [Header("Ammo")]
+    public int magazine = 12;
+    public int ammo = 12;
+    public int reserve = 60;
+    public bool infiniteAmmo = false;
+    public float reloadTime = 1.6;
+    public float boltTime = 0.0;
+
+    [Header("Aiming / Effects")]
+    public float aimFov = 55.0;
+    [Tooltip("Birinci şahıs nişan: görüş modelinin kayması (gez-arpacık / dürbün göz hizasına gelsin)")]
+    [Tooltip("Nişan alırken gez noktasının gözün ne kadar önünde duracağı (m)")]
+    public float eyeRelief = 0.16;
+    [Tooltip("Dürbünlü: tam nişanda dürbün görüntüsü (HUD ScopeOverlay) açılır, silah modeli gizlenir")]
+    public bool scoped = false;
+    public string shotSound = "Assets/Weapons/Audio/pistol_shot.wav";
+    public float shotVolume = 0.9;
+    [Tooltip("Lazer silahı (Laser Tag): ışın, kovan ve mermi deliği yok")]
+    public bool laser = false;
+    public float tracerR = 1.0;
+    public float tracerG = 0.8;
+    public float tracerB = 0.45;
+
+    [Header("State")]
+    public bool reloading = false;
+    public int shotsFired = 0;
+    public int hits = 0;
+
+    private float cooldown = 0.0;
+    private float reloadTimer = 0.0;
+    private float flash = 0.0;
+    private int reloadStage = 0;
+    private var muzzle = -1;
+    private var flashSprite = -1;
+    private bool flashRig = false;          // yeni alev: kökün çocukları (Flash Front / Flash Side A, B)
+    private float flashTime = 0.05;
+
+    func Start()
+    {
+        foreach (var c in EntityGetChildren(GetEntityId()))
+        {
+            if (EntityGetName(c) == "Muzzle") { muzzle = c; }
+        }
+        if (muzzle >= 0)
+        {
+            foreach (var c in EntityGetChildren(muzzle))
+            {
+                if (EntityGetName(c) == "Muzzle Flash")
+                {
+                    flashSprite = c;
+                    EntitySetActive(c, false);
+                    var front = EntityFindChild(c, "Flash Front");
+                    flashRig = front != null && front >= 0;
+                    if (flashRig) { flashTime = 0.034; }     // 2 kare
+                }
+            }
+        }
+        ammo = MathMin(ammo, magazine);
+    }
+
+    func Update(dt)
+    {
+        if (cooldown > 0.0) { cooldown -= dt; }
+        if (flash > 0.0)
+        {
+            flash -= dt;
+            if (muzzle >= 0) { EntitySetComponentField(muzzle, "PointLight", "Intensity", flash > 0.0 ? 9.0 * flash / flashTime : 0.0); }
+            if (flash <= 0.0 && flashSprite >= 0) { EntitySetActive(flashSprite, false); }
+        }
+        if (reloading)
+        {
+            reloadTimer -= dt;
+            var p = MuzzlePos();
+            // Şarjör sesleri: çıkar (%15), tak (%55), mekanizma (%85)
+            var f = 1.0 - reloadTimer / reloadTime;
+            if (reloadStage == 0 && f > 0.15) { reloadStage = 1; AudioPlayOneShotAt("Assets/Weapons/Audio/mag_out.wav", p.x, p.y, p.z, 0.7); }
+            if (reloadStage == 1 && f > 0.55) { reloadStage = 2; AudioPlayOneShotAt("Assets/Weapons/Audio/mag_in.wav", p.x, p.y, p.z, 0.8); }
+            if (reloadStage == 2 && f > 0.85)
+            {
+                reloadStage = 3;
+                AudioPlayOneShotAt(fireMode == "Bolt" ? "Assets/Weapons/Audio/bolt.wav" : "Assets/Weapons/Audio/slide.wav", p.x, p.y, p.z, 0.7);
+            }
+            if (reloadTimer <= 0.0)
+            {
+                reloading = false;
+                var need = magazine - ammo;
+                var take = infiniteAmmo ? need : MathMin(need, reserve);
+                ammo += int(take);
+                if (!infiniteAmmo) { reserve -= int(take); }
+            }
+        }
+    }
+
+    func MuzzlePos()
+    {
+        return muzzle >= 0 ? EntityGetWorldPosition(muzzle) : EntityGetWorldPosition(GetEntityId());
+    }
+
+    func CanFire() { return !reloading && cooldown <= 0.0 && ammo > 0; }
+    func IsAuto() { return fireMode == "Auto"; }
+    func NeedsReload() { return ammo <= 0 && !reloading && (reserve > 0 || infiniteAmmo); }
+
+    func Reload()
+    {
+        if (reloading || ammo >= magazine || (reserve <= 0 && !infiniteAmmo)) { return false; }
+        reloading = true;
+        reloadTimer = reloadTime;
+        reloadStage = 0;
+        return true;
+    }
+
+    func CancelReload() { reloading = false; }
+
+    // Kök varlık (sahip) mi? ebeveyn zinciri
+    func IsOwnedBy(e, root)
+    {
+        var c = e;
+        for (var i = 0; i < 12 && c != null && c >= 0; i++)
+        {
+            if (c == root) { return true; }
+            c = EntityGetParent(c);
+        }
+        return false;
+    }
+
+    func DamageRoot(e)
+    {
+        var c = e;
+        for (var i = 0; i < 12 && c != null && c >= 0; i++)
+        {
+            if (GetScriptField(c, "maxHealth") != null) { return c; }
+            c = EntityGetParent(c);
+        }
+        return -1;
+    }
+
+    // Ateş: (ox..) bakış başlangıcı, (dx..) yön (birim), spread derece, instigator: ateş edenin kök varlığı.
+    // Sonuç: {fired, hit, kill, head, damage} — sekme (recoil) uygulamak kullananın işi
+    func Fire(ox, oy, oz, dx, dy, dz, spread, instigator)
+    {
+        var result = {fired: false, hit: false, kill: false, head: false, damage: 0.0};
+        if (reloading || cooldown > 0.0) { return result; }
+        if (ammo <= 0)
+        {
+            var p0 = MuzzlePos();
+            AudioPlayOneShotAt("Assets/Weapons/Audio/dry_fire.wav", p0.x, p0.y, p0.z, 0.6);
+            cooldown = 0.25;
+            return result;
+        }
+        if (!infiniteAmmo || magazine > 0) { ammo -= 1; }
+        cooldown = 1.0 / fireRate + boltTime;
+        shotsFired += 1;
+        result.fired = true;
+        var mp = MuzzlePos();
+        AudioPlayOneShotAt(shotSound, mp.x, mp.y, mp.z, shotVolume, RandomRange(0.95, 1.05));
+        flash = flashTime;
+        if (flashSprite >= 0)
+        {
+            EntitySetActive(flashSprite, true);
+            if (flashRig)
+            {
+                // Namlu ekseni (yerel Z) etrafında rastgele dönüş ve boy: her atış farklı
+                EntitySetRotation(flashSprite, 0, 0, RandomRange(0, 360));
+                var fsc = RandomRange(0.8, 1.25);
+                EntitySetScale(flashSprite, fsc, fsc, RandomRange(0.85, 1.3));
+            }
+            else { EntitySetRotation(flashSprite, 0, 0, RandomRange(0, 360)); }
+        }
+        if (!laser) { ParticleEmitAt("FX Muzzle", mp.x, mp.y, mp.z, 6); }
+        // Silah sesi: yakındaki yapay zekâ duyar (hedefi yoksa sese döner ve oraya gider)
+        foreach (var ai in FindEntitiesWithScript("ShooterAI"))
+        {
+            if (ai != instigator) { InvokeMethod(ai, "HearNoise", mp.x, mp.y, mp.z, instigator); }
+        }
+        if (!laser && RandomRange(0, 1) < 0.7)
+        {
+            AudioPlayOneShotAt("Assets/Weapons/Audio/shell" + (1 + int(MathFloor(RandomRange(0, 2.99)))) + ".wav", mp.x, mp.y - 1.0, mp.z, 0.25);
+        }
+        if (boltTime > 0.0) { AudioPlayOneShotAt("Assets/Weapons/Audio/bolt.wav", mp.x, mp.y, mp.z, 0.5); }
+
+        for (var pi = 0; pi < pellets; pi++)
+        {
+            // Koni içinde rastgele yön
+            var sr = MathDegToRad(spread) * MathSqrt(RandomRange(0, 1));
+            var sa = RandomRange(0, 6.2831853);
+            // Yöne dik iki eksen
+            var ux = 0.0;
+            var uy = 1.0;
+            var uz = 0.0;
+            if (MathAbs(dy) > 0.95) { ux = 1.0; uy = 0.0; }
+            var rx = dy * uz - dz * uy;
+            var ry = dz * ux - dx * uz;
+            var rz = dx * uy - dy * ux;
+            var rl = MathSqrt(rx * rx + ry * ry + rz * rz);
+            rx /= rl; ry /= rl; rz /= rl;
+            var vx = ry * dz - rz * dy;
+            var vy = rz * dx - rx * dz;
+            var vz = rx * dy - ry * dx;
+            var c = MathCos(sa) * MathTan(sr);
+            var s = MathSin(sa) * MathTan(sr);
+            var ex = dx + rx * c + vx * s;
+            var ey = dy + ry * c + vy * s;
+            var ez = dz + rz * c + vz * s;
+            var el = MathSqrt(ex * ex + ey * ey + ez * ez);
+            ex /= el; ey /= el; ez /= el;
+
+            // Kendi gövdemizi atla (en çok 3 kez yeniden at)
+            var sx = ox;
+            var sy = oy;
+            var sz = oz;
+            var hit = null;
+            // Işın kapsülün içinden başlar (kamera / göğüs): kendine çarparsa kapsülü aşacak kadar ileriden yeniden at
+            for (var k = 0; k < 4; k++)
+            {
+                hit = Raycast(sx, sy, sz, ex, ey, ez, range);
+                if (hit == null) { break; }
+                if (!IsOwnedBy(hit.entity, instigator) && !hit.isTrigger) { break; }
+                sx = hit.point.x + ex * 0.4;
+                sy = hit.point.y + ey * 0.4;
+                sz = hit.point.z + ez * 0.4;
+                hit = null;
+            }
+            var endX = ox + ex * range;
+            var endY = oy + ey * range;
+            var endZ = oz + ez * range;
+            if (hit != null)
+            {
+                endX = hit.point.x;
+                endY = hit.point.y;
+                endZ = hit.point.z;
+                var target = DamageRoot(hit.entity);
+                if (target >= 0)
+                {
+                    var tp = EntityGetWorldPosition(target);
+                    // Karakter kökü kapsül merkezinde: başın üstü (merkezden 0.55 m yukarısı) kafa sayılır
+                    var head = hit.point.y > tp.y + 0.55;
+                    var dmg = damage / pellets * (head ? headshotMultiplier : 1.0);
+                    var killed = InvokeMethod(target, "TakeDamage", dmg, instigator, hit.point.x, hit.point.y, hit.point.z, head);
+                    result.hit = true;
+                    result.head = result.head || head;
+                    result.kill = result.kill || killed == true;
+                    result.damage += dmg;
+                    hits += 1;
+                    InvokeMethod("Impacts", "Spawn", hit.point.x, hit.point.y, hit.point.z, hit.normal.x, hit.normal.y, hit.normal.z, laser ? "laser" : "body", false, hit.entity);
+                }
+                else
+                {
+                    var surface = laser ? "laser" : (GetScriptField(hit.entity, "metal") == true ? "metal" : "concrete");
+                    InvokeMethod("Impacts", "Spawn", hit.point.x, hit.point.y, hit.point.z, hit.normal.x, hit.normal.y, hit.normal.z, surface, !laser, hit.entity);
+                }
+                // Fizik nesnelerini it
+                EntityAddImpulse(hit.entity, ex * impulse, ey * impulse, ez * impulse, hit.point.x, hit.point.y, hit.point.z);
+                // Vurulan varlık ve ataları OnShot alır (hedef tahtası -> hedef kökü)
+                var se = hit.entity;
+                for (var si = 0; si < 4 && se != null && se >= 0; si++)
+                {
+                    SendMessage(se, "OnShot", instigator, hit.point.x, hit.point.y, hit.point.z);
+                    se = EntityGetParent(se);
+                }
+            }
+            InvokeMethod("Impacts", "Tracer", mp.x, mp.y, mp.z, endX, endY, endZ, tracerR, tracerG, tracerB, laser ? 0.03 : 0.012, laser ? 0.12 : 0.04);
+        }
+        return result;
+    }
+}

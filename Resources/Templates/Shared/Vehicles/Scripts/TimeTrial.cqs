@@ -1,0 +1,259 @@
+using nativebridge;
+
+// Zamana karşı yarış (Unreal Vehicle Time Trial karşılığı): 3-2-1 geri sayım, sıralı kontrol noktaları
+// ("Checkpoint 0" = start / bitiş), tur sayacı, tur süresi, en iyi tur (kalıcı), kontrol noktası farkı (+/-),
+// ters yön uyarısı, sonuç ekranı. Kontrol noktası geçişi: aracın kapı düzlemini doğru yönde kesmesi.
+script TimeTrial : ConquerorScript
+{
+    public string vehicleName = "Vehicle";
+    public int laps = 3;
+    public float gateWidth = 16.0;
+    public float countdown = 3.0;
+    public string bestKey = "TimeTrial.BestLap";
+    [Header("State")]
+    public int lap = 0;                  // tamamlanan tur
+    public int nextCheckpoint = 1;
+    public float lapTime = 0.0;
+    public float totalTime = 0.0;
+    public float bestLap = 0.0;
+    public bool racing = false;
+    public bool finished = false;
+    public int checkpointsPassed = 0;
+
+    private var vehicle = -1;
+    private var gates = [];
+    private var gateSide = [];
+    private var splits = [];             // bu turun kontrol noktası süreleri
+    private var bestSplits = [];
+    private float count = 0.0;
+    private int lastBeep = 4;
+    private float messageTimer = 0.0;
+    private float deltaTimer = 0.0;
+    private float wrongTimer = 0.0;
+    private float wrongBeep = 0.0;
+    private var lapTimes = [];
+
+    func Start()
+    {
+        vehicle = FindEntity(vehicleName);
+        for (var i = 0; i < 64; i++)
+        {
+            var g = FindEntity("Checkpoint " + i);
+            if (g == null || g < 0) { break; }
+            gates.Add(g);
+            gateSide.Add(0.0);
+        }
+        bestLap = PrefsGetFloat(bestKey, 0.0);
+        count = countdown;
+        SetVehicleInput(false);
+        UISetText("CenterText", "");
+        UISetText("DeltaText", "");
+        UpdateGates();
+        foreach (var gi in Range(gates.Count)) { gateSide[gi] = Side(gi); }
+    }
+
+    func Range(n)
+    {
+        var r = [];
+        for (var i = 0; i < n; i++) { r.Add(i); }
+        return r;
+    }
+
+    func SetVehicleInput(on)
+    {
+        if (vehicle >= 0) { SetScriptField(vehicle, "inputEnabled", on); }
+    }
+
+    // Aracın kapıya göre konumu: kapı ileri ekseninde işaretli uzaklık (önünde +)
+    func Side(i)
+    {
+        var g = gates[i];
+        var gp = EntityGetWorldPosition(g);
+        var vp = EntityGetWorldPosition(vehicle);
+        var f = EntityGetForward(g);
+        return (vp.x - gp.x) * f.x + (vp.z - gp.z) * f.z;
+    }
+
+    func Lateral(i)
+    {
+        var g = gates[i];
+        var gp = EntityGetWorldPosition(g);
+        var vp = EntityGetWorldPosition(vehicle);
+        var r = EntityGetRight(g);
+        return (vp.x - gp.x) * r.x + (vp.z - gp.z) * r.z;
+    }
+
+    func Format(t)
+    {
+        if (t <= 0.0) { return "--:--.---"; }
+        var m = int(MathFloor(t / 60.0));
+        var s = t - m * 60.0;
+        var si = int(MathFloor(s));
+        var ms = int(MathFloor((s - si) * 1000.0));
+        return $"{m}:{si:D2}.{ms:D3}";
+    }
+
+    func Message(text, seconds)
+    {
+        UISetText("CenterText", text);
+        messageTimer = seconds;
+    }
+
+    func UpdateGates()
+    {
+        // Sıradaki kapı parlak, diğerleri sönük
+        for (var i = 0; i < gates.Count; i++)
+        {
+            var on = i == nextCheckpoint % gates.Count && !finished;
+            foreach (var c in EntityGetChildren(gates[i]))
+            {
+                if (StringStartsWith(EntityGetName(c), "Glow"))
+                {
+                    EntitySetComponentField(c, "MeshRenderer", "EmissionStrength", on ? 4.0 : 0.25);
+                }
+                if (EntityGetName(c) == "Arrow") { EntitySetActive(c, on); }
+            }
+        }
+    }
+
+    func Update(dt)
+    {
+        if (vehicle < 0) { return; }
+        if (finished)
+        {
+            UpdateHud();
+            if (IsKeyDown("Enter") || (IsGamepadConnected(0) && IsGamepadButtonPressed(0, 7))) { LoadScene("Assets/Scenes/" + GetSceneName() + ".cqscene"); }
+            return;
+        }
+        // Geri sayım
+        if (!racing)
+        {
+            count -= dt;
+            var n = int(MathCeil(count));
+            if (n != lastBeep && n > 0)
+            {
+                lastBeep = n;
+                AudioPlayOneShot("Assets/Vehicles/Audio/countdown.wav", 0.8, 1.0, 0, "SFX");
+                Message("" + n, 1.0);
+            }
+            if (count <= 0.0)
+            {
+                racing = true;
+                SetVehicleInput(true);
+                AudioPlayOneShot("Assets/Vehicles/Audio/countdown_go.wav", 0.9, 1.0, 0, "SFX");
+                Message("GO!", 1.0);
+            }
+            UpdateHud();
+            return;
+        }
+        lapTime += dt;
+        totalTime += dt;
+        if (messageTimer > 0.0) { messageTimer -= dt; if (messageTimer <= 0.0) { UISetText("CenterText", ""); } }
+        if (deltaTimer > 0.0) { deltaTimer -= dt; if (deltaTimer <= 0.0) { UISetText("DeltaText", ""); } }
+
+        // Kapı geçişleri (yalnızca sıradaki kapı sayılır)
+        for (var i = 0; i < gates.Count; i++)
+        {
+            var side = Side(i);
+            var prev = gateSide[i];
+            gateSide[i] = side;
+            if (i != nextCheckpoint % gates.Count) { continue; }
+            if (prev < 0.0 && side >= 0.0 && MathAbs(Lateral(i)) < gateWidth * 0.5 + 2.0) { PassGate(i); }
+        }
+        // Ters yön: araç sıradaki kapıdan uzaklaşıyor ve ona sırtını dönmüş
+        var g = gates[nextCheckpoint % gates.Count];
+        var gp = EntityGetWorldPosition(g);
+        var vp = EntityGetWorldPosition(vehicle);
+        var vf = EntityGetForward(vehicle);
+        var tx = gp.x - vp.x;
+        var tz = gp.z - vp.z;
+        var tl = MathMax(MathSqrt(tx * tx + tz * tz), 0.01);
+        var speed = MathAbs(GetScriptField(vehicle, "speedKmh"));
+        var facing = (vf.x * tx + vf.z * tz) / tl;
+        wrongTimer = facing < -0.5 && speed > 15.0 ? wrongTimer + dt : 0.0;
+        if (wrongTimer > 1.2)
+        {
+            UISetText("CenterText", "WRONG WAY");
+            messageTimer = 0.3;
+            wrongBeep -= dt;
+            if (wrongBeep <= 0.0) { wrongBeep = 1.5; AudioPlayOneShot("Assets/Vehicles/Audio/wrong_way.wav", 0.6, 1.0, 0, "SFX"); }
+        }
+        UpdateHud();
+    }
+
+    func PassGate(i)
+    {
+        checkpointsPassed += 1;
+        var cp = EntityGetWorldPosition(gates[i]);
+        SendMessage(vehicle, "SetResetPoint", cp.x, cp.y, cp.z, EntityGetRotation(gates[i]).y);
+        if (i == 0)
+        {
+            // Tur tamam
+            lap += 1;
+            lapTimes.Add(lapTime);
+            var best = bestLap <= 0.0 || lapTime < bestLap;
+            if (best)
+            {
+                bestLap = lapTime;
+                bestSplits = splits;
+                PrefsSetFloat(bestKey, bestLap);
+                PrefsSave();
+            }
+            AudioPlayOneShot("Assets/Vehicles/Audio/lap.wav", 0.8, 1.0, 0, "SFX");
+            if (lap >= laps)
+            {
+                Finish();
+                return;
+            }
+            Message((best ? "NEW BEST LAP  " : "LAP  ") + Format(lapTime), 2.5);
+            lapTime = 0.0;
+            splits = [];
+        }
+        else
+        {
+            splits.Add(lapTime);
+            AudioPlayOneShot("Assets/Vehicles/Audio/checkpoint.wav", 0.6, 1.0, 0, "SFX");
+            // En iyi tura göre fark
+            var k = splits.Count - 1;
+            if (k < bestSplits.Count)
+            {
+                var d = lapTime - bestSplits[k];
+                UISetText("DeltaText", (d < 0 ? "-" : "+") + MathRound(MathAbs(d) * 1000.0) / 1000.0);
+                UISetColor("DeltaText", d < 0 ? 0.3 : 1.0, d < 0 ? 1.0 : 0.35, 0.3, 1.0);
+                deltaTimer = 2.5;
+            }
+        }
+        nextCheckpoint = (i + 1) % gates.Count;
+        UpdateGates();
+    }
+
+    func Finish()
+    {
+        finished = true;
+        racing = false;
+        SetVehicleInput(false);
+        var lines = "FINISH     " + Format(totalTime) + "\n";
+        for (var i = 0; i < lapTimes.Count; i++) { lines = lines + "LAP " + (i + 1) + "   " + Format(lapTimes[i]) + "\n"; }
+        lines = lines + "BEST   " + Format(bestLap) + "\n\nENTER: RACE AGAIN";
+        UISetText("ResultsText", lines);
+        UISetAlpha("ResultsPanel", 0.72);
+        UISetText("CenterText", "");
+        UpdateGates();
+        UpdateHud();
+    }
+
+    func UpdateHud()
+    {
+        var spd = GetScriptField(vehicle, "speedKmh");
+        UISetText("SpeedText", "" + int(MathAbs(spd)));
+        var gear = GetScriptField(vehicle, "gear");
+        UISetText("GearText", gear < 0 ? "R" : (gear == 0 ? "N" : "" + gear));
+        var rpm = GetScriptField(vehicle, "rpm");
+        UISetFill("RpmFill", MathClamp01(rpm / 7500.0));
+        UISetColor("RpmFill", 1.0, rpm > 6500.0 ? 0.25 : 0.85, rpm > 6500.0 ? 0.2 : 0.3, 0.95);
+        UISetText("LapText", "LAP " + int(MathMin(lap + 1, laps)) + " / " + laps);
+        UISetText("TimeText", Format(lapTime));
+        UISetText("BestText", "BEST " + Format(bestLap));
+        UISetText("TotalText", "TOTAL " + Format(totalTime));
+    }
+}

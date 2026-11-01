@@ -1,0 +1,20 @@
+Id: conqueror.laser-beam
+Name: Laser Beam
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Laser emitters for puzzles and hazards: the beam is cast forward and stops at the first
+  obstacle, bounces off objects tagged "Mirror", damages anything with Health it touches,
+  pulses its width, sparks where it hits and can blink on a timer. Receivers can react to
+  being hit (OnLaserHit) for laser puzzle doors.
+Category: Effects
+Icon: bolt-lightning
+Tags: [laser, beam, puzzle, hazard, line-renderer]
+Dependencies: [conqueror.health-system]
+Components:
+  - Scripts/LaserBeam.cqs
+Inserts:
+  - Name: Laser Emitter
+    Icon: bolt-lightning
+    Prefab: Prefabs/LaserEmitter.cqprefab
+    Tooltip: Red laser that damages what it touches

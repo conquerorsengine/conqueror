@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: driving
+      States:
+        - Name: driving
+          ClipIndex: 23
+          ClipName: driving
+  Parameters: []

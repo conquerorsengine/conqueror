@@ -1,0 +1,48 @@
+using nativebridge;
+
+// Görev veren: oyuncu dokununca (ya da requireKey ile E'ye basınca) görevi başlatır.
+// startOnChainOf doluysa o görev tamamlandığında kendiliğinden başlar.
+script QuestGiver : ConquerorScript
+{
+    public string questId = "explore";
+    public string title = "Explore the area";
+    public int goal = 1;
+    public string nextQuest = "";
+    public bool requireKey = false;
+    public string logName = "Quest Log";
+    public string startOnChainOf = "";
+
+    // Çalışma zamanı bilgisi
+    public bool given = false;
+
+    private bool inRange = false;
+
+    func OnTriggerEnter(other, name)
+    {
+        if (!EntityHasComponent(other, "CharacterController")) { return; }
+        inRange = true;
+        if (!requireKey) { Give(); }
+    }
+
+    func OnTriggerExit(other, name) { inRange = false; }
+
+    func Update(dt)
+    {
+        if (inRange && requireKey && IsKeyDown(Key.E)) { Give(); }
+    }
+
+    func OnQuestCompleted(id)
+    {
+        if (startOnChainOf != "" && id == startOnChainOf) { Give(); }
+    }
+
+    func Give()
+    {
+        if (given) { return false; }
+        var log = FindEntity(logName);
+        if (log == null) { LogWarn("QuestGiver: no Quest Log named '" + logName + "'"); return false; }
+        InvokeMethod(log, "StartQuest", questId, title, goal, nextQuest);
+        given = true;
+        return true;
+    }
+}

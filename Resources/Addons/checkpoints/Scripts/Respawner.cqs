@@ -1,0 +1,56 @@
+using nativebridge;
+
+// Oyuncuya eklenir: doğma noktasını tutar, Respawn() ile (gecikmeli) oraya döner, minY altına düşerse kendiliğinden döner.
+// Diğer betiklere OnRespawn() iletilir (hız / durum sıfırlama için).
+script Respawner : ConquerorScript
+{
+    public float respawnDelay = 0.0;
+    public bool useFallHeight = true;
+    public float minY = -30.0;
+
+    // Çalışma zamanı bilgisi
+    public int respawns = 0;
+    public float spawnX = 0.0;
+    public float spawnY = 0.0;
+    public float spawnZ = 0.0;
+
+    private float spawnYaw = 0.0;
+    private float pending = -1.0;
+
+    func Start()
+    {
+        var p = EntityGetWorldPosition(GetEntityId());
+        spawnX = p.x; spawnY = p.y; spawnZ = p.z;
+        spawnYaw = GetRotation().y;
+    }
+
+    func SetSpawn(x, y, z, yaw = 0)
+    {
+        spawnX = x; spawnY = y; spawnZ = z;
+        spawnYaw = yaw;
+    }
+
+    func Respawn()
+    {
+        if (pending >= 0) { return; }
+        pending = respawnDelay;
+        if (pending <= 0) { DoRespawn(); }
+    }
+
+    func DoRespawn()
+    {
+        pending = -1.0;
+        respawns++;
+        EntitySetWorldPosition(GetEntityId(), spawnX, spawnY, spawnZ);
+        var r = GetRotation();
+        SetRotation(r.x, spawnYaw, r.z);
+        if (EntityHasComponent(GetEntityId(), "Rigidbody")) { SetLinearVelocity(0, 0, 0); SetAngularVelocity(0, 0, 0); }
+        SendMessage(GetEntityId(), "OnRespawn");
+    }
+
+    func Update(dt)
+    {
+        if (pending > 0) { pending -= dt; if (pending <= 0) { DoRespawn(); } return; }
+        if (useFallHeight && pending < 0 && EntityGetWorldPosition(GetEntityId()).y < minY) { Respawn(); }
+    }
+}

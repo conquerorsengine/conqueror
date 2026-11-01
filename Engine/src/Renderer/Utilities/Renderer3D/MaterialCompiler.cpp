@@ -300,8 +300,7 @@ namespace Conqueror
                     nodeOutputs[nodeID] = nodeVar;
                     break;
                 case ShaderGraphNodeType::Time:
-                    addUniform("uniform float u_Time;\n");
-                    code = "float " + nodeVar + " = u_Time;\n";
+                    code = "float " + nodeVar + " = u_Time;\n"; // u_Time = CQ_Time() (kare UBO'su)
                     nodeOutputs[nodeID] = nodeVar;
                     break;
                 case ShaderGraphNodeType::Fresnel:
@@ -309,7 +308,6 @@ namespace Conqueror
                     nodeOutputs[nodeID] = nodeVar;
                     break;
                 case ShaderGraphNodeType::Panner:
-                    addUniform("uniform float u_Time;\n");
                     code = "vec2 " + nodeVar + " = vec2(" + getInputValue(0, "fs_in.TexCoord") + ") + vec2(" + getInputValue(1, "vec2(0.1)") + ") * u_Time;\n";
                     nodeOutputs[nodeID] = nodeVar;
                     break;
@@ -387,11 +385,11 @@ namespace Conqueror
                     break;
                 }
                 case ShaderGraphNodeType::LightVector:
-                    code = "vec3 " + nodeVar + " = normalize(-u_DirLight.Direction);\n";
+                    code = "vec3 " + nodeVar + " = normalize(-CQ_Frame.SunDirection.xyz);\n";
                     nodeOutputs[nodeID] = nodeVar;
                     break;
                 case ShaderGraphNodeType::VertexColor:
-                    code = "vec4 " + nodeVar + " = vec4(1.0);\n";
+                    code = "vec4 " + nodeVar + " = fs_in.Color;\n";
                     nodeOutputs[nodeID] = nodeVar;
                     break;
                 case ShaderGraphNodeType::Desaturation:

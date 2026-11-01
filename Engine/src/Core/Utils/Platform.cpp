@@ -3,16 +3,35 @@
 
 #include <thread>
 #include <chrono>
+#include <cstdlib>
 #include <fstream>
 #include <sstream>
 
-#ifdef CQ_PLATFORM_LINUX
+#if defined(CQ_PLATFORM_LINUX) || defined(CQ_PLATFORM_MACOS)
+    #define CQ_PLATFORM_POSIX
     #include <unistd.h>
     #include <sys/types.h>
-    #include <sys/sysinfo.h>
     #include <pwd.h>
     #include <limits.h>
+    #include <cstdlib>
     #include <cstring>
+    #ifdef CQ_PLATFORM_LINUX
+        #include "Core/Utils/SelfExecutable.h"
+        #if defined(CQ_PLATFORM_BSD)
+            #include <sys/sysctl.h>
+        #elif !defined(CQ_PLATFORM_QNX)
+            #include <sys/sysinfo.h>
+        #endif
+    #else
+        #include <mach-o/dyld.h>
+        #include <sys/sysctl.h>
+        #include <mach/mach.h>
+    #endif
+    extern char** environ;
+    // BSD'lerde HOST_NAME_MAX tanımlı değil (POSIX en az 255 garanti eder)
+    #ifndef HOST_NAME_MAX
+        #define HOST_NAME_MAX 255
+    #endif
 #elif defined(CQ_PLATFORM_WINDOWS)
     #ifndef WIN32_LEAN_AND_MEAN
         #define WIN32_LEAN_AND_MEAN
@@ -68,8 +87,14 @@ namespace Conqueror
     {
         std::string GetOSName()
         {
-#ifdef CQ_PLATFORM_LINUX
+#if defined(CQ_PLATFORM_ANDROID)
+            return "Android";
+#elif defined(CQ_PLATFORM_QNX)
+            return "QNX";
+#elif defined(CQ_PLATFORM_LINUX)
             return "Linux";
+#elif defined(CQ_PLATFORM_MACOS)
+            return "macOS";
 #elif defined(CQ_PLATFORM_WINDOWS)
             return "Windows";
 #else
@@ -116,9 +141,30 @@ namespace Conqueror
 #endif
         }
 
+        bool IsSteamDeck()
+        {
+            static const bool deck = [] {
+                if (const char* forced = std::getenv("CQ_STEAM_DECK"))
+                    return forced[0] == '1';
+                if (const char* steam = std::getenv("SteamDeck"); steam && steam[0] == '1')
+                    return true;
+#if defined(CQ_PLATFORM_LINUX) && !defined(CQ_PLATFORM_ANDROID)
+                for (const char* file : { "/sys/devices/virtual/dmi/id/board_name", "/sys/devices/virtual/dmi/id/product_name" })
+                {
+                    std::ifstream f(file);
+                    std::string name;
+                    if (f && std::getline(f, name) && (name.find("Jupiter") != std::string::npos || name.find("Galileo") != std::string::npos))
+                        return true;
+                }
+#endif
+                return false;
+            }();
+            return deck;
+        }
+
         std::string GetComputerName()
         {
-#ifdef CQ_PLATFORM_LINUX
+#ifdef CQ_PLATFORM_POSIX
             char hostname[HOST_NAME_MAX];
             if (gethostname(hostname, HOST_NAME_MAX) == 0)
                 return std::string(hostname);
@@ -133,7 +179,7 @@ namespace Conqueror
 
         std::string GetUserName()
         {
-#ifdef CQ_PLATFORM_LINUX
+#ifdef CQ_PLATFORM_POSIX
             struct passwd* pw = getpwuid(getuid());
             if (pw)
                 return std::string(pw->pw_name);
@@ -158,6 +204,15 @@ namespace Conqueror
 
         std::string GetCPUName()
         {
+#ifdef CQ_PLATFORM_BSD
+            {
+                char model[256] = {};
+                size_t size = sizeof(model);
+                int mib[2] = { CTL_HW, HW_MODEL };
+                if (sysctl(mib, 2, model, &size, nullptr, 0) == 0 && model[0])
+                    return std::string(model);
+            }
+#endif
 #ifdef CQ_PLATFORM_LINUX
             std::ifstream cpuinfo("/proc/cpuinfo");
             if (cpuinfo.is_open())
@@ -174,15 +229,30 @@ namespace Conqueror
                 }
             }
 #endif
+#ifdef CQ_PLATFORM_MACOS
+            char brand[256] = {};
+            size_t size = sizeof(brand);
+            if (sysctlbyname("machdep.cpu.brand_string", brand, &size, nullptr, 0) == 0 && brand[0])
+                return std::string(brand);
+#endif
             return "Unknown CPU";
         }
 
         uint64_t GetTotalPhysicalMemory()
         {
-#ifdef CQ_PLATFORM_LINUX
+#if defined(CQ_PLATFORM_BSD)
+            const long pages = sysconf(_SC_PHYS_PAGES), pageSize = sysconf(_SC_PAGESIZE);
+            if (pages > 0 && pageSize > 0)
+                return (uint64_t)pages * (uint64_t)pageSize;
+#elif defined(CQ_PLATFORM_LINUX) && !defined(CQ_PLATFORM_QNX)
             struct sysinfo info;
             if (sysinfo(&info) == 0)
                 return info.totalram * info.mem_unit;
+#elif defined(CQ_PLATFORM_MACOS)
+            uint64_t memsize = 0;
+            size_t size = sizeof(memsize);
+            if (sysctlbyname("hw.memsize", &memsize, &size, nullptr, 0) == 0)
+                return memsize;
 #elif defined(CQ_PLATFORM_WINDOWS)
             MEMORYSTATUSEX memInfo;
             memInfo.dwLength = sizeof(MEMORYSTATUSEX);
@@ -194,7 +264,11 @@ namespace Conqueror
 
         uint64_t GetAvailablePhysicalMemory()
         {
-#ifdef CQ_PLATFORM_LINUX
+#if defined(CQ_PLATFORM_BSD) && defined(_SC_AVPHYS_PAGES)
+            const long pages = sysconf(_SC_AVPHYS_PAGES), pageSize = sysconf(_SC_PAGESIZE);
+            if (pages > 0 && pageSize > 0)
+                return (uint64_t)pages * (uint64_t)pageSize;
+#elif defined(CQ_PLATFORM_LINUX) && !defined(CQ_PLATFORM_QNX) && !defined(CQ_PLATFORM_BSD)
             struct sysinfo info;
             if (sysinfo(&info) == 0)
                 return info.freeram * info.mem_unit;
@@ -237,7 +311,7 @@ namespace Conqueror
 
         bool SetEnvironmentVariable(const std::string& name, const std::string& value)
         {
-#ifdef CQ_PLATFORM_LINUX
+#ifdef CQ_PLATFORM_POSIX
             return setenv(name.c_str(), value.c_str(), 1) == 0;
 #elif defined(CQ_PLATFORM_WINDOWS)
             return SetEnvironmentVariableA(name.c_str(), value.c_str()) != 0;
@@ -250,7 +324,7 @@ namespace Conqueror
         {
             std::unordered_map<std::string, std::string> vars;
             
-#ifdef CQ_PLATFORM_LINUX
+#ifdef CQ_PLATFORM_POSIX
             for (char** env = ::environ; *env != nullptr; ++env)
             {
                 std::string envStr(*env);
@@ -267,7 +341,7 @@ namespace Conqueror
 
         uint32_t GetProcessID()
         {
-#ifdef CQ_PLATFORM_LINUX
+#ifdef CQ_PLATFORM_POSIX
             return getpid();
 #elif defined(CQ_PLATFORM_WINDOWS)
             return GetCurrentProcessId();
@@ -279,12 +353,15 @@ namespace Conqueror
         std::string GetProcessPath()
         {
 #ifdef CQ_PLATFORM_LINUX
-            char path[PATH_MAX];
-            ssize_t count = readlink("/proc/self/exe", path, PATH_MAX);
-            if (count != -1)
+            if (std::string path = SelfExecutablePath(); !path.empty())
+                return path;
+#elif defined(CQ_PLATFORM_MACOS)
+            char raw[PATH_MAX];
+            uint32_t size = sizeof(raw);
+            if (_NSGetExecutablePath(raw, &size) == 0)
             {
-                path[count] = '\0';
-                return std::string(path);
+                char resolved[PATH_MAX];
+                return realpath(raw, resolved) ? std::string(resolved) : std::string(raw);
             }
 #elif defined(CQ_PLATFORM_WINDOWS)
             char path[MAX_PATH];
@@ -296,7 +373,7 @@ namespace Conqueror
 
         std::string GetWorkingDirectory()
         {
-#ifdef CQ_PLATFORM_LINUX
+#ifdef CQ_PLATFORM_POSIX
             char cwd[PATH_MAX];
             if (getcwd(cwd, sizeof(cwd)))
                 return std::string(cwd);
@@ -310,7 +387,7 @@ namespace Conqueror
 
         bool SetWorkingDirectory(const std::string& path)
         {
-#ifdef CQ_PLATFORM_LINUX
+#ifdef CQ_PLATFORM_POSIX
             return chdir(path.c_str()) == 0;
 #elif defined(CQ_PLATFORM_WINDOWS)
             return SetCurrentDirectoryA(path.c_str()) != 0;
@@ -321,7 +398,7 @@ namespace Conqueror
 
         std::string GetUserHomeDirectory()
         {
-#ifdef CQ_PLATFORM_LINUX
+#ifdef CQ_PLATFORM_POSIX
             const char* home = getenv("HOME");
             if (home)
                 return std::string(home);
@@ -339,7 +416,7 @@ namespace Conqueror
 
         std::string GetUserDocumentsDirectory()
         {
-#ifdef CQ_PLATFORM_LINUX
+#ifdef CQ_PLATFORM_POSIX
             return GetUserHomeDirectory() + "/Documents";
 #elif defined(CQ_PLATFORM_WINDOWS)
             char path[MAX_PATH];
@@ -352,7 +429,12 @@ namespace Conqueror
         std::string GetUserAppDataDirectory()
         {
 #ifdef CQ_PLATFORM_LINUX
+            // XDG Base Directory: $XDG_DATA_HOME (mutlak yol ise), yoksa ~/.local/share
+            if (const char* xdg = getenv("XDG_DATA_HOME"); xdg && xdg[0] == '/')
+                return std::string(xdg);
             return GetUserHomeDirectory() + "/.local/share";
+#elif defined(CQ_PLATFORM_MACOS)
+            return GetUserHomeDirectory() + "/Library/Application Support";
 #elif defined(CQ_PLATFORM_WINDOWS)
             char path[MAX_PATH];
             if (SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, 0, path) == S_OK)
@@ -363,7 +445,7 @@ namespace Conqueror
 
         std::string GetTempDirectory()
         {
-#ifdef CQ_PLATFORM_LINUX
+#ifdef CQ_PLATFORM_POSIX
             const char* tmpdir = getenv("TMPDIR");
             return tmpdir ? std::string(tmpdir) : "/tmp";
 #elif defined(CQ_PLATFORM_WINDOWS)
@@ -395,7 +477,7 @@ namespace Conqueror
 
         int ExecuteCommandWithOutput(const std::string& command, std::string& output)
         {
-#ifdef CQ_PLATFORM_LINUX
+#ifdef CQ_PLATFORM_POSIX
             FILE* pipe = popen(command.c_str(), "r");
             if (!pipe)
                 return -1;

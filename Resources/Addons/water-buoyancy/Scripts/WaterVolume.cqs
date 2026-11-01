@@ -1,0 +1,41 @@
+using nativebridge;
+
+// Su hacmi: yüzey yüksekliği bu varlığın y konumu (+ dalgalar). Alan: merkezden ±halfSizeX / ±halfSizeZ.
+// Görsel: "Water Surface" çocuğu varsa dalgaya göre hafifçe inip kalkar. HeightAt(x, z) Buoyancy tarafından çağrılır.
+script WaterVolume : ConquerorScript
+{
+    public float halfSizeX = 20.0;
+    public float halfSizeZ = 20.0;
+    public float waveAmplitude = 0.15;
+    public float waveLength = 8.0;
+    public float waveSpeed = 1.2;
+    public float depth = 20.0;
+    public float density = 1.0;
+
+    // Çalışma zamanı bilgisi
+    public float time = 0.0;
+    public int splashes = 0;
+
+    func Update(dt) { time += dt; }
+
+    func HeightAt(x, z)
+    {
+        var p = EntityGetWorldPosition(GetEntityId());
+        if (waveAmplitude <= 0) { return p.y; }
+        var k = 6.2831853 / MathMax(0.1, waveLength);
+        return p.y + waveAmplitude * (MathSin(x * k + time * waveSpeed) * 0.6 + MathSin(z * k * 0.7 - time * waveSpeed * 1.3) * 0.4);
+    }
+
+    func Contains(x, y, z)
+    {
+        var p = EntityGetWorldPosition(GetEntityId());
+        return MathAbs(x - p.x) <= halfSizeX && MathAbs(z - p.z) <= halfSizeZ && y <= HeightAt(x, z) + 0.5 && y >= p.y - depth;
+    }
+
+    func Splash(x, y, z, strength)
+    {
+        splashes++;
+        var fx = EntityFindChild(GetEntityId(), "Splash");
+        if (fx != null && fx >= 0) { ParticleEmitAt(fx, x, HeightAt(x, z), z, int(MathClamp(strength * 6.0, 6.0, 60.0))); }
+    }
+}

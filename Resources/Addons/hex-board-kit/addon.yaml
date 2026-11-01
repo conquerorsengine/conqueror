@@ -1,0 +1,24 @@
+Id: conqueror.hex-board-kit
+Name: Hex Board Kit
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Everything for hex strategy and board games: one-click procedural island boards
+  (water, sand, grass, hills, cliffs), a board generator component that builds a new map
+  every play, and a click-to-move Hex Unit that walks A* paths over walkable tiles.
+Category: Gameplay
+Icon: chess-board
+Tags: [hex, strategy, board-game, procedural, pathfinding]
+Editor: Editor/HexBoardKit.cqs
+Components:
+  - Scripts/HexBoardGenerator.cqs
+  - Scripts/HexUnit.cqs
+Inserts:
+  - Name: Hex Board
+    Icon: chess-board
+    Prefab: Prefabs/HexBoard.cqprefab
+    Tooltip: A generated 3D hex island board
+  - Name: Hex Unit
+    Icon: chess-knight
+    Prefab: Prefabs/HexUnit.cqprefab
+    Tooltip: A unit that walks to the clicked hex

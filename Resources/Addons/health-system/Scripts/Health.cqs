@@ -1,0 +1,100 @@
+using nativebridge;
+
+// Can sistemi. Başka betikler: SendMessage(hedef, "Damage", 25) / SendMessage(hedef, "Heal", 10).
+// Olaylar aynı varlığın betiklerine gider: OnDamaged(miktar), OnHealed(miktar), OnDeath(), OnRevived().
+script Health : ConquerorScript
+{
+    public float maxHealth = 100.0;
+    public float health = 100.0;
+    public float regenPerSecond = 0.0;
+    public float regenDelay = 3.0;
+    public float invulnerabilityTime = 0.15;
+    public bool destroyOnDeath = false;
+    public float destroyDelay = 0.0;
+    public bool respawnOnDeath = false;
+    public float respawnDelay = 2.0;
+    public bool startFull = true;
+
+    // Çalışma zamanı bilgisi
+    public bool dead = false;
+    public int hits = 0;
+    public float lastDamage = 0.0;
+    public string lastAttacker = "";
+    public int deaths = 0;
+
+    private float sinceDamage = 999.0;
+    private float invulnerable = 0.0;
+    private float deathTimer = 0.0;
+    private var spawn = null;
+
+    func Start()
+    {
+        if (startFull) { health = maxHealth; }
+        spawn = EntityGetWorldPosition(GetEntityId());
+    }
+
+    func Fraction() { return maxHealth > 0 ? MathClamp01(health / maxHealth) : 0.0; }
+    func IsDead() { return dead; }
+
+    // Hasar: attacker isteğe bağlı (ad)
+    func Damage(amount, attacker = null)
+    {
+        if (dead || amount <= 0 || invulnerable > 0) { return false; }
+        health = MathMax(0.0, health - amount);
+        hits++;
+        lastDamage = amount;
+        if (attacker != null) { lastAttacker = str(attacker); }
+        sinceDamage = 0.0;
+        invulnerable = invulnerabilityTime;
+        SendMessage(GetEntityId(), "OnDamaged", amount);
+        if (health <= 0) { Die(); }
+        return true;
+    }
+
+    func Heal(amount)
+    {
+        if (dead || amount <= 0 || health >= maxHealth) { return false; }
+        health = MathMin(maxHealth, health + amount);
+        SendMessage(GetEntityId(), "OnHealed", amount);
+        return true;
+    }
+
+    func Kill() { if (!dead) { health = 0; Die(); } }
+
+    func Die()
+    {
+        dead = true;
+        deaths++;
+        deathTimer = 0.0;
+        SendMessage(GetEntityId(), "OnDeath");
+        if (destroyOnDeath && destroyDelay <= 0) { EntityDestroy(GetEntityId()); }
+    }
+
+    func Revive()
+    {
+        dead = false;
+        health = maxHealth;
+        invulnerable = 1.0;
+        if (spawn != null) { EntitySetWorldPosition(GetEntityId(), spawn.x, spawn.y, spawn.z); }
+        if (EntityHasComponent(GetEntityId(), "Rigidbody")) { SetLinearVelocity(0, 0, 0); }
+        SendMessage(GetEntityId(), "OnRevived");
+    }
+
+    func Update(dt)
+    {
+        if (dt <= 0) { return; }
+        if (invulnerable > 0) { invulnerable -= dt; }
+        if (dead)
+        {
+            deathTimer += dt;
+            if (destroyOnDeath && deathTimer >= destroyDelay) { EntityDestroy(GetEntityId()); return; }
+            if (respawnOnDeath && deathTimer >= respawnDelay) { Revive(); }
+            return;
+        }
+        sinceDamage += dt;
+        if (regenPerSecond > 0 && sinceDamage >= regenDelay && health < maxHealth)
+        {
+            health = MathMin(maxHealth, health + regenPerSecond * dt);
+        }
+    }
+}

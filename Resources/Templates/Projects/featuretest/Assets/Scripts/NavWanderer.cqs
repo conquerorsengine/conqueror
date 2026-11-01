@@ -1,0 +1,24 @@
+using nativebridge;
+
+// NavMesh istasyonu: ajan, alanın içinde rastgele noktalara gider (engellerin ve diğer ajanların etrafından dolaşır)
+script NavWanderer : ConquerorScript
+{
+    public float radius = 5.5;
+    private var home = null;
+    private float timer = 0.0;
+
+    func Start() { home = EntityGetWorldPosition(GetEntityId()); timer = RandomRange(0.2, 1.0); }
+
+    func Update(dt)
+    {
+        timer -= dt;
+        var rem = NavRemainingDistance(GetEntityId());
+        if (timer <= 0.0 || (rem != null && rem < 0.4))
+        {
+            var a = RandomRange(0, 6.2831853);
+            var r = RandomRange(1.0, radius);
+            NavAgentSetDestination(GetEntityId(), home.x + MathCos(a) * r, home.y, home.z + MathSin(a) * r);
+            timer = RandomRange(3.0, 6.0);
+        }
+    }
+}

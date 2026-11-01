@@ -1,0 +1,13 @@
+Id: conqueror.foliage-painter
+Name: Foliage Painter
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Scatter trees, rocks and grass over a surface in the editor: pick one or more template
+  objects, choose count, radius and spacing, and the painter drops copies onto the ground
+  below with random rotation and scale, optional alignment to the surface and a slope limit.
+  Every scatter is grouped and undoable; "Clear Last" removes the previous batch.
+Category: Level Design
+Icon: tree
+Tags: [foliage, scatter, level-design, editor, trees, rocks]
+Editor: Editor/FoliagePainter.cqs

@@ -1,0 +1,163 @@
+using nativebridge;
+
+// Ember Trail: title screen + level select. Levels unlock in order ("Ember.<id>.Done").
+script EmberMenu : ConquerorScript
+{
+    [Tooltip("scene|id|name|world entries separated by ';' (Tools/gen_levels.py)")]
+    public string levelData = "";
+    public bool unlockAll = false;
+
+    [Header("State")]
+    public int selected = 0;
+    public string loading = "";
+
+    private var levels = [];
+    private var padPrev = {};
+    private float time = 0;
+    private float fade = 1;
+    private float fadeTarget = 0;
+    private float wickX = -10;
+    private float mouseX = -1;
+    private float mouseY = -1;
+    private float lastKeySubmit = -10;
+
+    func Start()
+    {
+        foreach (var rec in StringSplit(levelData, ";"))
+        {
+            var f = StringSplit(rec, "|");
+            if (f.Count >= 4) { levels.Add({scene: f[0], id: f[1], name: f[2], world: f[3]}); }
+        }
+        selected = 0;
+        // Açık olan son seviyeden başla
+        for (var i = 0; i < levels.Count; i++) { if (Unlocked(i)) { selected = i; } }
+        SetCursorMode(0);
+        Refresh();
+    }
+
+    func Done(i) { return PrefsGetInt("Ember." + levels[i].id + ".Done", 0) == 1; }
+    func Unlocked(i) { return unlockAll || i == 0 || Done(i - 1); }
+
+    func FormatTime(t)
+    {
+        var cs = int(MathFloor(t * 100));
+        var m = int(cs / 6000);
+        var s = int((cs - m * 6000) / 100);
+        var c = cs - m * 6000 - s * 100;
+        return $"{m}:{s:D2}.{c:D2}";
+    }
+
+    func Refresh()
+    {
+        var totalShards = 0;
+        var totalEmbers = 0;
+        var maxEmbers = 0;
+        var golds = 0;
+        for (var i = 0; i < levels.Count; i++)
+        {
+            var l = levels[i];
+            if (i % 2 == 0) { UISetText("WorldLabel" + int(MathFloor(i / 2)), l.world); }
+            var open = Unlocked(i);
+            UISetText("LvlBtn" + i, open ? (int(MathFloor(i / 2)) + 1) + "-" + (i % 2 + 1) + "   " + l.name : "LOCKED");
+            var shards = PrefsGetInt("Ember." + l.id + ".Shards", 0);
+            var em = PrefsGetInt("Ember." + l.id + ".Embers", 0);
+            var et = PrefsGetInt("Ember." + l.id + ".EmberTotal", 0);
+            var best = PrefsGetFloat("Ember." + l.id + ".Best", 0);
+            var medal = PrefsGetInt("Ember." + l.id + ".Medal", 0);
+            totalShards += shards;
+            totalEmbers += em;
+            maxEmbers += et;
+            if (medal == 3) { golds += 1; }
+            var info = "";
+            if (!open) { info = "FINISH THE PREVIOUS LEVEL"; }
+            else if (best > 0)
+            {
+                var stars = "";
+                for (var s = 0; s < 3; s++) { stars = stars + (s < shards ? "*" : "-"); }
+                info = FormatTime(best) + "   " + stars + "   " + (medal == 3 ? "GOLD" : (medal == 2 ? "SILVER" : "BRONZE"));
+            }
+            else { info = "NEW"; }
+            UISetText("LvlInfo" + i, info);
+        }
+        UISetText("MenuTotals", $"SUN SHARDS {totalShards} / {levels.Count * 3}      EMBERS {totalEmbers}      GOLD FLAMES {golds} / {levels.Count}");
+        Highlight();
+    }
+
+    func Highlight()
+    {
+        for (var i = 0; i < levels.Count; i++)
+        {
+            if (i == selected) { EntitySetColor("LvlBtn" + i, 1.0, 0.62, 0.22, 1); }
+            else if (Unlocked(i)) { EntitySetColor("LvlBtn" + i, 0.16, 0.12, 0.22, 0.92); }
+            else { EntitySetColor("LvlBtn" + i, 0.08, 0.07, 0.1, 0.7); }
+        }
+    }
+
+    func Pad(b) { return IsGamepadConnected(0) && IsGamepadButtonPressed(0, b); }
+
+    func PadDown(b)
+    {
+        var now = Pad(b);
+        var k = "b" + b;
+        var was = padPrev.ContainsKey(k) && padPrev[k];
+        padPrev[k] = now;
+        return now && !was;
+    }
+
+    func Sfx(name) { AudioPlayOneShot("Assets/Audio/" + name + ".wav", 0.45, 1.0, 0, "SFX"); }
+
+    func Select(i)
+    {
+        if (i < 0 || i >= levels.Count || i == selected) { return; }
+        selected = i;
+        Sfx("menu_move");
+        Highlight();
+    }
+
+    func Play(i)
+    {
+        if (!Unlocked(i)) { Sfx("pop"); return; }
+        Sfx("menu_select");
+        loading = levels[i].scene;
+        fadeTarget = 1;
+    }
+
+    func Update(dt)
+    {
+        var udt = GetUnscaledDeltaTime();
+        time += udt;
+        // Wick ekranın altında koşar
+        wickX += udt * 3.0;
+        if (wickX > 14) { wickX = -14; }
+        EntitySetPosition("MenuWick", wickX, 0, 0.2);
+        EntitySetComponentField("MenuWick", "SpriteRenderer", "Rect", {x: (2 + int(MathFloor(time * 10)) % 4) * 16, y: 0, z: 16, w: 20});
+        var pulse = 1.0 + 0.02 * MathSin(time * 2.0);
+        UISetScale("MenuTitle", pulse, pulse);
+        fade += MathClamp(fadeTarget - fade, -udt * 2.5, udt * 2.5);
+        EntitySetColor("Fade", 0, 0, 0, fade);
+        if (loading != "")
+        {
+            if (fade >= 0.99) { LoadScene("Assets/Scenes/" + loading + ".cqscene"); }
+            return;
+        }
+        var mx = GetMouseX();
+        var my = GetMouseY();
+        var moved = mouseX >= 0 && (MathAbs(mx - mouseX) > 0.5 || MathAbs(my - mouseY) > 0.5);
+        mouseX = mx;
+        mouseY = my;
+        if (IsKeyDown("Enter") || IsKeyDown("Space") || PadDown(0)) { lastKeySubmit = time; }
+        var keySubmit = time - lastKeySubmit < 0.25;
+        for (var i = 0; i < levels.Count; i++)
+        {
+            if (moved && UIIsHovered("LvlBtn" + i)) { Select(i); }
+            // Enter, Event System'in seçili düğmesini de "tıklar": klavye onayı yalnızca menü seçimini kullanır
+            if (UIWasClicked("LvlBtn" + i) && !keySubmit) { selected = i; Play(i); return; }
+        }
+        if (IsKeyDown("Right") || IsKeyDown("D") || PadDown(12)) { Select(selected + 1); }
+        if (IsKeyDown("Left") || IsKeyDown("A") || PadDown(14)) { Select(selected - 1); }
+        if (IsKeyDown("Down") || IsKeyDown("S") || PadDown(13)) { Select(selected + 2); }
+        if (IsKeyDown("Up") || IsKeyDown("W") || PadDown(11)) { Select(selected - 2); }
+        if (time == lastKeySubmit) { Play(selected); }
+        if (IsKeyDown("Escape") || PadDown(1)) { QuitGame(); }
+    }
+}

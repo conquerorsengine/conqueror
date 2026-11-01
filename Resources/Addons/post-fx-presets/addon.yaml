@@ -1,0 +1,14 @@
+Id: conqueror.post-fx-presets
+Name: Post FX Presets
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  One-click looks for the post processing stack: Cinematic, Noir, Vintage, Dreamy, Horror,
+  Vivid, Cold, Warm and Retro. Apply them to the scene from the toolbar or the panel (undoable),
+  or switch and blend between them at runtime with the Post FX Preset component.
+Category: Rendering
+Icon: palette
+Tags: [post-processing, color-grading, presets, look, rendering]
+Editor: Editor/PostFXEditor.cqs
+Components:
+  - Scripts/PostFXPreset.cqs

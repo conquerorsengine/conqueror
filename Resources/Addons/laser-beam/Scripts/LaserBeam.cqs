@@ -1,0 +1,112 @@
+using nativebridge;
+
+// Lazer: bu varlığın ileri yönünde ışın, ilk engelde durur ("Mirror" etiketlilerde yansır, en fazla maxBounces).
+// Çizim: "Beam" çocuğundaki Line Renderer. Çarpılan nesneye saniyede damagePerSecond hasar ve OnLaserHit iletisi.
+script LaserBeam : ConquerorScript
+{
+    public float range = 30.0;
+    public float damagePerSecond = 25.0;
+    public int maxBounces = 4;
+    public string mirrorTag = "Mirror";
+    public float width = 0.06;
+    public float pulse = 0.3;
+    public bool blink = false;
+    public float onTime = 2.0;
+    public float offTime = 1.0;
+    public float damageTick = 0.2;
+
+    // Çalışma zamanı bilgisi
+    public bool active = true;
+    public float length = 0.0;
+    public int bounces = 0;
+    public string hitName = "";
+
+    private var beam = null;
+    private var sparks = null;
+    private float t = 0.0;
+    private float pending = 0.0;
+    private float tickTimer = 0.0;
+    private var lastTarget = null;
+
+    func Start()
+    {
+        beam = EntityFindChild(GetEntityId(), "Beam");
+        sparks = EntityFindChild(GetEntityId(), "Sparks");
+    }
+
+    func Update(dt)
+    {
+        t += dt;
+        if (blink)
+        {
+            var period = MathMax(0.01, onTime + offTime);
+            active = MathRepeat(t, period) < onTime;
+        }
+        if (beam == null || beam < 0) { return; }
+        if (!active)
+        {
+            EntitySetComponentField(beam, "LineRenderer", "Positions", []);
+            hitName = "";
+            length = 0.0;
+            return;
+        }
+        var o = EntityGetWorldPosition(GetEntityId());
+        var d = EntityGetForward(GetEntityId());
+        var pts = [[o.x, o.y, o.z]];
+        var left = range;
+        length = 0.0;
+        bounces = 0;
+        hitName = "";
+        var ignore = GetEntityId();
+        for (var i = 0; i <= maxBounces; i++)
+        {
+            var hit = null;
+            for (var h in RaycastAll(o.x, o.y, o.z, d.x, d.y, d.z, left))
+            {
+                if (h.isTrigger || h.entity == ignore || EntityGetParent(h.entity) == GetEntityId()) { continue; }
+                hit = h;
+                break;
+            }
+            if (hit == null)
+            {
+                pts.Add([o.x + d.x * left, o.y + d.y * left, o.z + d.z * left]);
+                length += left;
+                break;
+            }
+            pts.Add([hit.point.x, hit.point.y, hit.point.z]);
+            length += hit.distance;
+            left -= hit.distance;
+            if (EntityGetTag(hit.entity) == mirrorTag && i < maxBounces && left > 0.01)
+            {
+                // Yansıt: d - 2 (d·n) n
+                var k = d.x * hit.normal.x + d.y * hit.normal.y + d.z * hit.normal.z;
+                d = {x: d.x - 2 * k * hit.normal.x, y: d.y - 2 * k * hit.normal.y, z: d.z - 2 * k * hit.normal.z};
+                o = {x: hit.point.x + d.x * 0.01, y: hit.point.y + d.y * 0.01, z: hit.point.z + d.z * 0.01};
+                ignore = hit.entity;
+                bounces++;
+                continue;
+            }
+            hitName = hit.name;
+            // Hasar tikler halinde (Health'in dokunulmazlık süresinden uzun aralıkla) uygulanır
+            if (damagePerSecond > 0)
+            {
+                if (hit.entity != lastTarget) { lastTarget = hit.entity; pending = 0.0; tickTimer = 0.0; }
+                pending += damagePerSecond * dt;
+                tickTimer += dt;
+                if (tickTimer >= damageTick)
+                {
+                    SendMessage(hit.entity, "Damage", pending, GetEntityName());
+                    pending = 0.0;
+                    tickTimer = 0.0;
+                }
+            }
+            SendMessage(hit.entity, "OnLaserHit", GetEntityId());
+            if (sparks != null && sparks >= 0) { ParticleEmitAt(sparks, hit.point.x, hit.point.y, hit.point.z, 2); }
+            break;
+        }
+        EntitySetComponentField(beam, "LineRenderer", "Positions", pts);
+        var w = width * (1.0 + MathSin(t * 20.0) * pulse * 0.5);
+        EntitySetComponentField(beam, "LineRenderer", "StartWidth", w);
+        EntitySetComponentField(beam, "LineRenderer", "EndWidth", w);
+    }
+}

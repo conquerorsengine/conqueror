@@ -19,14 +19,26 @@
         #define CQ_PLATFORM_IOS
         #error "IOS is not supported!"
     #elif TARGET_OS_MAC == 1
+        // macOS: POSIX yolları + Vulkan arka ucu (MoltenVK -> Metal); motor statik bağlanır
         #define CQ_PLATFORM_MACOS
-        #error "MacOS is not supported!"
     #else
         #error "Unknown Apple platform!"
     #endif
 #elif defined(__ANDROID__)
+    // Android: Linux çekirdeği + bionic libc. POSIX yolları Linux ile ortak; pencere, girdi ve EGL bağlamı
+    // Platform/Android katmanında (NativeActivity), grafik OpenGL ES 3.x
     #define CQ_PLATFORM_ANDROID
-    #error "Android is not supported!"
+    #define CQ_PLATFORM_LINUX
+#elif defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__DragonFly__)
+    // BSD (FreeBSD, OpenBSD, NetBSD, DragonFly): POSIX + GLFW (X11 / Wayland), Linux ile aynı yollar. Linux'a özgü
+    // /proc ve sysinfo kullanımları CQ_PLATFORM_BSD ile ayrıca korunur.
+    #define CQ_PLATFORM_BSD
+    #define CQ_PLATFORM_LINUX
+#elif defined(__QNX__)
+    // QNX Neutrino (SDP 7.1 / 8.0, otomotiv): POSIX. Pencere, girdi ve EGL bağlamı Platform/QNX katmanında (Screen),
+    // grafik OpenGL ES 3.x. Linux'a özgü /proc ve sysinfo kullanımları ayrıca CQ_PLATFORM_QNX ile korunur.
+    #define CQ_PLATFORM_QNX
+    #define CQ_PLATFORM_LINUX
 #elif defined(__linux__)
     #define CQ_PLATFORM_LINUX
 #else
@@ -44,7 +56,7 @@
     #else
         #define CQ_API
     #endif
-#elif defined(CQ_PLATFORM_LINUX)
+#elif defined(CQ_PLATFORM_LINUX) || defined(CQ_PLATFORM_MACOS)
     #if CQ_DYNAMIC_LINK
         #ifdef CQ_BUILD_DLL
             #define CQ_API __attribute__((visibility("default")))
@@ -55,14 +67,14 @@
         #define CQ_API
     #endif
 #else
-    #error Conqueror only supports Windows and Linux!
+    #error Conqueror only supports Windows, Linux and macOS!
 #endif
 
 // Debug break
 #ifdef CQ_DEBUG
     #if defined(CQ_PLATFORM_WINDOWS)
         #define CQ_DEBUGBREAK() __debugbreak()
-    #elif defined(CQ_PLATFORM_LINUX)
+    #elif defined(CQ_PLATFORM_LINUX) || defined(CQ_PLATFORM_MACOS)
         #include <signal.h>
         #define CQ_DEBUGBREAK() raise(SIGTRAP)
     #else

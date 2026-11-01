@@ -1,0 +1,10 @@
+TextureImporter:
+  Type: Sprite
+  Filter: Point
+  Wrap: Repeat
+  Mipmaps: false
+  Anisotropy: 1
+  MaxSize: 4096
+  NormalFromGrayscale: false
+  Bumpiness: 2
+  PixelsPerUnit: 16

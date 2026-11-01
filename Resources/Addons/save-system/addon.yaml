@@ -1,0 +1,20 @@
+Id: conqueror.save-system
+Name: Save System
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Save slots for your game state: every object marked Saveable stores its transform, active
+  state and chosen script fields; global values (score, checkpoints...) can be included too.
+  Quick save / quick load keys, autosave on an interval and slot metadata (time, scene).
+  Files are JSON in the player's persistent data folder.
+Category: Gameplay
+Icon: floppy-disk
+Tags: [save, load, persistence, slots, json]
+Components:
+  - Scripts/SaveManager.cqs
+  - Scripts/Saveable.cqs
+Inserts:
+  - Name: Save Manager
+    Icon: floppy-disk
+    Prefab: Prefabs/SaveManager.cqprefab
+    Tooltip: F5 quick save, F9 quick load, optional autosave

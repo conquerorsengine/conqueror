@@ -1,0 +1,58 @@
+using nativebridge;
+
+// Dünya uzayında can çubuğu: "Bar Fill" çocuğunu Health oranına göre ölçekler, kameraya döner,
+// renk yeşilden kırmızıya geçer. Health betiği bu varlıkta ya da üst nesnesindedir.
+script HealthBar : ConquerorScript
+{
+    public float width = 1.2;
+    public bool faceCamera = true;
+    public bool hideWhenFull = false;
+    public float smooth = 10.0;
+
+    // Çalışma zamanı bilgisi
+    public float shown = 1.0;
+
+    private var owner = null;
+    private var fill = null;
+    private var back = null;
+
+    func Start()
+    {
+        fill = EntityFindChild(GetEntityId(), "Bar Fill");
+        back = EntityFindChild(GetEntityId(), "Bar Back");
+        owner = HasScript(GetEntityId(), "Health") ? GetEntityId() : EntityGetParent(GetEntityId());
+    }
+
+    func LateUpdate(dt)
+    {
+        if (owner == null || owner < 0 || fill == null || fill < 0) { return; }
+        var hp = GetScriptField(owner, "health");
+        var max = GetScriptField(owner, "maxHealth");
+        if (hp == null || max == null || max <= 0) { return; }
+        var f = MathClamp01(hp / max);
+        shown = MathLerp(shown, f, 1.0 - MathExp(-smooth * dt));
+        var s = EntityGetScale(fill);
+        EntitySetScale(fill, MathMax(0.0001, width * 0.5 * shown), s.y, s.z);
+        EntitySetPosition(fill, -width * 0.5 * (1.0 - shown), 0, 0.02);
+        EntitySetColor(fill, MathClamp01(2.0 * (1.0 - shown)), MathClamp01(2.0 * shown), 0.15, 1);
+        var visible = !(hideWhenFull && f >= 0.999) && !GetScriptField(owner, "dead");
+        SetVisible(visible);
+        if (back != null && back >= 0) { EntitySetActive(back, visible); }
+        EntitySetActive(fill, visible);
+        if (faceCamera)
+        {
+            var cam = GetMainCamera();
+            if (cam != null)
+            {
+                var c = EntityGetWorldPosition(cam);
+                var p = EntityGetWorldPosition(GetEntityId());
+                var yaw = MathRadToDeg(MathAtan2(c.x - p.x, c.z - p.z));
+                // Üst nesnenin dönüşünü telafi et (yalnızca Y ekseni)
+                var parentYaw = 0.0;
+                var parent = EntityGetParent(GetEntityId());
+                if (parent != null && parent >= 0) { parentYaw = EntityGetRotation(parent).y; }
+                SetRotation(0, yaw - parentYaw, 0);
+            }
+        }
+    }
+}

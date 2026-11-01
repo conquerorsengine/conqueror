@@ -1,0 +1,156 @@
+using nativebridge;
+
+// Oyun kuralları ("Game" varlığı). Mod:
+//   Range    : hedeflere ateş et, puan topla (atış poligonu)
+//   Arena    : herkes herkese karşı (deathmatch): oyuncu ve botlar birbirini vurur; scoreLimit leşe ilk ulaşan kazanır
+//              (oyuncu ya da bir bot), öldükçe yeniden doğulur. Skor satırında lider gösterilir.
+//   LaserTag : Mavi (oyuncu + botlar) - Kırmızı takım; ilk scoreLimit vuruşa ulaşan takım kazanır
+// Oyun başında NavMesh pişirilir (yapay zekâ yol bulması).
+script ShooterGame : ConquerorScript
+{
+    public string mode = "Arena";
+    public int scoreLimit = 20;
+    public float timeLimit = 600.0;
+    [Header("State")]
+    public int score = 0;
+    public int blueScore = 0;
+    public int redScore = 0;
+    public int playerKills = 0;
+    public int playerDeaths = 0;
+    public bool over = false;
+    public float elapsed = 0.0;
+    public int navCells = 0;
+
+    private var player = -1;
+    private var frags = Map();              // varlık -> leş (deathmatch)
+    private var leaderName = "-";
+    private int leaderFrags = 0;
+    private var feed = [];
+    private float feedTimer = 0.0;
+    private float messageTimer = 0.0;
+    private var winner = -1;
+
+    func Start()
+    {
+        player = FindEntity("Player");
+        navCells = NavBake();
+        if (mode == "Range") { Message("SHOOT THE TARGETS", 3.0); }
+        else if (mode == "LaserTag") { Message("BLUE VS RED  -  FIRST TO " + scoreLimit, 3.0); }
+        else if (mode == "Arena") { Message("FREE FOR ALL  -  FIRST TO " + scoreLimit, 3.0); }
+        else { Message("ELIMINATE THE BOTS  -  FIRST TO " + scoreLimit, 3.0); }
+        UpdateScore();
+    }
+
+    func Message(text, seconds)
+    {
+        UISetText("CenterText", text);
+        messageTimer = seconds;
+    }
+
+    func Update(dt)
+    {
+        if (over)
+        {
+            if (IsKeyDown("Enter")) { LoadScene("Assets/Scenes/" + GetSceneName() + ".cqscene"); }
+            return;
+        }
+        elapsed += dt;
+        if (messageTimer > 0.0)
+        {
+            messageTimer -= dt;
+            if (messageTimer <= 0.0) { UISetText("CenterText", ""); }
+        }
+        if (feedTimer > 0.0)
+        {
+            feedTimer -= dt;
+            if (feedTimer <= 0.0) { feed = []; UISetText("InfoText", ""); }
+        }
+        if (timeLimit > 0.0 && elapsed >= timeLimit) { End(); }
+        UpdateScore();
+    }
+
+    func NameOf(e)
+    {
+        if (e == null || e < 0) { return "?"; }
+        if (e == player) { return "YOU"; }
+        return EntityGetName(e);
+    }
+
+    func Feed(text)
+    {
+        feed.Add(text);
+        if (feed.Count > 3) { feed.RemoveAt(0); }
+        var s = "";
+        foreach (var f in feed) { s = s + f + "     "; }
+        UISetText("InfoText", s);
+        feedTimer = 4.0;
+    }
+
+    func OnTargetHit(t, points, instigator)
+    {
+        score += points;
+        Feed("+" + points);
+    }
+
+    func OnActorKilled(victim, instigator)
+    {
+        Feed(NameOf(instigator) + "  >  " + NameOf(victim));
+        if (victim == player) { playerDeaths += 1; }
+        if (instigator == player && victim != player) { playerKills += 1; }
+        if (mode == "LaserTag")
+        {
+            var t = GetScriptField(instigator, "team");
+            if (t == "Blue") { blueScore += 1; }
+            if (t == "Red") { redScore += 1; }
+            if (blueScore >= scoreLimit || redScore >= scoreLimit) { End(); }
+        }
+        else if (mode == "Arena")
+        {
+            if (instigator == player && victim != player) { score += 1; }
+            // Herkesin leşi (botlar da puan alır); kendini öldürme / ortam leşi saymaz
+            if (instigator != null && instigator >= 0 && instigator != victim)
+            {
+                var key = "" + instigator;
+                var k = frags.ContainsKey(key) ? frags[key] + 1 : 1;
+                frags[key] = k;
+                if (k > leaderFrags || (k == leaderFrags && instigator == player))
+                {
+                    leaderFrags = k;
+                    leaderName = NameOf(instigator);
+                }
+                if (k >= scoreLimit) { winner = instigator; End(); }
+            }
+        }
+    }
+
+    func OnActorRespawned(e)
+    {
+        if (e == player) { Message("", 0.1); }
+    }
+
+    func End()
+    {
+        over = true;
+        var text = "TIME";
+        if (mode == "LaserTag") { text = blueScore > redScore ? "BLUE TEAM WINS" : (redScore > blueScore ? "RED TEAM WINS" : "DRAW"); }
+        else if (mode == "Arena")
+        {
+            if (winner == player) { text = "VICTORY"; }
+            else if (winner != null && winner >= 0) { text = StringToUpper(NameOf(winner)) + " WINS"; }
+            else { text = "TIME UP  -  " + (leaderName == "YOU" ? "YOU LEAD" : StringToUpper(leaderName) + " LEADS"); }
+        }
+        else { text = "SCORE " + score; }
+        UISetText("CenterText", text + "     (ENTER: PLAY AGAIN)");
+        SetCursorMode(0);
+    }
+
+    func UpdateScore()
+    {
+        var mins = int(MathFloor(MathMax(0.0, timeLimit - elapsed) / 60.0));
+        var secs = int(MathFloor(MathMax(0.0, timeLimit - elapsed))) - mins * 60;
+        var clock = timeLimit > 0.0 ? $"{mins}:{secs:D2}" : "";
+        if (mode == "LaserTag") { UISetText("ScoreText", $"BLUE {blueScore}   -   {redScore} RED        {clock}"); }
+        else if (mode == "Arena") { UISetText("ScoreText", $"KILLS {score} / {scoreLimit}     DEATHS {playerDeaths}     LEADER {leaderName} {leaderFrags}        {clock}"); }
+        else { UISetText("ScoreText", $"SCORE {score}        {clock}"); }
+    }
+}

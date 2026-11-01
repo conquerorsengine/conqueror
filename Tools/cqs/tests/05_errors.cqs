@@ -1,0 +1,41 @@
+// İstisnalar
+func risky(n) {
+    if (n > 2) throw new Exception("too big: " + n);
+    return n;
+}
+try { risky(5); print("not reached"); }
+catch (e) { print("caught", e.message); }
+try { var l = [1]; print(l[5]); }
+catch (IndexOutOfRangeException e) { print("index:", e.type); }
+try { null.Foo(); }
+catch (e) { print(e.type); }
+try { undefinedThing + 1; }
+catch (e) { print(e.type, e.message.Contains("undefinedThing")); }
+var log = [];
+func withFinally() {
+    try { log.Add("try"); return "ret"; }
+    finally { log.Add("finally"); }
+}
+print(withFinally(), log);
+try {
+    try { throw "inner"; }
+    finally { log.Add("inner-finally"); }
+} catch (e) { print("outer got", e); }
+print(log);
+class MyError : Exception { var code = 0; func init(c) { base.init("my error", "MyError"); code = c; } }
+try { throw new MyError(42); }
+catch (MyError e) { print("MyError", e.code, e.message); }
+try {
+    try { throw new MyError(1); }
+    catch (IndexOutOfRangeException e) { print("wrong"); }
+} catch (e) { print("propagated", e.code); }
+for (var i = 0; i < 3; i++) {
+    try { if (i == 1) continue; log.Add(i); }
+    finally { log.Add("f" + i); }
+}
+print(log);
+try { throw 123; } catch (e) { try { throw; } catch (e2) { print("rethrown", e2); } }
+func deep(n) { return deep(n + 1); }
+try { deep(0); } catch (e) { print(e.type); }
+print(1 / 0.0, -1 / 0.0);
+try { print(1 / 0); } catch (e) { print(e.type); }

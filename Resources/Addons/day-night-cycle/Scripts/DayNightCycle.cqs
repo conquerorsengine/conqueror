@@ -1,0 +1,92 @@
+using nativebridge;
+
+// Gün/gece döngüsü: bu nesnedeki Directional Light'ı günün saatine göre döndürür ve renklendirir.
+// timeOfDay: 0-24 (6 = gün doğumu, 12 = öğle, 18 = gün batımı). dayLengthSeconds: tam bir günün süresi.
+// Gece ışık ayın ışığıdır (güneşin karşısında, gökte; soluk mavi): eskiden ışık ufkun altından yukarı vurup sahneyi
+// tamamen karartıyordu. driveFog: sis rengi saate göre (gündüz sahnenin sis rengi, gün batımında sıcak, gece lacivert);
+// yoksa karanlık sahnede gündüz renkli sis her şeyi düz griye boyuyordu.
+script DayNightCycle : ConquerorScript
+{
+    public float timeOfDay = 8.0;
+    public float dayLengthSeconds = 120.0;
+    public bool running = true;
+    public float sunYaw = 30.0;
+    public float maxIntensity = 3.0;
+    public float moonIntensity = 0.45;
+    public bool driveFog = true;
+    public float sunHeight = 0.0;
+
+    private var dayFog = null;
+
+    func Start()
+    {
+        if (driveFog)
+        {
+            var f = RenderSettingGet("Fog.Color");
+            if (f != null) { dayFog = f; }
+        }
+        Apply();
+    }
+
+    func Update(dt)
+    {
+        if (!running || dayLengthSeconds <= 0.0) { return; }
+        timeOfDay = timeOfDay + dt * 24.0 / dayLengthSeconds;
+        if (timeOfDay >= 24.0) { timeOfDay = timeOfDay - 24.0; }
+        Apply();
+    }
+
+    func Apply()
+    {
+        var me = GetEntityId();
+        var light = SunLight(timeOfDay, maxIntensity);
+        sunHeight = light.height;
+        // Gündüz ışık güneştir; gece güneşin tam karşısındaki aydır (gökte). Geçiş ufukta: o anda güneş de ay da
+        // en sönük olduğundan yön değişimi görünmez.
+        var night = MathClamp01(-light.height * 4.0);
+        var angle = MathRepeat((timeOfDay - 6.0) / 12.0 * 180.0, 360.0);
+        var elevation = light.height >= 0.0 ? angle : angle - 180.0;
+        elevation = MathClamp(elevation, 6.0, 174.0);
+        // Motor ileri yönü -Z; X ekseni etrafında eğim = ışığın yüksekliği (doğu ufku 0, tepe -90)
+        SetRotation(-elevation, sunYaw, 0);
+        if (EntityHasComponent(me, "DirectionalLight"))
+        {
+            var moon = moonIntensity * night;
+            EntitySetComponentField(me, "DirectionalLight", "Intensity", MathMax(light.intensity, moon));
+            var r = MathLerp(light.r, 0.55, night);
+            var g = MathLerp(light.g, 0.66, night);
+            var b = MathLerp(light.b, 0.95, night);
+            EntitySetComponentField(me, "DirectionalLight", "Color", [r, g, b]);
+        }
+        if (driveFog && dayFog != null)
+        {
+            var day = MathClamp01(light.height * 3.0);
+            var dusk = MathClamp01(1.0 - MathAbs(light.height) * 5.0);    // ufka yakın: sıcak
+            var fr = MathLerp(0.035, dayFog.r, day);
+            var fg = MathLerp(0.045, dayFog.g, day);
+            var fb = MathLerp(0.085, dayFog.b, day);
+            fr = MathLerp(fr, 0.55, dusk * 0.5);
+            fg = MathLerp(fg, 0.38, dusk * 0.5);
+            fb = MathLerp(fb, 0.3, dusk * 0.5);
+            RenderSettingSet("Fog.Color", {r: fr, g: fg, b: fb});
+        }
+    }
+}
+
+// Saat -> güneş açısı, rengi ve şiddeti (editör önizlemesi de aynı eğriyi kullanır)
+func SunLight(hour, maxIntensity)
+{
+    var angle = (hour - 6.0) / 12.0 * 180.0;          // 6:00 = 0°, 12:00 = 90°, 18:00 = 180°
+    var height = MathSin(MathDegToRad(angle));        // -1..1 (negatif: gece)
+    var day = MathClamp01(height * 3.0);              // ufka yakın yumuşak geçiş
+    var warm = 1.0 - MathClamp01(height * 2.2);       // alçak güneş: sıcak tonlar
+    var result = Map();
+    result["elevation"] = MathClamp(angle, -20.0, 200.0);
+    result["height"] = height;
+    result["intensity"] = 0.05 + day * maxIntensity;
+    // Gün: beyazımsı sarı; şafak/gün batımı: turuncu; gece: soluk mavi
+    result["r"] = MathLerp(MathLerp(0.35, 1.0, day), 1.0, warm * day);
+    result["g"] = MathLerp(MathLerp(0.42, 0.95, day), 0.62, warm * day);
+    result["b"] = MathLerp(MathLerp(0.70, 0.88, day), 0.38, warm * day);
+    return result;
+}

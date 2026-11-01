@@ -1,0 +1,100 @@
+#language GLSL
+// Bulut gürültüsü: döşenebilir 64³ hacim, 2B atlas olarak tek geçişte çizilir (8x8 karo, karo başına 64² + 1 texel sarmalı kenar;
+// tüm arka uçlarda 2B doku yeterli). R Perlin-Worley (şekil), GBA Worley FBM (aşınma)
+#type vertex
+#version 450 core
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+out vec2 v_UV;
+void main()
+{
+    v_UV = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+
+layout(location = 0) out vec4 FragColor;
+in vec2 v_UV;
+
+const float kSize = 64.0;   // hacim kenarı
+const float kTile = 66.0;   // karo (kenarlı)
+
+vec3 Hash33(vec3 p)
+{
+    p = vec3(dot(p, vec3(127.1, 311.7, 74.7)), dot(p, vec3(269.5, 183.3, 246.1)), dot(p, vec3(113.5, 271.9, 124.6)));
+    return fract(sin(p) * 43758.5453123);
+}
+
+// Döşenebilir gradyan gürültüsü (periyot = freq)
+float GradientNoise(vec3 x, float freq)
+{
+    vec3 p = floor(x);
+    vec3 w = fract(x);
+    vec3 u = w * w * w * (w * (w * 6.0 - 15.0) + 10.0);
+    float result = 0.0;
+    float n[8];
+    for (int i = 0; i < 8; ++i)
+    {
+        vec3 o = vec3(i & 1, (i >> 1) & 1, (i >> 2) & 1);
+        vec3 g = Hash33(mod(p + o, freq)) * 2.0 - 1.0;
+        n[i] = dot(normalize(g + 1e-4), w - o);
+    }
+    float x0 = mix(n[0], n[1], u.x), x1 = mix(n[2], n[3], u.x);
+    float x2 = mix(n[4], n[5], u.x), x3 = mix(n[6], n[7], u.x);
+    return mix(mix(x0, x1, u.y), mix(x2, x3, u.y), u.z);
+}
+
+// Döşenebilir Worley (hücre gürültüsü): en yakın noktaya uzaklık (0..1)
+float Worley(vec3 x, float freq)
+{
+    vec3 id = floor(x);
+    vec3 f = fract(x);
+    float minDist = 1e4;
+    for (int z = -1; z <= 1; ++z)
+    for (int y = -1; y <= 1; ++y)
+    for (int xx = -1; xx <= 1; ++xx)
+    {
+        vec3 o = vec3(xx, y, z);
+        vec3 h = Hash33(mod(id + o, freq));
+        vec3 d = o + h - f;
+        minDist = min(minDist, dot(d, d));
+    }
+    return clamp(sqrt(minDist), 0.0, 1.0);
+}
+
+float WorleyFbm(vec3 p, float freq)
+{
+    return (1.0 - Worley(p * freq, freq)) * 0.625 + (1.0 - Worley(p * freq * 2.0, freq * 2.0)) * 0.25
+         + (1.0 - Worley(p * freq * 4.0, freq * 4.0)) * 0.125;
+}
+
+float PerlinFbm(vec3 p, float freq)
+{
+    float sum = 0.0, amp = 0.5;
+    for (int i = 0; i < 5; ++i)
+    {
+        sum += GradientNoise(p * freq, freq) * amp;
+        freq *= 2.0;
+        amp *= 0.5;
+    }
+    return sum * 0.5 + 0.5;
+}
+
+float Remap(float v, float a, float b, float c, float d) { return c + (v - a) / (b - a) * (d - c); }
+
+void main()
+{
+    // Atlas texeli -> hacim koordinatı (kenar texelleri karşı kenardan sarılır: donanım çift doğrusal süzmesi doğru kalır)
+    vec2 texel = floor(gl_FragCoord.xy);
+    vec2 tile = floor(texel / kTile);
+    vec2 inTile = texel - tile * kTile - 1.0;
+    vec2 xy = mod(inTile, kSize);
+    float slice = tile.y * 8.0 + tile.x;
+    vec3 p = vec3((xy + 0.5) / kSize, (slice + 0.5) / kSize);
+    float perlin = clamp(PerlinFbm(p, 4.0) * 1.2 - 0.1, 0.0, 1.0);
+    float w1 = WorleyFbm(p, 4.0);
+    float perlinWorley = clamp(Remap(perlin, w1 - 1.0, 1.0, 0.0, 1.0), 0.0, 1.0);
+    FragColor = vec4(perlinWorley, WorleyFbm(p, 8.0), WorleyFbm(p, 16.0), WorleyFbm(p, 32.0));
+}

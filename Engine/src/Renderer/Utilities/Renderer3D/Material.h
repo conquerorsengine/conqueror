@@ -104,9 +104,9 @@ namespace Conqueror
 
     struct ShaderGraphNode
     {
-        int ID;
-        ShaderGraphNodeType Type;
-        glm::vec2 EditorPosition;
+        int ID{};
+        ShaderGraphNodeType Type{};
+        glm::vec2 EditorPosition{};
 
         glm::vec4 ColorValue   = glm::vec4(1.0f);
         float     FloatValue   = 0.0f;
@@ -145,6 +145,9 @@ namespace Conqueror
 
         // Material ismi
         std::string Name = "Default-Material";
+        // Malzeme varyantı (Unity Material Variant / Unreal Material Instance): üst malzemenin .cqmat yolu; dosyada
+        // yalnız üstten farklı alanlar saklanır, üst değişince varyant da güncellenir
+        std::string ParentPath;
 
         // Shader referansı (nullptr ise default PBR shader kullanılır)
         std::shared_ptr<Shader> MaterialShader;
@@ -162,6 +165,15 @@ namespace Conqueror
         // Tiling & Offset
         glm::vec2 Tiling = glm::vec2(1.0f);
         glm::vec2 Offset = glm::vec2(0.0f);
+        bool WorldAligned = false;          // dünya konumundan üç eksenli izdüşüm UV (Tiling = metre başına tekrar)
+        bool AlignToObject = false;         // izdüşüm nesne uzayında (ölçeği korur): doku nesneyle hareket eder
+
+        // Gölgelendirme modeli (Unreal Shading Model; MetaHuman deri / saç / kumaş)
+        // Unlit: ışıklandırma yok, renk = taban rengi + ışıma (ekran, LED duvar, gökyüzü kartı)
+        enum class ShadingModel { DefaultLit = 0, Subsurface, Hair, Cloth, Unlit };
+        ShadingModel Shading = ShadingModel::DefaultLit;
+        glm::vec3 SubsurfaceColor = glm::vec3(0.85f, 0.32f, 0.22f);   // deri saçılması / saç ikincil vurgu / kumaş parlaklığı
+        float SubsurfaceAmount = 0.5f;
 
         // Render state
         enum class RenderMode { Opaque = 0, Cutout, Transparent };
@@ -169,6 +181,12 @@ namespace Conqueror
         RenderMode Rendering = RenderMode::Opaque;
         CullMode   Culling   = CullMode::Back;
         float AlphaClip = 0.5f;
+        float Opacity = 1.0f;               // albedo alfası ile çarpılır (Transparent)
+
+        // glTF metal/pürüz dokusu tek dokuda: metal B, pürüz G kanalında; doku değeri çarpanla çarpılır
+        int MetallicChannel = 0;
+        int RoughnessChannel = 0;
+        bool MapsScaleFactors = false;
 
         // Texture haritaları
         std::shared_ptr<Texture2D> AlbedoMap;

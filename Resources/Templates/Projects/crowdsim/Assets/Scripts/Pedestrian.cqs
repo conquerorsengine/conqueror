@@ -1,0 +1,229 @@
+using nativebridge;
+
+// Yaya (Unreal Mass / City Sample kalabalığına benzer davranışlar): NavMesh Agent ile yürür; Crowd Director'dan
+// görev alır. Görevler: meydanda gezinme, vitrine bakma (bekler / telefona bakar), bankta oturma (yanında biri varsa
+// sohbet eder), başka bir yayayla buluşup ayakta sohbet, sokaktan çıkıp başka bir sokaktan geri gelme.
+// Animasyon: Pedestrian.cqcont (Speed: yürüme hızı, Activity: 0 yürü / 1 konuş / 2 telefon / 3 otur / 4 oturup konuş /
+// 5 bekle).
+script Pedestrian : ConquerorScript
+{
+    public float walkSpeed = 1.35;
+    [Header("State")]
+    public string task = "";
+    public int activity = 0;
+    public float speed = 0.0;
+
+    private var me = -1;
+    private var director = -1;
+    private var last = null;
+    private float timer = 0.0;
+    private float walkTime = 0.0;
+    private float stuck = 0.0;
+    private var seat = -1;
+    private var spot = -1;
+    private var partner = -1;
+    private var target = null;
+    private bool hasFace = false;
+    private float faceYaw = 0.0;
+    private bool arrived = false;
+
+    func Start()
+    {
+        me = GetEntityId();
+        director = FindEntity("Crowd Director");
+        last = GetPosition();
+        EntitySetComponentField(me, "NavMeshAgent", "Speed", walkSpeed);
+        timer = RandomRange(0.2, 2.5);
+        task = "Idle";
+    }
+
+    func Busy() { return task == "Chat" || task == "Seat" || task == "Window"; }
+
+    // Hedef: NavMesh üstünde en yakın noktaya yürü
+    func WalkTo(x, z)
+    {
+        target = {x: x, z: z};
+        NavAgentSetDestination(me, x, 0, z);
+        walkTime = 0.0;
+        stuck = 0.0;
+        arrived = false;
+        activity = 0;
+        hasFace = false;
+    }
+
+    func Release()
+    {
+        if (seat >= 0) { InvokeMethod(director, "ReleaseSeat", seat); seat = -1; }
+        if (spot >= 0) { InvokeMethod(director, "ReleaseSpot", spot); spot = -1; }
+        partner = -1;
+    }
+
+    // Yeni görev seç (yönetmen kalabalığın dengesini gözetir: bank / vitrin dolu ise gezinme)
+    func NextTask()
+    {
+        Release();
+        var r = RandomRange(0.0, 1.0);
+        if (r < 0.22)
+        {
+            seat = InvokeMethod(director, "ReserveSeat", me);
+            if (seat != null && seat >= 0)
+            {
+                var p = EntityGetWorldPosition(seat);
+                task = "Seat";
+                WalkTo(p.x, p.z);
+                return;
+            }
+            seat = -1;
+        }
+        if (r < 0.42)
+        {
+            spot = InvokeMethod(director, "ReserveSpot", me);
+            if (spot != null && spot >= 0)
+            {
+                var q = EntityGetWorldPosition(spot);
+                task = "Window";
+                WalkTo(q.x, q.z);
+                return;
+            }
+            spot = -1;
+        }
+        if (r < 0.56 && InvokeMethod(director, "RequestChat", me)) { return; }
+        if (r < 0.68)
+        {
+            var exit = InvokeMethod(director, "RandomExit", -1);
+            if (exit != null && exit >= 0)
+            {
+                var e = EntityGetWorldPosition(exit);
+                task = "Leave";
+                WalkTo(e.x, e.z);
+                return;
+            }
+        }
+        var w = InvokeMethod(director, "RandomPoint");
+        task = "Wander";
+        WalkTo(w.x, w.z);
+    }
+
+    // Yönetmenin sohbet eşleştirmesi: iki yaya birbirine dönük iki noktaya gider
+    func JoinChat(other, x, z, faceX, faceZ, seconds)
+    {
+        Release();
+        partner = other;
+        task = "Chat";
+        WalkTo(x, z);
+        faceYaw = MathRadToDeg(MathAtan2(faceX - x, faceZ - z));
+        timer = seconds;
+    }
+
+    func Arrive()
+    {
+        arrived = true;
+        if (task == "Seat")
+        {
+            var r = EntityGetRotation(seat);
+            var p = EntityGetWorldPosition(seat);
+            EntitySetWorldPosition(me, p.x, p.y, p.z);   // oturma noktasına tam otur (NavMesh bankın önünde biter)
+            faceYaw = r.y;
+            hasFace = true;
+            activity = 3;
+            timer = RandomRange(9.0, 20.0);
+        }
+        else if (task == "Window")
+        {
+            faceYaw = EntityGetRotation(spot).y;
+            hasFace = true;
+            activity = RandomRange(0.0, 1.0) < 0.5 ? 5 : 2;
+            timer = RandomRange(4.0, 9.0);
+        }
+        else if (task == "Chat")
+        {
+            hasFace = true;
+            activity = 5;            // eş gelene kadar bekler
+        }
+        else if (task == "Leave")
+        {
+            // Sokağın sonuna vardı: başka bir sokaktan meydana geri gelir
+            var exit = InvokeMethod(director, "RandomExit", -1);
+            if (exit != null && exit >= 0)
+            {
+                var e = EntityGetWorldPosition(exit);
+                EntitySetWorldPosition(me, e.x, 0, e.z);
+                last = GetPosition();
+            }
+            task = "Wander";
+            var w = InvokeMethod(director, "RandomPoint");
+            WalkTo(w.x, w.z);
+        }
+        else
+        {
+            // Gezinti sonunda kısa duraklama; bazen telefona bakar
+            activity = RandomRange(0.0, 1.0) < 0.3 ? 2 : 0;
+            timer = RandomRange(0.5, 3.0);
+            task = "Pause";
+        }
+    }
+
+    func Update(dt)
+    {
+        if (director == null || director < 0 || dt <= 0.0) { return; }
+        // Gerçek hız (konum farkından): yürüme animasyonu ayak kaymadan hıza uyar
+        var p = GetPosition();
+        var dx = p.x - last.x;
+        var dz = p.z - last.z;
+        last = p;
+        var v = MathSqrt(dx * dx + dz * dz) / dt;
+        speed += (MathMin(v, 3.0) - speed) * (1.0 - MathExp(-10.0 * dt));
+
+        if (task == "Idle" || task == "Pause")
+        {
+            timer -= dt;
+            if (timer <= 0.0) { activity = 0; NextTask(); }
+        }
+        else if (!arrived)
+        {
+            walkTime += dt;
+            var rem = NavRemainingDistance(me);
+            var tdx = target.x - p.x;
+            var tdz = target.z - p.z;
+            var near = MathSqrt(tdx * tdx + tdz * tdz);
+            if (walkTime > 0.4 && (rem == null || rem < 0.3) && near < 1.2) { Arrive(); }
+            // Takıldı (yol yok / sıkıştı): görevi bırak
+            stuck = speed < 0.08 ? stuck + dt : 0.0;
+            if (walkTime > 0.6 && (stuck > 2.5 || walkTime > 60.0))
+            {
+                if (near < 1.2) { Arrive(); } else { task = "Idle"; timer = 0.2; }
+            }
+        }
+        else if (task == "Chat")
+        {
+            var other = partner;
+            var together = other != null && other >= 0 && GetScriptField(other, "task") == "Chat";
+            if (together)
+            {
+                var op = EntityGetWorldPosition(other);
+                var ox = op.x - p.x;
+                var oz = op.z - p.z;
+                if (ox * ox + oz * oz < 4.0) { activity = 1; timer -= dt; }
+            }
+            else { timer -= dt * 3.0; }
+            if (timer <= 0.0) { NextTask(); }
+        }
+        else
+        {
+            timer -= dt;
+            // Bankta yanındaki de oturuyorsa sohbet eder
+            if (task == "Seat") { activity = InvokeMethod(director, "NeighborSeated", seat) ? 4 : 3; }
+            if (timer <= 0.0) { activity = 0; NextTask(); }
+        }
+
+        // Dururken hedef yöne yumuşak dönüş
+        if (hasFace && arrived)
+        {
+            var r = GetRotation();
+            var dy = MathNormalizeAngle(faceYaw - r.y);
+            SetRotation(0, r.y + dy * (1.0 - MathExp(-6.0 * dt)), 0);
+        }
+        AnimSetFloat("Speed", activity == 0 ? speed : 0.0);
+        AnimSetInt("Activity", activity);
+    }
+}

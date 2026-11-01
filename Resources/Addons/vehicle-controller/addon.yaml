@@ -1,0 +1,23 @@
+Id: conqueror.vehicle-controller
+Name: Vehicle Controller
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Arcade-to-sim car driving on Wheel Colliders: throttle, brake and reverse, speed-sensitive
+  steering, handbrake, rear/front/all wheel drive, top speed limit and downforce. Includes a
+  four wheel car prefab and a smooth chase camera.
+Category: Characters
+Icon: car
+Tags: [vehicle, car, driving, wheel-collider, physics, camera]
+Components:
+  - Scripts/VehicleController.cqs
+  - Scripts/ChaseCamera.cqs
+Inserts:
+  - Name: Vehicle
+    Icon: car
+    Prefab: Prefabs/Vehicle.cqprefab
+    Tooltip: Rigidbody car with four Wheel Colliders and the Vehicle Controller
+  - Name: Chase Camera
+    Icon: video
+    Prefab: Prefabs/ChaseCamera.cqprefab
+    Tooltip: Camera that follows the "Vehicle" from behind

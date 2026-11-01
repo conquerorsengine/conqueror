@@ -1,0 +1,211 @@
+using nativebridge;
+
+// Quick Tools: seçili nesneler üzerinde hızlı seviye tasarımı işlemleri.
+// Menü ve düğmeler geri alınabilir tek adım olarak çalışır (Ctrl+Z).
+script QuickTools : ConquerorScript
+{
+    public int scatterCount = 8;
+    public float scatterRadius = 6.0;
+    public float minScale = 0.8;
+    public float maxScale = 1.3;
+    public float spacing = 2.0;
+    public int axis = 0;
+    public bool randomYaw = true;
+    public string lastAction = "";
+
+    func OnLoad()
+    {
+        EditorAddMenuItem("Quick Tools/Drop To Ground", "DropToGround");
+        EditorAddMenuItem("Quick Tools/Randomize Rotation", "RandomizeRotation");
+        EditorAddMenuItem("Quick Tools/Randomize Scale", "RandomizeScale");
+        EditorAddMenuItem("Quick Tools/Scatter Copies", "Scatter");
+        EditorAddMenuItem("Quick Tools/Distribute In A Row", "Distribute");
+        EditorAddMenuItem("Quick Tools/Align To First", "AlignToFirst");
+        EditorAddMenuItem("Quick Tools/Group Selection", "Group");
+        EditorAddToolButton("Drop", "arrows-down-to-line", "DropToGround", "Place the selection on the ground (bottom at y = 0)");
+        EditorAddToolButton("Rotate", "shuffle", "RandomizeRotation", "Random Y rotation for every selected object");
+        EditorAddToolButton("Scatter", "seedling", "Scatter", "Scatter copies of the selection around it");
+        EditorAddToolButton("Distribute", "ruler-combined", "Distribute", "Line the selection up with even spacing");
+        EditorAddToolButton("Group", "object-group", "Group", "Parent the selection under a new Group object");
+        EditorAddPanel("Quick Tools", "DrawPanel");
+    }
+
+    func Selection()
+    {
+        var sel = EditorGetSelection();
+        if (len(sel) == 0)
+        {
+            EditorNotify("Select one or more objects first.");
+        }
+        return sel;
+    }
+
+    func DropToGround()
+    {
+        var sel = Selection();
+        for (var e in sel)
+        {
+            var p = EntityGetPosition(e);
+            var s = EntityGetScale(e);
+            EntitySetPosition(e, p.x, MathAbs(s.y) * 0.5, p.z);
+        }
+        lastAction = "Dropped " + str(len(sel)) + " object(s)";
+        EditorNotify(lastAction);
+    }
+
+    func RandomizeRotation()
+    {
+        var sel = Selection();
+        for (var e in sel)
+        {
+            var r = EntityGetRotation(e);
+            EntitySetRotation(e, r.x, MathRandomRange(0.0, 360.0), r.z);
+        }
+        lastAction = "Rotated " + str(len(sel)) + " object(s)";
+        EditorNotify(lastAction);
+    }
+
+    func RandomizeScale()
+    {
+        var sel = Selection();
+        for (var e in sel)
+        {
+            var k = MathRandomRange(minScale, maxScale);
+            var s = EntityGetScale(e);
+            EntitySetScale(e, s.x * k, s.y * k, s.z * k);
+        }
+        lastAction = "Scaled " + str(len(sel)) + " object(s)";
+        EditorNotify(lastAction);
+    }
+
+    func Scatter()
+    {
+        var sel = Selection();
+        var created = List();
+        for (var e in sel)
+        {
+            var p = EntityGetPosition(e);
+            for (var i = 0; i < scatterCount; i++)
+            {
+                var a = MathRandomRange(0.0, 6.2831853);
+                var d = scatterRadius * MathSqrt(MathRandom());
+                var copy = Instantiate(e, p.x + MathCos(a) * d, p.y, p.z + MathSin(a) * d);
+                if (randomYaw)
+                {
+                    var r = EntityGetRotation(copy);
+                    EntitySetRotation(copy, r.x, MathRandomRange(0.0, 360.0), r.z);
+                }
+                var k = MathRandomRange(minScale, maxScale);
+                var s = EntityGetScale(copy);
+                EntitySetScale(copy, s.x * k, s.y * k, s.z * k);
+                ListAdd(created, copy);
+            }
+        }
+        lastAction = "Scattered " + str(len(created)) + " copies";
+        EditorNotify(lastAction);
+    }
+
+    func Distribute()
+    {
+        var sel = Selection();
+        if (len(sel) < 2) { return; }
+        var start = EntityGetPosition(sel[0]);
+        var i = 0;
+        for (var e in sel)
+        {
+            var p = EntityGetPosition(e);
+            if (axis == 0) { EntitySetPosition(e, start.x + i * spacing, p.y, p.z); }
+            if (axis == 1) { EntitySetPosition(e, p.x, start.y + i * spacing, p.z); }
+            if (axis == 2) { EntitySetPosition(e, p.x, p.y, start.z + i * spacing); }
+            i++;
+        }
+        lastAction = "Distributed " + str(len(sel)) + " object(s)";
+        EditorNotify(lastAction);
+    }
+
+    func AlignToFirst()
+    {
+        var sel = Selection();
+        if (len(sel) < 2) { return; }
+        var first = EntityGetPosition(sel[0]);
+        for (var e in sel)
+        {
+            var p = EntityGetPosition(e);
+            if (axis == 0) { EntitySetPosition(e, first.x, p.y, p.z); }
+            if (axis == 1) { EntitySetPosition(e, p.x, first.y, p.z); }
+            if (axis == 2) { EntitySetPosition(e, p.x, p.y, first.z); }
+        }
+        lastAction = "Aligned " + str(len(sel)) + " object(s)";
+        EditorNotify(lastAction);
+    }
+
+    func Group()
+    {
+        var sel = Selection();
+        if (len(sel) == 0) { return; }
+        var cx = 0.0;
+        var cy = 0.0;
+        var cz = 0.0;
+        for (var e in sel)
+        {
+            var p = EntityGetPosition(e);
+            cx += p.x;
+            cy += p.y;
+            cz += p.z;
+        }
+        var n = len(sel);
+        var group = CreateEntity("Group");
+        EntitySetPosition(group, cx / n, cy / n, cz / n);
+        for (var e in sel)
+        {
+            EntitySetParent(e, group, true);
+        }
+        EditorSetSelection(group);
+        lastAction = "Grouped " + str(n) + " object(s)";
+        EditorNotify(lastAction);
+    }
+
+    func DrawPanel()
+    {
+        var sel = EditorGetSelection();
+        GuiTextDisabled(str(len(sel)) + " selected");
+        if (GuiHeader("Placement"))
+        {
+            if (GuiButton("Drop To Ground", -1)) { EditorRunUndoable("Drop To Ground", "DropToGround"); }
+            axis = GuiCombo("Axis", axis, ["X", "Y", "Z"]);
+            spacing = GuiSliderFloat("Spacing", spacing, 0.1, 20.0);
+            if (GuiButton("Distribute")) { EditorRunUndoable("Distribute", "Distribute"); }
+            GuiSameLine();
+            if (GuiButton("Align To First")) { EditorRunUndoable("Align", "AlignToFirst"); }
+        }
+        if (GuiHeader("Variation"))
+        {
+            minScale = GuiSliderFloat("Min Scale", minScale, 0.1, 3.0);
+            maxScale = GuiSliderFloat("Max Scale", maxScale, 0.1, 3.0);
+            if (maxScale < minScale) { maxScale = minScale; }
+            if (GuiButton("Randomize Rotation")) { EditorRunUndoable("Randomize Rotation", "RandomizeRotation"); }
+            GuiSameLine();
+            if (GuiButton("Randomize Scale")) { EditorRunUndoable("Randomize Scale", "RandomizeScale"); }
+        }
+        if (GuiHeader("Scatter"))
+        {
+            scatterCount = GuiSliderInt("Copies", scatterCount, 1, 200);
+            scatterRadius = GuiSliderFloat("Radius", scatterRadius, 0.5, 100.0);
+            randomYaw = GuiCheckbox("Random Yaw", randomYaw);
+            GuiBeginDisabled(len(sel) == 0);
+            if (GuiButton("Scatter Copies", -1)) { EditorRunUndoable("Scatter", "Scatter"); }
+            GuiEndDisabled();
+        }
+        if (GuiHeader("Hierarchy"))
+        {
+            GuiBeginDisabled(len(sel) == 0);
+            if (GuiButton("Group Selection", -1)) { EditorRunUndoable("Group", "Group"); }
+            GuiEndDisabled();
+        }
+        if (lastAction != "")
+        {
+            GuiSeparator();
+            GuiTextDisabled(lastAction);
+        }
+    }
+}

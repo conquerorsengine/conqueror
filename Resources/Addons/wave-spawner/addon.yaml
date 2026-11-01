@@ -1,0 +1,20 @@
+Id: conqueror.wave-spawner
+Name: Wave Spawner
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Survival / tower-defense style waves: each wave spawns more enemies than the last from
+  random spawn points, the next wave starts after all enemies are defeated and a short
+  break, with a wave counter, enemies-left text, a wave limit and OnWaveStarted /
+  OnWaveCleared / OnAllWavesCleared messages for your game logic.
+Category: Gameplay
+Icon: people-group
+Tags: [waves, spawner, survival, enemies, tower-defense]
+Dependencies: [conqueror.health-system]
+Components:
+  - Scripts/WaveSpawner.cqs
+Inserts:
+  - Name: Wave Spawner
+    Icon: people-group
+    Prefab: Prefabs/WaveSpawner.cqprefab
+    Tooltip: Spawner with four spawn points and a sample enemy

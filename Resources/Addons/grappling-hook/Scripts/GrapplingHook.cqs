@@ -1,0 +1,116 @@
+using nativebridge;
+
+// Kanca: sağ tık (ya da F) bakılan noktaya kanca atar, oyuncu oraya çekilir. Halat: "Rope" çocuğundaki Line Renderer
+// (yoksa oluşturulur). requiredTag doluysa yalnızca o etiketli yüzeylere tutunur.
+script GrapplingHook : ConquerorScript
+{
+    public float range = 30.0;
+    public float pullSpeed = 16.0;
+    public float stopDistance = 1.5;
+    public string requiredTag = "";
+    public string cameraName = "";
+    public bool useInput = true;
+    public string fireSound = "Packages/grappling-hook/Sounds/fire.wav";
+    public string attachSound = "Packages/grappling-hook/Sounds/attach.wav";
+
+    // Çalışma zamanı bilgisi
+    public bool attached = false;
+    public float ropeLength = 0.0;
+    public int grapples = 0;
+    public string attachedTo = "";
+
+    private float hx = 0.0;
+    private float hy = 0.0;
+    private float hz = 0.0;
+    private var rope = null;
+
+    func Start()
+    {
+        rope = EntityFindChild(GetEntityId(), "Rope");
+        if (rope == null || rope < 0)
+        {
+            rope = CreateEntity("Rope");
+            EntitySetParent(rope, GetEntityId(), false);
+            EntityAddComponent(rope, "LineRenderer");
+            EntitySetComponentField(rope, "LineRenderer", "StartWidth", 0.04);
+            EntitySetComponentField(rope, "LineRenderer", "EndWidth", 0.02);
+            EntitySetComponentField(rope, "LineRenderer", "UseWorldSpace", true);
+        }
+        EntitySetComponentField(rope, "LineRenderer", "Positions", []);
+    }
+
+    func Eye()
+    {
+        if (cameraName != "") { var c = FindEntity(cameraName); if (c != null) { return c; } }
+        for (var ch in EntityGetChildren(GetEntityId())) { if (EntityHasComponent(ch, "Camera")) { return ch; } }
+        return GetEntityId();
+    }
+
+    func IsMine(e)
+    {
+        var cur = e;
+        for (var i = 0; i < 16; i++)
+        {
+            if (cur == null || cur < 0) { return false; }
+            if (cur == GetEntityId()) { return true; }
+            cur = EntityGetParent(cur);
+        }
+        return false;
+    }
+
+    func Fire()
+    {
+        var eye = Eye();
+        var o = EntityGetWorldPosition(eye);
+        var f = EntityGetForward(eye);
+        if (fireSound != "") { AudioPlayOneShotAt(fireSound, o.x, o.y, o.z, 0.6); }
+        for (var h in RaycastAll(o.x, o.y, o.z, f.x, f.y, f.z, range))
+        {
+            if (h.isTrigger || IsMine(h.entity)) { continue; }
+            if (requiredTag != "" && EntityGetTag(h.entity) != requiredTag) { return false; }
+            hx = h.point.x; hy = h.point.y; hz = h.point.z;
+            attached = true;
+            attachedTo = h.name;
+            grapples++;
+            if (attachSound != "") { AudioPlayOneShotAt(attachSound, hx, hy, hz, 0.8); }
+            SendMessage(GetEntityId(), "OnGrappleAttached", h.entity);
+            return true;
+        }
+        return false;
+    }
+
+    func Release()
+    {
+        if (!attached) { return; }
+        attached = false;
+        EntitySetComponentField(rope, "LineRenderer", "Positions", []);
+        SendMessage(GetEntityId(), "OnGrappleReleased");
+    }
+
+    func Update(dt)
+    {
+        if (useInput)
+        {
+            if (IsMouseButtonDown(1) || IsKeyDown(Key.F)) { if (attached) { Release(); } else { Fire(); } }
+            if (attached && IsKeyDown(Key.Space)) { Release(); }
+        }
+        if (!attached || dt <= 0) { return; }
+        var p = EntityGetWorldPosition(GetEntityId());
+        var eye = EntityGetWorldPosition(Eye());
+        var dx = hx - eye.x;
+        var dy = hy - eye.y;
+        var dz = hz - eye.z;
+        ropeLength = MathSqrt(dx * dx + dy * dy + dz * dz);
+        EntitySetComponentField(rope, "LineRenderer", "Positions", [[eye.x, eye.y - 0.3, eye.z], [hx, hy, hz]]);
+        if (ropeLength <= stopDistance) { Release(); return; }
+        var step = MathMin(ropeLength - stopDistance * 0.5, pullSpeed * dt);
+        var mx = dx / ropeLength * step;
+        var my = dy / ropeLength * step;
+        var mz = dz / ropeLength * step;
+        // Karakter: kendi denetleyicisinin yerçekimi birikmesin
+        InvokeMethod(GetEntityId(), "ResetVelocity");
+        if (HasComponent("CharacterController")) { CharacterMove(mx, my, mz); }
+        else if (HasComponent("Rigidbody")) { SetLinearVelocity(dx / ropeLength * pullSpeed, dy / ropeLength * pullSpeed, dz / ropeLength * pullSpeed); }
+        else { EntitySetWorldPosition(GetEntityId(), p.x + mx, p.y + my, p.z + mz); }
+    }
+}

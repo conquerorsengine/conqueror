@@ -1,0 +1,27 @@
+using nativebridge;
+
+// Öldürme bölgesi: içine giren nesne Respawner'ı varsa ona "Respawn" der; yoksa son kontrol noktasına
+// (GlobalSet ile saklanan) ışınlanır. Health varsa önce Kill çağrılabilir (killHealth).
+script KillZone : ConquerorScript
+{
+    public string requiredTag = "";
+    public bool killHealth = false;
+
+    // Çalışma zamanı bilgisi
+    public int kills = 0;
+
+    func OnTriggerEnter(other, name)
+    {
+        if (requiredTag != "" && EntityGetTag(other) != requiredTag) { return; }
+        if (!EntityHasComponent(other, "CharacterController") && !EntityHasComponent(other, "Rigidbody")) { return; }
+        if (EntityHasComponent(other, "Rigidbody") && EntityGetComponentField(other, "Rigidbody", "BodyType") != "Dynamic") { return; }
+        kills++;
+        if (killHealth && HasScript(other, "Health")) { SendMessage(other, "Kill"); }
+        if (HasScript(other, "Respawner")) { SendMessage(other, "Respawn"); return; }
+        if (GlobalHas("checkpoint.x"))
+        {
+            EntitySetWorldPosition(other, GlobalGet("checkpoint.x", 0), GlobalGet("checkpoint.y", 0), GlobalGet("checkpoint.z", 0));
+            if (EntityHasComponent(other, "Rigidbody")) { SetLinearVelocity(other, 0, 0, 0); }
+        }
+    }
+}

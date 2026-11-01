@@ -1,0 +1,2536 @@
+Scene: Untitled
+Entities:
+  - Entity: 8316723618837101216
+    TagComponent:
+      Tag: Main Camera
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 10]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera:
+        ProjectionType: 1
+        PerspectiveFOV: 0.7853982
+        PerspectiveNear: 0.01
+        PerspectiveFar: 1000
+        OrthographicSize: 25
+        OrthographicNear: -1000
+        OrthographicFar: 1000
+      Primary: true
+      FixedAspectRatio: false
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 8997397242120353192
+    TagComponent:
+      Tag: Background
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -8]
+      Rotation: [0, 0, 0]
+      Scale: [3.4, 2.45, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/background.png
+      Rect: [0, 0, 0, 0]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 100
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 7805135247217212231
+    TagComponent:
+      Tag: Playfield
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 3605449518559985495
+    TagComponent:
+      Tag: BoardBack
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -2]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.035, 0.04, 0.085, 0.94]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/panel.png
+      Rect: [0, 0, 0, 0]
+      Pivot: [0.5, 0.5]
+      Border: [16, 16, 16, 16]
+      PixelsPerUnit: 64
+      FlipX: false
+      FlipY: false
+      DrawMode: 1
+      Size: [10.5, 20.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 4282829096556718543
+    TagComponent:
+      Tag: BoardFrame
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, -1.5]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.3, 0.55, 1.6, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/frame.png
+      Rect: [0, 0, 0, 0]
+      Pivot: [0.5, 0.5]
+      Border: [32, 32, 32, 32]
+      PixelsPerUnit: 32
+      FlipX: false
+      FlipY: false
+      DrawMode: 1
+      Size: [12.2, 22.2]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 2736761184604377882
+    TagComponent:
+      Tag: HoldPanel
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-9.5, 7.55, -2]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.05, 0.06, 0.12, 0.86]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/panel.png
+      Rect: [0, 0, 0, 0]
+      Pivot: [0.5, 0.5]
+      Border: [16, 16, 16, 16]
+      PixelsPerUnit: 64
+      FlipX: false
+      FlipY: false
+      DrawMode: 1
+      Size: [5.4, 4.9]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 3913896924807327375
+    TagComponent:
+      Tag: StatsPanel
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-9.5, -2.25, -2]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.05, 0.06, 0.12, 0.86]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/panel.png
+      Rect: [0, 0, 0, 0]
+      Pivot: [0.5, 0.5]
+      Border: [16, 16, 16, 16]
+      PixelsPerUnit: 64
+      FlipX: false
+      FlipY: false
+      DrawMode: 1
+      Size: [5.4, 12.4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 6990462472990776232
+    TagComponent:
+      Tag: NextPanel
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [9.5, 1.45, -2]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.05, 0.06, 0.12, 0.86]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/panel.png
+      Rect: [0, 0, 0, 0]
+      Pivot: [0.5, 0.5]
+      Border: [16, 16, 16, 16]
+      PixelsPerUnit: 64
+      FlipX: false
+      FlipY: false
+      DrawMode: 1
+      Size: [5.4, 17.3]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5313883665582102717
+    TagComponent:
+      Tag: HoldFrame
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-9.5, 7.55, -1.9]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.55, 0.35, 1.2, 0.55]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/frame.png
+      Rect: [0, 0, 0, 0]
+      Pivot: [0.5, 0.5]
+      Border: [32, 32, 32, 32]
+      PixelsPerUnit: 32
+      FlipX: false
+      FlipY: false
+      DrawMode: 1
+      Size: [6.4, 5.9]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 775108565662112489
+    TagComponent:
+      Tag: StatsFrame
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-9.5, -2.25, -1.9]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.55, 0.35, 1.2, 0.55]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/frame.png
+      Rect: [0, 0, 0, 0]
+      Pivot: [0.5, 0.5]
+      Border: [32, 32, 32, 32]
+      PixelsPerUnit: 32
+      FlipX: false
+      FlipY: false
+      DrawMode: 1
+      Size: [6.4, 13.4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 1943187160941237014
+    TagComponent:
+      Tag: NextFrame
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [9.5, 1.45, -1.9]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.55, 0.35, 1.2, 0.55]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/frame.png
+      Rect: [0, 0, 0, 0]
+      Pivot: [0.5, 0.5]
+      Border: [32, 32, 32, 32]
+      PixelsPerUnit: 32
+      FlipX: false
+      FlipY: false
+      DrawMode: 1
+      Size: [6.4, 18.3]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 680457583243950998
+    TagComponent:
+      Tag: BlockTemplate
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/block.png
+      Rect: [0, 0, 0, 0]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 64
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 932168158130463626
+    TagComponent:
+      Tag: GhostTemplate
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 0.5]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/ghost.png
+      Rect: [0, 0, 0, 0]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 64
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 611729067363178614
+    TagComponent:
+      Tag: CellTemplate
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0, 0, -1]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.3, 0.36, 0.62, 0.28]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/cell.png
+      Rect: [0, 0, 0, 0]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 64
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 7439233299483073663
+    TagComponent:
+      Tag: FX_Sparks
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 1]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ParticleSystemComponent:
+      Duration: 5
+      Looping: false
+      Prewarm: false
+      PlayOnAwake: false
+      StartDelay: 0
+      StartLifetime: [0.35, 0.85]
+      StartSpeed: [3, 9]
+      StartSize: [0.16, 0.42]
+      StartRotation: [0, 0]
+      StartColorA: [1, 1, 1, 1]
+      StartColorB: [0.7, 0.85, 1, 1]
+      GravityModifier: 0.35
+      SimulationSpeed: 1
+      MaxParticles: 3000
+      SimulationSpace: 1
+      EmissionEnabled: false
+      RateOverTime: 0
+      RateOverDistance: 0
+      ShapeEnabled: true
+      Radius: 0.25
+      Angle: 25
+      BoxSize: [1, 1, 1]
+      EmitFromShell: false
+      RandomizeDirection: 0
+      Shape: 0
+      VelocityEnabled: false
+      VelocityOverLifetime: [0, 0, 0]
+      OrbitalSpeed: 0
+      LimitVelocityEnabled: false
+      Drag: 1.5
+      SpeedLimit: 100
+      NoiseEnabled: false
+      NoiseStrength: 1
+      NoiseFrequency: 0.5
+      NoiseScrollSpeed: 0.5
+      ColorOverLifetimeEnabled: true
+      SizeOverLifetimeEnabled: false
+      RotationOverLifetimeEnabled: false
+      AngularVelocity: 45
+      CollisionEnabled: false
+      CollisionPlaneY: 0
+      Bounce: 0.5
+      LifetimeLoss: 0
+      TextureSheetEnabled: false
+      AnimationCycles: 1
+      RandomStartFrame: false
+      Tiles: [1, 1]
+      RenderMode: 0
+      Blend: 1
+      Texture: Assets/Textures/spark.png
+      LengthScale: 2
+      SpeedScale: 0.1
+      SortByDistance: false
+      EmissiveIntensity: 2.2
+      Bursts:
+        []
+      ColorOverLifetime:
+        - [0, 1, 1, 1, 1]
+        - [1, 1, 1, 1, 1]
+      SizeOverLifetime:
+        - [0, 1]
+        - [1, 1]
+  - Entity: 6432954183308513034
+    TagComponent:
+      Tag: FX_Ambient
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -14, -6]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ParticleSystemComponent:
+      Duration: 10
+      Looping: true
+      Prewarm: true
+      PlayOnAwake: true
+      StartDelay: 0
+      StartLifetime: [9, 15]
+      StartSpeed: [0.6, 1.6]
+      StartSize: [0.25, 1.1]
+      StartRotation: [0, 0]
+      StartColorA: [0.35, 0.45, 1, 0.22]
+      StartColorB: [0.9, 0.35, 1, 0.16]
+      GravityModifier: 0
+      SimulationSpeed: 1
+      MaxParticles: 400
+      SimulationSpace: 1
+      EmissionEnabled: true
+      RateOverTime: 7
+      RateOverDistance: 0
+      ShapeEnabled: true
+      Radius: 0.5
+      Angle: 0
+      BoxSize: [46, 0.5, 0.5]
+      EmitFromShell: false
+      RandomizeDirection: 0.08
+      Shape: 3
+      VelocityEnabled: false
+      VelocityOverLifetime: [0, 0, 0]
+      OrbitalSpeed: 0
+      LimitVelocityEnabled: false
+      Drag: 0
+      SpeedLimit: 100
+      NoiseEnabled: false
+      NoiseStrength: 1
+      NoiseFrequency: 0.5
+      NoiseScrollSpeed: 0.5
+      ColorOverLifetimeEnabled: true
+      SizeOverLifetimeEnabled: false
+      RotationOverLifetimeEnabled: false
+      AngularVelocity: 45
+      CollisionEnabled: false
+      CollisionPlaneY: 0
+      Bounce: 0.5
+      LifetimeLoss: 0
+      TextureSheetEnabled: false
+      AnimationCycles: 1
+      RandomStartFrame: false
+      Tiles: [1, 1]
+      RenderMode: 0
+      Blend: 1
+      Texture: Assets/Textures/glow.png
+      LengthScale: 2
+      SpeedScale: 0.1
+      SortByDistance: false
+      EmissiveIntensity: 1
+      Bursts:
+        []
+      ColorOverLifetime:
+        - [0, 1, 1, 1, 1]
+        - [1, 1, 1, 1, 1]
+      SizeOverLifetime:
+        - [0, 1]
+        - [1, 1]
+  - Entity: 6236163941106804762
+    TagComponent:
+      Tag: Game
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Scripts/TetrisGame.cqs
+      ClassName: ""
+    AudioSourceComponent:
+      FilePath: Assets/Music/theme.mp3
+      PlayOnAwake: false
+      Loop: true
+      Mute: false
+      Volume: 0.55
+      Pitch: 1
+      Pan: 0
+      Is3D: false
+      MinDistance: 1
+      MaxDistance: 100
+      DopplerLevel: 1
+      Attenuation: 1
+      RolloffFactor: 1
+      OutputGroup: Music
+      NextGraphNodeID: 1
+      NextGraphLinkID: 1
+      GraphInitialized: false
+      GraphNodes:
+        []
+      GraphLinks:
+        []
+  - Entity: 5294796629180288804
+    TagComponent:
+      Tag: TitleMusic
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    AudioSourceComponent:
+      FilePath: Assets/Music/title.mp3
+      PlayOnAwake: true
+      Loop: true
+      Mute: false
+      Volume: 0.5
+      Pitch: 1
+      Pan: 0
+      Is3D: false
+      MinDistance: 1
+      MaxDistance: 100
+      DopplerLevel: 1
+      Attenuation: 1
+      RolloffFactor: 1
+      OutputGroup: Music
+      NextGraphNodeID: 1
+      NextGraphLinkID: 1
+      GraphInitialized: false
+      GraphNodes:
+        []
+      GraphLinks:
+        []
+  - Entity: 2867683860607518184
+    TagComponent:
+      Tag: HUD
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    CanvasComponent:
+      RenderMode: 0
+      PixelPerfect: false
+      SortOrder: 0
+    CanvasScalerComponent:
+      ScaleMode: 1
+      ScaleFactor: 1
+      ReferencePixelsPerUnit: 100
+      ReferenceResolution: [1920, 1080]
+      MatchWidthOrHeight: 1
+    GraphicRaycasterComponent:
+      IgnoreReversedGraphics: true
+      BlockingObjects: 0
+      BlockingMask: 4294967295
+  - Entity: 4436192783129751881
+    TagComponent:
+      Tag: HudRoot
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [0, 0]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.01, 0.01, 0.04, 0]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 6597162482411660973
+    TagComponent:
+      Tag: HoldLabel
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-410.4, 412.56]
+      SizeDelta: [220, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: HOLD
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 26
+      Color: [0.55, 0.62, 0.85, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+  - Entity: 3160124455519152422
+    TagComponent:
+      Tag: NextLabel
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [410.4, 412.56]
+      SizeDelta: [220, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: NEXT
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 26
+      Color: [0.55, 0.62, 0.85, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+  - Entity: 4369086673489329105
+    TagComponent:
+      Tag: ScoreLabel
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-410.4, 133.92]
+      SizeDelta: [220, 34]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: SCORE
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 20
+      Color: [0.55, 0.62, 0.85, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+  - Entity: 9187960237767180879
+    TagComponent:
+      Tag: ScoreValue
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-410.4, 84.24]
+      SizeDelta: [230, 50]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: 0
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 36
+      Color: [0.92, 0.95, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [0, -3]
+      ShadowColor: [0.2, 0.5, 1, 0.6]
+      RaycastTarget: false
+  - Entity: 1156308949786917949
+    TagComponent:
+      Tag: LevelLabel
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-410.4, 4.32]
+      SizeDelta: [220, 34]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: LEVEL
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 20
+      Color: [0.55, 0.62, 0.85, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+  - Entity: 6607455459155041790
+    TagComponent:
+      Tag: LevelValue
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-410.4, -45.36]
+      SizeDelta: [230, 50]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: 1
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 36
+      Color: [0.35, 0.9, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [0, -3]
+      ShadowColor: [0.1, 0.6, 1, 0.6]
+      RaycastTarget: false
+  - Entity: 34836845477065883
+    TagComponent:
+      Tag: LinesLabel
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-410.4, -125.28]
+      SizeDelta: [220, 34]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: LINES
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 20
+      Color: [0.55, 0.62, 0.85, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+  - Entity: 7571273500381329167
+    TagComponent:
+      Tag: LinesValue
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-410.4, -174.96]
+      SizeDelta: [230, 50]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: 0
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 36
+      Color: [0.92, 0.95, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [0, -3]
+      ShadowColor: [0.2, 0.5, 1, 0.6]
+      RaycastTarget: false
+  - Entity: 1213563386717449247
+    TagComponent:
+      Tag: TimeLabel
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-410.4, -254.88]
+      SizeDelta: [220, 34]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: TIME
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 20
+      Color: [0.55, 0.62, 0.85, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+  - Entity: 2482693967640359138
+    TagComponent:
+      Tag: TimeValue
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-410.4, -304.56]
+      SizeDelta: [230, 46]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: 0:00
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 30
+      Color: [0.92, 0.95, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+  - Entity: 476889353207606873
+    TagComponent:
+      Tag: BestLabel
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-410.4, -354.24]
+      SizeDelta: [230, 30]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: BEST 0
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 17
+      Color: [0.55, 0.62, 0.85, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+  - Entity: 7753572011800865734
+    TagComponent:
+      Tag: PopupText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 151.2]
+      SizeDelta: [900, 110]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 64
+      Color: [0.92, 0.95, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: true
+      OutlineColor: [0.05, 0.08, 0.25, 1]
+      Shadow: true
+      ShadowOffset: [0, -3]
+      ShadowColor: [0.3, 0.6, 1, 0.85]
+      RaycastTarget: false
+  - Entity: 4234420515873141494
+    TagComponent:
+      Tag: PopupSub
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 69.12]
+      SizeDelta: [900, 60]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 30
+      Color: [0.35, 0.9, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: true
+      OutlineColor: [0.02, 0.05, 0.2, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+  - Entity: 2947462229637139035
+    TagComponent:
+      Tag: CountdownText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [600, 220]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 160
+      Color: [0.92, 0.95, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: true
+      OutlineColor: [0.03, 0.05, 0.18, 1]
+      Shadow: true
+      ShadowOffset: [0, -3]
+      ShadowColor: [0.4, 0.7, 1, 0.9]
+      RaycastTarget: false
+  - Entity: 6447878370261611363
+    TagComponent:
+      Tag: TitleUI
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [0, 0]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.01, 0.01, 0.04, 0]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 6695190779006893294
+    TagComponent:
+      Tag: PressStart
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -69.12]
+      SizeDelta: [1100, 70]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: PRESS ENTER TO PLAY
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 38
+      Color: [0.92, 0.95, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [0, -3]
+      ShadowColor: [0.3, 0.55, 1, 0.9]
+      RaycastTarget: false
+  - Entity: 2370361561331846196
+    TagComponent:
+      Tag: TitleBest
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -142.56]
+      SizeDelta: [900, 50]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: BEST 0
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 28
+      Color: [0.35, 0.9, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+  - Entity: 8053969987613935142
+    TagComponent:
+      Tag: TitleHint
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -457.92]
+      SizeDelta: [1800, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ARROWS / WASD  MOVE      UP / X  ROTATE      Z  ROTATE LEFT      SPACE  DROP      C  HOLD      ESC  PAUSE
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 17
+      Color: [0.55, 0.62, 0.85, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+  - Entity: 4360061254168179871
+    TagComponent:
+      Tag: PlayBtn
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -241.92]
+      SizeDelta: [300, 64]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.1, 0.12, 0.24, 0.92]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 14
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 5263412865837703988
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: PLAY
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 26
+      Color: [0.86, 0.92, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+  - Entity: 4677659986276726386
+    TagComponent:
+      Tag: Credit
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -501.12]
+      SizeDelta: [900, 30]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: MADE WITH CONQUEROR'S ENGINE
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 14
+      Color: [0.55, 0.62, 0.85, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+  - Entity: 2356769269725632077
+    TagComponent:
+      Tag: PauseUI
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [0, 0]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.01, 0.01, 0.04, 0.62]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 0
+  - Entity: 8269444108102425821
+    TagComponent:
+      Tag: PausedText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 224.64]
+      SizeDelta: [900, 120]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: PAUSED
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 84
+      Color: [0.92, 0.95, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [0, -3]
+      ShadowColor: [0.3, 0.55, 1, 0.9]
+      RaycastTarget: false
+  - Entity: 409653074478940497
+    TagComponent:
+      Tag: ResumeBtn
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 69.12]
+      SizeDelta: [360, 64]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.1, 0.12, 0.24, 0.92]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 14
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 3763090933366135903
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: RESUME
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 26
+      Color: [0.86, 0.92, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+  - Entity: 7101112603882391152
+    TagComponent:
+      Tag: RestartBtn
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -17.28]
+      SizeDelta: [360, 64]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.1, 0.12, 0.24, 0.92]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 14
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 5531331399979895775
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: RESTART
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 26
+      Color: [0.86, 0.92, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+  - Entity: 2351664799909798081
+    TagComponent:
+      Tag: MenuBtn
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -103.68]
+      SizeDelta: [360, 64]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.1, 0.12, 0.24, 0.92]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 14
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 3034947260453946873
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: MAIN MENU
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 26
+      Color: [0.86, 0.92, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+  - Entity: 5725708485400148767
+    TagComponent:
+      Tag: MusicLabel
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-224.64, -216]
+      SizeDelta: [200, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: MUSIC
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 22
+      Color: [0.55, 0.62, 0.85, 1]
+      AlignH: 2
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+  - Entity: 2676252591281529830
+    TagComponent:
+      Tag: MusicSlider
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [25.92, -216]
+      SizeDelta: [380, 34]
+      Rotation: 0
+      Scale: [1, 1]
+    UISliderComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      MinValue: 0
+      MaxValue: 1
+      Value: 0.5
+      WholeNumbers: false
+      Direction: 0
+      BackgroundColor: [0.12, 0.14, 0.28, 1]
+      FillColor: [0.3, 0.62, 1, 1]
+      HandleColor: [0.9, 0.95, 1, 1]
+      HandleSize: 22
+      OnValueChanged: ""
+  - Entity: 7007719612941538517
+    TagComponent:
+      Tag: SfxLabel
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-224.64, -276.48]
+      SizeDelta: [200, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: EFFECTS
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 22
+      Color: [0.55, 0.62, 0.85, 1]
+      AlignH: 2
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+  - Entity: 722599647430359516
+    TagComponent:
+      Tag: SfxSlider
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [25.92, -276.48]
+      SizeDelta: [380, 34]
+      Rotation: 0
+      Scale: [1, 1]
+    UISliderComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      MinValue: 0
+      MaxValue: 1
+      Value: 0.5
+      WholeNumbers: false
+      Direction: 0
+      BackgroundColor: [0.12, 0.14, 0.28, 1]
+      FillColor: [0.3, 0.62, 1, 1]
+      HandleColor: [0.9, 0.95, 1, 1]
+      HandleSize: 22
+      OnValueChanged: ""
+  - Entity: 5399631953670719894
+    TagComponent:
+      Tag: GameOverUI
+      GameTag: Untagged
+      IsStatic: false
+    ActiveComponent:
+      Active: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [0, 0]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.01, 0.01, 0.04, 0.66]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 0
+  - Entity: 6318345163803949118
+    TagComponent:
+      Tag: GameOverText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 259.2]
+      SizeDelta: [1200, 130]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: GAME OVER
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 92
+      Color: [1, 0.45, 0.55, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [0, -3]
+      ShadowColor: [1, 0.2, 0.35, 0.9]
+      RaycastTarget: false
+  - Entity: 8969483851251703018
+    TagComponent:
+      Tag: FinalScoreLabel
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 146.88]
+      SizeDelta: [600, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: SCORE
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 24
+      Color: [0.55, 0.62, 0.85, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+  - Entity: 2439209386378154165
+    TagComponent:
+      Tag: FinalScore
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 95.04]
+      SizeDelta: [900, 80]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: 0
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 64
+      Color: [0.92, 0.95, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [0, -3]
+      ShadowColor: [0.2, 0.5, 1, 0.7]
+      RaycastTarget: false
+  - Entity: 63227176986901859
+    TagComponent:
+      Tag: FinalStats
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 30.24]
+      SizeDelta: [1400, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 22
+      Color: [0.55, 0.62, 0.85, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+  - Entity: 6906333797134877377
+    TagComponent:
+      Tag: NewRecord
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -25.92]
+      SizeDelta: [900, 60]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: NEW RECORD!
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 36
+      Color: [1, 0.85, 0.3, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [0, -3]
+      ShadowColor: [1, 0.6, 0.1, 0.8]
+      RaycastTarget: false
+  - Entity: 960421388347419861
+    TagComponent:
+      Tag: AgainBtn
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -129.6]
+      SizeDelta: [360, 64]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.1, 0.12, 0.24, 0.92]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 14
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 1573167898515713836
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: PLAY AGAIN
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 26
+      Color: [0.86, 0.92, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+  - Entity: 2849375007776671875
+    TagComponent:
+      Tag: OverMenuBtn
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -216]
+      SizeDelta: [360, 64]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.1, 0.12, 0.24, 0.92]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 14
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 7416833505752971935
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: MAIN MENU
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 26
+      Color: [0.86, 0.92, 1, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+Environment:
+  SkyboxExposure: 1
+  SkyboxRotation: 0
+  SkyboxTint: [1, 1, 1]
+  EnvironmentLightingSource: 0
+  AmbientColor: [0.3, 0.3, 0.3]
+  AmbientSkyColor: [0.5, 0.6, 0.7]
+  AmbientEquatorColor: [0.3, 0.3, 0.3]
+  AmbientGroundColor: [0.2, 0.15, 0.1]
+  AmbientIntensity: 1
+  FogEnabled: false
+  FogColor: [0.5, 0.6, 0.7]
+  FogDensity: 0.02
+  FogStart: 10
+  FogEnd: 100
+  SunSource: 0
+  HaloEnabled: false
+  HaloStrength: 0.5
+  FlareEnabled: false
+  FlareFadeSpeed: 3
+  FlareStrength: 1
+  FlareElements:
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.08
+      Offset: 0.3
+      Intensity: 1
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.06
+      Offset: 0.6
+      Intensity: 0.8
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.05
+      Offset: 0.9
+      Intensity: 0.6
+  ShadowEnabled: true
+  ShadowIntensity: 1
+  ReflectionSource: 0
+  ReflectionResolution: 128
+  ReflectionCompression: 0
+  ReflectionIntensityMultiplier: 1
+  ReflectionBounces: 1
+  BakedLightmapPath: ""
+  LightmapResolution: 40
+  MaxLightmapSize: 1024
+  MaxBounces: 2
+  DirectSamples: 32
+  IndirectSamples: 512
+  AmbientOcclusion: true
+  LightmapFiltering: 0
+  RenderSettings:
+    Shadows:
+      Enabled: true
+      Quality: 1
+      Resolution: 4096
+      Distance: 80
+      CascadeCount: 2
+      CascadeSplitLambda: 0.75
+      Strength: 1
+      Softness: 1
+      DepthBias: 0.005
+      NormalBias: 0.015
+      Color: [0, 0, 0]
+    Fog:
+      Enabled: false
+      Mode: 2
+      Color: [0.5, 0.6, 0.7]
+      Density: 0.02
+      Start: 10
+      End: 100
+      HeightFalloff: 0
+      BaseHeight: 0
+    Post:
+      Enabled: true
+      Tonemapper: 1
+      Exposure: 0
+      Bloom: true
+      BloomThreshold: 0.85
+      BloomKnee: 0.5
+      BloomIntensity: 0.55
+      BloomScatter: 0.72
+      BloomTint: [1, 1, 1]
+      AmbientOcclusion: false
+      AORadius: 0.6
+      AOIntensity: 1
+      AOPower: 1.5
+      ColorGrading: true
+      Contrast: 1
+      Saturation: 1
+      Temperature: 0
+      Tint: 0
+      Lift: [0, 0, 0]
+      Gamma: [1, 1, 1]
+      Gain: [1, 1, 1]
+      Vignette: true
+      VignetteIntensity: 0.32
+      VignetteSmoothness: 0.45
+      VignetteColor: [0, 0, 0]
+      ChromaticAberration: false
+      ChromaticAberrationIntensity: 0.3
+      FilmGrain: false
+      FilmGrainIntensity: 0.15
+      Sharpen: false
+      SharpenAmount: 0.3
+      AntiAliasing: 1
+    Environment:
+      Sky: 2
+      BackgroundColor: [0.02, 0.02, 0.05]
+      ImageBasedLighting: true
+      ReflectionIntensity: 1
+      SkyboxIntensity: 1
+      SpecularOcclusion: true
+    Bake:
+      RealtimeGI: false
+      BakedGI: true
+      LightingMode: 0
+      Lightmapper: 1
+      ImportanceSampling: true
+      DirectSamples: 32
+      IndirectSamples: 512
+      EnvironmentSamples: 256
+      MaxBounces: 2
+      Filtering: 0
+      Packing: 0
+      Resolution: 40
+      MaxLightmapSize: 1024
+      UseMipmapLimits: true
+      Compression: 2
+      AmbientOcclusion: true
+      DirectionalMode: 0
+      AlbedoBoost: 1
+      IndirectIntensity: 1
+      RealtimeResolution: 20
+      RealtimeIndirectSamples: 256
+      RealtimeMaxBounces: 1
+      AutoGenerate: false
+      BakeOnSceneLoad: 0
+      APVFitToScene: true
+      APVOrigin: [-10, -1, -10]
+      APVSize: [20, 10, 20]
+      APVProbeOffset: [0, 0, 0]
+      APVMinSpacing: 1
+      APVMaxSpacing: 9
+      APVBakingMode: 0
+      APVDilation: false
+      APVVirtualOffset: true
+      APVValidityThreshold: 0.75
+      APVSearchDistanceMultiplier: 0.2
+      APVGeometryBias: 0.01
+      APVRayOriginBias: -0.001
+EditorCamera:
+  CameraMode: 0
+  Position: [-6.1237245, 4.999999, 6.123725]
+  Distance: 10
+  Pitch: 0.5235987
+  Yaw: 0.7853981
+  OrthographicSize: 10
+Hierarchy:
+  - Child: 1573167898515713836
+    Parent: 960421388347419861
+  - Child: 6318345163803949118
+    Parent: 5399631953670719894
+  - Child: 8969483851251703018
+    Parent: 5399631953670719894
+  - Child: 2439209386378154165
+    Parent: 5399631953670719894
+  - Child: 63227176986901859
+    Parent: 5399631953670719894
+  - Child: 6906333797134877377
+    Parent: 5399631953670719894
+  - Child: 960421388347419861
+    Parent: 5399631953670719894
+  - Child: 2849375007776671875
+    Parent: 5399631953670719894
+  - Child: 3763090933366135903
+    Parent: 409653074478940497
+  - Child: 7416833505752971935
+    Parent: 2849375007776671875
+  - Child: 5263412865837703988
+    Parent: 4360061254168179871
+  - Child: 3034947260453946873
+    Parent: 2351664799909798081
+  - Child: 6695190779006893294
+    Parent: 6447878370261611363
+  - Child: 2370361561331846196
+    Parent: 6447878370261611363
+  - Child: 8053969987613935142
+    Parent: 6447878370261611363
+  - Child: 4360061254168179871
+    Parent: 6447878370261611363
+  - Child: 4677659986276726386
+    Parent: 6447878370261611363
+  - Child: 5531331399979895775
+    Parent: 7101112603882391152
+  - Child: 4436192783129751881
+    Parent: 2867683860607518184
+  - Child: 7753572011800865734
+    Parent: 2867683860607518184
+  - Child: 4234420515873141494
+    Parent: 2867683860607518184
+  - Child: 2947462229637139035
+    Parent: 2867683860607518184
+  - Child: 6447878370261611363
+    Parent: 2867683860607518184
+  - Child: 2356769269725632077
+    Parent: 2867683860607518184
+  - Child: 5399631953670719894
+    Parent: 2867683860607518184
+  - Child: 8269444108102425821
+    Parent: 2356769269725632077
+  - Child: 409653074478940497
+    Parent: 2356769269725632077
+  - Child: 7101112603882391152
+    Parent: 2356769269725632077
+  - Child: 2351664799909798081
+    Parent: 2356769269725632077
+  - Child: 5725708485400148767
+    Parent: 2356769269725632077
+  - Child: 2676252591281529830
+    Parent: 2356769269725632077
+  - Child: 7007719612941538517
+    Parent: 2356769269725632077
+  - Child: 722599647430359516
+    Parent: 2356769269725632077
+  - Child: 6597162482411660973
+    Parent: 4436192783129751881
+  - Child: 3160124455519152422
+    Parent: 4436192783129751881
+  - Child: 4369086673489329105
+    Parent: 4436192783129751881
+  - Child: 9187960237767180879
+    Parent: 4436192783129751881
+  - Child: 1156308949786917949
+    Parent: 4436192783129751881
+  - Child: 6607455459155041790
+    Parent: 4436192783129751881
+  - Child: 34836845477065883
+    Parent: 4436192783129751881
+  - Child: 7571273500381329167
+    Parent: 4436192783129751881
+  - Child: 1213563386717449247
+    Parent: 4436192783129751881
+  - Child: 2482693967640359138
+    Parent: 4436192783129751881
+  - Child: 476889353207606873
+    Parent: 4436192783129751881
+  - Child: 3605449518559985495
+    Parent: 7805135247217212231
+  - Child: 4282829096556718543
+    Parent: 7805135247217212231
+  - Child: 2736761184604377882
+    Parent: 7805135247217212231
+  - Child: 3913896924807327375
+    Parent: 7805135247217212231
+  - Child: 6990462472990776232
+    Parent: 7805135247217212231
+  - Child: 5313883665582102717
+    Parent: 7805135247217212231
+  - Child: 775108565662112489
+    Parent: 7805135247217212231
+  - Child: 1943187160941237014
+    Parent: 7805135247217212231
+  - Child: 680457583243950998
+    Parent: 7805135247217212231
+  - Child: 932168158130463626
+    Parent: 7805135247217212231
+  - Child: 611729067363178614
+    Parent: 7805135247217212231
+NavMesh:
+  Triangles:
+    []

@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: knockback
+      States:
+        - Name: knockback
+          ClipIndex: 41
+          ClipName: knockback
+  Parameters: []

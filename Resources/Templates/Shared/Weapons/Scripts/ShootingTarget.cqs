@@ -1,0 +1,104 @@
+using nativebridge;
+
+// Atış hedefi (atış poligonlarındaki devrilen "pop-up" hedef): vurulunca arkaya devrilir, puan verir (merkeze yakınlık),
+// resetTime sonra kaldırma motoru yeniden dikeltir. Taban kökte sabit durur; devrilen kısım çocuk "Hinge" (menteşe) ve
+// altındakiler: direk, levha, çerçeve, halkalı kâğıt. Menteşesi olmayan eski hedeflerde kökün tamamı döner.
+// Devrilme sarkaç gibi: kurşunun itişiyle başlar, yerçekimiyle hızlanır, yere çarpınca hafifçe seker ve durur.
+// Weapon OnShot mesajı gönderir (vurulan parça ve ataları).
+script ShootingTarget : ConquerorScript
+{
+    public float resetTime = 3.0;
+    public float radius = 0.35;
+    public bool moving = false;
+    public float moveAmplitude = 2.0;
+    public float moveSpeed = 0.8;
+    public float downAngle = -91.0;     // yatık açı: direğin ucu yere değer (menteşe taban plakasının üstünde)
+    public float raiseTime = 0.7;       // kaldırma motorunun dikeltme süresi (sn)
+    [Header("State")]
+    public bool down = false;
+    public int hits = 0;
+
+    private float angle = 0.0;
+    private float velocity = 0.0;       // derece / sn
+    private float timer = 0.0;
+    private float clock = 0.0;
+    private float raise = 1.0;          // 0..1 kaldırma ilerlemesi
+    private float raiseFrom = 0.0;
+    private bool landed = false;
+    private var basePos = null;
+    private float yaw = 0.0;
+    private var hinge = -1;
+
+    func Start()
+    {
+        basePos = EntityGetPosition(GetEntityId());
+        yaw = GetRotation().y;
+        hinge = EntityFindChild(GetEntityId(), "Hinge");
+    }
+
+    func Update(dt)
+    {
+        clock += dt;
+        if (moving && !down && raise >= 1.0)
+        {
+            var off = MathSin(clock * moveSpeed) * moveAmplitude;
+            var r = MathDegToRad(yaw);
+            EntitySetPosition(GetEntityId(), basePos.x + MathCos(r) * off, basePos.y, basePos.z - MathSin(r) * off);
+        }
+        if (down)
+        {
+            // Sarkaç: devrildikçe yerçekimi torku artar (sin), yere çarpınca sekme (geri dönüş katsayısı 0.25)
+            velocity -= (60.0 + 430.0 * MathAbs(MathSin(MathDegToRad(angle)))) * dt;
+            angle += velocity * dt;
+            if (angle <= downAngle)
+            {
+                angle = downAngle;
+                if (velocity < -40.0)
+                {
+                    if (!landed)
+                    {
+                        var p = EntityGetWorldPosition(GetEntityId());
+                        AudioPlayOneShotAt("Assets/Weapons/Audio/impact_concrete" + (1 + MathRandomInt(0, 2)) + ".wav", p.x, p.y + 0.1, p.z, 0.5);
+                        landed = true;
+                    }
+                    velocity = -velocity * 0.25;
+                }
+                else { velocity = 0.0; }
+            }
+            timer -= dt;
+            if (timer <= 0.0)
+            {
+                down = false;
+                raise = 0.0;
+                raiseFrom = angle;
+                velocity = 0.0;
+            }
+        }
+        else if (raise < 1.0)
+        {
+            // Kaldırma motoru: yumuşak başlayıp yumuşak biten dikeltme
+            raise = MathMin(raise + dt / MathMax(raiseTime, 0.05), 1.0);
+            var e = raise * raise * (3.0 - 2.0 * raise);
+            angle = raiseFrom * (1.0 - e);
+        }
+        if (hinge != null && hinge >= 0) { EntitySetRotation(hinge, angle, 0, 0); }
+        else { SetRotation(angle, yaw, 0); }
+    }
+
+    func OnShot(instigator, px, py, pz)
+    {
+        if (down || raise < 1.0) { return; }
+        down = true;
+        landed = false;
+        hits += 1;
+        timer = resetTime;
+        velocity = -75.0;               // kurşunun itişi
+        // Puan: merkeze uzaklık (halka 10 .. 1)
+        var c = EntityGetWorldPosition(GetEntityId());
+        var cy = c.y + 1.45;
+        var d = MathSqrt((px - c.x) * (px - c.x) + (py - cy) * (py - cy) + (pz - c.z) * (pz - c.z));
+        var score = int(MathClamp(10 - MathFloor(d / radius * 10), 1, 10));
+        AudioPlayOneShotAt("Assets/Weapons/Audio/impact_metal1.wav", px, py, pz, 0.8);
+        SendMessage("Game", "OnTargetHit", GetEntityId(), score, instigator);
+    }
+}

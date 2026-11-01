@@ -1,0 +1,14 @@
+caught too big: 5
+index: IndexOutOfRangeException
+NullReferenceException
+NameError true
+ret ["try", "finally"]
+outer got inner
+["try", "finally", "inner-finally"]
+MyError 42 my error
+propagated 1
+["try", "finally", "inner-finally", 0, "f0", "f1", 2, "f2"]
+rethrown 123
+StackOverflow
+Infinity -Infinity
+DivideByZeroException

@@ -12,11 +12,11 @@ namespace Conqueror
     struct ProfileResult
     {
         std::string Name;
-        double Duration; // milliseconds
-        uint64_t CallCount;
-        double MinDuration;
-        double MaxDuration;
-        double AvgDuration;
+        double Duration{}; // milliseconds
+        uint64_t CallCount{};
+        double MinDuration{};
+        double MaxDuration{};
+        double AvgDuration{};
     };
 
     // Profiler singleton

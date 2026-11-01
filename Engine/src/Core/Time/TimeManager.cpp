@@ -20,6 +20,7 @@ namespace Conqueror
     
     float TimeManager::s_SmoothDeltaTime = 0.0f;
     float TimeManager::s_DeltaSmoothingFactor = 0.1f;
+    float TimeManager::s_CaptureDeltaTime = 0.0f;
 
     void TimeManager::Init()
     {
@@ -37,6 +38,9 @@ namespace Conqueror
 
     void TimeManager::Update(float deltaTime)
     {
+        // Çevrimdışı kayıt: sabit adım
+        if (s_CaptureDeltaTime > 0.0f)
+            deltaTime = s_CaptureDeltaTime;
         // Clamp delta time
         s_UnscaledDeltaTime = std::min(deltaTime, s_MaxDeltaTime);
         

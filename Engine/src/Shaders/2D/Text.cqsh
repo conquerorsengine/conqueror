@@ -18,6 +18,9 @@ void main()
 #type fragment
 #version 460 core
 
+#include "Include/Common.glsl"
+#include "Include/FrameData.glsl"
+
 layout(location = 0) out vec4 color;
 
 in vec2 v_TexCoord;
@@ -27,6 +30,12 @@ uniform vec4 u_Color;
 
 void main()
 {
-    vec4 sampled = vec4(1.0, 1.0, 1.0, texture(u_Texture, v_TexCoord).r);
-    color = u_Color * sampled;
+    // FreeType bitmap'i kapsama (coverage) değeridir; doğrudan alfa olarak kullanılır
+    float alpha = texture(u_Texture, v_TexCoord).r;
+    vec4 c = vec4(u_Color.rgb, u_Color.a * alpha);
+    if (c.a < 0.003)
+        discard;
+    if (CQ_Frame.FeatureFlags.x == 1)
+        c.rgb = SRGBToLinear(c.rgb);
+    color = c;
 }

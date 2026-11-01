@@ -11,33 +11,42 @@ uniform mat4 u_ViewProjection;
 uniform mat4 u_Transform;
 
 out vec2 v_TexCoord;
+out vec3 v_Normal;
 
 void main()
 {
     v_TexCoord = a_TexCoord;
+    v_Normal = mat3(u_Transform) * a_Normal;
     gl_Position = u_ViewProjection * u_Transform * vec4(a_Position, 1.0);
 }
 
 #type fragment
 #version 450 core
 
+#include "Include/Common.glsl"
+
 layout(location = 0) out vec4 FragColor;
 
 in vec2 v_TexCoord;
+in vec3 v_Normal;
 
 uniform vec3 u_Color = vec3(1.0);
 uniform sampler2D u_MainTexture;
 uniform bool u_UseTexture = false;
+uniform int u_LinearOutput = 0;   // HDR hattında sRGB rengi doğrusal uzaya çevir
 
 void main()
 {
     vec3 color = u_Color;
-    
     if (u_UseTexture)
-    {
-        vec4 texColor = texture(u_MainTexture, v_TexCoord);
-        color *= texColor.rgb;
-    }
-    
+        color *= texture(u_MainTexture, v_TexCoord).rgb;
+
+    // Gizmo'lara hafif gölgelendirme: şekil okunabilir olsun
+    vec3 n = normalize(v_Normal);
+    float shade = 0.75 + 0.25 * clamp(dot(n, normalize(vec3(0.4, 0.8, 0.3))), 0.0, 1.0);
+    color *= shade;
+
+    if (u_LinearOutput == 1)
+        color = SRGBToLinear(color);
     FragColor = vec4(color, 1.0);
 }

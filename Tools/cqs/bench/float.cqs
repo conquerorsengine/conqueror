@@ -1,0 +1,16 @@
+func mandel() {
+    var count = 0;
+    for (var y = 0; y < 200; y++) {
+        for (var x = 0; x < 300; x++) {
+            var cr = x / 100.0 - 2.0; var ci = y / 100.0 - 1.0;
+            var zr = 0.0; var zi = 0.0; var i = 0;
+            while (i < 100 && zr * zr + zi * zi < 4.0) {
+                var t = zr * zr - zi * zi + cr;
+                zi = 2.0 * zr * zi + ci; zr = t; i++;
+            }
+            count += i;
+        }
+    }
+    return count;
+}
+print(mandel());

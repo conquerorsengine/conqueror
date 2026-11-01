@@ -1,4 +1,5 @@
 #include "OpenGLContext.h"
+#include "GLProfile.h"
 #include "Core/Logging/Log.h"
 
 #include <glad/glad.h>
@@ -12,7 +13,7 @@ namespace Conqueror
         CQ_CORE_ASSERT(windowHandle, "Window handle is null!")
     }
 
-    void OpenGLContext::Init()
+    bool OpenGLContext::Init()
     {
         glfwMakeContextCurrent(m_WindowHandle);
         [[maybe_unused]] int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
@@ -23,17 +24,18 @@ namespace Conqueror
         CQ_CORE_INFO("  Renderer: {0}", (const char*)glGetString(GL_RENDERER));
         CQ_CORE_INFO("  Version: {0}", (const char*)glGetString(GL_VERSION));
 
-        // Check OpenGL version - require at least 4.1 (more compatible than 4.5)
-        int major = GLVersion.major;
-        int minor = GLVersion.minor;
-        CQ_CORE_INFO("  Loaded OpenGL {0}.{1}", major, minor);
-        
-        if (major < 4 || (major == 4 && minor < 1))
+        // Profil algılama + 4.5 (DSA) öncesi / ES bağlamlarında eksik işlevlerin taklidi
+        GLProfile::OnContextCreated([](const char* name) { return (void*)glfwGetProcAddress(name); });
+        const auto& profile = GLProfile::Current();
+        CQ_CORE_INFO("  Loaded {0} {1}.{2}", profile.ES ? "OpenGL ES" : "OpenGL", profile.Major, profile.Minor);
+
+        // En az: masaüstü OpenGL 3.3 ya da OpenGL ES 3.0
+        if ((!profile.ES && (profile.Major < 3 || (profile.Major == 3 && profile.Minor < 3))) || (profile.ES && profile.Major < 3))
         {
-            CQ_CORE_ERROR("Conqueror requires at least OpenGL version 4.1!");
-            CQ_CORE_ERROR("Your system has OpenGL {0}.{1}", major, minor);
-            CQ_CORE_ASSERT(false, "Insufficient OpenGL version!");
+            CQ_CORE_ERROR("Conqueror requires OpenGL 3.3+ or OpenGL ES 3.0+ (this system has {0})", profile.Description);
+            return false;
         }
+        return status != 0;
     }
 
     void OpenGLContext::SwapBuffers()

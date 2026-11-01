@@ -1,0 +1,250 @@
+using nativebridge;
+
+// Metin tabanlı dallanan diyalog. Kaynak: dialogueFile (proje içi .txt) ya da dialogueText ("|" satır ayırıcı).
+// Kutudaki öğeler adla bulunur: panelName, speakerTextName, lineTextName, "Choice 1".."Choice 3" düğmeleri.
+// Space / Enter / E / sol tık: satırı tamamla ya da devam et. 1-3 tuşları: seçenek.
+script DialogueRunner : ConquerorScript
+{
+    public string dialogueFile = "";
+    public string dialogueText = "";
+    public string startLabel = "start";
+    public float charactersPerSecond = 45.0;
+    public string panelName = "Dialogue Panel";
+    public string speakerTextName = "Speaker Text";
+    public string lineTextName = "Line Text";
+    public string choicePrefix = "Choice ";
+    public bool pauseGame = false;
+
+    // Çalışma zamanı bilgisi
+    public bool active = false;
+    public bool finished = false;
+    public string currentSpeaker = "";
+    public string currentLine = "";
+    public int choiceCount = 0;
+    public int linesShown = 0;
+    public bool typing = false;
+
+    private var lines = [];
+    private var labels = Map();
+    private int pc = 0;
+    private float shownChars = 0.0;
+    private var choiceTargets = [];
+    private var choiceTexts = [];
+    private string loadedSource = "";
+
+    func Start()
+    {
+        Hide();
+    }
+
+    func Load()
+    {
+        var src = dialogueText;
+        if (dialogueFile != "")
+        {
+            var text = FileReadText(dialogueFile);
+            if (text != null && text != "") { src = text; }
+        }
+        if (src == loadedSource && lines.Count > 0) { return; }
+        loadedSource = src;
+        lines = [];
+        labels = Map();
+        var raw = StringContains(src, "\n") ? StringSplit(src, "\n") : StringSplit(src, "|");
+        for (var r in raw)
+        {
+            var line = StringTrim(r);
+            if (line == "" || StringStartsWith(line, "//")) { continue; }
+            if (StringStartsWith(line, "#"))
+            {
+                labels[StringTrim(StringSubstring(line, 1, StringLength(line) - 1))] = lines.Count;
+                continue;
+            }
+            lines.Add(line);
+        }
+    }
+
+    // Diyaloğu başlat (etiket boşsa startLabel)
+    func StartDialogue(label = "")
+    {
+        Load();
+        var l = label == "" || label == null ? startLabel : label;
+        pc = MapHasKey(labels, l) ? labels[l] : 0;
+        active = true;
+        finished = false;
+        linesShown = 0;
+        if (pauseGame) { SetTimeScale(0.0); }
+        Show();
+        Advance();
+    }
+
+    // Tekrar yüklemek için kaynağı değiştir (ör. NPC kendi dosyasını verir)
+    func SetSource(file, text = "")
+    {
+        dialogueFile = file;
+        dialogueText = text;
+        loadedSource = "";
+    }
+
+    func Advance()
+    {
+        HideChoices();
+        while (pc < lines.Count)
+        {
+            var line = lines[pc];
+            pc++;
+            if (line == "end") { End(); return; }
+            if (StringStartsWith(line, "->"))
+            {
+                var target = StringTrim(StringSubstring(line, 2, StringLength(line) - 2));
+                if (!StringStartsWith(target, "[")) { Jump(target); continue; }
+                // Seçenek satırı tek başına gelirse (önceki satırdan sonra okunmadıysa) yine de göster
+                pc--;
+                CollectChoices();
+                ShowChoices();
+                return;
+            }
+            var colon = StringIndexOf(line, ":");
+            currentSpeaker = colon > 0 ? StringTrim(StringSubstring(line, 0, colon)) : "";
+            currentLine = colon > 0 ? StringTrim(StringSubstring(line, colon + 1, StringLength(line) - colon - 1)) : line;
+            linesShown++;
+            shownChars = charactersPerSecond > 0 ? 0.0 : 100000.0;
+            typing = charactersPerSecond > 0;
+            SetUIText(speakerTextName, currentSpeaker);
+            SetUIText(lineTextName, charactersPerSecond > 0 ? "" : currentLine);
+            CollectChoices();
+            return;
+        }
+        End();
+    }
+
+    // Geçerli satırdan hemen sonra gelen "-> [..] etiket" seçeneklerini topla
+    func CollectChoices()
+    {
+        choiceTargets = [];
+        choiceTexts = [];
+        while (pc < lines.Count && StringStartsWith(lines[pc], "->"))
+        {
+            var body = StringTrim(StringSubstring(lines[pc], 2, StringLength(lines[pc]) - 2));
+            if (!StringStartsWith(body, "[")) { break; }
+            var close = StringIndexOf(body, "]");
+            if (close < 0) { break; }
+            choiceTexts.Add(StringSubstring(body, 1, close - 1));
+            choiceTargets.Add(StringTrim(StringSubstring(body, close + 1, StringLength(body) - close - 1)));
+            pc++;
+        }
+        choiceCount = choiceTargets.Count;
+    }
+
+    func Jump(label)
+    {
+        if (label == "end") { pc = lines.Count; return; }
+        if (MapHasKey(labels, label)) { pc = labels[label]; }
+        else { LogWarn("Dialogue: unknown label '" + label + "'"); pc = lines.Count; }
+    }
+
+    func Choose(index)
+    {
+        if (!active || index < 0 || index >= choiceTargets.Count || typing) { return false; }
+        var target = choiceTargets[index];
+        choiceTargets = [];
+        choiceCount = 0;
+        Jump(target);
+        Advance();
+        return true;
+    }
+
+    // Devam: yazım sürüyorsa tamamla, seçenek yoksa sonraki satır
+    func Continue()
+    {
+        if (!active) { return; }
+        if (typing) { CompleteTyping(); return; }
+        if (choiceCount > 0) { return; }
+        Advance();
+    }
+
+    func End()
+    {
+        active = false;
+        finished = true;
+        typing = false;
+        choiceCount = 0;
+        if (pauseGame) { SetTimeScale(1.0); }
+        Hide();
+        BroadcastMessage("OnDialogueFinished", GetEntityName());
+    }
+
+    func Update(dt)
+    {
+        if (!active) { return; }
+        var step = GetUnscaledDeltaTime();
+        if (typing)
+        {
+            shownChars += charactersPerSecond * step;
+            var n = int(MathMin(shownChars, StringLength(currentLine)));
+            SetUIText(lineTextName, StringSubstring(currentLine, 0, n));
+            if (n >= StringLength(currentLine)) { CompleteTyping(); }
+        }
+        if (choiceCount > 0 && !typing)
+        {
+            for (var i = 0; i < 3; i++)
+            {
+                var b = FindEntity(choicePrefix + str(i + 1));
+                if (b != null && UIWasClicked(b)) { Choose(i); return; }
+            }
+            if (IsKeyDown(Key.Num1)) { Choose(0); return; }
+            if (IsKeyDown(Key.Num2)) { Choose(1); return; }
+            if (IsKeyDown(Key.Num3)) { Choose(2); return; }
+            return;
+        }
+        if (IsKeyDown(Key.Space) || IsKeyDown(Key.Enter) || IsKeyDown(Key.E) || (IsMouseButtonDown(0) && !UIIsPointerOver())) { Continue(); }
+    }
+
+    // Satırın tamamını hemen göster (seçenek varsa düğmeler açılır)
+    func CompleteTyping()
+    {
+        typing = false;
+        shownChars = 100000.0;
+        SetUIText(lineTextName, currentLine);
+        if (choiceCount > 0) { ShowChoices(); }
+    }
+
+    func ShowChoices()
+    {
+        for (var i = 0; i < 3; i++)
+        {
+            var b = FindEntity(choicePrefix + str(i + 1));
+            if (b == null) { continue; }
+            var on = i < choiceTexts.Count;
+            UISetVisible(b, on);
+            if (on) { UISetText(b, str(i + 1) + ". " + choiceTexts[i]); }
+        }
+    }
+
+    func HideChoices()
+    {
+        for (var i = 0; i < 3; i++)
+        {
+            var b = FindEntity(choicePrefix + str(i + 1));
+            if (b != null) { UISetVisible(b, false); }
+        }
+    }
+
+    func Show()
+    {
+        var p = FindEntity(panelName);
+        if (p != null) { UISetVisible(p, true); }
+    }
+
+    func Hide()
+    {
+        var p = FindEntity(panelName);
+        if (p != null) { UISetVisible(p, false); }
+        HideChoices();
+    }
+
+    func SetUIText(name, text)
+    {
+        var e = FindEntity(name);
+        if (e != null) { UISetText(e, text); }
+    }
+}

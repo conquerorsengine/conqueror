@@ -1,0 +1,109 @@
+using nativebridge;
+
+// Ana menü: "Play Button", "Settings Button", "Quit Button" ve ayarlar sayfası ("Settings Panel":
+// "Volume Slider", "Bloom Toggle", "Shadows Toggle", "Back Button"). Ayarlar PlayerPrefs'e kaydedilir.
+script MainMenu : ConquerorScript
+{
+    public string playScene = "";
+    public string titleText = "My Game";
+    public string mainPanel = "Main Panel";
+    public string settingsPanel = "Settings Panel";
+    public float fadeTime = 0.4;
+
+    // Çalışma zamanı bilgisi
+    public string screen = "Main";
+    public bool loadRequested = false;
+    public bool lastLoadResult = false;
+    public float volume = 1.0;
+    public bool bloom = true;
+    public bool shadows = true;
+
+    private float fading = -1.0;
+
+    func Start()
+    {
+        var title = FindEntity("Title Text");
+        if (title != null && titleText != "") { UISetText(title, titleText); }
+        LoadSettings();
+        ShowScreen("Main");
+        var play = FindEntity("Play Button");
+        if (play != null) { UISetSelected(play); }
+    }
+
+    func LoadSettings()
+    {
+        volume = PrefsGetFloat("menu.volume", AudioGetMasterVolume());
+        bloom = PrefsGetInt("menu.bloom", 1) == 1;
+        shadows = PrefsGetInt("menu.shadows", 1) == 1;
+        ApplySettings();
+        var s = FindEntity("Volume Slider");
+        if (s != null) { UISetValue(s, volume); }
+        var b = FindEntity("Bloom Toggle");
+        if (b != null) { UISetValue(b, bloom); }
+        var sh = FindEntity("Shadows Toggle");
+        if (sh != null) { UISetValue(sh, shadows); }
+    }
+
+    func ApplySettings()
+    {
+        AudioSetMasterVolume(volume);
+        RenderSettingSet("Post.Bloom", bloom);
+        RenderSettingSet("Shadows.Enabled", shadows);
+    }
+
+    func SaveSettings()
+    {
+        PrefsSetFloat("menu.volume", volume);
+        PrefsSetInt("menu.bloom", bloom ? 1 : 0);
+        PrefsSetInt("menu.shadows", shadows ? 1 : 0);
+        PrefsSave();
+    }
+
+    func SetVolume(v) { volume = MathClamp01(v); ApplySettings(); SaveSettings(); }
+
+    func ShowScreen(name)
+    {
+        screen = name;
+        var m = FindEntity(mainPanel);
+        var s = FindEntity(settingsPanel);
+        if (m != null) { UISetVisible(m, name == "Main"); }
+        if (s != null) { UISetVisible(s, name == "Settings"); }
+        var focus = FindEntity(name == "Main" ? "Play Button" : "Volume Slider");
+        if (focus != null) { UISetSelected(focus); }
+    }
+
+    func Play()
+    {
+        loadRequested = true;
+        fading = 0.0;
+        var fade = FindEntity("Fade");
+        if (fade != null) { UISetVisible(fade, true); }
+    }
+
+    func Update(dt)
+    {
+        if (fading >= 0)
+        {
+            fading += GetUnscaledDeltaTime();
+            var fade = FindEntity("Fade");
+            if (fade != null) { UISetAlpha(fade, MathClamp01(fading / MathMax(0.01, fadeTime))); }
+            if (fading >= fadeTime)
+            {
+                fading = -1.0;
+                lastLoadResult = playScene != "" ? LoadScene(playScene) : LoadScene(GetSceneIndex() + 1);
+                if (!lastLoadResult) { LogWarn("MainMenu: could not load " + (playScene != "" ? playScene : "the next scene")); UISetAlpha(fade, 0.0); }
+            }
+            return;
+        }
+        if (UIWasClicked(FindEntity("Play Button"))) { Play(); }
+        if (UIWasClicked(FindEntity("Settings Button"))) { ShowScreen("Settings"); }
+        if (UIWasClicked(FindEntity("Quit Button"))) { QuitGame(); }
+        if (UIWasClicked(FindEntity("Back Button")) || (screen == "Settings" && IsKeyDown(Key.Escape))) { SaveSettings(); ShowScreen("Main"); }
+        var s = FindEntity("Volume Slider");
+        if (s != null && UIValueChanged(s)) { SetVolume(UIGetValue(s)); }
+        var b = FindEntity("Bloom Toggle");
+        if (b != null && UIValueChanged(b)) { bloom = UIGetValue(b); ApplySettings(); SaveSettings(); }
+        var sh = FindEntity("Shadows Toggle");
+        if (sh != null && UIValueChanged(sh)) { shadows = UIGetValue(sh); ApplySettings(); SaveSettings(); }
+    }
+}

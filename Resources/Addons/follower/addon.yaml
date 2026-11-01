@@ -1,0 +1,19 @@
+Id: conqueror.follower
+Name: Companion Follower
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Pets, squad mates and escorts that follow a target: keep a comfortable distance and side
+  offset, run to catch up when far behind, teleport back when hopelessly lost, wander a little
+  when idle and face the target. Uses the NavMesh when the object has a NavMesh Agent,
+  otherwise walks directly (Character Controller or transform).
+Category: AI
+Icon: dog
+Tags: [follower, companion, pet, ai, escort]
+Components:
+  - Scripts/Follower.cqs
+Inserts:
+  - Name: Companion
+    Icon: dog
+    Prefab: Prefabs/Companion.cqprefab
+    Tooltip: Small companion that follows the object tagged "Player"

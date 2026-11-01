@@ -1,0 +1,29 @@
+Id: conqueror.health-system
+Name: Health & Damage
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Health for anything that can be hurt: damage and healing, regeneration after a delay,
+  invulnerability frames, death with optional destroy or respawn, and messages other scripts
+  can react to (OnDamaged, OnHealed, OnDeath). Includes damage / heal zones and a world-space
+  health bar that faces the camera.
+Category: Gameplay
+Icon: heart-pulse
+Tags: [health, damage, combat, hitpoints, ui]
+Components:
+  - Scripts/Health.cqs
+  - Scripts/DamageZone.cqs
+  - Scripts/HealthBar.cqs
+Inserts:
+  - Name: Training Dummy
+    Icon: user-shield
+    Prefab: Prefabs/TrainingDummy.cqprefab
+    Tooltip: Target with Health and a floating health bar
+  - Name: Damage Zone
+    Icon: fire
+    Prefab: Prefabs/DamageZone.cqprefab
+    Tooltip: Trigger volume that hurts whatever stands inside
+  - Name: Heal Zone
+    Icon: kit-medical
+    Prefab: Prefabs/HealZone.cqprefab
+    Tooltip: Trigger volume that heals whatever stands inside

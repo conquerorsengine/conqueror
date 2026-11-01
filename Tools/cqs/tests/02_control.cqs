@@ -1,0 +1,44 @@
+// Kontrol akışı
+var out = [];
+for (var i = 0; i < 5; i++) { if (i == 3) continue; out.Add(i); }
+print(out);
+var n = 0;
+while (true) { n++; if (n >= 10) break; }
+print(n);
+var d = 0;
+do { d += 2; } while (d < 7);
+print(d);
+foreach (var v in [10, 20, 30]) print(v);
+foreach (var c in "héllo") out.Add(c);
+print(out.Count, out[-1]);
+var m = { b: 2, a: 1 };
+foreach (var k in m) print(k, m[k]);
+foreach (var k, v in m) print(k + "=" + v);
+foreach (var idx, item in ["x", "y"]) print(idx, item);
+for (var r in 0..3) print("r", r);
+for (var r in 3..0) print("down", r);
+var total = 0;
+for (int a = 0, b = 10; a < b; a++, b--) total += a * b;
+print(total);
+func grade(s) {
+    switch (s) {
+        case 90, 100: return "A";
+        case 80: return "B";
+        case "x": return "string case";
+        default: return "?";
+    }
+}
+print(grade(100), grade(80), grade("x"), grade(1));
+var s = "";
+switch (2) { case 1: s = "one"; break; case 2: s = "two"; break; }
+print(s);
+// iç içe döngüden break
+var found = -1;
+for (var i = 0; i < 5; i++) {
+    for (var j = 0; j < 5; j++) {
+        if (i * j == 6) { found = i * 10 + j; break; }
+    }
+    if (found >= 0) break;
+}
+print(found);
+print(1 > 2 ? "big" : "small");

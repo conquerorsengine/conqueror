@@ -1,0 +1,11 @@
+Id: conqueror.quick-tools
+Name: Quick Tools
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Level design helpers for the selection: drop to ground, random rotation and scale,
+  scatter copies, distribute in a row, align and group. Every action is a single undo step.
+Category: Level Design
+Icon: screwdriver-wrench
+Tags: [level-design, productivity, selection]
+Editor: Editor/QuickTools.cqs

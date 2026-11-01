@@ -43,3 +43,8 @@ scratch.cpp
 .freebuff/
 .env
 *.env
+build-*/
+
+# Editor recovery snapshots / crash reports
+**/Library/Recovery/
+crash_dumps/

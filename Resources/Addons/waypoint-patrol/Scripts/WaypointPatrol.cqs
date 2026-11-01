@@ -1,0 +1,99 @@
+using nativebridge;
+
+// Yol noktası devriyesi: "routeName" nesnesinin çocukları (dünya konumları) sırayla gezilir.
+// mode: 0 döngü, 1 git-gel, 2 rastgele. Character Controller varsa onunla yürür (yerçekimiyle).
+script WaypointPatrol : ConquerorScript
+{
+    public string routeName = "Waypoints";
+    public int mode = 0;
+    public float speed = 3.0;
+    public float turnSpeed = 360.0;
+    public float waitTime = 0.5;
+    public float arriveDistance = 0.15;
+    public bool faceMovement = true;
+    public bool keepHeight = true;
+    public bool drawRoute = false;
+
+    // Çalışma zamanı bilgisi
+    public int currentIndex = 0;
+    public int visited = 0;
+    public bool waiting = false;
+
+    private var points = [];
+    private int direction = 1;
+    private float waitTimer = 0.0;
+    private float vy = 0.0;
+
+    func Start()
+    {
+        var route = FindEntity(routeName);
+        if (route == null) { LogWarn("WaypointPatrol: route '" + routeName + "' not found"); return; }
+        for (var c in EntityGetChildren(route)) { points.Add(EntityGetWorldPosition(c)); }
+        currentIndex = 0;
+    }
+
+    func Next()
+    {
+        var n = points.Count;
+        if (n <= 1) { return 0; }
+        if (mode == 2)
+        {
+            var r = MathRandomInt(0, n - 2);
+            return r >= currentIndex ? r + 1 : r;
+        }
+        if (mode == 1)
+        {
+            if (currentIndex + direction >= n || currentIndex + direction < 0) { direction = -direction; }
+            return currentIndex + direction;
+        }
+        return (currentIndex + 1) % n;
+    }
+
+    func Update(dt)
+    {
+        if (dt <= 0 || points.Count == 0) { return; }
+        if (drawRoute)
+        {
+            for (var i = 0; i < points.Count; i++)
+            {
+                var a = points[i];
+                var b = points[(i + 1) % points.Count];
+                DebugDrawLineC(a, b, 0.0, {r: 0.3, g: 0.8, b: 1.0, a: 1.0});
+            }
+        }
+        if (waitTimer > 0) { waitTimer -= dt; waiting = true; return; }
+        waiting = false;
+        var me = EntityGetWorldPosition(GetEntityId());
+        var p = points[currentIndex];
+        var dx = p.x - me.x;
+        var dy = keepHeight ? 0.0 : p.y - me.y;
+        var dz = p.z - me.z;
+        var d = MathSqrt(dx * dx + dy * dy + dz * dz);
+        if (d <= arriveDistance)
+        {
+            visited++;
+            SendMessage(GetEntityId(), "OnWaypointReached", currentIndex);
+            currentIndex = Next();
+            waitTimer = waitTime;
+            return;
+        }
+        var step = MathMin(d, speed * dt);
+        var mx = dx / d * step;
+        var my = dy / d * step;
+        var mz = dz / d * step;
+        if (HasComponent("CharacterController"))
+        {
+            vy -= 20.0 * dt;
+            CharacterMove(mx, vy * dt + my, mz);
+            if (CharacterIsGrounded() && vy < 0) { vy = -2.0; }
+        }
+        else { EntitySetWorldPosition(GetEntityId(), me.x + mx, me.y + my, me.z + mz); }
+        if (faceMovement && (dx * dx + dz * dz) > 0.0001)
+        {
+            var want = MathRadToDeg(MathAtan2(-dx, -dz));
+            var r = GetRotation();
+            var diff = MathClamp(MathNormalizeAngle(want - r.y), -turnSpeed * dt, turnSpeed * dt);
+            SetRotation(r.x, r.y + diff, r.z);
+        }
+    }
+}

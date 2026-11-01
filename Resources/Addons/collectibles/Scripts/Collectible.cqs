@@ -1,0 +1,100 @@
+using nativebridge;
+
+// Toplanabilir: dokunan karakter/dinamik nesne puanı "Score Manager"a ekler (yoksa GlobalSet("score")).
+// Mıknatıs: magnetRadius içindeki "Player" etiketli (ya da collectorName adlı) nesneye doğru uçar.
+script Collectible : ConquerorScript
+{
+    public int value = 1;
+    public string requiredTag = "";
+    public string collectorName = "";
+    public float magnetRadius = 0.0;
+    public float magnetSpeed = 10.0;
+    public float spinSpeed = 180.0;
+    public float bobHeight = 0.1;
+    public float bobSpeed = 3.0;
+    public string scoreManagerName = "Score Manager";
+    public string sound = "";
+
+    // Çalışma zamanı bilgisi
+    public bool collected = false;
+
+    private float baseY = 0.0;
+    private float t = 0.0;
+    private var magnetTarget = null;
+
+    func Start()
+    {
+        baseY = GetPosition().y;
+        t = MathRandom() * 6.28;
+    }
+
+    func Update(dt)
+    {
+        if (collected) { return; }
+        t += dt;
+        var r = GetRotation();
+        SetRotation(r.x, r.y + spinSpeed * dt, r.z);
+        if (magnetRadius > 0)
+        {
+            if (magnetTarget == null) { magnetTarget = FindCollector(); }
+            if (magnetTarget != null && EntityIsValid(magnetTarget))
+            {
+                var me = EntityGetWorldPosition(GetEntityId());
+                var c = EntityGetWorldPosition(magnetTarget);
+                var dx = c.x - me.x;
+                var dy = c.y + 1.0 - me.y;
+                var dz = c.z - me.z;
+                var d = MathSqrt(dx * dx + dy * dy + dz * dz);
+                if (d < magnetRadius && d > 0.05)
+                {
+                    var step = MathMin(d, magnetSpeed * dt);
+                    EntitySetWorldPosition(GetEntityId(), me.x + dx / d * step, me.y + dy / d * step, me.z + dz / d * step);
+                    if (d < 0.6) { Collect(magnetTarget); }
+                    return;
+                }
+            }
+        }
+        var p = GetPosition();
+        SetPosition(p.x, baseY + MathSin(t * bobSpeed) * bobHeight, p.z);
+    }
+
+    func FindCollector()
+    {
+        if (collectorName != "") { return FindEntity(collectorName); }
+        var tag = requiredTag != "" ? requiredTag : "Player";
+        for (var e in FindEntitiesWithTag(tag)) { return e; }
+        return null;
+    }
+
+    func OnTriggerEnter(other, name)
+    {
+        if (collected) { return; }
+        if (requiredTag != "" && EntityGetTag(other) != requiredTag) { return; }
+        if (!EntityHasComponent(other, "CharacterController") && !EntityHasComponent(other, "Rigidbody") && !EntityHasComponent(other, "Rigidbody2D")) { return; }
+        Collect(other);
+    }
+
+    func OnTriggerEnter2D(other, name) { OnTriggerEnter(other, name); }
+
+    func Collect(by)
+    {
+        if (collected) { return; }
+        collected = true;
+        var manager = FindEntity(scoreManagerName);
+        if (manager != null && HasScript(manager, "ScoreManager")) { SendMessage(manager, "AddScore", value); }
+        else { GlobalSet("score", GlobalGet("score", 0) + value); }
+        var p = EntityGetWorldPosition(GetEntityId());
+        if (sound != "") { AudioPlayOneShotAt(sound, p.x, p.y, p.z); }
+        // Parçacık patlaması: çocuktaki Particle System üst nesneden ayrılır, yayar ve bitince kendini siler (Stop Action)
+        for (var c in EntityGetChildren(GetEntityId()))
+        {
+            if (EntityHasComponent(c, "ParticleSystem"))
+            {
+                EntitySetParent(c, -1, true);
+                EntitySetComponentField(c, "ParticleSystem", "StopAction", 2);
+                ParticleEmit(c, 24);
+            }
+        }
+        EntityDestroy(GetEntityId());
+    }
+}

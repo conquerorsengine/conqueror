@@ -1,0 +1,20 @@
+Id: conqueror.destructibles
+Name: Destructible Objects
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Crates, barrels and walls that break: shatter into physics fragments when their health
+  runs out (works with weapons through the Damage message) or when hit hard enough, push the
+  pieces outward with an explosion force, optionally drop a loot prefab and clean up the
+  debris after a while with a shrink-out.
+Category: Physics
+Icon: burst
+Tags: [destruction, physics, fragments, breakable, loot]
+Components:
+  - Scripts/Destructible.cqs
+  - Scripts/Fragment.cqs
+Inserts:
+  - Name: Destructible Crate
+    Icon: box
+    Prefab: Prefabs/DestructibleCrate.cqprefab
+    Tooltip: Crate that shatters into 8 pieces

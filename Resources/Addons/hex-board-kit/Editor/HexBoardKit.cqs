@@ -1,0 +1,99 @@
+using nativebridge;
+
+// Hex Board Kit editör aracı: seçili (ya da ilk) karo haritasında ada tahtası üret.
+script HexBoardKit : ConquerorScript
+{
+    public int radius = 7;
+    public int seed = 1234;
+    public float waterLevel = 0.32;
+    public float hillLevel = 0.62;
+    public float frequency = 0.16;
+    public string status = "";
+
+    func OnLoad()
+    {
+        EditorAddMenuItem("Hex Board Kit/Generate Island", "Generate");
+        EditorAddMenuItem("Hex Board Kit/New Random Island", "Randomize");
+        EditorAddToolButton("Island", "mountain-sun", "Generate", "Generate an island on the selected hex board");
+        EditorAddPanel("Hex Board Kit", "DrawPanel");
+    }
+
+    func TargetMap()
+    {
+        var sel = EditorGetSelection();
+        for (var e in sel)
+        {
+            if (EntityHasComponent(e, "Tilemap")) { return e; }
+            for (var c in EntityGetChildren(e))
+            {
+                if (EntityHasComponent(c, "Tilemap")) { return c; }
+            }
+        }
+        for (var e in EditorGetAllEntities())
+        {
+            if (EntityHasComponent(e, "Tilemap")) { return e; }
+        }
+        return -1;
+    }
+
+    func Generate()
+    {
+        var map = TargetMap();
+        if (map < 0)
+        {
+            status = "No hex board found - insert one from the ADDONS tab first.";
+            EditorNotify(status);
+            return;
+        }
+        var cells = HexIsland(map, radius, seed, waterLevel, hillLevel, frequency);
+        status = "Generated " + str(cells) + " tiles (seed " + str(seed) + ")";
+        EditorNotify(status);
+    }
+
+    func Randomize()
+    {
+        seed = MathRandomInt(1, 99999);
+        Generate();
+    }
+
+    func DrawPanel()
+    {
+        radius = GuiSliderInt("Radius", radius, 2, 30);
+        seed = GuiSliderInt("Seed", seed, 1, 99999);
+        waterLevel = GuiSliderFloat("Water Level", waterLevel, 0.0, 0.8);
+        hillLevel = GuiSliderFloat("Hill Level", hillLevel, 0.2, 1.0);
+        frequency = GuiSliderFloat("Feature Size", frequency, 0.03, 0.6);
+        GuiSpacing();
+        if (GuiButton("Generate", -1)) { EditorRunUndoable("Generate Island", "Generate"); }
+        if (GuiButton("Random Seed", -1)) { EditorRunUndoable("Random Island", "Randomize"); }
+        if (status != "") { GuiTextDisabled(status); }
+    }
+}
+
+func HexIsland(map, radius, seed, waterLevel, hillLevel, frequency)
+{
+    TilemapClear(map);
+    var sand = TilemapFindTileType(map, "Sand");
+    if (sand < 0) { sand = TilemapAddTileType(map, "Sand", 0.87, 0.79, 0.53, 1.0); }
+    var count = 0;
+    for (var y = -radius; y <= radius; y++)
+    {
+        for (var x = -radius - 1; x <= radius + 1; x++)
+        {
+            var d = GridDistance(map, 0, 0, x, y);
+            if (d > radius) { continue; }
+            // Ada: merkezde yüksek koni + katmanlı gürültü (kıyılar ve tepeler düzensiz)
+            var n = NoiseFBM2D(x * frequency, y * frequency, 4, 2.0, 0.5, seed);
+            var falloff = d / (radius + 0.5);
+            var h = 0.80 - falloff * falloff * 0.75 + n * 0.275;
+            var tile = 0;
+            if (h < waterLevel) { tile = 1; }
+            else if (h < waterLevel + 0.05) { tile = sand; }
+            else if (h > hillLevel + 0.16) { tile = 3; }
+            else if (h > hillLevel) { tile = 2; }
+            TilemapSetTile(map, x, y, tile);
+            count++;
+        }
+    }
+    return count;
+}

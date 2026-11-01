@@ -1,0 +1,10 @@
+AnimMontage:
+  Name: PistolShoot
+  ClipName: pistol_shoot
+  ClipIndex: 14
+  Rate: 1.4
+  BlendIn: 0.05
+  BlendOut: 0.15
+  FromBone: "spine_01"
+  Sections: []
+  Notifies: []

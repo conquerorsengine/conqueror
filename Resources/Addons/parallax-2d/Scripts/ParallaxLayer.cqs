@@ -1,0 +1,46 @@
+using nativebridge;
+
+// Paralaks katmanı: follow 1 = kamerayla birlikte (sonsuz uzak), 0 = dünyaya sabit. Katman, kameranın
+// hareketinin follow katı kadar kayar. repeatWidth > 0 ise çocuk karolar kameranın çevresinde sonsuz tekrarlanır.
+script ParallaxLayer : ConquerorScript
+{
+    public float followX = 0.5;
+    public float followY = 0.2;
+    public float repeatWidth = 0.0;
+    public float autoScrollX = 0.0;
+    public float pixelsPerUnit = 0.0;
+    public string cameraName = "";
+
+    // Çalışma zamanı bilgisi
+    public float offsetX = 0.0;
+
+    private var startPos = null;
+    private var startCam = null;
+    private float scroll = 0.0;
+
+    func LateUpdate(dt)
+    {
+        var cam = cameraName != "" ? FindEntity(cameraName) : GetMainCamera();
+        if (cam == null) { return; }
+        var c = EntityGetWorldPosition(cam);
+        if (startPos == null) { startPos = GetPosition(); startCam = c; }
+        scroll += autoScrollX * dt;
+        var dx = c.x - startCam.x;
+        var dy = c.y - startCam.y;
+        var x = startPos.x + dx * followX + scroll;
+        var y = startPos.y + dy * followY;
+        if (repeatWidth > 0)
+        {
+            // Katmanın merkezini kameranın yakınında tut (karolar -W, 0, +W'de)
+            var rel = c.x - x;
+            x += MathRound(rel / repeatWidth) * repeatWidth;
+        }
+        if (pixelsPerUnit > 0)
+        {
+            x = MathRound(x * pixelsPerUnit) / pixelsPerUnit;
+            y = MathRound(y * pixelsPerUnit) / pixelsPerUnit;
+        }
+        offsetX = x - startPos.x;
+        SetPosition(x, y, startPos.z);
+    }
+}

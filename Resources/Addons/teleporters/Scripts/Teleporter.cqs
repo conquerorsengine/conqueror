@@ -1,0 +1,73 @@
+using nativebridge;
+
+// Bağlı ışınlanma pedi: tetikleyici çarpıştırıcıya giren nesne "destinationName" pedine aktarılır.
+// Varış pedi gelen nesneyi o pedden çıkana kadar geri göndermez (git-gel olmaz).
+script Teleporter : ConquerorScript
+{
+    public string destinationName = "Teleporter B";
+    public string requiredTag = "";
+    public float exitHeight = 1.2;
+    public bool alignRotation = true;
+    public bool keepVelocity = false;
+    public float cooldown = 0.5;
+
+    // Çalışma zamanı bilgisi
+    public int teleports = 0;
+    public string lastTraveller = "";
+
+    private var arrivals = [];
+    private float timer = 0.0;
+
+    func Update(dt) { if (timer > 0) { timer -= dt; } }
+
+    // Varış pedi: bu nesne çıkana kadar yok sayılır
+    func Receive(entity)
+    {
+        if (!ListContains(arrivals, entity)) { arrivals.Add(entity); }
+    }
+
+    func OnTriggerExit(other, name)
+    {
+        var i = ListIndexOf(arrivals, other);
+        if (i >= 0) { ListRemoveAt(arrivals, i); }
+    }
+
+    func OnTriggerEnter(other, name)
+    {
+        if (ListContains(arrivals, other) || timer > 0 || !CanTravel(other)) { return; }
+        if (requiredTag != "" && EntityGetTag(other) != requiredTag) { return; }
+        var dest = FindEntity(destinationName);
+        if (dest == null) { LogWarn("Teleporter: destination '" + destinationName + "' not found"); return; }
+        // Varış pedi de bir ışınlayıcıysa geleni hemen geri göndermesin
+        if (HasScript(dest, "Teleporter")) { SendMessage(dest, "Receive", other); }
+        var d = EntityGetWorldPosition(dest);
+        var v = keepVelocity ? GetLinearVelocity(other) : null;
+        EntitySetWorldPosition(other, d.x, d.y + exitHeight, d.z);
+        if (alignRotation)
+        {
+            var r = EntityGetRotation(other);
+            EntitySetRotation(other, r.x, EntityGetRotation(dest).y, r.z);
+        }
+        if (EntityHasComponent(other, "Rigidbody"))
+        {
+            if (v != null) { SetLinearVelocity(other, v.x, v.y, v.z); }
+            else { SetLinearVelocity(other, 0, 0, 0); }
+        }
+        // Varış efekti (pedin çocuğunda Particle System varsa)
+        for (var c in EntityGetChildren(dest))
+        {
+            if (EntityHasComponent(c, "ParticleSystem")) { ParticleEmit(c, 30); }
+        }
+        teleports++;
+        lastTraveller = name;
+        timer = cooldown;
+    }
+
+    // Yalnızca hareket eden nesneler: karakterler ve dinamik gövdeler (zemin / duvarlar ışınlanmaz)
+    func CanTravel(e)
+    {
+        if (EntityHasComponent(e, "CharacterController")) { return true; }
+        if (!EntityHasComponent(e, "Rigidbody")) { return false; }
+        return EntityGetComponentField(e, "Rigidbody", "BodyType") == "Dynamic";
+    }
+}

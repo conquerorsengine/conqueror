@@ -5,6 +5,8 @@
 #include "Core/Application.h"
 #include "Core/Logging/Log.h"
 
+#include "Core/Utils/FileSystem.h"
+
 #include <filesystem>
 #include <cstdlib>
 
@@ -13,6 +15,8 @@ namespace Conqueror::Launcher
     LauncherApp::LauncherApp(const ApplicationSpecification& spec)
         : Application(spec)
     {
+        // Pencere / görev çubuğu simgesi (X11, Windows; Wayland'de uygulama kimliği + .desktop dosyası)
+        GetWindow().SetIcon(FileSystem::ResolveResourcePath("Resources/Logo/AppIcon/conqueror_256.png"));
         PushLayer(new LauncherLayer());
     }
 
@@ -57,8 +61,10 @@ int main(int argc, char** argv)
     if (!launchCmd.empty())
     {
         CQ_CORE_INFO("Launching engine: {0}", launchCmd);
+        Conqueror::Log::FlushAll();   // motor açılıp uzun sürebilir: önceki satırlar dosyada olsun
         std::system(launchCmd.c_str());
     }
 
+    Conqueror::Log::Shutdown();
     return 0;
 }

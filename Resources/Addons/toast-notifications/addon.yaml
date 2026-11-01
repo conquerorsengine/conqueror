@@ -1,0 +1,18 @@
+Id: conqueror.toast-notifications
+Name: Toast Notifications
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Stacked on-screen notifications for pickups, achievements in your own game, hints and
+  warnings: Show("Message", seconds, kind) from any script or broadcast "Toast". Toasts slide
+  in, stay, fade out and the stack reflows; info, success, warning and error colors.
+Category: UI
+Icon: message
+Tags: [ui, notifications, toast, messages, feedback]
+Components:
+  - Scripts/ToastManager.cqs
+Inserts:
+  - Name: Toasts
+    Icon: message
+    Prefab: Prefabs/Toasts.cqprefab
+    Tooltip: Canvas that shows stacked notifications in the top right corner

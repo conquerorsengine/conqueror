@@ -880,6 +880,7 @@ void TextEditor::Render()
 	}
 
 	ImVec2 cursorScreenPos = ImGui::GetCursorScreenPos();
+	mCursorOnScreen = false;
 	auto scrollX = ImGui::GetScrollX();
 	auto scrollY = ImGui::GetScrollY();
 
@@ -941,13 +942,15 @@ void TextEditor::Render()
 			if (errorIt != mErrorMarkers.end())
 			{
 				auto end = ImVec2(lineStartScreenPos.x + contentSize.x + 2.0f * scrollX, lineStartScreenPos.y + mCharAdvance.y);
-				drawList->AddRectFilled(start, end, mPalette[(int)PaletteIndex::ErrorMarker]);
+				// Conqueror: yalnızca uyarı içeren satırlar sarı/amber
+				const bool warningOnly = errorIt->second.rfind("Warning:", 0) == 0 && errorIt->second.find("Error:") == std::string::npos;
+				drawList->AddRectFilled(start, end, warningOnly ? IM_COL32(150, 110, 20, 90) : mPalette[(int)PaletteIndex::ErrorMarker]);
 
 				if (ImGui::IsMouseHoveringRect(lineStartScreenPos, end))
 				{
 					ImGui::BeginTooltip();
-					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
-					ImGui::Text("Error at line %d:", errorIt->first);
+					ImGui::PushStyleColor(ImGuiCol_Text, warningOnly ? ImVec4(1.0f, 0.75f, 0.25f, 1.0f) : ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
+					ImGui::Text(warningOnly ? "Warning at line %d:" : "Error at line %d:", errorIt->first);
 					ImGui::PopStyleColor();
 					ImGui::Separator();
 					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.2f, 1.0f));
@@ -965,6 +968,8 @@ void TextEditor::Render()
 
 			if (mState.mCursorPosition.mLine == lineNo)
 			{
+				mCursorScreenPos = ImVec2(textScreenPos.x + TextDistanceToLineStart(mState.mCursorPosition), lineStartScreenPos.y);
+				mCursorOnScreen = true;
 				auto focused = ImGui::IsWindowFocused();
 
 				// Highlight the current line (where the cursor is)
@@ -3159,4 +3164,111 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::Lua()
 		inited = true;
 	}
 	return langDef;
+}
+
+
+// ── Conqueror eklemeleri ──
+static bool CqIsIdentChar(char c)
+{
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || ((unsigned char)c & 0x80);
+}
+
+std::string TextEditor::GetWordBeforeCursor() const
+{
+	auto pos = GetActualCursorCoordinates();
+	if (pos.mLine < 0 || pos.mLine >= (int)mLines.size())
+		return "";
+	auto& line = mLines[pos.mLine];
+	int ci = GetCharacterIndex(pos);
+	int s = ci;
+	while (s > 0 && CqIsIdentChar(line[s - 1].mChar))
+		--s;
+	std::string word;
+	for (int i = s; i < ci && i < (int)line.size(); ++i)
+		word += line[i].mChar;
+	return word;
+}
+
+char TextEditor::GetCharBeforeWord() const
+{
+	auto pos = GetActualCursorCoordinates();
+	if (pos.mLine < 0 || pos.mLine >= (int)mLines.size())
+		return 0;
+	auto& line = mLines[pos.mLine];
+	int s = GetCharacterIndex(pos);
+	while (s > 0 && CqIsIdentChar(line[s - 1].mChar))
+		--s;
+	return s > 0 ? line[s - 1].mChar : 0;
+}
+
+void TextEditor::ReplaceWordBeforeCursor(const std::string& aText)
+{
+	if (mReadOnly)
+		return;
+	auto pos = GetActualCursorCoordinates();
+	if (pos.mLine < 0 || pos.mLine >= (int)mLines.size())
+		return;
+	auto& line = mLines[pos.mLine];
+	int ci = GetCharacterIndex(pos);
+	int s = ci;
+	while (s > 0 && CqIsIdentChar(line[s - 1].mChar))
+		--s;
+	Coordinates start(pos.mLine, GetCharacterColumn(pos.mLine, s));
+
+	UndoRecord u;
+	u.mBefore = mState;
+	if (start != pos)
+	{
+		u.mRemoved = GetText(start, pos);
+		u.mRemovedStart = start;
+		u.mRemovedEnd = pos;
+		DeleteRange(start, pos);
+	}
+	Coordinates where = start;
+	u.mAddedStart = start;
+	int lines = InsertTextAt(where, aText.c_str());
+	u.mAdded = aText;
+	u.mAddedEnd = where;
+	SetSelection(where, where);
+	SetCursorPosition(where);
+	Colorize(start.mLine - 1, lines + 3);
+	u.mAfter = mState;
+	AddUndo(u);
+	mTextChanged = true;
+}
+
+void TextEditor::ScrollToLine(int aLine)
+{
+	Coordinates c(std::max(0, std::min(aLine, (int)mLines.size() - 1)), 0);
+	SetSelection(c, c);
+	SetCursorPosition(c);
+	EnsureCursorVisible();
+}
+
+void TextEditor::ReplaceSelection(const std::string& aText)
+{
+	if (mReadOnly)
+		return;
+	UndoRecord u;
+	u.mBefore = mState;
+	Coordinates start = mState.mSelectionStart, end = mState.mSelectionEnd;
+	if (start > end) std::swap(start, end);
+	if (start != end)
+	{
+		u.mRemoved = GetText(start, end);
+		u.mRemovedStart = start;
+		u.mRemovedEnd = end;
+		DeleteRange(start, end);
+	}
+	Coordinates where = start;
+	u.mAddedStart = start;
+	int lines = InsertTextAt(where, aText.c_str());
+	u.mAdded = aText;
+	u.mAddedEnd = where;
+	SetSelection(where, where);
+	SetCursorPosition(where);
+	Colorize(start.mLine - 1, lines + 3);
+	u.mAfter = mState;
+	AddUndo(u);
+	mTextChanged = true;
 }

@@ -53,7 +53,7 @@ namespace Conqueror
         
         // Frame time history (son 60 frame)
         static constexpr size_t HISTORY_SIZE = 60;
-        float m_FrameTimeHistory[HISTORY_SIZE];
+        float m_FrameTimeHistory[HISTORY_SIZE]{};
         size_t m_HistoryIndex;
         
         void UpdateFPS();

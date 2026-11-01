@@ -1,0 +1,150 @@
+using nativebridge;
+
+// Mermi izleri, isabet efektleri ve izli mermiler (tracer) için havuz. Sahnede "Impacts" adlı varlıkta durur;
+// çocukları: "FX Sparks", "FX Dust", "FX Muzzle" parçacık sistemleri (TemplateKit ShooterFX oluşturur).
+script Impacts : ConquerorScript
+{
+    public int maxDecals = 64;
+    public float decalLifetime = 20.0;
+    public float decalSize = 0.06;          // m (delik + yırtık halka + is); 5-10 m'den okunur
+    public int maxTracers = 16;
+
+    private var decals = [];
+    private var decalTime = [];
+    private int nextDecal = 0;
+    private var tracers = [];
+    private var tracerTime = [];
+    private int nextTracer = 0;
+
+    func MakeDecal(i)
+    {
+        var d = CreateEntity("Bullet Hole " + i);
+        EntityAddComponent(d, "MeshRenderer");
+        EntitySetComponentField(d, "MeshRenderer", "Mesh", "Plane");
+        EntitySetComponentField(d, "MeshRenderer", "CastShadows", false);
+        EntitySetComponentField(d, "MeshRenderer", "Roughness", 0.9);
+        EntitySetComponentField(d, "MeshRenderer", "Texture", "Assets/Weapons/Textures/bullet_hole.png");
+        EntitySetColor(d, 1, 1, 1, 0.99);   // alfa < 1: saydam çizim (dokunun alfası)
+        EntitySetScale(d, decalSize, 1, decalSize);
+        EntitySetActive(d, false);
+        return d;
+    }
+
+    // Mermi izinin yapışacağı varlık: hareket edebilen gövde (kinematik / dinamik: devrilen hedef, fizik kutusu) ile birlikte
+    // döner, havada kalmaz. İnce levha gibi düzgün olmayan ölçekli parçada ebeveynine bağlanır (iz çarpılmasın).
+    // Sabit duvar / zemin: -1 (iz dünyada kalır).
+    func AttachHost(e)
+    {
+        if (e == null || e < 0 || !EntityIsValid(e) || !EntityHasComponent(e, "Rigidbody")) { return -1; }
+        var bt = EntityGetComponentField(e, "Rigidbody", "BodyType");
+        if (bt == "Static" || bt == 0) { return -1; }
+        var s = EntityGetScale(e);
+        var p = EntityGetParent(e);
+        if (p != null && p >= 0 && (MathAbs(s.x - s.y) > 0.001 || MathAbs(s.y - s.z) > 0.001)) { return p; }
+        return e;
+    }
+
+    func Start()
+    {
+        for (var i = 0; i < maxDecals; i++)
+        {
+            decals.Add(MakeDecal(i));
+            decalTime.Add(0.0);
+        }
+        for (var i = 0; i < maxTracers; i++)
+        {
+            var t = CreateEntity("Tracer " + i);
+            EntityAddComponent(t, "MeshRenderer");
+            EntitySetComponentField(t, "MeshRenderer", "Mesh", "Cube");
+            EntitySetComponentField(t, "MeshRenderer", "CastShadows", false);
+            EntitySetComponentField(t, "MeshRenderer", "EmissionColor", {r: 1.0, g: 0.8, b: 0.45});
+            EntitySetComponentField(t, "MeshRenderer", "EmissionStrength", 18.0);
+            EntitySetColor(t, 1, 0.85, 0.5, 1);
+            EntitySetActive(t, false);
+            tracers.Add(t);
+            tracerTime.Add(0.0);
+        }
+    }
+
+    func Update(dt)
+    {
+        for (var i = 0; i < decals.Count; i++)
+        {
+            if (decalTime[i] > 0.0)
+            {
+                decalTime[i] -= dt;
+                if (decalTime[i] <= 0.0) { EntitySetActive(decals[i], false); }
+            }
+        }
+        for (var i = 0; i < tracers.Count; i++)
+        {
+            if (tracerTime[i] > 0.0)
+            {
+                tracerTime[i] -= dt;
+                if (tracerTime[i] <= 0.0) { EntitySetActive(tracers[i], false); }
+            }
+        }
+    }
+
+    // Yüzey: "concrete", "metal", "body", "laser"
+    func Spawn(px, py, pz, nx, ny, nz, surface, decal, hitEntity)
+    {
+        if (surface == "body")
+        {
+            ParticleEmitAt("FX Hit", px, py, pz, 14);
+            AudioPlayOneShotAt("Assets/Weapons/Audio/impact_body" + RandomPick() + ".wav", px, py, pz, 0.7);
+            return;
+        }
+        if (surface == "laser")
+        {
+            ParticleEmitAt("FX Laser", px, py, pz, 18);
+            return;
+        }
+        ParticleEmitAt("FX Sparks", px + nx * 0.03, py + ny * 0.03, pz + nz * 0.03, 10);
+        ParticleEmitAt("FX Dust", px + nx * 0.05, py + ny * 0.05, pz + nz * 0.05, 6);
+        AudioPlayOneShotAt("Assets/Weapons/Audio/impact_" + surface + RandomPick() + ".wav", px, py, pz, 0.6);
+        if (!decal) { return; }
+        var d = decals[nextDecal];
+        // Yapıştığı varlık silindiyse iz de onunla gitti: havuza yenisi
+        if (!EntityIsValid(d))
+        {
+            d = MakeDecal(nextDecal);
+            decals[nextDecal] = d;
+        }
+        decalTime[nextDecal] = decalLifetime;
+        nextDecal = (nextDecal + 1) % decals.Count;
+        EntitySetParent(d, -1, false);
+        EntitySetActive(d, true);
+        // Düzlemin +Y'si yüzey normali: z-fighting olmasın diye 4 mm dışarı
+        EntitySetPosition(d, px + nx * 0.004, py + ny * 0.004, pz + nz * 0.004);
+        var pitch = MathRadToDeg(MathAcos(MathClamp(ny, -1.0, 1.0)));
+        var yaw = MathRadToDeg(MathAtan2(nx, nz));
+        EntitySetRotation(d, pitch, yaw, 0);
+        EntitySetScale(d, decalSize, 1, decalSize);
+        var host = AttachHost(hitEntity);
+        if (host >= 0) { EntitySetParent(d, host, true); }
+    }
+
+    func RandomPick() { return "" + (1 + int(MathFloor(RandomRange(0, 2.999)))); }
+
+    // İz: (ax, ay, az) -> (bx, by, bz) kısa süre parlayan ince çubuk
+    func Tracer(ax, ay, az, bx, by, bz, r, g, b, width, life)
+    {
+        var t = tracers[nextTracer];
+        tracerTime[nextTracer] = life;
+        nextTracer = (nextTracer + 1) % tracers.Count;
+        var dx = bx - ax;
+        var dy = by - ay;
+        var dz = bz - az;
+        var len = MathSqrt(dx * dx + dy * dy + dz * dz);
+        if (len < 0.01) { return; }
+        EntitySetActive(t, true);
+        EntitySetPosition(t, (ax + bx) / 2.0, (ay + by) / 2.0, (az + bz) / 2.0);
+        var yaw = MathRadToDeg(MathAtan2(dx, dz));
+        var pitch = -MathRadToDeg(MathAsin(dy / len));
+        EntitySetRotation(t, pitch, yaw, 0);
+        EntitySetScale(t, width, width, len / 2.0);
+        EntitySetColor(t, r, g, b, 1);
+        EntitySetComponentField(t, "MeshRenderer", "EmissionColor", {r: r, g: g, b: b});
+    }
+}

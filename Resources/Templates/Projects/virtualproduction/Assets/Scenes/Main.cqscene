@@ -1,0 +1,4473 @@
+Scene: Untitled
+Entities:
+  - Entity: 8316146953194899431
+    TagComponent:
+      Tag: Studio Floor
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.1, 0]
+      Rotation: [0, 0, 0]
+      Scale: [30, 0.1, 30]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.05, 0.05, 0.055, 1]
+      Metallic: 0
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 8997979409536296373
+    TagComponent:
+      Tag: Stage
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.125, -2]
+      Rotation: [0, 0, 0]
+      Scale: [9, 0.125, 7]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.12, 0.12, 0.12, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 7805717415349347383
+    TagComponent:
+      Tag: LED Panel 0
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [-7.572082, 3.75, 4.531736]
+      Rotation: [0, 2.2825644, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 3606031703476141990
+    TagComponent:
+      Tag: LED Frame 0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-7.761384, 3.75, 4.6950293]
+      Rotation: [0, 2.2825644, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 4282283165222510613
+    TagComponent:
+      Tag: LED Panel 1
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [-8.448531, 3.75, 3.349984]
+      Rotation: [0, 2.135302, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.03125, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 2736216370563180948
+    TagComponent:
+      Tag: LED Frame 1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-8.659744, 3.75, 3.4837334]
+      Rotation: [0, 2.135302, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 3914445024818803255
+    TagComponent:
+      Tag: LED Panel 2
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [-9.142094, 3.75, 2.0524209]
+      Rotation: [0, 1.98804, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.0625, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 6989884673510559896
+    TagComponent:
+      Tag: LED Frame 2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-9.370646, 3.75, 2.1537313]
+      Rotation: [0, 1.98804, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 5313304783688468392
+    TagComponent:
+      Tag: LED Panel 3
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [-9.637758, 3.75, 0.6671352]
+      Rotation: [0, 1.8407778, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.09375, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 775655582931081532
+    TagComponent:
+      Tag: LED Frame 3
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-9.878702, 3.75, 0.7338136]
+      Rotation: [0, 1.8407778, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 1942606062707097771
+    TagComponent:
+      Tag: LED Panel 4
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [-9.924794, 3.75, -0.77588606]
+      Rotation: [0, 1.6935155, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.125, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 681005717535069419
+    TagComponent:
+      Tag: LED Frame 4
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-10.1729145, 3.75, -0.7452832]
+      Rotation: [0, 1.6935155, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 931587094664710683
+    TagComponent:
+      Tag: LED Panel 5
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [-9.996988, 3.75, -2.2454057]
+      Rotation: [0, 1.5462533, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.15625, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 612313485197213201
+    TagComponent:
+      Tag: LED Frame 5
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-10.246913, 3.75, -2.251541]
+      Rotation: [0, 1.5462533, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 7439775902251720588
+    TagComponent:
+      Tag: LED Panel 6
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [-9.8527775, 3.75, -3.709613]
+      Rotation: [0, 1.3989911, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.1875, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 6432374167002321424
+    TagComponent:
+      Tag: LED Frame 6
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-10.099097, 3.75, -3.7523532]
+      Rotation: [0, 1.3989911, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 6235618061316050404
+    TagComponent:
+      Tag: LED Panel 7
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [-9.495283, 3.75, -5.136812]
+      Rotation: [0, 1.2517289, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.21875, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 5294252931368991531
+    TagComponent:
+      Tag: LED Frame 7
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-9.732666, 3.75, -5.215233]
+      Rotation: [0, 1.2517289, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 2868261630400825500
+    TagComponent:
+      Tag: LED Panel 8
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [-8.932245, 3.75, -6.496109]
+      Rotation: [0, 1.1044667, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.25, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 4436773868491631812
+    TagComponent:
+      Tag: LED Frame 8
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-9.155551, 3.75, -6.608512]
+      Rotation: [0, 1.1044667, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 6597711699115136213
+    TagComponent:
+      Tag: LED Panel 9
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [-8.175851, 3.75, -7.7580786]
+      Rotation: [0, 0.9572044, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.28125, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 3159582957245069088
+    TagComponent:
+      Tag: LED Frame 9
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-8.380247, 3.75, -7.9020305]
+      Rotation: [0, 0.9572044, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 4368507756522813684
+    TagComponent:
+      Tag: LED Panel 10
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [-7.242473, 3.75, -8.895403]
+      Rotation: [0, 0.8099422, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.3125, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 9187381373148557174
+    TagComponent:
+      Tag: LED Frame 10
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-7.423535, 3.75, -9.067788]
+      Rotation: [0, 0.8099422, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 1156892234467142459
+    TagComponent:
+      Tag: LED Panel 11
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [-6.152318, 3.75, -9.883463]
+      Rotation: [0, 0.66268, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.34375, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 6606910661550548494
+    TagComponent:
+      Tag: LED Frame 11
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-6.306126, 3.75, -10.080549]
+      Rotation: [0, 0.66268, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 34287633307310230
+    TagComponent:
+      Tag: LED Panel 12
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [-4.9289837, 3.75, -10.700869]
+      Rotation: [0, 0.51541775, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.375, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 7570694617774470171
+    TagComponent:
+      Tag: LED Frame 12
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-5.0522084, 3.75, -10.91839]
+      Rotation: [0, 0.51541775, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 1212984521691237808
+    TagComponent:
+      Tag: LED Panel 13
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.5989518, 3.75, -11.329927]
+      Rotation: [0, 0.36815554, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.40625, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 2483276169732220745
+    TagComponent:
+      Tag: LED Frame 13
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.6889257, 3.75, -11.563175]
+      Rotation: [0, 0.36815554, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 476347820058016037
+    TagComponent:
+      Tag: LED Panel 14
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.1910133, 3.75, -11.757021]
+      Rotation: [0, 0.22089334, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.4375, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 7752994229124972153
+    TagComponent:
+      Tag: LED Frame 14
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.2457886, 3.75, -12.000947]
+      Rotation: [0, 0.22089334, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 4233872385690148937
+    TagComponent:
+      Tag: LED Panel 15
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.73564595, 3.75, -11.972904]
+      Rotation: [0, 0.07363111, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.46875, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 2946883364673019587
+    TagComponent:
+      Tag: LED Frame 15
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.7540371, 3.75, -12.222227]
+      Rotation: [0, 0.07363111, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 6447295055711159567
+    TagComponent:
+      Tag: LED Panel 16
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [0.73564595, 3.75, -11.972904]
+      Rotation: [0, -0.07363111, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.5, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 6694612996379325461
+    TagComponent:
+      Tag: LED Frame 16
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.7540371, 3.75, -12.222227]
+      Rotation: [0, -0.07363111, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 2370904198268420596
+    TagComponent:
+      Tag: LED Panel 17
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [2.1910133, 3.75, -11.757021]
+      Rotation: [0, -0.22089334, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.53125, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 8054512624486811301
+    TagComponent:
+      Tag: LED Frame 17
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [2.2457886, 3.75, -12.000947]
+      Rotation: [0, -0.22089334, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 4359518638773090932
+    TagComponent:
+      Tag: LED Panel 18
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [3.5989518, 3.75, -11.329927]
+      Rotation: [0, -0.36815554, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.5625, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 5262866951834603151
+    TagComponent:
+      Tag: LED Frame 18
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [3.6889257, 3.75, -11.563175]
+      Rotation: [0, -0.36815554, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 4677113007135384753
+    TagComponent:
+      Tag: LED Panel 19
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [4.9289837, 3.75, -10.700869]
+      Rotation: [0, -0.51541775, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.59375, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 2357351471828897004
+    TagComponent:
+      Tag: LED Frame 19
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [5.0522084, 3.75, -10.91839]
+      Rotation: [0, -0.51541775, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 8268859728447794000
+    TagComponent:
+      Tag: LED Panel 20
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [6.152318, 3.75, -9.883463]
+      Rotation: [0, -0.66268, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.625, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 409109359518252748
+    TagComponent:
+      Tag: LED Frame 20
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [6.306126, 3.75, -10.080549]
+      Rotation: [0, -0.66268, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 3763668720301224200
+    TagComponent:
+      Tag: LED Panel 21
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [7.242473, 3.75, -8.895403]
+      Rotation: [0, -0.8099422, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.65625, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 7101661820688348651
+    TagComponent:
+      Tag: LED Frame 21
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [7.423535, 3.75, -9.067788]
+      Rotation: [0, -0.8099422, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 5530753617371043029
+    TagComponent:
+      Tag: LED Panel 22
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [8.175851, 3.75, -7.7580786]
+      Rotation: [0, -0.9572044, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.6875, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 2351117786422627430
+    TagComponent:
+      Tag: LED Frame 22
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [8.380247, 3.75, -7.9020305]
+      Rotation: [0, -0.9572044, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 3034405744527052366
+    TagComponent:
+      Tag: LED Panel 23
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [8.932245, 3.75, -6.496109]
+      Rotation: [0, -1.1044667, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.71875, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 5726289605188387055
+    TagComponent:
+      Tag: LED Frame 23
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [9.155551, 3.75, -6.608512]
+      Rotation: [0, -1.1044667, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 2675672592456823332
+    TagComponent:
+      Tag: LED Panel 24
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [9.495283, 3.75, -5.136812]
+      Rotation: [0, -1.2517289, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.75, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 7008296300347141955
+    TagComponent:
+      Tag: LED Frame 24
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [9.732666, 3.75, -5.215233]
+      Rotation: [0, -1.2517289, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 722021847621545382
+    TagComponent:
+      Tag: LED Panel 25
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [9.8527775, 3.75, -3.709613]
+      Rotation: [0, -1.3989911, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.78125, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 5399054136683857769
+    TagComponent:
+      Tag: LED Frame 25
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [10.099097, 3.75, -3.7523532]
+      Rotation: [0, -1.3989911, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 6317801466034467438
+    TagComponent:
+      Tag: LED Panel 26
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [9.996988, 3.75, -2.2454057]
+      Rotation: [0, -1.5462533, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.8125, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 8968937954473006156
+    TagComponent:
+      Tag: LED Frame 26
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [10.246913, 3.75, -2.251541]
+      Rotation: [0, -1.5462533, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 2439758603162114980
+    TagComponent:
+      Tag: LED Panel 27
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [9.924794, 3.75, -0.77588606]
+      Rotation: [0, -1.6935155, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.84375, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 63810495937845166
+    TagComponent:
+      Tag: LED Frame 27
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [10.1729145, 3.75, -0.7452832]
+      Rotation: [0, -1.6935155, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 6906879680951838061
+    TagComponent:
+      Tag: LED Panel 28
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [9.637758, 3.75, 0.6671352]
+      Rotation: [0, -1.8407778, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.875, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 960966206981379948
+    TagComponent:
+      Tag: LED Frame 28
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [9.878702, 3.75, 0.7338136]
+      Rotation: [0, -1.8407778, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 1573744568763792329
+    TagComponent:
+      Tag: LED Panel 29
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [9.142094, 3.75, 2.0524209]
+      Rotation: [0, -1.98804, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.90625, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 2848826929206807469
+    TagComponent:
+      Tag: LED Frame 29
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [9.370646, 3.75, 2.1537313]
+      Rotation: [0, -1.98804, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 7417412374981827694
+    TagComponent:
+      Tag: LED Panel 30
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [8.448531, 3.75, 3.349984]
+      Rotation: [0, -2.135302, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.9375, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 5726399501585110663
+    TagComponent:
+      Tag: LED Frame 30
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [8.659744, 3.75, 3.4837334]
+      Rotation: [0, -2.135302, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 5123927551503104561
+    TagComponent:
+      Tag: LED Panel 31
+      GameTag: LED Panel
+      IsStatic: false
+    TransformComponent:
+      Position: [7.572082, 3.75, 4.531736]
+      Rotation: [0, -2.2825644, 0]
+      Scale: [0.74564594, 3.5, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.95
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.9
+      EmissionFromTexture: true
+      Tiling: [0.03125, 1]
+      Offset: [0.96875, 0]
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest.jpg
+  - Entity: 4414843784214883937
+    TagComponent:
+      Tag: LED Frame 31
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [7.761384, 3.75, 4.6950293]
+      Rotation: [0, -2.2825644, 0]
+      Scale: [0.74564594, 3.65, 0.15]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.4
+      Roughness: 0.6
+      AO: 1
+      TexturePath: ""
+  - Entity: 5923115429619928919
+    TagComponent:
+      Tag: LED Ceiling
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 7.4, -2]
+      Rotation: [0, 0, 0]
+      Scale: [10, 0.05, 10]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [0.03, 0.03, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 1, 1]
+      EmissionStrength: 1.4
+      EmissionFromTexture: true
+      CastShadows: false
+      Unlit: true
+      TexturePath: Assets/Textures/LED_Forest_Ceiling.jpg
+  - Entity: 820258535020999910
+    TagComponent:
+      Tag: LED Spill 0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-8.227243, 3.5, -6.749996]
+      Rotation: [-0.17453292, 4.188791, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    AreaLightComponent:
+      Shape: 0
+      Color: [0.8, 0.92, 0.75]
+      Intensity: 3
+      Size: [5, 4]
+      Range: 16
+      TwoSided: false
+  - Entity: 642934178374003628
+    TagComponent:
+      Tag: LED Spill 1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 3.5, -11.5]
+      Rotation: [-0.17453292, 3.1415927, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    AreaLightComponent:
+      Shape: 0
+      Color: [0.8, 0.92, 0.75]
+      Intensity: 3
+      Size: [5, 4]
+      Range: 16
+      TwoSided: false
+  - Entity: 1000621808216378863
+    TagComponent:
+      Tag: LED Spill 2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [8.227243, 3.5, -6.749996]
+      Rotation: [-0.17453292, 2.0943947, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    AreaLightComponent:
+      Shape: 0
+      Color: [0.8, 0.92, 0.75]
+      Intensity: 3
+      Size: [5, 4]
+      Range: 16
+      TwoSided: false
+  - Entity: 1254700790145025651
+    TagComponent:
+      Tag: Concept GT
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [1.5, 0.25, -4]
+      Rotation: [0, 2.1816616, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 2187308597843630496
+    TagComponent:
+      Tag: Body
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Vehicles/Models/ConceptCar/Body_Pearl.glb
+  - Entity: 1039686031374839086
+    TagComponent:
+      Tag: Interior
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Vehicles/Models/ConceptCar/Interior_Carmine.glb
+  - Entity: 9150639268069917816
+    TagComponent:
+      Tag: Calipers
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Vehicles/Models/ConceptCar/Calipers_Red.glb
+  - Entity: 5542209222447080918
+    TagComponent:
+      Tag: Wheel FL
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.976, 0.384, -1.485]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Vehicles/Models/ConceptCar/Wheel_FL.glb
+  - Entity: 5276639403357494321
+    TagComponent:
+      Tag: Rim
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Vehicles/Models/ConceptCar/Rim_FL_Black.glb
+  - Entity: 1374879800662837276
+    TagComponent:
+      Tag: Wheel FR
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.977, 0.384, -1.484]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Vehicles/Models/ConceptCar/Wheel_FR.glb
+  - Entity: 6518283895708928971
+    TagComponent:
+      Tag: Rim
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Vehicles/Models/ConceptCar/Rim_FR_Black.glb
+  - Entity: 1157732619144669457
+    TagComponent:
+      Tag: Wheel RL
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.982, 0.384, 1.314]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Vehicles/Models/ConceptCar/Wheel_RL.glb
+  - Entity: 2588573119637215104
+    TagComponent:
+      Tag: Rim
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Vehicles/Models/ConceptCar/Rim_RL_Black.glb
+  - Entity: 5873019139224348234
+    TagComponent:
+      Tag: Wheel RR
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.982, 0.384, 1.314]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Vehicles/Models/ConceptCar/Wheel_RR.glb
+  - Entity: 2181510874643947911
+    TagComponent:
+      Tag: Rim
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Vehicles/Models/ConceptCar/Rim_RR_Black.glb
+  - Entity: 7429933195043139723
+    TagComponent:
+      Tag: Actor Talent
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.7, 0.25, -1.75]
+      Rotation: [0, 1.1170107, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Scripts/ActorPerformer.cqs
+      ClassName: ""
+    ModelComponent:
+      FilePath: Assets/Mannequin/Models/Mannequin_Female.glb
+    AnimationComponent:
+      ControllerPath: Assets/Animations/Dialogue_Talent.cqcont
+      Speed: 1
+      PlayOnAwake: true
+      Parameters:
+        - Name: Talking
+          Type: 1
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Nod
+          Type: 3
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+  - Entity: 7568782924939098871
+    TagComponent:
+      Tag: Actor Presenter
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.85, 0.25, -1.55]
+      Rotation: [0, -1.3264502, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Scripts/ActorPerformer.cqs
+      ClassName: ""
+    ModelComponent:
+      FilePath: Assets/Mannequin/Models/Mannequin_Male.glb
+    AnimationComponent:
+      ControllerPath: Assets/Animations/Dialogue_Presenter.cqcont
+      Speed: 1
+      PlayOnAwake: true
+      Parameters:
+        - Name: Talking
+          Type: 1
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Nod
+          Type: 3
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+  - Entity: 7445653440791593529
+    TagComponent:
+      Tag: Actor Presenter Eyes
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.85, 1.95, -1.55]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 8614963174692954464
+    TagComponent:
+      Tag: Head Aim
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.38928747, -0.25, 3.1938934]
+      Rotation: [0, -1.1170107, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MultiAimConstraintComponent:
+      Weight: 1
+      Bone: Head
+      Target: 7445653440791593529
+      AimAxis: 4
+      UpAxis: 2
+      MaxAngle: 70
+  - Entity: 1759773765401472361
+    TagComponent:
+      Tag: Actor Talent Eyes
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.7, 1.85, -1.75]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 6117874416148751341
+    TagComponent:
+      Tag: Head Aim
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [1.7095917, -0.25, -0.44977254]
+      Rotation: [0, 1.3264505, 0]
+      Scale: [0.9999999, 1, 0.9999999]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MultiAimConstraintComponent:
+      Weight: 1
+      Bone: Head
+      Target: 1759773765401472361
+      AimAxis: 4
+      UpAxis: 2
+      MaxAngle: 70
+  - Entity: 865492407213938286
+    TagComponent:
+      Tag: Forest Floor
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.256, -2]
+      Rotation: [0, 0, 0]
+      Scale: [9, 0.006, 7]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.92
+      AO: 1
+      Tiling: [0.33, 0.33]
+      Offset: [0, 0]
+      WorldAlignedUV: true
+      TexturePath: Assets/Textures/forest_floor.jpg
+  - Entity: 7799574926656470788
+    TagComponent:
+      Tag: Fern 1
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-6.5058875, 0.26, 3.4936647]
+      Rotation: [0, 0.82030475, 0]
+      Scale: [1.2379946, 1.2379946, 1.2379946]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 3825087399601559454
+    TagComponent:
+      Tag: Fern 2
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-7.0919833, 0.26, 2.4318366]
+      Rotation: [0, 1.6406095, 0]
+      Scale: [1.331031, 1.331031, 1.331031]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 5965411212283591754
+    TagComponent:
+      Tag: Fern 3
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-7.5499015, 0.26, 1.3755943]
+      Rotation: [0, 2.4609141, 0]
+      Scale: [1.3876762, 1.3876762, 1.3876762]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 5701532157351519307
+    TagComponent:
+      Tag: Fern Front 3
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-6.2302403, 0.26, 0.419659]
+      Rotation: [0, 4.34587, 0]
+      Scale: [1.0421575, 1.0421575, 1.0421575]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 6562345898515892630
+    TagComponent:
+      Tag: Fern 4
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-7.9129004, 0.26, 0.3461754]
+      Rotation: [0, 3.281219, 0]
+      Scale: [1.397925, 1.397925, 1.397925]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 4472217690519829130
+    TagComponent:
+      Tag: Fern 5
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-8.206414, 0.26, -0.6574507]
+      Rotation: [0, 4.101524, 0]
+      Scale: [1.3599672, 1.3599672, 1.3599672]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 5852874720914830729
+    TagComponent:
+      Tag: Fern 6
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-8.438315, 0.26, -1.6508974]
+      Rotation: [0, 4.9218283, 0]
+      Scale: [1.2805073, 1.2805073, 1.2805073]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 5141863904081145409
+    TagComponent:
+      Tag: Fern Front 6
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-6.975628, 0.26, -2.0603578]
+      Rotation: [0, 2.4085543, 0]
+      Scale: [0.97395915, 0.97395915, 0.97395915]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 2047742461363721921
+    TagComponent:
+      Tag: Fern 7
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-8.595634, 0.26, -2.6543522]
+      Rotation: [0, 5.742133, 0]
+      Scale: [1.1735802, 1.1735802, 1.1735802]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 8233751710629660004
+    TagComponent:
+      Tag: Fern 8
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-8.647273, 0.26, -3.6829357]
+      Rotation: [0, 0.27925268, 0]
+      Scale: [1.0580723, 1.0580723, 1.0580723]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 8585263906953656037
+    TagComponent:
+      Tag: Fern 9
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-8.551301, 0.26, -4.7388024]
+      Rotation: [0, 1.0995574, 0]
+      Scale: [0.9543859, 0.9543859, 0.9543859]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 7331224715662360749
+    TagComponent:
+      Tag: Fern Front 9
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-7.361242, 0.26, -4.770423]
+      Rotation: [0, 0.47123888, 0]
+      Scale: [0.76642734, 0.76642734, 0.76642734]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 7728780499896378173
+    TagComponent:
+      Tag: Fern 10
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-8.265399, 0.26, -5.805898]
+      Rotation: [0, 1.9198622, 0]
+      Scale: [0.88083494, 0.88083494, 0.88083494]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 5602463935678307403
+    TagComponent:
+      Tag: Fern 11
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-7.758817, 0.26, -6.8488092]
+      Rotation: [0, 2.740167, 0]
+      Scale: [0.8504108, 0.8504108, 0.8504108]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 873489143014900821
+    TagComponent:
+      Tag: Fern 12
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-7.02339, 0.26, -7.817371]
+      Rotation: [0, 3.5604715, 0]
+      Scale: [0.86848724, 0.86848724, 0.86848724]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 7578067686193941712
+    TagComponent:
+      Tag: Fern Front 12
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-5.9717093, 0.26, -7.471918]
+      Rotation: [0, 4.8171086, 0]
+      Scale: [0.7117646, 0.7117646, 0.7117646]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 5461247630947464265
+    TagComponent:
+      Tag: Fern 13
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-6.0800605, 0.26, -8.65745]
+      Rotation: [0, 4.3807764, 0]
+      Scale: [0.9318714, 0.9318714, 0.9318714]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 5220072774805692695
+    TagComponent:
+      Tag: Fern 14
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-4.977511, 0.26, -9.32542]
+      Rotation: [0, 5.2010813, 0]
+      Scale: [1.0293678, 1.0293678, 1.0293678]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 4705783100347465378
+    TagComponent:
+      Tag: Fern 15
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.7818139, 0.26, -9.800949]
+      Rotation: [0, 6.0213857, 0]
+      Scale: [1.1437557, 1.1437557, 1.1437557]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 3672398854620162911
+    TagComponent:
+      Tag: Fern Front 15
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.8712828, 0.26, -8.76471]
+      Rotation: [0, 2.8797932, 0]
+      Scale: [0.8869354, 0.8869354, 0.8869354]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 1269379299630769902
+    TagComponent:
+      Tag: Fern 16
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.5601344, 0.26, -10.092232]
+      Rotation: [0, 0.55850536, 0]
+      Scale: [1.2548307, 1.2548307, 1.2548307]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 307198100062749647
+    TagComponent:
+      Tag: Fern 17
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-1.3647969, 0.26, -10.230932]
+      Rotation: [0, 1.37881, 0]
+      Scale: [1.3429738, 1.3429738, 1.3429738]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 6466481446862868573
+    TagComponent:
+      Tag: Fern 18
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.2240168, 0.26, -10.259045]
+      Rotation: [0, 2.1991148, 0]
+      Scale: [1.3926164, 1.3926164, 1.3926164]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 4268229772931602756
+    TagComponent:
+      Tag: Fern Front 18
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [0.15261832, 0.26, -8.668391]
+      Rotation: [0, 0.94247776, 0]
+      Scale: [1.0453013, 1.0453013, 1.0453013]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 4968412464309586061
+    TagComponent:
+      Tag: Fern 19
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [0.85799354, 0.26, -10.213507]
+      Rotation: [0, 3.0194197, 0]
+      Scale: [1.3949898, 1.3949898, 1.3949898]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 2646488596179934297
+    TagComponent:
+      Tag: Fern 20
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [1.8933537, 0.26, -10.114387]
+      Rotation: [0, 3.8397243, 0]
+      Scale: [1.3496752, 1.3496752, 1.3496752]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 6934642531913304051
+    TagComponent:
+      Tag: Fern 21
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [2.8996015, 0.26, -9.959748]
+      Rotation: [0, 4.660029, 0]
+      Scale: [1.2646762, 1.2646762, 1.2646762]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 3741975960341619148
+    TagComponent:
+      Tag: Fern Front 21
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [2.7290986, 0.26, -8.466784]
+      Rotation: [0, 5.2883477, 0]
+      Scale: [0.9638849, 0.9638849, 0.9638849]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 3422040018248469690
+    TagComponent:
+      Tag: Fern 22
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [3.8894715, 0.26, -9.727228]
+      Rotation: [0, 5.480334, 0]
+      Scale: [1.1550063, 1.1550063, 1.1550063]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 3802359467659265708
+    TagComponent:
+      Tag: Fern 23
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [4.863409, 0.26, -9.380768]
+      Rotation: [0, 0.017453292, 0]
+      Scale: [1.0400363, 1.0400363, 1.0400363]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 8233725453790617189
+    TagComponent:
+      Tag: Fern 24
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [5.805409, 0.26, -8.880709]
+      Rotation: [0, 0.83775806, 0]
+      Scale: [0.94007355, 0.94007355, 0.94007355]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 5662812293560896312
+    TagComponent:
+      Tag: Fern Front 24
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [5.3927546, 0.26, -7.779002]
+      Rotation: [0, 3.3510323, 0]
+      Scale: [0.7573195, 0.7573195, 0.7573195]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 2689691598730671431
+    TagComponent:
+      Tag: Fern 25
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [6.682569, 0.26, -8.195578]
+      Rotation: [0, 1.6580628, 0]
+      Scale: [0.8727742, 0.8727742, 0.8727742]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 4883601923085154932
+    TagComponent:
+      Tag: Fern 26
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [7.44914, 0.26, -7.313384]
+      Rotation: [0, 2.4783676, 0]
+      Scale: [0.8500254, 0.8500254, 0.8500254]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 6301737735287858484
+    TagComponent:
+      Tag: Fern 27
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [8.055613, 0.26, -6.2494054]
+      Rotation: [0, 3.2986722, 0]
+      Scale: [0.87584525, 0.87584525, 0.87584525]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 3179204604368678467
+    TagComponent:
+      Tag: Fern Front 27
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [7.3256664, 0.26, -5.4078064]
+      Rotation: [0, 1.4137167, 0]
+      Scale: [0.716447, 0.716447, 0.716447]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 5665576591080686382
+    TagComponent:
+      Tag: Fern 28
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [8.461535, 0.26, -5.0470395]
+      Rotation: [0, 4.118977, 0]
+      Scale: [0.94567317, 0.94567317, 0.94567317]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 3786942398393574945
+    TagComponent:
+      Tag: Fern 29
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [8.648105, 0.26, -3.7698524]
+      Rotation: [0, 4.939282, 0]
+      Scale: [1.0471755, 1.0471755, 1.0471755]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 6130675348271778145
+    TagComponent:
+      Tag: Fern 30
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [8.625055, 0.26, -2.486418]
+      Rotation: [0, 5.7595863, 0]
+      Scale: [1.162424, 1.162424, 1.162424]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 5002141259699466257
+    TagComponent:
+      Tag: Fern Front 30
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [7.297788, 0.26, -2.046241]
+      Rotation: [0, 5.7595863, 0]
+      Scale: [0.8988153, 0.8988153, 0.8988153]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 5054456211703650803
+    TagComponent:
+      Tag: Fern 31
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [8.427986, 0.26, -1.2534158]
+      Rotation: [0, 0.29670596, 0]
+      Scale: [1.2710623, 1.2710623, 1.2710623]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 7855161187747067958
+    TagComponent:
+      Tag: Fern 32
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [8.106635, 0.26, -0.10386828]
+      Rotation: [0, 1.1170107, 0]
+      Scale: [1.3539016, 1.3539016, 1.3539016]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 5438765762563937555
+    TagComponent:
+      Tag: Fern 33
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [7.70906, 0.26, 0.9550889]
+      Rotation: [0, 1.9373155, 0]
+      Scale: [1.3963102, 1.3963102, 1.3963102]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 6684644128446697164
+    TagComponent:
+      Tag: Fern Front 33
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [6.0919075, 0.26, 0.691673]
+      Rotation: [0, 3.822271, 0]
+      Scale: [1.047652, 1.047652, 1.047652]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 4158036649735837143
+    TagComponent:
+      Tag: Fern 34
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [7.268077, 0.26, 1.9352585]
+      Rotation: [0, 2.75762, 0]
+      Scale: [1.3907974, 1.3907974, 1.3907974]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 5706438955671372444
+    TagComponent:
+      Tag: Fern 35
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [6.794235, 0.26, 2.855508]
+      Rotation: [0, 3.577925, 0]
+      Scale: [1.3383368, 1.3383368, 1.3383368]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fern.glb
+  - Entity: 1647720811601746252
+    TagComponent:
+      Tag: Mossy Rock
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-7.462823, 0.26, 2.6632903]
+      Rotation: [0, -6.387905, 0]
+      Scale: [0.65, 0.5, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/mossy_rock.glb
+  - Entity: 5851117498497595122
+    TagComponent:
+      Tag: Mossy Rock
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-8.961751, 0.26, -0.4198015]
+      Rotation: [0, -5.2359877, 0]
+      Scale: [0.91, 0.7, 0.7]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/mossy_rock.glb
+  - Entity: 5598571380931905897
+    TagComponent:
+      Tag: Mossy Rock
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-8.813386, 0.26, -3.2386405]
+      Rotation: [0, -4.29351, 0]
+      Scale: [0.715, 0.55, 0.55]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/mossy_rock.glb
+  - Entity: 8912607982345590871
+    TagComponent:
+      Tag: Mossy Rock
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-7.8020425, 0.26, -6.8752575]
+      Rotation: [0, -3.0368729, 0]
+      Scale: [1.04, 0.8, 0.8]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/mossy_rock.glb
+  - Entity: 3662007984464390018
+    TagComponent:
+      Tag: Mossy Rock
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.66063, 0.26, -10.2219095]
+      Rotation: [0, -1.2566371, 0]
+      Scale: [0.585, 0.45, 0.45]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/mossy_rock.glb
+  - Entity: 7285764233761425333
+    TagComponent:
+      Tag: Mossy Rock
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [0.97211474, 0.26, -11.249054]
+      Rotation: [0, 0.31415927, 0]
+      Scale: [0.845, 0.65, 0.65]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/mossy_rock.glb
+  - Entity: 8143727571193007595
+    TagComponent:
+      Tag: Mossy Rock
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [4.792824, 0.26, -9.3803005]
+      Rotation: [0, 1.727876, 0]
+      Scale: [0.65, 0.5, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/mossy_rock.glb
+  - Entity: 69064951979845254
+    TagComponent:
+      Tag: Mossy Rock
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [7.9590397, 0.26, -6.411767]
+      Rotation: [0, 3.1939526, 0]
+      Scale: [0.975, 0.75, 0.75]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/mossy_rock.glb
+  - Entity: 7086197815674676756
+    TagComponent:
+      Tag: Mossy Rock
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [8.6947, 0.26, -2.3036256]
+      Rotation: [0, 4.6076694, 0]
+      Scale: [0.65, 0.5, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/mossy_rock.glb
+  - Entity: 8720350218849814844
+    TagComponent:
+      Tag: Mossy Rock
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [8.559509, 0.26, 0.78115237]
+      Rotation: [0, 5.6548667, 0]
+      Scale: [0.845, 0.65, 0.65]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/mossy_rock.glb
+  - Entity: 1684971394623287621
+    TagComponent:
+      Tag: Mossy Rock
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [7.11935, 0.26, 3.17251]
+      Rotation: [0, 6.5973444, 0]
+      Scale: [0.715, 0.55, 0.55]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/mossy_rock.glb
+  - Entity: 3009180103762174355
+    TagComponent:
+      Tag: Fallen Log
+      GameTag: Forest Dressing
+      IsStatic: false
+    TransformComponent:
+      Position: [-5.7545233, 0.26, -8.391046]
+      Rotation: [0, 2.3038347, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ModelComponent:
+      FilePath: Assets/Props/fallen_log.glb
+  - Entity: 6941807925765641273
+    TagComponent:
+      Tag: Dolly Rail L
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2.35, 0.03, 15.6]
+      Rotation: [0, 0, 0]
+      Scale: [0.03, 0.03, 4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.35, 0.36, 0.38, 1]
+      Metallic: 1
+      Roughness: 0.3
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 8552593180317197601
+    TagComponent:
+      Tag: Dolly Rail R
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-1.65, 0.03, 15.6]
+      Rotation: [0, 0, 0]
+      Scale: [0.03, 0.03, 4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.35, 0.36, 0.38, 1]
+      Metallic: 1
+      Roughness: 0.3
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 9040179025643833031
+    TagComponent:
+      Tag: Rail Sleeper 0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2, -0.025, 12]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.025, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 4534608859547807215
+    TagComponent:
+      Tag: Rail Sleeper 1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2, -0.025, 12.8]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.025, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 7821777016960691090
+    TagComponent:
+      Tag: Rail Sleeper 2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2, -0.025, 13.6]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.025, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2819403799138101505
+    TagComponent:
+      Tag: Rail Sleeper 3
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2, -0.025, 14.4]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.025, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 880049605841557907
+    TagComponent:
+      Tag: Rail Sleeper 4
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2, -0.025, 15.2]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.025, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 8523382296421264014
+    TagComponent:
+      Tag: Rail Sleeper 5
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2, -0.025, 16]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.025, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2574632879414132829
+    TagComponent:
+      Tag: Rail Sleeper 6
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2, -0.025, 16.8]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.025, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2855151344234457943
+    TagComponent:
+      Tag: Rail Sleeper 7
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2, -0.025, 17.6]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.025, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 1151705420182891986
+    TagComponent:
+      Tag: Rail Sleeper 8
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2, -0.025, 18.4]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.025, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 5027135185629975258
+    TagComponent:
+      Tag: Rail Sleeper 9
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2, -0.025, 19.2]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.025, 0.06]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0
+      Roughness: 0.7
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6183738568909310450
+    TagComponent:
+      Tag: Camera Dolly
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2, 0.195, 14.6]
+      Rotation: [0, 0, 0]
+      Scale: [0.45, 0.125, 0.55]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.3
+      Roughness: 0.5
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 8332874061811539616
+    TagComponent:
+      Tag: Dolly Column
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2, 0.82, 14.6]
+      Rotation: [0, 0, 0]
+      Scale: [0.09, 0.5, 0.09]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.35, 0.36, 0.38, 1]
+      Metallic: 1
+      Roughness: 0.3
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 1021232997173537499
+    TagComponent:
+      Tag: Cinema Camera Body
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2, 1.49, 14.6]
+      Rotation: [0, 0, 0]
+      Scale: [0.1, 0.12, 0.21]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.035, 0.037, 0.04, 1]
+      Metallic: 0.2
+      Roughness: 0.4
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2822640034861020492
+    TagComponent:
+      Tag: Cinema Camera Lens
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2, 1.49, 14.26]
+      Rotation: [1.5707964, 0, 0]
+      Scale: [0.065, 0.13, 0.065]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [0.35, 0.36, 0.38, 1]
+      Metallic: 1
+      Roughness: 0.25
+      AO: 1
+      TexturePath: ""
+  - Entity: 671716676951873522
+    TagComponent:
+      Tag: Camera Monitor
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-1.82, 1.68, 14.72]
+      Rotation: [0, 0, 0]
+      Scale: [0.01, 0.07, 0.1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.02, 0.02, 0.03, 1]
+      Metallic: 0
+      Roughness: 0.1
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 3562594044246403023
+    TagComponent:
+      Tag: Key Light
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [3.2, 5.8, 2.6]
+      Rotation: [-0.6632251, 3.9444442, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    AreaLightComponent:
+      Shape: 0
+      Color: [1, 0.93, 0.85]
+      Intensity: 10
+      Size: [1.6, 1]
+      Range: 14
+      TwoSided: false
+  - Entity: 7830246078264125482
+    TagComponent:
+      Tag: Fill Light
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-5.6, 5.8, 2.2]
+      Rotation: [-0.6632251, 2.443461, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    AreaLightComponent:
+      Shape: 0
+      Color: [0.85, 0.9, 1]
+      Intensity: 4
+      Size: [1.6, 1]
+      Range: 14
+      TwoSided: false
+  - Entity: 8358270676641887558
+    TagComponent:
+      Tag: Rim Light
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [3, 5.8, -6.5]
+      Rotation: [-0.6632251, 5.5850534, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    AreaLightComponent:
+      Shape: 0
+      Color: [1, 0.8, 0.6]
+      Intensity: 7
+      Size: [1.6, 1]
+      Range: 14
+      TwoSided: false
+  - Entity: 2854432414063014611
+    TagComponent:
+      Tag: Spare Stand
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [8, 1.3, 9.5]
+      Rotation: [0, 0, 0]
+      Scale: [0.03, 1.3, 0.03]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.35, 0.36, 0.38, 1]
+      Metallic: 1
+      Roughness: 0.35
+      AO: 1
+      TexturePath: ""
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 3070022309156656370
+    TagComponent:
+      Tag: Spare Panel
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [8, 2.8, 9.5]
+      Rotation: [-0.2617994, 3.8397243, 0]
+      Scale: [0.6, 0.4, 0.04]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [0.95, 0.95, 0.95, 1]
+      Metallic: 0
+      Roughness: 0.5
+      AO: 1
+      EmissionColor: [1, 0.95, 0.9]
+      EmissionStrength: 3
+      TexturePath: ""
+  - Entity: 6128406582559379394
+    TagComponent:
+      Tag: Spare Light
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [8, 2.8, 9.5]
+      Rotation: [-0.2617994, 3.8397243, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    AreaLightComponent:
+      Shape: 0
+      Color: [1, 0.95, 0.9]
+      Intensity: 0
+      Size: [1.2, 0.8]
+      Range: 12
+      TwoSided: false
+  - Entity: 844468777871992353
+    TagComponent:
+      Tag: Shot 1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 4.8, 11]
+      Rotation: [-0.24661694, 0.029620964, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 1526260709013881239
+    TagComponent:
+      Tag: Shot 1 End
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.6, 2.4, 9]
+      Rotation: [-0.0950057, 0.08673834, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 3920881989080137246
+    TagComponent:
+      Tag: Shot 2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-1.4, 1.86, 3.4]
+      Rotation: [-0.011847139, 0.07510598, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 3641581751422517969
+    TagComponent:
+      Tag: Shot 2 End
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-1.5, 1.84, 2.3]
+      Rotation: [-0.010100892, 0.07076771, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 3337460126400563638
+    TagComponent:
+      Tag: Shot 3
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.05329084, 1.88, -1.0112473]
+      Rotation: [-0.021831576, 1.2986027, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5931742675769619651
+    TagComponent:
+      Tag: Shot 3 End
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.1793133, 1.88, -1.0550461]
+      Rotation: [-0.022942878, 1.3017793, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5526595933615075408
+    TagComponent:
+      Tag: Shot 4
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.593443, 1.8, -1.3939664]
+      Rotation: [0.047274012, -1.5139824, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 2776370313105905315
+    TagComponent:
+      Tag: Shot 4 End
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-3.4609714, 1.8, -1.40982]
+      Rotation: [0.049677387, -1.5171591, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 7630488793810386075
+    TagComponent:
+      Tag: Shot 5
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [1.61, 0.62, -0.2]
+      Rotation: [0.004378783, 0.3439076, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 6532435160487814989
+    TagComponent:
+      Tag: Shot 5 End
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [4.79, 0.6, -2.3]
+      Rotation: [0.012855778, 0.7853982, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 6898814906602238229
+    TagComponent:
+      Tag: Shot 6
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-1.65, 1.84, -0.9]
+      Rotation: [-0.02960068, 0.8902751, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 8275601522642180278
+    TagComponent:
+      Tag: Shot 6 End
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-1.8, 1.83, -1.03]
+      Rotation: [-0.026023084, 0.8960554, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 551055025255046186
+    TagComponent:
+      Tag: Shot 7
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.2, 1.3, 6]
+      Rotation: [-0.012180036, 0.04874185, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 5023779962524594683
+    TagComponent:
+      Tag: Shot 7 End
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 6.4, 11.5]
+      Rotation: [-0.3803657, 0.028563658, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 7416519793663289605
+    TagComponent:
+      Tag: Cine Camera
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 2.4, 9.5]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera:
+        ProjectionType: 0
+        PerspectiveFOV: 0.6981317
+        PerspectiveNear: 0.01
+        PerspectiveFar: 1000
+        OrthographicSize: 10
+        OrthographicNear: -1000
+        OrthographicFar: 1000
+      Primary: true
+      FixedAspectRatio: false
+      Background: 2
+      BackgroundColor: [0.01, 0.01, 0.012, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    AudioListenerComponent:
+      IsActive: true
+  - Entity: 7638359827095941417
+    TagComponent:
+      Tag: Sequencer
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Scripts/ShotSequencer.cqs
+      ClassName: ""
+  - Entity: 3204051693372246414
+    TagComponent:
+      Tag: UI
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    CanvasComponent:
+      RenderMode: 0
+      PixelPerfect: false
+      SortOrder: 0
+    CanvasScalerComponent:
+      ScaleMode: 1
+      ScaleFactor: 1
+      ReferencePixelsPerUnit: 100
+      ReferenceResolution: [1920, 1080]
+      MatchWidthOrHeight: 0.5
+    GraphicRaycasterComponent:
+      IgnoreReversedGraphics: true
+      BlockingObjects: 0
+      BlockingMask: 4294967295
+  - Entity: 8980515655650350018
+    TagComponent:
+      Tag: BarTop
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 1]
+      AnchorMax: [0.5, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -69]
+      SizeDelta: [4000, 138]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0, 0, 0, 1]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 4428332297425272863
+    TagComponent:
+      Tag: BarBottom
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 69]
+      SizeDelta: [4000, 138]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0, 0, 0, 1]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 8514757362652331240
+    TagComponent:
+      Tag: SlateText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 1]
+      AnchorMax: [0, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [340, -45]
+      SizeDelta: [600, 34]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: ""
+      FontSize: 24
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 0
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 2209387708105517769
+    TagComponent:
+      Tag: ShotText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 1]
+      AnchorMax: [0, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [390, -90]
+      SizeDelta: [700, 34]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: ""
+      FontSize: 24
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 0
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 7396928296323007443
+    TagComponent:
+      Tag: Timecode
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [1, 1]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-200, -45]
+      SizeDelta: [300, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: 01:00:00:00
+      FontPath: ""
+      FontSize: 30
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 2
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 152437203369875433
+    TagComponent:
+      Tag: RecDot
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [1, 1]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-400, -45]
+      SizeDelta: [18, 18]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [1, 0.1, 0.08, 1]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 9
+  - Entity: 8529225027907187222
+    TagComponent:
+      Tag: RecText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [1, 1]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-360, -45]
+      SizeDelta: [60, 30]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: REC
+      FontPath: ""
+      FontSize: 22
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 0
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 1467607333663271634
+    TagComponent:
+      Tag: ModeText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 160]
+      SizeDelta: [1400, 36]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: ""
+      FontSize: 22
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 4486582139187305610
+    TagComponent:
+      Tag: Subtitle
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 200]
+      SizeDelta: [1500, 50]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: ""
+      FontSize: 34
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 9183905689764863484
+    TagComponent:
+      Tag: TitleBack
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    UICanvasGroupComponent:
+      Alpha: 0
+      Interactable: true
+      BlocksRaycasts: true
+      IgnoreParentGroups: false
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [4000, 150]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0, 0, 0, 0.45]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 2194506612496048537
+    TagComponent:
+      Tag: TitleCard
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    UICanvasGroupComponent:
+      Alpha: 0
+      Interactable: true
+      BlocksRaycasts: true
+      IgnoreParentGroups: false
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [1600, 80]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: ""
+      FontSize: 54
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.7]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 2483113014563688958
+    TagComponent:
+      Tag: HintText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 69]
+      SizeDelta: [1800, 30]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: SPACE NEXT SHOT     BACKSPACE PREVIOUS     TAB DIRECTOR VIEW     P PAUSE     1 / 2 LED CONTENT
+      FontPath: ""
+      FontSize: 22
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+Environment:
+  SkyboxPath: Assets/Sky/Forest.hdr
+  SkyboxExposure: 1
+  SkyboxRotation: 0
+  SkyboxTint: [1, 1, 1]
+  EnvironmentLightingSource: 0
+  AmbientColor: [0.3, 0.3, 0.3]
+  AmbientSkyColor: [0.5, 0.6, 0.7]
+  AmbientEquatorColor: [0.3, 0.3, 0.3]
+  AmbientGroundColor: [0.2, 0.15, 0.1]
+  AmbientIntensity: 1
+  FogEnabled: false
+  FogColor: [0.5, 0.6, 0.7]
+  FogDensity: 0.02
+  FogStart: 10
+  FogEnd: 100
+  SunSource: 0
+  HaloEnabled: false
+  HaloStrength: 0.5
+  FlareEnabled: false
+  FlareFadeSpeed: 3
+  FlareStrength: 1
+  FlareElements:
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.08
+      Offset: 0.3
+      Intensity: 1
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.06
+      Offset: 0.6
+      Intensity: 0.8
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.05
+      Offset: 0.9
+      Intensity: 0.6
+  ShadowEnabled: true
+  ShadowIntensity: 1
+  ReflectionSource: 0
+  ReflectionResolution: 128
+  ReflectionCompression: 0
+  ReflectionIntensityMultiplier: 1
+  ReflectionBounces: 1
+  BakedLightmapPath: ""
+  LightmapResolution: 40
+  MaxLightmapSize: 1024
+  MaxBounces: 2
+  DirectSamples: 32
+  IndirectSamples: 512
+  AmbientOcclusion: true
+  LightmapFiltering: 0
+  RenderSettings:
+    Shadows:
+      Enabled: true
+      Quality: 2
+      Resolution: 4096
+      Distance: 40
+      CascadeCount: 2
+      CascadeSplitLambda: 0.75
+      Strength: 1
+      Softness: 1
+      DepthBias: 0.005
+      NormalBias: 0.015
+      Color: [0, 0, 0]
+    Fog:
+      Enabled: false
+      Mode: 2
+      Color: [0.5, 0.6, 0.7]
+      Density: 0.02
+      Start: 10
+      End: 100
+      HeightFalloff: 0
+      BaseHeight: 0
+    Post:
+      Enabled: true
+      Tonemapper: 2
+      Exposure: 0.1
+      Bloom: true
+      BloomThreshold: 1
+      BloomKnee: 0.5
+      BloomIntensity: 0.25
+      BloomScatter: 0.7
+      BloomTint: [1, 1, 1]
+      AmbientOcclusion: true
+      AORadius: 0.6
+      AOIntensity: 1
+      AOPower: 1.5
+      ColorGrading: true
+      Contrast: 1.08
+      Saturation: 1.05
+      Temperature: 0
+      Tint: 0
+      Lift: [0, 0, 0]
+      Gamma: [1, 1, 1]
+      Gain: [1, 1, 1]
+      Vignette: true
+      VignetteIntensity: 0.3
+      VignetteSmoothness: 0.4
+      VignetteColor: [0, 0, 0]
+      ChromaticAberration: false
+      ChromaticAberrationIntensity: 0.3
+      FilmGrain: true
+      FilmGrainIntensity: 0.12
+      Sharpen: false
+      SharpenAmount: 0.3
+      AntiAliasing: 3
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: true
+      SSRIntensity: 1
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: true
+      SSGIIntensity: 0.9
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: false
+      CloudCoverage: 0.45
+      CloudDensity: 1
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: true
+      FocusDistance: 9
+      Aperture: 2
+      FocalLength: 50
+      DOFMaxBlur: 10
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
+    Environment:
+      Sky: 0
+      BackgroundColor: [0.1, 0.1, 0.1]
+      ImageBasedLighting: true
+      ReflectionIntensity: 1
+      SkyboxIntensity: 0.9
+      SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
+    Bake:
+      RealtimeGI: false
+      BakedGI: true
+      LightingMode: 0
+      Lightmapper: 1
+      ImportanceSampling: true
+      DirectSamples: 32
+      IndirectSamples: 512
+      EnvironmentSamples: 256
+      MaxBounces: 2
+      Filtering: 0
+      Packing: 0
+      Resolution: 40
+      MaxLightmapSize: 1024
+      UseMipmapLimits: true
+      Compression: 2
+      AmbientOcclusion: true
+      DirectionalMode: 0
+      AlbedoBoost: 1
+      IndirectIntensity: 1
+      RealtimeResolution: 20
+      RealtimeIndirectSamples: 256
+      RealtimeMaxBounces: 1
+      AutoGenerate: false
+      BakeOnSceneLoad: 0
+      APVFitToScene: true
+      APVOrigin: [-10, -1, -10]
+      APVSize: [20, 10, 20]
+      APVProbeOffset: [0, 0, 0]
+      APVMinSpacing: 1
+      APVMaxSpacing: 9
+      APVBakingMode: 0
+      APVDilation: false
+      APVVirtualOffset: true
+      APVValidityThreshold: 0.75
+      APVSearchDistanceMultiplier: 0.2
+      APVGeometryBias: 0.01
+      APVRayOriginBias: -0.001
+EditorCamera:
+  CameraMode: 0
+  Position: [0, 6.141105, 11.454813]
+  Distance: 16
+  Pitch: 0.2617994
+  Yaw: 0
+  OrthographicSize: 10
+Hierarchy:
+  - Child: 8980515655650350018
+    Parent: 3204051693372246414
+  - Child: 4428332297425272863
+    Parent: 3204051693372246414
+  - Child: 8514757362652331240
+    Parent: 3204051693372246414
+  - Child: 2209387708105517769
+    Parent: 3204051693372246414
+  - Child: 7396928296323007443
+    Parent: 3204051693372246414
+  - Child: 152437203369875433
+    Parent: 3204051693372246414
+  - Child: 8529225027907187222
+    Parent: 3204051693372246414
+  - Child: 1467607333663271634
+    Parent: 3204051693372246414
+  - Child: 4486582139187305610
+    Parent: 3204051693372246414
+  - Child: 9183905689764863484
+    Parent: 3204051693372246414
+  - Child: 2194506612496048537
+    Parent: 3204051693372246414
+  - Child: 2483113014563688958
+    Parent: 3204051693372246414
+  - Child: 8614963174692954464
+    Parent: 7429933195043139723
+  - Child: 2181510874643947911
+    Parent: 5873019139224348234
+  - Child: 2588573119637215104
+    Parent: 1157732619144669457
+  - Child: 6518283895708928971
+    Parent: 1374879800662837276
+  - Child: 5276639403357494321
+    Parent: 5542209222447080918
+  - Child: 6117874416148751341
+    Parent: 7568782924939098871
+  - Child: 2187308597843630496
+    Parent: 1254700790145025651
+  - Child: 1039686031374839086
+    Parent: 1254700790145025651
+  - Child: 9150639268069917816
+    Parent: 1254700790145025651
+  - Child: 5542209222447080918
+    Parent: 1254700790145025651
+  - Child: 1374879800662837276
+    Parent: 1254700790145025651
+  - Child: 1157732619144669457
+    Parent: 1254700790145025651
+  - Child: 5873019139224348234
+    Parent: 1254700790145025651

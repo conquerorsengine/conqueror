@@ -17,9 +17,13 @@ namespace Conqueror
         static void Shutdown();
         
         static AudioEngine& Get() { return *s_Instance; }
+        static bool IsInitialized() { return s_Instance && s_Instance->m_Engine; }
         
         // Engine kontrolü
         void SetMasterVolume(float volume);
+        // Tüm ses çıkışını dondur / sürdür (oyun duraklatılınca); kaynakların konumu korunur
+        void SetPaused(bool paused);
+        bool IsPaused() const { return m_Paused; }
         float GetMasterVolume() const;
         
         // Listener pozisyonu (3D ses için)
@@ -48,6 +52,7 @@ namespace Conqueror
         static AudioEngine* s_Instance;
         
         ma_engine* m_Engine = nullptr;
+        bool m_Paused = false;
         
         glm::vec3 m_ListenerPosition = glm::vec3(0.0f);
         glm::vec3 m_ListenerForward = glm::vec3(0.0f, 0.0f, -1.0f);

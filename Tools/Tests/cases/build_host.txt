@@ -1,0 +1,9 @@
+# template: basic3d
+# Build Settings: bu PC için oyun derlemesi (oynatıcı, motor kitaplığı, varlıklar, sahneler) başarıyla biter
+wait 30
+build output Builds/RegressionHost
+build platform host
+build start
+wait_until 600000 build expect_done
+build expect_success
+quit

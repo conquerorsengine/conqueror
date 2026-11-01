@@ -1,0 +1,138 @@
+using nativebridge;
+
+// Dalga üretici: "Spawn Point" ile başlayan çocukların konumlarından (yoksa kendi çevresinden) düşman üretir.
+// Dalga n'de firstWaveCount + (n-1) * countIncrease düşman. Hepsi ölünce (silinince ya da Health.dead) mola, sonra yeni dalga.
+script WaveSpawner : ConquerorScript
+{
+    public string enemyPrefab = "Packages/wave-spawner/Prefabs/WaveEnemy.cqprefab";
+    public int firstWaveCount = 3;
+    public int countIncrease = 2;
+    public float spawnInterval = 0.4;
+    public float timeBetweenWaves = 3.0;
+    public int maxWaves = 0;
+    public float spawnRadius = 1.5;
+    public bool autoStart = true;
+    public string statusTextName = "";
+
+    // Çalışma zamanı bilgisi
+    public int currentWave = 0;
+    public int alive = 0;
+    public int spawnedTotal = 0;
+    public bool betweenWaves = false;
+    public bool finished = false;
+    public float countdown = 0.0;
+
+    private var points = [];
+    private var living = [];
+    private int toSpawn = 0;
+    private float spawnTimer = 0.0;
+    private bool running = false;
+
+    func Start()
+    {
+        points = [];
+        for (var c in EntityGetChildren(GetEntityId()))
+        {
+            if (StringStartsWith(EntityGetName(c), "Spawn Point")) { points.Add(c); }
+        }
+        if (autoStart) { StartWaves(); }
+    }
+
+    func StartWaves()
+    {
+        running = true;
+        finished = false;
+        currentWave = 0;
+        NextWave();
+    }
+
+    func NextWave()
+    {
+        if (maxWaves > 0 && currentWave >= maxWaves)
+        {
+            finished = true;
+            running = false;
+            BroadcastMessage("OnAllWavesCleared", currentWave);
+            UpdateText();
+            return;
+        }
+        currentWave++;
+        toSpawn = firstWaveCount + (currentWave - 1) * countIncrease;
+        spawnTimer = 0.0;
+        betweenWaves = false;
+        BroadcastMessage("OnWaveStarted", currentWave);
+        UpdateText();
+    }
+
+    func SpawnOne()
+    {
+        var at = EntityGetWorldPosition(GetEntityId());
+        if (points.Count > 0) { at = EntityGetWorldPosition(points[MathRandomInt(0, points.Count - 1)]); }
+        var a = MathRandom() * 6.2831853;
+        var r = MathSqrt(MathRandom()) * spawnRadius;
+        var e = Instantiate(enemyPrefab, at.x + MathCos(a) * r, at.y, at.z + MathSin(a) * r);
+        if (e == null) { LogError("WaveSpawner: cannot spawn " + enemyPrefab); toSpawn = 0; return; }
+        living.Add(e);
+        spawnedTotal++;
+        SendMessage(e, "OnSpawnedByWave", currentWave);
+    }
+
+    func IsAlive(e)
+    {
+        if (!EntityIsValid(e)) { return false; }
+        var dead = GetScriptField(e, "dead");
+        return dead == null || dead == false;
+    }
+
+    // Test / hile: canlı düşmanların hepsini yok et
+    func KillAll()
+    {
+        for (var e in living)
+        {
+            if (!EntityIsValid(e)) { continue; }
+            if (HasScript(e, "Health")) { SendMessage(e, "Kill"); }
+            else { EntityDestroy(e); }
+        }
+    }
+
+    func Update(dt)
+    {
+        if (!running) { return; }
+        for (var i = living.Count - 1; i >= 0; i--) { if (!IsAlive(living[i])) { ListRemoveAt(living, i); } }
+        alive = living.Count;
+        if (toSpawn > 0)
+        {
+            spawnTimer -= dt;
+            if (spawnTimer <= 0)
+            {
+                SpawnOne();
+                toSpawn--;
+                spawnTimer = spawnInterval;
+                alive = living.Count;
+                UpdateText();
+            }
+            return;
+        }
+        if (!betweenWaves && alive == 0)
+        {
+            betweenWaves = true;
+            countdown = timeBetweenWaves;
+            BroadcastMessage("OnWaveCleared", currentWave);
+            UpdateText();
+        }
+        if (betweenWaves)
+        {
+            countdown -= dt;
+            if (countdown <= 0) { NextWave(); }
+        }
+    }
+
+    func UpdateText()
+    {
+        if (statusTextName == "") { return; }
+        var t = FindEntity(statusTextName);
+        if (t == null) { return; }
+        var text = finished ? "All waves cleared!" : (betweenWaves ? "Wave " + str(currentWave + 1) + " in " + str(int(MathCeil(countdown))) : "Wave " + str(currentWave) + "  Enemies: " + str(alive + toSpawn));
+        UISetText(t, text);
+    }
+}

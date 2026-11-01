@@ -1,0 +1,330 @@
+// Virtual Production (Unreal "Virtual Production" / In-Camera VFX şablonu karşılığı): kavisli LED hacmi (duvar +
+// tavan; duvar Poly Haven ormanının 200 derecelik dilimi, sahne ortasından açıları birebir), sahnede kısa reklam
+// filmi "THE TRAIL": Concept GT ve iki oyuncu (Mara, Leo) diyalog çekiyor. Orman içeriğinde sahne zemini orman
+// tabanıyla, LED duvarın dibi eğreltiler, kayalar ve devrik kütükle giydirilir (görüntü fiziksel sete devam eder).
+// ShotSequencer yedi çekimi oynatır: açılış, iki kişilik plan, omuz üstü / karşı çekim, araç detayı, yakın plan,
+// kapanış; alt yazılar, konuşan oyuncu Talk animasyonunda, başlar birbirine bakar; odak çekim hedefini izler.
+// @EditorCamera 16 15 0 0 2 -4   (proje açıldığında editör görünümü: uzaklık, eğim, yön, odak)
+SceneSetSkybox("Assets/Sky/Forest.hdr");
+RenderSettingSet("Environment.Sky", "Auto");
+RenderSettingSet("Environment.SkyboxIntensity", 0.9);
+RenderSettingSet("Shadows.Enabled", true);
+RenderSettingSet("Shadows.Quality", "VerySoft");
+RenderSettingSet("Shadows.Distance", 40);
+RenderSettingSet("Post.Tonemap", "ACES");
+RenderSettingSet("Post.Exposure", 0.1);
+RenderSettingSet("Post.AntiAliasing", "TAA");
+RenderSettingSet("Post.AmbientOcclusion", true);
+RenderSettingSet("Post.ScreenSpaceReflections", true);
+RenderSettingSet("Post.ScreenSpaceGI", true);
+RenderSettingSet("Post.SSGIIntensity", 0.9);
+RenderSettingSet("Post.Bloom", true);
+RenderSettingSet("Post.BloomIntensity", 0.25);
+RenderSettingSet("Post.DepthOfField", true);
+RenderSettingSet("Post.Aperture", 2.0);
+RenderSettingSet("Post.FocalLength", 50.0);
+RenderSettingSet("Post.FocusDistance", 9.0);
+RenderSettingSet("Post.FilmGrain", true);
+RenderSettingSet("Post.FilmGrainIntensity", 0.12);
+RenderSettingSet("Post.Vignette", true);
+RenderSettingSet("Post.VignetteIntensity", 0.3);
+RenderSettingSet("Post.ColorGrading", true);
+RenderSettingSet("Post.Contrast", 1.08);
+RenderSettingSet("Post.Saturation", 1.05);
+RenderSettingSet("Fog.Enabled", false);
+
+var DARK = {r: 0.035, g: 0.037, b: 0.04, a: 1};
+var METAL = {r: 0.35, g: 0.36, b: 0.38, a: 1};
+func Paint(e, c, rough, metal)
+{
+    EntitySetColor(e, c);
+    EntitySetComponentField(e, "MeshRenderer", "Roughness", rough);
+    EntitySetComponentField(e, "MeshRenderer", "Metallic", metal);
+    return e;
+}
+
+// Stüdyo binası (koyu): zemin, sahne platformu
+Paint(Box("Studio Floor", 0, -0.2, 0, 60, 0.2, 60, ""), {r: 0.05, g: 0.05, b: 0.055, a: 1}, 0.6, 0);
+Paint(Box("Stage", 0, 0, -2, 18, 0.25, 14, ""), {r: 0.12, g: 0.12, b: 0.12, a: 1}, 0.5, 0);
+
+// LED hacmi: 270° kavisli duvar (Mandalorian "Volume" gibi; 32 panel, her biri görüntünün bir dilimi) + tavan.
+// 270°: omuz üstü çekim ve karşı çekim yana baktığında da arkada LED vardır (200°'de kadraj kenarı duvarı aşıyordu)
+var N = 32;
+var R = 10.0;
+var H = 7.0;
+var WALL_DEG = 270.0;
+for (var i = 0; i < N; i++)
+{
+    var a = (-WALL_DEG / 2.0 + (i + 0.5) * WALL_DEG / N) * 0.0174533;
+    var x = MathSin(a) * R;
+    var z = -2 - MathCos(a) * R;
+    var w = 2.0 * R * MathSin(WALL_DEG / N * 0.0174533 * 0.5) + 0.02;
+    // LED paneli: ışıklandırmasız (Unlit) ışıyan pikseller; stüdyo ışıkları / gökyüzü panelde yansıyıp panel panel
+    // parlaklık farkı (bantlaşma) yapmaz
+    var p = Mesh("LED Panel " + i, "Cube", x, H / 2.0 + 0.25, z, w, H, 0.12, "", {r: 0.03, g: 0.03, b: 0.03, a: 1});
+    EntitySetRotation(p, 0, -a * 57.29578, 0);
+    EntitySetComponentField(p, "MeshRenderer", "Texture", "Assets/Textures/LED_Forest.jpg");
+    // Panel i, panoramanın i. dilimini gösterir (soldan sağa kesintisiz)
+    EntitySetComponentField(p, "MeshRenderer", "Tiling", {x: 1.0 / N, y: 1.0});
+    EntitySetComponentField(p, "MeshRenderer", "Offset", {x: i * 1.0 / N, y: 0.0});
+    EntitySetComponentField(p, "MeshRenderer", "EmissionFromTexture", true);
+    EntitySetComponentField(p, "MeshRenderer", "EmissionColor", {r: 1, g: 1, b: 1});
+    EntitySetComponentField(p, "MeshRenderer", "EmissionStrength", 1.9);
+    EntitySetComponentField(p, "MeshRenderer", "Roughness", 0.95);
+    EntitySetComponentField(p, "MeshRenderer", "Unlit", true);
+    EntitySetComponentField(p, "MeshRenderer", "CastShadows", false);
+    EntitySetTag(p, "LED Panel");
+    // Panel arkası taşıyıcı çerçeve
+    var fr = Paint(Mesh("LED Frame " + i, "Cube", MathSin(a) * (R + 0.25), H / 2.0 + 0.25, -2 - MathCos(a) * (R + 0.25), w, H + 0.3, 0.3, "", DARK), DARK, 0.6, 0.4);
+    EntitySetRotation(fr, 0, -a * 57.29578, 0);
+}
+// LED tavan: panoramanın üst yarıküresi (kanopi), kapak UV'sine kutupsal izdüşüm (make_led_content.py)
+var ceiling = Mesh("LED Ceiling", "Cylinder", 0, H + 0.4, -2, R * 2.0, 0.1, R * 2.0, "", {r: 0.03, g: 0.03, b: 0.03, a: 1});
+EntitySetComponentField(ceiling, "MeshRenderer", "Texture", "Assets/Textures/LED_Forest_Ceiling.jpg");
+EntitySetComponentField(ceiling, "MeshRenderer", "EmissionFromTexture", true);
+EntitySetComponentField(ceiling, "MeshRenderer", "EmissionColor", {r: 1, g: 1, b: 1});
+EntitySetComponentField(ceiling, "MeshRenderer", "EmissionStrength", 1.4);
+EntitySetComponentField(ceiling, "MeshRenderer", "Unlit", true);
+EntitySetComponentField(ceiling, "MeshRenderer", "CastShadows", false);
+// LED ışığı (ortam): duvarın önünde geniş alan ışıkları
+for (var k = 0; k < 3; k++)
+{
+    var al = CreateEntity("LED Spill " + k);
+    var aa = (-60 + k * 60) * 0.0174533;
+    EntitySetPosition(al, MathSin(aa) * (R - 0.5), 3.5, -2 - MathCos(aa) * (R - 0.5));
+    EntityAddComponent(al, "AreaLight");
+    EntitySetComponentField(al, "AreaLight", "Intensity", 3.0);
+    EntitySetComponentField(al, "AreaLight", "Size", {x: 5, y: 4});
+    EntitySetComponentField(al, "AreaLight", "Range", 16);
+    EntitySetComponentField(al, "AreaLight", "Color", {r: 0.8, g: 0.92, b: 0.75});
+    EntitySetRotation(al, -10, -aa * 57.29578 + 180, 0);
+}
+
+// Çekim nesneleri: araç ve oyuncular
+func Part(name, parent, path, x, y, z)
+{
+    var e = CreateEntity(name);
+    if (parent != null) { EntitySetParent(e, parent); }
+    EntitySetPosition(e, x, y, z);
+    EntityAddComponent(e, "Model");
+    EntitySetComponentField(e, "Model", "FilePath", path);
+    return e;
+}
+var MP = "Assets/Vehicles/Models/ConceptCar/";
+var car = CreateEntity("Concept GT");
+EntitySetPosition(car, 1.5, 0.25, -4.0);
+Part("Body", car, MP + "Body_Pearl.glb", 0, 0, 0);
+Part("Interior", car, MP + "Interior_Carmine.glb", 0, 0, 0);
+Part("Calipers", car, MP + "Calipers_Red.glb", 0, 0, 0);
+foreach (var wd in [{n: "FL", x: -0.976, z: -1.485}, {n: "FR", x: 0.977, z: -1.484}, {n: "RL", x: -0.982, z: 1.314}, {n: "RR", x: 0.982, z: 1.314}])
+{
+    var wh = Part("Wheel " + wd.n, car, MP + "Wheel_" + wd.n + ".glb", wd.x, 0.384, wd.z);
+    Part("Rim", wh, MP + "Rim_" + wd.n + "_Black.glb", 0, 0, 0);
+}
+EntitySetRotation(car, 0, 125, 0);
+// Oyuncular: Mara (Talent) ve Leo (Presenter) X ekseni boyunca karşılıklı, kameraya hafif açık (film blokajı).
+// Böylece omuz üstü çekim sola, karşı çekim sağa bakar: ikisinde de arkada LED duvar (açık ön tarafa / stüdyoya
+// bakılmaz). Leo aracın ön köşesinden 1.2 m uzakta (eskiden bacağı tamponun içindeydi). Kontrolcü: Idle / Talk / Nod.
+var MARA = {x: -2.7, z: -1.75};
+var LEO = {x: -0.85, z: -1.55};
+func DialogueActor(name, x, z, yaw, body, controller)
+{
+    var e = CreateEntity(name);
+    EntitySetPosition(e, x, 0.25, z);
+    EntitySetRotation(e, 0, yaw, 0);
+    EntityAddComponent(e, "Model");
+    EntitySetComponentField(e, "Model", "FilePath", "Assets/Mannequin/Models/" + body + ".glb");
+    EntityAddComponent(e, "Animation");
+    EntitySetComponentField(e, "Animation", "ControllerPath", "Assets/Animations/" + controller + ".cqcont");
+    AddScript(e, "Assets/Scripts/ActorPerformer.cqs");
+    return e;
+}
+var mara = DialogueActor("Actor Talent", MARA.x, MARA.z, 64, "Mannequin_Female", "Dialogue_Talent");
+var leo = DialogueActor("Actor Presenter", LEO.x, LEO.z, -76, "Mannequin_Male", "Dialogue_Presenter");
+// Göz hattı: her oyuncunun başı diğerinin yüzüne döner (Multi-Aim, baş kemiği +Z yüz, +Y yukarı)
+func EyeLine(actor, other, ox, oz, headY)
+{
+    var eyes = CreateEntity(EntityGetName(other) + " Eyes");
+    EntitySetPosition(eyes, ox, headY, oz);
+    var aim = CreateEntity("Head Aim");
+    EntitySetParent(aim, actor);
+    EntityAddComponent(aim, "MultiAimConstraint");
+    EntitySetComponentField(aim, "MultiAimConstraint", "Bone", "Head");
+    EntitySetComponentField(aim, "MultiAimConstraint", "Target", eyes);
+    EntitySetComponentField(aim, "MultiAimConstraint", "AimAxis", "Z");
+    EntitySetComponentField(aim, "MultiAimConstraint", "UpAxis", "Y");
+    EntitySetComponentField(aim, "MultiAimConstraint", "MaxAngle", 70);
+}
+EyeLine(mara, leo, LEO.x, LEO.z, 1.95);
+EyeLine(leo, mara, MARA.x, MARA.z, 1.85);
+
+// Orman giydirmesi (yalnızca orman içeriğinde açık; ShotSequencer "Forest Dressing" etiketini açar / kapatır):
+// sahne zemini orman tabanı, LED duvarın dibinde eğreltiler, yosunlu kayalar, devrik kütük (make_vp_dressing.py)
+var forestFloor = Mesh("Forest Floor", "Cube", 0, 0.256, -2, 18, 0.012, 14, "Assets/Textures/forest_floor.jpg", {r: 1, g: 1, b: 1, a: 1});
+EntitySetComponentField(forestFloor, "MeshRenderer", "Tiling", {x: 0.33, y: 0.33});
+EntitySetComponentField(forestFloor, "MeshRenderer", "Roughness", 0.92);
+EntitySetTag(forestFloor, "Forest Dressing");
+func Dressing(name, file, x, z, yaw, scale)
+{
+    var e = CreateEntity(name);
+    EntitySetModel(e, "Assets/Props/" + file + ".glb");
+    EntitySetPosition(e, x, 0.26, z);
+    EntitySetRotation(e, 0, yaw, 0);
+    EntitySetScale(e, scale, scale, scale);
+    EntitySetTag(e, "Forest Dressing");
+    return e;
+}
+var fernCount = 0;
+for (var fa = -131.0; fa <= 131.0; fa += 7.5)
+{
+    fernCount++;
+    var jitter = MathSin(fernCount * 12.9898) * 0.5 + 0.5;
+    var fr = 9.15 - jitter * 0.9;
+    var far = MathDegToRad(fa + (jitter - 0.5) * 4.0);
+    Dressing("Fern " + fernCount, "fern", MathSin(far) * fr, -2 - MathCos(far) * fr, fernCount * 47 % 360, 0.85 + jitter * 0.55);
+    if (fernCount % 3 == 0)
+    {
+        var fr2 = fr - 1.0 - jitter * 0.6;
+        Dressing("Fern Front " + fernCount, "fern", MathSin(far + 0.05) * fr2, -2 - MathCos(far + 0.05) * fr2, fernCount * 83 % 360, 0.7 + jitter * 0.35);
+    }
+}
+foreach (var rk in [{a: -122, r: 8.8, s: 0.5}, {a: -100, r: 9.1, s: 0.7}, {a: -82, r: 8.9, s: 0.55}, {a: -58, r: 9.2, s: 0.8},
+                    {a: -24, r: 9.0, s: 0.45}, {a: 6, r: 9.3, s: 0.65}, {a: 33, r: 8.8, s: 0.5}, {a: 61, r: 9.1, s: 0.75},
+                    {a: 88, r: 8.7, s: 0.5}, {a: 108, r: 9.0, s: 0.65}, {a: 126, r: 8.8, s: 0.55}])
+{
+    var rr2 = MathDegToRad(rk.a);
+    var rock = Dressing("Mossy Rock", "mossy_rock", MathSin(rr2) * rk.r, -2 - MathCos(rr2) * rk.r, rk.a * 3, rk.s);
+    EntitySetScale(rock, rk.s * 1.3, rk.s, rk.s);
+}
+var logA = MathDegToRad(-42.0);
+Dressing("Fallen Log", "fallen_log", MathSin(logA) * 8.6, -2 - MathCos(logA) * 8.6, 42 + 90, 1.0);
+
+// Prodüksiyon ekipmanı (sahne dışı): dolly rayı + sinema kamerası, ışık ayakları, softbox'lar
+// Yedek dolly rayı + sinema kamerası: çekim kameralarının arkasında (kadraja girmez; yönetmen görünümünde görülür)
+var DZ0 = 12.0;
+for (var rs = -1; rs <= 1; rs += 2) { Paint(Box("Dolly Rail " + (rs < 0 ? "L" : "R"), rs * 0.35 - 2, 0.0, DZ0 + 3.6, 0.06, 0.06, 8, ""), METAL, 0.3, 1.0); }
+for (var sl = 0; sl < 10; sl++) { Paint(Box("Rail Sleeper " + sl, -2, -0.05, DZ0 + sl * 0.8, 1.0, 0.05, 0.12, ""), DARK, 0.7, 0); }
+var dolly = Paint(Box("Camera Dolly", -2, 0.07, DZ0 + 2.6, 0.9, 0.25, 1.1, ""), DARK, 0.5, 0.3);
+Paint(Box("Dolly Column", -2, 0.32, DZ0 + 2.6, 0.18, 1.0, 0.18, ""), METAL, 0.3, 1.0);
+var camBody = Paint(Box("Cinema Camera Body", -2, 1.37, DZ0 + 2.6, 0.2, 0.24, 0.42, ""), DARK, 0.4, 0.2);
+var lens = Paint(Mesh("Cinema Camera Lens", "Cylinder", -2, 1.49, DZ0 + 2.26, 0.13, 0.26, 0.13, "", METAL), METAL, 0.25, 1.0);
+EntitySetRotation(lens, 90, 0, 0);
+Paint(Box("Camera Monitor", -1.82, 1.61, DZ0 + 2.72, 0.02, 0.14, 0.2, ""), {r: 0.02, g: 0.02, b: 0.03, a: 1}, 0.1, 0);
+func LightStand(name, x, z, yaw, intensity, col, withStand)
+{
+    if (!withStand)
+    {
+        // Tavana asılı (görünmez armatür): yalnızca ışık
+        var hung = CreateEntity(name + " Light");
+        EntitySetPosition(hung, x, 5.8, z);
+        EntityAddComponent(hung, "AreaLight");
+        EntitySetComponentField(hung, "AreaLight", "Intensity", intensity);
+        EntitySetComponentField(hung, "AreaLight", "Size", {x: 1.6, y: 1.0});
+        EntitySetComponentField(hung, "AreaLight", "Range", 14);
+        EntitySetComponentField(hung, "AreaLight", "Color", {r: col.r, g: col.g, b: col.b});
+        EntitySetRotation(hung, -38, yaw, 0);
+        return hung;
+    }
+    Paint(Box(name + " Stand", x, 0, z, 0.06, 2.6, 0.06, ""), METAL, 0.35, 1.0);
+    var panel = Paint(Mesh(name + " Panel", "Cube", x, 2.8, z, 1.2, 0.8, 0.08, "", {r: 0.95, g: 0.95, b: 0.95, a: 1}), {r: 0.95, g: 0.95, b: 0.95, a: 1}, 0.5, 0);
+    EntitySetRotation(panel, -15, yaw, 0);
+    EntitySetComponentField(panel, "MeshRenderer", "EmissionColor", {r: col.r, g: col.g, b: col.b});
+    EntitySetComponentField(panel, "MeshRenderer", "EmissionStrength", 3.0);
+    var l = CreateEntity(name + " Light");
+    EntitySetPosition(l, x, 2.8, z);
+    EntityAddComponent(l, "AreaLight");
+    EntitySetComponentField(l, "AreaLight", "Intensity", intensity);
+    EntitySetComponentField(l, "AreaLight", "Size", {x: 1.2, y: 0.8});
+    EntitySetComponentField(l, "AreaLight", "Range", 12);
+    EntitySetComponentField(l, "AreaLight", "Color", {r: col.r, g: col.g, b: col.b});
+    EntitySetRotation(l, -15, yaw, 0);
+}
+// Çekim ışıkları tavana asılı (LED hacmi 270°: ayaklı ışık her geniş planda kadraja girerdi); sahne dışında bir
+// yedek ayaklı ışık durur (yönetmen görünümünde görülür)
+LightStand("Key", 3.2, 2.6, 226, 10, {r: 1, g: 0.93, b: 0.85}, false);
+LightStand("Fill", -5.6, 2.2, 140, 4, {r: 0.85, g: 0.9, b: 1.0}, false);
+LightStand("Rim", 3.0, -6.5, 320, 7, {r: 1, g: 0.8, b: 0.6}, false);
+LightStand("Spare", 8.0, 9.5, 220, 0.0, {r: 1, g: 0.95, b: 0.9}, true);
+
+// Çekim noktaları: Shot N (başlangıç) -> Shot N End (bitiş); konum + pitch / yaw
+func ShotMark(name, x, y, z, pitch, yaw)
+{
+    var s = CreateEntity(name);
+    EntitySetPosition(s, x, y, z);
+    EntitySetRotation(s, pitch, yaw, 0);
+}
+// Kamera noktası: konumdan hedefe bakan açı (kamera -Z'ye bakar: yaw = atan2(-dx, -dz), pitch = yükselme)
+func LookMark(name, cx, cy, cz, tx, ty, tz)
+{
+    var dx = tx - cx;
+    var dy = ty - cy;
+    var dz = tz - cz;
+    ShotMark(name, cx, cy, cz, MathRadToDeg(MathAtan2(dy, MathSqrt(dx * dx + dz * dz))), MathRadToDeg(MathAtan2(-dx, -dz)));
+}
+// Oyuncular arası eksen (omuz üstü / karşı çekim) ve yan vektör
+var DX = LEO.x - MARA.x;
+var DZ = LEO.z - MARA.z;
+var DL = MathSqrt(DX * DX + DZ * DZ);
+DX = DX / DL;
+DZ = DZ / DL;
+var PX = -DZ;
+var PZ = DX;
+// 1 açılış: vinçle inen geniş plan
+LookMark("Shot 1", 0.0, 4.8, 11.0, -0.4, 1.4, -2.5);                 LookMark("Shot 1 End", 0.6, 2.4, 9.0, -0.4, 1.3, -2.5);
+// 2 iki kişilik plan, dolly in
+LookMark("Shot 2", -1.4, 1.86, 3.4, -1.78, 1.8, -1.65);               LookMark("Shot 2 End", -1.5, 1.84, 2.3, -1.78, 1.8, -1.65);
+// 3 Leo'nun omzu üstünden Mara
+LookMark("Shot 3", LEO.x + DX * 0.85 + PX * 0.45, 1.88, LEO.z + DZ * 0.85 + PZ * 0.45, MARA.x, 1.82, MARA.z);
+LookMark("Shot 3 End", LEO.x + DX * 0.72 + PX * 0.42, 1.88, LEO.z + DZ * 0.72 + PZ * 0.42, MARA.x, 1.82, MARA.z);
+// 4 karşı çekim: Mara'nın omzu üstünden Leo (arkada araç)
+LookMark("Shot 4", MARA.x - DX * 0.85 + PX * 0.45, 1.8, MARA.z - DZ * 0.85 + PZ * 0.45, LEO.x, 1.93, LEO.z);
+LookMark("Shot 4 End", MARA.x - DX * 0.72 + PX * 0.42, 1.8, MARA.z - DZ * 0.72 + PZ * 0.42, LEO.x, 1.93, LEO.z);
+// 5 araç detayı: ön tekerlekten arka tekerleğe yan boyunca kayan alçak kamera
+LookMark("Shot 5", 1.61, 0.62, -0.2, 0.84, 0.63, -2.35);             LookMark("Shot 5 End", 4.79, 0.6, -2.3, 3.14, 0.63, -3.95);
+// 6 Mara yakın plan (üç çeyrek önden)
+LookMark("Shot 6", MARA.x + 1.05, 1.84, MARA.z + 0.85, MARA.x, 1.8, MARA.z);
+LookMark("Shot 6 End", MARA.x + 0.9, 1.83, MARA.z + 0.72, MARA.x, 1.8, MARA.z);
+// 7 kapanış: vinçle yükselip geri çekilen geniş plan
+LookMark("Shot 7", -0.2, 1.3, 6.0, -0.6, 1.2, -2.2);                 LookMark("Shot 7 End", 0.0, 6.4, 11.5, -0.4, 0.8, -2.5);
+
+var cine = CreateEntity("Cine Camera");
+EntitySetPosition(cine, 0, 2.4, 9.5);
+EntityAddComponent(cine, "Camera");
+EntitySetComponentField(cine, "Camera", "Primary", true);
+EntitySetComponentField(cine, "Camera", "FieldOfView", 40);
+EntitySetComponentField(cine, "Camera", "Background", "SolidColor");
+EntitySetComponentField(cine, "Camera", "BackgroundColor", {r: 0.01, g: 0.01, b: 0.012, a: 1});
+EntityAddComponent(cine, "AudioListener");
+var seq = CreateEntity("Sequencer");
+AddScript(seq, "Assets/Scripts/ShotSequencer.cqs");
+
+// Arayüz: 2.39:1 sinema bantları, klaket, çekim adı, zaman kodu, REC
+var ui = UICreateCanvas("UI");
+EntitySetComponentField(ui, "CanvasScaler", "ReferenceResolution", {x: 1920, y: 1080});
+EntitySetComponentField(ui, "CanvasScaler", "MatchWidthOrHeight", 0.5);
+foreach (var bn in ["BarTop", "BarBottom"])
+{
+    var bar = HudImage(bn, ui, "", 0, 0, 4000, 138, 0.5, bn == "BarTop" ? 1 : 0);
+    EntitySetColor(bar, 0, 0, 0, 1);
+    UISetPosition(bar, 0, bn == "BarTop" ? -69 : 69);
+}
+HudText("SlateText", ui, "", 340, -45, 600, 34, 24, "Left", 0, 1);
+HudText("ShotText", ui, "", 390, -90, 700, 34, 24, "Left", 0, 1);
+HudText("Timecode", ui, "01:00:00:00", -200, -45, 300, 40, 30, "Right", 1, 1);
+var rec = HudImage("RecDot", ui, "", -400, -45, 18, 18, 1, 1);
+EntitySetColor(rec, 1, 0.1, 0.08, 1);
+EntitySetComponentField(rec, "UIImage", "CornerRadius", 9);
+HudText("RecText", ui, "REC", -360, -45, 60, 30, 22, "Left", 1, 1);
+HudText("ModeText", ui, "", 0, 160, 1400, 36, 22, "Center", 0.5, 0);
+// Alt yazı (alt bandın hemen üstünde, gölgeli) ve açılış / kapanış başlık kartı (ortada, kararıp açılır)
+var sub = HudText("Subtitle", ui, "", 0, 200, 1500, 50, 34, "Center", 0.5, 0);
+EntitySetComponentField(sub, "UIText", "Shadow", true);
+EntitySetComponentField(sub, "UIText", "ShadowColor", {r: 0, g: 0, b: 0, a: 0.85});
+var titleBack = HudImage("TitleBack", ui, "", 0, 0, 4000, 150, 0.5, 0.5);
+EntitySetColor(titleBack, 0, 0, 0, 0.45);
+UISetAlpha(titleBack, 0);
+var title = HudText("TitleCard", ui, "", 0, 0, 1600, 80, 54, "Center", 0.5, 0.5);
+EntitySetComponentField(title, "UIText", "Shadow", true);
+EntitySetComponentField(title, "UIText", "ShadowColor", {r: 0, g: 0, b: 0, a: 0.7});
+UISetAlpha(title, 0);
+HudText("HintText", ui, "SPACE NEXT SHOT     BACKSPACE PREVIOUS     TAB DIRECTOR VIEW     P PAUSE     1 / 2 LED CONTENT", 0, 69, 1800, 30, 22, "Center", 0.5, 0);

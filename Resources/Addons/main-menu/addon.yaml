@@ -1,0 +1,19 @@
+Id: conqueror.main-menu
+Name: Main Menu
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  A complete start screen: title, Play / Settings / Quit buttons with keyboard and gamepad
+  navigation, a settings page with master volume, bloom, shadows and vsync-friendly options
+  that are saved to player prefs and restored on the next launch, and a fade into the first
+  level.
+Category: UI
+Icon: bars
+Tags: [ui, menu, main-menu, settings, start-screen]
+Components:
+  - Scripts/MainMenu.cqs
+Inserts:
+  - Name: Main Menu
+    Icon: bars
+    Prefab: Prefabs/MainMenu.cqprefab
+    Tooltip: Canvas with the title screen and the settings page

@@ -1,0 +1,18 @@
+Id: conqueror.radar-minimap
+Name: Radar Minimap
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Circular radar in the corner of the screen: the player sits in the middle, tagged objects
+  (enemies, pickups, objectives) appear as colored blips, the map can rotate with the player's
+  heading, far targets stick to the rim and blips are pooled so hundreds of objects stay cheap.
+Category: UI
+Icon: satellite-dish
+Tags: [ui, radar, minimap, hud, navigation]
+Components:
+  - Scripts/Radar.cqs
+Inserts:
+  - Name: Radar
+    Icon: satellite-dish
+    Prefab: Prefabs/Radar.cqprefab
+    Tooltip: Bottom-left radar showing "Enemy" (red) and "Pickup" (yellow) objects

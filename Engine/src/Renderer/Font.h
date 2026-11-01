@@ -11,10 +11,11 @@ namespace Conqueror
 {
     struct Glyph
     {
-        std::shared_ptr<Texture2D> Texture;
-        glm::ivec2 Size;
-        glm::ivec2 Bearing;
-        uint32_t Advance;
+        std::shared_ptr<Texture2D> Texture;     // yazı tipinin glif atlası (paylaşılan); atlasa sığmayan glifin kendi dokusu
+        glm::ivec2 Size{};
+        glm::ivec2 Bearing{};
+        uint32_t Advance{};
+        glm::vec2 UV0{ 0.0f }, UV1{ 1.0f };     // dokudaki bölge: sol üst, sağ alt
     };
 
     class Font
@@ -34,10 +35,16 @@ namespace Conqueror
 
     private:
         mutable std::unordered_map<wchar_t, Glyph> m_Glyphs;
+        // Glif atlası: glifler yüklendikçe raf usulü yerleşir (metin tek dokuyla, tek çizim çağrısında çizilir)
+        static constexpr int kAtlasSize = 1024;
+        mutable std::shared_ptr<Texture2D> m_Atlas;
+        mutable int m_AtlasX = 1, m_AtlasY = 1, m_AtlasRowHeight = 0;
         
         void* m_FTLibrary = nullptr; // FT_Library
         void* m_Face = nullptr;      // FT_Face
         
         static std::shared_ptr<Font> s_DefaultFont;
+    public:
+        static void ReleaseDefault() { s_DefaultFont.reset(); }
     };
 }

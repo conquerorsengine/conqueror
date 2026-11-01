@@ -1,0 +1,68 @@
+using nativebridge;
+
+// Hedef işaretçisi: "Marker" görüntüsü hedefin ekran konumuna gider (WorldToScreenPoint, çapa ile).
+// Ekran dışındaysa kenara yapışır ve "Marker Arrow" hedef yönünü gösterir. "Distance Text" metre yazar.
+script ObjectiveMarker : ConquerorScript
+{
+    public string targetName = "Objective";
+    public float heightOffset = 1.5;
+    public float edgePadding = 0.05;
+    public bool showDistance = true;
+    public float hideDistance = 2.0;
+
+    // Çalışma zamanı bilgisi
+    public bool onScreen = false;
+    public float distance = 0.0;
+    public float screenU = 0.0;
+    public float screenV = 0.0;
+
+    func Update(dt)
+    {
+        var marker = FindEntity("Marker");
+        var target = FindEntity(targetName);
+        if (marker == null) { return; }
+        if (target == null) { UISetVisible(marker, false); return; }
+        var t = EntityGetWorldPosition(target);
+        var cam = GetMainCamera();
+        if (cam != null)
+        {
+            var c = EntityGetWorldPosition(cam);
+            distance = MathSqrt((t.x - c.x) * (t.x - c.x) + (t.y - c.y) * (t.y - c.y) + (t.z - c.z) * (t.z - c.z));
+        }
+        var sp = WorldToScreenPoint(t.x, t.y + heightOffset, t.z);
+        if (sp == null) { UISetVisible(marker, false); return; }
+        var u = sp.u;
+        var v = sp.v;
+        onScreen = sp.visible;
+        if (sp.depth <= 0)
+        {
+            // Kameranın arkası: yansıt ve kenara it
+            u = 1.0 - u;
+            v = 1.0 - v;
+        }
+        var arrow = FindEntity("Marker Arrow");
+        if (!onScreen)
+        {
+            // Merkezden hedefe doğru ışın: ekran kenarıyla kesişim
+            var dx = u - 0.5;
+            var dy = v - 0.5;
+            if (sp.depth <= 0 && MathAbs(dx) < 0.001 && MathAbs(dy) < 0.001) { dy = 0.5; }
+            var lim = 0.5 - edgePadding;
+            var k = lim / MathMax(MathAbs(dx), MathAbs(dy));
+            u = 0.5 + dx * k;
+            v = 0.5 + dy * k;
+            if (arrow != null) { UISetVisible(arrow, true); UISetRotation(arrow, MathRadToDeg(MathAtan2(-dy, dx)) - 90.0); }
+        }
+        else if (arrow != null) { UISetVisible(arrow, false); }
+        screenU = u;
+        screenV = v;
+        var visible = distance > hideDistance;
+        UISetVisible(marker, visible);
+        // Çapa ile yerleştir (canvas boyutundan bağımsız): v yukarıdan aşağı, UI çapası aşağıdan yukarı
+        EntitySetComponentField(marker, "RectTransform", "AnchorMin", [u, 1.0 - v]);
+        EntitySetComponentField(marker, "RectTransform", "AnchorMax", [u, 1.0 - v]);
+        EntitySetComponentField(marker, "RectTransform", "AnchoredPosition", [0, 0]);
+        var txt = FindEntity("Distance Text");
+        if (txt != null) { UISetText(txt, showDistance ? str(int(MathRound(distance))) + " m" : ""); }
+    }
+}

@@ -13,9 +13,12 @@ namespace Conqueror
     public:
         using MessageCallback = std::function<void(const std::string&, int)>; // message, level
         
+        // sink_it_ ile aynı kilidi alır: geri çağrı kaldırıldıktan sonra
+        // (örn. panel yok edilirken) arka plan log thread'i onu çağıramaz.
         void SetCallback(MessageCallback callback)
         {
-            m_Callback = callback;
+            std::lock_guard<Mutex> lock(this->mutex_);
+            m_Callback = std::move(callback);
         }
 
     protected:

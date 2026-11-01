@@ -1,4 +1,5 @@
 #include "AITools.h"
+#include "Core/Math/Math.h"
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"
 #include "Scene/Components.h"
@@ -934,6 +935,10 @@ namespace Conqueror::AI
             !entity.HasComponent<SpotLightComponent>())
         {
             entity.AddComponent<DirectionalLightComponent>();
+            // Yön dönüşten gelir: dönüşsüz nesnede güneşi aşağı eğ
+            auto& rot = entity.GetComponent<TransformComponent>().Rotation;
+            if (glm::dot(rot, rot) < 1e-8f)
+                rot = Math::EulerForForward(glm::vec3(-0.4f, -1.0f, -0.3f));
         }
 
         glm::vec3 colVec(1.0f);
@@ -1156,6 +1161,7 @@ namespace Conqueror::AI
         else if (type == "Light")
         {
             entity.AddComponent<DirectionalLightComponent>();
+            entity.GetComponent<TransformComponent>().Rotation = Math::EulerForForward(glm::vec3(-0.4f, -1.0f, -0.3f));
         }
         else if (type == "Camera")
         {
@@ -1312,7 +1318,12 @@ namespace Conqueror::AI
         else if (componentType == "Light")
         {
             if (!entity.HasComponent<DirectionalLightComponent>())
+            {
                 entity.AddComponent<DirectionalLightComponent>();
+                auto& rot = entity.GetComponent<TransformComponent>().Rotation;
+                if (glm::dot(rot, rot) < 1e-8f)
+                    rot = Math::EulerForForward(glm::vec3(-0.4f, -1.0f, -0.3f));
+            }
             return "Added Light component to '" + nameOrUuid + "'.";
         }
         else if (componentType == "Camera")

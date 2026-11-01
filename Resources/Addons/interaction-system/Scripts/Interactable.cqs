@@ -1,0 +1,26 @@
+using nativebridge;
+
+// Etkileşimli nesne işareti: prompt metni ve menzil. Etkileşimde aynı varlığa (ve isteğe bağlı üst nesneye)
+// OnInteract(etkileşen) iletilir; Door / Lever betikleri bunu dinler.
+script Interactable : ConquerorScript
+{
+    public string prompt = "Interact";
+    public float range = 2.5;
+    public bool enabled = true;
+    public bool forwardToParent = true;
+
+    // Çalışma zamanı bilgisi
+    public int uses = 0;
+
+    func Prompt() { return enabled ? prompt : ""; }
+
+    func Interact(by)
+    {
+        if (!enabled) { return false; }
+        uses++;
+        SendMessage(GetEntityId(), "OnInteract", by);
+        var parent = EntityGetParent(GetEntityId());
+        if (forwardToParent && parent != null && parent >= 0) { SendMessage(parent, "OnInteract", by); }
+        return true;
+    }
+}

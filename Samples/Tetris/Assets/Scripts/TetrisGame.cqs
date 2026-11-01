@@ -1,0 +1,1467 @@
+using nativebridge;
+
+// Conqueror's Engine — Tetris örneği.
+// Modern kurallar: SRS dönüş + duvar tekmeleri, 7'li torba, tutma (hold), hayalet parça, kilit gecikmesi,
+// DAS/ARR, T-spin (3 köşe kuralı), back-to-back, kombo, mükemmel temizlik, seviye/yerçekimi eğrisi.
+script TetrisGame : ConquerorScript
+{
+    [Tooltip("Delayed auto shift: yan tuş basılı tutulunca tekrar başlamadan önceki süre (s)")]
+    [Range(0.05, 0.4)]
+    public float das = 0.16;
+    [Tooltip("Auto repeat rate: tekrar aralığı (s); 0 = anında duvara")]
+    [Range(0, 0.1)]
+    public float arr = 0.033;
+    [Tooltip("Yumuşak düşüşte yerçekimi çarpanı")]
+    [Range(5, 60)]
+    public float softDropFactor = 20;
+    [Tooltip("Zemine değen parçanın kilitlenmeden önce beklediği süre (s)")]
+    [Range(0.1, 2)]
+    public float lockDelay = 0.5;
+    public int maxLockResets = 15;
+    [Range(1, 15)]
+    public int startLevel = 1;
+    public bool showGhost = true;
+
+    // ---------------------------------------------------------------- Sabitler / veri
+    private var shapes = [];
+    private var colors = [];
+    private var kicksJLSTZ = {};
+    private var kicksI = {};
+    private var garbageColor = null;
+
+    // ---------------------------------------------------------------- Durum
+    // 0 başlık, 1 geri sayım, 2 oyun, 3 satır silme, 4 duraklatma, 5 bitiş animasyonu, 6 bitiş ekranı
+    private int state = 0;
+    private float stateTime = 0;
+    private var board = [];
+    private var rendered = [];
+    private int cur = -1;
+    private int rot = 0;
+    private int px = 0;
+    private int py = 0;
+    private int holdType = -1;
+    private bool holdUsed = false;
+    private var queue = [];
+    private var bag = [];
+
+    private float fallTimer = 0;
+    private float lockTimer = 0;
+    private int lockResets = 0;
+    private int lowestY = 99;
+    private bool lastRotate = false;
+    private int lastKick = 0;
+    private float spawnDelay = -1;
+
+    private int dasDir = 0;
+    private float dasTimer = 0;
+    private float arrTimer = 0;
+
+    public int score = 0;
+    public int lines = 0;
+    public int level = 1;
+    private int combo = -1;
+    private bool backToBack = false;
+    private int best = 0;
+    private float displayScore = 0;
+    private float playTime = 0;
+    private int tetrisCount = 0;
+    private int tspinCount = 0;
+    private int maxCombo = 0;
+    private int piecesPlaced = 0;
+
+    private var clearRows = [];
+    private float clearTime = 0;
+    private float clearDuration = 0.34;
+    private bool pendingPerfect = false;
+    private int pendingLines = 0;
+
+    // ---------------------------------------------------------------- Varlıklar
+    private int field = -1;
+    private int cam = -1;
+    private int sparks = -1;
+    private int frame = -1;
+    private int game = -1;
+    private int titleMusic = -1;
+    private var cellIds = [];
+    private var bgIds = [];
+    private var activeIds = [];
+    private var ghostIds = [];
+    private var holdIds = [];
+    private var nextIds = [];
+    private var logoIds = [];
+    private var logoBase = [];
+    private var rainIds = [];
+    private var rain = [];
+
+    // ---------------------------------------------------------------- Efektler
+    private float shake = 0;
+    private float popupTime = -1;
+    private float popupDuration = 1.4;
+    private float frameFlash = 0;
+    private var frameColor = null;
+    private float countdownStep = -1;
+    private float goFade = -1;
+    private var flashCells = [];
+    private float flashTime = 0;
+
+    // ---------------------------------------------------------------- Menü / ayarlar
+    private var menuButtons = [];
+    private int menuIndex = 0;
+    private float musicVol = 0.7;
+    private float sfxVol = 0.9;
+    private var padPrev = {};
+    private bool demoMode = false;
+
+    // ================================================================ Yaşam döngüsü
+    func Start()
+    {
+        DefineData();
+        field = FindEntity("Playfield");
+        cam = FindEntity("Main Camera");
+        sparks = FindEntity("FX_Sparks");
+        frame = FindEntity("BoardFrame");
+        game = GetEntityId();
+        titleMusic = FindEntity("TitleMusic");
+        frameColor = EntityGetColor(frame);
+
+        best = PrefsGetInt("Tetris.Best", 0);
+        musicVol = PrefsGetFloat("Tetris.MusicVolume", 0.7);
+        sfxVol = PrefsGetFloat("Tetris.SfxVolume", 0.9);
+        ApplyVolumes();
+        UISetValue("MusicSlider", musicVol);
+        UISetValue("SfxSlider", sfxVol);
+
+        BuildBoardSprites();
+        BuildLogo();
+        BuildRain();
+        ResetBoard();
+        EnterTitle();
+    }
+
+    func Update(dt)
+    {
+        stateTime += dt;
+        switch (state)
+        {
+            case 0: UpdateTitle(dt); break;
+            case 1: UpdateCountdown(dt); break;
+            case 2: UpdatePlaying(dt); break;
+            case 3: UpdateClearing(dt); break;
+            case 4: UpdatePaused(dt); break;
+            case 5: UpdateGameOverFill(dt); break;
+            case 6: UpdateGameOverScreen(dt); break;
+        }
+        UpdateEffects(dt);
+    }
+
+    // ================================================================ Veri
+    func DefineData()
+    {
+        // SRS durumları (sütun, satır; satır aşağı doğru) — sıra: I O T S Z J L
+        shapes = [
+            [[[0,1],[1,1],[2,1],[3,1]], [[2,0],[2,1],[2,2],[2,3]], [[0,2],[1,2],[2,2],[3,2]], [[1,0],[1,1],[1,2],[1,3]]],
+            [[[1,0],[2,0],[1,1],[2,1]], [[1,0],[2,0],[1,1],[2,1]], [[1,0],[2,0],[1,1],[2,1]], [[1,0],[2,0],[1,1],[2,1]]],
+            [[[1,0],[0,1],[1,1],[2,1]], [[1,0],[1,1],[2,1],[1,2]], [[0,1],[1,1],[2,1],[1,2]], [[1,0],[0,1],[1,1],[1,2]]],
+            [[[1,0],[2,0],[0,1],[1,1]], [[1,0],[1,1],[2,1],[2,2]], [[1,1],[2,1],[0,2],[1,2]], [[0,0],[0,1],[1,1],[1,2]]],
+            [[[0,0],[1,0],[1,1],[2,1]], [[2,0],[1,1],[2,1],[1,2]], [[0,1],[1,1],[1,2],[2,2]], [[1,0],[0,1],[1,1],[0,2]]],
+            [[[0,0],[0,1],[1,1],[2,1]], [[1,0],[2,0],[1,1],[1,2]], [[0,1],[1,1],[2,1],[2,2]], [[1,0],[1,1],[0,2],[1,2]]],
+            [[[2,0],[0,1],[1,1],[2,1]], [[1,0],[1,1],[1,2],[2,2]], [[0,1],[1,1],[2,1],[0,2]], [[0,0],[1,0],[1,1],[1,2]]]
+        ];
+        colors = [
+            {r: 0.20, g: 0.92, b: 1.00}, {r: 1.00, g: 0.86, b: 0.18}, {r: 0.78, g: 0.36, b: 1.00},
+            {r: 0.36, g: 1.00, b: 0.42}, {r: 1.00, g: 0.28, b: 0.36}, {r: 0.28, g: 0.48, b: 1.00},
+            {r: 1.00, g: 0.60, b: 0.16}
+        ];
+        garbageColor = {r: 0.42, g: 0.45, b: 0.58};
+        // Duvar tekmeleri (x sağa, y yukarı)
+        kicksJLSTZ = {
+            "01": [[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]], "10": [[0,0],[1,0],[1,-1],[0,2],[1,2]],
+            "12": [[0,0],[1,0],[1,-1],[0,2],[1,2]],     "21": [[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],
+            "23": [[0,0],[1,0],[1,1],[0,-2],[1,-2]],    "32": [[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],
+            "30": [[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],  "03": [[0,0],[1,0],[1,1],[0,-2],[1,-2]]
+        };
+        kicksI = {
+            "01": [[0,0],[-2,0],[1,0],[-2,-1],[1,2]],   "10": [[0,0],[2,0],[-1,0],[2,1],[-1,-2]],
+            "12": [[0,0],[-1,0],[2,0],[-1,2],[2,-1]],   "21": [[0,0],[1,0],[-2,0],[1,-2],[-2,1]],
+            "23": [[0,0],[2,0],[-1,0],[2,1],[-1,-2]],   "32": [[0,0],[-2,0],[1,0],[-2,-1],[1,2]],
+            "30": [[0,0],[1,0],[-2,0],[1,-2],[-2,1]],   "03": [[0,0],[-1,0],[2,0],[-1,2],[2,-1]]
+        };
+    }
+
+    // ================================================================ Kurulum
+    func BuildBoardSprites()
+    {
+        var tBlock = FindEntity("BlockTemplate");
+        var tGhost = FindEntity("GhostTemplate");
+        var tCell = FindEntity("CellTemplate");
+        for (var y = 0; y < 20; y++)
+        {
+            for (var x = 0; x < 10; x++)
+            {
+                var bgc = Instantiate(tCell, CellX(x), CellY(y), -1);
+                EntitySetParent(bgc, field);
+                EntitySetActive(bgc, true);
+                bgIds.Add(bgc);
+                var b = Instantiate(tBlock, CellX(x), CellY(y), 0);
+                EntitySetParent(b, field);
+                cellIds.Add(b);
+                rendered.Add(-1);
+            }
+        }
+        for (var i = 0; i < 4; i++)
+        {
+            var a = Instantiate(tBlock, 0, 0, 0.2);
+            EntitySetParent(a, field);
+            activeIds.Add(a);
+            var g = Instantiate(tGhost, 0, 0, 0.1);
+            EntitySetParent(g, field);
+            ghostIds.Add(g);
+            var h = Instantiate(tBlock, 0, 0, 0.1);
+            EntitySetParent(h, field);
+            holdIds.Add(h);
+        }
+        for (var i = 0; i < 20; i++)
+        {
+            var n = Instantiate(tBlock, 0, 0, 0.1);
+            EntitySetParent(n, field);
+            nextIds.Add(n);
+        }
+    }
+
+    func BuildLogo()
+    {
+        var glyphs = {
+            T: ["#####", "..#..", "..#..", "..#..", "..#.."],
+            E: ["####", "#...", "###.", "#...", "####"],
+            R: ["###.", "#..#", "###.", "#.#.", "#..#"],
+            I: ["###", ".#.", ".#.", ".#.", "###"],
+            S: [".###", "#...", ".##.", "...#", "###."]
+        };
+        var word = "TETRIS";
+        var letterColors = [4, 6, 1, 3, 0, 2];
+        var size = 0.82;
+        var total = 0;
+        foreach (var ch in word) { total += glyphs[ch][0].Length + 1; }
+        total -= 1;
+        var x0 = -(total - 1) * size / 2.0;
+        var col = 0;
+        var tBlock = FindEntity("BlockTemplate");
+        for (var li = 0; li < word.Length; li++)
+        {
+            var g = glyphs[word[li]];
+            var w = g[0].Length;
+            for (var r = 0; r < 5; r++)
+            {
+                for (var c = 0; c < w; c++)
+                {
+                    if (g[r][c] != "#") { continue; }
+                    var bx = x0 + (col + c) * size;
+                    var by = 8.2 - r * size;
+                    var e = Instantiate(tBlock, bx, by, 0.5);
+                    EntitySetScale(e, size, size, 1);
+                    var cc = colors[letterColors[li]];
+                    EntitySetColor(e, cc.r * 1.15, cc.g * 1.15, cc.b * 1.15, 1);
+                    EntitySetActive(e, true);
+                    logoIds.Add(e);
+                    logoBase.Add([bx, by, col + c]);
+                }
+            }
+            col += w + 1;
+        }
+    }
+
+    func BuildRain()
+    {
+        var tBlock = FindEntity("BlockTemplate");
+        for (var i = 0; i < 9; i++)
+        {
+            var ids = [];
+            for (var k = 0; k < 4; k++)
+            {
+                var e = Instantiate(tBlock, 0, 0, -4);
+                ids.Add(e);
+            }
+            rainIds.Add(ids);
+            rain.Add({ type: i % 7, x: random(-21.0, 21.0), y: random(-14.0, 16.0), speed: random(1.2, 2.6), size: random(0.55, 0.95) });
+        }
+    }
+
+    // ================================================================ Yardımcılar
+    func CellX(x) { return -4.5 + x; }
+    func CellY(y) { return -9.5 + y; }
+
+    func Cell(x, y)
+    {
+        if (x < 0 || x >= 10 || y < 0) { return 9; }
+        if (y >= 22) { return 0; }
+        return board[y * 10 + x];
+    }
+
+    func Fits(type, r, ox, oy)
+    {
+        foreach (var c in shapes[type][r])
+        {
+            var x = ox + c[0];
+            var y = oy - c[1];
+            if (x < 0 || x >= 10 || y < 0) { return false; }
+            if (y < 22 && board[y * 10 + x] != 0) { return false; }
+        }
+        return true;
+    }
+
+    func GravityInterval()
+    {
+        var l = MathMin(level, 20) - 1;
+        return MathPow(0.8 - l * 0.007, l);
+    }
+
+    func Sfx(name, volume, pitch)
+    {
+        AudioPlayOneShot("Assets/Audio/" + name + ".wav", volume, pitch, 0, "SFX");
+    }
+
+    func UiSfx(name)
+    {
+        AudioPlayOneShot("Assets/Audio/" + name + ".wav", 0.8, 1, 0, "UI");
+    }
+
+    func ApplyVolumes()
+    {
+        AudioSetGroupVolume("Music", musicVol);
+        AudioSetGroupVolume("SFX", sfxVol);
+        AudioSetGroupVolume("UI", sfxVol);
+    }
+
+    func FormatTime(t)
+    {
+        var s = MathFloor(t);
+        var m = MathFloor(s / 60);
+        var r = s - m * 60;
+        return $"{int(m)}:{int(r):D2}";
+    }
+
+    // ---------------------------------------------------------------- Girdi
+    func Key(a, b) { return IsKeyPressed(a) || (b != "" && IsKeyPressed(b)); }
+    func KeyDown(a, b) { return IsKeyDown(a) || (b != "" && IsKeyDown(b)); }
+
+    func Pad(button)
+    {
+        return IsGamepadConnected(0) && IsGamepadButtonPressed(0, button);
+    }
+
+    func PadDown(button)
+    {
+        var now = Pad(button);
+        var key = "b" + button;
+        var was = padPrev.ContainsKey(key) && padPrev[key];
+        padPrev[key] = now;
+        return now && !was;
+    }
+
+    func ConfirmPressed() { return KeyDown("Enter", "Space") || PadDown(0) || PadDown(7); }
+
+    // ================================================================ Başlık ekranı
+    func EnterTitle()
+    {
+        state = 0;
+        stateTime = 0;
+        EntitySetActive(field, false);
+        UISetVisible("HudRoot", false);
+        UISetVisible("TitleUI", true);
+        UISetVisible("PauseUI", false);
+        UISetVisible("GameOverUI", false);
+        UISetText("TitleBest", best > 0 ? $"BEST  {best:N0}" : "");
+        UISetText("PopupText", "");
+        UISetText("PopupSub", "");
+        UISetText("CountdownText", "");
+        foreach (var e in logoIds) { EntitySetActive(e, true); }
+        foreach (var ids in rainIds) { foreach (var e in ids) { EntitySetActive(e, true); } }
+        AudioStop();
+        AudioPlayEntity(titleMusic);
+        AudioSetEntityVolume(titleMusic, 0.5);
+        SetMenu(["PlayBtn"]);
+    }
+
+    func UpdateTitle(dt)
+    {
+        // Logo dalgalanması
+        for (var i = 0; i < logoIds.Count; i++)
+        {
+            var b = logoBase[i];
+            var wave = MathSin(stateTime * 2.4 - b[2] * 0.33) * 0.16;
+            EntitySetPosition(logoIds[i], b[0], b[1] + wave, 0.5);
+        }
+        UpdateRain(dt);
+        var blink = 0.55 + 0.45 * MathSin(stateTime * 4.0);
+        UISetTextColor("PressStart", 0.92, 0.95, 1.0, blink);
+        if (ConfirmPressed() || UIWasClicked("PlayBtn"))
+        {
+            UiSfx("menu_select");
+            StartGame();
+        }
+        if (KeyDown("Escape", "") || PadDown(6))
+        {
+            QuitGame();
+        }
+    }
+
+    func UpdateRain(dt)
+    {
+        for (var i = 0; i < rain.Count; i++)
+        {
+            var r = rain[i];
+            r.y -= r.speed * dt;
+            if (r.y < -15)
+            {
+                r.y = 15.5;
+                r.x = random(-21.0, 21.0);
+                r.type = random(0, 7);
+                r.speed = random(1.2, 2.6);
+                r.size = random(0.55, 0.95);
+            }
+            // Ortadaki logo/menü alanını boş bırak
+            var cells = shapes[r.type][0];
+            var cc = colors[r.type];
+            var fade = MathAbs(r.x) < 13 ? 0.10 : 0.28;
+            for (var k = 0; k < 4; k++)
+            {
+                var c = cells[k];
+                var e = rainIds[i][k];
+                EntitySetPosition(e, r.x + c[0] * r.size, r.y - c[1] * r.size, -4);
+                EntitySetScale(e, r.size, r.size, 1);
+                EntitySetColor(e, cc.r, cc.g, cc.b, fade);
+            }
+        }
+    }
+
+    // ================================================================ Oyun başlangıcı
+    func StartGame()
+    {
+        foreach (var e in logoIds) { EntitySetActive(e, false); }
+        foreach (var ids in rainIds) { foreach (var e in ids) { EntitySetActive(e, false); } }
+        AudioStopEntity(titleMusic);
+        EntitySetActive(field, true);
+        UISetVisible("TitleUI", false);
+        UISetVisible("GameOverUI", false);
+        UISetVisible("PauseUI", false);
+        UISetVisible("HudRoot", true);
+        ResetBoard();
+        score = 0;
+        lines = 0;
+        level = startLevel;
+        combo = -1;
+        backToBack = false;
+        displayScore = 0;
+        playTime = 0;
+        tetrisCount = 0;
+        tspinCount = 0;
+        maxCombo = 0;
+        piecesPlaced = 0;
+        holdType = -1;
+        holdUsed = false;
+        bag = [];
+        queue = [];
+        for (var i = 0; i < 6; i++) { queue.Add(NextFromBag()); }
+        foreach (var e in activeIds) { EntitySetActive(e, false); }
+        foreach (var e in ghostIds) { EntitySetActive(e, false); }
+        foreach (var e in holdIds) { EntitySetActive(e, false); }
+        RenderNext();
+        UpdateHud(true);
+        UISetText("BestLabel", $"BEST {best:N0}");
+        state = 1;
+        stateTime = 0;
+        countdownStep = -1;
+        // Önceki oyunun "GO!" sönmesi yeni geri sayımı silmesin
+        goFade = -1;
+        UISetTextColor("CountdownText", 0.92, 0.95, 1.0, 1);
+        menuButtons = [];
+    }
+
+    func ResetBoard()
+    {
+        board = [];
+        for (var i = 0; i < 220; i++) { board.Add(0); }
+        clearRows = [];
+        RenderBoard(true);
+    }
+
+    func NextFromBag()
+    {
+        if (bag.Count == 0)
+        {
+            bag = [0, 1, 2, 3, 4, 5, 6];
+            for (var i = 6; i > 0; i--)
+            {
+                var j = random(0, i + 1);
+                var t = bag[i];
+                bag[i] = bag[j];
+                bag[j] = t;
+            }
+        }
+        return bag.Pop();
+    }
+
+    func UpdateCountdown(dt)
+    {
+        var step = int(MathFloor(stateTime / 0.55));
+        if (step != countdownStep)
+        {
+            countdownStep = step;
+            if (step < 3)
+            {
+                UISetText("CountdownText", str(3 - step));
+                Sfx("countdown", 0.8, 1.0);
+            }
+            else
+            {
+                // GO: oyun başlar; yazının sönmesi ve büyüme animasyonu UpdateEffects'te
+                UISetText("CountdownText", "GO!");
+                UISetScale("CountdownText", 1.5);
+                goFade = 0;
+                Sfx("go", 0.9, 1.0);
+                AudioSetVolume(0.55);
+                AudioPlay();
+                state = 2;
+                stateTime = 0;
+                SpawnNext();
+                return;
+            }
+        }
+        var t = MathMax(0.0, stateTime - countdownStep * 0.55);
+        UISetScale("CountdownText", 1.0 + 0.5 * MathExp(-t * 9.0));
+    }
+
+    // ================================================================ Parça yönetimi
+    func SpawnNext()
+    {
+        var t = queue[0];
+        queue.RemoveAt(0);
+        queue.Add(NextFromBag());
+        Spawn(t);
+        RenderNext();
+    }
+
+    func Spawn(type)
+    {
+        cur = type;
+        rot = 0;
+        px = 3;
+        py = 20;
+        lockTimer = 0;
+        lockResets = 0;
+        lastRotate = false;
+        lastKick = 0;
+        fallTimer = 0;
+        spawnDelay = -1;
+        if (!Fits(cur, rot, px, py))
+        {
+            StartGameOver();
+            return;
+        }
+        // Kılavuz: doğduktan hemen sonra bir sıra düşer
+        if (Fits(cur, rot, px, py - 1)) { py -= 1; }
+        lowestY = py;
+        var cc = colors[cur];
+        for (var i = 0; i < 4; i++)
+        {
+            EntitySetColor(activeIds[i], cc.r, cc.g, cc.b, 1);
+            EntitySetScale(activeIds[i], 1, 1, 1);
+            EntitySetActive(activeIds[i], true);
+            EntitySetColor(ghostIds[i], cc.r * 1.6, cc.g * 1.6, cc.b * 1.6, 0.55);
+            EntitySetActive(ghostIds[i], showGhost);
+        }
+        RenderActive();
+    }
+
+    func TryMove(dx, dy)
+    {
+        if (!Fits(cur, rot, px + dx, py + dy)) { return false; }
+        px += dx;
+        py += dy;
+        lastRotate = false;
+        OnPieceMoved();
+        return true;
+    }
+
+    func TryRotate(dir)
+    {
+        if (cur == 1)
+        {
+            Sfx("rotate", 0.5, 1.0);
+            return true;
+        }
+        var to = (rot + dir + 4) % 4;
+        var table = cur == 0 ? kicksI : kicksJLSTZ;
+        var kicks = table[str(rot) + str(to)];
+        for (var i = 0; i < kicks.Count; i++)
+        {
+            var k = kicks[i];
+            if (Fits(cur, to, px + k[0], py + k[1]))
+            {
+                px += k[0];
+                py += k[1];
+                rot = to;
+                lastRotate = true;
+                lastKick = i;
+                OnPieceMoved();
+                Sfx("rotate", 0.55, 1.0);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    func OnPieceMoved()
+    {
+        // Zemindeyken hareket kilit süresini sıfırlar (sınırlı sayıda)
+        if (!Fits(cur, rot, px, py - 1) && lockResets < maxLockResets)
+        {
+            lockTimer = 0;
+            lockResets++;
+        }
+        if (py < lowestY)
+        {
+            lowestY = py;
+            lockResets = 0;
+        }
+        RenderActive();
+    }
+
+    func HardDrop()
+    {
+        var dist = 0;
+        while (Fits(cur, rot, px, py - 1))
+        {
+            py--;
+            dist++;
+        }
+        if (dist > 0) { lastRotate = false; }
+        score += dist * 2;
+        // Düşüş izi
+        foreach (var c in shapes[cur][rot])
+        {
+            var x = px + c[0];
+            var y = py - c[1];
+            var cc = colors[cur];
+            ParticleSetColor(sparks, cc.r, cc.g, cc.b, 0.8);
+            for (var k = 1; k <= dist; k += 2)
+            {
+                if (y + k < 20) { ParticleEmitAt(sparks, CellX(x), CellY(y + k), 1, 1); }
+            }
+        }
+        shake = MathMax(shake, 0.16);
+        Sfx("harddrop", 0.9, 1.0);
+        LockPiece(true);
+    }
+
+    func Hold()
+    {
+        if (holdUsed)
+        {
+            Sfx("menu_move", 0.35, 0.7);
+            return;
+        }
+        var t = cur;
+        if (holdType < 0)
+        {
+            holdType = t;
+            SpawnNext();
+        }
+        else
+        {
+            var h = holdType;
+            holdType = t;
+            Spawn(h);
+        }
+        holdUsed = true;
+        RenderHold();
+        Sfx("hold", 0.8, 1.0);
+    }
+
+    func DetectTSpin()
+    {
+        if (cur != 2 || !lastRotate) { return 0; }
+        var cx = px + 1;
+        var cy = py - 1;
+        var tl = Cell(cx - 1, cy + 1) != 0;
+        var tr = Cell(cx + 1, cy + 1) != 0;
+        var bl = Cell(cx - 1, cy - 1) != 0;
+        var br = Cell(cx + 1, cy - 1) != 0;
+        var count = (tl ? 1 : 0) + (tr ? 1 : 0) + (bl ? 1 : 0) + (br ? 1 : 0);
+        if (count < 3) { return 0; }
+        var front = false;
+        switch (rot)
+        {
+            case 0: front = tl && tr; break;
+            case 1: front = tr && br; break;
+            case 2: front = bl && br; break;
+            default: front = tl && bl; break;
+        }
+        if (front || lastKick == 4) { return 2; }
+        return 1;
+    }
+
+    func LockPiece(hard)
+    {
+        var tspin = DetectTSpin();
+        var allAbove = true;
+        flashCells = [];
+        foreach (var c in shapes[cur][rot])
+        {
+            var x = px + c[0];
+            var y = py - c[1];
+            if (y < 20) { allAbove = false; }
+            if (y < 22) { board[y * 10 + x] = cur + 1; }
+            if (y < 20) { flashCells.Add(y * 10 + x); }
+        }
+        piecesPlaced++;
+        foreach (var e in activeIds) { EntitySetActive(e, false); }
+        foreach (var e in ghostIds) { EntitySetActive(e, false); }
+        if (!hard) { Sfx("lock", 0.7, 1.0); }
+        holdUsed = false;
+        RenderHold();
+        if (allAbove)
+        {
+            RenderBoard(false);
+            StartGameOver();
+            return;
+        }
+        // Tam satırlar
+        clearRows = [];
+        for (var y = 0; y < 22; y++)
+        {
+            var full = true;
+            for (var x = 0; x < 10; x++)
+            {
+                if (board[y * 10 + x] == 0) { full = false; break; }
+            }
+            if (full) { clearRows.Add(y); }
+        }
+        RenderBoard(false);
+        flashTime = 0.14;
+        ScoreLock(clearRows.Count, tspin);
+        if (clearRows.Count > 0)
+        {
+            state = 3;
+            clearTime = 0;
+            StartClearFx();
+        }
+        else
+        {
+            spawnDelay = 0.06;
+        }
+    }
+
+    // ================================================================ Puanlama
+    func ScoreLock(n, tspin)
+    {
+        var basePts = 0;
+        var label = "";
+        var difficult = false;
+        if (tspin == 2)
+        {
+            basePts = [400, 800, 1200, 1600][n];
+            label = ["T-SPIN", "T-SPIN SINGLE", "T-SPIN DOUBLE", "T-SPIN TRIPLE"][n];
+            difficult = n > 0;
+            tspinCount++;
+        }
+        else if (tspin == 1)
+        {
+            var mi = n > 2 ? 2 : n;
+            basePts = [100, 200, 400][mi];
+            label = ["MINI T-SPIN", "MINI T-SPIN SINGLE", "MINI T-SPIN DOUBLE"][mi];
+            difficult = n > 0;
+        }
+        else if (n > 0)
+        {
+            basePts = [0, 100, 300, 500, 800][n];
+            label = ["", "SINGLE", "DOUBLE", "TRIPLE", "TETRIS!"][n];
+            difficult = n == 4;
+            if (n == 4) { tetrisCount++; }
+        }
+        var pts = basePts * level;
+        var b2b = false;
+        if (n > 0)
+        {
+            if (difficult)
+            {
+                if (backToBack) { pts = int(MathFloor(pts * 3 / 2)); b2b = true; }
+                backToBack = true;
+            }
+            else
+            {
+                backToBack = false;
+            }
+            combo++;
+            if (combo > 0)
+            {
+                pts += 50 * combo * level;
+                if (combo > maxCombo) { maxCombo = combo; }
+            }
+        }
+        else
+        {
+            combo = -1;
+        }
+        score += pts;
+
+        // Mükemmel temizlik: silinecek satırlar dışında tahtada blok kalmayacak mı?
+        pendingPerfect = false;
+        if (n > 0)
+        {
+            var remaining = 0;
+            for (var y = 0; y < 22; y++)
+            {
+                if (clearRows.Contains(y)) { continue; }
+                for (var x = 0; x < 10; x++) { if (board[y * 10 + x] != 0) { remaining++; } }
+            }
+            if (remaining == 0)
+            {
+                pendingPerfect = true;
+                score += [0, 800, 1200, 1800, 2000][n] * level * (b2b ? 2 : 1);
+            }
+        }
+
+        // Ses ve yazılar
+        if (tspin > 0) { Sfx("tspin", 0.9, 1.0); }
+        if (n == 4) { Sfx("tetris", 1.0, 1.0); }
+        else if (n == 3) { Sfx("clear3", 0.9, 1.0); }
+        else if (n == 2) { Sfx("clear2", 0.85, 1.0); }
+        else if (n == 1 && tspin == 0) { Sfx("clear1", 0.8, 1.0); }
+        if (combo > 0) { Sfx("combo", 0.6, 1.0 + MathMin(combo, 10) * 0.06); }
+
+        var sub = "";
+        if (b2b) { sub = "BACK-TO-BACK"; }
+        if (combo > 0) { sub = sub == "" ? $"COMBO x{combo}" : sub + $"   COMBO x{combo}"; }
+        if (pendingPerfect) { ShowPopup("PERFECT CLEAR", sub, {r: 1.0, g: 0.85, b: 0.3}); }
+        else if (label != "")
+        {
+            var color = {r: 0.92, g: 0.95, b: 1.0};
+            if (n == 4) { color = {r: 0.35, g: 0.95, b: 1.0}; }
+            if (tspin > 0) { color = {r: 0.85, g: 0.45, b: 1.0}; }
+            ShowPopup(label, sub, color);
+        }
+        else if (sub != "") { ShowPopup("", sub, {r: 0.92, g: 0.95, b: 1.0}); }
+
+        pendingLines = n;
+        UpdateHud(false);
+    }
+
+    func AddLines(n)
+    {
+        if (n <= 0) { return; }
+        lines += n;
+        var newLevel = startLevel + int(MathFloor(lines / 10));
+        if (newLevel > level)
+        {
+            level = newLevel;
+            Sfx("levelup", 0.9, 1.0);
+            ShowPopup($"LEVEL {level}", "SPEED UP", {r: 0.4, g: 1.0, b: 0.6});
+            frameFlash = 1.0;
+        }
+        UpdateHud(false);
+    }
+
+    // ================================================================ Satır silme
+    func StartClearFx()
+    {
+        var n = clearRows.Count;
+        shake = MathMax(shake, 0.06 + n * 0.07);
+        foreach (var y in clearRows)
+        {
+            if (y >= 20) { continue; }
+            for (var x = 0; x < 10; x++)
+            {
+                var v = board[y * 10 + x];
+                var cc = v > 0 && v <= 7 ? colors[v - 1] : garbageColor;
+                ParticleSetColor(sparks, cc.r * 1.4, cc.g * 1.4, cc.b * 1.4, 1);
+                ParticleEmitAt(sparks, CellX(x), CellY(y), 1, n >= 4 ? 7 : 4);
+                EntitySetColor(cellIds[y * 10 + x], 2.4, 2.4, 2.6, 1);
+            }
+        }
+    }
+
+    func UpdateClearing(dt)
+    {
+        clearTime += dt;
+        var p = MathMin(clearTime / clearDuration, 1.0);
+        if (p > 0.3)
+        {
+            var k = 1.0 - (p - 0.3) / 0.7;
+            foreach (var y in clearRows)
+            {
+                if (y >= 20) { continue; }
+                for (var x = 0; x < 10; x++)
+                {
+                    var id = cellIds[y * 10 + x];
+                    // Ortadan dışarı doğru küçülerek kaybol
+                    var d = MathAbs(x - 4.5) / 4.5;
+                    var s = MathMax(0.0, MathMin(1.0, k * 1.6 - d * 0.6));
+                    EntitySetScale(id, s, s, 1);
+                    EntitySetColor(id, 1.6 + s, 1.6 + s, 1.8 + s, s);
+                }
+            }
+        }
+        if (clearTime >= clearDuration)
+        {
+            // Satırları kaldır, üsttekileri indir
+            var kept = [];
+            for (var y = 0; y < 22; y++)
+            {
+                if (clearRows.Contains(y)) { continue; }
+                for (var x = 0; x < 10; x++) { kept.Add(board[y * 10 + x]); }
+            }
+            while (kept.Count < 220) { kept.Add(0); }
+            board = kept;
+            foreach (var id in cellIds) { EntitySetScale(id, 1, 1, 1); }
+            for (var i = 0; i < rendered.Count; i++) { rendered[i] = -1; }
+            AddLines(clearRows.Count);
+            clearRows = [];
+            RenderBoard(false);
+            state = 2;
+            spawnDelay = 0.02;
+        }
+    }
+
+    // ================================================================ Oyun döngüsü
+    func UpdatePlaying(dt)
+    {
+        playTime += dt;
+        if (KeyDown("Escape", "P") || PadDown(7))
+        {
+            EnterPause();
+            return;
+        }
+        if (spawnDelay >= 0)
+        {
+            spawnDelay -= dt;
+            UpdateDas(dt, false);
+            if (spawnDelay < 0) { SpawnNext(); }
+            return;
+        }
+        if (cur < 0) { return; }
+
+        // Döndürme / tutma / sert düşüş
+        if (KeyDown("Up", "X") || KeyDown("W", "") || PadDown(0)) { TryRotate(1); }
+        if (KeyDown("Z", "LeftControl") || PadDown(1)) { TryRotate(-1); }
+        if (KeyDown("C", "LeftShift") || PadDown(4) || PadDown(5))
+        {
+            Hold();
+            return;
+        }
+        if (KeyDown("Space", "") || PadDown(11))
+        {
+            HardDrop();
+            return;
+        }
+
+        UpdateDas(dt, true);
+
+        // Yerçekimi (yumuşak düşüşte hızlı)
+        var soft = Key("Down", "S") || Pad(13);
+        var interval = GravityInterval();
+        if (soft) { interval = MathMin(interval, interval / softDropFactor); }
+        fallTimer += dt;
+        var guard = 0;
+        while (fallTimer >= interval && guard < 22)
+        {
+            fallTimer -= interval;
+            guard++;
+            if (TryMove(0, -1))
+            {
+                if (soft)
+                {
+                    score += 1;
+                    Sfx("softdrop", 0.25, 1.0);
+                }
+            }
+            else
+            {
+                fallTimer = 0;
+                break;
+            }
+        }
+
+        // Kilit gecikmesi
+        if (!Fits(cur, rot, px, py - 1))
+        {
+            lockTimer += dt;
+            if (lockTimer >= lockDelay)
+            {
+                LockPiece(false);
+            }
+        }
+        else
+        {
+            lockTimer = 0;
+        }
+    }
+
+    func UpdateDas(dt, canMove)
+    {
+        var left = Key("Left", "A") || Pad(14);
+        var right = Key("Right", "D") || Pad(12);
+        var leftDown = KeyDown("Left", "A") || PadDown(14);
+        var rightDown = KeyDown("Right", "D") || PadDown(12);
+        if (leftDown)
+        {
+            dasDir = -1;
+            dasTimer = 0;
+            arrTimer = 0;
+            if (canMove && TryMove(-1, 0)) { Sfx("move", 0.45, 1.0); }
+        }
+        if (rightDown)
+        {
+            dasDir = 1;
+            dasTimer = 0;
+            arrTimer = 0;
+            if (canMove && TryMove(1, 0)) { Sfx("move", 0.45, 1.0); }
+        }
+        if (dasDir == -1 && !left) { dasDir = right ? 1 : 0; dasTimer = 0; }
+        if (dasDir == 1 && !right) { dasDir = left ? -1 : 0; dasTimer = 0; }
+        if (dasDir == 0) { return; }
+        dasTimer += dt;
+        if (dasTimer < das || !canMove) { return; }
+        if (arr <= 0.0001)
+        {
+            var moved = false;
+            while (TryMove(dasDir, 0)) { moved = true; }
+            if (moved) { Sfx("move", 0.3, 1.1); }
+            return;
+        }
+        arrTimer += dt;
+        var steps = 0;
+        while (arrTimer >= arr && steps < 10)
+        {
+            arrTimer -= arr;
+            steps++;
+            if (!TryMove(dasDir, 0)) { arrTimer = 0; break; }
+            Sfx("move", 0.3, 1.1);
+        }
+    }
+
+    // ================================================================ Çizim
+    func RenderBoard(force)
+    {
+        for (var y = 0; y < 20; y++)
+        {
+            for (var x = 0; x < 10; x++)
+            {
+                var i = y * 10 + x;
+                var v = board.Count > 0 ? board[i] : 0;
+                if (!force && rendered[i] == v) { continue; }
+                rendered[i] = v;
+                var id = cellIds[i];
+                if (v == 0)
+                {
+                    EntitySetActive(id, false);
+                    continue;
+                }
+                var cc = v <= 7 ? colors[v - 1] : garbageColor;
+                EntitySetColor(id, cc.r, cc.g, cc.b, 1);
+                EntitySetActive(id, true);
+            }
+        }
+    }
+
+    func RenderActive()
+    {
+        if (cur < 0) { return; }
+        var cells = shapes[cur][rot];
+        // Hayalet: aşağı düşürülmüş konum
+        var gy = py;
+        while (Fits(cur, rot, px, gy - 1)) { gy--; }
+        for (var i = 0; i < 4; i++)
+        {
+            var c = cells[i];
+            var x = px + c[0];
+            var y = py - c[1];
+            EntitySetPosition(activeIds[i], CellX(x), CellY(y), 0.2);
+            var yg = gy - c[1];
+            EntitySetPosition(ghostIds[i], CellX(x), CellY(yg), 0.1);
+            EntitySetActive(ghostIds[i], showGhost && gy != py);
+        }
+    }
+
+    func PlaceMini(ids, type, cx, cy, s, alpha)
+    {
+        var cells = shapes[type][0];
+        var minx = 99;
+        var maxx = -99;
+        var miny = 99;
+        var maxy = -99;
+        foreach (var c in cells)
+        {
+            minx = MathMin(minx, c[0]);
+            maxx = MathMax(maxx, c[0]);
+            miny = MathMin(miny, -c[1]);
+            maxy = MathMax(maxy, -c[1]);
+        }
+        var ox = (minx + maxx) / 2.0;
+        var oy = (miny + maxy) / 2.0;
+        var cc = colors[type];
+        for (var i = 0; i < 4; i++)
+        {
+            var c = cells[i];
+            EntitySetPosition(ids[i], cx + (c[0] - ox) * s, cy + (-c[1] - oy) * s, 0.1);
+            EntitySetScale(ids[i], s, s, 1);
+            EntitySetColor(ids[i], cc.r, cc.g, cc.b, alpha);
+            EntitySetActive(ids[i], true);
+        }
+    }
+
+    func RenderNext()
+    {
+        var ys = [6.85, 3.35, 0.55, -2.25, -5.05];
+        for (var n = 0; n < 5; n++)
+        {
+            var ids = [nextIds[n * 4], nextIds[n * 4 + 1], nextIds[n * 4 + 2], nextIds[n * 4 + 3]];
+            var s = n == 0 ? 0.92 : 0.66;
+            PlaceMini(ids, queue[n], 9.5, ys[n], s, n == 0 ? 1.0 : 0.82);
+        }
+    }
+
+    func RenderHold()
+    {
+        if (holdType < 0)
+        {
+            foreach (var e in holdIds) { EntitySetActive(e, false); }
+            return;
+        }
+        PlaceMini(holdIds, holdType, -9.5, 7.2, 0.92, holdUsed ? 0.35 : 1.0);
+    }
+
+    func UpdateHud(force)
+    {
+        UISetText("LevelValue", str(level));
+        UISetText("LinesValue", str(lines));
+        if (force) { UISetText("ScoreValue", "0"); }
+    }
+
+    // ================================================================ Efektler
+    func ShowPopup(text, sub, color)
+    {
+        UISetText("PopupText", text);
+        UISetText("PopupSub", sub);
+        UISetTextColor("PopupText", color.r, color.g, color.b, 1);
+        popupTime = 0;
+    }
+
+    func UpdateEffects(dt)
+    {
+        // Ekran sarsıntısı
+        if (shake > 0.001)
+        {
+            EntitySetPosition(cam, random(-1.0, 1.0) * shake, random(-1.0, 1.0) * shake, 10);
+            shake *= MathExp(-dt * 11.0);
+        }
+        else if (shake > 0)
+        {
+            shake = 0;
+            EntitySetPosition(cam, 0, 0, 10);
+        }
+
+        // Patlama yazısı: büyüyerek gelir, sonda söner
+        if (popupTime >= 0)
+        {
+            popupTime += dt;
+            var pop = 1.0 + 0.45 * MathExp(-popupTime * 10.0);
+            UISetScale("PopupText", pop);
+            var a = popupTime > popupDuration - 0.4 ? MathMax(0.0, (popupDuration - popupTime) / 0.4) : 1.0;
+            var c = EntityGetColor(FindEntity("PopupText"));
+            UISetTextColor("PopupText", c.r, c.g, c.b, a);
+            UISetTextColor("PopupSub", 0.35, 0.9, 1.0, a);
+            if (popupTime >= popupDuration)
+            {
+                popupTime = -1;
+                UISetText("PopupText", "");
+                UISetText("PopupSub", "");
+            }
+        }
+
+        // Geri sayım yazısı ("GO!") oyun başlayınca söner. Kendi sayacıyla: kare süresi ne olursa olsun
+        // sonunda mutlaka temizlenir (yavaş / düzensiz karelerde eşik atlanıp yazı soluk kalıyordu)
+        if (goFade >= 0)
+        {
+            goFade += dt;
+            var a2 = MathMax(0.0, 1.0 - goFade / 0.6);
+            UISetTextColor("CountdownText", 0.92, 0.95, 1.0, a2);
+            UISetScale("CountdownText", 1.0 + 0.5 * MathExp(-goFade * 9.0));
+            if (goFade >= 0.6)
+            {
+                goFade = -1;
+                UISetText("CountdownText", "");
+                UISetTextColor("CountdownText", 0.92, 0.95, 1.0, 1);
+                UISetScale("CountdownText", 1);
+            }
+        }
+
+        // Kilitlenen parçanın parlaması
+        if (flashTime > 0 && state != 3)
+        {
+            flashTime -= dt;
+            var k = MathMax(flashTime / 0.14, 0.0);
+            foreach (var i in flashCells)
+            {
+                var v = board[i];
+                if (v == 0) { continue; }
+                var cc = v <= 7 ? colors[v - 1] : garbageColor;
+                var boost = 1.0 + k * 1.2;
+                EntitySetColor(cellIds[i], cc.r * boost, cc.g * boost, cc.b * boost, 1);
+            }
+        }
+
+        // Seviye atlayınca çerçeve parlaması
+        if (frameFlash > 0)
+        {
+            frameFlash = MathMax(0.0, frameFlash - dt * 1.6);
+            var f = 1.0 + frameFlash * 2.0;
+            EntitySetColor(frame, frameColor.r * f, frameColor.g * f, frameColor.b * f, 1);
+        }
+
+        // Puan sayacı yumuşak artar
+        if (state >= 2 && state <= 6)
+        {
+            displayScore += (score - displayScore) * MathMin(1.0, dt * 10.0);
+            if (MathAbs(score - displayScore) < 1) { displayScore = score; }
+            UISetText("ScoreValue", $"{MathFloor(displayScore):N0}");
+            UISetText("TimeValue", FormatTime(playTime));
+        }
+    }
+
+    // ================================================================ Duraklatma
+    func EnterPause()
+    {
+        state = 4;
+        stateTime = 0;
+        UISetVisible("PauseUI", true);
+        AudioSetVolume(0.12);
+        UiSfx("pause");
+        SetMenu(["ResumeBtn", "RestartBtn", "MenuBtn"]);
+    }
+
+    func ExitPause()
+    {
+        UISetVisible("PauseUI", false);
+        AudioSetVolume(0.55);
+        state = 2;
+        menuButtons = [];
+    }
+
+    func UpdatePaused(dt)
+    {
+        var choice = UpdateMenu();
+        if (KeyDown("Escape", "P") || PadDown(7) || UIWasClicked("ResumeBtn") || choice == "ResumeBtn")
+        {
+            UiSfx("menu_select");
+            ExitPause();
+            return;
+        }
+        if (UIWasClicked("RestartBtn") || choice == "RestartBtn")
+        {
+            UiSfx("menu_select");
+            UISetVisible("PauseUI", false);
+            AudioStop();
+            StartGame();
+            return;
+        }
+        if (UIWasClicked("MenuBtn") || choice == "MenuBtn")
+        {
+            UiSfx("menu_select");
+            EnterTitle();
+            return;
+        }
+        if (UIValueChanged("MusicSlider"))
+        {
+            musicVol = UIGetValue("MusicSlider");
+            ApplyVolumes();
+            PrefsSetFloat("Tetris.MusicVolume", musicVol);
+        }
+        if (UIValueChanged("SfxSlider"))
+        {
+            sfxVol = UIGetValue("SfxSlider");
+            ApplyVolumes();
+            PrefsSetFloat("Tetris.SfxVolume", sfxVol);
+            UiSfx("menu_move");
+        }
+    }
+
+    // ================================================================ Oyun sonu
+    func StartGameOver()
+    {
+        state = 5;
+        stateTime = 0;
+        cur = -1;
+        foreach (var e in activeIds) { EntitySetActive(e, false); }
+        foreach (var e in ghostIds) { EntitySetActive(e, false); }
+        AudioStop();
+        Sfx("gameover", 1.0, 1.0);
+        shake = 0.35;
+    }
+
+    func UpdateGameOverFill(dt)
+    {
+        // Alttan yukarı gri dolum
+        var rows = MathMin(20, MathFloor(stateTime / 0.045));
+        for (var y = 0; y < rows; y++)
+        {
+            for (var x = 0; x < 10; x++)
+            {
+                if (board[y * 10 + x] != 0 && board[y * 10 + x] != 8) { board[y * 10 + x] = 8; }
+            }
+        }
+        RenderBoard(false);
+        if (stateTime > 20 * 0.045 + 0.5)
+        {
+            ShowGameOverScreen();
+        }
+    }
+
+    func ShowGameOverScreen()
+    {
+        state = 6;
+        stateTime = 0;
+        var record = score > best;
+        if (record)
+        {
+            best = score;
+            PrefsSetInt("Tetris.Best", best);
+            PrefsSave();
+        }
+        UISetText("FinalScore", $"{score:N0}");
+        UISetText("FinalStats", $"LEVEL {level}    LINES {lines}    TETRIS {tetrisCount}    T-SPIN {tspinCount}    TIME {FormatTime(playTime)}");
+        UISetVisible("NewRecord", record);
+        UISetText("BestLabel", $"BEST {best:N0}");
+        UISetVisible("GameOverUI", true);
+        SetMenu(["AgainBtn", "OverMenuBtn"]);
+    }
+
+    func UpdateGameOverScreen(dt)
+    {
+        var choice = UpdateMenu();
+        if (UIWasClicked("AgainBtn") || choice == "AgainBtn")
+        {
+            UiSfx("menu_select");
+            StartGame();
+            return;
+        }
+        if (UIWasClicked("OverMenuBtn") || choice == "OverMenuBtn" || KeyDown("Escape", ""))
+        {
+            UiSfx("menu_select");
+            EnterTitle();
+            return;
+        }
+        var pulse = 0.75 + 0.25 * MathSin(stateTime * 5.0);
+        UISetScale("NewRecord", 1.0 + 0.06 * MathSin(stateTime * 6.0));
+        UISetTextColor("NewRecord", 1.0, 0.85, 0.3, pulse);
+    }
+
+    // ================================================================ Test kancaları (otomasyon: script call Game Debug...)
+    func DebugFillRows(rows, holeX)
+    {
+        for (var y = 0; y < rows; y++)
+        {
+            for (var x = 0; x < 10; x++) { board[y * 10 + x] = x == holeX ? 0 : 8; }
+        }
+        RenderBoard(true);
+    }
+
+    // Alt 4 satır (holeX sütunu boş) + dikey I: sert düşüşte TETRIS
+    func DebugPrepareTetris()
+    {
+        DebugFillRows(4, 9);
+        Spawn(0);
+        rot = 1;
+        px = 7;
+        py = 19;
+        RenderActive();
+    }
+
+    // Klasik T-spin double: satır 0 (x=4 boş), satır 1 (x=3..5 boş), (3,2) çıkıntı; T aşağı bakar
+    func DebugTSpinDouble()
+    {
+        for (var i = 0; i < 220; i++) { board[i] = 0; }
+        for (var x = 0; x < 10; x++)
+        {
+            board[0 * 10 + x] = x == 4 ? 0 : 8;
+            board[1 * 10 + x] = (x >= 3 && x <= 5) ? 0 : 8;
+        }
+        board[2 * 10 + 3] = 8;
+        RenderBoard(true);
+        cur = 2;
+        rot = 2;
+        px = 3;
+        py = 2;
+        lastRotate = true;
+        lastKick = 0;
+        LockPiece(false);
+    }
+
+    func DebugTopOut()
+    {
+        for (var y = 0; y < 20; y++)
+        {
+            for (var x = 0; x < 10; x++) { board[y * 10 + x] = (x + y) % 3 == 0 ? 0 : 8; }
+        }
+        RenderBoard(true);
+        Spawn(2);
+    }
+
+    func DebugState() { return $"state={state} cur={cur} hold={holdType} lines={lines} score={score} level={level} b2b={backToBack} combo={combo}"; }
+
+    // ================================================================ Klavye ile menü
+    func SetMenu(buttons)
+    {
+        menuButtons = buttons;
+        menuIndex = 0;
+        HighlightMenu();
+    }
+
+    func HighlightMenu()
+    {
+        for (var i = 0; i < menuButtons.Count; i++)
+        {
+            var b = menuButtons[i];
+            if (i == menuIndex)
+            {
+                EntitySetColor(FindEntity(b), 0.22, 0.42, 0.95, 0.96);
+                UISetScale(b, 1.06);
+            }
+            else
+            {
+                EntitySetColor(FindEntity(b), 0.10, 0.12, 0.24, 0.92);
+                UISetScale(b, 1.0);
+            }
+        }
+    }
+
+    // Seçilen düğme adı (Enter / A) ya da ""
+    func UpdateMenu()
+    {
+        if (menuButtons.Count == 0) { return ""; }
+        // Fare üzerine gelince seçimi izle
+        for (var i = 0; i < menuButtons.Count; i++)
+        {
+            if (UIIsHovered(menuButtons[i]) && i != menuIndex)
+            {
+                menuIndex = i;
+                HighlightMenu();
+                UiSfx("menu_move");
+            }
+        }
+        if (KeyDown("Down", "S") || PadDown(13))
+        {
+            menuIndex = (menuIndex + 1) % menuButtons.Count;
+            HighlightMenu();
+            UiSfx("menu_move");
+        }
+        if (KeyDown("Up", "W") || PadDown(11))
+        {
+            menuIndex = (menuIndex - 1 + menuButtons.Count) % menuButtons.Count;
+            HighlightMenu();
+            UiSfx("menu_move");
+        }
+        if (KeyDown("Enter", "") || PadDown(0)) { return menuButtons[menuIndex]; }
+        return "";
+    }
+}

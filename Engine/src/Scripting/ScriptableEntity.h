@@ -2,6 +2,17 @@
 
 #include "Scene/Entity.h"
 
+// Yerel betik sınıfını motora tanıtır: Native Script bileşeni .cpp dosyasını kendisi derler ve bu fabrikayı çağırır.
+//   class Spinner : public Conqueror::ScriptableEntity { void OnUpdate(float dt) override { ... } };
+//   CQ_NATIVE_SCRIPT(Spinner)
+#if defined(_WIN32)
+    #define CQ_SCRIPT_EXPORT extern "C" __declspec(dllexport)
+#else
+    #define CQ_SCRIPT_EXPORT extern "C" __attribute__((visibility("default")))
+#endif
+#define CQ_NATIVE_SCRIPT(ClassName) \
+    CQ_SCRIPT_EXPORT ::Conqueror::ScriptableEntity* Create##ClassName() { return new ClassName(); }
+
 namespace Conqueror
 {
     // Kullanıcı script'lerinin türeyeceği base class

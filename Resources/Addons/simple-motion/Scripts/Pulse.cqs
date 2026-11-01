@@ -1,0 +1,23 @@
+using nativebridge;
+
+// Ölçek nabzı: başlangıç ölçeği * (1 ± amount)
+script Pulse : ConquerorScript
+{
+    public float amount = 0.2;
+    public float frequency = 1.0;
+    public float phase = 0.0;
+
+    // Çalışma zamanı bilgisi
+    public float factor = 1.0;
+
+    private var baseScale = null;
+    private float t = 0.0;
+
+    func Update(dt)
+    {
+        if (baseScale == null) { baseScale = GetScale(); }
+        t += dt;
+        factor = 1.0 + MathSin((t * frequency + phase) * 6.2831853) * amount;
+        SetScale(baseScale.x * factor, baseScale.y * factor, baseScale.z * factor);
+    }
+}

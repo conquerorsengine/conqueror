@@ -1,0 +1,18 @@
+Id: conqueror.pause-menu
+Name: Pause Menu
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Drop-in pause screen: Escape (or the gamepad Start button) freezes the game with time scale
+  zero, darkens the view and shows Resume / Restart / Main Menu buttons; the cursor is
+  released while paused and restored afterwards. Other scripts get OnPause / OnResume.
+Category: UI
+Icon: pause
+Tags: [ui, pause, menu, time-scale]
+Components:
+  - Scripts/PauseMenu.cqs
+Inserts:
+  - Name: Pause Menu
+    Icon: pause
+    Prefab: Prefabs/PauseMenu.cqprefab
+    Tooltip: Canvas with the pause overlay and buttons

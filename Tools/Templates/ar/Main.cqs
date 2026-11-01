@@ -1,0 +1,271 @@
+// Augmented Reality (Unreal Handheld AR / Unity AR Mobile şablonu karşılığı): elde tutulan cihazla mobilya yerleştirme.
+// AR Session yüzeyleri bulur (öznitelik noktaları + büyüyen düzlemler), dokunulan düzleme katalogdan seçilen mobilya
+// yerleşir; seç, sürükle, boyutlandır, döndür, sil. Cihaz kamerası yokken "AR Simulation Environment" (pencereli
+// oturma odası) gerçek dünyanın yerini tutar (Unity XR Simulation gibi); gerçek AR derlemesinde bu kök kapatılır,
+// kamera görüntüsü arka plan olur.
+// @EditorCamera 3.9 20 32 0.0 0.5 -1.1   (proje açıldığında editör görünümü: uzaklık, eğim, yön, odak)
+RenderSettingSet("Environment.Sky", "Atmosphere");
+RenderSettingSet("Environment.AtmosphereIntensity", 1.0);
+RenderSettingSet("Environment.SkyboxIntensity", 0.6);
+RenderSettingSet("Shadows.Enabled", true);
+RenderSettingSet("Shadows.Quality", "Soft");
+RenderSettingSet("Shadows.Distance", 25);
+RenderSettingSet("Post.Tonemap", "ACES");
+RenderSettingSet("Post.AntiAliasing", "TAA");
+RenderSettingSet("Post.AmbientOcclusion", true);
+RenderSettingSet("Post.AORadius", 0.5);
+RenderSettingSet("Post.AOIntensity", 1.1);
+RenderSettingSet("Post.ScreenSpaceGI", true);
+RenderSettingSet("Post.SSGIIntensity", 1.3);
+RenderSettingSet("Post.ScreenSpaceReflections", true);
+RenderSettingSet("Post.SSRIntensity", 0.6);
+RenderSettingSet("Post.Bloom", true);
+RenderSettingSet("Post.BloomIntensity", 0.15);
+RenderSettingSet("Post.Vignette", true);
+RenderSettingSet("Post.VignetteIntensity", 0.12);
+RenderSettingSet("Post.Exposure", 0.3);
+RenderSettingSet("Post.DepthOfField", false);
+RenderSettingSet("Fog.Enabled", false);
+
+var SURFACE = "AR Surface";
+var W = 3.5;      // oda yarı genişliği (x)
+var D = 3.0;      // oda yarı derinliği (z)
+var HC = 2.7;     // tavan
+var T = 0.2;      // duvar kalınlığı
+var PLASTER = "Assets/Textures/white_plaster.jpg";
+var WHITE_WALL = {r: 1, g: 1, b: 1, a: 1};
+
+// Simülasyon ortamı: gerçek dünyanın yerine geçen her şey bu kökün altında
+var env = CreateEntity("AR Simulation Environment");
+func Env(e) { EntitySetParent(e, env); return e; }
+func Tex(e, tex, tiling, color, rough)
+{
+    EntitySetComponentField(e, "MeshRenderer", "Texture", tex);
+    EntitySetComponentField(e, "MeshRenderer", "WorldAlignedUV", true);
+    EntitySetComponentField(e, "MeshRenderer", "Tiling", {x: tiling, y: tiling});
+    EntitySetColor(e, color);
+    EntitySetComponentField(e, "MeshRenderer", "Roughness", rough);
+    return e;
+}
+func Solid(name, x, y, z, sx, sy, sz, tex, tiling, color, rough)
+{
+    var e = Static(Mesh(name, "Cube", x, y, z, sx, sy, sz, "", color));
+    if (tex != "") { Tex(e, tex, tiling, color, rough); }
+    else { EntitySetComponentField(e, "MeshRenderer", "Roughness", rough); }
+    return Env(e);
+}
+// Görünmez çarpıştırıcı: mobilya modellerinin AR'ın "gördüğü" yüzeyi (etiketli olanlarda düzlem bulunur)
+func Collider(name, x, y, z, sx, sy, sz, tag)
+{
+    var e = CreateEntity(name);
+    EntitySetPosition(e, x, y, z);
+    EntityAddComponent(e, "Rigidbody");
+    EntitySetComponentField(e, "Rigidbody", "BodyType", "Static");
+    EntityAddComponent(e, "BoxCollider");
+    EntitySetComponentField(e, "BoxCollider", "Size", {x: sx, y: sy, z: sz});
+    EntitySetComponentField(e, "BoxCollider", "Offset", {x: 0, y: 0, z: 0});
+    if (tag != "") { EntitySetTag(e, tag); }
+    return Env(e);
+}
+// Mobilya (Poly Haven, ön yüz +Z; yaw = önün baktığı yön)
+func Furn(name, file, x, y, z, yaw, scale)
+{
+    var e = CreateEntity(name);
+    EntitySetPosition(e, x, y, z);
+    EntitySetRotation(e, 0, yaw, 0);
+    EntitySetScale(e, scale, scale, scale);
+    EntityAddComponent(e, "Model");
+    EntitySetComponentField(e, "Model", "FilePath", "Assets/Furniture/" + file + ".glb");
+    return Env(e);
+}
+
+// ---------------------------------------------------------------- oda: 7 x 6 m, doğu duvarında geniş pencere
+var floor = Solid("Floor", 0, -0.1, 0, 2 * W + 0.4, 0.2, 2 * D + 0.4, "Assets/Textures/laminate_floor_02.jpg", 0.45, {r: 1, g: 1, b: 1, a: 1}, 0.45);
+EntitySetTag(floor, SURFACE);
+Solid("Ceiling", 0, HC + 0.1, 0, 2 * W + 0.4, 0.2, 2 * D + 0.4, "", 1, {r: 0.95, g: 0.95, b: 0.94, a: 1}, 0.9);
+Solid("Wall North", 0, HC / 2.0, -D - T / 2.0, 2 * W + 0.4, HC, T, PLASTER, 0.5, WHITE_WALL, 0.85);
+Solid("Wall South", 0, HC / 2.0, D + T / 2.0, 2 * W + 0.4, HC, T, PLASTER, 0.5, WHITE_WALL, 0.85);
+Solid("Wall West", -W - T / 2.0, HC / 2.0, 0, T, HC, 2 * D, PLASTER, 0.5, WHITE_WALL, 0.85);
+var wx = W + T / 2.0;
+Solid("Wall East North", wx, HC / 2.0, -2.2, T, HC, 1.6, PLASTER, 0.5, WHITE_WALL, 0.85);
+Solid("Wall East South", wx, HC / 2.0, 2.2, T, HC, 1.6, PLASTER, 0.5, WHITE_WALL, 0.85);
+Solid("Window Sill Wall", wx, 0.225, 0, T, 0.45, 2.8, PLASTER, 0.5, WHITE_WALL, 0.85);
+Solid("Window Header", wx, 2.525, 0, T, 0.35, 2.8, PLASTER, 0.5, WHITE_WALL, 0.85);
+var FRAME = {r: 0.08, g: 0.08, b: 0.09, a: 1};
+Solid("Window Frame Bottom", wx, 0.47, 0, 0.12, 0.05, 2.8, "", 1, FRAME, 0.4);
+Solid("Window Frame Top", wx, 2.33, 0, 0.12, 0.05, 2.8, "", 1, FRAME, 0.4);
+Solid("Window Mullion", wx, 1.4, 0, 0.12, 1.86, 0.05, "", 1, FRAME, 0.4);
+var glass = Env(Mesh("Window Glass", "Cube", wx, 1.4, 0, 0.02, 1.86, 2.75, "", {r: 0.02, g: 0.03, b: 0.03, a: 0.15}));
+EntitySetComponentField(glass, "MeshRenderer", "Roughness", 0.02);
+EntitySetComponentField(glass, "MeshRenderer", "CastShadows", false);
+Solid("Window Ledge", W - 0.07, 0.465, 0, 0.16, 0.03, 2.9, "", 1, {r: 0.95, g: 0.95, b: 0.94, a: 1}, 0.4);
+foreach (var sk in [{x: 0, z: -D + 0.01, sx: 2 * W, sz: 0.02}, {x: 0, z: D - 0.01, sx: 2 * W, sz: 0.02}, {x: -W + 0.01, z: 0, sx: 0.02, sz: 2 * D}])
+{
+    Solid("Skirting", sk.x, 0.05, sk.z, sk.sx, 0.1, sk.sz, "", 1, {r: 0.96, g: 0.96, b: 0.95, a: 1}, 0.5);
+}
+// Pencereden görünen bahçe
+Solid("Garden Lawn", W + 20.0, -0.32, 0, 40, 0.3, 60, "Assets/Textures/lawn_grass.jpg", 0.3, {r: 0.92, g: 1.0, b: 0.88, a: 1}, 0.95);
+
+// ---------------------------------------------------------------- mobilyalar (gerçek dünya)
+// Oturma alanı (kuzey): kanepe duvara dayalı, önünde halı ve sehpa
+var rug = Env(Mesh("Rug", "Cube", 0.2, 0.002, -1.25, 2.8, 0.004, 1.9, "", {r: 1, g: 1, b: 1, a: 1}));
+EntitySetComponentField(rug, "MeshRenderer", "Texture", "Assets/Textures/fabric_pattern_07.jpg");
+EntitySetComponentField(rug, "MeshRenderer", "Tiling", {x: 1.5, y: 1.0});
+EntitySetComponentField(rug, "MeshRenderer", "Roughness", 0.95);
+Furn("Sofa", "sofa_03", 0.2, 0, -2.5, 0, 1.0);
+Furn("Throw Pillows", "throw_pillows_01", 0.2, 0.45, -2.45, 0, 1.0);
+Collider("Sofa Seat", 0.2, 0.22, -2.45, 2.6, 0.44, 0.85, "");
+Collider("Sofa Back", 0.2, 0.5, -2.82, 2.7, 1.0, 0.26, "");
+Furn("Coffee Table", "modern_coffee_table_01", 0.2, 0, -1.25, 90, 1.0);
+Collider("Coffee Table Top", 0.2, 0.195, -1.25, 1.2, 0.39, 0.6, SURFACE);
+Furn("Coffee Table Vase", "ceramic_vase_03", 0.62, 0.39, -1.18, 0, 1.0);
+Furn("Side Table", "side_table_01", 1.9, 0, -2.6, 0, 1.0);
+Collider("Side Table Top", 1.9, 0.2755, -2.6, 0.55, 0.551, 0.45, SURFACE);
+Furn("Picture Frame", "standing_picture_frame_01", 1.85, 0.551, -2.62, -25, 1.0);
+Furn("Painting", "hanging_picture_frame_01", 0.2, 1.22, -D + 0.02, 0, 1.2);
+Furn("Corner Plant", "potted_plant_01", -2.95, 0, -2.45, 30, 1.0);
+Collider("Corner Plant Pot", -2.95, 0.6, -2.45, 0.55, 1.2, 0.55, "");
+// Batı duvarında konsol (üstü düz yüzey) + üstünde vazo ve bitki, duvarda tablo
+Furn("Sideboard", "modern_wooden_cabinet", -W + 0.24, 0, 0.0, 90, 0.85);
+Collider("Sideboard Top", -W + 0.24, 0.289, 0.0, 0.44, 0.578, 2.07, SURFACE);
+Furn("Sideboard Vase", "ceramic_vase_01", -W + 0.24, 0.578, 0.65, 0, 0.8);
+Furn("Sideboard Plant", "potted_plant_04", -W + 0.24, 0.578, -0.6, 0, 1.3);
+Furn("Wall Painting", "hanging_picture_frame_02", -W + 0.02, 1.45, 0.0, 90, 1.4);
+// Yemek alanı (güneydoğu): masa + 4 sandalye, ortada bitki, üstte sarkıt lamba
+Furn("Dining Table", "dining_table", 1.9, 0, 1.6, 0, 1.0);
+Collider("Dining Table Top", 1.9, 0.857, 1.6, 2.2, 0.04, 1.34, SURFACE);
+foreach (var ch in [{x: 1.35, z: 0.66, y: 0}, {x: 2.45, z: 0.66, y: 0}, {x: 1.35, z: 2.56, y: 180}, {x: 2.45, z: 2.56, y: 180}])
+{
+    var chair = Furn("Dining Chair", "dining_chair_02", ch.x, 0, ch.z, ch.y, 1.0);
+    EntityAddComponent(chair, "Rigidbody");
+    EntitySetComponentField(chair, "Rigidbody", "BodyType", "Static");
+    EntityAddComponent(chair, "BoxCollider");
+}
+Furn("Table Plant", "potted_plant_04", 1.9, 0.877, 1.6, 0, 1.4);
+Furn("Ceiling Lamp", "modern_ceiling_lamp_01", 1.9, HC - 0.95, 1.6, 0, 1.0);
+var lamp = Env(CreateEntity("Lamp Light"));
+EntitySetPosition(lamp, 1.9, HC - 0.95, 1.6);
+EntityAddComponent(lamp, "PointLight");
+EntitySetComponentField(lamp, "PointLight", "Color", {r: 1.0, g: 0.8, b: 0.56});
+EntitySetComponentField(lamp, "PointLight", "Intensity", 0.6);
+EntitySetComponentField(lamp, "PointLight", "Range", 6.0);
+EntitySetComponentField(lamp, "PointLight", "CastShadows", true);
+
+// Işık: pencereden güneş + pencere portalı (gökyüzü ışığı odaya dolar)
+var sun = Env(CreateEntity("Sun"));
+EntitySetPosition(sun, 0, 4, 0);
+EntityAddComponent(sun, "DirectionalLight");
+EntitySetComponentField(sun, "DirectionalLight", "Color", {r: 1.0, g: 0.95, b: 0.88});
+EntitySetComponentField(sun, "DirectionalLight", "Intensity", 4.5);
+EntitySetComponentField(sun, "DirectionalLight", "CastShadows", true);
+EntitySetRotation(sun, -34, 112, 0);
+var portal = Env(CreateEntity("Window Light"));
+EntitySetPosition(portal, W - 0.1, 1.4, 0);
+EntitySetRotation(portal, 0, 90, 0);
+EntityAddComponent(portal, "AreaLight");
+EntitySetComponentField(portal, "AreaLight", "Size", {x: 2.8, y: 1.9});
+EntitySetComponentField(portal, "AreaLight", "Intensity", 2.2);
+EntitySetComponentField(portal, "AreaLight", "Range", 10);
+EntitySetComponentField(portal, "AreaLight", "Color", {r: 0.86, g: 0.92, b: 1.0});
+
+// ---------------------------------------------------------------- AR sistemi
+var session = CreateEntity("AR Session");
+AddScript(session, "Assets/Scripts/ARSession.cqs");
+var fp = Particles("AR Feature Points", session, {PlayOnAwake: true, Looping: true, EmissionEnabled: false, RateOverTime: 0, SimulationSpace: "World",
+    StartLifetime: {x: 0.5, y: 1.1}, StartSpeed: {x: 0, y: 0}, StartSize: {x: 0.016, y: 0.026}, StartColorA: {r: 1.0, g: 0.86, b: 0.3, a: 1},
+    StartColorB: {r: 1.0, g: 0.95, b: 0.6, a: 1}, Shape: "Sphere", Radius: 0.001, GravityModifier: 0, Blend: "Additive",
+    Texture: "Assets/AR/feature_point.png", EmissiveIntensity: 4.0, MaxParticles: 1200, ColorOverLifetimeEnabled: true,
+    ColorOverLifetimeKeys: "0:1,1,1,0; 0.15:1,1,1,1; 0.7:1,1,1,1; 1:1,1,1,0"});
+
+// Cihaz: XR Origin (AR) = cihazın konumu, AR Camera = cihaz kamerası (dikey FOV 55, telefon kamerası gibi)
+var origin = CreateEntity("XR Origin (AR)");
+EntitySetPosition(origin, -1.2, 1.4, 2.0);
+EntitySetRotation(origin, 0, -18, 0);
+var cam = CreateEntity("AR Camera");
+EntitySetParent(cam, origin, false);
+EntitySetRotation(cam, -27, 0, 0);
+EntityAddComponent(cam, "Camera");
+EntitySetComponentField(cam, "Camera", "Primary", true);
+EntitySetComponentField(cam, "Camera", "FieldOfView", 55);
+EntitySetComponentField(cam, "Camera", "NearClip", 0.05);
+EntityAddComponent(cam, "AudioListener");
+AddScript(origin, "Assets/Scripts/ARDevice.cqs");
+
+// Yerleştirme: gösterge, seçim halkası, katalog (gizli şablonlar; yerleştirilince kopyalanır)
+var interaction = CreateEntity("AR Interaction");
+AddScript(interaction, "Assets/Scripts/ARPlacement.cqs");
+var ret = Mesh("Placement Reticle", "Plane", 0, 0.01, 0, 0.22, 1, 0.22, "", {r: 1, g: 1, b: 1, a: 0.95});
+EntitySetComponentField(ret, "MeshRenderer", "Texture", "Assets/AR/reticle.png");
+EntitySetComponentField(ret, "MeshRenderer", "Unlit", true);
+EntitySetComponentField(ret, "MeshRenderer", "CastShadows", false);
+EntitySetActive(ret, false);       // oyunda betik gösterir
+var selRing = Mesh("Selection Ring", "Plane", 0, 0.01, 0, 1, 1, 1, "", {r: 0.25, g: 0.7, b: 1.0, a: 0.9});
+EntitySetComponentField(selRing, "MeshRenderer", "Texture", "Assets/AR/selection_ring.png");
+EntitySetComponentField(selRing, "MeshRenderer", "Unlit", true);
+EntitySetComponentField(selRing, "MeshRenderer", "CastShadows", false);
+EntitySetActive(selRing, false);
+var catalogRoot = CreateEntity("AR Catalog");
+var CATALOG = [{n: "Lounge Chair", f: "mid_century_lounge_chair", s: 1.0}, {n: "Ottoman", f: "Ottoman_01", s: 0.9},
+               {n: "Floor Plant", f: "potted_plant_01", s: 1.0}, {n: "Shelves", f: "wooden_display_shelves_01", s: 1.0},
+               {n: "Side Table", f: "side_table_01", s: 1.0}, {n: "Vase", f: "ceramic_vase_01", s: 1.0}];
+foreach (var it in CATALOG)
+{
+    var item = CreateEntity(it.n);
+    EntitySetParent(item, catalogRoot, false);
+    EntitySetScale(item, it.s, it.s, it.s);
+    var model = CreateEntity("Model");
+    EntitySetParent(model, item, false);
+    EntityAddComponent(model, "Model");
+    EntitySetComponentField(model, "Model", "FilePath", "Assets/Furniture/" + it.f + ".glb");
+}
+EntitySetActive(catalogRoot, false);
+
+// ---------------------------------------------------------------- arayüz
+var ui = UICreateCanvas("HUD");
+EntitySetComponentField(ui, "CanvasScaler", "ReferenceResolution", {x: 1920, y: 1080});
+EntitySetComponentField(ui, "CanvasScaler", "MatchWidthOrHeight", 0.5);
+func Back(name, x, y, w, h, ax, ay, a)
+{
+    var b = HudImage(name, ui, "", x, y, w, h, ax, ay);
+    EntitySetColor(b, 0.03, 0.035, 0.04, a);
+    EntitySetComponentField(b, "UIImage", "CornerRadius", h * 0.5);
+    return b;
+}
+func Btn(name, label, x, y, w, h, ax, ay, size)
+{
+    var b = UICreateElement("Button", ui, name);
+    UISetPosition(b, x, y);
+    UISetSize(b, w, h);
+    EntitySetColor(b, 0.1, 0.11, 0.13, 0.78);
+    EntitySetComponentField(b, "UIImage", "CornerRadius", 14);
+    EntitySetComponentField(b, "RectTransform", "AnchorMin", {x: ax, y: ay});
+    EntitySetComponentField(b, "RectTransform", "AnchorMax", {x: ax, y: ay});
+    UISetText(b, label);
+    UISetFontSize(b, size);
+    UISetTextColor(b, 0.95, 0.95, 0.97, 1);
+    return b;
+}
+// Üst: yönerge hapı + tarama simgesi
+Back("Instruction Back", 0, -70, 1240, 66, 0.5, 1, 0.55);
+var scan = HudImage("ScanIcon", ui, "Assets/AR/scan_phone.png", -560, -70, 64, 64, 0.5, 1);
+HudText("InstructionText", ui, "STARTING THE AR SESSION...", 30, -70, 1100, 50, 26, "Center", 0.5, 1);
+// Sol üst: oturum durumu
+Back("Status Back", 330, -150, 600, 46, 0, 1, 0.45);
+var dot = HudImage("StatusDot", ui, "", 58, -150, 16, 16, 0, 1);
+EntitySetComponentField(dot, "UIImage", "CornerRadius", 8);
+EntitySetColor(dot, 1.0, 0.72, 0.15, 1);
+HudText("StatusText", ui, "AR SESSION  INITIALIZING", 350, -150, 540, 40, 22, "Left", 0, 1);
+HudText("DeviceText", ui, "NO AR CAMERA  -  AR SIMULATION ENVIRONMENT", 350, -192, 540, 32, 22, "Left", 0, 1);
+// Sağ üst: düzlemler, sıfırla
+Btn("Planes", "PLANES  ON", -330, -150, 200, 50, 1, 1, 20);
+Btn("Reset", "RESET", -130, -150, 160, 50, 1, 1, 20);
+// Alt: katalog
+Back("Catalog Back", 0, 128, 1500, 104, 0.5, 0, 0.5);
+for (var i = 0; i < CATALOG.Count; i++)
+{
+    Btn("Item " + CATALOG[i].n, StringToUpper(CATALOG[i].n), -600 + i * 200, 128, 186, 72, 0.5, 0, 21);
+}
+var del = Btn("Delete", "DELETE", 820, 128, 150, 72, 0.5, 0, 21);
+EntitySetColor(del, 0.62, 0.12, 0.1, 0.85);
+Btn("Clear", "CLEAR ALL", -820, 128, 150, 72, 0.5, 0, 19);
+HudText("HintText", ui, "RMB + MOUSE LOOK   WASD MOVE   Q / E DOWN / UP   CLICK PLACE / SELECT   DRAG MOVE   WHEEL SIZE   SHIFT + WHEEL ROTATE   1-6 ITEMS", 0, 30, 1880, 30, 20, "Center", 0.5, 0);

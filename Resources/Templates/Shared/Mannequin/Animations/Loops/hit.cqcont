@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: hit
+      States:
+        - Name: hit
+          ClipIndex: 16
+          ClipName: hit
+  Parameters: []

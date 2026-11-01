@@ -1,0 +1,37 @@
+using nativebridge;
+
+// Manken görünümü ("Mesh" çocuğu): üst varlıktaki karakter betiğinin alanlarını Mannequin.cqcont parametrelerine
+// aktarır. MannequinCharacter, AI ve araç sürücüsü betikleri aynı alan adlarını kullanır:
+//   speed (m/s), grounded, crouching, aim01, jumps (artınca Jump tetiklenir), dead
+script MannequinAnimation : ConquerorScript
+{
+    private var owner = -1;
+    private var lastJumps = 0;
+
+    func Start()
+    {
+        owner = EntityGetParent();
+    }
+
+    func Field(name, def)
+    {
+        var v = GetScriptField(owner, name);
+        return v == null ? def : v;
+    }
+
+    func Update(dt)
+    {
+        if (owner == null || owner < 0) { return; }
+        AnimSetFloat("Speed", Field("speed", 0.0));
+        AnimSetBool("Grounded", Field("grounded", true));
+        AnimSetBool("Crouch", Field("crouching", false));
+        AnimSetFloat("Aim", Field("aim01", 0.0));
+        AnimSetBool("Dead", Field("dead", false));
+        var j = Field("jumps", 0);
+        if (j != lastJumps)
+        {
+            lastJumps = j;
+            AnimSetTrigger("Jump");
+        }
+    }
+}

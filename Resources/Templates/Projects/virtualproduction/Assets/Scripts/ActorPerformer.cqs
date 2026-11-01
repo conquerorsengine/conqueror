@@ -1,0 +1,18 @@
+using nativebridge;
+
+// Oyuncu: ShotSequencer konuşma ve tepkileri buradan oynatır (Dialogue_*.cqcont: Idle / Talk / Nod, yumuşak geçişli).
+// Başlar Multi-Aim kısıtıyla birbirine bakar (göz hattı).
+script ActorPerformer : ConquerorScript
+{
+    [Header("State")]
+    public bool talking = false;
+
+    func SetTalking(on)
+    {
+        if (on == talking) { return; }
+        talking = on;
+        AnimSetBool("Talking", on);
+    }
+
+    func Nod() { AnimSetTrigger("Nod"); }
+}

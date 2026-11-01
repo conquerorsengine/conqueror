@@ -1,0 +1,20 @@
+Id: conqueror.floating-text
+Name: Floating Text & Damage Numbers
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Pop-up 3D text that rises, scales and fades while facing the camera: damage numbers that
+  appear automatically above anything with Health (red for damage, green for healing, bigger
+  for critical hits), plus a spawner to show any message in the world from code.
+Category: UI
+Icon: comment-dots
+Tags: [ui, damage-numbers, floating-text, feedback, combat]
+Components:
+  - Scripts/FloatingText.cqs
+  - Scripts/DamageNumbers.cqs
+  - Scripts/FloatingTextSpawner.cqs
+Inserts:
+  - Name: Floating Text Spawner
+    Icon: comment-dots
+    Prefab: Prefabs/FloatingTextSpawner.cqprefab
+    Tooltip: Spawns world-space text from scripts (Spawn)

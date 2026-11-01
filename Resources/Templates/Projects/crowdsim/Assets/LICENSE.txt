@@ -1,0 +1,2 @@
+Animations/Pedestrian.cqcont: animation controller for the Mannequin package clips.
+The plaza set (buildings, props, textures) is the shared Plaza package (Assets/Plaza, see its LICENSE.txt).

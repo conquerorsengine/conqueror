@@ -1,0 +1,96 @@
+using nativebridge;
+
+// Yapay zekâ sürücü: "Racing Line" Spline Container'ını izler (ileriye bakan hedef noktası + virajın eğriliğine
+// göre güvenli hız). Aynı araçtaki VehicleController'ı Drive(...) ile sürer. P tuşu oyuncunun aracında aç / kapa
+// (gösteri modu); rakip araçlarda enabledOnStart = true yeterli.
+script VehicleAutopilot : ConquerorScript
+{
+    public string splineName = "Racing Line";
+    public bool enabledOnStart = false;
+    public bool toggleKey = true;
+    public float lookAhead = 7.0;
+    public float lookAheadPerSpeed = 0.45;     // s
+    public float grip = 8.0;                   // m/s² (güvenli yanal ivme)
+    public float brakeDecel = 6.5;             // m/s² (planlanan fren yavaşlaması; aracın gerçeğinden biraz az)
+    public float maxSpeed = 55.0;              // m/s
+    public float laneOffset = 0.0;             // + sol
+    [Header("State")]
+    public bool active = false;
+    public float targetSpeed = 0.0;
+
+    private var spline = -1;
+    private float length = 1.0;
+    private float stuck = 0.0;
+    private float backing = 0.0;
+    private float backSteer = 0.0;
+
+    func Start()
+    {
+        spline = FindEntity(splineName);
+        if (spline != null && spline >= 0) { length = MathMax(SplineLength(spline), 1.0); }
+        active = enabledOnStart;
+    }
+
+    func SetActive(on) { active = on; }
+
+    func Wrap(t) { return t - MathFloor(t); }
+
+    func Update(dt)
+    {
+        if (toggleKey && IsKeyDown("P")) { active = !active; }
+        if (!active || spline == null || spline < 0) { return; }
+        if (GetScriptField(GetEntityId(), "inputEnabled") != true) { return; }
+        var p = EntityGetWorldPosition(GetEntityId());
+        var f = GetForward();
+        var v = GetLinearVelocity();
+        var speed = MathSqrt(v.x * v.x + v.z * v.z);
+        var t = SplineNearestT(spline, p.x, p.y, p.z);
+        var la = lookAhead + speed * lookAheadPerSpeed;
+        var aim = SplineEvaluate(spline, Wrap(t + la / length));
+        if (laneOffset != 0.0)
+        {
+            var tg = SplineTangent(spline, Wrap(t + la / length));
+            aim = {x: aim.x + tg.z * laneOffset, y: aim.y, z: aim.z - tg.x * laneOffset};
+        }
+        // Direksiyon: hedefe yön ile aracın ileri yönü arasındaki açı
+        var dx = aim.x - p.x;
+        var dz = aim.z - p.z;
+        var want = MathAtan2(-dx, -dz);
+        var have = MathAtan2(-f.x, -f.z);
+        var err = MathNormalizeAngle(MathRadToDeg(want - have));
+        var steer = MathClamp(-err / 28.0, -1.0, 1.0);
+        // Hız planı: önümüzdeki her noktada yerel eğrilik (6 m'lik pencerede teğet dönüşü) -> orada güvenli viraj hızı
+        // v = sqrt(tutuş / eğrilik); oraya frenleyerek varılabilecek en yüksek hız v_şimdi = sqrt(v² + 2·fren·mesafe).
+        // Eski tahmin eğriliği uzun mesafede ortalıyor ve mesafeye doğrusal pay ekliyordu: keskin virajlara (R 29 m)
+        // 88 km/h ile girip pistten çıkıyordu.
+        var horizon = 24.0 + speed * speed / (2.0 * brakeDecel);
+        var minSafe = maxSpeed;
+        for (var d = 0.0; d <= horizon; d += 3.0)
+        {
+            var ta = SplineTangent(spline, Wrap(t + (d - 3.0) / length));
+            var tb = SplineTangent(spline, Wrap(t + (d + 3.0) / length));
+            var dot = MathClamp(ta.x * tb.x + ta.z * tb.z, -1.0, 1.0);
+            var curv = MathAcos(dot) / 6.0;
+            if (curv > 0.0015)
+            {
+                var vTurn = MathSqrt(grip / curv);
+                minSafe = MathMin(minSafe, MathSqrt(vTurn * vTurn + 2.0 * brakeDecel * d));
+            }
+        }
+        targetSpeed = minSafe;
+        var throttle = MathClamp((targetSpeed - speed) * 0.35, -1.0, 1.0);
+        // Takıldıysa (duvar, lastik yığını): 1.6 s ters direksiyonla geri, sonra yeniden dene
+        if (backing > 0.0)
+        {
+            backing -= dt;
+            throttle = -0.8;
+            steer = -backSteer;
+        }
+        else
+        {
+            stuck = speed < 1.5 && throttle > 0.3 ? stuck + dt : 0.0;
+            if (stuck > 1.5) { stuck = 0.0; backing = 1.6; backSteer = steer >= 0.0 ? 1.0 : -1.0; }
+        }
+        InvokeMethod(GetEntityId(), "Drive", throttle, steer, 0.15);
+    }
+}

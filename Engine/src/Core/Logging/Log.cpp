@@ -4,6 +4,9 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/rotating_file_sink.h>
+#ifdef __ANDROID__
+    #include <spdlog/sinks/android_sink.h>
+#endif
 #include <fstream>
 #include <ctime>
 #include <filesystem>
@@ -11,7 +14,9 @@
 #include <iomanip>
 
 #include "Core/Project/Project.h"
-#include <nfd.h>
+#include "Core/Utils/Platform.h"
+#include <cstdio>
+#include <mutex>
 
 #ifdef _WIN32
     #ifndef WIN32_LEAN_AND_MEAN
@@ -29,7 +34,7 @@
     #include <netinet/in.h>
     #include <arpa/inet.h>
     #include <fcntl.h>
-    #include <execinfo.h>
+    #include "Platform/Android/ExecInfoCompat.h"
     #include <cxxabi.h>
 #endif
 
@@ -98,19 +103,42 @@ namespace Conqueror
             size_t index = Log::s_LogHistoryIndex.fetch_add(1, std::memory_order_relaxed) % Log::MAX_LOG_HISTORY;
             Log::s_LogHistoryArray[index] = m;
 
-            // Black Box (Unbuffered Memory I/O)
+            // Black Box (Unbuffered Memory I/O): günlük dosyasının yanında, oturum başında sıfırlanır, boyutu sınırlı.
+            // Birden çok halka tampon örneği (özel günlükçüler) aynı dosyayı paylaşır: kendi kilidi var.
+            static std::mutex s_BlackBoxMutex;
             static std::ofstream s_BlackBox;
-            static std::once_flag s_BlackBoxFlag;
-            std::call_once(s_BlackBoxFlag, [](){
-                s_BlackBox.open("conqueror_blackbox.bin", std::ios::binary | std::ios::app);
-                if(s_BlackBox.is_open()) s_BlackBox.rdbuf()->pubsetbuf(nullptr, 0); // İşletim sistemine anında flush
-            });
-            if(s_BlackBox.is_open()) {
-                uint8_t level = static_cast<uint8_t>(m.Level);
-                s_BlackBox.write(reinterpret_cast<const char*>(&level), sizeof(level));
-                size_t len = m.Text.size();
-                s_BlackBox.write(reinterpret_cast<const char*>(&len), sizeof(len));
-                s_BlackBox.write(m.Text.c_str(), len);
+            static size_t s_BlackBoxBytes = 0;
+            static bool s_BlackBoxOpened = false;
+            constexpr size_t kBlackBoxLimit = 8u * 1024u * 1024u;
+            {
+                std::lock_guard<std::mutex> lock(s_BlackBoxMutex);
+                auto open = [] {
+                    const std::string& logPath = Log::GetLogFilePath();
+                    if (logPath.empty())
+                        return;
+                    const auto path = std::filesystem::path(logPath).parent_path() / "conqueror_blackbox.bin";
+                    s_BlackBox.open(path, std::ios::binary | std::ios::trunc);
+                    if (s_BlackBox.is_open()) s_BlackBox.rdbuf()->pubsetbuf(nullptr, 0); // İşletim sistemine anında flush
+                    s_BlackBoxBytes = 0;
+                };
+                if (!s_BlackBoxOpened)
+                {
+                    s_BlackBoxOpened = true;
+                    open();
+                }
+                else if (s_BlackBoxBytes > kBlackBoxLimit && s_BlackBox.is_open())
+                {
+                    s_BlackBox.close();
+                    open();
+                }
+                if (s_BlackBox.is_open()) {
+                    uint8_t level = static_cast<uint8_t>(m.Level);
+                    s_BlackBox.write(reinterpret_cast<const char*>(&level), sizeof(level));
+                    size_t len = m.Text.size();
+                    s_BlackBox.write(reinterpret_cast<const char*>(&len), sizeof(len));
+                    s_BlackBox.write(m.Text.c_str(), len);
+                    s_BlackBoxBytes += sizeof(level) + sizeof(len) + len;
+                }
             }
 
             // UDP Ağ Yayını Açıksa
@@ -125,6 +153,9 @@ namespace Conqueror
     Ref<spdlog::logger> Log::s_CoreLogger;
     Ref<spdlog::logger> Log::s_ClientLogger;
     std::shared_ptr<ConsoleSink<std::mutex>> Log::s_ConsoleSink;
+
+    namespace { std::string s_LogFilePath; }
+    const std::string& Log::GetLogFilePath() { return s_LogFilePath; }
 
     std::unordered_map<std::string, LogCategory> Log::s_Categories;
     std::unordered_map<std::string, Ref<spdlog::logger>> Log::s_Loggers;
@@ -198,19 +229,50 @@ namespace Conqueror
             // [Zaman] [Thread] [Logger] Mesaj
             stdout_sink->set_pattern("%^[%T] [T:%t] [%n] %v%$");
             logSinks.push_back(stdout_sink);
+#ifdef __ANDROID__
+            // Android'de stdout görünmez: günlükler logcat'e ("adb logcat -s Conqueror")
+            auto logcat_sink = std::make_shared<spdlog::sinks::android_sink_mt>("Conqueror");
+            logcat_sink->set_pattern("[%n] %v");
+            logSinks.push_back(logcat_sink);
+#endif
         }
 
-        // 2. Rotating File Sink
+        // 2. Rotating File Sink: çalışma klasörü yazılamıyorsa (ör. Program Files altına kurulmuş oyun)
+        //    kullanıcı veri klasörüne düş; dosya hiç açılamazsa dosyasız devam et (asla çökme)
         if (config.EnableFile)
         {
-            auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(config.DefaultLogPath, config.FileMaxSize, config.FileMaxCount, true);
-            file_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [thread %t] [%l] [%n] %v");
-            logSinks.push_back(file_sink);
+            std::vector<std::filesystem::path> candidates{ std::filesystem::path(config.DefaultLogPath) };
+            std::string dataDir = Platform::GetUserAppDataDirectory();
+            if (dataDir.empty())
+                dataDir = Platform::GetTempDirectory();
+            if (!dataDir.empty())
+                candidates.push_back(std::filesystem::path(dataDir) / "ConquerorEngine" / "Logs" / std::filesystem::path(config.DefaultLogPath).filename());
+            for (const auto& candidate : candidates)
+            {
+                try
+                {
+                    std::error_code ec;
+                    if (candidate.has_parent_path())
+                        std::filesystem::create_directories(candidate.parent_path(), ec);
+                    auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(candidate.string(), config.FileMaxSize, config.FileMaxCount, true);
+                    file_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [thread %t] [%l] [%n] %v");
+                    logSinks.push_back(file_sink);
+                    std::error_code abs;
+                    const auto full = std::filesystem::absolute(candidate, abs);
+                    s_LogFilePath = abs ? candidate.string() : full.string();
+                    break;
+                }
+                catch (const std::exception& e)
+                {
+                    std::fprintf(stderr, "[Log] Cannot open log file '%s': %s\n", candidate.string().c_str(), e.what());
+                }
+            }
         }
 
         // 3. UI/Editor Console Sink
         s_ConsoleSink = std::make_shared<ConsoleSink<std::mutex>>();
-        s_ConsoleSink->set_pattern("[%T] %v");
+        // Editör Log paneli alanları ayrıştırır: zaman \x1f logger \x1f mesaj
+        s_ConsoleSink->set_pattern("%T\x1f%n\x1f%v");
         logSinks.push_back(s_ConsoleSink);
 
         // 4. Advanced Ring Buffer Sink (Memory & Thread takipli)
@@ -296,13 +358,28 @@ namespace Conqueror
         std::vector<spdlog::sink_ptr> sinks;
         sinks.emplace_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
         std::string path = filePath.empty() ? name + ".log" : filePath;
-        sinks.emplace_back(std::make_shared<spdlog::sinks::rotating_file_sink_mt>(path, s_Config.FileMaxSize, s_Config.FileMaxCount, true));
-        sinks.emplace_back(s_ConsoleSink);
-        sinks.emplace_back(std::make_shared<AdvancedRingBufferSink<std::mutex>>());
-
+        // Ana günlük kullanıcı klasörüne düştüyse göreli özel günlükler de onun yanına
+        if (std::filesystem::path(path).is_relative() && !s_LogFilePath.empty())
+            path = (std::filesystem::path(s_LogFilePath).parent_path() / path).string();
+        spdlog::sink_ptr fileSink;
+        try
+        {
+            fileSink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(path, s_Config.FileMaxSize, s_Config.FileMaxCount, true);
+        }
+        catch (const std::exception& e)
+        {
+            std::fprintf(stderr, "[Log] Cannot open log file '%s': %s\n", path.c_str(), e.what());
+        }
         sinks[0]->set_pattern("%^[%T] [" + name + "] %v%$");
-        sinks[1]->set_pattern("[%T] [%l] [" + name + "] %v");
-        sinks[2]->set_pattern("[" + name + "] %v");
+        if (fileSink)
+        {
+            fileSink->set_pattern("[%T] [%l] [" + name + "] %v");
+            sinks.emplace_back(fileSink);
+        }
+        // Paylaşılan editör konsol havuzunun deseni değiştirilmez (Log paneli "%T\x1f%n\x1f%v" ayrıştırır)
+        if (s_ConsoleSink)
+            sinks.emplace_back(s_ConsoleSink);
+        sinks.emplace_back(std::make_shared<AdvancedRingBufferSink<std::mutex>>());
 
         std::shared_ptr<spdlog::logger> logger;
         if (s_Config.UseAsyncLogger)
@@ -724,29 +801,14 @@ namespace Conqueror
             }
         }
         
-        // 2. If no project is active, prompt the user using NFD
+        // 2. Proje yoksa motor klasöründeki crash_dumps/ (ASLA modal diyalog açma:
+        //    çökme anında/yükleme sırasında diyalog motoru kilitliyordu)
         if (finalPath.empty())
         {
-            NFD_Init();
-            nfdchar_t* outPath = nullptr;
-            nfdfilteritem_t filterItem[1] = { { "Crash Dump File", "txt" } };
-            std::string defaultName = fileName + ".txt";
-            
-            nfdresult_t result = NFD_SaveDialog(&outPath, filterItem, 1, nullptr, defaultName.c_str());
-            if (result == NFD_OKAY)
-            {
-                finalPath = outPath;
-                NFD_FreePath(outPath);
-            }
-            else
-            {
-                // Fallback to engine bin directory if cancelled or error
-                if (!std::filesystem::exists(s_Config.CrashDumpPath))
-                    std::filesystem::create_directories(s_Config.CrashDumpPath);
-                finalPath = s_Config.CrashDumpPath + fileName + ".txt";
-                dumpDir = s_Config.CrashDumpPath;
-            }
-            NFD_Quit();
+            std::error_code ec;
+            std::filesystem::create_directories(s_Config.CrashDumpPath, ec);
+            finalPath = s_Config.CrashDumpPath + fileName + ".txt";
+            dumpDir = s_Config.CrashDumpPath;
         }
         
         std::ofstream file(finalPath);

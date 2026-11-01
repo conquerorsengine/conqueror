@@ -1,0 +1,22 @@
+Id: conqueror.platformer-2d-controller
+Name: 2D Platformer Controller
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Responsive 2D platformer movement for a Rigidbody 2D: acceleration and braking, coyote
+  time, jump buffering, variable jump height, optional double jump, faster falling with a
+  terminal speed and sprite flipping. Includes a player and a platform prefab.
+Category: Characters
+Icon: person-skating
+Tags: [2d, platformer, controller, character, physics2d]
+Components:
+  - Scripts/PlatformerController2D.cqs
+Inserts:
+  - Name: Platformer Player
+    Icon: person-skating
+    Prefab: Prefabs/PlatformerPlayer.cqprefab
+    Tooltip: Sprite with Rigidbody 2D, Box Collider 2D and the platformer controller
+  - Name: Platform 2D
+    Icon: grip-lines
+    Prefab: Prefabs/Platform2D.cqprefab
+    Tooltip: Static ground platform (Box Collider 2D)

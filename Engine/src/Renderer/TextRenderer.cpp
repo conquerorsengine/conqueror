@@ -7,6 +7,9 @@
 #include <glad/glad.h>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <algorithm>
+#include <vector>
+
 namespace Conqueror
 {
     struct TextVertex
@@ -22,8 +25,14 @@ namespace Conqueror
         std::shared_ptr<VertexArray> QuadVA;
         std::shared_ptr<VertexBuffer> QuadVB;
         std::shared_ptr<Font> DefaultFont;
+
+        // Toplu çizim: bir metnin tüm glifleri (atlas) tek köşe tamponunda, tek çizim çağrısında
+        static constexpr uint32_t MaxGlyphs = 2048;
+        std::shared_ptr<VertexArray> BatchVA;
+        std::shared_ptr<VertexBuffer> BatchVB;
+        std::vector<float> BatchVertices;   // glif başına 4 köşe: konum (3) + uv (2)
         
-        glm::mat4 ViewProjection;
+        glm::mat4 ViewProjection{ 1.0f };
     };
 
     static TextRendererData s_Data;
@@ -53,6 +62,26 @@ namespace Conqueror
         std::shared_ptr<IndexBuffer> quadIB = IndexBuffer::Create(quadIndices, 6);
         s_Data.QuadVA->SetIndexBuffer(quadIB);
         
+        // Toplu glif tamponu (dörtgen indeksleri sabit)
+        s_Data.BatchVA = VertexArray::Create();
+        s_Data.BatchVB = VertexBuffer::Create(TextRendererData::MaxGlyphs * 4 * 5 * (uint32_t)sizeof(float));
+        s_Data.BatchVB->SetLayout({
+            { ShaderDataType::Float3, "a_Position" },
+            { ShaderDataType::Float2, "a_TexCoord" }
+        });
+        s_Data.BatchVA->AddVertexBuffer(s_Data.BatchVB);
+        {
+            std::vector<uint32_t> indices(TextRendererData::MaxGlyphs * 6);
+            for (uint32_t g = 0; g < TextRendererData::MaxGlyphs; ++g)
+            {
+                const uint32_t v = g * 4;
+                const uint32_t quad[6] = { v + 0, v + 1, v + 2, v + 2, v + 3, v + 0 };
+                std::copy(quad, quad + 6, indices.begin() + g * 6);
+            }
+            s_Data.BatchVA->SetIndexBuffer(IndexBuffer::Create(indices.data(), (uint32_t)indices.size()));
+        }
+        s_Data.BatchVertices.reserve(TextRendererData::MaxGlyphs * 4 * 5);
+
         // Text shader
         s_Data.TextShader = Shader::Create("Engine/src/Shaders/2D/Text.cqsh");
         
@@ -64,6 +93,9 @@ namespace Conqueror
 
     void TextRenderer::Shutdown()
     {
+        // GL nesneleri bağlam kapanmadan bırakılır
+        s_Data = TextRendererData{};
+        Font::ReleaseDefault();
     }
 
     void TextRenderer::BeginScene(const EditorCamera& camera, bool enableDepthTest)
@@ -96,7 +128,7 @@ namespace Conqueror
         DrawText(text, transform, scale, color);
     }
 
-    void TextRenderer::DrawText(const std::string& text, const glm::mat4& transform, float scale, const glm::vec4& color)
+    void TextRenderer::DrawText(const std::string& text, const glm::mat4& transform, float scale, const glm::vec4& color, int alignment)
     {
         if (!s_Data.DefaultFont)
         {
@@ -116,10 +148,6 @@ namespace Conqueror
         {
             glDisable(GL_DEPTH_TEST);
         }
-
-        s_Data.TextShader->Bind();
-        s_Data.TextShader->SetFloat4("u_Color", color);
-        s_Data.QuadVA->Bind();
 
         // UTF-8 to wchar_t conversion
         std::wstring wtext;
@@ -176,46 +204,75 @@ namespace Conqueror
             wtext += wc;
         }
 
-        float x = 0.0f;
+        // Hizalama: satır genişliği (ilerleme toplamı) ile satır başı kaydırılır
+        auto lineStart = [&](size_t from) -> float {
+            if (alignment <= 0)
+                return 0.0f;
+            float width = 0.0f;
+            for (size_t k = from; k < wtext.size() && wtext[k] != L'\n'; ++k)
+                width += (s_Data.DefaultFont->GetGlyph(wtext[k]).Advance >> 6) * scale;
+            return alignment == 1 ? -width * 0.5f : -width;
+        };
+        float x = lineStart(0);
         float y = 0.0f;
         float lineHeight = 48.0f * scale; // Font size * scale
-        
-        for (wchar_t wc : wtext)
+
+        s_Data.TextShader->Bind();
+        s_Data.TextShader->SetFloat4("u_Color", color);
+        // Metnin dönüşümü bir kez: glif köşeleri metnin yerel düzleminde
+        s_Data.TextShader->SetMat4("u_ViewProjection", s_Data.ViewProjection * transform);
+        s_Data.TextShader->SetInt("u_Texture", 0);
+
+        // Aynı dokudaki glifler tek çağrıda (atlas: genelde metnin tamamı)
+        std::shared_ptr<Texture2D> batchTexture;
+        auto flush = [&]() {
+            if (s_Data.BatchVertices.empty() || !batchTexture)
+                return;
+            const uint32_t glyphs = (uint32_t)(s_Data.BatchVertices.size() / 20);
+            s_Data.BatchVB->SetData(s_Data.BatchVertices.data(), (uint32_t)(s_Data.BatchVertices.size() * sizeof(float)));
+            batchTexture->Bind(0);
+            RenderCommand::DrawIndexed(s_Data.BatchVA, glyphs * 6);
+            Renderer::GetStats().DrawCalls++;
+            s_Data.BatchVertices.clear();
+        };
+
+        for (size_t ci = 0; ci < wtext.size(); ++ci)
         {
+            const wchar_t wc = wtext[ci];
             // Newline desteği
             if (wc == L'\n')
             {
-                x = 0.0f;
+                x = lineStart(ci + 1);
                 y -= lineHeight; // Aşağı git (negatif yön)
                 continue;
             }
 
             const Glyph& glyph = s_Data.DefaultFont->GetGlyph(wc);
-            
-            if (!glyph.Texture)
-                continue;
-
-            float xpos = x + glyph.Bearing.x * scale;
-            float ypos = y - (glyph.Size.y - glyph.Bearing.y) * scale;
-            
-            float w = glyph.Size.x * scale;
-            float h = glyph.Size.y * scale;
-            
-            glm::mat4 model = transform 
-                * glm::translate(glm::mat4(1.0f), glm::vec3(xpos, ypos, 0.0f))
-                * glm::scale(glm::mat4(1.0f), glm::vec3(w, h, 1.0f));
-            
-            s_Data.TextShader->SetMat4("u_ViewProjection", s_Data.ViewProjection * model);
-            
-            glyph.Texture->Bind(0);
-            
-            RenderCommand::DrawIndexed(s_Data.QuadVA, 6);
-            
+            if (glyph.Texture && glyph.Size.x > 0 && glyph.Size.y > 0)
+            {
+                if (glyph.Texture != batchTexture || s_Data.BatchVertices.size() >= (size_t)TextRendererData::MaxGlyphs * 20)
+                {
+                    flush();
+                    batchTexture = glyph.Texture;
+                }
+                const float x0 = x + glyph.Bearing.x * scale;
+                const float y0 = y - (glyph.Size.y - glyph.Bearing.y) * scale;
+                const float x1 = x0 + glyph.Size.x * scale;
+                const float y1 = y0 + glyph.Size.y * scale;
+                const glm::vec2 a = glyph.UV0, b = glyph.UV1;
+                const float quad[20] = {
+                    x0, y1, 0.0f, a.x, a.y,     // sol üst
+                    x1, y1, 0.0f, b.x, a.y,     // sağ üst
+                    x1, y0, 0.0f, b.x, b.y,     // sağ alt
+                    x0, y0, 0.0f, a.x, b.y      // sol alt
+                };
+                s_Data.BatchVertices.insert(s_Data.BatchVertices.end(), quad, quad + 20);
+            }
             x += (glyph.Advance >> 6) * scale;
         }
+        flush();
 
         // Stats güncelle
-        Renderer::GetStats().DrawCalls++;
         Renderer::GetStats().TextCount++;
 
         // Restore OpenGL state (depth test zaten doğru durumda)

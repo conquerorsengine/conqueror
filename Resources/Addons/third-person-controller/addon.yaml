@@ -1,0 +1,19 @@
+Id: conqueror.third-person-controller
+Name: Third Person Controller
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Third person character with an orbit follow camera. Movement is relative to the camera,
+  the character turns smoothly toward where it walks, sprints and jumps. The camera orbits
+  with the mouse, zooms with the wheel and pulls in when a wall is between it and the player.
+Category: Characters
+Icon: person-running
+Tags: [character, controller, third-person, camera, orbit]
+Components:
+  - Scripts/ThirdPersonController.cqs
+  - Scripts/ThirdPersonCamera.cqs
+Inserts:
+  - Name: Third Person Rig
+    Icon: person-running
+    Prefab: Prefabs/ThirdPersonRig.cqprefab
+    Tooltip: Player with Character Controller and a follow camera

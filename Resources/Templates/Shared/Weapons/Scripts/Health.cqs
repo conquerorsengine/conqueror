@@ -1,0 +1,123 @@
+using nativebridge;
+
+// Can (oyuncu, yapay zekâ, hasar alabilen her şey). Weapon.cqs isabet edince TakeDamage çağırır.
+// Ölünce: karakterin Kill() metodu (MannequinCharacter / ShooterAI / FirstPersonShooter), varsa "Mesh" ragdoll'u,
+// "Game" varlığına OnActorKilled(victim, instigator) mesajı. respawnDelay > 0 ise doğduğu yerde (ya da takımının
+// rastgele bir "Spawn <takım>" noktasında) yeniden doğar.
+script Health : ConquerorScript
+{
+    public float maxHealth = 100.0;
+    public float health = 100.0;
+    public string team = "";
+    public float respawnDelay = 0.0;
+    public float regenDelay = 0.0;
+    public float regenRate = 0.0;
+    public float spawnProtection = 0.0;     // doğuştan (ve her yeniden doğuştan) sonra bu kadar saniye hasar almaz
+    [Header("State")]
+    public bool isDead = false;
+    public int deathCount = 0;
+    public float lastDamageTime = -100.0;
+    public int lastInstigator = -1;
+
+    private var spawnPos = null;
+    private var spawnYaw = 0.0;
+    private float respawnTimer = 0.0;
+    private float clock = 0.0;
+
+    private float protectedUntil = 0.0;
+
+    func IsProtected() { return clock < protectedUntil; }
+
+    func Start()
+    {
+        health = maxHealth;
+        protectedUntil = spawnProtection;
+        spawnPos = EntityGetPosition(GetEntityId());
+        spawnYaw = GetRotation().y;
+    }
+
+    func Update(dt)
+    {
+        clock += dt;
+        if (isDead)
+        {
+            if (respawnDelay > 0.0)
+            {
+                respawnTimer -= dt;
+                if (respawnTimer <= 0.0) { Respawn(); }
+            }
+            return;
+        }
+        if (regenRate > 0.0 && health < maxHealth && clock - lastDamageTime > regenDelay)
+        {
+            health = MathMin(maxHealth, health + regenRate * dt);
+        }
+    }
+
+    // TakeDamage(miktar, saldıran kök varlık, isabet noktası, kafa vuruşu) -> true: öldü
+    func TakeDamage(amount, instigator, px, py, pz, head)
+    {
+        if (isDead) { return false; }
+        // Doğuş koruması (oyuncu Play'e basar basmaz ya da yeniden doğar doğmaz vurulmasın)
+        if (clock < protectedUntil) { return false; }
+        // Takım arkadaşı ateşi yok
+        if (team != "" && instigator != null && instigator >= 0)
+        {
+            var t = GetScriptField(instigator, "team");
+            if (t != null && t == team && instigator != GetEntityId()) { return false; }
+        }
+        health -= amount;
+        lastDamageTime = clock;
+        lastInstigator = instigator == null ? -1 : instigator;
+        SendMessage(GetEntityId(), "OnDamaged", amount, lastInstigator);
+        if (health <= 0.0)
+        {
+            Die(lastInstigator, px, py, pz);
+            return true;
+        }
+        return false;
+    }
+
+    func Heal(amount)
+    {
+        if (isDead) { return false; }
+        if (health >= maxHealth) { return false; }
+        health = MathMin(maxHealth, health + amount);
+        return true;
+    }
+
+    func Die(instigator, px, py, pz)
+    {
+        health = 0.0;
+        isDead = true;
+        deathCount += 1;
+        respawnTimer = respawnDelay;
+        InvokeMethod(GetEntityId(), "Kill");
+        SendMessage("Game", "OnActorKilled", GetEntityId(), instigator);
+    }
+
+    func Respawn()
+    {
+        isDead = false;
+        health = maxHealth;
+        protectedUntil = clock + spawnProtection;
+        var p = spawnPos;
+        var yaw = spawnYaw;
+        // Takım doğuş noktaları: "Spawn Blue 0", "Spawn Blue 1", ...
+        if (team != "")
+        {
+            var points = [];
+            for (var i = 0; FindEntity("Spawn " + team + " " + i) != null; i++) { points.Add(FindEntity("Spawn " + team + " " + i)); }
+            if (points.Count > 0)
+            {
+                var s = points[int(MathFloor(RandomRange(0, points.Count - 0.001)))];
+                p = EntityGetPosition(s);
+                yaw = EntityGetRotation(s).y;
+            }
+        }
+        EntitySetPosition(GetEntityId(), p.x, p.y, p.z);
+        SetRotation(0, yaw, 0);
+        InvokeMethod(GetEntityId(), "Revive");
+        SendMessage("Game", "OnActorRespawned", GetEntityId());
+    }
+}

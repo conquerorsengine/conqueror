@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: jog
+      States:
+        - Name: jog
+          ClipIndex: 2
+          ClipName: jog
+  Parameters: []

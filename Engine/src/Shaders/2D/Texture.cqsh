@@ -12,14 +12,14 @@ uniform mat4 u_ViewProjection;
 
 out vec4 v_Color;
 out vec2 v_TexCoord;
-out flat float v_TexIndex;
+out flat int v_TexIndex;
 out float v_TilingFactor;
 
 void main()
 {
     v_Color = a_Color;
     v_TexCoord = a_TexCoord;
-    v_TexIndex = a_TexIndex;
+    v_TexIndex = int(a_TexIndex + 0.5);
     v_TilingFactor = a_TilingFactor;
     gl_Position = u_ViewProjection * vec4(a_Position, 1.0);
 }
@@ -27,28 +27,102 @@ void main()
 #type fragment
 #version 460 core
 
+#include "Include/Common.glsl"
+#include "Include/FrameData.glsl"
+
 layout(location = 0) out vec4 color;
 
 in vec4 v_Color;
 in vec2 v_TexCoord;
-in flat float v_TexIndex;
+in flat int v_TexIndex;
 in float v_TilingFactor;
 
-uniform sampler2D u_Textures[32];
+uniform sampler2D u_Textures[31];
+uniform int u_OutputMode = -1;   // -1 kare ayarına göre, 0 sRGB (UI üst katmanı), 1 doğrusal
+// Light 2D: ekran boyutlu ışık birikim dokusu (doğrusal HDR); sprite rengi bununla çarpılır
+uniform sampler2D u_LightTex;
+uniform int u_Lit = 0;
+uniform vec2 u_LightOrigin = vec2(0.0);
+
+// Sampler dizisini uniform olmayan indisle örneklemek GLSL'de tanımsızdır
+// (AMD/Intel'de bozulma). switch ile her dal sabit indis kullanır.
+vec4 SampleTexture(int index, vec2 uv)
+{
+    switch (index)
+    {
+        case 0: return texture(u_Textures[0], uv);
+        case 1: return texture(u_Textures[1], uv);
+        case 2: return texture(u_Textures[2], uv);
+        case 3: return texture(u_Textures[3], uv);
+        case 4: return texture(u_Textures[4], uv);
+        case 5: return texture(u_Textures[5], uv);
+        case 6: return texture(u_Textures[6], uv);
+        case 7: return texture(u_Textures[7], uv);
+        case 8: return texture(u_Textures[8], uv);
+        case 9: return texture(u_Textures[9], uv);
+        case 10: return texture(u_Textures[10], uv);
+        case 11: return texture(u_Textures[11], uv);
+        case 12: return texture(u_Textures[12], uv);
+        case 13: return texture(u_Textures[13], uv);
+        case 14: return texture(u_Textures[14], uv);
+        case 15: return texture(u_Textures[15], uv);
+        case 16: return texture(u_Textures[16], uv);
+        case 17: return texture(u_Textures[17], uv);
+        case 18: return texture(u_Textures[18], uv);
+        case 19: return texture(u_Textures[19], uv);
+        case 20: return texture(u_Textures[20], uv);
+        case 21: return texture(u_Textures[21], uv);
+        case 22: return texture(u_Textures[22], uv);
+        case 23: return texture(u_Textures[23], uv);
+        case 24: return texture(u_Textures[24], uv);
+        case 25: return texture(u_Textures[25], uv);
+        case 26: return texture(u_Textures[26], uv);
+        case 27: return texture(u_Textures[27], uv);
+        case 28: return texture(u_Textures[28], uv);
+        case 29: return texture(u_Textures[29], uv);
+        case 30: return texture(u_Textures[30], uv);
+    }
+    return texture(u_Textures[0], uv);
+}
 
 void main()
 {
-    int index = int(v_TexIndex);
-    vec4 texColor = texture(u_Textures[index], v_TexCoord * v_TilingFactor) * v_Color;
-    
+    vec4 texColor;
+    if (v_TilingFactor < 0.0)
+    {
+        // SDF metin: alfa kanalı işaretli mesafe (0.5 = kenar). Küçük yazıda (atlas çok küçültülünce) ince dikey çizgiler
+        // (I, l, r, H) piksel arasına düşüp kayboluyordu: piksel içinde 4 örnek alınır ve küçüldükçe kenar hafifçe
+        // kalınlaştırılır (her harf okunur kalır); büyük yazıda etkisi yoktur.
+        float d = SampleTexture(v_TexIndex, v_TexCoord).a;
+        float fw = fwidth(d);
+        float w = max(fw * 0.75, 1e-4);
+        float edge = 0.5 - clamp(fw * 0.55, 0.0, 0.16);
+        vec2 dx = dFdx(v_TexCoord) * 0.3535;
+        vec2 dy = dFdy(v_TexCoord) * 0.3535;
+        float a = smoothstep(edge - w, edge + w, d) * 0.2;
+        a += smoothstep(edge - w, edge + w, SampleTexture(v_TexIndex, v_TexCoord + dx + dy).a) * 0.2;
+        a += smoothstep(edge - w, edge + w, SampleTexture(v_TexIndex, v_TexCoord + dx - dy).a) * 0.2;
+        a += smoothstep(edge - w, edge + w, SampleTexture(v_TexIndex, v_TexCoord - dx + dy).a) * 0.2;
+        a += smoothstep(edge - w, edge + w, SampleTexture(v_TexIndex, v_TexCoord - dx - dy).a) * 0.2;
+        texColor = vec4(v_Color.rgb, v_Color.a * a);
+    }
+    else
+        texColor = SampleTexture(v_TexIndex, v_TexCoord * v_TilingFactor) * v_Color;
+
     if (texColor.a < 0.01)
         discard;
-    
-    // Yarı saydam pikseller için depth'i uzağa at
-    if (texColor.a < 0.99)
-        gl_FragDepth = 0.999999;
-    else
-        gl_FragDepth = gl_FragCoord.z;
-    
+
+    // Not: sprite'lar arkadan öne sıralı çizilir; yarı saydam pikseller gerçek derinliğini yazar.
+    // (Eskiden derinlik 0.999999'a atılıyordu: önceden çizilmiş opak bir sprite'ın önündeki
+    //  yarı saydam sprite/metin kenarları derinlik testinde eleniyordu.)
+
+    // HDR hattında sprite rengi doğrusal uzaya çevrilir; nötr ton eşleme + sRGB
+    // kodlaması sonrası ekranda orijinal renk aynen görünür.
+    bool linearOut = u_OutputMode == 1 || (u_OutputMode < 0 && CQ_Frame.FeatureFlags.x == 1);
+    if (linearOut)
+        texColor.rgb = SRGBToLinear(texColor.rgb);
+    if (u_Lit == 1)
+        texColor.rgb *= texelFetch(u_LightTex, ivec2(gl_FragCoord.xy - u_LightOrigin), 0).rgb;
+
     color = texColor;
 }

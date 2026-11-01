@@ -1,4 +1,7 @@
 #include "Mesh.h"
+
+#include <algorithm>
+#include <cmath>
 #include "Renderer/Renderer.h"
 
 namespace Conqueror
@@ -13,8 +16,82 @@ namespace Conqueror
         Renderer::GetStats().MeshMemory += memoryMB;
     }
 
+    void Mesh::UpdateVertices(const Vertex* vertices, uint32_t first, uint32_t count)
+    {
+        if (!vertices || count == 0 || first >= m_Vertices.size())
+            return;
+        count = std::min<uint32_t>(count, (uint32_t)m_Vertices.size() - first);
+        std::copy(vertices, vertices + count, m_Vertices.begin() + first);
+        m_VertexBuffer->SetSubData(vertices, first * (uint32_t)sizeof(Vertex), count * (uint32_t)sizeof(Vertex));
+        // Kumaş gibi her karede değişen meshler: sınırlar köşelerle birlikte güncellenir (görüş kırpması onları yanlışlıkla
+        // gizlemesin). Tüm aralık yenilenince tam hesap, kısmi güncellemede (terrain fırçası) kutu yalnız büyür.
+        if (first == 0 && count == (uint32_t)m_Vertices.size())
+        {
+            ComputeBounds();
+            return;
+        }
+        glm::vec3 mn = m_BoundsCenter - m_BoundsExtents, mx = m_BoundsCenter + m_BoundsExtents;
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            mn = glm::min(mn, vertices[i].Position);
+            mx = glm::max(mx, vertices[i].Position);
+        }
+        const glm::vec3 center = (mn + mx) * 0.5f;
+        float r2 = 0.0f;
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            const glm::vec3 d = vertices[i].Position - center;
+            r2 = std::max(r2, glm::dot(d, d));
+        }
+        m_BoundsRadius = std::max(std::sqrt(r2), glm::length(center - m_BoundsCenter) + m_BoundsRadius);
+        m_BoundsCenter = center;
+        m_BoundsExtents = (mx - mn) * 0.5f;
+    }
+
+    void Mesh::ComputeBounds()
+    {
+        // Kutunun merkezi + yarı boyutu, sınır küresi aynı merkezden en uzak köşe
+        if (m_Vertices.empty())
+            return;
+        glm::vec3 mn = m_Vertices[0].Position, mx = mn;
+        for (const auto& v : m_Vertices)
+        {
+            mn = glm::min(mn, v.Position);
+            mx = glm::max(mx, v.Position);
+        }
+        m_BoundsCenter = (mn + mx) * 0.5f;
+        m_BoundsExtents = (mx - mn) * 0.5f;
+        float r2 = 0.0f;
+        for (const auto& v : m_Vertices)
+        {
+            const glm::vec3 d = v.Position - m_BoundsCenter;
+            r2 = std::max(r2, glm::dot(d, d));
+        }
+        m_BoundsRadius = std::sqrt(r2);
+    }
+
+    const Mesh* Mesh::GetLOD(int level) const
+    {
+        if (level <= 0 || m_LODs.empty())
+            return this;
+        const size_t i = std::min((size_t)level, m_LODs.size()) - 1;
+        return m_LODs[i].LODMesh ? m_LODs[i].LODMesh.get() : this;
+    }
+
+    int Mesh::SelectLOD(float screenSize) const
+    {
+        int level = 0;
+        for (size_t i = 0; i < m_LODs.size(); ++i)
+            if (screenSize < m_LODs[i].ScreenSize)
+                level = (int)i + 1;
+        return level;
+    }
+
     void Mesh::SetupMesh()
     {
+        // Sınırlar: LOD seçimi (küre) ve görüş kırpması (kutu)
+        ComputeBounds();
+
         // Vertex Array oluştur
         m_VertexArray = VertexArray::Create();
 

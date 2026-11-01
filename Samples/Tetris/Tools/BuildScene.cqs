@@ -1,0 +1,255 @@
+using nativebridge;
+
+// Tetris örnek sahnesini kurar (editörde, oyun dışında çalıştırılır):
+//   automation: new_scene -> run_cqs_file Tools/BuildScene.cqs -> save_scene_as Assets/Scenes/Main.cqscene
+// Dünya düzeni: tahta 10x20 hücre, hücre = 1 birim, merkez (0, 0); kamera ortografik, görünür yükseklik 25.
+// Arayüz: 1920x1080 referans, yüksekliğe göre ölçek -> 1 dünya birimi = 43.2 referans piksel.
+
+var FONT = "Assets/Fonts/Orbitron.ttf";
+var NUMFONT = "Assets/Fonts/RussoOne.ttf";   // düz sıfırlı rakamlar (Orbitron sıfırı eğik çizgili)
+var PX = 43.2;
+
+func Sprite(name, tex, x, y, z, sx, sy, color, parent) {
+    var e = CreateEntity(name);
+    EntityAddComponent(e, "SpriteRenderer");
+    if (tex != "") { EntitySetComponentField(e, "SpriteRenderer", "Texture", tex); }
+    EntitySetColor(e, color);
+    EntitySetPosition(e, x, y, z);
+    EntitySetScale(e, sx, sy, 1);
+    if (parent != null) { EntitySetParent(e, parent); }
+    return e;
+}
+
+// 9-dilim panel: w x h dünya birimi, kenarlık piksel olarak (ppu: piksel/birim)
+func Sliced(name, tex, x, y, z, w, h, border, ppu, color, parent) {
+    var e = Sprite(name, tex, x, y, z, 1, 1, color, parent);
+    EntitySetComponentField(e, "SpriteRenderer", "DrawMode", "Sliced");
+    EntitySetComponentField(e, "SpriteRenderer", "Size", {x: w, y: h});
+    EntitySetComponentField(e, "SpriteRenderer", "PixelsPerUnit", ppu);
+    EntitySetComponentField(e, "SpriteRenderer", "Border", {x: border, y: border, z: border, w: border});
+    return e;
+}
+
+func Text(name, parent, text, x, y, w, h, size, color, align) {
+    var t = UICreateElement("Text", parent, name);
+    UISetText(t, text);
+    UISetPosition(t, x, y);
+    UISetSize(t, w, h);
+    EntitySetComponentField(t, "UIText", "Font", FONT);
+    EntitySetComponentField(t, "UIText", "FontSize", size);
+    EntitySetComponentField(t, "UIText", "AlignH", align);
+    EntitySetComponentField(t, "UIText", "AlignV", "Middle");
+    EntitySetComponentField(t, "UIText", "WordWrap", false);
+    UISetTextColor(t, color);
+    return t;
+}
+
+func Numeric(t) {
+    EntitySetComponentField(t, "UIText", "Font", NUMFONT);
+    return t;
+}
+
+func Glow(t, color) {
+    EntitySetComponentField(t, "UIText", "Shadow", true);
+    EntitySetComponentField(t, "UIText", "ShadowColor", color);
+    EntitySetComponentField(t, "UIText", "ShadowOffset", {x: 0, y: -3});
+}
+
+// Tam ekran (ya da içerik) kabı: şeffaf panel
+func Layer(name, parent, alpha) {
+    var p = UICreateElement("Panel", parent, name);
+    EntitySetComponentField(p, "RectTransform", "AnchorMin", {x: 0, y: 0});
+    EntitySetComponentField(p, "RectTransform", "AnchorMax", {x: 1, y: 1});
+    EntitySetComponentField(p, "RectTransform", "SizeDelta", {x: 0, y: 0});
+    EntitySetComponentField(p, "RectTransform", "AnchoredPosition", {x: 0, y: 0});
+    EntitySetComponentField(p, "UIImage", "CornerRadius", 0);
+    EntitySetColor(p, 0.01, 0.01, 0.04, alpha);
+    EntitySetComponentField(p, "UIImage", "RaycastTarget", alpha > 0.01);
+    return p;
+}
+
+func Button(name, parent, label, x, y, w) {
+    var b = UICreateElement("Button", parent, name);
+    UISetPosition(b, x, y);
+    UISetSize(b, w, 64);
+    EntitySetColor(b, 0.10, 0.12, 0.24, 0.92);
+    EntitySetComponentField(b, "UIImage", "CornerRadius", 14);
+    UISetText(b, label);
+    var t = EntityGetChildren(b)[0];
+    EntitySetComponentField(t, "UIText", "Font", FONT);
+    EntitySetComponentField(t, "UIText", "FontSize", 26);
+    UISetTextColor(t, 0.86, 0.92, 1.0, 1);
+    return b;
+}
+
+// ------------------------------------------------------------------ Kamera ve görüntü
+var cam = CreateEntity("Main Camera");
+EntityAddComponent(cam, "Camera");
+EntitySetComponentField(cam, "Camera", "Projection", "Orthographic");
+EntitySetComponentField(cam, "Camera", "OrthographicSize", 25);
+EntitySetPosition(cam, 0, 0, 10);
+
+RenderSettingSet("Environment.Sky", "SolidColor");
+RenderSettingSet("Environment.BackgroundColor", {r: 0.02, g: 0.02, b: 0.05});
+RenderSettingSet("Post.Bloom", true);
+RenderSettingSet("Post.BloomThreshold", 0.85);
+RenderSettingSet("Post.BloomIntensity", 0.55);
+RenderSettingSet("Post.BloomScatter", 0.72);
+RenderSettingSet("Post.Vignette", true);
+RenderSettingSet("Post.VignetteIntensity", 0.32);
+RenderSettingSet("Post.VignetteSmoothness", 0.45);
+RenderSettingSet("Post.AmbientOcclusion", false);
+RenderSettingSet("Post.AntiAliasing", "FXAA");
+
+// Arka plan: ekranı her en-boy oranında kaplar
+Sprite("Background", "Assets/Textures/background.png", 0, 0, -8, 3.4, 2.45, {r: 1, g: 1, b: 1, a: 1}, null);
+
+// ------------------------------------------------------------------ Oyun alanı
+var field = CreateEntity("Playfield");
+Sliced("BoardBack", "Assets/Textures/panel.png", 0, 0, -2, 10.5, 20.5, 16, 64, {r: 0.035, g: 0.04, b: 0.085, a: 0.94}, field);
+Sliced("BoardFrame", "Assets/Textures/frame.png", 0, 0, -1.5, 12.2, 22.2, 32, 32, {r: 0.30, g: 0.55, b: 1.6, a: 1}, field);
+Sliced("HoldPanel", "Assets/Textures/panel.png", -9.5, 7.55, -2, 5.4, 4.9, 16, 64, {r: 0.05, g: 0.06, b: 0.12, a: 0.86}, field);
+Sliced("StatsPanel", "Assets/Textures/panel.png", -9.5, -2.25, -2, 5.4, 12.4, 16, 64, {r: 0.05, g: 0.06, b: 0.12, a: 0.86}, field);
+Sliced("NextPanel", "Assets/Textures/panel.png", 9.5, 1.45, -2, 5.4, 17.3, 16, 64, {r: 0.05, g: 0.06, b: 0.12, a: 0.86}, field);
+Sliced("HoldFrame", "Assets/Textures/frame.png", -9.5, 7.55, -1.9, 6.4, 5.9, 32, 32, {r: 0.55, g: 0.35, b: 1.2, a: 0.55}, field);
+Sliced("StatsFrame", "Assets/Textures/frame.png", -9.5, -2.25, -1.9, 6.4, 13.4, 32, 32, {r: 0.55, g: 0.35, b: 1.2, a: 0.55}, field);
+Sliced("NextFrame", "Assets/Textures/frame.png", 9.5, 1.45, -1.9, 6.4, 18.3, 32, 32, {r: 0.55, g: 0.35, b: 1.2, a: 0.55}, field);
+
+// Çalışma zamanında çoğaltılan şablonlar (kapalı)
+var tBlock = Sprite("BlockTemplate", "Assets/Textures/block.png", 0, 0, 0, 1, 1, {r: 1, g: 1, b: 1, a: 1}, field);
+EntitySetComponentField(tBlock, "SpriteRenderer", "PixelsPerUnit", 64);
+EntitySetActive(tBlock, false);
+var tGhost = Sprite("GhostTemplate", "Assets/Textures/ghost.png", 0, 0, 0, 1, 1, {r: 1, g: 1, b: 1, a: 0.5}, field);
+EntitySetComponentField(tGhost, "SpriteRenderer", "PixelsPerUnit", 64);
+EntitySetActive(tGhost, false);
+var tCell = Sprite("CellTemplate", "Assets/Textures/cell.png", 0, 0, -1, 1, 1, {r: 0.30, g: 0.36, b: 0.62, a: 0.28}, field);
+EntitySetComponentField(tCell, "SpriteRenderer", "PixelsPerUnit", 64);
+EntitySetActive(tCell, false);
+
+// ------------------------------------------------------------------ Efektler
+var sparks = CreateEntity("FX_Sparks");
+EntitySetPosition(sparks, 0, 0, 1);
+EntityAddComponent(sparks, "ParticleSystem");
+var ps = {
+    PlayOnAwake: false, Looping: false, EmissionEnabled: false, RateOverTime: 0,
+    StartLifetime: {x: 0.35, y: 0.85}, StartSpeed: {x: 3, y: 9}, StartSize: {x: 0.16, y: 0.42},
+    StartColorA: {r: 1, g: 1, b: 1, a: 1}, StartColorB: {r: 0.7, g: 0.85, b: 1, a: 1},
+    GravityModifier: 0.35, SimulationSpace: "World", MaxParticles: 3000,
+    Shape: "Sphere", Radius: 0.25, Blend: "Additive", Texture: "Assets/Textures/spark.png",
+    EmissiveIntensity: 2.2, Drag: 1.5, SortByDistance: false
+};
+foreach (var k, v in ps) { EntitySetComponentField(sparks, "ParticleSystem", k, v); }
+
+var dust = CreateEntity("FX_Ambient");
+EntitySetPosition(dust, 0, -14, -6);
+EntityAddComponent(dust, "ParticleSystem");
+var amb = {
+    PlayOnAwake: true, Looping: true, Prewarm: true, EmissionEnabled: true, RateOverTime: 7,
+    Duration: 10, StartLifetime: {x: 9, y: 15}, StartSpeed: {x: 0.6, y: 1.6}, StartSize: {x: 0.25, y: 1.1},
+    StartColorA: {r: 0.35, g: 0.45, b: 1, a: 0.22}, StartColorB: {r: 0.9, g: 0.35, b: 1, a: 0.16},
+    GravityModifier: 0, SimulationSpace: "World", MaxParticles: 400,
+    Shape: "Box", BoxSize: {x: 46, y: 0.5, z: 0.5}, Angle: 0, RandomizeDirection: 0.08,
+    Blend: "Additive", Texture: "Assets/Textures/glow.png", EmissiveIntensity: 1.0, SortByDistance: false
+};
+foreach (var k, v in amb) { EntitySetComponentField(dust, "ParticleSystem", k, v); }
+
+// ------------------------------------------------------------------ Oyun yöneticisi ve müzik
+var game = CreateEntity("Game");
+EntityAddComponent(game, "AudioSource");
+EntitySetComponentField(game, "AudioSource", "Clip", "Assets/Music/theme.mp3");
+EntitySetComponentField(game, "AudioSource", "Loop", true);
+EntitySetComponentField(game, "AudioSource", "PlayOnAwake", false);
+EntitySetComponentField(game, "AudioSource", "Is3D", false);
+EntitySetComponentField(game, "AudioSource", "Volume", 0.55);
+EntitySetComponentField(game, "AudioSource", "OutputGroup", "Music");
+AddScript(game, "Assets/Scripts/TetrisGame.cqs");
+
+var titleMusic = CreateEntity("TitleMusic");
+EntityAddComponent(titleMusic, "AudioSource");
+EntitySetComponentField(titleMusic, "AudioSource", "Clip", "Assets/Music/title.mp3");
+EntitySetComponentField(titleMusic, "AudioSource", "Loop", true);
+EntitySetComponentField(titleMusic, "AudioSource", "PlayOnAwake", true);
+EntitySetComponentField(titleMusic, "AudioSource", "Is3D", false);
+EntitySetComponentField(titleMusic, "AudioSource", "Volume", 0.5);
+EntitySetComponentField(titleMusic, "AudioSource", "OutputGroup", "Music");
+
+// ------------------------------------------------------------------ Arayüz
+var canvas = UICreateCanvas("HUD");
+EntitySetComponentField(canvas, "CanvasScaler", "ReferenceResolution", {x: 1920, y: 1080});
+EntitySetComponentField(canvas, "CanvasScaler", "MatchWidthOrHeight", 1);
+
+var white = {r: 0.92, g: 0.95, b: 1.0, a: 1};
+var dim = {r: 0.55, g: 0.62, b: 0.85, a: 1};
+var cyan = {r: 0.35, g: 0.9, b: 1.0, a: 1};
+
+var hud = Layer("HudRoot", canvas, 0);
+Text("HoldLabel", hud, "HOLD", -9.5 * PX, 9.55 * PX, 220, 40, 26, dim, "Center");
+Text("NextLabel", hud, "NEXT", 9.5 * PX, 9.55 * PX, 220, 40, 26, dim, "Center");
+Text("ScoreLabel", hud, "SCORE", -9.5 * PX, 3.1 * PX, 220, 34, 20, dim, "Center");
+Glow(Numeric(Text("ScoreValue", hud, "0", -9.5 * PX, 1.95 * PX, 230, 50, 36, white, "Center")), {r: 0.2, g: 0.5, b: 1, a: 0.6});
+Text("LevelLabel", hud, "LEVEL", -9.5 * PX, 0.1 * PX, 220, 34, 20, dim, "Center");
+Glow(Numeric(Text("LevelValue", hud, "1", -9.5 * PX, -1.05 * PX, 230, 50, 36, cyan, "Center")), {r: 0.1, g: 0.6, b: 1, a: 0.6});
+Text("LinesLabel", hud, "LINES", -9.5 * PX, -2.9 * PX, 220, 34, 20, dim, "Center");
+Glow(Numeric(Text("LinesValue", hud, "0", -9.5 * PX, -4.05 * PX, 230, 50, 36, white, "Center")), {r: 0.2, g: 0.5, b: 1, a: 0.6});
+Text("TimeLabel", hud, "TIME", -9.5 * PX, -5.9 * PX, 220, 34, 20, dim, "Center");
+Numeric(Text("TimeValue", hud, "0:00", -9.5 * PX, -7.05 * PX, 230, 46, 30, white, "Center"));
+Numeric(Text("BestLabel", hud, "BEST 0", -9.5 * PX, -8.2 * PX, 230, 30, 17, dim, "Center"));
+
+// Patlama yazıları (TETRIS!, T-SPIN, COMBO ...)
+var popup = Numeric(Text("PopupText", canvas, "", 0, 3.5 * PX, 900, 110, 64, white, "Center"));
+Glow(popup, {r: 0.3, g: 0.6, b: 1, a: 0.85});
+EntitySetComponentField(popup, "UIText", "Outline", true);
+EntitySetComponentField(popup, "UIText", "OutlineColor", {r: 0.05, g: 0.08, b: 0.25, a: 1});
+var popupSub = Numeric(Text("PopupSub", canvas, "", 0, 1.6 * PX, 900, 60, 30, cyan, "Center"));
+EntitySetComponentField(popupSub, "UIText", "Outline", true);
+EntitySetComponentField(popupSub, "UIText", "OutlineColor", {r: 0.02, g: 0.05, b: 0.2, a: 1});
+
+var countdown = Numeric(Text("CountdownText", canvas, "", 0, 0, 600, 220, 160, white, "Center"));
+Glow(countdown, {r: 0.4, g: 0.7, b: 1, a: 0.9});
+EntitySetComponentField(countdown, "UIText", "Outline", true);
+EntitySetComponentField(countdown, "UIText", "OutlineColor", {r: 0.03, g: 0.05, b: 0.18, a: 1});
+
+// Başlık ekranı (logo dünyada bloklarla çizilir)
+var title = Layer("TitleUI", canvas, 0);
+var press = Text("PressStart", title, "PRESS ENTER TO PLAY", 0, -1.6 * PX, 1100, 70, 38, white, "Center");
+Glow(press, {r: 0.3, g: 0.55, b: 1, a: 0.9});
+Numeric(Text("TitleBest", title, "BEST 0", 0, -3.3 * PX, 900, 50, 28, cyan, "Center"));
+Text("TitleHint", title, "ARROWS / WASD  MOVE      UP / X  ROTATE      Z  ROTATE LEFT      SPACE  DROP      C  HOLD      ESC  PAUSE", 0, -10.6 * PX, 1800, 40, 17, dim, "Center");
+Button("PlayBtn", title, "PLAY", 0, -5.6 * PX, 300);
+Text("Credit", title, "MADE WITH CONQUEROR'S ENGINE", 0, -11.6 * PX, 900, 30, 14, dim, "Center");
+
+// Duraklatma
+var pause = Layer("PauseUI", canvas, 0.62);
+Glow(Text("PausedText", pause, "PAUSED", 0, 5.2 * PX, 900, 120, 84, white, "Center"), {r: 0.3, g: 0.55, b: 1, a: 0.9});
+Button("ResumeBtn", pause, "RESUME", 0, 1.6 * PX, 360);
+Button("RestartBtn", pause, "RESTART", 0, -0.4 * PX, 360);
+Button("MenuBtn", pause, "MAIN MENU", 0, -2.4 * PX, 360);
+Text("MusicLabel", pause, "MUSIC", -5.2 * PX, -5.0 * PX, 200, 40, 22, dim, "Right");
+var musicSlider = UICreateElement("Slider", pause, "MusicSlider");
+UISetPosition(musicSlider, 0.6 * PX, -5.0 * PX);
+UISetSize(musicSlider, 380, 34);
+Text("SfxLabel", pause, "EFFECTS", -5.2 * PX, -6.4 * PX, 200, 40, 22, dim, "Right");
+var sfxSlider = UICreateElement("Slider", pause, "SfxSlider");
+UISetPosition(sfxSlider, 0.6 * PX, -6.4 * PX);
+UISetSize(sfxSlider, 380, 34);
+foreach (var s in [musicSlider, sfxSlider]) {
+    EntitySetComponentField(s, "UISlider", "BackgroundColor", {r: 0.12, g: 0.14, b: 0.28, a: 1});
+    EntitySetComponentField(s, "UISlider", "FillColor", {r: 0.3, g: 0.62, b: 1.0, a: 1});
+    EntitySetComponentField(s, "UISlider", "HandleColor", {r: 0.9, g: 0.95, b: 1, a: 1});
+}
+
+// Oyun bitti
+var over = Layer("GameOverUI", canvas, 0.66);
+Glow(Text("GameOverText", over, "GAME OVER", 0, 6.0 * PX, 1200, 130, 92, {r: 1, g: 0.45, b: 0.55, a: 1}, "Center"), {r: 1, g: 0.2, b: 0.35, a: 0.9});
+Text("FinalScoreLabel", over, "SCORE", 0, 3.4 * PX, 600, 40, 24, dim, "Center");
+Glow(Numeric(Text("FinalScore", over, "0", 0, 2.2 * PX, 900, 80, 64, white, "Center")), {r: 0.2, g: 0.5, b: 1, a: 0.7});
+Numeric(Text("FinalStats", over, "", 0, 0.7 * PX, 1400, 40, 22, dim, "Center"));
+Glow(Text("NewRecord", over, "NEW RECORD!", 0, -0.6 * PX, 900, 60, 36, {r: 1, g: 0.85, b: 0.3, a: 1}, "Center"), {r: 1, g: 0.6, b: 0.1, a: 0.8});
+Button("AgainBtn", over, "PLAY AGAIN", 0, -3.0 * PX, 360);
+Button("OverMenuBtn", over, "MAIN MENU", 0, -5.0 * PX, 360);
+
+UISetVisible(pause, false);
+UISetVisible(over, false);
+UISetText(popup, "");
+UISetText(countdown, "");
+CreateEntity("BuildSceneDone");

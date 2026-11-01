@@ -2,6 +2,7 @@
 #include "Core/Application.h"
 #include "Core/Logging/Log.h"
 #include <fstream>
+#include <algorithm>
 #include <sstream>
 
 #include <GLFW/glfw3.h>
@@ -42,6 +43,10 @@ namespace Conqueror
     
     std::unordered_map<std::string, Input::ComboState> Input::s_Combos;
     float Input::s_DeadZone = 0.2f;
+    int Input::s_CursorMode = 0;
+    int Input::s_AppliedCursorMode = 0;
+    bool Input::s_CursorReleased = false;
+    static uint32_t s_CursorModeEpoch = 0;
 
     bool Input::IsKeyPressed(const KeyCode key)
     {
@@ -86,8 +91,52 @@ namespace Conqueror
     }
 
     // Gamepad functions
+    namespace
+    {
+        bool s_VirtualPad = false;
+        std::string s_VirtualPadName;
+        GLFWgamepadstate s_VirtualPadState{};
+    }
+
+    void Input::SetVirtualGamepad(bool connected, const std::string& name)
+    {
+        s_VirtualPad = connected;
+        s_VirtualPadName = name;
+        s_VirtualPadState = {};
+        s_VirtualPadState.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER] = -1.0f;
+        s_VirtualPadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER] = -1.0f;
+    }
+
+    bool Input::IsVirtualGamepad() { return s_VirtualPad; }
+
+    void Input::SetVirtualGamepadButton(int button, bool down)
+    {
+        if (button >= 0 && button <= GLFW_GAMEPAD_BUTTON_LAST)
+            s_VirtualPadState.buttons[button] = down ? GLFW_PRESS : GLFW_RELEASE;
+    }
+
+    void Input::SetVirtualGamepadAxis(int axis, float value)
+    {
+        if (axis >= 0 && axis <= GLFW_GAMEPAD_AXIS_LAST)
+            s_VirtualPadState.axes[axis] = std::clamp(value, -1.0f, 1.0f);
+    }
+
+    std::string Input::GetGamepadName(int gamepadID)
+    {
+        if (gamepadID == 0 && s_VirtualPad)
+            return s_VirtualPadName;
+        if (!IsGamepadConnected(gamepadID))
+            return {};
+        const char* name = glfwJoystickIsGamepad(gamepadID) ? glfwGetGamepadName(gamepadID) : glfwGetJoystickName(gamepadID);
+        return name ? name : "";
+    }
+
     bool Input::IsGamepadConnected(int gamepadID)
     {
+        if (gamepadID == 0 && s_VirtualPad)
+            return true;
+        if (gamepadID < GLFW_JOYSTICK_1 || gamepadID > GLFW_JOYSTICK_LAST)
+            return false;
         return glfwJoystickPresent(gamepadID) == GLFW_TRUE;
     }
 
@@ -130,10 +179,28 @@ namespace Conqueror
         return count;
     }
 
+    // SDL eşlemesi bilinen kollar için standart düzen (A=0, B=1, X=2, Y=3, LB, RB, Back, Start, Guide,
+    // LS, RS, D-pad yukarı/sağ/aşağı/sol; eksenler LX, LY, RX, RY, LT, RT). Bilinmeyen cihazlar ham joystick verisine düşer.
+    static bool ReadGamepadState(int gamepadID, GLFWgamepadstate& state)
+    {
+        if (gamepadID == 0 && s_VirtualPad)
+        {
+            state = s_VirtualPadState;
+            return true;
+        }
+        if (gamepadID < 0 || gamepadID > GLFW_JOYSTICK_LAST)
+            return false;
+        return glfwJoystickIsGamepad(gamepadID) == GLFW_TRUE && glfwGetGamepadState(gamepadID, &state) == GLFW_TRUE;
+    }
+
     bool Input::IsGamepadButtonPressed(int button, int gamepadID)
     {
         if (!IsGamepadConnected(gamepadID))
             return false;
+
+        GLFWgamepadstate state;
+        if (ReadGamepadState(gamepadID, state))
+            return button >= 0 && button <= GLFW_GAMEPAD_BUTTON_LAST && state.buttons[button] == GLFW_PRESS;
             
         int count;
         const unsigned char* buttons = glfwGetJoystickButtons(gamepadID, &count);
@@ -153,6 +220,10 @@ namespace Conqueror
     {
         if (!IsGamepadConnected(gamepadID))
             return false;
+
+        GLFWgamepadstate state;
+        if (ReadGamepadState(gamepadID, state))
+            return button >= 0 && button <= GLFW_GAMEPAD_BUTTON_LAST && state.buttons[button] == GLFW_RELEASE;
             
         int count;
         const unsigned char* buttons = glfwGetJoystickButtons(gamepadID, &count);
@@ -167,6 +238,17 @@ namespace Conqueror
     {
         if (!IsGamepadConnected(gamepadID))
             return 0.0f;
+
+        GLFWgamepadstate state;
+        if (ReadGamepadState(gamepadID, state))
+        {
+            if (axis < 0 || axis > GLFW_GAMEPAD_AXIS_LAST)
+                return 0.0f;
+            // Tetikler -1 (bırakılmış) .. 1 aralığındadır; ölü bölge yalnızca çubuklara uygulanır
+            if (axis >= GLFW_GAMEPAD_AXIS_LEFT_TRIGGER)
+                return state.axes[axis];
+            return ApplyDeadZone(state.axes[axis], s_DeadZone);
+        }
             
         int count;
         const float* axes = glfwGetJoystickAxes(gamepadID, &count);
@@ -187,13 +269,20 @@ namespace Conqueror
         return glm::vec2(GetGamepadAxis(2, gamepadID), GetGamepadAxis(3, gamepadID));
     }
 
+    // 0 (bırakılmış) .. 1 (tam basılı)
     float Input::GetGamepadLeftTrigger(int gamepadID)
     {
+        GLFWgamepadstate state;
+        if (IsGamepadConnected(gamepadID) && ReadGamepadState(gamepadID, state))
+            return glm::clamp((state.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER] + 1.0f) * 0.5f, 0.0f, 1.0f);
         return GetGamepadAxis(4, gamepadID);
     }
 
     float Input::GetGamepadRightTrigger(int gamepadID)
     {
+        GLFWgamepadstate state;
+        if (IsGamepadConnected(gamepadID) && ReadGamepadState(gamepadID, state))
+            return glm::clamp((state.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER] + 1.0f) * 0.5f, 0.0f, 1.0f);
         return GetGamepadAxis(5, gamepadID);
     }
 
@@ -234,11 +323,82 @@ namespace Conqueror
         return !s_MouseButtonStates[button] && s_PreviousMouseButtonStates[button];
     }
 
+    // Betik API'si: 0 normal, 1 gizli, 2 kilitli (FPS). GLFW sabitleri (GLFW_CURSOR_*) de kabul edilir.
+    static int NormalizeCursorMode(int mode)
+    {
+        if (mode == GLFW_CURSOR_NORMAL) return 0;
+        if (mode == GLFW_CURSOR_HIDDEN) return 1;
+        if (mode == GLFW_CURSOR_DISABLED) return 2;
+        return (mode >= 0 && mode <= 2) ? mode : -1;
+    }
+
     void Input::SetCursorMode(int mode)
     {
-        auto* window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
-        glfwSetInputMode(window, GLFW_CURSOR, mode);
+        int m = NormalizeCursorMode(mode);
+        if (m < 0)
+            return;
+        s_CursorMode = m;
+        // Kullanıcı bıraktıysa (Esc) yeni kilit isteği oyun alanına tıklanana kadar bekler (Unreal Shift+F1 gibi);
+        // aksi halde her karede kilit isteyen bir betik imleci hiç bırakmazdı
+        if (m == 0)
+            s_CursorReleased = false;
+        if (!s_CursorReleased)
+            ApplyCursorMode(m);
     }
+
+    void Input::ReleaseCursor(float x, float y)
+    {
+        if (s_CursorMode == 0 || s_AppliedCursorMode == 0)
+            return;
+        auto* window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
+        if (!window)
+            return;
+#if defined(GLFW_PLATFORM_WAYLAND)
+        const bool wayland = glfwGetPlatform() == GLFW_PLATFORM_WAYLAND;
+#else
+        const bool wayland = false;
+#endif
+        // Wayland imleci kendisi taşıyamaz: kilit bırakılmadan önce konum ipucu verilir, imleç orada çıkar.
+        // Diğer platformlar kilidi bırakırken eski konuma döner: bıraktıktan sonra taşınır.
+        const bool place = x >= 0.0f && y >= 0.0f;
+        if (place && wayland && s_AppliedCursorMode == 2)
+            glfwSetCursorPos(window, (double)x, (double)y);
+        s_CursorReleased = true;
+        ApplyCursorMode(0);
+        if (place && !wayland)
+            glfwSetCursorPos(window, (double)x, (double)y);
+    }
+
+    void Input::RecaptureCursor()
+    {
+        s_CursorReleased = false;
+        if (s_CursorMode != 0)
+            ApplyCursorMode(s_CursorMode);
+    }
+
+    void Input::ApplyCursorMode(int mode)
+    {
+        int m = NormalizeCursorMode(mode);
+        if (m < 0)
+            return;
+        auto* window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
+        if (!window)
+            return;
+        const int glfwMode = m == 0 ? GLFW_CURSOR_NORMAL : (m == 1 ? GLFW_CURSOR_HIDDEN : GLFW_CURSOR_DISABLED);
+        glfwSetInputMode(window, GLFW_CURSOR, glfwMode);
+        // Kilitli imleçte ham fare hareketi (hızlanmasız, FPS kamerası için)
+        if (glfwRawMouseMotionSupported())
+            glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, m == 2 ? GLFW_TRUE : GLFW_FALSE);
+        if (s_AppliedCursorMode != m)
+        {
+            CQ_CORE_INFO("[Input] Cursor {0}", m == 0 ? "normal" : (m == 1 ? "hidden" : "locked"));
+            ++s_CursorModeEpoch;
+            s_PreviousMousePosition = s_MousePosition;
+        }
+        s_AppliedCursorMode = m;
+    }
+
+    uint32_t Input::GetCursorModeEpoch() { return s_CursorModeEpoch; }
 
     void Input::SetGamepadVibration(float leftMotor, float rightMotor, int gamepadID)
     {
@@ -415,6 +575,21 @@ namespace Conqueror
         action.GamepadButtons = buttons;
         action.GamepadAxes = axes;
         s_Contexts[contextName].Actions[actionName] = action;
+    }
+
+    const InputContext* Input::FindContext(const std::string& name)
+    {
+        auto it = s_Contexts.find(name);
+        return it != s_Contexts.end() ? &it->second : nullptr;
+    }
+
+    std::vector<std::string> Input::GetContextNames()
+    {
+        std::vector<std::string> names;
+        for (auto& [name, ctx] : s_Contexts)
+            names.push_back(name);
+        std::sort(names.begin(), names.end());
+        return names;
     }
 
     bool Input::GetActionButton(const std::string& actionName)
@@ -709,7 +884,71 @@ namespace Conqueror
             CQ_CORE_ERROR("Failed to open Input Config file: {0}", filepath);
             return false;
         }
+        std::stringstream text;
+        text << file.rdbuf();
+        LoadConfigFromString(text.str());
+        CQ_CORE_INFO("Successfully loaded Input Config: {0}", filepath);
+        return true;
+    }
 
+    void Input::ClearContexts()
+    {
+        s_Contexts.clear();
+        s_ContextStack.clear();
+        s_ActiveContext.clear();
+    }
+
+    InputContext* Input::GetContextMutable(const std::string& name)
+    {
+        auto it = s_Contexts.find(name);
+        return it != s_Contexts.end() ? &it->second : nullptr;
+    }
+
+    std::string Input::SaveConfigToString()
+    {
+        std::ostringstream out;
+        out << "# Conqueror's Engine - Input Configuration (Project Settings > Input)\n";
+        std::vector<std::string> names;
+        for (auto& [name, ctx] : s_Contexts)
+            names.push_back(name);
+        std::sort(names.begin(), names.end());
+        for (const auto& name : names)
+        {
+            const auto& ctx = s_Contexts[name];
+            if (name == "Default" && ctx.Actions.empty())
+                continue;
+            out << "Context:" << name << "\n";
+            std::vector<std::string> actions;
+            for (auto& [an, a] : ctx.Actions)
+                actions.push_back(an);
+            std::sort(actions.begin(), actions.end());
+            for (const auto& an : actions)
+            {
+                const InputAction& a = ctx.Actions.at(an);
+                if (a.IsChord && a.Keys.size() >= 2)
+                    out << "BindChord:" << an << "," << a.Keys[0] << "," << a.Keys[1] << "\n";
+                else
+                    for (KeyCode k : a.Keys)
+                        out << "BindAction:" << an << "," << k << "\n";
+                for (MouseCode m : a.MouseButtons)
+                    out << "BindMouseButton:" << an << "," << m << "\n";
+                for (int b : a.GamepadButtons)
+                    out << "BindGamepadButton:" << an << "," << b << "\n";
+                for (int ax : a.GamepadAxes)
+                    out << "BindGamepadAxis:" << an << "," << ax << "," << a.DeadZone << "\n";
+                if (a.Keys.empty() && a.MouseButtons.empty() && a.GamepadButtons.empty() && a.GamepadAxes.empty())
+                    out << "DeclareAction:" << an << "\n";
+                if (a.Scale != 1.0f) out << "ActionScale:" << an << "," << a.Scale << "\n";
+                if (a.PlayerIndex != 0) out << "ActionPlayerIndex:" << an << "," << a.PlayerIndex << "\n";
+                if (a.RequiredHoldTime > 0.0f) out << "ActionHoldTime:" << an << "," << a.RequiredHoldTime << "\n";
+            }
+        }
+        return out.str();
+    }
+
+    bool Input::LoadConfigFromString(const std::string& text)
+    {
+        std::istringstream file(text);
         std::string line;
         std::string currentContext = "Default";
         CreateContext(currentContext);
@@ -735,7 +974,12 @@ namespace Conqueror
                     std::string keyStr;
                     if (std::getline(viss, actionName, ',') && std::getline(viss, keyStr)) {
                         int code = std::stoi(keyStr);
-                        BindAction(currentContext, actionName, InputActionType::Button, { (KeyCode)code });
+                        // Aynı eylemin birden çok satırı tuşları birleştirir (W ve Yukarı ok gibi)
+                        auto& actions = s_Contexts[currentContext].Actions;
+                        if (actions.count(actionName) && !actions[actionName].IsChord)
+                            actions[actionName].Keys.push_back((KeyCode)code);
+                        else
+                            BindAction(currentContext, actionName, InputActionType::Button, { (KeyCode)code });
                     }
                 }
                 else if (command == "BindCombo") {
@@ -759,18 +1003,41 @@ namespace Conqueror
                         BindChord(currentContext, actionName, { (KeyCode)std::stoi(modStr) }, (KeyCode)std::stoi(keyStr));
                     }
                 }
+                else if (command == "BindMouseButton") {
+                    std::istringstream viss(value);
+                    std::string actionName, btnStr;
+                    if (std::getline(viss, actionName, ',') && std::getline(viss, btnStr)) {
+                        auto& actions = s_Contexts[currentContext].Actions;
+                        if (actions.count(actionName))
+                            actions[actionName].MouseButtons.push_back((MouseCode)std::stoi(btnStr));
+                        else
+                            BindMouseAction(currentContext, actionName, InputActionType::Button, { (MouseCode)std::stoi(btnStr) });
+                    }
+                }
+                else if (command == "DeclareAction") {
+                    if (!value.empty())
+                        s_Contexts[currentContext].Actions[value].Name = value;
+                }
                 else if (command == "BindGamepadButton") {
                     std::istringstream viss(value);
                     std::string actionName, btnStr;
                     if (std::getline(viss, actionName, ',') && std::getline(viss, btnStr)) {
-                        BindGamepadAction(currentContext, actionName, InputActionType::Button, { std::stoi(btnStr) }, {});
+                        auto& actions = s_Contexts[currentContext].Actions;
+                        if (actions.count(actionName))
+                            actions[actionName].GamepadButtons.push_back(std::stoi(btnStr));
+                        else
+                            BindGamepadAction(currentContext, actionName, InputActionType::Button, { std::stoi(btnStr) }, {});
                     }
                 }
                 else if (command == "BindGamepadAxis") {
                     std::istringstream viss(value);
                     std::string actionName, axisStr, dzStr;
                     if (std::getline(viss, actionName, ',') && std::getline(viss, axisStr, ',') && std::getline(viss, dzStr)) {
-                        BindGamepadAction(currentContext, actionName, InputActionType::Axis1D, {}, { std::stoi(axisStr) });
+                        auto& actions = s_Contexts[currentContext].Actions;
+                        if (actions.count(actionName))
+                            actions[actionName].GamepadAxes.push_back(std::stoi(axisStr));
+                        else
+                            BindGamepadAction(currentContext, actionName, InputActionType::Axis1D, {}, { std::stoi(axisStr) });
                         if (s_Contexts.find(currentContext) != s_Contexts.end()) {
                             s_Contexts[currentContext].Actions[actionName].DeadZone = std::stof(dzStr);
                         }
@@ -805,7 +1072,6 @@ namespace Conqueror
                 }
             }
         }
-        CQ_CORE_INFO("Successfully loaded Input Config: {0}", filepath);
         return true;
     }
 }

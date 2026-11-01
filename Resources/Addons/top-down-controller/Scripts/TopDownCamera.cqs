@@ -1,0 +1,45 @@
+using nativebridge;
+
+// Hedefi sabit açıyla yukarıdan izleyen kamera (yumuşak takip, isteğe bağlı fareye doğru kayma).
+script TopDownCamera : ConquerorScript
+{
+    public string targetName = "Top Down Player";
+    public float height = 14.0;
+    public float backDistance = 8.0;
+    public float sharpness = 8.0;
+    public float lookAhead = 0.0;
+
+    private var target = null;
+    private bool snapped = false;
+
+    func Start()
+    {
+        target = FindEntity(targetName);
+        SetRotation(-MathRadToDeg(MathAtan2(height, backDistance)), 0, 0);
+    }
+
+    func LateUpdate(dt)
+    {
+        if (target == null) { target = FindEntity(targetName); if (target == null) { return; } }
+        var t = EntityGetWorldPosition(target);
+        var ax = 0.0;
+        var az = 0.0;
+        if (lookAhead > 0)
+        {
+            var v = GetScriptField(target, "facing");
+            if (v != null)
+            {
+                var r = MathDegToRad(v);
+                ax = -MathSin(r) * lookAhead;
+                az = -MathCos(r) * lookAhead;
+            }
+        }
+        var gx = t.x + ax;
+        var gy = t.y + height;
+        var gz = t.z + backDistance + az;
+        var p = EntityGetWorldPosition(GetEntityId());
+        var k = snapped ? 1.0 - MathExp(-sharpness * dt) : 1.0;
+        snapped = true;
+        EntitySetWorldPosition(GetEntityId(), MathLerp(p.x, gx, k), MathLerp(p.y, gy, k), MathLerp(p.z, gz, k));
+    }
+}

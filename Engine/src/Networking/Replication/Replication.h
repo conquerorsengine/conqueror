@@ -27,7 +27,7 @@ namespace Conqueror
     struct ReplicatedProperty
     {
         std::string Name;
-        enum class Type : uint8_t { Float, Int, Bool, Vec3, String } PropertyType;
+        enum class Type : uint8_t { Float, Int, Bool, Vec3, String } PropertyType = Type::Float;
         
         // Current value (union-style)
         float  FloatVal = 0;

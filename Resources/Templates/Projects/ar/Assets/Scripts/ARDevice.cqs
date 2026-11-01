@@ -1,0 +1,72 @@
+using nativebridge;
+
+// Elde tutulan AR cihazı (Unity XR Origin (AR) + AR Camera, Unreal ARPawn karşılığı). Gerçek cihazda kamera pozu AR
+// izlemesinden gelir; AR Simulation'da klavye ve fareyle sürülür (Unity XR Simulation gibi): sağ tık basılıyken fare
+// bakış, WASD yürüme, Q / E alçal / yüksel. Cihaz simülasyon odasının içinde kalır; elde tutmanın küçük titremesi
+// isteğe bağlıdır.
+script ARDevice : ConquerorScript
+{
+    public float moveSpeed = 1.2;
+    public float lookSensitivity = 0.15;
+    public float minHeight = 0.35;
+    public float maxHeight = 2.2;
+    public float roomHalfX = 3.2;           // simülasyon odasının iç sınırı (duvarlardan 30 cm içeride)
+    public float roomHalfZ = 2.7;
+    public bool handShake = true;
+    [Header("State")]
+    public float yaw = 0.0;
+    public float pitch = -25.0;
+
+    private var cam = -1;
+    private float t = 0.0;
+
+    func Start()
+    {
+        cam = EntityFindChild(GetEntityId(), "AR Camera");
+        yaw = GetRotation().y;
+        SetRotation(0, 0, 0);
+        if (cam >= 0) { pitch = EntityGetRotation(cam).x; }
+    }
+
+    func Update(dt)
+    {
+        if (cam < 0) { return; }
+        t += dt;
+        if (IsMouseButtonPressed(1))
+        {
+            var md = GetMouseDelta();
+            yaw = MathNormalizeAngle(yaw - md.x * lookSensitivity);
+            pitch = MathClamp(pitch - md.y * lookSensitivity, -85.0, 80.0);
+        }
+        var mx = 0.0;
+        var mz = 0.0;
+        var my = 0.0;
+        if (IsKeyPressed("W")) { mz += 1.0; }
+        if (IsKeyPressed("S")) { mz -= 1.0; }
+        if (IsKeyPressed("D")) { mx += 1.0; }
+        if (IsKeyPressed("A")) { mx -= 1.0; }
+        if (IsKeyPressed("E")) { my += 1.0; }
+        if (IsKeyPressed("Q")) { my -= 1.0; }
+        var r = MathDegToRad(yaw);
+        var fx = -MathSin(r);
+        var fz = -MathCos(r);
+        var p = GetPosition();
+        var s = moveSpeed * dt;
+        var nx = MathClamp(p.x + (fx * mz + MathCos(r) * mx) * s, -roomHalfX, roomHalfX);
+        var nz = MathClamp(p.z + (fz * mz - MathSin(r) * mx) * s, -roomHalfZ, roomHalfZ);
+        var ny = MathClamp(p.y + my * s * 0.7, minHeight, maxHeight);
+        SetPosition(nx, ny, nz);
+        // Elde tutma titremesi (birkaç onda bir derece): yerleştirilen nesneler dünyaya sabit kalır, kamera hafif oynar
+        var sp = 0.0;
+        var sy = 0.0;
+        var sr = 0.0;
+        if (handShake)
+        {
+            sp = MathSin(t * 1.7) * 0.12 + MathSin(t * 4.3 + 1.0) * 0.05;
+            sy = MathSin(t * 1.3 + 2.0) * 0.1 + MathSin(t * 3.7) * 0.04;
+            sr = MathSin(t * 0.9 + 0.5) * 0.25;
+        }
+        EntitySetPosition(cam, 0, 0, 0);
+        EntitySetRotation(cam, pitch + sp, yaw + sy, sr);
+    }
+}

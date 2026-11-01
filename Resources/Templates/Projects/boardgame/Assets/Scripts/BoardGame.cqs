@@ -1,0 +1,265 @@
+using nativebridge;
+
+// Altıgen ada strateji tahtası (oyun yöneticisi). Hex Board Kit eklentisinin üreticisiyle her oyunda yeni bir ada kurar,
+// karoları süsler (orman kenarlarında çamlar, köyler, karlı zirveler, kayalar), atı ortaya yakın bir çayıra koyar.
+// Fareyle üzerine gelinen karo vurgulanır ve oraya giden A* yolu noktalarla gösterilir; sol tık = at yürür (HexUnit).
+// R yeni ada, T zaman atlamalı gün / gece (Day Night Cycle eklentisi).
+script BoardGame : ConquerorScript
+{
+    public string board = "Tilemap";          // karolar (Hex Board kökünün çocuğu)
+    public string generator = "Hex Board";    // Hex Board Kit üretici betiği bu kökte
+    public string unit = "Knight";
+    public string sun = "Sun";
+    public int radius = 7;
+    public float forestChance = 0.24;
+    public float villageChance = 0.05;
+    [Header("State")]
+    public int islands = 0;
+    public int props = 0;
+    public bool timeLapse = false;
+
+    private var map = -1;
+    private var gen = -1;
+    private var knight = -1;
+    private var propRoot = -1;
+    private var hover = -1;
+    private var dots = [];
+    private var lastHoverX = 9999;
+    private var lastHoverY = 9999;
+    private var lastUnitX = 9999;
+    private var lastUnitY = 9999;
+    private var forest = -1;
+    private bool started = false;
+    private var village = -1;
+
+    func Start()
+    {
+        map = FindEntity(board);
+        gen = FindEntity(generator);
+        knight = FindEntity(unit);
+        propRoot = FindEntity("Board Props");
+        hover = FindEntity("Hover Highlight");
+        for (var i = 0; i < 24; i++) { var d = FindEntity("Path Dot " + i); if (d != null && d >= 0) { dots.Add(d); } }
+        forest = TilemapFindTileType(map, "Forest");
+        village = TilemapFindTileType(map, "Village");
+    }
+
+    // Hücredeki karo türünün adı ("" boş)
+    func CellName(x, y)
+    {
+        var t = TilemapGetTile(map, x, y);
+        return t < 0 ? "" : TilemapGetTileName(map, t);
+    }
+
+    // Yürünebilir karoda süs karonun kenarına (taş ortada durur, süsün içine girmez)
+    func RimX(x, y, salt) { return MathCos(Rand01(x, y, salt) * 6.2831853) * 0.3; }
+    func RimZ(x, y, salt) { return MathSin(Rand01(x, y, salt) * 6.2831853) * 0.3; }
+
+    func Rand01(x, y, salt)
+    {
+        var v = MathSin(x * 127.1 + y * 311.7 + salt * 74.7 + islands * 19.3) * 43758.5453;
+        return v - MathFloor(v);
+    }
+
+    func NewIsland()
+    {
+        if (map == null || map < 0) { return; }
+        islands++;
+        foreach (var c in EntityGetChildren(propRoot)) { EntityDestroy(c); }
+        InvokeMethod(gen, "Generate");
+        Decorate();
+        PlaceUnit();
+        lastHoverX = 9999;
+        lastUnitX = 9999;
+    }
+
+    func Decorate()
+    {
+        props = 0;
+        var huts = 0;
+        for (var y = -radius; y <= radius; y++)
+        {
+            for (var x = -radius - 1; x <= radius + 1; x++)
+            {
+                if (GridDistance(map, 0, 0, x, y) > radius) { continue; }
+                var name = CellName(x, y);
+                if (name == null || name == "") { continue; }
+                // Doğal görünüm: her karonun rengi biraz farklı
+                var v = 0.92 + Rand01(x, y, 1) * 0.16;
+                TilemapSetCellColor(map, x, y, v, v, v * (0.97 + Rand01(x, y, 2) * 0.06), 1.0);
+                var top = TilemapGetTileHeight(map, x, y);
+                var p = GridCellToWorld(map, x, y, top);
+                var r = Rand01(x, y, 3);
+                if (name == "Grass" && GridDistance(map, 0, 0, x, y) > 1)
+                {
+                    if (r < forestChance && forest >= 0)
+                    {
+                        // Orman karosu: çamlar kenarda, orta boş (taş durduğunda ağaçların içinde kalmaz)
+                        TilemapSetTile(map, x, y, forest);
+                        TilemapSetCellColor(map, x, y, v, v, v, 1.0);
+                        var n = 2 + int(Rand01(x, y, 4) * 2.0);
+                        for (var k = 0; k < n; k++)
+                        {
+                            var a = (k * 1.0 / n + Rand01(x, y, 5)) * 6.2831853;
+                            var model = Rand01(x, y, 6 + k) < 0.5 ? "Pine_A" : (Rand01(x, y, 7 + k) < 0.6 ? "Pine_B" : "Tree");
+                            Prop(model, p.x + MathCos(a) * 0.3, p.y, p.z + MathSin(a) * 0.3, Rand01(x, y, 8 + k) * 360.0, 0.85 + Rand01(x, y, 9 + k) * 0.35);
+                        }
+                    }
+                    else if (r < forestChance + villageChance && huts < 5 && village >= 0)
+                    {
+                        TilemapSetTile(map, x, y, village);
+                        TilemapSetCellColor(map, x, y, v, v, v, 1.0);
+                        var hut = Prop("Hut", p.x, p.y, p.z, Rand01(x, y, 10) * 360.0, 1.0);
+                        // Gece pencereden sızan sıcak ışık (gündüz kapalı)
+                        var lamp = CreateEntity("Village Light");
+                        EntitySetParent(lamp, propRoot);
+                        EntitySetWorldPosition(lamp, p.x, p.y + 0.45, p.z);
+                        EntityAddComponent(lamp, "PointLight");
+                        EntitySetComponentField(lamp, "PointLight", "Color", {r: 1.0, g: 0.62, b: 0.3});
+                        EntitySetComponentField(lamp, "PointLight", "Intensity", 0.0);
+                        EntitySetComponentField(lamp, "PointLight", "Range", 2.6);
+                        EntitySetComponentField(lamp, "PointLight", "CastShadows", false);
+                        EntitySetTag(lamp, "Village Light");
+                        huts++;
+                    }
+                    else if (r > 0.9)
+                    {
+                        Prop("Bush", p.x + RimX(x, y, 11), p.y, p.z + RimZ(x, y, 11), Rand01(x, y, 13) * 360.0, 0.8 + Rand01(x, y, 14) * 0.5);
+                    }
+                }
+                else if (name == "Stone")
+                {
+                    if (r < 0.45)
+                    {
+                        Prop(r < 0.25 ? "Rock_A" : "Rock_B", p.x + RimX(x, y, 15), p.y, p.z + RimZ(x, y, 15), Rand01(x, y, 17) * 360.0, 0.8 + Rand01(x, y, 18) * 0.4);
+                    }
+                    else if (r > 0.8)
+                    {
+                        Prop("Pine_A", p.x + RimX(x, y, 19), p.y, p.z + RimZ(x, y, 19), Rand01(x, y, 21) * 360.0, 0.8);
+                    }
+                }
+                else if (name == "Wall")
+                {
+                    Prop("Peak", p.x, p.y, p.z, Rand01(x, y, 22) * 360.0, 0.95 + Rand01(x, y, 23) * 0.3);
+                }
+                else if (name == "Sand" && r < 0.07)
+                {
+                    Prop("Rock_B", p.x + RimX(x, y, 24), p.y, p.z + RimZ(x, y, 24), Rand01(x, y, 26) * 360.0, 0.55);
+                }
+            }
+        }
+    }
+
+    func Prop(model, x, y, z, yaw, scale)
+    {
+        var e = CreateEntity(model);
+        EntitySetModel(e, "Assets/Models/" + model + ".glb");
+        EntitySetParent(e, propRoot);
+        EntitySetWorldPosition(e, x, y, z);
+        EntitySetRotation(e, 0, yaw, 0);
+        EntitySetScale(e, scale, scale, scale);
+        props++;
+        return e;
+    }
+
+    // At: ada merkezine en yakın yürünebilir çayır karosu
+    func PlaceUnit()
+    {
+        if (knight == null || knight < 0) { return; }
+        var best = null;
+        var bestD = 1000;
+        for (var y = -radius; y <= radius; y++)
+        {
+            for (var x = -radius - 1; x <= radius + 1; x++)
+            {
+                var d = GridDistance(map, 0, 0, x, y);
+                if (d > radius || d >= bestD) { continue; }
+                if (CellName(x, y) == "Grass") { best = {x: x, y: y}; bestD = d; }
+            }
+        }
+        if (best == null) { return; }
+        SetScriptField(knight, "cellX", best.x);
+        SetScriptField(knight, "cellY", best.y);
+        SetScriptField(knight, "moving", false);
+        SetScriptField(knight, "steps", 0);      // yeni ada = yeni oyun: hamle sayacı sıfırdan
+        InvokeMethod(knight, "Snap");
+    }
+
+    func ShowPath(cx, cy)
+    {
+        var path = [];
+        if (!GetScriptField(knight, "moving")) { path = GridFindPath(map, GetScriptField(knight, "cellX"), GetScriptField(knight, "cellY"), cx, cy); }
+        for (var i = 0; i < len(dots); i++)
+        {
+            var on = i + 1 < len(path);
+            EntitySetActive(dots[i], on);
+            if (on)
+            {
+                var c = path[i + 1];
+                var w = GridCellToWorld(map, c.x, c.y, TilemapGetTileHeight(map, c.x, c.y) + 0.06);
+                EntitySetWorldPosition(dots[i], w.x, w.y, w.z);
+            }
+        }
+    }
+
+    func Update(dt)
+    {
+        if (map == null || map < 0) { return; }
+        // İlk ada ilk karede: taşın HexUnit betiği Start'ında tahtasını bulmuş olur (Start sırası belirsiz)
+        if (!started) { started = true; NewIsland(); }
+        if (IsKeyDown("R")) { NewIsland(); }
+        if (IsKeyDown("T"))
+        {
+            timeLapse = !timeLapse;
+            var s = FindEntity(sun);
+            if (s != null && s >= 0) { SetScriptField(s, "dayLengthSeconds", timeLapse ? 48.0 : 900.0); }
+        }
+        // Vurgulanan karo + yol önizlemesi
+        var m = GetMousePosition();
+        var c = UIIsPointerOver() ? null : GridScreenToCell(map, m.x, m.y);
+        var valid = c != null && GridDistance(map, 0, 0, c.x, c.y) <= radius && CellName(c.x, c.y) != "Water";
+        EntitySetActive(hover, valid);
+        if (valid)
+        {
+            var top = TilemapGetTileHeight(map, c.x, c.y);
+            var w = GridCellToWorld(map, c.x, c.y, top + 0.015);
+            EntitySetWorldPosition(hover, w.x, w.y, w.z);
+            var name = CellName(c.x, c.y);
+            var blocked = name == "Wall" || name == "Village";
+            EntitySetComponentField(hover, "MeshRenderer", "EmissionColor", blocked ? {r: 1.0, g: 0.3, b: 0.2} : {r: 1.0, g: 0.95, b: 0.75});
+            var ux = GetScriptField(knight, "cellX");
+            var uy = GetScriptField(knight, "cellY");
+            if (c.x != lastHoverX || c.y != lastHoverY || ux != lastUnitX || uy != lastUnitY || GetScriptField(knight, "moving"))
+            {
+                ShowPath(c.x, c.y);
+                lastHoverX = c.x;
+                lastHoverY = c.y;
+                lastUnitX = ux;
+                lastUnitY = uy;
+            }
+        }
+        else
+        {
+            foreach (var d in dots) { EntitySetActive(d, false); }
+            lastHoverX = 9999;
+        }
+        // Köy ışıkları güneş batınca yanar
+        var sunE = FindEntity(sun);
+        if (sunE != null && sunE >= 0)
+        {
+            var dark = MathClamp01(-GetScriptField(sunE, "sunHeight") * 5.0 + 0.3);
+            foreach (var vl in FindEntitiesWithTag("Village Light")) { EntitySetComponentField(vl, "PointLight", "Intensity", dark * 2.2); }
+        }
+        // Arayüz
+        var steps = GetScriptField(knight, "steps");
+        UISetText("StepsText", "MOVES " + steps + "     ISLAND " + islands);
+        var s2 = FindEntity(sun);
+        if (s2 != null && s2 >= 0)
+        {
+            var t = GetScriptField(s2, "timeOfDay");
+            var hh = int(t);
+            var mm = int((t - hh) * 60.0);
+            UISetText("ClockText", StringPadLeft("" + hh, 2, "0") + ":" + StringPadLeft("" + mm, 2, "0") + (timeLapse ? "  >>" : ""));
+        }
+    }
+}

@@ -1,0 +1,47 @@
+using nativebridge;
+
+// Aracı arkadan izleyen kamera: hedefin dönüşünü yumuşakça takip eder, hızla biraz geri çekilir.
+script ChaseCamera : ConquerorScript
+{
+    public string targetName = "Vehicle";
+    public float distance = 7.0;
+    public float height = 2.6;
+    public float lookHeight = 1.0;
+    public float positionSharpness = 6.0;
+    public float rotationSharpness = 8.0;
+    public float speedPullBack = 0.03;
+
+    private var target = null;
+    private float yaw = 0.0;
+    private bool snapped = false;
+
+    func LateUpdate(dt)
+    {
+        if (target == null) { target = FindEntity(targetName); if (target == null) { return; } }
+        var tp = EntityGetWorldPosition(target);
+        var targetYaw = EntityGetRotation(target).y;
+        var kRot = snapped ? 1.0 - MathExp(-rotationSharpness * dt) : 1.0;
+        yaw = yaw + MathNormalizeAngle(targetYaw - yaw) * kRot;
+        var v = GetLinearVelocity(target);
+        var sp = v != null ? MathSqrt(v.x * v.x + v.z * v.z) : 0.0;
+        var d = distance + sp * speedPullBack * distance;
+        var r = MathDegToRad(yaw);
+        // Hedefin arkası: ileri -Z olduğundan arka +Z yönü (yaw ile döndürülmüş)
+        var gx = tp.x + MathSin(r) * d;
+        var gz = tp.z + MathCos(r) * d;
+        var gy = tp.y + height;
+        var p = EntityGetWorldPosition(GetEntityId());
+        var k = snapped ? 1.0 - MathExp(-positionSharpness * dt) : 1.0;
+        snapped = true;
+        var nx = MathLerp(p.x, gx, k);
+        var ny = MathLerp(p.y, gy, k);
+        var nz = MathLerp(p.z, gz, k);
+        EntitySetWorldPosition(GetEntityId(), nx, ny, nz);
+        // Hedefe bak
+        var dx = tp.x - nx;
+        var dy = tp.y + lookHeight - ny;
+        var dz = tp.z - nz;
+        var horiz = MathSqrt(dx * dx + dz * dz);
+        SetRotation(MathRadToDeg(MathAtan2(dy, horiz)), MathRadToDeg(MathAtan2(-dx, -dz)), 0);
+    }
+}

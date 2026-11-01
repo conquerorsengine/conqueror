@@ -17,6 +17,8 @@ namespace Conqueror
         virtual void OnUpdate([[maybe_unused]] Timestep ts) {}
         virtual void OnImGuiRender() {}
         virtual void OnEvent([[maybe_unused]] Event& event) {}
+        // Pencere kapatılmak istendiğinde: false kapanmayı erteler (ör. "kaydedilmemiş değişiklikler" sorusu)
+        virtual bool OnCloseRequested() { return true; }
 
         const std::string& GetName() const { return m_DebugName; }
 

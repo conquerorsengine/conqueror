@@ -7,12 +7,17 @@ namespace Conqueror::Editor
     {
         m_SelectedEntities.clear();
         if (entity)
+        {
             m_SelectedEntities.push_back(entity);
+            m_SelectedAsset.clear();
+        }
     }
 
     void EditorState::SelectMultipleEntities(const std::vector<Entity>& entities)
     {
         m_SelectedEntities = entities;
+        if (!entities.empty())
+            m_SelectedAsset.clear();
     }
 
     void EditorState::ToggleEntitySelection(Entity entity)

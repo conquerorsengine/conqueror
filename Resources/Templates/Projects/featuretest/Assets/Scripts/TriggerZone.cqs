@@ -1,0 +1,42 @@
+using nativebridge;
+
+// Tetikleyici hacim (Box Collider, Is Trigger): içeri giren / çıkan gövdeleri sayar (OnTriggerEnter / Exit);
+// içi doluyken hacim yeşil parlar, sayaç yazısı güncellenir.
+script TriggerZone : ConquerorScript
+{
+    public string labelName = "Trigger Counter";
+    [Header("State")]
+    public int inside = 0;
+    public int entered = 0;
+
+    private var label = -1;
+
+    func Start()
+    {
+        label = FindEntity(labelName);
+        Refresh();
+    }
+
+    func OnTriggerEnter(other, otherName)
+    {
+        inside++;
+        entered++;
+        Refresh();
+    }
+
+    func OnTriggerExit(other, otherName)
+    {
+        inside = MathMax(0, inside - 1);
+        Refresh();
+    }
+
+    func Refresh()
+    {
+        var on = inside > 0;
+        var c = on ? {r: 0.2, g: 1.0, b: 0.45} : {r: 0.25, g: 0.55, b: 1.0};
+        EntitySetColor(GetEntityId(), c.r, c.g, c.b, on ? 0.38 : 0.2);
+        EntitySetComponentField(GetEntityId(), "MeshRenderer", "EmissionColor", c);
+        EntitySetComponentField(GetEntityId(), "MeshRenderer", "EmissionStrength", on ? 1.6 : 0.25);
+        if (label != null && label >= 0) { EntitySetComponentField(label, "TextRenderer", "Text", "INSIDE " + inside + "   ENTERED " + entered); }
+    }
+}

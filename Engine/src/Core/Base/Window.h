@@ -38,6 +38,13 @@ namespace Conqueror
         virtual void SetVSync(bool enabled) = 0;
         virtual bool IsVSync() const = 0;
 
+        // Derlenmiş oyun pencere ayarları (Player Settings)
+        virtual void SetTitle(const std::string& title) { (void)title; }
+        // 0 pencere, 1 kenarlıksız tam ekran pencere, 2 özel tam ekran
+        virtual void SetFullscreenMode(int mode) { (void)mode; }
+        virtual void SetResizable(bool resizable) { (void)resizable; }
+        virtual bool SetIcon(const std::string& pngPath) { (void)pngPath; return false; }
+
         virtual void* GetNativeWindow() const = 0;
 
         static Window* Create(const WindowProps& props = WindowProps());

@@ -1,0 +1,35 @@
+using nativebridge;
+
+// Görev hedefi. mode: 0 yere ulaş (tetikleyici), 1 topla (dokununca kaybolur), 2 yen (bu nesnenin Health'i ölünce)
+// Görev etkin değilse hedef sayılmaz (onlyWhenActive).
+script QuestObjective : ConquerorScript
+{
+    public string questId = "explore";
+    public int mode = 0;
+    public int amount = 1;
+    public bool onlyWhenActive = true;
+    public string logName = "Quest Log";
+
+    // Çalışma zamanı bilgisi
+    public bool done = false;
+
+    func Report()
+    {
+        if (done) { return false; }
+        var log = FindEntity(logName);
+        if (log == null) { return false; }
+        if (onlyWhenActive && !InvokeMethod(log, "IsActive", questId)) { return false; }
+        InvokeMethod(log, "AddProgress", questId, amount);
+        done = true;
+        return true;
+    }
+
+    func OnTriggerEnter(other, name)
+    {
+        if (mode == 2 || !EntityHasComponent(other, "CharacterController")) { return; }
+        if (Report() && mode == 1) { EntityDestroy(GetEntityId()); }
+    }
+
+    // Health betiğinden gelir
+    func OnDeath() { if (mode == 2) { Report(); } }
+}

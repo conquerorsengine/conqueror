@@ -1,0 +1,63 @@
+using nativebridge;
+
+// Render Target istasyonu: güvenlik kamerası sağa sola tarar. İzleyici (birincil kamera) istasyondan uzaktayken iki
+// render target kamerası durdurulur (her biri sahneyi baştan çizer; uzaktan görünmeyen ekran için maliyet olmasın).
+script SecurityCamPan : ConquerorScript
+{
+    public float amplitude = 18.0;      // derece
+    public float period = 9.0;          // tam tarama süresi (s)
+    public float activeDistance = 45.0;
+    public float centerX = 0.0;
+    public float centerZ = 0.0;
+    public string overviewName = "Overview Camera";
+    [Header("State")]
+    public bool live = true;
+
+    private var startRot = null;
+    private var overview = -1;
+    private var viewer = -1;
+    private float t = 0.0;
+    private float check = 0.0;
+    private int applied = -1;
+
+    func Start()
+    {
+        startRot = GetRotation();
+        overview = FindEntity(overviewName);
+    }
+
+    func FindViewer()
+    {
+        foreach (var e in FindEntitiesWithComponent("Camera"))
+        {
+            if (EntityGetComponentField(e, "Camera", "Primary") == true && !EntityHasComponent(e, "RenderTarget")) { return e; }
+        }
+        return -1;
+    }
+
+    func Update(dt)
+    {
+        t += dt;
+        SetRotation(startRot.x, startRot.y + amplitude * MathSin(t / period * 6.2831853), startRot.z);
+        check -= dt;
+        if (check > 0.0) { return; }
+        check = 0.5;
+        viewer = FindViewer();
+        live = true;
+        if (viewer != null && viewer >= 0)
+        {
+            var v = EntityGetWorldPosition(viewer);
+            var dx = v.x - centerX;
+            var dz = v.z - centerZ;
+            live = dx * dx + dz * dz < activeDistance * activeDistance;
+        }
+        var mode = live ? 0 : 2;
+        if (mode != applied)
+        {
+            applied = mode;
+            var m = live ? "Always" : "Disabled";
+            EntitySetComponentField(GetEntityId(), "RenderTarget", "UpdateMode", m);
+            if (overview != null && overview >= 0) { EntitySetComponentField(overview, "RenderTarget", "UpdateMode", m); }
+        }
+    }
+}

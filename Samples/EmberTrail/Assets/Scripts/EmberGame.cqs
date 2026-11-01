@@ -1,0 +1,966 @@
+using nativebridge;
+
+// Conqueror's Engine — Ember Trail: one level of the 2D platformer.
+// The simulation (player, enemies, platforms, crumbling blocks) steps at a fixed 1/60 s and mirrors
+// Tools/ember_sim.py line by line, so the recorded solution of every level (field "demo") replays exactly:
+// the autopilot and the automated tests use it to prove each level can be finished.
+script EmberGame : ConquerorScript
+{
+    [Header("Level")]
+    public string levelId = "meadow-1";
+    public string levelName = "SUNNY START";
+    public string worldName = "SUNNY MEADOW";
+    public string nextLevel = "";
+    public string menuScene = "Assets/Scenes/Menu.cqscene";
+    [Tooltip("Tile rows, top first, '/' between rows (0 empty, 1 ground, 2 crumble, 3 one-way, 4 spikes)")]
+    public string mapData = "";
+    [Tooltip("Recorded solution: one letter per 6 ticks (Tools/gen_levels.py)")]
+    public string demo = "";
+    [Tooltip("Time of the recorded solution (s); medal times derive from it")]
+    public float demoTime = 10;
+
+    [Header("Test")]
+    public bool autopilot = false;
+    public bool autoStart = false;
+
+    [Header("State")]
+    // 0 title card, 1 play, 2 dying, 3 paused, 4 goal reached, 5 results
+    public int state = 0;
+    public int playTick = 0;
+    public bool won = false;
+    public int deaths = 0;
+    public int embers = 0;
+    public int shards = 0;
+    public float runTime = 0;
+    public float px = 0;
+    public float py = 0;
+
+    // ---------------------------------------------------------------- constants (= ember_sim.py)
+    private float DT = 1.0 / 60.0;
+    private float HW = 0.3;
+    private float HH = 0.4;
+    private float RUN_MAX = 8.0;
+    private float ACC_GROUND = 70.0;
+    private float DEC_GROUND = 80.0;
+    private float ACC_AIR = 45.0;
+    private float JUMP_V = 20.0;
+    private float G_UP = 55.0;
+    private float G_DOWN = 95.0;
+    private float MAX_FALL = 20.0;
+    private float COYOTE = 0.1;
+    private float BUFFER = 0.12;
+    private float DASH_SPEED = 18.0;
+    private float DASH_TIME = 0.16;
+    private float DASH_COOLDOWN = 0.35;
+    private float SPRING_V = 28.0;
+    private float STOMP_V = 12.0;
+    private float STOMP_V_HELD = 18.0;
+    private float CRUMBLE_DELAY = 0.45;
+    private float CRUMBLE_GONE = 3.0;
+    private float SLUG_SPEED = 1.6;
+    private float THORN_SPEED = 2.2;
+    private float PLAT_AMP_H = 3.0;
+    private float PLAT_AMP_V = 3.0;
+    private float PLAT_PERIOD = 4.0;
+    private float MOTH_AMP_X = 2.5;
+    private float MOTH_AMP_Y = 0.6;
+    private float MOTH_PERIOD_X = 4.0;
+    private float MOTH_PERIOD_Y = 1.3;
+
+    // ---------------------------------------------------------------- level
+    private var grid = [];          // grid[j][i] (j = 0 bottom)
+    private var crumbleAt = [];     // crumbleAt[j][i] -> index or -1
+    private int W = 0;
+    private int H = 0;
+    private var spawn = null;
+    private var enemies = [];       // {x, y, dir, kind, alive, ax, ay, hw, hh, id, deadT}
+    private var plats = [];         // {i, j, kind, id}
+    private var springs = [];       // {i, j, id, t}
+    private var crumbles = [];      // {i, j, t, id}
+    private var cps = [];           // {i, j, id}
+    private var goal = null;
+    private var pickups = [];       // {x, y, kind, id, taken}
+    private int emberTotal = 0;
+    private int worldTick = 0;
+
+    // ---------------------------------------------------------------- player (= Player in ember_sim.py)
+    private float x = 0;
+    private float y = 0;
+    private float vx = 0;
+    private float vy = 0;
+    private bool ground = false;
+    private float coyote = 0;
+    private float buf = 0;
+    private float dash = 0;
+    private float cool = 0;
+    private float dashdir = 1;
+    private bool dashok = true;
+    private float facing = 1;
+    private int ride = -1;
+    private bool jumpprev = false;
+    private bool dead = false;
+    private int cp = -1;
+    private var events = [];
+
+    // ---------------------------------------------------------------- presentation
+    private int player = -1;
+    private int cam = -1;
+    private float camX = 0;
+    private float camY = 0;
+    private float stateTime = 0;
+    private float acc = 0;
+    private float landTime = 0;
+    private float runDist = 0;
+    private bool dashQueued = false;
+    private float fade = 1;
+    private float fadeTarget = 0;
+    private var padPrev = {};
+    private var menuButtons = [];
+    private int menuIndex = 0;
+    private float best = 0;
+    private bool newBest = false;
+    private float shake = 0;
+    private float clock = 0;
+    private bool cheated = false;
+    private float lastKeySubmit = -10;
+
+    // ================================================================ start
+    func Start()
+    {
+        player = FindEntity("Player");
+        cam = FindEntity("MainCamera");
+        var rows = StringSplit(mapData, "/");
+        H = rows.Count;
+        W = StringLength(rows[0]);
+        grid = [];
+        crumbleAt = [];
+        for (var j = 0; j < H; j++)
+        {
+            var row = rows[H - 1 - j];
+            var g = [];
+            var c = [];
+            for (var i = 0; i < W; i++)
+            {
+                g.Add(StringCharCodeAt(row, i) - 48);
+                c.Add(-1);
+            }
+            grid.Add(g);
+            crumbleAt.Add(c);
+        }
+        // Nesneler: oluşturucu ember_sim.Level sırasıyla adlandırdı
+        var sp = FindEntity("Spawn");
+        var s = EntityGetPosition(sp);
+        spawn = {x: s.x, y: s.y + HH};   // varlık karo tabanında (j); merkez = j + HH (ember_sim ile aynı çift duyarlık)
+        enemies = [];
+        for (var k = 0; FindEntity("Enemy" + k) != null; k++)
+        {
+            var e = FindEntity("Enemy" + k);
+            var p = EntityGetPosition(e);
+            var kind = EntityGetTag(e);
+            var hw = kind == "M" ? 0.4 : 0.4;
+            var hh = kind == "M" ? 0.35 : 0.25;
+            enemies.Add({x: p.x, y: p.y, dir: kind == "M" ? 1.0 : -1.0, kind: kind, alive: true, ax: p.x, ay: p.y, hw: hw, hh: hh, id: e, deadT: 0.0});
+        }
+        plats = [];
+        for (var k = 0; FindEntity("Plat" + k) != null; k++)
+        {
+            var e = FindEntity("Plat" + k);
+            var p = EntityGetPosition(e);
+            plats.Add({i: int(MathFloor(p.x - 1.5 + 0.5)), j: int(MathFloor(p.y - 1.0 + 0.5)), kind: EntityGetTag(e), id: e});
+        }
+        springs = [];
+        for (var k = 0; FindEntity("Spring" + k) != null; k++)
+        {
+            var e = FindEntity("Spring" + k);
+            var p = EntityGetPosition(e);
+            springs.Add({i: int(MathFloor(p.x)), j: int(MathFloor(p.y + 0.01)), id: e, t: 0.0});
+        }
+        crumbles = [];
+        for (var k = 0; FindEntity("Crumble" + k) != null; k++)
+        {
+            var e = FindEntity("Crumble" + k);
+            var p = EntityGetPosition(e);
+            var ci = int(MathFloor(p.x));
+            var cj = int(MathFloor(p.y));
+            crumbles.Add({i: ci, j: cj, t: 0.0, id: e});
+            crumbleAt[cj][ci] = k;
+        }
+        cps = [];
+        for (var k = 0; FindEntity("Checkpoint" + k) != null; k++)
+        {
+            var e = FindEntity("Checkpoint" + k);
+            var p = EntityGetPosition(e);
+            cps.Add({i: int(MathFloor(p.x)), j: int(MathFloor(p.y + 0.01)), id: e});
+        }
+        var ge = FindEntity("Goal");
+        var gp = EntityGetPosition(ge);
+        goal = {i: int(MathFloor(gp.x - 1.0 + 0.5)), j: int(MathFloor(gp.y + 0.01)), id: ge};
+        pickups = [];
+        emberTotal = 0;
+        for (var k = 0; FindEntity("Ember" + k) != null; k++)
+        {
+            var e = FindEntity("Ember" + k);
+            var p = EntityGetPosition(e);
+            pickups.Add({x: p.x, y: p.y, kind: 0, id: e, taken: false});
+            emberTotal += 1;
+        }
+        for (var k = 0; FindEntity("Shard" + k) != null; k++)
+        {
+            var e = FindEntity("Shard" + k);
+            var p = EntityGetPosition(e);
+            pickups.Add({x: p.x, y: p.y, kind: 1, id: e, taken: false});
+        }
+        best = PrefsGetFloat("Ember." + levelId + ".Best", 0);
+        ResetPlayer(spawn.x, spawn.y);
+        camX = x;
+        camY = y;
+        UpdateCamera(1.0);
+        UISetText("CardWorld", worldName);
+        UISetText("CardName", levelName);
+        UISetVisible("PauseUI", false);
+        UISetVisible("ResultUI", false);
+        UISetVisible("HudRoot", false);
+        UpdateHud();
+        state = 0;
+        stateTime = 0;
+        if (autoStart) { BeginPlay(); }
+    }
+
+    func ResetPlayer(sx, sy)
+    {
+        x = sx;
+        y = sy;
+        vx = 0.0;
+        vy = 0.0;
+        ground = false;
+        coyote = 0.0;
+        buf = 0.0;
+        dash = 0.0;
+        cool = 0.0;
+        dashdir = 1.0;
+        dashok = true;
+        facing = 1.0;
+        ride = -1;
+        jumpprev = false;
+        dead = false;
+    }
+
+    func BeginPlay()
+    {
+        state = 1;
+        stateTime = 0;
+        UISetVisible("CardUI", false);
+        UISetVisible("HudRoot", true);
+    }
+
+    // ================================================================ simulation (mirror of ember_sim.py)
+    func Tile(i, j)
+    {
+        if (i < 0 || i >= W) { return 1; }
+        if (j < 0 || j >= H) { return 0; }
+        return grid[j][i];
+    }
+
+    func Solid(i, j)
+    {
+        var t = Tile(i, j);
+        if (t == 2)
+        {
+            var k = crumbleAt[j][i];
+            return k < 0 || crumbles[k].t >= 0.0;
+        }
+        return t == 1;
+    }
+
+    func Oneway(i, j) { return Tile(i, j) == 3; }
+
+    func PingPong(t, period)
+    {
+        var u = t / period;
+        u = u - MathFloor(u);
+        var p = u < 0.5 ? u * 2.0 : 2.0 - u * 2.0;
+        return p * p * (3.0 - 2.0 * p);
+    }
+
+    func PlatX(k, tick)
+    {
+        var pl = plats[k];
+        if (pl.kind == "H")
+        {
+            var p = PingPong(tick / 60.0, PLAT_PERIOD);
+            return pl.i + 1.5 + PLAT_AMP_H * (p * 2.0 - 1.0);
+        }
+        return pl.i + 1.5;
+    }
+
+    func PlatY(k, tick)
+    {
+        var pl = plats[k];
+        if (pl.kind == "H") { return pl.j + 1.0; }
+        var p = PingPong(tick / 60.0, PLAT_PERIOD);
+        return pl.j + 1.0 + PLAT_AMP_V * p;
+    }
+
+    func Overlap(ax, ay, ahw, ahh, bx, by, bhw, bhh)
+    {
+        return MathAbs(ax - bx) < ahw + bhw && MathAbs(ay - by) < ahh + bhh;
+    }
+
+    func WorldStep()
+    {
+        worldTick += 1;
+        foreach (var e in enemies)
+        {
+            if (!e.alive) { continue; }
+            if (e.kind == "M")
+            {
+                var t = worldTick / 60.0;
+                e.x = e.ax + MOTH_AMP_X * (PingPong(t, MOTH_PERIOD_X) * 2.0 - 1.0);
+                e.y = e.ay + MOTH_AMP_Y * (PingPong(t, MOTH_PERIOD_Y) * 2.0 - 1.0);
+                continue;
+            }
+            var speed = e.kind == "S" ? SLUG_SPEED : THORN_SPEED;
+            var nx = e.x + e.dir * speed * DT;
+            var front = nx + e.dir * e.hw;
+            var fi = int(MathFloor(front));
+            var fj = int(MathFloor(e.y));
+            var below = int(MathFloor(e.y - e.hh - 0.1));
+            if (Solid(fi, fj) || !(Solid(fi, below) || Oneway(fi, below))) { e.dir = -e.dir; }
+            else { e.x = nx; }
+        }
+        foreach (var c in crumbles)
+        {
+            if (c.t > 0.0)
+            {
+                c.t -= DT;
+                if (c.t <= 0.0) { c.t = -CRUMBLE_GONE; events.Add("crumble"); }
+            }
+            else if (c.t < 0.0)
+            {
+                c.t += DT;
+                if (c.t >= 0.0) { c.t = 0.0; }
+            }
+        }
+    }
+
+    func PlayerStep(move, jump, dashIn)
+    {
+        var jumpPressed = jump && !jumpprev;
+        jumpprev = jump;
+        buf = jumpPressed ? BUFFER : buf - DT;
+        coyote = ground ? COYOTE : coyote - DT;
+        if (cool > 0.0) { cool -= DT; }
+        if (dashIn && dashok && dash <= 0.0 && cool <= 0.0)
+        {
+            dash = DASH_TIME;
+            dashok = false;
+            dashdir = move != 0 ? move * 1.0 : facing;
+            vy = 0.0;
+            events.Add("dash");
+        }
+        if (move != 0) { facing = move * 1.0; }
+        // Yatay
+        if (dash > 0.0)
+        {
+            vx = dashdir * DASH_SPEED;
+            dash -= DT;
+            if (dash <= 0.0)
+            {
+                vx = dashdir * RUN_MAX;
+                cool = DASH_COOLDOWN;
+            }
+        }
+        else
+        {
+            var target = move * RUN_MAX;
+            var a = ACC_AIR;
+            if (ground) { a = move != 0 ? ACC_GROUND : DEC_GROUND; }
+            var dv = a * DT;
+            if (vx < target) { vx = MathMin(vx + dv, target); }
+            else if (vx > target) { vx = MathMax(vx - dv, target); }
+        }
+        // Zıplama
+        if (buf > 0.0 && coyote > 0.0 && dash <= 0.0)
+        {
+            vy = JUMP_V;
+            buf = 0.0;
+            coyote = 0.0;
+            ground = false;
+            ride = -1;
+            events.Add("jump");
+        }
+        // Yerçekimi
+        if (dash > 0.0) { vy = 0.0; }
+        else
+        {
+            var g = (vy > 0.0 && jump) ? G_UP : G_DOWN;
+            vy = MathMax(vy - g * DT, -MAX_FALL);
+        }
+        // Taşıyan platform
+        if (ride >= 0)
+        {
+            var ox = PlatX(ride, worldTick - 1);
+            var oy = PlatY(ride, worldTick - 1);
+            var nx = PlatX(ride, worldTick);
+            var ny = PlatY(ride, worldTick);
+            x += nx - ox;
+            y += ny - oy;
+        }
+        // X ekseni
+        x += vx * DT;
+        var j0 = int(MathFloor(y - HH + 0.001));
+        var j1 = int(MathFloor(y + HH - 0.001));
+        if (vx > 0.0)
+        {
+            var i = int(MathFloor(x + HW));
+            for (var j = j0; j <= j1; j++)
+            {
+                if (Solid(i, j)) { x = i - HW - 0.0001; vx = 0.0; break; }
+            }
+        }
+        else if (vx < 0.0)
+        {
+            var i = int(MathFloor(x - HW));
+            for (var j = j0; j <= j1; j++)
+            {
+                if (Solid(i, j)) { x = i + 1 + HW + 0.0001; vx = 0.0; break; }
+            }
+        }
+        // Y ekseni
+        var prevBottom = y - HH;
+        y += vy * DT;
+        var i0 = int(MathFloor(x - HW + 0.001));
+        var i1 = int(MathFloor(x + HW - 0.001));
+        var wasGround = ground;
+        ground = false;
+        ride = -1;
+        if (vy > 0.0)
+        {
+            var j = int(MathFloor(y + HH));
+            for (var i = i0; i <= i1; i++)
+            {
+                if (Solid(i, j)) { y = j - HH - 0.0001; vy = 0.0; break; }
+            }
+        }
+        else
+        {
+            var bottom = y - HH;
+            var j = int(MathFloor(bottom));
+            var support = -1000000000.0;
+            for (var i = i0; i <= i1; i++)
+            {
+                if (Solid(i, j) || (Oneway(i, j) && prevBottom >= j + 1 - 0.001)) { support = MathMax(support, j + 1.0); }
+            }
+            for (var k = 0; k < plats.Count; k++)
+            {
+                var ppx = PlatX(k, worldTick);
+                var ppy = PlatY(k, worldTick);
+                if (MathAbs(x - ppx) < HW + 1.5 && prevBottom >= ppy - 0.001 - MathMax(0.0, ppy - PlatY(k, worldTick - 1)) && bottom <= ppy)
+                {
+                    if (ppy > support)
+                    {
+                        support = ppy;
+                        ride = k;
+                    }
+                }
+            }
+            if (support > -100000000.0 && bottom <= support)
+            {
+                y = support + HH;
+                vy = 0.0;
+                ground = true;
+                if (ride < 0)
+                {
+                    var sj = int(support) - 1;
+                    for (var i = i0; i <= i1; i++)
+                    {
+                        if (sj >= 0 && sj < H && i >= 0 && i < W)
+                        {
+                            var ck = crumbleAt[sj][i];
+                            if (ck >= 0 && crumbles[ck].t == 0.0) { crumbles[ck].t = CRUMBLE_DELAY; events.Add("crack"); }
+                        }
+                    }
+                }
+                if (!wasGround) { events.Add("land"); }
+            }
+            else { ride = -1; }
+        }
+        if (ground) { dashok = true; }
+        // Yaylar
+        foreach (var s in springs)
+        {
+            if (vy <= 0.0 && Overlap(x, y, HW, HH, s.i + 0.5, s.j + 0.25, 0.4, 0.25))
+            {
+                vy = SPRING_V;
+                ground = false;
+                ride = -1;
+                dashok = true;
+                dash = 0.0;
+                s.t = 0.25;
+                events.Add("spring");
+            }
+        }
+        // Dikenler ve düşme
+        var ci0 = int(MathFloor(x - HW));
+        var ci1 = int(MathFloor(x + HW));
+        var cj0 = int(MathFloor(y - HH));
+        var cj1 = int(MathFloor(y + HH));
+        for (var j = cj0; j <= cj1; j++)
+        {
+            for (var i = ci0; i <= ci1; i++)
+            {
+                if (Tile(i, j) == 4 && Overlap(x, y, HW, HH, i + 0.5, j + 0.25, 0.4, 0.25)) { dead = true; }
+            }
+        }
+        if (y < -2.0) { dead = true; }
+        // Düşmanlar
+        foreach (var e in enemies)
+        {
+            if (!e.alive || !Overlap(x, y, HW, HH, e.x, e.y, e.hw, e.hh)) { continue; }
+            if (dash > 0.0)
+            {
+                e.alive = false;
+                events.Add("kill");
+            }
+            else if (vy < 0.0 && y - HH > e.y && e.kind != "K")
+            {
+                e.alive = false;
+                vy = jump ? STOMP_V_HELD : STOMP_V;
+                dashok = true;
+                events.Add("stomp");
+            }
+            else { dead = true; }
+        }
+        // Kontrol noktaları ve hedef
+        for (var k = 0; k < cps.Count; k++)
+        {
+            if (k > cp && Overlap(x, y, HW, HH, cps[k].i + 0.5, cps[k].j + 1.0, 0.5, 1.0))
+            {
+                cp = k;
+                events.Add("checkpoint");
+            }
+        }
+        if (Overlap(x, y, HW, HH, goal.i + 1.0, goal.j + 1.5, 1.0, 1.5)) { won = true; }
+    }
+
+    // ================================================================ input
+    func Pad(b) { return IsGamepadConnected(0) && IsGamepadButtonPressed(0, b); }
+
+    func PadDown(b)
+    {
+        var now = Pad(b);
+        var k = "b" + b;
+        var was = padPrev.ContainsKey(k) && padPrev[k];
+        padPrev[k] = now;
+        return now && !was;
+    }
+
+    func ReadMove()
+    {
+        var m = 0;
+        if (IsKeyPressed("Right") || IsKeyPressed("D")) { m += 1; }
+        if (IsKeyPressed("Left") || IsKeyPressed("A")) { m -= 1; }
+        if (IsGamepadConnected(0))
+        {
+            var ax = GetGamepadAxis(0, 0);
+            if (ax > 0.4 || Pad(12)) { m = 1; }
+            if (ax < -0.4 || Pad(14)) { m = -1; }
+        }
+        return m;
+    }
+
+    func ReadJump()
+    {
+        return IsKeyPressed("Space") || IsKeyPressed("Up") || IsKeyPressed("W") || IsKeyPressed("Z") || Pad(0);
+    }
+
+    // ================================================================ frame
+    func Update(dt)
+    {
+        var udt = GetUnscaledDeltaTime();
+        if (udt > 0.1) { udt = 0.1; }
+        stateTime += udt;
+        clock += udt;
+        if (state == 0) { UpdateCard(); }
+        else if (state == 1 || state == 2) { UpdatePlay(udt); }
+        else if (state == 3) { UpdatePause(); }
+        else if (state == 4) { UpdateGoal(udt); }
+        else if (state == 5) { UpdateResults(); }
+        UpdateVisuals(udt);
+        fade += MathClamp(fadeTarget - fade, -udt * 3.0, udt * 3.0);
+        EntitySetColor("Fade", 0, 0, 0, fade);
+    }
+
+    func UpdateCard()
+    {
+        // Seviye kartı: kısa bekleme ya da tuşla başla
+        if (stateTime > 2.2 || (stateTime > 0.4 && (IsKeyDown("Enter") || IsKeyDown("Space") || PadDown(0)))) { BeginPlay(); }
+        if (IsKeyDown("Escape") || PadDown(1)) { LoadScene(menuScene); }
+    }
+
+    func UpdatePlay(udt)
+    {
+        if (IsKeyDown("Escape") || IsKeyDown("P") || PadDown(7)) { Pause(); return; }
+        if (IsKeyDown("X") || IsKeyDown("LeftShift") || IsKeyDown("K") || PadDown(2) || PadDown(5)) { dashQueued = true; }
+        acc += udt;
+        var steps = 0;
+        while (acc >= DT && steps < 5)
+        {
+            acc -= DT;
+            steps += 1;
+            FixedTick();
+            if (state != 1 && state != 2) { break; }
+        }
+        if (acc > DT * 5) { acc = 0; }
+    }
+
+    func FixedTick()
+    {
+        var move = 0;
+        var jump = false;
+        var dashIn = false;
+        if (autopilot && demo != "")
+        {
+            var idx = int(MathFloor(playTick / 6));
+            if (idx < StringLength(demo))
+            {
+                var v = StringCharCodeAt(demo, idx) - 97;
+                move = (v % 3) - 1;
+                jump = (int(MathFloor(v / 3)) % 2) == 1;
+                dashIn = int(MathFloor(v / 6)) == 1 && (playTick % 6) == 0;
+            }
+        }
+        else
+        {
+            move = ReadMove();
+            jump = ReadJump();
+            dashIn = dashQueued;
+        }
+        dashQueued = false;
+        playTick += 1;
+        runTime += DT;
+        WorldStep();
+        if (state == 2)
+        {
+            // Ölüm animasyonu: dünya akar, oyuncu bekler
+            if (stateTime > 0.7) { Respawn(); }
+            return;
+        }
+        PlayerStep(move, jump, dashIn);
+        HandleEvents();
+        Pickups();
+        if (dead) { Die(); return; }
+        if (won) { ReachGoal(); }
+    }
+
+    func HandleEvents()
+    {
+        foreach (var ev in events)
+        {
+            if (ev == "jump") { Sfx("jump", 0.5); }
+            else if (ev == "dash")
+            {
+                Sfx("dash", 0.55);
+                ParticleEmitAt("FX_Dash", x, y, 0.1, 14);
+            }
+            else if (ev == "land")
+            {
+                Sfx("land", 0.35);
+                landTime = 0.1;
+                ParticleEmitAt("FX_Dust", x, y - HH, 0.1, 6);
+            }
+            else if (ev == "stomp" || ev == "kill")
+            {
+                Sfx("stomp", 0.6);
+                shake = 0.12;
+            }
+            else if (ev == "spring") { Sfx("spring", 0.6); }
+            else if (ev == "checkpoint")
+            {
+                Sfx("checkpoint", 0.6);
+                EntitySetComponentField(cps[cp].id, "SpriteRenderer", "Rect", {x: 128, y: 0, z: 16, w: 16});
+                ParticleEmitAt("FX_Spark", cps[cp].i + 0.5, cps[cp].j + 1.4, 0.1, 30);
+            }
+            else if (ev == "crumble") { Sfx("crumble", 0.4); }
+        }
+        events = [];
+    }
+
+    func Pickups()
+    {
+        foreach (var pk in pickups)
+        {
+            if (pk.taken || !Overlap(x, y, HW, HH, pk.x, pk.y, 0.35, 0.35)) { continue; }
+            pk.taken = true;
+            EntitySetActive(pk.id, false);
+            if (pk.kind == 0)
+            {
+                embers += 1;
+                Sfx("ember", 0.4);
+                ParticleEmitAt("FX_Spark", pk.x, pk.y, 0.1, 8);
+            }
+            else
+            {
+                shards += 1;
+                Sfx("shard", 0.6);
+                ParticleEmitAt("FX_Spark", pk.x, pk.y, 0.1, 40);
+            }
+            UpdateHud();
+        }
+    }
+
+    func Die()
+    {
+        state = 2;
+        stateTime = 0;
+        deaths += 1;
+        Sfx("pop", 0.6);
+        ParticleEmitAt("FX_Spark", x, y, 0.1, 40);
+        shake = 0.25;
+        UpdateHud();
+    }
+
+    func Respawn()
+    {
+        if (cp >= 0) { ResetPlayer(cps[cp].i + 0.5, cps[cp].j + HH); }
+        else { ResetPlayer(spawn.x, spawn.y); }
+        state = 1;
+        stateTime = 0;
+    }
+
+    func ReachGoal()
+    {
+        state = 4;
+        stateTime = 0;
+        Sfx("goal", 0.7);
+        AudioStop();
+        EntitySetComponentField(goal.id, "SpriteRenderer", "Rect", {x: 32, y: 0, z: 32, w: 48});
+        ParticleEmitAt("FX_Spark", goal.i + 1.0, goal.j + 1.8, 0.1, 80);
+        newBest = !autopilot && !cheated && (best <= 0 || runTime < best);
+        if (!autopilot && !cheated)
+        {
+            if (newBest) { best = runTime; PrefsSetFloat("Ember." + levelId + ".Best", best); }
+            PrefsSetInt("Ember." + levelId + ".Done", 1);
+            var e0 = PrefsGetInt("Ember." + levelId + ".Embers", 0);
+            if (embers > e0) { PrefsSetInt("Ember." + levelId + ".Embers", embers); }
+            // Parçalar: en iyi sayı saklanır
+            var s0 = PrefsGetInt("Ember." + levelId + ".Shards", 0);
+            if (shards > s0) { PrefsSetInt("Ember." + levelId + ".Shards", shards); }
+            PrefsSetInt("Ember." + levelId + ".EmberTotal", emberTotal);
+            PrefsSave();
+        }
+        UISetVisible("HudRoot", false);
+    }
+
+    func UpdateGoal(udt)
+    {
+        // Wick fenere doğru süzülür
+        if (stateTime > 2.0) { ShowResults(); }
+    }
+
+    func ShowResults()
+    {
+        state = 5;
+        stateTime = 0;
+        UISetVisible("ResultUI", true);
+        UISetText("ResultTime", FormatTime(runTime));
+        UISetText("ResultEmbers", embers + " / " + emberTotal);
+        UISetText("ResultShards", shards + " / 3");
+        UISetText("ResultDeaths", "" + deaths);
+        var medal = runTime <= demoTime * 1.6 + 2 ? "GOLD" : (runTime <= demoTime * 2.4 + 4 ? "SILVER" : "BRONZE");
+        UISetText("ResultMedal", medal + " FLAME");
+        if (!autopilot && !cheated)
+        {
+            var rank = medal == "GOLD" ? 3 : (medal == "SILVER" ? 2 : 1);
+            if (rank > PrefsGetInt("Ember." + levelId + ".Medal", 0)) { PrefsSetInt("Ember." + levelId + ".Medal", rank); PrefsSave(); }
+        }
+        UISetText("ResultBest", autopilot || cheated ? "AUTOPILOT / DEBUG RUN - NOT RECORDED" : (newBest ? "NEW BEST TIME!" : "BEST  " + FormatTime(best)));
+        UISetVisible("NextBtn", nextLevel != "");
+        menuButtons = nextLevel != "" ? ["NextBtn", "RetryBtn", "MenuBtn"] : ["RetryBtn", "MenuBtn"];
+        menuIndex = 0;
+    }
+
+    func UpdateResults()
+    {
+        var choice = MenuInput();
+        if (nextLevel != "" && (Clicked("NextBtn") || choice == "NextBtn")) { LoadScene("Assets/Scenes/" + nextLevel + ".cqscene"); return; }
+        if (Clicked("RetryBtn") || choice == "RetryBtn") { LoadScene("Assets/Scenes/" + GetSceneName() + ".cqscene"); return; }
+        if (Clicked("MenuBtn") || choice == "MenuBtn") { LoadScene(menuScene); return; }
+    }
+
+    func Pause()
+    {
+        state = 3;
+        UISetVisible("PauseUI", true);
+        menuButtons = ["ResumeBtn", "RestartBtn", "QuitBtn"];
+        menuIndex = 0;
+        Sfx("menu_select", 0.4);
+    }
+
+    func UpdatePause()
+    {
+        var choice = MenuInput();
+        if (IsKeyDown("Escape") || PadDown(7) || Clicked("ResumeBtn") || choice == "ResumeBtn")
+        {
+            state = 1;
+            acc = 0;
+            UISetVisible("PauseUI", false);
+            return;
+        }
+        if (Clicked("RestartBtn") || choice == "RestartBtn") { LoadScene("Assets/Scenes/" + GetSceneName() + ".cqscene"); return; }
+        if (Clicked("QuitBtn") || choice == "QuitBtn") { LoadScene(menuScene); return; }
+    }
+
+    func MenuInput()
+    {
+        for (var i = 0; i < menuButtons.Count; i++)
+        {
+            if (UIIsHovered(menuButtons[i])) { menuIndex = i; }
+        }
+        if (IsKeyDown("Down") || IsKeyDown("S") || PadDown(13)) { menuIndex = (menuIndex + 1) % menuButtons.Count; Sfx("menu_move", 0.4); }
+        if (IsKeyDown("Up") || IsKeyDown("W") || PadDown(11)) { menuIndex = (menuIndex + menuButtons.Count - 1) % menuButtons.Count; Sfx("menu_move", 0.4); }
+        for (var i = 0; i < menuButtons.Count; i++)
+        {
+            if (i == menuIndex) { EntitySetColor(menuButtons[i], 1.0, 0.62, 0.22, 1); }
+            else { EntitySetColor(menuButtons[i], 0.16, 0.12, 0.22, 0.92); }
+        }
+        if (IsKeyDown("Enter") || IsKeyDown("Space") || PadDown(0)) { lastKeySubmit = clock; Sfx("menu_select", 0.5); return menuButtons[menuIndex]; }
+        return "";
+    }
+
+    // Enter, Event System'in seçili düğmesini de tıklar: klavye onayı yalnızca MenuInput seçimini kullanır
+    func Clicked(name) { return UIWasClicked(name) && clock - lastKeySubmit > 0.25; }
+
+    func Sfx(name, vol) { AudioPlayOneShot("Assets/Audio/" + name + ".wav", vol, 1.0, 0, "SFX"); }
+
+    func FormatTime(t)
+    {
+        var cs = int(MathFloor(t * 100));
+        var m = int(cs / 6000);
+        var s = int((cs - m * 6000) / 100);
+        var c = cs - m * 6000 - s * 100;
+        return $"{m}:{s:D2}.{c:D2}";
+    }
+
+    func UpdateHud()
+    {
+        UISetText("EmberText", "" + embers);
+        for (var k = 0; k < 3; k++) { UISetAlpha("ShardIcon" + k, k < shards ? 1.0 : 0.25); }
+        UISetText("DeathText", deaths > 0 ? "" + deaths : "0");
+    }
+
+    // ================================================================ visuals
+    func UpdateVisuals(udt)
+    {
+        px = x;
+        py = y;
+        // Oyuncu karesi (wick.png: 16x20 kareler)
+        var frame = 0;
+        if (state == 2) { frame = 9; }
+        else if (dash > 0.0) { frame = 8; }
+        else if (!ground) { frame = vy > 0.0 ? 6 : 7; }
+        else if (landTime > 0) { frame = 10; }
+        else if (MathAbs(vx) > 0.5)
+        {
+            runDist += MathAbs(vx) * udt;
+            frame = 2 + int(MathFloor(runDist * 1.6)) % 4;
+        }
+        else { frame = int(MathFloor(stateTime * 1.5)) % 2 == 0 ? 0 : (int(MathFloor(stateTime * 7)) % 9 == 0 ? 1 : 0); }
+        landTime -= udt;
+        EntitySetComponentField(player, "SpriteRenderer", "Rect", {x: frame * 16, y: 0, z: 16, w: 20});
+        EntitySetComponentField(player, "SpriteRenderer", "FlipX", facing < 0);
+        var sy = 1.0;
+        var sx = 1.0;
+        if (state == 2)
+        {
+            var k = MathClamp(stateTime / 0.35, 0, 1);
+            sx = 1.0 + k * 0.6;
+            sy = 1.0 - k;
+        }
+        EntitySetScale(player, sx, MathMax(0.01, sy), 1);
+        EntitySetPosition(player, x, y - HH, 0.2);
+        // Düşmanlar
+        foreach (var e in enemies)
+        {
+            if (!e.alive)
+            {
+                e.deadT += udt;
+                if (e.deadT > 0.35) { EntitySetActive(e.id, false); continue; }
+                EntitySetComponentField(e.id, "SpriteRenderer", "Rect", {x: (e.kind == "S" ? 6 : 7) * 16, y: 0, z: 16, w: 16});
+                continue;
+            }
+            var baseFrame = e.kind == "S" ? 0 : (e.kind == "M" ? 2 : 4);
+            var f = baseFrame + int(MathFloor(worldTick / (e.kind == "M" ? 6 : 12))) % 2;
+            EntitySetComponentField(e.id, "SpriteRenderer", "Rect", {x: f * 16, y: 0, z: 16, w: 16});
+            EntitySetComponentField(e.id, "SpriteRenderer", "FlipX", e.dir > 0);
+            EntitySetPosition(e.id, e.x, e.y - e.hh, 0.15);
+        }
+        for (var k = 0; k < plats.Count; k++) { EntitySetPosition(plats[k].id, PlatX(k, worldTick), PlatY(k, worldTick) - 0.25, 0.1); }
+        foreach (var c in crumbles)
+        {
+            EntitySetActive(c.id, c.t >= 0.0);
+            var shakeX = c.t > 0.0 ? MathSin(stateTime * 70) * 0.05 : 0.0;
+            EntitySetPosition(c.id, c.i + 0.5 + shakeX, c.j + 0.5, 0.05);
+            EntitySetComponentField(c.id, "SpriteRenderer", "Rect", {x: (c.t > 0.0 ? 12 : 11) * 16, y: 0, z: 16, w: 16});
+        }
+        foreach (var s in springs)
+        {
+            s.t -= udt;
+            EntitySetComponentField(s.id, "SpriteRenderer", "Rect", {x: (s.t > 0.0 ? 6 : 5) * 16, y: 0, z: 16, w: 16});
+        }
+        // Közler: titreme (4 kare)
+        var ef = int(MathFloor(stateTime * 8));
+        var n = 0;
+        foreach (var pk in pickups)
+        {
+            if (pk.taken || pk.kind != 0) { n += 1; continue; }
+            if (MathAbs(pk.x - camX) < 16)
+            {
+                EntitySetComponentField(pk.id, "SpriteRenderer", "Rect", {x: ((ef + n) % 4) * 16, y: 0, z: 16, w: 16});
+            }
+            n += 1;
+        }
+        if (state == 1 || state == 2 || state == 4) { UISetText("TimeText", FormatTime(runTime)); }
+        UpdateCamera(udt);
+    }
+
+    func UpdateCamera(udt)
+    {
+        var vp = GetViewportSize();
+        var halfH = 7.5;
+        var halfW = halfH * (vp.y > 0 ? vp.x / vp.y : 1.7778);
+        var tx = x + facing * 2.0;
+        var ty = y + 1.0;
+        var k = MathMin(1.0, udt * 5.0);
+        camX += (tx - camX) * k;
+        camY += (ty - camY) * MathMin(1.0, udt * 3.0);
+        camX = MathClamp(camX, halfW, MathMax(halfW, W - halfW));
+        camY = MathClamp(camY, halfH, MathMax(halfH, H - halfH));
+        var ox = 0.0;
+        var oy = 0.0;
+        if (shake > 0)
+        {
+            shake -= udt;
+            ox = MathSin(stateTime * 90) * 0.12;
+            oy = MathCos(stateTime * 77) * 0.12;
+        }
+        EntitySetPosition(cam, camX + ox, camY + oy, 10);
+        // Paralaks arka planlar
+        EntitySetPosition("BgFar", camX * 0.85, camY * 0.9 - 1.0, -2);
+        EntitySetPosition("BgNear", camX * 0.6, camY * 0.75 - 2.0, -1);
+    }
+
+    // ================================================================ test hooks
+    func DebugTeleport(tx, ty)
+    {
+        cheated = true;     // ışınlanan koşu rekor sayılmaz
+        ResetPlayer(tx * 1.0, ty * 1.0);
+    }
+
+    func DebugState()
+    {
+        var cpos = EntityGetPosition(cam);
+        print($"EMBER cam=({cpos.x:F2},{cpos.y:F2}) camY={camY:F2} H={H} W={W}");
+        print($"EMBER state={state} tick={playTick} won={won} deaths={deaths} embers={embers}/{emberTotal} shards={shards} pos=({x:F4},{y:F4}) time={runTime:F2}");
+    }
+}

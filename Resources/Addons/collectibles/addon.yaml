@@ -1,0 +1,31 @@
+Id: conqueror.collectibles
+Name: Collectibles & Score
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Coins, gems and other pickups that spin, bob, magnetize toward the player and add to a
+  score with a particle burst. The Score Manager keeps the score and a saved high score and
+  shows them on a canvas text; combos multiply points when pickups are chained quickly.
+Category: Gameplay
+Icon: coins
+Tags: [coins, score, pickup, collectible, platformer, ui]
+Components:
+  - Scripts/Collectible.cqs
+  - Scripts/ScoreManager.cqs
+Inserts:
+  - Name: Coin
+    Icon: coins
+    Prefab: Prefabs/Coin.cqprefab
+    Tooltip: Gold coin worth 1 point
+  - Name: Gem
+    Icon: gem
+    Prefab: Prefabs/Gem.cqprefab
+    Tooltip: Gem worth 10 points
+  - Name: Coin Ring
+    Icon: circle-notch
+    Prefab: Prefabs/CoinRing.cqprefab
+    Tooltip: Eight coins in a circle
+  - Name: Score Manager
+    Icon: trophy
+    Prefab: Prefabs/ScoreManager.cqprefab
+    Tooltip: Score + high score with an on-screen counter

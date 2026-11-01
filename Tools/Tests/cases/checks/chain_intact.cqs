@@ -1,0 +1,13 @@
+using nativebridge;
+var worst = 0.0;
+for (var i = 0; i < 7; i++)
+{
+    var a = EntityGetWorldPosition(FindEntity("Chain Link " + i));
+    var b = EntityGetWorldPosition(FindEntity("Chain Link " + (i + 1)));
+    var dx = a.x - b.x;
+    var dy = a.y - b.y;
+    var dz = a.z - b.z;
+    worst = MathMax(worst, MathSqrt(dx * dx + dy * dy + dz * dz));
+}
+LogInfo("REGRESSION chain_intact worst_link_distance=" + worst);
+if (worst > 0.2 && worst < 0.41) { CreateEntity("RegressionCheckOK"); }

@@ -1,0 +1,43 @@
+using nativebridge;
+
+// Adı önekle başlayan PhysicsReset gövdelerini belirli aralıkla başa döndürür; stagger > 0 ise sırayla (toplar
+// rampadan arka arkaya yuvarlansın).
+script GroupReset : ConquerorScript
+{
+    public string prefix = "";
+    public float interval = 8.0;
+    public float stagger = 0.0;
+    public float firstDelay = 0.5;
+
+    private var bodies = [];
+    private float timer = 0.0;
+    private float clock = 0.0;
+    private int next = 0;
+
+    func Start()
+    {
+        foreach (var e in FindEntitiesWithScript("PhysicsReset"))
+        {
+            if (StringStartsWith(EntityGetName(e), prefix)) { bodies.Add(e); }
+        }
+        timer = firstDelay;
+        next = bodies.Count;
+    }
+
+    func Update(dt)
+    {
+        timer -= dt;
+        if (timer <= 0.0)
+        {
+            timer = interval;
+            next = 0;
+            clock = 0.0;
+        }
+        clock += dt;
+        while (next < bodies.Count && clock >= next * stagger)
+        {
+            InvokeMethod(bodies[next], "ResetBody");
+            next++;
+        }
+    }
+}

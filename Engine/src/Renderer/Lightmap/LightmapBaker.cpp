@@ -97,9 +97,34 @@ namespace Conqueror
     }
 
     LightmapBaker::LightmapBaker(const LightmapSettings& settings) : m_Settings(settings) {}
-    void LightmapBaker::ReportProgress(float p, const std::string& s) { m_Progress = p; if (m_ProgressCallback) m_ProgressCallback(p, s); }
+    namespace { struct LightmapBakeCancelled {}; }
+
+    void LightmapBaker::ReportProgress(float p, const std::string& s)
+    {
+        if (m_CancelRequested.load())
+            throw LightmapBakeCancelled{};
+        m_Progress = p;
+        if (m_ProgressCallback)
+            m_ProgressCallback(p, s);
+    }
 
     void LightmapBaker::Bake(Scene* scene)
+    {
+        m_Cancelled = false;
+        try
+        {
+            BakeInternal(scene);
+        }
+        catch (const LightmapBakeCancelled&)
+        {
+            m_IsBaking = false;
+            m_Cancelled = true;
+            m_Atlas = LightmapAtlas{};
+            CQ_CORE_WARN("Lightmap bake cancelled");
+        }
+    }
+
+    void LightmapBaker::BakeInternal(Scene* scene)
     {
         if (!scene || m_IsBaking) return;
         m_IsBaking = true;
@@ -126,7 +151,7 @@ namespace Conqueror
             // Realtime modda sadece RealtimeGI=true olan entity'ler
             if (m_RealtimeMode && !mr.RealtimeGI) continue;
 
-            glm::mat4 wt = tf.GetTransform();
+            glm::mat4 wt = tf.WorldTransform;
             glm::mat3 nm = glm::mat3(glm::transpose(glm::inverse(wt)));
             std::shared_ptr<Mesh> mesh;
             switch (mr.Type) {
@@ -174,7 +199,7 @@ namespace Conqueror
             auto [tf, mc] = modelView.get<TransformComponent, ModelComponent>(e);
             if (!mc.ModelData) continue;
             if (m_RealtimeMode && !mc.RealtimeGI) continue;
-            glm::mat4 wt = tf.GetTransform();
+            glm::mat4 wt = tf.WorldTransform;
             glm::mat3 nm = glm::mat3(glm::transpose(glm::inverse(wt)));
             for (size_t m = 0; m < mc.ModelData->Meshes.size(); m++)
             {

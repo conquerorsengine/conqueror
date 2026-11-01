@@ -1,0 +1,5 @@
+# Third Person (Unreal Third Person template): mannequin, follow camera, test arena
+Shared: [Prototype, Mannequin]
+StartScene: Assets/Scenes/Main.cqscene
+Scenes:
+  - Assets/Scenes/Main.cqscene

@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: swim_idle
+      States:
+        - Name: swim_idle
+          ClipIndex: 31
+          ClipName: swim_idle
+  Parameters: []

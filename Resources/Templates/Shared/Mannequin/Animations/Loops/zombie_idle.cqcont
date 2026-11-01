@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: zombie_idle
+      States:
+        - Name: zombie_idle
+          ClipIndex: 45
+          ClipName: zombie_idle
+  Parameters: []

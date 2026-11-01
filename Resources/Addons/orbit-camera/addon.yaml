@@ -1,0 +1,18 @@
+Id: conqueror.orbit-camera
+Name: Orbit Camera
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Model-viewer / strategy style camera that orbits a target entity or point: drag with the
+  right (or left) mouse button to rotate, middle mouse to pan, wheel to zoom, with inertia,
+  pitch and distance limits, optional idle auto-rotation and focusing on any entity.
+Category: Camera
+Icon: arrows-spin
+Tags: [camera, orbit, viewer, rts, inspection]
+Components:
+  - Scripts/OrbitCamera.cqs
+Inserts:
+  - Name: Orbit Camera
+    Icon: arrows-spin
+    Prefab: Prefabs/OrbitCamera.cqprefab
+    Tooltip: Camera with the Orbit Camera component

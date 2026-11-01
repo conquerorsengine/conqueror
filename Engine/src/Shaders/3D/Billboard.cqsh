@@ -1,0 +1,76 @@
+#language GLSL
+#type vertex
+#version 450 core
+
+// Kameraya dönük dörtgenler: Billboard Renderer (doku, alfa kesme), Halo (parıltı) ve
+// Lens Flare öğeleri (ekran uzayı şekiller). Köşeler CPU'da hazırlanır.
+layout(location = 0) in vec3 a_Position;
+layout(location = 1) in vec2 a_UV;
+layout(location = 2) in vec4 a_Color;
+layout(location = 3) in float a_Shape;
+
+uniform mat4 u_ViewProjection;
+
+out vec2 v_UV;
+out vec4 v_Color;
+flat out int v_Shape;
+
+void main()
+{
+    v_UV = a_UV;
+    v_Color = a_Color;
+    v_Shape = int(a_Shape + 0.5);
+    gl_Position = u_ViewProjection * vec4(a_Position, 1.0);
+}
+
+#type fragment
+#version 450 core
+
+layout(location = 0) out vec4 FragColor;
+
+in vec2 v_UV;
+in vec4 v_Color;
+flat in int v_Shape;
+
+uniform sampler2D u_Texture;
+uniform float u_AlphaCutoff = 0.5;
+
+void main()
+{
+    vec2 p = v_UV * 2.0 - 1.0;
+    float r = length(p);
+    if (v_Shape == 0)
+    {
+        // Doku (ağaç, ot, uzak nesne): alfa kesme, derinlik yazar
+        vec4 c = texture(u_Texture, v_UV) * v_Color;
+        if (c.a < u_AlphaCutoff)
+            discard;
+        FragColor = vec4(c.rgb, 1.0);
+        return;
+    }
+    if (v_Shape == 6)
+    {
+        // Örtülme sorgusu: dörtgenin tamamı sayılır (renk yazımı kapalı)
+        FragColor = vec4(1.0);
+        return;
+    }
+    float a = 0.0;
+    if (v_Shape == 1)        // yumuşak parıltı
+        a = exp(-r * r * 5.0) * (1.0 - smoothstep(0.7, 1.0, r));
+    else if (v_Shape == 2)   // halka
+        a = exp(-pow((r - 0.82) / 0.07, 2.0));
+    else if (v_Shape == 3)   // altıgen hayalet
+    {
+        vec2 q = abs(p);
+        float d = max(q.x * 0.8660254 + q.y * 0.5, q.y);
+        a = (1.0 - smoothstep(0.82, 1.0, d)) * (0.55 + 0.45 * d);
+    }
+    else if (v_Shape == 4)   // daire hayalet
+        a = (1.0 - smoothstep(0.8, 1.0, r)) * (0.5 + 0.5 * r);
+    else if (v_Shape == 5)   // anamorfik çizgi
+        a = exp(-p.y * p.y * 80.0) * pow(max(1.0 - abs(p.x), 0.0), 2.0);
+    if (a <= 0.001)
+        discard;
+    // Toplamalı karışım (GL_ONE, GL_ONE)
+    FragColor = vec4(v_Color.rgb * v_Color.a * a, 1.0);
+}

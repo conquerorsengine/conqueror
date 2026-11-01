@@ -1,0 +1,127 @@
+using nativebridge;
+
+// Wheel Collider tabanlı araç sürüşü. Tekerlekler bu varlığın Wheel Collider bileşenli çocuklarıdır.
+// W/Yukarı gaz, S/Aşağı fren (dururken geri vites), A/D direksiyon, Space el freni.
+script VehicleController : ConquerorScript
+{
+    public float motorTorque = 2400.0;
+    public float brakeTorque = 3500.0;
+    public float handbrakeTorque = 5000.0;
+    public float maxSteerAngle = 30.0;
+    public float highSpeedSteerAngle = 10.0;
+    public float steerSpeed = 5.0;
+    public float maxSpeedKmh = 140.0;
+    public float maxReverseKmh = 30.0;
+    public int driveMode = 0;            // 0 arkadan, 1 önden, 2 dört çeker
+    public float downforce = 1.5;
+    public string frontWheels = "WheelFL,WheelFR";
+    public string rearWheels = "WheelRL,WheelRR";
+
+    // Çalışma zamanı bilgisi
+    public float speedKmh = 0.0;
+    public float throttle = 0.0;
+    public float steer = 0.0;
+    public bool braking = false;
+    public bool reversing = false;
+    public int groundedWheels = 0;
+
+    private var front = [];
+    private var rear = [];
+    private float driveThrottle = 0.0;
+    private float driveSteer = 0.0;
+    private float driveTime = 0.0;
+
+    func Start()
+    {
+        front = FindWheels(frontWheels);
+        rear = FindWheels(rearWheels);
+    }
+
+    func FindWheels(names)
+    {
+        var list = [];
+        for (var n in StringSplit(names, ","))
+        {
+            var w = EntityFindChild(GetEntityId(), StringTrim(n));
+            if (w != null && w >= 0 && EntityHasComponent(w, "WheelCollider")) { list.Add(w); }
+        }
+        return list;
+    }
+
+    // Kod / test için: belirli süre gaz (-1..1) ve direksiyon (-1..1)
+    func Drive(t, s, seconds)
+    {
+        driveThrottle = t;
+        driveSteer = s;
+        driveTime = seconds;
+    }
+
+    func SetWheels(list, field, value)
+    {
+        for (var w in list) { EntitySetComponentField(w, "WheelCollider", field, value); }
+    }
+
+    func FixedUpdate(dt)
+    {
+        var inThrottle = 0.0;
+        var inSteer = 0.0;
+        if (IsKeyPressed(Key.W) || IsKeyPressed(Key.Up)) { inThrottle += 1.0; }
+        if (IsKeyPressed(Key.S) || IsKeyPressed(Key.Down)) { inThrottle -= 1.0; }
+        if (IsKeyPressed(Key.D) || IsKeyPressed(Key.Right)) { inSteer += 1.0; }
+        if (IsKeyPressed(Key.A) || IsKeyPressed(Key.Left)) { inSteer -= 1.0; }
+        var handbrake = IsKeyPressed(Key.Space);
+        if (driveTime > 0) { inThrottle = driveThrottle; inSteer = driveSteer; driveTime -= dt; }
+
+        var v = GetLinearVelocity();
+        var f = GetForward();
+        var forwardSpeed = v.x * f.x + v.y * f.y + v.z * f.z;
+        speedKmh = forwardSpeed * 3.6;
+        var absKmh = MathAbs(speedKmh);
+
+        // Gaz / fren / geri vites
+        var torque = 0.0;
+        var brake = 0.0;
+        braking = false;
+        if (inThrottle > 0.01)
+        {
+            if (forwardSpeed < -0.5) { brake = brakeTorque; braking = true; }
+            else if (speedKmh < maxSpeedKmh) { torque = motorTorque * inThrottle; }
+            reversing = false;
+        }
+        else if (inThrottle < -0.01)
+        {
+            if (forwardSpeed > 0.5) { brake = brakeTorque; braking = true; }
+            else if (-speedKmh < maxReverseKmh) { torque = motorTorque * inThrottle * 0.6; reversing = true; }
+        }
+        throttle = inThrottle;
+
+        // Hıza bağlı direksiyon açısı
+        var t = MathClamp01(absKmh / 100.0);
+        var maxSteer = MathLerp(maxSteerAngle, highSpeedSteerAngle, t);
+        steer = MathLerp(steer, inSteer, 1.0 - MathExp(-steerSpeed * dt));
+        SetWheels(front, "SteerAngle", steer * maxSteer);
+
+        var driven = driveMode == 1 ? front : rear;
+        var count = driveMode == 2 ? len(front) + len(rear) : len(driven);
+        var per = count > 0 ? torque / count : 0.0;
+        if (driveMode == 2) { SetWheels(front, "MotorTorque", per); SetWheels(rear, "MotorTorque", per); }
+        else
+        {
+            SetWheels(driveMode == 1 ? rear : front, "MotorTorque", 0.0);
+            SetWheels(driven, "MotorTorque", per);
+        }
+        SetWheels(front, "BrakeTorque", brake);
+        SetWheels(rear, "BrakeTorque", handbrake ? handbrakeTorque : brake);
+
+        groundedWheels = 0;
+        for (var w in front) { if (EntityGetComponentField(w, "WheelCollider", "IsGrounded")) { groundedWheels++; } }
+        for (var w in rear) { if (EntityGetComponentField(w, "WheelCollider", "IsGrounded")) { groundedWheels++; } }
+        // Yere basma kuvveti: hızla artar (tekerlekler yerdeyken)
+        if (groundedWheels > 0 && downforce > 0)
+        {
+            var up = GetUp();
+            var k = -downforce * forwardSpeed * forwardSpeed * GetMass() * 0.01;
+            ApplyForce(up.x * k, up.y * k, up.z * k);
+        }
+    }
+}

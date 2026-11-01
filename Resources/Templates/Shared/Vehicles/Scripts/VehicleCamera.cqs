@@ -1,0 +1,139 @@
+using nativebridge;
+
+// Araç kamerası: arkadan izleme (yumuşak dönüş + hızla geri çekilme + hız FOV'u), fare / sağ çubukla etrafa bakma
+// (bırakınca arkaya döner), C / gamepad sağ omuz ile görünüm: Yakın, Uzak, Kaput. Arazide çarpışma: zemine gömülmez.
+script VehicleCamera : ConquerorScript
+{
+    public string targetName = "Vehicle";
+    public float distance = 6.2;
+    public float height = 1.9;
+    public float lookHeight = 1.0;
+    public float farDistance = 9.5;
+    public float farHeight = 3.0;
+    public float positionSharpness = 22.0;
+    public float rotationSharpness = 7.5;
+    public float speedPullBack = 0.006;
+    public float baseFov = 62.0;
+    public float speedFov = 14.0;
+    public float lookSensitivity = 0.18;
+    [Header("State")]
+    public int view = 0;                 // 0 yakın, 1 uzak, 2 kaput
+
+    private var target = -1;
+    private float yaw = 0.0;
+    private float orbitYaw = 0.0;
+    private float orbitPitch = 0.0;
+    private float idleLook = 0.0;
+    private bool snapped = false;
+
+    func Start()
+    {
+        SetCursorMode(2);
+    }
+
+    func LateUpdate(dt)
+    {
+        if (target < 0) { target = FindEntity(targetName); if (target < 0) { return; } }
+        if (IsKeyDown("C") || (IsGamepadConnected(0) && IsGamepadButtonPressed(0, 10) && idleLook >= 0.0)) { view = (view + 1) % 3; snapped = false; }
+
+        // Etrafa bakma
+        var md = GetMouseDelta();
+        var lx = md.x * lookSensitivity;
+        var ly = md.y * lookSensitivity;
+        if (IsGamepadConnected(0))
+        {
+            var rs = GetGamepadRightStick(0);
+            if (MathAbs(rs.x) > 0.15) { lx += rs.x * 140.0 * dt; }
+            if (MathAbs(rs.y) > 0.15) { ly += rs.y * 90.0 * dt; }
+        }
+        if (MathAbs(lx) + MathAbs(ly) > 0.01)
+        {
+            orbitYaw = MathNormalizeAngle(orbitYaw - lx);
+            orbitPitch = MathClamp(orbitPitch - ly, -10.0, 40.0);
+            idleLook = 0.0;
+        }
+        else
+        {
+            idleLook += dt;
+            if (idleLook > 1.2)
+            {
+                var k0 = 1.0 - MathExp(-3.0 * dt);
+                orbitYaw = orbitYaw * (1.0 - k0);
+                orbitPitch = orbitPitch * (1.0 - k0);
+            }
+        }
+
+        var tp = EntityGetWorldPosition(target);
+        // Aracın yönü ileri / sağ vektörlerinden (Euler açıları belirsiz: fizik gövdesinin dönüşü 90 dereceyi geçince
+        // (180, 180 - yön, 180) biçiminde gelir; kamera aracın yanına geçiyor, kaput görünümü ters dönüyordu)
+        var fwd = EntityGetForward(target);
+        var rgt = EntityGetRight(target);
+        var carYaw = MathRadToDeg(MathAtan2(-fwd.x, -fwd.z));
+        var carPitch = MathRadToDeg(MathAsin(MathClamp(fwd.y, -1.0, 1.0)));
+        var carRoll = MathRadToDeg(MathAsin(MathClamp(rgt.y, -1.0, 1.0)));
+        var v = GetLinearVelocity(target);
+        var sp = v != null ? MathSqrt(v.x * v.x + v.z * v.z) : 0.0;
+        // Hareket yönüne bak (geri giderken araç yönü)
+        var targetYaw = carYaw;
+        var kRot = snapped ? 1.0 - MathExp(-rotationSharpness * dt) : 1.0;
+        yaw = yaw + MathNormalizeAngle(targetYaw - yaw) * kRot;
+        var camYaw = yaw + orbitYaw;
+        var r = MathDegToRad(camYaw);
+
+        if (view == 2)
+        {
+            // Kaput: aracın önünde, hafif yukarıda; aracın yönünü sertçe izler
+            var hx = tp.x + fwd.x * 0.2;
+            var hz = tp.z + fwd.z * 0.2;
+            EntitySetWorldPosition(GetEntityId(), hx, tp.y + 1.32, hz);
+            SetRotation(-2.0 + carPitch * 0.6 + orbitPitch, carYaw + orbitYaw, carRoll * 0.6);
+            EntitySetComponentField(GetEntityId(), "Camera", "FieldOfView", baseFov + 6.0 + speedFov * MathClamp01(sp / 60.0));
+            snapped = true;
+            return;
+        }
+        var dist = view == 1 ? farDistance : distance;
+        var h = view == 1 ? farHeight : height;
+        dist = dist + sp * speedPullBack * dist;
+        var pr = MathDegToRad(orbitPitch);
+        var gx = tp.x + MathSin(r) * dist * MathCos(pr);
+        var gz = tp.z + MathCos(r) * dist * MathCos(pr);
+        var gy = tp.y + h + MathSin(pr) * dist;
+        // Zemine / duvara gömülme: hedeften kameraya ışın
+        var dx0 = gx - tp.x;
+        var dy0 = gy - (tp.y + lookHeight);
+        var dz0 = gz - tp.z;
+        var dl = MathSqrt(dx0 * dx0 + dy0 * dy0 + dz0 * dz0);
+        var hit = Raycast(tp.x, tp.y + lookHeight, tp.z, dx0 / dl, dy0 / dl, dz0 / dl, dl, -1, false);
+        if (hit != null && !IsOwnedBy(hit.entity, target))
+        {
+            var keep = MathMax(hit.distance - 0.3, 1.5) / dl;
+            gx = tp.x + dx0 * keep;
+            gy = tp.y + lookHeight + dy0 * keep;
+            gz = tp.z + dz0 * keep;
+        }
+        var p = EntityGetWorldPosition(GetEntityId());
+        var k = snapped ? 1.0 - MathExp(-positionSharpness * dt) : 1.0;
+        snapped = true;
+        var nx = MathLerp(p.x, gx, k);
+        var ny = MathLerp(p.y, gy, k);
+        var nz = MathLerp(p.z, gz, k);
+        EntitySetWorldPosition(GetEntityId(), nx, ny, nz);
+        var dx = tp.x - nx;
+        var dy = tp.y + lookHeight - ny;
+        var dz = tp.z - nz;
+        var horiz = MathSqrt(dx * dx + dz * dz);
+        SetRotation(MathRadToDeg(MathAtan2(dy, horiz)), MathRadToDeg(MathAtan2(-dx, -dz)), 0);
+        EntitySetComponentField(GetEntityId(), "Camera", "FieldOfView", baseFov + speedFov * MathClamp01(sp / 60.0));
+    }
+
+    func IsOwnedBy(e, root)
+    {
+        var c = e;
+        for (var i = 0; i < 8 && c != null && c >= 0; i++)
+        {
+            if (c == root) { return true; }
+            c = EntityGetParent(c);
+        }
+        return false;
+    }
+}

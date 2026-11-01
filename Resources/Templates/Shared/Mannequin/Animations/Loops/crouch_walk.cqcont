@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: crouch_walk
+      States:
+        - Name: crouch_walk
+          ClipIndex: 8
+          ClipName: crouch_walk
+  Parameters: []

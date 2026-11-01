@@ -1,0 +1,66 @@
+// Top Down (Unreal "TopDownMap" düzeninde): 50 x 50 m ızgaralı alan, alçak duvarlar, rampalı ve merdivenli
+// platformlar, köprü, engel blokları ve silindirler; NavMesh oyun başında pişer. Oyuncu: Conqueror Mannequin,
+// sol tık / basılı tut ile yürür (TopDownController), zeminde imleç halkası, tıklama efekti, yüksek takip kamerası.
+// @EditorCamera 42 55 0 0 0 0   (proje açıldığında editör görünümü: uzaklık, eğim, yön, odak)
+OutdoorLighting(-55, -25);
+RenderSettingSet("Shadows.Distance", 70);
+
+Box("Floor", 0, -1, 0, 50, 1, 50, GRID);
+Box("Wall North", 0, 0, -25.5, 52, 1.5, 1, GRID_DARK);
+Box("Wall South", 0, 0, 25.5, 52, 1.5, 1, GRID_DARK);
+Box("Wall East", 25.5, 0, 0, 1, 1.5, 50, GRID_DARK);
+Box("Wall West", -25.5, 0, 0, 1, 1.5, 50, GRID_DARK);
+
+// Rampalı platform (kuzeydoğu) ve merdivenli platform (kuzeybatı), aralarında köprü
+Box("Platform East", 12, 0, -12, 10, 2, 8, GRID);
+Ramp("Ramp East", 12, 0, -2, 6, 2, 4, 180, GRID);
+Box("Platform West", -12, 0, -12, 8, 2, 8, GRID);
+Stairs("Steps West", -12, 0, -2.5, 8, 0.25, 0.5, 4, 180, GRID);
+Box("Bridge", 0, 1.7, -12, 16, 0.3, 3, GRID);
+// Engeller: NavMesh etraflarından dolaşır
+Box("Block A", -6, 0, 6, 4, 1.2, 2, GRID_ORANGE);
+Box("Block B", 6, 0, 8, 2, 1.2, 6, GRID_ORANGE);
+Box("Block C", -16, 0, 12, 3, 2.5, 3, GRID_DARK);
+Box("Block D", 16, 0, 14, 5, 0.6, 5, GRID);
+Box("Low Wall", 0, 0, 16, 10, 1.0, 0.6, GRID_DARK);
+Cylinder("Pillar A", -20, 0, -20, 1.5, 3, GRID);
+Cylinder("Pillar B", 20, 0, -20, 1.5, 3, GRID);
+Cylinder("Pillar C", 20, 0, 20, 1.2, 2, GRID);
+Cylinder("Pillar D", -20, 0, 20, 1.2, 2, GRID);
+for (var i = 0; i < 3; i++) { PhysicsCube("Cube " + i, -2 + i * 1.1, 0, -2, 1, 30); }
+
+NavSurface();
+
+var player = Mannequin("Player", 0, 0, 2, 180, "Mannequin_Male", false);
+AddScript(player, "Assets/Scripts/TopDownController.cqs");
+
+// Zemin imleci (Unreal'in imleç Decal'i): aşağıya yansıyan halka
+var cursor = CreateEntity("Cursor Decal");
+EntitySetPosition(cursor, 0, 0.5, 0);
+EntityAddComponent(cursor, "DecalProjector");
+EntitySetComponentField(cursor, "DecalProjector", "Texture", "Assets/Textures/cursor_ring.png");
+EntitySetComponentField(cursor, "DecalProjector", "Size", {x: 1.1, y: 1.1, z: 1.4});
+EntitySetComponentField(cursor, "DecalProjector", "Color", {r: 1, g: 1, b: 1, a: 0.95});
+EntitySetComponentField(cursor, "DecalProjector", "Emission", 2.0);
+EntitySetRotation(cursor, -90, 0, 0);
+
+// Tıklama efekti: hedefte yayılan parıltılar
+var fx = Particles("FX Click", null, {PlayOnAwake: false, Looping: false, EmissionEnabled: false, RateOverTime: 0, SimulationSpace: "World"});
+foreach (var k, v in {StartLifetime: {x: 0.3, y: 0.6}, StartSpeed: {x: 1.2, y: 2.6}, StartSize: {x: 0.08, y: 0.16},
+    StartColorA: {r: 0.5, g: 0.85, b: 1.0, a: 1}, StartColorB: {r: 0.9, g: 1.0, b: 1.0, a: 1}, Shape: "Circle", Radius: 0.1,
+    GravityModifier: 0.0, Drag: 4, Blend: "Additive", Texture: "Assets/Textures/soft_dot.png", EmissiveIntensity: 4, MaxParticles: 200,
+    ColorOverLifetimeEnabled: true, ColorOverLifetimeKeys: "0:1,1,1,1; 1:1,1,1,0"}) { EntitySetComponentField(fx, "ParticleSystem", k, v); }
+
+// Kamera (TopDownController konumlar): yüksek, 58° eğik
+var cam = CreateEntity("Top Down Camera");
+EntitySetPosition(cam, 0, 12.7, 9.9);
+EntityAddComponent(cam, "Camera");
+EntitySetComponentField(cam, "Camera", "Primary", true);
+EntitySetComponentField(cam, "Camera", "FieldOfView", 55);
+EntityAddComponent(cam, "AudioListener");
+EntitySetRotation(cam, -58, 0, 0);
+
+var hud = UICreateCanvas("HUD");
+EntitySetComponentField(hud, "CanvasScaler", "ReferenceResolution", {x: 1920, y: 1080});
+EntitySetComponentField(hud, "CanvasScaler", "MatchWidthOrHeight", 0.5);
+HudText("HintText", hud, "LMB CLICK / HOLD  MOVE      WASD  WALK      SHIFT  RUN      WHEEL  ZOOM", 0, 26, 1800, 30, 22, "Center", 0.5, 0);

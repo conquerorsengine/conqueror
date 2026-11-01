@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Base/Base.h"
+#include "Renderer/RHI/TextureSettings.h"
 
 #include <string>
 #include <unordered_map>
@@ -23,6 +24,23 @@ namespace Conqueror
         virtual void Bind(uint32_t slot = 0) const = 0;
 
         virtual bool operator==(const Texture& other) const = 0;
+
+        // Ayrıntılar (doku denetçisi / istatistikler)
+        virtual uint32_t GetMipLevels() const { return 1; }
+        virtual uint64_t GetMemoryBytes() const { return 0; }
+        virtual std::string GetFormatName() const { return {}; }
+        virtual uint32_t GetSourceWidth() const { return GetWidth(); }
+        virtual uint32_t GetSourceHeight() const { return GetHeight(); }
+        virtual uint32_t GetSourceChannels() const { return 4; }
+        virtual const TextureImportSettings& GetImportSettings() const
+        {
+            static const TextureImportSettings s_Default;
+            return s_Default;
+        }
+        // Dosyadan ve .meta ayarlarından yerinde yeniden yükle (aynı nesne, yeni GPU dokusu)
+        virtual bool Reload() { return false; }
+        // Kaynak dosya silindi: içerik saydam 1x1 olur (Unity'de referansı kayıp doku gibi görünmez), yol korunur
+        virtual void SetMissing() {}
     };
 
     class CQ_API Texture2D : public Texture
@@ -36,6 +54,11 @@ namespace Conqueror
         static std::shared_ptr<Texture2D> CreateFromRawBGRA(uint32_t width, uint32_t height, const unsigned char* bgraPixels);
 
         static void ClearCache() { s_Cache.clear(); }
+        // Önbellekteki (yüklü) dokuyu yerinde yenile: içe aktarma ayarları değişince tüm kullanıcılar güncellenir
+        static bool ReloadFromDisk(const std::string& path);
+        // Yüklü dokuların kaynak dosyalarını denetler (editör çağırır): değişen dosya yerinde yeniden yüklenir, silinen
+        // dosyanın dokusu boşalır, geri gelen dosya yeniden yüklenir. Değişen doku sayısı
+        static int CheckFileChanges();
         static std::unordered_map<std::string, std::weak_ptr<Texture2D>>& GetCache() { return s_Cache; }
 
     private:

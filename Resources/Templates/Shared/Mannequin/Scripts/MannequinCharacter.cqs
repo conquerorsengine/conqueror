@@ -1,0 +1,284 @@
+using nativebridge;
+
+// Conqueror Mannequin karakteri (Unreal Character + CharacterMovement + oyuncu kontrolü).
+// Kök varlıkta Character Controller; çocuklar: "Mesh" (model + Mannequin.cqcont + MannequinAnimation),
+// "CameraBoom" (Spring Arm) -> "FollowCamera".
+//   Klavye/fare: WASD hareket, fare bakış, Shift depar, Alt yürü, C / Ctrl çömel, Space zıpla, sağ tık nişan, Esc imleç
+//   Kol: sol çubuk hareket, sağ çubuk bakış, L3 depar, B çömel, A zıpla, LT nişan
+script MannequinCharacter : ConquerorScript
+{
+    [Header("Movement")]
+    public float walkSpeed = 1.4;
+    public float jogSpeed = 4.0;
+    public float sprintSpeed = 6.2;
+    public float crouchSpeed = 1.25;
+    public float aimSpeed = 2.2;
+    public float acceleration = 12.0;
+    public float braking = 16.0;
+    public float airControl = 0.35;
+    public float jumpHeight = 1.2;
+    public float gravity = 20.0;
+    public float turnRate = 10.0;
+
+    [Header("Camera")]
+    public float mouseSensitivity = 0.12;
+    public float stickSensitivity = 160.0;
+    public bool invertY = false;
+    public float armLength = 3.4;
+    public float aimArmLength = 1.7;
+    public float minPitch = -70.0;
+    public float maxPitch = 50.0;
+
+    [Header("Control")]
+    [Tooltip("ThirdPerson: karakter gittiği yöne döner. Strafe: hep kameraya bakar. None: girdi yok (yapay zekâ / ara sahne)")]
+    public string mode = "ThirdPerson";
+    public bool canAim = true;
+    public bool lockCursor = true;
+
+    [Header("State (read by MannequinAnimation)")]
+    public float speed = 0.0;
+    public bool grounded = true;
+    public bool crouching = false;
+    public bool aiming = false;
+    public float aim01 = 0.0;
+    public int jumps = 0;
+    public bool dead = false;
+    public bool aimBlocked = false;      // başka betik nişanı engeller (şarjör değiştirme)
+    public float controlYaw = 0.0;
+    public float controlPitch = -12.0;
+
+    // Betik girdisi (yapay zekâ, testler): moveInputX/Y -1..1, sprintInput, jumpInput
+    public float moveInputX = 0.0;
+    public float moveInputY = 0.0;
+    public bool sprintInput = false;
+    public bool jumpInput = false;
+    public bool aimHold = false;            // diğer betikler (ThirdPersonShooter) nişanı buradan ister
+
+    private float turnSign = 0.0;
+    private var boom = -1;
+    private var vx = 0.0;
+    private var vz = 0.0;
+    private var vy = 0.0;
+    private var yaw = 0.0;
+    private var coyote = 0.0;
+    private var padPrev = {};
+    private bool onGround = true;       // fiziksel (anlık) zemin teması
+    private float airTime = 0.0;
+    private bool jumpedRecently = false;
+    private var meshEntity = -1;
+    private float meshOffset = 0.0;     // basamak çıkıp inerken görsel yumuşatma (kök sıçrar, model süzülür)
+    private float meshBaseY = -0.9;
+    private float lastY = 0.0;
+
+    func Start()
+    {
+        yaw = GetRotation().y;
+        controlYaw = yaw + 180.0;
+        boom = FindChild("CameraBoom");
+        meshEntity = FindChild("Mesh");
+        if (meshEntity != null && meshEntity >= 0) { meshBaseY = EntityGetPosition(meshEntity).y; }
+        lastY = EntityGetWorldPosition(GetEntityId()).y;
+        if (boom != null && boom >= 0)
+        {
+            EntitySetComponentField(boom, "SpringArm", "UseControlRotation", true);
+            EntitySetComponentField(boom, "SpringArm", "TargetArmLength", armLength);
+        }
+        if (lockCursor && mode != "None") { SetCursorMode(2); }
+    }
+
+    // Işınlama (doğuş noktası, test, kapı): hız sıfırlanır
+    func TeleportTo(x, y, z)
+    {
+        Teleport(x, y, z);
+        vx = 0.0;
+        vz = 0.0;
+        vy = 0.0;
+        lastY = y;
+        meshOffset = 0.0;
+    }
+
+    func FindChild(name)
+    {
+        foreach (var c in EntityGetChildren(GetEntityId()))
+        {
+            if (EntityGetName(c) == name) { return c; }
+        }
+        return -1;
+    }
+
+    func Pad(b) { return IsGamepadConnected(0) && IsGamepadButtonPressed(0, b); }
+
+    func PadDown(b)
+    {
+        var now = Pad(b);
+        var k = "b" + b;
+        var was = padPrev.ContainsKey(k) && padPrev[k];
+        padPrev[k] = now;
+        return now && !was;
+    }
+
+    func Axis(a)
+    {
+        if (!IsGamepadConnected(0)) { return 0.0; }
+        var v = GetGamepadAxis(0, a);
+        return MathAbs(v) < 0.15 ? 0.0 : v;
+    }
+
+    func Update(dt)
+    {
+        if (dt > 0.1) { dt = 0.1; }
+        var ix = moveInputX;
+        var iy = moveInputY;
+        var wantSprint = sprintInput;
+        var wantJump = jumpInput;
+        var wantWalk = false;
+        jumpInput = false;
+        if (mode != "None" && !dead)
+        {
+            if (IsKeyPressed("W") || IsKeyPressed("Up")) { iy += 1.0; }
+            if (IsKeyPressed("S") || IsKeyPressed("Down")) { iy -= 1.0; }
+            if (IsKeyPressed("D") || IsKeyPressed("Right")) { ix += 1.0; }
+            if (IsKeyPressed("A") || IsKeyPressed("Left")) { ix -= 1.0; }
+            ix += Axis(0);
+            iy -= Axis(1);
+            wantSprint = wantSprint || IsKeyPressed("LeftShift") || Pad(8);
+            wantWalk = IsKeyPressed("LeftAlt");
+            wantJump = wantJump || IsKeyDown("Space") || PadDown(0);
+            if (IsKeyDown("C") || IsKeyDown("LeftControl") || PadDown(1)) { crouching = !crouching; }
+            aiming = canAim && !aimBlocked && (aimHold || IsMouseButtonPressed(1) || Axis(4) > 0.3);
+            // Bakış
+            // İmleç: Esc bırakır, oyun görünümüne tıklamak geri kilitler (motor yapar)
+            var md = GetMouseDelta();
+            controlYaw -= md.x * mouseSensitivity;
+            controlPitch += (invertY ? md.y : -md.y) * mouseSensitivity;
+            controlYaw -= Axis(2) * stickSensitivity * dt;
+            controlYaw = MathNormalizeAngle(controlYaw);
+            controlPitch -= Axis(3) * stickSensitivity * dt * (invertY ? -1.0 : 1.0);
+            controlPitch = MathClamp(controlPitch, minPitch, maxPitch);
+        }
+        var il = MathSqrt(ix * ix + iy * iy);
+        if (il > 1.0) { ix /= il; iy /= il; il = 1.0; }
+
+        // Kamera yönüne göre hareket (kontrol yönü: kol -Z'ye bakar)
+        var r = MathDegToRad(controlYaw);
+        var fx = -MathSin(r);
+        var fz = -MathCos(r);
+        var rx = MathCos(r);
+        var rz = -MathSin(r);
+        var mx = fx * iy + rx * ix;
+        var mz = fz * iy + rz * ix;
+
+        var maxSpeed = jogSpeed;
+        if (wantWalk) { maxSpeed = walkSpeed; }
+        if (wantSprint && !crouching && !aiming) { maxSpeed = sprintSpeed; crouching = false; }
+        if (crouching) { maxSpeed = crouchSpeed; }
+        if (aiming) { maxSpeed = MathMin(maxSpeed, aimSpeed); }
+        var tx = mx * maxSpeed;
+        var tz = mz * maxSpeed;
+
+        onGround = CharacterIsGrounded();
+        var accel = il > 0.01 ? acceleration : braking;
+        if (!onGround) { accel *= airControl; }
+        var k = 1.0 - MathExp(-accel * dt);
+        vx += (tx - vx) * k;
+        vz += (tz - vz) * k;
+        speed = MathSqrt(vx * vx + vz * vz);
+
+        // Yön: hareket yönü ya da (nişan / strafe) kamera yönü
+        var want = yaw;
+        if (aiming || mode == "Strafe") { want = controlYaw + 180.0; }
+        else if (il > 0.01) { want = MathRadToDeg(MathAtan2(mx, mz)); }
+        // Ters yöne ani dönüşte fark ±180 arasında gidip gelir (her kare dönüş yönü değişip titrer): başlayan dönüş yönü
+        // korunur (Unreal Orient Rotation To Movement gibi tek yönde döner)
+        var diff = MathNormalizeAngle(want - yaw);
+        if (MathAbs(diff) > 150.0 && turnSign != 0.0) { diff = turnSign * MathAbs(diff); }
+        else if (MathAbs(diff) > 1.0) { turnSign = diff > 0.0 ? 1.0 : -1.0; }
+        yaw = MathNormalizeAngle(yaw + diff * (1.0 - MathExp(-turnRate * dt)));
+        SetRotation(0, yaw, 0);
+
+        // Dikey
+        if (onGround)
+        {
+            coyote = 0.12;
+            if (vy < 0.0) { vy = -2.0; }
+            jumpedRecently = false;
+        }
+        else
+        {
+            coyote -= dt;
+            vy -= gravity * dt;
+        }
+        var startY = EntityGetWorldPosition(GetEntityId()).y;
+        if (wantJump && coyote > 0.0 && !dead)
+        {
+            vy = MathSqrt(2.0 * gravity * jumpHeight);
+            coyote = 0.0;
+            crouching = false;
+            jumps += 1;
+            jumpedRecently = true;
+        }
+        var flags = CharacterMove(vx * dt, vy * dt, vz * dt);
+        // Merdiven / rampa inişi: zeminden yeni ayrıldıysa (zıplamadan) ve altta basamak yüksekliği kadar zemin varsa
+        // yapış (Unreal Character Movement "perch / step down"): her basamakta düşme animasyonu ve sekme olmaz
+        if (!onGround && !jumpedRecently && vy <= 0.0 && coyote > 0.0)
+        {
+            var fp = EntityGetWorldPosition(GetEntityId());
+            var hit = Raycast(fp.x, fp.y - 0.85, fp.z, 0, -1, 0, 0.65, -1, true);
+            if (hit != null && !hit.isTrigger)
+            {
+                CharacterMove(0, -(hit.distance + 0.02), 0);
+                vy = -2.0;
+                onGround = true;
+            }
+        }
+        // Animasyon için zemin: kısa havada kalmalar (basamak kenarı, eğim değişimi) düşme sayılmaz
+        airTime = onGround ? 0.0 : airTime + dt;
+        grounded = onGround || (airTime < 0.15 && !jumpedRecently);
+        // Basamak yumuşatma: zemindeyken kökün ani dikey sıçraması modelde ~0.1 s'de sönümlenir
+        var nowY = EntityGetWorldPosition(GetEntityId()).y;
+        if (onGround && meshEntity != null && meshEntity >= 0)
+        {
+            var dyStep = nowY - startY;
+            if (MathAbs(dyStep) > 0.02 && MathAbs(dyStep) < 0.6) { meshOffset -= dyStep; }
+        }
+        meshOffset = MathClamp(meshOffset * MathExp(-14.0 * dt), -0.5, 0.5);
+        if (meshEntity != null && meshEntity >= 0)
+        {
+            var mp = EntityGetPosition(meshEntity);
+            EntitySetPosition(meshEntity, mp.x, meshBaseY + meshOffset, mp.z);
+        }
+        lastY = nowY;
+        // Tavana çarpınca (CollidedAbove = 2) yukarı hız sıfırlanır
+        if (vy > 0.0 && flags != null && (int(flags) % 4) >= 2) { vy = 0.0; }
+
+        // Nişan kamerası
+        aim01 = MathLerp(aim01, aiming ? 1.0 : 0.0, 1.0 - MathExp(-12.0 * dt));
+        if (boom != null && boom >= 0)
+        {
+            EntitySetComponentField(boom, "SpringArm", "ControlYaw", controlYaw);
+            EntitySetComponentField(boom, "SpringArm", "ControlPitch", controlPitch);
+            EntitySetComponentField(boom, "SpringArm", "TargetArmLength", MathLerp(armLength, aimArmLength, aim01));
+            EntitySetComponentField(boom, "SpringArm", "SocketOffset", {x: 0.55 * aim01, y: 0.15 * aim01, z: 0});
+        }
+    }
+
+    // Diğer betikler: ölüm / dirilme
+    // Ölürken / dirilirken duruş sıfırlanır (eğilirken ölen karakter ayakta doğar; nişan, hız bırakılır)
+    func Kill()
+    {
+        dead = true;
+        crouching = false;
+        aiming = false;
+    }
+
+    func Revive()
+    {
+        dead = false;
+        crouching = false;
+        aiming = false;
+        vx = 0.0;
+        vz = 0.0;
+        vy = 0.0;
+        speed = 0.0;
+    }
+}

@@ -1,0 +1,6 @@
+# 3D Board Game: hex island strategy board (Hex Board Kit + Day Night Cycle addons), low-poly diorama on the sea
+Shared: []
+Addons: [hex-board-kit, day-night-cycle]
+StartScene: Assets/Scenes/Main.cqscene
+Scenes:
+  - Assets/Scenes/Main.cqscene

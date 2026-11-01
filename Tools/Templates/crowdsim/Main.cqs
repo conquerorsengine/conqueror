@@ -1,0 +1,80 @@
+// Crowd (Unreal City Sample / Mass kalabalığı karşılığı): taş döşeli bir şehir meydanı. Dört yanda dükkânlı, iki-üç katlı
+// binalar (kodla üretilmiş cephe dokuları), ortada çeşme, çevresinde banklar, kafe masaları, çiçeklikler; üç sokak çıkışı.
+// Yayalar NavMesh üzerinde görev alarak yaşar: gezinir, vitrinlere bakar, banklarda oturur, buluşup sohbet eder, bir
+// sokaktan çıkıp başka birinden döner. Kamera: serbest yörünge ya da F ile bir yayayı izleme.
+// @EditorCamera 24 36 35 2 1 1   (proje açıldığında editör görünümü: uzaklık, eğim, yön, odak)
+var sun = OutdoorLighting(-42, 205);
+RenderSettingSet("Shadows.Distance", 90);
+RenderSettingSet("Post.CloudCoverage", 0.3);
+RenderSettingSet("Fog.Density", 0.004);
+RenderSettingSet("Post.ScreenSpaceReflections", true);
+RenderSettingSet("Post.SSRIntensity", 0.5);
+RenderSettingSet("Post.Exposure", -0.2);   // açık renkli taş zemin beyaza kaçmasın
+
+// Meydan seti: TemplateKit.cqs PlazaSet() (Shared/Plaza paketi)
+PlazaSet();
+
+// ---------------------------------------------------------------- NavMesh ve yayalar
+var nav = CreateEntity("NavMesh Surface");
+EntityAddComponent(nav, "NavMeshSurface");
+EntitySetComponentField(nav, "NavMeshSurface", "CollectObjects", "All Game Objects");
+EntitySetComponentField(nav, "NavMeshSurface", "AgentRadius", 0.3);
+EntitySetComponentField(nav, "NavMeshSurface", "AgentHeight", 1.8);
+EntitySetComponentField(nav, "NavMeshSurface", "StepHeight", 0.3);
+EntitySetComponentField(nav, "NavMeshSurface", "MaxSlope", 30);
+EntitySetComponentField(nav, "NavMeshSurface", "BakeOnPlay", true);
+
+func SpawnPedestrian(i, x, z)
+{
+    var e = CreateEntity("Pedestrian " + (i + 1));
+    EntitySetPosition(e, x, 0, z);
+    EntitySetRotation(e, 0, (i * 137) % 360, 0);
+    EntityAddComponent(e, "Model");
+    EntitySetComponentField(e, "Model", "FilePath", "Assets/Mannequin/Models/" + (i % 2 == 0 ? "Mannequin_Male" : "Mannequin_Female") + ".glb");
+    EntityAddComponent(e, "Animation");
+    EntitySetComponentField(e, "Animation", "ControllerPath", "Assets/Animations/Pedestrian.cqcont");
+    EntityAddComponent(e, "NavMeshAgent");
+    EntitySetComponentField(e, "NavMeshAgent", "AngularSpeed", 300);
+    EntitySetComponentField(e, "NavMeshAgent", "Acceleration", 3.5);
+    EntitySetComponentField(e, "NavMeshAgent", "StoppingDistance", 0.15);
+    EntitySetComponentField(e, "NavMeshAgent", "Radius", 0.3);
+    EntitySetComponentField(e, "NavMeshAgent", "Height", 1.8);
+    EntitySetComponentField(e, "NavMeshAgent", "AvoidancePriority", 30 + (i * 7) % 40);
+    AddScript(e, "Assets/Scripts/Pedestrian.cqs");
+    SetFields(e, {walkSpeed: 1.15 + ((i * 37) % 10) * 0.04});
+    // Kalabalık tek tip görünmesin: her yayanın boyu, omuz genişliği ve baş oranı biraz farklı
+    EntityAddComponent(e, "CharacterCustomizer");
+    EntitySetComponentField(e, "CharacterCustomizer", "Height", 0.93 + ((i * 53) % 13) * 0.011);
+    EntitySetComponentField(e, "CharacterCustomizer", "BodyWidth", 0.92 + ((i * 29) % 11) * 0.016);
+    EntitySetComponentField(e, "CharacterCustomizer", "HeadSize", 0.97 + ((i * 17) % 7) * 0.01);
+    EntitySetTag(e, "Pedestrian");
+    IgnoreFromNav(e);
+    return e;
+}
+for (var pi = 0; pi < 36; pi++)
+{
+    var a = pi * 2.399963;                       // altın açı: meydana dağılmış başlangıç
+    var rr = 8.5 + (pi % 6) * 1.6;
+    SpawnPedestrian(pi, MathClamp(MathSin(a) * rr * 1.3, -18.5, 18.5), MathClamp(MathCos(a) * rr, -13.5, 13.5));
+}
+var director = CreateEntity("Crowd Director");
+AddScript(director, "Assets/Scripts/CrowdDirector.cqs");
+
+// ---------------------------------------------------------------- kamera ve arayüz
+var cam = CreateEntity("Main Camera");
+EntityAddComponent(cam, "Camera");
+EntitySetComponentField(cam, "Camera", "Primary", true);
+EntitySetComponentField(cam, "Camera", "FieldOfView", 50);
+EntitySetComponentField(cam, "Camera", "FarClip", 1500);
+EntityAddComponent(cam, "AudioListener");
+EntitySetPosition(cam, 11.3, 12.8, 14.2);
+EntitySetRotation(cam, -36, 35, 0);
+AddScript(cam, "Assets/Scripts/CrowdCamera.cqs");
+
+var hud = UICreateCanvas("HUD");
+EntitySetComponentField(hud, "CanvasScaler", "ReferenceResolution", {x: 1920, y: 1080});
+EntitySetComponentField(hud, "CanvasScaler", "MatchWidthOrHeight", 0.5);
+HudText("TitleText", hud, "CITY PLAZA", 340, -44, 600, 60, 40, "Left", 0, 1);
+HudText("CrowdStats", hud, "PEOPLE 36", 640, -96, 1200, 34, 22, "Left", 0, 1);
+HudText("ModeText", hud, "", 0, 80, 1600, 34, 24, "Center", 0.5, 0);
+HudText("HintText", hud, "RMB DRAG ROTATE     WHEEL ZOOM     WASD PAN     F FOLLOW A PERSON (TAB NEXT)     UP / DOWN CROWD SIZE", 0, 26, 1800, 30, 20, "Center", 0.5, 0);

@@ -1,0 +1,41 @@
+// Third Person arena (Unreal "ThirdPersonMap" düzeninde): 60x60 m ızgaralı zemin, duvarlar, rampa + platform,
+// merdivenli yüksek platform, silindirler, itilebilir mavi küpler; oyuncu: Conqueror Mannequin + takip kamerası.
+// @EditorCamera 40 33 0 0 1 0   (proje açıldığında editör görünümü: uzaklık, eğim, yön, odak)
+OutdoorLighting(-48, -35);
+
+Box("Floor", 0, -1, 0, 60, 1, 60, GRID);
+Box("Wall North", 0, 0, -30.5, 62, 4, 1, GRID_DARK);
+Box("Wall South", 0, 0, 30.5, 62, 4, 1, GRID_DARK);
+Box("Wall East", 30.5, 0, 0, 1, 4, 60, GRID_DARK);
+Box("Wall West", -30.5, 0, 0, 1, 4, 60, GRID_DARK);
+
+// Rampa ile çıkılan geniş platform
+Box("Platform", 10, 0, -12, 12, 3, 10, GRID);
+Ramp("Ramp", 10, 0, 0, 7, 3, 4, 180, GRID);
+// Merdivenli yüksek platform + köprü
+Box("High Platform", -11, 0, -14, 8, 3, 8, GRID);
+Stairs("Steps", -11, 0, -4, 12, 0.25, 0.5, 4, 180, GRID);
+Box("Bridge", -0.5, 2.6, -14, 13, 0.4, 3, GRID);
+Box("Bridge Support", -0.5, 0, -14, 1, 2.6, 1, GRID_DARK);
+// Atlama blokları
+Box("Block A", -20, 0, 6, 3, 1, 3, GRID_ORANGE);
+Box("Block B", -20, 0, 11, 3, 2, 3, GRID_ORANGE);
+Box("Block C", -20, 0, 16, 3, 3, 3, GRID_ORANGE);
+Box("Pillar A", 20, 0, 12, 2, 5, 2, GRID);
+Box("Pillar B", 24, 0, 18, 2, 3.5, 2, GRID);
+Cylinder("Cylinder A", 18, 0, -24, 3, 2.5, GRID);
+Cylinder("Cylinder B", -22, 0, -24, 2, 4, GRID);
+Cylinder("Cylinder C", 22, 0, 2, 1.5, 1, GRID);
+// Fizik küpleri: üst üste dizili (itilebilir)
+for (var i = 0; i < 3; i++)
+{
+    PhysicsCube("Cube " + i, 4 + i * 1.05, 0, 8, 1, 40);
+}
+PhysicsCube("Cube 3", 4.5, 1, 8, 1, 40);
+PhysicsCube("Cube 4", 5.6, 1, 8, 1, 40);
+PhysicsCube("Cube 5", 5.0, 2, 8, 1, 40);
+PhysicsCube("Big Cube", -6, 0, 10, 2, 120);
+
+var player = Mannequin("Player", 0, 0, 14, 180, "Mannequin_Male", true);
+AddScript(player, "Assets/Mannequin/Scripts/MannequinCharacter.cqs");
+SetFields(player, {canAim: false});   // Unreal Third Person: karakter gittiği yöne döner, kamera onu döndürmez

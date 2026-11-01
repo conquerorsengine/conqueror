@@ -1,0 +1,16 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: Aim
+      States:
+        - Name: Aim
+          ClipIndex: 11
+          ClipName: pistol_aim
+          Loop: true
+          Speed: 1.0
+          EditorPosX: 260
+          EditorPosY: 170
+      Transitions: []
+  Parameters: []

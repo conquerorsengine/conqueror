@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: punch_cross
+      States:
+        - Name: punch_cross
+          ClipIndex: 20
+          ClipName: punch_cross
+  Parameters: []

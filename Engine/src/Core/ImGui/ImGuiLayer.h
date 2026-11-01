@@ -6,6 +6,8 @@
 #include "Core/Events/KeyEvent.h"
 #include "Core/Events/MouseEvent.h"
 
+struct ImFont;
+
 namespace Conqueror
 {
     class ImGuiLayer : public Layer
@@ -25,7 +27,14 @@ namespace Conqueror
         
         void SetDarkThemeColors();
 
+        enum class FontRole { Regular = 0, Bold, Large, Mono, Count };
+        // Editör fontları (Font Awesome ikonları Regular/Bold/Large'a birleştirilmiştir)
+        static ::ImFont* GetFont(FontRole role);
+
     private:
+        void LoadFonts();
+        static ::ImFont* s_Fonts[(int)FontRole::Count];
+
         bool m_BlockEvents = true;
         float m_Time = 0.0f;
     };

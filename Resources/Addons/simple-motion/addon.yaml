@@ -1,0 +1,25 @@
+Id: conqueror.simple-motion
+Name: Simple Motion
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Small drop-on behaviours that bring a scene to life without animation clips: oscillate
+  along an axis, pulse the scale, orbit around a point or object, cycle colors, blink, look at
+  a target and wobble. Each has amplitude, speed and phase so many objects can move out of
+  sync.
+Category: Animation
+Icon: wave-square
+Tags: [motion, animation, procedural, oscillate, orbit, pulse]
+Components:
+  - Scripts/Oscillator.cqs
+  - Scripts/Pulse.cqs
+  - Scripts/Orbit.cqs
+  - Scripts/ColorCycle.cqs
+  - Scripts/Blink.cqs
+  - Scripts/LookAtTarget.cqs
+  - Scripts/Wobble.cqs
+Inserts:
+  - Name: Motion Showcase
+    Icon: shapes
+    Prefab: Prefabs/MotionShowcase.cqprefab
+    Tooltip: Six objects, one per motion behaviour

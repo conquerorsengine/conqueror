@@ -4,7 +4,7 @@
 
 #ifdef CQ_PLATFORM_WINDOWS
 
-#include <Windows.h>
+#include <windows.h>
 #include <string>
 #include <vector>
 

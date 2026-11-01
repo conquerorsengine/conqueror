@@ -28,5 +28,6 @@ namespace Conqueror
         uint32_t m_Width = 0;
         uint32_t m_Height = 0;
         std::string m_Path;
+        float m_SourceScale = 1.0f;   // HDR normalizasyon çarpanı (bilgi amaçlı)
     };
 }

@@ -15,13 +15,19 @@ namespace Conqueror
         virtual void Unbind() const override;
 
         virtual void SetData(const void* data, uint32_t size) override;
+        virtual void SetSubData(const void* data, uint32_t offset, uint32_t size) override;
 
         virtual const BufferLayout& GetLayout() const override { return m_Layout; }
         virtual void SetLayout(const BufferLayout& layout) override { m_Layout = layout; }
 
     private:
-        uint32_t m_RendererID;
+        // Statik oluşturulup sonradan güncellenen tamponu (kumaş, düzenlenen terrain) içeriğini koruyarak dinamik kullanıma
+        // çevirir (sürücü her güncellemede GL_STATIC_DRAW performans uyarısı basıyordu)
+        void MakeDynamic(const void* fullData);
+
+        uint32_t m_RendererID{};
         uint32_t m_Capacity = 0;
+        bool m_Dynamic = false;
         BufferLayout m_Layout;
     };
 

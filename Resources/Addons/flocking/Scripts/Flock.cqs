@@ -1,0 +1,190 @@
+using nativebridge;
+
+// Sürü yöneticisi: "Boid" adlı çocuğu şablon alıp count adet kopya üretir (şablon gizlenir) ve hepsini yönetir.
+// Kurallar: ayrılma, hizalanma, toplanma + kutu sınırları + engelden kaçınma (isteğe bağlı) + hedef takibi.
+script Flock : ConquerorScript
+{
+    public int count = 40;
+    public float boundsX = 10.0;
+    public float boundsY = 5.0;
+    public float boundsZ = 10.0;
+    public float minSpeed = 3.0;
+    public float maxSpeed = 7.0;
+    public float neighborRadius = 2.5;
+    public float separationRadius = 1.0;
+    public float separationWeight = 1.6;
+    public float alignmentWeight = 1.0;
+    public float cohesionWeight = 0.8;
+    public float boundsWeight = 4.0;
+    public bool avoidObstacles = false;
+    public float avoidDistance = 3.0;
+    public string targetName = "";
+    public float targetWeight = 0.6;
+    public int seed = 3;
+
+    // Çalışma zamanı bilgisi
+    public int boidCount = 0;
+    public float averageSpeed = 0.0;
+    public int outOfBounds = 0;
+
+    private var boids = [];
+    private var px = [];
+    private var py = [];
+    private var pz = [];
+    private var vx = [];
+    private var vy = [];
+    private var vz = [];
+
+    func Start()
+    {
+        var template = EntityFindChild(GetEntityId(), "Boid");
+        if (template == null || template < 0) { LogWarn("Flock: needs a child named 'Boid'"); return; }
+        var c = EntityGetWorldPosition(GetEntityId());
+        for (var i = 0; i < count; i++)
+        {
+            var x = c.x + (MathRandom() * 2 - 1) * boundsX * 0.8;
+            var y = c.y + (MathRandom() * 2 - 1) * boundsY * 0.8;
+            var z = c.z + (MathRandom() * 2 - 1) * boundsZ * 0.8;
+            var b = Instantiate(template, x, y, z);
+            if (b == null) { continue; }
+            EntitySetParent(b, -1, true);
+            EntitySetWorldPosition(b, x, y, z);
+            boids.Add(b);
+            px.Add(x); py.Add(y); pz.Add(z);
+            var d = RandomUnitVec3();
+            var s = MathRandomRange(minSpeed, maxSpeed);
+            vx.Add(d.x * s); vy.Add(d.y * s * 0.3); vz.Add(d.z * s);
+        }
+        EntitySetActive(template, false);
+        boidCount = boids.Count;
+    }
+
+    func Update(dt)
+    {
+        if (dt <= 0 || boids.Count == 0) { return; }
+        if (dt > 0.05) { dt = 0.05; }
+        var c = EntityGetWorldPosition(GetEntityId());
+        var n = boids.Count;
+        var nr2 = neighborRadius * neighborRadius;
+        var sr2 = separationRadius * separationRadius;
+        var target = targetName != "" ? FindEntity(targetName) : null;
+        var tp = target != null ? EntityGetWorldPosition(target) : null;
+        // Uzamsal ızgara: hücre = komşuluk yarıçapı
+        var cell = MathMax(0.5, neighborRadius);
+        var grid = Map();
+        for (var i = 0; i < n; i++)
+        {
+            var key = str(int(MathFloor(px[i] / cell))) + "," + str(int(MathFloor(py[i] / cell))) + "," + str(int(MathFloor(pz[i] / cell)));
+            if (!MapHasKey(grid, key)) { grid[key] = []; }
+            grid[key].Add(i);
+        }
+        var speedSum = 0.0;
+        var outside = 0;
+        for (var i = 0; i < n; i++)
+        {
+            var ax = 0.0; var ay = 0.0; var az = 0.0;
+            var cx = 0.0; var cy = 0.0; var cz = 0.0;
+            var sx = 0.0; var sy = 0.0; var sz = 0.0;
+            var mx = 0.0; var my = 0.0; var mz = 0.0;
+            var neighbors = 0;
+            var gx = int(MathFloor(px[i] / cell));
+            var gy = int(MathFloor(py[i] / cell));
+            var gz = int(MathFloor(pz[i] / cell));
+            for (var ox = -1; ox <= 1; ox++)
+            {
+                for (var oy = -1; oy <= 1; oy++)
+                {
+                    for (var oz = -1; oz <= 1; oz++)
+                    {
+                        var key2 = str(gx + ox) + "," + str(gy + oy) + "," + str(gz + oz);
+                        if (!MapHasKey(grid, key2)) { continue; }
+                        for (var j in grid[key2])
+                        {
+                            if (j == i) { continue; }
+                            var dx = px[j] - px[i];
+                            var dy = py[j] - py[i];
+                            var dz = pz[j] - pz[i];
+                            var d2 = dx * dx + dy * dy + dz * dz;
+                            if (d2 > nr2) { continue; }
+                            neighbors++;
+                            ax += vx[j]; ay += vy[j]; az += vz[j];
+                            cx += px[j]; cy += py[j]; cz += pz[j];
+                            if (d2 < sr2 && d2 > 0.0001)
+                            {
+                                var inv = 1.0 / d2;
+                                sx -= dx * inv; sy -= dy * inv; sz -= dz * inv;
+                            }
+                        }
+                    }
+                }
+            }
+            if (neighbors > 0)
+            {
+                mx += (ax / neighbors - vx[i]) * alignmentWeight;
+                my += (ay / neighbors - vy[i]) * alignmentWeight;
+                mz += (az / neighbors - vz[i]) * alignmentWeight;
+                mx += (cx / neighbors - px[i]) * cohesionWeight;
+                my += (cy / neighbors - py[i]) * cohesionWeight;
+                mz += (cz / neighbors - pz[i]) * cohesionWeight;
+            }
+            mx += sx * separationWeight; my += sy * separationWeight; mz += sz * separationWeight;
+            // Sınır kutusu: kenara %80'den sonra yaklaştıkça artan kuvvetle merkeze dön
+            var lx = px[i] - c.x; var ly = py[i] - c.y; var lz = pz[i] - c.z;
+            mx -= Edge(lx, boundsX);
+            my -= Edge(ly, boundsY);
+            mz -= Edge(lz, boundsZ);
+            if (MathAbs(lx) > boundsX || MathAbs(ly) > boundsY || MathAbs(lz) > boundsZ) { outside++; }
+            if (tp != null)
+            {
+                mx += (tp.x - px[i]) * targetWeight * 0.1;
+                my += (tp.y - py[i]) * targetWeight * 0.1;
+                mz += (tp.z - pz[i]) * targetWeight * 0.1;
+            }
+            var nvx = vx[i] + mx * dt;
+            var nvy = vy[i] + my * dt;
+            var nvz = vz[i] + mz * dt;
+            if (avoidObstacles)
+            {
+                var sp0 = MathSqrt(nvx * nvx + nvy * nvy + nvz * nvz);
+                if (sp0 > 0.001)
+                {
+                    var hit = Raycast(px[i], py[i], pz[i], nvx / sp0, nvy / sp0, nvz / sp0, avoidDistance);
+                    if (hit != null && !hit.isTrigger)
+                    {
+                        nvx += hit.normal.x * maxSpeed * 2.0 * dt * 10.0;
+                        nvy += hit.normal.y * maxSpeed * 2.0 * dt * 10.0;
+                        nvz += hit.normal.z * maxSpeed * 2.0 * dt * 10.0;
+                    }
+                }
+            }
+            var sp = MathSqrt(nvx * nvx + nvy * nvy + nvz * nvz);
+            if (sp > maxSpeed) { nvx *= maxSpeed / sp; nvy *= maxSpeed / sp; nvz *= maxSpeed / sp; sp = maxSpeed; }
+            if (sp < minSpeed && sp > 0.0001) { nvx *= minSpeed / sp; nvy *= minSpeed / sp; nvz *= minSpeed / sp; sp = minSpeed; }
+            vx[i] = nvx; vy[i] = nvy; vz[i] = nvz;
+            speedSum += sp;
+        }
+        // Konumları uygula, hız yönüne dön
+        for (var i = 0; i < n; i++)
+        {
+            px[i] = px[i] + vx[i] * dt;
+            py[i] = py[i] + vy[i] * dt;
+            pz[i] = pz[i] + vz[i] * dt;
+            var b = boids[i];
+            if (!EntityIsValid(b)) { continue; }
+            EntitySetPosition(b, px[i], py[i], pz[i]);
+            var h = MathSqrt(vx[i] * vx[i] + vz[i] * vz[i]);
+            EntitySetRotation(b, MathRadToDeg(MathAtan2(vy[i], h)), MathRadToDeg(MathAtan2(-vx[i], -vz[i])), 0);
+        }
+        averageSpeed = speedSum / n;
+        outOfBounds = outside;
+    }
+
+    func Edge(l, bound)
+    {
+        var margin = bound * 0.8;
+        var a = MathAbs(l);
+        if (a <= margin) { return 0.0; }
+        var k = (a - margin) / MathMax(0.001, bound - margin);
+        return MathSign(l) * boundsWeight * maxSpeed * k * k;
+    }
+}

@@ -1,0 +1,29 @@
+using nativebridge;
+
+// Hedefe bak (yalnızca yatay ya da tam), yumuşak dönüş. targetName boşsa ana kamera.
+script LookAtTarget : ConquerorScript
+{
+    public string targetName = "";
+    public bool yawOnly = true;
+    public float turnSpeed = 360.0;
+
+    // Çalışma zamanı bilgisi
+    public float yaw = 0.0;
+    public float pitch = 0.0;
+
+    func Update(dt)
+    {
+        var target = targetName != "" ? FindEntity(targetName) : GetMainCamera();
+        if (target == null) { return; }
+        var me = EntityGetWorldPosition(GetEntityId());
+        var t = EntityGetWorldPosition(target);
+        var dx = t.x - me.x; var dy = t.y - me.y; var dz = t.z - me.z;
+        var wantYaw = MathRadToDeg(MathAtan2(-dx, -dz));
+        var wantPitch = yawOnly ? 0.0 : MathRadToDeg(MathAtan2(dy, MathSqrt(dx * dx + dz * dz)));
+        var step = turnSpeed * dt;
+        var r = GetRotation();
+        yaw = r.y + MathClamp(MathNormalizeAngle(wantYaw - r.y), -step, step);
+        pitch = r.x + MathClamp(wantPitch - r.x, -step, step);
+        SetRotation(pitch, yaw, r.z);
+    }
+}

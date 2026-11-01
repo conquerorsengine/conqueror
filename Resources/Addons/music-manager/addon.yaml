@@ -1,0 +1,19 @@
+Id: conqueror.music-manager
+Name: Music Manager
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Background music with smooth crossfades: a playlist played in order or shuffled, Next /
+  Previous / Play / Stop / PlayTrack from code, a music volume saved in player prefs, and an
+  optional pause duck. Two internal sources crossfade so there is never a gap or a click.
+  Includes three short ambient loops.
+Category: Audio
+Icon: music
+Tags: [audio, music, playlist, crossfade]
+Components:
+  - Scripts/MusicManager.cqs
+Inserts:
+  - Name: Music Manager
+    Icon: music
+    Prefab: Prefabs/MusicManager.cqprefab
+    Tooltip: Plays the sample playlist with crossfades

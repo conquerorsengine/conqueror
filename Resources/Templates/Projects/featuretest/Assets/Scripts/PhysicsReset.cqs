@@ -1,0 +1,30 @@
+using nativebridge;
+
+// İstasyon tekrarları için fizik gövdesi: başlangıç konumuna / dönüşüne (ResetBody) ya da verilen poza (Place) ışınlanır,
+// hızları sıfırlanır. Gösteri betikleri bunu InvokeMethod ile çağırır.
+script PhysicsReset : ConquerorScript
+{
+    private var startPos = null;
+    private var startRot = null;
+
+    func Start()
+    {
+        startPos = GetPosition();
+        startRot = GetRotation();
+    }
+
+    func ResetBody()
+    {
+        if (startPos == null) { return; }
+        Place(startPos.x, startPos.y, startPos.z, startRot.x, startRot.y, startRot.z);
+    }
+
+    func Place(x, y, z, rx, ry, rz)
+    {
+        SetRotation(rx, ry, rz);
+        Teleport(x, y, z);
+        SetLinearVelocity(0, 0, 0);
+        SetAngularVelocity(0, 0, 0);
+        WakeUp();
+    }
+}

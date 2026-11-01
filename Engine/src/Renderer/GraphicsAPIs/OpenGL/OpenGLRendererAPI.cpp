@@ -5,6 +5,8 @@
 
 #include <glad/glad.h>
 
+#include <cstdlib>
+
 namespace Conqueror
 {
     void OpenGLMessageCallback(
@@ -16,26 +18,36 @@ namespace Conqueror
         const char* message,
         [[maybe_unused]] const void* userParam)
     {
+        // Mesaj biçim dizesi olarak verilmez ({} içeren GL mesajları fmt istisnası atardı).
+        // GL hataları çökme dökümü üretmez: kritik log + dosya diyaloğu motoru dondururdu.
         switch (severity)
         {
-            case GL_DEBUG_SEVERITY_HIGH:         CQ_CORE_CRITICAL(message); return;
-            case GL_DEBUG_SEVERITY_MEDIUM:       CQ_CORE_ERROR(message); return;
-            case GL_DEBUG_SEVERITY_LOW:          CQ_CORE_WARN(message); return;
-            case GL_DEBUG_SEVERITY_NOTIFICATION: CQ_CORE_TRACE(message); return;
+            case GL_DEBUG_SEVERITY_HIGH:         CQ_CORE_ERROR("[GL] {0}", message); return;
+            case GL_DEBUG_SEVERITY_MEDIUM:       CQ_CORE_WARN("[GL] {0}", message); return;
+            case GL_DEBUG_SEVERITY_LOW:          CQ_CORE_TRACE("[GL] {0}", message); return;
+            case GL_DEBUG_SEVERITY_NOTIFICATION: CQ_CORE_TRACE("[GL] {0}", message); return;
+            default:                             CQ_CORE_TRACE("[GL] {0}", message); return;
         }
-
-        CQ_CORE_ASSERT(false, "Unknown severity level!");
     }
 
     void OpenGLRendererAPI::Init()
     {
+        bool debugOutput = false;
         #ifdef CQ_DEBUG
+            debugOutput = true;
+        #endif
+        // Sürüm derlemesinde de: CQ_GL_DEBUG=1 (performans / API uyarıları Log paneline)
+        if (const char* dbg = std::getenv("CQ_GL_DEBUG"); dbg && dbg[0] == '1')
+            debugOutput = true;
+        if (debugOutput && glDebugMessageCallback)
+        {
             glEnable(GL_DEBUG_OUTPUT);
             glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
             glDebugMessageCallback(OpenGLMessageCallback, nullptr);
 
             glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_FALSE);
-        #endif
+            CQ_CORE_INFO("[GL] Debug output enabled");
+        }
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

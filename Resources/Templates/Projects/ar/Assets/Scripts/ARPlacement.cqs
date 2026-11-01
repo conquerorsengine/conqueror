@@ -1,0 +1,281 @@
+using nativebridge;
+
+// Dokun ve yerleştir (Unity AR Mobile template ARPlacementInteractable + ARTransformer, Unreal Handheld AR
+// karşılığı). Ekrana dokunulan nokta bulunan bir düzleme denk geliyorsa katalogdan seçili mobilya oraya, kameraya
+// dönük olarak yerleşir (yaylanarak belirir). Yerleştirilen nesneye dokunmak onu seçer: sürükle = düzlem üzerinde
+// taşı, tekerlek = boyut (iki parmakla sıkıştırma), Shift + tekerlek = döndür (iki parmakla çevirme), Delete = sil.
+// Fare imleci parmağın yerini tutar; imlecin altındaki düzlemde yerleştirme göstergesi (reticle) görünür.
+// Arayüz: üstte yönerge, solda oturum durumu, altta katalog; DÜZLEMLER aç / kapa, SIFIRLA (oturum + nesneler).
+script ARPlacement : ConquerorScript
+{
+    public string selectedItem = "Lounge Chair";
+    public float minScale = 0.4;
+    public float maxScale = 2.5;
+    [Header("State")]
+    public int placedCount = 0;
+    public string selectedObject = "";
+
+    private var session = -1;
+    private var reticle = -1;
+    private var ring = -1;
+    private var catalog = Map();
+    private var items = [];
+    private var placed = [];                // {e, item, key, scale, yaw, pop, base}
+    private int sel = -1;
+    private bool dragging = false;
+    private var dragOffset = null;
+    private float clock = 0.0;
+    private int serial = 0;
+
+    func Start()
+    {
+        session = FindEntity("AR Session");
+        reticle = FindEntity("Placement Reticle");
+        ring = FindEntity("Selection Ring");
+        var root = FindEntity("AR Catalog");
+        if (root >= 0)
+        {
+            foreach (var c in EntityGetChildren(root))
+            {
+                var n = EntityGetName(c);
+                catalog[n] = c;
+                items.Add(n);
+            }
+        }
+        if (reticle >= 0) { EntitySetActive(reticle, false); }
+        if (ring >= 0) { EntitySetActive(ring, false); }
+        SelectItem(selectedItem);
+        Select(-1);
+    }
+
+    func SelectItem(name)
+    {
+        selectedItem = name;
+        foreach (var n in items)
+        {
+            var on = n == name;
+            UISetColor("Item " + n, on ? 0.16 : 0.1, on ? 0.47 : 0.11, on ? 0.95 : 0.13, on ? 0.95 : 0.78);
+        }
+    }
+
+    func MouseRay()
+    {
+        var m = GetMousePosition();
+        return ScreenPointToRay(m.x, m.y);
+    }
+
+    func PlaneHit(ray)
+    {
+        if (ray == null || session < 0) { return null; }
+        var o = ray.origin;
+        var d = ray.direction;
+        return InvokeMethod(session, "RaycastPlanes", o.x, o.y, o.z, d.x, d.y, d.z);
+    }
+
+    // İmlecin altındaki yerleştirilmiş nesne (görsel sınırlarla), en yakını
+    func PickPlaced(ray)
+    {
+        if (ray == null) { return -1; }
+        var o = ray.origin;
+        var d = ray.direction;
+        var best = -1;
+        var bestD = 1000.0;
+        for (var i = 0; i < placed.Count; i++)
+        {
+            var h = EntityRaycast(placed[i].e, o.x, o.y, o.z, d.x, d.y, d.z, 30.0);
+            if (h != null && h.distance < bestD) { bestD = h.distance; best = i; }
+        }
+        return best;
+    }
+
+    func Place(hit)
+    {
+        var src = catalog[selectedItem];
+        if (src == null) { return; }
+        var camPos = EntityGetWorldPosition(FindEntity("AR Camera"));
+        var yaw = MathRadToDeg(MathAtan2(camPos.x - hit.point.x, camPos.z - hit.point.z));   // ön yüzü (+Z) kameraya
+        var e = Instantiate(src, hit.point.x, hit.point.y, hit.point.z, 0, yaw, 0);
+        if (e == null || e < 0) { return; }
+        serial++;
+        EntitySetName(e, "Placed " + selectedItem + " " + serial);
+        EntitySetActive(e, true);
+        var s = EntityGetScale(src);
+        EntitySetScale(e, 0.01, 0.01, 0.01);
+        placed.Add({e: e, item: selectedItem, key: hit.key, scale: 1.0, base: s.x, yaw: yaw, pop: 0.0});
+        placedCount = placed.Count;
+        Select(placed.Count - 1);
+        AudioPlayOneShotAt("Assets/AR/place.wav", hit.point.x, hit.point.y, hit.point.z, 0.6);
+    }
+
+    func Select(i)
+    {
+        sel = i;
+        selectedObject = i >= 0 ? EntityGetName(placed[i].e) : "";
+        UISetVisible("Delete", i >= 0);
+    }
+
+    func Remove(i)
+    {
+        if (i < 0 || i >= placed.Count) { return; }
+        EntityDestroy(placed[i].e);
+        placed.RemoveAt(i);
+        placedCount = placed.Count;
+        Select(-1);
+    }
+
+    func ClearAll()
+    {
+        foreach (var p in placed) { EntityDestroy(p.e); }
+        placed = [];
+        placedCount = 0;
+        Select(-1);
+    }
+
+    // Belirme yayı (ease-out-back) ve ölçek / dönüş uygulaması
+    func ApplyTransform(p)
+    {
+        var k = p.pop >= 1.0 ? 1.0 : 1.0 + 2.2 * MathPow(p.pop - 1.0, 3.0) + 1.2 * MathPow(p.pop - 1.0, 2.0);
+        var s = p.base * p.scale * MathMax(0.01, k);
+        EntitySetScale(p.e, s, s, s);
+        EntitySetRotation(p.e, 0, p.yaw, 0);
+    }
+
+    func UpdateRing()
+    {
+        if (ring < 0) { return; }
+        EntitySetActive(ring, sel >= 0);
+        if (sel < 0) { return; }
+        var b = EntityGetBounds(placed[sel].e, true);
+        var pos = EntityGetWorldPosition(placed[sel].e);
+        if (b == null) { EntitySetActive(ring, false); return; }
+        var r = MathMax(b.size.x, b.size.z) * 0.56 + 0.04;
+        EntitySetPosition(ring, b.center.x, pos.y + 0.012, b.center.z);
+        EntitySetScale(ring, r, 1, r);
+        var a = 0.75 + MathSin(clock * 4.0) * 0.2;
+        EntitySetColor(ring, {r: 0.25, g: 0.7, b: 1.0, a: a});
+    }
+
+    func Instruction()
+    {
+        var state = session >= 0 ? GetScriptField(session, "trackingState") : "Tracking";
+        var planes = session >= 0 ? GetScriptField(session, "planeCount") : 0;
+        if (state == "Initializing") { return "STARTING THE AR SESSION..."; }
+        if (state == "Limited") { return "TRACKING LIMITED  -  MOVE THE DEVICE MORE SLOWLY"; }
+        if (planes == 0) { return "MOVE YOUR DEVICE SLOWLY TO FIND SURFACES"; }
+        if (dragging) { return "DRAG ALONG THE SURFACE  -  RELEASE TO DROP"; }
+        if (sel >= 0) { return "DRAG TO MOVE     WHEEL TO RESIZE     SHIFT + WHEEL TO ROTATE     DEL TO REMOVE"; }
+        if (placed.Count == 0) { return "TAP A SURFACE TO PLACE THE " + StringToUpper(selectedItem); }
+        return "TAP A SURFACE TO PLACE     TAP AN OBJECT TO SELECT IT";
+    }
+
+    func UpdateUI()
+    {
+        var state = session >= 0 ? GetScriptField(session, "trackingState") : "Tracking";
+        var planes = session >= 0 ? GetScriptField(session, "planeCount") : 0;
+        UISetText("InstructionText", Instruction());
+        var scanning = state != "Tracking" || planes == 0;
+        UISetVisible("ScanIcon", scanning);
+        if (scanning) { UISetPosition("ScanIcon", -560 + MathSin(clock * 2.4) * 18.0, -70); UISetRotation("ScanIcon", MathSin(clock * 2.4) * 10.0); }
+        UISetText("StatusText", "AR SESSION  " + StringToUpper(state) + "     PLANES  " + planes + "     OBJECTS  " + placed.Count);
+        if (state == "Tracking") { UISetColor("StatusDot", 0.25, 0.9, 0.45, 1); }
+        else { UISetColor("StatusDot", 1.0, 0.72, 0.15, 1); }
+        var show = session >= 0 && GetScriptField(session, "showPlanes") == true;
+        UISetText("Planes", show ? "PLANES  ON" : "PLANES  OFF");
+    }
+
+    func Update(dt)
+    {
+        clock += dt;
+        foreach (var ev in UIGetEvents())
+        {
+            if (ev.type != "Click") { continue; }
+            var n = ev.name;
+            if (StringStartsWith(n, "Item ")) { SelectItem(StringRemovePrefix(n, "Item ")); }
+            else if (n == "Delete") { Remove(sel); }
+            else if (n == "Clear") { ClearAll(); }
+            else if (n == "Planes" && session >= 0) { InvokeMethod(session, "SetShowPlanes", GetScriptField(session, "showPlanes") != true); }
+            else if (n == "Reset")
+            {
+                ClearAll();
+                if (session >= 0) { InvokeMethod(session, "ResetSession"); }
+            }
+        }
+        // Klavye kısayolları: 1-6 katalog, Delete sil
+        for (var i = 0; i < items.Count && i < 6; i++) { if (IsKeyDown("" + (i + 1))) { SelectItem(items[i]); } }
+        if (IsKeyDown("Delete")) { Remove(sel); }
+
+        var overUI = UIIsPointerOver();
+        var ray = MouseRay();
+        // Dokunma: önce yerleştirilmiş nesne (seç + sürüklemeye başla), yoksa düzleme yerleştir
+        if (IsMouseButtonDown(0) && !overUI)
+        {
+            var pick = PickPlaced(ray);
+            if (pick >= 0)
+            {
+                Select(pick);
+                var pp = EntityGetWorldPosition(placed[pick].e);
+                var gh = PlaneAtHeight(ray, pp.y);
+                dragOffset = gh == null ? {x: 0.0, z: 0.0} : {x: pp.x - gh.x, z: pp.z - gh.z};
+                dragging = true;
+            }
+            else
+            {
+                var hit = PlaneHit(ray);
+                if (hit != null) { Place(hit); }
+                else { Select(-1); }
+            }
+        }
+        if (!IsMouseButtonPressed(0)) { dragging = false; }
+        if (dragging && sel >= 0)
+        {
+            var p = placed[sel];
+            var cur = EntityGetWorldPosition(p.e);
+            var g = PlaneAtHeight(ray, cur.y);
+            if (g != null)
+            {
+                var nx = g.x + dragOffset.x;
+                var nz = g.z + dragOffset.z;
+                var pb = session >= 0 ? InvokeMethod(session, "PlaneBounds", p.key) : null;
+                if (pb != null) { nx = MathClamp(nx, pb.minX, pb.maxX); nz = MathClamp(nz, pb.minZ, pb.maxZ); }
+                EntitySetWorldPosition(p.e, nx, cur.y, nz);
+            }
+        }
+        // Tekerlek: boyut, Shift + tekerlek: dönüş
+        var wheel = overUI ? 0.0 : GetMouseScrollDelta();
+        if (sel >= 0 && wheel != 0.0)
+        {
+            if (IsKeyPressed("Shift")) { placed[sel].yaw = MathNormalizeAngle(placed[sel].yaw + wheel * 15.0); }
+            else { placed[sel].scale = MathClamp(placed[sel].scale * (1.0 + wheel * 0.08), minScale, maxScale); }
+        }
+        foreach (var pl in placed)
+        {
+            if (pl.pop < 1.0) { pl.pop = MathMin(1.0, pl.pop + dt / 0.38); }
+            ApplyTransform(pl);
+        }
+        // Yerleştirme göstergesi: imlecin altındaki düzlemde, nesne sürüklenmiyorsa
+        if (reticle >= 0)
+        {
+            // İmleç yerleştirilmiş bir nesnenin üstündeyse dokunuş onu seçer: gösterge gizlenir
+            var rh = (!overUI && !dragging && PickPlaced(ray) < 0) ? PlaneHit(ray) : null;
+            EntitySetActive(reticle, rh != null);
+            if (rh != null)
+            {
+                EntitySetPosition(reticle, rh.point.x, rh.y + 0.009, rh.point.z);
+                EntitySetRotation(reticle, 0, clock * 25.0, 0);
+                var rs = 0.11 + MathSin(clock * 3.0) * 0.006;
+                EntitySetScale(reticle, rs, 1, rs);
+            }
+        }
+        UpdateRing();
+        UpdateUI();
+    }
+
+    // Işının y yüksekliğindeki yatay düzlemle kesişimi
+    func PlaneAtHeight(ray, y)
+    {
+        if (ray == null || MathAbs(ray.direction.y) < 0.00001) { return null; }
+        var t = (y - ray.origin.y) / ray.direction.y;
+        if (t <= 0.0) { return null; }
+        return {x: ray.origin.x + ray.direction.x * t, z: ray.origin.z + ray.direction.z * t};
+    }
+}

@@ -1,5 +1,5 @@
 #include "Material.h"
-#include "Core/Time/TimeManager.h"
+#include "Renderer3D.h"
 
 namespace Conqueror
 {
@@ -10,20 +10,31 @@ namespace Conqueror
 
     void Material::CreateDefaultTextures()
     {
-        // 1x1 beyaz texture (default albedo, metallic, roughness, AO için)
-        uint32_t whiteData = 0xFFFFFFFF;
-        m_WhiteTexture = Texture2D::Create(1, 1);
-        m_WhiteTexture->SetData(&whiteData, sizeof(uint32_t));
+        // Varsayılan 1x1 dokular TÜM materyaller arasında paylaşılır. Eskiden her
+        // Material 3 GPU dokusu oluşturuyordu; sahne her karede geçici Material
+        // ürettiği için bu, kare başına yüzlerce doku tahsisi demekti.
+        // Bilinçli olarak yok edilmez: statik yıkıcılar GL bağlamı kapandıktan
+        // sonra çalışır ve glDeleteTextures çağrısı çökmeye yol açardı.
+        struct Defaults { std::shared_ptr<Texture2D> White, Normal, Black; };
+        static Defaults* s_Defaults = nullptr;
+        if (!s_Defaults)
+        {
+            s_Defaults = new Defaults();
+            uint32_t whiteData = 0xFFFFFFFF;
+            s_Defaults->White = Texture2D::Create(1, 1);
+            s_Defaults->White->SetData(&whiteData, sizeof(uint32_t));
 
-        // 1x1 normal map (128, 128, 255 = yukarı bakan normal)
-        uint32_t normalData = 0xFFFF8080; // RGBA: 128, 128, 255, 255
-        m_DefaultNormalMap = Texture2D::Create(1, 1);
-        m_DefaultNormalMap->SetData(&normalData, sizeof(uint32_t));
+            uint32_t normalData = 0xFFFF8080; // RGBA: 128, 128, 255, 255 (yukarı bakan normal)
+            s_Defaults->Normal = Texture2D::Create(1, 1);
+            s_Defaults->Normal->SetData(&normalData, sizeof(uint32_t));
 
-        // 1x1 siyah texture (emission default)
-        uint32_t blackData = 0xFF000000;
-        m_BlackTexture = Texture2D::Create(1, 1);
-        m_BlackTexture->SetData(&blackData, sizeof(uint32_t));
+            uint32_t blackData = 0xFF000000;
+            s_Defaults->Black = Texture2D::Create(1, 1);
+            s_Defaults->Black->SetData(&blackData, sizeof(uint32_t));
+        }
+        m_WhiteTexture = s_Defaults->White;
+        m_DefaultNormalMap = s_Defaults->Normal;
+        m_BlackTexture = s_Defaults->Black;
     }
 
     void Material::Bind(std::shared_ptr<Shader> shader) const
@@ -39,6 +50,20 @@ namespace Conqueror
         // Emission
         shader->SetFloat3("u_Material.EmissionColor", EmissionColor);
         shader->SetFloat("u_Material.EmissionStrength", EmissionStrength);
+
+        // UV tiling/offset + render modu
+        shader->SetFloat2("u_Material.Tiling", Tiling);
+        shader->SetFloat2("u_Material.Offset", Offset);
+        shader->SetInt("u_WorldAligned", WorldAligned ? (AlignToObject ? 2 : 1) : 0);
+        shader->SetInt("u_Material.ShadingModel", (int)Shading);
+        shader->SetFloat3("u_Material.SubsurfaceColor", SubsurfaceColor);
+        shader->SetFloat("u_Material.SubsurfaceAmount", SubsurfaceAmount);
+        shader->SetInt("u_RenderMode", (int)Rendering);
+        shader->SetFloat("u_AlphaClip", AlphaClip);
+        shader->SetFloat("u_Opacity", Opacity);
+        shader->SetInt("u_MetallicChannel", MetallicChannel);
+        shader->SetInt("u_RoughnessChannel", RoughnessChannel);
+        shader->SetInt("u_MapsScaleFactors", MapsScaleFactors ? 1 : 0);
 
         // ── Texture'ları bind et ───────────────────────────────────────
 
@@ -162,8 +187,11 @@ namespace Conqueror
             }
         }
         if (needsTime)
-            shader->SetFloat("u_Time", TimeManager::GetTime());
+            shader->SetFloat("u_Time", Renderer3D::GetFrameTime());
 
+        int textureSlot = 0;
+        constexpr int kFirstGraphTextureSlot = 8;   // 8..11 (12+ renderer'a ayrılmış)
+        constexpr int kMaxGraphTextures = 4;
         for (const auto& node : GraphNodes)
         {
             std::string idStr = std::to_string(node.ID);
@@ -183,10 +211,11 @@ namespace Conqueror
                     break;
                 case ShaderGraphNodeType::TextureSample:
                 case ShaderGraphNodeType::NormalMap:
-                    if (node.TextureRef)
+                    if (node.TextureRef && textureSlot < kMaxGraphTextures)
                     {
-                        node.TextureRef->Bind(8);
-                        shader->SetInt("u_Node" + idStr + "_Tex", 8);
+                        int slot = kFirstGraphTextureSlot + textureSlot++;
+                        node.TextureRef->Bind(slot);
+                        shader->SetInt("u_Node" + idStr + "_Tex", slot);
                     }
                     break;
                 default:

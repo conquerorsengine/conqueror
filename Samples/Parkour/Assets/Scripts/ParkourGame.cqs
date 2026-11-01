@@ -1,0 +1,989 @@
+using nativebridge;
+
+// Conqueror's Engine — Parkur örneği: oyun akışı.
+// Başlık ekranı (yörüngede dönen kamera), geri sayım, zamanlayıcı, sıralı kontrol noktaları ve ara süreler,
+// düşünce karartmalı yeniden doğma, duraklatma menüsü (fare hassasiyeti / görüş alanı), yavaş çekimli bitiş,
+// madalyalar, kalıcı en iyi süre. Testler için otopilot parkuru baştan sona koşar.
+script ParkourGame : ConquerorScript
+{
+    [Header("Seviye")]
+    [Tooltip("Kayıt anahtarı (en iyi süre, madalya, kilit)")]
+    public string levelId = "skyline-4";
+    public string levelName = "SKYLINE RUN";
+    public string category = "SKYLINE";
+    [Tooltip("Bitişte NEXT LEVEL ile açılan sahne adı (Assets/Scenes/<ad>.cqscene); boşsa son seviye")]
+    public string nextLevel = "";
+    public string menuScene = "Assets/Scenes/Menu.cqscene";
+    [Tooltip("Parkurun -Z yönündeki uzunluğu (başlık kamerası)")]
+    public float courseLength = 220;
+    [Tooltip("Otopilot rotası: adımlar ';' ile, alanlar ',' ile (boşsa yerleşik rota)")]
+    public string routeData = "";
+    [Tooltip("İpuçları: 'z0,z1,metin[,duvar metni]' kayıtları '|' ile (boşsa yerleşik ipuçları)")]
+    public string hintData = "";
+
+    [Header("Madalya süreleri (s)")]
+    public float goldTime = 26;
+    public float silverTime = 34;
+    public float bronzeTime = 48;
+
+    [Header("Kurallar")]
+    [Tooltip("Son kontrol noktasının bu kadar altına düşen oyuncu oraya geri döner (başlangıçta mutlak yükseklik)")]
+    public float killHeight = -16;
+
+    [Header("Test")]
+    [Tooltip("Başlık ekranını atlayıp koşuyu hemen başlatır")]
+    public bool autoStart = false;
+    [Tooltip("Oyuncuyu otopilotla bitişe kadar koşturur (otomatik testler)")]
+    public bool autopilot = false;
+    [Tooltip("Otopilotun her karesini günlüğe yazar")]
+    public bool traceBot = false;
+
+    [Header("Durum")]
+    // 0 başlık, 1 geri sayım, 2 koşu, 3 duraklatma, 4 bitiş (yavaş çekim), 5 bitiş ekranı, 6 yeniden doğma
+    public int state = 0;
+    public float runTime = 0;
+    public int checkpoint = 0;
+    public int falls = 0;
+    public float best = 0;
+    public bool finishedRun = false;
+    public float lastTime = 0;
+    public int routeIndex = 0;
+
+    // ---------------------------------------------------------------- Varlıklar
+    private int player = -1;
+    private int pcam = -1;
+    private int tcam = -1;
+    private int hud = -1;
+    private int titleUI = -1;
+    private int pauseUI = -1;
+    private int finUI = -1;
+    private int fade = -1;
+    private int timerText = -1;
+    private int speedText = -1;
+    private int cpText = -1;
+    private int hintText = -1;
+    private int popupText = -1;
+    private int popupSub = -1;
+    private int countText = -1;
+    private var gates = [];
+
+    // ---------------------------------------------------------------- Akış
+    private var spawn = null;
+    private var startSpawn = null;
+    private float stateTime = 0;
+    private int countStep = -1;
+    private float goTime = -1;
+    private float titleAngle = 0.6;
+    private float fadeAlpha = 1;
+    private float fadeTarget = 0;
+    private float fadeSpeed = 2.5;
+    private float popupTime = -1;
+    private int pausedFrom = 2;
+    private var menuButtons = [];
+    private int menuIndex = 0;
+    private var padPrev = {};
+    private bool fallSound = false;
+    private bool respawnMoved = false;
+    private float musicVol = 0.6;
+    private float hintAlpha = 0;
+    private var hintShown = "";
+    private bool newBest = false;
+    private bool runValid = true;   // otopilot / hata ayıklama koşuları rekor sayılmaz
+    private var splits = [];
+    private var bestSplits = [];
+    private int cpCount = 3;
+    private float sensitivity = 0.12;
+    private float fovPref = 85;
+
+    // ---------------------------------------------------------------- Otopilot
+    private var route = [];
+    private float debugJumpZ = -99999;   // kapalı (parkur -Z yönünde ilerler)
+    private var routeCheckpoint = [];
+    private var hints = [];
+    private bool botJumped = false;
+    private float botTimer = 0;
+
+    // ================================================================ Yaşam döngüsü
+    func Start()
+    {
+        player = FindEntity("Player");
+        pcam = FindEntity("PlayerCamera");
+        tcam = FindEntity("TitleCamera");
+        hud = FindEntity("HudRoot");
+        titleUI = FindEntity("TitleUI");
+        pauseUI = FindEntity("PauseUI");
+        finUI = FindEntity("FinishUI");
+        fade = FindEntity("Fade");
+        timerText = FindEntity("TimerText");
+        speedText = FindEntity("SpeedText");
+        cpText = FindEntity("CheckpointText");
+        hintText = FindEntity("HintText");
+        popupText = FindEntity("PopupText");
+        popupSub = FindEntity("PopupSub");
+        countText = FindEntity("CountdownText");
+
+        gates = [];
+        var gateNames = [];
+        for (var gi = 1; FindEntity("Checkpoint" + gi) != null; gi++) { gateNames.Add("Checkpoint" + gi); }
+        cpCount = gateNames.Count;
+        gateNames.Add("FinishGate");
+        foreach (var n in gateNames)
+        {
+            var e = FindEntity(n);
+            var p = EntityGetPosition(e);
+            var s = EntityGetScale(e);
+            gates.Add({id: e, x: p.x, y: p.y, z: p.z, w: s.x});
+        }
+        startSpawn = {x: 0, y: 1.0, z: 4.5, yaw: 0};
+        spawn = startSpawn;
+
+        best = PrefsGetFloat(Key("Best"), 0);
+        bestSplits = [];
+        for (var i = 0; i < cpCount; i++) { bestSplits.Add(PrefsGetFloat(Key("Split" + (i + 1)), 0)); }
+        UISetText("TitleSub", category + "  -  " + levelName);
+        sensitivity = PrefsGetFloat("Parkour.Sensitivity", 0.12);
+        fovPref = PrefsGetFloat("Parkour.FOV", 85);
+        SetScriptField(player, "sensitivity", sensitivity);
+        SetScriptField(player, "fov", fovPref);
+        UISetValue("SensSlider", sensitivity);
+        UISetValue("FovSlider", fovPref);
+        UpdateSettingLabels();
+        UISetText(countText, "");
+        UISetText(popupText, "");
+        UISetText(popupSub, "");
+        BuildRoute();
+        hints = [];
+        foreach (var rec in StringSplit(hintData, "|"))
+        {
+            var hf = StringSplit(rec, ",");
+            if (hf.Count >= 3) { hints.Add({z0: ParseFloat(hf[0]), z1: ParseFloat(hf[1]), text: hf[2], wall: hf.Count > 3 ? hf[3] : ""}); }
+        }
+        EnterTitle();
+        fadeAlpha = 1;      // açılışta siyahtan aç
+        fadeTarget = 0;
+        fadeSpeed = 1.2;
+        if (autoStart) { BeginRun(); }
+    }
+
+    // Seviyeye özel kayıt anahtarı
+    func Key(name) { return "Parkour." + levelId + "." + name; }
+
+    func Update(dt)
+    {
+        var udt = GetUnscaledDeltaTime();
+        if (udt > 0.1) { udt = 0.1; }
+        if (state == 0) { UpdateTitle(udt); }
+        else if (state == 1) { UpdateCountdown(udt); }
+        else if (state == 2) { UpdateRun(dt, udt); }
+        else if (state == 3) { UpdatePaused(udt); }
+        else if (state == 4) { UpdateFinishSlowmo(dt, udt); }
+        else if (state == 5) { UpdateFinishScreen(udt); }
+        else if (state == 6) { UpdateRespawn(dt, udt); }
+        UpdateEffects(udt);
+    }
+
+    // ================================================================ Yardımcılar
+    func FormatTime(t)
+    {
+        if (t < 0) { t = 0; }
+        var cs = int(MathFloor(t * 100));
+        var m = int(cs / 6000);
+        var s = int((cs - m * 6000) / 100);
+        var c = cs - m * 6000 - s * 100;
+        return $"{m}:{s:D2}.{c:D2}";
+    }
+
+    func FormatDelta(d)
+    {
+        var sign = d < 0 ? "-" : "+";
+        var a = MathAbs(d);
+        var cs = int(MathFloor(a * 100));
+        var s = int(cs / 100);
+        var c = cs - s * 100;
+        return $"{sign}{s}.{c:D2}";
+    }
+
+    func Sfx(path, vol)
+    {
+        AudioPlayOneShot(path, vol, 1.0, 0, "SFX");
+    }
+
+    func Pad(b) { return IsGamepadConnected(0) && IsGamepadButtonPressed(0, b); }
+
+    func PadDown(b)
+    {
+        var now = Pad(b);
+        var k = "b" + b;
+        var was = padPrev.ContainsKey(k) && padPrev[k];
+        padPrev[k] = now;
+        return now && !was;
+    }
+
+    func ConfirmPressed() { return IsKeyDown("Enter") || IsKeyDown("Space") || PadDown(0); }
+    func PausePressed() { return IsKeyDown("Escape") || IsKeyDown("P") || PadDown(7); }
+
+    func PlayerPos() { return EntityGetPosition(player); }
+
+    func MovePlayerTo(sp)
+    {
+        SendMessage(player, "Respawn", sp.x, sp.y, sp.z, sp.yaw);
+    }
+
+    // ================================================================ Başlık
+    func EnterTitle()
+    {
+        state = 0;
+        stateTime = 0;
+        SetTimeScale(1);
+        UISetVisible(titleUI, true);
+        UISetVisible(hud, false);
+        UISetVisible(pauseUI, false);
+        UISetVisible(finUI, false);
+        UISetText(countText, "");
+        CameraSetPrimary(tcam);
+        SetScriptField(player, "mode", 0);
+        SetScriptField(player, "autopilot", false);
+        MovePlayerTo(startSpawn);
+        SetCursorMode(0);
+        AudioSetVolume(musicVol);
+        UISetText("TitleBest", best > 0 ? "BEST  " + FormatTime(best) : "");
+        menuButtons = ["StartBtn"];
+        menuIndex = 0;
+    }
+
+    func UpdateTitle(udt)
+    {
+        stateTime += udt;
+        // Parkurun yanında, gökdelenlerin arasındaki boş koridorda yavaşça gidip gelen kamera
+        titleAngle += udt * 0.03;
+        var u = 0.5 - 0.5 * MathCos(titleAngle);
+        var pz = 14 - u * (courseLength - 30);
+        var px = 21 + MathSin(titleAngle * 1.3) * 3;
+        var py = 17 + MathSin(titleAngle * 0.9) * 3 + u * 10;
+        var tz = pz - 36;
+        var tx = 1.0;
+        var ty = MathClamp(-tz * 0.055, 0, courseLength * 0.055) + 1.5;
+        var dx = tx - px;
+        var dy = ty - py;
+        var dz = tz - pz;
+        var h = MathSqrt(dx * dx + dz * dz);
+        EntitySetPosition(tcam, px, py, pz);
+        EntitySetRotation(tcam, MathAtan2(dy, h) * 57.29578, MathAtan2(-dx, -dz) * 57.29578, 0);
+
+        var blink = 0.55 + 0.45 * MathSin(stateTime * 3.2);
+        UISetTextColor("PressStart", 0.95, 0.97, 1.0, blink);
+        var pulse = 1.0 + 0.012 * MathSin(stateTime * 1.6);
+        UISetScale("TitleText", pulse, pulse);
+        HighlightMenu();
+        if (ConfirmPressed() || UIWasClicked("StartBtn")) { BeginRun(); return; }
+        if (IsKeyDown("Escape") || PadDown(1)) { LoadScene(menuScene); }
+    }
+
+    // ================================================================ Koşu başlangıcı
+    func BeginRun()
+    {
+        UISetVisible(titleUI, false);
+        UISetVisible(finUI, false);
+        UISetVisible(pauseUI, false);
+        UISetVisible(hud, true);
+        SetTimeScale(1);
+        CameraSetPrimary(pcam);
+        MovePlayerTo(startSpawn);
+        SendMessage(player, "ResetStats");
+        SetScriptField(player, "mode", 1);
+        SetScriptField(player, "autopilot", autopilot);
+        SetCursorMode(2);
+        spawn = startSpawn;
+        runTime = 0;
+        checkpoint = 0;
+        falls = 0;
+        finishedRun = false;
+        newBest = false;
+        runValid = !autopilot;
+        splits = [];
+        routeIndex = 0;
+        botJumped = false;
+        fallSound = false;
+        state = 1;
+        stateTime = 0;
+        countStep = -1;
+        goTime = -1;
+        popupTime = -1;
+        fadeAlpha = 1;
+        fadeTarget = 0;
+        fadeSpeed = 2.2;
+        AudioSetVolume(musicVol);
+        UpdateHud(0);
+    }
+
+    func UpdateCountdown(udt)
+    {
+        stateTime += udt;
+        var step = int(MathFloor(stateTime / 0.7));
+        if (step != countStep)
+        {
+            countStep = step;
+            if (step <= 2)
+            {
+                UISetText(countText, "" + (3 - step));
+                UISetTextColor(countText, 0.95, 0.97, 1.0, 1);
+                Sfx("Assets/Audio/countdown.wav", 0.7);
+            }
+            else
+            {
+                UISetText(countText, "GO!");
+                UISetTextColor(countText, 1.0, 0.82, 0.35, 1);
+                Sfx("Assets/Audio/go.wav", 0.8);
+                goTime = 0;
+                state = 2;
+                stateTime = 0;
+                SetScriptField(player, "mode", 2);
+                return;
+            }
+        }
+        var f = MathClamp((stateTime - step * 0.7) / 0.25, 0, 1);
+        var sc = 1.0 + 0.6 * (1 - f) * (1 - f);
+        UISetScale(countText, sc, sc);
+        if (PausePressed()) { Pause(); }
+    }
+
+    // ================================================================ Koşu
+    func UpdateRun(dt, udt)
+    {
+        runTime += dt;
+        stateTime += udt;
+        if (autopilot) { UpdateAutopilot(dt); }
+        var p = PlayerPos();
+        CheckGates(p);
+        if (state != 2) { return; }
+        if (!fallSound && p.y < spawn.y - 8)
+        {
+            fallSound = true;
+            Sfx("Assets/Audio/fall.wav", 0.7);
+        }
+        if (p.y < killHeight + spawn.y - startSpawn.y)
+        {
+            BeginRespawn();
+            return;
+        }
+        UpdateHud(dt);
+        UpdateHint(p, udt);
+        if (PausePressed()) { Pause(); }
+    }
+
+    func Passed(p, g)
+    {
+        return p.z <= g.z && p.z > g.z - 8 && MathAbs(p.x - g.x) <= g.w / 2.0 + 1.0 && p.y > g.y - 2.5 && p.y < g.y + 7;
+    }
+
+    func CheckGates(p)
+    {
+        for (var i = checkpoint; i < cpCount; i++)
+        {
+            if (Passed(p, gates[i])) { ReachCheckpoint(i + 1); }
+        }
+        if (Passed(p, gates[cpCount])) { Finish(); }
+    }
+
+    func ReachCheckpoint(n)
+    {
+        checkpoint = n;
+        var g = gates[n - 1];
+        spawn = {x: g.x, y: g.y - 1.0 + 1.0, z: g.z - 1.5, yaw: 0};
+        splits.Add(runTime);
+        var sub = FormatTime(runTime);
+        var subColor = {r: 1.0, g: 0.82, b: 0.35};
+        var bs = bestSplits[n - 1];
+        if (bs > 0)
+        {
+            var d = runTime - bs;
+            sub = sub + "   " + FormatDelta(d);
+            subColor = d <= 0 ? {r: 0.45, g: 1.0, b: 0.5} : {r: 1.0, g: 0.45, b: 0.4};
+        }
+        Popup("CHECKPOINT " + n, sub, subColor);
+        Sfx("Assets/Audio/checkpoint.wav", 0.8);
+        ParticleEmit(EntityGetName(g.id) + " FX", 60);
+        if (autopilot) { routeIndex = int(MathMax(routeIndex, routeCheckpoint[n])); }
+    }
+
+    func Popup(text, sub, color)
+    {
+        UISetText(popupText, text);
+        UISetText(popupSub, sub);
+        UISetTextColor(popupSub, color.r, color.g, color.b, 1);
+        popupTime = 0;
+    }
+
+    func UpdateHud(dt)
+    {
+        UISetText(timerText, FormatTime(runTime));
+        UISetText("BestText", best > 0 ? "BEST  " + FormatTime(best) : "");
+        UISetText(cpText, checkpoint + " / " + cpCount);
+        UISetText("FallsText", falls > 0 ? "FALLS  " + falls : "");
+        var sp = GetScriptField(player, "speed");
+        UISetText(speedText, "" + int(MathFloor(sp * 3.6 + 0.5)));
+        var hot = MathClamp((sp - 9) / 5, 0, 1);
+        UISetTextColor(speedText, 0.95, 0.97 - hot * 0.2, 1.0 - hot * 0.65, 1);
+    }
+
+    func HintFor(p)
+    {
+        var z = p.z;
+        var wall = GetScriptField(player, "wallRunning");
+        if (hintData != "")
+        {
+            foreach (var h in hints)
+            {
+                if (z <= h.z0 && z > h.z1) { return wall && h.wall != "" ? h.wall : h.text; }
+            }
+            return "";
+        }
+        if (z > -6) { return "SPACE TO JUMP   /   HOLD SHIFT TO SPRINT"; }
+        if (z > -45) { return ""; }
+        if (z > -57) { return "JUMP AT THE WALL AND HOLD W TO WALL-RUN"; }
+        if (z > -71) { return wall ? "PRESS SPACE TO JUMP OFF THE WALL" : ""; }
+        if (z > -80) { return "WAIT FOR THE PLATFORM, THEN JUMP"; }
+        if (z > -109) { return ""; }
+        if (z > -121) { return "JUMP THE HURDLES   /   CTRL TO SLIDE UNDER THE TUNNEL"; }
+        if (z > -149) { return ""; }
+        if (z > -158) { return "STEP ON THE JUMP PAD"; }
+        if (z > -168) { return "WALL-RUN ON THE LEFT, THEN JUMP"; }
+        if (z > -183) { return wall ? "PRESS SPACE TO JUMP OFF THE WALL" : ""; }
+        if (z > -192) { return "DOUBLE JUMP: PRESS SPACE AGAIN IN THE AIR"; }
+        return "";
+    }
+
+    func UpdateHint(p, udt)
+    {
+        // İpuçları yalnızca parkur ilk kez bitirilene kadar gösterilir
+        var h = best > 0 ? "" : HintFor(p);
+        if (h != "" && IsGamepadConnected(0))
+        {
+            h = StringReplace(h, "HOLD SHIFT", "PUSH THE STICK");
+            h = StringReplace(h, "SPACE", "A");
+            h = StringReplace(h, "CTRL", "B");
+            h = StringReplace(h, "HOLD W", "HOLD FORWARD");
+        }
+        if (h != hintShown)
+        {
+            hintAlpha = MathMax(0, hintAlpha - udt * 5);
+            if (hintAlpha <= 0)
+            {
+                hintShown = h;
+                UISetText(hintText, h);
+            }
+        }
+        else if (h != "") { hintAlpha = MathMin(1, hintAlpha + udt * 4); }
+        UISetTextColor(hintText, 1.0, 0.82, 0.35, hintAlpha);
+    }
+
+    // ================================================================ Düşme / yeniden doğma
+    func BeginRespawn()
+    {
+        state = 6;
+        stateTime = 0;
+        respawnMoved = false;
+        falls += 1;
+        SetScriptField(player, "mode", 1);
+        fadeTarget = 1;
+        fadeSpeed = 4.5;
+    }
+
+    func UpdateRespawn(dt, udt)
+    {
+        runTime += dt;      // düşmek zaman kaybettirir
+        stateTime += udt;
+        if (!respawnMoved && fadeAlpha >= 0.99)
+        {
+            MovePlayerTo(spawn);
+            respawnMoved = true;
+            fallSound = false;
+            stateTime = 0;
+            fadeTarget = 0;
+            fadeSpeed = 3.0;
+            if (autopilot)
+            {
+                routeIndex = routeCheckpoint[checkpoint];
+                botJumped = false;
+                botTimer = 0;
+            }
+        }
+        if (respawnMoved && stateTime > 0.12)
+        {
+            state = 2;
+            SetScriptField(player, "mode", 2);
+        }
+        UpdateHud(dt);
+    }
+
+    // ================================================================ Duraklatma
+    func Pause()
+    {
+        pausedFrom = state;
+        state = 3;
+        SetTimeScale(0);
+        UISetVisible(pauseUI, true);
+        UISetText("CheckpointBtn", checkpoint > 0 ? "LAST CHECKPOINT" : "BACK TO START");
+        SetCursorMode(0);
+        menuButtons = ["ResumeBtn", "CheckpointBtn", "RestartBtn", "MenuBtn"];
+        menuIndex = 0;
+        AudioSetVolume(musicVol * 0.35);
+        Sfx("Assets/Audio/ui_select.wav", 0.5);
+    }
+
+    func Resume()
+    {
+        state = pausedFrom;
+        SetTimeScale(1);
+        UISetVisible(pauseUI, false);
+        SetCursorMode(2);
+        SendMessage(player, "SkipMouse");
+        AudioSetVolume(musicVol);
+    }
+
+    func UpdatePaused(udt)
+    {
+        HighlightMenu();
+        var choice = MenuInput();
+        if (PausePressed() || UIWasClicked("ResumeBtn") || choice == "ResumeBtn") { Resume(); return; }
+        if (UIWasClicked("CheckpointBtn") || choice == "CheckpointBtn")
+        {
+            Resume();
+            BeginRespawn();
+            falls -= 1;     // menüden dönüş düşme sayılmaz
+            return;
+        }
+        if (UIWasClicked("RestartBtn") || choice == "RestartBtn") { BeginRun(); return; }
+        if (UIWasClicked("MenuBtn") || choice == "MenuBtn") { LoadScene(menuScene); return; }
+        if (UIValueChanged("SensSlider"))
+        {
+            sensitivity = UIGetValue("SensSlider");
+            SetScriptField(player, "sensitivity", sensitivity);
+            PrefsSetFloat("Parkour.Sensitivity", sensitivity);
+            UpdateSettingLabels();
+        }
+        if (UIValueChanged("FovSlider"))
+        {
+            fovPref = UIGetValue("FovSlider");
+            SetScriptField(player, "fov", fovPref);
+            PrefsSetFloat("Parkour.FOV", fovPref);
+            UpdateSettingLabels();
+        }
+    }
+
+    func UpdateSettingLabels()
+    {
+        UISetText("SensValue", "" + int(MathFloor(sensitivity * 100 + 0.5)));
+        UISetText("FovValue", "" + int(MathFloor(fovPref + 0.5)) + "°");
+    }
+
+    // Klavye / kol ile menü gezinme; seçilen düğmenin adını döndürür
+    func MenuInput()
+    {
+        if (menuButtons.Count == 0) { return ""; }
+        for (var i = 0; i < menuButtons.Count; i++)
+        {
+            if (UIIsHovered(menuButtons[i])) { menuIndex = i; }
+        }
+        if (IsKeyDown("Down") || IsKeyDown("S") || PadDown(13))
+        {
+            menuIndex = (menuIndex + 1) % menuButtons.Count;
+            Sfx("Assets/Audio/ui_move.wav", 0.4);
+        }
+        if (IsKeyDown("Up") || IsKeyDown("W") || PadDown(11))
+        {
+            menuIndex = (menuIndex + menuButtons.Count - 1) % menuButtons.Count;
+            Sfx("Assets/Audio/ui_move.wav", 0.4);
+        }
+        if (IsKeyDown("Enter") || PadDown(0))
+        {
+            Sfx("Assets/Audio/ui_select.wav", 0.5);
+            return menuButtons[menuIndex];
+        }
+        return "";
+    }
+
+    func HighlightMenu()
+    {
+        for (var i = 0; i < menuButtons.Count; i++)
+        {
+            if (i == menuIndex) { EntitySetColor(menuButtons[i], 0.95, 0.55, 0.18, 0.95); }
+            else { EntitySetColor(menuButtons[i], 0.08, 0.10, 0.20, 0.9); }
+        }
+    }
+
+    // ================================================================ Bitiş
+    func Finish()
+    {
+        state = 4;
+        stateTime = 0;
+        finishedRun = true;
+        lastTime = runTime;
+        // Denetim alınır: oyuncu kendi momentumuyla durur (yavaş çekimde platformdan koşup düşmesin)
+        SetScriptField(player, "mode", 3);
+        SetScriptField(player, "autopilot", false);
+        SetTimeScale(0.3);
+        Sfx("Assets/Audio/finish.wav", 0.9);
+        ConfettiBurst(220);
+        ParticleEmit("FinishGate FX", 80);
+        Popup("", "", {r: 1, g: 1, b: 1});
+        UISetText(hintText, "");
+        hintShown = "";
+        newBest = runValid && (best <= 0 || runTime < best);
+        if (newBest)
+        {
+            best = runTime;
+            PrefsSetFloat(Key("Best"), best);
+            for (var i = 0; i < splits.Count && i < cpCount; i++)
+            {
+                bestSplits[i] = splits[i];
+                PrefsSetFloat(Key("Split" + (i + 1)), splits[i]);
+            }
+        }
+        if (runValid)
+        {
+            // Seviye tamamlandı (sıradaki açılır) + en iyi madalya: 3 altın, 2 gümüş, 1 bronz
+            PrefsSetInt(Key("Done"), 1);
+            var rank = runTime <= goldTime ? 3 : (runTime <= silverTime ? 2 : (runTime <= bronzeTime ? 1 : 0));
+            if (rank > PrefsGetInt(Key("Medal"), 0)) { PrefsSetInt(Key("Medal"), rank); }
+            PrefsSave();
+        }
+        UpdateHud(0);
+    }
+
+    func UpdateFinishSlowmo(dt, udt)
+    {
+        stateTime += udt;
+        if (stateTime > 0.45 && stateTime - udt <= 0.45) { ConfettiBurst(180); }
+        if (stateTime >= 1.4) { ShowFinishScreen(); }
+    }
+
+    // Oyuncunun görüş alanında, önünde ve üstünde patlayan konfeti
+    func ConfettiBurst(count)
+    {
+        var p = PlayerPos();
+        var yaw = GetScriptField(player, "yaw") * 0.0174533;
+        var fx = -MathSin(yaw);
+        var fz = -MathCos(yaw);
+        ParticleEmitAt("FinishConfetti", p.x + fx * 7 - fz * 3, p.y + 3.5, p.z + fz * 7 + fx * 3, count / 2);
+        ParticleEmitAt("FinishConfetti", p.x + fx * 7 + fz * 3, p.y + 3.0, p.z + fz * 7 - fx * 3, count / 2);
+    }
+
+    func ShowFinishScreen()
+    {
+        state = 5;
+        stateTime = 0;
+        SetTimeScale(1);
+        SetCursorMode(0);
+        UISetVisible(hud, false);
+        UISetVisible(finUI, true);
+        UISetText("FinishTime", FormatTime(lastTime));
+        var medal = "NO MEDAL";
+        var mc = {r: 0.74, g: 0.78, b: 0.90};
+        var next = "";
+        if (lastTime <= goldTime) { medal = "GOLD MEDAL"; mc = {r: 1.0, g: 0.82, b: 0.3}; }
+        else if (lastTime <= silverTime) { medal = "SILVER MEDAL"; mc = {r: 0.82, g: 0.87, b: 0.97}; next = "GOLD UNDER " + FormatTime(goldTime); }
+        else if (lastTime <= bronzeTime) { medal = "BRONZE MEDAL"; mc = {r: 0.92, g: 0.58, b: 0.32}; next = "SILVER UNDER " + FormatTime(silverTime); }
+        else { next = "BRONZE UNDER " + FormatTime(bronzeTime); }
+        UISetText("FinishMedal", medal);
+        UISetTextColor("FinishMedal", mc.r, mc.g, mc.b, 1);
+        UISetText("FinishTitle", newBest ? "NEW RECORD!" : "FINISHED!");
+        var bestLine = newBest ? "PERSONAL BEST" : (best > 0 ? "BEST  " + FormatTime(best) + "   (" + FormatDelta(lastTime - best) + ")" : "");
+        if (!runValid) { bestLine = "AUTOPILOT RUN - NOT RECORDED"; }
+        if (next != "") { bestLine = bestLine + "     /     " + next; }
+        UISetText("FinishBest", bestLine);
+        var jumps = GetScriptField(player, "jumpCount");
+        var runs = GetScriptField(player, "wallRunCount");
+        var top = GetScriptField(player, "topSpeed");
+        UISetText("FinishStats", $"FALLS  {falls}      JUMPS  {jumps}      WALL RUNS  {runs}      TOP SPEED  {int(MathFloor(top * 3.6 + 0.5))} KM/H");
+        UISetVisible("NextBtn", nextLevel != "");
+        menuButtons = nextLevel != "" ? ["NextBtn", "AgainBtn", "FinMenuBtn"] : ["AgainBtn", "FinMenuBtn"];
+        menuIndex = 0;
+    }
+
+    func UpdateFinishScreen(udt)
+    {
+        stateTime += udt;
+        var f = MathClamp(stateTime / 0.35, 0, 1);
+        var sc = 1.0 + 0.25 * (1 - f) * (1 - f);
+        UISetScale("FinishTime", sc, sc);
+        HighlightMenu();
+        var choice = MenuInput();
+        if (nextLevel != "" && (UIWasClicked("NextBtn") || choice == "NextBtn")) { LoadScene("Assets/Scenes/" + nextLevel + ".cqscene"); return; }
+        if (UIWasClicked("AgainBtn") || choice == "AgainBtn") { BeginRun(); return; }
+        if (UIWasClicked("FinMenuBtn") || choice == "FinMenuBtn" || IsKeyDown("Escape")) { LoadScene(menuScene); return; }
+    }
+
+    // ================================================================ Efektler
+    func UpdateEffects(udt)
+    {
+        if (fadeAlpha < fadeTarget) { fadeAlpha = MathMin(fadeTarget, fadeAlpha + fadeSpeed * udt); }
+        else if (fadeAlpha > fadeTarget) { fadeAlpha = MathMax(fadeTarget, fadeAlpha - fadeSpeed * udt); }
+        EntitySetColor(fade, 0, 0, 0, fadeAlpha);
+
+        if (popupTime >= 0)
+        {
+            popupTime += udt;
+            var a = 1.0;
+            if (popupTime < 0.15) { a = popupTime / 0.15; }
+            else if (popupTime > 1.6) { a = MathMax(0, 1 - (popupTime - 1.6) / 0.4); }
+            var sc = popupTime < 0.2 ? 1.25 - 0.25 * (popupTime / 0.2) : 1.0;
+            UISetScale(popupText, sc, sc);
+            UISetTextColor(popupText, 0.95, 0.97, 1.0, a);
+            var sub = EntityGetColor(popupSub);
+            UISetTextColor(popupSub, sub.r, sub.g, sub.b, a);
+            if (popupTime > 2.0)
+            {
+                popupTime = -1;
+                UISetText(popupText, "");
+                UISetText(popupSub, "");
+            }
+        }
+
+        if (goTime >= 0)
+        {
+            goTime += udt;
+            var ga = MathMax(0, 1 - goTime / 0.6);
+            var gs = 1.0 + goTime * 0.8;
+            UISetScale(countText, gs, gs);
+            UISetTextColor(countText, 1.0, 0.82, 0.35, ga);
+            if (goTime > 0.6)
+            {
+                goTime = -1;
+                UISetText(countText, "");
+            }
+        }
+    }
+
+    // ================================================================ Otopilot (test / demo)
+    // Adımlar: [eylem, x, z, ...]
+    //   go     : (x, z) noktasına koş, z geçilince sonraki adım
+    //   jump   : z geçilince zıpla (havadaysa çift zıplama)
+    //   slide  : z geçilince kay
+    //   walk   : go gibi ama depar yok
+    //   stop   : (x, z) noktasına gidip dur
+    //   wait   : koşul sağlanana kadar bekle
+    //   leap   : hareketli platforma atla [leap, platform, jumpZ, landZ]
+    //   cp     : kontrol noktası işareti (yeniden doğunca buradan devam) [cp, index]
+    func BuildRoute()
+    {
+        if (routeData != "")
+        {
+            route = [];
+            foreach (var step in StringSplit(routeData, ";"))
+            {
+                var f = StringSplit(StringTrim(step), ",");
+                if (f.Count == 0 || f[0] == "") { continue; }
+                var item = [f[0]];
+                for (var k = 1; k < f.Count; k++)
+                {
+                    // Sayı değilse metin (platform adı, koşul)
+                    if (StringIsNumeric(StringReplace(StringReplace(f[k], "-", ""), ".", ""))) { item.Add(ParseFloat(f[k])); }
+                    else { item.Add(f[k]); }
+                }
+                route.Add(item);
+            }
+            IndexRouteCheckpoints();
+            return;
+        }
+        route = [
+            ["go", 0, -6.4], ["jump", 0, -6.4], ["go", 0, -15], ["jump", 2.5, -19.4], ["go", 4, -27],
+            ["jump", 2.6, -30.4], ["go", -1, -38.5], ["jump", -1, -41.4], ["go", 2.5, -50],
+            ["cp", 1],
+            ["go", 3.6, -53.5], ["jump", 3.6, -55.5], ["go", 3.9, -65.5], ["jump", 3.9, -65.5], ["go", 2, -74],
+            ["stop", 2, -76.6], ["wait", "m1"], ["leap", "Mover1", -78.6, -86],
+            ["wait", "m2"], ["leap", "Mover2", -87.6, -95],
+            ["wait", "m3low"], ["leap", "Mover3", -96.6, -104],
+            ["wait", "m3high"], ["go", 2, -105.6], ["jump", 2, -105.6], ["go", 2, -108.5], ["jump", 2, -108.5], ["go", 2, -112],
+            ["cp", 2],
+            ["go", 2, -120.4], ["jump", 2, -120.4], ["go", 2, -128.4], ["jump", 2, -128.4], ["go", 2, -137.4],
+            ["slide", 2, -137.4], ["go", 2, -150], ["walk", 2, -154], ["walk", 2, -163],
+            ["cp", 3],
+            ["go", -1.3, -165.5], ["go", -1.4, -166.4], ["jump", -1.4, -166.4], ["go", -1.9, -175.5], ["jump", -1.9, -175.5],
+            ["go", 0.5, -185], ["go", 0, -190.4], ["jump", 0, -190.4], ["go", 0, -194.5], ["jump", 0, -194.5],
+            ["go", 0, -200], ["go", 0, -204.4], ["jump", 0, -204.4], ["go", 0, -208], ["jump", 0, -208], ["go", 0, -219]
+        ];
+        IndexRouteCheckpoints();
+    }
+
+    // Kontrol noktası adımlarının indeksleri (yeniden doğunca otopilot buradan devam eder)
+    func IndexRouteCheckpoints()
+    {
+        routeCheckpoint = [];
+        for (var c = 0; c <= cpCount; c++) { routeCheckpoint.Add(0); }
+        for (var i = 0; i < route.Count; i++)
+        {
+            if (route[i][0] == "cp") { routeCheckpoint[int(route[i][1])] = i + 1; }
+        }
+    }
+
+    func MoverPredict(name, T)
+    {
+        var e = FindEntity(name);
+        var p = EntityGetPosition(e);
+        var t = GetScriptField(e, "time");
+        var a = GetScriptField(e, "amplitude");
+        var per = GetScriptField(e, "period");
+        var w = 6.2831853 / per;
+        var d = a * (MathSin((t + T) * w) - MathSin(t * w));
+        var axis = GetScriptField(e, "axis");
+        if (axis == "y") { return {x: p.x, y: p.y + d, z: p.z}; }
+        if (axis == "z") { return {x: p.x, y: p.y, z: p.z + d}; }
+        return {x: p.x + d, y: p.y, z: p.z};
+    }
+
+    func BotCondition(cond)
+    {
+        // "ad@x@dy": hareketli platform koşulu; x = yolun ekseni, dy = bölümün özgün parkura göre yükseklik farkı
+        // (eski rota: ad tek başına, x = 2, dy = 0)
+        var parts = StringSplit(cond, "@");
+        var name = parts[0];
+        var px = parts.Count > 1 ? ParseFloat(parts[1]) : 2.0;
+        var baseY = parts.Count > 2 ? ParseFloat(parts[2]) : 0.0;
+        if (name == "m1") { return MathAbs(MoverPredict("Mover1", 0.8).x - px) < 0.9; }
+        if (name == "m2")
+        {
+            var a = MoverPredict("Mover1", 0.6);
+            var b = MoverPredict("Mover2", 0.6);
+            return MathAbs(a.x - b.x) < 0.9;
+        }
+        if (name == "m3low")
+        {
+            var t3 = MoverPredict("Mover3", 0.6).y + 0.6;
+            var m2 = MoverPredict("Mover2", 0.5);
+            return t3 >= 2.0 + baseY && t3 <= 3.3 + baseY && MathAbs(m2.x - px) < 1.5;
+        }
+        if (name == "m3high")
+        {
+            var top = MoverPredict("Mover3", 0.25).y + 0.6;
+            return top >= 3.7 + baseY;
+        }
+        return true;
+    }
+
+    func BotSteer(p, tx, tz)
+    {
+        var dx = tx - p.x;
+        var dz = tz - p.z;
+        // Parkur -Z yönünde ilerler: geride kalan hedefe asla dönme
+        if (dz > -0.3) { return; }
+        SetScriptField(player, "yaw", MathAtan2(-dx, -dz) * 57.29578);
+        SetScriptField(player, "pitch", -8);
+    }
+
+    func UpdateAutopilot(dt)
+    {
+        if (routeIndex >= route.Count)
+        {
+            SetScriptField(player, "botMoveY", 0);
+            return;
+        }
+        var p = PlayerPos();
+        var s = route[routeIndex];
+        var act = s[0];
+        // Test kancası: belirli bir z'de bir kez zıpla (ör. pedin üstünde)
+        if (p.z <= debugJumpZ)
+        {
+            SetScriptField(player, "botJump", true);
+            debugJumpZ = -99999;
+        }
+        if (traceBot)
+        {
+            print($"BOT t={runTime:F2} r={routeIndex} {act} p=({p.x:F2},{p.y:F2},{p.z:F2}) g={GetScriptField(player, "grounded")} w={GetScriptField(player, "wallRunning")} sp={GetScriptField(player, "speed"):F1} end={GetScriptField(player, "wallEndReason")}");
+        }
+        SetScriptField(player, "botMoveX", 0);
+        SetScriptField(player, "botMoveY", 1);
+        SetScriptField(player, "botSprint", act != "walk");
+        if (act == "cp") { routeIndex += 1; return; }
+        if (act == "wait")
+        {
+            SetScriptField(player, "botMoveY", 0);
+            botTimer += dt;
+            // Bekleme sırasında platformun ortasında kal
+            if (BotCondition(s[1]) || botTimer > 12) { routeIndex += 1; botTimer = 0; botJumped = false; }
+            return;
+        }
+        if (act == "stop")
+        {
+            var ddx = s[1] - p.x;
+            var ddz = s[2] - p.z;
+            if (ddx * ddx + ddz * ddz < 0.25) { SetScriptField(player, "botMoveY", 0); routeIndex += 1; return; }
+            BotSteer(p, s[1], s[2]);
+            return;
+        }
+        if (act == "leap")
+        {
+            var mp = EntityGetPosition(FindEntity(s[1]));
+            BotSteer(p, mp.x, s[3]);
+            if (!botJumped && p.z <= s[2])
+            {
+                SetScriptField(player, "botJump", true);
+                botJumped = true;
+                botTimer = 0;
+            }
+            if (botJumped)
+            {
+                botTimer += dt;
+                var on = GetScriptField(player, "standingOn");
+                if (on >= 0 && EntityGetName(on) == s[1] && botTimer > 0.15)
+                {
+                    SetScriptField(player, "botMoveY", 0);
+                    routeIndex += 1;
+                    botJumped = false;
+                    botTimer = 0;
+                    return;
+                }
+                // Platformun üstüne gelince yavaşla
+                if (MathAbs(p.z - s[3]) < 1.2 && GetScriptField(player, "grounded")) { SetScriptField(player, "botMoveY", 0); }
+            }
+            return;
+        }
+        if (p.z <= s[2])
+        {
+            if (act == "jump") { SetScriptField(player, "botJump", true); }
+            if (act == "slide") { SetScriptField(player, "botSlide", true); }
+            routeIndex += 1;
+            // Bu karede bir sonraki hedefe yönel (geçilen noktaya bakılmaz)
+            if (routeIndex < route.Count)
+            {
+                var n = route[routeIndex];
+                if (n[0] == "go" || n[0] == "jump" || n[0] == "slide" || n[0] == "walk" || n[0] == "stop") { BotSteer(p, n[1], n[2]); }
+            }
+            return;
+        }
+        BotSteer(p, s[1], s[2]);
+    }
+
+    // ================================================================ Test kancaları
+    func DebugState()
+    {
+        var p = PlayerPos();
+        print($"PARKOUR state={state} cp={checkpoint} time={runTime:F2} falls={falls} route={routeIndex} pos=({p.x:F2},{p.y:F2},{p.z:F2}) confetti={ParticleGetCount("FinishConfetti")}");
+    }
+
+    func DebugTeleport(x, y, z)
+    {
+        runValid = false;
+        MovePlayerTo({x: x, y: y, z: z, yaw: 0});
+    }
+
+    func DebugStartRun()
+    {
+        BeginRun();
+    }
+
+    // Otopilotu rotanın belli bir adımından, verilen noktadan başlatır
+    func DebugJumpAt(z)
+    {
+        debugJumpZ = z;
+    }
+
+    func DebugRoute(index, x, y, z)
+    {
+        routeIndex = index;
+        botJumped = false;
+        botTimer = 0;
+        runValid = false;
+        MovePlayerTo({x: x, y: y, z: z, yaw: 0});
+    }
+}

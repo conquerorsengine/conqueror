@@ -1,0 +1,26 @@
+using nativebridge;
+
+// Renk döngüsü: HSV tonunu sürekli çevirir (doygunluk / parlaklık sabit). emission açıksa ışıma rengi de değişir.
+script ColorCycle : ConquerorScript
+{
+    public float speed = 0.2;
+    public float saturation = 0.8;
+    public float value = 1.0;
+    public float hueOffset = 0.0;
+    public bool emission = false;
+
+    // Çalışma zamanı bilgisi
+    public float hue = 0.0;
+
+    private float t = 0.0;
+
+    func Update(dt)
+    {
+        t += dt;
+        hue = MathRepeat(hueOffset + t * speed, 1.0);
+        var c = ColorHSVToRGB({h: hue * 360.0, s: saturation, v: value});
+        var r = c.r; var g = c.g; var b = c.b;
+        SetColor(r, g, b, 1.0);
+        if (emission && HasComponent("MeshRenderer")) { SetComponentField("MeshRenderer", "EmissionColor", [r, g, b]); }
+    }
+}

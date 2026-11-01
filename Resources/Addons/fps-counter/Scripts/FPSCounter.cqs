@@ -1,0 +1,49 @@
+using nativebridge;
+
+// FPS sayacı: interval saniyelik ortalama FPS / ms ve en kötü kare. F3 ile aç / kapat.
+script FPSCounter : ConquerorScript
+{
+    public float interval = 0.5;
+    public float targetFps = 60.0;
+    public string textName = "FPS Text";
+    public bool showWorst = true;
+
+    // Çalışma zamanı bilgisi
+    public float fps = 0.0;
+    public float frameMs = 0.0;
+    public float worstMs = 0.0;
+    public bool shown = true;
+
+    private float timer = 0.0;
+    private int frames = 0;
+    private float worst = 0.0;
+
+    func Update(dt)
+    {
+        var real = GetUnscaledDeltaTime();
+        if (IsKeyDown(Key.F3))
+        {
+            shown = !shown;
+            var t0 = FindEntity(textName);
+            if (t0 != null) { UISetVisible(t0, shown); }
+        }
+        timer += real;
+        frames++;
+        worst = MathMax(worst, real);
+        if (timer < interval) { return; }
+        fps = frames / timer;
+        frameMs = timer / frames * 1000.0;
+        worstMs = worst * 1000.0;
+        timer = 0.0;
+        frames = 0;
+        worst = 0.0;
+        var t = FindEntity(textName);
+        if (t == null || !shown) { return; }
+        var text = str(int(MathRound(fps))) + " FPS  " + StringPadLeft(str(MathRound(frameMs * 10.0) / 10.0), 4, " ") + " ms";
+        if (showWorst) { text = text + "  (worst " + str(MathRound(worstMs * 10.0) / 10.0) + ")"; }
+        UISetText(t, text);
+        var good = fps >= targetFps * 0.95;
+        var ok = fps >= targetFps * 0.5;
+        UISetTextColor(t, good ? 0.4 : (ok ? 1.0 : 1.0), good ? 1.0 : (ok ? 0.85 : 0.3), good ? 0.5 : (ok ? 0.2 : 0.25), 1);
+    }
+}

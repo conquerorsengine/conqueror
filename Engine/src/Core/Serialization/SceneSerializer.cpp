@@ -1,7 +1,14 @@
 #include "SceneSerializer.h"
+#include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
+#include "Scripting/NativeScriptCompiler.h"
+#include <unordered_set>
+#include "Core/Math/Math.h"
+#include "Scene/ComponentRegistry.h"
+#include <algorithm>
 #include "Scene/Entity.h"
 #include "Scene/Components.h"
 #include "Scene/EditorCamera.h"
+#include "Terrain/Terrain.h"
 #include "Core/Logging/Log.h"
 #include "Core/Project/Project.h"
 #include "Core/Animation/AnimationController.h"
@@ -20,7 +27,7 @@
 #include <libloaderapi.h>
 #else
 #include <unistd.h>
-#include <linux/limits.h>
+#include "Core/Utils/SelfExecutable.h"
 #endif
 
 namespace YAML
@@ -100,6 +107,30 @@ namespace YAML
 
 namespace Conqueror
 {
+    namespace
+    {
+        // Varlıklar oluşturulma (ekleme) sırasıyla yazılır; yükleme aynı sırayla oluşturduğundan Hiyerarşi sırası
+        // kaydet/yükle döngüsünde korunur (EnTT görünümleri yeniden eskiye doğru gezer)
+        std::vector<entt::entity> SerializationOrder(entt::registry& registry)
+        {
+            std::vector<entt::entity> order;
+            const auto& tags = registry.storage<TagComponent>();
+            order.reserve(tags.size());
+            for (size_t i = 0; i < tags.size(); ++i)
+                if (registry.valid(tags.data()[i]))
+                    order.push_back(tags.data()[i]);
+            // Etiketsiz varlıklar (olmamalı) sona
+            if (order.size() < registry.storage<entt::entity>().size())
+            {
+                std::unordered_set<entt::entity> seen(order.begin(), order.end());
+                std::vector<entt::entity> rest;
+                registry.view<entt::entity>().each([&](auto e) { if (!seen.count(e)) rest.push_back(e); });
+                order.insert(order.end(), rest.rbegin(), rest.rend());
+            }
+            return order;
+        }
+    }
+
     static std::filesystem::path GetEngineDirectory()
     {
 #ifdef _WIN32
@@ -107,13 +138,9 @@ namespace Conqueror
         GetModuleFileNameA(NULL, buffer, MAX_PATH);
         return std::filesystem::path(buffer).parent_path();
 #else
-        char buffer[PATH_MAX] = { 0 };
-        ssize_t len = readlink("/proc/self/exe", buffer, sizeof(buffer) - 1);
-        if (len != -1)
-        {
-            buffer[len] = '\0';
-            return std::filesystem::path(buffer).parent_path();
-        }
+        const std::string exe = SelfExecutablePath();
+        if (!exe.empty())
+            return std::filesystem::path(exe).parent_path();
         return std::filesystem::current_path();
 #endif
     }
@@ -152,7 +179,7 @@ namespace Conqueror
             std::error_code ec;
             auto relative = std::filesystem::relative(absolutePath, projectDir, ec);
             if (!ec && !relative.empty() && relative.native()[0] != '.')
-                return relative.string();
+                return relative.generic_string();
         }
 
         auto engineDir = GetEngineDirectory();
@@ -160,7 +187,7 @@ namespace Conqueror
         auto relative = std::filesystem::relative(absolutePath, engineDir, ec);
         if (!ec && !relative.empty() && relative.native()[0] != '.')
         {
-            std::string relStr = relative.string();
+            std::string relStr = relative.generic_string();
             if (relStr.find("Resources/") == 0 || relStr.find("Resources\\") == 0)
                 return "CQ:" + relStr;
         }
@@ -168,10 +195,13 @@ namespace Conqueror
         return absolutePath;
     }
 
-    static std::string ResolveSerializablePath(const std::string& path)
+    static std::string ResolveSerializablePath(const std::string& rawPath)
     {
-        if (path.empty())
-            return path;
+        if (rawPath.empty())
+            return rawPath;
+        // Eski Windows kayıtları '\' içerebilir: her platformda '/' ile çözülür
+        std::string path = rawPath;
+        std::replace(path.begin(), path.end(), '\\', '/');
 
         if (path.size() > 3 && path[0] == 'C' && path[1] == 'Q' && path[2] == ':')
         {
@@ -186,11 +216,24 @@ namespace Conqueror
         if (!projectDir.empty())
         {
             std::filesystem::path p(path);
+            std::error_code ec;
             if (p.is_relative())
             {
                 auto absolute = projectDir / p;
-                if (std::filesystem::exists(absolute))
+                if (std::filesystem::exists(absolute, ec))
                     return absolute.string();
+            }
+            else if (!std::filesystem::exists(p, ec))
+            {
+                // Başka makinede / klasörde kaydedilmiş mutlak yol (eski sahneler, taşınmış proje, derlenmiş oyun):
+                // ".../Assets/..." kısmı bu projeye göre çözülür
+                const size_t assets = path.rfind("/Assets/");
+                if (assets != std::string::npos)
+                {
+                    auto remapped = projectDir / std::filesystem::path(path.substr(assets + 1));
+                    if (std::filesystem::exists(remapped, ec))
+                        return remapped.string();
+                }
             }
         }
 
@@ -216,6 +259,887 @@ namespace Conqueror
         out << YAML::Flow;
         out << YAML::BeginSeq << v.x << v.y << v.z << v.w << YAML::EndSeq;
         return out;
+    }
+
+    // ---- Parçacık sistemi (tüm modül ayarları)
+    // ------------------------------------------------------------------ Malzeme (gömülü ve .cqmat aynı biçim)
+    static bool s_EmitEmptyMaps = false;   // varyant farkı için: boş harita da yazılır ("" = kaldırıldı)
+    static void EmitTexturePath(YAML::Emitter& out, const char* key, const std::shared_ptr<Texture2D>& tex)
+    {
+        if (tex && !tex->GetPath().empty())
+            out << YAML::Key << key << YAML::Value << ToSerializablePath(tex->GetPath());
+        else if (s_EmitEmptyMaps)
+            out << YAML::Key << key << YAML::Value << "";
+    }
+
+    static void EmitMaterial(YAML::Emitter& out, const Material& mat)
+    {
+        out << YAML::BeginMap;
+        out << YAML::Key << "Name" << YAML::Value << mat.Name;
+        out << YAML::Key << "Albedo" << YAML::Value << mat.Albedo;
+        out << YAML::Key << "Opacity" << YAML::Value << mat.Opacity;
+        out << YAML::Key << "Metallic" << YAML::Value << mat.Metallic;
+        out << YAML::Key << "Roughness" << YAML::Value << mat.Roughness;
+        out << YAML::Key << "AO" << YAML::Value << mat.AO;
+        out << YAML::Key << "EmissionColor" << YAML::Value << mat.EmissionColor;
+        out << YAML::Key << "EmissionStrength" << YAML::Value << mat.EmissionStrength;
+        out << YAML::Key << "Tiling" << YAML::Value << mat.Tiling;
+        out << YAML::Key << "Offset" << YAML::Value << mat.Offset;
+        if (mat.WorldAligned) out << YAML::Key << "WorldAligned" << YAML::Value << true;
+        if (mat.AlignToObject) out << YAML::Key << "AlignToObject" << YAML::Value << true;
+        out << YAML::Key << "RenderMode" << YAML::Value << (int)mat.Rendering;
+        out << YAML::Key << "Culling" << YAML::Value << (int)mat.Culling;
+        out << YAML::Key << "AlphaClip" << YAML::Value << mat.AlphaClip;
+        if (mat.Shading != Material::ShadingModel::DefaultLit)
+        {
+            out << YAML::Key << "ShadingModel" << YAML::Value << (int)mat.Shading;
+            out << YAML::Key << "SubsurfaceColor" << YAML::Value << mat.SubsurfaceColor;
+            out << YAML::Key << "SubsurfaceAmount" << YAML::Value << mat.SubsurfaceAmount;
+        }
+        if (mat.MapsScaleFactors)
+        {
+            out << YAML::Key << "MapsScaleFactors" << YAML::Value << true;
+            out << YAML::Key << "MetallicChannel" << YAML::Value << mat.MetallicChannel;
+            out << YAML::Key << "RoughnessChannel" << YAML::Value << mat.RoughnessChannel;
+        }
+        EmitTexturePath(out, "AlbedoMap", mat.AlbedoMap);
+        EmitTexturePath(out, "NormalMap", mat.NormalMap);
+        EmitTexturePath(out, "MetallicMap", mat.MetallicMap);
+        EmitTexturePath(out, "RoughnessMap", mat.RoughnessMap);
+        EmitTexturePath(out, "AOMap", mat.AOMap);
+        EmitTexturePath(out, "EmissionMap", mat.EmissionMap);
+
+        // Shader Graph
+        out << YAML::Key << "NextGraphNodeID" << YAML::Value << mat.NextGraphNodeID;
+        out << YAML::Key << "NextGraphLinkID" << YAML::Value << mat.NextGraphLinkID;
+        out << YAML::Key << "GraphInitialized" << YAML::Value << mat.GraphInitialized;
+        out << YAML::Key << "GraphNodes" << YAML::Value << YAML::BeginSeq;
+        for (const auto& node : mat.GraphNodes)
+        {
+            out << YAML::BeginMap;
+            out << YAML::Key << "ID" << YAML::Value << node.ID;
+            out << YAML::Key << "Type" << YAML::Value << (int)node.Type;
+            out << YAML::Key << "EditorPosX" << YAML::Value << node.EditorPosition.x;
+            out << YAML::Key << "EditorPosY" << YAML::Value << node.EditorPosition.y;
+            out << YAML::Key << "ColorValue" << YAML::Value << node.ColorValue;
+            out << YAML::Key << "FloatValue" << YAML::Value << node.FloatValue;
+            out << YAML::Key << "Vec2Value" << YAML::Value << node.Vec2Value;
+            out << YAML::Key << "Vec3Value" << YAML::Value << node.Vec3Value;
+            if (node.IntValue) out << YAML::Key << "IntValue" << YAML::Value << node.IntValue;
+            out << YAML::Key << "TexturePath" << YAML::Value << ToSerializablePath(node.TexturePath);
+            if (!node.CustomCode.empty()) out << YAML::Key << "CustomCode" << YAML::Value << YAML::Literal << node.CustomCode;
+            out << YAML::EndMap;
+        }
+        out << YAML::EndSeq;
+        out << YAML::Key << "GraphLinks" << YAML::Value << YAML::BeginSeq;
+        for (const auto& link : mat.GraphLinks)
+        {
+            out << YAML::Flow << YAML::BeginMap;
+            out << YAML::Key << "ID" << YAML::Value << link.ID;
+            out << YAML::Key << "From" << YAML::Value << link.FromNodeID;
+            out << YAML::Key << "FromPin" << YAML::Value << link.FromPinIndex;
+            out << YAML::Key << "To" << YAML::Value << link.ToNodeID;
+            out << YAML::Key << "ToPin" << YAML::Value << link.ToPinIndex;
+            out << YAML::EndMap;
+        }
+        out << YAML::EndSeq;
+        out << YAML::EndMap;
+    }
+
+    static std::shared_ptr<Texture2D> ReadTexturePath(const YAML::Node& n, const char* key)
+    {
+        if (auto t = n[key])
+        {
+            const std::string path = ResolveSerializablePath(t.as<std::string>());
+            if (!path.empty())
+                return Texture2D::Create(path);
+        }
+        return nullptr;
+    }
+
+    static void ReadMaterial(const YAML::Node& n, Material& mat, bool partial = false)
+    {
+        if (n["Name"]) mat.Name = n["Name"].as<std::string>();
+        if (n["Albedo"]) mat.Albedo = n["Albedo"].as<glm::vec3>();
+        if (n["Opacity"]) mat.Opacity = n["Opacity"].as<float>();
+        if (n["Metallic"]) mat.Metallic = n["Metallic"].as<float>();
+        if (n["Roughness"]) mat.Roughness = n["Roughness"].as<float>();
+        if (n["AO"]) mat.AO = n["AO"].as<float>();
+        if (n["EmissionColor"]) mat.EmissionColor = n["EmissionColor"].as<glm::vec3>();
+        if (n["EmissionStrength"]) mat.EmissionStrength = n["EmissionStrength"].as<float>();
+        if (n["Tiling"]) mat.Tiling = n["Tiling"].as<glm::vec2>();
+        if (n["Offset"]) mat.Offset = n["Offset"].as<glm::vec2>();
+        if (n["WorldAligned"]) mat.WorldAligned = n["WorldAligned"].as<bool>();
+        if (n["AlignToObject"]) mat.AlignToObject = n["AlignToObject"].as<bool>();
+        if (n["RenderMode"]) mat.Rendering = (Material::RenderMode)std::clamp(n["RenderMode"].as<int>(), 0, 2);
+        if (n["Culling"]) mat.Culling = (Material::CullMode)std::clamp(n["Culling"].as<int>(), 0, 2);
+        if (n["AlphaClip"]) mat.AlphaClip = n["AlphaClip"].as<float>();
+        if (n["ShadingModel"]) mat.Shading = (Material::ShadingModel)std::clamp(n["ShadingModel"].as<int>(), 0, 4);
+        if (n["SubsurfaceColor"]) mat.SubsurfaceColor = n["SubsurfaceColor"].as<glm::vec3>();
+        if (n["SubsurfaceAmount"]) mat.SubsurfaceAmount = n["SubsurfaceAmount"].as<float>();
+        if (n["MapsScaleFactors"]) mat.MapsScaleFactors = n["MapsScaleFactors"].as<bool>();
+        if (n["MetallicChannel"]) mat.MetallicChannel = n["MetallicChannel"].as<int>();
+        if (n["RoughnessChannel"]) mat.RoughnessChannel = n["RoughnessChannel"].as<int>();
+        // Varyant (partial): dosyada olmayan alan üstten gelir. Boş yol ("") = üstteki dokuyu kaldır.
+        auto readMap = [&](const char* key, std::shared_ptr<Texture2D>& slot) {
+            if (!partial || n[key])
+                slot = ReadTexturePath(n, key);
+        };
+        readMap("AlbedoMap", mat.AlbedoMap);
+        readMap("NormalMap", mat.NormalMap);
+        readMap("MetallicMap", mat.MetallicMap);
+        readMap("RoughnessMap", mat.RoughnessMap);
+        readMap("AOMap", mat.AOMap);
+        readMap("EmissionMap", mat.EmissionMap);
+        if (n["Parent"]) mat.ParentPath = ResolveSerializablePath(n["Parent"].as<std::string>());
+        const bool hasGraph = !partial || n["GraphNodes"] || n["GraphLinks"];
+
+        if (n["NextGraphNodeID"]) mat.NextGraphNodeID = n["NextGraphNodeID"].as<int>();
+        if (n["NextGraphLinkID"]) mat.NextGraphLinkID = n["NextGraphLinkID"].as<int>();
+        if (n["GraphInitialized"]) mat.GraphInitialized = n["GraphInitialized"].as<bool>();
+        if (hasGraph)
+        {
+            mat.GraphNodes.clear();
+            mat.GraphLinks.clear();
+        }
+        if (auto nodes = n["GraphNodes"])
+            for (auto node : nodes)
+            {
+                ShaderGraphNode g;
+                g.ID = node["ID"].as<int>();
+                g.Type = (ShaderGraphNodeType)node["Type"].as<int>();
+                g.EditorPosition = { node["EditorPosX"].as<float>(0.0f), node["EditorPosY"].as<float>(0.0f) };
+                if (node["ColorValue"]) g.ColorValue = node["ColorValue"].as<glm::vec4>();
+                if (node["FloatValue"]) g.FloatValue = node["FloatValue"].as<float>();
+                if (node["Vec2Value"]) g.Vec2Value = node["Vec2Value"].as<glm::vec2>();
+                if (node["Vec3Value"]) g.Vec3Value = node["Vec3Value"].as<glm::vec3>();
+                if (node["IntValue"]) g.IntValue = node["IntValue"].as<int>();
+                if (node["TexturePath"]) g.TexturePath = ResolveSerializablePath(node["TexturePath"].as<std::string>());
+                if (node["CustomCode"]) g.CustomCode = node["CustomCode"].as<std::string>();
+                mat.GraphNodes.push_back(g);
+            }
+        if (auto links = n["GraphLinks"])
+            for (auto link : links)
+                mat.GraphLinks.emplace_back(link["ID"].as<int>(), link["From"].as<int>(), link["FromPin"].as<int>(), link["To"].as<int>(),
+                                            link["ToPin"].as<int>());
+        // Shader Graph'lı malzeme yüklenince derlenir (eskiden yalnız graph düzenleyicide derleniyordu: kaydedilip açılan
+        // sahnede graph sonucu görünmüyordu)
+        if (hasGraph && mat.GraphInitialized && !mat.GraphNodes.empty())
+        {
+            mat.CompileShaderGraph();
+            mat.ApplyGraphToProperties();
+        }
+    }
+
+    std::string MaterialAsset::ToYaml(const Material& material)
+    {
+        // Varyant: yalnız üstten farklı alanlar (+ Parent)
+        if (!material.ParentPath.empty())
+            if (auto parent = MaterialAsset::Load(material.ParentPath); parent && parent.get() != &material)
+            {
+                auto emitNode = [](const Material& m) {
+                    s_EmitEmptyMaps = true;
+                    YAML::Emitter e;
+                    EmitMaterial(e, m);
+                    s_EmitEmptyMaps = false;
+                    return YAML::Load(e.c_str());
+                };
+                YAML::Node mine = emitNode(material), base = emitNode(*parent);
+                YAML::Emitter out;
+                out << YAML::BeginMap << YAML::Key << "Material" << YAML::Value << YAML::BeginMap;
+                out << YAML::Key << "Parent" << YAML::Value << ToSerializablePath(material.ParentPath);
+                bool graphDiffers = false;
+                for (const char* g : { "GraphNodes", "GraphLinks", "NextGraphNodeID", "NextGraphLinkID", "GraphInitialized" })
+                    if (YAML::Dump(mine[g]) != YAML::Dump(base[g]))
+                        graphDiffers = true;
+                for (auto kv : mine)
+                {
+                    const std::string key = kv.first.as<std::string>();
+                    const bool graphKey = key.rfind("Graph", 0) == 0 || key.rfind("NextGraph", 0) == 0;
+                    if (key == "Name" || (graphKey ? !graphDiffers : YAML::Dump(kv.second) == YAML::Dump(base[key])))
+                        continue;
+                    out << YAML::Key << key << YAML::Value << kv.second;
+                }
+                out << YAML::EndMap << YAML::EndMap;
+                return out.c_str();
+            }
+        YAML::Emitter out;
+        out << YAML::BeginMap << YAML::Key << "Material" << YAML::Value;
+        EmitMaterial(out, material);
+        out << YAML::EndMap;
+        return out.c_str();
+    }
+
+    bool MaterialAsset::FromYaml(const std::string& text, Material& material, std::string* error)
+    {
+        try
+        {
+            YAML::Node root = YAML::Load(text);
+            YAML::Node n = root["Material"];
+            if (!n || !n.IsMap())
+            {
+                if (error) *error = "Not a material file";
+                return false;
+            }
+            static thread_local int s_Depth = 0;   // döngüsel üst zinciri (A -> B -> A) koruması
+            if (auto parentNode = n["Parent"]; parentNode && s_Depth < 8)
+            {
+                struct DepthGuard { DepthGuard() { ++s_Depth; } ~DepthGuard() { --s_Depth; } } guard;
+                const std::string parentPath = ResolveSerializablePath(parentNode.as<std::string>());
+                auto parent = MaterialAsset::Load(parentPath);
+                if (parent && parent.get() != &material)
+                {
+                    material = *parent;   // üstten başla, dosyadaki farkları uygula
+                    ReadMaterial(n, material, true);
+                    material.ParentPath = parentPath;
+                    return true;
+                }
+                CQ_CORE_WARN("Material variant: parent '{0}' not found", parentPath);
+            }
+            ReadMaterial(n, material);
+            return true;
+        }
+        catch (const std::exception& e)
+        {
+            if (error) *error = e.what();
+            return false;
+        }
+    }
+
+    static void SerializeParticleSystem(YAML::Emitter& out, const ParticleSystemComponent& ps)
+    {
+        out << YAML::Key << "ParticleSystemComponent" << YAML::BeginMap;
+#define CQ_PS_OUT(field) out << YAML::Key << #field << YAML::Value << ps.field
+        CQ_PS_OUT(Duration); CQ_PS_OUT(Looping); CQ_PS_OUT(Prewarm); CQ_PS_OUT(PlayOnAwake); CQ_PS_OUT(StopAction); CQ_PS_OUT(StartDelay);
+        CQ_PS_OUT(StartLifetime); CQ_PS_OUT(StartSpeed); CQ_PS_OUT(StartSize); CQ_PS_OUT(StartRotation);
+        CQ_PS_OUT(StartColorA); CQ_PS_OUT(StartColorB); CQ_PS_OUT(GravityModifier); CQ_PS_OUT(SimulationSpeed); CQ_PS_OUT(MaxParticles);
+        out << YAML::Key << "SimulationSpace" << YAML::Value << (int)ps.SimulationSpace;
+        CQ_PS_OUT(EmissionEnabled); CQ_PS_OUT(RateOverTime); CQ_PS_OUT(RateOverDistance);
+        CQ_PS_OUT(ShapeEnabled); CQ_PS_OUT(Radius); CQ_PS_OUT(Angle); CQ_PS_OUT(BoxSize); CQ_PS_OUT(EmitFromShell); CQ_PS_OUT(RandomizeDirection);
+        out << YAML::Key << "Shape" << YAML::Value << (int)ps.Shape;
+        CQ_PS_OUT(VelocityEnabled); CQ_PS_OUT(VelocityOverLifetime); CQ_PS_OUT(OrbitalSpeed);
+        CQ_PS_OUT(LimitVelocityEnabled); CQ_PS_OUT(Drag); CQ_PS_OUT(SpeedLimit);
+        CQ_PS_OUT(NoiseEnabled); CQ_PS_OUT(NoiseStrength); CQ_PS_OUT(NoiseFrequency); CQ_PS_OUT(NoiseScrollSpeed);
+        CQ_PS_OUT(ColorOverLifetimeEnabled); CQ_PS_OUT(SizeOverLifetimeEnabled); CQ_PS_OUT(RotationOverLifetimeEnabled); CQ_PS_OUT(AngularVelocity);
+        CQ_PS_OUT(CollisionEnabled); CQ_PS_OUT(CollisionPlaneY); CQ_PS_OUT(Bounce); CQ_PS_OUT(LifetimeLoss);
+        CQ_PS_OUT(TextureSheetEnabled); CQ_PS_OUT(AnimationCycles); CQ_PS_OUT(RandomStartFrame);
+        out << YAML::Key << "Tiles" << YAML::Value << glm::vec2(ps.Tiles);
+        out << YAML::Key << "RenderMode" << YAML::Value << (int)ps.RenderMode;
+        out << YAML::Key << "Blend" << YAML::Value << (int)ps.Blend;
+        out << YAML::Key << "Texture" << YAML::Value << ToSerializablePath(ps.TexturePath);
+        CQ_PS_OUT(LengthScale); CQ_PS_OUT(SpeedScale); CQ_PS_OUT(SortByDistance); CQ_PS_OUT(EmissiveIntensity);
+#undef CQ_PS_OUT
+        out << YAML::Key << "Bursts" << YAML::Value << YAML::BeginSeq;
+        for (const auto& b : ps.Bursts)
+            out << YAML::Flow << YAML::BeginSeq << b.Time << b.Count << b.Cycles << b.Interval << YAML::EndSeq;
+        out << YAML::EndSeq;
+        out << YAML::Key << "ColorOverLifetime" << YAML::Value << YAML::BeginSeq;
+        for (const auto& k : ps.ColorOverLifetime.Keys)
+            out << YAML::Flow << YAML::BeginSeq << k.Time << k.Color.r << k.Color.g << k.Color.b << k.Color.a << YAML::EndSeq;
+        out << YAML::EndSeq;
+        out << YAML::Key << "SizeOverLifetime" << YAML::Value << YAML::BeginSeq;
+        for (const auto& k : ps.SizeOverLifetime.Keys)
+            out << YAML::Flow << YAML::BeginSeq << k.Time << k.Value << YAML::EndSeq;
+        out << YAML::EndSeq;
+        out << YAML::EndMap;
+    }
+
+    static void DeserializeParticleSystem(const YAML::Node& n, ParticleSystemComponent& ps)
+    {
+#define CQ_PS_IN(field, T) if (n[#field]) ps.field = n[#field].as<T>()
+        CQ_PS_IN(Duration, float); CQ_PS_IN(Looping, bool); CQ_PS_IN(Prewarm, bool); CQ_PS_IN(PlayOnAwake, bool); CQ_PS_IN(StopAction, int); CQ_PS_IN(StartDelay, float);
+        CQ_PS_IN(StartLifetime, glm::vec2); CQ_PS_IN(StartSpeed, glm::vec2); CQ_PS_IN(StartSize, glm::vec2); CQ_PS_IN(StartRotation, glm::vec2);
+        CQ_PS_IN(StartColorA, glm::vec4); CQ_PS_IN(StartColorB, glm::vec4); CQ_PS_IN(GravityModifier, float); CQ_PS_IN(SimulationSpeed, float); CQ_PS_IN(MaxParticles, int);
+        if (n["SimulationSpace"]) ps.SimulationSpace = (ParticleSpace)n["SimulationSpace"].as<int>();
+        CQ_PS_IN(EmissionEnabled, bool); CQ_PS_IN(RateOverTime, float); CQ_PS_IN(RateOverDistance, float);
+        CQ_PS_IN(ShapeEnabled, bool); CQ_PS_IN(Radius, float); CQ_PS_IN(Angle, float); CQ_PS_IN(BoxSize, glm::vec3); CQ_PS_IN(EmitFromShell, bool); CQ_PS_IN(RandomizeDirection, float);
+        if (n["Shape"]) ps.Shape = (ParticleShape)n["Shape"].as<int>();
+        CQ_PS_IN(VelocityEnabled, bool); CQ_PS_IN(VelocityOverLifetime, glm::vec3); CQ_PS_IN(OrbitalSpeed, float);
+        CQ_PS_IN(LimitVelocityEnabled, bool); CQ_PS_IN(Drag, float); CQ_PS_IN(SpeedLimit, float);
+        CQ_PS_IN(NoiseEnabled, bool); CQ_PS_IN(NoiseStrength, float); CQ_PS_IN(NoiseFrequency, float); CQ_PS_IN(NoiseScrollSpeed, float);
+        CQ_PS_IN(ColorOverLifetimeEnabled, bool); CQ_PS_IN(SizeOverLifetimeEnabled, bool); CQ_PS_IN(RotationOverLifetimeEnabled, bool); CQ_PS_IN(AngularVelocity, float);
+        CQ_PS_IN(CollisionEnabled, bool); CQ_PS_IN(CollisionPlaneY, float); CQ_PS_IN(Bounce, float); CQ_PS_IN(LifetimeLoss, float);
+        CQ_PS_IN(TextureSheetEnabled, bool); CQ_PS_IN(AnimationCycles, float); CQ_PS_IN(RandomStartFrame, bool);
+        if (n["Tiles"]) ps.Tiles = glm::ivec2(n["Tiles"].as<glm::vec2>());
+        if (n["RenderMode"]) ps.RenderMode = (ParticleRenderMode)n["RenderMode"].as<int>();
+        if (n["Blend"]) ps.Blend = (ParticleBlend)n["Blend"].as<int>();
+        if (n["Texture"]) ps.TexturePath = ResolveSerializablePath(n["Texture"].as<std::string>());
+        CQ_PS_IN(LengthScale, float); CQ_PS_IN(SpeedScale, float); CQ_PS_IN(SortByDistance, bool); CQ_PS_IN(EmissiveIntensity, float);
+#undef CQ_PS_IN
+        ps.Bursts.clear();
+        for (const auto& b : n["Bursts"])
+            if (b.size() >= 4)
+                ps.Bursts.push_back({ b[0].as<float>(), b[1].as<int>(), b[2].as<int>(), b[3].as<float>() });
+        if (n["ColorOverLifetime"])
+        {
+            ps.ColorOverLifetime.Keys.clear();
+            for (const auto& k : n["ColorOverLifetime"])
+                if (k.size() >= 5)
+                    ps.ColorOverLifetime.Keys.push_back({ k[0].as<float>(), glm::vec4(k[1].as<float>(), k[2].as<float>(), k[3].as<float>(), k[4].as<float>()) });
+            if (ps.ColorOverLifetime.Keys.empty()) ps.ColorOverLifetime = ColorGradient{};
+        }
+        if (n["SizeOverLifetime"])
+        {
+            ps.SizeOverLifetime.Keys.clear();
+            for (const auto& k : n["SizeOverLifetime"])
+                if (k.size() >= 2)
+                    ps.SizeOverLifetime.Keys.push_back({ k[0].as<float>(), k[1].as<float>() });
+            if (ps.SizeOverLifetime.Keys.empty()) ps.SizeOverLifetime = FloatCurve{};
+        }
+    }
+
+    // ---- UI bileşenleri
+#define CQ_O(obj, f) out << YAML::Key << #f << YAML::Value << obj.f
+#define CQ_OE(obj, f) out << YAML::Key << #f << YAML::Value << (int)obj.f
+#define CQ_I(node, obj, f, T) if (node[#f]) obj.f = node[#f].as<T>()
+#define CQ_IE(node, obj, f, E) if (node[#f]) obj.f = (E)node[#f].as<int>()
+    static void SerializeSelectable(YAML::Emitter& out, const UISelectableState& s)
+    {
+        out << YAML::Key << "Selectable" << YAML::BeginMap;
+        CQ_O(s, Interactable); CQ_OE(s, Transition); CQ_O(s, NormalColor); CQ_O(s, HighlightedColor); CQ_O(s, PressedColor);
+        CQ_O(s, DisabledColor); CQ_O(s, FadeDuration);
+        out << YAML::EndMap;
+    }
+    static void DeserializeSelectable(const YAML::Node& n, UISelectableState& s)
+    {
+        if (!n) return;
+        CQ_I(n, s, Interactable, bool); CQ_IE(n, s, Transition, UITransition); CQ_I(n, s, NormalColor, glm::vec4); CQ_I(n, s, HighlightedColor, glm::vec4);
+        CQ_I(n, s, PressedColor, glm::vec4); CQ_I(n, s, DisabledColor, glm::vec4); CQ_I(n, s, FadeDuration, float);
+        s.CurrentTint = s.NormalColor;
+    }
+
+    static void SerializeUI(YAML::Emitter& out, Entity entity)
+    {
+        if (entity.HasComponent<RectTransformComponent>())
+        {
+            auto& c = entity.GetComponent<RectTransformComponent>();
+            out << YAML::Key << "RectTransformComponent" << YAML::BeginMap;
+            CQ_O(c, AnchorMin); CQ_O(c, AnchorMax); CQ_O(c, Pivot); CQ_O(c, AnchoredPosition); CQ_O(c, SizeDelta); CQ_O(c, Rotation); CQ_O(c, Scale);
+            out << YAML::EndMap;
+        }
+        if (entity.HasComponent<UIImageComponent>())
+        {
+            auto& c = entity.GetComponent<UIImageComponent>();
+            out << YAML::Key << "UIImageComponent" << YAML::BeginMap;
+            CQ_O(c, Color); out << YAML::Key << "TexturePath" << YAML::Value << ToSerializablePath(c.TexturePath); CQ_O(c, SpriteName); CQ_OE(c, Type);
+            CQ_O(c, Border); CQ_O(c, PixelsPerUnitMultiplier); CQ_OE(c, FillMethod); CQ_O(c, FillAmount); CQ_O(c, FillClockwise);
+            CQ_O(c, PreserveAspect); CQ_O(c, RaycastTarget); CQ_O(c, CornerRadius);
+            out << YAML::EndMap;
+        }
+        if (entity.HasComponent<UITextComponent>())
+        {
+            auto& c = entity.GetComponent<UITextComponent>();
+            out << YAML::Key << "UITextComponent" << YAML::BeginMap;
+            CQ_O(c, Text); out << YAML::Key << "FontPath" << YAML::Value << ToSerializablePath(c.FontPath); CQ_O(c, FontSize); CQ_O(c, Color);
+            CQ_OE(c, AlignH); CQ_OE(c, AlignV); CQ_O(c, WordWrap); CQ_O(c, BestFit); CQ_O(c, MinSize); CQ_O(c, MaxSize); CQ_O(c, LineSpacing);
+            CQ_O(c, Outline); CQ_O(c, OutlineColor); CQ_O(c, Shadow); CQ_O(c, ShadowOffset); CQ_O(c, ShadowColor); CQ_O(c, RaycastTarget); CQ_O(c, RichText);
+            out << YAML::EndMap;
+        }
+        if (entity.HasComponent<UIButtonComponent>())
+        {
+            auto& c = entity.GetComponent<UIButtonComponent>();
+            out << YAML::Key << "UIButtonComponent" << YAML::BeginMap;
+            SerializeSelectable(out, c.Selectable); CQ_O(c, OnClick);
+            out << YAML::EndMap;
+        }
+        if (entity.HasComponent<UIToggleComponent>())
+        {
+            auto& c = entity.GetComponent<UIToggleComponent>();
+            out << YAML::Key << "UIToggleComponent" << YAML::BeginMap;
+            SerializeSelectable(out, c.Selectable); CQ_O(c, IsOn); CQ_O(c, Group); CQ_O(c, OnValueChanged);
+            out << YAML::EndMap;
+        }
+        if (entity.HasComponent<UISliderComponent>())
+        {
+            auto& c = entity.GetComponent<UISliderComponent>();
+            out << YAML::Key << "UISliderComponent" << YAML::BeginMap;
+            SerializeSelectable(out, c.Selectable); CQ_O(c, MinValue); CQ_O(c, MaxValue); CQ_O(c, Value); CQ_O(c, WholeNumbers); CQ_OE(c, Direction);
+            CQ_O(c, BackgroundColor); CQ_O(c, FillColor); CQ_O(c, HandleColor); CQ_O(c, HandleSize); CQ_O(c, OnValueChanged);
+            out << YAML::EndMap;
+        }
+        if (entity.HasComponent<UIInputFieldComponent>())
+        {
+            auto& c = entity.GetComponent<UIInputFieldComponent>();
+            out << YAML::Key << "UIInputFieldComponent" << YAML::BeginMap;
+            SerializeSelectable(out, c.Selectable); CQ_O(c, Text); CQ_O(c, Placeholder); CQ_O(c, CharacterLimit); CQ_OE(c, ContentType); CQ_O(c, FontSize);
+            CQ_O(c, TextColor); CQ_O(c, PlaceholderColor); CQ_O(c, BackgroundColor); CQ_O(c, OnSubmit);
+            out << YAML::EndMap;
+        }
+        if (entity.HasComponent<UIDropdownComponent>())
+        {
+            auto& c = entity.GetComponent<UIDropdownComponent>();
+            out << YAML::Key << "UIDropdownComponent" << YAML::BeginMap;
+            SerializeSelectable(out, c.Selectable);
+            out << YAML::Key << "Options" << YAML::Value << YAML::Flow << c.Options;
+            CQ_O(c, Value); CQ_O(c, FontSize); CQ_O(c, OnValueChanged);
+            out << YAML::EndMap;
+        }
+        if (entity.HasComponent<UIScrollRectComponent>())
+        {
+            auto& c = entity.GetComponent<UIScrollRectComponent>();
+            out << YAML::Key << "UIScrollRectComponent" << YAML::BeginMap;
+            CQ_O(c, Horizontal); CQ_O(c, Vertical); CQ_O(c, ScrollSensitivity); CQ_O(c, Mask); CQ_O(c, ShowScrollbar);
+            out << YAML::EndMap;
+        }
+        if (entity.HasComponent<UILayoutGroupComponent>())
+        {
+            auto& c = entity.GetComponent<UILayoutGroupComponent>();
+            out << YAML::Key << "UILayoutGroupComponent" << YAML::BeginMap;
+            CQ_OE(c, Type); CQ_O(c, Padding); CQ_O(c, Spacing); CQ_O(c, CellSize); CQ_O(c, GridSpacing); CQ_O(c, Constraint); CQ_OE(c, ChildAlignment);
+            CQ_O(c, ControlChildWidth); CQ_O(c, ControlChildHeight); CQ_O(c, ChildForceExpandWidth); CQ_O(c, ChildForceExpandHeight); CQ_O(c, FitContent);
+            out << YAML::EndMap;
+        }
+    }
+
+    static void DeserializeUI(const YAML::Node& entity, Entity e)
+    {
+        if (auto n = entity["RectTransformComponent"])
+        {
+            auto& c = e.AddComponent<RectTransformComponent>();
+            CQ_I(n, c, AnchorMin, glm::vec2); CQ_I(n, c, AnchorMax, glm::vec2); CQ_I(n, c, Pivot, glm::vec2); CQ_I(n, c, AnchoredPosition, glm::vec2);
+            CQ_I(n, c, SizeDelta, glm::vec2); CQ_I(n, c, Rotation, float); CQ_I(n, c, Scale, glm::vec2);
+        }
+        if (auto n = entity["UIImageComponent"])
+        {
+            auto& c = e.AddComponent<UIImageComponent>();
+            CQ_I(n, c, Color, glm::vec4); if (n["TexturePath"]) c.TexturePath = ResolveSerializablePath(n["TexturePath"].as<std::string>());
+            CQ_I(n, c, SpriteName, std::string); CQ_IE(n, c, Type, UIImageType); CQ_I(n, c, Border, glm::vec4); CQ_I(n, c, PixelsPerUnitMultiplier, float);
+            CQ_IE(n, c, FillMethod, UIFillMethod); CQ_I(n, c, FillAmount, float); CQ_I(n, c, FillClockwise, bool); CQ_I(n, c, PreserveAspect, bool);
+            CQ_I(n, c, RaycastTarget, bool); CQ_I(n, c, CornerRadius, float);
+        }
+        if (auto n = entity["UITextComponent"])
+        {
+            auto& c = e.AddComponent<UITextComponent>();
+            CQ_I(n, c, Text, std::string); if (n["FontPath"]) c.FontPath = ResolveSerializablePath(n["FontPath"].as<std::string>());
+            CQ_I(n, c, FontSize, float); CQ_I(n, c, Color, glm::vec4); CQ_IE(n, c, AlignH, UITextAlignH); CQ_IE(n, c, AlignV, UITextAlignV);
+            CQ_I(n, c, WordWrap, bool); CQ_I(n, c, BestFit, bool); CQ_I(n, c, MinSize, float); CQ_I(n, c, MaxSize, float); CQ_I(n, c, LineSpacing, float);
+            CQ_I(n, c, Outline, bool); CQ_I(n, c, OutlineColor, glm::vec4); CQ_I(n, c, Shadow, bool); CQ_I(n, c, ShadowOffset, glm::vec2);
+            CQ_I(n, c, ShadowColor, glm::vec4); CQ_I(n, c, RaycastTarget, bool); CQ_I(n, c, RichText, bool);
+        }
+        if (auto n = entity["UIButtonComponent"])
+        {
+            auto& c = e.AddComponent<UIButtonComponent>();
+            DeserializeSelectable(n["Selectable"], c.Selectable); CQ_I(n, c, OnClick, std::string);
+        }
+        if (auto n = entity["UIToggleComponent"])
+        {
+            auto& c = e.AddComponent<UIToggleComponent>();
+            DeserializeSelectable(n["Selectable"], c.Selectable); CQ_I(n, c, IsOn, bool); CQ_I(n, c, Group, int); CQ_I(n, c, OnValueChanged, std::string);
+        }
+        if (auto n = entity["UISliderComponent"])
+        {
+            auto& c = e.AddComponent<UISliderComponent>();
+            DeserializeSelectable(n["Selectable"], c.Selectable); CQ_I(n, c, MinValue, float); CQ_I(n, c, MaxValue, float); CQ_I(n, c, Value, float);
+            CQ_I(n, c, WholeNumbers, bool); CQ_IE(n, c, Direction, UISliderDirection); CQ_I(n, c, BackgroundColor, glm::vec4); CQ_I(n, c, FillColor, glm::vec4);
+            CQ_I(n, c, HandleColor, glm::vec4); CQ_I(n, c, HandleSize, float); CQ_I(n, c, OnValueChanged, std::string);
+        }
+        if (auto n = entity["UIInputFieldComponent"])
+        {
+            auto& c = e.AddComponent<UIInputFieldComponent>();
+            DeserializeSelectable(n["Selectable"], c.Selectable); CQ_I(n, c, Text, std::string); CQ_I(n, c, Placeholder, std::string);
+            CQ_I(n, c, CharacterLimit, int); CQ_IE(n, c, ContentType, UIContentType); CQ_I(n, c, FontSize, float); CQ_I(n, c, TextColor, glm::vec4);
+            CQ_I(n, c, PlaceholderColor, glm::vec4); CQ_I(n, c, BackgroundColor, glm::vec4); CQ_I(n, c, OnSubmit, std::string);
+        }
+        if (auto n = entity["UIDropdownComponent"])
+        {
+            auto& c = e.AddComponent<UIDropdownComponent>();
+            DeserializeSelectable(n["Selectable"], c.Selectable);
+            if (n["Options"]) c.Options = n["Options"].as<std::vector<std::string>>();
+            CQ_I(n, c, Value, int); CQ_I(n, c, FontSize, float); CQ_I(n, c, OnValueChanged, std::string);
+        }
+        if (auto n = entity["UIScrollRectComponent"])
+        {
+            auto& c = e.AddComponent<UIScrollRectComponent>();
+            CQ_I(n, c, Horizontal, bool); CQ_I(n, c, Vertical, bool); CQ_I(n, c, ScrollSensitivity, float); CQ_I(n, c, Mask, bool); CQ_I(n, c, ShowScrollbar, bool);
+        }
+        if (auto n = entity["UILayoutGroupComponent"])
+        {
+            auto& c = e.AddComponent<UILayoutGroupComponent>();
+            CQ_IE(n, c, Type, UILayoutType); CQ_I(n, c, Padding, glm::vec4); CQ_I(n, c, Spacing, float); CQ_I(n, c, CellSize, glm::vec2);
+            CQ_I(n, c, GridSpacing, glm::vec2); CQ_I(n, c, Constraint, int); CQ_IE(n, c, ChildAlignment, UIChildAlignment);
+            CQ_I(n, c, ControlChildWidth, bool); CQ_I(n, c, ControlChildHeight, bool); CQ_I(n, c, ChildForceExpandWidth, bool);
+            CQ_I(n, c, ChildForceExpandHeight, bool); CQ_I(n, c, FitContent, bool);
+        }
+    }
+#undef CQ_O
+#undef CQ_OE
+#undef CQ_I
+#undef CQ_IE
+
+
+    // ---- RenderSettings (gölge / sis / post-process / ortam) ------------------
+    static void SerializeRenderSettings(YAML::Emitter& out, const RenderSettings& rs)
+    {
+        out << YAML::Key << "RenderSettings" << YAML::Value << YAML::BeginMap;
+
+        const auto& sh = rs.Shadows;
+        out << YAML::Key << "Shadows" << YAML::Value << YAML::BeginMap;
+        out << YAML::Key << "Enabled" << YAML::Value << sh.Enabled;
+        out << YAML::Key << "Quality" << YAML::Value << (int)sh.Quality;
+        out << YAML::Key << "Resolution" << YAML::Value << sh.Resolution;
+        out << YAML::Key << "Distance" << YAML::Value << sh.Distance;
+        out << YAML::Key << "CascadeCount" << YAML::Value << sh.CascadeCount;
+        out << YAML::Key << "CascadeSplitLambda" << YAML::Value << sh.CascadeSplitLambda;
+        out << YAML::Key << "Strength" << YAML::Value << sh.Strength;
+        out << YAML::Key << "Softness" << YAML::Value << sh.Softness;
+        out << YAML::Key << "DepthBias" << YAML::Value << sh.DepthBias;
+        out << YAML::Key << "NormalBias" << YAML::Value << sh.NormalBias;
+        out << YAML::Key << "Color" << YAML::Value << sh.Color;
+        out << YAML::EndMap;
+
+        const auto& fog = rs.Fog;
+        out << YAML::Key << "Fog" << YAML::Value << YAML::BeginMap;
+        out << YAML::Key << "Enabled" << YAML::Value << fog.Enabled;
+        out << YAML::Key << "Mode" << YAML::Value << (int)fog.Mode;
+        out << YAML::Key << "Color" << YAML::Value << fog.Color;
+        out << YAML::Key << "Density" << YAML::Value << fog.Density;
+        out << YAML::Key << "Start" << YAML::Value << fog.Start;
+        out << YAML::Key << "End" << YAML::Value << fog.End;
+        out << YAML::Key << "HeightFalloff" << YAML::Value << fog.HeightFalloff;
+        out << YAML::Key << "BaseHeight" << YAML::Value << fog.BaseHeight;
+        out << YAML::EndMap;
+
+        const auto& pp = rs.Post;
+        out << YAML::Key << "Post" << YAML::Value << YAML::BeginMap;
+        out << YAML::Key << "Enabled" << YAML::Value << pp.Enabled;
+        out << YAML::Key << "Tonemapper" << YAML::Value << (int)pp.Tonemap;
+        out << YAML::Key << "Exposure" << YAML::Value << pp.Exposure;
+        out << YAML::Key << "Bloom" << YAML::Value << pp.Bloom;
+        out << YAML::Key << "BloomThreshold" << YAML::Value << pp.BloomThreshold;
+        out << YAML::Key << "BloomKnee" << YAML::Value << pp.BloomKnee;
+        out << YAML::Key << "BloomIntensity" << YAML::Value << pp.BloomIntensity;
+        out << YAML::Key << "BloomScatter" << YAML::Value << pp.BloomScatter;
+        out << YAML::Key << "BloomTint" << YAML::Value << pp.BloomTint;
+        out << YAML::Key << "AmbientOcclusion" << YAML::Value << pp.AmbientOcclusion;
+        out << YAML::Key << "AORadius" << YAML::Value << pp.AORadius;
+        out << YAML::Key << "AOIntensity" << YAML::Value << pp.AOIntensity;
+        out << YAML::Key << "AOPower" << YAML::Value << pp.AOPower;
+        out << YAML::Key << "ColorGrading" << YAML::Value << pp.ColorGrading;
+        out << YAML::Key << "Contrast" << YAML::Value << pp.Contrast;
+        out << YAML::Key << "Saturation" << YAML::Value << pp.Saturation;
+        out << YAML::Key << "Temperature" << YAML::Value << pp.Temperature;
+        out << YAML::Key << "Tint" << YAML::Value << pp.Tint;
+        out << YAML::Key << "Lift" << YAML::Value << pp.Lift;
+        out << YAML::Key << "Gamma" << YAML::Value << pp.Gamma;
+        out << YAML::Key << "Gain" << YAML::Value << pp.Gain;
+        out << YAML::Key << "Vignette" << YAML::Value << pp.Vignette;
+        out << YAML::Key << "VignetteIntensity" << YAML::Value << pp.VignetteIntensity;
+        out << YAML::Key << "VignetteSmoothness" << YAML::Value << pp.VignetteSmoothness;
+        out << YAML::Key << "VignetteColor" << YAML::Value << pp.VignetteColor;
+        out << YAML::Key << "ChromaticAberration" << YAML::Value << pp.ChromaticAberration;
+        out << YAML::Key << "ChromaticAberrationIntensity" << YAML::Value << pp.ChromaticAberrationIntensity;
+        out << YAML::Key << "FilmGrain" << YAML::Value << pp.FilmGrain;
+        out << YAML::Key << "FilmGrainIntensity" << YAML::Value << pp.FilmGrainIntensity;
+        out << YAML::Key << "Sharpen" << YAML::Value << pp.Sharpen;
+        out << YAML::Key << "SharpenAmount" << YAML::Value << pp.SharpenAmount;
+        out << YAML::Key << "AntiAliasing" << YAML::Value << (int)pp.AntiAliasing;
+        out << YAML::Key << "TAAFeedback" << YAML::Value << pp.TAAFeedback;
+        out << YAML::Key << "TAASharpness" << YAML::Value << pp.TAASharpness;
+        out << YAML::Key << "ScreenSpaceReflections" << YAML::Value << pp.ScreenSpaceReflections;
+        out << YAML::Key << "SSRIntensity" << YAML::Value << pp.SSRIntensity;
+        out << YAML::Key << "SSRMaxDistance" << YAML::Value << pp.SSRMaxDistance;
+        out << YAML::Key << "SSRThickness" << YAML::Value << pp.SSRThickness;
+        out << YAML::Key << "SSRMaxRoughness" << YAML::Value << pp.SSRMaxRoughness;
+        out << YAML::Key << "ScreenSpaceGI" << YAML::Value << pp.ScreenSpaceGI;
+        out << YAML::Key << "SSGIIntensity" << YAML::Value << pp.SSGIIntensity;
+        out << YAML::Key << "SSGIRadius" << YAML::Value << pp.SSGIRadius;
+        out << YAML::Key << "SSGIRays" << YAML::Value << pp.SSGIRays;
+        out << YAML::Key << "VolumetricFog" << YAML::Value << pp.VolumetricFog;
+        out << YAML::Key << "VolumetricFogDensity" << YAML::Value << pp.VolumetricFogDensity;
+        out << YAML::Key << "VolumetricFogHeightFalloff" << YAML::Value << pp.VolumetricFogHeightFalloff;
+        out << YAML::Key << "VolumetricFogBaseHeight" << YAML::Value << pp.VolumetricFogBaseHeight;
+        out << YAML::Key << "VolumetricFogAnisotropy" << YAML::Value << pp.VolumetricFogAnisotropy;
+        out << YAML::Key << "VolumetricFogIntensity" << YAML::Value << pp.VolumetricFogIntensity;
+        out << YAML::Key << "VolumetricFogDistance" << YAML::Value << pp.VolumetricFogDistance;
+        out << YAML::Key << "VolumetricFogAlbedo" << YAML::Value << pp.VolumetricFogAlbedo;
+        out << YAML::Key << "VolumetricFogAmbient" << YAML::Value << pp.VolumetricFogAmbient;
+        out << YAML::Key << "VolumetricClouds" << YAML::Value << pp.VolumetricClouds;
+        out << YAML::Key << "CloudCoverage" << YAML::Value << pp.CloudCoverage;
+        out << YAML::Key << "CloudDensity" << YAML::Value << pp.CloudDensity;
+        out << YAML::Key << "CloudBottom" << YAML::Value << pp.CloudBottom;
+        out << YAML::Key << "CloudThickness" << YAML::Value << pp.CloudThickness;
+        out << YAML::Key << "CloudScale" << YAML::Value << pp.CloudScale;
+        out << YAML::Key << "CloudWindSpeed" << YAML::Value << pp.CloudWindSpeed;
+        out << YAML::Key << "CloudWindDirection" << YAML::Value << pp.CloudWindDirection;
+        out << YAML::Key << "CloudColor" << YAML::Value << pp.CloudColor;
+        out << YAML::Key << "DepthOfField" << YAML::Value << pp.DepthOfField;
+        out << YAML::Key << "FocusDistance" << YAML::Value << pp.FocusDistance;
+        out << YAML::Key << "Aperture" << YAML::Value << pp.Aperture;
+        out << YAML::Key << "FocalLength" << YAML::Value << pp.FocalLength;
+        out << YAML::Key << "DOFMaxBlur" << YAML::Value << pp.DOFMaxBlur;
+        out << YAML::Key << "MotionBlur" << YAML::Value << pp.MotionBlur;
+        out << YAML::Key << "MotionBlurIntensity" << YAML::Value << pp.MotionBlurIntensity;
+        out << YAML::Key << "MotionBlurMax" << YAML::Value << pp.MotionBlurMax;
+        out << YAML::Key << "AutoExposure" << YAML::Value << pp.AutoExposure;
+        out << YAML::Key << "AutoExposureMin" << YAML::Value << pp.AutoExposureMin;
+        out << YAML::Key << "AutoExposureMax" << YAML::Value << pp.AutoExposureMax;
+        out << YAML::Key << "AutoExposureSpeedUp" << YAML::Value << pp.AutoExposureSpeedUp;
+        out << YAML::Key << "AutoExposureSpeedDown" << YAML::Value << pp.AutoExposureSpeedDown;
+        out << YAML::Key << "AutoExposureCompensation" << YAML::Value << pp.AutoExposureCompensation;
+        out << YAML::EndMap;
+
+        const auto& env = rs.Environment;
+        out << YAML::Key << "Environment" << YAML::Value << YAML::BeginMap;
+        out << YAML::Key << "Sky" << YAML::Value << (int)env.Sky;
+        out << YAML::Key << "BackgroundColor" << YAML::Value << env.BackgroundColor;
+        out << YAML::Key << "ImageBasedLighting" << YAML::Value << env.ImageBasedLighting;
+        out << YAML::Key << "ReflectionIntensity" << YAML::Value << env.ReflectionIntensity;
+        out << YAML::Key << "SkyboxIntensity" << YAML::Value << env.SkyboxIntensity;
+        out << YAML::Key << "SpecularOcclusion" << YAML::Value << env.SpecularOcclusion;
+        out << YAML::Key << "AtmosphereRayleigh" << YAML::Value << env.AtmosphereRayleigh;
+        out << YAML::Key << "AtmosphereMie" << YAML::Value << env.AtmosphereMie;
+        out << YAML::Key << "AtmosphereMieAnisotropy" << YAML::Value << env.AtmosphereMieAnisotropy;
+        out << YAML::Key << "AtmosphereOzone" << YAML::Value << env.AtmosphereOzone;
+        out << YAML::Key << "AtmosphereSunDisk" << YAML::Value << env.AtmosphereSunDisk;
+        out << YAML::Key << "AtmosphereIntensity" << YAML::Value << env.AtmosphereIntensity;
+        out << YAML::Key << "AtmosphereGroundAlbedo" << YAML::Value << env.AtmosphereGroundAlbedo;
+        out << YAML::EndMap;
+
+        const auto& bk = rs.Bake;
+        out << YAML::Key << "Bake" << YAML::Value << YAML::BeginMap;
+        out << YAML::Key << "RealtimeGI" << YAML::Value << bk.RealtimeGI;
+        out << YAML::Key << "BakedGI" << YAML::Value << bk.BakedGI;
+        out << YAML::Key << "LightingMode" << YAML::Value << bk.LightingMode;
+        out << YAML::Key << "Lightmapper" << YAML::Value << bk.Lightmapper;
+        out << YAML::Key << "ImportanceSampling" << YAML::Value << bk.ImportanceSampling;
+        out << YAML::Key << "DirectSamples" << YAML::Value << bk.DirectSamples;
+        out << YAML::Key << "IndirectSamples" << YAML::Value << bk.IndirectSamples;
+        out << YAML::Key << "EnvironmentSamples" << YAML::Value << bk.EnvironmentSamples;
+        out << YAML::Key << "MaxBounces" << YAML::Value << bk.MaxBounces;
+        out << YAML::Key << "Filtering" << YAML::Value << bk.Filtering;
+        out << YAML::Key << "Packing" << YAML::Value << bk.Packing;
+        out << YAML::Key << "Resolution" << YAML::Value << bk.Resolution;
+        out << YAML::Key << "MaxLightmapSize" << YAML::Value << bk.MaxLightmapSize;
+        out << YAML::Key << "UseMipmapLimits" << YAML::Value << bk.UseMipmapLimits;
+        out << YAML::Key << "Compression" << YAML::Value << bk.Compression;
+        out << YAML::Key << "AmbientOcclusion" << YAML::Value << bk.AmbientOcclusion;
+        out << YAML::Key << "DirectionalMode" << YAML::Value << bk.DirectionalMode;
+        out << YAML::Key << "AlbedoBoost" << YAML::Value << bk.AlbedoBoost;
+        out << YAML::Key << "IndirectIntensity" << YAML::Value << bk.IndirectIntensity;
+        out << YAML::Key << "RealtimeResolution" << YAML::Value << bk.RealtimeResolution;
+        out << YAML::Key << "RealtimeIndirectSamples" << YAML::Value << bk.RealtimeIndirectSamples;
+        out << YAML::Key << "RealtimeMaxBounces" << YAML::Value << bk.RealtimeMaxBounces;
+        out << YAML::Key << "AutoGenerate" << YAML::Value << bk.AutoGenerate;
+        out << YAML::Key << "BakeOnSceneLoad" << YAML::Value << bk.BakeOnSceneLoad;
+        out << YAML::Key << "APVFitToScene" << YAML::Value << bk.APVFitToScene;
+        out << YAML::Key << "APVOrigin" << YAML::Value << bk.APVOrigin;
+        out << YAML::Key << "APVSize" << YAML::Value << bk.APVSize;
+        out << YAML::Key << "APVProbeOffset" << YAML::Value << bk.APVProbeOffset;
+        out << YAML::Key << "APVMinSpacing" << YAML::Value << bk.APVMinSpacing;
+        out << YAML::Key << "APVMaxSpacing" << YAML::Value << bk.APVMaxSpacing;
+        out << YAML::Key << "APVBakingMode" << YAML::Value << bk.APVBakingMode;
+        out << YAML::Key << "APVDilation" << YAML::Value << bk.APVDilation;
+        out << YAML::Key << "APVVirtualOffset" << YAML::Value << bk.APVVirtualOffset;
+        out << YAML::Key << "APVValidityThreshold" << YAML::Value << bk.APVValidityThreshold;
+        out << YAML::Key << "APVSearchDistanceMultiplier" << YAML::Value << bk.APVSearchDistanceMultiplier;
+        out << YAML::Key << "APVGeometryBias" << YAML::Value << bk.APVGeometryBias;
+        out << YAML::Key << "APVRayOriginBias" << YAML::Value << bk.APVRayOriginBias;
+        out << YAML::EndMap;
+
+        out << YAML::EndMap; // RenderSettings
+    }
+
+    template<typename T>
+    static void ReadIf(const YAML::Node& node, const char* key, T& value)
+    {
+        if (node && node[key])
+        {
+            try { value = node[key].as<T>(); }
+            catch (const std::exception&) { /* bozuk değer: varsayılan kalır */ }
+        }
+    }
+
+    template<typename E>
+    static void ReadEnumIf(const YAML::Node& node, const char* key, E& value)
+    {
+        int v = (int)value;
+        ReadIf(node, key, v);
+        value = (E)v;
+    }
+
+    static void DeserializeRenderSettings(const YAML::Node& node, RenderSettings& rs)
+    {
+        if (!node)
+            return;
+        if (auto sh = node["Shadows"])
+        {
+            auto& s = rs.Shadows;
+            ReadIf(sh, "Enabled", s.Enabled);
+            ReadEnumIf(sh, "Quality", s.Quality);
+            ReadIf(sh, "Resolution", s.Resolution);
+            ReadIf(sh, "Distance", s.Distance);
+            ReadIf(sh, "CascadeCount", s.CascadeCount);
+            ReadIf(sh, "CascadeSplitLambda", s.CascadeSplitLambda);
+            ReadIf(sh, "Strength", s.Strength);
+            ReadIf(sh, "Softness", s.Softness);
+            ReadIf(sh, "DepthBias", s.DepthBias);
+            ReadIf(sh, "NormalBias", s.NormalBias);
+            ReadIf(sh, "Color", s.Color);
+        }
+        if (auto fog = node["Fog"])
+        {
+            auto& f = rs.Fog;
+            ReadIf(fog, "Enabled", f.Enabled);
+            ReadEnumIf(fog, "Mode", f.Mode);
+            ReadIf(fog, "Color", f.Color);
+            ReadIf(fog, "Density", f.Density);
+            ReadIf(fog, "Start", f.Start);
+            ReadIf(fog, "End", f.End);
+            ReadIf(fog, "HeightFalloff", f.HeightFalloff);
+            ReadIf(fog, "BaseHeight", f.BaseHeight);
+        }
+        if (auto pp = node["Post"])
+        {
+            auto& p = rs.Post;
+            ReadIf(pp, "Enabled", p.Enabled);
+            ReadEnumIf(pp, "Tonemapper", p.Tonemap);
+            ReadIf(pp, "Exposure", p.Exposure);
+            ReadIf(pp, "Bloom", p.Bloom);
+            ReadIf(pp, "BloomThreshold", p.BloomThreshold);
+            ReadIf(pp, "BloomKnee", p.BloomKnee);
+            ReadIf(pp, "BloomIntensity", p.BloomIntensity);
+            ReadIf(pp, "BloomScatter", p.BloomScatter);
+            ReadIf(pp, "BloomTint", p.BloomTint);
+            ReadIf(pp, "AmbientOcclusion", p.AmbientOcclusion);
+            ReadIf(pp, "AORadius", p.AORadius);
+            ReadIf(pp, "AOIntensity", p.AOIntensity);
+            ReadIf(pp, "AOPower", p.AOPower);
+            ReadIf(pp, "ColorGrading", p.ColorGrading);
+            ReadIf(pp, "Contrast", p.Contrast);
+            ReadIf(pp, "Saturation", p.Saturation);
+            ReadIf(pp, "Temperature", p.Temperature);
+            ReadIf(pp, "Tint", p.Tint);
+            ReadIf(pp, "Lift", p.Lift);
+            ReadIf(pp, "Gamma", p.Gamma);
+            ReadIf(pp, "Gain", p.Gain);
+            ReadIf(pp, "Vignette", p.Vignette);
+            ReadIf(pp, "VignetteIntensity", p.VignetteIntensity);
+            ReadIf(pp, "VignetteSmoothness", p.VignetteSmoothness);
+            ReadIf(pp, "VignetteColor", p.VignetteColor);
+            ReadIf(pp, "ChromaticAberration", p.ChromaticAberration);
+            ReadIf(pp, "ChromaticAberrationIntensity", p.ChromaticAberrationIntensity);
+            ReadIf(pp, "FilmGrain", p.FilmGrain);
+            ReadIf(pp, "FilmGrainIntensity", p.FilmGrainIntensity);
+            ReadIf(pp, "Sharpen", p.Sharpen);
+            ReadIf(pp, "SharpenAmount", p.SharpenAmount);
+            ReadEnumIf(pp, "AntiAliasing", p.AntiAliasing);
+            ReadIf(pp, "TAAFeedback", p.TAAFeedback);
+            ReadIf(pp, "TAASharpness", p.TAASharpness);
+            ReadIf(pp, "ScreenSpaceReflections", p.ScreenSpaceReflections);
+            ReadIf(pp, "SSRIntensity", p.SSRIntensity);
+            ReadIf(pp, "SSRMaxDistance", p.SSRMaxDistance);
+            ReadIf(pp, "SSRThickness", p.SSRThickness);
+            ReadIf(pp, "SSRMaxRoughness", p.SSRMaxRoughness);
+            ReadIf(pp, "ScreenSpaceGI", p.ScreenSpaceGI);
+            ReadIf(pp, "SSGIIntensity", p.SSGIIntensity);
+            ReadIf(pp, "SSGIRadius", p.SSGIRadius);
+            ReadIf(pp, "SSGIRays", p.SSGIRays);
+            ReadIf(pp, "VolumetricFog", p.VolumetricFog);
+            ReadIf(pp, "VolumetricFogDensity", p.VolumetricFogDensity);
+            ReadIf(pp, "VolumetricFogHeightFalloff", p.VolumetricFogHeightFalloff);
+            ReadIf(pp, "VolumetricFogBaseHeight", p.VolumetricFogBaseHeight);
+            ReadIf(pp, "VolumetricFogAnisotropy", p.VolumetricFogAnisotropy);
+            ReadIf(pp, "VolumetricFogIntensity", p.VolumetricFogIntensity);
+            ReadIf(pp, "VolumetricFogDistance", p.VolumetricFogDistance);
+            ReadIf(pp, "VolumetricFogAlbedo", p.VolumetricFogAlbedo);
+            ReadIf(pp, "VolumetricFogAmbient", p.VolumetricFogAmbient);
+            ReadIf(pp, "VolumetricClouds", p.VolumetricClouds);
+            ReadIf(pp, "CloudCoverage", p.CloudCoverage);
+            ReadIf(pp, "CloudDensity", p.CloudDensity);
+            ReadIf(pp, "CloudBottom", p.CloudBottom);
+            ReadIf(pp, "CloudThickness", p.CloudThickness);
+            ReadIf(pp, "CloudScale", p.CloudScale);
+            ReadIf(pp, "CloudWindSpeed", p.CloudWindSpeed);
+            ReadIf(pp, "CloudWindDirection", p.CloudWindDirection);
+            ReadIf(pp, "CloudColor", p.CloudColor);
+            ReadIf(pp, "DepthOfField", p.DepthOfField);
+            ReadIf(pp, "FocusDistance", p.FocusDistance);
+            ReadIf(pp, "Aperture", p.Aperture);
+            ReadIf(pp, "FocalLength", p.FocalLength);
+            ReadIf(pp, "DOFMaxBlur", p.DOFMaxBlur);
+            ReadIf(pp, "MotionBlur", p.MotionBlur);
+            ReadIf(pp, "MotionBlurIntensity", p.MotionBlurIntensity);
+            ReadIf(pp, "MotionBlurMax", p.MotionBlurMax);
+            ReadIf(pp, "AutoExposure", p.AutoExposure);
+            ReadIf(pp, "AutoExposureMin", p.AutoExposureMin);
+            ReadIf(pp, "AutoExposureMax", p.AutoExposureMax);
+            ReadIf(pp, "AutoExposureSpeedUp", p.AutoExposureSpeedUp);
+            ReadIf(pp, "AutoExposureSpeedDown", p.AutoExposureSpeedDown);
+            ReadIf(pp, "AutoExposureCompensation", p.AutoExposureCompensation);
+        }
+        if (auto env = node["Environment"])
+        {
+            auto& e = rs.Environment;
+            ReadEnumIf(env, "Sky", e.Sky);
+            ReadIf(env, "BackgroundColor", e.BackgroundColor);
+            ReadIf(env, "ImageBasedLighting", e.ImageBasedLighting);
+            ReadIf(env, "ReflectionIntensity", e.ReflectionIntensity);
+            ReadIf(env, "SkyboxIntensity", e.SkyboxIntensity);
+            ReadIf(env, "SpecularOcclusion", e.SpecularOcclusion);
+            ReadIf(env, "AtmosphereRayleigh", e.AtmosphereRayleigh);
+            ReadIf(env, "AtmosphereMie", e.AtmosphereMie);
+            ReadIf(env, "AtmosphereMieAnisotropy", e.AtmosphereMieAnisotropy);
+            ReadIf(env, "AtmosphereOzone", e.AtmosphereOzone);
+            ReadIf(env, "AtmosphereSunDisk", e.AtmosphereSunDisk);
+            ReadIf(env, "AtmosphereIntensity", e.AtmosphereIntensity);
+            ReadIf(env, "AtmosphereGroundAlbedo", e.AtmosphereGroundAlbedo);
+        }
+        if (auto bake = node["Bake"])
+        {
+            auto& b = rs.Bake;
+            ReadIf(bake, "RealtimeGI", b.RealtimeGI);
+            ReadIf(bake, "BakedGI", b.BakedGI);
+            ReadIf(bake, "LightingMode", b.LightingMode);
+            ReadIf(bake, "Lightmapper", b.Lightmapper);
+            ReadIf(bake, "ImportanceSampling", b.ImportanceSampling);
+            ReadIf(bake, "DirectSamples", b.DirectSamples);
+            ReadIf(bake, "IndirectSamples", b.IndirectSamples);
+            ReadIf(bake, "EnvironmentSamples", b.EnvironmentSamples);
+            ReadIf(bake, "MaxBounces", b.MaxBounces);
+            ReadIf(bake, "Filtering", b.Filtering);
+            ReadIf(bake, "Packing", b.Packing);
+            ReadIf(bake, "Resolution", b.Resolution);
+            ReadIf(bake, "MaxLightmapSize", b.MaxLightmapSize);
+            ReadIf(bake, "UseMipmapLimits", b.UseMipmapLimits);
+            ReadIf(bake, "Compression", b.Compression);
+            ReadIf(bake, "AmbientOcclusion", b.AmbientOcclusion);
+            ReadIf(bake, "DirectionalMode", b.DirectionalMode);
+            ReadIf(bake, "AlbedoBoost", b.AlbedoBoost);
+            ReadIf(bake, "IndirectIntensity", b.IndirectIntensity);
+            ReadIf(bake, "RealtimeResolution", b.RealtimeResolution);
+            ReadIf(bake, "RealtimeIndirectSamples", b.RealtimeIndirectSamples);
+            ReadIf(bake, "RealtimeMaxBounces", b.RealtimeMaxBounces);
+            ReadIf(bake, "AutoGenerate", b.AutoGenerate);
+            ReadIf(bake, "BakeOnSceneLoad", b.BakeOnSceneLoad);
+            ReadIf(bake, "APVFitToScene", b.APVFitToScene);
+            ReadIf(bake, "APVOrigin", b.APVOrigin);
+            ReadIf(bake, "APVSize", b.APVSize);
+            ReadIf(bake, "APVProbeOffset", b.APVProbeOffset);
+            ReadIf(bake, "APVMinSpacing", b.APVMinSpacing);
+            ReadIf(bake, "APVMaxSpacing", b.APVMaxSpacing);
+            ReadIf(bake, "APVBakingMode", b.APVBakingMode);
+            ReadIf(bake, "APVDilation", b.APVDilation);
+            ReadIf(bake, "APVVirtualOffset", b.APVVirtualOffset);
+            ReadIf(bake, "APVValidityThreshold", b.APVValidityThreshold);
+            ReadIf(bake, "APVSearchDistanceMultiplier", b.APVSearchDistanceMultiplier);
+            ReadIf(bake, "APVGeometryBias", b.APVGeometryBias);
+            ReadIf(bake, "APVRayOriginBias", b.APVRayOriginBias);
+        }
+
+        // Akıl sağlığı sınırları (elle düzenlenmiş dosyalar için)
+        rs.Shadows.CascadeCount = std::clamp(rs.Shadows.CascadeCount, 1, 4);
+        rs.Shadows.Resolution = std::clamp(rs.Shadows.Resolution, 512, 8192);
+        rs.Shadows.Distance = std::max(rs.Shadows.Distance, 1.0f);
+    }
+
+    std::string SceneSerializer::ToAssetPath(const std::string& absolutePath)
+    {
+        return ToSerializablePath(absolutePath);
+    }
+
+    std::string SceneSerializer::ResolveAssetPath(const std::string& path)
+    {
+        return ResolveSerializablePath(path);
     }
 
     SceneSerializer::SceneSerializer(const std::shared_ptr<Scene>& scene)
@@ -286,6 +1210,8 @@ namespace Conqueror
 
             out << YAML::Key << "Primary" << YAML::Value << cameraComponent.Primary;
             out << YAML::Key << "FixedAspectRatio" << YAML::Value << cameraComponent.FixedAspectRatio;
+            out << YAML::Key << "Background" << YAML::Value << (int)cameraComponent.Background;
+            out << YAML::Key << "BackgroundColor" << YAML::Value << cameraComponent.BackgroundColor;
 
             out << YAML::EndMap;
         }
@@ -304,6 +1230,18 @@ namespace Conqueror
             {
                 out << YAML::Key << "TexturePath" << YAML::Value << ToSerializablePath(spriteRenderer.Texture->GetPath());
             }
+            if (!spriteRenderer.SpriteName.empty())
+                out << YAML::Key << "SpriteName" << YAML::Value << spriteRenderer.SpriteName;
+            out << YAML::Key << "Rect" << YAML::Value << spriteRenderer.Rect;
+            out << YAML::Key << "Pivot" << YAML::Value << spriteRenderer.Pivot;
+            out << YAML::Key << "Border" << YAML::Value << spriteRenderer.Border;
+            out << YAML::Key << "PixelsPerUnit" << YAML::Value << spriteRenderer.PixelsPerUnit;
+            out << YAML::Key << "FlipX" << YAML::Value << spriteRenderer.FlipX;
+            out << YAML::Key << "FlipY" << YAML::Value << spriteRenderer.FlipY;
+            out << YAML::Key << "DrawMode" << YAML::Value << (int)spriteRenderer.DrawMode;
+            out << YAML::Key << "Size" << YAML::Value << spriteRenderer.Size;
+            if (spriteRenderer.MaskInteraction != SpriteMaskInteraction::None)
+                out << YAML::Key << "MaskInteraction" << YAML::Value << (int)spriteRenderer.MaskInteraction;
 
             out << YAML::EndMap;
         }
@@ -329,45 +1267,81 @@ namespace Conqueror
             out << YAML::Key << "Text" << YAML::Value << textRenderer.Text;
             out << YAML::Key << "Color" << YAML::Value << textRenderer.Color;
             out << YAML::Key << "FontSize" << YAML::Value << textRenderer.FontSize;
+            if (textRenderer.Alignment != TextAlignment::Left)
+                out << YAML::Key << "Alignment" << YAML::Value << (int)textRenderer.Alignment;
 
             out << YAML::EndMap;
         }
 
-        if (entity.HasComponent<NavMeshAgentComponent>())
+        // NavMesh Agent / Obstacle / Surface: bileşen kayıt sistemi (ComponentRegistry) serileştirir
+
+        if (entity.HasComponent<ReflectionProbeComponent>())
         {
-            out << YAML::Key << "NavMeshAgentComponent";
-            out << YAML::BeginMap;
-            auto& comp = entity.GetComponent<NavMeshAgentComponent>();
-            out << YAML::Key << "Speed" << YAML::Value << comp.Speed;
-            out << YAML::Key << "AngularSpeed" << YAML::Value << comp.AngularSpeed;
-            out << YAML::Key << "Acceleration" << YAML::Value << comp.Acceleration;
-            out << YAML::Key << "StoppingDistance" << YAML::Value << comp.StoppingDistance;
-            out << YAML::Key << "Radius" << YAML::Value << comp.Radius;
-            out << YAML::Key << "Height" << YAML::Value << comp.Height;
-            out << YAML::Key << "AutoBraking" << YAML::Value << comp.AutoBraking;
+            auto& comp = entity.GetComponent<ReflectionProbeComponent>();
+            out << YAML::Key << "ReflectionProbeComponent" << YAML::BeginMap;
+            out << YAML::Key << "BoxOffset" << YAML::Value << comp.BoxOffset;
+            out << YAML::Key << "BoxSize" << YAML::Value << comp.BoxSize;
+            out << YAML::Key << "Resolution" << YAML::Value << comp.Resolution;
+            out << YAML::Key << "Intensity" << YAML::Value << comp.Intensity;
+            out << YAML::Key << "Bounces" << YAML::Value << comp.Bounces;
+            out << YAML::Key << "RealtimeUpdate" << YAML::Value << comp.RealtimeUpdate;
+            out << YAML::Key << "BlendDistance" << YAML::Value << comp.BlendDistance;
+            out << YAML::Key << "UpdateInterval" << YAML::Value << comp.UpdateInterval;
             out << YAML::EndMap;
         }
 
-        if (entity.HasComponent<NavMeshObstacleComponent>())
+        if (entity.HasComponent<AdaptiveProbeVolumeComponent>())
         {
-            out << YAML::Key << "NavMeshObstacleComponent";
-            out << YAML::BeginMap;
-            auto& comp = entity.GetComponent<NavMeshObstacleComponent>();
-            out << YAML::Key << "Carve" << YAML::Value << comp.Carve;
-            out << YAML::Key << "Radius" << YAML::Value << comp.Radius;
-            out << YAML::Key << "Size" << YAML::Value << comp.Size;
-            out << YAML::Key << "Center" << YAML::Value << comp.Center;
+            auto& comp = entity.GetComponent<AdaptiveProbeVolumeComponent>();
+            out << YAML::Key << "AdaptiveProbeVolumeComponent" << YAML::BeginMap;
+            out << YAML::Key << "ProbeOffset" << YAML::Value << comp.ProbeOffset;
+            out << YAML::Key << "MinSpacing" << YAML::Value << comp.MinSpacing;
+            out << YAML::Key << "MaxSpacing" << YAML::Value << comp.MaxSpacing;
+            out << YAML::Key << "BakingMode" << YAML::Value << comp.BakingMode;
+            out << YAML::Key << "Dilation" << YAML::Value << comp.Dilation;
+            out << YAML::Key << "VirtualOffset" << YAML::Value << comp.VirtualOffset;
+            out << YAML::Key << "ValidityThreshold" << YAML::Value << comp.ValidityThreshold;
+            out << YAML::Key << "SearchDistanceMultiplier" << YAML::Value << comp.SearchDistanceMultiplier;
+            out << YAML::Key << "GeometryBias" << YAML::Value << comp.GeometryBias;
+            out << YAML::Key << "RayOriginBias" << YAML::Value << comp.RayOriginBias;
             out << YAML::EndMap;
         }
 
-        if (entity.HasComponent<NavMeshSurfaceComponent>())
+        if (entity.HasComponent<ParticleSystemComponent>())
+            SerializeParticleSystem(out, entity.GetComponent<ParticleSystemComponent>());
+        // Kayıtlı (yansımalı) bileşenler
+        ComponentRegistry::SerializeEntity(out, entity);
+        SerializeUI(out, entity);
+
+        if (entity.HasComponent<TerrainComponent>())
         {
-            out << YAML::Key << "NavMeshSurfaceComponent";
-            out << YAML::BeginMap;
-            auto& comp = entity.GetComponent<NavMeshSurfaceComponent>();
-            out << YAML::Key << "AreaType" << YAML::Value << comp.AreaType;
-            out << YAML::Key << "OverrideVoxelSize" << YAML::Value << comp.OverrideVoxelSize;
-            out << YAML::Key << "VoxelSize" << YAML::Value << comp.VoxelSize;
+            auto& t = entity.GetComponent<TerrainComponent>();
+            TerrainSystem::EnsureData(t);
+            out << YAML::Key << "TerrainComponent" << YAML::BeginMap;
+            out << YAML::Key << "Width" << YAML::Value << t.Width;
+            out << YAML::Key << "Length" << YAML::Value << t.Length;
+            out << YAML::Key << "Height" << YAML::Value << t.Height;
+            out << YAML::Key << "Resolution" << YAML::Value << t.Resolution;
+            out << YAML::Key << "SplatResolution" << YAML::Value << t.SplatResolution;
+            out << YAML::Key << "LayerCount" << YAML::Value << t.LayerCount;
+            out << YAML::Key << "CastShadows" << YAML::Value << t.CastShadows;
+            out << YAML::Key << "ReceiveShadows" << YAML::Value << t.ReceiveShadows;
+            out << YAML::Key << "EnableCollider" << YAML::Value << t.EnableCollider;
+            out << YAML::Key << "Layers" << YAML::Value << YAML::BeginSeq;
+            for (int i = 0; i < TerrainComponent::MaxLayers; ++i)
+            {
+                const auto& l = t.Layers[(size_t)i];
+                out << YAML::BeginMap;
+                out << YAML::Key << "Texture" << YAML::Value << ToSerializablePath(l.TexturePath);
+                out << YAML::Key << "Tint" << YAML::Value << l.Tint;
+                out << YAML::Key << "Tiling" << YAML::Value << l.Tiling;
+                out << YAML::Key << "Roughness" << YAML::Value << l.Roughness;
+                out << YAML::Key << "Metallic" << YAML::Value << l.Metallic;
+                out << YAML::EndMap;
+            }
+            out << YAML::EndSeq;
+            out << YAML::Key << "Heights" << YAML::Value << TerrainSystem::EncodeHeights(t);
+            out << YAML::Key << "Splat" << YAML::Value << TerrainSystem::EncodeSplat(t);
             out << YAML::EndMap;
         }
 
@@ -382,62 +1356,51 @@ namespace Conqueror
             out << YAML::Key << "Metallic" << YAML::Value << meshRenderer.Metallic;
             out << YAML::Key << "Roughness" << YAML::Value << meshRenderer.Roughness;
             out << YAML::Key << "AO" << YAML::Value << meshRenderer.AO;
+            if (meshRenderer.EmissionStrength != 0.0f || meshRenderer.EmissionColor != glm::vec3(0.0f))
+            {
+                out << YAML::Key << "EmissionColor" << YAML::Value << meshRenderer.EmissionColor;
+                out << YAML::Key << "EmissionStrength" << YAML::Value << meshRenderer.EmissionStrength;
+                if (meshRenderer.EmissionFromTexture)
+                    out << YAML::Key << "EmissionFromTexture" << YAML::Value << true;
+            }
+            if (meshRenderer.Tiling != glm::vec2(1.0f) || meshRenderer.Offset != glm::vec2(0.0f))
+            {
+                out << YAML::Key << "Tiling" << YAML::Value << meshRenderer.Tiling;
+                out << YAML::Key << "Offset" << YAML::Value << meshRenderer.Offset;
+            }
+            if (meshRenderer.WorldAlignedUV)
+                out << YAML::Key << "WorldAlignedUV" << YAML::Value << true;
+            if (meshRenderer.AlignToObject)
+                out << YAML::Key << "AlignToObject" << YAML::Value << true;
+            if (!meshRenderer.CastShadows)
+                out << YAML::Key << "CastShadows" << YAML::Value << false;
+            if (!meshRenderer.ReceiveShadows)
+                out << YAML::Key << "ReceiveShadows" << YAML::Value << false;
+            if (meshRenderer.RealtimeGI)
+                out << YAML::Key << "RealtimeGI" << YAML::Value << true;
+            if (meshRenderer.Unlit)
+                out << YAML::Key << "Unlit" << YAML::Value << true;
+            if (meshRenderer.AlphaClip)
+            {
+                out << YAML::Key << "AlphaClip" << YAML::Value << true;
+                out << YAML::Key << "AlphaClipThreshold" << YAML::Value << meshRenderer.AlphaClipThreshold;
+            }
             out << YAML::Key << "TexturePath" << YAML::Value << ToSerializablePath(meshRenderer.TexturePath);
+            if (!meshRenderer.NormalMapPath.empty())
+                out << YAML::Key << "NormalMapPath" << YAML::Value << ToSerializablePath(meshRenderer.NormalMapPath);
+            if (!meshRenderer.MaskMapPath.empty())
+                out << YAML::Key << "MaskMapPath" << YAML::Value << ToSerializablePath(meshRenderer.MaskMapPath);
 
-            if (meshRenderer.MaterialInstance)
+            // Malzeme: dosyaya başvuru (Unity / Unreal), yoksa sahneye gömülü
+            // Dosya yeniden adlandırıldı / taşındıysa güncel yol önbellekten
+            const std::string materialPath = meshRenderer.MaterialPath.empty() ? std::string()
+                : [&] { std::string now = MaterialAsset::PathOf(meshRenderer.MaterialInstance.get()); return now.empty() ? meshRenderer.MaterialPath : now; }();
+            if (!materialPath.empty())
+                out << YAML::Key << "MaterialAsset" << YAML::Value << ToSerializablePath(materialPath);
+            else if (meshRenderer.MaterialInstance)
             {
                 out << YAML::Key << "Material";
-                out << YAML::BeginMap;
-                auto& mat = meshRenderer.MaterialInstance;
-                out << YAML::Key << "Name" << YAML::Value << mat->Name;
-                out << YAML::Key << "Albedo" << YAML::Value << mat->Albedo;
-                out << YAML::Key << "Metallic" << YAML::Value << mat->Metallic;
-                out << YAML::Key << "Roughness" << YAML::Value << mat->Roughness;
-                out << YAML::Key << "AO" << YAML::Value << mat->AO;
-                out << YAML::Key << "EmissionColor" << YAML::Value << mat->EmissionColor;
-                out << YAML::Key << "EmissionStrength" << YAML::Value << mat->EmissionStrength;
-                out << YAML::Key << "Tiling" << YAML::Value << mat->Tiling;
-                out << YAML::Key << "Offset" << YAML::Value << mat->Offset;
-                
-                // Shader Graph
-                out << YAML::Key << "NextGraphNodeID" << YAML::Value << mat->NextGraphNodeID;
-                out << YAML::Key << "NextGraphLinkID" << YAML::Value << mat->NextGraphLinkID;
-                out << YAML::Key << "GraphInitialized" << YAML::Value << mat->GraphInitialized;
-
-                out << YAML::Key << "GraphNodes" << YAML::Value << YAML::BeginSeq;
-                for (const auto& node : mat->GraphNodes)
-                {
-                    out << YAML::BeginMap;
-                    out << YAML::Key << "ID" << YAML::Value << node.ID;
-                    out << YAML::Key << "Type" << YAML::Value << (int)node.Type;
-                    out << YAML::Key << "EditorPosX" << YAML::Value << node.EditorPosition.x;
-                    out << YAML::Key << "EditorPosY" << YAML::Value << node.EditorPosition.y;
-                    
-                    // Values
-                    out << YAML::Key << "ColorValue" << YAML::Value << node.ColorValue;
-                    out << YAML::Key << "FloatValue" << YAML::Value << node.FloatValue;
-                    out << YAML::Key << "Vec2Value" << YAML::Value << node.Vec2Value;
-                    out << YAML::Key << "Vec3Value" << YAML::Value << node.Vec3Value;
-                    out << YAML::Key << "TexturePath" << YAML::Value << ToSerializablePath(node.TexturePath);
-                    
-                    out << YAML::EndMap;
-                }
-                out << YAML::EndSeq;
-
-                out << YAML::Key << "GraphLinks" << YAML::Value << YAML::BeginSeq;
-                for (const auto& link : mat->GraphLinks)
-                {
-                    out << YAML::BeginMap;
-                    out << YAML::Key << "ID" << YAML::Value << link.ID;
-                    out << YAML::Key << "From" << YAML::Value << link.FromNodeID;
-                    out << YAML::Key << "FromPin" << YAML::Value << link.FromPinIndex;
-                    out << YAML::Key << "To" << YAML::Value << link.ToNodeID;
-                    out << YAML::Key << "ToPin" << YAML::Value << link.ToPinIndex;
-                    out << YAML::EndMap;
-                }
-                out << YAML::EndSeq;
-
-                out << YAML::EndMap;
+                EmitMaterial(out, *meshRenderer.MaterialInstance);
             }
 
             out << YAML::EndMap;
@@ -450,6 +1413,8 @@ namespace Conqueror
 
             auto& light = entity.GetComponent<DirectionalLightComponent>();
             out << YAML::Key << "Direction" << YAML::Value << light.Direction;
+            // Yön artık nesnenin dönüşünden gelir (eski sahneler yüklenirken Direction -> dönüş)
+            out << YAML::Key << "FromRotation" << YAML::Value << true;
             out << YAML::Key << "Color" << YAML::Value << light.Color;
             out << YAML::Key << "Intensity" << YAML::Value << light.Intensity;
             out << YAML::Key << "CastShadows" << YAML::Value << light.CastShadows;
@@ -483,6 +1448,7 @@ namespace Conqueror
 
             auto& light = entity.GetComponent<SpotLightComponent>();
             out << YAML::Key << "Direction" << YAML::Value << light.Direction;
+            out << YAML::Key << "FromRotation" << YAML::Value << true;
             out << YAML::Key << "Color" << YAML::Value << light.Color;
             out << YAML::Key << "Intensity" << YAML::Value << light.Intensity;
             out << YAML::Key << "Range" << YAML::Value << light.Range;
@@ -522,6 +1488,24 @@ namespace Conqueror
                 out << YAML::BeginMap;
                 out << YAML::Key << "ScriptPath" << YAML::Value << ToSerializablePath(script.ScriptPath);
                 out << YAML::Key << "ClassName" << YAML::Value << script.ClassName;
+                if (!script.FieldOverrides.empty())
+                {
+                    out << YAML::Key << "Fields" << YAML::Value << YAML::BeginMap;
+                    for (const auto& [name, v] : script.FieldOverrides)
+                    {
+                        out << YAML::Key << name << YAML::Value << YAML::BeginMap;
+                        switch (v.Type)
+                        {
+                            case ScriptFieldOverride::Kind::Bool: out << YAML::Key << "Bool" << YAML::Value << v.Bool; break;
+                            case ScriptFieldOverride::Kind::Int: out << YAML::Key << "Int" << YAML::Value << v.Int; break;
+                            case ScriptFieldOverride::Kind::Float: out << YAML::Key << "Float" << YAML::Value << v.Float; break;
+                            case ScriptFieldOverride::Kind::String: out << YAML::Key << "String" << YAML::Value << v.String; break;
+                            default: out << YAML::Key << "Null" << YAML::Value << true; break;
+                        }
+                        out << YAML::EndMap;
+                    }
+                    out << YAML::EndMap;
+                }
                 out << YAML::EndMap;
             }
         }
@@ -532,7 +1516,9 @@ namespace Conqueror
             out << YAML::BeginMap;
 
             auto& model = entity.GetComponent<ModelComponent>();
-            out << YAML::Key << "FilePath" << YAML::Value << model.FilePath;
+            out << YAML::Key << "FilePath" << YAML::Value << ToSerializablePath(model.FilePath);
+            if (model.Tint != glm::vec3(1.0f))
+                out << YAML::Key << "Tint" << YAML::Value << model.Tint;
 
             out << YAML::EndMap;
         }
@@ -593,7 +1579,7 @@ namespace Conqueror
                     std::error_code ec;
                     auto relative = std::filesystem::relative(texPath, projectDir, ec);
                     if (!ec && !relative.empty() && relative.native()[0] != '.')
-                        texPath = relative.string();
+                        texPath = relative.generic_string();
                 }
                 out << YAML::Key << "TexturePath" << YAML::Value << texPath;
             }
@@ -652,6 +1638,8 @@ namespace Conqueror
             out << YAML::Key << "ScaleMode" << YAML::Value << (int)scaler.ScaleMode;
             out << YAML::Key << "ScaleFactor" << YAML::Value << scaler.ScaleFactor;
             out << YAML::Key << "ReferencePixelsPerUnit" << YAML::Value << scaler.ReferencePixelsPerUnit;
+            out << YAML::Key << "ReferenceResolution" << YAML::Value << scaler.ReferenceResolution;
+            out << YAML::Key << "MatchWidthOrHeight" << YAML::Value << scaler.MatchWidthOrHeight;
 
             out << YAML::EndMap;
         }
@@ -677,6 +1665,14 @@ namespace Conqueror
             auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
             out << YAML::Key << "BodyType" << YAML::Value << (int)rb2d.Type;
             out << YAML::Key << "FixedRotation" << YAML::Value << rb2d.FixedRotation;
+            out << YAML::Key << "UseAutoMass" << YAML::Value << rb2d.UseAutoMass;
+            out << YAML::Key << "Mass" << YAML::Value << rb2d.Mass;
+            out << YAML::Key << "LinearDrag" << YAML::Value << rb2d.LinearDrag;
+            out << YAML::Key << "AngularDrag" << YAML::Value << rb2d.AngularDrag;
+            out << YAML::Key << "GravityScale" << YAML::Value << rb2d.GravityScale;
+            out << YAML::Key << "Interpolate" << YAML::Value << rb2d.Interpolate;
+            out << YAML::Key << "ContinuousCollision" << YAML::Value << rb2d.ContinuousCollision;
+            out << YAML::Key << "AllowSleep" << YAML::Value << rb2d.AllowSleep;
 
             out << YAML::EndMap;
         }
@@ -693,6 +1689,9 @@ namespace Conqueror
             out << YAML::Key << "Friction" << YAML::Value << bc2d.Friction;
             out << YAML::Key << "Restitution" << YAML::Value << bc2d.Restitution;
             out << YAML::Key << "RestitutionThreshold" << YAML::Value << bc2d.RestitutionThreshold;
+            out << YAML::Key << "IsTrigger" << YAML::Value << bc2d.IsTrigger;
+            out << YAML::Key << "EdgeRadius" << YAML::Value << bc2d.EdgeRadius;
+            out << YAML::Key << "Version" << YAML::Value << 2;
 
             out << YAML::EndMap;
         }
@@ -709,6 +1708,8 @@ namespace Conqueror
             out << YAML::Key << "Friction" << YAML::Value << cc2d.Friction;
             out << YAML::Key << "Restitution" << YAML::Value << cc2d.Restitution;
             out << YAML::Key << "RestitutionThreshold" << YAML::Value << cc2d.RestitutionThreshold;
+            out << YAML::Key << "IsTrigger" << YAML::Value << cc2d.IsTrigger;
+            out << YAML::Key << "Version" << YAML::Value << 2;
 
             out << YAML::EndMap;
         }
@@ -728,6 +1729,13 @@ namespace Conqueror
             out << YAML::Key << "FreezeRotation" << YAML::Value << rb.FreezeRotation;
             out << YAML::Key << "Friction" << YAML::Value << rb.Friction;
             out << YAML::Key << "Restitution" << YAML::Value << rb.Restitution;
+            out << YAML::Key << "UseGravity" << YAML::Value << rb.UseGravity;
+            out << YAML::Key << "FreezePosition" << YAML::Value << YAML::Flow << YAML::BeginSeq << rb.FreezePositionX << rb.FreezePositionY << rb.FreezePositionZ << YAML::EndSeq;
+            out << YAML::Key << "FreezeRotationAxes" << YAML::Value << YAML::Flow << YAML::BeginSeq << rb.FreezeRotationX << rb.FreezeRotationY << rb.FreezeRotationZ << YAML::EndSeq;
+            out << YAML::Key << "Interpolate" << YAML::Value << rb.Interpolate;
+            out << YAML::Key << "CollisionDetection" << YAML::Value << (int)rb.CollisionDetection;
+            out << YAML::Key << "MaxAngularVelocity" << YAML::Value << rb.MaxAngularVelocity;
+            out << YAML::Key << "AllowSleep" << YAML::Value << rb.AllowSleep;
 
             out << YAML::EndMap;
         }
@@ -741,6 +1749,8 @@ namespace Conqueror
             out << YAML::Key << "Offset" << YAML::Value << bc.Offset;
             out << YAML::Key << "Size" << YAML::Value << bc.Size;
             out << YAML::Key << "IsTrigger" << YAML::Value << bc.IsTrigger;
+            if (!bc.PhysicsMaterial.empty()) out << YAML::Key << "PhysicsMaterial" << YAML::Value << ToSerializablePath(bc.PhysicsMaterial);
+            out << YAML::Key << "Version" << YAML::Value << 2;
 
             out << YAML::EndMap;
         }
@@ -754,6 +1764,8 @@ namespace Conqueror
             out << YAML::Key << "Offset" << YAML::Value << sc.Offset;
             out << YAML::Key << "Radius" << YAML::Value << sc.Radius;
             out << YAML::Key << "IsTrigger" << YAML::Value << sc.IsTrigger;
+            if (!sc.PhysicsMaterial.empty()) out << YAML::Key << "PhysicsMaterial" << YAML::Value << ToSerializablePath(sc.PhysicsMaterial);
+            out << YAML::Key << "Version" << YAML::Value << 2;
 
             out << YAML::EndMap;
         }
@@ -767,7 +1779,10 @@ namespace Conqueror
             out << YAML::Key << "Offset" << YAML::Value << cc.Offset;
             out << YAML::Key << "Radius" << YAML::Value << cc.Radius;
             out << YAML::Key << "Height" << YAML::Value << cc.Height;
+            out << YAML::Key << "Direction" << YAML::Value << cc.Direction;
             out << YAML::Key << "IsTrigger" << YAML::Value << cc.IsTrigger;
+            if (!cc.PhysicsMaterial.empty()) out << YAML::Key << "PhysicsMaterial" << YAML::Value << ToSerializablePath(cc.PhysicsMaterial);
+            out << YAML::Key << "Version" << YAML::Value << 2;
 
             out << YAML::EndMap;
         }
@@ -780,6 +1795,7 @@ namespace Conqueror
             auto& mc = entity.GetComponent<MeshColliderComponent>();
             out << YAML::Key << "IsConvex" << YAML::Value << mc.IsConvex;
             out << YAML::Key << "IsTrigger" << YAML::Value << mc.IsTrigger;
+            if (!mc.PhysicsMaterial.empty()) out << YAML::Key << "PhysicsMaterial" << YAML::Value << ToSerializablePath(mc.PhysicsMaterial);
 
             out << YAML::EndMap;
         }
@@ -791,7 +1807,7 @@ namespace Conqueror
             out << YAML::BeginMap;
 
             auto& audio = entity.GetComponent<AudioSourceComponent>();
-            out << YAML::Key << "FilePath" << YAML::Value << audio.FilePath;
+            out << YAML::Key << "FilePath" << YAML::Value << ToSerializablePath(audio.FilePath);
             out << YAML::Key << "PlayOnAwake" << YAML::Value << audio.PlayOnAwake;
             out << YAML::Key << "Loop" << YAML::Value << audio.Loop;
             out << YAML::Key << "Mute" << YAML::Value << audio.Mute;
@@ -804,6 +1820,7 @@ namespace Conqueror
             out << YAML::Key << "DopplerLevel" << YAML::Value << audio.DopplerLevel;
             out << YAML::Key << "Attenuation" << YAML::Value << (int)audio.Attenuation;
             out << YAML::Key << "RolloffFactor" << YAML::Value << audio.RolloffFactor;
+            out << YAML::Key << "OutputGroup" << YAML::Value << audio.OutputGroup;
 
             out << YAML::Key << "NextGraphNodeID" << YAML::Value << audio.NextGraphNodeID;
             out << YAML::Key << "NextGraphLinkID" << YAML::Value << audio.NextGraphLinkID;
@@ -953,6 +1970,15 @@ namespace Conqueror
         out << YAML::EndMap; // Entity
     }
 
+    std::string SceneSerializer::SerializeEntityToString(Entity entity)
+    {
+        if (!entity)
+            return {};
+        YAML::Emitter out;
+        SerializeEntity(out, entity);
+        return out.c_str();
+    }
+
     void SceneSerializer::Serialize(const std::filesystem::path& filepath)
     {
         YAML::Emitter out;
@@ -962,14 +1988,14 @@ namespace Conqueror
         // Entity'leri kaydet
         out << YAML::Key << "Entities" << YAML::Value << YAML::BeginSeq;
 
-        m_Scene->m_Registry.view<entt::entity>().each([&](auto entityID)
+        for (entt::entity entityID : SerializationOrder(m_Scene->m_Registry))
         {
             Entity entity = { entityID, m_Scene.get() };
             if (!entity)
-                return;
+                continue;
 
             SerializeEntity(out, entity);
-        });
+        }
 
         out << YAML::EndSeq;
         
@@ -1045,6 +2071,8 @@ namespace Conqueror
         out << YAML::Key << "AmbientOcclusion" << YAML::Value << m_Scene->IsAmbientOcclusion();
         out << YAML::Key << "LightmapFiltering" << YAML::Value << m_Scene->GetFiltering();
         
+        SerializeRenderSettings(out, m_Scene->GetRenderSettings());
+
         out << YAML::EndMap; // Environment
         
         // Editor Camera kaydet
@@ -1063,12 +2091,14 @@ namespace Conqueror
         // Hierarchy (parent-child ilişkileri) kaydet
         out << YAML::Key << "Hierarchy" << YAML::Value << YAML::BeginSeq;
         
-        for (const auto& [child, parent] : m_Scene->m_EntityParent)
+        // Çocuk sırası korunur (ebeveyn başına vektör sırası)
+        for (const auto& [parent, children] : m_Scene->m_EntityChildren)
+        for (auto child : children)
         {
             Entity childEntity = { child, m_Scene.get() };
             Entity parentEntity = { parent, m_Scene.get() };
             
-            if (childEntity && parentEntity)
+            if (childEntity && parentEntity && m_Scene->m_Registry.valid(child) && m_Scene->m_Registry.valid(parent))
             {
                 out << YAML::BeginMap;
                 out << YAML::Key << "Child" << YAML::Value << childEntity.GetComponent<IDComponent>().ID;
@@ -1079,21 +2109,7 @@ namespace Conqueror
         
         out << YAML::EndSeq;
 
-        // NavMesh kaydet
-        auto& navMesh = m_Scene->GetNavMesh();
-        out << YAML::Key << "NavMesh" << YAML::Value << YAML::BeginMap;
-        out << YAML::Key << "Triangles" << YAML::Value << YAML::BeginSeq;
-        for (const auto& tri : navMesh.GetTriangles())
-        {
-            out << YAML::BeginMap;
-            out << YAML::Key << "V0" << YAML::Value << tri.Vertices[0];
-            out << YAML::Key << "V1" << YAML::Value << tri.Vertices[1];
-            out << YAML::Key << "V2" << YAML::Value << tri.Vertices[2];
-            out << YAML::Key << "Area" << YAML::Value << tri.AreaType;
-            out << YAML::EndMap;
-        }
-        out << YAML::EndSeq;
-        out << YAML::EndMap;
+        // NavMesh sahneyle kaydedilmez: NavMesh Surface "Bake On Play" ile oyun başında (önbellekli) pişirilir
 
         out << YAML::EndMap;
 
@@ -1119,14 +2135,14 @@ namespace Conqueror
         // Entity'leri kaydet
         out << YAML::Key << "Entities" << YAML::Value << YAML::BeginSeq;
 
-        m_Scene->m_Registry.view<entt::entity>().each([&](auto entityID)
+        for (entt::entity entityID : SerializationOrder(m_Scene->m_Registry))
         {
             Entity entity = { entityID, m_Scene.get() };
             if (!entity)
-                return;
+                continue;
 
             SerializeEntity(out, entity);
-        });
+        }
 
         out << YAML::EndSeq;
         
@@ -1192,17 +2208,21 @@ namespace Conqueror
         out << YAML::Key << "ReflectionIntensityMultiplier" << YAML::Value << m_Scene->GetReflectionIntensityMultiplier();
         out << YAML::Key << "ReflectionBounces" << YAML::Value << m_Scene->GetReflectionBounces();
         
+        SerializeRenderSettings(out, m_Scene->GetRenderSettings());
+
         out << YAML::EndMap; // Environment
         
         // Hierarchy (parent-child ilişkileri) kaydet
         out << YAML::Key << "Hierarchy" << YAML::Value << YAML::BeginSeq;
         
-        for (const auto& [child, parent] : m_Scene->m_EntityParent)
+        // Çocuk sırası korunur (ebeveyn başına vektör sırası)
+        for (const auto& [parent, children] : m_Scene->m_EntityChildren)
+        for (auto child : children)
         {
             Entity childEntity = { child, m_Scene.get() };
             Entity parentEntity = { parent, m_Scene.get() };
             
-            if (childEntity && parentEntity)
+            if (childEntity && parentEntity && m_Scene->m_Registry.valid(child) && m_Scene->m_Registry.valid(parent))
             {
                 out << YAML::BeginMap;
                 out << YAML::Key << "Child" << YAML::Value << childEntity.GetComponent<IDComponent>().ID;
@@ -1218,6 +2238,19 @@ namespace Conqueror
     }
 
     bool SceneSerializer::DeserializeFromStream(std::istream& stream)
+    {
+        try
+        {
+            return DeserializeFromStreamImpl(stream);
+        }
+        catch (const std::exception& e)
+        {
+            CQ_CORE_ERROR("Failed to load scene: {0}", e.what());
+            return false;
+        }
+    }
+
+    bool SceneSerializer::DeserializeFromStreamImpl(std::istream& stream)
     {
         std::stringstream buffer;
         buffer << stream.rdbuf();
@@ -1245,6 +2278,9 @@ namespace Conqueror
         {
             for (auto entity : entities)
             {
+                // Bozuk/eksik bir alan tüm sahneyi düşürmesin: entity bazında koruma
+                try
+                {
                 uint64_t uuid = entity["Entity"].as<uint64_t>();
 
                 std::string name;
@@ -1298,6 +2334,10 @@ namespace Conqueror
 
                     cc.Primary = cameraComponent["Primary"].as<bool>();
                     cc.FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();
+                    if (auto n = cameraComponent["Background"])
+                        cc.Background = (CameraComponent::BackgroundMode)std::clamp(n.as<int>(), 0, 2);
+                    if (auto n = cameraComponent["BackgroundColor"])
+                        cc.BackgroundColor = n.as<glm::vec4>();
                 }
 
                 auto spriteRendererComponent = entity["SpriteRendererComponent"];
@@ -1315,6 +2355,16 @@ namespace Conqueror
                             src.Texture = Texture2D::Create(texturePath);
                         }
                     }
+                    if (auto n = spriteRendererComponent["SpriteName"]) src.SpriteName = n.as<std::string>();
+                    if (auto n = spriteRendererComponent["Rect"]) src.Rect = n.as<glm::vec4>();
+                    if (auto n = spriteRendererComponent["Pivot"]) src.Pivot = n.as<glm::vec2>();
+                    if (auto n = spriteRendererComponent["Border"]) src.Border = n.as<glm::vec4>();
+                    if (auto n = spriteRendererComponent["PixelsPerUnit"]) src.PixelsPerUnit = n.as<float>();
+                    if (auto n = spriteRendererComponent["FlipX"]) src.FlipX = n.as<bool>();
+                    if (auto n = spriteRendererComponent["FlipY"]) src.FlipY = n.as<bool>();
+                    if (auto n = spriteRendererComponent["DrawMode"]) src.DrawMode = (SpriteDrawMode)n.as<int>();
+                    if (auto n = spriteRendererComponent["Size"]) src.Size = n.as<glm::vec2>();
+                    if (auto n = spriteRendererComponent["MaskInteraction"]) src.MaskInteraction = (SpriteMaskInteraction)n.as<int>();
                 }
 
                 auto layerComponent = entity["LayerComponent"];
@@ -1332,38 +2382,74 @@ namespace Conqueror
                     trc.Text = textRendererComponent["Text"].as<std::string>();
                     trc.Color = textRendererComponent["Color"].as<glm::vec4>();
                     trc.FontSize = textRendererComponent["FontSize"].as<float>();
+                    if (auto al = textRendererComponent["Alignment"])
+                        trc.Alignment = (TextAlignment)std::clamp(al.as<int>(), 0, 2);
                 }
 
-                auto navMeshAgentComponent = entity["NavMeshAgentComponent"];
-                if (navMeshAgentComponent)
+                if (auto n = entity["ReflectionProbeComponent"])
                 {
-                    auto& comp = deserializedEntity.AddComponent<NavMeshAgentComponent>();
-                    comp.Speed = navMeshAgentComponent["Speed"].as<float>();
-                    comp.AngularSpeed = navMeshAgentComponent["AngularSpeed"].as<float>();
-                    comp.Acceleration = navMeshAgentComponent["Acceleration"].as<float>();
-                    comp.StoppingDistance = navMeshAgentComponent["StoppingDistance"].as<float>();
-                    comp.Radius = navMeshAgentComponent["Radius"].as<float>();
-                    comp.Height = navMeshAgentComponent["Height"].as<float>();
-                    comp.AutoBraking = navMeshAgentComponent["AutoBraking"].as<bool>();
+                    auto& comp = deserializedEntity.AddComponent<ReflectionProbeComponent>();
+                    if (n["BoxOffset"]) comp.BoxOffset = n["BoxOffset"].as<glm::vec3>();
+                    if (n["BoxSize"]) comp.BoxSize = n["BoxSize"].as<glm::vec3>();
+                    comp.Resolution = n["Resolution"].as<uint32_t>(128);
+                    comp.Intensity = n["Intensity"].as<float>(1.0f);
+                    comp.Bounces = n["Bounces"].as<int>(1);
+                    comp.RealtimeUpdate = n["RealtimeUpdate"].as<bool>(false);
+                    comp.BlendDistance = n["BlendDistance"].as<float>(1.0f);
+                    comp.UpdateInterval = n["UpdateInterval"].as<float>(0.5f);
                 }
 
-                auto navMeshObstacleComponent = entity["NavMeshObstacleComponent"];
-                if (navMeshObstacleComponent)
+                if (auto n = entity["AdaptiveProbeVolumeComponent"])
                 {
-                    auto& comp = deserializedEntity.AddComponent<NavMeshObstacleComponent>();
-                    comp.Carve = navMeshObstacleComponent["Carve"].as<bool>();
-                    comp.Radius = navMeshObstacleComponent["Radius"].as<float>();
-                    comp.Size = navMeshObstacleComponent["Size"].as<glm::vec3>();
-                    comp.Center = navMeshObstacleComponent["Center"].as<glm::vec3>();
+                    auto& comp = deserializedEntity.AddComponent<AdaptiveProbeVolumeComponent>();
+                    if (n["ProbeOffset"]) comp.ProbeOffset = n["ProbeOffset"].as<glm::vec3>();
+                    comp.MinSpacing = n["MinSpacing"].as<float>(1.0f);
+                    comp.MaxSpacing = n["MaxSpacing"].as<float>(9.0f);
+                    comp.BakingMode = n["BakingMode"].as<int>(0);
+                    comp.Dilation = n["Dilation"].as<bool>(false);
+                    comp.VirtualOffset = n["VirtualOffset"].as<bool>(true);
+                    comp.ValidityThreshold = n["ValidityThreshold"].as<float>(0.75f);
+                    comp.SearchDistanceMultiplier = n["SearchDistanceMultiplier"].as<float>(0.2f);
+                    comp.GeometryBias = n["GeometryBias"].as<float>(0.01f);
+                    comp.RayOriginBias = n["RayOriginBias"].as<float>(-0.001f);
                 }
 
-                auto navMeshSurfaceComponent = entity["NavMeshSurfaceComponent"];
-                if (navMeshSurfaceComponent)
+                if (auto n = entity["ParticleSystemComponent"])
+                    DeserializeParticleSystem(n, deserializedEntity.AddComponent<ParticleSystemComponent>());
+                ComponentRegistry::DeserializeEntity(entity, deserializedEntity);
+                DeserializeUI(entity, deserializedEntity);
+
+                if (auto n = entity["TerrainComponent"])
                 {
-                    auto& comp = deserializedEntity.AddComponent<NavMeshSurfaceComponent>();
-                    comp.AreaType = navMeshSurfaceComponent["AreaType"].as<int>();
-                    comp.OverrideVoxelSize = navMeshSurfaceComponent["OverrideVoxelSize"].as<bool>();
-                    comp.VoxelSize = navMeshSurfaceComponent["VoxelSize"].as<float>();
+                    TerrainComponent t;
+                    t.Width = n["Width"].as<float>(100.0f);
+                    t.Length = n["Length"].as<float>(100.0f);
+                    t.Height = n["Height"].as<float>(30.0f);
+                    t.Resolution = n["Resolution"].as<int>(129);
+                    t.SplatResolution = n["SplatResolution"].as<int>(256);
+                    t.LayerCount = n["LayerCount"].as<int>(1);
+                    t.CastShadows = n["CastShadows"].as<bool>(true);
+                    t.ReceiveShadows = n["ReceiveShadows"].as<bool>(true);
+                    t.EnableCollider = n["EnableCollider"].as<bool>(true);
+                    int li = 0;
+                    for (const auto& ln : n["Layers"])
+                    {
+                        if (li >= TerrainComponent::MaxLayers) break;
+                        auto& l = t.Layers[(size_t)li++];
+                        l.TexturePath = ResolveSerializablePath(ln["Texture"].as<std::string>(""));
+                        if (ln["Tint"]) l.Tint = ln["Tint"].as<glm::vec3>();
+                        l.Tiling = ln["Tiling"].as<float>(12.0f);
+                        l.Roughness = ln["Roughness"].as<float>(0.85f);
+                        l.Metallic = ln["Metallic"].as<float>(0.0f);
+                    }
+                    if (!n["Heights"] || !TerrainSystem::DecodeHeights(t, n["Heights"].as<std::string>("")))
+                        TerrainSystem::Initialize(t, t.Resolution);
+                    if (!n["Splat"] || !TerrainSystem::DecodeSplat(t, n["Splat"].as<std::string>("")))
+                    {
+                        t.Splat.clear();
+                        TerrainSystem::EnsureData(t);
+                    }
+                    deserializedEntity.AddComponent<TerrainComponent>(t);
                 }
 
                 auto meshRendererComponent = entity["MeshRendererComponent"];
@@ -1376,6 +2462,19 @@ namespace Conqueror
                     mrc.Metallic = meshRendererComponent["Metallic"].as<float>();
                     mrc.Roughness = meshRendererComponent["Roughness"].as<float>();
                     mrc.AO = meshRendererComponent["AO"].as<float>();
+                    if (auto n = meshRendererComponent["EmissionColor"]) mrc.EmissionColor = n.as<glm::vec3>();
+                    if (auto n = meshRendererComponent["EmissionStrength"]) mrc.EmissionStrength = n.as<float>();
+                    if (auto n = meshRendererComponent["EmissionFromTexture"]) mrc.EmissionFromTexture = n.as<bool>();
+                    if (auto n = meshRendererComponent["Tiling"]) mrc.Tiling = n.as<glm::vec2>();
+                    if (auto n = meshRendererComponent["Offset"]) mrc.Offset = n.as<glm::vec2>();
+                    if (auto n = meshRendererComponent["WorldAlignedUV"]) mrc.WorldAlignedUV = n.as<bool>();
+                    if (auto n = meshRendererComponent["AlignToObject"]) mrc.AlignToObject = n.as<bool>();
+                    if (auto n = meshRendererComponent["CastShadows"]) mrc.CastShadows = n.as<bool>();
+                    if (auto n = meshRendererComponent["ReceiveShadows"]) mrc.ReceiveShadows = n.as<bool>();
+                    if (auto n = meshRendererComponent["RealtimeGI"]) mrc.RealtimeGI = n.as<bool>();
+                    if (auto n = meshRendererComponent["Unlit"]) mrc.Unlit = n.as<bool>();
+                    if (auto n = meshRendererComponent["AlphaClip"]) mrc.AlphaClip = n.as<bool>();
+                    if (auto n = meshRendererComponent["AlphaClipThreshold"]) mrc.AlphaClipThreshold = n.as<float>();
 
                     if (meshRendererComponent["TexturePath"])
                     {
@@ -1393,58 +2492,40 @@ namespace Conqueror
                         mrc.Texture = nullptr;
                     }
 
-                    auto materialNode = meshRendererComponent["Material"];
-                    if (materialNode)
+                    if (auto n = meshRendererComponent["NormalMapPath"])
+                    {
+                        mrc.NormalMapPath = ResolveSerializablePath(n.as<std::string>());
+                        mrc.NormalMap = mrc.NormalMapPath.empty() ? nullptr : Texture2D::Create(mrc.NormalMapPath);
+                    }
+                    if (auto n = meshRendererComponent["MaskMapPath"])
+                    {
+                        mrc.MaskMapPath = ResolveSerializablePath(n.as<std::string>());
+                        mrc.MaskMap = mrc.MaskMapPath.empty() ? nullptr : Texture2D::Create(mrc.MaskMapPath);
+                    }
+
+                    if (auto assetNode = meshRendererComponent["MaterialAsset"])
+                    {
+                        mrc.MaterialPath = ResolveSerializablePath(assetNode.as<std::string>());
+                        mrc.MaterialInstance = MaterialAsset::Load(mrc.MaterialPath);
+                        if (!mrc.MaterialInstance)
+                            CQ_CORE_WARN("Material asset not found: {0}", mrc.MaterialPath);
+                    }
+                    else if (auto materialNode = meshRendererComponent["Material"])
                     {
                         mrc.MaterialInstance = Material::CreateDefault();
-                        auto& mat = mrc.MaterialInstance;
-                        
-                        if (materialNode["Name"]) mat->Name = materialNode["Name"].as<std::string>();
-                        if (materialNode["Albedo"]) mat->Albedo = materialNode["Albedo"].as<glm::vec3>();
-                        if (materialNode["Metallic"]) mat->Metallic = materialNode["Metallic"].as<float>();
-                        if (materialNode["Roughness"]) mat->Roughness = materialNode["Roughness"].as<float>();
-                        if (materialNode["AO"]) mat->AO = materialNode["AO"].as<float>();
-                        if (materialNode["EmissionColor"]) mat->EmissionColor = materialNode["EmissionColor"].as<glm::vec3>();
-                        if (materialNode["EmissionStrength"]) mat->EmissionStrength = materialNode["EmissionStrength"].as<float>();
-                        if (materialNode["Tiling"]) mat->Tiling = materialNode["Tiling"].as<glm::vec2>();
-                        if (materialNode["Offset"]) mat->Offset = materialNode["Offset"].as<glm::vec2>();
-
-                        if (materialNode["NextGraphNodeID"]) mat->NextGraphNodeID = materialNode["NextGraphNodeID"].as<int>();
-                        if (materialNode["NextGraphLinkID"]) mat->NextGraphLinkID = materialNode["NextGraphLinkID"].as<int>();
-                        if (materialNode["GraphInitialized"]) mat->GraphInitialized = materialNode["GraphInitialized"].as<bool>();
-
-                        auto graphNodes = materialNode["GraphNodes"];
-                        if (graphNodes)
+                        ReadMaterial(materialNode, *mrc.MaterialInstance);
+                        // Eski biçim (dokular malzemede değil Mesh Renderer'daydı): dokuları malzemeye taşı, görünüm aynı kalsın
+                        if (!materialNode["RenderMode"])
                         {
-                            for (auto node : graphNodes)
+                            auto& m = *mrc.MaterialInstance;
+                            if (!m.AlbedoMap) m.AlbedoMap = mrc.Texture;
+                            if (!m.NormalMap) m.NormalMap = mrc.NormalMap;
+                            if (mrc.MaskMap && !m.AOMap)
                             {
-                                ShaderGraphNode sNode;
-                                sNode.ID = node["ID"].as<int>();
-                                sNode.Type = (ShaderGraphNodeType)node["Type"].as<int>();
-                                sNode.EditorPosition = { node["EditorPosX"].as<float>(), node["EditorPosY"].as<float>() };
-                                
-                                if (node["ColorValue"]) sNode.ColorValue = node["ColorValue"].as<glm::vec4>();
-                                if (node["FloatValue"]) sNode.FloatValue = node["FloatValue"].as<float>();
-                                if (node["Vec2Value"]) sNode.Vec2Value = node["Vec2Value"].as<glm::vec2>();
-                                if (node["Vec3Value"]) sNode.Vec3Value = node["Vec3Value"].as<glm::vec3>();
-                                if (node["TexturePath"]) sNode.TexturePath = ResolveSerializablePath(node["TexturePath"].as<std::string>());
-
-                                mat->GraphNodes.push_back(sNode);
-                            }
-                        }
-
-                        auto graphLinks = materialNode["GraphLinks"];
-                        if (graphLinks)
-                        {
-                            for (auto link : graphLinks)
-                            {
-                                ShaderGraphLink sLink;
-                                sLink.ID = link["ID"].as<int>();
-                                sLink.FromNodeID = link["From"].as<int>();
-                                sLink.FromPinIndex = link["FromPin"].as<int>();
-                                sLink.ToNodeID = link["To"].as<int>();
-                                sLink.ToPinIndex = link["ToPin"].as<int>();
-                                mat->GraphLinks.push_back(sLink);
+                                m.AOMap = m.RoughnessMap = m.MetallicMap = mrc.MaskMap;
+                                m.RoughnessChannel = 1;
+                                m.MetallicChannel = 2;
+                                m.MapsScaleFactors = true;
                             }
                         }
                     }
@@ -1455,6 +2536,9 @@ namespace Conqueror
                 {
                     auto& dlc = deserializedEntity.AddComponent<DirectionalLightComponent>();
                     dlc.Direction = directionalLightComponent["Direction"].as<glm::vec3>();
+                    // Eski sahne: yön ayrı alandaydı -> nesne dönüşüne çevir (ışık görünümü korunur)
+                    if (!directionalLightComponent["FromRotation"] && directionalLightComponent["Direction"])
+                        deserializedEntity.GetComponent<TransformComponent>().Rotation = Math::EulerForForward(dlc.Direction);
                     dlc.Color = directionalLightComponent["Color"].as<glm::vec3>();
                     dlc.Intensity = directionalLightComponent["Intensity"].as<float>();
                     dlc.CastShadows = directionalLightComponent["CastShadows"].as<bool>();
@@ -1482,6 +2566,8 @@ namespace Conqueror
                 {
                     auto& slc = deserializedEntity.AddComponent<SpotLightComponent>();
                     slc.Direction = spotLightComponent["Direction"].as<glm::vec3>();
+                    if (!spotLightComponent["FromRotation"])
+                        deserializedEntity.GetComponent<TransformComponent>().Rotation = Math::EulerForForward(slc.Direction);
                     slc.Color = spotLightComponent["Color"].as<glm::vec3>();
                     slc.Intensity = spotLightComponent["Intensity"].as<float>();
                     slc.Range = spotLightComponent["Range"].as<float>();
@@ -1500,6 +2586,7 @@ namespace Conqueror
                 {
                     auto& mc = deserializedEntity.AddComponent<ModelComponent>();
                     mc.FilePath = ResolveSerializablePath(modelComponent["FilePath"].as<std::string>());
+                    if (auto t = modelComponent["Tint"]) mc.Tint = t.as<glm::vec3>();
                     
                     if (!mc.FilePath.empty())
                     {
@@ -1596,6 +2683,14 @@ namespace Conqueror
                         if (nativeScriptComponent["ScriptPath"])
                             data.ScriptPath = ResolveSerializablePath(nativeScriptComponent["ScriptPath"].as<std::string>());
                             
+                        // .cpp kaynağı: Play başında NativeScriptCompiler derler ve bağlar (burada DLL yüklenmez)
+                        if (NativeScriptCompiler::IsSource(data.ScriptPath))
+                        {
+                            if (data.ModuleName.empty())
+                                data.ModuleName = std::filesystem::path(data.ScriptPath).stem().string();
+                            sc.Scripts.push_back(data);
+                            continue;
+                        }
                         if (data.ClassName.empty() && !data.ModuleName.empty())
                         {
                             if (!data.ScriptPath.empty() && !ScriptEngine::IsModuleLoaded(data.ModuleName))
@@ -1629,6 +2724,19 @@ namespace Conqueror
                         ConquerorScriptData data;
                         data.ScriptPath = ResolveSerializablePath(conquerorScriptComponent["ScriptPath"].as<std::string>());
                         data.ClassName = conquerorScriptComponent["ClassName"].as<std::string>();
+                        if (auto fields = conquerorScriptComponent["Fields"]; fields && fields.IsMap())
+                        {
+                            for (auto it = fields.begin(); it != fields.end(); ++it)
+                            {
+                                ScriptFieldOverride v;
+                                const YAML::Node& n = it->second;
+                                if (n["Bool"]) { v.Type = ScriptFieldOverride::Kind::Bool; v.Bool = n["Bool"].as<bool>(); }
+                                else if (n["Int"]) { v.Type = ScriptFieldOverride::Kind::Int; v.Int = n["Int"].as<int64_t>(); }
+                                else if (n["Float"]) { v.Type = ScriptFieldOverride::Kind::Float; v.Float = n["Float"].as<double>(); }
+                                else if (n["String"]) { v.Type = ScriptFieldOverride::Kind::String; v.String = n["String"].as<std::string>(); }
+                                data.FieldOverrides[it->first.as<std::string>()] = v;
+                            }
+                        }
                         
                         sc.Scripts.push_back(data);
                     }
@@ -1691,6 +2799,8 @@ namespace Conqueror
                     csc.ScaleMode = (CanvasScalerComponent::UIScaleMode)canvasScalerComponent["ScaleMode"].as<int>();
                     csc.ScaleFactor = canvasScalerComponent["ScaleFactor"].as<float>();
                     csc.ReferencePixelsPerUnit = canvasScalerComponent["ReferencePixelsPerUnit"].as<float>();
+                    if (auto n = canvasScalerComponent["ReferenceResolution"]) csc.ReferenceResolution = n.as<glm::vec2>();
+                    if (auto n = canvasScalerComponent["MatchWidthOrHeight"]) csc.MatchWidthOrHeight = n.as<float>();
                 }
 
                 auto graphicRaycasterComponent = entity["GraphicRaycasterComponent"];
@@ -1708,6 +2818,21 @@ namespace Conqueror
                     auto& rb2d = deserializedEntity.AddComponent<RigidBody2DComponent>();
                     rb2d.Type = (RigidBody2DComponent::BodyType)rigidBody2DComponent["BodyType"].as<int>();
                     rb2d.FixedRotation = rigidBody2DComponent["FixedRotation"].as<bool>();
+#define CQ_RB2D_IN(key, T) if (rigidBody2DComponent[#key]) rb2d.key = rigidBody2DComponent[#key].as<T>()
+                    CQ_RB2D_IN(UseAutoMass, bool); CQ_RB2D_IN(Mass, float); CQ_RB2D_IN(LinearDrag, float); CQ_RB2D_IN(AngularDrag, float);
+                    CQ_RB2D_IN(GravityScale, float); CQ_RB2D_IN(Interpolate, bool); CQ_RB2D_IN(ContinuousCollision, bool); CQ_RB2D_IN(AllowSleep, bool);
+#undef CQ_RB2D_IN
+                    // Eski sahneler: kütle yoğunluktan geliyordu
+                    if (!rigidBody2DComponent["Mass"])
+                        rb2d.UseAutoMass = true;
+                }
+
+                // Eski sahneler (Version < 2): kutu boyutu yarım genişlikti, doku varsa boyut dokudan (100 px/birim) geliyordu
+                glm::vec2 legacyTexSize(0.0f);
+                if (deserializedEntity.HasComponent<SpriteRendererComponent>() && deserializedEntity.GetComponent<SpriteRendererComponent>().Texture)
+                {
+                    auto& tex = deserializedEntity.GetComponent<SpriteRendererComponent>().Texture;
+                    legacyTexSize = glm::vec2((float)tex->GetWidth(), (float)tex->GetHeight()) / 100.0f;
                 }
 
                 auto boxCollider2DComponent = entity["BoxCollider2DComponent"];
@@ -1720,6 +2845,13 @@ namespace Conqueror
                     bc2d.Friction = boxCollider2DComponent["Friction"].as<float>();
                     bc2d.Restitution = boxCollider2DComponent["Restitution"].as<float>();
                     bc2d.RestitutionThreshold = boxCollider2DComponent["RestitutionThreshold"].as<float>();
+                    if (boxCollider2DComponent["IsTrigger"]) bc2d.IsTrigger = boxCollider2DComponent["IsTrigger"].as<bool>();
+                    if (boxCollider2DComponent["EdgeRadius"]) bc2d.EdgeRadius = boxCollider2DComponent["EdgeRadius"].as<float>();
+                    if (!boxCollider2DComponent["Version"])
+                    {
+                        bc2d.Size = legacyTexSize.x > 0.0f ? legacyTexSize : bc2d.Size * 2.0f;
+                        bc2d.Offset = glm::vec2(0.0f);
+                    }
                 }
 
                 auto circleCollider2DComponent = entity["CircleCollider2DComponent"];
@@ -1732,6 +2864,9 @@ namespace Conqueror
                     cc2d.Friction = circleCollider2DComponent["Friction"].as<float>();
                     cc2d.Restitution = circleCollider2DComponent["Restitution"].as<float>();
                     cc2d.RestitutionThreshold = circleCollider2DComponent["RestitutionThreshold"].as<float>();
+                    if (circleCollider2DComponent["IsTrigger"]) cc2d.IsTrigger = circleCollider2DComponent["IsTrigger"].as<bool>();
+                    if (!circleCollider2DComponent["Version"] && legacyTexSize.x > 0.0f)
+                        cc2d.Radius = std::max(legacyTexSize.x, legacyTexSize.y) * 0.5f;
                 }
 
                 auto rigidbodyComponent = entity["RigidbodyComponent"];
@@ -1746,7 +2881,25 @@ namespace Conqueror
                     rb.FreezeRotation = rigidbodyComponent["FreezeRotation"].as<bool>();
                     rb.Friction = rigidbodyComponent["Friction"].as<float>();
                     rb.Restitution = rigidbodyComponent["Restitution"].as<float>();
+                    if (rigidbodyComponent["UseGravity"]) rb.UseGravity = rigidbodyComponent["UseGravity"].as<bool>();
+                    if (auto fp = rigidbodyComponent["FreezePosition"]; fp && fp.IsSequence() && fp.size() == 3)
+                    {
+                        rb.FreezePositionX = fp[0].as<bool>(); rb.FreezePositionY = fp[1].as<bool>(); rb.FreezePositionZ = fp[2].as<bool>();
+                    }
+                    if (auto fr = rigidbodyComponent["FreezeRotationAxes"]; fr && fr.IsSequence() && fr.size() == 3)
+                    {
+                        rb.FreezeRotationX = fr[0].as<bool>(); rb.FreezeRotationY = fr[1].as<bool>(); rb.FreezeRotationZ = fr[2].as<bool>();
+                    }
+                    if (rigidbodyComponent["Interpolate"]) rb.Interpolate = rigidbodyComponent["Interpolate"].as<bool>();
+                    if (rigidbodyComponent["CollisionDetection"])
+                        rb.CollisionDetection = (RigidbodyComponent::CollisionDetectionMode)rigidbodyComponent["CollisionDetection"].as<int>();
+                    if (rigidbodyComponent["MaxAngularVelocity"]) rb.MaxAngularVelocity = rigidbodyComponent["MaxAngularVelocity"].as<float>();
+                    if (rigidbodyComponent["AllowSleep"]) rb.AllowSleep = rigidbodyComponent["AllowSleep"].as<bool>();
                 }
+
+                // Eski sahneler (Version < 2): çalışma zamanı çarpıştırıcıyı ilkel ağa göre zorla boyutlandırıyordu
+                // (küp 2x2x2, küre/kapsül yarıçap 1). Aynı davranışı korumak için değerler taşınır.
+                const bool legacyMeshFit = deserializedEntity.HasComponent<MeshRendererComponent>();
 
                 auto boxColliderComponent = entity["BoxColliderComponent"];
                 if (boxColliderComponent)
@@ -1755,6 +2908,12 @@ namespace Conqueror
                     bc.Offset = boxColliderComponent["Offset"].as<glm::vec3>();
                     bc.Size = boxColliderComponent["Size"].as<glm::vec3>();
                     bc.IsTrigger = boxColliderComponent["IsTrigger"].as<bool>();
+                    if (auto pm = boxColliderComponent["PhysicsMaterial"]) bc.PhysicsMaterial = ResolveSerializablePath(pm.as<std::string>());
+                    if (!boxColliderComponent["Version"] && legacyMeshFit)
+                    {
+                        bc.Size = glm::vec3(2.0f);
+                        bc.Offset = glm::vec3(0.0f);
+                    }
                 }
 
                 auto sphereColliderComponent = entity["SphereColliderComponent"];
@@ -1764,6 +2923,12 @@ namespace Conqueror
                     sc.Offset = sphereColliderComponent["Offset"].as<glm::vec3>();
                     sc.Radius = sphereColliderComponent["Radius"].as<float>();
                     sc.IsTrigger = sphereColliderComponent["IsTrigger"].as<bool>();
+                    if (auto pm = sphereColliderComponent["PhysicsMaterial"]) sc.PhysicsMaterial = ResolveSerializablePath(pm.as<std::string>());
+                    if (!sphereColliderComponent["Version"] && legacyMeshFit)
+                    {
+                        sc.Radius = 1.0f;
+                        sc.Offset = glm::vec3(0.0f);
+                    }
                 }
 
                 auto capsuleColliderComponent = entity["CapsuleColliderComponent"];
@@ -1774,6 +2939,14 @@ namespace Conqueror
                     cc.Radius = capsuleColliderComponent["Radius"].as<float>();
                     cc.Height = capsuleColliderComponent["Height"].as<float>();
                     cc.IsTrigger = capsuleColliderComponent["IsTrigger"].as<bool>();
+                    if (auto pm = capsuleColliderComponent["PhysicsMaterial"]) cc.PhysicsMaterial = ResolveSerializablePath(pm.as<std::string>());
+                    if (capsuleColliderComponent["Direction"]) cc.Direction = capsuleColliderComponent["Direction"].as<int>();
+                    if (!capsuleColliderComponent["Version"] && legacyMeshFit)
+                    {
+                        cc.Radius = 1.0f;
+                        cc.Height = 2.0f;
+                        cc.Offset = glm::vec3(0.0f);
+                    }
                 }
 
                 auto meshColliderComponent = entity["MeshColliderComponent"];
@@ -1782,6 +2955,7 @@ namespace Conqueror
                     auto& mc = deserializedEntity.AddComponent<MeshColliderComponent>();
                     mc.IsConvex = meshColliderComponent["IsConvex"].as<bool>();
                     mc.IsTrigger = meshColliderComponent["IsTrigger"].as<bool>();
+                    if (auto pm = meshColliderComponent["PhysicsMaterial"]) mc.PhysicsMaterial = ResolveSerializablePath(pm.as<std::string>());
                 }
 
                 auto audioSourceComponent = entity["AudioSourceComponent"];
@@ -1801,6 +2975,8 @@ namespace Conqueror
                     audio.DopplerLevel = audioSourceComponent["DopplerLevel"].as<float>();
                     audio.Attenuation = (AudioSourceComponent::AttenuationModel)audioSourceComponent["Attenuation"].as<int>();
                     audio.RolloffFactor = audioSourceComponent["RolloffFactor"].as<float>();
+                    if (audioSourceComponent["OutputGroup"])
+                        audio.OutputGroup = audioSourceComponent["OutputGroup"].as<std::string>();
 
                     if (audioSourceComponent["NextGraphNodeID"])
                         audio.NextGraphNodeID = audioSourceComponent["NextGraphNodeID"].as<int>();
@@ -1931,6 +3107,11 @@ namespace Conqueror
                     comp.MaxDistance = audioReverbZoneComponent["MaxDistance"].as<float>();
                     comp.Preset = (AudioReverbZoneComponent::ReverbPreset)audioReverbZoneComponent["Preset"].as<int>();
                 }
+                            }
+                catch (const std::exception& e)
+                {
+                    CQ_CORE_ERROR("Scene load: skipped invalid data in entity: {0}", e.what());
+                }
             }
         }
         
@@ -2047,6 +3228,8 @@ namespace Conqueror
             if (environment["LightmapFiltering"])
                 m_Scene->SetFiltering(environment["LightmapFiltering"].as<int>());
             
+            DeserializeRenderSettings(environment["RenderSettings"], m_Scene->GetRenderSettings());
+
             // Load lightmap texture from disk
             std::string lmPath = m_Scene->GetBakedLightmapPath();
             if (!lmPath.empty())
@@ -2058,9 +3241,37 @@ namespace Conqueror
                     if (lmTex)
                     {
                         m_Scene->SetBakedLightmapTexture(lmTex);
-                        Renderer3D::SetLightmap(lmTex);
                     }
                 }
+            }
+        }
+
+        // Editör kamerası (sahneyle birlikte kaydedilen bakış açısı / 2D-3D modu)
+        if (auto cam = data["EditorCamera"]; cam && m_EditorCamera)
+        {
+            try
+            {
+                auto mode = (EditorCameraMode)cam["CameraMode"].as<int>(0);
+                m_EditorCamera->SetCameraMode(mode);
+                float distance = std::max(0.05f, cam["Distance"].as<float>(10.0f));
+                glm::vec3 position = cam["Position"] ? cam["Position"].as<glm::vec3>() : glm::vec3(0.0f, 0.0f, 10.0f);
+                m_EditorCamera->SetOrthographicSize(std::max(0.01f, cam["OrthographicSize"].as<float>(10.0f)));
+                if (mode == EditorCameraMode::Orthographic2D)
+                {
+                    m_EditorCamera->SetDistance(distance);
+                    m_EditorCamera->SetFocalPoint(glm::vec3(position.x, position.y, 0.0f));
+                }
+                else
+                {
+                    m_EditorCamera->SetPitch(cam["Pitch"].as<float>(0.5235987f));
+                    m_EditorCamera->SetYaw(cam["Yaw"].as<float>(0.7853981f));
+                    m_EditorCamera->SetDistance(distance);
+                    m_EditorCamera->SetFocalPoint(position + m_EditorCamera->GetForwardDirection() * distance);
+                }
+            }
+            catch (const std::exception& e)
+            {
+                CQ_CORE_WARN("SceneSerializer: invalid EditorCamera block ({0})", e.what());
             }
         }
 
@@ -2083,30 +3294,14 @@ namespace Conqueror
                 {
                     Entity childEntity = { uuidToEntity[childUUID], m_Scene.get() };
                     Entity parentEntity = { uuidToEntity[parentUUID], m_Scene.get() };
-                    m_Scene->SetEntityParent(childEntity, parentEntity);
+                    m_Scene->SetEntityParent(childEntity, parentEntity, false);
                 }
             }
         }
 
         auto navMeshNode = data["NavMesh"];
-        if (navMeshNode)
-        {
-            auto triangles = navMeshNode["Triangles"];
-            if (triangles)
-            {
-                auto& navMesh = m_Scene->GetNavMesh();
-                navMesh.Clear();
-                for (auto tri : triangles)
-                {
-                    glm::vec3 v0 = tri["V0"].as<glm::vec3>();
-                    glm::vec3 v1 = tri["V1"].as<glm::vec3>();
-                    glm::vec3 v2 = tri["V2"].as<glm::vec3>();
-                    int area = tri["Area"] ? tri["Area"].as<int>() : 0;
-                    navMesh.AddTriangle(v0, v1, v2, area);
-                }
-                navMesh.BuildConnectivity();
-            }
-        }
+        // Eski sürümlerin kaydettiği NavMesh üçgenleri yok sayılır (ağ yeniden pişirilir)
+        (void)navMeshNode;
 
         return true;
     }

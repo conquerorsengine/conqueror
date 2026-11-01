@@ -1,0 +1,357 @@
+// Archviz Interior (Unreal Archviz şablonu karşılığı): 10 x 8 m döşenmiş daire. Kuzey duvarında iki büyük pencere
+// (güneş içeri düşer, gökyüzü HDR'si görünür), laminat parke, sıva duvarlar, oturma alanı (kanepe, berjer, sehpa,
+// halı, TV ünitesi, raf), yemek alanı (masa + 6 sandalye, sarkıt lambalar), mermer tezgâhlı mutfak bloğu, bitkiler,
+// tablolar. Işık: güneş + gökyüzü ortam ışığı + ekran uzayı GI ve yansımalar; G gündüz / akşam. Birinci şahıs gezinti.
+// @EditorCamera 4 15 0 0 1.2 -0.5   (proje açıldığında editör görünümü: uzaklık, eğim, yön, odak)
+SceneSetSkybox("Assets/Sky/day.hdr");
+RenderSettingSet("Environment.Sky", "Auto");
+RenderSettingSet("Environment.SkyboxIntensity", 0.5);
+RenderSettingSet("Shadows.Enabled", true);
+RenderSettingSet("Shadows.Quality", "Soft");
+RenderSettingSet("Shadows.Distance", 30);
+RenderSettingSet("Post.Tonemap", "ACES");
+RenderSettingSet("Post.AntiAliasing", "TAA");
+RenderSettingSet("Post.AmbientOcclusion", true);
+RenderSettingSet("Post.AORadius", 0.6);
+RenderSettingSet("Post.AOIntensity", 1.1);
+RenderSettingSet("Post.ScreenSpaceGI", true);
+RenderSettingSet("Post.SSGIIntensity", 1.4);
+RenderSettingSet("Post.ScreenSpaceReflections", true);
+RenderSettingSet("Post.SSRIntensity", 0.8);
+RenderSettingSet("Post.Bloom", true);
+RenderSettingSet("Post.BloomIntensity", 0.2);
+RenderSettingSet("Post.Vignette", true);
+RenderSettingSet("Post.VignetteIntensity", 0.15);
+RenderSettingSet("Post.Exposure", 0.25);
+RenderSettingSet("Fog.Enabled", false);
+
+var W = 5.0;     // yarı genişlik (x)
+var D = 4.0;     // yarı derinlik (z)
+var HC = 2.9;    // tavan
+var WHITE_WALL = {r: 1, g: 1, b: 1, a: 1};
+func Tex(e, tex, tiling, color, rough)
+{
+    EntitySetComponentField(e, "MeshRenderer", "Texture", tex);
+    EntitySetComponentField(e, "MeshRenderer", "WorldAlignedUV", true);
+    EntitySetComponentField(e, "MeshRenderer", "Tiling", {x: tiling, y: tiling});
+    EntitySetColor(e, color);
+    EntitySetComponentField(e, "MeshRenderer", "Roughness", rough);
+    return e;
+}
+func Solid(name, x, y, z, sx, sy, sz, tex, tiling, color, rough)
+{
+    var e = Static(Mesh(name, "Cube", x, y, z, sx, sy, sz, "", color));
+    if (tex != "") { Tex(e, tex, tiling, color, rough); }
+    else { EntitySetComponentField(e, "MeshRenderer", "Roughness", rough); }
+    return e;
+}
+var PLASTER = "Assets/Textures/white_plaster.jpg";   // make_plaster.py
+
+// Zemin, tavan, dış zemin
+Solid("Floor", 0, -0.1, 0, 2 * W + 0.6, 0.2, 2 * D + 0.6, "Assets/Textures/laminate_floor_02.jpg", 0.45, {r: 1, g: 1, b: 1, a: 1}, 0.45);
+Solid("Ceiling", 0, HC + 0.1, 0, 2 * W + 0.6, 0.2, 2 * D + 0.6, "", 1, {r: 0.95, g: 0.95, b: 0.94, a: 1}, 0.9);
+
+// Duvarlar: güney (kapılı), doğu, batı; kuzey iki pencereli
+var T = 0.2;
+Solid("Wall South L", -2.8, HC / 2.0, D + T / 2.0, 4.8, HC, T, PLASTER, 0.5, WHITE_WALL, 0.85);
+Solid("Wall South R", 2.9, HC / 2.0, D + T / 2.0, 4.6, HC, T, PLASTER, 0.5, WHITE_WALL, 0.85);
+Solid("Wall South Door Top", 0.1, 2.5, D + T / 2.0, 1.0, 0.8, T, PLASTER, 0.5, WHITE_WALL, 0.85);
+// Giriş kapısı (kapalı): ahşap kanat, koyu kasa, metal kol
+var TRIM = {r: 0.16, g: 0.13, b: 0.11, a: 1};
+Solid("Door Jamb L", -0.375, 1.05, D + T / 2.0, 0.05, 2.1, T + 0.04, "", 1, TRIM, 0.5);
+Solid("Door Jamb R", 0.575, 1.05, D + T / 2.0, 0.05, 2.1, T + 0.04, "", 1, TRIM, 0.5);
+Solid("Door Head", 0.1, 2.125, D + T / 2.0, 1.0, 0.05, T + 0.04, "", 1, TRIM, 0.5);
+Solid("Front Door", 0.1, 1.05, D + T / 2.0, 0.9, 2.1, 0.045, "Assets/Textures/laminate_floor_02.jpg", 0.9, {r: 0.78, g: 0.66, b: 0.55, a: 1}, 0.55);
+var handle = Mesh("Door Handle", "Cube", 0.46, 1.0, D + T / 2.0 - 0.05, 0.14, 0.025, 0.025, "", {r: 0.75, g: 0.75, b: 0.74, a: 1});
+EntitySetComponentField(handle, "MeshRenderer", "Metallic", 1.0);
+EntitySetComponentField(handle, "MeshRenderer", "Roughness", 0.25);
+Solid("Wall East", W + T / 2.0, HC / 2.0, 0, T, HC, 2 * D + 0.4, PLASTER, 0.5, WHITE_WALL, 0.85);
+Solid("Wall West", -W - T / 2.0, HC / 2.0, 0, T, HC, 2 * D + 0.4, PLASTER, 0.5, WHITE_WALL, 0.85);
+var wz = -D - T / 2.0;
+Solid("Wall North Pier W", -4.25, HC / 2.0, wz, 1.5, HC, T, PLASTER, 0.5, WHITE_WALL, 0.85);
+Solid("Wall North Pier C", 0, HC / 2.0, wz, 1.0, HC, T, PLASTER, 0.5, WHITE_WALL, 0.85);
+Solid("Wall North Pier E", 4.25, HC / 2.0, wz, 1.5, HC, T, PLASTER, 0.5, WHITE_WALL, 0.85);
+foreach (var wx in [-2.0, 2.0])
+{
+    Solid("Wall North Sill " + wx, wx, 0.2, wz, 3.0, 0.4, T, PLASTER, 0.5, WHITE_WALL, 0.85);
+    Solid("Wall North Header " + wx, wx, 2.7, wz, 3.0, 0.4, T, PLASTER, 0.5, WHITE_WALL, 0.85);
+    // Pencere: ince koyu çerçeve + cam (yarı saydam, parlak)
+    var FRAME = {r: 0.08, g: 0.08, b: 0.09, a: 1};
+    Solid("Window Frame Bottom " + wx, wx, 0.42, wz, 3.0, 0.05, 0.12, "", 1, FRAME, 0.4);
+    Solid("Window Frame Top " + wx, wx, 2.48, wz, 3.0, 0.05, 0.12, "", 1, FRAME, 0.4);
+    Solid("Window Mullion " + wx, wx, 1.45, wz, 0.05, 2.05, 0.12, "", 1, FRAME, 0.4);
+    var glass = Mesh("Window Glass " + wx, "Cube", wx, 1.45, wz, 2.95, 2.0, 0.02, "", {r: 0.02, g: 0.03, b: 0.03, a: 0.15});
+    EntitySetComponentField(glass, "MeshRenderer", "Roughness", 0.02);
+    EntitySetComponentField(glass, "MeshRenderer", "CastShadows", false);
+}
+Solid("Skirting East", W - 0.01, 0.05, 0, 0.02, 0.1, 2 * D, "", 1, {r: 0.95, g: 0.95, b: 0.95, a: 1}, 0.5);
+Solid("Skirting West", -W + 0.01, 0.05, 0, 0.02, 0.1, 2 * D, "", 1, {r: 0.95, g: 0.95, b: 0.95, a: 1}, 0.5);
+
+// ---------------------------------------------------------------- Dış mekân
+// Pencerelerin önünde 5 m taş döşeli teras (bir basamak aşağıda), kenar taşı, ötesinde çim bahçe; bahçenin sonunda
+// iki sıra çit çalısı (Poly Haven shrub, farklı boy / açı), terasta bahçe masası ve çiçeklikler.
+func Ext(name, file, x, y, z, yaw, scale)
+{
+    var e = CreateEntity(name);
+    EntitySetPosition(e, x, y, z);
+    EntitySetRotation(e, 0, yaw, 0);
+    EntitySetScale(e, scale, scale, scale);
+    EntityAddComponent(e, "Model");
+    EntitySetComponentField(e, "Model", "FilePath", "Assets/Exterior/" + file + ".glb");
+    return e;
+}
+func Hash01(i)
+{
+    var v = MathSin(i * 12.9898 + 78.233) * 43758.5453;
+    return v - MathFloor(v);
+}
+var NZ = -D - T;
+Solid("Patio", 0, -0.25, NZ - 2.6, 14, 0.2, 5.2, "Assets/Textures/patio_stone.jpg", 0.45, {r: 0.95, g: 0.95, b: 0.93, a: 1}, 0.7);
+Solid("Patio Kerb", 0, -0.2, NZ - 5.25, 14.3, 0.14, 0.18, "", 1, {r: 0.62, g: 0.62, b: 0.6, a: 1}, 0.8);
+Solid("Lawn", 0, -0.4, -20, 180, 0.3, 120, "Assets/Textures/lawn_grass.jpg", 0.3, {r: 0.92, g: 1.0, b: 0.88, a: 1}, 0.95);
+// Budanmış şimşir çit bahçeyi üç yandan çevreler (doku: make_hedge.py); önünde serbest çalılar
+var HEDGE = "Assets/Textures/hedge_leaves.jpg";
+Solid("Hedge North", 0, 0.85, -16, 24, 2.2, 1.0, HEDGE, 1.0, {r: 1, g: 1, b: 1, a: 1}, 0.9);
+Solid("Hedge West", -11.5, 0.85, -10.2, 1.0, 2.2, 11.6, HEDGE, 1.0, {r: 1, g: 1, b: 1, a: 1}, 0.9);
+Solid("Hedge East", 11.5, 0.85, -10.2, 1.0, 2.2, 11.6, HEDGE, 1.0, {r: 1, g: 1, b: 1, a: 1}, 0.9);
+for (var i = 0; i < 8; i++)
+{
+    var hx = -9.5 + i * 2.7 + (Hash01(i) - 0.5) * 0.8;
+    Ext("Garden Shrub", "shrub_02", hx, -0.3, -14.8 + (Hash01(i + 40) - 0.5) * 0.5, Hash01(i + 80) * 360.0, 0.75 + Hash01(i + 120) * 0.3);
+}
+Ext("Garden Table", "outdoor_table_chair_set_01", 2.6, -0.15, NZ - 2.6, 20, 1.0);
+var fill = CreateEntity("Garden Fill Light");
+EntitySetPosition(fill, 0, 3.2, NZ - 1.0);
+EntitySetRotation(fill, -12, 0, 0);
+EntityAddComponent(fill, "AreaLight");
+EntitySetComponentField(fill, "AreaLight", "Size", {x: 22, y: 4});
+EntitySetComponentField(fill, "AreaLight", "Intensity", 1.2);
+EntitySetComponentField(fill, "AreaLight", "Range", 24);
+EntitySetComponentField(fill, "AreaLight", "Color", {r: 0.9, g: 0.94, b: 1.0});
+EntitySetTag(fill, "Garden Light");
+foreach (var px in [-5.6, 5.6])
+{
+    Ext("Garden Planter", "planter_box_02", px, -0.15, NZ - 0.6, 90, 1.0);
+    for (var k = 0; k < 3; k++) { Ext("Planter Shrub", "shrub_03", px, 0.25, NZ - 0.2 - k * 0.4, k * 70.0, 1.6); }
+}
+foreach (var bx in [-3.4, -1.0, 1.4, 4.2])
+{
+    Ext("Lawn Shrub", "shrub_04", bx, -0.25, NZ - 6.2 - Hash01(bx * 3.0) * 1.5, bx * 40.0, 2.2);
+}
+
+// Mobilyalar (Poly Haven, ön yüzleri +Z; yaw = önün baktığı yön)
+func Furn(name, file, x, y, z, yaw, scale)
+{
+    var e = CreateEntity(name);
+    EntitySetPosition(e, x, y, z);
+    EntitySetRotation(e, 0, yaw, 0);
+    EntitySetScale(e, scale, scale, scale);
+    EntityAddComponent(e, "Model");
+    EntitySetComponentField(e, "Model", "FilePath", "Assets/Furniture/" + file + ".glb");
+    return e;
+}
+func Solidify(e)
+{
+    EntityAddComponent(e, "Rigidbody");
+    EntitySetComponentField(e, "Rigidbody", "BodyType", "Static");
+    EntityAddComponent(e, "BoxCollider");
+    return e;
+}
+// Oturma alanı (doğu): TV doğu duvarında, kanepe ona bakar
+var rug = Mesh("Rug", "Cube", 2.8, 0.005, 0.6, 3.2, 0.01, 2.4, "", {r: 1, g: 1, b: 1, a: 1});
+EntitySetComponentField(rug, "MeshRenderer", "Texture", "Assets/Textures/fabric_pattern_07.jpg");
+EntitySetComponentField(rug, "MeshRenderer", "Tiling", {x: 1.5, y: 1.0});
+EntitySetComponentField(rug, "MeshRenderer", "Roughness", 0.95);
+Solidify(Furn("Sofa", "sofa_03", 1.0, 0, 0.6, 90, 1.0));
+Furn("Throw Pillows", "throw_pillows_01", 1.05, 0.45, 0.6, 90, 1.0);
+Solidify(Furn("Coffee Table", "modern_coffee_table_01", 2.7, 0, 0.6, 90, 1.0));
+Furn("Vase", "ceramic_vase_03", 2.7, 0.39, 0.85, 0, 1.0);
+Solidify(Furn("TV Cabinet", "modern_wooden_cabinet", 4.6, 0, 0.6, -90, 0.85));
+// Duvara asılı ince televizyon (55"): ince çerçeve + parlak siyah ekran (yansımalar SSR ile), altında ses çubuğu
+var tvBody = Mesh("Television", "Cube", W - 0.03, 1.3, 0.6, 0.04, 0.72, 1.25, "", {r: 0.03, g: 0.03, b: 0.035, a: 1});
+EntitySetComponentField(tvBody, "MeshRenderer", "Roughness", 0.35);
+EntitySetComponentField(tvBody, "MeshRenderer", "Metallic", 0.4);
+var tvScreen = Mesh("Television Screen", "Cube", W - 0.052, 1.305, 0.6, 0.004, 0.69, 1.215, "", {r: 0.006, g: 0.006, b: 0.008, a: 1});
+EntitySetComponentField(tvScreen, "MeshRenderer", "Roughness", 0.06);
+var soundbar = Mesh("Soundbar", "Cube", 4.62, 0.62, 0.6, 0.09, 0.07, 0.95, "", {r: 0.05, g: 0.05, b: 0.055, a: 1});
+EntitySetComponentField(soundbar, "MeshRenderer", "Roughness", 0.6);
+Solidify(Furn("Lounge Chair", "mid_century_lounge_chair", 3.6, 0, -2.6, -140, 1.0));
+Solidify(Furn("Ottoman", "Ottoman_01", 2.6, 0, -2.2, 0, 0.9));
+Solidify(Furn("Side Table", "side_table_01", 0.6, 0, 2.2, 90, 1.0));
+Furn("Picture Frame", "standing_picture_frame_01", 0.6, 0.55, 2.2, 120, 1.0);
+Solidify(Furn("Plant Corner", "potted_plant_01", 4.5, 0, -3.5, 0, 1.0));
+Solidify(Furn("Shelves", "wooden_display_shelves_01", 4.75, 0, 2.9, -90, 1.0));
+Furn("Vase Shelf", "ceramic_vase_01", 4.75, 1.56, 2.9, 0, 0.8);
+// Yemek alanı (batı)
+Solidify(Furn("Dining Table", "dining_table", -2.6, 0, 0.6, 0, 1.0));
+foreach (var ch in [{x: -3.35, z: -0.25, y: 0}, {x: -2.6, z: -0.25, y: 0}, {x: -1.85, z: -0.25, y: 0},
+                    {x: -3.35, z: 1.45, y: 180}, {x: -2.6, z: 1.45, y: 180}, {x: -1.85, z: 1.45, y: 180}])
+{
+    Solidify(Furn("Dining Chair", "dining_chair_02", ch.x, 0, ch.z, ch.y, 1.0));
+}
+Furn("Table Plant", "potted_plant_04", -2.6, 0.88, 0.6, 0, 1.4);
+Solidify(Furn("Planter", "planter_box_01", -4.3, 0, -3.6, 0, 1.0));
+// Duvar tabloları (güney duvarı, içe bakar)
+Furn("Painting A", "hanging_picture_frame_01", 2.2, 1.2, D - 0.02, 180, 1.2);
+Furn("Painting B", "hanging_picture_frame_02", -W + 0.02, 1.4, 0.6, 90, 1.4);    // batı duvarı, yemek masasının üstü
+// Mutfak bloğu (güneybatı köşe): dolap gövdesi + mermer tezgâh + üst dolaplar
+var CAB = {r: 0.22, g: 0.25, b: 0.27, a: 1};
+Solid("Kitchen Base", -3.3, 0.45, 3.65, 3.2, 0.9, 0.6, "", 1, CAB, 0.5);
+Solid("Kitchen Top", -3.3, 0.92, 3.62, 3.25, 0.04, 0.66, "Assets/Textures/marble_01.jpg", 1.2, {r: 1, g: 1, b: 1, a: 1}, 0.2);
+Solid("Kitchen Upper", -3.3, 2.15, 3.8, 3.2, 0.7, 0.35, "", 1, CAB, 0.5);
+Solid("Kitchen Splash", -3.3, 1.45, 3.88, 3.2, 1.0, 0.02, "Assets/Textures/marble_01.jpg", 1.2, {r: 1, g: 1, b: 1, a: 1}, 0.25);
+
+// Tavan lambaları: sarkıt (model) + ışık; akşam modunda güçlenir
+foreach (var lp in [{x: -3.1, z: 0.6}, {x: -2.1, z: 0.6}, {x: 2.7, z: 0.6}])
+{
+    Furn("Ceiling Lamp", "modern_ceiling_lamp_01", lp.x, HC - 0.95, lp.z, 0, 1.0);
+    var l = CreateEntity("Lamp Light");
+    EntitySetPosition(l, lp.x, HC - 0.95, lp.z);
+    EntityAddComponent(l, "PointLight");
+    EntitySetComponentField(l, "PointLight", "Color", {r: 1.0, g: 0.78, b: 0.52});
+    EntitySetComponentField(l, "PointLight", "Intensity", 0.6);
+    EntitySetComponentField(l, "PointLight", "Range", 6.0);
+    EntitySetComponentField(l, "PointLight", "CastShadows", true);
+    EntitySetTag(l, "Lamp");
+    var bulb = Mesh("Lamp Glow", "Sphere", lp.x, HC - 0.9, lp.z, 0.08, 0.08, 0.08, "", {r: 1, g: 0.85, b: 0.6, a: 1});
+    EntitySetComponentField(bulb, "MeshRenderer", "EmissionColor", {r: 1, g: 0.8, b: 0.55});
+    EntitySetComponentField(bulb, "MeshRenderer", "EmissionStrength", 1.0);
+    EntitySetComponentField(bulb, "MeshRenderer", "CastShadows", false);
+    EntitySetTag(bulb, "Lamp Glow");
+}
+
+// Keten perdeler (pileli, iki yüzlü; make_soft_furnishings.py): her pencerenin iki yanında, tavana yakın ince rayda
+foreach (var cwx in [-2.0, 2.0])
+{
+    var rod = Mesh("Curtain Rod " + cwx, "Cylinder", cwx, 2.79, -D + 0.14, 0.026, 3.8, 0.026, "", {r: 0.12, g: 0.12, b: 0.13, a: 1});
+    EntitySetRotation(rod, 0, 0, 90);
+    EntitySetComponentField(rod, "MeshRenderer", "Metallic", 0.9);
+    EntitySetComponentField(rod, "MeshRenderer", "Roughness", 0.35);
+    for (var cs = -1; cs <= 1; cs += 2)
+    {
+        var fin = Mesh("Curtain Finial", "Sphere", cwx + cs * 1.92, 2.79, -D + 0.14, 0.05, 0.05, 0.05, "", {r: 0.12, g: 0.12, b: 0.13, a: 1});
+        EntitySetComponentField(fin, "MeshRenderer", "Metallic", 0.9);
+        EntitySetComponentField(fin, "MeshRenderer", "Roughness", 0.35);
+        Furn("Curtain", "linen_curtain", cwx + cs * 1.45, 0.04, -D + 0.14, 0, 1.0);
+    }
+}
+// Yemek alanı halısı (yün, kenar şeritli)
+var rug2 = Mesh("Dining Rug", "Cube", -2.6, 0.005, 0.6, 3.1, 0.01, 2.7, "", {r: 1, g: 1, b: 1, a: 1});
+EntitySetComponentField(rug2, "MeshRenderer", "Texture", "Assets/Textures/rug_wool.jpg");
+EntitySetComponentField(rug2, "MeshRenderer", "Roughness", 0.95);
+// Mutfak: üst dolapların altında LED şerit (tezgâhı ve mermer duvarı aydınlatır; akşam güçlenir)
+var led = Mesh("Kitchen LED Strip", "Cube", -3.3, 1.793, 3.68, 3.0, 0.012, 0.03, "", {r: 1, g: 0.92, b: 0.8, a: 1});
+EntitySetComponentField(led, "MeshRenderer", "EmissionColor", {r: 1.0, g: 0.86, b: 0.66});
+EntitySetComponentField(led, "MeshRenderer", "EmissionStrength", 1.5);
+EntitySetComponentField(led, "MeshRenderer", "CastShadows", false);
+EntitySetTag(led, "Lamp Glow");
+var underCab = CreateEntity("Kitchen Under Cabinet Light");
+EntitySetPosition(underCab, -3.3, 1.77, 3.6);
+EntitySetRotation(underCab, -90, 0, 0);
+EntityAddComponent(underCab, "AreaLight");
+EntitySetComponentField(underCab, "AreaLight", "Size", {x: 3.0, y: 0.2});
+EntitySetComponentField(underCab, "AreaLight", "Intensity", 0.4);
+EntitySetComponentField(underCab, "AreaLight", "Range", 3.0);
+EntitySetComponentField(underCab, "AreaLight", "Color", {r: 1.0, g: 0.84, b: 0.62});
+EntitySetTag(underCab, "Evening Light");
+// Kanepenin yanında lambader: taban, ince gövde, keten abajur (akşam içten aydınlanır) + sıcak nokta ışığı
+var FL = {x: 0.55, z: -0.85};
+var flBase = Mesh("Floor Lamp Base", "Cylinder", FL.x, 0.015, FL.z, 0.32, 0.03, 0.32, "", {r: 0.1, g: 0.1, b: 0.11, a: 1});
+EntitySetComponentField(flBase, "MeshRenderer", "Metallic", 0.8);
+EntitySetComponentField(flBase, "MeshRenderer", "Roughness", 0.4);
+var flPole = Mesh("Floor Lamp Pole", "Cylinder", FL.x, 0.78, FL.z, 0.025, 1.5, 0.025, "", {r: 0.62, g: 0.5, b: 0.32, a: 1});
+EntitySetComponentField(flPole, "MeshRenderer", "Metallic", 1.0);
+EntitySetComponentField(flPole, "MeshRenderer", "Roughness", 0.3);
+var shade = Mesh("Floor Lamp Shade", "Cylinder", FL.x, 1.56, FL.z, 0.44, 0.32, 0.44, "", {r: 0.95, g: 0.9, b: 0.8, a: 1});
+EntitySetComponentField(shade, "MeshRenderer", "Texture", "Assets/Textures/linen.jpg");
+EntitySetComponentField(shade, "MeshRenderer", "Roughness", 0.9);
+EntitySetComponentField(shade, "MeshRenderer", "EmissionColor", {r: 1.0, g: 0.78, b: 0.5});
+EntitySetComponentField(shade, "MeshRenderer", "EmissionStrength", 0.0);
+EntitySetTag(shade, "Shade Glow");
+var flLight = CreateEntity("Floor Lamp Light");
+EntitySetPosition(flLight, FL.x, 1.5, FL.z);
+EntityAddComponent(flLight, "PointLight");
+EntitySetComponentField(flLight, "PointLight", "Color", {r: 1.0, g: 0.76, b: 0.5});
+EntitySetComponentField(flLight, "PointLight", "Intensity", 0.0);
+EntitySetComponentField(flLight, "PointLight", "Range", 5.0);
+EntitySetComponentField(flLight, "PointLight", "CastShadows", true);
+EntitySetTag(flLight, "Evening Light");
+// Tavan spotları (gömme): mutfak, giriş ve TV duvarı üstü; akşam açılır
+foreach (var dl in [{x: -4.2, z: 3.1}, {x: -2.4, z: 3.1}, {x: 0.1, z: 3.0}, {x: 4.3, z: -0.4}, {x: 4.3, z: 1.6}])
+{
+    var trim = Mesh("Downlight Trim", "Cylinder", dl.x, HC - 0.004, dl.z, 0.14, 0.008, 0.14, "", {r: 0.9, g: 0.9, b: 0.9, a: 1});
+    EntitySetComponentField(trim, "MeshRenderer", "Metallic", 0.6);
+    EntitySetComponentField(trim, "MeshRenderer", "Roughness", 0.3);
+    var lens = Mesh("Downlight Lens", "Cylinder", dl.x, HC - 0.009, dl.z, 0.09, 0.004, 0.09, "", {r: 1, g: 0.95, b: 0.88, a: 1});
+    EntitySetComponentField(lens, "MeshRenderer", "EmissionColor", {r: 1.0, g: 0.84, b: 0.64});
+    EntitySetComponentField(lens, "MeshRenderer", "EmissionStrength", 0.0);
+    EntitySetComponentField(lens, "MeshRenderer", "CastShadows", false);
+    EntitySetTag(lens, "Downlight Glow");
+    var spot = CreateEntity("Downlight");
+    EntitySetPosition(spot, dl.x, HC - 0.03, dl.z);
+    EntitySetRotation(spot, -90, 0, 0);
+    EntityAddComponent(spot, "SpotLight");
+    EntitySetComponentField(spot, "SpotLight", "Color", {r: 1.0, g: 0.84, b: 0.64});
+    EntitySetComponentField(spot, "SpotLight", "Intensity", 0.0);
+    EntitySetComponentField(spot, "SpotLight", "Range", 5.0);
+    EntitySetComponentField(spot, "SpotLight", "InnerConeAngle", 20);
+    EntitySetComponentField(spot, "SpotLight", "OuterConeAngle", 42);
+    EntitySetComponentField(spot, "SpotLight", "CastShadows", false);
+    EntitySetTag(spot, "Downlight");
+}
+
+// Pencere portal ışıkları: gökyüzü ışığı pencereden odaya dolar (Unreal'ın sky light portal yaklaşımı); oda içi ortam
+// ışığı pencereden uzaklaştıkça azalır, köşeler doğal biçimde koyulaşır
+foreach (var wx in [-2.0, 2.0])
+{
+    var portal = CreateEntity("Window Light " + wx);
+    EntitySetPosition(portal, wx, 1.45, -D + 0.1);
+    EntitySetRotation(portal, 0, 180, 0);
+    EntityAddComponent(portal, "AreaLight");
+    EntitySetComponentField(portal, "AreaLight", "Size", {x: 2.9, y: 2.0});
+    EntitySetComponentField(portal, "AreaLight", "Intensity", 2.0);
+    EntitySetComponentField(portal, "AreaLight", "Range", 12);
+    EntitySetComponentField(portal, "AreaLight", "Color", {r: 0.85, g: 0.92, b: 1.0});
+    EntitySetTag(portal, "Window Light");
+}
+
+// Güneş (pencerelerden içeri)
+var sun = CreateEntity("Sun");
+EntityAddComponent(sun, "DirectionalLight");
+EntitySetComponentField(sun, "DirectionalLight", "Intensity", 5.0);
+EntitySetComponentField(sun, "DirectionalLight", "CastShadows", true);
+EntitySetRotation(sun, -38, 125, 0);
+
+// Gezinti noktaları (1-4): konum ve bakış
+func ViewPoint(i, x, z, yaw, pitch)
+{
+    var v = CreateEntity("View " + i);
+    EntitySetPosition(v, x, 0.9, z);
+    EntitySetRotation(v, pitch, yaw, 0);
+}
+ViewPoint(1, -0.4, 3.2, 20, -6);
+ViewPoint(2, 3.8, 3.0, 15, -8);
+ViewPoint(3, -4.2, -2.6, -125, -6);
+ViewPoint(4, 0.2, -3.0, 165, -5);
+
+// Oyuncu: kapsül + kamera (göz 1.62 m)
+var player = CreateEntity("Visitor");
+EntitySetPosition(player, -0.4, 0.9, 3.2);
+EntityAddComponent(player, "CharacterController");
+EntitySetComponentField(player, "CharacterController", "Height", 1.8);
+EntitySetComponentField(player, "CharacterController", "Radius", 0.25);
+var cam = CreateEntity("Camera");
+EntitySetParent(cam, player);
+EntitySetPosition(cam, 0, 0.72, 0);
+EntityAddComponent(cam, "Camera");
+EntitySetComponentField(cam, "Camera", "Primary", true);
+EntitySetComponentField(cam, "Camera", "FieldOfView", 75);
+EntitySetComponentField(cam, "Camera", "NearClip", 0.05);
+EntityAddComponent(cam, "AudioListener");
+AddScript(player, "Assets/Scripts/ArchvizWalker.cqs");
+EntitySetRotation(player, 0, 20, 0);
+
+var hud = UICreateCanvas("HUD");
+EntitySetComponentField(hud, "CanvasScaler", "ReferenceResolution", {x: 1920, y: 1080});
+EntitySetComponentField(hud, "CanvasScaler", "MatchWidthOrHeight", 0.5);
+HudText("HintText", hud, "WASD WALK     SHIFT FASTER     MOUSE LOOK     1-4 VIEWPOINTS     G DAY / EVENING     F FLY (Q / E)", 0, 26, 1800, 30, 22, "Center", 0.5, 0);

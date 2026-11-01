@@ -1,0 +1,125 @@
+using nativebridge;
+
+// Takipçi: hedefin (targetName ya da targetTag) arkasında/yanında followDistance mesafede durur.
+// Uzaktaysa koşar, teleportDistance'tan uzaksa hedefin yanına ışınlanır, beklerken hafifçe dolaşır.
+script Follower : ConquerorScript
+{
+    public string targetName = "";
+    public string targetTag = "Player";
+    public float followDistance = 2.5;
+    public float sideOffset = 1.0;
+    public float walkSpeed = 3.5;
+    public float runSpeed = 7.0;
+    public float runDistance = 6.0;
+    public float teleportDistance = 30.0;
+    public bool idleWander = true;
+    public float gravity = 20.0;
+
+    // Çalışma zamanı bilgisi
+    public float distance = 0.0;
+    public bool moving = false;
+    public int teleports = 0;
+
+    private var target = null;
+    private bool useNav = false;
+    private float idleTime = 0.0;
+    private float wanderX = 0.0;
+    private float wanderZ = 0.0;
+    private float vy = 0.0;
+    private float repath = 0.0;
+
+    func Start() { useNav = HasComponent("NavMeshAgent"); }
+
+    func FindTarget()
+    {
+        if (targetName != "") { return FindEntity(targetName); }
+        for (var e in FindEntitiesWithTag(targetTag)) { if (e != GetEntityId()) { return e; } }
+        return null;
+    }
+
+    func Update(dt)
+    {
+        if (dt <= 0) { return; }
+        if (target == null || !EntityIsValid(target)) { target = FindTarget(); if (target == null) { return; } }
+        var me = EntityGetWorldPosition(GetEntityId());
+        var t = EntityGetWorldPosition(target);
+        var dx = t.x - me.x;
+        var dz = t.z - me.z;
+        distance = MathSqrt(dx * dx + dz * dz);
+        if (distance > teleportDistance)
+        {
+            var back = EntityGetForward(target);
+            EntitySetWorldPosition(GetEntityId(), t.x - back.x * followDistance, t.y + 0.1, t.z - back.z * followDistance);
+            teleports++;
+            if (useNav) { NavWarp(t.x - back.x * followDistance, t.y, t.z - back.z * followDistance); }
+            return;
+        }
+        // Hedefin arka-yan noktası
+        var f = EntityGetForward(target);
+        var r = EntityGetRight(target);
+        var gx = t.x - f.x * followDistance + r.x * sideOffset;
+        var gz = t.z - f.z * followDistance + r.z * sideOffset;
+        var gdx = gx - me.x;
+        var gdz = gz - me.z;
+        var gd = MathSqrt(gdx * gdx + gdz * gdz);
+        moving = distance > followDistance + 0.3 && gd > 0.4;
+        if (moving)
+        {
+            idleTime = 0;
+            var speed = distance > runDistance ? runSpeed : walkSpeed;
+            Move(gx, gz, gd, speed, dt);
+        }
+        else
+        {
+            if (useNav) { NavStop(); }
+            idleTime += dt;
+            if (idleWander && idleTime > 2.5)
+            {
+                if (wanderX == 0 && wanderZ == 0)
+                {
+                    var a = MathRandom() * 6.28;
+                    wanderX = t.x + MathCos(a) * followDistance;
+                    wanderZ = t.z + MathSin(a) * followDistance;
+                }
+                var wdx = wanderX - me.x;
+                var wdz = wanderZ - me.z;
+                var wd = MathSqrt(wdx * wdx + wdz * wdz);
+                if (wd > 0.3) { Move(wanderX, wanderZ, wd, walkSpeed * 0.4, dt); }
+                else { idleTime = 0; wanderX = 0; wanderZ = 0; }
+            }
+            else { Face(dx, dz, dt); }
+        }
+        if (!useNav && HasComponent("CharacterController"))
+        {
+            vy -= gravity * dt;
+            CharacterMove(0, vy * dt, 0);
+            if (CharacterIsGrounded() && vy < 0) { vy = -2.0; }
+        }
+    }
+
+    func Move(x, z, d, speed, dt)
+    {
+        var me = EntityGetWorldPosition(GetEntityId());
+        if (useNav)
+        {
+            repath -= dt;
+            if (repath <= 0) { NavSetSpeed(speed); NavResume(); NavSetDestination(x, me.y, z); repath = 0.3; }
+            return;
+        }
+        var step = MathMin(d, speed * dt);
+        var ux = (x - me.x) / d;
+        var uz = (z - me.z) / d;
+        if (HasComponent("CharacterController")) { CharacterMove(ux * step, 0, uz * step); }
+        else { EntitySetWorldPosition(GetEntityId(), me.x + ux * step, me.y, me.z + uz * step); }
+        Face(ux, uz, dt);
+    }
+
+    func Face(dx, dz, dt)
+    {
+        if (dx * dx + dz * dz < 0.0001) { return; }
+        var want = MathRadToDeg(MathAtan2(-dx, -dz));
+        var r = GetRotation();
+        var diff = MathClamp(MathNormalizeAngle(want - r.y), -540 * dt, 540 * dt);
+        SetRotation(r.x, r.y + diff, r.z);
+    }
+}

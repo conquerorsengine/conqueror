@@ -1,0 +1,12 @@
+Id: conqueror.snap-to-surface
+Name: Snap To Surface
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Precise placement for level design: drop the selection onto whatever is below it (bottom of
+  the object touches the surface, not just y = 0), optionally tilt it to the surface normal,
+  snap positions to a grid and rotations to 15 or 90 degree steps. Each action is one undo step.
+Category: Level Design
+Icon: magnet
+Tags: [editor, snap, placement, grid, level-design]
+Editor: Editor/SnapToSurface.cqs

@@ -1,0 +1,248 @@
+using nativebridge;
+
+// Conqueror's Engine — Parkur örneği: seviye seçim menüsü.
+// Solda kategoriler, sağda seçili kategorinin seviyeleri (en iyi süre, madalya, kilit).
+// Bir kategorinin ilk seviyesi hep açıktır; sonrakiler bir öncekini bitirince açılır ("Parkour.<id>.Done").
+script ParkourMenu : ConquerorScript
+{
+    [Tooltip("Kategoriler ';' ile; her biri 'AD:sahne|id|seviye adı,...' (Tools/gen_levels.py yazar)")]
+    public string levelData = "";
+    [Tooltip("Tüm seviyeleri açık gösterir (test / tanıtım)")]
+    public bool unlockAll = false;
+
+    [Header("Durum")]
+    public int category = 0;
+    public int level = 0;
+    public int column = 0;      // 0 kategoriler, 1 seviyeler
+    public string loading = "";
+
+    private var cats = [];
+    private var padPrev = {};
+    private float time = 0;
+    private float camAngle = 0;
+    private int cam = -1;
+    private float fade = 1;
+    private float fadeTarget = 0;
+    private float mouseX = -1;
+    private float mouseY = -1;
+
+    func Start()
+    {
+        cam = FindEntity("MenuCamera");
+        foreach (var c in StringSplit(levelData, ";"))
+        {
+            var parts = StringSplit(c, ":");
+            if (parts.Count < 2) { continue; }
+            var levels = [];
+            foreach (var l in StringSplit(parts[1], ","))
+            {
+                var f = StringSplit(l, "|");
+                if (f.Count >= 3) { levels.Add({scene: f[0], id: f[1], name: f[2]}); }
+            }
+            cats.Add({name: parts[0], levels: levels});
+        }
+        // Son oynanan kategoriden başla
+        category = int(MathClamp(PrefsGetInt("Parkour.MenuCategory", 0), 0, MathMax(0, cats.Count - 1)));
+        level = 0;
+        SetCursorMode(0);
+        Refresh();
+    }
+
+    func Done(l) { return PrefsGetInt("Parkour." + l.id + ".Done", 0) == 1; }
+    func Medal(l) { return PrefsGetInt("Parkour." + l.id + ".Medal", 0); }
+
+    func Unlocked(ci, li)
+    {
+        if (unlockAll || li == 0) { return true; }
+        return Done(cats[ci].levels[li - 1]);
+    }
+
+    func FormatTime(t)
+    {
+        var cs = int(MathFloor(t * 100));
+        var m = int(cs / 6000);
+        var s = int((cs - m * 6000) / 100);
+        var c = cs - m * 6000 - s * 100;
+        return $"{m}:{s:D2}.{c:D2}";
+    }
+
+    func MedalName(m)
+    {
+        if (m == 3) { return "GOLD"; }
+        if (m == 2) { return "SILVER"; }
+        if (m == 1) { return "BRONZE"; }
+        return "";
+    }
+
+    func Refresh()
+    {
+        var gold = 0;
+        var silver = 0;
+        var bronze = 0;
+        var total = 0;
+        for (var ci = 0; ci < cats.Count; ci++)
+        {
+            var done = 0;
+            foreach (var l in cats[ci].levels)
+            {
+                total += 1;
+                if (Done(l)) { done += 1; }
+                var m = Medal(l);
+                if (m == 3) { gold += 1; }
+                else if (m == 2) { silver += 1; }
+                else if (m == 1) { bronze += 1; }
+            }
+            UISetText("CatBtn" + ci, cats[ci].name + "   " + done + "/" + cats[ci].levels.Count);
+        }
+        UISetText("MedalText", $"GOLD {gold}     SILVER {silver}     BRONZE {bronze}     OF {total}");
+        var cat = cats[category];
+        UISetText("CategoryTitle", cat.name);
+        for (var li = 0; li < 4; li++)
+        {
+            var btn = "LvlBtn" + li;
+            if (li >= cat.levels.Count) { UISetVisible(btn, false); UISetVisible("LvlInfo" + li, false); continue; }
+            UISetVisible(btn, true);
+            UISetVisible("LvlInfo" + li, true);
+            var l = cat.levels[li];
+            var open = Unlocked(category, li);
+            UISetText(btn, "    " + (li + 1) + "    " + (open ? l.name : "LOCKED"));
+            var best = PrefsGetFloat("Parkour." + l.id + ".Best", 0);
+            var info = "";
+            if (!open) { info = "FINISH LEVEL " + li + " TO UNLOCK"; }
+            else if (best > 0) { info = FormatTime(best) + "   " + MedalName(Medal(l)); }
+            else { info = "NOT FINISHED"; }
+            UISetText("LvlInfo" + li, info);
+            var m = Medal(l);
+            if (!open) { UISetTextColor("LvlInfo" + li, 0.5, 0.52, 0.6, 1); }
+            else if (m == 3) { UISetTextColor("LvlInfo" + li, 1.0, 0.82, 0.3, 1); }
+            else if (m == 2) { UISetTextColor("LvlInfo" + li, 0.82, 0.87, 0.97, 1); }
+            else if (m == 1) { UISetTextColor("LvlInfo" + li, 0.92, 0.58, 0.32, 1); }
+            else { UISetTextColor("LvlInfo" + li, 0.74, 0.78, 0.90, 1); }
+        }
+        Highlight();
+    }
+
+    func Highlight()
+    {
+        for (var ci = 0; ci < cats.Count; ci++)
+        {
+            var on = ci == category;
+            if (on && column == 0) { EntitySetColor("CatBtn" + ci, 0.95, 0.55, 0.18, 0.95); }
+            else if (on) { EntitySetColor("CatBtn" + ci, 0.35, 0.22, 0.12, 0.95); }
+            else { EntitySetColor("CatBtn" + ci, 0.08, 0.10, 0.20, 0.9); }
+        }
+        for (var li = 0; li < 4; li++)
+        {
+            var open = li < cats[category].levels.Count && Unlocked(category, li);
+            if (column == 1 && li == level) { EntitySetColor("LvlBtn" + li, 0.95, 0.55, 0.18, 0.95); }
+            else if (open) { EntitySetColor("LvlBtn" + li, 0.08, 0.10, 0.20, 0.9); }
+            else { EntitySetColor("LvlBtn" + li, 0.05, 0.05, 0.08, 0.7); }
+        }
+    }
+
+    func Pad(b) { return IsGamepadConnected(0) && IsGamepadButtonPressed(0, b); }
+
+    func PadDown(b)
+    {
+        var now = Pad(b);
+        var k = "b" + b;
+        var was = padPrev.ContainsKey(k) && padPrev[k];
+        padPrev[k] = now;
+        return now && !was;
+    }
+
+    func Sfx(path) { AudioPlayOneShot(path, 0.45, 1.0, 0, "SFX"); }
+
+    func SelectCategory(ci)
+    {
+        if (ci == category) { return; }
+        category = ci;
+        level = 0;
+        PrefsSetInt("Parkour.MenuCategory", category);
+        Sfx("Assets/Audio/ui_move.wav");
+        Refresh();
+    }
+
+    func Play(li)
+    {
+        if (!Unlocked(category, li))
+        {
+            Sfx("Assets/Audio/fall.wav");
+            return;
+        }
+        Sfx("Assets/Audio/ui_select.wav");
+        PrefsSetInt("Parkour.MenuCategory", category);
+        PrefsSave();
+        loading = cats[category].levels[li].scene;
+        fadeTarget = 1;
+    }
+
+    func Update(dt)
+    {
+        var udt = GetUnscaledDeltaTime();
+        time += udt;
+        // Arka plan: parkurun üzerinde yavaşça dönen kamera
+        camAngle += udt * 0.05;
+        var r = 22;
+        EntitySetPosition(cam, MathSin(camAngle) * r, 15 + MathSin(camAngle * 0.7) * 2, -40 + MathCos(camAngle) * r);
+        EntitySetRotation(cam, -14, camAngle * 57.29578, 0);
+
+        fade += MathClamp(fadeTarget - fade, -udt * 2.5, udt * 2.5);
+        EntitySetColor("Fade", 0, 0, 0, fade);
+        if (loading != "")
+        {
+            if (fade >= 0.99) { LoadScene("Assets/Scenes/" + loading + ".cqscene"); }
+            return;
+        }
+        if (cats.Count == 0) { return; }
+
+        // Fare: üzerine gelme yalnızca fare hareket edince seçimi değiştirir (klavye seçimini ezmesin)
+        var mx = GetMouseX();
+        var my = GetMouseY();
+        var moved = mouseX >= 0 && (MathAbs(mx - mouseX) > 0.5 || MathAbs(my - mouseY) > 0.5);
+        mouseX = mx;
+        mouseY = my;
+        for (var ci = 0; ci < cats.Count; ci++)
+        {
+            if (UIWasClicked("CatBtn" + ci)) { column = 0; SelectCategory(ci); Highlight(); }
+        }
+        for (var li = 0; li < cats[category].levels.Count; li++)
+        {
+            if (moved && UIIsHovered("LvlBtn" + li) && (column != 1 || level != li)) { column = 1; level = li; Highlight(); }
+            if (UIWasClicked("LvlBtn" + li)) { level = li; Play(li); return; }
+        }
+        if (UIWasClicked("QuitBtn")) { QuitGame(); return; }
+
+        // Klavye / kol
+        var up = IsKeyDown("Up") || IsKeyDown("W") || PadDown(11);
+        var down = IsKeyDown("Down") || IsKeyDown("S") || PadDown(13);
+        var left = IsKeyDown("Left") || IsKeyDown("A") || PadDown(14);
+        var right = IsKeyDown("Right") || IsKeyDown("D") || PadDown(12);
+        var ok = IsKeyDown("Enter") || IsKeyDown("Space") || PadDown(0);
+        var back = IsKeyDown("Escape") || PadDown(1);
+        if (column == 0)
+        {
+            if (up) { SelectCategory((category + cats.Count - 1) % cats.Count); }
+            if (down) { SelectCategory((category + 1) % cats.Count); }
+            if (right || ok) { column = 1; level = 0; Sfx("Assets/Audio/ui_move.wav"); Highlight(); }
+            if (back) { QuitGame(); }
+        }
+        else
+        {
+            var n = cats[category].levels.Count;
+            if (up) { level = (level + n - 1) % n; Sfx("Assets/Audio/ui_move.wav"); Highlight(); }
+            if (down) { level = (level + 1) % n; Sfx("Assets/Audio/ui_move.wav"); Highlight(); }
+            if (left || back) { column = 0; Sfx("Assets/Audio/ui_move.wav"); Highlight(); }
+            else if (ok) { Play(level); }
+        }
+        var pulse = 1.0 + 0.012 * MathSin(time * 1.6);
+        UISetScale("MenuTitle", pulse, pulse);
+    }
+
+    // Test kancası: bir seviyeyi doğrudan aç
+    func DebugPlay(ci, li)
+    {
+        category = ci;
+        Play(li);
+    }
+}

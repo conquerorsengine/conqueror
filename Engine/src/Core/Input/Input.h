@@ -34,18 +34,18 @@ namespace Conqueror
     // Gamepad info
     struct GamepadInfo
     {
-        int ID;
+        int ID{};
         std::string Name;
-        bool Connected;
-        int ButtonCount;
-        int AxisCount;
+        bool Connected{};
+        int ButtonCount{};
+        int AxisCount{};
     };
 
     // Input action definition
     struct InputAction
     {
         std::string Name;
-        InputActionType Type;
+        InputActionType Type{};
         std::vector<KeyCode> Keys;
         std::vector<MouseCode> MouseButtons;
         std::vector<int> GamepadButtons;
@@ -117,6 +117,14 @@ namespace Conqueror
         static float GetGamepadLeftTrigger(int gamepadID = 0);
         static float GetGamepadRightTrigger(int gamepadID = 0);
         
+        // Kumanda adı (SDL eşleme adı: "Xbox Controller", "PS5 Controller", "Steam Deck" ...)
+        static std::string GetGamepadName(int gamepadID = 0);
+        // Sanal kumanda (otomasyon testleri): bağlıyken 0 numaralı gerçek kumandanın yerine geçer
+        static void SetVirtualGamepad(bool connected, const std::string& name = "Xbox Controller");
+        static bool IsVirtualGamepad();
+        static void SetVirtualGamepadButton(int button, bool down);
+        static void SetVirtualGamepadAxis(int axis, float value);
+
         // Vibration/Haptic feedback
         static void SetGamepadVibration(float leftMotor, float rightMotor, int gamepadID = 0);
         static void StopGamepadVibration(int gamepadID = 0);
@@ -140,6 +148,9 @@ namespace Conqueror
         static void BindGamepadAction(const std::string& contextName, const std::string& actionName, 
                                       InputActionType type, const std::vector<int>& buttons, const std::vector<int>& axes);
         
+        // Bağlam tanımı (Player Input bileşeni eylemleri kendisi değerlendirir); yoksa nullptr
+        static const InputContext* FindContext(const std::string& name);
+        static std::vector<std::string> GetContextNames();
         static bool GetActionButton(const std::string& actionName);
         static InputTriggerState GetActionState(const std::string& actionName);
         static float GetActionAxis1D(const std::string& actionName);
@@ -149,6 +160,11 @@ namespace Conqueror
         
         // Input Map File Parsing
         static bool LoadConfig(const std::string& filepath);
+        // Proje ayarları: .cqinput biçimindeki metinden yükle / metne yaz (Project Settings > Input)
+        static bool LoadConfigFromString(const std::string& text);
+        static std::string SaveConfigToString();
+        static void ClearContexts();
+        static InputContext* GetContextMutable(const std::string& name);
 
         // UI Helpers
         static KeyCode GetAnyKeyPressed();
@@ -179,7 +195,21 @@ namespace Conqueror
         static float GetDeadZone();
         
         // Cursor control
-        static void SetCursorMode(int mode); // GLFW_CURSOR_NORMAL, GLFW_CURSOR_HIDDEN, GLFW_CURSOR_DISABLED
+        // 0 normal, 1 gizli, 2 kilitli (GLFW_CURSOR_* sabitleri de kabul edilir). Oyunun istediği kip saklanır.
+        static void SetCursorMode(int mode);
+        static int GetCursorMode() { return s_CursorMode; }
+        // Yalnızca pencereye uygular, istenen kipi değiştirmez (editör: duraklatınca imleci geçici bırakmak için)
+        static void ApplyCursorMode(int mode);
+        // İmleç kipi her değiştiğinde artar: o karede fare hareketi sıfırlanır (kilitlenirken imleç sıçraması kamerayı çevirmesin)
+        static uint32_t GetCursorModeEpoch();
+        static int GetAppliedCursorMode() { return s_AppliedCursorMode; }
+        // Oyunun istediği kilit kullanıcı tarafından geçici bırakıldı (Esc / Shift+F1 / odak kaybı): bu sırada oyun fare
+        // hareketi, tıklaması ve tekerleği almaz; oyunun yeni kilit istekleri de oyun alanına tıklanana kadar bekler
+        static bool IsCursorReleased() { return s_CursorReleased; }
+        // İmleç (x, y) pencere noktasında görünür (Unity: Game görünümünün ortası); x < 0: olduğu yerde
+        static void ReleaseCursor(float x = -1.0f, float y = -1.0f);
+        // Oyun alanına tıklandı: oyunun istediği kip geri gelir
+        static void RecaptureCursor();
         static void SetCursorPosition(float x, float y);
         
         // Internal update (called by Application)
@@ -231,13 +261,16 @@ namespace Conqueror
         struct ComboState
         {
             std::vector<KeyCode> Keys;
-            float TimeWindow;
+            float TimeWindow{};
             std::vector<float> KeyPressTimes;
         };
         static std::unordered_map<std::string, ComboState> s_Combos;
         
         static float s_DeadZone;
-        
+        static int s_CursorMode;
+        static int s_AppliedCursorMode;
+        static bool s_CursorReleased;
+
         // Helper functions
         static void UpdateGamepads();
         static void ProcessInputBuffer();

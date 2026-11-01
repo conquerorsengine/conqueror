@@ -1,0 +1,12 @@
+cat makes a sound
+rex has 4 legs. rex barks
+["sit", "roll", "play dead"] 3
+2 cow 3
+Animal(cat) Animal(rex) Animal(cat)
+true true false false true
+true
+3 4 3
+12
+rex barks
+black
+2 [1, 2]

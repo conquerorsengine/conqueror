@@ -1,0 +1,123 @@
+using nativebridge;
+
+// Meydan kamerası: sağ fare sürükle = dön, tekerlek = yakınlaş, WASD = kaydır, Q / E = döndür.
+// F = rastgele bir yayayı izle (arkasından, omuz hizasında), Tab = sıradaki yaya, F / Esc = serbest kameraya dön.
+script CrowdCamera : ConquerorScript
+{
+    public float yaw = 35.0;
+    public float pitch = 36.0;
+    public float distance = 20.0;          // açılış: kamera meydanın üstünde (çatılar önü kesmez)
+    public float focusX = 2.0;
+    public float focusZ = 1.0;
+    public float minDistance = 4.0;
+    public float maxDistance = 70.0;
+    public float panSpeed = 12.0;
+    public float sensitivity = 0.25;
+    public float sharpness = 6.0;
+    [Header("State")]
+    public int follow = -1;
+
+    private float homeDist = 20.0;
+    private float homePitch = 36.0;
+    private float wantYaw = 35.0;
+    private float wantPitch = 36.0;
+    private float wantDist = 20.0;
+    private float fx = 0.0;
+    private float fy = 0.0;
+    private float fz = 0.0;
+    private float wantFx = 0.0;
+    private float wantFz = 0.0;
+
+    func Start()
+    {
+        wantYaw = yaw;
+        wantPitch = pitch;
+        wantDist = distance;
+        homeDist = distance;
+        homePitch = pitch;
+        fx = focusX;
+        fz = focusZ;
+        wantFx = focusX;
+        wantFz = focusZ;
+        fy = 1.0;
+    }
+
+    func FreeCamera()
+    {
+        follow = -1;
+        wantDist = homeDist;
+        wantPitch = homePitch;
+        UISetText("ModeText", "");
+    }
+
+    func PickPerson(step)
+    {
+        var list = FindEntitiesWithTag("Pedestrian");
+        if (len(list) == 0) { follow = -1; return; }
+        var i = 0;
+        for (var k = 0; k < len(list); k++) { if (list[k] == follow) { i = k; } }
+        follow = step == 0 ? list[MathRandomInt(0, len(list) - 1)] : list[(i + step + len(list)) % len(list)];
+        wantDist = 4.2;
+        wantPitch = 14.0;
+        UISetText("ModeText", "FOLLOWING " + StringToUpper(EntityGetName(follow)) + "     TAB NEXT     F FREE CAMERA");
+    }
+
+    func LateUpdate(dt)
+    {
+        if (IsKeyDown("F")) { if (follow >= 0) { FreeCamera(); } else { PickPerson(0); } }
+        if (IsKeyDown("Escape") && follow >= 0) { FreeCamera(); }
+        if (IsKeyDown("Tab") && follow >= 0) { PickPerson(1); }
+        if (follow >= 0 && !EntityIsValid(follow)) { follow = -1; UISetText("ModeText", ""); }
+
+        var overUI = UIIsPointerOver();
+        var md = GetMouseDelta();
+        if (!overUI && IsMouseButtonPressed(1) && (MathAbs(md.x) + MathAbs(md.y) > 0.0))
+        {
+            wantYaw -= md.x * sensitivity;
+            wantPitch = MathClamp(wantPitch + md.y * sensitivity * 0.6, 3.0, 85.0);
+        }
+        var wheel = overUI ? 0.0 : GetMouseScrollDelta();
+        if (wheel != 0.0) { wantDist = MathClamp(wantDist * (1.0 - wheel * 0.12), minDistance, maxDistance); }
+        if (IsKeyPressed("Q")) { wantYaw += 70.0 * dt; }
+        if (IsKeyPressed("E")) { wantYaw -= 70.0 * dt; }
+        var ty = 1.0;
+        if (follow >= 0)
+        {
+            // İzleme: hedef yayanın omzu; kamera yavaşça yayanın arkasına döner
+            var p = EntityGetWorldPosition(follow);
+            wantFx = p.x;
+            wantFz = p.z;
+            ty = 1.45;
+            var r = EntityGetRotation(follow);
+            if (!IsMouseButtonPressed(1)) { wantYaw = wantYaw + MathNormalizeAngle(r.y + 180.0 - wantYaw) * (1.0 - MathExp(-1.5 * dt)); }
+        }
+        else
+        {
+            var ix = 0.0;
+            var iz = 0.0;
+            if (IsKeyPressed("W")) { iz -= 1.0; }
+            if (IsKeyPressed("S")) { iz += 1.0; }
+            if (IsKeyPressed("D")) { ix += 1.0; }
+            if (IsKeyPressed("A")) { ix -= 1.0; }
+            if (ix != 0.0 || iz != 0.0)
+            {
+                var yr0 = MathDegToRad(wantYaw);
+                var s = panSpeed * dt * (wantDist / 30.0);
+                wantFx = MathClamp(wantFx + (MathCos(yr0) * ix + MathSin(yr0) * iz) * s, -30.0, 30.0);
+                wantFz = MathClamp(wantFz + (-MathSin(yr0) * ix + MathCos(yr0) * iz) * s, -30.0, 30.0);
+            }
+        }
+        var k = 1.0 - MathExp(-sharpness * dt);
+        yaw = yaw + MathNormalizeAngle(wantYaw - yaw) * k;
+        pitch = MathLerp(pitch, wantPitch, k);
+        distance = MathLerp(distance, wantDist, k);
+        fx = MathLerp(fx, wantFx, follow >= 0 ? 1.0 - MathExp(-12.0 * dt) : k);
+        fz = MathLerp(fz, wantFz, follow >= 0 ? 1.0 - MathExp(-12.0 * dt) : k);
+        fy = MathLerp(fy, ty, k);
+        var yr = MathDegToRad(yaw);
+        var pr = MathDegToRad(pitch);
+        EntitySetWorldPosition(GetEntityId(), fx + MathSin(yr) * MathCos(pr) * distance, fy + MathSin(pr) * distance,
+                               fz + MathCos(yr) * MathCos(pr) * distance);
+        SetRotation(-pitch, yaw, 0);
+    }
+}

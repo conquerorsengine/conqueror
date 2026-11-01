@@ -1,0 +1,1373 @@
+Scene: Untitled
+Entities:
+  - Entity: 8316145245003929047
+    TagComponent:
+      Tag: Sea
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.1, 0]
+      Rotation: [0, 0, 0]
+      Scale: [300, 0.5, 300]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 2
+      Color: [0.05, 0.26, 0.34, 1]
+      Metallic: 0
+      Roughness: 0.06
+      AO: 1
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 8997979868161879760
+    TagComponent:
+      Tag: Shallows
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.03, 0]
+      Rotation: [0, 0, 0]
+      Scale: [8.75, 0.05, 8.75]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [0.16, 0.52, 0.56, 1]
+      Metallic: 0
+      Roughness: 0.3
+      AO: 1
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 7805718077480009367
+    TagComponent:
+      Tag: Hex Board
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    PrefabInstanceComponent:
+      Prefab: Packages/hex-board-kit/Prefabs/HexBoard.cqprefab
+    GridComponent:
+      Layout: 1
+      CellSize: [1, 1.1547005]
+      CellGap: [0, 0]
+      Plane: 1
+      ShowGridInEditor: true
+      EditorGridExtent: 12
+    HexBoardGenerator_ConquerorScriptComponent:
+      ScriptPath: Packages/hex-board-kit/Scripts/HexBoardGenerator.cqs
+      ClassName: HexBoardGenerator
+      Fields:
+        generateOnStart:
+          Bool: false
+        radius:
+          Int: 7
+  - Entity: 3606032170613789709
+    TagComponent:
+      Tag: Tilemap
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    TilemapComponent:
+      Tint: [1, 1, 1, 1]
+      OrderInLayer: 0
+      Render3D: true
+      Outline: true
+      Palette:
+        - Name: Grass
+          Color: [0.47, 0.71, 0.33, 1]
+          Texture: ""
+          Solid: false
+          Walkable: true
+          Cost: 1
+          Height: 0.3
+        - Name: Water
+          Color: [0.2, 0.5, 0.6, 0]
+          Texture: ""
+          Solid: false
+          Walkable: false
+          Cost: 1
+          Height: 0.05
+        - Name: Stone
+          Color: [0.58, 0.6, 0.4, 1]
+          Texture: ""
+          Solid: true
+          Walkable: true
+          Cost: 2
+          Height: 0.55
+        - Name: Wall
+          Color: [0.5, 0.48, 0.45, 1]
+          Texture: ""
+          Solid: true
+          Walkable: false
+          Cost: 1
+          Height: 0.8
+        - Name: Sand
+          Color: [0.9, 0.82, 0.6, 1]
+          Texture: ""
+          Solid: true
+          Walkable: true
+          Cost: 1
+          Height: 0.2
+        - Name: Forest
+          Color: [0.36, 0.58, 0.27, 1]
+          Texture: ""
+          Solid: true
+          Walkable: true
+          Cost: 2
+          Height: 0.3
+        - Name: Village
+          Color: [0.62, 0.7, 0.4, 1]
+          Texture: ""
+          Solid: true
+          Walkable: false
+          Cost: 1
+          Height: 0.3
+      Cells:
+        - [-4, -7, 1]
+        - [-3, -7, 1]
+        - [-2, -7, 4]
+        - [-1, -7, 1]
+        - [0, -7, 4]
+        - [1, -7, 1]
+        - [2, -7, 1]
+        - [3, -7, 1]
+        - [-4, -6, 1]
+        - [-3, -6, 0]
+        - [-2, -6, 0]
+        - [-1, -6, 1]
+        - [0, -6, 4]
+        - [1, -6, 0]
+        - [2, -6, 0]
+        - [3, -6, 0]
+        - [4, -6, 1]
+        - [-5, -5, 1]
+        - [-4, -5, 1]
+        - [-3, -5, 0]
+        - [-2, -5, 0]
+        - [-1, -5, 4]
+        - [0, -5, 1]
+        - [1, -5, 0]
+        - [2, -5, 2]
+        - [3, -5, 0]
+        - [4, -5, 1]
+        - [-5, -4, 1]
+        - [-4, -4, 1]
+        - [-3, -4, 0]
+        - [-2, -4, 3]
+        - [-1, -4, 2]
+        - [0, -4, 4]
+        - [1, -4, 1]
+        - [2, -4, 0]
+        - [3, -4, 0]
+        - [4, -4, 4]
+        - [5, -4, 1]
+        - [-6, -3, 1]
+        - [-5, -3, 1]
+        - [-4, -3, 4]
+        - [-3, -3, 0]
+        - [-2, -3, 2]
+        - [-1, -3, 2]
+        - [0, -3, 0]
+        - [1, -3, 2]
+        - [2, -3, 0]
+        - [3, -3, 0]
+        - [4, -3, 0]
+        - [5, -3, 1]
+        - [-6, -2, 1]
+        - [-5, -2, 1]
+        - [-4, -2, 0]
+        - [-3, -2, 0]
+        - [-2, -2, 2]
+        - [-1, -2, 2]
+        - [0, -2, 0]
+        - [1, -2, 3]
+        - [2, -2, 2]
+        - [3, -2, 3]
+        - [4, -2, 0]
+        - [5, -2, 1]
+        - [6, -2, 1]
+        - [-7, -1, 1]
+        - [-6, -1, 1]
+        - [-5, -1, 1]
+        - [-4, -1, 0]
+        - [-3, -1, 2]
+        - [-2, -1, 2]
+        - [-1, -1, 2]
+        - [0, -1, 0]
+        - [1, -1, 3]
+        - [2, -1, 3]
+        - [3, -1, 2]
+        - [4, -1, 1]
+        - [5, -1, 4]
+        - [6, -1, 0]
+        - [-7, 0, 1]
+        - [-6, 0, 4]
+        - [-5, 0, 1]
+        - [-4, 0, 0]
+        - [-3, 0, 2]
+        - [-2, 0, 2]
+        - [-1, 0, 2]
+        - [0, 0, 3]
+        - [1, 0, 3]
+        - [2, 0, 3]
+        - [3, 0, 3]
+        - [4, 0, 2]
+        - [5, 0, 2]
+        - [6, 0, 2]
+        - [7, 0, 0]
+        - [-7, 1, 1]
+        - [-6, 1, 4]
+        - [-5, 1, 0]
+        - [-4, 1, 0]
+        - [-3, 1, 0]
+        - [-2, 1, 0]
+        - [-1, 1, 0]
+        - [0, 1, 0]
+        - [1, 1, 2]
+        - [2, 1, 2]
+        - [3, 1, 2]
+        - [4, 1, 2]
+        - [5, 1, 0]
+        - [6, 1, 1]
+        - [-6, 2, 0]
+        - [-5, 2, 1]
+        - [-4, 2, 1]
+        - [-3, 2, 4]
+        - [-2, 2, 0]
+        - [-1, 2, 2]
+        - [0, 2, 2]
+        - [1, 2, 0]
+        - [2, 2, 2]
+        - [3, 2, 0]
+        - [4, 2, 0]
+        - [5, 2, 4]
+        - [6, 2, 0]
+        - [-6, 3, 1]
+        - [-5, 3, 1]
+        - [-4, 3, 1]
+        - [-3, 3, 0]
+        - [-2, 3, 3]
+        - [-1, 3, 2]
+        - [0, 3, 2]
+        - [1, 3, 0]
+        - [2, 3, 0]
+        - [3, 3, 1]
+        - [4, 3, 1]
+        - [5, 3, 1]
+        - [-5, 4, 1]
+        - [-4, 4, 1]
+        - [-3, 4, 0]
+        - [-2, 4, 2]
+        - [-1, 4, 2]
+        - [0, 4, 0]
+        - [1, 4, 0]
+        - [2, 4, 0]
+        - [3, 4, 0]
+        - [4, 4, 0]
+        - [5, 4, 1]
+        - [-5, 5, 1]
+        - [-4, 5, 1]
+        - [-3, 5, 0]
+        - [-2, 5, 0]
+        - [-1, 5, 0]
+        - [0, 5, 0]
+        - [1, 5, 0]
+        - [2, 5, 4]
+        - [3, 5, 1]
+        - [4, 5, 1]
+        - [-4, 6, 1]
+        - [-3, 6, 1]
+        - [-2, 6, 1]
+        - [-1, 6, 1]
+        - [0, 6, 1]
+        - [1, 6, 1]
+        - [2, 6, 1]
+        - [3, 6, 1]
+        - [4, 6, 1]
+        - [-4, 7, 1]
+        - [-3, 7, 1]
+        - [-2, 7, 1]
+        - [-1, 7, 1]
+        - [0, 7, 1]
+        - [1, 7, 1]
+        - [2, 7, 1]
+        - [3, 7, 1]
+  - Entity: 4282281424885215716
+    TagComponent:
+      Tag: Board Props
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 2736218074123325008
+    TagComponent:
+      Tag: Knight
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1.5, 1.5, 1.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Packages/hex-board-kit/Scripts/HexUnit.cqs
+      ClassName: ""
+      Fields:
+        board:
+          String: Tilemap
+        hop:
+          Float: 0.22
+        speed:
+          Float: 3.2
+        standHeight:
+          Float: 0
+    ModelComponent:
+      FilePath: Assets/Models/Knight.glb
+  - Entity: 3914444598632612522
+    TagComponent:
+      Tag: Hover Highlight
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.45, 0.01, 0.45]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [1, 1, 1, 0.35]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.95, 0.75]
+      EmissionStrength: 0.8
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 6989884100890704344
+    TagComponent:
+      Tag: Path Dot 0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -10, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.055, 0.055, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.92, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.85, 0.45]
+      EmissionStrength: 2
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 5313305353722338118
+    TagComponent:
+      Tag: Path Dot 1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -10, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.055, 0.055, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.92, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.85, 0.45]
+      EmissionStrength: 2
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 775656222231641876
+    TagComponent:
+      Tag: Path Dot 2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -10, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.055, 0.055, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.92, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.85, 0.45]
+      EmissionStrength: 2
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 1942604457350727877
+    TagComponent:
+      Tag: Path Dot 3
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -10, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.055, 0.055, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.92, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.85, 0.45]
+      EmissionStrength: 2
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 681005110985136354
+    TagComponent:
+      Tag: Path Dot 4
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -10, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.055, 0.055, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.92, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.85, 0.45]
+      EmissionStrength: 2
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 931585531985773617
+    TagComponent:
+      Tag: Path Dot 5
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -10, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.055, 0.055, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.92, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.85, 0.45]
+      EmissionStrength: 2
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 612311717161217318
+    TagComponent:
+      Tag: Path Dot 6
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -10, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.055, 0.055, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.92, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.85, 0.45]
+      EmissionStrength: 2
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 7439776564630420400
+    TagComponent:
+      Tag: Path Dot 7
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -10, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.055, 0.055, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.92, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.85, 0.45]
+      EmissionStrength: 2
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 6432375725399574154
+    TagComponent:
+      Tag: Path Dot 8
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -10, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.055, 0.055, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.92, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.85, 0.45]
+      EmissionStrength: 2
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 6235616361664560105
+    TagComponent:
+      Tag: Path Dot 9
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -10, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.055, 0.055, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.92, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.85, 0.45]
+      EmissionStrength: 2
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 5294253355650079226
+    TagComponent:
+      Tag: Path Dot 10
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -10, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.055, 0.055, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.92, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.85, 0.45]
+      EmissionStrength: 2
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 2868262294881380249
+    TagComponent:
+      Tag: Path Dot 11
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -10, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.055, 0.055, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.92, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.85, 0.45]
+      EmissionStrength: 2
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 4436775495392601642
+    TagComponent:
+      Tag: Path Dot 12
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -10, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.055, 0.055, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.92, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.85, 0.45]
+      EmissionStrength: 2
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 6597709993126137308
+    TagComponent:
+      Tag: Path Dot 13
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -10, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.055, 0.055, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.92, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.85, 0.45]
+      EmissionStrength: 2
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 3159581250715428174
+    TagComponent:
+      Tag: Path Dot 14
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -10, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.055, 0.055, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.92, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.85, 0.45]
+      EmissionStrength: 2
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 4368508359314021269
+    TagComponent:
+      Tag: Path Dot 15
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -10, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.055, 0.055, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.92, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.85, 0.45]
+      EmissionStrength: 2
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 9187381942925384613
+    TagComponent:
+      Tag: Path Dot 16
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -10, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.055, 0.055, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.92, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.85, 0.45]
+      EmissionStrength: 2
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 1156891593327384447
+    TagComponent:
+      Tag: Path Dot 17
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -10, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.055, 0.055, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.92, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.85, 0.45]
+      EmissionStrength: 2
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 6606912183463738848
+    TagComponent:
+      Tag: Path Dot 18
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -10, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.055, 0.055, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.92, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.85, 0.45]
+      EmissionStrength: 2
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 34289328323928634
+    TagComponent:
+      Tag: Path Dot 19
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -10, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.055, 0.055, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.92, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.85, 0.45]
+      EmissionStrength: 2
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 7570695254890515317
+    TagComponent:
+      Tag: Path Dot 20
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -10, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.055, 0.055, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.92, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.85, 0.45]
+      EmissionStrength: 2
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 1212984952378514760
+    TagComponent:
+      Tag: Path Dot 21
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -10, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.055, 0.055, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.92, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.85, 0.45]
+      EmissionStrength: 2
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 2483276806578127275
+    TagComponent:
+      Tag: Path Dot 22
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -10, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.055, 0.055, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.92, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.85, 0.45]
+      EmissionStrength: 2
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 476346148231898592
+    TagComponent:
+      Tag: Path Dot 23
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -10, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.055, 0.055, 0.055]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 1
+      Color: [1, 0.92, 0.6, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      EmissionColor: [1, 0.85, 0.45]
+      EmissionStrength: 2
+      CastShadows: false
+      TexturePath: ""
+  - Entity: 7752993699752918049
+    TagComponent:
+      Tag: Sun
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 8, 0]
+      Rotation: [-0.87266463, -0.5235988, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    PrefabInstanceComponent:
+      Prefab: Packages/day-night-cycle/Prefabs/Sun.cqprefab
+    DirectionalLightComponent:
+      Direction: [0.3213938, -0.76604456, -0.5566704]
+      FromRotation: true
+      Color: [1, 1, 1]
+      Intensity: 1
+      CastShadows: true
+      Mode: 0
+    DayNightCycle_ConquerorScriptComponent:
+      ScriptPath: Packages/day-night-cycle/Scripts/DayNightCycle.cqs
+      ClassName: DayNightCycle
+      Fields:
+        dayLengthSeconds:
+          Float: 900
+        maxIntensity:
+          Float: 3.2
+        sunYaw:
+          Float: 35
+        timeOfDay:
+          Float: 9.5
+  - Entity: 4233873058881505198
+    TagComponent:
+      Tag: Board Game
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Scripts/BoardGame.cqs
+      ClassName: ""
+  - Entity: 2946883934914586000
+    TagComponent:
+      Tag: Main Camera
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [8, 13, 11]
+      Rotation: [-0.9075712, 0.5235988, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera:
+        ProjectionType: 0
+        PerspectiveFOV: 0.6981317
+        PerspectiveNear: 0.01
+        PerspectiveFar: 1500
+        OrthographicSize: 10
+        OrthographicNear: -1000
+        OrthographicFar: 1000
+      Primary: true
+      FixedAspectRatio: false
+      Background: 0
+      BackgroundColor: [0.192, 0.302, 0.475, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Scripts/BoardCamera.cqs
+      ClassName: ""
+    AudioListenerComponent:
+      IsActive: true
+  - Entity: 6447295582869072777
+    TagComponent:
+      Tag: HUD
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    CanvasComponent:
+      RenderMode: 0
+      PixelPerfect: false
+      SortOrder: 0
+    CanvasScalerComponent:
+      ScaleMode: 1
+      ScaleFactor: 1
+      ReferencePixelsPerUnit: 100
+      ReferenceResolution: [1920, 1080]
+      MatchWidthOrHeight: 0.5
+    GraphicRaycasterComponent:
+      IgnoreReversedGraphics: true
+      BlockingObjects: 0
+      BlockingMask: 4294967295
+  - Entity: 6694612464822795017
+    TagComponent:
+      Tag: TitleText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 1]
+      AnchorMax: [0, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [340, -44]
+      SizeDelta: [600, 60]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: HEX ISLAND
+      FontPath: ""
+      FontSize: 40
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 0
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 2370904768335379504
+    TagComponent:
+      Tag: StepsText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 1]
+      AnchorMax: [0, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [390, -96]
+      SizeDelta: [700, 34]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: MOVES 0     ISLAND 1
+      FontPath: ""
+      FontSize: 22
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 0
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 8054513194617984001
+    TagComponent:
+      Tag: ClockText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [1, 1]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-240, -44]
+      SizeDelta: [400, 50]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: 09:30
+      FontPath: ""
+      FontSize: 32
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 2
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 4359518006228228456
+    TagComponent:
+      Tag: HintText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 26]
+      SizeDelta: [1800, 30]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: LMB MOVE THE KNIGHT     RMB DRAG ROTATE     WHEEL ZOOM     WASD PAN     F FOCUS     R NEW ISLAND     T TIME-LAPSE
+      FontPath: ""
+      FontSize: 22
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+Environment:
+  SkyboxExposure: 1
+  SkyboxRotation: 0
+  SkyboxTint: [1, 1, 1]
+  EnvironmentLightingSource: 0
+  AmbientColor: [0.3, 0.3, 0.3]
+  AmbientSkyColor: [0.5, 0.6, 0.7]
+  AmbientEquatorColor: [0.3, 0.3, 0.3]
+  AmbientGroundColor: [0.2, 0.15, 0.1]
+  AmbientIntensity: 1
+  FogEnabled: true
+  FogColor: [0.62, 0.74, 0.86]
+  FogDensity: 0.012
+  FogStart: 10
+  FogEnd: 100
+  SunSource: 0
+  HaloEnabled: false
+  HaloStrength: 0.5
+  FlareEnabled: false
+  FlareFadeSpeed: 3
+  FlareStrength: 1
+  FlareElements:
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.08
+      Offset: 0.3
+      Intensity: 1
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.06
+      Offset: 0.6
+      Intensity: 0.8
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.05
+      Offset: 0.9
+      Intensity: 0.6
+  ShadowEnabled: true
+  ShadowIntensity: 1
+  ReflectionSource: 0
+  ReflectionResolution: 128
+  ReflectionCompression: 0
+  ReflectionIntensityMultiplier: 1
+  ReflectionBounces: 1
+  BakedLightmapPath: ""
+  LightmapResolution: 40
+  MaxLightmapSize: 1024
+  MaxBounces: 2
+  DirectSamples: 32
+  IndirectSamples: 512
+  AmbientOcclusion: true
+  LightmapFiltering: 0
+  RenderSettings:
+    Shadows:
+      Enabled: true
+      Quality: 1
+      Resolution: 4096
+      Distance: 45
+      CascadeCount: 2
+      CascadeSplitLambda: 0.75
+      Strength: 1
+      Softness: 1
+      DepthBias: 0.005
+      NormalBias: 0.015
+      Color: [0, 0, 0]
+    Fog:
+      Enabled: true
+      Mode: 1
+      Color: [0.62, 0.74, 0.86]
+      Density: 0.012
+      Start: 10
+      End: 100
+      HeightFalloff: 0
+      BaseHeight: 0
+    Post:
+      Enabled: true
+      Tonemapper: 2
+      Exposure: 0
+      Bloom: true
+      BloomThreshold: 1
+      BloomKnee: 0.5
+      BloomIntensity: 0.12
+      BloomScatter: 0.7
+      BloomTint: [1, 1, 1]
+      AmbientOcclusion: true
+      AORadius: 0.5
+      AOIntensity: 1
+      AOPower: 1.5
+      ColorGrading: true
+      Contrast: 1
+      Saturation: 1.08
+      Temperature: 0
+      Tint: 0
+      Lift: [0, 0, 0]
+      Gamma: [1, 1, 1]
+      Gain: [1, 1, 1]
+      Vignette: true
+      VignetteIntensity: 0.22
+      VignetteSmoothness: 0.4
+      VignetteColor: [0, 0, 0]
+      ChromaticAberration: false
+      ChromaticAberrationIntensity: 0.3
+      FilmGrain: false
+      FilmGrainIntensity: 0.15
+      Sharpen: false
+      SharpenAmount: 0.3
+      AntiAliasing: 3
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: true
+      SSRIntensity: 0.9
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: false
+      SSGIIntensity: 1
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: false
+      CloudCoverage: 0.45
+      CloudDensity: 1
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: true
+      FocusDistance: 17
+      Aperture: 2.8
+      FocalLength: 50
+      DOFMaxBlur: 6
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
+    Environment:
+      Sky: 3
+      BackgroundColor: [0.1, 0.1, 0.1]
+      ImageBasedLighting: true
+      ReflectionIntensity: 1
+      SkyboxIntensity: 1
+      SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
+    Bake:
+      RealtimeGI: false
+      BakedGI: true
+      LightingMode: 0
+      Lightmapper: 1
+      ImportanceSampling: true
+      DirectSamples: 32
+      IndirectSamples: 512
+      EnvironmentSamples: 256
+      MaxBounces: 2
+      Filtering: 0
+      Packing: 0
+      Resolution: 40
+      MaxLightmapSize: 1024
+      UseMipmapLimits: true
+      Compression: 2
+      AmbientOcclusion: true
+      DirectionalMode: 0
+      AlbedoBoost: 1
+      IndirectIntensity: 1
+      RealtimeResolution: 20
+      RealtimeIndirectSamples: 256
+      RealtimeMaxBounces: 1
+      AutoGenerate: false
+      BakeOnSceneLoad: 0
+      APVFitToScene: true
+      APVOrigin: [-10, -1, -10]
+      APVSize: [20, 10, 20]
+      APVProbeOffset: [0, 0, 0]
+      APVMinSpacing: 1
+      APVMaxSpacing: 9
+      APVBakingMode: 0
+      APVDilation: false
+      APVVirtualOffset: true
+      APVValidityThreshold: 0.75
+      APVSearchDistanceMultiplier: 0.2
+      APVGeometryBias: 0.01
+      APVRayOriginBias: -0.001
+EditorCamera:
+  CameraMode: 0
+  Position: [-6.427875, 15.3208885, 11.133408]
+  Distance: 20
+  Pitch: 0.87266463
+  Yaw: 0.5235988
+  OrthographicSize: 10
+Hierarchy:
+  - Child: 6694612464822795017
+    Parent: 6447295582869072777
+  - Child: 2370904768335379504
+    Parent: 6447295582869072777
+  - Child: 8054513194617984001
+    Parent: 6447295582869072777
+  - Child: 4359518006228228456
+    Parent: 6447295582869072777
+  - Child: 3606032170613789709
+    Parent: 7805718077480009367

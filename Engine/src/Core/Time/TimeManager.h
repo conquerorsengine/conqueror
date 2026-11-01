@@ -43,6 +43,11 @@ namespace Conqueror
         // Smooth delta time (exponential moving average)
         static float GetSmoothDeltaTime() { return s_SmoothDeltaTime; }
         static void SetDeltaSmoothingFactor(float factor);
+
+        // Çevrimdışı kayıt (Unity Time.captureDeltaTime): > 0 iken her kare gerçek süre yerine tam bu kadar ilerler
+        // (film kaydı makine yavaş da olsa takılmaz; 0 = kapalı)
+        static void SetCaptureDeltaTime(float dt) { s_CaptureDeltaTime = dt > 0.0f ? dt : 0.0f; }
+        static float GetCaptureDeltaTime() { return s_CaptureDeltaTime; }
         
     private:
         static float s_TimeScale;
@@ -61,5 +66,6 @@ namespace Conqueror
         
         static float s_SmoothDeltaTime;
         static float s_DeltaSmoothingFactor;
+        static float s_CaptureDeltaTime;
     };
 }

@@ -1,0 +1,85 @@
+using nativebridge;
+
+// Altıgen birim: tıklanan hücreye yürünebilir karolar üzerinden A* ile zıplayarak gider.
+// board: Tilemap varlığının adı. Kod ile: MoveTo(x, y).
+script HexUnit : ConquerorScript
+{
+    public string board = "Tilemap";
+    public float speed = 3.5;
+    public float hop = 0.3;
+    public float standHeight = 0.5;
+    public bool clickToMove = true;
+    public int cellX = 0;
+    public int cellY = 0;
+    public int steps = 0;
+    public bool moving = false;
+    var map = -1;
+    var path = null;
+    var pathIndex = 0;
+    var t = 0.0;
+
+    func Start()
+    {
+        map = FindEntity(board);
+        if (map < 0) { LogWarn("HexUnit: board '" + board + "' not found"); return; }
+        var p = GetPosition();
+        var c = GridWorldToCell(map, p.x, p.y, p.z);
+        cellX = c.x;
+        cellY = c.y;
+        Snap();
+    }
+
+    func Top(x, y)
+    {
+        return TilemapGetTileHeight(map, x, y) + standHeight;
+    }
+
+    func Snap()
+    {
+        var w = GridCellToWorld(map, cellX, cellY, Top(cellX, cellY));
+        SetPosition(w.x, w.y, w.z);
+    }
+
+    func MoveTo(x, y)
+    {
+        if (map < 0 || moving) { return false; }
+        var p = GridFindPath(map, cellX, cellY, x, y);
+        if (len(p) < 2) { return false; }
+        path = p;
+        pathIndex = 1;
+        t = 0.0;
+        moving = true;
+        return true;
+    }
+
+    func Update(dt)
+    {
+        if (map < 0) { return; }
+        if (clickToMove && !moving && IsMouseButtonDown(0))
+        {
+            var m = GetMousePosition();
+            var c = GridScreenToCell(map, m.x, m.y);
+            if (c != null) { MoveTo(c.x, c.y); }
+        }
+        if (!moving) { return; }
+        var target = path[pathIndex];
+        var from = GridCellToWorld(map, cellX, cellY, Top(cellX, cellY));
+        var to = GridCellToWorld(map, target.x, target.y, Top(target.x, target.y));
+        t += dt * speed;
+        var k = MathMin(t, 1.0);
+        var arc = MathSin(k * 3.14159265) * hop;
+        SetPosition(MathLerp(from.x, to.x, k), MathLerp(from.y, to.y, k) + arc, MathLerp(from.z, to.z, k));
+        // Motor ileri yönü -Z: hareket yönüne dön
+        var yaw = MathDegrees(MathAtan2(from.x - to.x, from.z - to.z));
+        SetRotation(0, yaw, 0);
+        if (t >= 1.0)
+        {
+            cellX = target.x;
+            cellY = target.y;
+            steps++;
+            pathIndex++;
+            t = 0.0;
+            if (pathIndex >= len(path)) { moving = false; }
+        }
+    }
+}

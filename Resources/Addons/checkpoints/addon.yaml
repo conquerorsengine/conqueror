@@ -1,0 +1,24 @@
+Id: conqueror.checkpoints
+Name: Checkpoints & Respawn
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Classic checkpoint flow: flags that light up when reached and become the respawn point,
+  kill zones (lava, pits) that send the player back, a fall-height safety net, respawn with
+  a short fade-out delay and a death counter. Works with characters and rigidbodies.
+Category: Gameplay
+Icon: flag-checkered
+Tags: [checkpoint, respawn, kill-zone, platformer, level-design]
+Components:
+  - Scripts/Checkpoint.cqs
+  - Scripts/KillZone.cqs
+  - Scripts/Respawner.cqs
+Inserts:
+  - Name: Checkpoint
+    Icon: flag
+    Prefab: Prefabs/Checkpoint.cqprefab
+    Tooltip: Flag that stores the respawn point when touched
+  - Name: Kill Zone
+    Icon: skull
+    Prefab: Prefabs/KillZone.cqprefab
+    Tooltip: Large trigger that respawns whatever falls into it

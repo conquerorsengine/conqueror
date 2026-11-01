@@ -1,0 +1,51 @@
+using nativebridge;
+
+// Spring Joint: ağırlık yaya asılı; birkaç saniyede bir aşağı çekilip bırakılır (yay gerilir, ağırlık zıplar).
+// Yay bobini (Line Renderer, dünya uzayı) askı noktasından ağırlığın tepesine sarmal olarak her karede çizilir.
+script SpringBungee : ConquerorScript
+{
+    public float interval = 6.0;
+    public float pullDown = 1.0;         // bırakılmadan önce dinlenme konumundan aşağı (m)
+    public float radius = 0.22;          // ağırlığın yarıçapı
+    public string coilName = "Spring Coil";
+    public float hookX = 0.0;
+    public float hookY = 0.0;
+    public float hookZ = 0.0;
+    public int turns = 14;
+    public float coilRadius = 0.07;
+
+    private var coil = -1;
+    private var start = null;
+    private float timer = 0.5;
+
+    func Start()
+    {
+        coil = FindEntity(coilName);
+        start = GetPosition();
+    }
+
+    func Update(dt)
+    {
+        timer -= dt;
+        if (timer <= 0.0)
+        {
+            timer = interval;
+            InvokeMethod(GetEntityId(), "Place", start.x, start.y - pullDown, start.z, 0, 0, 0);
+        }
+        if (coil == null || coil < 0) { return; }
+        var p = GetPosition();
+        var pts = [];
+        var n = turns * 8;
+        var topY = hookY;
+        var botY = p.y + radius;
+        for (var i = 0; i <= n; i++)
+        {
+            var t = i * 1.0 / n;
+            var a = t * turns * 6.2831853;
+            // Uçlarda bobin eksene toplanır (kanca ve ağırlık bağlantısı)
+            var r = coilRadius * MathMin(1.0, MathMin(t, 1.0 - t) * 12.0);
+            pts.Add({x: hookX + (p.x - hookX) * t + MathCos(a) * r, y: topY + (botY - topY) * t, z: hookZ + (p.z - hookZ) * t + MathSin(a) * r});
+        }
+        EntitySetComponentField(coil, "LineRenderer", "Positions", pts);
+    }
+}

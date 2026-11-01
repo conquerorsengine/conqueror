@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: punch_jab
+      States:
+        - Name: punch_jab
+          ClipIndex: 19
+          ClipName: punch_jab
+  Parameters: []

@@ -1,0 +1,31 @@
+using nativebridge;
+
+// Havuzdan çıkan nesne: lifetime dolunca (ya da Release ile) havuza döner.
+// Etkin değilken Update çalışmaz; süre her OnSpawned'da baştan sayılır.
+script PooledObject : ConquerorScript
+{
+    public float lifetime = 3.0;
+    public int pool = -1;
+
+    // Çalışma zamanı bilgisi
+    public float age = 0.0;
+    public int timesSpawned = 0;
+
+    func OnSpawned()
+    {
+        age = 0.0;
+        timesSpawned++;
+    }
+
+    func Update(dt)
+    {
+        age += dt;
+        if (lifetime > 0 && age >= lifetime) { Release(); }
+    }
+
+    func Release()
+    {
+        if (pool >= 0 && EntityIsValid(pool)) { SendMessage(pool, "Despawn", GetEntityId()); }
+        else { EntityDestroy(GetEntityId()); }
+    }
+}

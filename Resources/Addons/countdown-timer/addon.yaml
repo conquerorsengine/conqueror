@@ -1,0 +1,23 @@
+Id: conqueror.countdown-timer
+Name: Countdown & Stopwatch
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Level timers for races, bombs and speedruns: count down from a time or count up as a
+  stopwatch, mm:ss or mm:ss.cc display on a canvas text, warning color for the last seconds,
+  pause / resume / add time from scripts, best time saved per level and an OnTimerFinished
+  message (optionally reloading the scene).
+Category: UI
+Icon: stopwatch
+Tags: [ui, timer, countdown, stopwatch, speedrun]
+Components:
+  - Scripts/GameTimer.cqs
+Inserts:
+  - Name: Countdown Timer
+    Icon: hourglass-half
+    Prefab: Prefabs/CountdownTimer.cqprefab
+    Tooltip: 60 second countdown at the top of the screen
+  - Name: Stopwatch
+    Icon: stopwatch
+    Prefab: Prefabs/Stopwatch.cqprefab
+    Tooltip: Speedrun stopwatch with best time

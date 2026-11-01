@@ -1,8 +1,43 @@
 #include "AudioEngine.h"
 #include "Core/Logging/Log.h"
 
+// OGG Vorbis desteği (miniaudio 0.11: stb_vorbis başlığı önce, uygulaması miniaudio'dan sonra)
+#if defined(__GNUC__)
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wunused-value"
+    #pragma GCC diagnostic ignored "-Wunused-parameter"
+    #pragma GCC diagnostic ignored "-Wsign-compare"
+    #pragma GCC diagnostic ignored "-Wpedantic"
+#endif
+#define STB_VORBIS_HEADER_ONLY
+#include <stb_vorbis.c>
+#if defined(__GNUC__)
+    #pragma GCC diagnostic pop
+#endif
+
 #define MINIAUDIO_IMPLEMENTATION
 #include <miniaudio.h>
+
+#if defined(__GNUC__)
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wunused-value"
+    #pragma GCC diagnostic ignored "-Wunused-parameter"
+    #pragma GCC diagnostic ignored "-Wsign-compare"
+    #pragma GCC diagnostic ignored "-Wpedantic"
+    #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+    #pragma GCC diagnostic ignored "-Wunused-variable"
+    #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+    #pragma GCC diagnostic ignored "-Wmisleading-indentation"
+#endif
+#undef STB_VORBIS_HEADER_ONLY
+#include <stb_vorbis.c>
+// stb_vorbis kısa makro adları tanımlar (L, C, R): motor koduna sızmasın
+#undef L
+#undef C
+#undef R
+#if defined(__GNUC__)
+    #pragma GCC diagnostic pop
+#endif
 
 namespace Conqueror
 {
@@ -51,6 +86,18 @@ namespace Conqueror
             delete s_Instance;
             s_Instance = nullptr;
         }
+    }
+
+    void AudioEngine::SetPaused(bool paused)
+    {
+        if (!m_Engine || paused == m_Paused)
+            return;
+        m_Paused = paused;
+        CQ_CORE_INFO("Audio output {0}", paused ? "paused" : "resumed");
+        if (paused)
+            ma_engine_stop(m_Engine);
+        else
+            ma_engine_start(m_Engine);
     }
 
     void AudioEngine::SetMasterVolume(float volume)

@@ -1,0 +1,38 @@
+using nativebridge;
+
+// Bir nesnenin (centerName) ya da başlangıç noktasının çevresinde yatay çember çizer.
+script Orbit : ConquerorScript
+{
+    public string centerName = "";
+    public float radius = 3.0;
+    public float speed = 45.0;
+    public float heightOffset = 0.0;
+    public bool faceDirection = true;
+
+    // Çalışma zamanı bilgisi
+    public float angle = 0.0;
+
+    private var origin = null;
+
+    func Update(dt)
+    {
+        if (origin == null) { origin = EntityGetWorldPosition(GetEntityId()); }
+        var c = origin;
+        if (centerName != "")
+        {
+            var e = FindEntity(centerName);
+            if (e != null) { c = EntityGetWorldPosition(e); }
+        }
+        angle = MathNormalizeAngle(angle + speed * dt);
+        var r = MathDegToRad(angle);
+        EntitySetWorldPosition(GetEntityId(), c.x + MathCos(r) * radius, c.y + heightOffset, c.z + MathSin(r) * radius);
+        if (faceDirection)
+        {
+            // Teğet yönü: (-sin, cos) * sign(speed)
+            var s = speed >= 0 ? 1.0 : -1.0;
+            var dx = -MathSin(r) * s;
+            var dz = MathCos(r) * s;
+            SetRotation(0, MathRadToDeg(MathAtan2(-dx, -dz)), 0);
+        }
+    }
+}

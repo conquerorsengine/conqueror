@@ -1,0 +1,93 @@
+using nativebridge;
+
+// Bildirimler: Show(mesaj, süre, tür) — tür: "info", "success", "warning", "error".
+// Canvas altında sağ üst köşede yığılır; en fazla maxVisible kadar, eskiler önce kaybolur.
+script ToastManager : ConquerorScript
+{
+    public float defaultDuration = 2.5;
+    public int maxVisible = 5;
+    public float width = 520.0;
+    public float height = 64.0;
+    public float spacing = 10.0;
+    public float margin = 70.0;
+
+    // Çalışma zamanı bilgisi
+    public int visibleCount = 0;
+    public int shownTotal = 0;
+
+    private var toasts = [];   // {panel, label, age, duration, y}
+
+    func Toast(message) { Show(message, defaultDuration, "info"); }
+
+    func Show(message, seconds = 0.0, kind = "info")
+    {
+        var d = seconds > 0 ? seconds : defaultDuration;
+        while (toasts.Count >= maxVisible) { Remove(0); }
+        var panel = UICreateElement("Image", GetEntityId(), "Toast");
+        EntitySetComponentField(panel, "RectTransform", "AnchorMin", [1, 1]);
+        EntitySetComponentField(panel, "RectTransform", "AnchorMax", [1, 1]);
+        EntitySetComponentField(panel, "RectTransform", "Pivot", [1, 1]);
+        UISetSize(panel, width, height);
+        var c = KindColor(kind);
+        UISetColor(panel, c[0], c[1], c[2], 0.9);
+        EntitySetComponentField(panel, "Image", "CornerRadius", 10.0);
+        var label = UICreateElement("Text", panel, "Toast Text");
+        EntitySetComponentField(label, "RectTransform", "AnchorMin", [0, 0]);
+        EntitySetComponentField(label, "RectTransform", "AnchorMax", [1, 1]);
+        EntitySetComponentField(label, "RectTransform", "SizeDelta", [-28, 0]);
+        UISetText(label, message);
+        UISetFontSize(label, 26);
+        UISetTextColor(label, 1, 1, 1, 1);
+        toasts.Add({panel: panel, label: label, age: 0.0, duration: d, y: -margin});
+        shownTotal++;
+        Layout(true);
+        return true;
+    }
+
+    func KindColor(kind)
+    {
+        if (kind == "success") { return [0.12, 0.45, 0.2]; }
+        if (kind == "warning") { return [0.55, 0.4, 0.05]; }
+        if (kind == "error") { return [0.55, 0.1, 0.1]; }
+        return [0.12, 0.14, 0.2];
+    }
+
+    func Remove(i)
+    {
+        var t = toasts[i];
+        if (EntityIsValid(t.panel)) { EntityDestroy(t.panel); }
+        ListRemoveAt(toasts, i);
+    }
+
+    // Yığını yeniden diz (en yeni en üstte)
+    func Layout(snap)
+    {
+        var y = -margin;
+        for (var i = toasts.Count - 1; i >= 0; i--)
+        {
+            var t = toasts[i];
+            t.y = snap && t.age == 0.0 ? y : t.y;
+            t.target = y;
+            y -= height + spacing;
+        }
+    }
+
+    func Update(dt)
+    {
+        var real = GetUnscaledDeltaTime();
+        for (var i = toasts.Count - 1; i >= 0; i--)
+        {
+            var t = toasts[i];
+            t.age = t.age + real;
+            if (t.age >= t.duration) { Remove(i); Layout(false); continue; }
+            if (MapHasKey(t, "target")) { t.y = MathLerp(t.y, t.target, 1.0 - MathExp(-12.0 * real)); }
+            var slide = MathMin(1.0, t.age / 0.18);
+            var x = -margin + (1.0 - EaseOutCubic(slide)) * (width + margin);
+            UISetPosition(t.panel, x, t.y);
+            var fade = t.duration - t.age < 0.4 ? (t.duration - t.age) / 0.4 : 1.0;
+            UISetAlpha(t.panel, fade * 0.9);
+            UISetAlpha(t.label, fade);
+        }
+        visibleCount = toasts.Count;
+    }
+}

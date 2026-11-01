@@ -1,0 +1,136 @@
+using nativebridge;
+
+// Üçüncü şahıs nişancı (omuz kamerası): MannequinCharacter'ın üstüne silah kullanımı ekler.
+// Sağ tık / LT nişan (omuz üstü kamera, karakter kameraya döner), sol tık / RT ateş (kameranın ortasından),
+// R şarjör. Silah: "Mesh" altında Muzzle çocuğu olan varlık (el kemiğine bağlı).
+script ThirdPersonShooter : ConquerorScript
+{
+    public bool fireWithoutAim = false;
+    [Header("State")]
+    public int shots = 0;
+    public int kills = 0;
+    public bool fireInput = false;
+    public bool aimInput = false;
+
+    private var weapon = -1;
+    private var mesh = -1;
+    private var cam = -1;
+    private bool firePrev = false;
+    private float hitmarker = 0.0;
+    private float damageFlash = 0.0;
+    private float lastHealth = 100.0;
+
+    func Start()
+    {
+        mesh = Find(GetEntityId(), "Mesh");
+        cam = Find(GetEntityId(), "FollowCamera");
+        weapon = FindWeapon(GetEntityId());
+        var h = GetScriptField(GetEntityId(), "health");
+        if (h != null) { lastHealth = h; }
+    }
+
+    func Find(e, name)
+    {
+        foreach (var c in EntityGetChildren(e))
+        {
+            if (EntityGetName(c) == name) { return c; }
+            var r = Find(c, name);
+            if (r >= 0) { return r; }
+        }
+        return -1;
+    }
+
+    // Silah: doğrudan çocuğu "Muzzle" olan varlık
+    func FindWeapon(e)
+    {
+        foreach (var c in EntityGetChildren(e))
+        {
+            foreach (var cc in EntityGetChildren(c))
+            {
+                if (EntityGetName(cc) == "Muzzle") { return c; }
+            }
+            var w = FindWeapon(c);
+            if (w >= 0) { return w; }
+        }
+        return -1;
+    }
+
+    func SetTestInput(aim, fire)
+    {
+        aimInput = aim;
+        fireInput = fire;
+    }
+
+    func Update(dt)
+    {
+        if (weapon < 0) { weapon = FindWeapon(GetEntityId()); }
+        var dead = GetScriptField(GetEntityId(), "dead") == true;
+        // Şarjör değiştirirken nişan alınmaz
+        var reloadingNow = weapon >= 0 && GetScriptField(weapon, "reloading") == true;
+        SetScriptField(GetEntityId(), "aimBlocked", reloadingNow);
+        SetScriptField(GetEntityId(), "aimHold", aimInput && !reloadingNow);
+        var aiming = !reloadingNow && (GetScriptField(GetEntityId(), "aiming") == true || aimInput);
+        var fire = fireInput || IsMouseButtonPressed(0) || (IsGamepadConnected(0) && GetGamepadAxis(0, 5) > 0.3);
+        if (!dead && weapon >= 0)
+        {
+            if (IsKeyDown("R") || (IsGamepadConnected(0) && IsGamepadButtonPressed(0, 2)))
+            {
+                if (InvokeMethod(weapon, "Reload") == true && mesh >= 0) { AnimMontagePlay(mesh, "Assets/Mannequin/Animations/PistolReload.cqmontage"); }
+            }
+            var auto = InvokeMethod(weapon, "IsAuto") == true;
+            if ((aiming || fireWithoutAim) && ((auto && fire) || (fire && !firePrev)) && cam >= 0)
+            {
+                var o = EntityGetWorldPosition(cam);
+                var d = EntityGetForward(cam);
+                // Kamera karakterin arkasında: ışını karakterin önünden başlat (arkadaki engellere çarpmasın)
+                var arm = GetScriptField(GetEntityId(), "aimArmLength");
+                var skip = arm == null ? 1.7 : arm;
+                o = {x: o.x + d.x * skip, y: o.y + d.y * skip, z: o.z + d.z * skip};
+                var spread = GetScriptField(weapon, "aimSpread") + GetScriptField(weapon, "moveSpread") * MathMin(GetScriptField(GetEntityId(), "speed") / 6.0, 1.0);
+                var res = InvokeMethod(weapon, "Fire", o.x, o.y, o.z, d.x, d.y, d.z, spread, GetEntityId());
+                if (res != null && res.fired)
+                {
+                    shots += 1;
+                    var p = GetScriptField(GetEntityId(), "controlPitch");
+                    SetScriptField(GetEntityId(), "controlPitch", p + GetScriptField(weapon, "recoilPitch") * 0.6);
+                    if (mesh >= 0) { AnimMontagePlay(mesh, "Assets/Mannequin/Animations/PistolShoot.cqmontage"); }
+                    if (res.hit)
+                    {
+                        hitmarker = 0.18;
+                        AudioPlayOneShot(res.head ? "Assets/Weapons/Audio/headshot.wav" : "Assets/Weapons/Audio/hitmarker.wav", 0.5, 1.0, 0, "SFX");
+                    }
+                    if (res.kill) { kills += 1; AudioPlayOneShot("Assets/Weapons/Audio/kill.wav", 0.5, 1.0, 0, "SFX"); }
+                }
+                else if (InvokeMethod(weapon, "NeedsReload") == true)
+                {
+                    if (InvokeMethod(weapon, "Reload") == true && mesh >= 0) { AnimMontagePlay(mesh, "Assets/Mannequin/Animations/PistolReload.cqmontage"); }
+                }
+            }
+        }
+        firePrev = fire;
+        var h = GetScriptField(GetEntityId(), "health");
+        if (h != null)
+        {
+            if (h < lastHealth - 0.01) { damageFlash = 1.0; AudioPlayOneShot("Assets/Weapons/Audio/hurt.wav", 0.6, 1.0, 0, "SFX"); }
+            lastHealth = h;
+        }
+        hitmarker -= dt;
+        damageFlash = MathMax(0.0, damageFlash - dt * 1.5);
+        // HUD
+        if (weapon >= 0)
+        {
+            UISetText("AmmoText", GetScriptField(weapon, "reloading") == true ? "..." : "" + int(GetScriptField(weapon, "ammo")));
+            UISetText("ReserveText", GetScriptField(weapon, "infiniteAmmo") == true ? "/ INF" : "/ " + int(GetScriptField(weapon, "reserve")));
+            UISetText("WeaponText", StringToUpper(GetScriptField(weapon, "weaponName")));
+        }
+        var mh = GetScriptField(GetEntityId(), "maxHealth");
+        if (h != null && mh != null)
+        {
+            UISetFill("HealthFill", MathClamp(h / mh, 0, 1));
+            UISetText("HealthText", "" + int(MathCeil(MathMax(h, 0))));
+        }
+        UISetAlpha("Hitmarker", hitmarker > 0.0 ? 1.0 : 0.0);
+        UISetAlpha("DamageVignette", damageFlash * 0.55);
+        UISetAlpha("Crosshair", aiming ? 1.0 : 0.35);
+    }
+}

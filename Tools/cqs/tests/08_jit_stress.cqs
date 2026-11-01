@@ -1,0 +1,149 @@
+// JIT ve OSR stres testi: her işlem sıcak döngülerde
+func arith() {
+    var i = 0; var f = 0.5; var acc = 0; var facc = 0.0;
+    for (var k = 0; k < 5000; k++) {
+        acc += k * 3 - (k & 5) + (k | 2) - (k ^ 7) + (k << 2) - (k >> 1) + k % 7 + (-k % 5);
+        facc += f * k / 3.0 - k / 2;
+        i = i + 1;
+    }
+    return [acc, facc, i];
+}
+print(arith());
+
+func compares() {
+    var nan = 0.0 / 0.0;
+    var c = [0, 0, 0, 0, 0, 0];
+    for (var k = 0; k < 1000; k++) {
+        var x = k % 10; var y = 5.5;
+        if (x < y) c[0]++;
+        if (x <= 5) c[1]++;
+        if (x > y) c[2]++;
+        if (x >= 5.0) c[3]++;
+        if (x == 5) c[4]++;
+        if (x != 5) c[5]++;
+    }
+    var n = [nan < 1, nan > 1, nan == nan, nan != nan, nan <= nan, 1.0 < 2, "a" < "b", 2 == 2.0];
+    return [c, n];
+}
+print(compares());
+
+func catches() {
+    var caught = 0; var ok = 0; var fin = 0;
+    for (var k = 0; k < 2000; k++) {
+        try {
+            if (k % 3 == 0) throw "x" + k;
+            if (k % 5 == 0) { var l = [1]; l[k]; }
+            ok++;
+        } catch (e) {
+            caught++;
+        } finally {
+            fin++;
+        }
+    }
+    return [caught, ok, fin];
+}
+print(catches());
+
+func thrower(n) { if (n % 4 == 0) throw new Exception("t" + n); return n; }
+func crossFrame() {
+    var s = 0;
+    for (var k = 0; k < 1000; k++) {
+        try { s += thrower(k); } catch (Exception e) { s -= 1; }
+    }
+    return s;
+}
+print(crossFrame());
+
+func closures() {
+    var fs = [];
+    for (var k = 0; k < 500; k++) { var j = k; fs.Add(() => j * 2); }
+    var total = 0;
+    foreach (var f in fs) total += f();
+    var counter = 0;
+    var inc = () => { counter++; };
+    for (var k = 0; k < 1000; k++) inc();
+    return [total, counter];
+}
+print(closures());
+
+func iterate() {
+    var m = {};
+    for (var k = 0; k < 300; k++) m["k" + k] = k;
+    var s = 0;
+    foreach (var key, v in m) s += v;
+    var chars = 0;
+    for (var k = 0; k < 300; k++) foreach (var ch in "abc") chars++;
+    var r = 0;
+    foreach (var x in 0..1000) r += x;
+    return [s, chars, r];
+}
+print(iterate());
+
+func allocations() {
+    // GC güvenli noktalarında toplama: nesneler canlı kalmalı
+    var keep = [];
+    for (var k = 0; k < 300000; k++) {
+        var tmp = { a: k, b: "s" + k, c: [k] };
+        if (k % 1000 == 0) keep.Add(tmp);
+    }
+    var sum = 0;
+    foreach (var o in keep) sum += o.a + o.c[0];
+    return [keep.Count, sum, keep[5].b];
+}
+print(allocations());
+
+class Vec { var x = 0.0; var y = 0.0; func init(x, y) { this.x = x; this.y = y; } func Len2() => x * x + y * y; }
+func fields() {
+    var v = new Vec(1.5, 2.0);
+    var t = 0.0;
+    for (var k = 0; k < 5000; k++) { v.x += 0.001; v.y = v.y * 1.0; t += v.Len2(); }
+    var grid = new int[100];
+    for (var k = 0; k < 10000; k++) grid[k % 100] += 1;
+    var neg = [1, 2, 3];
+    var last = 0;
+    for (var k = 0; k < 500; k++) last = neg[-1] + neg[-3];
+    return [(int)t, grid[7], grid.Sum(), last];
+}
+print(fields());
+
+func nestedOsr() {
+    var total = 0;
+    try {
+        for (var a = 0; a < 50; a++)
+            for (var b = 0; b < 50; b++) {
+                var w = 0;
+                while (w < 3) { w++; total += a ^ b; }
+            }
+    } catch (e) { total = -1; }
+    return total;
+}
+print(nestedOsr());
+
+func deep(n) { return n == 0 ? 0 : 1 + deep(n - 1); }
+print(deep(800));
+
+var globalCounter = 0;
+func globals() { for (var k = 0; k < 3000; k++) globalCounter += 2; return globalCounter; }
+print(globals());
+
+func strings() {
+    var s = "";
+    for (var k = 0; k < 200; k++) s += (k % 10);
+    var parts = [];
+    for (var k = 0; k < 100; k++) parts.Add($"{k:D3}");
+    return [s.Length, parts[42], s.Substring(0, 12)];
+}
+print(strings());
+
+func nulls() {
+    var n = 0;
+    var o = null;
+    for (var k = 0; k < 1000; k++) {
+        var v = (k % 2 == 0) ? null : k;
+        n += v ?? 1;
+        if (!v) n += 1000;
+        if (o?.x == null) n++;
+    }
+    return n;
+}
+print(nulls());

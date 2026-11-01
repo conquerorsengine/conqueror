@@ -22,6 +22,11 @@ namespace Conqueror
         void SetVSync(bool enabled) override;
         bool IsVSync() const override { return m_Data.VSync; }
 
+        void SetTitle(const std::string& title) override;
+        void SetFullscreenMode(int mode) override;
+        void SetResizable(bool resizable) override;
+        bool SetIcon(const std::string& pngPath) override;
+
         void* GetNativeWindow() const override { return m_Window; }
 
     private:
@@ -29,18 +34,24 @@ namespace Conqueror
         virtual void Shutdown();
 
     private:
-        GLFWwindow* m_Window;
-        GraphicsContext* m_Context;
+        GLFWwindow* m_Window = nullptr;
+        GraphicsContext* m_Context = nullptr;
 
         struct WindowData
         {
             std::string Title;
-            uint32_t Width, Height;
-            bool VSync;
+            uint32_t Width = 0, Height = 0;
+            bool VSync = true;
+            // Wayland: gizlenen (üstü örtülen) pencerede vsync'li takas sonsuza dek bekler -> takas aralığı 0 +
+            // yazılımla kare hızı sınırlama (ağ sunucusu olan oyun arka planda donmaz)
+            bool SoftVSync = false;
+            double NextFrameTime = 0.0;
 
             EventCallbackFn EventCallback;
         };
 
         WindowData m_Data;
+        int m_WindowedX = 100, m_WindowedY = 100, m_WindowedW = 1280, m_WindowedH = 720;
+        int m_FullscreenMode = 0;
     };
 }

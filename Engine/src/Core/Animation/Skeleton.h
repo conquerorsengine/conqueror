@@ -30,9 +30,20 @@ namespace Conqueror
         glm::mat4 OffsetMatrix{ 1.f };
     };
 
+    // Animasyon düğüm ağacının düz (ebeveyn önce) listesi: poz örnekleme/karıştırma için
+    struct FlatAnimNode
+    {
+        const AnimSceneNode* Node = nullptr;
+        int32_t Parent = -1;
+        int32_t BoneIndex = -1;
+    };
+
     class CQ_API Skeleton
     {
     public:
+        // İlk kullanımda RootAnimNode'dan oluşturulur (Animator::Flatten)
+        mutable std::vector<FlatAnimNode> FlatNodes;
+
         glm::mat4 GlobalInverseRoot{ 1.f };
         std::vector<SkeletonBone> Bones;
         std::unordered_map<std::string, uint32_t> BoneNameToIndex;

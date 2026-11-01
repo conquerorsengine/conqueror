@@ -1,6 +1,7 @@
 #include "ScriptEngine.h"
 #include "Core/Logging/Log.h"
 #include "ConquerorScript/CQSEngine.h"
+#include "ScriptRuntime.h"
 
 namespace Conqueror
 {
@@ -10,12 +11,14 @@ namespace Conqueror
     {
         CQ_CORE_INFO("ScriptEngine::Init - Starting initialization");
         CQS::CQSEngine::Init();
+        Scripting::ScriptRuntimes::Init();
         CQ_CORE_INFO("ScriptEngine initialized");
     }
 
     void ScriptEngine::Shutdown()
     {
         CQ_CORE_INFO("ScriptEngine::Shutdown - Starting shutdown");
+        Scripting::ScriptRuntimes::Shutdown();
         CQS::CQSEngine::Shutdown();
         CQ_CORE_INFO("ScriptEngine::Shutdown - Clearing {0} modules", s_Modules.size());
         s_Modules.clear();

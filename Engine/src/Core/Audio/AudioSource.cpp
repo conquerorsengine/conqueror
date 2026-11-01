@@ -1,4 +1,5 @@
 #include "AudioSource.h"
+#include "Core/Project/ProjectSettings.h"
 #include "AudioEngine.h"
 #include "Core/Logging/Log.h"
 
@@ -67,7 +68,9 @@ namespace Conqueror
     {
         if (m_IsLoaded && m_Sound)
         {
-            ma_sound_uninit(m_Sound);
+            // Ses motoru kapandıysa ses verisi motorla birlikte gitti: dokunma
+            if (AudioEngine::IsInitialized())
+                ma_sound_uninit(m_Sound);
             m_IsLoaded = false;
             m_FilePath.clear();
         }
@@ -260,7 +263,7 @@ namespace Conqueror
         
         if (m_IsLoaded && m_Sound && m_IsSpatialized)
         {
-            ma_sound_set_doppler_factor(m_Sound, factor);
+            ma_sound_set_doppler_factor(m_Sound, factor * ProjectSettings::Audio().DopplerFactor);
         }
     }
 
@@ -299,7 +302,7 @@ namespace Conqueror
         
         if (m_IsLoaded && m_Sound && m_IsSpatialized)
         {
-            ma_sound_set_rolloff(m_Sound, rolloff);
+            ma_sound_set_rolloff(m_Sound, rolloff * ProjectSettings::Audio().RolloffScale);
         }
     }
 

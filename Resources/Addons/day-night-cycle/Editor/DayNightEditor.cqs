@@ -1,0 +1,83 @@
+using nativebridge;
+
+// Gün/gece önizlemesi: sahnedeki güneşi (DayNightCycle ya da seçili Directional Light) saate göre ayarlar.
+script DayNightEditor : ConquerorScript
+{
+    public float hour = 8.0;
+    public float maxIntensity = 3.0;
+    public float sunYaw = 30.0;
+    public string status = "";
+
+    func OnLoad()
+    {
+        EditorAddPanel("Time of Day", "DrawPanel");
+        EditorAddMenuItem("Day Night/Sunrise", "Sunrise");
+        EditorAddMenuItem("Day Night/Noon", "Noon");
+        EditorAddMenuItem("Day Night/Sunset", "Sunset");
+        EditorAddMenuItem("Day Night/Night", "Night");
+        EditorAddToolButton("Noon", "sun", "Noon", "Set the sun to midday");
+        EditorAddToolButton("Sunset", "cloud-sun", "Sunset", "Set the sun to golden hour");
+    }
+
+    func FindSun()
+    {
+        for (var e in EditorGetSelection())
+        {
+            if (EntityHasComponent(e, "DirectionalLight")) { return e; }
+        }
+        for (var e in EditorGetAllEntities())
+        {
+            if (EntityHasComponent(e, "DirectionalLight")) { return e; }
+        }
+        return -1;
+    }
+
+    func ApplyHour()
+    {
+        var sun = FindSun();
+        if (sun < 0) { status = "No Directional Light in the scene."; return; }
+        var light = SunLight(hour, maxIntensity);
+        EntitySetRotation(sun, -light.elevation, sunYaw, 0);
+        EntitySetComponentField(sun, "DirectionalLight", "Intensity", light.intensity);
+        EntitySetComponentField(sun, "DirectionalLight", "Color", [light.r, light.g, light.b]);
+        status = EntityGetName(sun) + " at " + str(MathFloor(hour)) + ":" + StringPadLeft(str(MathFloor((hour - MathFloor(hour)) * 60.0)), 2, "0");
+    }
+
+    func Sunrise() { hour = 6.5; ApplyHour(); }
+    func Noon() { hour = 12.0; ApplyHour(); }
+    func Sunset() { hour = 18.3; ApplyHour(); }
+    func Night() { hour = 23.0; ApplyHour(); }
+
+    func DrawPanel()
+    {
+        var before = hour;
+        hour = GuiSliderFloat("Hour", hour, 0.0, 24.0);
+        maxIntensity = GuiSliderFloat("Max Intensity", maxIntensity, 0.1, 10.0);
+        sunYaw = GuiSliderFloat("Sun Yaw", sunYaw, -180.0, 180.0);
+        if (hour != before) { ApplyHour(); }
+        if (GuiButton("Sunrise")) { EditorRunUndoable("Sunrise", "Sunrise"); }
+        GuiSameLine();
+        if (GuiButton("Noon")) { EditorRunUndoable("Noon", "Noon"); }
+        GuiSameLine();
+        if (GuiButton("Sunset")) { EditorRunUndoable("Sunset", "Sunset"); }
+        GuiSameLine();
+        if (GuiButton("Night")) { EditorRunUndoable("Night", "Night"); }
+        if (status != "") { GuiTextDisabled(status); }
+    }
+}
+
+func SunLight(hour, maxIntensity)
+{
+    var angle = (hour - 6.0) / 12.0 * 180.0;
+    var height = MathSin(MathDegToRad(angle));
+    var day = MathClamp01(height * 3.0);
+    var warm = 1.0 - MathClamp01(height * 2.2);
+    var result = Map();
+    result["elevation"] = MathClamp(angle, -20.0, 200.0);
+    result["height"] = height;
+    result["intensity"] = 0.05 + day * maxIntensity;
+    result["r"] = MathLerp(MathLerp(0.35, 1.0, day), 1.0, warm * day);
+    result["g"] = MathLerp(MathLerp(0.42, 0.95, day), 0.62, warm * day);
+    result["b"] = MathLerp(MathLerp(0.70, 0.88, day), 0.38, warm * day);
+    return result;
+}

@@ -42,6 +42,7 @@
 #else
     #include <unistd.h>
     #include <limits.h>
+    #include "Core/Utils/SelfExecutable.h"
 #endif
 
 namespace Conqueror
@@ -242,7 +243,7 @@ namespace Conqueror
 
         std::string GetRelativePath(const std::string& path, const std::string& base)
         {
-            return std::filesystem::relative(path, base).string();
+            return std::filesystem::relative(path, base).generic_string();
         }
 
         std::string CombinePaths(const std::string& path1, const std::string& path2)
@@ -429,14 +430,7 @@ namespace Conqueror
             GetModuleFileNameA(NULL, buffer, MAX_PATH);
             return std::string(buffer);
 #else
-            char buffer[PATH_MAX];
-            ssize_t len = readlink("/proc/self/exe", buffer, sizeof(buffer) - 1);
-            if (len != -1)
-            {
-                buffer[len] = '\0';
-                return std::string(buffer);
-            }
-            return "";
+            return SelfExecutablePath();
 #endif
         }
 

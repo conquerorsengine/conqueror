@@ -29,6 +29,7 @@ namespace Conqueror
         ApplicationCommandLineArgs CommandLineArgs;
         uint32_t Width = 1920;
         uint32_t Height = 1080;
+        std::string GraphicsBackend = "Auto";   // "Auto" / "OpenGL" / "Vulkan" (komut satırı ve CQ_RENDERER önceliklidir)
     };
 
     class CQ_API Application
@@ -38,7 +39,8 @@ namespace Conqueror
         virtual ~Application();
 
         void Run();
-        void Close();
+        // force=false: katmanlara sorulur (biri reddederse açık kalır); true: koşulsuz kapat
+        void Close(bool force = false);
 
         void OnEvent(Event& e);
 
@@ -50,6 +52,7 @@ namespace Conqueror
         ImGuiLayer* GetImGuiLayer() { return m_ImGuiLayer; }
 
         static Application& Get() { return *s_Instance; }
+        static bool Exists() { return s_Instance != nullptr; }
 
         const ApplicationSpecification& GetSpecification() const { return m_Specification; }
 

@@ -1,0 +1,4 @@
+Shared: [Prototype, Mannequin, Weapons]
+StartScene: Assets/Scenes/Main.cqscene
+Scenes:
+  - Assets/Scenes/Main.cqscene

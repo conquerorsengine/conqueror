@@ -20,6 +20,14 @@ namespace Conqueror
         static void BeginScene(const glm::mat4& viewProjection, bool enableDepthTest = false);
         static void EndScene();
         static void Flush();
+        // -1: kare ayarı (HDR hattında doğrusal), 0: sRGB çıktı (post-process sonrası UI), 1: doğrusal
+        static void SetOutputMode(int mode);
+        // 2D ışık dokusu (0 = kapalı) ve görünüm kökeni (gl_FragCoord -> doku pikseli)
+        static void SetLighting(uint32_t lightTexture, const glm::vec2& viewportOrigin);
+        // Sonraki çizimler ışıkla çarpılsın mı (sprite / karo: evet, UI / metin: hayır)
+        static void SetLit(bool lit);
+        // Sprite Mask etkileşimi: 0 yok, 1 maskenin içinde görünür, 2 dışında görünür
+        static void SetMaskInteraction(int mode);
 
         // Primitives - Textured (Her sprite için ayrı render)
         static void DrawSprite(const glm::mat4& transform, const std::shared_ptr<Texture2D>& texture, float tilingFactor, const glm::vec4& tintColor, struct SpriteRendererComponent& sprite);
@@ -27,6 +35,20 @@ namespace Conqueror
         
         // 9-Slice rendering
         static void DrawSprite9Slice(const glm::mat4& transform, const std::shared_ptr<Texture2D>& texture, float borderSize, const glm::vec4& tintColor, struct ImageComponent& image);
+
+        // ---- Toplu (batched) çizim temel öğeleri
+        static void DrawQuad(const glm::mat4& transform, const glm::vec4& color);
+        static void DrawQuad(const glm::mat4& transform, const std::shared_ptr<Texture2D>& texture, const glm::vec2& uvMin, const glm::vec2& uvMax,
+                             const glm::vec4& tintColor = glm::vec4(1.0f));
+        // Yerel dikdörtgen (min/max) + dönüşüm
+        static void DrawRect(const glm::mat4& transform, const glm::vec2& localMin, const glm::vec2& localMax, const std::shared_ptr<Texture2D>& texture,
+                             const glm::vec2& uvMin, const glm::vec2& uvMax, const glm::vec4& tintColor);
+        // tilingFactor < 0: SDF metin modu (doku alfası mesafe alanıdır)
+        static void DrawQuadCorners(const glm::vec3 positions[4], const glm::vec2 uvs[4], const std::shared_ptr<Texture2D>& texture, const glm::vec4& tintColor,
+                                    float tilingFactor = 1.0f);
+
+        // Sprite'ın yerel uzaydaki sınırları (pivot, PPU, sayfa dilimi, çizim modu dahil)
+        static bool GetSpriteLocalBounds(const struct SpriteRendererComponent& sprite, glm::vec2& outMin, glm::vec2& outMax);
 
         // Stats
         struct Statistics

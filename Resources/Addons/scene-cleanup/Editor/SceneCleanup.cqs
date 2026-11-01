@@ -1,0 +1,95 @@
+using nativebridge;
+
+// Sahne denetimi: boş nesneler, sıfır ölçek, eksik betik dosyaları, yinelenen adlar, çok uzaktaki nesneler.
+script SceneCleanup : ConquerorScript
+{
+    public float farDistance = 5000.0;
+
+    // Bilgi
+    public int emptyCount = 0;
+    public int zeroScaleCount = 0;
+    public int missingScriptCount = 0;
+    public int duplicateNameCount = 0;
+    public int farCount = 0;
+    public int deleted = 0;
+
+    private var empties = [];
+    private var zeroScale = [];
+    private var missing = [];
+    private var duplicates = [];
+    private var far = [];
+
+    func OnLoad()
+    {
+        EditorAddPanel("Scene Cleanup", "DrawPanel");
+        EditorAddMenuItem("Cleanup/Scan Scene", "Scan");
+        EditorAddMenuItem("Cleanup/Delete Empty Objects", "DeleteEmpty");
+    }
+
+    func Scan()
+    {
+        empties = []; zeroScale = []; missing = []; duplicates = []; far = [];
+        var names = Map();
+        for (var e in EditorGetAllEntities())
+        {
+            var comps = EntityGetComponentNames(e);
+            var meaningful = 0;
+            for (var c in comps) { if (c != "Transform") { meaningful++; } }
+            if (meaningful == 0 && len(EntityGetChildren(e)) == 0) { empties.Add(e); }
+            var s = EntityGetScale(e);
+            if (MathAbs(s.x) < 0.00001 || MathAbs(s.y) < 0.00001 || MathAbs(s.z) < 0.00001) { zeroScale.Add(e); }
+            var p = EntityGetWorldPosition(e);
+            if (MathAbs(p.x) > farDistance || MathAbs(p.y) > farDistance || MathAbs(p.z) > farDistance) { far.Add(e); }
+            var n = EntityGetName(e);
+            if (MapHasKey(names, n)) { names[n] = names[n] + 1; } else { names[n] = 1; }
+            if (EntityHasComponent(e, "ConquerorScript"))
+            {
+                var path = EntityGetComponentField(e, "ConquerorScript", "Script");
+                if (path != null && path != "" && !FileExists(path)) { missing.Add(e); }
+            }
+        }
+        for (var e2 in EditorGetAllEntities()) { if (names[EntityGetName(e2)] > 1) { duplicates.Add(e2); } }
+        emptyCount = empties.Count;
+        zeroScaleCount = zeroScale.Count;
+        missingScriptCount = missing.Count;
+        duplicateNameCount = duplicates.Count;
+        farCount = far.Count;
+    }
+
+    func DeleteEmpty()
+    {
+        Scan();
+        deleted = 0;
+        for (var e in empties) { if (EntityIsValid(e)) { EntityDestroy(e); deleted++; } }
+        EditorNotify("Deleted " + str(deleted) + " empty object(s)");
+        Scan();
+    }
+
+    func SelectList(list, label)
+    {
+        if (list.Count == 0) { EditorNotify("No " + label); return; }
+        EditorSetSelection(list);
+    }
+
+    func SelectEmpty() { Scan(); SelectList(empties, "empty objects"); }
+    func SelectZeroScale() { Scan(); SelectList(zeroScale, "zero-scale objects"); }
+    func SelectMissing() { Scan(); SelectList(missing, "missing scripts"); }
+    func SelectDuplicates() { Scan(); SelectList(duplicates, "duplicate names"); }
+    func SelectFar() { Scan(); SelectList(far, "far objects"); }
+
+    func DrawPanel()
+    {
+        if (GuiButton("Scan", -1)) { Scan(); }
+        GuiSeparator();
+        GuiText("Empty objects: " + str(emptyCount));
+        if (emptyCount > 0) { GuiSameLine(); if (GuiButton("Select##e")) { SelectEmpty(); } GuiSameLine(); if (GuiButton("Delete##e")) { EditorRunUndoable("Delete Empty Objects", "DeleteEmpty"); } }
+        GuiText("Zero scale: " + str(zeroScaleCount));
+        if (zeroScaleCount > 0) { GuiSameLine(); if (GuiButton("Select##z")) { SelectZeroScale(); } }
+        GuiText("Missing script files: " + str(missingScriptCount));
+        if (missingScriptCount > 0) { GuiSameLine(); if (GuiButton("Select##m")) { SelectMissing(); } }
+        GuiText("Duplicate names: " + str(duplicateNameCount));
+        if (duplicateNameCount > 0) { GuiSameLine(); if (GuiButton("Select##d")) { SelectDuplicates(); } }
+        GuiText("Far from origin: " + str(farCount));
+        if (farCount > 0) { GuiSameLine(); if (GuiButton("Select##f")) { SelectFar(); } }
+    }
+}

@@ -1,0 +1,113 @@
+using nativebridge;
+
+// Seçim kümeleri: ad -> [UUID] eşlemesi projede ProjectSettings/SelectionSets.json dosyasında saklanır.
+script SelectionSets : ConquerorScript
+{
+    public string newSetName = "Set 1";
+
+    // Bilgi
+    public int setCount = 0;
+    public int lastRestored = 0;
+    public string status = "";
+
+    private var sets = Map();
+    private bool loaded = false;
+
+    func OnLoad()
+    {
+        EditorAddPanel("Selection Sets", "DrawPanel");
+        EditorAddMenuItem("Selection/Save Selection Set", "SaveCurrent");
+    }
+
+    func FilePath() { return PathCombine(EditorGetProjectPath(), "ProjectSettings/SelectionSets.json"); }
+
+    func Load()
+    {
+        loaded = true;
+        sets = Map();
+        var text = FileReadText(FilePath());
+        if (text != null && text != "")
+        {
+            var data = JSONParse(text);
+            if (data != null) { sets = data; }
+        }
+        setCount = MapCount(sets);
+    }
+
+    func Persist()
+    {
+        var dir = PathCombine(EditorGetProjectPath(), "ProjectSettings");
+        FileWriteText(FilePath(), JSONStringify(sets));
+        setCount = MapCount(sets);
+    }
+
+    // Seçimi adla kaydet (aynı ad varsa üzerine yazar)
+    func SaveSet(name)
+    {
+        if (!loaded) { Load(); }
+        var ids = [];
+        for (var e in EditorGetSelection()) { ids.Add(EntityGetUUID(e)); }
+        if (ids.Count == 0) { status = "Nothing selected."; return false; }
+        sets[name] = ids;
+        Persist();
+        status = "Saved " + name + " (" + str(ids.Count) + ")";
+        return true;
+    }
+
+    func SaveCurrent() { SaveSet(newSetName); }
+
+    func Resolve(name)
+    {
+        var list = [];
+        if (!MapHasKey(sets, name)) { return list; }
+        for (var id in sets[name])
+        {
+            var e = FindEntityByUUID(id);
+            if (e != null) { list.Add(e); }
+        }
+        return list;
+    }
+
+    func Restore(name)
+    {
+        if (!loaded) { Load(); }
+        var list = Resolve(name);
+        lastRestored = list.Count;
+        if (list.Count == 0) { status = name + ": no objects found"; return false; }
+        EditorSetSelection(list);
+        status = "Selected " + name + " (" + str(list.Count) + ")";
+        return true;
+    }
+
+    func RestoreFirst()
+    {
+        if (!loaded) { Load(); }
+        for (var k in MapKeys(sets)) { return Restore(k); }
+        return false;
+    }
+
+    func Remove(name)
+    {
+        if (!loaded) { Load(); }
+        if (!MapHasKey(sets, name)) { return; }
+        MapRemove(sets, name);
+        Persist();
+    }
+
+    func DrawPanel()
+    {
+        if (!loaded) { Load(); }
+        newSetName = GuiInputText("Name", newSetName);
+        GuiBeginDisabled(len(EditorGetSelection()) == 0);
+        if (GuiButton("Save Selection", -1)) { SaveSet(newSetName); }
+        GuiEndDisabled();
+        GuiSeparator();
+        for (var k in MapKeys(sets))
+        {
+            if (GuiButton(k + " (" + str(len(sets[k])) + ")")) { Restore(k); }
+            GuiSameLine();
+            if (GuiButton("x##" + k)) { Remove(k); break; }
+        }
+        if (status != "") { GuiTextDisabled(status); }
+    }
+}

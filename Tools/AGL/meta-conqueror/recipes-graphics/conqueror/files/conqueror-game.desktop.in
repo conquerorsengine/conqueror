@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=@NAME@
+Exec=@BIN@
+Icon=@APP_ID@
+StartupWMClass=@APP_ID@
+Categories=Game;

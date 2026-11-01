@@ -1,0 +1,290 @@
+using nativebridge;
+
+// Düşman beyni: Devriye -> (görünce) Kovala -> (menzilde) Saldır -> (kaybedince) Ara -> Devriye
+// Hedef: targetTag etiketli en yakın nesne (ya da targetName). Görüş: menzil + açı + engelsiz ışın.
+// NavMesh Agent varsa yol bulma onunla; yoksa Character Controller ile düz yürür.
+script EnemyAI : ConquerorScript
+{
+    public string targetTag = "Player";
+    public string targetName = "";
+    public float sightRange = 14.0;
+    public float sightAngle = 120.0;
+    public float hearingRange = 3.0;
+    public float eyeHeight = 1.6;
+    public float loseSightTime = 3.0;
+    public float searchTime = 4.0;
+    public float attackRange = 1.8;
+    public float attackDamage = 10.0;
+    public float attackCooldown = 1.2;
+    public string patrolPath = "Patrol Path";
+    public float patrolWait = 1.5;
+    public float patrolSpeed = 2.5;
+    public float chaseSpeed = 5.0;
+    public float turnSpeed = 540.0;
+    public float gravity = 20.0;
+
+    // Çalışma zamanı bilgisi
+    public string state = "Patrol";
+    public bool seesTarget = false;
+    public int attacks = 0;
+    public int patrolIndex = 0;
+    public float targetDistance = 999.0;
+
+    private var target = null;
+    private var points = [];
+    private bool useNav = false;
+    private float waitTimer = 0.0;
+    private float sinceSeen = 999.0;
+    private float stateTime = 0.0;
+    private float cooldown = 0.0;
+    private float lastX = 0.0;
+    private float lastY = 0.0;
+    private float lastZ = 0.0;
+    private float vy = 0.0;
+    private float navX = 1e9;
+    private float navZ = 1e9;
+    private float repath = 0.0;
+
+    func Start()
+    {
+        useNav = HasComponent("NavMeshAgent");
+        var path = patrolPath != "" ? FindEntity(patrolPath) : null;
+        if (path != null) { for (var c in EntityGetChildren(path)) { points.Add(EntityGetWorldPosition(c)); } }
+        SetState("Patrol");
+    }
+
+    func SetState(s)
+    {
+        if (state == s && stateTime > 0) { return; }
+        state = s;
+        stateTime = 0.0;
+        if (s == "Patrol") { waitTimer = 0; GoToPoint(); }
+        SendMessage(GetEntityId(), "OnAIStateChanged", s);
+    }
+
+    func FindTarget()
+    {
+        if (targetName != "") { return FindEntity(targetName); }
+        var me = EntityGetWorldPosition(GetEntityId());
+        var best = null;
+        var bestD = 1e9;
+        for (var e in FindEntitiesWithTag(targetTag))
+        {
+            if (e == GetEntityId()) { continue; }
+            var p = EntityGetWorldPosition(e);
+            var d = (p.x - me.x) * (p.x - me.x) + (p.z - me.z) * (p.z - me.z);
+            if (d < bestD) { bestD = d; best = e; }
+        }
+        return best;
+    }
+
+    func IsSelfOrChild(e)
+    {
+        var cur = e;
+        for (var i = 0; i < 16; i++)
+        {
+            if (cur == null || cur < 0) { return false; }
+            if (cur == GetEntityId()) { return true; }
+            cur = EntityGetParent(cur);
+        }
+        return false;
+    }
+
+    func IsTargetOrChild(e)
+    {
+        var cur = e;
+        for (var i = 0; i < 16; i++)
+        {
+            if (cur == null || cur < 0) { return false; }
+            if (cur == target) { return true; }
+            cur = EntityGetParent(cur);
+        }
+        return false;
+    }
+
+    // Menzil, görüş açısı ve engelsiz ışın; çok yakındaysa (duyma menzili) açıya bakılmaz
+    func CanSee()
+    {
+        if (target == null || !EntityIsValid(target)) { return false; }
+        if (HasScript(target, "Health") && GetScriptField(target, "dead")) { return false; }
+        var me = EntityGetWorldPosition(GetEntityId());
+        var t = EntityGetWorldPosition(target);
+        var dx = t.x - me.x;
+        var dz = t.z - me.z;
+        var d = MathSqrt(dx * dx + dz * dz);
+        targetDistance = d;
+        if (d > sightRange) { return false; }
+        if (d > hearingRange)
+        {
+            var f = EntityGetForward(GetEntityId());
+            var cosA = (f.x * dx + f.z * dz) / MathMax(0.0001, d * MathSqrt(f.x * f.x + f.z * f.z));
+            if (cosA < MathCos(MathDegToRad(sightAngle * 0.5))) { return false; }
+        }
+        // Göz hizasından hedefin gövde ortasına ışın
+        var ey = me.y + eyeHeight;
+        var ty = t.y + 1.0;
+        var rx = dx;
+        var ry = ty - ey;
+        var rz = dz;
+        var rl = MathSqrt(rx * rx + ry * ry + rz * rz);
+        for (var h in RaycastAll(me.x, ey, me.z, rx / rl, ry / rl, rz / rl, rl + 0.5))
+        {
+            if (h.isTrigger || IsSelfOrChild(h.entity)) { continue; }
+            return IsTargetOrChild(h.entity);
+        }
+        return true;
+    }
+
+    func Update(dt)
+    {
+        if (dt <= 0) { return; }
+        if (HasScript(GetEntityId(), "Health") && GetScriptField(GetEntityId(), "dead"))
+        {
+            if (useNav) { NavStop(); }
+            state = "Dead";
+            return;
+        }
+        stateTime += dt;
+        if (cooldown > 0) { cooldown -= dt; }
+        if (target == null || !EntityIsValid(target)) { target = FindTarget(); }
+        seesTarget = CanSee();
+        if (seesTarget)
+        {
+            sinceSeen = 0;
+            var t = EntityGetWorldPosition(target);
+            lastX = t.x; lastY = t.y; lastZ = t.z;
+        }
+        else { sinceSeen += dt; }
+
+        if (state == "Patrol") { UpdatePatrol(dt); if (seesTarget) { SetState("Chase"); } }
+        else if (state == "Chase") { UpdateChase(dt); }
+        else if (state == "Attack") { UpdateAttack(dt); }
+        else if (state == "Search") { UpdateSearch(dt); }
+        if (!useNav) { ApplyGravity(dt); }
+    }
+
+    func UpdatePatrol(dt)
+    {
+        if (points.Count == 0) { return; }
+        if (waitTimer > 0)
+        {
+            waitTimer -= dt;
+            if (waitTimer <= 0) { patrolIndex = (patrolIndex + 1) % points.Count; GoToPoint(); }
+            return;
+        }
+        var p = points[patrolIndex];
+        if (MoveTowards(p.x, p.z, patrolSpeed, dt, 0.4)) { waitTimer = patrolWait; Stop(); }
+    }
+
+    func UpdateChase(dt)
+    {
+        if (targetDistance <= attackRange && seesTarget) { Stop(); SetState("Attack"); return; }
+        if (sinceSeen > loseSightTime) { SetState("Search"); return; }
+        MoveTowards(lastX, lastZ, chaseSpeed, dt, attackRange * 0.8);
+    }
+
+    func UpdateAttack(dt)
+    {
+        if (!seesTarget || targetDistance > attackRange * 1.25) { SetState("Chase"); return; }
+        FaceTowards(lastX, lastZ, dt);
+        if (cooldown <= 0)
+        {
+            cooldown = attackCooldown;
+            attacks++;
+            SendMessage(target, "Damage", attackDamage, GetEntityName());
+            SendMessage(GetEntityId(), "OnAttack", target);
+        }
+    }
+
+    func UpdateSearch(dt)
+    {
+        if (seesTarget) { SetState("Chase"); return; }
+        var arrived = MoveTowards(lastX, lastZ, patrolSpeed * 1.4, dt, 0.6);
+        if (arrived)
+        {
+            // Bulunduğu yerde dönerek bak
+            var r = GetRotation();
+            SetRotation(r.x, r.y + 90 * dt, r.z);
+        }
+        if (stateTime > searchTime + loseSightTime) { SetState("Patrol"); }
+    }
+
+    func GoToPoint()
+    {
+        if (points.Count == 0) { return; }
+        var p = points[patrolIndex];
+        if (useNav) { NavSetSpeed(patrolSpeed); NavResume(); NavSetDestination(p.x, p.y, p.z); navX = p.x; navZ = p.z; repath = 0.5; }
+    }
+
+    func Stop()
+    {
+        if (useNav) { NavStop(); navX = 1e9; navZ = 1e9; }
+    }
+
+    // Hedefe yürü (NavMesh ya da düz); vardıysa true
+    func MoveTowards(x, z, speed, dt, stopDistance)
+    {
+        var me = EntityGetWorldPosition(GetEntityId());
+        var dx = x - me.x;
+        var dz = z - me.z;
+        var d = MathSqrt(dx * dx + dz * dz);
+        if (d <= stopDistance) { return true; }
+        if (useNav)
+        {
+            // Hedef belirgin şekilde değişince ya da aralıklarla yeniden yol iste (her kare değil)
+            repath -= dt;
+            var moved = (x - navX) * (x - navX) + (z - navZ) * (z - navZ) > 0.25;
+            if (moved || repath <= 0 || NavIsStopped())
+            {
+                NavSetSpeed(speed);
+                NavResume();
+                NavSetDestination(x, me.y, z);
+                navX = x;
+                navZ = z;
+                repath = 0.5;
+            }
+            return false;
+        }
+        FaceTowards(x, z, dt);
+        var step = MathMin(d - stopDistance, speed * dt);
+        if (HasComponent("CharacterController")) { CharacterMove(dx / d * step, vy * dt, dz / d * step); }
+        else { EntitySetWorldPosition(GetEntityId(), me.x + dx / d * step, me.y, me.z + dz / d * step); }
+        return false;
+    }
+
+    func FaceTowards(x, z, dt)
+    {
+        var me = EntityGetWorldPosition(GetEntityId());
+        var want = MathRadToDeg(MathAtan2(-(x - me.x), -(z - me.z)));
+        var r = GetRotation();
+        var diff = MathNormalizeAngle(want - r.y);
+        var step = turnSpeed * dt;
+        if (diff > step) { diff = step; }
+        if (diff < -step) { diff = -step; }
+        SetRotation(r.x, r.y + diff, r.z);
+    }
+
+    func ApplyGravity(dt)
+    {
+        if (!HasComponent("CharacterController")) { return; }
+        vy -= gravity * dt;
+        CharacterMove(0, vy * dt, 0);
+        if (CharacterIsGrounded() && vy < 0) { vy = -2.0; }
+    }
+
+    func OnDamaged(amount)
+    {
+        // Saldırıya uğrayınca hedefi fark eder
+        if (state == "Patrol" || state == "Search")
+        {
+            if (target == null) { target = FindTarget(); }
+            if (target != null)
+            {
+                var t = EntityGetWorldPosition(target);
+                lastX = t.x; lastY = t.y; lastZ = t.z;
+                sinceSeen = 0;
+                SetState("Chase");
+            }
+        }
+    }
+}

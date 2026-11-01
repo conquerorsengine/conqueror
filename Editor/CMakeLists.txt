@@ -1,7 +1,7 @@
 project(ConquerorEditor)
 
 # Collect all source files
-file(GLOB_RECURSE EDITOR_SOURCES
+file(GLOB_RECURSE EDITOR_SOURCES CONFIGURE_DEPENDS
     "src/*.cpp"
 )
 
@@ -13,6 +13,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/../Engine/src
     ${CMAKE_CURRENT_SOURCE_DIR}/../External/imgui
+    ${CMAKE_CURRENT_SOURCE_DIR}/../External/IconFontCppHeaders
     ${CMAKE_CURRENT_SOURCE_DIR}/../External/imnodes
     ${CMAKE_CURRENT_SOURCE_DIR}/../External/glm
     ${CMAKE_CURRENT_SOURCE_DIR}/../External/yaml-cpp/include
@@ -30,3 +31,10 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     imguicolortextedit
     nfd
 )
+
+cq_apply_sanitizers(${PROJECT_NAME})
+
+# Python betik modülü editörle birlikte derlensin
+if(TARGET CQPython)
+    add_dependencies(${PROJECT_NAME} CQPython)
+endif()

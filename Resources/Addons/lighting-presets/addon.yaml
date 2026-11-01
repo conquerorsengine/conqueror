@@ -1,0 +1,15 @@
+Id: conqueror.lighting-presets
+Name: Lighting Presets
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Instant lighting moods for the whole scene: Day, Golden Hour, Sunset, Night, Overcast,
+  Studio and Interior. Each preset sets the sun direction, color and intensity, ambient light,
+  sky exposure, fog and exposure together (creating a sun if the scene has none). Use the panel
+  in the editor (undoable) or switch moods during play with the Lighting Preset component.
+Category: Rendering
+Icon: sun
+Tags: [lighting, presets, mood, sun, ambient, rendering]
+Editor: Editor/LightingPresetsEditor.cqs
+Components:
+  - Scripts/LightingPreset.cqs

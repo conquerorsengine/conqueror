@@ -1,10 +1,14 @@
 #include "ModelLoader.h"
 #include "Core/Logging/Log.h"
 
+#include <algorithm>
+#include <cmath>
+
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <assimp/material.h>
+#include <assimp/GltfMaterial.h>
 #include <assimp/quaternion.h>
 #include <Renderer/RHI/Texture.h>
 
@@ -425,11 +429,16 @@ namespace Conqueror
         // bunları hem node transform'a hem animasyon keyframe'lerine bake et.
         // Yoksa mTransformation ile animasyon keyframe'leri farklı uzayda kalır → spagetti.
         importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
+        // Normalsiz dosyalar: 80°'ye kadar yumuşak (Unity / Godot içe aktarma varsayılanı gibi), daha keskinler sert kenar
+        importer.SetPropertyFloat(AI_CONFIG_PP_GSN_MAX_SMOOTHING_ANGLE, 80.0f);
+        // Aynı köşeler birleştirilir: OBJ / STL gibi biçimlerde üçgen başına ayrı köşe olmaz (bellek, LOD / küme kalitesi)
         const aiScene* scene = importer.ReadFile(path,
             aiProcess_Triangulate |
-            aiProcess_GenNormals |
+            aiProcess_GenSmoothNormals |
+            aiProcess_JoinIdenticalVertices |
             aiProcess_CalcTangentSpace |
-            aiProcess_FlipUVs |
+            // aiProcess_FlipUVs yok: Assimp tüm biçimlerde UV'yi GL düzeninde (v yukarı) verir, dokular da stb ile
+            // ters çevrilerek yüklenir; ek çevirme glTF / FBX / OBJ dokularını baş aşağı örnekliyordu
             aiProcess_LimitBoneWeights);
 
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
@@ -449,7 +458,7 @@ namespace Conqueror
             LoadAnimationClips(scene, model);
         }
 
-        ProcessNode(scene->mRootNode, scene, model);
+        ProcessNode(scene->mRootNode, scene, model, glm::mat4(1.0f), true);
 
         if (model->IsSkinned)
         {
@@ -464,10 +473,12 @@ namespace Conqueror
         return model;
     }
 
-    void ModelLoader::ProcessNode(void* nodePtr, const void* scenePtr, std::shared_ptr<Model> model)
+    void ModelLoader::ProcessNode(void* nodePtr, const void* scenePtr, std::shared_ptr<Model> model, const glm::mat4& parentTransform, bool isRoot)
     {
         aiNode* node = static_cast<aiNode*>(nodePtr);
         const aiScene* scene = static_cast<const aiScene*>(scenePtr);
+        // Kök düğümün dönüşümü (FBX birim ölçeği / eksen çevirmesi) önceki davranışla uyumlu kalsın diye uygulanmaz
+        const glm::mat4 global = isRoot ? parentTransform : parentTransform * Mat4FromAi(node->mTransformation);
 
         for (uint32_t i = 0; i < node->mNumMeshes; i++)
         {
@@ -476,7 +487,7 @@ namespace Conqueror
             if (model->IsSkinned && mesh->HasBones())
                 model->SkinnedMeshes.push_back(ProcessSkinnedMesh(mesh, model));
             else
-                model->Meshes.push_back(ProcessStaticMesh(mesh, scene));
+                model->Meshes.push_back(ProcessStaticMesh(mesh, scene, global));
 
             if (mesh->mMaterialIndex >= 0)
             {
@@ -488,12 +499,14 @@ namespace Conqueror
         }
 
         for (uint32_t i = 0; i < node->mNumChildren; i++)
-            ProcessNode(node->mChildren[i], scene, model);
+            ProcessNode(node->mChildren[i], scene, model, global, false);
     }
 
-    std::shared_ptr<Mesh> ModelLoader::ProcessStaticMesh(void* meshPtr, [[maybe_unused]] const void* scenePtr)
+    std::shared_ptr<Mesh> ModelLoader::ProcessStaticMesh(void* meshPtr, [[maybe_unused]] const void* scenePtr, const glm::mat4& transform)
     {
         aiMesh* mesh = static_cast<aiMesh*>(meshPtr);
+        const bool identity = transform == glm::mat4(1.0f);
+        const glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(transform)));
 
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;
@@ -514,6 +527,15 @@ namespace Conqueror
                 vertex.TexCoords = glm::vec2(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
             else
                 vertex.TexCoords = glm::vec2(0.f);
+
+            if (!identity)
+            {
+                vertex.Position = glm::vec3(transform * glm::vec4(vertex.Position, 1.0f));
+                if (glm::dot(vertex.Normal, vertex.Normal) > 0.0f)
+                    vertex.Normal = glm::normalize(normalMatrix * vertex.Normal);
+                if (glm::dot(vertex.Tangent, vertex.Tangent) > 0.0f)
+                    vertex.Tangent = glm::normalize(glm::mat3(transform) * vertex.Tangent);
+            }
 
             vertices.push_back(vertex);
         }
@@ -619,6 +641,88 @@ namespace Conqueror
         mat->AOMap = LoadTextureSlot(material, aiTextureType_AMBIENT_OCCLUSION, 0, scene, directory);
         if (!mat->AOMap)
             mat->AOMap = LoadTextureSlot(material, aiTextureType_AMBIENT, 0, scene, directory);
+
+        // glTF metal/pürüz iş akışı: çarpanlar, paketli doku kanalları, ışıma, alfa modu, geçirgenlik (cam)
+        float metallicFactor = 1.0f;
+        if (material->Get(AI_MATKEY_METALLIC_FACTOR, metallicFactor) == AI_SUCCESS)
+        {
+            float roughnessFactor = 1.0f;
+            material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughnessFactor);
+            mat->Metallic = metallicFactor;
+            mat->Roughness = roughnessFactor;
+            mat->MapsScaleFactors = true;
+
+            // Temel renk çarpanı doğrusal; gölgelendirici albedoyu sRGB kabul edip doğrusala çevirir
+            aiColor4D base(1.0f, 1.0f, 1.0f, 1.0f);
+            if (material->Get(AI_MATKEY_BASE_COLOR, base) == AI_SUCCESS)
+            {
+                auto toSrgb = [](float c) { return std::pow(std::max(c, 0.0f), 1.0f / 2.2f); };
+                mat->Albedo = glm::vec3(toSrgb(base.r), toSrgb(base.g), toSrgb(base.b));
+                mat->Opacity = base.a;
+            }
+            if (!mat->AlbedoMap)
+                mat->AlbedoMap = LoadTextureSlot(material, aiTextureType_BASE_COLOR, 0, scene, directory);
+
+            // Tek doku iki kanalda (metal B, pürüz G)
+            if (!mat->MetallicMap && !mat->RoughnessMap)
+            {
+                auto mr = LoadTextureSlot(material, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, scene, directory);
+                mat->MetallicMap = mr;
+                mat->RoughnessMap = mr;
+            }
+            if (mat->MetallicMap && mat->MetallicMap == mat->RoughnessMap)
+            {
+                mat->MetallicChannel = 2;
+                mat->RoughnessChannel = 1;
+            }
+            else if (mat->MetallicMap || mat->RoughnessMap)
+            {
+                // Ayrı yüklenmiş aynı dosya (Assimp her iki türe de aynı yolu verir)
+                aiString a, b;
+                if (material->GetTexture(aiTextureType_METALNESS, 0, &a) == AI_SUCCESS &&
+                    material->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, 0, &b) == AI_SUCCESS && a == b)
+                {
+                    mat->RoughnessMap = mat->MetallicMap;
+                    mat->MetallicChannel = 2;
+                    mat->RoughnessChannel = 1;
+                }
+            }
+
+            aiColor3D emissive(0.0f, 0.0f, 0.0f);
+            if (material->Get(AI_MATKEY_COLOR_EMISSIVE, emissive) == AI_SUCCESS && (emissive.r + emissive.g + emissive.b) > 0.0f)
+            {
+                float intensity = 1.0f;
+                material->Get(AI_MATKEY_EMISSIVE_INTENSITY, intensity);
+                mat->EmissionColor = glm::vec3(emissive.r, emissive.g, emissive.b);
+                mat->EmissionStrength = intensity;
+                mat->EmissionMap = LoadTextureSlot(material, aiTextureType_EMISSIVE, 0, scene, directory);
+            }
+
+            aiString alphaMode;
+            if (material->Get(AI_MATKEY_GLTF_ALPHAMODE, alphaMode) == AI_SUCCESS)
+            {
+                const std::string mode = alphaMode.C_Str();
+                if (mode == "MASK")
+                {
+                    mat->Rendering = Material::RenderMode::Cutout;
+                    float cutoff = 0.5f;
+                    material->Get(AI_MATKEY_GLTF_ALPHACUTOFF, cutoff);
+                    mat->AlphaClip = cutoff;
+                }
+                else if (mode == "BLEND")
+                    mat->Rendering = Material::RenderMode::Transparent;
+            }
+            float transmission = 0.0f;
+            if (material->Get(AI_MATKEY_TRANSMISSION_FACTOR, transmission) == AI_SUCCESS && transmission > 0.0f)
+            {
+                // Kırılma yok: geçirgen yüzey yarı saydam, parlak yansımalı cam olarak çizilir
+                mat->Rendering = Material::RenderMode::Transparent;
+                mat->Opacity = std::min(mat->Opacity, 1.0f - 0.82f * std::min(transmission, 1.0f));
+            }
+            int twoSided = 0;
+            if (material->Get(AI_MATKEY_TWOSIDED, twoSided) == AI_SUCCESS && twoSided)
+                mat->Culling = Material::CullMode::Off;
+        }
 
         return mat;
     }

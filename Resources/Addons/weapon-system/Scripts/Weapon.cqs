@@ -1,0 +1,161 @@
+using nativebridge;
+
+// Silah: mode 0 anında isabet (ışın), 1 mermi (Projectile prefabı). Nişan "aimFrom" adlı varlıktan
+// (ör. kamera) ya da bu varlıktan ileri yöne. Sol fare ateş, R şarjör değiştir (useInput).
+// Hasar hedefin betiklerine "Damage" iletisiyle gider (Health bileşeni).
+script Weapon : ConquerorScript
+{
+    public int mode = 0;
+    public float damage = 25.0;
+    public float fireRate = 8.0;
+    public bool automatic = true;
+    public int magazineSize = 30;
+    public int reserveAmmo = 120;
+    public bool infiniteReserve = false;
+    public float reloadTime = 1.4;
+    public float range = 100.0;
+    public float spreadDegrees = 0.5;
+    public float impactForce = 4.0;
+    public string projectilePrefab = "Packages/weapon-system/Prefabs/Projectile.cqprefab";
+    public float projectileSpeed = 40.0;
+    public string aimFrom = "";
+    public bool useInput = true;
+    public string fireSound = "";
+
+    // Çalışma zamanı bilgisi
+    public int ammo = 30;
+    public bool reloading = false;
+    public int shotsFired = 0;
+    public int hitsLanded = 0;
+    public string lastHit = "";
+
+    private float cooldown = 0.0;
+    private float reloadTimer = 0.0;
+    private var owner = null;
+
+    func Start()
+    {
+        ammo = magazineSize;
+        // Sahip: en üstteki ata (oyuncu); kendi ışınlarımız ona çarpmaz
+        owner = GetEntityId();
+        var p = EntityGetParent(owner);
+        while (p != null && p >= 0) { owner = p; p = EntityGetParent(p); }
+    }
+
+    func Update(dt)
+    {
+        if (cooldown > 0) { cooldown -= dt; }
+        if (reloading)
+        {
+            reloadTimer -= dt;
+            if (reloadTimer <= 0) { FinishReload(); }
+        }
+        if (!useInput) { return; }
+        var wantFire = automatic ? IsMouseButtonPressed(0) : IsMouseButtonDown(0);
+        if (wantFire && !UIIsPointerOver()) { Fire(); }
+        if (IsKeyDown(Key.R)) { Reload(); }
+    }
+
+    func Reload()
+    {
+        if (reloading || ammo >= magazineSize || (!infiniteReserve && reserveAmmo <= 0)) { return false; }
+        reloading = true;
+        reloadTimer = reloadTime;
+        SendMessage(GetEntityId(), "OnReloadStarted");
+        return true;
+    }
+
+    func FinishReload()
+    {
+        reloading = false;
+        var need = magazineSize - ammo;
+        var take = infiniteReserve ? need : int(MathMin(need, reserveAmmo));
+        ammo += take;
+        if (!infiniteReserve) { reserveAmmo -= take; }
+        SendMessage(GetEntityId(), "OnReloaded");
+    }
+
+    // Ateş et (kod / test için de): başarılıysa true
+    func Fire()
+    {
+        if (reloading || cooldown > 0) { return false; }
+        if (ammo <= 0) { Reload(); return false; }
+        ammo--;
+        shotsFired++;
+        cooldown = 1.0 / MathMax(0.01, fireRate);
+        var aim = aimFrom != "" ? FindEntity(aimFrom) : null;
+        if (aim == null) { aim = GetEntityId(); }
+        var o = EntityGetWorldPosition(aim);
+        var f = EntityGetForward(aim);
+        var d = ApplySpread(f);
+        Flash("Muzzle Flash", null);
+        if (fireSound != "") { AudioPlayOneShotAt(fireSound, o.x, o.y, o.z); }
+        if (mode == 1) { SpawnProjectile(o, d); }
+        else { Hitscan(o, d); }
+        if (ammo == 0) { Reload(); }
+        return true;
+    }
+
+    func ApplySpread(f)
+    {
+        if (spreadDegrees <= 0) { return f; }
+        var s = MathTan(MathDegToRad(spreadDegrees));
+        var x = f.x + (MathRandom() * 2 - 1) * s;
+        var y = f.y + (MathRandom() * 2 - 1) * s;
+        var z = f.z + (MathRandom() * 2 - 1) * s;
+        var l = MathSqrt(x * x + y * y + z * z);
+        return {x: x / l, y: y / l, z: z / l};
+    }
+
+    func IsOwnerOrChild(e)
+    {
+        var cur = e;
+        for (var i = 0; i < 32; i++)
+        {
+            if (cur == null || cur < 0) { return false; }
+            if (cur == owner) { return true; }
+            cur = EntityGetParent(cur);
+        }
+        return false;
+    }
+
+    func Hitscan(o, d)
+    {
+        var hits = RaycastAll(o.x, o.y, o.z, d.x, d.y, d.z, range);
+        for (var h in hits)
+        {
+            if (h.isTrigger || IsOwnerOrChild(h.entity)) { continue; }
+            hitsLanded++;
+            lastHit = h.name;
+            SendMessage(h.entity, "Damage", damage, EntityGetName(owner));
+            if (impactForce > 0 && EntityHasComponent(h.entity, "Rigidbody"))
+            {
+                EntityAddImpulse(h.entity, d.x * impactForce, d.y * impactForce, d.z * impactForce, h.point.x, h.point.y, h.point.z);
+            }
+            Flash("Impact FX", h.point);
+            return;
+        }
+    }
+
+    func SpawnProjectile(o, d)
+    {
+        var p = Instantiate(projectilePrefab, o.x + d.x * 0.6, o.y + d.y * 0.6, o.z + d.z * 0.6);
+        if (p == null) { LogWarn("Weapon: cannot spawn " + projectilePrefab); return; }
+        SetScriptField(p, "dirX", d.x);
+        SetScriptField(p, "dirY", d.y);
+        SetScriptField(p, "dirZ", d.z);
+        SetScriptField(p, "speed", projectileSpeed);
+        SetScriptField(p, "damage", damage);
+        SetScriptField(p, "impactForce", impactForce);
+        SetScriptField(p, "ownerId", owner);
+    }
+
+    // Çocuk parçacık sistemini (adıyla) yay: point verilirse oraya
+    func Flash(name, point)
+    {
+        var fx = EntityFindChild(GetEntityId(), name);
+        if (fx == null || fx < 0) { return; }
+        if (point == null) { ParticleEmit(fx, 6); }
+        else { ParticleEmitAt(fx, point.x, point.y, point.z, 12); }
+    }
+}

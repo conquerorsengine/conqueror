@@ -1,0 +1,98 @@
+using nativebridge;
+
+// Müzik: "Music A" ve "Music B" çocuklarındaki Audio Source'lar arasında çapraz geçiş.
+// playlist: virgülle ayrılmış ses dosyaları. trackLength > 0 ise o kadar saniyede bir sonraki parçaya geçer.
+script MusicManager : ConquerorScript
+{
+    public string playlist = "Packages/music-manager/Music/Track1.wav,Packages/music-manager/Music/Track2.wav,Packages/music-manager/Music/Track3.wav";
+    public bool shuffle = false;
+    public bool playOnStart = true;
+    public float crossfade = 2.0;
+    public float trackLength = 24.0;
+    public float volume = 0.6;
+    public string volumeKey = "music.volume";
+
+    // Çalışma zamanı bilgisi
+    public int currentIndex = -1;
+    public string currentTrack = "";
+    public bool playing = false;
+    public float fade = 1.0;
+    public int changes = 0;
+
+    private var tracks = [];
+    private var a = null;
+    private var b = null;
+    private bool aActive = true;
+    private float trackTime = 0.0;
+
+    func Start()
+    {
+        a = EntityFindChild(GetEntityId(), "Music A");
+        b = EntityFindChild(GetEntityId(), "Music B");
+        tracks = [];
+        for (var t in StringSplit(playlist, ",")) { var s = StringTrim(t); if (s != "") { tracks.Add(s); } }
+        if (volumeKey != "") { volume = PrefsGetFloat(volumeKey, volume); }
+        if (playOnStart && tracks.Count > 0) { PlayTrack(shuffle ? MathRandomInt(0, tracks.Count - 1) : 0); }
+    }
+
+    func Active() { return aActive ? a : b; }
+    func Inactive() { return aActive ? b : a; }
+
+    func PlayTrack(i)
+    {
+        if (tracks.Count == 0 || a == null || b == null) { return false; }
+        currentIndex = (i % tracks.Count + tracks.Count) % tracks.Count;
+        currentTrack = tracks[currentIndex];
+        // Yeni parça sessiz kaynakta başlar, eskisi söner
+        aActive = !aActive;
+        var next = Active();
+        EntitySetComponentField(next, "AudioSource", "Clip", currentTrack);
+        EntitySetComponentField(next, "AudioSource", "Loop", true);
+        AudioSetEntityVolume(next, 0.0);
+        AudioPlayEntity(next);
+        fade = playing ? 0.0 : 0.0;
+        playing = true;
+        trackTime = 0.0;
+        changes++;
+        BroadcastMessage("OnMusicChanged", currentTrack);
+        return true;
+    }
+
+    func Next()
+    {
+        if (tracks.Count == 0) { return; }
+        if (shuffle && tracks.Count > 1)
+        {
+            var r = MathRandomInt(0, tracks.Count - 2);
+            PlayTrack(r >= currentIndex ? r + 1 : r);
+        }
+        else { PlayTrack(currentIndex + 1); }
+    }
+
+    func Previous() { PlayTrack(currentIndex - 1); }
+
+    func Stop()
+    {
+        playing = false;
+        if (a != null) { AudioStopEntity(a); }
+        if (b != null) { AudioStopEntity(b); }
+    }
+
+    func SetVolume(v)
+    {
+        volume = MathClamp01(v);
+        if (volumeKey != "") { PrefsSetFloat(volumeKey, volume); PrefsSave(); }
+    }
+
+    func Update(dt)
+    {
+        if (!playing || a == null || b == null) { return; }
+        var real = GetUnscaledDeltaTime();
+        fade = crossfade > 0 ? MathMin(1.0, fade + real / crossfade) : 1.0;
+        AudioSetEntityVolume(Active(), volume * fade);
+        AudioSetEntityVolume(Inactive(), volume * (1.0 - fade));
+        if (fade >= 1.0) { AudioStopEntity(Inactive()); }
+        trackTime += real;
+        if (trackLength > 0 && trackTime >= trackLength) { Next(); }
+    }
+}

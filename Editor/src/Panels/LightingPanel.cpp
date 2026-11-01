@@ -1,1073 +1,1614 @@
 #include "LightingPanel.h"
+#include "UI/EditorUI.h"
 #include "Renderer/RHI/Cubemap.h"
 #include "Renderer/RHI/Texture.h"
+#include "Renderer/Utilities/Renderer3D/Renderer3D.h"
+#include "Renderer/Utilities/Renderer3D/ModelLoader.h"
 #include "Core/Logging/Log.h"
 #include "Core/Project/Project.h"
-#include "Scene/Entity.h"
+#include "Core/Utils/FileSystem.h"
 #include "Scene/Components.h"
-#include "Renderer/Utilities/Renderer3D/Renderer3D.h"
 
 #include <imgui.h>
 #include <nfd.h>
 #include <stb_image.h>
 #include <glm/gtc/type_ptr.hpp>
-#include <filesystem>
-#include <algorithm>
-#include <chrono>
-#include <iterator>
 
-#ifdef _WIN32
-#include <windows.h>
-#include <libloaderapi.h>
-#else
-#include <unistd.h>
-#include <linux/limits.h>
-#endif
+#include <algorithm>
+#include <cmath>
+#include <cstring>
+#include <ctime>
+#include <filesystem>
 
 namespace Conqueror::Editor
 {
-    static std::filesystem::path GetEngineDirectory()
+    namespace
     {
-#ifdef _WIN32
-        char buffer[MAX_PATH] = { 0 };
-        GetModuleFileNameA(NULL, buffer, MAX_PATH);
-        return std::filesystem::path(buffer).parent_path();
-#else
-        char buffer[PATH_MAX] = { 0 };
-        ssize_t len = readlink("/proc/self/exe", buffer, sizeof(buffer) - 1);
-        if (len != -1)
+        std::filesystem::path EngineDirectory()
         {
-            buffer[len] = '\0';
-            return std::filesystem::path(buffer).parent_path();
+            std::string exe = FileSystem::GetExecutableDirectory();
+            return exe.empty() ? std::filesystem::current_path() : std::filesystem::path(exe);
         }
-        return std::filesystem::current_path();
-#endif
+
+        std::string NowString()
+        {
+            std::time_t t = std::time(nullptr);
+            char buf[32];
+            std::strftime(buf, sizeof(buf), "%H:%M:%S", std::localtime(&t));
+            return buf;
+        }
+
+        void HashCombine(uint64_t& h, uint64_t v)
+        {
+            h ^= v + 0x9e3779b97f4a7c15ull + (h << 6) + (h >> 2);
+        }
+
+        void HashFloat(uint64_t& h, float f)
+        {
+            uint32_t bits;
+            std::memcpy(&bits, &f, sizeof(bits));
+            HashCombine(h, bits);
+        }
+
+        void HashVec3(uint64_t& h, const glm::vec3& v)
+        {
+            HashFloat(h, v.x);
+            HashFloat(h, v.y);
+            HashFloat(h, v.z);
+        }
+
+        const char* LightModeName(LightMode mode)
+        {
+            switch (mode)
+            {
+                case LightMode::Realtime: return "Realtime";
+                case LightMode::Mixed:    return "Mixed";
+                case LightMode::Baked:    return "Baked";
+            }
+            return "?";
+        }
     }
 
-    static std::string ToSerializablePath(const std::string& absolutePath)
+    LightingPanel::~LightingPanel()
     {
-        if (absolutePath.empty())
-            return absolutePath;
-
-        auto projectDir = Project::GetActiveProjectDirectory();
-        if (!projectDir.empty())
-        {
-            std::error_code ec;
-            auto relative = std::filesystem::relative(absolutePath, projectDir, ec);
-            if (!ec && !relative.empty() && relative.native()[0] != '.')
-                return relative.string();
-        }
-
-        auto engineDir = GetEngineDirectory();
-        std::error_code ec;
-        auto relative = std::filesystem::relative(absolutePath, engineDir, ec);
-        if (!ec && !relative.empty() && relative.native()[0] != '.')
-        {
-            std::string relStr = relative.string();
-            if (relStr.find("Resources/") == 0 || relStr.find("Resources\\") == 0)
-                return "CQ:" + relStr;
-        }
-
-        return absolutePath;
+        CancelBake();
+        JoinWorker();
     }
 
-    void LightingPanel::OnImGuiRender()
+    void LightingPanel::SetContext(std::shared_ptr<Scene> scene)
     {
-        ImGui::Begin("Lighting");
-
-        if (!m_Context)
+        if (scene == m_Context)
+            return;
+        // Sahne değişti: kayıtlı sonuç bilgileri artık geçersiz
+        m_Context = scene;
+        m_BakedInfo = {};
+        m_RealtimeInfo = {};
+        m_APVInfo = {};
+        m_LastLightingHash = 0;
+        m_AutoPending = false;
+        if (m_Context && m_Context->GetBakedLightmapTexture())
         {
-            ImGui::Text("No active scene");
+            auto tex = m_Context->GetBakedLightmapTexture();
+            m_BakedInfo.Valid = true;
+            m_BakedInfo.AtlasWidth = (int)tex->GetWidth();
+            m_BakedInfo.AtlasHeight = (int)tex->GetHeight();
+            m_BakedInfo.When = "loaded from disk";
+        }
+    }
+
+    // ===================================================================== Ana pencere
+
+    void LightingPanel::OnImGuiRender(bool* open)
+    {
+        PollBake();
+        UpdateAutoGenerate();
+
+        ImGui::SetNextWindowSize(ImVec2(460, 720), ImGuiCond_FirstUseEver);
+        if (!ImGui::Begin("Lighting", open))
+        {
             ImGui::End();
             return;
         }
 
-        // Realtime lightmap auto-update: ışık değiştiyse yeniden bake et (throttle: 2sn)
-        if (m_RealtimeAutoUpdate && m_RealtimeBaked && !m_IsBaking)
+        if (!m_Context)
         {
-            auto now = std::chrono::high_resolution_clock::now();
-            float timeSinceLast = std::chrono::duration<float>(now - m_LastAutoUpdateTime).count();
-            if (timeSinceLast < 2.0f) return;
+            UI::InfoBox("No active scene.", UI::InfoType::Warning);
+            ImGui::End();
+            return;
+        }
 
-            Entity sunSource = m_Context->GetSunSourceEntity();
-            if (sunSource && sunSource.HasComponent<DirectionalLightComponent>())
+        DrawToolbar();
+
+        if (ImGui::BeginTabBar("##LightingTabs", ImGuiTabBarFlags_FittingPolicyScroll))
+        {
+            const char* tabs[] = { "Scene", "Environment", "Shadows", "Post FX", "Lightmaps", "Probes", "Light Explorer" };
+            for (int i = 0; i < 7; ++i)
             {
-                auto& dl = sunSource.GetComponent<DirectionalLightComponent>();
-                glm::vec3 curDir = dl.Direction;
-                glm::vec3 curColor = dl.Color;
-                float curIntensity = dl.Intensity;
-
-                if (curDir != m_LastLightDir || curColor != m_LastLightColor || curIntensity != m_LastLightIntensity)
+                ImGuiTabItemFlags flags = (m_RequestedTab == i) ? ImGuiTabItemFlags_SetSelected : 0;
+                if (ImGui::BeginTabItem(tabs[i], nullptr, flags))
                 {
-                    float dirDiff = glm::length(curDir - m_LastLightDir);
-                    float colorDiff = glm::length(curColor - m_LastLightColor);
-                    float intensityDiff = std::abs(curIntensity - m_LastLightIntensity);
-                    if (dirDiff < 0.01f && colorDiff < 0.01f && intensityDiff < 0.01f) return;
-
-                    m_LastLightDir = curDir;
-                    m_LastLightColor = curColor;
-                    m_LastLightIntensity = curIntensity;
-                    m_LastAutoUpdateTime = now;
-
-                    m_IsBaking = true;
-                    m_IsAutoUpdate = true;
-                    m_BakeMode = 1;
-                    m_BakeProgress = 0.0f;
-                    m_BakeThreadDone.store(false);
-                    m_BakeThreadProgress.store(0.0f);
-                    m_BakeThreadStep = "Starting...";
-                    m_BakeStartTime = std::chrono::high_resolution_clock::now();
-
-                    m_ActiveBaker = LightmapBaker::Create();
-                    LightmapSettings settings;
-                    settings.Lightmapper = m_LightmapperIndex;
-                    settings.ImportanceSampling = m_ImportanceSampling;
-                    settings.Resolution = 10;
-                    settings.MaxLightmapSize = 256;
-                    settings.MaxBounces = 1;
-                    settings.DirectSamples = 8;
-                    settings.IndirectSamples = 32;
-                    settings.EnvironmentSamples = 16;
-                    settings.Filtering = m_FilteringIndex;
-                    settings.Compression = m_LightmapCompressionIndex;
-                    settings.AmbientOcclusion = m_AmbientOcclusion;
-                    settings.DirectionalMode = m_DirectionalModeIndex;
-                    settings.AlbedoBoost = m_AlbedoBoost;
-                    settings.IndirectIntensity = m_IndirectIntensity;
-                    m_ActiveBaker->SetSettings(settings);
-                    m_ActiveBaker->SetRealtimeMode(true);
-
-                    auto bakerPtr = m_ActiveBaker.get();
-                    auto progressPtr = &m_BakeThreadProgress;
-                    auto stepPtr = &m_BakeThreadStep;
-                    auto donePtr = &m_BakeThreadDone;
-                    auto scenePtr = m_Context.get();
-
-                    m_ActiveBaker->SetProgressCallback([progressPtr, stepPtr](float progress, const std::string& step) {
-                        progressPtr->store(progress);
-                        *stepPtr = step;
-                    });
-
-                    m_BakeThread = std::thread([bakerPtr, scenePtr, donePtr]() {
-                        bakerPtr->Bake(scenePtr);
-                        donePtr->store(true);
-                    });
+                    ImGui::BeginChild("##tabcontent", ImVec2(0, 0), ImGuiChildFlags_None);
+                    switch (i)
+                    {
+                        case 0: DrawSceneTab(); break;
+                        case 1: DrawEnvironmentTab(); break;
+                        case 2: DrawShadowsTab(); break;
+                        case 3: DrawPostTab(); break;
+                        case 4: DrawLightmapsTab(); break;
+                        case 5: DrawProbesTab(); break;
+                        case 6: DrawLightExplorerTab(); break;
+                    }
+                    ImGui::EndChild();
+                    ImGui::EndTabItem();
                 }
             }
+            m_RequestedTab = -1;
+            ImGui::EndTabBar();
         }
-
-        // Tab buttons
-        const char* tabLabels[] = { "Scene", "Adaptive Probe Volumes", "Environment", "Realtime Lightmaps", "Baked Lightmaps" };
-        float avail = ImGui::GetContentRegionAvail().x;
-        float tabX = 0;
-        for (int i = 0; i < 5; i++)
-        {
-            float btnW = ImGui::CalcTextSize(tabLabels[i]).x + ImGui::GetStyle().FramePadding.x * 2 + ImGui::GetStyle().ItemSpacing.x;
-            if (i > 0 && tabX + btnW > avail)
-                tabX = 0;
-            if (i > 0 && tabX > 0)
-                ImGui::SameLine(0, ImGui::GetStyle().ItemSpacing.x);
-            tabX += btnW;
-            
-            bool isActive = (m_ActiveTab == i);
-            if (isActive)
-                ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
-            
-            ImGui::PushID(i);
-            if (ImGui::Button(tabLabels[i], ImVec2(0, 25)))
-                m_ActiveTab = i;
-            ImGui::PopID();
-            
-            if (isActive)
-                ImGui::PopStyleColor();
-        }
-
-        ImGui::Separator();
-        ImGui::Spacing();
-
-        // Render active tab
-        switch (m_ActiveTab)
-        {
-            case 0: RenderSceneTab(); break;
-            case 1: RenderAdaptiveProbeVolumesTab(); break;
-            case 2: RenderEnvironmentTab(); break;
-            case 3: RenderRealtimeLightmapsTab(); break;
-            case 4: RenderBakedLightmapsTab(); break;
-        }
-
-        // GPU Baking section (common to all tabs)
-        ImGui::Spacing();
-        ImGui::Separator();
-        RenderGPUBakingSection();
 
         ImGui::End();
     }
 
-    void LightingPanel::RenderSceneTab()
+    void LightingPanel::DrawToolbar()
     {
-        // Lighting Settings
-        if (ImGui::CollapsingHeader("Lighting Settings", ImGuiTreeNodeFlags_DefaultOpen))
+        auto& bake = m_Context->GetRenderSettings().Bake;
+
+        if (m_Bake.Active && !m_Bake.Silent)
         {
-            const char* lightmappers[] = { "None", "Default-Medium" };
-            ImGui::Text("Lighting Settings Asset");
-            ImGui::SameLine(200);
-            ImGui::SetNextItemWidth(150);
-            ImGui::Combo("##LightingSettingsAsset", &m_LightmapperIndex, lightmappers, 2);
-        }
-
-        // Realtime Lighting
-        if (ImGui::CollapsingHeader("Realtime Lighting"))
-        {
-            ImGui::Checkbox("Realtime Global Illumination", &m_RealtimeGI);
-        }
-
-        // Mixed Lighting
-        if (ImGui::CollapsingHeader("Mixed Lighting"))
-        {
-            ImGui::Checkbox("Baked Global Illumination", &m_BakedGI);
-
-            const char* lightingModes[] = { "Shadowmask", "Distance Shadowmask", "Subtractive" };
-            ImGui::Combo("Lighting Mode", &m_LightingModeIndex, lightingModes, 3);
-        }
-
-        // Lightmapping Settings
-        if (ImGui::CollapsingHeader("Lightmapping Settings", ImGuiTreeNodeFlags_DefaultOpen))
-        {
-            const char* lightmappers[] = { "None", "Progressive CPU", "Progressive GPU" };
-            ImGui::Combo("Lightmapper", &m_LightmapperIndex, lightmappers, 3);
-
-            ImGui::Checkbox("Importance Sampling", &m_ImportanceSampling);
-
-            ImGui::InputInt("Direct Samples", &m_DirectSamples);
-            ImGui::InputInt("Indirect Samples", &m_IndirectSamples);
-            ImGui::InputInt("Environment Samples", &m_EnvironmentSamples);
-
-            ImGui::InputInt("Max Bounces", &m_MaxBounces);
-
-            const char* filterings[] = { "Auto", "None" };
-            ImGui::Combo("Filtering", &m_FilteringIndex, filterings, 2);
-
-            const char* packings[] = { "Auto", "Manual" };
-            ImGui::Combo("Lightmap Packing", &m_PackingIndex, packings, 2);
-
-            ImGui::InputInt("Lightmap Resolution", &m_LightmapResolution);
-            ImGui::Text("texels per unit");
-
-            const char* maxSizes[] = { "256", "512", "1024", "2048", "4096" };
-            ImGui::Combo("Max Lightmap Size", &m_MaxLightmapSizeIndex, maxSizes, 5);
-
-            ImGui::Checkbox("Use Mipmap Limits", &m_UseMipmapLimits);
-
-            const char* compressions[] = { "None", "Low Quality", "Medium Quality", "High Quality" };
-            ImGui::Combo("Lightmap Compression", &m_LightmapCompressionIndex, compressions, 4);
-
-            ImGui::Checkbox("Ambient Occlusion", &m_AmbientOcclusion);
-
-            const char* dirModes[] = { "Directional", "Non-Directional" };
-            ImGui::Combo("Directional Mode", &m_DirectionalModeIndex, dirModes, 2);
-
-            ImGui::SliderFloat("Albedo Boost", &m_AlbedoBoost, 0.0f, 2.0f);
-            ImGui::SliderFloat("Indirect Intensity", &m_IndirectIntensity, 0.0f, 5.0f);
-        }
-
-        // Realtime Lightmapping Settings
-        if (ImGui::CollapsingHeader("Realtime Lightmapping Settings", ImGuiTreeNodeFlags_DefaultOpen))
-        {
-            ImGui::InputInt("Realtime Resolution", &m_RealtimeResolution);
-            ImGui::Text("texels per unit");
-            ImGui::InputInt("Realtime Indirect Samples", &m_RealtimeIndirectSamples);
-            ImGui::InputInt("Realtime Max Bounces", &m_RealtimeMaxBounces);
-        }
-    }
-
-    void LightingPanel::RenderAdaptiveProbeVolumesTab()
-    {
-        // Warning
-        ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "!");
-        ImGui::SameLine();
-        ImGui::TextWrapped("Adaptive Probe Volumes bake indirect lighting using SH L2 probes placed in a hierarchical brick structure.");
-
-        ImGui::Spacing();
-
-        // Bake status
-        if (m_APBaked)
-        {
-            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Status: Baked");
-            ImGui::Text("Probes: %d", m_APVProbeCount);
-            ImGui::Text("Levels: %d", m_APVLevelCount);
-            ImGui::Text("Total Bake Time: %.2fs", m_APVBakeTime);
-
-            ImGui::Spacing();
-            if (ImGui::Button("Clear APV Data", ImVec2(-1, 25)))
+            std::string step;
             {
-                m_APBaked = false;
-                m_ActiveAPV.reset();
-                Renderer3D::SetAdaptiveProbeVolume(nullptr);
+                std::lock_guard<std::mutex> lock(m_Bake.StepMutex);
+                step = m_Bake.Step;
             }
+            float progress = m_Bake.Progress.load();
+            float elapsed = std::chrono::duration<float>(std::chrono::steady_clock::now() - m_Bake.Start).count();
+            char overlay[160];
+            snprintf(overlay, sizeof(overlay), "%s  %d%%  (%.1fs)", step.c_str(), (int)(progress * 100.0f), elapsed);
+            float cancelW = 70.0f;
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - cancelW - ImGui::GetStyle().ItemSpacing.x);
+            UI::ProgressBarLabeled(progress, overlay, UI::Colors::Accent);
+            ImGui::SameLine();
+            if (UI::DangerButton("Cancel", ImVec2(cancelW, 0)))
+                CancelBake();
         }
         else
         {
-            ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No APV data baked yet.");
-            ImGui::Text("Configure settings below and press Generate Lighting.");
+            float w = ImGui::GetContentRegionAvail().x;
+            float autoW = 130.0f;
+            if (UI::AccentButton("Generate Lighting", ImVec2(w - autoW - 90.0f - ImGui::GetStyle().ItemSpacing.x * 2.0f, 28)))
+                GenerateLighting();
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+                ImGui::SetTooltip("Bakes lightmaps (static objects), Adaptive Probe Volumes and reflection probes.");
+            ImGui::SameLine();
+            if (ImGui::Button("Clear", ImVec2(90.0f, 28)))
+                ClearBakedData();
+            ImGui::SameLine();
+            ImGui::AlignTextToFramePadding();
+            ImGui::Checkbox("Auto Generate", &bake.AutoGenerate);
         }
 
+        // Durum satırı
+        if (!m_StatusMessage.empty() && std::chrono::duration<float>(std::chrono::steady_clock::now() - m_StatusTime).count() < 6.0f)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, UI::Colors::TextDim);
+            ImGui::TextUnformatted(m_StatusMessage.c_str());
+            ImGui::PopStyleColor();
+        }
+        else if (m_Bake.Active && m_Bake.Silent)
+        {
+            UI::StatusDot(UI::Colors::Warning);
+            ImGui::SameLine();
+            ImGui::TextDisabled("Auto generating lighting... %d%%", (int)(m_Bake.Progress.load() * 100.0f));
+        }
+        else if (m_BakedInfo.Valid)
+        {
+            UI::StatusDot(UI::Colors::Success);
+            ImGui::SameLine();
+            ImGui::TextDisabled("Lightmaps baked (%s)", m_BakedInfo.When.c_str());
+        }
+        else
+        {
+            UI::StatusDot(UI::Colors::TextDim);
+            ImGui::SameLine();
+            ImGui::TextDisabled("No baked lighting data");
+        }
+        // Generate / Clear / Auto Generate ile sekmeleri ayıran çizgi
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
+    }
 
-        // Baking
-        if (ImGui::CollapsingHeader("Baking", ImGuiTreeNodeFlags_DefaultOpen))
+    // ===================================================================== Scene sekmesi
+
+    void LightingPanel::DrawSceneTab()
+    {
+        auto& rs = m_Context->GetRenderSettings();
+        auto& b = rs.Bake;
+
+        if (UI::BeginSection("Realtime Lighting"))
         {
-            const char* bakingModes[] = { "Single Scene", "Multi Scene" };
-            ImGui::Combo("Baking Mode", &m_APBakingModeIndex, bakingModes, 2);
-        }
-
-        // Probe Placement
-        if (ImGui::CollapsingHeader("Probe Placement", ImGuiTreeNodeFlags_DefaultOpen))
-        {
-            ImGui::Text("Probe Offset");
-            ImGui::SameLine(120);
-            ImGui::SetNextItemWidth(80);
-            ImGui::InputFloat("X##POffset", &m_APProbeOffset[0]);
-            ImGui::SameLine();
-            ImGui::SetNextItemWidth(80);
-            ImGui::InputFloat("Y##POffset", &m_APProbeOffset[1]);
-            ImGui::SameLine();
-            ImGui::SetNextItemWidth(80);
-            ImGui::InputFloat("Z##POffset", &m_APProbeOffset[2]);
-
-            ImGui::InputFloat("Min Probe Spacing", &m_APMinSpacing);
-            ImGui::SliderFloat("Max Probe Spacing", &m_APMaxSpacing, 0.0f, 250.0f);
-
-            // Info
-            ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "!");
-            ImGui::SameLine();
-            ImGui::TextWrapped("Baked Probe data will contain up to 4 different sizes of Brick.");
-        }
-
-        // Renderer Filter Settings
-        if (ImGui::CollapsingHeader("Renderer Filter Settings"))
-        {
-            ImGui::Text("Configure which renderers affect probe baking.");
-        }
-
-        // Probe Invalidity Settings
-        if (ImGui::CollapsingHeader("Probe Invalidity Settings"))
-        {
-            ImGui::Checkbox("Dilation", &m_APDilation);
-            ImGui::Checkbox("Virtual Offset", &m_APVirtualOffset);
-
-            if (m_APVirtualOffset)
+            UI::Checkbox("Realtime Global Illumination", b.RealtimeGI,
+                "Static objects marked 'Realtime GI' receive a low resolution lightmap that is regenerated automatically when lights change.");
+            if (b.RealtimeGI)
             {
-                ImGui::SliderFloat("Validity Threshold", &m_APValidityThreshold, 0.0f, 1.0f);
-                ImGui::SliderFloat("Search Distance Multiplier", &m_APSearchDistanceMultiplier, 0.0f, 1.0f);
-                ImGui::SliderFloat("Geometry Bias", &m_APGeometryBias, 0.0f, 0.1f);
-                ImGui::SliderFloat("Ray Origin Bias", &m_APRayOriginBias, -0.1f, 0.0f);
+                UI::DragInt("Realtime Resolution", b.RealtimeResolution, 0.2f, 1, 200, "Texels per unit");
+                UI::DragInt("Indirect Samples", b.RealtimeIndirectSamples, 4.0f, 8, 4096);
+                UI::SliderInt("Max Bounces", b.RealtimeMaxBounces, 0, 4);
             }
-
-            // Layer Mask
-            static int layerMask = 0;
-            ImGui::Combo("Layer Mask", &layerMask, "Default, TransparentFX, Water, UI\0");
-
-            if (ImGui::Button("Refresh Virtual Offset Debug"))
-            {
-                // TODO: Refresh debug visualization
-            }
+            UI::EndSection();
         }
 
-        // Rendering Layers
-        if (ImGui::CollapsingHeader("Rendering Layers"))
+        if (UI::BeginSection("Mixed Lighting"))
         {
-            ImGui::Text("Configure which rendering layers affect probe baking.");
+            UI::Checkbox("Baked Global Illumination", b.BakedGI, "Bake indirect lighting of Baked/Mixed lights into lightmaps.");
+            const char* modes[] = { "Shadowmask", "Distance Shadowmask", "Subtractive", "Baked Indirect" };
+            UI::Combo("Lighting Mode", b.LightingMode, modes, 4,
+                "Shadowmask: realtime direct + baked shadows. Subtractive: everything baked except the sun's dynamic shadows. Baked Indirect: only indirect light is baked.");
+            UI::EndSection();
+        }
+
+        if (UI::BeginSection("Lightmapping Settings"))
+        {
+            const char* lightmappers[] = { "None", "Progressive CPU", "Progressive GPU (preview)" };
+            UI::Combo("Lightmapper", b.Lightmapper, lightmappers, 3);
+            UI::Checkbox("Importance Sampling", b.ImportanceSampling);
+            UI::DragInt("Direct Samples", b.DirectSamples, 1.0f, 1, 4096);
+            UI::DragInt("Indirect Samples", b.IndirectSamples, 4.0f, 8, 16384);
+            UI::DragInt("Environment Samples", b.EnvironmentSamples, 4.0f, 8, 8192);
+            UI::SliderInt("Max Bounces", b.MaxBounces, 0, 8);
+            const char* filtering[] = { "Auto", "None" };
+            UI::Combo("Filtering", b.Filtering, filtering, 2);
+            UI::Separator();
+            UI::DragInt("Lightmap Resolution", b.Resolution, 0.25f, 1, 400, "Texels per unit");
+            const char* packing[] = { "Auto", "Manual" };
+            UI::Combo("Lightmap Packing", b.Packing, packing, 2);
+            const int sizes[] = { 256, 512, 1024, 2048, 4096 };
+            const char* sizeNames[] = { "256", "512", "1024", "2048", "4096" };
+            int sizeIndex = 2;
+            for (int i = 0; i < 5; ++i)
+                if (sizes[i] == b.MaxLightmapSize) sizeIndex = i;
+            if (UI::Combo("Max Lightmap Size", sizeIndex, sizeNames, 5))
+                b.MaxLightmapSize = sizes[sizeIndex];
+            UI::Checkbox("Use Mipmap Limits", b.UseMipmapLimits);
+            const char* compression[] = { "None", "Low Quality", "Normal Quality", "High Quality" };
+            UI::Combo("Lightmap Compression", b.Compression, compression, 4);
+            UI::Checkbox("Ambient Occlusion", b.AmbientOcclusion);
+            const char* dirModes[] = { "Directional", "Non-Directional" };
+            UI::Combo("Directional Mode", b.DirectionalMode, dirModes, 2);
+            UI::SliderFloat("Albedo Boost", b.AlbedoBoost, 1.0f, 10.0f);
+            UI::SliderFloat("Indirect Intensity", b.IndirectIntensity, 0.0f, 5.0f);
+            UI::EndSection();
+        }
+
+        if (UI::BeginSection("Workflow", false))
+        {
+            const char* onLoad[] = { "Never", "If lighting data is missing" };
+            UI::Combo("Bake On Scene Load", b.BakeOnSceneLoad, onLoad, 2);
+            UI::Checkbox("Auto Generate", b.AutoGenerate, "Regenerates lighting one second after a light or static object changes.");
+
+            // Statik nesne sayısı (bake'e katılanlar)
+            int staticCount = 0, totalCount = 0;
+            auto view = m_Context->m_Registry.view<TagComponent, MeshRendererComponent>();
+            for (auto e : view)
+            {
+                ++totalCount;
+                if (view.get<TagComponent>(e).IsStatic)
+                    ++staticCount;
+            }
+            UI::Text("Static Renderers", "%d / %d", staticCount, totalCount);
+            if (staticCount == 0 && totalCount > 0)
+                UI::InfoBox("No renderer is marked Static. Only static objects contribute to baked lightmaps (Inspector > Static).", UI::InfoType::Warning);
+            UI::EndSection();
         }
     }
 
-    void LightingPanel::RenderEnvironmentTab()
+    // ===================================================================== Environment sekmesi
+
+    void LightingPanel::DrawSkyboxPicker()
     {
-        ImGui::PushID("EnvironmentTab");
-        // Environment
-        if (ImGui::CollapsingHeader("Environment##EnvTab", ImGuiTreeNodeFlags_DefaultOpen))
+        auto now = std::chrono::steady_clock::now();
+        if (m_SkyboxCandidates.empty() || std::chrono::duration<float>(now - m_LastSkyboxScan).count() > 4.0f)
         {
-            // Skybox Material
-            ImGui::Text("Skybox Material");
-            ImGui::SameLine(200);
-            
-            auto skybox = m_Context->GetSkybox();
-            std::string currentSkybox = "None (Material)";
-            if (skybox)
+            m_LastSkyboxScan = now;
+            m_SkyboxCandidates.clear();
+            std::error_code ec;
+            auto scan = [&](const std::filesystem::path& root, bool recursive)
             {
-                std::string skyboxPath = skybox->GetPath();
-                std::string displayPath = ToSerializablePath(skyboxPath);
-                currentSkybox = std::filesystem::path(displayPath).stem().string();
-            }
-            
-            if (ImGui::BeginCombo("##SkyboxMaterial", currentSkybox.c_str()))
+                if (!std::filesystem::is_directory(root, ec))
+                    return;
+                auto consider = [&](const std::filesystem::directory_entry& entry)
+                {
+                    if (!entry.is_regular_file(ec))
+                        return;
+                    std::string ext = entry.path().extension().string();
+                    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+                    if (ext == ".hdr" || ext == ".exr")
+                        m_SkyboxCandidates.push_back(entry.path().string());
+                };
+                if (recursive)
+                {
+                    for (auto it = std::filesystem::recursive_directory_iterator(root, std::filesystem::directory_options::skip_permission_denied, ec);
+                         it != std::filesystem::recursive_directory_iterator(); it.increment(ec))
+                        consider(*it);
+                }
+                else
+                {
+                    for (auto& entry : std::filesystem::directory_iterator(root, ec))
+                        consider(entry);
+                }
+            };
+            scan(EngineDirectory() / "Resources" / "skybox", false);
+            auto projectDir = Project::GetActiveProjectDirectory();
+            if (!projectDir.empty())
+                scan(projectDir / "Assets", true);
+            std::sort(m_SkyboxCandidates.begin(), m_SkyboxCandidates.end());
+            m_SkyboxCandidates.erase(std::unique(m_SkyboxCandidates.begin(), m_SkyboxCandidates.end()), m_SkyboxCandidates.end());
+        }
+
+        auto skybox = m_Context->GetSkybox();
+        std::string current = skybox ? std::filesystem::path(skybox->GetPath()).stem().string() : "None (Procedural / Color)";
+
+        auto loadSkybox = [&](const std::string& path)
+        {
+            int resolution = 1024;
+            if (m_SkyboxResolutionIndex == 4)
             {
-                if (ImGui::Selectable("None (Material)", !skybox))
-                    m_Context->SetSkybox(nullptr);
-
-                // Skybox files
-                std::string skyboxDir = "Resources/skybox";
-                if (std::filesystem::exists(skyboxDir))
-                {
-                    std::vector<std::string> skyboxFiles;
-                    for (const auto& entry : std::filesystem::directory_iterator(skyboxDir))
-                    {
-                        if (entry.is_regular_file())
-                        {
-                            std::string ext = entry.path().extension().string();
-                            if (ext == ".hdr" || ext == ".exr")
-                                skyboxFiles.push_back(entry.path().stem().string());
-                        }
-                    }
-                    std::sort(skyboxFiles.begin(), skyboxFiles.end());
-
-                    for (const auto& name : skyboxFiles)
-                    {
-                        bool isSelected = (currentSkybox == name);
-                        if (ImGui::Selectable(name.c_str(), isSelected))
-                        {
-                            std::string fullPath = GetEngineDirectory().string() + "/Resources/skybox/" + name + ".hdr";
-                            int resolution;
-                            if (m_SkyboxResolutionIndex == 4)
-                            {
-                                int width, height, channels;
-                                stbi_info(fullPath.c_str(), &width, &height, &channels);
-                                resolution = std::max(width, height);
-                            }
-                            else
-                            {
-                                int res[] = { 512, 1024, 2048, 4096 };
-                                resolution = res[m_SkyboxResolutionIndex];
-                            }
-                            auto newSkybox = Cubemap::CreateFromEquirectangular(fullPath, resolution);
-                            if (newSkybox)
-                                m_Context->SetSkybox(newSkybox);
-                        }
-                    }
-                }
-
-                if (ImGui::Selectable("Browse...", false))
-                {
-                    nfdchar_t* outPath = nullptr;
-                    nfdfilteritem_t filters[1] = { { "HDR Images", "hdr,exr" } };
-                    nfdresult_t result = NFD_OpenDialog(&outPath, filters, 1, nullptr);
-
-                    if (result == NFD_OKAY)
-                    {
-                        int resolution;
-                        if (m_SkyboxResolutionIndex == 4)
-                        {
-                            int width, height, channels;
-                            stbi_info(outPath, &width, &height, &channels);
-                            resolution = std::max(width, height);
-                        }
-                        else
-                        {
-                            int res[] = { 512, 1024, 2048, 4096 };
-                            resolution = res[m_SkyboxResolutionIndex];
-                        }
-
-                        auto newSkybox = Cubemap::CreateFromEquirectangular(outPath, resolution);
-                        if (newSkybox)
-                            m_Context->SetSkybox(newSkybox);
-                        NFD_FreePath(outPath);
-                    }
-                }
-
-                ImGui::EndCombo();
+                int w = 0, h = 0, c = 0;
+                if (stbi_info(path.c_str(), &w, &h, &c))
+                    resolution = std::clamp(w / 4, 256, 4096);
             }
+            else
+            {
+                const int res[] = { 512, 1024, 2048, 4096 };
+                resolution = res[std::clamp(m_SkyboxResolutionIndex, 0, 3)];
+            }
+            auto cube = Cubemap::CreateFromEquirectangular(path, (uint32_t)resolution);
+            if (cube && cube->GetRendererID())
+            {
+                m_Context->SetSkybox(cube);
+                m_Context->InvalidateReflectionProbes();
+                m_StatusMessage = "Skybox loaded: " + std::filesystem::path(path).filename().string();
+            }
+            else
+            {
+                m_StatusMessage = "Failed to load skybox: " + path;
+            }
+            m_StatusTime = std::chrono::steady_clock::now();
+        };
 
-            // Sun Source
-            ImGui::Text("Sun Source");
-            ImGui::SameLine(200);
-            
+        UI::BeginProperty("Skybox");
+        if (ImGui::BeginCombo("##skybox", current.c_str()))
+        {
+            if (ImGui::Selectable("None (Procedural / Color)", !skybox))
+            {
+                m_Context->SetSkybox(nullptr);
+                m_Context->InvalidateReflectionProbes();
+            }
+            ImGui::Separator();
+            for (const auto& path : m_SkyboxCandidates)
+            {
+                std::string name = std::filesystem::path(path).stem().string();
+                bool selected = skybox && skybox->GetPath() == path;
+                if (ImGui::Selectable((name + "##" + path).c_str(), selected))
+                    loadSkybox(path);
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+                    ImGui::SetTooltip("%s", path.c_str());
+            }
+            ImGui::Separator();
+            if (ImGui::Selectable("Browse..."))
+            {
+                nfdu8char_t* outPath = nullptr;
+                nfdfilteritem_t filters[1] = { { "HDR Images", "hdr,exr" } };
+                if (NFD_OpenDialogU8(&outPath, filters, 1, nullptr) == NFD_OKAY)
+                {
+                    loadSkybox(outPath);
+                    NFD_FreePathU8(outPath);
+                }
+            }
+            ImGui::EndCombo();
+        }
+        if (ImGui::BeginDragDropTarget())
+        {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+            {
+                std::string path((const char*)payload->Data);
+                std::string ext = std::filesystem::path(path).extension().string();
+                std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+                if (ext == ".hdr" || ext == ".exr")
+                    loadSkybox(path);
+            }
+            ImGui::EndDragDropTarget();
+        }
+        UI::EndProperty();
+
+        const char* resNames[] = { "512", "1024", "2048", "4096", "Source / 4" };
+        UI::Combo("Cubemap Resolution", m_SkyboxResolutionIndex, resNames, 5, "Resolution used when converting the next HDR file to a cubemap.");
+    }
+
+    void LightingPanel::DrawTexturePicker(const char* label, std::shared_ptr<Texture2D> texture, const std::function<void(std::shared_ptr<Texture2D>)>& setter)
+    {
+        UI::BeginProperty(label);
+        float h = ImGui::GetFrameHeight() * 2.0f;
+        if (texture && texture->GetRendererID())
+            ImGui::Image((ImTextureID)(intptr_t)texture->GetRendererID(), ImVec2(h, h), ImVec2(0, 1), ImVec2(1, 0));
+        else
+            ImGui::Button("None", ImVec2(h, h));
+        if (ImGui::BeginDragDropTarget())
+        {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+            {
+                auto tex = Texture2D::Create(std::string((const char*)payload->Data));
+                if (tex && tex->GetRendererID())
+                    setter(tex);
+            }
+            ImGui::EndDragDropTarget();
+        }
+        ImGui::SameLine();
+        ImGui::BeginGroup();
+        std::string name = texture ? std::filesystem::path(texture->GetPath()).filename().string() : std::string("None (Texture 2D)");
+        ImGui::TextUnformatted(name.c_str());
+        if (ImGui::SmallButton("Browse"))
+        {
+            nfdu8char_t* outPath = nullptr;
+            nfdfilteritem_t filters[1] = { { "Images", "png,jpg,jpeg,tga,bmp" } };
+            if (NFD_OpenDialogU8(&outPath, filters, 1, nullptr) == NFD_OKAY)
+            {
+                auto tex = Texture2D::Create(std::string(outPath));
+                if (tex && tex->GetRendererID())
+                    setter(tex);
+                NFD_FreePathU8(outPath);
+            }
+        }
+        if (texture)
+        {
+            ImGui::SameLine();
+            if (ImGui::SmallButton("Clear"))
+                setter(nullptr);
+        }
+        ImGui::EndGroup();
+        UI::EndProperty();
+    }
+
+    void LightingPanel::DrawEnvironmentTab()
+    {
+        auto& rs = m_Context->GetRenderSettings();
+        auto& env = rs.Environment;
+
+        if (UI::BeginSection("Sky"))
+        {
+            const char* skyModes[] = { "Auto", "Procedural", "Solid Color", "Sky Atmosphere" };
+            UI::ComboEnum("Sky Mode", env.Sky, skyModes, 4,
+                "Auto: the skybox if assigned, otherwise a procedural sky for 3D scenes and a solid color for 2D scenes. "
+                "Sky Atmosphere: physically based sky (Rayleigh + Mie + ozone) that follows the sun, with sunsets and twilight.");
+            if (env.Sky == SkyMode::Atmosphere)
+            {
+                UI::SliderFloat("Rayleigh", env.AtmosphereRayleigh, 0.0f, 4.0f, "%.2f", "Blue sky scattering (higher = deeper blue, redder sunsets)");
+                UI::SliderFloat("Mie", env.AtmosphereMie, 0.0f, 10.0f, "%.2f", "Haze / aerosols: whiter sky and a larger sun glow");
+                UI::SliderFloat("Mie Anisotropy", env.AtmosphereMieAnisotropy, 0.0f, 0.98f, "%.2f", "How strongly haze scatters forward around the sun");
+                UI::SliderFloat("Ozone", env.AtmosphereOzone, 0.0f, 4.0f, "%.2f", "Ozone absorption (purple twilight colors)");
+                UI::SliderFloat("Sun Disk Size", env.AtmosphereSunDisk, 0.0f, 4.0f);
+                UI::SliderFloat("Intensity", env.AtmosphereIntensity, 0.0f, 8.0f);
+                UI::Color3("Ground Albedo", env.AtmosphereGroundAlbedo, "Color of the planet surface below the horizon");
+            }
+            else if (env.Sky != SkyMode::SolidColor)
+            {
+                DrawSkyboxPicker();
+                if (m_Context->GetSkybox())
+                {
+                    float exposure = m_Context->GetSkyboxExposure();
+                    if (UI::SliderFloat("Exposure", exposure, 0.0f, 8.0f))
+                        m_Context->SetSkyboxExposure(exposure);
+                    float rotation = m_Context->GetSkyboxRotation();
+                    if (UI::SliderFloat("Rotation", rotation, 0.0f, 360.0f, "%.0f°"))
+                        m_Context->SetSkyboxRotation(rotation);
+                    glm::vec3 tint = m_Context->GetSkyboxTint();
+                    if (UI::Color3("Tint", tint))
+                        m_Context->SetSkyboxTint(tint);
+                }
+                else
+                {
+                    UI::InfoBox("No skybox assigned: a procedural sky that follows the Sun Source is used.", UI::InfoType::Info);
+                }
+            }
+            UI::Color3("Background Color", env.BackgroundColor, "Used when the sky is not drawn (Solid Color mode or 2D scenes).");
+
+            // Güneş
             Entity sunEntity = m_Context->GetSunSourceEntity();
-            std::string sunName = sunEntity ? sunEntity.GetComponent<TagComponent>().Tag : "None (Light)";
-            
-            if (ImGui::BeginCombo("##SunSource", sunName.c_str()))
+            std::string sunName = sunEntity && sunEntity.HasComponent<TagComponent>() ? sunEntity.GetComponent<TagComponent>().Tag : "None (Light)";
+            UI::BeginProperty("Sun Source", "Directional light used for the sun disk, procedural sky and cascaded shadows.");
+            if (ImGui::BeginCombo("##sun", sunName.c_str()))
             {
-                if (ImGui::Selectable("None (Light)##SunNone", m_Context->GetSunSource() == 0))
+                if (ImGui::Selectable("None (first directional light)", m_Context->GetSunSource() == 0))
                     m_Context->SetSunSource(0);
-                
-                auto view = m_Context->m_Registry.view<TagComponent, DirectionalLightComponent>();
-                int index = 0;
-                for (auto entity : view)
+                auto view = m_Context->m_Registry.view<TagComponent, IDComponent, DirectionalLightComponent>();
+                for (auto e : view)
                 {
-                    Entity e{ entity, m_Context.get() };
-                    auto& tag = e.GetComponent<TagComponent>();
-                    auto& id = e.GetComponent<IDComponent>();
-                    
-                    std::string uniqueLabel = tag.Tag + "##SunSource" + std::to_string(index++);
-                    bool isSelected = (m_Context->GetSunSource() == id.ID);
-                    if (ImGui::Selectable(uniqueLabel.c_str(), isSelected))
+                    auto& tag = view.get<TagComponent>(e);
+                    auto& id = view.get<IDComponent>(e);
+                    std::string label = tag.Tag + "##sun" + std::to_string((uint64_t)id.ID);
+                    if (ImGui::Selectable(label.c_str(), m_Context->GetSunSource() == (uint64_t)id.ID))
                         m_Context->SetSunSource(id.ID);
                 }
-                
                 ImGui::EndCombo();
             }
-
-            // Realtime Shadow Color
-            glm::vec3 shadowColor = m_Context->GetAmbientColor(); // Placeholder - gercek shadow color eklenecek
-            if (ImGui::ColorEdit3("Realtime Shadow Color", glm::value_ptr(shadowColor)))
-            {
-                // TODO: Set realtime shadow color
-            }
+            UI::EndProperty();
+            UI::EndSection();
         }
 
-        // Environment Lighting
-        if (ImGui::CollapsingHeader("Environment Lighting##EnvTab", ImGuiTreeNodeFlags_DefaultOpen))
+        if (UI::BeginSection("Environment Lighting"))
         {
             const char* sources[] = { "Skybox", "Color", "Gradient" };
-            int currentSource = (int)m_Context->GetEnvironmentLightingSource();
-            
-            ImGui::Text("Source");
-            ImGui::SameLine(200);
-            if (ImGui::Combo("##ELSource", &currentSource, sources, 3))
-                m_Context->SetEnvironmentLightingSource((Scene::EnvironmentLightingSource)currentSource);
-            
-            ImGui::Spacing();
-            
-            if (currentSource == 0) // Skybox
+            int source = (int)m_Context->GetEnvironmentLightingSource();
+            if (UI::Combo("Source", source, sources, 3))
+                m_Context->SetEnvironmentLightingSource((Scene::EnvironmentLightingSource)source);
+
+            if (source == 2)
             {
-                glm::vec3 ambientColor = m_Context->GetAmbientColor();
-                ImGui::Text("Ambient Color");
-                ImGui::SameLine(200);
-                if (ImGui::ColorEdit3("##AmbientColor", glm::value_ptr(ambientColor)))
-                    m_Context->SetAmbientColor(ambientColor);
+                glm::vec3 sky = m_Context->GetAmbientSkyColor();
+                if (UI::Color3("Sky Color", sky)) m_Context->SetAmbientSkyColor(sky);
+                glm::vec3 equator = m_Context->GetAmbientEquatorColor();
+                if (UI::Color3("Equator Color", equator)) m_Context->SetAmbientEquatorColor(equator);
+                glm::vec3 ground = m_Context->GetAmbientGroundColor();
+                if (UI::Color3("Ground Color", ground)) m_Context->SetAmbientGroundColor(ground);
             }
-            else if (currentSource == 1) // Color
+            else
             {
-                glm::vec3 skyColor = m_Context->GetAmbientColor();
-                ImGui::Text("Ambient Color");
-                ImGui::SameLine(200);
-                if (ImGui::ColorEdit3("##AmbientColor", glm::value_ptr(skyColor)))
-                    m_Context->SetAmbientColor(skyColor);
+                glm::vec3 ambient = m_Context->GetAmbientColor();
+                const char* label = source == 0 ? "Fallback Color" : "Ambient Color";
+                if (UI::Color3(label, ambient, source == 0 ? "Used when Image Based Lighting is disabled." : nullptr))
+                    m_Context->SetAmbientColor(ambient);
             }
-            else // Gradient
-            {
-                glm::vec3 skyColor = m_Context->GetAmbientSkyColor();
-                ImGui::Text("Sky Color");
-                ImGui::SameLine(200);
-                if (ImGui::ColorEdit3("##SkyColor", glm::value_ptr(skyColor)))
-                    m_Context->SetAmbientSkyColor(skyColor);
-                
-                glm::vec3 equatorColor = m_Context->GetAmbientEquatorColor();
-                ImGui::Text("Equator Color");
-                ImGui::SameLine(200);
-                if (ImGui::ColorEdit3("##EquatorColor", glm::value_ptr(equatorColor)))
-                    m_Context->SetAmbientEquatorColor(equatorColor);
-                
-                glm::vec3 groundColor = m_Context->GetAmbientGroundColor();
-                ImGui::Text("Ground Color");
-                ImGui::SameLine(200);
-                if (ImGui::ColorEdit3("##GroundColor", glm::value_ptr(groundColor)))
-                    m_Context->SetAmbientGroundColor(groundColor);
-            }
-            
-            float ambientIntensity = m_Context->GetAmbientIntensity();
-            ImGui::Text("Intensity Multiplier");
-            ImGui::SameLine(200);
-            ImGui::SetNextItemWidth(200);
-            if (ImGui::SliderFloat("##AmbientIntensity", &ambientIntensity, 0.0f, 2.0f))
-                m_Context->SetAmbientIntensity(ambientIntensity);
+
+            float intensity = m_Context->GetAmbientIntensity();
+            if (UI::SliderFloat("Intensity Multiplier", intensity, 0.0f, 8.0f))
+                m_Context->SetAmbientIntensity(intensity);
+            if (source == 0)
+                UI::Checkbox("Image Based Lighting", env.ImageBasedLighting, "Diffuse (spherical harmonics) and specular (prefiltered cubemap) lighting from the sky.");
+            UI::EndSection();
         }
 
-        // Environment Reflections
-        if (ImGui::CollapsingHeader("Environment Reflections", ImGuiTreeNodeFlags_DefaultOpen))
+        if (UI::BeginSection("Environment Reflections"))
         {
-            const char* refSources[] = { "Skybox", "Custom" };
-            ImGui::Text("Source");
-            ImGui::SameLine(200);
-            ImGui::SetNextItemWidth(150);
-            ImGui::Combo("##RefSource", &m_EnvironmentReflectionsSourceIndex, refSources, 2);
-
-            ImGui::Text("Resolution");
-            ImGui::SameLine(200);
-            ImGui::SetNextItemWidth(150);
-            ImGui::InputInt("##RefResolution", &m_ReflectionsResolution);
-
-            const char* refCompressions[] = { "Auto", "None", "Low Quality", "High Quality" };
-            ImGui::Text("Compression");
-            ImGui::SameLine(200);
-            ImGui::SetNextItemWidth(150);
-            ImGui::Combo("##RefCompression", &m_ReflectionsCompressionIndex, refCompressions, 4);
-
-            ImGui::Text("Intensity Multiplier");
-            ImGui::SameLine(200);
-            ImGui::SetNextItemWidth(200);
-            ImGui::SliderFloat("##RefIntensity", &m_ReflectionsIntensityMultiplier, 0.0f, 5.0f);
-
-            ImGui::Text("Bounces");
-            ImGui::SameLine(200);
-            ImGui::SetNextItemWidth(150);
-            ImGui::InputInt("##RefBounces", &m_ReflectionsBounces);
+            UI::SliderFloat("Intensity Multiplier##refl", env.ReflectionIntensity, 0.0f, 4.0f);
+            UI::SliderFloat("Sky Contribution", env.SkyboxIntensity, 0.0f, 4.0f, "%.2f", "Scales ambient light and reflections that come from the sky.");
+            UI::Checkbox("Specular Occlusion", env.SpecularOcclusion);
+            int resolution = m_Context->GetReflectionResolution();
+            const char* resNames[] = { "64", "128", "256", "512", "1024" };
+            const int resValues[] = { 64, 128, 256, 512, 1024 };
+            int resIndex = 1;
+            for (int i = 0; i < 5; ++i)
+                if (resValues[i] == resolution) resIndex = i;
+            if (UI::Combo("Probe Resolution", resIndex, resNames, 5, "Default resolution for newly created reflection probes."))
+                m_Context->SetReflectionResolution(resValues[resIndex]);
+            UI::EndSection();
         }
 
-        // Other Settings
-        if (ImGui::CollapsingHeader("Other Settings", ImGuiTreeNodeFlags_DefaultOpen))
+        if (UI::BeginSection("Fog"))
         {
-            // Fog
-            bool fogEnabled = m_Context->IsFogEnabled();
-            ImGui::Checkbox("Fog", &fogEnabled);
-            m_Context->SetFogEnabled(fogEnabled);
-            
-            if (fogEnabled)
+            auto& fog = rs.Fog;
+            UI::Checkbox("Enabled##fog", fog.Enabled);
+            if (fog.Enabled)
             {
-                glm::vec3 fogColor = m_Context->GetFogColor();
-                ImGui::Text("Fog Color");
-                ImGui::SameLine(200);
-                if (ImGui::ColorEdit3("##FogColor", glm::value_ptr(fogColor)))
-                    m_Context->SetFogColor(fogColor);
-                
-                float fogDensity = m_Context->GetFogDensity();
-                ImGui::Text("Density");
-                ImGui::SameLine(200);
-                ImGui::SetNextItemWidth(200);
-                if (ImGui::SliderFloat("##FogDensity", &fogDensity, 0.0f, 0.1f))
-                    m_Context->SetFogDensity(fogDensity);
-                
-                float fogStart = m_Context->GetFogStart();
-                ImGui::Text("Start Distance");
-                ImGui::SameLine(200);
-                ImGui::SetNextItemWidth(200);
-                if (ImGui::DragFloat("##FogStart", &fogStart, 1.0f, 0.0f, 1000.0f))
-                    m_Context->SetFogStart(fogStart);
-                
-                float fogEnd = m_Context->GetFogEnd();
-                ImGui::Text("End Distance");
-                ImGui::SameLine(200);
-                ImGui::SetNextItemWidth(200);
-                if (ImGui::DragFloat("##FogEnd", &fogEnd, 1.0f, 0.0f, 1000.0f))
-                    m_Context->SetFogEnd(fogEnd);
-            }
-
-            ImGui::Spacing();
-            ImGui::Separator();
-            ImGui::Spacing();
-
-            // Halo Texture
-            bool haloEnabled = m_Context->IsHaloEnabled();
-            ImGui::Checkbox("Halo Texture", &haloEnabled);
-            m_Context->SetHaloEnabled(haloEnabled);
-            
-            if (haloEnabled)
-            {
-                auto haloTexture = m_Context->GetHaloTexture();
-                if (haloTexture)
+                const char* modes[] = { "Linear", "Exponential", "Exponential Squared" };
+                UI::ComboEnum("Mode", fog.Mode, modes, 3);
+                UI::Color3("Color", fog.Color);
+                if (fog.Mode == FogMode::Linear)
                 {
-                    ImGui::Text("Loaded: %s", haloTexture->GetPath().c_str());
-                    if (ImGui::Button("Remove##HaloTex"))
-                        m_Context->SetHaloTexture(nullptr);
+                    UI::DragFloat("Start", fog.Start, 0.5f, 0.0f, 100000.0f, "%.1f");
+                    UI::DragFloat("End", fog.End, 0.5f, 0.0f, 100000.0f, "%.1f");
+                    if (fog.End <= fog.Start)
+                        fog.End = fog.Start + 0.1f;
                 }
                 else
                 {
-                    ImGui::Text("None (Texture 2D)");
+                    UI::DragFloat("Density", fog.Density, 0.0005f, 0.0f, 2.0f, "%.4f");
                 }
+                UI::DragFloat("Height Falloff", fog.HeightFalloff, 0.005f, 0.0f, 10.0f, "%.3f", "0 = uniform fog. Larger values thin the fog with altitude.");
+                if (fog.HeightFalloff > 0.0f)
+                    UI::DragFloat("Base Height", fog.BaseHeight, 0.1f, -10000.0f, 10000.0f, "%.1f");
+            }
+            UI::EndSection();
+        }
 
-                float haloStrength = m_Context->GetHaloStrength();
-                ImGui::Text("Halo Strength");
-                ImGui::SameLine(200);
-                ImGui::SetNextItemWidth(200);
-                if (ImGui::SliderFloat("##HaloStrength", &haloStrength, 0.0f, 1.0f))
-                    m_Context->SetHaloStrength(haloStrength);
+        if (UI::BeginSection("Halo, Flare & Cookie", false))
+        {
+            bool halo = m_Context->IsHaloEnabled();
+            if (UI::Checkbox("Halo", halo)) m_Context->SetHaloEnabled(halo);
+            if (halo)
+            {
+                DrawTexturePicker("Halo Texture", m_Context->GetHaloTexture(), [this](std::shared_ptr<Texture2D> t) { m_Context->SetHaloTexture(t); });
+                float strength = m_Context->GetHaloStrength();
+                if (UI::SliderFloat("Halo Strength", strength, 0.0f, 1.0f)) m_Context->SetHaloStrength(strength);
             }
 
-            ImGui::Spacing();
-
-            // Flare
-            bool flareEnabled = m_Context->IsFlareEnabled();
-            if (ImGui::Checkbox("Flare Enabled", &flareEnabled))
-                m_Context->SetFlareEnabled(flareEnabled);
-
-            if (flareEnabled)
+            bool flare = m_Context->IsFlareEnabled();
+            if (UI::Checkbox("Lens Flare", flare)) m_Context->SetFlareEnabled(flare);
+            if (flare)
             {
-                float flareFadeSpeed = m_Context->GetFlareFadeSpeed();
-                ImGui::Text("Flare Fade Speed");
-                ImGui::SameLine(200);
-                ImGui::SetNextItemWidth(200);
-                if (ImGui::DragFloat("##FlareFadeSpeed", &flareFadeSpeed, 0.1f, 0.0f, 10.0f))
-                    m_Context->SetFlareFadeSpeed(flareFadeSpeed);
+                float fade = m_Context->GetFlareFadeSpeed();
+                if (UI::DragFloat("Fade Speed", fade, 0.05f, 0.0f, 20.0f)) m_Context->SetFlareFadeSpeed(fade);
+                float fs = m_Context->GetFlareStrength();
+                if (UI::SliderFloat("Flare Strength", fs, 0.0f, 5.0f)) m_Context->SetFlareStrength(fs);
 
-                float flareStrength = m_Context->GetFlareStrength();
-                ImGui::Text("Flare Strength");
-                ImGui::SameLine(200);
-                ImGui::SetNextItemWidth(200);
-                if (ImGui::SliderFloat("##FlareStrength", &flareStrength, 0.0f, 5.0f))
-                    m_Context->SetFlareStrength(flareStrength);
-
-                ImGui::Spacing();
-                if (ImGui::TreeNode("Flare Elements"))
+                int count = m_Context->GetFlareElementCount();
+                UI::SubHeader("Flare Elements");
+                for (int i = 0; i < count; ++i)
                 {
-                    int elementCount = m_Context->GetFlareElementCount();
-                    if (elementCount == 0)
+                    ImGui::PushID(i);
+                    auto element = m_Context->GetFlareElement(i);
+                    char title[32];
+                    snprintf(title, sizeof(title), "Element %d", i + 1);
+                    bool open = ImGui::TreeNodeEx(title, ImGuiTreeNodeFlags_SpanAvailWidth);
+                    ImGui::SameLine(ImGui::GetContentRegionAvail().x - 10.0f);
+                    bool remove = ImGui::SmallButton("x");
+                    if (open)
                     {
-                        if (ImGui::Button("Add Default Flare Elements"))
-                        {
-                            m_Context->SetFlareElementCount(3);
-                        }
+                        bool changed = false;
+                        changed |= UI::Color3("Color", element.ColorMultiplier);
+                        changed |= UI::SliderFloat("Size", element.Size, 0.01f, 0.5f);
+                        changed |= UI::SliderFloat("Offset", element.Offset, -1.0f, 2.0f);
+                        changed |= UI::SliderFloat("Intensity", element.Intensity, 0.0f, 2.0f);
+                        if (changed)
+                            m_Context->SetFlareElement(i, element);
+                        ImGui::TreePop();
                     }
-                    else
+                    ImGui::PopID();
+                    if (remove)
                     {
-                        if (ImGui::Button("Add Element"))
-                        {
-                            m_Context->SetFlareElementCount(elementCount + 1);
-                        }
-                        ImGui::SameLine();
-                        if (ImGui::Button("Remove Element") && elementCount > 0)
-                        {
-                            m_Context->SetFlareElementCount(elementCount - 1);
-                        }
-
-                        elementCount = m_Context->GetFlareElementCount();
-                        for (int i = 0; i < elementCount; i++)
-                        {
-                            ImGui::PushID(i);
-                            auto element = m_Context->GetFlareElement(i);
-                            std::string elemHeader = "Element " + std::to_string(i + 1);
-                            if (ImGui::TreeNode(elemHeader.c_str()))
-                            {
-                                bool changed = false;
-                                if (ImGui::ColorEdit3("Color", glm::value_ptr(element.ColorMultiplier)))
-                                    changed = true;
-                                if (ImGui::SliderFloat("Size", &element.Size, 0.01f, 0.5f))
-                                    changed = true;
-                                if (ImGui::SliderFloat("Offset", &element.Offset, -1.0f, 2.0f))
-                                    changed = true;
-                                if (ImGui::SliderFloat("Intensity", &element.Intensity, 0.0f, 2.0f))
-                                    changed = true;
-
-                                if (changed)
-                                    m_Context->SetFlareElement(i, element);
-
-                                ImGui::TreePop();
-                            }
-                            ImGui::PopID();
-                        }
+                        // Elemanı sil: sonrakileri kaydır
+                        for (int j = i; j < count - 1; ++j)
+                            m_Context->SetFlareElement(j, m_Context->GetFlareElement(j + 1));
+                        m_Context->SetFlareElementCount(count - 1);
+                        break;
                     }
-                    ImGui::TreePop();
                 }
+                if (ImGui::Button("+ Add Element"))
+                    m_Context->SetFlareElementCount(count + 1);
+                ImGui::SameLine();
+                if (count == 0 && ImGui::Button("Add Default Set"))
+                    m_Context->SetFlareElementCount(3);
             }
 
-            ImGui::Spacing();
-            ImGui::Separator();
-            ImGui::Spacing();
-
-            // Spot Cookie
-            auto spotCookie = m_Context->GetSpotCookie();
-            ImGui::Text("Spot Cookie");
-            if (spotCookie)
-            {
-                ImGui::Text("Loaded: %s", spotCookie->GetPath().c_str());
-                if (ImGui::Button("Remove##SpotCookie"))
-                    m_Context->SetSpotCookie(nullptr);
-            }
-            else
-            {
-                ImGui::Text("Soft");
-            }
+            DrawTexturePicker("Spot Cookie", m_Context->GetSpotCookie(), [this](std::shared_ptr<Texture2D> t) { m_Context->SetSpotCookie(t); });
+            UI::EndSection();
         }
-
-        ImGui::PopID();
     }
 
-    void LightingPanel::RenderRealtimeLightmapsTab()
-    {
-        ImGui::PushID("RealtimeLightmapTab");
+    // ===================================================================== Shadows sekmesi
 
-        if (ImGui::CollapsingHeader("Realtime Lightmap Data", ImGuiTreeNodeFlags_DefaultOpen))
+    void LightingPanel::DrawCascadePreview()
+    {
+        const auto& sh = m_Context->GetRenderSettings().Shadows;
+        int count = std::clamp(sh.CascadeCount, 1, 4);
+        float nearPlane = 0.1f, farPlane = std::max(sh.Distance, 1.0f);
+        float splits[4];
+        for (int i = 0; i < count; ++i)
         {
-            if (m_IsBaking && m_BakeMode == 1 && !m_IsAutoUpdate)
-            {
-                ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Status: Baking...");
-            }
-            else if (m_RealtimeBaked)
-            {
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Status: Baked");
-                ImGui::Text("Atlas Size: %dx%d", m_RealtimeAtlasWidth, m_RealtimeAtlasHeight);
-                ImGui::Text("Texels: %d", (int)m_RealtimeTexelCount);
-                ImGui::Text("Realtime GI Objects: %d", m_RealtimeObjectCount);
-                ImGui::Text("Total Bake Time: %.2fs", m_RealtimeBakeTime);
-
-                ImGui::Spacing();
-                ImGui::Text("Lightmap Texture:");
-                if (m_RealtimeLightmapTexture)
-                    ImGui::Image((ImTextureID)(intptr_t)m_RealtimeLightmapTexture->GetRendererID(), ImVec2(200, 200));
-                else
-                    ImGui::Text("No texture generated");
-
-                ImGui::Spacing();
-                if (ImGui::Button("Clear Realtime Lightmaps", ImVec2(-1, 25)))
-                {
-                    m_RealtimeBaked = false;
-                    m_RealtimeLightmapTexture.reset();
-                    Renderer3D::SetLightmap(nullptr);
-                }
-            }
-            else
-            {
-                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No realtime lightmaps generated yet.");
-            }
+            float p = (float)(i + 1) / (float)count;
+            float logSplit = nearPlane * std::pow(farPlane / nearPlane, p);
+            float uniformSplit = nearPlane + (farPlane - nearPlane) * p;
+            splits[i] = sh.CascadeSplitLambda * logSplit + (1.0f - sh.CascadeSplitLambda) * uniformSplit;
         }
 
-        ImGui::PopID();
-    }
-
-    void LightingPanel::RenderBakedLightmapsTab()
-    {
-        ImGui::PushID("BakedLightmapTab");
-
-        if (ImGui::CollapsingHeader("Baked Lightmap Data", ImGuiTreeNodeFlags_DefaultOpen))
+        const ImU32 colors[4] = { IM_COL32(86, 156, 214, 255), IM_COL32(106, 190, 120, 255), IM_COL32(220, 180, 90, 255), IM_COL32(210, 100, 100, 255) };
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        ImVec2 p = ImGui::GetCursorScreenPos();
+        float w = ImGui::GetContentRegionAvail().x;
+        float h = 22.0f;
+        float prev = 0.0f;
+        for (int i = 0; i < count; ++i)
         {
-            if (m_IsBaking && m_BakeMode == 0)
-            {
-                ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Status: Baking...");
-            }
-            else if (m_BakedLightmapBaked)
-            {
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Status: Baked");
-                ImGui::Text("Atlas Size: %dx%d", m_BakedAtlasWidth, m_BakedAtlasHeight);
-                ImGui::Text("Texels: %d", (int)m_BakedTexelCount);
-                ImGui::Text("Static Objects: %d", m_BakedObjectCount);
-                ImGui::Text("Total Bake Time: %.2fs", m_BakedBakeTime);
-
-                ImGui::Spacing();
-                ImGui::Text("Lightmap Texture:");
-                if (m_BakedLightmapTexture)
-                    ImGui::Image((ImTextureID)(intptr_t)m_BakedLightmapTexture->GetRendererID(), ImVec2(200, 200));
-                else
-                    ImGui::Text("No texture generated");
-
-                ImGui::Spacing();
-                if (ImGui::Button("Clear Baked Lightmaps", ImVec2(-1, 25)))
-                {
-                    m_BakedLightmapBaked = false;
-                    m_BakedLightmapTexture.reset();
-                    Renderer3D::SetLightmap(nullptr);
-                }
-            }
-            else
-            {
-                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No baked lightmaps generated yet.");
-            }
+            float x0 = p.x + w * (prev / farPlane);
+            float x1 = p.x + w * (splits[i] / farPlane);
+            dl->AddRectFilled(ImVec2(x0, p.y), ImVec2(x1, p.y + h), colors[i], i == 0 ? 3.0f : 0.0f);
+            char label[48];
+            snprintf(label, sizeof(label), "%d  %.1fm", i, splits[i]);
+            ImVec2 ts = ImGui::CalcTextSize(label);
+            if (ts.x < (x1 - x0) - 4.0f)
+                dl->AddText(ImVec2((x0 + x1) * 0.5f - ts.x * 0.5f, p.y + (h - ts.y) * 0.5f), IM_COL32(15, 15, 18, 255), label);
+            prev = splits[i];
         }
-
-        ImGui::PopID();
+        dl->AddRect(p, ImVec2(p.x + w, p.y + h), IM_COL32(0, 0, 0, 120), 3.0f);
+        ImGui::Dummy(ImVec2(w, h + 4.0f));
     }
 
-    void LightingPanel::RenderGPUBakingSection()
+    void LightingPanel::DrawShadowsTab()
     {
-        // GPU Baking Device
-        ImGui::Text("GPU Baking Device");
-        ImGui::SameLine(200);
-        ImGui::SetNextItemWidth(250);
-        ImGui::Combo("##GPUBakingDevice", &m_GPUBakingProfileIndex, "Automatic\0");
+        auto& sh = m_Context->GetRenderSettings().Shadows;
 
-        // Bake On Scene Load
-        ImGui::Text("Bake On Scene Load");
-        ImGui::SameLine(200);
-        ImGui::SetNextItemWidth(250);
-        const char* bakeOnLoad[] = { "Never", "On Load" };
-        ImGui::Combo("##BakeOnLoad", &m_BakeOnSceneLoadIndex, bakeOnLoad, 2);
+        if (UI::BeginSection("Realtime Shadows"))
+        {
+            UI::Checkbox("Enabled", sh.Enabled);
+            const char* quality[] = { "Hard", "Soft (Poisson PCF)", "Very Soft (PCSS)" };
+            UI::ComboEnum("Quality", sh.Quality, quality, 3, "Very Soft computes a contact-hardening penumbra from the blocker distance.");
+            const int resolutions[] = { 1024, 2048, 4096, 8192 };
+            const char* resNames[] = { "1024", "2048", "4096", "8192" };
+            int resIndex = 2;
+            for (int i = 0; i < 4; ++i)
+                if (resolutions[i] == sh.Resolution) resIndex = i;
+            if (UI::Combo("Resolution", resIndex, resNames, 4, "Size of the shadow atlas. Each cascade gets a quarter of it (two cascades: half)."))
+                sh.Resolution = resolutions[resIndex];
+            UI::DragFloat("Shadow Distance", sh.Distance, 0.5f, 1.0f, 5000.0f, "%.1f m");
+            UI::SliderFloat("Strength", sh.Strength, 0.0f, 1.0f);
+            UI::SliderFloat("Softness", sh.Softness, 0.0f, 4.0f);
+            UI::Color3("Shadow Color", sh.Color, "Tint of fully shadowed areas (black = physically correct).");
+            UI::EndSection();
+        }
 
+        if (UI::BeginSection("Cascades"))
+        {
+            UI::SliderInt("Cascade Count", sh.CascadeCount, 1, 4);
+            UI::SliderFloat("Split Distribution", sh.CascadeSplitLambda, 0.0f, 1.0f, "%.2f", "0 = uniform splits, 1 = logarithmic (more resolution near the camera).");
+            DrawCascadePreview();
+            UI::EndSection();
+        }
+
+        if (UI::BeginSection("Bias"))
+        {
+            UI::DragFloat("Depth Bias", sh.DepthBias, 0.0005f, 0.0f, 0.1f, "%.4f", "Removes shadow acne; too high causes peter-panning.");
+            UI::DragFloat("Normal Bias", sh.NormalBias, 0.001f, 0.0f, 0.5f, "%.3f");
+            if (ImGui::Button("Reset Bias"))
+            {
+                sh.DepthBias = ShadowSettings{}.DepthBias;
+                sh.NormalBias = ShadowSettings{}.NormalBias;
+            }
+            UI::EndSection();
+        }
+
+        // Güneş gölge durumu bilgisi
+        Entity sun = m_Context->GetSunSourceEntity();
+        if (!sun || !sun.HasComponent<DirectionalLightComponent>())
+            UI::InfoBox("The scene has no directional light: add one (GameObject > Light > Directional Light) to get sun shadows.", UI::InfoType::Warning);
+        else if (!sun.GetComponent<DirectionalLightComponent>().CastShadows)
+            UI::InfoBox("The sun light has 'Cast Shadows' disabled in the Inspector.", UI::InfoType::Warning);
+        else
+            UI::Text("Active Cascades", "%d", Renderer3D::GetShadowPass().GetActiveCascadeCount());
+    }
+
+    // ===================================================================== Post FX sekmesi
+
+    void LightingPanel::ApplyPostPreset(int preset)
+    {
+        auto& p = m_Context->GetRenderSettings().Post;
+        PostProcessSettings defaults;
+        AntiAliasingMode aa = p.AntiAliasing;
+        p = defaults;
+        p.AntiAliasing = aa;
+        switch (preset)
+        {
+            case 1: // Cinematic
+                p.Tonemap = Tonemapper::ACES; p.Bloom = true; p.BloomIntensity = 0.8f; p.Vignette = true; p.VignetteIntensity = 0.35f;
+                p.FilmGrain = true; p.FilmGrainIntensity = 0.12f; p.Contrast = 1.1f; p.Saturation = 0.95f; p.Temperature = 0.1f;
+                break;
+            case 2: // Vibrant
+                p.Tonemap = Tonemapper::AgX; p.Saturation = 1.25f; p.Contrast = 1.08f; p.Bloom = true; p.BloomIntensity = 0.7f; p.Sharpen = true;
+                break;
+            case 3: // Retro
+                p.Tonemap = Tonemapper::Reinhard; p.ChromaticAberration = true; p.ChromaticAberrationIntensity = 0.6f; p.FilmGrain = true;
+                p.FilmGrainIntensity = 0.3f; p.Vignette = true; p.VignetteIntensity = 0.5f; p.Saturation = 0.8f; p.Temperature = 0.35f;
+                break;
+            case 4: // Noir
+                p.Tonemap = Tonemapper::ACES; p.Saturation = 0.0f; p.Contrast = 1.3f; p.Vignette = true; p.VignetteIntensity = 0.55f; p.FilmGrain = true;
+                break;
+            case 5: // Off
+                p.Enabled = false;
+                break;
+            default:
+                break;
+        }
+    }
+
+    void LightingPanel::DrawPostTab()
+    {
+        auto& p = m_Context->GetRenderSettings().Post;
+
+        // Hazır ayarlar
+        const char* presets[] = { "Default", "Cinematic", "Vibrant", "Retro", "Noir", "Off" };
+        float bw = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x * 5.0f) / 6.0f;
+        for (int i = 0; i < 6; ++i)
+        {
+            if (i > 0) ImGui::SameLine();
+            if (ImGui::Button(presets[i], ImVec2(bw, 0)))
+                ApplyPostPreset(i);
+        }
         ImGui::Spacing();
 
-        if (m_IsBaking)
+        UI::Checkbox("Post Processing", p.Enabled);
+        ImGui::BeginDisabled(!p.Enabled);
+
+        if (UI::BeginSection("Tonemapping & Exposure"))
         {
-            if (!m_IsAutoUpdate)
+            const char* tonemappers[] = { "None", "Neutral (Khronos PBR)", "ACES", "AgX", "Reinhard" };
+            UI::ComboEnum("Tonemapper", p.Tonemap, tonemappers, 5, "Neutral keeps colors below 0.76 untouched (ideal for 2D/UI); ACES and AgX give a filmic look.");
+            UI::SliderFloat("Exposure (EV)", p.Exposure, -6.0f, 6.0f, "%+.2f");
+            UI::Checkbox("Auto Exposure", p.AutoExposure, "Eye adaptation: exposure follows the average scene brightness over time (Unreal Auto Exposure).");
+            if (p.AutoExposure)
             {
-                m_BakeProgress = m_BakeThreadProgress.load();
-                m_BakeStep = m_BakeThreadStep;
+                UI::SliderFloat("Min EV", p.AutoExposureMin, -10.0f, 10.0f, "%+.1f");
+                UI::SliderFloat("Max EV", p.AutoExposureMax, -10.0f, 10.0f, "%+.1f");
+                UI::SliderFloat("Speed Up", p.AutoExposureSpeedUp, 0.05f, 20.0f, "%.2f", "Adaptation speed when the scene gets brighter");
+                UI::SliderFloat("Speed Down", p.AutoExposureSpeedDown, 0.05f, 20.0f, "%.2f", "Adaptation speed when the scene gets darker");
+                UI::SliderFloat("Compensation", p.AutoExposureCompensation, -6.0f, 6.0f, "%+.2f");
+            }
+            UI::EndSection();
+        }
 
-                ImGui::ProgressBar(m_BakeProgress, ImVec2(-1, 0), "Baking...");
-                ImGui::Text("Step: %s", m_BakeStep.c_str());
+        if (UI::BeginSection("Global Illumination (Screen Traces)"))
+        {
+            UI::Checkbox("Enabled##ssgi", p.ScreenSpaceGI, "Lumen-style dynamic diffuse bounce light traced on screen: lit surfaces tint and brighten their neighbours. "
+                                                           "No baking; works with moving lights and objects (PBR materials).");
+            if (p.ScreenSpaceGI)
+            {
+                UI::SliderFloat("Intensity##ssgi", p.SSGIIntensity, 0.0f, 4.0f);
+                UI::SliderFloat("Ray Length##ssgi", p.SSGIRadius, 0.25f, 20.0f, "%.2f m");
+                UI::SliderInt("Rays per Pixel##ssgi", p.SSGIRays, 1, 16);
+            }
+            UI::EndSection();
+        }
+
+        if (UI::BeginSection("Screen Space Reflections"))
+        {
+            UI::Checkbox("Enabled##ssr", p.ScreenSpaceReflections, "Glossy floors, water and metals reflect what is on screen (PBR materials).");
+            if (p.ScreenSpaceReflections)
+            {
+                UI::SliderFloat("Intensity##ssr", p.SSRIntensity, 0.0f, 2.0f);
+                UI::SliderFloat("Max Distance##ssr", p.SSRMaxDistance, 1.0f, 200.0f, "%.1f m");
+                UI::SliderFloat("Thickness##ssr", p.SSRThickness, 0.01f, 4.0f, "%.2f m", "How thick objects are assumed to be (reduces holes, may add streaks)");
+                UI::SliderFloat("Max Roughness##ssr", p.SSRMaxRoughness, 0.05f, 1.0f, "%.2f", "Rougher surfaces do not get screen space reflections");
+            }
+            UI::EndSection();
+        }
+
+        if (UI::BeginSection("Volumetric Fog"))
+        {
+            UI::Checkbox("Enabled##vfog", p.VolumetricFog, "Height fog lit by the sun with shadowed light shafts (god rays) and sky light.");
+            if (p.VolumetricFog)
+            {
+                UI::DragFloat("Density##vfog", p.VolumetricFogDensity, 0.0005f, 0.0f, 1.0f, "%.4f");
+                UI::DragFloat("Height Falloff##vfog", p.VolumetricFogHeightFalloff, 0.002f, 0.0f, 5.0f, "%.3f", "Fog thins out with height (0 = uniform)");
+                UI::DragFloat("Base Height##vfog", p.VolumetricFogBaseHeight, 0.05f, -10000.0f, 10000.0f, "%.2f m");
+                UI::SliderFloat("Scattering Distribution##vfog", p.VolumetricFogAnisotropy, -0.9f, 0.95f, "%.2f", "> 0: brighter when looking towards the sun");
+                UI::SliderFloat("Sun Intensity##vfog", p.VolumetricFogIntensity, 0.0f, 10.0f);
+                UI::SliderFloat("Sky Light##vfog", p.VolumetricFogAmbient, 0.0f, 4.0f);
+                UI::Color3("Albedo##vfog", p.VolumetricFogAlbedo);
+                UI::DragFloat("View Distance##vfog", p.VolumetricFogDistance, 0.5f, 1.0f, 2000.0f, "%.0f m");
+            }
+            UI::EndSection();
+        }
+
+        if (UI::BeginSection("Volumetric Clouds"))
+        {
+            UI::Checkbox("Enabled##clouds", p.VolumetricClouds, "Raymarched clouds drawn over the sky; they drift with the wind.");
+            if (p.VolumetricClouds)
+            {
+                UI::SliderFloat("Coverage##clouds", p.CloudCoverage, 0.0f, 1.0f);
+                UI::SliderFloat("Density##clouds", p.CloudDensity, 0.0f, 4.0f);
+                UI::DragFloat("Layer Bottom##clouds", p.CloudBottom, 10.0f, 50.0f, 20000.0f, "%.0f m");
+                UI::DragFloat("Layer Thickness##clouds", p.CloudThickness, 10.0f, 100.0f, 10000.0f, "%.0f m");
+                UI::SliderFloat("Shape Scale##clouds", p.CloudScale, 0.1f, 5.0f, "%.2f", "Larger = smaller, more frequent clouds");
+                UI::SliderFloat("Wind Speed##clouds", p.CloudWindSpeed, 0.0f, 100.0f, "%.1f m/s");
+                UI::SliderFloat("Wind Direction##clouds", p.CloudWindDirection, 0.0f, 360.0f, "%.0f°");
+                UI::Color3("Color##clouds", p.CloudColor);
+            }
+            UI::EndSection();
+        }
+
+        if (UI::BeginSection("Depth of Field", false))
+        {
+            UI::Checkbox("Enabled##dof", p.DepthOfField, "Cinematic bokeh blur outside the focus distance.");
+            if (p.DepthOfField)
+            {
+                UI::DragFloat("Focus Distance##dof", p.FocusDistance, 0.05f, 0.05f, 10000.0f, "%.2f m");
+                UI::SliderFloat("Aperture (f-stop)##dof", p.Aperture, 0.7f, 32.0f, "f/%.1f", "Smaller = stronger blur");
+                UI::SliderFloat("Focal Length##dof", p.FocalLength, 10.0f, 300.0f, "%.0f mm");
+                UI::SliderFloat("Max Blur##dof", p.DOFMaxBlur, 1.0f, 32.0f, "%.0f px");
+            }
+            UI::EndSection();
+        }
+
+        if (UI::BeginSection("Motion Blur", false))
+        {
+            UI::Checkbox("Enabled##mb", p.MotionBlur, "Blur from camera movement (reprojected from depth).");
+            if (p.MotionBlur)
+            {
+                UI::SliderFloat("Intensity##mb", p.MotionBlurIntensity, 0.0f, 1.5f, "%.2f", "Shutter: fraction of the frame time");
+                UI::SliderFloat("Max Length##mb", p.MotionBlurMax, 1.0f, 96.0f, "%.0f px");
+            }
+            UI::EndSection();
+        }
+
+        if (UI::BeginSection("Bloom"))
+        {
+            UI::Checkbox("Enabled##bloom", p.Bloom);
+            if (p.Bloom)
+            {
+                UI::DragFloat("Threshold", p.BloomThreshold, 0.01f, 0.0f, 20.0f);
+                UI::SliderFloat("Knee", p.BloomKnee, 0.0f, 1.0f);
+                UI::SliderFloat("Intensity", p.BloomIntensity, 0.0f, 4.0f);
+                UI::SliderFloat("Scatter", p.BloomScatter, 0.0f, 1.0f);
+                UI::Color3("Tint", p.BloomTint);
+            }
+            UI::EndSection();
+        }
+
+        if (UI::BeginSection("Ambient Occlusion (SSAO)"))
+        {
+            UI::Checkbox("Enabled##ao", p.AmbientOcclusion);
+            if (p.AmbientOcclusion)
+            {
+                UI::DragFloat("Radius", p.AORadius, 0.01f, 0.05f, 5.0f, "%.2f m");
+                UI::SliderFloat("Intensity##ao", p.AOIntensity, 0.0f, 4.0f);
+                UI::SliderFloat("Power", p.AOPower, 0.5f, 4.0f);
+            }
+            UI::EndSection();
+        }
+
+        if (UI::BeginSection("Color Grading"))
+        {
+            UI::Checkbox("Enabled##grading", p.ColorGrading);
+            if (p.ColorGrading)
+            {
+                UI::SliderFloat("Temperature", p.Temperature, -1.0f, 1.0f, "%+.2f");
+                UI::SliderFloat("Tint##wb", p.Tint, -1.0f, 1.0f, "%+.2f");
+                UI::SliderFloat("Contrast", p.Contrast, 0.0f, 2.0f);
+                UI::SliderFloat("Saturation", p.Saturation, 0.0f, 2.0f);
+                UI::Color3("Lift", p.Lift);
+                UI::Color3("Gamma", p.Gamma);
+                UI::Color3("Gain", p.Gain);
+                if (ImGui::Button("Reset Grading"))
+                {
+                    PostProcessSettings d;
+                    p.Temperature = d.Temperature; p.Tint = d.Tint; p.Contrast = d.Contrast; p.Saturation = d.Saturation;
+                    p.Lift = d.Lift; p.Gamma = d.Gamma; p.Gain = d.Gain;
+                }
+            }
+            UI::EndSection();
+        }
+
+        if (UI::BeginSection("Lens", false))
+        {
+            UI::Checkbox("Vignette", p.Vignette);
+            if (p.Vignette)
+            {
+                UI::SliderFloat("Vignette Intensity", p.VignetteIntensity, 0.0f, 1.0f);
+                UI::SliderFloat("Vignette Smoothness", p.VignetteSmoothness, 0.01f, 1.0f);
+                UI::Color3("Vignette Color", p.VignetteColor);
+            }
+            UI::Checkbox("Chromatic Aberration", p.ChromaticAberration);
+            if (p.ChromaticAberration)
+                UI::SliderFloat("Aberration Intensity", p.ChromaticAberrationIntensity, 0.0f, 1.0f);
+            UI::Checkbox("Film Grain", p.FilmGrain);
+            if (p.FilmGrain)
+                UI::SliderFloat("Grain Intensity", p.FilmGrainIntensity, 0.0f, 1.0f);
+            UI::EndSection();
+        }
+
+        if (UI::BeginSection("Anti-Aliasing & Sharpening"))
+        {
+            const char* aa[] = { "None", "FXAA", "SMAA", "TAA (Temporal)" };
+            UI::ComboEnum("Anti-Aliasing", p.AntiAliasing, aa, 4, "FXAA/SMAA run after tonemapping. TAA jitters the camera and blends with previous frames in HDR "
+                                                               "(smoothest edges, also cleans up noise; replaces MSAA). MSAA is configured in Project Settings > Quality.");
+            if (p.AntiAliasing == AntiAliasingMode::TAA)
+            {
+                UI::SliderFloat("History Weight", p.TAAFeedback, 0.5f, 0.97f, "%.2f", "Higher = smoother but more ghosting on fast motion");
+                UI::SliderFloat("TAA Sharpness", p.TAASharpness, 0.0f, 1.0f);
+            }
+            UI::Checkbox("Sharpen", p.Sharpen);
+            if (p.Sharpen)
+                UI::SliderFloat("Sharpen Amount", p.SharpenAmount, 0.0f, 1.0f);
+            UI::EndSection();
+        }
+
+        ImGui::EndDisabled();
+    }
+
+    // ===================================================================== Lightmaps sekmesi
+
+    void LightingPanel::DrawLightmapsTab()
+    {
+        auto drawInfo = [](const BakeResultInfo& info)
+        {
+            UI::Text("Atlas Size", "%d x %d", info.AtlasWidth, info.AtlasHeight);
+            if (info.Texels > 0) UI::Text("Texels", "%d", info.Texels);
+            if (info.Objects > 0) UI::Text("Objects", "%d", info.Objects);
+            if (info.Seconds > 0.0f) UI::Text("Bake Time", "%.2f s", info.Seconds);
+            UI::Text("Generated", "%s", info.When.c_str());
+        };
+        auto drawPreview = [](const std::shared_ptr<Texture2D>& tex)
+        {
+            if (!tex || !tex->GetRendererID())
+                return;
+            float w = std::min(ImGui::GetContentRegionAvail().x, 320.0f);
+            float aspect = tex->GetHeight() > 0 ? (float)tex->GetHeight() / (float)tex->GetWidth() : 1.0f;
+            ImGui::Image((ImTextureID)(intptr_t)tex->GetRendererID(), ImVec2(w, w * aspect), ImVec2(0, 1), ImVec2(1, 0));
+        };
+
+        if (UI::BeginSection("Baked Lightmaps"))
+        {
+            auto tex = m_Context->GetBakedLightmapTexture();
+            if (m_Bake.Active && m_Bake.Kind == BakeKind::BakedLightmap)
+                UI::InfoBox("Baking...", UI::InfoType::Info);
+            else if (tex)
+            {
+                UI::Badge("BAKED", UI::Colors::Success);
+                drawInfo(m_BakedInfo);
+                if (!m_Context->GetBakedLightmapPath().empty())
+                    UI::Text("File", "%s", m_Context->GetBakedLightmapPath().c_str());
+                drawPreview(tex);
+                if (UI::DangerButton("Clear Baked Lightmap"))
+                {
+                    m_Context->SetBakedLightmapTexture(nullptr);
+                    m_Context->SetBakedLightmapPath("");
+                    m_BakedInfo = {};
+                }
+            }
+            else
+            {
+                UI::InfoBox("No baked lightmap. Mark objects as Static and press Generate Lighting.", UI::InfoType::Info);
+                if (UI::AccentButton("Bake Lightmaps Only") && !m_Bake.Active)
+                    StartBake(BakeKind::BakedLightmap);
+            }
+            UI::EndSection();
+        }
+
+        if (UI::BeginSection("Realtime Lightmaps"))
+        {
+            if (!m_Context->GetRenderSettings().Bake.RealtimeGI)
+                UI::InfoBox("Realtime Global Illumination is disabled (Scene tab).", UI::InfoType::Info);
+            if (m_RealtimeLightmap)
+            {
+                UI::Badge("REALTIME", UI::Colors::Accent);
+                drawInfo(m_RealtimeInfo);
+                drawPreview(m_RealtimeLightmap);
+            }
+            if (ImGui::Button("Update Realtime Lightmaps") && !m_Bake.Active)
+                StartBake(BakeKind::RealtimeLightmap);
+            UI::EndSection();
+        }
+    }
+
+    // ===================================================================== Probes sekmesi
+
+    void LightingPanel::DrawProbesTab()
+    {
+        auto& b = m_Context->GetRenderSettings().Bake;
+
+        if (UI::BeginSection("Adaptive Probe Volume"))
+        {
+            auto apv = m_Context->GetAdaptiveProbeVolume();
+            if (apv && apv->IsBaked())
+            {
+                UI::Badge("BAKED", UI::Colors::Success);
+                UI::Text("Probes", "%d", apv->GetTotalProbeCount());
+                UI::Text("Levels", "%d", apv->GetNumLevels());
+                if (m_APVInfo.Seconds > 0.0f)
+                    UI::Text("Bake Time", "%.2f s", m_APVInfo.Seconds);
+                if (UI::DangerButton("Clear APV Data"))
+                    m_Context->SetAdaptiveProbeVolume(nullptr);
+            }
+            else
+            {
+                UI::InfoBox("Probes store indirect light (L2 spherical harmonics) for dynamic objects.", UI::InfoType::Info);
             }
 
-            if (m_BakeThreadDone.load())
+            UI::Checkbox("Fit Volume To Scene", b.APVFitToScene, "Automatically sizes the volume around all static renderers.");
+            if (!b.APVFitToScene)
             {
-                if (m_BakeThread.joinable())
-                    m_BakeThread.join();
-
-                if (m_BakeMode == 2 && m_ActiveAPV)
-                {
-                    // APV bake complete
-                    m_APBaked = true;
-                    m_APVProbeCount = m_ActiveAPV->GetTotalProbeCount();
-                    m_APVLevelCount = m_ActiveAPV->GetNumLevels();
-                    m_APVBrickCount = 0;
-                    for (int l = 0; l < m_APVLevelCount; l++)
-                        m_APVBrickCount += m_ActiveAPV->GetBrickCount(l);
-
-                    auto endTime = std::chrono::high_resolution_clock::now();
-                    m_APVBakeTime = std::chrono::duration<float>(endTime - m_BakeStartTime).count();
-
-                    Renderer3D::SetAdaptiveProbeVolume(m_ActiveAPV);
-                }
-                else if (m_ActiveBaker)
-                {
-                    m_ActiveBaker->ApplyUV2ToMeshes();
-
-                    auto texture = m_ActiveBaker->CreateLightmapTexture();
-
-                    if (m_BakeMode == 1)
-                    {
-                        // Realtime lightmap
-                        m_RealtimeBaked = true;
-                        m_RealtimeAtlasWidth = m_ActiveBaker->GetAtlas().Width;
-                        m_RealtimeAtlasHeight = m_ActiveBaker->GetAtlas().Height;
-                        m_RealtimeTexelCount = (int)m_ActiveBaker->GetAtlas().Texels.size();
-                        m_RealtimeLightmapTexture = texture;
-                        if (m_RealtimeLightmapTexture)
-                            Renderer3D::SetLightmap(m_RealtimeLightmapTexture);
-
-                        auto& registry = m_Context->m_Registry;
-                        int objCount = 0;
-                        auto meshView = registry.view<TransformComponent, MeshRendererComponent>();
-                        for (auto e : meshView)
-                        {
-                            auto& mr = meshView.get<MeshRendererComponent>(e);
-                            if (mr.RealtimeGI) objCount++;
-                        }
-                        m_RealtimeObjectCount = objCount;
-                    }
-                    else
-                    {
-                        // Baked lightmap
-                        m_BakedLightmapBaked = true;
-                        m_BakedAtlasWidth = m_ActiveBaker->GetAtlas().Width;
-                        m_BakedAtlasHeight = m_ActiveBaker->GetAtlas().Height;
-                        m_BakedTexelCount = (int)m_ActiveBaker->GetAtlas().Texels.size();
-                        m_BakedLightmapTexture = texture;
-                        if (m_BakedLightmapTexture)
-                        {
-                            Renderer3D::SetLightmap(m_BakedLightmapTexture);
-
-                            auto projectDir = Project::GetActiveProjectDirectory();
-                            if (!projectDir.empty())
-                            {
-                                std::string lmDir = projectDir.string() + "/Assets/Lightmaps";
-                                std::filesystem::create_directories(lmDir);
-                                std::string lmPath = lmDir + "/baked_lightmap.png";
-                                m_ActiveBaker->SaveToFile(lmPath);
-                                m_Context->SetBakedLightmapPath("Assets/Lightmaps/baked_lightmap.png");
-                            }
-                        }
-
-                        auto& registry = m_Context->m_Registry;
-                        int objCount = 0;
-                        auto meshView = registry.view<TransformComponent, MeshRendererComponent>();
-                        objCount += (int)std::distance(meshView.begin(), meshView.end());
-                        auto modelView = registry.view<TransformComponent, ModelComponent>();
-                        objCount += (int)std::distance(modelView.begin(), modelView.end());
-                        m_BakedObjectCount = objCount;
-                    }
-
-                    auto endTime = std::chrono::high_resolution_clock::now();
-                    if (m_BakeMode == 1)
-                        m_RealtimeBakeTime = std::chrono::duration<float>(endTime - m_BakeStartTime).count();
-                    else
-                        m_BakedBakeTime = std::chrono::duration<float>(endTime - m_BakeStartTime).count();
-
-                    m_ActiveBaker.reset();
-                }
-
-                m_IsBaking = false;
-                m_IsAutoUpdate = false;
+                UI::Vec3("Volume Origin", b.APVOrigin, 0.1f);
+                UI::Vec3("Volume Size", b.APVSize, 0.1f, 10.0f);
             }
+            UI::Vec3("Probe Offset", b.APVProbeOffset, 0.05f);
+            UI::DragFloat("Min Probe Spacing", b.APVMinSpacing, 0.05f, 0.1f, 50.0f, "%.2f m");
+            UI::DragFloat("Max Probe Spacing", b.APVMaxSpacing, 0.1f, b.APVMinSpacing, 250.0f, "%.2f m");
+            const char* modes[] = { "Single Scene", "Baking Set" };
+            UI::Combo("Baking Mode", b.APVBakingMode, modes, 2);
+            UI::SubHeader("Probe Invalidity");
+            UI::Checkbox("Dilation", b.APVDilation);
+            UI::Checkbox("Virtual Offset", b.APVVirtualOffset);
+            if (b.APVVirtualOffset)
+            {
+                UI::SliderFloat("Validity Threshold", b.APVValidityThreshold, 0.0f, 1.0f);
+                UI::SliderFloat("Search Distance", b.APVSearchDistanceMultiplier, 0.0f, 1.0f);
+                UI::DragFloat("Geometry Bias", b.APVGeometryBias, 0.001f, 0.0f, 0.5f, "%.3f");
+                UI::DragFloat("Ray Origin Bias", b.APVRayOriginBias, 0.0005f, -0.1f, 0.0f, "%.4f");
+            }
+            ImGui::Spacing();
+            if (UI::AccentButton("Bake Probe Volume", ImVec2(-FLT_MIN, 0)) && !m_Bake.Active)
+                StartBake(BakeKind::APV);
+            UI::EndSection();
+        }
+
+        if (UI::BeginSection("Reflection Probes"))
+        {
+            auto view = m_Context->m_Registry.view<TagComponent, ReflectionProbeComponent>();
+            int count = 0;
+            if (ImGui::BeginTable("##probes", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_SizingStretchProp))
+            {
+                ImGui::TableSetupColumn("Probe", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupColumn("Resolution", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+                ImGui::TableSetupColumn("State", ImGuiTableColumnFlags_WidthFixed, 90.0f);
+                ImGui::TableHeadersRow();
+                for (auto e : view)
+                {
+                    ++count;
+                    auto& tag = view.get<TagComponent>(e);
+                    auto& probe = view.get<ReflectionProbeComponent>(e);
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    ImGui::PushID((int)(uint32_t)e);
+                    if (ImGui::Selectable(tag.Tag.c_str(), false, ImGuiSelectableFlags_SpanAllColumns) && m_SelectCallback)
+                        m_SelectCallback(Entity{ e, m_Context.get() });
+                    ImGui::PopID();
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%u", probe.Resolution);
+                    ImGui::TableNextColumn();
+                    if (probe.NeedsCapture)
+                        UI::Badge("PENDING", UI::Colors::Warning);
+                    else if (probe.Captured)
+                        UI::Badge(probe.RealtimeUpdate ? "REALTIME" : "CAPTURED", UI::Colors::Success);
+                    else
+                        UI::Badge("NONE", UI::Colors::TextDim);
+                }
+                ImGui::EndTable();
+            }
+            if (count == 0)
+                UI::InfoBox("No reflection probes. Add one with GameObject > Light > Reflection Probe for accurate local reflections.", UI::InfoType::Info);
+            else if (ImGui::Button("Bake All Reflection Probes", ImVec2(-FLT_MIN, 0)))
+                m_Context->InvalidateReflectionProbes();
+            UI::EndSection();
+        }
+    }
+
+    // ===================================================================== Light Explorer
+
+    void LightingPanel::DrawLightExplorerTab()
+    {
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ImGui::InputTextWithHint("##lightfilter", "Filter lights by name...", m_LightFilter, sizeof(m_LightFilter));
+
+        auto passes = [&](const std::string& name)
+        {
+            if (!m_LightFilter[0])
+                return true;
+            std::string a = name, f = m_LightFilter;
+            std::transform(a.begin(), a.end(), a.begin(), ::tolower);
+            std::transform(f.begin(), f.end(), f.begin(), ::tolower);
+            return a.find(f) != std::string::npos;
+        };
+
+        ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollX | ImGuiTableFlags_SizingFixedFit;
+        if (!ImGui::BeginTable("##lights", 8, flags))
+            return;
+        ImGui::TableSetupColumn("On", ImGuiTableColumnFlags_WidthFixed, 26.0f);
+        ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 130.0f);
+        ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+        ImGui::TableSetupColumn("Mode", ImGuiTableColumnFlags_WidthFixed, 90.0f);
+        ImGui::TableSetupColumn("Color", ImGuiTableColumnFlags_WidthFixed, 50.0f);
+        ImGui::TableSetupColumn("Intensity", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+        ImGui::TableSetupColumn("Range", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+        ImGui::TableSetupColumn("Shadows", ImGuiTableColumnFlags_WidthFixed, 60.0f);
+        ImGui::TableHeadersRow();
+
+        const char* modes[] = { "Realtime", "Mixed", "Baked" };
+        int rows = 0;
+        auto rowCommon = [&](entt::entity e, const char* type, LightMode& mode, glm::vec3& color, float& intensity, float* range, bool& shadows)
+        {
+            Entity entity{ e, m_Context.get() };
+            std::string name = entity.HasComponent<TagComponent>() ? entity.GetComponent<TagComponent>().Tag : "Light";
+            if (!passes(name))
+                return;
+            ++rows;
+            ImGui::TableNextRow();
+            ImGui::PushID((int)(uint32_t)e);
+            ImGui::TableNextColumn();
+            bool active = m_Context->IsEntityActive(e);
+            if (ImGui::Checkbox("##on", &active))
+            {
+                if (active && entity.HasComponent<ActiveComponent>())
+                    entity.RemoveComponent<ActiveComponent>();
+                else if (!active && !entity.HasComponent<ActiveComponent>())
+                    entity.AddComponent<ActiveComponent>();
+            }
+            ImGui::TableNextColumn();
+            if (ImGui::Selectable(name.c_str(), false) && m_SelectCallback)
+                m_SelectCallback(entity);
+            ImGui::TableNextColumn();
+            ImGui::TextUnformatted(type);
+            ImGui::TableNextColumn();
+            int m = (int)mode;
+            ImGui::SetNextItemWidth(-FLT_MIN);
+            if (ImGui::Combo("##mode", &m, modes, 3))
+                mode = (LightMode)m;
+            ImGui::TableNextColumn();
+            ImGui::ColorEdit3("##color", glm::value_ptr(color), ImGuiColorEditFlags_NoInputs);
+            ImGui::TableNextColumn();
+            ImGui::SetNextItemWidth(-FLT_MIN);
+            ImGui::DragFloat("##intensity", &intensity, 0.01f, 0.0f, 1000.0f, "%.2f");
+            ImGui::TableNextColumn();
+            if (range)
+            {
+                ImGui::SetNextItemWidth(-FLT_MIN);
+                ImGui::DragFloat("##range", range, 0.05f, 0.01f, 10000.0f, "%.1f");
+            }
+            else
+            {
+                ImGui::TextDisabled("-");
+            }
+            ImGui::TableNextColumn();
+            ImGui::Checkbox("##shadows", &shadows);
+            ImGui::PopID();
+        };
+
+        auto& reg = m_Context->m_Registry;
+        for (auto e : reg.view<DirectionalLightComponent>())
+        {
+            auto& l = reg.get<DirectionalLightComponent>(e);
+            rowCommon(e, "Directional", l.Mode, l.Color, l.Intensity, nullptr, l.CastShadows);
+        }
+        for (auto e : reg.view<PointLightComponent>())
+        {
+            auto& l = reg.get<PointLightComponent>(e);
+            rowCommon(e, "Point", l.Mode, l.Color, l.Intensity, &l.Range, l.CastShadows);
+        }
+        for (auto e : reg.view<SpotLightComponent>())
+        {
+            auto& l = reg.get<SpotLightComponent>(e);
+            rowCommon(e, "Spot", l.Mode, l.Color, l.Intensity, &l.Range, l.CastShadows);
+        }
+        ImGui::EndTable();
+
+        if (rows == 0)
+            UI::InfoBox(m_LightFilter[0] ? "No light matches the filter." : "The scene has no lights.", UI::InfoType::Info);
+        ImGui::TextDisabled("Realtime point/spot lights: up to 64 / 32 per view. Shadows: sun (cascaded).");
+    }
+
+    // ===================================================================== Bake motoru
+
+    LightmapSettings LightingPanel::MakeLightmapSettings(bool realtime) const
+    {
+        const auto& b = m_Context->GetRenderSettings().Bake;
+        LightmapSettings s;
+        s.Lightmapper = b.Lightmapper;
+        s.ImportanceSampling = b.ImportanceSampling;
+        s.Resolution = realtime ? b.RealtimeResolution : b.Resolution;
+        s.MaxLightmapSize = b.MaxLightmapSize;
+        s.MaxBounces = realtime ? b.RealtimeMaxBounces : b.MaxBounces;
+        s.DirectSamples = b.DirectSamples;
+        s.IndirectSamples = realtime ? b.RealtimeIndirectSamples : b.IndirectSamples;
+        s.EnvironmentSamples = b.EnvironmentSamples;
+        s.Filtering = b.Filtering;
+        s.Packing = b.Packing;
+        s.UseMipmapLimits = b.UseMipmapLimits;
+        s.Compression = b.Compression;
+        s.AmbientOcclusion = b.AmbientOcclusion;
+        s.DirectionalMode = b.DirectionalMode;
+        s.AlbedoBoost = b.AlbedoBoost;
+        s.IndirectIntensity = b.IndirectIntensity;
+        return s;
+    }
+
+    std::shared_ptr<Scene> LightingPanel::CreateSnapshot() const
+    {
+        // Bake thread'i canlı sahneye asla dokunmaz: ana thread'de bir kopya alınır
+        auto snapshot = std::make_shared<Scene>();
+        snapshot->CloneSceneFrom(m_Context);
+        snapshot->UpdateWorldTransforms();
+        return snapshot;
+    }
+
+    void LightingPanel::GenerateLighting()
+    {
+        if (!m_Context || m_Bake.Active)
+            return;
+        auto& b = m_Context->GetRenderSettings().Bake;
+        // Sıra: lightmap (BakedGI) -> APV (bileşen ya da ayar) -> yansıma probları
+        m_Context->InvalidateReflectionProbes();
+        if (b.BakedGI && b.Lightmapper != 0)
+            StartBake(BakeKind::BakedLightmap);
+        else if (!m_Context->m_Registry.view<AdaptiveProbeVolumeComponent>().empty())
+            StartBake(BakeKind::APV);
+        else
+        {
+            m_StatusMessage = "Reflection probes queued for capture.";
+            m_StatusTime = std::chrono::steady_clock::now();
+        }
+    }
+
+    void LightingPanel::ClearBakedData()
+    {
+        if (!m_Context)
+            return;
+        CancelBake();
+        JoinWorker();
+        m_Context->SetBakedLightmapTexture(nullptr);
+        m_Context->SetBakedLightmapPath("");
+        m_Context->SetAdaptiveProbeVolume(nullptr);
+        Renderer3D::SetLightmap(nullptr);
+        Renderer3D::SetAdaptiveProbeVolume(nullptr);
+        m_RealtimeLightmap.reset();
+        m_BakedInfo = {};
+        m_RealtimeInfo = {};
+        m_APVInfo = {};
+        m_StatusMessage = "Baked lighting data cleared.";
+        m_StatusTime = std::chrono::steady_clock::now();
+    }
+
+    void LightingPanel::StartBake(BakeKind kind, bool silent)
+    {
+        if (!m_Context || m_Bake.Active)
+            return;
+        JoinWorker();
+
+        m_Bake.Active = true;
+        m_Bake.Kind = kind;
+        m_Bake.Silent = silent;
+        m_Bake.Done.store(false);
+        m_Bake.Progress.store(0.0f);
+        {
+            std::lock_guard<std::mutex> lock(m_Bake.StepMutex);
+            m_Bake.Step = "Preparing scene snapshot...";
+        }
+        m_Bake.Start = std::chrono::steady_clock::now();
+        m_Bake.Snapshot = CreateSnapshot();
+        m_Bake.Baker.reset();
+        m_Bake.APV.reset();
+
+        auto progressCallback = [this](float progress, const std::string& step)
+        {
+            m_Bake.Progress.store(progress);
+            std::lock_guard<std::mutex> lock(m_Bake.StepMutex);
+            m_Bake.Step = step;
+        };
+
+        Scene* snapshot = m_Bake.Snapshot.get();
+        if (kind == BakeKind::APV)
+        {
+            const auto& b = m_Context->GetRenderSettings().Bake;
+            AdaptiveProbeVolumeSettings settings;
+            glm::vec3 origin = b.APVOrigin, size = b.APVSize;
+            if (b.APVFitToScene)
+            {
+                glm::vec3 mn(1e9f), mx(-1e9f);
+                bool any = false;
+                auto view = snapshot->m_Registry.view<TransformComponent, MeshRendererComponent>();
+                for (auto e : view)
+                {
+                    auto& tc = view.get<TransformComponent>(e);
+                    glm::vec3 p = glm::vec3(tc.WorldTransform[3]);
+                    glm::vec3 ext = glm::abs(glm::vec3(glm::length(glm::vec3(tc.WorldTransform[0])),
+                                                       glm::length(glm::vec3(tc.WorldTransform[1])),
+                                                       glm::length(glm::vec3(tc.WorldTransform[2])))) * 0.5f;
+                    mn = glm::min(mn, p - ext);
+                    mx = glm::max(mx, p + ext);
+                    any = true;
+                }
+                if (any)
+                {
+                    origin = mn - glm::vec3(1.0f);
+                    size = (mx - mn) + glm::vec3(2.0f);
+                }
+            }
+            settings.Origin = origin;
+            settings.Size = glm::max(size, glm::vec3(0.5f));
+            settings.ProbeOffset = b.APVProbeOffset;
+            settings.MinSpacing = b.APVMinSpacing;
+            settings.MaxSpacing = b.APVMaxSpacing;
+            settings.BakingMode = b.APVBakingMode;
+            settings.ProbeResolution = 32;
+            m_Bake.APV = AdaptiveProbeVolume::Create(settings);
+            ProbeInvaliditySettings inv;
+            inv.Dilation = b.APVDilation;
+            inv.VirtualOffset = b.APVVirtualOffset;
+            inv.ValidityThreshold = b.APVValidityThreshold;
+            inv.SearchDistanceMultiplier = b.APVSearchDistanceMultiplier;
+            inv.GeometryBias = b.APVGeometryBias;
+            inv.RayOriginBias = b.APVRayOriginBias;
+            m_Bake.APV->SetInvaliditySettings(inv);
+            m_Bake.APV->SetProgressCallback(progressCallback);
+            auto* apv = m_Bake.APV.get();
+            auto* done = &m_Bake.Done;
+            m_Bake.Worker = std::thread([apv, snapshot, done]()
+            {
+                try { apv->Bake(snapshot); }
+                catch (const std::exception& e) { CQ_CORE_ERROR("APV bake failed: {0}", e.what()); }
+                done->store(true);
+            });
         }
         else
         {
-            if (ImGui::Button("Generate Lighting", ImVec2(-1, 30)))
+            bool realtime = kind == BakeKind::RealtimeLightmap;
+            m_Bake.Baker = LightmapBaker::Create(MakeLightmapSettings(realtime));
+            m_Bake.Baker->SetRealtimeMode(realtime);
+            m_Bake.Baker->SetProgressCallback(progressCallback);
+            auto* baker = m_Bake.Baker.get();
+            auto* done = &m_Bake.Done;
+            m_Bake.Worker = std::thread([baker, snapshot, done]()
             {
-                if (!m_Context) return;
+                try { baker->Bake(snapshot); }
+                catch (const std::exception& e) { CQ_CORE_ERROR("Lightmap bake failed: {0}", e.what()); }
+                done->store(true);
+            });
+        }
+    }
 
-                m_BakeMode = (m_ActiveTab == 3) ? 1 : 0;
-                m_IsBaking = true;
-                m_IsAutoUpdate = false;
-                m_BakeProgress = 0.0f;
-                m_BakeThreadDone.store(false);
-                m_BakeThreadProgress.store(0.0f);
-                m_BakeThreadStep = "Starting...";
-                m_BakeStartTime = std::chrono::high_resolution_clock::now();
+    void LightingPanel::CancelBake()
+    {
+        if (!m_Bake.Active)
+            return;
+        if (m_Bake.Baker) m_Bake.Baker->RequestCancel();
+        if (m_Bake.APV) m_Bake.APV->RequestCancel();
+    }
 
-                if (m_BakeMode == 2)
+    void LightingPanel::JoinWorker()
+    {
+        if (m_Bake.Worker.joinable())
+            m_Bake.Worker.join();
+    }
+
+    void LightingPanel::PollBake()
+    {
+        if (m_Bake.Active && m_Bake.Done.load())
+            FinishBake();
+    }
+
+    void LightingPanel::FinishBake()
+    {
+        JoinWorker();
+        float seconds = std::chrono::duration<float>(std::chrono::steady_clock::now() - m_Bake.Start).count();
+        BakeKind kind = m_Bake.Kind;
+        bool silent = m_Bake.Silent;
+        m_Bake.Active = false;
+        m_Bake.Kind = BakeKind::None;
+
+        if (!m_Context)
+        {
+            m_Bake.Snapshot.reset();
+            return;
+        }
+
+        if (kind == BakeKind::APV && m_Bake.APV)
+        {
+            if (m_Bake.APV->IsBaked())
+            {
+                m_Context->SetAdaptiveProbeVolume(m_Bake.APV);
+                m_APVInfo.Valid = true;
+                m_APVInfo.Seconds = seconds;
+                m_APVInfo.When = NowString();
+                m_StatusMessage = "Probe volume baked: " + std::to_string(m_Bake.APV->GetTotalProbeCount()) + " probes.";
+            }
+            else
+            {
+                m_StatusMessage = m_Bake.APV->WasCancelled() ? "Probe volume bake cancelled." : "Probe volume bake failed (see Log).";
+            }
+        }
+        else if (m_Bake.Baker)
+        {
+            auto& baker = *m_Bake.Baker;
+            const auto& atlas = baker.GetAtlas();
+            if (baker.WasCancelled() || atlas.Width == 0 || atlas.Texels.empty())
+            {
+                m_StatusMessage = baker.WasCancelled() ? "Lightmap bake cancelled." : "Nothing to bake: no static geometry.";
+            }
+            else
+            {
+                baker.ApplyUV2ToMeshes();
+                auto texture = baker.CreateLightmapTexture();
+                BakeResultInfo info;
+                info.Valid = texture != nullptr;
+                info.AtlasWidth = (int)atlas.Width;
+                info.AtlasHeight = (int)atlas.Height;
+                info.Texels = (int)atlas.Texels.size();
+                info.Seconds = seconds;
+                info.When = NowString();
+                auto& reg = m_Context->m_Registry;
+                for (auto e : reg.view<TagComponent, MeshRendererComponent>())
+                    if (reg.get<TagComponent>(e).IsStatic) ++info.Objects;
+
+                if (kind == BakeKind::RealtimeLightmap)
                 {
-                    // APV bake
-                    AdaptiveProbeVolumeSettings apvSettings;
-                    apvSettings.Origin = m_Context->GetAmbientColor() * 0.0f; // TODO: Use volume bounds from component
-                    apvSettings.Size = glm::vec3(10.0f, 10.0f, 10.0f);
-                    apvSettings.ProbeOffset = glm::vec3(m_APProbeOffset[0], m_APProbeOffset[1], m_APProbeOffset[2]);
-                    apvSettings.MinSpacing = m_APMinSpacing;
-                    apvSettings.MaxSpacing = m_APMaxSpacing;
-                    apvSettings.BakingMode = m_APBakingModeIndex;
-                    apvSettings.ProbeResolution = 32;
-
-                    m_ActiveAPV = AdaptiveProbeVolume::Create(apvSettings);
-
-                    ProbeInvaliditySettings invaliditySettings;
-                    invaliditySettings.Dilation = m_APDilation;
-                    invaliditySettings.VirtualOffset = m_APVirtualOffset;
-                    invaliditySettings.ValidityThreshold = m_APValidityThreshold;
-                    invaliditySettings.SearchDistanceMultiplier = m_APSearchDistanceMultiplier;
-                    invaliditySettings.GeometryBias = m_APGeometryBias;
-                    invaliditySettings.RayOriginBias = m_APRayOriginBias;
-                    m_ActiveAPV->SetInvaliditySettings(invaliditySettings);
-
-                    auto apvPtr = m_ActiveAPV.get();
-                    auto scenePtr = m_Context.get();
-                    auto progressPtr = &m_BakeThreadProgress;
-                    auto stepPtr = &m_BakeThreadStep;
-                    auto donePtr = &m_BakeThreadDone;
-
-                    apvPtr->SetProgressCallback([progressPtr, stepPtr](float progress, const std::string& step) {
-                        progressPtr->store(progress);
-                        *stepPtr = step;
-                    });
-
-                    m_BakeThread = std::thread([apvPtr, scenePtr, donePtr]() {
-                        apvPtr->Bake(scenePtr);
-                        donePtr->store(true);
-                    });
+                    m_RealtimeLightmap = texture;
+                    m_RealtimeInfo = info;
+                    if (texture && !m_Context->GetBakedLightmapTexture())
+                        m_Context->SetBakedLightmapTexture(texture);
+                    m_StatusMessage = "Realtime lightmaps updated.";
                 }
                 else
                 {
-                    // Lightmap bake
-                    m_ActiveBaker = LightmapBaker::Create();
-                    LightmapSettings settings;
-                    settings.Lightmapper = m_LightmapperIndex;
-                    settings.ImportanceSampling = m_ImportanceSampling;
-                    settings.Resolution = (m_BakeMode == 1) ? m_RealtimeResolution : m_LightmapResolution;
-                    settings.MaxLightmapSize = (m_MaxLightmapSizeIndex + 1) * 256;
-                    settings.MaxBounces = (m_BakeMode == 1) ? m_RealtimeMaxBounces : m_MaxBounces;
-                    settings.DirectSamples = m_DirectSamples;
-                    settings.IndirectSamples = (m_BakeMode == 1) ? m_RealtimeIndirectSamples : m_IndirectSamples;
-                    settings.EnvironmentSamples = m_EnvironmentSamples;
-                    settings.Filtering = m_FilteringIndex;
-                    settings.Compression = m_LightmapCompressionIndex;
-                    settings.AmbientOcclusion = m_AmbientOcclusion;
-                    settings.DirectionalMode = m_DirectionalModeIndex;
-                    settings.AlbedoBoost = m_AlbedoBoost;
-                    settings.IndirectIntensity = m_IndirectIntensity;
-                    m_ActiveBaker->SetSettings(settings);
-                    m_ActiveBaker->SetRealtimeMode(m_BakeMode == 1);
+                    m_BakedInfo = info;
+                    m_Context->SetBakedLightmapTexture(texture);
+                    auto projectDir = Project::GetActiveProjectDirectory();
+                    if (!projectDir.empty() && texture)
+                    {
+                        std::error_code ec;
+                        auto dir = projectDir / "Assets" / "Lightmaps";
+                        std::filesystem::create_directories(dir, ec);
+                        auto file = dir / "baked_lightmap.png";
+                        if (baker.SaveToFile(file.string()))
+                            m_Context->SetBakedLightmapPath("Assets/Lightmaps/baked_lightmap.png");
+                    }
+                    m_StatusMessage = "Lightmaps baked in " + std::to_string((int)(seconds * 10.0f) / 10.0f).substr(0, 4) + " s.";
 
-                    auto bakerPtr = m_ActiveBaker.get();
-                    auto progressPtr = &m_BakeThreadProgress;
-                    auto stepPtr = &m_BakeThreadStep;
-                    auto donePtr = &m_BakeThreadDone;
-                    auto scenePtr = m_Context.get();
-
-                    m_ActiveBaker->SetProgressCallback([progressPtr, stepPtr](float progress, const std::string& step) {
-                        progressPtr->store(progress);
-                        *stepPtr = step;
-                    });
-
-                    m_BakeThread = std::thread([bakerPtr, scenePtr, donePtr]() {
-                        bakerPtr->Bake(scenePtr);
-                        donePtr->store(true);
-                    });
+                    // Zincir: APV bileşeni varsa onu da pişir
+                    if (!m_Context->m_Registry.view<AdaptiveProbeVolumeComponent>().empty() && !silent)
+                    {
+                        m_Bake.Snapshot.reset();
+                        m_StatusTime = std::chrono::steady_clock::now();
+                        StartBake(BakeKind::APV, silent);
+                        return;
+                    }
                 }
             }
+        }
+
+        m_StatusTime = std::chrono::steady_clock::now();
+        m_Bake.Snapshot.reset();
+        m_Bake.Baker.reset();
+        m_LastLightingHash = ComputeLightingHash();
+    }
+
+    uint64_t LightingPanel::ComputeLightingHash() const
+    {
+        uint64_t h = 1469598103934665603ull;
+        auto& reg = m_Context->m_Registry;
+        for (auto e : reg.view<DirectionalLightComponent>())
+        {
+            auto& l = reg.get<DirectionalLightComponent>(e);
+            HashVec3(h, l.Direction); HashVec3(h, l.Color); HashFloat(h, l.Intensity);
+            HashCombine(h, (uint64_t)l.Mode);
+        }
+        for (auto e : reg.view<TransformComponent, PointLightComponent>())
+        {
+            auto& l = reg.get<PointLightComponent>(e);
+            HashVec3(h, glm::vec3(reg.get<TransformComponent>(e).WorldTransform[3]));
+            HashVec3(h, l.Color); HashFloat(h, l.Intensity); HashFloat(h, l.Range);
+        }
+        for (auto e : reg.view<TransformComponent, SpotLightComponent>())
+        {
+            auto& l = reg.get<SpotLightComponent>(e);
+            HashVec3(h, glm::vec3(reg.get<TransformComponent>(e).WorldTransform[3]));
+            HashVec3(h, l.Direction); HashVec3(h, l.Color); HashFloat(h, l.Intensity); HashFloat(h, l.Range);
+        }
+        for (auto e : reg.view<TagComponent, TransformComponent, MeshRendererComponent>())
+        {
+            if (!reg.get<TagComponent>(e).IsStatic)
+                continue;
+            const auto& wt = reg.get<TransformComponent>(e).WorldTransform;
+            for (int c = 0; c < 4; ++c)
+                HashVec3(h, glm::vec3(wt[c]));
+            HashVec3(h, glm::vec3(reg.get<MeshRendererComponent>(e).Color));
+        }
+        return h;
+    }
+
+    void LightingPanel::UpdateAutoGenerate()
+    {
+        if (!m_Context)
+            return;
+        auto& b = m_Context->GetRenderSettings().Bake;
+        if (!b.AutoGenerate && !b.RealtimeGI)
+            return;
+
+        uint64_t hash = ComputeLightingHash();
+        auto now = std::chrono::steady_clock::now();
+        if (m_LastLightingHash == 0)
+        {
+            m_LastLightingHash = hash;
+            return;
+        }
+        if (hash != m_LastLightingHash)
+        {
+            m_LastLightingHash = hash;
+            m_AutoPending = true;
+            m_AutoChangeTime = now;
+        }
+        // Son değişiklikten 1 sn sonra (sürüklerken her karede pişirme)
+        if (m_AutoPending && !m_Bake.Active && std::chrono::duration<float>(now - m_AutoChangeTime).count() > 1.0f)
+        {
+            m_AutoPending = false;
+            if (b.AutoGenerate && b.BakedGI && b.Lightmapper != 0)
+                StartBake(BakeKind::BakedLightmap, true);
+            else if (b.RealtimeGI)
+                StartBake(BakeKind::RealtimeLightmap, true);
         }
     }
 }

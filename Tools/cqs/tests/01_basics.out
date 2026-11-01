@@ -1,0 +1,12 @@
+7 6 3.5 1 -1 5.0
+true true true true false false
+1 7 6 -1 1024 128
+255 10 1000000 1000.0 2.5
+fallback 0 false true
+concat n=42 2.5
+6.0
+1
+-9223372036854775808
+int float string List Map null function
+3 2.0 12! 43 2.5
+1.0 0.30000000000000004 33.333333333333336 1e+21 -0.0

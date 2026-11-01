@@ -1,0 +1,1730 @@
+Scene: Untitled
+Entities:
+  - Entity: 8316121557269069181
+    TagComponent:
+      Tag: Directional Light
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 10, 0]
+      Rotation: [-0.9599311, -0.43633232, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    DirectionalLightComponent:
+      Direction: [0.24240386, -0.81915206, -0.51983684]
+      FromRotation: true
+      Color: [1, 0.96, 0.9]
+      Intensity: 3.2
+      CastShadows: true
+      Mode: 0
+  - Entity: 8997929756292501889
+    TagComponent:
+      Tag: Floor
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.5, 0]
+      Rotation: [0, 0, 0]
+      Scale: [25, 0.5, 25]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 7805676350333286628
+    TagComponent:
+      Tag: Wall North
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.75, -25.5]
+      Rotation: [0, 0, 0]
+      Scale: [26, 0.75, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGridDark.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 3606008172013746697
+    TagComponent:
+      Tag: Wall South
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.75, 25.5]
+      Rotation: [0, 0, 0]
+      Scale: [26, 0.75, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGridDark.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 4282243956057884780
+    TagComponent:
+      Tag: Wall East
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [25.5, 0.75, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.75, 25]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGridDark.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2736167273865415220
+    TagComponent:
+      Tag: Wall West
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-25.5, 0.75, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.75, 25]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGridDark.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 3914411940288148373
+    TagComponent:
+      Tag: Platform East
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [12, 1, -12]
+      Rotation: [0, 0, 0]
+      Scale: [5, 1, 4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6989904357458681465
+    TagComponent:
+      Tag: Ramp East
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [12, 0.07628292, -5.3079057]
+      Rotation: [-0.32175055, 3.1415927, 0]
+      Scale: [2, 0.9736833, 3.1622777]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 5313272729673714636
+    TagComponent:
+      Tag: Platform West
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-12, 1, -12]
+      Rotation: [0, 0, 0]
+      Scale: [4, 1, 4]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 775605731115265619
+    TagComponent:
+      Tag: Steps West0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-12, 0.125, -2.75]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [2, 0.125, 0.25]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 1942645743242275777
+    TagComponent:
+      Tag: Steps West1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-12, 0.25, -3.25]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [2, 0.25, 0.25]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 680963829386010470
+    TagComponent:
+      Tag: Steps West2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-12, 0.375, -3.75]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [2, 0.375, 0.25]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 931548513103541583
+    TagComponent:
+      Tag: Steps West3
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-12, 0.5, -4.25]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [2, 0.5, 0.25]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 612331459495487932
+    TagComponent:
+      Tag: Steps West4
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-12, 0.625, -4.75]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [2, 0.625, 0.25]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 7439747756655998350
+    TagComponent:
+      Tag: Steps West5
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-12, 0.75, -5.25]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [2, 0.75, 0.25]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6432351726716763916
+    TagComponent:
+      Tag: Steps West6
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-12, 0.875, -5.75]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [2, 0.875, 0.25]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6235641052946733180
+    TagComponent:
+      Tag: Steps West7
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-12, 1, -6.25]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [2, 1, 0.25]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 5294220044406375516
+    TagComponent:
+      Tag: Bridge
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 1.85, -12]
+      Rotation: [0, 0, 0]
+      Scale: [8, 0.15, 1.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2868286262428251193
+    TagComponent:
+      Tag: Block A
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-6, 0.6, 6]
+      Rotation: [0, 0, 0]
+      Scale: [2, 0.6, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGridOrange.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 4436812794453102670
+    TagComponent:
+      Tag: Block B
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [6, 0.6, 8]
+      Rotation: [0, 0, 0]
+      Scale: [1, 0.6, 3]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGridOrange.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 6597747326563375640
+    TagComponent:
+      Tag: Block C
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-16, 1.25, 12]
+      Rotation: [0, 0, 0]
+      Scale: [1.5, 1.25, 1.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGridDark.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 3159618309261742824
+    TagComponent:
+      Tag: Block D
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [16, 0.3, 14]
+      Rotation: [0, 0, 0]
+      Scale: [2.5, 0.3, 2.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 4368528205807943809
+    TagComponent:
+      Tag: Low Wall
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.5, 16]
+      Rotation: [0, 0, 0]
+      Scale: [5, 0.5, 0.3]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGridDark.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 9187357841150695916
+    TagComponent:
+      Tag: Pillar A
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-20, 1.5, -20]
+      Rotation: [0, 0, 0]
+      Scale: [1.5, 1.5, 1.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    CapsuleColliderComponent:
+      Offset: [0, 0, 0]
+      Radius: 1
+      Height: 2
+      Direction: 1
+      IsTrigger: false
+      Version: 2
+  - Entity: 1156920096312511721
+    TagComponent:
+      Tag: Pillar B
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [20, 1.5, -20]
+      Rotation: [0, 0, 0]
+      Scale: [1.5, 1.5, 1.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    CapsuleColliderComponent:
+      Offset: [0, 0, 0]
+      Radius: 1
+      Height: 2
+      Direction: 1
+      IsTrigger: false
+      Version: 2
+  - Entity: 6606879424125763764
+    TagComponent:
+      Tag: Pillar C
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [20, 1, 20]
+      Rotation: [0, 0, 0]
+      Scale: [1.2, 1, 1.2]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    CapsuleColliderComponent:
+      Offset: [0, 0, 0]
+      Radius: 1
+      Height: 2
+      Direction: 1
+      IsTrigger: false
+      Version: 2
+  - Entity: 34339408192380697
+    TagComponent:
+      Tag: Pillar D
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-20, 1, 20]
+      Rotation: [0, 0, 0]
+      Scale: [1.2, 1, 1.2]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 3
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.75
+      AO: 1
+      WorldAlignedUV: true
+      TexturePath: Assets/Prototype/WorldGrid.png
+    RigidbodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    CapsuleColliderComponent:
+      Offset: [0, 0, 0]
+      Radius: 1
+      Height: 2
+      Direction: 1
+      IsTrigger: false
+      Version: 2
+  - Entity: 7570741523936577244
+    TagComponent:
+      Tag: Cube 0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-2, 0.5, -2]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.5, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.45
+      AO: 1
+      Tiling: [1, 1]
+      Offset: [0.5, 0.5]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Prototype/WorldGridBlue.png
+    RigidbodyComponent:
+      BodyType: 1
+      Mass: 30
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 1212960439497940140
+    TagComponent:
+      Tag: Cube 1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-0.9, 0.5, -2]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.5, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.45
+      AO: 1
+      Tiling: [1, 1]
+      Offset: [0.5, 0.5]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Prototype/WorldGridBlue.png
+    RigidbodyComponent:
+      BodyType: 1
+      Mass: 30
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 2483296961005271659
+    TagComponent:
+      Tag: Cube 2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.2, 0.5, -2]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.5, 0.5]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Color: [1, 1, 1, 1]
+      Metallic: 0
+      Roughness: 0.45
+      AO: 1
+      Tiling: [1, 1]
+      Offset: [0.5, 0.5]
+      WorldAlignedUV: true
+      AlignToObject: true
+      TexturePath: Assets/Prototype/WorldGridBlue.png
+    RigidbodyComponent:
+      BodyType: 1
+      Mass: 30
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      GravityScale: 1
+      FreezeRotation: false
+      Friction: 0.5
+      Restitution: 0
+      UseGravity: true
+      FreezePosition: [false, false, false]
+      FreezeRotationAxes: [false, false, false]
+      Interpolate: true
+      CollisionDetection: 0
+      MaxAngularVelocity: 50
+      AllowSleep: true
+    BoxColliderComponent:
+      Offset: [0, 0, 0]
+      Size: [2, 2, 2]
+      IsTrigger: false
+      Version: 2
+  - Entity: 476392243314613583
+    TagComponent:
+      Tag: NavMesh Surface
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    NavMeshSurfaceComponent:
+      CollectObjects: 0
+      AreaType: 0
+      AgentRadius: 0.4
+      AgentHeight: 1.8
+      MaxSlope: 45
+      StepHeight: 0.45
+      OverrideVoxelSize: false
+      VoxelSize: 0.166
+      BakeOnPlay: true
+  - Entity: 7752952005698536201
+    TagComponent:
+      Tag: Player
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.9, 2]
+      Rotation: [0, 3.1415927, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    CharacterControllerComponent:
+      SlopeLimit: 46
+      StepOffset: 0.45
+      SkinWidth: 0.02
+      MinMoveDistance: 0
+      Center: [0, 0, 0]
+      Radius: 0.34
+      Height: 1.8
+      Mass: 70
+      PushRigidbodies: true
+    NavMeshModifierComponent:
+      IgnoreFromBuild: true
+      OverrideArea: true
+      Area: 1
+      ApplyToChildren: true
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Scripts/TopDownController.cqs
+      ClassName: ""
+  - Entity: 4233827206531210279
+    TagComponent:
+      Tag: Mesh
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, -0.9, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Mannequin/Scripts/MannequinAnimation.cqs
+      ClassName: ""
+    ModelComponent:
+      FilePath: Assets/Mannequin/Models/Mannequin_Male.glb
+    AnimationComponent:
+      ControllerPath: Assets/Mannequin/Animations/Mannequin.cqcont
+      Speed: 1
+      PlayOnAwake: true
+      Parameters:
+        - Name: Speed
+          Type: 0
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Grounded
+          Type: 1
+          FloatValue: 0
+          BoolValue: true
+          IntValue: 1
+        - Name: Crouch
+          Type: 1
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Jump
+          Type: 3
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Aim
+          Type: 0
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+        - Name: Dead
+          Type: 1
+          FloatValue: 0
+          BoolValue: false
+          IntValue: 0
+  - Entity: 2946833170142745118
+    TagComponent:
+      Tag: Cursor Decal
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0.5, 0]
+      Rotation: [-1.5707964, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    DecalProjectorComponent:
+      Texture: Assets/Textures/cursor_ring.png
+      Color: [1, 1, 1, 0.95]
+      Size: [1.1, 1.1, 1.4]
+      Tiling: [1, 1]
+      Offset: [0, 0]
+      AngleFade: 80
+      Emission: 2
+  - Entity: 6447267185211044347
+    TagComponent:
+      Tag: FX Click
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ParticleSystemComponent:
+      Duration: 5
+      Looping: false
+      Prewarm: false
+      PlayOnAwake: false
+      StopAction: 0
+      StartDelay: 0
+      StartLifetime: [0.3, 0.6]
+      StartSpeed: [1.2, 2.6]
+      StartSize: [0.08, 0.16]
+      StartRotation: [0, 0]
+      StartColorA: [0.5, 0.85, 1, 1]
+      StartColorB: [0.9, 1, 1, 1]
+      GravityModifier: 0
+      SimulationSpeed: 1
+      MaxParticles: 200
+      SimulationSpace: 1
+      EmissionEnabled: false
+      RateOverTime: 0
+      RateOverDistance: 0
+      ShapeEnabled: true
+      Radius: 0.1
+      Angle: 25
+      BoxSize: [1, 1, 1]
+      EmitFromShell: false
+      RandomizeDirection: 0
+      Shape: 4
+      VelocityEnabled: false
+      VelocityOverLifetime: [0, 0, 0]
+      OrbitalSpeed: 0
+      LimitVelocityEnabled: false
+      Drag: 4
+      SpeedLimit: 100
+      NoiseEnabled: false
+      NoiseStrength: 1
+      NoiseFrequency: 0.5
+      NoiseScrollSpeed: 0.5
+      ColorOverLifetimeEnabled: true
+      SizeOverLifetimeEnabled: false
+      RotationOverLifetimeEnabled: false
+      AngularVelocity: 45
+      CollisionEnabled: false
+      CollisionPlaneY: 0
+      Bounce: 0.5
+      LifetimeLoss: 0
+      TextureSheetEnabled: false
+      AnimationCycles: 1
+      RandomStartFrame: false
+      Tiles: [1, 1]
+      RenderMode: 0
+      Blend: 1
+      Texture: Assets/Textures/soft_dot.png
+      LengthScale: 2
+      SpeedScale: 0.1
+      SortByDistance: true
+      EmissiveIntensity: 4
+      Bursts:
+        []
+      ColorOverLifetime:
+        - [0, 1, 1, 1, 1]
+        - [1, 1, 1, 1, 0]
+      SizeOverLifetime:
+        - [0, 1]
+        - [1, 1]
+  - Entity: 6694641415894802349
+    TagComponent:
+      Tag: Top Down Camera
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 12.7, 9.9]
+      Rotation: [-1.012291, 0, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera:
+        ProjectionType: 0
+        PerspectiveFOV: 0.9599311
+        PerspectiveNear: 0.01
+        PerspectiveFar: 1000
+        OrthographicSize: 10
+        OrthographicNear: -1000
+        OrthographicFar: 1000
+      Primary: true
+      FixedAspectRatio: false
+      Background: 0
+      BackgroundColor: [0.192, 0.302, 0.475, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    AudioListenerComponent:
+      IsActive: true
+  - Entity: 2370875993503497777
+    TagComponent:
+      Tag: HUD
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    CanvasComponent:
+      RenderMode: 0
+      PixelPerfect: false
+      SortOrder: 0
+    CanvasScalerComponent:
+      ScaleMode: 1
+      ScaleFactor: 1
+      ReferencePixelsPerUnit: 100
+      ReferenceResolution: [1920, 1080]
+      MatchWidthOrHeight: 0.5
+    GraphicRaycasterComponent:
+      IgnoreReversedGraphics: true
+      BlockingObjects: 0
+      BlockingMask: 4294967295
+  - Entity: 8054493765534556829
+    TagComponent:
+      Tag: HintText
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 26]
+      SizeDelta: [1800, 30]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: LMB CLICK / HOLD  MOVE      WASD  WALK      SHIFT  RUN      WHEEL  ZOOM
+      FontPath: ""
+      FontSize: 22
+      Color: [0.96, 0.96, 0.96, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.6]
+      RaycastTarget: false
+      RichText: false
+Environment:
+  SkyboxExposure: 1
+  SkyboxRotation: 0
+  SkyboxTint: [1, 1, 1]
+  EnvironmentLightingSource: 0
+  AmbientColor: [0.3, 0.3, 0.3]
+  AmbientSkyColor: [0.5, 0.6, 0.7]
+  AmbientEquatorColor: [0.3, 0.3, 0.3]
+  AmbientGroundColor: [0.2, 0.15, 0.1]
+  AmbientIntensity: 1
+  FogEnabled: true
+  FogColor: [0.62, 0.72, 0.85]
+  FogDensity: 0.0025
+  FogStart: 10
+  FogEnd: 100
+  SunSource: 0
+  HaloEnabled: false
+  HaloStrength: 0.5
+  FlareEnabled: false
+  FlareFadeSpeed: 3
+  FlareStrength: 1
+  FlareElements:
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.08
+      Offset: 0.3
+      Intensity: 1
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.06
+      Offset: 0.6
+      Intensity: 0.8
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.05
+      Offset: 0.9
+      Intensity: 0.6
+  ShadowEnabled: true
+  ShadowIntensity: 1
+  ReflectionSource: 0
+  ReflectionResolution: 128
+  ReflectionCompression: 0
+  ReflectionIntensityMultiplier: 1
+  ReflectionBounces: 1
+  BakedLightmapPath: ""
+  LightmapResolution: 40
+  MaxLightmapSize: 1024
+  MaxBounces: 2
+  DirectSamples: 32
+  IndirectSamples: 512
+  AmbientOcclusion: true
+  LightmapFiltering: 0
+  RenderSettings:
+    Shadows:
+      Enabled: true
+      Quality: 2
+      Resolution: 4096
+      Distance: 70
+      CascadeCount: 4
+      CascadeSplitLambda: 0.75
+      Strength: 1
+      Softness: 1
+      DepthBias: 0.005
+      NormalBias: 0.015
+      Color: [0, 0, 0]
+    Fog:
+      Enabled: true
+      Mode: 1
+      Color: [0.62, 0.72, 0.85]
+      Density: 0.0025
+      Start: 10
+      End: 100
+      HeightFalloff: 0.08
+      BaseHeight: 0
+    Post:
+      Enabled: true
+      Tonemapper: 2
+      Exposure: 0
+      Bloom: true
+      BloomThreshold: 1
+      BloomKnee: 0.5
+      BloomIntensity: 0.25
+      BloomScatter: 0.7
+      BloomTint: [1, 1, 1]
+      AmbientOcclusion: true
+      AORadius: 0.6
+      AOIntensity: 1
+      AOPower: 1.5
+      ColorGrading: true
+      Contrast: 1
+      Saturation: 1
+      Temperature: 0
+      Tint: 0
+      Lift: [0, 0, 0]
+      Gamma: [1, 1, 1]
+      Gain: [1, 1, 1]
+      Vignette: true
+      VignetteIntensity: 0.15
+      VignetteSmoothness: 0.4
+      VignetteColor: [0, 0, 0]
+      ChromaticAberration: false
+      ChromaticAberrationIntensity: 0.3
+      FilmGrain: false
+      FilmGrainIntensity: 0.15
+      Sharpen: false
+      SharpenAmount: 0.3
+      AntiAliasing: 3
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: false
+      SSRIntensity: 1
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: true
+      SSGIIntensity: 0.8
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: true
+      CloudCoverage: 0.45
+      CloudDensity: 0.6
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: false
+      FocusDistance: 10
+      Aperture: 2.8
+      FocalLength: 50
+      DOFMaxBlur: 10
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
+    Environment:
+      Sky: 3
+      BackgroundColor: [0.1, 0.1, 0.1]
+      ImageBasedLighting: true
+      ReflectionIntensity: 1
+      SkyboxIntensity: 1
+      SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
+    Bake:
+      RealtimeGI: false
+      BakedGI: true
+      LightingMode: 0
+      Lightmapper: 1
+      ImportanceSampling: true
+      DirectSamples: 32
+      IndirectSamples: 512
+      EnvironmentSamples: 256
+      MaxBounces: 2
+      Filtering: 0
+      Packing: 0
+      Resolution: 40
+      MaxLightmapSize: 1024
+      UseMipmapLimits: true
+      Compression: 2
+      AmbientOcclusion: true
+      DirectionalMode: 0
+      AlbedoBoost: 1
+      IndirectIntensity: 1
+      RealtimeResolution: 20
+      RealtimeIndirectSamples: 256
+      RealtimeMaxBounces: 1
+      AutoGenerate: false
+      BakeOnSceneLoad: 0
+      APVFitToScene: true
+      APVOrigin: [-10, -1, -10]
+      APVSize: [20, 10, 20]
+      APVProbeOffset: [0, 0, 0]
+      APVMinSpacing: 1
+      APVMaxSpacing: 9
+      APVBakingMode: 0
+      APVDilation: false
+      APVVirtualOffset: true
+      APVValidityThreshold: 0.75
+      APVSearchDistanceMultiplier: 0.2
+      APVGeometryBias: 0.01
+      APVRayOriginBias: -0.001
+EditorCamera:
+  CameraMode: 0
+  Position: [0, 34.404385, 24.09021]
+  Distance: 42
+  Pitch: 0.9599311
+  Yaw: 0
+  OrthographicSize: 10
+Hierarchy:
+  - Child: 8054493765534556829
+    Parent: 2370875993503497777
+  - Child: 4233827206531210279
+    Parent: 7752952005698536201

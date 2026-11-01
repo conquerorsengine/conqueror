@@ -1,0 +1,35 @@
+// Fonksiyonlar, kapanışlar, varsayılan parametreler
+func add(a, b = 10) { return a + b; }
+print(add(1), add(1, 2));
+func fib(n) => n < 2 ? n : fib(n - 1) + fib(n - 2);
+print(fib(20));
+func makeCounter() {
+    var count = 0;
+    return () => { count++; return count; };
+}
+var c1 = makeCounter();
+var c2 = makeCounter();
+c1(); c1();
+print(c1(), c2());
+var adders = [];
+for (var i = 0; i < 3; i++) { var j = i; adders.Add(x => x + j); }
+print(adders[0](100), adders[2](100));
+var square = func (x) { return x * x; };
+print(square(7));
+print([1, 2, 3, 4].Map(x => x * x).Filter(x => x > 4));
+print([3, 1, 2].Reduce((a, b) => a + b), [5, 9, 1].Max(), [1, 2].Sum());
+func outer() {
+    var a = 1;
+    func inner() { a += 1; return a; }
+    inner(); inner();
+    return a;
+}
+print(outer());
+float typed(float v, int n = 2) { return v * n; }
+print(typed(1.5), typed(1.5, 4));
+void noop() { }
+print(noop());
+var compose = (f, g) => x => f(g(x));
+print(compose(x => x + 1, x => x * 2)(5));
+func varargsLike(list) { return list.Count; }
+print(varargsLike([1, 2, 3]));

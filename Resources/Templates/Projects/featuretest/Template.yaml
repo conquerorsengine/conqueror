@@ -1,0 +1,5 @@
+# Feature Test (Flax / Stride style feature showcase): one station per engine feature, free-fly camera
+Shared: [Prototype, Mannequin]
+StartScene: Assets/Scenes/Main.cqscene
+Scenes:
+  - Assets/Scenes/Main.cqscene

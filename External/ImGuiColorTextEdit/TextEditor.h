@@ -210,6 +210,15 @@ public:
 	void SetReadOnly(bool aValue);
 	bool IsReadOnly() const { return mReadOnly; }
 	bool IsTextChanged() const { return mTextChanged; }
+	// Conqueror eklemeleri: otomatik tamamlama ve teşhis için
+	ImVec2 GetCursorScreenPos() const { return mCursorScreenPos; }
+	bool IsCursorOnScreen() const { return mCursorOnScreen; }
+	float GetLineHeight() const { return mCharAdvance.y; }
+	std::string GetWordBeforeCursor() const;
+	char GetCharBeforeWord() const;
+	void ReplaceWordBeforeCursor(const std::string& aText);
+	void ReplaceSelection(const std::string& aText);
+	void ScrollToLine(int aLine);
 	bool IsCursorPositionChanged() const { return mCursorPositionChanged; }
 
 	bool IsColorizerEnabled() const { return mColorizerEnabled; }
@@ -381,6 +390,8 @@ private:
 	Breakpoints mBreakpoints;
 	ErrorMarkers mErrorMarkers;
 	ImVec2 mCharAdvance;
+	ImVec2 mCursorScreenPos = ImVec2(0, 0);
+	bool mCursorOnScreen = false;
 	Coordinates mInteractiveStart, mInteractiveEnd;
 	std::string mLineBuffer;
 	uint64_t mStartTime;

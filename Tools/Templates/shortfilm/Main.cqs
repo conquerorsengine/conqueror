@@ -1,0 +1,251 @@
+// Short Film (Unreal sinematik örnekleri / Unity Timeline örneği karşılığı): "The Lantern", tamamen Timeline ile anlatılan
+// bir dakikalık kısa film. Alacakaranlıkta şehir meydanı (Plaza seti): Leo elinde bir kutuyla bankta Mira'yı bekler; kutudan
+// bir kâğıt fener yükselir, meydanın lambaları birer birer yanar. Kamera kesmeleri, lens ve netlik, oyuncular, ışıklar,
+// başlıklar ve müzik Assets/Film/TheLantern.cqtimeline içinde (Tools/Templates/shortfilm/make_film.py üretir).
+// Play: film oynar. Record (Fixed Time Step açık) ile kare kaçırmadan MP4'e kaydedilir.
+// @EditorCamera 16 -16 235 4.5 1.2 3
+
+// ---------------------------------------------------------------- ışık: altın saat (güneş film boyunca batar)
+var sun = OutdoorLighting(-25, 290);
+EntitySetName(sun, "Sun");
+EntitySetComponentField(sun, "DirectionalLight", "Color", {r: 1.0, g: 0.74, b: 0.5});
+EntitySetComponentField(sun, "DirectionalLight", "Intensity", 3.4);
+RenderSettingSet("Shadows.Distance", 70);
+RenderSettingSet("Post.CloudCoverage", 0.3);
+RenderSettingSet("Post.CloudDensity", 0.45);
+RenderSettingSet("Fog.Color", {r: 0.62, g: 0.6, b: 0.66});
+RenderSettingSet("Fog.Density", 0.0022);
+RenderSettingSet("Post.VolumetricFog", true);            // alçak güneşte ışık huzmeleri
+RenderSettingSet("Post.VolumetricFogDensity", 0.004);
+RenderSettingSet("Post.VolumetricFogAnisotropy", 0.75);
+RenderSettingSet("Post.ScreenSpaceReflections", true);
+RenderSettingSet("Post.SSRIntensity", 0.5);
+RenderSettingSet("Post.BloomIntensity", 0.45);
+RenderSettingSet("Post.MotionBlur", true);
+RenderSettingSet("Post.DepthOfField", false);            // netlik Post Process Volume'dan (zaman çizelgesi sürer)
+
+// ---------------------------------------------------------------- set
+PlazaSet();
+
+// Sokak lambaları ve duvar fenerleri: sönük başlar, zaman çizelgesi birer birer yakar
+func WarmLight(name, parent, x, y, z, range)
+{
+    var l = CreateEntity(name);
+    EntityAddComponent(l, "PointLight");
+    EntitySetComponentField(l, "PointLight", "Color", {r: 1.0, g: 0.7, b: 0.42});
+    EntitySetComponentField(l, "PointLight", "Intensity", 0.0);
+    EntitySetComponentField(l, "PointLight", "Range", range);
+    var p = EntityGetPosition(parent);
+    EntitySetPosition(l, p.x + x, p.y + y, p.z + z);
+    EntitySetParent(l, parent);
+    return l;
+}
+var lampLights = [];
+for (var li = 0; li < PLAZA_LAMP_HEADS.Count; li++)
+{
+    lampLights.Add(WarmLight("Street Lamp " + (li + 1) + " Light", PLAZA_LAMP_HEADS[li], 0, -0.1, 0, 14));
+}
+var wallLights = [];
+for (var wi = 0; wi < PLAZA_WALL_LANTERNS.Count; wi++)
+{
+    // Fener kolu duvardan +Z yönünde 0.8 m uzanır
+    var wl = PLAZA_WALL_LANTERNS[wi];
+    var wr = MathDegToRad(EntityGetRotation(wl).y);
+    wallLights.Add(WarmLight("Wall Lantern " + (wi + 1) + " Light", wl, MathSin(wr) * 0.7, -0.2, MathCos(wr) * 0.7, 7));
+}
+
+// ---------------------------------------------------------------- oyuncular (Animator: zaman çizelgesi klip ve zamanı sürer)
+func FilmActor(name, body, p, outfit)
+{
+    var e = CreateEntity(name);
+    EntityAddComponent(e, "Model");
+    EntitySetComponentField(e, "Model", "FilePath", "Assets/Mannequin/Models/" + body + ".glb");
+    // Kıyafetler: gri mankenin UV'sine boyanmış doku (make_film.py, Character Customizer > Outfit Texture)
+    EntityAddComponent(e, "CharacterCustomizer");
+    EntitySetComponentField(e, "CharacterCustomizer", "OutfitTexture", outfit);
+    EntitySetComponentField(e, "CharacterCustomizer", "SkinShading", false);
+    EntityAddComponent(e, "Animator");
+    EntitySetComponentField(e, "Animator", "Playing", false);
+    EntitySetPosition(e, p.x, 0, p.z);
+    EntitySetRotation(e, 0, p.yaw, 0);
+    return e;
+}
+var leo = FilmActor("Leo", "Mannequin_Male", FILM_LEO, "Assets/Film/Actors/leo_outfit.png");
+var mira = FilmActor("Mira", "Mannequin_Female", FILM_MIRA, "Assets/Film/Actors/mira_outfit.png");
+
+// ---------------------------------------------------------------- hediye kutusu: kraft kutu, kırmızı kurdele, menteşeli kapak
+var KRAFT = {r: 0.6, g: 0.42, b: 0.27, a: 1};
+var RIBBON = {r: 0.72, g: 0.07, b: 0.09, a: 1};
+func Part(root, name, kind, x, y, z, sx, sy, sz, color, rough)
+{
+    var e = Mesh(name, kind, x, y, z, sx, sy, sz, "", color);
+    EntitySetComponentField(e, "MeshRenderer", "Roughness", rough);
+    EntitySetParent(e, root);
+    return e;
+}
+// Dünya merkezinde kurulur, sonra kök taşınır (EntitySetParent dünya dönüşümünü korur)
+func GiftBox(name, withGlow)
+{
+    var root = CreateEntity(name);
+    Part(root, name + " Base", "Cube", 0, 0.1, 0, 0.34, 0.2, 0.26, KRAFT, 0.8);
+    Part(root, name + " Ribbon A", "Cube", 0, 0.1, 0, 0.352, 0.202, 0.05, RIBBON, 0.45);
+    Part(root, name + " Ribbon B", "Cube", 0, 0.1, 0, 0.05, 0.202, 0.272, RIBBON, 0.45);
+    // Kapak: menteşe arka üst kenarda; kapak gövdesi menteşenin çocuğu
+    var hinge = CreateEntity(name + " Lid");
+    EntitySetPosition(hinge, 0, 0.2, -0.13);
+    EntitySetParent(hinge, root);
+    Part(hinge, name + " Lid Top", "Cube", 0, 0.215, 0.0, 0.36, 0.03, 0.28, KRAFT, 0.8);
+    Part(hinge, name + " Lid Ribbon A", "Cube", 0, 0.216, 0.0, 0.372, 0.032, 0.05, RIBBON, 0.45);
+    Part(hinge, name + " Lid Ribbon B", "Cube", 0, 0.216, 0.0, 0.05, 0.032, 0.292, RIBBON, 0.45);
+    var bow = Part(hinge, name + " Bow", "Sphere", 0, 0.245, 0.0, 0.09, 0.05, 0.09, RIBBON, 0.4);
+    var glow = null;
+    if (withGlow)
+    {
+        // İçeriden sızan sıcak ışık (kapak açılınca)
+        glow = CreateEntity(name + " Glow");
+        EntityAddComponent(glow, "PointLight");
+        EntitySetComponentField(glow, "PointLight", "Color", {r: 1.0, g: 0.62, b: 0.3});
+        EntitySetComponentField(glow, "PointLight", "Intensity", 0.0);
+        EntitySetComponentField(glow, "PointLight", "Range", 3.0);
+        EntitySetPosition(glow, 0, 0.16, 0);
+        EntitySetParent(glow, root);
+    }
+    return {root: root, lid: hinge, glow: glow};
+}
+// Leo'nun taşıdığı kutu: göğüs kemiğine bağlı (kemik uzayı: +Y omurga boyunca yukarı, +Z göğüs önü)
+var carried = GiftBox("Gift Box Carried", false);
+EntitySetParent(carried.root, leo);
+EntityAddComponent(carried.root, "BoneAttachment");
+EntitySetComponentField(carried.root, "BoneAttachment", "Bone", "spine_03");
+EntitySetComponentField(carried.root, "BoneAttachment", "PositionOffset", {x: 0.0, y: -0.26, z: 0.3});
+// Bankın üstündeki kutu (Leo bıraktıktan sonra etkin)
+var placed = GiftBox("Gift Box", true);
+EntitySetPosition(placed.root, FILM_BOX.x, FILM_BOX.y, FILM_BOX.z);
+EntitySetRotation(placed.root, 0, FILM_BOX.yaw, 0);
+
+// ---------------------------------------------------------------- kâğıt fener: kutudan yükselir
+var lantern = CreateEntity("Sky Lantern");
+var paper = Mesh("Sky Lantern Paper", "Cylinder", 0, 0.15, 0, 0.26, 0.3, 0.26, "", {r: 0.95, g: 0.62, b: 0.32, a: 1});
+EntitySetComponentField(paper, "MeshRenderer", "EmissionColor", {r: 1.0, g: 0.5, b: 0.18});
+EntitySetComponentField(paper, "MeshRenderer", "EmissionStrength", 0.9);
+EntitySetComponentField(paper, "MeshRenderer", "Roughness", 0.9);
+EntitySetComponentField(paper, "MeshRenderer", "CastShadows", false);
+EntitySetParent(paper, lantern);
+var rim = Mesh("Sky Lantern Rim", "Cylinder", 0, 0.005, 0, 0.24, 0.012, 0.24, "", {r: 0.25, g: 0.16, b: 0.08, a: 1});
+EntitySetParent(rim, lantern);
+var lanternLight = CreateEntity("Sky Lantern Light");
+EntityAddComponent(lanternLight, "PointLight");
+EntitySetComponentField(lanternLight, "PointLight", "Color", {r: 1.0, g: 0.6, b: 0.28});
+EntitySetComponentField(lanternLight, "PointLight", "Intensity", 0.0);
+EntitySetComponentField(lanternLight, "PointLight", "Range", 7.0);
+EntitySetPosition(lanternLight, 0, 0.2, 0);
+EntitySetParent(lanternLight, lantern);
+EntitySetPosition(lantern, FILM_LANTERN.x, FILM_LANTERN.y, FILM_LANTERN.z);
+
+// ---------------------------------------------------------------- kamera ve film görünümü
+var cam = CreateEntity("Film Camera");
+EntityAddComponent(cam, "Camera");
+EntitySetComponentField(cam, "Camera", "Primary", true);
+EntitySetComponentField(cam, "Camera", "FieldOfView", 46);
+EntityAddComponent(cam, "AudioListener");
+EntitySetPosition(cam, -15, 13.5, 24);
+
+var look = CreateEntity("Film Look");
+EntityAddComponent(look, "PostProcessVolume");
+EntitySetComponentField(look, "PostProcessVolume", "Shape", "Global");
+EntitySetComponentField(look, "PostProcessVolume", "OverrideExposure", true);
+EntitySetComponentField(look, "PostProcessVolume", "Exposure", 0.15);
+EntitySetComponentField(look, "PostProcessVolume", "OverrideColorGrading", true);
+EntitySetComponentField(look, "PostProcessVolume", "Temperature", 0.12);
+EntitySetComponentField(look, "PostProcessVolume", "Saturation", 1.08);
+EntitySetComponentField(look, "PostProcessVolume", "Contrast", 1.06);
+EntitySetComponentField(look, "PostProcessVolume", "OverrideVignette", true);
+EntitySetComponentField(look, "PostProcessVolume", "VignetteIntensity", 0.3);
+EntitySetComponentField(look, "PostProcessVolume", "OverrideFilmGrain", true);
+EntitySetComponentField(look, "PostProcessVolume", "FilmGrainIntensity", 0.06);
+EntitySetComponentField(look, "PostProcessVolume", "OverrideDepthOfField", true);
+EntitySetComponentField(look, "PostProcessVolume", "FocusDistance", 12.0);
+EntitySetComponentField(look, "PostProcessVolume", "Aperture", 8.0);
+EntitySetComponentField(look, "PostProcessVolume", "FocalLength", 55.0);
+
+// ---------------------------------------------------------------- başlıklar: sinemaskop şeritleri, açılış, kapanış, kararma
+var titles = UICreateCanvas("Film Titles");
+EntitySetComponentField(titles, "CanvasScaler", "ReferenceResolution", {x: 1920, y: 1080});
+EntitySetComponentField(titles, "CanvasScaler", "MatchWidthOrHeight", 0.5);
+func Bar(name, ay)
+{
+    var b = HudImage(name, titles, "", 0, 0, 0, 132, 0, ay);
+    EntitySetComponentField(b, "RectTransform", "AnchorMin", {x: 0, y: ay});
+    EntitySetComponentField(b, "RectTransform", "AnchorMax", {x: 1, y: ay});
+    EntitySetComponentField(b, "RectTransform", "Pivot", {x: 0.5, y: ay});
+    EntitySetComponentField(b, "RectTransform", "SizeDelta", {x: 0, y: 132});
+    EntitySetColor(b, 0, 0, 0, 1);
+    return b;
+}
+Bar("Letterbox Top", 1);
+Bar("Letterbox Bottom", 0);
+func TitleText(name, parent, text, y, size, alpha)
+{
+    var t = HudText(name, parent, text, 0, y, 1600, size * 1.6, size, "Center", 0.5, 0.5);
+    EntitySetComponentField(t, "UIText", "Shadow", false);
+    EntitySetComponentField(t, "UIText", "Color", {r: 0.98, g: 0.94, b: 0.86, a: alpha});
+    return t;
+}
+var titleGroup = UICreateElement("Panel", titles, "Title");
+EntitySetColor(titleGroup, 0, 0, 0, 0);
+EntitySetComponentField(titleGroup, "UIImage", "RaycastTarget", false);
+UISetSize(titleGroup, 10, 10);
+TitleText("Title Name", titleGroup, "THE LANTERN", 40, 84, 1.0);
+TitleText("Title Line", titleGroup, "a short film made with Conqueror Engine", -40, 30, 0.85);
+UISetAlpha(titleGroup, 0);
+var endGroup = UICreateElement("Panel", titles, "End Card");
+EntitySetColor(endGroup, 0, 0, 0, 0);
+EntitySetComponentField(endGroup, "UIImage", "RaycastTarget", false);
+UISetSize(endGroup, 10, 10);
+TitleText("End Name", endGroup, "THE LANTERN", 50, 56, 1.0);
+TitleText("End Line", endGroup, "Made with Conqueror Engine  -  Timeline, Plaza set, Human characters", -20, 26, 0.85);
+TitleText("End Hint", endGroup, "Edit it in Window > Timeline. Record it with Record (Fixed Time Step).", -62, 22, 0.6);
+UISetAlpha(endGroup, 0);
+var fade = HudImage("Fade", titles, "", 0, 0, 0, 0, 0, 0);
+EntitySetComponentField(fade, "RectTransform", "AnchorMax", {x: 1, y: 1});
+EntitySetComponentField(fade, "RectTransform", "SizeDelta", {x: 0, y: 0});
+EntitySetComponentField(fade, "UIImage", "RaycastTarget", false);
+EntitySetColor(fade, 0, 0, 0, 0);       // düzenleyicide görünüm açık kalsın; zaman çizelgesi ilk karede karartır
+
+// ---------------------------------------------------------------- yönetmen: zaman çizelgesi ve parça bağları
+var director = CreateEntity("Director");
+EntityAddComponent(director, "PlayableDirector");
+EntitySetComponentField(director, "PlayableDirector", "Timeline", "Assets/Film/TheLantern.cqtimeline");
+EntitySetComponentField(director, "PlayableDirector", "PlayOnAwake", true);
+func Bind(track, target)
+{
+    if (!TimelineBind(track, target, director)) { LogError("Short Film: could not bind track '" + track + "'"); }
+}
+Bind("Film Camera", cam);
+Bind("Film Camera Lens", cam);
+Bind("Focus", look);
+Bind("Aperture", look);
+Bind("Exposure", look);
+Bind("Leo", leo);
+Bind("Leo Animation", leo);
+Bind("Mira", mira);
+Bind("Mira Animation", mira);
+Bind("Gift Box Carried", carried.root);
+Bind("Gift Box", placed.root);
+Bind("Gift Box Lid", placed.lid);
+Bind("Gift Box Glow", placed.glow);
+Bind("Sky Lantern", lantern);
+Bind("Sky Lantern Active", lantern);
+Bind("Sky Lantern Light", lanternLight);
+Bind("Sky Lantern Glow", paper);
+Bind("Sun", sun);
+Bind("Sun Light", sun);
+for (var bl = 0; bl < lampLights.Count; bl++)
+{
+    Bind("Street Lamp " + (bl + 1) + " Light", lampLights[bl]);
+    Bind("Street Lamp " + (bl + 1) + " Glass", PLAZA_LAMP_HEADS[bl]);
+}
+for (var bw = 0; bw < wallLights.Count; bw++) { Bind("Wall Lantern " + (bw + 1) + " Light", wallLights[bw]); }
+Bind("Title", titleGroup);
+Bind("End Card", endGroup);
+Bind("Fade", fade);

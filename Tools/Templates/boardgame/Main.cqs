@@ -1,0 +1,101 @@
+// 3D Board Game (altıgen strateji tahtası): Hex Board Kit eklentisinin ürettiği ada, denizin ortasında alçak poligon
+// bir diorama. Ormanlar, köyler, karlı zirveler; beyaz at A* yoluyla tıklanan karoya yürür. Güneş Day Night Cycle
+// eklentisiyle döner (T zaman atlamalı). R her seferinde yeni bir ada üretir.
+// @EditorCamera 20 50 30 0 0 0   (proje açıldığında editör görünümü: uzaklık, eğim, yön, odak)
+RenderSettingSet("Environment.Sky", "Atmosphere");
+RenderSettingSet("Environment.SkyboxIntensity", 1.0);
+RenderSettingSet("Shadows.Enabled", true);
+RenderSettingSet("Shadows.Quality", "Soft");
+RenderSettingSet("Shadows.Distance", 45);
+RenderSettingSet("Post.Tonemap", "ACES");
+RenderSettingSet("Post.AntiAliasing", "TAA");
+RenderSettingSet("Post.AmbientOcclusion", true);
+RenderSettingSet("Post.AORadius", 0.5);
+RenderSettingSet("Post.ScreenSpaceReflections", true);
+RenderSettingSet("Post.SSRIntensity", 0.9);
+RenderSettingSet("Post.Bloom", true);
+RenderSettingSet("Post.BloomIntensity", 0.12);
+RenderSettingSet("Post.Vignette", true);
+RenderSettingSet("Post.VignetteIntensity", 0.22);
+// Minyatür (tilt-shift) hissi: tahta merkezine odaklı hafif alan derinliği; kamera odağı uzaklığa göre günceller
+RenderSettingSet("Post.DepthOfField", true);
+RenderSettingSet("Post.FocusDistance", 17);
+RenderSettingSet("Post.Aperture", 2.8);
+RenderSettingSet("Post.FocalLength", 50);
+RenderSettingSet("Post.DOFMaxBlur", 6);
+RenderSettingSet("Post.Saturation", 1.08);
+RenderSettingSet("Fog.Enabled", true);
+RenderSettingSet("Fog.Mode", "Exponential");
+RenderSettingSet("Fog.Density", 0.012);
+RenderSettingSet("Fog.Color", {r: 0.62, g: 0.74, b: 0.86});
+
+// Deniz: ufka uzanan yansıtıcı su (su karoları görünmez; altıgen kıyılar doğrudan suya iner)
+var sea = Mesh("Sea", "Plane", 0, 0.1, 0, 600, 1, 600, "", {r: 0.05, g: 0.26, b: 0.34, a: 1});
+EntitySetComponentField(sea, "MeshRenderer", "Roughness", 0.06);
+EntitySetComponentField(sea, "MeshRenderer", "CastShadows", false);
+// Sığlık: adanın çevresinde açık turkuaz halka (kumsalın suya geçişi)
+var shallow = Mesh("Shallows", "Cylinder", 0, 0.03, 0, 17.5, 0.1, 17.5, "", {r: 0.16, g: 0.52, b: 0.56, a: 1});
+EntitySetComponentField(shallow, "MeshRenderer", "Roughness", 0.3);
+EntitySetComponentField(shallow, "MeshRenderer", "CastShadows", false);
+
+// Tahta (Hex Board Kit): her oyunda yeni ada; üretimi oyun yöneticisi tetikler (süs + taş yerleşimi ardından)
+var boardRoot = Instantiate("Packages/hex-board-kit/Prefabs/HexBoard.cqprefab", 0, 0, 0);
+SetFields(boardRoot, {generateOnStart: false, radius: 7});
+var map = EntityFindChild(boardRoot, "Tilemap");   // karo paleti çocuktaki Tilemap'te (Grid kökte)
+TilemapSetTileType(map, 0, {Name: "Grass", Color: {r: 0.47, g: 0.71, b: 0.33, a: 1}, Height: 0.3, Walkable: true, Cost: 1});
+TilemapSetTileType(map, 1, {Name: "Water", Color: {r: 0.2, g: 0.5, b: 0.6, a: 0.0}, Height: 0.05, Walkable: false});
+TilemapSetTileType(map, 2, {Name: "Stone", Color: {r: 0.58, g: 0.6, b: 0.4, a: 1}, Height: 0.55, Walkable: true, Cost: 2});
+TilemapSetTileType(map, 3, {Name: "Wall", Color: {r: 0.5, g: 0.48, b: 0.45, a: 1}, Height: 0.8, Walkable: false});
+TilemapSetTileType(map, 4, {Name: "Sand", Color: {r: 0.9, g: 0.82, b: 0.6, a: 1}, Height: 0.2, Walkable: true, Cost: 1});
+var forestTile = TilemapAddTileType(map, "Forest", 0.36, 0.58, 0.27, 1);
+TilemapSetTileType(map, forestTile, {Height: 0.3, Walkable: true, Cost: 2});
+var villageTile = TilemapAddTileType(map, "Village", 0.62, 0.7, 0.4, 1);
+TilemapSetTileType(map, villageTile, {Height: 0.3, Walkable: false});
+
+var propsRoot = CreateEntity("Board Props");
+
+// Oyun taşı: beyaz at (Hex Board Kit HexUnit: tıklanan karoya A* ile zıplayarak gider)
+var knight = CreateEntity("Knight");
+EntitySetModel(knight, "Assets/Models/Knight.glb");
+EntitySetScale(knight, 1.5, 1.5, 1.5);   // kahraman taş: karoda belirgin (~0.65 m)
+AddScript(knight, "Packages/hex-board-kit/Scripts/HexUnit.cqs");
+SetFields(knight, {board: "Tilemap", standHeight: 0.0, hop: 0.22, speed: 3.2});
+
+// Vurgu ve yol noktaları
+var hl = Mesh("Hover Highlight", "Cylinder", 0, 0, 0, 0.9, 0.02, 0.9, "", {r: 1, g: 1, b: 1, a: 0.35});
+EntitySetComponentField(hl, "MeshRenderer", "EmissionColor", {r: 1.0, g: 0.95, b: 0.75});
+EntitySetComponentField(hl, "MeshRenderer", "EmissionStrength", 0.8);
+EntitySetComponentField(hl, "MeshRenderer", "CastShadows", false);
+for (var di = 0; di < 24; di++)
+{
+    var dot = Mesh("Path Dot " + di, "Sphere", 0, -10, 0, 0.11, 0.11, 0.11, "", {r: 1, g: 0.92, b: 0.6, a: 1});
+    EntitySetComponentField(dot, "MeshRenderer", "EmissionColor", {r: 1.0, g: 0.85, b: 0.45});
+    EntitySetComponentField(dot, "MeshRenderer", "EmissionStrength", 2.0);
+    EntitySetComponentField(dot, "MeshRenderer", "CastShadows", false);
+}
+
+// Güneş (Day Night Cycle): sabah 09:30, gün 15 dakika (T ile zaman atlamalı)
+var sun = Instantiate("Packages/day-night-cycle/Prefabs/Sun.cqprefab", 0, 8, 0);
+SetFields(sun, {timeOfDay: 9.5, dayLengthSeconds: 900.0, sunYaw: 35.0, maxIntensity: 3.2});
+
+var game = CreateEntity("Board Game");
+AddScript(game, "Assets/Scripts/BoardGame.cqs");
+
+var cam = CreateEntity("Main Camera");
+EntityAddComponent(cam, "Camera");
+EntitySetComponentField(cam, "Camera", "Primary", true);
+EntitySetComponentField(cam, "Camera", "FieldOfView", 40);
+EntitySetComponentField(cam, "Camera", "FarClip", 1500);
+EntityAddComponent(cam, "AudioListener");
+EntitySetPosition(cam, 8, 13, 11);
+EntitySetRotation(cam, -52, 30, 0);
+AddScript(cam, "Assets/Scripts/BoardCamera.cqs");
+
+// Arayüz
+var hud = UICreateCanvas("HUD");
+EntitySetComponentField(hud, "CanvasScaler", "ReferenceResolution", {x: 1920, y: 1080});
+EntitySetComponentField(hud, "CanvasScaler", "MatchWidthOrHeight", 0.5);
+HudText("TitleText", hud, "HEX ISLAND", 340, -44, 600, 60, 40, "Left", 0, 1);
+HudText("StepsText", hud, "MOVES 0     ISLAND 1", 390, -96, 700, 34, 22, "Left", 0, 1);
+HudText("ClockText", hud, "09:30", -240, -44, 400, 50, 32, "Right", 1, 1);
+HudText("HintText", hud, "LMB MOVE THE KNIGHT     RMB DRAG ROTATE     WHEEL ZOOM     WASD PAN     F FOCUS     R NEW ISLAND     T TIME-LAPSE", 0, 26, 1800, 30, 20, "Center", 0.5, 0);

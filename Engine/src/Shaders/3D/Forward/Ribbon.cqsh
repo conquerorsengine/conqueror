@@ -1,0 +1,50 @@
+#language GLSL
+// Conqueror's Engine - şerit (Line Renderer / Trail Renderer): CPU'da üretilen kameraya bakan üçgen şeritleri
+#type vertex
+#version 450 core
+
+#include "Include/FrameData.glsl"
+
+layout(location = 0) in vec3 a_Position;   // dünya
+layout(location = 1) in vec2 a_UV;
+layout(location = 2) in vec4 a_Color;
+
+out vec2 v_UV;
+out vec4 v_Color;
+
+void main()
+{
+    v_UV = a_UV;
+    v_Color = a_Color;
+    gl_Position = CQ_Frame.ViewProjection * vec4(a_Position, 1.0);
+}
+
+#type fragment
+#version 450 core
+
+#include "Include/Common.glsl"
+#include "Include/FrameData.glsl"
+
+in vec2 v_UV;
+in vec4 v_Color;
+layout(location = 0) out vec4 FragColor;
+
+uniform sampler2D u_Texture;
+uniform int u_HasTexture = 0;
+uniform int u_Additive = 0;
+uniform float u_Emissive = 1.0;
+
+void main()
+{
+    vec4 tex = u_HasTexture == 1 ? texture(u_Texture, v_UV) : vec4(1.0);
+    vec4 c = tex * v_Color;
+    if (c.a < 0.003)
+        discard;
+    vec3 rgb = c.rgb;
+    if (CQ_Frame.FeatureFlags.x == 1)
+        rgb = SRGBToLinear(rgb) * u_Emissive;
+    if (u_Additive == 1)
+        FragColor = vec4(rgb * c.a, 1.0);
+    else
+        FragColor = vec4(rgb, c.a);
+}

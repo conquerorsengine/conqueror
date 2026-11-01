@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: idle_arms_folded
+      States:
+        - Name: idle_arms_folded
+          ClipIndex: 35
+          ClipName: idle_arms_folded
+  Parameters: []

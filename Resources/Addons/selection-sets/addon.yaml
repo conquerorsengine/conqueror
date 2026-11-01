@@ -1,0 +1,12 @@
+Id: conqueror.selection-sets
+Name: Selection Sets
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Save the current selection under a name and bring it back with one click, even after
+  reopening the project: sets are stored by persistent object ids per scene, survive renames,
+  and can be added to, subtracted from or isolated (hide everything else).
+Category: Productivity
+Icon: object-group
+Tags: [editor, selection, productivity, workflow]
+Editor: Editor/SelectionSets.cqs

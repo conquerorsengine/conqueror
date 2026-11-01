@@ -1,0 +1,18 @@
+// Temel değerler ve aritmetik
+print(1 + 2 * 3, 10 - 4, 7 / 2, 7 % 3, -7 % 3, 2.5 * 2);
+print(1 == 1.0, 1 != 2, 3 < 4, "a" < "b", !true, !!0);
+print(5 & 3, 5 | 3, 5 ^ 3, ~0, 1 << 10, 1024 >> 3);
+print(0xFF, 0b1010, 1_000_000, 1e3, 2.5f);
+print(null ?? "fallback", 0 ?? 5, true && false, false || true);
+print("con" + "cat", "n=" + 42, 1.5 + 1);
+var x = 10;
+x += 5; x -= 3; x *= 2; x /= 4;
+print(x);
+var i = 0;
+i++; ++i; i--;
+print(i);
+var big = 9223372036854775807;
+print(big + 1);
+print(typeof(1), typeof(1.0), typeof("s"), typeof([]), typeof({}), typeof(null), typeof(print));
+print((int)3.9, (float)2, (string)12 + "!", int("42") + 1, float("2.5"));
+print(1.0, 0.1 + 0.2, 100.0 / 3.0, 1e21, -0.0);

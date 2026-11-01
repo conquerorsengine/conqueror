@@ -1,0 +1,19 @@
+Id: conqueror.waypoint-patrol
+Name: Waypoint Patrol
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Move anything along a route of waypoints without a NavMesh: guards, trains, drones, moving
+  hazards. Loop, ping-pong or random order, per-waypoint waits, smooth turning toward the next
+  point, constant or eased speed, ground following for walkers and a route preview drawn while
+  playing.
+Category: AI
+Icon: route
+Tags: [patrol, waypoints, path, ai, movement]
+Components:
+  - Scripts/WaypointPatrol.cqs
+Inserts:
+  - Name: Patrol Route
+    Icon: route
+    Prefab: Prefabs/PatrolRoute.cqprefab
+    Tooltip: A patroller and a square route of four waypoints

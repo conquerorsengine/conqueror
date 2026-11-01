@@ -1,0 +1,21 @@
+// Örnek diyalog. Satır biçimleri:
+//   # etiket                bölüm başlangıcı
+//   Konuşan: metin           ekranda gösterilen satır
+//   -> [Seçenek metni] etiket   seçenek (art arda en fazla 3)
+//   -> etiket               doğrudan atlama
+//   end                     konuşmayı bitirir
+# start
+Guard: Halt! Who goes there?
+Player: Just a traveler looking for a place to rest.
+-> [Ask about the town] town
+-> [Ask about the castle] castle
+-> [Leave] bye
+# town
+Guard: The town is quiet these days. The inn is down the road.
+-> bye
+# castle
+Guard: The castle is closed to visitors until the harvest feast.
+-> bye
+# bye
+Guard: Safe travels, stranger.
+end

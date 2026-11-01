@@ -1,0 +1,387 @@
+using nativebridge;
+
+// VR oyuncusu (Unreal VR Template VRPawn / Unity XR Origin karşılığı): baş (kamera), iki el kontrolcüsü, ışınlanma
+// (yay + hedef halkası + kararma), 45 derece adımlı dönüş, isteğe bağlı yumuşak yürüyüş, uzaktan tutma ve fırlatma,
+// tetikle tutulan silahı ateşleme, iki göz önizlemesi.
+//
+// Gözlük bağlı değilken XR Device Simulator (Unity'deki gibi) çalışır: fare başı döndürür, sağ el bakılan yeri işaret
+// eder. Kontroller: sağ tık tut (bırak = fırlat), sol tık tetik, F / G sol el tut / tetik, Space basılı tut = ışınlanma
+// yayı (bırakınca ışınlan), Q / E adımlı dönüş, WASD yürüyüş, C görüşü ortala (gözlükteki "recenter"), V iki göz
+// görünümü, R nesneleri masaya geri koy.
+script XRRig : ConquerorScript
+{
+    public float eyeHeight = 1.65;
+    public float lookSensitivity = 0.12;
+    public float moveSpeed = 2.0;
+    public float snapAngle = 45.0;
+    public float teleportSpeed = 8.5;          // yayın çıkış hızı (m/s)
+    public float grabDistance = 4.0;           // uzaktan tutma ışını
+    public string teleportTag = "Teleport Area";
+    [Header("State")]
+    public string device = "XR Device Simulator";
+    public int teleports = 0;
+    public int grabs = 0;
+    public int throws = 0;
+    public bool stereo = false;
+
+    private var head = -1;
+    private var hands = [];                    // [0] sol, [1] sağ
+    private var held = [-1, -1];
+    private var handPos = [null, null];
+    private var handVel = [{x: 0.0, y: 0.0, z: 0.0}, {x: 0.0, y: 0.0, z: 0.0}];   // fırlatma hızı (son ~0.15 s'nin tepe değeri)
+    private var goalPrev = [null, null];
+    private var pull = [0.0, 0.0];
+    private var arc = -1;
+    private var marker = -1;
+    private var pointer = -1;
+    private float yaw = 0.0;
+    private float pitch = 0.0;
+    private float startYaw = 0.0;
+    private int aimHand = 1;                   // ışınlanma yayını çizen el
+    private bool aiming = false;
+    private bool aimValid = false;
+    private var aimPoint = null;
+    private float fade = 0.0;
+    private float fadeTarget = 0.0;
+    private var pendingTeleport = null;
+    private bool wasGripR = false;
+    private bool wasGripL = false;
+
+    func Start()
+    {
+        head = EntityFindChild(GetEntityId(), "Main Camera");
+        hands = [FindEntity("Left Controller"), FindEntity("Right Controller")];
+        arc = FindEntity("Teleport Arc");
+        marker = FindEntity("Teleport Marker");
+        pointer = FindEntity("Pointer");
+        yaw = GetRotation().y;
+        startYaw = yaw;
+        SetRotation(0, 0, 0);                  // dönüş başta tutulur; kök yalnız konum
+        SetCursorMode(2);
+        if (marker >= 0) { EntitySetActive(marker, false); }
+        SetStereo(false);
+        UISetText("DeviceText", "HEADSET: NOT CONNECTED   -   " + StringToUpper(device));
+    }
+
+    func Forward() { var r = MathDegToRad(yaw); return {x: -MathSin(r), y: 0.0, z: -MathCos(r)}; }
+    func Right() { var r = MathDegToRad(yaw); return {x: MathCos(r), y: 0.0, z: -MathSin(r)}; }
+    func HeadPos() { var p = EntityGetWorldPosition(GetEntityId()); return {x: p.x, y: p.y + eyeHeight, z: p.z}; }
+    func LookDir()
+    {
+        var y = MathDegToRad(yaw);
+        var p = MathDegToRad(pitch);
+        return {x: -MathSin(y) * MathCos(p), y: MathSin(p), z: -MathCos(y) * MathCos(p)};
+    }
+
+    // Yöne bakan Euler (motorun ileri yönü -Z)
+    func AimRotation(d) { return {x: MathRadToDeg(MathAsin(MathClamp(d.y, -1.0, 1.0))), y: MathRadToDeg(MathAtan2(-d.x, -d.z))}; }
+
+    func HandForward(i)
+    {
+        if (hands[i] < 0) { return LookDir(); }
+        return EntityGetForward(hands[i]);
+    }
+
+    func SetStereo(on)
+    {
+        stereo = on;
+        foreach (var n in ["Left Eye", "Right Eye"])
+        {
+            var e = FindEntity(n);
+            if (e >= 0) { EntitySetComponentField(e, "RenderTarget", "UpdateMode", on ? "Always" : "Disabled"); }
+        }
+        UISetAlpha("Left Eye View", on ? 1.0 : 0.0);
+        UISetAlpha("Right Eye View", on ? 1.0 : 0.0);
+        UISetAlpha("Eye Divider", on ? 1.0 : 0.0);
+    }
+
+    func ShowController(i, on)
+    {
+        if (hands[i] < 0) { return; }
+        var m = EntityFindChild(hands[i], "Controller Model");
+        if (m != null && m >= 0) { EntitySetActive(m, on); }
+    }
+
+    func IsGrabbable(e) { return e != null && e >= 0 && GetScriptField(e, "held") != null; }
+
+    // Elin ışınıyla tutulabilir nesne (çarpıştırıcı bir çocuktaysa ata)
+    func FindGrabTarget(i)
+    {
+        var p = EntityGetWorldPosition(hands[i]);
+        var f = HandForward(i);
+        var hit = Raycast(p.x + f.x * 0.06, p.y + f.y * 0.06, p.z + f.z * 0.06, f.x, f.y, f.z, grabDistance, -1, false);
+        if (hit == null) { return null; }
+        var e = hit.entity;
+        var guard = 0;
+        while (e != null && e >= 0 && !IsGrabbable(e) && guard < 6) { e = EntityGetParent(e); guard++; }
+        if (!IsGrabbable(e) || GetScriptField(e, "held") == true) { return null; }
+        return {entity: e, point: hit.point};
+    }
+
+    func Grab(i)
+    {
+        var t = FindGrabTarget(i);
+        if (t == null) { return; }
+        var e = t.entity;
+        held[i] = e;
+        SetScriptField(e, "held", true);
+        EntitySetComponentField(e, "Rigidbody", "BodyType", "Kinematic");
+        EntitySetParent(e, hands[i], true);
+        // Silah gibi ele oturan nesnede kontrolcü modeli gizlenir (Unity XRI "Hide Controller On Select")
+        if (GetScriptField(e, "snapToHand") == true) { ShowController(i, false); }
+        pull[i] = 0.0;
+        grabs++;
+        AudioPlayOneShotAt("Assets/Weapons/Audio/empty_click.wav", t.point.x, t.point.y, t.point.z, 0.4);
+    }
+
+    func Release(i)
+    {
+        var e = held[i];
+        held[i] = -1;
+        if (e == null || e < 0) { return; }
+        EntitySetParent(e, -1, true);
+        ShowController(i, true);
+        EntitySetComponentField(e, "Rigidbody", "BodyType", "Dynamic");
+        SetScriptField(e, "held", false);
+        var v = handVel[i];
+        var speed = MathSqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+        SetLinearVelocity(e, v.x * 1.15, v.y * 1.15, v.z * 1.15);
+        SetAngularVelocity(e, RandomRange(-2, 2), RandomRange(-2, 2), RandomRange(-2, 2));
+        if (speed > 1.5) { throws++; }
+    }
+
+    // Tutulan nesne ele çekilir (uzaktan tutma): ~0.12 s'de el pozuna
+    func UpdateHeld(i, dt)
+    {
+        var e = held[i];
+        if (e == null || e < 0) { return; }
+        if (pull[i] >= 1.0) { return; }
+        pull[i] = MathMin(1.0, pull[i] + dt / 0.12);
+        var k = pull[i] * pull[i] * (3.0 - 2.0 * pull[i]);
+        var lp = EntityGetPosition(e);
+        var snap = GetScriptField(e, "snapToHand") == true;
+        var tx = snap ? GetScriptField(e, "snapX") : 0.0;
+        var ty = snap ? GetScriptField(e, "snapY") : 0.0;
+        var tz = snap ? GetScriptField(e, "snapZ") : -0.12;
+        EntitySetPosition(e, MathLerp(lp.x, tx, k), MathLerp(lp.y, ty, k), MathLerp(lp.z, tz, k));
+        if (snap)
+        {
+            var lr = EntityGetRotation(e);
+            EntitySetRotation(e, MathLerp(lr.x, 0.0, k), lr.y + MathNormalizeAngle(0.0 - lr.y) * k, MathLerp(lr.z, 0.0, k));
+        }
+    }
+
+    func UpdateHands(dt)
+    {
+        var h = HeadPos();
+        var f = Forward();
+        var r = Right();
+        // Sağ el bakılan noktayı işaret eder (simülatörde nişan = bakış), sol el aşağıda dinlenir
+        var look = LookDir();
+        var target = {x: h.x + look.x * 6.0, y: h.y + look.y * 6.0, z: h.z + look.z * 6.0};
+        var view = Raycast(h.x, h.y, h.z, look.x, look.y, look.z, 30.0, -1, false);
+        if (view != null && view.distance > 0.6) { target = view.point; }
+        var goals = [
+            {x: h.x - r.x * 0.2 + f.x * 0.42, y: h.y - 0.3 + MathMax(pitch, -40.0) * 0.003, z: h.z - r.z * 0.2 + f.z * 0.42},
+            {x: h.x + r.x * 0.2 + f.x * 0.45, y: h.y - 0.28 + MathMax(pitch, -40.0) * 0.004, z: h.z + r.z * 0.2 + f.z * 0.45}];
+        var k = 1.0 - MathExp(-22.0 * dt);
+        for (var i = 0; i < 2; i++)
+        {
+            if (hands[i] < 0) { continue; }
+            var g = goals[i];
+            var prev = handPos[i];
+            var p = prev == null ? g : {x: MathLerp(prev.x, g.x, k), y: MathLerp(prev.y, g.y, k), z: MathLerp(prev.z, g.z, k)};
+            // Fırlatma hızı elin hedef pozunun hızından (yumuşatılmış el geride kalır, savurma anında bırakılınca kaybolurdu);
+            // tepe değeri kısa süre tutulur: savurup hemen bırakmak da fırlatır
+            var gp = goalPrev[i];
+            if (gp != null && dt > 0.0)
+            {
+                var nv = {x: (g.x - gp.x) / dt, y: (g.y - gp.y) / dt, z: (g.z - gp.z) / dt};
+                var decay = MathExp(-dt / 0.15);
+                var hv = handVel[i];
+                if (nv.x * nv.x + nv.y * nv.y + nv.z * nv.z > (hv.x * hv.x + hv.y * hv.y + hv.z * hv.z) * decay * decay) { handVel[i] = nv; }
+                else { handVel[i] = {x: hv.x * decay, y: hv.y * decay, z: hv.z * decay}; }
+            }
+            goalPrev[i] = g;
+            handPos[i] = p;
+            EntitySetWorldPosition(hands[i], p.x, p.y, p.z);
+            // Sağ el (ve ışınlanırken yayı çizen el) bakılan noktayı gösterir
+            if (i == 1 || (aiming && i == aimHand))
+            {
+                var d = {x: target.x - p.x, y: target.y - p.y, z: target.z - p.z};
+                var dl = MathMax(MathSqrt(d.x * d.x + d.y * d.y + d.z * d.z), 0.001);
+                var ar = AimRotation({x: d.x / dl, y: d.y / dl, z: d.z / dl});
+                EntitySetRotation(hands[i], ar.x, ar.y, 0);
+            }
+            else { EntitySetRotation(hands[i], MathMax(pitch, -50.0) * 0.6 - 18.0, yaw + 8.0, 0); }
+        }
+    }
+
+    // Işınlanma yayı: elden fırlatılan parabol; ilk çarpılan yüzey yatay ve "Teleport Area" ise geçerli
+    func UpdateArc(i)
+    {
+        var p = EntityGetWorldPosition(hands[i]);
+        var f = HandForward(i);
+        var vx = f.x * teleportSpeed;
+        var vy = f.y * teleportSpeed;
+        var vz = f.z * teleportSpeed;
+        var pts = [{x: p.x, y: p.y, z: p.z}];
+        var cur = {x: p.x, y: p.y, z: p.z};
+        aimValid = false;
+        aimPoint = null;
+        var hitFound = false;
+        for (var s = 0; s < 60 && !hitFound; s++)
+        {
+            var step = 0.035;
+            var nx = cur.x + vx * step;
+            var ny = cur.y + vy * step;
+            var nz = cur.z + vz * step;
+            vy -= 9.81 * step;
+            var dx = nx - cur.x;
+            var dy = ny - cur.y;
+            var dz = nz - cur.z;
+            var len = MathSqrt(dx * dx + dy * dy + dz * dz);
+            var hit = Raycast(cur.x, cur.y, cur.z, dx / len, dy / len, dz / len, len, -1, false);
+            if (hit != null)
+            {
+                pts.Add({x: hit.point.x, y: hit.point.y, z: hit.point.z});
+                hitFound = true;
+                aimPoint = hit.point;
+                aimValid = hit.normal.y > 0.7 && EntityGetTag(hit.entity) == teleportTag;
+            }
+            else
+            {
+                cur = {x: nx, y: ny, z: nz};
+                pts.Add(cur);
+                if (cur.y < -20.0) { break; }
+            }
+        }
+        if (arc >= 0)
+        {
+            EntitySetActive(arc, true);
+            EntitySetComponentField(arc, "LineRenderer", "Positions", pts);
+            var c = aimValid ? {r: 0.2, g: 0.85, b: 1.0, a: 1} : {r: 1.0, g: 0.25, b: 0.2, a: 1};
+            EntitySetComponentField(arc, "LineRenderer", "StartColor", c);
+            EntitySetComponentField(arc, "LineRenderer", "EndColor", c);
+        }
+        if (marker >= 0)
+        {
+            EntitySetActive(marker, aimValid);
+            if (aimValid)
+            {
+                EntitySetWorldPosition(marker, aimPoint.x, aimPoint.y + 0.02, aimPoint.z);
+                EntitySetRotation(marker, 0, yaw + 180.0, 0);
+            }
+        }
+    }
+
+    func HideArc()
+    {
+        if (arc >= 0) { EntitySetActive(arc, false); }
+        if (marker >= 0) { EntitySetActive(marker, false); }
+    }
+
+    func Update(dt)
+    {
+        if (dt > 0.1) { dt = 0.1; }
+        // Simülatör: fare ile baş
+        var md = GetMouseDelta();
+        yaw = MathNormalizeAngle(yaw - md.x * lookSensitivity);
+        pitch = MathClamp(pitch - md.y * lookSensitivity, -85.0, 85.0);
+        if (IsKeyDown("Q")) { yaw = MathNormalizeAngle(yaw + snapAngle); fade = MathMax(fade, 0.6); }
+        if (IsKeyDown("E")) { yaw = MathNormalizeAngle(yaw - snapAngle); fade = MathMax(fade, 0.6); }
+        if (IsKeyDown("V")) { SetStereo(!stereo); }
+        if (IsKeyDown("C")) { yaw = startYaw; pitch = 0.0; }
+        if (IsKeyDown("R")) { foreach (var g in FindEntitiesWithScript("Grabbable")) { InvokeMethod(g, "ResetBody"); } }
+        // Yumuşak yürüyüş (WASD), duvara girmez
+        var mx = 0.0;
+        var mz = 0.0;
+        if (IsKeyPressed("W")) { mz += 1.0; }
+        if (IsKeyPressed("S")) { mz -= 1.0; }
+        if (IsKeyPressed("D")) { mx += 1.0; }
+        if (IsKeyPressed("A")) { mx -= 1.0; }
+        if (mx != 0.0 || mz != 0.0)
+        {
+            var fw = Forward();
+            var rt = Right();
+            var dx = fw.x * mz + rt.x * mx;
+            var dz = fw.z * mz + rt.z * mx;
+            var dl = MathSqrt(dx * dx + dz * dz);
+            dx /= dl;
+            dz /= dl;
+            var o = EntityGetWorldPosition(GetEntityId());
+            var block = Raycast(o.x, o.y + 0.9, o.z, dx, 0.0, dz, 0.45, -1, false);
+            if (block == null || IsGrabbable(block.entity))
+            {
+                SetPosition(o.x + dx * moveSpeed * dt, o.y, o.z + dz * moveSpeed * dt);
+            }
+        }
+        if (head >= 0)
+        {
+            EntitySetPosition(head, 0, eyeHeight, 0);
+            EntitySetRotation(head, pitch, yaw, 0);
+        }
+        UpdateHands(dt);
+
+        // Tutma (sağ: sağ tık, sol: F) ve tetik (sol tık, G)
+        var gripR = IsMouseButtonPressed(1);
+        var gripL = IsKeyPressed("F");
+        if (gripR && !wasGripR && held[1] < 0) { Grab(1); }
+        if (!gripR && wasGripR && held[1] >= 0) { Release(1); }
+        if (gripL && !wasGripL && held[0] < 0) { Grab(0); }
+        if (!gripL && wasGripL && held[0] >= 0) { Release(0); }
+        wasGripR = gripR;
+        wasGripL = gripL;
+        if (IsMouseButtonDown(0) && held[1] >= 0) { InvokeMethod(held[1], "Use"); }
+        if (IsKeyDown("G") && held[0] >= 0) { InvokeMethod(held[0], "Use"); }
+        UpdateHeld(0, dt);
+        UpdateHeld(1, dt);
+
+        // Işınlanma: Space basılıyken yay (sağ el doluysa sol elden), bırakınca kararıp ışınlan
+        var tele = IsKeyPressed("Space");
+        if (tele)
+        {
+            aiming = true;
+            aimHand = held[1] >= 0 ? 0 : 1;
+            UpdateArc(aimHand);
+        }
+        else if (aiming)
+        {
+            aiming = false;
+            HideArc();
+            if (aimValid && aimPoint != null)
+            {
+                pendingTeleport = aimPoint;
+                fadeTarget = 1.0;
+            }
+        }
+        // Kararma: tam kararınca ışınlan, sonra aç
+        var speed = fadeTarget > fade ? 12.0 : 6.0;
+        fade = fade + (fadeTarget - fade) * MathMin(1.0, speed * dt);
+        if (fadeTarget == 0.0) { fade = MathMax(0.0, fade - dt * 3.0); }
+        if (pendingTeleport != null && fade > 0.95)
+        {
+            Teleport(pendingTeleport.x, pendingTeleport.y, pendingTeleport.z);
+            SetPosition(pendingTeleport.x, pendingTeleport.y, pendingTeleport.z);
+            handPos = [null, null];
+            goalPrev = [null, null];
+            handVel = [{x: 0.0, y: 0.0, z: 0.0}, {x: 0.0, y: 0.0, z: 0.0}];
+            pendingTeleport = null;
+            fadeTarget = 0.0;
+            teleports++;
+        }
+        UISetAlpha("Fade", fade);
+
+        // İşaretçi: sağ el boşken tutulabilir nesneye ince ışın ve nokta
+        if (pointer >= 0)
+        {
+            var t = (held[1] < 0 && !aiming && hands[1] >= 0) ? FindGrabTarget(1) : null;
+            EntitySetActive(pointer, t != null);
+            if (t != null)
+            {
+                var hp = EntityGetWorldPosition(hands[1]);
+                EntitySetComponentField(pointer, "LineRenderer", "Positions", [{x: hp.x, y: hp.y, z: hp.z}, {x: t.point.x, y: t.point.y, z: t.point.z}]);
+            }
+        }
+    }
+}

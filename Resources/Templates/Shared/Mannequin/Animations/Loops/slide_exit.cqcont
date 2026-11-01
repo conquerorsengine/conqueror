@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: slide_exit
+      States:
+        - Name: slide_exit
+          ClipIndex: 40
+          ClipName: slide_exit
+  Parameters: []

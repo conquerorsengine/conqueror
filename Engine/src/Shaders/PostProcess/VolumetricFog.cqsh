@@ -1,0 +1,126 @@
+#language GLSL
+// Hacimsel sis (yarım çözünürlük): kameradan yüzeye (ya da en fazla mesafeye) ışın yürütme; üstel yükseklik sisi
+// yoğunluğu, gölge haritasıyla örtülen güneş saçılması (Henyey-Greenstein) ve gökyüzü ortam ışığı.
+// Çıktı: rgb içe saçılan ışık, a geçirgenlik (sahne * a + rgb)
+#type vertex
+#version 450 core
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+out vec2 v_UV;
+void main()
+{
+    v_UV = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+
+#include "Include/Common.glsl"
+#include "Include/FrameData.glsl"
+
+layout(location = 0) out vec4 FragColor;
+in vec2 v_UV;
+
+uniform sampler2D u_Depth;
+uniform sampler2D u_ShadowMap;
+uniform mat4 u_InvViewProj;
+uniform mat4 u_View;
+uniform vec3 u_CameraPos;
+uniform float u_Density = 0.01;
+uniform float u_HeightFalloff = 0.1;
+uniform float u_BaseHeight = 0.0;
+uniform float u_Anisotropy = 0.2;
+uniform float u_Intensity = 1.0;
+uniform float u_MaxDistance = 80.0;
+uniform vec3 u_Albedo = vec3(1.0);
+uniform float u_Ambient = 0.3;
+uniform int u_Steps = 32;
+uniform int u_UseShadows = 1;
+uniform float u_Time = 0.0;
+
+float PhaseHG(float cosTheta, float g)
+{
+    float g2 = g * g;
+    return (1.0 - g2) / (4.0 * PI * pow(max(1.0 + g2 - 2.0 * g * cosTheta, 1e-4), 1.5));
+}
+
+float FogDensity(vec3 p)
+{
+    return u_Density * exp(-max(u_HeightFalloff, 0.0) * (p.y - u_BaseHeight));
+}
+
+// Güneş görünürlüğü: cascade gölge atlasından tek örnek (1 aydınlık, 0 gölge)
+float SunVisibility(vec3 worldPos)
+{
+    if (u_UseShadows == 0 || CQ_Frame.ShadowParams.x < 0.5)
+        return 1.0;
+    int count = int(CQ_Frame.ShadowParams2.z + 0.5);
+    float viewDepth = -(u_View * vec4(worldPos, 1.0)).z;
+    for (int i = 0; i < count; ++i)
+    {
+        if (viewDepth < CQ_Frame.CascadeSplits[i])
+        {
+            vec4 ls = CQ_Frame.LightSpace[i] * vec4(worldPos, 1.0);
+            vec3 p = ls.xyz / ls.w * 0.5 + 0.5;
+            if (p.z >= 1.0 || any(lessThan(p.xy, vec2(0.0))) || any(greaterThan(p.xy, vec2(1.0))))
+                return 1.0;
+            vec4 r = CQ_Frame.CascadeRects[i];
+            float occluder = textureLod(u_ShadowMap, r.xy + p.xy * r.zw, 0.0).r;
+            return p.z - 0.002 > occluder ? 0.0 : 1.0;
+        }
+    }
+    return 1.0;
+}
+
+vec3 SkyAmbient()
+{
+    // Yukarı bakan SH ışınımı (π'ye bölünmüş) ~ gökyüzünün ortalama parlaklığı
+    vec3 up = CQ_Frame.IrradianceSH[0].rgb * 0.282095 + CQ_Frame.IrradianceSH[1].rgb * 0.488603;
+    if (CQ_Frame.AmbientParams.y == 0)
+        up = CQ_Frame.AmbientSkyColor.rgb;
+    return max(up, vec3(0.0)) * CQ_Frame.AmbientSkyColor.a;
+}
+
+void main()
+{
+    float depth = texture(u_Depth, v_UV).r;
+    vec4 world = u_InvViewProj * vec4(v_UV * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+    vec3 target = world.xyz / world.w;
+    vec3 toTarget = target - u_CameraPos;
+    float dist = length(toTarget);
+    vec3 dir = toTarget / max(dist, 1e-4);
+    float marchLength = min(depth >= 1.0 ? u_MaxDistance : dist, u_MaxDistance);
+
+    int steps = clamp(u_Steps, 4, 64);
+    float ds = marchLength / float(steps);
+    float jitter = InterleavedGradientNoise(gl_FragCoord.xy + vec2(fract(u_Time * 7.31) * 64.0));
+
+    bool hasSun = CQ_Frame.SunDirection.w > 0.5;
+    vec3 L = -normalize(CQ_Frame.SunDirection.xyz);
+    vec3 sunColor = hasSun ? CQ_Frame.SunColor.rgb * u_Intensity : vec3(0.0);
+    float phase = PhaseHG(dot(dir, L), clamp(u_Anisotropy, -0.95, 0.95));
+    vec3 ambient = SkyAmbient() * u_Ambient;
+
+    vec3 scattered = vec3(0.0);
+    float transmittance = 1.0;
+    for (int i = 0; i < steps; ++i)
+    {
+        float t = (float(i) + jitter) * ds;
+        vec3 p = u_CameraPos + dir * t;
+        float density = FogDensity(p);
+        if (density < 1e-6)
+            continue;
+        float stepT = exp(-density * ds);
+        vec3 light = ambient;
+        if (hasSun)
+            light += sunColor * phase * 4.0 * PI * 0.25 * SunVisibility(p);
+        // Enerji korunumlu adım integrali (Frostbite): (L - L*T) / yoğunluk
+        vec3 S = light * u_Albedo * density;
+        scattered += transmittance * (S - S * stepT) / max(density, 1e-6);
+        transmittance *= stepT;
+        if (transmittance < 0.01)
+            break;
+    }
+    FragColor = vec4(scattered, transmittance);
+}

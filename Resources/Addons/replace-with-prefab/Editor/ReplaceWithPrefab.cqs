@@ -1,0 +1,71 @@
+using nativebridge;
+
+// Seçimi prefab örnekleriyle değiştir. prefabPath boşsa: ilk seçili nesne kaynak, diğerleri onun kopyasıyla değişir.
+script ReplaceWithPrefab : ConquerorScript
+{
+    public string prefabPath = "";
+    public bool keepScale = true;
+    public bool keepName = false;
+    public bool keepParent = true;
+
+    // Bilgi
+    public int replaced = 0;
+    public string status = "";
+
+    func OnLoad()
+    {
+        EditorAddMenuItem("Replace/Replace Selection With Prefab", "Replace");
+        EditorAddToolButton("Replace", "arrow-right-arrow-left", "Replace", "Replace the selection with the prefab (or with the first selected object)");
+        EditorAddPanel("Replace With Prefab", "DrawPanel");
+    }
+
+    func Replace()
+    {
+        var sel = EditorGetSelection();
+        var source = null;
+        var targets = [];
+        if (prefabPath != "")
+        {
+            if (!PrefabExists(prefabPath)) { status = "Prefab not found: " + prefabPath; EditorNotify(status); return; }
+            for (var e in sel) { targets.Add(e); }
+        }
+        else
+        {
+            if (len(sel) < 2) { status = "Select the source first, then the objects to replace."; EditorNotify(status); return; }
+            source = sel[0];
+            for (var i = 1; i < len(sel); i++) { targets.Add(sel[i]); }
+        }
+        var created = [];
+        for (var t in targets)
+        {
+            var p = EntityGetPosition(t);
+            var r = EntityGetRotation(t);
+            var s = EntityGetScale(t);
+            var parent = EntityGetParent(t);
+            var copy = source != null ? Instantiate(source, p.x, p.y, p.z) : Instantiate(prefabPath, p.x, p.y, p.z);
+            if (copy == null) { continue; }
+            if (keepParent && parent != null && parent >= 0) { EntitySetParent(copy, parent, false); }
+            EntitySetPosition(copy, p.x, p.y, p.z);
+            EntitySetRotation(copy, r.x, r.y, r.z);
+            if (keepScale) { EntitySetScale(copy, s.x, s.y, s.z); }
+            if (keepName) { EntitySetName(copy, EntityGetName(t)); }
+            EntityDestroy(t);
+            created.Add(copy);
+        }
+        replaced = created.Count;
+        if (created.Count > 0) { EditorSetSelection(created); }
+        status = "Replaced " + str(replaced) + " object(s)";
+        EditorNotify(status);
+    }
+
+    func DrawPanel()
+    {
+        prefabPath = GuiInputText("Prefab (.cqprefab)", prefabPath);
+        GuiTextDisabled(prefabPath == "" ? "Empty: the first selected object is used as the source" : (PrefabExists(prefabPath) ? "Prefab found" : "Prefab not found"));
+        keepScale = GuiCheckbox("Keep Scale", keepScale);
+        keepName = GuiCheckbox("Keep Name", keepName);
+        keepParent = GuiCheckbox("Keep Parent", keepParent);
+        if (GuiButton("Replace Selection", -1)) { EditorRunUndoable("Replace With Prefab", "Replace"); }
+        if (status != "") { GuiTextDisabled(status); }
+    }
+}

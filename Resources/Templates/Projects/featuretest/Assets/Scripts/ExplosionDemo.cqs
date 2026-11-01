@@ -1,0 +1,70 @@
+using nativebridge;
+
+// Patlama: sandık piramidi dizilir, kısa bir süre sonra AddExplosionForce ile savrulur (parlama ışığı, kıvılcım /
+// duman patlaması, ses). Döngü istasyona ne zaman gelinirse gelinsin görülür.
+script ExplosionDemo : ConquerorScript
+{
+    public float interval = 8.0;
+    public float fuse = 2.0;             // dizildikten sonra patlamaya kadar
+    public float force = 85.0;           // dürtü (N·s), uzaklıkla azalır: en yakın 10 kg sandık ~7 m/s
+    public float radius = 4.0;
+    public float upwards = 0.8;
+    public string cratePrefix = "Blast Crate";
+    public string flashName = "Blast Flash";
+    public string sparksName = "Blast Sparks";
+    public string smokeName = "Blast Smoke";
+    public string sound = "Assets/Audio/explosion.wav";
+    [Header("State")]
+    public int blasts = 0;
+
+    private var crates = [];
+    private var flash = -1;
+    private var sparks = -1;
+    private var smoke = -1;
+    private float timer = 0.4;
+    private float fuseTimer = -1.0;
+    private float flashLevel = 0.0;
+
+    func Start()
+    {
+        foreach (var e in FindEntitiesWithScript("PhysicsReset"))
+        {
+            if (StringStartsWith(EntityGetName(e), cratePrefix)) { crates.Add(e); }
+        }
+        flash = FindEntity(flashName);
+        sparks = FindEntity(sparksName);
+        smoke = FindEntity(smokeName);
+    }
+
+    func Update(dt)
+    {
+        timer -= dt;
+        if (timer <= 0.0)
+        {
+            timer = interval;
+            foreach (var c in crates) { InvokeMethod(c, "ResetBody"); }
+            fuseTimer = fuse;
+        }
+        if (fuseTimer > 0.0)
+        {
+            fuseTimer -= dt;
+            if (fuseTimer <= 0.0) { Blast(); }
+        }
+        if (flashLevel > 0.0)
+        {
+            flashLevel = MathMax(0.0, flashLevel - dt * 4.0);
+            if (flash != null && flash >= 0) { EntitySetComponentField(flash, "PointLight", "Intensity", 60.0 * flashLevel * flashLevel); }
+        }
+    }
+
+    func Blast()
+    {
+        var p = EntityGetWorldPosition(GetEntityId());
+        AddExplosionForce(force, p.x, p.y, p.z, radius, upwards);
+        flashLevel = 1.0;
+        if (sparks != null && sparks >= 0) { ParticleEmit(sparks, 90); }
+        if (smoke != null && smoke >= 0) { ParticleEmit(smoke, 28); }
+        AudioPlayOneShotAt(sound, p.x, p.y, p.z, 0.9);
+        blasts++;
+    }
+}

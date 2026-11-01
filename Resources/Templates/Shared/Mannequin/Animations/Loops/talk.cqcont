@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: talk
+      States:
+        - Name: talk
+          ClipIndex: 26
+          ClipName: talk
+  Parameters: []

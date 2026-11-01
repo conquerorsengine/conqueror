@@ -1,0 +1,10 @@
+AnimMontage:
+  Name: HitReact
+  ClipName: hit
+  ClipIndex: 16
+  Rate: 1.2
+  BlendIn: 0.05
+  BlendOut: 0.2
+  FromBone: "spine_01"
+  Sections: []
+  Notifies: []

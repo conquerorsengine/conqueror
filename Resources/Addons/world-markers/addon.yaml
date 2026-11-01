@@ -1,0 +1,19 @@
+Id: conqueror.world-markers
+Name: Objective Markers
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Screen-space markers that point at objects in the world: an icon follows the target on
+  screen with its distance in meters, sticks to the screen edge with an arrow when the target
+  is off screen or behind the camera, and fades when you get close. One marker per target,
+  set the target by name.
+Category: UI
+Icon: location-crosshairs
+Tags: [ui, markers, objectives, waypoints, hud, navigation]
+Components:
+  - Scripts/ObjectiveMarker.cqs
+Inserts:
+  - Name: Objective Marker
+    Icon: location-crosshairs
+    Prefab: Prefabs/ObjectiveMarker.cqprefab
+    Tooltip: Canvas marker that tracks the object named "Objective"

@@ -1,9 +1,19 @@
+#include <charconv>
+#include <cctype>
+#include <unordered_map>
+#include <memory>
 #include "CQSNativeBridge.h"
 #include "CQSVM.h"
 #include "CQSEngine.h"
+#include "Scripting/NativeRegistry.h"
+#include "Scripting/ScriptContext.h"
 #include "Core/Logging/Log.h"
 #include "Core/Input/Input.h"
 #include "Core/Time/TimeManager.h"
+#include "Core/Profiling/FrameProfiler.h"
+#include "Scene/SceneManager.h"
+#include "Core/Project/Project.h"
+#include "Timeline/TimelineSystem.h"
 #include "Core/PhysicsSystem/Physics.h"
 #include "Core/Audio/AudioEngine.h"
 #include "Core/Audio/AudioSource.h"
@@ -24,6 +34,8 @@
 #include "Core/Utils/FileSystem.h"
 #include "Core/Utils/RegexUtils.h"
 #include "Core/Utils/SaveSystem.h"
+#include "Core/Utils/PlayerPrefs.h"
+#include <filesystem>
 #include "Core/Math/GeomUtils.h"
 #include "Core/Math/ExpressionParser.h"
 #include "Core/Math/MathExtended.h"
@@ -50,17 +62,58 @@
 
 namespace Conqueror::CQS
 {
+    namespace
+    {
+        // Tohum başına önbellekli gürültü üreteci (permütasyon tablosu her çağrıda kurulmaz)
+        template<typename T>
+        const T& NoiseCache(uint32_t seed)
+        {
+            static std::unordered_map<uint32_t, std::unique_ptr<T>> s_Cache;
+            auto it = s_Cache.find(seed);
+            if (it != s_Cache.end())
+                return *it->second;
+            if (s_Cache.size() > 64)
+                s_Cache.clear();
+            auto& slot = s_Cache[seed];
+            slot = std::make_unique<T>(seed);
+            return *slot;
+        }
+
+        float NoiseArg(int argc, Value* args, int i, float def = 0.0f)
+        {
+            return i < argc && args[i].IsNumber() ? (float)args[i].ToNumber() : def;
+        }
+        uint32_t NoiseSeed(int argc, Value* args, int i)
+        {
+            return i < argc && args[i].IsNumber() ? (uint32_t)(int64_t)args[i].ToNumber() : 0u;
+        }
+    }
+
     // ── Helper ──
     static Entity GetCurrentEntity()
     {
-        auto* vm = CQSEngine::GetVM();
-        auto* scene = static_cast<Scene*>(CQSEngine::GetActiveScene());
-        if (!vm || !scene) return Entity{};
-        auto* inst = vm->GetCurrentInstance();
-        if (!inst || inst->EntityHandle == 0xFFFFFFFF) return Entity{};
-        entt::entity handle = static_cast<entt::entity>(inst->EntityHandle);
+        auto* scene = ScriptContext::GetActiveScene();
+        uint32_t id = ScriptContext::GetCurrentEntity();
+        if (!scene || id == ScriptContext::NullEntity) return Entity{};
+        entt::entity handle = static_cast<entt::entity>(id);
         if (!scene->m_Registry.valid(handle)) return Entity{};
         return Entity{ handle, scene };
+    }
+
+    // İsteğe bağlı ilk argüman hedef varlık: argüman sayısı temel sayıyı aşarsa ilk argüman varlık kimliğidir
+    // (ör. SetLinearVelocity2D(x, y) betiğin kendi gövdesi, SetLinearVelocity2D(other, x, y) başka gövde)
+    static Entity TargetOrSelf(int& argCount, Value*& args, int baseArity)
+    {
+        if (argCount > baseArity && args[0].IsNumber())
+        {
+            auto* scene = ScriptContext::GetActiveScene();
+            entt::entity handle = static_cast<entt::entity>((uint32_t)(int64_t)args[0].ToNumber());
+            ++args;
+            --argCount;
+            if (!scene || !scene->m_Registry.valid(handle)) return Entity{};
+            return Entity{ handle, scene };
+        }
+        return GetCurrentEntity();
     }
 
     static CQSMapObject* MakeVec3Map(float x, float y, float z)
@@ -83,7 +136,7 @@ namespace Conqueror::CQS
     // ════════════════════════════════════════
     //  RegisterGlobals
     // ════════════════════════════════════════
-    void CQSNativeBridge::RegisterGlobals(CQSVM* vm)
+    void CQSNativeBridge::RegisterGlobals(Scripting::NativeRegistry* vm)
     {
         // Log
         vm->DefineNative("print", LogInfo, 1);
@@ -103,19 +156,19 @@ namespace Conqueror::CQS
         vm->DefineNative("GetUp", GetUp, 0);
 
         // Physics 3D
-        vm->DefineNative("GetLinearVelocity", GetLinearVelocity, 0);
-        vm->DefineNative("SetLinearVelocity", SetLinearVelocity, 3);
-        vm->DefineNative("GetAngularVelocity", GetAngularVelocity, 0);
-        vm->DefineNative("SetAngularVelocity", SetAngularVelocity, 3);
+        vm->DefineNative("GetLinearVelocity", GetLinearVelocity, -1);
+        vm->DefineNative("SetLinearVelocity", SetLinearVelocity, -1);
+        vm->DefineNative("GetAngularVelocity", GetAngularVelocity, -1);
+        vm->DefineNative("SetAngularVelocity", SetAngularVelocity, -1);
         vm->DefineNative("ApplyForce", ApplyForce, 3);
         vm->DefineNative("ApplyImpulse", ApplyImpulse, 3);
         vm->DefineNative("ApplyTorque", ApplyTorque, 3);
 
         // Physics 2D
-        vm->DefineNative("GetLinearVelocity2D", GetLinearVelocity2D, 0);
-        vm->DefineNative("SetLinearVelocity2D", SetLinearVelocity2D, 2);
-        vm->DefineNative("GetAngularVelocity2D", GetAngularVelocity2D, 0);
-        vm->DefineNative("SetAngularVelocity2D", SetAngularVelocity2D, 1);
+        vm->DefineNative("GetLinearVelocity2D", GetLinearVelocity2D, -1);
+        vm->DefineNative("SetLinearVelocity2D", SetLinearVelocity2D, -1);
+        vm->DefineNative("GetAngularVelocity2D", GetAngularVelocity2D, -1);
+        vm->DefineNative("SetAngularVelocity2D", SetAngularVelocity2D, -1);
         vm->DefineNative("ApplyForce2D", ApplyForce2D, 2);
         vm->DefineNative("ApplyImpulse2D", ApplyImpulse2D, 2);
 
@@ -136,7 +189,7 @@ namespace Conqueror::CQS
         vm->DefineNative("SetCursorMode", SetCursorMode, 1);
 
         // Input: Gamepad
-        vm->DefineNative("IsGamepadConnected", IsGamepadConnected, 0);
+        vm->DefineNative("IsGamepadConnected", IsGamepadConnected, 1);
         vm->DefineNative("IsGamepadButtonPressed", IsGamepadButtonPressed, 2);
         vm->DefineNative("GetGamepadAxis", GetGamepadAxis, 2);
         vm->DefineNative("GetGamepadLeftStick", GetGamepadLeftStick, 1);
@@ -177,6 +230,116 @@ namespace Conqueror::CQS
         vm->DefineNative("GetFrameCount", GetFrameCount, 0);
         vm->DefineNative("GetTimeScale", GetTimeScale, 0);
         vm->DefineNative("SetTimeScale", SetTimeScale, 1);
+
+        // Profiler (Unity: Profiler.BeginSample / EndSample) — Profiler penceresinde "Scripts" kategorisinde görünür
+        vm->DefineNative("ProfilerBeginSample", [](int argc, Value* args) -> Value {
+            if (argc >= 1 && args[0].IsString() && Profiling::FrameProfiler::IsRecording())
+                Profiling::FrameProfiler::BeginSample(Profiling::FrameProfiler::Intern(args[0].AsString()->Value), Profiling::Category::Scripts);
+            return Value::MakeNull();
+        }, 1);
+        vm->DefineNative("ProfilerEndSample", [](int, Value*) -> Value {
+            if (Profiling::FrameProfiler::IsRecording())
+                Profiling::FrameProfiler::EndSample();
+            return Value::MakeNull();
+        }, 0);
+        vm->DefineNative("ProfilerIsRecording", [](int, Value*) -> Value {
+            return Value::MakeBool(Profiling::FrameProfiler::IsRecording());
+        }, 0);
+
+        // Sahne yönetimi (Unity SceneManager): yükleme karenin sonunda yapılır
+        vm->DefineNative("LoadScene", [](int argc, Value* args) -> Value {
+            if (argc < 1)
+                return Value::MakeBool(false);
+            if (args[0].IsNumber())
+                return Value::MakeBool(SceneManager::RequestLoadIndex((int)args[0].ToNumber()));
+            if (args[0].IsString())
+                return Value::MakeBool(SceneManager::RequestLoad(args[0].AsString()->Value));
+            return Value::MakeBool(false);
+        }, 1);
+        vm->DefineNative("ReloadScene", [](int, Value*) -> Value { return Value::MakeBool(SceneManager::RequestReload()); }, 0);
+        vm->DefineNative("GetSceneName", [](int, Value*) -> Value { return Value::MakeString(SceneManager::GetActiveSceneName()); }, 0);
+        vm->DefineNative("GetSceneIndex", [](int, Value*) -> Value { return Value::MakeInt(SceneManager::GetActiveSceneIndex()); }, 0);
+        vm->DefineNative("GetSceneCount", [](int, Value*) -> Value { return Value::MakeInt(SceneManager::GetSceneCount()); }, 0);
+        vm->DefineNative("GetSceneLoadError", [](int, Value*) -> Value { return Value::MakeString(SceneManager::GetLastError()); }, 0);
+        vm->DefineNative("QuitGame", [](int, Value*) -> Value { SceneManager::RequestQuit(); return Value::MakeNull(); }, 0);
+
+        // Zaman çizelgesi (PlayableDirector) — varlık argümanı yoksa bu varlık
+        {
+            static auto director = [](int argc, Value* args, int index) -> Entity {
+                Scene* scene = ScriptContext::GetActiveScene();
+                if (!scene)
+                    return {};
+                uint32_t id = ScriptContext::GetCurrentEntity();
+                if (index < argc && args[index].IsNumber() && args[index].ToNumber() >= 0)
+                    id = (uint32_t)(int64_t)args[index].ToNumber();
+                entt::entity h = (entt::entity)id;
+                if (id == ScriptContext::NullEntity || !scene->m_Registry.valid(h) || !scene->m_Registry.all_of<PlayableDirectorComponent>(h))
+                    return {};
+                return Entity{ h, scene };
+            };
+            vm->DefineNative("TimelinePlay", [](int argc, Value* args) -> Value {
+                Entity d = director(argc, args, 0);
+                if (d) TimelineSystem::Play(*d.GetScene(), d);
+                return Value::MakeBool((bool)d);
+            }, -1);
+            vm->DefineNative("TimelinePause", [](int argc, Value* args) -> Value {
+                Entity d = director(argc, args, 0);
+                if (d) TimelineSystem::Pause(*d.GetScene(), d);
+                return Value::MakeBool((bool)d);
+            }, -1);
+            vm->DefineNative("TimelineStop", [](int argc, Value* args) -> Value {
+                Entity d = director(argc, args, 0);
+                if (d) TimelineSystem::Stop(*d.GetScene(), d);
+                return Value::MakeBool((bool)d);
+            }, -1);
+            vm->DefineNative("TimelineSetTime", [](int argc, Value* args) -> Value {
+                Entity d = director(argc, args, 1);
+                if (d && argc > 0 && args[0].IsNumber()) TimelineSystem::SetTime(*d.GetScene(), d, args[0].ToNumber());
+                return Value::MakeBool((bool)d);
+            }, -1);
+            vm->DefineNative("TimelineGetTime", [](int argc, Value* args) -> Value {
+                Entity d = director(argc, args, 0);
+                return Value::MakeFloat(d ? d.GetComponent<PlayableDirectorComponent>().Time : 0.0);
+            }, -1);
+            vm->DefineNative("TimelineIsPlaying", [](int argc, Value* args) -> Value {
+                Entity d = director(argc, args, 0);
+                return Value::MakeBool(d && d.GetComponent<PlayableDirectorComponent>().Playing);
+            }, -1);
+            vm->DefineNative("TimelineGetDuration", [](int argc, Value* args) -> Value {
+                Entity d = director(argc, args, 0);
+                return Value::MakeFloat(d ? TimelineSystem::GetDuration(d.GetComponent<PlayableDirectorComponent>()) : 0.0);
+            }, -1);
+            // Unity PlayableDirector.SetGenericBinding: parça (sıra no ya da ad) bir varlığa bağlanır; sahneyle kaydedilir
+            vm->DefineNative("TimelineBind", [](int argc, Value* args) -> Value {
+                Entity d = director(argc, args, 2);
+                Scene* scene = ScriptContext::GetActiveScene();
+                if (!d || !scene || argc < 2 || !args[1].IsNumber())
+                    return Value::MakeBool(false);
+                auto& pd = d.GetComponent<PlayableDirectorComponent>();
+                int track = -1;
+                if (args[0].IsNumber())
+                    track = (int)args[0].ToNumber();
+                else if (args[0].IsString())
+                {
+                    if (auto asset = TimelineSystem::GetAsset(pd.Timeline))
+                        for (size_t i = 0; i < asset->Tracks.size(); ++i)
+                            if (asset->Tracks[i].Name == args[0].AsString()->Value)
+                            {
+                                track = (int)i;
+                                break;
+                            }
+                }
+                const entt::entity h = (entt::entity)(uint32_t)(int64_t)args[1].ToNumber();
+                if (track < 0 || track > 4096 || !scene->m_Registry.valid(h))
+                    return Value::MakeBool(false);
+                if (pd.Bindings.size() <= (size_t)track)
+                    pd.Bindings.resize((size_t)track + 1, 0);
+                if (!scene->m_Registry.all_of<IDComponent>(h))
+                    return Value::MakeBool(false);
+                pd.Bindings[(size_t)track] = (uint64_t)scene->m_Registry.get<IDComponent>(h).ID;
+                return Value::MakeBool(true);
+            }, -1);
+        }
 
         // Scene / Entity
         vm->DefineNative("FindEntityByTag", FindEntityByTag, 1);
@@ -229,24 +392,14 @@ namespace Conqueror::CQS
         vm->DefineNative("NavGetSpeed", NavGetSpeed, 0);
         vm->DefineNative("NavSetSpeed", NavSetSpeed, 1);
 
-        // Networking
-        vm->DefineNative("NetStartServer", NetStartServer, 1);
-        vm->DefineNative("NetConnect", NetConnect, 2);
-        vm->DefineNative("NetDisconnect", NetDisconnect, 0);
-        vm->DefineNative("NetSend", NetSend, 2);
-        vm->DefineNative("NetBroadcast", NetBroadcast, 1);
-        vm->DefineNative("NetIsServer", NetIsServer, 0);
-        vm->DefineNative("NetIsClient", NetIsClient, 0);
-        vm->DefineNative("NetIsConnected", NetIsConnected, 0);
-        vm->DefineNative("NetGetPeerCount", NetGetPeerCount, 0);
-
+        // Networking: oturum/nesne/RPC API'si CQSNativeBridge_Net.cpp'de (NetworkSession). Eski adlar orada
+        // yeni oturuma yönlendirilir (NetConnect, NetDisconnect, NetBroadcast, NetGetPeerCount, NetCallRPC).
         // Networking (Advanced)
         vm->DefineNative("NetEnableEncryption", NetEnableEncryption, 0);
         vm->DefineNative("NetIsEncryptionEnabled", NetIsEncryptionEnabled, 0);
         vm->DefineNative("NetOpenNATPort", NetOpenNATPort, 1);
         vm->DefineNative("NetCloseNATPort", NetCloseNATPort, 1);
         vm->DefineNative("NetGetExternalIP", NetGetExternalIP, 0);
-        vm->DefineNative("NetCallRPC", NetCallRPC, 1);
 
         // Math
         vm->DefineNative("MathSin", MathSin, 1);
@@ -704,7 +857,7 @@ namespace Conqueror::CQS
         vm->DefineNative("NoiseFade", NoiseFade, 1);
         vm->DefineNative("NoiseGrad1D", NoiseGrad1D, 2);
         vm->DefineNative("NoisePerlin1D", NoisePerlin1D, 1);
-        vm->DefineNative("NoiseValueNoise2D", NoiseValueNoise2D, 2);
+        vm->DefineNative("NoiseValueNoise2D", NoiseValueNoise2D, -1);
         vm->DefineNative("NoiseFBM1D", NoiseFBM1D, 3);
 
         // ── Type Checking ──
@@ -831,7 +984,26 @@ namespace Conqueror::CQS
         vm->DefineNative("RandomColor", RandomColor, 0);
         vm->DefineNative("RandomUnitVec2", RandomUnitVec2, 0);
         vm->DefineNative("RandomUnitVec3", RandomUnitVec3, 0);
-        vm->DefineNative("NoiseSimplex2D", NoiseSimplex2D, 2);
+        vm->DefineNative("NoiseSimplex2D", NoiseSimplex2D, -1);
+        vm->DefineNative("NoiseSimplex3D", [](int argc, Value* args) -> Value {
+            return Value::MakeFloat(NoiseCache<Math::SimplexNoise>(NoiseSeed(argc, args, 3)).Noise3D(NoiseArg(argc, args, 0), NoiseArg(argc, args, 1), NoiseArg(argc, args, 2)));
+        }, -1);
+        vm->DefineNative("NoisePerlin2D", [](int argc, Value* args) -> Value {
+            return Value::MakeFloat(NoiseCache<Math::PerlinNoise>(NoiseSeed(argc, args, 2)).Noise2D(NoiseArg(argc, args, 0), NoiseArg(argc, args, 1)));
+        }, -1);
+        vm->DefineNative("NoisePerlin3D", [](int argc, Value* args) -> Value {
+            return Value::MakeFloat(NoiseCache<Math::PerlinNoise>(NoiseSeed(argc, args, 3)).Noise3D(NoiseArg(argc, args, 0), NoiseArg(argc, args, 1), NoiseArg(argc, args, 2)));
+        }, -1);
+        vm->DefineNative("NoiseFBM2D", [](int argc, Value* args) -> Value {
+            // NoiseFBM2D(x, y, octaves = 4, lacunarity = 2, gain = 0.5, seed = 0): katmanlı simplex
+            int octaves = std::clamp((int)NoiseArg(argc, args, 2, 4.0f), 1, 12);
+            return Value::MakeFloat(NoiseCache<Math::SimplexNoise>(NoiseSeed(argc, args, 5))
+                                        .FBM2D(NoiseArg(argc, args, 0), NoiseArg(argc, args, 1), octaves, NoiseArg(argc, args, 3, 2.0f), NoiseArg(argc, args, 4, 0.5f)));
+        }, -1);
+        vm->DefineNative("NoiseWorley2D", [](int argc, Value* args) -> Value {
+            // Hücresel gürültü: en yakın özellik noktasına uzaklık (F1)
+            return Value::MakeFloat(NoiseCache<Math::WorleyNoise>(NoiseSeed(argc, args, 2)).Noise2D(NoiseArg(argc, args, 0), NoiseArg(argc, args, 1)));
+        }, -1);
         
         // ── Color Space ──
         vm->DefineNative("ColorBlend", ColorBlend, 3);
@@ -1102,6 +1274,16 @@ namespace Conqueror::CQS
         vm->DefineNative("CryptoBase32Encode", CryptoBase32Encode, 1);
         vm->DefineNative("CryptoBase32Decode", CryptoBase32Decode, 1);
 
+        // Fizik sorguları, karakter, eklemler, bileşen alanları, varlık API'si
+        RegisterPhysicsNatives(vm);
+        // Izgara / karo haritası
+        RegisterGridNatives(vm);
+        RegisterNetNatives(vm);
+        // Oyun arayüzü, parçacıklar, kalıcı tercihler
+        RegisterUINatives(vm);
+        RegisterRenderNatives(vm);
+        RegisterGameplayNatives(vm);
+
         CQ_CORE_INFO("[CQS] NativeBridge: All systems registered.");
     }
 
@@ -1194,29 +1376,29 @@ namespace Conqueror::CQS
     // ════════════════════════════════════════
     //  PHYSICS 3D
     // ════════════════════════════════════════
-    Value CQSNativeBridge::GetLinearVelocity(int, Value*)
+    Value CQSNativeBridge::GetLinearVelocity(int argCount, Value* args)
     {
-        Entity e = GetCurrentEntity(); if (!e) return Value::MakeNull();
+        Entity e = TargetOrSelf(argCount, args, 0); if (!e) return Value::MakeNull();
         glm::vec3 v = Physics::GetLinearVelocity(e);
         return Value::MakeObject(MakeVec3Map(v.x, v.y, v.z));
     }
     Value CQSNativeBridge::SetLinearVelocity(int argCount, Value* args)
     {
+        Entity e = TargetOrSelf(argCount, args, 3); if (!e) return Value::MakeNull();
         if (argCount < 3) return Value::MakeNull();
-        Entity e = GetCurrentEntity(); if (!e) return Value::MakeNull();
         Physics::SetLinearVelocity(e, glm::vec3((float)args[0].ToNumber(), (float)args[1].ToNumber(), (float)args[2].ToNumber()));
         return Value::MakeNull();
     }
-    Value CQSNativeBridge::GetAngularVelocity(int, Value*)
+    Value CQSNativeBridge::GetAngularVelocity(int argCount, Value* args)
     {
-        Entity e = GetCurrentEntity(); if (!e) return Value::MakeNull();
+        Entity e = TargetOrSelf(argCount, args, 0); if (!e) return Value::MakeNull();
         glm::vec3 v = Physics::GetAngularVelocity(e);
         return Value::MakeObject(MakeVec3Map(v.x, v.y, v.z));
     }
     Value CQSNativeBridge::SetAngularVelocity(int argCount, Value* args)
     {
+        Entity e = TargetOrSelf(argCount, args, 3); if (!e) return Value::MakeNull();
         if (argCount < 3) return Value::MakeNull();
-        Entity e = GetCurrentEntity(); if (!e) return Value::MakeNull();
         Physics::SetAngularVelocity(e, glm::vec3((float)args[0].ToNumber(), (float)args[1].ToNumber(), (float)args[2].ToNumber()));
         return Value::MakeNull();
     }
@@ -1245,28 +1427,28 @@ namespace Conqueror::CQS
     // ════════════════════════════════════════
     //  PHYSICS 2D
     // ════════════════════════════════════════
-    Value CQSNativeBridge::GetLinearVelocity2D(int, Value*)
+    Value CQSNativeBridge::GetLinearVelocity2D(int argCount, Value* args)
     {
-        Entity e = GetCurrentEntity(); if (!e) return Value::MakeNull();
+        Entity e = TargetOrSelf(argCount, args, 0); if (!e) return Value::MakeNull();
         glm::vec2 v = Physics::GetLinearVelocity2D(e);
         return Value::MakeObject(MakeVec2Map(v.x, v.y));
     }
     Value CQSNativeBridge::SetLinearVelocity2D(int argCount, Value* args)
     {
+        Entity e = TargetOrSelf(argCount, args, 2); if (!e) return Value::MakeNull();
         if (argCount < 2) return Value::MakeNull();
-        Entity e = GetCurrentEntity(); if (!e) return Value::MakeNull();
         Physics::SetLinearVelocity2D(e, glm::vec2((float)args[0].ToNumber(), (float)args[1].ToNumber()));
         return Value::MakeNull();
     }
-    Value CQSNativeBridge::GetAngularVelocity2D(int, Value*)
+    Value CQSNativeBridge::GetAngularVelocity2D(int argCount, Value* args)
     {
-        Entity e = GetCurrentEntity(); if (!e) return Value::MakeNull();
+        Entity e = TargetOrSelf(argCount, args, 0); if (!e) return Value::MakeNull();
         return Value::MakeFloat(Physics::GetAngularVelocity2D(e));
     }
     Value CQSNativeBridge::SetAngularVelocity2D(int argCount, Value* args)
     {
+        Entity e = TargetOrSelf(argCount, args, 1); if (!e) return Value::MakeNull();
         if (argCount < 1) return Value::MakeNull();
-        Entity e = GetCurrentEntity(); if (!e) return Value::MakeNull();
         Physics::SetAngularVelocity2D(e, (float)args[0].ToNumber());
         return Value::MakeNull();
     }
@@ -2367,32 +2549,53 @@ namespace Conqueror::CQS
     // ════════════════════════════════════════
     //  STANDARD LIBRARY PHASE 3: FILE IO
     // ════════════════════════════════════════
+    // Göreli yol: önce çalışma klasörü, yoksa etkin proje klasörü ("Assets/..." editörde de çalışsın)
+    static std::string ResolveScriptFile(const std::string& path)
+    {
+        std::error_code ec;
+        std::filesystem::path p(path);
+        if (p.is_absolute() || std::filesystem::exists(p, ec))
+            return path;
+        if (Project::GetActive())
+        {
+            auto candidate = Project::GetActiveProjectDirectory() / p;
+            if (std::filesystem::exists(candidate, ec))
+                return candidate.string();
+        }
+        return path;
+    }
+
     Value CQSNativeBridge::FileExists(int argCount, Value* args)
     {
         if (argCount < 1 || !args[0].IsString()) return Value::MakeBool(false);
-        return Value::MakeBool(FileSystem::Exists(args[0].AsString()->Value));
+        return Value::MakeBool(FileSystem::Exists(ResolveScriptFile(args[0].AsString()->Value)));
     }
     Value CQSNativeBridge::FileReadText(int argCount, Value* args)
     {
         if (argCount < 1 || !args[0].IsString()) return Value::MakeNull();
         std::string content;
-        if (!FileSystem::ReadFile(args[0].AsString()->Value, content)) return Value::MakeNull();
+        if (!FileSystem::ReadFile(ResolveScriptFile(args[0].AsString()->Value), content)) return Value::MakeNull();
         return Value::MakeString(content);
     }
     Value CQSNativeBridge::FileWriteText(int argCount, Value* args)
     {
         if (argCount < 2 || !args[0].IsString() || !args[1].IsString()) return Value::MakeBool(false);
+        // Üst klasör yoksa oluştur (ör. ProjectSettings/SelectionSets.json)
+        std::error_code ec;
+        std::filesystem::path parent = std::filesystem::path(args[0].AsString()->Value).parent_path();
+        if (!parent.empty() && !std::filesystem::exists(parent, ec))
+            std::filesystem::create_directories(parent, ec);
         return Value::MakeBool(FileSystem::WriteFile(args[0].AsString()->Value, args[1].AsString()->Value));
     }
     Value CQSNativeBridge::FileDelete(int argCount, Value* args)
     {
         if (argCount < 1 || !args[0].IsString()) return Value::MakeBool(false);
-        return Value::MakeBool(FileSystem::DeleteFile(args[0].AsString()->Value));
+        return Value::MakeBool(FileSystem::DeleteFile(ResolveScriptFile(args[0].AsString()->Value)));
     }
     Value CQSNativeBridge::FileGetSize(int argCount, Value* args)
     {
         if (argCount < 1 || !args[0].IsString()) return Value::MakeInt(0);
-        return Value::MakeInt((int64_t)FileSystem::GetFileSize(args[0].AsString()->Value));
+        return Value::MakeInt((int64_t)FileSystem::GetFileSize(ResolveScriptFile(args[0].AsString()->Value)));
     }
 
     // ════════════════════════════════════════
@@ -3397,8 +3600,8 @@ namespace Conqueror::CQS
     Value CQSNativeBridge::NoiseValueNoise2D(int argCount, Value* args)
     {
         if (argCount < 2 || !args[0].IsNumber() || !args[1].IsNumber()) return Value::MakeFloat(0.0);
-        Math::ValueNoise vn(0); // Using 0 as default seed for bridging unless exposed
-        return Value::MakeFloat(vn.Noise2D((float)args[0].ToNumber(), (float)args[1].ToNumber()));
+        uint32_t seed = argCount > 2 && args[2].IsNumber() ? (uint32_t)(int64_t)args[2].ToNumber() : 0u;
+        return Value::MakeFloat(NoiseCache<Math::ValueNoise>(seed).Noise2D((float)args[0].ToNumber(), (float)args[1].ToNumber()));
     }
     Value CQSNativeBridge::NoiseFBM1D(int argCount, Value* args)
     {
@@ -3453,15 +3656,28 @@ namespace Conqueror::CQS
     // ════════════════════════════════════════
     //  STANDARD LIBRARY PHASE 5: TYPE CONVERSION
     // ════════════════════════════════════════
+    // Metin argümanı sayı olarak ayrıştırılır ("1.5" -> 1.5; yerel ayardan bağımsız); ayrıştırılamazsa 0
+    static double ParseNumberArg(const Value& v)
+    {
+        if (!v.IsString()) return v.ToNumber();
+        const std::string& s = v.AsString()->Value;
+        const char* begin = s.data();
+        const char* end = s.data() + s.size();
+        while (begin < end && std::isspace((unsigned char)*begin)) ++begin;
+        if (begin < end && *begin == '+') ++begin;
+        double d = 0.0;
+        std::from_chars(begin, end, d);
+        return d;
+    }
     Value CQSNativeBridge::ToInt(int argCount, Value* args)
     {
         if (argCount < 1) return Value::MakeInt(0);
-        return Value::MakeInt((long long)args[0].ToNumber());
+        return Value::MakeInt((long long)ParseNumberArg(args[0]));
     }
     Value CQSNativeBridge::ToFloat(int argCount, Value* args)
     {
         if (argCount < 1) return Value::MakeFloat(0.0);
-        return Value::MakeFloat(args[0].ToNumber());
+        return Value::MakeFloat(ParseNumberArg(args[0]));
     }
     Value CQSNativeBridge::ToString(int argCount, Value* args)
     {
@@ -4012,9 +4228,10 @@ namespace Conqueror::CQS
     }
     Value CQSNativeBridge::NoiseSimplex2D(int argCount, Value* args)
     {
+        // Gerçek simplex gürültüsü (Core/Math/Noise): [-1, 1]; isteğe bağlı tohum
         if (argCount < 2 || !args[0].IsNumber() || !args[1].IsNumber()) return Value::MakeFloat(0.0);
-        double x = args[0].ToNumber(), y = args[1].ToNumber();
-        return Value::MakeFloat(std::sin(x) * std::cos(y)); // Approximated noise
+        uint32_t seed = argCount > 2 && args[2].IsNumber() ? (uint32_t)(int64_t)args[2].ToNumber() : 0u;
+        return Value::MakeFloat(NoiseCache<Math::SimplexNoise>(seed).Noise2D((float)args[0].ToNumber(), (float)args[1].ToNumber()));
     }
 
     // ════════════════════════════════════════
@@ -4799,14 +5016,25 @@ namespace Conqueror::CQS
     }
 
     // ── Game State/Save System ──
+    // Göreli kayıt dosyası adları kullanıcı başına oyun verisi klasörüne gider (GetPersistentDataPath)
+    static std::string SaveFilePath(const std::string& name)
+    {
+        std::filesystem::path p(name);
+        if (p.is_absolute())
+            return name;
+        std::filesystem::path full = std::filesystem::path(PlayerPrefs::GetPersistentDataPath()) / p;
+        std::error_code ec;
+        std::filesystem::create_directories(full.parent_path(), ec);
+        return full.string();
+    }
     Value CQSNativeBridge::StateSaveGame(int argCount, Value* args) {
         if (argCount < 2 || !args[0].IsString() || !args[1].IsString()) return Value::MakeBool(false);
-        bool success = Utils::SaveSystem::SaveGame(args[0].AsString()->Value, args[1].AsString()->Value);
+        bool success = Utils::SaveSystem::SaveGame(SaveFilePath(args[0].AsString()->Value), args[1].AsString()->Value);
         return Value::MakeBool(success);
     }
     Value CQSNativeBridge::StateLoadGame(int argCount, Value* args) {
         if (argCount < 1 || !args[0].IsString()) return Value::MakeString("");
-        std::string data = Utils::SaveSystem::LoadGame(args[0].AsString()->Value);
+        std::string data = Utils::SaveSystem::LoadGame(SaveFilePath(args[0].AsString()->Value));
         return Value::MakeString(data);
     }
 

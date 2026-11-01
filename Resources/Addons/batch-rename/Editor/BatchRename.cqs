@@ -1,0 +1,110 @@
+using nativebridge;
+
+// Toplu yeniden adlandırma. mode: 0 numaralı (baseName + ayraç + sıra), 1 bul / değiştir, 2 önek / sonek, 3 büyük-küçük harf
+script BatchRename : ConquerorScript
+{
+    public int mode = 0;
+    public string baseName = "Object";
+    public string separator = "_";
+    public int startIndex = 1;
+    public int digits = 2;
+    public int order = 0;          // 0 seçim sırası, 1 X'e göre, 2 Z'ye göre, 3 ada göre
+    public string findText = "";
+    public string replaceText = "";
+    public string prefix = "";
+    public string suffix = "";
+    public int caseMode = 0;       // 0 Başlık, 1 BÜYÜK, 2 küçük
+
+    // Bilgi
+    public int renamed = 0;
+    public string lastName = "";
+
+    func OnLoad()
+    {
+        EditorAddMenuItem("Rename/Batch Rename Selection", "Apply");
+        EditorAddToolButton("Rename", "i-cursor", "Apply", "Rename the selected objects with the Batch Rename settings");
+        EditorAddPanel("Batch Rename", "DrawPanel");
+    }
+
+    func Ordered()
+    {
+        var sel = EditorGetSelection();
+        var list = [];
+        for (var e in sel) { list.Add(e); }
+        if (order == 0 || list.Count < 2) { return list; }
+        // Basit eklemeli sıralama (küçük listeler)
+        for (var i = 1; i < list.Count; i++)
+        {
+            var j = i;
+            while (j > 0 && Key(list[j]) < Key(list[j - 1]))
+            {
+                var tmp = list[j];
+                list[j] = list[j - 1];
+                list[j - 1] = tmp;
+                j--;
+            }
+        }
+        return list;
+    }
+
+    func Key(e)
+    {
+        if (order == 1) { return EntityGetWorldPosition(e).x; }
+        if (order == 2) { return EntityGetWorldPosition(e).z; }
+        return EntityGetName(e);
+    }
+
+    func NewName(e, i)
+    {
+        var name = EntityGetName(e);
+        if (mode == 0) { return baseName + separator + StringPadLeft(str(startIndex + i), digits, "0"); }
+        if (mode == 1) { return findText == "" ? name : StringReplace(name, findText, replaceText); }
+        if (mode == 2) { return prefix + name + suffix; }
+        if (caseMode == 1) { return StringToUpper(name); }
+        if (caseMode == 2) { return StringToLower(name); }
+        return StringToTitleCase(name);
+    }
+
+    func Apply()
+    {
+        var list = Ordered();
+        if (list.Count == 0) { EditorNotify("Select objects to rename."); return; }
+        for (var i = 0; i < list.Count; i++)
+        {
+            var n = NewName(list[i], i);
+            EntitySetName(list[i], n);
+            lastName = n;
+        }
+        renamed = list.Count;
+        EditorNotify("Renamed " + str(renamed) + " object(s)");
+    }
+
+    func DrawPanel()
+    {
+        mode = GuiCombo("Mode", mode, ["Numbered", "Find / Replace", "Prefix / Suffix", "Change Case"]);
+        if (mode == 0)
+        {
+            baseName = GuiInputText("Base Name", baseName);
+            separator = GuiInputText("Separator", separator);
+            startIndex = GuiSliderInt("Start Index", startIndex, 0, 1000);
+            digits = GuiSliderInt("Digits", digits, 1, 6);
+            order = GuiCombo("Order", order, ["Selection", "Position X", "Position Z", "Name"]);
+        }
+        if (mode == 1) { findText = GuiInputText("Find", findText); replaceText = GuiInputText("Replace", replaceText); }
+        if (mode == 2) { prefix = GuiInputText("Prefix", prefix); suffix = GuiInputText("Suffix", suffix); }
+        if (mode == 3) { caseMode = GuiCombo("Case", caseMode, ["Title Case", "UPPER", "lower"]); }
+        var list = Ordered();
+        GuiSeparator();
+        GuiTextDisabled("Preview (" + str(list.Count) + " selected)");
+        var shown = 0;
+        for (var i = 0; i < list.Count && shown < 12; i++)
+        {
+            GuiText(EntityGetName(list[i]) + "  ->  " + NewName(list[i], i));
+            shown++;
+        }
+        if (list.Count > 12) { GuiTextDisabled("..."); }
+        GuiBeginDisabled(list.Count == 0);
+        if (GuiButton("Rename", -1)) { EditorRunUndoable("Batch Rename", "Apply"); }
+        GuiEndDisabled();
+    }
+}

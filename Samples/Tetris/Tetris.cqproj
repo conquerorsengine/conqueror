@@ -1,0 +1,43 @@
+Project:
+  Name: Tetris
+  Organization: Conqueror Samples
+  Version: 1.0.0
+  TargetPlatform: ""
+  StartScene: Assets/Scenes/Main.cqscene
+  AssetDirectory: Assets
+  ScriptModulePath: ""
+Player:
+  Width: 1600
+  Height: 900
+  FullscreenMode: 0
+  Resizable: true
+  VSync: true
+  RunInBackground: false
+  Icon: ""
+  GraphicsAPI: Auto
+Build:
+  OutputDirectory: Builds
+  DevelopmentBuild: false
+  Scenes:
+    - Path: Assets/Scenes/Main.cqscene
+      Enabled: true
+Physics:
+  Backend: Jolt
+  Gravity: [0, -9.81, 0]
+  Gravity2D: [0, -9.81]
+  FixedTimestep: 0.016666668
+  MaxSubSteps: 8
+  CollisionSteps: 1
+  VelocityIterations: 10
+  PositionIterations: 2
+  Interpolation: true
+  DefaultFriction: 0.6
+  DefaultRestitution: 0
+  SleepThreshold: 0.05
+  QueriesHitTriggers: true
+  AutoSyncTransforms: true
+  CollisionMatrix: [4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295]
+  MuJoCoLibraryPath: ""
+  MuJoCoIntegrator: 3
+  MuJoCoIterations: 50
+  MuJoCoTimestepScale: 1

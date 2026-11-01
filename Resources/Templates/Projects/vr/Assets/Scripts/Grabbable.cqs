@@ -1,0 +1,48 @@
+using nativebridge;
+
+// Tutulabilir nesne (Unreal VR Template GrabComponent / Unity XR Grab Interactable karşılığı). XRRig eli bunu bulur:
+// tutunca gövde kinematik olur ve ele bağlanır, bırakınca elin hızıyla fırlatılır. snapToHand: silah gibi nesneler ele
+// sabit pozla oturur (kabza avuçta, namlu ileri). Tetik (Use): çocuktaki silahı namlu yönünde ateşler.
+script Grabbable : ConquerorScript
+{
+    public bool snapToHand = false;
+    public float snapX = 0.0;
+    public float snapY = -0.025;
+    public float snapZ = 0.035;
+    public string weaponName = "";          // tetikte ateşlenecek çocuk silah (Weapon betikli)
+    [Header("State")]
+    public bool held = false;
+    public int uses = 0;
+
+    private var startPos = null;
+    private var startRot = null;
+
+    func Start()
+    {
+        startPos = EntityGetWorldPosition(GetEntityId());
+        startRot = GetRotation();
+    }
+
+    // Başlangıç yerine (masaya / rafa) geri koy
+    func ResetBody()
+    {
+        if (held || startPos == null) { return; }
+        SetRotation(startRot.x, startRot.y, startRot.z);
+        Teleport(startPos.x, startPos.y, startPos.z);
+        SetLinearVelocity(0, 0, 0);
+        SetAngularVelocity(0, 0, 0);
+        WakeUp();
+    }
+
+    func Use()
+    {
+        if (weaponName == "") { return; }
+        var w = EntityFindChild(GetEntityId(), weaponName);
+        if (w == null || w < 0) { return; }
+        if (GetScriptField(w, "ammo") <= 0) { InvokeMethod(w, "Reload"); return; }
+        var mp = InvokeMethod(w, "MuzzlePos");
+        var f = EntityGetForward(w);
+        var res = InvokeMethod(w, "Fire", mp.x, mp.y, mp.z, f.x, f.y, f.z, 0.25, -1);
+        if (res != null && res.fired) { uses++; }
+    }
+}

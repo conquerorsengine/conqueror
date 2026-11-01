@@ -1,0 +1,371 @@
+using nativebridge;
+
+// Nişancı yapay zekâ (Conqueror Mannequin + Character Controller + Health + elde silah).
+// Avlanma / devriye -> hedefi görünce (görüş açısı + ışın) yaklaşır, uygun mesafede yan adım atarak ateş eder ->
+// hedefi kaybedince son görüldüğü yere gider. Hedef yokken çoğunlukla düşmanların bulunduğu bölgeye ilerler (Unreal
+// Tournament botları gibi), yakında düşman ateş ederse sesi duyup oraya döner (Unreal AI Perception: Hearing).
+// Takım: Health.team ("Red", "Blue"; boş = oyuncuya düşman).
+// Yol bulma: NavMesh (Game varlığı oyun başında NavBake çağırır). Animasyon: MannequinAnimation aynı alanları okur.
+script ShooterAI : ConquerorScript
+{
+    [Header("Behaviour")]
+    public float sightRange = 32.0;
+    public float sightAngle = 75.0;          // yarım açı (derece)
+    public float preferredRange = 11.0;
+    public float walkSpeed = 1.7;
+    public float runSpeed = 4.2;
+    public float reactionTime = 0.45;
+    public float accuracy = 2.2;             // dağılma (derece)
+    public float burstPause = 0.9;
+    public int burstSize = 3;
+    public float patrolRadius = 14.0;
+    public bool hunt = true;                 // hedef yokken düşman bölgesine ilerler (yoksa evin çevresinde devriye)
+    public float hearingRange = 30.0;        // düşman silah sesini bu mesafeden duyar
+    public string weaponName = "Weapon";
+
+    [Header("State (MannequinAnimation)")]
+    public float speed = 0.0;
+    public bool grounded = true;
+    public bool crouching = false;
+    public float aim01 = 0.0;
+    public int jumps = 0;
+    public bool dead = false;
+    public string state = "Patrol";
+    public int kills = 0;
+
+    private var weapon = -1;
+    private var mesh = -1;
+    private var target = -1;
+    private var lastSeen = null;
+    private var path = [];
+    private int pathIndex = 0;
+    private float repath = 0.0;
+    private float seeTimer = 0.0;
+    private float engageTime = 0.0;
+    private float targetSpeed = 0.0;          // hedefin yatay hızı (konum farkından; karakterlerde rigidbody yok)
+    private var lastTargetPos = null;
+    private float fireTimer = 0.0;
+    private int burstLeft = 0;
+    private float strafeDir = 1.0;
+    private float strafeTimer = 0.0;
+    private float vy = 0.0;
+    private float yaw = 0.0;
+    private var home = null;
+    private float deadTimer = 0.0;
+
+    func Start()
+    {
+        home = EntityGetPosition(GetEntityId());
+        yaw = GetRotation().y;
+        mesh = Child(GetEntityId(), "Mesh");
+        weapon = FindWeapon(GetEntityId());
+        strafeDir = RandomRange(0, 1) < 0.5 ? -1.0 : 1.0;
+    }
+
+    func Child(parent, name)
+    {
+        foreach (var c in EntityGetChildren(parent))
+        {
+            if (EntityGetName(c) == name) { return c; }
+        }
+        return -1;
+    }
+
+    func FindWeapon(e)
+    {
+        foreach (var c in EntityGetChildren(e))
+        {
+            if (Child(c, "Muzzle") >= 0) { return c; }
+            var w = FindWeapon(c);
+            if (w >= 0) { return w; }
+        }
+        return -1;
+    }
+
+    func MyTeam()
+    {
+        var t = GetScriptField(GetEntityId(), "team");
+        return t == null ? "" : t;
+    }
+
+    // Düşman mı: takımlı yapay zekâ için öbür takım (oyuncu dahil, Laser Tag); takımsız yapay zekâ herkes herkese karşı
+    // (deathmatch: oyuncu da öbür botlar da düşman)
+    func IsEnemy(c)
+    {
+        if (c == null || c < 0 || c == GetEntityId() || GetScriptField(c, "isDead") == true) { return false; }
+        var team = MyTeam();
+        if (team == "") { return true; }
+        var t = GetScriptField(c, "team");
+        if (t == null) { t = ""; }
+        return t != team;
+    }
+
+    // Avlanma hedefi: canlı bir düşmanın çevresinde yürünebilir bir nokta (konumunu "bilir"; görünce savaşır)
+    func HuntGoal()
+    {
+        var enemies = [];
+        foreach (var c in FindEntitiesWithScript("Health")) { if (IsEnemy(c)) { enemies.Add(c); } }
+        if (enemies.Count == 0) { return null; }
+        var p = EntityGetPosition(enemies[MathRandomInt(0, enemies.Count - 1)]);
+        var a = RandomRange(0, 6.2831853);
+        var r = RandomRange(2.0, 9.0);
+        return NavSamplePosition(p.x + MathCos(a) * r, p.y, p.z + MathSin(a) * r, 4.0);
+    }
+
+    // Duyma: Weapon her atışta yakındaki yapay zekâya bildirir; hedefi olmayan bot sese döner ve oraya koşar
+    func HearNoise(x, y, z, instigator)
+    {
+        if (dead || target >= 0 || !IsEnemy(instigator)) { return; }
+        var me = EntityGetPosition(GetEntityId());
+        var dx = x - me.x;
+        var dz = z - me.z;
+        if (dx * dx + dz * dz > hearingRange * hearingRange) { return; }
+        lastSeen = {x: x, y: y, z: z};
+        state = "Search";
+        repath = 0.0;
+        path = [];
+        // Sese dön: görüş konisine girerse hemen fark eder
+        yaw = MathRadToDeg(MathAtan2(dx, dz));
+    }
+
+    // En yakın görünür düşman (oyuncu ya da öbür takım)
+    func FindTarget()
+    {
+        var me = EntityGetPosition(GetEntityId());
+        var best = -1;
+        var bestD = sightRange;
+        var team = MyTeam();
+        var candidates = FindEntitiesWithScript("Health");
+        foreach (var c in candidates)
+        {
+            if (c == GetEntityId()) { continue; }
+            if (GetScriptField(c, "isDead") == true) { continue; }
+            var t = GetScriptField(c, "team");
+            if (t == null) { t = ""; }
+            // Takımlı yapay zekâ (Laser Tag) kendi takımını hedeflemez; takımsız herkes herkese karşı
+            if (team != "" && t == team) { continue; }
+            var p = EntityGetPosition(c);
+            var dx = p.x - me.x;
+            var dz = p.z - me.z;
+            var d = MathSqrt(dx * dx + dz * dz);
+            if (d > bestD) { continue; }
+            if (!CanSee(c)) { continue; }
+            best = c;
+            bestD = d;
+        }
+        return best;
+    }
+
+    func CanSee(e)
+    {
+        var me = EntityGetPosition(GetEntityId());
+        var p = EntityGetPosition(e);
+        var ex = me.x;
+        var ey = me.y + 0.65;
+        var ez = me.z;
+        var dx = p.x - ex;
+        var dy = p.y + 0.5 - ey;
+        var dz = p.z - ez;
+        var d = MathSqrt(dx * dx + dy * dy + dz * dz);
+        if (d < 0.01) { return true; }
+        // Görüş açısı (hedef zaten takipteyse açı aranmaz)
+        if (e != target)
+        {
+            var fx = MathSin(MathDegToRad(yaw));
+            var fz = MathCos(MathDegToRad(yaw));
+            var cosA = (dx * fx + dz * fz) / MathMax(MathSqrt(dx * dx + dz * dz), 0.001);
+            if (cosA < MathCos(MathDegToRad(sightAngle))) { return false; }
+        }
+        var hit = Raycast(ex, ey, ez, dx / d, dy / d, dz / d, d + 0.5, -1, true);
+        if (hit == null) { return true; }
+        var h = hit.entity;
+        for (var i = 0; i < 6 && h != null && h >= 0; i++)
+        {
+            if (h == e) { return true; }
+            h = EntityGetParent(h);
+        }
+        return false;
+    }
+
+    func Update(dt)
+    {
+        if (dt > 0.1) { dt = 0.1; }
+        if (dead)
+        {
+            speed = 0.0;
+            aim01 = 0.0;
+            return;
+        }
+        var me = EntityGetPosition(GetEntityId());
+        grounded = CharacterIsGrounded();
+        vy = grounded ? -2.0 : vy - 20.0 * dt;
+
+        // Hedef seçimi
+        if (target >= 0 && (GetScriptField(target, "isDead") == true || !CanSee(target)))
+        {
+            if (GetScriptField(target, "isDead") != true) { lastSeen = EntityGetPosition(target); state = "Search"; }
+            target = -1;
+        }
+        if (target < 0)
+        {
+            var t = FindTarget();
+            if (t >= 0)
+            {
+                target = t;
+                seeTimer = reactionTime;
+                engageTime = 0.0;
+                lastTargetPos = null;
+                targetSpeed = 0.0;
+                state = "Combat";
+                burstLeft = burstSize;
+            }
+        }
+
+        var moveX = 0.0;
+        var moveZ = 0.0;
+        var maxSpeed = walkSpeed;
+        var face = null;
+        if (state == "Combat" && target >= 0)
+        {
+            var tp = EntityGetPosition(target);
+            lastSeen = tp;
+            var dx = tp.x - me.x;
+            var dz = tp.z - me.z;
+            var d = MathMax(MathSqrt(dx * dx + dz * dz), 0.001);
+            face = {x: dx / d, z: dz / d};
+            // Mesafe ayarla + yan adım
+            strafeTimer -= dt;
+            if (strafeTimer <= 0.0) { strafeTimer = RandomRange(1.2, 2.6); strafeDir = -strafeDir; }
+            var adv = d > preferredRange + 3.0 ? 1.0 : (d < preferredRange - 3.0 ? -0.7 : 0.0);
+            moveX = face.x * adv - face.z * strafeDir * 0.8;
+            moveZ = face.z * adv + face.x * strafeDir * 0.8;
+            maxSpeed = adv > 0.5 ? runSpeed * 0.8 : walkSpeed;
+            aim01 = MathLerp(aim01, 1.0, 1.0 - MathExp(-8.0 * dt));
+            engageTime += dt;
+            if (lastTargetPos != null && dt > 0.0)
+            {
+                var mvx = tp.x - lastTargetPos.x;
+                var mvz = tp.z - lastTargetPos.z;
+                targetSpeed = MathLerp(targetSpeed, MathSqrt(mvx * mvx + mvz * mvz) / dt, 1.0 - MathExp(-6.0 * dt));
+            }
+            lastTargetPos = tp;
+            seeTimer -= dt;
+            fireTimer -= dt;
+            if (seeTimer <= 0.0 && fireTimer <= 0.0 && weapon >= 0 && aim01 > 0.8)
+            {
+                if (GetScriptField(weapon, "ammo") <= 0) { InvokeMethod(weapon, "Reload"); fireTimer = 0.5; }
+                else
+                {
+                    var mp = InvokeMethod(weapon, "MuzzlePos");
+                    var ox = me.x;
+                    var oy = me.y + 0.55;
+                    var oz = me.z;
+                    var ax = tp.x - ox;
+                    var ay = tp.y + RandomRange(-0.1, 0.45) - oy;
+                    var az = tp.z - oz;
+                    var al = MathSqrt(ax * ax + ay * ay + az * az);
+                    // Nişan oturması: hedefe yeni dönünce dağılma 3.5 kat, ~1.6 s'de olağana iner (Unreal botlarındaki
+                    // "aim error" gibi); hedef koşuyorsa ek dağılma. Botlar Play'in ilk saniyelerinde oyuncuyu delik deşik etmez.
+                    var settle = MathClamp01(engageTime / 1.6);
+                    var spread = accuracy * (1.0 + 2.5 * (1.0 - settle)) + (speed > 0.5 ? 1.0 : 0.0) + MathMin(targetSpeed * 0.35, 2.0);
+                    var res = InvokeMethod(weapon, "Fire", ox, oy, oz, ax / al, ay / al, az / al, spread, GetEntityId());
+                    if (res != null && res.fired && mesh >= 0) { AnimMontagePlay(mesh, "Assets/Mannequin/Animations/PistolShoot.cqmontage"); }
+                    if (res != null && res.kill) { kills += 1; }
+                    burstLeft -= 1;
+                    fireTimer = 1.0 / MathMax(GetScriptField(weapon, "fireRate"), 0.5) + RandomRange(0.05, 0.2);
+                    if (burstLeft <= 0) { burstLeft = burstSize; fireTimer += burstPause * RandomRange(0.7, 1.4); }
+                }
+            }
+        }
+        else
+        {
+            aim01 = MathLerp(aim01, 0.0, 1.0 - MathExp(-4.0 * dt));
+            // Devriye / arama: NavMesh yolu
+            repath -= dt;
+            if (repath <= 0.0 || pathIndex >= path.Count)
+            {
+                repath = 4.0;
+                var goal = null;
+                if (state == "Search" && lastSeen != null) { goal = lastSeen; }
+                else
+                {
+                    state = "Patrol";
+                    // Avlanma: çoğunlukla düşman bölgesine (takımsız botlar daha az ısrarcı)
+                    var huntChance = MyTeam() == "" ? 0.5 : 0.8;
+                    if (hunt && RandomRange(0.0, 1.0) < huntChance)
+                    {
+                        goal = HuntGoal();
+                        if (goal != null) { state = "Hunt"; repath = 6.0; }
+                    }
+                    if (goal == null)
+                    {
+                        var a = RandomRange(0, 6.2831853);
+                        var r = RandomRange(3.0, patrolRadius);
+                        goal = NavSamplePosition(home.x + MathCos(a) * r, home.y, home.z + MathSin(a) * r, 3.0);
+                    }
+                }
+                path = goal == null ? [] : NavFindPath(me.x, me.y - 0.9, me.z, goal.x, goal.y, goal.z);
+                pathIndex = 0;
+            }
+            if (pathIndex < path.Count)
+            {
+                var wp = path[pathIndex];
+                var dx2 = wp.x - me.x;
+                var dz2 = wp.z - me.z;
+                var d2 = MathSqrt(dx2 * dx2 + dz2 * dz2);
+                if (d2 < 0.6)
+                {
+                    pathIndex += 1;
+                    if (pathIndex >= path.Count && state == "Search") { state = "Patrol"; lastSeen = null; }
+                }
+                else
+                {
+                    moveX = dx2 / d2;
+                    moveZ = dz2 / d2;
+                    face = {x: moveX, z: moveZ};
+                    maxSpeed = state == "Search" ? runSpeed : (state == "Hunt" ? runSpeed * 0.8 : walkSpeed);
+                }
+            }
+        }
+        var ml = MathSqrt(moveX * moveX + moveZ * moveZ);
+        if (ml > 1.0) { moveX /= ml; moveZ /= ml; }
+        speed = MathLerp(speed, ml > 0.05 ? maxSpeed : 0.0, 1.0 - MathExp(-8.0 * dt));
+        if (face != null)
+        {
+            var want = MathRadToDeg(MathAtan2(face.x, face.z));
+            yaw = yaw + MathNormalizeAngle(want - yaw) * (1.0 - MathExp(-10.0 * dt));
+        }
+        SetRotation(0, yaw, 0);
+        var sx = ml > 0.05 ? moveX / MathMax(ml, 1.0) * speed : 0.0;
+        var sz = ml > 0.05 ? moveZ / MathMax(ml, 1.0) * speed : 0.0;
+        CharacterMove(sx * dt, vy * dt, sz * dt);
+    }
+
+    func OnDamaged(amount, instigator)
+    {
+        // Ateş edeni hemen hedef al
+        if (instigator != null && instigator >= 0 && instigator != GetEntityId() && !dead)
+        {
+            target = instigator;
+            state = "Combat";
+            seeTimer = MathMin(seeTimer, 0.2);
+            if (mesh >= 0) { AnimMontagePlay(mesh, "Assets/Mannequin/Animations/HitReact.cqmontage"); }
+        }
+    }
+
+    func Kill()
+    {
+        dead = true;
+        state = "Dead";
+        target = -1;
+    }
+
+    func Revive()
+    {
+        dead = false;
+        state = "Patrol";
+        path = [];
+        var w = weapon;
+        if (w >= 0) { SetScriptField(w, "ammo", GetScriptField(w, "magazine")); }
+    }
+}

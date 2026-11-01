@@ -1,0 +1,41 @@
+#language GLSL
+// Derinlik farkına duyarlı (bilateral) 4x4 bulanıklaştırma
+#type vertex
+#version 450 core
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+out vec2 v_UV;
+void main()
+{
+    v_UV = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+layout(location = 0) out float FragAO;
+in vec2 v_UV;
+uniform sampler2D u_AO;
+uniform sampler2D u_Depth;
+uniform vec2 u_TexelSize;
+
+float LinearDepth(float d) { return d; }
+
+void main()
+{
+    float centerDepth = texture(u_Depth, v_UV).r;
+    float sum = 0.0;
+    float wsum = 0.0;
+    for (int x = -2; x < 2; ++x)
+    {
+        for (int y = -2; y < 2; ++y)
+        {
+            vec2 uv = v_UV + (vec2(x, y) + 0.5) * u_TexelSize;
+            float d = texture(u_Depth, uv).r;
+            float w = 1.0 / (1e-4 + abs(d - centerDepth) * 2000.0);
+            sum += texture(u_AO, uv).r * w;
+            wsum += w;
+        }
+    }
+    FragAO = sum / max(wsum, 1e-5);
+}

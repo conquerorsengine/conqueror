@@ -1,0 +1,68 @@
+using nativebridge;
+
+// Altıgen ada tahtası üretici: bu nesnedeki (ya da ilk çocuğundaki) Tilemap'i Start'ta yeniden üretir.
+// seed = 0 ise her oyunda rastgele.
+script HexBoardGenerator : ConquerorScript
+{
+    public int radius = 7;
+    public int seed = 0;
+    public float waterLevel = 0.32;
+    public float hillLevel = 0.62;
+    public float frequency = 0.16;
+    public bool generateOnStart = true;
+    public int generatedCells = 0;
+
+    func Start()
+    {
+        if (generateOnStart) { Generate(); }
+    }
+
+    func FindMap()
+    {
+        var me = GetEntityId();
+        if (EntityHasComponent(me, "Tilemap")) { return me; }
+        for (var c in EntityGetChildren(me))
+        {
+            if (EntityHasComponent(c, "Tilemap")) { return c; }
+        }
+        return -1;
+    }
+
+    func Generate()
+    {
+        var map = FindMap();
+        if (map < 0) { LogWarn("HexBoardGenerator: no Tilemap on this object or its children"); return; }
+        var s = seed;
+        if (s == 0) { s = MathRandomInt(1, 99999); }
+        generatedCells = HexIsland(map, radius, s, waterLevel, hillLevel, frequency);
+    }
+}
+
+// Ortak üretim fonksiyonu (editör aracı da aynı algoritmayı kullanır)
+func HexIsland(map, radius, seed, waterLevel, hillLevel, frequency)
+{
+    TilemapClear(map);
+    var sand = TilemapFindTileType(map, "Sand");
+    if (sand < 0) { sand = TilemapAddTileType(map, "Sand", 0.87, 0.79, 0.53, 1.0); }
+    var count = 0;
+    for (var y = -radius; y <= radius; y++)
+    {
+        for (var x = -radius - 1; x <= radius + 1; x++)
+        {
+            var d = GridDistance(map, 0, 0, x, y);
+            if (d > radius) { continue; }
+            // Ada: merkezde yüksek koni + katmanlı gürültü (kıyılar ve tepeler düzensiz)
+            var n = NoiseFBM2D(x * frequency, y * frequency, 4, 2.0, 0.5, seed);
+            var falloff = d / (radius + 0.5);
+            var h = 0.80 - falloff * falloff * 0.75 + n * 0.275;
+            var tile = 0;
+            if (h < waterLevel) { tile = 1; }
+            else if (h < waterLevel + 0.05) { tile = sand; }
+            else if (h > hillLevel + 0.16) { tile = 3; }
+            else if (h > hillLevel) { tile = 2; }
+            TilemapSetTile(map, x, y, tile);
+            count++;
+        }
+    }
+    return count;
+}

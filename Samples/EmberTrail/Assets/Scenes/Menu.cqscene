@@ -1,0 +1,1713 @@
+Scene: Untitled
+Entities:
+  - Entity: 852471489670964572
+    TagComponent:
+      Tag: MainCamera
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 4.2, -1]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera:
+        ProjectionType: 1
+        PerspectiveFOV: 0.7853982
+        PerspectiveNear: 0.01
+        PerspectiveFar: 1000
+        OrthographicSize: 15
+        OrthographicNear: -1000
+        OrthographicFar: 1000
+      Primary: true
+      FixedAspectRatio: false
+      Background: 2
+      BackgroundColor: [0.53, 0.78, 0.98, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 3213839244069631916
+    TagComponent:
+      Tag: BgFar
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [60, 6, -2]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.75, 0.75, 0.85, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/bg_meadow_far.png
+      Rect: [0, 0, 0, 0]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 2
+      Size: [200, 10]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 1728293979477163270
+    TagComponent:
+      Tag: BgNear
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [60, 5, -1]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/bg_meadow_near.png
+      Rect: [0, 0, 0, 0]
+      Pivot: [0.5, 0.5]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 2
+      Size: [200, 10]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 7417709893271612530
+    TagComponent:
+      Tag: Terrain
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0.5, 0.5, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    GridComponent:
+      Layout: 0
+      CellSize: [1, 1]
+      CellGap: [0, 0]
+      Plane: 0
+      ShowGridInEditor: true
+      EditorGridExtent: 12
+    TilemapComponent:
+      Tint: [1, 1, 1, 1]
+      OrderInLayer: 0
+      Render3D: false
+      Outline: false
+      Palette:
+        - Name: Grass
+          Color: [0.36, 0.72, 0.33, 1]
+          Texture: ""
+          Solid: false
+          Walkable: true
+          Cost: 1
+          Height: 0.25
+        - Name: Water
+          Color: [0.22, 0.48, 0.86, 1]
+          Texture: ""
+          Solid: false
+          Walkable: false
+          Cost: 1
+          Height: 0.12
+        - Name: Stone
+          Color: [0.55, 0.55, 0.6, 1]
+          Texture: ""
+          Solid: true
+          Walkable: true
+          Cost: 2
+          Height: 0.4
+        - Name: Wall
+          Color: [0.35, 0.3, 0.28, 1]
+          Texture: ""
+          Solid: true
+          Walkable: false
+          Cost: 1
+          Height: 1
+        - Name: Ground
+          Color: [1, 1, 1, 1]
+          Texture: Assets/Textures/tiles_meadow.png
+          Solid: true
+          Walkable: true
+          Cost: 1
+          Height: 0.25
+          Autotile: 1
+      Cells:
+        - [-20, -4, 4]
+        - [-19, -4, 4]
+        - [-18, -4, 4]
+        - [-17, -4, 4]
+        - [-16, -4, 4]
+        - [-15, -4, 4]
+        - [-14, -4, 4]
+        - [-13, -4, 4]
+        - [-12, -4, 4]
+        - [-11, -4, 4]
+        - [-10, -4, 4]
+        - [-9, -4, 4]
+        - [-8, -4, 4]
+        - [-7, -4, 4]
+        - [-6, -4, 4]
+        - [-5, -4, 4]
+        - [-4, -4, 4]
+        - [-3, -4, 4]
+        - [-2, -4, 4]
+        - [-1, -4, 4]
+        - [0, -4, 4]
+        - [1, -4, 4]
+        - [2, -4, 4]
+        - [3, -4, 4]
+        - [4, -4, 4]
+        - [5, -4, 4]
+        - [6, -4, 4]
+        - [7, -4, 4]
+        - [8, -4, 4]
+        - [9, -4, 4]
+        - [10, -4, 4]
+        - [11, -4, 4]
+        - [12, -4, 4]
+        - [13, -4, 4]
+        - [14, -4, 4]
+        - [15, -4, 4]
+        - [16, -4, 4]
+        - [17, -4, 4]
+        - [18, -4, 4]
+        - [19, -4, 4]
+        - [-20, -3, 4]
+        - [-19, -3, 4]
+        - [-18, -3, 4]
+        - [-17, -3, 4]
+        - [-16, -3, 4]
+        - [-15, -3, 4]
+        - [-14, -3, 4]
+        - [-13, -3, 4]
+        - [-12, -3, 4]
+        - [-11, -3, 4]
+        - [-10, -3, 4]
+        - [-9, -3, 4]
+        - [-8, -3, 4]
+        - [-7, -3, 4]
+        - [-6, -3, 4]
+        - [-5, -3, 4]
+        - [-4, -3, 4]
+        - [-3, -3, 4]
+        - [-2, -3, 4]
+        - [-1, -3, 4]
+        - [0, -3, 4]
+        - [1, -3, 4]
+        - [2, -3, 4]
+        - [3, -3, 4]
+        - [4, -3, 4]
+        - [5, -3, 4]
+        - [6, -3, 4]
+        - [7, -3, 4]
+        - [8, -3, 4]
+        - [9, -3, 4]
+        - [10, -3, 4]
+        - [11, -3, 4]
+        - [12, -3, 4]
+        - [13, -3, 4]
+        - [14, -3, 4]
+        - [15, -3, 4]
+        - [16, -3, 4]
+        - [17, -3, 4]
+        - [18, -3, 4]
+        - [19, -3, 4]
+        - [-20, -2, 4]
+        - [-19, -2, 4]
+        - [-18, -2, 4]
+        - [-17, -2, 4]
+        - [-16, -2, 4]
+        - [-15, -2, 4]
+        - [-14, -2, 4]
+        - [-13, -2, 4]
+        - [-12, -2, 4]
+        - [-11, -2, 4]
+        - [-10, -2, 4]
+        - [-9, -2, 4]
+        - [-8, -2, 4]
+        - [-7, -2, 4]
+        - [-6, -2, 4]
+        - [-5, -2, 4]
+        - [-4, -2, 4]
+        - [-3, -2, 4]
+        - [-2, -2, 4]
+        - [-1, -2, 4]
+        - [0, -2, 4]
+        - [1, -2, 4]
+        - [2, -2, 4]
+        - [3, -2, 4]
+        - [4, -2, 4]
+        - [5, -2, 4]
+        - [6, -2, 4]
+        - [7, -2, 4]
+        - [8, -2, 4]
+        - [9, -2, 4]
+        - [10, -2, 4]
+        - [11, -2, 4]
+        - [12, -2, 4]
+        - [13, -2, 4]
+        - [14, -2, 4]
+        - [15, -2, 4]
+        - [16, -2, 4]
+        - [17, -2, 4]
+        - [18, -2, 4]
+        - [19, -2, 4]
+        - [-20, -1, 4]
+        - [-19, -1, 4]
+        - [-18, -1, 4]
+        - [-17, -1, 4]
+        - [-16, -1, 4]
+        - [-15, -1, 4]
+        - [-14, -1, 4]
+        - [-13, -1, 4]
+        - [-12, -1, 4]
+        - [-11, -1, 4]
+        - [-10, -1, 4]
+        - [-9, -1, 4]
+        - [-8, -1, 4]
+        - [-7, -1, 4]
+        - [-6, -1, 4]
+        - [-5, -1, 4]
+        - [-4, -1, 4]
+        - [-3, -1, 4]
+        - [-2, -1, 4]
+        - [-1, -1, 4]
+        - [0, -1, 4]
+        - [1, -1, 4]
+        - [2, -1, 4]
+        - [3, -1, 4]
+        - [4, -1, 4]
+        - [5, -1, 4]
+        - [6, -1, 4]
+        - [7, -1, 4]
+        - [8, -1, 4]
+        - [9, -1, 4]
+        - [10, -1, 4]
+        - [11, -1, 4]
+        - [12, -1, 4]
+        - [13, -1, 4]
+        - [14, -1, 4]
+        - [15, -1, 4]
+        - [16, -1, 4]
+        - [17, -1, 4]
+        - [18, -1, 4]
+        - [19, -1, 4]
+  - Entity: 7844708609823824060
+    TagComponent:
+      Tag: MenuWick
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [-10, 0, 0.2]
+      Rotation: [0, 0, 0]
+      Scale: [2, 2, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      TilingFactor: 1
+      TexturePath: Assets/Textures/wick.png
+      Rect: [32, 0, 16, 20]
+      Pivot: [0.5, 0]
+      Border: [0, 0, 0, 0]
+      PixelsPerUnit: 16
+      FlipX: false
+      FlipY: false
+      DrawMode: 0
+      Size: [1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+  - Entity: 913793740755947618
+    TagComponent:
+      Tag: Menu
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 0
+      OrderInLayer: 0
+    ConquerorScriptComponent:
+      ScriptPath: Assets/Scripts/EmberMenu.cqs
+      ClassName: ""
+      Fields:
+        levelData:
+          String: Meadow1|meadow1|SUNNY START|SUNNY MEADOW;Meadow2|meadow2|WINDY HILLS|SUNNY MEADOW;Cave1|cave1|GLOWCAP CAVERN|GLOWCAP CAVES;Cave2|cave2|CRYSTAL DEPTHS|GLOWCAP CAVES;Sky1|sky1|CLOUD RUINS|CLOUD KINGDOM;Sky2|sky2|LANTERN PEAK|CLOUD KINGDOM
+    AudioSourceComponent:
+      FilePath: Assets/Music/title.mp3
+      PlayOnAwake: true
+      Loop: true
+      Mute: false
+      Volume: 0.55
+      Pitch: 1
+      Pan: 0
+      Is3D: false
+      MinDistance: 1
+      MaxDistance: 100
+      DopplerLevel: 1
+      Attenuation: 1
+      RolloffFactor: 1
+      OutputGroup: Music
+      NextGraphNodeID: 1
+      NextGraphLinkID: 1
+      GraphInitialized: false
+      GraphNodes:
+        []
+      GraphLinks:
+        []
+  - Entity: 5557933819946866200
+    TagComponent:
+      Tag: MenuCanvas
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    CanvasComponent:
+      RenderMode: 0
+      PixelPerfect: false
+      SortOrder: 0
+    CanvasScalerComponent:
+      ScaleMode: 1
+      ScaleFactor: 1
+      ReferencePixelsPerUnit: 100
+      ReferenceResolution: [1920, 1080]
+      MatchWidthOrHeight: 0.5
+    GraphicRaycasterComponent:
+      IgnoreReversedGraphics: true
+      BlockingObjects: 0
+      BlockingMask: 4294967295
+  - Entity: 1449821392210439870
+    TagComponent:
+      Tag: MenuRoot
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [0, 0]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.06, 0.03, 0.1, 0]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+  - Entity: 3488868599712896620
+    TagComponent:
+      Tag: MenuTitle
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 1]
+      AnchorMax: [0.5, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -150]
+      SizeDelta: [1700, 190]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: EMBER TRAIL
+      FontPath: Assets/Fonts/Orbitron.ttf
+      FontSize: 150
+      Color: [1, 0.74, 0.3, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 495622431361909871
+    TagComponent:
+      Tag: MenuSub
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 1]
+      AnchorMax: [0.5, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, -255]
+      SizeDelta: [1400, 60]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: LIGHT THE LANTERNS, WICK!
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 38
+      Color: [1, 0.96, 0.86, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 7222548060872420324
+    TagComponent:
+      Tag: WorldLabel0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-650, 170]
+      SizeDelta: [520, 60]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 34
+      Color: [1, 0.74, 0.3, 1]
+      AlignH: 2
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 6100802181948294185
+    TagComponent:
+      Tag: LvlBtn0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-110, 170]
+      SizeDelta: [520, 110]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.16, 0.12, 0.22, 0.92]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 18
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 7342362779908870109
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 30
+      Color: [1, 0.96, 0.88, 1]
+      AlignH: 1
+      AlignV: 0
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 1811930175423957555
+    TagComponent:
+      Tag: LvlInfo0
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-110, 140]
+      SizeDelta: [500, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 26
+      Color: [0.85, 0.78, 0.92, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 5182701764379271363
+    TagComponent:
+      Tag: LvlBtn1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [450, 170]
+      SizeDelta: [520, 110]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.16, 0.12, 0.22, 0.92]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 18
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 1485825105649250273
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 30
+      Color: [1, 0.96, 0.88, 1]
+      AlignH: 1
+      AlignV: 0
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 5211606056151008295
+    TagComponent:
+      Tag: LvlInfo1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [450, 140]
+      SizeDelta: [500, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 26
+      Color: [0.85, 0.78, 0.92, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 7457274452150062636
+    TagComponent:
+      Tag: WorldLabel1
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-650, 20]
+      SizeDelta: [520, 60]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 34
+      Color: [1, 0.74, 0.3, 1]
+      AlignH: 2
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 3847110482001479767
+    TagComponent:
+      Tag: LvlBtn2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-110, 20]
+      SizeDelta: [520, 110]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.16, 0.12, 0.22, 0.92]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 18
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 2098859816023679453
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 30
+      Color: [1, 0.96, 0.88, 1]
+      AlignH: 1
+      AlignV: 0
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 497216603648044619
+    TagComponent:
+      Tag: LvlInfo2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-110, -10]
+      SizeDelta: [500, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 26
+      Color: [0.85, 0.78, 0.92, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 3328219651616726578
+    TagComponent:
+      Tag: LvlBtn3
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [450, 20]
+      SizeDelta: [520, 110]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.16, 0.12, 0.22, 0.92]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 18
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 1948136539940700968
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 30
+      Color: [1, 0.96, 0.88, 1]
+      AlignH: 1
+      AlignV: 0
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 315396275868712045
+    TagComponent:
+      Tag: LvlInfo3
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [450, -10]
+      SizeDelta: [500, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 26
+      Color: [0.85, 0.78, 0.92, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 2456874675122539181
+    TagComponent:
+      Tag: WorldLabel2
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-650, -130]
+      SizeDelta: [520, 60]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 34
+      Color: [1, 0.74, 0.3, 1]
+      AlignH: 2
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 565942742216240944
+    TagComponent:
+      Tag: LvlBtn4
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-110, -130]
+      SizeDelta: [520, 110]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.16, 0.12, 0.22, 0.92]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 18
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 6258500190564585990
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 30
+      Color: [1, 0.96, 0.88, 1]
+      AlignH: 1
+      AlignV: 0
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 6191801546948347270
+    TagComponent:
+      Tag: LvlInfo4
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [-110, -160]
+      SizeDelta: [500, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 26
+      Color: [0.85, 0.78, 0.92, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 4408553897472608749
+    TagComponent:
+      Tag: LvlBtn5
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [450, -130]
+      SizeDelta: [520, 110]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0.16, 0.12, 0.22, 0.92]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: true
+      CornerRadius: 18
+    UIButtonComponent:
+      Selectable:
+        Interactable: true
+        Transition: 1
+        NormalColor: [1, 1, 1, 1]
+        HighlightedColor: [0.92, 0.92, 0.92, 1]
+        PressedColor: [0.75, 0.75, 0.75, 1]
+        DisabledColor: [0.78, 0.78, 0.78, 0.5]
+        FadeDuration: 0.1
+      OnClick: ""
+  - Entity: 2060875622846608568
+    TagComponent:
+      Tag: Text
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [-0, -0]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 30
+      Color: [1, 0.96, 0.88, 1]
+      AlignH: 1
+      AlignV: 0
+      WordWrap: true
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: false
+      ShadowOffset: [2, -2]
+      ShadowColor: [0, 0, 0, 0.5]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 2577770019520102961
+    TagComponent:
+      Tag: LvlInfo5
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0.5]
+      AnchorMax: [0.5, 0.5]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [450, -160]
+      SizeDelta: [500, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 26
+      Color: [0.85, 0.78, 0.92, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 8069677153811461575
+    TagComponent:
+      Tag: MenuTotals
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 120]
+      SizeDelta: [1600, 50]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ""
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 32
+      Color: [1, 0.96, 0.86, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 5264095981760939824
+    TagComponent:
+      Tag: MenuHint
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0.5, 0]
+      AnchorMax: [0.5, 0]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 60]
+      SizeDelta: [1600, 40]
+      Rotation: 0
+      Scale: [1, 1]
+    UITextComponent:
+      Text: ARROWS + ENTER  OR  MOUSE        ESC  QUIT
+      FontPath: Assets/Fonts/RussoOne.ttf
+      FontSize: 24
+      Color: [0.85, 0.78, 0.92, 1]
+      AlignH: 1
+      AlignV: 1
+      WordWrap: false
+      BestFit: false
+      MinSize: 10
+      MaxSize: 72
+      LineSpacing: 1
+      Outline: false
+      OutlineColor: [0, 0, 0, 1]
+      Shadow: true
+      ShadowOffset: [3, -3]
+      ShadowColor: [0.1, 0.05, 0.15, 0.85]
+      RaycastTarget: false
+      RichText: false
+  - Entity: 8306278616831041481
+    TagComponent:
+      Tag: Fade
+      GameTag: Untagged
+      IsStatic: false
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LayerComponent:
+      Layer: 5
+      OrderInLayer: 0
+    RectTransformComponent:
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      AnchoredPosition: [0, 0]
+      SizeDelta: [0, 0]
+      Rotation: 0
+      Scale: [1, 1]
+    UIImageComponent:
+      Color: [0, 0, 0, 1]
+      TexturePath: ""
+      SpriteName: ""
+      Type: 0
+      Border: [0, 0, 0, 0]
+      PixelsPerUnitMultiplier: 1
+      FillMethod: 0
+      FillAmount: 1
+      FillClockwise: true
+      PreserveAspect: false
+      RaycastTarget: false
+      CornerRadius: 0
+Environment:
+  SkyboxExposure: 1
+  SkyboxRotation: 0
+  SkyboxTint: [1, 1, 1]
+  EnvironmentLightingSource: 0
+  AmbientColor: [0.3, 0.3, 0.3]
+  AmbientSkyColor: [0.5, 0.6, 0.7]
+  AmbientEquatorColor: [0.3, 0.3, 0.3]
+  AmbientGroundColor: [0.2, 0.15, 0.1]
+  AmbientIntensity: 1
+  FogEnabled: false
+  FogColor: [0.5, 0.6, 0.7]
+  FogDensity: 0.02
+  FogStart: 10
+  FogEnd: 100
+  SunSource: 0
+  HaloEnabled: false
+  HaloStrength: 0.5
+  FlareEnabled: false
+  FlareFadeSpeed: 3
+  FlareStrength: 1
+  FlareElements:
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.08
+      Offset: 0.3
+      Intensity: 1
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.06
+      Offset: 0.6
+      Intensity: 0.8
+    - ColorMultiplier: [1, 1, 1]
+      Size: 0.05
+      Offset: 0.9
+      Intensity: 0.6
+  ShadowEnabled: true
+  ShadowIntensity: 1
+  ReflectionSource: 0
+  ReflectionResolution: 128
+  ReflectionCompression: 0
+  ReflectionIntensityMultiplier: 1
+  ReflectionBounces: 1
+  BakedLightmapPath: ""
+  LightmapResolution: 40
+  MaxLightmapSize: 1024
+  MaxBounces: 2
+  DirectSamples: 32
+  IndirectSamples: 512
+  AmbientOcclusion: true
+  LightmapFiltering: 0
+  RenderSettings:
+    Shadows:
+      Enabled: true
+      Quality: 1
+      Resolution: 4096
+      Distance: 80
+      CascadeCount: 2
+      CascadeSplitLambda: 0.75
+      Strength: 1
+      Softness: 1
+      DepthBias: 0.005
+      NormalBias: 0.015
+      Color: [0, 0, 0]
+    Fog:
+      Enabled: false
+      Mode: 2
+      Color: [0.5, 0.6, 0.7]
+      Density: 0.02
+      Start: 10
+      End: 100
+      HeightFalloff: 0
+      BaseHeight: 0
+    Post:
+      Enabled: true
+      Tonemapper: 0
+      Exposure: 0
+      Bloom: true
+      BloomThreshold: 1.1
+      BloomKnee: 0.5
+      BloomIntensity: 0.35
+      BloomScatter: 0.7
+      BloomTint: [1, 1, 1]
+      AmbientOcclusion: false
+      AORadius: 0.6
+      AOIntensity: 1
+      AOPower: 1.5
+      ColorGrading: true
+      Contrast: 1
+      Saturation: 1
+      Temperature: 0
+      Tint: 0
+      Lift: [0, 0, 0]
+      Gamma: [1, 1, 1]
+      Gain: [1, 1, 1]
+      Vignette: true
+      VignetteIntensity: 0.18
+      VignetteSmoothness: 0.4
+      VignetteColor: [0, 0, 0]
+      ChromaticAberration: false
+      ChromaticAberrationIntensity: 0.3
+      FilmGrain: false
+      FilmGrainIntensity: 0.15
+      Sharpen: false
+      SharpenAmount: 0.3
+      AntiAliasing: 1
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: false
+      SSRIntensity: 1
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: false
+      SSGIIntensity: 1
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: false
+      CloudCoverage: 0.45
+      CloudDensity: 1
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: false
+      FocusDistance: 10
+      Aperture: 2.8
+      FocalLength: 50
+      DOFMaxBlur: 10
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
+    Environment:
+      Sky: 2
+      BackgroundColor: [0.53, 0.78, 0.98]
+      ImageBasedLighting: true
+      ReflectionIntensity: 1
+      SkyboxIntensity: 1
+      SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
+    Bake:
+      RealtimeGI: false
+      BakedGI: true
+      LightingMode: 0
+      Lightmapper: 1
+      ImportanceSampling: true
+      DirectSamples: 32
+      IndirectSamples: 512
+      EnvironmentSamples: 256
+      MaxBounces: 2
+      Filtering: 0
+      Packing: 0
+      Resolution: 40
+      MaxLightmapSize: 1024
+      UseMipmapLimits: true
+      Compression: 2
+      AmbientOcclusion: true
+      DirectionalMode: 0
+      AlbedoBoost: 1
+      IndirectIntensity: 1
+      RealtimeResolution: 20
+      RealtimeIndirectSamples: 256
+      RealtimeMaxBounces: 1
+      AutoGenerate: false
+      BakeOnSceneLoad: 0
+      APVFitToScene: true
+      APVOrigin: [-10, -1, -10]
+      APVSize: [20, 10, 20]
+      APVProbeOffset: [0, 0, 0]
+      APVMinSpacing: 1
+      APVMaxSpacing: 9
+      APVBakingMode: 0
+      APVDilation: false
+      APVVirtualOffset: true
+      APVValidityThreshold: 0.75
+      APVSearchDistanceMultiplier: 0.2
+      APVGeometryBias: 0.01
+      APVRayOriginBias: -0.001
+EditorCamera:
+  CameraMode: 0
+  Position: [21.378685, 5.2141128, -45.6164]
+  Distance: 3.773536
+  Pitch: 0.051820517
+  Yaw: 2.4861262
+  OrthographicSize: 10
+Hierarchy:
+  - Child: 1449821392210439870
+    Parent: 5557933819946866200
+  - Child: 8306278616831041481
+    Parent: 5557933819946866200
+  - Child: 3488868599712896620
+    Parent: 1449821392210439870
+  - Child: 495622431361909871
+    Parent: 1449821392210439870
+  - Child: 7222548060872420324
+    Parent: 1449821392210439870
+  - Child: 6100802181948294185
+    Parent: 1449821392210439870
+  - Child: 1811930175423957555
+    Parent: 1449821392210439870
+  - Child: 5182701764379271363
+    Parent: 1449821392210439870
+  - Child: 5211606056151008295
+    Parent: 1449821392210439870
+  - Child: 7457274452150062636
+    Parent: 1449821392210439870
+  - Child: 3847110482001479767
+    Parent: 1449821392210439870
+  - Child: 497216603648044619
+    Parent: 1449821392210439870
+  - Child: 3328219651616726578
+    Parent: 1449821392210439870
+  - Child: 315396275868712045
+    Parent: 1449821392210439870
+  - Child: 2456874675122539181
+    Parent: 1449821392210439870
+  - Child: 565942742216240944
+    Parent: 1449821392210439870
+  - Child: 6191801546948347270
+    Parent: 1449821392210439870
+  - Child: 4408553897472608749
+    Parent: 1449821392210439870
+  - Child: 2577770019520102961
+    Parent: 1449821392210439870
+  - Child: 8069677153811461575
+    Parent: 1449821392210439870
+  - Child: 5264095981760939824
+    Parent: 1449821392210439870
+  - Child: 7342362779908870109
+    Parent: 6100802181948294185
+  - Child: 1485825105649250273
+    Parent: 5182701764379271363
+  - Child: 2098859816023679453
+    Parent: 3847110482001479767
+  - Child: 1948136539940700968
+    Parent: 3328219651616726578
+  - Child: 6258500190564585990
+    Parent: 565942742216240944
+  - Child: 2060875622846608568
+    Parent: 4408553897472608749

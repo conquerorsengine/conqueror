@@ -1,0 +1,5 @@
+# First Person (Unreal First Person template): FP arms + pistol and marksman rifle, physics cubes, target range
+Shared: [Prototype, Mannequin, Weapons]
+StartScene: Assets/Scenes/Main.cqscene
+Scenes:
+  - Assets/Scenes/Main.cqscene

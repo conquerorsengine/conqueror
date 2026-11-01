@@ -1,0 +1,14 @@
+Id: conqueror.grappling-hook
+Name: Grappling Hook
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Fire a hook where you look and get pulled to it: works with the First Person Controller or
+  any Character Controller / Rigidbody, draws the rope with a Line Renderer, has a maximum
+  range, an optional "Grapple" tag filter, release on arrival, on jump or on a second click,
+  and fire / attach sounds.
+Category: Characters
+Icon: anchor
+Tags: [grapple, hook, traversal, fps, movement]
+Components:
+  - Scripts/GrapplingHook.cqs

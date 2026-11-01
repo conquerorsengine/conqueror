@@ -1,0 +1,5 @@
+# Car Configurator (Unreal Automotive Configurator): HDR studio, turntable, paint variants, camera presets, interior view
+Shared: [Vehicles]
+StartScene: Assets/Scenes/Main.cqscene
+Scenes:
+  - Assets/Scenes/Main.cqscene

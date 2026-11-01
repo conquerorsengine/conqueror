@@ -1,0 +1,20 @@
+Id: conqueror.maze-generator
+Name: Maze Generator
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Perfect mazes of any size with a seed: recursive-backtracker generation, configurable cell
+  size, wall height and thickness, an entrance and an exit, optional floor and the solution
+  path length. Build mazes in the editor from the menu (undoable) or at runtime with the Maze
+  Generator component for procedural levels.
+Category: Level Design
+Icon: border-all
+Tags: [maze, procedural, labyrinth, generation, level-design]
+Editor: Editor/MazeEditor.cqs
+Components:
+  - Scripts/MazeGenerator.cqs
+Inserts:
+  - Name: Maze Generator
+    Icon: border-all
+    Prefab: Prefabs/MazeGenerator.cqprefab
+    Tooltip: Generates an 8 x 8 maze when the game starts

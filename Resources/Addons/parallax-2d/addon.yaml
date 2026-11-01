@@ -1,0 +1,18 @@
+Id: conqueror.parallax-2d
+Name: 2D Parallax Background
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Depth for 2D games: background layers that follow the camera at different rates, repeat
+  endlessly in both directions, can auto-scroll (clouds, menu screens) and snap to pixels.
+  Includes a three-layer sky, mountains and hills background.
+Category: 2D
+Icon: layer-group
+Tags: [2d, parallax, background, platformer, scrolling]
+Components:
+  - Scripts/ParallaxLayer.cqs
+Inserts:
+  - Name: Parallax Background
+    Icon: layer-group
+    Prefab: Prefabs/ParallaxBackground.cqprefab
+    Tooltip: Three repeating layers (far, mid, near)

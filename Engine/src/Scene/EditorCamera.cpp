@@ -59,7 +59,11 @@ namespace Conqueror
             return;
         }
 
-        m_Projection = glm::perspective(glm::radians(m_FOV), m_AspectRatio, m_NearClip, m_FarClip);
+        // Dinamik kırpma (Unity "Dynamic Clipping"): çok uzaklaşınca yakın düzlem uzaklıkla büyür; sabit 0.1 m'de
+        // 3000 m'deki derinlik çözünürlüğü ~5 m'ye düşüp yüzeyler ve ızgara titriyordu
+        const float nearClip = std::max(m_NearClip, m_Distance * 0.0005f);
+        const float farClip = std::max(m_FarClip, m_Distance * 50.0f);
+        m_Projection = glm::perspective(glm::radians(m_FOV), m_AspectRatio, nearClip, farClip);
     }
 
     void EditorCamera::UpdateView()
@@ -77,6 +81,8 @@ namespace Conqueror
         glm::quat orientation = GetOrientation();
         m_ViewMatrix = glm::translate(glm::mat4(1.0f), m_Position) * glm::toMat4(orientation);
         m_ViewMatrix = glm::inverse(m_ViewMatrix);
+        // Uzaklık değişince (zoom) dinamik kırpma güncellensin
+        UpdateProjection();
     }
 
     std::pair<float, float> EditorCamera::PanSpeed() const
@@ -140,7 +146,8 @@ namespace Conqueror
         // Play modunda tuşla gezinme kapalıdır (orbit/pan/zoom çalışmaya devam eder).
         if (allowKeyMovement)
         {
-        float moveSpeed = 12.0f;
+        // Uzaklaşınca tuşla gezinme de hızlanır (3000 m'de 12 m/s piksel altında kalıyordu)
+        float moveSpeed = std::max(12.0f, m_Distance * 0.5f);
         if (m_CameraMode == EditorCameraMode::Orthographic2D)
             moveSpeed = m_OrthographicSize * 2.0f;
 
@@ -210,7 +217,8 @@ namespace Conqueror
     void EditorCamera::MouseZoom2D(float delta)
     {
         m_OrthographicSize -= delta * m_OrthographicSize;
-        m_OrthographicSize = std::clamp(m_OrthographicSize, 1.0f, 500.0f);
+        // 3D gibi pratikte sınırsız (eskiden 1..500 arasına sıkışıyordu); çarpımsal adım hiç sıfıra inmez
+        m_OrthographicSize = std::clamp(m_OrthographicSize, 0.01f, 1.0e6f);
         UpdateProjection();
     }
 

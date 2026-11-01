@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: walk_formal
+      States:
+        - Name: walk_formal
+          ClipIndex: 27
+          ClipName: walk_formal
+  Parameters: []

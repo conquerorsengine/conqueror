@@ -1,0 +1,221 @@
+using nativebridge;
+
+// Sanal prodüksiyon kısa filmi (Unreal Sequencer + Cine Camera karşılığı): "THE TRAIL", Concept GT reklam filmi.
+// Yedi çekim: açılış (vinçle inen geniş plan), iki kişilik plan, omuz üstü / karşı çekim, araç detayı, yakın plan,
+// kapanış (vinçle yükselen geniş plan). Her çekim "Shot N" varlığından "Shot N End" varlığına ilerler; lens açısı
+// çekime göre, odak her karede çekimin odak hedefine olan uzaklıktır. Diyalog: alt yazılar + konuşan oyuncu Talk
+// animasyonunda (ActorPerformer), dinleyen boşta; başlar birbirine bakar. Açılış ve kapanış yazıları kararıp açılır.
+// Arayüz: 2.39:1 sinema bantları, klaket (sahne / çekim / tekrar), zaman kodu, REC.
+// Space sonraki çekim, Backspace önceki, Tab yönetmen görünümü (serbest kamera), P duraklat.
+// LED duvar içeriği: 1 orman (sahne zemini orman tabanı, eğreltiler, kayalar), 2 gün batımı.
+script ShotSequencer : ConquerorScript
+{
+    public int scene = 12;
+    public int take = 3;
+    [Header("State")]
+    public int shot = 0;
+    public float shotTime = 0.0;
+    public bool director = false;
+    public bool paused = false;
+    public string ledContent = "Forest";
+    public string subtitle = "";
+
+    private var shots = [];
+    private var lines = [];
+    private var titles = [];
+    private var cues = [];
+    private var actors = Map();
+    private var cam = -1;
+    private float clock = 0.0;
+    private float yaw = 0.0;
+    private float pitch = -10.0;
+
+    func Start()
+    {
+        // Çekim listesi: ad, süre (s), lens açısı (derece), odak hedefi
+        shots = [
+            {name: "WIDE - ESTABLISHING", dur: 5.0, fov: 38.0, focus: "Concept GT"},
+            {name: "TWO SHOT - DOLLY IN", dur: 6.6, fov: 30.0, focus: "Actor Presenter"},
+            {name: "OVER THE SHOULDER - MARA", dur: 3.8, fov: 26.0, focus: "Actor Talent"},
+            {name: "REVERSE - LEO", dur: 4.6, fov: 26.0, focus: "Actor Presenter"},
+            {name: "CAR DETAIL - TRACKING", dur: 5.2, fov: 30.0, focus: "Concept GT"},
+            {name: "CLOSE UP - MARA", dur: 4.0, fov: 24.0, focus: "Actor Talent"},
+            {name: "WIDE - CRANE UP", dur: 7.2, fov: 40.0, focus: "Concept GT"}
+        ];
+        // Diyalog: çekim, başlangıç / bitiş (çekim içi saniye), konuşan, alt yazı
+        lines = [
+            {shot: 1, t0: 0.7, t1: 3.1, who: "Actor Talent", text: "Leo! You said this would take five minutes."},
+            {shot: 1, t0: 3.5, t1: 6.2, who: "Actor Presenter", text: "It did. I just took the scenic route."},
+            {shot: 2, t0: 0.4, t1: 3.4, who: "Actor Talent", text: "Through a rainforest?"},
+            {shot: 3, t0: 0.3, t1: 4.2, who: "Actor Presenter", text: "Hybrid all-wheel drive. Mud doesn't scare her."},
+            {shot: 4, t0: 0.6, t1: 4.8, who: "Actor Presenter", text: "Six hundred horsepower. Not a sound on the trail."},
+            {shot: 5, t0: 0.5, t1: 3.6, who: "Actor Talent", text: "Fine. But I'm driving back."}
+        ];
+        titles = [
+            {shot: 0, t0: 0.8, t1: 4.4, text: "CONCEPT GT      THE TRAIL"},
+            {shot: 6, t0: 2.4, t1: 7.2, text: "CONCEPT GT.     FIND YOUR OWN TRAIL."}
+        ];
+        cues = [{shot: 5, t: 3.7, who: "Actor Presenter", action: "Nod"}, {shot: 6, t: 0.6, who: "Actor Talent", action: "Nod"}];
+        foreach (var n in ["Actor Talent", "Actor Presenter"]) { actors[n] = FindEntity(n); }
+        cam = FindEntity("Cine Camera");
+        SetLed(ledContent);
+        Cut(0);
+    }
+
+    func SetLed(name)
+    {
+        ledContent = name;
+        foreach (var p in FindEntitiesWithTag("LED Panel"))
+        {
+            EntitySetComponentField(p, "MeshRenderer", "Texture", "Assets/Textures/LED_" + name + ".jpg");
+        }
+        var ceiling = FindEntity("LED Ceiling");
+        if (ceiling != null && ceiling >= 0) { EntitySetComponentField(ceiling, "MeshRenderer", "Texture", "Assets/Textures/LED_" + name + "_Ceiling.jpg"); }
+        SceneSetSkybox("Assets/Sky/" + name + ".hdr");
+        // Orman çekiminde sahne orman tabanıyla giydirilir (LED'deki görüntü fiziksel sete devam eder)
+        foreach (var d in FindEntitiesWithTag("Forest Dressing")) { EntitySetActive(d, name == "Forest"); }
+    }
+
+    func Cut(i)
+    {
+        if (i >= shots.Count) { take++; }        // film baştan: yeni tekrar
+        shot = (i + shots.Count) % shots.Count;
+        shotTime = 0.0;
+        foreach (var c in cues) { c.done = false; }
+        UISetText("ShotText", "SHOT " + (shot + 1) + "  -  " + shots[shot].name);
+        UISetText("SlateText", "SCENE " + scene + "   SHOT " + (shot + 1) + "   TAKE " + take);
+        UpdateCamera(0.0);
+        UpdatePerformance();
+    }
+
+    func Lerp3(a, b, t) { return {x: MathLerp(a.x, b.x, t), y: MathLerp(a.y, b.y, t), z: MathLerp(a.z, b.z, t)}; }
+
+    func UpdateCamera(t)
+    {
+        var a = FindEntity("Shot " + (shot + 1));
+        var b = FindEntity("Shot " + (shot + 1) + " End");
+        if (a < 0 || cam < 0) { return; }
+        var pa = EntityGetWorldPosition(a);
+        var ra = EntityGetRotation(a);
+        var pb = b >= 0 ? EntityGetWorldPosition(b) : pa;
+        var rb = b >= 0 ? EntityGetRotation(b) : ra;
+        // Yumuşak hareket (ease in-out)
+        var e = t * t * (3.0 - 2.0 * t);
+        var p = Lerp3(pa, pb, e);
+        EntitySetWorldPosition(cam, p.x, p.y, p.z);
+        EntitySetRotation(cam, MathLerp(ra.x, rb.x, e), ra.y + MathNormalizeAngle(rb.y - ra.y) * e, 0);
+        EntitySetComponentField(cam, "Camera", "FieldOfView", shots[shot].fov);
+        // Odak: çekimin odak hedefine (oyuncunun başı / araç) olan uzaklık
+        var target = FindEntity(shots[shot].focus);
+        if (target != null && target >= 0)
+        {
+            var tp = EntityGetWorldPosition(target);
+            var ty = StringStartsWith(shots[shot].focus, "Actor") ? tp.y + 1.55 : tp.y + 0.6;
+            var dx = tp.x - p.x;
+            var dy = ty - p.y;
+            var dz = tp.z - p.z;
+            RenderSettingSet("Post.FocusDistance", MathSqrt(dx * dx + dy * dy + dz * dz));
+        }
+    }
+
+    // Alt yazı, konuşan oyuncu, tepkiler ve başlık yazıları çekim zamanına göre (çekim atlanınca da doğru)
+    func UpdatePerformance()
+    {
+        var speaking = "";
+        subtitle = "";
+        foreach (var l in lines)
+        {
+            if (l.shot == shot && shotTime >= l.t0 && shotTime < l.t1)
+            {
+                speaking = l.who;
+                subtitle = l.text;
+            }
+        }
+        UISetText("Subtitle", subtitle);
+        foreach (var n in ["Actor Talent", "Actor Presenter"])
+        {
+            var a = actors[n];
+            if (a != null && a >= 0) { InvokeMethod(a, "SetTalking", n == speaking); }
+        }
+        foreach (var c in cues)
+        {
+            if (c.shot == shot && !c.done && shotTime >= c.t)
+            {
+                c.done = true;
+                var who = actors[c.who];
+                if (who != null && who >= 0) { InvokeMethod(who, c.action); }
+            }
+        }
+        var titleText = "";
+        var alpha = 0.0;
+        foreach (var tt in titles)
+        {
+            if (tt.shot == shot && shotTime >= tt.t0 && shotTime < tt.t1)
+            {
+                titleText = tt.text;
+                alpha = MathMin(MathClamp01((shotTime - tt.t0) / 0.8), MathClamp01((tt.t1 - shotTime) / 0.8));
+            }
+        }
+        UISetText("TitleCard", titleText);
+        UISetAlpha("TitleCard", alpha);
+        UISetAlpha("TitleBack", alpha * 0.45);
+    }
+
+    func Update(dt)
+    {
+        if (IsKeyDown("1")) { SetLed("Forest"); }
+        if (IsKeyDown("2")) { SetLed("Sunset"); }
+        if (IsKeyDown("P")) { paused = !paused; }
+        if (IsKeyDown("Tab"))
+        {
+            director = !director;
+            UISetAlpha("BarTop", director ? 0.0 : 1.0);
+            UISetAlpha("BarBottom", director ? 0.0 : 1.0);
+            UISetText("ModeText", director ? "DIRECTOR VIEW   (RMB LOOK, WASD MOVE, TAB BACK TO CAMERA)" : "");
+            if (director) { var r = EntityGetRotation(cam); yaw = r.y; pitch = r.x; }
+            else { Cut(shot); }
+        }
+        if (director)
+        {
+            // Serbest kamera: sağ tık bak, WASD / Q E hareket
+            if (IsMouseButtonPressed(1))
+            {
+                var md = GetMouseDelta();
+                yaw = MathNormalizeAngle(yaw - md.x * 0.15);
+                pitch = MathClamp(pitch - md.y * 0.15, -85.0, 85.0);
+            }
+            EntitySetRotation(cam, pitch, yaw, 0);
+            var f = EntityGetForward(cam);
+            var rr = EntityGetRight(cam);
+            var mv = {x: 0.0, y: 0.0, z: 0.0};
+            var s = 4.0 * dt * (IsKeyPressed("LeftShift") ? 3.0 : 1.0);
+            if (IsKeyPressed("W")) { mv = {x: mv.x + f.x * s, y: mv.y + f.y * s, z: mv.z + f.z * s}; }
+            if (IsKeyPressed("S")) { mv = {x: mv.x - f.x * s, y: mv.y - f.y * s, z: mv.z - f.z * s}; }
+            if (IsKeyPressed("D")) { mv = {x: mv.x + rr.x * s, y: mv.y, z: mv.z + rr.z * s}; }
+            if (IsKeyPressed("A")) { mv = {x: mv.x - rr.x * s, y: mv.y, z: mv.z - rr.z * s}; }
+            if (IsKeyPressed("E")) { mv.y += s; }
+            if (IsKeyPressed("Q")) { mv.y -= s; }
+            var cp = EntityGetWorldPosition(cam);
+            EntitySetWorldPosition(cam, cp.x + mv.x, cp.y + mv.y, cp.z + mv.z);
+            EntitySetComponentField(cam, "Camera", "FieldOfView", 60);
+            return;
+        }
+        if (IsKeyDown("Space")) { Cut(shot + 1); }
+        if (IsKeyDown("Backspace")) { Cut(shot - 1); }
+        if (!paused)
+        {
+            clock += dt;
+            shotTime += dt;
+            if (shotTime >= shots[shot].dur) { Cut(shot + 1); }
+        }
+        UpdateCamera(MathClamp01(shotTime / shots[shot].dur));
+        UpdatePerformance();
+        // Zaman kodu (24 fps) ve yanıp sönen REC
+        var frames = int(clock * 24.0);
+        var ff = frames % 24;
+        var ss = int(frames / 24) % 60;
+        var mm = int(frames / 1440) % 60;
+        UISetText("Timecode", "01:" + StringPadLeft("" + mm, 2, "0") + ":" + StringPadLeft("" + ss, 2, "0") + ":" + StringPadLeft("" + ff, 2, "0"));
+        UISetAlpha("RecDot", (int(clock * 2.0) % 2 == 0 && !paused) ? 1.0 : 0.25);
+    }
+}

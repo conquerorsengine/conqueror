@@ -1,4 +1,15 @@
 #include "InspectorPanel.h"
+#include "Scripting/NativeScriptCompiler.h"
+#include "AssetInspector.h"
+#include "MaterialEditorUI.h"
+#include "Core/Serialization/SceneSerializer.h"
+#include "UndoRedo/UndoRedoManager.h"
+#include "UndoRedo/EntitySnapshotCommand.h"
+#include "Core/Math/Math.h"
+#include "Addons/AddonManager.h"
+#include "EditorState.h"
+#include "Scripting/ConquerorScript/CQSEngine.h"
+#include "Scripting/ScriptRuntime.h"
 #include "Scene/Components.h"
 #include "Scene/Scene.h"
 #include "Renderer/Renderer2D.h"
@@ -9,11 +20,23 @@
 #include "Core/Logging/Log.h"
 #include "Core/Animation/AnimationController.h"
 #include "Panels/Animator/AnimatorPanel.h"
+#include "Panels/HierarchyPanel.h"
+#include "Core/Audio/AudioMixer.h"
+#include "Renderer/SpriteSheet.h"
+#include "Terrain/Terrain.h"
+#include "UI/EditorUI.h"
+#include "Scene/ComponentRegistry.h"
+#include "Core/PhysicsSystem/Physics3D/PhysicsWorld3D.h"
+#include "Core/PhysicsSystem/Physics2D/PhysicsWorld2D.h"
+
+#include <IconsFontAwesome6.h>
+#include <cfloat>
 
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <filesystem>
+#include <fstream>
 #include <nfd.h>
 
 #ifdef _WIN32
@@ -21,7 +44,7 @@
 #include <libloaderapi.h>
 #else
 #include <unistd.h>
-#include <linux/limits.h>
+#include "Core/Utils/SelfExecutable.h"
 #endif
 
 namespace Conqueror::Editor
@@ -33,13 +56,9 @@ namespace Conqueror::Editor
         GetModuleFileNameA(NULL, buffer, MAX_PATH);
         return std::filesystem::path(buffer).parent_path();
 #else
-        char buffer[PATH_MAX] = { 0 };
-        ssize_t len = readlink("/proc/self/exe", buffer, sizeof(buffer) - 1);
-        if (len != -1)
-        {
-            buffer[len] = '\0';
-            return std::filesystem::path(buffer).parent_path();
-        }
+        const std::string exe = SelfExecutablePath();
+        if (!exe.empty())
+            return std::filesystem::path(exe).parent_path();
         return std::filesystem::current_path();
 #endif
     }
@@ -55,7 +74,7 @@ namespace Conqueror::Editor
             std::error_code ec;
             auto relative = std::filesystem::relative(absolutePath, projectDir, ec);
             if (!ec && !relative.empty() && relative.native()[0] != '.')
-                return relative.string();
+                return relative.generic_string();
         }
 
         auto engineDir = GetEngineDirectory();
@@ -63,13 +82,15 @@ namespace Conqueror::Editor
         auto relative = std::filesystem::relative(absolutePath, engineDir, ec);
         if (!ec && !relative.empty() && relative.native()[0] != '.')
         {
-            std::string relStr = relative.string();
+            std::string relStr = relative.generic_string();
             if (relStr.find("Resources/") == 0 || relStr.find("Resources\\") == 0)
                 return "CQ:" + relStr;
         }
 
         return absolutePath;
     }
+
+    std::function<void(const std::string&)> InspectorPanel::s_OpenSpriteEditor;
 
     void InspectorPanel::SetSelectedEntity(Entity entity)
     {
@@ -79,239 +100,75 @@ namespace Conqueror::Editor
             m_SelectionContext = Entity();
     }
 
+    std::function<std::shared_ptr<Scene>()> InspectorPanel::s_SharedScene;
+
+    bool InspectorPanel::IsInspectorHovered() const
+    {
+        // Inspector ya da onun açtığı açılır pencereler (bağlam menüsü, Add Component, combo)
+        for (ImGuiWindow* w = GImGui->HoveredWindow; w; w = w->ParentWindow)
+            if (w->ID == m_WindowID)
+                return true;
+        return false;
+    }
+
+    void InspectorPanel::BeginUndoCapture()
+    {
+        if (!m_SelectionContext || !m_Context || m_SelectionContext.GetScene() != m_Context || !m_Context->m_Registry.valid(m_SelectionContext))
+            return;
+        if (!EditorState::Get().GetSelectedAsset().empty())
+            return;   // dosya denetçisi açık
+        if (!EditorState::Get().IsEditing())
+            return;   // oyun modundaki değişiklikler geri alınmaz (Unity gibi)
+        m_UndoPending = true;
+        m_UndoEntityUUID = (uint64_t)m_SelectionContext.GetComponent<IDComponent>().ID;
+        m_UndoBefore = EntitySnapshotCommand::Capture(m_SelectionContext);
+        m_UndoBeforeText = SceneSerializer::SerializeEntityToString(m_SelectionContext);
+    }
+
+    void InspectorPanel::EndUndoCapture()
+    {
+        m_UndoPending = false;
+        std::shared_ptr<Scene> shared = s_SharedScene ? s_SharedScene() : nullptr;
+        Entity e = m_Context ? m_Context->FindEntityByUUID(m_UndoEntityUUID) : Entity{};
+        if (e && shared && shared.get() == m_Context && EditorState::Get().IsEditing())
+        {
+            std::string after = SceneSerializer::SerializeEntityToString(e);
+            if (after != m_UndoBeforeText)
+                UndoRedoManager::Get().Execute(std::make_shared<EntitySnapshotCommand>(
+                    shared, m_UndoEntityUUID, m_UndoBefore, EntitySnapshotCommand::Capture(e), "Edit " + e.GetComponent<TagComponent>().Tag));
+        }
+        m_UndoBefore.reset();
+        m_UndoBeforeText.clear();
+    }
+
     void InspectorPanel::OnImGuiRender()
     {
+        // Düzenleme başlangıcı: Inspector'a tıklama (değer aynı karede değişebileceğinden pencere çizilmeden önce)
+        if (!m_UndoPending && m_WindowID != 0 && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && IsInspectorHovered())
+            BeginUndoCapture();
         ImGui::Begin("Inspector");
+        m_WindowID = ImGui::GetCurrentWindow()->ID;
 
-        auto& selInfo = AnimatorPanel::GetSelectionInfo();
-        auto* controller = AnimatorPanel::GetActiveController();
-
-        // Animator seçimi varsa sadece onu göster, yoksa entity component'lerini göster
-        if (selInfo.HasSelection && controller)
+        // Animator penceresinde bir durum/geçiş seçiliyse Inspector onun özelliklerini gösterir
+        if (AnimatorPanel::DrawInspectorForSelection())
         {
-            ImGui::TextDisabled("Animator Selection");
-
-            if (selInfo.IsState)
-            {
-                ImGui::Text("State: %s", selInfo.StateName.c_str());
-
-                for (auto& layer : controller->Layers)
-                {
-                    for (auto& state : layer.States)
-                    {
-                        if (state.Name == selInfo.StateName)
-                        {
-                            char nameBuf[128];
-                            strncpy(nameBuf, state.Name.c_str(), sizeof(nameBuf) - 1);
-                            nameBuf[sizeof(nameBuf) - 1] = '\0';
-                            if (ImGui::InputText("Name", nameBuf, sizeof(nameBuf)))
-                            {
-                                std::string oldName = state.Name;
-                                state.Name = nameBuf;
-                                for (auto& t : layer.Transitions)
-                                {
-                                    if (t.FromState == oldName) t.FromState = nameBuf;
-                                    if (t.ToState == oldName) t.ToState = nameBuf;
-                                }
-                                if (layer.DefaultState == oldName) layer.DefaultState = nameBuf;
-                            }
-
-                            ImGui::DragFloat("Speed", &state.Speed, 0.05f, -5.f, 5.f);
-                            ImGui::Checkbox("Loop", &state.Loop);
-
-                            ImGui::Separator();
-                            ImGui::TextDisabled("Motion");
-
-                            // Clip seçimi — tüm entity'lerdeki ModelComponent'leri kontrol et
-                            bool foundModel = false;
-                            if (m_Context)
-                            {
-                                m_Context->m_Registry.view<ModelComponent>().each([&](auto entityID, auto& mc)
-                                {
-                                    if (!foundModel && mc.ModelData && !mc.ModelData->Animations.empty())
-                                    {
-                                        foundModel = true;
-                                        std::string preview = state.ClipName.empty() ? "(none)" : state.ClipName;
-                                        if (ImGui::BeginCombo("##clip", preview.c_str()))
-                                        {
-                                            for (int i = 0; i < (int)mc.ModelData->Animations.size(); i++)
-                                            {
-                                                auto& clip = mc.ModelData->Animations[i];
-                                                if (!clip) continue;
-                                                bool selected = (state.ClipIndex == i);
-                                                if (ImGui::Selectable(clip->Name.c_str(), selected))
-                                                {
-                                                    state.ClipIndex = i;
-                                                    state.ClipName = clip->Name;
-                                                }
-                                                if (selected) ImGui::SetItemDefaultFocus();
-                                            }
-                                            ImGui::EndCombo();
-                                        }
-                                    }
-                                });
-                            }
-                            if (!foundModel)
-                            {
-                                ImGui::TextDisabled("No model with animations found");
-                            }
-
-                            ImGui::DragFloat("Cycle Offset", &state.CycleOffset, 0.01f, 0.f, 1.f);
-                            ImGui::Checkbox("Mirror", &state.Mirror);
-                            ImGui::Checkbox("Foot IK", &state.FootIK);
-                            ImGui::Checkbox("Write Defaults", &state.WriteDefaults);
-
-                            ImGui::Separator();
-                            ImGui::TextDisabled("Parameters");
-
-                            // Motion Time Parameter
-                            {
-                                ImGui::Text("Motion Time");
-                                ImGui::SameLine(100.f);
-                                ImGui::PushItemWidth(120.f);
-                                char mtBuf[128];
-                                strncpy(mtBuf, state.MotionTimeParameter.c_str(), sizeof(mtBuf) - 1);
-                                mtBuf[sizeof(mtBuf) - 1] = '\0';
-                                if (ImGui::InputText("##mt", mtBuf, sizeof(mtBuf)))
-                                    state.MotionTimeParameter = mtBuf;
-                                ImGui::PopItemWidth();
-                            }
-
-                            ImGui::Separator();
-
-                            bool isDefault = (layer.DefaultState == state.Name);
-                            if (isDefault)
-                                ImGui::TextColored(ImVec4(0.2f, 0.8f, 0.2f, 1.f), "Default State");
-                            else if (ImGui::Button("Set as Default"))
-                                layer.DefaultState = state.Name;
-
-                            ImGui::Separator();
-
-                            // Behaviours
-                            ImGui::TextDisabled("Behaviours");
-                            if (ImGui::Button("+ Add Behaviour"))
-                            {
-                                state.Behaviours.push_back("NewBehaviour");
-                            }
-                            int bhvToRemove = -1;
-                            for (int bi = 0; bi < (int)state.Behaviours.size(); bi++)
-                            {
-                                ImGui::PushID(bi + 7000);
-                                char bhvBuf[128];
-                                strncpy(bhvBuf, state.Behaviours[bi].c_str(), sizeof(bhvBuf) - 1);
-                                bhvBuf[sizeof(bhvBuf) - 1] = '\0';
-                                if (ImGui::InputText("##bhv", bhvBuf, sizeof(bhvBuf)))
-                                    state.Behaviours[bi] = bhvBuf;
-                                ImGui::SameLine();
-                                if (ImGui::SmallButton("X"))
-                                    bhvToRemove = bi;
-                                ImGui::PopID();
-                            }
-                            if (bhvToRemove >= 0 && bhvToRemove < (int)state.Behaviours.size())
-                                state.Behaviours.erase(state.Behaviours.begin() + bhvToRemove);
-
-                            ImGui::Separator();
-
-                            if (ImGui::Button("Delete State"))
-                            {
-                                layer.States.erase(std::remove_if(layer.States.begin(), layer.States.end(),
-                                    [&state](const AnimState& s) { return s.Name == state.Name; }), layer.States.end());
-                                layer.Transitions.erase(std::remove_if(layer.Transitions.begin(), layer.Transitions.end(),
-                                    [&state](const AnimTransition& t) { return t.FromState == state.Name || t.ToState == state.Name; }), layer.Transitions.end());
-                                if (layer.DefaultState == state.Name && !layer.States.empty())
-                                    layer.DefaultState = layer.States[0].Name;
-
-                                auto& info = AnimatorPanel::GetSelectionInfo();
-                                info.HasSelection = false;
-                                info.IsState = false;
-                                info.StateName.clear();
-                            }
-                        }
-                    }
-                }
-            }
-            else if (selInfo.IsTransition)
-            {
-                ImGui::Text("Transition");
-                ImGui::Text("From: %s", selInfo.TransitionFrom.c_str());
-                ImGui::Text("To: %s", selInfo.TransitionTo.c_str());
-
-                for (auto& layer : controller->Layers)
-                {
-                    for (auto& trans : layer.Transitions)
-                    {
-                        if (trans.FromState == selInfo.TransitionFrom && trans.ToState == selInfo.TransitionTo)
-                        {
-                            ImGui::Separator();
-                            ImGui::DragFloat("Duration", &trans.Duration, 0.01f, 0.f, 5.f);
-                            ImGui::Checkbox("Has Exit Time", &trans.HasExitTime);
-                            if (trans.HasExitTime)
-                                ImGui::DragFloat("Exit Time", &trans.ExitTime, 0.01f, 0.f, 1.f);
-
-                            ImGui::Separator();
-                            ImGui::TextDisabled("Conditions");
-                            if (ImGui::Button("+ Condition"))
-                            {
-                                AnimCondition cond;
-                                cond.ParameterName = controller->Parameters.empty() ? "" : controller->Parameters[0].Name;
-                                cond.Mode = AnimConditionMode::Greater;
-                                cond.Threshold = 0.f;
-                                trans.Conditions.push_back(cond);
-                            }
-
-                            int condToRemove = -1;
-                            for (int ci = 0; ci < (int)trans.Conditions.size(); ci++)
-                            {
-                                auto& cond = trans.Conditions[ci];
-                                ImGui::PushID(ci + 5000);
-
-                                char idBuf[64];
-                                char paramPreview[128];
-                                strncpy(paramPreview, cond.ParameterName.c_str(), sizeof(paramPreview) - 1);
-                                paramPreview[sizeof(paramPreview) - 1] = '\0';
-                                snprintf(idBuf, sizeof(idBuf), "##cond_param_%d", ci);
-                                if (ImGui::BeginCombo(idBuf, paramPreview))
-                                {
-                                    for (auto& p : controller->Parameters)
-                                    {
-                                        bool selected = (cond.ParameterName == p.Name);
-                                        if (ImGui::Selectable(p.Name.c_str(), selected))
-                                            cond.ParameterName = p.Name;
-                                        if (selected) ImGui::SetItemDefaultFocus();
-                                    }
-                                    ImGui::EndCombo();
-                                }
-
-                                const char* modes[] = { "Greater", "Less", "Equals", "NotEquals" };
-                                int modeIdx = static_cast<int>(cond.Mode);
-                                snprintf(idBuf, sizeof(idBuf), "##cond_mode_%d", ci);
-                                if (ImGui::Combo(idBuf, &modeIdx, modes, 4))
-                                    cond.Mode = static_cast<AnimConditionMode>(modeIdx);
-
-                                snprintf(idBuf, sizeof(idBuf), "##cond_thresh_%d", ci);
-                                ImGui::DragFloat(idBuf, &cond.Threshold, 0.01f);
-
-                                ImGui::SameLine();
-                                snprintf(idBuf, sizeof(idBuf), "X##cond_%d", ci);
-                                if (ImGui::SmallButton(idBuf))
-                                    condToRemove = ci;
-
-                                ImGui::PopID();
-                            }
-
-                            if (condToRemove >= 0 && condToRemove < (int)trans.Conditions.size())
-                                trans.Conditions.erase(trans.Conditions.begin() + condToRemove);
-                        }
-                    }
-                }
-            }
+        }
+        // İçerik Tarayıcısında seçili dosya (doku içe aktarma ayarları vb.)
+        else if (!EditorState::Get().GetSelectedAsset().empty())
+        {
+            AssetInspector::Draw(EditorState::Get().GetSelectedAsset());
         }
         else if (m_SelectionContext && m_SelectionContext.GetScene() && m_SelectionContext.GetScene()->m_Registry.valid(m_SelectionContext))
         {
             DrawComponents(m_SelectionContext);
         }
 
+        // Klavyeyle başlayan düzenleme (Tab ile alana geçiş)
+        if (!m_UndoPending && ImGui::IsAnyItemActive() && ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
+            BeginUndoCapture();
         ImGui::End();
+        if (m_UndoPending && !ImGui::IsAnyItemActive() && !ImGui::IsMouseDown(ImGuiMouseButton_Left))
+            EndUndoCapture();
     }
 
     static void DrawVec3Control(const std::string& label, glm::vec3& values, float resetValue = 0.0f, float columnWidth = 100.0f)
@@ -380,245 +237,890 @@ namespace Conqueror::Editor
         ImGui::PopID();
     }
 
+    // Bileşen başlığı ikonu (ada göre)
+    static const char* ComponentIconFor(const std::string& name, ImVec4& color)
+    {
+        struct Entry { const char* Key; const char* Icon; ImVec4 Color; };
+        static const Entry entries[] = {
+            { "Transform", ICON_FA_UP_DOWN_LEFT_RIGHT, ImVec4(0.75f, 0.78f, 0.85f, 1) },
+            { "Camera", ICON_FA_VIDEO, ImVec4(0.45f, 0.75f, 1.00f, 1) },
+            { "Light", ICON_FA_LIGHTBULB, ImVec4(1.00f, 0.82f, 0.30f, 1) },
+            { "Sprite", ICON_FA_SHAPES, ImVec4(0.55f, 0.85f, 0.65f, 1) },
+            { "Mesh Renderer", ICON_FA_CUBE, ImVec4(0.62f, 0.70f, 0.85f, 1) },
+            { "Model", ICON_FA_CUBES, ImVec4(0.62f, 0.70f, 0.85f, 1) },
+            { "Animat", ICON_FA_PERSON_RUNNING, ImVec4(1.00f, 0.50f, 0.65f, 1) },
+            { "Collider", ICON_FA_VECTOR_SQUARE, ImVec4(0.55f, 0.90f, 0.40f, 1) },
+            { "Rigid", ICON_FA_WEIGHT_HANGING, ImVec4(0.55f, 0.90f, 0.40f, 1) },
+            { "Audio", ICON_FA_VOLUME_HIGH, ImVec4(1.00f, 0.60f, 0.30f, 1) },
+            { "Script", ICON_FA_FILE_CODE, ImVec4(0.75f, 0.55f, 1.00f, 1) },
+            { "NavMesh", ICON_FA_ROUTE, ImVec4(0.40f, 0.80f, 0.75f, 1) },
+            { "Canvas", ICON_FA_TABLE_CELLS_LARGE, ImVec4(0.35f, 0.85f, 0.85f, 1) },
+            { "Raycaster", ICON_FA_ARROW_POINTER, ImVec4(0.35f, 0.85f, 0.85f, 1) },
+            { "Button", ICON_FA_HAND_POINTER, ImVec4(0.35f, 0.85f, 0.85f, 1) },
+            { "Image", ICON_FA_IMAGE, ImVec4(0.35f, 0.85f, 0.85f, 1) },
+            { "Text", ICON_FA_FONT, ImVec4(0.35f, 0.85f, 0.85f, 1) },
+            { "Layer", ICON_FA_LAYER_GROUP, ImVec4(0.70f, 0.70f, 0.75f, 1) },
+            { "Probe", ICON_FA_GLOBE, ImVec4(0.65f, 0.85f, 1.00f, 1) },
+            { "Terrain", ICON_FA_MOUNTAIN_SUN, ImVec4(0.55f, 0.85f, 0.65f, 1) },
+            { "Particle", ICON_FA_FIRE, ImVec4(1.00f, 0.55f, 0.25f, 1) },
+        };
+        for (const auto& e : entries)
+        {
+            if (name.find(e.Key) != std::string::npos)
+            {
+                color = e.Color;
+                return e.Icon;
+            }
+        }
+        color = ImVec4(0.70f, 0.72f, 0.76f, 1);
+        return ICON_FA_PUZZLE_PIECE;
+    }
+
     template<typename T, typename UIFunction>
     static void DrawComponent(const std::string& name, Entity entity, UIFunction uiFunction)
     {
-        const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_FramePadding;
-        
-        if (entity.HasComponent<T>())
+        const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth |
+                                                 ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_AllowOverlap;
+
+        if (!entity.HasComponent<T>())
+            return;
+
+        auto& component = entity.GetComponent<T>();
+        ImGui::PushID(name.c_str());
+
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 6, 5 });
+        const float lineHeight = ImGui::GetTextLineHeight() + GImGui->Style.FramePadding.y * 2.0f;
+        ImGui::Spacing();
+        ImVec4 iconColor;
+        const char* icon = ComponentIconFor(name, iconColor);
+        std::string label = std::string("      ") + name;
+        bool open = ImGui::TreeNodeEx((void*)typeid(T).hash_code(), treeNodeFlags, "%s", label.c_str());
+        ImGui::PopStyleVar();
+
+        // İkon (ok işaretinin sağına)
         {
-            auto& component = entity.GetComponent<T>();
-            ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
+            ImVec2 min = ImGui::GetItemRectMin();
+            float x = min.x + ImGui::GetTreeNodeToLabelSpacing();
+            ImGui::GetWindowDrawList()->AddText(ImVec2(x, min.y + 5.0f), ImGui::GetColorU32(iconColor), icon);
+        }
 
-            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
-            float lineHeight = ImGui::GetTextLineHeight() + GImGui->Style.FramePadding.y * 2.0f;
+        // Ayarlar düğmesi (sağ)
+        const float right = ImGui::GetItemRectMax().x;
+        ImGui::SameLine();
+        ImGui::SetCursorScreenPos(ImVec2(right - lineHeight - 2.0f, ImGui::GetItemRectMin().y));
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+        // "##Settings_<bileşen>": otomasyon/erişilebilirlik için bileşene özgü kimlik
+        if (ImGui::Button((std::string(ICON_FA_ELLIPSIS_VERTICAL "##Settings_") + name).c_str(), ImVec2{ lineHeight, lineHeight }))
+            ImGui::OpenPopup("ComponentSettings");
+        ImGui::PopStyleColor();
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+            ImGui::SetTooltip("Component settings");
+
+        bool removeComponent = false;
+        if (ImGui::BeginPopup("ComponentSettings"))
+        {
+            ImGui::TextDisabled("%s", name.c_str());
             ImGui::Separator();
-            bool open = ImGui::TreeNodeEx((void*)typeid(T).hash_code(), treeNodeFlags, name.c_str());
-            ImGui::PopStyleVar();
-            
-            ImGui::SameLine(contentRegionAvailable.x - lineHeight * 0.5f);
-            if (ImGui::Button("+", ImVec2{ lineHeight, lineHeight }))
+            if constexpr (std::is_default_constructible_v<T> && std::is_copy_assignable_v<T>)
             {
-                ImGui::OpenPopup("ComponentSettings");
+                if (ImGui::MenuItem(ICON_FA_ROTATE_LEFT "  Reset"))
+                    component = T{};
             }
-
-            bool removeComponent = false;
-            if (ImGui::BeginPopup("ComponentSettings"))
+            if constexpr (!std::is_same_v<T, TransformComponent>)
             {
-                if (ImGui::MenuItem("Remove component"))
+                ImGui::PushStyleColor(ImGuiCol_Text, UI::Colors::Error);
+                if (ImGui::MenuItem(ICON_FA_TRASH "  Remove Component"))
                     removeComponent = true;
+                ImGui::PopStyleColor();
+            }
+            ImGui::EndPopup();
+        }
 
+        if (open)
+        {
+            ImGui::Indent(4.0f);
+            uiFunction(component);
+            ImGui::Unindent(4.0f);
+            ImGui::TreePop();
+        }
+        ImGui::PopID();
+
+        if (removeComponent)
+            entity.RemoveComponent<T>();
+    }
+
+
+    // ════════════════════════════════════════
+    //  Kayıtlı (yansımalı) bileşenler: alan tanımlarından otomatik denetçi
+    // ════════════════════════════════════════
+    // Işık yönü nesne dönüşünden gelir: yükseklik / pusula açısı ile dönüşü ayarla (Unity: ışık -Z'ye bakar)
+    static void DrawLightAim(Entity entity, const glm::vec3& direction, bool sun)
+    {
+        glm::vec3 d = glm::dot(direction, direction) > 1e-8f ? glm::normalize(direction) : glm::vec3(0, -1, 0);
+        float elevation = glm::degrees(std::asin(std::clamp(-d.y, -1.0f, 1.0f)));
+        float azimuth = glm::degrees(std::atan2(d.x, -d.z));
+        bool changed = false;
+        changed |= UI::SliderFloat(sun ? "Sun Elevation" : "Tilt", elevation, -90.0f, 90.0f, "%.1f deg",
+                                   "90 = pointing straight down. Same as rotating the object (E).");
+        changed |= UI::SliderFloat(sun ? "Sun Azimuth" : "Heading", azimuth, -180.0f, 180.0f, "%.1f deg", "Compass direction the light points to");
+        if (changed && entity.HasComponent<TransformComponent>())
+        {
+            const float el = glm::radians(elevation), az = glm::radians(azimuth);
+            glm::vec3 world(std::sin(az) * std::cos(el), -std::sin(el), -std::cos(az) * std::cos(el));
+            // Ebeveyn dönüşünü telafi et (yerel dönüş yazılır)
+            glm::vec3 local = world;
+            if (Entity parent = entity.GetParent())
+            {
+                glm::vec3 pp, pr, ps;
+                if (Math::DecomposeTransform(parent.GetComponent<TransformComponent>().WorldTransform, pp, pr, ps))
+                    local = glm::inverse(glm::quat(pr)) * world;
+            }
+            entity.GetComponent<TransformComponent>().Rotation = Math::EulerForForward(local);
+        }
+        ImGui::TextDisabled(ICON_FA_CIRCLE_INFO "  Direction follows the object's rotation (%.2f, %.2f, %.2f)", d.x, d.y, d.z);
+    }
+
+    static bool DrawRegistryField(Entity entity, const ComponentField& f, void* component)
+    {
+        if (!f.Ptr)
+        {
+            // Sanal metin/varlık alanı
+            if (!f.GetString)
+                return false;
+            std::string value = f.GetString(component);
+            bool changed = UI::InputText(f.Label.c_str(), value, f.Tooltip.empty() ? nullptr : f.Tooltip.c_str());
+            if (f.Kind == FieldKind::Asset && ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                {
+                    value = std::string((const char*)payload->Data, payload->DataSize - 1);
+                    changed = true;
+                }
+                ImGui::EndDragDropTarget();
+            }
+            if (changed && f.SetString && !f.ReadOnly)
+                f.SetString(component, value);
+            return changed;
+        }
+        void* p = f.Ptr(component);
+        const char* label = f.Label.c_str();
+        const char* tip = f.Tooltip.empty() ? nullptr : f.Tooltip.c_str();
+        const float speed = f.Speed > 0.0f ? f.Speed : 0.05f;
+        bool changed = false;
+        if (f.ReadOnly) ImGui::BeginDisabled();
+        switch (f.Kind)
+        {
+            case FieldKind::Bool: changed = UI::Checkbox(label, *(bool*)p, tip); break;
+            case FieldKind::Int: changed = UI::DragInt(label, *(int*)p, speed < 1.0f ? 1.0f : speed, (int)f.Min, (int)f.Max, tip); break;
+            case FieldKind::Float:
+            case FieldKind::Angle:
+                changed = UI::DragFloat(label, *(float*)p, speed, f.Min, f.Max, f.Format.empty() ? "%.3f" : f.Format.c_str(), tip);
+                break;
+            case FieldKind::Vec2: changed = UI::Vec2(label, *(glm::vec2*)p, speed, tip); break;
+            case FieldKind::Vec3: changed = UI::Vec3(label, *(glm::vec3*)p, speed, 0.0f, tip); break;
+            case FieldKind::Vec4:
+            {
+                UI::BeginProperty(label, tip);
+                ImGui::SetNextItemWidth(-1);
+                changed = ImGui::DragFloat4("##v4", (float*)p, speed);
+                UI::EndProperty();
+                break;
+            }
+            case FieldKind::Color3: changed = UI::Color3(label, *(glm::vec3*)p, tip); break;
+            case FieldKind::Color4: changed = UI::Color4(label, *(glm::vec4*)p, tip); break;
+            case FieldKind::String: changed = UI::InputText(label, *(std::string*)p, tip); break;
+            case FieldKind::Asset:
+            {
+                changed = UI::InputText(label, *(std::string*)p, tip);
+                if (ImGui::BeginDragDropTarget())
+                {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                    {
+                        *(std::string*)p = std::string((const char*)payload->Data, payload->DataSize - 1);
+                        changed = true;
+                    }
+                    ImGui::EndDragDropTarget();
+                }
+                break;
+            }
+            case FieldKind::Enum:
+            {
+                std::vector<const char*> items;
+                for (auto& o : f.Options) items.push_back(o.c_str());
+                int v = 0;
+                std::memcpy(&v, p, (size_t)std::min(f.EnumSize, 4));
+                if (f.EnumSize == 1) v = *(int8_t*)p;
+                if (!items.empty() && UI::Combo(label, v, items.data(), (int)items.size(), tip))
+                {
+                    ComponentRegistry::FieldFromString(f, component, std::to_string(v));
+                    changed = true;
+                }
+                break;
+            }
+            case FieldKind::EntityRef:
+            {
+                Scene* scene = entity.GetScene();
+                uint64_t& uuid = *(uint64_t*)p;
+                Entity target = uuid && scene ? scene->FindEntityByUUID(uuid) : Entity{};
+                std::string preview = target ? target.GetComponent<TagComponent>().Tag : (uuid ? std::string("(missing)") : std::string("None (World)"));
+                UI::BeginProperty(label, tip);
+                ImGui::SetNextItemWidth(-1);
+                if (ImGui::BeginCombo("##entityref", (std::string(ICON_FA_CUBE "  ") + preview).c_str(), ImGuiComboFlags_HeightLarge))
+                {
+                    if (ImGui::Selectable("None (World)", uuid == 0)) { uuid = 0; changed = true; }
+                    if (scene)
+                    {
+                        std::vector<std::pair<std::string, uint64_t>> options;
+                        scene->m_Registry.view<IDComponent, TagComponent>().each([&](auto e, auto& id, auto& tag) {
+                            if (e != (entt::entity)entity) options.emplace_back(tag.Tag, (uint64_t)id.ID);
+                        });
+                        std::sort(options.begin(), options.end());
+                        for (auto& [name, id] : options)
+                        {
+                            ImGui::PushID((void*)(uintptr_t)id);
+                            if (ImGui::Selectable(name.c_str(), uuid == id)) { uuid = id; changed = true; }
+                            ImGui::PopID();
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+                if (ImGui::BeginDragDropTarget())
+                {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ENTITY_NODE"))
+                    {
+                        Entity dropped = *(const Entity*)payload->Data;
+                        if (dropped && dropped.HasComponent<IDComponent>() && dropped != entity)
+                        {
+                            uuid = dropped.GetComponent<IDComponent>().ID;
+                            changed = true;
+                        }
+                    }
+                    ImGui::EndDragDropTarget();
+                }
+                UI::EndProperty();
+                break;
+            }
+            case FieldKind::LayerMask:
+            {
+                uint32_t& mask = *(uint32_t*)p;
+                Scene* scene = entity.GetScene();
+                std::string preview = mask == 0xFFFFFFFFu ? "Everything" : mask == 0 ? "Nothing" : "Mixed";
+                UI::BeginProperty(label, tip);
+                ImGui::SetNextItemWidth(-1);
+                if (ImGui::BeginCombo("##mask", preview.c_str()))
+                {
+                    if (ImGui::Selectable("Everything")) { mask = 0xFFFFFFFFu; changed = true; }
+                    if (ImGui::Selectable("Nothing")) { mask = 0; changed = true; }
+                    ImGui::Separator();
+                    if (scene)
+                        for (auto& layer : scene->GetLayers())
+                        {
+                            if (layer.ID < 0 || layer.ID > 31) continue;
+                            bool on = (mask >> layer.ID) & 1u;
+                            if (ImGui::Checkbox((std::to_string(layer.ID) + ": " + layer.Name).c_str(), &on))
+                            {
+                                mask = on ? (mask | (1u << layer.ID)) : (mask & ~(1u << layer.ID));
+                                changed = true;
+                            }
+                        }
+                    ImGui::EndCombo();
+                }
+                UI::EndProperty();
+                break;
+            }
+            case FieldKind::Vec2List:
+            case FieldKind::Vec3List:
+            {
+                const bool is3 = f.Kind == FieldKind::Vec3List;
+                size_t count = is3 ? ((std::vector<glm::vec3>*)p)->size() : ((std::vector<glm::vec2>*)p)->size();
+                UI::BeginProperty(label, tip);
+                ImGui::TextDisabled("%zu points", count);
+                ImGui::SameLine();
+                if (ImGui::SmallButton(ICON_FA_PLUS "##addpt"))
+                {
+                    if (is3)
+                    {
+                        auto& l = *(std::vector<glm::vec3>*)p;
+                        l.push_back(l.empty() ? glm::vec3(0.0f) : l.back() + glm::vec3(0.0f, 0.0f, 1.0f));
+                    }
+                    else
+                    {
+                        auto& l = *(std::vector<glm::vec2>*)p;
+                        l.push_back(l.empty() ? glm::vec2(0.0f) : l.back() + glm::vec2(0.5f, 0.0f));
+                    }
+                    changed = true;
+                }
+                UI::EndProperty();
+                int removeIndex = -1;
+                count = is3 ? ((std::vector<glm::vec3>*)p)->size() : ((std::vector<glm::vec2>*)p)->size();
+                for (size_t i = 0; i < count; ++i)
+                {
+                    ImGui::PushID((int)i);
+                    char rowLabel[32];
+                    std::snprintf(rowLabel, sizeof(rowLabel), "  [%zu]", i);
+                    UI::BeginProperty(rowLabel);
+                    ImGui::SetNextItemWidth(-ImGui::GetFrameHeight() - 6.0f);
+                    if (is3)
+                        changed |= ImGui::DragFloat3("##pt", &(*(std::vector<glm::vec3>*)p)[i].x, speed);
+                    else
+                        changed |= ImGui::DragFloat2("##pt", &(*(std::vector<glm::vec2>*)p)[i].x, speed);
+                    ImGui::SameLine(0, 4);
+                    if (ImGui::Button(ICON_FA_XMARK "##rm", ImVec2(ImGui::GetFrameHeight(), 0)))
+                        removeIndex = (int)i;
+                    UI::EndProperty();
+                    ImGui::PopID();
+                }
+                if (removeIndex >= 0)
+                {
+                    if (is3) { auto& l = *(std::vector<glm::vec3>*)p; l.erase(l.begin() + removeIndex); }
+                    else { auto& l = *(std::vector<glm::vec2>*)p; l.erase(l.begin() + removeIndex); }
+                    changed = true;
+                }
+                break;
+            }
+        }
+        if (f.ReadOnly) ImGui::EndDisabled();
+        return changed;
+    }
+
+    static void DrawRegistryComponent(Entity entity, ComponentInfo& info)
+    {
+        const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth |
+                                                 ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_AllowOverlap;
+        void* component = info.Get(entity);
+        if (!component)
+            return;
+        ImGui::PushID(info.TypeName.c_str());
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 6, 5 });
+        const float lineHeight = ImGui::GetTextLineHeight() + GImGui->Style.FramePadding.y * 2.0f;
+        ImGui::Spacing();
+        std::string label = std::string("      ") + info.Name;
+        bool open = ImGui::TreeNodeEx("##registry", treeNodeFlags, "%s", label.c_str());
+        ImGui::PopStyleVar();
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal) && !info.Description.empty())
+            ImGui::SetTooltip("%s", info.Description.c_str());
+        {
+            ImVec2 min = ImGui::GetItemRectMin();
+            float x = min.x + ImGui::GetTreeNodeToLabelSpacing();
+            ImGui::GetWindowDrawList()->AddText(ImVec2(x, min.y + 5.0f),
+                ImGui::GetColorU32(ImVec4(info.IconColor.r, info.IconColor.g, info.IconColor.b, info.IconColor.a)), info.Icon.c_str());
+        }
+        const float right = ImGui::GetItemRectMax().x;
+        ImGui::SameLine();
+        ImGui::SetCursorScreenPos(ImVec2(right - lineHeight - 2.0f, ImGui::GetItemRectMin().y));
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+        if (ImGui::Button((std::string(ICON_FA_ELLIPSIS_VERTICAL "##Settings_") + info.Name).c_str(), ImVec2{ lineHeight, lineHeight }))
+            ImGui::OpenPopup("ComponentSettings");
+        ImGui::PopStyleColor();
+        bool remove = false;
+        if (ImGui::BeginPopup("ComponentSettings"))
+        {
+            ImGui::TextDisabled("%s", info.Name.c_str());
+            ImGui::Separator();
+            if (ImGui::MenuItem(ICON_FA_ROTATE_LEFT "  Reset"))
+                info.Reset(entity);
+            ImGui::PushStyleColor(ImGuiCol_Text, UI::Colors::Error);
+            if (ImGui::MenuItem(ICON_FA_TRASH "  Remove Component"))
+                remove = true;
+            ImGui::PopStyleColor();
+            ImGui::EndPopup();
+        }
+        if (open)
+        {
+            ImGui::Indent(4.0f);
+            component = info.Get(entity);
+            for (auto& f : info.Fields)
+            {
+                if (f.VisibleIf && !f.VisibleIf(component))
+                    continue;
+                if (!f.Header.empty())
+                    UI::SubHeader(f.Header.c_str());
+                ImGui::PushID(f.Name.c_str());
+                DrawRegistryField(entity, f, component);
+                ImGui::PopID();
+            }
+            if (info.ExtraInspector)
+                info.ExtraInspector(entity);
+            ImGui::Unindent(4.0f);
+            ImGui::TreePop();
+        }
+        ImGui::PopID();
+        if (remove)
+            info.Remove(entity);
+    }
+
+    // ════════════════════════════════════════
+    //  ConquerorScript bileşeni (Unity MonoBehaviour denetçisi gibi)
+    // ════════════════════════════════════════
+    std::function<void(const std::string&)> InspectorPanel::s_OpenCodeEditor;
+
+    namespace
+    {
+        struct ScriptMetaCache
+        {
+            std::filesystem::file_time_type Time{};
+            std::vector<std::string> Classes;
+            std::unordered_map<std::string, std::vector<Scripting::ScriptFieldInfo>> Fields;
+            std::string Error;
+        };
+
+        std::string ResolveScriptPath(const std::string& path)
+        {
+            std::filesystem::path p(path);
+            if (p.is_relative())
+            {
+                auto dir = Project::GetActiveProjectDirectory();
+                if (!dir.empty() && std::filesystem::exists(dir / p))
+                    return (dir / p).string();
+            }
+            return path;
+        }
+
+        // Add Component > Scripts listesi için projedeki betik dosyaları (menü açılırken bir kez taranır)
+        std::vector<std::filesystem::path> s_AddMenuScripts;
+
+        void RefreshAddMenuScripts()
+        {
+            s_AddMenuScripts.clear();
+            auto assets = Project::GetAssetDirectory();
+            std::error_code ec;
+            if (assets.empty() || !std::filesystem::is_directory(assets, ec))
+                return;
+            namespace fs = std::filesystem;
+            for (auto it = fs::recursive_directory_iterator(assets, fs::directory_options::skip_permission_denied, ec);
+                 !ec && it != fs::recursive_directory_iterator() && s_AddMenuScripts.size() < 2000; it.increment(ec))
+            {
+                std::string file = it->path().filename().string();
+                if (!file.empty() && file[0] == '.')
+                {
+                    if (it->is_directory(ec))
+                        it.disable_recursion_pending();
+                    continue;
+                }
+                if (it->is_regular_file(ec) && Scripting::ScriptRuntimes::IsScriptFile(it->path().string()))
+                    s_AddMenuScripts.push_back(it->path());
+            }
+            std::sort(s_AddMenuScripts.begin(), s_AddMenuScripts.end(),
+                [](const fs::path& a, const fs::path& b) { return a.filename().string() < b.filename().string(); });
+        }
+
+        // Dosya değişmediyse derleme sonucunu yeniden kullan
+        ScriptMetaCache& GetScriptMeta(const std::string& resolved)
+        {
+            static std::unordered_map<std::string, ScriptMetaCache> s_Cache;
+            auto& entry = s_Cache[resolved];
+            std::error_code ec;
+            auto time = std::filesystem::last_write_time(resolved, ec);
+            if (ec || (time == entry.Time && (!entry.Classes.empty() || !entry.Error.empty())))
+            {
+                if (ec && entry.Error.empty())
+                    entry.Error = "Script file not found.";
+                return entry;
+            }
+            entry = ScriptMetaCache{};
+            entry.Time = time;
+            std::string error;
+            auto* runtime = Scripting::ScriptRuntimes::ForPath(resolved);
+            if (!runtime)
+            {
+                entry.Error = "Unsupported script type.";
+                return entry;
+            }
+            if (!runtime->IsAvailable())
+            {
+                entry.Error = std::string(runtime->GetName()) + " is not available: " + runtime->GetUnavailableReason();
+                return entry;
+            }
+            runtime->GetClasses(resolved, entry.Classes, &error);
+            for (auto& cls : entry.Classes)
+            {
+                std::vector<Scripting::ScriptFieldInfo> fields;
+                std::string ferr;
+                if (runtime->GetFields(resolved, cls, fields, &ferr))
+                    entry.Fields[cls] = std::move(fields);
+                else if (error.empty())
+                    error = ferr;
+            }
+            entry.Error = error;
+            return entry;
+        }
+
+        // "[Range(0, 10)]" -> min/max
+        bool ParseRangeAttribute(const std::vector<std::string>& attrs, float& mn, float& mx)
+        {
+            for (auto& a : attrs)
+            {
+                if (a.rfind("Range(", 0) == 0)
+                    return std::sscanf(a.c_str(), "Range(%f,%f)", &mn, &mx) == 2 || std::sscanf(a.c_str(), "Range(%f, %f)", &mn, &mx) == 2;
+            }
+            return false;
+        }
+
+        // "[Tooltip(\"...\")]", "[Header(\"...\")]" -> tırnak içindeki metin
+        std::string QuotedAttribute(const std::vector<std::string>& attrs, const char* prefix)
+        {
+            for (auto& a : attrs)
+            {
+                if (a.rfind(prefix, 0) == 0)
+                {
+                    size_t q1 = a.find('"'), q2 = a.rfind('"');
+                    if (q1 != std::string::npos && q2 > q1)
+                        return a.substr(q1 + 1, q2 - q1 - 1);
+                }
+            }
+            return "";
+        }
+
+        std::string TooltipAttribute(const std::vector<std::string>& attrs) { return QuotedAttribute(attrs, "Tooltip("); }
+
+        bool HasSpaceAttribute(const std::vector<std::string>& attrs)
+        {
+            for (auto& a : attrs)
+                if (a == "Space" || a.rfind("Space(", 0) == 0)
+                    return true;
+            return false;
+        }
+
+        std::string PrettyFieldName(const std::string& name)
+        {
+            // moveSpeed -> Move Speed, m_Health -> Health
+            std::string n = name;
+            if (n.rfind("m_", 0) == 0) n = n.substr(2);
+            std::string out;
+            for (size_t i = 0; i < n.size(); ++i)
+            {
+                char c = n[i];
+                if (c == '_') { out += ' '; continue; }
+                if (i > 0 && std::isupper((unsigned char)c) && std::islower((unsigned char)n[i - 1])) out += ' ';
+                out += (i == 0) ? (char)std::toupper((unsigned char)c) : c;
+            }
+            return out;
+        }
+
+        ScriptFieldOverride FieldDefault(const Scripting::ScriptFieldInfo& f)
+        {
+            return f.Default;
+        }
+
+        // Bir alan düzenleyicisi; değiştiyse true
+        bool DrawScriptFieldValue(const char* id, ScriptFieldOverride& v, const Scripting::ScriptFieldInfo& f)
+        {
+            float mn = 0, mx = 0;
+            bool hasRange = ParseRangeAttribute(f.Attributes, mn, mx);
+            ImGui::SetNextItemWidth(-1);
+            switch (v.Type)
+            {
+                case ScriptFieldOverride::Kind::Bool:
+                    return ImGui::Checkbox(id, &v.Bool);
+                case ScriptFieldOverride::Kind::Int:
+                {
+                    int x = (int)v.Int;
+                    bool changed = hasRange ? ImGui::SliderInt(id, &x, (int)mn, (int)mx) : ImGui::DragInt(id, &x, 0.2f);
+                    if (changed) v.Int = x;
+                    return changed;
+                }
+                case ScriptFieldOverride::Kind::Float:
+                {
+                    float x = (float)v.Float;
+                    bool changed = hasRange ? ImGui::SliderFloat(id, &x, mn, mx, "%.3f") : ImGui::DragFloat(id, &x, 0.05f, 0.0f, 0.0f, "%.3f");
+                    if (changed) v.Float = x;
+                    return changed;
+                }
+                case ScriptFieldOverride::Kind::String:
+                {
+                    char buf[512] = {};
+                    std::strncpy(buf, v.String.c_str(), sizeof(buf) - 1);
+                    if (ImGui::InputText(id, buf, sizeof(buf)))
+                    {
+                        v.String = buf;
+                        return true;
+                    }
+                    return false;
+                }
+                default:
+                    ImGui::TextDisabled("(%s)", f.TypeName.empty() ? "object" : f.TypeName.c_str());
+                    return false;
+            }
+        }
+    }
+
+    void InspectorPanel::DrawConquerorScripts(Entity entity)
+    {
+        auto& csc = entity.GetComponent<ConquerorScriptComponent>();
+        int indexToRemove = -1;
+        const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth |
+                                                 ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_AllowOverlap;
+        const bool playing = !EditorState::Get().IsEditing();
+
+        for (int i = 0; i < (int)csc.Scripts.size(); i++)
+        {
+            auto& script = csc.Scripts[i];
+            std::string title = "Script";
+            if (!script.ScriptPath.empty())
+            {
+                auto* rt = Scripting::ScriptRuntimes::ForPath(script.ScriptPath);
+                title = std::filesystem::path(script.ScriptPath).stem().string() + " (" + (rt ? rt->GetName() : "Unknown script type") + ")";
+            }
+            ImGui::PushID(i);
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 6, 5 });
+            const float lineHeight = ImGui::GetTextLineHeight() + GImGui->Style.FramePadding.y * 2.0f;
+            ImGui::Spacing();
+            bool open = ImGui::TreeNodeEx("##script", treeNodeFlags, "      %s", title.c_str());
+            ImGui::PopStyleVar();
+            {
+                ImVec2 min = ImGui::GetItemRectMin();
+                ImGui::GetWindowDrawList()->AddText(ImVec2(min.x + ImGui::GetTreeNodeToLabelSpacing(), min.y + 5.0f),
+                                                    ImGui::GetColorU32(ImVec4(0.75f, 0.55f, 1.00f, 1)), ICON_FA_FILE_CODE);
+            }
+            const float right = ImGui::GetItemRectMax().x;
+            ImGui::SameLine();
+            ImGui::SetCursorScreenPos(ImVec2(right - lineHeight - 2.0f, ImGui::GetItemRectMin().y));
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+            if (ImGui::Button(ICON_FA_ELLIPSIS_VERTICAL, ImVec2{ lineHeight, lineHeight }))
+                ImGui::OpenPopup("ScriptSettings");
+            ImGui::PopStyleColor();
+            if (ImGui::BeginPopup("ScriptSettings"))
+            {
+                if (ImGui::MenuItem(ICON_FA_ROTATE_LEFT "  Reset Field Values"))
+                    script.FieldOverrides.clear();
+                if (!script.ScriptPath.empty() && s_OpenCodeEditor && ImGui::MenuItem(ICON_FA_CODE "  Edit Script"))
+                    s_OpenCodeEditor(ResolveScriptPath(script.ScriptPath));
+                ImGui::PushStyleColor(ImGuiCol_Text, UI::Colors::Error);
+                if (ImGui::MenuItem(ICON_FA_TRASH "  Remove Component"))
+                    indexToRemove = i;
+                ImGui::PopStyleColor();
                 ImGui::EndPopup();
             }
 
             if (open)
             {
-                uiFunction(component);
+                ImGui::Indent(4.0f);
+                // ── Betik dosyası ──
+                auto assignScript = [&](const std::string& path) {
+                    script.ScriptPath = ToSerializablePath(path);
+                    script.ClassName.clear();
+                    script.FieldOverrides.clear();
+                    auto& meta = GetScriptMeta(ResolveScriptPath(script.ScriptPath));
+                    if (!meta.Classes.empty())
+                        script.ClassName = meta.Classes.front();
+                };
+                auto isScriptFile = [](const std::string& path) { return Scripting::ScriptRuntimes::IsScriptFile(path); };
+                ImGui::AlignTextToFramePadding();
+                ImGui::TextUnformatted("Script");
+                ImGui::SameLine(110.0f);
+                {
+                    std::string shown = script.ScriptPath.empty() ? "None (drop a script file)" : std::filesystem::path(script.ScriptPath).filename().string();
+                    float w = ImGui::GetContentRegionAvail().x - 2 * (ImGui::GetFrameHeight() + 4.0f);
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_FrameBg));
+                    ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.0f, 0.5f));
+                    ImGui::Button((std::string(ICON_FA_FILE_CODE "  ") + shown + "##scriptslot").c_str(), ImVec2(std::max(60.0f, w), 0));
+                    ImGui::PopStyleVar();
+                    ImGui::PopStyleColor();
+                    if (ImGui::IsItemHovered() && !script.ScriptPath.empty())
+                        ImGui::SetTooltip("%s\nDouble-click to edit", script.ScriptPath.c_str());
+                    if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && s_OpenCodeEditor && !script.ScriptPath.empty())
+                        s_OpenCodeEditor(ResolveScriptPath(script.ScriptPath));
+                    if (ImGui::BeginDragDropTarget())
+                    {
+                        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                        {
+                            std::string dropped((const char*)payload->Data, payload->DataSize - 1);
+                            if (isScriptFile(dropped))
+                                assignScript(dropped);
+                        }
+                        ImGui::EndDragDropTarget();
+                    }
+                    ImGui::SameLine(0, 4.0f);
+                    if (ImGui::Button(ICON_FA_FOLDER_OPEN "##browse", ImVec2(ImGui::GetFrameHeight(), 0)))
+                    {
+                        nfdchar_t* outPath = nullptr;
+                        nfdfilteritem_t filters[1] = { { "Scripts", "cqs,luau,lua,py,cs,java,cpp" } };
+                        if (NFD_OpenDialog(&outPath, filters, 1, nullptr) == NFD_OKAY)
+                        {
+                            assignScript(outPath);
+                            NFD_FreePath(outPath);
+                        }
+                    }
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort)) ImGui::SetTooltip("Browse...");
+                    ImGui::SameLine(0, 4.0f);
+                    ImGui::BeginDisabled(script.ScriptPath.empty() || !s_OpenCodeEditor);
+                    if (ImGui::Button(ICON_FA_PEN_TO_SQUARE "##edit", ImVec2(ImGui::GetFrameHeight(), 0)))
+                        s_OpenCodeEditor(ResolveScriptPath(script.ScriptPath));
+                    ImGui::EndDisabled();
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort)) ImGui::SetTooltip("Open in Code Editor");
+                }
+
+                if (!script.ScriptPath.empty())
+                {
+                    std::string resolved = ResolveScriptPath(script.ScriptPath);
+                    auto& meta = GetScriptMeta(resolved);
+                    if (!meta.Error.empty())
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Text, UI::Colors::Error);
+                        ImGui::TextWrapped(ICON_FA_TRIANGLE_EXCLAMATION "  %s", meta.Error.c_str());
+                        ImGui::PopStyleColor();
+                    }
+                    // ── Sınıf ── (boşsa ilk betik sınıfı: alanlar hemen görünsün)
+                    if (script.ClassName.empty() && !meta.Classes.empty())
+                        script.ClassName = meta.Classes.front();
+                    if (meta.Classes.size() > 1 || (!meta.Classes.empty() && script.ClassName != meta.Classes.front()))
+                    {
+                        ImGui::AlignTextToFramePadding();
+                        ImGui::TextUnformatted("Class");
+                        ImGui::SameLine(110.0f);
+                        ImGui::SetNextItemWidth(-1);
+                        if (ImGui::BeginCombo("##class", script.ClassName.empty() ? "(first script class)" : script.ClassName.c_str()))
+                        {
+                            for (auto& cls : meta.Classes)
+                                if (ImGui::Selectable(cls.c_str(), cls == script.ClassName))
+                                    script.ClassName = cls;
+                            ImGui::EndCombo();
+                        }
+                    }
+                    else if (script.ClassName.empty() && !meta.Classes.empty())
+                        script.ClassName = meta.Classes.front();
+
+                    // ── Alanlar ──
+                    auto fit = meta.Fields.find(script.ClassName);
+                    if (fit != meta.Fields.end() && !fit->second.empty())
+                    {
+                        ImGui::Spacing();
+                        if (ImGui::BeginTable("##fields", 2, ImGuiTableFlags_SizingStretchProp))
+                        {
+                            ImGui::TableSetupColumn("name", ImGuiTableColumnFlags_WidthFixed, 106.0f);
+                            ImGui::TableSetupColumn("value", ImGuiTableColumnFlags_WidthStretch);
+                            for (const auto& f : fit->second)
+                            {
+                                // Unity: [Header("Hareket")] başlık satırı, [Space] boşluk
+                                std::string header = QuotedAttribute(f.Attributes, "Header(");
+                                if (!header.empty() || HasSpaceAttribute(f.Attributes))
+                                {
+                                    ImGui::TableNextRow();
+                                    ImGui::TableNextColumn();
+                                    ImGui::Dummy(ImVec2(0.0f, header.empty() ? 6.0f : 3.0f));
+                                    if (!header.empty())
+                                        ImGui::TextColored(ImVec4(0.62f, 0.74f, 1.0f, 1.0f), "%s", header.c_str());
+                                }
+                                ImGui::TableNextRow();
+                                ImGui::TableNextColumn();
+                                ImGui::AlignTextToFramePadding();
+                                bool overridden = script.FieldOverrides.count(f.Name) != 0;
+                                if (overridden)
+                                {
+                                    // Unity: değiştirilmiş değerin solunda mavi işaret
+                                    ImVec2 p = ImGui::GetCursorScreenPos();
+                                    ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(p.x - 6, p.y + 2), ImVec2(p.x - 4, p.y + ImGui::GetFrameHeight() - 2),
+                                                                              ImGui::GetColorU32(ImVec4(0.26f, 0.59f, 0.98f, 1)));
+                                }
+                                ImGui::TextUnformatted(PrettyFieldName(f.Name).c_str());
+                                std::string tip = TooltipAttribute(f.Attributes);
+                                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+                                    ImGui::SetTooltip("%s%s%s (%s)", tip.c_str(), tip.empty() ? "" : "\n", f.Name.c_str(), f.TypeName.empty() ? "var" : f.TypeName.c_str());
+                                if (ImGui::BeginPopupContextItem(("##ctx" + f.Name).c_str()))
+                                {
+                                    if (ImGui::MenuItem("Reset to Default", nullptr, false, overridden))
+                                        script.FieldOverrides.erase(f.Name);
+                                    ImGui::EndPopup();
+                                }
+                                ImGui::TableNextColumn();
+                                std::string id = "##" + f.Name;
+                                if (playing && script.Instance && script.Runtime)
+                                {
+                                    // Oyun modunda canlı değer
+                                    auto* runtime = static_cast<Scripting::ScriptRuntime*>(script.Runtime);
+                                    ScriptFieldOverride live;
+                                    std::string display;
+                                    if (runtime->GetField(script.Instance, f.Name, live, &display))
+                                    {
+                                        if (live.Type == ScriptFieldOverride::Kind::Null && !display.empty() && display != "null")
+                                        {
+                                            if (display.size() > 120) display = display.substr(0, 117) + "...";
+                                            ImGui::TextDisabled("%s", display.c_str());
+                                            continue;
+                                        }
+                                        // Luau sayıları double: alan float tanımlıysa float göster
+                                        if (live.Type == ScriptFieldOverride::Kind::Int && f.Default.Type == ScriptFieldOverride::Kind::Float)
+                                            live = ScriptFieldOverride::MakeFloat((double)live.Int);
+                                        if (DrawScriptFieldValue(id.c_str(), live, f))
+                                            runtime->SetField(script.Instance, f.Name, live);
+                                        continue;
+                                    }
+                                }
+                                ScriptFieldOverride v = overridden ? script.FieldOverrides[f.Name] : FieldDefault(f);
+                                if (DrawScriptFieldValue(id.c_str(), v, f))
+                                    script.FieldOverrides[f.Name] = v;
+                            }
+                            ImGui::EndTable();
+                        }
+                    }
+                    else if (meta.Error.empty())
+                        ImGui::TextDisabled("No public fields.");
+                }
+
+                if (playing)
+                {
+                    if (script.Instance)
+                        ImGui::TextColored(UI::Colors::Success, ICON_FA_CIRCLE_PLAY "  Running");
+                    else if (script.bLoaded)
+                        ImGui::TextColored(UI::Colors::Error, ICON_FA_CIRCLE_XMARK "  Failed to start (see Log)");
+                }
+                ImGui::Unindent(4.0f);
                 ImGui::TreePop();
             }
+            ImGui::PopID();
+        }
 
-            if (removeComponent)
-                entity.RemoveComponent<T>();
+        if (indexToRemove != -1)
+        {
+            csc.Scripts.erase(csc.Scripts.begin() + indexToRemove);
+            if (csc.Scripts.empty())
+                entity.RemoveComponent<ConquerorScriptComponent>();
         }
     }
 
     void InspectorPanel::DrawComponents(Entity entity)
     {
-        // Görünürlük gözü: ismin solu, varsayılan açık.
-        // Kapalı obje Viewport'ta da oyunda da çizilmez, gölge bırakmaz.
-        bool visible = true;
-        if (entity.HasComponent<ActiveComponent>())
-            visible = entity.GetComponent<ActiveComponent>().Active;
+        // ---- Başlık: aktiflik | ikon | ad | Static
         ImGui::PushID((int)(uint32_t)entity);
-        if (ImGui::Checkbox("##visible", &visible))
         {
-            if (!entity.HasComponent<ActiveComponent>())
-                entity.AddComponent<ActiveComponent>();
-            entity.GetComponent<ActiveComponent>().Active = visible;
+            bool visible = true;
+            if (entity.HasComponent<ActiveComponent>())
+                visible = entity.GetComponent<ActiveComponent>().Active;
+            if (ImGui::Checkbox("##visible", &visible))
+            {
+                if (!entity.HasComponent<ActiveComponent>())
+                    entity.AddComponent<ActiveComponent>();
+                entity.GetComponent<ActiveComponent>().Active = visible;
+            }
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+                ImGui::SetTooltip("Active: inactive objects are not rendered, simulated or updated");
+            ImGui::SameLine();
+
+            auto icon = HierarchyPanel::GetPrimaryIcon(entity);
+            ImGui::AlignTextToFramePadding();
+            ImGui::TextColored(icon.Color, "%s", icon.Icon);
+            ImGui::SameLine();
+
+            const float staticW = ImGui::CalcTextSize("Static").x + ImGui::GetFrameHeight() + ImGui::GetStyle().ItemSpacing.x * 2.0f;
+            if (entity.HasComponent<TagComponent>())
+            {
+                auto& tagComp = entity.GetComponent<TagComponent>();
+                char buffer[256] = {};
+                strncpy(buffer, tagComp.Tag.c_str(), sizeof(buffer) - 1);
+                ImGui::SetNextItemWidth(std::max(80.0f, ImGui::GetContentRegionAvail().x - staticW));
+                if (ImGui::InputText("##EntityName", buffer, sizeof(buffer)))
+                    tagComp.Tag = std::string(buffer);
+
+                ImGui::SameLine();
+                bool isStatic = tagComp.IsStatic;
+                if (ImGui::Checkbox("Static", &isStatic))
+                    tagComp.IsStatic = isStatic;
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+                    ImGui::SetTooltip("Static objects are included in lightmap/probe baking and batching");
+            }
         }
         ImGui::PopID();
-        ImGui::SameLine();
 
-        // Entity ismi
-        if (entity.HasComponent<TagComponent>())
-        {
-            auto& tagComp = entity.GetComponent<TagComponent>();
-
-            char buffer[256];
-            memset(buffer, 0, sizeof(buffer));
-            strncpy(buffer, tagComp.Tag.c_str(), sizeof(buffer) - 1);
-            if (ImGui::InputText("##EntityName", buffer, sizeof(buffer)))
-            {
-                tagComp.Tag = std::string(buffer);
-            }
-        }
-
-        ImGui::SameLine();
-        ImGui::Text("Static");
-        ImGui::SameLine();
-        if (entity.HasComponent<TagComponent>())
-        {
-            auto& tagComp = entity.GetComponent<TagComponent>();
-            bool isStatic = tagComp.IsStatic;
-            if (ImGui::Checkbox("##StaticCheck", &isStatic))
-            {
-                tagComp.IsStatic = isStatic;
-            }
-        }
-
-        ImGui::SameLine();
-        ImGui::PushItemWidth(-1);
-        if (ImGui::Button("Add Component"))
-            ImGui::OpenPopup("AddComponent");
-
-        if (ImGui::BeginPopup("AddComponent"))
-        {
-            static char searchBuffer[128] = "";
-            ImGui::SetNextItemWidth(200.0f);
-            ImGui::InputTextWithHint("##SearchComponent", "Search...", searchBuffer, sizeof(searchBuffer));
-            std::string searchString = searchBuffer;
-            
-            auto toLower = [](char c) { return (c >= 'A' && c <= 'Z') ? (c - 'A' + 'a') : c; };
-            for (char& c : searchString) c = toLower(c);
-
-            ImGui::Separator();
-
-            auto drawEntry = [&](const std::string& name, auto func)
-            {
-                std::string lowerName = name;
-                for (char& c : lowerName) c = toLower(c);
-                
-                if (searchString.empty() || lowerName.find(searchString) != std::string::npos)
-                {
-                    func();
-                }
-            };
-
-            auto beginCategory = [&](const char* name)
-            {
-                if (!searchString.empty()) return true;
-                return ImGui::BeginMenu(name);
-            };
-
-            auto endCategory = [&](bool open)
-            {
-                if (open && searchString.empty())
-                    ImGui::EndMenu();
-            };
-
-            bool animOpen = beginCategory("Animation");
-            if (animOpen || !searchString.empty())
-            {
-                drawEntry("Animator", [&]() { DrawAddComponentEntry<AnimatorComponent>("Animator"); });
-                drawEntry("Animation", [&]() { DrawAddComponentEntry<AnimationComponent>("Animation"); });
-                endCategory(animOpen);
-            }
-
-            bool audioOpen = beginCategory("Audio");
-            if (audioOpen || !searchString.empty())
-            {
-                drawEntry("Audio Source", [&]() { DrawAddComponentEntry<AudioSourceComponent>("Audio Source"); });
-                drawEntry("Audio Listener", [&]() { DrawAddComponentEntry<AudioListenerComponent>("Audio Listener"); });
-                drawEntry("Audio Chorus Filter", [&]() { DrawAddComponentEntry<AudioChorusFilterComponent>("Audio Chorus Filter"); });
-                drawEntry("Audio Distortion Filter", [&]() { DrawAddComponentEntry<AudioDistortionFilterComponent>("Audio Distortion Filter"); });
-                drawEntry("Audio Echo Filter", [&]() { DrawAddComponentEntry<AudioEchoFilterComponent>("Audio Echo Filter"); });
-                drawEntry("Audio High Pass Filter", [&]() { DrawAddComponentEntry<AudioHighPassFilterComponent>("Audio High Pass Filter"); });
-                drawEntry("Audio Low Pass Filter", [&]() { DrawAddComponentEntry<AudioLowPassFilterComponent>("Audio Low Pass Filter"); });
-                drawEntry("Audio Reverb Filter", [&]() { DrawAddComponentEntry<AudioReverbFilterComponent>("Audio Reverb Filter"); });
-                drawEntry("Audio Reverb Zone", [&]() { DrawAddComponentEntry<AudioReverbZoneComponent>("Audio Reverb Zone"); });
-                endCategory(audioOpen);
-            }
-
-            bool meshOpen = beginCategory("Mesh");
-            if (meshOpen || !searchString.empty())
-            {
-                drawEntry("Mesh Renderer", [&]() { DrawAddComponentEntry<MeshRendererComponent>("Mesh Renderer"); });
-                drawEntry("Model", [&]() { DrawAddComponentEntry<ModelComponent>("Model"); });
-                endCategory(meshOpen);
-            }
-
-            bool physOpen = beginCategory("Physics");
-            if (physOpen || !searchString.empty())
-            {
-                drawEntry("Rigidbody", [&]() { DrawAddComponentEntry<RigidbodyComponent>("Rigidbody"); });
-                drawEntry("Box Collider", [&]() { DrawAddComponentEntry<BoxColliderComponent>("Box Collider"); });
-                drawEntry("Sphere Collider", [&]() { DrawAddComponentEntry<SphereColliderComponent>("Sphere Collider"); });
-                drawEntry("Capsule Collider", [&]() { DrawAddComponentEntry<CapsuleColliderComponent>("Capsule Collider"); });
-                drawEntry("Mesh Collider", [&]() { DrawAddComponentEntry<MeshColliderComponent>("Mesh Collider"); });
-                endCategory(physOpen);
-            }
-
-            bool phys2dOpen = beginCategory("Physics 2D");
-            if (phys2dOpen || !searchString.empty())
-            {
-                drawEntry("RigidBody 2D", [&]() { DrawAddComponentEntry<RigidBody2DComponent>("RigidBody 2D"); });
-                drawEntry("Box Collider 2D", [&]() { DrawAddComponentEntry<BoxCollider2DComponent>("Box Collider 2D"); });
-                drawEntry("Circle Collider 2D", [&]() { DrawAddComponentEntry<CircleCollider2DComponent>("Circle Collider 2D"); });
-                endCategory(phys2dOpen);
-            }
-
-            bool rendOpen = beginCategory("Rendering");
-            if (rendOpen || !searchString.empty())
-            {
-                drawEntry("Camera", [&]() { DrawAddComponentEntry<CameraComponent>("Camera"); });
-                drawEntry("Directional Light", [&]() { DrawAddComponentEntry<DirectionalLightComponent>("Directional Light"); });
-                drawEntry("Point Light", [&]() { DrawAddComponentEntry<PointLightComponent>("Point Light"); });
-                drawEntry("Spot Light", [&]() { DrawAddComponentEntry<SpotLightComponent>("Spot Light"); });
-                drawEntry("Sprite Renderer", [&]() { DrawAddComponentEntry<SpriteRendererComponent>("Sprite Renderer"); });
-                endCategory(rendOpen);
-            }
-
-            bool scriptsOpen = beginCategory("Scripts");
-            if (scriptsOpen || !searchString.empty())
-            {
-                drawEntry("Conqueror Script", [&]() {
-                    if (ImGui::MenuItem("Conqueror Script"))
-                    {
-                        if (!m_SelectionContext.HasComponent<ConquerorScriptComponent>())
-                            m_SelectionContext.AddComponent<ConquerorScriptComponent>().Scripts.push_back({});
-                        else
-                            m_SelectionContext.GetComponent<ConquerorScriptComponent>().Scripts.push_back({});
-                        ImGui::CloseCurrentPopup();
-                    }
-                });
-                drawEntry("Native Script", [&]() {
-                    if (ImGui::MenuItem("Native Script"))
-                    {
-                        if (!m_SelectionContext.HasComponent<NativeScriptComponent>())
-                            m_SelectionContext.AddComponent<NativeScriptComponent>().Scripts.push_back({});
-                        else
-                            m_SelectionContext.GetComponent<NativeScriptComponent>().Scripts.push_back({});
-                        ImGui::CloseCurrentPopup();
-                    }
-                });
-                endCategory(scriptsOpen);
-            }
-
-            bool aiOpen = beginCategory("AI & Navigation");
-            if (aiOpen || !searchString.empty())
-            {
-                drawEntry("NavMesh Agent", [&]() { DrawAddComponentEntry<NavMeshAgentComponent>("NavMesh Agent"); });
-                drawEntry("NavMesh Obstacle", [&]() { DrawAddComponentEntry<NavMeshObstacleComponent>("NavMesh Obstacle"); });
-                drawEntry("NavMesh Surface", [&]() { DrawAddComponentEntry<NavMeshSurfaceComponent>("NavMesh Surface"); });
-                endCategory(aiOpen);
-            }
-
-            bool uiOpen = beginCategory("UI");
-            if (uiOpen || !searchString.empty())
-            {
-                drawEntry("Button", [&]() { DrawAddComponentEntry<ButtonComponent>("Button"); });
-                drawEntry("Canvas", [&]() { DrawAddComponentEntry<CanvasComponent>("Canvas"); });
-                drawEntry("Canvas Scaler", [&]() { DrawAddComponentEntry<CanvasScalerComponent>("Canvas Scaler"); });
-                drawEntry("Graphic Raycaster", [&]() { DrawAddComponentEntry<GraphicRaycasterComponent>("Graphic Raycaster"); });
-                drawEntry("Image", [&]() { DrawAddComponentEntry<ImageComponent>("Image"); });
-                drawEntry("Text Renderer", [&]() { DrawAddComponentEntry<TextRendererComponent>("Text Renderer"); });
-                endCategory(uiOpen);
-            }
-
-            ImGui::EndPopup();
-        }
-
-        ImGui::PopItemWidth();
 
         // Tag ve Layer dropdown'ları
         if (entity.HasComponent<TagComponent>())
@@ -723,6 +1225,7 @@ namespace Conqueror::Editor
             ImGui::TextDisabled("(No Layer Component)");
         }
 
+        if (!entity.HasComponent<RectTransformComponent>())
         DrawComponent<TransformComponent>("Transform", entity, [](auto& component)
         {
             DrawVec3Control("Position", component.Position);
@@ -789,234 +1292,381 @@ namespace Conqueror::Editor
 
                 ImGui::Checkbox("Fixed Aspect Ratio", &component.FixedAspectRatio);
             }
+
+            // Unity "Background Type": oyunda bu kameranın arkasında ne görüneceği
+            const char* backgroundModes[] = { "Auto", "Skybox", "Solid Color" };
+            int background = (int)component.Background;
+            if (ImGui::Combo("Background", &background, backgroundModes, 3))
+                component.Background = (CameraComponent::BackgroundMode)background;
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+                ImGui::SetTooltip("Auto: perspective cameras show the sky, orthographic (2D) cameras a solid color.\n"
+                                  "Lighting > Environment > Sky = Solid Color overrides every camera.");
+            const bool solid = component.Background == CameraComponent::BackgroundMode::SolidColor ||
+                               (component.Background == CameraComponent::BackgroundMode::Auto &&
+                                camera.GetProjectionType() == SceneCamera::ProjectionType::Orthographic);
+            if (solid)
+                ImGui::ColorEdit4("Background Color", &component.BackgroundColor.x);
         });
 
         DrawComponent<SpriteRendererComponent>("Sprite Renderer", entity, [](auto& component)
         {
-            ImGui::ColorEdit4("Color", glm::value_ptr(component.Color));
-            
-            // Sprite dropdown (Resources/test klasöründeki PNG'ler - hot reload)
-            std::vector<std::string> spriteFiles;
-            spriteFiles.push_back("None");
-            
-            // Her frame Resources/test klasöründeki PNG dosyalarını tara
-            std::string testPath = "Resources/test";
-            if (std::filesystem::exists(testPath))
+            // ---- Doku (önizleme + sürükle-bırak + yerleşik şekiller)
             {
-                std::vector<std::string> tempFiles;
-                for (const auto& entry : std::filesystem::directory_iterator(testPath))
+                UI::BeginProperty("Texture", "Drag an image from the Content Browser");
+                const float thumb = 48.0f;
+                ImVec2 p = ImGui::GetCursorScreenPos();
+                ImGui::GetWindowDrawList()->AddRectFilled(p, ImVec2(p.x + thumb, p.y + thumb), IM_COL32(40, 41, 46, 255), 4.0f);
+                if (component.Texture && component.Texture->GetRendererID())
+                    ImGui::GetWindowDrawList()->AddImage((ImTextureID)(uint64_t)component.Texture->GetRendererID(), ImVec2(p.x + 2, p.y + 2),
+                                                         ImVec2(p.x + thumb - 2, p.y + thumb - 2), ImVec2(0, 1), ImVec2(1, 0));
+                ImGui::InvisibleButton("##texthumb", ImVec2(thumb, thumb));
+                if (ImGui::BeginDragDropTarget())
                 {
-                    if (entry.is_regular_file() && entry.path().extension() == ".png")
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
                     {
-                        tempFiles.push_back(entry.path().stem().string());
-                    }
-                }
-                
-                // Alfabetik sırala
-                std::sort(tempFiles.begin(), tempFiles.end());
-                spriteFiles.insert(spriteFiles.end(), tempFiles.begin(), tempFiles.end());
-            }
-            
-            // Mevcut texture'ın adını bul
-            std::string currentSprite = "None";
-            if (component.Texture)
-            {
-                // Component'te texture path'i sakla
-                if (component.Texture->GetPath().empty())
-                {
-                    currentSprite = "Custom";
-                }
-                else
-                {
-                    // Path'den dosya adını çıkar
-                    std::filesystem::path texPath(component.Texture->GetPath());
-                    currentSprite = texPath.stem().string();
-                }
-            }
-            
-            if (ImGui::BeginCombo("Sprite", currentSprite.c_str()))
-            {
-                for (const auto& spriteName : spriteFiles)
-                {
-                    bool isSelected = (currentSprite == spriteName);
-                    if (ImGui::Selectable(spriteName.c_str(), isSelected))
-                    {
-                        if (spriteName == "None")
+                        std::filesystem::path path((const char*)payload->Data);
+                        std::string ext = path.extension().string();
+                        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+                        if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".tga" || ext == ".bmp")
                         {
-                            component.Texture = nullptr;
+                            component.Texture = Texture2D::Create(path.string());
+                            component.SpriteName.clear();
                         }
                         else
-                        {
-                            std::string texturePath = "Resources/test/" + spriteName + ".png";
-                            component.Texture = Texture2D::Create(texturePath);
-                        }
+                            CQ_CORE_WARN("Sprite Renderer: unsupported texture type {0}", ext);
                     }
-                    
-                    if (isSelected)
-                        ImGui::SetItemDefaultFocus();
+                    ImGui::EndDragDropTarget();
                 }
-                
-                ImGui::EndCombo();
-            }
-            
-            // Drag & Drop target (Content Browser'dan texture sürükleme)
-            if (ImGui::BeginDragDropTarget())
-            {
-                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
-                {
-                    std::string droppedPath((const char*)payload->Data, payload->DataSize - 1);
-                    std::filesystem::path path(droppedPath);
-                    std::string ext = path.extension().string();
-                    
-                    CQ_CORE_INFO("Sprite Renderer: Drag & Drop received - Path: {0}, Extension: {1}", droppedPath, ext);
-                    
-                    // Sadece png/jpg dosyalarını kabul et
-                    if (ext == ".png" || ext == ".jpg" || ext == ".jpeg")
-                    {
-                        component.Texture = Texture2D::Create(droppedPath);
-                        CQ_CORE_INFO("Sprite texture set: {0}", droppedPath);
-                    }
-                    else
-                    {
-                        CQ_CORE_WARN("Sprite Renderer: Invalid file type {0}, only PNG/JPG accepted", ext);
-                    }
-                }
-                ImGui::EndDragDropTarget();
-            }
-            
-            ImGui::DragFloat("Tiling Factor", &component.TilingFactor, 0.1f, 0.0f, 100.0f);
-        });
-
-        DrawComponent<MeshRendererComponent>("Mesh Renderer", entity, [](auto& component)
-        {
-            const char* meshTypeNames[] = { "Cube", "Sphere", "Plane", "Cylinder" };
-            int currentType = static_cast<int>(component.Type);
-            if (ImGui::Combo("Mesh Type", &currentType, meshTypeNames, 4))
-                component.Type = static_cast<MeshType>(currentType);
-
-            ImGui::Separator();
-
-            ImGui::Text("Albedo Texture");
-            if (!component.TexturePath.empty())
-            {
-                std::string displayPath = ToSerializablePath(component.TexturePath);
-                ImGui::Text("%s", displayPath.c_str());
                 ImGui::SameLine();
-                if (ImGui::Button("X##RemoveTexMR"))
+                ImGui::BeginGroup();
+                std::string texName = component.Texture ? std::filesystem::path(component.Texture->GetPath()).filename().string() : std::string("None");
+                if (texName.empty()) texName = "Custom";
+                ImGui::TextUnformatted(texName.c_str());
+                if (component.Texture)
+                    ImGui::TextDisabled("%u x %u", component.Texture->GetWidth(), component.Texture->GetHeight());
+                if (ImGui::SmallButton(ICON_FA_SHAPES " Shapes"))
+                    ImGui::OpenPopup("##builtinsprites");
+                ImGui::SameLine();
+                if (component.Texture && ImGui::SmallButton(ICON_FA_XMARK "##cleartex"))
                 {
                     component.Texture = nullptr;
-                    component.TexturePath.clear();
+                    component.SpriteName.clear();
                 }
-
-                if (component.Texture)
+                if (ImGui::BeginPopup("##builtinsprites"))
                 {
-                    uint32_t texID = component.Texture->GetRendererID();
-                    if (texID != 0)
-                    {
-                        ImVec2 texSize(64, 64);
-                        ImGui::Image((ImTextureID)(uintptr_t)texID, texSize);
-                    }
+                    std::vector<std::string> files;
+                    std::error_code ec;
+                    for (const auto& e : std::filesystem::directory_iterator("Resources/test", ec))
+                        if (e.path().extension() == ".png")
+                            files.push_back(e.path().stem().string());
+                    std::sort(files.begin(), files.end());
+                    for (const auto& f : files)
+                        if (ImGui::MenuItem(f.c_str()))
+                        {
+                            component.Texture = Texture2D::Create("Resources/test/" + f + ".png");
+                            component.SpriteName.clear();
+                        }
+                    ImGui::EndPopup();
                 }
-            }
-            else
-            {
-                ImGui::Text("None");
+                ImGui::EndGroup();
+                UI::EndProperty();
             }
 
-            if (ImGui::Button("Load Texture...##MR"))
+            // ---- Sprite sayfası dilimi
+            std::shared_ptr<SpriteSheet> sheet = (component.Texture && !component.Texture->GetPath().empty()) ? SpriteSheet::Get(component.Texture->GetPath()) : nullptr;
+            if (sheet && !sheet->Sprites.empty())
             {
-                nfdu8char_t* outPath = nullptr;
-                nfdfilteritem_t filters[1] = { { "Image Files", "png,jpg,jpeg" } };
-                nfdresult_t result = NFD_OpenDialogU8(&outPath, filters, 1, nullptr);
-                if (result == NFD_OKAY)
+                UI::BeginProperty("Sprite", "Slice from the texture's sprite sheet");
+                if (ImGui::BeginCombo("##subsprite", component.SpriteName.empty() ? "(Full Texture)" : component.SpriteName.c_str()))
                 {
-                    std::string loadedPathStr(outPath);
-                    component.Texture = Texture2D::Create(loadedPathStr);
-                    component.TexturePath = ToSerializablePath(loadedPathStr);
-                    NFD_FreePathU8(outPath);
+                    if (ImGui::Selectable("(Full Texture)", component.SpriteName.empty()))
+                        component.SpriteName.clear();
+                    for (const auto& def : sheet->Sprites)
+                        if (ImGui::Selectable(def.Name.c_str(), def.Name == component.SpriteName))
+                            component.SpriteName = def.Name;
+                    ImGui::EndCombo();
                 }
+                UI::EndProperty();
+                if (!component.SpriteName.empty() && !sheet->Find(component.SpriteName))
+                    UI::InfoBox("The selected slice no longer exists in the sprite sheet.", UI::InfoType::Warning);
+            }
+            if (component.Texture && !component.Texture->GetPath().empty())
+            {
+                UI::BeginProperty("");
+                if (ImGui::Button(ICON_FA_OBJECT_UNGROUP " Open Sprite Editor", ImVec2(-1, 0)) && InspectorPanel::s_OpenSpriteEditor)
+                    InspectorPanel::s_OpenSpriteEditor(component.Texture->GetPath());
+                UI::EndProperty();
             }
 
-            // Drag & Drop target
-            if (ImGui::BeginDragDropTarget())
+            UI::Color4("Color", component.Color);
+            UI::BeginProperty("Flip");
+            ImGui::Checkbox("X##flipx", &component.FlipX);
+            ImGui::SameLine();
+            ImGui::Checkbox("Y##flipy", &component.FlipY);
+            UI::EndProperty();
+
+            const char* modes[] = { "Simple", "Sliced", "Tiled" };
+            UI::ComboEnum("Draw Mode", component.DrawMode, modes, 3);
+            const char* maskModes[] = { "None", "Visible Inside Mask", "Visible Outside Mask" };
+            UI::ComboEnum("Mask Interaction", component.MaskInteraction, maskModes, 3);
+            if (component.DrawMode != SpriteDrawMode::Simple)
             {
-                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                UI::Vec2("Size", component.Size, 0.01f);
+                if (component.DrawMode == SpriteDrawMode::Sliced)
                 {
-                    std::string droppedPath((const char*)payload->Data, payload->DataSize - 1);
-                    std::filesystem::path path(droppedPath);
-                    std::string ext = path.extension().string();
-                    
-                    if (ext == ".png" || ext == ".jpg" || ext == ".jpeg")
-                    {
-                        component.Texture = Texture2D::Create(droppedPath);
-                        component.TexturePath = ToSerializablePath(droppedPath);
-                        CQ_CORE_INFO("MeshRenderer texture set: {0}", droppedPath);
-                    }
+                    const SpriteDef* def = sheet && !component.SpriteName.empty() ? sheet->Find(component.SpriteName) : nullptr;
+                    glm::vec4 border = def ? def->Border : component.Border;
+                    if (border == glm::vec4(0.0f))
+                        UI::InfoBox("This sprite has no borders. Set them in the Sprite Editor (green lines) or below.", UI::InfoType::Info);
                 }
-                ImGui::EndDragDropTarget();
             }
 
-            ImGui::Separator();
-
-            if (component.MaterialInstance.get())
+            // Sayfa dilimi kullanılmıyorsa: özel pivot / PPU / kenarlık
+            if (component.SpriteName.empty())
             {
-                ImGui::Text("Material: %s", component.MaterialInstance->Name.c_str());
+                UI::DragFloat("Pixels Per Unit", component.PixelsPerUnit, 1.0f, 1.0f, 10000.0f, "%.0f");
+                UI::Vec2("Pivot", component.Pivot, 0.01f);
+                UI::BeginProperty("Border", "9-slice borders in pixels: Left, Bottom, Right, Top");
+                ImGui::DragFloat4("##border", &component.Border.x, 0.5f, 0.0f, 4096.0f, "%.0f");
+                UI::EndProperty();
+            }
+        });
+
+        DrawComponent<ParticleSystemComponent>("Particle System", entity, [](auto& ps)
+        {
+            auto& rt = *ps.RT;
+            // Oynatma kontrolleri + hazır ayarlar
+            {
+                if (ImGui::Button(rt.Playing && !rt.Paused ? ICON_FA_PAUSE " Pause" : ICON_FA_PLAY " Play"))
+                {
+                    if (rt.Playing && !rt.Paused) ParticleSystem::Pause(ps);
+                    else ParticleSystem::Play(ps);
+                }
                 ImGui::SameLine();
-                if (ImGui::Button("Remove##MaterialMR"))
+                if (ImGui::Button(ICON_FA_ROTATE_RIGHT " Restart")) ParticleSystem::Restart(ps);
+                ImGui::SameLine();
+                if (ImGui::Button(ICON_FA_STOP " Stop")) ParticleSystem::Stop(ps, true);
+                ImGui::SameLine();
+                ImGui::SetNextItemWidth(-1.0f);
+                if (ImGui::BeginCombo("##preset", ICON_FA_WAND_MAGIC_SPARKLES " Preset"))
                 {
-                    component.MaterialInstance = nullptr;
+                    for (const auto& name : ParticleSystem::GetPresetNames())
+                        if (ImGui::Selectable(name.c_str()))
+                            ParticleSystem::ApplyPreset(ps, name);
+                    ImGui::EndCombo();
                 }
-                else
-                {
-                    ImGui::Separator();
-                    ImGui::Text("Material Properties");
-                    char buffer[256] = {};
-                    strncpy(buffer, component.MaterialInstance->Name.c_str(), sizeof(buffer) - 1);
-                    if (ImGui::InputText("Name##MaterialMR", buffer, sizeof(buffer)))
-                        component.MaterialInstance->Name = buffer;
-
-                    if (ImGui::ColorEdit3("Albedo##MR", glm::value_ptr(component.MaterialInstance->Albedo)))
-                        component.Color = glm::vec4(component.MaterialInstance->Albedo, 1.0f);
-
-                    ImGui::SliderFloat("Metallic##MR", &component.MaterialInstance->Metallic, 0.0f, 1.0f);
-                    ImGui::SliderFloat("Roughness##MR", &component.MaterialInstance->Roughness, 0.0f, 1.0f);
-                    ImGui::SliderFloat("AO##MR", &component.MaterialInstance->AO, 0.0f, 1.0f);
-                    
-                    ImGui::ColorEdit3("Emission Color##MR", glm::value_ptr(component.MaterialInstance->EmissionColor));
-                    ImGui::DragFloat("Emission Strength##MR", &component.MaterialInstance->EmissionStrength, 0.1f, 0.0f, 100.0f);
-
-                    component.Color = glm::vec4(component.MaterialInstance->Albedo, 1.0f);
-                    component.Metallic = component.MaterialInstance->Metallic;
-                    component.Roughness = component.MaterialInstance->Roughness;
-                    component.AO = component.MaterialInstance->AO;
-                }
+                ImGui::TextDisabled("Particles: %zu   |   Time: %.2f s", rt.Particles.size(), rt.Time);
             }
-            else
+
+            auto module = [](const char* name, bool* enabled, bool defaultOpen = false) -> bool {
+                ImGui::PushID(name);
+                ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_FramePadding;
+                if (defaultOpen) flags |= ImGuiTreeNodeFlags_DefaultOpen;
+                bool open = ImGui::TreeNodeEx("##mod", flags, "%s%s", enabled ? "       " : "", name);
+                if (enabled)
+                {
+                    ImVec2 min = ImGui::GetItemRectMin();
+                    ImGui::SetCursorScreenPos(ImVec2(min.x + ImGui::GetTreeNodeToLabelSpacing() - 2.0f, min.y + 1.0f));
+                    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
+                    ImGui::Checkbox("##en", enabled);
+                    ImGui::PopStyleVar();
+                }
+                ImGui::PopID();
+                if (open && enabled && !*enabled) ImGui::BeginDisabled();
+                return open;
+            };
+            auto endModule = [](bool* enabled) {
+                if (enabled && !*enabled) ImGui::EndDisabled();
+                ImGui::TreePop();
+            };
+
+            if (module("Main", nullptr, true))
             {
-                ImGui::Text("No Material Assigned");
-                if (ImGui::Button("Create New Material##MR"))
+                UI::DragFloat("Duration", ps.Duration, 0.05f, 0.05f, 1000.0f, "%.2f s");
+                UI::Checkbox("Looping", ps.Looping);
+                UI::Checkbox("Prewarm", ps.Prewarm);
+                static const char* const kStopActions[] = { "None", "Disable", "Destroy" };
+                UI::Combo("Stop Action", ps.StopAction, kStopActions, 3, "What happens to the object when the system has finished playing (non-looping) and every particle has died");
+                UI::DragFloat("Start Delay", ps.StartDelay, 0.05f, 0.0f, 100.0f, "%.2f s");
+                UI::Vec2("Start Lifetime", ps.StartLifetime, 0.05f);
+                UI::Vec2("Start Speed", ps.StartSpeed, 0.05f);
+                UI::Vec2("Start Size", ps.StartSize, 0.01f);
+                UI::Vec2("Start Rotation", ps.StartRotation, 1.0f);
+                UI::Color4("Start Color A", ps.StartColorA);
+                UI::Color4("Start Color B", ps.StartColorB);
+                UI::DragFloat("Gravity Modifier", ps.GravityModifier, 0.01f, -10.0f, 10.0f);
+                const char* spaces[] = { "Local", "World" };
+                UI::ComboEnum("Simulation Space", ps.SimulationSpace, spaces, 2);
+                UI::DragFloat("Simulation Speed", ps.SimulationSpeed, 0.01f, 0.0f, 10.0f);
+                UI::Checkbox("Play On Awake", ps.PlayOnAwake);
+                UI::DragInt("Max Particles", ps.MaxParticles, 10.0f, 1, 100000);
+                endModule(nullptr);
+            }
+            if (module("Emission", &ps.EmissionEnabled, true))
+            {
+                UI::DragFloat("Rate over Time", ps.RateOverTime, 0.5f, 0.0f, 100000.0f, "%.1f /s");
+                UI::DragFloat("Rate over Distance", ps.RateOverDistance, 0.1f, 0.0f, 10000.0f, "%.1f /m");
+                int remove = -1;
+                for (int i = 0; i < (int)ps.Bursts.size(); ++i)
                 {
-                    component.MaterialInstance = Material::CreateDefault();
-                    component.MaterialInstance->Albedo = glm::vec3(component.Color);
-                    component.MaterialInstance->Metallic = component.Metallic;
-                    component.MaterialInstance->Roughness = component.Roughness;
-                    component.MaterialInstance->AO = component.AO;
+                    ImGui::PushID(i);
+                    auto& b = ps.Bursts[(size_t)i];
+                    UI::BeginProperty("Burst", "Time (s), Count, Cycles, Interval (s)");
+                    float w = (ImGui::GetContentRegionAvail().x - 34.0f) / 4.0f;
+                    ImGui::SetNextItemWidth(w); ImGui::DragFloat("##t", &b.Time, 0.01f, 0.0f, 1000.0f, "%.2fs"); ImGui::SameLine(0, 2);
+                    ImGui::SetNextItemWidth(w); ImGui::DragInt("##c", &b.Count, 1.0f, 0, 100000); ImGui::SameLine(0, 2);
+                    ImGui::SetNextItemWidth(w); ImGui::DragInt("##y", &b.Cycles, 0.1f, 1, 1000, "x%d"); ImGui::SameLine(0, 2);
+                    ImGui::SetNextItemWidth(w); ImGui::DragFloat("##i", &b.Interval, 0.01f, 0.001f, 100.0f, "%.2fs"); ImGui::SameLine(0, 2);
+                    if (ImGui::SmallButton(ICON_FA_XMARK)) remove = i;
+                    UI::EndProperty();
+                    ImGui::PopID();
                 }
-                
-                ImGui::Separator();
-                ImGui::Text("Fallback Properties");
-                ImGui::ColorEdit4("Color##MR", glm::value_ptr(component.Color));
-                ImGui::SliderFloat("Metallic##MR", &component.Metallic, 0.0f, 1.0f);
-                ImGui::SliderFloat("Roughness##MR", &component.Roughness, 0.0f, 1.0f);
-                ImGui::SliderFloat("AO##MR", &component.AO, 0.0f, 1.0f);
+                if (remove >= 0) ps.Bursts.erase(ps.Bursts.begin() + remove);
+                UI::BeginProperty("");
+                if (ImGui::SmallButton(ICON_FA_PLUS " Add Burst")) ps.Bursts.push_back({});
+                UI::EndProperty();
+                endModule(&ps.EmissionEnabled);
+            }
+            if (module("Shape", &ps.ShapeEnabled))
+            {
+                const char* shapes[] = { "Sphere", "Hemisphere", "Cone", "Box", "Circle", "Edge", "Point" };
+                UI::ComboEnum("Shape", ps.Shape, shapes, 7);
+                if (ps.Shape == ParticleShape::Box) UI::Vec3("Box Size", ps.BoxSize, 0.05f, 1.0f);
+                else if (ps.Shape != ParticleShape::Point) UI::DragFloat("Radius", ps.Radius, 0.01f, 0.0f, 1000.0f);
+                if (ps.Shape == ParticleShape::Cone) UI::SliderFloat("Angle", ps.Angle, 0.0f, 89.0f, "%.0f deg");
+                UI::Checkbox("Emit from Shell", ps.EmitFromShell);
+                UI::SliderFloat("Randomize Direction", ps.RandomizeDirection, 0.0f, 1.0f);
+                endModule(&ps.ShapeEnabled);
+            }
+            if (module("Velocity over Lifetime", &ps.VelocityEnabled))
+            {
+                UI::Vec3("Linear", ps.VelocityOverLifetime, 0.05f);
+                UI::DragFloat("Orbital (Y)", ps.OrbitalSpeed, 0.05f, -100.0f, 100.0f, "%.2f rad/s");
+                endModule(&ps.VelocityEnabled);
+            }
+            if (module("Limit Velocity", &ps.LimitVelocityEnabled))
+            {
+                UI::DragFloat("Drag", ps.Drag, 0.01f, 0.0f, 100.0f);
+                UI::DragFloat("Speed Limit", ps.SpeedLimit, 0.1f, 0.0f, 10000.0f);
+                endModule(&ps.LimitVelocityEnabled);
+            }
+            if (module("Noise", &ps.NoiseEnabled))
+            {
+                UI::DragFloat("Strength", ps.NoiseStrength, 0.01f, 0.0f, 100.0f);
+                UI::DragFloat("Frequency", ps.NoiseFrequency, 0.01f, 0.0f, 50.0f);
+                UI::DragFloat("Scroll Speed", ps.NoiseScrollSpeed, 0.01f, 0.0f, 50.0f);
+                endModule(&ps.NoiseEnabled);
+            }
+            if (module("Color over Lifetime", &ps.ColorOverLifetimeEnabled))
+            {
+                UI::GradientEditor("Color", ps.ColorOverLifetime);
+                endModule(&ps.ColorOverLifetimeEnabled);
+            }
+            if (module("Size over Lifetime", &ps.SizeOverLifetimeEnabled))
+            {
+                UI::CurveEditor("Size", ps.SizeOverLifetime, 0.0f, 3.0f);
+                endModule(&ps.SizeOverLifetimeEnabled);
+            }
+            if (module("Rotation over Lifetime", &ps.RotationOverLifetimeEnabled))
+            {
+                UI::DragFloat("Angular Velocity", ps.AngularVelocity, 1.0f, -3600.0f, 3600.0f, "%.0f deg/s");
+                endModule(&ps.RotationOverLifetimeEnabled);
+            }
+            if (module("Collision (Ground Plane)", &ps.CollisionEnabled))
+            {
+                UI::DragFloat("Plane Height", ps.CollisionPlaneY, 0.05f, -10000.0f, 10000.0f);
+                UI::SliderFloat("Bounce", ps.Bounce, 0.0f, 1.0f);
+                UI::SliderFloat("Lifetime Loss", ps.LifetimeLoss, 0.0f, 1.0f);
+                endModule(&ps.CollisionEnabled);
+            }
+            if (module("Texture Sheet Animation", &ps.TextureSheetEnabled))
+            {
+                UI::BeginProperty("Tiles");
+                ImGui::DragInt2("##tiles", &ps.Tiles.x, 0.1f, 1, 64);
+                UI::EndProperty();
+                UI::DragFloat("Cycles", ps.AnimationCycles, 0.05f, 0.01f, 100.0f);
+                UI::Checkbox("Random Start Frame", ps.RandomStartFrame);
+                endModule(&ps.TextureSheetEnabled);
+            }
+            if (module("Renderer", nullptr, true))
+            {
+                const char* modes[] = { "Billboard", "Stretched Billboard", "Horizontal Billboard", "Vertical Billboard" };
+                UI::ComboEnum("Render Mode", ps.RenderMode, modes, 4);
+                if (ps.RenderMode == ParticleRenderMode::StretchedBillboard)
+                {
+                    UI::DragFloat("Length Scale", ps.LengthScale, 0.01f, 0.0f, 100.0f);
+                    UI::DragFloat("Speed Scale", ps.SpeedScale, 0.01f, 0.0f, 10.0f);
+                }
+                const char* blends[] = { "Alpha Blended", "Additive", "Premultiplied" };
+                UI::ComboEnum("Blend", ps.Blend, blends, 3);
+                UI::BeginProperty("Texture", "Drag an image from the Content Browser (empty = soft circle)");
+                std::string texName = ps.TexturePath.empty() ? std::string("Default (soft circle)") : std::filesystem::path(ps.TexturePath).filename().string();
+                ImGui::Button(texName.c_str(), ImVec2(ImGui::GetContentRegionAvail().x - 26.0f, 0));
+                if (ImGui::BeginDragDropTarget())
+                {
+                    if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                        ps.TexturePath = (const char*)p->Data;
+                    ImGui::EndDragDropTarget();
+                }
+                ImGui::SameLine(0, 2);
+                if (ImGui::SmallButton(ICON_FA_XMARK "##cleartex")) ps.TexturePath.clear();
+                UI::EndProperty();
+                UI::DragFloat("Emissive (HDR)", ps.EmissiveIntensity, 0.05f, 0.0f, 100.0f);
+                UI::Checkbox("Sort by Distance", ps.SortByDistance);
+                endModule(nullptr);
+            }
+        });
+
+        DrawComponent<TerrainComponent>("Terrain", entity, [](auto& t)
+        {
+            TerrainSystem::EnsureData(t);
+            UI::Text("Heightmap", "%d x %d", t.Resolution, t.Resolution);
+            bool changed = false;
+            changed |= UI::DragFloat("Width", t.Width, 0.5f, 1.0f, 100000.0f, "%.1f m");
+            changed |= UI::DragFloat("Length", t.Length, 0.5f, 1.0f, 100000.0f, "%.1f m");
+            changed |= UI::DragFloat("Height", t.Height, 0.2f, 0.1f, 10000.0f, "%.1f m");
+            if (changed)
+            {
+                t.MeshDirty = true;
+                t.ColliderVersion++;
+            }
+            UI::SliderInt("Texture Layers", t.LayerCount, 1, TerrainComponent::MaxLayers);
+            UI::Checkbox("Cast Shadows", t.CastShadows);
+            UI::Checkbox("Receive Shadows", t.ReceiveShadows);
+            UI::Checkbox("Collider", t.EnableCollider);
+            UI::InfoBox("Sculpt, paint and generate in the Terrain panel (Window > Terrain).", UI::InfoType::Info);
+        });
+
+        DrawComponent<MeshRendererComponent>("Mesh Renderer", entity, [entity](auto& component)
+        {
+            // Unity Mesh Renderer: ağ + malzeme yuvası + ışıklandırma; doku / renk / metalik malzemenin içinde
+            const char* meshTypeNames[] = { "Cube", "Sphere", "Plane", "Cylinder" };
+            int currentType = static_cast<int>(component.Type);
+            if (UI::Combo("Mesh", currentType, meshTypeNames, 4))
+                component.Type = static_cast<MeshType>(currentType);
+
+            if (UI::BeginSection("Materials", true))
+            {
+                Entity e = entity;
+                std::string name = e.HasComponent<TagComponent>() ? e.GetComponent<TagComponent>().Tag : std::string();
+                MaterialEditorUI::DrawMeshRendererMaterials(component, name);
+                UI::EndSection();
             }
 
-            ImGui::Separator();
-            ImGui::Checkbox("Realtime GI", &component.RealtimeGI);
+            if (UI::BeginSection("Lighting", true))
+            {
+                UI::Checkbox("Cast Shadows", component.CastShadows);
+                UI::Checkbox("Receive Shadows", component.ReceiveShadows);
+                UI::Checkbox("Realtime GI", component.RealtimeGI);
+                UI::EndSection();
+            }
         });
 
         DrawComponent<ModelComponent>("Model", entity, [](auto& component)
         {
+            ImGui::ColorEdit3("Tint##Model", glm::value_ptr(component.Tint));
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Per-object color multiplier (the shared material is not changed)");
             // Model path
             if (!component.FilePath.empty())
             {
@@ -1269,7 +1919,7 @@ namespace Conqueror::Editor
                     std::error_code ec;
                     auto relative = std::filesystem::relative(texPath, projectDir, ec);
                     if (!ec && !relative.empty() && relative.native()[0] != '.')
-                        texPath = relative.string();
+                        texPath = relative.generic_string();
                 }
                 strncpy(imgPathBuffer, texPath.c_str(), sizeof(imgPathBuffer) - 1);
             }
@@ -1334,37 +1984,10 @@ namespace Conqueror::Editor
 
             ImGui::ColorEdit4("Color", glm::value_ptr(component.Color));
             ImGui::DragFloat("Font Size", &component.FontSize, 0.1f, 0.1f, 10.0f);
-        });
-
-        DrawComponent<NavMeshAgentComponent>("NavMesh Agent", entity, [](auto& component)
-        {
-            ImGui::DragFloat("Speed", &component.Speed, 0.1f, 0.0f, 100.0f);
-            ImGui::DragFloat("Angular Speed", &component.AngularSpeed, 1.0f, 0.0f, 720.0f);
-            ImGui::DragFloat("Acceleration", &component.Acceleration, 0.1f, 0.0f, 100.0f);
-            ImGui::DragFloat("Stopping Dist", &component.StoppingDistance, 0.1f, 0.0f, 100.0f);
-            ImGui::DragFloat("Radius", &component.Radius, 0.1f, 0.01f, 100.0f);
-            ImGui::DragFloat("Height", &component.Height, 0.1f, 0.01f, 100.0f);
-            ImGui::Checkbox("Auto Braking", &component.AutoBraking);
-        });
-
-        DrawComponent<NavMeshObstacleComponent>("NavMesh Obstacle", entity, [](auto& component)
-        {
-            ImGui::Checkbox("Carve", &component.Carve);
-            ImGui::DragFloat("Radius", &component.Radius, 0.1f, 0.0f, 100.0f);
-            ImGui::DragFloat3("Size", glm::value_ptr(component.Size), 0.1f);
-            ImGui::DragFloat3("Center", glm::value_ptr(component.Center), 0.1f);
-        });
-
-        DrawComponent<NavMeshSurfaceComponent>("NavMesh Surface", entity, [](auto& component)
-        {
-            const char* areaTypes[] = { "Walkable", "Not Walkable", "Jump" };
-            ImGui::Combo("Area Type", &component.AreaType, areaTypes, IM_ARRAYSIZE(areaTypes));
-            
-            ImGui::Checkbox("Override Voxel Size", &component.OverrideVoxelSize);
-            if (component.OverrideVoxelSize)
-            {
-                ImGui::DragFloat("Voxel Size", &component.VoxelSize, 0.01f, 0.01f, 2.0f);
-            }
+            const char* alignments[] = { "Left", "Center", "Right" };
+            int alignment = (int)component.Alignment;
+            if (ImGui::Combo("Alignment", &alignment, alignments, 3))
+                component.Alignment = (TextAlignment)alignment;
         });
 
         DrawComponent<LayerComponent>("Layer", entity, [this](auto& component)
@@ -1564,8 +2187,317 @@ namespace Conqueror::Editor
                 component.ScaleMode = (CanvasScalerComponent::UIScaleMode)currentMode;
             }
             
-            ImGui::DragFloat("Scale Factor", &component.ScaleFactor, 0.01f, 0.1f, 10.0f);
+            if (component.ScaleMode == CanvasScalerComponent::UIScaleMode::ScaleWithScreenSize)
+            {
+                UI::Vec2("Reference Resolution", component.ReferenceResolution, 1.0f);
+                UI::SliderFloat("Match (Width - Height)", component.MatchWidthOrHeight, 0.0f, 1.0f);
+            }
+            else
+                ImGui::DragFloat("Scale Factor", &component.ScaleFactor, 0.01f, 0.1f, 10.0f);
             ImGui::DragFloat("Reference Pixels Per Unit", &component.ReferencePixelsPerUnit, 1.0f, 1.0f, 1000.0f);
+        });
+
+        // ================= UI (RectTransform + widget'lar)
+        DrawComponent<RectTransformComponent>("Rect Transform", entity, [](auto& rt)
+        {
+            // Çapa ön ayarları (Unity): satır = üst/orta/alt/esnet, sütun = sol/orta/sağ/esnet
+            UI::BeginProperty("Anchor Preset", "Click: set anchors.  Shift: also pivot.  Alt: also position");
+            if (ImGui::Button(ICON_FA_TABLE_CELLS " Presets"))
+                ImGui::OpenPopup("##anchorpresets");
+            ImGui::SameLine();
+            ImGui::TextDisabled("(%.2f,%.2f)-(%.2f,%.2f)", rt.AnchorMin.x, rt.AnchorMin.y, rt.AnchorMax.x, rt.AnchorMax.y);
+            if (ImGui::BeginPopup("##anchorpresets"))
+            {
+                static const float ys[4][2] = { { 1, 1 }, { 0.5f, 0.5f }, { 0, 0 }, { 0, 1 } };
+                static const float xs[4][2] = { { 0, 0 }, { 0.5f, 0.5f }, { 1, 1 }, { 0, 1 } };
+                static const char* rowNames[] = { "top", "middle", "bottom", "stretch" };
+                static const char* colNames[] = { "left", "center", "right", "stretch" };
+                ImGui::TextDisabled("Anchor Presets   (Shift: pivot, Alt: position)");
+                ImDrawList* dl = ImGui::GetWindowDrawList();
+                for (int r = 0; r < 4; ++r)
+                {
+                    for (int c = 0; c < 4; ++c)
+                    {
+                        if (c > 0) ImGui::SameLine();
+                        ImGui::PushID(r * 4 + c);
+                        ImVec2 p = ImGui::GetCursorScreenPos();
+                        bool cur = rt.AnchorMin == glm::vec2(xs[c][0], ys[r][0]) && rt.AnchorMax == glm::vec2(xs[c][1], ys[r][1]);
+                        if (ImGui::Button("##p", ImVec2(44, 44)))
+                        {
+                            rt.AnchorMin = { xs[c][0], ys[r][0] };
+                            rt.AnchorMax = { xs[c][1], ys[r][1] };
+                            if (ImGui::GetIO().KeyShift)
+                                rt.Pivot = { c == 3 ? 0.5f : xs[c][0], r == 3 ? 0.5f : ys[r][0] };
+                            if (ImGui::GetIO().KeyAlt)
+                            {
+                                rt.AnchoredPosition = glm::vec2(0.0f);
+                                if (c == 3) rt.SizeDelta.x = 0.0f;
+                                if (r == 3) rt.SizeDelta.y = 0.0f;
+                            }
+                        }
+                        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s %s", rowNames[r], colNames[c]);
+                        // simge: kutu + çapa noktaları/çizgileri
+                        ImU32 col = cur ? IM_COL32(90, 170, 255, 255) : IM_COL32(200, 200, 205, 255);
+                        dl->AddRect(ImVec2(p.x + 10, p.y + 10), ImVec2(p.x + 34, p.y + 34), IM_COL32(140, 140, 150, 255));
+                        float ax0 = p.x + 10 + 24 * xs[c][0], ax1 = p.x + 10 + 24 * xs[c][1];
+                        float ay0 = p.y + 34 - 24 * ys[r][0], ay1 = p.y + 34 - 24 * ys[r][1];
+                        if (c == 3) dl->AddLine(ImVec2(ax0, p.y + 22), ImVec2(ax1, p.y + 22), col, 2.0f);
+                        if (r == 3) dl->AddLine(ImVec2(p.x + 22, ay0), ImVec2(p.x + 22, ay1), col, 2.0f);
+                        if (c != 3 && r != 3) dl->AddCircleFilled(ImVec2(ax0, ay0), 3.5f, col);
+                        ImGui::PopID();
+                    }
+                }
+                ImGui::EndPopup();
+            }
+            UI::EndProperty();
+
+            bool stretchX = rt.AnchorMin.x != rt.AnchorMax.x, stretchY = rt.AnchorMin.y != rt.AnchorMax.y;
+            UI::Vec2("Position", rt.AnchoredPosition, 1.0f);
+            UI::BeginProperty(stretchX || stretchY ? "Size Delta" : "Width / Height");
+            ImGui::DragFloat2("##size", &rt.SizeDelta.x, 1.0f);
+            UI::EndProperty();
+            UI::Vec2("Anchor Min", rt.AnchorMin, 0.01f);
+            UI::Vec2("Anchor Max", rt.AnchorMax, 0.01f);
+            UI::Vec2("Pivot", rt.Pivot, 0.01f);
+            UI::DragFloat("Rotation", rt.Rotation, 0.5f, -360.0f, 360.0f, "%.1f deg");
+            UI::Vec2("Scale", rt.Scale, 0.01f);
+            UI::Text("Computed", "%.0f x %.0f px", rt.ComputedRect.z, rt.ComputedRect.w);
+        });
+
+        auto selectableUI = [](UISelectableState& s) {
+            UI::Checkbox("Interactable", s.Interactable);
+            const char* transitions[] = { "None", "Color Tint", "Scale" };
+            UI::ComboEnum("Transition", s.Transition, transitions, 3);
+            if (s.Transition == UITransition::ColorTint)
+            {
+                UI::Color4("Normal Color", s.NormalColor);
+                UI::Color4("Highlighted", s.HighlightedColor);
+                UI::Color4("Pressed", s.PressedColor);
+                UI::Color4("Disabled", s.DisabledColor);
+            }
+            UI::DragFloat("Fade Duration", s.FadeDuration, 0.01f, 0.0f, 2.0f, "%.2f s");
+        };
+        auto textureField = [](const char* label, std::string& path) {
+            UI::BeginProperty(label, "Drag an image from the Content Browser");
+            std::string name = path.empty() ? std::string("None") : std::filesystem::path(path).filename().string();
+            ImGui::Button(name.c_str(), ImVec2(ImGui::GetContentRegionAvail().x - 26.0f, 0));
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                    path = (const char*)p->Data;
+                ImGui::EndDragDropTarget();
+            }
+            ImGui::SameLine(0, 2);
+            ImGui::PushID(label);
+            if (ImGui::SmallButton(ICON_FA_XMARK)) path.clear();
+            ImGui::PopID();
+            UI::EndProperty();
+        };
+
+        DrawComponent<UIImageComponent>("Image (UI)", entity, [&](auto& c)
+        {
+            textureField("Source Image", c.TexturePath);
+            if (!c.TexturePath.empty())
+                if (auto sheet = SpriteSheet::Get(c.TexturePath); sheet && !sheet->Sprites.empty())
+                {
+                    UI::BeginProperty("Sprite");
+                    if (ImGui::BeginCombo("##uisprite", c.SpriteName.empty() ? "(Full Texture)" : c.SpriteName.c_str()))
+                    {
+                        if (ImGui::Selectable("(Full Texture)", c.SpriteName.empty())) c.SpriteName.clear();
+                        for (auto& d : sheet->Sprites)
+                            if (ImGui::Selectable(d.Name.c_str(), d.Name == c.SpriteName)) c.SpriteName = d.Name;
+                        ImGui::EndCombo();
+                    }
+                    UI::EndProperty();
+                }
+            UI::Color4("Color", c.Color);
+            const char* types[] = { "Simple", "Sliced", "Tiled", "Filled" };
+            UI::ComboEnum("Image Type", c.Type, types, 4);
+            if (c.Type == UIImageType::Sliced)
+            {
+                UI::BeginProperty("Border", "Left, Bottom, Right, Top (pixels)");
+                ImGui::DragFloat4("##b", &c.Border.x, 0.5f, 0.0f, 4096.0f, "%.0f");
+                UI::EndProperty();
+                UI::DragFloat("Pixels Per Unit Mult.", c.PixelsPerUnitMultiplier, 0.01f, 0.01f, 10.0f);
+            }
+            if (c.Type == UIImageType::Filled)
+            {
+                const char* methods[] = { "Horizontal", "Vertical", "Radial 360" };
+                UI::ComboEnum("Fill Method", c.FillMethod, methods, 3);
+                UI::SliderFloat("Fill Amount", c.FillAmount, 0.0f, 1.0f);
+                if (c.FillMethod == UIFillMethod::Radial360) UI::Checkbox("Clockwise", c.FillClockwise);
+            }
+            if (c.TexturePath.empty())
+                UI::DragFloat("Corner Radius", c.CornerRadius, 0.5f, 0.0f, 500.0f, "%.0f px");
+            else if (c.Type == UIImageType::Simple)
+                UI::Checkbox("Preserve Aspect", c.PreserveAspect);
+            UI::Checkbox("Raycast Target", c.RaycastTarget);
+        });
+
+        DrawComponent<UITextComponent>("Text (UI)", entity, [](auto& c)
+        {
+            UI::BeginProperty("Text");
+            char buf[2048];
+            snprintf(buf, sizeof(buf), "%s", c.Text.c_str());
+            if (ImGui::InputTextMultiline("##txt", buf, sizeof(buf), ImVec2(-1, 60)))
+                c.Text = buf;
+            UI::EndProperty();
+            UI::BeginProperty("Font", "Drag a .ttf/.otf from the Content Browser");
+            std::string fn = c.FontPath.empty() ? std::string("Default (Open Sans)") : std::filesystem::path(c.FontPath).filename().string();
+            ImGui::Button(fn.c_str(), ImVec2(ImGui::GetContentRegionAvail().x - 26.0f, 0));
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                {
+                    std::string path = (const char*)p->Data;
+                    if (path.ends_with(".ttf") || path.ends_with(".otf") || path.ends_with(".TTF") || path.ends_with(".OTF"))
+                        c.FontPath = path;
+                }
+                ImGui::EndDragDropTarget();
+            }
+            ImGui::SameLine(0, 2);
+            if (ImGui::SmallButton(ICON_FA_XMARK "##font")) c.FontPath.clear();
+            UI::EndProperty();
+            UI::DragFloat("Font Size", c.FontSize, 0.25f, 4.0f, 512.0f, "%.1f px");
+            UI::Color4("Color", c.Color);
+            UI::BeginProperty("Alignment");
+            const char* ah[] = { ICON_FA_ALIGN_LEFT, ICON_FA_ALIGN_CENTER, ICON_FA_ALIGN_RIGHT };
+            for (int i = 0; i < 3; ++i)
+            {
+                if (i) ImGui::SameLine(0, 2);
+                bool a = (int)c.AlignH == i;
+                if (a) ImGui::PushStyleColor(ImGuiCol_Button, UI::Colors::AccentDim);
+                if (ImGui::Button((std::string(ah[i]) + "##ah" + std::to_string(i)).c_str())) c.AlignH = (UITextAlignH)i;
+                if (a) ImGui::PopStyleColor();
+            }
+            ImGui::SameLine(0, 10);
+            const char* av[] = { "Top", "Mid", "Bot" };
+            for (int i = 0; i < 3; ++i)
+            {
+                if (i) ImGui::SameLine(0, 2);
+                bool a = (int)c.AlignV == i;
+                if (a) ImGui::PushStyleColor(ImGuiCol_Button, UI::Colors::AccentDim);
+                if (ImGui::Button((std::string(av[i]) + "##av").c_str())) c.AlignV = (UITextAlignV)i;
+                if (a) ImGui::PopStyleColor();
+            }
+            UI::EndProperty();
+            UI::Checkbox("Word Wrap", c.WordWrap);
+            UI::Checkbox("Best Fit", c.BestFit);
+            if (c.BestFit)
+            {
+                UI::DragFloat("Min Size", c.MinSize, 0.25f, 2.0f, 512.0f);
+                UI::DragFloat("Max Size", c.MaxSize, 0.25f, 2.0f, 512.0f);
+            }
+            UI::DragFloat("Line Spacing", c.LineSpacing, 0.01f, 0.5f, 4.0f);
+            UI::Checkbox("Outline", c.Outline);
+            if (c.Outline) UI::Color4("Outline Color", c.OutlineColor);
+            UI::Checkbox("Shadow", c.Shadow);
+            if (c.Shadow)
+            {
+                UI::Vec2("Shadow Offset", c.ShadowOffset, 0.25f);
+                UI::Color4("Shadow Color", c.ShadowColor);
+            }
+            UI::Checkbox("Raycast Target", c.RaycastTarget);
+        });
+
+        DrawComponent<UIButtonComponent>("Button (UI)", entity, [&](auto& c)
+        {
+            selectableUI(c.Selectable);
+            UI::InputText("On Click Event", c.OnClick, "Event name scripts receive (empty = object name)");
+            UI::Text("Clicks", "%u", c.ClickCount);
+        });
+        DrawComponent<UIToggleComponent>("Toggle (UI)", entity, [&](auto& c)
+        {
+            UI::Checkbox("Is On", c.IsOn);
+            UI::DragInt("Group", c.Group, 0.1f, 0, 1000, "0 = none. Only one toggle per group can be on");
+            UI::InputText("On Value Changed", c.OnValueChanged);
+            selectableUI(c.Selectable);
+        });
+        DrawComponent<UISliderComponent>("Slider (UI)", entity, [&](auto& c)
+        {
+            UI::DragFloat("Min Value", c.MinValue, 0.1f);
+            UI::DragFloat("Max Value", c.MaxValue, 0.1f);
+            UI::SliderFloat("Value", c.Value, c.MinValue, std::max(c.MaxValue, c.MinValue + 0.0001f));
+            UI::Checkbox("Whole Numbers", c.WholeNumbers);
+            const char* dirs[] = { "Left To Right", "Right To Left", "Bottom To Top", "Top To Bottom" };
+            UI::ComboEnum("Direction", c.Direction, dirs, 4);
+            UI::Color4("Background", c.BackgroundColor);
+            UI::Color4("Fill", c.FillColor);
+            UI::Color4("Handle", c.HandleColor);
+            UI::DragFloat("Handle Size", c.HandleSize, 0.5f, 4.0f, 200.0f);
+            UI::InputText("On Value Changed", c.OnValueChanged);
+            selectableUI(c.Selectable);
+        });
+        DrawComponent<UIInputFieldComponent>("Input Field (UI)", entity, [&](auto& c)
+        {
+            UI::InputText("Text", c.Text);
+            UI::InputText("Placeholder", c.Placeholder);
+            UI::DragInt("Character Limit", c.CharacterLimit, 0.2f, 0, 100000);
+            const char* types[] = { "Standard", "Integer Number", "Decimal Number", "Alphanumeric", "Password" };
+            UI::ComboEnum("Content Type", c.ContentType, types, 5);
+            UI::DragFloat("Font Size", c.FontSize, 0.25f, 4.0f, 256.0f);
+            UI::Color4("Text Color", c.TextColor);
+            UI::Color4("Background", c.BackgroundColor);
+            UI::InputText("On Submit", c.OnSubmit);
+            selectableUI(c.Selectable);
+        });
+        DrawComponent<UIDropdownComponent>("Dropdown (UI)", entity, [&](auto& c)
+        {
+            UI::BeginProperty("Options");
+            int remove = -1;
+            for (int i = 0; i < (int)c.Options.size(); ++i)
+            {
+                ImGui::PushID(i);
+                char buf[256];
+                snprintf(buf, sizeof(buf), "%s", c.Options[(size_t)i].c_str());
+                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 26.0f);
+                if (ImGui::InputText("##opt", buf, sizeof(buf))) c.Options[(size_t)i] = buf;
+                ImGui::SameLine(0, 2);
+                if (ImGui::SmallButton(ICON_FA_XMARK)) remove = i;
+                ImGui::PopID();
+            }
+            if (remove >= 0) c.Options.erase(c.Options.begin() + remove);
+            if (ImGui::SmallButton(ICON_FA_PLUS " Add Option")) c.Options.push_back("Option " + std::to_string(c.Options.size() + 1));
+            UI::EndProperty();
+            UI::SliderInt("Value", c.Value, 0, std::max(0, (int)c.Options.size() - 1));
+            UI::DragFloat("Font Size", c.FontSize, 0.25f, 4.0f, 256.0f);
+            UI::InputText("On Value Changed", c.OnValueChanged);
+            selectableUI(c.Selectable);
+        });
+        DrawComponent<UIScrollRectComponent>("Scroll Rect (UI)", entity, [](auto& c)
+        {
+            UI::Checkbox("Horizontal", c.Horizontal);
+            UI::Checkbox("Vertical", c.Vertical);
+            UI::DragFloat("Scroll Sensitivity", c.ScrollSensitivity, 0.5f, 1.0f, 1000.0f);
+            UI::Checkbox("Mask (clip content)", c.Mask);
+            UI::Checkbox("Show Scrollbar", c.ShowScrollbar);
+            UI::Text("Position", "%.2f, %.2f", c.NormalizedPosition.x, c.NormalizedPosition.y);
+            UI::InfoBox("The first child is the scrolling Content.", UI::InfoType::Info);
+        });
+        DrawComponent<UILayoutGroupComponent>("Layout Group (UI)", entity, [](auto& c)
+        {
+            const char* types[] = { "Horizontal", "Vertical", "Grid" };
+            UI::ComboEnum("Type", c.Type, types, 3);
+            UI::BeginProperty("Padding", "Left, Right, Top, Bottom");
+            ImGui::DragFloat4("##pad", &c.Padding.x, 0.5f, 0.0f, 2000.0f, "%.0f");
+            UI::EndProperty();
+            const char* aligns[] = { "Upper Left", "Upper Center", "Upper Right", "Middle Left", "Middle Center", "Middle Right", "Lower Left", "Lower Center", "Lower Right" };
+            UI::ComboEnum("Child Alignment", c.ChildAlignment, aligns, 9);
+            if (c.Type == UILayoutType::Grid)
+            {
+                UI::Vec2("Cell Size", c.CellSize, 1.0f);
+                UI::Vec2("Spacing", c.GridSpacing, 0.5f);
+                UI::DragInt("Fixed Columns", c.Constraint, 0.1f, 0, 100, "0 = flexible");
+            }
+            else
+            {
+                UI::DragFloat("Spacing", c.Spacing, 0.5f, 0.0f, 2000.0f);
+                UI::Checkbox("Control Child Width", c.ControlChildWidth);
+                UI::Checkbox("Control Child Height", c.ControlChildHeight);
+                UI::Checkbox("Force Expand Width", c.ChildForceExpandWidth);
+                UI::Checkbox("Force Expand Height", c.ChildForceExpandHeight);
+            }
+            UI::Checkbox("Fit Content Size", c.FitContent);
         });
 
         DrawComponent<GraphicRaycasterComponent>("Graphic Raycaster", entity, [this](auto& component)
@@ -1605,17 +2537,14 @@ namespace Conqueror::Editor
             }
         });
 
-        DrawComponent<DirectionalLightComponent>("Directional Light", entity, [](auto& component)
+        DrawComponent<DirectionalLightComponent>("Directional Light", entity, [entity](auto& component)
         {
-            DrawVec3Control("Direction", component.Direction);
-            ImGui::ColorEdit3("Color", glm::value_ptr(component.Color));
-            ImGui::DragFloat("Intensity", &component.Intensity, 0.1f, 0.0f, 10.0f);
-            ImGui::Checkbox("Cast Shadows", &component.CastShadows);
-
+            DrawLightAim(entity, component.Direction, true);
+            UI::Color3("Color", component.Color);
+            UI::DragFloat("Intensity", component.Intensity, 0.05f, 0.0f, 20.0f, "%.2f");
+            UI::Checkbox("Cast Shadows", component.CastShadows);
             const char* lightModes[] = { "Realtime", "Mixed", "Baked" };
-            int modeIdx = (int)component.Mode;
-            if (ImGui::Combo("Mode", &modeIdx, lightModes, 3))
-                component.Mode = (LightMode)modeIdx;
+            UI::ComboEnum("Mode", component.Mode, lightModes, 3);
         });
 
         DrawComponent<PointLightComponent>("Point Light", entity, [](auto& component)
@@ -1638,9 +2567,9 @@ namespace Conqueror::Editor
                 component.Mode = (LightMode)modeIdx;
         });
 
-        DrawComponent<SpotLightComponent>("Spot Light", entity, [](auto& component)
+        DrawComponent<SpotLightComponent>("Spot Light", entity, [entity](auto& component)
         {
-            DrawVec3Control("Direction", component.Direction);
+            DrawLightAim(entity, component.Direction, false);
             ImGui::ColorEdit3("Color", glm::value_ptr(component.Color));
             ImGui::DragFloat("Intensity", &component.Intensity, 0.1f, 0.0f, 100.0f);
             ImGui::DragFloat("Range", &component.Range, 0.1f, 0.1f, 100.0f);
@@ -1669,109 +2598,187 @@ namespace Conqueror::Editor
         });
 
         // 2D Physics Components
-        DrawComponent<RigidBody2DComponent>("RigidBody 2D", entity, [](auto& component)
+        DrawComponent<RigidBody2DComponent>("Rigidbody 2D", entity, [entity](auto& component)
         {
-            const char* bodyTypeStrings[] = { "Static", "Dynamic", "Kinematic" };
-            const char* currentBodyTypeString = bodyTypeStrings[(int)component.Type];
-            if (ImGui::BeginCombo("Body Type", currentBodyTypeString))
+            static const char* bodyTypes[] = { "Static", "Dynamic", "Kinematic" };
+            UI::ComboEnum("Body Type", component.Type, bodyTypes, 3);
+            if (component.Type == RigidBody2DComponent::BodyType::Dynamic)
             {
-                for (int i = 0; i < 3; i++)
-                {
-                    bool isSelected = currentBodyTypeString == bodyTypeStrings[i];
-                    if (ImGui::Selectable(bodyTypeStrings[i], isSelected))
-                    {
-                        component.Type = (RigidBody2DComponent::BodyType)i;
-                    }
-                    if (isSelected)
-                        ImGui::SetItemDefaultFocus();
-                }
-                ImGui::EndCombo();
+                UI::Checkbox("Use Auto Mass", component.UseAutoMass, "Mass from collider areas x density.");
+                if (!component.UseAutoMass)
+                    UI::DragFloat("Mass", component.Mass, 0.01f, 0.0001f, 100000.0f, "%.3f kg");
+                UI::DragFloat("Linear Drag", component.LinearDrag, 0.01f, 0.0f, 1000.0f);
+                UI::DragFloat("Angular Drag", component.AngularDrag, 0.01f, 0.0f, 1000.0f);
+                UI::DragFloat("Gravity Scale", component.GravityScale, 0.01f, -100.0f, 100.0f);
+                static const char* detection[] = { "Discrete", "Continuous" };
+                int mode = component.ContinuousCollision ? 1 : 0;
+                if (UI::Combo("Collision Detection", mode, detection, 2, "Continuous: fast bodies (bullets) won't tunnel."))
+                    component.ContinuousCollision = mode == 1;
+                UI::Checkbox("Interpolate", component.Interpolate);
+                UI::Checkbox("Allow Sleep", component.AllowSleep);
+                UI::SubHeader("Constraints");
+                UI::Checkbox("Freeze Rotation Z", component.FixedRotation);
             }
-            
-            ImGui::Checkbox("Fixed Rotation", &component.FixedRotation);
+            if (Scene* scene = entity.GetScene(); scene && scene->GetPhysicsWorld2D() && scene->GetPhysicsWorld2D()->IsRunning() && component.RuntimeBody)
+            {
+                auto* world = scene->GetPhysicsWorld2D();
+                UI::SubHeader("Info");
+                glm::vec2 v = world->GetLinearVelocity(entity);
+                UI::Text("Velocity", "%.2f, %.2f", v.x, v.y);
+                UI::Text("Angular Velocity", "%.2f rad/s", world->GetAngularVelocity(entity));
+                UI::Text("Mass", "%.3f kg", world->GetMass(entity));
+            }
         });
 
         DrawComponent<BoxCollider2DComponent>("Box Collider 2D", entity, [](auto& component)
         {
-            ImGui::DragFloat2("Offset", glm::value_ptr(component.Offset), 0.01f);
-            ImGui::DragFloat2("Size", glm::value_ptr(component.Size), 0.01f);
-            ImGui::DragFloat("Density", &component.Density, 0.01f, 0.0f, 100.0f);
-            ImGui::DragFloat("Friction", &component.Friction, 0.01f, 0.0f, 1.0f);
-            ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
+            UI::Checkbox("Is Trigger", component.IsTrigger, "Detects overlaps (OnTriggerEnter2D) without blocking.");
+            UI::Vec2("Offset", component.Offset, 0.01f);
+            UI::Vec2("Size", component.Size, 0.01f);
+            component.Size = glm::max(component.Size, glm::vec2(0.0f));
+            UI::DragFloat("Edge Radius", component.EdgeRadius, 0.005f, 0.0f, 10.0f);
+            UI::SubHeader("Material");
+            UI::DragFloat("Density", component.Density, 0.01f, 0.0f, 1000.0f);
+            UI::SliderFloat("Friction", component.Friction, 0.0f, 1.0f);
+            UI::SliderFloat("Bounciness", component.Restitution, 0.0f, 1.0f);
         });
 
         DrawComponent<CircleCollider2DComponent>("Circle Collider 2D", entity, [](auto& component)
         {
-            ImGui::DragFloat2("Offset", glm::value_ptr(component.Offset), 0.01f);
-            ImGui::DragFloat("Radius", &component.Radius, 0.01f, 0.0f, 10.0f);
-            ImGui::DragFloat("Density", &component.Density, 0.01f, 0.0f, 100.0f);
-            ImGui::DragFloat("Friction", &component.Friction, 0.01f, 0.0f, 1.0f);
-            ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
+            UI::Checkbox("Is Trigger", component.IsTrigger, "Detects overlaps (OnTriggerEnter2D) without blocking.");
+            UI::Vec2("Offset", component.Offset, 0.01f);
+            UI::DragFloat("Radius", component.Radius, 0.01f, 0.0f, 10000.0f);
+            UI::SubHeader("Material");
+            UI::DragFloat("Density", component.Density, 0.01f, 0.0f, 1000.0f);
+            UI::SliderFloat("Friction", component.Friction, 0.0f, 1.0f);
+            UI::SliderFloat("Bounciness", component.Restitution, 0.0f, 1.0f);
         });
 
         // 3D Physics Components
-        DrawComponent<RigidbodyComponent>("Rigidbody", entity, [](auto& component)
+        DrawComponent<RigidbodyComponent>("Rigidbody", entity, [entity](auto& component)
         {
-            const char* bodyTypeStrings[] = { "Static", "Dynamic", "Kinematic" };
-            const char* currentBodyTypeString = bodyTypeStrings[(int)component.Type];
-            if (ImGui::BeginCombo("Body Type", currentBodyTypeString))
+            static const char* bodyTypes[] = { "Static", "Dynamic", "Kinematic" };
+            UI::ComboEnum("Body Type", component.Type, bodyTypes, 3, "Dynamic: simulated. Kinematic: moved by script/animation, pushes others. Static: never moves.");
+            const bool dynamic = component.Type == RigidbodyComponent::BodyType::Dynamic;
+            if (dynamic)
             {
-                for (int i = 0; i < 3; i++)
-                {
-                    bool isSelected = currentBodyTypeString == bodyTypeStrings[i];
-                    if (ImGui::Selectable(bodyTypeStrings[i], isSelected))
-                    {
-                        component.Type = (RigidbodyComponent::BodyType)i;
-                    }
-                    if (isSelected)
-                        ImGui::SetItemDefaultFocus();
-                }
-                ImGui::EndCombo();
+                UI::DragFloat("Mass", component.Mass, 0.01f, 0.001f, 100000.0f, "%.3f kg");
+                UI::DragFloat("Drag", component.LinearDrag, 0.01f, 0.0f, 100.0f, "%.3f", "Linear velocity damping.");
+                UI::DragFloat("Angular Drag", component.AngularDrag, 0.01f, 0.0f, 100.0f);
+                UI::Checkbox("Use Gravity", component.UseGravity);
+                if (component.UseGravity)
+                    UI::DragFloat("Gravity Scale", component.GravityScale, 0.01f, -10.0f, 10.0f);
+                UI::Checkbox("Interpolate", component.Interpolate, "Smooths rendering between fixed physics steps.");
+                static const char* ccd[] = { "Discrete", "Continuous" };
+                UI::ComboEnum("Collision Detection", component.CollisionDetection, ccd, 2, "Continuous prevents fast bodies from tunneling through thin colliders.");
+                UI::DragFloat("Max Angular Velocity", component.MaxAngularVelocity, 0.5f, 0.1f, 1000.0f, "%.1f rad/s");
+                UI::Checkbox("Allow Sleep", component.AllowSleep);
+
+                UI::SubHeader("Constraints");
+                auto axisRow = [](const char* label, bool& x, bool& y, bool& z) {
+                    UI::BeginProperty(label);
+                    ImGui::Checkbox("X##ax", &x); ImGui::SameLine();
+                    ImGui::Checkbox("Y##ay", &y); ImGui::SameLine();
+                    ImGui::Checkbox("Z##az", &z);
+                    UI::EndProperty();
+                };
+                ImGui::PushID("pos");
+                axisRow("Freeze Position", component.FreezePositionX, component.FreezePositionY, component.FreezePositionZ);
+                ImGui::PopID();
+                ImGui::PushID("rot");
+                bool rx = component.FreezeRotation || component.FreezeRotationX, ry = component.FreezeRotation || component.FreezeRotationY,
+                     rz = component.FreezeRotation || component.FreezeRotationZ;
+                axisRow("Freeze Rotation", rx, ry, rz);
+                component.FreezeRotationX = rx; component.FreezeRotationY = ry; component.FreezeRotationZ = rz;
+                component.FreezeRotation = rx && ry && rz;
+                ImGui::PopID();
             }
-            
-            ImGui::DragFloat("Mass", &component.Mass, 0.01f, 0.01f, 1000.0f);
-            ImGui::DragFloat("Linear Drag", &component.LinearDrag, 0.01f, 0.0f, 10.0f);
-            ImGui::DragFloat("Angular Drag", &component.AngularDrag, 0.01f, 0.0f, 10.0f);
-            ImGui::DragFloat("Gravity Scale", &component.GravityScale, 0.01f, -10.0f, 10.0f);
-            ImGui::Checkbox("Freeze Rotation", &component.FreezeRotation);
-            
-            ImGui::Separator();
-            ImGui::Text("Material");
-            ImGui::DragFloat("Friction", &component.Friction, 0.01f, 0.0f, 1.0f);
-            ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
+            UI::SubHeader("Material");
+            UI::SliderFloat("Friction", component.Friction, 0.0f, 1.0f);
+            UI::SliderFloat("Bounciness", component.Restitution, 0.0f, 1.0f);
+
+            // Oyun modunda canlı bilgi
+            if (Scene* scene = entity.GetScene(); scene && scene->GetPhysicsWorld3D() && scene->GetPhysicsWorld3D()->IsRunning() && component.RuntimeBody)
+            {
+                auto* world = scene->GetPhysicsWorld3D();
+                UI::SubHeader("Info");
+                glm::vec3 v = world->GetLinearVelocity(entity), w = world->GetAngularVelocity(entity);
+                UI::Text("Speed", "%.3f m/s", glm::length(v));
+                UI::Text("Velocity", "%.2f, %.2f, %.2f", v.x, v.y, v.z);
+                UI::Text("Angular Velocity", "%.2f, %.2f, %.2f", w.x, w.y, w.z);
+                UI::Text("Sleeping", "%s", world->IsSleeping(entity) ? "Yes" : "No");
+            }
         });
 
         DrawComponent<BoxColliderComponent>("Box Collider", entity, [](auto& component)
         {
-            ImGui::DragFloat3("Offset", glm::value_ptr(component.Offset), 0.01f);
-            ImGui::DragFloat3("Size", glm::value_ptr(component.Size), 0.01f);
-            ImGui::Checkbox("Is Trigger", &component.IsTrigger);
+            UI::Checkbox("Is Trigger", component.IsTrigger, "Detects overlaps (OnTriggerEnter) without blocking.");
+            MaterialEditorUI::AssetPathSlot("Material", component.PhysicsMaterial, ".cqphysmat", "Physics Material",
+                                            "Friction and bounciness (.cqphysmat). Empty = the Rigidbody values.");
+            UI::Vec3("Center", component.Offset, 0.01f);
+            UI::Vec3("Size", component.Size, 0.01f, 1.0f);
+            component.Size = glm::max(component.Size, glm::vec3(0.0f));
         });
 
         DrawComponent<SphereColliderComponent>("Sphere Collider", entity, [](auto& component)
         {
-            ImGui::DragFloat3("Offset", glm::value_ptr(component.Offset), 0.01f);
-            ImGui::DragFloat("Radius", &component.Radius, 0.01f, 0.0f, 10.0f);
-            ImGui::Checkbox("Is Trigger", &component.IsTrigger);
+            UI::Checkbox("Is Trigger", component.IsTrigger, "Detects overlaps (OnTriggerEnter) without blocking.");
+            MaterialEditorUI::AssetPathSlot("Material", component.PhysicsMaterial, ".cqphysmat", "Physics Material",
+                                            "Friction and bounciness (.cqphysmat). Empty = the Rigidbody values.");
+            UI::Vec3("Center", component.Offset, 0.01f);
+            UI::DragFloat("Radius", component.Radius, 0.01f, 0.0f, 10000.0f);
         });
 
         DrawComponent<CapsuleColliderComponent>("Capsule Collider", entity, [](auto& component)
         {
-            ImGui::DragFloat3("Offset", glm::value_ptr(component.Offset), 0.01f);
-            ImGui::DragFloat("Radius", &component.Radius, 0.01f, 0.0f, 10.0f);
-            ImGui::DragFloat("Height", &component.Height, 0.01f, 0.0f, 10.0f);
-            ImGui::Checkbox("Is Trigger", &component.IsTrigger);
+            UI::Checkbox("Is Trigger", component.IsTrigger, "Detects overlaps (OnTriggerEnter) without blocking.");
+            MaterialEditorUI::AssetPathSlot("Material", component.PhysicsMaterial, ".cqphysmat", "Physics Material",
+                                            "Friction and bounciness (.cqphysmat). Empty = the Rigidbody values.");
+            UI::Vec3("Center", component.Offset, 0.01f);
+            UI::DragFloat("Radius", component.Radius, 0.01f, 0.0f, 10000.0f);
+            UI::DragFloat("Height", component.Height, 0.01f, 0.0f, 10000.0f);
+            static const char* axes[] = { "X-Axis", "Y-Axis", "Z-Axis" };
+            component.Direction = std::clamp(component.Direction, 0, 2);
+            UI::Combo("Direction", component.Direction, axes, 3);
         });
 
         DrawComponent<MeshColliderComponent>("Mesh Collider", entity, [](auto& component)
         {
-            ImGui::Checkbox("Is Convex", &component.IsConvex);
-            ImGui::Checkbox("Is Trigger", &component.IsTrigger);
+            UI::Checkbox("Convex", component.IsConvex, "Required for dynamic rigidbodies. Uses the mesh's convex hull.");
+            if (component.IsConvex)
+                UI::Checkbox("Is Trigger", component.IsTrigger);
+            else
+                component.IsTrigger = false;
+            MaterialEditorUI::AssetPathSlot("Material", component.PhysicsMaterial, ".cqphysmat", "Physics Material",
+                                            "Friction and bounciness (.cqphysmat). Empty = the Rigidbody values.");
+            UI::InfoBox("Uses the entity's Mesh Renderer or Model mesh.", UI::InfoType::Info);
         });
 
         // Audio Components
         DrawComponent<AudioSourceComponent>("Audio Source", entity, [](auto& component)
         {
+            // Mikser çıkışı
+            {
+                auto& mixer = AudioMixer::Get();
+                ImGui::Text("Output:");
+                ImGui::SameLine();
+                ImGui::SetNextItemWidth(-1.0f);
+                bool exists = mixer.FindGroup(component.OutputGroup) != nullptr;
+                std::string preview = component.OutputGroup + (exists || !mixer.IsInitialized() ? "" : "  (missing -> Master)");
+                if (ImGui::BeginCombo("##AudioOutput", preview.c_str()))
+                {
+                    for (auto& g : mixer.GetGroups())
+                    {
+                        if (ImGui::Selectable(g.Name.c_str(), g.Name == component.OutputGroup))
+                        {
+                            component.OutputGroup = g.Name;
+                            component.RoutingGeneration = 0; // yeniden bağlanır
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+            }
+
             // Dosya yolu
             ImGui::Text("Audio File:");
             ImGui::SameLine();
@@ -1991,6 +2998,41 @@ namespace Conqueror::Editor
 
                 if (open)
                 {
+                    // C++ kaynağı (ScriptableEntity + CQ_NATIVE_SCRIPT): motor Play'de kendisi derler; DLL gerekmez
+                    if (NativeScriptCompiler::IsSource(script.ScriptPath))
+                    {
+                        UI::Text("Source", "%s", std::filesystem::path(script.ScriptPath).filename().string().c_str());
+                        UI::Text("Class", "%s", script.ClassName.empty() ? "(first CQ_NATIVE_SCRIPT in the file)" : script.ClassName.c_str());
+                        if (ImGui::Button(ICON_FA_HAMMER " Compile Now"))
+                        {
+                            std::filesystem::path src = script.ScriptPath;
+                            if (src.is_relative() && Project::GetActive())
+                                src = Project::GetActiveProjectDirectory() / src;
+                            const auto r = NativeScriptCompiler::Compile(src, true);
+                            m_NativeCompileLog = r.Success ? std::string("Compiled: ") + r.Library.filename().string() : r.Log;
+                            m_NativeCompileOk = r.Success;
+                        }
+                        if (!m_NativeCompileLog.empty())
+                            UI::InfoBox(m_NativeCompileLog.c_str(), m_NativeCompileOk ? UI::InfoType::Success : UI::InfoType::Error);
+                        else
+                            ImGui::TextDisabled("Compiled automatically when you press Play (only if the file changed).");
+                    }
+                    if (ImGui::Button(ICON_FA_FILE_CODE " C++ Source"))
+                    {
+                        nfdchar_t* outPath = nullptr;
+                        nfdfilteritem_t filters[1] = { { "C++ Native Script", "cpp,cc,cxx" } };
+                        if (NFD_OpenDialog(&outPath, filters, 1, nullptr) == NFD_OKAY)
+                        {
+                            const std::filesystem::path src = outPath;
+                            NFD_FreePath(outPath);
+                            script.ModuleName = src.stem().string();
+                            script.ClassName.clear();
+                            script.ScriptPath = ToSerializablePath(src.string());
+                            script.InstantiateScript = nullptr;
+                            m_NativeCompileLog.clear();
+                        }
+                    }
+                    ImGui::SameLine();
                     if (ImGui::Button("Load DLL"))
                     {
                         CQ_CORE_INFO("InspectorPanel: Load DLL button clicked");
@@ -2031,7 +3073,15 @@ namespace Conqueror::Editor
                             std::filesystem::path path(droppedPath);
                             std::string ext = path.extension().string();
                             
-                            if (ext == ".dll" || ext == ".so")
+                            if (NativeScriptCompiler::IsSource(droppedPath))
+                            {
+                                script.ModuleName = path.stem().string();
+                                script.ClassName.clear();
+                                script.ScriptPath = ToSerializablePath(droppedPath);
+                                script.InstantiateScript = nullptr;
+                                m_NativeCompileLog.clear();
+                            }
+                            else if (ext == ".dll" || ext == ".so")
                             {
                                 std::filesystem::path fpath(droppedPath);
                                 script.ModuleName = fpath.stem().string();
@@ -2055,12 +3105,15 @@ namespace Conqueror::Editor
                     ImGui::Separator();
                     
                     if (script.Instance)
-                        ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Script Active");
+                        ImGui::TextColored(UI::Colors::Success, ICON_FA_CIRCLE_CHECK " Running");
+                    else if (NativeScriptCompiler::IsSource(script.ScriptPath))
+                        ImGui::TextDisabled(ICON_FA_CIRCLE_INFO " Runs in Play mode");
+                    else if (script.ScriptPath.empty())
+                        ImGui::TextWrapped("Pick a C++ source (a ScriptableEntity class with CQ_NATIVE_SCRIPT) or a compiled script library.");
+                    else if (!ScriptEngine::IsModuleLoaded(script.ModuleName))
+                        ImGui::TextColored(UI::Colors::Error, ICON_FA_TRIANGLE_EXCLAMATION " Library not loaded");
                     else
-                        ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Script Not Loaded");
-                    
-                    ImGui::Text("Note: DLL-based scripting system");
-                    ImGui::TextWrapped("Load a compiled script DLL to attach behavior to this entity.");
+                        ImGui::TextDisabled(ICON_FA_CIRCLE_INFO " Runs in Play mode");
                     
                     ImGui::TreePop();
                 }
@@ -2076,159 +3129,387 @@ namespace Conqueror::Editor
         }
 
         if (entity.HasComponent<ConquerorScriptComponent>())
+            DrawConquerorScripts(entity);
+
+        // ---- Bileşen ekle (Unity gibi en altta)
+        // Kayıtlı bileşenler (Character Controller, eklemler, Constant Force ...)
+        for (auto& info : ComponentRegistry::All())
+            if (!info.Builtin && info.Has(entity))
+                DrawRegistryComponent(entity, info);
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
         {
-            auto& csc = entity.GetComponent<ConquerorScriptComponent>();
-            int indexToRemove = -1;
-            
-            for (int i = 0; i < csc.Scripts.size(); i++)
+            const float w = std::min(260.0f, ImGui::GetContentRegionAvail().x);
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (ImGui::GetContentRegionAvail().x - w) * 0.5f);
+            ImGui::PushStyleColor(ImGuiCol_Button, UI::Colors::AccentDim);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, UI::Colors::Accent);
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f);
+            if (ImGui::Button(ICON_FA_PLUS "  Add Component", ImVec2(w, ImGui::GetFrameHeight() + 6.0f)))
+                ImGui::OpenPopup("AddComponent");
+            ImGui::PopStyleVar();
+            ImGui::PopStyleColor(2);
+            ImGui::SetNextWindowSizeConstraints(ImVec2(w, 0.0f), ImVec2(FLT_MAX, 520.0f));
+        if (ImGui::BeginPopup("AddComponent"))
+        {
+            static char searchBuffer[128] = "";
+            if (ImGui::IsWindowAppearing())
             {
-                auto& script = csc.Scripts[i];
-                std::string cqsName = "Conqueror Script";
-                if (!script.ScriptPath.empty())
-                {
-                    std::filesystem::path path(script.ScriptPath);
-                    cqsName = path.stem().string() + " (Conqueror Script)";
-                }
-                    
-                const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_FramePadding;
-                ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
+                searchBuffer[0] = '\0';
+                ImGui::SetKeyboardFocusHere();
+                RefreshAddMenuScripts();
+            }
+            ImGui::SetNextItemWidth(-1.0f);
+            ImGui::InputTextWithHint("##SearchComponent", "Search...", searchBuffer, sizeof(searchBuffer));
+            std::string searchString = searchBuffer;
+            
+            auto toLower = [](char c) { return (c >= 'A' && c <= 'Z') ? (c - 'A' + 'a') : c; };
+            for (char& c : searchString) c = toLower(c);
 
-                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
-                float lineHeight = ImGui::GetTextLineHeight() + GImGui->Style.FramePadding.y * 2.0f;
-                ImGui::Separator();
+            ImGui::Separator();
+
+            auto drawEntry = [&](const std::string& name, auto func)
+            {
+                std::string lowerName = name;
+                for (char& c : lowerName) c = toLower(c);
                 
-                ImGui::PushID((void*)&script);
-                bool open = ImGui::TreeNodeEx((void*)&script, treeNodeFlags, cqsName.c_str());
-                ImGui::PopStyleVar();
-                
-                ImGui::SameLine(contentRegionAvailable.x - lineHeight * 0.5f);
-                
-                std::string popupName = "ComponentSettingsCQS" + std::to_string(i);
-                if (ImGui::Button("+", ImVec2{ lineHeight, lineHeight }))
+                if (searchString.empty() || lowerName.find(searchString) != std::string::npos)
                 {
-                    ImGui::OpenPopup(popupName.c_str());
+                    func();
                 }
+            };
 
-                if (ImGui::BeginPopup(popupName.c_str()))
+            auto beginCategory = [&](const char* name)
+            {
+                if (!searchString.empty()) return true;
+                return ImGui::BeginMenu(name);
+            };
+
+            auto endCategory = [&](bool open)
+            {
+                if (open && searchString.empty())
+                    ImGui::EndMenu();
+            };
+
+            // Kayıtlı bileşenleri kendi kategorisinde listele
+            auto drawRegistryCategory = [&](const std::string& category) {
+                for (auto& info : ComponentRegistry::All())
                 {
-                    if (ImGui::MenuItem("Remove component"))
-                        indexToRemove = i;
-
-                    ImGui::EndPopup();
+                    if (info.Builtin || !info.AllowInAddMenu || info.Category != category)
+                        continue;
+                    drawEntry(info.Name, [&]() {
+                        if (info.Has(m_SelectionContext))
+                            return;
+                        if (ImGui::MenuItem((info.Icon + "  " + info.Name).c_str()))
+                        {
+                            ComponentRegistry::AddWithRequirements(info, m_SelectionContext);
+                            ImGui::CloseCurrentPopup();
+                        }
+                        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal) && !info.Description.empty())
+                            ImGui::SetTooltip("%s", info.Description.c_str());
+                    });
                 }
+            };
 
-                if (open)
-                {
-                    ImGui::Text("Script Path:");
-                    ImGui::SameLine();
-                    
-                    char pathBuffer[256];
-                    memset(pathBuffer, 0, sizeof(pathBuffer));
-                    strncpy(pathBuffer, script.ScriptPath.c_str(), sizeof(pathBuffer) - 1);
-                    
-                    if (ImGui::InputText("##CQSPath", pathBuffer, sizeof(pathBuffer)))
+            bool animOpen = beginCategory("Animation");
+            if (animOpen || !searchString.empty())
+            {
+                drawEntry("Animator", [&]() { DrawAddComponentEntry<AnimatorComponent>("Animator"); });
+                drawEntry("Animation", [&]() { DrawAddComponentEntry<AnimationComponent>("Animation"); });
+                drawRegistryCategory("Animation");
+                endCategory(animOpen);
+            }
+
+            bool audioOpen = beginCategory("Audio");
+            if (audioOpen || !searchString.empty())
+            {
+                drawEntry("Audio Source", [&]() { DrawAddComponentEntry<AudioSourceComponent>("Audio Source"); });
+                drawEntry("Audio Listener", [&]() { DrawAddComponentEntry<AudioListenerComponent>("Audio Listener"); });
+                drawEntry("Audio Chorus Filter", [&]() { DrawAddComponentEntry<AudioChorusFilterComponent>("Audio Chorus Filter"); });
+                drawEntry("Audio Distortion Filter", [&]() { DrawAddComponentEntry<AudioDistortionFilterComponent>("Audio Distortion Filter"); });
+                drawEntry("Audio Echo Filter", [&]() { DrawAddComponentEntry<AudioEchoFilterComponent>("Audio Echo Filter"); });
+                drawEntry("Audio High Pass Filter", [&]() { DrawAddComponentEntry<AudioHighPassFilterComponent>("Audio High Pass Filter"); });
+                drawEntry("Audio Low Pass Filter", [&]() { DrawAddComponentEntry<AudioLowPassFilterComponent>("Audio Low Pass Filter"); });
+                drawEntry("Audio Reverb Filter", [&]() { DrawAddComponentEntry<AudioReverbFilterComponent>("Audio Reverb Filter"); });
+                drawEntry("Audio Reverb Zone", [&]() { DrawAddComponentEntry<AudioReverbZoneComponent>("Audio Reverb Zone"); });
+                drawRegistryCategory("Audio");
+                endCategory(audioOpen);
+            }
+
+            bool meshOpen = beginCategory("Mesh");
+            if (meshOpen || !searchString.empty())
+            {
+                drawEntry("Mesh Renderer", [&]() { DrawAddComponentEntry<MeshRendererComponent>("Mesh Renderer"); });
+                drawEntry("Model", [&]() { DrawAddComponentEntry<ModelComponent>("Model"); });
+                drawRegistryCategory("Mesh");
+                endCategory(meshOpen);
+            }
+
+            bool physOpen = beginCategory("Physics");
+            if (physOpen || !searchString.empty())
+            {
+                drawEntry("Rigidbody", [&]() { DrawAddComponentEntry<RigidbodyComponent>("Rigidbody"); });
+                drawEntry("Box Collider", [&]() { DrawAddComponentEntry<BoxColliderComponent>("Box Collider"); });
+                drawEntry("Sphere Collider", [&]() { DrawAddComponentEntry<SphereColliderComponent>("Sphere Collider"); });
+                drawEntry("Capsule Collider", [&]() { DrawAddComponentEntry<CapsuleColliderComponent>("Capsule Collider"); });
+                drawEntry("Mesh Collider", [&]() { DrawAddComponentEntry<MeshColliderComponent>("Mesh Collider"); });
+                drawRegistryCategory("Physics");
+                endCategory(physOpen);
+            }
+
+            bool phys2dOpen = beginCategory("Physics 2D");
+            if (phys2dOpen || !searchString.empty())
+            {
+                drawEntry("RigidBody 2D", [&]() { DrawAddComponentEntry<RigidBody2DComponent>("RigidBody 2D"); });
+                drawEntry("Box Collider 2D", [&]() { DrawAddComponentEntry<BoxCollider2DComponent>("Box Collider 2D"); });
+                drawEntry("Circle Collider 2D", [&]() { DrawAddComponentEntry<CircleCollider2DComponent>("Circle Collider 2D"); });
+                drawRegistryCategory("Physics 2D");
+                endCategory(phys2dOpen);
+            }
+
+            bool rendOpen = beginCategory("Rendering");
+            if (rendOpen || !searchString.empty())
+            {
+                drawEntry("Camera", [&]() { DrawAddComponentEntry<CameraComponent>("Camera"); });
+                drawEntry("Directional Light", [&]() { DrawAddComponentEntry<DirectionalLightComponent>("Directional Light"); });
+                drawEntry("Point Light", [&]() { DrawAddComponentEntry<PointLightComponent>("Point Light"); });
+                drawEntry("Spot Light", [&]() { DrawAddComponentEntry<SpotLightComponent>("Spot Light"); });
+                drawEntry("Sprite Renderer", [&]() { DrawAddComponentEntry<SpriteRendererComponent>("Sprite Renderer"); });
+                drawEntry("Terrain", [&]() { DrawAddComponentEntry<TerrainComponent>("Terrain"); });
+                drawEntry("Particle System", [&]() { DrawAddComponentEntry<ParticleSystemComponent>("Particle System"); });
+                drawRegistryCategory("Rendering");
+                endCategory(rendOpen);
+            }
+
+            bool scriptsOpen = beginCategory("Scripts");
+            if (scriptsOpen || !searchString.empty())
+            {
+                // Her dildeki betik aynı Script bileşenine eklenir; çalışma zamanı dosya uzantısından seçilir
+                auto attachScript = [&](const std::string& path) {
+                    if (!m_SelectionContext.HasComponent<ConquerorScriptComponent>())
+                        m_SelectionContext.AddComponent<ConquerorScriptComponent>();
+                    ConquerorScriptData data;
+                    if (!path.empty())
                     {
-                        script.ScriptPath = ToSerializablePath(std::string(pathBuffer));
-                        std::string resolvePath = std::filesystem::path(pathBuffer).is_relative() ?
-                            (Project::GetActiveProjectDirectory() / pathBuffer).string() : std::string(pathBuffer);
-                        std::ifstream file(resolvePath);
-                        std::string line;
-                        while (std::getline(file, line)) {
-                            size_t pos = line.find("script ");
-                            if (pos != std::string::npos) {
-                                size_t start = pos + 7;
-                                while (start < line.length() && isspace(line[start])) start++;
-                                size_t end = start;
-                                while (end < line.length() && (isalnum(line[end]) || line[end] == '_')) end++;
-                                if (end > start) {
-                                    script.ClassName = line.substr(start, end - start);
-                                    break;
-                                }
-                            }
+                        data.ScriptPath = ToSerializablePath(path);
+                        auto& meta = GetScriptMeta(path);
+                        if (!meta.Classes.empty())
+                            data.ClassName = meta.Classes.front();
+                    }
+                    m_SelectionContext.GetComponent<ConquerorScriptComponent>().Scripts.push_back(data);
+                    ImGui::CloseCurrentPopup();
+                };
+
+                // Unity'deki "New script" gibi: ad + dil seç, Assets/Scripts altına oluştur ve ekle
+                drawEntry("New Script", [&]() {
+                    if (!ImGui::BeginMenu(ICON_FA_FILE_CIRCLE_PLUS "  New Script"))
+                        return;
+                    static char nameBuffer[64] = "NewBehaviour";
+                    static std::string languageId = "cqs";
+                    static std::string createError;
+                    ImGui::TextDisabled("Name");
+                    ImGui::SetNextItemWidth(240.0f);
+                    bool enter = ImGui::InputText("##NewScriptName", nameBuffer, sizeof(nameBuffer), ImGuiInputTextFlags_EnterReturnsTrue);
+                    ImGui::Spacing();
+                    ImGui::TextDisabled("Language");
+                    for (auto* runtime : Scripting::ScriptRuntimes::All())
+                    {
+                        bool available = runtime->IsAvailable();
+                        std::string label = std::string(runtime->GetName()) + "  (" + runtime->GetExtensions().front() + ")##lang_" + runtime->GetLanguageId();
+                        ImGui::BeginDisabled(!available);
+                        if (ImGui::RadioButton(label.c_str(), languageId == runtime->GetLanguageId()))
+                            languageId = runtime->GetLanguageId();
+                        ImGui::EndDisabled();
+                        if (!available && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                            ImGui::SetTooltip("%s", runtime->GetUnavailableReason().c_str());
+                    }
+                    ImGui::Spacing();
+                    auto* runtime = Scripting::ScriptRuntimes::ForLanguage(languageId);
+                    auto assets = Project::GetAssetDirectory();
+                    bool canCreate = runtime && runtime->IsAvailable() && !assets.empty();
+                    ImGui::BeginDisabled(!canCreate);
+                    bool create = ImGui::Button(ICON_FA_PLUS "  Create and Add##NewScriptCreate", ImVec2(240.0f, 0.0f)) || enter;
+                    ImGui::EndDisabled();
+                    if (create && canCreate)
+                    {
+                        // Sınıf adı olarak geçerli olsun (Java/C# dosya adı = sınıf adı)
+                        std::string name;
+                        for (char c : std::string(nameBuffer))
+                            if (std::isalnum((unsigned char)c) || c == '_')
+                                name += c;
+                        if (name.empty())
+                            name = "NewBehaviour";
+                        if (std::isdigit((unsigned char)name[0]))
+                            name = "_" + name;
+                        std::error_code ec;
+                        auto dir = std::filesystem::is_directory(assets / "Scripts", ec) ? assets / "Scripts" : assets;
+                        auto path = dir / (name + runtime->GetExtensions().front());
+                        if (std::filesystem::exists(path, ec))
+                            createError = "A script named '" + path.filename().string() + "' already exists.";
+                        else
+                        {
+                            std::ofstream f(path);
+                            f << runtime->GetNewScriptTemplate(name);
+                            f.close();
+                            createError.clear();
+                            CQ_CORE_INFO("Created script {}", path.string());
+                            attachScript(path.string());
                         }
                     }
-                    
-                    ImGui::SameLine();
-                    if (ImGui::Button("Browse..."))
+                    if (!createError.empty())
+                        ImGui::TextColored(UI::Colors::Error, "%s", createError.c_str());
+                    ImGui::EndMenu();
+                });
+                drawEntry("Empty Script", [&]() {
+                    if (ImGui::MenuItem(ICON_FA_FILE "  Empty Script Slot"))
+                        attachScript("");
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+                        ImGui::SetTooltip("Adds a Script slot; pick a file of any language in the Inspector.");
+                });
+                drawEntry("Native Script", [&]() {
+                    if (ImGui::MenuItem(ICON_FA_MICROCHIP "  Native Script (C++ class)"))
                     {
-                        nfdchar_t* outPath = nullptr;
-                        nfdfilteritem_t filters[1] = { { "ConquerorScript", "cqs" } };
-                        nfdresult_t result = NFD_OpenDialog(&outPath, filters, 1, nullptr);
-                        
-                        if (result == NFD_OKAY)
-                        {
-                            script.ScriptPath = ToSerializablePath(std::string(outPath));
-                            
-                            std::ifstream file(outPath);
-                            std::string line;
-                            while (std::getline(file, line)) {
-                                size_t pos = line.find("script ");
-                                if (pos != std::string::npos) {
-                                    size_t start = pos + 7;
-                                    while (start < line.length() && isspace(line[start])) start++;
-                                    size_t end = start;
-                                    while (end < line.length() && (isalnum(line[end]) || line[end] == '_')) end++;
-                                    if (end > start) {
-                                        script.ClassName = line.substr(start, end - start);
-                                        break;
-                                    }
-                                }
-                            }
-                            NFD_FreePath(outPath);
-                        }
+                        if (!m_SelectionContext.HasComponent<NativeScriptComponent>())
+                            m_SelectionContext.AddComponent<NativeScriptComponent>().Scripts.push_back({});
+                        else
+                            m_SelectionContext.GetComponent<NativeScriptComponent>().Scripts.push_back({});
+                        ImGui::CloseCurrentPopup();
                     }
+                });
 
-                    // Drag & Drop target
-                    if (ImGui::BeginDragDropTarget())
+                // Projedeki mevcut betikler, dile göre gruplu (aramada düz liste)
+                if (!s_AddMenuScripts.empty() && searchString.empty())
+                    ImGui::Separator();
+                for (auto* runtime : Scripting::ScriptRuntimes::All())
+                {
+                    std::vector<const std::filesystem::path*> scripts;
+                    for (auto& path : s_AddMenuScripts)
+                        if (Scripting::ScriptRuntimes::ForPath(path.string()) == runtime)
+                            scripts.push_back(&path);
+                    if (scripts.empty())
+                        continue;
+                    // "C#" gibi adlarda '#' kimlik ayracıyla karışmasın: kimlik PushID ile, etikette '##' yok
+                    std::string groupLabel = std::string(ICON_FA_FILE_CODE "  ") + runtime->GetName();
+                    ImGui::PushID(runtime->GetLanguageId());
+                    bool groupOpen = beginCategory(groupLabel.c_str());
+                    if (groupOpen || !searchString.empty())
                     {
-                        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                        for (auto* path : scripts)
                         {
-                            std::string droppedPath((const char*)payload->Data, payload->DataSize - 1);
-                            std::filesystem::path path(droppedPath);
-                            std::string ext = path.extension().string();
-                            
-                            if (ext == ".cqs")
+                            std::string name = path->stem().string();
+                            drawEntry(name, [&]() {
+                                std::string label = name + "##" + path->string();
+                                if (ImGui::MenuItem(label.c_str(), runtime->GetExtensions().front().c_str()))
+                                    attachScript(path->string());
+                                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+                                    ImGui::SetTooltip("%s", ToSerializablePath(path->string()).c_str());
+                            });
+                        }
+                        endCategory(groupOpen);
+                    }
+                    ImGui::PopID();
+                }
+                endCategory(scriptsOpen);
+            }
+
+            bool aiOpen = beginCategory("AI & Navigation");
+            if (aiOpen || !searchString.empty())
+            {
+                drawRegistryCategory("AI & Navigation");
+                endCategory(aiOpen);
+            }
+
+            bool uiOpen = beginCategory("UI");
+            if (uiOpen || !searchString.empty())
+            {
+                drawEntry("Button", [&]() { DrawAddComponentEntry<ButtonComponent>("Button"); });
+                drawEntry("Canvas", [&]() { DrawAddComponentEntry<CanvasComponent>("Canvas"); });
+                drawEntry("Canvas Scaler", [&]() { DrawAddComponentEntry<CanvasScalerComponent>("Canvas Scaler"); });
+                drawEntry("Graphic Raycaster", [&]() { DrawAddComponentEntry<GraphicRaycasterComponent>("Graphic Raycaster"); });
+                drawEntry("Image", [&]() { DrawAddComponentEntry<ImageComponent>("Image"); });
+                drawEntry("Text Renderer", [&]() { DrawAddComponentEntry<TextRendererComponent>("Text Renderer"); });
+                drawEntry("Rect Transform", [&]() { DrawAddComponentEntry<RectTransformComponent>("Rect Transform"); });
+                drawEntry("UI Image", [&]() { DrawAddComponentEntry<UIImageComponent>("UI Image"); });
+                drawEntry("UI Text", [&]() { DrawAddComponentEntry<UITextComponent>("UI Text"); });
+                drawEntry("UI Button", [&]() { DrawAddComponentEntry<UIButtonComponent>("UI Button"); });
+                drawEntry("UI Toggle", [&]() { DrawAddComponentEntry<UIToggleComponent>("UI Toggle"); });
+                drawEntry("UI Slider", [&]() { DrawAddComponentEntry<UISliderComponent>("UI Slider"); });
+                drawEntry("UI Input Field", [&]() { DrawAddComponentEntry<UIInputFieldComponent>("UI Input Field"); });
+                drawEntry("UI Dropdown", [&]() { DrawAddComponentEntry<UIDropdownComponent>("UI Dropdown"); });
+                drawEntry("UI Scroll Rect", [&]() { DrawAddComponentEntry<UIScrollRectComponent>("UI Scroll Rect"); });
+                drawEntry("UI Layout Group", [&]() { DrawAddComponentEntry<UILayoutGroupComponent>("UI Layout Group"); });
+                drawRegistryCategory("UI");
+                endCategory(uiOpen);
+            }
+
+            // Yerleşik menüde olmayan kategoriler
+            {
+                static const char* known[] = { "Animation", "Audio", "Mesh", "Physics", "Physics 2D", "Rendering", "Scripts", "AI & Navigation", "UI" };
+                std::vector<std::string> extra;
+                for (auto& info : ComponentRegistry::All())
+                {
+                    if (info.Builtin || !info.AllowInAddMenu) continue;
+                    bool isKnown = false;
+                    for (const char* k : known) isKnown |= info.Category == k;
+                    if (!isKnown && std::find(extra.begin(), extra.end(), info.Category) == extra.end())
+                        extra.push_back(info.Category);
+                }
+                std::sort(extra.begin(), extra.end());
+                for (auto& category : extra)
+                {
+                    bool open = beginCategory(category.c_str());
+                    if (open || !searchString.empty())
+                    {
+                        drawRegistryCategory(category);
+                        endCategory(open);
+                    }
+                }
+            }
+
+            // Addon'ların sağladığı betik bileşenleri
+            {
+                bool any = false;
+                for (auto& addon : AddonManager::GetInstalled())
+                    any |= AddonManager::IsEnabled(addon.Id) && !addon.Components.empty();
+                if (any)
+                {
+                    bool open = beginCategory(ICON_FA_PUZZLE_PIECE "  Addons");
+                    if (open || !searchString.empty())
+                    {
+                        for (auto& addon : AddonManager::GetInstalled())
+                        {
+                            if (!AddonManager::IsEnabled(addon.Id))
+                                continue;
+                            for (auto& component : addon.Components)
                             {
-                                script.ScriptPath = ToSerializablePath(droppedPath);
-                                
-                                std::ifstream file(droppedPath);
-                                std::string line;
-                                while (std::getline(file, line)) {
-                                    size_t pos = line.find("script ");
-                                    if (pos != std::string::npos) {
-                                        size_t start = pos + 7;
-                                        while (start < line.length() && isspace(line[start])) start++;
-                                        size_t end = start;
-                                        while (end < line.length() && (isalnum(line[end]) || line[end] == '_')) end++;
-                                        if (end > start) {
-                                            script.ClassName = line.substr(start, end - start);
-                                            break;
-                                        }
+                                std::string name = std::filesystem::path(component).stem().string();
+                                drawEntry(name, [&]() {
+                                    std::string label = name + "##" + addon.Id;
+                                    if (ImGui::MenuItem(label.c_str()))
+                                    {
+                                        if (!m_SelectionContext.HasComponent<ConquerorScriptComponent>())
+                                            m_SelectionContext.AddComponent<ConquerorScriptComponent>();
+                                        ConquerorScriptData data;
+                                        data.ScriptPath = ToSerializablePath((addon.Directory / component).string());
+                                        m_SelectionContext.GetComponent<ConquerorScriptComponent>().Scripts.push_back(data);
+                                        ImGui::CloseCurrentPopup();
                                     }
-                                }
-                                CQ_CORE_INFO("ConquerorScript loaded: {0}", droppedPath);
+                                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+                                        ImGui::SetTooltip("From addon: %s", addon.Name.c_str());
+                                });
                             }
                         }
-                        ImGui::EndDragDropTarget();
+                        endCategory(open);
                     }
-
-                    if (script.Instance)
-                        ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Instance Running");
-                    else
-                        ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Not Initialized");
-                    
-                    ImGui::TreePop();
                 }
-                ImGui::PopID();
             }
-            
-            if (indexToRemove != -1)
-            {
-                csc.Scripts.erase(csc.Scripts.begin() + indexToRemove);
-                if (csc.Scripts.empty())
-                    entity.RemoveComponent<ConquerorScriptComponent>();
-            }
+
+            ImGui::EndPopup();
         }
+
+        }
+        ImGui::Dummy(ImVec2(0.0f, 12.0f));
     }
 
     template<typename T>

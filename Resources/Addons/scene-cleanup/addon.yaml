@@ -1,0 +1,12 @@
+Id: conqueror.scene-cleanup
+Name: Scene Cleanup
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Scene health check: finds empty objects with no components or children, objects with zero
+  scale, scripts whose files are missing, duplicate names and objects lost far away from the
+  origin. Select any category in one click and delete empty leftovers as a single undo step.
+Category: Productivity
+Icon: broom
+Tags: [editor, cleanup, validation, optimization, scene]
+Editor: Editor/SceneCleanup.cqs

@@ -1,0 +1,5 @@
+# Top Down (Unreal Top Down template): click / hold to move on the NavMesh, ground cursor, high follow camera
+Shared: [Prototype, Mannequin]
+StartScene: Assets/Scenes/Main.cqscene
+Scenes:
+  - Assets/Scenes/Main.cqscene

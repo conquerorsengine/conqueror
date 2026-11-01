@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: sprint
+      States:
+        - Name: sprint
+          ClipIndex: 3
+          ClipName: sprint
+  Parameters: []

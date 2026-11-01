@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: sword_idle
+      States:
+        - Name: sword_idle
+          ClipIndex: 29
+          ClipName: sword_idle
+  Parameters: []

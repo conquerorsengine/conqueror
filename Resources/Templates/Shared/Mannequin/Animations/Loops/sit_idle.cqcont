@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: sit_idle
+      States:
+        - Name: sit_idle
+          ClipIndex: 24
+          ClipName: sit_idle
+  Parameters: []

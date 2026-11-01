@@ -14,7 +14,7 @@ namespace Conqueror
     {
         struct DistortionNode
         {
-            ma_node_base BaseNode;
+            ma_node_base BaseNode{};
             float Drive = 0.5f;
             AudioBuffer ScratchBuffer;
         };

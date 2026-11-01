@@ -1,0 +1,268 @@
+// Vehicle - Time Trial (Unreal Vehicle şablonu karşılığı): 840 m'lik kerbli asfalt pist (Racing Line eğrisi + Spline
+// Extrude profilleri, düzenlenebilir; dokular ve veri make_track.py),
+// Khronos CarConcept aracı (Wheel Collider süspansiyonu, otomatik vites, motor sesi), 8 kontrol noktalı
+// 3 turluk zamana karşı yarış, hız / devir / vites / tur HUD'u, pit binası, tribün, lastik bariyerleri.
+// @EditorCamera 16 22 -4.4 0.81 0.6 83.98   (proje açıldığında editör görünümü: uzaklık, eğim, yön, odak)
+OutdoorLighting(-38, -32);
+RenderSettingSet("Fog.Density", 0.0018);
+RenderSettingSet("Post.BloomIntensity", 0.18);
+RenderSettingSet("Post.CloudCoverage", 0.3);
+RenderSettingSet("Shadows.Distance", 160);
+
+var ROAD_Y_SPAWN = 0.08;
+var CONCRETE = {r: 0.62, g: 0.62, b: 0.6, a: 1};
+var DARK = {r: 0.12, g: 0.13, b: 0.14, a: 1};
+var GLASS = {r: 0.05, g: 0.07, b: 0.09, a: 1};
+var ORANGE = {r: 1.0, g: 0.42, b: 0.05};
+var CYAN = {r: 0.1, g: 0.75, b: 1.0};
+
+func Paint(e, c, rough, metal)
+{
+    EntitySetColor(e, c);
+    EntitySetComponentField(e, "MeshRenderer", "Roughness", rough);
+    EntitySetComponentField(e, "MeshRenderer", "Metallic", metal);
+    return e;
+}
+
+// Pist motor içinde kurulur: "Racing Line" eğrisi boyunca Spline Extrude profilleri (asfalt, kenar çizgileri, kerbler,
+// çakıl, bariyerler). Eğrinin düğümleri editörde sürüklenince bütün katmanlar ve otomatik pilotun çizgisi birlikte
+// değişir. Pist 12 parçaya bölünür (görünmeyen parçalar çizilmez); her katmanın kendi Mesh Collider'ı var.
+var line = CreateEntity("Racing Line");
+EntityAddComponent(line, "SplineContainer");
+EntitySetComponentField(line, "SplineContainer", "Knots", TRACK_LINE);
+EntitySetComponentField(line, "SplineContainer", "Closed", true);
+EntitySetComponentField(line, "SplineContainer", "ShowGizmo", false);
+var RH = TRACK_ROAD_HALF;
+var RY = TRACK_ROAD_Y;
+var WIN = TRACK_WALL_OFFSET - TRACK_WALL_T / 2.0;     // bariyer iç yüzü
+var WOUT = TRACK_WALL_OFFSET + TRACK_WALL_T / 2.0;    // dış yüzü
+var GW = TRACK_WALL_OFFSET - TRACK_WALL_T - RH - TRACK_KERB_W;   // çakıl genişliği
+var LAYERS = [
+    {n: "Asphalt", tex: "asphalt", collide: true, uv: 4.0, rough: 1.0, color: {r: 1, g: 1, b: 1, a: 1},
+     profile: [{x: -RH, y: RY, z: 0}, {x: RH, y: RY, z: RH * 2.0 / 4.0}]},
+    {n: "Line Left", tex: "", collide: false, uv: 10.0, rough: 0.55, color: {r: 0.85, g: 0.85, b: 0.82, a: 1},
+     profile: [{x: -(RH - TRACK_LINE_IN), y: RY + 0.006, z: 0}, {x: -(RH - TRACK_LINE_IN - TRACK_LINE_W), y: RY + 0.006, z: 1}]},
+    {n: "Line Right", tex: "", collide: false, uv: 10.0, rough: 0.55, color: {r: 0.85, g: 0.85, b: 0.82, a: 1},
+     profile: [{x: RH - TRACK_LINE_IN - TRACK_LINE_W, y: RY + 0.006, z: 0}, {x: RH - TRACK_LINE_IN, y: RY + 0.006, z: 1}]},
+    {n: "Kerb Left", tex: "kerb", collide: true, uv: 3.0, rough: 0.5, color: {r: 1, g: 1, b: 1, a: 1},
+     profile: [{x: -(RH + TRACK_KERB_W), y: RY + 0.07, z: 1}, {x: -RH, y: RY + 0.004, z: 0}]},
+    {n: "Kerb Right", tex: "kerb", collide: true, uv: 3.0, rough: 0.5, color: {r: 1, g: 1, b: 1, a: 1},
+     profile: [{x: RH, y: RY + 0.004, z: 0}, {x: RH + TRACK_KERB_W, y: RY + 0.07, z: 1}]},
+    {n: "Gravel Left", tex: "gravel", collide: true, uv: 4.0, rough: 0.95, color: {r: 1, g: 1, b: 1, a: 1},
+     profile: [{x: -(TRACK_WALL_OFFSET - TRACK_WALL_T), y: RY - 0.012, z: 0}, {x: -(RH + TRACK_KERB_W), y: RY - 0.012, z: GW / 4.0}]},
+    {n: "Gravel Right", tex: "gravel", collide: true, uv: 4.0, rough: 0.95, color: {r: 1, g: 1, b: 1, a: 1},
+     profile: [{x: RH + TRACK_KERB_W, y: RY - 0.012, z: 0}, {x: TRACK_WALL_OFFSET - TRACK_WALL_T, y: RY - 0.012, z: GW / 4.0}]},
+    // Bariyer: dış yüz, üst, iç yüz (aynı konumdaki tekrar noktalar yalnız doku v'sini sıfırlar; üstte kırmızı şerit)
+    {n: "Barrier Left", tex: "barrier", collide: true, uv: 4.0, rough: 0.7, color: {r: 1, g: 1, b: 1, a: 1}, swap: true,
+     profile: [{x: -WOUT, y: 0, z: 1}, {x: -WOUT, y: TRACK_WALL_H, z: 0}, {x: -WOUT, y: TRACK_WALL_H, z: 0}, {x: -WIN, y: TRACK_WALL_H, z: 0.03},
+               {x: -WIN, y: TRACK_WALL_H, z: 0}, {x: -WIN, y: 0, z: 1}]},
+    {n: "Barrier Right", tex: "barrier", collide: true, uv: 4.0, rough: 0.7, color: {r: 1, g: 1, b: 1, a: 1}, swap: true,
+     profile: [{x: WIN, y: 0, z: 1}, {x: WIN, y: TRACK_WALL_H, z: 0}, {x: WIN, y: TRACK_WALL_H, z: 0}, {x: WOUT, y: TRACK_WALL_H, z: 0.03},
+               {x: WOUT, y: TRACK_WALL_H, z: 0}, {x: WOUT, y: 0, z: 1}]}];
+var CHUNKS = 12;
+var track = CreateEntity("Track");
+for (var ck = 0; ck < CHUNKS; ck++)
+{
+    var chunk = CreateEntity("Track Chunk " + (ck + 1));
+    EntitySetParent(chunk, track);
+    foreach (var ly in LAYERS)
+    {
+        var part = CreateEntity(ly.n);
+        EntitySetParent(part, chunk);
+        EntityAddComponent(part, "MeshRenderer");
+        EntitySetColor(part, ly.color);
+        EntitySetComponentField(part, "MeshRenderer", "Roughness", ly.rough);
+        EntitySetComponentField(part, "MeshRenderer", "Texture", ly.tex == "" ? "" : "Assets/Track/" + ly.tex + (ly.tex == "kerb" || ly.tex == "barrier" ? ".png" : "_diffuse.jpg"));
+        if (ly.tex == "asphalt")
+        {
+            EntitySetComponentField(part, "MeshRenderer", "NormalMap", "Assets/Track/asphalt_normal.jpg");
+            EntitySetComponentField(part, "MeshRenderer", "MaskMap", "Assets/Track/asphalt_orm.jpg");
+            EntitySetComponentField(part, "MeshRenderer", "Metallic", 1.0);
+        }
+        if (ly.tex == "gravel") { EntitySetComponentField(part, "MeshRenderer", "NormalMap", "Assets/Track/gravel_normal.jpg"); }
+        EntityAddComponent(part, "SplineExtrude");
+        EntitySetComponentField(part, "SplineExtrude", "Container", line);
+        EntitySetComponentField(part, "SplineExtrude", "Shape", "Profile");
+        EntitySetComponentField(part, "SplineExtrude", "Profile", ly.profile);
+        EntitySetComponentField(part, "SplineExtrude", "UVLength", ly.uv);
+        EntitySetComponentField(part, "SplineExtrude", "SwapUV", ly.swap == true);
+        EntitySetComponentField(part, "SplineExtrude", "SegmentsPerUnit", 0.5);
+        EntitySetComponentField(part, "SplineExtrude", "RangeStart", ck * 1.0 / CHUNKS);
+        EntitySetComponentField(part, "SplineExtrude", "Range", (ck + 1) * 1.0 / CHUNKS);
+        if (ly.collide)
+        {
+            EntityAddComponent(part, "Rigidbody");
+            EntitySetComponentField(part, "Rigidbody", "BodyType", "Static");
+            EntityAddComponent(part, "MeshCollider");
+        }
+        IgnoreFromNav(part);
+    }
+}
+// Çim zemin: pistin altında geniş düz blok (üstü y = 0)
+var gsx = TRACK_GROUND_MAX.x - TRACK_GROUND_MIN.x;
+var gsz = TRACK_GROUND_MAX.z - TRACK_GROUND_MIN.z;
+var ground = Box("Ground", (TRACK_GROUND_MIN.x + TRACK_GROUND_MAX.x) / 2.0, -0.4, (TRACK_GROUND_MIN.z + TRACK_GROUND_MAX.z) / 2.0, gsx, 0.4, gsz, "Assets/Track/grass_diffuse.jpg");
+EntitySetColor(ground, {r: 0.75, g: 0.85, b: 0.6, a: 1});
+EntitySetComponentField(ground, "MeshRenderer", "Tiling", {x: 1.0 / 6.0, y: 1.0 / 6.0});
+EntitySetComponentField(ground, "MeshRenderer", "NormalMap", "Assets/Track/grass_normal.jpg");
+EntitySetComponentField(ground, "MeshRenderer", "Roughness", 0.95);
+IgnoreFromNav(ground);
+// Start / bitiş çizgisi: eğrinin başında (s = 0), yolun 8 mm üstünde, pist yönünde
+var sdx = TRACK_LINE[1].x - TRACK_LINE[0].x;
+var sdz = TRACK_LINE[1].z - TRACK_LINE[0].z;
+var startLine = Mesh("Start Line", "Plane", TRACK_LINE[0].x, RY + 0.008, TRACK_LINE[0].z, RH * 2.0, 1, 1.2, "", {r: 1, g: 1, b: 1, a: 1});
+EntitySetComponentField(startLine, "MeshRenderer", "Texture", "Assets/Track/Checker.png");
+EntitySetComponentField(startLine, "MeshRenderer", "Roughness", 0.6);
+EntitySetRotation(startLine, 0, MathRadToDeg(MathAtan2(-sdx, -sdz)), 0);
+
+// Ufuk: alçak çimenli tepeler
+var hills = [{x: -260, z: -180, s: 150, h: 26}, {x: 330, z: -120, s: 190, h: 34}, {x: 380, z: 260, s: 170, h: 30},
+             {x: -230, z: 280, s: 210, h: 38}, {x: 60, z: -430, s: 260, h: 44}, {x: 90, z: 520, s: 240, h: 40}];
+foreach (var hl in hills)
+{
+    var hill = Mesh("Hill", "Sphere", hl.x, -hl.h * 0.4, hl.z, hl.s * 2.0, hl.h * 2.0, hl.s * 1.6, "", {r: 0.33, g: 0.42, b: 0.22, a: 1});
+    EntitySetComponentField(hill, "MeshRenderer", "Roughness", 0.95);
+}
+
+// Pit binası (start düzlüğünün solu) ve tribün (sağı)
+var pitX = TRACK_START.x - 26.0;
+Paint(Box("Pit Building", pitX, 0, 10, 12, 7, 64, ""), CONCRETE, 0.8, 0);
+Paint(Box("Pit Glass", pitX + 6.05, 2.2, 10, 0.1, 3.6, 62, ""), GLASS, 0.05, 0.6);
+Paint(Box("Pit Roof", pitX + 2, 7, 10, 17, 0.5, 66, ""), DARK, 0.6, 0.2);
+for (var i = 0; i < 8; i++)
+{
+    Paint(Box("Pit Column " + i, pitX + 10.0, 0, -20 + i * 8.5, 0.4, 7, 0.4, ""), DARK, 0.5, 0.6);
+}
+Paint(Box("Pit Lane", pitX + 9.5, -0.02, 10, 7, 0.05, 64, ""), {r: 0.32, g: 0.33, b: 0.34, a: 1}, 0.9, 0);
+for (var row = 0; row < 7; row++)
+{
+    var step = Box("Grandstand Step " + row, TRACK_START.x + 20.0 + row * 1.6, 0, 6, 1.6, 0.9 + row * 0.75, 46, "");
+    Paint(step, row % 2 == 0 ? CONCRETE : {r: 0.55, g: 0.56, b: 0.56, a: 1}, 0.85, 0);
+    var seats = Box("Grandstand Seats " + row, TRACK_START.x + 19.6 + row * 1.6, 0.9 + row * 0.75, 6, 0.6, 0.35, 45, "");
+    Paint(seats, row % 2 == 0 ? {r: 0.08, g: 0.28, b: 0.7, a: 1} : {r: 0.75, g: 0.08, b: 0.08, a: 1}, 0.5, 0);
+}
+Paint(Box("Grandstand Roof", TRACK_START.x + 25.0, 7.2, 6, 13, 0.35, 48, ""), DARK, 0.5, 0.4);
+Paint(Box("Grandstand Post A", TRACK_START.x + 31.0, 0, -17, 0.5, 7.2, 0.5, ""), DARK, 0.5, 0.6);
+Paint(Box("Grandstand Post B", TRACK_START.x + 31.0, 0, 29, 0.5, 7.2, 0.5, ""), DARK, 0.5, 0.6);
+
+// Lastik bariyerleri (viraj dışları; 3'lü yığın) ve projektör direkleri
+var tyreData = "";
+foreach (var ty in TRACK_TYRES)
+{
+    for (var k = 0; k < 3; k++)
+    {
+        tyreData = tyreData + ty.x + " " + (k * 0.165) + " " + ty.z + " " + (k * 37) + " 1 1 1 1 1;";
+    }
+}
+// Lastik yığınlarının çarpışması (görsel Multi Mesh'te; her yığına bir statik kutu)
+foreach (var tc in TRACK_TYRES)
+{
+    var tcol = CreateEntity("Tyre Collider");
+    EntitySetPosition(tcol, tc.x, 0.25, tc.z);
+    EntityAddComponent(tcol, "Rigidbody");
+    EntitySetComponentField(tcol, "Rigidbody", "BodyType", "Static");
+    EntityAddComponent(tcol, "BoxCollider");
+    EntitySetComponentField(tcol, "BoxCollider", "Size", {x: 0.6, y: 0.5, z: 0.6});
+}
+var tyres = CreateEntity("Tyre Barriers");
+EntityAddComponent(tyres, "MultiMesh");
+EntitySetComponentField(tyres, "MultiMesh", "Source", "Model");
+EntitySetComponentField(tyres, "MultiMesh", "ModelPath", "Assets/Props/Tyre.glb");
+EntitySetComponentField(tyres, "MultiMesh", "Mode", "Manual");
+EntitySetComponentField(tyres, "MultiMesh", "ColorVariation", 0.0);
+EntitySetComponentField(tyres, "MultiMesh", "InstanceData", tyreData);
+var lampData = "";
+foreach (var lp in TRACK_LAMPS) { lampData = lampData + lp.x + " 0 " + lp.z + " " + lp.yaw + " 1.6 1 1 1 1;"; }
+foreach (var lc in TRACK_LAMPS)
+{
+    var lcol = CreateEntity("Floodlight Collider");
+    EntitySetPosition(lcol, lc.x, 3.0, lc.z);
+    EntityAddComponent(lcol, "Rigidbody");
+    EntitySetComponentField(lcol, "Rigidbody", "BodyType", "Static");
+    EntityAddComponent(lcol, "BoxCollider");
+    EntitySetComponentField(lcol, "BoxCollider", "Size", {x: 0.35, y: 6.0, z: 0.35});
+}
+var lamps = CreateEntity("Floodlights");
+EntityAddComponent(lamps, "MultiMesh");
+EntitySetComponentField(lamps, "MultiMesh", "Source", "Model");
+EntitySetComponentField(lamps, "MultiMesh", "ModelPath", "Assets/Props/StreetLamp.glb");
+EntitySetComponentField(lamps, "MultiMesh", "Mode", "Manual");
+EntitySetComponentField(lamps, "MultiMesh", "ColorVariation", 0.0);
+EntitySetComponentField(lamps, "MultiMesh", "InstanceData", lampData);
+// Pit girişinde beton bariyerler
+var barrierData = "";
+for (var b = 0; b < 10; b++) { barrierData = barrierData + (pitX + 13.2) + " 0 " + (-24 + b * 1.6) + " 90 1 1 1 1 1;"; }
+var bcol = CreateEntity("Concrete Barrier Collider");
+EntitySetPosition(bcol, pitX + 13.2, 0.42, -24 + 4.5 * 1.6);
+EntityAddComponent(bcol, "Rigidbody");
+EntitySetComponentField(bcol, "Rigidbody", "BodyType", "Static");
+EntityAddComponent(bcol, "BoxCollider");
+EntitySetComponentField(bcol, "BoxCollider", "Size", {x: 0.6, y: 0.84, z: 16.0});
+var barriers = CreateEntity("Concrete Barriers");
+EntityAddComponent(barriers, "MultiMesh");
+EntitySetComponentField(barriers, "MultiMesh", "Source", "Model");
+EntitySetComponentField(barriers, "MultiMesh", "ModelPath", "Assets/Props/ConcreteBarrier.glb");
+EntitySetComponentField(barriers, "MultiMesh", "Mode", "Manual");
+EntitySetComponentField(barriers, "MultiMesh", "ColorVariation", 0.0);
+EntitySetComponentField(barriers, "MultiMesh", "InstanceData", barrierData);
+
+// Kontrol noktası kapıları: iki direk + üst bant (parlayan şeritler sıradaki kapıda yanar). 0 = start / bitiş
+func Glow(name, parent, x, y, z, sx, sy, sz, c)
+{
+    var g = Mesh(name, "Cube", 0, 0, 0, sx, sy, sz, "", {r: c.r, g: c.g, b: c.b, a: 1});
+    EntitySetParent(g, parent);
+    EntitySetPosition(g, x, y, z);
+    EntitySetComponentField(g, "MeshRenderer", "EmissionColor", {r: c.r, g: c.g, b: c.b});
+    EntitySetComponentField(g, "MeshRenderer", "EmissionStrength", 0.25);
+    EntitySetComponentField(g, "MeshRenderer", "CastShadows", false);
+    return g;
+}
+
+func Gate(i, cp)
+{
+    var g = CreateEntity("Checkpoint " + i);
+    EntitySetPosition(g, cp.x, 0, cp.z);
+    var half = TRACK_WIDTH * 0.5 + 1.4;
+    var start = i == 0;
+    var c = start ? {r: 1.0, g: 1.0, b: 1.0} : (i % 2 == 0 ? ORANGE : CYAN);
+    for (var s = -1; s <= 1; s += 2)
+    {
+        var post = Paint(Mesh("Post", "Cube", 0, 0, 0, 0.7, 6.0, 0.7, "", DARK), DARK, 0.4, 0.5);
+        EntitySetParent(post, g);
+        EntitySetPosition(post, s * half, 3.0, 0);
+        Glow("Glow Post", g, s * (half - 0.36), 3.0, 0, 0.06, 5.6, 0.5, c);
+    }
+    var beam = Paint(Mesh("Banner", "Cube", 0, 0, 0, half * 2.0 + 0.7, start ? 1.6 : 0.9, 0.5, start ? "Assets/Track/Checker.png" : "", DARK), DARK, 0.5, 0.3);
+    EntitySetParent(beam, g);
+    EntitySetPosition(beam, 0, start ? 6.6 : 6.3, 0);
+    if (start) { EntitySetColor(beam, WHITE); EntitySetComponentField(beam, "MeshRenderer", "WorldAlignedUV", false); }
+    Glow("Glow Banner", g, 0, start ? 5.75 : 5.82, 0.27, half * 2.0 - 0.2, 0.08, 0.04, c);
+    Glow("Glow Banner Back", g, 0, start ? 5.75 : 5.82, -0.27, half * 2.0 - 0.2, 0.08, 0.04, c);
+    if (start)
+    {
+        var txt = CreateEntity("Start Text");
+        EntitySetParent(txt, g);
+        EntitySetPosition(txt, 0, 7.75, 0.3);
+        EntityAddComponent(txt, "TextRenderer");
+        EntitySetComponentField(txt, "TextRenderer", "Text", "START / FINISH");
+        EntitySetComponentField(txt, "TextRenderer", "FontSize", 1.1);
+        EntitySetComponentField(txt, "TextRenderer", "Color", {r: 1, g: 1, b: 1, a: 1});
+        EntitySetComponentField(txt, "TextRenderer", "Alignment", "Center");   // kapının ortasında (eskiden ortadan sağa taşıyordu)
+    }
+    EntitySetRotation(g, 0, cp.yaw, 0);
+    return g;
+}
+for (var ci = 0; ci < TRACK_CHECKPOINTS.Count; ci++) { Gate(ci, TRACK_CHECKPOINTS[ci]); }
+
+var car = VehicleCar("Vehicle", TRACK_START.x, ROAD_Y_SPAWN, TRACK_START.z, TRACK_START.yaw, "Carmine", false);
+
+// Otomatik pilot pistin orta çizgisini ("Racing Line", yukarıda) izler (P: otomatik sürüş gösterisi)
+AddScript(car, "Assets/Vehicles/Scripts/VehicleAutopilot.cqs");
+
+VehicleCameraRig(TRACK_START.x, 0, TRACK_START.z, TRACK_START.yaw);
+
+var game = CreateEntity("Game");
+AddScript(game, "Assets/Vehicles/Scripts/TimeTrial.cqs");
+SetFields(game, {laps: 3, gateWidth: TRACK_WIDTH + 2.8});
+
+VehicleHUD(true, "W / S  THROTTLE - BRAKE     A / D  STEER     SPACE  HANDBRAKE     R  RESET     C  CAMERA     MOUSE  LOOK     P  AUTOPILOT");

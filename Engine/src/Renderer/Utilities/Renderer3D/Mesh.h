@@ -38,6 +38,29 @@ namespace Conqueror
         // Lightmap UV2 guncelle + GPU'ya yukle
         void UpdateUV2(const std::vector<glm::vec2>& newUV2);
 
+        // Vertex aralığını güncelle (CPU kopyası + GPU alt bölümü); terrain fırçaları için
+        void UpdateVertices(const Vertex* vertices, uint32_t first, uint32_t count);
+
+        // Otomatik LOD (Unreal Static Mesh LOD'ları). Seviye 0 meshin kendisi; ekran boyutu (sınır küresi
+        // yarıçapı * izdüşüm / uzaklık) bir seviyenin eşiğinin altına inince o seviye çizilir.
+        struct LODLevel
+        {
+            std::shared_ptr<Mesh> LODMesh;
+            float ScreenSize = 0.0f;
+        };
+        void SetLODs(std::vector<LODLevel> lods, uint64_t signature = 0) { m_LODs = std::move(lods); m_LODSignature = signature; }
+        uint64_t GetLODSignature() const { return m_LODSignature; }
+        const std::vector<LODLevel>& GetLODs() const { return m_LODs; }
+        bool HasLODs() const { return !m_LODs.empty(); }
+        int GetLODCount() const { return 1 + (int)m_LODs.size(); }
+        // level 0 = kendisi; aralık dışı -> son seviye
+        const Mesh* GetLOD(int level) const;
+        int SelectLOD(float screenSize) const;
+        // Yerel sınırlar: kutunun merkezi, yarı boyutu (görüş kırpması) ve bu merkeze göre sınır küresi (LOD)
+        const glm::vec3& GetBoundsCenter() const { return m_BoundsCenter; }
+        const glm::vec3& GetBoundsExtents() const { return m_BoundsExtents; }
+        float GetBoundsRadius() const { return m_BoundsRadius; }
+
         // Cube mesh oluştur
         static std::shared_ptr<Mesh> CreateCube();
         
@@ -64,6 +87,13 @@ namespace Conqueror
         std::vector<Vertex> m_Vertices;
         std::vector<uint32_t> m_Indices;
         uint32_t m_IndexCount;
+        std::vector<LODLevel> m_LODs;
+        uint64_t m_LODSignature = 0;
+        void ComputeBounds();
+
+        glm::vec3 m_BoundsCenter{ 0.0f };
+        glm::vec3 m_BoundsExtents{ 0.0f };
+        float m_BoundsRadius = 0.0f;
 
         std::shared_ptr<VertexArray> m_VertexArray;
         std::shared_ptr<VertexBuffer> m_VertexBuffer;

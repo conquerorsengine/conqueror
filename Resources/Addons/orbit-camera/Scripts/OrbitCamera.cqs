@@ -1,0 +1,118 @@
+using nativebridge;
+
+// Bir hedefin (varlık ya da nokta) çevresinde dönen kamera.
+// Sağ fare (useLeftMouse ile sol) sürükle: döndür, orta fare: kaydır, tekerlek: yakınlaş.
+script OrbitCamera : ConquerorScript
+{
+    public string targetName = "";
+    public float targetX = 0.0;
+    public float targetY = 0.0;
+    public float targetZ = 0.0;
+    public float distance = 10.0;
+    public float minDistance = 2.0;
+    public float maxDistance = 60.0;
+    public float yaw = 30.0;
+    public float pitch = -25.0;
+    public float minPitch = -85.0;
+    public float maxPitch = 10.0;
+    public float rotateSensitivity = 0.25;
+    public float panSensitivity = 0.01;
+    public float zoomSpeed = 0.15;
+    public float inertia = 6.0;
+    public bool useLeftMouse = false;
+    public bool autoRotate = false;
+    public float autoRotateSpeed = 12.0;
+    public float idleDelay = 3.0;
+
+    // Çalışma zamanı bilgisi
+    public float currentDistance = 10.0;
+
+    private float yawVel = 0.0;
+    private float pitchVel = 0.0;
+    private float idle = 0.0;
+    private float wantDistance = 10.0;
+    private var target = null;
+
+    func Start()
+    {
+        if (targetName != "") { target = FindEntity(targetName); }
+        currentDistance = distance;
+        wantDistance = distance;
+        Apply();
+    }
+
+    // Kamerayı bir varlığa odakla (mesafe isteğe bağlı)
+    func Focus(name, dist)
+    {
+        var e = FindEntity(name);
+        if (e == null) { return false; }
+        target = e;
+        targetName = name;
+        if (dist != null && dist > 0) { wantDistance = dist; }
+        return true;
+    }
+
+    func Update(dt)
+    {
+        if (dt <= 0) { return; }
+        var md = GetMouseDelta();
+        var rotating = IsMouseButtonPressed(useLeftMouse ? 0 : 1);
+        if (rotating && (md.x != 0 || md.y != 0))
+        {
+            yawVel = -md.x * rotateSensitivity / MathMax(dt, 0.001);
+            pitchVel = -md.y * rotateSensitivity / MathMax(dt, 0.001);
+            idle = 0;
+        }
+        else
+        {
+            var damp = MathExp(-inertia * dt);
+            yawVel *= damp;
+            pitchVel *= damp;
+            idle += dt;
+        }
+        if (IsMouseButtonPressed(2) && (md.x != 0 || md.y != 0))
+        {
+            // Ekran düzleminde kaydır
+            var r = MathDegToRad(yaw);
+            var s = panSensitivity * currentDistance;
+            targetX -= MathCos(r) * md.x * s;
+            targetZ += MathSin(r) * md.x * s;
+            targetY += md.y * s;
+            target = null;
+            idle = 0;
+        }
+        var scroll = GetMouseScrollDelta();
+        if (scroll != 0)
+        {
+            wantDistance = MathClamp(wantDistance * (1.0 - scroll * zoomSpeed), minDistance, maxDistance);
+            idle = 0;
+        }
+        if (autoRotate && idle > idleDelay) { yaw += autoRotateSpeed * dt; }
+        yaw += yawVel * dt;
+        pitch = MathClamp(pitch + pitchVel * dt, minPitch, maxPitch);
+        yaw = MathNormalizeAngle(yaw);
+        currentDistance = MathLerp(currentDistance, wantDistance, 1.0 - MathExp(-10.0 * dt));
+        distance = wantDistance;
+        Apply();
+    }
+
+    func Apply()
+    {
+        var cx = targetX;
+        var cy = targetY;
+        var cz = targetZ;
+        if (target != null && EntityIsValid(target))
+        {
+            var p = EntityGetWorldPosition(target);
+            cx = p.x; cy = p.y; cz = p.z;
+            targetX = cx; targetY = cy; targetZ = cz;
+        }
+        var yr = MathDegToRad(yaw);
+        var pr = MathDegToRad(pitch);
+        var fx = -MathSin(yr) * MathCos(pr);
+        var fy = MathSin(pr);
+        var fz = -MathCos(yr) * MathCos(pr);
+        EntitySetWorldPosition(GetEntityId(), cx - fx * currentDistance, cy - fy * currentDistance, cz - fz * currentDistance);
+        SetRotation(pitch, yaw, 0);
+    }
+}

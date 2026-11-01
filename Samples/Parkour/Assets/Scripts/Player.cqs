@@ -1,0 +1,966 @@
+using nativebridge;
+
+// Conqueror's Engine — Parkur örneği: birinci şahıs oyuncu denetleyicisi.
+// Koşu/depar, çakılma süresi (coyote time), zıplama tamponu, değişken zıplama yüksekliği, çift zıplama,
+// duvar koşusu + duvar zıplaması, kayma ve çömelme, kenara tutunup tırmanma, zıplatma pedleri, hareketli platformlar.
+// ParkourGame denetimi "mode" alanıyla açıp kapatır ve Respawn(...) ile oyuncuyu taşır.
+script Player : ConquerorScript
+{
+    [Header("Koşu")]
+    [Tooltip("Normal koşu hızı (m/s)")]
+    [Range(3, 15)]
+    public float runSpeed = 8.5;
+    [Tooltip("Depar hızı: Shift ya da sol çubuğu sonuna kadar itmek (m/s)")]
+    [Range(4, 20)]
+    public float sprintSpeed = 11.5;
+    [Tooltip("Yerde hızlanma (m/s²)")]
+    public float groundAccel = 80;
+    [Tooltip("Girdi yokken yerde durma ivmesi (m/s²)")]
+    public float groundFriction = 60;
+    [Tooltip("Havada yön değiştirme ivmesi (m/s²)")]
+    public float airAccel = 24;
+
+    [Header("Zıplama")]
+    public float gravity = 26;
+    public float jumpVelocity = 9.0;
+    public float airJumpVelocity = 8.4;
+    [Range(0, 3)]
+    public int maxAirJumps = 1;
+    [Tooltip("Kenardan düştükten sonra hâlâ zıplanabilen süre (s)")]
+    public float coyoteTime = 0.12;
+    [Tooltip("Yere inmeden hemen önce basılan zıplamanın hatırlanma süresi (s)")]
+    public float jumpBuffer = 0.15;
+    [Tooltip("Zıplatma pedinin verdiği dikey hız (m/s)")]
+    public float padVelocity = 20;
+    [Tooltip("Ped uçuşunda yatay hız sınırı (m/s): hızlı gelince hedef platformu aşmasın")]
+    public float padAirSpeed = 7.5;
+
+    [Header("Duvar koşusu")]
+    public float wallRunMinSpeed = 5.0;
+    public float wallRunSpeed = 10.0;
+    public float wallRunMaxTime = 1.7;
+    public float wallRunGravity = 2.6;
+    public float wallJumpOut = 7.5;
+    public float wallJumpUp = 8.8;
+
+    [Header("Kayma")]
+    public float slideBoost = 3.0;
+    public float slideMaxSpeed = 15;
+    public float slideTime = 0.9;
+    public float slideFriction = 5.0;
+    public float crouchSpeed = 3.5;
+
+    [Header("Kamera")]
+    [Range(0.02, 0.5)]
+    public float sensitivity = 0.12;
+    [Range(60, 110)]
+    public float fov = 85;
+    public bool invertY = false;
+    public bool headBob = true;
+
+    [Header("Durum")]
+    [Tooltip("0 donuk, 1 yalnızca bakış, 2 tam denetim, 3 fren (girdi yok, fizik sürer)")]
+    public int mode = 0;
+    public float yaw = 0;
+    public float pitch = 0;
+    public float speed = 0;
+    public bool grounded = false;
+    public bool wallRunning = false;
+    public bool sliding = false;
+    [Tooltip("Üzerinde durulan varlık (-1 havada)")]
+    public int standingOn = -1;
+    public int jumpCount = 0;
+    public int wallRunCount = 0;
+    public float topSpeed = 0;
+    [Tooltip("Son duvar koşusunun neden bittiği (hata ayıklama)")]
+    public string wallEndReason = "";
+
+    [Header("Otopilot (test / demo)")]
+    public bool autopilot = false;
+    public float botMoveX = 0;
+    public float botMoveY = 0;
+    public bool botJump = false;
+    public bool botSlide = false;
+    public bool botSprint = true;
+
+    // ---------------------------------------------------------------- İç durum
+    private float DEG = 0.0174532925;
+    private int cam = -1;
+    private float vx = 0;
+    private float vy = 0;
+    private float vz = 0;
+    private float coyote = 0;
+    private float buffer = 0;
+    private int airJumps = 1;
+    private bool jumpHeld = false;
+    private bool padFlight = false;
+    private var pads = [];
+    private float airTime = 0;
+    private float lastInputX = 0;
+
+    private int wallSide = 0;
+    private float wallNx = 0;
+    private float wallNz = 0;
+    private float wallTime = 0;
+    private int wallId = -1;
+    private int lastWall = -1;
+    private float wallCooldown = 0;
+    private float wallStep = 0;
+    private float wallMiss = 0;
+
+    private float slideTimer = 0;
+    private bool crouched = false;
+    private float slideQueue = 0;
+
+    private float mantleCooldown = 0;
+    private float mantleTimer = 0;
+    private float mantleFx = 0;
+    private float mantleFz = 0;
+
+    private int groundId = -1;
+    private float platDx = 0;
+    private float platDy = 0;
+    private float platDz = 0;
+
+    private float camHeight = 0.7;
+    private float camRoll = 0;
+    private float bobPhase = 0;
+    private float bobAmount = 0;
+    private float dip = 0;
+    private float dipVel = 0;
+    private float fovKick = 0;
+    private float curFov = 85;
+    private float appliedFov = -1;
+    private float shake = 0;
+    private float stepDist = 0;
+    private int lastStep = 0;
+    private float windVol = 0;
+    private float dustTimer = 0;
+    private int ignoreMouse = 3;
+    private var padPrev = {};
+
+    // ================================================================ Yaşam döngüsü
+    func Start()
+    {
+        cam = FindEntity("PlayerCamera");
+        airJumps = maxAirJumps;
+        // Zıplatma pedleri: JumpPad1, JumpPad2, ...
+        for (var i = 1; i <= 64; i++)
+        {
+            var pad = FindEntity("JumpPad" + i);
+            if (pad == null) { break; }
+            pads.Add(pad);
+        }
+        curFov = fov;
+        yaw = GetRotation().y;
+    }
+
+    func Update(dt)
+    {
+        if (dt <= 0) { return; }        // duraklatıldı (zaman ölçeği 0)
+        if (dt > 0.05) { dt = 0.05; }   // takılmalarda dev adımlar atma
+        if (mode == 1 || mode == 2) { Look(dt); }
+        if (mode >= 2) { Move(dt); }
+        else { speed = 0; lastInputX = 0; }
+        UpdateCameraFx(dt);
+        UpdateWind(dt);
+    }
+
+    // ParkourGame çağırır: oyuncuyu bir noktaya ışınlar ve hareket durumunu sıfırlar
+    func Respawn(x, y, z, faceYaw)
+    {
+        if (crouched) { SetCrouched(false); }
+        SetPosition(x, y, z);
+        vx = 0; vy = 0; vz = 0;
+        yaw = faceYaw;
+        pitch = -4;
+        SetRotation(0, yaw, 0);
+        sliding = false;
+        wallRunning = false;
+        slideQueue = 0;
+        slideTimer = 0;
+        coyote = 0;
+        buffer = 0;
+        airJumps = maxAirJumps;
+        padFlight = false;
+        mantleTimer = 0;
+        wallCooldown = 0;
+        lastWall = -1;
+        airTime = 0;
+        speed = 0;
+        dip = 0;
+        dipVel = 0;
+        fovKick = 0;
+        shake = 0;
+        camRoll = 0;
+        camHeight = 0.7;
+        groundId = -1;
+        platDx = 0; platDy = 0; platDz = 0;
+        grounded = false;
+        ignoreMouse = 3;
+        botJump = false;
+        botSlide = false;
+    }
+
+    // Duraklatmadan dönünce imleç kilitlenirken oluşan fare sıçramasını yut
+    func SkipMouse()
+    {
+        ignoreMouse = 3;
+    }
+
+    func DebugPrint()
+    {
+        var p = GetPosition();
+        print($"PLAYER pos=({p.x:F2},{p.y:F2},{p.z:F2}) v=({vx:F2},{vy:F2},{vz:F2}) grounded={grounded} sliding={sliding} crouched={crouched} slideTimer={slideTimer:F2} wall={wallRunning} mode={mode} on={standingOn}");
+    }
+
+    func ResetStats()
+    {
+        jumpCount = 0;
+        wallRunCount = 0;
+        topSpeed = 0;
+    }
+
+    // ================================================================ Girdi
+    func Pad(b) { return IsGamepadConnected(0) && IsGamepadButtonPressed(0, b); }
+
+    func PadDown(b)
+    {
+        var now = Pad(b);
+        var k = "b" + b;
+        var was = padPrev.ContainsKey(k) && padPrev[k];
+        padPrev[k] = now;
+        return now && !was;
+    }
+
+    func MoveInput()
+    {
+        if (autopilot) { return {x: botMoveX, y: botMoveY}; }
+        var x = 0.0;
+        var y = 0.0;
+        if (IsKeyPressed("W") || IsKeyPressed("Up")) { y += 1; }
+        if (IsKeyPressed("S") || IsKeyPressed("Down")) { y -= 1; }
+        if (IsKeyPressed("D") || IsKeyPressed("Right")) { x += 1; }
+        if (IsKeyPressed("A") || IsKeyPressed("Left")) { x -= 1; }
+        if (IsGamepadConnected(0))
+        {
+            var s = GetGamepadLeftStick(0);
+            x += s.x;
+            y -= s.y;
+        }
+        var l = MathSqrt(x * x + y * y);
+        if (l > 1) { x /= l; y /= l; }
+        return {x: x, y: y};
+    }
+
+    func SprintHeld()
+    {
+        if (autopilot) { return botSprint; }
+        if (IsKeyPressed("LeftShift") || IsKeyPressed("RightShift")) { return true; }
+        if (IsGamepadConnected(0))
+        {
+            var s = GetGamepadLeftStick(0);
+            if (s.x * s.x + s.y * s.y > 0.81 || IsGamepadButtonPressed(0, 9)) { return true; }
+        }
+        return false;
+    }
+
+    func JumpPressed()
+    {
+        if (autopilot)
+        {
+            var j = botJump;
+            botJump = false;
+            return j;
+        }
+        return IsKeyDown("Space") || PadDown(0);
+    }
+
+    func JumpHeld()
+    {
+        if (autopilot) { return true; }
+        return IsKeyPressed("Space") || Pad(0);
+    }
+
+    func SlidePressed()
+    {
+        if (autopilot)
+        {
+            var s = botSlide;
+            botSlide = false;
+            return s;
+        }
+        return IsKeyDown("LeftControl") || IsKeyDown("C") || PadDown(1) || PadDown(10);
+    }
+
+    func SlideHeld()
+    {
+        if (autopilot) { return false; }
+        return IsKeyPressed("LeftControl") || IsKeyPressed("C") || Pad(1) || Pad(10);
+    }
+
+    // ================================================================ Bakış
+    func Look(dt)
+    {
+        if (!autopilot)
+        {
+            var md = GetMouseDelta();
+            var mx = md.x;
+            var my = md.y;
+            // İmleç kilitlenirken gelen sıçramaları yok say
+            if (ignoreMouse > 0 || MathAbs(mx) > 500 || MathAbs(my) > 500)
+            {
+                mx = 0;
+                my = 0;
+                if (ignoreMouse > 0) { ignoreMouse -= 1; }
+            }
+            var inv = invertY ? -1 : 1;
+            yaw -= mx * sensitivity;
+            pitch -= my * sensitivity * inv;
+            if (IsGamepadConnected(0))
+            {
+                var rs = GetGamepadRightStick(0);
+                yaw -= rs.x * 180 * dt;
+                pitch -= rs.y * 130 * dt * inv;
+            }
+        }
+        pitch = MathClamp(pitch, -88, 88);
+        if (yaw > 180) { yaw -= 360; }
+        if (yaw < -180) { yaw += 360; }
+        SetRotation(0, yaw, 0);
+    }
+
+    // ================================================================ Hareket
+    func Move(dt)
+    {
+        var p = GetPosition();
+        var braking = mode == 3;
+        var inp = braking ? {x: 0, y: 0} : MoveInput();
+        lastInputX = inp.x;
+        var sy = MathSin(yaw * DEG);
+        var cy = MathCos(yaw * DEG);
+        var fx = -sy;
+        var fz = -cy;
+        var rx = cy;
+        var rz = -sy;
+        var wx = fx * inp.y + rx * inp.x;
+        var wz = fz * inp.y + rz * inp.x;
+        var wl = MathSqrt(wx * wx + wz * wz);
+        if (wl > 1) { wx /= wl; wz /= wl; wl = 1; }
+
+        if (buffer > 0) { buffer -= dt; }
+        if (!braking && JumpPressed()) { buffer = jumpBuffer; }
+        jumpHeld = !braking && JumpHeld();
+        if (!braking && SlidePressed()) { slideQueue = 0.3; }
+        else if (slideQueue > 0) { slideQueue -= dt; }
+        if (wallCooldown > 0) { wallCooldown -= dt; }
+        if (mantleCooldown > 0) { mantleCooldown -= dt; }
+
+        var target = !braking && SprintHeld() ? sprintSpeed : runSpeed;
+        if (inp.y < -0.3) { target = runSpeed * 0.7; }
+
+        // Zemin: hareketli platformun yer değiştirmesi, zıplatma pedi
+        platDx = 0; platDy = 0; platDz = 0;
+        if (grounded && groundId >= 0)
+        {
+            var gname = EntityGetName(groundId);
+            if (StringStartsWith(gname, "Mover"))
+            {
+                platDx = GetScriptField(groundId, "dx");
+                platDy = GetScriptField(groundId, "dy");
+                platDz = GetScriptField(groundId, "dz");
+            }
+            else if (StringStartsWith(gname, "JumpPad"))
+            {
+                Bounce(groundId);
+            }
+        }
+        // Pedin kenarından/çaprazdan geçerken zemin hâlâ alttaki platform görünebilir: ayak izi denetimi
+        if (grounded && vy <= 0.5)
+        {
+            var under = PadUnderFeet(p);
+            if (under >= 0) { Bounce(under); }
+        }
+
+        if (mantleTimer > 0) { MantleMove(dt); }
+        else if (sliding) { SlideMove(dt, wx, wz, wl); }
+        else if (wallRunning) { WallRunMove(dt, p, inp); }
+        else if (grounded) { GroundMove(dt, wx, wz, wl, target); }
+        else
+        {
+            AirMove(dt, wx, wz, wl, target);
+            TryWallRun(p, inp);
+            if (!wallRunning) { TryMantle(p, inp, fx, fz); }
+        }
+
+        if (slideQueue > 0 && grounded && !sliding && mantleTimer <= 0) { StartSlide(); }
+        if (buffer > 0) { TryJump(wx, wz, wl, target); }
+        ApplyGravity(dt);
+
+        var flags = CharacterMove(vx * dt + platDx, vy * dt + platDy, vz * dt + platDz);
+        PostMove(dt, flags, p);
+    }
+
+    func PostMove(dt, flags, before)
+    {
+        var was = grounded;
+        var after = GetPosition();
+        if ((flags & 2) != 0 && vy > 0)
+        {
+            vy = 0;
+            padFlight = false;
+        }
+        if ((flags & 1) != 0 && !wallRunning && mantleTimer <= 0)
+        {
+            // Engele çarpınca o yöndeki hız kaybolur (karakter yüzey boyunca kayar)
+            var ax = (after.x - before.x - platDx) / dt;
+            var az = (after.z - before.z - platDz) / dt;
+            if (ax * ax + az * az < vx * vx + vz * vz)
+            {
+                vx = ax;
+                vz = az;
+            }
+        }
+        grounded = CharacterIsGrounded() && vy <= 0.5;
+        groundId = grounded ? CharacterGetGroundEntity() : -1;
+        standingOn = groundId;
+        if (grounded)
+        {
+            if (!was) { Land(); }
+            coyote = coyoteTime;
+            airJumps = maxAirJumps;
+            padFlight = false;
+            airTime = 0;
+            if (vy < 0) { vy = -2; }
+            if (wallRunning)
+            {
+                wallEndReason = "ground";
+                EndWallRun(false);
+            }
+            if (!sliding) { Footsteps(dt); }
+        }
+        else
+        {
+            if (coyote > 0) { coyote -= dt; }
+            airTime += dt;
+            if (sliding && slideTimer <= 0 && CanStand()) { EndSlide(); }
+        }
+        speed = MathSqrt(vx * vx + vz * vz);
+        if (speed > topSpeed) { topSpeed = speed; }
+    }
+
+    // Hız vektörünü (vx, vz) hedefe en fazla maxDelta kadar yaklaştırır
+    func Approach(tx, tz, maxDelta)
+    {
+        var dx = tx - vx;
+        var dz = tz - vz;
+        var d = MathSqrt(dx * dx + dz * dz);
+        if (d <= maxDelta || d < 0.0001)
+        {
+            vx = tx;
+            vz = tz;
+            return;
+        }
+        vx += dx / d * maxDelta;
+        vz += dz / d * maxDelta;
+    }
+
+    func GroundMove(dt, wx, wz, wl, target)
+    {
+        var rate = wl > 0.05 ? groundAccel : groundFriction;
+        // Kayma / ped sonrası fazla hız yavaşça söner
+        if (wl > 0.05 && speed > target + 0.5) { rate = 14; }
+        Approach(wx * target, wz * target, rate * dt);
+    }
+
+    func AirMove(dt, wx, wz, wl, target)
+    {
+        if (wl < 0.05) { return; }      // havada momentum korunur
+        var cur = MathSqrt(vx * vx + vz * vz);
+        var cap = MathMax(cur, target);
+        if (padFlight) { cap = MathMin(cap, padAirSpeed); }
+        Approach(wx * cap, wz * cap, airAccel * dt);
+        var n = MathSqrt(vx * vx + vz * vz);
+        if (n > cap)
+        {
+            vx = vx / n * cap;
+            vz = vz / n * cap;
+        }
+    }
+
+    func ApplyGravity(dt)
+    {
+        if (grounded && vy <= 0) { return; }
+        var g = gravity;
+        if (wallRunning) { g = wallRunGravity; }
+        else if (vy > 0 && !jumpHeld && !padFlight && mantleTimer <= 0) { g = gravity * 2.0; }   // kısa basış = alçak zıplama
+        else if (vy < 0) { g = gravity * 1.1; }
+        vy -= g * dt;
+        if (vy < -40) { vy = -40; }
+    }
+
+    // ================================================================ Zıplama
+    func TryJump(wx, wz, wl, target)
+    {
+        if (sliding && !CanStand()) { return; }
+        if (grounded || coyote > 0)
+        {
+            if (sliding) { EndSlide(); }        // kayarak zıplama: hız korunur
+            vy = jumpVelocity;
+            grounded = false;
+            groundId = -1;
+            coyote = 0;
+            buffer = 0;
+            jumpCount += 1;
+            Sfx("Assets/Audio/jump.wav", 0.5, random(0.95, 1.05));
+            return;
+        }
+        if (wallRunning)
+        {
+            WallJump();
+            return;
+        }
+        // Ped fırlatması hâlâ güçlüyken çift zıplama onu ezmesin (yüksek hızda pedden hemen önce basılan zıplama)
+        if (padFlight && vy > airJumpVelocity) { buffer = 0; return; }
+        if (airJumps > 0 && mantleTimer <= 0)
+        {
+            airJumps -= 1;
+            vy = airJumpVelocity;
+            buffer = 0;
+            padFlight = false;
+            jumpCount += 1;
+            // Çift zıplamada yön değiştirilebilir: hız girdi yönüne kısmen döner
+            if (wl > 0.1)
+            {
+                var cur = MathSqrt(vx * vx + vz * vz);
+                var keep = MathMax(cur, target * 0.85);
+                vx = MathLerp(vx, wx * keep, 0.65);
+                vz = MathLerp(vz, wz * keep, 0.65);
+            }
+            fovKick += 3;
+            Sfx("Assets/Audio/doublejump.wav", 0.6, random(0.97, 1.05));
+        }
+    }
+
+    // Ayakların altında bir ped var mı (silindir: ölçek = yarıçap, üst = y + ölçek.y)
+    func PadUnderFeet(p)
+    {
+        var feet = p.y - 0.9;
+        for (var i = 0; i < pads.Count; i++)
+        {
+            var pp = EntityGetPosition(pads[i]);
+            var sc = EntityGetScale(pads[i]);
+            var r = MathMax(sc.x, sc.z) + 0.15;
+            var top = pp.y + sc.y;
+            var dx = p.x - pp.x;
+            var dz = p.z - pp.z;
+            if (dx * dx + dz * dz <= r * r && feet > top - 0.3 && feet < top + 0.35) { return pads[i]; }
+        }
+        return -1;
+    }
+
+    func Bounce(pad)
+    {
+        if (sliding && CanStand()) { EndSlide(); }
+        vy = padVelocity;
+        grounded = false;
+        groundId = -1;
+        coyote = 0;
+        buffer = 0;             // pedden hemen önce basılan zıplamayı ped tüketir
+        airJumps = maxAirJumps;
+        padFlight = true;
+        // Ped oyuncuyu hedef platforma taşıyacak kadar ileri iter, fazlasını keser
+        var h = MathSqrt(vx * vx + vz * vz);
+        if (h > padAirSpeed)
+        {
+            vx = vx / h * padAirSpeed;
+            vz = vz / h * padAirSpeed;
+        }
+        fovKick += 10;
+        shake = 0.22;
+        Sfx("Assets/Audio/bounce.wav", 0.8, random(0.97, 1.03));
+        var fx = FindEntity(EntityGetName(pad) + " FX");
+        if (fx != null) { ParticleEmit(fx, 70); }
+    }
+
+    func Land()
+    {
+        var impact = -vy;
+        if (impact > 3)
+        {
+            Sfx("Assets/Audio/land.wav", MathClamp(impact / 20, 0.15, 0.85), random(0.92, 1.05));
+            dipVel -= MathClamp(impact * 0.12, 0.3, 3.0);
+        }
+        if (impact > 17) { shake = MathMin(0.35, (impact - 17) * 0.03); }
+        if (impact > 7) { Dust(GetPosition(), int(MathMin(24, impact))); }
+        stepDist = 0;
+    }
+
+    // ================================================================ Duvar koşusu
+    func WallRay(p, side)
+    {
+        var sy = MathSin(yaw * DEG);
+        var cy = MathCos(yaw * DEG);
+        var rx = cy * side;
+        var rz = -sy * side;
+        // Işınlar kapsülün dışından başlar (karakterin iç gövdesine çarpmasın)
+        // Yalnızca tam yandaki duvar: koşu boyunca aynı ışın duvarı görmeye devam etmeli
+        var h = Raycast(p.x + rx * 0.38, p.y + 0.1, p.z + rz * 0.38, rx, 0, rz, 0.7);
+        if (h == null || h.isTrigger || MathAbs(h.normal.y) > 0.3) { return null; }
+        return h;
+    }
+
+    func NearGround(p, dist)
+    {
+        var h = Raycast(p.x, p.y - 0.88, p.z, 0, -1, 0, dist);
+        return h != null && !h.isTrigger;
+    }
+
+    func TryWallRun(p, inp)
+    {
+        if (wallRunning || sliding || mantleTimer > 0) { return; }
+        if (inp.y < 0.3) { return; }
+        if (airTime < 0.06) { return; }
+        if (speed < wallRunMinSpeed) { return; }
+        if (NearGround(p, 0.7)) { return; }
+        var side = 1;
+        var hit = WallRay(p, 1);
+        if (hit == null)
+        {
+            side = -1;
+            hit = WallRay(p, -1);
+        }
+        if (hit == null) { return; }
+        if (hit.entity == lastWall && wallCooldown > 0) { return; }
+        var nx = hit.normal.x;
+        var nz = hit.normal.z;
+        var nl = MathSqrt(nx * nx + nz * nz);
+        if (nl < 0.01) { return; }
+        nx /= nl;
+        nz /= nl;
+        var tx = -nz;
+        var tz = nx;
+        var along = vx * tx + vz * tz;
+        if (MathAbs(along) < wallRunMinSpeed) { return; }
+        wallRunning = true;
+        wallRunCount += 1;
+        wallSide = side;
+        wallNx = nx;
+        wallNz = nz;
+        wallId = hit.entity;
+        wallTime = 0;
+        wallStep = 0;
+        wallMiss = 0;
+        airJumps = maxAirJumps;
+        padFlight = false;
+        vy = MathClamp(vy, 1.2, 3.5);
+        Sfx("Assets/Audio/land.wav", 0.25, 1.3);
+    }
+
+    func WallRunMove(dt, p, inp)
+    {
+        wallTime += dt;
+        var h = Raycast(p.x - wallNx * 0.38, p.y + 0.1, p.z - wallNz * 0.38, -wallNx, 0, -wallNz, 0.85);
+        if (h != null && !h.isTrigger && MathAbs(h.normal.y) <= 0.3) { wallMiss = 0; }
+        else if (h == null && wallMiss + dt < 0.1)
+        {
+            // Duvar dikişleri / kare atlaması: kısa kaçırmada koşu sürer
+            wallMiss += dt;
+            h = {normal: {x: wallNx, y: 0, z: wallNz}, isTrigger: false};
+        }
+        if (h == null || h.isTrigger || MathAbs(h.normal.y) > 0.3 || wallTime > wallRunMaxTime || inp.y < 0.2)
+        {
+            if (h == null) { wallEndReason = "nowall"; }
+            else if (wallTime > wallRunMaxTime) { wallEndReason = "time"; }
+            else if (inp.y < 0.2) { wallEndReason = "input"; }
+            else { wallEndReason = "surface"; }
+            EndWallRun(true);
+            return;
+        }
+        var nx = h.normal.x;
+        var nz = h.normal.z;
+        var nl = MathSqrt(nx * nx + nz * nz);
+        if (nl > 0.01)
+        {
+            wallNx = nx / nl;
+            wallNz = nz / nl;
+        }
+        var tx = -wallNz;
+        var tz = wallNx;
+        var along = vx * tx + vz * tz;
+        if (along < 0)
+        {
+            tx = -tx;
+            tz = -tz;
+            along = -along;
+        }
+        if (along < wallRunMinSpeed * 0.7)
+        {
+            wallEndReason = "slow";
+            EndWallRun(true);
+            return;
+        }
+        if (along < wallRunSpeed) { along = MathMin(wallRunSpeed, along + 20 * dt); }
+        // Duvara hafifçe bastır: temas sürsün
+        vx = tx * along - wallNx * 1.5;
+        vz = tz * along - wallNz * 1.5;
+        wallStep += along * dt;
+        if (wallStep > 1.7)
+        {
+            wallStep = 0;
+            Step(1.15);
+            // Duvara basılan noktada toz
+            ParticleEmitAt("FX_Dust", p.x - wallNx * 0.35, p.y - 0.4, p.z - wallNz * 0.35, 4);
+        }
+    }
+
+    func EndWallRun(push)
+    {
+        if (!wallRunning) { return; }
+        wallRunning = false;
+        lastWall = wallId;
+        wallCooldown = 0.4;
+        if (push)
+        {
+            vx += wallNx * 1.2;
+            vz += wallNz * 1.2;
+        }
+    }
+
+    func WallJump()
+    {
+        var tx = -wallNz;
+        var tz = wallNx;
+        var along = vx * tx + vz * tz;
+        if (along < 0)
+        {
+            tx = -tx;
+            tz = -tz;
+            along = -along;
+        }
+        along = MathMax(along, wallRunSpeed);
+        vx = tx * along + wallNx * wallJumpOut;
+        vz = tz * along + wallNz * wallJumpOut;
+        vy = wallJumpUp;
+        wallRunning = false;
+        wallEndReason = "jump";
+        lastWall = wallId;
+        wallCooldown = 0.3;
+        buffer = 0;
+        jumpCount += 1;
+        fovKick += 3;
+        Sfx("Assets/Audio/jump.wav", 0.6, 1.08);
+    }
+
+    // ================================================================ Kenara tutunma
+    func TryMantle(p, inp, fx, fz)
+    {
+        if (mantleCooldown > 0 || vy > 5 || inp.y < 0.3) { return; }
+        // Göğüs hizasında önde duvar
+        var h = Raycast(p.x + fx * 0.38, p.y + 0.2, p.z + fz * 0.38, fx, 0, fz, 0.55);
+        if (h == null || h.isTrigger || MathAbs(h.normal.y) > 0.3) { return; }
+        // Baş hizası boş olmalı
+        var head = Raycast(p.x + fx * 0.38, p.y + 1.25, p.z + fz * 0.38, fx, 0, fz, 0.9);
+        if (head != null) { return; }
+        // Kenarın üst yüzeyi
+        var reach = h.distance + 0.38 + 0.35;
+        var top = Raycast(p.x + fx * reach, p.y + 1.25, p.z + fz * reach, 0, -1, 0, 1.4);
+        if (top == null || top.normal.y < 0.7) { return; }
+        var rise = top.point.y - (p.y - 0.9);
+        if (rise < 0.25 || rise > 1.9) { return; }
+        vy = MathSqrt(2 * gravity * (rise + 0.3));
+        mantleTimer = 0.32;
+        mantleFx = fx;
+        mantleFz = fz;
+        mantleCooldown = 0.6;
+        vx = 0;
+        vz = 0;
+        dipVel += 1.0;
+        Sfx("Assets/Audio/land.wav", 0.35, 1.2);
+    }
+
+    func MantleMove(dt)
+    {
+        mantleTimer -= dt;
+        // Önce yukarı, sonra ileri
+        var push = mantleTimer < 0.18 ? 5.0 : 1.0;
+        vx = mantleFx * push;
+        vz = mantleFz * push;
+    }
+
+    // ================================================================ Kayma / çömelme
+    func StartSlide()
+    {
+        slideQueue = 0;
+        sliding = true;
+        SetCrouched(true);
+        var cur = MathSqrt(vx * vx + vz * vz);
+        if (cur < 5.0)
+        {
+            slideTimer = 0;     // yavaşken çömel
+            return;
+        }
+        var s = MathMin(cur + slideBoost, slideMaxSpeed);
+        vx = vx / cur * s;
+        vz = vz / cur * s;
+        slideTimer = slideTime;
+        fovKick += 4;
+        Dust(GetPosition(), 10);
+        Sfx("Assets/Audio/slide.wav", 0.55, random(0.95, 1.05));
+    }
+
+    func SlideMove(dt, wx, wz, wl)
+    {
+        if (slideTimer > 0)
+        {
+            slideTimer -= dt;
+            var cur = MathSqrt(vx * vx + vz * vz);
+            var next = MathMax(0, cur - slideFriction * dt);
+            if (cur > 0.1)
+            {
+                var dx = vx / cur;
+                var dz = vz / cur;
+                if (wl > 0.1)
+                {
+                    dx = MathLerp(dx, wx, 1.6 * dt);
+                    dz = MathLerp(dz, wz, 1.6 * dt);
+                    var dl = MathSqrt(dx * dx + dz * dz);
+                    if (dl > 0.0001) { dx /= dl; dz /= dl; }
+                }
+                vx = dx * next;
+                vz = dz * next;
+            }
+            if (next < crouchSpeed) { slideTimer = 0; }
+            // Kayarken ayak altından toz
+            dustTimer -= dt;
+            if (dustTimer <= 0 && grounded)
+            {
+                dustTimer = 0.04;
+                Dust(GetPosition(), 2);
+            }
+        }
+        else
+        {
+            Approach(wx * crouchSpeed, wz * crouchSpeed, groundAccel * dt);
+        }
+        if (slideTimer <= 0 && !SlideHeld() && CanStand()) { EndSlide(); }
+    }
+
+    func EndSlide()
+    {
+        sliding = false;
+        slideTimer = 0;
+        SetCrouched(false);
+    }
+
+    func SetCrouched(on)
+    {
+        if (crouched == on) { return; }
+        crouched = on;
+        if (on)
+        {
+            SetComponentField("CharacterController", "Height", 1.0);
+            SetComponentField("CharacterController", "Center", {x: 0, y: -0.4, z: 0});
+        }
+        else
+        {
+            SetComponentField("CharacterController", "Height", 1.8);
+            SetComponentField("CharacterController", "Center", {x: 0, y: 0, z: 0});
+        }
+    }
+
+    // Ayağa kalkmak için başın üstünde yer var mı (kapsül yarıçapını da yokla)
+    func CanStand()
+    {
+        if (!crouched) { return true; }
+        var p = GetPosition();
+        var offs = [[0, 0], [0.3, 0], [-0.3, 0], [0, 0.3], [0, -0.3]];
+        foreach (var o in offs)
+        {
+            var h = Raycast(p.x + o[0], p.y + 0.14, p.z + o[1], 0, 1, 0, 0.85);
+            if (h != null && !h.isTrigger) { return false; }
+        }
+        return true;
+    }
+
+    // Ayak hizasında toz bulutu
+    func Dust(p, count)
+    {
+        ParticleEmitAt("FX_Dust", p.x, p.y - 0.85, p.z, count);
+    }
+
+    // ================================================================ Ses
+    func Sfx(path, vol, pitch)
+    {
+        AudioPlayOneShot(path, vol, pitch, 0, "SFX");
+    }
+
+    func Step(pitchMul)
+    {
+        var i = int(MathClamp(MathFloor(random(1, 5)), 1, 4));
+        if (i == lastStep) { i = i % 4 + 1; }
+        lastStep = i;
+        Sfx("Assets/Audio/step" + i + ".wav", 0.3, random(0.92, 1.08) * pitchMul);
+    }
+
+    func Footsteps(dt)
+    {
+        if (speed < 1.5) { return; }
+        stepDist += speed * dt;
+        var stride = speed > runSpeed + 0.5 ? 2.7 : 2.2;
+        if (stepDist > stride)
+        {
+            stepDist = 0;
+            Step(1.0);
+        }
+    }
+
+    func UpdateWind(dt)
+    {
+        var total = mode >= 2 ? MathSqrt(vx * vx + vy * vy + vz * vz) : 0;
+        var target = MathClamp((total - 6) / 16, 0, 0.7);
+        windVol = MathLerp(windVol, target, 1 - MathExp(-4 * dt));
+        AudioSetVolume(windVol);
+        AudioSetPitch(0.8 + MathClamp(total / 40, 0, 0.7));
+    }
+
+    // ================================================================ Kamera
+    func UpdateCameraFx(dt)
+    {
+        if (cam == null) { return; }
+        camHeight = MathLerp(camHeight, crouched ? 0.05 : 0.7, 1 - MathExp(-14 * dt));
+        // İniş yaylanması
+        dipVel += (-dip * 140 - dipVel * 18) * dt;
+        dip += dipVel * dt;
+        // Baş sallanması
+        var moving = mode >= 2 && grounded && !sliding && speed > 1.0;
+        var bobTarget = moving && headBob ? MathMin(speed / sprintSpeed, 1.2) : 0;
+        bobAmount = MathLerp(bobAmount, bobTarget, 1 - MathExp(-8 * dt));
+        if (moving) { bobPhase += dt * speed * 1.15; }
+        var by = MathSin(bobPhase * 2) * 0.05 * bobAmount;
+        var bx = MathCos(bobPhase) * 0.035 * bobAmount;
+        // Duvar koşusunda duvardan uzağa, yan adımda hafif eğilme
+        var rollTarget = wallRunning ? wallSide * 13 : -lastInputX * 1.5;
+        camRoll = MathLerp(camRoll, rollTarget, 1 - MathExp(-9 * dt));
+        var sx = 0;
+        var syy = 0;
+        if (shake > 0)
+        {
+            shake = MathMax(0, shake - dt * 1.4);
+            sx = random(-1, 1) * shake * 0.25;
+            syy = random(-1, 1) * shake * 0.25;
+        }
+        EntitySetPosition(cam, bx + sx, camHeight + by + dip + syy, 0);
+        EntitySetRotation(cam, pitch, 0, camRoll);
+        // Hızla genişleyen görüş alanı
+        var sp = MathClamp((speed - runSpeed) / (sprintSpeed - runSpeed), 0, 1.6);
+        fovKick = MathLerp(fovKick, 0, 1 - MathExp(-3 * dt));
+        var targetFov = fov + sp * 6 + fovKick;
+        curFov = MathLerp(curFov, targetFov, 1 - MathExp(-6 * dt));
+        if (MathAbs(curFov - appliedFov) > 0.05)
+        {
+            EntitySetComponentField(cam, "Camera", "FieldOfView", curFov);
+            appliedFov = curFov;
+        }
+    }
+}

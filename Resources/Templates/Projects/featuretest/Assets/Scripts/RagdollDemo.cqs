@@ -1,0 +1,50 @@
+using nativebridge;
+
+// Ragdoll istasyonu: manken merdivenin tepesinde bir an ayakta durur (idle animasyonu), sonra izleyiciye doğru itilir ve
+// basamaklardan yuvarlanır; birkaç saniyede bir başa döner (istasyona ne zaman gelinirse gelinsin düşüş görülür).
+script RagdollDemo : ConquerorScript
+{
+    public float interval = 7.0;
+    public float standTime = 0.8;        // itilmeden önce ayakta durma (animasyon pozu oturur)
+    public float push = 260.0;           // tüm gövdeye dağıtılan itme (N·s; 60 kg -> ~4.3 m/s), basamakların inişi yönünde (-Z)
+    public float pushUp = 70.0;          // hafif yukarı: gövde öne devrilip basamaklardan yuvarlanır
+    [Header("State")]
+    public int drops = 0;
+
+    private var start = null;
+    private var startRot = null;
+    private float timer = 0.0;
+    private float standTimer = 0.0;
+
+    func Start()
+    {
+        start = GetPosition();
+        startRot = GetRotation();
+        Reset();
+    }
+
+    func Reset()
+    {
+        RagdollDeactivate(GetEntityId());
+        Teleport(start.x, start.y, start.z);
+        SetRotation(startRot.x, startRot.y, startRot.z);
+        standTimer = standTime;
+        timer = interval;
+    }
+
+    func Update(dt)
+    {
+        if (standTimer > 0.0)
+        {
+            standTimer -= dt;
+            if (standTimer <= 0.0)
+            {
+                RagdollActivate(GetEntityId(), 0, pushUp, -push);   // nokta yok: itme kütleye oranla bütün gövdeye
+                drops++;
+            }
+            return;
+        }
+        timer -= dt;
+        if (timer <= 0.0) { Reset(); }
+    }
+}

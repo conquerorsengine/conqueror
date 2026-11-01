@@ -1,0 +1,75 @@
+using nativebridge;
+
+// Editör: sahnenin son işlem ayarlarına hazır görünüm uygular (geri alınabilir).
+script PostFXEditor : ConquerorScript
+{
+    public int selected = 1;
+    public string last = "";
+
+    func OnLoad()
+    {
+        EditorAddPanel("Post FX Presets", "DrawPanel");
+        for (var n in PostPresetNames()) { EditorAddMenuItem("Post FX/" + n, "Apply" + n); }
+        EditorAddToolButton("Look", "palette", "ApplySelected", "Apply the selected Post FX preset");
+    }
+
+    func ApplyNamed(name)
+    {
+        var p = PostPresetValues(name);
+        if (p == null) { return; }
+        RenderSettingSet("Post.Enabled", true);
+        for (var k in MapKeys(p)) { RenderSettingSet("Post." + k, p[k]); }
+        last = name;
+        EditorNotify("Post FX: " + name);
+    }
+
+    func ApplySelected() { ApplyNamed(PostPresetNames()[selected]); }
+    func ApplyDefault() { ApplyNamed("Default"); }
+    func ApplyCinematic() { ApplyNamed("Cinematic"); }
+    func ApplyNoir() { ApplyNamed("Noir"); }
+    func ApplyVintage() { ApplyNamed("Vintage"); }
+    func ApplyDreamy() { ApplyNamed("Dreamy"); }
+    func ApplyHorror() { ApplyNamed("Horror"); }
+    func ApplyVivid() { ApplyNamed("Vivid"); }
+    func ApplyCold() { ApplyNamed("Cold"); }
+    func ApplyWarm() { ApplyNamed("Warm"); }
+    func ApplyRetro() { ApplyNamed("Retro"); }
+
+    func DrawPanel()
+    {
+        selected = GuiCombo("Preset", selected, PostPresetNames());
+        if (GuiButton("Apply To Scene", -1)) { EditorRunUndoable("Post FX Preset", "ApplySelected"); }
+        GuiSeparator();
+        var names = PostPresetNames();
+        for (var i = 0; i < names.Count; i++)
+        {
+            if (i % 3 != 0) { GuiSameLine(); }
+            if (GuiButton(names[i])) { selected = i; EditorRunUndoable("Post FX Preset", "ApplySelected"); }
+        }
+        if (last != "") { GuiTextDisabled("Last applied: " + last); }
+    }
+}
+
+func PostPresetNames() { return ["Default", "Cinematic", "Noir", "Vintage", "Dreamy", "Horror", "Vivid", "Cold", "Warm", "Retro"]; }
+
+func PostPresetValues(name)
+{
+    var p = Map();
+    p["ColorGrading"] = true;
+    p["Exposure"] = 0.0; p["Bloom"] = true; p["BloomIntensity"] = 0.6; p["BloomThreshold"] = 1.0;
+    p["Contrast"] = 1.0; p["Saturation"] = 1.0; p["Temperature"] = 0.0; p["Tint"] = 0.0;
+    p["Vignette"] = false; p["VignetteIntensity"] = 0.3; p["ChromaticAberration"] = false; p["ChromaticAberrationIntensity"] = 0.3;
+    p["FilmGrain"] = false; p["FilmGrainIntensity"] = 0.15; p["Sharpen"] = false; p["SharpenAmount"] = 0.3;
+    p["Lift"] = [0, 0, 0]; p["Gamma"] = [1, 1, 1]; p["Gain"] = [1, 1, 1];
+    if (name == "Default") { return p; }
+    if (name == "Cinematic") { p["Contrast"] = 1.12; p["Saturation"] = 0.92; p["Temperature"] = 0.08; p["Vignette"] = true; p["VignetteIntensity"] = 0.35; p["FilmGrain"] = true; p["FilmGrainIntensity"] = 0.06; p["Lift"] = [0.0, 0.01, 0.03]; p["Gain"] = [1.04, 1.0, 0.95]; return p; }
+    if (name == "Noir") { p["Saturation"] = 0.0; p["Contrast"] = 1.35; p["Vignette"] = true; p["VignetteIntensity"] = 0.5; p["FilmGrain"] = true; p["FilmGrainIntensity"] = 0.2; p["Exposure"] = -0.1; return p; }
+    if (name == "Vintage") { p["Saturation"] = 0.65; p["Contrast"] = 0.9; p["Temperature"] = 0.35; p["Vignette"] = true; p["VignetteIntensity"] = 0.45; p["FilmGrain"] = true; p["FilmGrainIntensity"] = 0.25; p["Lift"] = [0.06, 0.04, 0.0]; return p; }
+    if (name == "Dreamy") { p["BloomIntensity"] = 1.6; p["BloomThreshold"] = 0.6; p["Saturation"] = 1.1; p["Contrast"] = 0.9; p["Exposure"] = 0.15; p["Tint"] = 0.1; return p; }
+    if (name == "Horror") { p["Saturation"] = 0.45; p["Contrast"] = 1.25; p["Temperature"] = -0.25; p["Tint"] = -0.15; p["Vignette"] = true; p["VignetteIntensity"] = 0.6; p["ChromaticAberration"] = true; p["ChromaticAberrationIntensity"] = 0.5; p["FilmGrain"] = true; p["FilmGrainIntensity"] = 0.3; p["Exposure"] = -0.35; return p; }
+    if (name == "Vivid") { p["Saturation"] = 1.4; p["Contrast"] = 1.15; p["Sharpen"] = true; p["SharpenAmount"] = 0.4; p["BloomIntensity"] = 0.8; return p; }
+    if (name == "Cold") { p["Temperature"] = -0.45; p["Saturation"] = 0.85; p["Contrast"] = 1.05; p["Lift"] = [0.0, 0.02, 0.06]; return p; }
+    if (name == "Warm") { p["Temperature"] = 0.45; p["Saturation"] = 1.1; p["Gain"] = [1.06, 1.0, 0.92]; return p; }
+    if (name == "Retro") { p["Saturation"] = 1.25; p["Contrast"] = 1.2; p["ChromaticAberration"] = true; p["ChromaticAberrationIntensity"] = 0.7; p["Sharpen"] = true; p["SharpenAmount"] = 0.6; p["FilmGrain"] = true; p["FilmGrainIntensity"] = 0.12; return p; }
+    return null;
+}

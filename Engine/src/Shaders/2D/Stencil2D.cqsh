@@ -1,0 +1,34 @@
+#language GLSL
+#type vertex
+#version 450 core
+
+// Yalnızca stencil'e yazan 2D geometri: gölge hacimleri ve sprite maskeleri
+layout(location = 0) in vec4 a_PosUV;
+
+uniform mat4 u_ViewProjection;
+
+out vec2 v_UV;
+
+void main()
+{
+    v_UV = a_PosUV.zw;
+    gl_Position = u_ViewProjection * vec4(a_PosUV.xy, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+
+layout(location = 0) out vec4 FragColor;
+
+in vec2 v_UV;
+
+uniform int u_UseTexture = 0;
+uniform sampler2D u_Texture;
+uniform float u_AlphaCutoff = 0.2;
+
+void main()
+{
+    if (u_UseTexture == 1 && texture(u_Texture, v_UV).a < u_AlphaCutoff)
+        discard;
+    FragColor = vec4(0.0);
+}

@@ -1,0 +1,24 @@
+Id: conqueror.water-buoyancy
+Name: Water & Buoyancy
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Floating physics for boats, crates and ragdolls: water volumes with gentle animated waves,
+  buoyancy sampled at several points so objects bob and tilt naturally, water drag and angular
+  damping, splash particles when something hits the surface and an underwater flag for
+  gameplay or audio effects.
+Category: Physics
+Icon: water
+Tags: [water, buoyancy, physics, boats, floating]
+Components:
+  - Scripts/WaterVolume.cqs
+  - Scripts/Buoyancy.cqs
+Inserts:
+  - Name: Water
+    Icon: water
+    Prefab: Prefabs/Water.cqprefab
+    Tooltip: 40 x 40 m water surface with waves
+  - Name: Floating Crate
+    Icon: box
+    Prefab: Prefabs/FloatingCrate.cqprefab
+    Tooltip: Crate that floats on water

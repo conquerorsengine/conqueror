@@ -14,6 +14,9 @@ namespace Conqueror
         CQ_API std::string GetArchitecture();
         CQ_API std::string GetComputerName();
         CQ_API std::string GetUserName();
+        // Steam Deck (LCD "Jupiter" / OLED "Galileo"): Steam'in SteamDeck=1 değişkeni, DMI kart adı ya da
+        // CQ_STEAM_DECK=1 (deneme için). Sonuç ilk çağrıda belirlenir.
+        CQ_API bool IsSteamDeck();
         
         // CPU bilgileri
         CQ_API int GetCPUCoreCount();

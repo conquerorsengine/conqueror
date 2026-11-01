@@ -1,0 +1,103 @@
+#language GLSL
+// Alan derinliği: u_Mode 0 = CoC + yarım çözünürlüğe indirme, 1 = disk toplama bulanıklığı (bokeh), 2 = birleştirme
+#type vertex
+#version 450 core
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+out vec2 v_UV;
+void main()
+{
+    v_UV = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+
+#include "Include/Common.glsl"
+
+layout(location = 0) out vec4 FragColor;
+in vec2 v_UV;
+
+uniform sampler2D u_Source;     // mod 0/2: tam çözünürlüklü sahne; mod 1: yarım çözünürlük (rgb + CoC)
+uniform sampler2D u_Blurred;    // mod 2
+uniform sampler2D u_Depth;
+uniform int u_Mode = 0;
+uniform vec2 u_Texel;           // kaynak dokunun texel boyutu
+uniform float u_Near = 0.1;
+uniform float u_Far = 1000.0;
+uniform float u_FocusDistance = 10.0;
+uniform float u_Aperture = 2.8;
+uniform float u_FocalLength = 50.0;
+uniform float u_MaxBlur = 10.0; // piksel (tam çözünürlük)
+uniform float u_ScreenHeight = 1080.0;
+uniform int u_Orthographic = 0;
+
+float LinearDepth(float d)
+{
+    if (u_Orthographic == 1)
+        return u_Near + d * (u_Far - u_Near);
+    float z = d * 2.0 - 1.0;
+    return 2.0 * u_Near * u_Far / (u_Far + u_Near - z * (u_Far - u_Near));
+}
+
+// İnce mercek CoC (piksel, işaretli: < 0 önde, > 0 arkada)
+float CircleOfConfusion(float depth)
+{
+    float S2 = max(LinearDepth(depth), 1e-3) * 1000.0;   // mm
+    float S1 = max(u_FocusDistance, 0.01) * 1000.0;
+    float f = max(u_FocalLength, 1.0);
+    float A = f / max(u_Aperture, 0.5);
+    float cocMM = A * f * (S2 - S1) / (S2 * max(S1 - f, 1.0));
+    float px = cocMM / 24.0 * u_ScreenHeight;           // 24 mm sensör yüksekliği
+    float maxPx = u_MaxBlur * u_ScreenHeight / 1080.0;
+    return clamp(px, -maxPx, maxPx);
+}
+
+// Altın açı spirali: 1 merkez + 32 örnek
+const int kSamples = 32;
+
+void main()
+{
+    if (u_Mode == 0)
+    {
+        // 4 dokunuşla indir; CoC en büyük mutlak değer (bulanıklık kenarlardan taşsın)
+        vec3 c = vec3(0.0);
+        float coc = 0.0;
+        for (int i = 0; i < 4; ++i)
+        {
+            vec2 o = (vec2(i & 1, i >> 1) - 0.5) * u_Texel;
+            c += texture(u_Source, v_UV + o).rgb;
+            float k = CircleOfConfusion(texture(u_Depth, v_UV + o).r);
+            if (abs(k) > abs(coc)) coc = k;
+        }
+        FragColor = vec4(c * 0.25, coc);
+        return;
+    }
+    if (u_Mode == 1)
+    {
+        vec4 center = texture(u_Source, v_UV);
+        float radius = abs(center.a) * 0.5;               // yarım çözünürlükte piksel
+        vec3 sum = center.rgb;
+        float weight = 1.0;
+        for (int i = 1; i <= kSamples; ++i)
+        {
+            float r = sqrt(float(i) / float(kSamples)) * max(radius, 0.5);
+            float a = float(i) * 2.39996323;
+            vec2 o = vec2(cos(a), sin(a)) * r;
+            vec4 s = texture(u_Source, v_UV + o * u_Texel);
+            // Örnek yalnızca kendi bulanıklığı bu uzaklığa ulaşıyorsa katkı verir (keskin ön plan arka plana taşmaz)
+            float sampleRadius = abs(s.a) * 0.5;
+            float w = smoothstep(r - 1.0, r + 1.0, max(min(sampleRadius, radius) , s.a < 0.0 ? sampleRadius : 0.0));
+            sum += s.rgb * w;
+            weight += w;
+        }
+        FragColor = vec4(sum / weight, center.a);
+        return;
+    }
+    vec3 sharp = texture(u_Source, v_UV).rgb;
+    vec4 blurred = texture(u_Blurred, v_UV);
+    float coc = CircleOfConfusion(texture(u_Depth, v_UV).r);
+    float t = smoothstep(0.5, 2.0, max(abs(coc), blurred.a < 0.0 ? abs(blurred.a) : 0.0));
+    FragColor = vec4(mix(sharp, blurred.rgb, t), 1.0);
+}

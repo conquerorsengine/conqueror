@@ -1,0 +1,47 @@
+using nativebridge;
+
+// Şalter: etkileşimde açılır / kapanır, "Handle" çocuğu eğilir ve targetName nesnesine onMessage / offMessage gider
+// (ör. hareketli platforma Activate / Stop). Hedef boşsa yalnızca durum değişir (OnLeverChanged).
+script Lever : ConquerorScript
+{
+    public string targetName = "";
+    public string onMessage = "Activate";
+    public string offMessage = "Stop";
+    public bool isOn = false;
+    public float handleAngle = 35.0;
+    public string sound = "Packages/interaction-system/Sounds/click.wav";
+
+    // Çalışma zamanı bilgisi
+    public int switches = 0;
+
+    func Start() { Apply(); UpdatePrompt(); }
+
+    func UpdatePrompt()
+    {
+        if (HasScript(GetEntityId(), "Interactable")) { SetScriptField(GetEntityId(), "prompt", isOn ? "Switch Off" : "Switch On"); }
+    }
+
+    func OnInteract(by)
+    {
+        isOn = !isOn;
+        switches++;
+        Apply();
+        UpdatePrompt();
+        var p = EntityGetWorldPosition(GetEntityId());
+        if (sound != "") { AudioPlayOneShotAt(sound, p.x, p.y + 1, p.z, 0.8, isOn ? 1.1 : 0.9); }
+        if (targetName != "")
+        {
+            var t = FindEntity(targetName);
+            if (t != null) { SendMessage(t, isOn ? onMessage : offMessage); }
+        }
+        SendMessage(GetEntityId(), "OnLeverChanged", isOn);
+    }
+
+    func Apply()
+    {
+        var h = EntityFindChild(GetEntityId(), "Handle");
+        if (h == null || h < 0) { return; }
+        var r = EntityGetRotation(h);
+        EntitySetRotation(h, isOn ? -handleAngle : handleAngle, r.y, r.z);
+    }
+}

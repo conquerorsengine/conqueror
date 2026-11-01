@@ -1,0 +1,165 @@
+// Virtual Reality (Unreal VR Template / Unity VR Core karşılığı): ızgaralı oda, ışınlanılabilen zemin ve yükseltilmiş
+// platform, masada tutulabilir küpler, toplar ve bir tabanca, ötede devrilen hedefler ve fırlatılacak küp yığını.
+// Oyuncu: XR Origin (baş = kamera) + iki el kontrolcüsü (XRRig.cqs): ışınlanma yayı, 45 derece dönüş, tut / fırlat,
+// tetikle ateş. Gözlük bağlı değilken XR Device Simulator: fare baş, sağ el bakılan yeri gösterir.
+// @EditorCamera 17 30 25 0 0.5 -3.5   (proje açıldığında editör görünümü: uzaklık, eğim, yön, odak)
+OutdoorLighting(-48, 35);
+RenderSettingSet("Post.CloudCoverage", 0.35);
+RenderSettingSet("Post.DepthOfField", false);
+
+var TELEPORT = "Teleport Area";
+func Teleportable(e) { EntitySetTag(e, TELEPORT); return e; }
+
+// Oda: 24 x 24 m zemin, alçak duvarlar, yükseltilmiş platform (rampa ile)
+Teleportable(Box("Floor", 0, -1, 0, 24, 1, 24, GRID));
+foreach (var w in [{x: 0, z: -12.25, sx: 24.5, sz: 0.5}, {x: 0, z: 12.25, sx: 24.5, sz: 0.5}, {x: -12.25, z: 0, sx: 0.5, sz: 24}, {x: 12.25, z: 0, sx: 0.5, sz: 24}])
+{
+    Box("Wall", w.x, 0, w.z, w.sx, 2.4, w.sz, GRID_DARK);
+}
+Teleportable(Box("Platform", 7.0, 0, -7.0, 6, 1.2, 6, GRID_BLUE));
+Teleportable(Ramp("Platform Ramp", 7.0, 0, -0.0, 4.0, 1.2, 2.4, 180, GRID_DARK));
+Box("Pillar A", -8.5, 0, 6.5, 1.2, 2.4, 1.2, GRID_ORANGE);
+Box("Pillar B", 8.5, 0, 6.5, 1.2, 2.4, 1.2, GRID_ORANGE);
+
+// Masa ve tutulabilir nesneler
+Box("Table", 0, 0, -2.2, 2.6, 0.82, 0.9, GRID_DARK);
+func Grabbable(e) { AddScript(e, "Assets/Scripts/Grabbable.cqs"); IgnoreFromNav(e); return e; }
+var cubeCols = [{r: 0.2, g: 0.45, b: 1.0, a: 1}, {r: 1.0, g: 0.45, b: 0.1, a: 1}, {r: 0.25, g: 0.8, b: 0.4, a: 1}, {r: 0.95, g: 0.95, b: 0.95, a: 1}];
+for (var ci = 0; ci < 4; ci++)
+{
+    var cube = Mesh("Grab Cube " + (ci + 1), "Cube", -0.95 + ci * 0.22, 0.82 + 0.065, -2.35, 0.13, 0.13, 0.13, "", cubeCols[ci]);
+    EntitySetComponentField(cube, "MeshRenderer", "Roughness", 0.4);
+    EntityAddComponent(cube, "Rigidbody");
+    EntitySetComponentField(cube, "Rigidbody", "BodyType", "Dynamic");
+    EntitySetComponentField(cube, "Rigidbody", "Mass", 0.5);
+    EntityAddComponent(cube, "BoxCollider");
+    Grabbable(cube);
+}
+for (var bi = 0; bi < 2; bi++)
+{
+    var ball = Mesh("Grab Ball " + (bi + 1), "Sphere", -0.2 + bi * 0.26, 0.82 + 0.08, -1.95, 0.16, 0.16, 0.16, "", bi == 0 ? {r: 0.95, g: 0.25, b: 0.2, a: 1} : {r: 0.95, g: 0.85, b: 0.2, a: 1});
+    EntitySetComponentField(ball, "MeshRenderer", "Roughness", 0.3);
+    EntityAddComponent(ball, "Rigidbody");
+    EntitySetComponentField(ball, "Rigidbody", "BodyType", "Dynamic");
+    EntitySetComponentField(ball, "Rigidbody", "Mass", 0.4);
+    EntitySetComponentField(ball, "Rigidbody", "Restitution", 0.5);
+    EntityAddComponent(ball, "SphereCollider");
+    Grabbable(ball);
+}
+// Tabanca: tutulunca ele oturur (kabza avuçta), tetikle ateş eder
+var gun = CreateEntity("Pistol Pickup");
+EntityAddComponent(gun, "Rigidbody");
+EntitySetComponentField(gun, "Rigidbody", "BodyType", "Dynamic");
+EntitySetComponentField(gun, "Rigidbody", "Mass", 1.1);
+EntityAddComponent(gun, "BoxCollider");
+EntitySetComponentField(gun, "BoxCollider", "Size", {x: 0.045, y: 0.13, z: 0.25});
+EntitySetComponentField(gun, "BoxCollider", "Offset", {x: 0, y: -0.02, z: -0.07});
+var pistol = WeaponEntity("Pistol", "Pistol", gun);
+EntitySetPosition(pistol, 0, 0, 0);
+EntitySetRotation(pistol, 0, 0, 0);
+SetFields(pistol, {reserve: 120});
+Grabbable(gun);
+SetFields(gun, {snapToHand: true, weaponName: "Pistol"});
+EntitySetPosition(gun, 0.75, 0.82 + 0.03, -2.15);
+EntitySetRotation(gun, 0, 25, 90);
+ShooterFX();
+
+// Hedefler ve fırlatma için küp yığını
+Target("Target A", -3.0, 0, -10.0, 0, false);
+Target("Target B", 0.0, 0, -10.6, 0, false);
+Target("Target C", 3.0, 0, -10.0, 0, true);
+for (var row = 0; row < 4; row++)
+{
+    for (var c = 0; c <= 3 - row; c++) { PhysicsCube("Stack " + row + "-" + c, -7.5 + c * 0.52 + row * 0.26, 0.0 + row * 0.5, -6.0, 0.5, 4); }
+}
+
+// Oyuncu: XR Origin (zeminde) / Main Camera (göz 1.65 m) + iki göz kamerası (V ile iki göz önizlemesi)
+var origin = CreateEntity("XR Origin");
+EntitySetPosition(origin, 0, 0, -0.75);
+var cam = CreateEntity("Main Camera");
+EntitySetParent(cam, origin);
+EntitySetPosition(cam, 0, 1.65, 0);
+EntityAddComponent(cam, "Camera");
+EntitySetComponentField(cam, "Camera", "Primary", true);
+EntitySetComponentField(cam, "Camera", "FieldOfView", 75);
+EntitySetComponentField(cam, "Camera", "NearClip", 0.03);
+EntityAddComponent(cam, "AudioListener");
+foreach (var eye in [{n: "Left Eye", x: -0.032}, {n: "Right Eye", x: 0.032}])
+{
+    var ec = CreateEntity(eye.n);
+    EntitySetParent(ec, cam);
+    EntitySetPosition(ec, eye.x, 0, 0);
+    EntityAddComponent(ec, "Camera");
+    EntitySetComponentField(ec, "Camera", "Primary", false);
+    EntitySetComponentField(ec, "Camera", "FieldOfView", 95);
+    EntitySetComponentField(ec, "Camera", "NearClip", 0.03);
+    EntityAddComponent(ec, "RenderTarget");
+    EntitySetComponentField(ec, "RenderTarget", "Name", eye.n == "Left Eye" ? "LeftEye" : "RightEye");
+    EntitySetComponentField(ec, "RenderTarget", "Width", 960);
+    EntitySetComponentField(ec, "RenderTarget", "Height", 1080);
+    EntitySetComponentField(ec, "RenderTarget", "UpdateMode", "Disabled");
+}
+AddScript(origin, "Assets/Scripts/XRRig.cqs");
+foreach (var hn in ["Left", "Right"])
+{
+    // Kontrolcü (poz betikten) + görünen modeli ayrı çocukta: silah tutulurken model gizlenir
+    var hand = CreateEntity(hn + " Controller");
+    EntitySetPosition(hand, hn == "Left" ? -0.2 : 0.2, 1.37, -1.18);
+    var hm = CreateEntity("Controller Model");
+    EntitySetParent(hm, hand, false);
+    EntityAddComponent(hm, "Model");
+    EntitySetComponentField(hm, "Model", "FilePath", "Assets/Models/Controller_" + hn + ".glb");
+}
+// Işınlanma yayı, hedef halkası, işaretçi ışını
+func Beam(name, width, col)
+{
+    var b = CreateEntity(name);
+    EntityAddComponent(b, "LineRenderer");
+    EntitySetComponentField(b, "LineRenderer", "UseWorldSpace", true);
+    EntitySetComponentField(b, "LineRenderer", "StartWidth", width);
+    EntitySetComponentField(b, "LineRenderer", "EndWidth", width);
+    EntitySetComponentField(b, "LineRenderer", "StartColor", col);
+    EntitySetComponentField(b, "LineRenderer", "EndColor", col);
+    EntitySetComponentField(b, "LineRenderer", "Emissive", 3.0);
+    EntitySetActive(b, false);
+    return b;
+}
+Beam("Teleport Arc", 0.02, {r: 0.2, g: 0.85, b: 1.0, a: 1});
+Beam("Pointer", 0.005, {r: 0.4, g: 0.9, b: 1.0, a: 0.8});
+var mk = Mesh("Teleport Marker", "Plane", 0, 0.02, 0, 0.9, 1, 0.9, "", {r: 0.25, g: 0.85, b: 1.0, a: 1});
+EntitySetComponentField(mk, "MeshRenderer", "Texture", "Assets/Textures/teleport_marker.png");
+EntitySetComponentField(mk, "MeshRenderer", "AlphaClip", true);
+EntitySetComponentField(mk, "MeshRenderer", "Unlit", true);
+EntitySetComponentField(mk, "MeshRenderer", "EmissionColor", {r: 0.25, g: 0.85, b: 1.0});
+EntitySetComponentField(mk, "MeshRenderer", "EmissionStrength", 3.0);
+EntitySetComponentField(mk, "MeshRenderer", "CastShadows", false);
+EntitySetActive(mk, false);
+
+// Arayüz: kararma, iki göz önizlemesi, cihaz durumu, ipucu, ortada küçük nokta (simülatörde sağ elin nişanı)
+var ui = UICreateCanvas("HUD");
+EntitySetComponentField(ui, "CanvasScaler", "ReferenceResolution", {x: 1920, y: 1080});
+EntitySetComponentField(ui, "CanvasScaler", "MatchWidthOrHeight", 0.5);
+foreach (var eyeUI in [{n: "Left Eye View", rt: "rt://LeftEye", a: 0.0}, {n: "Right Eye View", rt: "rt://RightEye", a: 0.5}])
+{
+    var ri = UICreateElement("RawImage", ui, eyeUI.n);
+    EntitySetComponentField(ri, "RawImage", "TexturePath", eyeUI.rt);
+    EntitySetComponentField(ri, "RawImage", "RaycastTarget", false);
+    EntitySetComponentField(ri, "RectTransform", "AnchorMin", {x: eyeUI.a, y: 0});
+    EntitySetComponentField(ri, "RectTransform", "AnchorMax", {x: eyeUI.a + 0.5, y: 1});
+    EntitySetComponentField(ri, "RectTransform", "SizeDelta", {x: 0, y: 0});
+    UISetPosition(ri, 0, 0);
+    UISetAlpha(ri, 0);
+}
+var div = HudImage("Eye Divider", ui, "", 0, 0, 6, 1080, 0.5, 0.5);
+EntitySetColor(div, 0, 0, 0, 1);
+UISetAlpha(div, 0);
+var dot = HudImage("Aim Dot", ui, "", 0, 0, 6, 6, 0.5, 0.5);
+EntitySetColor(dot, 1, 1, 1, 0.8);
+EntitySetComponentField(dot, "UIImage", "CornerRadius", 3);
+var fadeImg = HudImage("Fade", ui, "", 0, 0, 0, 0, 0, 0);
+EntitySetComponentField(fadeImg, "RectTransform", "AnchorMax", {x: 1, y: 1});
+EntitySetComponentField(fadeImg, "RectTransform", "SizeDelta", {x: 0, y: 0});
+EntitySetColor(fadeImg, 0, 0, 0, 1);
+UISetAlpha(fadeImg, 0);
+HudText("DeviceText", ui, "HEADSET: NOT CONNECTED   -   XR DEVICE SIMULATOR", 470, -40, 900, 32, 22, "Left", 0, 1);
+HudText("HintText", ui, "MOUSE HEAD   RMB GRAB / THROW   LMB TRIGGER   SPACE TELEPORT   Q / E TURN   WASD MOVE   C RECENTER   F / G LEFT HAND   V EYES   R RESET", 0, 26, 1860, 30, 22, "Center", 0.5, 0);

@@ -1,0 +1,93 @@
+using nativebridge;
+
+// Serbest uçuş kamerası (Flax / Stride örnek sahneleri gibi): sağ tuş basılıyken fareyle bak, WASD uç, Q / E aşağı /
+// yukarı, Shift hızlı, tekerlek hızı değiştirir. 1-9 ve 0 (10) istasyonlara ışınlar ("Station N" varlıkları);
+// Tab / Page Down sonraki, Shift + Tab / Page Up önceki istasyon.
+script FreeFlyCamera : ConquerorScript
+{
+    public float speed = 6.0;
+    public float fastMultiplier = 3.0;
+    public float sensitivity = 0.15;
+    public float smoothing = 10.0;
+    private float yaw = 0.0;
+    private float pitch = 0.0;
+    private float vx = 0.0;
+    private float vy = 0.0;
+    private float vz = 0.0;
+    private int stationCount = 0;
+    private int current = 0;
+
+    func Start()
+    {
+        var r = GetRotation();
+        yaw = r.y;
+        pitch = r.x;
+        for (var i = 1; i < 100; i++)
+        {
+            var s = FindEntity("Station " + i);
+            if (s == null || s < 0) { break; }
+            stationCount = i;
+        }
+    }
+
+    func GoToStation(i)
+    {
+        if (stationCount <= 0) { return; }
+        // Baştan / sondan sar (Tab ile dolaşma)
+        if (i < 1) { i = stationCount; }
+        if (i > stationCount) { i = 1; }
+        var s = FindEntity("Station " + i);
+        if (s == null || s < 0) { return; }
+        current = i;
+        var p = EntityGetWorldPosition(s);
+        var sy = EntityGetRotation(s).y;
+        var r = MathDegToRad(sy);
+        // İstasyonun önünde, ona bakan konum
+        SetPosition(p.x - MathSin(r) * 9.0, p.y + 3.2, p.z - MathCos(r) * 9.0);
+        yaw = sy + 180.0;
+        pitch = -12.0;
+        vx = 0.0;
+        vy = 0.0;
+        vz = 0.0;
+    }
+
+    func Update(dt)
+    {
+        for (var i = 1; i <= 9; i++) { if (IsKeyDown("" + i)) { GoToStation(i); } }
+        if (IsKeyDown("0")) { GoToStation(10); }
+        var shift = IsKeyPressed("LeftShift") || IsKeyPressed("RightShift");
+        if (IsKeyDown("Tab")) { GoToStation(shift ? current - 1 : current + 1); }
+        if (IsKeyDown("PageDown")) { GoToStation(current + 1); }
+        if (IsKeyDown("PageUp")) { GoToStation(current - 1); }
+        if (IsMouseButtonPressed(1))
+        {
+            var md = GetMouseDelta();
+            yaw = MathNormalizeAngle(yaw - md.x * sensitivity);
+            pitch = MathClamp(pitch - md.y * sensitivity, -89.0, 89.0);
+        }
+        var wheel = GetMouseScrollDelta();
+        if (wheel != 0.0) { speed = MathClamp(speed * (1.0 + wheel * 0.15), 1.0, 60.0); }
+        SetRotation(pitch, yaw, 0);
+        var f = GetForward();
+        var r = GetRight();
+        var ix = 0.0;
+        var iz = 0.0;
+        var iy = 0.0;
+        if (IsKeyPressed("W")) { iz += 1.0; }
+        if (IsKeyPressed("S")) { iz -= 1.0; }
+        if (IsKeyPressed("D")) { ix += 1.0; }
+        if (IsKeyPressed("A")) { ix -= 1.0; }
+        if (IsKeyPressed("E")) { iy += 1.0; }
+        if (IsKeyPressed("Q")) { iy -= 1.0; }
+        var sp = speed * (IsKeyPressed("LeftShift") ? fastMultiplier : 1.0);
+        var tx = (f.x * iz + r.x * ix) * sp;
+        var ty = (f.y * iz + iy) * sp;
+        var tz = (f.z * iz + r.z * ix) * sp;
+        var k = 1.0 - MathExp(-smoothing * dt);
+        vx += (tx - vx) * k;
+        vy += (ty - vy) * k;
+        vz += (tz - vz) * k;
+        var p = GetPosition();
+        SetPosition(p.x + vx * dt, MathMax(p.y + vy * dt, 0.3), p.z + vz * dt);
+    }
+}

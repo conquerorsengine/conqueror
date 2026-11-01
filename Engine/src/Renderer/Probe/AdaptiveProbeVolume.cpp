@@ -80,7 +80,7 @@ namespace Conqueror
         for (auto e : meshView)
         {
             auto [tf, mr] = meshView.get<TransformComponent, MeshRendererComponent>(e);
-            glm::mat4 wt = tf.GetTransform();
+            glm::mat4 wt = tf.WorldTransform;
             std::shared_ptr<Mesh> mesh;
             switch (mr.Type) {
                 case MeshType::Sphere: mesh = Renderer3D::GetSphereMesh(); break;
@@ -104,7 +104,7 @@ namespace Conqueror
         {
             auto [tf, mc] = modelView.get<TransformComponent, ModelComponent>(e);
             if (!mc.ModelData) continue;
-            glm::mat4 wt = tf.GetTransform();
+            glm::mat4 wt = tf.WorldTransform;
             for (auto& mesh : mc.ModelData->Meshes)
             {
                 if (!mesh) continue;
@@ -235,7 +235,25 @@ namespace Conqueror
                       leafBricks.size(), m_Probes.size(), m_NumLevels);
     }
 
+    namespace { struct APVBakeCancelled {}; }
+
     void AdaptiveProbeVolume::Bake(Scene* scene)
+    {
+        m_Cancelled = false;
+        try
+        {
+            BakeInternal(scene);
+        }
+        catch (const APVBakeCancelled&)
+        {
+            m_IsBaking = false;
+            m_IsBaked = false;
+            m_Cancelled = true;
+            CQ_CORE_WARN("APV bake cancelled");
+        }
+    }
+
+    void AdaptiveProbeVolume::BakeInternal(Scene* scene)
     {
         if (!scene || m_IsBaking) return;
         m_IsBaking = true;
@@ -318,7 +336,7 @@ namespace Conqueror
         for (auto e : meshView)
         {
             auto [tf, mr] = meshView.get<TransformComponent, MeshRendererComponent>(e);
-            glm::mat4 wt = tf.GetTransform();
+            glm::mat4 wt = tf.WorldTransform;
             glm::mat3 nm = glm::mat3(glm::transpose(glm::inverse(wt)));
             glm::vec3 alb = mr.MaterialInstance ? mr.MaterialInstance->Albedo : glm::vec3(mr.Color);
 
@@ -356,7 +374,7 @@ namespace Conqueror
             auto [tf, mc] = modelView.get<TransformComponent, ModelComponent>(e);
             if (!mc.ModelData) continue;
 
-            glm::mat4 wt = tf.GetTransform();
+            glm::mat4 wt = tf.WorldTransform;
             glm::mat3 nm = glm::mat3(glm::transpose(glm::inverse(wt)));
 
             for (size_t m = 0; m < mc.ModelData->Meshes.size(); m++)
@@ -650,7 +668,7 @@ namespace Conqueror
         for (auto e : meshView)
         {
             auto [tf, mr] = meshView.get<TransformComponent, MeshRendererComponent>(e);
-            glm::mat4 wt = tf.GetTransform();
+            glm::mat4 wt = tf.WorldTransform;
             std::shared_ptr<Mesh> mesh;
             switch (mr.Type) {
                 case MeshType::Sphere: mesh = Renderer3D::GetSphereMesh(); break;
@@ -677,7 +695,7 @@ namespace Conqueror
         {
             auto [tf, mc] = modelView.get<TransformComponent, ModelComponent>(e);
             if (!mc.ModelData) continue;
-            glm::mat4 wt = tf.GetTransform();
+            glm::mat4 wt = tf.WorldTransform;
 
             for (auto& mesh : mc.ModelData->Meshes)
             {
@@ -866,6 +884,8 @@ namespace Conqueror
 
     void AdaptiveProbeVolume::ReportProgress(float progress, const std::string& step)
     {
+        if (m_CancelRequested.load())
+            throw APVBakeCancelled{};
         m_Progress = progress;
         if (m_ProgressCallback)
             m_ProgressCallback(progress, step);

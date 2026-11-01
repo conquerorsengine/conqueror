@@ -1,0 +1,31 @@
+using nativebridge;
+
+// Kod ile dünyada yazı: SendMessage(FindEntity("Floating Text Spawner"), "Spawn", "Level Up!", x, y, z)
+script FloatingTextSpawner : ConquerorScript
+{
+    public float r = 1.0;
+    public float g = 0.9;
+    public float b = 0.3;
+    public float fontSize = 0.7;
+
+    // Çalışma zamanı bilgisi
+    public int spawned = 0;
+
+    func Spawn(text, x, y, z)
+    {
+        SpawnFloatingText(text, x, y, z, r, g, b, fontSize);
+        spawned++;
+    }
+}
+
+func SpawnFloatingText(text, x, y, z, r, g, b, size)
+{
+    var e = CreateEntity("Floating Text");
+    EntitySetPosition(e, x, y, z);
+    EntityAddComponent(e, "TextRenderer");
+    EntitySetComponentField(e, "TextRenderer", "Text", text);
+    EntitySetComponentField(e, "TextRenderer", "Color", [r, g, b, 1.0]);
+    EntitySetComponentField(e, "TextRenderer", "FontSize", size);
+    AddScript(e, "Packages/floating-text/Scripts/FloatingText.cqs");
+    return e;
+}

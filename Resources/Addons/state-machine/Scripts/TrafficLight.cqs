@@ -1,0 +1,35 @@
+using nativebridge;
+
+// Durum makinesi örneği: yeşil -> sarı -> kırmızı -> yeşil. Lambalar "Green Lamp" / "Yellow Lamp" / "Red Lamp" çocukları.
+script TrafficLight : ConquerorScript
+{
+    public float greenTime = 4.0;
+    public float yellowTime = 1.0;
+    public float redTime = 3.0;
+
+    // Çalışma zamanı bilgisi
+    public int cycles = 0;
+
+    func Lamp(name, on, r, g, b)
+    {
+        var e = EntityFindChild(GetEntityId(), name);
+        if (e == null || e < 0) { return; }
+        var k = on ? 1.0 : 0.12;
+        EntitySetColor(e, r * k, g * k, b * k, 1);
+        EntitySetComponentField(e, "MeshRenderer", "EmissionStrength", on ? 3.0 : 0.0);
+    }
+
+    func Show(green, yellow, red)
+    {
+        Lamp("Green Lamp", green, 0.1, 1.0, 0.25);
+        Lamp("Yellow Lamp", yellow, 1.0, 0.8, 0.1);
+        Lamp("Red Lamp", red, 1.0, 0.12, 0.1);
+    }
+
+    func Enter_Green() { Show(true, false, false); cycles++; }
+    func Update_Green(dt) { return GetScriptField(GetEntityId(), "timeInState") >= greenTime ? "Yellow" : ""; }
+    func Enter_Yellow() { Show(false, true, false); }
+    func Update_Yellow(dt) { return GetScriptField(GetEntityId(), "timeInState") >= yellowTime ? "Red" : ""; }
+    func Enter_Red() { Show(false, false, true); }
+    func Update_Red(dt) { return GetScriptField(GetEntityId(), "timeInState") >= redTime ? "Green" : ""; }
+}

@@ -1,0 +1,79 @@
+using nativebridge;
+
+// Menteşeli kapı: "Hinge" çocuğu Y ekseninde openAngle kadar döner (yumuşak). Kilitliyse keyItem envanterde olmalı.
+script Door : ConquerorScript
+{
+    public float openAngle = 100.0;
+    public float speed = 3.0;
+    public bool startOpen = false;
+    public bool locked = false;
+    public string keyItem = "";
+    public bool autoClose = false;
+    public float autoCloseDelay = 3.0;
+    public string sound = "Packages/interaction-system/Sounds/door.wav";
+
+    // Çalışma zamanı bilgisi
+    public bool open = false;
+    public float angle = 0.0;
+    public int toggles = 0;
+
+    private var hinge = null;
+    private float openTimer = 0.0;
+
+    func Start()
+    {
+        hinge = EntityFindChild(GetEntityId(), "Hinge");
+        open = startOpen;
+        angle = open ? openAngle : 0.0;
+        Apply();
+        UpdatePrompt();
+    }
+
+    func UpdatePrompt()
+    {
+        if (!HasScript(GetEntityId(), "Interactable")) { return; }
+        SetScriptField(GetEntityId(), "prompt", locked ? "Locked" : (open ? "Close" : "Open"));
+    }
+
+    func OnInteract(by)
+    {
+        if (locked)
+        {
+            if (keyItem != "" && by != null && HasScript(by, "Inventory") && InvokeMethod(by, "HasItem", keyItem, 1)) { locked = false; }
+            else { SendMessage(GetEntityId(), "OnDoorLocked"); return; }
+        }
+        Toggle();
+    }
+
+    func Toggle()
+    {
+        open = !open;
+        toggles++;
+        openTimer = 0.0;
+        var p = EntityGetWorldPosition(GetEntityId());
+        if (sound != "") { AudioPlayOneShotAt(sound, p.x, p.y + 1, p.z, 0.7, open ? 1.0 : 0.85); }
+        UpdatePrompt();
+    }
+
+    func Unlock() { locked = false; UpdatePrompt(); }
+
+    func Update(dt)
+    {
+        var target = open ? openAngle : 0.0;
+        angle = MathLerp(angle, target, 1.0 - MathExp(-speed * dt));
+        if (MathAbs(angle - target) < 0.05) { angle = target; }
+        Apply();
+        if (open && autoClose)
+        {
+            openTimer += dt;
+            if (openTimer >= autoCloseDelay) { Toggle(); }
+        }
+    }
+
+    func Apply()
+    {
+        if (hinge == null || hinge < 0) { return; }
+        var r = EntityGetRotation(hinge);
+        EntitySetRotation(hinge, r.x, angle, r.z);
+    }
+}

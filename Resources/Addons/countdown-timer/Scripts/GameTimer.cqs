@@ -1,0 +1,93 @@
+using nativebridge;
+
+// Zamanlayıcı: countDown açıkken duration'dan 0'a, kapalıyken 0'dan yukarı. textName adlı UI Text'e yazar.
+// Bitince OnTimerFinished yayınlanır; reloadOnFinish ile sahne yeniden yüklenir. Kronometrede en iyi süre kaydedilir.
+script GameTimer : ConquerorScript
+{
+    public bool countDown = true;
+    public float duration = 60.0;
+    public bool autoStart = true;
+    public bool showHundredths = false;
+    public float warningTime = 10.0;
+    public bool reloadOnFinish = false;
+    public string textName = "Timer Text";
+    public string bestKey = "";
+
+    // Çalışma zamanı bilgisi
+    public float time = 0.0;
+    public bool running = false;
+    public bool finished = false;
+    public string display = "";
+    public float bestTime = 0.0;
+
+    func Start()
+    {
+        time = countDown ? duration : 0.0;
+        running = autoStart;
+        if (bestKey != "") { bestTime = PrefsGetFloat(bestKey, 0.0); }
+        Refresh();
+    }
+
+    func StartTimer() { running = true; finished = false; }
+    func Pause() { running = false; }
+    func Resume() { if (!finished) { running = true; } }
+    func ResetTimer() { time = countDown ? duration : 0.0; finished = false; Refresh(); }
+    func AddTime(seconds) { time = MathMax(0.0, time + seconds); Refresh(); }
+
+    // Kronometreyi bitir (ör. bitiş çizgisi): en iyi süreyi kaydeder
+    func Stop()
+    {
+        running = false;
+        finished = true;
+        if (!countDown && bestKey != "" && (bestTime <= 0 || time < bestTime))
+        {
+            bestTime = time;
+            PrefsSetFloat(bestKey, bestTime);
+            PrefsSave();
+        }
+        BroadcastMessage("OnTimerFinished", GetEntityName());
+        Refresh();
+    }
+
+    func Update(dt)
+    {
+        if (!running) { return; }
+        if (countDown)
+        {
+            time -= dt;
+            if (time <= 0)
+            {
+                time = 0;
+                Stop();
+                if (reloadOnFinish) { ReloadScene(); }
+                return;
+            }
+        }
+        else { time += dt; }
+        Refresh();
+    }
+
+    func Format(t)
+    {
+        var total = MathMax(0.0, t);
+        var m = int(MathFloor(total / 60.0));
+        var s = int(MathFloor(total - m * 60));
+        var text = StringPadLeft(str(m), 2, "0") + ":" + StringPadLeft(str(s), 2, "0");
+        if (showHundredths)
+        {
+            var c = int(MathFloor((total - MathFloor(total)) * 100.0));
+            text = text + "." + StringPadLeft(str(c), 2, "0");
+        }
+        return text;
+    }
+
+    func Refresh()
+    {
+        display = Format(countDown ? MathCeil(time * (showHundredths ? 100.0 : 1.0)) / (showHundredths ? 100.0 : 1.0) : time);
+        var t = FindEntity(textName);
+        if (t == null) { return; }
+        UISetText(t, display);
+        var warn = countDown && time <= warningTime && !finished;
+        if (warn) { UISetTextColor(t, 1.0, 0.3, 0.25, 1); } else { UISetTextColor(t, 1, 1, 1, 1); }
+    }
+}

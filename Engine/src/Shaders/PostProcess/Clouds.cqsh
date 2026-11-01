@@ -1,0 +1,193 @@
+#language GLSL
+// Hacimsel bulutlar (çeyrek çözünürlük): gezegen eğrili bulut kabuğunda ışın yürütme, güneşe doğru gölge yürütmesi
+// (Beer-Powder), çift loblu faz ve yüksekliğe bağlı ortam ışığı. Yalnızca gökyüzü piksellerinde.
+// Çıktı: rgb içe saçılan ışık, a geçirgenlik
+#type vertex
+#version 450 core
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+out vec2 v_UV;
+void main()
+{
+    v_UV = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+
+#include "Include/Common.glsl"
+#include "Include/FrameData.glsl"
+
+layout(location = 0) out vec4 FragColor;
+in vec2 v_UV;
+
+uniform sampler2D u_Noise;   // 64³ hacim, 8x8 karolu 2B atlas (CloudNoise.cqsh)
+
+// Döşenebilir hacimden örnek: iki komşu katman (karo) çift doğrusal örneklenip z'de karıştırılır
+vec4 SampleNoise(vec3 p)
+{
+    const float kSize = 64.0, kTile = 66.0, kAtlas = 528.0;
+    p = fract(p);
+    float z = p.z * kSize - 0.5;
+    float s0 = floor(z);
+    float f = z - s0;
+    s0 = mod(s0, kSize);
+    float s1 = mod(s0 + 1.0, kSize);
+    vec2 inTile = (p.xy * kSize + 1.0) / kAtlas;
+    vec2 t0 = vec2(mod(s0, 8.0), floor(s0 / 8.0)) * kTile / kAtlas;
+    vec2 t1 = vec2(mod(s1, 8.0), floor(s1 / 8.0)) * kTile / kAtlas;
+    return mix(textureLod(u_Noise, t0 + inTile, 0.0), textureLod(u_Noise, t1 + inTile, 0.0), f);
+}
+uniform sampler2D u_Depth;
+uniform mat4 u_InvViewProj;
+uniform vec3 u_CameraPos;
+uniform float u_Coverage = 0.45;
+uniform float u_Density = 1.0;
+uniform float u_Bottom = 1500.0;
+uniform float u_Thickness = 1800.0;
+uniform float u_Scale = 1.0;
+uniform vec2 u_Wind = vec2(0.0);      // birikmiş rüzgâr kayması (m)
+uniform vec3 u_CloudColor = vec3(1.0);
+uniform float u_Time = 0.0;
+
+const float kPlanetRadius = 6360e3;
+
+vec2 RaySphere(vec3 ro, vec3 rd, float radius)
+{
+    float b = dot(ro, rd);
+    float c = dot(ro, ro) - radius * radius;
+    float h = b * b - c;
+    if (h < 0.0)
+        return vec2(1.0, -1.0);
+    h = sqrt(h);
+    return vec2(-b - h, -b + h);
+}
+
+float Remap(float v, float a, float b, float c, float d) { return c + (v - a) / max(b - a, 1e-5) * (d - c); }
+
+float HeightFraction(vec3 p)
+{
+    return clamp((length(p) - kPlanetRadius - u_Bottom) / max(u_Thickness, 1.0), 0.0, 1.0);
+}
+
+float CloudDensity(vec3 p, bool detail)
+{
+    float h = HeightFraction(p);
+    vec3 q = p - vec3(0.0, kPlanetRadius, 0.0);
+    q.xz += u_Wind;
+    float baseScale = 1.0 / (9000.0 / max(u_Scale, 0.05));
+    vec4 n = SampleNoise(q * baseScale);
+    // Kapsama: düşük frekanslı hava durumu (aynı dokudan, büyük ölçekte)
+    float weather = SampleNoise(vec3(q.xz * baseScale * 0.18, 0.37)).r;
+    float coverage = clamp(u_Coverage * mix(0.75, 1.25, weather), 0.0, 1.0);
+    float shape = n.r;
+    // Yükseklik profili: altta yumuşak başlangıç, üstte yuvarlanma (kümülüs)
+    float profile = smoothstep(0.0, 0.12, h) * smoothstep(1.0, 0.55, h);
+    float base = Remap(shape * profile, 1.0 - coverage, 1.0, 0.0, 1.0);
+    if (base <= 0.0 || !detail)
+        return max(base, 0.0) * u_Density;
+    vec4 d = SampleNoise(q * baseScale * 5.0 + vec3(u_Time * 0.002));
+    float erosion = d.g * 0.625 + d.b * 0.25 + d.a * 0.125;
+    erosion = mix(erosion, 1.0 - erosion, clamp(h * 4.0, 0.0, 1.0));
+    float density = Remap(base, erosion * 0.35, 1.0, 0.0, 1.0);
+    return max(density, 0.0) * u_Density;
+}
+
+float PhaseHG(float c, float g)
+{
+    float g2 = g * g;
+    return (1.0 - g2) / (4.0 * PI * pow(max(1.0 + g2 - 2.0 * g * c, 1e-4), 1.5));
+}
+
+void main()
+{
+    float depth = texture(u_Depth, v_UV).r;
+    if (depth < 1.0)
+    {
+        // Gökyüzüne komşu (bir düşük çözünürlük pikseli içinde) duvar / nesne pikselleri de hesaplanır: tam çözünürlükteki
+        // gökyüzü pikselleri bilineer büyütmede bu komşuları da kullanır. Buraya "bulut yok" yazılınca duvarların hemen
+        // üstünde koyu, kamera hareket ettikçe (düşük çözünürlüklü ızgara kaydıkça) titreyen bir şerit oluşuyordu.
+        vec2 lowTexel = 4.0 / vec2(textureSize(u_Depth, 0));
+        bool nearSky = false;
+        for (int y = -1; y <= 1 && !nearSky; ++y)
+            for (int x = -1; x <= 1; ++x)
+                if (texture(u_Depth, v_UV + vec2(float(x), float(y)) * lowTexel).r >= 1.0)
+                {
+                    nearSky = true;
+                    break;
+                }
+        if (!nearSky)
+        {
+            FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+            return;
+        }
+    }
+    vec4 far = u_InvViewProj * vec4(v_UV * 2.0 - 1.0, 1.0, 1.0);
+    vec3 dir = normalize(far.xyz / far.w - u_CameraPos);
+    if (dir.y < -0.02)
+    {
+        FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+        return;
+    }
+    vec3 origin = vec3(0.0, kPlanetRadius + max(u_CameraPos.y, 0.0) + 1.0, 0.0);
+    vec2 inner = RaySphere(origin, dir, kPlanetRadius + u_Bottom);
+    vec2 outer = RaySphere(origin, dir, kPlanetRadius + u_Bottom + u_Thickness);
+    float tStart = max(inner.y, 0.0);
+    float tEnd = outer.y;
+    if (tEnd <= tStart)
+    {
+        FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+        return;
+    }
+    tEnd = min(tEnd, tStart + 40000.0);
+
+    const int kSteps = 56;
+    float ds = (tEnd - tStart) / float(kSteps);
+    float jitter = InterleavedGradientNoise(gl_FragCoord.xy + vec2(fract(u_Time * 3.17) * 64.0));
+
+    vec3 L = CQ_Frame.SunDirection.w > 0.5 ? -normalize(CQ_Frame.SunDirection.xyz) : vec3(0.0, 1.0, 0.0);
+    vec3 sun = CQ_Frame.SunDirection.w > 0.5 ? CQ_Frame.SunColor.rgb : vec3(0.0);
+    float sunHeight = clamp(L.y * 4.0 + 0.3, 0.0, 1.0);
+    float cosTheta = dot(dir, L);
+    float phase = mix(PhaseHG(cosTheta, 0.8), PhaseHG(cosTheta, -0.3), 0.3) * 4.0 * PI;
+    vec3 skyUp = max(CQ_Frame.IrradianceSH[0].rgb * 0.282095 + CQ_Frame.IrradianceSH[1].rgb * 0.488603, vec3(0.0));
+    if (CQ_Frame.AmbientParams.y == 0)
+        skyUp = CQ_Frame.AmbientSkyColor.rgb;
+
+    vec3 scattered = vec3(0.0);
+    float transmittance = 1.0;
+    const float kSigma = 0.04;          // yoğunluk 1 için sönüm (1/m), bulutun opaklığı
+    for (int i = 0; i < kSteps; ++i)
+    {
+        vec3 p = origin + dir * (tStart + (float(i) + jitter) * ds);
+        float density = CloudDensity(p, true);
+        if (density <= 1e-4)
+            continue;
+        // Güneşe doğru gölge yürütmesi (6 adım, artan)
+        float lightOptical = 0.0;
+        float lstep = u_Thickness / 12.0;
+        for (int j = 0; j < 6; ++j)
+        {
+            vec3 lp = p + L * lstep * (float(j) + 0.5);
+            lightOptical += CloudDensity(lp, j < 3) * lstep;
+            lstep *= 1.3;
+        }
+        float beer = exp(-lightOptical * kSigma * 0.5);
+        float powder = 1.0 - exp(-density * kSigma * ds * 2.0);
+        float h = HeightFraction(p);
+        vec3 lightColor = sun * beer * mix(1.0, powder * 2.0, 0.35) * phase * sunHeight * 1.6
+                        + skyUp * mix(0.5, 1.2, h) * 1.4;
+        float stepT = exp(-density * kSigma * ds);
+        vec3 S = lightColor * u_CloudColor;
+        scattered += transmittance * (S - S * stepT);
+        transmittance *= stepT;
+        if (transmittance < 0.01)
+            break;
+    }
+    // Ufka doğru atmosferik solma (uzak bulutlar gökyüzüne karışır)
+    float fade = exp(-tStart / 28000.0) * smoothstep(-0.02, 0.06, dir.y);
+    scattered *= fade;
+    transmittance = mix(1.0, transmittance, fade);
+    FragColor = vec4(scattered, transmittance);
+}

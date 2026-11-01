@@ -1,0 +1,4 @@
+using nativebridge;
+var r = EntityGetRotation(FindEntity("Main Camera"));
+LogInfo("REGRESSION vr_snap_turn yaw=" + r.y);
+if (MathAbs(MathNormalizeAngle(r.y - 45.0)) < 1.0) { CreateEntity("RegressionCheckOK"); }

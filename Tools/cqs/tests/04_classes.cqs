@@ -1,0 +1,54 @@
+// Sınıflar, kalıtım, statikler
+class Animal {
+    var name = "animal";
+    var legs: int;
+    static var count = 0;
+    func init(name, legs = 4) { this.name = name; this.legs = legs; Animal.count++; }
+    func Speak() { return name + " makes a sound"; }
+    func Describe() { return $"{name} has {legs} legs. {Speak()}"; }
+    static func Create(n) { return new Animal(n); }
+    func ToString() { return "Animal(" + name + ")"; }
+}
+class Dog : Animal {
+    var tricks = [];
+    func init(name) { base.init(name, 4); tricks.Add("sit"); }
+    func Speak() { return name + " barks"; }
+    func Learn(t) { tricks.Add(t); return this; }
+}
+var a = new Animal("cat");
+var d = new Dog("rex");
+d.Learn("roll").Learn("play dead");
+print(a.Speak());
+print(d.Describe());
+print(d.tricks, d.tricks.Count);
+print(Animal.count, Animal.Create("cow").name, Animal.count);
+print(a, "" + d, str(a));
+print(d is Dog, d is Animal, a is Dog, d is string, 5 is int);
+var maybe = a as Dog;
+print(maybe == null);
+struct Point { var x = 0; var y = 0; }
+var p = new Point(3, 4);
+var q = new Point { x = 1, y = 2 };
+print(p.x, p.y, q.x + q.y);
+// C# tarzı sınıf
+class Counter {
+    private int value;
+    public Counter(int start) { value = start; }
+    public int Next() { value++; return value; }
+}
+var cnt = new Counter(10);
+cnt.Next();
+print(cnt.Next());
+// Bağlı metot
+var speak = d.Speak;
+print(speak());
+// dinamik alan
+a.color = "black";
+print(a.color);
+// statik alan erişimi sınıf içinden
+class Registry {
+    static var items = [];
+    static func Add(x) { items.Add(x); return items.Count; }
+}
+Registry.Add(1);
+print(Registry.Add(2), Registry.items);

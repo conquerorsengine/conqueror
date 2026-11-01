@@ -1,0 +1,18 @@
+Id: conqueror.camera-follow-2d
+Name: 2D Camera Follow
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Smooth 2D follow camera with a dead zone, look-ahead in the direction of travel, vertical
+  lag for platformers, level bounds that keep the view inside the map, and optional pixel
+  snapping. Works with orthographic cameras of any size.
+Category: Camera
+Icon: crop-simple
+Tags: [2d, camera, follow, platformer, bounds]
+Components:
+  - Scripts/CameraFollow2D.cqs
+Inserts:
+  - Name: 2D Follow Camera
+    Icon: crop-simple
+    Prefab: Prefabs/FollowCamera2D.cqprefab
+    Tooltip: Orthographic camera that follows "Platformer Player"

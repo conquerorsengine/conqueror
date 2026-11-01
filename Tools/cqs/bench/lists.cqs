@@ -1,0 +1,10 @@
+func work() {
+    var l = [];
+    for (var i = 0; i < 1000000; i++) l.Add(i * 2);
+    var total = 0;
+    for (var i = 0; i < l.Count; i++) total += l[i];
+    var m = {};
+    for (var i = 0; i < 100000; i++) m["k" + (i % 1000)] = i;
+    return total + m.Count;
+}
+print(work());

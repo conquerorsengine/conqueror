@@ -1,0 +1,18 @@
+Id: conqueror.first-person-controller
+Name: First Person Controller
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Ready-to-play first person character: WASD movement with acceleration, mouse look with
+  pitch clamp, sprint, crouch, jump with a configurable height, air control, head bob and
+  cursor locking. Drop the "FPS Player" prefab into a scene with a floor and press Play.
+Category: Characters
+Icon: person-walking
+Tags: [character, controller, fps, first-person, camera]
+Components:
+  - Scripts/FirstPersonController.cqs
+Inserts:
+  - Name: FPS Player
+    Icon: person-walking
+    Prefab: Prefabs/FPSPlayer.cqprefab
+    Tooltip: Character Controller + camera with the First Person Controller component

@@ -1,0 +1,14 @@
+Id: conqueror.footsteps
+Name: Footsteps
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Surface-aware footstep sounds for any character: steps are timed by the distance actually
+  walked (faster when running), the surface under the feet picks the sound set (stone, grass,
+  metal, wood by tag or name), with random pitch and volume and a landing thud after falls.
+  Includes 13 step sounds and a landing sound.
+Category: Audio
+Icon: shoe-prints
+Tags: [audio, footsteps, character, sound, surfaces]
+Components:
+  - Scripts/Footsteps.cqs

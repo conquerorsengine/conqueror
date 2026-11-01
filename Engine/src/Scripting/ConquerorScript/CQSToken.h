@@ -1,155 +1,70 @@
 #pragma once
 
-#include <string>
 #include <cstdint>
+#include <string>
 
 namespace Conqueror::CQS
 {
     enum class TokenType : uint8_t
     {
         // ── Literals ──
-        IntLiteral,         // 42
-        FloatLiteral,       // 3.14f
-        StringLiteral,      // "hello"
+        IntLiteral,         // 42, 0xFF, 0b101
+        FloatLiteral,       // 3.14, 2.5f, 1e-3
+        StringLiteral,      // "hello" (kaçış dizileri çözülmüş)
+        InterpolatedString, // $"Hello {name}" (Lexeme: ham içerik)
 
-        // ── Identifier ──
-        Identifier,         // playerSpeed, MyClass, etc.
+        Identifier,
 
         // ── Keywords: Declarations ──
-        Script,             // script
-        Class,              // class
-        Struct,             // struct
-        Enum,               // enum
-        Interface,          // interface
-        Func,               // func
-        Var,                // var
+        Script, Class, Struct, Enum, Interface, Func, Var,
 
         // ── Keywords: Control Flow ──
-        If,                 // if
-        Else,               // else
-        For,                // for
-        Foreach,            // foreach
-        While,              // while
-        Switch,             // switch
-        Case,               // case
-        Default,            // default
-        Break,              // break
-        Continue,           // continue
-        Return,             // return
+        If, Else, For, Foreach, While, Do, Switch, Case, Default, Break, Continue, Return,
 
         // ── Keywords: Types & Values ──
-        Null,               // null
-        True,               // true
-        False,              // false
-        This,               // this
-        New,                // new
-        In,                 // in
-        As,                 // as
-        Is,                 // is
+        Null, True, False, This, Base, New, In, As, Is,
 
         // ── Keywords: Access ──
-        Public,             // public
-        Private,            // private
-        Static,             // static
+        Public, Private, Protected, Static,
 
         // ── Keywords: Advanced ──
-        Event,              // event
-        Yield,              // yield
-        Try,                // try
-        Catch,              // catch
-        Finally,            // finally
-        Throw,              // throw
-        Using,              // using
-        Namespace,          // namespace
+        Event, Yield, Try, Catch, Finally, Throw, Using, Namespace,
 
-        // ── Operators: Arithmetic ──
-        Plus,               // +
-        Minus,              // -
-        Star,               // *
-        Slash,              // /
-        Percent,            // %
-
-        // ── Operators: Assignment ──
-        Equal,              // =
-        PlusEqual,          // +=
-        MinusEqual,         // -=
-        StarEqual,          // *=
-        SlashEqual,         // /=
-        PercentEqual,       // %=
-
-        // ── Operators: Increment/Decrement ──
-        PlusPlus,           // ++
-        MinusMinus,         // --
-
-        // ── Operators: Comparison ──
-        EqualEqual,         // ==
-        BangEqual,          // !=
-        Less,               // <
-        Greater,            // >
-        LessEqual,          // <=
-        GreaterEqual,       // >=
-
-        // ── Operators: Logical ──
-        AmpAmp,             // &&
-        PipePipe,           // ||
-        Bang,               // !
-
-        // ── Operators: Bitwise ──
-        Amp,                // &
-        Pipe,               // |
-        Caret,              // ^
-        Tilde,              // ~
-        LessLess,           // <<
-        GreaterGreater,     // >>
-
-        // ── Operators: Special ──
-        Arrow,              // ->  (return type)
-        FatArrow,           // =>  (lambda)
-        QuestionDot,        // ?.  (null-conditional)
-        QuestionQuestion,   // ??  (null-coalescing)
-        Question,           // ?   (ternary)
+        // ── Operators ──
+        Plus, Minus, Star, Slash, Percent,
+        Equal, PlusEqual, MinusEqual, StarEqual, SlashEqual, PercentEqual,
+        AmpEqual, PipeEqual, CaretEqual, LessLessEqual, GreaterGreaterEqual, QuestionQuestionEqual,
+        PlusPlus, MinusMinus,
+        EqualEqual, BangEqual, Less, Greater, LessEqual, GreaterEqual,
+        AmpAmp, PipePipe, Bang,
+        Amp, Pipe, Caret, Tilde, LessLess, GreaterGreater,
+        Arrow,              // ->
+        FatArrow,           // =>
+        QuestionDot,        // ?.
+        QuestionQuestion,   // ??
+        Question,           // ?
 
         // ── Delimiters ──
-        LeftParen,          // (
-        RightParen,         // )
-        LeftBrace,          // {
-        RightBrace,         // }
-        LeftBracket,        // [
-        RightBracket,       // ]
+        LeftParen, RightParen, LeftBrace, RightBrace, LeftBracket, RightBracket,
+        Semicolon, Colon, Comma, Dot, DotDot, Dollar,
 
-        // ── Punctuation ──
-        Semicolon,          // ;
-        Colon,              // :
-        Comma,              // ,
-        Dot,                // .
-        DotDot,             // ..  (range, opsiyonel)
-        Dollar,             // $   (string interpolation)
-
-        // ── Special ──
         EndOfFile,
         Error
     };
 
     struct Token
     {
-        TokenType   Type;
-        std::string Lexeme;     // Kaynak koddaki orijinal metin
-        int         Line;       // Satır numarası (hata raporlama)
-        int         Column;     // Sütun numarası
+        TokenType   Type = TokenType::Error;
+        std::string Lexeme;
+        int         Line = 0;
+        int         Column = 0;
+        int64_t     IntValue = 0;
+        double      FloatValue = 0.0;
 
-        // Literal değerler (opsiyonel)
-        union
-        {
-            int64_t IntValue;
-            double  FloatValue;
-        };
+        Token() = default;
+        Token(TokenType type, std::string lexeme, int line, int col)
+            : Type(type), Lexeme(std::move(lexeme)), Line(line), Column(col) {}
 
-        Token() : Type(TokenType::Error), Line(0), Column(0), IntValue(0) {}
-
-        Token(TokenType type, const std::string& lexeme, int line, int col)
-            : Type(type), Lexeme(lexeme), Line(line), Column(col), IntValue(0) {}
-
-        // Debug: Token'ı string'e çevir
         static const char* TypeToString(TokenType type);
     };
 }

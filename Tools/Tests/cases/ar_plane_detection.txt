@@ -1,0 +1,12 @@
+# template: ar
+# AR şablonu: AR Session kamerayı çevirmeden zemini ve sehpayı düzlem olarak bulur (simüle algılama), izleme "Tracking"
+wait 30
+focus Game
+script_errors mark
+play
+wait 420
+run_cqs_file "{dir}/checks/ar_planes.cqs"
+entity expect_active RegressionCheckOK true
+script_errors expect 0
+stop
+quit

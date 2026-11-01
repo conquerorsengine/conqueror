@@ -1,0 +1,10 @@
+AnimMontage:
+  Name: Punch
+  ClipName: punch_jab
+  ClipIndex: 19
+  Rate: 1.3
+  BlendIn: 0.08
+  BlendOut: 0.2
+  FromBone: "spine_01"
+  Sections: []
+  Notifies: []

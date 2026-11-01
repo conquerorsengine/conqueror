@@ -1,0 +1,12 @@
+Id: conqueror.measure-tool
+Name: Measure Tool
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Measure the level while you build: distance and per-axis offset between two selected
+  objects, the size of one object's bounds, the total path length through a selection in
+  order, and the angle between three points — drawn as lines in the scene view.
+Category: Productivity
+Icon: ruler
+Tags: [editor, measure, distance, ruler, level-design]
+Editor: Editor/MeasureTool.cqs

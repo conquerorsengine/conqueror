@@ -1,0 +1,5 @@
+# Virtual Production (Unreal Virtual Production / In-Camera VFX): curved LED volume, car commercial shoot, cine camera shots
+Shared: [Mannequin, Vehicles]
+StartScene: Assets/Scenes/Main.cqscene
+Scenes:
+  - Assets/Scenes/Main.cqscene

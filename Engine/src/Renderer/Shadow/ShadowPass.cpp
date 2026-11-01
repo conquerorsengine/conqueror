@@ -3,10 +3,19 @@
 #include "Scene/Entity.h"
 #include "Renderer/Utilities/Renderer3D/Renderer3D.h"
 #include "Renderer/Utilities/Renderer3D/Mesh.h"
+#include "Renderer/Utilities/Renderer3D/SkinnedMesh.h"
 #include "Renderer/Utilities/Renderer3D/ModelLoader.h"
+#include "Renderer/Utilities/Renderer3D/ClusterMesh.h"
+#include "Scene/VirtualGeometry.h"
+#include "Scene/MultiMesh.h"
 #include "Renderer/RHI/RenderCommand.h"
+#include "Renderer/TextureSlots.h"
+#include "Renderer/RHI/Texture.h"
+#include "Renderer/Utilities/Renderer3D/Material.h"
+#include "Renderer/Renderer.h"
 #include "Core/Logging/Log.h"
 
+#include <unordered_map>
 #include <glad/glad.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
@@ -25,12 +34,80 @@ namespace Conqueror
         }
     )";
 
-    static const char* s_DepthFragmentSrc = R"(
+    // MultiMesh örnekleri: yerel örnek matrisi 8..11 özniteliklerinde
+    static const char* s_InstancedDepthVertexSrc = R"(
         #version 450 core
-        layout(location = 0) out vec4 FragColor;
+        layout(location = 0) in vec3 a_Position;
+        layout(location = 8) in vec4 a_Instance0;
+        layout(location = 9) in vec4 a_Instance1;
+        layout(location = 10) in vec4 a_Instance2;
+        layout(location = 11) in vec4 a_Instance3;
+        uniform mat4 u_LightSpaceMatrix;
+        uniform mat4 u_Transform;
         void main()
         {
-            FragColor = vec4(gl_FragCoord.z, 0.0, 0.0, 1.0);
+            gl_Position = u_LightSpaceMatrix * u_Transform * mat4(a_Instance0, a_Instance1, a_Instance2, a_Instance3) * vec4(a_Position, 1.0);
+        }
+    )";
+
+    static const char* s_SkinnedDepthVertexSrc = R"(
+        #version 450 core
+        #define MAX_BONES 128
+        layout(location = 0) in vec3 a_Position;
+        layout(location = 4) in ivec4 a_BoneIDs;
+        layout(location = 5) in vec4 a_BoneWeights;
+        uniform mat4 u_LightSpaceMatrix;
+        uniform mat4 u_Transform;
+        uniform mat4 u_BoneTransforms[MAX_BONES];
+        void main()
+        {
+            mat4 skin = mat4(0.0);
+            float total = 0.0;
+            for (int i = 0; i < 4; ++i)
+            {
+                float w = a_BoneWeights[i];
+                int b = a_BoneIDs[i];
+                if (w <= 0.0 || b < 0 || b >= MAX_BONES) continue;
+                skin += u_BoneTransforms[b] * w;
+                total += w;
+            }
+            skin = total < 1e-5 ? mat4(1.0) : skin / total;
+            gl_Position = u_LightSpaceMatrix * u_Transform * skin * vec4(a_Position, 1.0);
+        }
+    )";
+
+    static const char* s_DepthFragmentSrc = R"(
+        #version 450 core
+        void main() { }
+    )";
+
+    // Alfa kırpmalı (Cutout) yüzeyler: yaprak kartları, tel örgü, delikli levhalar gölgede de delikli düşer
+    static const char* s_CutoutDepthVertexSrc = R"(
+        #version 450 core
+        layout(location = 0) in vec3 a_Position;
+        layout(location = 3) in vec2 a_TexCoord;
+        uniform mat4 u_LightSpaceMatrix;
+        uniform mat4 u_Transform;
+        uniform vec2 u_UVScale;
+        uniform vec2 u_UVOffset;
+        out vec2 v_UV;
+        void main()
+        {
+            v_UV = a_TexCoord * u_UVScale + u_UVOffset;
+            gl_Position = u_LightSpaceMatrix * u_Transform * vec4(a_Position, 1.0);
+        }
+    )";
+
+    static const char* s_CutoutDepthFragmentSrc = R"(
+        #version 450 core
+        in vec2 v_UV;
+        uniform sampler2D u_AlbedoMap;
+        uniform float u_AlphaClip;
+        uniform float u_Alpha;
+        void main()
+        {
+            if (texture(u_AlbedoMap, v_UV).a * u_Alpha < u_AlphaClip)
+                discard;
         }
     )";
 
@@ -38,344 +115,433 @@ namespace Conqueror
     {
     }
 
+    bool ShadowPass::CutoutReady() const
+    {
+        return m_CutoutDepthShader && m_CutoutDepthShader->IsValid();
+    }
+
+    void ShadowPass::DrawCutout(const Mesh& mesh, const glm::mat4& transform, const glm::mat4& lightSpace, Texture2D& albedo,
+                                float alphaClip, float alpha, const glm::vec2& uvScale, const glm::vec2& uvOffset)
+    {
+        m_CutoutDepthShader->Bind();
+        m_CutoutDepthShader->SetMat4("u_LightSpaceMatrix", lightSpace);
+        m_CutoutDepthShader->SetMat4("u_Transform", transform);
+        m_CutoutDepthShader->SetFloat2("u_UVScale", uvScale);
+        m_CutoutDepthShader->SetFloat2("u_UVOffset", uvOffset);
+        m_CutoutDepthShader->SetFloat("u_AlphaClip", alphaClip);
+        m_CutoutDepthShader->SetFloat("u_Alpha", alpha);
+        albedo.Bind(0);
+        m_CutoutDepthShader->SetInt("u_AlbedoMap", 0);
+        RenderCommand::DrawIndexed(mesh.GetVertexArray(), mesh.GetIndexCount());
+    }
+
     void ShadowPass::Init()
     {
         m_DirectionalShadowMap = ShadowMap::Create(4096, 4096);
         m_DepthShader = Shader::Create("ShadowDepthShader", s_DepthVertexSrc, s_DepthFragmentSrc);
-        m_LightSpaceMatrices.resize(CascadeCount);
-        m_CascadeSplits.resize(CascadeCount);
-        m_CascadeTexelWorld.resize(CascadeCount, 0.05f);
+        m_SkinnedDepthShader = Shader::Create("ShadowDepthSkinnedShader", s_SkinnedDepthVertexSrc, s_DepthFragmentSrc);
+        m_InstancedDepthShader = Shader::Create("ShadowDepthInstancedShader", s_InstancedDepthVertexSrc, s_DepthFragmentSrc);
+        m_CutoutDepthShader = Shader::Create("ShadowDepthCutoutShader", s_CutoutDepthVertexSrc, s_CutoutDepthFragmentSrc);
+        m_LightSpaceMatrices.assign(kMaxCascades, glm::mat4(1.0f));
+        m_CascadeSplits.assign(kMaxCascades, 0.0f);
+        m_CascadeTexelWorld.assign(kMaxCascades, 0.05f);
+        m_CascadeRects.assign(kMaxCascades, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
     }
 
     void ShadowPass::Shutdown()
     {
         m_DirectionalShadowMap.reset();
         m_DepthShader.reset();
+        m_SkinnedDepthShader.reset();
+        m_InstancedDepthShader.reset();
+        m_CutoutDepthShader.reset();
         m_LightSpaceMatrices.clear();
         m_CascadeSplits.clear();
         m_CascadeTexelWorld.clear();
+        m_CascadeRects.clear();
+        m_ActiveCascades = 0;
+    }
+
+    uint32_t ShadowPass::GetAtlasTextureID() const
+    {
+        return m_DirectionalShadowMap ? m_DirectionalShadowMap->GetDepthTextureID() : 0;
+    }
+
+    void ShadowPass::EnsureResolution(int resolution)
+    {
+        resolution = std::clamp(resolution, 512, 8192);
+        if (!m_DirectionalShadowMap || (int)m_DirectionalShadowMap->GetWidth() != resolution)
+            m_DirectionalShadowMap = ShadowMap::Create((uint32_t)resolution, (uint32_t)resolution);
     }
 
     void ShadowPass::Execute(Scene* scene, const DirectionalLightComponent& dirLight,
                               const glm::vec3& lightDirection,
-                              const glm::mat4& cameraView,
-                              const glm::mat4& cameraProj,
+                              const glm::mat4& cameraView, const glm::mat4& cameraProj,
                               const glm::vec3& cameraPos)
     {
-        if (!scene || !m_DirectionalShadowMap || !m_DepthShader)
+        ShadowSettings settings;
+        settings.Enabled = dirLight.CastShadows;
+        Execute(scene, lightDirection, cameraView, cameraProj, cameraPos, settings);
+    }
+
+    void ShadowPass::Execute(Scene* scene, const glm::vec3& lightDirection,
+                             const glm::mat4& cameraView, const glm::mat4& cameraProj,
+                             const glm::vec3& cameraPos, const ShadowSettings& settings)
+    {
+        m_ActiveCascades = 0;
+        if (!scene || !m_DepthShader || !m_DepthShader->IsValid() || !settings.Enabled)
+            return;
+        if (glm::dot(lightDirection, lightDirection) < 1e-8f)
             return;
 
-        auto& registry = scene->m_Registry;
+        m_LastSettings = settings;
+        EnsureResolution(settings.Resolution);
 
-        // Cascade splits hesapla
-        CalculateCascadeSplits(CascadeNearPlane, CascadeFarPlane, m_CascadeSplits);
+        const int cascades = std::clamp(settings.CascadeCount, 1, kMaxCascades);
+        const float shadowFar = std::max(settings.Distance, 1.0f);
+        const float shadowNear = 0.1f;
+        CalculateCascadeSplits(shadowNear, shadowFar, cascades, settings.CascadeSplitLambda);
 
-        // Scene-fitted far (last) cascade: center + spread are derived from
-        // caster positions in the scene. A fixed ortho fitted to the scene is
-        // used instead of the frustum slice -> stays sharp when zooming out.
-        // (Near cascades keep the frustum path, near quality untouched.)
-        glm::vec3 sceneCenter(0.0f);
-        float sceneSpread = 0.0f;
-        {
-            glm::vec3 sum(0.0f);
-            size_t count = 0;
-            auto addPos = [&](const glm::vec3& p)
-            {
-                sum += p;
-                count++;
-            };
-            auto meshBoundsView = registry.view<TransformComponent, MeshRendererComponent>();
-            for (auto entity : meshBoundsView)
-            {
-                if (!scene->IsEntityActive(entity))
-                    continue;
-                auto [transform, meshRenderer] = meshBoundsView.get<TransformComponent, MeshRendererComponent>(entity);
-                addPos(glm::vec3(transform.WorldTransform[3]));
-            }
-            auto modelBoundsView = registry.view<TransformComponent, ModelComponent>();
-            for (auto entity : modelBoundsView)
-            {
-                if (!scene->IsEntityActive(entity))
-                    continue;
-                auto [transform, modelComponent] = modelBoundsView.get<TransformComponent, ModelComponent>(entity);
-                if (!modelComponent.ModelData || modelComponent.ModelData->Meshes.empty())
-                    continue;
-                addPos(glm::vec3(transform.WorldTransform[3]));
-            }
-            if (count > 0)
-            {
-                sceneCenter = sum / (float)count;
-                float maxD = 0.0f;
-                for (auto entity : meshBoundsView)
-                {
-                    if (!scene->IsEntityActive(entity))
-                        continue;
-                    auto [transform, meshRenderer] = meshBoundsView.get<TransformComponent, MeshRendererComponent>(entity);
-                    maxD = glm::max(maxD, glm::length(glm::vec3(transform.WorldTransform[3]) - sceneCenter));
-                }
-                for (auto entity : modelBoundsView)
-                {
-                    if (!scene->IsEntityActive(entity))
-                        continue;
-                    auto [transform, modelComponent] = modelBoundsView.get<TransformComponent, ModelComponent>(entity);
-                    if (!modelComponent.ModelData || modelComponent.ModelData->Meshes.empty())
-                        continue;
-                    maxD = glm::max(maxD, glm::length(glm::vec3(transform.WorldTransform[3]) - sceneCenter));
-                }
-                sceneSpread = maxD;
-            }
-        }
-        float sceneFitRadius = glm::clamp(sceneSpread * 1.5f + 2.0f, 6.0f, 28.0f);
+        // Atlas yerleşimi
+        const int cols = cascades == 1 ? 1 : 2;
+        const int rows = cascades <= 2 ? 1 : 2;
+        const uint32_t atlas = m_DirectionalShadowMap->GetWidth();
+        const uint32_t tileW = atlas / cols;
+        const uint32_t tileH = atlas / rows;
 
-        // Her cascade icin shadow map render et
-        m_DirectionalShadowMap->Bind();
-        glViewport(0, 0, m_DirectionalShadowMap->GetWidth(), m_DirectionalShadowMap->GetHeight());
-        glClear(GL_DEPTH_BUFFER_BIT);
-        // Cull back faces in the depth pass (front faces are written): occluders
-        // appear full-size from the light, shadows don't pull back (no white halo).
-        // Acne, depth + normal bias ile tutulur.
+        GLint prevViewport[4];
+        GLint prevFBO;
+        glGetIntegerv(GL_VIEWPORT, prevViewport);
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFBO);
         GLboolean cullWasEnabled = glIsEnabled(GL_CULL_FACE);
         GLint prevCullMode = GL_BACK;
         glGetIntegerv(GL_CULL_FACE_MODE, &prevCullMode);
+
+        m_DirectionalShadowMap->Bind();
+        glViewport(0, 0, atlas, atlas);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
+        glDepthMask(GL_TRUE);
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
+        // Eğimli yüzeylerde akne'yi bastır
+        glEnable(GL_POLYGON_OFFSET_FILL);
+        glPolygonOffset(1.5f, 2.0f);
 
-        glm::vec3 lightDir = glm::normalize(lightDirection);
+        const glm::vec3 lightDir = glm::normalize(lightDirection);
+        // Işık neredeyse dikeyse 'up' vektörünü değiştir (lookAt NaN üretmesin)
+        const glm::vec3 up = std::abs(lightDir.y) > 0.99f ? glm::vec3(0.0f, 0.0f, 1.0f) : glm::vec3(0.0f, 1.0f, 0.0f);
 
-        // Unproject camera frustum NDC corners
-        glm::mat4 invCamVP = glm::inverse(cameraProj * cameraView);
-        glm::vec3 ndcNear[4] = {
-            glm::vec3(-1.0f, -1.0f, -1.0f),
-            glm::vec3( 1.0f, -1.0f, -1.0f),
-            glm::vec3( 1.0f,  1.0f, -1.0f),
-            glm::vec3(-1.0f,  1.0f, -1.0f)
-        };
-        glm::vec3 ndcFar[4] = {
-            glm::vec3(-1.0f, -1.0f,  1.0f),
-            glm::vec3( 1.0f, -1.0f,  1.0f),
-            glm::vec3( 1.0f,  1.0f,  1.0f),
-            glm::vec3(-1.0f,  1.0f,  1.0f)
-        };
-
-        glm::vec3 worldNear[4], worldFar[4];for (int k = 0; k < 4; k++)
+        const glm::mat4 invCamVP = glm::inverse(cameraProj * cameraView);
+        glm::vec3 worldNear[4], worldFar[4];
+        const glm::vec2 ndc[4] = { { -1, -1 }, { 1, -1 }, { 1, 1 }, { -1, 1 } };
+        for (int k = 0; k < 4; ++k)
         {
-            glm::vec4 wN = invCamVP * glm::vec4(ndcNear[k], 1.0f);
-            worldNear[k] = glm::vec3(wN) / wN.w;
-            glm::vec4 wF = invCamVP * glm::vec4(ndcFar[k], 1.0f);
-            worldFar[k] = glm::vec3(wF) / wF.w;
-            // Clamp rays to CascadeFarPlane so the camera far plane
-            // (100000 in the editor) can't break the shadow math.
-            glm::vec3 ray = worldFar[k] - cameraPos;
-            float rayLen = glm::length(ray);
-            if (rayLen > CascadeFarPlane && rayLen > 0.0001f)
-                worldFar[k] = cameraPos + ray * (CascadeFarPlane / rayLen);
+            glm::vec4 n = invCamVP * glm::vec4(ndc[k], -1.0f, 1.0f);
+            glm::vec4 f = invCamVP * glm::vec4(ndc[k], 1.0f, 1.0f);
+            worldNear[k] = glm::vec3(n) / n.w;
+            worldFar[k] = glm::vec3(f) / f.w;
+        }
+        // Kamera ışınlarını gölge mesafesine göre yeniden ölçekle (yalnızca yön kullanılır)
+        glm::vec3 camForward = -glm::vec3(glm::inverse(cameraView)[2]);
+        glm::vec3 rayDir[4];
+        for (int k = 0; k < 4; ++k)
+        {
+            glm::vec3 d = worldFar[k] - worldNear[k];
+            float along = glm::dot(d, camForward);
+            rayDir[k] = std::abs(along) > 1e-5f ? d / along : glm::normalize(d); // ileri ekseninde birim
         }
 
-        for (int i = 0; i < CascadeCount; i++)
-        {
-            float prevSplit = (i == 0) ? CascadeNearPlane : m_CascadeSplits[i - 1];
-            float split = m_CascadeSplits[i];
+        auto& registry = scene->m_Registry;
+        auto meshView = registry.view<TransformComponent, MeshRendererComponent>();
+        auto modelView = registry.view<TransformComponent, ModelComponent>();
 
-            float tn = (prevSplit - CascadeNearPlane) / (CascadeFarPlane - CascadeNearPlane);
-            float tf = (split - CascadeNearPlane) / (CascadeFarPlane - CascadeNearPlane);
-            tn = glm::clamp(tn, 0.0f, 1.0f);
-            tf = glm::clamp(tf, 0.0f, 1.0f);
+        // Kademe kırpması: her kademe yalnız kendi ışık hacmine giren gölge düşürenleri çizer (GPU zaten kırpardı; burada çizim
+        // çağrısı hiç yapılmaz). İskeletli modellerin poz kutusu pahalıdır: karede bir kez hesaplanır.
+        const bool cull = Renderer3D::GetFrustumCulling();
+        struct CasterBox { glm::vec3 Center{ 0.0f }, Extents{ 0.0f }; bool Valid = false; };
+        static thread_local std::unordered_map<uint32_t, CasterBox> s_SkinnedBoxes;
+        s_SkinnedBoxes.clear();
+        glm::vec4 planes[6];
+        auto outside = [&](const Mesh& mesh, const glm::mat4& world) {
+            if (!cull || !(mesh.GetBoundsRadius() > 0.0f))
+                return false;
+            glm::vec3 c, e;
+            Renderer3D::TransformBox(world, mesh.GetBoundsCenter(), mesh.GetBoundsExtents(), c, e);
+            return !Renderer3D::BoxInFrustum(planes, c, e);
+        };
+
+        for (int i = 0; i < cascades; ++i)
+        {
+            float splitNear = (i == 0) ? shadowNear : m_CascadeSplits[i - 1];
+            float splitFar = m_CascadeSplits[i];
 
             glm::vec3 corners[8];
-            for (int k = 0; k < 4; k++)
+            for (int k = 0; k < 4; ++k)
             {
-                corners[k]     = glm::mix(worldNear[k], worldFar[k], tn);
-                corners[k + 4] = glm::mix(worldNear[k], worldFar[k], tf);
+                corners[k] = cameraPos + rayDir[k] * splitNear;
+                corners[k + 4] = cameraPos + rayDir[k] * splitFar;
             }
 
-            // Center ve radius
+            // Kararlı sınırlayıcı küre (kamera dönerken gölge yüzmez)
             glm::vec3 center(0.0f);
-            for (int j = 0; j < 8; j++)
-                center += corners[j];
+            for (auto& c : corners) center += c;
             center /= 8.0f;
-
             float radius = 0.0f;
-            for (int j = 0; j < 8; j++)
-                radius = glm::max(radius, glm::length(corners[j] - center));
-            radius = glm::max(radius, 5.0f);
-            // Quantize radius to coarse steps so small camera moves don't
-            // constantly rescale the ortho (no shadow swimming).
-            float quantStep = CascadeFarPlane / 64.0f;
-            radius = glm::ceil(radius / quantStep) * quantStep;
+            for (auto& c : corners) radius = std::max(radius, glm::length(c - center));
+            radius = std::ceil(radius * 16.0f) / 16.0f;
+            radius = std::max(radius, 1.0f);
 
-            // Last cascade is scene-fitted (not a frustum slice): same sharpness
-            // for distant cameras. First cascades use the frustum path.
-            bool useSceneFit = (i == CascadeCount - 1) && (sceneSpread > 0.0f);
-            if (useSceneFit)
-            {
-                center = sceneCenter;
-                radius = sceneFitRadius;
-            }
-
-            // Texel snapping to stabilize shadow map (horizontal strip atlas)
-            float cascadeTexWidth = (float)(m_DirectionalShadowMap->GetWidth() / CascadeCount);
-            float texelSize = (radius * 2.0f) / cascadeTexWidth;
+            const float texelSize = (radius * 2.0f) / (float)tileW;
             m_CascadeTexelWorld[i] = texelSize;
 
-            glm::mat4 lightView = glm::lookAt(center - lightDir * radius * 2.0f, center, glm::vec3(0.0f, 1.0f, 0.0f));
+            glm::mat4 lightView = glm::lookAt(center - lightDir * radius, center, up);
+            // Merkezi texel ızgarasına oturt
             glm::vec4 centerLS = lightView * glm::vec4(center, 1.0f);
             centerLS.x = std::floor(centerLS.x / texelSize) * texelSize;
             centerLS.y = std::floor(centerLS.y / texelSize) * texelSize;
             center = glm::vec3(glm::inverse(lightView) * centerLS);
 
-            lightView = glm::lookAt(center - lightDir * radius * 2.0f, center, glm::vec3(0.0f, 1.0f, 0.0f));
-            glm::mat4 lightProjection = glm::ortho(-radius, radius, -radius, radius, 0.0f, radius * 4.0f);
-
+            // Kamera arkasındaki yüksek dağlar/binalar da gölge düşürsün diye z aralığı geniş
+            const float zBack = radius * 6.0f;
+            lightView = glm::lookAt(center - lightDir * zBack, center, up);
+            glm::mat4 lightProjection = glm::ortho(-radius, radius, -radius, radius, 0.0f, zBack + radius * 2.0f);
             m_LightSpaceMatrices[i] = lightProjection * lightView;
 
-            // Set viewport per cascade (horizontal strip)
-            uint32_t cascadeWidth = m_DirectionalShadowMap->GetWidth() / CascadeCount;
-            uint32_t cascadeHeight = m_DirectionalShadowMap->GetHeight();
-            glViewport(i * cascadeWidth, 0, cascadeWidth, cascadeHeight);
+            const int col = i % cols;
+            const int row = i / cols;
+            m_CascadeRects[i] = glm::vec4((float)col / cols, (float)row / rows, 1.0f / cols, 1.0f / rows);
+            glViewport(col * tileW, row * tileH, tileW, tileH);
 
-            // Depth shader bind
             m_DepthShader->Bind();
             m_DepthShader->SetMat4("u_LightSpaceMatrix", m_LightSpaceMatrices[i]);
+            Renderer3D::ExtractFrustum(m_LightSpaceMatrices[i], planes);
 
-            // Mesh renderer'lari render et
-            auto meshView = registry.view<TransformComponent, MeshRendererComponent>();
             for (auto entity : meshView)
             {
+                if (!scene->IsEntityActive(entity))
+                    continue;
                 auto [transform, meshRenderer] = meshView.get<TransformComponent, MeshRendererComponent>(entity);
-                if (scene && !scene->IsEntityActive(entity))
+                // Çoğunlukla saydam yüzeyler (cam) ışığı kesmez
+                if (!meshRenderer.CastShadows || meshRenderer.Color.a < 0.5f)
                     continue;
 
-                m_DepthShader->SetMat4("u_Transform", transform.GetTransform());
-
-                switch (meshRenderer.Type)
+                // Prosedürel ağ (kumaş, Spline Extrude...) varsa çizimdeki gibi o kullanılır; yoksa ilkel ağ
+                std::shared_ptr<Mesh> mesh = meshRenderer.CustomMesh;
+                if (!mesh)
                 {
-                    case MeshType::Sphere:   RenderCommand::DrawIndexed(Renderer3D::GetSphereMesh()->GetVertexArray(), Renderer3D::GetSphereMesh()->GetIndexCount()); break;
-                    case MeshType::Plane:    RenderCommand::DrawIndexed(Renderer3D::GetPlaneMesh()->GetVertexArray(), Renderer3D::GetPlaneMesh()->GetIndexCount()); break;
-                    case MeshType::Cylinder: RenderCommand::DrawIndexed(Renderer3D::GetCylinderMesh()->GetVertexArray(), Renderer3D::GetCylinderMesh()->GetIndexCount()); break;
-                    default:                 RenderCommand::DrawIndexed(Renderer3D::GetCubeMesh()->GetVertexArray(), Renderer3D::GetCubeMesh()->GetIndexCount()); break;
+                    switch (meshRenderer.Type)
+                    {
+                        case MeshType::Sphere:   mesh = Renderer3D::GetSphereMesh(); break;
+                        case MeshType::Plane:    mesh = Renderer3D::GetPlaneMesh(); break;
+                        case MeshType::Cylinder: mesh = Renderer3D::GetCylinderMesh(); break;
+                        default:                 mesh = Renderer3D::GetCubeMesh(); break;
+                    }
+                }
+                if (!mesh || outside(*mesh, transform.WorldTransform))
+                    continue;
+                // Düzlem ve prosedürel yüzeyler (kumaş gibi tek katman) tek yüzlü olabilir; arka yüz ayıklaması onları
+                // gölgeden silmesin
+                const bool twoSided = meshRenderer.CustomMesh || meshRenderer.Type == MeshType::Plane;
+                const Mesh* lod = mesh->HasLODs() ? mesh->GetLOD(Renderer3D::SelectMeshLOD(*mesh, transform.WorldTransform)) : mesh.get();
+                // Alfa kırpmalı doku (nesne UV'si): delikler gölgede de delik (dünyaya hizalı UV'de tam gölge)
+                if (meshRenderer.AlphaClip && meshRenderer.Texture && !meshRenderer.WorldAlignedUV && CutoutReady())
+                {
+                    glDisable(GL_CULL_FACE);
+                    DrawCutout(*lod, transform.WorldTransform, m_LightSpaceMatrices[i], *meshRenderer.Texture,
+                               meshRenderer.AlphaClipThreshold, meshRenderer.Color.a, meshRenderer.Tiling, meshRenderer.Offset);
+                    glEnable(GL_CULL_FACE);
+                    m_DepthShader->Bind();
+                    Renderer::GetStats().ShadowDrawCalls++;
+                    continue;
+                }
+                if (twoSided) glDisable(GL_CULL_FACE);
+                m_DepthShader->SetMat4("u_Transform", transform.WorldTransform);
+                RenderCommand::DrawIndexed(lod->GetVertexArray(), lod->GetIndexCount());
+                if (twoSided) glEnable(GL_CULL_FACE);
+                Renderer::GetStats().ShadowDrawCalls++;
+            }
+
+            // Terrain gölgeleri (mesh ilk çizimde oluşturulur)
+            {
+                auto terrainView = registry.view<TransformComponent, TerrainComponent>();
+                for (auto entity : terrainView)
+                {
+                    if (!scene->IsEntityActive(entity))
+                        continue;
+                    auto [transform, terrain] = terrainView.get<TransformComponent, TerrainComponent>(entity);
+                    if (!terrain.CastShadows || !terrain.RuntimeMesh || outside(*terrain.RuntimeMesh, transform.WorldTransform))
+                        continue;
+                    m_DepthShader->Bind();
+                    m_DepthShader->SetMat4("u_LightSpaceMatrix", m_LightSpaceMatrices[i]);
+                    m_DepthShader->SetMat4("u_Transform", transform.WorldTransform);
+                    RenderCommand::DrawIndexed(terrain.RuntimeMesh->GetVertexArray(), terrain.RuntimeMesh->GetIndexCount());
+                    Renderer::GetStats().ShadowDrawCalls++;
                 }
             }
 
-            // Model renderer'lari render et
-            auto modelView = registry.view<TransformComponent, ModelComponent>();
             for (auto entity : modelView)
             {
+                if (!scene->IsEntityActive(entity))
+                    continue;
                 auto [transform, modelComponent] = modelView.get<TransformComponent, ModelComponent>(entity);
-                if (scene && !scene->IsEntityActive(entity))
+                auto& model = modelComponent.ModelData;
+                if (!model)
                     continue;
 
-                if (!modelComponent.ModelData || modelComponent.ModelData->Meshes.empty())
-                    continue;
-
-                m_DepthShader->SetMat4("u_Transform", transform.GetTransform());
-
-                for (size_t j = 0; j < modelComponent.ModelData->Meshes.size(); j++)
+                if (model->IsSkinned && model->SkeletonData && !model->SkinnedMeshes.empty() && m_SkinnedDepthShader && m_SkinnedDepthShader->IsValid())
                 {
-                    auto& mesh = modelComponent.ModelData->Meshes[j];
-                    RenderCommand::DrawIndexed(mesh->GetVertexArray(), mesh->GetIndexCount());
+                    Entity e{ entity, scene };
+                    const std::vector<glm::mat4>* bones = nullptr;
+                    if (e.HasComponent<AnimatorComponent>())
+                        bones = &e.GetComponent<AnimatorComponent>().BoneMatricesGPU;
+                    else if (e.HasComponent<AnimationComponent>())
+                        bones = &e.GetComponent<AnimationComponent>().BoneMatricesGPU;
+                    const uint32_t boneCount = std::min<uint32_t>(model->SkeletonData->GetBoneCount(), 128u);
+
+                    if (cull)
+                    {
+                        auto it = s_SkinnedBoxes.find((uint32_t)entity);
+                        if (it == s_SkinnedBoxes.end())
+                        {
+                            // Aşağıdaki yükleme ile aynı palet: geçerli kemikler ya da 128 birim matris
+                            const bool posed = bones && bones->size() >= boneCount && boneCount > 0;
+                            CasterBox box;
+                            glm::vec3 c, ext;
+                            if (Renderer3D::SkinnedModelBounds(*model, posed ? bones->data() : nullptr, posed ? boneCount : 0u,
+                                                               posed ? boneCount : 128u, c, ext))
+                            {
+                                Renderer3D::TransformBox(transform.WorldTransform, c, ext, box.Center, box.Extents);
+                                box.Valid = true;
+                            }
+                            it = s_SkinnedBoxes.emplace((uint32_t)entity, box).first;
+                        }
+                        if (it->second.Valid && !Renderer3D::BoxInFrustum(planes, it->second.Center, it->second.Extents))
+                            continue;
+                    }
+
+                    m_SkinnedDepthShader->Bind();
+                    m_SkinnedDepthShader->SetMat4("u_LightSpaceMatrix", m_LightSpaceMatrices[i]);
+                    m_SkinnedDepthShader->SetMat4("u_Transform", transform.WorldTransform);
+                    if (bones && bones->size() >= boneCount && boneCount > 0)
+                    {
+                        m_SkinnedDepthShader->SetMat4Array("u_BoneTransforms", bones->data(), boneCount);
+                    }
+                    else
+                    {
+                        static std::vector<glm::mat4> s_Identity(128, glm::mat4(1.0f));
+                        m_SkinnedDepthShader->SetMat4Array("u_BoneTransforms", s_Identity.data(), 128);
+                    }
+                    for (auto& mesh : model->SkinnedMeshes)
+                    {
+                        RenderCommand::DrawIndexed(mesh->GetVertexArray(), mesh->GetIndexCount());
+                        Renderer::GetStats().ShadowDrawCalls++;
+                    }
+                    m_DepthShader->Bind();
+                    m_DepthShader->SetMat4("u_LightSpaceMatrix", m_LightSpaceMatrices[i]);
+                    continue;
                 }
+
+                m_DepthShader->SetMat4("u_Transform", transform.WorldTransform);
+                // Virtual Geometry: gölgede daha kaba hata eşiğiyle küme seçimi (ana kameraya göre)
+                if (auto* vg = registry.try_get<VirtualGeometryComponent>(entity); vg && vg->Enabled && vg->Ready)
+                {
+                    const RenderCamera& cam = Renderer3D::GetCamera();
+                    const glm::mat4& world = transform.WorldTransform;
+                    const glm::vec3 cameraLocal = glm::vec3(glm::inverse(world) * glm::vec4(cam.Position, 1.0f));
+                    const float scale = std::max({ glm::length(glm::vec3(world[0])), glm::length(glm::vec3(world[1])), glm::length(glm::vec3(world[2])) });
+                    const float pixelScale = std::abs(cam.Projection[1][1]) * (float)std::max(cam.ViewportHeight, 1u) * 0.5f;
+                    static thread_local std::vector<uint32_t> s_Selected;
+                    bool drawnAll = true;
+                    for (auto& mesh : model->Meshes)
+                    {
+                        auto clusters = VirtualGeometry::Acquire(mesh, vg->ClusterSize);
+                        if (!clusters || !clusters->IsUploaded()) { drawnAll = false; break; }
+                        // Kümeler de kademenin ışık hacmiyle kırpılır
+                        clusters->Select(cameraLocal, scale, pixelScale, vg->ShadowErrorThreshold, cam.Orthographic, world,
+                                         cull ? planes : nullptr, s_Selected);
+                        clusters->Draw(s_Selected);
+                        Renderer::GetStats().ShadowDrawCalls++;
+                    }
+                    if (drawnAll)
+                        continue;
+                }
+                for (size_t mi = 0; mi < model->Meshes.size(); ++mi)
+                {
+                    auto& mesh = model->Meshes[mi];
+                    if (!mesh || outside(*mesh, transform.WorldTransform))
+                        continue;
+                    // Gölge de otomatik LOD'u kullanır (ucuz derinlik çizimi)
+                    const Mesh* lod = mesh->HasLODs() ? mesh->GetLOD(Renderer3D::SelectMeshLOD(*mesh, transform.WorldTransform)) : mesh.get();
+                    const Material* mat = mi < model->Materials.size() ? model->Materials[mi].get() : nullptr;
+                    if (mat && mat->Rendering == Material::RenderMode::Cutout && mat->AlbedoMap && CutoutReady())
+                    {
+                        // Yaprak kartı / tel örgü: albedo alfasıyla kırpılır; çift yüzlü malzemede iki yüz de gölge düşürür
+                        const bool open = mat->Culling == Material::CullMode::Off;
+                        if (open) glDisable(GL_CULL_FACE);
+                        DrawCutout(*lod, transform.WorldTransform, m_LightSpaceMatrices[i], *mat->AlbedoMap, mat->AlphaClip, 1.0f,
+                                   glm::vec2(1.0f), glm::vec2(0.0f));
+                        if (open) glEnable(GL_CULL_FACE);
+                        m_DepthShader->Bind();
+                        Renderer::GetStats().ShadowDrawCalls++;
+                        continue;
+                    }
+                    RenderCommand::DrawIndexed(lod->GetVertexArray(), lod->GetIndexCount());
+                    Renderer::GetStats().ShadowDrawCalls++;
+                }
+            }
+
+            // MultiMesh: her toplu örnek kümesi tek çağrıda
+            if (m_InstancedDepthShader && m_InstancedDepthShader->IsValid())
+            {
+                m_InstancedDepthShader->Bind();
+                m_InstancedDepthShader->SetMat4("u_LightSpaceMatrix", m_LightSpaceMatrices[i]);
+                // Örnek kümeleri de kademenin ışık hacmiyle kırpılır
+                MultiMesh::ForEachShadowBatch(*scene, cull ? planes : nullptr, [&](const Mesh& mesh, const glm::mat4& world, uint32_t buffer,
+                                                                                   uint32_t first, uint32_t count, bool doubleSided) {
+                    m_InstancedDepthShader->SetMat4("u_Transform", world);
+                    if (doubleSided) glDisable(GL_CULL_FACE);
+                    Renderer3D::BindInstanceAttributes(mesh, buffer, first);
+                    glDrawElementsInstanced(GL_TRIANGLES, (GLsizei)mesh.GetIndexCount(), GL_UNSIGNED_INT, nullptr, (GLsizei)count);
+                    Renderer3D::UnbindInstanceAttributes(mesh);
+                    if (doubleSided) glEnable(GL_CULL_FACE);
+                    Renderer::GetStats().ShadowDrawCalls++;
+                });
             }
         }
 
+        m_ActiveCascades = cascades;
+
+        glDisable(GL_POLYGON_OFFSET_FILL);
         if (!cullWasEnabled)
             glDisable(GL_CULL_FACE);
         glCullFace(prevCullMode);
-        m_DirectionalShadowMap->Unbind();
+        glBindFramebuffer(GL_FRAMEBUFFER, prevFBO);
+        glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
     }
 
     void ShadowPass::BindShadowMapsToShader(std::shared_ptr<Shader> shader)
     {
         if (!shader || !m_DirectionalShadowMap)
             return;
-
         shader->Bind();
-
-        // Shadow map'i texture slot 8'e bind et
-        glActiveTexture(GL_TEXTURE8);
+        glActiveTexture(GL_TEXTURE0 + TextureSlot::ShadowAtlas);
         glBindTexture(GL_TEXTURE_2D, m_DirectionalShadowMap->GetDepthTextureID());
-        shader->SetInt("u_ShadowMap", 8);
-
-        // Light space matrix'leri gonder
-        for (int i = 0; i < CascadeCount; i++)
-        {
-            std::string name = "u_LightSpaceMatrices[" + std::to_string(i) + "]";
-            shader->SetMat4(name, m_LightSpaceMatrices[i]);
-        }
-
-        // Cascade split'leri gonder
-        for (int i = 0; i < CascadeCount; i++)
-        {
-            std::string name = "u_CascadeSplits[" + std::to_string(i) + "]";
-            shader->SetFloat(name, m_CascadeSplits[i]);
-        }
-
-        // Per-cascade world-space texel size (bias floor sent to the shader)
-        for (int i = 0; i < CascadeCount; i++)
-        {
-            std::string name = "u_CascadeTexelWorld[" + std::to_string(i) + "]";
-            shader->SetFloat(name, m_CascadeTexelWorld[i]);
-        }
-
-        shader->SetInt("u_CascadeCount", CascadeCount);
-        shader->SetFloat("u_ShadowBias", ShadowBias);
-        shader->SetFloat("u_NormalBias", NormalBias);
-        shader->SetFloat("u_CascadeFade", CascadeFade);
+        shader->SetInt("u_ShadowMap", (int)TextureSlot::ShadowAtlas);
     }
 
-    void ShadowPass::CalculateCascadeSplits(float nearPlane, float farPlane, std::vector<float>& splits)
+    void ShadowPass::CalculateCascadeSplits(float nearPlane, float farPlane, int count, float lambda)
     {
-        float range = farPlane - nearPlane;
-        float ratio = farPlane / nearPlane;
-
-        for (int i = 0; i < CascadeCount; i++)
+        const float range = farPlane - nearPlane;
+        const float ratio = farPlane / nearPlane;
+        for (int i = 0; i < count; ++i)
         {
-            float p = (float)(i + 1) / (float)CascadeCount;
+            float p = (float)(i + 1) / (float)count;
             float logSplit = nearPlane * std::pow(ratio, p);
             float uniformSplit = nearPlane + range * p;
-            splits[i] = CascadeSplitLambda * logSplit + (1.0f - CascadeSplitLambda) * uniformSplit;
+            m_CascadeSplits[i] = lambda * logSplit + (1.0f - lambda) * uniformSplit;
         }
-    }
-
-    glm::mat4 ShadowPass::CalculateLightSpaceMatrix(const glm::vec3& lightDir,
-                                                      const glm::vec3& center, float radius,
-                                                      float nearZ, float farZ)
-    {
-        glm::mat4 lightView = glm::lookAt(center - lightDir * radius, center, glm::vec3(0.0f, 1.0f, 0.0f));
-        glm::mat4 lightProj = glm::ortho(-radius, radius, -radius, radius, 0.0f, radius * 2.0f);
-        return lightProj * lightView;
-    }
-
-    void ShadowPass::CalculateFrustumCorners(const glm::mat4& viewProj, glm::vec3* corners)
-    {
-        // View-projection matrix'in inverse'ini al
-        glm::mat4 invVP = glm::inverse(viewProj);
-
-        int index = 0;
-        for (int x = 0; x < 2; x++)
-        {
-            for (int y = 0; y < 2; y++)
-            {
-                for (int z = 0; z < 2; z++)
-                {
-                    glm::vec4 clip(x * 2.0f - 1.0f, y * 2.0f - 1.0f, z * 2.0f - 1.0f, 1.0f);
-                    glm::vec4 worldPos = invVP * clip;
-                    corners[index++] = glm::vec3(worldPos) / worldPos.w;
-                }
-            }
-        }
-    }
-
-    float ShadowPass::CalculateFitRadius(const glm::vec3* corners, const glm::vec3& lightDir)
-    {
-        glm::vec3 center(0.0f);
-        for (int i = 0; i < 8; i++)
-            center += corners[i];
-        center /= 8.0f;
-
-        float radius = 0.0f;
-        for (int i = 0; i < 8; i++)
-            radius = glm::max(radius, glm::length(corners[i] - center));
-
-        return radius;
+        for (int i = count; i < kMaxCascades; ++i)
+            m_CascadeSplits[i] = farPlane;
     }
 }

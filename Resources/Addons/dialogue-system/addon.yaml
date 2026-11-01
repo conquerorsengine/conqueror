@@ -1,0 +1,23 @@
+Id: conqueror.dialogue-system
+Name: Dialogue System
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Branching conversations written as plain text: speaker lines, labels, choices with up to
+  three answers, jumps and an end marker. A ready dialogue box shows the speaker and types the
+  line out character by character; NPC triggers start a conversation on contact or with a key.
+Category: Gameplay
+Icon: comments
+Tags: [dialogue, conversation, npc, story, ui, rpg]
+Components:
+  - Scripts/DialogueRunner.cqs
+  - Scripts/DialogueTrigger.cqs
+Inserts:
+  - Name: Dialogue Box
+    Icon: comment-dots
+    Prefab: Prefabs/DialogueBox.cqprefab
+    Tooltip: Canvas with speaker name, typed line and three choice buttons
+  - Name: Talking NPC
+    Icon: user
+    Prefab: Prefabs/TalkingNPC.cqprefab
+    Tooltip: Character that starts the sample conversation when you press E nearby

@@ -1,0 +1,44 @@
+Id: conqueror.vfx-pack
+Name: VFX Pack
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Drag-and-drop particle effects: campfire with flickering light, smoke column, sparks,
+  explosion with flash light and debris, magic aura, dust puff and a waterfall mist.
+  One-shot effects remove themselves when finished, and VFX.Spawn("Explosion", x, y, z) plays
+  any of them from code.
+Category: Effects
+Icon: wand-magic-sparkles
+Tags: [vfx, particles, fire, smoke, explosion, magic, effects]
+Components:
+  - Scripts/FlickerLight.cqs
+  - Scripts/VFXSpawner.cqs
+Inserts:
+  - Name: Campfire
+    Icon: fire
+    Prefab: Prefabs/Campfire.cqprefab
+    Tooltip: Fire, smoke and a flickering orange light
+  - Name: Smoke Column
+    Icon: smog
+    Prefab: Prefabs/SmokeColumn.cqprefab
+    Tooltip: Rising smoke
+  - Name: Sparks
+    Icon: bolt
+    Prefab: Prefabs/Sparks.cqprefab
+    Tooltip: Shower of sparks
+  - Name: Explosion
+    Icon: burst
+    Prefab: Prefabs/Explosion.cqprefab
+    Tooltip: One-shot explosion with flash (removes itself)
+  - Name: Magic Aura
+    Icon: hat-wizard
+    Prefab: Prefabs/MagicAura.cqprefab
+    Tooltip: Glowing magic particles
+  - Name: Dust Puff
+    Icon: wind
+    Prefab: Prefabs/DustPuff.cqprefab
+    Tooltip: One-shot dust cloud (removes itself)
+  - Name: VFX Spawner
+    Icon: wand-magic-sparkles
+    Prefab: Prefabs/VFXSpawner.cqprefab
+    Tooltip: Spawns effects by name from scripts

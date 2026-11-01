@@ -1,0 +1,97 @@
+using nativebridge;
+
+// 2D takip kamerası: ölü bölge, ileri bakış, sınırlar. Ortografik kameraya ekleyin.
+script CameraFollow2D : ConquerorScript
+{
+    public string targetName = "Platformer Player";
+    public float smoothTime = 0.18;
+    public float deadZoneWidth = 1.0;
+    public float deadZoneHeight = 1.5;
+    public float lookAhead = 1.5;
+    public float lookAheadSharpness = 3.0;
+    public float offsetY = 1.0;
+    public bool useBounds = false;
+    public float minX = -50.0;
+    public float maxX = 50.0;
+    public float minY = -20.0;
+    public float maxY = 30.0;
+    public float pixelsPerUnit = 0.0;
+
+    // Çalışma zamanı bilgisi
+    public float focusX = 0.0;
+    public float focusY = 0.0;
+
+    private var target = null;
+    private float velX = 0.0;
+    private float velY = 0.0;
+    private float ahead = 0.0;
+    private float lastTargetX = 0.0;
+    private bool started = false;
+
+    func LateUpdate(dt)
+    {
+        if (dt <= 0) { return; }
+        if (target == null) { target = FindEntity(targetName); if (target == null) { return; } }
+        var t = EntityGetWorldPosition(target);
+        if (!started)
+        {
+            focusX = t.x;
+            focusY = t.y + offsetY;
+            lastTargetX = t.x;
+            started = true;
+        }
+        // Ölü bölge: hedef bölgenin dışına çıkınca odak kayar
+        var hx = deadZoneWidth * 0.5;
+        var hy = deadZoneHeight * 0.5;
+        var ty = t.y + offsetY;
+        if (t.x > focusX + hx) { focusX = t.x - hx; }
+        if (t.x < focusX - hx) { focusX = t.x + hx; }
+        if (ty > focusY + hy) { focusY = ty - hy; }
+        if (ty < focusY - hy) { focusY = ty + hy; }
+        // Hareket yönüne ileri bakış
+        var moveX = (t.x - lastTargetX) / dt;
+        lastTargetX = t.x;
+        var wantAhead = MathAbs(moveX) > 0.5 ? MathSign(moveX) * lookAhead : ahead;
+        ahead = MathLerp(ahead, wantAhead, 1.0 - MathExp(-lookAheadSharpness * dt));
+
+        var p = GetPosition();
+        var gx = focusX + ahead;
+        var gy = focusY;
+        if (useBounds)
+        {
+            var me = GetEntityId();
+            var halfH = CameraIsOrthographic(me) ? CameraGetOrthographicSize(me) * 0.5 : 5.0;
+            var size = GetViewportSize();
+            var aspect = (size != null && size.y > 0) ? size.x / size.y : 16.0 / 9.0;
+            var halfW = halfH * aspect;
+            gx = MathClamp(gx, minX + halfW, MathMax(minX + halfW, maxX - halfW));
+            gy = MathClamp(gy, minY + halfH, MathMax(minY + halfH, maxY - halfH));
+        }
+        // Kritik sönümlü yay (SmoothDamp)
+        var nx = SmoothDamp(p.x, gx, velX, dt);
+        velX = nx.v;
+        var ny = SmoothDamp(p.y, gy, velY, dt);
+        velY = ny.v;
+        var x = nx.x;
+        var y = ny.x;
+        if (pixelsPerUnit > 0)
+        {
+            x = MathRound(x * pixelsPerUnit) / pixelsPerUnit;
+            y = MathRound(y * pixelsPerUnit) / pixelsPerUnit;
+        }
+        SetPosition(x, y, p.z);
+    }
+
+    func SmoothDamp(current, targetValue, vel, dt)
+    {
+        var st = MathMax(0.0001, smoothTime);
+        var omega = 2.0 / st;
+        var x = omega * dt;
+        var e = 1.0 / (1.0 + x + 0.48 * x * x + 0.235 * x * x * x);
+        var change = current - targetValue;
+        var temp = (vel + omega * change) * dt;
+        var newVel = (vel - omega * temp) * e;
+        var out = targetValue + (change + temp) * e;
+        return {x: out, v: newVel};
+    }
+}

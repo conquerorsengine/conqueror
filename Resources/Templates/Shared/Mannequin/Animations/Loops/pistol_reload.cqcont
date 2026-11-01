@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: pistol_reload
+      States:
+        - Name: pistol_reload
+          ClipIndex: 15
+          ClipName: pistol_reload
+  Parameters: []

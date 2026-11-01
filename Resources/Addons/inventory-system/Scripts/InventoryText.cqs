@@ -1,0 +1,29 @@
+using nativebridge;
+
+// UI Text'e bir envanterin içeriğini yazar (bu varlıkta ya da "textName" adlı öğede).
+script InventoryText : ConquerorScript
+{
+    public string ownerName = "Player";
+    public string textName = "";
+    public string title = "Inventory";
+    public string emptyText = "(empty)";
+
+    // Çalışma zamanı bilgisi
+    public string shown = "";
+
+    func Update(dt)
+    {
+        var owner = FindEntity(ownerName);
+        var text = title + ": ";
+        if (owner == null || !HasScript(owner, "Inventory")) { text = text + emptyText; }
+        else
+        {
+            var items = GetScriptField(owner, "itemsText");
+            text = text + (items == null || items == "" ? emptyText : items);
+        }
+        if (text == shown) { return; }
+        shown = text;
+        var target = textName == "" ? GetEntityId() : FindEntity(textName);
+        if (target != null) { UISetText(target, text); }
+    }
+}

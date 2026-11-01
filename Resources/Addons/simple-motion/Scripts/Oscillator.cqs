@@ -1,0 +1,24 @@
+using nativebridge;
+
+// Bir eksen boyunca sinüs salınımı (başlangıç konumu etrafında). axis: 0 X, 1 Y, 2 Z
+script Oscillator : ConquerorScript
+{
+    public int axis = 1;
+    public float amplitude = 1.0;
+    public float frequency = 0.5;
+    public float phase = 0.0;
+
+    // Çalışma zamanı bilgisi
+    public float offset = 0.0;
+
+    private var start = null;
+    private float t = 0.0;
+
+    func Update(dt)
+    {
+        if (start == null) { start = GetPosition(); }
+        t += dt;
+        offset = MathSin((t * frequency + phase) * 6.2831853) * amplitude;
+        SetPosition(start.x + (axis == 0 ? offset : 0.0), start.y + (axis == 1 ? offset : 0.0), start.z + (axis == 2 ? offset : 0.0));
+    }
+}

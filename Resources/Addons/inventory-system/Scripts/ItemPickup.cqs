@@ -1,0 +1,48 @@
+using nativebridge;
+
+// Toplanabilir eşya: Inventory betiği olan bir nesne tetikleyiciye girince eşyayı ona ekler.
+// Sığmayan kısım yerde kalır. Görsel: kendi ekseninde döner ve hafifçe süzülür.
+script ItemPickup : ConquerorScript
+{
+    public string itemId = "Crystal";
+    public int amount = 1;
+    public float spinSpeed = 90.0;
+    public float bobHeight = 0.15;
+    public float bobSpeed = 2.0;
+    public string pickupSound = "";
+
+    // Çalışma zamanı bilgisi
+    public bool collected = false;
+
+    private float baseY = 0.0;
+    private float t = 0.0;
+
+    func Start()
+    {
+        baseY = GetPosition().y;
+        t = MathRandom() * 6.28;
+    }
+
+    func Update(dt)
+    {
+        t += dt;
+        var r = GetRotation();
+        SetRotation(r.x, r.y + spinSpeed * dt, r.z);
+        var p = GetPosition();
+        SetPosition(p.x, baseY + MathSin(t * bobSpeed) * bobHeight, p.z);
+    }
+
+    func OnTriggerEnter(other, name)
+    {
+        if (collected || !HasScript(other, "Inventory")) { return; }
+        var left = InvokeMethod(other, "AddItem", itemId, amount);
+        if (left == null) { return; }
+        if (pickupSound != "") { var p = GetPosition(); AudioPlayOneShotAt(pickupSound, p.x, p.y, p.z); }
+        if (left <= 0)
+        {
+            collected = true;
+            EntityDestroy(GetEntityId());
+        }
+        else { amount = left; }
+    }
+}

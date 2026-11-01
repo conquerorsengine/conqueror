@@ -1,0 +1,81 @@
+using nativebridge;
+
+// Kaldırma kuvveti: gövdenin köşelerine yakın 4 (ya da 8) örnek noktada su altındaki derinlik kadar yukarı itme.
+// buoyancy 1 = nötr yüzerlik (ağırlığı tam karşılar), daha büyük değer daha çok yüzer. Su: waterName ya da ilk WaterVolume.
+script Buoyancy : ConquerorScript
+{
+    public string waterName = "";
+    public float buoyancy = 1.6;
+    public float floatHeight = 0.5;
+    public float waterDrag = 2.0;
+    public float waterAngularDrag = 1.5;
+    public bool eightPoints = false;
+    public float sampleSpread = 0.8;
+
+    // Çalışma zamanı bilgisi
+    public float submerged = 0.0;
+    public bool inWater = false;
+    public bool underwater = false;
+
+    private var water = null;
+    private bool wasInWater = false;
+
+    func Start()
+    {
+        if (waterName != "") { water = FindEntity(waterName); }
+        if (water == null) { for (var e in FindEntitiesWithScript("WaterVolume")) { water = e; break; } }
+    }
+
+    func FixedUpdate(dt)
+    {
+        if (water == null || !EntityIsValid(water)) { return; }
+        var p = EntityGetWorldPosition(GetEntityId());
+        var s = GetScale();
+        var r = EntityGetRight(GetEntityId());
+        var f = EntityGetForward(GetEntityId());
+        var u = EntityGetUp(GetEntityId());
+        var hx = MathAbs(s.x) * sampleSpread;
+        var hz = MathAbs(s.z) * sampleSpread;
+        var hy = MathAbs(s.y) * sampleSpread;
+        var pts = [[hx, 0, hz], [-hx, 0, hz], [hx, 0, -hz], [-hx, 0, -hz]];
+        if (eightPoints) { pts = [[hx, hy, hz], [-hx, hy, hz], [hx, hy, -hz], [-hx, hy, -hz], [hx, -hy, hz], [-hx, -hy, hz], [hx, -hy, -hz], [-hx, -hy, -hz]]; }
+        var mass = GetMass();
+        var g = GetGravity();
+        var gMag = MathMax(0.01, MathSqrt(g.x * g.x + g.y * g.y + g.z * g.z));
+        var per = mass * gMag * buoyancy / pts.Count;
+        var sub = 0.0;
+        var v = GetLinearVelocity();
+        for (var o in pts)
+        {
+            var wx = p.x + r.x * o[0] + u.x * o[1] - f.x * o[2];
+            var wy = p.y + r.y * o[0] + u.y * o[1] - f.y * o[2];
+            var wz = p.z + r.z * o[0] + u.z * o[1] - f.z * o[2];
+            if (!InvokeMethod(water, "Contains", wx, wy, wz)) { continue; }
+            var h = InvokeMethod(water, "HeightAt", wx, wz);
+            var d = h - wy;
+            if (d <= 0) { continue; }
+            var k = MathClamp01(d / MathMax(0.01, floatHeight));
+            sub += k;
+            AddForceAtPosition(0, per * k, 0, wx, wy, wz);
+        }
+        submerged = sub / pts.Count;
+        inWater = submerged > 0.001;
+        underwater = submerged > 0.999;
+        if (inWater)
+        {
+            // Su direnci (doğrusal + açısal)
+            ApplyForce(-v.x * waterDrag * mass * submerged, -v.y * waterDrag * mass * submerged, -v.z * waterDrag * mass * submerged);
+            var w = GetAngularVelocity();
+            var damp = MathMax(0.0, 1.0 - waterAngularDrag * submerged * dt);
+            SetAngularVelocity(w.x * damp, w.y * damp, w.z * damp);
+        }
+        if (inWater && !wasInWater)
+        {
+            var speed = MathAbs(v.y);
+            if (speed > 1.0) { SendMessage(water, "Splash", p.x, p.y, p.z, speed); }
+            SendMessage(GetEntityId(), "OnEnterWater");
+        }
+        if (!inWater && wasInWater) { SendMessage(GetEntityId(), "OnExitWater"); }
+        wasInWater = inWater;
+    }
+}

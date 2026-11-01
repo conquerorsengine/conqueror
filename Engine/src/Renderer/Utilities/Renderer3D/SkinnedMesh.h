@@ -31,13 +31,27 @@ namespace Conqueror
         uint32_t GetIndexCount() const { return m_IndexCount; }
         uint32_t GetVertexCount() const { return static_cast<uint32_t>(m_Vertices.size()); }
         std::shared_ptr<VertexArray> GetVertexArray() const { return m_VertexArray; }
+        const std::vector<SkinnedVertex>& GetVertices() const { return m_Vertices; }
+        const std::vector<uint32_t>& GetIndices() const { return m_Indices; }
+
+        // Kemik başına bağlama pozu kutusu: o kemiğin etkilediği köşelerin yerel kutusu (Bone = -1: ağırlıksız köşeler,
+        // shader onları bağlama pozunda bırakır). Animasyonlu pozun tutucu sınırı bunlardan hesaplanır (görüş kırpması).
+        struct BoneBox
+        {
+            int Bone = -1;
+            glm::vec3 Center{ 0.0f };
+            glm::vec3 Extents{ 0.0f };
+        };
+        const std::vector<BoneBox>& GetBoneBoxes() const { return m_BoneBoxes; }
 
     private:
         void SetupMesh();
+        void ComputeBoneBoxes();
 
         std::vector<SkinnedVertex> m_Vertices;
         std::vector<uint32_t> m_Indices;
         uint32_t m_IndexCount = 0;
+        std::vector<BoneBox> m_BoneBoxes;
 
         std::shared_ptr<VertexArray> m_VertexArray;
         std::shared_ptr<VertexBuffer> m_VertexBuffer;

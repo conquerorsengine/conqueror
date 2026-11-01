@@ -1,0 +1,66 @@
+using nativebridge;
+namespace Game.Util {
+    func Clamp01(v) { return v < 0 ? 0 : (v > 1 ? 1 : v); }
+    class Box { var w = 1; }
+}
+print(Game.Util.Clamp01(5), Clamp01(-2), new Game.Util.Box().w);
+print(nativebridge.MathClamp(15, 0, 10), MathAbs(-3));
+enum Dir { Up, Down = 5, Left }
+print(Dir.Up, Dir.Down, Dir.Left, Dir);
+// ?. ve ??=
+class Node { var next = null; var val = 0; func init(v) { val = v; } }
+var n = new Node(1);
+print(n.next?.val, n?.val, n.next?.val ?? "none");
+var cache = null;
+cache ??= [];
+cache ??= "not assigned";
+print(cache);
+var o = { count: null };
+o.count ??= 3;
+o.count += 2;
+print(o.count);
+// atama/artırma ifadeleri ve değerleri
+var arr = [1, 2, 3];
+var old = arr[0]++;
+var pre = ++arr[1];
+arr[2] *= 10;
+print(old, pre, arr);
+class P { var x = 1; }
+var p = new P();
+var px = p.x++;
+print(px, p.x, ++p.x, p.x--, p.x);
+var a, b = 5;
+print(a, b);
+// lambdas this yakalar
+class Clicker {
+    var clicks = 0;
+    func MakeHandler() { return () => { clicks++; return clicks; }; }
+    func Twice() { var h = MakeHandler(); h(); return h(); }
+}
+print(new Clicker().Twice());
+// generic çağrı -> dize argüman
+func GetComponent(t) { return "component:" + t; }
+print(GetComponent<Rigidbody>());
+// özyinelemeli yerel fonksiyon
+func countdown(n) {
+    func step(k) { return k <= 0 ? [] : [k] + step(k - 1); }
+    return step(n);
+}
+print(countdown(4));
+// karşılaştırma zincirleri ve kısa devre
+var calls = 0;
+func touch() { calls++; return true; }
+var t = false && touch();
+var u = true || touch();
+print(t, u, calls);
+// map nesneleri metot gibi
+var api = { greet: name => "hi " + name };
+print(api.greet("bob"));
+// büyük döngü + GC
+var acc = 0;
+for (var i = 0; i < 200000; i++) { var tmp = [i, "s" + i]; acc += tmp[0]; }
+print(acc);
+// switch içinde continue döngüye uygulanır
+var evens = [];
+for (var i = 0; i < 6; i++) { switch (i % 2) { case 1: continue; default: evens.Add(i); } }
+print(evens);

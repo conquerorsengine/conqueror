@@ -1,0 +1,7 @@
+#!/bin/sh
+# Conqueror Engine oyunu: @APP_ID@
+# Wayland app_id: AGL bileşikçisi pencereyi bu kimlikle uygulamaya eşler (.desktop dosya adıyla aynı)
+export CQ_APP_ID="@APP_ID@"
+# Oyun klasörü salt okunur: günlükler, kayıtlar ve gölgelendirici önbelleği kullanıcı veri klasörüne yazılır
+cd "@GAME_DIR@" || exit 1
+exec "@PLAYER@" "@GAME_DIR@" "$@"

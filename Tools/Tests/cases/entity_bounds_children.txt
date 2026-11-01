@@ -1,0 +1,8 @@
+# template: empty
+# Betik API: EntityGetBounds(kök) ağsız kökte null, EntityGetBounds(kök, true) çocukların sınırlarını katar
+wait 30
+script_errors mark
+run_cqs_file "{dir}/checks/bounds_children.cqs"
+entity expect_active RegressionCheckOK true
+script_errors expect 0
+quit

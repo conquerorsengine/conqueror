@@ -1,0 +1,24 @@
+Id: conqueror.enemy-ai
+Name: Enemy AI
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Ready-made melee enemy brain: patrols a path, spots the player with a view cone and line of
+  sight, chases on the NavMesh, attacks in range with a cooldown, searches the last known
+  position when it loses sight and returns to its route. Works with a NavMesh Agent or,
+  without one, by walking straight on a Character Controller.
+Category: AI
+Icon: user-ninja
+Tags: [ai, enemy, patrol, chase, navmesh, combat]
+Dependencies: [conqueror.health-system]
+Components:
+  - Scripts/EnemyAI.cqs
+Inserts:
+  - Name: Enemy
+    Icon: user-ninja
+    Prefab: Prefabs/Enemy.cqprefab
+    Tooltip: NavMesh agent with Enemy AI and Health
+  - Name: Patrol Path
+    Icon: route
+    Prefab: Prefabs/PatrolPath.cqprefab
+    Tooltip: Three waypoints (children) for the enemy's patrol route

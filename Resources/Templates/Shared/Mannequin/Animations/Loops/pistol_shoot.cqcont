@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: pistol_shoot
+      States:
+        - Name: pistol_shoot
+          ClipIndex: 14
+          ClipName: pistol_shoot
+  Parameters: []

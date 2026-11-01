@@ -1,11 +1,17 @@
 project(Engine)
 
 # Collect all source files
-file(GLOB_RECURSE ENGINE_SOURCES
+file(GLOB_RECURSE ENGINE_SOURCES CONFIGURE_DEPENDS
     "src/Core/*.cpp"
     "src/Platform/*.cpp"
     "src/Renderer/*.cpp"
     "src/Scene/*.cpp"
+    "src/Terrain/*.cpp"
+    "src/Particles/*.cpp"
+    "src/Grid/*.cpp"
+    "src/Timeline/*.cpp"
+    "src/Addons/*.cpp"
+    "src/UI/*.cpp"
     "src/Scripting/*.cpp"
     "src/AISystem/*.cpp"
     "src/AISystem/**/*.cpp"
@@ -16,6 +22,13 @@ file(GLOB_RECURSE ENGINE_SOURCES
     "src/Networking/RPC/*.cpp"
 )
 
+# 3B fizik: Jolt yoksa (CQ_ENABLE_JOLT=OFF, QNX) arka uç yerine boş uygulama derlenir
+if(TARGET Jolt)
+    list(FILTER ENGINE_SOURCES EXCLUDE REGEX ".*/Physics3D/JoltBackendUnavailable\\.cpp$")
+else()
+    list(FILTER ENGINE_SOURCES EXCLUDE REGEX ".*/Physics3D/JoltBackend\\.cpp$")
+endif()
+
 # Platforma özel kaynakları ayıkla (işlev kaldırılmadı, sadece yanlış platformda derlenmesin)
 # NOT: Platform/Windows altındaki dosyalar portable GLFW kodudur, Linux'ta da derlenir;
 # yalnızca dlfcn.h isteyen Linux/ klasörü Windows'ta hariç tutulur.
@@ -25,19 +38,30 @@ endif()
 
 # Linux: shared libEngine.so is easy to shadow with another copy on LD_LIBRARY_PATH / ld.so cache.
 # Static linking ships all renderer code inside the executable so you always run what you compiled.
-if(UNIX AND NOT APPLE)
+if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX")
     option(CQ_LINUX_ENGINE_CORE_STATIC "Build Engine as static on Linux (avoids wrong libEngine.so at runtime)" OFF)
 else()
     set(CQ_LINUX_ENGINE_CORE_STATIC OFF)
 endif()
 
-if(CQ_LINUX_ENGINE_CORE_STATIC)
+# Windows/macOS: motor çekirdeği statik. C++ betik DLL'leri motorla yalnızca C ABI üzerinden konuşur (CQHostApi),
+# bu yüzden DLL dışa aktarım listesine (her sınıfa CQ_API) gerek kalmaz.
+if(CQ_LINUX_ENGINE_CORE_STATIC OR WIN32 OR APPLE OR ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "QNX")
     add_library(${PROJECT_NAME} STATIC ${ENGINE_SOURCES})
 else()
     add_library(${PROJECT_NAME} SHARED ${ENGINE_SOURCES})
     target_compile_definitions(${PROJECT_NAME} PRIVATE CQ_BUILD_DLL)
     target_compile_definitions(${PROJECT_NAME} PUBLIC CQ_DYNAMIC_LINK)
 endif()
+
+# sljit: ConquerorScript JIT arka ucu (x86-32/64, ARM32/64, RISC-V, PPC, s390x, LoongArch, MIPS)
+set(CQ_SLJIT_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/../External/sljit/sljit_src/sljitLir.c)
+target_sources(${PROJECT_NAME} PRIVATE ${CQ_SLJIT_SOURCE})
+set_source_files_properties(${CQ_SLJIT_SOURCE} PROPERTIES
+    SKIP_PRECOMPILE_HEADERS ON
+    COMPILE_OPTIONS "$<IF:$<C_COMPILER_ID:MSVC>,/w,-w>")
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../External/sljit/sljit_src)
+target_compile_definitions(${PROJECT_NAME} PRIVATE SLJIT_CONFIG_AUTO=1)
 
 # Position Independent Code (shared library'ler için gerekli)
 set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -57,6 +81,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/../External/glm
     ${CMAKE_CURRENT_SOURCE_DIR}/../External/spdlog/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../External/imgui
+    ${CMAKE_CURRENT_SOURCE_DIR}/../External/IconFontCppHeaders
+    ${CMAKE_CURRENT_SOURCE_DIR}/../External/mujoco/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../External/yaml-cpp/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../External/entt/single_include
     ${CMAKE_CURRENT_SOURCE_DIR}/../External/imguizmo
@@ -81,7 +107,13 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     stb
     freetype
     assimp
-    nfd
+    glslang
+    glslang-default-resource-limits
+    spirv-cross-core
+    spirv-cross-glsl
+    spirv-cross-hlsl
+    spirv-cross-msl
+    spirv-cross-reflect
 )
 
 
@@ -90,6 +122,101 @@ if(TARGET zlibstatic)
     target_link_libraries(${PROJECT_NAME} PUBLIC zlibstatic)
 else()
     target_link_libraries(${PROJECT_NAME} PUBLIC z)
+endif()
+
+# ── Betik dilleri ──
+# Luau (gömülü, her platformda)
+target_link_libraries(${PROJECT_NAME} PRIVATE Luau.Compiler Luau.VM Luau.CodeGen)
+target_compile_definitions(${PROJECT_NAME} PRIVATE CQ_LUAU_ENABLED)
+
+# ── Vulkan arka ucu ── (GL -> Vulkan 1.2/1.3 çeviri katmanı; --vulkan / CQ_RENDERER=vulkan / Player Settings ile seçilir)
+# Başlıklar External/Vulkan-Headers'da; yükleyici çalışma anında açılır (VulkanLoader): Vulkan SDK gerekmez ve
+# yürütülebilir dosya vulkan-1.dll / libvulkan olmadan da açılır (OpenGL / D3D11'e düşer).
+if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "QNX")
+    # Android / QNX: OpenGL ES 3.x (EGL). Vulkan arka ucu GLFW yüzeyi kullandığı için şimdilik kapalı
+    option(CQ_ENABLE_VULKAN "Build the Vulkan backend" OFF)
+else()
+    option(CQ_ENABLE_VULKAN "Build the Vulkan backend" ON)
+endif()
+if(CQ_ENABLE_VULKAN)
+    target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../External/Vulkan-Headers/include)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC CQ_VULKAN_ENABLED)
+    message(STATUS "Conqueror: Vulkan backend enabled (runtime-loaded)")
+endif()
+
+# ── Direct3D 11 arka ucu ── (Windows varsayılanı; GL -> D3D11 çeviri katmanı, HLSL SPIRV-Cross ile)
+if(WIN32)
+    if(MSVC)
+        target_link_libraries(${PROJECT_NAME} PUBLIC d3d11 dxgi d3dcompiler dxguid)
+    else()
+        target_link_libraries(${PROJECT_NAME} PUBLIC d3d11 dxgi d3dcompiler_47 dxguid)
+    endif()
+    target_compile_definitions(${PROJECT_NAME} PUBLIC CQ_D3D11_ENABLED)
+    message(STATUS "Conqueror: Direct3D 11 backend enabled")
+    # Direct3D 12: d3d12.dll çalışma anında açılır (Windows 10 öncesinde D3D11 / OpenGL'e düşer)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC CQ_D3D12_ENABLED)
+    message(STATUS "Conqueror: Direct3D 12 backend enabled (runtime-loaded)")
+endif()
+
+# ── Metal arka ucu ── (macOS varsayılanı; GL -> Metal çeviri katmanı, MSL SPIRV-Cross ile; Objective-C++ / ARC)
+if(APPLE)
+    enable_language(OBJCXX)
+    file(GLOB CQ_METAL_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/GraphicsAPIs/Metal/*.mm")
+    target_sources(${PROJECT_NAME} PRIVATE ${CQ_METAL_SOURCES})
+    set_source_files_properties(${CQ_METAL_SOURCES} PROPERTIES COMPILE_FLAGS "-fobjc-arc")
+    target_link_libraries(${PROJECT_NAME} PUBLIC "-framework Metal" "-framework QuartzCore" "-framework Cocoa")
+    target_compile_definitions(${PROJECT_NAME} PUBLIC CQ_METAL_ENABLED)
+    message(STATUS "Conqueror: Metal backend enabled")
+endif()
+
+# GLFW yalnızca Wayland (AGL / Yocto: GLFW_BUILD_X11=OFF) ya da yalnızca X11 ile derlendiyse ImGui'nin GLFW arka ucu
+# olmayan platformun işlevlerini (glfwGetX11Display ...) çağırmasın
+if(DEFINED GLFW_BUILD_X11 AND NOT GLFW_BUILD_X11)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE IMGUI_IMPL_GLFW_DISABLE_X11)
+endif()
+if(DEFINED GLFW_BUILD_WAYLAND AND NOT GLFW_BUILD_WAYLAND)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE IMGUI_IMPL_GLFW_DISABLE_WAYLAND)
+endif()
+
+# Varsayılan OpenGL profili (--gl / CQ_GL_PROFILE verilmezse): gömülü / otomotiv Linux görüntüleri için, ör. "es3.2"
+set(CQ_DEFAULT_GL_PROFILE "" CACHE STRING "Default GL profile when none is requested (4.6, 4.1, 3.3, es3.2, es3.0 ...)")
+if(CQ_DEFAULT_GL_PROFILE)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE CQ_DEFAULT_GL_PROFILE="${CQ_DEFAULT_GL_PROFILE}")
+endif()
+
+# Python (CPython gömme): geliştirme dosyaları bulunursa (Android'de ana makinenin Python'u kullanılamaz)
+if(NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX")
+    find_package(Python3 COMPONENTS Development.Embed QUIET)
+endif()
+if(Python3_Development.Embed_FOUND AND NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX")
+    get_target_property(_cq_engine_type ${PROJECT_NAME} TYPE)
+    if(_cq_engine_type STREQUAL "SHARED_LIBRARY" AND NOT WIN32)
+        # Python ayrı modül (libCQPython.so): motor onu gerektiğinde açar. Derlenen oyun Python kurulu olmayan
+        # makinede de açılır; yalnızca Python betikleri devre dışı kalır.
+        get_target_property(_cq_engine_sources ${PROJECT_NAME} SOURCES)
+        list(FILTER _cq_engine_sources EXCLUDE REGEX ".*/Scripting/Python/PythonRuntime\\.cpp$")
+        set_target_properties(${PROJECT_NAME} PROPERTIES SOURCES "${_cq_engine_sources}")
+        target_compile_definitions(${PROJECT_NAME} PRIVATE CQ_PYTHON_MODULE)
+        add_library(CQPython SHARED src/Scripting/Python/PythonRuntime.cpp)
+        target_link_libraries(CQPython PRIVATE ${PROJECT_NAME} Python3::Python)
+        target_compile_definitions(CQPython PRIVATE CQ_PYTHON_ENABLED CQ_PYTHON_MODULE)
+        set_target_properties(CQPython PROPERTIES POSITION_INDEPENDENT_CODE ON)
+        message(STATUS "ConquerorEngine: Python scripting enabled as module (${Python3_VERSION})")
+    else()
+        target_link_libraries(${PROJECT_NAME} PRIVATE Python3::Python)
+        target_compile_definitions(${PROJECT_NAME} PRIVATE CQ_PYTHON_ENABLED)
+        message(STATUS "ConquerorEngine: Python scripting enabled (${Python3_VERSION})")
+    endif()
+endif()
+
+# Java (JNI): yalnızca başlıklar; libjvm çalışma anında yüklenir (JAVA_HOME)
+if(NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX")
+    find_package(JNI QUIET COMPONENTS JVM)
+endif()
+if(JNI_INCLUDE_DIRS AND NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX")
+    target_include_directories(${PROJECT_NAME} PRIVATE ${JNI_INCLUDE_DIRS})
+    target_compile_definitions(${PROJECT_NAME} PRIVATE CQ_JAVA_ENABLED)
+    message(STATUS "ConquerorEngine: Java scripting enabled")
 endif()
 
 if(TARGET libzstd_static)
@@ -145,9 +272,27 @@ endif()
 # Platform specific
 if(WIN32)
     target_compile_definitions(${PROJECT_NAME} PUBLIC CQ_PLATFORM_WINDOWS)
+    # ImGui arka uçları (ImGuiBuild.cpp) motorun içinde derlenir; bildirimleri imgui.dll içe aktarımı sanmasın
+    target_compile_definitions(${PROJECT_NAME} PUBLIC IMGUI_IMPL_API=)
     target_link_libraries(${PROJECT_NAME} PUBLIC ws2_32 winmm)
+elseif(ANDROID)
+    # NativeActivity + EGL + OpenGL ES 3; android_native_app_glue.h başlığı GLFWAndroid.cpp için
+    target_include_directories(${PROJECT_NAME} PUBLIC ${ANDROID_NDK}/sources/android/native_app_glue)
+    # glfw3.h masaüstü GL/gl.h başlığını aramasın (GL işlevleri glad üzerinden)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC GLFW_INCLUDE_NONE)
+    target_link_libraries(${PROJECT_NAME} PUBLIC android log EGL GLESv3 dl)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "QNX")
+    # QNX: Screen (pencere / girdi) + EGL + OpenGL ES; soketler libsocket'te, dlopen libc'de (libdl yok)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC GLFW_INCLUDE_NONE _QNX_SOURCE)
+    target_link_libraries(${PROJECT_NAME} PUBLIC screen EGL GLESv2 socket m)
 else()
-    target_link_libraries(${PROJECT_NAME} PUBLIC dl)
+    if(CMAKE_SYSTEM_NAME MATCHES "BSD|DragonFly")
+        # BSD: GL işlevleri glad'dan; glfw3.h sistemde olmayabilecek GL/gl.h başlığını aramasın
+        target_compile_definitions(${PROJECT_NAME} PUBLIC GLFW_INCLUDE_NONE)
+    endif()
+    # dlopen: Linux'ta libdl, BSD'lerde libc içinde (CMAKE_DL_LIBS boş); std::thread için pthread
+    find_package(Threads REQUIRED)
+    target_link_libraries(${PROJECT_NAME} PUBLIC ${CMAKE_DL_LIBS} Threads::Threads)
 endif()
 
 # Precompiled headers (optional)
@@ -164,3 +309,5 @@ target_precompile_headers(${PROJECT_NAME} PRIVATE
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/Core/AI/.env")
     file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/src/Core/AI/.env" DESTINATION "${CMAKE_BINARY_DIR}/bin")
 endif()
+
+cq_apply_sanitizers(${PROJECT_NAME})

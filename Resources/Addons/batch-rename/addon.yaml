@@ -1,0 +1,12 @@
+Id: conqueror.batch-rename
+Name: Batch Rename
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Rename many objects at once: numbered names with padding (Crate_01, Crate_02 ...) in
+  selection, hierarchy or position order, find and replace, prefixes and suffixes, and case
+  changes. A live preview lists the new names before you apply; every rename is one undo step.
+Category: Productivity
+Icon: i-cursor
+Tags: [editor, rename, productivity, hierarchy]
+Editor: Editor/BatchRename.cqs

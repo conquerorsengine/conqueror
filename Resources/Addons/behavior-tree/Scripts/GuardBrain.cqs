@@ -1,0 +1,81 @@
+using nativebridge;
+
+// Davranış ağacının yaprak yöntemleri (örnek bekçi): oyuncu yakınsa kovala, değilse rastgele dolaş.
+script GuardBrain : ConquerorScript
+{
+    public string targetTag = "Player";
+    public float noticeRange = 6.0;
+    public float speed = 3.0;
+    public float wanderRadius = 5.0;
+
+    // Çalışma zamanı bilgisi
+    public int chases = 0;
+    public int wanders = 0;
+
+    private float homeX = 0.0;
+    private float homeZ = 0.0;
+    private float goalX = 0.0;
+    private float goalZ = 0.0;
+
+    func Start()
+    {
+        var p = EntityGetWorldPosition(GetEntityId());
+        homeX = p.x;
+        homeZ = p.z;
+        goalX = p.x;
+        goalZ = p.z;
+    }
+
+    func Target()
+    {
+        for (var e in FindEntitiesWithTag(targetTag)) { return e; }
+        return null;
+    }
+
+    func PlayerNearby()
+    {
+        var t = Target();
+        if (t == null) { return false; }
+        var a = EntityGetWorldPosition(GetEntityId());
+        var b = EntityGetWorldPosition(t);
+        return (a.x - b.x) * (a.x - b.x) + (a.z - b.z) * (a.z - b.z) < noticeRange * noticeRange;
+    }
+
+    func ChasePlayer(dt)
+    {
+        var t = Target();
+        if (t == null) { return "failure"; }
+        var b = EntityGetWorldPosition(t);
+        chases++;
+        MoveTo(b.x, b.z, speed * 1.6, dt);
+        return "success";
+    }
+
+    func PickWanderPoint(dt)
+    {
+        var a = MathRandom() * 6.2831853;
+        var r = MathSqrt(MathRandom()) * wanderRadius;
+        goalX = homeX + MathCos(a) * r;
+        goalZ = homeZ + MathSin(a) * r;
+        wanders++;
+        return "success";
+    }
+
+    func WalkToWanderPoint(dt)
+    {
+        return MoveTo(goalX, goalZ, speed, dt) ? "success" : "running";
+    }
+
+    func MoveTo(x, z, spd, dt)
+    {
+        var p = EntityGetWorldPosition(GetEntityId());
+        var dx = x - p.x;
+        var dz = z - p.z;
+        var d = MathSqrt(dx * dx + dz * dz);
+        if (d < 0.2) { return true; }
+        var step = MathMin(d, spd * dt);
+        EntitySetWorldPosition(GetEntityId(), p.x + dx / d * step, p.y, p.z + dz / d * step);
+        SetRotation(0, MathRadToDeg(MathAtan2(-dx, -dz)), 0);
+        return false;
+    }
+}

@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: sword_attack
+      States:
+        - Name: sword_attack
+          ClipIndex: 30
+          ClipName: sword_attack
+  Parameters: []

@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "round*", "ci/**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: Linux (GCC 14, editor + player)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build g++-14 libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
+            libxkbcommon-dev libwayland-dev wayland-protocols libgtk-3-dev libgl-dev python3-dev
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc-14 -DCMAKE_CXX_COMPILER=g++-14
+      - name: Build
+        run: cmake --build build --parallel
+
+  linux-embedded:
+    name: Linux player for AGL / Yocto (Wayland only, OpenGL ES default)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build g++-14 libxkbcommon-dev libwayland-dev wayland-protocols
+      - name: Configure
+        run: >
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc-14 -DCMAKE_CXX_COMPILER=g++-14
+          -DCQ_RUNTIME_ONLY=ON -DCQ_DEFAULT_GL_PROFILE=es3.2 -DCQ_ENABLE_VULKAN=OFF -DCQ_LINUX_ENGINE_CORE_STATIC=ON
+          -DGLFW_BUILD_X11=OFF -DGLFW_BUILD_WAYLAND=ON
+      - name: Build
+        run: cmake --build build --target ConquerorRuntime --parallel
+
+  windows:
+    name: Windows (MSVC)
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+  macos:
+    name: macOS (Apple Silicon)
+    runs-on: macos-14
+    # macOS port is not finished yet: the job reports problems without failing the workflow
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: brew install ninja
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --parallel
+
+  freebsd:
+    name: FreeBSD (player, in a VM)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build inside FreeBSD
+        uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          mem: 12288
+          prepare: |
+            pkg install -y cmake ninja pkgconf python3 xorgproto libX11 libXrandr libXinerama libXcursor libXi libXext \
+              libxkbcommon wayland wayland-protocols evdev-proto
+          run: |
+            cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCQ_RUNTIME_ONLY=ON
+            cmake --build build --target ConquerorRuntime
+
+  android:
+    name: Android (NDK, arm64-v8a player)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - name: Configure
+        run: >
+          cmake -S . -B build-android -G Ninja -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_LATEST_HOME/build/cmake/android.toolchain.cmake
+          -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-26 -DANDROID_STL=c++_static
+      - name: Build
+        run: cmake --build build-android --target conqueror --parallel

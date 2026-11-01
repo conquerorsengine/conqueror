@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: idle
+      States:
+        - Name: idle
+          ClipIndex: 0
+          ClipName: idle
+  Parameters: []

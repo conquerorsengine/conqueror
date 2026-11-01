@@ -1,0 +1,17 @@
+using nativebridge;
+
+// Doku kaydırma: Mesh Renderer Offset'i her karede ilerletir (konveyör bandı)
+script UVScroll : ConquerorScript
+{
+    public float speedU = 0.0;
+    public float speedV = 0.6;          // tekrar / s
+    private float u = 0.0;
+    private float v = 0.0;
+
+    func Update(dt)
+    {
+        u = MathRepeat(u + speedU * dt, 1.0);
+        v = MathRepeat(v + speedV * dt, 1.0);
+        EntitySetComponentField(GetEntityId(), "MeshRenderer", "Offset", {x: u, y: v});
+    }
+}

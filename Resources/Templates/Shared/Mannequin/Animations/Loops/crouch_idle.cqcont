@@ -1,0 +1,11 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: crouch_idle
+      States:
+        - Name: crouch_idle
+          ClipIndex: 7
+          ClipName: crouch_idle
+  Parameters: []

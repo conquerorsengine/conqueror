@@ -1,0 +1,19 @@
+Id: conqueror.object-pool
+Name: Object Pool
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  Reuse objects instead of creating and destroying them: pre-warmed pools per prefab with
+  optional growth and a hard cap, Spawn / Despawn from any script, automatic return after a
+  lifetime, and OnSpawned / OnDespawned messages so pooled objects can reset themselves.
+Category: Performance
+Icon: recycle
+Tags: [pool, pooling, performance, bullets, spawn]
+Components:
+  - Scripts/ObjectPool.cqs
+  - Scripts/PooledObject.cqs
+Inserts:
+  - Name: Object Pool
+    Icon: recycle
+    Prefab: Prefabs/ObjectPool.cqprefab
+    Tooltip: Pool pre-warmed with 10 "Pooled Ball" objects

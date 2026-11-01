@@ -1,0 +1,147 @@
+using nativebridge;
+
+// Dizi aracı: seçili nesnenin kopyaları. mode 0 doğrusal, 1 ızgara, 2 dairesel
+script ArrayTool : ConquerorScript
+{
+    public int mode = 0;
+    public int count = 5;
+    public float stepX = 2.0;
+    public float stepY = 0.0;
+    public float stepZ = 0.0;
+    public int countX = 4;
+    public int countY = 1;
+    public int countZ = 4;
+    public float spacing = 2.0;
+    public float radius = 5.0;
+    public bool faceOutward = true;
+    public bool includeOriginal = true;
+
+    // Bilgi
+    public int created = 0;
+    public string lastGroup = "";
+
+    func OnLoad()
+    {
+        EditorAddMenuItem("Array/Linear", "Linear");
+        EditorAddMenuItem("Array/Grid", "Grid");
+        EditorAddMenuItem("Array/Radial", "Radial");
+        EditorAddToolButton("Array", "grip", "Apply", "Duplicate the selection in the chosen pattern");
+        EditorAddPanel("Array Tool", "DrawPanel");
+    }
+
+    func Source()
+    {
+        var sel = EditorGetSelection();
+        if (len(sel) == 0) { EditorNotify("Select an object first."); return null; }
+        return sel[0];
+    }
+
+    func Group(src)
+    {
+        var g = CreateEntity("Array (" + EntityGetName(src) + ")");
+        var p = EntityGetWorldPosition(src);
+        EntitySetPosition(g, p.x, p.y, p.z);
+        lastGroup = EntityGetName(g);
+        return g;
+    }
+
+    func Copy(src, group, x, y, z)
+    {
+        var c = Instantiate(src, x, y, z);
+        if (c == null) { return null; }
+        EntitySetParent(c, group, true);
+        created++;
+        return c;
+    }
+
+    func Linear()
+    {
+        var src = Source();
+        if (src == null) { return; }
+        created = 0;
+        var g = Group(src);
+        var p = EntityGetWorldPosition(src);
+        for (var i = includeOriginal ? 1 : 0; i < count; i++) { Copy(src, g, p.x + stepX * i, p.y + stepY * i, p.z + stepZ * i); }
+        EditorNotify("Array: " + str(created) + " copies");
+    }
+
+    func Grid()
+    {
+        var src = Source();
+        if (src == null) { return; }
+        created = 0;
+        var g = Group(src);
+        var p = EntityGetWorldPosition(src);
+        for (var x = 0; x < countX; x++)
+        {
+            for (var y = 0; y < countY; y++)
+            {
+                for (var z = 0; z < countZ; z++)
+                {
+                    if (includeOriginal && x == 0 && y == 0 && z == 0) { continue; }
+                    Copy(src, g, p.x + x * spacing, p.y + y * spacing, p.z + z * spacing);
+                }
+            }
+        }
+        EditorNotify("Array: " + str(created) + " copies");
+    }
+
+    func Radial()
+    {
+        var src = Source();
+        if (src == null) { return; }
+        created = 0;
+        var g = Group(src);
+        var p = EntityGetWorldPosition(src);
+        // Merkez: kaynağın konumu; kopyalar onun çevresinde çemberde
+        for (var i = 0; i < count; i++)
+        {
+            var a = i * 6.2831853 / count;
+            var c = Copy(src, g, p.x + MathCos(a) * radius, p.y, p.z + MathSin(a) * radius);
+            if (c != null && faceOutward)
+            {
+                var r = EntityGetRotation(src);
+                EntitySetRotation(c, r.x, MathRadToDeg(MathAtan2(-MathCos(a), -MathSin(a))) + 180.0, r.z);
+            }
+        }
+        EditorNotify("Array: " + str(created) + " copies");
+    }
+
+    func Apply()
+    {
+        if (mode == 0) { Linear(); }
+        else if (mode == 1) { Grid(); }
+        else { Radial(); }
+    }
+
+    func DrawPanel()
+    {
+        mode = GuiCombo("Pattern", mode, ["Linear", "Grid", "Radial"]);
+        if (mode == 0)
+        {
+            count = GuiSliderInt("Count", count, 2, 200);
+            stepX = GuiDragFloat("Step X", stepX, 0.05);
+            stepY = GuiDragFloat("Step Y", stepY, 0.05);
+            stepZ = GuiDragFloat("Step Z", stepZ, 0.05);
+            includeOriginal = GuiCheckbox("Original Is First", includeOriginal);
+        }
+        if (mode == 1)
+        {
+            countX = GuiSliderInt("Count X", countX, 1, 50);
+            countY = GuiSliderInt("Count Y", countY, 1, 50);
+            countZ = GuiSliderInt("Count Z", countZ, 1, 50);
+            spacing = GuiSliderFloat("Spacing", spacing, 0.1, 50.0);
+            includeOriginal = GuiCheckbox("Original Is First", includeOriginal);
+        }
+        if (mode == 2)
+        {
+            count = GuiSliderInt("Count", count, 2, 200);
+            radius = GuiSliderFloat("Radius", radius, 0.1, 200.0);
+            faceOutward = GuiCheckbox("Face Outward", faceOutward);
+        }
+        GuiBeginDisabled(len(EditorGetSelection()) == 0);
+        if (GuiButton("Create Array", -1)) { EditorRunUndoable("Array", "Apply"); }
+        GuiEndDisabled();
+        if (created > 0) { GuiTextDisabled(str(created) + " copies in " + lastGroup); }
+    }
+}

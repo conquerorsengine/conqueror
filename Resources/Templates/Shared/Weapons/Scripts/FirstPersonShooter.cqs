@@ -1,0 +1,513 @@
+using nativebridge;
+
+// Birinci şahıs nişancı (Unreal First Person + Arena Shooter). Kökte Character Controller + Health.
+// Çocuklar: "Camera" -> "ViewModel" -> "Arms" (FP kolları, FPArms.cqcont; "IK Arm R/L" iki kemikli IK) ve silahlar
+//   (Weapon; "IK R" / "IK L" el hedefleri). Tepme, şarjör değiştirme, silah değiştirme, nişan silaha uygulanır, eller izler.
+//   WASD hareket, fare bakış, Shift depar, C / Ctrl çömel, Space zıpla, sol tık ateş, sağ tık nişan, R şarjör,
+//   1 / 2 / tekerlek silah değiştir, Esc imleç. Kol: sol/sağ çubuk, RT ateş, LT nişan, X şarjör, Y silah, A zıpla.
+script FirstPersonShooter : ConquerorScript
+{
+    [Header("Movement")]
+    public float walkSpeed = 4.2;
+    public float sprintSpeed = 6.8;
+    public float crouchSpeed = 2.2;
+    public float aimMoveSpeed = 2.6;
+    public float acceleration = 14.0;
+    public float airControl = 0.3;
+    public float jumpHeight = 1.15;
+    public float gravity = 20.0;
+    public float eyeHeight = 0.72;          // kapsül merkezinden göze
+    public float crouchEyeHeight = 0.2;
+
+    [Header("Look")]
+    public float mouseSensitivity = 0.11;
+    public float stickSensitivity = 170.0;
+    public bool invertY = false;
+    public float fov = 80.0;
+
+    [Header("View Model")]
+    public float bobAmount = 0.012;
+    public float swayAmount = 0.0016;
+    public float aimInSpeed = 12.0;
+
+    [Header("State")]
+    public float speed = 0.0;
+    public bool grounded = true;
+    public bool crouching = false;
+    public bool aiming = false;
+    public bool dead = false;
+    public int currentWeapon = 0;
+    public float pitch = 0.0;
+    public float yaw = 0.0;
+    public int kills = 0;
+    public int shots = 0;
+    public bool inputEnabled = true;
+
+    // Betik / test girdisi
+    public bool fireInput = false;
+    public bool aimInput = false;
+    public float moveInputX = 0.0;
+    public float moveInputY = 0.0;
+
+    private var cam = -1;
+    private var viewModel = -1;
+    private var arms = -1;
+    private var weapons = [];
+    private var ikR = -1;
+    private var ikL = -1;
+    private float reloadAnim = 0.0;
+    private bool scopeShown = false;
+    private var weaponBase = {};
+    private var leftBase = {};
+    private float reloadLength = 1.0;
+    private bool weaponsReady = false;
+    private bool sightReady = false;
+    private float adsSmooth = 1.0;
+    private float vx = 0.0;
+    private float vz = 0.0;
+    private float vy = 0.0;
+    private float coyote = 0.0;
+    private float bobPhase = 0.0;
+    private float aim01 = 0.0;
+    private float recoil = 0.0;          // kamerada geri dönecek tepme
+    private float kick = 0.0;            // silahın geri tepmesi
+    private float swayX = 0.0;
+    private float swayY = 0.0;
+    private float eye = 0.72;
+    private float hitmarker = 0.0;
+    private float damageFlash = 0.0;
+    private bool firePrev = false;
+    private float switchTimer = 0.0;
+    private var padPrev = {};
+    private float lastHealth = 100.0;
+
+    func Start()
+    {
+        yaw = GetRotation().y;
+        cam = Child(GetEntityId(), "Camera");
+        viewModel = Child(cam, "ViewModel");
+        arms = Child(viewModel, "Arms");
+        ikR = Child(arms, "IK Arm R");
+        ikL = Child(arms, "IK Arm L");
+        eye = eyeHeight;
+        CollectWeapons();
+        SetCursorMode(2);
+        if (cam >= 0) { EntitySetComponentField(cam, "Camera", "FieldOfView", fov); }
+        var h = GetScriptField(GetEntityId(), "health");
+        if (h != null) { lastHealth = h; }
+        UpdateHud();
+    }
+
+    // Silahlar: görünüm modelinin (eski projelerde kolların) altındaki Weapon varlıkları
+    func CollectWeapons()
+    {
+        weapons = [];
+        foreach (var holder in [viewModel, arms])
+        {
+            if (holder < 0) { continue; }
+            // Silah = "Muzzle" çocuğu olan varlık (betiklerin başlama sırasından bağımsız)
+            foreach (var c in EntityGetChildren(holder))
+            {
+                if (Child(c, "Muzzle") >= 0)
+                {
+                    weapons.Add(c);
+                    weaponBase["" + c] = EntityGetPosition(c);
+                }
+            }
+        }
+        if (weapons.Count > 0)
+        {
+            weaponsReady = true;
+            SelectWeapon(0, true);
+        }
+    }
+
+    func Child(parent, name)
+    {
+        if (parent == null || parent < 0) { return -1; }
+        foreach (var c in EntityGetChildren(parent))
+        {
+            if (EntityGetName(c) == name) { return c; }
+        }
+        return -1;
+    }
+
+    func Pad(b) { return IsGamepadConnected(0) && IsGamepadButtonPressed(0, b); }
+    func PadDown(b)
+    {
+        var now = Pad(b);
+        var k = "b" + b;
+        var was = padPrev.ContainsKey(k) && padPrev[k];
+        padPrev[k] = now;
+        return now && !was;
+    }
+    func Axis(a)
+    {
+        if (!IsGamepadConnected(0)) { return 0.0; }
+        var v = GetGamepadAxis(0, a);
+        return MathAbs(v) < 0.15 ? 0.0 : v;
+    }
+
+    func CurrentWeapon() { return currentWeapon < weapons.Count ? weapons[currentWeapon] : -1; }
+
+    func StartReloadAnim(w)
+    {
+        reloadLength = MathMax(GetScriptField(w, "reloadTime"), 0.3);
+        reloadAnim = reloadLength;
+    }
+
+    // Şarjör değiştirme: silah aşağı iner ve yana yatar, ortada kısa sarsıntı (şarjör takma), sonra geri gelir (0..1)
+    func ReloadCurve()
+    {
+        if (reloadAnim <= 0.0) { return 0.0; }
+        var f = 1.0 - reloadAnim / reloadLength;
+        if (f < 0.2) { return MathSin(f / 0.2 * 1.5707963); }
+        if (f > 0.8) { return MathSin((1.0 - f) / 0.2 * 1.5707963); }
+        return 1.0;
+    }
+
+    func SelectWeapon(i, instant)
+    {
+        if (weapons.Count == 0) { return; }
+        i = (i + weapons.Count) % weapons.Count;
+        if (!instant && i == currentWeapon) { return; }
+        var w = CurrentWeapon();
+        if (w >= 0) { InvokeMethod(w, "CancelReload"); }
+        currentWeapon = i;
+        for (var k = 0; k < weapons.Count; k++) { EntitySetActive(weapons[k], k == currentWeapon); }
+        // Eller yeni silahın kabzasına / önüne
+        var nw = CurrentWeapon();
+        if (ikR >= 0) { EntitySetComponentField(ikR, "TwoBoneIKConstraint", "Target", Child(nw, "IK R")); }
+        if (ikL >= 0) { EntitySetComponentField(ikL, "TwoBoneIKConstraint", "Target", Child(nw, "IK L")); }
+        reloadAnim = 0.0;
+        if (scopeShown)
+        {
+            scopeShown = false;
+            UISetAlpha("ScopeOverlay", 0.0);
+            UISetAlpha("ScopeLeft", 0.0);
+            UISetAlpha("ScopeRight", 0.0);
+            if (arms >= 0) { EntitySetActive(arms, true); }
+            foreach (var wk in weapons) { var mk = Child(wk, "Model"); if (mk >= 0) { EntitySetActive(mk, true); } }
+        }
+        if (!instant)
+        {
+            switchTimer = 0.35;
+            AudioPlayOneShot("Assets/Weapons/Audio/slide.wav", 0.4, 1.2, 0, "SFX");
+        }
+        UpdateHud();
+    }
+
+    func Update(dt)
+    {
+        if (dt > 0.1) { dt = 0.1; }
+        if (!weaponsReady) { CollectWeapons(); }
+        var ix = moveInputX;
+        var iy = moveInputY;
+        var sprint = false;
+        var jump = false;
+        var fire = fireInput;
+        aiming = aimInput;
+        if (inputEnabled && !dead)
+        {
+            if (IsKeyPressed("W") || IsKeyPressed("Up")) { iy += 1.0; }
+            if (IsKeyPressed("S") || IsKeyPressed("Down")) { iy -= 1.0; }
+            if (IsKeyPressed("D") || IsKeyPressed("Right")) { ix += 1.0; }
+            if (IsKeyPressed("A") || IsKeyPressed("Left")) { ix -= 1.0; }
+            ix += Axis(0);
+            iy -= Axis(1);
+            sprint = IsKeyPressed("LeftShift") || Pad(8);
+            jump = IsKeyDown("Space") || PadDown(0);
+            if (IsKeyDown("C") || IsKeyDown("LeftControl") || PadDown(1)) { crouching = !crouching; }
+            fire = fire || IsMouseButtonPressed(0) || Axis(5) > 0.3;
+            aiming = aiming || IsMouseButtonPressed(1) || Axis(4) > 0.3;
+            if (IsKeyDown("R") || PadDown(2))
+            {
+                var w0 = CurrentWeapon();
+                if (w0 >= 0 && InvokeMethod(w0, "Reload") == true) { StartReloadAnim(w0); }
+            }
+            if (IsKeyDown("1")) { SelectWeapon(0, false); }
+            if (IsKeyDown("2")) { SelectWeapon(1, false); }
+            if (IsKeyDown("3")) { SelectWeapon(2, false); }
+            var wheel = GetMouseScrollDelta();
+            if (wheel > 0.1 || PadDown(3)) { SelectWeapon(currentWeapon + 1, false); }
+            if (wheel < -0.1) { SelectWeapon(currentWeapon - 1, false); }
+            // İmleç: Esc bırakır, oyun görünümüne tıklamak geri kilitler (motor yapar; o tık ateş etmez)
+            var md = GetMouseDelta();
+            // Nişanda hassasiyet görüş açısıyla orantılı (dürbünde fare yavaşlar)
+            var cwf = CurrentWeapon();
+            var curFov = MathLerp(fov, cwf >= 0 ? GetScriptField(cwf, "aimFov") : fov, aim01);
+            var sens = mouseSensitivity * MathLerp(1.0, MathMax(curFov / fov, 0.2), aim01);
+            yaw = MathNormalizeAngle(yaw - (md.x * sens + Axis(2) * stickSensitivity * dt));
+            pitch += (invertY ? md.y : -md.y) * sens - Axis(3) * stickSensitivity * dt * (invertY ? -1.0 : 1.0);
+        }
+        // Şarjör değiştirirken (ve silah değiştirirken) nişan alınmaz
+        var wa = CurrentWeapon();
+        if (wa >= 0 && (GetScriptField(wa, "reloading") == true || reloadAnim > 0.0 || switchTimer > 0.0)) { aiming = false; }
+        // Sekme toparlanması
+        var rec = recoil * (1.0 - MathExp(-9.0 * dt));
+        recoil -= rec;
+        pitch -= rec * 0.7;
+        pitch = MathClamp(pitch, -85.0, 85.0);
+        SetRotation(0, yaw, 0);
+
+        var il = MathSqrt(ix * ix + iy * iy);
+        if (il > 1.0) { ix /= il; iy /= il; il = 1.0; }
+        var r = MathDegToRad(yaw);
+        // Kamera -Z'ye bakar
+        var fx = -MathSin(r);
+        var fz = -MathCos(r);
+        var rx = MathCos(r);
+        var rz = -MathSin(r);
+        var mx = fx * iy + rx * ix;
+        var mz = fz * iy + rz * ix;
+        var maxSpeed = walkSpeed;
+        if (sprint && iy > 0.3 && !aiming) { maxSpeed = sprintSpeed; crouching = false; }
+        if (crouching) { maxSpeed = crouchSpeed; }
+        if (aiming) { maxSpeed = MathMin(maxSpeed, aimMoveSpeed); }
+        grounded = CharacterIsGrounded();
+        var k = 1.0 - MathExp(-(grounded ? acceleration : acceleration * airControl) * dt);
+        vx += (mx * maxSpeed - vx) * k;
+        vz += (mz * maxSpeed - vz) * k;
+        speed = MathSqrt(vx * vx + vz * vz);
+        if (grounded)
+        {
+            coyote = 0.1;
+            if (vy < 0.0) { vy = -2.0; }
+        }
+        else
+        {
+            coyote -= dt;
+            vy -= gravity * dt;
+        }
+        if (jump && coyote > 0.0)
+        {
+            vy = MathSqrt(2.0 * gravity * jumpHeight);
+            coyote = 0.0;
+            crouching = false;
+        }
+        var flags = CharacterMove(vx * dt, vy * dt, vz * dt);
+        if (vy > 0.0 && flags != null && (int(flags) % 4) >= 2) { vy = 0.0; }
+
+        // Kamera: göz yüksekliği, bakış, FOV
+        eye = MathLerp(eye, crouching ? crouchEyeHeight : eyeHeight, 1.0 - MathExp(-12.0 * dt));
+        aim01 = MathLerp(aim01, aiming ? 1.0 : 0.0, 1.0 - MathExp(-aimInSpeed * dt));
+        var w = CurrentWeapon();
+        var aimFov = w >= 0 ? GetScriptField(w, "aimFov") : 60.0;
+        if (cam >= 0)
+        {
+            var bob = grounded ? MathMin(speed / walkSpeed, 1.6) : 0.0;
+            bobPhase += dt * (5.0 + speed * 1.4);
+            var by = MathSin(bobPhase * 2.0) * bobAmount * bob * (1.0 - aim01 * 0.8);
+            EntitySetPosition(cam, 0, eye + by, 0);
+            EntitySetRotation(cam, pitch, 0, MathSin(bobPhase) * 0.4 * bob * (1.0 - aim01));
+            EntitySetComponentField(cam, "Camera", "FieldOfView", MathLerp(fov, aimFov, aim01));
+        }
+        // Silah modeli: sallanma, yürüme salınımı, geri tepme, nişana gelme
+        var md2 = GetMouseDelta();
+        swayX = MathLerp(swayX, -md2.x * swayAmount, 1.0 - MathExp(-10.0 * dt));
+        swayY = MathLerp(swayY, md2.y * swayAmount, 1.0 - MathExp(-10.0 * dt));
+        kick = MathLerp(kick, 0.0, 1.0 - MathExp(-14.0 * dt));
+        if (viewModel >= 0)
+        {
+            var bob2 = grounded ? MathMin(speed / walkSpeed, 1.6) * (1.0 - aim01 * 0.85) : 0.0;
+            var hipX = -0.05;
+            var hipY = -0.03;
+            // Nişan: silahın "Sight" noktası kamera eksenine (ve gözün eyeRelief önüne) gelecek kayma
+            var adsX = 0.0;
+            var adsY = 0.0;
+            var adsZ = 0.0;
+            var sight = w >= 0 ? Child(w, "Sight") : -1;
+            if (sight >= 0)
+            {
+                var sp = EntityGetWorldPosition(sight);
+                var cp = EntityGetWorldPosition(cam);
+                var R = EntityGetRight(cam);
+                var U = EntityGetUp(cam);
+                var F = EntityGetForward(cam);
+                var vp = EntityGetPosition(viewModel);
+                var ddx = sp.x - cp.x;
+                var ddy = sp.y - cp.y;
+                var ddz = sp.z - cp.z;
+                adsX = vp.x - (ddx * R.x + ddy * R.y + ddz * R.z);
+                adsY = vp.y - (ddx * U.x + ddy * U.y + ddz * U.z);
+                adsZ = vp.z + ((ddx * F.x + ddy * F.y + ddz * F.z) - GetScriptField(w, "eyeRelief"));
+                adsSmooth = sightReady ? adsSmooth : 1.0;
+                sightReady = true;
+            }
+            var down = switchTimer > 0.0 ? switchTimer * 0.6 : 0.0;
+            if (reloadAnim > 0.0) { reloadAnim -= dt; }
+            var rl = ReloadCurve() * (1.0 - aim01);
+            var rf = reloadAnim > 0.0 ? 1.0 - reloadAnim / reloadLength : 0.0;
+            var seat = (rf > 0.5 && rf < 0.62) ? MathSin((rf - 0.5) / 0.12 * 3.1415926) * 0.02 : 0.0;
+            // Yalnız silah hareket eder; eller IK ile onu izler
+            if (w >= 0 && weaponBase.ContainsKey("" + w))
+            {
+                var b = weaponBase["" + w];
+                EntitySetPosition(w, b.x - rl * 0.03, b.y - rl * 0.07 - seat, b.z + rl * 0.04);
+                EntitySetRotation(w, rl * 22.0, rl * 10.0, rl * 40.0);
+                // Şarjör değiştirirken sol el silahı bırakır: tabancada şarjör yuvasına (kabzanın altına) gider,
+                // uzun silahta aşağı inip (fişeklik / yeni şarjör) geri gelir
+                var lt = Child(w, "IK L");
+                if (lt >= 0)
+                {
+                    if (!leftBase.ContainsKey("" + w)) { leftBase["" + w] = EntityGetPosition(lt); }
+                    var lb = leftBase["" + w];
+                    if (GetScriptField(w, "weaponName") == "Pistol")
+                    {
+                        if (ikL >= 0) { EntitySetComponentField(ikL, "TwoBoneIKConstraint", "Weight", 1.0 - rl); }
+                    }
+                    else
+                    {
+                        if (ikL >= 0) { EntitySetComponentField(ikL, "TwoBoneIKConstraint", "Weight", 1.0); }
+                        EntitySetPosition(lt, lb.x - rl * 0.16, lb.y - rl * 0.32, lb.z + rl * 0.22);
+                    }
+                }
+            }
+            var sprintDrop = (speed > walkSpeed + 0.5 && !aiming) ? 0.04 : 0.0;
+            EntitySetPosition(viewModel,
+                MathLerp(hipX, adsX, aim01) + swayX + MathCos(bobPhase) * 0.008 * bob2,
+                MathLerp(hipY, adsY, aim01) + swayY - MathAbs(MathSin(bobPhase)) * 0.006 * bob2 - down - sprintDrop,
+                MathLerp(0.0, adsZ, aim01) + kick);
+            EntitySetRotation(viewModel, -kick * 60.0 + sprintDrop * 300.0, swayX * 200.0, swayX * 300.0);
+        }
+        if (switchTimer > 0.0) { switchTimer -= dt; }
+
+        // Ateş
+        if (w >= 0 && !dead && switchTimer <= 0.0)
+        {
+            var auto = InvokeMethod(w, "IsAuto") == true;
+            var pressed = fire && !firePrev;
+            if ((auto && fire) || pressed)
+            {
+                var hip = GetScriptField(w, "hipSpread");
+                var ads = GetScriptField(w, "aimSpread");
+                var mv = GetScriptField(w, "moveSpread");
+                var spread = MathLerp(hip, ads, aim01) + mv * MathMin(speed / sprintSpeed, 1.0) + (grounded ? 0.0 : 2.0);
+                var o = EntityGetWorldPosition(cam);
+                var d = EntityGetForward(cam);
+                var res = InvokeMethod(w, "Fire", o.x, o.y, o.z, d.x, d.y, d.z, spread, GetEntityId());
+                if (res != null && res.fired)
+                {
+                    shots += 1;
+                    recoil += GetScriptField(w, "recoilPitch") * (1.0 - 0.5 * aim01);
+                    pitch += GetScriptField(w, "recoilPitch") * (1.0 - 0.5 * aim01);
+                    yaw += RandomRange(-1, 1) * GetScriptField(w, "recoilYaw");
+                    kick = 0.035;
+                    if (res.hit)
+                    {
+                        hitmarker = 0.18;
+                        AudioPlayOneShot(res.head ? "Assets/Weapons/Audio/headshot.wav" : "Assets/Weapons/Audio/hitmarker.wav", 0.5, 1.0, 0, "SFX");
+                    }
+                    if (res.kill)
+                    {
+                        kills += 1;
+                        AudioPlayOneShot("Assets/Weapons/Audio/kill.wav", 0.5, 1.0, 0, "SFX");
+                    }
+                }
+                else if (InvokeMethod(w, "NeedsReload") == true)
+                {
+                    if (InvokeMethod(w, "Reload") == true) { StartReloadAnim(w); }
+                }
+            }
+        }
+        firePrev = fire;
+
+        // Hasar geri bildirimi
+        var h = GetScriptField(GetEntityId(), "health");
+        if (h != null)
+        {
+            if (h < lastHealth - 0.01)
+            {
+                damageFlash = 1.0;
+                AudioPlayOneShot("Assets/Weapons/Audio/hurt.wav", 0.6, RandomRange(0.9, 1.1), 0, "SFX");
+            }
+            lastHealth = h;
+        }
+        hitmarker -= dt;
+        damageFlash = MathMax(0.0, damageFlash - dt * 1.5);
+        UpdateHud();
+    }
+
+    func UpdateHud()
+    {
+        var w = CurrentWeapon();
+        if (w >= 0)
+        {
+            var reloading = GetScriptField(w, "reloading") == true;
+            UISetText("AmmoText", reloading ? "..." : "" + int(GetScriptField(w, "ammo")));
+            UISetText("ReserveText", GetScriptField(w, "infiniteAmmo") == true ? "/ INF" : "/ " + int(GetScriptField(w, "reserve")));
+            UISetText("WeaponText", StringToUpper(GetScriptField(w, "weaponName")));
+        }
+        var h = GetScriptField(GetEntityId(), "health");
+        var mh = GetScriptField(GetEntityId(), "maxHealth");
+        if (h != null && mh != null)
+        {
+            UISetFill("HealthFill", MathClamp(h / mh, 0, 1));
+            UISetText("HealthText", "" + int(MathCeil(MathMax(h, 0))));
+        }
+        UISetAlpha("Hitmarker", hitmarker > 0.0 ? 1.0 : 0.0);
+        UISetAlpha("DamageVignette", damageFlash * 0.55);
+        // Nişangah: dağılma kadar açılır, nişan alırken kaybolur
+        var gap = 10.0 + speed * 3.0 + (grounded ? 0.0 : 14.0) + kick * 300.0;
+        UISetPosition("CrossTop", 0, gap + 9);
+        UISetPosition("CrossBottom", 0, -gap - 9);
+        UISetPosition("CrossLeft", -gap - 9, 0);
+        UISetPosition("CrossRight", gap + 9, 0);
+        // Dürbün: tam nişanda dürbün görüntüsü, silah ve kollar gizli
+        var cw = CurrentWeapon();
+        var scopedNow = cw >= 0 && GetScriptField(cw, "scoped") == true && aim01 > 0.9 && switchTimer <= 0.0 && reloadAnim <= 0.0;
+        if (scopedNow != scopeShown)
+        {
+            scopeShown = scopedNow;
+            UISetAlpha("ScopeOverlay", scopedNow ? 1.0 : 0.0);
+            UISetAlpha("ScopeLeft", scopedNow ? 1.0 : 0.0);
+            UISetAlpha("ScopeRight", scopedNow ? 1.0 : 0.0);
+            if (arms >= 0) { EntitySetActive(arms, !scopedNow); }
+            var cm = Child(cw, "Model");
+            if (cm >= 0) { EntitySetActive(cm, !scopedNow); }
+        }
+        UISetAlpha("Crosshair", scopeShown ? 0.0 : 1.0 - aim01);
+    }
+
+    func Kill()
+    {
+        dead = true;
+        crouching = false;
+        UISetText("CenterText", "YOU WERE ELIMINATED");
+    }
+
+    func Revive()
+    {
+        dead = false;
+        vx = 0.0;
+        vz = 0.0;
+        vy = 0.0;
+        pitch = 0.0;
+        yaw = GetRotation().y;
+        UISetText("CenterText", "");
+        var w = CurrentWeapon();
+        if (w >= 0) { SetScriptField(w, "ammo", GetScriptField(w, "magazine")); }
+    }
+
+    func DebugState()
+    {
+        var w = CurrentWeapon();
+        var vp = viewModel >= 0 ? EntityGetPosition(viewModel) : null;
+        print("FPS aiming=" + aiming + " aim01=" + aim01 + " weapon=" + w + " count=" + weapons.Count + " shots=" + shots + " vm=" + (vp == null ? "none" : ("" + vp.x + "," + vp.y + "," + vp.z)) + " ammo=" + (w >= 0 ? GetScriptField(w, "ammo") : -1));
+    }
+
+    // Testler / yapay zekâ sürücüsü: oyun sırasında girdi ver
+    func SetTestInput(aim, fire, mx, my)
+    {
+        aimInput = aim;
+        fireInput = fire;
+        moveInputX = mx;
+        moveInputY = my;
+    }
+
+    func SetLook(y, p)
+    {
+        yaw = y;
+        pitch = p;
+    }
+}

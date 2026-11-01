@@ -1,0 +1,31 @@
+Id: conqueror.interaction-system
+Name: Interaction System
+Version: 1.0.0
+Author: TurcoLabs
+Description: >-
+  "Press E to ..." interactions: the player looks at (or stands near) interactable objects,
+  a prompt shows what will happen, and pressing E triggers it. Comes with hinged doors that
+  swing open smoothly (optionally locked behind an inventory key), levers that switch other
+  objects on and off (moving platforms, lights, anything with Activate / Deactivate) and
+  sound effects.
+Category: Gameplay
+Icon: hand-pointer
+Tags: [interaction, doors, levers, prompt, fps, puzzle]
+Components:
+  - Scripts/Interactor.cqs
+  - Scripts/Interactable.cqs
+  - Scripts/Door.cqs
+  - Scripts/Lever.cqs
+Inserts:
+  - Name: Door
+    Icon: door-open
+    Prefab: Prefabs/Door.cqprefab
+    Tooltip: Hinged door that opens with E
+  - Name: Lever
+    Icon: toggle-on
+    Prefab: Prefabs/Lever.cqprefab
+    Tooltip: Lever that sends Activate / Deactivate to a target object
+  - Name: Interaction Prompt
+    Icon: comment
+    Prefab: Prefabs/InteractionPrompt.cqprefab
+    Tooltip: Canvas text used by the Interactor for its prompt

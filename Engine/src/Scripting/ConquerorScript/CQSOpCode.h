@@ -1,158 +1,193 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 
 namespace Conqueror::CQS
 {
+    // Sabit genişlikli komut: { Op, A(u8), B(u16), C(i32) }
+    // Yığın etkileri açıklamalarda [önce] -> [sonra] biçimindedir.
     enum class OpCode : uint8_t
     {
-        // Constants
-        Constant,           // 1 byte index
-        ConstantLong,       // 2 byte index
+        Nop,
 
-        // Literals
-        Null, True, False, Zero, One,
+        PushNull, PushTrue, PushFalse,
+        PushInt,            // C = değer                         [] -> [int]
+        PushConst,          // B = sabit indeksi                 [] -> [k]
 
-        // Arithmetic
-        Add, Subtract, Multiply, Divide, Modulo, Negate,
-        Increment, Decrement,
+        Pop,                //                                   [a] -> []
+        PopN,               // B = adet
+        Dup,                //                                   [a] -> [a a]
+        Dup2,               //                                   [a b] -> [a b a b]
+        Swap,               //                                   [a b] -> [b a]
+        Bury,               // B = n: üstteki değeri n slot aşağı taşı   [x1..xn v] -> [v x1..xn]
 
-        // Comparison
-        Equal, NotEqual, Less, LessEqual, Greater, GreaterEqual,
+        GetLocal,           // B = slot                          [] -> [v]
+        SetLocal,           // B = slot                          [v] -> [v]
+        GetUpval,           // B = indeks
+        SetUpval,           // B = indeks                        [v] -> [v]
+        CloseUpval,         // üstteki slotu kapat ve at          [v] -> []
 
-        // Logical
-        Not, And, Or,
+        GetGlobal,          // C = global indeksi
+        SetGlobal,          // C                                 [v] -> [v]
+        DefineGlobal,       // C                                 [v] -> []
+        GetDynamic,         // B = ad, C = global: this özelliği ya da global   [this] -> [v]
 
-        // Bitwise
-        BitAnd, BitOr, BitXor, BitNot, ShiftLeft, ShiftRight,
+        GetProp,            // B = ad, C = önbellek              [obj] -> [v]
+        SetProp,            // B = ad, C = önbellek              [obj v] -> [v]
+        GetField,           // B = slot                          [obj] -> [v]
+        SetField,           // B = slot                          [obj v] -> [v]
+        GetThisField,       // B = slot                          [] -> [v]
+        SetThisField,       // B = slot                          [v] -> [v]
+        GetIndex,           //                                   [obj i] -> [v]
+        SetIndex,           //                                   [obj i v] -> [v]
+        GetSuper,           // B = ad                            [this] -> [bound]
 
-        // Type Operations
-        CastToInt, CastToFloat, CastToString,
-        TypeCheck,          // 1 byte
+        Add, Sub, Mul, Div, Mod,      //                         [a b] -> [r]
+        Neg, Not, BitNot,             //                         [a] -> [r]
+        BitAnd, BitOr, BitXor, Shl, Shr,
+        Eq, Ne, Lt, Le, Gt, Ge,
+        ToBool,             //                                   [a] -> [bool]
+        MakeRange,          //                                   [a b] -> [range]
+        IsType,             // B = tip adı                       [v] -> [bool]
+        CastType,           // B = tip adı                       [v] -> [v']
 
-        // Variables
-        GetLocal,           // 1 byte slot
-        SetLocal,           // 1 byte slot
-        GetGlobal,          // 1 byte constant index
-        SetGlobal,          // 1 byte constant index
-        DefineGlobal,       // 1 byte constant index
+        Jump,               // C = hedef
+        JumpIfFalse,        // C                                 [c] -> []
+        JumpIfTrue,         // C                                 [c] -> []
+        JumpIfNullKeep,     // C: null ise kalır ve atlar, değilse dokunmaz
+        JumpIfNotNullKeep,  // C: null değilse kalır ve atlar, null ise atılır
+        Loop,               // C = hedef (geri kenar, GC güvenli noktası)
+        JumpIfArg,          // B = parametre indeksi, C: argüman verilmişse atla
 
-        // Upvalues
-        GetUpvalue,         // 1 byte index
-        SetUpvalue,         // 1 byte index
-        CloseUpvalue,
+        Call,               // A = argc                          [f a1..an] -> [r]
+        Invoke,             // A = argc, B = ad, C = önbellek    [o a1..an] -> [r]
+        SuperInvoke,        // A = argc, B = ad                  [this a1..an] -> [r]
+        Return,             //                                   [v] -> (çağırana)
+        ReturnNull,
 
-        // Properties
-        GetProperty,        // 1 byte constant index
-        SetProperty,        // 1 byte constant index
+        Closure,            // B = sabit (fonksiyon prototipi)   [] -> [closure]
+        Class,              // B = sabit (sınıf şablonu)         [] -> [class]
+        Inherit,            // A = 1: taban bulunamazsa yok say  [class base] -> [class]
+        Method,             // A = tür (0 metot, 1 statik, 2 yapıcı, 3 alan başlatıcı), B = ad   [class f] -> [class]
+        StaticField,        // B = ad                            [class v] -> [class]
 
-        // List / Map
-        NewList,            // 1 byte initial count
-        GetIndex, SetIndex,
-        NewMap,             // 1 byte initial count
-        GetKey, SetKey,
+        NewList,            // B = adet                          [e1..en] -> [list]
+        NewMap,             // B = çift sayısı                   [k1 v1 ..] -> [map]
+        IterPrep,           // A = değişken sayısı (1/2)         [x] -> [seq]
+        IterNext,           // A = değişken sayısı, B = seq slotu (indeks slotu B+1), C = çıkış   [] -> [e] / [k v]
+        Throw,              //                                   [v] -> (yayılır)
+        ToStr,              // B = biçim sabiti (0xFFFF: yok)    [v] -> [str]
+        Concat,             // B = adet                          [s1..sn] -> [str]
+        NewArray,           // B = öğe tipi adı                  [n] -> [list]
 
-        // Stack
-        Pop, PopN, Dup, Swap,
-
-        // Control Flow
-        Jump,               // 2 byte offset
-        JumpIfFalse,        // 2 byte offset
-        JumpIfTrue,         // 2 byte offset
-        Loop,               // 2 byte offset
-
-        // Functions
-        Call,               // 1 byte arg count
-        Return,
-
-        // Objects
-        NewInstance,         // 1 byte constant index
-        Invoke,             // 1 byte name index, 1 byte arg count
-        Closure,            // 1 byte constant index
-
-        // Special
-        Print, Halt,
-        New, This
+        Count_
     };
 
-    struct OpCodeInfo
+    inline const char* OpCodeName(OpCode op)
     {
-        const char* Name;
-        int OperandBytes;
-    };
+        static const char* const names[] = {
+            "NOP", "PUSH_NULL", "PUSH_TRUE", "PUSH_FALSE", "PUSH_INT", "PUSH_CONST",
+            "POP", "POPN", "DUP", "DUP2", "SWAP", "BURY",
+            "GET_LOCAL", "SET_LOCAL", "GET_UPVAL", "SET_UPVAL", "CLOSE_UPVAL",
+            "GET_GLOBAL", "SET_GLOBAL", "DEFINE_GLOBAL", "GET_DYNAMIC",
+            "GET_PROP", "SET_PROP", "GET_FIELD", "SET_FIELD", "GET_THIS_FIELD", "SET_THIS_FIELD", "GET_INDEX", "SET_INDEX", "GET_SUPER",
+            "ADD", "SUB", "MUL", "DIV", "MOD", "NEG", "NOT", "BIT_NOT",
+            "BIT_AND", "BIT_OR", "BIT_XOR", "SHL", "SHR",
+            "EQ", "NE", "LT", "LE", "GT", "GE",
+            "TO_BOOL", "MAKE_RANGE", "IS_TYPE", "CAST_TYPE",
+            "JUMP", "JUMP_IF_FALSE", "JUMP_IF_TRUE", "JUMP_IF_NULL_KEEP", "JUMP_IF_NOT_NULL_KEEP", "LOOP", "JUMP_IF_ARG",
+            "CALL", "INVOKE", "SUPER_INVOKE", "RETURN", "RETURN_NULL",
+            "CLOSURE", "CLASS", "INHERIT", "METHOD", "STATIC_FIELD",
+            "NEW_LIST", "NEW_MAP", "ITER_PREP", "ITER_NEXT", "THROW", "TO_STR", "CONCAT", "NEW_ARRAY",
+        };
+        static_assert(sizeof(names) / sizeof(names[0]) == (size_t)OpCode::Count_, "OpCodeName table out of sync");
+        return (size_t)op < (size_t)OpCode::Count_ ? names[(size_t)op] : "???";
+    }
 
-    inline OpCodeInfo GetOpCodeInfo(OpCode code)
+    // Komutun düşmeyen (fall-through) yoldaki yığın etkisi.
+    // Atlama hedefindeki derinlik farklı olan komutlar: JumpIfNotNullKeep (hedef: +0, düşen: -1),
+    // IterNext (hedef/çıkış: +0, düşen: +A). Return/ReturnNull/Throw sonlandırıcıdır.
+    inline int StackEffect(OpCode op, int a, int b)
     {
-        switch (code)
+        switch (op)
         {
-            case OpCode::Constant:      return { "CONSTANT", 1 };
-            case OpCode::ConstantLong:  return { "CONSTANT_LONG", 2 };
-            case OpCode::Null:          return { "NULL", 0 };
-            case OpCode::True:          return { "TRUE", 0 };
-            case OpCode::False:         return { "FALSE", 0 };
-            case OpCode::Zero:          return { "ZERO", 0 };
-            case OpCode::One:           return { "ONE", 0 };
-            case OpCode::Add:           return { "ADD", 0 };
-            case OpCode::Subtract:      return { "SUBTRACT", 0 };
-            case OpCode::Multiply:      return { "MULTIPLY", 0 };
-            case OpCode::Divide:        return { "DIVIDE", 0 };
-            case OpCode::Modulo:        return { "MODULO", 0 };
-            case OpCode::Negate:        return { "NEGATE", 0 };
-            case OpCode::Increment:     return { "INCREMENT", 0 };
-            case OpCode::Decrement:     return { "DECREMENT", 0 };
-            case OpCode::Equal:         return { "EQUAL", 0 };
-            case OpCode::NotEqual:      return { "NOT_EQUAL", 0 };
-            case OpCode::Less:          return { "LESS", 0 };
-            case OpCode::LessEqual:     return { "LESS_EQUAL", 0 };
-            case OpCode::Greater:       return { "GREATER", 0 };
-            case OpCode::GreaterEqual:  return { "GREATER_EQUAL", 0 };
-            case OpCode::Not:           return { "NOT", 0 };
-            case OpCode::And:           return { "AND", 0 };
-            case OpCode::Or:            return { "OR", 0 };
-            case OpCode::BitAnd:        return { "BIT_AND", 0 };
-            case OpCode::BitOr:         return { "BIT_OR", 0 };
-            case OpCode::BitXor:        return { "BIT_XOR", 0 };
-            case OpCode::BitNot:        return { "BIT_NOT", 0 };
-            case OpCode::ShiftLeft:     return { "SHIFT_LEFT", 0 };
-            case OpCode::ShiftRight:    return { "SHIFT_RIGHT", 0 };
-            case OpCode::CastToInt:     return { "CAST_INT", 0 };
-            case OpCode::CastToFloat:   return { "CAST_FLOAT", 0 };
-            case OpCode::CastToString:  return { "CAST_STRING", 0 };
-            case OpCode::TypeCheck:     return { "TYPE_CHECK", 1 };
-            case OpCode::GetLocal:      return { "GET_LOCAL", 1 };
-            case OpCode::SetLocal:      return { "SET_LOCAL", 1 };
-            case OpCode::GetGlobal:     return { "GET_GLOBAL", 1 };
-            case OpCode::SetGlobal:     return { "SET_GLOBAL", 1 };
-            case OpCode::DefineGlobal:  return { "DEFINE_GLOBAL", 1 };
-            case OpCode::GetUpvalue:    return { "GET_UPVALUE", 1 };
-            case OpCode::SetUpvalue:    return { "SET_UPVALUE", 1 };
-            case OpCode::CloseUpvalue:  return { "CLOSE_UPVALUE", 0 };
-            case OpCode::GetProperty:   return { "GET_PROPERTY", 1 };
-            case OpCode::SetProperty:   return { "SET_PROPERTY", 1 };
-            case OpCode::NewList:       return { "NEW_LIST", 1 };
-            case OpCode::GetIndex:      return { "GET_INDEX", 0 };
-            case OpCode::SetIndex:      return { "SET_INDEX", 0 };
-            case OpCode::NewMap:        return { "NEW_MAP", 1 };
-            case OpCode::GetKey:        return { "GET_KEY", 0 };
-            case OpCode::SetKey:        return { "SET_KEY", 0 };
-            case OpCode::Pop:           return { "POP", 0 };
-            case OpCode::PopN:          return { "POP_N", 1 };
-            case OpCode::Dup:           return { "DUP", 0 };
-            case OpCode::Swap:          return { "SWAP", 0 };
-            case OpCode::Jump:          return { "JUMP", 2 };
-            case OpCode::JumpIfFalse:   return { "JUMP_IF_FALSE", 2 };
-            case OpCode::JumpIfTrue:    return { "JUMP_IF_TRUE", 2 };
-            case OpCode::Loop:          return { "LOOP", 2 };
-            case OpCode::Call:          return { "CALL", 1 };
-            case OpCode::Return:        return { "RETURN", 0 };
-            case OpCode::NewInstance:   return { "NEW_INSTANCE", 1 };
-            case OpCode::Invoke:        return { "INVOKE", 2 };
-            case OpCode::Closure:       return { "CLOSURE", 1 };
-            case OpCode::Print:         return { "PRINT", 0 };
-            case OpCode::Halt:          return { "HALT", 0 };
-            case OpCode::New:           return { "NEW", 2 }; // name index + arg count
-            case OpCode::This:          return { "THIS", 0 };
-            default:                    return { "UNKNOWN", 0 };
+            case OpCode::Nop: return 0;
+            case OpCode::PushNull: case OpCode::PushTrue: case OpCode::PushFalse: case OpCode::PushInt: case OpCode::PushConst: return 1;
+            case OpCode::Pop: return -1;
+            case OpCode::PopN: return -b;
+            case OpCode::Dup: return 1;
+            case OpCode::Dup2: return 2;
+            case OpCode::Swap: case OpCode::Bury: return 0;
+            case OpCode::GetLocal: return 1;
+            case OpCode::SetLocal: return 0;
+            case OpCode::GetUpval: return 1;
+            case OpCode::SetUpval: return 0;
+            case OpCode::CloseUpval: return -1;
+            case OpCode::GetGlobal: return 1;
+            case OpCode::SetGlobal: return 0;
+            case OpCode::DefineGlobal: return -1;
+            case OpCode::GetDynamic: return 0;
+            case OpCode::GetProp: return 0;
+            case OpCode::SetProp: return -1;
+            case OpCode::GetField: return 0;
+            case OpCode::SetField: return -1;
+            case OpCode::GetThisField: return 1;
+            case OpCode::SetThisField: return 0;
+            case OpCode::GetIndex: return -1;
+            case OpCode::SetIndex: return -2;
+            case OpCode::GetSuper: return 0;
+            case OpCode::Add: case OpCode::Sub: case OpCode::Mul: case OpCode::Div: case OpCode::Mod:
+            case OpCode::BitAnd: case OpCode::BitOr: case OpCode::BitXor: case OpCode::Shl: case OpCode::Shr:
+            case OpCode::Eq: case OpCode::Ne: case OpCode::Lt: case OpCode::Le: case OpCode::Gt: case OpCode::Ge:
+            case OpCode::MakeRange:
+                return -1;
+            case OpCode::Neg: case OpCode::Not: case OpCode::BitNot: case OpCode::ToBool: case OpCode::IsType: case OpCode::CastType: return 0;
+            case OpCode::Jump: return 0;
+            case OpCode::JumpIfFalse: case OpCode::JumpIfTrue: return -1;
+            case OpCode::JumpIfNullKeep: return 0;
+            case OpCode::JumpIfNotNullKeep: return -1;
+            case OpCode::Loop: case OpCode::JumpIfArg: return 0;
+            case OpCode::Call: case OpCode::Invoke: case OpCode::SuperInvoke: return -a;
+            case OpCode::Return: return -1;
+            case OpCode::ReturnNull: return 0;
+            case OpCode::Closure: case OpCode::Class: return 1;
+            case OpCode::Inherit: case OpCode::Method: case OpCode::StaticField: return -1;
+            case OpCode::NewList: return 1 - b;
+            case OpCode::NewMap: return 1 - 2 * b;
+            case OpCode::IterPrep: return 0;
+            case OpCode::IterNext: return a;
+            case OpCode::Throw: return -1;
+            case OpCode::ToStr: return 0;
+            case OpCode::Concat: return 1 - b;
+            case OpCode::NewArray: return 0;
+            default: return 0;
+        }
+    }
+
+    inline bool IsTerminator(OpCode op)
+    {
+        return op == OpCode::Return || op == OpCode::ReturnNull || op == OpCode::Throw || op == OpCode::Jump || op == OpCode::Loop;
+    }
+
+    inline bool IsBranch(OpCode op)
+    {
+        switch (op)
+        {
+            case OpCode::Jump: case OpCode::JumpIfFalse: case OpCode::JumpIfTrue: case OpCode::JumpIfNullKeep:
+            case OpCode::JumpIfNotNullKeep: case OpCode::Loop: case OpCode::JumpIfArg: case OpCode::IterNext:
+                return true;
+            default: return false;
+        }
+    }
+
+    // Atlama hedefine ulaşıldığında (komut öncesi derinliğe göre) yığın etkisi
+    inline int BranchStackEffect(OpCode op)
+    {
+        switch (op)
+        {
+            case OpCode::JumpIfFalse: case OpCode::JumpIfTrue: return -1;
+            default: return 0;  // JumpIfNullKeep/NotNullKeep hedefte değeri tutar, IterNext çıkışı iter. değeri itmez
         }
     }
 }

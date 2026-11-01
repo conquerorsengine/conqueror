@@ -1,0 +1,38 @@
+using nativebridge;
+
+// Balon: Constant Force kaldırır, Spring Joint (en çok ip boyu) tutar; hafif rüzgâr itişi ve ip çizgisi (Line Renderer).
+script Balloon : ConquerorScript
+{
+    public float anchorX = 0.0;
+    public float anchorY = 0.0;
+    public float anchorZ = 0.0;
+    public float radius = 0.32;
+    public float gust = 0.6;            // yan itme (N)
+    public float phase = 0.0;
+    public string stringName = "";
+
+    private var line = -1;
+    private float t = 0.0;
+
+    func Start() { line = FindEntity(stringName); }
+
+    func Update(dt)
+    {
+        t += dt;
+        ApplyForce(MathSin(t * 0.7 + phase) * gust, 0.0, MathSin(t * 0.43 + phase * 1.7) * gust * 0.6);
+        if (line == null || line < 0) { return; }
+        var p = GetPosition();
+        // İp balonun alt ucundan çapaya, hafif sarkık (orta nokta biraz aşağıda)
+        var bx = p.x;
+        var by = p.y - radius * 1.12;
+        var bz = p.z;
+        var pts = [];
+        for (var i = 0; i <= 10; i++)
+        {
+            var k = i / 10.0;
+            var sag = MathSin(k * 3.1415926) * 0.12;
+            pts.Add({x: bx + (anchorX - bx) * k + sag * 0.4, y: by + (anchorY - by) * k - sag, z: bz + (anchorZ - bz) * k});
+        }
+        EntitySetComponentField(line, "LineRenderer", "Positions", pts);
+    }
+}

@@ -1,0 +1,66 @@
+// Vehicle - Offroad (Unreal Vehicle şablonunun arazi haritası karşılığı): tepelerle çevrili 400 x 400 m vadi
+// (Terrain: çim / toprak patika / kaya / kuru çayır katmanları, make_offroad.py + post_Offroad.py), patika döngüsü,
+// atlama rampaları, kayalar; dört çeker, uzun süspansiyonlu araç ayarı.
+// @EditorCamera 18 22 -24.9 0 12.1 60   (proje açıldığında editör görünümü: uzaklık, eğim, yön, odak)
+var sun = OutdoorLighting(-32, 35);
+RenderSettingSet("Fog.Density", 0.0022);
+RenderSettingSet("Post.CloudCoverage", 0.38);
+RenderSettingSet("Shadows.Distance", 140);
+
+// Arazi (yükseklik haritası ve katmanlar kurulumdan sonra eklenir)
+var terrain = CreateEntity("Terrain");
+EntitySetPosition(terrain, -OFF_SIZE / 2.0, 0, -OFF_SIZE / 2.0);
+
+// Rampalar (patika üstünde, sürüş yönünde yükselen)
+var WOOD = {r: 0.55, g: 0.4, b: 0.26, a: 1};
+for (var i = 0; i < OFF_RAMPS.Count; i++)
+{
+    var rp = OFF_RAMPS[i];
+    // Ramp(): alt kenar (x, y0, z), +Z'ye göre yön; yolun yönü (yaw) ileri -Z olduğundan +180
+    // Üst kenar, altındaki arazinin 1.6 m üstünde (eğimli patikada rampa ne gömülür ne havada kalır)
+    var r = Ramp("Jump Ramp " + i, rp.x, rp.y - 0.05, rp.z, rp.length, rp.yEnd + 1.6 - (rp.y - 0.05), 5.0, rp.yaw + 180, "");
+    EntitySetColor(r, {r: 0.95, g: 0.9, b: 0.85, a: 1});
+    EntitySetComponentField(r, "MeshRenderer", "Texture", "Assets/Props/WoodPlanks.jpg");
+    EntitySetComponentField(r, "MeshRenderer", "WorldAlignedUV", true);
+    EntitySetComponentField(r, "MeshRenderer", "AlignToObject", true);
+    EntitySetComponentField(r, "MeshRenderer", "Tiling", {x: 0.4, y: 0.4});
+    EntitySetComponentField(r, "MeshRenderer", "Roughness", 0.85);
+}
+
+// Kayalar (görsel: Multi Mesh; çarpışma: küre)
+var rockData = "";
+for (var k = 0; k < OFF_ROCKS.Count; k++)
+{
+    var rk = OFF_ROCKS[k];
+    rockData = rockData + rk.x + " " + rk.y + " " + rk.z + " " + rk.yaw + " " + rk.s + " 1 1 1 1;";
+    var col = CreateEntity("Rock Collider " + k);
+    EntitySetPosition(col, rk.x, rk.y + rk.s * 0.42, rk.z);
+    EntityAddComponent(col, "Rigidbody");
+    EntitySetComponentField(col, "Rigidbody", "BodyType", "Static");
+    EntityAddComponent(col, "SphereCollider");
+    EntitySetComponentField(col, "SphereCollider", "Radius", rk.s * 0.55);
+}
+var rocks = CreateEntity("Rocks");
+EntityAddComponent(rocks, "MultiMesh");
+EntitySetComponentField(rocks, "MultiMesh", "Source", "Model");
+EntitySetComponentField(rocks, "MultiMesh", "ModelPath", "Assets/Props/Boulder.glb");
+EntitySetComponentField(rocks, "MultiMesh", "Mode", "Manual");
+EntitySetComponentField(rocks, "MultiMesh", "ColorVariation", 0.0);
+EntitySetComponentField(rocks, "MultiMesh", "InstanceData", rockData);
+
+var car = VehicleCar("Vehicle", OFF_START.x, OFF_START.y + 0.4, OFF_START.z, OFF_START.yaw, "Graphite", true);
+
+var line = CreateEntity("Racing Line");
+EntityAddComponent(line, "SplineContainer");
+EntitySetComponentField(line, "SplineContainer", "Knots", OFF_LINE);
+EntitySetComponentField(line, "SplineContainer", "Closed", true);
+EntitySetComponentField(line, "SplineContainer", "ShowGizmo", false);
+AddScript(car, "Assets/Vehicles/Scripts/VehicleAutopilot.cqs");
+SetFields(car, {grip: 6.0, maxSpeed: 24.0});
+
+VehicleCameraRig(OFF_START.x, OFF_START.y, OFF_START.z, OFF_START.yaw);
+
+var game = CreateEntity("Game");
+AddScript(game, "Assets/Vehicles/Scripts/VehicleHud.cqs");
+
+VehicleHUD(false, "W / S  THROTTLE - BRAKE     A / D  STEER     SPACE  HANDBRAKE     R  RESET     C  CAMERA     MOUSE  LOOK     P  AUTOPILOT");

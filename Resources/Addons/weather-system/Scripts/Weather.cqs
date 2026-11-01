@@ -1,0 +1,121 @@
+using nativebridge;
+
+// Hava durumu: SetWeather("Clear" | "Cloudy" | "Rain" | "Storm" | "Snow" | "Fog").
+// Çocuklar: "Rain" ve "Snow" parçacık sistemleri (kameranın üstünde dolaşır). Güneş: sahnedeki ilk Directional Light.
+script Weather : ConquerorScript
+{
+    public string startWeather = "Clear";
+    public float transitionTime = 3.0;
+    public bool followCamera = true;
+    public float emitterHeight = 12.0;
+    public float maxRainRate = 1500.0;
+    public float maxSnowRate = 500.0;
+    public bool autoCycle = false;
+    public float cycleMinutes = 3.0;
+    public float lightningMinInterval = 3.0;
+    public float lightningMaxInterval = 9.0;
+
+    // Çalışma zamanı bilgisi
+    public string current = "Clear";
+    public float rain = 0.0;
+    public float snow = 0.0;
+    public float fog = 0.0;
+    public float sunFactor = 1.0;
+    public int lightningStrikes = 0;
+
+    private float targetRain = 0.0;
+    private float targetSnow = 0.0;
+    private float targetFog = 0.0;
+    private float targetSun = 1.0;
+    private float storm = 0.0;
+    private float nextLightning = 5.0;
+    private float flash = 0.0;
+    private float cycleTimer = 0.0;
+    private var sun = null;
+    private float sunBase = -1.0;
+    private float fogBase = 0.0;
+    private bool fogWasEnabled = false;
+
+    func Start()
+    {
+        for (var e in FindEntitiesWithComponent("DirectionalLight")) { sun = e; break; }
+        if (sun != null) { sunBase = EntityGetComponentField(sun, "DirectionalLight", "Intensity"); }
+        fogWasEnabled = RenderSettingGet("Fog.Enabled");
+        fogBase = RenderSettingGet("Fog.Density");
+        SetWeather(startWeather);
+        rain = targetRain; snow = targetSnow; fog = targetFog; sunFactor = targetSun;
+        Apply();
+    }
+
+    func SetWeather(name)
+    {
+        current = name;
+        storm = 0.0;
+        if (name == "Clear") { targetRain = 0; targetSnow = 0; targetFog = 0; targetSun = 1.0; }
+        else if (name == "Cloudy") { targetRain = 0; targetSnow = 0; targetFog = 0.15; targetSun = 0.55; }
+        else if (name == "Rain") { targetRain = 0.6; targetSnow = 0; targetFog = 0.35; targetSun = 0.35; }
+        else if (name == "Storm") { targetRain = 1.0; targetSnow = 0; targetFog = 0.5; targetSun = 0.15; storm = 1.0; }
+        else if (name == "Snow") { targetRain = 0; targetSnow = 1.0; targetFog = 0.4; targetSun = 0.5; }
+        else if (name == "Fog") { targetRain = 0; targetSnow = 0; targetFog = 1.0; targetSun = 0.4; }
+        else { LogWarn("Weather: unknown preset " + name); return false; }
+        nextLightning = MathRandomRange(1.0, lightningMinInterval);
+        return true;
+    }
+
+    func Update(dt)
+    {
+        if (dt <= 0) { return; }
+        var k = transitionTime > 0 ? MathMin(1.0, dt / transitionTime * 3.0) : 1.0;
+        rain = MathLerp(rain, targetRain, k);
+        snow = MathLerp(snow, targetSnow, k);
+        fog = MathLerp(fog, targetFog, k);
+        sunFactor = MathLerp(sunFactor, targetSun, k);
+        if (storm > 0)
+        {
+            nextLightning -= dt;
+            if (nextLightning <= 0)
+            {
+                flash = 1.0;
+                lightningStrikes++;
+                nextLightning = MathRandomRange(lightningMinInterval, lightningMaxInterval);
+                BroadcastMessage("OnLightning");
+            }
+        }
+        flash = MathMax(0.0, flash - dt * 4.0);
+        if (autoCycle)
+        {
+            cycleTimer += dt;
+            if (cycleTimer > cycleMinutes * 60.0)
+            {
+                cycleTimer = 0;
+                var names = ["Clear", "Cloudy", "Rain", "Storm", "Snow", "Fog"];
+                SetWeather(names[MathRandomInt(0, 5)]);
+            }
+        }
+        Apply();
+        if (followCamera)
+        {
+            var cam = GetMainCamera();
+            if (cam != null)
+            {
+                var p = EntityGetWorldPosition(cam);
+                EntitySetWorldPosition(GetEntityId(), p.x, p.y + emitterHeight, p.z);
+            }
+        }
+    }
+
+    func Apply()
+    {
+        var r = EntityFindChild(GetEntityId(), "Rain");
+        if (r != null && r >= 0) { ParticleSetRate(r, rain * maxRainRate); if (rain > 0.01 && !ParticleIsPlaying(r)) { ParticlePlay(r); } }
+        var s = EntityFindChild(GetEntityId(), "Snow");
+        if (s != null && s >= 0) { ParticleSetRate(s, snow * maxSnowRate); if (snow > 0.01 && !ParticleIsPlaying(s)) { ParticlePlay(s); } }
+        var fogOn = fog > 0.02 || fogWasEnabled;
+        RenderSettingSet("Fog.Enabled", fogOn);
+        if (fogOn) { RenderSettingSet("Fog.Density", MathMax(fogBase, fog * 0.06)); }
+        if (sun != null && sunBase >= 0)
+        {
+            EntitySetComponentField(sun, "DirectionalLight", "Intensity", sunBase * sunFactor + flash * 6.0);
+        }
+    }
+}

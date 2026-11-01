@@ -1,0 +1,191 @@
+AnimationController:
+  Version: 2
+  Layers:
+    - Name: Base Layer
+      Weight: 1
+      DefaultState: Locomotion
+      States:
+        - Name: Locomotion
+          Type: BlendTree
+          EditorPosX: 260
+          EditorPosY: 170
+          BlendType: 0
+          BlendParameter: Speed
+          BlendChildren:
+            - ClipIndex: 0
+              ClipName: idle
+              Threshold: 0
+            - ClipIndex: 1
+              ClipName: walk
+              Threshold: 1.03
+            - ClipIndex: 2
+              ClipName: jog
+              Threshold: 6.2
+            - ClipIndex: 3
+              ClipName: sprint
+              Threshold: 9.6
+        - Name: Crouch
+          Type: BlendTree
+          EditorPosX: 260
+          EditorPosY: 330
+          BlendType: 0
+          BlendParameter: Speed
+          BlendChildren:
+            - ClipIndex: 7
+              ClipName: crouch_idle
+              Threshold: 0
+            - ClipIndex: 8
+              ClipName: crouch_walk
+              Threshold: 1.25
+              TimeScale: 1.58
+        - Name: JumpStart
+          ClipIndex: 4
+          ClipName: jump_start
+          Loop: false
+          Speed: 1.0
+          EditorPosX: 520
+          EditorPosY: 60
+        - Name: Falling
+          ClipIndex: 5
+          ClipName: jump_loop
+          Loop: true
+          Speed: 1.0
+          EditorPosX: 760
+          EditorPosY: 60
+        - Name: Land
+          ClipIndex: 6
+          ClipName: jump_land
+          Loop: false
+          Speed: 1.4
+          EditorPosX: 760
+          EditorPosY: 200
+        - Name: Death
+          ClipIndex: 18
+          ClipName: death
+          Loop: false
+          Speed: 1.0
+          EditorPosX: 520
+          EditorPosY: 420
+      Transitions:
+        - From: Any State
+          To: Death
+          HasExitTime: false
+          Duration: 0.15
+          Conditions:
+            - Parameter: Dead
+              Mode: If
+        - From: Locomotion
+          To: JumpStart
+          HasExitTime: false
+          Duration: 0.08
+          Conditions:
+            - Parameter: Jump
+              Mode: If
+        - From: Crouch
+          To: JumpStart
+          HasExitTime: false
+          Duration: 0.1
+          Conditions:
+            - Parameter: Jump
+              Mode: If
+        - From: JumpStart
+          To: Falling
+          HasExitTime: true
+          ExitTime: 0.8
+          Duration: 0.15
+        - From: Locomotion
+          To: Falling
+          HasExitTime: false
+          Duration: 0.2
+          Conditions:
+            - Parameter: Grounded
+              Mode: IfNot
+        - From: Crouch
+          To: Falling
+          HasExitTime: false
+          Duration: 0.2
+          Conditions:
+            - Parameter: Grounded
+              Mode: IfNot
+        - From: Falling
+          To: Land
+          HasExitTime: false
+          Duration: 0.08
+          Conditions:
+            - Parameter: Grounded
+              Mode: If
+        - From: JumpStart
+          To: Land
+          HasExitTime: false
+          Duration: 0.08
+          Conditions:
+            - Parameter: Grounded
+              Mode: If
+        - From: Land
+          To: Locomotion
+          HasExitTime: true
+          ExitTime: 0.45
+          Duration: 0.2
+        - From: Land
+          To: Locomotion
+          HasExitTime: false
+          Duration: 0.12
+          Conditions:
+            - Parameter: Speed
+              Mode: Greater
+              Threshold: 0.5
+        - From: Locomotion
+          To: Crouch
+          HasExitTime: false
+          Duration: 0.2
+          Conditions:
+            - Parameter: Crouch
+              Mode: If
+        - From: Crouch
+          To: Locomotion
+          HasExitTime: false
+          Duration: 0.2
+          Conditions:
+            - Parameter: Crouch
+              Mode: IfNot
+        - From: Death
+          To: Locomotion
+          HasExitTime: false
+          Duration: 0.3
+          Conditions:
+            - Parameter: Dead
+              Mode: IfNot
+    - Name: Upper Body
+      Weight: 1
+      Blending: 0
+      FromBone: spine_01
+      WeightParameter: Aim
+      DefaultState: PistolAim
+      States:
+        - Name: PistolAim
+          ClipIndex: 11
+          ClipName: pistol_aim
+          Loop: true
+          Speed: 1.0
+          EditorPosX: 260
+          EditorPosY: 170
+      Transitions: []
+  Parameters:
+    - Name: Speed
+      Type: Float
+      Default: 0
+    - Name: Grounded
+      Type: Bool
+      Default: 1
+    - Name: Crouch
+      Type: Bool
+      Default: 0
+    - Name: Jump
+      Type: Trigger
+      Default: 0
+    - Name: Aim
+      Type: Float
+      Default: 0
+    - Name: Dead
+      Type: Bool
+      Default: 0

@@ -1,0 +1,79 @@
+using nativebridge;
+
+// Ortam sesi bölgesi: dinleyici (listenerName ya da ana kamera) bölgeye girince bu varlıktaki Audio Source
+// sesi targetVolume'a yükselir. shape 0 kutu (halfSize), 1 küre (radius); border kadar yumuşak geçiş.
+script AmbientZone : ConquerorScript
+{
+    public int shape = 0;
+    public float halfSizeX = 10.0;
+    public float halfSizeY = 5.0;
+    public float halfSizeZ = 10.0;
+    public float radius = 8.0;
+    public float border = 3.0;
+    public float targetVolume = 0.8;
+    public float fadeSpeed = 1.5;
+    public string listenerName = "";
+    public string snapshotInside = "";
+    public string snapshotOutside = "";
+
+    // Çalışma zamanı bilgisi
+    public float weight = 0.0;
+    public float volume = 0.0;
+    public bool inside = false;
+
+    private bool wasInside = false;
+    private bool started = false;
+
+    func Listener()
+    {
+        if (listenerName != "") { return FindEntity(listenerName); }
+        return GetMainCamera();
+    }
+
+    // 1 içeride, kenar bandında 0..1, dışarıda 0
+    func ZoneWeight(p)
+    {
+        var c = EntityGetWorldPosition(GetEntityId());
+        var outside = 0.0;
+        if (shape == 1)
+        {
+            var d = MathSqrt((p.x - c.x) * (p.x - c.x) + (p.y - c.y) * (p.y - c.y) + (p.z - c.z) * (p.z - c.z));
+            outside = d - radius;
+        }
+        else
+        {
+            var ox = MathAbs(p.x - c.x) - halfSizeX;
+            var oy = MathAbs(p.y - c.y) - halfSizeY;
+            var oz = MathAbs(p.z - c.z) - halfSizeZ;
+            outside = MathMax(ox, MathMax(oy, oz));
+        }
+        if (outside <= 0) { return 1.0; }
+        if (border <= 0) { return 0.0; }
+        return MathClamp01(1.0 - outside / border);
+    }
+
+    func Update(dt)
+    {
+        if (!started)
+        {
+            started = true;
+            AudioSetEntityVolume(GetEntityId(), 0.0);
+            AudioPlayEntity(GetEntityId());
+        }
+        var l = Listener();
+        var want = 0.0;
+        if (l != null) { want = ZoneWeight(EntityGetWorldPosition(l)); }
+        var real = GetUnscaledDeltaTime();
+        weight = weight + MathClamp(want - weight, -fadeSpeed * real, fadeSpeed * real);
+        volume = weight * targetVolume;
+        AudioSetEntityVolume(GetEntityId(), volume);
+        inside = want >= 1.0;
+        if (inside != wasInside)
+        {
+            wasInside = inside;
+            if (inside && snapshotInside != "") { AudioApplySnapshot(snapshotInside, 0.5); }
+            if (!inside && snapshotOutside != "") { AudioApplySnapshot(snapshotOutside, 0.5); }
+            SendMessage(GetEntityId(), inside ? "OnListenerEnter" : "OnListenerExit");
+        }
+    }
+}

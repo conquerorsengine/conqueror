@@ -1,0 +1,106 @@
+using nativebridge;
+
+// Son işlem hazır ayarları. Bileşen olarak: preset adını Start'ta uygular (blendTime ile yumuşak geçiş).
+// Kod: SendMessage(varlık, "ApplyPreset", "Noir", 1.5)
+script PostFXPreset : ConquerorScript
+{
+    public string preset = "Cinematic";
+    public float blendTime = 0.0;
+    public bool applyOnStart = true;
+
+    // Çalışma zamanı bilgisi
+    public string applied = "";
+    public float saturation = 1.0;
+    public float contrast = 1.0;
+
+    private var from = null;
+    private var to = null;
+    private float blend = 1.0;
+    private float duration = 0.0;
+
+    func Start() { if (applyOnStart) { ApplyPreset(preset, blendTime); } }
+
+    func ApplyPreset(name, seconds = 0.0)
+    {
+        var p = PostPresetValues(name);
+        if (p == null) { LogWarn("PostFXPreset: unknown preset " + name); return false; }
+        from = CurrentValues();
+        to = p;
+        duration = seconds;
+        blend = seconds > 0 ? 0.0 : 1.0;
+        applied = name;
+        if (blend >= 1.0) { SetValues(to, 1.0); }
+        return true;
+    }
+
+    func Update(dt)
+    {
+        if (to == null || blend >= 1.0) { return; }
+        blend = MathMin(1.0, blend + dt / MathMax(0.001, duration));
+        SetValues(to, blend);
+    }
+
+    func CurrentValues()
+    {
+        var m = Map();
+        for (var k in PostKeys()) { m[k] = RenderSettingGet("Post." + k); }
+        return m;
+    }
+
+    func SetValues(target, t)
+    {
+        for (var k in PostKeys())
+        {
+            if (!MapHasKey(target, k)) { continue; }
+            var v = target[k];
+            if (IsBool(v)) { RenderSettingSet("Post." + k, t >= 0.5 ? v : from[k]); continue; }
+            if (IsList(v))
+            {
+                var a = from[k];
+                var mixed = [];
+                for (var i = 0; i < v.Count; i++)
+                {
+                    var av = IsList(a) ? a[i] : (IsMap(a) ? (i == 0 ? a.r : (i == 1 ? a.g : a.b)) : v[i]);
+                    mixed.Add(MathLerp(av, v[i], t));
+                }
+                RenderSettingSet("Post." + k, mixed);
+                continue;
+            }
+            RenderSettingSet("Post." + k, MathLerp(from[k], v, t));
+        }
+        saturation = RenderSettingGet("Post.Saturation");
+        contrast = RenderSettingGet("Post.Contrast");
+    }
+}
+
+func PostKeys()
+{
+    return ["Exposure", "Bloom", "BloomIntensity", "BloomThreshold", "ColorGrading", "Contrast", "Saturation", "Temperature", "Tint",
+            "Vignette", "VignetteIntensity", "ChromaticAberration", "ChromaticAberrationIntensity", "FilmGrain", "FilmGrainIntensity",
+            "Sharpen", "SharpenAmount", "Lift", "Gamma", "Gain"];
+}
+
+// Hazır ayar değerleri (editör paneli de kullanır)
+func PostPresetValues(name)
+{
+    var p = Map();
+    p["ColorGrading"] = true;
+    p["Exposure"] = 0.0; p["Bloom"] = true; p["BloomIntensity"] = 0.6; p["BloomThreshold"] = 1.0;
+    p["Contrast"] = 1.0; p["Saturation"] = 1.0; p["Temperature"] = 0.0; p["Tint"] = 0.0;
+    p["Vignette"] = false; p["VignetteIntensity"] = 0.3; p["ChromaticAberration"] = false; p["ChromaticAberrationIntensity"] = 0.3;
+    p["FilmGrain"] = false; p["FilmGrainIntensity"] = 0.15; p["Sharpen"] = false; p["SharpenAmount"] = 0.3;
+    p["Lift"] = [0, 0, 0]; p["Gamma"] = [1, 1, 1]; p["Gain"] = [1, 1, 1];
+    if (name == "Default") { return p; }
+    if (name == "Cinematic") { p["Contrast"] = 1.12; p["Saturation"] = 0.92; p["Temperature"] = 0.08; p["Vignette"] = true; p["VignetteIntensity"] = 0.35; p["FilmGrain"] = true; p["FilmGrainIntensity"] = 0.06; p["Lift"] = [0.0, 0.01, 0.03]; p["Gain"] = [1.04, 1.0, 0.95]; return p; }
+    if (name == "Noir") { p["Saturation"] = 0.0; p["Contrast"] = 1.35; p["Vignette"] = true; p["VignetteIntensity"] = 0.5; p["FilmGrain"] = true; p["FilmGrainIntensity"] = 0.2; p["Exposure"] = -0.1; return p; }
+    if (name == "Vintage") { p["Saturation"] = 0.65; p["Contrast"] = 0.9; p["Temperature"] = 0.35; p["Vignette"] = true; p["VignetteIntensity"] = 0.45; p["FilmGrain"] = true; p["FilmGrainIntensity"] = 0.25; p["Lift"] = [0.06, 0.04, 0.0]; return p; }
+    if (name == "Dreamy") { p["BloomIntensity"] = 1.6; p["BloomThreshold"] = 0.6; p["Saturation"] = 1.1; p["Contrast"] = 0.9; p["Exposure"] = 0.15; p["Tint"] = 0.1; return p; }
+    if (name == "Horror") { p["Saturation"] = 0.45; p["Contrast"] = 1.25; p["Temperature"] = -0.25; p["Tint"] = -0.15; p["Vignette"] = true; p["VignetteIntensity"] = 0.6; p["ChromaticAberration"] = true; p["ChromaticAberrationIntensity"] = 0.5; p["FilmGrain"] = true; p["FilmGrainIntensity"] = 0.3; p["Exposure"] = -0.35; return p; }
+    if (name == "Vivid") { p["Saturation"] = 1.4; p["Contrast"] = 1.15; p["Sharpen"] = true; p["SharpenAmount"] = 0.4; p["BloomIntensity"] = 0.8; return p; }
+    if (name == "Cold") { p["Temperature"] = -0.45; p["Saturation"] = 0.85; p["Contrast"] = 1.05; p["Lift"] = [0.0, 0.02, 0.06]; return p; }
+    if (name == "Warm") { p["Temperature"] = 0.45; p["Saturation"] = 1.1; p["Gain"] = [1.06, 1.0, 0.92]; return p; }
+    if (name == "Retro") { p["Saturation"] = 1.25; p["Contrast"] = 1.2; p["ChromaticAberration"] = true; p["ChromaticAberrationIntensity"] = 0.7; p["Sharpen"] = true; p["SharpenAmount"] = 0.6; p["FilmGrain"] = true; p["FilmGrainIntensity"] = 0.12; return p; }
+    return null;
+}
+
+func PostPresetNames() { return ["Default", "Cinematic", "Noir", "Vintage", "Dreamy", "Horror", "Vivid", "Cold", "Warm", "Retro"]; }

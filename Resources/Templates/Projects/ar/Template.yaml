@@ -1,0 +1,6 @@
+# Augmented Reality (Unreal Handheld AR / Unity AR Mobile): plane detection, tap to place furniture, select / move /
+# resize / rotate. Without an AR camera the "AR Simulation Environment" room stands in for the real world.
+Shared: [Furniture]
+StartScene: Assets/Scenes/Main.cqscene
+Scenes:
+  - Assets/Scenes/Main.cqscene

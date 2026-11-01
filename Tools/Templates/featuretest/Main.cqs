@@ -1,0 +1,957 @@
+// Feature Test (Flax / Stride örnek sahneleri gibi): motorun özelliklerini çalışırken gösteren istasyon salonu.
+// Her istasyon kendi kaidesinde, başlığı ve kısa açıklamasıyla: PBR malzemeler, ışıklar, fizik, kumaş, yıkım,
+// parçacıklar, animasyon, ragdoll, NavMesh, spline'lar, iz / çizgi, eklemler, IK + kısıtlar, render target,
+// instancing + LOD, yüzeyler, CSG, tetikleyici + ışın, kuvvetler; koridorda 3D ses, Post Process Volume, Decal.
+// Kamera: serbest uçuş (sağ tık bak, WASD, Q / E, Shift), 1-9 ve 0 istasyonlara atlar, Tab sonraki istasyon.
+// @EditorCamera 150 40 0 0 0 0   (proje açıldığında editör görünümü: uzaklık, eğim, yön, odak)
+OutdoorLighting(-42, -35);
+RenderSettingSet("Post.CloudCoverage", 0.35);
+
+Box("Floor", 0, -1, 0, 252, 1, 60, GRID);
+
+var STATIONS = [];
+func Station(i, title, desc, x, z, faceNorth)
+{
+    var s = CreateEntity("Station " + i);
+    EntitySetPosition(s, x, 0, z);
+    var pedestal = Box("Station " + i + " Base", x, 0, z, 12, 0.3, 12, GRID_DARK);
+    EntitySetComponentField(pedestal, "MeshRenderer", "Roughness", 0.6);
+    // Başlık panosu kaidenin arka kenarında, ziyaretçiye dönük
+    var dz = faceNorth ? -6.6 : 6.6;
+    var board = Mesh("Station " + i + " Board", "Cube", x, 3.3, z + dz, 11, 2.0, 0.2, "", {r: 0.06, g: 0.065, b: 0.075, a: 1});
+    EntitySetComponentField(board, "MeshRenderer", "Roughness", 0.4);
+    EntitySetComponentField(board, "MeshRenderer", "CastShadows", false);   // pano, sergilenen şeyin üstüne gölge düşürmesin
+    var t = CreateEntity("Station " + i + " Title");
+    EntitySetPosition(t, x, 3.7, z + dz + (faceNorth ? 0.12 : -0.12));
+    EntityAddComponent(t, "TextRenderer");
+    EntitySetComponentField(t, "TextRenderer", "Text", i + "  " + title);
+    EntitySetComponentField(t, "TextRenderer", "FontSize", 0.85);
+    EntitySetComponentField(t, "TextRenderer", "Color", {r: 1, g: 1, b: 1, a: 1});
+    EntitySetComponentField(t, "TextRenderer", "Alignment", "Center");
+    EntitySetRotation(t, 0, faceNorth ? 0 : 180, 0);
+    var d = CreateEntity("Station " + i + " Info");
+    EntitySetPosition(d, x, 2.85, z + dz + (faceNorth ? 0.12 : -0.12));
+    EntityAddComponent(d, "TextRenderer");
+    EntitySetComponentField(d, "TextRenderer", "Text", desc);
+    EntitySetComponentField(d, "TextRenderer", "FontSize", 0.33);
+    EntitySetComponentField(d, "TextRenderer", "Color", {r: 0.75, g: 0.8, b: 0.86, a: 1});
+    EntitySetComponentField(d, "TextRenderer", "Alignment", "Center");
+    EntitySetRotation(d, 0, faceNorth ? 0 : 180, 0);
+    // İstasyonun "önü": FreeFlyCamera buradan bakar (kuzeydekiler güneye, güneydekiler kuzeye)
+    EntitySetRotation(s, 0, faceNorth ? 180 : 0, 0);
+    STATIONS.Add(s);
+    return s;
+}
+func Col(r, g, b) { return {r: r, g: g, b: b, a: 1}; }
+// Koyu panel üstünde ortalı yazı (gökyüzü önünde de okunur); izleyici tarafına bakar
+func InfoText(name, text, x, y, z, faceNorth, size, color)
+{
+    var panel = Mesh(name + " Panel", "Cube", x, y + size * 0.3, z, StringLength(text) * size * 0.36 + 0.35, size * 1.5, 0.04, "", {r: 0.05, g: 0.055, b: 0.065, a: 1});
+    EntitySetComponentField(panel, "MeshRenderer", "Roughness", 0.5);
+    EntitySetComponentField(panel, "MeshRenderer", "CastShadows", false);
+    EntitySetRotation(panel, 0, faceNorth ? 0 : 180, 0);
+    var t = CreateEntity(name);
+    EntitySetPosition(t, x, y, z + (faceNorth ? 0.03 : -0.03));
+    EntityAddComponent(t, "TextRenderer");
+    EntitySetComponentField(t, "TextRenderer", "Text", text);
+    EntitySetComponentField(t, "TextRenderer", "FontSize", size);
+    EntitySetComponentField(t, "TextRenderer", "Color", color);
+    EntitySetComponentField(t, "TextRenderer", "Alignment", "Center");
+    EntitySetRotation(t, 0, faceNorth ? 0 : 180, 0);
+    return t;
+}
+
+// Dinamik gövde: Mesh + Rigidbody (Dynamic) + çarpıştırıcı; PhysicsReset ile istasyon tekrarlarında başa döner
+func DynBody(name, kind, x, y, z, sx, sy, sz, color, mass)
+{
+    var e = Mesh(name, kind, x, y, z, sx, sy, sz, "", color);
+    EntityAddComponent(e, "Rigidbody");
+    EntitySetComponentField(e, "Rigidbody", "BodyType", "Dynamic");
+    EntitySetComponentField(e, "Rigidbody", "Mass", mass);
+    EntityAddComponent(e, kind == "Sphere" ? "SphereCollider" : "BoxCollider");
+    AddScript(e, "Assets/Scripts/PhysicsReset.cqs");
+    return e;
+}
+func Steel(e, rough)
+{
+    EntitySetComponentField(e, "MeshRenderer", "Metallic", 1.0);
+    EntitySetComponentField(e, "MeshRenderer", "Roughness", rough);
+    return e;
+}
+// Sergi tabelası: kaidenin üstünde arkaya yatık küçük koyu levha + sarı yazı (izleyicinin bakış yönünden okunur)
+func FloorLabel(text, x, z, faceNorth)
+{
+    var yaw = faceNorth ? 0 : 180;
+    var plate = Mesh("Plaque " + text, "Cube", x, 0.55, z, StringLength(text) * 0.088 + 0.45, 0.42, 0.04, "", {r: 0.05, g: 0.055, b: 0.065, a: 1});
+    EntitySetComponentField(plate, "MeshRenderer", "Roughness", 0.5);
+    EntitySetComponentField(plate, "MeshRenderer", "CastShadows", false);
+    EntitySetRotation(plate, -22, yaw, 0);
+    var legs = Mesh("Plaque Stand " + text, "Cube", x, 0.4, z + (faceNorth ? -0.07 : 0.07), 0.06, 0.2, 0.06, "", {r: 0.05, g: 0.055, b: 0.065, a: 1});
+    // Yazı levhanın yatık ön yüzünde: levha merkezine göre (0, -0.1, 0.035) noktası 22 derece döndürülmüş
+    var t = CreateEntity("Label " + text);
+    var tilt = MathDegToRad(22.0);
+    var oy = -0.1 * MathCos(tilt) + 0.035 * MathSin(tilt);
+    var oz = 0.1 * MathSin(tilt) + 0.035 * MathCos(tilt);
+    EntitySetPosition(t, x, 0.55 + oy, z + (faceNorth ? oz : -oz));
+    EntityAddComponent(t, "TextRenderer");
+    EntitySetComponentField(t, "TextRenderer", "Text", text);
+    EntitySetComponentField(t, "TextRenderer", "FontSize", 0.26);
+    EntitySetComponentField(t, "TextRenderer", "Color", {r: 1.0, g: 0.78, b: 0.3, a: 1});
+    EntitySetComponentField(t, "TextRenderer", "Alignment", "Center");
+    EntitySetRotation(t, -22, yaw, 0);
+    return t;
+}
+
+// ---------------------------------------------------------------- 1 PBR malzemeler
+Station(1, "PBR MATERIALS", "metallic 0 -> 1 (left to right), roughness 0.05 / 0.45 / 0.9 (top to bottom)", -56, -14, true);
+for (var mi = 0; mi < 5; mi++)
+{
+    for (var ri = 0; ri < 3; ri++)
+    {
+        var sp = Mesh("PBR Sphere " + mi + "-" + ri, "Sphere", -60 + mi * 2.0, 3.0 - ri * 1.05, -14, 0.9, 0.9, 0.9, "", Col(0.95, 0.72, 0.35));
+        EntitySetComponentField(sp, "MeshRenderer", "Metallic", mi / 4.0);
+        EntitySetComponentField(sp, "MeshRenderer", "Roughness", [0.05, 0.45, 0.9][ri]);
+    }
+}
+// ---------------------------------------------------------------- 2 Işıklar
+Station(2, "LIGHTS", "point, spot and area lights with shadows, emissive surfaces, lens flare", -28, -14, true);
+var orbit = CreateEntity("Light Orbit");
+EntitySetPosition(orbit, -28, 1.6, -14);
+EntityAddComponent(orbit, "Rotator");
+EntitySetComponentField(orbit, "Rotator", "RotationRate", {x: 0, y: 40, z: 0});
+var lc = [Col(1, 0.25, 0.2), Col(0.25, 1, 0.35), Col(0.3, 0.5, 1)];
+for (var li = 0; li < 3; li++)
+{
+    var a = li * 2.094;
+    var orb = Mesh("Light Orb " + li, "Sphere", 0, 0, 0, 0.25, 0.25, 0.25, "", lc[li]);
+    EntitySetParent(orb, orbit);
+    EntitySetPosition(orb, MathCos(a) * 3.0, 0, MathSin(a) * 3.0);
+    EntitySetComponentField(orb, "MeshRenderer", "EmissionColor", {r: lc[li].r, g: lc[li].g, b: lc[li].b});
+    EntitySetComponentField(orb, "MeshRenderer", "EmissionStrength", 8.0);
+    EntitySetComponentField(orb, "MeshRenderer", "CastShadows", false);
+    EntityAddComponent(orb, "PointLight");
+    EntitySetComponentField(orb, "PointLight", "Color", {r: lc[li].r, g: lc[li].g, b: lc[li].b});
+    EntitySetComponentField(orb, "PointLight", "Intensity", 6.0);
+    EntitySetComponentField(orb, "PointLight", "Range", 6.0);
+    EntitySetComponentField(orb, "PointLight", "CastShadows", true);
+}
+Box("Light Pillar", -28, 0.3, -14, 0.8, 2.2, 0.8, GRID);
+var spot = CreateEntity("Spot Light");
+EntitySetPosition(spot, -32, 4.5, -11);
+EntityAddComponent(spot, "SpotLight");
+EntitySetComponentField(spot, "SpotLight", "Color", {r: 1, g: 0.85, b: 0.6});
+EntitySetComponentField(spot, "SpotLight", "Intensity", 25.0);
+EntitySetComponentField(spot, "SpotLight", "Range", 10.0);
+EntitySetComponentField(spot, "SpotLight", "OuterConeAngle", 30);
+EntitySetComponentField(spot, "SpotLight", "CastShadows", true);
+EntitySetRotation(spot, -60, 30, 0);
+var area = CreateEntity("Area Light");
+EntitySetPosition(area, -24, 3.0, -17);
+EntityAddComponent(area, "AreaLight");
+EntitySetComponentField(area, "AreaLight", "Intensity", 6.0);
+EntitySetComponentField(area, "AreaLight", "Size", {x: 3, y: 1.2});
+EntitySetComponentField(area, "AreaLight", "Range", 10);
+EntitySetRotation(area, -30, 180, 0);
+var lamp = Mesh("Emissive Panel", "Cube", -24, 3.0, -17.1, 3, 1.2, 0.05, "", Col(1, 1, 1));
+EntitySetComponentField(lamp, "MeshRenderer", "EmissionColor", {r: 1, g: 0.97, b: 0.9});
+EntitySetComponentField(lamp, "MeshRenderer", "EmissionStrength", 4.0);
+// ---------------------------------------------------------------- 3 Fizik
+Station(3, "RIGID BODIES", "stacked boxes, rolling balls and dominoes (Jolt): click Play and watch them settle", 0, -14, true);
+for (var row = 0; row < 5; row++)
+{
+    // Piramit sola yaslı: ortalanmış başlık panosu arkada görünür kalsın
+    for (var c = 0; c <= 4 - row; c++) { PhysicsCube("Pyramid " + row + "-" + c, -5.1 + c * 1.02 + row * 0.51, 0.3 + row * 1.0, -15, 1, 20); }
+}
+for (var di = 0; di < 9; di++)
+{
+    var dom = Mesh("Domino " + di, "Cube", 1.5 + di * 0.45, 0.3 + 0.5, -12.5, 0.12, 1.0, 0.5, "", Col(0.95, 0.95, 0.95));
+    EntityAddComponent(dom, "Rigidbody");
+    EntitySetComponentField(dom, "Rigidbody", "BodyType", "Dynamic");
+    EntitySetComponentField(dom, "Rigidbody", "Mass", 2);
+    EntityAddComponent(dom, "BoxCollider");
+}
+var pusher = Mesh("Domino Ball", "Sphere", 0.9, 3.0, -12.5, 0.5, 0.5, 0.5, "", Col(0.95, 0.3, 0.2));
+EntityAddComponent(pusher, "Rigidbody");
+EntitySetComponentField(pusher, "Rigidbody", "BodyType", "Dynamic");
+EntitySetComponentField(pusher, "Rigidbody", "Mass", 6);
+EntityAddComponent(pusher, "SphereCollider");
+Ramp("Ball Ramp", -0.4, 0.3, -12.5, 1.2, 1.4, 1.0, 90, GRID_DARK);
+for (var bi = 0; bi < 6; bi++)
+{
+    var ball = Mesh("Ball " + bi, "Sphere", 3 + (bi % 3) * 0.7, 4 + bi * 0.8, -16 + (bi / 3) * 0.6, 0.6, 0.6, 0.6, "", Col(0.25, 0.5, 0.95));
+    EntityAddComponent(ball, "Rigidbody");
+    EntitySetComponentField(ball, "Rigidbody", "BodyType", "Dynamic");
+    EntitySetComponentField(ball, "Rigidbody", "Mass", 3);
+    EntityAddComponent(ball, "SphereCollider");
+}
+// ---------------------------------------------------------------- 4 Kumaş
+Station(4, "CLOTH + WIND", "position based cloth pinned on a bar, pushed by a pulsing Wind Zone", 28, -14, true);
+// Bayrak panonun önünde ama başlığı kapatmayacak yükseklikte (üst kenar 3.1 m)
+Box("Cloth Post L", 24.6, 0.3, -14, 0.25, 2.95, 0.25, GRID_DARK);
+Box("Cloth Post R", 31.4, 0.3, -14, 0.25, 2.95, 0.25, GRID_DARK);
+Box("Cloth Bar", 28, 3.15, -14, 7.2, 0.15, 0.15, GRID_DARK);
+var cloth = CreateEntity("Cloth Banner");
+EntitySetPosition(cloth, 28, 1.98, -14);   // kumaş merkezli: üst kenar çubukta
+EntityAddComponent(cloth, "Cloth");
+EntitySetComponentField(cloth, "Cloth", "Size", {x: 6.4, y: 2.3});
+EntitySetComponentField(cloth, "Cloth", "Resolution", 24);
+EntitySetComponentField(cloth, "Cloth", "Pin", "Top Edge");
+EntitySetComponentField(cloth, "Cloth", "Orientation", "Vertical (XY)");
+EntityAddComponent(cloth, "MeshRenderer");
+EntitySetColor(cloth, Col(0.85, 0.2, 0.25));
+EntitySetComponentField(cloth, "MeshRenderer", "Roughness", 0.8);
+var wind = CreateEntity("Wind Zone");
+EntitySetPosition(wind, 28, 2.5, -8);
+EntityAddComponent(wind, "WindZone");
+EntitySetComponentField(wind, "WindZone", "Main", 2.0);
+EntitySetComponentField(wind, "WindZone", "Turbulence", 1.0);
+EntitySetComponentField(wind, "WindZone", "PulseMagnitude", 1.5);
+EntitySetComponentField(wind, "WindZone", "PulseFrequency", 0.4);
+EntitySetRotation(wind, 0, 0, 0);
+// ---------------------------------------------------------------- 5 Yıkım
+Station(5, "DESTRUCTION", "Fracture: the wall breaks into pieces when the falling ball hits it", 56, -14, true);
+for (var wi = 0; wi < 3; wi++)
+{
+    var wall = Mesh("Fracture Block " + wi, "Cube", 54 + wi * 2.1, 0.3 + 1.0, -14, 2, 2, 0.6, "", Col(0.8, 0.78, 0.74));
+    EntityAddComponent(wall, "Rigidbody");
+    EntitySetComponentField(wall, "Rigidbody", "BodyType", "Static");
+    EntityAddComponent(wall, "BoxCollider");
+    EntityAddComponent(wall, "Fracture");
+    EntitySetComponentField(wall, "Fracture", "Pieces", 24);
+    EntitySetComponentField(wall, "Fracture", "BreakImpulse", 40);
+    EntitySetComponentField(wall, "Fracture", "PieceLifetime", 0);
+    var wrecker = Mesh("Wrecking Ball " + wi, "Sphere", 54 + wi * 2.1, 6 + wi * 2.5, -14, 0.9, 0.9, 0.9, "", Col(0.15, 0.15, 0.17));
+    EntitySetComponentField(wrecker, "MeshRenderer", "Metallic", 1.0);
+    EntitySetComponentField(wrecker, "MeshRenderer", "Roughness", 0.3);
+    EntityAddComponent(wrecker, "Rigidbody");
+    EntitySetComponentField(wrecker, "Rigidbody", "BodyType", "Dynamic");
+    EntitySetComponentField(wrecker, "Rigidbody", "Mass", 200);
+    EntityAddComponent(wrecker, "SphereCollider");
+}
+// ---------------------------------------------------------------- 6 Parçacıklar
+Station(6, "PARTICLES", "GPU-friendly particle systems: fire, smoke and a spark fountain", -56, 14, false);
+var fire = Particles("Fire", null, {RateOverTime: 60, StartLifetime: {x: 0.6, y: 1.1}, StartSpeed: {x: 0.8, y: 1.8}, StartSize: {x: 0.35, y: 0.7},
+    StartColorA: {r: 1, g: 0.55, b: 0.15, a: 1}, StartColorB: {r: 1, g: 0.3, b: 0.05, a: 1}, Shape: "Cone", Radius: 0.35, GravityModifier: -0.4,
+    Blend: "Additive", EmissiveIntensity: 5, MaxParticles: 300, ColorOverLifetimeEnabled: true, ColorOverLifetimeKeys: "0:1,1,1,1; 1:1,0.3,0.1,0",
+    SizeOverLifetimeEnabled: true, SizeOverLifetimeKeys: "0:1; 1:0.2"});
+EntitySetPosition(fire, -59, 0.4, 14);
+EntitySetRotation(fire, -90, 0, 0);
+var fireLight = CreateEntity("Fire Light");
+EntitySetPosition(fireLight, -59, 1.2, 14);
+EntityAddComponent(fireLight, "PointLight");
+EntitySetComponentField(fireLight, "PointLight", "Color", {r: 1, g: 0.55, b: 0.2});
+EntitySetComponentField(fireLight, "PointLight", "Intensity", 8);
+EntitySetComponentField(fireLight, "PointLight", "Range", 6);
+var smoke = Particles("Smoke", null, {RateOverTime: 14, StartLifetime: {x: 3, y: 5}, StartSpeed: {x: 0.4, y: 1.0}, StartSize: {x: 0.6, y: 1.2},
+    StartColorA: {r: 0.4, g: 0.4, b: 0.42, a: 0.5}, StartColorB: {r: 0.25, g: 0.25, b: 0.27, a: 0.35}, Shape: "Cone", Radius: 0.4, GravityModifier: -0.08,
+    Drag: 0.3, Blend: "Alpha", MaxParticles: 200, ColorOverLifetimeEnabled: true, ColorOverLifetimeKeys: "0:1,1,1,0; 0.2:1,1,1,1; 1:1,1,1,0",
+    SizeOverLifetimeEnabled: true, SizeOverLifetimeKeys: "0:0.5; 1:3"});
+EntitySetPosition(smoke, -56, 0.4, 14);
+EntitySetRotation(smoke, -90, 0, 0);
+var sparks = Particles("Spark Fountain", null, {RateOverTime: 120, StartLifetime: {x: 0.8, y: 1.6}, StartSpeed: {x: 5, y: 8}, StartSize: {x: 0.04, y: 0.08},
+    StartColorA: {r: 1, g: 0.85, b: 0.4, a: 1}, StartColorB: {r: 0.6, g: 0.8, b: 1, a: 1}, Shape: "Cone", Radius: 0.05, GravityModifier: 1.0,
+    Blend: "Additive", EmissiveIntensity: 6, MaxParticles: 600});
+EntitySetPosition(sparks, -53, 0.4, 14);
+EntitySetRotation(sparks, -90, 0, 0);
+// ---------------------------------------------------------------- 7 Animasyon
+Station(7, "ANIMATION", "skinned meshes with animation state machines: idle, walk, dance, talk", -28, 14, false);
+var clips = ["idle", "walk", "dance", "talk"];
+for (var ai = 0; ai < 4; ai++) { Actor("Actor " + clips[ai], -32 + ai * 2.6, 0.3, 14, 0, ai % 2 == 0 ? "Mannequin_Male" : "Mannequin_Female", clips[ai]); }
+// ---------------------------------------------------------------- 8 Ragdoll
+Station(8, "RAGDOLL", "physics ragdoll built from the skeleton (capsules + character joints), tumbling down steps", 0, 14, false);
+// Merdiven izleyiciye doğru iner (en üst basamak arkada); manken en üstten düşüp yuvarlanır
+// Gerçekçi dik merdiven (9 basamak, 25 cm rıht, 38 cm basamak) + tepede sahanlık; manken sahanlıktan merdivene itilir
+Stairs("Ragdoll Steps", 0, 0.3, 10.6, 9, 0.25, 0.38, 5, 0, GRID);
+// Merdiven z 10.6 + 9 x 0.38 = 14.02 m'de biter: sahanlık tam orada başlar (arada boşluk kalmaz), arka kenar 15.92
+Box("Ragdoll Landing", 0, 0.3, 14.97, 5, 2.25, 1.9, GRID);
+var rd = Actor("Ragdoll Mannequin", 0, 2.56, 14.45, 180, "Mannequin_Male", "idle");   // sahanlığın ön kenarından 43 cm geride, izleyiciye dönük
+EntitySetRotation(rd, 0, 180, 0);
+EntityAddComponent(rd, "Ragdoll");
+AddScript(rd, "Assets/Scripts/RagdollDemo.cqs");   // tepeden izleyiciye doğru itilir, 7 sn'de bir başa döner
+// ---------------------------------------------------------------- 9 NavMesh
+Station(9, "NAVIGATION", "NavMesh baked on Play; agents wander, avoid each other and the obstacles", 28, 14, false);
+// Engellerin üstü yürünemez (NavMesh Modifier varsayılanı: Not Walkable); ajanlar yalnız çevresinden dolaşır
+foreach (var ob in [Box("Nav Obstacle A", 26, 0.3, 13, 1.2, 1.2, 3, GRID_ORANGE), Box("Nav Obstacle B", 30.5, 0.3, 15.5, 2.5, 1.2, 1.2, GRID_ORANGE)])
+{
+    EntityAddComponent(ob, "NavMeshModifier");
+}
+for (var ni = 0; ni < 5; ni++)
+{
+    var ag = Mesh("Agent " + ni, "Cylinder", 24 + ni * 1.8, 0.3 + 0.9, 11, 0.6, 1.8, 0.6, "", Col(0.3 + ni * 0.12, 0.6, 1.0 - ni * 0.12));
+    EntityAddComponent(ag, "NavMeshAgent");
+    EntitySetComponentField(ag, "NavMeshAgent", "Speed", 2.2);
+    EntitySetComponentField(ag, "NavMeshAgent", "Radius", 0.35);
+    EntitySetComponentField(ag, "NavMeshAgent", "Height", 1.8);
+    AddScript(ag, "Assets/Scripts/NavWanderer.cqs");
+    IgnoreFromNav(ag);
+}
+NavSurface();
+// ---------------------------------------------------------------- 10 Spline'lar, iz ve çizgi
+Station(10, "SPLINES + TRAILS", "Spline Extrude tube, an object riding the spline, trail and line renderers", 56, 14, false);
+var spl = CreateEntity("Spline");
+EntitySetPosition(spl, 56, 0.3, 14);
+EntityAddComponent(spl, "SplineContainer");
+EntitySetComponentField(spl, "SplineContainer", "Knots", [{x: -4, y: 0.8, z: -3}, {x: 0, y: 2.5, z: -4}, {x: 4, y: 1.0, z: -2}, {x: 3, y: 3.0, z: 3}, {x: -3, y: 1.5, z: 3}]);
+EntitySetComponentField(spl, "SplineContainer", "Closed", true);
+EntityAddComponent(spl, "SplineExtrude");
+EntitySetComponentField(spl, "SplineExtrude", "Container", spl);
+EntitySetComponentField(spl, "SplineExtrude", "Radius", 0.08);
+EntityAddComponent(spl, "MeshRenderer");
+EntitySetColor(spl, Col(0.8, 0.82, 0.86));
+EntitySetComponentField(spl, "MeshRenderer", "Metallic", 1.0);
+EntitySetComponentField(spl, "MeshRenderer", "Roughness", 0.25);
+var rider = Mesh("Spline Rider", "Cube", 0, 0, 0, 0.4, 0.4, 0.6, "", Col(1, 0.55, 0.1));
+EntitySetPosition(rider, 56, 1, 11);
+EntityAddComponent(rider, "SplineAnimate");
+EntitySetComponentField(rider, "SplineAnimate", "Container", spl);
+EntitySetComponentField(rider, "SplineAnimate", "Speed", 3.0);
+EntitySetComponentField(rider, "SplineAnimate", "Loop", "Loop");
+EntitySetComponentField(rider, "SplineAnimate", "AlignToPath", true);
+EntitySetComponentField(rider, "SplineAnimate", "PlayOnAwake", true);
+EntityAddComponent(rider, "TrailRenderer");
+EntitySetComponentField(rider, "TrailRenderer", "Time", 1.2);
+EntitySetComponentField(rider, "TrailRenderer", "StartWidth", 0.25);
+EntitySetComponentField(rider, "TrailRenderer", "EndWidth", 0.0);
+EntitySetComponentField(rider, "TrailRenderer", "StartColor", {r: 1, g: 0.6, b: 0.1, a: 1});
+EntitySetComponentField(rider, "TrailRenderer", "EndColor", {r: 1, g: 0.2, b: 0.05, a: 0});
+EntitySetComponentField(rider, "TrailRenderer", "Emissive", 3.0);
+var line = CreateEntity("Line Renderer");
+EntitySetPosition(line, 56, 0.3, 14);
+EntityAddComponent(line, "LineRenderer");
+var pts = [];
+for (var k = 0; k <= 24; k++) { var a2 = k / 24.0 * 3.1415926; pts.Add({x: MathCos(a2) * 5.0, y: 0.05 + MathSin(a2) * 4.0, z: 4.5}); }
+EntitySetComponentField(line, "LineRenderer", "Positions", pts);
+EntitySetComponentField(line, "LineRenderer", "UseWorldSpace", false);
+EntitySetComponentField(line, "LineRenderer", "StartWidth", 0.08);
+EntitySetComponentField(line, "LineRenderer", "EndWidth", 0.08);
+EntitySetComponentField(line, "LineRenderer", "StartColor", {r: 0.2, g: 0.8, b: 1, a: 1});
+EntitySetComponentField(line, "LineRenderer", "EndColor", {r: 0.8, g: 0.3, b: 1, a: 1});
+EntitySetComponentField(line, "LineRenderer", "Emissive", 2.0);
+// ---------------------------------------------------------------- 11 Eklemler
+Station(11, "JOINTS", "ball-joint chain + wrecking ball, motor hinge, slider piston, spring-loaded door, spring joint", 84, -14, true);
+// Yıkım topu: Ball Joint zinciri portal kirişinden sarkar; WreckingBall betiği sola çekip bırakır, sandık yığınına çarpar
+var PIVOT_X = 79.8;
+var PIVOT_Y = 4.85;
+var PIVOT_Z = -14.0;
+Box("Gantry Post A", PIVOT_X, 0.3, -15.75, 0.22, 4.85, 0.22, GRID_DARK);
+Box("Gantry Post B", PIVOT_X, 0.3, -12.25, 0.22, 4.85, 0.22, GRID_DARK);
+Box("Gantry Beam", PIVOT_X, 4.85, PIVOT_Z, 0.3, 0.3, 3.72, GRID_DARK);
+var prevLink = -1;
+for (var ci = 0; ci < 8; ci++)
+{
+    var link = Steel(DynBody("Chain Link " + ci, "Cylinder", PIVOT_X, PIVOT_Y - (ci + 0.5) * 0.36, PIVOT_Z, 0.08, 0.36, 0.08, Col(0.3, 0.31, 0.33), 30), 0.35);
+    EntityAddComponent(link, "BallJoint");
+    EntitySetComponentField(link, "BallJoint", "Anchor", {x: 0, y: 1, z: 0});   // halkanın üst ucu (yerel: birim silindir -1..1)
+    if (prevLink >= 0) { EntitySetComponentField(link, "BallJoint", "ConnectedBody", prevLink); }
+    prevLink = link;
+}
+var wball = Steel(DynBody("Wrecking Ball", "Sphere", PIVOT_X, PIVOT_Y - 8 * 0.36 - 0.45, PIVOT_Z, 0.9, 0.9, 0.9, Col(0.13, 0.13, 0.14), 160), 0.3);
+EntityAddComponent(wball, "BallJoint");
+EntitySetComponentField(wball, "BallJoint", "Anchor", {x: 0, y: 1, z: 0});
+EntitySetComponentField(wball, "BallJoint", "ConnectedBody", prevLink);
+var wrig = CreateEntity("Wrecking Ball Rig");
+EntitySetPosition(wrig, PIVOT_X, PIVOT_Y, PIVOT_Z);
+AddScript(wrig, "Assets/Scripts/WreckingBall.cqs");
+for (var cy = 0; cy < 4; cy++)
+{
+    for (var cx = 0; cx < 2; cx++)
+    {
+        for (var cz = 0; cz < 2; cz++)
+        {
+            var crate = DynBody("Joint Crate " + cy + cx + cz, "Cube", 80.56 + cx * 0.52, 0.55 + cy * 0.505, -14.26 + cz * 0.52, 0.5, 0.5, 0.5, WHITE, 12);
+            EntitySetComponentField(crate, "MeshRenderer", "Texture", GRID_ORANGE);
+            EntitySetComponentField(crate, "MeshRenderer", "WorldAlignedUV", true);
+            EntitySetComponentField(crate, "MeshRenderer", "AlignToObject", true);
+            EntitySetComponentField(crate, "MeshRenderer", "Offset", {x: 0.5, y: 0.5});
+            EntitySetComponentField(crate, "MeshRenderer", "Roughness", 0.55);
+        }
+    }
+}
+FloorLabel("BALL JOINT CHAIN", 80.9, -11.5, true);
+// Motorlu menteşe: pervane göbeği Hinge Joint (Z ekseni) + motor; kanatlar göbeğin çocuk çarpıştırıcıları (bileşik gövde)
+Box("Windmill Post", 88.8, 0.3, -18.15, 0.18, 1.95, 0.18, GRID_DARK);
+var hub = Mesh("Windmill Hub", "Sphere", 88.8, 2.25, -17.78, 0.26, 0.26, 0.26, "", Col(0.85, 0.86, 0.88));
+Steel(hub, 0.3);
+EntityAddComponent(hub, "Rigidbody");
+EntitySetComponentField(hub, "Rigidbody", "BodyType", "Dynamic");
+EntitySetComponentField(hub, "Rigidbody", "Mass", 20);
+EntitySetComponentField(hub, "Rigidbody", "AllowSleep", false);
+EntityAddComponent(hub, "SphereCollider");
+for (var wb = 0; wb < 4; wb++)
+{
+    var ang = wb * 90.0;
+    var ar = MathDegToRad(ang);
+    var blade = Mesh("Windmill Blade " + wb, "Cube", 88.8 + MathCos(ar) * 0.78, 2.25 + MathSin(ar) * 0.78, -17.78, 1.2, 0.26, 0.05, "", wb % 2 == 0 ? Col(0.92, 0.25, 0.18) : Col(0.95, 0.95, 0.95));
+    EntitySetRotation(blade, 0, 0, ang);
+    EntitySetComponentField(blade, "MeshRenderer", "Roughness", 0.5);
+    EntityAddComponent(blade, "BoxCollider");
+    EntitySetParent(blade, hub);
+}
+EntityAddComponent(hub, "HingeJoint");
+EntitySetComponentField(hub, "HingeJoint", "Axis", {x: 0, y: 0, z: 1});
+EntitySetComponentField(hub, "HingeJoint", "UseMotor", true);
+EntitySetComponentField(hub, "HingeJoint", "MotorTargetVelocity", 55);
+EntitySetComponentField(hub, "HingeJoint", "MotorForce", 3000);
+FloorLabel("HINGE + MOTOR", 88.6, -16.2, true);
+// Piston (Slider Joint + motor, PistonDemo yönünü değiştirir) yaylı kapıyı (Hinge Joint + spring + limit) iter
+Box("Piston Housing", 89.6, 0.3, -10.25, 0.8, 0.9, 0.9, GRID_DARK);
+var head = Mesh("Piston Head", "Cube", 88.55, 0.75, -10.25, 0.6, 0.6, 0.6, "", Col(0.95, 0.72, 0.12));
+EntitySetComponentField(head, "MeshRenderer", "Roughness", 0.4);
+EntityAddComponent(head, "Rigidbody");
+EntitySetComponentField(head, "Rigidbody", "BodyType", "Dynamic");
+EntitySetComponentField(head, "Rigidbody", "Mass", 30);
+EntitySetComponentField(head, "Rigidbody", "AllowSleep", false);
+EntityAddComponent(head, "BoxCollider");
+EntityAddComponent(head, "SliderJoint");
+EntitySetComponentField(head, "SliderJoint", "Axis", {x: 1, y: 0, z: 0});
+EntitySetComponentField(head, "SliderJoint", "UseLimits", true);
+EntitySetComponentField(head, "SliderJoint", "MinDistance", -3.0);
+EntitySetComponentField(head, "SliderJoint", "MaxDistance", 0.0);
+EntitySetComponentField(head, "SliderJoint", "UseMotor", true);
+EntitySetComponentField(head, "SliderJoint", "MotorTargetSpeed", -1.6);
+EntitySetComponentField(head, "SliderJoint", "MotorForce", 4000);
+AddScript(head, "Assets/Scripts/PistonDemo.cqs");
+SetFields(head, {rodStartX: 89.2});
+var rod = Steel(Mesh("Piston Rod", "Cylinder", 88.9, 0.75, -10.25, 0.14, 0.6, 0.14, "", Col(0.8, 0.82, 0.85)), 0.2);
+EntitySetRotation(rod, 0, 0, 90);
+Box("Door Post", 86.0, 0.3, -11.13, 0.12, 1.8, 0.12, GRID_DARK);
+var door = Mesh("Spring Door", "Cube", 86.0, 1.15, -10.3, 0.08, 1.6, 1.4, "", Col(0.25, 0.55, 0.95));
+EntitySetComponentField(door, "MeshRenderer", "Roughness", 0.45);
+EntityAddComponent(door, "Rigidbody");
+EntitySetComponentField(door, "Rigidbody", "BodyType", "Dynamic");
+EntitySetComponentField(door, "Rigidbody", "Mass", 15);
+EntitySetComponentField(door, "Rigidbody", "AllowSleep", false);
+EntityAddComponent(door, "BoxCollider");
+EntityAddComponent(door, "HingeJoint");
+EntitySetComponentField(door, "HingeJoint", "Anchor", {x: 0, y: 0, z: -1});   // kapının arka kenarı (z -11.0)
+EntitySetComponentField(door, "HingeJoint", "Axis", {x: 0, y: 1, z: 0});
+EntitySetComponentField(door, "HingeJoint", "UseLimits", true);
+EntitySetComponentField(door, "HingeJoint", "MinAngle", -110);
+EntitySetComponentField(door, "HingeJoint", "MaxAngle", 0);
+EntitySetComponentField(door, "HingeJoint", "UseSpring", true);
+EntitySetComponentField(door, "HingeJoint", "Spring", 120);
+EntitySetComponentField(door, "HingeJoint", "Damper", 30);
+EntitySetComponentField(door, "HingeJoint", "TargetAngle", 0);
+FloorLabel("SLIDER + MOTOR", 88.7, -9.05, true);
+FloorLabel("HINGE + SPRING", 85.6, -9.05, true);
+// Yay: ağırlık askı kolundan Spring Joint ile sarkar (doğal boy 0.7 m); SpringBungee aşağı çekip bırakır, bobini çizer
+Box("Spring Post", 78.7, 0.3, -9.0, 0.14, 3.2, 0.14, GRID_DARK);
+Box("Spring Arm", 79.3, 3.38, -9.0, 1.3, 0.12, 0.12, GRID_DARK);
+var weight = Steel(DynBody("Spring Weight", "Sphere", 79.8, 3.38 - 0.7 - 0.22, -9.0, 0.44, 0.44, 0.44, Col(0.95, 0.3, 0.2), 5), 0.25);
+EntitySetComponentField(weight, "MeshRenderer", "Metallic", 0.0);
+EntityAddComponent(weight, "SpringJoint");
+EntitySetComponentField(weight, "SpringJoint", "Anchor", {x: 0, y: 1, z: 0});
+EntitySetComponentField(weight, "SpringJoint", "AutoConfigureConnectedAnchor", false);
+EntitySetComponentField(weight, "SpringJoint", "ConnectedAnchor", {x: 79.8, y: 3.38, z: -9.0});   // bağlı gövde yok: dünya noktası
+EntitySetComponentField(weight, "SpringJoint", "Spring", 110);
+EntitySetComponentField(weight, "SpringJoint", "Damper", 0.8);
+AddScript(weight, "Assets/Scripts/SpringBungee.cqs");
+SetFields(weight, {hookX: 79.8, hookY: 3.38, hookZ: -9.0});
+var coil = CreateEntity("Spring Coil");
+EntityAddComponent(coil, "LineRenderer");
+EntitySetComponentField(coil, "LineRenderer", "UseWorldSpace", true);
+EntitySetComponentField(coil, "LineRenderer", "StartWidth", 0.022);
+EntitySetComponentField(coil, "LineRenderer", "EndWidth", 0.022);
+EntitySetComponentField(coil, "LineRenderer", "StartColor", {r: 0.75, g: 0.77, b: 0.8, a: 1});
+EntitySetComponentField(coil, "LineRenderer", "EndColor", {r: 0.75, g: 0.77, b: 0.8, a: 1});
+FloorLabel("SPRING JOINT", 79.5, -8.45, true);
+// ---------------------------------------------------------------- 12 IK + kısıtlar
+Station(12, "IK + CONSTRAINTS", "Animation Rigging: Two Bone IK hands and Multi-Aim head follow the orb; Aim and Look At constraints", 84, 14, false);
+var ikActor = Actor("IK Mannequin", 84, 0.3, 15.3, 180, "Mannequin_Male", "idle");
+var ikOrb = Mesh("IK Orb", "Sphere", 84, 1.38, 14.95, 0.26, 0.26, 0.26, "", Col(1.0, 0.55, 0.15));
+EntitySetComponentField(ikOrb, "MeshRenderer", "EmissionColor", {r: 1.0, g: 0.55, b: 0.15});
+EntitySetComponentField(ikOrb, "MeshRenderer", "EmissionStrength", 6.0);
+EntitySetComponentField(ikOrb, "MeshRenderer", "CastShadows", false);
+EntityAddComponent(ikOrb, "PointLight");
+EntitySetComponentField(ikOrb, "PointLight", "Color", {r: 1.0, g: 0.6, b: 0.25});
+EntitySetComponentField(ikOrb, "PointLight", "Intensity", 2.5);
+EntitySetComponentField(ikOrb, "PointLight", "Range", 3.0);
+AddScript(ikOrb, "Assets/Scripts/IKOrb.cqs");
+// Baş küreye bakar (Multi-Aim: kafa kemiğinin +Z ekseni yüz yönü, +Y yukarı)
+var headAim = CreateEntity("Head Aim");
+EntitySetParent(headAim, ikActor);
+EntityAddComponent(headAim, "MultiAimConstraint");
+EntitySetComponentField(headAim, "MultiAimConstraint", "Bone", "Head");
+EntitySetComponentField(headAim, "MultiAimConstraint", "Target", ikOrb);
+EntitySetComponentField(headAim, "MultiAimConstraint", "AimAxis", "Z");
+EntitySetComponentField(headAim, "MultiAimConstraint", "UpAxis", "Y");
+EntitySetComponentField(headAim, "MultiAimConstraint", "MaxAngle", 75);
+// Eller: Two Bone IK, dirsek ipuçları arkada ve dışarıda; ağırlıkları IKOrb sürer
+for (var hs = 0; hs < 2; hs++)
+{
+    var sfx = hs == 0 ? "r" : "l";
+    var sx = hs == 0 ? 1.0 : -1.0;     // manken -Z'ye bakıyor: sağ eli +X tarafında
+    var tgt = CreateEntity("IK Target " + StringToUpper(sfx));
+    EntitySetPosition(tgt, 84 + sx * 0.3, 1.3, 14.7);
+    var hint = CreateEntity("Elbow Hint " + StringToUpper(sfx));
+    EntitySetPosition(hint, 84 + sx * 0.75, 1.0, 15.9);
+    var ik = CreateEntity("IK Hand " + StringToUpper(sfx));
+    EntitySetParent(ik, ikActor);
+    EntityAddComponent(ik, "TwoBoneIKConstraint");
+    EntitySetComponentField(ik, "TwoBoneIKConstraint", "Root", "upperarm_" + sfx);
+    EntitySetComponentField(ik, "TwoBoneIKConstraint", "Mid", "lowerarm_" + sfx);
+    EntitySetComponentField(ik, "TwoBoneIKConstraint", "Tip", "hand_" + sfx);
+    EntitySetComponentField(ik, "TwoBoneIKConstraint", "Target", tgt);
+    EntitySetComponentField(ik, "TwoBoneIKConstraint", "Hint", hint);
+    EntitySetComponentField(ik, "TwoBoneIKConstraint", "TargetRotationWeight", 0.0);
+    EntitySetComponentField(ik, "TwoBoneIKConstraint", "Weight", 0.0);
+}
+// Taretler küreyi namluyla izler (Aim Constraint: yerel -Z küreye)
+func Turret(name, x, z, target)
+{
+    var pedestalT = Mesh(name + " Base", "Cylinder", x, 0.3 + 0.4, z, 0.42, 0.8, 0.42, "", Col(0.16, 0.17, 0.19));
+    EntitySetComponentField(pedestalT, "MeshRenderer", "Roughness", 0.5);
+    var head = CreateEntity(name + " Head");
+    EntitySetPosition(head, x, 1.25, z);
+    var housing = Steel(Mesh(name + " Housing", "Cube", x, 1.25, z, 0.46, 0.3, 0.52, "", Col(0.85, 0.86, 0.9)), 0.35);
+    EntitySetComponentField(housing, "MeshRenderer", "Metallic", 0.6);
+    EntitySetParent(housing, head);
+    var barrel = Steel(Mesh(name + " Barrel", "Cylinder", x, 1.27, z - 0.55, 0.09, 0.62, 0.09, "", Col(0.2, 0.2, 0.22)), 0.3);
+    EntitySetRotation(barrel, 90, 0, 0);
+    EntitySetParent(barrel, head);
+    var lens = Mesh(name + " Lens", "Sphere", x, 1.27, z - 0.87, 0.06, 0.06, 0.06, "", Col(1.0, 0.2, 0.15));
+    EntitySetComponentField(lens, "MeshRenderer", "EmissionColor", {r: 1.0, g: 0.15, b: 0.1});
+    EntitySetComponentField(lens, "MeshRenderer", "EmissionStrength", 5.0);
+    EntitySetParent(lens, head);
+    EntityAddComponent(head, "AimConstraint");
+    EntitySetComponentField(head, "AimConstraint", "Source", target);
+    EntitySetComponentField(head, "AimConstraint", "AimVector", {x: 0, y: 0, z: -1});
+    EntitySetComponentField(head, "AimConstraint", "UpVector", {x: 0, y: 1, z: 0});
+    EntitySetComponentField(head, "AimConstraint", "WorldUpVector", {x: 0, y: 1, z: 0});
+    return head;
+}
+Turret("Turret A", 80.5, 16.6, ikOrb);
+Turret("Turret B", 87.5, 16.6, ikOrb);
+// Takip ışığı: Look At Constraint ile spot ışık küreyi aydınlatır (mankenin gölgesi zeminde dolaşır)
+Box("Spot Pole", 79.6, 0.3, 11.4, 0.12, 3.9, 0.12, GRID_DARK);
+var trackSpot = CreateEntity("Tracking Spot");
+EntitySetPosition(trackSpot, 79.6, 4.3, 11.4);
+EntityAddComponent(trackSpot, "SpotLight");
+EntitySetComponentField(trackSpot, "SpotLight", "Color", {r: 1.0, g: 0.92, b: 0.78});
+EntitySetComponentField(trackSpot, "SpotLight", "Intensity", 40.0);
+EntitySetComponentField(trackSpot, "SpotLight", "Range", 10.0);
+EntitySetComponentField(trackSpot, "SpotLight", "OuterConeAngle", 18);
+EntitySetComponentField(trackSpot, "SpotLight", "CastShadows", true);
+var spotCan = Steel(Mesh("Tracking Spot Housing", "Cylinder", 79.6, 4.3, 11.4 + 0.12, 0.3, 0.34, 0.3, "", Col(0.12, 0.12, 0.13)), 0.4);
+EntitySetRotation(spotCan, 90, 0, 0);
+EntitySetParent(spotCan, trackSpot);
+EntityAddComponent(trackSpot, "LookAtConstraint");
+EntitySetComponentField(trackSpot, "LookAtConstraint", "Source", ikOrb);
+EntitySetComponentField(trackSpot, "LookAtConstraint", "UseWorldUp", true);
+FloorLabel("TWO BONE IK + MULTI-AIM", 84, 9.0, false);
+FloorLabel("AIM CONSTRAINT", 87.5, 15.0, false);
+FloorLabel("AIM CONSTRAINT", 80.5, 15.0, false);
+FloorLabel("LOOK AT CONSTRAINT", 79.9, 9.6, false);
+// ---------------------------------------------------------------- 13 Render Target
+Station(13, "RENDER TARGETS", "cameras rendering into textures: a panning security camera and a top-down orthographic overview", 112, -14, true);
+// Ekranlar: çerçeve + ışıksız (Unlit) ekran yüzeyi; doku yolu rt://<Render Target adı>
+func Monitor(name, x, y, z, w, h, rt)
+{
+    var bezel = Mesh(name + " Bezel", "Cube", x, y, z, w + 0.2, h + 0.2, 0.12, "", Col(0.035, 0.037, 0.042));
+    EntitySetComponentField(bezel, "MeshRenderer", "Roughness", 0.35);
+    var screen = Mesh(name, "Cube", x, y, z + 0.065, w, h, 0.01, "", WHITE);
+    EntitySetComponentField(screen, "MeshRenderer", "Texture", "rt://" + rt);
+    EntitySetComponentField(screen, "MeshRenderer", "Unlit", true);
+    EntitySetComponentField(screen, "MeshRenderer", "CastShadows", false);
+    Box(name + " Stand", x, 0.3, z - 0.02, 0.16, y - h / 2.0 - 0.1 - 0.3, 0.16, GRID_DARK);
+    return screen;
+}
+Monitor("Security Monitor", 108.7, 1.5, -16.6, 2.88, 1.62, "SecurityCam");
+Monitor("Overview Monitor", 115.5, 1.25, -16.6, 4.0, 1.0, "Overview");
+// Güvenlik kamerası: direk üstünde, batıdaki Eklemler istasyonuna bakar ve sağa sola tarar
+Box("Security Pole", 106.4, 0.3, -9.4, 0.14, 3.0, 0.14, GRID_DARK);
+var secCam = CreateEntity("Security Camera");
+EntitySetPosition(secCam, 106.4, 3.45, -9.4);
+EntityAddComponent(secCam, "Camera");
+EntitySetComponentField(secCam, "Camera", "Primary", false);
+EntitySetComponentField(secCam, "Camera", "FieldOfView", 24);
+EntitySetComponentField(secCam, "Camera", "FarClip", 400);
+EntitySetComponentField(secCam, "Camera", "NearClip", 0.3);   // kendi gövdesi / merceği görüntüye girmesin
+EntityAddComponent(secCam, "RenderTarget");
+EntitySetComponentField(secCam, "RenderTarget", "Name", "SecurityCam");
+EntitySetComponentField(secCam, "RenderTarget", "Width", 768);
+EntitySetComponentField(secCam, "RenderTarget", "Height", 432);
+var camBody = Mesh("Security Camera Body", "Cube", 106.4, 3.45, -9.4 + 0.05, 0.24, 0.2, 0.46, "", Col(0.88, 0.89, 0.9));
+EntitySetComponentField(camBody, "MeshRenderer", "Roughness", 0.35);
+EntitySetParent(camBody, secCam);
+var camLens = Steel(Mesh("Security Camera Lens", "Cylinder", 106.4, 3.45, -9.4 - 0.2, 0.13, 0.08, 0.13, "", Col(0.05, 0.05, 0.06)), 0.15);
+EntitySetRotation(camLens, 90, 0, 0);
+EntitySetParent(camLens, secCam);
+var recLed = Mesh("Security Camera REC", "Sphere", 106.4 + 0.08, 3.45 + 0.07, -9.4 - 0.18, 0.03, 0.03, 0.03, "", Col(1, 0.1, 0.08));
+EntitySetComponentField(recLed, "MeshRenderer", "EmissionColor", {r: 1, g: 0.08, b: 0.05});
+EntitySetComponentField(recLed, "MeshRenderer", "EmissionStrength", 8.0);
+EntitySetParent(recLed, secCam);
+EntitySetRotation(secCam, -5, 79.5, 0);
+AddScript(secCam, "Assets/Scripts/SecurityCamPan.cqs");
+SetFields(secCam, {centerX: 112.0, centerZ: -14.0, amplitude: 12.0});
+// Tepeden ortografik genel görünüm (4:1 ekran = 256 x 64 m salon)
+var overCam = CreateEntity("Overview Camera");
+EntitySetPosition(overCam, 0, 160, 0);
+EntityAddComponent(overCam, "Camera");
+EntitySetComponentField(overCam, "Camera", "Primary", false);
+EntitySetComponentField(overCam, "Camera", "Projection", "Orthographic");
+EntitySetComponentField(overCam, "Camera", "OrthographicSize", 66);
+EntitySetComponentField(overCam, "Camera", "FarClip", 400);
+EntityAddComponent(overCam, "RenderTarget");
+EntitySetComponentField(overCam, "RenderTarget", "Name", "Overview");
+EntitySetComponentField(overCam, "RenderTarget", "Width", 1024);
+EntitySetComponentField(overCam, "RenderTarget", "Height", 256);
+EntitySetRotation(overCam, -90, 0, 0);
+FloorLabel("CAMERA -> rt://SecurityCam", 108.7, -11.4, true);
+FloorLabel("ORTHOGRAPHIC CAMERA -> rt://Overview", 115.5, -11.4, true);
+// ---------------------------------------------------------------- 14 Instancing + LOD
+Station(14, "INSTANCING + LOD", "Multi Mesh draws 12000 cubes in one call; LOD Groups switch meshes by on-screen size", 112, 14, false);
+var turntable = Mesh("Instancing Turntable", "Cylinder", 115.3, 0.35, 14.8, 5.8, 0.1, 5.8, "", Col(0.08, 0.085, 0.095));
+EntitySetComponentField(turntable, "MeshRenderer", "Roughness", 0.45);
+var field = CreateEntity("Instanced Field");
+EntitySetPosition(field, 115.3, 1.1, 14.8);
+EntityAddComponent(field, "MultiMesh");
+EntitySetComponentField(field, "MultiMesh", "Primitive", "Cube");
+EntitySetComponentField(field, "MultiMesh", "Color", {r: 0.35, g: 0.7, b: 1.0, a: 1});
+EntitySetComponentField(field, "MultiMesh", "Roughness", 0.4);
+EntitySetComponentField(field, "MultiMesh", "Mode", "Scatter");
+EntitySetComponentField(field, "MultiMesh", "Count", 12000);
+EntitySetComponentField(field, "MultiMesh", "Area", {x: 4.2, y: 1.0, z: 4.2});   // dönen küp bulutu
+EntitySetComponentField(field, "MultiMesh", "ScaleRange", {x: 0.02, y: 0.05});
+EntitySetComponentField(field, "MultiMesh", "RandomYaw", true);
+EntitySetComponentField(field, "MultiMesh", "ColorVariation", 0.55);
+EntitySetComponentField(field, "MultiMesh", "Seed", 7);
+EntityAddComponent(field, "Rotator");
+EntitySetComponentField(field, "Rotator", "RotationRate", {x: 0, y: 14, z: 0});
+var stats = InfoText("Instance Stats", "12000 INSTANCES  /  1 DRAW CALL", 115.3, 2.05, 14.8, false, 0.26, {r: 0.55, g: 0.85, b: 1.0, a: 1});
+AddScript(stats, "Assets/Scripts/InstanceStats.cqs");
+// LOD: aynı nesne üç derinlikte; yeşil küre (LOD 0), sarı silindir (LOD 1), kırmızı küp (LOD 2) ekrandaki boyuta göre
+var lodColors = [Col(0.3, 0.9, 0.4), Col(1.0, 0.8, 0.2), Col(1.0, 0.3, 0.25)];
+var lodMeshes = ["Sphere", "Cylinder", "Cube"];
+for (var lo = 0; lo < 3; lo++)
+{
+    var lz = 10.2 + lo * 3.4;
+    Box("LOD Plinth " + lo, 109.2, 0.3, lz, 0.9, 0.5, 0.9, GRID_DARK);
+    var lodObj = CreateEntity("LOD Object " + lo);
+    EntitySetPosition(lodObj, 109.2, 1.42, lz);
+    var levels = [];
+    for (var lv = 0; lv < 3; lv++)
+    {
+        var m = Mesh("LOD" + lv, lodMeshes[lv], 109.2, 1.42, lz, 1.1, 1.1, 1.1, "", lodColors[lv]);
+        EntitySetComponentField(m, "MeshRenderer", "Roughness", 0.35);
+        EntitySetParent(m, lodObj);
+        levels.Add(m);
+    }
+    EntityAddComponent(lodObj, "LODGroup");
+    EntitySetComponentField(lodObj, "LODGroup", "LOD0", levels[0]);
+    EntitySetComponentField(lodObj, "LODGroup", "Threshold0", 10.5);
+    EntitySetComponentField(lodObj, "LODGroup", "LOD1", levels[1]);
+    EntitySetComponentField(lodObj, "LODGroup", "Threshold1", 7.0);
+    EntitySetComponentField(lodObj, "LODGroup", "LOD2", levels[2]);
+    EntitySetComponentField(lodObj, "LODGroup", "Threshold2", 0.5);
+    EntitySetComponentField(lodObj, "LODGroup", "Size", 1.1);
+    InfoText("LOD Label " + lo, "LOD 0", 109.2, 2.2, lz, false, 0.26, {r: 1, g: 1, b: 1, a: 1});
+}
+FloorLabel("MULTI MESH (GPU INSTANCING)", 115.3, 9.3, false);
+FloorLabel("LOD GROUP", 109.2, 8.9, false);
+// ---------------------------------------------------------------- 15 Yüzeyler
+Station(15, "SURFACES", "transparency, alpha clip (cutout), emissive + bloom, scrolling UVs, world-aligned vs object UVs", -84, -14, true);
+func Plinth(name, x, z) { var p = Box(name, x, 0.3, z, 1.3, 0.4, 1.3, GRID_DARK); return p; }
+// Saydam: cam küre, arkasındaki çizgili sütun camın ardından görünür
+Plinth("Glass Plinth", -88.8, -14.6);
+var stripes = [Col(0.95, 0.3, 0.2), Col(0.95, 0.95, 0.95)];
+for (var st = 0; st < 6; st++) { Mesh("Glass Backdrop " + st, "Cube", -88.8, 0.85 + st * 0.3, -15.15, 1.15, 0.3, 0.08, "", stripes[st % 2]); }
+// Küre çizgili panonun hemen önünde; izleyici sağda durduğu için biraz sağa kaydırılmış (paralaks): pano camın ardından görünür
+var glass = Mesh("Glass Sphere", "Sphere", -88.55, 1.45, -14.75, 0.85, 0.85, 0.85, "", {r: 0.55, g: 0.8, b: 1.0, a: 0.32});
+EntitySetComponentField(glass, "MeshRenderer", "Roughness", 0.04);
+EntitySetComponentField(glass, "MeshRenderer", "Metallic", 0.0);
+EntitySetComponentField(glass, "MeshRenderer", "CastShadows", false);
+FloorLabel("TRANSPARENT", -88.8, -11.6, true);
+// Alfa kırpma: tel örgü dokusundaki delikler kesilir (ışık ve gölge deliklerden geçer)
+Plinth("Fence Plinth", -86.4, -14.6);
+Box("Fence Post L", -87.2, 0.7, -14.6, 0.07, 1.7, 0.07, GRID_DARK);
+Box("Fence Post R", -85.6, 0.7, -14.6, 0.07, 1.7, 0.07, GRID_DARK);
+var fence = Mesh("Chain Link Fence", "Cube", -86.4, 1.5, -14.6, 1.53, 1.5, 0.01, "", WHITE);
+EntitySetComponentField(fence, "MeshRenderer", "Texture", "Assets/Textures/ChainLink.png");
+EntitySetComponentField(fence, "MeshRenderer", "Tiling", {x: 1.5, y: 1.5});
+EntitySetComponentField(fence, "MeshRenderer", "AlphaClip", true);
+EntitySetComponentField(fence, "MeshRenderer", "AlphaClipThreshold", 0.5);
+EntitySetComponentField(fence, "MeshRenderer", "Metallic", 0.7);
+EntitySetComponentField(fence, "MeshRenderer", "Roughness", 0.4);
+FloorLabel("ALPHA CLIP", -86.4, -10.6, true);
+// Işıyan yüzeyler + bloom: neon tüpler
+Plinth("Neon Plinth", -84.0, -14.6);
+var neon = [Col(1.0, 0.15, 0.7), Col(0.1, 0.85, 1.0), Col(1.0, 0.8, 0.15)];
+for (var ni2 = 0; ni2 < 3; ni2++)
+{
+    var tube = Mesh("Neon Tube " + ni2, "Cylinder", -84.4 + ni2 * 0.4, 1.45, -14.6, 0.09, 1.6, 0.09, "", neon[ni2]);
+    EntitySetComponentField(tube, "MeshRenderer", "EmissionColor", {r: neon[ni2].r, g: neon[ni2].g, b: neon[ni2].b});
+    EntitySetComponentField(tube, "MeshRenderer", "EmissionStrength", 14.0);
+    EntitySetComponentField(tube, "MeshRenderer", "CastShadows", false);
+    var glow = CreateEntity("Neon Light " + ni2);
+    EntitySetPosition(glow, -84.4 + ni2 * 0.4, 1.45, -14.3);
+    EntityAddComponent(glow, "PointLight");
+    EntitySetComponentField(glow, "PointLight", "Color", {r: neon[ni2].r, g: neon[ni2].g, b: neon[ni2].b});
+    EntitySetComponentField(glow, "PointLight", "Intensity", 1.5);
+    EntitySetComponentField(glow, "PointLight", "Range", 2.5);
+}
+FloorLabel("EMISSIVE + BLOOM", -84.0, -11.6, true);
+// Doku kaydırma: konveyör bandı (UVScroll Offset'i ilerletir)
+Plinth("Conveyor Plinth", -81.6, -14.6);
+var belt = Mesh("Conveyor Belt", "Cube", -81.6, 0.78, -14.6, 0.9, 0.1, 2.6, "", WHITE);
+EntitySetComponentField(belt, "MeshRenderer", "Texture", "Assets/Textures/ConveyorArrows.png");
+EntitySetComponentField(belt, "MeshRenderer", "Tiling", {x: 1, y: 3});
+EntitySetComponentField(belt, "MeshRenderer", "Roughness", 0.8);
+AddScript(belt, "Assets/Scripts/UVScroll.cqs");
+for (var rl = 0; rl < 2; rl++)
+{
+    var roller = Steel(Mesh("Conveyor Roller " + rl, "Cylinder", -81.6, 0.78, -15.9 + rl * 2.6, 0.2, 0.96, 0.2, "", Col(0.6, 0.62, 0.65)), 0.3);
+    EntitySetRotation(roller, 0, 0, 90);
+}
+FloorLabel("UV SCROLL", -81.6, -10.6, true);
+// Dünyaya hizalı UV (doku ölçeği sabit) ile nesne UV'si (uzatınca doku da uzar)
+Plinth("UV Plinth", -79.2, -14.6);
+var wuv = Mesh("World UV Block", "Cube", -79.6, 1.45, -14.6, 0.5, 1.9, 0.5, GRID_ORANGE, WHITE);
+var ouv = Mesh("Object UV Block", "Cube", -78.8, 1.45, -14.6, 0.5, 1.9, 0.5, "", WHITE);
+EntitySetComponentField(ouv, "MeshRenderer", "Texture", GRID_ORANGE);
+EntitySetComponentField(ouv, "MeshRenderer", "WorldAlignedUV", false);
+FloorLabel("WORLD vs OBJECT UV", -79.2, -11.6, true);
+// ---------------------------------------------------------------- 16 CSG
+Station(16, "CSG", "constructive solid geometry: union, subtraction, intersection and a quick level blockout", -84, 14, false);
+func CSGShape(name, parent, shape, op, x, y, z, sizeOrRadius, height)
+{
+    var e = CreateEntity(name);
+    if (parent != null) { EntitySetParent(e, parent); }
+    EntitySetPosition(e, x, y, z);
+    EntityAddComponent(e, "CSGShape");
+    EntitySetComponentField(e, "CSGShape", "Shape", shape);
+    EntitySetComponentField(e, "CSGShape", "Operation", op);
+    if (shape == "Box") { EntitySetComponentField(e, "CSGShape", "Size", sizeOrRadius); }
+    else
+    {
+        EntitySetComponentField(e, "CSGShape", "Radius", sizeOrRadius);
+        EntitySetComponentField(e, "CSGShape", "Height", height);
+        EntitySetComponentField(e, "CSGShape", "Sides", 40);
+        EntitySetComponentField(e, "CSGShape", "SmoothFaces", true);
+    }
+    EntitySetComponentField(e, "CSGShape", "UseCollision", false);
+    return e;
+}
+func CSGExhibit(name, x, color)
+{
+    Box(name + " Plinth", x, 0.3, 14.2, 1.5, 0.4, 1.5, GRID_DARK);
+    var spin = CreateEntity(name + " Turntable");
+    EntitySetPosition(spin, x, 1.45, 14.2);
+    EntityAddComponent(spin, "Rotator");
+    EntitySetComponentField(spin, "Rotator", "RotationRate", {x: 0, y: 22, z: 0});
+    return spin;
+}
+var cu = CSGExhibit("CSG Union", -79.6, null);
+var cuRoot = CSGShape("CSG Union Shape", cu, "Box", "Union", 0, 0, 0, {x: 0.9, y: 0.9, z: 0.9}, 0);
+EntitySetPosition(cuRoot, 0, 0, 0);
+CSGShape("Union Sphere", cuRoot, "Sphere", "Union", 0, 0.38, 0, 0.42, 0);
+CSGShape("Union Cylinder", cuRoot, "Cylinder", "Union", 0, 0, 0, 0.2, 1.5);
+var cs = CSGExhibit("CSG Subtraction", -82.5, null);
+var csRoot = CSGShape("CSG Subtraction Shape", cs, "Box", "Union", 0, 0, 0, {x: 1.0, y: 1.0, z: 1.0}, 0);
+EntitySetPosition(csRoot, 0, 0, 0);
+CSGShape("Subtract Sphere", csRoot, "Sphere", "Subtraction", 0, 0, 0, 0.64, 0);
+var ci = CSGExhibit("CSG Intersection", -85.5, null);
+var ciRoot = CSGShape("CSG Intersection Shape", ci, "Box", "Union", 0, 0, 0, {x: 0.95, y: 0.95, z: 0.95}, 0);
+EntitySetPosition(ciRoot, 0, 0, 0);
+CSGShape("Intersect Sphere", ciRoot, "Sphere", "Intersection", 0, 0, 0, 0.64, 0);
+// Hızlı blokaj: duvar kutusundan kapı ve pencereler çıkarılır, dört kenarlı koni çatı eklenir
+var ch = CSGExhibit("CSG Blockout", -88.4, null);
+var chRoot = CSGShape("CSG House", ch, "Box", "Union", 0, 0, 0, {x: 1.5, y: 0.95, z: 1.2}, 0);
+EntitySetPosition(chRoot, 0, -0.1, 0);
+CSGShape("House Inside", chRoot, "Box", "Subtraction", 0, 0.05, 0, {x: 1.36, y: 0.9, z: 1.06}, 0);
+CSGShape("House Door", chRoot, "Box", "Subtraction", 0.25, -0.12, -0.6, {x: 0.3, y: 0.62, z: 0.3}, 0);
+CSGShape("House Window L", chRoot, "Box", "Subtraction", -0.4, 0.08, -0.6, {x: 0.3, y: 0.26, z: 0.3}, 0);
+CSGShape("House Window R", chRoot, "Box", "Subtraction", 0.75, 0.08, 0.0, {x: 0.3, y: 0.26, z: 0.4}, 0);
+var roof = CSGShape("House Roof", chRoot, "Cone", "Union", 0, 0.82, 0, 1.08, 0.7);
+EntitySetComponentField(roof, "CSGShape", "Sides", 4);
+EntitySetComponentField(roof, "CSGShape", "SmoothFaces", false);
+EntitySetRotation(roof, 0, 45, 0);
+var csgColors = [Col(0.3, 0.75, 1.0), Col(1.0, 0.55, 0.2), Col(0.4, 0.9, 0.5), Col(0.92, 0.9, 0.85)];
+var csgRoots = [cuRoot, csRoot, ciRoot, chRoot];
+for (var cc = 0; cc < 4; cc++)
+{
+    EntityAddComponent(csgRoots[cc], "MeshRenderer");
+    EntitySetColor(csgRoots[cc], csgColors[cc]);
+    EntitySetComponentField(csgRoots[cc], "MeshRenderer", "Texture", "");
+    EntitySetComponentField(csgRoots[cc], "MeshRenderer", "Roughness", 0.35);
+}
+FloorLabel("UNION", -79.6, 10.6, false);
+FloorLabel("SUBTRACTION", -82.5, 10.6, false);
+FloorLabel("INTERSECTION", -85.5, 10.6, false);
+FloorLabel("BLOCKOUT", -88.4, 10.6, false);
+// ---------------------------------------------------------------- 17 Tetikleyiciler + ışın
+Station(17, "TRIGGERS + RAYCASTS", "a raycast laser tripwire with an alarm, and a trigger volume counting the balls rolling through", -112, -14, true);
+// Lazer: verici +X yönünde Raycast yapar; aradaki kinematik blok ışını keser
+var emitter = Mesh("Laser Emitter", "Cube", -117.2, 1.1, -10.8, 0.3, 0.3, 0.3, "", Col(0.12, 0.12, 0.14));
+EntityAddComponent(emitter, "Rigidbody");
+EntitySetComponentField(emitter, "Rigidbody", "BodyType", "Static");
+EntityAddComponent(emitter, "BoxCollider");
+AddScript(emitter, "Assets/Scripts/LaserTripwire.cqs");
+Box("Laser Emitter Stand", -117.2, 0.3, -10.8, 0.1, 0.65, 0.1, GRID_DARK);
+var receiver = Mesh("Laser Receiver", "Cube", -106.8, 1.1, -10.8, 0.3, 0.3, 0.3, "", Col(0.12, 0.12, 0.14));
+EntityAddComponent(receiver, "Rigidbody");
+EntitySetComponentField(receiver, "Rigidbody", "BodyType", "Static");
+EntityAddComponent(receiver, "BoxCollider");
+Box("Laser Receiver Stand", -106.8, 0.3, -10.8, 0.1, 0.65, 0.1, GRID_DARK);
+var lamp = Mesh("Alarm Lamp", "Sphere", -106.8, 1.42, -10.8, 0.22, 0.22, 0.22, "", Col(0.1, 1.0, 0.3));
+EntitySetComponentField(lamp, "MeshRenderer", "EmissionColor", {r: 0.1, g: 1.0, b: 0.3});
+EntitySetComponentField(lamp, "MeshRenderer", "EmissionStrength", 6.0);
+EntitySetComponentField(lamp, "MeshRenderer", "CastShadows", false);
+EntityAddComponent(lamp, "PointLight");
+EntitySetComponentField(lamp, "PointLight", "Color", {r: 0.1, g: 1.0, b: 0.3});
+EntitySetComponentField(lamp, "PointLight", "Intensity", 2.0);
+EntitySetComponentField(lamp, "PointLight", "Range", 3.0);
+var beam = CreateEntity("Laser Beam");
+EntityAddComponent(beam, "LineRenderer");
+EntitySetComponentField(beam, "LineRenderer", "UseWorldSpace", true);
+EntitySetComponentField(beam, "LineRenderer", "StartWidth", 0.03);
+EntitySetComponentField(beam, "LineRenderer", "EndWidth", 0.03);
+EntitySetComponentField(beam, "LineRenderer", "StartColor", {r: 1, g: 0.1, b: 0.08, a: 1});
+EntitySetComponentField(beam, "LineRenderer", "EndColor", {r: 1, g: 0.1, b: 0.08, a: 1});
+EntitySetComponentField(beam, "LineRenderer", "Emissive", 6.0);
+var ldot = Mesh("Laser Dot", "Sphere", -112, 1.1, -10.8, 0.07, 0.07, 0.07, "", Col(1, 0.2, 0.1));
+EntitySetComponentField(ldot, "MeshRenderer", "EmissionColor", {r: 1, g: 0.15, b: 0.1});
+EntitySetComponentField(ldot, "MeshRenderer", "EmissionStrength", 12.0);
+EntitySetComponentField(ldot, "MeshRenderer", "CastShadows", false);
+var blocker = Mesh("Laser Blocker", "Cube", -112.0, 1.5, -10.8, 0.7, 0.7, 0.7, GRID_ORANGE, WHITE);
+EntitySetComponentField(blocker, "MeshRenderer", "AlignToObject", true);
+EntityAddComponent(blocker, "Rigidbody");
+EntitySetComponentField(blocker, "Rigidbody", "BodyType", "Kinematic");
+EntityAddComponent(blocker, "BoxCollider");
+AddScript(blocker, "Assets/Scripts/Oscillator.cqs");
+SetFields(blocker, {amplitude: 0.9, period: 4.0});
+FloorLabel("RAYCAST LASER", -114.6, -9.0, true);
+// Tetikleyici: toplar rampadan yuvarlanıp yarı saydam hacimden geçer; hacim içerideki topları sayar
+Ramp("Trigger Ramp", -114.4, 0.3, -15.6, 2.7, 1.3, 1.2, -90, GRID_DARK);   // -X yönünde yükselir: toplar +X'e (hacme) yuvarlanır
+var zone = Mesh("Trigger Volume", "Cube", -110.6, 1.0, -15.6, 1.8, 1.4, 1.6, "", {r: 0.25, g: 0.55, b: 1.0, a: 0.2});
+EntitySetComponentField(zone, "MeshRenderer", "Roughness", 0.1);
+EntitySetComponentField(zone, "MeshRenderer", "CastShadows", false);
+EntityAddComponent(zone, "BoxCollider");
+EntitySetComponentField(zone, "BoxCollider", "IsTrigger", true);
+AddScript(zone, "Assets/Scripts/TriggerZone.cqs");
+InfoText("Trigger Counter", "INSIDE 0   ENTERED 0", -110.6, 2.15, -15.6, true, 0.26, {r: 0.75, g: 0.95, b: 1.0, a: 1});
+Box("Trigger Stop", -107.2, 0.3, -15.6, 0.3, 0.4, 2.4, GRID_DARK);
+var ballCols = [Col(1, 0.35, 0.2), Col(0.3, 0.6, 1), Col(1, 0.85, 0.2), Col(0.4, 0.9, 0.45)];
+for (var tb = 0; tb < 4; tb++)
+{
+    var tball = DynBody("Trigger Ball " + tb, "Sphere", -116.75, 1.95 + tb * 0.42, -15.6, 0.36, 0.36, 0.36, ballCols[tb], 3);   // üst üste: rampanın tepesine sırayla düşer
+    EntitySetComponentField(tball, "MeshRenderer", "Roughness", 0.3);
+}
+var feeder = CreateEntity("Trigger Ball Feeder");
+AddScript(feeder, "Assets/Scripts/GroupReset.cqs");
+SetFields(feeder, {prefix: "Trigger Ball", interval: 7.0, stagger: 0.8, firstDelay: 0.3});
+FloorLabel("TRIGGER VOLUME", -110.6, -12.6, true);
+// ---------------------------------------------------------------- 18 Kuvvetler
+Station(18, "FORCES", "explosion force throws a crate pyramid; Constant Force balloons pull on Spring Joint strings", -112, 14, false);
+var blastCrates = 0;
+for (var br = 0; br < 4; br++)
+{
+    for (var bc = 0; bc < 4 - br; bc++)
+    {
+        var bx = -110.2 + (bc - (3 - br) / 2.0) * 0.62;
+        var bcr = DynBody("Blast Crate " + br + bc, "Cube", bx, 0.6 + br * 0.61, 15.0, 0.6, 0.6, 0.6, WHITE, 10);
+        EntitySetComponentField(bcr, "MeshRenderer", "Texture", GRID_ORANGE);
+        EntitySetComponentField(bcr, "MeshRenderer", "WorldAlignedUV", true);
+        EntitySetComponentField(bcr, "MeshRenderer", "AlignToObject", true);
+        EntitySetComponentField(bcr, "MeshRenderer", "Offset", {x: 0.5, y: 0.5});
+        blastCrates++;
+    }
+}
+var blast = CreateEntity("Blast Point");
+EntitySetPosition(blast, -110.2, 0.45, 14.3);
+AddScript(blast, "Assets/Scripts/ExplosionDemo.cqs");
+var bflash = CreateEntity("Blast Flash");
+EntitySetPosition(bflash, -110.2, 0.9, 14.1);
+EntityAddComponent(bflash, "PointLight");
+EntitySetComponentField(bflash, "PointLight", "Color", {r: 1.0, g: 0.6, b: 0.25});
+EntitySetComponentField(bflash, "PointLight", "Intensity", 0.0);
+EntitySetComponentField(bflash, "PointLight", "Range", 9.0);
+var bsparks = Particles("Blast Sparks", null, {RateOverTime: 0, StartLifetime: {x: 0.4, y: 1.0}, StartSpeed: {x: 4, y: 10}, StartSize: {x: 0.04, y: 0.1},
+    StartColorA: {r: 1, g: 0.8, b: 0.35, a: 1}, StartColorB: {r: 1, g: 0.45, b: 0.1, a: 1}, Shape: "Sphere", Radius: 0.2, GravityModifier: 1.2,
+    Blend: "Additive", EmissiveIntensity: 8, MaxParticles: 400});
+EntitySetPosition(bsparks, -110.2, 0.6, 14.3);
+var bsmoke = Particles("Blast Smoke", null, {RateOverTime: 0, StartLifetime: {x: 1.2, y: 2.4}, StartSpeed: {x: 0.6, y: 2.2}, StartSize: {x: 0.6, y: 1.2},
+    StartColorA: {r: 0.62, g: 0.6, b: 0.57, a: 0.35}, StartColorB: {r: 0.45, g: 0.44, b: 0.42, a: 0.25}, Shape: "Sphere", Radius: 0.4, GravityModifier: -0.05,
+    SizeOverLifetimeEnabled: true, SizeOverLifetimeKeys: "0:0.6; 1:2.2", MaxParticles: 200});
+EntitySetPosition(bsmoke, -110.2, 0.7, 14.3);
+FloorLabel("EXPLOSION FORCE", -110.2, 9.4, false);
+// Balonlar: Constant Force yukarı çeker, Spring Joint (en çok ip boyu) zemindeki ağırlığa bağlar
+Box("Balloon Weight", -115.4, 0.3, 14.6, 0.5, 0.3, 0.5, GRID_DARK);
+var bcols = [Col(0.95, 0.15, 0.2), Col(1.0, 0.8, 0.1), Col(0.2, 0.5, 1.0)];
+for (var bl = 0; bl < 3; bl++)
+{
+    var ax = -115.4 + (bl - 1) * 0.12;
+    var bxp = -115.4 + (bl - 1) * 0.75;
+    var byp = 2.1 + (bl % 2) * 0.25;
+    var balloon = Mesh("Balloon " + bl, "Sphere", bxp, byp, 14.6 + (bl == 1 ? 0.3 : 0.0), 0.62, 0.74, 0.62, "", bcols[bl]);
+    EntitySetComponentField(balloon, "MeshRenderer", "Roughness", 0.22);
+    EntityAddComponent(balloon, "Rigidbody");
+    EntitySetComponentField(balloon, "Rigidbody", "BodyType", "Dynamic");
+    EntitySetComponentField(balloon, "Rigidbody", "Mass", 0.25);
+    EntitySetComponentField(balloon, "Rigidbody", "LinearDrag", 1.2);
+    EntitySetComponentField(balloon, "Rigidbody", "AngularDrag", 2.0);
+    EntitySetComponentField(balloon, "Rigidbody", "AllowSleep", false);
+    EntityAddComponent(balloon, "SphereCollider");
+    EntityAddComponent(balloon, "ConstantForce");
+    EntitySetComponentField(balloon, "ConstantForce", "Force", {x: 0, y: 4.2, z: 0});
+    EntityAddComponent(balloon, "SpringJoint");
+    EntitySetComponentField(balloon, "SpringJoint", "Anchor", {x: 0, y: -1, z: 0});
+    EntitySetComponentField(balloon, "SpringJoint", "AutoConfigureConnectedAnchor", false);
+    EntitySetComponentField(balloon, "SpringJoint", "ConnectedAnchor", {x: ax, y: 0.6, z: 14.6});
+    EntitySetComponentField(balloon, "SpringJoint", "Spring", 60);
+    EntitySetComponentField(balloon, "SpringJoint", "Damper", 0.6);
+    EntitySetComponentField(balloon, "SpringJoint", "MaxDistance", 1.45 + (bl % 2) * 0.25);
+    var str = CreateEntity("Balloon String " + bl);
+    EntityAddComponent(str, "LineRenderer");
+    EntitySetComponentField(str, "LineRenderer", "UseWorldSpace", true);
+    EntitySetComponentField(str, "LineRenderer", "StartWidth", 0.012);
+    EntitySetComponentField(str, "LineRenderer", "EndWidth", 0.012);
+    EntitySetComponentField(str, "LineRenderer", "StartColor", {r: 0.92, g: 0.92, b: 0.92, a: 1});
+    EntitySetComponentField(str, "LineRenderer", "EndColor", {r: 0.92, g: 0.92, b: 0.92, a: 1});
+    AddScript(balloon, "Assets/Scripts/Balloon.cqs");
+    SetFields(balloon, {anchorX: ax, anchorY: 0.6, anchorZ: 14.6, radius: 0.34, phase: bl * 2.1, stringName: "Balloon String " + bl});
+}
+FloorLabel("CONSTANT FORCE + SPRING", -115.4, 9.4, false);
+// ---------------------------------------------------------------- 3D ses, Post Process Volume, Decal (orta koridor)
+var speaker = Mesh("Speaker (3D Audio)", "Cube", -14, 0.6, 0, 0.8, 1.2, 0.6, "", Col(0.1, 0.1, 0.12));
+EntityAddComponent(speaker, "AudioSource");
+EntitySetComponentField(speaker, "AudioSource", "Clip", "Assets/Audio/music_box_loop.wav");
+EntitySetComponentField(speaker, "AudioSource", "Loop", true);
+EntitySetComponentField(speaker, "AudioSource", "PlayOnAwake", true);
+EntitySetComponentField(speaker, "AudioSource", "Is3D", true);
+EntitySetComponentField(speaker, "AudioSource", "MinDistance", 2);
+EntitySetComponentField(speaker, "AudioSource", "MaxDistance", 18);
+EntitySetComponentField(speaker, "AudioSource", "Volume", 0.6);
+var ppv = CreateEntity("Post Process Volume");
+EntitySetPosition(ppv, 14, 2, 0);
+EntityAddComponent(ppv, "PostProcessVolume");
+EntitySetComponentField(ppv, "PostProcessVolume", "Shape", "Box");
+EntitySetComponentField(ppv, "PostProcessVolume", "Size", {x: 8, y: 6, z: 8});
+EntitySetComponentField(ppv, "PostProcessVolume", "BlendDistance", 2);
+EntitySetComponentField(ppv, "PostProcessVolume", "OverrideColorGrading", true);
+Box("Volume Marker", 14, 0, 0, 8, 0.05, 8, GRID_BLUE);
+for (var dc = 0; dc < 3; dc++)
+{
+    var dec = CreateEntity("Decal " + dc);
+    EntitySetPosition(dec, -2 + dc * 2.0, 0.4, 0);
+    EntityAddComponent(dec, "DecalProjector");
+    EntitySetComponentField(dec, "DecalProjector", "Texture", "Resources/Textures/texture_grid.png");
+    EntitySetComponentField(dec, "DecalProjector", "Size", {x: 1.6, y: 1.6, z: 1.0});
+    EntitySetComponentField(dec, "DecalProjector", "Color", [Col(1, 0.4, 0.3), Col(0.4, 1, 0.5), Col(0.4, 0.6, 1)][dc]);
+    EntitySetRotation(dec, -90, dc * 25, 0);
+}
+
+var cam = CreateEntity("Camera");
+EntitySetPosition(cam, -56, 3.6, -3);
+EntityAddComponent(cam, "Camera");
+EntitySetComponentField(cam, "Camera", "Primary", true);
+EntitySetComponentField(cam, "Camera", "FieldOfView", 70);
+EntitySetComponentField(cam, "Camera", "FarClip", 1000);
+EntityAddComponent(cam, "AudioListener");
+AddScript(cam, "Assets/Scripts/FreeFlyCamera.cqs");
+EntitySetRotation(cam, -10, 0, 0);
+
+var hud = UICreateCanvas("HUD");
+EntitySetComponentField(hud, "CanvasScaler", "ReferenceResolution", {x: 1920, y: 1080});
+EntitySetComponentField(hud, "CanvasScaler", "MatchWidthOrHeight", 0.5);
+HudText("HintText", hud, "RMB LOOK     WASD FLY     Q / E DOWN - UP     SHIFT FAST     WHEEL SPEED     1-9, 0 STATION     TAB NEXT STATION", 0, 26, 1800, 30, 22, "Center", 0.5, 0);

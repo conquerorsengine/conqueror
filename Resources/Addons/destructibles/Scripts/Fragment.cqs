@@ -1,0 +1,34 @@
+using nativebridge;
+
+// Parça: lifetime dolunca son 0.5 saniyede küçülerek silinir.
+script Fragment : ConquerorScript
+{
+    public float lifetime = 4.0;
+    public float launchX = 0.0;
+    public float launchY = 0.0;
+    public float launchZ = 0.0;
+
+    private float age = 0.0;
+    private var baseScale = null;
+    private bool launched = false;
+
+    func Update(dt)
+    {
+        // Fizik gövdesi birkaç kare içinde kurulur: hız tutana kadar (en fazla ~10 kare) yeniden uygula
+        if (!launched && (launchX != 0 || launchY != 0 || launchZ != 0))
+        {
+            SetLinearVelocity(launchX, launchY, launchZ);
+            var v = GetLinearVelocity();
+            launched = (v != null && (v.x * v.x + v.y * v.y + v.z * v.z) > 0.01) || age > 0.2;
+        }
+        age += dt;
+        if (baseScale == null) { baseScale = GetScale(); }
+        var left = lifetime - age;
+        if (left <= 0) { EntityDestroy(GetEntityId()); return; }
+        if (left < 0.5)
+        {
+            var k = MathMax(0.01, left / 0.5);
+            SetScale(baseScale.x * k, baseScale.y * k, baseScale.z * k);
+        }
+    }
+}

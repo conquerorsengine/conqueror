@@ -1,0 +1,57 @@
+using nativebridge;
+
+// Tetikleyici bölge: içindeki Health sahiplerine her "tickInterval" saniyede hasar (negatif değer iyileştirir).
+// requiredTag boş değilse yalnızca o etikete sahip nesneler etkilenir.
+script DamageZone : ConquerorScript
+{
+    public float amountPerTick = 10.0;
+    public float tickInterval = 0.5;
+    public bool damageOnEnter = true;
+    public string requiredTag = "";
+
+    // Çalışma zamanı bilgisi
+    public int occupants = 0;
+    public int ticks = 0;
+
+    private var inside = [];
+    private var timers = [];
+
+    func OnTriggerEnter(other, name)
+    {
+        if (requiredTag != "" && EntityGetTag(other) != requiredTag) { return; }
+        if (!HasScript(other, "Health") || ListContains(inside, other)) { return; }
+        inside.Add(other);
+        timers.Add(damageOnEnter ? 0.0 : tickInterval);
+        occupants = inside.Count;
+    }
+
+    func OnTriggerExit(other, name)
+    {
+        var i = ListIndexOf(inside, other);
+        if (i < 0) { return; }
+        ListRemoveAt(inside, i);
+        ListRemoveAt(timers, i);
+        occupants = inside.Count;
+    }
+
+    func Update(dt)
+    {
+        for (var i = inside.Count - 1; i >= 0; i--)
+        {
+            var e = inside[i];
+            if (!EntityIsValid(e))
+            {
+                ListRemoveAt(inside, i);
+                ListRemoveAt(timers, i);
+                continue;
+            }
+            timers[i] = timers[i] - dt;
+            if (timers[i] > 0) { continue; }
+            timers[i] = tickInterval;
+            ticks++;
+            if (amountPerTick >= 0) { SendMessage(e, "Damage", amountPerTick, GetEntityName()); }
+            else { SendMessage(e, "Heal", -amountPerTick); }
+        }
+        occupants = inside.Count;
+    }
+}

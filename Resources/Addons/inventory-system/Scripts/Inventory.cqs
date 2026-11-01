@@ -1,0 +1,113 @@
+using nativebridge;
+
+// Yuvalı envanter. Eşyalar kimlik (metin) ve adetle tutulur; aynı eşya "maxStack" kadar bir yuvada birikir.
+// Başka betikler: InvokeMethod(oyuncu, "AddItem", "Crystal", 3) -> sığmayan adet, "RemoveItem", "CountOf", "HasItem"
+script Inventory : ConquerorScript
+{
+    public int slots = 20;
+    public int maxStack = 99;
+    public string saveKey = "";
+    public bool autoLoad = false;
+
+    // Çalışma zamanı bilgisi
+    public int usedSlots = 0;
+    public int totalItems = 0;
+    public string itemsText = "";
+
+    private var items = [];   // her yuva: {id, count}
+
+    func Start()
+    {
+        if (autoLoad && saveKey != "") { Load(); }
+        Refresh();
+    }
+
+    // Eklenemeyen (sığmayan) adedi döndürür
+    func AddItem(id, count = 1)
+    {
+        var left = count;
+        for (var s in items)
+        {
+            if (left <= 0) { break; }
+            if (s.id == id && s.count < maxStack)
+            {
+                var put = int(MathMin(left, maxStack - s.count));
+                s.count = s.count + put;
+                left -= put;
+            }
+        }
+        while (left > 0 && items.Count < slots)
+        {
+            var put2 = int(MathMin(left, maxStack));
+            items.Add({id: id, count: put2});
+            left -= put2;
+        }
+        Refresh();
+        if (left < count) { SendMessage(GetEntityId(), "OnItemAdded", id, count - left); }
+        return left;
+    }
+
+    func RemoveItem(id, count = 1)
+    {
+        if (CountOf(id) < count) { return false; }
+        var left = count;
+        for (var i = items.Count - 1; i >= 0 && left > 0; i--)
+        {
+            var s = items[i];
+            if (s.id != id) { continue; }
+            var take = int(MathMin(left, s.count));
+            s.count = s.count - take;
+            left -= take;
+            if (s.count <= 0) { ListRemoveAt(items, i); }
+        }
+        Refresh();
+        SendMessage(GetEntityId(), "OnItemRemoved", id, count);
+        return true;
+    }
+
+    func CountOf(id)
+    {
+        var n = 0;
+        for (var s in items) { if (s.id == id) { n += s.count; } }
+        return n;
+    }
+
+    func HasItem(id, count = 1) { return CountOf(id) >= count; }
+    func Clear() { items = []; Refresh(); }
+    func GetItems() { return items; }
+
+    func Save()
+    {
+        if (saveKey == "") { return false; }
+        PrefsSetString(saveKey, JSONStringify(items));
+        PrefsSave();
+        return true;
+    }
+
+    func Load()
+    {
+        if (saveKey == "" || !PrefsHasKey(saveKey)) { return false; }
+        var data = JSONParse(PrefsGetString(saveKey, "[]"));
+        items = [];
+        if (data != null) { for (var s in data) { items.Add({id: s.id, count: int(s.count)}); } }
+        Refresh();
+        return true;
+    }
+
+    func Refresh()
+    {
+        usedSlots = items.Count;
+        totalItems = 0;
+        var text = "";
+        // Aynı eşyanın yuvalarını birleştirerek listele
+        var seen = [];
+        for (var s in items)
+        {
+            totalItems += s.count;
+            if (ListContains(seen, s.id)) { continue; }
+            seen.Add(s.id);
+            text = text + (text == "" ? "" : ", ") + s.id + " x" + str(CountOf(s.id));
+        }
+        itemsText = text;
+    }
+}
