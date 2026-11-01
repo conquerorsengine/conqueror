@@ -51,7 +51,9 @@ jobs:
       - name: Configure
         run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
       - name: Build
-        run: cmake --build build --config Release --parallel
+        # Yalnız hatalar ve özet (binlerce üçüncü taraf uyarısı asıl hatayı gömüyordu); her proje /MP ile zaten tüm
+        # çekirdekleri kullanır, aynı anda en çok 2 proje (bellek tükenip cl.exe sessizce düşmesin)
+        run: cmake --build build --config Release --parallel 2 -- '/clp:ErrorsOnly;Summary' /v:minimal
 
   macos:
     name: macOS (Apple Silicon)

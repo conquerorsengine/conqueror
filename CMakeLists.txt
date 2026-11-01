@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
 project(ConquerorEngine VERSION 1.0.0 LANGUAGES C CXX)
+# macOS: Metal arka ucu Objective-C++ (.mm). Dil en üst düzeyde açılmalı: yalnız Engine/ içinde açılınca Ninja
+# üreticisi "CMAKE_OBJCXX_COMPILE_OBJECT not set" hatasıyla duruyordu (CI macOS işi)
+if(APPLE)
+    enable_language(OBJC OBJCXX)
+endif()
 # Windows: çalıştırılabilir simgesi (Resources/Logo/AppIcon/Conqueror.rc) için kaynak derleyici (MSVC rc / MinGW windres)
 if(WIN32)
     enable_language(RC)

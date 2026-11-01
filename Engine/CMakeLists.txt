@@ -294,6 +294,16 @@ else()
         # BSD: GL işlevleri glad'dan; glfw3.h sistemde olmayabilecek GL/gl.h başlığını aramasın
         target_compile_definitions(${PROJECT_NAME} PUBLIC GLFW_INCLUDE_NONE)
     endif()
+    # ImGui GLFW arka ucu X11 başlıklarını (X11/Xatom.h) kullanır; BSD'lerde paketler /usr/local/include altındadır ve
+    # derleyici orada kendiliğinden aramaz (CI FreeBSD işi bu yüzden düşüyordu)
+    if(NOT (DEFINED GLFW_BUILD_X11 AND NOT GLFW_BUILD_X11))
+        find_package(X11 QUIET)
+        if(X11_FOUND AND X11_INCLUDE_DIR)
+            target_include_directories(${PROJECT_NAME} PRIVATE ${X11_INCLUDE_DIR})
+        elseif(CMAKE_SYSTEM_NAME MATCHES "BSD|DragonFly")
+            target_include_directories(${PROJECT_NAME} PRIVATE /usr/local/include)
+        endif()
+    endif()
     # dlopen: Linux'ta libdl, BSD'lerde libc içinde (CMAKE_DL_LIBS boş); std::thread için pthread
     find_package(Threads REQUIRED)
     target_link_libraries(${PROJECT_NAME} PUBLIC ${CMAKE_DL_LIBS} Threads::Threads)
