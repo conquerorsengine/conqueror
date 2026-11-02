@@ -17,7 +17,10 @@ namespace Conqueror
     namespace PhysicsMaterials
     {
         constexpr const char* Extension = ".cqphysmat";
+        // Physics Material 2D (Unity PhysicsMaterial2D): aynı alanlar, 2D çarpıştırıcılar ve Rigidbody 2D için
+        constexpr const char* Extension2D = ".cqphysmat2d";
         CQ_API bool IsFile(const std::string& path);
+        CQ_API bool IsFile2D(const std::string& path);
         // Önbellekli; dosya değişince yeniden okunur. Bulunamazsa false
         CQ_API bool Load(const std::string& path, PhysicsMaterialAsset& out);
         CQ_API bool Save(const PhysicsMaterialAsset& material, const std::string& path);

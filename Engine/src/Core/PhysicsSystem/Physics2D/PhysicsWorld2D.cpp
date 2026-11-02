@@ -1,3 +1,4 @@
+#include "Core/PhysicsSystem/PhysicsMaterial.h"
 #include "PhysicsWorld2D.h"
 #include "Core/Logging/Log.h"
 #include "Core/PhysicsSystem/PhysicsSettings.h"
@@ -376,7 +377,24 @@ namespace Conqueror
         const int layer = LayerOf(e);
         bool any = false;
 
-        auto baseDef = [&](float density, float friction, float restitution, bool trigger) {
+        // Physics Material 2D: çarpıştırıcının kendi malzemesi, yoksa gövdenin (Rigidbody 2D) malzemesi
+        auto applyMaterial = [&](const std::string& own, float& friction, float& restitution) {
+            std::string path = own;
+            if (path.empty())
+            {
+                Entity ow{ (entt::entity)owner, m_Scene };
+                if (ow.HasComponent<RigidBody2DComponent>())
+                    path = ow.GetComponent<RigidBody2DComponent>().PhysicsMaterial;
+            }
+            PhysicsMaterialAsset m;
+            if (!path.empty() && PhysicsMaterials::Load(path, m))
+            {
+                friction = m.Friction;
+                restitution = m.Bounciness;
+            }
+        };
+        auto baseDef = [&](float density, float friction, float restitution, bool trigger, const std::string& material) {
+            applyMaterial(material, friction, restitution);
             b2ShapeDef d = b2DefaultShapeDef();
             d.density = density;
             d.material.friction = friction;
@@ -482,7 +500,7 @@ namespace Conqueror
             comp.ShapeCount = 0;
             if (boxes)
             {
-                b2ShapeDef d = baseDef(comp.Density, comp.Friction, comp.Restitution, comp.IsTrigger);
+                b2ShapeDef d = baseDef(comp.Density, comp.Friction, comp.Restitution, comp.IsTrigger, comp.PhysicsMaterial);
                 for (const glm::vec4& r : merged.Boxes)
                 {
                     glm::vec2 half = glm::max((glm::vec2(r.z, r.w) - glm::vec2(r.x, r.y)) * 0.5f, glm::vec2(0.0005f));
@@ -497,6 +515,7 @@ namespace Conqueror
                 b2SurfaceMaterial material = b2DefaultSurfaceMaterial();
                 material.friction = comp.Friction;
                 material.restitution = comp.Restitution;
+                applyMaterial(comp.PhysicsMaterial, material.friction, material.restitution);
                 for (auto& loop : merged.Loops)
                 {
                     std::vector<b2Vec2> pts;
@@ -536,7 +555,7 @@ namespace Conqueror
         if (e.HasComponent<BoxCollider2DComponent>())
         {
             auto& bc = e.GetComponent<BoxCollider2DComponent>();
-            b2ShapeDef d = baseDef(bc.Density, bc.Friction, bc.Restitution, bc.IsTrigger);
+            b2ShapeDef d = baseDef(bc.Density, bc.Friction, bc.Restitution, bc.IsTrigger, bc.PhysicsMaterial);
             glm::vec2 half = glm::max(glm::abs(bc.Size * s) * 0.5f, glm::vec2(0.001f));
             b2Polygon box = bc.EdgeRadius > 0.0f ? b2MakeOffsetRoundedBox(half.x, half.y, B(xf(bc.Offset)), b2MakeRot(phi), bc.EdgeRadius)
                                                  : b2MakeOffsetBox(half.x, half.y, B(xf(bc.Offset)), b2MakeRot(phi));
@@ -545,14 +564,14 @@ namespace Conqueror
         if (e.HasComponent<CircleCollider2DComponent>())
         {
             auto& cc = e.GetComponent<CircleCollider2DComponent>();
-            b2ShapeDef d = baseDef(cc.Density, cc.Friction, cc.Restitution, cc.IsTrigger);
+            b2ShapeDef d = baseDef(cc.Density, cc.Friction, cc.Restitution, cc.IsTrigger, cc.PhysicsMaterial);
             b2Circle circle{ B(xf(cc.Offset)), std::max(0.001f, std::fabs(cc.Radius) * std::max(s.x, s.y)) };
             registerShape(b2CreateCircleShape(body, &d, &circle), d);
         }
         if (e.HasComponent<CapsuleCollider2DComponent>())
         {
             auto& cc = e.GetComponent<CapsuleCollider2DComponent>();
-            b2ShapeDef d = baseDef(cc.Density, cc.Friction, cc.Restitution, cc.IsTrigger);
+            b2ShapeDef d = baseDef(cc.Density, cc.Friction, cc.Restitution, cc.IsTrigger, cc.PhysicsMaterial);
             glm::vec2 size = glm::abs(cc.Size * s);
             bool vertical = cc.Direction == 0;
             float radius = std::max(0.001f, (vertical ? size.x : size.y) * 0.5f);
@@ -592,7 +611,7 @@ namespace Conqueror
                 b2Hull hull = b2ComputeHull(bp.data(), (int)bp.size());
                 if (hull.count >= 3)
                 {
-                    b2ShapeDef d = baseDef(pc.Density, pc.Friction, pc.Restitution, pc.IsTrigger);
+                    b2ShapeDef d = baseDef(pc.Density, pc.Friction, pc.Restitution, pc.IsTrigger, pc.PhysicsMaterial);
                     b2Polygon poly = b2MakePolygon(&hull, 0.0f);
                     registerShape(b2CreatePolygonShape(body, &d, &poly), d);
                 }
@@ -601,7 +620,7 @@ namespace Conqueror
         if (e.HasComponent<EdgeCollider2DComponent>())
         {
             auto& ec = e.GetComponent<EdgeCollider2DComponent>();
-            b2ShapeDef d = baseDef(0.0f, ec.Friction, ec.Restitution, false);
+            b2ShapeDef d = baseDef(0.0f, ec.Friction, ec.Restitution, false, ec.PhysicsMaterial);
             const size_t n = ec.Points.size();
             for (size_t i = 0; i + 1 < n + (ec.Loop && n > 2 ? 1 : 0); ++i)
             {
@@ -639,7 +658,7 @@ namespace Conqueror
                 b2Hull hull = b2ComputeHull(bp.data(), (int)bp.size());
                 if (hull.count < 3)
                     continue;
-                b2ShapeDef d = baseDef(0.0f, tc.Friction, tc.Restitution, tc.IsTrigger);
+                b2ShapeDef d = baseDef(0.0f, tc.Friction, tc.Restitution, tc.IsTrigger, tc.PhysicsMaterial);
                 b2Polygon poly = b2MakePolygon(&hull, 0.0f);
                 registerShape(b2CreatePolygonShape(body, &d, &poly), d);
             }
@@ -681,6 +700,21 @@ namespace Conqueror
             if (e.HasComponent<PolygonCollider2DComponent>()) { auto& c = e.GetComponent<PolygonCollider2DComponent>(); for (auto& pt : c.Points) HashV(h, pt); HashV(h, c.Offset); HashF(h, c.Density); HashCombine(h, c.IsTrigger + 19); any = true; }
             if (e.HasComponent<EdgeCollider2DComponent>()) { auto& c = e.GetComponent<EdgeCollider2DComponent>(); for (auto& pt : c.Points) HashV(h, pt); HashV(h, c.Offset); HashF(h, c.EdgeRadius); HashCombine(h, c.Loop + 23); any = true; }
             if (e.HasComponent<SurfaceEffector2DComponent>()) HashF(h, e.GetComponent<SurfaceEffector2DComponent>().Speed);
+            // Physics Material 2D (dosya değişince de yeniden kurulur)
+            auto hashMat = [&](const std::string& path) {
+                if (path.empty()) return;
+                HashCombine(h, std::hash<std::string>{}(path));
+                PhysicsMaterialAsset m;
+                if (PhysicsMaterials::Load(path, m)) { HashF(h, m.Friction); HashF(h, m.Bounciness); }
+            };
+            if (e.HasComponent<BoxCollider2DComponent>()) hashMat(e.GetComponent<BoxCollider2DComponent>().PhysicsMaterial);
+            if (e.HasComponent<CircleCollider2DComponent>()) hashMat(e.GetComponent<CircleCollider2DComponent>().PhysicsMaterial);
+            if (e.HasComponent<CapsuleCollider2DComponent>()) hashMat(e.GetComponent<CapsuleCollider2DComponent>().PhysicsMaterial);
+            if (e.HasComponent<PolygonCollider2DComponent>()) hashMat(e.GetComponent<PolygonCollider2DComponent>().PhysicsMaterial);
+            if (e.HasComponent<EdgeCollider2DComponent>()) hashMat(e.GetComponent<EdgeCollider2DComponent>().PhysicsMaterial);
+            if (e.HasComponent<CompositeCollider2DComponent>()) hashMat(e.GetComponent<CompositeCollider2DComponent>().PhysicsMaterial);
+            if (e.HasComponent<TilemapCollider2DComponent>()) hashMat(e.GetComponent<TilemapCollider2DComponent>().PhysicsMaterial);
+            if (root && e.HasComponent<RigidBody2DComponent>()) hashMat(e.GetComponent<RigidBody2DComponent>().PhysicsMaterial);
             if (e.HasComponent<CompositeCollider2DComponent>())
             {
                 auto& cc = e.GetComponent<CompositeCollider2DComponent>();

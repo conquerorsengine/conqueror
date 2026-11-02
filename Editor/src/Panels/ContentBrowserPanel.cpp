@@ -1,3 +1,8 @@
+#include "Renderer/SpriteAtlas.h"
+#include "Grid/GridSystem.h"
+#include "Renderer/SpriteSheet.h"
+#include "Renderer/RHI/TextureSettings.h"
+#include "Assets/SceneTemplate.h"
 #include "Renderer/RenderTargetRegistry.h"
 #include "Core/PhysicsSystem/PhysicsMaterial.h"
 #include "Timeline/Timeline.h"
@@ -6,6 +11,7 @@
 #include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
 #include "Renderer/Utilities/Renderer3D/Material.h"
 #include "ContentBrowserPanel.h"
+#include "Assets/SceneTemplate.h"
 #include "EditorState.h"
 #include <sstream>
 #include "Scripting/ScriptRuntime.h"
@@ -26,6 +32,7 @@
 #include <nfd.h>
 
 #include <algorithm>
+#include <unordered_map>
 #include <cctype>
 #include <cstdlib>
 #include <fstream>
@@ -68,8 +75,11 @@ namespace Conqueror::Editor
 
         bool IsHidden(const fs::path& p)
         {
-            // İçe aktarma ayarları (.meta) yan dosyaları gizli (Unity gibi)
-            if (p.extension() == ".meta")
+            // İçe aktarma ayarları (.meta) ve sprite dilimleri (.cqsprite) yan dosyaları gizli (Unity gibi)
+            if (p.extension() == ".meta" || p.extension() == ".cqsprite")
+                return true;
+            // Sprite Atlas paketi ("<atlas>.cqspriteatlas.png"): varlığın parçası
+            if (p.filename().string().find(".cqspriteatlas.") != std::string::npos)
                 return true;
             std::string name = p.filename().string();
             return name.empty() || name[0] == '.';
@@ -77,6 +87,21 @@ namespace Conqueror::Editor
     }
 
     // ------------------------------------------------------------------ Varlık türleri
+
+    namespace
+    {
+        // Her karede dosya okumamak için (değişim zamanıyla önbellekli)
+        bool IsPrefabVariantCached(const fs::path& path)
+        {
+            static std::unordered_map<std::string, std::pair<fs::file_time_type, bool>> cache;
+            std::error_code ec;
+            const auto t = fs::last_write_time(path, ec);
+            auto& entry = cache[path.string()];
+            if (entry.first != t || ec)
+                entry = { t, PrefabSerializer::IsVariant(path) };
+            return entry.second;
+        }
+    }
 
     ContentBrowserPanel::AssetTypeInfo ContentBrowserPanel::GetAssetTypeInfo(const fs::path& path, bool isDirectory)
     {
@@ -86,10 +111,17 @@ namespace Conqueror::Editor
         const std::string ext = ToLower(path.extension().string());
         if (ext == ".cqmat") return { ICON_FA_CIRCLE_HALF_STROKE, IM_COL32(235, 120, 190, 255), "Material" };
         if (ext == ".cqphysmat") return { ICON_FA_BASKETBALL, IM_COL32(120, 200, 120, 255), "Physics Material" };
+        if (ext == ".cqspriteatlas") return { ICON_FA_OBJECT_GROUP, IM_COL32(120, 200, 255, 255), "Sprite Atlas" };
+        if (ext == ".cqtile") return { ICON_FA_SQUARE, IM_COL32(120, 210, 170, 255), "Tile" };
+        if (ext == ".cqpalette") return { ICON_FA_SWATCHBOOK, IM_COL32(120, 210, 170, 255), "Tile Palette" };
+        if (ext == ".cqphysmat2d") return { ICON_FA_BASKETBALL, IM_COL32(120, 220, 200, 255), "Physics Material 2D" };
         if (ext == ".cqrt") return { ICON_FA_TV, IM_COL32(110, 190, 240, 255), "Render Texture" };
         if (ext == ".cqtimeline") return { ICON_FA_FILM, IM_COL32(240, 190, 90, 255), "Timeline" };
         if (ext == ".cqscene") return { ICON_FA_CLAPPERBOARD, IM_COL32(90, 170, 255, 255), "Scene" };
-        if (ext == ".cqprefab") return { ICON_FA_CUBES_STACKED, IM_COL32(110, 175, 255, 255), "Prefab" };
+        if (ext == ".cqscenetemplate") return { ICON_FA_CLAPPERBOARD, IM_COL32(150, 200, 255, 255), "Scene Template" };
+        if (ext == ".cqprefab")
+            return IsPrefabVariantCached(path) ? AssetTypeInfo{ ICON_FA_CUBES_STACKED, IM_COL32(170, 140, 255, 255), "Prefab Variant" }
+                                                     : AssetTypeInfo{ ICON_FA_CUBES_STACKED, IM_COL32(110, 175, 255, 255), "Prefab" };
         if (ext == ".cqgraph") return { ICON_FA_DIAGRAM_PROJECT, IM_COL32(120, 220, 200, 255), "Visual Script" };
         if (ext == ".cqcont") return { ICON_FA_PERSON_RUNNING, IM_COL32(255, 120, 160, 255), "Animator Controller" };
         if (ext == ".cqmontage") return { ICON_FA_PERSON_RUNNING, IM_COL32(255, 160, 110, 255), "Anim Montage" };
@@ -915,6 +947,21 @@ namespace Conqueror::Editor
             fs::path created = CreateAsset("materialvariant");
             if (!created.empty()) { m_Dirty = true; m_SelectedPath = created; EditorState::Get().SelectAsset(created.string()); BeginRename(created); }
         }
+        if (!entry.IsDirectory && entry.Extension == PrefabSerializer::Extension && ImGui::MenuItem(ICON_FA_CUBES_STACKED "  Create Prefab Variant"))
+        {
+            fs::path created = CreateAsset("prefabvariant");
+            if (!created.empty()) { m_Dirty = true; m_SelectedPath = created; EditorState::Get().SelectAsset(created.string()); BeginRename(created); }
+        }
+        if (!entry.IsDirectory && entry.Extension == ".cqscene" && ImGui::MenuItem(ICON_FA_CLAPPERBOARD "  Create Scene Template From Scene"))
+        {
+            fs::path created = CreateAsset("scenetemplate");
+            if (!created.empty()) { m_Dirty = true; m_SelectedPath = created; EditorState::Get().SelectAsset(created.string()); BeginRename(created); }
+        }
+        if (!entry.IsDirectory && IsImage(entry.Extension) && ImGui::MenuItem(ICON_FA_SQUARE "  Create Tile"))
+        {
+            fs::path created = CreateAsset("tile");
+            if (!created.empty()) { m_Dirty = true; m_SelectedPath = created; EditorState::Get().SelectAsset(created.string()); BeginRename(created); }
+        }
         if (!entry.IsDirectory && IsImage(entry.Extension) && ImGui::MenuItem(ICON_FA_CIRCLE_HALF_STROKE "  Create Material"))
         {
             // Unreal: dokuya sağ tık > Create Material (doku taban haritası olur)
@@ -980,7 +1027,61 @@ namespace Conqueror::Editor
         if (ImGui::MenuItem(ICON_FA_FOLDER "  Folder")) created = CreateAsset("folder");
         ImGui::Separator();
         if (ImGui::MenuItem(ICON_FA_CLAPPERBOARD "  Scene")) created = CreateAsset("scene");
+        if (ImGui::MenuItem(ICON_FA_CLAPPERBOARD "  Scene Template")) created = CreateAsset("scenetemplate");
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+            ImGui::SetTooltip("A starting point for new scenes: File > New Scene lists it next to the built-in templates.\n"
+                              "With a scene selected, the template uses that scene.");
         if (ImGui::MenuItem(ICON_FA_CUBES_STACKED "  Prefab")) created = CreateAsset("prefab");
+        {
+            const bool canVariant = m_SelectedPath.extension() == PrefabSerializer::Extension;
+            if (ImGui::MenuItem(ICON_FA_CUBES_STACKED "  Prefab Variant", nullptr, false, canVariant))
+                created = CreateAsset("prefabvariant");
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled | ImGuiHoveredFlags_DelayShort))
+                ImGui::SetTooltip(canVariant ? "A prefab based on the selected prefab: it stores only what you change, everything else follows the base."
+                                             : "Select a prefab first: the variant is based on it.");
+        }
+        ImGui::Separator();
+        if (ImGui::BeginMenu(ICON_FA_SHAPES "  2D"))
+        {
+            if (ImGui::BeginMenu("Sprites"))
+            {
+                // Unity Create > 2D > Sprites: yumuşak kenarlı hazır şekiller (Sprite türünde içe aktarılır)
+                static const char* shapes[][2] = { { "Triangle", "Triangle" }, { "Square", "Square" }, { "Circle", "Circle" },
+                                                   { "Capsule", "Capsule" }, { "Isometric Diamond", "IsometricDiamond" },
+                                                   { "Hexagon Flat-Top", "HexagonFlat" }, { "Hexagon Pointed-Top", "HexagonPoint" },
+                                                   { "9-Sliced", "NineSliced" } };
+                for (const auto& sh : shapes)
+                    if (ImGui::MenuItem(sh[0]))
+                        created = CreateAsset(std::string("sprite:") + sh[1] + "|" + sh[0]);
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Tile Palette"))
+            {
+                // Unity Create > 2D > Tile Palette: ızgara düzeniyle boş palet
+                if (ImGui::MenuItem("Rectangular")) created = CreateAsset("tilepalette:0");
+                if (ImGui::MenuItem("Hexagonal Pointed-Top")) created = CreateAsset("tilepalette:1");
+                if (ImGui::MenuItem("Hexagonal Flat-Top")) created = CreateAsset("tilepalette:2");
+                if (ImGui::MenuItem("Isometric")) created = CreateAsset("tilepalette:3");
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Tiles"))
+            {
+                if (ImGui::MenuItem("Tile")) created = CreateAsset("tile");
+                if (ImGui::MenuItem("Rule Tile")) created = CreateAsset("ruletile");
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+                    ImGui::SetTooltip("Picks its sprite from rules about which neighbours are the same tile (paths, walls, platforms).");
+                if (ImGui::MenuItem("Animated Tile")) created = CreateAsset("animatedtile");
+                ImGui::EndMenu();
+            }
+            if (ImGui::MenuItem(ICON_FA_OBJECT_GROUP "  Sprite Atlas")) created = CreateAsset("spriteatlas");
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+                ImGui::SetTooltip("Packs sprites (or whole folders) into one texture so they draw with fewer texture switches.\n"
+                                  "With images selected, they are added to the atlas.");
+            if (ImGui::MenuItem(ICON_FA_BASKETBALL "  Physics Material 2D")) created = CreateAsset("physicsmaterial2d");
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+                ImGui::SetTooltip("Friction and bounciness for 2D colliders and Rigidbody 2D (Material slot).");
+            ImGui::EndMenu();
+        }
         ImGui::Separator();
         // Görünüm (Unity Create > Material / Shader Graph / Render Texture, Unreal Material / Material Instance)
         if (ImGui::MenuItem(ICON_FA_CIRCLE_HALF_STROKE "  Material")) created = CreateAsset("material");
@@ -1166,7 +1267,7 @@ namespace Conqueror::Editor
         const std::string newRel = fs::relative(target, projectDir, ec).generic_string();
         if (oldRel.empty() || newRel.empty() || oldRel.rfind("..", 0) == 0)
             return;
-        static const char* exts[] = { ".cqscene", ".cqprefab", ".cqmat", ".cqtimeline", ".cqcont" };
+        static const char* exts[] = { ".cqscene", ".cqprefab", ".cqmat", ".cqtimeline", ".cqcont", ".cqscenetemplate", ".cqtile", ".cqpalette", ".cqspriteatlas" };
         int files = 0;
         for (fs::recursive_directory_iterator it(Project::GetAssetDirectory(), fs::directory_options::skip_permission_denied, ec), end;
              it != end; it.increment(ec))
@@ -1246,6 +1347,15 @@ namespace Conqueror::Editor
         // İçe aktarma ayarları dosyayla birlikte taşınır
         if (fs::exists(source.string() + ".meta", ec))
             fs::rename(source.string() + ".meta", target.string() + ".meta", ec);
+        if (fs::exists(source.string() + ".cqsprite", ec))
+            fs::rename(source.string() + ".cqsprite", target.string() + ".cqsprite", ec);
+        // Sprite Atlas paketi ve içe aktarma ayarı
+        if (fs::exists(source.string() + ".png", ec) && source.extension() == SpriteAtlases::Extension)
+        {
+            fs::rename(source.string() + ".png", target.string() + ".png", ec);
+            fs::rename(source.string() + ".png.meta", target.string() + ".png.meta", ec);
+            SpriteAtlases::Invalidate();
+        }
         if (m_SelectedPath == source)
             m_SelectedPath = target;
         FixAssetReferences(source, target);
@@ -1298,6 +1408,15 @@ namespace Conqueror::Editor
         CQ_CORE_INFO("Renamed: {0} -> {1}", source.filename().string(), target.filename().string());
         if (fs::exists(source.string() + ".meta", ec))
             fs::rename(source.string() + ".meta", target.string() + ".meta", ec);
+        if (fs::exists(source.string() + ".cqsprite", ec))
+            fs::rename(source.string() + ".cqsprite", target.string() + ".cqsprite", ec);
+        // Sprite Atlas paketi ve içe aktarma ayarı
+        if (fs::exists(source.string() + ".png", ec) && source.extension() == SpriteAtlases::Extension)
+        {
+            fs::rename(source.string() + ".png", target.string() + ".png", ec);
+            fs::rename(source.string() + ".png.meta", target.string() + ".png.meta", ec);
+            SpriteAtlases::Invalidate();
+        }
         // Yeni oluşturulmuş betik yeniden adlandırıldıysa içindeki sınıf adını da güncelle (C#/Java'da zorunlu)
         if (source == m_NewScriptPath && !m_NewScriptClass.empty())
         {
@@ -1370,6 +1489,13 @@ namespace Conqueror::Editor
         }
         CQ_CORE_INFO("Deleted: {0}", path.string());
         fs::remove(path.string() + ".meta", ec);
+        fs::remove(path.string() + ".cqsprite", ec);
+        if (path.extension() == SpriteAtlases::Extension)
+        {
+            fs::remove(path.string() + ".png", ec);
+            fs::remove(path.string() + ".png.meta", ec);
+            SpriteAtlases::Invalidate();
+        }
         if (EditorState::Get().GetSelectedAsset() == path.string())
             EditorState::Get().SelectAsset("");
         m_Thumbnails.erase(path.string());
@@ -1399,6 +1525,56 @@ namespace Conqueror::Editor
                 path = MakeUniquePath(dir / "New Scene.cqscene");
                 auto scene = std::make_shared<Scene>();
                 SceneSerializer(scene).Serialize(path);
+            }
+            else if (kind.rfind("sprite:", 0) == 0)
+            {
+                const std::string spec = kind.substr(7);
+                const std::string shape = spec.substr(0, spec.find('|'));
+                const std::string display = spec.find('|') != std::string::npos ? spec.substr(spec.find('|') + 1) : shape;
+                const fs::path src = EnginePackagesDir() / "Core" / "Sprites" / (shape + ".png");
+                path = MakeUniquePath(dir / (display + ".png"));
+                fs::copy_file(src, path, ec);
+                if (ec)
+                    path.clear();
+                else
+                {
+                    TextureImportSettings settings = TextureImportSettings::DefaultsFor(TextureType::Sprite);
+                    settings.PixelsPerUnit = 256.0f;   // 256 px = 1 birim (Unity hazır şekilleri gibi)
+                    settings.Save(path.string());
+                    if (shape == "NineSliced")
+                    {
+                        // 9-Sliced: köşeler (40 px) sabit kalır, Draw Mode Sliced / Tiled ile esner
+                        SpriteSheet sheet;
+                        sheet.TexturePath = path.string();
+                        sheet.PixelsPerUnit = 256.0f;
+                        SpriteDef def;
+                        def.Name = path.stem().string();
+                        def.Rect = { 0.0f, 0.0f, 256.0f, 256.0f };
+                        def.Border = { 40.0f, 40.0f, 40.0f, 40.0f };
+                        sheet.Sprites.push_back(def);
+                        sheet.Save();
+                    }
+                }
+            }
+            else if (kind == "prefabvariant")
+            {
+                const fs::path basePath = m_SelectedPath;
+                path = MakeUniquePath(dir / (basePath.stem().string() + " Variant" + PrefabSerializer::Extension));
+                if (!PrefabSerializer::CreateVariant(basePath, path))
+                    path.clear();
+            }
+            else if (kind == "scenetemplate")
+            {
+                // Seçili sahne varsa şablon onu kullanır (Unity: Scene Template From Scene)
+                SceneTemplates::SceneTemplate t;
+                const bool fromScene = m_SelectedPath.extension() == ".cqscene";
+                path = MakeUniquePath(dir / ((fromScene ? m_SelectedPath.stem().string() : std::string("New Scene")) + " Template" +
+                                             SceneTemplates::Extension));
+                t.Name = path.stem().string();
+                if (fromScene)
+                    t.ScenePath = SceneTemplates::ToProjectRelative(m_SelectedPath);
+                if (!SceneTemplates::Save(path, t))
+                    path.clear();
             }
             else if (kind == "controller")
             {
@@ -1459,6 +1635,53 @@ namespace Conqueror::Editor
             {
                 path = MakeUniquePath(dir / "New Render Texture.cqrt");
                 if (!RenderTargetRegistry::WriteAsset(path.string(), 512, 512))
+                    path.clear();
+            }
+            else if (kind == "spriteatlas")
+            {
+                SpriteAtlasAsset atlas;
+                // Seçili görsel / klasör pakete eklenir
+                if (!m_SelectedPath.empty() && (fs::is_directory(m_SelectedPath, ec) || IsImage(ToLower(m_SelectedPath.extension().string()))) &&
+                    m_SelectedPath != m_CurrentDirectory)
+                    atlas.Objects.push_back(fs::relative(m_SelectedPath, m_BaseDirectory, ec).generic_string());
+                path = MakeUniquePath(dir / (std::string("New Sprite Atlas") + SpriteAtlases::Extension));
+                if (!SpriteAtlases::Save(path.string(), atlas))
+                    path.clear();
+            }
+            else if (kind.rfind("tilepalette:", 0) == 0)
+            {
+                GridSystem::TilePaletteAsset palette;
+                palette.Layout = (GridLayout)std::clamp(std::atoi(kind.c_str() + 12), 0, 3);
+                path = MakeUniquePath(dir / (std::string("New Tile Palette") + GridSystem::PaletteExtension));
+                if (!GridSystem::SavePalette(path.string(), palette))
+                    path.clear();
+            }
+            else if (kind == "tile" || kind == "ruletile" || kind == "animatedtile")
+            {
+                TileDefinition def;
+                def.Name = kind == "ruletile" ? "New Rule Tile" : (kind == "animatedtile" ? "New Animated Tile" : "New Tile");
+                def.Color = glm::vec4(1.0f);
+                // Seçili görsel varsa karo onu kullanır (Unity: sprite'tan Tile)
+                if (IsImage(ToLower(m_SelectedPath.extension().string())))
+                    def.Texture = fs::relative(m_SelectedPath, m_BaseDirectory, ec).generic_string();
+                if (kind == "ruletile")
+                    def.Rules.push_back({});
+                if (kind == "animatedtile")
+                {
+                    def.FrameRate = 6.0f;
+                    if (!def.Texture.empty())
+                        def.Frames.push_back(def.Texture);
+                }
+                path = MakeUniquePath(dir / (def.Name + GridSystem::TileExtension));
+                if (!GridSystem::SaveTileAsset(path.string(), def))
+                    path.clear();
+            }
+            else if (kind == "physicsmaterial2d")
+            {
+                path = MakeUniquePath(dir / "New Physics Material 2D.cqphysmat2d");
+                PhysicsMaterialAsset m;
+                m.Friction = 0.4f;   // Unity PhysicsMaterial2D varsayılanı
+                if (!PhysicsMaterials::Save(m, path.string()))
                     path.clear();
             }
             else if (kind == "physicsmaterial")

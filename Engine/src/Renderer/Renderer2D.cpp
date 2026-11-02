@@ -1,6 +1,8 @@
 #include "Renderer2D.h"
 #include "Renderer.h"
 #include "SpriteSheet.h"
+#include "SpriteAtlas.h"
+#include "RHI/TextureSettings.h"
 #include "RHI/VertexArray.h"
 #include "RHI/Shader.h"
 #include "RHI/RenderCommand.h"
@@ -338,6 +340,19 @@ namespace Conqueror
         }
     }
 
+    void Renderer2D::ApplySpriteImport(SpriteRendererComponent& sprite)
+    {
+        if (!sprite.Texture || sprite.Texture->GetPath().empty())
+            return;
+        TextureImportSettings settings;
+        if (TextureImportSettings::Load(sprite.Texture->GetPath(), settings) &&
+            (settings.Type == TextureType::Sprite || settings.Type == TextureType::UI))
+            sprite.PixelsPerUnit = settings.PixelsPerUnit;
+        // Tek dilimli sayfa (ör. Create > 2D > Sprites > 9-Sliced): dilim seçilir, kenarlıkları Sliced / Tiled modda kullanılır
+        if (auto sheet = SpriteSheet::Get(sprite.Texture->GetPath()); sheet && sheet->Sprites.size() == 1 && sprite.SpriteName.empty())
+            sprite.SpriteName = sheet->Sprites.front().Name;
+    }
+
     bool Renderer2D::GetSpriteLocalBounds(const SpriteRendererComponent& sprite, glm::vec2& outMin, glm::vec2& outMax)
     {
         SpriteGeometry g;
@@ -373,9 +388,21 @@ namespace Conqueror
         if (!ResolveSprite(sprite, g))
             return;
 
+        // Sprite Atlas: görsel bir atlasa paketlenmişse atlas dokusu ve oradaki yeri kullanılır
+        std::shared_ptr<Texture2D> drawTexture = texture;
+        glm::vec2 atlasOffset(0.0f), uvSpace = g.TexSize;
+        SpriteAtlases::Lookup atlas;
+        if (texture == sprite.Texture && SpriteAtlases::Find(texture->GetPath(), atlas))
+        {
+            drawTexture = atlas.Texture;
+            atlasOffset = atlas.Offset;
+            uvSpace = atlas.Size;
+        }
+        const std::shared_ptr<Texture2D>& tex = drawTexture;
+
         // UV: piksel dikdörtgeni -> [0,1] (doku sol-alt köken; yükleyici dikey çevirir)
-        glm::vec2 uvMin(g.RectPx.x / g.TexSize.x, g.RectPx.y / g.TexSize.y);
-        glm::vec2 uvMax((g.RectPx.x + g.RectPx.z) / g.TexSize.x, (g.RectPx.y + g.RectPx.w) / g.TexSize.y);
+        glm::vec2 uvMin((atlasOffset.x + g.RectPx.x) / uvSpace.x, (atlasOffset.y + g.RectPx.y) / uvSpace.y);
+        glm::vec2 uvMax((atlasOffset.x + g.RectPx.x + g.RectPx.z) / uvSpace.x, (atlasOffset.y + g.RectPx.y + g.RectPx.w) / uvSpace.y);
         if (sprite.FlipX) std::swap(uvMin.x, uvMax.x);
         if (sprite.FlipY) std::swap(uvMin.y, uvMax.y);
 
@@ -385,7 +412,7 @@ namespace Conqueror
         if (sprite.DrawMode == SpriteDrawMode::Simple)
         {
             glm::vec2 mn = -g.Pivot * nativeSize;
-            DrawRect(transform, mn, mn + nativeSize, texture, uvMin, uvMax, tintColor);
+            DrawRect(transform, mn, mn + nativeSize, tex, uvMin, uvMax, tintColor);
             return;
         }
 
@@ -405,7 +432,7 @@ namespace Conqueror
                     glm::vec2 mx = glm::min(mn + nativeSize, origin + size);
                     glm::vec2 frac = (mx - mn) / nativeSize;
                     glm::vec2 uv1 = uvMin + (uvMax - uvMin) * frac;
-                    DrawRect(transform, mn, mx, texture, uvMin, uv1, tintColor);
+                    DrawRect(transform, mn, mx, tex, uvMin, uv1, tintColor);
                 }
             }
             return;
@@ -425,7 +452,7 @@ namespace Conqueror
         for (int y = 0; y < 3; ++y)
             for (int x = 0; x < 3; ++x)
                 if (xs[x + 1] > xs[x] && ys[y + 1] > ys[y])
-                    DrawRect(transform, glm::vec2(xs[x], ys[y]), glm::vec2(xs[x + 1], ys[y + 1]), texture,
+                    DrawRect(transform, glm::vec2(xs[x], ys[y]), glm::vec2(xs[x + 1], ys[y + 1]), tex,
                              glm::vec2(us[x], vs[y]), glm::vec2(us[x + 1], vs[y + 1]), tintColor);
     }
 

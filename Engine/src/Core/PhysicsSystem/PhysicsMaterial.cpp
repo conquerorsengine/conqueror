@@ -41,6 +41,13 @@ namespace Conqueror::PhysicsMaterials
         return ext == Extension;
     }
 
+    bool IsFile2D(const std::string& path)
+    {
+        std::string ext = std::filesystem::path(path).extension().string();
+        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+        return ext == Extension2D;
+    }
+
     bool Load(const std::string& path, PhysicsMaterialAsset& out)
     {
         if (path.empty())
@@ -60,7 +67,7 @@ namespace Conqueror::PhysicsMaterials
         try
         {
             YAML::Node root = YAML::LoadFile(file.string());
-            YAML::Node n = root["PhysicsMaterial"];
+            YAML::Node n = root["PhysicsMaterial"] ? root["PhysicsMaterial"] : root["PhysicsMaterial2D"];
             if (!n)
                 return false;
             PhysicsMaterialAsset m;
@@ -80,7 +87,7 @@ namespace Conqueror::PhysicsMaterials
     bool Save(const PhysicsMaterialAsset& material, const std::string& path)
     {
         YAML::Emitter out;
-        out << YAML::BeginMap << YAML::Key << "PhysicsMaterial" << YAML::Value << YAML::BeginMap;
+        out << YAML::BeginMap << YAML::Key << (IsFile2D(path) ? "PhysicsMaterial2D" : "PhysicsMaterial") << YAML::Value << YAML::BeginMap;
         out << YAML::Key << "Friction" << YAML::Value << material.Friction;
         out << YAML::Key << "Bounciness" << YAML::Value << material.Bounciness;
         out << YAML::EndMap << YAML::EndMap;

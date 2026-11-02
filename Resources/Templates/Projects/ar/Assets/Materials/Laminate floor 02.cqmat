@@ -1,0 +1,23 @@
+Material:
+  Name: Laminate floor 02
+  Albedo: [1, 1, 1]
+  Opacity: 1
+  Metallic: 0
+  Roughness: 0.45
+  AO: 1
+  EmissionColor: [0, 0, 0]
+  EmissionStrength: 0
+  Tiling: [0.45, 0.45]
+  Offset: [0, 0]
+  WorldAligned: true
+  RenderMode: 0
+  Culling: 0
+  AlphaClip: 0.5
+  AlbedoMap: Assets/Textures/laminate_floor_02.jpg
+  NextGraphNodeID: 1
+  NextGraphLinkID: 1
+  GraphInitialized: false
+  GraphNodes:
+    []
+  GraphLinks:
+    []

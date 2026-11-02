@@ -380,8 +380,6 @@ namespace Conqueror
                 auto& mr = e.AddComponent<MeshRendererComponent>();
                 mr = look;
                 mr.CustomMesh = p.PieceMesh;
-                mr.RuntimeMaterial.reset();
-                mr.RuntimeMaterialSource = nullptr;
                 auto& rb = e.AddComponent<RigidbodyComponent>();
                 rb.Type = RigidbodyComponent::BodyType::Dynamic;
                 rb.Mass = std::max(totalMass * (totalVolume > 0.0f ? p.Volume / totalVolume : 1.0f / (float)pieces.size()), 0.01f);

@@ -1,4 +1,5 @@
 #include "SceneSerializer.h"
+#include "Scene/MeshRendererMaterial.h"
 #include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
 #include "Scripting/NativeScriptCompiler.h"
 #include <unordered_set>
@@ -1351,46 +1352,13 @@ namespace Conqueror
             out << YAML::BeginMap;
 
             auto& meshRenderer = entity.GetComponent<MeshRendererComponent>();
-            NormalizeDefaultMaterial(meshRenderer);   // varsayılan malzemeye renk / doku verildiyse gömülü yazılır
             out << YAML::Key << "MeshType" << YAML::Value << static_cast<int>(meshRenderer.Type);
-            out << YAML::Key << "Color" << YAML::Value << meshRenderer.Color;
-            out << YAML::Key << "Metallic" << YAML::Value << meshRenderer.Metallic;
-            out << YAML::Key << "Roughness" << YAML::Value << meshRenderer.Roughness;
-            out << YAML::Key << "AO" << YAML::Value << meshRenderer.AO;
-            if (meshRenderer.EmissionStrength != 0.0f || meshRenderer.EmissionColor != glm::vec3(0.0f))
-            {
-                out << YAML::Key << "EmissionColor" << YAML::Value << meshRenderer.EmissionColor;
-                out << YAML::Key << "EmissionStrength" << YAML::Value << meshRenderer.EmissionStrength;
-                if (meshRenderer.EmissionFromTexture)
-                    out << YAML::Key << "EmissionFromTexture" << YAML::Value << true;
-            }
-            if (meshRenderer.Tiling != glm::vec2(1.0f) || meshRenderer.Offset != glm::vec2(0.0f))
-            {
-                out << YAML::Key << "Tiling" << YAML::Value << meshRenderer.Tiling;
-                out << YAML::Key << "Offset" << YAML::Value << meshRenderer.Offset;
-            }
-            if (meshRenderer.WorldAlignedUV)
-                out << YAML::Key << "WorldAlignedUV" << YAML::Value << true;
-            if (meshRenderer.AlignToObject)
-                out << YAML::Key << "AlignToObject" << YAML::Value << true;
             if (!meshRenderer.CastShadows)
                 out << YAML::Key << "CastShadows" << YAML::Value << false;
             if (!meshRenderer.ReceiveShadows)
                 out << YAML::Key << "ReceiveShadows" << YAML::Value << false;
             if (meshRenderer.RealtimeGI)
                 out << YAML::Key << "RealtimeGI" << YAML::Value << true;
-            if (meshRenderer.Unlit)
-                out << YAML::Key << "Unlit" << YAML::Value << true;
-            if (meshRenderer.AlphaClip)
-            {
-                out << YAML::Key << "AlphaClip" << YAML::Value << true;
-                out << YAML::Key << "AlphaClipThreshold" << YAML::Value << meshRenderer.AlphaClipThreshold;
-            }
-            out << YAML::Key << "TexturePath" << YAML::Value << ToSerializablePath(meshRenderer.TexturePath);
-            if (!meshRenderer.NormalMapPath.empty())
-                out << YAML::Key << "NormalMapPath" << YAML::Value << ToSerializablePath(meshRenderer.NormalMapPath);
-            if (!meshRenderer.MaskMapPath.empty())
-                out << YAML::Key << "MaskMapPath" << YAML::Value << ToSerializablePath(meshRenderer.MaskMapPath);
 
             // Malzeme: dosyaya başvuru (Unity / Unreal), yoksa sahneye gömülü
             // Dosya yeniden adlandırıldı / taşındıysa güncel yol önbellekten
@@ -1674,6 +1642,7 @@ namespace Conqueror
             out << YAML::Key << "Interpolate" << YAML::Value << rb2d.Interpolate;
             out << YAML::Key << "ContinuousCollision" << YAML::Value << rb2d.ContinuousCollision;
             out << YAML::Key << "AllowSleep" << YAML::Value << rb2d.AllowSleep;
+            if (!rb2d.PhysicsMaterial.empty()) out << YAML::Key << "PhysicsMaterial" << YAML::Value << ToSerializablePath(rb2d.PhysicsMaterial);
 
             out << YAML::EndMap;
         }
@@ -1692,6 +1661,7 @@ namespace Conqueror
             out << YAML::Key << "RestitutionThreshold" << YAML::Value << bc2d.RestitutionThreshold;
             out << YAML::Key << "IsTrigger" << YAML::Value << bc2d.IsTrigger;
             out << YAML::Key << "EdgeRadius" << YAML::Value << bc2d.EdgeRadius;
+            if (!bc2d.PhysicsMaterial.empty()) out << YAML::Key << "PhysicsMaterial" << YAML::Value << ToSerializablePath(bc2d.PhysicsMaterial);
             out << YAML::Key << "Version" << YAML::Value << 2;
 
             out << YAML::EndMap;
@@ -1710,6 +1680,7 @@ namespace Conqueror
             out << YAML::Key << "Restitution" << YAML::Value << cc2d.Restitution;
             out << YAML::Key << "RestitutionThreshold" << YAML::Value << cc2d.RestitutionThreshold;
             out << YAML::Key << "IsTrigger" << YAML::Value << cc2d.IsTrigger;
+            if (!cc2d.PhysicsMaterial.empty()) out << YAML::Key << "PhysicsMaterial" << YAML::Value << ToSerializablePath(cc2d.PhysicsMaterial);
             out << YAML::Key << "Version" << YAML::Value << 2;
 
             out << YAML::EndMap;
@@ -2457,81 +2428,101 @@ namespace Conqueror
                 if (meshRendererComponent)
                 {
                     auto& mrc = deserializedEntity.AddComponent<MeshRendererComponent>();
-                    // Dosyada "MaterialAsset" yoksa gömülü malzeme (eski sahneler): eklemedeki varsayılan malzeme kaldırılır
+                    const YAML::Node& n = meshRendererComponent;
+                    if (n["MeshType"])
+                        mrc.Type = static_cast<MeshType>(n["MeshType"].as<int>());
+                    if (auto v = n["CastShadows"]) mrc.CastShadows = v.as<bool>();
+                    if (auto v = n["ReceiveShadows"]) mrc.ReceiveShadows = v.as<bool>();
+                    if (auto v = n["RealtimeGI"]) mrc.RealtimeGI = v.as<bool>();
+
+                    // Eski biçim: renk / doku / ışıma ... Mesh Renderer'daydı -> malzemeye taşınır (görünüm aynı kalır)
+                    MeshRendererMaterial::LegacyFields legacy;
+                    const bool hasLegacy = n["Color"] || n["TexturePath"];
+                    if (hasLegacy)
+                    {
+                        if (auto v = n["Color"]) legacy.Color = v.as<glm::vec4>();
+                        if (auto v = n["Metallic"]) legacy.Metallic = v.as<float>();
+                        if (auto v = n["Roughness"]) legacy.Roughness = v.as<float>();
+                        if (auto v = n["AO"]) legacy.AO = v.as<float>();
+                        if (auto v = n["EmissionColor"]) legacy.EmissionColor = v.as<glm::vec3>();
+                        if (auto v = n["EmissionStrength"]) legacy.EmissionStrength = v.as<float>();
+                        if (auto v = n["EmissionFromTexture"]) legacy.EmissionFromTexture = v.as<bool>();
+                        if (auto v = n["Tiling"]) legacy.Tiling = v.as<glm::vec2>();
+                        if (auto v = n["Offset"]) legacy.Offset = v.as<glm::vec2>();
+                        if (auto v = n["WorldAlignedUV"]) legacy.WorldAlignedUV = v.as<bool>();
+                        if (auto v = n["AlignToObject"]) legacy.AlignToObject = v.as<bool>();
+                        if (auto v = n["Unlit"]) legacy.Unlit = v.as<bool>();
+                        if (auto v = n["AlphaClip"]) legacy.AlphaClip = v.as<bool>();
+                        if (auto v = n["AlphaClipThreshold"]) legacy.AlphaClipThreshold = v.as<float>();
+                        auto loadTex = [](const YAML::Node& node) -> std::shared_ptr<Texture2D> {
+                            if (!node) return nullptr;
+                            const std::string path = ResolveSerializablePath(node.as<std::string>());
+                            return path.empty() ? nullptr : Texture2D::Create(path);
+                        };
+                        legacy.Texture = loadTex(n["TexturePath"]);
+                        legacy.NormalMap = loadTex(n["NormalMapPath"]);
+                        legacy.MaskMap = loadTex(n["MaskMapPath"]);
+                    }
+
                     mrc.MaterialInstance = nullptr;
                     mrc.MaterialPath.clear();
-                    if (meshRendererComponent["MeshType"])
-                        mrc.Type = static_cast<MeshType>(meshRendererComponent["MeshType"].as<int>());
-                    mrc.Color = meshRendererComponent["Color"].as<glm::vec4>();
-                    mrc.Metallic = meshRendererComponent["Metallic"].as<float>();
-                    mrc.Roughness = meshRendererComponent["Roughness"].as<float>();
-                    mrc.AO = meshRendererComponent["AO"].as<float>();
-                    if (auto n = meshRendererComponent["EmissionColor"]) mrc.EmissionColor = n.as<glm::vec3>();
-                    if (auto n = meshRendererComponent["EmissionStrength"]) mrc.EmissionStrength = n.as<float>();
-                    if (auto n = meshRendererComponent["EmissionFromTexture"]) mrc.EmissionFromTexture = n.as<bool>();
-                    if (auto n = meshRendererComponent["Tiling"]) mrc.Tiling = n.as<glm::vec2>();
-                    if (auto n = meshRendererComponent["Offset"]) mrc.Offset = n.as<glm::vec2>();
-                    if (auto n = meshRendererComponent["WorldAlignedUV"]) mrc.WorldAlignedUV = n.as<bool>();
-                    if (auto n = meshRendererComponent["AlignToObject"]) mrc.AlignToObject = n.as<bool>();
-                    if (auto n = meshRendererComponent["CastShadows"]) mrc.CastShadows = n.as<bool>();
-                    if (auto n = meshRendererComponent["ReceiveShadows"]) mrc.ReceiveShadows = n.as<bool>();
-                    if (auto n = meshRendererComponent["RealtimeGI"]) mrc.RealtimeGI = n.as<bool>();
-                    if (auto n = meshRendererComponent["Unlit"]) mrc.Unlit = n.as<bool>();
-                    if (auto n = meshRendererComponent["AlphaClip"]) mrc.AlphaClip = n.as<bool>();
-                    if (auto n = meshRendererComponent["AlphaClipThreshold"]) mrc.AlphaClipThreshold = n.as<float>();
-
-                    if (meshRendererComponent["TexturePath"])
-                    {
-                        mrc.TexturePath = ResolveSerializablePath(meshRendererComponent["TexturePath"].as<std::string>());
-                        if (!mrc.TexturePath.empty())
-                            mrc.Texture = Texture2D::Create(mrc.TexturePath);
-                        else
-                        {
-                            mrc.Texture = nullptr;
-                        }
-                    }
-                    else
-                    {
-                        mrc.TexturePath.clear();
-                        mrc.Texture = nullptr;
-                    }
-
-                    if (auto n = meshRendererComponent["NormalMapPath"])
-                    {
-                        mrc.NormalMapPath = ResolveSerializablePath(n.as<std::string>());
-                        mrc.NormalMap = mrc.NormalMapPath.empty() ? nullptr : Texture2D::Create(mrc.NormalMapPath);
-                    }
-                    if (auto n = meshRendererComponent["MaskMapPath"])
-                    {
-                        mrc.MaskMapPath = ResolveSerializablePath(n.as<std::string>());
-                        mrc.MaskMap = mrc.MaskMapPath.empty() ? nullptr : Texture2D::Create(mrc.MaskMapPath);
-                    }
-
-                    if (auto assetNode = meshRendererComponent["MaterialAsset"])
+                    if (auto assetNode = n["MaterialAsset"])
                     {
                         mrc.MaterialPath = ResolveSerializablePath(assetNode.as<std::string>());
                         mrc.MaterialInstance = MaterialAsset::Load(mrc.MaterialPath);
                         if (!mrc.MaterialInstance)
+                        {
                             CQ_CORE_WARN("Material asset not found: {0}", mrc.MaterialPath);
+                            mrc.MaterialPath.clear();
+                        }
                     }
-                    else if (auto materialNode = meshRendererComponent["Material"])
+                    else if (auto materialNode = n["Material"])
                     {
                         mrc.MaterialInstance = Material::CreateDefault();
                         ReadMaterial(materialNode, *mrc.MaterialInstance);
-                        // Eski biçim (dokular malzemede değil Mesh Renderer'daydı): dokuları malzemeye taşı, görünüm aynı kalsın
-                        if (!materialNode["RenderMode"])
+                        // Daha eski biçim: dokular hâlâ Mesh Renderer'daydı
+                        if (!materialNode["RenderMode"] && hasLegacy)
                         {
                             auto& m = *mrc.MaterialInstance;
-                            if (!m.AlbedoMap) m.AlbedoMap = mrc.Texture;
-                            if (!m.NormalMap) m.NormalMap = mrc.NormalMap;
-                            if (mrc.MaskMap && !m.AOMap)
+                            if (!m.AlbedoMap) m.AlbedoMap = legacy.Texture;
+                            if (!m.NormalMap) m.NormalMap = legacy.NormalMap;
+                            if (legacy.MaskMap && !m.AOMap)
                             {
-                                m.AOMap = m.RoughnessMap = m.MetallicMap = mrc.MaskMap;
+                                m.AOMap = m.RoughnessMap = m.MetallicMap = legacy.MaskMap;
                                 m.RoughnessChannel = 1;
                                 m.MetallicChannel = 2;
                                 m.MapsScaleFactors = true;
                             }
                         }
+                    }
+                    else if (hasLegacy)
+                    {
+                        // Eski varsayılan (beyaz + dama, başka ayar yok) = paketteki Default Grid malzemesi
+                        const std::string texPath = legacy.Texture ? ToSerializablePath(legacy.Texture->GetPath()) : std::string();
+                        const bool defaultGrid = legacy.Color == glm::vec4(1.0f) && legacy.Metallic == 0.0f && legacy.Roughness == 0.5f &&
+                                                 legacy.AO == 1.0f && legacy.EmissionStrength == 0.0f && legacy.Tiling == glm::vec2(1.0f) &&
+                                                 legacy.Offset == glm::vec2(0.0f) && !legacy.WorldAlignedUV && !legacy.NormalMap && !legacy.MaskMap &&
+                                                 !legacy.Unlit && !legacy.AlphaClip &&
+                                                 (texPath == "CQ:Resources/Textures/texture_grid.png" || texPath == "CQ:Resources/Packages/Core/Textures/Grid.png");
+                        if (defaultGrid && MaterialAsset::DefaultGrid())
+                        {
+                            mrc.MaterialPath = MaterialAsset::DefaultGridPath();
+                            mrc.MaterialInstance = MaterialAsset::DefaultGrid();
+                        }
+                        else
+                        {
+                            mrc.MaterialInstance = Material::CreateDefault();
+                            mrc.MaterialInstance->Name = deserializedEntity.GetComponent<TagComponent>().Tag + " (Instance)";
+                            MeshRendererMaterial::Apply(*mrc.MaterialInstance, legacy);
+                        }
+                    }
+                    else
+                    {
+                        // Ne malzeme ne eski alan: varsayılan malzeme (eklemede atanan)
+                        mrc.MaterialPath = MaterialAsset::DefaultGridPath();
+                        mrc.MaterialInstance = MaterialAsset::DefaultGrid();
+                        if (!mrc.MaterialInstance)
+                            mrc.MaterialPath.clear();
                     }
                 }
 
@@ -2825,6 +2816,7 @@ namespace Conqueror
 #define CQ_RB2D_IN(key, T) if (rigidBody2DComponent[#key]) rb2d.key = rigidBody2DComponent[#key].as<T>()
                     CQ_RB2D_IN(UseAutoMass, bool); CQ_RB2D_IN(Mass, float); CQ_RB2D_IN(LinearDrag, float); CQ_RB2D_IN(AngularDrag, float);
                     CQ_RB2D_IN(GravityScale, float); CQ_RB2D_IN(Interpolate, bool); CQ_RB2D_IN(ContinuousCollision, bool); CQ_RB2D_IN(AllowSleep, bool);
+                    if (auto pm = rigidBody2DComponent["PhysicsMaterial"]) rb2d.PhysicsMaterial = ResolveSerializablePath(pm.as<std::string>());
 #undef CQ_RB2D_IN
                     // Eski sahneler: kütle yoğunluktan geliyordu
                     if (!rigidBody2DComponent["Mass"])
@@ -2851,6 +2843,7 @@ namespace Conqueror
                     bc2d.RestitutionThreshold = boxCollider2DComponent["RestitutionThreshold"].as<float>();
                     if (boxCollider2DComponent["IsTrigger"]) bc2d.IsTrigger = boxCollider2DComponent["IsTrigger"].as<bool>();
                     if (boxCollider2DComponent["EdgeRadius"]) bc2d.EdgeRadius = boxCollider2DComponent["EdgeRadius"].as<float>();
+                    if (auto pm = boxCollider2DComponent["PhysicsMaterial"]) bc2d.PhysicsMaterial = ResolveSerializablePath(pm.as<std::string>());
                     if (!boxCollider2DComponent["Version"])
                     {
                         bc2d.Size = legacyTexSize.x > 0.0f ? legacyTexSize : bc2d.Size * 2.0f;
@@ -2869,6 +2862,7 @@ namespace Conqueror
                     cc2d.Restitution = circleCollider2DComponent["Restitution"].as<float>();
                     cc2d.RestitutionThreshold = circleCollider2DComponent["RestitutionThreshold"].as<float>();
                     if (circleCollider2DComponent["IsTrigger"]) cc2d.IsTrigger = circleCollider2DComponent["IsTrigger"].as<bool>();
+                    if (auto pm = circleCollider2DComponent["PhysicsMaterial"]) cc2d.PhysicsMaterial = ResolveSerializablePath(pm.as<std::string>());
                     if (!circleCollider2DComponent["Version"] && legacyTexSize.x > 0.0f)
                         cc2d.Radius = std::max(legacyTexSize.x, legacyTexSize.y) * 0.5f;
                 }

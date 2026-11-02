@@ -1,3 +1,4 @@
+#include "Renderer/SpriteAtlas.h"
 #include "Renderer.h"
 #include "Particles/ParticleSystem.h"
 #include "Grid/GridSystem.h"
@@ -47,6 +48,7 @@ namespace Conqueror
         ParticleSystem::Shutdown();
         RibbonRenderer::Shutdown();
         GridSystem::Shutdown();
+        SpriteAtlases::Shutdown();
         UISystem::Shutdown();
         Lighting2D::Shutdown();
         Billboards::Shutdown();

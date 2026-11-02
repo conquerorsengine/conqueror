@@ -99,18 +99,23 @@ emission, tiling and offset, world-aligned UVs, surface type (opaque, cutout, tr
 model (lit, unlit, subsurface, hair, cloth). Every object that uses the same file shares it, so editing the material
 changes all of them, and edits made outside the editor are picked up while it runs.
 
-- **Mesh Renderer.** The component has a mesh, a Material slot and lighting options. Drag a `.cqmat` onto the slot, onto
-  the object in the Scene view or onto its row in the Hierarchy, or pick one with the target button. **New** saves the
-  current look as `Assets/Materials/<object>.cqmat`. Without a material the renderer uses its built-in material, whose
-  values are stored in the scene (this is what the sample templates use).
+- **Mesh Renderer.** The component has a mesh, a Materials list (Element 0) and lighting options. It has no color or
+  texture fields of its own: color, textures, metallic, emission and the rest live in the material. Drag a `.cqmat`
+  onto the slot, onto the object in the Scene view or onto its row in the Hierarchy, or pick one with the target
+  button. **New** saves the current look as `Assets/Materials/<object>.cqmat`. New 3D objects use the read-only
+  `Default Grid` material from Packages/Core. Templates and samples keep their materials in `Assets/Materials`.
+- **Instances.** Setting a color or texture on one object from a script, a tween or automation gives that object its
+  own copy named `<material> (Instance)` (like Unity's `renderer.material`); the file and the other objects keep the
+  original. The copy is saved inside the scene. The `material_bake [folder]` automation command turns these copies
+  into `.cqmat` files, merging identical ones.
+- **Older scenes.** Scenes saved before materials moved out of the Mesh Renderer are converted when they load: the old
+  color, texture, normal / mask map, emission, tiling and clip values become the object's material.
 - **Material Variant.** Right-click a material > Create Material Variant (Unity Material Variant, Unreal Material
   Instance). The variant file stores only the values you change; everything else comes from its parent and follows it.
 - **Shader Graph.** Right-click > Shader Graph creates a material driven by a node graph and opens it in the Shader
   Graph editor. Double-clicking any `.cqmat` opens it there too. Inputs wired in the graph override the matching
   values in the Inspector. The graph is compiled when the material loads.
 - **From a texture.** Right-click an image > Create Material makes a material with that image as its base map.
-- **At runtime.** Changing an object's color from a script or a tween while playing gives that object its own copy of
-  the material (like Unity's `renderer.material`); the file and the other objects keep the original.
 
 Renaming or moving a material in the Content Browser updates the scenes, prefabs and variants that refer to it.
 

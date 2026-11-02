@@ -1,3 +1,5 @@
+#include "Scene/MeshRendererMaterial.h"
+#include "Renderer/Utilities/Renderer3D/Material.h"
 #include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
 #include "Panels/MaterialEditorUI.h"
 #include "Core/Project/Project.h"
@@ -318,8 +320,7 @@ namespace Conqueror::Editor
                     std::string name = m_SelectedEntity.HasComponent<TagComponent>() ? m_SelectedEntity.GetComponent<TagComponent>().Tag : "New Material";
                     std::string dir = Project::GetActive() ? (Project::GetAssetDirectory() / "Materials").string() : std::string("Materials");
                     std::string path = Editor::MaterialEditorUI::UniqueMaterialPath(dir, name);
-                    Material from;
-                    FillMaterialFromMeshRenderer(from, meshRenderer);
+                    Material from = MeshRendererMaterial::Shared(meshRenderer);
                     EnsureMasterNode(&from);
                     from.GraphInitialized = true;
                     if (auto mat = MaterialAsset::Create(path, &from))

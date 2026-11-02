@@ -1,3 +1,4 @@
+#include "ObjectPicker.h"
 #include "TerrainPanel.h"
 #include "EditorState.h"
 #include "Scene/Scene.h"
@@ -419,6 +420,12 @@ namespace Conqueror::Editor
                     l.Albedo.reset();
                 }
                 ImGui::EndDragDropTarget();
+            }
+            ImGui::SameLine();
+            if (std::string picked; ObjectPicker::Button("layerpick", "Texture", ObjectPicker::ImageExtensions(), l.TexturePath, picked))
+            {
+                l.TexturePath = picked;
+                l.Albedo.reset();
             }
             ImGui::SameLine();
             if (!l.TexturePath.empty() && ImGui::SmallButton(ICON_FA_XMARK " Clear"))

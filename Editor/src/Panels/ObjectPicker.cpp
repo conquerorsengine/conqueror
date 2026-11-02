@@ -49,6 +49,8 @@ namespace Conqueror::Editor::ObjectPicker
 
         bool Matches(const std::string& path)
         {
+            if (s.Extensions.empty())
+                return fs::path(path).filename().string()[0] != '.';   // her dosya (gizliler hariç)
             const std::string ext = Lower(fs::path(path).extension().string());
             return std::find(s.Extensions.begin(), s.Extensions.end(), ext) != s.Extensions.end();
         }
@@ -117,7 +119,8 @@ namespace Conqueror::Editor::ObjectPicker
             ImGui::BeginGroup();
             const ImVec2 p0 = ImGui::GetCursorScreenPos();
             const bool selected = s.Selected == path;
-            if (ImGui::InvisibleButton("##cell", cell))
+            // Görünmez düğmenin etiketi ad (otomasyon / ekran okuyucu öğeyi adıyla bulur), çizim aşağıda
+            if (ImGui::InvisibleButton((name + "##cell").c_str(), cell))
                 Pick(path, false);
             if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
                 Pick(path, true);
@@ -161,6 +164,90 @@ namespace Conqueror::Editor::ObjectPicker
     {
         static const std::vector<std::string> exts = { ".png", ".jpg", ".jpeg", ".tga", ".bmp", ".hdr", ".cqrt" };
         return exts;
+    }
+
+    const std::vector<std::string>& ModelExtensions()
+    {
+        static const std::vector<std::string> exts = { ".glb", ".gltf", ".fbx", ".obj", ".dae", ".blend", ".3ds" };
+        return exts;
+    }
+
+    const std::vector<std::string>& AudioExtensions()
+    {
+        static const std::vector<std::string> exts = { ".wav", ".mp3", ".ogg", ".flac" };
+        return exts;
+    }
+
+    const std::vector<std::string>& FontExtensions()
+    {
+        static const std::vector<std::string> exts = { ".ttf", ".otf" };
+        return exts;
+    }
+
+    std::vector<std::string> ParseFilter(const std::string& filter)
+    {
+        std::vector<std::string> out;
+        std::string cur;
+        auto flush = [&]() {
+            std::string e = cur;
+            cur.clear();
+            while (!e.empty() && (e.front() == ' ' || e.front() == '*'))
+                e.erase(e.begin());
+            while (!e.empty() && e.back() == ' ')
+                e.pop_back();
+            if (e.empty())
+                return;
+            if (e[0] != '.')
+                e = "." + e;
+            out.push_back(Lower(e));
+        };
+        for (char c : filter)
+        {
+            if (c == ';' || c == ',' || c == '|')
+                flush();
+            else
+                cur += c;
+        }
+        flush();
+        return out;
+    }
+
+    std::string TypeNameFor(const std::vector<std::string>& exts)
+    {
+        if (exts.empty())
+            return "Asset";
+        auto has = [&](const char* e) { return std::find(exts.begin(), exts.end(), e) != exts.end(); };
+        if (has(".cqmat")) return "Material";
+        if (has(".cqphysmat2d")) return "Physics Material 2D";
+        if (has(".cqtile")) return "Tile";
+        if (has(".cqspriteatlas")) return "Sprite Atlas";
+        if (has(".cqpalette")) return "Tile Palette";
+        if (has(".cqphysmat")) return "Physics Material";
+        if (has(".cqrt") && exts.size() == 1) return "Render Texture";
+        if (has(".png") || has(".jpg")) return "Texture";
+        if (has(".wav") || has(".ogg") || has(".mp3")) return "Audio Clip";
+        if (has(".glb") || has(".fbx") || has(".obj") || has(".gltf")) return "Model";
+        if (has(".ttf") || has(".otf")) return "Font";
+        if (has(".cqprefab")) return "Prefab";
+        if (has(".cqscene")) return "Scene";
+        if (has(".cqtimeline")) return "Timeline";
+        if (has(".cqcont")) return "Animator Controller";
+        if (has(".cqmontage")) return "Anim Montage";
+        if (has(".cqgraph")) return "Visual Script";
+        if (has(".mp4") || has(".webm")) return "Video Clip";
+        return "Asset";
+    }
+
+    bool Button(const char* id, const std::string& typeName, const std::vector<std::string>& extensions, const std::string& current,
+                std::string& picked)
+    {
+        const ImGuiID owner = ImGui::GetID(id);
+        const float h = ImGui::GetFrameHeight();
+        if (ImGui::Button((std::string(ICON_FA_BULLSEYE) + "##" + id).c_str(), ImVec2(h, 0)))
+            Open(owner, typeName, extensions, current);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Select %s", typeName.c_str());
+        return Consume(owner, picked);
     }
 
     void SetSceneProvider(std::function<std::vector<std::string>()> provider) { s_SceneProvider = std::move(provider); }

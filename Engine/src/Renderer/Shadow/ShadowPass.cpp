@@ -1,3 +1,5 @@
+#include "Scene/MeshRendererMaterial.h"
+#include "Renderer/Utilities/Renderer3D/Material.h"
 #include "ShadowPass.h"
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"
@@ -323,7 +325,8 @@ namespace Conqueror
                     continue;
                 auto [transform, meshRenderer] = meshView.get<TransformComponent, MeshRendererComponent>(entity);
                 // Çoğunlukla saydam yüzeyler (cam) ışığı kesmez
-                if (!meshRenderer.CastShadows || meshRenderer.Color.a < 0.5f)
+                const Material& mat = MeshRendererMaterial::Shared(meshRenderer);
+                if (!meshRenderer.CastShadows || (mat.Rendering == Material::RenderMode::Transparent && mat.Opacity < 0.5f))
                     continue;
 
                 // Prosedürel ağ (kumaş, Spline Extrude...) varsa çizimdeki gibi o kullanılır; yoksa ilkel ağ
@@ -345,11 +348,11 @@ namespace Conqueror
                 const bool twoSided = meshRenderer.CustomMesh || meshRenderer.Type == MeshType::Plane;
                 const Mesh* lod = mesh->HasLODs() ? mesh->GetLOD(Renderer3D::SelectMeshLOD(*mesh, transform.WorldTransform)) : mesh.get();
                 // Alfa kırpmalı doku (nesne UV'si): delikler gölgede de delik (dünyaya hizalı UV'de tam gölge)
-                if (meshRenderer.AlphaClip && meshRenderer.Texture && !meshRenderer.WorldAlignedUV && CutoutReady())
+                if (mat.Rendering == Material::RenderMode::Cutout && mat.AlbedoMap && !mat.WorldAligned && CutoutReady())
                 {
                     glDisable(GL_CULL_FACE);
-                    DrawCutout(*lod, transform.WorldTransform, m_LightSpaceMatrices[i], *meshRenderer.Texture,
-                               meshRenderer.AlphaClipThreshold, meshRenderer.Color.a, meshRenderer.Tiling, meshRenderer.Offset);
+                    DrawCutout(*lod, transform.WorldTransform, m_LightSpaceMatrices[i], *mat.AlbedoMap,
+                               mat.AlphaClip, mat.Opacity, mat.Tiling, mat.Offset);
                     glEnable(GL_CULL_FACE);
                     m_DepthShader->Bind();
                     Renderer::GetStats().ShadowDrawCalls++;

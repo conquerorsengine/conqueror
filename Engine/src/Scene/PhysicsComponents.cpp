@@ -141,7 +141,8 @@ namespace Conqueror
                .Field("Offset", "Offset", &CapsuleCollider2DComponent::Offset).Speed(0.01f)
                .Field("Size", "Size", &CapsuleCollider2DComponent::Size).Speed(0.01f)
                .Field("Direction", "Direction", &CapsuleCollider2DComponent::Direction, FieldKind::Enum).Options({ "Vertical", "Horizontal" })
-               .Field("Density", "Density", &CapsuleCollider2DComponent::Density).Range(0.0f, 1000.0f, 0.01f).Header("Material")
+               .Field("PhysicsMaterial", "Material", &CapsuleCollider2DComponent::PhysicsMaterial, FieldKind::Asset).Filter(".cqphysmat2d").Header("Material")
+               .Field("Density", "Density", &CapsuleCollider2DComponent::Density).Range(0.0f, 1000.0f, 0.01f)
                .Field("Friction", "Friction", &CapsuleCollider2DComponent::Friction).Range(0.0f, 1.0f, 0.01f)
                .Field("Restitution", "Bounciness", &CapsuleCollider2DComponent::Restitution).Range(0.0f, 1.0f, 0.01f);
         }
@@ -151,7 +152,8 @@ namespace Conqueror
                .Field("IsTrigger", "Is Trigger", &PolygonCollider2DComponent::IsTrigger)
                .Field("Offset", "Offset", &PolygonCollider2DComponent::Offset).Speed(0.01f)
                .Field("Points", "Points", &PolygonCollider2DComponent::Points).Speed(0.01f)
-               .Field("Density", "Density", &PolygonCollider2DComponent::Density).Range(0.0f, 1000.0f, 0.01f).Header("Material")
+               .Field("PhysicsMaterial", "Material", &PolygonCollider2DComponent::PhysicsMaterial, FieldKind::Asset).Filter(".cqphysmat2d").Header("Material")
+               .Field("Density", "Density", &PolygonCollider2DComponent::Density).Range(0.0f, 1000.0f, 0.01f)
                .Field("Friction", "Friction", &PolygonCollider2DComponent::Friction).Range(0.0f, 1.0f, 0.01f)
                .Field("Restitution", "Bounciness", &PolygonCollider2DComponent::Restitution).Range(0.0f, 1.0f, 0.01f);
         }
@@ -162,7 +164,8 @@ namespace Conqueror
                .Field("Points", "Points", &EdgeCollider2DComponent::Points).Speed(0.01f)
                .Field("Loop", "Loop", &EdgeCollider2DComponent::Loop)
                .Field("EdgeRadius", "Edge Radius", &EdgeCollider2DComponent::EdgeRadius).Range(0.0f, 10.0f, 0.005f)
-               .Field("Friction", "Friction", &EdgeCollider2DComponent::Friction).Range(0.0f, 1.0f, 0.01f).Header("Material")
+               .Field("PhysicsMaterial", "Material", &EdgeCollider2DComponent::PhysicsMaterial, FieldKind::Asset).Filter(".cqphysmat2d").Header("Material")
+               .Field("Friction", "Friction", &EdgeCollider2DComponent::Friction).Range(0.0f, 1.0f, 0.01f)
                .Field("Restitution", "Bounciness", &EdgeCollider2DComponent::Restitution).Range(0.0f, 1.0f, 0.01f);
         }
 #define CQ_JOINT2D_COMMON(T) \
@@ -291,6 +294,7 @@ namespace Conqueror
             .Field("GeometryType", "Geometry Type", &CompositeCollider2DComponent::GeometryType).Options({ "Outlines", "Polygons" })
             .Field("VertexDistance", "Vertex Distance", &CompositeCollider2DComponent::VertexDistance).Range(0.005f, 1.0f, 0.001f)
                 .Tooltip("Sampling step for non-rectangular shapes. Axis-aligned boxes and tiles are merged exactly.")
+            .Field("PhysicsMaterial", "Material", &CompositeCollider2DComponent::PhysicsMaterial, FieldKind::Asset).Filter(".cqphysmat2d")
             .Field("Density", "Density", &CompositeCollider2DComponent::Density).Range(0.0f, 1000.0f, 0.01f)
             .Field("Friction", "Friction", &CompositeCollider2DComponent::Friction).Range(0.0f, 10.0f, 0.01f)
             .Field("Restitution", "Bounciness", &CompositeCollider2DComponent::Restitution).Range(0.0f, 1.0f, 0.01f)

@@ -1,7 +1,9 @@
+#include "Renderer/Renderer2D.h"
 #include "Panels/MaterialEditorUI.h"
 #include "AssetActions.h"
 #include "Scene/Scene.h"
 #include "Scene/Components.h"
+#include "Grid/GridComponents.h"
 #include "Core/Serialization/PrefabSerializer.h"
 #include "Core/Serialization/SceneSerializer.h"
 #include "Core/Logging/Log.h"
@@ -55,6 +57,20 @@ namespace Conqueror::Editor::AssetActions
         const std::string e = Ext(path);
         if (e == ".cqmat" && entity.HasComponent<MeshRendererComponent>())
             return MaterialEditorUI::AssignMaterial(entity.GetComponent<MeshRendererComponent>(), path);
+        if (e == ".cqphysmat2d")
+        {
+            // Unity: Physics Material 2D bir nesneye bırakılınca Rigidbody 2D'ye (yoksa 2D çarpıştırıcılara) atanır
+            if (entity.HasComponent<RigidBody2DComponent>()) { entity.GetComponent<RigidBody2DComponent>().PhysicsMaterial = path; return true; }
+            bool any = false;
+            if (entity.HasComponent<BoxCollider2DComponent>()) { entity.GetComponent<BoxCollider2DComponent>().PhysicsMaterial = path; any = true; }
+            if (entity.HasComponent<CircleCollider2DComponent>()) { entity.GetComponent<CircleCollider2DComponent>().PhysicsMaterial = path; any = true; }
+            if (entity.HasComponent<CapsuleCollider2DComponent>()) { entity.GetComponent<CapsuleCollider2DComponent>().PhysicsMaterial = path; any = true; }
+            if (entity.HasComponent<PolygonCollider2DComponent>()) { entity.GetComponent<PolygonCollider2DComponent>().PhysicsMaterial = path; any = true; }
+            if (entity.HasComponent<EdgeCollider2DComponent>()) { entity.GetComponent<EdgeCollider2DComponent>().PhysicsMaterial = path; any = true; }
+            if (entity.HasComponent<CompositeCollider2DComponent>()) { entity.GetComponent<CompositeCollider2DComponent>().PhysicsMaterial = path; any = true; }
+            if (entity.HasComponent<TilemapCollider2DComponent>()) { entity.GetComponent<TilemapCollider2DComponent>().PhysicsMaterial = path; any = true; }
+            return any;
+        }
         if (e == ".cqphysmat")
         {
             bool any = false;
@@ -93,7 +109,9 @@ namespace Conqueror::Editor::AssetActions
         else if (IsTexture(e))
         {
             created = scene->CreateEntity(name);
-            created.AddComponent<SpriteRendererComponent>().Texture = Texture2D::Create(path);
+            auto& sprite = created.AddComponent<SpriteRendererComponent>();
+            sprite.Texture = Texture2D::Create(path);
+            Renderer2D::ApplySpriteImport(sprite);
         }
         else if (IsAudio(e))
         {

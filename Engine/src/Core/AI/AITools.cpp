@@ -1,3 +1,4 @@
+#include "Scene/MeshRendererMaterial.h"
 #include "AITools.h"
 #include "Core/Math/Math.h"
 #include "Scene/Scene.h"
@@ -1091,10 +1092,7 @@ namespace Conqueror::AI
             entity.AddComponent<MeshRendererComponent>();
 
         auto& mr = entity.GetComponent<MeshRendererComponent>();
-        CQ_CORE_INFO("[AI SetMaterial] BEFORE: mr.Color=({0},{1},{2},{3}), mr.MaterialInstance={4}, mr.TexturePath='{5}'",
-            mr.Color.r, mr.Color.g, mr.Color.b, mr.Color.a,
-            mr.MaterialInstance ? "VALID" : "NULL",
-            mr.TexturePath);
+        CQ_CORE_INFO("[AI SetMaterial] material: {0}", MeshRendererMaterial::Shared(mr).Name);
         if (!colorHex.empty())
         {
             std::string hex = colorHex;
@@ -1106,7 +1104,7 @@ namespace Conqueror::AI
                 ssR << std::hex << hex.substr(0, 2); ssR >> r;
                 ssG << std::hex << hex.substr(2, 2); ssG >> g;
                 ssB << std::hex << hex.substr(4, 2); ssB >> b;
-                mr.Color = glm::vec4(r / 255.0f, g / 255.0f, b / 255.0f, 1.0f);
+                MeshRendererMaterial::SetColor(mr, glm::vec4(r / 255.0f, g / 255.0f, b / 255.0f, 1.0f));
                 CQ_CORE_INFO("[AI SetMaterial] Parsed hex '{0}' -> r={1}, g={2}, b={3}", hex, r, g, b);
             }
             else
@@ -1118,9 +1116,8 @@ namespace Conqueror::AI
         {
             CQ_CORE_WARN("[AI SetMaterial] colorHex is EMPTY, skipping color set!");
         }
-        if (metallic >= 0.0f) mr.Metallic = metallic;
-        if (roughness >= 0.0f) mr.Roughness = roughness;
-        CQ_CORE_INFO("[AI SetMaterial] AFTER: mr.Color=({0},{1},{2},{3})", mr.Color.r, mr.Color.g, mr.Color.b, mr.Color.a);
+        if (metallic >= 0.0f) MeshRendererMaterial::Edit(mr).Metallic = metallic;
+        if (roughness >= 0.0f) MeshRendererMaterial::Edit(mr).Roughness = roughness;
 
         return "Successfully set Material properties for '" + nameOrUuid + "'.";
     }
@@ -1134,25 +1131,21 @@ namespace Conqueror::AI
         {
             auto& mr = entity.AddComponent<MeshRendererComponent>();
             mr.Type = MeshType::Cube;
-            mr.Color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
         }
         else if (type == "Sphere")
         {
             auto& mr = entity.AddComponent<MeshRendererComponent>();
             mr.Type = MeshType::Sphere;
-            mr.Color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
         }
         else if (type == "Plane")
         {
             auto& mr = entity.AddComponent<MeshRendererComponent>();
             mr.Type = MeshType::Plane;
-            mr.Color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
         }
         else if (type == "Cylinder" || type == "Capsule")
         {
             auto& mr = entity.AddComponent<MeshRendererComponent>();
             mr.Type = MeshType::Cylinder;
-            mr.Color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
         }
         else if (type == "Sprite")
         {
@@ -1305,8 +1298,7 @@ namespace Conqueror::AI
             {
                 auto& mr = entity.AddComponent<MeshRendererComponent>();
                 mr.Type = MeshType::Cube;
-                mr.Color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-            }
+                }
             return "Added MeshRenderer component to '" + nameOrUuid + "'.";
         }
         else if (componentType == "SpriteRenderer")

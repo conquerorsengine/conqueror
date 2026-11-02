@@ -97,6 +97,10 @@ namespace Conqueror::Editor
         // Scene operations
         void NewScene();
         void ApplyNewSceneTemplate();
+        // File > New Scene penceresi (yerleşik şablonlar + projedeki .cqscenetemplate dosyaları)
+        void DrawNewSceneDialog();
+        void ConfirmNewScene(const std::string& choice);
+        bool CreateNewScene(const std::string& choice);   // "builtin:basic" | "builtin:empty" | şablon dosyası yolu
         bool OpenInExternalEditor(const std::string& path);
         void OpenScene();
         bool OpenScene(const std::filesystem::path& path);
@@ -222,6 +226,9 @@ namespace Conqueror::Editor
         PendingSceneAction m_PendingAction = PendingSceneAction::None;
         std::filesystem::path m_PendingOpenScene;
         bool m_OpenUnsavedPopup = false;
+        bool m_OpenNewSceneDialog = false;
+        std::string m_NewSceneChoice = "builtin:basic";
+        std::string m_PendingNewSceneChoice = "builtin:basic";
         bool m_CloseConfirmed = false;
         const float m_AutoSaveInterval = 300.0f; // 5 dakika (300 saniye)
         

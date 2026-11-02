@@ -218,6 +218,7 @@ namespace Conqueror
         int Direction = 0;               // 0 dikey, 1 yatay
         float Density = 1.0f;
         float Friction = 0.4f;
+        std::string PhysicsMaterial;   // .cqphysmat2d
         float Restitution = 0.0f;
         bool IsTrigger = false;
     };
@@ -228,6 +229,7 @@ namespace Conqueror
         std::vector<glm::vec2> Points{ { -0.5f, -0.5f }, { 0.5f, -0.5f }, { 0.5f, 0.5f }, { -0.5f, 0.5f } };
         float Density = 1.0f;
         float Friction = 0.4f;
+        std::string PhysicsMaterial;   // .cqphysmat2d
         float Restitution = 0.0f;
         bool IsTrigger = false;
     };
@@ -238,6 +240,7 @@ namespace Conqueror
         std::vector<glm::vec2> Points{ { -1.0f, 0.0f }, { 1.0f, 0.0f } };
         float EdgeRadius = 0.0f;
         float Friction = 0.4f;
+        std::string PhysicsMaterial;   // .cqphysmat2d
         float Restitution = 0.0f;
         bool Loop = false;
     };
@@ -351,6 +354,7 @@ namespace Conqueror
         float VertexDistance = 0.05f;    // dikdörtgen olmayan şekillerde örnekleme aralığı (metre)
         float Density = 1.0f;
         float Friction = 0.4f;
+        std::string PhysicsMaterial;   // .cqphysmat2d
         float Restitution = 0.0f;
         bool IsTrigger = false;
         // Çalışma zamanı (bilgi): son birleşimdeki kontur / kutu sayısı

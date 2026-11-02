@@ -1,3 +1,4 @@
+#include "ObjectPicker.h"
 #include "BuildSettingsPanel.h"
 #include "Build/BuildPipeline.h"
 #include "UI/EditorUI.h"
@@ -401,7 +402,8 @@ namespace Conqueror::Editor
 
         UI::SubHeader("Branding");
         UI::BeginProperty("Icon", "A .png in the project, shown in the title bar / taskbar.");
-        if (InputStringField("##icon", player.Icon, ImGui::GetContentRegionAvail().x)) MarkDirty();
+        if (InputStringField("##icon", player.Icon, ImGui::GetContentRegionAvail().x - ImGui::GetFrameHeight() - ImGui::GetStyle().ItemSpacing.x))
+            MarkDirty();
         if (ImGui::BeginDragDropTarget())
         {
             if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
@@ -414,6 +416,12 @@ namespace Conqueror::Editor
                 }
             }
             ImGui::EndDragDropTarget();
+        }
+        ImGui::SameLine();
+        if (std::string picked; ObjectPicker::Button("iconpick", "Texture", { ".png" }, player.Icon, picked))
+        {
+            player.Icon = picked.empty() ? std::string() : ToProjectRelative(picked);
+            MarkDirty();
         }
         UI::EndProperty();
     }

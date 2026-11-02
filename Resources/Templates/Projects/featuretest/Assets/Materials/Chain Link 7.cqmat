@@ -1,0 +1,21 @@
+Material:
+  Name: Chain Link 7
+  Albedo: [0.3, 0.31, 0.33]
+  Opacity: 1
+  Metallic: 1
+  Roughness: 0.35
+  AO: 1
+  EmissionColor: [0, 0, 0]
+  EmissionStrength: 0
+  Tiling: [1, 1]
+  Offset: [0, 0]
+  RenderMode: 0
+  Culling: 0
+  AlphaClip: 0.5
+  NextGraphNodeID: 1
+  NextGraphLinkID: 1
+  GraphInitialized: false
+  GraphNodes:
+    []
+  GraphLinks:
+    []

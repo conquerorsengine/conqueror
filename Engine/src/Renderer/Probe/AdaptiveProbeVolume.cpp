@@ -1,3 +1,5 @@
+#include "Scene/MeshRendererMaterial.h"
+#include "Renderer/Utilities/Renderer3D/Material.h"
 #include "AdaptiveProbeVolume.h"
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"
@@ -338,7 +340,7 @@ namespace Conqueror
             auto [tf, mr] = meshView.get<TransformComponent, MeshRendererComponent>(e);
             glm::mat4 wt = tf.WorldTransform;
             glm::mat3 nm = glm::mat3(glm::transpose(glm::inverse(wt)));
-            glm::vec3 alb = mr.MaterialInstance ? mr.MaterialInstance->Albedo : glm::vec3(mr.Color);
+            glm::vec3 alb = MeshRendererMaterial::Shared(mr).Albedo;
 
             std::shared_ptr<Mesh> mesh;
             switch (mr.Type) {

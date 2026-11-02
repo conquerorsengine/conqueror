@@ -1,0 +1,23 @@
+Material:
+  Name: Cobble 1
+  Albedo: [0.5, 0.5, 0.52]
+  Opacity: 1
+  Metallic: 0
+  Roughness: 0.55
+  AO: 1
+  EmissionColor: [0, 0, 0]
+  EmissionStrength: 0
+  Tiling: [0.6, 0.6]
+  Offset: [0, 0]
+  WorldAligned: true
+  RenderMode: 0
+  Culling: 0
+  AlphaClip: 0.5
+  AlbedoMap: Assets/Plaza/Textures/cobble.jpg
+  NextGraphNodeID: 1
+  NextGraphLinkID: 1
+  GraphInitialized: false
+  GraphNodes:
+    []
+  GraphLinks:
+    []

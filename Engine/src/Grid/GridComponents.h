@@ -25,6 +25,15 @@ namespace Conqueror
         int EditorGridExtent = 12;          // düzenleyicide çizilen hücre yarıçapı
     };
 
+    // Rule Tile kuralı (Unity Rule Tile): 8 komşu deseni eşleşirse çıktı dokusu kullanılır
+    struct TileRule
+    {
+        // Komşular K, KD, D, GD, G, GB, B, KB (saat yönü, kuzeyden): 0 = fark etmez, 1 = bu karo, 2 = bu karo değil
+        int Neighbors[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+        std::string Texture;   // boş = karonun dokusu
+        int Rotation = 0;      // 0 sabit; 1 döndürülmüş (desen 90°'lik dönüşlerle de denenir, doku birlikte döner)
+    };
+
     struct TileDefinition
     {
         std::string Name = "Tile";
@@ -38,6 +47,13 @@ namespace Conqueror
         // 0 yok; 1 = 16 karo (4 kenar komşu, 4x4 atlas, indis = K1|D2|G4|B8); 2 = 47 karo "blob" (8 komşu, 8x6 atlas)
         int Autotile = 0;
         int Terrain = -1;                   // aynı Terrain değerli karolar birbirine bağlanır (-1: yalnızca aynı karo)
+        // Karo varlığı (.cqtile, Unity Tile asset): doluysa yukarıdaki alanlar dosyadan gelir (dosya değişince güncellenir)
+        std::string Asset;
+        // Rule Tile: ilk eşleşen kuralın dokusu (hiçbiri eşleşmezse Texture)
+        std::vector<TileRule> Rules;
+        // Animated Tile: kare dokuları ve hız (kare/saniye)
+        std::vector<std::string> Frames;
+        float FrameRate = 0.0f;
     };
 
     struct TileCell
@@ -88,6 +104,7 @@ namespace Conqueror
         float Friction = 0.4f;
         float Restitution = 0.0f;
         bool IsTrigger = false;
+        std::string PhysicsMaterial;   // .cqphysmat2d
     };
 
     inline uint64_t GridKey(int x, int y)

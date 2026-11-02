@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 8316177736411589612
+  - Entity: 8317949032124816441
     TagComponent:
       Tag: AR Simulation Environment
       GameTag: Untagged
@@ -12,7 +12,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 8997948622370469112
+  - Entity: 8996106957644542265
     TagComponent:
       Tag: Floor
       GameTag: AR Surface
@@ -26,14 +26,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.45
-      AO: 1
-      Tiling: [0.45, 0.45]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/laminate_floor_02.jpg
+      MaterialAsset: Assets/Materials/Laminate floor 02.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -55,7 +48,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7805695421709735793
+  - Entity: 7806096760561335094
     TagComponent:
       Tag: Ceiling
       GameTag: Untagged
@@ -69,11 +62,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.95, 0.95, 0.94, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Ceiling.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -95,7 +84,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 3606027304258932405
+  - Entity: 3606428643381277209
     TagComponent:
       Tag: Wall North
       GameTag: Untagged
@@ -109,14 +98,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [0.5, 0.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/white_plaster.jpg
+      MaterialAsset: Assets/Materials/White plaster.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -138,7 +120,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4282261173961522830
+  - Entity: 4281252939047216279
     TagComponent:
       Tag: Wall South
       GameTag: Untagged
@@ -152,14 +134,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [0.5, 0.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/white_plaster.jpg
+      MaterialAsset: Assets/Materials/White plaster.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -181,7 +156,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2736185583160538597
+  - Entity: 2738003092713008665
     TagComponent:
       Tag: Wall West
       GameTag: Untagged
@@ -195,14 +170,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [0.5, 0.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/white_plaster.jpg
+      MaterialAsset: Assets/Materials/White plaster.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -224,7 +192,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 3914467013933175164
+  - Entity: 3915121240739432236
     TagComponent:
       Tag: Wall East North
       GameTag: Untagged
@@ -238,14 +206,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [0.5, 0.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/white_plaster.jpg
+      MaterialAsset: Assets/Materials/White plaster.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -267,7 +228,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6989889070570026501
+  - Entity: 6991458090364044911
     TagComponent:
       Tag: Wall East South
       GameTag: Untagged
@@ -281,14 +242,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [0.5, 0.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/white_plaster.jpg
+      MaterialAsset: Assets/Materials/White plaster.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -310,7 +264,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5313326772860782945
+  - Entity: 5312857264027865858
     TagComponent:
       Tag: Window Sill Wall
       GameTag: Untagged
@@ -324,14 +278,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [0.5, 0.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/white_plaster.jpg
+      MaterialAsset: Assets/Materials/White plaster.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -353,7 +300,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 775659979925826210
+  - Entity: 775753421651977086
     TagComponent:
       Tag: Window Header
       GameTag: Untagged
@@ -367,14 +314,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [0.5, 0.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/white_plaster.jpg
+      MaterialAsset: Assets/Materials/White plaster.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -396,7 +336,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1942628049740412242
+  - Entity: 1941663795038092277
     TagComponent:
       Tag: Window Frame Bottom
       GameTag: Untagged
@@ -410,11 +350,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.09, 1]
-      Metallic: 0
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Window Mullion.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -436,7 +372,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 681018910578943882
+  - Entity: 681382831867380610
     TagComponent:
       Tag: Window Frame Top
       GameTag: Untagged
@@ -450,11 +386,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.09, 1]
-      Metallic: 0
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Window Mullion.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -476,7 +408,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 931600285600690582
+  - Entity: 930556831422237531
     TagComponent:
       Tag: Window Mullion
       GameTag: Untagged
@@ -490,11 +422,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.09, 1]
-      Metallic: 0
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Window Mullion.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -516,7 +444,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 612282695664933171
+  - Entity: 610509166653712489
     TagComponent:
       Tag: Window Glass
       GameTag: Untagged
@@ -530,13 +458,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.02, 0.03, 0.03, 0.15]
-      Metallic: 0
-      Roughness: 0.02
-      AO: 1
       CastShadows: false
-      TexturePath: ""
-  - Entity: 7439797889277374705
+      MaterialAsset: Assets/Materials/Window Glass.cqmat
+  - Entity: 7437921039931186257
     TagComponent:
       Tag: Window Ledge
       GameTag: Untagged
@@ -550,11 +474,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.95, 0.95, 0.94, 1]
-      Metallic: 0
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Window Ledge.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -576,7 +496,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6432404952249273749
+  - Entity: 6432208157212662030
     TagComponent:
       Tag: Skirting
       GameTag: Untagged
@@ -590,11 +510,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.96, 0.96, 0.95, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Skirting.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -616,7 +532,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6235587271716792340
+  - Entity: 6237191442168810523
     TagComponent:
       Tag: Skirting
       GameTag: Untagged
@@ -630,11 +546,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.96, 0.96, 0.95, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Skirting.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -656,7 +568,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5294239736175276971
+  - Entity: 5296057211815663357
     TagComponent:
       Tag: Skirting
       GameTag: Untagged
@@ -670,11 +582,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.96, 0.96, 0.95, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Skirting.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -696,7 +604,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2868230842970257215
+  - Entity: 2867022496785420339
     TagComponent:
       Tag: Garden Lawn
       GameTag: Untagged
@@ -710,14 +618,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 1, 0.88, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      Tiling: [0.3, 0.3]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/lawn_grass.jpg
+      MaterialAsset: Assets/Materials/Lawn grass.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -739,7 +640,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4436760673291602396
+  - Entity: 4437522652259233078
     TagComponent:
       Tag: Rug
       GameTag: Untagged
@@ -753,14 +654,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      Tiling: [1.5, 1]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/fabric_pattern_07.jpg
-  - Entity: 6597733688300870948
+      MaterialAsset: Assets/Materials/Fabric pattern 07.cqmat
+  - Entity: 6595643499747164677
     TagComponent:
       Tag: Sofa
       GameTag: Untagged
@@ -774,7 +669,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/sofa_03.glb
-  - Entity: 3159569761546495398
+  - Entity: 3161173931994940116
     TagComponent:
       Tag: Throw Pillows
       GameTag: Untagged
@@ -788,7 +683,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/throw_pillows_01.glb
-  - Entity: 4368512151725315161
+  - Entity: 4370646320874207133
     TagComponent:
       Tag: Sofa Seat
       GameTag: Untagged
@@ -821,7 +716,7 @@ Entities:
       Size: [2.6, 0.44, 0.85]
       IsTrigger: false
       Version: 2
-  - Entity: 9187412157957772660
+  - Entity: 9189467128177955023
     TagComponent:
       Tag: Sofa Back
       GameTag: Untagged
@@ -854,7 +749,7 @@ Entities:
       Size: [2.7, 1, 0.26]
       IsTrigger: false
       Version: 2
-  - Entity: 1156870242980130287
+  - Entity: 1155650901664092617
     TagComponent:
       Tag: Coffee Table
       GameTag: Untagged
@@ -868,7 +763,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/modern_coffee_table_01.glb
-  - Entity: 6606897464592597874
+  - Entity: 6608996415345052625
     TagComponent:
       Tag: Coffee Table Top
       GameTag: AR Surface
@@ -901,7 +796,7 @@ Entities:
       Size: [1.2, 0.39, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 34283233786940925
+  - Entity: 35599365076637485
     TagComponent:
       Tag: Coffee Table Vase
       GameTag: Untagged
@@ -915,7 +810,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/ceramic_vase_03.glb
-  - Entity: 7570725401182922459
+  - Entity: 7572569266515993146
     TagComponent:
       Tag: Side Table
       GameTag: Untagged
@@ -929,7 +824,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/side_table_01.glb
-  - Entity: 1213015304999454059
+  - Entity: 1212255525519280630
     TagComponent:
       Tag: Side Table Top
       GameTag: AR Surface
@@ -962,7 +857,7 @@ Entities:
       Size: [0.55, 0.551, 0.45]
       IsTrigger: false
       Version: 2
-  - Entity: 2483245380101785721
+  - Entity: 2482037000079065556
     TagComponent:
       Tag: Picture Frame
       GameTag: Untagged
@@ -976,7 +871,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/standing_picture_frame_01.glb
-  - Entity: 476343420767120264
+  - Entity: 476249979358282241
     TagComponent:
       Tag: Painting
       GameTag: Untagged
@@ -990,7 +885,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/hanging_picture_frame_01.glb
-  - Entity: 7753007421389263810
+  - Entity: 7755060192317042961
     TagComponent:
       Tag: Corner Plant
       GameTag: Untagged
@@ -1004,7 +899,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/potted_plant_01.glb
-  - Entity: 4233841596574664030
+  - Entity: 4235096156557638841
     TagComponent:
       Tag: Corner Plant Pot
       GameTag: Untagged
@@ -1037,7 +932,7 @@ Entities:
       Size: [0.55, 1.2, 0.55]
       IsTrigger: false
       Version: 2
-  - Entity: 2946887760998390631
+  - Entity: 2946136777546779572
     TagComponent:
       Tag: Sideboard
       GameTag: Untagged
@@ -1051,7 +946,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/modern_wooden_cabinet.glb
-  - Entity: 6447317043267129916
+  - Entity: 6448817893852070073
     TagComponent:
       Tag: Sideboard Top
       GameTag: AR Surface
@@ -1084,7 +979,7 @@ Entities:
       Size: [0.44, 0.578, 2.07]
       IsTrigger: false
       Version: 2
-  - Entity: 6694626187839340619
+  - Entity: 6696749327647973124
     TagComponent:
       Tag: Sideboard Vase
       GameTag: Untagged
@@ -1098,7 +993,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/ceramic_vase_01.glb
-  - Entity: 2370926186823586983
+  - Entity: 2369049303397309354
     TagComponent:
       Tag: Sideboard Plant
       GameTag: Untagged
@@ -1112,7 +1007,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/potted_plant_04.glb
-  - Entity: 8054543408915302024
+  - Entity: 8052657729187628537
     TagComponent:
       Tag: Wall Painting
       GameTag: Untagged
@@ -1126,7 +1021,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/hanging_picture_frame_02.glb
-  - Entity: 4359487850532105807
+  - Entity: 4361655004965804233
     TagComponent:
       Tag: Dining Table
       GameTag: Untagged
@@ -1140,7 +1035,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/dining_table.glb
-  - Entity: 5262853755145511449
+  - Entity: 5264387591479437701
     TagComponent:
       Tag: Dining Table Top
       GameTag: AR Surface
@@ -1173,7 +1068,7 @@ Entities:
       Size: [2.2, 0.04, 1.34]
       IsTrigger: false
       Version: 2
-  - Entity: 4677108607335542867
+  - Entity: 4679196562372709881
     TagComponent:
       Tag: Dining Chair
       GameTag: Untagged
@@ -1208,7 +1103,7 @@ Entities:
       Size: [0.43357077, 0.9733777, 0.5764201]
       IsTrigger: false
       Version: 2
-  - Entity: 2357320683803806130
+  - Entity: 2355760459245315637
     TagComponent:
       Tag: Dining Chair
       GameTag: Untagged
@@ -1243,7 +1138,7 @@ Entities:
       Size: [0.43357077, 0.9733777, 0.5764201]
       IsTrigger: false
       Version: 2
-  - Entity: 8268881716087778633
+  - Entity: 8270664007771618452
     TagComponent:
       Tag: Dining Chair
       GameTag: Untagged
@@ -1278,7 +1173,7 @@ Entities:
       Size: [0.43357077, 0.9733777, 0.5764201]
       IsTrigger: false
       Version: 2
-  - Entity: 409104959740644295
+  - Entity: 408380398465473849
     TagComponent:
       Tag: Dining Chair
       GameTag: Untagged
@@ -1313,7 +1208,7 @@ Entities:
       Size: [0.43357077, 0.9733777, 0.5764201]
       IsTrigger: false
       Version: 2
-  - Entity: 3763637932209942276
+  - Entity: 3764048066789506314
     TagComponent:
       Tag: Table Plant
       GameTag: Untagged
@@ -1327,7 +1222,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/potted_plant_04.glb
-  - Entity: 7101675012263023053
+  - Entity: 7100350084084654931
     TagComponent:
       Tag: Ceiling Lamp
       GameTag: Untagged
@@ -1341,7 +1236,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/modern_ceiling_lamp_01.glb
-  - Entity: 5530758013232129608
+  - Entity: 5532256630294875399
     TagComponent:
       Tag: Lamp Light
       GameTag: Untagged
@@ -1362,7 +1257,7 @@ Entities:
       Quadratic: 0.032
       CastShadows: true
       Mode: 0
-  - Entity: 2351095794078499611
+  - Entity: 2352972677703328552
     TagComponent:
       Tag: Sun
       GameTag: Untagged
@@ -1381,7 +1276,7 @@ Entities:
       Intensity: 4.5
       CastShadows: true
       Mode: 0
-  - Entity: 3034374956020985845
+  - Entity: 3034290310700792621
     TagComponent:
       Tag: Window Light
       GameTag: Untagged
@@ -1400,7 +1295,7 @@ Entities:
       Size: [2.8, 1.9]
       Range: 10
       TwoSided: false
-  - Entity: 5726258816680005860
+  - Entity: 5724206011463172647
     TagComponent:
       Tag: AR Session
       GameTag: Untagged
@@ -1415,7 +1310,7 @@ Entities:
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/ARSession.cqs
       ClassName: ""
-  - Entity: 2675694580582830226
+  - Entity: 2676913955994222069
     TagComponent:
       Tag: AR Feature Points
       GameTag: Untagged
@@ -1493,7 +1388,7 @@ Entities:
       SizeOverLifetime:
         - [0, 1]
         - [1, 1]
-  - Entity: 7008274307943173128
+  - Entity: 7009238596984319549
     TagComponent:
       Tag: XR Origin (AR)
       GameTag: Untagged
@@ -1508,7 +1403,7 @@ Entities:
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/ARDevice.cqs
       ClassName: ""
-  - Entity: 722052631747591575
+  - Entity: 721290687533110049
     TagComponent:
       Tag: AR Camera
       GameTag: Untagged
@@ -1535,7 +1430,7 @@ Entities:
       OrderInLayer: 0
     AudioListenerComponent:
       IsActive: true
-  - Entity: 5399067328740351276
+  - Entity: 5398375753202967553
     TagComponent:
       Tag: AR Interaction
       GameTag: Untagged
@@ -1550,7 +1445,7 @@ Entities:
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/ARPlacement.cqs
       ClassName: ""
-  - Entity: 6317788269795847902
+  - Entity: 6317142839386797922
     TagComponent:
       Tag: Placement Reticle
       GameTag: Untagged
@@ -1566,14 +1461,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.95]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/AR/reticle.png
-  - Entity: 8968933554326991364
+      MaterialAsset: Assets/Materials/Reticle.cqmat
+  - Entity: 8971091878552015963
     TagComponent:
       Tag: Selection Ring
       GameTag: Untagged
@@ -1589,14 +1479,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [0.25, 0.7, 1, 0.9]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/AR/selection_ring.png
-  - Entity: 2439789387318738144
+      MaterialAsset: Assets/Materials/Selection ring.cqmat
+  - Entity: 2439942202152501691
     TagComponent:
       Tag: AR Catalog
       GameTag: Untagged
@@ -1610,7 +1495,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 63806095659660280
+  - Entity: 64486676279479812
     TagComponent:
       Tag: Lounge Chair
       GameTag: Untagged
@@ -1622,7 +1507,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 6906892872991622637
+  - Entity: 6907821977666708566
     TagComponent:
       Tag: Model
       GameTag: Untagged
@@ -1636,7 +1521,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/mid_century_lounge_chair.glb
-  - Entity: 960979398968765128
+  - Entity: 959724839194679946
     TagComponent:
       Tag: Ottoman
       GameTag: Untagged
@@ -1648,7 +1533,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 1573740168566907767
+  - Entity: 1571960076592276586
     TagComponent:
       Tag: Model
       GameTag: Untagged
@@ -1662,7 +1547,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/Ottoman_01.glb
-  - Entity: 2848822529036393592
+  - Entity: 2850420105636021860
     TagComponent:
       Tag: Floor Plant
       GameTag: Untagged
@@ -1674,7 +1559,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 7417407974758516036
+  - Entity: 7415273844000723413
     TagComponent:
       Tag: Model
       GameTag: Untagged
@@ -1688,7 +1573,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/potted_plant_01.glb
-  - Entity: 5726430285782609134
+  - Entity: 5728555660720433699
     TagComponent:
       Tag: Shelves
       GameTag: Untagged
@@ -1700,7 +1585,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5123905559105373243
+  - Entity: 5124095758885652441
     TagComponent:
       Tag: Model
       GameTag: Untagged
@@ -1714,7 +1599,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/wooden_display_shelves_01.glb
-  - Entity: 4414848179972262276
+  - Entity: 4414376473271091387
     TagComponent:
       Tag: Side Table
       GameTag: Untagged
@@ -1726,7 +1611,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5923146213669223932
+  - Entity: 5923512369133750370
     TagComponent:
       Tag: Model
       GameTag: Untagged
@@ -1740,7 +1625,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/side_table_01.glb
-  - Entity: 820280522915347541
+  - Entity: 821218426627624558
     TagComponent:
       Tag: Vase
       GameTag: Untagged
@@ -1752,7 +1637,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 642947370445562858
+  - Entity: 642748379398558342
     TagComponent:
       Tag: Model
       GameTag: Untagged
@@ -1766,7 +1651,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/ceramic_vase_01.glb
-  - Entity: 1000626204000362950
+  - Entity: 1001282632682312059
     TagComponent:
       Tag: HUD
       GameTag: Untagged
@@ -1792,7 +1677,7 @@ Entities:
       IgnoreReversedGraphics: true
       BlockingObjects: 0
       BlockingMask: 4294967295
-  - Entity: 1254687593667453162
+  - Entity: 1256010327520178112
     TagComponent:
       Tag: Instruction Back
       GameTag: Untagged
@@ -1825,7 +1710,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 33
-  - Entity: 2187339382212381424
+  - Entity: 2187984780595203931
     TagComponent:
       Tag: ScanIcon
       GameTag: Untagged
@@ -1858,7 +1743,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 1039672835112812568
+  - Entity: 1038675561786771144
     TagComponent:
       Tag: InstructionText
       GameTag: Untagged
@@ -1897,7 +1782,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 9150617275681199741
+  - Entity: 9149679378199920414
     TagComponent:
       Tag: Status Back
       GameTag: Untagged
@@ -1930,7 +1815,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 23
-  - Entity: 5542240006620552479
+  - Entity: 5543448356841758805
     TagComponent:
       Tag: StatusDot
       GameTag: Untagged
@@ -1963,7 +1848,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 8
-  - Entity: 5276670187527867942
+  - Entity: 5277597062042170216
     TagComponent:
       Tag: StatusText
       GameTag: Untagged
@@ -2002,7 +1887,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 1374884196505696113
+  - Entity: 1374482858299776501
     TagComponent:
       Tag: DeviceText
       GameTag: Untagged
@@ -2041,7 +1926,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 6518261903368788453
+  - Entity: 6517326236528016093
     TagComponent:
       Tag: Planes
       GameTag: Untagged
@@ -2084,7 +1969,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 1157719422898768923
+  - Entity: 1159323594093013408
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -2123,7 +2008,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 2588559923326041240
+  - Entity: 2588404913020977202
     TagComponent:
       Tag: Reset
       GameTag: Untagged
@@ -2166,7 +2051,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 5873041132634817775
+  - Entity: 5874539787538409447
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -2205,7 +2090,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 2181524065908519748
+  - Entity: 2180271705692576368
     TagComponent:
       Tag: Catalog Back
       GameTag: Untagged
@@ -2238,7 +2123,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 52
-  - Entity: 7429937598659153260
+  - Entity: 7429749600261520582
     TagComponent:
       Tag: Item Lounge Chair
       GameTag: Untagged
@@ -2281,7 +2166,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 7568769736541835517
+  - Entity: 7570022098175266388
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -2320,7 +2205,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 7445675428618444224
+  - Entity: 7445557798151921809
     TagComponent:
       Tag: Item Ottoman
       GameTag: Untagged
@@ -2363,7 +2248,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 8614932385940725417
+  - Entity: 8613651438164612384
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -2402,7 +2287,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 1759751777577882455
+  - Entity: 1759871645388932874
     TagComponent:
       Tag: Item Floor Plant
       GameTag: Untagged
@@ -2445,7 +2330,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 6117878819821259752
+  - Entity: 6116072305677425987
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -2484,7 +2369,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 865470421538011857
+  - Entity: 866223605899671470
     TagComponent:
       Tag: Item Shelves
       GameTag: Untagged
@@ -2527,7 +2412,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 7799588123736301865
+  - Entity: 7798546907059199136
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -2566,7 +2451,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 3825082997056738004
+  - Entity: 3824358438308163174
     TagComponent:
       Tag: Item Side Table
       GameTag: Untagged
@@ -2609,7 +2494,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 5965433207035645101
+  - Entity: 5966931826247598644
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -2648,7 +2533,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 5701545357650095166
+  - Entity: 5699376038821831266
     TagComponent:
       Tag: Item Vase
       GameTag: Untagged
@@ -2691,7 +2576,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 6562376679194162614
+  - Entity: 6563305787084975383
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -2730,7 +2615,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 4472248470681764262
+  - Entity: 4474092372994104862
     TagComponent:
       Tag: Delete
       GameTag: Untagged
@@ -2773,7 +2658,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 5852861529158957681
+  - Entity: 5854186427428760335
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -2812,7 +2697,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 5141859509517689645
+  - Entity: 5142047546026783377
     TagComponent:
       Tag: Clear
       GameTag: Untagged
@@ -2855,7 +2740,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 2047755650435139086
+  - Entity: 2048192176770282721
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -2894,7 +2779,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 8233764907224848810
+  - Entity: 8233565882310864692
     TagComponent:
       Tag: HintText
       GameTag: Untagged
@@ -3140,185 +3025,185 @@ EditorCamera:
   Yaw: 0.55850536
   OrthographicSize: 10
 Hierarchy:
-  - Child: 8614932385940725417
-    Parent: 7445675428618444224
-  - Child: 7568769736541835517
-    Parent: 7429937598659153260
-  - Child: 8997948622370469112
-    Parent: 8316177736411589612
-  - Child: 7805695421709735793
-    Parent: 8316177736411589612
-  - Child: 3606027304258932405
-    Parent: 8316177736411589612
-  - Child: 4282261173961522830
-    Parent: 8316177736411589612
-  - Child: 2736185583160538597
-    Parent: 8316177736411589612
-  - Child: 3914467013933175164
-    Parent: 8316177736411589612
-  - Child: 6989889070570026501
-    Parent: 8316177736411589612
-  - Child: 5313326772860782945
-    Parent: 8316177736411589612
-  - Child: 775659979925826210
-    Parent: 8316177736411589612
-  - Child: 1942628049740412242
-    Parent: 8316177736411589612
-  - Child: 681018910578943882
-    Parent: 8316177736411589612
-  - Child: 931600285600690582
-    Parent: 8316177736411589612
-  - Child: 612282695664933171
-    Parent: 8316177736411589612
-  - Child: 7439797889277374705
-    Parent: 8316177736411589612
-  - Child: 6432404952249273749
-    Parent: 8316177736411589612
-  - Child: 6235587271716792340
-    Parent: 8316177736411589612
-  - Child: 5294239736175276971
-    Parent: 8316177736411589612
-  - Child: 2868230842970257215
-    Parent: 8316177736411589612
-  - Child: 4436760673291602396
-    Parent: 8316177736411589612
-  - Child: 6597733688300870948
-    Parent: 8316177736411589612
-  - Child: 3159569761546495398
-    Parent: 8316177736411589612
-  - Child: 4368512151725315161
-    Parent: 8316177736411589612
-  - Child: 9187412157957772660
-    Parent: 8316177736411589612
-  - Child: 1156870242980130287
-    Parent: 8316177736411589612
-  - Child: 6606897464592597874
-    Parent: 8316177736411589612
-  - Child: 34283233786940925
-    Parent: 8316177736411589612
-  - Child: 7570725401182922459
-    Parent: 8316177736411589612
-  - Child: 1213015304999454059
-    Parent: 8316177736411589612
-  - Child: 2483245380101785721
-    Parent: 8316177736411589612
-  - Child: 476343420767120264
-    Parent: 8316177736411589612
-  - Child: 7753007421389263810
-    Parent: 8316177736411589612
-  - Child: 4233841596574664030
-    Parent: 8316177736411589612
-  - Child: 2946887760998390631
-    Parent: 8316177736411589612
-  - Child: 6447317043267129916
-    Parent: 8316177736411589612
-  - Child: 6694626187839340619
-    Parent: 8316177736411589612
-  - Child: 2370926186823586983
-    Parent: 8316177736411589612
-  - Child: 8054543408915302024
-    Parent: 8316177736411589612
-  - Child: 4359487850532105807
-    Parent: 8316177736411589612
-  - Child: 5262853755145511449
-    Parent: 8316177736411589612
-  - Child: 4677108607335542867
-    Parent: 8316177736411589612
-  - Child: 2357320683803806130
-    Parent: 8316177736411589612
-  - Child: 8268881716087778633
-    Parent: 8316177736411589612
-  - Child: 409104959740644295
-    Parent: 8316177736411589612
-  - Child: 3763637932209942276
-    Parent: 8316177736411589612
-  - Child: 7101675012263023053
-    Parent: 8316177736411589612
-  - Child: 5530758013232129608
-    Parent: 8316177736411589612
-  - Child: 2351095794078499611
-    Parent: 8316177736411589612
-  - Child: 3034374956020985845
-    Parent: 8316177736411589612
-  - Child: 5852861529158957681
-    Parent: 4472248470681764262
-  - Child: 5923146213669223932
-    Parent: 4414848179972262276
-  - Child: 2675694580582830226
-    Parent: 5726258816680005860
-  - Child: 722052631747591575
-    Parent: 7008274307943173128
-  - Child: 1157719422898768923
-    Parent: 6518261903368788453
-  - Child: 63806095659660280
-    Parent: 2439789387318738144
-  - Child: 960979398968765128
-    Parent: 2439789387318738144
-  - Child: 2848822529036393592
-    Parent: 2439789387318738144
-  - Child: 5726430285782609134
-    Parent: 2439789387318738144
-  - Child: 4414848179972262276
-    Parent: 2439789387318738144
-  - Child: 820280522915347541
-    Parent: 2439789387318738144
-  - Child: 1254687593667453162
-    Parent: 1000626204000362950
-  - Child: 2187339382212381424
-    Parent: 1000626204000362950
-  - Child: 1039672835112812568
-    Parent: 1000626204000362950
-  - Child: 9150617275681199741
-    Parent: 1000626204000362950
-  - Child: 5542240006620552479
-    Parent: 1000626204000362950
-  - Child: 5276670187527867942
-    Parent: 1000626204000362950
-  - Child: 1374884196505696113
-    Parent: 1000626204000362950
-  - Child: 6518261903368788453
-    Parent: 1000626204000362950
-  - Child: 2588559923326041240
-    Parent: 1000626204000362950
-  - Child: 2181524065908519748
-    Parent: 1000626204000362950
-  - Child: 7429937598659153260
-    Parent: 1000626204000362950
-  - Child: 7445675428618444224
-    Parent: 1000626204000362950
-  - Child: 1759751777577882455
-    Parent: 1000626204000362950
-  - Child: 865470421538011857
-    Parent: 1000626204000362950
-  - Child: 3825082997056738004
-    Parent: 1000626204000362950
-  - Child: 5701545357650095166
-    Parent: 1000626204000362950
-  - Child: 4472248470681764262
-    Parent: 1000626204000362950
-  - Child: 5141859509517689645
-    Parent: 1000626204000362950
-  - Child: 8233764907224848810
-    Parent: 1000626204000362950
-  - Child: 6117878819821259752
-    Parent: 1759751777577882455
-  - Child: 6906892872991622637
-    Parent: 63806095659660280
-  - Child: 7799588123736301865
-    Parent: 865470421538011857
-  - Child: 1573740168566907767
-    Parent: 960979398968765128
-  - Child: 5965433207035645101
-    Parent: 3825082997056738004
-  - Child: 7417407974758516036
-    Parent: 2848822529036393592
-  - Child: 6562376679194162614
-    Parent: 5701545357650095166
-  - Child: 5123905559105373243
-    Parent: 5726430285782609134
-  - Child: 2047755650435139086
-    Parent: 5141859509517689645
-  - Child: 642947370445562858
-    Parent: 820280522915347541
-  - Child: 5873041132634817775
-    Parent: 2588559923326041240
+  - Child: 8613651438164612384
+    Parent: 7445557798151921809
+  - Child: 7570022098175266388
+    Parent: 7429749600261520582
+  - Child: 8996106957644542265
+    Parent: 8317949032124816441
+  - Child: 7806096760561335094
+    Parent: 8317949032124816441
+  - Child: 3606428643381277209
+    Parent: 8317949032124816441
+  - Child: 4281252939047216279
+    Parent: 8317949032124816441
+  - Child: 2738003092713008665
+    Parent: 8317949032124816441
+  - Child: 3915121240739432236
+    Parent: 8317949032124816441
+  - Child: 6991458090364044911
+    Parent: 8317949032124816441
+  - Child: 5312857264027865858
+    Parent: 8317949032124816441
+  - Child: 775753421651977086
+    Parent: 8317949032124816441
+  - Child: 1941663795038092277
+    Parent: 8317949032124816441
+  - Child: 681382831867380610
+    Parent: 8317949032124816441
+  - Child: 930556831422237531
+    Parent: 8317949032124816441
+  - Child: 610509166653712489
+    Parent: 8317949032124816441
+  - Child: 7437921039931186257
+    Parent: 8317949032124816441
+  - Child: 6432208157212662030
+    Parent: 8317949032124816441
+  - Child: 6237191442168810523
+    Parent: 8317949032124816441
+  - Child: 5296057211815663357
+    Parent: 8317949032124816441
+  - Child: 2867022496785420339
+    Parent: 8317949032124816441
+  - Child: 4437522652259233078
+    Parent: 8317949032124816441
+  - Child: 6595643499747164677
+    Parent: 8317949032124816441
+  - Child: 3161173931994940116
+    Parent: 8317949032124816441
+  - Child: 4370646320874207133
+    Parent: 8317949032124816441
+  - Child: 9189467128177955023
+    Parent: 8317949032124816441
+  - Child: 1155650901664092617
+    Parent: 8317949032124816441
+  - Child: 6608996415345052625
+    Parent: 8317949032124816441
+  - Child: 35599365076637485
+    Parent: 8317949032124816441
+  - Child: 7572569266515993146
+    Parent: 8317949032124816441
+  - Child: 1212255525519280630
+    Parent: 8317949032124816441
+  - Child: 2482037000079065556
+    Parent: 8317949032124816441
+  - Child: 476249979358282241
+    Parent: 8317949032124816441
+  - Child: 7755060192317042961
+    Parent: 8317949032124816441
+  - Child: 4235096156557638841
+    Parent: 8317949032124816441
+  - Child: 2946136777546779572
+    Parent: 8317949032124816441
+  - Child: 6448817893852070073
+    Parent: 8317949032124816441
+  - Child: 6696749327647973124
+    Parent: 8317949032124816441
+  - Child: 2369049303397309354
+    Parent: 8317949032124816441
+  - Child: 8052657729187628537
+    Parent: 8317949032124816441
+  - Child: 4361655004965804233
+    Parent: 8317949032124816441
+  - Child: 5264387591479437701
+    Parent: 8317949032124816441
+  - Child: 4679196562372709881
+    Parent: 8317949032124816441
+  - Child: 2355760459245315637
+    Parent: 8317949032124816441
+  - Child: 8270664007771618452
+    Parent: 8317949032124816441
+  - Child: 408380398465473849
+    Parent: 8317949032124816441
+  - Child: 3764048066789506314
+    Parent: 8317949032124816441
+  - Child: 7100350084084654931
+    Parent: 8317949032124816441
+  - Child: 5532256630294875399
+    Parent: 8317949032124816441
+  - Child: 2352972677703328552
+    Parent: 8317949032124816441
+  - Child: 3034290310700792621
+    Parent: 8317949032124816441
+  - Child: 5854186427428760335
+    Parent: 4474092372994104862
+  - Child: 5923512369133750370
+    Parent: 4414376473271091387
+  - Child: 2676913955994222069
+    Parent: 5724206011463172647
+  - Child: 721290687533110049
+    Parent: 7009238596984319549
+  - Child: 1159323594093013408
+    Parent: 6517326236528016093
+  - Child: 64486676279479812
+    Parent: 2439942202152501691
+  - Child: 959724839194679946
+    Parent: 2439942202152501691
+  - Child: 2850420105636021860
+    Parent: 2439942202152501691
+  - Child: 5728555660720433699
+    Parent: 2439942202152501691
+  - Child: 4414376473271091387
+    Parent: 2439942202152501691
+  - Child: 821218426627624558
+    Parent: 2439942202152501691
+  - Child: 1256010327520178112
+    Parent: 1001282632682312059
+  - Child: 2187984780595203931
+    Parent: 1001282632682312059
+  - Child: 1038675561786771144
+    Parent: 1001282632682312059
+  - Child: 9149679378199920414
+    Parent: 1001282632682312059
+  - Child: 5543448356841758805
+    Parent: 1001282632682312059
+  - Child: 5277597062042170216
+    Parent: 1001282632682312059
+  - Child: 1374482858299776501
+    Parent: 1001282632682312059
+  - Child: 6517326236528016093
+    Parent: 1001282632682312059
+  - Child: 2588404913020977202
+    Parent: 1001282632682312059
+  - Child: 2180271705692576368
+    Parent: 1001282632682312059
+  - Child: 7429749600261520582
+    Parent: 1001282632682312059
+  - Child: 7445557798151921809
+    Parent: 1001282632682312059
+  - Child: 1759871645388932874
+    Parent: 1001282632682312059
+  - Child: 866223605899671470
+    Parent: 1001282632682312059
+  - Child: 3824358438308163174
+    Parent: 1001282632682312059
+  - Child: 5699376038821831266
+    Parent: 1001282632682312059
+  - Child: 4474092372994104862
+    Parent: 1001282632682312059
+  - Child: 5142047546026783377
+    Parent: 1001282632682312059
+  - Child: 8233565882310864692
+    Parent: 1001282632682312059
+  - Child: 6116072305677425987
+    Parent: 1759871645388932874
+  - Child: 6907821977666708566
+    Parent: 64486676279479812
+  - Child: 7798546907059199136
+    Parent: 866223605899671470
+  - Child: 1571960076592276586
+    Parent: 959724839194679946
+  - Child: 5966931826247598644
+    Parent: 3824358438308163174
+  - Child: 7415273844000723413
+    Parent: 2850420105636021860
+  - Child: 6563305787084975383
+    Parent: 5699376038821831266
+  - Child: 5124095758885652441
+    Parent: 5728555660720433699
+  - Child: 2048192176770282721
+    Parent: 5142047546026783377
+  - Child: 642748379398558342
+    Parent: 821218426627624558
+  - Child: 5874539787538409447
+    Parent: 2588404913020977202

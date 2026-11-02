@@ -1,3 +1,4 @@
+#include "ObjectPicker.h"
 #include "TilePalettePanel.h"
 #include "EditorState.h"
 #include "Scene/Scene.h"
@@ -495,6 +496,7 @@ namespace Conqueror::Editor
             UI::InfoBox("Select the Tilemap (or its Grid) to paint in the Scene view.", UI::InfoType::Warning);
 
         ImGui::BeginChild("##tilepalettebody");
+        DrawPaletteAsset(e, map);
         DrawPalette(e, map);
         DrawTileEditor(e, map);
         DrawBrush(e, map);
@@ -590,6 +592,163 @@ namespace Conqueror::Editor
             ImGui::PopStyleColor();
         }
         ImGui::Spacing();
+    }
+
+    int TilePalettePanel::EnsureTileInMap(Entity e, TilemapComponent& map, const std::string& tileAsset)
+    {
+        for (int i = 0; i < (int)map.Palette.size(); ++i)
+            if (map.Palette[(size_t)i].Asset == tileAsset)
+                return i;
+        TileDefinition def;
+        if (!GridSystem::LoadTileAsset(tileAsset, def))
+            return -1;
+        PushUndo(e);
+        def.Asset = tileAsset;
+        map.Palette.push_back(def);
+        map.Version++;
+        return (int)map.Palette.size() - 1;
+    }
+
+    bool TilePalettePanel::SelectPaletteAssetTile(int index)
+    {
+        Entity e = GetTarget();
+        GridSystem::TilePaletteAsset palette;
+        if (!e || m_PaletteAsset.empty() || !GridSystem::LoadPalette(m_PaletteAsset, palette) || index < 0 || index >= (int)palette.Tiles.size())
+            return false;
+        const int tile = EnsureTileInMap(e, e.GetComponent<TilemapComponent>(), palette.Tiles[(size_t)index]);
+        if (tile < 0)
+            return false;
+        m_SelectedTile = tile;
+        if (m_Tool == Tool::None || m_Tool == Tool::Erase || m_Tool == Tool::Picker)
+            m_Tool = Tool::Paint;
+        return true;
+    }
+
+    void TilePalettePanel::DrawPaletteAsset(Entity e, TilemapComponent& map)
+    {
+        namespace fs = std::filesystem;
+        // Projedeki paletler (saniyede bir taranır)
+        static std::vector<std::string> palettes;
+        static double lastScan = -10.0;
+        if (ImGui::GetTime() - lastScan > 1.0 && Project::GetActive())
+        {
+            lastScan = ImGui::GetTime();
+            palettes.clear();
+            std::error_code ec;
+            const fs::path root = Project::GetActiveProjectDirectory();
+            for (auto it = fs::recursive_directory_iterator(root / "Assets", fs::directory_options::skip_permission_denied, ec);
+                 it != fs::recursive_directory_iterator(); it.increment(ec))
+            {
+                if (ec) break;
+                if (it->path().extension() == GridSystem::PaletteExtension)
+                    palettes.push_back(fs::relative(it->path(), root, ec).generic_string());
+            }
+            std::sort(palettes.begin(), palettes.end());
+        }
+        if (!UI::BeginSection("Tile Palette Asset", true, ICON_FA_SWATCHBOOK))
+            return;
+        const std::string current = m_PaletteAsset.empty() ? std::string("None (use the Tilemap's own tiles)") : fs::path(m_PaletteAsset).stem().string();
+        ImGui::SetNextItemWidth(-1.0f);
+        if (ImGui::BeginCombo("##paletteasset", current.c_str()))
+        {
+            if (ImGui::Selectable("None (use the Tilemap's own tiles)", m_PaletteAsset.empty()))
+                m_PaletteAsset.clear();
+            for (const auto& p : palettes)
+                if (ImGui::Selectable(p.c_str(), p == m_PaletteAsset))
+                    m_PaletteAsset = p;
+            ImGui::EndCombo();
+        }
+        if (palettes.empty())
+            ImGui::TextDisabled("Create > 2D > Tile Palette in the Content Browser to make one.");
+        GridSystem::TilePaletteAsset palette;
+        if (!m_PaletteAsset.empty() && GridSystem::LoadPalette(m_PaletteAsset, palette))
+        {
+            const GridComponent& g = GridSystem::GridOf(e);
+            const float cell = 52.0f, gap = 6.0f;
+            const int columns = std::max(1, (int)((ImGui::GetContentRegionAvail().x + gap) / (cell + gap)));
+            ImDrawList* dl = ImGui::GetWindowDrawList();
+            for (int i = 0; i < (int)palette.Tiles.size(); ++i)
+            {
+                if (i % columns != 0)
+                    ImGui::SameLine(0.0f, gap);
+                ImGui::PushID(1000 + i);
+                ImVec2 a = ImGui::GetCursorScreenPos(), b(a.x + cell, a.y + cell);
+                TileDefinition def;
+                const bool ok = GridSystem::LoadTileAsset(palette.Tiles[(size_t)i], def);
+                if (ImGui::InvisibleButton("##assettile", ImVec2(cell, cell)) && ok)
+                    SelectPaletteAssetTile(i);
+                const bool hovered = ImGui::IsItemHovered();
+                dl->AddRectFilled(a, b, IM_COL32(28, 30, 34, 255), 5.0f);
+                if (ok)
+                {
+                    DrawSwatch(dl, ImVec2(a.x + 6, a.y + 4), ImVec2(b.x - 6, b.y - 14), def, IsHex(g));
+                    ImGui::PushFont(nullptr, ImGui::GetStyle().FontSizeBase * 0.8f);
+                    std::string name = def.Name.size() > 8 ? def.Name.substr(0, 7) + ".." : def.Name;
+                    ImVec2 ts = ImGui::CalcTextSize(name.c_str());
+                    dl->AddText(ImVec2(a.x + (cell - ts.x) * 0.5f, b.y - ts.y - 1.0f), IM_COL32(220, 222, 226, 255), name.c_str());
+                    ImGui::PopFont();
+                    const char* kind = !def.Rules.empty() ? "Rule Tile" : (!def.Frames.empty() ? "Animated Tile" : "Tile");
+                    if (hovered)
+                        ImGui::SetTooltip("%s (%s)\n%s", def.Name.c_str(), kind, palette.Tiles[(size_t)i].c_str());
+                }
+                else
+                    dl->AddText(ImVec2(a.x + 6, a.y + 18), IM_COL32(230, 120, 110, 255), "missing");
+                const bool isSel = ok && m_SelectedTile >= 0 && m_SelectedTile < (int)map.Palette.size() &&
+                                   map.Palette[(size_t)m_SelectedTile].Asset == palette.Tiles[(size_t)i];
+                if (isSel)
+                    dl->AddRect(ImVec2(a.x - 1, a.y - 1), ImVec2(b.x + 1, b.y + 1), ImGui::GetColorU32(UI::Colors::Accent), 5.0f, 0, 2.5f);
+                else if (hovered)
+                    dl->AddRect(a, b, IM_COL32(255, 255, 255, 90), 5.0f, 0, 1.5f);
+                if (ImGui::BeginPopupContextItem("##assettilectx"))
+                {
+                    if (ImGui::MenuItem(ICON_FA_TRASH "  Remove from Palette"))
+                    {
+                        palette.Tiles.erase(palette.Tiles.begin() + i);
+                        GridSystem::SavePalette(m_PaletteAsset, palette);
+                        ImGui::EndPopup();
+                        ImGui::PopID();
+                        break;
+                    }
+                    ImGui::EndPopup();
+                }
+                ImGui::PopID();
+            }
+            // Karo / görsel bırak: palete eklenir (görselden yeni Tile varlığı oluşturulur, Unity gibi)
+            ImGui::Button(ICON_FA_PLUS "  Drop Tiles or Sprites here", ImVec2(-1.0f, 26.0f));
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                {
+                    fs::path dropped((const char*)p->Data);
+                    std::error_code ec;
+                    const fs::path root = Project::GetActiveProjectDirectory();
+                    std::string ext = dropped.extension().string();
+                    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+                    std::string tilePath;
+                    if (ext == GridSystem::TileExtension)
+                        tilePath = fs::relative(dropped, root, ec).generic_string();
+                    else if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".tga" || ext == ".bmp")
+                    {
+                        // Unity: sprite'ı palete sürüklemek bir Tile varlığı oluşturur (paletin yanında)
+                        fs::path out = root / fs::path(m_PaletteAsset).parent_path() / (dropped.stem().string() + GridSystem::TileExtension);
+                        TileDefinition def;
+                        def.Name = dropped.stem().string();
+                        def.Texture = fs::relative(dropped, root, ec).generic_string();
+                        if (!fs::exists(out, ec) && GridSystem::SaveTileAsset(out.string(), def))
+                            tilePath = fs::relative(out, root, ec).generic_string();
+                        else if (fs::exists(out, ec))
+                            tilePath = fs::relative(out, root, ec).generic_string();
+                    }
+                    if (!tilePath.empty() && std::find(palette.Tiles.begin(), palette.Tiles.end(), tilePath) == palette.Tiles.end())
+                    {
+                        palette.Tiles.push_back(tilePath);
+                        GridSystem::SavePalette(m_PaletteAsset, palette);
+                    }
+                }
+                ImGui::EndDragDropTarget();
+            }
+        }
+        UI::EndSection();
     }
 
     void TilePalettePanel::DrawPalette(Entity e, TilemapComponent& map)
@@ -734,6 +893,15 @@ namespace Conqueror::Editor
             }
             ImGui::EndDragDropTarget();
         }
+        UI::BeginProperty("##tilepickrow");
+        if (std::string picked; ObjectPicker::Button("tiletexpick", "Texture", ObjectPicker::ImageExtensions(), def.Texture, picked))
+        {
+            def.Texture = picked;
+            changed = true;
+        }
+        ImGui::SameLine();
+        ImGui::TextDisabled("Select texture");
+        UI::EndProperty();
         changed |= UI::Checkbox("Solid", def.Solid, "Generates a collider in Tilemap Collider 2D");
         changed |= UI::Checkbox("Walkable", def.Walkable, "Pathfinding (GridFindPath) can walk over this tile");
         if (def.Walkable)

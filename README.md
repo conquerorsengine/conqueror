@@ -1,4 +1,4 @@
-# Conqueror's Engine
+# Conqueror's Engine (Libre Engine)
 
 A 2D/3D game engine and editor written in C++23, with OpenGL, Vulkan, Direct3D 11, Direct3D 12 and Metal backends,
 ten scripting languages plus visual scripting, and a Unity/Roblox-style editor.
@@ -318,7 +318,7 @@ public class Orbiter : ScriptBehaviour
 
 ## License
 
-Conqueror's Engine is developed by **TurcoLabs** and licensed under the [Mozilla Public License 2.0](LICENSE) with an additional clause: **Any modifications made to the game engine source code must be disclosed publicly.**
+Conqueror's Engine (Libre Engine) is developed by **TurcoLabs** and licensed under the [Mozilla Public License 2.0](LICENSE) with an additional clause: **Any modifications made to the game engine source code must be disclosed publicly.**
 
 Third-party libraries in the `External/` directory retain their original licenses.
 

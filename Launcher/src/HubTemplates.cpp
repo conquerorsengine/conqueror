@@ -6,6 +6,7 @@
 #include "Scene/EditorCamera.h"
 #include "Grid/GridSystem.h"
 #include "Core/Serialization/SceneSerializer.h"
+#include "Scene/MeshRendererMaterial.h"
 #include "Core/Serialization/PrefabSerializer.h"
 #include "Core/Project/Project.h"
 #include <yaml-cpp/yaml.h>
@@ -662,6 +663,8 @@ script FirstPersonController : ConquerorScript
         }
         else BuildBasic3D(*scene);
         scene->UpdateWorldTransforms();
+        // Renk / doku verilmiş nesnelerin malzemeleri Assets/Materials/*.cqmat dosyaları olur (Mesh Renderer yalnız malzemeye başvurur)
+        MeshRendererMaterial::BakeInstances(*scene, dir / "Assets/Materials", nullptr, dir);
 
         // Sahne görünümünün ilk bakış açısı (sahneyle kaydedilir): 2D şablonlar 2D modda açılır
         EditorCamera view(45.0f, 16.0f / 9.0f, 0.1f, 1000.0f);

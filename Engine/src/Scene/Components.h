@@ -123,75 +123,27 @@ namespace Conqueror
 
     enum class MeshType : int { Cube = 0, Sphere, Plane, Cylinder };
 
+    // Mesh Renderer (Unity gibi): ağ + malzeme yuvası + ışıklandırma. Renk, doku, metalik, ışıma ... malzemenin içinde.
+    // Betiklerin / tween'lerin "Color", "Texture" ... alanları malzemeye yazar (MeshRendererMaterial.h, Unity
+    // renderer.material): paylaşılan bir malzemeye yazılınca bu nesne için "(Instance)" kopyası çıkar.
     struct MeshRendererComponent
     {
         MeshType Type = MeshType::Cube;
-        glm::vec4 Color{ 1.0f, 1.0f, 1.0f, 1.0f };
-        
-        // PBR Material parametreleri (fallback, Material atanmadıysa kullanılır)
-        float Metallic = 0.0f;
-        float Roughness = 0.5f;
-        float AO = 1.0f;
-        // Işıma (neon / ekran / lamba): renk * güç, HDR (bloom)
-        glm::vec3 EmissionColor{ 0.0f };
-        float EmissionStrength = 0.0f;
-        // Işıma dokuyla çarpılır (ör. yalnız pencereler parlar); kapalıysa tüm yüzey eşit ışır
-        bool EmissionFromTexture = false;
-        // Doku döşeme / kaydırma (büyük yüzeylerde dokunun gerilmemesi için)
-        glm::vec2 Tiling{ 1.0f, 1.0f };
-        glm::vec2 Offset{ 0.0f, 0.0f };
-        // Dünya hizalı UV (Unreal WorldAlignedTexture): doku ağın UV'sinden değil dünya konumundan, üç eksenden
-        // izdüşümle örneklenir; Tiling = metre başına tekrar. Ölçeklenen bloklarda ızgara hep aynı boyda kalır.
-        bool WorldAlignedUV = false;
-        // WorldAlignedUV açıkken: izdüşüm nesnenin kendi uzayında (metre) — doku hareket eden / dönen nesneyle gider
-        // (fizik küpleri). Kapalıysa dünyada sabit (zemin, duvar).
-        bool AlignToObject = false;
 
-        // Material referansı (Unity tarzı): MaterialPath doluysa .cqmat varlığı (paylaşılan nesne), boşsa sahneye gömülü.
-        // Malzeme atanmışsa çizimde YALNIZ o kullanılır (doku / renk / ışıma malzemenin içinde); aşağıdaki alanlar
-        // malzemesiz nesnenin gömülü varsayılan malzemesidir.
+        // Malzeme: MaterialPath doluysa .cqmat varlığı (paylaşılan, dosyada); boşsa bu nesneye özel örnek (sahnede)
         std::shared_ptr<Material> MaterialInstance;
         std::string MaterialPath;
 
-        // Texture
-        std::shared_ptr<Texture2D> Texture;
-        std::string TexturePath;
-        // Normal haritası (OpenGL / +Y) ve maske haritası (glTF ORM: R = ortam kapatma, G = pürüzlülük, B = metallik;
-        // Roughness / Metallic / AO değerleri çarpan olur). Asfalt, beton gibi ayrıntılı yüzeyler için.
-        std::shared_ptr<Texture2D> NormalMap;
-        std::string NormalMapPath;
-        std::shared_ptr<Texture2D> MaskMap;
-        std::string MaskMapPath;
-
-        // Realtime GI
-        bool RealtimeGI = false;
-
-        // Gölgeler
+        // Işıklandırma
         bool CastShadows = true;
         bool ReceiveShadows = true;
-
-        // Işıklandırmasız (Unity Unlit / Unreal Unlit): renk = doku x renk + ışıma; ekranlar, LED duvarlar için
-        bool Unlit = false;
-
-        // Alfa kırpma (Unity "Alpha Clipping"): dokunun alfası eşiğin altındaysa piksel çizilmez, gerisi opak geçişte
-        // çizilir (yuvarlak kâğıt hedef, yaprak, çit). Yarı saydam sıralama sorunları olmaz; öndeki saydam izler görünür.
-        bool AlphaClip = false;
-        float AlphaClipThreshold = 0.5f;
+        bool RealtimeGI = false;
 
         // Prosedürel ağ (serileştirilmez; ör. Spline Extrude üretir): varsa Type yerine çizilir
         std::shared_ptr<Mesh> CustomMesh;
 
-        // Çalışma zamanı önbelleği (serileştirilmez): MaterialInstance yokken kare
-        // başına yeni Material üretmemek için
-        std::shared_ptr<Material> RuntimeMaterial;
-        const Material* RuntimeMaterialSource = nullptr;
-        // Oyunda Color değişince (betik, tween) malzeme bu nesneye özel kopyaya döner (Unity renderer.material)
-        glm::vec4 RuntimeTrackedColor{ -1.0f };
-        bool RuntimeMaterialInstanced = false;
-
         MeshRendererComponent() = default;
         MeshRendererComponent(const MeshRendererComponent&) = default;
-        MeshRendererComponent(const glm::vec4& color) : Color(color) {}
     };
 
     struct CameraComponent
@@ -222,6 +174,8 @@ namespace Conqueror
         bool Interpolate = true;
         bool ContinuousCollision = false;  // hızlı cisimler (mermi)
         bool AllowSleep = true;
+        // Physics Material 2D (.cqphysmat2d): kendi malzemesi olmayan çarpıştırıcılara uygulanır (Unity Rigidbody2D.sharedMaterial)
+        std::string PhysicsMaterial;
 
         void* RuntimeBody = nullptr;
 
@@ -240,6 +194,7 @@ namespace Conqueror
         float Friction = 0.5f;
         float Restitution = 0.0f;
         float RestitutionThreshold = 0.5f;
+        std::string PhysicsMaterial;      // .cqphysmat2d (boş = Rigidbody 2D malzemesi ya da yukarıdaki değerler)
 
         void* RuntimeFixture = nullptr;
 
@@ -257,6 +212,7 @@ namespace Conqueror
         float Friction = 0.5f;
         float Restitution = 0.0f;
         float RestitutionThreshold = 0.5f;
+        std::string PhysicsMaterial;      // .cqphysmat2d (boş = Rigidbody 2D malzemesi ya da yukarıdaki değerler)
 
         void* RuntimeFixture = nullptr;
 

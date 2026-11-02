@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+namespace YAML { class Emitter; class Node; }
+
 namespace Conqueror
 {
     class Scene;
@@ -57,6 +59,28 @@ namespace Conqueror
         CQ_API glm::ivec2 AutotileAtlasSize(int mode);
         // Sanatçı için şablon PNG: her atlas hücresi bağlı olmayan kenarlarında koyu kenarlık, iç köşelerde köşe parçası
         CQ_API bool WriteAutotileTemplate(int mode, int tilePixels, const std::string& path);
+
+        // ---- Karo varlıkları (Unity Tile / Rule Tile / Animated Tile, .cqtile) ve Tile Palette (.cqpalette)
+        constexpr const char* TileExtension = ".cqtile";
+        constexpr const char* PaletteExtension = ".cqpalette";
+        CQ_API void EmitTileDefinition(YAML::Emitter& out, const TileDefinition& def);
+        CQ_API void ReadTileDefinition(const YAML::Node& node, TileDefinition& def);
+        CQ_API bool SaveTileAsset(const std::string& path, const TileDefinition& def);
+        // Önbellekli (dosya değişince yeniden okunur)
+        CQ_API bool LoadTileAsset(const std::string& path, TileDefinition& def);
+        // Asset'i olan palet girişlerini dosyalarından güncelle (değiştiyse Version artar)
+        CQ_API void SyncTileAssets(TilemapComponent& map);
+        // Hücrenin çizilecek dokusu: Animated Tile karesi, Rule Tile kuralı ya da karo dokusu; rotation 0-3 (x90°)
+        CQ_API const std::string& ResolveTileTexture(const TilemapComponent& map, const glm::ivec2& cell, int& rotation, double time);
+
+        struct TilePaletteAsset
+        {
+            GridLayout Layout = GridLayout::Rectangle;
+            glm::vec2 CellSize{ 1.0f, 1.0f };
+            std::vector<std::string> Tiles;   // .cqtile yolları (proje göreli)
+        };
+        CQ_API bool SavePalette(const std::string& path, const TilePaletteAsset& palette);
+        CQ_API bool LoadPalette(const std::string& path, TilePaletteAsset& palette);
 
         // Çizim
         CQ_API void DrawTilemap2D(Scene& scene, Entity tilemapEntity);

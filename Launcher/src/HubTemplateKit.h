@@ -2,6 +2,8 @@
 
 // Şablon sahnelerinin ortak yardımcıları (HubTemplates.cpp, HubTemplatesPro.cpp)
 
+#include "Scene/MeshRendererMaterial.h"
+#include "Renderer/Utilities/Renderer3D/Material.h"
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"
 #include "Scene/Components.h"
@@ -27,7 +29,7 @@ namespace Conqueror::Launcher::Kit
         tc.Scale = size * 0.5f;
         auto& mr = e.AddComponent<MeshRendererComponent>();
         mr.Type = type;
-        mr.Color = color;
+        MeshRendererMaterial::SetColor(mr, color);
         return e;
     }
 

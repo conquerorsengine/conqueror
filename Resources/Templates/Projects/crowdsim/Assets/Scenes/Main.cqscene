@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 8316087495376391162
+  - Entity: 8317960987020085815
     TagComponent:
       Tag: Directional Light
       GameTag: Untagged
@@ -19,7 +19,7 @@ Entities:
       Intensity: 3.2
       CastShadows: true
       Mode: 0
-  - Entity: 8998034320374375343
+  - Entity: 8996090322545611093
     TagComponent:
       Tag: Plaza
       GameTag: Untagged
@@ -33,14 +33,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.76, 0.74, 0.7, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      Tiling: [0.45, 0.45]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/plaza_pavers.jpg
+      MaterialAsset: Assets/Materials/Plaza pavers.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -62,7 +55,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7805640518557202261
+  - Entity: 7806088647981770950
     TagComponent:
       Tag: Granite Ring
       GameTag: Untagged
@@ -76,15 +69,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.5, 0.5, 0.52, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      Tiling: [0.6, 0.6]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/cobble.jpg
-  - Entity: 3606112993689440227
+      MaterialAsset: Assets/Materials/Cobble 1.cqmat
+  - Entity: 3606402945916837599
     TagComponent:
       Tag: Street South
       GameTag: Untagged
@@ -98,14 +84,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.9, 0.9, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.5, 0.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/cobble.jpg
+      MaterialAsset: Assets/Materials/Cobble.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -127,7 +106,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4282351268931944421
+  - Entity: 4281251146288884651
     TagComponent:
       Tag: Street West
       GameTag: Untagged
@@ -141,14 +120,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.9, 0.9, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.5, 0.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/cobble.jpg
+      MaterialAsset: Assets/Materials/Cobble.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -170,7 +142,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2736130671445328807
+  - Entity: 2737987015430530493
     TagComponent:
       Tag: Street East
       GameTag: Untagged
@@ -184,14 +156,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.9, 0.9, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.5, 0.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/cobble.jpg
+      MaterialAsset: Assets/Materials/Cobble.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -213,7 +178,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 3914376917869372836
+  - Entity: 3915125503909308246
     TagComponent:
       Tag: Ground
       GameTag: Untagged
@@ -232,12 +197,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.24, 0.24, 0.25, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: ""
-  - Entity: 6989939567025680014
+      MaterialAsset: Assets/Materials/Ground.cqmat
+  - Entity: 6991479938749009789
     TagComponent:
       Tag: Building 1 Shops
       GameTag: Untagged
@@ -256,14 +217,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.22222222]
-      Offset: [0, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/shop_b.jpg
+      MaterialAsset: Assets/Materials/Shop b 1.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -285,7 +239,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5313377431336852195
+  - Entity: 5312858228935812496
     TagComponent:
       Tag: Building 1 Floors
       GameTag: Untagged
@@ -304,14 +258,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_terracotta.jpg
+      MaterialAsset: Assets/Materials/Facade terracotta.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -333,7 +280,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 775710638521117110
+  - Entity: 775771703324742391
     TagComponent:
       Tag: Building 1 Cornice
       GameTag: Untagged
@@ -352,12 +299,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 1942683080619137185
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 1941670525946055378
     TagComponent:
       Tag: Building 1 Roof
       GameTag: Untagged
@@ -376,12 +319,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 680928669558433292
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 681413475765002132
     TagComponent:
       Tag: Building 2 Shops
       GameTag: Untagged
@@ -400,14 +339,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.22222222]
-      Offset: [0, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/shop_a.jpg
+      MaterialAsset: Assets/Materials/Shop a 1.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -429,7 +361,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 931655326140918050
+  - Entity: 930590785154138723
     TagComponent:
       Tag: Building 2 Floors
       GameTag: Untagged
@@ -448,14 +380,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_gray.jpg
+      MaterialAsset: Assets/Materials/Facade gray.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -477,7 +402,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 612227646523432919
+  - Entity: 610494190237732770
     TagComponent:
       Tag: Building 2 Cornice
       GameTag: Untagged
@@ -496,12 +421,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 7439712182657074944
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 7437925846671485216
     TagComponent:
       Tag: Building 2 Roof
       GameTag: Untagged
@@ -520,12 +441,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 6432314728416073915
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 6432218734777865868
     TagComponent:
       Tag: Building 3 Shops
       GameTag: Untagged
@@ -544,14 +461,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.22222222]
-      Offset: [0, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/shop_b.jpg
+      MaterialAsset: Assets/Materials/Shop b 1.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -573,7 +483,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6235536621696557868
+  - Entity: 6237181414895352937
     TagComponent:
       Tag: Building 3 Floors
       GameTag: Untagged
@@ -592,14 +502,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_cream.jpg
+      MaterialAsset: Assets/Materials/Facade cream.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -621,7 +524,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5294184695613320172
+  - Entity: 5296022158850223223
     TagComponent:
       Tag: Building 3 Cornice
       GameTag: Untagged
@@ -640,12 +543,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 2868321076506534228
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 2867009710253694315
     TagComponent:
       Tag: Building 3 Roof
       GameTag: Untagged
@@ -664,12 +563,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 4436846354117116992
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 4437488974662163194
     TagComponent:
       Tag: Building 4 Shops
       GameTag: Untagged
@@ -688,14 +583,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.22222222]
-      Offset: [0, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/shop_a.jpg
+      MaterialAsset: Assets/Materials/Shop a 1.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -717,7 +605,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6597643464432913222
+  - Entity: 6595646106015963180
     TagComponent:
       Tag: Building 4 Floors
       GameTag: Untagged
@@ -736,14 +624,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_terracotta.jpg
+      MaterialAsset: Assets/Materials/Facade terracotta.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -765,7 +646,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 3159655460051497937
+  - Entity: 3161141079589742137
     TagComponent:
       Tag: Building 4 Cornice
       GameTag: Untagged
@@ -784,12 +665,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 4368562811024304508
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 4370664605896594647
     TagComponent:
       Tag: Building 4 Roof
       GameTag: Untagged
@@ -808,12 +685,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 9187462800896562913
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 9189476615496591141
     TagComponent:
       Tag: Building 5 Shops
       GameTag: Untagged
@@ -832,14 +705,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.22222222]
-      Offset: [0, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/shop_b.jpg
+      MaterialAsset: Assets/Materials/Shop b 1.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -861,7 +727,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1156955924000302465
+  - Entity: 1155645811863767067
     TagComponent:
       Tag: Building 5 Floors
       GameTag: Untagged
@@ -880,14 +746,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_gray.jpg
+      MaterialAsset: Assets/Materials/Facade gray.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -909,7 +768,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6606842423646951525
+  - Entity: 6608963013289300471
     TagComponent:
       Tag: Building 5 Cornice
       GameTag: Untagged
@@ -928,12 +787,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 34232711950314214
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 35578607592697345
     TagComponent:
       Tag: Building 5 Roof
       GameTag: Untagged
@@ -952,12 +807,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 7570776060554904517
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 7572578753892002600
     TagComponent:
       Tag: Building 6 Shops
       GameTag: Untagged
@@ -976,14 +827,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.22222222]
-      Offset: [0, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/shop_a.jpg
+      MaterialAsset: Assets/Materials/Shop a 1.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1005,7 +849,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1212925071291075026
+  - Entity: 1212264463441364338
     TagComponent:
       Tag: Building 6 Floors
       GameTag: Untagged
@@ -1024,14 +868,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_cream.jpg
+      MaterialAsset: Assets/Materials/Facade cream.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1053,7 +890,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2483190485670202093
+  - Entity: 2482020374171222222
     TagComponent:
       Tag: Building 6 Cornice
       GameTag: Untagged
@@ -1072,12 +909,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 476288381467540358
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 476226197990145497
     TagComponent:
       Tag: Building 6 Roof
       GameTag: Untagged
@@ -1096,12 +929,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 7753058081868045526
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 7755090570560146927
     TagComponent:
       Tag: Building 7 Shops
       GameTag: Untagged
@@ -1120,14 +949,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.22222222]
-      Offset: [0, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/shop_b.jpg
+      MaterialAsset: Assets/Materials/Shop b 1.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1149,7 +971,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4233931839314979518
+  - Entity: 4235083928677201530
     TagComponent:
       Tag: Building 7 Floors
       GameTag: Untagged
@@ -1168,14 +990,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_terracotta.jpg
+      MaterialAsset: Assets/Materials/Facade terracotta.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1197,7 +1012,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2946797666654704886
+  - Entity: 2946154786230832805
     TagComponent:
       Tag: Building 7 Cornice
       GameTag: Untagged
@@ -1216,12 +1031,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 6447231218000458684
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 6448822975107066945
     TagComponent:
       Tag: Building 7 Roof
       GameTag: Untagged
@@ -1240,12 +1051,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 6694676845900946623
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 6696779980603486694
     TagComponent:
       Tag: Building 8 Ground
       GameTag: Untagged
@@ -1264,14 +1071,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_gray.jpg
+      MaterialAsset: Assets/Materials/Facade gray 1.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1293,7 +1093,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2370981227970804418
+  - Entity: 2369054118327167037
     TagComponent:
       Tag: Building 8 Floors
       GameTag: Untagged
@@ -1312,14 +1112,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_gray.jpg
+      MaterialAsset: Assets/Materials/Facade gray.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1341,7 +1134,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 8054457711719630603
+  - Entity: 8052671889116519993
     TagComponent:
       Tag: Building 8 Cornice
       GameTag: Untagged
@@ -1360,12 +1153,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 4359573539731870471
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 4361641677103921531
     TagComponent:
       Tag: Building 8 Roof
       GameTag: Untagged
@@ -1384,12 +1173,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 5262803095881315940
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 5264359962029278506
     TagComponent:
       Tag: Building 9 Shops
       GameTag: Untagged
@@ -1408,14 +1193,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.22222222]
-      Offset: [0.5, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/shop_b.jpg
+      MaterialAsset: Assets/Materials/Shop b.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1437,7 +1215,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4677057946190188842
+  - Entity: 4679178003625116368
     TagComponent:
       Tag: Building 9 Floors
       GameTag: Untagged
@@ -1456,14 +1234,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0.5, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_cream.jpg
+      MaterialAsset: Assets/Materials/Facade cream 2.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1485,7 +1256,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2357265790994598290
+  - Entity: 2355743559526275897
     TagComponent:
       Tag: Building 9 Cornice
       GameTag: Untagged
@@ -1504,12 +1275,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 8268795898255677855
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 8270670471793783698
     TagComponent:
       Tag: Building 9 Roof
       GameTag: Untagged
@@ -1528,12 +1295,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 409050041186183864
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 408354419110283977
     TagComponent:
       Tag: Building 10 Shops
       GameTag: Untagged
@@ -1552,14 +1315,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.22222222]
-      Offset: [0.5, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/shop_a.jpg
+      MaterialAsset: Assets/Materials/Shop a.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1581,7 +1337,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 3763728156743832775
+  - Entity: 3764035289089751678
     TagComponent:
       Tag: Building 10 Floors
       GameTag: Untagged
@@ -1600,14 +1356,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0.5, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_terracotta.jpg
+      MaterialAsset: Assets/Materials/Facade terracotta 2.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1629,7 +1378,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7101725672359236260
+  - Entity: 7100379087021534221
     TagComponent:
       Tag: Building 10 Cornice
       GameTag: Untagged
@@ -1648,12 +1397,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 5530808536577505225
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 5532278487568155845
     TagComponent:
       Tag: Building 10 Roof
       GameTag: Untagged
@@ -1672,12 +1417,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 2351045273954924355
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 2352972261845399613
     TagComponent:
       Tag: Building 11 Ground
       GameTag: Untagged
@@ -1696,14 +1437,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0.5, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_gray.jpg
+      MaterialAsset: Assets/Materials/Facade gray 3.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1725,7 +1459,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 3034319909062526988
+  - Entity: 3034275059623232200
     TagComponent:
       Tag: Building 11 Floors
       GameTag: Untagged
@@ -1744,14 +1478,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0.5, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_gray.jpg
+      MaterialAsset: Assets/Materials/Facade gray 2.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1773,7 +1500,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5726203907171257259
+  - Entity: 5724190485912229054
     TagComponent:
       Tag: Building 11 Cornice
       GameTag: Untagged
@@ -1792,12 +1519,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 2675604474810363811
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 2676916013064473442
     TagComponent:
       Tag: Building 11 Roof
       GameTag: Untagged
@@ -1816,12 +1539,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 7008223659023034550
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 7009235715781486886
     TagComponent:
       Tag: Building 12 Shops
       GameTag: Untagged
@@ -1840,14 +1559,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.22222222]
-      Offset: [0.5, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/shop_a.jpg
+      MaterialAsset: Assets/Materials/Shop a.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1869,7 +1581,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 722103266781653509
+  - Entity: 721303740826760753
     TagComponent:
       Tag: Building 12 Floors
       GameTag: Untagged
@@ -1888,14 +1600,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0.5, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_cream.jpg
+      MaterialAsset: Assets/Materials/Facade cream 2.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1917,7 +1622,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5398977241211749251
+  - Entity: 5398406123637162523
     TagComponent:
       Tag: Building 12 Cornice
       GameTag: Untagged
@@ -1936,12 +1641,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 6317733229202676028
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 6317107788478642481
     TagComponent:
       Tag: Building 12 Roof
       GameTag: Untagged
@@ -1960,12 +1661,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 8969023795293693925
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 8971073053915960226
     TagComponent:
       Tag: Building 13 Shops
       GameTag: Untagged
@@ -1984,14 +1681,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.22222222]
-      Offset: [0.5, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/shop_b.jpg
+      MaterialAsset: Assets/Materials/Shop b.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2013,7 +1703,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2439699298685903122
+  - Entity: 2439954154699468732
     TagComponent:
       Tag: Building 13 Floors
       GameTag: Untagged
@@ -2032,14 +1722,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0.5, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_terracotta.jpg
+      MaterialAsset: Assets/Materials/Facade terracotta 2.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2061,7 +1744,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 63891921541459699
+  - Entity: 64464003487918167
     TagComponent:
       Tag: Building 13 Cornice
       GameTag: Untagged
@@ -2080,12 +1763,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 6906943385509358410
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 6907849599342712666
     TagComponent:
       Tag: Building 13 Roof
       GameTag: Untagged
@@ -2104,12 +1783,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 961034457773308291
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 959758516866325536
     TagComponent:
       Tag: Building 14 Ground
       GameTag: Untagged
@@ -2128,14 +1803,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0.5, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_gray.jpg
+      MaterialAsset: Assets/Materials/Facade gray 3.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2157,7 +1825,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1573830271083529978
+  - Entity: 1571939602238740588
     TagComponent:
       Tag: Building 14 Floors
       GameTag: Untagged
@@ -2176,14 +1844,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0.5, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_gray.jpg
+      MaterialAsset: Assets/Materials/Facade gray 2.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2205,7 +1866,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2848912608972497347
+  - Entity: 2850398245555425342
     TagComponent:
       Tag: Building 14 Cornice
       GameTag: Untagged
@@ -2224,12 +1885,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 7417357471879185856
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 7415255557109710137
     TagComponent:
       Tag: Building 14 Roof
       GameTag: Untagged
@@ -2248,12 +1905,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 5726340198255393217
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 5728566513257076131
     TagComponent:
       Tag: Building 15 Ground
       GameTag: Untagged
@@ -2272,14 +1925,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0.5, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_cream.jpg
+      MaterialAsset: Assets/Materials/Facade cream 3.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2301,7 +1947,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5123854916625171976
+  - Entity: 5124091492664598483
     TagComponent:
       Tag: Building 15 Floors
       GameTag: Untagged
@@ -2320,14 +1966,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0.5, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_cream.jpg
+      MaterialAsset: Assets/Materials/Facade cream 2.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2349,7 +1988,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4414903209918945286
+  - Entity: 4414402718610369689
     TagComponent:
       Tag: Building 15 Cornice
       GameTag: Untagged
@@ -2368,12 +2007,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 5923196725298190091
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 5923523221306064481
     TagComponent:
       Tag: Building 15 Roof
       GameTag: Untagged
@@ -2392,12 +2027,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 820335563585641778
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 821223237932620438
     TagComponent:
       Tag: Building 16 Ground
       GameTag: Untagged
@@ -2416,14 +2047,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0.5, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_terracotta.jpg
+      MaterialAsset: Assets/Materials/Facade terracotta 3.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2445,7 +2069,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 643002274480229276
+  - Entity: 642783152668053231
     TagComponent:
       Tag: Building 16 Floors
       GameTag: Untagged
@@ -2464,14 +2088,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0.5, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_terracotta.jpg
+      MaterialAsset: Assets/Materials/Facade terracotta 2.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2493,7 +2110,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1000540361162196397
+  - Entity: 1001306401968854204
     TagComponent:
       Tag: Building 16 Cornice
       GameTag: Untagged
@@ -2512,12 +2129,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 1254773301534764371
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 1255978030311516018
     TagComponent:
       Tag: Building 16 Roof
       GameTag: Untagged
@@ -2536,12 +2149,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 2187253564821487844
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 2188001137036620854
     TagComponent:
       Tag: Building 17 Ground
       GameTag: Untagged
@@ -2560,14 +2169,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_gray.jpg
+      MaterialAsset: Assets/Materials/Facade gray 1.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2589,7 +2191,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1039763049381514456
+  - Entity: 1038644907399187935
     TagComponent:
       Tag: Building 17 Floors
       GameTag: Untagged
@@ -2608,14 +2210,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_gray.jpg
+      MaterialAsset: Assets/Materials/Facade gray.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2637,7 +2232,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 9150707500783677863
+  - Entity: 9149677317552907943
     TagComponent:
       Tag: Building 17 Cornice
       GameTag: Untagged
@@ -2656,12 +2251,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 5542154328040982803
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 5543463888381263538
     TagComponent:
       Tag: Building 17 Roof
       GameTag: Untagged
@@ -2680,12 +2271,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 5276579973266993804
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 5277609020440962566
     TagComponent:
       Tag: Building 18 Ground
       GameTag: Untagged
@@ -2704,14 +2291,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_cream.jpg
+      MaterialAsset: Assets/Materials/Facade cream 1.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2733,7 +2313,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1374939252006794771
+  - Entity: 1374507188348680046
     TagComponent:
       Tag: Building 18 Floors
       GameTag: Untagged
@@ -2752,14 +2332,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_cream.jpg
+      MaterialAsset: Assets/Materials/Facade cream.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2781,7 +2354,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6518352126232505117
+  - Entity: 6517322528769800800
     TagComponent:
       Tag: Building 18 Cornice
       GameTag: Untagged
@@ -2800,12 +2373,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 1157805247714436722
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 1159291299028374015
     TagComponent:
       Tag: Building 18 Roof
       GameTag: Untagged
@@ -2824,12 +2393,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 2588509420583409776
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 2588377280134225991
     TagComponent:
       Tag: Building 19 Ground
       GameTag: Untagged
@@ -2848,14 +2413,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_terracotta.jpg
+      MaterialAsset: Assets/Materials/Facade terracotta 1.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2877,7 +2435,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5873091767512404731
+  - Entity: 5874542391499389367
     TagComponent:
       Tag: Building 19 Floors
       GameTag: Untagged
@@ -2896,14 +2454,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_terracotta.jpg
+      MaterialAsset: Assets/Materials/Facade terracotta.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2925,7 +2476,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2181438246459235982
+  - Entity: 2180303457449005593
     TagComponent:
       Tag: Building 19 Cornice
       GameTag: Untagged
@@ -2944,12 +2495,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 7429851908260390324
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 7429771722432767815
     TagComponent:
       Tag: Building 19 Roof
       GameTag: Untagged
@@ -2968,12 +2515,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 7568855432321675120
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 7569989244501822923
     TagComponent:
       Tag: Building 20 Ground
       GameTag: Untagged
@@ -2992,14 +2535,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_gray.jpg
+      MaterialAsset: Assets/Materials/Facade gray 1.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3021,7 +2557,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7445585194094943831
+  - Entity: 7445559313561183528
     TagComponent:
       Tag: Building 20 Floors
       GameTag: Untagged
@@ -3040,14 +2576,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_gray.jpg
+      MaterialAsset: Assets/Materials/Facade gray.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3069,7 +2598,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 8614877352870750076
+  - Entity: 8613637560226297961
     TagComponent:
       Tag: Building 20 Cornice
       GameTag: Untagged
@@ -3088,12 +2617,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 1759701257538930387
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 1759867377071539075
     TagComponent:
       Tag: Building 20 Roof
       GameTag: Untagged
@@ -3112,12 +2637,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 6117929314226211281
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 6116091404165173268
     TagComponent:
       Tag: Building 21 Ground
       GameTag: Untagged
@@ -3136,14 +2657,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_cream.jpg
+      MaterialAsset: Assets/Materials/Facade cream 1.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3165,7 +2679,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 865419899222371651
+  - Entity: 866219614473186236
     TagComponent:
       Tag: Building 21 Floors
       GameTag: Untagged
@@ -3184,14 +2698,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_cream.jpg
+      MaterialAsset: Assets/Materials/Facade cream.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3213,7 +2720,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7799643019234285708
+  - Entity: 7798579747611390411
     TagComponent:
       Tag: Building 21 Cornice
       GameTag: Untagged
@@ -3232,12 +2739,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 3825032364264223589
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 3824337136705987593
     TagComponent:
       Tag: Building 21 Roof
       GameTag: Untagged
@@ -3256,12 +2759,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 5965347517543167392
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 5966938555042819881
     TagComponent:
       Tag: Building 22 Ground
       GameTag: Untagged
@@ -3280,14 +2779,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_terracotta.jpg
+      MaterialAsset: Assets/Materials/Facade terracotta 1.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3309,7 +2801,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5701459650040882350
+  - Entity: 5699410530922993433
     TagComponent:
       Tag: Building 22 Floors
       GameTag: Untagged
@@ -3328,14 +2820,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_terracotta.jpg
+      MaterialAsset: Assets/Materials/Facade terracotta.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3357,7 +2842,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6562427185257345831
+  - Entity: 6563314996726859077
     TagComponent:
       Tag: Building 22 Cornice
       GameTag: Untagged
@@ -3376,12 +2861,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 4472299114321850966
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 4474102681828891235
     TagComponent:
       Tag: Building 22 Roof
       GameTag: Untagged
@@ -3400,12 +2881,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 5852947365636126389
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 5854152197220019294
     TagComponent:
       Tag: Building 23 Ground
       GameTag: Untagged
@@ -3424,14 +2901,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_gray.jpg
+      MaterialAsset: Assets/Materials/Facade gray 1.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3453,7 +2923,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5141949588327788984
+  - Entity: 5142027884361915818
     TagComponent:
       Tag: Building 23 Floors
       GameTag: Untagged
@@ -3472,14 +2942,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_gray.jpg
+      MaterialAsset: Assets/Materials/Facade gray.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3501,7 +2964,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2047806292987952420
+  - Entity: 2048218703420746035
     TagComponent:
       Tag: Building 23 Cornice
       GameTag: Untagged
@@ -3520,12 +2983,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 8233819940272708850
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 8233599822024646079
     TagComponent:
       Tag: Building 23 Roof
       GameTag: Untagged
@@ -3544,12 +3003,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 8585182620595340727
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 8584787697444498767
     TagComponent:
       Tag: Building 24 Ground
       GameTag: Untagged
@@ -3568,14 +3023,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_cream.jpg
+      MaterialAsset: Assets/Materials/Facade cream 1.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3597,7 +3045,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7331279768348154867
+  - Entity: 7330181157754752049
     TagComponent:
       Tag: Building 24 Floors
       GameTag: Untagged
@@ -3616,14 +3064,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_cream.jpg
+      MaterialAsset: Assets/Materials/Facade cream.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3645,7 +3086,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7728857525643185395
+  - Entity: 7729744925048806355
     TagComponent:
       Tag: Building 24 Cornice
       GameTag: Untagged
@@ -3664,12 +3105,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 5602404639161683774
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 5600302692006530524
     TagComponent:
       Tag: Building 24 Roof
       GameTag: Untagged
@@ -3688,12 +3125,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 873434090332748381
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 871718499086282940
     TagComponent:
       Tag: Building 25 Ground
       GameTag: Untagged
@@ -3712,14 +3145,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_terracotta.jpg
+      MaterialAsset: Assets/Materials/Facade terracotta 1.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3741,7 +3167,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7578144729515000426
+  - Entity: 7578716554054384184
     TagComponent:
       Tag: Building 25 Floors
       GameTag: Untagged
@@ -3760,14 +3186,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_terracotta.jpg
+      MaterialAsset: Assets/Materials/Facade terracotta.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3789,7 +3208,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5461302683630840507
+  - Entity: 5462172750773536567
     TagComponent:
       Tag: Building 25 Cornice
       GameTag: Untagged
@@ -3808,12 +3227,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 5219991488026702076
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 5221600976670536713
     TagComponent:
       Tag: Building 25 Roof
       GameTag: Untagged
@@ -3832,12 +3247,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 4705701814024681838
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 4704566337494302637
     TagComponent:
       Tag: Building 26 Ground
       GameTag: Untagged
@@ -3856,14 +3267,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_gray.jpg
+      MaterialAsset: Assets/Materials/Facade gray 1.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3885,7 +3289,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 3672321965909420010
+  - Entity: 3670800560829425168
     TagComponent:
       Tag: Building 26 Floors
       GameTag: Untagged
@@ -3904,14 +3308,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_gray.jpg
+      MaterialAsset: Assets/Materials/Facade gray.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3933,7 +3330,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1269438595594650719
+  - Entity: 1268338730546949483
     TagComponent:
       Tag: Building 26 Cornice
       GameTag: Untagged
@@ -3952,12 +3349,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 307138786206971862
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 307605897097451925
     TagComponent:
       Tag: Building 26 Roof
       GameTag: Untagged
@@ -3976,12 +3369,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 6466536362126460839
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 6465542308128420629
     TagComponent:
       Tag: Building 27 Ground
       GameTag: Untagged
@@ -4000,14 +3389,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_cream.jpg
+      MaterialAsset: Assets/Materials/Facade cream 1.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -4029,7 +3411,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4268148349187049150
+  - Entity: 4268421482197016018
     TagComponent:
       Tag: Building 27 Floors
       GameTag: Untagged
@@ -4048,14 +3430,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [0.1, 0.15625]
-      Offset: [0, -0.703125]
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/facade_cream.jpg
+      MaterialAsset: Assets/Materials/Facade cream.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -4077,7 +3452,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4968339836706170428
+  - Entity: 4968858197585957973
     TagComponent:
       Tag: Building 27 Cornice
       GameTag: Untagged
@@ -4096,12 +3471,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 2646561086941237128
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 2647414813768190215
     TagComponent:
       Tag: Building 27 Roof
       GameTag: Untagged
@@ -4120,12 +3491,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.28, 0.29, 0.31, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
-  - Entity: 6934561245073426873
+      MaterialAsset: Assets/Materials/Building 27 Roof.cqmat
+  - Entity: 6934270468336395076
     TagComponent:
       Tag: Window Spot 1
       GameTag: Window Spot
@@ -4137,7 +3504,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 3742039792393462446
+  - Entity: 3740694324289682175
     TagComponent:
       Tag: Window Spot 2
       GameTag: Window Spot
@@ -4149,7 +3516,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 3422112663546903321
+  - Entity: 3421101431555505977
     TagComponent:
       Tag: Wall Lantern
       GameTag: Untagged
@@ -4163,7 +3530,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Plaza/Props/wall_lantern.glb
-  - Entity: 3802445290358611942
+  - Entity: 3801890404928904414
     TagComponent:
       Tag: Window Spot 3
       GameTag: Window Spot
@@ -4175,7 +3542,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 8233811293635976503
+  - Entity: 8233608476906740292
     TagComponent:
       Tag: Window Spot 4
       GameTag: Window Spot
@@ -4187,7 +3554,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5662739785478266021
+  - Entity: 5661569141888065214
     TagComponent:
       Tag: Wall Lantern
       GameTag: Untagged
@@ -4201,7 +3568,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Plaza/Props/wall_lantern.glb
-  - Entity: 2689768624012270573
+  - Entity: 2689777791571185803
     TagComponent:
       Tag: Window Spot 5
       GameTag: Window Spot
@@ -4213,7 +3580,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 4883665617861420399
+  - Entity: 4882391241414728759
     TagComponent:
       Tag: Window Spot 6
       GameTag: Window Spot
@@ -4225,7 +3592,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 6301673903828625470
+  - Entity: 6301648521601098427
     TagComponent:
       Tag: Wall Lantern
       GameTag: Untagged
@@ -4239,7 +3606,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Plaza/Props/wall_lantern.glb
-  - Entity: 3179123163810393406
+  - Entity: 3177706638585373512
     TagComponent:
       Tag: Window Spot 7
       GameTag: Window Spot
@@ -4251,7 +3618,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5665640440425720347
+  - Entity: 5667671279558447774
     TagComponent:
       Tag: Window Spot 8
       GameTag: Window Spot
@@ -4263,7 +3630,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 3786861112269870898
+  - Entity: 3785938390579175161
     TagComponent:
       Tag: Wall Lantern
       GameTag: Untagged
@@ -4277,7 +3644,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Plaza/Props/wall_lantern.glb
-  - Entity: 6130743441060979116
+  - Entity: 6130312078480124890
     TagComponent:
       Tag: Window Spot 9
       GameTag: Window Spot
@@ -4289,7 +3656,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5002200572836737860
+  - Entity: 5002542737364782025
     TagComponent:
       Tag: Window Spot 10
       GameTag: Window Spot
@@ -4301,7 +3668,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5054524459362972617
+  - Entity: 5053812568615594760
     TagComponent:
       Tag: Wall Lantern
       GameTag: Untagged
@@ -4315,7 +3682,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Plaza/Props/wall_lantern.glb
-  - Entity: 7855242474726297435
+  - Entity: 7855568160441334238
     TagComponent:
       Tag: Window Spot 11
       GameTag: Window Spot
@@ -4327,7 +3694,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5438710863615168093
+  - Entity: 5439739501619542227
     TagComponent:
       Tag: Window Spot 12
       GameTag: Window Spot
@@ -4339,7 +3706,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 6684729951155834454
+  - Entity: 6684211076783436693
     TagComponent:
       Tag: Wall Lantern
       GameTag: Untagged
@@ -4353,7 +3720,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Plaza/Props/wall_lantern.glb
-  - Entity: 4157981750774451301
+  - Entity: 4157920495191085345
     TagComponent:
       Tag: Window Spot 13
       GameTag: Window Spot
@@ -4365,7 +3732,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5706370709337830638
+  - Entity: 5707997085222041634
     TagComponent:
       Tag: Window Spot 14
       GameTag: Window Spot
@@ -4377,7 +3744,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 1647665775536837136
+  - Entity: 1646725085000150492
     TagComponent:
       Tag: Wall Lantern
       GameTag: Untagged
@@ -4391,7 +3758,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Plaza/Props/wall_lantern.glb
-  - Entity: 5851044871302076341
+  - Entity: 5851564294525636922
     TagComponent:
       Tag: Window Spot 15
       GameTag: Window Spot
@@ -4403,7 +3770,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5598626415966436596
+  - Entity: 5599568519102970160
     TagComponent:
       Tag: Window Spot 16
       GameTag: Window Spot
@@ -4415,7 +3782,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 8912552945960289039
+  - Entity: 8910450312419508690
     TagComponent:
       Tag: Wall Lantern
       GameTag: Untagged
@@ -4429,7 +3796,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Plaza/Props/wall_lantern.glb
-  - Entity: 3662093686892824677
+  - Entity: 3663016632460511358
     TagComponent:
       Tag: Window Spot 17
       GameTag: Window Spot
@@ -4441,7 +3808,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 7285827945687290044
+  - Entity: 7285571975078252801
     TagComponent:
       Tag: Window Spot 18
       GameTag: Window Spot
@@ -4453,7 +3820,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 8143663739033793370
+  - Entity: 8143603173061046752
     TagComponent:
       Tag: Wall Lantern
       GameTag: Untagged
@@ -4467,7 +3834,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Plaza/Props/wall_lantern.glb
-  - Entity: 68979129300757088
+  - Entity: 68372930584488767
     TagComponent:
       Tag: Window Spot 19
       GameTag: Window Spot
@@ -4479,7 +3846,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 7086261509321626455
+  - Entity: 7084318044628783263
     TagComponent:
       Tag: Window Spot 20
       GameTag: Window Spot
@@ -4491,7 +3858,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 8720277574389290169
+  - Entity: 8719917439314941655
     TagComponent:
       Tag: Wall Lantern
       GameTag: Untagged
@@ -4505,7 +3872,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Plaza/Props/wall_lantern.glb
-  - Entity: 1685039624906019004
+  - Entity: 1685910221700242683
     TagComponent:
       Tag: Window Spot 21
       GameTag: Window Spot
@@ -4517,7 +3884,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 3009125067384137953
+  - Entity: 3009943559122466486
     TagComponent:
       Tag: Window Spot 22
       GameTag: Window Spot
@@ -4529,7 +3896,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 6941753009612569403
+  - Entity: 6940600506086274113
     TagComponent:
       Tag: Wall Lantern
       GameTag: Untagged
@@ -4543,7 +3910,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Plaza/Props/wall_lantern.glb
-  - Entity: 8552516275336672191
+  - Entity: 8554408045275878440
     TagComponent:
       Tag: Awning 1
       GameTag: Untagged
@@ -4562,14 +3929,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [4.5, 1]
-      Offset: [0, 0]
-      TexturePath: Assets/Plaza/Textures/awning_red.png
-  - Entity: 9040242875062009922
+      MaterialAsset: Assets/Materials/Awning red 1.cqmat
+  - Entity: 9039458965064124644
     TagComponent:
       Tag: Awning Valance 1
       GameTag: Untagged
@@ -4588,14 +3949,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [4.5, 0.25]
-      Offset: [0, 0]
-      TexturePath: Assets/Plaza/Textures/awning_red.png
-  - Entity: 4534672553268676167
+      MaterialAsset: Assets/Materials/Awning red.cqmat
+  - Entity: 4533326432493829063
     TagComponent:
       Tag: Awning 2
       GameTag: Untagged
@@ -4614,14 +3969,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [4.5, 1]
-      Offset: [0, 0]
-      TexturePath: Assets/Plaza/Textures/awning_green.png
-  - Entity: 7821845263618392922
+      MaterialAsset: Assets/Materials/Awning green 1.cqmat
+  - Entity: 7821413507421830934
     TagComponent:
       Tag: Awning Valance 2
       GameTag: Untagged
@@ -4640,14 +3989,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [4.5, 0.25]
-      Offset: [0, 0]
-      TexturePath: Assets/Plaza/Textures/awning_green.png
-  - Entity: 2819471909370542784
+      MaterialAsset: Assets/Materials/Awning green.cqmat
+  - Entity: 2821292089215574061
     TagComponent:
       Tag: Awning 3
       GameTag: Untagged
@@ -4666,14 +4009,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [4.5, 1]
-      Offset: [0, 0]
-      TexturePath: Assets/Plaza/Textures/awning_navy.png
-  - Entity: 880135306951890080
+      MaterialAsset: Assets/Materials/Awning navy 1.cqmat
+  - Entity: 878525804304390997
     TagComponent:
       Tag: Awning Valance 3
       GameTag: Untagged
@@ -4692,14 +4029,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [4.5, 0.25]
-      Offset: [0, 0]
-      TexturePath: Assets/Plaza/Textures/awning_navy.png
-  - Entity: 8523463720046272988
+      MaterialAsset: Assets/Materials/Awning navy.cqmat
+  - Entity: 8524915995831926389
     TagComponent:
       Tag: Awning 4
       GameTag: Untagged
@@ -4718,14 +4049,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [4.5, 1]
-      Offset: [0, 0]
-      TexturePath: Assets/Plaza/Textures/awning_terracotta.png
-  - Entity: 2574547039352948307
+      MaterialAsset: Assets/Materials/Awning terracotta 1.cqmat
+  - Entity: 2575311397131045440
     TagComponent:
       Tag: Awning Valance 4
       GameTag: Untagged
@@ -4744,14 +4069,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [4.5, 0.25]
-      Offset: [0, 0]
-      TexturePath: Assets/Plaza/Textures/awning_terracotta.png
-  - Entity: 2855219590439673666
+      MaterialAsset: Assets/Materials/Awning terracotta.cqmat
+  - Entity: 2853100601651811419
     TagComponent:
       Tag: Awning 5
       GameTag: Untagged
@@ -4770,14 +4089,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [4.5, 1]
-      Offset: [0, 0]
-      TexturePath: Assets/Plaza/Textures/awning_red.png
-  - Entity: 1151764717196914799
+      MaterialAsset: Assets/Materials/Awning red 1.cqmat
+  - Entity: 1151825420618430889
     TagComponent:
       Tag: Awning Valance 5
       GameTag: Untagged
@@ -4796,14 +4109,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [4.5, 0.25]
-      Offset: [0, 0]
-      TexturePath: Assets/Plaza/Textures/awning_red.png
-  - Entity: 5027062558635586934
+      MaterialAsset: Assets/Materials/Awning red.cqmat
+  - Entity: 5027229074824037763
     TagComponent:
       Tag: Awning 6
       GameTag: Untagged
@@ -4822,14 +4129,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [4.5, 1]
-      Offset: [0, 0]
-      TexturePath: Assets/Plaza/Textures/awning_green.png
-  - Entity: 6183797864831141300
+      MaterialAsset: Assets/Materials/Awning green 1.cqmat
+  - Entity: 6185337380013828523
     TagComponent:
       Tag: Awning Valance 6
       GameTag: Untagged
@@ -4848,14 +4149,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [4.5, 0.25]
-      Offset: [0, 0]
-      TexturePath: Assets/Plaza/Textures/awning_green.png
-  - Entity: 8332819147151082612
+      MaterialAsset: Assets/Materials/Awning green.cqmat
+  - Entity: 8332756807992338666
     TagComponent:
       Tag: Awning 7
       GameTag: Untagged
@@ -4874,14 +4169,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [4.5, 1]
-      Offset: [0, 0]
-      TexturePath: Assets/Plaza/Textures/awning_navy.png
-  - Entity: 1021305643018312276
+      MaterialAsset: Assets/Materials/Awning navy 1.cqmat
+  - Entity: 1021069050610395033
     TagComponent:
       Tag: Awning Valance 7
       GameTag: Untagged
@@ -4900,14 +4189,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [4.5, 0.25]
-      Offset: [0, 0]
-      TexturePath: Assets/Plaza/Textures/awning_navy.png
-  - Entity: 2822708282047966022
+      MaterialAsset: Assets/Materials/Awning navy.cqmat
+  - Entity: 2822559376322739774
     TagComponent:
       Tag: Awning 8
       GameTag: Untagged
@@ -4926,14 +4209,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [4.5, 1]
-      Offset: [0, 0]
-      TexturePath: Assets/Plaza/Textures/awning_terracotta.png
-  - Entity: 671639770363311328
+      MaterialAsset: Assets/Materials/Awning terracotta 1.cqmat
+  - Entity: 672685777117955927
     TagComponent:
       Tag: Awning Valance 8
       GameTag: Untagged
@@ -4952,14 +4229,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [4.5, 0.25]
-      Offset: [0, 0]
-      TexturePath: Assets/Plaza/Textures/awning_terracotta.png
-  - Entity: 3562539145609950319
+      MaterialAsset: Assets/Materials/Awning terracotta.cqmat
+  - Entity: 3564412790187315106
     TagComponent:
       Tag: Awning 9
       GameTag: Untagged
@@ -4978,14 +4249,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [4.5, 1]
-      Offset: [0, 0]
-      TexturePath: Assets/Plaza/Textures/awning_red.png
-  - Entity: 7830300976695020533
+      MaterialAsset: Assets/Materials/Awning red 1.cqmat
+  - Entity: 7830961189114953052
     TagComponent:
       Tag: Awning Valance 9
       GameTag: Untagged
@@ -5004,14 +4269,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [4.5, 0.25]
-      Offset: [0, 0]
-      TexturePath: Assets/Plaza/Textures/awning_red.png
-  - Entity: 8358334524667089890
+      MaterialAsset: Assets/Materials/Awning red.cqmat
+  - Entity: 8356776559361306279
     TagComponent:
       Tag: Awning 10
       GameTag: Untagged
@@ -5030,14 +4289,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [4.5, 1]
-      Offset: [0, 0]
-      TexturePath: Assets/Plaza/Textures/awning_green.png
-  - Entity: 2854355524606423811
+      MaterialAsset: Assets/Materials/Awning green 1.cqmat
+  - Entity: 2853960329356114866
     TagComponent:
       Tag: Awning Valance 10
       GameTag: Untagged
@@ -5056,14 +4309,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [4.5, 0.25]
-      Offset: [0, 0]
-      TexturePath: Assets/Plaza/Textures/awning_green.png
-  - Entity: 3069949802428916580
+      MaterialAsset: Assets/Materials/Awning green.cqmat
+  - Entity: 3070715945419861260
     TagComponent:
       Tag: Awning 11
       GameTag: Untagged
@@ -5082,14 +4329,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [4.5, 1]
-      Offset: [0, 0]
-      TexturePath: Assets/Plaza/Textures/awning_navy.png
-  - Entity: 6128333954003785176
+      MaterialAsset: Assets/Materials/Awning navy 1.cqmat
+  - Entity: 6128220096303630279
     TagComponent:
       Tag: Awning Valance 11
       GameTag: Untagged
@@ -5108,14 +4349,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [4.5, 0.25]
-      Offset: [0, 0]
-      TexturePath: Assets/Plaza/Textures/awning_navy.png
-  - Entity: 844541423098976835
+      MaterialAsset: Assets/Materials/Awning navy.cqmat
+  - Entity: 846554707005477926
     TagComponent:
       Tag: Plaza Tree 1
       GameTag: Untagged
@@ -5134,7 +4369,7 @@ Entities:
       ApplyToChildren: true
     ModelComponent:
       FilePath: Assets/Plaza/Props/plaza_tree.glb
-  - Entity: 1526175008154924431
+  - Entity: 1525006010668572030
     TagComponent:
       Tag: Plaza Tree Core 1
       GameTag: Untagged
@@ -5148,12 +4383,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.3, 0.26, 0.22, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 3920818294054039496
+      MaterialAsset: Assets/Materials/Plaza Tree Core 6.cqmat
+  - Entity: 3922199325455317056
     TagComponent:
       Tag: Tree Grate 1
       GameTag: Untagged
@@ -5172,12 +4403,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.07, 0.07, 0.075, 1]
-      Metallic: 0.7
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 3641496049787780195
+      MaterialAsset: Assets/Materials/Tree Grate 6.cqmat
+  - Entity: 3643070886262928890
     TagComponent:
       Tag: Plaza Tree 2
       GameTag: Untagged
@@ -5196,7 +4423,7 @@ Entities:
       ApplyToChildren: true
     ModelComponent:
       FilePath: Assets/Plaza/Props/plaza_tree.glb
-  - Entity: 3337523975258398361
+  - Entity: 3339063608573352607
     TagComponent:
       Tag: Plaza Tree Core 2
       GameTag: Untagged
@@ -5210,12 +4437,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.3, 0.26, 0.22, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 5931670184645934653
+      MaterialAsset: Assets/Materials/Plaza Tree Core 6.cqmat
+  - Entity: 5933068567755188411
     TagComponent:
       Tag: Tree Grate 2
       GameTag: Untagged
@@ -5234,12 +4457,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.07, 0.07, 0.075, 1]
-      Metallic: 0.7
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 5526523305043385296
+      MaterialAsset: Assets/Materials/Tree Grate 6.cqmat
+  - Entity: 5527569704860868864
     TagComponent:
       Tag: Plaza Tree 3
       GameTag: Untagged
@@ -5258,7 +4477,7 @@ Entities:
       ApplyToChildren: true
     ModelComponent:
       FilePath: Assets/Plaza/Props/plaza_tree.glb
-  - Entity: 2776442804504199018
+  - Entity: 2774236007612081332
     TagComponent:
       Tag: Plaza Tree Core 3
       GameTag: Untagged
@@ -5272,12 +4491,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.3, 0.26, 0.22, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 7630433896478930679
+      MaterialAsset: Assets/Materials/Plaza Tree Core 6.cqmat
+  - Entity: 7630021105279055063
     TagComponent:
       Tag: Tree Grate 3
       GameTag: Untagged
@@ -5296,12 +4511,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.07, 0.07, 0.075, 1]
-      Metallic: 0.7
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 6532349459383882538
+      MaterialAsset: Assets/Materials/Tree Grate 6.cqmat
+  - Entity: 6530335798580487992
     TagComponent:
       Tag: Plaza Tree 4
       GameTag: Untagged
@@ -5320,7 +4531,7 @@ Entities:
       ApplyToChildren: true
     ModelComponent:
       FilePath: Assets/Plaza/Props/plaza_tree.glb
-  - Entity: 6898896193021840699
+  - Entity: 6897884600702235347
     TagComponent:
       Tag: Plaza Tree Core 4
       GameTag: Untagged
@@ -5334,12 +4545,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.3, 0.26, 0.22, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 8275533292653933934
+      MaterialAsset: Assets/Materials/Plaza Tree Core 6.cqmat
+  - Entity: 8277441676798030304
     TagComponent:
       Tag: Tree Grate 4
       GameTag: Untagged
@@ -5358,12 +4565,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.07, 0.07, 0.075, 1]
-      Metallic: 0.7
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 551114475313532125
+      MaterialAsset: Assets/Materials/Tree Grate 6.cqmat
+  - Entity: 550014493079252813
     TagComponent:
       Tag: Plaza Tree 5
       GameTag: Untagged
@@ -5382,7 +4585,7 @@ Entities:
       ApplyToChildren: true
     ModelComponent:
       FilePath: Assets/Plaza/Props/plaza_tree.glb
-  - Entity: 5023839397282649872
+  - Entity: 5025942030963605865
     TagComponent:
       Tag: Plaza Tree Core 5
       GameTag: Untagged
@@ -5396,12 +4599,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.3, 0.26, 0.22, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 7416455960894740363
+      MaterialAsset: Assets/Materials/Plaza Tree Core 6.cqmat
+  - Entity: 7416148279944922015
     TagComponent:
       Tag: Tree Grate 5
       GameTag: Untagged
@@ -5420,12 +4619,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.07, 0.07, 0.075, 1]
-      Metallic: 0.7
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 7638291718483956001
+      MaterialAsset: Assets/Materials/Tree Grate 6.cqmat
+  - Entity: 7640164556397734914
     TagComponent:
       Tag: Plaza Tree 6
       GameTag: Untagged
@@ -5444,7 +4639,7 @@ Entities:
       ApplyToChildren: true
     ModelComponent:
       FilePath: Assets/Plaza/Props/plaza_tree.glb
-  - Entity: 3204128719741635326
+  - Entity: 3202238479627518474
     TagComponent:
       Tag: Plaza Tree Core 6
       GameTag: Untagged
@@ -5458,12 +4653,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.3, 0.26, 0.22, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 8980597096127684864
+      MaterialAsset: Assets/Materials/Plaza Tree Core 6.cqmat
+  - Entity: 8982013344183978009
     TagComponent:
       Tag: Tree Grate 6
       GameTag: Untagged
@@ -5482,12 +4673,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.07, 0.07, 0.075, 1]
-      Metallic: 0.7
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 4428400527352556807
+      MaterialAsset: Assets/Materials/Tree Grate 6.cqmat
+  - Entity: 4427933605122280818
     TagComponent:
       Tag: Street Lamp Post
       GameTag: Untagged
@@ -5501,12 +4688,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.08, 0.13, 0.1, 1]
-      Metallic: 0.6
-      Roughness: 0.45
-      AO: 1
-      TexturePath: ""
-  - Entity: 8514671541304828504
+      MaterialAsset: Assets/Materials/Street Lamp Post.cqmat
+  - Entity: 8515682720724035243
     TagComponent:
       Tag: Street Lamp Base
       GameTag: Untagged
@@ -5520,12 +4703,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.08, 0.13, 0.1, 1]
-      Metallic: 0.6
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 2209328394251163658
+      MaterialAsset: Assets/Materials/Street Lamp Cap.cqmat
+  - Entity: 2210955767258179776
     TagComponent:
       Tag: Street Lamp Lantern
       GameTag: Untagged
@@ -5544,14 +4723,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.95, 0.9, 0.75, 1]
-      Metallic: 0
-      Roughness: 0.15
-      AO: 1
-      EmissionColor: [1, 0.85, 0.6]
-      EmissionStrength: 0.3
-      TexturePath: ""
-  - Entity: 7396992008507820917
+      MaterialAsset: Assets/Materials/Street Lamp Lantern.cqmat
+  - Entity: 7395084293839939722
     TagComponent:
       Tag: Street Lamp Cap
       GameTag: Untagged
@@ -5570,12 +4743,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.08, 0.13, 0.1, 1]
-      Metallic: 0.6
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 152522904786930905
+      MaterialAsset: Assets/Materials/Street Lamp Cap.cqmat
+  - Entity: 151475526753799575
     TagComponent:
       Tag: Street Lamp Post
       GameTag: Untagged
@@ -5589,12 +4758,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.08, 0.13, 0.1, 1]
-      Metallic: 0.6
-      Roughness: 0.45
-      AO: 1
-      TexturePath: ""
-  - Entity: 8529161196265167173
+      MaterialAsset: Assets/Materials/Street Lamp Post.cqmat
+  - Entity: 8528219130312631930
     TagComponent:
       Tag: Street Lamp Base
       GameTag: Untagged
@@ -5608,12 +4773,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.08, 0.13, 0.1, 1]
-      Metallic: 0.6
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 1467525909569168616
+      MaterialAsset: Assets/Materials/Street Lamp Cap.cqmat
+  - Entity: 1466568176144627236
     TagComponent:
       Tag: Street Lamp Lantern
       GameTag: Untagged
@@ -5632,14 +4793,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.95, 0.9, 0.75, 1]
-      Metallic: 0
-      Roughness: 0.15
-      AO: 1
-      EmissionColor: [1, 0.85, 0.6]
-      EmissionStrength: 0.3
-      TexturePath: ""
-  - Entity: 4486645971961207187
+      MaterialAsset: Assets/Materials/Street Lamp Lantern.cqmat
+  - Entity: 4486777421804175797
     TagComponent:
       Tag: Street Lamp Cap
       GameTag: Untagged
@@ -5658,12 +4813,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.08, 0.13, 0.1, 1]
-      Metallic: 0.6
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 9183833062839150894
+      MaterialAsset: Assets/Materials/Street Lamp Cap.cqmat
+  - Entity: 9184105681813605405
     TagComponent:
       Tag: Street Lamp Post
       GameTag: Untagged
@@ -5677,12 +4828,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.08, 0.13, 0.1, 1]
-      Metallic: 0.6
-      Roughness: 0.45
-      AO: 1
-      TexturePath: ""
-  - Entity: 2194442901321829895
+      MaterialAsset: Assets/Materials/Street Lamp Post.cqmat
+  - Entity: 2194311604993586013
     TagComponent:
       Tag: Street Lamp Base
       GameTag: Untagged
@@ -5696,12 +4843,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.08, 0.13, 0.1, 1]
-      Metallic: 0.6
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 2483036125482161047
+      MaterialAsset: Assets/Materials/Street Lamp Cap.cqmat
+  - Entity: 2482183531175716235
     TagComponent:
       Tag: Street Lamp Lantern
       GameTag: Untagged
@@ -5720,14 +4863,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.95, 0.9, 0.75, 1]
-      Metallic: 0
-      Roughness: 0.15
-      AO: 1
-      EmissionColor: [1, 0.85, 0.6]
-      EmissionStrength: 0.3
-      TexturePath: ""
-  - Entity: 4644932059240930926
+      MaterialAsset: Assets/Materials/Street Lamp Lantern.cqmat
+  - Entity: 4643745507072186708
     TagComponent:
       Tag: Street Lamp Cap
       GameTag: Untagged
@@ -5746,12 +4883,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.08, 0.13, 0.1, 1]
-      Metallic: 0.6
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 1719496802997135867
+      MaterialAsset: Assets/Materials/Street Lamp Cap.cqmat
+  - Entity: 1718996051340914572
     TagComponent:
       Tag: Street Lamp Post
       GameTag: Untagged
@@ -5765,12 +4898,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.08, 0.13, 0.1, 1]
-      Metallic: 0.6
-      Roughness: 0.45
-      AO: 1
-      TexturePath: ""
-  - Entity: 5977222334633579196
+      MaterialAsset: Assets/Materials/Street Lamp Post.cqmat
+  - Entity: 5977584012411209494
     TagComponent:
       Tag: Street Lamp Base
       GameTag: Untagged
@@ -5784,12 +4913,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.08, 0.13, 0.1, 1]
-      Metallic: 0.6
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 6109583166062906235
+      MaterialAsset: Assets/Materials/Street Lamp Cap.cqmat
+  - Entity: 6110928892939360122
     TagComponent:
       Tag: Street Lamp Lantern
       GameTag: Untagged
@@ -5808,14 +4933,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.95, 0.9, 0.75, 1]
-      Metallic: 0
-      Roughness: 0.15
-      AO: 1
-      EmissionColor: [1, 0.85, 0.6]
-      EmissionStrength: 0.3
-      TexturePath: ""
-  - Entity: 4472421357523878763
+      MaterialAsset: Assets/Materials/Street Lamp Lantern.cqmat
+  - Entity: 4473978170621567780
     TagComponent:
       Tag: Street Lamp Cap
       GameTag: Untagged
@@ -5834,12 +4953,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.08, 0.13, 0.1, 1]
-      Metallic: 0.6
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 2730115109627466137
+      MaterialAsset: Assets/Materials/Street Lamp Cap.cqmat
+  - Entity: 2730493969019319618
     TagComponent:
       Tag: Fountain Basin
       GameTag: Untagged
@@ -5853,11 +4968,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Fountain Basin.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -5879,7 +4990,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6262381057532138141
+  - Entity: 6264377966806481328
     TagComponent:
       Tag: Fountain Water
       GameTag: Untagged
@@ -5893,12 +5004,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.12, 0.28, 0.3, 1]
-      Metallic: 0.1
-      Roughness: 0.04
-      AO: 1
-      TexturePath: ""
-  - Entity: 6330682865655780432
+      MaterialAsset: Assets/Materials/Fountain Water.cqmat
+  - Entity: 6331184147198072361
     TagComponent:
       Tag: Fountain Pillar
       GameTag: Untagged
@@ -5912,12 +5019,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 363554315489723854
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 363773762211214225
     TagComponent:
       Tag: Fountain Bowl
       GameTag: Untagged
@@ -5931,12 +5034,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 1160626728032183953
+      MaterialAsset: Assets/Materials/Fountain Bowl.cqmat
+  - Entity: 1160986604221926465
     TagComponent:
       Tag: Fountain Bowl Water
       GameTag: Untagged
@@ -5950,12 +5049,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.12, 0.28, 0.3, 1]
-      Metallic: 0
-      Roughness: 0.04
-      AO: 1
-      TexturePath: ""
-  - Entity: 7989208044214631252
+      MaterialAsset: Assets/Materials/Fountain Bowl Water.cqmat
+  - Entity: 7987317099308757408
     TagComponent:
       Tag: Fountain Jet
       GameTag: Untagged
@@ -6031,7 +5126,7 @@ Entities:
       SizeOverLifetime:
         - [0, 0.7]
         - [1, 1.4]
-  - Entity: 2687127971536485380
+  - Entity: 2687910454790638879
     TagComponent:
       Tag: Fountain Fall
       GameTag: Untagged
@@ -6107,7 +5202,7 @@ Entities:
       SizeOverLifetime:
         - [0, 1]
         - [1, 1]
-  - Entity: 8156155947653723691
+  - Entity: 8158134838595892658
     TagComponent:
       Tag: Bench 1
       GameTag: Untagged
@@ -6142,7 +5237,7 @@ Entities:
       Size: [1.1649436, 0.88929147, 0.4965431]
       IsTrigger: false
       Version: 2
-  - Entity: 3844781512453557974
+  - Entity: 3845107182287829848
     TagComponent:
       Tag: Seat 1 A
       GameTag: Seat
@@ -6154,7 +5249,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 3815537020410455605
+  - Entity: 3815809209043521789
     TagComponent:
       Tag: Seat 1 B
       GameTag: Seat
@@ -6166,7 +5261,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5529590418163005595
+  - Entity: 5529001724902992971
     TagComponent:
       Tag: Bench 2
       GameTag: Untagged
@@ -6201,7 +5296,7 @@ Entities:
       Size: [1.1649436, 0.88929147, 0.4965431]
       IsTrigger: false
       Version: 2
-  - Entity: 4041792985480383391
+  - Entity: 4039919872483150669
     TagComponent:
       Tag: Seat 2 A
       GameTag: Seat
@@ -6213,7 +5308,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5259218538167655741
+  - Entity: 5258946056137130860
     TagComponent:
       Tag: Seat 2 B
       GameTag: Seat
@@ -6225,7 +5320,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 4580798963735508119
+  - Entity: 4581775545258325444
     TagComponent:
       Tag: Bench 3
       GameTag: Untagged
@@ -6260,7 +5355,7 @@ Entities:
       Size: [1.1649436, 0.88929147, 0.4965431]
       IsTrigger: false
       Version: 2
-  - Entity: 124787923269751585
+  - Entity: 125165114123849797
     TagComponent:
       Tag: Seat 3 A
       GameTag: Seat
@@ -6272,7 +5367,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 1650657664176062624
+  - Entity: 1652724924925775385
     TagComponent:
       Tag: Seat 3 B
       GameTag: Seat
@@ -6284,7 +5379,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 8989962689517432017
+  - Entity: 8990657759563962139
     TagComponent:
       Tag: Bench 4
       GameTag: Untagged
@@ -6319,7 +5414,7 @@ Entities:
       Size: [1.1649436, 0.88929147, 0.4965431]
       IsTrigger: false
       Version: 2
-  - Entity: 91986813589074343
+  - Entity: 90412237317353353
     TagComponent:
       Tag: Seat 4 A
       GameTag: Seat
@@ -6331,7 +5426,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 3496081521975534172
+  - Entity: 3495755836304763844
     TagComponent:
       Tag: Seat 4 B
       GameTag: Seat
@@ -6343,7 +5438,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 392568115487404605
+  - Entity: 393315553224980266
     TagComponent:
       Tag: Bench 5
       GameTag: Untagged
@@ -6378,7 +5473,7 @@ Entities:
       Size: [1.1649436, 0.88929147, 0.4965431]
       IsTrigger: false
       Version: 2
-  - Entity: 6689996920911861671
+  - Entity: 6687946839149350207
     TagComponent:
       Tag: Seat 5 A
       GameTag: Seat
@@ -6390,7 +5485,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 6914341574326929537
+  - Entity: 6913964348031485737
     TagComponent:
       Tag: Seat 5 B
       GameTag: Seat
@@ -6402,7 +5497,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 2902912152774878229
+  - Entity: 2904487299462356727
     TagComponent:
       Tag: Bench 6
       GameTag: Untagged
@@ -6437,7 +5532,7 @@ Entities:
       Size: [1.1649436, 0.88929147, 0.4965431]
       IsTrigger: false
       Version: 2
-  - Entity: 4608436860346615122
+  - Entity: 4608180904301416759
     TagComponent:
       Tag: Seat 6 A
       GameTag: Seat
@@ -6449,7 +5544,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 4158415976499361282
+  - Entity: 4157475265470315650
     TagComponent:
       Tag: Seat 6 B
       GameTag: Seat
@@ -6461,7 +5556,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 6796395141277982318
+  - Entity: 6797723668769792403
     TagComponent:
       Tag: Bench 7
       GameTag: Untagged
@@ -6496,7 +5591,7 @@ Entities:
       Size: [1.1649436, 0.88929147, 0.4965431]
       IsTrigger: false
       Version: 2
-  - Entity: 5705372808721394170
+  - Entity: 5704502312892627958
     TagComponent:
       Tag: Seat 7 A
       GameTag: Seat
@@ -6508,7 +5603,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 4733564460395401754
+  - Entity: 4735261480974353843
     TagComponent:
       Tag: Seat 7 B
       GameTag: Seat
@@ -6520,7 +5615,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5354662430270107756
+  - Entity: 5352649010450122426
     TagComponent:
       Tag: Bench 8
       GameTag: Untagged
@@ -6555,7 +5650,7 @@ Entities:
       Size: [1.1649436, 0.88929147, 0.4965431]
       IsTrigger: false
       Version: 2
-  - Entity: 6691205298035850280
+  - Entity: 6691248650820520742
     TagComponent:
       Tag: Seat 8 A
       GameTag: Seat
@@ -6567,7 +5662,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 6326057125779205570
+  - Entity: 6326804886679619291
     TagComponent:
       Tag: Seat 8 B
       GameTag: Seat
@@ -6579,7 +5674,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 6538482169376682137
+  - Entity: 6537716009031641488
     TagComponent:
       Tag: Cafe Table
       GameTag: Untagged
@@ -6614,7 +5709,7 @@ Entities:
       Size: [0.7416651, 0.8585816, 1.7173197]
       IsTrigger: false
       Version: 2
-  - Entity: 3943176744299571218
+  - Entity: 3944874741691161561
     TagComponent:
       Tag: Cafe Table
       GameTag: Untagged
@@ -6649,7 +5744,7 @@ Entities:
       Size: [0.7416651, 0.8585816, 1.7173197]
       IsTrigger: false
       Version: 2
-  - Entity: 9099353663797471069
+  - Entity: 9097443888719330553
     TagComponent:
       Tag: Cafe Table
       GameTag: Untagged
@@ -6684,7 +5779,7 @@ Entities:
       Size: [0.7416651, 0.8585816, 1.7173197]
       IsTrigger: false
       Version: 2
-  - Entity: 824871001446309865
+  - Entity: 825705986896031199
     TagComponent:
       Tag: Planter
       GameTag: Untagged
@@ -6698,11 +5793,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Planter.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6724,7 +5815,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1207290208751523965
+  - Entity: 1208883323064613151
     TagComponent:
       Tag: Planter Soil
       GameTag: Untagged
@@ -6738,12 +5829,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.2, 0.15, 0.11, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 63112424745297297
+      MaterialAsset: Assets/Materials/Planter Soil.cqmat
+  - Entity: 65232496653479844
     TagComponent:
       Tag: Planter Hedge
       GameTag: Untagged
@@ -6757,13 +5844,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/hedge_leaves.jpg
-  - Entity: 4701933200526675055
+      MaterialAsset: Assets/Materials/Hedge leaves.cqmat
+  - Entity: 4703842286297567075
     TagComponent:
       Tag: Planter Hedge Top
       GameTag: Untagged
@@ -6777,13 +5859,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/hedge_leaves.jpg
-  - Entity: 1785406592933092913
+      MaterialAsset: Assets/Materials/Hedge leaves.cqmat
+  - Entity: 1783690573827203049
     TagComponent:
       Tag: Planter
       GameTag: Untagged
@@ -6797,11 +5874,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Planter.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6823,7 +5896,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4607736727657693598
+  - Entity: 4608872171743044741
     TagComponent:
       Tag: Planter Soil
       GameTag: Untagged
@@ -6837,12 +5910,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.2, 0.15, 0.11, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 5404586490797613205
+      MaterialAsset: Assets/Materials/Planter Soil.cqmat
+  - Entity: 5406301083508340367
     TagComponent:
       Tag: Planter Hedge
       GameTag: Untagged
@@ -6856,13 +5925,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/hedge_leaves.jpg
-  - Entity: 1140433818802210384
+      MaterialAsset: Assets/Materials/Hedge leaves.cqmat
+  - Entity: 1140636052531619376
     TagComponent:
       Tag: Planter Hedge Top
       GameTag: Untagged
@@ -6876,13 +5940,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/hedge_leaves.jpg
-  - Entity: 5586857236105427498
+      MaterialAsset: Assets/Materials/Hedge leaves.cqmat
+  - Entity: 5588819768952276200
     TagComponent:
       Tag: Planter
       GameTag: Untagged
@@ -6896,11 +5955,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Planter.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6922,7 +5977,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5439389511577539548
+  - Entity: 5439063052086406176
     TagComponent:
       Tag: Planter Soil
       GameTag: Untagged
@@ -6936,12 +5991,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.2, 0.15, 0.11, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 7614405708644917508
+      MaterialAsset: Assets/Materials/Planter Soil.cqmat
+  - Entity: 7614519689658494084
     TagComponent:
       Tag: Planter Hedge
       GameTag: Untagged
@@ -6955,13 +6006,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/hedge_leaves.jpg
-  - Entity: 936409941793470673
+      MaterialAsset: Assets/Materials/Hedge leaves.cqmat
+  - Entity: 934834572119084319
     TagComponent:
       Tag: Planter Hedge Top
       GameTag: Untagged
@@ -6975,13 +6021,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/hedge_leaves.jpg
-  - Entity: 8284561757683915944
+      MaterialAsset: Assets/Materials/Hedge leaves.cqmat
+  - Entity: 8286436329552776105
     TagComponent:
       Tag: Planter
       GameTag: Untagged
@@ -6995,11 +6036,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.86, 0.83, 0.77, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Planter.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -7021,7 +6058,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7735001745765525045
+  - Entity: 7737122507629501193
     TagComponent:
       Tag: Planter Soil
       GameTag: Untagged
@@ -7035,12 +6072,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.2, 0.15, 0.11, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 3070404450072610636
+      MaterialAsset: Assets/Materials/Planter Soil.cqmat
+  - Entity: 3070254701031880799
     TagComponent:
       Tag: Planter Hedge
       GameTag: Untagged
@@ -7054,13 +6087,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/hedge_leaves.jpg
-  - Entity: 8636512320460069828
+      MaterialAsset: Assets/Materials/Hedge leaves.cqmat
+  - Entity: 8637049507676916973
     TagComponent:
       Tag: Planter Hedge Top
       GameTag: Untagged
@@ -7074,13 +6102,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/hedge_leaves.jpg
-  - Entity: 5077193357182711946
+      MaterialAsset: Assets/Materials/Hedge leaves.cqmat
+  - Entity: 5076164273470747645
     TagComponent:
       Tag: Flower Box
       GameTag: Untagged
@@ -7115,7 +6138,7 @@ Entities:
       Size: [1.2515764, 0.45337266, 0.46718612]
       IsTrigger: false
       Version: 2
-  - Entity: 375274413730703989
+  - Entity: 374580389018578667
     TagComponent:
       Tag: Flower Box Hedge
       GameTag: Untagged
@@ -7129,13 +6152,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/hedge_leaves.jpg
-  - Entity: 6806705360681590580
+      MaterialAsset: Assets/Materials/Hedge leaves.cqmat
+  - Entity: 6805429969211428825
     TagComponent:
       Tag: Flower Box
       GameTag: Untagged
@@ -7170,7 +6188,7 @@ Entities:
       Size: [1.2515764, 0.45337266, 0.46718612]
       IsTrigger: false
       Version: 2
-  - Entity: 2858467867629481023
+  - Entity: 2858846330072430338
     TagComponent:
       Tag: Flower Box Hedge
       GameTag: Untagged
@@ -7184,13 +6202,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/hedge_leaves.jpg
-  - Entity: 6977917020971264308
+      MaterialAsset: Assets/Materials/Hedge leaves.cqmat
+  - Entity: 6976483161852756777
     TagComponent:
       Tag: Flower Box
       GameTag: Untagged
@@ -7225,7 +6238,7 @@ Entities:
       Size: [1.2515764, 0.45337266, 0.46718612]
       IsTrigger: false
       Version: 2
-  - Entity: 8130785465925543359
+  - Entity: 8129457727127248567
     TagComponent:
       Tag: Flower Box Hedge
       GameTag: Untagged
@@ -7239,13 +6252,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/hedge_leaves.jpg
-  - Entity: 5547520145934968416
+      MaterialAsset: Assets/Materials/Hedge leaves.cqmat
+  - Entity: 5547089866845869325
     TagComponent:
       Tag: Flower Box
       GameTag: Untagged
@@ -7280,7 +6288,7 @@ Entities:
       Size: [1.2515764, 0.45337266, 0.46718612]
       IsTrigger: false
       Version: 2
-  - Entity: 8010238574314739882
+  - Entity: 8011320434570603529
     TagComponent:
       Tag: Flower Box Hedge
       GameTag: Untagged
@@ -7294,13 +6302,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Plaza/Textures/hedge_leaves.jpg
-  - Entity: 8577868892689415618
+      MaterialAsset: Assets/Materials/Hedge leaves.cqmat
+  - Entity: 8578599422467487256
     TagComponent:
       Tag: Exit
       GameTag: Exit
@@ -7312,7 +6315,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5278661064865140088
+  - Entity: 5280024930251133018
     TagComponent:
       Tag: Exit
       GameTag: Exit
@@ -7324,7 +6327,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 8908940673759496256
+  - Entity: 8909547920527541988
     TagComponent:
       Tag: Exit
       GameTag: Exit
@@ -7336,7 +6339,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 4125583309677073887
+  - Entity: 4127264143923129409
     TagComponent:
       Tag: NavMesh Surface
       GameTag: Untagged
@@ -7358,7 +6361,7 @@ Entities:
       OverrideVoxelSize: false
       VoxelSize: 0.166
       BakeOnPlay: true
-  - Entity: 2655041653698724316
+  - Entity: 2656950776462240519
     TagComponent:
       Tag: Pedestrian 1
       GameTag: Pedestrian
@@ -7402,6 +6405,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -7425,7 +6432,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 9021072704169276456
+  - Entity: 9022593663106533103
     TagComponent:
       Tag: Pedestrian 2
       GameTag: Pedestrian
@@ -7469,6 +6476,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -7492,7 +6503,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 8600961766319849543
+  - Entity: 8600531539709654397
     TagComponent:
       Tag: Pedestrian 3
       GameTag: Pedestrian
@@ -7536,6 +6547,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -7559,7 +6574,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 3183994548045849998
+  - Entity: 3181840253557514728
     TagComponent:
       Tag: Pedestrian 4
       GameTag: Pedestrian
@@ -7603,6 +6618,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -7626,7 +6645,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 6090211579848056661
+  - Entity: 6089781335826153956
     TagComponent:
       Tag: Pedestrian 5
       GameTag: Pedestrian
@@ -7670,6 +6689,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -7693,7 +6716,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 6632820814036100774
+  - Entity: 6632530757754224158
     TagComponent:
       Tag: Pedestrian 6
       GameTag: Pedestrian
@@ -7737,6 +6760,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -7760,7 +6787,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 5980367495601485942
+  - Entity: 5978933655897647088
     TagComponent:
       Tag: Pedestrian 7
       GameTag: Pedestrian
@@ -7804,6 +6831,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -7827,7 +6858,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 4707535717212696487
+  - Entity: 4707244836816210396
     TagComponent:
       Tag: Pedestrian 8
       GameTag: Pedestrian
@@ -7871,6 +6902,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -7894,7 +6929,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 8246380841097542031
+  - Entity: 8248060526138947835
     TagComponent:
       Tag: Pedestrian 9
       GameTag: Pedestrian
@@ -7938,6 +6973,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -7961,7 +7000,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 1623784651011189570
+  - Entity: 1625570214306157692
     TagComponent:
       Tag: Pedestrian 10
       GameTag: Pedestrian
@@ -8005,6 +7044,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -8028,7 +7071,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 6462934906966742245
+  - Entity: 6464651150888888316
     TagComponent:
       Tag: Pedestrian 11
       GameTag: Pedestrian
@@ -8072,6 +7115,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -8095,7 +7142,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 8133292228112343747
+  - Entity: 8131454487906618560
     TagComponent:
       Tag: Pedestrian 12
       GameTag: Pedestrian
@@ -8139,6 +7186,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -8162,7 +7213,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 5295478550925422945
+  - Entity: 5294730512889365767
     TagComponent:
       Tag: Pedestrian 13
       GameTag: Pedestrian
@@ -8206,6 +7257,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -8229,7 +7284,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 760519447525154457
+  - Entity: 759437759044090474
     TagComponent:
       Tag: Pedestrian 14
       GameTag: Pedestrian
@@ -8273,6 +7328,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -8296,7 +7355,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 539635640336736039
+  - Entity: 538975339677877877
     TagComponent:
       Tag: Pedestrian 15
       GameTag: Pedestrian
@@ -8340,6 +7399,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -8363,7 +7426,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 1936526369585238176
+  - Entity: 1934318645172175294
     TagComponent:
       Tag: Pedestrian 16
       GameTag: Pedestrian
@@ -8407,6 +7470,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -8430,7 +7497,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 5876171648543006906
+  - Entity: 5875968316028871434
     TagComponent:
       Tag: Pedestrian 17
       GameTag: Pedestrian
@@ -8474,6 +7541,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -8497,7 +7568,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 5942143593113689367
+  - Entity: 5940605160884523112
     TagComponent:
       Tag: Pedestrian 18
       GameTag: Pedestrian
@@ -8541,6 +7612,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -8564,7 +7639,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 2736435102333693446
+  - Entity: 2737693570070583627
     TagComponent:
       Tag: Pedestrian 19
       GameTag: Pedestrian
@@ -8608,6 +7683,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -8631,7 +7710,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 2263013347429236634
+  - Entity: 2260857936172054393
     TagComponent:
       Tag: Pedestrian 20
       GameTag: Pedestrian
@@ -8675,6 +7754,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -8698,7 +7781,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 5397363432459283334
+  - Entity: 5395507535035105330
     TagComponent:
       Tag: Pedestrian 21
       GameTag: Pedestrian
@@ -8742,6 +7825,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -8765,7 +7852,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 332656016016655857
+  - Entity: 331625988733772913
     TagComponent:
       Tag: Pedestrian 22
       GameTag: Pedestrian
@@ -8809,6 +7896,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -8832,7 +7923,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 5208454931848853888
+  - Entity: 5210628330411903147
     TagComponent:
       Tag: Pedestrian 23
       GameTag: Pedestrian
@@ -8876,6 +7967,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -8899,7 +7994,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 5086582933709881884
+  - Entity: 5084797953250957021
     TagComponent:
       Tag: Pedestrian 24
       GameTag: Pedestrian
@@ -8943,6 +8038,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -8966,7 +8065,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 2360207133882138123
+  - Entity: 2361815933981359546
     TagComponent:
       Tag: Pedestrian 25
       GameTag: Pedestrian
@@ -9010,6 +8109,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -9033,7 +8136,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 6995003693050682828
+  - Entity: 6995434073829073712
     TagComponent:
       Tag: Pedestrian 26
       GameTag: Pedestrian
@@ -9077,6 +8180,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -9100,7 +8207,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 7779592281120811379
+  - Entity: 7778087092278084030
     TagComponent:
       Tag: Pedestrian 27
       GameTag: Pedestrian
@@ -9144,6 +8251,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -9167,7 +8278,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 3625834635837771134
+  - Entity: 3627215820654663774
     TagComponent:
       Tag: Pedestrian 28
       GameTag: Pedestrian
@@ -9211,6 +8322,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -9234,7 +8349,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 355589342318774739
+  - Entity: 353733134056568164
     TagComponent:
       Tag: Pedestrian 29
       GameTag: Pedestrian
@@ -9278,6 +8393,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -9301,7 +8420,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 7021215729020452054
+  - Entity: 7023265175249584789
     TagComponent:
       Tag: Pedestrian 30
       GameTag: Pedestrian
@@ -9345,6 +8464,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -9368,7 +8491,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 7625363321208022615
+  - Entity: 7626075744111784703
     TagComponent:
       Tag: Pedestrian 31
       GameTag: Pedestrian
@@ -9412,6 +8535,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -9435,7 +8562,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 1109705824640788617
+  - Entity: 1108324657184394727
     TagComponent:
       Tag: Pedestrian 32
       GameTag: Pedestrian
@@ -9479,6 +8606,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -9502,7 +8633,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 8880403772237710955
+  - Entity: 8879533688666784809
     TagComponent:
       Tag: Pedestrian 33
       GameTag: Pedestrian
@@ -9546,6 +8677,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -9569,7 +8704,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 7722557934052277638
+  - Entity: 7722531450853448442
     TagComponent:
       Tag: Pedestrian 34
       GameTag: Pedestrian
@@ -9613,6 +8748,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -9636,7 +8775,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 8763843097064369162
+  - Entity: 8761915987678999488
     TagComponent:
       Tag: Pedestrian 35
       GameTag: Pedestrian
@@ -9680,6 +8819,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -9703,7 +8846,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 3646231978164902590
+  - Entity: 3647348746478666355
     TagComponent:
       Tag: Pedestrian 36
       GameTag: Pedestrian
@@ -9747,6 +8890,10 @@ Entities:
       SkinMaterials: skin,body,face,head
       HairMaterials: hair,brow,beard
       EyeMaterials: eye,iris
+      OutfitTexture: ""
+      OutfitMaterials: "*"
+      OutfitRoughness: 0.72
+      OutfitKeepNormalMap: false
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Pedestrian.cqs
       ClassName: ""
@@ -9770,7 +8917,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 6855641444086219769
+  - Entity: 6855562082123056031
     TagComponent:
       Tag: Crowd Director
       GameTag: Untagged
@@ -9785,7 +8932,7 @@ Entities:
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/CrowdDirector.cqs
       ClassName: ""
-  - Entity: 6287252873210177146
+  - Entity: 6289056820231055063
     TagComponent:
       Tag: Main Camera
       GameTag: Untagged
@@ -9815,7 +8962,7 @@ Entities:
       ClassName: ""
     AudioListenerComponent:
       IsActive: true
-  - Entity: 2724179242653483183
+  - Entity: 2722921168779229159
     TagComponent:
       Tag: HUD
       GameTag: Untagged
@@ -9841,7 +8988,7 @@ Entities:
       IgnoreReversedGraphics: true
       BlockingObjects: 0
       BlockingMask: 4294967295
-  - Entity: 5427328672532886876
+  - Entity: 5428603753257154975
     TagComponent:
       Tag: TitleText
       GameTag: Untagged
@@ -9880,7 +9027,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 149771115037491184
+  - Entity: 149710599457890030
     TagComponent:
       Tag: CrowdStats
       GameTag: Untagged
@@ -9919,7 +9066,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 8513332198303242579
+  - Entity: 8512531659778881384
     TagComponent:
       Tag: ModeText
       GameTag: Untagged
@@ -9958,7 +9105,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 3977599184344129214
+  - Entity: 3978012816090660787
     TagComponent:
       Tag: HintText
       GameTag: Untagged
@@ -10204,11 +9351,11 @@ EditorCamera:
   Yaw: 0.61086524
   OrthographicSize: 10
 Hierarchy:
-  - Child: 5427328672532886876
-    Parent: 2724179242653483183
-  - Child: 149771115037491184
-    Parent: 2724179242653483183
-  - Child: 8513332198303242579
-    Parent: 2724179242653483183
-  - Child: 3977599184344129214
-    Parent: 2724179242653483183
+  - Child: 5428603753257154975
+    Parent: 2722921168779229159
+  - Child: 149710599457890030
+    Parent: 2722921168779229159
+  - Child: 8512531659778881384
+    Parent: 2722921168779229159
+  - Child: 3978012816090660787
+    Parent: 2722921168779229159

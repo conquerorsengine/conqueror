@@ -1,0 +1,21 @@
+Material:
+  Name: Downlight Lens
+  Albedo: [1, 0.95, 0.88]
+  Opacity: 1
+  Metallic: 0
+  Roughness: 0.75
+  AO: 1
+  EmissionColor: [1, 0.84, 0.64]
+  EmissionStrength: 0
+  Tiling: [1, 1]
+  Offset: [0, 0]
+  RenderMode: 0
+  Culling: 0
+  AlphaClip: 0.5
+  NextGraphNodeID: 1
+  NextGraphLinkID: 1
+  GraphInitialized: false
+  GraphNodes:
+    []
+  GraphLinks:
+    []

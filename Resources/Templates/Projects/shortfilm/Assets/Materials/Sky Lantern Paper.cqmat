@@ -1,0 +1,21 @@
+Material:
+  Name: Sky Lantern Paper
+  Albedo: [0.95, 0.62, 0.32]
+  Opacity: 1
+  Metallic: 0
+  Roughness: 0.9
+  AO: 1
+  EmissionColor: [1, 0.5, 0.18]
+  EmissionStrength: 0.9
+  Tiling: [1, 1]
+  Offset: [0, 0]
+  RenderMode: 0
+  Culling: 0
+  AlphaClip: 0.5
+  NextGraphNodeID: 1
+  NextGraphLinkID: 1
+  GraphInitialized: false
+  GraphNodes:
+    []
+  GraphLinks:
+    []

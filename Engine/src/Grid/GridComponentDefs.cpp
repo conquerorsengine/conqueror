@@ -1,6 +1,7 @@
 #include "Scene/ComponentRegistry.h"
 #include "Scene/Components.h"
 #include "Grid/GridComponents.h"
+#include "Grid/GridSystem.h"
 
 #include <IconsFontAwesome6.h>
 #include <yaml-cpp/yaml.h>
@@ -15,21 +16,7 @@ namespace Conqueror
         {
             out << YAML::Key << "Palette" << YAML::Value << YAML::BeginSeq;
             for (const auto& t : map.Palette)
-            {
-                out << YAML::BeginMap;
-                out << YAML::Key << "Name" << YAML::Value << t.Name;
-                out << YAML::Key << "Color" << YAML::Value << YAML::Flow << YAML::BeginSeq << t.Color.r << t.Color.g << t.Color.b << t.Color.a << YAML::EndSeq;
-                out << YAML::Key << "Texture" << YAML::Value << t.Texture;
-                out << YAML::Key << "Solid" << YAML::Value << t.Solid;
-                out << YAML::Key << "Walkable" << YAML::Value << t.Walkable;
-                out << YAML::Key << "Cost" << YAML::Value << t.Cost;
-                out << YAML::Key << "Height" << YAML::Value << t.Height;
-                if (t.Autotile)
-                    out << YAML::Key << "Autotile" << YAML::Value << t.Autotile;
-                if (t.Terrain >= 0)
-                    out << YAML::Key << "Terrain" << YAML::Value << t.Terrain;
-                out << YAML::EndMap;
-            }
+                GridSystem::EmitTileDefinition(out, t);
             out << YAML::EndSeq;
             // Hücreler: [x, y, karo, r, g, b, a, yükseklik] (sıralı: kararlı dosya farkları)
             std::vector<std::pair<uint64_t, TileCell>> cells(map.Cells.begin(), map.Cells.end());
@@ -57,16 +44,7 @@ namespace Conqueror
                 for (auto t : palette)
                 {
                     TileDefinition def;
-                    if (t["Name"]) def.Name = t["Name"].as<std::string>();
-                    if (auto c = t["Color"]; c && c.IsSequence() && c.size() == 4)
-                        def.Color = { c[0].as<float>(), c[1].as<float>(), c[2].as<float>(), c[3].as<float>() };
-                    if (t["Texture"]) def.Texture = t["Texture"].as<std::string>();
-                    if (t["Solid"]) def.Solid = t["Solid"].as<bool>();
-                    if (t["Walkable"]) def.Walkable = t["Walkable"].as<bool>();
-                    if (t["Cost"]) def.Cost = t["Cost"].as<int>();
-                    if (t["Height"]) def.Height = t["Height"].as<float>();
-                    if (t["Autotile"]) def.Autotile = t["Autotile"].as<int>();
-                    if (t["Terrain"]) def.Terrain = t["Terrain"].as<int>();
+                    GridSystem::ReadTileDefinition(t, def);
                     map.Palette.push_back(def);
                 }
             }
@@ -114,6 +92,7 @@ namespace Conqueror
             .Requires("TilemapComponent")
             .Describe("Generates static 2D colliders for every Solid tile.")
             .Field("IsTrigger", "Is Trigger", &TilemapCollider2DComponent::IsTrigger)
+            .Field("PhysicsMaterial", "Material", &TilemapCollider2DComponent::PhysicsMaterial, FieldKind::Asset).Filter(".cqphysmat2d")
             .Field("Friction", "Friction", &TilemapCollider2DComponent::Friction).Range(0.0f, 1.0f, 0.01f)
             .Field("Restitution", "Bounciness", &TilemapCollider2DComponent::Restitution).Range(0.0f, 1.0f, 0.01f);
     }

@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 8316146953194899431
+  - Entity: 8317960694956856189
     TagComponent:
       Tag: Studio Floor
       GameTag: Untagged
@@ -14,11 +14,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.05, 0.05, 0.055, 1]
-      Metallic: 0
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Studio Floor.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -40,7 +36,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 8997979409536296373
+  - Entity: 8996089927412088626
     TagComponent:
       Tag: Stage
       GameTag: Untagged
@@ -54,11 +50,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.12, 0.12, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Stage.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -80,7 +72,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7805717415349347383
+  - Entity: 7806088459028189006
     TagComponent:
       Tag: LED Panel 0
       GameTag: LED Panel
@@ -94,19 +86,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 3606031703476141990
+      MaterialAsset: Assets/Materials/LED Forest 31.cqmat
+  - Entity: 3606402550906075758
     TagComponent:
       Tag: LED Frame 0
       GameTag: Untagged
@@ -120,12 +102,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 4282283165222510613
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 4281251301153422689
     TagComponent:
       Tag: LED Panel 1
       GameTag: LED Panel
@@ -139,19 +117,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.03125, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 2736216370563180948
+      MaterialAsset: Assets/Materials/LED Forest 30.cqmat
+  - Entity: 2737987307011857884
     TagComponent:
       Tag: LED Frame 1
       GameTag: Untagged
@@ -165,12 +133,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 3914445024818803255
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 3915125314940953281
     TagComponent:
       Tag: LED Panel 2
       GameTag: LED Panel
@@ -184,19 +148,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.0625, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 6989884673510559896
+      MaterialAsset: Assets/Materials/LED Forest 29.cqmat
+  - Entity: 6991479611951565148
     TagComponent:
       Tag: LED Frame 2
       GameTag: Untagged
@@ -210,12 +164,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 5313304783688468392
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 5312858005406513475
     TagComponent:
       Tag: LED Panel 3
       GameTag: LED Panel
@@ -229,19 +179,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.09375, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 775655582931081532
+      MaterialAsset: Assets/Materials/LED Forest 28.cqmat
+  - Entity: 775771549121222725
     TagComponent:
       Tag: LED Frame 3
       GameTag: Untagged
@@ -255,12 +195,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 1942606062707097771
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 1941670817949532776
     TagComponent:
       Tag: LED Panel 4
       GameTag: LED Panel
@@ -274,19 +210,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.125, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 681005717535069419
+      MaterialAsset: Assets/Materials/LED Forest 27.cqmat
+  - Entity: 681413183963302144
     TagComponent:
       Tag: LED Frame 4
       GameTag: Untagged
@@ -300,12 +226,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 931587094664710683
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 930590630107156786
     TagComponent:
       Tag: LED Panel 5
       GameTag: LED Panel
@@ -319,19 +241,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.15625, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 612313485197213201
+      MaterialAsset: Assets/Materials/LED Forest 26.cqmat
+  - Entity: 610494379649900682
     TagComponent:
       Tag: LED Frame 5
       GameTag: Untagged
@@ -345,12 +257,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 7439775902251720588
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 7437926207278345127
     TagComponent:
       Tag: LED Panel 6
       GameTag: LED Panel
@@ -364,19 +272,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.1875, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 6432374167002321424
+      MaterialAsset: Assets/Materials/LED Forest 25.cqmat
+  - Entity: 6432218340024114612
     TagComponent:
       Tag: LED Frame 6
       GameTag: Untagged
@@ -390,12 +288,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 6235618061316050404
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 6237181123003685059
     TagComponent:
       Tag: LED Panel 7
       GameTag: LED Panel
@@ -409,19 +303,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.21875, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 5294252931368991531
+      MaterialAsset: Assets/Materials/LED Forest 24.cqmat
+  - Entity: 5296022347924844962
     TagComponent:
       Tag: LED Frame 7
       GameTag: Untagged
@@ -435,12 +319,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 2868261630400825500
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 2867010070926764968
     TagComponent:
       Tag: LED Panel 8
       GameTag: LED Panel
@@ -454,19 +334,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.25, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 4436773868491631812
+      MaterialAsset: Assets/Materials/LED Forest 23.cqmat
+  - Entity: 4437489198097115836
     TagComponent:
       Tag: LED Frame 8
       GameTag: Untagged
@@ -480,12 +350,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 6597711699115136213
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 6595646363810321257
     TagComponent:
       Tag: LED Panel 9
       GameTag: LED Panel
@@ -499,19 +365,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.28125, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 3159582957245069088
+      MaterialAsset: Assets/Materials/LED Forest 22.cqmat
+  - Entity: 3161141336847113121
     TagComponent:
       Tag: LED Frame 9
       GameTag: Untagged
@@ -525,12 +381,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 4368507756522813684
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 4370664348630308854
     TagComponent:
       Tag: LED Panel 10
       GameTag: LED Panel
@@ -544,19 +396,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.3125, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 9187381373148557174
+      MaterialAsset: Assets/Materials/LED Forest 21.cqmat
+  - Entity: 9189476391785266265
     TagComponent:
       Tag: LED Frame 10
       GameTag: Untagged
@@ -570,12 +412,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 1156892234467142459
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 1155645966243803713
     TagComponent:
       Tag: LED Panel 11
       GameTag: LED Panel
@@ -589,19 +427,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.34375, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 6606910661550548494
+      MaterialAsset: Assets/Materials/LED Forest 20.cqmat
+  - Entity: 6608962652877258877
     TagComponent:
       Tag: LED Frame 11
       GameTag: Untagged
@@ -615,12 +443,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 34287633307310230
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 35578899286283375
     TagComponent:
       Tag: LED Panel 12
       GameTag: LED Panel
@@ -634,19 +458,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.375, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 7570694617774470171
+      MaterialAsset: Assets/Materials/LED Forest 19.cqmat
+  - Entity: 7572578599706488653
     TagComponent:
       Tag: LED Frame 12
       GameTag: Untagged
@@ -660,12 +474,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 1212984521691237808
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 1212264652516543692
     TagComponent:
       Tag: LED Panel 13
       GameTag: LED Panel
@@ -679,19 +489,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.40625, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 2483276169732220745
+      MaterialAsset: Assets/Materials/LED Forest 18.cqmat
+  - Entity: 2482020219850127213
     TagComponent:
       Tag: LED Frame 13
       GameTag: Untagged
@@ -705,12 +505,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 476347820058016037
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 476226421223483206
     TagComponent:
       Tag: LED Panel 14
       GameTag: LED Panel
@@ -724,19 +520,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.4375, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 7752994229124972153
+      MaterialAsset: Assets/Materials/LED Forest 17.cqmat
+  - Entity: 7755090347662674042
     TagComponent:
       Tag: LED Frame 14
       GameTag: Untagged
@@ -750,12 +536,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 4233872385690148937
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 4235083739862022441
     TagComponent:
       Tag: LED Panel 15
       GameTag: LED Panel
@@ -769,19 +551,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.46875, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 2946883364673019587
+      MaterialAsset: Assets/Materials/LED Forest 16.cqmat
+  - Entity: 2946155112686050787
     TagComponent:
       Tag: LED Frame 15
       GameTag: Untagged
@@ -795,12 +567,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 6447295055711159567
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 6448822648324624341
     TagComponent:
       Tag: LED Panel 16
       GameTag: LED Panel
@@ -814,19 +582,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.5, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 6694612996379325461
+      MaterialAsset: Assets/Materials/LED Forest 15.cqmat
+  - Entity: 6696779757428782669
     TagComponent:
       Tag: LED Frame 16
       GameTag: Untagged
@@ -840,12 +598,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 2370904198268420596
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 2369054444446851845
     TagComponent:
       Tag: LED Panel 17
       GameTag: LED Panel
@@ -859,19 +613,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.53125, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 8054512624486811301
+      MaterialAsset: Assets/Materials/LED Forest 14.cqmat
+  - Entity: 8052671665682756800
     TagComponent:
       Tag: LED Frame 17
       GameTag: Untagged
@@ -885,12 +629,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 4359518638773090932
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 4361641281929104951
     TagComponent:
       Tag: LED Panel 18
       GameTag: LED Panel
@@ -904,19 +644,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.5625, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 5262866951834603151
+      MaterialAsset: Assets/Materials/LED Forest 13.cqmat
+  - Entity: 5264359567332595566
     TagComponent:
       Tag: LED Frame 18
       GameTag: Untagged
@@ -930,12 +660,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 4677113007135384753
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 4679178192230526285
     TagComponent:
       Tag: LED Panel 19
       GameTag: LED Panel
@@ -949,19 +675,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.59375, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 2357351471828897004
+      MaterialAsset: Assets/Materials/LED Forest 12.cqmat
+  - Entity: 2355743335680829851
     TagComponent:
       Tag: LED Frame 19
       GameTag: Untagged
@@ -975,12 +691,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 8268859728447794000
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 8270670111389674811
     TagComponent:
       Tag: LED Panel 20
       GameTag: LED Panel
@@ -994,19 +706,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.625, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 409109359518252748
+      MaterialAsset: Assets/Materials/LED Forest 11.cqmat
+  - Entity: 408354710735596224
     TagComponent:
       Tag: LED Frame 20
       GameTag: Untagged
@@ -1020,12 +722,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 3763668720301224200
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 3764035649569544413
     TagComponent:
       Tag: LED Panel 21
       GameTag: LED Panel
@@ -1039,19 +737,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.65625, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 7101661820688348651
+      MaterialAsset: Assets/Materials/LED Forest 10.cqmat
+  - Entity: 7100379413812034166
     TagComponent:
       Tag: LED Frame 21
       GameTag: Untagged
@@ -1065,12 +753,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 5530753617371043029
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 5532278127234188935
     TagComponent:
       Tag: LED Panel 22
       GameTag: LED Panel
@@ -1084,19 +768,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.6875, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 2351117786422627430
+      MaterialAsset: Assets/Materials/LED Forest 9.cqmat
+  - Entity: 2352972003848756243
     TagComponent:
       Tag: LED Frame 22
       GameTag: Untagged
@@ -1110,12 +784,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 3034405744527052366
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 3034275283266398364
     TagComponent:
       Tag: LED Panel 23
       GameTag: LED Panel
@@ -1129,19 +799,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.71875, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 5726289605188387055
+      MaterialAsset: Assets/Materials/LED Forest 8.cqmat
+  - Entity: 5724190262197421069
     TagComponent:
       Tag: LED Frame 23
       GameTag: Untagged
@@ -1155,12 +815,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 2675672592456823332
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 2676915755198317484
     TagComponent:
       Tag: LED Panel 24
       GameTag: LED Panel
@@ -1174,19 +830,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.75, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 7008296300347141955
+      MaterialAsset: Assets/Materials/LED Forest 7.cqmat
+  - Entity: 7009235870034702566
     TagComponent:
       Tag: LED Frame 24
       GameTag: Untagged
@@ -1200,12 +846,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 722021847621545382
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 721303482628949717
     TagComponent:
       Tag: LED Panel 25
       GameTag: LED Panel
@@ -1219,19 +861,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.78125, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 5399054136683857769
+      MaterialAsset: Assets/Materials/LED Forest 6.cqmat
+  - Entity: 5398405934360443009
     TagComponent:
       Tag: LED Frame 25
       GameTag: Untagged
@@ -1245,12 +877,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 6317801466034467438
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 6317108046281158843
     TagComponent:
       Tag: LED Panel 26
       GameTag: LED Panel
@@ -1264,19 +892,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.8125, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 8968937954473006156
+      MaterialAsset: Assets/Materials/LED Forest 5.cqmat
+  - Entity: 8971072830816634967
     TagComponent:
       Tag: LED Frame 26
       GameTag: Untagged
@@ -1290,12 +908,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 2439758603162114980
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 2439953999983572539
     TagComponent:
       Tag: LED Panel 27
       GameTag: LED Panel
@@ -1309,19 +923,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.84375, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 63810495937845166
+      MaterialAsset: Assets/Materials/LED Forest 4.cqmat
+  - Entity: 64464330010767919
     TagComponent:
       Tag: LED Frame 27
       GameTag: Untagged
@@ -1335,12 +939,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 6906879680951838061
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 6907849753597143932
     TagComponent:
       Tag: LED Panel 28
       GameTag: LED Panel
@@ -1354,19 +954,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.875, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 960966206981379948
+      MaterialAsset: Assets/Materials/LED Forest 3.cqmat
+  - Entity: 959758293154216827
     TagComponent:
       Tag: LED Frame 28
       GameTag: Untagged
@@ -1380,12 +970,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 1573744568763792329
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 1571939756349110864
     TagComponent:
       Tag: LED Panel 29
       GameTag: LED Panel
@@ -1399,19 +985,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.90625, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 2848826929206807469
+      MaterialAsset: Assets/Materials/LED Forest 2.cqmat
+  - Entity: 2850398434571280901
     TagComponent:
       Tag: LED Frame 29
       GameTag: Untagged
@@ -1425,12 +1001,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 7417412374981827694
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 7415255917581221173
     TagComponent:
       Tag: LED Panel 30
       GameTag: LED Panel
@@ -1444,19 +1016,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.9375, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 5726399501585110663
+      MaterialAsset: Assets/Materials/LED Forest 1.cqmat
+  - Entity: 5728566323771438350
     TagComponent:
       Tag: LED Frame 30
       GameTag: Untagged
@@ -1470,12 +1032,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 5123927551503104561
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 5124091750861099035
     TagComponent:
       Tag: LED Panel 31
       GameTag: LED Panel
@@ -1489,19 +1047,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.9
-      EmissionFromTexture: true
-      Tiling: [0.03125, 1]
-      Offset: [0.96875, 0]
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest.jpg
-  - Entity: 4414843784214883937
+      MaterialAsset: Assets/Materials/LED Forest.cqmat
+  - Entity: 4414402563887895344
     TagComponent:
       Tag: LED Frame 31
       GameTag: Untagged
@@ -1515,12 +1063,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.4
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 5923115429619928919
+      MaterialAsset: Assets/Materials/LED Frame 31.cqmat
+  - Entity: 5923522826138974309
     TagComponent:
       Tag: LED Ceiling
       GameTag: Untagged
@@ -1534,17 +1078,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.03, 0.03, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 1.4
-      EmissionFromTexture: true
       CastShadows: false
-      Unlit: true
-      TexturePath: Assets/Textures/LED_Forest_Ceiling.jpg
-  - Entity: 820258535020999910
+      MaterialAsset: Assets/Materials/LED Forest Ceiling.cqmat
+  - Entity: 821223529939406575
     TagComponent:
       Tag: LED Spill 0
       GameTag: Untagged
@@ -1563,7 +1099,7 @@ Entities:
       Size: [5, 4]
       Range: 16
       TwoSided: false
-  - Entity: 642934178374003628
+  - Entity: 642782757744633601
     TagComponent:
       Tag: LED Spill 1
       GameTag: Untagged
@@ -1582,7 +1118,7 @@ Entities:
       Size: [5, 4]
       Range: 16
       TwoSided: false
-  - Entity: 1000621808216378863
+  - Entity: 1001306006784038967
     TagComponent:
       Tag: LED Spill 2
       GameTag: Untagged
@@ -1601,7 +1137,7 @@ Entities:
       Size: [5, 4]
       Range: 16
       TwoSided: false
-  - Entity: 1254700790145025651
+  - Entity: 1255977634984311426
     TagComponent:
       Tag: Concept GT
       GameTag: Untagged
@@ -1613,7 +1149,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 2187308597843630496
+  - Entity: 2188000845030544170
     TagComponent:
       Tag: Body
       GameTag: Untagged
@@ -1627,7 +1163,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Body_Pearl.glb
-  - Entity: 1039686031374839086
+  - Entity: 1038645233632717696
     TagComponent:
       Tag: Interior
       GameTag: Untagged
@@ -1641,7 +1177,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Interior_Carmine.glb
-  - Entity: 9150639268069917816
+  - Entity: 9149677643745784455
     TagComponent:
       Tag: Calipers
       GameTag: Untagged
@@ -1655,7 +1191,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Calipers_Red.glb
-  - Entity: 5542209222447080918
+  - Entity: 5543464214503929408
     TagComponent:
       Tag: Wheel FL
       GameTag: Untagged
@@ -1669,7 +1205,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Wheel_FL.glb
-  - Entity: 5276639403357494321
+  - Entity: 5277608728589421161
     TagComponent:
       Tag: Rim
       GameTag: Untagged
@@ -1683,7 +1219,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Rim_FL_Black.glb
-  - Entity: 1374879800662837276
+  - Entity: 1374507583158136338
     TagComponent:
       Tag: Wheel FR
       GameTag: Untagged
@@ -1697,7 +1233,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Wheel_FR.glb
-  - Entity: 6518283895708928971
+  - Entity: 6517322271262681867
     TagComponent:
       Tag: Rim
       GameTag: Untagged
@@ -1711,7 +1247,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Rim_FR_Black.glb
-  - Entity: 1157732619144669457
+  - Entity: 1159291075351420799
     TagComponent:
       Tag: Wheel RL
       GameTag: Untagged
@@ -1725,7 +1261,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Wheel_RL.glb
-  - Entity: 2588573119637215104
+  - Entity: 2588377022662766486
     TagComponent:
       Tag: Rim
       GameTag: Untagged
@@ -1739,7 +1275,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Rim_RL_Black.glb
-  - Entity: 5873019139224348234
+  - Entity: 5874542683777777199
     TagComponent:
       Tag: Wheel RR
       GameTag: Untagged
@@ -1753,7 +1289,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Wheel_RR.glb
-  - Entity: 2181510874643947911
+  - Entity: 2180303165086463315
     TagComponent:
       Tag: Rim
       GameTag: Untagged
@@ -1767,7 +1303,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Rim_RR_Black.glb
-  - Entity: 7429933195043139723
+  - Entity: 7429772082977350951
     TagComponent:
       Tag: Actor Talent
       GameTag: Untagged
@@ -1799,7 +1335,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 7568782924939098871
+  - Entity: 7569989399985144233
     TagComponent:
       Tag: Actor Presenter
       GameTag: Untagged
@@ -1831,7 +1367,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 7445653440791593529
+  - Entity: 7445559468542382501
     TagComponent:
       Tag: Actor Presenter Eyes
       GameTag: Untagged
@@ -1843,7 +1379,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 8614963174692954464
+  - Entity: 8613637749371221476
     TagComponent:
       Tag: Head Aim
       GameTag: Untagged
@@ -1858,11 +1394,11 @@ Entities:
     MultiAimConstraintComponent:
       Weight: 1
       Bone: Head
-      Target: 7445653440791593529
+      Target: 7445559468542382501
       AimAxis: 4
       UpAxis: 2
       MaxAngle: 70
-  - Entity: 1759773765401472361
+  - Entity: 1759867668964053690
     TagComponent:
       Tag: Actor Talent Eyes
       GameTag: Untagged
@@ -1874,7 +1410,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 6117874416148751341
+  - Entity: 6116091594056486090
     TagComponent:
       Tag: Head Aim
       GameTag: Untagged
@@ -1889,11 +1425,11 @@ Entities:
     MultiAimConstraintComponent:
       Weight: 1
       Bone: Head
-      Target: 1759773765401472361
+      Target: 1759867668964053690
       AimAxis: 4
       UpAxis: 2
       MaxAngle: 70
-  - Entity: 865492407213938286
+  - Entity: 866219975085313307
     TagComponent:
       Tag: Forest Floor
       GameTag: Forest Dressing
@@ -1907,15 +1443,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.92
-      AO: 1
-      Tiling: [0.33, 0.33]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/forest_floor.jpg
-  - Entity: 7799574926656470788
+      MaterialAsset: Assets/Materials/Forest floor.cqmat
+  - Entity: 7798579420304218179
     TagComponent:
       Tag: Fern 1
       GameTag: Forest Dressing
@@ -1929,7 +1458,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 3825087399601559454
+  - Entity: 3824336741952814928
     TagComponent:
       Tag: Fern 2
       GameTag: Forest Dressing
@@ -1943,7 +1472,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 5965411212283591754
+  - Entity: 5966938949791819054
     TagComponent:
       Tag: Fern 3
       GameTag: Forest Dressing
@@ -1957,7 +1486,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 5701532157351519307
+  - Entity: 5699410823167233519
     TagComponent:
       Tag: Fern Front 3
       GameTag: Forest Dressing
@@ -1971,7 +1500,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 6562345898515892630
+  - Entity: 6563315219442495855
     TagComponent:
       Tag: Fern 4
       GameTag: Forest Dressing
@@ -1985,7 +1514,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 4472217690519829130
+  - Entity: 4474102973435857951
     TagComponent:
       Tag: Fern 5
       GameTag: Forest Dressing
@@ -1999,7 +1528,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 5852874720914830729
+  - Entity: 5854151973799781677
     TagComponent:
       Tag: Fern 6
       GameTag: Forest Dressing
@@ -2013,7 +1542,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 5141863904081145409
+  - Entity: 5142028039972584635
     TagComponent:
       Tag: Fern Front 6
       GameTag: Forest Dressing
@@ -2027,7 +1556,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 2047742461363721921
+  - Entity: 2048218996097058008
     TagComponent:
       Tag: Fern 7
       GameTag: Forest Dressing
@@ -2041,7 +1570,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 8233751710629660004
+  - Entity: 8233599598532860106
     TagComponent:
       Tag: Fern 8
       GameTag: Forest Dressing
@@ -2055,7 +1584,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 8585263906953656037
+  - Entity: 8584787438792390390
     TagComponent:
       Tag: Fern 9
       GameTag: Forest Dressing
@@ -2069,7 +1598,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 7331224715662360749
+  - Entity: 7330180900675215008
     TagComponent:
       Tag: Fern Front 9
       GameTag: Forest Dressing
@@ -2083,7 +1612,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 7728780499896378173
+  - Entity: 7729745216718732669
     TagComponent:
       Tag: Fern 10
       GameTag: Forest Dressing
@@ -2097,7 +1626,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 5602463935678307403
+  - Entity: 5600303086687722337
     TagComponent:
       Tag: Fern 11
       GameTag: Forest Dressing
@@ -2111,7 +1640,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 873489143014900821
+  - Entity: 871718137351078397
     TagComponent:
       Tag: Fern 12
       GameTag: Forest Dressing
@@ -2125,7 +1654,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 7578067686193941712
+  - Entity: 7578716846265993158
     TagComponent:
       Tag: Fern Front 12
       GameTag: Forest Dressing
@@ -2139,7 +1668,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 5461247630947464265
+  - Entity: 5462173043450212601
     TagComponent:
       Tag: Fern 13
       GameTag: Forest Dressing
@@ -2153,7 +1682,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 5220072774805692695
+  - Entity: 5221600719662244979
     TagComponent:
       Tag: Fern 14
       GameTag: Forest Dressing
@@ -2167,7 +1696,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 4705783100347465378
+  - Entity: 4704566663024883991
     TagComponent:
       Tag: Fern 15
       GameTag: Forest Dressing
@@ -2181,7 +1710,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 3672398854620162911
+  - Entity: 3670800887937147106
     TagComponent:
       Tag: Fern Front 15
       GameTag: Forest Dressing
@@ -2195,7 +1724,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 1269379299630769902
+  - Entity: 1268338370727834185
     TagComponent:
       Tag: Fern 16
       GameTag: Forest Dressing
@@ -2209,7 +1738,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 307198100062749647
+  - Entity: 307605640290458978
     TagComponent:
       Tag: Fern 17
       GameTag: Forest Dressing
@@ -2223,7 +1752,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 6466481446862868573
+  - Entity: 6465541947001621389
     TagComponent:
       Tag: Fern 18
       GameTag: Forest Dressing
@@ -2237,7 +1766,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 4268229772931602756
+  - Entity: 4268421671592034859
     TagComponent:
       Tag: Fern Front 18
       GameTag: Forest Dressing
@@ -2251,7 +1780,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 4968412464309586061
+  - Entity: 4968858421039924077
     TagComponent:
       Tag: Fern 19
       GameTag: Forest Dressing
@@ -2265,7 +1794,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 2646488596179934297
+  - Entity: 2647414968473731878
     TagComponent:
       Tag: Fern 20
       GameTag: Forest Dressing
@@ -2279,7 +1808,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 6934642531913304051
+  - Entity: 6934270313328906714
     TagComponent:
       Tag: Fern 21
       GameTag: Forest Dressing
@@ -2293,7 +1822,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 3741975960341619148
+  - Entity: 3740694649819761959
     TagComponent:
       Tag: Fern Front 21
       GameTag: Forest Dressing
@@ -2307,7 +1836,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 3422040018248469690
+  - Entity: 3421101827144179929
     TagComponent:
       Tag: Fern 22
       GameTag: Forest Dressing
@@ -2321,7 +1850,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 3802359467659265708
+  - Entity: 3801890697303501864
     TagComponent:
       Tag: Fern 23
       GameTag: Forest Dressing
@@ -2335,7 +1864,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 8233725453790617189
+  - Entity: 8233608254392427815
     TagComponent:
       Tag: Fern 24
       GameTag: Forest Dressing
@@ -2349,7 +1878,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 5662812293560896312
+  - Entity: 5661569536779370024
     TagComponent:
       Tag: Fern Front 24
       GameTag: Forest Dressing
@@ -2363,7 +1892,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 2689691598730671431
+  - Entity: 2689778151490509413
     TagComponent:
       Tag: Fern 25
       GameTag: Forest Dressing
@@ -2377,7 +1906,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 4883601923085154932
+  - Entity: 4882390915758901692
     TagComponent:
       Tag: Fern 26
       GameTag: Forest Dressing
@@ -2391,7 +1920,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 6301737735287858484
+  - Entity: 6301648229821863190
     TagComponent:
       Tag: Fern 27
       GameTag: Forest Dressing
@@ -2405,7 +1934,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 3179204604368678467
+  - Entity: 3177706278628228664
     TagComponent:
       Tag: Fern Front 27
       GameTag: Forest Dressing
@@ -2419,7 +1948,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 5665576591080686382
+  - Entity: 5667671675515344800
     TagComponent:
       Tag: Fern 28
       GameTag: Forest Dressing
@@ -2433,7 +1962,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 3786942398393574945
+  - Entity: 3785938167989599233
     TagComponent:
       Tag: Fern 29
       GameTag: Forest Dressing
@@ -2447,7 +1976,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 6130675348271778145
+  - Entity: 6130311718565004698
     TagComponent:
       Tag: Fern 30
       GameTag: Forest Dressing
@@ -2461,7 +1990,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 5002141259699466257
+  - Entity: 5002542891159436683
     TagComponent:
       Tag: Fern Front 30
       GameTag: Forest Dressing
@@ -2475,7 +2004,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 5054456211703650803
+  - Entity: 5053812414820983698
     TagComponent:
       Tag: Fern 31
       GameTag: Forest Dressing
@@ -2489,7 +2018,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 7855161187747067958
+  - Entity: 7855568315808858786
     TagComponent:
       Tag: Fern 32
       GameTag: Forest Dressing
@@ -2503,7 +2032,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 5438765762563937555
+  - Entity: 5439739346245565361
     TagComponent:
       Tag: Fern 33
       GameTag: Forest Dressing
@@ -2517,7 +2046,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 6684644128446697164
+  - Entity: 6684211369060250114
     TagComponent:
       Tag: Fern Front 33
       GameTag: Forest Dressing
@@ -2531,7 +2060,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 4158036649735837143
+  - Entity: 4157920821388253840
     TagComponent:
       Tag: Fern 34
       GameTag: Forest Dressing
@@ -2545,7 +2074,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 5706438955671372444
+  - Entity: 5707997274420611511
     TagComponent:
       Tag: Fern 35
       GameTag: Forest Dressing
@@ -2559,7 +2088,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fern.glb
-  - Entity: 1647720811601746252
+  - Entity: 1646725238794989175
     TagComponent:
       Tag: Mossy Rock
       GameTag: Forest Dressing
@@ -2573,7 +2102,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/mossy_rock.glb
-  - Entity: 5851117498497595122
+  - Entity: 5851564483721509307
     TagComponent:
       Tag: Mossy Rock
       GameTag: Forest Dressing
@@ -2587,7 +2116,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/mossy_rock.glb
-  - Entity: 5598571380931905897
+  - Entity: 5599568329369509090
     TagComponent:
       Tag: Mossy Rock
       GameTag: Forest Dressing
@@ -2601,7 +2130,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/mossy_rock.glb
-  - Entity: 8912607982345590871
+  - Entity: 8910449950887150696
     TagComponent:
       Tag: Mossy Rock
       GameTag: Forest Dressing
@@ -2615,7 +2144,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/mossy_rock.glb
-  - Entity: 3662007984464390018
+  - Entity: 3663016822294608767
     TagComponent:
       Tag: Mossy Rock
       GameTag: Forest Dressing
@@ -2629,7 +2158,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/mossy_rock.glb
-  - Entity: 7285764233761425333
+  - Entity: 7285572130014828777
     TagComponent:
       Tag: Mossy Rock
       GameTag: Forest Dressing
@@ -2643,7 +2172,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/mossy_rock.glb
-  - Entity: 8143727571193007595
+  - Entity: 8143602880182294497
     TagComponent:
       Tag: Mossy Rock
       GameTag: Forest Dressing
@@ -2657,7 +2186,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/mossy_rock.glb
-  - Entity: 69064951979845254
+  - Entity: 68372638206952033
     TagComponent:
       Tag: Mossy Rock
       GameTag: Forest Dressing
@@ -2671,7 +2200,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/mossy_rock.glb
-  - Entity: 7086197815674676756
+  - Entity: 7084318233354681374
     TagComponent:
       Tag: Mossy Rock
       GameTag: Forest Dressing
@@ -2685,7 +2214,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/mossy_rock.glb
-  - Entity: 8720350218849814844
+  - Entity: 8719917663474174917
     TagComponent:
       Tag: Mossy Rock
       GameTag: Forest Dressing
@@ -2699,7 +2228,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/mossy_rock.glb
-  - Entity: 1684971394623287621
+  - Entity: 1685909999117958180
     TagComponent:
       Tag: Mossy Rock
       GameTag: Forest Dressing
@@ -2713,7 +2242,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/mossy_rock.glb
-  - Entity: 3009180103762174355
+  - Entity: 3009943747244797177
     TagComponent:
       Tag: Fallen Log
       GameTag: Forest Dressing
@@ -2727,7 +2256,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Props/fallen_log.glb
-  - Entity: 6941807925765641273
+  - Entity: 6940600351225766563
     TagComponent:
       Tag: Dolly Rail L
       GameTag: Untagged
@@ -2741,11 +2270,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.35, 0.36, 0.38, 1]
-      Metallic: 1
-      Roughness: 0.3
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Dolly Column.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2767,7 +2292,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 8552593180317197601
+  - Entity: 8554407822727696220
     TagComponent:
       Tag: Dolly Rail R
       GameTag: Untagged
@@ -2781,11 +2306,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.35, 0.36, 0.38, 1]
-      Metallic: 1
-      Roughness: 0.3
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Dolly Column.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2807,7 +2328,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 9040179025643833031
+  - Entity: 9039459291738340325
     TagComponent:
       Tag: Rail Sleeper 0
       GameTag: Untagged
@@ -2821,11 +2342,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Rail Sleeper 9.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2847,7 +2364,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4534608859547807215
+  - Entity: 4533326037032495260
     TagComponent:
       Tag: Rail Sleeper 1
       GameTag: Untagged
@@ -2861,11 +2378,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Rail Sleeper 9.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2887,7 +2400,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7821777016960691090
+  - Entity: 7821413867343523309
     TagComponent:
       Tag: Rail Sleeper 2
       GameTag: Untagged
@@ -2901,11 +2414,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Rail Sleeper 9.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2927,7 +2436,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2819403799138101505
+  - Entity: 2821292312838995246
     TagComponent:
       Tag: Rail Sleeper 3
       GameTag: Untagged
@@ -2941,11 +2450,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Rail Sleeper 9.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2967,7 +2472,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 880049605841557907
+  - Entity: 878526061145618662
     TagComponent:
       Tag: Rail Sleeper 4
       GameTag: Untagged
@@ -2981,11 +2486,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Rail Sleeper 9.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3007,7 +2508,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 8523382296421264014
+  - Entity: 8524915737813846850
     TagComponent:
       Tag: Rail Sleeper 5
       GameTag: Untagged
@@ -3021,11 +2522,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Rail Sleeper 9.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3047,7 +2544,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2574632879414132829
+  - Entity: 2575311654076379854
     TagComponent:
       Tag: Rail Sleeper 6
       GameTag: Untagged
@@ -3061,11 +2558,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Rail Sleeper 9.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3087,7 +2580,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2855151344234457943
+  - Entity: 2853100446242734672
     TagComponent:
       Tag: Rail Sleeper 7
       GameTag: Untagged
@@ -3101,11 +2594,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Rail Sleeper 9.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3127,7 +2616,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1151705420182891986
+  - Entity: 1151825575988628860
     TagComponent:
       Tag: Rail Sleeper 8
       GameTag: Untagged
@@ -3141,11 +2630,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Rail Sleeper 9.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3167,7 +2652,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5027135185629975258
+  - Entity: 5027229298983708408
     TagComponent:
       Tag: Rail Sleeper 9
       GameTag: Untagged
@@ -3181,11 +2666,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Rail Sleeper 9.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3207,7 +2688,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6183738568909310450
+  - Entity: 6185337637391784634
     TagComponent:
       Tag: Camera Dolly
       GameTag: Untagged
@@ -3221,11 +2702,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.3
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Camera Dolly.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3247,7 +2724,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 8332874061811539616
+  - Entity: 8332757135266229024
     TagComponent:
       Tag: Dolly Column
       GameTag: Untagged
@@ -3261,11 +2738,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.35, 0.36, 0.38, 1]
-      Metallic: 1
-      Roughness: 0.3
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Dolly Column.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3287,7 +2760,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1021232997173537499
+  - Entity: 1021068862490711655
     TagComponent:
       Tag: Cinema Camera Body
       GameTag: Untagged
@@ -3301,11 +2774,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.035, 0.037, 0.04, 1]
-      Metallic: 0.2
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Cinema Camera Body.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3327,7 +2796,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2822640034861020492
+  - Entity: 2822559118841565186
     TagComponent:
       Tag: Cinema Camera Lens
       GameTag: Untagged
@@ -3341,12 +2810,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.35, 0.36, 0.38, 1]
-      Metallic: 1
-      Roughness: 0.25
-      AO: 1
-      TexturePath: ""
-  - Entity: 671716676951873522
+      MaterialAsset: Assets/Materials/Cinema Camera Lens.cqmat
+  - Entity: 672686137075066453
     TagComponent:
       Tag: Camera Monitor
       GameTag: Untagged
@@ -3360,11 +2825,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.02, 0.02, 0.03, 1]
-      Metallic: 0
-      Roughness: 0.1
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Camera Monitor.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3386,7 +2847,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 3562594044246403023
+  - Entity: 3564413081924357870
     TagComponent:
       Tag: Key Light
       GameTag: Untagged
@@ -3405,7 +2866,7 @@ Entities:
       Size: [1.6, 1]
       Range: 14
       TwoSided: false
-  - Entity: 7830246078264125482
+  - Entity: 7830961412673756979
     TagComponent:
       Tag: Fill Light
       GameTag: Untagged
@@ -3424,7 +2885,7 @@ Entities:
       Size: [1.6, 1]
       Range: 14
       TwoSided: false
-  - Entity: 8358270676641887558
+  - Entity: 8356776953745624358
     TagComponent:
       Tag: Rim Light
       GameTag: Untagged
@@ -3443,7 +2904,7 @@ Entities:
       Size: [1.6, 1]
       Range: 14
       TwoSided: false
-  - Entity: 2854432414063014611
+  - Entity: 2853960070838249243
     TagComponent:
       Tag: Spare Stand
       GameTag: Untagged
@@ -3457,11 +2918,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.35, 0.36, 0.38, 1]
-      Metallic: 1
-      Roughness: 0.35
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Spare Stand.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3483,7 +2940,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 3070022309156656370
+  - Entity: 3070715791654670903
     TagComponent:
       Tag: Spare Panel
       GameTag: Untagged
@@ -3497,14 +2954,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.95, 0.95, 0.95, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.95, 0.9]
-      EmissionStrength: 3
-      TexturePath: ""
-  - Entity: 6128406582559379394
+      MaterialAsset: Assets/Materials/Spare Panel.cqmat
+  - Entity: 6128220318855372153
     TagComponent:
       Tag: Spare Light
       GameTag: Untagged
@@ -3523,7 +2974,7 @@ Entities:
       Size: [1.2, 0.8]
       Range: 12
       TwoSided: false
-  - Entity: 844468777871992353
+  - Entity: 846555068065829418
     TagComponent:
       Tag: Shot 1
       GameTag: Untagged
@@ -3535,7 +2986,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 1526260709013881239
+  - Entity: 1525005856839558101
     TagComponent:
       Tag: Shot 1 End
       GameTag: Untagged
@@ -3547,7 +2998,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 3920881989080137246
+  - Entity: 3922199719844928001
     TagComponent:
       Tag: Shot 2
       GameTag: Untagged
@@ -3559,7 +3010,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 3641581751422517969
+  - Entity: 3643071212897346793
     TagComponent:
       Tag: Shot 2 End
       GameTag: Untagged
@@ -3571,7 +3022,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 3337460126400563638
+  - Entity: 3339063934664963331
     TagComponent:
       Tag: Shot 3
       GameTag: Untagged
@@ -3583,7 +3034,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5931742675769619651
+  - Entity: 5933068309273697065
     TagComponent:
       Tag: Shot 3 End
       GameTag: Untagged
@@ -3595,7 +3046,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5526595933615075408
+  - Entity: 5527569308929584243
     TagComponent:
       Tag: Shot 4
       GameTag: Untagged
@@ -3607,7 +3058,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 2776370313105905315
+  - Entity: 2774235716408439966
     TagComponent:
       Tag: Shot 4 End
       GameTag: Untagged
@@ -3619,7 +3070,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 7630488793810386075
+  - Entity: 7630020917150439760
     TagComponent:
       Tag: Shot 5
       GameTag: Untagged
@@ -3631,7 +3082,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 6532435160487814989
+  - Entity: 6530335541664286145
     TagComponent:
       Tag: Shot 5 End
       GameTag: Untagged
@@ -3643,7 +3094,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 6898814906602238229
+  - Entity: 6897884205273126474
     TagComponent:
       Tag: Shot 6
       GameTag: Untagged
@@ -3655,7 +3106,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 8275601522642180278
+  - Entity: 8277441315741105995
     TagComponent:
       Tag: Shot 6 End
       GameTag: Untagged
@@ -3667,7 +3118,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 551055025255046186
+  - Entity: 550014303309298429
     TagComponent:
       Tag: Shot 7
       GameTag: Untagged
@@ -3679,7 +3130,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5023779962524594683
+  - Entity: 5025942392560670097
     TagComponent:
       Tag: Shot 7 End
       GameTag: Untagged
@@ -3691,7 +3142,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 7416519793663289605
+  - Entity: 7416148536788733284
     TagComponent:
       Tag: Cine Camera
       GameTag: Untagged
@@ -3718,7 +3169,7 @@ Entities:
       OrderInLayer: 0
     AudioListenerComponent:
       IsActive: true
-  - Entity: 7638359827095941417
+  - Entity: 7640164849283234831
     TagComponent:
       Tag: Sequencer
       GameTag: Untagged
@@ -3733,7 +3184,7 @@ Entities:
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/ShotSequencer.cqs
       ClassName: ""
-  - Entity: 3204051693372246414
+  - Entity: 3202238222246088287
     TagComponent:
       Tag: UI
       GameTag: Untagged
@@ -3759,7 +3210,7 @@ Entities:
       IgnoreReversedGraphics: true
       BlockingObjects: 0
       BlockingMask: 4294967295
-  - Entity: 8980515655650350018
+  - Entity: 8982013635379752001
     TagComponent:
       Tag: BarTop
       GameTag: Untagged
@@ -3792,7 +3243,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 4428332297425272863
+  - Entity: 4427933966149320253
     TagComponent:
       Tag: BarBottom
       GameTag: Untagged
@@ -3825,7 +3276,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 8514757362652331240
+  - Entity: 8515682429524237520
     TagComponent:
       Tag: SlateText
       GameTag: Untagged
@@ -3864,7 +3315,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 2209387708105517769
+  - Entity: 2210956059070609535
     TagComponent:
       Tag: ShotText
       GameTag: Untagged
@@ -3903,7 +3354,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 7396928296323007443
+  - Entity: 7395083899485262718
     TagComponent:
       Tag: Timecode
       GameTag: Untagged
@@ -3942,7 +3393,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 152437203369875433
+  - Entity: 151475784231639066
     TagComponent:
       Tag: RecDot
       GameTag: Untagged
@@ -3975,7 +3426,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 9
-  - Entity: 8529225027907187222
+  - Entity: 8528219285244244971
     TagComponent:
       Tag: RecText
       GameTag: Untagged
@@ -4014,7 +3465,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 1467607333663271634
+  - Entity: 1466567780749735879
     TagComponent:
       Tag: ModeText
       GameTag: Untagged
@@ -4053,7 +3504,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 4486582139187305610
+  - Entity: 4486777199315130781
     TagComponent:
       Tag: Subtitle
       GameTag: Untagged
@@ -4092,7 +3543,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.85]
       RaycastTarget: false
       RichText: false
-  - Entity: 9183905689764863484
+  - Entity: 9184105356253948313
     TagComponent:
       Tag: TitleBack
       GameTag: Untagged
@@ -4130,7 +3581,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 2194506612496048537
+  - Entity: 2194311416268958275
     TagComponent:
       Tag: TitleCard
       GameTag: Untagged
@@ -4174,7 +3625,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.7]
       RaycastTarget: false
       RichText: false
-  - Entity: 2483113014563688958
+  - Entity: 2482183341347832528
     TagComponent:
       Tag: HintText
       GameTag: Untagged
@@ -4421,53 +3872,53 @@ EditorCamera:
   Yaw: 0
   OrthographicSize: 10
 Hierarchy:
-  - Child: 8980515655650350018
-    Parent: 3204051693372246414
-  - Child: 4428332297425272863
-    Parent: 3204051693372246414
-  - Child: 8514757362652331240
-    Parent: 3204051693372246414
-  - Child: 2209387708105517769
-    Parent: 3204051693372246414
-  - Child: 7396928296323007443
-    Parent: 3204051693372246414
-  - Child: 152437203369875433
-    Parent: 3204051693372246414
-  - Child: 8529225027907187222
-    Parent: 3204051693372246414
-  - Child: 1467607333663271634
-    Parent: 3204051693372246414
-  - Child: 4486582139187305610
-    Parent: 3204051693372246414
-  - Child: 9183905689764863484
-    Parent: 3204051693372246414
-  - Child: 2194506612496048537
-    Parent: 3204051693372246414
-  - Child: 2483113014563688958
-    Parent: 3204051693372246414
-  - Child: 8614963174692954464
-    Parent: 7429933195043139723
-  - Child: 2181510874643947911
-    Parent: 5873019139224348234
-  - Child: 2588573119637215104
-    Parent: 1157732619144669457
-  - Child: 6518283895708928971
-    Parent: 1374879800662837276
-  - Child: 5276639403357494321
-    Parent: 5542209222447080918
-  - Child: 6117874416148751341
-    Parent: 7568782924939098871
-  - Child: 2187308597843630496
-    Parent: 1254700790145025651
-  - Child: 1039686031374839086
-    Parent: 1254700790145025651
-  - Child: 9150639268069917816
-    Parent: 1254700790145025651
-  - Child: 5542209222447080918
-    Parent: 1254700790145025651
-  - Child: 1374879800662837276
-    Parent: 1254700790145025651
-  - Child: 1157732619144669457
-    Parent: 1254700790145025651
-  - Child: 5873019139224348234
-    Parent: 1254700790145025651
+  - Child: 8982013635379752001
+    Parent: 3202238222246088287
+  - Child: 4427933966149320253
+    Parent: 3202238222246088287
+  - Child: 8515682429524237520
+    Parent: 3202238222246088287
+  - Child: 2210956059070609535
+    Parent: 3202238222246088287
+  - Child: 7395083899485262718
+    Parent: 3202238222246088287
+  - Child: 151475784231639066
+    Parent: 3202238222246088287
+  - Child: 8528219285244244971
+    Parent: 3202238222246088287
+  - Child: 1466567780749735879
+    Parent: 3202238222246088287
+  - Child: 4486777199315130781
+    Parent: 3202238222246088287
+  - Child: 9184105356253948313
+    Parent: 3202238222246088287
+  - Child: 2194311416268958275
+    Parent: 3202238222246088287
+  - Child: 2482183341347832528
+    Parent: 3202238222246088287
+  - Child: 8613637749371221476
+    Parent: 7429772082977350951
+  - Child: 2180303165086463315
+    Parent: 5874542683777777199
+  - Child: 2588377022662766486
+    Parent: 1159291075351420799
+  - Child: 6517322271262681867
+    Parent: 1374507583158136338
+  - Child: 5277608728589421161
+    Parent: 5543464214503929408
+  - Child: 6116091594056486090
+    Parent: 7569989399985144233
+  - Child: 2188000845030544170
+    Parent: 1255977634984311426
+  - Child: 1038645233632717696
+    Parent: 1255977634984311426
+  - Child: 9149677643745784455
+    Parent: 1255977634984311426
+  - Child: 5543464214503929408
+    Parent: 1255977634984311426
+  - Child: 1374507583158136338
+    Parent: 1255977634984311426
+  - Child: 1159291075351420799
+    Parent: 1255977634984311426
+  - Child: 5874542683777777199
+    Parent: 1255977634984311426

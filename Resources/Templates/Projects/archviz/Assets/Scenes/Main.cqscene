@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 8316140862244892267
+  - Entity: 8317949072669870754
     TagComponent:
       Tag: Floor
       GameTag: Untagged
@@ -14,14 +14,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.45
-      AO: 1
-      Tiling: [0.45, 0.45]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/laminate_floor_02.jpg
+      MaterialAsset: Assets/Materials/Laminate floor 02 1.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -43,7 +36,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 8997913896114451885
+  - Entity: 8996106909750495913
     TagComponent:
       Tag: Ceiling
       GameTag: Untagged
@@ -57,11 +50,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.95, 0.95, 0.94, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Ceiling.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -83,7 +72,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7805660900143781743
+  - Entity: 7806096782620264509
     TagComponent:
       Tag: Wall South L
       GameTag: Untagged
@@ -97,14 +86,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [0.5, 0.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/white_plaster.jpg
+      MaterialAsset: Assets/Materials/White plaster.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -126,7 +108,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 3605992560014140698
+  - Entity: 3606428586831232450
     TagComponent:
       Tag: Wall South R
       GameTag: Untagged
@@ -140,14 +122,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [0.5, 0.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/white_plaster.jpg
+      MaterialAsset: Assets/Materials/White plaster.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -169,7 +144,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4282224247870075283
+  - Entity: 4281252890122629888
     TagComponent:
       Tag: Wall South Door Top
       GameTag: Untagged
@@ -183,14 +158,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [0.5, 0.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/white_plaster.jpg
+      MaterialAsset: Assets/Materials/White plaster.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -212,7 +180,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2736152075776978977
+  - Entity: 2738003035615051633
     TagComponent:
       Tag: Door Jamb L
       GameTag: Untagged
@@ -226,11 +194,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.16, 0.13, 0.11, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Door Head.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -252,7 +216,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 3914431376286327199
+  - Entity: 3915121251798994922
     TagComponent:
       Tag: Door Jamb R
       GameTag: Untagged
@@ -266,11 +230,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.16, 0.13, 0.11, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Door Head.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -292,7 +252,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6989923664237092728
+  - Entity: 6991458094605456072
     TagComponent:
       Tag: Door Head
       GameTag: Untagged
@@ -306,11 +266,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.16, 0.13, 0.11, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Door Head.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -332,7 +288,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5313292183393849151
+  - Entity: 5312857258184000504
     TagComponent:
       Tag: Front Door
       GameTag: Untagged
@@ -346,14 +302,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.78, 0.66, 0.55, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      Tiling: [0.9, 0.9]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/laminate_floor_02.jpg
+      MaterialAsset: Assets/Materials/Laminate floor 02.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -375,7 +324,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 775625459306523828
+  - Entity: 775753484116627108
     TagComponent:
       Tag: Door Handle
       GameTag: Untagged
@@ -389,12 +338,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.75, 0.75, 0.74, 1]
-      Metallic: 1
-      Roughness: 0.25
-      AO: 1
-      TexturePath: ""
-  - Entity: 1942661612941187670
+      MaterialAsset: Assets/Materials/Door Handle.cqmat
+  - Entity: 1941663731354986009
     TagComponent:
       Tag: Wall East
       GameTag: Untagged
@@ -408,14 +353,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [0.5, 0.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/white_plaster.jpg
+      MaterialAsset: Assets/Materials/White plaster.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -437,7 +375,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 680983135603792672
+  - Entity: 681382869915160635
     TagComponent:
       Tag: Wall West
       GameTag: Untagged
@@ -451,14 +389,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [0.5, 0.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/white_plaster.jpg
+      MaterialAsset: Assets/Materials/White plaster.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -480,7 +411,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 931563548378671948
+  - Entity: 930556880624400702
     TagComponent:
       Tag: Wall North Pier W
       GameTag: Untagged
@@ -494,14 +425,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [0.5, 0.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/white_plaster.jpg
+      MaterialAsset: Assets/Materials/White plaster.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -523,7 +447,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 612316121433588442
+  - Entity: 610509145376903894
     TagComponent:
       Tag: Wall North Pier C
       GameTag: Untagged
@@ -537,14 +461,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [0.5, 0.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/white_plaster.jpg
+      MaterialAsset: Assets/Materials/White plaster.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -566,7 +483,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7439763351349068828
+  - Entity: 7437921044827172445
     TagComponent:
       Tag: Wall North Pier E
       GameTag: Untagged
@@ -580,14 +497,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [0.5, 0.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/white_plaster.jpg
+      MaterialAsset: Assets/Materials/White plaster.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -609,7 +519,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6432371324875530238
+  - Entity: 6432208108974856385
     TagComponent:
       Tag: Wall North Sill -2.0
       GameTag: Untagged
@@ -623,14 +533,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [0.5, 0.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/white_plaster.jpg
+      MaterialAsset: Assets/Materials/White plaster.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -652,7 +555,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6235620766008338250
+  - Entity: 6237191490953132022
     TagComponent:
       Tag: Wall North Header -2.0
       GameTag: Untagged
@@ -666,14 +569,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [0.5, 0.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/white_plaster.jpg
+      MaterialAsset: Assets/Materials/White plaster.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -695,7 +591,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5294205008996380426
+  - Entity: 5296057197122661693
     TagComponent:
       Tag: Window Frame Bottom -2.0
       GameTag: Untagged
@@ -709,11 +605,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.09, 1]
-      Metallic: 0
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Window Mullion 2.0.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -735,7 +627,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2868266691147746380
+  - Entity: 2867022517912784302
     TagComponent:
       Tag: Window Frame Top -2.0
       GameTag: Untagged
@@ -749,11 +641,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.09, 1]
-      Metallic: 0
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Window Mullion 2.0.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -775,7 +663,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4436797465913548347
+  - Entity: 4437522655721308643
     TagComponent:
       Tag: Window Mullion -2.0
       GameTag: Untagged
@@ -789,11 +677,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.09, 1]
-      Metallic: 0
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Window Mullion 2.0.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -815,7 +699,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6597767199554942014
+  - Entity: 6595643554738766099
     TagComponent:
       Tag: Window Glass -2.0
       GameTag: Untagged
@@ -829,13 +713,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.02, 0.03, 0.03, 0.15]
-      Metallic: 0
-      Roughness: 0.02
-      AO: 1
       CastShadows: false
-      TexturePath: ""
-  - Entity: 3159603273312880605
+      MaterialAsset: Assets/Materials/Window Glass 2.0.cqmat
+  - Entity: 3161173987562475939
     TagComponent:
       Tag: Wall North Sill 2.0
       GameTag: Untagged
@@ -849,14 +729,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [0.5, 0.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/white_plaster.jpg
+      MaterialAsset: Assets/Materials/White plaster.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -878,7 +751,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4368547930774564248
+  - Entity: 4370646283633665680
     TagComponent:
       Tag: Wall North Header 2.0
       GameTag: Untagged
@@ -892,14 +765,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [0.5, 0.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/white_plaster.jpg
+      MaterialAsset: Assets/Materials/White plaster.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -921,7 +787,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 9187377551634330494
+  - Entity: 9189467106505337928
     TagComponent:
       Tag: Window Frame Bottom 2.0
       GameTag: Untagged
@@ -935,11 +801,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.09, 1]
-      Metallic: 0
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Window Mullion 2.0.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -961,7 +823,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1156904768322585336
+  - Entity: 1155650836907583064
     TagComponent:
       Tag: Window Frame Top 2.0
       GameTag: Untagged
@@ -975,11 +837,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.09, 1]
-      Metallic: 0
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Window Mullion 2.0.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1001,7 +859,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6606863836810471465
+  - Entity: 6608996402297155408
     TagComponent:
       Tag: Window Mullion 2.0
       GameTag: Untagged
@@ -1015,11 +873,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.09, 1]
-      Metallic: 0
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Window Mullion 2.0.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1041,7 +895,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 34320095677119387
+  - Entity: 35599300811957927
     TagComponent:
       Tag: Window Glass 2.0
       GameTag: Untagged
@@ -1055,13 +909,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.02, 0.03, 0.03, 0.15]
-      Metallic: 0
-      Roughness: 0.02
-      AO: 1
       CastShadows: false
-      TexturePath: ""
-  - Entity: 7570761249019341227
+      MaterialAsset: Assets/Materials/Window Glass 2.0.cqmat
+  - Entity: 7572569330801154300
     TagComponent:
       Tag: Skirting East
       GameTag: Untagged
@@ -1075,11 +925,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.95, 0.95, 0.95, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Skirting West.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1101,7 +947,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1212980560456326833
+  - Entity: 1212255504073725369
     TagComponent:
       Tag: Skirting West
       GameTag: Untagged
@@ -1115,11 +961,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.95, 0.95, 0.95, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Skirting West.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1141,7 +983,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2483281227929022734
+  - Entity: 2482037064347970355
     TagComponent:
       Tag: Patio
       GameTag: Untagged
@@ -1155,14 +997,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.95, 0.95, 0.93, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      Tiling: [0.45, 0.45]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/patio_stone.jpg
+      MaterialAsset: Assets/Materials/Patio stone.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1184,7 +1019,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 476376932628641880
+  - Entity: 476250000639149177
     TagComponent:
       Tag: Patio Kerb
       GameTag: Untagged
@@ -1198,11 +1033,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.62, 0.62, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Patio Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1224,7 +1055,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7752971732817071897
+  - Entity: 7755060187919310110
     TagComponent:
       Tag: Lawn
       GameTag: Untagged
@@ -1238,14 +1069,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 1, 0.88, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      Tiling: [0.3, 0.3]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/lawn_grass.jpg
+      MaterialAsset: Assets/Materials/Lawn grass.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1267,7 +1091,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4233807077140902268
+  - Entity: 4235096186499846704
     TagComponent:
       Tag: Hedge North
       GameTag: Untagged
@@ -1281,12 +1105,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/hedge_leaves.jpg
+      MaterialAsset: Assets/Materials/Hedge leaves.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1308,7 +1127,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2946853154766913589
+  - Entity: 2946136755930045532
     TagComponent:
       Tag: Hedge West
       GameTag: Untagged
@@ -1322,12 +1141,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/hedge_leaves.jpg
+      MaterialAsset: Assets/Materials/Hedge leaves.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1349,7 +1163,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6447282386853012051
+  - Entity: 6448817915605407430
     TagComponent:
       Tag: Hedge East
       GameTag: Untagged
@@ -1363,12 +1177,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/hedge_leaves.jpg
+      MaterialAsset: Assets/Materials/Hedge leaves.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1390,7 +1199,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6694660866704157284
+  - Entity: 6696749323090421663
     TagComponent:
       Tag: Garden Shrub
       GameTag: Untagged
@@ -1404,7 +1213,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Exterior/shrub_02.glb
-  - Entity: 2370891580754399567
+  - Entity: 2369049281785563395
     TagComponent:
       Tag: Garden Shrub
       GameTag: Untagged
@@ -1418,7 +1227,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Exterior/shrub_02.glb
-  - Entity: 8054508803029949230
+  - Entity: 8052657706994490405
     TagComponent:
       Tag: Garden Shrub
       GameTag: Untagged
@@ -1432,7 +1241,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Exterior/shrub_02.glb
-  - Entity: 4359522376440599136
+  - Entity: 4361654948413855182
     TagComponent:
       Tag: Garden Shrub
       GameTag: Untagged
@@ -1446,7 +1255,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Exterior/shrub_02.glb
-  - Entity: 5262816811338092337
+  - Entity: 5264387527536626148
     TagComponent:
       Tag: Garden Shrub
       GameTag: Untagged
@@ -1460,7 +1269,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Exterior/shrub_02.glb
-  - Entity: 4677072762235092494
+  - Entity: 4679196531708854225
     TagComponent:
       Tag: Garden Shrub
       GameTag: Untagged
@@ -1474,7 +1283,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Exterior/shrub_02.glb
-  - Entity: 2357286094895429498
+  - Entity: 2355760455519450722
     TagComponent:
       Tag: Garden Shrub
       GameTag: Untagged
@@ -1488,7 +1297,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Exterior/shrub_02.glb
-  - Entity: 8268848087999211993
+  - Entity: 8270664003979111378
     TagComponent:
       Tag: Garden Shrub
       GameTag: Untagged
@@ -1502,7 +1311,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Exterior/shrub_02.glb
-  - Entity: 409070353739822898
+  - Entity: 408380334545744418
     TagComponent:
       Tag: Garden Table
       GameTag: Untagged
@@ -1516,7 +1325,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Exterior/outdoor_table_chair_set_01.glb
-  - Entity: 3763603394852202102
+  - Entity: 3764048079276159260
     TagComponent:
       Tag: Garden Fill Light
       GameTag: Garden Light
@@ -1535,7 +1344,7 @@ Entities:
       Size: [22, 4]
       Range: 24
       TwoSided: false
-  - Entity: 7101638225279887515
+  - Entity: 7100350079105891594
     TagComponent:
       Tag: Garden Planter
       GameTag: Untagged
@@ -1549,7 +1358,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Exterior/planter_box_02.glb
-  - Entity: 5530722187680180637
+  - Entity: 5532256625836776110
     TagComponent:
       Tag: Planter Shrub
       GameTag: Untagged
@@ -1563,7 +1372,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Exterior/shrub_03.glb
-  - Entity: 2351130457335460099
+  - Entity: 2352972613551804586
     TagComponent:
       Tag: Planter Shrub
       GameTag: Untagged
@@ -1577,7 +1386,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Exterior/shrub_03.glb
-  - Entity: 3034408450644425601
+  - Entity: 3034290323321116715
     TagComponent:
       Tag: Planter Shrub
       GameTag: Untagged
@@ -1591,7 +1400,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Exterior/shrub_03.glb
-  - Entity: 5726295678985675766
+  - Entity: 5724205990252187511
     TagComponent:
       Tag: Garden Planter
       GameTag: Untagged
@@ -1605,7 +1414,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Exterior/planter_box_02.glb
-  - Entity: 2675661073208647329
+  - Entity: 2676913891834851740
     TagComponent:
       Tag: Planter Shrub
       GameTag: Untagged
@@ -1619,7 +1428,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Exterior/shrub_03.glb
-  - Entity: 7008240664057453494
+  - Entity: 7009238541422639079
     TagComponent:
       Tag: Planter Shrub
       GameTag: Untagged
@@ -1633,7 +1442,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Exterior/shrub_03.glb
-  - Entity: 722016926411772714
+  - Entity: 721290623373981151
     TagComponent:
       Tag: Planter Shrub
       GameTag: Untagged
@@ -1647,7 +1456,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Exterior/shrub_03.glb
-  - Entity: 5399102077896730322
+  - Entity: 5398375774942792058
     TagComponent:
       Tag: Lawn Shrub
       GameTag: Untagged
@@ -1661,7 +1470,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Exterior/shrub_04.glb
-  - Entity: 6317823980593171973
+  - Entity: 6317142895039068143
     TagComponent:
       Tag: Lawn Shrub
       GameTag: Untagged
@@ -1675,7 +1484,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Exterior/shrub_04.glb
-  - Entity: 8968967134668499950
+  - Entity: 8971091873956202430
     TagComponent:
       Tag: Lawn Shrub
       GameTag: Untagged
@@ -1689,7 +1498,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Exterior/shrub_04.glb
-  - Entity: 2439823035935129932
+  - Entity: 2439942258144209564
     TagComponent:
       Tag: Lawn Shrub
       GameTag: Untagged
@@ -1703,7 +1512,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Exterior/shrub_04.glb
-  - Entity: 63770389747080554
+  - Entity: 64486654639612966
     TagComponent:
       Tag: Rug
       GameTag: Untagged
@@ -1717,14 +1526,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      Tiling: [1.5, 1]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/fabric_pattern_07.jpg
-  - Entity: 6906859246496371174
+      MaterialAsset: Assets/Materials/Fabric pattern 07.cqmat
+  - Entity: 6907821930643078867
     TagComponent:
       Tag: Sofa
       GameTag: Untagged
@@ -1759,7 +1562,7 @@ Entities:
       Size: [2.7311773, 1.1182641, 0.92508423]
       IsTrigger: false
       Version: 2
-  - Entity: 961012980229587666
+  - Entity: 959724834821445146
     TagComponent:
       Tag: Throw Pillows
       GameTag: Untagged
@@ -1773,7 +1576,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/throw_pillows_01.glb
-  - Entity: 1573776909766963231
+  - Entity: 1571960037780943106
     TagComponent:
       Tag: Coffee Table
       GameTag: Untagged
@@ -1808,7 +1611,7 @@ Entities:
       Size: [0.6, 0.39, 1.20183]
       IsTrigger: false
       Version: 2
-  - Entity: 2848858154077172705
+  - Entity: 2850420072168974274
     TagComponent:
       Tag: Vase
       GameTag: Untagged
@@ -1822,7 +1625,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/ceramic_vase_03.glb
-  - Entity: 7417372355063252479
+  - Entity: 7415273861568935461
     TagComponent:
       Tag: TV Cabinet
       GameTag: Untagged
@@ -1857,7 +1660,7 @@ Entities:
       Size: [2.4400005, 0.6801425, 0.52]
       IsTrigger: false
       Version: 2
-  - Entity: 5726467233856272361
+  - Entity: 5728555682184932312
     TagComponent:
       Tag: Television
       GameTag: Untagged
@@ -1871,12 +1674,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.03, 0.03, 0.035, 1]
-      Metallic: 0.4
-      Roughness: 0.35
-      AO: 1
-      TexturePath: ""
-  - Entity: 5123941270065932136
+      MaterialAsset: Assets/Materials/Television.cqmat
+  - Entity: 5124095814705288109
     TagComponent:
       Tag: Television Screen
       GameTag: Untagged
@@ -1890,12 +1689,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.006, 0.006, 0.008, 1]
-      Metallic: 0
-      Roughness: 0.06
-      AO: 1
-      TexturePath: ""
-  - Entity: 4414812542045446182
+      MaterialAsset: Assets/Materials/Television Screen.cqmat
+  - Entity: 4414376511958221457
     TagComponent:
       Tag: Soundbar
       GameTag: Untagged
@@ -1909,12 +1704,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.05, 0.05, 0.055, 1]
-      Metallic: 0
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
-  - Entity: 5923112585713218118
+      MaterialAsset: Assets/Materials/Soundbar.cqmat
+  - Entity: 5923512321991034915
     TagComponent:
       Tag: Lounge Chair
       GameTag: Untagged
@@ -1949,7 +1740,7 @@ Entities:
       Size: [1.0086143, 1.1690847, 1.1903107]
       IsTrigger: false
       Version: 2
-  - Entity: 820245915736154170
+  - Entity: 821218370776827581
     TagComponent:
       Tag: Ottoman
       GameTag: Untagged
@@ -1984,7 +1775,7 @@ Entities:
       Size: [0.8845578, 0.6243239, 0.62114847]
       IsTrigger: false
       Version: 2
-  - Entity: 642911526482294329
+  - Entity: 642748323582742044
     TagComponent:
       Tag: Side Table
       GameTag: Untagged
@@ -2019,7 +1810,7 @@ Entities:
       Size: [0.5500001, 0.5506623, 0.45000002]
       IsTrigger: false
       Version: 2
-  - Entity: 1000592559820946174
+  - Entity: 1001282568241018042
     TagComponent:
       Tag: Picture Frame
       GameTag: Untagged
@@ -2033,7 +1824,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/standing_picture_frame_01.glb
-  - Entity: 1254721036830825648
+  - Entity: 1256010288676173414
     TagComponent:
       Tag: Plant Corner
       GameTag: Untagged
@@ -2068,7 +1859,7 @@ Entities:
       Size: [0.58738714, 1.3501639, 0.63356483]
       IsTrigger: false
       Version: 2
-  - Entity: 2187302524617449278
+  - Entity: 2187984845331300440
     TagComponent:
       Tag: Shelves
       GameTag: Untagged
@@ -2103,7 +1894,7 @@ Entities:
       Size: [0.37150964, 1.5561838, 1.0777609]
       IsTrigger: false
       Version: 2
-  - Entity: 1039638228502488638
+  - Entity: 1038675531336373375
     TagComponent:
       Tag: Vase Shelf
       GameTag: Untagged
@@ -2117,7 +1908,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/ceramic_vase_01.glb
-  - Entity: 9150650838787316429
+  - Entity: 9149679356344949665
     TagComponent:
       Tag: Dining Table
       GameTag: Untagged
@@ -2152,7 +1943,7 @@ Entities:
       Size: [2.255896, 0.87698925, 1.390236]
       IsTrigger: false
       Version: 2
-  - Entity: 5542203218063158566
+  - Entity: 5543448352066926428
     TagComponent:
       Tag: Dining Chair
       GameTag: Untagged
@@ -2187,7 +1978,7 @@ Entities:
       Size: [0.43357077, 0.9733777, 0.5764201]
       IsTrigger: false
       Version: 2
-  - Entity: 5276633333578841893
+  - Entity: 5277597125950617083
     TagComponent:
       Tag: Dining Chair
       GameTag: Untagged
@@ -2222,7 +2013,7 @@ Entities:
       Size: [0.43357077, 0.9733777, 0.5764201]
       IsTrigger: false
       Version: 2
-  - Entity: 1374917846056439480
+  - Entity: 1374482923273784860
     TagComponent:
       Tag: Dining Chair
       GameTag: Untagged
@@ -2257,7 +2048,7 @@ Entities:
       Size: [0.43357077, 0.9733777, 0.5764201]
       IsTrigger: false
       Version: 2
-  - Entity: 6518297665741831652
+  - Entity: 6517326181218106706
     TagComponent:
       Tag: Dining Chair
       GameTag: Untagged
@@ -2292,7 +2083,7 @@ Entities:
       Size: [0.43357077, 0.9733777, 0.5764201]
       IsTrigger: false
       Version: 2
-  - Entity: 1157752986783586133
+  - Entity: 1159323573142890064
     TagComponent:
       Tag: Dining Chair
       GameTag: Untagged
@@ -2327,7 +2118,7 @@ Entities:
       Size: [0.43357077, 0.9733777, 0.5764201]
       IsTrigger: false
       Version: 2
-  - Entity: 2588523129726556237
+  - Entity: 2588404865217782700
     TagComponent:
       Tag: Dining Chair
       GameTag: Untagged
@@ -2362,7 +2153,7 @@ Entities:
       Size: [0.43357077, 0.9733777, 0.5764201]
       IsTrigger: false
       Version: 2
-  - Entity: 5873004321584931779
+  - Entity: 5874539722565242552
     TagComponent:
       Tag: Table Plant
       GameTag: Untagged
@@ -2376,7 +2167,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/potted_plant_04.glb
-  - Entity: 2181559777327362433
+  - Entity: 2180271770420989596
     TagComponent:
       Tag: Planter
       GameTag: Untagged
@@ -2411,7 +2202,7 @@ Entities:
       Size: [0.91261137, 0.42496824, 0.41366798]
       IsTrigger: false
       Version: 2
-  - Entity: 7429903070032328477
+  - Entity: 7429749622027219104
     TagComponent:
       Tag: Painting A
       GameTag: Untagged
@@ -2425,7 +2216,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/hanging_picture_frame_01.glb
-  - Entity: 7568732802306837257
+  - Entity: 7570022051198216567
     TagComponent:
       Tag: Painting B
       GameTag: Untagged
@@ -2439,7 +2230,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/hanging_picture_frame_02.glb
-  - Entity: 7445712153121978381
+  - Entity: 7445557743305500816
     TagComponent:
       Tag: Kitchen Base
       GameTag: Untagged
@@ -2453,11 +2244,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.22, 0.25, 0.27, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Kitchen Upper.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2479,7 +2266,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 8614896560162701573
+  - Entity: 8613651434489564197
     TagComponent:
       Tag: Kitchen Top
       GameTag: Untagged
@@ -2493,14 +2280,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.2
-      AO: 1
-      Tiling: [1.2, 1.2]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/marble_01.jpg
+      MaterialAsset: Assets/Materials/Marble 01 1.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2522,7 +2302,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1759717165908148639
+  - Entity: 1759871580355979535
     TagComponent:
       Tag: Kitchen Upper
       GameTag: Untagged
@@ -2536,11 +2316,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.22, 0.25, 0.27, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Kitchen Upper.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2562,7 +2338,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6117915535754133244
+  - Entity: 6116072276080037353
     TagComponent:
       Tag: Kitchen Splash
       GameTag: Untagged
@@ -2576,14 +2352,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.25
-      AO: 1
-      Tiling: [1.2, 1.2]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Textures/marble_01.jpg
+      MaterialAsset: Assets/Materials/Marble 01.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2605,7 +2374,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 865506245193548151
+  - Entity: 866223609451791109
     TagComponent:
       Tag: Ceiling Lamp
       GameTag: Untagged
@@ -2619,7 +2388,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/modern_ceiling_lamp_01.glb
-  - Entity: 7799554542939569620
+  - Entity: 7798546910162308448
     TagComponent:
       Tag: Lamp Light
       GameTag: Lamp
@@ -2640,7 +2409,7 @@ Entities:
       Quadratic: 0.032
       CastShadows: true
       Mode: 0
-  - Entity: 3825048272790988499
+  - Entity: 3824358398664466730
     TagComponent:
       Tag: Lamp Glow
       GameTag: Lamp Glow
@@ -2654,15 +2423,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.85, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.8, 0.55]
-      EmissionStrength: 1
       CastShadows: false
-      TexturePath: ""
-  - Entity: 5965396480204086416
+      MaterialAsset: Assets/Materials/Lamp Glow.cqmat
+  - Entity: 5966931883072018152
     TagComponent:
       Tag: Ceiling Lamp
       GameTag: Untagged
@@ -2676,7 +2439,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/modern_ceiling_lamp_01.glb
-  - Entity: 5701509643491181242
+  - Entity: 5699375975488103799
     TagComponent:
       Tag: Lamp Light
       GameTag: Lamp
@@ -2697,7 +2460,7 @@ Entities:
       Quadratic: 0.032
       CastShadows: true
       Mode: 0
-  - Entity: 6562342007504615727
+  - Entity: 6563305798778440733
     TagComponent:
       Tag: Lamp Glow
       GameTag: Lamp Glow
@@ -2711,15 +2474,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.85, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.8, 0.55]
-      EmissionStrength: 1
       CastShadows: false
-      TexturePath: ""
-  - Entity: 4472285336028127454
+      MaterialAsset: Assets/Materials/Lamp Glow.cqmat
+  - Entity: 4474092316203523195
     TagComponent:
       Tag: Ceiling Lamp
       GameTag: Untagged
@@ -2733,7 +2490,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/modern_ceiling_lamp_01.glb
-  - Entity: 5852897303524875660
+  - Entity: 5854186413352373822
     TagComponent:
       Tag: Lamp Light
       GameTag: Lamp
@@ -2754,7 +2511,7 @@ Entities:
       Quadratic: 0.032
       CastShadows: true
       Mode: 0
-  - Entity: 5141892929159479709
+  - Entity: 5142047480411393525
     TagComponent:
       Tag: Lamp Glow
       GameTag: Lamp Glow
@@ -2768,15 +2525,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.85, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.8, 0.55]
-      EmissionStrength: 1
       CastShadows: false
-      TexturePath: ""
-  - Entity: 2047791415197592317
+      MaterialAsset: Assets/Materials/Lamp Glow.cqmat
+  - Entity: 2048192119979742048
     TagComponent:
       Tag: Curtain Rod -2.0
       GameTag: Untagged
@@ -2790,12 +2541,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.12, 0.12, 0.13, 1]
-      Metallic: 0.9
-      Roughness: 0.35
-      AO: 1
-      TexturePath: ""
-  - Entity: 8233728096702616022
+      MaterialAsset: Assets/Materials/Curtain Finial.cqmat
+  - Entity: 8233565851256405224
     TagComponent:
       Tag: Curtain Finial
       GameTag: Untagged
@@ -2809,12 +2556,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.12, 0.12, 0.13, 1]
-      Metallic: 0.9
-      Roughness: 0.35
-      AO: 1
-      TexturePath: ""
-  - Entity: 8585199628688500506
+      MaterialAsset: Assets/Materials/Curtain Finial.cqmat
+  - Entity: 8584798788936341017
     TagComponent:
       Tag: Curtain
       GameTag: Untagged
@@ -2828,7 +2571,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/linen_curtain.glb
-  - Entity: 7331160436937785687
+  - Entity: 7330196647805742399
     TagComponent:
       Tag: Curtain Finial
       GameTag: Untagged
@@ -2842,12 +2585,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.12, 0.12, 0.13, 1]
-      Metallic: 0.9
-      Roughness: 0.35
-      AO: 1
-      TexturePath: ""
-  - Entity: 7728767880987554360
+      MaterialAsset: Assets/Materials/Curtain Finial.cqmat
+  - Entity: 7729740331832848962
     TagComponent:
       Tag: Curtain
       GameTag: Untagged
@@ -2861,7 +2600,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/linen_curtain.glb
-  - Entity: 5602423914953610926
+  - Entity: 5600325431961625589
     TagComponent:
       Tag: Curtain Rod 2.0
       GameTag: Untagged
@@ -2875,12 +2614,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.12, 0.12, 0.13, 1]
-      Metallic: 0.9
-      Roughness: 0.35
-      AO: 1
-      TexturePath: ""
-  - Entity: 873553353073248594
+      MaterialAsset: Assets/Materials/Curtain Finial.cqmat
+  - Entity: 871702394855173966
     TagComponent:
       Tag: Curtain Finial
       GameTag: Untagged
@@ -2894,12 +2629,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.12, 0.12, 0.13, 1]
-      Metallic: 0.9
-      Roughness: 0.35
-      AO: 1
-      TexturePath: ""
-  - Entity: 7578021000130909094
+      MaterialAsset: Assets/Materials/Curtain Finial.cqmat
+  - Entity: 7578746062342821298
     TagComponent:
       Tag: Curtain
       GameTag: Untagged
@@ -2913,7 +2644,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/linen_curtain.glb
-  - Entity: 5461180053698473002
+  - Entity: 5462187691069172777
     TagComponent:
       Tag: Curtain Finial
       GameTag: Untagged
@@ -2927,12 +2658,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.12, 0.12, 0.13, 1]
-      Metallic: 0.9
-      Roughness: 0.35
-      AO: 1
-      TexturePath: ""
-  - Entity: 5220042580877078118
+      MaterialAsset: Assets/Materials/Curtain Finial.cqmat
+  - Entity: 5221577983816086841
     TagComponent:
       Tag: Curtain
       GameTag: Untagged
@@ -2946,7 +2673,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Furniture/linen_curtain.glb
-  - Entity: 4705823275707305690
+  - Entity: 4704543928250997983
     TagComponent:
       Tag: Dining Rug
       GameTag: Untagged
@@ -2960,12 +2687,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Textures/rug_wool.jpg
-  - Entity: 3672341172902208807
+      MaterialAsset: Assets/Materials/Rug wool.cqmat
+  - Entity: 3670805639874626472
     TagComponent:
       Tag: Kitchen LED Strip
       GameTag: Lamp Glow
@@ -2979,15 +2702,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 0.92, 0.8, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.86, 0.66]
-      EmissionStrength: 1.5
       CastShadows: false
-      TexturePath: ""
-  - Entity: 1269311567676914269
+      MaterialAsset: Assets/Materials/Kitchen LED Strip.cqmat
+  - Entity: 1268349015107218423
     TagComponent:
       Tag: Kitchen Under Cabinet Light
       GameTag: Evening Light
@@ -3006,7 +2723,7 @@ Entities:
       Size: [3, 0.2]
       Range: 3
       TwoSided: false
-  - Entity: 307193177779928142
+  - Entity: 307592782678026995
     TagComponent:
       Tag: Floor Lamp Base
       GameTag: Untagged
@@ -3020,12 +2737,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.1, 0.1, 0.11, 1]
-      Metallic: 0.8
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 6466521484256409466
+      MaterialAsset: Assets/Materials/Floor Lamp Base.cqmat
+  - Entity: 6465523747724947144
     TagComponent:
       Tag: Floor Lamp Pole
       GameTag: Untagged
@@ -3039,12 +2752,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.62, 0.5, 0.32, 1]
-      Metallic: 1
-      Roughness: 0.3
-      AO: 1
-      TexturePath: ""
-  - Entity: 4268270910342099108
+      MaterialAsset: Assets/Materials/Floor Lamp Pole.cqmat
+  - Entity: 4268397973395811947
     TagComponent:
       Tag: Floor Lamp Shade
       GameTag: Shade Glow
@@ -3058,14 +2767,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.95, 0.9, 0.8, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      EmissionColor: [1, 0.78, 0.5]
-      EmissionStrength: 0
-      TexturePath: Assets/Textures/linen.jpg
-  - Entity: 4968426182693962379
+      MaterialAsset: Assets/Materials/Linen.cqmat
+  - Entity: 4968862210985541352
     TagComponent:
       Tag: Floor Lamp Light
       GameTag: Evening Light
@@ -3086,7 +2789,7 @@ Entities:
       Quadratic: 0.032
       CastShadows: true
       Mode: 0
-  - Entity: 2646439556515060816
+  - Entity: 2647446229008569058
     TagComponent:
       Tag: Downlight Trim
       GameTag: Untagged
@@ -3100,12 +2803,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.9, 0.9, 0.9, 1]
-      Metallic: 0.6
-      Roughness: 0.3
-      AO: 1
-      TexturePath: ""
-  - Entity: 6934682775502704210
+      MaterialAsset: Assets/Materials/Downlight Trim.cqmat
+  - Entity: 6934247853433732792
     TagComponent:
       Tag: Downlight Lens
       GameTag: Downlight Glow
@@ -3119,15 +2818,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 0.95, 0.88, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.84, 0.64]
-      EmissionStrength: 0
       CastShadows: false
-      TexturePath: ""
-  - Entity: 3741953446388969390
+      MaterialAsset: Assets/Materials/Downlight Lens.cqmat
+  - Entity: 3740664201280579453
     TagComponent:
       Tag: Downlight
       GameTag: Downlight
@@ -3152,7 +2845,7 @@ Entities:
       Quadratic: 0.032
       CastShadows: false
       Mode: 0
-  - Entity: 3422096755036575737
+  - Entity: 3421097782733191916
     TagComponent:
       Tag: Downlight Trim
       GameTag: Untagged
@@ -3166,12 +2859,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.9, 0.9, 0.9, 1]
-      Metallic: 0.6
-      Roughness: 0.3
-      AO: 1
-      TexturePath: ""
-  - Entity: 3802318262011561469
+      MaterialAsset: Assets/Materials/Downlight Trim.cqmat
+  - Entity: 3801909725713482218
     TagComponent:
       Tag: Downlight Lens
       GameTag: Downlight Glow
@@ -3185,15 +2874,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 0.95, 0.88, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.84, 0.64]
-      EmissionStrength: 0
       CastShadows: false
-      TexturePath: ""
-  - Entity: 8233754633527954202
+      MaterialAsset: Assets/Materials/Downlight Lens.cqmat
+  - Entity: 8233627574856225633
     TagComponent:
       Tag: Downlight
       GameTag: Downlight
@@ -3218,7 +2901,7 @@ Entities:
       Quadratic: 0.032
       CastShadows: false
       Mode: 0
-  - Entity: 5662823932647443569
+  - Entity: 5661570974069012746
     TagComponent:
       Tag: Downlight Trim
       GameTag: Untagged
@@ -3232,12 +2915,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.9, 0.9, 0.9, 1]
-      Metallic: 0.6
-      Roughness: 0.3
-      AO: 1
-      TexturePath: ""
-  - Entity: 2689644964248558959
+      MaterialAsset: Assets/Materials/Downlight Trim.cqmat
+  - Entity: 2689807076394506653
     TagComponent:
       Tag: Downlight Lens
       GameTag: Downlight Glow
@@ -3251,15 +2930,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 0.95, 0.88, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.84, 0.64]
-      EmissionStrength: 0
       CastShadows: false
-      TexturePath: ""
-  - Entity: 4883651907622344289
+      MaterialAsset: Assets/Materials/Downlight Lens.cqmat
+  - Entity: 4882362802414961216
     TagComponent:
       Tag: Downlight
       GameTag: Downlight
@@ -3284,7 +2957,7 @@ Entities:
       Quadratic: 0.032
       CastShadows: false
       Mode: 0
-  - Entity: 6301794334611745998
+  - Entity: 6301639924812670921
     TagComponent:
       Tag: Downlight Trim
       GameTag: Untagged
@@ -3298,12 +2971,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.9, 0.9, 0.9, 1]
-      Metallic: 0.6
-      Roughness: 0.3
-      AO: 1
-      TexturePath: ""
-  - Entity: 3179242425559352799
+      MaterialAsset: Assets/Materials/Downlight Trim.cqmat
+  - Entity: 3177681738906839600
     TagComponent:
       Tag: Downlight Lens
       GameTag: Downlight Glow
@@ -3317,15 +2986,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 0.95, 0.88, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.84, 0.64]
-      EmissionStrength: 0
       CastShadows: false
-      TexturePath: ""
-  - Entity: 5665553062978596474
+      MaterialAsset: Assets/Materials/Downlight Lens.cqmat
+  - Entity: 5667642617203192765
     TagComponent:
       Tag: Downlight
       GameTag: Downlight
@@ -3350,7 +3013,7 @@ Entities:
       Quadratic: 0.032
       CastShadows: false
       Mode: 0
-  - Entity: 3786913304011140417
+  - Entity: 3785914332428982832
     TagComponent:
       Tag: Downlight Trim
       GameTag: Untagged
@@ -3364,12 +3027,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.9, 0.9, 0.9, 1]
-      Metallic: 0.6
-      Roughness: 0.3
-      AO: 1
-      TexturePath: ""
-  - Entity: 6130724164615147803
+      MaterialAsset: Assets/Materials/Downlight Trim.cqmat
+  - Entity: 6130280581497086452
     TagComponent:
       Tag: Downlight Lens
       GameTag: Downlight Glow
@@ -3383,15 +3042,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 0.95, 0.88, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.84, 0.64]
-      EmissionStrength: 0
       CastShadows: false
-      TexturePath: ""
-  - Entity: 5002110928925866931
+      MaterialAsset: Assets/Materials/Downlight Lens.cqmat
+  - Entity: 5002520568781990481
     TagComponent:
       Tag: Downlight
       GameTag: Downlight
@@ -3416,7 +3069,7 @@ Entities:
       Quadratic: 0.032
       CastShadows: false
       Mode: 0
-  - Entity: 5054504151842815893
+  - Entity: 5053777859214841999
     TagComponent:
       Tag: Window Light -2.0
       GameTag: Window Light
@@ -3435,7 +3088,7 @@ Entities:
       Size: [2.9, 2]
       Range: 12
       TwoSided: false
-  - Entity: 7855156127990078498
+  - Entity: 7855555870501428534
     TagComponent:
       Tag: Window Light 2.0
       GameTag: Window Light
@@ -3454,7 +3107,7 @@ Entities:
       Size: [2.9, 2]
       Range: 12
       TwoSided: false
-  - Entity: 5438762026230696776
+  - Entity: 5439725682167990271
     TagComponent:
       Tag: Sun
       GameTag: Untagged
@@ -3473,7 +3126,7 @@ Entities:
       Intensity: 5
       CastShadows: true
       Mode: 0
-  - Entity: 6684641405681560131
+  - Entity: 6684196587568666288
     TagComponent:
       Tag: View 1
       GameTag: Untagged
@@ -3485,7 +3138,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 4158069128034109874
+  - Entity: 4157940967310216146
     TagComponent:
       Tag: View 2
       GameTag: Untagged
@@ -3497,7 +3150,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5706459185219924918
+  - Entity: 5708029909350238821
     TagComponent:
       Tag: View 3
       GameTag: Untagged
@@ -3509,7 +3162,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 1647715769602741526
+  - Entity: 1646708139096476370
     TagComponent:
       Tag: View 4
       GameTag: Untagged
@@ -3521,7 +3174,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5851132247672731186
+  - Entity: 5851567174141761927
     TagComponent:
       Tag: Visitor
       GameTag: Untagged
@@ -3546,7 +3199,7 @@ Entities:
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/ArchvizWalker.cqs
       ClassName: ""
-  - Entity: 5598575323999539869
+  - Entity: 5599581861024555167
     TagComponent:
       Tag: Camera
       GameTag: Untagged
@@ -3573,7 +3226,7 @@ Entities:
       OrderInLayer: 0
     AudioListenerComponent:
       IsActive: true
-  - Entity: 8912566656461226283
+  - Entity: 8910469409597345466
     TagComponent:
       Tag: HUD
       GameTag: Untagged
@@ -3599,7 +3252,7 @@ Entities:
       IgnoreReversedGraphics: true
       BlockingObjects: 0
       BlockingMask: 4294967295
-  - Entity: 3662039225810579238
+  - Entity: 3663038204361597383
     TagComponent:
       Tag: HintText
       GameTag: Untagged
@@ -3846,7 +3499,7 @@ EditorCamera:
   Yaw: 0
   OrthographicSize: 10
 Hierarchy:
-  - Child: 3662039225810579238
-    Parent: 8912566656461226283
-  - Child: 5598575323999539869
-    Parent: 5851132247672731186
+  - Child: 3663038204361597383
+    Parent: 8910469409597345466
+  - Child: 5599581861024555167
+    Parent: 5851567174141761927

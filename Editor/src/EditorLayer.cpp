@@ -4,6 +4,9 @@
 #include "Panels/ObjectPicker.h"
 #include "Renderer/Utilities/Renderer3D/Material.h"
 #include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
+#include "Scene/MeshRendererMaterial.h"
+#include "Assets/SceneTemplate.h"
+#include "Renderer/SpriteAtlas.h"
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 #include "EditorLayer.h"
@@ -352,6 +355,18 @@ namespace Conqueror::Editor
             CQ_CORE_INFO("EditorLayer: Creating ShaderEditorPanel...");
             m_ShaderEditorPanel = std::make_unique<ShaderEditorPanel>();
             m_ShaderEditorPanel->SetContext(m_ActiveScene.get());
+            // Sahne şablonu Snapshot: Game görünümü (kamera varsa), yoksa Scene görünümü
+            SceneTemplates::SetSnapshotProvider([this](const std::filesystem::path& out) {
+                std::shared_ptr<Framebuffer> fb;
+                if (m_GamePanel && m_GamePanel->HasCamera() && m_GamePanel->GetViewportSize().x > 1.0f && m_GamePanel->GetViewportSize().y > 1.0f)
+                    fb = m_GamePanel->GetFramebuffer();
+                if (!fb && m_ViewportPanel && m_ViewportPanel->GetViewportSize().x > 1.0f)
+                    fb = m_ViewportPanel->GetFramebuffer();
+                if (!fb)
+                    return false;
+                const auto& spec = fb->GetSpecification();
+                return WriteProjectThumbnail(fb->GetColorAttachmentRendererID(0), spec.Width, spec.Height, out, 640, 360);
+            });
             // Nesne seçici "Scene" sekmesi: açık sahnenin kullandığı dosyalar
             ObjectPicker::SetSceneProvider([this]() {
                 std::vector<std::string> out;
@@ -362,8 +377,6 @@ namespace Conqueror::Editor
                 {
                     auto& mr = reg.get<MeshRendererComponent>(e);
                     if (!mr.MaterialPath.empty()) out.push_back(mr.MaterialPath);
-                    for (const auto* t : { &mr.Texture, &mr.NormalMap, &mr.MaskMap })
-                        if (*t && !(*t)->GetPath().empty()) out.push_back((*t)->GetPath());
                     if (mr.MaterialInstance)
                         for (const auto* t : { &mr.MaterialInstance->AlbedoMap, &mr.MaterialInstance->NormalMap, &mr.MaterialInstance->EmissionMap })
                             if (*t && !(*t)->GetPath().empty()) out.push_back((*t)->GetPath());
@@ -1946,6 +1959,8 @@ namespace Conqueror::Editor
                 m_TimelinePanel->StopPreview();
             if (m_LogPanel)
                 m_LogPanel->OnPlay();
+            // Sprite Atlas: kaynakları değişen atlaslar Play'den önce yeniden paketlenir (Unity gibi)
+            SpriteAtlases::PackAllIfStale();
             // Editor scene'i direkt memory'den klonla (YAML yok, disk I/O yok)
             uint64_t selectedUUID = GetSelectedEntityUUID();
             m_RuntimeScene = std::make_shared<Scene>();
@@ -2382,6 +2397,7 @@ namespace Conqueror::Editor
 
         DrawRecoveryPopup();
         DrawUnsavedChangesPopup();
+        DrawNewSceneDialog();
 
         // Konum her kare BeginPopupModal'dan hemen önce verilir: araya giren kapalı popup'lar
         // (kurtarma / kaydedilmemiş değişiklik) SetNextWindow* verisini tüketiyordu ve pencere üstte açılıyordu
@@ -2652,16 +2668,177 @@ namespace Conqueror::Editor
 
     void EditorLayer::RequestNewScene()
     {
+        // Unity File > New Scene: şablon seçme penceresi (otomasyonda doğrudan yerleşik Basic)
+        if (Automation::IsActive())
+        {
+            CreateNewScene("builtin:basic");
+            return;
+        }
+        m_OpenNewSceneDialog = true;
+    }
+
+    void EditorLayer::ConfirmNewScene(const std::string& choice)
+    {
         if (!Automation::IsActive() && HasUnsavedChanges())
         {
+            m_PendingNewSceneChoice = choice;
             m_PendingAction = PendingSceneAction::NewScene;
             m_OpenUnsavedPopup = true;
             return;
         }
+        CreateNewScene(choice);
+    }
+
+    bool EditorLayer::CreateNewScene(const std::string& choice)
+    {
         if (!EditorState::Get().IsEditing())
             OnStopButtonPressed();
-        NewScene();
-        ApplyNewSceneTemplate();
+        if (choice == "builtin:empty")
+        {
+            NewScene();
+            return true;
+        }
+        if (choice.rfind("builtin:", 0) == 0)
+        {
+            NewScene();
+            ApplyNewSceneTemplate();
+            return true;
+        }
+        // Proje şablonu: şablon sahnesinin kopyası, adsız (ilk kayıtta Save As)
+        SceneTemplates::SceneTemplate t;
+        const std::filesystem::path scenePath = SceneTemplates::Load(choice, t) ? SceneTemplates::Resolve(t.ScenePath) : std::filesystem::path();
+        std::error_code ec;
+        if (scenePath.empty() || !std::filesystem::exists(scenePath, ec))
+        {
+            CQ_CORE_ERROR("Scene template '{0}' has no valid scene; created a Basic scene instead.", choice);
+            NewScene();
+            ApplyNewSceneTemplate();
+            return false;
+        }
+        auto scene = std::make_shared<Scene>();
+        SceneSerializer serializer(scene);
+        if (m_ViewportPanel)
+            serializer.SetEditorCamera(&m_ViewportPanel->GetEditorCamera());
+        if (!serializer.Deserialize(scenePath.string()))
+        {
+            CQ_CORE_ERROR("Scene template scene could not be loaded: {0}", scenePath.string());
+            return false;
+        }
+        m_ActiveScene = scene;
+        m_EditorScene = m_ActiveScene;
+        m_CurrentScenePath.clear();
+        EditorState::Get().ClearSelection();
+        RefreshAllPanels();
+        SelectEntityEverywhere({});
+        CQ_CORE_INFO("New scene from template '{0}'", t.Name);
+        return true;
+    }
+
+    void EditorLayer::DrawNewSceneDialog()
+    {
+        struct Item { std::string Choice, Title, Description, Thumb; bool Pinned = false; bool BuiltIn = false; };
+        static std::vector<Item> items;
+        static std::map<std::string, std::shared_ptr<Texture2D>>* thumbs = new std::map<std::string, std::shared_ptr<Texture2D>>();
+        if (m_OpenNewSceneDialog)
+        {
+            m_OpenNewSceneDialog = false;
+            items.clear();
+            items.push_back({ "builtin:basic", "Basic (Built-in)", "A scene with a Main Camera and a Directional Light (2D projects: an orthographic camera).", "", false, true });
+            items.push_back({ "builtin:empty", "Empty (Built-in)", "A completely empty scene.", "", false, true });
+            for (const auto& f : SceneTemplates::FindAll())
+            {
+                SceneTemplates::SceneTemplate t;
+                if (SceneTemplates::Load(f, t))
+                    items.push_back({ f.string(), t.Name, t.Description, SceneTemplates::Resolve(t.ThumbnailPath).string(), t.Pinned, false });
+            }
+            std::stable_sort(items.begin(), items.end(), [](const Item& a, const Item& b) { return a.Pinned && !b.Pinned; });
+            if (std::none_of(items.begin(), items.end(), [this](const Item& i) { return i.Choice == m_NewSceneChoice; }))
+                m_NewSceneChoice = "builtin:basic";
+            ImGui::OpenPopup("New Scene");
+        }
+        ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+        ImGui::SetNextWindowSize(ImVec2(760.0f, 460.0f), ImGuiCond_Appearing);
+        if (!ImGui::BeginPopupModal("New Scene", nullptr, ImGuiWindowFlags_NoSavedSettings))
+            return;
+        const float footer = ImGui::GetFrameHeightWithSpacing() + 8.0f;
+        ImGui::BeginChild("##templates", ImVec2(260.0f, -footer), ImGuiChildFlags_Borders);
+        ImGui::TextDisabled("Scene Templates in Project");
+        ImGui::Separator();
+        const Item* selected = nullptr;
+        bool create = false;
+        for (const auto& it : items)
+        {
+            const bool sel = it.Choice == m_NewSceneChoice;
+            std::string label = std::string(it.Pinned ? ICON_FA_THUMBTACK "  " : ICON_FA_CLAPPERBOARD "  ") + it.Title + "##" + it.Choice;
+            if (ImGui::Selectable(label.c_str(), sel, ImGuiSelectableFlags_AllowDoubleClick))
+            {
+                m_NewSceneChoice = it.Choice;
+                if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                    create = true;
+            }
+            if (it.Choice == m_NewSceneChoice)
+                selected = &it;
+        }
+        if (items.size() == 2)
+        {
+            ImGui::Spacing();
+            ImGui::TextWrapped("Create > Scene Template in the Content Browser (or right-click a scene > Create Scene Template From Scene) to add your own.");
+        }
+        ImGui::EndChild();
+        ImGui::SameLine();
+        ImGui::BeginChild("##details", ImVec2(0.0f, -footer), ImGuiChildFlags_Borders);
+        if (selected)
+        {
+            std::error_code ec;
+            if (!selected->Thumb.empty() && std::filesystem::exists(selected->Thumb, ec))
+            {
+                auto& tex = (*thumbs)[selected->Thumb];
+                if (!tex)
+                    tex = Texture2D::Create(selected->Thumb);
+                if (tex && tex->GetRendererID() && tex->GetWidth() > 0)
+                {
+                    const float w = ImGui::GetContentRegionAvail().x;
+                    const float h = std::min(w * (float)tex->GetHeight() / (float)tex->GetWidth(), 260.0f);
+                    ImGui::Image((ImTextureID)(uintptr_t)tex->GetRendererID(), ImVec2(h * (float)tex->GetWidth() / (float)tex->GetHeight(), h),
+                                 ImVec2(0, 1), ImVec2(1, 0));
+                }
+            }
+            else
+            {
+                const ImVec2 p = ImGui::GetCursorScreenPos();
+                const float w = ImGui::GetContentRegionAvail().x;
+                ImGui::GetWindowDrawList()->AddRectFilled(p, ImVec2(p.x + w, p.y + 200.0f), IM_COL32(40, 42, 48, 255), 4.0f);
+                ImGui::SetCursorScreenPos(ImVec2(p.x + w * 0.5f - 20.0f, p.y + 80.0f));
+                ImGui::SetWindowFontScale(2.5f);
+                ImGui::TextDisabled(ICON_FA_CLAPPERBOARD);
+                ImGui::SetWindowFontScale(1.0f);
+                ImGui::SetCursorScreenPos(ImVec2(p.x, p.y + 208.0f));
+            }
+            ImGui::Spacing();
+            ImGui::TextUnformatted(selected->Title.c_str());
+            ImGui::Separator();
+            ImGui::TextWrapped("%s", selected->Description.empty() ? "No description." : selected->Description.c_str());
+            if (!selected->BuiltIn)
+            {
+                ImGui::Spacing();
+                ImGui::TextDisabled("%s", SceneTemplates::ToProjectRelative(selected->Choice).c_str());
+            }
+        }
+        ImGui::EndChild();
+        ImGui::Spacing();
+        ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 2.0f * 120.0f - 2.0f * ImGui::GetStyle().ItemSpacing.x - 8.0f);
+        if (ImGui::Button("Create", ImVec2(120, 0)) || create || (ImGui::IsKeyPressed(ImGuiKey_Enter) && !ImGui::GetIO().WantTextInput))
+        {
+            const std::string choice = m_NewSceneChoice;
+            ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+            ConfirmNewScene(choice);
+            return;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0)) || ImGui::IsKeyPressed(ImGuiKey_Escape))
+            ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
     }
 
     // Project Settings > Editor / Graphics: yeni sahne şablonu (Unity: Main Camera + Directional Light)
@@ -2753,7 +2930,7 @@ namespace Conqueror::Editor
             if (!EditorState::Get().IsEditing())
                 OnStopButtonPressed();
             if (action == PendingSceneAction::NewScene)
-                NewScene();
+                CreateNewScene(m_PendingNewSceneChoice);
             else if (action == PendingSceneAction::OpenScene)
                 OpenScene(pending);
         };
@@ -3146,10 +3323,36 @@ namespace Conqueror::Editor
                 SelectEntityEverywhere(e);
                 return (bool)e;
             }
+            // tile palette <path.cqpalette> | pick_asset <i> (palet varlığının i. karosunu seç; haritaya ekler)
+            if (a[1] == "palette" && a.size() > 2)
+            {
+                std::string p = a[2];
+                for (size_t i = 3; i < a.size(); ++i) p += " " + a[i];
+                tp.SetPaletteAsset(p);
+                m_ShowTilePalette = true;
+                return true;
+            }
+            if (a[1] == "pick_asset")
+            {
+                if (!tp.SelectPaletteAssetTile(I(2))) { err = "cannot pick palette tile " + a[2]; return false; }
+                return true;
+            }
             Entity e = tp.GetTarget();
             if (!e) { err = "no tilemap"; return false; }
             auto& map = e.GetComponent<TilemapComponent>();
             const GridComponent& g = GridSystem::GridOf(e);
+            // tile expect_texture <x> <y> <dosya-adı-soneki> [rotation]: Rule / Animated Tile çözümlemesi
+            if (a[1] == "expect_texture" && a.size() > 4)
+            {
+                GridSystem::SyncTileAssets(map);
+                int rot = 0;
+                const std::string tex = GridSystem::ResolveTileTexture(map, { I(2), I(3) }, rot, ImGui::GetTime());
+                Automation::Report("TILE " + a[2] + "," + a[3] + " texture=" + tex + " rot=" + std::to_string(rot));
+                const bool texOk = tex.size() >= a[4].size() && tex.compare(tex.size() - a[4].size(), a[4].size(), a[4]) == 0;
+                const bool rotOk = a.size() < 6 || std::atoi(a[5].c_str()) == rot;
+                if (!texOk || !rotOk) { err = "texture " + tex + " rot " + std::to_string(rot); return false; }
+                return true;
+            }
             // Hücre merkezinin viewport ekran konumu
             auto cellScreen = [&](int x, int y, ImVec2& out) {
                 if (!m_ViewportPanel) return false;
@@ -4663,6 +4866,76 @@ namespace Conqueror::Editor
             }
             err = "unknown material command";
             return false;
+        });
+        // select_asset <path>: varlığı seç (Inspector'da açılır; Content Browser'da tıklamakla aynı)
+        Automation::RegisterCommand("select_asset", [](const Args& a, std::string& err) {
+            if (a.size() < 2) { err = "select_asset <path>"; return false; }
+            std::string p = a[1];
+            for (size_t i = 2; i < a.size(); ++i) p += " " + a[i];
+            std::filesystem::path x(p);
+            if (x.is_relative() && Project::GetActive()) x = Project::GetActiveProjectDirectory() / x;
+            if (!std::filesystem::exists(x)) { err = "no asset " + x.string(); return false; }
+            EditorState::Get().SelectAsset(x.string());
+            return true;
+        });
+        // select_asset <path>: varlığı seç (Inspector'da açılır; Content Browser'da tıklamakla aynı)
+        Automation::RegisterCommand("select_asset", [](const Args& a, std::string& err) {
+            if (a.size() < 2) { err = "select_asset <path>"; return false; }
+            std::string p = a[1];
+            for (size_t i = 2; i < a.size(); ++i) p += " " + a[i];
+            std::filesystem::path x(p);
+            if (x.is_relative() && Project::GetActive()) x = Project::GetActiveProjectDirectory() / x;
+            if (!std::filesystem::exists(x)) { err = "no asset " + x.string(); return false; }
+            EditorState::Get().SelectAsset(x.string());
+            return true;
+        });
+        // sprite_atlas pack <atlas> | pack_all | expect <doku> <in|out>: görselin atlastan çizilip çizilmediği
+        Automation::RegisterCommand("sprite_atlas", [](const Args& a, std::string& err) {
+            if (a.size() < 2) { err = "sprite_atlas pack <atlas>|pack_all|expect <texture> <in|out>"; return false; }
+            auto abs = [](const std::string& p) {
+                std::filesystem::path x(p);
+                return (x.is_relative() && Project::GetActive() ? Project::GetActiveProjectDirectory() / x : x).string();
+            };
+            if (a[1] == "pack" && a.size() > 2)
+            {
+                std::string error;
+                if (!SpriteAtlases::Pack(abs(a[2]), &error)) { err = error; return false; }
+                return true;
+            }
+            if (a[1] == "pack_all") { Automation::Report("ATLAS packed " + std::to_string(SpriteAtlases::PackAllIfStale())); return true; }
+            if (a[1] == "expect" && a.size() > 3)
+            {
+                SpriteAtlases::Lookup l;
+                const bool in = SpriteAtlases::Find(abs(a[2]), l);
+                Automation::Report(std::string("ATLAS ") + a[2] + (in ? " in atlas at " + std::to_string((int)l.Offset.x) + "," + std::to_string((int)l.Offset.y) : " not in an atlas"));
+                if (in != (a[3] == "in")) { err = in ? "texture is in an atlas" : "texture is not in an atlas"; return false; }
+                return true;
+            }
+            err = "unknown sprite_atlas command";
+            return false;
+        });
+        // new_scene_from_template <şablon.cqscenetemplate | builtin:basic | builtin:empty>  (File > New Scene penceresinde Create)
+        Automation::RegisterCommand("new_scene_from_template", [this](const Args& a, std::string& err) {
+            if (a.size() < 2) { err = "new_scene_from_template <path|builtin:basic|builtin:empty>"; return false; }
+            std::string choice = a[1];
+            for (size_t i = 2; i < a.size(); ++i) choice += " " + a[i];
+            if (choice.rfind("builtin:", 0) != 0)
+                choice = SceneTemplates::Resolve(choice).string();
+            if (!CreateNewScene(choice)) { err = "cannot create a scene from " + choice; return false; }
+            return true;
+        });
+        // new_scene_dialog: File > New Scene penceresini aç (otomasyonda da)
+        Automation::RegisterCommand("new_scene_dialog", [this](const Args&, std::string&) { m_OpenNewSceneDialog = true; return true; });
+        // material_bake [klasör=Assets/Materials]: sahnedeki gömülü (Instance) malzemeleri içerik bazında tekilleştirip
+        // .cqmat dosyalarına yazar ve Mesh Renderer'lara atar (eski sahne / şablon taşıma)
+        Automation::RegisterCommand("material_bake", [this](const Args& a, std::string& err) {
+            if (!m_ActiveScene || !Project::GetActive()) { err = "no scene/project"; return false; }
+            std::filesystem::path dir = a.size() > 1 ? std::filesystem::path(a[1]) : std::filesystem::path("Assets/Materials");
+            if (dir.is_relative()) dir = Project::GetActiveProjectDirectory() / dir;
+            int created = 0;
+            const int baked = MeshRendererMaterial::BakeInstances(*m_ActiveScene, dir, &created);
+            CQ_CORE_INFO("material_bake: {} renderers, {} new material files in {}", baked, created, dir.string());
+            return true;
         });
         Automation::RegisterCommand("view_option", [this](const Args& a, std::string& err) {
             if (a.size() < 3 || !m_ViewportPanel) { err = "view_option <grid|gizmos|skybox|fog|shadows|post|sprites|realtime> <on|off>"; return false; }

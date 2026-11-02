@@ -1,0 +1,29 @@
+Material:
+  Name: Asphalt diffuse
+  Albedo: [1, 1, 1]
+  Opacity: 1
+  Metallic: 1
+  Roughness: 1
+  AO: 1
+  EmissionColor: [0, 0, 0]
+  EmissionStrength: 0
+  Tiling: [1, 1]
+  Offset: [0, 0]
+  RenderMode: 0
+  Culling: 0
+  AlphaClip: 0.5
+  MapsScaleFactors: true
+  MetallicChannel: 2
+  RoughnessChannel: 1
+  AlbedoMap: Assets/Track/asphalt_diffuse.jpg
+  NormalMap: Assets/Track/asphalt_normal.jpg
+  MetallicMap: Assets/Track/asphalt_orm.jpg
+  RoughnessMap: Assets/Track/asphalt_orm.jpg
+  AOMap: Assets/Track/asphalt_orm.jpg
+  NextGraphNodeID: 1
+  NextGraphLinkID: 1
+  GraphInitialized: false
+  GraphNodes:
+    []
+  GraphLinks:
+    []

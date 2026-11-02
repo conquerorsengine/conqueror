@@ -26,4 +26,15 @@ namespace Conqueror::Editor::ObjectPicker
 
     // Yaygın uzantı kümeleri
     const std::vector<std::string>& ImageExtensions();
+    const std::vector<std::string>& ModelExtensions();
+    const std::vector<std::string>& AudioExtensions();
+    const std::vector<std::string>& FontExtensions();
+    // "*.png;*.jpg" / ".png;.jpg" -> { ".png", ".jpg" } (boş = her dosya)
+    std::vector<std::string> ParseFilter(const std::string& filter);
+    // Uzantılara göre tür adı ("Texture", "Material", "Audio Clip" ...)
+    std::string TypeNameFor(const std::vector<std::string>& extensions);
+
+    // Unity nesne alanı yanındaki ◎ düğmesi: tıklanınca pencereyi açar, seçim yapılınca true (picked "" = None)
+    bool Button(const char* id, const std::string& typeName, const std::vector<std::string>& extensions, const std::string& current,
+                std::string& picked);
 }

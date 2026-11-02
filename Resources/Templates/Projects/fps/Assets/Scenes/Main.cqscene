@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 8316084832352546640
+  - Entity: 8317960795891951753
     TagComponent:
       Tag: Directional Light
       GameTag: Untagged
@@ -19,7 +19,7 @@ Entities:
       Intensity: 3.2
       CastShadows: true
       Mode: 0
-  - Entity: 8998040419084982570
+  - Entity: 8996090114237614300
     TagComponent:
       Tag: Impacts
       GameTag: Untagged
@@ -34,7 +34,7 @@ Entities:
     ConquerorScriptComponent:
       ScriptPath: Assets/Weapons/Scripts/Impacts.cqs
       ClassName: ""
-  - Entity: 7805637752737798608
+  - Entity: 7806088852022717586
     TagComponent:
       Tag: FX Sparks
       GameTag: Untagged
@@ -110,7 +110,7 @@ Entities:
       SizeOverLifetime:
         - [0, 1]
         - [1, 1]
-  - Entity: 3606110296341083363
+  - Entity: 3606402986762952390
     TagComponent:
       Tag: FX Dust
       GameTag: Untagged
@@ -186,7 +186,7 @@ Entities:
       SizeOverLifetime:
         - [0, 0.6]
         - [1, 2]
-  - Entity: 4282344173559227762
+  - Entity: 4281250938008993973
     TagComponent:
       Tag: FX Hit
       GameTag: Untagged
@@ -262,7 +262,7 @@ Entities:
       SizeOverLifetime:
         - [0, 1]
         - [1, 1]
-  - Entity: 2736137732200966013
+  - Entity: 2737986918766622175
     TagComponent:
       Tag: FX Muzzle
       GameTag: Untagged
@@ -338,7 +338,7 @@ Entities:
       SizeOverLifetime:
         - [0, 0.5]
         - [1, 2.5]
-  - Entity: 3914384047363988297
+  - Entity: 3915125407236959487
     TagComponent:
       Tag: FX Laser
       GameTag: Untagged
@@ -414,7 +414,7 @@ Entities:
       SizeOverLifetime:
         - [0, 1]
         - [1, 1]
-  - Entity: 6989946833965925675
+  - Entity: 6991479713231586142
     TagComponent:
       Tag: Floor
       GameTag: Untagged
@@ -428,12 +428,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -455,7 +450,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5313383358574730919
+  - Entity: 5312858183862573921
     TagComponent:
       Tag: Wall North
       GameTag: Untagged
@@ -469,12 +464,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGridDark.png
+      MaterialAsset: Assets/Materials/WorldGridDark.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -496,7 +486,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 775716634494697057
+  - Entity: 775771933057602074
     TagComponent:
       Tag: Wall South
       GameTag: Untagged
@@ -510,12 +500,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGridDark.png
+      MaterialAsset: Assets/Materials/WorldGridDark.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -537,7 +522,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1942684644165737996
+  - Entity: 1941670712783349219
     TagComponent:
       Tag: Wall East
       GameTag: Untagged
@@ -551,12 +536,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGridDark.png
+      MaterialAsset: Assets/Materials/WorldGridDark.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -578,7 +558,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 680927106147734731
+  - Entity: 681413284699648614
     TagComponent:
       Tag: Wall West
       GameTag: Untagged
@@ -592,12 +572,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGridDark.png
+      MaterialAsset: Assets/Materials/WorldGridDark.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -619,7 +594,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 931648127545741010
+  - Entity: 930590722912758101
     TagComponent:
       Tag: Platform
       GameTag: Untagged
@@ -633,12 +608,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -660,7 +630,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 612233711216294922
+  - Entity: 610493990491556340
     TagComponent:
       Tag: Ramp
       GameTag: Untagged
@@ -674,12 +644,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -701,7 +666,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7439713814809656280
+  - Entity: 7437925758663620329
     TagComponent:
       Tag: High Platform
       GameTag: Untagged
@@ -715,12 +680,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -742,7 +702,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6432313130753280300
+  - Entity: 6432218801388468264
     TagComponent:
       Tag: Steps0
       GameTag: Untagged
@@ -756,12 +716,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -783,7 +738,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6235538356794180806
+  - Entity: 6237181215151327022
     TagComponent:
       Tag: Steps1
       GameTag: Untagged
@@ -797,12 +752,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -824,7 +774,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5294190759900696814
+  - Entity: 5296022259803727064
     TagComponent:
       Tag: Steps2
       GameTag: Untagged
@@ -838,12 +788,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -865,7 +810,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2868322708791514152
+  - Entity: 2867009639360306722
     TagComponent:
       Tag: Steps3
       GameTag: Untagged
@@ -879,12 +824,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -906,7 +846,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4436853621013288245
+  - Entity: 4437488749211331895
     TagComponent:
       Tag: Steps4
       GameTag: Untagged
@@ -920,12 +860,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -947,7 +882,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6597649597442421537
+  - Entity: 6595645932111357139
     TagComponent:
       Tag: Steps5
       GameTag: Untagged
@@ -961,12 +896,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -988,7 +918,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 3159661593059100244
+  - Entity: 3161141180543648201
     TagComponent:
       Tag: Steps6
       GameTag: Untagged
@@ -1002,12 +932,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1029,7 +954,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4368568772669283444
+  - Entity: 4370664801272692991
     TagComponent:
       Tag: Steps7
       GameTag: Untagged
@@ -1043,12 +968,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1070,7 +990,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 9187459931804038794
+  - Entity: 9189476828066610147
     TagComponent:
       Tag: Steps8
       GameTag: Untagged
@@ -1084,12 +1004,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1111,7 +1026,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1156954326335494796
+  - Entity: 1155645586351210657
     TagComponent:
       Tag: Steps9
       GameTag: Untagged
@@ -1125,12 +1040,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1152,7 +1062,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6606849587716009916
+  - Entity: 6608963114244613618
     TagComponent:
       Tag: Steps10
       GameTag: Untagged
@@ -1166,12 +1076,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1193,7 +1098,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 34226578670242529
+  - Entity: 35578794401210631
     TagComponent:
       Tag: Steps11
       GameTag: Untagged
@@ -1207,12 +1112,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1234,7 +1134,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7570773260433750215
+  - Entity: 7572578983642906551
     TagComponent:
       Tag: Bridge
       GameTag: Untagged
@@ -1248,12 +1148,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1275,7 +1170,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1212922339486564712
+  - Entity: 1212264538643607365
     TagComponent:
       Tag: Cylinder A
       GameTag: Untagged
@@ -1289,12 +1184,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1318,7 +1208,7 @@ Entities:
       Direction: 1
       IsTrigger: false
       Version: 2
-  - Entity: 2483196481239213286
+  - Entity: 2482020329030620220
     TagComponent:
       Tag: Cylinder B
       GameTag: Untagged
@@ -1332,12 +1222,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1361,7 +1246,7 @@ Entities:
       Direction: 1
       IsTrigger: false
       Version: 2
-  - Entity: 476285753279176077
+  - Entity: 476225989635272624
     TagComponent:
       Tag: Cube 0
       GameTag: Untagged
@@ -1375,15 +1260,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.45
-      AO: 1
-      Tiling: [1, 1]
-      Offset: [0.5, 0.5]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Prototype/WorldGridBlue.png
+      MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
       Mass: 30
@@ -1405,7 +1282,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7753056312007879331
+  - Entity: 7755090800312131787
     TagComponent:
       Tag: Cube 1
       GameTag: Untagged
@@ -1419,15 +1296,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.45
-      AO: 1
-      Tiling: [1, 1]
-      Offset: [0.5, 0.5]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Prototype/WorldGridBlue.png
+      MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
       Mass: 30
@@ -1449,7 +1318,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4233933471064770085
+  - Entity: 4235083849181844420
     TagComponent:
       Tag: Cube 2
       GameTag: Untagged
@@ -1463,15 +1332,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.45
-      AO: 1
-      Tiling: [1, 1]
-      Offset: [0.5, 0.5]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Prototype/WorldGridBlue.png
+      MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
       Mass: 30
@@ -1493,7 +1354,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2946803593506089879
+  - Entity: 2946154723912381339
     TagComponent:
       Tag: Cube 3
       GameTag: Untagged
@@ -1507,15 +1368,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.45
-      AO: 1
-      Tiling: [1, 1]
-      Offset: [0.5, 0.5]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Prototype/WorldGridBlue.png
+      MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
       Mass: 30
@@ -1537,7 +1390,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6447232987729200801
+  - Entity: 6448823041636585167
     TagComponent:
       Tag: Cube 4
       GameTag: Untagged
@@ -1551,15 +1404,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.45
-      AO: 1
-      Tiling: [1, 1]
-      Offset: [0.5, 0.5]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Prototype/WorldGridBlue.png
+      MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
       Mass: 30
@@ -1581,7 +1426,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6694675076037427879
+  - Entity: 6696779935465955559
     TagComponent:
       Tag: Cube 5
       GameTag: Untagged
@@ -1595,15 +1440,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.45
-      AO: 1
-      Tiling: [1, 1]
-      Offset: [0.5, 0.5]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Prototype/WorldGridBlue.png
+      MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
       Mass: 30
@@ -1625,7 +1462,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2370982757179739916
+  - Entity: 2369054056076841543
     TagComponent:
       Tag: Cube 6
       GameTag: Untagged
@@ -1639,15 +1476,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.45
-      AO: 1
-      Tiling: [1, 1]
-      Offset: [0.5, 0.5]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Prototype/WorldGridBlue.png
+      MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
       Mass: 30
@@ -1669,7 +1498,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 8054450444835766561
+  - Entity: 8052671826799063040
     TagComponent:
       Tag: Cube 7
       GameTag: Untagged
@@ -1683,15 +1512,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.45
-      AO: 1
-      Tiling: [1, 1]
-      Offset: [0.5, 0.5]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Prototype/WorldGridBlue.png
+      MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
       Mass: 30
@@ -1713,7 +1534,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4359580738295809742
+  - Entity: 4361641443071602600
     TagComponent:
       Tag: Cube 8
       GameTag: Untagged
@@ -1727,15 +1548,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.45
-      AO: 1
-      Tiling: [1, 1]
-      Offset: [0.5, 0.5]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Prototype/WorldGridBlue.png
+      MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
       Mass: 30
@@ -1757,7 +1570,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5262804796342994940
+  - Entity: 5264359736502978303
     TagComponent:
       Tag: Cube 9
       GameTag: Untagged
@@ -1771,15 +1584,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.45
-      AO: 1
-      Tiling: [1, 1]
-      Offset: [0.5, 0.5]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Prototype/WorldGridBlue.png
+      MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
       Mass: 30
@@ -1801,7 +1606,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4677051916258548671
+  - Entity: 4679178087333518206
     TagComponent:
       Tag: Target 0
       GameTag: Untagged
@@ -1821,7 +1626,7 @@ Entities:
           Bool: false
         radius:
           Float: 0.31
-  - Entity: 2357271718385517714
+  - Entity: 2355743789268842331
     TagComponent:
       Tag: Foot
       GameTag: Untagged
@@ -1835,12 +1640,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.2, 0.2, 0.22, 1]
-      Metallic: 0.85
-      Roughness: 0.45
-      AO: 1
-      TexturePath: ""
-  - Entity: 8268798664012939944
+      MaterialAsset: Assets/Materials/Foot.cqmat
+  - Entity: 8270670289296070985
     TagComponent:
       Tag: Hinge
       GameTag: Untagged
@@ -1852,7 +1653,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 409047206900132984
+  - Entity: 408354331101585609
     TagComponent:
       Tag: Hinge Bracket
       GameTag: Untagged
@@ -1866,12 +1667,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.16, 0.16, 0.18, 1]
-      Metallic: 0.9
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 3763729789031022793
+      MaterialAsset: Assets/Materials/Hinge Bracket.cqmat
+  - Entity: 3764035192490238543
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -1885,16 +1682,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 7101722803118938934
+      MaterialAsset: Assets/Materials/Stained wood 1.cqmat
+  - Entity: 7100379041959462750
     TagComponent:
       Tag: Batten
       GameTag: Untagged
@@ -1908,16 +1697,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 5530815700248614402
+      MaterialAsset: Assets/Materials/Stained wood 1.cqmat
+  - Entity: 5532278305000118033
     TagComponent:
       Tag: Back
       GameTag: Untagged
@@ -1931,15 +1712,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [1.3, 1.3]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/plywood.jpg
+      MaterialAsset: Assets/Materials/Plywood.cqmat
     RigidbodyComponent:
       BodyType: 2
       Mass: 1
@@ -1961,7 +1734,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2351039140937298741
+  - Entity: 2352972448710862185
     TagComponent:
       Tag: Frame Top
       GameTag: Untagged
@@ -1975,16 +1748,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 3034326076446597958
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 3034275100392949316
     TagComponent:
       Tag: Frame Bottom
       GameTag: Untagged
@@ -1998,16 +1763,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 5726210933961178426
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 5724190423600877273
     TagComponent:
       Tag: Frame Left
       GameTag: Untagged
@@ -2021,16 +1778,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 2675611536079366131
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 2676915925052536108
     TagComponent:
       Tag: Frame Right
       GameTag: Untagged
@@ -2044,16 +1793,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 7008217663453235143
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 7009235481674051264
     TagComponent:
       Tag: Board
       GameTag: Untagged
@@ -2067,14 +1808,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      AlphaClip: true
-      AlphaClipThreshold: 0.5
-      TexturePath: Assets/Weapons/Textures/target.png
-  - Entity: 722101531947025814
+      MaterialAsset: Assets/Materials/Target.cqmat
+  - Entity: 721303652773921497
     TagComponent:
       Tag: Target 1
       GameTag: Untagged
@@ -2094,7 +1829,7 @@ Entities:
           Bool: false
         radius:
           Float: 0.31
-  - Entity: 5398975574960475739
+  - Entity: 5398406327660664276
     TagComponent:
       Tag: Foot
       GameTag: Untagged
@@ -2108,12 +1843,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.2, 0.2, 0.22, 1]
-      Metallic: 0.85
-      Roughness: 0.45
-      AO: 1
-      TexturePath: ""
-  - Entity: 6317739362210439686
+      MaterialAsset: Assets/Materials/Foot.cqmat
+  - Entity: 6317107889439766118
     TagComponent:
       Tag: Hinge
       GameTag: Untagged
@@ -2125,7 +1856,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 8969016527876331201
+  - Entity: 8971073008831337091
     TagComponent:
       Tag: Hinge Bracket
       GameTag: Untagged
@@ -2139,12 +1870,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.16, 0.16, 0.18, 1]
-      Metallic: 0.9
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 2439696498568332540
+      MaterialAsset: Assets/Materials/Hinge Bracket.cqmat
+  - Entity: 2439954118187931815
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -2158,16 +1885,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 63890151806918614
+      MaterialAsset: Assets/Materials/Stained wood 1.cqmat
+  - Entity: 64463941224113275
     TagComponent:
       Tag: Batten
       GameTag: Untagged
@@ -2181,16 +1900,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 6906941788253575767
+      MaterialAsset: Assets/Materials/Stained wood 1.cqmat
+  - Entity: 6907849665927436827
     TagComponent:
       Tag: Back
       GameTag: Untagged
@@ -2204,15 +1915,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [1.3, 1.3]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/plywood.jpg
+      MaterialAsset: Assets/Materials/Plywood.cqmat
     RigidbodyComponent:
       BodyType: 2
       Mass: 1
@@ -2234,7 +1937,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 961027191160624033
+  - Entity: 959758746617826526
     TagComponent:
       Tag: Frame Top
       GameTag: Untagged
@@ -2248,16 +1951,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 1573824275642747771
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 1571939385313243168
     TagComponent:
       Tag: Frame Bottom
       GameTag: Untagged
@@ -2271,16 +1966,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 2848905479118211197
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 2850398329320074312
     TagComponent:
       Tag: Frame Left
       GameTag: Untagged
@@ -2294,16 +1981,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 7417351407853133690
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 7415255486263786715
     TagComponent:
       Tag: Frame Right
       GameTag: Untagged
@@ -2317,16 +1996,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 5726338532143948130
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 5728566442394596179
     TagComponent:
       Tag: Board
       GameTag: Untagged
@@ -2340,14 +2011,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      AlphaClip: true
-      AlphaClipThreshold: 0.5
-      TexturePath: Assets/Weapons/Textures/target.png
-  - Entity: 5123847855369527916
+      MaterialAsset: Assets/Materials/Target.cqmat
+  - Entity: 5124091593600247461
     TagComponent:
       Tag: Target 2
       GameTag: Untagged
@@ -2367,7 +2032,7 @@ Entities:
           Bool: false
         radius:
           Float: 0.31
-  - Entity: 4414905907358521276
+  - Entity: 4414402664943924621
     TagComponent:
       Tag: Foot
       GameTag: Untagged
@@ -2381,12 +2046,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.2, 0.2, 0.22, 1]
-      Metallic: 0.85
-      Roughness: 0.45
-      AO: 1
-      TexturePath: ""
-  - Entity: 5923195127772683246
+      MaterialAsset: Assets/Materials/Foot.cqmat
+  - Entity: 5923523013005321069
     TagComponent:
       Tag: Hinge
       GameTag: Untagged
@@ -2398,7 +2059,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 820337127156290173
+  - Entity: 821223141324317425
     TagComponent:
       Tag: Hinge Bracket
       GameTag: Untagged
@@ -2412,12 +2073,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.16, 0.16, 0.18, 1]
-      Metallic: 0.9
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 642996278639564412
+      MaterialAsset: Assets/Materials/Hinge Bracket.cqmat
+  - Entity: 642783193494230986
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -2431,16 +2088,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 1000543161683275078
+      MaterialAsset: Assets/Materials/Stained wood 1.cqmat
+  - Entity: 1001306451368470072
     TagComponent:
       Tag: Batten
       GameTag: Untagged
@@ -2454,16 +2103,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 1254779400401468300
+      MaterialAsset: Assets/Materials/Stained wood 1.cqmat
+  - Entity: 1255978088318058463
     TagComponent:
       Tag: Back
       GameTag: Untagged
@@ -2477,15 +2118,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [1.3, 1.3]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/plywood.jpg
+      MaterialAsset: Assets/Materials/Plywood.cqmat
     RigidbodyComponent:
       BodyType: 2
       Mass: 1
@@ -2507,7 +2140,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2187246503693170811
+  - Entity: 2188000954488479789
     TagComponent:
       Tag: Frame Top
       GameTag: Untagged
@@ -2521,16 +2154,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 1039764578583769871
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 1038645128584611527
     TagComponent:
       Tag: Frame Bottom
       GameTag: Untagged
@@ -2544,16 +2169,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 9150700233899163292
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 9149677530176004466
     TagComponent:
       Tag: Frame Left
       GameTag: Untagged
@@ -2567,16 +2184,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 5542147061024716269
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 5543464118185824217
     TagComponent:
       Tag: Frame Right
       GameTag: Untagged
@@ -2590,16 +2199,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 5276577310186673165
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 5277608837916623561
     TagComponent:
       Tag: Board
       GameTag: Untagged
@@ -2613,14 +2214,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      AlphaClip: true
-      AlphaClipThreshold: 0.5
-      TexturePath: Assets/Weapons/Textures/target.png
-  - Entity: 1374940850069864689
+      MaterialAsset: Assets/Materials/Target.cqmat
+  - Entity: 1374507418133881349
     TagComponent:
       Tag: Target 3
       GameTag: Untagged
@@ -2640,7 +2235,7 @@ Entities:
           Bool: false
         radius:
           Float: 0.31
-  - Entity: 6518344893036363508
+  - Entity: 6517322706984031475
     TagComponent:
       Tag: Foot
       GameTag: Untagged
@@ -2654,12 +2249,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.2, 0.2, 0.22, 1]
-      Metallic: 0.85
-      Roughness: 0.45
-      AO: 1
-      TexturePath: ""
-  - Entity: 1157811174838732959
+      MaterialAsset: Assets/Materials/Foot.cqmat
+  - Entity: 1159291511606370805
     TagComponent:
       Tag: Hinge
       GameTag: Untagged
@@ -2671,7 +2262,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 2588510983486241622
+  - Entity: 2588377209260820129
     TagComponent:
       Tag: Hinge Bracket
       GameTag: Untagged
@@ -2685,12 +2276,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.16, 0.16, 0.18, 1]
-      Metallic: 0.9
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 5873097728719980758
+      MaterialAsset: Assets/Materials/Hinge Bracket.cqmat
+  - Entity: 5874542303446051328
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -2704,16 +2291,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 2181431185998766199
+      MaterialAsset: Assets/Materials/Stained wood 1.cqmat
+  - Entity: 2180303274889754035
     TagComponent:
       Tag: Batten
       GameTag: Untagged
@@ -2727,16 +2306,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 7429853540410639558
+      MaterialAsset: Assets/Materials/Stained wood 1.cqmat
+  - Entity: 7429771926417387125
     TagComponent:
       Tag: Back
       GameTag: Untagged
@@ -2750,15 +2321,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [1.3, 1.3]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/plywood.jpg
+      MaterialAsset: Assets/Materials/Plywood.cqmat
     RigidbodyComponent:
       BodyType: 2
       Mass: 1
@@ -2780,7 +2343,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7568861531508248773
+  - Entity: 7569989311583372344
     TagComponent:
       Tag: Frame Top
       GameTag: Untagged
@@ -2794,16 +2357,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 7445592392161427202
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 7445559079244305190
     TagComponent:
       Tag: Frame Bottom
       GameTag: Untagged
@@ -2817,16 +2372,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 8614884516629186210
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 8613637377386119038
     TagComponent:
       Tag: Frame Left
       GameTag: Untagged
@@ -2840,16 +2387,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 1759694025011725572
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 1759867564206601004
     TagComponent:
       Tag: Frame Right
       GameTag: Untagged
@@ -2863,16 +2402,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 6117936478429257202
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 6116091213347407086
     TagComponent:
       Tag: Board
       GameTag: Untagged
@@ -2886,14 +2417,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      AlphaClip: true
-      AlphaClipThreshold: 0.5
-      TexturePath: Assets/Weapons/Textures/target.png
-  - Entity: 865412735548826125
+      MaterialAsset: Assets/Materials/Target.cqmat
+  - Entity: 866219526864680264
     TagComponent:
       Tag: Target 4
       GameTag: Untagged
@@ -2913,7 +2438,7 @@ Entities:
           Bool: false
         radius:
           Float: 0.31
-  - Entity: 7799637091983190111
+  - Entity: 7798579521817636257
     TagComponent:
       Tag: Foot
       GameTag: Untagged
@@ -2927,12 +2452,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.2, 0.2, 0.22, 1]
-      Metallic: 0.85
-      Roughness: 0.45
-      AO: 1
-      TexturePath: ""
-  - Entity: 3825025268639834084
+      MaterialAsset: Assets/Materials/Foot.cqmat
+  - Entity: 3824337194455054538
     TagComponent:
       Tag: Hinge
       GameTag: Untagged
@@ -2944,7 +2465,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5965349115615412039
+  - Entity: 5966938793643064404
     TagComponent:
       Tag: Hinge Bracket
       GameTag: Untagged
@@ -2958,12 +2479,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.16, 0.16, 0.18, 1]
-      Metallic: 0.9
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 5701453516460165443
+      MaterialAsset: Assets/Materials/Hinge Bracket.cqmat
+  - Entity: 5699410442439053691
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -2977,16 +2494,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 6562424556509085580
+      MaterialAsset: Assets/Materials/Stained wood 1.cqmat
+  - Entity: 6563314762612215061
     TagComponent:
       Tag: Batten
       GameTag: Untagged
@@ -3000,16 +2509,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 4472297379349810140
+      MaterialAsset: Assets/Materials/Stained wood 1.cqmat
+  - Entity: 4474102585233173326
     TagComponent:
       Tag: Back
       GameTag: Untagged
@@ -3023,15 +2524,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [1.3, 1.3]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/plywood.jpg
+      MaterialAsset: Assets/Materials/Plywood.cqmat
     RigidbodyComponent:
       BodyType: 2
       Mass: 1
@@ -3053,7 +2546,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5852953293019832168
+  - Entity: 5854152161212620553
     TagComponent:
       Tag: Frame Top
       GameTag: Untagged
@@ -3067,16 +2560,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 5141942493387583832
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 5142027934264800984
     TagComponent:
       Tag: Frame Bottom
       GameTag: Untagged
@@ -3090,16 +2575,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 2047803458517895708
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 2048218881696583685
     TagComponent:
       Tag: Frame Left
       GameTag: Untagged
@@ -3113,16 +2590,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 8233812673445350667
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 8233599768632019931
     TagComponent:
       Tag: Frame Right
       GameTag: Untagged
@@ -3136,16 +2605,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 8585185283326649948
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 8584787617615211774
     TagComponent:
       Tag: Board
       GameTag: Untagged
@@ -3159,14 +2620,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      AlphaClip: true
-      AlphaClipThreshold: 0.5
-      TexturePath: Assets/Weapons/Textures/target.png
-  - Entity: 7331286829500063113
+      MaterialAsset: Assets/Materials/Target.cqmat
+  - Entity: 7330181078332404780
     TagComponent:
       Tag: Target 5
       GameTag: Untagged
@@ -3186,7 +2641,7 @@ Entities:
           Bool: false
         radius:
           Float: 0.31
-  - Entity: 7728859089218009916
+  - Entity: 7729745111972877257
     TagComponent:
       Tag: Foot
       GameTag: Untagged
@@ -3200,12 +2655,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.2, 0.2, 0.22, 1]
-      Metallic: 0.85
-      Roughness: 0.45
-      AO: 1
-      TexturePath: ""
-  - Entity: 5602402938561273406
+      MaterialAsset: Assets/Materials/Foot.cqmat
+  - Entity: 5600302655524405397
     TagComponent:
       Tag: Hinge
       GameTag: Untagged
@@ -3217,7 +2668,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 873426960470457080
+  - Entity: 871718573887587573
     TagComponent:
       Tag: Hinge Bracket
       GameTag: Untagged
@@ -3231,12 +2682,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.16, 0.16, 0.18, 1]
-      Metallic: 0.9
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 7578147392199138582
+      MaterialAsset: Assets/Materials/Hinge Bracket.cqmat
+  - Entity: 7578716749165403828
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -3250,16 +2697,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 5461308645265067788
+      MaterialAsset: Assets/Materials/Stained wood 1.cqmat
+  - Entity: 5462172671341677726
     TagComponent:
       Tag: Batten
       GameTag: Untagged
@@ -3273,16 +2712,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 5219993051619474549
+      MaterialAsset: Assets/Materials/Stained wood 1.cqmat
+  - Entity: 5221600905912223209
     TagComponent:
       Tag: Back
       GameTag: Untagged
@@ -3296,15 +2727,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [1.3, 1.3]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/plywood.jpg
+      MaterialAsset: Assets/Materials/Plywood.cqmat
     RigidbodyComponent:
       BodyType: 2
       Mass: 1
@@ -3326,7 +2749,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4705703342805165218
+  - Entity: 4704566300676555648
     TagComponent:
       Tag: Frame Top
       GameTag: Untagged
@@ -3340,16 +2763,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 3672320196593067871
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 3670800515824362041
     TagComponent:
       Tag: Frame Bottom
       GameTag: Untagged
@@ -3363,16 +2778,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 1269440262368696393
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 1268338806220618654
     TagComponent:
       Tag: Frame Left
       GameTag: Untagged
@@ -3386,16 +2793,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 307137051372042895
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 307605800904334297
     TagComponent:
       Tag: Frame Right
       GameTag: Untagged
@@ -3409,16 +2808,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 6466542426813665690
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 6465542125701398845
     TagComponent:
       Tag: Board
       GameTag: Untagged
@@ -3432,14 +2823,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      AlphaClip: true
-      AlphaClipThreshold: 0.5
-      TexturePath: Assets/Weapons/Textures/target.png
-  - Entity: 4268151114884561108
+      MaterialAsset: Assets/Materials/Target.cqmat
+  - Entity: 4268421299484555176
     TagComponent:
       Tag: Moving Target 0
       GameTag: Untagged
@@ -3459,7 +2844,7 @@ Entities:
           Bool: true
         radius:
           Float: 0.31
-  - Entity: 4968332809864145261
+  - Entity: 4968857988783811167
     TagComponent:
       Tag: Foot
       GameTag: Untagged
@@ -3473,12 +2858,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.2, 0.2, 0.22, 1]
-      Metallic: 0.85
-      Roughness: 0.45
-      AO: 1
-      TexturePath: ""
-  - Entity: 2646568284980261619
+      MaterialAsset: Assets/Materials/Foot.cqmat
+  - Entity: 2647414579318422959
     TagComponent:
       Tag: Hinge
       GameTag: Untagged
@@ -3490,7 +2871,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 6934562843081510055
+  - Entity: 6934270706932349187
     TagComponent:
       Tag: Hinge Bracket
       GameTag: Untagged
@@ -3504,12 +2885,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.16, 0.16, 0.18, 1]
-      Metallic: 0.9
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 3742038022639661314
+      MaterialAsset: Assets/Materials/Hinge Bracket.cqmat
+  - Entity: 3740694261569390970
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -3523,16 +2900,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 3422119758638501247
+      MaterialAsset: Assets/Materials/Stained wood 1.cqmat
+  - Entity: 3421101395021515538
     TagComponent:
       Tag: Batten
       GameTag: Untagged
@@ -3546,16 +2915,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 3802438057415076669
+      MaterialAsset: Assets/Materials/Stained wood 1.cqmat
+  - Entity: 3801890316570318382
     TagComponent:
       Tag: Back
       GameTag: Untagged
@@ -3569,15 +2930,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [1.3, 1.3]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/plywood.jpg
+      MaterialAsset: Assets/Materials/Plywood.cqmat
     RigidbodyComponent:
       BodyType: 2
       Mass: 1
@@ -3599,7 +2952,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 8233804025826548936
+  - Entity: 8233608706915404883
     TagComponent:
       Tag: Frame Top
       GameTag: Untagged
@@ -3613,16 +2966,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 5662732587456042805
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 5661569079843163443
     TagComponent:
       Tag: Frame Bottom
       GameTag: Untagged
@@ -3636,16 +2981,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 2689771356507491584
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 2689777703161939019
     TagComponent:
       Tag: Frame Left
       GameTag: Untagged
@@ -3659,16 +2996,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 4883664088133642317
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 4882391007522341774
     TagComponent:
       Tag: Frame Right
       GameTag: Untagged
@@ -3682,16 +3011,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 6301676738334294433
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 6301648338765707932
     TagComponent:
       Tag: Board
       GameTag: Untagged
@@ -3705,14 +3026,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      AlphaClip: true
-      AlphaClipThreshold: 0.5
-      TexturePath: Assets/Weapons/Textures/target.png
-  - Entity: 3179124829383560976
+      MaterialAsset: Assets/Materials/Target.cqmat
+  - Entity: 3177706722712152312
     TagComponent:
       Tag: Moving Target 1
       GameTag: Untagged
@@ -3732,7 +3047,7 @@ Entities:
           Bool: true
         radius:
           Float: 0.31
-  - Entity: 5665637639234699586
+  - Entity: 5667671518291113061
     TagComponent:
       Tag: Foot
       GameTag: Untagged
@@ -3746,12 +3061,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.2, 0.2, 0.22, 1]
-      Metallic: 0.85
-      Roughness: 0.45
-      AO: 1
-      TexturePath: ""
-  - Entity: 3786863740058441956
+      MaterialAsset: Assets/Materials/Foot.cqmat
+  - Entity: 3785938354230027265
     TagComponent:
       Tag: Hinge
       GameTag: Untagged
@@ -3763,7 +3074,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 6130736310536298237
+  - Entity: 6130312154018789197
     TagComponent:
       Tag: Hinge Bracket
       GameTag: Untagged
@@ -3777,12 +3088,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.16, 0.16, 0.18, 1]
-      Metallic: 0.9
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 5002202274387862632
+      MaterialAsset: Assets/Materials/Hinge Bracket.cqmat
+  - Entity: 5002542795119049642
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -3796,16 +3103,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 5054518359627545932
+      MaterialAsset: Assets/Materials/Stained wood 1.cqmat
+  - Entity: 5053812798755783743
     TagComponent:
       Tag: Batten
       GameTag: Untagged
@@ -3819,16 +3118,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 7855240876256719805
+      MaterialAsset: Assets/Materials/Stained wood 1.cqmat
+  - Entity: 7855568201401893835
     TagComponent:
       Tag: Back
       GameTag: Untagged
@@ -3842,15 +3133,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [1.3, 1.3]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/plywood.jpg
+      MaterialAsset: Assets/Materials/Plywood.cqmat
     RigidbodyComponent:
       BodyType: 2
       Mass: 1
@@ -3872,7 +3155,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5438703665975844118
+  - Entity: 5439739731223179749
     TagComponent:
       Tag: Frame Top
       GameTag: Untagged
@@ -3886,16 +3169,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 6684723817592256521
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 6684211254799266735
     TagComponent:
       Tag: Frame Bottom
       GameTag: Untagged
@@ -3909,16 +3184,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 4157975583419261179
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 4157920450468400258
     TagComponent:
       Tag: Frame Left
       GameTag: Untagged
@@ -3932,16 +3199,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 5706376773476602911
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 5707997160141794282
     TagComponent:
       Tag: Frame Right
       GameTag: Untagged
@@ -3955,16 +3214,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 1647659780589777914
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 1646724867741403310
     TagComponent:
       Tag: Board
       GameTag: Untagged
@@ -3978,14 +3229,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      AlphaClip: true
-      AlphaClipThreshold: 0.5
-      TexturePath: Assets/Weapons/Textures/target.png
-  - Entity: 5851038840806160467
+      MaterialAsset: Assets/Materials/Target.cqmat
+  - Entity: 5851564111749332922
     TagComponent:
       Tag: Moving Target 2
       GameTag: Untagged
@@ -4005,7 +3250,7 @@ Entities:
           Bool: true
         radius:
           Float: 0.31
-  - Entity: 5598633546491332470
+  - Entity: 5599568430745603252
     TagComponent:
       Tag: Foot
       GameTag: Untagged
@@ -4019,12 +3264,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.2, 0.2, 0.22, 1]
-      Metallic: 0.85
-      Roughness: 0.45
-      AO: 1
-      TexturePath: ""
-  - Entity: 8912545817190112068
+      MaterialAsset: Assets/Materials/Foot.cqmat
+  - Entity: 8910450404451252602
     TagComponent:
       Tag: Hinge
       GameTag: Untagged
@@ -4036,7 +3277,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 3662086556394619246
+  - Entity: 3663016458892138918
     TagComponent:
       Tag: Hinge Bracket
       GameTag: Untagged
@@ -4050,12 +3291,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.16, 0.16, 0.18, 1]
-      Metallic: 0.9
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 7285825248148765924
+      MaterialAsset: Assets/Materials/Hinge Bracket.cqmat
+  - Entity: 7285572041490626083
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -4069,16 +3306,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 8143666574417039042
+      MaterialAsset: Assets/Materials/Stained wood 1.cqmat
+  - Entity: 8143602998888338295
     TagComponent:
       Tag: Batten
       GameTag: Untagged
@@ -4092,16 +3321,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 68986362321551123
+      MaterialAsset: Assets/Materials/Stained wood 1.cqmat
+  - Entity: 68373023085303171
     TagComponent:
       Tag: Back
       GameTag: Untagged
@@ -4115,15 +3336,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [1.3, 1.3]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/plywood.jpg
+      MaterialAsset: Assets/Materials/Plywood.cqmat
     RigidbodyComponent:
       BodyType: 2
       Mass: 1
@@ -4145,7 +3358,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7086259877594529211
+  - Entity: 7084317853728866338
     TagComponent:
       Tag: Frame Top
       GameTag: Untagged
@@ -4159,16 +3372,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 8720271646504763773
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 8719917214206233871
     TagComponent:
       Tag: Frame Bottom
       GameTag: Untagged
@@ -4182,16 +3387,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 1685032357034666964
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 1685910168173173779
     TagComponent:
       Tag: Frame Left
       GameTag: Untagged
@@ -4205,16 +3402,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 3009119037967018303
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 3009943384949348365
     TagComponent:
       Tag: Frame Right
       GameTag: Untagged
@@ -4228,16 +3417,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 6941745811530580968
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 6940600444051955119
     TagComponent:
       Tag: Board
       GameTag: Untagged
@@ -4251,14 +3432,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      AlphaClip: true
-      AlphaClipThreshold: 0.5
-      TexturePath: Assets/Weapons/Textures/target.png
-  - Entity: 8552514504990004432
+      MaterialAsset: Assets/Materials/Target.cqmat
+  - Entity: 8554408258186934374
     TagComponent:
       Tag: Platform Target
       GameTag: Untagged
@@ -4278,7 +3453,7 @@ Entities:
           Bool: false
         radius:
           Float: 0.31
-  - Entity: 9040240005741091838
+  - Entity: 9039459194483848329
     TagComponent:
       Tag: Foot
       GameTag: Untagged
@@ -4292,12 +3467,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.2, 0.2, 0.22, 1]
-      Metallic: 0.85
-      Roughness: 0.45
-      AO: 1
-      TexturePath: ""
-  - Entity: 4534669856315590508
+      MaterialAsset: Assets/Materials/Foot.cqmat
+  - Entity: 4533326473589362273
     TagComponent:
       Tag: Hinge
       GameTag: Untagged
@@ -4309,7 +3480,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 7821838100439945423
+  - Entity: 7821413427588275648
     TagComponent:
       Tag: Hinge Bracket
       GameTag: Untagged
@@ -4323,12 +3494,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.16, 0.16, 0.18, 1]
-      Metallic: 0.9
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 2819464882555836008
+      MaterialAsset: Assets/Materials/Hinge Bracket.cqmat
+  - Entity: 2821291872142515114
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -4342,16 +3509,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 880129346388251705
+      MaterialAsset: Assets/Materials/Stained wood 1.cqmat
+  - Entity: 878525904975756351
     TagComponent:
       Tag: Batten
       GameTag: Untagged
@@ -4365,16 +3524,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 8523461985192406737
+      MaterialAsset: Assets/Materials/Stained wood 1.cqmat
+  - Entity: 8524915907926218375
     TagComponent:
       Tag: Back
       GameTag: Untagged
@@ -4388,15 +3539,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      Tiling: [1.3, 1.3]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/plywood.jpg
+      MaterialAsset: Assets/Materials/Plywood.cqmat
     RigidbodyComponent:
       BodyType: 2
       Mass: 1
@@ -4418,7 +3561,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2574553173363591679
+  - Entity: 2575311480608595790
     TagComponent:
       Tag: Frame Top
       GameTag: Untagged
@@ -4432,16 +3575,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 2855213492326213883
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 2853100556225166438
     TagComponent:
       Tag: Frame Bottom
       GameTag: Untagged
@@ -4455,16 +3590,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 1151766417225583505
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 1151825470167707427
     TagComponent:
       Tag: Frame Left
       GameTag: Untagged
@@ -4478,16 +3605,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 5027055531215539917
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 5027228858286943631
     TagComponent:
       Tag: Frame Right
       GameTag: Untagged
@@ -4501,16 +3620,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.82, 0.72, 1]
-      Metallic: 0
-      Roughness: 0.65
-      AO: 1
-      Tiling: [2.5, 2.5]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Weapons/Textures/stained_wood.jpg
-  - Entity: 6183800699821896373
+      MaterialAsset: Assets/Materials/Stained wood.cqmat
+  - Entity: 6185337455315643435
     TagComponent:
       Tag: Board
       GameTag: Untagged
@@ -4524,14 +3635,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      AlphaClip: true
-      AlphaClipThreshold: 0.5
-      TexturePath: Assets/Weapons/Textures/target.png
-  - Entity: 8332811879225771391
+      MaterialAsset: Assets/Materials/Target.cqmat
+  - Entity: 8332756745976986783
     TagComponent:
       Tag: Player
       GameTag: Untagged
@@ -4579,7 +3684,7 @@ Entities:
     ConquerorScriptComponent:
       ScriptPath: Assets/Weapons/Scripts/FirstPersonShooter.cqs
       ClassName: ""
-  - Entity: 1021312771842218989
+  - Entity: 1021068979985204843
     TagComponent:
       Tag: Camera
       GameTag: Untagged
@@ -4606,7 +3711,7 @@ Entities:
       OrderInLayer: 0
     AudioListenerComponent:
       IsActive: true
-  - Entity: 2822702148596576895
+  - Entity: 2822559579959507697
     TagComponent:
       Tag: ViewModel
       GameTag: Untagged
@@ -4618,7 +3723,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 671637005191401286
+  - Entity: 672685688717109385
     TagComponent:
       Tag: Arms
       GameTag: Untagged
@@ -4638,7 +3743,7 @@ Entities:
       PlayOnAwake: true
       Parameters:
         []
-  - Entity: 3562533012832316186
+  - Entity: 3564412993974433098
     TagComponent:
       Tag: Pistol
       GameTag: Untagged
@@ -4686,7 +3791,7 @@ Entities:
           String: Assets/Weapons/Audio/pistol_shot.wav
         weaponName:
           String: Pistol
-  - Entity: 7830308243415078999
+  - Entity: 7830960963683261838
     TagComponent:
       Tag: Model
       GameTag: Untagged
@@ -4700,7 +3805,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Weapons/Models/Pistol/service_pistol_1k.gltf
-  - Entity: 8358331724500419160
+  - Entity: 8356776789164502507
     TagComponent:
       Tag: Sight
       GameTag: Untagged
@@ -4712,7 +3817,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 2854353789591383864
+  - Entity: 2853960533382104601
     TagComponent:
       Tag: Muzzle
       GameTag: Untagged
@@ -4733,7 +3838,7 @@ Entities:
       Quadratic: 0.032
       CastShadows: false
       Mode: 0
-  - Entity: 3069943703462630001
+  - Entity: 3070715891744176880
     TagComponent:
       Tag: Muzzle Flash
       GameTag: Untagged
@@ -4747,7 +3852,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 6128328026794024733
+  - Entity: 6128219879397485724
     TagComponent:
       Tag: Flash Front
       GameTag: Untagged
@@ -4761,16 +3866,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_flash.png
-  - Entity: 844547453342710432
+      MaterialAsset: Assets/Materials/Muzzle flash.cqmat
+  - Entity: 846554902403593609
     TagComponent:
       Tag: Flash Side A
       GameTag: Untagged
@@ -4784,16 +3882,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_side.png
-  - Entity: 1526182103332478772
+      MaterialAsset: Assets/Materials/Muzzle side.cqmat
+  - Entity: 1525005948406895896
     TagComponent:
       Tag: Flash Side B
       GameTag: Untagged
@@ -4807,16 +3898,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_side.png
-  - Entity: 3920820991150310750
+      MaterialAsset: Assets/Materials/Muzzle side.cqmat
+  - Entity: 3922199555253507154
     TagComponent:
       Tag: IK R
       GameTag: Untagged
@@ -4828,7 +3912,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 3641503076481095357
+  - Entity: 3643070823970381058
     TagComponent:
       Tag: IK L
       GameTag: Untagged
@@ -4840,7 +3924,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 3337522205588173739
+  - Entity: 3339063563458722433
     TagComponent:
       Tag: Rifle
       GameTag: Untagged
@@ -4902,7 +3986,7 @@ Entities:
           Float: 1
         weaponName:
           String: Marksman Rifle
-  - Entity: 5931662951783608055
+  - Entity: 5933068488280945020
     TagComponent:
       Tag: Model
       GameTag: Untagged
@@ -4916,7 +4000,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Weapons/Models/Rifle/bolt_action_rifle_7_62_1k.gltf
-  - Entity: 5526516209777265381
+  - Entity: 5527569770494117844
     TagComponent:
       Tag: Sight
       GameTag: Untagged
@@ -4928,7 +4012,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 2776450037211274830
+  - Entity: 2774235808567933351
     TagComponent:
       Tag: Muzzle
       GameTag: Untagged
@@ -4949,7 +4033,7 @@ Entities:
       Quadratic: 0.032
       CastShadows: false
       Mode: 0
-  - Entity: 7630427831967491318
+  - Entity: 7630021301371412066
     TagComponent:
       Tag: Muzzle Flash
       GameTag: Untagged
@@ -4963,7 +4047,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 6532356520290789631
+  - Entity: 6530335977760930997
     TagComponent:
       Tag: Flash Front
       GameTag: Untagged
@@ -4977,16 +4061,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_flash.png
-  - Entity: 6898893495766850386
+      MaterialAsset: Assets/Materials/Muzzle flash.cqmat
+  - Entity: 6897884366223113681
     TagComponent:
       Tag: Flash Side A
       GameTag: Untagged
@@ -5000,16 +4077,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_side.png
-  - Entity: 8275539357145979180
+      MaterialAsset: Assets/Materials/Muzzle side.cqmat
+  - Entity: 8277441768752635189
     TagComponent:
       Tag: Flash Side B
       GameTag: Untagged
@@ -5023,16 +4093,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_side.png
-  - Entity: 551116107349952896
+      MaterialAsset: Assets/Materials/Muzzle side.cqmat
+  - Entity: 550014696409494495
     TagComponent:
       Tag: IK R
       GameTag: Untagged
@@ -5044,7 +4107,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5023842128830232327
+  - Entity: 5025941943578619464
     TagComponent:
       Tag: IK L
       GameTag: Untagged
@@ -5056,7 +4119,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 7416458795588910700
+  - Entity: 7416148371591256203
     TagComponent:
       Tag: Elbow Hint R
       GameTag: Untagged
@@ -5068,7 +4131,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 7638297679851970434
+  - Entity: 7640164460411777875
     TagComponent:
       Tag: IK Arm R
       GameTag: Untagged
@@ -5086,10 +4149,10 @@ Entities:
       Mid: lowerarm_r
       Tip: hand_r
       Target: 0
-      Hint: 7416458795588910700
+      Hint: 7416148371591256203
       TargetPositionWeight: 1
       TargetRotationWeight: 1
-  - Entity: 3204131382599162510
+  - Entity: 3202238391738767911
     TagComponent:
       Tag: Elbow Hint L
       GameTag: Untagged
@@ -5101,7 +4164,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 8980595360970797746
+  - Entity: 8982013547225248148
     TagComponent:
       Tag: IK Arm L
       GameTag: Untagged
@@ -5119,10 +4182,10 @@ Entities:
       Mid: lowerarm_l
       Tip: hand_l
       Target: 0
-      Hint: 3204131382599162510
+      Hint: 3202238391738767911
       TargetPositionWeight: 1
       TargetRotationWeight: 1
-  - Entity: 4428393363407650611
+  - Entity: 4427933508910464016
     TagComponent:
       Tag: NavMesh Surface
       GameTag: Untagged
@@ -5144,7 +4207,7 @@ Entities:
       OverrideVoxelSize: false
       VoxelSize: 0.166
       BakeOnPlay: true
-  - Entity: 8514677674499342647
+  - Entity: 8515682814015810323
     TagComponent:
       Tag: Game
       GameTag: Untagged
@@ -5166,7 +4229,7 @@ Entities:
           Int: 0
         timeLimit:
           Int: 0
-  - Entity: 2209326659026730607
+  - Entity: 2210955953934091577
     TagComponent:
       Tag: HUD
       GameTag: Untagged
@@ -5192,7 +4255,7 @@ Entities:
       IgnoreReversedGraphics: true
       BlockingObjects: 0
       BlockingMask: 4294967295
-  - Entity: 7396990410821180438
+  - Entity: 7395084086494502331
     TagComponent:
       Tag: DamageVignette
       GameTag: Untagged
@@ -5230,7 +4293,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 152515843824324134
+  - Entity: 151475352694423056
     TagComponent:
       Tag: Crosshair
       GameTag: Untagged
@@ -5263,7 +4326,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 14
-  - Entity: 8529162897038332895
+  - Entity: 8528219188701547762
     TagComponent:
       Tag: CrossDot
       GameTag: Untagged
@@ -5296,7 +4359,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 1467528709852340801
+  - Entity: 1466567967406736779
     TagComponent:
       Tag: CrossTop
       GameTag: Untagged
@@ -5329,7 +4392,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 4486643102885463858
+  - Entity: 4486777635080252020
     TagComponent:
       Tag: CrossBottom
       GameTag: Untagged
@@ -5362,7 +4425,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 9183826036250832986
+  - Entity: 9184105465618320162
     TagComponent:
       Tag: CrossLeft
       GameTag: Untagged
@@ -5395,7 +4458,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 2194445632964074532
+  - Entity: 2194311783398476387
     TagComponent:
       Tag: CrossRight
       GameTag: Untagged
@@ -5428,7 +4491,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 2483034458947502343
+  - Entity: 2482183725653055291
     TagComponent:
       Tag: ScopeOverlay
       GameTag: Untagged
@@ -5466,7 +4529,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 4644930324022181074
+  - Entity: 4643745410322040138
     TagComponent:
       Tag: ScopeLeft
       GameTag: Untagged
@@ -5504,7 +4567,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 1719503863839931161
+  - Entity: 1718996247161094987
     TagComponent:
       Tag: ScopeRight
       GameTag: Untagged
@@ -5542,7 +4605,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 5977220736828151177
+  - Entity: 5977583795651359421
     TagComponent:
       Tag: Hitmarker
       GameTag: Untagged
@@ -5580,7 +4643,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 6109589299349232676
+  - Entity: 6110928692554167046
     TagComponent:
       Tag: HealthBack
       GameTag: Untagged
@@ -5613,7 +4676,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 4472423092616944433
+  - Entity: 4473977987686758430
     TagComponent:
       Tag: HealthFill
       GameTag: Untagged
@@ -5646,7 +4709,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 2730122170613238875
+  - Entity: 2730494173697450174
     TagComponent:
       Tag: HealthText
       GameTag: Untagged
@@ -5685,7 +4748,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 6262383892140158897
+  - Entity: 6264378050695495034
     TagComponent:
       Tag: HealthLabel
       GameTag: Untagged
@@ -5724,7 +4787,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 6330684600890700179
+  - Entity: 6331183973656366537
     TagComponent:
       Tag: AmmoText
       GameTag: Untagged
@@ -5763,7 +4826,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 363555878789926604
+  - Entity: 363773939778345506
     TagComponent:
       Tag: ReserveText
       GameTag: Untagged
@@ -5802,7 +4865,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 1160619461025596503
+  - Entity: 1160986550936864959
     TagComponent:
       Tag: WeaponText
       GameTag: Untagged
@@ -5841,7 +4904,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 7989202117238188053
+  - Entity: 7987317157966322642
     TagComponent:
       Tag: CenterText
       GameTag: Untagged
@@ -5880,7 +4943,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 2687134104820753799
+  - Entity: 2687910548067870512
     TagComponent:
       Tag: ScoreText
       GameTag: Untagged
@@ -5919,7 +4982,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 8156153078677523480
+  - Entity: 8158134792563002674
     TagComponent:
       Tag: InfoText
       GameTag: Untagged
@@ -5958,7 +5021,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 3844788711226784141
+  - Entity: 3845107248416848770
     TagComponent:
       Tag: HintText
       GameTag: Untagged
@@ -6204,321 +5267,321 @@ EditorCamera:
   Yaw: 0
   OrthographicSize: 10
 Hierarchy:
-  - Child: 8529162897038332895
-    Parent: 152515843824324134
-  - Child: 1467528709852340801
-    Parent: 152515843824324134
-  - Child: 4486643102885463858
-    Parent: 152515843824324134
-  - Child: 9183826036250832986
-    Parent: 152515843824324134
-  - Child: 2194445632964074532
-    Parent: 152515843824324134
-  - Child: 7396990410821180438
-    Parent: 2209326659026730607
-  - Child: 152515843824324134
-    Parent: 2209326659026730607
-  - Child: 2483034458947502343
-    Parent: 2209326659026730607
-  - Child: 4644930324022181074
-    Parent: 2209326659026730607
-  - Child: 1719503863839931161
-    Parent: 2209326659026730607
-  - Child: 5977220736828151177
-    Parent: 2209326659026730607
-  - Child: 6109589299349232676
-    Parent: 2209326659026730607
-  - Child: 4472423092616944433
-    Parent: 2209326659026730607
-  - Child: 2730122170613238875
-    Parent: 2209326659026730607
-  - Child: 6262383892140158897
-    Parent: 2209326659026730607
-  - Child: 6330684600890700179
-    Parent: 2209326659026730607
-  - Child: 363555878789926604
-    Parent: 2209326659026730607
-  - Child: 1160619461025596503
-    Parent: 2209326659026730607
-  - Child: 7989202117238188053
-    Parent: 2209326659026730607
-  - Child: 2687134104820753799
-    Parent: 2209326659026730607
-  - Child: 8156153078677523480
-    Parent: 2209326659026730607
-  - Child: 3844788711226784141
-    Parent: 2209326659026730607
-  - Child: 7638297679851970434
-    Parent: 671637005191401286
-  - Child: 8980595360970797746
-    Parent: 671637005191401286
-  - Child: 4968332809864145261
-    Parent: 4268151114884561108
-  - Child: 2646568284980261619
-    Parent: 4268151114884561108
-  - Child: 6934562843081510055
-    Parent: 4268151114884561108
-  - Child: 2439696498568332540
-    Parent: 6317739362210439686
-  - Child: 63890151806918614
-    Parent: 6317739362210439686
-  - Child: 6906941788253575767
-    Parent: 6317739362210439686
-  - Child: 961027191160624033
-    Parent: 6317739362210439686
-  - Child: 1573824275642747771
-    Parent: 6317739362210439686
-  - Child: 2848905479118211197
-    Parent: 6317739362210439686
-  - Child: 7417351407853133690
-    Parent: 6317739362210439686
-  - Child: 5726338532143948130
-    Parent: 6317739362210439686
-  - Child: 7728859089218009916
-    Parent: 7331286829500063113
-  - Child: 5602402938561273406
-    Parent: 7331286829500063113
-  - Child: 873426960470457080
-    Parent: 7331286829500063113
-  - Child: 7799637091983190111
-    Parent: 865412735548826125
-  - Child: 3825025268639834084
-    Parent: 865412735548826125
-  - Child: 5965349115615412039
-    Parent: 865412735548826125
-  - Child: 3763729789031022793
-    Parent: 8268798664012939944
-  - Child: 7101722803118938934
-    Parent: 8268798664012939944
-  - Child: 5530815700248614402
-    Parent: 8268798664012939944
-  - Child: 2351039140937298741
-    Parent: 8268798664012939944
-  - Child: 3034326076446597958
-    Parent: 8268798664012939944
-  - Child: 5726210933961178426
-    Parent: 8268798664012939944
-  - Child: 2675611536079366131
-    Parent: 8268798664012939944
-  - Child: 7008217663453235143
-    Parent: 8268798664012939944
-  - Child: 1021312771842218989
-    Parent: 8332811879225771391
-  - Child: 6518344893036363508
-    Parent: 1374940850069864689
-  - Child: 1157811174838732959
-    Parent: 1374940850069864689
-  - Child: 2588510983486241622
-    Parent: 1374940850069864689
-  - Child: 5701453516460165443
-    Parent: 3825025268639834084
-  - Child: 6562424556509085580
-    Parent: 3825025268639834084
-  - Child: 4472297379349810140
-    Parent: 3825025268639834084
-  - Child: 5852953293019832168
-    Parent: 3825025268639834084
-  - Child: 5141942493387583832
-    Parent: 3825025268639834084
-  - Child: 2047803458517895708
-    Parent: 3825025268639834084
-  - Child: 8233812673445350667
-    Parent: 3825025268639834084
-  - Child: 8585185283326649948
-    Parent: 3825025268639834084
-  - Child: 9040240005741091838
-    Parent: 8552514504990004432
-  - Child: 4534669856315590508
-    Parent: 8552514504990004432
-  - Child: 7821838100439945423
-    Parent: 8552514504990004432
-  - Child: 7630427831967491318
-    Parent: 2776450037211274830
-  - Child: 4414905907358521276
-    Parent: 5123847855369527916
-  - Child: 5923195127772683246
-    Parent: 5123847855369527916
-  - Child: 820337127156290173
-    Parent: 5123847855369527916
-  - Child: 5873097728719980758
-    Parent: 1157811174838732959
-  - Child: 2181431185998766199
-    Parent: 1157811174838732959
-  - Child: 7429853540410639558
-    Parent: 1157811174838732959
-  - Child: 7568861531508248773
-    Parent: 1157811174838732959
-  - Child: 7445592392161427202
-    Parent: 1157811174838732959
-  - Child: 8614884516629186210
-    Parent: 1157811174838732959
-  - Child: 1759694025011725572
-    Parent: 1157811174838732959
-  - Child: 6117936478429257202
-    Parent: 1157811174838732959
-  - Child: 5598633546491332470
-    Parent: 5851038840806160467
-  - Child: 8912545817190112068
-    Parent: 5851038840806160467
-  - Child: 3662086556394619246
-    Parent: 5851038840806160467
-  - Child: 5398975574960475739
-    Parent: 722101531947025814
-  - Child: 6317739362210439686
-    Parent: 722101531947025814
-  - Child: 8969016527876331201
-    Parent: 722101531947025814
-  - Child: 6128328026794024733
-    Parent: 3069943703462630001
-  - Child: 844547453342710432
-    Parent: 3069943703462630001
-  - Child: 1526182103332478772
-    Parent: 3069943703462630001
-  - Child: 642996278639564412
-    Parent: 5923195127772683246
-  - Child: 1000543161683275078
-    Parent: 5923195127772683246
-  - Child: 1254779400401468300
-    Parent: 5923195127772683246
-  - Child: 2187246503693170811
-    Parent: 5923195127772683246
-  - Child: 1039764578583769871
-    Parent: 5923195127772683246
-  - Child: 9150700233899163292
-    Parent: 5923195127772683246
-  - Child: 5542147061024716269
-    Parent: 5923195127772683246
-  - Child: 5276577310186673165
-    Parent: 5923195127772683246
-  - Child: 5665637639234699586
-    Parent: 3179124829383560976
-  - Child: 3786863740058441956
-    Parent: 3179124829383560976
-  - Child: 6130736310536298237
-    Parent: 3179124829383560976
-  - Child: 2357271718385517714
-    Parent: 4677051916258548671
-  - Child: 8268798664012939944
-    Parent: 4677051916258548671
-  - Child: 409047206900132984
-    Parent: 4677051916258548671
-  - Child: 3742038022639661314
-    Parent: 2646568284980261619
-  - Child: 3422119758638501247
-    Parent: 2646568284980261619
-  - Child: 3802438057415076669
-    Parent: 2646568284980261619
-  - Child: 8233804025826548936
-    Parent: 2646568284980261619
-  - Child: 5662732587456042805
-    Parent: 2646568284980261619
-  - Child: 2689771356507491584
-    Parent: 2646568284980261619
-  - Child: 4883664088133642317
-    Parent: 2646568284980261619
-  - Child: 6301676738334294433
-    Parent: 2646568284980261619
-  - Child: 5002202274387862632
-    Parent: 3786863740058441956
-  - Child: 5054518359627545932
-    Parent: 3786863740058441956
-  - Child: 7855240876256719805
-    Parent: 3786863740058441956
-  - Child: 5438703665975844118
-    Parent: 3786863740058441956
-  - Child: 6684723817592256521
-    Parent: 3786863740058441956
-  - Child: 4157975583419261179
-    Parent: 3786863740058441956
-  - Child: 5706376773476602911
-    Parent: 3786863740058441956
-  - Child: 1647659780589777914
-    Parent: 3786863740058441956
-  - Child: 7285825248148765924
-    Parent: 8912545817190112068
-  - Child: 8143666574417039042
-    Parent: 8912545817190112068
-  - Child: 68986362321551123
-    Parent: 8912545817190112068
-  - Child: 7086259877594529211
-    Parent: 8912545817190112068
-  - Child: 8720271646504763773
-    Parent: 8912545817190112068
-  - Child: 1685032357034666964
-    Parent: 8912545817190112068
-  - Child: 3009119037967018303
-    Parent: 8912545817190112068
-  - Child: 6941745811530580968
-    Parent: 8912545817190112068
-  - Child: 3069943703462630001
-    Parent: 2854353789591383864
-  - Child: 2819464882555836008
-    Parent: 4534669856315590508
-  - Child: 880129346388251705
-    Parent: 4534669856315590508
-  - Child: 8523461985192406737
-    Parent: 4534669856315590508
-  - Child: 2574553173363591679
-    Parent: 4534669856315590508
-  - Child: 2855213492326213883
-    Parent: 4534669856315590508
-  - Child: 1151766417225583505
-    Parent: 4534669856315590508
-  - Child: 5027055531215539917
-    Parent: 4534669856315590508
-  - Child: 6183800699821896373
-    Parent: 4534669856315590508
-  - Child: 7578147392199138582
-    Parent: 5602402938561273406
-  - Child: 5461308645265067788
-    Parent: 5602402938561273406
-  - Child: 5219993051619474549
-    Parent: 5602402938561273406
-  - Child: 4705703342805165218
-    Parent: 5602402938561273406
-  - Child: 3672320196593067871
-    Parent: 5602402938561273406
-  - Child: 1269440262368696393
-    Parent: 5602402938561273406
-  - Child: 307137051372042895
-    Parent: 5602402938561273406
-  - Child: 6466542426813665690
-    Parent: 5602402938561273406
-  - Child: 2822702148596576895
-    Parent: 1021312771842218989
-  - Child: 671637005191401286
-    Parent: 2822702148596576895
-  - Child: 3562533012832316186
-    Parent: 2822702148596576895
-  - Child: 3337522205588173739
-    Parent: 2822702148596576895
-  - Child: 7416458795588910700
-    Parent: 2822702148596576895
-  - Child: 3204131382599162510
-    Parent: 2822702148596576895
-  - Child: 7830308243415078999
-    Parent: 3562533012832316186
-  - Child: 8358331724500419160
-    Parent: 3562533012832316186
-  - Child: 2854353789591383864
-    Parent: 3562533012832316186
-  - Child: 3920820991150310750
-    Parent: 3562533012832316186
-  - Child: 3641503076481095357
-    Parent: 3562533012832316186
-  - Child: 5931662951783608055
-    Parent: 3337522205588173739
-  - Child: 5526516209777265381
-    Parent: 3337522205588173739
-  - Child: 2776450037211274830
-    Parent: 3337522205588173739
-  - Child: 551116107349952896
-    Parent: 3337522205588173739
-  - Child: 5023842128830232327
-    Parent: 3337522205588173739
-  - Child: 6532356520290789631
-    Parent: 7630427831967491318
-  - Child: 6898893495766850386
-    Parent: 7630427831967491318
-  - Child: 8275539357145979180
-    Parent: 7630427831967491318
+  - Child: 8528219188701547762
+    Parent: 151475352694423056
+  - Child: 1466567967406736779
+    Parent: 151475352694423056
+  - Child: 4486777635080252020
+    Parent: 151475352694423056
+  - Child: 9184105465618320162
+    Parent: 151475352694423056
+  - Child: 2194311783398476387
+    Parent: 151475352694423056
+  - Child: 7395084086494502331
+    Parent: 2210955953934091577
+  - Child: 151475352694423056
+    Parent: 2210955953934091577
+  - Child: 2482183725653055291
+    Parent: 2210955953934091577
+  - Child: 4643745410322040138
+    Parent: 2210955953934091577
+  - Child: 1718996247161094987
+    Parent: 2210955953934091577
+  - Child: 5977583795651359421
+    Parent: 2210955953934091577
+  - Child: 6110928692554167046
+    Parent: 2210955953934091577
+  - Child: 4473977987686758430
+    Parent: 2210955953934091577
+  - Child: 2730494173697450174
+    Parent: 2210955953934091577
+  - Child: 6264378050695495034
+    Parent: 2210955953934091577
+  - Child: 6331183973656366537
+    Parent: 2210955953934091577
+  - Child: 363773939778345506
+    Parent: 2210955953934091577
+  - Child: 1160986550936864959
+    Parent: 2210955953934091577
+  - Child: 7987317157966322642
+    Parent: 2210955953934091577
+  - Child: 2687910548067870512
+    Parent: 2210955953934091577
+  - Child: 8158134792563002674
+    Parent: 2210955953934091577
+  - Child: 3845107248416848770
+    Parent: 2210955953934091577
+  - Child: 7640164460411777875
+    Parent: 672685688717109385
+  - Child: 8982013547225248148
+    Parent: 672685688717109385
+  - Child: 4968857988783811167
+    Parent: 4268421299484555176
+  - Child: 2647414579318422959
+    Parent: 4268421299484555176
+  - Child: 6934270706932349187
+    Parent: 4268421299484555176
+  - Child: 2439954118187931815
+    Parent: 6317107889439766118
+  - Child: 64463941224113275
+    Parent: 6317107889439766118
+  - Child: 6907849665927436827
+    Parent: 6317107889439766118
+  - Child: 959758746617826526
+    Parent: 6317107889439766118
+  - Child: 1571939385313243168
+    Parent: 6317107889439766118
+  - Child: 2850398329320074312
+    Parent: 6317107889439766118
+  - Child: 7415255486263786715
+    Parent: 6317107889439766118
+  - Child: 5728566442394596179
+    Parent: 6317107889439766118
+  - Child: 7729745111972877257
+    Parent: 7330181078332404780
+  - Child: 5600302655524405397
+    Parent: 7330181078332404780
+  - Child: 871718573887587573
+    Parent: 7330181078332404780
+  - Child: 7798579521817636257
+    Parent: 866219526864680264
+  - Child: 3824337194455054538
+    Parent: 866219526864680264
+  - Child: 5966938793643064404
+    Parent: 866219526864680264
+  - Child: 3764035192490238543
+    Parent: 8270670289296070985
+  - Child: 7100379041959462750
+    Parent: 8270670289296070985
+  - Child: 5532278305000118033
+    Parent: 8270670289296070985
+  - Child: 2352972448710862185
+    Parent: 8270670289296070985
+  - Child: 3034275100392949316
+    Parent: 8270670289296070985
+  - Child: 5724190423600877273
+    Parent: 8270670289296070985
+  - Child: 2676915925052536108
+    Parent: 8270670289296070985
+  - Child: 7009235481674051264
+    Parent: 8270670289296070985
+  - Child: 1021068979985204843
+    Parent: 8332756745976986783
+  - Child: 6517322706984031475
+    Parent: 1374507418133881349
+  - Child: 1159291511606370805
+    Parent: 1374507418133881349
+  - Child: 2588377209260820129
+    Parent: 1374507418133881349
+  - Child: 5699410442439053691
+    Parent: 3824337194455054538
+  - Child: 6563314762612215061
+    Parent: 3824337194455054538
+  - Child: 4474102585233173326
+    Parent: 3824337194455054538
+  - Child: 5854152161212620553
+    Parent: 3824337194455054538
+  - Child: 5142027934264800984
+    Parent: 3824337194455054538
+  - Child: 2048218881696583685
+    Parent: 3824337194455054538
+  - Child: 8233599768632019931
+    Parent: 3824337194455054538
+  - Child: 8584787617615211774
+    Parent: 3824337194455054538
+  - Child: 9039459194483848329
+    Parent: 8554408258186934374
+  - Child: 4533326473589362273
+    Parent: 8554408258186934374
+  - Child: 7821413427588275648
+    Parent: 8554408258186934374
+  - Child: 7630021301371412066
+    Parent: 2774235808567933351
+  - Child: 4414402664943924621
+    Parent: 5124091593600247461
+  - Child: 5923523013005321069
+    Parent: 5124091593600247461
+  - Child: 821223141324317425
+    Parent: 5124091593600247461
+  - Child: 5874542303446051328
+    Parent: 1159291511606370805
+  - Child: 2180303274889754035
+    Parent: 1159291511606370805
+  - Child: 7429771926417387125
+    Parent: 1159291511606370805
+  - Child: 7569989311583372344
+    Parent: 1159291511606370805
+  - Child: 7445559079244305190
+    Parent: 1159291511606370805
+  - Child: 8613637377386119038
+    Parent: 1159291511606370805
+  - Child: 1759867564206601004
+    Parent: 1159291511606370805
+  - Child: 6116091213347407086
+    Parent: 1159291511606370805
+  - Child: 5599568430745603252
+    Parent: 5851564111749332922
+  - Child: 8910450404451252602
+    Parent: 5851564111749332922
+  - Child: 3663016458892138918
+    Parent: 5851564111749332922
+  - Child: 5398406327660664276
+    Parent: 721303652773921497
+  - Child: 6317107889439766118
+    Parent: 721303652773921497
+  - Child: 8971073008831337091
+    Parent: 721303652773921497
+  - Child: 6128219879397485724
+    Parent: 3070715891744176880
+  - Child: 846554902403593609
+    Parent: 3070715891744176880
+  - Child: 1525005948406895896
+    Parent: 3070715891744176880
+  - Child: 642783193494230986
+    Parent: 5923523013005321069
+  - Child: 1001306451368470072
+    Parent: 5923523013005321069
+  - Child: 1255978088318058463
+    Parent: 5923523013005321069
+  - Child: 2188000954488479789
+    Parent: 5923523013005321069
+  - Child: 1038645128584611527
+    Parent: 5923523013005321069
+  - Child: 9149677530176004466
+    Parent: 5923523013005321069
+  - Child: 5543464118185824217
+    Parent: 5923523013005321069
+  - Child: 5277608837916623561
+    Parent: 5923523013005321069
+  - Child: 5667671518291113061
+    Parent: 3177706722712152312
+  - Child: 3785938354230027265
+    Parent: 3177706722712152312
+  - Child: 6130312154018789197
+    Parent: 3177706722712152312
+  - Child: 2355743789268842331
+    Parent: 4679178087333518206
+  - Child: 8270670289296070985
+    Parent: 4679178087333518206
+  - Child: 408354331101585609
+    Parent: 4679178087333518206
+  - Child: 3740694261569390970
+    Parent: 2647414579318422959
+  - Child: 3421101395021515538
+    Parent: 2647414579318422959
+  - Child: 3801890316570318382
+    Parent: 2647414579318422959
+  - Child: 8233608706915404883
+    Parent: 2647414579318422959
+  - Child: 5661569079843163443
+    Parent: 2647414579318422959
+  - Child: 2689777703161939019
+    Parent: 2647414579318422959
+  - Child: 4882391007522341774
+    Parent: 2647414579318422959
+  - Child: 6301648338765707932
+    Parent: 2647414579318422959
+  - Child: 5002542795119049642
+    Parent: 3785938354230027265
+  - Child: 5053812798755783743
+    Parent: 3785938354230027265
+  - Child: 7855568201401893835
+    Parent: 3785938354230027265
+  - Child: 5439739731223179749
+    Parent: 3785938354230027265
+  - Child: 6684211254799266735
+    Parent: 3785938354230027265
+  - Child: 4157920450468400258
+    Parent: 3785938354230027265
+  - Child: 5707997160141794282
+    Parent: 3785938354230027265
+  - Child: 1646724867741403310
+    Parent: 3785938354230027265
+  - Child: 7285572041490626083
+    Parent: 8910450404451252602
+  - Child: 8143602998888338295
+    Parent: 8910450404451252602
+  - Child: 68373023085303171
+    Parent: 8910450404451252602
+  - Child: 7084317853728866338
+    Parent: 8910450404451252602
+  - Child: 8719917214206233871
+    Parent: 8910450404451252602
+  - Child: 1685910168173173779
+    Parent: 8910450404451252602
+  - Child: 3009943384949348365
+    Parent: 8910450404451252602
+  - Child: 6940600444051955119
+    Parent: 8910450404451252602
+  - Child: 3070715891744176880
+    Parent: 2853960533382104601
+  - Child: 2821291872142515114
+    Parent: 4533326473589362273
+  - Child: 878525904975756351
+    Parent: 4533326473589362273
+  - Child: 8524915907926218375
+    Parent: 4533326473589362273
+  - Child: 2575311480608595790
+    Parent: 4533326473589362273
+  - Child: 2853100556225166438
+    Parent: 4533326473589362273
+  - Child: 1151825470167707427
+    Parent: 4533326473589362273
+  - Child: 5027228858286943631
+    Parent: 4533326473589362273
+  - Child: 6185337455315643435
+    Parent: 4533326473589362273
+  - Child: 7578716749165403828
+    Parent: 5600302655524405397
+  - Child: 5462172671341677726
+    Parent: 5600302655524405397
+  - Child: 5221600905912223209
+    Parent: 5600302655524405397
+  - Child: 4704566300676555648
+    Parent: 5600302655524405397
+  - Child: 3670800515824362041
+    Parent: 5600302655524405397
+  - Child: 1268338806220618654
+    Parent: 5600302655524405397
+  - Child: 307605800904334297
+    Parent: 5600302655524405397
+  - Child: 6465542125701398845
+    Parent: 5600302655524405397
+  - Child: 2822559579959507697
+    Parent: 1021068979985204843
+  - Child: 672685688717109385
+    Parent: 2822559579959507697
+  - Child: 3564412993974433098
+    Parent: 2822559579959507697
+  - Child: 3339063563458722433
+    Parent: 2822559579959507697
+  - Child: 7416148371591256203
+    Parent: 2822559579959507697
+  - Child: 3202238391738767911
+    Parent: 2822559579959507697
+  - Child: 7830960963683261838
+    Parent: 3564412993974433098
+  - Child: 8356776789164502507
+    Parent: 3564412993974433098
+  - Child: 2853960533382104601
+    Parent: 3564412993974433098
+  - Child: 3922199555253507154
+    Parent: 3564412993974433098
+  - Child: 3643070823970381058
+    Parent: 3564412993974433098
+  - Child: 5933068488280945020
+    Parent: 3339063563458722433
+  - Child: 5527569770494117844
+    Parent: 3339063563458722433
+  - Child: 2774235808567933351
+    Parent: 3339063563458722433
+  - Child: 550014696409494495
+    Parent: 3339063563458722433
+  - Child: 5025941943578619464
+    Parent: 3339063563458722433
+  - Child: 6530335977760930997
+    Parent: 7630021301371412066
+  - Child: 6897884366223113681
+    Parent: 7630021301371412066
+  - Child: 8277441768752635189
+    Parent: 7630021301371412066

@@ -1,3 +1,5 @@
+#include "Scene/MeshRendererMaterial.h"
+#include "Renderer/Utilities/Renderer3D/Material.h"
 #include "LightmapBaker.h"
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"
@@ -161,7 +163,7 @@ namespace Conqueror
                 default: mesh = Renderer3D::GetCubeMesh(); break;
             }
             if (!mesh) continue;
-            glm::vec3 alb = mr.MaterialInstance ? mr.MaterialInstance->Albedo : glm::vec3(mr.Color);
+            glm::vec3 alb = MeshRendererMaterial::Shared(mr).Albedo;
             const auto& vs = mesh->GetVertices();
             const auto& is = mesh->GetIndices();
             for (size_t i = 0; i + 2 < is.size(); i += 3)

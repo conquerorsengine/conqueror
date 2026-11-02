@@ -7,6 +7,7 @@
 #include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
 #include "Scene/Components.h"
 #include "Scene/Scene.h"
+#include "Scene/MeshRendererMaterial.h"
 #include "UI/EditorUI.h"
 #include "ObjectPicker.h"
 
@@ -307,7 +308,6 @@ namespace Conqueror::Editor::MaterialEditorUI
             return false;
         component.MaterialInstance = mat;
         component.MaterialPath = path;
-        component.RuntimeMaterial.reset();
         return true;
     }
 
@@ -368,54 +368,32 @@ namespace Conqueror::Editor::MaterialEditorUI
             s_OpenGraph(materialPath);
     }
 
-    // Gömülü malzeme düzenlendi: Mesh Renderer alanlarına geri yaz
-    static void WriteBackEmbedded(MeshRendererComponent& c, const Material& m)
-    {
-        c.Color = glm::vec4(m.Albedo, m.Opacity);
-        if (m.Rendering != Material::RenderMode::Transparent && c.Color.a < 0.999f)
-            c.Color.a = 1.0f;
-        c.Metallic = m.Metallic;
-        c.Roughness = m.Roughness;
-        c.AO = m.AO;
-        c.EmissionColor = m.EmissionColor;
-        c.EmissionStrength = m.EmissionStrength;
-        c.Tiling = m.Tiling;
-        c.Offset = m.Offset;
-        c.WorldAlignedUV = m.WorldAligned;
-        c.AlignToObject = m.AlignToObject;
-        auto setTex = [](std::shared_ptr<Texture2D>& dst, std::string& path, const std::shared_ptr<Texture2D>& src) {
-            dst = src;
-            path = src ? src->GetPath() : std::string();
-        };
-        setTex(c.Texture, c.TexturePath, m.AlbedoMap);
-        setTex(c.NormalMap, c.NormalMapPath, m.NormalMap);
-        setTex(c.MaskMap, c.MaskMapPath, m.MapsScaleFactors ? m.AOMap : nullptr);
-        c.EmissionFromTexture = m.EmissionMap != nullptr;   // gömülü malzemede ışıma haritası = taban dokusu
-        c.Unlit = m.Shading == Material::ShadingModel::Unlit;
-        c.AlphaClip = m.Rendering == Material::RenderMode::Cutout;
-        c.AlphaClipThreshold = m.AlphaClip;
-    }
-
     void DrawMeshRendererMaterials(MeshRendererComponent& component, const std::string& entityName)
     {
-
         if (component.MaterialInstance && !component.MaterialPath.empty())
             if (std::string now = MaterialAsset::PathOf(component.MaterialInstance.get()); !now.empty())
                 component.MaterialPath = now;   // dosya taşındı / yeniden adlandırıldı
 
-        // ---- Materials yuvası (Unity: Materials > Element 0)
-        UI::BeginProperty("Material", "The material asset (.cqmat) this renderer draws with. Drag one from the Content Browser.");
         const float h = ImGui::GetFrameHeight();
-        std::string shown = component.MaterialInstance
-            ? (component.MaterialPath.empty() ? component.MaterialInstance->Name + " (Scene)"
-                                              : fs::path(component.MaterialPath).stem().string() + (MaterialAsset::IsReadOnly(component.MaterialPath) ? " (Packages)" : ""))
-            : std::string("Scene Material");
-        ImGui::PushStyleColor(ImGuiCol_Text, component.MaterialPath.empty() ? UI::Colors::TextDim : ImGui::GetStyleColorVec4(ImGuiCol_Text));
+        const bool isAsset = !component.MaterialPath.empty();
+        const bool packaged = isAsset && MaterialAsset::IsReadOnly(component.MaterialPath);
+
+        // ---- Materials listesi (Unity: Size + Element 0). İlkel ağların tek alt ağı var: tek yuva
+        UI::Text("Size", "%d", 1);
+        UI::BeginProperty("Element 0", "The material this renderer draws with. Drag a .cqmat from the Content Browser or use the target button.");
+        std::string shown;
+        if (!component.MaterialInstance)
+            shown = "None (Material)";
+        else if (isAsset)
+            shown = fs::path(component.MaterialPath).stem().string() + (packaged ? " (Packages)" : "");
+        else
+            shown = component.MaterialInstance->Name;   // "<ad> (Instance)": nesneye özel örnek
+        ImGui::PushStyleColor(ImGuiCol_Text, isAsset ? ImGui::GetStyleColorVec4(ImGuiCol_Text) : UI::Colors::TextDim);
         ImGui::Button((std::string(ICON_FA_CIRCLE_HALF_STROKE "  ") + shown + "##matslot").c_str(),
                       ImVec2(ImGui::GetContentRegionAvail().x - h - ImGui::GetStyle().ItemSpacing.x, 0.0f));
         ImGui::PopStyleColor();
-        if (ImGui::IsItemHovered() && !component.MaterialPath.empty())
-            ImGui::SetTooltip("%s", component.MaterialPath.c_str());
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("%s", isAsset ? component.MaterialPath.c_str() : "Instance: this object's own copy, stored in the scene");
         if (ImGui::BeginDragDropTarget())
         {
             if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
@@ -444,18 +422,15 @@ namespace Conqueror::Editor::MaterialEditorUI
         }
         UI::EndProperty();
 
-        // ---- Oluştur / kaldır
+        // ---- Malzeme işlemleri
         UI::BeginProperty("##matactions");
         if (ImGui::Button(ICON_FA_PLUS " New"))
         {
-            // Unity "Create > Material" ile aynı: gerçek dosya. Mevcut görünüm (gömülü alanlar veya sahne malzemesi) kopyalanır.
+            // Yeni .cqmat (Assets/Materials): görünen malzemenin kopyası
             std::string dir = Project::GetActive() ? (Project::GetAssetDirectory() / "Materials").string() : std::string("Materials");
             std::string path = UniqueMaterialPath(dir, entityName.empty() ? "New Material" : entityName);
-            Material from;
-            if (component.MaterialInstance)
-                from = *component.MaterialInstance;
-            else
-                FillMaterialFromMeshRenderer(from, component);
+            Material from = MeshRendererMaterial::Shared(component);
+            from.ParentPath.clear();
             if (auto mat = MaterialAsset::Create(path, &from))
             {
                 component.MaterialInstance = mat;
@@ -464,23 +439,17 @@ namespace Conqueror::Editor::MaterialEditorUI
             }
         }
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Save the current look as a new material asset in Assets/Materials and use it");
+            ImGui::SetTooltip("Save the current material as a new asset in Assets/Materials and use it");
         if (component.MaterialInstance)
         {
             ImGui::SameLine();
-            const bool packaged = MaterialAsset::IsReadOnly(component.MaterialPath);
-            ImGui::BeginDisabled(packaged);
+            ImGui::BeginDisabled(packaged || !isAsset);
             const bool openGraph = ImGui::Button(ICON_FA_DIAGRAM_PROJECT " Graph");
             ImGui::EndDisabled();
-            if (packaged && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-                ImGui::SetTooltip("Built-in material: click New to make an editable copy first");
+            if ((packaged || !isAsset) && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                ImGui::SetTooltip("Shader Graph edits a material asset: click New to make one first");
             if (openGraph)
-            {
-                if (component.MaterialPath.empty())
-                    OpenGraph(std::string());
-                else
-                    OpenGraph(component.MaterialPath);
-            }
+                OpenGraph(component.MaterialPath);
             ImGui::SameLine();
             if (ImGui::Button(ICON_FA_XMARK "##matremove"))
             {
@@ -488,48 +457,38 @@ namespace Conqueror::Editor::MaterialEditorUI
                 component.MaterialPath.clear();
             }
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Stop using the material (the asset file is kept)");
+                ImGui::SetTooltip("Remove the material (the asset file is kept)");
         }
         UI::EndProperty();
 
         // ---- Malzeme düzenleyici (Unity: Inspector'ın altında malzeme bölümü)
         ImGui::Spacing();
-        if (component.MaterialInstance)
+        if (!component.MaterialInstance)
         {
-            auto& mat = *component.MaterialInstance;
-            ImGui::TextColored(UI::Colors::Accent, ICON_FA_CIRCLE_HALF_STROKE);
-            ImGui::SameLine();
-            ImGui::TextUnformatted(component.MaterialPath.empty() ? (mat.Name + " (stored in the scene)").c_str()
-                                                                  : fs::path(component.MaterialPath).filename().string().c_str());
-            if (!mat.GraphNodes.empty() && mat.GraphInitialized && mat.MaterialShader)
-                UI::InfoBox("Shader Graph material: inputs wired in the graph override these values.", UI::InfoType::Info);
-            if (component.MaterialPath.empty())
-                UI::InfoBox("This material lives inside the scene. Use New Material to save it as an asset you can share.",
-                            UI::InfoType::Warning);
-            if (MaterialAsset::IsReadOnly(component.MaterialPath))
-            {
-                // Paket malzemesi (Unity Default-Material gibi): düzenlenemez, "New" ile kopyası çıkarılır
-                UI::InfoBox("Built-in material from Packages (read-only). Click New to make an editable copy in your project.",
-                            UI::InfoType::Info);
-                ImGui::BeginDisabled();
-                DrawProperties(mat);
-                ImGui::EndDisabled();
-            }
-            else if (DrawProperties(mat))
-                MarkDirty(component.MaterialInstance, component.MaterialPath);
+            UI::InfoBox("No material: the object draws with the default material.", UI::InfoType::Info);
+            return;
         }
-        else
+        auto& mat = *component.MaterialInstance;
+        ImGui::TextColored(UI::Colors::Accent, ICON_FA_CIRCLE_HALF_STROKE);
+        ImGui::SameLine();
+        ImGui::TextUnformatted(isAsset ? fs::path(component.MaterialPath).filename().string().c_str() : mat.Name.c_str());
+        if (!mat.GraphNodes.empty() && mat.GraphInitialized && mat.MaterialShader)
+            UI::InfoBox("Shader Graph material: inputs wired in the graph override these values.", UI::InfoType::Info);
+        if (packaged)
         {
-            ImGui::TextColored(UI::Colors::TextDim, ICON_FA_CIRCLE_HALF_STROKE "  Scene Material");
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("This object's own material, stored in the scene. Click New to save it as a material asset.");
-            Material temp;
-            FillMaterialFromMeshRenderer(temp, component);
-            Options opt;
-            opt.Embedded = true;
-            if (DrawProperties(temp, opt))
-                WriteBackEmbedded(component, temp);
+            UI::InfoBox("Built-in material from Packages (read-only). Click New to make an editable copy in your project.", UI::InfoType::Info);
+            ImGui::BeginDisabled();
+            DrawProperties(mat);
+            ImGui::EndDisabled();
         }
+        else if (!isAsset)
+        {
+            UI::InfoBox("Instance: this object's own copy of the material, stored in the scene. Click New to save it as an asset.",
+                        UI::InfoType::Info);
+            DrawProperties(mat);
+        }
+        else if (DrawProperties(mat))
+            MarkDirty(component.MaterialInstance, component.MaterialPath);
     }
 
     void DrawAssetInspector(const std::string& path)

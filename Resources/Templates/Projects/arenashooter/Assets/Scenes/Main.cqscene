@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 8316163652240217307
+  - Entity: 8317960929834431763
     TagComponent:
       Tag: Directional Light
       GameTag: Untagged
@@ -19,7 +19,7 @@ Entities:
       Intensity: 3.2
       CastShadows: true
       Mode: 0
-  - Entity: 8997963123889722751
+  - Entity: 8996090250863381476
     TagComponent:
       Tag: Impacts
       GameTag: Untagged
@@ -34,7 +34,7 @@ Entities:
     ConquerorScriptComponent:
       ScriptPath: Assets/Weapons/Scripts/Impacts.cqs
       ClassName: ""
-  - Entity: 7805701265399781196
+  - Entity: 7806088711085171160
     TagComponent:
       Tag: FX Sparks
       GameTag: Untagged
@@ -110,7 +110,7 @@ Entities:
       SizeOverLifetime:
         - [0, 1]
         - [1, 1]
-  - Entity: 3606015417553911026
+  - Entity: 3606402848510707592
     TagComponent:
       Tag: FX Dust
       GameTag: Untagged
@@ -186,7 +186,7 @@ Entities:
       SizeOverLifetime:
         - [0, 0.6]
         - [1, 2]
-  - Entity: 4282264129569165383
+  - Entity: 4281251074650627263
     TagComponent:
       Tag: FX Hit
       GameTag: Untagged
@@ -262,7 +262,7 @@ Entities:
       SizeOverLifetime:
         - [0, 1]
         - [1, 1]
-  - Entity: 2736199670786793713
+  - Entity: 2737987054856501736
     TagComponent:
       Tag: FX Muzzle
       GameTag: Untagged
@@ -338,7 +338,7 @@ Entities:
       SizeOverLifetime:
         - [0, 0.5]
         - [1, 2.5]
-  - Entity: 3914461860636642887
+  - Entity: 3915125543873190167
     TagComponent:
       Tag: FX Laser
       GameTag: Untagged
@@ -414,7 +414,7 @@ Entities:
       SizeOverLifetime:
         - [0, 1]
         - [1, 1]
-  - Entity: 6989901372568896739
+  - Entity: 6991479849326967900
     TagComponent:
       Tag: Floor
       GameTag: Untagged
@@ -428,12 +428,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -455,7 +450,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5313323818326506305
+  - Entity: 5312858319968946989
     TagComponent:
       Tag: Wall North
       GameTag: Untagged
@@ -469,12 +464,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGridDark.png
+      MaterialAsset: Assets/Materials/WorldGridDark.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -496,7 +486,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 775674618100860214
+  - Entity: 775771794820950453
     TagComponent:
       Tag: Wall South
       GameTag: Untagged
@@ -510,12 +500,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGridDark.png
+      MaterialAsset: Assets/Materials/WorldGridDark.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -537,7 +522,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1942622348576792270
+  - Entity: 1941670571879665843
     TagComponent:
       Tag: Wall East
       GameTag: Untagged
@@ -551,12 +536,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGridDark.png
+      MaterialAsset: Assets/Materials/WorldGridDark.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -578,7 +558,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 681022417014295862
+  - Entity: 681413421308928223
     TagComponent:
       Tag: Wall West
       GameTag: Untagged
@@ -592,12 +572,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGridDark.png
+      MaterialAsset: Assets/Materials/WorldGridDark.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -619,7 +594,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 931603931085054088
+  - Entity: 930590856886387890
     TagComponent:
       Tag: Tower
       GameTag: Untagged
@@ -633,12 +608,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -660,7 +630,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 612294449775370047
+  - Entity: 610494124986866918
     TagComponent:
       Tag: Tower Ramp N
       GameTag: Untagged
@@ -674,12 +644,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -701,7 +666,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7439794387127264771
+  - Entity: 7437925892620004513
     TagComponent:
       Tag: Tower Ramp S
       GameTag: Untagged
@@ -715,12 +680,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -742,7 +702,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6432393065788562966
+  - Entity: 6432218663168573814
     TagComponent:
       Tag: Tower Wall A
       GameTag: Untagged
@@ -756,12 +716,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGridOrange.png
+      MaterialAsset: Assets/Materials/WorldGridOrange.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -783,7 +738,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6235599576391062349
+  - Entity: 6237181349643444199
     TagComponent:
       Tag: Tower Wall B
       GameTag: Untagged
@@ -797,12 +752,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGridOrange.png
+      MaterialAsset: Assets/Materials/WorldGridOrange.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -824,7 +774,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5294236094718822307
+  - Entity: 5296022121587112350
     TagComponent:
       Tag: Cover 0
       GameTag: Untagged
@@ -838,12 +788,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -865,7 +810,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2868244931963548577
+  - Entity: 2867009775434377858
     TagComponent:
       Tag: Cover 1
       GameTag: Untagged
@@ -879,12 +824,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -906,7 +846,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4436757032898195413
+  - Entity: 4437488885826459070
     TagComponent:
       Tag: Cover 2
       GameTag: Untagged
@@ -920,12 +860,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -947,7 +882,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6597727848873051996
+  - Entity: 6595646068721635210
     TagComponent:
       Tag: Cover 3
       GameTag: Untagged
@@ -961,12 +896,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGridOrange.png
+      MaterialAsset: Assets/Materials/WorldGridOrange.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -988,7 +918,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 3159563922075454527
+  - Entity: 3161141041756314863
     TagComponent:
       Tag: Cover 4
       GameTag: Untagged
@@ -1002,12 +932,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1029,7 +954,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4368526792782139973
+  - Entity: 4370664660908270141
     TagComponent:
       Tag: Cover 5
       GameTag: Untagged
@@ -1043,12 +968,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1070,7 +990,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 9187400408586534293
+  - Entity: 9189476689299970337
     TagComponent:
       Tag: Cover 6
       GameTag: Untagged
@@ -1084,12 +1004,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1111,7 +1026,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1156873199583621958
+  - Entity: 1155645722458825138
     TagComponent:
       Tag: Cover 7
       GameTag: Untagged
@@ -1125,12 +1040,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGridOrange.png
+      MaterialAsset: Assets/Materials/WorldGridOrange.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1152,7 +1062,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6606894374926023120
+  - Entity: 6608962973880501533
     TagComponent:
       Tag: Cover 8
       GameTag: Untagged
@@ -1166,12 +1076,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1193,7 +1098,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 34270933540120654
+  - Entity: 35578655593562184
     TagComponent:
       Tag: Cover 9
       GameTag: Untagged
@@ -1207,12 +1112,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1234,7 +1134,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7570713654017802678
+  - Entity: 7572578843231329551
     TagComponent:
       Tag: Cover 10
       GameTag: Untagged
@@ -1248,12 +1148,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1275,7 +1170,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1213002869397723452
+  - Entity: 1212264398228979586
     TagComponent:
       Tag: Cover 11
       GameTag: Untagged
@@ -1289,12 +1184,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGridOrange.png
+      MaterialAsset: Assets/Materials/WorldGridOrange.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1316,7 +1206,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2483260020244739402
+  - Entity: 2482020463510379141
     TagComponent:
       Tag: Cover 12
       GameTag: Untagged
@@ -1330,12 +1220,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1357,7 +1242,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 476328785290950960
+  - Entity: 476226125730081460
     TagComponent:
       Tag: Cover 13
       GameTag: Untagged
@@ -1371,12 +1256,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1398,7 +1278,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7753011065909986939
+  - Entity: 7755090662045852180
     TagComponent:
       Tag: Cover 14
       GameTag: Untagged
@@ -1412,12 +1292,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1439,7 +1314,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4233856236034753652
+  - Entity: 4235083985837528669
     TagComponent:
       Tag: Cover 15
       GameTag: Untagged
@@ -1453,12 +1328,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGridOrange.png
+      MaterialAsset: Assets/Materials/WorldGridOrange.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1480,7 +1350,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2946901850874570137
+  - Entity: 2946154860570156778
     TagComponent:
       Tag: Pillar NE
       GameTag: Untagged
@@ -1494,12 +1364,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1523,7 +1388,7 @@ Entities:
       Direction: 1
       IsTrigger: false
       Version: 2
-  - Entity: 6447313953154637796
+  - Entity: 6448822902881668165
     TagComponent:
       Tag: Pillar SW
       GameTag: Untagged
@@ -1537,12 +1402,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1566,7 +1426,7 @@ Entities:
       Direction: 1
       IsTrigger: false
       Version: 2
-  - Entity: 6694629832240444599
+  - Entity: 6696780069976240126
     TagComponent:
       Tag: Pillar NW
       GameTag: Untagged
@@ -1580,12 +1440,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1609,7 +1464,7 @@ Entities:
       Direction: 1
       IsTrigger: false
       Version: 2
-  - Entity: 2370922684504210728
+  - Entity: 2369054192197734400
     TagComponent:
       Tag: Pillar SE
       GameTag: Untagged
@@ -1623,12 +1478,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1652,14 +1502,14 @@ Entities:
       Direction: 1
       IsTrigger: false
       Version: 2
-  - Entity: 8054531659103223703
+  - Entity: 8052671962886408969
     TagComponent:
       Tag: Bot 1
       GameTag: Untagged
       IsStatic: false
     TransformComponent:
       Position: [-20, 0.9, -20]
-      Rotation: [0, 0.110000804, 0]
+      Rotation: [0, 1.3418438, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1694,7 +1544,7 @@ Entities:
     ConquerorScriptComponent:
       ScriptPath: Assets/Weapons/Scripts/ShooterAI.cqs
       ClassName: ""
-  - Entity: 4359500152537167108
+  - Entity: 4361641579143297437
     TagComponent:
       Tag: Mesh
       GameTag: Untagged
@@ -1746,7 +1596,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 5262848466671070428
+  - Entity: 5264359870427629599
     TagComponent:
       Tag: Weapon
       GameTag: Untagged
@@ -1798,7 +1648,7 @@ Entities:
           String: Assets/Weapons/Audio/pistol_shot.wav
         weaponName:
           String: Pistol
-  - Entity: 4677093971406407238
+  - Entity: 4679177947184521684
     TagComponent:
       Tag: Model
       GameTag: Untagged
@@ -1812,7 +1662,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Weapons/Models/Pistol/service_pistol_1k.gltf
-  - Entity: 2357335323052796111
+  - Entity: 2355743650116817310
     TagComponent:
       Tag: Sight
       GameTag: Untagged
@@ -1824,7 +1674,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 8268878626005804057
+  - Entity: 8270670423079129326
     TagComponent:
       Tag: Muzzle
       GameTag: Untagged
@@ -1845,7 +1695,7 @@ Entities:
       Quadratic: 0.032
       CastShadows: false
       Mode: 0
-  - Entity: 409092660980591034
+  - Entity: 408354466763693227
     TagComponent:
       Tag: Muzzle Flash
       GameTag: Untagged
@@ -1859,7 +1709,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 3763652021711339543
+  - Entity: 3764035329222915235
     TagComponent:
       Tag: Flash Front
       GameTag: Untagged
@@ -1873,16 +1723,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_flash.png
-  - Entity: 7101678106930103358
+      MaterialAsset: Assets/Materials/Muzzle flash.cqmat
+  - Entity: 7100379178961408640
     TagComponent:
       Tag: Flash Side A
       GameTag: Untagged
@@ -1896,16 +1739,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_side.png
-  - Entity: 5530770315839456681
+      MaterialAsset: Assets/Materials/Muzzle side.cqmat
+  - Entity: 5532278440998040525
     TagComponent:
       Tag: Flash Side B
       GameTag: Untagged
@@ -1919,23 +1755,16 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_side.png
-  - Entity: 2351099438544529781
+      MaterialAsset: Assets/Materials/Muzzle side.cqmat
+  - Entity: 2352972309494339191
     TagComponent:
       Tag: Bot 2
       GameTag: Untagged
       IsStatic: false
     TransformComponent:
       Position: [20, 0.9, -20]
-      Rotation: [0, 3.4959443, 0]
+      Rotation: [0, 3.548683, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -1970,7 +1799,7 @@ Entities:
     ConquerorScriptComponent:
       ScriptPath: Assets/Weapons/Scripts/ShooterAI.cqs
       ClassName: ""
-  - Entity: 3034386708983246387
+  - Entity: 3034274961510396680
     TagComponent:
       Tag: Mesh
       GameTag: Untagged
@@ -2022,7 +1851,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 5726273456513910225
+  - Entity: 5724190559453092740
     TagComponent:
       Tag: Weapon
       GameTag: Untagged
@@ -2074,7 +1903,7 @@ Entities:
           String: Assets/Weapons/Audio/pistol_shot.wav
         weaponName:
           String: Pistol
-  - Entity: 2675691627900086333
+  - Entity: 2676916059799440695
     TagComponent:
       Tag: Model
       GameTag: Untagged
@@ -2088,7 +1917,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Weapons/Models/Pistol/service_pistol_1k.gltf
-  - Entity: 7008279464464403687
+  - Entity: 7009235617541099788
     TagComponent:
       Tag: Sight
       GameTag: Untagged
@@ -2100,7 +1929,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 722038684287802339
+  - Entity: 721303788615172809
     TagComponent:
       Tag: Muzzle
       GameTag: Untagged
@@ -2121,7 +1950,7 @@ Entities:
       Quadratic: 0.032
       CastShadows: false
       Mode: 0
-  - Entity: 5399070973366152136
+  - Entity: 5398406186439947534
     TagComponent:
       Tag: Muzzle Flash
       GameTag: Untagged
@@ -2135,7 +1964,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 6317784629624403774
+  - Entity: 6317107748223184512
     TagComponent:
       Tag: Flash Front
       GameTag: Untagged
@@ -2149,16 +1978,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_flash.png
-  - Entity: 8968919606234519317
+      MaterialAsset: Assets/Materials/Muzzle flash.cqmat
+  - Entity: 8971073142488825802
     TagComponent:
       Tag: Flash Side A
       GameTag: Untagged
@@ -2172,16 +1994,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_side.png
-  - Entity: 2439775439461658287
+      MaterialAsset: Assets/Materials/Muzzle side.cqmat
+  - Entity: 2439954252957533230
     TagComponent:
       Tag: Flash Side B
       GameTag: Untagged
@@ -2195,23 +2010,16 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_side.png
-  - Entity: 63791597945837884
+      MaterialAsset: Assets/Materials/Muzzle side.cqmat
+  - Entity: 64464074882884283
     TagComponent:
       Tag: Bot 3
       GameTag: Untagged
       IsStatic: false
     TransformComponent:
       Position: [-20, 0.9, 20]
-      Rotation: [0, 3.4585552, 0]
+      Rotation: [0, 0.29171658, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2246,7 +2054,7 @@ Entities:
     ConquerorScriptComponent:
       ScriptPath: Assets/Weapons/Scripts/ShooterAI.cqs
       ClassName: ""
-  - Entity: 6906898029448660104
+  - Entity: 6907849524710894369
     TagComponent:
       Tag: Mesh
       GameTag: Untagged
@@ -2298,7 +2106,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 960983043663084225
+  - Entity: 959758607593447687
     TagComponent:
       Tag: Weapon
       GameTag: Untagged
@@ -2350,7 +2158,7 @@ Entities:
           String: Assets/Weapons/Audio/pistol_shot.wav
         weaponName:
           String: Pistol
-  - Entity: 1573727732897379233
+  - Entity: 1571939520092963487
     TagComponent:
       Tag: Model
       GameTag: Untagged
@@ -2364,7 +2172,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Weapons/Models/Pistol/service_pistol_1k.gltf
-  - Entity: 2848810092784368742
+  - Entity: 2850398190312527015
     TagComponent:
       Tag: Sight
       GameTag: Untagged
@@ -2376,7 +2184,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 7417393477506105479
+  - Entity: 7415255621781698880
     TagComponent:
       Tag: Muzzle
       GameTag: Untagged
@@ -2397,7 +2205,7 @@ Entities:
       Quadratic: 0.032
       CastShadows: false
       Mode: 0
-  - Entity: 5726418537261553829
+  - Entity: 5728566575580460921
     TagComponent:
       Tag: Muzzle Flash
       GameTag: Untagged
@@ -2411,7 +2219,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5123910714835334754
+  - Entity: 5124091452914847941
     TagComponent:
       Tag: Flash Front
       GameTag: Untagged
@@ -2425,16 +2233,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_flash.png
-  - Entity: 4414860620612400653
+      MaterialAsset: Assets/Materials/Muzzle flash.cqmat
+  - Entity: 4414402799590293613
     TagComponent:
       Tag: Flash Side A
       GameTag: Untagged
@@ -2448,16 +2249,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_side.png
-  - Entity: 5923134327620581671
+      MaterialAsset: Assets/Materials/Muzzle side.cqmat
+  - Entity: 5923523147740806942
     TagComponent:
       Tag: Flash Side B
       GameTag: Untagged
@@ -2471,23 +2265,16 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_side.png
-  - Entity: 820277020695452453
+      MaterialAsset: Assets/Materials/Muzzle side.cqmat
+  - Entity: 821223278117464747
     TagComponent:
       Tag: Bot 4
       GameTag: Untagged
       IsStatic: false
     TransformComponent:
       Position: [20, 0.9, 12]
-      Rotation: [0, 2.2247086, 0]
+      Rotation: [0, 5.9044037, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2522,7 +2309,7 @@ Entities:
     ConquerorScriptComponent:
       ScriptPath: Assets/Weapons/Scripts/ShooterAI.cqs
       ClassName: ""
-  - Entity: 642950877070604461
+  - Entity: 642783054605022017
     TagComponent:
       Tag: Mesh
       GameTag: Untagged
@@ -2574,7 +2361,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 1000640706205154941
+  - Entity: 1001306313346007032
     TagComponent:
       Tag: Weapon
       GameTag: Untagged
@@ -2626,7 +2413,7 @@ Entities:
           String: Assets/Weapons/Audio/pistol_shot.wav
         weaponName:
           String: Pistol
-  - Entity: 1254682304738244548
+  - Entity: 1255977949012393878
     TagComponent:
       Tag: Model
       GameTag: Untagged
@@ -2640,7 +2427,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Weapons/Models/Pistol/service_pistol_1k.gltf
-  - Entity: 2187325296552764400
+  - Entity: 2188001091462484549
     TagComponent:
       Tag: Sight
       GameTag: Untagged
@@ -2652,7 +2439,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 1039669332796806817
+  - Entity: 1038644988389481437
     TagComponent:
       Tag: Muzzle
       GameTag: Untagged
@@ -2673,7 +2460,7 @@ Entities:
       Quadratic: 0.032
       CastShadows: false
       Mode: 0
-  - Entity: 9150620370502724543
+  - Entity: 9149677392137844840
     TagComponent:
       Tag: Muzzle Flash
       GameTag: Untagged
@@ -2687,7 +2474,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5542225509188940618
+  - Entity: 5543463978939704396
     TagComponent:
       Tag: Flash Front
       GameTag: Untagged
@@ -2701,16 +2488,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_flash.png
-  - Entity: 5276656101949000773
+      MaterialAsset: Assets/Materials/Muzzle flash.cqmat
+  - Entity: 5277608973807257049
     TagComponent:
       Tag: Flash Side A
       GameTag: Untagged
@@ -2724,16 +2504,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_side.png
-  - Entity: 1374896087433948703
+      MaterialAsset: Assets/Materials/Muzzle side.cqmat
+  - Entity: 1374507277545502655
     TagComponent:
       Tag: Flash Side B
       GameTag: Untagged
@@ -2747,23 +2520,16 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_side.png
-  - Entity: 6518267746719958412
+      MaterialAsset: Assets/Materials/Muzzle side.cqmat
+  - Entity: 6517322567193428162
     TagComponent:
       Tag: Bot 5
       GameTag: Untagged
       IsStatic: false
     TransformComponent:
       Position: [0, 0.9, -26]
-      Rotation: [0, 4.019004, 0]
+      Rotation: [0, 4.20835, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -2798,7 +2564,7 @@ Entities:
     ConquerorScriptComponent:
       ScriptPath: Assets/Weapons/Scripts/ShooterAI.cqs
       ClassName: ""
-  - Entity: 1157714271129413784
+  - Entity: 1159291371274841095
     TagComponent:
       Tag: Mesh
       GameTag: Untagged
@@ -2850,7 +2616,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 2588554771563583784
+  - Entity: 2588377345422003491
     TagComponent:
       Tag: Weapon
       GameTag: Untagged
@@ -2902,7 +2668,7 @@ Entities:
           String: Assets/Weapons/Audio/pistol_shot.wav
         weaponName:
           String: Pistol
-  - Entity: 5873035430847131110
+  - Entity: 5874542439340017568
     TagComponent:
       Tag: Model
       GameTag: Untagged
@@ -2916,7 +2682,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Weapons/Models/Pistol/service_pistol_1k.gltf
-  - Entity: 2181529771703355203
+  - Entity: 2180303409324255902
     TagComponent:
       Tag: Sight
       GameTag: Untagged
@@ -2928,7 +2694,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 7429951688364377110
+  - Entity: 7429771786109902506
     TagComponent:
       Tag: Muzzle
       GameTag: Untagged
@@ -2949,7 +2715,7 @@ Entities:
       Quadratic: 0.032
       CastShadows: false
       Mode: 0
-  - Entity: 7568763897334483094
+  - Entity: 7569989171006363272
     TagComponent:
       Tag: Muzzle Flash
       GameTag: Untagged
@@ -2963,7 +2729,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 7445671788564475172
+  - Entity: 7445559214216801326
     TagComponent:
       Tag: Flash Front
       GameTag: Untagged
@@ -2977,16 +2743,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_flash.png
-  - Entity: 8614944139198929367
+      MaterialAsset: Assets/Materials/Muzzle flash.cqmat
+  - Entity: 8613637512460457429
     TagComponent:
       Tag: Flash Side A
       GameTag: Untagged
@@ -3000,16 +2759,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_side.png
-  - Entity: 1759757071061869325
+      MaterialAsset: Assets/Materials/Muzzle side.cqmat
+  - Entity: 1759867424838697913
     TagComponent:
       Tag: Flash Side B
       GameTag: Untagged
@@ -3023,23 +2775,16 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_side.png
-  - Entity: 6117892771934401234
+      MaterialAsset: Assets/Materials/Muzzle side.cqmat
+  - Entity: 6116091347750833627
     TagComponent:
       Tag: Bot 6
       GameTag: Untagged
       IsStatic: false
     TransformComponent:
       Position: [-26, 0.9, 4]
-      Rotation: [0, 2.5629706, 0]
+      Rotation: [0, 5.8144965, 0]
       Scale: [1, 1, 1]
     LayerComponent:
       Layer: 0
@@ -3074,7 +2819,7 @@ Entities:
     ConquerorScriptComponent:
       ScriptPath: Assets/Weapons/Scripts/ShooterAI.cqs
       ClassName: ""
-  - Entity: 865475714829259560
+  - Entity: 866219660099507257
     TagComponent:
       Tag: Mesh
       GameTag: Untagged
@@ -3126,7 +2871,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 7799593829687011792
+  - Entity: 7798579657990833929
     TagComponent:
       Tag: Weapon
       GameTag: Untagged
@@ -3178,7 +2923,7 @@ Entities:
           String: Assets/Weapons/Audio/pistol_shot.wav
         weaponName:
           String: Pistol
-  - Entity: 3825071110610648485
+  - Entity: 3824337056692000508
     TagComponent:
       Tag: Model
       GameTag: Untagged
@@ -3192,7 +2937,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Weapons/Models/Pistol/service_pistol_1k.gltf
-  - Entity: 5965427505569618044
+  - Entity: 5966938652270458264
     TagComponent:
       Tag: Sight
       GameTag: Untagged
@@ -3204,7 +2949,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5701548452416953054
+  - Entity: 5699410577551407618
     TagComponent:
       Tag: Muzzle
       GameTag: Untagged
@@ -3225,7 +2970,7 @@ Entities:
       Quadratic: 0.032
       CastShadows: false
       Mode: 0
-  - Entity: 6562364242951142331
+  - Entity: 6563314898533654313
     TagComponent:
       Tag: Muzzle Flash
       GameTag: Untagged
@@ -3239,7 +2984,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 4472236172210107265
+  - Entity: 4474102720966337534
     TagComponent:
       Tag: Flash Front
       GameTag: Untagged
@@ -3253,16 +2998,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_flash.png
-  - Entity: 5852858576203830162
+      MaterialAsset: Assets/Materials/Muzzle flash.cqmat
+  - Entity: 5854152296610745122
     TagComponent:
       Tag: Flash Side A
       GameTag: Untagged
@@ -3276,16 +3014,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_side.png
-  - Entity: 5141844874237487954
+      MaterialAsset: Assets/Materials/Muzzle side.cqmat
+  - Entity: 5142027795841520230
     TagComponent:
       Tag: Flash Side B
       GameTag: Untagged
@@ -3299,16 +3030,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_side.png
-  - Entity: 2047760944139359812
+      MaterialAsset: Assets/Materials/Muzzle side.cqmat
+  - Entity: 2048218743612115593
     TagComponent:
       Tag: Player
       GameTag: Untagged
@@ -3356,7 +3080,7 @@ Entities:
     ConquerorScriptComponent:
       ScriptPath: Assets/Weapons/Scripts/FirstPersonShooter.cqs
       ClassName: ""
-  - Entity: 8233768551355518850
+  - Entity: 8233599904111962226
     TagComponent:
       Tag: Camera
       GameTag: Untagged
@@ -3383,7 +3107,7 @@ Entities:
       OrderInLayer: 0
     AudioListenerComponent:
       IsActive: true
-  - Entity: 8585247754546629744
+  - Entity: 8584787753901074561
     TagComponent:
       Tag: ViewModel
       GameTag: Untagged
@@ -3395,7 +3119,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 7331208563791158993
+  - Entity: 7330181215113064897
     TagComponent:
       Tag: Arms
       GameTag: Untagged
@@ -3415,7 +3139,7 @@ Entities:
       PlayOnAwake: true
       Parameters:
         []
-  - Entity: 7728798990064900058
+  - Entity: 7729744972697587773
     TagComponent:
       Tag: Pistol
       GameTag: Untagged
@@ -3463,7 +3187,7 @@ Entities:
           String: Assets/Weapons/Audio/pistol_shot.wav
         weaponName:
           String: Pistol
-  - Entity: 5602445044607327526
+  - Entity: 5600302788987879923
     TagComponent:
       Tag: Model
       GameTag: Untagged
@@ -3477,7 +3201,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Weapons/Models/Pistol/service_pistol_1k.gltf
-  - Entity: 873505838312498913
+  - Entity: 871718435142120957
     TagComponent:
       Tag: Sight
       GameTag: Untagged
@@ -3489,7 +3213,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 7578050987005248442
+  - Entity: 7578716609274882308
     TagComponent:
       Tag: Muzzle
       GameTag: Untagged
@@ -3510,7 +3234,7 @@ Entities:
       Quadratic: 0.032
       CastShadows: false
       Mode: 0
-  - Entity: 5461228732341129190
+  - Entity: 5462172805863520340
     TagComponent:
       Tag: Muzzle Flash
       GameTag: Untagged
@@ -3524,7 +3248,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5220091817930966124
+  - Entity: 5221601040362725217
     TagComponent:
       Tag: Flash Front
       GameTag: Untagged
@@ -3538,16 +3262,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_flash.png
-  - Entity: 4705801593107124802
+      MaterialAsset: Assets/Materials/Muzzle flash.cqmat
+  - Entity: 4704566434598552175
     TagComponent:
       Tag: Flash Side A
       GameTag: Untagged
@@ -3561,16 +3278,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_side.png
-  - Entity: 3672379955932936469
+      MaterialAsset: Assets/Materials/Muzzle side.cqmat
+  - Entity: 3670800650283285464
     TagComponent:
       Tag: Flash Side B
       GameTag: Untagged
@@ -3584,16 +3294,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_side.png
-  - Entity: 1269360811099832555
+      MaterialAsset: Assets/Materials/Muzzle side.cqmat
+  - Entity: 1268338667948122858
     TagComponent:
       Tag: IK R
       GameTag: Untagged
@@ -3605,7 +3308,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 307214933403678648
+  - Entity: 307605937569405670
     TagComponent:
       Tag: IK L
       GameTag: Untagged
@@ -3617,7 +3320,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 6466500340647318510
+  - Entity: 6465542261225585951
     TagComponent:
       Tag: Rifle
       GameTag: Untagged
@@ -3679,7 +3382,7 @@ Entities:
           Float: 1
         weaponName:
           String: Marksman Rifle
-  - Entity: 4268248118585704089
+  - Entity: 4268421436615321388
     TagComponent:
       Tag: Model
       GameTag: Untagged
@@ -3693,7 +3396,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Weapons/Models/Rifle/bolt_action_rifle_7_62_1k.gltf
-  - Entity: 4968395628244715229
+  - Entity: 4968858124236794871
     TagComponent:
       Tag: Sight
       GameTag: Untagged
@@ -3705,7 +3408,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 2646469560936915015
+  - Entity: 2647414714783861691
     TagComponent:
       Tag: Muzzle
       GameTag: Untagged
@@ -3726,7 +3429,7 @@ Entities:
       Quadratic: 0.032
       CastShadows: false
       Mode: 0
-  - Entity: 6934661567273763855
+  - Entity: 6934270567457088376
     TagComponent:
       Tag: Muzzle Flash
       GameTag: Untagged
@@ -3740,7 +3443,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 3741992247086747378
+  - Entity: 3740694396967752159
     TagComponent:
       Tag: Flash Front
       GameTag: Untagged
@@ -3754,16 +3457,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_flash.png
-  - Entity: 3422056304580227691
+      MaterialAsset: Assets/Materials/Muzzle flash.cqmat
+  - Entity: 3421101530137655220
     TagComponent:
       Tag: Flash Side A
       GameTag: Untagged
@@ -3777,16 +3473,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_side.png
-  - Entity: 3802340570021099183
+      MaterialAsset: Assets/Materials/Muzzle side.cqmat
+  - Entity: 3801890451968701773
     TagComponent:
       Tag: Flash Side B
       GameTag: Untagged
@@ -3800,16 +3489,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 0.99]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.68, 0.32]
-      EmissionStrength: 10
-      EmissionFromTexture: true
       CastShadows: false
-      TexturePath: Assets/Weapons/Textures/muzzle_side.png
-  - Entity: 8233707105872885525
+      MaterialAsset: Assets/Materials/Muzzle side.cqmat
+  - Entity: 8233608567440169052
     TagComponent:
       Tag: IK R
       GameTag: Untagged
@@ -3821,7 +3503,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5662793395882987374
+  - Entity: 5661569215241649626
     TagComponent:
       Tag: IK L
       GameTag: Untagged
@@ -3833,7 +3515,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 2689674899816116976
+  - Entity: 2689777838342153723
     TagComponent:
       Tag: Elbow Hint R
       GameTag: Untagged
@@ -3845,7 +3527,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 4883620820851070867
+  - Entity: 4882391142702702611
     TagComponent:
       Tag: IK Arm R
       GameTag: Untagged
@@ -3863,10 +3545,10 @@ Entities:
       Mid: lowerarm_r
       Tip: hand_r
       Target: 0
-      Hint: 2689674899816116976
+      Hint: 2689777838342153723
       TargetPositionWeight: 1
       TargetRotationWeight: 1
-  - Entity: 6301754434043032840
+  - Entity: 6301648473883118196
     TagComponent:
       Tag: Elbow Hint L
       GameTag: Untagged
@@ -3878,7 +3560,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 3179221303253929487
+  - Entity: 3177706583215918234
     TagComponent:
       Tag: IK Arm L
       GameTag: Untagged
@@ -3896,10 +3578,10 @@ Entities:
       Mid: lowerarm_l
       Tip: hand_l
       Target: 0
-      Hint: 6301754434043032840
+      Hint: 6301648473883118196
       TargetPositionWeight: 1
       TargetRotationWeight: 1
-  - Entity: 5665592877383384317
+  - Entity: 5667671378543026178
     TagComponent:
       Tag: NavMesh Surface
       GameTag: Untagged
@@ -3921,7 +3603,7 @@ Entities:
       OverrideVoxelSize: false
       VoxelSize: 0.166
       BakeOnPlay: true
-  - Entity: 3786961433608534306
+  - Entity: 3785938489423036968
     TagComponent:
       Tag: Game
       GameTag: Untagged
@@ -3943,7 +3625,7 @@ Entities:
           Int: 15
         timeLimit:
           Int: 600
-  - Entity: 6130694245951481281
+  - Entity: 6130312014259428396
     TagComponent:
       Tag: HUD
       GameTag: Untagged
@@ -3969,7 +3651,7 @@ Entities:
       IgnoreReversedGraphics: true
       BlockingObjects: 0
       BlockingMask: 4294967295
-  - Entity: 5002159607959175977
+  - Entity: 5002542655695038214
     TagComponent:
       Tag: DamageVignette
       GameTag: Untagged
@@ -4007,7 +3689,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 5054473048084538731
+  - Entity: 5053812659277511142
     TagComponent:
       Tag: Crosshair
       GameTag: Untagged
@@ -4040,7 +3722,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 14
-  - Entity: 7855177336731859222
+  - Entity: 7855568061722271551
     TagComponent:
       Tag: CrossDot
       GameTag: Untagged
@@ -4073,7 +3755,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 5438784797699605596
+  - Entity: 5439739591476389021
     TagComponent:
       Tag: CrossTop
       GameTag: Untagged
@@ -4106,7 +3788,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 6684662614145346019
+  - Entity: 6684211115369270425
     TagComponent:
       Tag: CrossBottom
       GameTag: Untagged
@@ -4139,7 +3821,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 4158019950726772689
+  - Entity: 4157920585587134758
     TagComponent:
       Tag: CrossLeft
       GameTag: Untagged
@@ -4172,7 +3854,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 5706419920552541416
+  - Entity: 5707997020728662682
     TagComponent:
       Tag: CrossRight
       GameTag: Untagged
@@ -4205,7 +3887,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 1647736960838027901
+  - Entity: 1646725003195067756
     TagComponent:
       Tag: ScopeOverlay
       GameTag: Untagged
@@ -4243,7 +3925,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 5851100662404661077
+  - Entity: 5851564247214281723
     TagComponent:
       Tag: ScopeLeft
       GameTag: Untagged
@@ -4281,7 +3963,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 5598553032673964000
+  - Entity: 5599568565877181543
     TagComponent:
       Tag: ScopeRight
       GameTag: Untagged
@@ -4319,7 +4001,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 8912589496649301343
+  - Entity: 8910450264705784277
     TagComponent:
       Tag: Hitmarker
       GameTag: Untagged
@@ -4357,7 +4039,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 3661991148283005241
+  - Entity: 3663016594276266720
     TagComponent:
       Tag: HealthBack
       GameTag: Untagged
@@ -4390,7 +4072,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 7285745198292019741
+  - Entity: 7285571901727886709
     TagComponent:
       Tag: HealthFill
       GameTag: Untagged
@@ -4423,7 +4105,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 8143709085815828911
+  - Entity: 8143603134339897025
     TagComponent:
       Tag: HealthText
       GameTag: Untagged
@@ -4462,7 +4144,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 69048665370348103
+  - Entity: 68372883405253960
     TagComponent:
       Tag: HealthLabel
       GameTag: Untagged
@@ -4501,7 +4183,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 7086178780218996171
+  - Entity: 7084317988859580301
     TagComponent:
       Tag: AmmoText
       GameTag: Untagged
@@ -4540,7 +4222,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 8720368567045345114
+  - Entity: 8719917349589096255
     TagComponent:
       Tag: ReserveText
       GameTag: Untagged
@@ -4579,7 +4261,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 1684955245450665883
+  - Entity: 1685910303373160790
     TagComponent:
       Tag: WeaponText
       GameTag: Untagged
@@ -4618,7 +4300,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 3009196252728981054
+  - Entity: 3009943520131061069
     TagComponent:
       Tag: CenterText
       GameTag: Untagged
@@ -4657,7 +4339,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 6941824761882981559
+  - Entity: 6940600579168555550
     TagComponent:
       Tag: ScoreText
       GameTag: Untagged
@@ -4696,7 +4378,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 8552612215764153731
+  - Entity: 8554408118760724668
     TagComponent:
       Tag: InfoText
       GameTag: Untagged
@@ -4735,7 +4417,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 9040197511064733944
+  - Entity: 9039459054788341533
     TagComponent:
       Tag: HintText
       GameTag: Untagged
@@ -4981,209 +4663,209 @@ EditorCamera:
   Yaw: 0
   OrthographicSize: 10
 Hierarchy:
-  - Child: 7855177336731859222
-    Parent: 5054473048084538731
-  - Child: 5438784797699605596
-    Parent: 5054473048084538731
-  - Child: 6684662614145346019
-    Parent: 5054473048084538731
-  - Child: 4158019950726772689
-    Parent: 5054473048084538731
-  - Child: 5706419920552541416
-    Parent: 5054473048084538731
-  - Child: 4883620820851070867
-    Parent: 7331208563791158993
-  - Child: 3179221303253929487
-    Parent: 7331208563791158993
-  - Child: 3741992247086747378
-    Parent: 6934661567273763855
-  - Child: 3422056304580227691
-    Parent: 6934661567273763855
-  - Child: 3802340570021099183
-    Parent: 6934661567273763855
-  - Child: 6934661567273763855
-    Parent: 2646469560936915015
-  - Child: 5220091817930966124
-    Parent: 5461228732341129190
-  - Child: 4705801593107124802
-    Parent: 5461228732341129190
-  - Child: 3672379955932936469
-    Parent: 5461228732341129190
-  - Child: 5461228732341129190
-    Parent: 7578050987005248442
-  - Child: 7331208563791158993
-    Parent: 8585247754546629744
-  - Child: 7728798990064900058
-    Parent: 8585247754546629744
-  - Child: 6466500340647318510
-    Parent: 8585247754546629744
-  - Child: 2689674899816116976
-    Parent: 8585247754546629744
-  - Child: 6301754434043032840
-    Parent: 8585247754546629744
-  - Child: 4472236172210107265
-    Parent: 6562364242951142331
-  - Child: 5852858576203830162
-    Parent: 6562364242951142331
-  - Child: 5141844874237487954
-    Parent: 6562364242951142331
-  - Child: 1573727732897379233
-    Parent: 960983043663084225
-  - Child: 2848810092784368742
-    Parent: 960983043663084225
-  - Child: 7417393477506105479
-    Parent: 960983043663084225
-  - Child: 7799593829687011792
-    Parent: 865475714829259560
-  - Child: 960983043663084225
-    Parent: 6906898029448660104
-  - Child: 865475714829259560
-    Parent: 6117892771934401234
-  - Child: 6906898029448660104
-    Parent: 63791597945837884
-  - Child: 6317784629624403774
-    Parent: 5399070973366152136
-  - Child: 8968919606234519317
-    Parent: 5399070973366152136
-  - Child: 2439775439461658287
-    Parent: 5399070973366152136
-  - Child: 7568763897334483094
-    Parent: 7429951688364377110
-  - Child: 2675691627900086333
-    Parent: 5726273456513910225
-  - Child: 7008279464464403687
-    Parent: 5726273456513910225
-  - Child: 722038684287802339
-    Parent: 5726273456513910225
-  - Child: 2588554771563583784
-    Parent: 1157714271129413784
-  - Child: 5726273456513910225
-    Parent: 3034386708983246387
-  - Child: 1157714271129413784
-    Parent: 6518267746719958412
-  - Child: 3034386708983246387
-    Parent: 2351099438544529781
-  - Child: 3763652021711339543
-    Parent: 409092660980591034
-  - Child: 7101678106930103358
-    Parent: 409092660980591034
-  - Child: 5530770315839456681
-    Parent: 409092660980591034
-  - Child: 9150620370502724543
-    Parent: 1039669332796806817
-  - Child: 5602445044607327526
-    Parent: 7728798990064900058
-  - Child: 873505838312498913
-    Parent: 7728798990064900058
-  - Child: 7578050987005248442
-    Parent: 7728798990064900058
-  - Child: 1269360811099832555
-    Parent: 7728798990064900058
-  - Child: 307214933403678648
-    Parent: 7728798990064900058
-  - Child: 409092660980591034
-    Parent: 8268878626005804057
-  - Child: 4268248118585704089
-    Parent: 6466500340647318510
-  - Child: 4968395628244715229
-    Parent: 6466500340647318510
-  - Child: 2646469560936915015
-    Parent: 6466500340647318510
-  - Child: 8233707105872885525
-    Parent: 6466500340647318510
-  - Child: 5662793395882987374
-    Parent: 6466500340647318510
-  - Child: 5399070973366152136
-    Parent: 722038684287802339
-  - Child: 8585247754546629744
-    Parent: 8233768551355518850
-  - Child: 4677093971406407238
-    Parent: 5262848466671070428
-  - Child: 2357335323052796111
-    Parent: 5262848466671070428
-  - Child: 8268878626005804057
-    Parent: 5262848466671070428
-  - Child: 5002159607959175977
-    Parent: 6130694245951481281
-  - Child: 5054473048084538731
-    Parent: 6130694245951481281
-  - Child: 1647736960838027901
-    Parent: 6130694245951481281
-  - Child: 5851100662404661077
-    Parent: 6130694245951481281
-  - Child: 5598553032673964000
-    Parent: 6130694245951481281
-  - Child: 8912589496649301343
-    Parent: 6130694245951481281
-  - Child: 3661991148283005241
-    Parent: 6130694245951481281
-  - Child: 7285745198292019741
-    Parent: 6130694245951481281
-  - Child: 8143709085815828911
-    Parent: 6130694245951481281
-  - Child: 69048665370348103
-    Parent: 6130694245951481281
-  - Child: 7086178780218996171
-    Parent: 6130694245951481281
-  - Child: 8720368567045345114
-    Parent: 6130694245951481281
-  - Child: 1684955245450665883
-    Parent: 6130694245951481281
-  - Child: 3009196252728981054
-    Parent: 6130694245951481281
-  - Child: 6941824761882981559
-    Parent: 6130694245951481281
-  - Child: 8552612215764153731
-    Parent: 6130694245951481281
-  - Child: 9040197511064733944
-    Parent: 6130694245951481281
-  - Child: 1000640706205154941
-    Parent: 642950877070604461
-  - Child: 8233768551355518850
-    Parent: 2047760944139359812
-  - Child: 5262848466671070428
-    Parent: 4359500152537167108
-  - Child: 642950877070604461
-    Parent: 820277020695452453
-  - Child: 4359500152537167108
-    Parent: 8054531659103223703
-  - Child: 5726418537261553829
-    Parent: 7417393477506105479
-  - Child: 5123910714835334754
-    Parent: 5726418537261553829
-  - Child: 4414860620612400653
-    Parent: 5726418537261553829
-  - Child: 5923134327620581671
-    Parent: 5726418537261553829
-  - Child: 6562364242951142331
-    Parent: 5701548452416953054
-  - Child: 1254682304738244548
-    Parent: 1000640706205154941
-  - Child: 2187325296552764400
-    Parent: 1000640706205154941
-  - Child: 1039669332796806817
-    Parent: 1000640706205154941
-  - Child: 5542225509188940618
-    Parent: 9150620370502724543
-  - Child: 5276656101949000773
-    Parent: 9150620370502724543
-  - Child: 1374896087433948703
-    Parent: 9150620370502724543
-  - Child: 5873035430847131110
-    Parent: 2588554771563583784
-  - Child: 2181529771703355203
-    Parent: 2588554771563583784
-  - Child: 7429951688364377110
-    Parent: 2588554771563583784
-  - Child: 7445671788564475172
-    Parent: 7568763897334483094
-  - Child: 8614944139198929367
-    Parent: 7568763897334483094
-  - Child: 1759757071061869325
-    Parent: 7568763897334483094
-  - Child: 3825071110610648485
-    Parent: 7799593829687011792
-  - Child: 5965427505569618044
-    Parent: 7799593829687011792
-  - Child: 5701548452416953054
-    Parent: 7799593829687011792
+  - Child: 7855568061722271551
+    Parent: 5053812659277511142
+  - Child: 5439739591476389021
+    Parent: 5053812659277511142
+  - Child: 6684211115369270425
+    Parent: 5053812659277511142
+  - Child: 4157920585587134758
+    Parent: 5053812659277511142
+  - Child: 5707997020728662682
+    Parent: 5053812659277511142
+  - Child: 4882391142702702611
+    Parent: 7330181215113064897
+  - Child: 3177706583215918234
+    Parent: 7330181215113064897
+  - Child: 3740694396967752159
+    Parent: 6934270567457088376
+  - Child: 3421101530137655220
+    Parent: 6934270567457088376
+  - Child: 3801890451968701773
+    Parent: 6934270567457088376
+  - Child: 6934270567457088376
+    Parent: 2647414714783861691
+  - Child: 5221601040362725217
+    Parent: 5462172805863520340
+  - Child: 4704566434598552175
+    Parent: 5462172805863520340
+  - Child: 3670800650283285464
+    Parent: 5462172805863520340
+  - Child: 5462172805863520340
+    Parent: 7578716609274882308
+  - Child: 7330181215113064897
+    Parent: 8584787753901074561
+  - Child: 7729744972697587773
+    Parent: 8584787753901074561
+  - Child: 6465542261225585951
+    Parent: 8584787753901074561
+  - Child: 2689777838342153723
+    Parent: 8584787753901074561
+  - Child: 6301648473883118196
+    Parent: 8584787753901074561
+  - Child: 4474102720966337534
+    Parent: 6563314898533654313
+  - Child: 5854152296610745122
+    Parent: 6563314898533654313
+  - Child: 5142027795841520230
+    Parent: 6563314898533654313
+  - Child: 1571939520092963487
+    Parent: 959758607593447687
+  - Child: 2850398190312527015
+    Parent: 959758607593447687
+  - Child: 7415255621781698880
+    Parent: 959758607593447687
+  - Child: 7798579657990833929
+    Parent: 866219660099507257
+  - Child: 959758607593447687
+    Parent: 6907849524710894369
+  - Child: 866219660099507257
+    Parent: 6116091347750833627
+  - Child: 6907849524710894369
+    Parent: 64464074882884283
+  - Child: 6317107748223184512
+    Parent: 5398406186439947534
+  - Child: 8971073142488825802
+    Parent: 5398406186439947534
+  - Child: 2439954252957533230
+    Parent: 5398406186439947534
+  - Child: 7569989171006363272
+    Parent: 7429771786109902506
+  - Child: 2676916059799440695
+    Parent: 5724190559453092740
+  - Child: 7009235617541099788
+    Parent: 5724190559453092740
+  - Child: 721303788615172809
+    Parent: 5724190559453092740
+  - Child: 2588377345422003491
+    Parent: 1159291371274841095
+  - Child: 5724190559453092740
+    Parent: 3034274961510396680
+  - Child: 1159291371274841095
+    Parent: 6517322567193428162
+  - Child: 3034274961510396680
+    Parent: 2352972309494339191
+  - Child: 3764035329222915235
+    Parent: 408354466763693227
+  - Child: 7100379178961408640
+    Parent: 408354466763693227
+  - Child: 5532278440998040525
+    Parent: 408354466763693227
+  - Child: 9149677392137844840
+    Parent: 1038644988389481437
+  - Child: 5600302788987879923
+    Parent: 7729744972697587773
+  - Child: 871718435142120957
+    Parent: 7729744972697587773
+  - Child: 7578716609274882308
+    Parent: 7729744972697587773
+  - Child: 1268338667948122858
+    Parent: 7729744972697587773
+  - Child: 307605937569405670
+    Parent: 7729744972697587773
+  - Child: 408354466763693227
+    Parent: 8270670423079129326
+  - Child: 4268421436615321388
+    Parent: 6465542261225585951
+  - Child: 4968858124236794871
+    Parent: 6465542261225585951
+  - Child: 2647414714783861691
+    Parent: 6465542261225585951
+  - Child: 8233608567440169052
+    Parent: 6465542261225585951
+  - Child: 5661569215241649626
+    Parent: 6465542261225585951
+  - Child: 5398406186439947534
+    Parent: 721303788615172809
+  - Child: 8584787753901074561
+    Parent: 8233599904111962226
+  - Child: 4679177947184521684
+    Parent: 5264359870427629599
+  - Child: 2355743650116817310
+    Parent: 5264359870427629599
+  - Child: 8270670423079129326
+    Parent: 5264359870427629599
+  - Child: 5002542655695038214
+    Parent: 6130312014259428396
+  - Child: 5053812659277511142
+    Parent: 6130312014259428396
+  - Child: 1646725003195067756
+    Parent: 6130312014259428396
+  - Child: 5851564247214281723
+    Parent: 6130312014259428396
+  - Child: 5599568565877181543
+    Parent: 6130312014259428396
+  - Child: 8910450264705784277
+    Parent: 6130312014259428396
+  - Child: 3663016594276266720
+    Parent: 6130312014259428396
+  - Child: 7285571901727886709
+    Parent: 6130312014259428396
+  - Child: 8143603134339897025
+    Parent: 6130312014259428396
+  - Child: 68372883405253960
+    Parent: 6130312014259428396
+  - Child: 7084317988859580301
+    Parent: 6130312014259428396
+  - Child: 8719917349589096255
+    Parent: 6130312014259428396
+  - Child: 1685910303373160790
+    Parent: 6130312014259428396
+  - Child: 3009943520131061069
+    Parent: 6130312014259428396
+  - Child: 6940600579168555550
+    Parent: 6130312014259428396
+  - Child: 8554408118760724668
+    Parent: 6130312014259428396
+  - Child: 9039459054788341533
+    Parent: 6130312014259428396
+  - Child: 1001306313346007032
+    Parent: 642783054605022017
+  - Child: 8233599904111962226
+    Parent: 2048218743612115593
+  - Child: 5264359870427629599
+    Parent: 4361641579143297437
+  - Child: 642783054605022017
+    Parent: 821223278117464747
+  - Child: 4361641579143297437
+    Parent: 8052671962886408969
+  - Child: 5728566575580460921
+    Parent: 7415255621781698880
+  - Child: 5124091452914847941
+    Parent: 5728566575580460921
+  - Child: 4414402799590293613
+    Parent: 5728566575580460921
+  - Child: 5923523147740806942
+    Parent: 5728566575580460921
+  - Child: 6563314898533654313
+    Parent: 5699410577551407618
+  - Child: 1255977949012393878
+    Parent: 1001306313346007032
+  - Child: 2188001091462484549
+    Parent: 1001306313346007032
+  - Child: 1038644988389481437
+    Parent: 1001306313346007032
+  - Child: 5543463978939704396
+    Parent: 9149677392137844840
+  - Child: 5277608973807257049
+    Parent: 9149677392137844840
+  - Child: 1374507277545502655
+    Parent: 9149677392137844840
+  - Child: 5874542439340017568
+    Parent: 2588377345422003491
+  - Child: 2180303409324255902
+    Parent: 2588377345422003491
+  - Child: 7429771786109902506
+    Parent: 2588377345422003491
+  - Child: 7445559214216801326
+    Parent: 7569989171006363272
+  - Child: 8613637512460457429
+    Parent: 7569989171006363272
+  - Child: 1759867424838697913
+    Parent: 7569989171006363272
+  - Child: 3824337056692000508
+    Parent: 7798579657990833929
+  - Child: 5966938652270458264
+    Parent: 7798579657990833929
+  - Child: 5699410577551407618
+    Parent: 7798579657990833929

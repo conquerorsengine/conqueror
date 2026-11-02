@@ -1,0 +1,21 @@
+Material:
+  Name: Camera Dolly
+  Albedo: [0.035, 0.037, 0.04]
+  Opacity: 1
+  Metallic: 0.3
+  Roughness: 0.5
+  AO: 1
+  EmissionColor: [0, 0, 0]
+  EmissionStrength: 0
+  Tiling: [1, 1]
+  Offset: [0, 0]
+  RenderMode: 0
+  Culling: 0
+  AlphaClip: 0.5
+  NextGraphNodeID: 1
+  NextGraphLinkID: 1
+  GraphInitialized: false
+  GraphNodes:
+    []
+  GraphLinks:
+    []

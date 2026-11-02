@@ -78,6 +78,9 @@ namespace Conqueror::Editor
         void DrawPreview(const ViewportToolContext& ctx, Entity e, const std::vector<glm::ivec2>& cells, unsigned int color);
 
         void DrawCreate();
+        // Tile Palette varlığı (.cqpalette): karo varlıklarından (.cqtile) oluşan, projeler arası paylaşılan palet
+        void DrawPaletteAsset(Entity e, TilemapComponent& map);
+        int EnsureTileInMap(Entity e, TilemapComponent& map, const std::string& tileAsset);
         void DrawToolbar();
         void DrawPalette(Entity e, TilemapComponent& map);
         void DrawTileEditor(Entity e, TilemapComponent& map);
@@ -87,6 +90,13 @@ namespace Conqueror::Editor
         Scene* m_Context = nullptr;
         Tool m_Tool = Tool::Paint;
         int m_SelectedTile = 0;
+        std::string m_PaletteAsset;   // seçili .cqpalette (proje göreli)
+    public:
+        void SetPaletteAsset(const std::string& path) { m_PaletteAsset = path; }
+        const std::string& GetPaletteAsset() const { return m_PaletteAsset; }
+        // Otomasyon/test: palet varlığının i. karosunu seç (haritaya ekler)
+        bool SelectPaletteAssetTile(int index);
+    private:
         int m_BrushSize = 1;
         glm::vec4 m_PaintColor{ 1.0f };
         float m_Elevation = 0.0f;

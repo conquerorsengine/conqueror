@@ -1,0 +1,22 @@
+Material:
+  Name: Linen
+  Albedo: [0.95, 0.9, 0.8]
+  Opacity: 1
+  Metallic: 0
+  Roughness: 0.9
+  AO: 1
+  EmissionColor: [1, 0.78, 0.5]
+  EmissionStrength: 0
+  Tiling: [1, 1]
+  Offset: [0, 0]
+  RenderMode: 0
+  Culling: 0
+  AlphaClip: 0.5
+  AlbedoMap: Assets/Textures/linen.jpg
+  NextGraphNodeID: 1
+  NextGraphLinkID: 1
+  GraphInitialized: false
+  GraphNodes:
+    []
+  GraphLinks:
+    []

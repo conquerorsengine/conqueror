@@ -29,6 +29,12 @@ namespace Conqueror
         static Entity FindInstanceRoot(Entity entity);
 
         static bool IsPrefabPath(const std::string& path);
+
+        // Prefab Variant (Unity): tabandan türeyen, yalnız farkları saklayan prefab. Taban değişince variant da değişir;
+        // variant örneğine Apply yalnız farkları yazar. Variant'ın tabanı da bir variant olabilir.
+        static bool CreateVariant(const std::filesystem::path& basePath, const std::filesystem::path& variantPath);
+        static bool IsVariant(const std::filesystem::path& path);
+        static std::string GetVariantBase(const std::filesystem::path& path);   // proje göreli (variant değilse boş)
         // Proje göreli yol -> mutlak (bulunamazsa olduğu gibi)
         static std::filesystem::path Resolve(const std::string& path);
         // Mutlak yol -> proje göreli (proje dışındaysa mutlak)

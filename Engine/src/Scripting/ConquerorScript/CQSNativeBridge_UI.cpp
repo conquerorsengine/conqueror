@@ -1,3 +1,5 @@
+#include "Scene/MeshRendererMaterial.h"
+#include "Renderer/Utilities/Renderer3D/Material.h"
 #include "CQSNativeBridge.h"
 #include "CQSValue.h"
 #include "Scripting/NativeRegistry.h"
@@ -693,7 +695,7 @@ namespace Conqueror::CQS
             if (!e) return Value::MakeBool(false);
             const glm::vec4 c = ReadColor(argc, args, 1);
             if (auto* sr = Get<SpriteRendererComponent>(e)) { sr->Color = c; return Value::MakeBool(true); }
-            if (auto* mr = Get<MeshRendererComponent>(e)) { mr->Color = c; return Value::MakeBool(true); }
+            if (auto* mr = Get<MeshRendererComponent>(e)) { MeshRendererMaterial::SetColor(*mr, c); return Value::MakeBool(true); }
             if (auto* img = Get<UIImageComponent>(e)) { img->Color = c; return Value::MakeBool(true); }
             if (auto* t = Get<UITextComponent>(e)) { t->Color = c; return Value::MakeBool(true); }
             if (auto* tr = Get<TextRendererComponent>(e)) { tr->Color = c; return Value::MakeBool(true); }
@@ -703,7 +705,7 @@ namespace Conqueror::CQS
             Entity e = TargetArg(argc, args);
             glm::vec4 c(1.0f);
             if (auto* sr = Get<SpriteRendererComponent>(e)) c = sr->Color;
-            else if (auto* mr = Get<MeshRendererComponent>(e)) c = mr->Color;
+            else if (auto* mr = Get<MeshRendererComponent>(e)) c = MeshRendererMaterial::GetColor(*mr);
             else if (auto* img = Get<UIImageComponent>(e)) c = img->Color;
             else if (auto* t = Get<UITextComponent>(e)) c = t->Color;
             else if (auto* tr = Get<TextRendererComponent>(e)) c = tr->Color;

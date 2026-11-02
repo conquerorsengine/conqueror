@@ -11,6 +11,10 @@
 #include "Core/Serialization/SceneSerializer.h"
 #include "stb_image_write.h"
 
+#include <yaml-cpp/yaml.h>
+#include <chrono>
+#include <fstream>
+
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <algorithm>
@@ -526,14 +530,250 @@ namespace Conqueror::GridSystem
     }
 
     // ════════════════════════════════════════
+    //  Karo varlıkları
+    // ════════════════════════════════════════
+    void EmitTileDefinition(YAML::Emitter& out, const TileDefinition& t)
+    {
+        out << YAML::BeginMap;
+        out << YAML::Key << "Name" << YAML::Value << t.Name;
+        out << YAML::Key << "Color" << YAML::Value << YAML::Flow << YAML::BeginSeq << t.Color.r << t.Color.g << t.Color.b << t.Color.a << YAML::EndSeq;
+        out << YAML::Key << "Texture" << YAML::Value << t.Texture;
+        out << YAML::Key << "Solid" << YAML::Value << t.Solid;
+        out << YAML::Key << "Walkable" << YAML::Value << t.Walkable;
+        out << YAML::Key << "Cost" << YAML::Value << t.Cost;
+        out << YAML::Key << "Height" << YAML::Value << t.Height;
+        if (t.Autotile)
+            out << YAML::Key << "Autotile" << YAML::Value << t.Autotile;
+        if (t.Terrain >= 0)
+            out << YAML::Key << "Terrain" << YAML::Value << t.Terrain;
+        if (!t.Asset.empty())
+            out << YAML::Key << "Asset" << YAML::Value << t.Asset;
+        if (!t.Rules.empty())
+        {
+            out << YAML::Key << "Rules" << YAML::Value << YAML::BeginSeq;
+            for (const auto& r : t.Rules)
+            {
+                out << YAML::BeginMap;
+                out << YAML::Key << "Neighbors" << YAML::Value << YAML::Flow << YAML::BeginSeq;
+                for (int n : r.Neighbors) out << n;
+                out << YAML::EndSeq;
+                out << YAML::Key << "Texture" << YAML::Value << r.Texture;
+                out << YAML::Key << "Rotation" << YAML::Value << r.Rotation;
+                out << YAML::EndMap;
+            }
+            out << YAML::EndSeq;
+        }
+        if (!t.Frames.empty())
+        {
+            out << YAML::Key << "Frames" << YAML::Value << YAML::BeginSeq;
+            for (const auto& f : t.Frames) out << f;
+            out << YAML::EndSeq;
+            out << YAML::Key << "FrameRate" << YAML::Value << t.FrameRate;
+        }
+        out << YAML::EndMap;
+    }
+
+    void ReadTileDefinition(const YAML::Node& t, TileDefinition& def)
+    {
+        if (t["Name"]) def.Name = t["Name"].as<std::string>();
+        if (auto c = t["Color"]; c && c.IsSequence() && c.size() == 4)
+            def.Color = { c[0].as<float>(), c[1].as<float>(), c[2].as<float>(), c[3].as<float>() };
+        if (t["Texture"]) def.Texture = t["Texture"].as<std::string>();
+        if (t["Solid"]) def.Solid = t["Solid"].as<bool>();
+        if (t["Walkable"]) def.Walkable = t["Walkable"].as<bool>();
+        if (t["Cost"]) def.Cost = t["Cost"].as<int>();
+        if (t["Height"]) def.Height = t["Height"].as<float>();
+        if (t["Autotile"]) def.Autotile = t["Autotile"].as<int>();
+        if (t["Terrain"]) def.Terrain = t["Terrain"].as<int>();
+        if (t["Asset"]) def.Asset = t["Asset"].as<std::string>();
+        def.Rules.clear();
+        if (auto rules = t["Rules"]; rules && rules.IsSequence())
+            for (const auto& r : rules)
+            {
+                TileRule rule;
+                if (auto n = r["Neighbors"]; n && n.IsSequence())
+                    for (size_t i = 0; i < 8 && i < n.size(); ++i)
+                        rule.Neighbors[i] = std::clamp(n[i].as<int>(), 0, 2);
+                if (r["Texture"]) rule.Texture = r["Texture"].as<std::string>();
+                if (r["Rotation"]) rule.Rotation = r["Rotation"].as<int>();
+                def.Rules.push_back(rule);
+            }
+        def.Frames.clear();
+        if (auto frames = t["Frames"]; frames && frames.IsSequence())
+            for (const auto& f : frames)
+                def.Frames.push_back(f.as<std::string>());
+        if (t["FrameRate"]) def.FrameRate = t["FrameRate"].as<float>();
+    }
+
+    bool SaveTileAsset(const std::string& path, const TileDefinition& def)
+    {
+        TileDefinition copy = def;
+        copy.Asset.clear();
+        YAML::Emitter out;
+        out << YAML::BeginMap << YAML::Key << "Tile" << YAML::Value;
+        EmitTileDefinition(out, copy);
+        out << YAML::EndMap;
+        std::ofstream f(SceneSerializer::ResolveAssetPath(path), std::ios::trunc);
+        if (!f)
+            return false;
+        f << out.c_str() << "\n";
+        return true;
+    }
+
+    bool LoadTileAsset(const std::string& path, TileDefinition& def)
+    {
+        struct Cached { TileDefinition Def; std::filesystem::file_time_type Time; };
+        static std::unordered_map<std::string, Cached> cache;
+        const std::string file = SceneSerializer::ResolveAssetPath(path);
+        std::error_code ec;
+        const auto t = std::filesystem::last_write_time(file, ec);
+        if (ec)
+            return false;
+        auto it = cache.find(file);
+        if (it == cache.end() || it->second.Time != t)
+        {
+            try
+            {
+                YAML::Node root = YAML::LoadFile(file);
+                if (!root["Tile"])
+                    return false;
+                TileDefinition loaded;
+                ReadTileDefinition(root["Tile"], loaded);
+                it = cache.insert_or_assign(file, Cached{ loaded, t }).first;
+            }
+            catch (...) { return false; }
+        }
+        def = it->second.Def;
+        return true;
+    }
+
+    void SyncTileAssets(TilemapComponent& map)
+    {
+        for (auto& def : map.Palette)
+        {
+            if (def.Asset.empty())
+                continue;
+            TileDefinition fresh;
+            if (!LoadTileAsset(def.Asset, fresh))
+                continue;
+            fresh.Asset = def.Asset;
+            YAML::Emitter a, b;
+            EmitTileDefinition(a, def);
+            EmitTileDefinition(b, fresh);
+            if (std::string(a.c_str()) != b.c_str())
+            {
+                def = fresh;
+                map.Version++;
+            }
+        }
+    }
+
+    namespace
+    {
+        // Komşu sırası: K, KD, D, GD, G, GB, B, KB
+        const glm::ivec2 kRuleOffsets[8] = { { 0, 1 }, { 1, 1 }, { 1, 0 }, { 1, -1 }, { 0, -1 }, { -1, -1 }, { -1, 0 }, { -1, 1 } };
+
+        bool SameTile(const TilemapComponent& map, int tile, const glm::ivec2& cell)
+        {
+            auto it = map.Cells.find(GridKey(cell.x, cell.y));
+            if (it == map.Cells.end() || it->second.Tile < 0 || it->second.Tile >= (int)map.Palette.size())
+                return false;
+            if (it->second.Tile == tile)
+                return true;
+            const auto& a = map.Palette[(size_t)tile];
+            return !a.Asset.empty() && a.Asset == map.Palette[(size_t)it->second.Tile].Asset;
+        }
+    }
+
+    const std::string& ResolveTileTexture(const TilemapComponent& map, const glm::ivec2& cell, int& rotation, double time)
+    {
+        static const std::string empty;
+        rotation = 0;
+        auto it = map.Cells.find(GridKey(cell.x, cell.y));
+        if (it == map.Cells.end() || it->second.Tile < 0 || it->second.Tile >= (int)map.Palette.size())
+            return empty;
+        const int tile = it->second.Tile;
+        const TileDefinition& def = map.Palette[(size_t)tile];
+        if (!def.Frames.empty() && def.FrameRate > 0.0f)
+        {
+            const size_t frame = (size_t)(time * def.FrameRate) % def.Frames.size();
+            return def.Frames[frame];
+        }
+        if (!def.Rules.empty())
+        {
+            bool here[8];
+            for (int i = 0; i < 8; ++i)
+                here[i] = SameTile(map, tile, cell + kRuleOffsets[i]);
+            for (const auto& rule : def.Rules)
+            {
+                const int turns = rule.Rotation == 1 ? 4 : 1;
+                for (int k = 0; k < turns; ++k)
+                {
+                    bool ok = true;
+                    for (int i = 0; i < 8 && ok; ++i)
+                    {
+                        // Desen k*90° döndürülür: kural komşusu i, dünyada (i + 2k) yönüne düşer
+                        const int want = rule.Neighbors[i];
+                        const bool has = here[(i + 2 * k) % 8];
+                        ok = want == 0 || (want == 1 && has) || (want == 2 && !has);
+                    }
+                    if (ok)
+                    {
+                        rotation = k;
+                        return rule.Texture.empty() ? def.Texture : rule.Texture;
+                    }
+                }
+            }
+        }
+        return def.Texture;
+    }
+
+    bool SavePalette(const std::string& path, const TilePaletteAsset& palette)
+    {
+        YAML::Emitter out;
+        out << YAML::BeginMap << YAML::Key << "TilePalette" << YAML::Value << YAML::BeginMap;
+        out << YAML::Key << "Layout" << YAML::Value << (int)palette.Layout;
+        out << YAML::Key << "CellSize" << YAML::Value << YAML::Flow << YAML::BeginSeq << palette.CellSize.x << palette.CellSize.y << YAML::EndSeq;
+        out << YAML::Key << "Tiles" << YAML::Value << YAML::BeginSeq;
+        for (const auto& t : palette.Tiles) out << t;
+        out << YAML::EndSeq << YAML::EndMap << YAML::EndMap;
+        std::ofstream f(SceneSerializer::ResolveAssetPath(path), std::ios::trunc);
+        if (!f)
+            return false;
+        f << out.c_str() << "\n";
+        return true;
+    }
+
+    bool LoadPalette(const std::string& path, TilePaletteAsset& palette)
+    {
+        try
+        {
+            YAML::Node root = YAML::LoadFile(SceneSerializer::ResolveAssetPath(path));
+            YAML::Node n = root["TilePalette"];
+            if (!n)
+                return false;
+            palette = {};
+            if (n["Layout"]) palette.Layout = (GridLayout)std::clamp(n["Layout"].as<int>(), 0, 3);
+            if (auto c = n["CellSize"]; c && c.IsSequence() && c.size() == 2) palette.CellSize = { c[0].as<float>(), c[1].as<float>() };
+            if (auto t = n["Tiles"]; t && t.IsSequence())
+                for (const auto& p : t) palette.Tiles.push_back(p.as<std::string>());
+            return true;
+        }
+        catch (...) { return false; }
+    }
+
+    // ════════════════════════════════════════
     //  Çizim
     // ════════════════════════════════════════
     void DrawTilemap2D(Scene& scene, Entity e)
     {
         (void)scene;
         auto& map = e.GetComponent<TilemapComponent>();
+        SyncTileAssets(map);
         if (map.Cells.empty())
             return;
+        static const auto s_Start = std::chrono::steady_clock::now();
+        const double now = std::chrono::duration<double>(std::chrono::steady_clock::now() - s_Start).count();
         const GridComponent& g = GridOf(e);
         glm::mat4 world = WorldMatrixOf(e);
         auto toWorld = [&](const glm::vec2& p) { return glm::vec3(world * glm::vec4(PlaneToLocal(g, p, 0.0f), 1.0f)); };
@@ -546,9 +786,11 @@ namespace Conqueror::GridSystem
                 continue;
             const TileDefinition& def = map.Palette[(size_t)cell.Tile];
             glm::vec4 color = def.Color * cell.Color * map.Tint;
-            auto tex = def.Texture.empty() ? white : TextureFor(def.Texture);
-            if (!tex) tex = white;
             glm::ivec2 c = GridKeyToCell(key);
+            int turns = 0;
+            const std::string& texPath = ResolveTileTexture(map, c, turns, now);
+            auto tex = texPath.empty() ? white : TextureFor(texPath);
+            if (!tex) tex = white;
             CellCorners(g, c, corners);
             // Doku koordinatları: hücre sınır kutusuna göre
             glm::vec2 mn(1e30f), mx(-1e30f);
@@ -565,7 +807,13 @@ namespace Conqueror::GridSystem
                     uvMin = glm::vec2((float)(index % atlas.x) * uvSize.x, 1.0f - (float)(index / atlas.x + 1) * uvSize.y);
                 }
             }
-            auto uvOf = [&](const glm::vec2& p) { return uvMin + (p - mn) / glm::max(mx - mn, glm::vec2(1e-5f)) * uvSize; };
+            auto uvOf = [&](const glm::vec2& p) {
+                glm::vec2 t = (p - mn) / glm::max(mx - mn, glm::vec2(1e-5f));
+                // Rule Tile döndürmesi: doku hücre merkezinde 90°'lik adımlarla döner
+                for (int k = 0; k < turns; ++k)
+                    t = glm::vec2(t.y, 1.0f - t.x);
+                return uvMin + t * uvSize;
+            };
             if (corners.size() == 4)
             {
                 glm::vec3 pos[4] = { toWorld(corners[3]), toWorld(corners[0]), toWorld(corners[1]), toWorld(corners[2]) };
@@ -665,12 +913,12 @@ namespace Conqueror::GridSystem
             return mesh;
         }
 
-        std::shared_ptr<Material> MaterialFor(const TileDefinition& def, const glm::vec4& color)
+        std::shared_ptr<Material> MaterialFor(const std::string& texture, const glm::vec4& color)
         {
             auto& cache = s_Caches.Materials;
             char key[160];
             std::snprintf(key, sizeof(key), "%d_%d_%d_%d|", (int)(color.r * 255), (int)(color.g * 255), (int)(color.b * 255), (int)(color.a * 255));
-            std::string k = key + def.Texture;
+            std::string k = key + texture;
             auto it = cache.find(k);
             if (it != cache.end())
                 return it->second;
@@ -678,7 +926,7 @@ namespace Conqueror::GridSystem
             m->Albedo = glm::vec3(color);
             m->Roughness = 0.7f;
             m->Metallic = 0.0f;
-            m->AlbedoMap = TextureFor(def.Texture);
+            m->AlbedoMap = TextureFor(texture);
             m->Opacity = color.a;      // saydam karo (ör. su, alfa 0: görünmez, altındaki deniz düzlemi görünür)
             if (color.a < 0.999f)
                 m->Rendering = Material::RenderMode::Transparent;
@@ -697,6 +945,9 @@ namespace Conqueror::GridSystem
             auto& map = view.get<TilemapComponent>(h);
             if (!map.Render3D || map.Cells.empty() || !scene.IsEntityActive(h))
                 continue;
+            SyncTileAssets(map);
+            static const auto s_Start3D = std::chrono::steady_clock::now();
+            const double now = std::chrono::duration<double>(std::chrono::steady_clock::now() - s_Start3D).count();
             Entity e{ h, &scene };
             const GridComponent& g = GridOf(e);
             auto mesh = PrismMesh(g);
@@ -713,7 +964,8 @@ namespace Conqueror::GridSystem
                 const float inset = map.Outline ? 0.94f : 1.0f;
                 glm::vec3 scale = g.Plane == GridPlane::XZ ? glm::vec3(inset, height, inset) : glm::vec3(inset, inset, height);
                 glm::mat4 m = world * glm::translate(glm::mat4(1.0f), base) * glm::scale(glm::mat4(1.0f), scale);
-                Renderer3D::DrawMesh(mesh, m, MaterialFor(def, def.Color * cell.Color * map.Tint));
+                int turns = 0;
+                Renderer3D::DrawMesh(mesh, m, MaterialFor(ResolveTileTexture(map, c, turns, now), def.Color * cell.Color * map.Tint));
             }
         }
     }

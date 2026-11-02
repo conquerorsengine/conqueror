@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 8316121513733176015
+  - Entity: 8317960807078444179
     TagComponent:
       Tag: Directional Light
       GameTag: Untagged
@@ -19,7 +19,7 @@ Entities:
       Intensity: 3.2
       CastShadows: true
       Mode: 0
-  - Entity: 8997929800140738388
+  - Entity: 8996090093354081885
     TagComponent:
       Tag: Floor
       GameTag: Untagged
@@ -33,12 +33,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -60,7 +55,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7805676323613772615
+  - Entity: 7806088898715609318
     TagComponent:
       Tag: Wall North
       GameTag: Untagged
@@ -74,12 +69,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGridDark.png
+      MaterialAsset: Assets/Materials/WorldGridDark.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -101,7 +91,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 3606008198695991897
+  - Entity: 3606402974413892721
     TagComponent:
       Tag: Wall South
       GameTag: Untagged
@@ -115,12 +105,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGridDark.png
+      MaterialAsset: Assets/Materials/WorldGridDark.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -142,7 +127,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4282243999917294142
+  - Entity: 4281250918147056325
     TagComponent:
       Tag: Wall East
       GameTag: Untagged
@@ -156,12 +141,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGridDark.png
+      MaterialAsset: Assets/Materials/WorldGridDark.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -183,7 +163,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2736167301146577985
+  - Entity: 2737986907495336568
     TagComponent:
       Tag: Wall West
       GameTag: Untagged
@@ -197,12 +177,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGridDark.png
+      MaterialAsset: Assets/Materials/WorldGridDark.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -224,7 +199,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 3914411898311823993
+  - Entity: 3915125464676861333
     TagComponent:
       Tag: Platform
       GameTag: Untagged
@@ -238,12 +213,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -265,7 +235,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6989904316042115930
+  - Entity: 6991479761018513072
     TagComponent:
       Tag: Ramp
       GameTag: Untagged
@@ -279,12 +249,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -306,7 +271,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5313272773794181840
+  - Entity: 5312858138230353704
     TagComponent:
       Tag: High Platform
       GameTag: Untagged
@@ -320,12 +285,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -347,7 +307,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 775605706044156142
+  - Entity: 775771956151760810
     TagComponent:
       Tag: Steps0
       GameTag: Untagged
@@ -361,12 +321,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -388,7 +343,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1942645768037428560
+  - Entity: 1941670690793121536
     TagComponent:
       Tag: Steps1
       GameTag: Untagged
@@ -402,12 +357,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -429,7 +379,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 680963787341949695
+  - Entity: 681413298100095615
     TagComponent:
       Tag: Steps2
       GameTag: Untagged
@@ -443,12 +393,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -470,7 +415,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 931548469455840824
+  - Entity: 930590742798606758
     TagComponent:
       Tag: Steps3
       GameTag: Untagged
@@ -484,12 +429,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -511,7 +451,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 612331483826046781
+  - Entity: 610493942721940620
     TagComponent:
       Tag: Steps4
       GameTag: Untagged
@@ -525,12 +465,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -552,7 +487,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7439747712735172477
+  - Entity: 7437925805381513849
     TagComponent:
       Tag: Steps5
       GameTag: Untagged
@@ -566,12 +501,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -593,7 +523,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6432351770708599299
+  - Entity: 6432218780478121225
     TagComponent:
       Tag: Steps6
       GameTag: Untagged
@@ -607,12 +537,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -634,7 +559,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6235641008958889745
+  - Entity: 6237181235025887407
     TagComponent:
       Tag: Steps7
       GameTag: Untagged
@@ -648,12 +573,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -675,7 +595,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5294220088394122420
+  - Entity: 5296022205603004680
     TagComponent:
       Tag: Steps8
       GameTag: Untagged
@@ -689,12 +609,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -716,7 +631,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2868286237763526829
+  - Entity: 2867009687115262904
     TagComponent:
       Tag: Steps9
       GameTag: Untagged
@@ -730,12 +645,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -757,7 +667,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4436812752539360437
+  - Entity: 4437488796969422936
     TagComponent:
       Tag: Steps10
       GameTag: Untagged
@@ -771,12 +681,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -798,7 +703,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6597747301812781924
+  - Entity: 6595645945505221341
     TagComponent:
       Tag: Steps11
       GameTag: Untagged
@@ -812,12 +717,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -839,7 +739,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 3159618284524020761
+  - Entity: 3161141193954613447
     TagComponent:
       Tag: Bridge
       GameTag: Untagged
@@ -853,12 +753,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -880,7 +775,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4368528247713518080
+  - Entity: 4370664786799930946
     TagComponent:
       Tag: Bridge Support
       GameTag: Untagged
@@ -894,12 +789,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGridDark.png
+      MaterialAsset: Assets/Materials/WorldGridDark.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -921,7 +811,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 9187357868039685119
+  - Entity: 9189476781369378503
     TagComponent:
       Tag: Block A
       GameTag: Untagged
@@ -935,12 +825,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGridOrange.png
+      MaterialAsset: Assets/Materials/WorldGridOrange.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -962,7 +847,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1156920123052875912
+  - Entity: 1155645565423028551
     TagComponent:
       Tag: Block B
       GameTag: Untagged
@@ -976,12 +861,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGridOrange.png
+      MaterialAsset: Assets/Materials/WorldGridOrange.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1003,7 +883,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6606879465965894780
+  - Entity: 6608963057899751011
     TagComponent:
       Tag: Block C
       GameTag: Untagged
@@ -1017,12 +897,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGridOrange.png
+      MaterialAsset: Assets/Materials/WorldGridOrange.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1044,7 +919,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 34339435068240793
+  - Entity: 35578774509435280
     TagComponent:
       Tag: Pillar A
       GameTag: Untagged
@@ -1058,12 +933,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1085,7 +955,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7570741497263255106
+  - Entity: 7572579003486250257
     TagComponent:
       Tag: Pillar B
       GameTag: Untagged
@@ -1099,12 +969,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1126,7 +991,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1212960464023848291
+  - Entity: 1212264490840228027
     TagComponent:
       Tag: Cylinder A
       GameTag: Untagged
@@ -1140,12 +1005,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1169,7 +1029,7 @@ Entities:
       Direction: 1
       IsTrigger: false
       Version: 2
-  - Entity: 2483296934325115138
+  - Entity: 2482020349963235503
     TagComponent:
       Tag: Cylinder B
       GameTag: Untagged
@@ -1183,12 +1043,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1212,7 +1067,7 @@ Entities:
       Direction: 1
       IsTrigger: false
       Version: 2
-  - Entity: 476392218782368714
+  - Entity: 476226037415819766
     TagComponent:
       Tag: Cylinder C
       GameTag: Untagged
@@ -1226,12 +1081,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      WorldAlignedUV: true
-      TexturePath: Assets/Prototype/WorldGrid.png
+      MaterialAsset: Assets/Materials/WorldGrid.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1255,7 +1105,7 @@ Entities:
       Direction: 1
       IsTrigger: false
       Version: 2
-  - Entity: 7752952049891865183
+  - Entity: 7755090753581676468
     TagComponent:
       Tag: Cube 0
       GameTag: Untagged
@@ -1269,15 +1119,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.45
-      AO: 1
-      Tiling: [1, 1]
-      Offset: [0.5, 0.5]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Prototype/WorldGridBlue.png
+      MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
       Mass: 40
@@ -1299,7 +1141,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4233827181738906663
+  - Entity: 4235083906620471527
     TagComponent:
       Tag: Cube 1
       GameTag: Untagged
@@ -1313,15 +1155,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.45
-      AO: 1
-      Tiling: [1, 1]
-      Offset: [0.5, 0.5]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Prototype/WorldGridBlue.png
+      MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
       Mass: 40
@@ -1343,7 +1177,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2946833196777721222
+  - Entity: 2946154677207438742
     TagComponent:
       Tag: Cube 2
       GameTag: Untagged
@@ -1357,15 +1191,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.45
-      AO: 1
-      Tiling: [1, 1]
-      Offset: [0.5, 0.5]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Prototype/WorldGridBlue.png
+      MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
       Mass: 40
@@ -1387,7 +1213,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6447267160443327995
+  - Entity: 6448823090497824262
     TagComponent:
       Tag: Cube 3
       GameTag: Untagged
@@ -1401,15 +1227,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.45
-      AO: 1
-      Tiling: [1, 1]
-      Offset: [0.5, 0.5]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Prototype/WorldGridBlue.png
+      MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
       Mass: 40
@@ -1431,7 +1249,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6694641457524869764
+  - Entity: 6696779887677918533
     TagComponent:
       Tag: Cube 4
       GameTag: Untagged
@@ -1445,15 +1263,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.45
-      AO: 1
-      Tiling: [1, 1]
-      Offset: [0.5, 0.5]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Prototype/WorldGridBlue.png
+      MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
       Mass: 40
@@ -1475,7 +1285,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2370876020564307259
+  - Entity: 2369054009370945766
     TagComponent:
       Tag: Cube 5
       GameTag: Untagged
@@ -1489,15 +1299,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.45
-      AO: 1
-      Tiling: [1, 1]
-      Offset: [0.5, 0.5]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Prototype/WorldGridBlue.png
+      MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
       Mass: 40
@@ -1519,7 +1321,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 8054493791633598415
+  - Entity: 8052671781167420755
     TagComponent:
       Tag: Big Cube
       GameTag: Untagged
@@ -1533,15 +1335,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.45
-      AO: 1
-      Tiling: [1, 1]
-      Offset: [0.5, 0.5]
-      WorldAlignedUV: true
-      AlignToObject: true
-      TexturePath: Assets/Prototype/WorldGridBlue.png
+      MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
       Mass: 120
@@ -1563,7 +1357,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4359538288744139417
+  - Entity: 4361641431791354287
     TagComponent:
       Tag: Player
       GameTag: Untagged
@@ -1596,7 +1390,7 @@ Entities:
       Fields:
         canAim:
           Bool: false
-  - Entity: 5262837114199415249
+  - Entity: 5264359713420924106
     TagComponent:
       Tag: Mesh
       GameTag: Untagged
@@ -1648,7 +1442,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 4677092239541494673
+  - Entity: 4679178030671573138
     TagComponent:
       Tag: CameraBoom
       GameTag: Untagged
@@ -1671,7 +1465,7 @@ Entities:
       UseControlRotation: true
       ControlYaw: 360
       ControlPitch: -12
-  - Entity: 2357301596133640165
+  - Entity: 2355743742127933801
     TagComponent:
       Tag: FollowCamera
       GameTag: Untagged
@@ -1905,9 +1699,9 @@ EditorCamera:
   Yaw: 0
   OrthographicSize: 10
 Hierarchy:
-  - Child: 2357301596133640165
-    Parent: 4677092239541494673
-  - Child: 5262837114199415249
-    Parent: 4359538288744139417
-  - Child: 4677092239541494673
-    Parent: 4359538288744139417
+  - Child: 2355743742127933801
+    Parent: 4679178030671573138
+  - Child: 5264359713420924106
+    Parent: 4361641431791354287
+  - Child: 4679178030671573138
+    Parent: 4361641431791354287

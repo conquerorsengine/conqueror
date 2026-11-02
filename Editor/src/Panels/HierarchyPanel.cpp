@@ -796,8 +796,7 @@ namespace Conqueror::Editor
         };
         auto makeMesh = [&](const char* name, MeshType type) {
             auto& mr = make(name).AddComponent<MeshRendererComponent>();
-            mr.Type = type;
-            mr.Color = glm::vec4(1.0f);
+            mr.Type = type;   // varsayılan malzeme (Default Grid) eklemede atanır
         };
         auto makeUI = [&](const char* name) -> Entity {
             Entity canvas = (parent && (parent.HasComponent<CanvasComponent>() || parent.GetParent())) ? parent : FindOrCreateCanvas(scene);

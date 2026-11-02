@@ -49,6 +49,8 @@ namespace Conqueror
 
         // Sprite'ın yerel uzaydaki sınırları (pivot, PPU, sayfa dilimi, çizim modu dahil)
         static bool GetSpriteLocalBounds(const struct SpriteRendererComponent& sprite, glm::vec2& outMin, glm::vec2& outMax);
+        // Doku atandığında (Unity: sprite içe aktarma ayarları): .meta'daki Pixels Per Unit ve dokunun tek dilimi (9-slice) uygulanır
+        static void ApplySpriteImport(struct SpriteRendererComponent& sprite);
 
         // Stats
         struct Statistics

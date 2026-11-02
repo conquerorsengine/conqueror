@@ -135,9 +135,8 @@ namespace
         {
             using T = Conqueror::MeshRendererComponent;
             Conqueror::Reflection::TypeRegistrar<T> registrar("MeshRendererComponent");
-            registrar.Property("Metallic", &T::Metallic);
-            registrar.Property("Roughness", &T::Roughness);
-            registrar.Property("AO", &T::AO);
+            registrar.Property("CastShadows", &T::CastShadows);
+            registrar.Property("ReceiveShadows", &T::ReceiveShadows);
         }
     };
     static MeshRendererComponent_ReflectionRegistrar s_MeshRendererComponent_Registrar;

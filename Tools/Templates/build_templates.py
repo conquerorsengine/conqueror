@@ -34,6 +34,10 @@ PROJECT = """Project:
 """
 
 
+# Laser Tag şablonuna dokunulmaz (kullanıcı kararı)
+NO_BAKE = {"lasertag"}
+
+
 def read_meta(path):
     meta = {"Shared": [], "Scenes": []}
     key = None
@@ -92,6 +96,9 @@ def build(tid):
         for line in open(os.path.join(HERE, tid, b), encoding="utf-8"):
             if line.strip().startswith("// @EditorCamera "):
                 auto.append("camera " + " ".join(line.strip()[len("// @EditorCamera "):].split()[:6]))
+        # Gömülü (Instance) malzemeler -> Assets/Materials/*.cqmat (Mesh Renderer yalnız malzeme dosyasına başvurur)
+        if tid not in NO_BAKE:
+            auto.append("material_bake Assets/Materials")
         auto.append(f'save_scene_as "{out}"')
     auto.append("quit")
     script = os.path.join(work, "_build.txt")
@@ -116,6 +123,12 @@ def build(tid):
             ok = subprocess.run([sys.executable, post, sc], check=False).returncode == 0 and ok
         if os.path.exists(sc):
             shutil.copy(sc, os.path.join(dst, b[:-4] + ".cqscene"))
+    mats = os.path.join(work, "Assets", "Materials")
+    if os.path.isdir(mats):
+        dst_mats = os.path.join(src, "Assets", "Materials")
+        if os.path.isdir(dst_mats):
+            shutil.rmtree(dst_mats)
+        shutil.copytree(mats, dst_mats)
     print(f"{tid}: {'OK' if ok else 'FAILED'} ({len(builders)} scenes)")
     if not ok:
         print("\n".join(l for l in result.splitlines() if "FAIL" in l or "ERROR" in l))

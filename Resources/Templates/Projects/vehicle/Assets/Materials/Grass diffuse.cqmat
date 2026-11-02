@@ -1,0 +1,24 @@
+Material:
+  Name: Grass diffuse
+  Albedo: [0.75, 0.85, 0.6]
+  Opacity: 1
+  Metallic: 0
+  Roughness: 0.95
+  AO: 1
+  EmissionColor: [0, 0, 0]
+  EmissionStrength: 0
+  Tiling: [0.166667, 0.166667]
+  Offset: [0, 0]
+  WorldAligned: true
+  RenderMode: 0
+  Culling: 0
+  AlphaClip: 0.5
+  AlbedoMap: Assets/Track/grass_diffuse.jpg
+  NormalMap: Assets/Track/grass_normal.jpg
+  NextGraphNodeID: 1
+  NextGraphLinkID: 1
+  GraphInitialized: false
+  GraphNodes:
+    []
+  GraphLinks:
+    []

@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 8316141286759720731
+  - Entity: 8317960950527543597
     TagComponent:
       Tag: Key Light
       GameTag: Untagged
@@ -19,7 +19,7 @@ Entities:
       Intensity: 1.2
       CastShadows: true
       Mode: 0
-  - Entity: 8997914423818206321
+  - Entity: 8996090234513579045
     TagComponent:
       Tag: Softbox Top
       GameTag: Softbox
@@ -38,7 +38,7 @@ Entities:
       Size: [6, 3]
       Range: 13
       TwoSided: false
-  - Entity: 7805660947955596500
+  - Entity: 7806088766106558266
     TagComponent:
       Tag: Softbox Left
       GameTag: Softbox
@@ -57,7 +57,7 @@ Entities:
       Size: [3, 2.2]
       Range: 13
       TwoSided: false
-  - Entity: 3605992822288114964
+  - Entity: 3606402832160867498
     TagComponent:
       Tag: Softbox Right
       GameTag: Softbox
@@ -76,7 +76,7 @@ Entities:
       Size: [3, 2.2]
       Range: 13
       TwoSided: false
-  - Entity: 4282224226677206560
+  - Entity: 4281251058284810109
     TagComponent:
       Tag: Softbox Back
       GameTag: Softbox
@@ -95,7 +95,7 @@ Entities:
       Size: [4, 2]
       Range: 13
       TwoSided: false
-  - Entity: 2736151925203252678
+  - Entity: 2737987039042704539
     TagComponent:
       Tag: Studio Cyc
       GameTag: Untagged
@@ -109,7 +109,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Studio/Cyclorama.glb
-  - Entity: 3914431707248357214
+  - Entity: 3915125596251037134
     TagComponent:
       Tag: Dark Cyc
       GameTag: Untagged
@@ -125,7 +125,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Studio/Cyclorama_Dark.glb
-  - Entity: 6989924123552180917
+  - Entity: 6991479902238927027
     TagComponent:
       Tag: Outdoor Ground
       GameTag: Untagged
@@ -141,12 +141,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.32, 0.33, 0.34, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      TexturePath: ""
-  - Entity: 5313292548173696784
+      MaterialAsset: Assets/Materials/Outdoor Ground.cqmat
+  - Entity: 5312858269737237560
     TagComponent:
       Tag: Turntable
       GameTag: Untagged
@@ -160,7 +156,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Studio/Turntable.glb
-  - Entity: 775625481089777503
+  - Entity: 775771812845294047
     TagComponent:
       Tag: Car
       GameTag: Untagged
@@ -172,7 +168,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 1942661178874168312
+  - Entity: 1941670558156585134
     TagComponent:
       Tag: Car Body
       GameTag: Untagged
@@ -186,7 +182,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Body_Carmine.glb
-  - Entity: 680983561212098904
+  - Entity: 681413439450602031
     TagComponent:
       Tag: Car Interior
       GameTag: Untagged
@@ -200,7 +196,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Interior_Carmine.glb
-  - Entity: 931563844588667907
+  - Entity: 930590877124603775
     TagComponent:
       Tag: Car Calipers
       GameTag: Untagged
@@ -214,7 +210,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Calipers_Red.glb
-  - Entity: 612316074330170835
+  - Entity: 610494076785765006
     TagComponent:
       Tag: Wheel FL
       GameTag: Untagged
@@ -228,7 +224,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Wheel_FL.glb
-  - Entity: 7439763123310164447
+  - Entity: 7437925947486001694
     TagComponent:
       Tag: Rim FL
       GameTag: Untagged
@@ -242,7 +238,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Rim_FL_Chrome.glb
-  - Entity: 6432371578385925338
+  - Entity: 6432218647160511923
     TagComponent:
       Tag: Wheel FR
       GameTag: Untagged
@@ -256,7 +252,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Wheel_FR.glb
-  - Entity: 6235621200183669036
+  - Entity: 6237181369932293332
     TagComponent:
       Tag: Rim FR
       GameTag: Untagged
@@ -270,7 +266,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Rim_FR_Chrome.glb
-  - Entity: 5294204678674680326
+  - Entity: 5296022070939287749
     TagComponent:
       Tag: Wheel RL
       GameTag: Untagged
@@ -284,7 +280,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Wheel_RL.glb
-  - Entity: 2868266463009022911
+  - Entity: 2867009828112662397
     TagComponent:
       Tag: Rim RL
       GameTag: Untagged
@@ -298,7 +294,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Rim_RL_Chrome.glb
-  - Entity: 4436797376222729400
+  - Entity: 4437488938392997341
     TagComponent:
       Tag: Wheel RR
       GameTag: Untagged
@@ -312,7 +308,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Wheel_RR.glb
-  - Entity: 6597767075533326612
+  - Entity: 6595646086925857719
     TagComponent:
       Tag: Rim RR
       GameTag: Untagged
@@ -326,7 +322,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Rim_RR_Chrome.glb
-  - Entity: 3159602873859403309
+  - Entity: 3161141059899024713
     TagComponent:
       Tag: Headlight L
       GameTag: Headlight
@@ -351,7 +347,7 @@ Entities:
       Quadratic: 0.032
       CastShadows: false
       Mode: 0
-  - Entity: 4368548055372275928
+  - Entity: 4370664647039744268
     TagComponent:
       Tag: Headlight R
       GameTag: Headlight
@@ -376,7 +372,7 @@ Entities:
       Quadratic: 0.032
       CastShadows: false
       Mode: 0
-  - Entity: 9187377641585165116
+  - Entity: 9189476638937036985
     TagComponent:
       Tag: Contact Shadow
       GameTag: Untagged
@@ -390,15 +386,10 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [0, 0, 0, 0.92]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
       CastShadows: false
       ReceiveShadows: false
-      Unlit: true
-      TexturePath: Assets/Studio/ContactShadow.png
-  - Entity: 1156904746471879543
+      MaterialAsset: Assets/Materials/ContactShadow.cqmat
+  - Entity: 1155645706327906884
     TagComponent:
       Tag: Hotspot Wheel
       GameTag: Hotspot
@@ -439,7 +430,7 @@ Entities:
       Radius: 0.13
       IsTrigger: false
       Version: 2
-  - Entity: 6606864056096205532
+  - Entity: 6608962925453850397
     TagComponent:
       Tag: Hotspot Interior
       GameTag: Hotspot
@@ -480,7 +471,7 @@ Entities:
       Radius: 0.13
       IsTrigger: false
       Version: 2
-  - Entity: 34319661643288592
+  - Entity: 35578639592541177
     TagComponent:
       Tag: Hotspot Lights
       GameTag: Hotspot
@@ -521,7 +512,7 @@ Entities:
       Radius: 0.13
       IsTrigger: false
       Version: 2
-  - Entity: 7570761270530688085
+  - Entity: 7572578863739192176
     TagComponent:
       Tag: Camera
       GameTag: Untagged
@@ -551,7 +542,7 @@ Entities:
       ClassName: ""
     AudioListenerComponent:
       IsActive: true
-  - Entity: 1212980238837709752
+  - Entity: 1212264349821256502
     TagComponent:
       Tag: Configurator
       GameTag: Untagged
@@ -566,7 +557,7 @@ Entities:
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/Configurator.cqs
       ClassName: ""
-  - Entity: 2483281524447706155
+  - Entity: 2482020483872385503
     TagComponent:
       Tag: UI
       GameTag: Untagged
@@ -592,7 +583,7 @@ Entities:
       IgnoreReversedGraphics: true
       BlockingObjects: 0
       BlockingMask: 4294967295
-  - Entity: 476376842053384214
+  - Entity: 476226178434859324
     TagComponent:
       Tag: Flash
       GameTag: Untagged
@@ -630,7 +621,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 7752971823159212584
+  - Entity: 7755090611685981307
     TagComponent:
       Tag: Title Back
       GameTag: Untagged
@@ -663,7 +654,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 14
-  - Entity: 4233807408263619775
+  - Entity: 4235084038546548405
     TagComponent:
       Tag: ModelName
       GameTag: Untagged
@@ -702,7 +693,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 2946852970444115586
+  - Entity: 2946154810063614782
     TagComponent:
       Tag: PaintName
       GameTag: Untagged
@@ -741,7 +732,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 6447282571361914059
+  - Entity: 6448822955586488156
     TagComponent:
       Tag: PriceText
       GameTag: Untagged
@@ -780,7 +771,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 6694661232134678466
+  - Entity: 6696780021751444023
     TagComponent:
       Tag: Options Panel
       GameTag: Untagged
@@ -813,7 +804,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 14
-  - Entity: 2370891396119144314
+  - Entity: 2369054141758364431
     TagComponent:
       Tag: Paint Header
       GameTag: Untagged
@@ -852,7 +843,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 8054509167915361813
+  - Entity: 8052671912515433194
     TagComponent:
       Tag: Paint Ring Carmine
       GameTag: Untagged
@@ -885,7 +876,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 35
-  - Entity: 4359522913133050201
+  - Entity: 4361641563080616981
     TagComponent:
       Tag: Paint Carmine
       GameTag: Untagged
@@ -928,7 +919,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 5262817339398713806
+  - Entity: 5264359857148311209
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -967,7 +958,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 4677072431575146764
+  - Entity: 4679177898203425607
     TagComponent:
       Tag: Paint Ring Pearl
       GameTag: Untagged
@@ -1000,7 +991,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 35
-  - Entity: 2357286185310086129
+  - Entity: 2355743599982710193
     TagComponent:
       Tag: Paint Pearl
       GameTag: Untagged
@@ -1043,7 +1034,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 8268848590457783738
+  - Entity: 8270670375335012405
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -1082,7 +1073,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 409070195041884871
+  - Entity: 408354450963626890
     TagComponent:
       Tag: Paint Ring Graphite
       GameTag: Untagged
@@ -1115,7 +1106,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 35
-  - Entity: 3763603175950962311
+  - Entity: 3764035381253504381
     TagComponent:
       Tag: Paint Graphite
       GameTag: Untagged
@@ -1158,7 +1149,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 7101638040487625786
+  - Entity: 7100379128035128296
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -1197,7 +1188,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 5530722690125229648
+  - Entity: 5532278391292612847
     TagComponent:
       Tag: Interior Header
       GameTag: Untagged
@@ -1236,7 +1227,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 2351130573729590614
+  - Entity: 2352972293832854165
     TagComponent:
       Tag: Interior Ring Carmine
       GameTag: Untagged
@@ -1269,7 +1260,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 35
-  - Entity: 3034408094860354781
+  - Entity: 3034275014702628673
     TagComponent:
       Tag: Interior Carmine
       GameTag: Untagged
@@ -1312,7 +1303,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 5726296044470816078
+  - Entity: 5724190509323386734
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -1351,7 +1342,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 2675661463084020070
+  - Entity: 2676916044967923936
     TagComponent:
       Tag: Interior Ring Pearl
       GameTag: Untagged
@@ -1384,7 +1375,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 35
-  - Entity: 7008240651552029836
+  - Entity: 7009235601790430178
     TagComponent:
       Tag: Interior Pearl
       GameTag: Untagged
@@ -1427,7 +1418,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 722017317666811348
+  - Entity: 721303772696745782
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -1466,7 +1457,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 5399102123390097220
+  - Entity: 5398406241555964744
     TagComponent:
       Tag: Interior Ring Graphite
       GameTag: Untagged
@@ -1499,7 +1490,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 35
-  - Entity: 6317823579975745112
+  - Entity: 6317107769376098037
     TagComponent:
       Tag: Interior Graphite
       GameTag: Untagged
@@ -1542,7 +1533,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 8968967498576236350
+  - Entity: 8971073095060608705
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -1581,7 +1572,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 2439823322712833615
+  - Entity: 2439954272600541462
     TagComponent:
       Tag: Rims Header
       GameTag: Untagged
@@ -1620,7 +1611,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 63770203899533186
+  - Entity: 64464027319206878
     TagComponent:
       Tag: Rims Ring Chrome
       GameTag: Untagged
@@ -1653,7 +1644,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 35
-  - Entity: 6906858948192341791
+  - Entity: 6907849511103836194
     TagComponent:
       Tag: Rims Chrome
       GameTag: Untagged
@@ -1696,7 +1687,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 961013070604683313
+  - Entity: 959758557441344433
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -1735,7 +1726,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 1573776896067873991
+  - Entity: 1571939505242255360
     TagComponent:
       Tag: Rims Ring Black
       GameTag: Untagged
@@ -1768,7 +1759,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 35
-  - Entity: 2848857824092747175
+  - Entity: 2850398140537404534
     TagComponent:
       Tag: Rims Black
       GameTag: Untagged
@@ -1811,7 +1802,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 7417372128034065298
+  - Entity: 7415255675046162447
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -1850,7 +1841,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 5726467554385890437
+  - Entity: 5728566631042465217
     TagComponent:
       Tag: Rims Ring Bronze
       GameTag: Untagged
@@ -1883,7 +1874,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 35
-  - Entity: 5123940868998650931
+  - Entity: 5124091473679992380
     TagComponent:
       Tag: Rims Bronze
       GameTag: Untagged
@@ -1926,7 +1917,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 4414812829166580770
+  - Entity: 4414402819365738499
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -1965,7 +1956,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 5923113113434834165
+  - Entity: 5923523133066001900
     TagComponent:
       Tag: Calipers Header
       GameTag: Untagged
@@ -2004,7 +1995,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 820245766961526275
+  - Entity: 821223261379048131
     TagComponent:
       Tag: Calipers Ring Red
       GameTag: Untagged
@@ -2037,7 +2028,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 35
-  - Entity: 642911789858025433
+  - Entity: 642783039212885281
     TagComponent:
       Tag: Calipers Red
       GameTag: Untagged
@@ -2080,7 +2071,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 1000592813855594126
+  - Entity: 1001306296548331878
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -2119,7 +2110,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 1254721299493210873
+  - Entity: 1255977933363976189
     TagComponent:
       Tag: Calipers Ring Yellow
       GameTag: Untagged
@@ -2152,7 +2143,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 35
-  - Entity: 2187302959802973285
+  - Entity: 2188001109312557827
     TagComponent:
       Tag: Calipers Yellow
       GameTag: Untagged
@@ -2195,7 +2186,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 1039637759185103571
+  - Entity: 1038644939401235918
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -2234,7 +2225,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 9150650380209719714
+  - Entity: 9149677340999640682
     TagComponent:
       Tag: Calipers Ring Black
       GameTag: Untagged
@@ -2267,7 +2258,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 35
-  - Entity: 5542202759583224337
+  - Entity: 5543463928873142803
     TagComponent:
       Tag: Calipers Black
       GameTag: Untagged
@@ -2310,7 +2301,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 5276633765136349300
+  - Entity: 5277608992732991594
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -2349,7 +2340,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 1374917316083587210
+  - Entity: 1374507297542975425
     TagComponent:
       Tag: View Header
       GameTag: Untagged
@@ -2388,7 +2379,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 6518297788906035122
+  - Entity: 6517322552568463795
     TagComponent:
       Tag: View Orbit
       GameTag: Untagged
@@ -2431,7 +2422,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 1157753075046612470
+  - Entity: 1159291322290270199
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -2470,7 +2461,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 2588523526690182233
+  - Entity: 2588377329716394411
     TagComponent:
       Tag: View Front
       GameTag: Untagged
@@ -2513,7 +2504,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 5873004169060784970
+  - Entity: 5874542423894834823
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -2552,7 +2543,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 2181560209137493017
+  - Entity: 2180303429311892749
     TagComponent:
       Tag: View Side
       GameTag: Untagged
@@ -2595,7 +2586,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 7429902574281562909
+  - Entity: 7429771840188835054
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -2634,7 +2625,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 7568732513145248946
+  - Entity: 7569989156631211183
     TagComponent:
       Tag: View Rear
       GameTag: Untagged
@@ -2677,7 +2668,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 7445712138768537019
+  - Entity: 7445559199836923179
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -2716,7 +2707,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 8614896511164463590
+  - Entity: 8613637463497437473
     TagComponent:
       Tag: View Top
       GameTag: Untagged
@@ -2759,7 +2750,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 1759716738168033355
+  - Entity: 1759867409392978800
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -2798,7 +2789,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 6117915487040027518
+  - Entity: 6116091299047635332
     TagComponent:
       Tag: View Interior
       GameTag: Untagged
@@ -2841,7 +2832,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 865506023603254047
+  - Entity: 866219715513808592
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -2880,7 +2871,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 7799555008455518282
+  - Entity: 7798579710994871597
     TagComponent:
       Tag: Env Header
       GameTag: Untagged
@@ -2919,7 +2910,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 3825048533154632914
+  - Entity: 3824337040161787143
     TagComponent:
       Tag: Env Studio
       GameTag: Untagged
@@ -2962,7 +2953,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 5965395949258165117
+  - Entity: 5966938673045807900
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -3001,7 +2992,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 5701509491447129591
+  - Entity: 5699410563025650336
     TagComponent:
       Tag: Env Dark
       GameTag: Untagged
@@ -3044,7 +3035,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 6562341923235261638
+  - Entity: 6563314951789661250
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -3083,7 +3074,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 4472285183000302202
+  - Entity: 4474102705291311836
     TagComponent:
       Tag: Env Outdoor
       GameTag: Untagged
@@ -3126,7 +3117,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 5852897665950231192
+  - Entity: 5854152246787595717
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -3165,7 +3156,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 5141892639816726515
+  - Entity: 5142027779293972849
     TagComponent:
       Tag: Turntable
       GameTag: Untagged
@@ -3208,7 +3199,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 2047790988340015468
+  - Entity: 2048218726867279872
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -3247,7 +3238,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 8233728459064112539
+  - Entity: 8233599854344963066
     TagComponent:
       Tag: Lights
       GameTag: Untagged
@@ -3290,7 +3281,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 8585200025534440045
+  - Entity: 8584787738087995401
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -3329,7 +3320,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 7331160834754600488
+  - Entity: 7330181198397267189
     TagComponent:
       Tag: Hint Back
       GameTag: Untagged
@@ -3362,7 +3353,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 12
-  - Entity: 7728767453074782389
+  - Entity: 7729744957151699253
     TagComponent:
       Tag: HintText
       GameTag: Untagged
@@ -3609,183 +3600,183 @@ EditorCamera:
   Yaw: -2.5307274
   OrthographicSize: 10
 Hierarchy:
-  - Child: 8585200025534440045
-    Parent: 8233728459064112539
-  - Child: 7101638040487625786
-    Parent: 3763603175950962311
-  - Child: 722017317666811348
-    Parent: 7008240651552029836
-  - Child: 5262817339398713806
-    Parent: 4359522913133050201
-  - Child: 2047790988340015468
-    Parent: 5141892639816726515
-  - Child: 476376842053384214
-    Parent: 2483281524447706155
-  - Child: 7752971823159212584
-    Parent: 2483281524447706155
-  - Child: 4233807408263619775
-    Parent: 2483281524447706155
-  - Child: 2946852970444115586
-    Parent: 2483281524447706155
-  - Child: 6447282571361914059
-    Parent: 2483281524447706155
-  - Child: 6694661232134678466
-    Parent: 2483281524447706155
-  - Child: 2370891396119144314
-    Parent: 2483281524447706155
-  - Child: 8054509167915361813
-    Parent: 2483281524447706155
-  - Child: 4359522913133050201
-    Parent: 2483281524447706155
-  - Child: 4677072431575146764
-    Parent: 2483281524447706155
-  - Child: 2357286185310086129
-    Parent: 2483281524447706155
-  - Child: 409070195041884871
-    Parent: 2483281524447706155
-  - Child: 3763603175950962311
-    Parent: 2483281524447706155
-  - Child: 5530722690125229648
-    Parent: 2483281524447706155
-  - Child: 2351130573729590614
-    Parent: 2483281524447706155
-  - Child: 3034408094860354781
-    Parent: 2483281524447706155
-  - Child: 2675661463084020070
-    Parent: 2483281524447706155
-  - Child: 7008240651552029836
-    Parent: 2483281524447706155
-  - Child: 5399102123390097220
-    Parent: 2483281524447706155
-  - Child: 6317823579975745112
-    Parent: 2483281524447706155
-  - Child: 2439823322712833615
-    Parent: 2483281524447706155
-  - Child: 63770203899533186
-    Parent: 2483281524447706155
-  - Child: 6906858948192341791
-    Parent: 2483281524447706155
-  - Child: 1573776896067873991
-    Parent: 2483281524447706155
-  - Child: 2848857824092747175
-    Parent: 2483281524447706155
-  - Child: 5726467554385890437
-    Parent: 2483281524447706155
-  - Child: 5123940868998650931
-    Parent: 2483281524447706155
-  - Child: 5923113113434834165
-    Parent: 2483281524447706155
-  - Child: 820245766961526275
-    Parent: 2483281524447706155
-  - Child: 642911789858025433
-    Parent: 2483281524447706155
-  - Child: 1254721299493210873
-    Parent: 2483281524447706155
-  - Child: 2187302959802973285
-    Parent: 2483281524447706155
-  - Child: 9150650380209719714
-    Parent: 2483281524447706155
-  - Child: 5542202759583224337
-    Parent: 2483281524447706155
-  - Child: 1374917316083587210
-    Parent: 2483281524447706155
-  - Child: 6518297788906035122
-    Parent: 2483281524447706155
-  - Child: 2588523526690182233
-    Parent: 2483281524447706155
-  - Child: 2181560209137493017
-    Parent: 2483281524447706155
-  - Child: 7568732513145248946
-    Parent: 2483281524447706155
-  - Child: 8614896511164463590
-    Parent: 2483281524447706155
-  - Child: 6117915487040027518
-    Parent: 2483281524447706155
-  - Child: 7799555008455518282
-    Parent: 2483281524447706155
-  - Child: 3825048533154632914
-    Parent: 2483281524447706155
-  - Child: 5701509491447129591
-    Parent: 2483281524447706155
-  - Child: 4472285183000302202
-    Parent: 2483281524447706155
-  - Child: 5141892639816726515
-    Parent: 2483281524447706155
-  - Child: 8233728459064112539
-    Parent: 2483281524447706155
-  - Child: 7331160834754600488
-    Parent: 2483281524447706155
-  - Child: 7728767453074782389
-    Parent: 2483281524447706155
-  - Child: 961013070604683313
-    Parent: 6906858948192341791
-  - Child: 865506023603254047
-    Parent: 6117915487040027518
-  - Child: 6597767075533326612
-    Parent: 4436797376222729400
-  - Child: 5726296044470816078
-    Parent: 3034408094860354781
-  - Child: 1157753075046612470
-    Parent: 6518297788906035122
-  - Child: 2868266463009022911
-    Parent: 5294204678674680326
-  - Child: 8968967498576236350
-    Parent: 6317823579975745112
-  - Child: 7445712138768537019
-    Parent: 7568732513145248946
-  - Child: 8268848590457783738
-    Parent: 2357286185310086129
-  - Child: 7439763123310164447
-    Parent: 612316074330170835
-  - Child: 1039637759185103571
-    Parent: 2187302959802973285
-  - Child: 775625481089777503
-    Parent: 5313292548173696784
-  - Child: 7417372128034065298
-    Parent: 2848857824092747175
-  - Child: 5965395949258165117
-    Parent: 3825048533154632914
-  - Child: 4414812829166580770
-    Parent: 5123940868998650931
-  - Child: 1942661178874168312
-    Parent: 775625481089777503
-  - Child: 680983561212098904
-    Parent: 775625481089777503
-  - Child: 931563844588667907
-    Parent: 775625481089777503
-  - Child: 612316074330170835
-    Parent: 775625481089777503
-  - Child: 6432371578385925338
-    Parent: 775625481089777503
-  - Child: 5294204678674680326
-    Parent: 775625481089777503
-  - Child: 4436797376222729400
-    Parent: 775625481089777503
-  - Child: 3159602873859403309
-    Parent: 775625481089777503
-  - Child: 4368548055372275928
-    Parent: 775625481089777503
-  - Child: 9187377641585165116
-    Parent: 775625481089777503
-  - Child: 1156904746471879543
-    Parent: 775625481089777503
-  - Child: 6606864056096205532
-    Parent: 775625481089777503
-  - Child: 34319661643288592
-    Parent: 775625481089777503
-  - Child: 1000592813855594126
-    Parent: 642911789858025433
-  - Child: 6235621200183669036
-    Parent: 6432371578385925338
-  - Child: 5276633765136349300
-    Parent: 5542202759583224337
-  - Child: 5873004169060784970
-    Parent: 2588523526690182233
-  - Child: 7429902574281562909
-    Parent: 2181560209137493017
-  - Child: 1759716738168033355
-    Parent: 8614896511164463590
-  - Child: 6562341923235261638
-    Parent: 5701509491447129591
-  - Child: 5852897665950231192
-    Parent: 4472285183000302202
+  - Child: 8584787738087995401
+    Parent: 8233599854344963066
+  - Child: 7100379128035128296
+    Parent: 3764035381253504381
+  - Child: 721303772696745782
+    Parent: 7009235601790430178
+  - Child: 5264359857148311209
+    Parent: 4361641563080616981
+  - Child: 2048218726867279872
+    Parent: 5142027779293972849
+  - Child: 476226178434859324
+    Parent: 2482020483872385503
+  - Child: 7755090611685981307
+    Parent: 2482020483872385503
+  - Child: 4235084038546548405
+    Parent: 2482020483872385503
+  - Child: 2946154810063614782
+    Parent: 2482020483872385503
+  - Child: 6448822955586488156
+    Parent: 2482020483872385503
+  - Child: 6696780021751444023
+    Parent: 2482020483872385503
+  - Child: 2369054141758364431
+    Parent: 2482020483872385503
+  - Child: 8052671912515433194
+    Parent: 2482020483872385503
+  - Child: 4361641563080616981
+    Parent: 2482020483872385503
+  - Child: 4679177898203425607
+    Parent: 2482020483872385503
+  - Child: 2355743599982710193
+    Parent: 2482020483872385503
+  - Child: 408354450963626890
+    Parent: 2482020483872385503
+  - Child: 3764035381253504381
+    Parent: 2482020483872385503
+  - Child: 5532278391292612847
+    Parent: 2482020483872385503
+  - Child: 2352972293832854165
+    Parent: 2482020483872385503
+  - Child: 3034275014702628673
+    Parent: 2482020483872385503
+  - Child: 2676916044967923936
+    Parent: 2482020483872385503
+  - Child: 7009235601790430178
+    Parent: 2482020483872385503
+  - Child: 5398406241555964744
+    Parent: 2482020483872385503
+  - Child: 6317107769376098037
+    Parent: 2482020483872385503
+  - Child: 2439954272600541462
+    Parent: 2482020483872385503
+  - Child: 64464027319206878
+    Parent: 2482020483872385503
+  - Child: 6907849511103836194
+    Parent: 2482020483872385503
+  - Child: 1571939505242255360
+    Parent: 2482020483872385503
+  - Child: 2850398140537404534
+    Parent: 2482020483872385503
+  - Child: 5728566631042465217
+    Parent: 2482020483872385503
+  - Child: 5124091473679992380
+    Parent: 2482020483872385503
+  - Child: 5923523133066001900
+    Parent: 2482020483872385503
+  - Child: 821223261379048131
+    Parent: 2482020483872385503
+  - Child: 642783039212885281
+    Parent: 2482020483872385503
+  - Child: 1255977933363976189
+    Parent: 2482020483872385503
+  - Child: 2188001109312557827
+    Parent: 2482020483872385503
+  - Child: 9149677340999640682
+    Parent: 2482020483872385503
+  - Child: 5543463928873142803
+    Parent: 2482020483872385503
+  - Child: 1374507297542975425
+    Parent: 2482020483872385503
+  - Child: 6517322552568463795
+    Parent: 2482020483872385503
+  - Child: 2588377329716394411
+    Parent: 2482020483872385503
+  - Child: 2180303429311892749
+    Parent: 2482020483872385503
+  - Child: 7569989156631211183
+    Parent: 2482020483872385503
+  - Child: 8613637463497437473
+    Parent: 2482020483872385503
+  - Child: 6116091299047635332
+    Parent: 2482020483872385503
+  - Child: 7798579710994871597
+    Parent: 2482020483872385503
+  - Child: 3824337040161787143
+    Parent: 2482020483872385503
+  - Child: 5699410563025650336
+    Parent: 2482020483872385503
+  - Child: 4474102705291311836
+    Parent: 2482020483872385503
+  - Child: 5142027779293972849
+    Parent: 2482020483872385503
+  - Child: 8233599854344963066
+    Parent: 2482020483872385503
+  - Child: 7330181198397267189
+    Parent: 2482020483872385503
+  - Child: 7729744957151699253
+    Parent: 2482020483872385503
+  - Child: 959758557441344433
+    Parent: 6907849511103836194
+  - Child: 866219715513808592
+    Parent: 6116091299047635332
+  - Child: 6595646086925857719
+    Parent: 4437488938392997341
+  - Child: 5724190509323386734
+    Parent: 3034275014702628673
+  - Child: 1159291322290270199
+    Parent: 6517322552568463795
+  - Child: 2867009828112662397
+    Parent: 5296022070939287749
+  - Child: 8971073095060608705
+    Parent: 6317107769376098037
+  - Child: 7445559199836923179
+    Parent: 7569989156631211183
+  - Child: 8270670375335012405
+    Parent: 2355743599982710193
+  - Child: 7437925947486001694
+    Parent: 610494076785765006
+  - Child: 1038644939401235918
+    Parent: 2188001109312557827
+  - Child: 775771812845294047
+    Parent: 5312858269737237560
+  - Child: 7415255675046162447
+    Parent: 2850398140537404534
+  - Child: 5966938673045807900
+    Parent: 3824337040161787143
+  - Child: 4414402819365738499
+    Parent: 5124091473679992380
+  - Child: 1941670558156585134
+    Parent: 775771812845294047
+  - Child: 681413439450602031
+    Parent: 775771812845294047
+  - Child: 930590877124603775
+    Parent: 775771812845294047
+  - Child: 610494076785765006
+    Parent: 775771812845294047
+  - Child: 6432218647160511923
+    Parent: 775771812845294047
+  - Child: 5296022070939287749
+    Parent: 775771812845294047
+  - Child: 4437488938392997341
+    Parent: 775771812845294047
+  - Child: 3161141059899024713
+    Parent: 775771812845294047
+  - Child: 4370664647039744268
+    Parent: 775771812845294047
+  - Child: 9189476638937036985
+    Parent: 775771812845294047
+  - Child: 1155645706327906884
+    Parent: 775771812845294047
+  - Child: 6608962925453850397
+    Parent: 775771812845294047
+  - Child: 35578639592541177
+    Parent: 775771812845294047
+  - Child: 1001306296548331878
+    Parent: 642783039212885281
+  - Child: 6237181369932293332
+    Parent: 6432218647160511923
+  - Child: 5277608992732991594
+    Parent: 5543463928873142803
+  - Child: 5874542423894834823
+    Parent: 2588377329716394411
+  - Child: 7429771840188835054
+    Parent: 2180303429311892749
+  - Child: 1759867409392978800
+    Parent: 8613637463497437473
+  - Child: 6563314951789661250
+    Parent: 5699410563025650336
+  - Child: 5854152246787595717
+    Parent: 4474102705291311836

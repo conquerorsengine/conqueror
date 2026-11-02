@@ -2,6 +2,8 @@
 // Archviz Interior (Architecture), Car Configurator (Automotive), Crowd Simulation (Simulation).
 // Varlıklar: Resources/Templates/Kenney (CC0) — kullanılanlar projenin Assets/ klasörüne kopyalanır.
 
+#include "Scene/MeshRendererMaterial.h"
+#include "Renderer/Utilities/Renderer3D/Material.h"
 #include "HubTemplates.h"
 #include "HubTemplateKit.h"
 #include "Core/Serialization/PrefabSerializer.h"
@@ -676,7 +678,7 @@ script Wanderer : ConquerorScript
             // Sahne: parlak siyah zemin, arka plan perdesi (cyclorama), sahne ışıkları
             MakeBlock(scene, "Stage Floor", { 0.0f, -0.1f, 0.0f }, { 16.0f, 0.2f, 12.0f }, { 0.05f, 0.05f, 0.06f, 1.0f });
             if (Entity f = FindByName(scene, "Stage Floor"))
-                f.GetComponent<MeshRendererComponent>().Roughness = 0.15f;
+                MeshRendererMaterial::Edit(f.GetComponent<MeshRendererComponent>()).Roughness = 0.15f;
             MakeBlock(scene, "Cyclorama", { 0.0f, 3.0f, -6.0f }, { 16.0f, 6.0f, 0.2f }, { 0.12f, 0.14f, 0.2f, 1.0f });
             MakeBlock(scene, "Riser", { 0.0f, 0.2f, -2.0f }, { 6.0f, 0.4f, 3.0f }, { 0.25f, 0.22f, 0.2f, 1.0f });
             MakeSpotLight(scene, "Key Light", { 3.5f, 5.0f, 3.0f }, { 0.0f, 1.0f, -1.5f }, { 1.0f, 0.9f, 0.78f }, 22.0f, 18.0f, 30.0f);
@@ -817,12 +819,12 @@ script Wanderer : ConquerorScript
             // Stüdyo: parlak zemin, döner tabla, yumuşak tepe ışıkları
             MakeBlock(scene, "Studio Floor", { 0.0f, -0.1f, 0.0f }, { 40.0f, 0.2f, 40.0f }, { 0.07f, 0.07f, 0.08f, 1.0f });
             if (Entity f = FindByName(scene, "Studio Floor"))
-                f.GetComponent<MeshRendererComponent>().Roughness = 0.12f;
+                MeshRendererMaterial::Edit(f.GetComponent<MeshRendererComponent>()).Roughness = 0.12f;
             // Döner tabla: ölçeksiz pivot (arabalar disk ölçeğini miras almasın) + disk çocuğu
             Entity table = scene.CreateEntity("Turntable");
             Entity disc = MakeMesh(scene, "Turntable Disc", MeshType::Cylinder, { 0.0f, 0.05f, 0.0f }, { 7.0f, 0.1f, 7.0f }, { 0.75f, 0.76f, 0.78f, 1.0f });
-            disc.GetComponent<MeshRendererComponent>().Metallic = 0.8f;
-            disc.GetComponent<MeshRendererComponent>().Roughness = 0.25f;
+            MeshRendererMaterial::Edit(disc.GetComponent<MeshRendererComponent>()).Metallic = 0.8f;
+            MeshRendererMaterial::Edit(disc.GetComponent<MeshRendererComponent>()).Roughness = 0.25f;
             scene.SetEntityParent(disc, table, false);
             auto& spin = table.AddComponent<RotatorComponent>();
             spin.RotationRate = { 0.0f, 12.0f, 0.0f };
@@ -965,7 +967,7 @@ script Wanderer : ConquerorScript
                             tc.Scale = glm::vec3(0.4f);
                             auto& mr = e.AddComponent<MeshRendererComponent>();
                             mr.Type = MeshType::Cube;
-                            mr.Color = { 0.3f + 0.05f * (row % 8), 0.55f, 0.85f - 0.05f * (col % 8), 1.0f };
+                            MeshRendererMaterial::SetColor(mr, { 0.3f + 0.05f * (row % 8), 0.55f, 0.85f - 0.05f * (col % 8), 1.0f });
                         }
                         scene.SetEntityParent(e, group, false);
                     }

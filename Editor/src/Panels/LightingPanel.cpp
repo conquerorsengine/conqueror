@@ -1,3 +1,7 @@
+#include "Scene/MeshRendererMaterial.h"
+#include "Renderer/Utilities/Renderer3D/Material.h"
+#include "ObjectPicker.h"
+#include <IconsFontAwesome6.h>
 #include "LightingPanel.h"
 #include "UI/EditorUI.h"
 #include "Renderer/RHI/Cubemap.h"
@@ -377,6 +381,9 @@ namespace Conqueror::Editor
         };
 
         UI::BeginProperty("Skybox");
+        const ImGuiID skyPick = ImGui::GetID("##skypick");
+        if (std::string picked; ObjectPicker::Consume(skyPick, picked) && !picked.empty())
+            loadSkybox(picked);
         if (ImGui::BeginCombo("##skybox", current.c_str()))
         {
             if (ImGui::Selectable("None (Procedural / Color)", !skybox))
@@ -395,6 +402,8 @@ namespace Conqueror::Editor
                     ImGui::SetTooltip("%s", path.c_str());
             }
             ImGui::Separator();
+            if (ImGui::Selectable(ICON_FA_BULLSEYE "  Select..."))
+                ObjectPicker::Open(skyPick, "Sky (HDR)", { ".hdr", ".exr" }, skybox ? skybox->GetPath() : std::string());
             if (ImGui::Selectable("Browse..."))
             {
                 nfdu8char_t* outPath = nullptr;
@@ -458,6 +467,13 @@ namespace Conqueror::Editor
                     setter(tex);
                 NFD_FreePathU8(outPath);
             }
+        }
+        ImGui::SameLine();
+        if (std::string picked; ObjectPicker::Button("lighttexpick", "Texture", ObjectPicker::ImageExtensions(),
+                                                     texture ? texture->GetPath() : std::string(), picked))
+        {
+            auto tex = picked.empty() ? nullptr : Texture2D::Create(picked);
+            setter(tex && tex->GetRendererID() ? tex : nullptr);
         }
         if (texture)
         {
@@ -1575,7 +1591,7 @@ namespace Conqueror::Editor
             const auto& wt = reg.get<TransformComponent>(e).WorldTransform;
             for (int c = 0; c < 4; ++c)
                 HashVec3(h, glm::vec3(wt[c]));
-            HashVec3(h, glm::vec3(reg.get<MeshRendererComponent>(e).Color));
+            HashVec3(h, MeshRendererMaterial::Shared(reg.get<MeshRendererComponent>(e)).Albedo);
         }
         return h;
     }

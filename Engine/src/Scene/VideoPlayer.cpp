@@ -1,3 +1,5 @@
+#include "Scene/MeshRendererMaterial.h"
+#include "Renderer/Utilities/Renderer3D/Material.h"
 #include "VideoPlayer.h"
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"
@@ -524,12 +526,18 @@ namespace Conqueror
                 case VideoRenderMode::MaterialOverride:
                     if (auto* mr = reg.try_get<MeshRendererComponent>(target))
                     {
-                        mr->Texture = tex;
+                        // Malzemenin taban dokusu video karesi (Unity VideoPlayer Material Override); nesneye özel örnek
+                        MeshRendererMaterial::SetTexture(*mr, tex);
                         if (vp.Emissive)
                         {
-                            mr->EmissionFromTexture = true;
-                            mr->EmissionColor = glm::vec3(1.0f);
-                            mr->EmissionStrength = std::max(mr->EmissionStrength, 1.0f);
+                            const Material& cur = MeshRendererMaterial::Shared(*mr);
+                            if (cur.EmissionMap != tex || cur.EmissionColor != glm::vec3(1.0f) || cur.EmissionStrength < 1.0f)
+                            {
+                                Material& m = MeshRendererMaterial::Edit(*mr);
+                                m.EmissionMap = tex;
+                                m.EmissionColor = glm::vec3(1.0f);
+                                m.EmissionStrength = std::max(m.EmissionStrength, 1.0f);
+                            }
                         }
                     }
                     break;

@@ -1,3 +1,4 @@
+#include "Renderer/SpriteAtlas.h"
 #include "BuildPipeline.h"
 
 #include <IconsFontAwesome6.h>
@@ -305,6 +306,8 @@ namespace Conqueror::Editor
     {
         if (m_Running.load())
             return false;
+        // Sprite Atlas paketleri oyunla gider: eskiyse derlemeden önce yeniden paketle
+        SpriteAtlases::PackAllIfStale();
         if (m_Thread.joinable())
             m_Thread.join();
         {

@@ -1,4 +1,10 @@
 #include "AssetInspector.h"
+#include "Assets/SceneTemplate.h"
+#include "Assets/AssetUI.h"
+#include "Assets/TileAssetInspector.h"
+#include "Assets/SpriteAtlasInspector.h"
+#include "EditorState.h"
+#include <yaml-cpp/yaml.h>
 #include "Core/PhysicsSystem/PhysicsMaterial.h"
 #include "Renderer/RenderTargetRegistry.h"
 #include "MaterialEditorUI.h"
@@ -21,6 +27,7 @@
 #include <cmath>
 #include <ctime>
 #include <filesystem>
+#include <fstream>
 #include <memory>
 #include <vector>
 
@@ -494,7 +501,7 @@ namespace Conqueror::Editor::AssetInspector
 
     static void DrawPhysicsMaterial(const std::string& path)
     {
-        AssetHeader(ICON_FA_BASKETBALL, path, "Physics Material");
+        AssetHeader(ICON_FA_BASKETBALL, path, PhysicsMaterials::IsFile2D(path) ? "Physics Material 2D" : "Physics Material");
         PhysicsMaterialAsset m;
         if (!PhysicsMaterials::Load(path, m))
         {
@@ -543,14 +550,89 @@ namespace Conqueror::Editor::AssetInspector
         UI::InfoBox("A camera renders into it via Render Target > Target Texture. Use it in any texture slot.", UI::InfoType::Info);
     }
 
+    namespace
+    {
+        void DrawPrefab(const std::string& path)
+        {
+            const bool variant = PrefabSerializer::IsVariant(path);
+            ImGui::TextColored(variant ? ImVec4(0.67f, 0.55f, 1.0f, 1.0f) : UI::Colors::Accent, ICON_FA_CUBES_STACKED);
+            ImGui::SameLine();
+            ImGui::TextUnformatted((fs::path(path).filename().string() + (variant ? "  (Prefab Variant)" : "  (Prefab)")).c_str());
+            ImGui::Separator();
+            if (!variant)
+            {
+                ImGui::TextWrapped("Drag it into the Scene view or the Hierarchy to place it. Right-click > Create Prefab Variant makes a "
+                                   "prefab based on this one.");
+                DrawFileInfo(path);
+                return;
+            }
+            static std::string cachedPath;
+            static int overrides = 0, added = 0, removed = 0;
+            static fs::file_time_type cachedTime;
+            std::error_code ec;
+            const auto t = fs::last_write_time(path, ec);
+            if (cachedPath != path || cachedTime != t)
+            {
+                cachedPath = path;
+                cachedTime = t;
+                overrides = added = removed = 0;
+                try
+                {
+                    YAML::Node v = YAML::LoadFile(path)["PrefabVariant"];
+                    if (v["Overrides"]) for (const auto& o : v["Overrides"]) overrides += (o["Components"] ? (int)o["Components"].size() : 0) + (o["Removed"] ? (int)o["Removed"].size() : 0);
+                    if (v["Added"]) added = (int)v["Added"].size();
+                    if (v["RemovedEntities"]) removed = (int)v["RemovedEntities"].size();
+                }
+                catch (...) {}
+            }
+            std::string base = PrefabSerializer::GetVariantBase(path);
+            if (AssetUI::BeginProperties("##variant"))
+            {
+                AssetUI::Row("Base Prefab");
+                std::string edited = base;
+                if (AssetUI::AssetSlot("base", "Prefab", { ".cqprefab" }, edited) && !edited.empty() &&
+                    fs::weakly_canonical(AssetUI::Resolve(edited), ec) != fs::weakly_canonical(path, ec))
+                {
+                    // Taban değişimi: farklar korunur, yeni tabana uygulanır
+                    try
+                    {
+                        YAML::Node root = YAML::LoadFile(path);
+                        root["PrefabVariant"]["Base"] = edited;
+                        YAML::Emitter e;
+                        e << root;
+                        std::ofstream(path, std::ios::binary | std::ios::trunc) << e.c_str() << "\n";
+                    }
+                    catch (...) {}
+                }
+                AssetUI::Row("Overridden components");
+                ImGui::Text("%d", overrides);
+                AssetUI::Row("Added objects");
+                ImGui::Text("%d", added);
+                AssetUI::Row("Removed objects");
+                ImGui::Text("%d", removed);
+                AssetUI::EndProperties();
+            }
+            if (ImGui::Button(ICON_FA_ARROW_UP "  Select Base Prefab") && !base.empty())
+                EditorState::Get().SelectAsset(AssetUI::Resolve(base).string());
+            ImGui::Spacing();
+            ImGui::TextWrapped("Place it in a scene, change it and press Apply on the instance: only the differences from the base are saved. "
+                               "Changes to the base prefab show up in this variant unless the variant overrides them.");
+        }
+    }
+
     void Draw(const std::string& path)
     {
+        if (Lower(fs::path(path).extension().string()) == PrefabSerializer::Extension)
+        {
+            DrawPrefab(path);
+            return;
+        }
         if (IsTexture(path))
         {
             DrawTexture(path);
             return;
         }
-        if (Lower(fs::path(path).extension().string()) == ".cqphysmat")
+        if (Lower(fs::path(path).extension().string()) == ".cqphysmat" || Lower(fs::path(path).extension().string()) == ".cqphysmat2d")
         {
             DrawPhysicsMaterial(path);
             return;
@@ -563,6 +645,26 @@ namespace Conqueror::Editor::AssetInspector
         if (Lower(fs::path(path).extension().string()) == ".cqmat")
         {
             MaterialEditorUI::DrawAssetInspector(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".cqspriteatlas")
+        {
+            SpriteAtlasInspector::Draw(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".cqtile")
+        {
+            TileAssetInspector::DrawTile(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".cqpalette")
+        {
+            TileAssetInspector::DrawPalette(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == SceneTemplates::Extension)
+        {
+            SceneTemplates::DrawInspector(path);
             return;
         }
         if (Lower(fs::path(path).extension().string()) == ".cqmontage")

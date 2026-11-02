@@ -381,6 +381,41 @@ namespace Conqueror::Editor
         ImGui::TextDisabled(ICON_FA_CIRCLE_INFO "  Direction follows the object's rotation (%.2f, %.2f, %.2f)", d.x, d.y, d.z);
     }
 
+    // Unity nesne alanı: yol kutusu (yazılabilir) + Content Browser'dan sürükle-bırak + ◎ seçici penceresi
+    static bool AssetFieldRow(const char* label, std::string& value, const std::string& filter, const char* tooltip)
+    {
+        bool changed = false;
+        const auto exts = ObjectPicker::ParseFilter(filter);
+        UI::BeginProperty(label, tooltip);
+        const float h = ImGui::GetFrameHeight();
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - h - ImGui::GetStyle().ItemSpacing.x);
+        char buf[1024];
+        snprintf(buf, sizeof(buf), "%s", value.c_str());
+        if (ImGui::InputText("##assetpath", buf, sizeof(buf)))
+        {
+            value = buf;
+            changed = true;
+        }
+        if (ImGui::BeginDragDropTarget())
+        {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+            {
+                value = SceneSerializer::ToAssetPath(std::string((const char*)payload->Data, payload->DataSize - 1));
+                changed = true;
+            }
+            ImGui::EndDragDropTarget();
+        }
+        ImGui::SameLine();
+        if (std::string picked; ObjectPicker::Button("assetpick", ObjectPicker::TypeNameFor(exts), exts,
+                                                     value.empty() ? value : SceneSerializer::ResolveAssetPath(value), picked))
+        {
+            value = picked.empty() ? picked : SceneSerializer::ToAssetPath(picked);
+            changed = true;
+        }
+        UI::EndProperty();
+        return changed;
+    }
+
     static bool DrawRegistryField(Entity entity, const ComponentField& f, void* component)
     {
         if (!f.Ptr)
@@ -389,16 +424,9 @@ namespace Conqueror::Editor
             if (!f.GetString)
                 return false;
             std::string value = f.GetString(component);
-            bool changed = UI::InputText(f.Label.c_str(), value, f.Tooltip.empty() ? nullptr : f.Tooltip.c_str());
-            if (f.Kind == FieldKind::Asset && ImGui::BeginDragDropTarget())
-            {
-                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
-                {
-                    value = std::string((const char*)payload->Data, payload->DataSize - 1);
-                    changed = true;
-                }
-                ImGui::EndDragDropTarget();
-            }
+            bool changed = f.Kind == FieldKind::Asset
+                ? AssetFieldRow(f.Label.c_str(), value, f.AssetFilter, f.Tooltip.empty() ? nullptr : f.Tooltip.c_str())
+                : UI::InputText(f.Label.c_str(), value, f.Tooltip.empty() ? nullptr : f.Tooltip.c_str());
             if (changed && f.SetString && !f.ReadOnly)
                 f.SetString(component, value);
             return changed;
@@ -431,19 +459,8 @@ namespace Conqueror::Editor
             case FieldKind::Color4: changed = UI::Color4(label, *(glm::vec4*)p, tip); break;
             case FieldKind::String: changed = UI::InputText(label, *(std::string*)p, tip); break;
             case FieldKind::Asset:
-            {
-                changed = UI::InputText(label, *(std::string*)p, tip);
-                if (ImGui::BeginDragDropTarget())
-                {
-                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
-                    {
-                        *(std::string*)p = std::string((const char*)payload->Data, payload->DataSize - 1);
-                        changed = true;
-                    }
-                    ImGui::EndDragDropTarget();
-                }
+                changed = AssetFieldRow(label, *(std::string*)p, f.AssetFilter, tip);
                 break;
-            }
             case FieldKind::Enum:
             {
                 std::vector<const char*> items;
@@ -932,17 +949,20 @@ namespace Conqueror::Editor
                         ImGui::EndDragDropTarget();
                     }
                     ImGui::SameLine(0, 4.0f);
-                    if (ImGui::Button(ICON_FA_FOLDER_OPEN "##browse", ImVec2(ImGui::GetFrameHeight(), 0)))
                     {
-                        nfdchar_t* outPath = nullptr;
-                        nfdfilteritem_t filters[1] = { { "Scripts", "cqs,luau,lua,py,cs,java,cpp" } };
-                        if (NFD_OpenDialog(&outPath, filters, 1, nullptr) == NFD_OKAY)
+                        // Unity Object Picker: projedeki tüm betik dilleri
+                        std::vector<std::string> scriptExts;
+                        for (auto* runtime : Scripting::ScriptRuntimes::All())
+                            for (const auto& e : runtime->GetExtensions())
+                                scriptExts.push_back(e);
+                        if (std::string picked; ObjectPicker::Button("scriptpick", "Script", scriptExts, script.ScriptPath, picked))
                         {
-                            assignScript(outPath);
-                            NFD_FreePath(outPath);
+                            if (picked.empty())
+                                script.ScriptPath.clear();
+                            else
+                                assignScript(picked);
                         }
                     }
-                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort)) ImGui::SetTooltip("Browse...");
                     ImGui::SameLine(0, 4.0f);
                     ImGui::BeginDisabled(script.ScriptPath.empty() || !s_OpenCodeEditor);
                     if (ImGui::Button(ICON_FA_PEN_TO_SQUARE "##edit", ImVec2(ImGui::GetFrameHeight(), 0)))
@@ -1332,6 +1352,7 @@ namespace Conqueror::Editor
                         {
                             component.Texture = Texture2D::Create(path.string());
                             component.SpriteName.clear();
+                            Renderer2D::ApplySpriteImport(component);
                         }
                         else
                             CQ_CORE_WARN("Sprite Renderer: unsupported texture type {0}", ext);
@@ -1353,6 +1374,7 @@ namespace Conqueror::Editor
                 {
                     component.Texture = picked.empty() ? nullptr : Texture2D::Create(picked);
                     component.SpriteName.clear();
+                    Renderer2D::ApplySpriteImport(component);
                 }
                 ImGui::SameLine();
                 if (component.Texture && ImGui::SmallButton(ICON_FA_XMARK "##cleartex"))
@@ -1593,15 +1615,18 @@ namespace Conqueror::Editor
                 UI::ComboEnum("Blend", ps.Blend, blends, 3);
                 UI::BeginProperty("Texture", "Drag an image from the Content Browser (empty = soft circle)");
                 std::string texName = ps.TexturePath.empty() ? std::string("Default (soft circle)") : std::filesystem::path(ps.TexturePath).filename().string();
-                ImGui::Button(texName.c_str(), ImVec2(ImGui::GetContentRegionAvail().x - 26.0f, 0));
+                ImGui::Button(texName.c_str(), ImVec2(ImGui::GetContentRegionAvail().x - 2.0f * (ImGui::GetFrameHeight() + 4.0f), 0));
                 if (ImGui::BeginDragDropTarget())
                 {
                     if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
                         ps.TexturePath = (const char*)p->Data;
                     ImGui::EndDragDropTarget();
                 }
-                ImGui::SameLine(0, 2);
-                if (ImGui::SmallButton(ICON_FA_XMARK "##cleartex")) ps.TexturePath.clear();
+                ImGui::SameLine(0, 4);
+                if (std::string picked; ObjectPicker::Button("ptexpick", "Texture", ObjectPicker::ImageExtensions(), ps.TexturePath, picked))
+                    ps.TexturePath = picked;
+                ImGui::SameLine(0, 4);
+                if (ImGui::Button(ICON_FA_XMARK "##cleartex", ImVec2(ImGui::GetFrameHeight(), 0))) ps.TexturePath.clear();
                 UI::EndProperty();
                 UI::DragFloat("Emissive (HDR)", ps.EmissiveIntensity, 0.05f, 0.0f, 100.0f);
                 UI::Checkbox("Sort by Distance", ps.SortByDistance);
@@ -1708,6 +1733,20 @@ namespace Conqueror::Editor
                     }
                 }
                 ImGui::EndDragDropTarget();
+            }
+            ImGui::SameLine();
+            if (std::string picked; ObjectPicker::Button("modelpick", "Model", ObjectPicker::ModelExtensions(), component.FilePath, picked))
+            {
+                if (picked.empty())
+                {
+                    component.FilePath.clear();
+                    component.ModelData = nullptr;
+                }
+                else
+                {
+                    component.FilePath = ToSerializablePath(picked);
+                    component.ModelData = ModelLoader::Load(picked);
+                }
             }
 
             // Model info
@@ -1959,6 +1998,10 @@ namespace Conqueror::Editor
                 }
                 ImGui::EndDragDropTarget();
             }
+            ImGui::SameLine();
+            if (std::string picked; ObjectPicker::Button("imgpick", "Texture", ObjectPicker::ImageExtensions(),
+                                                         component.Texture ? component.Texture->GetPath() : std::string(), picked))
+                component.Texture = picked.empty() ? nullptr : Texture2D::Create(picked);
 
             ImGui::DragFloat("Tiling Factor", &component.TilingFactor, 0.1f, 0.1f, 10.0f);
         });
@@ -2272,16 +2315,19 @@ namespace Conqueror::Editor
         auto textureField = [](const char* label, std::string& path) {
             UI::BeginProperty(label, "Drag an image from the Content Browser");
             std::string name = path.empty() ? std::string("None") : std::filesystem::path(path).filename().string();
-            ImGui::Button(name.c_str(), ImVec2(ImGui::GetContentRegionAvail().x - 26.0f, 0));
+            ImGui::Button(name.c_str(), ImVec2(ImGui::GetContentRegionAvail().x - 2.0f * (ImGui::GetFrameHeight() + 4.0f), 0));
             if (ImGui::BeginDragDropTarget())
             {
                 if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
                     path = (const char*)p->Data;
                 ImGui::EndDragDropTarget();
             }
-            ImGui::SameLine(0, 2);
             ImGui::PushID(label);
-            if (ImGui::SmallButton(ICON_FA_XMARK)) path.clear();
+            ImGui::SameLine(0, 4);
+            if (std::string picked; ObjectPicker::Button("uitexpick", "Sprite", ObjectPicker::ImageExtensions(), path, picked))
+                path = picked;
+            ImGui::SameLine(0, 4);
+            if (ImGui::Button(ICON_FA_XMARK, ImVec2(ImGui::GetFrameHeight(), 0))) path.clear();
             ImGui::PopID();
             UI::EndProperty();
         };
@@ -2336,7 +2382,7 @@ namespace Conqueror::Editor
             UI::EndProperty();
             UI::BeginProperty("Font", "Drag a .ttf/.otf from the Content Browser");
             std::string fn = c.FontPath.empty() ? std::string("Default (Open Sans)") : std::filesystem::path(c.FontPath).filename().string();
-            ImGui::Button(fn.c_str(), ImVec2(ImGui::GetContentRegionAvail().x - 26.0f, 0));
+            ImGui::Button(fn.c_str(), ImVec2(ImGui::GetContentRegionAvail().x - 2.0f * (ImGui::GetFrameHeight() + 4.0f), 0));
             if (ImGui::BeginDragDropTarget())
             {
                 if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
@@ -2347,8 +2393,11 @@ namespace Conqueror::Editor
                 }
                 ImGui::EndDragDropTarget();
             }
-            ImGui::SameLine(0, 2);
-            if (ImGui::SmallButton(ICON_FA_XMARK "##font")) c.FontPath.clear();
+            ImGui::SameLine(0, 4);
+            if (std::string picked; ObjectPicker::Button("fontpick", "Font", ObjectPicker::FontExtensions(), c.FontPath, picked))
+                c.FontPath = picked;
+            ImGui::SameLine(0, 4);
+            if (ImGui::Button(ICON_FA_XMARK "##font", ImVec2(ImGui::GetFrameHeight(), 0))) c.FontPath.clear();
             UI::EndProperty();
             UI::DragFloat("Font Size", c.FontSize, 0.25f, 4.0f, 512.0f, "%.1f px");
             UI::Color4("Color", c.Color);
@@ -2594,6 +2643,8 @@ namespace Conqueror::Editor
         {
             static const char* bodyTypes[] = { "Static", "Dynamic", "Kinematic" };
             UI::ComboEnum("Body Type", component.Type, bodyTypes, 3);
+            MaterialEditorUI::AssetPathSlot("Material", component.PhysicsMaterial, ".cqphysmat2d", "Physics Material 2D",
+                                            "Friction and bounciness for this body's colliders that have no material of their own (.cqphysmat2d).");
             if (component.Type == RigidBody2DComponent::BodyType::Dynamic)
             {
                 UI::Checkbox("Use Auto Mass", component.UseAutoMass, "Mass from collider areas x density.");
@@ -2630,6 +2681,8 @@ namespace Conqueror::Editor
             component.Size = glm::max(component.Size, glm::vec2(0.0f));
             UI::DragFloat("Edge Radius", component.EdgeRadius, 0.005f, 0.0f, 10.0f);
             UI::SubHeader("Material");
+            MaterialEditorUI::AssetPathSlot("Material", component.PhysicsMaterial, ".cqphysmat2d", "Physics Material 2D",
+                                            "Friction and bounciness (.cqphysmat2d). Empty = the Rigidbody 2D material, or the values below.");
             UI::DragFloat("Density", component.Density, 0.01f, 0.0f, 1000.0f);
             UI::SliderFloat("Friction", component.Friction, 0.0f, 1.0f);
             UI::SliderFloat("Bounciness", component.Restitution, 0.0f, 1.0f);
@@ -2641,6 +2694,8 @@ namespace Conqueror::Editor
             UI::Vec2("Offset", component.Offset, 0.01f);
             UI::DragFloat("Radius", component.Radius, 0.01f, 0.0f, 10000.0f);
             UI::SubHeader("Material");
+            MaterialEditorUI::AssetPathSlot("Material", component.PhysicsMaterial, ".cqphysmat2d", "Physics Material 2D",
+                                            "Friction and bounciness (.cqphysmat2d). Empty = the Rigidbody 2D material, or the values below.");
             UI::DragFloat("Density", component.Density, 0.01f, 0.0f, 1000.0f);
             UI::SliderFloat("Friction", component.Friction, 0.0f, 1.0f);
             UI::SliderFloat("Bounciness", component.Restitution, 0.0f, 1.0f);
@@ -2771,50 +2826,32 @@ namespace Conqueror::Editor
                 }
             }
 
-            // Dosya yolu
-            ImGui::Text("Audio File:");
-            ImGui::SameLine();
-            
-            char pathBuffer[256];
-            memset(pathBuffer, 0, sizeof(pathBuffer));
-            strncpy(pathBuffer, component.FilePath.c_str(), sizeof(pathBuffer) - 1);
-            
-            if (ImGui::InputText("##AudioFilePath", pathBuffer, sizeof(pathBuffer)))
+            // Ses klibi (Unity AudioClip alanı): ad düğmesi + sürükle-bırak + ◎ seçici + temizle
             {
-                component.FilePath = ToSerializablePath(std::string(pathBuffer));
-            }
-            
-            ImGui::SameLine();
-            if (ImGui::Button("Browse..."))
-            {
-                nfdchar_t* outPath = nullptr;
-                nfdfilteritem_t filters[1] = { { "Audio Files", "wav,mp3,ogg,flac" } };
-                
-                nfdresult_t result = NFD_OpenDialog(&outPath, filters, 1, nullptr);
-                
-                if (result == NFD_OKAY)
+                UI::BeginProperty("Audio Clip", "Drag a .wav/.mp3/.ogg/.flac from the Content Browser or pick one with the target button");
+                const float h = ImGui::GetFrameHeight();
+                std::string shown = component.FilePath.empty() ? std::string("None (Audio Clip)") : std::filesystem::path(component.FilePath).filename().string();
+                ImGui::Button((shown + "##audioclip").c_str(), ImVec2(ImGui::GetContentRegionAvail().x - 2.0f * (h + 4.0f), 0));
+                if (ImGui::IsItemHovered() && !component.FilePath.empty())
+                    ImGui::SetTooltip("%s", component.FilePath.c_str());
+                if (ImGui::BeginDragDropTarget())
                 {
-                    component.FilePath = ToSerializablePath(std::string(outPath));
-                    NFD_FreePath(outPath);
-                }
-            }
-            
-            // Drag & Drop target
-            if (ImGui::BeginDragDropTarget())
-            {
-                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
-                {
-                    std::string droppedPath((const char*)payload->Data, payload->DataSize - 1);
-                    std::filesystem::path path(droppedPath);
-                    std::string ext = path.extension().string();
-                    
-                    if (ext == ".wav" || ext == ".mp3" || ext == ".ogg" || ext == ".flac")
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
                     {
-                        component.FilePath = ToSerializablePath(droppedPath);
-                        CQ_CORE_INFO("Audio loaded: {0}", droppedPath);
+                        std::string droppedPath((const char*)payload->Data, payload->DataSize - 1);
+                        std::string ext = std::filesystem::path(droppedPath).extension().string();
+                        if (ext == ".wav" || ext == ".mp3" || ext == ".ogg" || ext == ".flac")
+                            component.FilePath = ToSerializablePath(droppedPath);
                     }
+                    ImGui::EndDragDropTarget();
                 }
-                ImGui::EndDragDropTarget();
+                ImGui::SameLine(0, 4);
+                if (std::string picked; ObjectPicker::Button("audiopick", "Audio Clip", ObjectPicker::AudioExtensions(), component.FilePath, picked))
+                    component.FilePath = picked.empty() ? std::string() : ToSerializablePath(picked);
+                ImGui::SameLine(0, 4);
+                if (ImGui::Button(ICON_FA_XMARK "##clearaudio", ImVec2(h, 0)))
+                    component.FilePath.clear();
+                UI::EndProperty();
             }
 
             // Temel kontroller
@@ -3092,6 +3129,40 @@ namespace Conqueror::Editor
                             }
                         }
                         ImGui::EndDragDropTarget();
+                    }
+                    ImGui::SameLine();
+                    // Unity Object Picker: C / C++ / Rust / Zig kaynakları ve derlenmiş kitaplıklar
+                    if (std::string picked; ObjectPicker::Button("nativepick", "Native Script",
+                                                                 { ".cpp", ".cc", ".cxx", ".c", ".rs", ".zig", ".dll", ".so" }, script.ScriptPath, picked))
+                    {
+                        if (picked.empty())
+                        {
+                            script.ScriptPath.clear();
+                            script.ModuleName.clear();
+                            script.ClassName.clear();
+                            script.InstantiateScript = nullptr;
+                        }
+                        else if (NativeScriptCompiler::IsSource(picked))
+                        {
+                            script.ModuleName = std::filesystem::path(picked).stem().string();
+                            script.ClassName.clear();
+                            script.ScriptPath = ToSerializablePath(picked);
+                            script.InstantiateScript = nullptr;
+                            m_NativeCompileLog.clear();
+                        }
+                        else
+                        {
+                            script.ModuleName = std::filesystem::path(picked).stem().string();
+                            script.ScriptPath = ToSerializablePath(picked);
+                            if (ScriptEngine::LoadModule(script.ModuleName, picked))
+                            {
+                                auto classNames = ScriptEngine::GetModuleClassNames(script.ModuleName);
+                                script.ClassName = classNames.empty() ? script.ModuleName : classNames.front();
+                                script.InstantiateScript = [moduleName = script.ModuleName, className = script.ClassName]() {
+                                    return ScriptEngine::CreateScriptInstance(moduleName, className);
+                                };
+                            }
+                        }
                     }
                     
                     ImGui::Separator();

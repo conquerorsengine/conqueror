@@ -1,3 +1,5 @@
+#include "Scene/MeshRendererMaterial.h"
+#include "Renderer/Utilities/Renderer3D/Material.h"
 #include "CQSNativeBridge.h"
 #include <algorithm>
 #include <cctype>
@@ -595,7 +597,7 @@ namespace Conqueror::CQS
         if (argCount < 4) return Value::MakeNull();
         Entity e = GetCurrentEntity_S(); if (!e) return Value::MakeNull();
         glm::vec4 color((float)args[0].ToNumber(), (float)args[1].ToNumber(), (float)args[2].ToNumber(), (float)args[3].ToNumber());
-        if (e.HasComponent<MeshRendererComponent>()) e.GetComponent<MeshRendererComponent>().Color = color;
+        if (e.HasComponent<MeshRendererComponent>()) MeshRendererMaterial::SetColor(e.GetComponent<MeshRendererComponent>(), color);
         else if (e.HasComponent<SpriteRendererComponent>()) e.GetComponent<SpriteRendererComponent>().Color = color;
         return Value::MakeNull();
     }
@@ -603,7 +605,7 @@ namespace Conqueror::CQS
     {
         Entity e = GetCurrentEntity_S(); if (!e) return Value::MakeNull();
         glm::vec4 c(1.0f);
-        if (e.HasComponent<MeshRendererComponent>()) c = e.GetComponent<MeshRendererComponent>().Color;
+        if (e.HasComponent<MeshRendererComponent>()) c = MeshRendererMaterial::GetColor(e.GetComponent<MeshRendererComponent>());
         else if (e.HasComponent<SpriteRendererComponent>()) c = e.GetComponent<SpriteRendererComponent>().Color;
         auto* m = new CQSMapObject();
         m->Entries["r"] = Value::MakeFloat(c.r);

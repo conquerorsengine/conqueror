@@ -1,3 +1,4 @@
+#include "Core/Serialization/SceneSerializer.h"
 #include "ComponentRegistry.h"
 #include "Core/Logging/Log.h"
 
@@ -201,8 +202,9 @@ namespace Conqueror
                     case FieldKind::Color3: WriteSeq<3>(out, (float*)p); break;
                     case FieldKind::Vec4:
                     case FieldKind::Color4: WriteSeq<4>(out, (float*)p); break;
-                    case FieldKind::String:
-                    case FieldKind::Asset: out << *(std::string*)p; break;
+                    case FieldKind::String: out << *(std::string*)p; break;
+                    // Dosya yolu proje göreli / CQ:Resources yazılır (mutlak yol proje taşınınca bozulurdu)
+                    case FieldKind::Asset: out << SceneSerializer::ToAssetPath(*(std::string*)p); break;
                     case FieldKind::Enum: out << ReadEnum(f, p); break;
                     case FieldKind::EntityRef: out << *(uint64_t*)p; break;
                     case FieldKind::LayerMask: out << *(uint32_t*)p; break;

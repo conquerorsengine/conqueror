@@ -1,3 +1,4 @@
+#include "Scene/MeshRendererMaterial.h"
 #include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
 #include "Scene.h"
 #include "Scripting/NativeScriptCompiler.h"
@@ -94,57 +95,6 @@
 
 namespace Conqueror
 {
-    bool NormalizeDefaultMaterial(MeshRendererComponent& mr)
-    {
-        if (mr.MaterialPath.empty() || mr.MaterialPath != MaterialAsset::DefaultGridPath())
-            return false;
-        static const MeshRendererComponent defaults = [] { MeshRendererComponent d; return d; }();
-        const bool customized = mr.Color != defaults.Color || mr.Metallic != defaults.Metallic || mr.Roughness != defaults.Roughness ||
-                                mr.AO != defaults.AO || mr.EmissionColor != defaults.EmissionColor || mr.EmissionStrength != defaults.EmissionStrength ||
-                                mr.EmissionFromTexture || mr.Tiling != defaults.Tiling || mr.Offset != defaults.Offset || mr.WorldAlignedUV ||
-                                mr.AlignToObject || mr.Texture || mr.NormalMap || mr.MaskMap || mr.Unlit || mr.AlphaClip;
-        if (!customized)
-            return false;
-        // Gömülü malzemeye geç; doku verilmediyse dama korunur (eski görünüm: renkli dama)
-        if (!mr.Texture && mr.MaterialInstance && mr.MaterialInstance->AlbedoMap)
-        {
-            mr.Texture = mr.MaterialInstance->AlbedoMap;
-            mr.TexturePath = mr.Texture->GetPath();
-        }
-        mr.MaterialInstance = nullptr;
-        mr.MaterialPath.clear();
-        mr.RuntimeMaterial.reset();
-        return true;
-    }
-
-    void FillMaterialFromMeshRenderer(Material& material, const MeshRendererComponent& meshRenderer)
-    {
-        material.Albedo = glm::vec3(meshRenderer.Color);
-        material.Metallic = meshRenderer.Metallic;
-        material.Roughness = meshRenderer.Roughness;
-        material.AO = meshRenderer.AO;
-        material.EmissionColor = meshRenderer.EmissionColor;
-        material.EmissionStrength = meshRenderer.EmissionStrength;
-        material.EmissionMap = meshRenderer.EmissionFromTexture ? meshRenderer.Texture : nullptr;
-        material.Tiling = meshRenderer.Tiling;
-        material.Offset = meshRenderer.Offset;
-        material.WorldAligned = meshRenderer.WorldAlignedUV;
-        material.AlignToObject = meshRenderer.AlignToObject;
-        material.AlbedoMap = meshRenderer.Texture;
-        material.NormalMap = meshRenderer.NormalMap;
-        material.AOMap = meshRenderer.MaskMap;
-        material.RoughnessMap = meshRenderer.MaskMap;
-        material.MetallicMap = meshRenderer.MaskMap;
-        material.RoughnessChannel = meshRenderer.MaskMap ? 1 : 0;
-        material.MetallicChannel = meshRenderer.MaskMap ? 2 : 0;
-        material.MapsScaleFactors = meshRenderer.MaskMap != nullptr;
-        // Renk alfası saydamlıktır (cam, hayalet): shader'da dokunun alfasıyla çarpılır
-        material.Opacity = meshRenderer.Color.a;
-        material.Shading = meshRenderer.Unlit ? Material::ShadingModel::Unlit : Material::ShadingModel::DefaultLit;
-        material.Rendering = meshRenderer.AlphaClip ? Material::RenderMode::Cutout
-                           : (meshRenderer.Color.a < 0.999f ? Material::RenderMode::Transparent : Material::RenderMode::Opaque);
-        material.AlphaClip = meshRenderer.AlphaClipThreshold;
-    }
 
     namespace
     {
@@ -2853,48 +2803,18 @@ namespace Conqueror
                 continue;
             auto [transform, meshRenderer] = meshView.get<TransformComponent, MeshRendererComponent>(entity);
 
-            // Malzeme atanmışsa YALNIZ o çizilir (Unity: doku, renk, ışıma ve Shader Graph malzemenin içinde). Eskiden
-            // Mesh Renderer dokusu varken malzemenin bir kopyası önbelleklenip ona doku ekleniyordu; sonradan derlenen
-            // Shader Graph o kopyaya hiç ulaşmıyordu (küp damalı kalıyordu).
-            NormalizeDefaultMaterial(meshRenderer);
-            std::shared_ptr<Material> material;
-            if (meshRenderer.MaterialInstance)
+            // Unity gibi: renk, doku, ışıma ve Shader Graph malzemenin içinde; malzemesiz nesne varsayılan malzemeyle çizilir
+            std::shared_ptr<Material> material = meshRenderer.MaterialInstance;
+            if (!material)
             {
-                // Oyunda renk betik / tween ile değiştiyse paylaşılan malzeme bu nesne için kopyalanır (Unity
-                // renderer.material): dosya ve aynı malzemeyi kullanan diğer nesneler etkilenmez
-                if (m_IsRuntimeScene)
+                static std::shared_ptr<Material> s_Fallback;
+                material = MaterialAsset::DefaultGrid();
+                if (!material)
                 {
-                    if (meshRenderer.RuntimeTrackedColor.x < 0.0f)
-                    {
-                        // Betiklerin okuduğu renk malzemenin rengi olsun (GetColor, tween başlangıcı)
-                        meshRenderer.Color = glm::vec4(meshRenderer.MaterialInstance->Albedo, meshRenderer.MaterialInstance->Opacity);
-                        meshRenderer.RuntimeTrackedColor = meshRenderer.Color;
-                    }
-                    else if (meshRenderer.Color != meshRenderer.RuntimeTrackedColor)
-                    {
-                        if (!meshRenderer.RuntimeMaterialInstanced)
-                        {
-                            meshRenderer.MaterialInstance = std::make_shared<Material>(*meshRenderer.MaterialInstance);
-                            meshRenderer.RuntimeMaterialInstanced = true;
-                        }
-                        meshRenderer.MaterialInstance->Albedo = glm::vec3(meshRenderer.Color);
-                        meshRenderer.MaterialInstance->Opacity = meshRenderer.Color.a;
-                        if (meshRenderer.Color.a < 0.999f && meshRenderer.MaterialInstance->Rendering == Material::RenderMode::Opaque)
-                            meshRenderer.MaterialInstance->Rendering = Material::RenderMode::Transparent;
-                        meshRenderer.RuntimeTrackedColor = meshRenderer.Color;
-                    }
+                    if (!s_Fallback)
+                        s_Fallback = std::make_shared<Material>();
+                    material = s_Fallback;
                 }
-                material = meshRenderer.MaterialInstance;
-            }
-            else
-            {
-                if (!meshRenderer.RuntimeMaterial || meshRenderer.RuntimeMaterialSource != nullptr)
-                {
-                    meshRenderer.RuntimeMaterial = std::make_shared<Material>();
-                    meshRenderer.RuntimeMaterialSource = nullptr;
-                }
-                material = meshRenderer.RuntimeMaterial;
-                FillMaterialFromMeshRenderer(*material, meshRenderer);
             }
 
             Renderer3D::SetReceiveShadows(meshRenderer.ReceiveShadows);
@@ -3338,11 +3258,9 @@ namespace Conqueror
     template<>
     CQ_API void Scene::OnComponentAdded<MeshRendererComponent>(Entity entity, MeshRendererComponent& component)
     {
-        // Varsayılan malzeme (Unreal WorldGridMaterial gibi): dama dokusu Mesh Renderer'da değil, motorla gelen
+        // Varsayılan malzeme (Unreal WorldGridMaterial gibi): dama dokusu motorla gelen salt okunur
         // "Packages/Core/Materials/Default Grid" malzemesinin içinde. Betik / Inspector renk ya da doku verirse
-        // NormalizeDefaultMaterial nesneyi kendi (gömülü) malzemesine çevirir.
-        component.Texture = nullptr;
-        component.TexturePath.clear();
+        // MeshRendererMaterial::Edit nesneye özel "(Instance)" kopyası çıkarır.
         component.MaterialPath = MaterialAsset::DefaultGridPath();
         component.MaterialInstance = MaterialAsset::DefaultGrid();
         if (!component.MaterialInstance)

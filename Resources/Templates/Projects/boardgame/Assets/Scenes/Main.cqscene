@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 8316145245003929047
+  - Entity: 8317960973219336045
     TagComponent:
       Tag: Sea
       GameTag: Untagged
@@ -14,13 +14,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [0.05, 0.26, 0.34, 1]
-      Metallic: 0
-      Roughness: 0.06
-      AO: 1
       CastShadows: false
-      TexturePath: ""
-  - Entity: 8997979868161879760
+      MaterialAsset: Assets/Materials/Sea.cqmat
+  - Entity: 8996090206336297452
     TagComponent:
       Tag: Shallows
       GameTag: Untagged
@@ -34,13 +30,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.16, 0.52, 0.56, 1]
-      Metallic: 0
-      Roughness: 0.3
-      AO: 1
       CastShadows: false
-      TexturePath: ""
-  - Entity: 7805718077480009367
+      MaterialAsset: Assets/Materials/Shallows.cqmat
+  - Entity: 7806088738438351091
     TagComponent:
       Tag: Hex Board
       GameTag: Untagged
@@ -69,7 +61,7 @@ Entities:
           Bool: false
         radius:
           Int: 7
-  - Entity: 3606032170613789709
+  - Entity: 3606402821035927868
     TagComponent:
       Tag: Tilemap
       GameTag: Untagged
@@ -306,7 +298,7 @@ Entities:
         - [1, 7, 1]
         - [2, 7, 1]
         - [3, 7, 1]
-  - Entity: 4282281424885215716
+  - Entity: 4281251031189474377
     TagComponent:
       Tag: Board Props
       GameTag: Untagged
@@ -318,7 +310,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 2736218074123325008
+  - Entity: 2737987028523444791
     TagComponent:
       Tag: Knight
       GameTag: Untagged
@@ -344,7 +336,7 @@ Entities:
           Float: 0
     ModelComponent:
       FilePath: Assets/Models/Knight.glb
-  - Entity: 3914444598632612522
+  - Entity: 3915125586325272431
     TagComponent:
       Tag: Hover Highlight
       GameTag: Untagged
@@ -358,15 +350,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 1, 1, 0.35]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.95, 0.75]
-      EmissionStrength: 0.8
       CastShadows: false
-      TexturePath: ""
-  - Entity: 6989884100890704344
+      MaterialAsset: Assets/Materials/Hover Highlight.cqmat
+  - Entity: 6991479890692399162
     TagComponent:
       Tag: Path Dot 0
       GameTag: Untagged
@@ -380,15 +366,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.92, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.85, 0.45]
-      EmissionStrength: 2
       CastShadows: false
-      TexturePath: ""
-  - Entity: 5313305353722338118
+      MaterialAsset: Assets/Materials/Path Dot 23.cqmat
+  - Entity: 5312858276446346821
     TagComponent:
       Tag: Path Dot 1
       GameTag: Untagged
@@ -402,15 +382,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.92, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.85, 0.45]
-      EmissionStrength: 2
       CastShadows: false
-      TexturePath: ""
-  - Entity: 775656222231641876
+      MaterialAsset: Assets/Materials/Path Dot 23.cqmat
+  - Entity: 775771820102371762
     TagComponent:
       Tag: Path Dot 2
       GameTag: Untagged
@@ -424,15 +398,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.92, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.85, 0.45]
-      EmissionStrength: 2
       CastShadows: false
-      TexturePath: ""
-  - Entity: 1942604457350727877
+      MaterialAsset: Assets/Materials/Path Dot 23.cqmat
+  - Entity: 1941670547680376781
     TagComponent:
       Tag: Path Dot 3
       GameTag: Untagged
@@ -446,15 +414,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.92, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.85, 0.45]
-      EmissionStrength: 2
       CastShadows: false
-      TexturePath: ""
-  - Entity: 681005110985136354
+      MaterialAsset: Assets/Materials/Path Dot 23.cqmat
+  - Entity: 681413462620538972
     TagComponent:
       Tag: Path Dot 4
       GameTag: Untagged
@@ -468,15 +430,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.92, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.85, 0.45]
-      EmissionStrength: 2
       CastShadows: false
-      TexturePath: ""
-  - Entity: 931585531985773617
+      MaterialAsset: Assets/Materials/Path Dot 23.cqmat
+  - Entity: 930590900324933459
     TagComponent:
       Tag: Path Dot 5
       GameTag: Untagged
@@ -490,15 +446,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.92, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.85, 0.45]
-      EmissionStrength: 2
       CastShadows: false
-      TexturePath: ""
-  - Entity: 612311717161217318
+      MaterialAsset: Assets/Materials/Path Dot 23.cqmat
+  - Entity: 610494100867373603
     TagComponent:
       Tag: Path Dot 6
       GameTag: Untagged
@@ -512,15 +462,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.92, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.85, 0.45]
-      EmissionStrength: 2
       CastShadows: false
-      TexturePath: ""
-  - Entity: 7439776564630420400
+      MaterialAsset: Assets/Materials/Path Dot 23.cqmat
+  - Entity: 7437925937152835739
     TagComponent:
       Tag: Path Dot 7
       GameTag: Untagged
@@ -534,15 +478,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.92, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.85, 0.45]
-      EmissionStrength: 2
       CastShadows: false
-      TexturePath: ""
-  - Entity: 6432375725399574154
+      MaterialAsset: Assets/Materials/Path Dot 23.cqmat
+  - Entity: 6432218618564411997
     TagComponent:
       Tag: Path Dot 8
       GameTag: Untagged
@@ -556,15 +494,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.92, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.85, 0.45]
-      EmissionStrength: 2
       CastShadows: false
-      TexturePath: ""
-  - Entity: 6235616361664560105
+      MaterialAsset: Assets/Materials/Path Dot 23.cqmat
+  - Entity: 6237181393171098231
     TagComponent:
       Tag: Path Dot 9
       GameTag: Untagged
@@ -578,15 +510,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.92, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.85, 0.45]
-      EmissionStrength: 2
       CastShadows: false
-      TexturePath: ""
-  - Entity: 5294253355650079226
+      MaterialAsset: Assets/Materials/Path Dot 23.cqmat
+  - Entity: 5296022078058901655
     TagComponent:
       Tag: Path Dot 10
       GameTag: Untagged
@@ -600,15 +526,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.92, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.85, 0.45]
-      EmissionStrength: 2
       CastShadows: false
-      TexturePath: ""
-  - Entity: 2868262294881380249
+      MaterialAsset: Assets/Materials/Path Dot 23.cqmat
+  - Entity: 2867009799634760010
     TagComponent:
       Tag: Path Dot 11
       GameTag: Untagged
@@ -622,15 +542,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.92, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.85, 0.45]
-      EmissionStrength: 2
       CastShadows: false
-      TexturePath: ""
-  - Entity: 4436775495392601642
+      MaterialAsset: Assets/Materials/Path Dot 23.cqmat
+  - Entity: 4437488927140649491
     TagComponent:
       Tag: Path Dot 12
       GameTag: Untagged
@@ -644,15 +558,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.92, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.85, 0.45]
-      EmissionStrength: 2
       CastShadows: false
-      TexturePath: ""
-  - Entity: 6597709993126137308
+      MaterialAsset: Assets/Materials/Path Dot 23.cqmat
+  - Entity: 6595646092854245800
     TagComponent:
       Tag: Path Dot 13
       GameTag: Untagged
@@ -666,15 +574,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.92, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.85, 0.45]
-      EmissionStrength: 2
       CastShadows: false
-      TexturePath: ""
-  - Entity: 3159581250715428174
+      MaterialAsset: Assets/Materials/Path Dot 23.cqmat
+  - Entity: 3161141065874390074
     TagComponent:
       Tag: Path Dot 14
       GameTag: Untagged
@@ -688,15 +590,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.92, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.85, 0.45]
-      EmissionStrength: 2
       CastShadows: false
-      TexturePath: ""
-  - Entity: 4368508359314021269
+      MaterialAsset: Assets/Materials/Path Dot 23.cqmat
+  - Entity: 4370664618521515489
     TagComponent:
       Tag: Path Dot 15
       GameTag: Untagged
@@ -710,15 +606,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.92, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.85, 0.45]
-      EmissionStrength: 2
       CastShadows: false
-      TexturePath: ""
-  - Entity: 9187381942925384613
+      MaterialAsset: Assets/Materials/Path Dot 23.cqmat
+  - Entity: 9189476661960660014
     TagComponent:
       Tag: Path Dot 16
       GameTag: Untagged
@@ -732,15 +622,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.92, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.85, 0.45]
-      EmissionStrength: 2
       CastShadows: false
-      TexturePath: ""
-  - Entity: 1156891593327384447
+      MaterialAsset: Assets/Materials/Path Dot 23.cqmat
+  - Entity: 1155645695119123814
     TagComponent:
       Tag: Path Dot 17
       GameTag: Untagged
@@ -754,15 +638,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.92, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.85, 0.45]
-      EmissionStrength: 2
       CastShadows: false
-      TexturePath: ""
-  - Entity: 6606912183463738848
+      MaterialAsset: Assets/Materials/Path Dot 23.cqmat
+  - Entity: 6608962932498249542
     TagComponent:
       Tag: Path Dot 18
       GameTag: Untagged
@@ -776,15 +654,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.92, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.85, 0.45]
-      EmissionStrength: 2
       CastShadows: false
-      TexturePath: ""
-  - Entity: 34289328323928634
+      MaterialAsset: Assets/Materials/Path Dot 23.cqmat
+  - Entity: 35578629327477516
     TagComponent:
       Tag: Path Dot 19
       GameTag: Untagged
@@ -798,15 +670,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.92, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.85, 0.45]
-      EmissionStrength: 2
       CastShadows: false
-      TexturePath: ""
-  - Entity: 7570695254890515317
+      MaterialAsset: Assets/Materials/Path Dot 23.cqmat
+  - Entity: 7572578869579101627
     TagComponent:
       Tag: Path Dot 20
       GameTag: Untagged
@@ -820,15 +686,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.92, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.85, 0.45]
-      EmissionStrength: 2
       CastShadows: false
-      TexturePath: ""
-  - Entity: 1212984952378514760
+      MaterialAsset: Assets/Materials/Path Dot 23.cqmat
+  - Entity: 1212264374045835825
     TagComponent:
       Tag: Path Dot 21
       GameTag: Untagged
@@ -842,15 +702,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.92, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.85, 0.45]
-      EmissionStrength: 2
       CastShadows: false
-      TexturePath: ""
-  - Entity: 2483276806578127275
+      MaterialAsset: Assets/Materials/Path Dot 23.cqmat
+  - Entity: 2482020490917317604
     TagComponent:
       Tag: Path Dot 22
       GameTag: Untagged
@@ -864,15 +718,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.92, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.85, 0.45]
-      EmissionStrength: 2
       CastShadows: false
-      TexturePath: ""
-  - Entity: 476346148231898592
+      MaterialAsset: Assets/Materials/Path Dot 23.cqmat
+  - Entity: 476226149915051744
     TagComponent:
       Tag: Path Dot 23
       GameTag: Untagged
@@ -886,15 +734,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.92, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.85, 0.45]
-      EmissionStrength: 2
       CastShadows: false
-      TexturePath: ""
-  - Entity: 7752993699752918049
+      MaterialAsset: Assets/Materials/Path Dot 23.cqmat
+  - Entity: 7755090617524991337
     TagComponent:
       Tag: Sun
       GameTag: Untagged
@@ -927,7 +769,7 @@ Entities:
           Float: 35
         timeOfDay:
           Float: 9.5
-  - Entity: 4233873058881505198
+  - Entity: 4235084011100043937
     TagComponent:
       Tag: Board Game
       GameTag: Untagged
@@ -942,7 +784,7 @@ Entities:
     ConquerorScriptComponent:
       ScriptPath: Assets/Scripts/BoardGame.cqs
       ClassName: ""
-  - Entity: 2946883934914586000
+  - Entity: 2946154833227606948
     TagComponent:
       Tag: Main Camera
       GameTag: Untagged
@@ -972,7 +814,7 @@ Entities:
       ClassName: ""
     AudioListenerComponent:
       IsActive: true
-  - Entity: 6447295582869072777
+  - Entity: 6448822928152485085
     TagComponent:
       Tag: HUD
       GameTag: Untagged
@@ -998,7 +840,7 @@ Entities:
       IgnoreReversedGraphics: true
       BlockingObjects: 0
       BlockingMask: 4294967295
-  - Entity: 6694612464822795017
+  - Entity: 6696780028666760952
     TagComponent:
       Tag: TitleText
       GameTag: Untagged
@@ -1037,7 +879,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 2370904768335379504
+  - Entity: 2369054164788132031
     TagComponent:
       Tag: StepsText
       GameTag: Untagged
@@ -1076,7 +918,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 8054513194617984001
+  - Entity: 8052671936617376180
     TagComponent:
       Tag: ClockText
       GameTag: Untagged
@@ -1115,7 +957,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 4359518006228228456
+  - Entity: 4361641552797654875
     TagComponent:
       Tag: HintText
       GameTag: Untagged
@@ -1361,13 +1203,13 @@ EditorCamera:
   Yaw: 0.5235988
   OrthographicSize: 10
 Hierarchy:
-  - Child: 6694612464822795017
-    Parent: 6447295582869072777
-  - Child: 2370904768335379504
-    Parent: 6447295582869072777
-  - Child: 8054513194617984001
-    Parent: 6447295582869072777
-  - Child: 4359518006228228456
-    Parent: 6447295582869072777
-  - Child: 3606032170613789709
-    Parent: 7805718077480009367
+  - Child: 6696780028666760952
+    Parent: 6448822928152485085
+  - Child: 2369054164788132031
+    Parent: 6448822928152485085
+  - Child: 8052671936617376180
+    Parent: 6448822928152485085
+  - Child: 4361641552797654875
+    Parent: 6448822928152485085
+  - Child: 3606402821035927868
+    Parent: 7806088738438351091

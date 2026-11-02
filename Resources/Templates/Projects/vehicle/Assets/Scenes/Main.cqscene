@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 8316163254856375313
+  - Entity: 8317960656376696902
     TagComponent:
       Tag: Directional Light
       GameTag: Untagged
@@ -19,7 +19,7 @@ Entities:
       Intensity: 3.2
       CastShadows: true
       Mode: 0
-  - Entity: 8997962691609110655
+  - Entity: 8996089977549476232
     TagComponent:
       Tag: Racing Line
       GameTag: Untagged
@@ -36,7 +36,7 @@ Entities:
       Closed: true
       Mode: 0
       ShowGizmo: false
-  - Entity: 7805700628233128834
+  - Entity: 7806088438938257787
     TagComponent:
       Tag: Track
       GameTag: Untagged
@@ -48,7 +48,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 3606014710396039868
+  - Entity: 3606402575054587339
     TagComponent:
       Tag: Track Chunk 1
       GameTag: Untagged
@@ -60,7 +60,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 4282263698359237026
+  - Entity: 4281251352158641223
     TagComponent:
       Tag: Asphalt
       GameTag: Untagged
@@ -73,7 +73,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -91,13 +91,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 1
-      Roughness: 1
-      AO: 1
-      TexturePath: Assets/Track/asphalt_diffuse.jpg
-      NormalMapPath: Assets/Track/asphalt_normal.jpg
-      MaskMapPath: Assets/Track/asphalt_orm.jpg
+      MaterialAsset: Assets/Materials/Asphalt diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -117,7 +111,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 2736200339591874306
+  - Entity: 2737987332262974915
     TagComponent:
       Tag: Line Left
       GameTag: Untagged
@@ -130,7 +124,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -148,12 +142,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.85, 0.82, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 3914462597629942556
+      MaterialAsset: Assets/Materials/Line Right.cqmat
+  - Entity: 3915125271497356088
     TagComponent:
       Tag: Line Right
       GameTag: Untagged
@@ -166,7 +156,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -184,12 +174,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.85, 0.82, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 6989902108929297024
+      MaterialAsset: Assets/Materials/Line Right.cqmat
+  - Entity: 6991479576006091335
     TagComponent:
       Tag: Kerb Left
       GameTag: Untagged
@@ -202,7 +188,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -220,11 +206,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/kerb.png
+      MaterialAsset: Assets/Materials/Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -244,7 +226,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 5313323352989292904
+  - Entity: 5312858047791465005
     TagComponent:
       Tag: Kerb Right
       GameTag: Untagged
@@ -257,7 +239,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -275,11 +257,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/kerb.png
+      MaterialAsset: Assets/Materials/Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -299,7 +277,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 775673946070702006
+  - Entity: 775771522847527981
     TagComponent:
       Tag: Gravel Left
       GameTag: Untagged
@@ -312,7 +290,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -330,12 +308,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Track/gravel_diffuse.jpg
-      NormalMapPath: Assets/Track/gravel_normal.jpg
+      MaterialAsset: Assets/Materials/Gravel diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -355,7 +328,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 1942621642685742435
+  - Entity: 1941670849551100582
     TagComponent:
       Tag: Gravel Right
       GameTag: Untagged
@@ -368,7 +341,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -386,12 +359,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Track/gravel_diffuse.jpg
-      NormalMapPath: Assets/Track/gravel_normal.jpg
+      MaterialAsset: Assets/Materials/Gravel diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -411,7 +379,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 681023118543049229
+  - Entity: 681413147933622542
     TagComponent:
       Tag: Barrier Left
       GameTag: Untagged
@@ -424,7 +392,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -442,11 +410,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: Assets/Track/barrier.png
+      MaterialAsset: Assets/Materials/Barrier.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -466,7 +430,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 931603533636257304
+  - Entity: 930590583454064924
     TagComponent:
       Tag: Barrier Right
       GameTag: Untagged
@@ -479,7 +443,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -497,11 +461,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: Assets/Track/barrier.png
+      MaterialAsset: Assets/Materials/Barrier.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -521,7 +481,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 612293983946294016
+  - Entity: 610494402672413830
     TagComponent:
       Tag: Track Chunk 2
       GameTag: Untagged
@@ -533,7 +493,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 7439794024849381625
+  - Entity: 7437926170305593878
     TagComponent:
       Tag: Asphalt
       GameTag: Untagged
@@ -546,7 +506,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -564,13 +524,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 1
-      Roughness: 1
-      AO: 1
-      TexturePath: Assets/Track/asphalt_diffuse.jpg
-      NormalMapPath: Assets/Track/asphalt_normal.jpg
-      MaskMapPath: Assets/Track/asphalt_orm.jpg
+      MaterialAsset: Assets/Materials/Asphalt diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -590,7 +544,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 6432393457831342652
+  - Entity: 6432218390007664248
     TagComponent:
       Tag: Line Left
       GameTag: Untagged
@@ -603,7 +557,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -621,12 +575,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.85, 0.82, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 6235599178475994681
+      MaterialAsset: Assets/Materials/Line Right.cqmat
+  - Entity: 6237181076233102066
     TagComponent:
       Tag: Line Right
       GameTag: Untagged
@@ -639,7 +589,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -657,12 +607,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.85, 0.82, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 5294235354198641902
+      MaterialAsset: Assets/Materials/Line Right.cqmat
+  - Entity: 5296022398990294508
     TagComponent:
       Tag: Kerb Left
       GameTag: Untagged
@@ -675,7 +621,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -693,11 +639,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/kerb.png
+      MaterialAsset: Assets/Materials/Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -717,7 +659,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 2868244568660091784
+  - Entity: 2867010052082000176
     TagComponent:
       Tag: Kerb Right
       GameTag: Untagged
@@ -730,7 +672,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -748,11 +690,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/kerb.png
+      MaterialAsset: Assets/Materials/Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -772,7 +710,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 4436757768823626410
+  - Entity: 4437489162205570878
     TagComponent:
       Tag: Gravel Left
       GameTag: Untagged
@@ -785,7 +723,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -803,12 +741,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Track/gravel_diffuse.jpg
-      NormalMapPath: Assets/Track/gravel_normal.jpg
+      MaterialAsset: Assets/Materials/Gravel diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -828,7 +761,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 6597727450924706848
+  - Entity: 6595646345100992204
     TagComponent:
       Tag: Gravel Right
       GameTag: Untagged
@@ -841,7 +774,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -859,12 +792,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Track/gravel_diffuse.jpg
-      NormalMapPath: Assets/Track/gravel_normal.jpg
+      MaterialAsset: Assets/Materials/Gravel diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -884,7 +812,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 3159563249800912869
+  - Entity: 3161141318118987975
     TagComponent:
       Tag: Barrier Left
       GameTag: Untagged
@@ -897,7 +825,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -915,11 +843,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: Assets/Track/barrier.png
+      MaterialAsset: Assets/Materials/Barrier.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -939,7 +863,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 4368526085749388783
+  - Entity: 4370664387749637834
     TagComponent:
       Tag: Barrier Right
       GameTag: Untagged
@@ -952,7 +876,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -970,11 +894,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: Assets/Track/barrier.png
+      MaterialAsset: Assets/Materials/Barrier.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -994,7 +914,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 9187399667209149263
+  - Entity: 9189476415890279637
     TagComponent:
       Tag: Track Chunk 3
       GameTag: Untagged
@@ -1006,7 +926,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 1156873866818765789
+  - Entity: 1155645999073032806
     TagComponent:
       Tag: Asphalt
       GameTag: Untagged
@@ -1019,7 +939,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -1037,13 +957,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 1
-      Roughness: 1
-      AO: 1
-      TexturePath: Assets/Track/asphalt_diffuse.jpg
-      NormalMapPath: Assets/Track/asphalt_normal.jpg
-      MaskMapPath: Assets/Track/asphalt_orm.jpg
+      MaterialAsset: Assets/Materials/Asphalt diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1063,7 +977,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 6606894734047504865
+  - Entity: 6608962701796261691
     TagComponent:
       Tag: Line Left
       GameTag: Untagged
@@ -1076,7 +990,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -1094,12 +1008,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.85, 0.82, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 34271327079652843
+      MaterialAsset: Assets/Materials/Line Right.cqmat
+  - Entity: 35578933046547195
     TagComponent:
       Tag: Line Right
       GameTag: Untagged
@@ -1112,7 +1022,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -1130,12 +1040,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.85, 0.82, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 7570712981322929625
+      MaterialAsset: Assets/Materials/Line Right.cqmat
+  - Entity: 7572578570120773614
     TagComponent:
       Tag: Kerb Left
       GameTag: Untagged
@@ -1148,7 +1054,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -1166,11 +1072,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/kerb.png
+      MaterialAsset: Assets/Materials/Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1190,7 +1092,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 1213002128991337034
+  - Entity: 1212264675684774933
     TagComponent:
       Tag: Kerb Right
       GameTag: Untagged
@@ -1203,7 +1105,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -1221,11 +1123,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/kerb.png
+      MaterialAsset: Assets/Materials/Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1245,7 +1143,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 2483259623385398884
+  - Entity: 2482020191461985489
     TagComponent:
       Tag: Gravel Left
       GameTag: Untagged
@@ -1258,7 +1156,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -1276,12 +1174,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Track/gravel_diffuse.jpg
-      NormalMapPath: Assets/Track/gravel_normal.jpg
+      MaterialAsset: Assets/Materials/Gravel diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1301,7 +1194,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 476328421856738274
+  - Entity: 476226402360236561
     TagComponent:
       Tag: Gravel Right
       GameTag: Untagged
@@ -1314,7 +1207,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -1332,12 +1225,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Track/gravel_diffuse.jpg
-      NormalMapPath: Assets/Track/gravel_normal.jpg
+      MaterialAsset: Assets/Materials/Gravel diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1357,7 +1245,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 7753011424046823932
+  - Entity: 7755090388935612043
     TagComponent:
       Tag: Barrier Left
       GameTag: Untagged
@@ -1370,7 +1258,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -1388,11 +1276,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: Assets/Track/barrier.png
+      MaterialAsset: Assets/Materials/Barrier.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1412,7 +1296,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 4233855873669265063
+  - Entity: 4235083713488089167
     TagComponent:
       Tag: Barrier Right
       GameTag: Untagged
@@ -1425,7 +1309,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -1443,11 +1327,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: Assets/Track/barrier.png
+      MaterialAsset: Assets/Materials/Barrier.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1467,7 +1347,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 2946901384180787198
+  - Entity: 2946155136900462872
     TagComponent:
       Tag: Track Chunk 4
       GameTag: Untagged
@@ -1479,7 +1359,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 6447313315735252592
+  - Entity: 6448822630527843122
     TagComponent:
       Tag: Asphalt
       GameTag: Untagged
@@ -1492,7 +1372,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -1510,13 +1390,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 1
-      Roughness: 1
-      AO: 1
-      TexturePath: Assets/Track/asphalt_diffuse.jpg
-      NormalMapPath: Assets/Track/asphalt_normal.jpg
-      MaskMapPath: Assets/Track/asphalt_orm.jpg
+      MaterialAsset: Assets/Materials/Asphalt diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1536,7 +1410,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 6694630466137815553
+  - Entity: 6696779797624393765
     TagComponent:
       Tag: Line Left
       GameTag: Untagged
@@ -1549,7 +1423,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -1567,12 +1441,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.85, 0.82, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 2370922217807588171
+      MaterialAsset: Assets/Materials/Line Right.cqmat
+  - Entity: 2369054468527930401
     TagComponent:
       Tag: Line Right
       GameTag: Untagged
@@ -1585,7 +1455,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -1603,12 +1473,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.85, 0.82, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 8054531193781359756
+      MaterialAsset: Assets/Materials/Line Right.cqmat
+  - Entity: 8052671690837637720
     TagComponent:
       Tag: Kerb Left
       GameTag: Untagged
@@ -1621,7 +1487,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -1639,11 +1505,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/kerb.png
+      MaterialAsset: Assets/Materials/Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1663,7 +1525,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 4359500821048151588
+  - Entity: 4361641307110259888
     TagComponent:
       Tag: Kerb Right
       GameTag: Untagged
@@ -1676,7 +1538,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -1694,11 +1556,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/kerb.png
+      MaterialAsset: Assets/Materials/Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1718,7 +1576,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 5262848034704182061
+  - Entity: 5264359597856338139
     TagComponent:
       Tag: Gravel Left
       GameTag: Untagged
@@ -1731,7 +1589,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -1749,12 +1607,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Track/gravel_diffuse.jpg
-      NormalMapPath: Assets/Track/gravel_normal.jpg
+      MaterialAsset: Assets/Materials/Gravel diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1774,7 +1627,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 4677094330515919347
+  - Entity: 4679178223832565014
     TagComponent:
       Tag: Gravel Right
       GameTag: Untagged
@@ -1787,7 +1640,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -1805,12 +1658,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Track/gravel_diffuse.jpg
-      NormalMapPath: Assets/Track/gravel_normal.jpg
+      MaterialAsset: Assets/Materials/Gravel diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1830,7 +1678,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 2357334581887573309
+  - Entity: 2355743377096550526
     TagComponent:
       Tag: Barrier Left
       GameTag: Untagged
@@ -1843,7 +1691,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -1861,11 +1709,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: Assets/Track/barrier.png
+      MaterialAsset: Assets/Materials/Barrier.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1885,7 +1729,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 8268879259765728481
+  - Entity: 8270670150637839569
     TagComponent:
       Tag: Barrier Right
       GameTag: Untagged
@@ -1898,7 +1742,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -1916,11 +1760,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: Assets/Track/barrier.png
+      MaterialAsset: Assets/Materials/Barrier.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1940,7 +1780,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 409092229044770445
+  - Entity: 408354743541399534
     TagComponent:
       Tag: Track Chunk 5
       GameTag: Untagged
@@ -1952,7 +1792,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 3763651658532845944
+  - Entity: 3764035606017957363
     TagComponent:
       Tag: Asphalt
       GameTag: Untagged
@@ -1965,7 +1805,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -1983,13 +1823,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 1
-      Roughness: 1
-      AO: 1
-      TexturePath: Assets/Track/asphalt_diffuse.jpg
-      NormalMapPath: Assets/Track/asphalt_normal.jpg
-      MaskMapPath: Assets/Track/asphalt_orm.jpg
+      MaterialAsset: Assets/Materials/Asphalt diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2009,7 +1843,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 7101677641210105147
+  - Entity: 7100379456281579191
     TagComponent:
       Tag: Line Left
       GameTag: Untagged
@@ -2022,7 +1856,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -2040,12 +1874,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.85, 0.82, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 5530770949701331980
+      MaterialAsset: Assets/Materials/Line Right.cqmat
+  - Entity: 5532278168508313443
     TagComponent:
       Tag: Line Right
       GameTag: Untagged
@@ -2058,7 +1888,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -2076,12 +1906,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.85, 0.82, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 2351099831323164984
+      MaterialAsset: Assets/Materials/Line Right.cqmat
+  - Entity: 2352972036529569051
     TagComponent:
       Tag: Kerb Left
       GameTag: Untagged
@@ -2094,7 +1920,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -2112,11 +1938,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/kerb.png
+      MaterialAsset: Assets/Materials/Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2136,7 +1958,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 3034386071433133655
+  - Entity: 3034275238772298170
     TagComponent:
       Tag: Kerb Right
       GameTag: Untagged
@@ -2149,7 +1971,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -2167,11 +1989,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/kerb.png
+      MaterialAsset: Assets/Materials/Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2191,7 +2009,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 5726274089633432861
+  - Entity: 5724190286291030570
     TagComponent:
       Tag: Gravel Left
       GameTag: Untagged
@@ -2204,7 +2022,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -2222,12 +2040,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Track/gravel_diffuse.jpg
-      NormalMapPath: Assets/Track/gravel_normal.jpg
+      MaterialAsset: Assets/Materials/Gravel diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2247,7 +2060,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 2675692295609293937
+  - Entity: 2676915786939271446
     TagComponent:
       Tag: Gravel Right
       GameTag: Untagged
@@ -2260,7 +2073,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -2278,12 +2091,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Track/gravel_diffuse.jpg
-      NormalMapPath: Assets/Track/gravel_normal.jpg
+      MaterialAsset: Assets/Materials/Gravel diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2303,7 +2111,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 7008280131928657261
+  - Entity: 7009235894126163219
     TagComponent:
       Tag: Barrier Left
       GameTag: Untagged
@@ -2316,7 +2124,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -2334,11 +2142,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: Assets/Track/barrier.png
+      MaterialAsset: Assets/Materials/Barrier.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2358,7 +2162,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 722039351754860489
+  - Entity: 721303515444340698
     TagComponent:
       Tag: Barrier Right
       GameTag: Untagged
@@ -2371,7 +2175,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -2389,11 +2193,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: Assets/Track/barrier.png
+      MaterialAsset: Assets/Materials/Barrier.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2413,7 +2213,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 5399071434650919533
+  - Entity: 5398405913353008382
     TagComponent:
       Tag: Track Chunk 6
       GameTag: Untagged
@@ -2425,7 +2225,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 6317783957725250995
+  - Entity: 6317108025412150451
     TagComponent:
       Tag: Asphalt
       GameTag: Untagged
@@ -2438,7 +2238,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -2456,13 +2256,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 1
-      Roughness: 1
-      AO: 1
-      TexturePath: Assets/Track/asphalt_diffuse.jpg
-      NormalMapPath: Assets/Track/asphalt_normal.jpg
-      MaskMapPath: Assets/Track/asphalt_orm.jpg
+      MaterialAsset: Assets/Materials/Asphalt diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2482,7 +2276,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 8968919140343852716
+  - Entity: 8971072869938550046
     TagComponent:
       Tag: Line Left
       GameTag: Untagged
@@ -2495,7 +2289,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -2513,12 +2307,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.85, 0.82, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 2439775042038880849
+      MaterialAsset: Assets/Materials/Line Right.cqmat
+  - Entity: 2439953980055275382
     TagComponent:
       Tag: Line Right
       GameTag: Untagged
@@ -2531,7 +2321,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -2549,12 +2339,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.85, 0.82, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 63792231597414723
+      MaterialAsset: Assets/Materials/Line Right.cqmat
+  - Entity: 64464352086470876
     TagComponent:
       Tag: Kerb Left
       GameTag: Untagged
@@ -2567,7 +2353,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -2585,11 +2371,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/kerb.png
+      MaterialAsset: Assets/Materials/Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2609,7 +2391,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 6906898422049562337
+  - Entity: 6907849801310438281
     TagComponent:
       Tag: Kerb Right
       GameTag: Untagged
@@ -2622,7 +2404,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -2640,11 +2422,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/kerb.png
+      MaterialAsset: Assets/Materials/Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2664,7 +2442,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 960982302380233027
+  - Entity: 959758334423403337
     TagComponent:
       Tag: Gravel Left
       GameTag: Untagged
@@ -2677,7 +2455,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -2695,12 +2473,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Track/gravel_diffuse.jpg
-      NormalMapPath: Assets/Track/gravel_normal.jpg
+      MaterialAsset: Assets/Materials/Gravel diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2720,7 +2493,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 1573728400372193979
+  - Entity: 1571939796684911167
     TagComponent:
       Tag: Gravel Right
       GameTag: Untagged
@@ -2733,7 +2506,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -2751,12 +2524,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Track/gravel_diffuse.jpg
-      NormalMapPath: Assets/Track/gravel_normal.jpg
+      MaterialAsset: Assets/Materials/Gravel diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2776,7 +2544,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 2848809352028915818
+  - Entity: 2850398467385090234
     TagComponent:
       Tag: Barrier Left
       GameTag: Untagged
@@ -2789,7 +2557,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -2807,11 +2575,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: Assets/Track/barrier.png
+      MaterialAsset: Assets/Materials/Barrier.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2831,7 +2595,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 7417394213704292820
+  - Entity: 7415255898726390290
     TagComponent:
       Tag: Barrier Right
       GameTag: Untagged
@@ -2844,7 +2608,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -2862,11 +2626,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: Assets/Track/barrier.png
+      MaterialAsset: Assets/Materials/Barrier.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2886,7 +2646,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 5726419273442238383
+  - Entity: 5728566302898970987
     TagComponent:
       Tag: Track Chunk 7
       GameTag: Untagged
@@ -2898,7 +2658,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5123910043070473246
+  - Entity: 5124091729857515587
     TagComponent:
       Tag: Asphalt
       GameTag: Untagged
@@ -2911,7 +2671,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -2929,13 +2689,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 1
-      Roughness: 1
-      AO: 1
-      TexturePath: Assets/Track/asphalt_diffuse.jpg
-      NormalMapPath: Assets/Track/asphalt_normal.jpg
-      MaskMapPath: Assets/Track/asphalt_orm.jpg
+      MaterialAsset: Assets/Materials/Asphalt diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -2955,7 +2709,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 4414861322699787858
+  - Entity: 4414402526777209163
     TagComponent:
       Tag: Line Left
       GameTag: Untagged
@@ -2968,7 +2722,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -2986,12 +2740,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.85, 0.82, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 5923134995350162235
+      MaterialAsset: Assets/Materials/Line Right.cqmat
+  - Entity: 5923522874926712857
     TagComponent:
       Tag: Line Right
       GameTag: Untagged
@@ -3004,7 +2754,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -3022,12 +2772,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.85, 0.82, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 820276588855858190
+      MaterialAsset: Assets/Materials/Line Right.cqmat
+  - Entity: 821223555052421143
     TagComponent:
       Tag: Kerb Left
       GameTag: Untagged
@@ -3040,7 +2786,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -3058,11 +2804,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/kerb.png
+      MaterialAsset: Assets/Materials/Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3082,7 +2824,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 642951270190717961
+  - Entity: 642782781787892349
     TagComponent:
       Tag: Kerb Right
       GameTag: Untagged
@@ -3095,7 +2837,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -3113,11 +2855,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/kerb.png
+      MaterialAsset: Assets/Materials/Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3137,7 +2875,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 1000641099065310504
+  - Entity: 1001306040558972007
     TagComponent:
       Tag: Gravel Left
       GameTag: Untagged
@@ -3150,7 +2888,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -3168,12 +2906,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Track/gravel_diffuse.jpg
-      NormalMapPath: Assets/Track/gravel_normal.jpg
+      MaterialAsset: Assets/Materials/Gravel diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3193,7 +2926,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 1254681598080095527
+  - Entity: 1255977676342755317
     TagComponent:
       Tag: Gravel Right
       GameTag: Untagged
@@ -3206,7 +2939,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -3224,12 +2957,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Track/gravel_diffuse.jpg
-      NormalMapPath: Assets/Track/gravel_normal.jpg
+      MaterialAsset: Assets/Materials/Gravel diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3249,7 +2977,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 2187324899393601434
+  - Entity: 2188000818843316893
     TagComponent:
       Tag: Barrier Left
       GameTag: Untagged
@@ -3262,7 +2990,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -3280,11 +3008,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: Assets/Track/barrier.png
+      MaterialAsset: Assets/Materials/Barrier.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3304,7 +3028,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 1039668591762013399
+  - Entity: 1038645265387614053
     TagComponent:
       Tag: Barrier Right
       GameTag: Untagged
@@ -3317,7 +3041,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -3335,11 +3059,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: Assets/Track/barrier.png
+      MaterialAsset: Assets/Materials/Barrier.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3359,7 +3079,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 9150619629498992879
+  - Entity: 9149677669039349602
     TagComponent:
       Tag: Track Chunk 8
       GameTag: Untagged
@@ -3371,7 +3091,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5542224768185740484
+  - Entity: 5543464256042585378
     TagComponent:
       Tag: Asphalt
       GameTag: Untagged
@@ -3384,7 +3104,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -3402,13 +3122,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 1
-      Roughness: 1
-      AO: 1
-      TexturePath: Assets/Track/asphalt_diffuse.jpg
-      NormalMapPath: Assets/Track/asphalt_normal.jpg
-      MaskMapPath: Assets/Track/asphalt_orm.jpg
+      MaterialAsset: Assets/Materials/Asphalt diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3428,7 +3142,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 5276655704819768423
+  - Entity: 5277608701099853483
     TagComponent:
       Tag: Line Left
       GameTag: Untagged
@@ -3441,7 +3155,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -3459,12 +3173,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.85, 0.82, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 1374895414864899605
+      MaterialAsset: Assets/Materials/Line Right.cqmat
+  - Entity: 1374507554598879254
     TagComponent:
       Tag: Line Right
       GameTag: Untagged
@@ -3477,7 +3187,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -3495,12 +3205,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.85, 0.82, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 6518267040249510425
+      MaterialAsset: Assets/Materials/Line Right.cqmat
+  - Entity: 6517322294588647480
     TagComponent:
       Tag: Kerb Left
       GameTag: Untagged
@@ -3513,7 +3219,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -3531,11 +3237,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/kerb.png
+      MaterialAsset: Assets/Materials/Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3555,7 +3257,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 1157713530303964187
+  - Entity: 1159291098670483508
     TagComponent:
       Tag: Kerb Right
       GameTag: Untagged
@@ -3568,7 +3270,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -3586,11 +3288,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/kerb.png
+      MaterialAsset: Assets/Materials/Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3610,7 +3308,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 2588554340032244628
+  - Entity: 2588377072738879101
     TagComponent:
       Tag: Gravel Left
       GameTag: Untagged
@@ -3623,7 +3321,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -3641,12 +3339,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Track/gravel_diffuse.jpg
-      NormalMapPath: Assets/Track/gravel_normal.jpg
+      MaterialAsset: Assets/Materials/Gravel diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3666,7 +3359,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 5873034999305882986
+  - Entity: 5874542716402927977
     TagComponent:
       Tag: Gravel Right
       GameTag: Untagged
@@ -3679,7 +3372,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -3697,12 +3390,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Track/gravel_diffuse.jpg
-      NormalMapPath: Assets/Track/gravel_normal.jpg
+      MaterialAsset: Assets/Materials/Gravel diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3722,7 +3410,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 2181529374396310084
+  - Entity: 2180303136496394523
     TagComponent:
       Tag: Barrier Left
       GameTag: Untagged
@@ -3735,7 +3423,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -3753,11 +3441,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: Assets/Track/barrier.png
+      MaterialAsset: Assets/Materials/Barrier.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3777,7 +3461,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 7429951050604765418
+  - Entity: 7429772063241078834
     TagComponent:
       Tag: Barrier Right
       GameTag: Untagged
@@ -3790,7 +3474,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -3808,11 +3492,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: Assets/Track/barrier.png
+      MaterialAsset: Assets/Materials/Barrier.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3832,7 +3512,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 7568763190924394917
+  - Entity: 7569989448070412781
     TagComponent:
       Tag: Track Chunk 9
       GameTag: Untagged
@@ -3844,7 +3524,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 7445672456557010240
+  - Entity: 7445559491205389487
     TagComponent:
       Tag: Asphalt
       GameTag: Untagged
@@ -3857,7 +3537,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -3875,13 +3555,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 1
-      Roughness: 1
-      AO: 1
-      TexturePath: Assets/Track/asphalt_diffuse.jpg
-      NormalMapPath: Assets/Track/asphalt_normal.jpg
-      MaskMapPath: Assets/Track/asphalt_orm.jpg
+      MaterialAsset: Assets/Materials/Asphalt diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -3901,7 +3575,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 8614944772584258259
+  - Entity: 8613637789524859888
     TagComponent:
       Tag: Line Left
       GameTag: Untagged
@@ -3914,7 +3588,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -3932,12 +3606,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.85, 0.82, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 1759756364651324266
+      MaterialAsset: Assets/Materials/Line Right.cqmat
+  - Entity: 1759867701840668649
     TagComponent:
       Tag: Line Right
       GameTag: Untagged
@@ -3950,7 +3620,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -3968,12 +3638,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.85, 0.82, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 6117893405617973646
+      MaterialAsset: Assets/Materials/Line Right.cqmat
+  - Entity: 6116091624747794959
     TagComponent:
       Tag: Kerb Left
       GameTag: Untagged
@@ -3986,7 +3652,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -4004,11 +3670,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/kerb.png
+      MaterialAsset: Assets/Materials/Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -4028,7 +3690,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 865475352079562672
+  - Entity: 866219937229133534
     TagComponent:
       Tag: Kerb Right
       GameTag: Untagged
@@ -4041,7 +3703,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -4059,11 +3721,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/kerb.png
+      MaterialAsset: Assets/Materials/Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -4083,7 +3741,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 7799594566096207545
+  - Entity: 7798579385294668286
     TagComponent:
       Tag: Gravel Left
       GameTag: Untagged
@@ -4096,7 +3754,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -4114,12 +3772,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Track/gravel_diffuse.jpg
-      NormalMapPath: Assets/Track/gravel_normal.jpg
+      MaterialAsset: Assets/Materials/Gravel diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -4139,7 +3792,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 3825070404251256856
+  - Entity: 3824336783928113622
     TagComponent:
       Tag: Gravel Right
       GameTag: Untagged
@@ -4152,7 +3805,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -4170,12 +3823,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Track/gravel_diffuse.jpg
-      NormalMapPath: Assets/Track/gravel_normal.jpg
+      MaterialAsset: Assets/Materials/Gravel diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -4195,7 +3843,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 5965426833241749693
+  - Entity: 5966938929279352344
     TagComponent:
       Tag: Barrier Left
       GameTag: Untagged
@@ -4208,7 +3856,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -4226,11 +3874,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: Assets/Track/barrier.png
+      MaterialAsset: Assets/Materials/Barrier.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -4250,7 +3894,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 5701549120108376155
+  - Entity: 5699410854593434466
     TagComponent:
       Tag: Barrier Right
       GameTag: Untagged
@@ -4263,7 +3907,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -4281,11 +3925,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: Assets/Track/barrier.png
+      MaterialAsset: Assets/Materials/Barrier.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -4305,7 +3945,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 6562363880122283423
+  - Entity: 6563315175575912077
     TagComponent:
       Tag: Track Chunk 10
       GameTag: Untagged
@@ -4317,7 +3957,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 4472236839979676086
+  - Entity: 4474102997974941328
     TagComponent:
       Tag: Asphalt
       GameTag: Untagged
@@ -4330,7 +3970,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -4348,13 +3988,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 1
-      Roughness: 1
-      AO: 1
-      TexturePath: Assets/Track/asphalt_diffuse.jpg
-      NormalMapPath: Assets/Track/asphalt_normal.jpg
-      MaskMapPath: Assets/Track/asphalt_orm.jpg
+      MaterialAsset: Assets/Materials/Asphalt diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -4374,7 +4008,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 5852858110311292563
+  - Entity: 5854152023897050470
     TagComponent:
       Tag: Line Left
       GameTag: Untagged
@@ -4387,7 +4021,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -4405,12 +4039,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.85, 0.82, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 5141844167817739449
+      MaterialAsset: Assets/Materials/Line Right.cqmat
+  - Entity: 5142028072883767145
     TagComponent:
       Tag: Line Right
       GameTag: Untagged
@@ -4423,7 +4053,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -4441,12 +4071,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.85, 0.82, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 2047760237517999073
+      MaterialAsset: Assets/Materials/Line Right.cqmat
+  - Entity: 2048219020622857569
     TagComponent:
       Tag: Kerb Left
       GameTag: Untagged
@@ -4459,7 +4085,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -4477,11 +4103,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/kerb.png
+      MaterialAsset: Assets/Materials/Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -4501,7 +4123,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 8233768085573095425
+  - Entity: 8233599631387581497
     TagComponent:
       Tag: Kerb Right
       GameTag: Untagged
@@ -4514,7 +4136,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -4532,11 +4154,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/kerb.png
+      MaterialAsset: Assets/Materials/Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -4556,7 +4174,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 8585248422179572963
+  - Entity: 8584787481172858320
     TagComponent:
       Tag: Gravel Left
       GameTag: Untagged
@@ -4569,7 +4187,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -4587,12 +4205,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Track/gravel_diffuse.jpg
-      NormalMapPath: Assets/Track/gravel_normal.jpg
+      MaterialAsset: Assets/Materials/Gravel diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -4612,7 +4225,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 7331209231564062598
+  - Entity: 7330180942397227568
     TagComponent:
       Tag: Gravel Right
       GameTag: Untagged
@@ -4625,7 +4238,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -4643,12 +4256,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Track/gravel_diffuse.jpg
-      NormalMapPath: Assets/Track/gravel_normal.jpg
+      MaterialAsset: Assets/Materials/Gravel diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -4668,7 +4276,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 7728798283548411625
+  - Entity: 7729745249760555275
     TagComponent:
       Tag: Barrier Left
       GameTag: Untagged
@@ -4681,7 +4289,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -4699,11 +4307,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: Assets/Track/barrier.png
+      MaterialAsset: Assets/Materials/Barrier.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -4723,7 +4327,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 5602445746830206988
+  - Entity: 5600303066117826371
     TagComponent:
       Tag: Barrier Right
       GameTag: Untagged
@@ -4736,7 +4340,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -4754,11 +4358,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: Assets/Track/barrier.png
+      MaterialAsset: Assets/Materials/Barrier.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -4778,7 +4378,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 873505097408625352
+  - Entity: 871718162563994989
     TagComponent:
       Tag: Track Chunk 11
       GameTag: Untagged
@@ -4790,7 +4390,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 7578051380014705348
+  - Entity: 7578716886414984998
     TagComponent:
       Tag: Asphalt
       GameTag: Untagged
@@ -4803,7 +4403,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -4821,13 +4421,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 1
-      Roughness: 1
-      AO: 1
-      TexturePath: Assets/Track/asphalt_diffuse.jpg
-      NormalMapPath: Assets/Track/asphalt_normal.jpg
-      MaskMapPath: Assets/Track/asphalt_orm.jpg
+      MaterialAsset: Assets/Materials/Asphalt diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -4847,7 +4441,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 5461228300714462206
+  - Entity: 5462173083007595875
     TagComponent:
       Tag: Line Left
       GameTag: Untagged
@@ -4860,7 +4454,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -4878,12 +4472,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.85, 0.82, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 5220091386280581366
+      MaterialAsset: Assets/Materials/Line Right.cqmat
+  - Entity: 5221600767751209891
     TagComponent:
       Tag: Line Right
       GameTag: Untagged
@@ -4896,7 +4486,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -4914,12 +4504,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.85, 0.82, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 4705801127086891244
+      MaterialAsset: Assets/Materials/Line Right.cqmat
+  - Entity: 4704566711774002300
     TagComponent:
       Tag: Kerb Left
       GameTag: Untagged
@@ -4932,7 +4518,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -4950,11 +4536,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/kerb.png
+      MaterialAsset: Assets/Materials/Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -4974,7 +4556,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 3672380589527047314
+  - Entity: 3670800927427193677
     TagComponent:
       Tag: Kerb Right
       GameTag: Untagged
@@ -4987,7 +4569,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -5005,11 +4587,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/kerb.png
+      MaterialAsset: Assets/Materials/Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -5029,7 +4607,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 1269360070168331615
+  - Entity: 1268338395065736223
     TagComponent:
       Tag: Gravel Left
       GameTag: Untagged
@@ -5042,7 +4620,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -5060,12 +4638,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Track/gravel_diffuse.jpg
-      NormalMapPath: Assets/Track/gravel_normal.jpg
+      MaterialAsset: Assets/Materials/Gravel diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -5085,7 +4658,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 307215601166203467
+  - Entity: 307605664689255020
     TagComponent:
       Tag: Gravel Right
       GameTag: Untagged
@@ -5098,7 +4671,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -5116,12 +4689,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Track/gravel_diffuse.jpg
-      NormalMapPath: Assets/Track/gravel_normal.jpg
+      MaterialAsset: Assets/Materials/Gravel diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -5141,7 +4709,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 6466499874767307775
+  - Entity: 6465541988647550423
     TagComponent:
       Tag: Barrier Left
       GameTag: Untagged
@@ -5154,7 +4722,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -5172,11 +4740,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: Assets/Track/barrier.png
+      MaterialAsset: Assets/Materials/Barrier.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -5196,7 +4760,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 4268248752169090442
+  - Entity: 4268421713488365059
     TagComponent:
       Tag: Barrier Right
       GameTag: Untagged
@@ -5209,7 +4773,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -5227,11 +4791,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: Assets/Track/barrier.png
+      MaterialAsset: Assets/Materials/Barrier.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -5251,7 +4811,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 4968395273461968489
+  - Entity: 4968858401012392221
     TagComponent:
       Tag: Track Chunk 12
       GameTag: Untagged
@@ -5263,7 +4823,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 2646470226376021665
+  - Entity: 2647414993660235917
     TagComponent:
       Tag: Asphalt
       GameTag: Untagged
@@ -5276,7 +4836,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -5294,13 +4854,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 1
-      Roughness: 1
-      AO: 1
-      TexturePath: Assets/Track/asphalt_diffuse.jpg
-      NormalMapPath: Assets/Track/asphalt_normal.jpg
-      MaskMapPath: Assets/Track/asphalt_orm.jpg
+      MaterialAsset: Assets/Materials/Asphalt diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -5320,7 +4874,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 6934660901732592747
+  - Entity: 6934270292823156785
     TagComponent:
       Tag: Line Left
       GameTag: Untagged
@@ -5333,7 +4887,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -5351,12 +4905,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.85, 0.82, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 3741992876852913464
+      MaterialAsset: Assets/Materials/Line Right.cqmat
+  - Entity: 3740694674813495290
     TagComponent:
       Tag: Line Right
       GameTag: Untagged
@@ -5369,7 +4919,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -5387,12 +4937,8 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.85, 0.82, 1]
-      Metallic: 0
-      Roughness: 0.55
-      AO: 1
-      TexturePath: ""
-  - Entity: 3422057015280337147
+      MaterialAsset: Assets/Materials/Line Right.cqmat
+  - Entity: 3421101806915115557
     TagComponent:
       Tag: Kerb Left
       GameTag: Untagged
@@ -5405,7 +4951,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -5423,11 +4969,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/kerb.png
+      MaterialAsset: Assets/Materials/Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -5447,7 +4989,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 3802340144300481241
+  - Entity: 3801890730887325145
     TagComponent:
       Tag: Kerb Right
       GameTag: Untagged
@@ -5460,7 +5002,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -5478,11 +5020,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/kerb.png
+      MaterialAsset: Assets/Materials/Kerb.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -5502,7 +5040,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 8233706363968926369
+  - Entity: 8233608293873524906
     TagComponent:
       Tag: Gravel Left
       GameTag: Untagged
@@ -5515,7 +5053,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -5533,12 +5071,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Track/gravel_diffuse.jpg
-      NormalMapPath: Assets/Track/gravel_normal.jpg
+      MaterialAsset: Assets/Materials/Gravel diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -5558,7 +5091,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 5662792996503220698
+  - Entity: 5661569490361371083
     TagComponent:
       Tag: Gravel Right
       GameTag: Untagged
@@ -5571,7 +5104,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -5589,12 +5122,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: Assets/Track/gravel_diffuse.jpg
-      NormalMapPath: Assets/Track/gravel_normal.jpg
+      MaterialAsset: Assets/Materials/Gravel diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -5614,7 +5142,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 2689675643739065737
+  - Entity: 2689778114023018427
     TagComponent:
       Tag: Barrier Left
       GameTag: Untagged
@@ -5627,7 +5155,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -5645,11 +5173,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: Assets/Track/barrier.png
+      MaterialAsset: Assets/Materials/Barrier.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -5669,7 +5193,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 4883621556726238175
+  - Entity: 4882390869134388080
     TagComponent:
       Tag: Barrier Right
       GameTag: Untagged
@@ -5682,7 +5206,7 @@ Entities:
       Layer: 0
       OrderInLayer: 0
     SplineExtrudeComponent:
-      Container: 8997962691609110655
+      Container: 8996089977549476232
       Shape: 1
       Radius: 0.25
       Sides: 12
@@ -5700,11 +5224,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.7
-      AO: 1
-      TexturePath: Assets/Track/barrier.png
+      MaterialAsset: Assets/Materials/Barrier.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -5724,7 +5244,7 @@ Entities:
     MeshColliderComponent:
       IsConvex: false
       IsTrigger: false
-  - Entity: 6301755136026330919
+  - Entity: 6301648200918447274
     TagComponent:
       Tag: Ground
       GameTag: Untagged
@@ -5743,15 +5263,7 @@ Entities:
       ApplyToChildren: true
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.75, 0.85, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      Tiling: [0.16666667, 0.16666667]
-      Offset: [0, 0]
-      WorldAlignedUV: true
-      TexturePath: Assets/Track/grass_diffuse.jpg
-      NormalMapPath: Assets/Track/grass_normal.jpg
+      MaterialAsset: Assets/Materials/Grass diffuse.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -5773,7 +5285,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 3179220567930053631
+  - Entity: 3177706311852516142
     TagComponent:
       Tag: Start Line
       GameTag: Untagged
@@ -5787,12 +5299,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 2
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.6
-      AO: 1
-      TexturePath: Assets/Track/Checker.png
-  - Entity: 5665592211064105014
+      MaterialAsset: Assets/Materials/Checker 1.cqmat
+  - Entity: 5667671656931509668
     TagComponent:
       Tag: Hill
       GameTag: Untagged
@@ -5806,12 +5314,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.33, 0.42, 0.22, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: ""
-  - Entity: 3786962074978002701
+      MaterialAsset: Assets/Materials/Hill.cqmat
+  - Entity: 3785938215841550179
     TagComponent:
       Tag: Hill
       GameTag: Untagged
@@ -5825,12 +5329,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.33, 0.42, 0.22, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: ""
-  - Entity: 6130693502296786599
+      MaterialAsset: Assets/Materials/Hill.cqmat
+  - Entity: 6130311742920087217
     TagComponent:
       Tag: Hill
       GameTag: Untagged
@@ -5844,12 +5344,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.33, 0.42, 0.22, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: ""
-  - Entity: 5002158899949862019
+      MaterialAsset: Assets/Materials/Hill.cqmat
+  - Entity: 5002542931360836118
     TagComponent:
       Tag: Hill
       GameTag: Untagged
@@ -5863,12 +5359,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.33, 0.42, 0.22, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: ""
-  - Entity: 5054473474502805679
+      MaterialAsset: Assets/Materials/Hill.cqmat
+  - Entity: 5053812385757641869
     TagComponent:
       Tag: Hill
       GameTag: Untagged
@@ -5882,12 +5374,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.33, 0.42, 0.22, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: ""
-  - Entity: 7855177726846706762
+      MaterialAsset: Assets/Materials/Hill.cqmat
+  - Entity: 7855568340039111363
     TagComponent:
       Tag: Hill
       GameTag: Untagged
@@ -5901,12 +5389,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.33, 0.42, 0.22, 1]
-      Metallic: 0
-      Roughness: 0.95
-      AO: 1
-      TexturePath: ""
-  - Entity: 5438784125473847670
+      MaterialAsset: Assets/Materials/Hill.cqmat
+  - Entity: 5439739317454819534
     TagComponent:
       Tag: Pit Building
       GameTag: Untagged
@@ -5920,11 +5404,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.62, 0.62, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.8
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Pit Building.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -5946,7 +5426,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6684663007061606658
+  - Entity: 6684211392075435836
     TagComponent:
       Tag: Pit Glass
       GameTag: Untagged
@@ -5960,11 +5440,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.05, 0.07, 0.09, 1]
-      Metallic: 0.6
-      Roughness: 0.05
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Pit Glass.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -5986,7 +5462,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4158020584168465825
+  - Entity: 4157920862932038342
     TagComponent:
       Tag: Pit Roof
       GameTag: Untagged
@@ -6000,11 +5476,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.2
-      Roughness: 0.6
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Pit Roof.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6026,7 +5498,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5706419179600067262
+  - Entity: 5707997297435854931
     TagComponent:
       Tag: Pit Column 0
       GameTag: Untagged
@@ -6040,11 +5512,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.6
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Post B.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6066,7 +5534,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1647737628785749543
+  - Entity: 1646725278862026148
     TagComponent:
       Tag: Pit Column 1
       GameTag: Untagged
@@ -6080,11 +5548,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.6
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Post B.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6106,7 +5570,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5851101295839280793
+  - Entity: 5851564526068897908
     TagComponent:
       Tag: Pit Column 2
       GameTag: Untagged
@@ -6120,11 +5584,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.6
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Post B.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6146,7 +5606,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5598553777907431588
+  - Entity: 5599568291854354261
     TagComponent:
       Tag: Pit Column 3
       GameTag: Untagged
@@ -6160,11 +5620,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.6
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Post B.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6186,7 +5642,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 8912588755855789670
+  - Entity: 8910449990684216318
     TagComponent:
       Tag: Pit Column 4
       GameTag: Untagged
@@ -6200,11 +5656,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.6
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Post B.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6226,7 +5678,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 3661990690824447901
+  - Entity: 3663016870547374976
     TagComponent:
       Tag: Pit Column 5
       GameTag: Untagged
@@ -6240,11 +5692,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.6
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Post B.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6266,7 +5714,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7285744500309783104
+  - Entity: 7285572178534310955
     TagComponent:
       Tag: Pit Column 6
       GameTag: Untagged
@@ -6280,11 +5728,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.6
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Post B.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6306,7 +5750,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 8143709796581614549
+  - Entity: 8143602860250675657
     TagComponent:
       Tag: Pit Column 7
       GameTag: Untagged
@@ -6320,11 +5764,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.6
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Post B.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6346,7 +5786,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 69049092764551987
+  - Entity: 68372608745904604
     TagComponent:
       Tag: Pit Lane
       GameTag: Untagged
@@ -6360,11 +5800,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.32, 0.33, 0.34, 1]
-      Metallic: 0
-      Roughness: 0.9
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Pit Lane.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6386,7 +5822,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7086179422354999660
+  - Entity: 7084318266170649331
     TagComponent:
       Tag: Grandstand Step 0
       GameTag: Untagged
@@ -6400,11 +5836,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.62, 0.62, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Step 6.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6426,7 +5858,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 8720369312144764265
+  - Entity: 8719917627973949705
     TagComponent:
       Tag: Grandstand Seats 0
       GameTag: Untagged
@@ -6440,11 +5872,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.28, 0.7, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Seats 6.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6466,7 +5894,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1684954788075085718
+  - Entity: 1685910031933953211
     TagComponent:
       Tag: Grandstand Step 1
       GameTag: Untagged
@@ -6480,11 +5908,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.55, 0.56, 0.56, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Step 5.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6506,7 +5930,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 3009196894723560058
+  - Entity: 3009943797911783565
     TagComponent:
       Tag: Grandstand Seats 1
       GameTag: Untagged
@@ -6520,11 +5944,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.75, 0.08, 0.08, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Seats 5.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6546,7 +5966,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6941824364700260112
+  - Entity: 6940600306723960637
     TagComponent:
       Tag: Grandstand Step 2
       GameTag: Untagged
@@ -6560,11 +5980,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.62, 0.62, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Step 6.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6586,7 +6002,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 8552612574296086488
+  - Entity: 8554407845208366330
     TagComponent:
       Tag: Grandstand Seats 2
       GameTag: Untagged
@@ -6600,11 +6016,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.28, 0.7, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Seats 6.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6626,7 +6038,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 9040196770222200172
+  - Entity: 9039459333676391656
     TagComponent:
       Tag: Grandstand Step 3
       GameTag: Untagged
@@ -6640,11 +6052,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.55, 0.56, 0.56, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Step 5.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6666,7 +6074,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4534627050687059092
+  - Entity: 4533326061398499017
     TagComponent:
       Tag: Grandstand Seats 3
       GameTag: Untagged
@@ -6680,11 +6088,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.75, 0.08, 0.08, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Seats 5.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6706,7 +6110,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7821795139792828619
+  - Entity: 7821413840841028576
     TagComponent:
       Tag: Grandstand Step 4
       GameTag: Untagged
@@ -6720,11 +6124,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.62, 0.62, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Step 6.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6746,7 +6146,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2819421784393755354
+  - Entity: 2821292286472277318
     TagComponent:
       Tag: Grandstand Seats 4
       GameTag: Untagged
@@ -6760,11 +6160,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.28, 0.7, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Seats 6.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6786,7 +6182,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 880033205294690946
+  - Entity: 878526040945005570
     TagComponent:
       Tag: Grandstand Step 5
       GameTag: Untagged
@@ -6800,11 +6196,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.55, 0.56, 0.56, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Step 5.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6826,7 +6218,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 8523399809373442144
+  - Entity: 8524915768750249305
     TagComponent:
       Tag: Grandstand Seats 5
       GameTag: Untagged
@@ -6840,11 +6232,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.75, 0.08, 0.08, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Seats 5.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6866,7 +6254,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2574650563729730668
+  - Entity: 2575311618989704510
     TagComponent:
       Tag: Grandstand Step 6
       GameTag: Untagged
@@ -6880,11 +6268,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.62, 0.62, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Step 6.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6906,7 +6290,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2855168882494735115
+  - Entity: 2853100417309144238
     TagComponent:
       Tag: Grandstand Seats 6
       GameTag: Untagged
@@ -6920,11 +6304,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.28, 0.7, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Seats 6.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6946,7 +6326,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1151720871533532193
+  - Entity: 1151825608820331684
     TagComponent:
       Tag: Grandstand Roof
       GameTag: Untagged
@@ -6960,11 +6340,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.4
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Roof.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -6986,7 +6362,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5027117986714186245
+  - Entity: 5027229269662633529
     TagComponent:
       Tag: Grandstand Post A
       GameTag: Untagged
@@ -7000,11 +6376,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.6
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Post B.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -7026,7 +6398,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6183755145525122825
+  - Entity: 6185337591017684010
     TagComponent:
       Tag: Grandstand Post B
       GameTag: Untagged
@@ -7040,11 +6412,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.6
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
+      MaterialAsset: Assets/Materials/Grandstand Post B.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -7066,7 +6434,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 8332856897180348255
+  - Entity: 8332757159762183163
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7099,7 +6467,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 1021252777827160399
+  - Entity: 1021068841887396340
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7132,7 +6500,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 2822659471416292237
+  - Entity: 2822559167494411482
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7165,7 +6533,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 671734807797911826
+  - Entity: 672686099828650191
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7198,7 +6566,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 3562612931586023729
+  - Entity: 3564413131919426148
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7231,7 +6599,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 7830227787822470709
+  - Entity: 7830961377574597667
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7264,7 +6632,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 8358288489796974203
+  - Entity: 8356776927372743690
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7297,7 +6665,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 2854414467327689807
+  - Entity: 2853960119625210016
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7330,7 +6698,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 3070039856424517108
+  - Entity: 3070715755752365042
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7363,7 +6731,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 6128388283657233295
+  - Entity: 6128220290064829338
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7396,7 +6764,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 844484426391299187
+  - Entity: 846555039543397486
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7429,7 +6797,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 1526245262492286548
+  - Entity: 1525005812480838045
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7462,7 +6830,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 3920898702600312936
+  - Entity: 3922199690919166875
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7495,7 +6863,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 3641563486896842895
+  - Entity: 3643071235915421627
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7528,7 +6896,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 3337479245675082031
+  - Entity: 3339063976072439718
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7561,7 +6929,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 5931761279245280121
+  - Entity: 5933068349205304167
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7594,7 +6962,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 5526611934338588991
+  - Entity: 5527569359595475225
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7627,7 +6995,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 2776389913364342556
+  - Entity: 2774235669766468360
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7660,7 +7028,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 7630470907730570050
+  - Entity: 7630020889971611481
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7693,7 +7061,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 6532417205705174297
+  - Entity: 6530335564147603915
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7726,7 +7094,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 6898831173982866843
+  - Entity: 6897884227351152093
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7759,7 +7127,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 8275582296532572800
+  - Entity: 8277441355135815852
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7792,7 +7160,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 551036047766869555
+  - Entity: 550014283379769806
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7825,7 +7193,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 5023796994579222286
+  - Entity: 5025942356792948555
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7858,7 +7226,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 7416536369895651915
+  - Entity: 7416148508267209605
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7891,7 +7259,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 7638375682313312639
+  - Entity: 7640164871495881477
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7924,7 +7292,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 3204036220537532792
+  - Entity: 3202238253586726485
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7957,7 +7325,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 8980497159177751700
+  - Entity: 8982013686048229356
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -7990,7 +7358,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 4428315235316894307
+  - Entity: 4427933920312980390
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -8023,7 +7391,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 8514740404156307713
+  - Entity: 8515682402478899485
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -8056,7 +7424,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 2209371411197376984
+  - Entity: 2210956090143244215
     TagComponent:
       Tag: Tyre Collider
       GameTag: Untagged
@@ -8089,7 +7457,7 @@ Entities:
       Size: [0.6, 0.5, 0.6]
       IsTrigger: false
       Version: 2
-  - Entity: 7396945671937576742
+  - Entity: 7395083949885195718
     TagComponent:
       Tag: Tyre Barriers
       GameTag: Untagged
@@ -8123,7 +7491,7 @@ Entities:
       CastShadows: true
       ReceiveShadows: true
       CullDistance: 0
-  - Entity: 152419978590846423
+  - Entity: 151475763629769022
     TagComponent:
       Tag: Floodlight Collider
       GameTag: Untagged
@@ -8156,7 +7524,7 @@ Entities:
       Size: [0.35, 6, 0.35]
       IsTrigger: false
       Version: 2
-  - Entity: 8529242669123673466
+  - Entity: 8528219325307740770
     TagComponent:
       Tag: Floodlight Collider
       GameTag: Untagged
@@ -8189,7 +7557,7 @@ Entities:
       Size: [0.35, 6, 0.35]
       IsTrigger: false
       Version: 2
-  - Entity: 1467589524925160091
+  - Entity: 1466567828731673210
     TagComponent:
       Tag: Floodlight Collider
       GameTag: Untagged
@@ -8222,7 +7590,7 @@ Entities:
       Size: [0.35, 6, 0.35]
       IsTrigger: false
       Version: 2
-  - Entity: 4486600433772638505
+  - Entity: 4486777223542411234
     TagComponent:
       Tag: Floodlight Collider
       GameTag: Untagged
@@ -8255,7 +7623,7 @@ Entities:
       Size: [0.35, 6, 0.35]
       IsTrigger: false
       Version: 2
-  - Entity: 9183922026004783825
+  - Entity: 9184105326927413446
     TagComponent:
       Tag: Floodlight Collider
       GameTag: Untagged
@@ -8288,7 +7656,7 @@ Entities:
       Size: [0.35, 6, 0.35]
       IsTrigger: false
       Version: 2
-  - Entity: 2194490924789908687
+  - Entity: 2194311370164740216
     TagComponent:
       Tag: Floodlight Collider
       GameTag: Untagged
@@ -8321,7 +7689,7 @@ Entities:
       Size: [0.35, 6, 0.35]
       IsTrigger: false
       Version: 2
-  - Entity: 2483132511393031440
+  - Entity: 2482183314704746854
     TagComponent:
       Tag: Floodlight Collider
       GameTag: Untagged
@@ -8354,7 +7722,7 @@ Entities:
       Size: [0.35, 6, 0.35]
       IsTrigger: false
       Version: 2
-  - Entity: 4644973693172759044
+  - Entity: 4643745271635121429
     TagComponent:
       Tag: Floodlight Collider
       GameTag: Untagged
@@ -8387,7 +7755,7 @@ Entities:
       Size: [0.35, 6, 0.35]
       IsTrigger: false
       Version: 2
-  - Entity: 1719458978968387676
+  - Entity: 1718995836230886764
     TagComponent:
       Tag: Floodlight Collider
       GameTag: Untagged
@@ -8420,7 +7788,7 @@ Entities:
       Size: [0.35, 6, 0.35]
       IsTrigger: false
       Version: 2
-  - Entity: 5977125411592485103
+  - Entity: 5977583659576746918
     TagComponent:
       Tag: Floodlight Collider
       GameTag: Untagged
@@ -8453,7 +7821,7 @@ Entities:
       Size: [0.35, 6, 0.35]
       IsTrigger: false
       Version: 2
-  - Entity: 6109632530933013388
+  - Entity: 6110928554214598342
     TagComponent:
       Tag: Floodlight Collider
       GameTag: Untagged
@@ -8486,7 +7854,7 @@ Entities:
       Size: [0.35, 6, 0.35]
       IsTrigger: false
       Version: 2
-  - Entity: 4472466306921935643
+  - Entity: 4473977851142624911
     TagComponent:
       Tag: Floodlight Collider
       GameTag: Untagged
@@ -8519,7 +7887,7 @@ Entities:
       Size: [0.35, 6, 0.35]
       IsTrigger: false
       Version: 2
-  - Entity: 2730042109548626483
+  - Entity: 2730493759998963211
     TagComponent:
       Tag: Floodlight Collider
       GameTag: Untagged
@@ -8552,7 +7920,7 @@ Entities:
       Size: [0.35, 6, 0.35]
       IsTrigger: false
       Version: 2
-  - Entity: 6262305360228784271
+  - Entity: 6264378189517142737
     TagComponent:
       Tag: Floodlight Collider
       GameTag: Untagged
@@ -8585,7 +7953,7 @@ Entities:
       Size: [0.35, 6, 0.35]
       IsTrigger: false
       Version: 2
-  - Entity: 6330730021835893858
+  - Entity: 6331183837531605255
     TagComponent:
       Tag: Floodlight Collider
       GameTag: Untagged
@@ -8618,7 +7986,7 @@ Entities:
       Size: [0.35, 6, 0.35]
       IsTrigger: false
       Version: 2
-  - Entity: 363601172085012590
+  - Entity: 363773528847353536
     TagComponent:
       Tag: Floodlights
       GameTag: Untagged
@@ -8652,7 +8020,7 @@ Entities:
       CastShadows: true
       ReceiveShadows: true
       CullDistance: 0
-  - Entity: 1160521550313096698
+  - Entity: 1160986962408027505
     TagComponent:
       Tag: Concrete Barrier Collider
       GameTag: Untagged
@@ -8685,7 +8053,7 @@ Entities:
       Size: [0.6, 0.84, 16]
       IsTrigger: false
       Version: 2
-  - Entity: 7989105967227262732
+  - Entity: 7987317294015512713
     TagComponent:
       Tag: Concrete Barriers
       GameTag: Untagged
@@ -8719,7 +8087,7 @@ Entities:
       CastShadows: true
       ReceiveShadows: true
       CullDistance: 0
-  - Entity: 2687179242291872766
+  - Entity: 2687910134369993086
     TagComponent:
       Tag: Checkpoint 0
       GameTag: Untagged
@@ -8731,7 +8099,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 8156057891820368885
+  - Entity: 8158134654288720048
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -8745,12 +8113,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.5
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 3844727755355648342
+      MaterialAsset: Assets/Materials/Post.cqmat
+  - Entity: 3845107386774923689
     TagComponent:
       Tag: Glow Post
       GameTag: Untagged
@@ -8764,15 +8128,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 3815636696197172877
+      MaterialAsset: Assets/Materials/Glow Banner Back 2.cqmat
+  - Entity: 3815809018658017221
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -8786,12 +8144,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.5
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 5529667037360052052
+      MaterialAsset: Assets/Materials/Post.cqmat
+  - Entity: 5529001498676850026
     TagComponent:
       Tag: Glow Post
       GameTag: Untagged
@@ -8805,15 +8159,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 4041710881074681587
+      MaterialAsset: Assets/Materials/Glow Banner Back 2.cqmat
+  - Entity: 4039920111317360962
     TagComponent:
       Tag: Banner
       GameTag: Untagged
@@ -8827,12 +8175,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0.3
-      Roughness: 0.5
-      AO: 1
-      TexturePath: Assets/Track/Checker.png
-  - Entity: 5259114245965844821
+      MaterialAsset: Assets/Materials/Checker.cqmat
+  - Entity: 5258946269469913487
     TagComponent:
       Tag: Glow Banner
       GameTag: Untagged
@@ -8846,15 +8190,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 4580754061671221460
+      MaterialAsset: Assets/Materials/Glow Banner Back 2.cqmat
+  - Entity: 4581775740211990014
     TagComponent:
       Tag: Glow Banner Back
       GameTag: Untagged
@@ -8868,15 +8206,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 124704529171401222
+      MaterialAsset: Assets/Materials/Glow Banner Back 2.cqmat
+  - Entity: 125165474437215010
     TagComponent:
       Tag: Start Text
       GameTag: Untagged
@@ -8893,7 +8225,7 @@ Entities:
       Color: [1, 1, 1, 1]
       FontSize: 1.1
       Alignment: 1
-  - Entity: 1650586348057987476
+  - Entity: 1652725164708096548
     TagComponent:
       Tag: Checkpoint 1
       GameTag: Untagged
@@ -8905,7 +8237,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 8989919883400960408
+  - Entity: 8990657991015953587
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -8919,12 +8251,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.5
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 91921829429326769
+      MaterialAsset: Assets/Materials/Post.cqmat
+  - Entity: 90411898490197687
     TagComponent:
       Tag: Glow Post
       GameTag: Untagged
@@ -8938,15 +8266,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.1, 0.75, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [0.1, 0.75, 1]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 3496143995141586084
+      MaterialAsset: Assets/Materials/Glow Banner Back.cqmat
+  - Entity: 3495755651952238486
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -8960,12 +8282,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.5
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 392641583906735835
+      MaterialAsset: Assets/Materials/Post.cqmat
+  - Entity: 393315369013560775
     TagComponent:
       Tag: Glow Post
       GameTag: Untagged
@@ -8979,15 +8297,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.1, 0.75, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [0.1, 0.75, 1]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 6690091948987862789
+      MaterialAsset: Assets/Materials/Glow Banner Back.cqmat
+  - Entity: 6687947016790593770
     TagComponent:
       Tag: Banner
       GameTag: Untagged
@@ -9001,12 +8313,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.3
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
-  - Entity: 6914418408384288138
+      MaterialAsset: Assets/Materials/Banner.cqmat
+  - Entity: 6913964027458577717
     TagComponent:
       Tag: Glow Banner
       GameTag: Untagged
@@ -9020,15 +8328,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.1, 0.75, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [0.1, 0.75, 1]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 2902966706218873982
+      MaterialAsset: Assets/Materials/Glow Banner Back.cqmat
+  - Entity: 2904487063712257776
     TagComponent:
       Tag: Glow Banner Back
       GameTag: Untagged
@@ -9042,15 +8344,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.1, 0.75, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [0.1, 0.75, 1]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 4608355631398000687
+      MaterialAsset: Assets/Materials/Glow Banner Back.cqmat
+  - Entity: 4608181092812792222
     TagComponent:
       Tag: Checkpoint 2
       GameTag: Untagged
@@ -9062,7 +8358,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 4158501014467350217
+  - Entity: 4157475488199888166
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -9076,12 +8372,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.5
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 6796488950591005274
+      MaterialAsset: Assets/Materials/Post.cqmat
+  - Entity: 6797724036321370040
     TagComponent:
       Tag: Glow Post
       GameTag: Untagged
@@ -9095,15 +8387,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 0.42, 0.05, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.42, 0.05]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 5705446894930870923
+      MaterialAsset: Assets/Materials/Glow Banner Back 1.cqmat
+  - Entity: 5704502680442021210
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -9117,12 +8403,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.5
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 4733459283257765587
+      MaterialAsset: Assets/Materials/Post.cqmat
+  - Entity: 4735261700357061272
     TagComponent:
       Tag: Glow Post
       GameTag: Untagged
@@ -9136,15 +8418,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 0.42, 0.05, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.42, 0.05]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 5354721629242411508
+      MaterialAsset: Assets/Materials/Glow Banner Back 1.cqmat
+  - Entity: 5352648818722832684
     TagComponent:
       Tag: Banner
       GameTag: Untagged
@@ -9158,12 +8434,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.3
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
-  - Entity: 6691135374062006523
+      MaterialAsset: Assets/Materials/Banner.cqmat
+  - Entity: 6691248872609729296
     TagComponent:
       Tag: Glow Banner
       GameTag: Untagged
@@ -9177,15 +8449,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 0.42, 0.05, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.42, 0.05]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 6326137593912544373
+      MaterialAsset: Assets/Materials/Glow Banner Back 1.cqmat
+  - Entity: 6326805212496075594
     TagComponent:
       Tag: Glow Banner Back
       GameTag: Untagged
@@ -9199,15 +8465,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 0.42, 0.05, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.42, 0.05]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 6538387781834766082
+      MaterialAsset: Assets/Materials/Glow Banner Back 1.cqmat
+  - Entity: 6537716228547621511
     TagComponent:
       Tag: Checkpoint 3
       GameTag: Untagged
@@ -9219,7 +8479,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 3943083669954658065
+  - Entity: 3944875075318755762
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -9233,12 +8493,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.5
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 9099305471871987476
+      MaterialAsset: Assets/Materials/Post.cqmat
+  - Entity: 9097444230877976918
     TagComponent:
       Tag: Glow Post
       GameTag: Untagged
@@ -9252,15 +8508,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.1, 0.75, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [0.1, 0.75, 1]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 824959320216135176
+      MaterialAsset: Assets/Materials/Glow Banner Back.cqmat
+  - Entity: 825706224424001347
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -9274,12 +8524,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.5
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 1207377995443182252
+      MaterialAsset: Assets/Materials/Post.cqmat
+  - Entity: 1208882995208832579
     TagComponent:
       Tag: Glow Post
       GameTag: Untagged
@@ -9293,15 +8539,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.1, 0.75, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [0.1, 0.75, 1]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 63164219080662401
+      MaterialAsset: Assets/Materials/Glow Banner Back.cqmat
+  - Entity: 65232701901649309
     TagComponent:
       Tag: Banner
       GameTag: Untagged
@@ -9315,12 +8555,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.3
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
-  - Entity: 4701969919305033688
+      MaterialAsset: Assets/Materials/Banner.cqmat
+  - Entity: 4703842637759796694
     TagComponent:
       Tag: Glow Banner
       GameTag: Untagged
@@ -9334,15 +8570,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.1, 0.75, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [0.1, 0.75, 1]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 1785490582379949288
+      MaterialAsset: Assets/Materials/Glow Banner Back.cqmat
+  - Entity: 1783690948913827415
     TagComponent:
       Tag: Glow Banner Back
       GameTag: Untagged
@@ -9356,15 +8586,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.1, 0.75, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [0.1, 0.75, 1]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 4607648386934508020
+      MaterialAsset: Assets/Materials/Glow Banner Back.cqmat
+  - Entity: 4608871842421503247
     TagComponent:
       Tag: Checkpoint 4
       GameTag: Untagged
@@ -9376,7 +8600,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5404509944007191417
+  - Entity: 5406301314548907953
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -9390,12 +8614,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.5
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 1140533769406409118
+      MaterialAsset: Assets/Materials/Post.cqmat
+  - Entity: 1140635723211118371
     TagComponent:
       Tag: Glow Post
       GameTag: Untagged
@@ -9409,15 +8629,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 0.42, 0.05, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.42, 0.05]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 5586960399865295404
+      MaterialAsset: Assets/Materials/Glow Banner Back 1.cqmat
+  - Entity: 5588819458457907283
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -9431,12 +8645,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.5
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 5439442483830079034
+      MaterialAsset: Assets/Materials/Post.cqmat
+  - Entity: 5439063367046620580
     TagComponent:
       Tag: Glow Post
       GameTag: Untagged
@@ -9450,15 +8660,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 0.42, 0.05, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.42, 0.05]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 7614340439900418869
+      MaterialAsset: Assets/Materials/Glow Banner Back 1.cqmat
+  - Entity: 7614519376848796378
     TagComponent:
       Tag: Banner
       GameTag: Untagged
@@ -9472,12 +8676,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.3
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
-  - Entity: 936348563768947422
+      MaterialAsset: Assets/Materials/Banner.cqmat
+  - Entity: 934834751783601524
     TagComponent:
       Tag: Glow Banner
       GameTag: Untagged
@@ -9491,15 +8691,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 0.42, 0.05, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.42, 0.05]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 8284638600835038604
+      MaterialAsset: Assets/Materials/Glow Banner Back 1.cqmat
+  - Entity: 8286436018920978707
     TagComponent:
       Tag: Glow Banner Back
       GameTag: Untagged
@@ -9513,15 +8707,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 0.42, 0.05, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.42, 0.05]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 7735038963532477413
+      MaterialAsset: Assets/Materials/Glow Banner Back 1.cqmat
+  - Entity: 7737122289472581929
     TagComponent:
       Tag: Checkpoint 5
       GameTag: Untagged
@@ -9533,7 +8721,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 3070359264598859581
+  - Entity: 3070254510792447986
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -9547,12 +8735,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.5
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 8636586723525333033
+      MaterialAsset: Assets/Materials/Post.cqmat
+  - Entity: 8637049300664532381
     TagComponent:
       Tag: Glow Post
       GameTag: Untagged
@@ -9566,15 +8750,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.1, 0.75, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [0.1, 0.75, 1]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 5077122050795187387
+      MaterialAsset: Assets/Materials/Glow Banner Back.cqmat
+  - Entity: 5076164624235054518
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -9588,12 +8766,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.5
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 375313866018971613
+      MaterialAsset: Assets/Materials/Post.cqmat
+  - Entity: 374580207252649797
     TagComponent:
       Tag: Glow Post
       GameTag: Untagged
@@ -9607,15 +8781,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.1, 0.75, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [0.1, 0.75, 1]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 6806656036008360430
+      MaterialAsset: Assets/Materials/Glow Banner Back.cqmat
+  - Entity: 6805430345795423993
     TagComponent:
       Tag: Banner
       GameTag: Untagged
@@ -9629,12 +8797,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.3
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
-  - Entity: 2858394394978801025
+      MaterialAsset: Assets/Materials/Banner.cqmat
+  - Entity: 2858846509616444841
     TagComponent:
       Tag: Glow Banner
       GameTag: Untagged
@@ -9648,15 +8812,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.1, 0.75, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [0.1, 0.75, 1]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 6977999284916538103
+      MaterialAsset: Assets/Materials/Glow Banner Back.cqmat
+  - Entity: 6976482843189654169
     TagComponent:
       Tag: Glow Banner Back
       GameTag: Untagged
@@ -9670,15 +8828,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.1, 0.75, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [0.1, 0.75, 1]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 8130692373936450495
+      MaterialAsset: Assets/Materials/Glow Banner Back.cqmat
+  - Entity: 8129457941098055187
     TagComponent:
       Tag: Checkpoint 6
       GameTag: Untagged
@@ -9690,7 +8842,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5547484496402061649
+  - Entity: 5547089556238319327
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -9704,12 +8856,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.5
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 8010296683325519051
+      MaterialAsset: Assets/Materials/Post.cqmat
+  - Entity: 8011320079460591657
     TagComponent:
       Tag: Glow Post
       GameTag: Untagged
@@ -9723,15 +8871,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 0.42, 0.05, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.42, 0.05]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 8577925316937206186
+      MaterialAsset: Assets/Materials/Glow Banner Back 1.cqmat
+  - Entity: 8578599653561549908
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -9745,12 +8887,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.5
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 5278726372241147714
+      MaterialAsset: Assets/Materials/Post.cqmat
+  - Entity: 5280025144223035046
     TagComponent:
       Tag: Glow Post
       GameTag: Untagged
@@ -9764,15 +8902,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 0.42, 0.05, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.42, 0.05]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 8908882818784947741
+      MaterialAsset: Assets/Materials/Glow Banner Back 1.cqmat
+  - Entity: 8909548289117140824
     TagComponent:
       Tag: Banner
       GameTag: Untagged
@@ -9786,12 +8918,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.3
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
-  - Entity: 4125679642939909683
+      MaterialAsset: Assets/Materials/Banner.cqmat
+  - Entity: 4127263773786384823
     TagComponent:
       Tag: Glow Banner
       GameTag: Untagged
@@ -9805,15 +8933,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 0.42, 0.05, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.42, 0.05]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 2655089402821777398
+      MaterialAsset: Assets/Materials/Glow Banner Back 1.cqmat
+  - Entity: 2656951090836396834
     TagComponent:
       Tag: Glow Banner Back
       GameTag: Untagged
@@ -9827,15 +8949,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 0.42, 0.05, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [1, 0.42, 0.05]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 9021015975114493864
+      MaterialAsset: Assets/Materials/Glow Banner Back 1.cqmat
+  - Entity: 9022594023193771763
     TagComponent:
       Tag: Checkpoint 7
       GameTag: Untagged
@@ -9847,7 +8963,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 8600923969637471634
+  - Entity: 8600531177771000181
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -9861,12 +8977,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.5
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 3183919333551862401
+      MaterialAsset: Assets/Materials/Post.cqmat
+  - Entity: 3181839926008989518
     TagComponent:
       Tag: Glow Post
       GameTag: Untagged
@@ -9880,15 +8992,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.1, 0.75, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [0.1, 0.75, 1]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 6090160571629631198
+      MaterialAsset: Assets/Materials/Glow Banner Back.cqmat
+  - Entity: 6089780991211894507
     TagComponent:
       Tag: Post
       GameTag: Untagged
@@ -9902,12 +9008,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.5
-      Roughness: 0.4
-      AO: 1
-      TexturePath: ""
-  - Entity: 6632918847633132744
+      MaterialAsset: Assets/Materials/Post.cqmat
+  - Entity: 6632530952159281425
     TagComponent:
       Tag: Glow Post
       GameTag: Untagged
@@ -9921,15 +9023,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.1, 0.75, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [0.1, 0.75, 1]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 5980454173513231545
+      MaterialAsset: Assets/Materials/Glow Banner Back.cqmat
+  - Entity: 5978933317611354650
     TagComponent:
       Tag: Banner
       GameTag: Untagged
@@ -9943,12 +9039,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.12, 0.13, 0.14, 1]
-      Metallic: 0.3
-      Roughness: 0.5
-      AO: 1
-      TexturePath: ""
-  - Entity: 4707626262612206714
+      MaterialAsset: Assets/Materials/Banner.cqmat
+  - Entity: 4707245033384008248
     TagComponent:
       Tag: Glow Banner
       GameTag: Untagged
@@ -9962,15 +9054,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.1, 0.75, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [0.1, 0.75, 1]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 8246469428044081157
+      MaterialAsset: Assets/Materials/Glow Banner Back.cqmat
+  - Entity: 8248060207300573708
     TagComponent:
       Tag: Glow Banner Back
       GameTag: Untagged
@@ -9984,15 +9070,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.1, 0.75, 1, 1]
-      Metallic: 0
-      Roughness: 0.75
-      AO: 1
-      EmissionColor: [0.1, 0.75, 1]
-      EmissionStrength: 0.25
       CastShadows: false
-      TexturePath: ""
-  - Entity: 1623697640335385840
+      MaterialAsset: Assets/Materials/Glow Banner Back.cqmat
+  - Entity: 1625569841655134329
     TagComponent:
       Tag: Vehicle
       GameTag: Untagged
@@ -10036,7 +9116,7 @@ Entities:
       Size: [1.96, 0.62, 4.2]
       IsTrigger: false
       Version: 2
-  - Entity: 6462853350941714015
+  - Entity: 6464650838369815643
     TagComponent:
       Tag: Body
       GameTag: Untagged
@@ -10050,7 +9130,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Body_Carmine.glb
-  - Entity: 8133252298390337952
+  - Entity: 8131454261557975893
     TagComponent:
       Tag: Interior
       GameTag: Untagged
@@ -10064,7 +9144,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Interior_Carmine.glb
-  - Entity: 5295404407766299363
+  - Entity: 5294730191795550567
     TagComponent:
       Tag: Calipers
       GameTag: Untagged
@@ -10078,7 +9158,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Calipers_Red.glb
-  - Entity: 760465705357609503
+  - Entity: 759437944959540277
     TagComponent:
       Tag: WheelFL Mesh
       GameTag: Untagged
@@ -10092,7 +9172,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Wheel_FL.glb
-  - Entity: 539715273959885366
+  - Entity: 538975517031609935
     TagComponent:
       Tag: Rim
       GameTag: Untagged
@@ -10106,7 +9186,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Rim_FL_Chrome.glb
-  - Entity: 1936463825102610756
+  - Entity: 1934318961733736391
     TagComponent:
       Tag: WheelFL
       GameTag: Untagged
@@ -10141,8 +9221,8 @@ Entities:
       MotorTorque: 0
       BrakeTorque: 0
       SteerAngle: 0
-      WheelModel: 760465705357609503
-  - Entity: 5876077201504611270
+      WheelModel: 759437944959540277
+  - Entity: 5875968649883532081
     TagComponent:
       Tag: WheelFR Mesh
       GameTag: Untagged
@@ -10156,7 +9236,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Wheel_FR.glb
-  - Entity: 5942187389770571203
+  - Entity: 5940604961904791607
     TagComponent:
       Tag: Rim
       GameTag: Untagged
@@ -10170,7 +9250,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Rim_FR_Chrome.glb
-  - Entity: 2736388492163991270
+  - Entity: 2737693362636041775
     TagComponent:
       Tag: WheelFR
       GameTag: Untagged
@@ -10205,8 +9285,8 @@ Entities:
       MotorTorque: 0
       BrakeTorque: 0
       SteerAngle: 0
-      WheelModel: 5876077201504611270
-  - Entity: 2262928287020371420
+      WheelModel: 5875968649883532081
+  - Entity: 2260857623916007132
     TagComponent:
       Tag: WheelRL Mesh
       GameTag: Untagged
@@ -10220,7 +9300,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Wheel_RL.glb
-  - Entity: 5397307545653792292
+  - Entity: 5395507875752531069
     TagComponent:
       Tag: Rim
       GameTag: Untagged
@@ -10234,7 +9314,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Rim_RL_Chrome.glb
-  - Entity: 332574837773231189
+  - Entity: 331626192562632684
     TagComponent:
       Tag: WheelRL
       GameTag: Untagged
@@ -10269,8 +9349,8 @@ Entities:
       MotorTorque: 0
       BrakeTorque: 0
       SteerAngle: 0
-      WheelModel: 2262928287020371420
-  - Entity: 5208546859838958199
+      WheelModel: 2260857623916007132
+  - Entity: 5210627985559301129
     TagComponent:
       Tag: WheelRR Mesh
       GameTag: Untagged
@@ -10284,7 +9364,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Wheel_RR.glb
-  - Entity: 5086661665696110378
+  - Entity: 5084797745675434355
     TagComponent:
       Tag: Rim
       GameTag: Untagged
@@ -10298,7 +9378,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Vehicles/Models/ConceptCar/Rim_RR_Chrome.glb
-  - Entity: 2360304079210671145
+  - Entity: 2361816138334891173
     TagComponent:
       Tag: WheelRR
       GameTag: Untagged
@@ -10333,8 +9413,8 @@ Entities:
       MotorTorque: 0
       BrakeTorque: 0
       SteerAngle: 0
-      WheelModel: 5208546859838958199
-  - Entity: 6995041453195287552
+      WheelModel: 5210627985559301129
+  - Entity: 6995434295815546042
     TagComponent:
       Tag: Brake Light L
       GameTag: Untagged
@@ -10355,7 +9435,7 @@ Entities:
       Quadratic: 0.032
       CastShadows: false
       Mode: 0
-  - Entity: 7779675997683181706
+  - Entity: 7778087468249809017
     TagComponent:
       Tag: Brake Light R
       GameTag: Untagged
@@ -10376,7 +9456,7 @@ Entities:
       Quadratic: 0.032
       CastShadows: false
       Mode: 0
-  - Entity: 3625910672993753291
+  - Entity: 3627216041117777895
     TagComponent:
       Tag: Engine Audio
       GameTag: Untagged
@@ -10410,7 +9490,7 @@ Entities:
         []
       GraphLinks:
         []
-  - Entity: 355522071180415562
+  - Entity: 353732952443601676
     TagComponent:
       Tag: Skid Audio
       GameTag: Untagged
@@ -10444,7 +9524,7 @@ Entities:
         []
       GraphLinks:
         []
-  - Entity: 7021113393915191446
+  - Entity: 7023264804459227454
     TagComponent:
       Tag: Camera
       GameTag: Untagged
@@ -10474,7 +9554,7 @@ Entities:
       ClassName: ""
     AudioListenerComponent:
       IsActive: true
-  - Entity: 7625408245500857795
+  - Entity: 7626075399091319425
     TagComponent:
       Tag: Game
       GameTag: Untagged
@@ -10494,7 +9574,7 @@ Entities:
           Float: 14.8
         laps:
           Int: 3
-  - Entity: 1109618882732520333
+  - Entity: 1108324423821079016
     TagComponent:
       Tag: HUD
       GameTag: Untagged
@@ -10520,7 +9600,7 @@ Entities:
       IgnoreReversedGraphics: true
       BlockingObjects: 0
       BlockingMask: 4294967295
-  - Entity: 8880491268299104454
+  - Entity: 8879533377501982406
     TagComponent:
       Tag: LapText
       GameTag: Untagged
@@ -10559,7 +9639,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 7722642473075375027
+  - Entity: 7722531139685571208
     TagComponent:
       Tag: TimeText
       GameTag: Untagged
@@ -10598,7 +9678,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 8763779693698438610
+  - Entity: 8761916338440895583
     TagComponent:
       Tag: BestText
       GameTag: Untagged
@@ -10637,7 +9717,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 3646327202980082413
+  - Entity: 3647348401452040636
     TagComponent:
       Tag: TotalText
       GameTag: Untagged
@@ -10676,7 +9756,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 6855743611607315840
+  - Entity: 6855561873100282074
     TagComponent:
       Tag: DeltaText
       GameTag: Untagged
@@ -10715,7 +9795,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 6287184245115433087
+  - Entity: 6289056482760680654
     TagComponent:
       Tag: SpeedText
       GameTag: Untagged
@@ -10754,7 +9834,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 2724226398090534340
+  - Entity: 2722920995180815673
     TagComponent:
       Tag: SpeedUnit
       GameTag: Untagged
@@ -10793,7 +9873,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 5427366707640018471
+  - Entity: 5428603425551223336
     TagComponent:
       Tag: GearText
       GameTag: Untagged
@@ -10832,7 +9912,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 149823744441330284
+  - Entity: 149710227183290486
     TagComponent:
       Tag: GearLabel
       GameTag: Untagged
@@ -10871,7 +9951,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 8513264995943211379
+  - Entity: 8512531339078599595
     TagComponent:
       Tag: RpmBack
       GameTag: Untagged
@@ -10904,7 +9984,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 3977552091181949052
+  - Entity: 3978013019754749184
     TagComponent:
       Tag: RpmFill
       GameTag: Untagged
@@ -10937,7 +10017,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 5342003004162092111
+  - Entity: 5342742656264551279
     TagComponent:
       Tag: CenterText
       GameTag: Untagged
@@ -10976,7 +10056,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 5655086212858816903
+  - Entity: 5655748985163471426
     TagComponent:
       Tag: ResultsPanel
       GameTag: Untagged
@@ -11014,7 +10094,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: false
       CornerRadius: 0
-  - Entity: 2263914884833399057
+  - Entity: 2264375862410330200
     TagComponent:
       Tag: ResultsText
       GameTag: Untagged
@@ -11053,7 +10133,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.6]
       RaycastTarget: false
       RichText: false
-  - Entity: 5820667993984774029
+  - Entity: 5818806840022787085
     TagComponent:
       Tag: HintText
       GameTag: Untagged
@@ -11299,425 +10379,425 @@ EditorCamera:
   Yaw: -0.07679449
   OrthographicSize: 10
 Hierarchy:
-  - Child: 5942187389770571203
-    Parent: 5876077201504611270
-  - Child: 539715273959885366
-    Parent: 760465705357609503
-  - Child: 5086661665696110378
-    Parent: 5208546859838958199
-  - Child: 5547484496402061649
-    Parent: 8130692373936450495
-  - Child: 8010296683325519051
-    Parent: 8130692373936450495
-  - Child: 8577925316937206186
-    Parent: 8130692373936450495
-  - Child: 5278726372241147714
-    Parent: 8130692373936450495
-  - Child: 8908882818784947741
-    Parent: 8130692373936450495
-  - Child: 4125679642939909683
-    Parent: 8130692373936450495
-  - Child: 2655089402821777398
-    Parent: 8130692373936450495
-  - Child: 3070359264598859581
-    Parent: 7735038963532477413
-  - Child: 8636586723525333033
-    Parent: 7735038963532477413
-  - Child: 5077122050795187387
-    Parent: 7735038963532477413
-  - Child: 375313866018971613
-    Parent: 7735038963532477413
-  - Child: 6806656036008360430
-    Parent: 7735038963532477413
-  - Child: 2858394394978801025
-    Parent: 7735038963532477413
-  - Child: 6977999284916538103
-    Parent: 7735038963532477413
-  - Child: 5404509944007191417
-    Parent: 4607648386934508020
-  - Child: 1140533769406409118
-    Parent: 4607648386934508020
-  - Child: 5586960399865295404
-    Parent: 4607648386934508020
-  - Child: 5439442483830079034
-    Parent: 4607648386934508020
-  - Child: 7614340439900418869
-    Parent: 4607648386934508020
-  - Child: 936348563768947422
-    Parent: 4607648386934508020
-  - Child: 8284638600835038604
-    Parent: 4607648386934508020
-  - Child: 8880491268299104454
-    Parent: 1109618882732520333
-  - Child: 7722642473075375027
-    Parent: 1109618882732520333
-  - Child: 8763779693698438610
-    Parent: 1109618882732520333
-  - Child: 3646327202980082413
-    Parent: 1109618882732520333
-  - Child: 6855743611607315840
-    Parent: 1109618882732520333
-  - Child: 6287184245115433087
-    Parent: 1109618882732520333
-  - Child: 2724226398090534340
-    Parent: 1109618882732520333
-  - Child: 5427366707640018471
-    Parent: 1109618882732520333
-  - Child: 149823744441330284
-    Parent: 1109618882732520333
-  - Child: 8513264995943211379
-    Parent: 1109618882732520333
-  - Child: 3977552091181949052
-    Parent: 1109618882732520333
-  - Child: 5342003004162092111
-    Parent: 1109618882732520333
-  - Child: 5655086212858816903
-    Parent: 1109618882732520333
-  - Child: 2263914884833399057
-    Parent: 1109618882732520333
-  - Child: 5820667993984774029
-    Parent: 1109618882732520333
-  - Child: 8156057891820368885
-    Parent: 2687179242291872766
-  - Child: 3844727755355648342
-    Parent: 2687179242291872766
-  - Child: 3815636696197172877
-    Parent: 2687179242291872766
-  - Child: 5529667037360052052
-    Parent: 2687179242291872766
-  - Child: 4041710881074681587
-    Parent: 2687179242291872766
-  - Child: 5259114245965844821
-    Parent: 2687179242291872766
-  - Child: 4580754061671221460
-    Parent: 2687179242291872766
-  - Child: 124704529171401222
-    Parent: 2687179242291872766
-  - Child: 3606014710396039868
-    Parent: 7805700628233128834
-  - Child: 612293983946294016
-    Parent: 7805700628233128834
-  - Child: 9187399667209149263
-    Parent: 7805700628233128834
-  - Child: 2946901384180787198
-    Parent: 7805700628233128834
-  - Child: 409092229044770445
-    Parent: 7805700628233128834
-  - Child: 5399071434650919533
-    Parent: 7805700628233128834
-  - Child: 5726419273442238383
-    Parent: 7805700628233128834
-  - Child: 9150619629498992879
-    Parent: 7805700628233128834
-  - Child: 7568763190924394917
-    Parent: 7805700628233128834
-  - Child: 6562363880122283423
-    Parent: 7805700628233128834
-  - Child: 873505097408625352
-    Parent: 7805700628233128834
-  - Child: 4968395273461968489
-    Parent: 7805700628233128834
-  - Child: 8600923969637471634
-    Parent: 9021015975114493864
-  - Child: 3183919333551862401
-    Parent: 9021015975114493864
-  - Child: 6090160571629631198
-    Parent: 9021015975114493864
-  - Child: 6632918847633132744
-    Parent: 9021015975114493864
-  - Child: 5980454173513231545
-    Parent: 9021015975114493864
-  - Child: 4707626262612206714
-    Parent: 9021015975114493864
-  - Child: 8246469428044081157
-    Parent: 9021015975114493864
-  - Child: 4472236839979676086
-    Parent: 6562363880122283423
-  - Child: 5852858110311292563
-    Parent: 6562363880122283423
-  - Child: 5141844167817739449
-    Parent: 6562363880122283423
-  - Child: 2047760237517999073
-    Parent: 6562363880122283423
-  - Child: 8233768085573095425
-    Parent: 6562363880122283423
-  - Child: 8585248422179572963
-    Parent: 6562363880122283423
-  - Child: 7331209231564062598
-    Parent: 6562363880122283423
-  - Child: 7728798283548411625
-    Parent: 6562363880122283423
-  - Child: 5602445746830206988
-    Parent: 6562363880122283423
-  - Child: 3943083669954658065
-    Parent: 6538387781834766082
-  - Child: 9099305471871987476
-    Parent: 6538387781834766082
-  - Child: 824959320216135176
-    Parent: 6538387781834766082
-  - Child: 1207377995443182252
-    Parent: 6538387781834766082
-  - Child: 63164219080662401
-    Parent: 6538387781834766082
-  - Child: 4701969919305033688
-    Parent: 6538387781834766082
-  - Child: 1785490582379949288
-    Parent: 6538387781834766082
-  - Child: 4282263698359237026
-    Parent: 3606014710396039868
-  - Child: 2736200339591874306
-    Parent: 3606014710396039868
-  - Child: 3914462597629942556
-    Parent: 3606014710396039868
-  - Child: 6989902108929297024
-    Parent: 3606014710396039868
-  - Child: 5313323352989292904
-    Parent: 3606014710396039868
-  - Child: 775673946070702006
-    Parent: 3606014710396039868
-  - Child: 1942621642685742435
-    Parent: 3606014710396039868
-  - Child: 681023118543049229
-    Parent: 3606014710396039868
-  - Child: 931603533636257304
-    Parent: 3606014710396039868
-  - Child: 7439794024849381625
-    Parent: 612293983946294016
-  - Child: 6432393457831342652
-    Parent: 612293983946294016
-  - Child: 6235599178475994681
-    Parent: 612293983946294016
-  - Child: 5294235354198641902
-    Parent: 612293983946294016
-  - Child: 2868244568660091784
-    Parent: 612293983946294016
-  - Child: 4436757768823626410
-    Parent: 612293983946294016
-  - Child: 6597727450924706848
-    Parent: 612293983946294016
-  - Child: 3159563249800912869
-    Parent: 612293983946294016
-  - Child: 4368526085749388783
-    Parent: 612293983946294016
-  - Child: 1156873866818765789
-    Parent: 9187399667209149263
-  - Child: 6606894734047504865
-    Parent: 9187399667209149263
-  - Child: 34271327079652843
-    Parent: 9187399667209149263
-  - Child: 7570712981322929625
-    Parent: 9187399667209149263
-  - Child: 1213002128991337034
-    Parent: 9187399667209149263
-  - Child: 2483259623385398884
-    Parent: 9187399667209149263
-  - Child: 476328421856738274
-    Parent: 9187399667209149263
-  - Child: 7753011424046823932
-    Parent: 9187399667209149263
-  - Child: 4233855873669265063
-    Parent: 9187399667209149263
-  - Child: 6447313315735252592
-    Parent: 2946901384180787198
-  - Child: 6694630466137815553
-    Parent: 2946901384180787198
-  - Child: 2370922217807588171
-    Parent: 2946901384180787198
-  - Child: 8054531193781359756
-    Parent: 2946901384180787198
-  - Child: 4359500821048151588
-    Parent: 2946901384180787198
-  - Child: 5262848034704182061
-    Parent: 2946901384180787198
-  - Child: 4677094330515919347
-    Parent: 2946901384180787198
-  - Child: 2357334581887573309
-    Parent: 2946901384180787198
-  - Child: 8268879259765728481
-    Parent: 2946901384180787198
-  - Child: 6462853350941714015
-    Parent: 1623697640335385840
-  - Child: 8133252298390337952
-    Parent: 1623697640335385840
-  - Child: 5295404407766299363
-    Parent: 1623697640335385840
-  - Child: 760465705357609503
-    Parent: 1623697640335385840
-  - Child: 1936463825102610756
-    Parent: 1623697640335385840
-  - Child: 5876077201504611270
-    Parent: 1623697640335385840
-  - Child: 2736388492163991270
-    Parent: 1623697640335385840
-  - Child: 2262928287020371420
-    Parent: 1623697640335385840
-  - Child: 332574837773231189
-    Parent: 1623697640335385840
-  - Child: 5208546859838958199
-    Parent: 1623697640335385840
-  - Child: 2360304079210671145
-    Parent: 1623697640335385840
-  - Child: 6995041453195287552
-    Parent: 1623697640335385840
-  - Child: 7779675997683181706
-    Parent: 1623697640335385840
-  - Child: 3625910672993753291
-    Parent: 1623697640335385840
-  - Child: 355522071180415562
-    Parent: 1623697640335385840
-  - Child: 3763651658532845944
-    Parent: 409092229044770445
-  - Child: 7101677641210105147
-    Parent: 409092229044770445
-  - Child: 5530770949701331980
-    Parent: 409092229044770445
-  - Child: 2351099831323164984
-    Parent: 409092229044770445
-  - Child: 3034386071433133655
-    Parent: 409092229044770445
-  - Child: 5726274089633432861
-    Parent: 409092229044770445
-  - Child: 2675692295609293937
-    Parent: 409092229044770445
-  - Child: 7008280131928657261
-    Parent: 409092229044770445
-  - Child: 722039351754860489
-    Parent: 409092229044770445
-  - Child: 5397307545653792292
-    Parent: 2262928287020371420
-  - Child: 4158501014467350217
-    Parent: 4608355631398000687
-  - Child: 6796488950591005274
-    Parent: 4608355631398000687
-  - Child: 5705446894930870923
-    Parent: 4608355631398000687
-  - Child: 4733459283257765587
-    Parent: 4608355631398000687
-  - Child: 5354721629242411508
-    Parent: 4608355631398000687
-  - Child: 6691135374062006523
-    Parent: 4608355631398000687
-  - Child: 6326137593912544373
-    Parent: 4608355631398000687
-  - Child: 6317783957725250995
-    Parent: 5399071434650919533
-  - Child: 8968919140343852716
-    Parent: 5399071434650919533
-  - Child: 2439775042038880849
-    Parent: 5399071434650919533
-  - Child: 63792231597414723
-    Parent: 5399071434650919533
-  - Child: 6906898422049562337
-    Parent: 5399071434650919533
-  - Child: 960982302380233027
-    Parent: 5399071434650919533
-  - Child: 1573728400372193979
-    Parent: 5399071434650919533
-  - Child: 2848809352028915818
-    Parent: 5399071434650919533
-  - Child: 7417394213704292820
-    Parent: 5399071434650919533
-  - Child: 5123910043070473246
-    Parent: 5726419273442238383
-  - Child: 4414861322699787858
-    Parent: 5726419273442238383
-  - Child: 5923134995350162235
-    Parent: 5726419273442238383
-  - Child: 820276588855858190
-    Parent: 5726419273442238383
-  - Child: 642951270190717961
-    Parent: 5726419273442238383
-  - Child: 1000641099065310504
-    Parent: 5726419273442238383
-  - Child: 1254681598080095527
-    Parent: 5726419273442238383
-  - Child: 2187324899393601434
-    Parent: 5726419273442238383
-  - Child: 1039668591762013399
-    Parent: 5726419273442238383
-  - Child: 5542224768185740484
-    Parent: 9150619629498992879
-  - Child: 5276655704819768423
-    Parent: 9150619629498992879
-  - Child: 1374895414864899605
-    Parent: 9150619629498992879
-  - Child: 6518267040249510425
-    Parent: 9150619629498992879
-  - Child: 1157713530303964187
-    Parent: 9150619629498992879
-  - Child: 2588554340032244628
-    Parent: 9150619629498992879
-  - Child: 5873034999305882986
-    Parent: 9150619629498992879
-  - Child: 2181529374396310084
-    Parent: 9150619629498992879
-  - Child: 7429951050604765418
-    Parent: 9150619629498992879
-  - Child: 7445672456557010240
-    Parent: 7568763190924394917
-  - Child: 8614944772584258259
-    Parent: 7568763190924394917
-  - Child: 1759756364651324266
-    Parent: 7568763190924394917
-  - Child: 6117893405617973646
-    Parent: 7568763190924394917
-  - Child: 865475352079562672
-    Parent: 7568763190924394917
-  - Child: 7799594566096207545
-    Parent: 7568763190924394917
-  - Child: 3825070404251256856
-    Parent: 7568763190924394917
-  - Child: 5965426833241749693
-    Parent: 7568763190924394917
-  - Child: 5701549120108376155
-    Parent: 7568763190924394917
-  - Child: 8989919883400960408
-    Parent: 1650586348057987476
-  - Child: 91921829429326769
-    Parent: 1650586348057987476
-  - Child: 3496143995141586084
-    Parent: 1650586348057987476
-  - Child: 392641583906735835
-    Parent: 1650586348057987476
-  - Child: 6690091948987862789
-    Parent: 1650586348057987476
-  - Child: 6914418408384288138
-    Parent: 1650586348057987476
-  - Child: 2902966706218873982
-    Parent: 1650586348057987476
-  - Child: 7578051380014705348
-    Parent: 873505097408625352
-  - Child: 5461228300714462206
-    Parent: 873505097408625352
-  - Child: 5220091386280581366
-    Parent: 873505097408625352
-  - Child: 4705801127086891244
-    Parent: 873505097408625352
-  - Child: 3672380589527047314
-    Parent: 873505097408625352
-  - Child: 1269360070168331615
-    Parent: 873505097408625352
-  - Child: 307215601166203467
-    Parent: 873505097408625352
-  - Child: 6466499874767307775
-    Parent: 873505097408625352
-  - Child: 4268248752169090442
-    Parent: 873505097408625352
-  - Child: 2646470226376021665
-    Parent: 4968395273461968489
-  - Child: 6934660901732592747
-    Parent: 4968395273461968489
-  - Child: 3741992876852913464
-    Parent: 4968395273461968489
-  - Child: 3422057015280337147
-    Parent: 4968395273461968489
-  - Child: 3802340144300481241
-    Parent: 4968395273461968489
-  - Child: 8233706363968926369
-    Parent: 4968395273461968489
-  - Child: 5662792996503220698
-    Parent: 4968395273461968489
-  - Child: 2689675643739065737
-    Parent: 4968395273461968489
-  - Child: 4883621556726238175
-    Parent: 4968395273461968489
+  - Child: 5940604961904791607
+    Parent: 5875968649883532081
+  - Child: 538975517031609935
+    Parent: 759437944959540277
+  - Child: 5084797745675434355
+    Parent: 5210627985559301129
+  - Child: 5547089556238319327
+    Parent: 8129457941098055187
+  - Child: 8011320079460591657
+    Parent: 8129457941098055187
+  - Child: 8578599653561549908
+    Parent: 8129457941098055187
+  - Child: 5280025144223035046
+    Parent: 8129457941098055187
+  - Child: 8909548289117140824
+    Parent: 8129457941098055187
+  - Child: 4127263773786384823
+    Parent: 8129457941098055187
+  - Child: 2656951090836396834
+    Parent: 8129457941098055187
+  - Child: 3070254510792447986
+    Parent: 7737122289472581929
+  - Child: 8637049300664532381
+    Parent: 7737122289472581929
+  - Child: 5076164624235054518
+    Parent: 7737122289472581929
+  - Child: 374580207252649797
+    Parent: 7737122289472581929
+  - Child: 6805430345795423993
+    Parent: 7737122289472581929
+  - Child: 2858846509616444841
+    Parent: 7737122289472581929
+  - Child: 6976482843189654169
+    Parent: 7737122289472581929
+  - Child: 5406301314548907953
+    Parent: 4608871842421503247
+  - Child: 1140635723211118371
+    Parent: 4608871842421503247
+  - Child: 5588819458457907283
+    Parent: 4608871842421503247
+  - Child: 5439063367046620580
+    Parent: 4608871842421503247
+  - Child: 7614519376848796378
+    Parent: 4608871842421503247
+  - Child: 934834751783601524
+    Parent: 4608871842421503247
+  - Child: 8286436018920978707
+    Parent: 4608871842421503247
+  - Child: 8879533377501982406
+    Parent: 1108324423821079016
+  - Child: 7722531139685571208
+    Parent: 1108324423821079016
+  - Child: 8761916338440895583
+    Parent: 1108324423821079016
+  - Child: 3647348401452040636
+    Parent: 1108324423821079016
+  - Child: 6855561873100282074
+    Parent: 1108324423821079016
+  - Child: 6289056482760680654
+    Parent: 1108324423821079016
+  - Child: 2722920995180815673
+    Parent: 1108324423821079016
+  - Child: 5428603425551223336
+    Parent: 1108324423821079016
+  - Child: 149710227183290486
+    Parent: 1108324423821079016
+  - Child: 8512531339078599595
+    Parent: 1108324423821079016
+  - Child: 3978013019754749184
+    Parent: 1108324423821079016
+  - Child: 5342742656264551279
+    Parent: 1108324423821079016
+  - Child: 5655748985163471426
+    Parent: 1108324423821079016
+  - Child: 2264375862410330200
+    Parent: 1108324423821079016
+  - Child: 5818806840022787085
+    Parent: 1108324423821079016
+  - Child: 8158134654288720048
+    Parent: 2687910134369993086
+  - Child: 3845107386774923689
+    Parent: 2687910134369993086
+  - Child: 3815809018658017221
+    Parent: 2687910134369993086
+  - Child: 5529001498676850026
+    Parent: 2687910134369993086
+  - Child: 4039920111317360962
+    Parent: 2687910134369993086
+  - Child: 5258946269469913487
+    Parent: 2687910134369993086
+  - Child: 4581775740211990014
+    Parent: 2687910134369993086
+  - Child: 125165474437215010
+    Parent: 2687910134369993086
+  - Child: 3606402575054587339
+    Parent: 7806088438938257787
+  - Child: 610494402672413830
+    Parent: 7806088438938257787
+  - Child: 9189476415890279637
+    Parent: 7806088438938257787
+  - Child: 2946155136900462872
+    Parent: 7806088438938257787
+  - Child: 408354743541399534
+    Parent: 7806088438938257787
+  - Child: 5398405913353008382
+    Parent: 7806088438938257787
+  - Child: 5728566302898970987
+    Parent: 7806088438938257787
+  - Child: 9149677669039349602
+    Parent: 7806088438938257787
+  - Child: 7569989448070412781
+    Parent: 7806088438938257787
+  - Child: 6563315175575912077
+    Parent: 7806088438938257787
+  - Child: 871718162563994989
+    Parent: 7806088438938257787
+  - Child: 4968858401012392221
+    Parent: 7806088438938257787
+  - Child: 8600531177771000181
+    Parent: 9022594023193771763
+  - Child: 3181839926008989518
+    Parent: 9022594023193771763
+  - Child: 6089780991211894507
+    Parent: 9022594023193771763
+  - Child: 6632530952159281425
+    Parent: 9022594023193771763
+  - Child: 5978933317611354650
+    Parent: 9022594023193771763
+  - Child: 4707245033384008248
+    Parent: 9022594023193771763
+  - Child: 8248060207300573708
+    Parent: 9022594023193771763
+  - Child: 4474102997974941328
+    Parent: 6563315175575912077
+  - Child: 5854152023897050470
+    Parent: 6563315175575912077
+  - Child: 5142028072883767145
+    Parent: 6563315175575912077
+  - Child: 2048219020622857569
+    Parent: 6563315175575912077
+  - Child: 8233599631387581497
+    Parent: 6563315175575912077
+  - Child: 8584787481172858320
+    Parent: 6563315175575912077
+  - Child: 7330180942397227568
+    Parent: 6563315175575912077
+  - Child: 7729745249760555275
+    Parent: 6563315175575912077
+  - Child: 5600303066117826371
+    Parent: 6563315175575912077
+  - Child: 3944875075318755762
+    Parent: 6537716228547621511
+  - Child: 9097444230877976918
+    Parent: 6537716228547621511
+  - Child: 825706224424001347
+    Parent: 6537716228547621511
+  - Child: 1208882995208832579
+    Parent: 6537716228547621511
+  - Child: 65232701901649309
+    Parent: 6537716228547621511
+  - Child: 4703842637759796694
+    Parent: 6537716228547621511
+  - Child: 1783690948913827415
+    Parent: 6537716228547621511
+  - Child: 4281251352158641223
+    Parent: 3606402575054587339
+  - Child: 2737987332262974915
+    Parent: 3606402575054587339
+  - Child: 3915125271497356088
+    Parent: 3606402575054587339
+  - Child: 6991479576006091335
+    Parent: 3606402575054587339
+  - Child: 5312858047791465005
+    Parent: 3606402575054587339
+  - Child: 775771522847527981
+    Parent: 3606402575054587339
+  - Child: 1941670849551100582
+    Parent: 3606402575054587339
+  - Child: 681413147933622542
+    Parent: 3606402575054587339
+  - Child: 930590583454064924
+    Parent: 3606402575054587339
+  - Child: 7437926170305593878
+    Parent: 610494402672413830
+  - Child: 6432218390007664248
+    Parent: 610494402672413830
+  - Child: 6237181076233102066
+    Parent: 610494402672413830
+  - Child: 5296022398990294508
+    Parent: 610494402672413830
+  - Child: 2867010052082000176
+    Parent: 610494402672413830
+  - Child: 4437489162205570878
+    Parent: 610494402672413830
+  - Child: 6595646345100992204
+    Parent: 610494402672413830
+  - Child: 3161141318118987975
+    Parent: 610494402672413830
+  - Child: 4370664387749637834
+    Parent: 610494402672413830
+  - Child: 1155645999073032806
+    Parent: 9189476415890279637
+  - Child: 6608962701796261691
+    Parent: 9189476415890279637
+  - Child: 35578933046547195
+    Parent: 9189476415890279637
+  - Child: 7572578570120773614
+    Parent: 9189476415890279637
+  - Child: 1212264675684774933
+    Parent: 9189476415890279637
+  - Child: 2482020191461985489
+    Parent: 9189476415890279637
+  - Child: 476226402360236561
+    Parent: 9189476415890279637
+  - Child: 7755090388935612043
+    Parent: 9189476415890279637
+  - Child: 4235083713488089167
+    Parent: 9189476415890279637
+  - Child: 6448822630527843122
+    Parent: 2946155136900462872
+  - Child: 6696779797624393765
+    Parent: 2946155136900462872
+  - Child: 2369054468527930401
+    Parent: 2946155136900462872
+  - Child: 8052671690837637720
+    Parent: 2946155136900462872
+  - Child: 4361641307110259888
+    Parent: 2946155136900462872
+  - Child: 5264359597856338139
+    Parent: 2946155136900462872
+  - Child: 4679178223832565014
+    Parent: 2946155136900462872
+  - Child: 2355743377096550526
+    Parent: 2946155136900462872
+  - Child: 8270670150637839569
+    Parent: 2946155136900462872
+  - Child: 6464650838369815643
+    Parent: 1625569841655134329
+  - Child: 8131454261557975893
+    Parent: 1625569841655134329
+  - Child: 5294730191795550567
+    Parent: 1625569841655134329
+  - Child: 759437944959540277
+    Parent: 1625569841655134329
+  - Child: 1934318961733736391
+    Parent: 1625569841655134329
+  - Child: 5875968649883532081
+    Parent: 1625569841655134329
+  - Child: 2737693362636041775
+    Parent: 1625569841655134329
+  - Child: 2260857623916007132
+    Parent: 1625569841655134329
+  - Child: 331626192562632684
+    Parent: 1625569841655134329
+  - Child: 5210627985559301129
+    Parent: 1625569841655134329
+  - Child: 2361816138334891173
+    Parent: 1625569841655134329
+  - Child: 6995434295815546042
+    Parent: 1625569841655134329
+  - Child: 7778087468249809017
+    Parent: 1625569841655134329
+  - Child: 3627216041117777895
+    Parent: 1625569841655134329
+  - Child: 353732952443601676
+    Parent: 1625569841655134329
+  - Child: 3764035606017957363
+    Parent: 408354743541399534
+  - Child: 7100379456281579191
+    Parent: 408354743541399534
+  - Child: 5532278168508313443
+    Parent: 408354743541399534
+  - Child: 2352972036529569051
+    Parent: 408354743541399534
+  - Child: 3034275238772298170
+    Parent: 408354743541399534
+  - Child: 5724190286291030570
+    Parent: 408354743541399534
+  - Child: 2676915786939271446
+    Parent: 408354743541399534
+  - Child: 7009235894126163219
+    Parent: 408354743541399534
+  - Child: 721303515444340698
+    Parent: 408354743541399534
+  - Child: 5395507875752531069
+    Parent: 2260857623916007132
+  - Child: 4157475488199888166
+    Parent: 4608181092812792222
+  - Child: 6797724036321370040
+    Parent: 4608181092812792222
+  - Child: 5704502680442021210
+    Parent: 4608181092812792222
+  - Child: 4735261700357061272
+    Parent: 4608181092812792222
+  - Child: 5352648818722832684
+    Parent: 4608181092812792222
+  - Child: 6691248872609729296
+    Parent: 4608181092812792222
+  - Child: 6326805212496075594
+    Parent: 4608181092812792222
+  - Child: 6317108025412150451
+    Parent: 5398405913353008382
+  - Child: 8971072869938550046
+    Parent: 5398405913353008382
+  - Child: 2439953980055275382
+    Parent: 5398405913353008382
+  - Child: 64464352086470876
+    Parent: 5398405913353008382
+  - Child: 6907849801310438281
+    Parent: 5398405913353008382
+  - Child: 959758334423403337
+    Parent: 5398405913353008382
+  - Child: 1571939796684911167
+    Parent: 5398405913353008382
+  - Child: 2850398467385090234
+    Parent: 5398405913353008382
+  - Child: 7415255898726390290
+    Parent: 5398405913353008382
+  - Child: 5124091729857515587
+    Parent: 5728566302898970987
+  - Child: 4414402526777209163
+    Parent: 5728566302898970987
+  - Child: 5923522874926712857
+    Parent: 5728566302898970987
+  - Child: 821223555052421143
+    Parent: 5728566302898970987
+  - Child: 642782781787892349
+    Parent: 5728566302898970987
+  - Child: 1001306040558972007
+    Parent: 5728566302898970987
+  - Child: 1255977676342755317
+    Parent: 5728566302898970987
+  - Child: 2188000818843316893
+    Parent: 5728566302898970987
+  - Child: 1038645265387614053
+    Parent: 5728566302898970987
+  - Child: 5543464256042585378
+    Parent: 9149677669039349602
+  - Child: 5277608701099853483
+    Parent: 9149677669039349602
+  - Child: 1374507554598879254
+    Parent: 9149677669039349602
+  - Child: 6517322294588647480
+    Parent: 9149677669039349602
+  - Child: 1159291098670483508
+    Parent: 9149677669039349602
+  - Child: 2588377072738879101
+    Parent: 9149677669039349602
+  - Child: 5874542716402927977
+    Parent: 9149677669039349602
+  - Child: 2180303136496394523
+    Parent: 9149677669039349602
+  - Child: 7429772063241078834
+    Parent: 9149677669039349602
+  - Child: 7445559491205389487
+    Parent: 7569989448070412781
+  - Child: 8613637789524859888
+    Parent: 7569989448070412781
+  - Child: 1759867701840668649
+    Parent: 7569989448070412781
+  - Child: 6116091624747794959
+    Parent: 7569989448070412781
+  - Child: 866219937229133534
+    Parent: 7569989448070412781
+  - Child: 7798579385294668286
+    Parent: 7569989448070412781
+  - Child: 3824336783928113622
+    Parent: 7569989448070412781
+  - Child: 5966938929279352344
+    Parent: 7569989448070412781
+  - Child: 5699410854593434466
+    Parent: 7569989448070412781
+  - Child: 8990657991015953587
+    Parent: 1652725164708096548
+  - Child: 90411898490197687
+    Parent: 1652725164708096548
+  - Child: 3495755651952238486
+    Parent: 1652725164708096548
+  - Child: 393315369013560775
+    Parent: 1652725164708096548
+  - Child: 6687947016790593770
+    Parent: 1652725164708096548
+  - Child: 6913964027458577717
+    Parent: 1652725164708096548
+  - Child: 2904487063712257776
+    Parent: 1652725164708096548
+  - Child: 7578716886414984998
+    Parent: 871718162563994989
+  - Child: 5462173083007595875
+    Parent: 871718162563994989
+  - Child: 5221600767751209891
+    Parent: 871718162563994989
+  - Child: 4704566711774002300
+    Parent: 871718162563994989
+  - Child: 3670800927427193677
+    Parent: 871718162563994989
+  - Child: 1268338395065736223
+    Parent: 871718162563994989
+  - Child: 307605664689255020
+    Parent: 871718162563994989
+  - Child: 6465541988647550423
+    Parent: 871718162563994989
+  - Child: 4268421713488365059
+    Parent: 871718162563994989
+  - Child: 2647414993660235917
+    Parent: 4968858401012392221
+  - Child: 6934270292823156785
+    Parent: 4968858401012392221
+  - Child: 3740694674813495290
+    Parent: 4968858401012392221
+  - Child: 3421101806915115557
+    Parent: 4968858401012392221
+  - Child: 3801890730887325145
+    Parent: 4968858401012392221
+  - Child: 8233608293873524906
+    Parent: 4968858401012392221
+  - Child: 5661569490361371083
+    Parent: 4968858401012392221
+  - Child: 2689778114023018427
+    Parent: 4968858401012392221
+  - Child: 4882390869134388080
+    Parent: 4968858401012392221

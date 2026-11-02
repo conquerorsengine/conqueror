@@ -1,0 +1,23 @@
+Material:
+  Name: Facade cream
+  Albedo: [1, 1, 1]
+  Opacity: 1
+  Metallic: 0
+  Roughness: 0.8
+  AO: 1
+  EmissionColor: [0, 0, 0]
+  EmissionStrength: 0
+  Tiling: [0.1, 0.15625]
+  Offset: [0, -0.703125]
+  WorldAligned: true
+  RenderMode: 0
+  Culling: 0
+  AlphaClip: 0.5
+  AlbedoMap: Assets/Plaza/Textures/facade_cream.jpg
+  NextGraphNodeID: 1
+  NextGraphLinkID: 1
+  GraphInitialized: false
+  GraphNodes:
+    []
+  GraphLinks:
+    []

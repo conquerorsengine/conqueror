@@ -1,0 +1,22 @@
+Material:
+  Name: ChainLink
+  Albedo: [1, 1, 1]
+  Opacity: 1
+  Metallic: 0.7
+  Roughness: 0.4
+  AO: 1
+  EmissionColor: [0, 0, 0]
+  EmissionStrength: 0
+  Tiling: [1.5, 1.5]
+  Offset: [0, 0]
+  RenderMode: 1
+  Culling: 0
+  AlphaClip: 0.5
+  AlbedoMap: Assets/Textures/ChainLink.png
+  NextGraphNodeID: 1
+  NextGraphLinkID: 1
+  GraphInitialized: false
+  GraphNodes:
+    []
+  GraphLinks:
+    []

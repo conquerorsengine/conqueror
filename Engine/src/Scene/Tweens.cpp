@@ -1,3 +1,4 @@
+#include <sstream>
 #include "Tweens.h"
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"
@@ -81,7 +82,8 @@ namespace Conqueror
                 if (!info || !info->Has || !info->Has(e))
                     return false;
                 const ComponentField* f = ComponentRegistry::FindField(*info, field);
-                if (!f || !f->Ptr || SizeOf(f->Kind) == 0)
+                // Üye alanı ya da erişimcili alan (ör. Mesh Renderer Color -> malzeme)
+                if (!f || (!f->Ptr && !(f->GetString && f->SetString)) || SizeOf(f->Kind) == 0)
                     return false;
                 out.Type = Accessor::Kind::Field;
                 out.Info = info;
@@ -117,9 +119,16 @@ namespace Conqueror
                     void* comp = a.Info->Get(e);
                     if (!comp)
                         return glm::vec4(0.0f);
-                    void* f = a.Field->Ptr(comp);
                     glm::vec4 v(0.0f);
                     const int n = SizeOf(a.Field->Kind);
+                    if (!a.Field->Ptr)
+                    {
+                        std::istringstream in(a.Field->GetString(comp));
+                        for (int i = 0; i < n; ++i)
+                            in >> v[i];
+                        return a.Channel >= 0 ? glm::vec4(v[a.Channel], 0.0f, 0.0f, 0.0f) : v;
+                    }
+                    void* f = a.Field->Ptr(comp);
                     if (a.Field->Kind == FieldKind::Int)
                         v.x = (float)*(int*)f;
                     else
@@ -146,6 +155,20 @@ namespace Conqueror
                     void* comp = a.Info->Get(e);
                     if (!comp)
                         return;
+                    if (!a.Field->Ptr)
+                    {
+                        glm::vec4 full = v;
+                        if (a.Channel >= 0)
+                        {
+                            full = Read(e, Accessor{ a.Type, a.Info, a.Field, SizeOf(a.Field->Kind), -1 });
+                            full[a.Channel] = v.x;
+                        }
+                        std::string text;
+                        for (int i = 0; i < SizeOf(a.Field->Kind); ++i)
+                            text += (i ? " " : "") + std::to_string(full[i]);
+                        a.Field->SetString(comp, text);
+                        break;
+                    }
                     void* f = a.Field->Ptr(comp);
                     if (a.Field->Kind == FieldKind::Int)
                         *(int*)f = (int)std::lround(v.x);

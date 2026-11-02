@@ -1,3 +1,7 @@
+#include <sstream>
+#include "Renderer/Utilities/Renderer3D/Material.h"
+#include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
+#include "Scene/MeshRendererMaterial.h"
 #include "Scene/ComponentRegistry.h"
 #include "Scene/Components.h"
 #include "Renderer/RHI/Texture.h"
@@ -147,62 +151,131 @@ namespace Conqueror
             .Field("FixedRotation", "Freeze Rotation", &RigidBody2DComponent::FixedRotation)
             .Field("Interpolate", "Interpolate", &RigidBody2DComponent::Interpolate)
             .Field("ContinuousCollision", "Continuous", &RigidBody2DComponent::ContinuousCollision)
-            .Field("AllowSleep", "Allow Sleep", &RigidBody2DComponent::AllowSleep);
+            .Field("AllowSleep", "Allow Sleep", &RigidBody2DComponent::AllowSleep)
+            .Field("PhysicsMaterial", "Material", &RigidBody2DComponent::PhysicsMaterial, FieldKind::Asset).Filter(".cqphysmat2d");
         ComponentDef<BoxCollider2DComponent>("Box Collider 2D", "BoxCollider2DComponent", "Physics 2D", ICON_FA_SQUARE).Builtin().ScriptName("BoxCollider2D")
             .Field("Offset", "Offset", &BoxCollider2DComponent::Offset)
             .Field("Size", "Size", &BoxCollider2DComponent::Size)
             .Field("IsTrigger", "Is Trigger", &BoxCollider2DComponent::IsTrigger)
             .Field("Density", "Density", &BoxCollider2DComponent::Density)
             .Field("Friction", "Friction", &BoxCollider2DComponent::Friction)
-            .Field("Restitution", "Bounciness", &BoxCollider2DComponent::Restitution);
+            .Field("Restitution", "Bounciness", &BoxCollider2DComponent::Restitution)
+            .Field("PhysicsMaterial", "Material", &BoxCollider2DComponent::PhysicsMaterial, FieldKind::Asset).Filter(".cqphysmat2d");
         ComponentDef<CircleCollider2DComponent>("Circle Collider 2D", "CircleCollider2DComponent", "Physics 2D", ICON_FA_CIRCLE).Builtin().ScriptName("CircleCollider2D")
             .Field("Offset", "Offset", &CircleCollider2DComponent::Offset)
             .Field("Radius", "Radius", &CircleCollider2DComponent::Radius)
             .Field("IsTrigger", "Is Trigger", &CircleCollider2DComponent::IsTrigger)
             .Field("Density", "Density", &CircleCollider2DComponent::Density)
             .Field("Friction", "Friction", &CircleCollider2DComponent::Friction)
-            .Field("Restitution", "Bounciness", &CircleCollider2DComponent::Restitution);
+            .Field("Restitution", "Bounciness", &CircleCollider2DComponent::Restitution)
+            .Field("PhysicsMaterial", "Material", &CircleCollider2DComponent::PhysicsMaterial, FieldKind::Asset).Filter(".cqphysmat2d");
 
-        ComponentDef<MeshRendererComponent>("Mesh Renderer", "MeshRendererComponent", "Rendering", ICON_FA_CUBES).Builtin()
-            .Field("Mesh", "Mesh", &MeshRendererComponent::Type).Options({ "Cube", "Sphere", "Plane", "Cylinder" })
-            .Field("Color", "Color", &MeshRendererComponent::Color, FieldKind::Color4)
-            .Field("Metallic", "Metallic", &MeshRendererComponent::Metallic)
-            .Field("Roughness", "Roughness", &MeshRendererComponent::Roughness)
-            .Field("EmissionColor", "Emission Color", &MeshRendererComponent::EmissionColor, FieldKind::Color3)
-            .Field("EmissionStrength", "Emission Strength", &MeshRendererComponent::EmissionStrength)
-            .Field("EmissionFromTexture", "Emission From Texture", &MeshRendererComponent::EmissionFromTexture)
-            .Field("Tiling", "Tiling", &MeshRendererComponent::Tiling)
-            .Field("WorldAlignedUV", "World Aligned UV", &MeshRendererComponent::WorldAlignedUV)
-                .Tooltip("Projects the texture from world position (Tiling = repeats per metre), like Unreal's world-aligned grid material.")
-            .Field("AlignToObject", "Align To Object", &MeshRendererComponent::AlignToObject)
-                .Tooltip("World Aligned UV in the object's own space: the texture moves and rotates with the object (physics props) and keeps its size when scaled.")
-            .Field("Offset", "Offset", &MeshRendererComponent::Offset)
-            .Field("CastShadows", "Cast Shadows", &MeshRendererComponent::CastShadows)
-            .Field("ReceiveShadows", "Receive Shadows", &MeshRendererComponent::ReceiveShadows)
-            .Field("Unlit", "Unlit", &MeshRendererComponent::Unlit)
-            .Field("AlphaClip", "Alpha Clipping", &MeshRendererComponent::AlphaClip)
-            .Field("AlphaClipThreshold", "Alpha Clip Threshold", &MeshRendererComponent::AlphaClipThreshold).Range(0.0f, 1.0f)
-            .Property("Texture", "Texture", FieldKind::Asset,
-                [](const MeshRendererComponent& m) { return m.TexturePath; },
-                [](MeshRendererComponent& m, const std::string& path) {
-                    auto tex = path.empty() ? nullptr : Texture2D::Create(SceneSerializer::ResolveAssetPath(path));
-                    m.TexturePath = tex ? path : std::string();
-                    m.Texture = tex ? tex : Renderer2D::GetWhiteTexture();
-                })
-            .Property("NormalMap", "Normal Map", FieldKind::Asset,
-                [](const MeshRendererComponent& m) { return m.NormalMapPath; },
-                [](MeshRendererComponent& m, const std::string& path) {
-                    auto tex = path.empty() ? nullptr : Texture2D::Create(SceneSerializer::ResolveAssetPath(path));
-                    m.NormalMapPath = tex ? path : std::string();
-                    m.NormalMap = tex;
-                })
-            .Property("MaskMap", "Mask Map (AO / Rough / Metal)", FieldKind::Asset,
-                [](const MeshRendererComponent& m) { return m.MaskMapPath; },
-                [](MeshRendererComponent& m, const std::string& path) {
-                    auto tex = path.empty() ? nullptr : Texture2D::Create(SceneSerializer::ResolveAssetPath(path));
-                    m.MaskMapPath = tex ? path : std::string();
-                    m.MaskMap = tex;
-                });
+        // Mesh Renderer: renk / doku / metalik ... malzemede. Bu adlar betikler, tween'ler ve otomasyon için malzemeye
+        // yönlendirilir (Unity renderer.material.color): paylaşılan malzemeye yazınca nesneye özel örnek çıkar.
+        {
+            using MRM = MeshRendererComponent;
+            namespace RM = MeshRendererMaterial;
+            auto num = [](float v) { char b[32]; snprintf(b, sizeof(b), "%g", v); return std::string(b); };
+            auto vec = [num](const float* v, int n) { std::string s; for (int i = 0; i < n; ++i) s += (i ? " " : "") + num(v[i]); return s; };
+            auto parse = [](const std::string& t, float* out, int n) {
+                std::string c = t;
+                std::replace(c.begin(), c.end(), ',', ' ');
+                std::istringstream in(c);
+                for (int i = 0; i < n; ++i)
+                    if (!(in >> out[i])) return i;
+                return n;
+            };
+            auto boolOf = [](const std::string& t) { return t == "true" || t == "1" || t == "yes" || t == "on" || t == "True"; };
+            auto texPath = [](const std::shared_ptr<Texture2D>& t) { return t ? SceneSerializer::ToAssetPath(t->GetPath()) : std::string(); };
+            auto loadTex = [](const std::string& path) -> std::shared_ptr<Texture2D> {
+                return path.empty() ? nullptr : Texture2D::Create(SceneSerializer::ResolveAssetPath(path));
+            };
+            ComponentDef<MRM>("Mesh Renderer", "MeshRendererComponent", "Rendering", ICON_FA_CUBES).Builtin()
+                .Field("Mesh", "Mesh", &MRM::Type).Options({ "Cube", "Sphere", "Plane", "Cylinder" })
+                .Property("Material", "Material", FieldKind::Asset,
+                    [](const MRM& m) { return m.MaterialPath.empty() ? std::string() : SceneSerializer::ToAssetPath(m.MaterialPath); },
+                    [](MRM& m, const std::string& path) {
+                        if (path.empty()) { m.MaterialInstance = nullptr; m.MaterialPath.clear(); return; }
+                        const std::string abs = SceneSerializer::ResolveAssetPath(path);
+                        if (auto mat = MaterialAsset::Load(abs)) { m.MaterialInstance = mat; m.MaterialPath = abs; }
+                    })
+                .Field("CastShadows", "Cast Shadows", &MRM::CastShadows)
+                .Field("ReceiveShadows", "Receive Shadows", &MRM::ReceiveShadows)
+                .Field("RealtimeGI", "Realtime GI", &MRM::RealtimeGI)
+                // --- malzeme özellikleri (renderer.material)
+                .Property("Color", "Color", FieldKind::Color4,
+                    [vec](const MRM& m) { glm::vec4 c = RM::GetColor(m); return vec(&c.x, 4); },
+                    [parse](MRM& m, const std::string& t) { glm::vec4 c = RM::GetColor(m); parse(t, &c.x, 4); RM::SetColor(m, c); })
+                .Property("Metallic", "Metallic", FieldKind::Float,
+                    [num](const MRM& m) { return num(RM::Shared(m).Metallic); },
+                    [](MRM& m, const std::string& t) { float v = std::strtof(t.c_str(), nullptr); if (RM::Shared(m).Metallic != v) RM::Edit(m).Metallic = v; })
+                .Property("Roughness", "Roughness", FieldKind::Float,
+                    [num](const MRM& m) { return num(RM::Shared(m).Roughness); },
+                    [](MRM& m, const std::string& t) { float v = std::strtof(t.c_str(), nullptr); if (RM::Shared(m).Roughness != v) RM::Edit(m).Roughness = v; })
+                .Property("AO", "Occlusion", FieldKind::Float,
+                    [num](const MRM& m) { return num(RM::Shared(m).AO); },
+                    [](MRM& m, const std::string& t) { float v = std::strtof(t.c_str(), nullptr); if (RM::Shared(m).AO != v) RM::Edit(m).AO = v; })
+                .Property("EmissionColor", "Emission Color", FieldKind::Color3,
+                    [vec](const MRM& m) { glm::vec3 c = RM::Shared(m).EmissionColor; return vec(&c.x, 3); },
+                    [parse](MRM& m, const std::string& t) { glm::vec3 c = RM::Shared(m).EmissionColor; parse(t, &c.x, 3); if (c != RM::Shared(m).EmissionColor) RM::Edit(m).EmissionColor = c; })
+                .Property("EmissionStrength", "Emission Intensity", FieldKind::Float,
+                    [num](const MRM& m) { return num(RM::Shared(m).EmissionStrength); },
+                    [](MRM& m, const std::string& t) { float v = std::strtof(t.c_str(), nullptr); if (RM::Shared(m).EmissionStrength != v) RM::Edit(m).EmissionStrength = v; })
+                .Property("EmissionFromTexture", "Emission Uses Base Map", FieldKind::Bool,
+                    [](const MRM& m) { const Material& x = RM::Shared(m); return std::string(x.EmissionMap && x.EmissionMap == x.AlbedoMap ? "true" : "false"); },
+                    [boolOf](MRM& m, const std::string& t) {
+                        const bool on = boolOf(t);
+                        const Material& x = RM::Shared(m);
+                        if ((x.EmissionMap && x.EmissionMap == x.AlbedoMap) == on) return;
+                        Material& e = RM::Edit(m);
+                        e.EmissionMap = on ? e.AlbedoMap : nullptr;
+                    })
+                .Property("Tiling", "Tiling", FieldKind::Vec2,
+                    [vec](const MRM& m) { glm::vec2 v = RM::Shared(m).Tiling; return vec(&v.x, 2); },
+                    [parse](MRM& m, const std::string& t) { glm::vec2 v = RM::Shared(m).Tiling; parse(t, &v.x, 2); if (v != RM::Shared(m).Tiling) RM::Edit(m).Tiling = v; })
+                .Property("Offset", "Offset", FieldKind::Vec2,
+                    [vec](const MRM& m) { glm::vec2 v = RM::Shared(m).Offset; return vec(&v.x, 2); },
+                    [parse](MRM& m, const std::string& t) { glm::vec2 v = RM::Shared(m).Offset; parse(t, &v.x, 2); if (v != RM::Shared(m).Offset) RM::Edit(m).Offset = v; })
+                .Property("WorldAlignedUV", "World Aligned UV", FieldKind::Bool,
+                    [](const MRM& m) { return std::string(RM::Shared(m).WorldAligned ? "true" : "false"); },
+                    [boolOf](MRM& m, const std::string& t) { bool v = boolOf(t); if (RM::Shared(m).WorldAligned != v) RM::Edit(m).WorldAligned = v; })
+                .Property("AlignToObject", "Align To Object", FieldKind::Bool,
+                    [](const MRM& m) { return std::string(RM::Shared(m).AlignToObject ? "true" : "false"); },
+                    [boolOf](MRM& m, const std::string& t) { bool v = boolOf(t); if (RM::Shared(m).AlignToObject != v) RM::Edit(m).AlignToObject = v; })
+                .Property("Unlit", "Unlit", FieldKind::Bool,
+                    [](const MRM& m) { return std::string(RM::Shared(m).Shading == Material::ShadingModel::Unlit ? "true" : "false"); },
+                    [boolOf](MRM& m, const std::string& t) {
+                        const auto want = boolOf(t) ? Material::ShadingModel::Unlit : Material::ShadingModel::DefaultLit;
+                        if (RM::Shared(m).Shading != want) RM::Edit(m).Shading = want;
+                    })
+                .Property("AlphaClip", "Alpha Clipping", FieldKind::Bool,
+                    [](const MRM& m) { return std::string(RM::Shared(m).Rendering == Material::RenderMode::Cutout ? "true" : "false"); },
+                    [boolOf](MRM& m, const std::string& t) {
+                        const bool on = boolOf(t);
+                        if ((RM::Shared(m).Rendering == Material::RenderMode::Cutout) == on) return;
+                        Material& e = RM::Edit(m);
+                        e.Rendering = on ? Material::RenderMode::Cutout : (e.Opacity < 0.999f ? Material::RenderMode::Transparent : Material::RenderMode::Opaque);
+                    })
+                .Property("AlphaClipThreshold", "Alpha Clip Threshold", FieldKind::Float,
+                    [num](const MRM& m) { return num(RM::Shared(m).AlphaClip); },
+                    [](MRM& m, const std::string& t) { float v = std::strtof(t.c_str(), nullptr); if (RM::Shared(m).AlphaClip != v) RM::Edit(m).AlphaClip = v; })
+                .Property("Texture", "Base Map", FieldKind::Asset,
+                    [texPath](const MRM& m) { return texPath(RM::Shared(m).AlbedoMap); },
+                    [loadTex](MRM& m, const std::string& path) { RM::SetTexture(m, loadTex(path)); })
+                .Property("NormalMap", "Normal Map", FieldKind::Asset,
+                    [texPath](const MRM& m) { return texPath(RM::Shared(m).NormalMap); },
+                    [loadTex](MRM& m, const std::string& path) { auto t = loadTex(path); if (RM::Shared(m).NormalMap != t) RM::Edit(m).NormalMap = t; })
+                .Property("MaskMap", "Mask Map (AO / Rough / Metal)", FieldKind::Asset,
+                    [texPath](const MRM& m) { const Material& x = RM::Shared(m); return x.MapsScaleFactors ? texPath(x.AOMap) : std::string(); },
+                    [loadTex](MRM& m, const std::string& path) {
+                        auto t = loadTex(path);
+                        Material& e = RM::Edit(m);
+                        e.AOMap = e.RoughnessMap = e.MetallicMap = t;
+                        e.MapsScaleFactors = t != nullptr;
+                        e.RoughnessChannel = t ? 1 : 0;
+                        e.MetallicChannel = t ? 2 : 0;
+                    });
+        }
         ComponentDef<SpriteRendererComponent>("Sprite Renderer", "SpriteRendererComponent", "Rendering", ICON_FA_IMAGE).Builtin()
             .Field("Color", "Color", &SpriteRendererComponent::Color, FieldKind::Color4)
             .Field("FlipX", "Flip X", &SpriteRendererComponent::FlipX)
@@ -220,6 +293,8 @@ namespace Conqueror
                 [](const SpriteRendererComponent& sr) { return sr.Texture ? sr.Texture->GetPath() : std::string(); },
                 [](SpriteRendererComponent& sr, const std::string& path) {
                     sr.Texture = path.empty() ? nullptr : Texture2D::Create(SceneSerializer::ResolveAssetPath(path));
+                    sr.SpriteName.clear();
+                    Renderer2D::ApplySpriteImport(sr);
                 });
         ComponentDef<TextRendererComponent>("Text Renderer", "TextRendererComponent", "Rendering", ICON_FA_FONT).Builtin()
             .Field("Text", "Text", &TextRendererComponent::Text)
