@@ -247,7 +247,7 @@ namespace Conqueror.Hosting
         static IEnumerable<FieldInfo> InspectorFields(Type t)
         {
             var chain = new List<Type>();
-            for (var c = t; c != null && c != typeof(ScriptBehaviour) && c != typeof(object); c = c.BaseType) chain.Insert(0, c);
+            for (var c = t; c != null && c != typeof(ScriptBehaviour) && c != typeof(DataAsset) && c != typeof(object); c = c.BaseType) chain.Insert(0, c);
             foreach (var c in chain)
                 foreach (var f in c.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
                 {
@@ -276,6 +276,20 @@ namespace Conqueror.Hosting
                      .FirstOrDefault(x => x.Name == name && !x.IsGenericMethodDefinition);
             slot.Methods[name] = m;
             return m;
+        }
+
+        // DataAsset.Load<T>: .cqdata değerleri (motorun LoadDataAsset'i, sınıf varsayılanlarıyla birleşmiş) alanlara yazılır
+        internal static object LoadDataAsset(Type type, string path)
+        {
+            var map = Conqueror.NativeBridge.LoadDataAsset(Value.FromString(path));
+            if (map.Type != Value.Kind.Map) return null;
+            var asset = (DataAsset)Activator.CreateInstance(type);
+            asset.assetPath = path;
+            var values = map.AsMap;
+            foreach (var f in InspectorFields(type))
+                if (values.TryGetValue(f.Name, out var v) && !v.IsNull)
+                    f.SetValue(asset, ConvertTo(v, f.FieldType));
+            return asset;
         }
 
         static string FieldTypeName(Type t) =>
@@ -482,7 +496,7 @@ namespace Conqueror.Hosting
                 using (var w = new Utf8JsonWriter(ms))
                 {
                     w.WriteStartArray();
-                    foreach (var t in asm.GetTypes().Where(t => typeof(ScriptBehaviour).IsAssignableFrom(t) && !t.IsAbstract))
+                    foreach (var t in asm.GetTypes().Where(t => (typeof(ScriptBehaviour).IsAssignableFrom(t) || typeof(DataAsset).IsAssignableFrom(t)) && !t.IsAbstract))
                     {
                         w.WriteStartObject();
                         w.WriteString("name", t.Name);

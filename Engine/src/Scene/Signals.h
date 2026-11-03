@@ -24,6 +24,30 @@ namespace Conqueror
         bool Applied = false;
     };
 
+    // Signal Receiver (Unity Timeline Signal Receiver): Signal varlığı (.cqsignal) bu nesneye ulaşınca (Timeline'daki
+    // Signal Emitter ya da SignalSend) tepkiler çalışır: hedef nesnenin betik metodu (isteğe bağlı metin argümanıyla).
+    struct SignalReaction
+    {
+        std::string Signal;     // proje göreli .cqsignal
+        uint64_t Target = 0;    // hedef nesne UUID'si (0 = bu nesne)
+        std::string Method;
+        std::string Argument;
+    };
+    struct SignalReceiverComponent
+    {
+        std::vector<SignalReaction> Reactions;
+    };
+
+    namespace SignalAssets
+    {
+        constexpr const char* Extension = ".cqsignal";
+        CQ_API bool Create(const std::string& path);
+        // Nesnedeki Signal Receiver'a sinyal gönder; çalışan tepki sayısı
+        CQ_API int Send(Scene& scene, uint32_t receiver, const std::string& signalPath);
+        // İki yol aynı sinyal dosyası mı (göreli / mutlak farkı yok sayılır)
+        CQ_API bool Same(const std::string& a, const std::string& b);
+    }
+
     namespace Signals
     {
         CQ_API bool Connect(Scene& scene, uint32_t source, const std::string& signal, uint32_t target, const std::string& method, bool oneShot = false);

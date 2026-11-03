@@ -300,6 +300,7 @@ namespace Conqueror
         while (m_Accumulator >= m_FixedDt && steps < settings.MaxSubSteps)
         {
             PreStep(m_FixedDt);
+            MoveCharactersFixed(m_FixedDt);   // karakterler gövdelerden önce (Jolt önerisi), aynı adımda
             m_Backend->Step(m_FixedDt);
             PostStep(m_FixedDt);
             m_Accumulator -= m_FixedDt;
@@ -310,6 +311,7 @@ namespace Conqueror
         if (steps >= settings.MaxSubSteps && m_Accumulator > m_FixedDt)
             m_Accumulator = 0.0f;
         WriteTransforms(std::clamp(m_Accumulator / m_FixedDt, 0.0f, 1.0f));
+        WriteCharacterTransforms(std::clamp(m_Accumulator / m_FixedDt, 0.0f, 1.0f));
         if (steps > 0)
             UpdateClothMeshes();
         UpdateWheelVisuals(dt);
@@ -519,12 +521,12 @@ namespace Conqueror
                     for (uint32_t idx : mesh.GetIndices())
                         d.Indices.push_back(base + idx);
             };
-            if (e.HasComponent<ModelComponent>() && e.GetComponent<ModelComponent>().ModelData)
+            if (e.HasComponent<MeshRendererComponent>() && e.GetComponent<MeshRendererComponent>().ModelData)
             {
-                for (auto& m : e.GetComponent<ModelComponent>().ModelData->Meshes)
+                for (auto& m : e.GetComponent<MeshRendererComponent>().ModelData->Meshes)
                     if (m) append(*m);
             }
-            else if (e.HasComponent<MeshRendererComponent>())
+            else if (e.HasComponent<MeshRendererComponent>() && !e.GetComponent<MeshRendererComponent>().IsModel())
             {
                 // Özel mesh (kırılma parçası, prosedürel) varsa o; yoksa ilkel şekil
                 const auto& mr = e.GetComponent<MeshRendererComponent>();
@@ -536,7 +538,7 @@ namespace Conqueror
             if (d.Vertices.size() >= 4)
                 shapes.push_back(std::move(d));
             else
-                CQ_CORE_WARN("[Physics] Mesh Collider on '{0}' has no mesh (add a Mesh Renderer or Model).", e.GetComponent<TagComponent>().Tag);
+                CQ_CORE_WARN("[Physics] Mesh Collider on '{0}' has no mesh (add a Mesh Renderer).", e.GetComponent<TagComponent>().Tag);
         }
         if (e.HasComponent<TerrainComponent>() && e.GetComponent<TerrainComponent>().EnableCollider)
         {
@@ -677,8 +679,8 @@ namespace Conqueror
                 {
                     HashCombine(h, (size_t)e.GetComponent<MeshRendererComponent>().Type + 23);
                     HashCombine(h, std::hash<const void*>()(e.GetComponent<MeshRendererComponent>().CustomMesh.get()));
+                    HashCombine(h, std::hash<const void*>()(e.GetComponent<MeshRendererComponent>().ModelData.get()));
                 }
-                if (e.HasComponent<ModelComponent>()) HashCombine(h, std::hash<const void*>()(e.GetComponent<ModelComponent>().ModelData.get()));
                 any = true;
             }
             if (e.HasComponent<TerrainComponent>())
@@ -1663,6 +1665,28 @@ namespace Conqueror
         return m_Characters.count((uint32_t)entity) != 0;
     }
 
+    void PhysicsWorld3D::BeginFrame(Timestep ts)
+    {
+        const float dt = std::clamp(ts.GetSeconds(), 0.0f, 0.25f);
+        m_ScriptDt = dt > 0.0f ? dt : m_FixedDt;
+        ++m_FrameIndex;
+    }
+
+    void PhysicsWorld3D::SyncCharacterTeleport(uint32_t e, CharacterRecord& rec)
+    {
+        // Dışarıdan taşındıysa (betik / Inspector / yeniden doğma) fizik konumu ve ara değerleme o noktaya atlar
+        glm::vec3 p, s;
+        glm::quat r;
+        DecomposeWorld(e, p, r, s);
+        if (glm::distance(p, rec.LastWrittenPos) > 1e-4f)
+        {
+            m_Backend->SetCharacterPosition(rec.Character, p);
+            rec.PrevPos = rec.CurrPos = p;
+            rec.LastWrittenPos = p;
+            rec.HasPose = true;
+        }
+    }
+
     CharacterState PhysicsWorld3D::MoveCharacter(Entity entity, const glm::vec3& displacement)
     {
         if (!m_Backend)
@@ -1674,28 +1698,64 @@ namespace Conqueror
             return {};
         Entity ent{ (entt::entity)e, m_Scene };
         auto& cc = ent.GetComponent<CharacterControllerComponent>();
-        // Dışarıdan taşındıysa önce konumu eşitle
+        SyncCharacterTeleport(e, it->second);
+        // İstek bu karenin hızına çevrilir; hareket fizik adımlarında yapılır (aynı karede birden çok çağrı toplanır)
+        if (glm::length(displacement) >= cc.MinMoveDistance)
         {
-            glm::vec3 p, s;
-            glm::quat r;
-            DecomposeWorld(e, p, r, s);
-            if (glm::distance(p, it->second.LastWrittenPos) > 1e-4f)
-                m_Backend->SetCharacterPosition(it->second.Character, p);
+            if (it->second.RequestFrame != m_FrameIndex)
+                it->second.RequestedVelocity = glm::vec3(0.0f);   // yeni karenin ilk isteği
+            it->second.RequestFrame = m_FrameIndex;
+            it->second.RequestedVelocity += displacement / std::max(m_ScriptDt, 1e-4f);
+            it->second.Requested = true;
         }
-        CharacterState st;
-        if (glm::length(displacement) < cc.MinMoveDistance)
-            st = m_Backend->GetCharacterState(it->second.Character);
-        else
-            st = m_Backend->MoveCharacter(it->second.Character, displacement, m_FrameDt);
-        glm::vec3 p, s;
-        glm::quat r;
-        DecomposeWorld(e, p, r, s);
-        SetWorldPose(e, st.Position, r);
-        it->second.LastWrittenPos = st.Position;
+        CharacterState st = m_Backend->GetCharacterState(it->second.Character);
         cc.IsGrounded = st.Grounded;
         cc.Velocity = st.Velocity;
         cc.CollisionFlags = (int)st.Flags;
         return st;
+    }
+
+    void PhysicsWorld3D::MoveCharactersFixed(float dt)
+    {
+        for (auto& [e, rec] : m_Characters)
+        {
+            if (!Valid(e) || !rec.Character)
+                continue;
+            SyncCharacterTeleport(e, rec);
+            if (!rec.HasPose)
+            {
+                const CharacterState now = m_Backend->GetCharacterState(rec.Character);
+                rec.PrevPos = rec.CurrPos = now.Position;
+                rec.HasPose = true;
+            }
+            // Betik önceki karede (ya da bu karede) hareket istediyse; istemediyse karakter durur
+            const bool active = rec.Requested && rec.RequestFrame + 1 >= m_FrameIndex;
+            const CharacterState st = active ? m_Backend->MoveCharacter(rec.Character, rec.RequestedVelocity * dt, dt)
+                                             : m_Backend->GetCharacterState(rec.Character);
+            rec.PrevPos = rec.CurrPos;
+            rec.CurrPos = st.Position;
+            Entity ent{ (entt::entity)e, m_Scene };
+            auto& cc = ent.GetComponent<CharacterControllerComponent>();
+            cc.IsGrounded = st.Grounded;
+            cc.Velocity = st.Velocity;
+            cc.CollisionFlags = (int)st.Flags;
+        }
+    }
+
+    void PhysicsWorld3D::WriteCharacterTransforms(float alpha)
+    {
+        const bool interpolate = PhysicsSettings::Get().Interpolation;
+        for (auto& [e, rec] : m_Characters)
+        {
+            if (!Valid(e) || !rec.HasPose)
+                continue;
+            glm::vec3 p, s;
+            glm::quat r;
+            DecomposeWorld(e, p, r, s);
+            const glm::vec3 pos = interpolate ? glm::mix(rec.PrevPos, rec.CurrPos, alpha) : rec.CurrPos;
+            SetWorldPose(e, pos, r);
+            rec.LastWrittenPos = pos;
+        }
     }
 
     CharacterState PhysicsWorld3D::SimpleMoveCharacter(Entity entity, const glm::vec3& velocity)
@@ -1705,8 +1765,8 @@ namespace Conqueror
             return {};
         CharacterState prev = m_Backend->GetCharacterState(it->second.Character);
         float& vy = it->second.VerticalVelocity;
-        vy = prev.Grounded ? -1.0f : vy + m_Gravity.y * m_FrameDt;
-        glm::vec3 disp(velocity.x * m_FrameDt, vy * m_FrameDt, velocity.z * m_FrameDt);
+        vy = prev.Grounded ? -1.0f : vy + m_Gravity.y * m_ScriptDt;
+        glm::vec3 disp(velocity.x * m_ScriptDt, vy * m_ScriptDt, velocity.z * m_ScriptDt);
         CharacterState st = MoveCharacter(entity, disp);
         if (st.Grounded) vy = -1.0f;
         if (st.Flags & CollidedAbove) vy = std::min(vy, 0.0f);

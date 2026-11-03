@@ -1,6 +1,10 @@
+#include "Core/Audio/AudioRandomContainer.h"
+#include "Renderer/ShaderVariantCollection.h"
+#include "Renderer/CustomRenderTexture.h"
 #include "Scene/MeshRendererMaterial.h"
 #include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
 #include "Scene.h"
+#include "Core/Animation/PropertyAnimation.h"
 #include "Scripting/NativeScriptCompiler.h"
 #include "Core/Console/ConsoleVariables.h"
 #include "Scene/GameplayTags.h"
@@ -48,6 +52,7 @@
 #include "Scene/Splines.h"
 #include "Scene/CameraRig.h"
 #include "Scene/PostProcessVolume.h"
+#include "Scene/FullScreenPass.h"
 #include "Scene/Decals.h"
 #include "Scene/Lighting2D.h"
 #include "Scene/PixelPerfect.h"
@@ -203,6 +208,10 @@ namespace Conqueror
         {
             Scripting::ScriptRuntimes::PlayStart();
             AudioMixer::Get().BeginPlaySession();
+            // Preloaded Shaders (Project Settings > Graphics): ilk kullanımda derleme takılması olmasın
+            AudioRandomContainers::ResetAll();
+            ShaderVariantCollections::ResetPreloaded();
+            ShaderVariantCollections::WarmUpPreloaded();
         }
         ScriptContext::SetActiveScene(this);
         ScriptContext::SetCurrentEntity(ScriptContext::NullEntity);
@@ -668,12 +677,10 @@ namespace Conqueror
         CQ_COPY(MeshRendererComponent)
         CQ_COPY(CameraComponent)
         CQ_COPY(TextRendererComponent)
-        CQ_COPY(ImageComponent)
         CQ_COPY(ButtonComponent)
         CQ_COPY(CanvasComponent)
         CQ_COPY(CanvasScalerComponent)
         CQ_COPY(GraphicRaycasterComponent)
-        CQ_COPY(ModelComponent)
         CQ_COPY(AnimatorComponent)
         CQ_COPY(AnimationComponent)
         CQ_COPY(DirectionalLightComponent)
@@ -838,9 +845,9 @@ namespace Conqueror
 #define CQ_REMOVE_IF_MISSING(T) if (target.HasComponent<T>() && !reference.HasComponent<T>()) target.RemoveComponent<T>();
         CQ_REMOVE_IF_MISSING(ActiveComponent)
         CQ_REMOVE_IF_MISSING(SpriteRendererComponent) CQ_REMOVE_IF_MISSING(MeshRendererComponent) CQ_REMOVE_IF_MISSING(CameraComponent)
-        CQ_REMOVE_IF_MISSING(TextRendererComponent) CQ_REMOVE_IF_MISSING(ImageComponent) CQ_REMOVE_IF_MISSING(ButtonComponent)
+        CQ_REMOVE_IF_MISSING(TextRendererComponent) CQ_REMOVE_IF_MISSING(ButtonComponent)
         CQ_REMOVE_IF_MISSING(CanvasComponent) CQ_REMOVE_IF_MISSING(CanvasScalerComponent) CQ_REMOVE_IF_MISSING(GraphicRaycasterComponent)
-        CQ_REMOVE_IF_MISSING(ModelComponent) CQ_REMOVE_IF_MISSING(AnimatorComponent) CQ_REMOVE_IF_MISSING(AnimationComponent)
+        CQ_REMOVE_IF_MISSING(AnimatorComponent) CQ_REMOVE_IF_MISSING(AnimationComponent)
         CQ_REMOVE_IF_MISSING(DirectionalLightComponent) CQ_REMOVE_IF_MISSING(PointLightComponent) CQ_REMOVE_IF_MISSING(SpotLightComponent)
         CQ_REMOVE_IF_MISSING(ReflectionProbeComponent) CQ_REMOVE_IF_MISSING(AdaptiveProbeVolumeComponent) CQ_REMOVE_IF_MISSING(ParticleSystemComponent)
         CQ_REMOVE_IF_MISSING(RectTransformComponent) CQ_REMOVE_IF_MISSING(UIImageComponent) CQ_REMOVE_IF_MISSING(UITextComponent)
@@ -1109,6 +1116,9 @@ namespace Conqueror
         // gerçek zamanla sürer. Eskiden ölçek yalnız betiklerin GetDeltaTime()'ını değiştiriyordu.
         const Timestep realTs = ts;
         ts = Timestep((float)ts * (TimeManager::IsPaused() ? 0.0f : TimeManager::GetTimeScale()));
+        // Karakter hareket istekleri bu karenin süresiyle hıza çevrilir (betiklerden önce)
+        if (!renderOnly && m_PhysicsWorld3D)
+            m_PhysicsWorld3D->BeginFrame(ts);
         if (!renderOnly)
         {
         // Ağ: gelen mesajlar, uzak nesne oluşturma/silme ve ara değerleme (betiklerden önce)
@@ -1223,6 +1233,8 @@ namespace Conqueror
             }
             // Zaman çizelgeleri (PlayableDirector): Update'ten sonra, LateUpdate'ten önce (Unity animasyon aşaması gibi)
             TimelineSystem::Update(*this, (float)ts);
+            // Animation bileşenleri (.cqanim özellik klipleri)
+            PropertyClips::Update(*this, (float)ts);
             // Bileşen sistemleri (döndürücü, mermi, kısıtlar, iz kayıtları, rüzgâr)
             {
                 CQ_PROFILE_SAMPLE("GameplaySystems.Update", Other);
@@ -1345,6 +1357,7 @@ namespace Conqueror
             // Light 2D ışık dokusu + Sprite Mask stencil'i (sahnede yoksa hiçbir şey yapmaz)
             const glm::mat4 viewProjection2D = camera.GetProjection() * glm::inverse(cameraTransform);
             const bool lit2D = Lighting2D::BeginPass(*this, viewProjection2D);
+            CustomRenderTextures::UpdateAll();   // 2D sahnelerde de
             Renderer2D::BeginScene(camera, cameraTransform, true, true);
             TextRenderer::BeginScene(camera, cameraTransform, true);
 
@@ -1384,28 +1397,6 @@ namespace Conqueror
                 renderItems.push_back({ RenderItem::Type::Sprite, entity, &transform, (void*)&sprite, layer, orderInLayer, transform.WorldTransform[3][2] });
             }
 
-            // Image'ları topla
-            auto imageView = m_Registry.view<TransformComponent, ImageComponent>();
-            for (auto entity : imageView)
-            {
-                auto [transform, image] = imageView.get<TransformComponent, ImageComponent>(entity);
-                if (!IsEntityActive(entity))
-                    continue;
-
-                if (!image.Texture)
-                    continue;
-
-                int32_t layer = 5;
-                int32_t orderInLayer = 0;
-                if (m_Registry.all_of<LayerComponent>(entity))
-                {
-                    auto& layerComp = m_Registry.get<LayerComponent>(entity);
-                    layer = layerComp.Layer;
-                    orderInLayer = layerComp.OrderInLayer;
-                }
-
-                renderItems.push_back({ RenderItem::Type::Image, entity, &transform, (void*)&image, layer, orderInLayer, transform.WorldTransform[3][2] });
-            }
 
             // Text'leri topla
             auto textView = m_Registry.view<TransformComponent, TextRendererComponent>();
@@ -1633,27 +1624,17 @@ namespace Conqueror
                         finalTransform[3][0] = std::round(finalTransform[3][0] * pixelGrid) / pixelGrid;
                         finalTransform[3][1] = std::round(finalTransform[3][1] * pixelGrid) / pixelGrid;
                     }
-                    Renderer2D::DrawSprite(finalTransform, sprite->Texture, sprite->TilingFactor, sprite->Color, *sprite);
-                }
-                else if (item.ItemType == RenderItem::Type::Image)
-                {
-                    auto* image = (ImageComponent*)item.Component;
-                    glm::vec4 finalColor = image->Color;
-                    bool use9Slice = false;
-                    float borderSize = 10.0f;
-                    
-                    if (m_Registry.all_of<ButtonComponent>(item.Entity))
+                    // Eski (Legacy) düğme: arka planı Sprite Renderer; renk düğme durumundan, isteğe bağlı 9 dilim
+                    if (m_Registry.all_of<ButtonComponent>(item.Entity) && sprite->Texture)
                     {
                         auto& button = m_Registry.get<ButtonComponent>(item.Entity);
-                        use9Slice = button.Use9Slice;
-                        borderSize = button.BorderSize;
-                        finalColor = button.CurrentBackgroundColor;
+                        if (button.Use9Slice)
+                            Renderer2D::DrawSprite9Slice(finalTransform, sprite->Texture, button.BorderSize, button.CurrentBackgroundColor, *sprite);
+                        else
+                            Renderer2D::DrawSprite(finalTransform, sprite->Texture, sprite->TilingFactor, button.CurrentBackgroundColor, *sprite);
                     }
-                    
-                    if (use9Slice)
-                        Renderer2D::DrawSprite9Slice(finalTransform, image->Texture, borderSize, finalColor, *image);
                     else
-                        Renderer2D::DrawSprite(finalTransform, image->Texture, image->TilingFactor, finalColor, *image);
+                        Renderer2D::DrawSprite(finalTransform, sprite->Texture, sprite->TilingFactor, sprite->Color, *sprite);
                 }
                 else if (item.ItemType == RenderItem::Type::Text)
                 {
@@ -1664,10 +1645,10 @@ namespace Conqueror
                     Entity textEntity{ item.Entity, this };
                     Entity parent = GetEntityParent(textEntity);
                     
-                    if (parent && parent.HasComponent<ButtonComponent>() && parent.HasComponent<ImageComponent>())
+                    if (parent && parent.HasComponent<ButtonComponent>() && parent.HasComponent<SpriteRendererComponent>())
                     {
                         auto& button = parent.GetComponent<ButtonComponent>();
-                        auto& parentImage = parent.GetComponent<ImageComponent>();
+                        auto& parentImage = parent.GetComponent<SpriteRendererComponent>();
                         finalTextColor = button.CurrentTextColor;
                         
                         if (parentImage.Texture)
@@ -1776,7 +1757,8 @@ namespace Conqueror
             {
                 // Ağ sınır kutusu (tam tel kafes pahalı)
                 glm::mat4 m = world * glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
-                if (e.HasComponent<MeshRendererComponent>() && e.GetComponent<MeshRendererComponent>().Type == MeshType::Plane)
+                if (e.HasComponent<MeshRendererComponent>() && !e.GetComponent<MeshRendererComponent>().IsModel()
+                    && e.GetComponent<MeshRendererComponent>().Type == MeshType::Plane)
                     m = world * glm::scale(glm::mat4(1.0f), glm::vec3(2.0f, 0.001f, 2.0f));
                 DebugDraw::Box(m, e.GetComponent<MeshColliderComponent>().IsTrigger ? kTrigger : kCollider, 0.0f, false);
             }
@@ -2045,14 +2027,14 @@ namespace Conqueror
         Renderer2D::BeginScene(camera, true, true); // Depth test enabled, depth write enabled
         TextRenderer::BeginScene(camera, true); // Depth test enabled
 
-        // Tüm render edilebilir entity'leri topla (sprite + image + text)
+        // Tüm render edilebilir entity'leri topla (sprite + text + karo haritası)
         struct RenderItem
         {
-            enum class Type { Sprite, Image, Text, Tilemap };
+            enum class Type { Sprite, Text, Tilemap };
             Type ItemType;
             entt::entity Entity;
             TransformComponent* Transform;
-            void* Component; // SpriteRendererComponent*, ImageComponent* veya TextRendererComponent*
+            void* Component; // SpriteRendererComponent* ya da TextRendererComponent*
             int32_t Layer;
             int32_t OrderInLayer;
             float ZPosition; // Z-depth sorting için
@@ -2088,36 +2070,6 @@ namespace Conqueror
             });
         }
 
-        // Image'ları topla
-        auto imageView = m_Registry.view<TransformComponent, ImageComponent>();
-        for (auto entity : imageView)
-        {
-            auto [transform, image] = imageView.get<TransformComponent, ImageComponent>(entity);
-            if (!IsEntityActive(entity))
-                continue;
-
-            if (!image.Texture)
-                continue;
-
-            int32_t layer = 5; // Default UI layer
-            int32_t orderInLayer = 0;
-            if (m_Registry.all_of<LayerComponent>(entity))
-            {
-                auto& layerComp = m_Registry.get<LayerComponent>(entity);
-                layer = layerComp.Layer;
-                orderInLayer = layerComp.OrderInLayer;
-            }
-
-            renderItems.push_back({ 
-                RenderItem::Type::Image, 
-                entity, 
-                &transform, 
-                (void*)&image, 
-                layer, 
-                orderInLayer,
-                transform.WorldTransform[3][2] // Z pozisyonu
-            });
-        }
 
         // Text'leri topla
         auto textView = m_Registry.view<TransformComponent, TextRendererComponent>();
@@ -2348,35 +2300,17 @@ namespace Conqueror
             else if (item.ItemType == RenderItem::Type::Sprite)
             {
                 auto* sprite = (SpriteRendererComponent*)item.Component;
-                Renderer2D::DrawSprite(finalTransform, sprite->Texture, 
-                                       sprite->TilingFactor, sprite->Color, *sprite);
-            }
-            else if (item.ItemType == RenderItem::Type::Image)
-            {
-                auto* image = (ImageComponent*)item.Component;
-                
-                glm::vec4 finalColor = image->Color;
-                bool use9Slice = false;
-                float borderSize = 10.0f;
-                
-                if (m_Registry.all_of<ButtonComponent>(item.Entity))
+                // Eski (Legacy) düğme: arka planı Sprite Renderer; renk düğme durumundan, isteğe bağlı 9 dilim
+                if (m_Registry.all_of<ButtonComponent>(item.Entity) && sprite->Texture)
                 {
                     auto& button = m_Registry.get<ButtonComponent>(item.Entity);
-                    use9Slice = button.Use9Slice;
-                    borderSize = button.BorderSize;
-                    finalColor = button.CurrentBackgroundColor;
-                }
-                
-                if (use9Slice)
-                {
-                    Renderer2D::DrawSprite9Slice(finalTransform, image->Texture, 
-                                                 borderSize, finalColor, *image);
+                    if (button.Use9Slice)
+                        Renderer2D::DrawSprite9Slice(finalTransform, sprite->Texture, button.BorderSize, button.CurrentBackgroundColor, *sprite);
+                    else
+                        Renderer2D::DrawSprite(finalTransform, sprite->Texture, sprite->TilingFactor, button.CurrentBackgroundColor, *sprite);
                 }
                 else
-                {
-                    Renderer2D::DrawSprite(finalTransform, image->Texture, 
-                                           image->TilingFactor, finalColor, *image);
-                }
+                    Renderer2D::DrawSprite(finalTransform, sprite->Texture, sprite->TilingFactor, sprite->Color, *sprite);
             }
             else if (item.ItemType == RenderItem::Type::Text)
             {
@@ -2387,10 +2321,10 @@ namespace Conqueror
                 Entity textEntity{ item.Entity, this };
                 Entity parent = GetEntityParent(textEntity);
                 
-                if (parent && parent.HasComponent<ButtonComponent>() && parent.HasComponent<ImageComponent>())
+                if (parent && parent.HasComponent<ButtonComponent>() && parent.HasComponent<SpriteRendererComponent>())
                 {
                     auto& button = parent.GetComponent<ButtonComponent>();
-                    auto& parentImage = parent.GetComponent<ImageComponent>();
+                    auto& parentImage = parent.GetComponent<SpriteRendererComponent>();
                     
                     finalTextColor = button.CurrentTextColor;
                     
@@ -2497,7 +2431,7 @@ namespace Conqueror
     bool Scene::HasRenderable3D() const
     {
         auto& reg = const_cast<entt::registry&>(m_Registry);
-        return !reg.view<MeshRendererComponent>().empty() || !reg.view<ModelComponent>().empty() || !reg.view<TerrainComponent>().empty();
+        return !reg.view<MeshRendererComponent>().empty() || !reg.view<TerrainComponent>().empty();
     }
 
     SceneEnvironment Scene::BuildRenderEnvironment(bool hdrOutput) const
@@ -2684,6 +2618,7 @@ namespace Conqueror
     {
         CQ_PROFILE_SAMPLE("Render.3D", Rendering);
         CQ_PROFILE_GPU("Scene 3D");
+        CustomRenderTextures::UpdateAll();   // Custom Render Texture'lar (karede bir kez)
         if (!m_CapturingProbes)
             CaptureReflectionProbes();
 
@@ -2802,6 +2737,9 @@ namespace Conqueror
             if (!IsEntityActive(entity) || m_LODHidden.count((uint32_t)entity))
                 continue;
             auto [transform, meshRenderer] = meshView.get<TransformComponent, MeshRendererComponent>(entity);
+            if (meshRenderer.IsModel())
+                continue;   // model ağı aşağıda (Modeller)
+            Renderer3D::SetDrawCastsShadows(meshRenderer.CastShadows);
 
             // Unity gibi: renk, doku, ışıma ve Shader Graph malzemenin içinde; malzemesiz nesne varsayılan malzemeyle çizilir
             std::shared_ptr<Material> material = meshRenderer.MaterialInstance;
@@ -2843,12 +2781,15 @@ namespace Conqueror
         GridSystem::DrawTilemaps3D(*this);
 
         // Modeller
-        auto modelView = m_Registry.view<TransformComponent, ModelComponent>();
+        auto modelView = m_Registry.view<TransformComponent, MeshRendererComponent>();
         for (auto entity : modelView)
         {
             if (!IsEntityActive(entity) || m_LODHidden.count((uint32_t)entity))
                 continue;
-            auto [transform, modelComp] = modelView.get<TransformComponent, ModelComponent>(entity);
+            auto [transform, modelComp] = modelView.get<TransformComponent, MeshRendererComponent>(entity);
+            if (!modelComp.IsModel())
+                continue;
+            Renderer3D::SetDrawCastsShadows(modelComp.CastShadows);
             if (!modelComp.ModelData)
                 continue;
 
@@ -2921,6 +2862,8 @@ namespace Conqueror
             Renderer3D::SetTint(glm::vec3(1.0f));
         }
 
+        // Sonraki çizimler (kuyruk, MultiMesh, arazi, parçacık) varsayılan: gölge düşürür
+        Renderer3D::SetDrawCastsShadows(true);
         // Kuyruktaki opak meshler / modeller yakından uzağa; MultiMesh ve araziler (büyük, çoğunlukla arkada) sonra çizilir
         Renderer3D::FlushOpaque();
 
@@ -3251,11 +3194,6 @@ namespace Conqueror
     }
 
     template<>
-    CQ_API void Scene::OnComponentAdded<ImageComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] ImageComponent& component)
-    {
-    }
-
-    template<>
     CQ_API void Scene::OnComponentAdded<MeshRendererComponent>(Entity entity, MeshRendererComponent& component)
     {
         // Varsayılan malzeme (Unreal WorldGridMaterial gibi): dama dokusu motorla gelen salt okunur
@@ -3281,7 +3219,7 @@ namespace Conqueror
         {
             if (e.HasComponent<SpriteRendererComponent>() && Renderer2D::GetSpriteLocalBounds(e.GetComponent<SpriteRendererComponent>(), mn, mx))
                 return true;
-            if (e.HasComponent<SpriteRendererComponent>() || e.HasComponent<ImageComponent>())
+            if (e.HasComponent<SpriteRendererComponent>())
             {
                 mn = glm::vec2(-0.5f);
                 mx = glm::vec2(0.5f);
@@ -3355,6 +3293,7 @@ namespace Conqueror
     CQ_PLAIN_ADDED(SpringArmComponent)
     CQ_PLAIN_ADDED(BoneAttachmentComponent)
     CQ_PLAIN_ADDED(StreamedLevelComponent)
+    CQ_PLAIN_ADDED(AnimationPlayerComponent)
     CQ_PLAIN_ADDED(LevelStreamingVolumeComponent)
     CQ_PLAIN_ADDED(AutoLODComponent)
     CQ_PLAIN_ADDED(SoundOcclusionComponent)
@@ -3372,6 +3311,8 @@ namespace Conqueror
     CQ_PLAIN_ADDED(VisibleOnScreenNotifierComponent)
     CQ_PLAIN_ADDED(Parallax2DComponent)
     CQ_PLAIN_ADDED(RenderTargetComponent)
+    CQ_PLAIN_ADDED(FullScreenPassComponent)
+    CQ_PLAIN_ADDED(SignalReceiverComponent)
     CQ_PLAIN_ADDED(Bone2DComponent)
     CQ_PLAIN_ADDED(IK2DComponent)
     CQ_PLAIN_ADDED(RigComponent) CQ_PLAIN_ADDED(TwoBoneIKConstraintComponent) CQ_PLAIN_ADDED(MultiAimConstraintComponent) CQ_PLAIN_ADDED(ChainIKConstraintComponent) CQ_PLAIN_ADDED(DampedTransformComponent)
@@ -3397,12 +3338,12 @@ namespace Conqueror
                     mx = glm::max(mx, v.Position);
                 }
             };
-            if (e.HasComponent<ModelComponent>() && e.GetComponent<ModelComponent>().ModelData)
+            if (e.HasComponent<MeshRendererComponent>() && e.GetComponent<MeshRendererComponent>().ModelData)
             {
-                for (auto& m : e.GetComponent<ModelComponent>().ModelData->Meshes)
+                for (auto& m : e.GetComponent<MeshRendererComponent>().ModelData->Meshes)
                     addMesh(m.get());
             }
-            else if (e.HasComponent<MeshRendererComponent>())
+            else if (e.HasComponent<MeshRendererComponent>() && !e.GetComponent<MeshRendererComponent>().IsModel())
             {
                 std::shared_ptr<Mesh> mesh = e.GetComponent<MeshRendererComponent>().CustomMesh;
                 if (!mesh)
@@ -3519,11 +3460,6 @@ namespace Conqueror
 
     template<>
     CQ_API void Scene::OnComponentAdded<GraphicRaycasterComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] GraphicRaycasterComponent& component)
-    {
-    }
-
-    template<>
-    CQ_API void Scene::OnComponentAdded<ModelComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] ModelComponent& component)
     {
     }
 
@@ -3861,10 +3797,10 @@ namespace Conqueror
         wasPressed = mousePressed;
         
         // Tüm butonları tara
-        auto buttonView = m_Registry.view<TransformComponent, ButtonComponent, ImageComponent>();
+        auto buttonView = m_Registry.view<TransformComponent, ButtonComponent, SpriteRendererComponent>();
         for (auto entity : buttonView)
         {
-            auto [transform, button, image] = buttonView.get<TransformComponent, ButtonComponent, ImageComponent>(entity);
+            auto [transform, button, image] = buttonView.get<TransformComponent, ButtonComponent, SpriteRendererComponent>(entity);
             
             if (!button.Interactable)
             {
@@ -3922,7 +3858,7 @@ namespace Conqueror
 
 
 
-            // AABB bounds hesapla (ImageComponent texture boyutundan)
+            // AABB bounds hesapla (Sprite Renderer dokusunun boyutundan)
             if (!image.Texture)
                 continue;
             
@@ -4881,6 +4817,13 @@ namespace Conqueror
             auto& transform = entity.GetComponent<TransformComponent>();
             auto& audioSource = entity.GetComponent<AudioSourceComponent>();
             
+            // Audio Random Container: istenince (Play / otomatik tetik) yeni klip seçilir
+            const bool container = AudioRandomContainers::IsAsset(audioSource.FilePath);
+            if (container && audioSource.ContainerRequest && audioSource.RuntimeSound)
+            {
+                ReleaseAudioRuntime(m_Registry, entityID);
+                audioSource.LoadedPath.clear();
+            }
             // Clip çalışma sırasında değiştiyse (Unity audioSource.clip = ...) eski sesi bırak, yenisi yüklensin
             if (audioSource.RuntimeSound && audioSource.FilePath != audioSource.LoadedPath)
             {
@@ -4892,6 +4835,19 @@ namespace Conqueror
             if (!audioSource.RuntimeSound && !audioSource.FilePath.empty())
             {
                 std::string loadPath = audioSource.FilePath;
+                bool playNow = false;
+                if (container)
+                {
+                    AudioRandomContainers::Pick pick;
+                    if (!AudioRandomContainers::Next(audioSource.FilePath, (uint64_t)entityID, pick))
+                        continue;
+                    loadPath = pick.Clip;
+                    audioSource.ContainerClip = pick.Clip;
+                    audioSource.ContainerVolume = pick.VolumeScale;
+                    audioSource.ContainerPitch = pick.PitchScale;
+                    playNow = audioSource.ContainerRequest;
+                    audioSource.ContainerRequest = false;
+                }
                 if (loadPath.size() > 3 && loadPath[0] == 'C' && loadPath[1] == 'Q' && loadPath[2] == ':')
                 {
                     std::string relative = loadPath.substr(3);
@@ -4911,8 +4867,9 @@ namespace Conqueror
                         auto projectDir = Project::GetActiveProjectDirectory();
                         if (!projectDir.empty())
                         {
+                            const std::string key = loadPath;
                             loadPath = (projectDir / loadPath).string();
-                            s_AudioPathCache[audioSource.FilePath] = loadPath;
+                            s_AudioPathCache[key] = loadPath;
                         }
                     }
                 }
@@ -4925,10 +4882,18 @@ namespace Conqueror
                     audioSource.NeedsReconnection = true; // İlk yüklemede bağla
                     
                     // Play On Awake yalnızca oyun modunda (düzenleyicide proje açılınca ses çalmaz; Unity gibi)
-                    if (audioSource.PlayOnAwake && m_IsRuntimeScene)
+                    if ((audioSource.PlayOnAwake || playNow) && m_IsRuntimeScene)
                     {
                         source->Play();
                         audioSource.IsPlaying = true;
+                        if (container)
+                        {
+                            ++audioSource.ContainerPlays;
+                            audioSource.ContainerTimer = 0.0f;
+                            AudioRandomContainerAsset asset;
+                            if (AudioRandomContainers::Load(audioSource.FilePath, asset))
+                                audioSource.ContainerInterval = AudioRandomContainers::NextInterval(asset);
+                        }
                     }
                 }
                 else
@@ -4943,8 +4908,22 @@ namespace Conqueror
             
             // Temel Ayarlar (Sound Occlusion çarpanı dahil)
             const auto* occlusion = m_Registry.try_get<SoundOcclusionComponent>(entityID);
-            source->SetVolume(audioSource.Volume * (occlusion ? occlusion->Gain : 1.0f));
-            source->SetPitch(audioSource.Pitch);
+            source->SetVolume(audioSource.Volume * (container ? audioSource.ContainerVolume : 1.0f) * (occlusion ? occlusion->Gain : 1.0f));
+            source->SetPitch(audioSource.Pitch * (container ? audioSource.ContainerPitch : 1.0f));
+            // Audio Random Container: Automatic tetikleme (Unity Pulse) ya da Loop'ta bitince sıradaki klip
+            if (container && m_IsRuntimeScene && audioSource.ContainerPlays > 0)
+            {
+                AudioRandomContainerAsset asset;
+                if (AudioRandomContainers::Load(audioSource.FilePath, asset))
+                {
+                    audioSource.ContainerTimer += ts.GetSeconds();
+                    const bool more = asset.Count == 0 || audioSource.ContainerPlays < asset.Count;
+                    if (asset.Trigger == 1 && more && audioSource.ContainerTimer >= audioSource.ContainerInterval)
+                        audioSource.ContainerRequest = true;
+                    else if (asset.Trigger == 0 && audioSource.Loop && !source->IsPlaying() && audioSource.IsPlaying)
+                        audioSource.ContainerRequest = true;
+                }
+            }
             source->SetPan(audioSource.Pan);
             source->SetLooping(audioSource.Loop);
             source->SetMute(audioSource.Mute);
@@ -5098,11 +5077,11 @@ namespace Conqueror
         RigConstraints::BeginFrame(*this, dt);
 
         // Basit klip oynatıcı (AnimatorComponent)
-        auto view = m_Registry.view<AnimatorComponent, ModelComponent>();
+        auto view = m_Registry.view<AnimatorComponent, MeshRendererComponent>();
         for (auto entity : view)
         {
             auto& anim = view.get<AnimatorComponent>(entity);
-            auto& mc = view.get<ModelComponent>(entity);
+            auto& mc = view.get<MeshRendererComponent>(entity);
             if (!mc.ModelData || !mc.ModelData->IsSkinned || !mc.ModelData->SkeletonData || mc.ModelData->Animations.empty())
                 continue;
 
@@ -5139,11 +5118,11 @@ namespace Conqueror
 
         // Durum makinesi (AnimationComponent + AnimationController) + montajlar
         std::vector<std::pair<entt::entity, std::vector<AnimNotifyEvent>>> notifyBatches;
-        auto animView = m_Registry.view<AnimationComponent, ModelComponent>();
+        auto animView = m_Registry.view<AnimationComponent, MeshRendererComponent>();
         for (auto entity : animView)
         {
             auto& ac = animView.get<AnimationComponent>(entity);
-            auto& mc = animView.get<ModelComponent>(entity);
+            auto& mc = animView.get<MeshRendererComponent>(entity);
             // Ragdoll etkinse poz fizik gövdelerinden gelir (animasyon durur)
             if (Ragdoll::ApplyPose(*this, (uint32_t)entity, ac.BoneMatricesGPU))
                 continue;
@@ -5223,11 +5202,11 @@ namespace Conqueror
     // değişmez, kaydedilen dosya etkilenmez.
     void Scene::UpdateEditorAnimationPreview(float dt)
     {
-        auto view = m_Registry.view<AnimationComponent, ModelComponent>();
+        auto view = m_Registry.view<AnimationComponent, MeshRendererComponent>();
         for (auto entity : view)
         {
             auto& ac = view.get<AnimationComponent>(entity);
-            auto& mc = view.get<ModelComponent>(entity);
+            auto& mc = view.get<MeshRendererComponent>(entity);
             if (!ac.Controller || !mc.ModelData || !mc.ModelData->IsSkinned || !mc.ModelData->SkeletonData)
                 continue;
             AnimationStateMachine::Update(ac, *mc.ModelData, dt);

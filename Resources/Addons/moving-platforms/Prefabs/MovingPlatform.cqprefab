@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 4414990660159464539
+  - Entity: 672672506150210638
     TagComponent:
       Tag: Moving Platform
       GameTag: Untagged
@@ -14,11 +14,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.55, 0.55, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
+      MaterialAsset: Packages/moving-platforms/Materials/Light Gray.cqmat
     MovingPlatform_ConquerorScriptComponent:
       ScriptPath: Packages/moving-platforms/Scripts/MovingPlatform.cqs
       ClassName: MovingPlatform
@@ -139,6 +135,49 @@ Environment:
       Sharpen: false
       SharpenAmount: 0.3
       AntiAliasing: 1
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: false
+      SSRIntensity: 1
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: false
+      SSGIIntensity: 1
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: false
+      CloudCoverage: 0.45
+      CloudDensity: 1
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: false
+      FocusDistance: 10
+      Aperture: 2.8
+      FocalLength: 50
+      DOFMaxBlur: 10
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
     Environment:
       Sky: 0
       BackgroundColor: [0.1, 0.1, 0.1]
@@ -146,6 +185,13 @@ Environment:
       ReflectionIntensity: 1
       SkyboxIntensity: 1
       SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
     Bake:
       RealtimeGI: false
       BakedGI: true

@@ -10,6 +10,8 @@ for (var i = 0; i < bots.Count; i++)
     Bot("Bot " + (i + 1), bots[i][0], 0, bots[i][1], RandomRange(0, 360), i % 2 == 0 ? "Mannequin_Male" : "Mannequin_Female", "Pistol", "", 4.0);
 }
 FPPlayer("Player", 0, 0, 27, 0, ["Pistol", "Rifle"], "", 100, 3);    // takımsız: herkes herkese karşı
+// Silah duvara / kübe yaklaşınca geri çekilip iner (içine girmez); yürürken kamera yatması hafif
+SetFields(FindEntity("Player"), {avoidWalls: true, crispStop: true, bobRoll: 0.32});
 SetFields(FindEntity("Player"), {regenDelay: 4.0, regenRate: 15.0});
 Game("Arena", 15, 600);
 ShooterHUD();

@@ -256,7 +256,7 @@ namespace Conqueror
 
         auto& registry = scene->m_Registry;
         auto meshView = registry.view<TransformComponent, MeshRendererComponent>();
-        auto modelView = registry.view<TransformComponent, ModelComponent>();
+        auto modelView = registry.view<TransformComponent, MeshRendererComponent>();
 
         // Kademe kırpması: her kademe yalnız kendi ışık hacmine giren gölge düşürenleri çizer (GPU zaten kırpardı; burada çizim
         // çağrısı hiç yapılmaz). İskeletli modellerin poz kutusu pahalıdır: karede bir kez hesaplanır.
@@ -297,16 +297,18 @@ namespace Conqueror
             const float texelSize = (radius * 2.0f) / (float)tileW;
             m_CascadeTexelWorld[i] = texelSize;
 
-            glm::mat4 lightView = glm::lookAt(center - lightDir * radius, center, up);
-            // Merkezi texel ızgarasına oturt
-            glm::vec4 centerLS = lightView * glm::vec4(center, 1.0f);
-            centerLS.x = std::floor(centerLS.x / texelSize) * texelSize;
-            centerLS.y = std::floor(centerLS.y / texelSize) * texelSize;
-            center = glm::vec3(glm::inverse(lightView) * centerLS);
+            // Merkezi texel ızgarasına oturt. Izgara dünya orijinine bağlı, yalnız dönen bir ışık uzayında olmalı:
+            // merkeze göre kurulan bir görünümde merkez hep (0,0)'a düşer ve yuvarlama hiçbir şey yapmaz
+            // (kamera her kıpırdadığında gölge kenarları titrer).
+            const glm::mat4 lightRot = glm::lookAt(glm::vec3(0.0f), lightDir, up);
+            glm::vec4 centerLS = lightRot * glm::vec4(center, 1.0f);
+            centerLS.x = std::floor(centerLS.x / texelSize + 0.5f) * texelSize;
+            centerLS.y = std::floor(centerLS.y / texelSize + 0.5f) * texelSize;
+            center = glm::vec3(glm::inverse(lightRot) * centerLS);
 
             // Kamera arkasındaki yüksek dağlar/binalar da gölge düşürsün diye z aralığı geniş
             const float zBack = radius * 6.0f;
-            lightView = glm::lookAt(center - lightDir * zBack, center, up);
+            glm::mat4 lightView = glm::lookAt(center - lightDir * zBack, center, up);
             glm::mat4 lightProjection = glm::ortho(-radius, radius, -radius, radius, 0.0f, zBack + radius * 2.0f);
             m_LightSpaceMatrices[i] = lightProjection * lightView;
 
@@ -324,6 +326,7 @@ namespace Conqueror
                 if (!scene->IsEntityActive(entity))
                     continue;
                 auto [transform, meshRenderer] = meshView.get<TransformComponent, MeshRendererComponent>(entity);
+                if (meshRenderer.IsModel()) continue;   // model ağı model döngüsünde
                 // Çoğunlukla saydam yüzeyler (cam) ışığı kesmez
                 const Material& mat = MeshRendererMaterial::Shared(meshRenderer);
                 if (!meshRenderer.CastShadows || (mat.Rendering == Material::RenderMode::Transparent && mat.Opacity < 0.5f))
@@ -387,9 +390,9 @@ namespace Conqueror
             {
                 if (!scene->IsEntityActive(entity))
                     continue;
-                auto [transform, modelComponent] = modelView.get<TransformComponent, ModelComponent>(entity);
+                auto [transform, modelComponent] = modelView.get<TransformComponent, MeshRendererComponent>(entity);
                 auto& model = modelComponent.ModelData;
-                if (!model)
+                if (!model || !modelComponent.CastShadows)
                     continue;
 
                 if (model->IsSkinned && model->SkeletonData && !model->SkinnedMeshes.empty() && m_SkinnedDepthShader && m_SkinnedDepthShader->IsValid())

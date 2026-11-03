@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 5262713454890451782
+  - Entity: 6913968550547389638
     TagComponent:
       Tag: Third Person Rig
       GameTag: Untagged
@@ -12,7 +12,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 4677532356004101098
+  - Entity: 2904474304897848763
     TagComponent:
       Tag: TP Player
       GameTag: Player
@@ -37,7 +37,7 @@ Entities:
     ThirdPersonController_ConquerorScriptComponent:
       ScriptPath: Packages/third-person-controller/Scripts/ThirdPersonController.cqs
       ClassName: ThirdPersonController
-  - Entity: 2357459815793293477
+  - Entity: 4608167772548426606
     TagComponent:
       Tag: Body
       GameTag: Untagged
@@ -51,12 +51,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.25, 0.55, 0.95, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 8269026206661457825
+      MaterialAsset: Packages/third-person-controller/Materials/Blue.cqmat
+  - Entity: 4157488246884770063
     TagComponent:
       Tag: Nose
       GameTag: Untagged
@@ -70,12 +66,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.1, 0.1, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 408962599647040703
+      MaterialAsset: Packages/third-person-controller/Materials/Dark Gray.cqmat
+  - Entity: 6797710416541687235
     TagComponent:
       Tag: TP Camera
       GameTag: Untagged
@@ -199,6 +191,49 @@ Environment:
       Sharpen: false
       SharpenAmount: 0.3
       AntiAliasing: 1
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: false
+      SSRIntensity: 1
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: false
+      SSGIIntensity: 1
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: false
+      CloudCoverage: 0.45
+      CloudDensity: 1
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: false
+      FocusDistance: 10
+      Aperture: 2.8
+      FocalLength: 50
+      DOFMaxBlur: 10
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
     Environment:
       Sky: 0
       BackgroundColor: [0.1, 0.1, 0.1]
@@ -206,6 +241,13 @@ Environment:
       ReflectionIntensity: 1
       SkyboxIntensity: 1
       SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
     Bake:
       RealtimeGI: false
       BakedGI: true
@@ -245,11 +287,11 @@ Environment:
       APVGeometryBias: 0.01
       APVRayOriginBias: -0.001
 Hierarchy:
-  - Child: 2357459815793293477
-    Parent: 4677532356004101098
-  - Child: 8269026206661457825
-    Parent: 4677532356004101098
-  - Child: 4677532356004101098
-    Parent: 5262713454890451782
-  - Child: 408962599647040703
-    Parent: 5262713454890451782
+  - Child: 4608167772548426606
+    Parent: 2904474304897848763
+  - Child: 4157488246884770063
+    Parent: 2904474304897848763
+  - Child: 2904474304897848763
+    Parent: 6913968550547389638
+  - Child: 6797710416541687235
+    Parent: 6913968550547389638

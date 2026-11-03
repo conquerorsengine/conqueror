@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 8268898611388614221
+  - Entity: 2853087347723218106
     TagComponent:
       Tag: Laser Emitter
       GameTag: Untagged
@@ -14,11 +14,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.25, 0.25, 0.28, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
+      MaterialAsset: Packages/laser-beam/Materials/Gray.cqmat
     LaserBeam_ConquerorScriptComponent:
       ScriptPath: Packages/laser-beam/Scripts/LaserBeam.cqs
       ClassName: LaserBeam
@@ -43,7 +39,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 408861845506011774
+  - Entity: 1151821086219117445
     TagComponent:
       Tag: Lens
       GameTag: Untagged
@@ -57,14 +53,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 0.1, 0.05, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.05]
-      EmissionStrength: 4
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 3763566349157561201
+      MaterialAsset: Packages/laser-beam/Materials/Red Glow.cqmat
+  - Entity: 5027215684681762313
     TagComponent:
       Tag: Beam
       GameTag: Untagged
@@ -89,7 +79,7 @@ Entities:
       Blend: 1
       Texture: ""
       Emissive: 4
-  - Entity: 7102115768222506353
+  - Entity: 6185333042646743413
     TagComponent:
       Tag: Sparks
       GameTag: Untagged
@@ -261,6 +251,49 @@ Environment:
       Sharpen: false
       SharpenAmount: 0.3
       AntiAliasing: 1
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: false
+      SSRIntensity: 1
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: false
+      SSGIIntensity: 1
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: false
+      CloudCoverage: 0.45
+      CloudDensity: 1
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: false
+      FocusDistance: 10
+      Aperture: 2.8
+      FocalLength: 50
+      DOFMaxBlur: 10
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
     Environment:
       Sky: 0
       BackgroundColor: [0.1, 0.1, 0.1]
@@ -268,6 +301,13 @@ Environment:
       ReflectionIntensity: 1
       SkyboxIntensity: 1
       SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
     Bake:
       RealtimeGI: false
       BakedGI: true
@@ -307,9 +347,9 @@ Environment:
       APVGeometryBias: 0.01
       APVRayOriginBias: -0.001
 Hierarchy:
-  - Child: 408861845506011774
-    Parent: 8268898611388614221
-  - Child: 3763566349157561201
-    Parent: 8268898611388614221
-  - Child: 7102115768222506353
-    Parent: 8268898611388614221
+  - Child: 1151821086219117445
+    Parent: 2853087347723218106
+  - Child: 5027215684681762313
+    Parent: 2853087347723218106
+  - Child: 6185333042646743413
+    Parent: 2853087347723218106

@@ -222,7 +222,7 @@ namespace Conqueror::CQS
 
         const Model* ModelOf(Entity e)
         {
-            return e && e.HasComponent<ModelComponent>() ? e.GetComponent<ModelComponent>().ModelData.get() : nullptr;
+            return e && e.HasComponent<MeshRendererComponent>() ? e.GetComponent<MeshRendererComponent>().ModelData.get() : nullptr;
         }
 
         // .cqmontage dosyaları değişiklik zamanıyla önbelleklenir; dosya değilse modeldeki klip adıyla geçici montaj
@@ -549,15 +549,17 @@ namespace Conqueror::CQS
             const std::filesystem::path file = PrefabSerializer::Resolve(path);
             auto model = ModelLoader::Load(file.string());
             if (!model) return Value::MakeBool(false);
-            if (!e.HasComponent<ModelComponent>()) e.AddComponent<ModelComponent>();
-            auto& mc = e.GetComponent<ModelComponent>();
-            mc.FilePath = PrefabSerializer::ToProjectPath(file);
+            if (!e.HasComponent<MeshRendererComponent>()) e.AddComponent<MeshRendererComponent>();
+            auto& mc = e.GetComponent<MeshRendererComponent>();
+            mc.ModelPath = PrefabSerializer::ToProjectPath(file);
             mc.ModelData = model;
+            mc.MaterialInstance = nullptr;
+            mc.MaterialPath.clear();
             return Value::MakeBool(true);
         }, 2);
         vm->DefineNative("EntityGetModel", [](int argc, Value* args) -> Value {
             Entity e = Target(argc > 0 ? args[0] : Value::MakeNull());
-            return Value::MakeString(e && e.HasComponent<ModelComponent>() ? e.GetComponent<ModelComponent>().FilePath : std::string());
+            return Value::MakeString(e && e.HasComponent<MeshRendererComponent>() ? e.GetComponent<MeshRendererComponent>().ModelPath : std::string());
         }, -1);
 
         // ================================================================ Ses örtme / eşzamanlılık
@@ -966,7 +968,7 @@ namespace Conqueror::CQS
         vm->DefineNative("MeshGenerateLODs", [](int argc, Value* args) -> Value {
             Entity e = Target(argc > 0 ? args[0] : Value::MakeNull());
             Scene* scene = ActiveScene();
-            if (!e || !scene || !e.HasComponent<ModelComponent>()) return Value::MakeInt(0);
+            if (!e || !scene || !e.HasComponent<MeshRendererComponent>() || !e.GetComponent<MeshRendererComponent>().ModelData) return Value::MakeInt(0);
             if (!e.HasComponent<AutoLODComponent>()) e.AddComponent<AutoLODComponent>();
             auto& c = e.GetComponent<AutoLODComponent>();
             if (argc > 1 && args[1].IsNumber()) c.Levels = std::clamp((int)args[1].ToNumber(), 1, 4);
@@ -976,8 +978,8 @@ namespace Conqueror::CQS
         vm->DefineNative("MeshGetLODTriangles", [](int argc, Value* args) -> Value {
             Entity e = Target(argc > 0 ? args[0] : Value::MakeNull());
             auto* list = new CQSListObject();
-            if (!e || !e.HasComponent<ModelComponent>() || !e.GetComponent<ModelComponent>().ModelData) return Value::MakeObject(list);
-            const Model& model = *e.GetComponent<ModelComponent>().ModelData;
+            if (!e || !e.HasComponent<MeshRendererComponent>() || !e.GetComponent<MeshRendererComponent>().ModelData) return Value::MakeObject(list);
+            const Model& model = *e.GetComponent<MeshRendererComponent>().ModelData;
             int levels = 1;
             for (const auto& m : model.Meshes) if (m) levels = std::max(levels, m->GetLODCount());
             for (int l = 0; l < levels; ++l)

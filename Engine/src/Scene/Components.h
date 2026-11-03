@@ -130,6 +130,17 @@ namespace Conqueror
     {
         MeshType Type = MeshType::Cube;
 
+        // Mesh alanına model dosyası (.glb / .gltf / .fbx / .obj) verilmişse ilkel ağ yerine model çizilir (Unity'de Mesh
+        // Filter'a modelin ağını atamak; animasyonlu modelde Skinned Mesh Renderer). Malzemeler modelin kendi
+        // malzemeleri (içe aktarma ayarlarındaki eşlemeyle). Eski "Model" bileşeni buraya katıldı.
+        std::string ModelPath;
+        std::shared_ptr<struct Model> ModelData;
+        // Örneğe özel renk çarpanı (Unity MaterialPropertyBlock): paylaşılan malzemeyi değiştirmeden bu nesnenin taban
+        // rengini çarpar (ör. kalabalıkta her yayaya farklı kıyafet rengi)
+        glm::vec3 Tint{ 1.0f };
+        bool HasModel() const { return ModelData != nullptr; }
+        bool IsModel() const { return !ModelPath.empty() || ModelData != nullptr; }
+
         // Malzeme: MaterialPath doluysa .cqmat varlığı (paylaşılan, dosyada); boşsa bu nesneye özel örnek (sahnede)
         std::shared_ptr<Material> MaterialInstance;
         std::string MaterialPath;
@@ -138,6 +149,8 @@ namespace Conqueror
         bool CastShadows = true;
         bool ReceiveShadows = true;
         bool RealtimeGI = false;
+        // Lightmap Parameters (.cqlmparams): boşsa Lighting Settings'teki varsayılan
+        std::string LightmapParameters;
 
         // Prosedürel ağ (serileştirilmez; ör. Spline Extrude üretir): varsa Type yerine çizilir
         std::shared_ptr<Mesh> CustomMesh;
@@ -322,23 +335,6 @@ namespace Conqueror
         TextRendererComponent(const std::string& text) : Text(text) {}
     };
 
-    struct ImageComponent
-    {
-        glm::vec4 Color{ 1.0f, 1.0f, 1.0f, 1.0f };
-        std::shared_ptr<Texture2D> Texture;
-        float TilingFactor = 1.0f;
-
-        // Her image için kendi render kaynakları
-        std::shared_ptr<class VertexArray> VertexArray;
-        std::shared_ptr<class VertexBuffer> VertexBuffer;
-        std::shared_ptr<class IndexBuffer> IndexBuffer;
-        bool RenderResourcesInitialized = false;
-
-        ImageComponent() = default;
-        ImageComponent(const ImageComponent&) = default;
-        ImageComponent(const glm::vec4& color) : Color(color) {}
-    };
-
     struct ButtonComponent
     {
         enum class State { Normal = 0, Hover, Pressed, Disabled, Highlighted };
@@ -431,18 +427,6 @@ namespace Conqueror
         GraphicRaycasterComponent(const GraphicRaycasterComponent&) = default;
     };
 
-    struct ModelComponent
-    {
-        std::shared_ptr<struct Model> ModelData;
-        std::string FilePath;
-        bool RealtimeGI = false;
-        // Örneğe özel renk çarpanı (Unity MaterialPropertyBlock / Unreal malzeme örneği parametresi): paylaşılan
-        // malzemeyi değiştirmeden bu nesnenin taban rengini çarpar (ör. kalabalıkta her yayaya farklı kıyafet rengi)
-        glm::vec3 Tint{ 1.0f };
-
-        ModelComponent() = default;
-        ModelComponent(const ModelComponent&) = default;
-    };
 
     struct AnimatorComponent
     {
@@ -716,6 +700,12 @@ namespace Conqueror
         // Runtime data
         std::string LoadedPath;           // çalışma zamanı: yüklü klibin yolu (Clip değişince yeniden yüklenir)
         void* RuntimeSound = nullptr;
+        // Audio Random Container (Clip = .cqaudiorandom): seçilen klibin ses / perde çarpanı, otomatik tetikleme
+        float ContainerVolume = 1.0f, ContainerPitch = 1.0f;
+        bool ContainerRequest = false;    // sonraki karede yeni klip seç ve çal
+        float ContainerTimer = 0.0f, ContainerInterval = 0.0f;
+        int ContainerPlays = 0;
+        std::string ContainerClip;        // şu an seçili klip
         bool IsPlaying = false;
         uint32_t RoutingGeneration = 0;
         

@@ -198,9 +198,9 @@ namespace Conqueror
             std::vector<std::shared_ptr<Mesh>> out;
             if (!entity)
                 return out;
-            if (entity.HasComponent<ModelComponent>())
+            if (entity.HasComponent<MeshRendererComponent>() && entity.GetComponent<MeshRendererComponent>().IsModel())
             {
-                auto& mc = entity.GetComponent<ModelComponent>();
+                auto& mc = entity.GetComponent<MeshRendererComponent>();
                 if (mc.ModelData && !mc.ModelData->IsSkinned)
                     for (auto& m : mc.ModelData->Meshes)
                         out.push_back(m);

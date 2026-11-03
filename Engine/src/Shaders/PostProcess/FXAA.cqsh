@@ -22,6 +22,9 @@ in vec2 v_TexCoord;
 
 uniform sampler2D u_ScreenTexture;
 uniform vec2 u_InverseScreenSize;
+// TAA sonrası: yalnız hareket eden piksellerde (TAA durum dokusu x: 0 durağan .. 1 hızlı) uygulanır
+uniform sampler2D u_MotionMask;
+uniform int u_UseMotionMask = 0;
 
 #define FXAA_SPAN_MAX 8.0
 #define FXAA_REDUCE_MUL (1.0/FXAA_SPAN_MAX)
@@ -74,5 +77,7 @@ vec3 FxaaPixelShader(vec2 pos, sampler2D tex, vec2 rcpFrame)
 void main()
 {
     vec3 color = FxaaPixelShader(v_TexCoord, u_ScreenTexture, u_InverseScreenSize);
+    if (u_UseMotionMask == 1)
+        color = mix(texture(u_ScreenTexture, v_TexCoord).rgb, color, clamp(texture(u_MotionMask, v_TexCoord).x, 0.0, 1.0));
     FragColor = vec4(color, 1.0);
 }

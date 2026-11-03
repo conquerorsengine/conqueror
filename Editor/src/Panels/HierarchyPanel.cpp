@@ -74,11 +74,10 @@ namespace Conqueror::Editor
         if (entity.HasComponent<CanvasComponent>()) return { ICON_FA_TABLE_CELLS_LARGE, kColUI, "Canvas" };
         if (entity.HasComponent<ButtonComponent>()) return { ICON_FA_HAND_POINTER, kColUI, "Button" };
         if (entity.HasComponent<TextRendererComponent>()) return { ICON_FA_FONT, kColUI, "Text" };
-        if (entity.HasComponent<ImageComponent>()) return { ICON_FA_IMAGE, kColUI, "Image" };
         if (entity.HasComponent<TerrainComponent>()) return { ICON_FA_MOUNTAIN_SUN, kCol2D, "Terrain" };
         if (entity.HasComponent<ParticleSystemComponent>()) return { ICON_FA_FIRE, kColAudio, "Particle System" };
-        if (entity.HasComponent<ModelComponent>()) return { ICON_FA_CUBES, kColMesh, "Model" };
-        if (entity.HasComponent<MeshRendererComponent>()) return { ICON_FA_CUBE, kColMesh, "Mesh Renderer" };
+        if (entity.HasComponent<MeshRendererComponent>())
+            return { entity.GetComponent<MeshRendererComponent>().IsModel() ? ICON_FA_CUBES : ICON_FA_CUBE, kColMesh, "Mesh Renderer" };
         if (entity.HasComponent<SpriteRendererComponent>()) return { ICON_FA_SHAPES, kCol2D, "Sprite Renderer" };
         if (entity.HasComponent<AudioSourceComponent>()) return { ICON_FA_VOLUME_HIGH, kColAudio, "Audio Source" };
         if (entity.HasComponent<AudioListenerComponent>()) return { ICON_FA_EAR_LISTEN, kColAudio, "Audio Listener" };
@@ -98,7 +97,6 @@ namespace Conqueror::Editor
                 out.push_back(icon);
         };
         add(entity.HasComponent<MeshRendererComponent>(), { ICON_FA_CUBE, kColMesh, "Mesh Renderer" });
-        add(entity.HasComponent<ModelComponent>(), { ICON_FA_CUBES, kColMesh, "Model" });
         add(entity.HasComponent<SpriteRendererComponent>(), { ICON_FA_SHAPES, kCol2D, "Sprite Renderer" });
         add(entity.HasComponent<AnimationComponent>() || entity.HasComponent<AnimatorComponent>(), { ICON_FA_PERSON_RUNNING, kColAnim, "Animator" });
         add(entity.HasComponent<RigidbodyComponent>(), { ICON_FA_WEIGHT_HANGING, kColPhysics, "Rigidbody" });
@@ -116,7 +114,6 @@ namespace Conqueror::Editor
         add(entity.HasComponent<DirectionalLightComponent>(), { ICON_FA_SUN, kColLight, "Directional Light" });
         add(entity.HasComponent<PointLightComponent>(), { ICON_FA_LIGHTBULB, kColLight, "Point Light" });
         add(entity.HasComponent<SpotLightComponent>(), { ICON_FA_LIGHTBULB, kColLight, "Spot Light" });
-        add(entity.HasComponent<ImageComponent>(), { ICON_FA_IMAGE, kColUI, "Image" });
         add(entity.HasComponent<TextRendererComponent>(), { ICON_FA_FONT, kColUI, "Text" });
         add(entity.HasComponent<ButtonComponent>(), { ICON_FA_HAND_POINTER, kColUI, "Button" });
         add(entity.HasComponent<NavMeshAgentComponent>(), { ICON_FA_ROUTE, kColNav, "NavMesh Agent" });
@@ -532,7 +529,8 @@ namespace Conqueror::Editor
         else
         {
             ImU32 textColor = ImGui::GetColorU32(active ? ImGuiCol_Text : ImGuiCol_TextDisabled);
-            if ((entity.HasComponent<ModelComponent>() || entity.HasComponent<PrefabInstanceComponent>()) && active)
+            if (((entity.HasComponent<MeshRendererComponent>() && entity.GetComponent<MeshRendererComponent>().IsModel())
+                 || entity.HasComponent<PrefabInstanceComponent>()) && active)
                 textColor = ImGui::GetColorU32(ImVec4(0.55f, 0.75f, 1.0f, 1.0f)); // prefab / model örnekleri mavi (Unity gibi)
             dl->AddText(ImVec2(x, textY), textColor, tag.c_str());
             nameEnd = x + ImGui::CalcTextSize(tag.c_str()).x + 8.0f;
@@ -827,9 +825,6 @@ namespace Conqueror::Editor
                 created = TilePalettePanel::CreateTilemap(scene, GridLayout::HexagonPointyTop, GridPlane::XZ, true, parent);
             if (ImGui::MenuItem(ICON_FA_CHESS_BOARD "  Square Board"))
                 created = TilePalettePanel::CreateTilemap(scene, GridLayout::Rectangle, GridPlane::XZ, true, parent);
-            ImGui::Separator();
-            if (ImGui::MenuItem("Model (glTF / FBX / OBJ)"))
-                make("Model").AddComponent<ModelComponent>();
             ImGui::EndMenu();
         }
 
@@ -980,20 +975,11 @@ namespace Conqueror::Editor
             ImGui::Separator();
             if (ImGui::MenuItem("Text"))
                 makeUI("Text").AddComponent<TextRendererComponent>();
-            if (ImGui::MenuItem("Image"))
-            {
-                auto& img = makeUI("Image").AddComponent<ImageComponent>();
-                img.Color = glm::vec4(1.0f);
-            }
-            if (ImGui::MenuItem("Panel"))
-            {
-                auto& img = makeUI("Panel").AddComponent<ImageComponent>();
-                img.Color = glm::vec4(1.0f, 1.0f, 1.0f, 0.4f);
-            }
+            // Eski düğmenin arka planı Sprite Renderer (eski Image bileşeni kaldırıldı; resim / panel için yukarıdaki UI Image)
             if (ImGui::MenuItem("Button"))
             {
                 Entity button = makeUI("Button");
-                auto& image = button.AddComponent<ImageComponent>();
+                auto& image = button.AddComponent<SpriteRendererComponent>();
                 image.Texture = Texture2D::Create("Resources/ui/UIButton.png");
                 image.Color = glm::vec4(1.0f);
                 button.AddComponent<ButtonComponent>();

@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 5931336868097469471
+  - Entity: 6002628966821292971
     TagComponent:
       Tag: Hitscan Rifle
       GameTag: Untagged
@@ -15,7 +15,7 @@ Entities:
     Weapon_ConquerorScriptComponent:
       ScriptPath: Packages/weapon-system/Scripts/Weapon.cqs
       ClassName: Weapon
-  - Entity: 5527031948127228420
+  - Entity: 1448029355638759237
     TagComponent:
       Tag: Hitscan Rifle Body
       GameTag: Untagged
@@ -29,12 +29,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.15, 0.15, 0.17, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 2775969899921223804
+      MaterialAsset: Packages/weapon-system/Materials/Dark Gray 1.cqmat
+  - Entity: 550669675057391437
     TagComponent:
       Tag: Hitscan Rifle Barrel
       GameTag: Untagged
@@ -48,12 +44,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.1, 0.1, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 7630627038240414617
+      MaterialAsset: Packages/weapon-system/Materials/Dark Gray.cqmat
+  - Entity: 6020223270259785999
     TagComponent:
       Tag: Muzzle Flash
       GameTag: Untagged
@@ -129,7 +121,7 @@ Entities:
       SizeOverLifetime:
         - [0, 1]
         - [1, 1]
-  - Entity: 6531979599583181613
+  - Entity: 7582087988227101521
     TagComponent:
       Tag: Impact FX
       GameTag: Untagged
@@ -301,6 +293,49 @@ Environment:
       Sharpen: false
       SharpenAmount: 0.3
       AntiAliasing: 1
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: false
+      SSRIntensity: 1
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: false
+      SSGIIntensity: 1
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: false
+      CloudCoverage: 0.45
+      CloudDensity: 1
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: false
+      FocusDistance: 10
+      Aperture: 2.8
+      FocalLength: 50
+      DOFMaxBlur: 10
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
     Environment:
       Sky: 0
       BackgroundColor: [0.1, 0.1, 0.1]
@@ -308,6 +343,13 @@ Environment:
       ReflectionIntensity: 1
       SkyboxIntensity: 1
       SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
     Bake:
       RealtimeGI: false
       BakedGI: true
@@ -347,11 +389,11 @@ Environment:
       APVGeometryBias: 0.01
       APVRayOriginBias: -0.001
 Hierarchy:
-  - Child: 5527031948127228420
-    Parent: 5931336868097469471
-  - Child: 2775969899921223804
-    Parent: 5931336868097469471
-  - Child: 7630627038240414617
-    Parent: 5931336868097469471
-  - Child: 6531979599583181613
-    Parent: 5931336868097469471
+  - Child: 1448029355638759237
+    Parent: 6002628966821292971
+  - Child: 550669675057391437
+    Parent: 6002628966821292971
+  - Child: 6020223270259785999
+    Parent: 6002628966821292971
+  - Child: 7582087988227101521
+    Parent: 6002628966821292971

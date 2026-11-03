@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 3393568357420727179
+  - Entity: 2138175369278319378
     TagComponent:
       Tag: Level
       GameTag: Untagged
@@ -12,7 +12,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 391516310672436642
+  - Entity: 8626226400295093862
     TagComponent:
       Tag: Sun
       GameTag: Untagged
@@ -31,7 +31,7 @@ Entities:
       Intensity: 3.4
       CastShadows: true
       Mode: 0
-  - Entity: 5068082871092757262
+  - Entity: 2590084683931051552
     TagComponent:
       Tag: Start
       GameTag: Untagged
@@ -45,13 +45,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.84, 0.78, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [4.6666665, 4.6666665]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/concrete.png
+      MaterialAsset: Assets/Materials/Concrete.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -73,7 +67,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 3707616635658245490
+  - Entity: 8526500562975355867
     TagComponent:
       Tag: Start EdgeN
       GameTag: Untagged
@@ -87,14 +81,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 1297245783900011031
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow 1.cqmat
+  - Entity: 2520709920313602143
     TagComponent:
       Tag: Start EdgeS
       GameTag: Untagged
@@ -108,14 +97,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 1522046265475365208
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow 1.cqmat
+  - Entity: 3397050498823212913
     TagComponent:
       Tag: Start EdgeW
       GameTag: Untagged
@@ -129,14 +113,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 7441327801327344302
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow 1.cqmat
+  - Entity: 8577499244445306793
     TagComponent:
       Tag: Start EdgeE
       GameTag: Untagged
@@ -150,14 +129,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 1221868346609514638
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow 1.cqmat
+  - Entity: 1767360359235248005
     TagComponent:
       Tag: Start BandS
       GameTag: Untagged
@@ -171,14 +145,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 3
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 2037357482444156001
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow.cqmat
+  - Entity: 4409611436975131395
     TagComponent:
       Tag: Start Pillar0
       GameTag: Untagged
@@ -192,14 +161,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.3, 0.31, 0.36, 1]
-      Metallic: 0.6
-      Roughness: 0.5
-      AO: 1
-      Tiling: [1, 14]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/metal.png
-  - Entity: 8936781846625120164
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Metal.cqmat
+  - Entity: 1773618165800445262
     TagComponent:
       Tag: P1
       GameTag: Untagged
@@ -213,13 +177,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.84, 0.78, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [2.6666667, 2.6666667]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/concrete.png
+      MaterialAsset: Assets/Materials/Concrete.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -241,7 +199,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5092662241531129027
+  - Entity: 233270326000707264
     TagComponent:
       Tag: P1 EdgeN
       GameTag: Untagged
@@ -255,14 +213,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 6145018744546951451
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow 1.cqmat
+  - Entity: 349456621453518134
     TagComponent:
       Tag: P1 EdgeS
       GameTag: Untagged
@@ -276,14 +229,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 7010975601018395620
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow 1.cqmat
+  - Entity: 491808468483626449
     TagComponent:
       Tag: P1 EdgeW
       GameTag: Untagged
@@ -297,14 +245,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 2957829304812616970
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow 1.cqmat
+  - Entity: 3297759058916380384
     TagComponent:
       Tag: P1 EdgeE
       GameTag: Untagged
@@ -318,14 +261,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 2558116085144692844
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow 1.cqmat
+  - Entity: 1815627375028619402
     TagComponent:
       Tag: P1 BandS
       GameTag: Untagged
@@ -339,14 +277,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 3
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 5126377439403498803
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow.cqmat
+  - Entity: 3077424878126848551
     TagComponent:
       Tag: P1 Pillar0
       GameTag: Untagged
@@ -360,14 +293,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.3, 0.31, 0.36, 1]
-      Metallic: 0.6
-      Roughness: 0.5
-      AO: 1
-      Tiling: [1, 14]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/metal.png
-  - Entity: 4827791815597310652
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Metal.cqmat
+  - Entity: 6887267207983470915
     TagComponent:
       Tag: P2
       GameTag: Untagged
@@ -381,13 +309,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.84, 0.78, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [3.3333333, 2.6666667]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/concrete.png
+      MaterialAsset: Assets/Materials/Concrete.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -409,7 +331,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 3908142950360627877
+  - Entity: 6389202408390106849
     TagComponent:
       Tag: P2 EdgeN
       GameTag: Untagged
@@ -423,14 +345,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 6215297674217995381
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow 1.cqmat
+  - Entity: 8647649202921239603
     TagComponent:
       Tag: P2 EdgeS
       GameTag: Untagged
@@ -444,14 +361,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 6162586369553078044
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow 1.cqmat
+  - Entity: 4079511705639790620
     TagComponent:
       Tag: P2 EdgeW
       GameTag: Untagged
@@ -465,14 +377,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 6016847524877473207
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow 1.cqmat
+  - Entity: 5861490541099260225
     TagComponent:
       Tag: P2 EdgeE
       GameTag: Untagged
@@ -486,14 +393,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 9182266055587773297
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow 1.cqmat
+  - Entity: 4120907059419660129
     TagComponent:
       Tag: P2 BandS
       GameTag: Untagged
@@ -507,14 +409,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 3
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 834244817331676719
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow.cqmat
+  - Entity: 2005215519443372225
     TagComponent:
       Tag: P2 Pillar0
       GameTag: Untagged
@@ -528,14 +425,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.3, 0.31, 0.36, 1]
-      Metallic: 0.6
-      Roughness: 0.5
-      AO: 1
-      Tiling: [1, 14]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/metal.png
-  - Entity: 1247174105567913692
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Metal.cqmat
+  - Entity: 8104758091154618086
     TagComponent:
       Tag: Checkpoint1 PostL
       GameTag: Untagged
@@ -549,14 +441,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.5, 0.15]
-      EmissionStrength: 2.4
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 5947299174448110989
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Orange Glow 4.cqmat
+  - Entity: 2887841551782981687
     TagComponent:
       Tag: Checkpoint1 PostR
       GameTag: Untagged
@@ -570,14 +457,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.5, 0.15]
-      EmissionStrength: 2.4
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 6670708035626648320
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Orange Glow 4.cqmat
+  - Entity: 2362253575153051244
     TagComponent:
       Tag: Checkpoint1 Beam
       GameTag: Untagged
@@ -591,14 +473,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.5, 0.15]
-      EmissionStrength: 3
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 3718556303936731219
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Orange Glow.cqmat
+  - Entity: 7691855334706467354
     TagComponent:
       Tag: Checkpoint1
       GameTag: Untagged
@@ -610,7 +487,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5372427850899393917
+  - Entity: 1998145973974950586
     TagComponent:
       Tag: Checkpoint1 FX
       GameTag: Untagged
@@ -686,7 +563,7 @@ Entities:
       SizeOverLifetime:
         - [0, 1]
         - [1, 1]
-  - Entity: 2179451590538298644
+  - Entity: 2799292863046849259
     TagComponent:
       Tag: WallRun1
       GameTag: Untagged
@@ -700,13 +577,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.95, 0.95, 1, 1]
-      Metallic: 0.25
-      Roughness: 0.5
-      AO: 1
-      Tiling: [5.6666665, 3]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/metal.png
+      MaterialAsset: Assets/Materials/Metal 1.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -728,7 +599,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4250707116401620199
+  - Entity: 7589522357080069027
     TagComponent:
       Tag: WallRun1 StripLow
       GameTag: Untagged
@@ -742,14 +613,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.5, 0.15]
-      EmissionStrength: 5
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 2189768638910483893
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Orange Glow 2.cqmat
+  - Entity: 3660806127826765562
     TagComponent:
       Tag: WallRun1 StripMid
       GameTag: Untagged
@@ -763,14 +629,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.5, 0.15]
-      EmissionStrength: 3
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 3278269135036350021
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Orange Glow.cqmat
+  - Entity: 6905745906686196943
     TagComponent:
       Tag: WallRun1 StripHigh
       GameTag: Untagged
@@ -784,14 +645,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.5, 0.15]
-      EmissionStrength: 5
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 7483573108840052972
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Orange Glow 2.cqmat
+  - Entity: 6721699461929155064
     TagComponent:
       Tag: WallRun1 Leg
       GameTag: Untagged
@@ -805,14 +661,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.3, 0.31, 0.36, 1]
-      Metallic: 0.6
-      Roughness: 0.5
-      AO: 1
-      Tiling: [1, 14]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/metal.png
-  - Entity: 113137426858646510
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Metal.cqmat
+  - Entity: 7837509506491251163
     TagComponent:
       Tag: P3
       GameTag: Untagged
@@ -826,13 +677,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.84, 0.78, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [2.6666667, 2.6666667]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/concrete.png
+      MaterialAsset: Assets/Materials/Concrete.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -854,7 +699,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2741943357360068913
+  - Entity: 3342919054831827566
     TagComponent:
       Tag: P3 EdgeN
       GameTag: Untagged
@@ -868,14 +713,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.5, 0.15]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 4575836560674061072
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Orange Glow 1.cqmat
+  - Entity: 6448218407220341030
     TagComponent:
       Tag: P3 EdgeS
       GameTag: Untagged
@@ -889,14 +729,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.5, 0.15]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 6547592235877861744
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Orange Glow 1.cqmat
+  - Entity: 8374343959682486375
     TagComponent:
       Tag: P3 EdgeW
       GameTag: Untagged
@@ -910,14 +745,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.5, 0.15]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 5600628884087945336
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Orange Glow 1.cqmat
+  - Entity: 2378498953880942085
     TagComponent:
       Tag: P3 EdgeE
       GameTag: Untagged
@@ -931,14 +761,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.5, 0.15]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 7383049937043107921
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Orange Glow 1.cqmat
+  - Entity: 2107890217342664344
     TagComponent:
       Tag: P3 BandS
       GameTag: Untagged
@@ -952,14 +777,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.5, 0.15]
-      EmissionStrength: 3
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 8441062929212217623
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Orange Glow.cqmat
+  - Entity: 143440384727698232
     TagComponent:
       Tag: P3 Pillar0
       GameTag: Untagged
@@ -973,14 +793,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.3, 0.31, 0.36, 1]
-      Metallic: 0.6
-      Roughness: 0.5
-      AO: 1
-      Tiling: [1, 14]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/metal.png
-  - Entity: 6158694216879000162
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Metal.cqmat
+  - Entity: 1404946433840678530
     TagComponent:
       Tag: P4
       GameTag: Untagged
@@ -994,13 +809,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.84, 0.78, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [2.6666667, 2.6666667]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/concrete.png
+      MaterialAsset: Assets/Materials/Concrete.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1022,7 +831,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7592526418030449946
+  - Entity: 1984050677641870845
     TagComponent:
       Tag: P4 EdgeN
       GameTag: Untagged
@@ -1036,14 +845,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 6678131793507571060
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow 1.cqmat
+  - Entity: 4419161777922211910
     TagComponent:
       Tag: P4 EdgeS
       GameTag: Untagged
@@ -1057,14 +861,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 492741935178959755
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow 1.cqmat
+  - Entity: 1615803986989799512
     TagComponent:
       Tag: P4 EdgeW
       GameTag: Untagged
@@ -1078,14 +877,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 5793586483008885715
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow 1.cqmat
+  - Entity: 2861575343863273373
     TagComponent:
       Tag: P4 EdgeE
       GameTag: Untagged
@@ -1099,14 +893,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 1551564404232418080
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow 1.cqmat
+  - Entity: 4387780419450297858
     TagComponent:
       Tag: P4 BandS
       GameTag: Untagged
@@ -1120,14 +909,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 3
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 6546998822708081896
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow.cqmat
+  - Entity: 4372030009908793054
     TagComponent:
       Tag: P4 Pillar0
       GameTag: Untagged
@@ -1141,14 +925,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.3, 0.31, 0.36, 1]
-      Metallic: 0.6
-      Roughness: 0.5
-      AO: 1
-      Tiling: [1, 14]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/metal.png
-  - Entity: 3981480020632507649
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Metal.cqmat
+  - Entity: 4896109332433840812
     TagComponent:
       Tag: P5
       GameTag: Untagged
@@ -1162,13 +941,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.84, 0.78, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [2, 2]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/concrete.png
+      MaterialAsset: Assets/Materials/Concrete.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1190,7 +963,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4567760502834056429
+  - Entity: 7660656099211644491
     TagComponent:
       Tag: P5 EdgeN
       GameTag: Untagged
@@ -1204,14 +977,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 1706674561897847411
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow 1.cqmat
+  - Entity: 604508280415482610
     TagComponent:
       Tag: P5 EdgeS
       GameTag: Untagged
@@ -1225,14 +993,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 3968722579075477486
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow 1.cqmat
+  - Entity: 8877899086035399073
     TagComponent:
       Tag: P5 EdgeW
       GameTag: Untagged
@@ -1246,14 +1009,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 7503445665127408527
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow 1.cqmat
+  - Entity: 3572820537844172159
     TagComponent:
       Tag: P5 EdgeE
       GameTag: Untagged
@@ -1267,14 +1025,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 6720331358988723312
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow 1.cqmat
+  - Entity: 3272349353823331848
     TagComponent:
       Tag: P5 BandS
       GameTag: Untagged
@@ -1288,14 +1041,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.85, 1]
-      EmissionStrength: 3
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 6846579238331935981
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Cyan Glow.cqmat
+  - Entity: 6364735096024171395
     TagComponent:
       Tag: P5 Pillar0
       GameTag: Untagged
@@ -1309,14 +1057,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.3, 0.31, 0.36, 1]
-      Metallic: 0.6
-      Roughness: 0.5
-      AO: 1
-      Tiling: [1, 14]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/metal.png
-  - Entity: 4450802348482705744
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Metal.cqmat
+  - Entity: 2107525756732269445
     TagComponent:
       Tag: Finish
       GameTag: Untagged
@@ -1330,13 +1073,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.84, 0.78, 1]
-      Metallic: 0
-      Roughness: 0.85
-      AO: 1
-      Tiling: [4, 3.3333333]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/concrete.png
+      MaterialAsset: Assets/Materials/Concrete.cqmat
     RigidbodyComponent:
       BodyType: 0
       Mass: 1
@@ -1358,7 +1095,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1574385416292772853
+  - Entity: 7578057611111398699
     TagComponent:
       Tag: Finish EdgeN
       GameTag: Untagged
@@ -1372,14 +1109,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.78, 0.25]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 9168541513047035393
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Yellow Glow 2.cqmat
+  - Entity: 3741226067503285504
     TagComponent:
       Tag: Finish EdgeS
       GameTag: Untagged
@@ -1393,14 +1125,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.78, 0.25]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 8302015023492947163
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Yellow Glow 2.cqmat
+  - Entity: 1695907232353521049
     TagComponent:
       Tag: Finish EdgeW
       GameTag: Untagged
@@ -1414,14 +1141,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.78, 0.25]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 6612209168506376940
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Yellow Glow 2.cqmat
+  - Entity: 7269711257202793208
     TagComponent:
       Tag: Finish EdgeE
       GameTag: Untagged
@@ -1435,14 +1157,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.78, 0.25]
-      EmissionStrength: 7
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 8050672309533044539
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Yellow Glow 2.cqmat
+  - Entity: 3191037268258641831
     TagComponent:
       Tag: Finish BandS
       GameTag: Untagged
@@ -1456,14 +1173,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.78, 0.25]
-      EmissionStrength: 3
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 5962405686183063001
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Yellow Glow.cqmat
+  - Entity: 491251356179223002
     TagComponent:
       Tag: Finish Pillar0
       GameTag: Untagged
@@ -1477,14 +1189,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.3, 0.31, 0.36, 1]
-      Metallic: 0.6
-      Roughness: 0.5
-      AO: 1
-      Tiling: [1, 14]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/metal.png
-  - Entity: 4776610394655771927
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Metal.cqmat
+  - Entity: 4337423406060232240
     TagComponent:
       Tag: FinishGate PostL
       GameTag: Untagged
@@ -1498,14 +1205,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.78, 0.25]
-      EmissionStrength: 2.4
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 6858535472893669269
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Yellow Glow 1.cqmat
+  - Entity: 6558421504839169702
     TagComponent:
       Tag: FinishGate PostR
       GameTag: Untagged
@@ -1519,14 +1221,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.78, 0.25]
-      EmissionStrength: 2.4
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 6261637028970793483
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Yellow Glow 1.cqmat
+  - Entity: 3789419172908249763
     TagComponent:
       Tag: FinishGate Beam
       GameTag: Untagged
@@ -1540,14 +1237,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.08, 0.08, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.78, 0.25]
-      EmissionStrength: 3
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 5441706736251903918
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Yellow Glow.cqmat
+  - Entity: 6325013284129788395
     TagComponent:
       Tag: FinishGate
       GameTag: Untagged
@@ -1559,7 +1251,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 5574411612118751436
+  - Entity: 5128662389015108092
     TagComponent:
       Tag: FinishGate FX
       GameTag: Untagged
@@ -1635,7 +1327,7 @@ Entities:
       SizeOverLifetime:
         - [0, 1]
         - [1, 1]
-  - Entity: 929567815842854333
+  - Entity: 1729041984467666407
     TagComponent:
       Tag: FinishConfetti
       GameTag: Untagged
@@ -1711,7 +1403,7 @@ Entities:
       SizeOverLifetime:
         - [0, 1]
         - [1, 1]
-  - Entity: 7884362540028936126
+  - Entity: 1978187648240561405
     TagComponent:
       Tag: Tower0
       GameTag: Untagged
@@ -1725,17 +1417,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.8538039, 3.2059417]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 1459749598551273821
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 8391665030626696406
     TagComponent:
       Tag: Tower0 Beacon
       GameTag: Untagged
@@ -1749,14 +1433,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.2, 0.02, 0.02, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.1]
-      EmissionStrength: 9
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 377686722013773351
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Red Glow.cqmat
+  - Entity: 7439599861884822198
     TagComponent:
       Tag: Tower1
       GameTag: Untagged
@@ -1770,17 +1449,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [2.0857809, 2.882505]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 7778777909675666060
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 501449665442779524
     TagComponent:
       Tag: Tower2
       GameTag: Untagged
@@ -1794,17 +1465,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [2.178956, 1.6704499]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 4353334698914907572
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 1947690386805710642
     TagComponent:
       Tag: Tower3
       GameTag: Untagged
@@ -1818,17 +1481,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.4589936, 5.6448555]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 3670480707804242732
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 9079548104462559357
     TagComponent:
       Tag: Tower4
       GameTag: Untagged
@@ -1842,17 +1497,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.9274338, 5.043284]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 2288475539263104799
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 73398200669328542
     TagComponent:
       Tag: Tower4 Beacon
       GameTag: Untagged
@@ -1866,14 +1513,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.2, 0.02, 0.02, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.1]
-      EmissionStrength: 9
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 181516316698323710
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Red Glow.cqmat
+  - Entity: 2999932618074259792
     TagComponent:
       Tag: Tower5
       GameTag: Untagged
@@ -1887,17 +1529,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.6750957, 5.006847]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 6933462187055002016
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 477862027278766556
     TagComponent:
       Tag: Tower6
       GameTag: Untagged
@@ -1911,17 +1545,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.5681198, 5.1485987]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 1991485874357108759
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 4602364309186145277
     TagComponent:
       Tag: Tower6 Beacon
       GameTag: Untagged
@@ -1935,14 +1561,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.2, 0.02, 0.02, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.1]
-      EmissionStrength: 9
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 7618572560242412611
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Red Glow.cqmat
+  - Entity: 656698572325561582
     TagComponent:
       Tag: Tower7
       GameTag: Untagged
@@ -1956,17 +1577,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.2014751, 3.0337825]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 4987274288183128034
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 6621204983499941553
     TagComponent:
       Tag: Tower8
       GameTag: Untagged
@@ -1980,17 +1593,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.5014955, 2.4385345]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 2503619774622026695
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 4128486500575713988
     TagComponent:
       Tag: Tower9
       GameTag: Untagged
@@ -2004,17 +1609,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.2882749, 2.1958604]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 311082079151659360
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 7170359523895304247
     TagComponent:
       Tag: Tower9 Beacon
       GameTag: Untagged
@@ -2028,14 +1625,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.2, 0.02, 0.02, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.1]
-      EmissionStrength: 9
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 3202943710022131052
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Red Glow.cqmat
+  - Entity: 6771642415307958292
     TagComponent:
       Tag: Tower10
       GameTag: Untagged
@@ -2049,17 +1641,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [2.2821832, 4.3421617]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 5655965765020591742
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 1321226727566706463
     TagComponent:
       Tag: Tower10 Beacon
       GameTag: Untagged
@@ -2073,14 +1657,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.2, 0.02, 0.02, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.1]
-      EmissionStrength: 9
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 1350013378121526755
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Red Glow.cqmat
+  - Entity: 6326878851685929014
     TagComponent:
       Tag: Tower11
       GameTag: Untagged
@@ -2094,17 +1673,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [2.106278, 2.0297034]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 9178755541041998571
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 1448388073400147434
     TagComponent:
       Tag: Tower11 Beacon
       GameTag: Untagged
@@ -2118,14 +1689,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.2, 0.02, 0.02, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.1]
-      EmissionStrength: 9
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 1002037009941630065
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Red Glow.cqmat
+  - Entity: 8163835722829484301
     TagComponent:
       Tag: Tower12
       GameTag: Untagged
@@ -2139,17 +1705,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.8558881, 6.2389426]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 5456757017375388978
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 6361889676591643460
     TagComponent:
       Tag: Tower12 Beacon
       GameTag: Untagged
@@ -2163,14 +1721,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.2, 0.02, 0.02, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.1]
-      EmissionStrength: 9
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 3271616969742376262
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Red Glow.cqmat
+  - Entity: 7842016039603338720
     TagComponent:
       Tag: Tower13
       GameTag: Untagged
@@ -2184,17 +1737,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [2.1916583, 5.5817814]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 5839332487644083567
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 1731620377840064718
     TagComponent:
       Tag: Tower14
       GameTag: Untagged
@@ -2208,17 +1753,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [2.2602053, 4.698158]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 8233372388962313930
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 1340756466680176397
     TagComponent:
       Tag: Tower15
       GameTag: Untagged
@@ -2232,17 +1769,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.5320309, 3.9143565]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 2576214141554432166
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 4934501378281960112
     TagComponent:
       Tag: Tower16
       GameTag: Untagged
@@ -2256,17 +1785,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.3514479, 6.1289096]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 5906097453583526779
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 1819749529250538766
     TagComponent:
       Tag: Tower16 Beacon
       GameTag: Untagged
@@ -2280,14 +1801,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.2, 0.02, 0.02, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.1]
-      EmissionStrength: 9
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 3322841682154087914
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Red Glow.cqmat
+  - Entity: 8287758707210516937
     TagComponent:
       Tag: Tower17
       GameTag: Untagged
@@ -2301,17 +1817,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.6485937, 2.7552104]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 1265569476059850934
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 8507515934856348438
     TagComponent:
       Tag: Tower17 Beacon
       GameTag: Untagged
@@ -2325,14 +1833,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.2, 0.02, 0.02, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.1]
-      EmissionStrength: 9
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 7002770366922001540
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Red Glow.cqmat
+  - Entity: 5399272314449054124
     TagComponent:
       Tag: Tower18
       GameTag: Untagged
@@ -2346,17 +1849,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.1878519, 5.157164]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 6839854774700748977
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 6482163252636916006
     TagComponent:
       Tag: Tower18 Beacon
       GameTag: Untagged
@@ -2370,14 +1865,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.2, 0.02, 0.02, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.1]
-      EmissionStrength: 9
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 5406762830310194568
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Red Glow.cqmat
+  - Entity: 790398073378072520
     TagComponent:
       Tag: Tower19
       GameTag: Untagged
@@ -2391,17 +1881,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.9433268, 2.724861]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 6906966343926126530
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 5698530577275722570
     TagComponent:
       Tag: Tower20
       GameTag: Untagged
@@ -2415,17 +1897,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.3863872, 5.3948402]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 4348748863433770271
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 6197150415439322633
     TagComponent:
       Tag: Tower20 Beacon
       GameTag: Untagged
@@ -2439,14 +1913,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.2, 0.02, 0.02, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.1]
-      EmissionStrength: 9
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 1524425277968737697
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Red Glow.cqmat
+  - Entity: 933668386831169934
     TagComponent:
       Tag: Tower21
       GameTag: Untagged
@@ -2460,17 +1929,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [2.3095863, 5.5036654]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 7005155858884047656
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 7997020431233642059
     TagComponent:
       Tag: Tower21 Beacon
       GameTag: Untagged
@@ -2484,14 +1945,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.2, 0.02, 0.02, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.1]
-      EmissionStrength: 9
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 9093246110958601410
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Red Glow.cqmat
+  - Entity: 2167805573963463923
     TagComponent:
       Tag: Tower22
       GameTag: Untagged
@@ -2505,17 +1961,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [2.121294, 5.011483]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 4952425220483259617
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 8336237257620466050
     TagComponent:
       Tag: Tower23
       GameTag: Untagged
@@ -2529,17 +1977,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.8694845, 4.7971306]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 5943476446181558813
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 5096924054452102629
     TagComponent:
       Tag: Tower23 Beacon
       GameTag: Untagged
@@ -2553,14 +1993,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.2, 0.02, 0.02, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.1]
-      EmissionStrength: 9
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 4619943765534511144
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Red Glow.cqmat
+  - Entity: 1285511831986919099
     TagComponent:
       Tag: Tower24
       GameTag: Untagged
@@ -2574,17 +2009,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.9042863, 3.0722082]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 1330542981118095476
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 470086615611301661
     TagComponent:
       Tag: Tower25
       GameTag: Untagged
@@ -2598,17 +2025,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [2.1452599, 5.873826]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 22850969576746361
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 666586067087587920
     TagComponent:
       Tag: Tower25 Beacon
       GameTag: Untagged
@@ -2622,14 +2041,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.2, 0.02, 0.02, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.1]
-      EmissionStrength: 9
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 5360678510014504668
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Red Glow.cqmat
+  - Entity: 8164949340364360207
     TagComponent:
       Tag: Tower26
       GameTag: Untagged
@@ -2643,17 +2057,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [2.1956465, 3.7098038]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 1653986657176052214
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 3116899339648042334
     TagComponent:
       Tag: Tower27
       GameTag: Untagged
@@ -2667,17 +2073,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.4025149, 5.8351555]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 8963612889926818993
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 3787406164928438268
     TagComponent:
       Tag: Tower27 Beacon
       GameTag: Untagged
@@ -2691,14 +2089,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.2, 0.02, 0.02, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.1]
-      EmissionStrength: 9
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 516326629799517493
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Red Glow.cqmat
+  - Entity: 8187695525533705465
     TagComponent:
       Tag: Tower28
       GameTag: Untagged
@@ -2712,17 +2105,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.470429, 4.884734]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 468879521683217035
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 5475114737184445365
     TagComponent:
       Tag: Tower29
       GameTag: Untagged
@@ -2736,17 +2121,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.7426631, 2.4046135]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 4455603603025621605
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 7732621650525656355
     TagComponent:
       Tag: Tower30
       GameTag: Untagged
@@ -2760,17 +2137,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [2.0798683, 4.0794406]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 493299486389648871
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 57042020875912886
     TagComponent:
       Tag: Tower31
       GameTag: Untagged
@@ -2784,17 +2153,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [2.0722554, 4.0636835]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 3445704834885270275
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 5390636169312259582
     TagComponent:
       Tag: Tower31 Beacon
       GameTag: Untagged
@@ -2808,14 +2169,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.2, 0.02, 0.02, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.1]
-      EmissionStrength: 9
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 5680033361739571463
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Red Glow.cqmat
+  - Entity: 474803052815030701
     TagComponent:
       Tag: Tower32
       GameTag: Untagged
@@ -2829,17 +2185,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.7866478, 6.085563]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 6209157432704646546
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 3667291223496018205
     TagComponent:
       Tag: Tower32 Beacon
       GameTag: Untagged
@@ -2853,14 +2201,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.2, 0.02, 0.02, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.1]
-      EmissionStrength: 9
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 7409600516825744026
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Red Glow.cqmat
+  - Entity: 7490441326154136639
     TagComponent:
       Tag: Tower33
       GameTag: Untagged
@@ -2874,17 +2217,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.4894278, 5.3324428]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 4737565376374881853
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 4062849325133185239
     TagComponent:
       Tag: Tower34
       GameTag: Untagged
@@ -2898,17 +2233,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.7380081, 1.9762572]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 5298226020532286259
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 1831091918691434385
     TagComponent:
       Tag: Tower35
       GameTag: Untagged
@@ -2922,17 +2249,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [2.327861, 3.4552665]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 7415440557522581844
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 6823723901913527961
     TagComponent:
       Tag: Tower35 Beacon
       GameTag: Untagged
@@ -2946,14 +2265,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.2, 0.02, 0.02, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.1]
-      EmissionStrength: 9
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 6817810717617033157
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Red Glow.cqmat
+  - Entity: 1688608498049445127
     TagComponent:
       Tag: Tower36
       GameTag: Untagged
@@ -2967,17 +2281,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.6614574, 4.4922676]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 3983216900452772957
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 2815431122131490152
     TagComponent:
       Tag: Tower37
       GameTag: Untagged
@@ -2991,17 +2297,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [2.1253123, 4.389184]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 9120702628645831782
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 5592097474527760945
     TagComponent:
       Tag: Tower37 Beacon
       GameTag: Untagged
@@ -3015,14 +2313,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.2, 0.02, 0.02, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.1]
-      EmissionStrength: 9
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 7790226915417967446
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Red Glow.cqmat
+  - Entity: 5274643787873054237
     TagComponent:
       Tag: Tower38
       GameTag: Untagged
@@ -3036,17 +2329,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [2.122595, 2.2312126]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 6736601811019543212
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 7038894594659193187
     TagComponent:
       Tag: Tower38 Beacon
       GameTag: Untagged
@@ -3060,14 +2345,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.2, 0.02, 0.02, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.1]
-      EmissionStrength: 9
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 7886472007931839569
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Red Glow.cqmat
+  - Entity: 8611866208477255349
     TagComponent:
       Tag: Tower39
       GameTag: Untagged
@@ -3081,17 +2361,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.7631656, 4.927189]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 1195977459705463945
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 3357611781836067076
     TagComponent:
       Tag: Tower39 Beacon
       GameTag: Untagged
@@ -3105,14 +2377,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.2, 0.02, 0.02, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.1]
-      EmissionStrength: 9
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 5871688494482645695
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Red Glow.cqmat
+  - Entity: 8043290530835709943
     TagComponent:
       Tag: Tower40
       GameTag: Untagged
@@ -3126,17 +2393,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [2.1111872, 2.9745708]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 8960433222672926765
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 4415688421674384047
     TagComponent:
       Tag: Tower41
       GameTag: Untagged
@@ -3150,17 +2409,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [2.2024148, 2.8551939]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 5355062156112644682
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 7065914316914135189
     TagComponent:
       Tag: Tower41 Beacon
       GameTag: Untagged
@@ -3174,14 +2425,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.2, 0.02, 0.02, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.1]
-      EmissionStrength: 9
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 2970155335541209464
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Red Glow.cqmat
+  - Entity: 654591576294149535
     TagComponent:
       Tag: Tower42
       GameTag: Untagged
@@ -3195,17 +2441,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.0546885, 4.2122793]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 8003965201261400152
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 8187227236586099944
     TagComponent:
       Tag: Tower43
       GameTag: Untagged
@@ -3219,17 +2457,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.8806382, 3.1823897]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 6088280639169567729
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 2496413088204926182
     TagComponent:
       Tag: Tower44
       GameTag: Untagged
@@ -3243,17 +2473,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.9628599, 1.8097837]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 6917779663575938633
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 8531079650503736691
     TagComponent:
       Tag: Tower45
       GameTag: Untagged
@@ -3267,17 +2489,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.4290713, 3.0452304]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 1967608260784858206
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 3125038571737506040
     TagComponent:
       Tag: Tower46
       GameTag: Untagged
@@ -3291,17 +2505,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [1.911123, 5.0428057]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 7125335634066200154
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 4853091322940026299
     TagComponent:
       Tag: Tower46 Beacon
       GameTag: Untagged
@@ -3315,14 +2521,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.2, 0.02, 0.02, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.1]
-      EmissionStrength: 9
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 1533550803078346589
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Red Glow.cqmat
+  - Entity: 1456339843811927519
     TagComponent:
       Tag: Tower47
       GameTag: Untagged
@@ -3336,17 +2537,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.92, 0.94, 1, 1]
-      Metallic: 0.4
-      Roughness: 0.3
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 2.2
-      EmissionFromTexture: true
-      Tiling: [2.1077602, 4.7869363]
-      Offset: [0, 0]
-      TexturePath: Assets/Textures/windows.png
-  - Entity: 8922665703384110480
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Windows.cqmat
+  - Entity: 2636981136480124290
     TagComponent:
       Tag: Tower47 Beacon
       GameTag: Untagged
@@ -3360,14 +2553,9 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.2, 0.02, 0.02, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.1, 0.1]
-      EmissionStrength: 9
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 9187829975593135910
+      CastShadows: false
+      MaterialAsset: Assets/Materials/Red Glow.cqmat
+  - Entity: 1708017513919299261
     TagComponent:
       Tag: MenuCamera
       GameTag: Untagged
@@ -3392,7 +2580,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 2879126110817840217
+  - Entity: 8998073429119013771
     TagComponent:
       Tag: Menu
       GameTag: Untagged
@@ -3432,7 +2620,7 @@ Entities:
         []
       GraphLinks:
         []
-  - Entity: 8364745782806740533
+  - Entity: 5875975425854078339
     TagComponent:
       Tag: MenuCanvas
       GameTag: Untagged
@@ -3458,7 +2646,7 @@ Entities:
       IgnoreReversedGraphics: true
       BlockingObjects: 0
       BlockingMask: 4294967295
-  - Entity: 712847670136416098
+  - Entity: 5612058193103036077
     TagComponent:
       Tag: MenuRoot
       GameTag: Untagged
@@ -3491,7 +2679,7 @@ Entities:
       PreserveAspect: false
       RaycastTarget: true
       CornerRadius: 0
-  - Entity: 6308796586636275946
+  - Entity: 3337771099140618305
     TagComponent:
       Tag: MenuTitle
       GameTag: Untagged
@@ -3530,7 +2718,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.55]
       RaycastTarget: false
       RichText: false
-  - Entity: 343642805579438480
+  - Entity: 6229537704657407525
     TagComponent:
       Tag: MenuSub
       GameTag: Untagged
@@ -3569,7 +2757,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.55]
       RaycastTarget: false
       RichText: false
-  - Entity: 4869559831060319740
+  - Entity: 1066434071981859095
     TagComponent:
       Tag: CatBtn0
       GameTag: Untagged
@@ -3612,7 +2800,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 8643534300569182012
+  - Entity: 4076999741630803897
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -3651,7 +2839,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 627654747310142562
+  - Entity: 8541947537197794628
     TagComponent:
       Tag: CatBtn1
       GameTag: Untagged
@@ -3694,7 +2882,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 2702628842500229326
+  - Entity: 2433971659098160057
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -3733,7 +2921,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 2356566661534033619
+  - Entity: 794979729206267072
     TagComponent:
       Tag: CatBtn2
       GameTag: Untagged
@@ -3776,7 +2964,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 7068879408438017449
+  - Entity: 8978653366288439404
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -3815,7 +3003,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 3877814958951118918
+  - Entity: 4944589236023498216
     TagComponent:
       Tag: CatBtn3
       GameTag: Untagged
@@ -3858,7 +3046,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 2219580204150066609
+  - Entity: 1299294171585461998
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -3897,7 +3085,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 450455945615937545
+  - Entity: 4833628717222897216
     TagComponent:
       Tag: CatBtn4
       GameTag: Untagged
@@ -3940,7 +3128,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 3898878439855466692
+  - Entity: 6015003928588620932
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -3979,7 +3167,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 6445282902728627267
+  - Entity: 5573249786393533084
     TagComponent:
       Tag: CatBtn5
       GameTag: Untagged
@@ -4022,7 +3210,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 3164792554630562430
+  - Entity: 7728127723908951866
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -4061,7 +3249,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 4202997460148751277
+  - Entity: 1990572714674002664
     TagComponent:
       Tag: CategoryTitle
       GameTag: Untagged
@@ -4100,7 +3288,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.55]
       RaycastTarget: false
       RichText: false
-  - Entity: 4259107273380498861
+  - Entity: 575460446223041184
     TagComponent:
       Tag: LvlBtn0
       GameTag: Untagged
@@ -4143,7 +3331,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 456627444902354214
+  - Entity: 974919317712531669
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -4182,7 +3370,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 4517689700607888438
+  - Entity: 1038148072922682981
     TagComponent:
       Tag: LvlInfo0
       GameTag: Untagged
@@ -4221,7 +3409,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.55]
       RaycastTarget: false
       RichText: false
-  - Entity: 3898785252207813675
+  - Entity: 3447275339328311809
     TagComponent:
       Tag: LvlBtn1
       GameTag: Untagged
@@ -4264,7 +3452,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 2278742536914174210
+  - Entity: 5423025707527624515
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -4303,7 +3491,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 7245524164908896269
+  - Entity: 6342162178301583209
     TagComponent:
       Tag: LvlInfo1
       GameTag: Untagged
@@ -4342,7 +3530,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.55]
       RaycastTarget: false
       RichText: false
-  - Entity: 334843718974654627
+  - Entity: 6248314550199324197
     TagComponent:
       Tag: LvlBtn2
       GameTag: Untagged
@@ -4385,7 +3573,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 7188971711281591379
+  - Entity: 3209110323270104480
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -4424,7 +3612,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 7506145054941991271
+  - Entity: 332942468502413504
     TagComponent:
       Tag: LvlInfo2
       GameTag: Untagged
@@ -4463,7 +3651,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.55]
       RaycastTarget: false
       RichText: false
-  - Entity: 1503186961898235875
+  - Entity: 7775812481674055711
     TagComponent:
       Tag: LvlBtn3
       GameTag: Untagged
@@ -4506,7 +3694,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 8923744206970255905
+  - Entity: 7120269056394946387
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -4545,7 +3733,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 8698939031144547140
+  - Entity: 8514983871091043819
     TagComponent:
       Tag: LvlInfo3
       GameTag: Untagged
@@ -4584,7 +3772,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.55]
       RaycastTarget: false
       RichText: false
-  - Entity: 2883961930444335651
+  - Entity: 2511321827047185757
     TagComponent:
       Tag: MedalText
       GameTag: Untagged
@@ -4623,7 +3811,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.55]
       RaycastTarget: false
       RichText: false
-  - Entity: 1791465995416135630
+  - Entity: 7876498094207454679
     TagComponent:
       Tag: MenuHint
       GameTag: Untagged
@@ -4662,7 +3850,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.55]
       RaycastTarget: false
       RichText: false
-  - Entity: 5229217900341767084
+  - Entity: 8886620089432511341
     TagComponent:
       Tag: QuitBtn
       GameTag: Untagged
@@ -4705,7 +3893,7 @@ Entities:
         DisabledColor: [0.78, 0.78, 0.78, 0.5]
         FadeDuration: 0.1
       OnClick: ""
-  - Entity: 3522590772373608872
+  - Entity: 7935240564521341976
     TagComponent:
       Tag: Text
       GameTag: Untagged
@@ -4744,7 +3932,7 @@ Entities:
       ShadowColor: [0, 0, 0, 0.5]
       RaycastTarget: false
       RichText: false
-  - Entity: 1007038288659076680
+  - Entity: 3151681774413739854
     TagComponent:
       Tag: Fade
       GameTag: Untagged
@@ -4984,343 +4172,343 @@ EditorCamera:
   Yaw: 0.9062707
   OrthographicSize: 10
 Hierarchy:
-  - Child: 2702628842500229326
-    Parent: 627654747310142562
-  - Child: 3707616635658245490
-    Parent: 5068082871092757262
-  - Child: 1297245783900011031
-    Parent: 5068082871092757262
-  - Child: 1522046265475365208
-    Parent: 5068082871092757262
-  - Child: 7441327801327344302
-    Parent: 5068082871092757262
-  - Child: 1221868346609514638
-    Parent: 5068082871092757262
-  - Child: 6308796586636275946
-    Parent: 712847670136416098
-  - Child: 343642805579438480
-    Parent: 712847670136416098
-  - Child: 4869559831060319740
-    Parent: 712847670136416098
-  - Child: 627654747310142562
-    Parent: 712847670136416098
-  - Child: 2356566661534033619
-    Parent: 712847670136416098
-  - Child: 3877814958951118918
-    Parent: 712847670136416098
-  - Child: 450455945615937545
-    Parent: 712847670136416098
-  - Child: 6445282902728627267
-    Parent: 712847670136416098
-  - Child: 4202997460148751277
-    Parent: 712847670136416098
-  - Child: 4259107273380498861
-    Parent: 712847670136416098
-  - Child: 4517689700607888438
-    Parent: 712847670136416098
-  - Child: 3898785252207813675
-    Parent: 712847670136416098
-  - Child: 7245524164908896269
-    Parent: 712847670136416098
-  - Child: 334843718974654627
-    Parent: 712847670136416098
-  - Child: 7506145054941991271
-    Parent: 712847670136416098
-  - Child: 1503186961898235875
-    Parent: 712847670136416098
-  - Child: 8698939031144547140
-    Parent: 712847670136416098
-  - Child: 2883961930444335651
-    Parent: 712847670136416098
-  - Child: 1791465995416135630
-    Parent: 712847670136416098
-  - Child: 5229217900341767084
-    Parent: 712847670136416098
-  - Child: 712847670136416098
-    Parent: 8364745782806740533
-  - Child: 1007038288659076680
-    Parent: 8364745782806740533
-  - Child: 1574385416292772853
-    Parent: 4450802348482705744
-  - Child: 9168541513047035393
-    Parent: 4450802348482705744
-  - Child: 8302015023492947163
-    Parent: 4450802348482705744
-  - Child: 6612209168506376940
-    Parent: 4450802348482705744
-  - Child: 8050672309533044539
-    Parent: 4450802348482705744
-  - Child: 4567760502834056429
-    Parent: 3981480020632507649
-  - Child: 1706674561897847411
-    Parent: 3981480020632507649
-  - Child: 3968722579075477486
-    Parent: 3981480020632507649
-  - Child: 7503445665127408527
-    Parent: 3981480020632507649
-  - Child: 6720331358988723312
-    Parent: 3981480020632507649
-  - Child: 7592526418030449946
-    Parent: 6158694216879000162
-  - Child: 6678131793507571060
-    Parent: 6158694216879000162
-  - Child: 492741935178959755
-    Parent: 6158694216879000162
-  - Child: 5793586483008885715
-    Parent: 6158694216879000162
-  - Child: 1551564404232418080
-    Parent: 6158694216879000162
-  - Child: 2741943357360068913
-    Parent: 113137426858646510
-  - Child: 4575836560674061072
-    Parent: 113137426858646510
-  - Child: 6547592235877861744
-    Parent: 113137426858646510
-  - Child: 5600628884087945336
-    Parent: 113137426858646510
-  - Child: 7383049937043107921
-    Parent: 113137426858646510
-  - Child: 7068879408438017449
-    Parent: 2356566661534033619
-  - Child: 3522590772373608872
-    Parent: 5229217900341767084
-  - Child: 8923744206970255905
-    Parent: 1503186961898235875
-  - Child: 7188971711281591379
-    Parent: 334843718974654627
-  - Child: 2219580204150066609
-    Parent: 3877814958951118918
-  - Child: 456627444902354214
-    Parent: 4259107273380498861
-  - Child: 4250707116401620199
-    Parent: 2179451590538298644
-  - Child: 2189768638910483893
-    Parent: 2179451590538298644
-  - Child: 3278269135036350021
-    Parent: 2179451590538298644
-  - Child: 3164792554630562430
-    Parent: 6445282902728627267
-  - Child: 3898878439855466692
-    Parent: 450455945615937545
-  - Child: 8643534300569182012
-    Parent: 4869559831060319740
-  - Child: 5068082871092757262
-    Parent: 3393568357420727179
-  - Child: 2037357482444156001
-    Parent: 3393568357420727179
-  - Child: 8936781846625120164
-    Parent: 3393568357420727179
-  - Child: 5126377439403498803
-    Parent: 3393568357420727179
-  - Child: 4827791815597310652
-    Parent: 3393568357420727179
-  - Child: 834244817331676719
-    Parent: 3393568357420727179
-  - Child: 1247174105567913692
-    Parent: 3393568357420727179
-  - Child: 5947299174448110989
-    Parent: 3393568357420727179
-  - Child: 6670708035626648320
-    Parent: 3393568357420727179
-  - Child: 3718556303936731219
-    Parent: 3393568357420727179
-  - Child: 5372427850899393917
-    Parent: 3393568357420727179
-  - Child: 2179451590538298644
-    Parent: 3393568357420727179
-  - Child: 7483573108840052972
-    Parent: 3393568357420727179
-  - Child: 113137426858646510
-    Parent: 3393568357420727179
-  - Child: 8441062929212217623
-    Parent: 3393568357420727179
-  - Child: 6158694216879000162
-    Parent: 3393568357420727179
-  - Child: 6546998822708081896
-    Parent: 3393568357420727179
-  - Child: 3981480020632507649
-    Parent: 3393568357420727179
-  - Child: 6846579238331935981
-    Parent: 3393568357420727179
-  - Child: 4450802348482705744
-    Parent: 3393568357420727179
-  - Child: 5962405686183063001
-    Parent: 3393568357420727179
-  - Child: 4776610394655771927
-    Parent: 3393568357420727179
-  - Child: 6858535472893669269
-    Parent: 3393568357420727179
-  - Child: 6261637028970793483
-    Parent: 3393568357420727179
-  - Child: 5441706736251903918
-    Parent: 3393568357420727179
-  - Child: 5574411612118751436
-    Parent: 3393568357420727179
-  - Child: 929567815842854333
-    Parent: 3393568357420727179
-  - Child: 7884362540028936126
-    Parent: 3393568357420727179
-  - Child: 1459749598551273821
-    Parent: 3393568357420727179
-  - Child: 377686722013773351
-    Parent: 3393568357420727179
-  - Child: 7778777909675666060
-    Parent: 3393568357420727179
-  - Child: 4353334698914907572
-    Parent: 3393568357420727179
-  - Child: 3670480707804242732
-    Parent: 3393568357420727179
-  - Child: 2288475539263104799
-    Parent: 3393568357420727179
-  - Child: 181516316698323710
-    Parent: 3393568357420727179
-  - Child: 6933462187055002016
-    Parent: 3393568357420727179
-  - Child: 1991485874357108759
-    Parent: 3393568357420727179
-  - Child: 7618572560242412611
-    Parent: 3393568357420727179
-  - Child: 4987274288183128034
-    Parent: 3393568357420727179
-  - Child: 2503619774622026695
-    Parent: 3393568357420727179
-  - Child: 311082079151659360
-    Parent: 3393568357420727179
-  - Child: 3202943710022131052
-    Parent: 3393568357420727179
-  - Child: 5655965765020591742
-    Parent: 3393568357420727179
-  - Child: 1350013378121526755
-    Parent: 3393568357420727179
-  - Child: 9178755541041998571
-    Parent: 3393568357420727179
-  - Child: 1002037009941630065
-    Parent: 3393568357420727179
-  - Child: 5456757017375388978
-    Parent: 3393568357420727179
-  - Child: 3271616969742376262
-    Parent: 3393568357420727179
-  - Child: 5839332487644083567
-    Parent: 3393568357420727179
-  - Child: 8233372388962313930
-    Parent: 3393568357420727179
-  - Child: 2576214141554432166
-    Parent: 3393568357420727179
-  - Child: 5906097453583526779
-    Parent: 3393568357420727179
-  - Child: 3322841682154087914
-    Parent: 3393568357420727179
-  - Child: 1265569476059850934
-    Parent: 3393568357420727179
-  - Child: 7002770366922001540
-    Parent: 3393568357420727179
-  - Child: 6839854774700748977
-    Parent: 3393568357420727179
-  - Child: 5406762830310194568
-    Parent: 3393568357420727179
-  - Child: 6906966343926126530
-    Parent: 3393568357420727179
-  - Child: 4348748863433770271
-    Parent: 3393568357420727179
-  - Child: 1524425277968737697
-    Parent: 3393568357420727179
-  - Child: 7005155858884047656
-    Parent: 3393568357420727179
-  - Child: 9093246110958601410
-    Parent: 3393568357420727179
-  - Child: 4952425220483259617
-    Parent: 3393568357420727179
-  - Child: 5943476446181558813
-    Parent: 3393568357420727179
-  - Child: 4619943765534511144
-    Parent: 3393568357420727179
-  - Child: 1330542981118095476
-    Parent: 3393568357420727179
-  - Child: 22850969576746361
-    Parent: 3393568357420727179
-  - Child: 5360678510014504668
-    Parent: 3393568357420727179
-  - Child: 1653986657176052214
-    Parent: 3393568357420727179
-  - Child: 8963612889926818993
-    Parent: 3393568357420727179
-  - Child: 516326629799517493
-    Parent: 3393568357420727179
-  - Child: 468879521683217035
-    Parent: 3393568357420727179
-  - Child: 4455603603025621605
-    Parent: 3393568357420727179
-  - Child: 493299486389648871
-    Parent: 3393568357420727179
-  - Child: 3445704834885270275
-    Parent: 3393568357420727179
-  - Child: 5680033361739571463
-    Parent: 3393568357420727179
-  - Child: 6209157432704646546
-    Parent: 3393568357420727179
-  - Child: 7409600516825744026
-    Parent: 3393568357420727179
-  - Child: 4737565376374881853
-    Parent: 3393568357420727179
-  - Child: 5298226020532286259
-    Parent: 3393568357420727179
-  - Child: 7415440557522581844
-    Parent: 3393568357420727179
-  - Child: 6817810717617033157
-    Parent: 3393568357420727179
-  - Child: 3983216900452772957
-    Parent: 3393568357420727179
-  - Child: 9120702628645831782
-    Parent: 3393568357420727179
-  - Child: 7790226915417967446
-    Parent: 3393568357420727179
-  - Child: 6736601811019543212
-    Parent: 3393568357420727179
-  - Child: 7886472007931839569
-    Parent: 3393568357420727179
-  - Child: 1195977459705463945
-    Parent: 3393568357420727179
-  - Child: 5871688494482645695
-    Parent: 3393568357420727179
-  - Child: 8960433222672926765
-    Parent: 3393568357420727179
-  - Child: 5355062156112644682
-    Parent: 3393568357420727179
-  - Child: 2970155335541209464
-    Parent: 3393568357420727179
-  - Child: 8003965201261400152
-    Parent: 3393568357420727179
-  - Child: 6088280639169567729
-    Parent: 3393568357420727179
-  - Child: 6917779663575938633
-    Parent: 3393568357420727179
-  - Child: 1967608260784858206
-    Parent: 3393568357420727179
-  - Child: 7125335634066200154
-    Parent: 3393568357420727179
-  - Child: 1533550803078346589
-    Parent: 3393568357420727179
-  - Child: 8922665703384110480
-    Parent: 3393568357420727179
-  - Child: 5092662241531129027
-    Parent: 8936781846625120164
-  - Child: 6145018744546951451
-    Parent: 8936781846625120164
-  - Child: 7010975601018395620
-    Parent: 8936781846625120164
-  - Child: 2957829304812616970
-    Parent: 8936781846625120164
-  - Child: 2558116085144692844
-    Parent: 8936781846625120164
-  - Child: 3908142950360627877
-    Parent: 4827791815597310652
-  - Child: 6215297674217995381
-    Parent: 4827791815597310652
-  - Child: 6162586369553078044
-    Parent: 4827791815597310652
-  - Child: 6016847524877473207
-    Parent: 4827791815597310652
-  - Child: 9182266055587773297
-    Parent: 4827791815597310652
-  - Child: 2278742536914174210
-    Parent: 3898785252207813675
+  - Child: 7935240564521341976
+    Parent: 8886620089432511341
+  - Child: 7120269056394946387
+    Parent: 7775812481674055711
+  - Child: 3209110323270104480
+    Parent: 6248314550199324197
+  - Child: 974919317712531669
+    Parent: 575460446223041184
+  - Child: 7728127723908951866
+    Parent: 5573249786393533084
+  - Child: 6015003928588620932
+    Parent: 4833628717222897216
+  - Child: 1299294171585461998
+    Parent: 4944589236023498216
+  - Child: 7589522357080069027
+    Parent: 2799292863046849259
+  - Child: 3660806127826765562
+    Parent: 2799292863046849259
+  - Child: 6905745906686196943
+    Parent: 2799292863046849259
+  - Child: 2590084683931051552
+    Parent: 2138175369278319378
+  - Child: 4409611436975131395
+    Parent: 2138175369278319378
+  - Child: 1773618165800445262
+    Parent: 2138175369278319378
+  - Child: 3077424878126848551
+    Parent: 2138175369278319378
+  - Child: 6887267207983470915
+    Parent: 2138175369278319378
+  - Child: 2005215519443372225
+    Parent: 2138175369278319378
+  - Child: 8104758091154618086
+    Parent: 2138175369278319378
+  - Child: 2887841551782981687
+    Parent: 2138175369278319378
+  - Child: 2362253575153051244
+    Parent: 2138175369278319378
+  - Child: 7691855334706467354
+    Parent: 2138175369278319378
+  - Child: 1998145973974950586
+    Parent: 2138175369278319378
+  - Child: 2799292863046849259
+    Parent: 2138175369278319378
+  - Child: 6721699461929155064
+    Parent: 2138175369278319378
+  - Child: 7837509506491251163
+    Parent: 2138175369278319378
+  - Child: 143440384727698232
+    Parent: 2138175369278319378
+  - Child: 1404946433840678530
+    Parent: 2138175369278319378
+  - Child: 4372030009908793054
+    Parent: 2138175369278319378
+  - Child: 4896109332433840812
+    Parent: 2138175369278319378
+  - Child: 6364735096024171395
+    Parent: 2138175369278319378
+  - Child: 2107525756732269445
+    Parent: 2138175369278319378
+  - Child: 491251356179223002
+    Parent: 2138175369278319378
+  - Child: 4337423406060232240
+    Parent: 2138175369278319378
+  - Child: 6558421504839169702
+    Parent: 2138175369278319378
+  - Child: 3789419172908249763
+    Parent: 2138175369278319378
+  - Child: 6325013284129788395
+    Parent: 2138175369278319378
+  - Child: 5128662389015108092
+    Parent: 2138175369278319378
+  - Child: 1729041984467666407
+    Parent: 2138175369278319378
+  - Child: 1978187648240561405
+    Parent: 2138175369278319378
+  - Child: 8391665030626696406
+    Parent: 2138175369278319378
+  - Child: 7439599861884822198
+    Parent: 2138175369278319378
+  - Child: 501449665442779524
+    Parent: 2138175369278319378
+  - Child: 1947690386805710642
+    Parent: 2138175369278319378
+  - Child: 9079548104462559357
+    Parent: 2138175369278319378
+  - Child: 73398200669328542
+    Parent: 2138175369278319378
+  - Child: 2999932618074259792
+    Parent: 2138175369278319378
+  - Child: 477862027278766556
+    Parent: 2138175369278319378
+  - Child: 4602364309186145277
+    Parent: 2138175369278319378
+  - Child: 656698572325561582
+    Parent: 2138175369278319378
+  - Child: 6621204983499941553
+    Parent: 2138175369278319378
+  - Child: 4128486500575713988
+    Parent: 2138175369278319378
+  - Child: 7170359523895304247
+    Parent: 2138175369278319378
+  - Child: 6771642415307958292
+    Parent: 2138175369278319378
+  - Child: 1321226727566706463
+    Parent: 2138175369278319378
+  - Child: 6326878851685929014
+    Parent: 2138175369278319378
+  - Child: 1448388073400147434
+    Parent: 2138175369278319378
+  - Child: 8163835722829484301
+    Parent: 2138175369278319378
+  - Child: 6361889676591643460
+    Parent: 2138175369278319378
+  - Child: 7842016039603338720
+    Parent: 2138175369278319378
+  - Child: 1731620377840064718
+    Parent: 2138175369278319378
+  - Child: 1340756466680176397
+    Parent: 2138175369278319378
+  - Child: 4934501378281960112
+    Parent: 2138175369278319378
+  - Child: 1819749529250538766
+    Parent: 2138175369278319378
+  - Child: 8287758707210516937
+    Parent: 2138175369278319378
+  - Child: 8507515934856348438
+    Parent: 2138175369278319378
+  - Child: 5399272314449054124
+    Parent: 2138175369278319378
+  - Child: 6482163252636916006
+    Parent: 2138175369278319378
+  - Child: 790398073378072520
+    Parent: 2138175369278319378
+  - Child: 5698530577275722570
+    Parent: 2138175369278319378
+  - Child: 6197150415439322633
+    Parent: 2138175369278319378
+  - Child: 933668386831169934
+    Parent: 2138175369278319378
+  - Child: 7997020431233642059
+    Parent: 2138175369278319378
+  - Child: 2167805573963463923
+    Parent: 2138175369278319378
+  - Child: 8336237257620466050
+    Parent: 2138175369278319378
+  - Child: 5096924054452102629
+    Parent: 2138175369278319378
+  - Child: 1285511831986919099
+    Parent: 2138175369278319378
+  - Child: 470086615611301661
+    Parent: 2138175369278319378
+  - Child: 666586067087587920
+    Parent: 2138175369278319378
+  - Child: 8164949340364360207
+    Parent: 2138175369278319378
+  - Child: 3116899339648042334
+    Parent: 2138175369278319378
+  - Child: 3787406164928438268
+    Parent: 2138175369278319378
+  - Child: 8187695525533705465
+    Parent: 2138175369278319378
+  - Child: 5475114737184445365
+    Parent: 2138175369278319378
+  - Child: 7732621650525656355
+    Parent: 2138175369278319378
+  - Child: 57042020875912886
+    Parent: 2138175369278319378
+  - Child: 5390636169312259582
+    Parent: 2138175369278319378
+  - Child: 474803052815030701
+    Parent: 2138175369278319378
+  - Child: 3667291223496018205
+    Parent: 2138175369278319378
+  - Child: 7490441326154136639
+    Parent: 2138175369278319378
+  - Child: 4062849325133185239
+    Parent: 2138175369278319378
+  - Child: 1831091918691434385
+    Parent: 2138175369278319378
+  - Child: 6823723901913527961
+    Parent: 2138175369278319378
+  - Child: 1688608498049445127
+    Parent: 2138175369278319378
+  - Child: 2815431122131490152
+    Parent: 2138175369278319378
+  - Child: 5592097474527760945
+    Parent: 2138175369278319378
+  - Child: 5274643787873054237
+    Parent: 2138175369278319378
+  - Child: 7038894594659193187
+    Parent: 2138175369278319378
+  - Child: 8611866208477255349
+    Parent: 2138175369278319378
+  - Child: 3357611781836067076
+    Parent: 2138175369278319378
+  - Child: 8043290530835709943
+    Parent: 2138175369278319378
+  - Child: 4415688421674384047
+    Parent: 2138175369278319378
+  - Child: 7065914316914135189
+    Parent: 2138175369278319378
+  - Child: 654591576294149535
+    Parent: 2138175369278319378
+  - Child: 8187227236586099944
+    Parent: 2138175369278319378
+  - Child: 2496413088204926182
+    Parent: 2138175369278319378
+  - Child: 8531079650503736691
+    Parent: 2138175369278319378
+  - Child: 3125038571737506040
+    Parent: 2138175369278319378
+  - Child: 4853091322940026299
+    Parent: 2138175369278319378
+  - Child: 1456339843811927519
+    Parent: 2138175369278319378
+  - Child: 2636981136480124290
+    Parent: 2138175369278319378
+  - Child: 4076999741630803897
+    Parent: 1066434071981859095
+  - Child: 233270326000707264
+    Parent: 1773618165800445262
+  - Child: 349456621453518134
+    Parent: 1773618165800445262
+  - Child: 491808468483626449
+    Parent: 1773618165800445262
+  - Child: 3297759058916380384
+    Parent: 1773618165800445262
+  - Child: 1815627375028619402
+    Parent: 1773618165800445262
+  - Child: 5423025707527624515
+    Parent: 3447275339328311809
+  - Child: 6389202408390106849
+    Parent: 6887267207983470915
+  - Child: 8647649202921239603
+    Parent: 6887267207983470915
+  - Child: 4079511705639790620
+    Parent: 6887267207983470915
+  - Child: 5861490541099260225
+    Parent: 6887267207983470915
+  - Child: 4120907059419660129
+    Parent: 6887267207983470915
+  - Child: 8978653366288439404
+    Parent: 794979729206267072
+  - Child: 3342919054831827566
+    Parent: 7837509506491251163
+  - Child: 6448218407220341030
+    Parent: 7837509506491251163
+  - Child: 8374343959682486375
+    Parent: 7837509506491251163
+  - Child: 2378498953880942085
+    Parent: 7837509506491251163
+  - Child: 2107890217342664344
+    Parent: 7837509506491251163
+  - Child: 1984050677641870845
+    Parent: 1404946433840678530
+  - Child: 4419161777922211910
+    Parent: 1404946433840678530
+  - Child: 1615803986989799512
+    Parent: 1404946433840678530
+  - Child: 2861575343863273373
+    Parent: 1404946433840678530
+  - Child: 4387780419450297858
+    Parent: 1404946433840678530
+  - Child: 7660656099211644491
+    Parent: 4896109332433840812
+  - Child: 604508280415482610
+    Parent: 4896109332433840812
+  - Child: 8877899086035399073
+    Parent: 4896109332433840812
+  - Child: 3572820537844172159
+    Parent: 4896109332433840812
+  - Child: 3272349353823331848
+    Parent: 4896109332433840812
+  - Child: 7578057611111398699
+    Parent: 2107525756732269445
+  - Child: 3741226067503285504
+    Parent: 2107525756732269445
+  - Child: 1695907232353521049
+    Parent: 2107525756732269445
+  - Child: 7269711257202793208
+    Parent: 2107525756732269445
+  - Child: 3191037268258641831
+    Parent: 2107525756732269445
+  - Child: 5612058193103036077
+    Parent: 5875975425854078339
+  - Child: 3151681774413739854
+    Parent: 5875975425854078339
+  - Child: 3337771099140618305
+    Parent: 5612058193103036077
+  - Child: 6229537704657407525
+    Parent: 5612058193103036077
+  - Child: 1066434071981859095
+    Parent: 5612058193103036077
+  - Child: 8541947537197794628
+    Parent: 5612058193103036077
+  - Child: 794979729206267072
+    Parent: 5612058193103036077
+  - Child: 4944589236023498216
+    Parent: 5612058193103036077
+  - Child: 4833628717222897216
+    Parent: 5612058193103036077
+  - Child: 5573249786393533084
+    Parent: 5612058193103036077
+  - Child: 1990572714674002664
+    Parent: 5612058193103036077
+  - Child: 575460446223041184
+    Parent: 5612058193103036077
+  - Child: 1038148072922682981
+    Parent: 5612058193103036077
+  - Child: 3447275339328311809
+    Parent: 5612058193103036077
+  - Child: 6342162178301583209
+    Parent: 5612058193103036077
+  - Child: 6248314550199324197
+    Parent: 5612058193103036077
+  - Child: 332942468502413504
+    Parent: 5612058193103036077
+  - Child: 7775812481674055711
+    Parent: 5612058193103036077
+  - Child: 8514983871091043819
+    Parent: 5612058193103036077
+  - Child: 2511321827047185757
+    Parent: 5612058193103036077
+  - Child: 7876498094207454679
+    Parent: 5612058193103036077
+  - Child: 8886620089432511341
+    Parent: 5612058193103036077
+  - Child: 8526500562975355867
+    Parent: 2590084683931051552
+  - Child: 2520709920313602143
+    Parent: 2590084683931051552
+  - Child: 3397050498823212913
+    Parent: 2590084683931051552
+  - Child: 8577499244445306793
+    Parent: 2590084683931051552
+  - Child: 1767360359235248005
+    Parent: 2590084683931051552
+  - Child: 2433971659098160057
+    Parent: 8541947537197794628

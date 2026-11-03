@@ -110,7 +110,11 @@ namespace Conqueror::Launcher::Kit
         tc.Position = pos;
         tc.Rotation = { 0.0f, glm::radians(yawDeg), 0.0f };
         tc.Scale = glm::vec3(scale);
-        e.AddComponent<ModelComponent>().FilePath = projectRelativePath;
+        // Model dosyası Mesh Renderer'ın Mesh alanında (eski Model bileşeni Mesh Renderer'a katıldı)
+        auto& mr = e.AddComponent<MeshRendererComponent>();
+        mr.ModelPath = projectRelativePath;
+        mr.MaterialInstance = nullptr;
+        mr.MaterialPath.clear();
         return e;
     }
 

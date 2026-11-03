@@ -1,3 +1,6 @@
+#include "Scene/Signals.h"
+#include "Assets/AssetUI.h"
+#include <filesystem>
 #include "TimelinePanel.h"
 #include "EditorState.h"
 #include "UI/EditorUI.h"
@@ -458,7 +461,15 @@ namespace Conqueror::Editor
         }
         PushUndo();
         auto& t = m_Asset->Tracks[(size_t)track];
-        t.Markers.push_back({ std::max(0.0f, time), method, "" });
+        // ".cqsignal" yolu: Signal Emitter (bağlı nesnenin Signal Receiver'ı tepki verir); değilse betik metodu
+        TimelineMarker marker{ std::max(0.0f, time), method, "", "" };
+        const std::string ext = SignalAssets::Extension;
+        if (method.size() > ext.size() && method.compare(method.size() - ext.size(), ext.size(), ext) == 0)
+        {
+            marker.Method.clear();
+            marker.Signal = method;
+        }
+        t.Markers.push_back(marker);
         std::sort(t.Markers.begin(), t.Markers.end(), [](const TimelineMarker& a, const TimelineMarker& b) { return a.Time < b.Time; });
         MarkChanged();
         return true;
@@ -1105,7 +1116,7 @@ namespace Conqueror::Editor
                 dl->AddTriangleFilled(ImVec2(x - 6.0f, pos.y + 4.0f), ImVec2(x + 6.0f, pos.y + 4.0f), ImVec2(x, pos.y + 14.0f),
                                       sel ? IM_COL32(255, 255, 255, 255) : TrackColor(t.Type, alpha));
                 dl->AddLine(ImVec2(x, pos.y + 14.0f), ImVec2(x, pos.y + height - 3.0f), TrackColor(t.Type, alpha), 1.5f);
-                dl->AddText(ImVec2(x + 5.0f, pos.y + 13.0f), IM_COL32(220, 220, 225, 200), marker.Method.c_str());
+                dl->AddText(ImVec2(x + 5.0f, pos.y + 13.0f), IM_COL32(220, 220, 225, 200), !marker.Method.empty() ? marker.Method.c_str() : std::filesystem::path(marker.Signal).stem().string().c_str());
                 ImGui::PushID(m + 9000);
                 ImGui::SetCursorScreenPos(ImVec2(x - 6.0f, pos.y + 2.0f));
                 ImGui::InvisibleButton("##marker", ImVec2(12.0f, height - 4.0f));
@@ -1282,7 +1293,7 @@ namespace Conqueror::Editor
                 {
                     // Bağlı modelin klipleri adlarıyla (model yoksa sıra numarası)
                     Entity bound = BoundEntity(m_Sel.Track);
-                    const ModelComponent* mc = bound && bound.HasComponent<ModelComponent>() ? &bound.GetComponent<ModelComponent>() : nullptr;
+                    const MeshRendererComponent* mc = bound && bound.HasComponent<MeshRendererComponent>() ? &bound.GetComponent<MeshRendererComponent>() : nullptr;
                     if (mc && mc->ModelData && !mc->ModelData->Animations.empty())
                     {
                         const auto& anims = mc->ModelData->Animations;
@@ -1374,6 +1385,13 @@ namespace Conqueror::Editor
                 UI::BeginProperty("Argument");
                 ImGui::SetNextItemWidth(-1);
                 if (ImGui::InputText("##arg", arg, sizeof(arg))) { track(true); m.Argument = arg; } else track(false);
+                UI::EndProperty();
+                // Signal Emitter (Unity): Signal varlığı bağlı nesnenin Signal Receiver'ına gider
+                UI::BeginProperty("Emit Signal", "A Signal asset (.cqsignal); the bound object's Signal Receiver reacts to it.");
+                {
+                    std::string signal = m.Signal;
+                    if (AssetUI::AssetSlot("emitsignal", "Signal", { SignalAssets::Extension }, signal)) { track(true); m.Signal = signal; } else track(false);
+                }
                 UI::EndProperty();
                 break;
             }

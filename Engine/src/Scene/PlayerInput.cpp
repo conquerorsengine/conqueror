@@ -1,4 +1,6 @@
 #include "PlayerInput.h"
+#include "Core/Input/InputActionAssets.h"
+#include "Core/Input/InputActionRuntime.h"
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"
 #include "Scene/Components.h"
@@ -59,12 +61,98 @@ namespace Conqueror
         {
             scene.InvokeScriptMethod((uint32_t)e, method.c_str(), args, argc);
         }
+
+        // Broadcast Messages: nesne ve bütün çocukları
+        void Broadcast(Scene& scene, entt::entity e, const std::string& method, const CQS::Value* args, int argc)
+        {
+            Send(scene, e, method, args, argc);
+            for (Entity child : scene.GetEntityChildren(Entity{ e, &scene }))
+                Broadcast(scene, (entt::entity)child, method, args, argc);
+        }
+
+        // Actions varlığıyla oyuncu: eylemleri değerlendir, olayları betiklere gönder. false: varlık / harita yok
+        bool UpdateAssetPlayer(Scene& scene, entt::entity e, PlayerInputComponent& p, bool& hasMove, bool& hasLook)
+        {
+            const InputActionAssetData* asset = InputActionAssets::Get(p.Actions);
+            const InputActionMapDef* map = asset ? asset->FindMapOrFirst(p.ActionMap) : nullptr;
+            if (!map)
+                return false;
+            const uint64_t stamp = InputActionAssets::Stamp(p.Actions);
+            auto& st = p.AssetState;
+            if (st.Asset != p.Actions || st.Map != map->Name || st.Scheme != p.DefaultScheme || st.Stamp != stamp)
+            {
+                st.Reset();
+                st.Asset = p.Actions;
+                st.Map = map->Name;
+                st.Scheme = p.DefaultScheme;
+                st.Stamp = stamp;
+            }
+            std::vector<InputActionEvent> events;
+            InputActionRuntime::Evaluate(*map, p.DefaultScheme, InputDeviceFilter{ p.UseKeyboardMouse, p.PlayerIndex }, InputActionRuntime::Now(), st, &events);
+            for (const auto& [name, a] : st.Actions)
+            {
+                p.Values[name] = a.Vector ? a.Magnitude : a.Value.x;
+                hasMove |= name == "Move";
+                hasLook |= name == "Look";
+            }
+            if (hasMove)
+                p.Move = st.Actions["Move"].Value;
+            if (hasLook)
+                p.Look = st.Actions["Look"].Value;
+            if (p.Behavior == PlayerInputBehavior::None)
+                return true;
+            for (const auto& ev : events)
+            {
+                // Unity Send / Broadcast Messages: gerçekleşince; Value eylemleri bırakılınca da (sıfır değerle)
+                const bool send = ev.Phase == InputActionPhase::Performed || (ev.Phase == InputActionPhase::Canceled && ev.Kind == InputActionKind::Value);
+                if (!send)
+                    continue;
+                CQS::Value args[2] = { CQS::Value::MakeFloat((double)ev.Value.x), CQS::Value::MakeFloat((double)ev.Value.y) };
+                if (p.Behavior == PlayerInputBehavior::BroadcastMessages)
+                    Broadcast(scene, e, "On" + ev.Action, args, ev.Vector ? 2 : 1);
+                else
+                    Send(scene, e, "On" + ev.Action, args, ev.Vector ? 2 : 1);
+            }
+            return true;
+        }
     }
 
     namespace PlayerInputs
     {
+        const InputActionState* FindState(const PlayerInputComponent& c, const std::string& action)
+        {
+            if (c.Actions.empty())
+                return nullptr;
+            auto it = c.AssetState.Actions.find(action);
+            return it != c.AssetState.Actions.end() ? &it->second : nullptr;
+        }
+
+        glm::vec2 GetVector(const PlayerInputComponent& c, const std::string& action)
+        {
+            if (const auto* st = FindState(c, action))
+                return st->Value;
+            if (action == "Move") return c.Move;
+            if (action == "Look") return c.Look;
+            auto it = c.Values.find(action);
+            return glm::vec2(it != c.Values.end() ? it->second : 0.0f, 0.0f);
+        }
+
+        void SwitchMap(PlayerInputComponent& c, const std::string& map)
+        {
+            c.ActionMap = map;
+            c.AssetState.Reset();
+        }
+
+        void SwitchScheme(PlayerInputComponent& c, const std::string& scheme)
+        {
+            c.DefaultScheme = scheme;
+            c.AssetState.Reset();
+        }
+
         float GetValue(const PlayerInputComponent& c, const std::string& action)
         {
+            if (const auto* st = FindState(c, action))
+                return st->Vector ? st->Magnitude : st->Value.x;
             if (action == "Move") return glm::length(c.Move);
             auto it = c.Values.find(action);
             return it != c.Values.end() ? it->second : 0.0f;
@@ -72,6 +160,8 @@ namespace Conqueror
 
         bool WasPressed(const PlayerInputComponent& c, const std::string& action)
         {
+            if (const auto* st = FindState(c, action))
+                return st->PressedThisFrame;
             auto it = c.Values.find(action);
             auto pt = c.Previous.find(action);
             float now = it != c.Values.end() ? it->second : 0.0f, before = pt != c.Previous.end() ? pt->second : 0.0f;
@@ -80,6 +170,8 @@ namespace Conqueror
 
         bool WasReleased(const PlayerInputComponent& c, const std::string& action)
         {
+            if (const auto* st = FindState(c, action))
+                return st->ReleasedThisFrame;
             auto it = c.Values.find(action);
             auto pt = c.Previous.find(action);
             float now = it != c.Values.end() ? it->second : 0.0f, before = pt != c.Previous.end() ? pt->second : 0.0f;
@@ -111,6 +203,9 @@ namespace Conqueror
 
         void Update(Scene& scene)
         {
+            // ---- Project-wide Actions (Project Settings > Input): betiklerin genel eylem sorguları için
+            InputActionRuntime::UpdateProjectWide();
+
             // ---- Yerel çok oyunculu katılım
             auto managers = scene.m_Registry.view<PlayerInputManagerComponent>();
             for (auto m : managers)
@@ -145,8 +240,10 @@ namespace Conqueror
                     continue;
                 auto& p = players.get<PlayerInputComponent>(e);
                 p.Previous = p.Values;
-                const InputContext* ctx = Input::FindContext(p.ActionMap);
                 bool hasMove = false, hasLook = false;
+                // Actions varlığı atanmışsa eylemler, aşamalar ve olaylar oradan (Unity Player Input > Actions)
+                const bool assetPlayer = !p.Actions.empty() && UpdateAssetPlayer(scene, e, p, hasMove, hasLook);
+                const InputContext* ctx = assetPlayer ? nullptr : Input::FindContext(p.ActionMap);
                 if (ctx && ctx->Enabled)
                     for (const auto& [name, action] : ctx->Actions)
                     {
@@ -175,30 +272,38 @@ namespace Conqueror
                         move = glm::normalize(move);
                 }
                 p.PrevMove = p.Move;
-                p.Move = move;
-                p.Look = look;
+                if (!hasMove)
+                    p.Move = move;
+                if (!hasLook)
+                    p.Look = look;
 
-                if (p.Behavior != PlayerInputBehavior::SendMessages)
+                if (p.Behavior == PlayerInputBehavior::None)
                     continue;
-                for (const auto& [name, value] : p.Values)
+                auto deliver = [&](const std::string& method, const CQS::Value* args, int argc) {
+                    if (p.Behavior == PlayerInputBehavior::BroadcastMessages)
+                        Broadcast(scene, e, method, args, argc);
+                    else
+                        Send(scene, e, method, args, argc);
+                };
+                for (const auto& [name, value] : (assetPlayer ? std::unordered_map<std::string, float>{} : p.Values))
                 {
                     auto prev = p.Previous.find(name);
                     const float before = prev != p.Previous.end() ? prev->second : 0.0f;
                     if (value != before)
                     {
                         CQS::Value arg = CQS::Value::MakeFloat((double)value);
-                        Send(scene, e, "On" + name, &arg, 1);
+                        deliver("On" + name, &arg, 1);
                     }
                 }
                 if (p.GenerateMoveLook && !hasMove && p.Move != p.PrevMove)
                 {
                     CQS::Value args[2] = { CQS::Value::MakeFloat((double)p.Move.x), CQS::Value::MakeFloat((double)p.Move.y) };
-                    Send(scene, e, "OnMove", args, 2);
+                    deliver("OnMove", args, 2);
                 }
                 if (p.GenerateMoveLook && !hasLook && p.Look != glm::vec2(0.0f))
                 {
                     CQS::Value args[2] = { CQS::Value::MakeFloat((double)p.Look.x), CQS::Value::MakeFloat((double)p.Look.y) };
-                    Send(scene, e, "OnLook", args, 2);
+                    deliver("OnLook", args, 2);
                 }
             }
         }
@@ -208,11 +313,14 @@ namespace Conqueror
     {
         using P = PlayerInputComponent;
         ComponentDef<P>("Player Input", "PlayerInputComponent", "Input", ICON_FA_GAMEPAD)
-            .Describe("Binds an action map of the project's input settings to this player. Sends On<Action>(value), OnMove(x, y) and OnLook(dx, dy) to this object's scripts. Each player reads its own gamepad.")
-            .Field("ActionMap", "Action Map", &P::ActionMap).Tooltip("Context name in the input settings (e.g. Gameplay, Vehicle).")
+            .Describe("Binds an action map to this player: from an Input Actions asset (Actions slot) or, when the slot is empty, from the project's input settings. Sends On<Action>(value), OnMove(x, y) and OnLook(dx, dy) to this object's scripts. Each player reads its own gamepad.")
+            .Field("Actions", "Actions", &P::Actions, FieldKind::Asset).Filter(InputActionAssets::Extension).Tooltip("Input Actions asset (.cqinputactions). Empty = Project Settings > Input.")
+            .Field("ActionMap", "Default Map", &P::ActionMap).Tooltip("Action map to use (e.g. Player, UI, Vehicle). With an Actions asset, an unknown name uses the asset's first map.")
+            .Field("DefaultScheme", "Default Scheme", &P::DefaultScheme).Tooltip("Control scheme of the Actions asset (e.g. Keyboard&Mouse, Gamepad). Empty = bindings of every scheme.")
             .Field("PlayerIndex", "Player Index (Gamepad)", &P::PlayerIndex).Range(-1.0f, 15.0f, 1.0f).Tooltip("-1 = no gamepad.")
             .Field("UseKeyboardMouse", "Keyboard & Mouse", &P::UseKeyboardMouse)
-            .Field("Behavior", "Behavior", &P::Behavior).Options({ "Send Messages", "None (poll from scripts)" })
+            .Field("Behavior", "Behavior", &P::Behavior).Options({ "Send Messages", "None (poll from scripts)", "Broadcast Messages" })
+            .Tooltip("Send Messages: On<Action> on this object's scripts. Broadcast Messages: also on its children.")
             .Field("GenerateMoveLook", "Generate Move / Look", &P::GenerateMoveLook).Tooltip("WASD / arrows / left stick -> OnMove, mouse / right stick -> OnLook.");
 
         using M = PlayerInputManagerComponent;

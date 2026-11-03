@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 820705511016468692
+  - Entity: 3815805010500268414
     TagComponent:
       Tag: Teleporter Pair
       GameTag: Untagged
@@ -12,7 +12,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 643371121595429115
+  - Entity: 5529006322339491258
     TagComponent:
       Tag: Teleporter A
       GameTag: Untagged
@@ -51,7 +51,7 @@ Entities:
       Size: [1.6, 2, 1.6]
       IsTrigger: true
       Version: 2
-  - Entity: 1000770679206750029
+  - Entity: 4039906482728496087
     TagComponent:
       Tag: Teleporter A Pad
       GameTag: Untagged
@@ -65,14 +65,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.2, 0.8, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.8, 1]
-      EmissionStrength: 2
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 1254261439510472472
+      MaterialAsset: Packages/teleporters/Materials/Blue Glow.cqmat
+  - Entity: 5258950516247841311
     TagComponent:
       Tag: Teleporter A FX
       GameTag: Untagged
@@ -148,7 +142,7 @@ Entities:
       SizeOverLifetime:
         - [0, 1]
         - [1, 1]
-  - Entity: 2187480644729411245
+  - Entity: 4581762430765404419
     TagComponent:
       Tag: Teleporter B
       GameTag: Untagged
@@ -187,7 +181,7 @@ Entities:
       Size: [1.6, 2, 1.6]
       IsTrigger: true
       Version: 2
-  - Entity: 1039253396103320981
+  - Entity: 125152119357350929
     TagComponent:
       Tag: Teleporter B Pad
       GameTag: Untagged
@@ -201,14 +195,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 0.45, 0.9, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.45, 0.9]
-      EmissionStrength: 2
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 9150195639825895932
+      MaterialAsset: Packages/teleporters/Materials/Magenta Glow.cqmat
+  - Entity: 1652720606528113464
     TagComponent:
       Tag: Teleporter B FX
       GameTag: Untagged
@@ -380,6 +368,49 @@ Environment:
       Sharpen: false
       SharpenAmount: 0.3
       AntiAliasing: 1
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: false
+      SSRIntensity: 1
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: false
+      SSGIIntensity: 1
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: false
+      CloudCoverage: 0.45
+      CloudDensity: 1
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: false
+      FocusDistance: 10
+      Aperture: 2.8
+      FocalLength: 50
+      DOFMaxBlur: 10
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
     Environment:
       Sky: 0
       BackgroundColor: [0.1, 0.1, 0.1]
@@ -387,6 +418,13 @@ Environment:
       ReflectionIntensity: 1
       SkyboxIntensity: 1
       SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
     Bake:
       RealtimeGI: false
       BakedGI: true
@@ -426,15 +464,15 @@ Environment:
       APVGeometryBias: 0.01
       APVRayOriginBias: -0.001
 Hierarchy:
-  - Child: 1039253396103320981
-    Parent: 2187480644729411245
-  - Child: 9150195639825895932
-    Parent: 2187480644729411245
-  - Child: 1000770679206750029
-    Parent: 643371121595429115
-  - Child: 1254261439510472472
-    Parent: 643371121595429115
-  - Child: 643371121595429115
-    Parent: 820705511016468692
-  - Child: 2187480644729411245
-    Parent: 820705511016468692
+  - Child: 125152119357350929
+    Parent: 4581762430765404419
+  - Child: 1652720606528113464
+    Parent: 4581762430765404419
+  - Child: 4039906482728496087
+    Parent: 5529006322339491258
+  - Child: 5258950516247841311
+    Parent: 5529006322339491258
+  - Child: 5529006322339491258
+    Parent: 3815805010500268414
+  - Child: 4581762430765404419
+    Parent: 3815805010500268414

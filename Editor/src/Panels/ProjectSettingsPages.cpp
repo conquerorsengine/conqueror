@@ -1,4 +1,9 @@
+#include "Assets/AssetUI.h"
 #include "ProjectSettingsPanel.h"
+#include "Core/Input/InputActionAssets.h"
+#include "Panels/InspectorPanel.h"
+#include "Panels/ObjectPicker.h"
+#include "EditorState.h"
 #include "Scene/Scene.h"
 #include "Core/Project/Project.h"
 #include "Core/Project/ProjectSettings.h"
@@ -17,6 +22,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstring>
+#include <filesystem>
 
 // Project Settings: Player, Quality, Graphics, Audio, Input, Navigation, Editor, Script Execution Order (Unity eşdeğerleri)
 namespace Conqueror::Editor
@@ -304,6 +310,29 @@ namespace Conqueror::Editor
         m_Dirty |= UI::Combo("Tonemapper", g.DefaultTonemapper, tonemappers, 5);
         static const char* skies[] = { "Procedural Sky", "Solid Color" };
         m_Dirty |= UI::Combo("Background", g.DefaultSky, skies, 2);
+        UI::SubHeader("Preloaded Shaders");
+        ImGui::TextDisabled("Shader Variant Collections compiled when the game starts (no hitch on first use).");
+        int removeAt = -1;
+        for (int i = 0; i < (int)g.PreloadedShaders.size(); ++i)
+        {
+            ImGui::PushID(i);
+            ImGui::BulletText("%s", g.PreloadedShaders[(size_t)i].c_str());
+            ImGui::SameLine();
+            if (ImGui::SmallButton(ICON_FA_XMARK)) removeAt = i;
+            ImGui::PopID();
+        }
+        if (removeAt >= 0) { g.PreloadedShaders.erase(g.PreloadedShaders.begin() + removeAt); m_Dirty = true; }
+        {
+            std::string add;
+            UI::BeginProperty("Add Collection");
+            if (Editor::AssetUI::AssetSlot("preload", "Shader Variant Collection", { ".cqshadervariants" }, add) && !add.empty() &&
+                std::find(g.PreloadedShaders.begin(), g.PreloadedShaders.end(), add) == g.PreloadedShaders.end())
+            {
+                g.PreloadedShaders.push_back(add);
+                m_Dirty = true;
+            }
+            UI::EndProperty();
+        }
         UI::InfoBox("Per-scene rendering (sky, fog, shadows, post processing) is edited in the Lighting window.", UI::InfoType::Info);
     }
 
@@ -324,6 +353,76 @@ namespace Conqueror::Editor
 
     void ProjectSettingsPanel::DrawInput()
     {
+        // Project-wide Actions (Unity 6): betiklerin genel eylem sorguları bu Input Actions varlığından okunur
+        UI::SubHeader("Project-wide Actions");
+        {
+            std::string& projectWide = ProjectSettings::ProjectWideActions();
+            std::string picked;
+            UI::BeginProperty("Actions Asset", "An Input Actions asset (.cqinputactions). InputGetAction, InputActionVector, InputActionPhase ... read it\n"
+                                               "in every map (\"Jump\" or \"Player/Jump\"), with the keyboard, mouse and every gamepad.");
+            {
+                // Unity nesne alanı: ad (tıkla: Content Browser'da seç, Input Actions dosyası sürükle-bırak) + ◎ seçici
+                const std::string shown = projectWide.empty() ? std::string("None (Input Actions)")
+                                                               : std::filesystem::path(projectWide).filename().string();
+                ImGui::Button((std::string(ICON_FA_GAMEPAD "  ") + shown + "##pwName").c_str(),
+                              ImVec2(ImGui::GetContentRegionAvail().x - ImGui::GetFrameHeight() - ImGui::GetStyle().ItemSpacing.x, 0.0f));
+                if (ImGui::IsItemClicked() && !projectWide.empty())
+                    EditorState::Get().SelectAsset(AssetUI::Resolve(projectWide).string());
+                if (ImGui::BeginDragDropTarget())
+                {
+                    if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                    {
+                        const std::filesystem::path dropped((const char*)p->Data);
+                        if (dropped.extension() == InputActionAssets::Extension)
+                        {
+                            projectWide = AssetUI::ToProjectRelative(dropped);
+                            ProjectSettings::Apply();
+                            m_Dirty = true;
+                        }
+                    }
+                    ImGui::EndDragDropTarget();
+                }
+                ImGui::SameLine();
+                if (ObjectPicker::Button("##projectWideActions", "Input Actions", { InputActionAssets::Extension }, projectWide, picked))
+                {
+                    projectWide = picked.empty() ? std::string() : AssetUI::ToProjectRelative(picked);
+                    ProjectSettings::Apply();
+                    m_Dirty = true;
+                }
+            }
+            UI::EndProperty();
+            if (projectWide.empty())
+            {
+                if (ImGui::Button(ICON_FA_PLUS " Create Project-wide Actions", ImVec2(-1, 0)) && Project::GetActive())
+                {
+                    namespace fs = std::filesystem;
+                    const fs::path dir = Project::GetActiveProjectDirectory() / "Assets";
+                    fs::path target = dir / (std::string("Input Actions") + InputActionAssets::Extension);
+                    for (int i = 1; fs::exists(target); ++i)
+                        target = dir / ("Input Actions " + std::to_string(i) + InputActionAssets::Extension);
+                    if (InputActionAssets::CreateDefault(target.string()))
+                    {
+                        projectWide = AssetUI::ToProjectRelative(target);
+                        ProjectSettings::Apply();
+                        m_Dirty = true;
+                    }
+                }
+            }
+            else
+            {
+                UI::InfoBox("Global action queries read this asset first; actions it does not have fall back to the input map below.", UI::InfoType::Info);
+                if (ImGui::Button(ICON_FA_PEN_TO_SQUARE " Edit", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f - 4.0f, 0)) && InspectorPanel::s_OpenInputActions)
+                    InspectorPanel::s_OpenInputActions(AssetUI::Resolve(projectWide).string());
+                ImGui::SameLine();
+                if (ImGui::Button(ICON_FA_XMARK " Remove", ImVec2(-1, 0)))
+                {
+                    projectWide.clear();
+                    ProjectSettings::Apply();
+                    m_Dirty = true;
+                }
+            }
+        }
+        UI::SubHeader("Input Map");
         auto names = Input::GetContextNames();
         if (ProjectSettings::CustomInput())
             UI::InfoBox("This project uses its own input map (saved in the project file).", UI::InfoType::Info);

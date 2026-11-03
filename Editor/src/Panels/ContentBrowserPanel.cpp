@@ -1,3 +1,20 @@
+#include "Scripting/DataAssets.h"
+#include "Core/Math/CurveAsset.h"
+#include "Renderer/CubemapAsset.h"
+#include "Core/Animation/AvatarMask.h"
+#include "Core/Animation/PropertyAnimation.h"
+#include "Core/Input/InputActionAssets.h"
+#include "Scene/Signals.h"
+#include "Terrain/Terrain.h"
+#include "Core/Audio/AudioRandomContainer.h"
+#include "Core/Audio/AudioMixer.h"
+#include "Renderer/ShaderVariantCollection.h"
+#include "Assets/ShaderTemplates.h"
+#include "Renderer/CustomRenderTexture.h"
+#include "Scene/Billboards.h"
+#include "Renderer/RenderSettings.h"
+#include "Renderer/Lightmap/LightmapParameters.h"
+#include "Scene/PostProcessVolume.h"
 #include "Renderer/SpriteAtlas.h"
 #include "Grid/GridSystem.h"
 #include "Renderer/SpriteSheet.h"
@@ -18,6 +35,9 @@
 #include "Core/Logging/Log.h"
 #include "Core/Project/Project.h"
 #include "Core/Animation/AnimationController.h"
+#include "Assets/AnimatorOverrideInspector.h"
+#include "Core/Animation/BlendSpace.h"
+#include <fstream>
 #include "Core/Serialization/SceneSerializer.h"
 #include "Renderer/RHI/Texture.h"
 #include "Scene/Scene.h"
@@ -111,6 +131,25 @@ namespace Conqueror::Editor
         const std::string ext = ToLower(path.extension().string());
         if (ext == ".cqmat") return { ICON_FA_CIRCLE_HALF_STROKE, IM_COL32(235, 120, 190, 255), "Material" };
         if (ext == ".cqphysmat") return { ICON_FA_BASKETBALL, IM_COL32(120, 200, 120, 255), "Physics Material" };
+        if (ext == ".cqmesh") return { ICON_FA_CUBE, IM_COL32(150, 190, 235, 255), "Mesh" };
+        if (ext == ".cqlighting") return { ICON_FA_LIGHTBULB, IM_COL32(255, 210, 110, 255), "Lighting Settings" };
+        if (ext == ".cqlmparams") return { ICON_FA_SLIDERS, IM_COL32(255, 210, 110, 255), "Lightmap Parameters" };
+        if (ext == ".cqsignal") return { ICON_FA_TOWER_BROADCAST, IM_COL32(240, 190, 90, 255), "Signal" };
+        if (ext == ".cqinputactions") return { ICON_FA_GAMEPAD, IM_COL32(120, 200, 255, 255), "Input Actions" };
+        if (ext == ".cqdata") return { ICON_FA_DATABASE, IM_COL32(150, 220, 160, 255), "Data Asset" };
+        if (ext == ".cqcurve") return { ICON_FA_CHART_LINE, IM_COL32(120, 220, 210, 255), "Curve" };
+        if (ext == ".cqcubemap") return { ICON_FA_CUBE, IM_COL32(140, 190, 255, 255), "Cubemap" };
+        if (ext == ".cqmask") return { ICON_FA_PERSON, IM_COL32(120, 210, 140, 255), "Avatar Mask" };
+        if (ext == ".cqanim") return { ICON_FA_CLAPPERBOARD, IM_COL32(110, 196, 240, 255), "Animation Clip" };
+        if (ext == ".cqterrainlayer") return { ICON_FA_LAYER_GROUP, IM_COL32(150, 200, 110, 255), "Terrain Layer" };
+        if (ext == ".cqbrush") return { ICON_FA_PAINTBRUSH, IM_COL32(150, 200, 110, 255), "Brush" };
+        if (ext == ".cqaudiorandom") return { ICON_FA_SHUFFLE, IM_COL32(255, 170, 90, 255), "Audio Random Container" };
+        if (ext == ".cqmixer") return { ICON_FA_SLIDERS, IM_COL32(255, 170, 90, 255), "Audio Mixer" };
+        if (ext == ".cqraytrace") return { ICON_FA_WAND_MAGIC_SPARKLES, IM_COL32(190, 120, 255, 255), "Ray Tracing Shader" };
+        if (ext == ".cqshadervariants") return { ICON_FA_LAYER_GROUP, IM_COL32(190, 120, 255, 255), "Shader Variant Collection" };
+        if (ext == ".cqcrt") return { ICON_FA_TV, IM_COL32(130, 200, 250, 255), "Custom Render Texture" };
+        if (ext == ".cqflare") return { ICON_FA_STAR, IM_COL32(255, 220, 120, 255), "Lens Flare" };
+        if (ext == ".cqvolume") return { ICON_FA_CUBES_STACKED, IM_COL32(160, 180, 255, 255), "Volume Profile" };
         if (ext == ".cqspriteatlas") return { ICON_FA_OBJECT_GROUP, IM_COL32(120, 200, 255, 255), "Sprite Atlas" };
         if (ext == ".cqtile") return { ICON_FA_SQUARE, IM_COL32(120, 210, 170, 255), "Tile" };
         if (ext == ".cqpalette") return { ICON_FA_SWATCHBOOK, IM_COL32(120, 210, 170, 255), "Tile Palette" };
@@ -124,6 +163,8 @@ namespace Conqueror::Editor
                                                      : AssetTypeInfo{ ICON_FA_CUBES_STACKED, IM_COL32(110, 175, 255, 255), "Prefab" };
         if (ext == ".cqgraph") return { ICON_FA_DIAGRAM_PROJECT, IM_COL32(120, 220, 200, 255), "Visual Script" };
         if (ext == ".cqcont") return { ICON_FA_PERSON_RUNNING, IM_COL32(255, 120, 160, 255), "Animator Controller" };
+        if (ext == ".cqblendspace") return { ICON_FA_BRAILLE, IM_COL32(255, 150, 190, 255), "Blend Space" };
+        if (ext == ".cqoverride") return { ICON_FA_PERSON_RUNNING, IM_COL32(255, 170, 120, 255), "Animator Override Controller" };
         if (ext == ".cqmontage") return { ICON_FA_PERSON_RUNNING, IM_COL32(255, 160, 110, 255), "Anim Montage" };
         if (ext == ".cqsh" || ext == ".glsl" || ext == ".hlsl" || ext == ".vert" || ext == ".frag" || ext == ".comp")
             return { ICON_FA_WAND_MAGIC_SPARKLES, IM_COL32(190, 120, 255, 255), "Shader" };
@@ -203,9 +244,14 @@ namespace Conqueror::Editor
         return !r.empty() && (p == r || (p.size() > r.size() && p.compare(0, r.size(), r) == 0 && p[r.size()] == '/'));
     }
 
+    // Salt okunur: motorla gelen paketler ve projenin Packages klasörü (Unity gibi: Packages içine + ile varlık oluşturulmaz,
+    // yapıştırılmaz, taşınmaz, silinmez, yeniden adlandırılmaz)
     bool ContentBrowserPanel::IsReadOnly(const fs::path& path)
     {
-        return IsUnder(path, EnginePackagesDir());
+        if (IsUnder(path, EnginePackagesDir()))
+            return true;
+        const fs::path project = Project::GetActiveProjectDirectory();
+        return !project.empty() && IsUnder(path, project / "Packages");
     }
 
     fs::path ContentBrowserPanel::WritableDirectory() const
@@ -217,6 +263,9 @@ namespace Conqueror::Editor
 
     void ContentBrowserPanel::NavigateTo(const fs::path& directory, bool recordHistory)
     {
+        // Unity: klasöre gitmek arama / başvuru süzgecini kapatır
+        m_ResultsTitle.clear();
+        m_Results.clear();
         std::error_code ec;
         if (!fs::is_directory(directory, ec) || directory == m_CurrentDirectory)
             return;
@@ -302,6 +351,7 @@ namespace Conqueror::Editor
 
     void ContentBrowserPanel::OnImGuiRender()
     {
+        DrawPropertyWindows();
         if (!ImGui::Begin("Content Browser"))
         {
             m_Focused = false;
@@ -356,6 +406,7 @@ namespace Conqueror::Editor
 
         DrawStatusBar();
         DrawModals();
+        DrawPackageWindows();
         if (m_Focused)
             HandleKeyboard();
 
@@ -377,12 +428,11 @@ namespace Conqueror::Editor
             return pressed;
         };
 
-        // + Oluştur
-        ImGui::PushStyleColor(ImGuiCol_Button, UI::Colors::AccentDim);
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, UI::Colors::Accent);
-        if (ImGui::Button(ICON_FA_PLUS " Create"))
+        // "+▾" (Unity Project penceresi): Create menüsünü doğrudan açar
+        if (ImGui::Button(ICON_FA_PLUS " " ICON_FA_CARET_DOWN "##CreateMenu"))
             ImGui::OpenPopup("##CreateAsset");
-        ImGui::PopStyleColor(2);
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+            ImGui::SetTooltip("Create");
         if (ImGui::BeginPopup("##CreateAsset"))
         {
             DrawCreateMenu();
@@ -568,7 +618,30 @@ namespace Conqueror::Editor
         std::vector<Entry> searchResults;
         const bool searching = m_Search[0] != '\0';
         const std::vector<Entry>* entries = &m_Entries;
-        if (searching)
+        // Find References / Select Dependencies sonuçları (Unity'de Project penceresi süzgeci)
+        std::vector<Entry> resultEntries;
+        if (!m_ResultsTitle.empty())
+        {
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6.0f, 3.0f));
+            ImGui::TextColored(UI::Colors::Accent, ICON_FA_MAGNIFYING_GLASS);
+            ImGui::SameLine();
+            ImGui::Text("%s  (%d)", m_ResultsTitle.c_str(), (int)m_Results.size());
+            ImGui::SameLine();
+            if (ImGui::SmallButton(ICON_FA_XMARK " Clear##results"))
+            {
+                m_ResultsTitle.clear();
+                m_Results.clear();
+            }
+            ImGui::PopStyleVar();
+            ImGui::Separator();
+            std::error_code rec;
+            for (const auto& p : m_Results)
+                if (fs::exists(p, rec))
+                    resultEntries.push_back(MakeEntry(p));
+            if (!m_ResultsTitle.empty())
+                entries = &resultEntries;
+        }
+        if (searching && m_ResultsTitle.empty())
         {
             std::string filter = ToLower(m_Search);
             std::error_code ec;
@@ -603,7 +676,9 @@ namespace Conqueror::Editor
         if (entries->empty())
         {
             ImVec2 avail = ImGui::GetContentRegionAvail();
-            const char* msg = searching ? "No assets match the search" : "This folder is empty  -  drop files here or use + Create";
+            const char* msg = !m_ResultsTitle.empty() ? "Nothing found"
+                               : searching             ? "No assets match the search"
+                                                       : "This folder is empty  -  drop files here or use the + button";
             ImVec2 ts = ImGui::CalcTextSize(msg);
             ImGui::SetCursorPos(ImVec2(std::max(8.0f, (avail.x - ts.x) * 0.5f), std::max(8.0f, avail.y * 0.4f)));
             ImGui::TextDisabled("%s", msg);
@@ -649,6 +724,8 @@ namespace Conqueror::Editor
             ImGui::InvisibleButton("##EmptyArea", ImVec2(std::max(rest.x, 1.0f), rest.y));
             if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
                 m_SelectedPath.clear();
+            // Boş alana sağ tık: klasör menüsü (görünmez düğme pencere menüsünü engellemesin)
+            ImGui::OpenPopupOnItemClick("##ContentBackground", ImGuiPopupFlags_MouseButtonRight);
             if (ImGui::BeginDragDropTarget())
             {
                 if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
@@ -751,7 +828,14 @@ namespace Conqueror::Editor
         ImGui::PushID(entry.Path.string().c_str());
         const ImVec2 cellMin = ImGui::GetCursorScreenPos();
         ImGui::SetNextItemAllowOverlap();
-        ImGui::InvisibleButton("##cell", cellSize, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
+        // Kimlik dosya adını taşır (otomasyon testleri varlığı adıyla bulur); PushID(yol) içinde tekil
+        ImGui::InvisibleButton(("##cell_" + entry.Path.filename().string()).c_str(), cellSize,
+                               ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
+        if (selected && m_ScrollToSelected)
+        {
+            ImGui::SetScrollHereY(0.5f);
+            m_ScrollToSelected = false;
+        }
         const bool hovered = ImGui::IsItemHovered();
 
         ImDrawList* dl = ImGui::GetWindowDrawList();
@@ -922,228 +1006,7 @@ namespace Conqueror::Editor
         DrawItemContextMenu(entry);
     }
 
-    void ContentBrowserPanel::DrawItemContextMenu(const Entry& entry)
-    {
-        if (!ImGui::BeginPopupContextItem("##ItemContext"))
-            return;
-        m_SelectedPath = entry.Path;
-
-        AssetTypeInfo info = GetAssetTypeInfo(entry.Path, entry.IsDirectory);
-        ImGui::TextColored(ImColor(info.Color).Value, "%s", info.Icon);
-        ImGui::SameLine();
-        ImGui::TextDisabled("%s", entry.Path.filename().string().c_str());
-        ImGui::Separator();
-
-        if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN "  Open", "Enter"))
-        {
-            if (entry.IsDirectory) NavigateTo(entry.Path);
-            else OpenFile(entry.Path);
-        }
-        if (!entry.IsDirectory && IsImage(entry.Extension) && m_SpriteEditorCallback &&
-            ImGui::MenuItem(ICON_FA_OBJECT_UNGROUP "  Open in Sprite Editor"))
-            m_SpriteEditorCallback(entry.Path);
-        if (!entry.IsDirectory && entry.Extension == ".cqmat" && ImGui::MenuItem(ICON_FA_CIRCLE_HALF_STROKE "  Create Material Variant"))
-        {
-            fs::path created = CreateAsset("materialvariant");
-            if (!created.empty()) { m_Dirty = true; m_SelectedPath = created; EditorState::Get().SelectAsset(created.string()); BeginRename(created); }
-        }
-        if (!entry.IsDirectory && entry.Extension == PrefabSerializer::Extension && ImGui::MenuItem(ICON_FA_CUBES_STACKED "  Create Prefab Variant"))
-        {
-            fs::path created = CreateAsset("prefabvariant");
-            if (!created.empty()) { m_Dirty = true; m_SelectedPath = created; EditorState::Get().SelectAsset(created.string()); BeginRename(created); }
-        }
-        if (!entry.IsDirectory && entry.Extension == ".cqscene" && ImGui::MenuItem(ICON_FA_CLAPPERBOARD "  Create Scene Template From Scene"))
-        {
-            fs::path created = CreateAsset("scenetemplate");
-            if (!created.empty()) { m_Dirty = true; m_SelectedPath = created; EditorState::Get().SelectAsset(created.string()); BeginRename(created); }
-        }
-        if (!entry.IsDirectory && IsImage(entry.Extension) && ImGui::MenuItem(ICON_FA_SQUARE "  Create Tile"))
-        {
-            fs::path created = CreateAsset("tile");
-            if (!created.empty()) { m_Dirty = true; m_SelectedPath = created; EditorState::Get().SelectAsset(created.string()); BeginRename(created); }
-        }
-        if (!entry.IsDirectory && IsImage(entry.Extension) && ImGui::MenuItem(ICON_FA_CIRCLE_HALF_STROKE "  Create Material"))
-        {
-            // Unreal: dokuya sağ tık > Create Material (doku taban haritası olur)
-            fs::path created = MakeUniquePath(WritableDirectory() / (entry.Path.stem().string() + ".cqmat"));
-            Material m;
-            m.AlbedoMap = Texture2D::Create(entry.Path.string());
-            if (MaterialAsset::Create(created.string(), &m)) { m_Dirty = true; m_SelectedPath = created; EditorState::Get().SelectAsset(created.string()); }
-        }
-        if (ImGui::MenuItem(ICON_FA_UP_RIGHT_FROM_SQUARE "  Show in File Manager"))
-            RevealInFileManager(entry.IsDirectory ? entry.Path : entry.Path.parent_path());
-        if (ImGui::MenuItem(ICON_FA_COPY "  Copy Path"))
-            ImGui::SetClipboardText(entry.Path.string().c_str());
-        if (ImGui::MenuItem(ICON_FA_LINK "  Copy Relative Path"))
-        {
-            std::error_code ec;
-            ImGui::SetClipboardText(fs::relative(entry.Path, m_BaseDirectory, ec).string().c_str());
-        }
-        ImGui::Separator();
-        const bool readOnly = IsReadOnly(entry.Path);
-        if (readOnly)
-            ImGui::TextDisabled(ICON_FA_LOCK "  Built-in package (read-only)");
-        if (!readOnly && ImGui::MenuItem(ICON_FA_PEN "  Rename", "F2"))
-            BeginRename(entry.Path);
-        if (!readOnly && ImGui::MenuItem(ICON_FA_CLONE "  Duplicate", "Ctrl+D"))
-            DuplicatePath(entry.Path);
-        ImGui::Separator();
-        ImGui::PushStyleColor(ImGuiCol_Text, UI::Colors::Error);
-        if (!readOnly && ImGui::MenuItem(ICON_FA_TRASH "  Delete", "Del"))
-        {
-            m_PendingDelete = entry.Path;
-            m_OpenDeleteModal = true;
-        }
-        ImGui::PopStyleColor();
-        ImGui::EndPopup();
-    }
-
-    void ContentBrowserPanel::DrawBackgroundContextMenu()
-    {
-        if (!ImGui::BeginPopupContextWindow("##ContentBackground", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
-            return;
-        DrawCreateMenu();
-        ImGui::Separator();
-        if (!IsReadOnly(m_CurrentDirectory) && ImGui::MenuItem(ICON_FA_FILE_IMPORT "  Import File..."))
-            ImportFile();
-        if (ImGui::MenuItem(ICON_FA_UP_RIGHT_FROM_SQUARE "  Show in File Manager"))
-            RevealInFileManager(m_CurrentDirectory);
-        if (ImGui::MenuItem(ICON_FA_ARROWS_ROTATE "  Refresh"))
-        {
-            m_Thumbnails.clear();
-            m_Dirty = true;
-        }
-        ImGui::EndPopup();
-    }
-
-    void ContentBrowserPanel::DrawCreateMenu()
-    {
-        if (IsReadOnly(m_CurrentDirectory))
-        {
-            ImGui::TextDisabled(ICON_FA_LOCK "  Built-in packages are read-only");
-            return;
-        }
-        fs::path created;
-        if (ImGui::MenuItem(ICON_FA_FOLDER "  Folder")) created = CreateAsset("folder");
-        ImGui::Separator();
-        if (ImGui::MenuItem(ICON_FA_CLAPPERBOARD "  Scene")) created = CreateAsset("scene");
-        if (ImGui::MenuItem(ICON_FA_CLAPPERBOARD "  Scene Template")) created = CreateAsset("scenetemplate");
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
-            ImGui::SetTooltip("A starting point for new scenes: File > New Scene lists it next to the built-in templates.\n"
-                              "With a scene selected, the template uses that scene.");
-        if (ImGui::MenuItem(ICON_FA_CUBES_STACKED "  Prefab")) created = CreateAsset("prefab");
-        {
-            const bool canVariant = m_SelectedPath.extension() == PrefabSerializer::Extension;
-            if (ImGui::MenuItem(ICON_FA_CUBES_STACKED "  Prefab Variant", nullptr, false, canVariant))
-                created = CreateAsset("prefabvariant");
-            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled | ImGuiHoveredFlags_DelayShort))
-                ImGui::SetTooltip(canVariant ? "A prefab based on the selected prefab: it stores only what you change, everything else follows the base."
-                                             : "Select a prefab first: the variant is based on it.");
-        }
-        ImGui::Separator();
-        if (ImGui::BeginMenu(ICON_FA_SHAPES "  2D"))
-        {
-            if (ImGui::BeginMenu("Sprites"))
-            {
-                // Unity Create > 2D > Sprites: yumuşak kenarlı hazır şekiller (Sprite türünde içe aktarılır)
-                static const char* shapes[][2] = { { "Triangle", "Triangle" }, { "Square", "Square" }, { "Circle", "Circle" },
-                                                   { "Capsule", "Capsule" }, { "Isometric Diamond", "IsometricDiamond" },
-                                                   { "Hexagon Flat-Top", "HexagonFlat" }, { "Hexagon Pointed-Top", "HexagonPoint" },
-                                                   { "9-Sliced", "NineSliced" } };
-                for (const auto& sh : shapes)
-                    if (ImGui::MenuItem(sh[0]))
-                        created = CreateAsset(std::string("sprite:") + sh[1] + "|" + sh[0]);
-                ImGui::EndMenu();
-            }
-            if (ImGui::BeginMenu("Tile Palette"))
-            {
-                // Unity Create > 2D > Tile Palette: ızgara düzeniyle boş palet
-                if (ImGui::MenuItem("Rectangular")) created = CreateAsset("tilepalette:0");
-                if (ImGui::MenuItem("Hexagonal Pointed-Top")) created = CreateAsset("tilepalette:1");
-                if (ImGui::MenuItem("Hexagonal Flat-Top")) created = CreateAsset("tilepalette:2");
-                if (ImGui::MenuItem("Isometric")) created = CreateAsset("tilepalette:3");
-                ImGui::EndMenu();
-            }
-            if (ImGui::BeginMenu("Tiles"))
-            {
-                if (ImGui::MenuItem("Tile")) created = CreateAsset("tile");
-                if (ImGui::MenuItem("Rule Tile")) created = CreateAsset("ruletile");
-                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
-                    ImGui::SetTooltip("Picks its sprite from rules about which neighbours are the same tile (paths, walls, platforms).");
-                if (ImGui::MenuItem("Animated Tile")) created = CreateAsset("animatedtile");
-                ImGui::EndMenu();
-            }
-            if (ImGui::MenuItem(ICON_FA_OBJECT_GROUP "  Sprite Atlas")) created = CreateAsset("spriteatlas");
-            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
-                ImGui::SetTooltip("Packs sprites (or whole folders) into one texture so they draw with fewer texture switches.\n"
-                                  "With images selected, they are added to the atlas.");
-            if (ImGui::MenuItem(ICON_FA_BASKETBALL "  Physics Material 2D")) created = CreateAsset("physicsmaterial2d");
-            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
-                ImGui::SetTooltip("Friction and bounciness for 2D colliders and Rigidbody 2D (Material slot).");
-            ImGui::EndMenu();
-        }
-        ImGui::Separator();
-        // Görünüm (Unity Create > Material / Shader Graph / Render Texture, Unreal Material / Material Instance)
-        if (ImGui::MenuItem(ICON_FA_CIRCLE_HALF_STROKE "  Material")) created = CreateAsset("material");
-        {
-            const bool canVariant = MaterialAsset::IsMaterialFile(m_SelectedPath.string());
-            if (ImGui::MenuItem(ICON_FA_CIRCLE_HALF_STROKE "  Material Variant", nullptr, false, canVariant))
-                created = CreateAsset("materialvariant");
-            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled | ImGuiHoveredFlags_DelayShort))
-                ImGui::SetTooltip(canVariant ? "A material that inherits everything from the selected material and stores only what you change\n"
-                                               "(Unity Material Variant / Unreal Material Instance)."
-                                             : "Select a material first: the variant inherits from it.");
-        }
-        if (ImGui::MenuItem(ICON_FA_DIAGRAM_PROJECT "  Shader Graph")) created = CreateAsset("shadergraph");
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
-            ImGui::SetTooltip("A material driven by a node graph; opens in the Shader Graph editor.");
-        if (ImGui::MenuItem(ICON_FA_WAND_MAGIC_SPARKLES "  Shader (Code)")) created = CreateAsset("shader");
-        if (ImGui::MenuItem(ICON_FA_TV "  Render Texture")) created = CreateAsset("rendertexture");
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
-            ImGui::SetTooltip("A texture a camera renders into (Render Target component > Target Texture). Use it in any texture slot\n"
-                              "for monitors, minimaps, mirrors and portals.");
-        ImGui::Separator();
-        if (ImGui::MenuItem(ICON_FA_BASKETBALL "  Physics Material")) created = CreateAsset("physicsmaterial");
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
-            ImGui::SetTooltip("Friction and bounciness for colliders (Collider > Material).");
-        ImGui::Separator();
-        if (ImGui::MenuItem(ICON_FA_PERSON_RUNNING "  Animator Controller")) created = CreateAsset("controller");
-        if (ImGui::MenuItem(ICON_FA_PERSON_RUNNING "  Anim Montage")) created = CreateAsset("montage");
-        if (ImGui::MenuItem(ICON_FA_FILM "  Timeline")) created = CreateAsset("timeline");
-        ImGui::Separator();
-        if (ImGui::BeginMenu(ICON_FA_FILE_CODE "  Script"))
-        {
-            // Kayıtlı her betik dili (kullanılamayanlar gri ve nedeni ipucunda)
-            for (auto* runtime : Scripting::ScriptRuntimes::All())
-            {
-                std::string label = std::string(runtime->GetName()) + " (" + runtime->GetExtensions().front() + ")";
-                bool available = runtime->IsAvailable();
-                if (ImGui::MenuItem(label.c_str(), nullptr, false, available))
-                    created = CreateAsset(std::string("script:") + runtime->GetLanguageId());
-                if (!available && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-                    ImGui::SetTooltip("%s", runtime->GetUnavailableReason().c_str());
-            }
-            ImGui::Separator();
-            // Native Script bileşeni için motorun C++ API'siyle sınıf (Play'de motor derler)
-            if (ImGui::MenuItem("C++ Native Behaviour (Native Script component)"))
-                created = CreateAsset("cpp");
-            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
-                ImGui::SetTooltip("A ScriptableEntity class using the engine's C++ API. Drag it onto a Native Script component; "
-                                  "the engine compiles it when you press Play.");
-            ImGui::EndMenu();
-        }
-        if (ImGui::MenuItem(ICON_FA_DIAGRAM_PROJECT "  Visual Script Graph")) created = CreateAsset("visualscript");
-        ImGui::Separator();
-        if (ImGui::MenuItem(ICON_FA_FILE_LINES "  Text File")) created = CreateAsset("text");
-
-        if (!created.empty())
-        {
-            m_Dirty = true;
-            m_SelectedPath = created;
-            EditorState::Get().SelectAsset(created.string());   // Unity: yeni varlık Inspector'da açılır
-            BeginRename(created);
-        }
-    }
+    // Sağ tık menüleri ve Create menüsü: ContentBrowserMenus.cpp
 
     void ContentBrowserPanel::DrawModals()
     {
@@ -1207,6 +1070,29 @@ namespace Conqueror::Editor
         if (ImGui::GetIO().WantTextInput)
             return;
         const bool ctrl = ImGui::GetIO().KeyCtrl;
+        const bool alt = ImGui::GetIO().KeyAlt;
+        // Unity Project penceresi kısayolları
+        if (ctrl && !alt && ImGui::IsKeyPressed(ImGuiKey_R, false))
+        {
+            m_Thumbnails.clear();
+            m_Dirty = true;
+        }
+        if (ctrl && !alt && ImGui::IsKeyPressed(ImGuiKey_V, false) && HasClipboard())
+            PasteInto(m_CurrentDirectory);
+        if (!m_SelectedPath.empty())
+        {
+            if (ctrl && !alt && ImGui::IsKeyPressed(ImGuiKey_C, false))
+                CopyAssets({ m_SelectedPath }, false);
+            else if (ctrl && !alt && ImGui::IsKeyPressed(ImGuiKey_X, false) && !IsReadOnly(m_SelectedPath))
+                CopyAssets({ m_SelectedPath }, true);
+            else if (ctrl && alt && ImGui::IsKeyPressed(ImGuiKey_C, false))
+            {
+                std::error_code rec;
+                ImGui::SetClipboardText(fs::relative(m_SelectedPath, m_BaseDirectory, rec).generic_string().c_str());
+            }
+            else if (alt && !ctrl && ImGui::IsKeyPressed(ImGuiKey_P, false))
+                OpenProperties(m_SelectedPath);
+        }
         if (!m_SelectedPath.empty())
         {
             if (ImGui::IsKeyPressed(ImGuiKey_F2, false))
@@ -1267,7 +1153,7 @@ namespace Conqueror::Editor
         const std::string newRel = fs::relative(target, projectDir, ec).generic_string();
         if (oldRel.empty() || newRel.empty() || oldRel.rfind("..", 0) == 0)
             return;
-        static const char* exts[] = { ".cqscene", ".cqprefab", ".cqmat", ".cqtimeline", ".cqcont", ".cqscenetemplate", ".cqtile", ".cqpalette", ".cqspriteatlas" };
+        static const char* exts[] = { ".cqscene", ".cqprefab", ".cqmat", ".cqtimeline", ".cqcont", ".cqscenetemplate", ".cqtile", ".cqpalette", ".cqspriteatlas", ".cqvolume", ".cqlighting", ".cqflare", ".cqcrt", ".cqshadervariants", ".cqaudiorandom", ".cqmixer", ".cqterrainlayer", ".cqbrush", ".cqsignal", ".cqdata" };
         int files = 0;
         for (fs::recursive_directory_iterator it(Project::GetAssetDirectory(), fs::directory_options::skip_permission_denied, ec), end;
              it != end; it.increment(ec))
@@ -1464,12 +1350,9 @@ namespace Conqueror::Editor
         fs::path target = MakeUniquePath(path);
         if (target == path)
             target = MakeUniquePath(path.parent_path() / (path.stem().string() + " Copy" + path.extension().string()));
-        fs::copy(path, target, fs::copy_options::recursive, ec);
-        if (ec)
-        {
-            CQ_CORE_ERROR("Duplicate failed: {0}", ec.message());
+        // İçe aktarma ayarı / sprite kesimi de çoğaltılır (Unity Ctrl+D)
+        if (!CopyWithSidecars(path, target))
             return;
-        }
         m_SelectedPath = target;
         m_Dirty = true;
     }
@@ -1510,7 +1393,13 @@ namespace Conqueror::Editor
 
     fs::path ContentBrowserPanel::CreateAsset(const std::string& kind)
     {
-        const fs::path dir = WritableDirectory();   // paket klasöründeyken Assets'e
+        // Packages salt okunur (Unity gibi): orada açıkken oluşturma yapılmaz (menüler zaten kapalı; kısayollar da)
+        if (IsReadOnly(m_CurrentDirectory))
+        {
+            CQ_CORE_WARN("Content Browser: Packages are read-only, nothing is created there");
+            return {};
+        }
+        const fs::path dir = WritableDirectory();
         std::error_code ec;
         fs::path path;
         try
@@ -1581,6 +1470,17 @@ namespace Conqueror::Editor
                 path = MakeUniquePath(dir / "New Animator Controller.cqcont");
                 AnimationController::CreateDefault()->Serialize(path.string());
             }
+            else if (kind == "blendspace2d" || kind == "blendspace1d")
+            {
+                const bool is2D = kind == "blendspace2d";
+                path = MakeUniquePath(dir / (is2D ? "New Blend Space.cqblendspace" : "New Blend Space 1D.cqblendspace"));
+                BlendSpaces::Save(path.string(), BlendSpaces::Default(is2D));
+            }
+            else if (kind == "overridecontroller")
+            {
+                path = MakeUniquePath(dir / "New Animator Override Controller.cqoverride");
+                std::ofstream(path, std::ios::binary) << AnimatorOverrideInspector::DefaultContent();
+            }
             else if (kind == "montage")
             {
                 path = MakeUniquePath(dir / "New Montage.cqmontage");
@@ -1635,6 +1535,37 @@ namespace Conqueror::Editor
             {
                 path = MakeUniquePath(dir / "New Render Texture.cqrt");
                 if (!RenderTargetRegistry::WriteAsset(path.string(), 512, 512))
+                    path.clear();
+            }
+            else if (kind == "lightingsettings")
+            {
+                path = MakeUniquePath(dir / "New Lighting Settings.cqlighting");
+                if (!SceneSerializer::SaveLightingSettings(path.string(), LightBakeSettings{}))
+                    path.clear();
+            }
+            else if (kind == "lightmapparams")
+            {
+                path = MakeUniquePath(dir / (std::string("New Lightmap Parameters") + LightmapParameterAssets::Extension));
+                if (!LightmapParameterAssets::Save(path.string(), LightmapParameters{}))
+                    path.clear();
+            }
+            else if (kind == "customrendertexture")
+            {
+                path = MakeUniquePath(dir / (std::string("New Custom Render Texture") + CustomRenderTextures::Extension));
+                if (!CustomRenderTextures::Save(path.string(), CustomRenderTextureAsset{}))
+                    path.clear();
+            }
+            else if (kind == "lensflare")
+            {
+                path = MakeUniquePath(dir / (std::string("New Lens Flare") + LensFlareAssets::Extension));
+                if (!LensFlareAssets::Save(path.string(), LensFlareAssets::DefaultElements()))
+                    path.clear();
+            }
+            else if (kind == "volumeprofile")
+            {
+                path = MakeUniquePath(dir / (std::string("New Volume Profile") + VolumeProfiles::Extension));
+                PostProcessVolumeComponent defaults;
+                if (!VolumeProfiles::Save(path.string(), defaults))
                     path.clear();
             }
             else if (kind == "spriteatlas")
@@ -1706,6 +1637,149 @@ namespace Conqueror::Editor
                 graph.AddNode("event.update", 80.0f, 260.0f);
                 if (!graph.Save(path.string()))
                     path.clear();
+            }
+            else if (kind.rfind("dataasset:", 0) == 0)
+            {
+                const std::string spec = kind.substr(10);
+                const size_t bar = spec.find('|');
+                DataAssets::DataAssetFile data;
+                data.Script = spec.substr(0, bar);
+                data.Class = bar == std::string::npos ? std::string() : spec.substr(bar + 1);
+                path = MakeUniquePath(dir / ("New " + data.Class + DataAssets::Extension));
+                if (!DataAssets::Save(path.string(), data))
+                    path.clear();
+            }
+            else if (kind == "dataassetscript" || kind.rfind("dataassetscript:", 0) == 0)
+            {
+                const std::string language = kind.size() > 16 ? kind.substr(16) : std::string("cqs");
+                auto* runtime = Scripting::ScriptRuntimes::ForLanguage(language);
+                if (runtime && DataAssets::SupportsDataClasses(language))
+                {
+                    path = MakeUniquePath(dir / ("NewDataAsset" + (language == "cpp" ? std::string(".h") : runtime->GetExtensions().front())));
+                    std::string name = path.stem().string();
+                    name.erase(std::remove_if(name.begin(), name.end(), [](char c) { return !std::isalnum((unsigned char)c) && c != '_'; }), name.end());
+                    std::ofstream f(path);
+                    f << DataAssets::NewScriptTemplate(name, language);
+                    f.close();
+                    m_NewScriptPath = path;   // adlandırınca sınıf adı da değişir
+                    m_NewScriptClass = name;
+                }
+            }
+            else if (kind == "animclip")
+            {
+                // Unity Create > Animation > Animation Clip (Animation penceresinde düzenlenir)
+                PropertyClip clip;
+                path = MakeUniquePath(dir / (std::string("New Animation") + PropertyClips::Extension));
+                if (!PropertyClips::Save(path.string(), clip))
+                    path.clear();
+            }
+            else if (kind == "avatarmask")
+            {
+                // Unity Create > Avatar Mask; seçili model varsa iskeleti kaynak olur
+                AvatarMask mask;
+                const std::string e = ToLower(m_SelectedPath.extension().string());
+                if (e == ".fbx" || e == ".glb" || e == ".gltf" || e == ".dae")
+                    mask.SourceModel = SceneSerializer::ToAssetPath(m_SelectedPath.string());
+                path = MakeUniquePath(dir / (std::string("New Avatar Mask") + AvatarMasks::Extension));
+                if (!AvatarMasks::Save(path.string(), mask))
+                    path.clear();
+            }
+            else if (kind == "cubemap")
+            {
+                // Unity Create > Legacy > Cubemap; seçili resim varsa panorama olarak kullanılır
+                CubemapAssetData data;
+                if (IsImage(ToLower(m_SelectedPath.extension().string())))
+                {
+                    data.Source = CubemapAssetData::SourceKind::Panorama;
+                    data.Panorama = SceneSerializer::ToAssetPath(m_SelectedPath.string());
+                }
+                path = MakeUniquePath(dir / (std::string("New Cubemap") + CubemapAssets::Extension));
+                if (!CubemapAssets::Save(path.string(), data))
+                    path.clear();
+            }
+            else if (kind.rfind("curve:", 0) == 0)
+            {
+                // Unreal Curve Float / Curve Vector / Curve Linear Color
+                const std::string t = kind.substr(6);
+                const CurveType type = t == "vector" ? CurveType::Vector : t == "color" ? CurveType::Color : CurveType::Float;
+                const char* name = type == CurveType::Vector ? "New Vector Curve" : type == CurveType::Color ? "New Color Curve" : "New Float Curve";
+                path = MakeUniquePath(dir / (std::string(name) + CurveAssets::Extension));
+                if (!CurveAssets::Save(path.string(), CurveAsset::Default(type)))
+                    path.clear();
+            }
+            else if (kind == "inputactions")
+            {
+                path = MakeUniquePath(dir / (std::string("New Input Actions") + InputActionAssets::Extension));
+                if (!InputActionAssets::CreateDefault(path.string()))
+                    path.clear();
+            }
+            else if (kind == "signal")
+            {
+                path = MakeUniquePath(dir / (std::string("New Signal") + SignalAssets::Extension));
+                if (!SignalAssets::Create(path.string()))
+                    path.clear();
+            }
+            else if (kind == "terrainlayer" || kind == "terrainbrush")
+            {
+                const bool image = IsImage(ToLower(m_SelectedPath.extension().string()));
+                if (kind == "terrainlayer")
+                {
+                    TerrainLayer l;
+                    if (image)
+                        l.TexturePath = m_SelectedPath.string();
+                    path = MakeUniquePath(dir / ((image ? m_SelectedPath.stem().string() : std::string("New Terrain Layer")) + TerrainAssets::LayerExtension));
+                    if (!TerrainAssets::SaveLayer(path.string(), l))
+                        path.clear();
+                }
+                else
+                {
+                    TerrainBrushAsset b;
+                    if (image)
+                        b.Mask = fs::relative(m_SelectedPath, m_BaseDirectory, ec).generic_string();
+                    path = MakeUniquePath(dir / ((image ? m_SelectedPath.stem().string() : std::string("New Brush")) + TerrainAssets::BrushExtension));
+                    if (!TerrainAssets::SaveBrush(path.string(), b))
+                        path.clear();
+                }
+            }
+            else if (kind == "audiorandom")
+            {
+                AudioRandomContainerAsset a;
+                // Seçili ses dosyası başlangıç klibi olur
+                const std::string ext = ToLower(m_SelectedPath.extension().string());
+                if (ext == ".wav" || ext == ".mp3" || ext == ".ogg" || ext == ".flac")
+                    a.Clips.push_back(fs::relative(m_SelectedPath, m_BaseDirectory, ec).generic_string());
+                path = MakeUniquePath(dir / (std::string("New Audio Random Container") + AudioRandomContainers::Extension));
+                if (!AudioRandomContainers::Save(path.string(), a))
+                    path.clear();
+            }
+            else if (kind == "audiomixer")
+            {
+                path = MakeUniquePath(dir / "New Audio Mixer.cqmixer");
+                std::ofstream f(path);
+                f << "AudioMixer: 1\nOutput: Master\nGroups:\n  - Name: Master\n    Parent: \"\"\n    Volume: 0\n";
+                f.close();
+                if (AudioMixer::Get().IsInitialized())
+                    AudioMixer::Get().LoadAssetMixer(path);
+            }
+            else if (kind == "shadervariants")
+            {
+                path = MakeUniquePath(dir / (std::string("New Shader Variant Collection") + ShaderVariantCollections::Extension));
+                if (!ShaderVariantCollections::Save(path.string(), {}))
+                    path.clear();
+            }
+            else if (kind.rfind("shader:", 0) == 0)
+            {
+                const std::string t = kind.substr(7);
+                const char* name = t == "lit" ? "New Lit Shader.cqsh" : t == "unlit" ? "New Unlit Shader.cqsh"
+                                 : t == "imageeffect" ? "New Image Effect Shader.glsl" : t == "compute" ? "New Compute Shader.comp"
+                                 : t == "raytracing" ? "New Ray Tracing Shader.cqraytrace"
+                                 : "New Custom Render Texture Shader.glsl";
+                path = MakeUniquePath(dir / name);
+                std::ofstream f(path);
+                f << (t == "lit" ? ShaderTemplates::Lit() : t == "unlit" ? ShaderTemplates::Unlit()
+                      : t == "imageeffect" ? ShaderTemplates::ImageEffect() : t == "compute" ? ShaderTemplates::Compute()
+                      : t == "raytracing" ? ShaderTemplates::RayTracing()
+                      : ShaderTemplates::CustomRenderTexture());
             }
             else if (kind == "shader")
             {
@@ -1821,7 +1895,7 @@ namespace Conqueror::Editor
         }
         static const char* internal[] = { ".cpp", ".h", ".hpp", ".c", ".cs", ".cqs", ".cqsh", ".glsl", ".cqcont", ".cqscene",
                                           ".lua", ".luaq", ".luau", ".py", ".java", ".txt", ".md", ".json", ".yaml", ".yml", ".ini",
-                                          ".cqprefab", ".cqgraph", ".cqmontage" };
+                                          ".cqprefab", ".cqgraph", ".cqmontage", ".cqinputactions", ".cqanim" };
         for (const char* e : internal)
         {
             if (ext == e && m_FileOpenCallback)

@@ -153,9 +153,9 @@ namespace Conqueror
 
         bool SkinnedModelOf(Entity e)
         {
-            if (!e.HasComponent<ModelComponent>())
+            if (!e.HasComponent<MeshRendererComponent>())
                 return false;
-            auto& mc = e.GetComponent<ModelComponent>();
+            auto& mc = e.GetComponent<MeshRendererComponent>();
             return mc.ModelData && mc.ModelData->IsSkinned && mc.ModelData->SkeletonData;
         }
 
@@ -358,11 +358,19 @@ namespace Conqueror
 
         bool GetBoneWorldTransform(Scene& scene, uint32_t modelEntity, const std::string& bone, glm::mat4& out)
         {
+            if (!GetBoneModelTransform(scene, modelEntity, bone, out))
+                return false;
+            out = scene.m_Registry.get<TransformComponent>((entt::entity)modelEntity).WorldTransform * out;
+            return true;
+        }
+
+        bool GetBoneModelTransform(Scene& scene, uint32_t modelEntity, const std::string& bone, glm::mat4& out)
+        {
             entt::entity e = (entt::entity)modelEntity;
             auto& reg = scene.m_Registry;
-            if (!reg.valid(e) || !reg.all_of<ModelComponent, TransformComponent>(e))
+            if (!reg.valid(e) || !reg.all_of<MeshRendererComponent, TransformComponent>(e))
                 return false;
-            auto& mc = reg.get<ModelComponent>(e);
+            auto& mc = reg.get<MeshRendererComponent>(e);
             if (!mc.ModelData || !mc.ModelData->SkeletonData)
                 return false;
             const Skeleton& sk = *mc.ModelData->SkeletonData;
@@ -382,9 +390,8 @@ namespace Conqueror
                 }
             if (index < 0)
                 return false;
-            const glm::mat4& world = reg.get<TransformComponent>(e).WorldTransform;
             const glm::mat4 skin = palette && (size_t)index < palette->size() ? (*palette)[(size_t)index] : glm::mat4(1.0f);
-            out = world * skin * glm::inverse(sk.Bones[(size_t)index].OffsetMatrix);
+            out = skin * glm::inverse(sk.Bones[(size_t)index].OffsetMatrix);
             return true;
         }
     }

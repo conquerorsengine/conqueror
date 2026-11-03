@@ -445,6 +445,9 @@ func FPPlayer(name, x, y0, z, yaw, kinds, team, maxHealth, respawn)
     EntitySetParent(arms, vm);
     EntityAddComponent(arms, "Model");
     EntitySetComponentField(arms, "Model", "FilePath", "Assets/Mannequin/Models/Arms_Male.glb");
+    // Birinci şahıs kolları gölge düşürmez (normal FPS oyunlarındaki gibi): kameraya çok yakın olduklarından
+    // kendi üstlerine düşük çözünürlüklü, her kıpırdamada titreyen gölge atarlar
+    EntitySetComponentField(arms, "Model", "CastShadows", false);
     EntityAddComponent(arms, "Animation");
     EntitySetComponentField(arms, "Animation", "ControllerPath", "Assets/Mannequin/Animations/FPArms.cqcont");
     EntitySetPosition(arms, FP_ARMS_X, FP_ARMS_Y, FP_ARMS_Z);
@@ -619,6 +622,16 @@ func TargetPart(root, partName, px, py, pz, sx, sy, sz, tex, tiling, color, roug
     return e;
 }
 
+// Hedef parçası katı: kinematik gövde + kutu çarpıştırıcı (devrilirken / kayarken menteşeyle birlikte hareket eder).
+// Oyuncu ve silahı direğin, tabanın, çerçevenin içinden geçmez; mermi izi tahtada kalır
+func TargetSolid(e)
+{
+    EntityAddComponent(e, "Rigidbody");
+    EntitySetComponentField(e, "Rigidbody", "BodyType", "Kinematic");
+    EntityAddComponent(e, "BoxCollider");
+    return e;
+}
+
 // Atış hedefi (sabit taban + menteşeli stant + halkalı kâğıt hedef)
 func Target(name, x, y0, z, yaw, moving)
 {
@@ -633,15 +646,15 @@ func Target(name, x, y0, z, yaw, moving)
     var WOOD = "Assets/Weapons/Textures/stained_wood.jpg";
     var PLY = "Assets/Weapons/Textures/plywood.jpg";
     var wood = {r: 0.9, g: 0.82, b: 0.72, a: 1};
-    TargetPart(root, "Foot", 0, 0.015, -0.05, 0.5, 0.03, 0.36, "", 1, {r: 0.2, g: 0.2, b: 0.22, a: 1}, 0.45, 0.85);
+    TargetSolid(TargetPart(root, "Foot", 0, 0.015, -0.05, 0.5, 0.03, 0.36, "", 1, {r: 0.2, g: 0.2, b: 0.22, a: 1}, 0.45, 0.85));
     var hinge = CreateEntity("Hinge");
     EntitySetParent(hinge, root);
     EntitySetPosition(hinge, 0, 0.03, -0.099);
     // Menteşe yuvası: taban üstünde direğin dibini tutan çelik bilezik
-    TargetPart(root, "Hinge Bracket", 0, 0.055, -0.064, 0.1, 0.05, 0.1, "", 1, {r: 0.16, g: 0.16, b: 0.18, a: 1}, 0.4, 0.9);
+    TargetSolid(TargetPart(root, "Hinge Bracket", 0, 0.055, -0.064, 0.1, 0.05, 0.1, "", 1, {r: 0.16, g: 0.16, b: 0.18, a: 1}, 0.4, 0.9));
     // Parçalar menteşeye göre (kökteki konum - (0, 0.03, -0.099))
-    TargetPart(hinge, "Post", 0, 0.80, 0.035, 0.07, 1.6, 0.07, WOOD, 2.5, wood, 0.7, 0.0);
-    TargetPart(hinge, "Batten", 0, 1.42, 0.0825, 0.66, 0.06, 0.025, WOOD, 2.5, wood, 0.7, 0.0);
+    TargetSolid(TargetPart(hinge, "Post", 0, 0.80, 0.035, 0.07, 1.6, 0.07, WOOD, 2.5, wood, 0.7, 0.0));
+    TargetSolid(TargetPart(hinge, "Batten", 0, 1.42, 0.0825, 0.66, 0.06, 0.025, WOOD, 2.5, wood, 0.7, 0.0));
     var back = TargetPart(hinge, "Back", 0, 1.42, 0.104, 0.72, 0.72, 0.018, PLY, 1.3, {r: 1, g: 1, b: 1, a: 1}, 0.8, 0.0);
     EntityAddComponent(back, "Rigidbody");
     EntitySetComponentField(back, "Rigidbody", "BodyType", "Kinematic");
@@ -649,7 +662,7 @@ func Target(name, x, y0, z, yaw, moving)
     foreach (var f in [{n: "Top", px: 0, py: 1.7775, sx: 0.785, sy: 0.035}, {n: "Bottom", px: 0, py: 1.0625, sx: 0.785, sy: 0.035},
                        {n: "Left", px: -0.375, py: 1.42, sx: 0.035, sy: 0.715}, {n: "Right", px: 0.375, py: 1.42, sx: 0.035, sy: 0.715}])
     {
-        TargetPart(hinge, "Frame " + f.n, f.px, f.py, 0.111, f.sx, f.sy, 0.032, WOOD, 2.5, wood, 0.65, 0.0);
+        TargetSolid(TargetPart(hinge, "Frame " + f.n, f.px, f.py, 0.111, f.sx, f.sy, 0.032, WOOD, 2.5, wood, 0.65, 0.0));
     }
     var board = Mesh("Board", "Plane", 0, 0, 0, 0.62, 1, 0.62, "", WHITE);
     EntitySetParent(board, hinge);

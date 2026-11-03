@@ -60,6 +60,7 @@ namespace Conqueror
         float Time = 0.0f;
         std::string Method;              // bağlı varlıktaki betik metodu
         std::string Argument;            // isteğe bağlı metin argümanı
+        std::string Signal;              // Signal varlığı (.cqsignal): bağlı nesnenin Signal Receiver'ı tepki verir
     };
 
     struct TimelineTrack

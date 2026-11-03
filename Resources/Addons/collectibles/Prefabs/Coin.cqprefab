@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 2646894640436569197
+  - Entity: 5296035433466890568
     TagComponent:
       Tag: Coin
       GameTag: Untagged
@@ -20,7 +20,7 @@ Entities:
       Radius: 0.55
       IsTrigger: true
       Version: 2
-  - Entity: 6934790645679971110
+  - Entity: 2867005255348161013
     TagComponent:
       Tag: Coin Mesh
       GameTag: Untagged
@@ -34,14 +34,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 0.78, 0.15, 1]
-      Metallic: 0.9
-      Roughness: 0.25
-      AO: 1
-      EmissionColor: [1, 0.7, 0.1]
-      EmissionStrength: 0.4
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 3742408496096963789
+      MaterialAsset: Packages/collectibles/Materials/Orange Glow.cqmat
+  - Entity: 4437501957183916946
     TagComponent:
       Tag: Sparkle
       GameTag: Untagged
@@ -213,6 +207,49 @@ Environment:
       Sharpen: false
       SharpenAmount: 0.3
       AntiAliasing: 1
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: false
+      SSRIntensity: 1
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: false
+      SSGIIntensity: 1
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: false
+      CloudCoverage: 0.45
+      CloudDensity: 1
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: false
+      FocusDistance: 10
+      Aperture: 2.8
+      FocalLength: 50
+      DOFMaxBlur: 10
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
     Environment:
       Sky: 0
       BackgroundColor: [0.1, 0.1, 0.1]
@@ -220,6 +257,13 @@ Environment:
       ReflectionIntensity: 1
       SkyboxIntensity: 1
       SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
     Bake:
       RealtimeGI: false
       BakedGI: true
@@ -259,7 +303,7 @@ Environment:
       APVGeometryBias: 0.01
       APVRayOriginBias: -0.001
 Hierarchy:
-  - Child: 6934790645679971110
-    Parent: 2646894640436569197
-  - Child: 3742408496096963789
-    Parent: 2646894640436569197
+  - Child: 2867005255348161013
+    Parent: 5296035433466890568
+  - Child: 4437501957183916946
+    Parent: 5296035433466890568

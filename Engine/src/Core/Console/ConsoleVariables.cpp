@@ -421,6 +421,7 @@ namespace Conqueror
         AddBoolOverride("r.Bloom", "Bloom on/off", &R::Bloom, [](Scene& s) { return s.GetRenderSettings().Post.Bloom; });
         AddFloatOverride("r.Bloom.Intensity", "Bloom intensity", &R::BloomIntensity, [](Scene& s) { return s.GetRenderSettings().Post.BloomIntensity; }, 0.0f, 20.0f);
         AddBoolOverride("r.SSAO", "Screen space ambient occlusion on/off", &R::SSAO, [](Scene& s) { return s.GetRenderSettings().Post.AmbientOcclusion; });
+        AddIntOverride("r.TAADebug", "TAA debug view: 0 off, 1 per-pixel history path (red moving, green settled, cyan calm, blue trusted, yellow clamped, magenta sky, white no history)", &R::TAADebug, [](Scene&) { return 0; }, 0, 1);
         AddIntOverride("r.AntiAliasing", "Post anti-aliasing: 0 off, 1 FXAA, 2 SMAA, 3 TAA", &R::AntiAliasing, [](Scene& s) { return (int)s.GetRenderSettings().Post.AntiAliasing; }, 0, 3);
         AddBoolOverride("r.SSR", "Screen space reflections on/off", &R::SSR, [](Scene& s) { return s.GetRenderSettings().Post.ScreenSpaceReflections; });
         AddBoolOverride("r.VolumetricFog", "Volumetric fog (shadowed light shafts) on/off", &R::VolumetricFog, [](Scene& s) { return s.GetRenderSettings().Post.VolumetricFog; });

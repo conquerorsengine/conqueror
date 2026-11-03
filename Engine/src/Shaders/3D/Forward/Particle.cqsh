@@ -18,6 +18,7 @@ uniform vec2 u_Tiles = vec2(1.0);
 
 out vec2 v_UV;
 out vec4 v_Color;
+out float v_Size;
 
 void main()
 {
@@ -62,6 +63,7 @@ void main()
     v_UV = vec2((float(fx) + uv.x) / float(tx), 1.0 - (float(fy) + 1.0 - uv.y) / float(ty));
 
     v_Color = i_Color;
+    v_Size = size;
     gl_Position = CQ_Frame.ViewProjection * vec4(world, 1.0);
 }
 
@@ -73,9 +75,13 @@ void main()
 
 in vec2 v_UV;
 in vec4 v_Color;
+in float v_Size;
 layout(location = 0) out vec4 FragColor;
 
 uniform sampler2D u_Texture;
+uniform sampler2D u_SceneDepth;         // sahne derinliği (opak geometri)
+uniform int u_SoftDepth = 0;
+uniform int u_ReactivePass = 0;         // 1: TAA tepki maskesine örtü (alfa) yazılır
 uniform int u_HasTexture = 0;
 uniform int u_Blend = 0;                // 0 alfa, 1 eklemeli, 2 önceden çarpılmış
 uniform float u_Emissive = 1.0;
@@ -93,8 +99,26 @@ void main()
         tex = vec4(1.0, 1.0, 1.0, a * a);
     }
     vec4 c = tex * v_Color;
+    // Yumuşak parçacık (Unity soft particles): parçacık arkasındaki yüzeye yaklaştıkça (parçacık boyunun yarısı içinde)
+    // solar. Düz dörtgen küpü / silahı / zemini kestiği yerde dümdüz kesik çizgi kalmaz
+    if (u_SoftDepth == 1)
+    {
+        float scene = texelFetch(u_SceneDepth, ivec2(gl_FragCoord.xy), 0).r;
+        if (scene < 1.0)
+        {
+            vec4 ps = CQ_Frame.InvProjection * vec4(0.0, 0.0, scene * 2.0 - 1.0, 1.0);
+            vec4 pf = CQ_Frame.InvProjection * vec4(0.0, 0.0, gl_FragCoord.z * 2.0 - 1.0, 1.0);
+            float gap = (-ps.z / ps.w) - (-pf.z / pf.w);
+            c.a *= clamp(gap / max(v_Size * 0.5, 0.02), 0.0, 1.0);
+        }
+    }
     if (c.a < 0.003)
         discard;
+    if (u_ReactivePass == 1)
+    {
+        FragColor = vec4(c.a);
+        return;
+    }
 
     vec3 rgb = c.rgb;
     if (CQ_Frame.FeatureFlags.x == 1)

@@ -28,6 +28,8 @@ namespace Conqueror
         std::string GetFormatName() const override { return "RGBA8 (render target)"; }
 
         const std::string& GetName() const { return m_Name; }
+        // Varlıktan gelen hedeflerde yol = varlık dosyası (kaydedilen sahne / malzeme yeniden açınca varlığı yükler)
+        void SetPath(const std::string& path) { m_Path = path; }
         // Boyut farklıysa yeniden ayır (içerik siyaha döner)
         void Resize(uint32_t width, uint32_t height);
         // Bu dokuya çizen çerçeve tamponu (tonlama çözümü buraya yazar)

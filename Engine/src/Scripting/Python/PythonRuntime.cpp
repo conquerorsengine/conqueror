@@ -241,6 +241,36 @@ namespace Conqueror::Scripting
                 PyModule_AddObject(module, name.c_str(), ToPy(value));
             Py_XDECREF(builtins);
             PyErr_Clear();
+            // Data Asset temel sınıfı (Unity ScriptableObject, Unreal UDataAsset): "class WeaponData(DataAsset)" sınıf
+            // öznitelikleri veri şablonudur; oyunda WeaponData.load("Assets/Sword.cqdata") alanları dolu bir nesne verir
+            static const char* kDataAsset =
+                "class DataAsset:\n"
+                "    \"\"\"Data Asset sınıflarının temeli: sınıf öznitelikleri veri şablonudur, değerler .cqdata dosyasında.\"\"\"\n"
+                "    _asset_path = None\n"
+                "    @classmethod\n"
+                "    def load(cls, path):\n"
+                "        \"\"\".cqdata dosyasını bu sınıf olarak yükle (okunamazsa None).\"\"\"\n"
+                "        data = LoadDataAsset(path)\n"
+                "        if data is None:\n"
+                "            return None\n"
+                "        obj = cls()\n"
+                "        for k, v in data.items():\n"
+                "            setattr(obj, k, v)\n"
+                "        obj._asset_path = path\n"
+                "        return obj\n"
+                "    @property\n"
+                "    def asset_path(self):\n"
+                "        return self._asset_path\n";
+            PyObject* dict = PyModule_GetDict(module);
+            if (!PyDict_GetItemString(dict, "__builtins__"))
+                PyDict_SetItemString(dict, "__builtins__", PyEval_GetBuiltins());
+            if (PyObject* r = PyRun_String(kDataAsset, Py_file_input, dict, dict))
+                Py_DECREF(r);
+            else
+            {
+                CQ_CORE_ERROR("[Python] DataAsset class could not be defined");
+                PyErr_Clear();
+            }
             return module;
         }
 

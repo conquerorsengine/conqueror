@@ -673,7 +673,6 @@ namespace Conqueror
             };
             std::vector<entt::entity> ids;
             for (auto e : reg.view<MeshRendererComponent>()) ids.push_back(e);
-            for (auto e : reg.view<ModelComponent>()) ids.push_back(e);
             for (auto e : reg.view<TerrainComponent>()) ids.push_back(e);
             std::sort(ids.begin(), ids.end());
             ids.erase(std::unique(ids.begin(), ids.end()), ids.end());
@@ -722,8 +721,11 @@ namespace Conqueror
             for (int c = 0; c < 4; ++c)
                 for (int r = 0; r < 4; ++r)
                     h = HashFloat(h, w[c][r]);
-            if (auto* mr = reg.try_get<MeshRendererComponent>(s.E)) h = HashMix(h, (uint64_t)mr->Type + 11);
-            if (auto* mc = reg.try_get<ModelComponent>(s.E)) h = HashMix(h, (uint64_t)(uintptr_t)mc->ModelData.get());
+            if (auto* mr = reg.try_get<MeshRendererComponent>(s.E))
+            {
+                h = HashMix(h, (uint64_t)mr->Type + 11);
+                h = HashMix(h, (uint64_t)(uintptr_t)mr->ModelData.get());
+            }
             if (auto* t = reg.try_get<TerrainComponent>(s.E))
             {
                 h = HashFloat(h, t->Width); h = HashFloat(h, t->Length); h = HashFloat(h, t->Height); h = HashMix(h, (uint64_t)t->Resolution);
@@ -768,13 +770,13 @@ namespace Conqueror
         for (auto& s : sources)
         {
             const glm::mat4& world = reg.get<TransformComponent>(s.E).WorldTransform;
-            if (auto* mr = reg.try_get<MeshRendererComponent>(s.E))
+            if (auto* mr = reg.try_get<MeshRendererComponent>(s.E); mr && !mr->IsModel())
             {
                 std::shared_ptr<Mesh> mesh = mr->Type == MeshType::Sphere ? Renderer3D::GetSphereMesh() : mr->Type == MeshType::Plane ? Renderer3D::GetPlaneMesh()
                                            : mr->Type == MeshType::Cylinder ? Renderer3D::GetCylinderMesh() : Renderer3D::GetCubeMesh();
                 AppendMesh(mesh, world, s.Area, tris);
             }
-            if (auto* mc = reg.try_get<ModelComponent>(s.E); mc && mc->ModelData)
+            if (auto* mc = reg.try_get<MeshRendererComponent>(s.E); mc && mc->ModelData)
                 for (auto& m : mc->ModelData->Meshes)
                     AppendMesh(m, world, s.Area, tris);
             if (auto* t = reg.try_get<TerrainComponent>(s.E); t && t->Resolution > 1 && (int)t->Heights.size() >= t->Resolution * t->Resolution)

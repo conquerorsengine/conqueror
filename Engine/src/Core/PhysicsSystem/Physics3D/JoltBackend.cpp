@@ -1254,51 +1254,13 @@ namespace Conqueror::Physics3D
             ch->ExtendedUpdate(dt, JPH::Vec3::sZero(), ext, m_System->GetDefaultBroadPhaseLayerFilter(MakeLayer(rec.Layer, true)),
                                objFilter, bodyFilter, {}, *s_TempAllocator);
             glm::vec3 after = ToG(JPH::Vec3(ch->GetPosition()));
-            // İtilen hafif dinamik nesne (kutu, varil) karakterin önünden onun hızıyla çekilir (Unreal karakter itmesi):
-            // nesne yalnız fizik adımlarında ilerlediği için aradaki karelerde karakter takılıp sonra sıçrıyordu
-            if (rec.Listener->PushBodies)
-                PushContactBodies(*ch, displacement / dt);
+            // Kutuları Jolt'un karakter itmesi iter (eski hız); karakter artık fizik adımında hareket ettiği için kutuyla aynı
+            // adımda ilerler, aradaki karelerde takılıp sarsılmaz
             RefreshCharacter(rec);
             rec.LastState.Velocity = (after - before) / dt;
             return rec.LastState;
         }
 
-        void PushContactBodies(const JPH::CharacterVirtual& ch, const glm::vec3& velocity)
-        {
-            const JPH::Vec3 want = ToJ(glm::vec3(velocity.x, 0.0f, velocity.z));
-            if (want.LengthSq() < 1e-6f)
-                return;
-            JPH::BodyInterface& bi = m_System->GetBodyInterface();
-            const float charMass = ch.GetMass();
-            for (const auto& c : ch.GetActiveContacts())
-            {
-                if (c.mMotionTypeB != JPH::EMotionType::Dynamic || c.mBodyB.IsInvalid() || c.mIsSensorB || !c.mHadCollision)
-                    continue;
-                // Yalnız yanlardan itme (üstünde durulan / tavandaki nesne değil); normal karaktere doğru
-                JPH::Vec3 dir = -c.mContactNormal;
-                dir.SetY(0.0f);
-                if (dir.LengthSq() < 0.25f)
-                    continue;
-                dir = dir.Normalized();
-                const float push = want.Dot(dir);
-                if (push <= 0.0f)
-                    continue;
-                // Karakterden çok ağır gövdeler (araba, kapı kasası) bu yolla sürüklenmez; onları Jolt'un dürtüleri iter
-                const float invMass = [&] {
-                    JPH::BodyLockRead lock(m_System->GetBodyLockInterface(), c.mBodyB);
-                    return lock.Succeeded() ? lock.GetBody().GetMotionProperties()->GetInverseMass() : 0.0f;
-                }();
-                if (invMass <= 0.0f || 1.0f / invMass > charMass * 6.0f)
-                    continue;
-                const JPH::Vec3 v = bi.GetLinearVelocity(c.mBodyB);
-                const float have = v.Dot(dir);
-                if (have < push)
-                {
-                    bi.SetLinearVelocity(c.mBodyB, v + dir * (push - have));
-                    bi.ActivateBody(c.mBodyB);
-                }
-            }
-        }
 
         void SetCharacterPosition(Handle h, const glm::vec3& position) override
         {

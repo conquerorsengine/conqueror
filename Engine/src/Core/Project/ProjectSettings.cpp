@@ -2,6 +2,7 @@
 #include "Core/Audio/AudioEngine.h"
 #include "Core/Logging/Log.h"
 #include "Core/Input/Input.h"
+#include "Core/Input/InputActionRuntime.h"
 #include "Core/Utils/FileSystem.h"
 #include "Scene/Scene.h"
 
@@ -89,6 +90,12 @@ namespace Conqueror
         return custom;
     }
 
+    std::string& ProjectSettings::ProjectWideActions()
+    {
+        static std::string path;
+        return path;
+    }
+
     int ProjectSettings::GetScriptOrder(const std::string& className)
     {
         if (s_ScriptOrder.empty() || className.empty())
@@ -116,6 +123,7 @@ namespace Conqueror
         s_ScriptOrder.clear();
         s_OrderCacheValid = false;
         CustomTags().clear();
+        ProjectWideActions().clear();
     }
 
     void ProjectSettings::Serialize(YAML::Emitter& out)
@@ -137,6 +145,9 @@ namespace Conqueror
         out << YAML::Key << "Graphics" << YAML::Value << YAML::BeginMap;
         out << YAML::Key << "DefaultTonemapper" << YAML::Value << s_Graphics.DefaultTonemapper;
         out << YAML::Key << "DefaultSky" << YAML::Value << s_Graphics.DefaultSky;
+        out << YAML::Key << "PreloadedShaders" << YAML::Value << YAML::BeginSeq;
+        for (const auto& p : s_Graphics.PreloadedShaders) out << p;
+        out << YAML::EndSeq;
         out << YAML::EndMap;
 
         out << YAML::Key << "Navigation" << YAML::Value << YAML::BeginMap;
@@ -168,6 +179,8 @@ namespace Conqueror
 
         if (CustomInput())
             out << YAML::Key << "InputConfig" << YAML::Value << YAML::Literal << Input::SaveConfigToString();
+        if (!ProjectWideActions().empty())
+            out << YAML::Key << "ProjectWideActions" << YAML::Value << ProjectWideActions();
     }
 
     void ProjectSettings::Deserialize(const YAML::Node& root)
@@ -191,6 +204,9 @@ namespace Conqueror
         {
             Read(g, "DefaultTonemapper", s_Graphics.DefaultTonemapper);
             Read(g, "DefaultSky", s_Graphics.DefaultSky);
+            s_Graphics.PreloadedShaders.clear();
+            if (auto p = g["PreloadedShaders"]; p && p.IsSequence())
+                for (const auto& x : p) s_Graphics.PreloadedShaders.push_back(x.as<std::string>());
         }
         if (auto n = root["Navigation"]; n && n["Areas"] && n["Areas"].IsSequence())
             for (const auto& a : n["Areas"])
@@ -225,6 +241,8 @@ namespace Conqueror
             }
             CustomInput() = false;
         }
+        if (auto pw = root["ProjectWideActions"]; pw && pw.IsScalar())
+            ProjectWideActions() = pw.as<std::string>();
         if (auto t = root["Tags"]; t && t.IsSequence())
             for (const auto& tag : t)
             {
@@ -255,5 +273,6 @@ namespace Conqueror
             AudioEngine::Get().SetMasterVolume(s_Audio.DisableAudio ? 0.0f : std::clamp(s_Audio.GlobalVolume, 0.0f, 4.0f));
         Scene::SetCustomTags(CustomTags());
         s_OrderCacheValid = false;
+        InputActionRuntime::SetProjectWideAsset(ProjectWideActions());
     }
 }

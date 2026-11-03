@@ -55,8 +55,20 @@ namespace Conqueror
 
         // Renderer3D: şu an bu görünümün sahne hedefine çiziliyorsa Temporal AA alt piksel titreşimi (NDC)
         static bool GetCurrentJitter(glm::vec2& outNDC);
+        // Şu an sahne hedefine çizilen görünüm (Renderer3D hareket maskesi anahtarı)
+        static const void* GetCurrentStack();
+        // Şu an bu görünümün (çok örneklemesiz) sahne hedefine çiziliyorsa sahne derinliği, değilse 0. Derinlik yazmayan
+        // saydam çizimler (parçacıklar) örnekleyebilir: yüzeye yaklaşınca yumuşakça solarlar (soft particles)
+        static uint32_t GetCurrentSceneDepth();
+        // TAA tepki maskesi (reactive mask): derinlik / hareket bayrağı yazmayan saydam çizimler (parçacıklar) kapladıkları
+        // pikselleri buraya yazar; TAA o piksellerde geçmişe güvenmez. Begin maskenin çerçeve tamponunu bağlar (bu görünümün
+        // TAA'lı sahne hedefine çizilmiyorsa 0), End sahne hedefini geri bağlar
+        static uint32_t BeginReactiveDraw();
+        static void EndReactiveDraw();
         // SSR normal/pürüzlülük tamponu (yoksa 0)
         uint32_t GetSceneNormalTexture() const;
+        // Güneş gölgesi (0 gölge .. 1 aydınlık), TAA açıkken: gölgesi değişen yüzey geçmişe güvenmez
+        uint32_t GetSceneShadowMaskTexture() const;
         // SSGI albedo tamponu (yoksa 0)
         uint32_t GetSceneAlbedoTexture() const;
 
@@ -86,6 +98,9 @@ namespace Conqueror
         void RunAutoExposure(const PostProcessSettings& settings, float deltaTime);
         void EnsureTarget(RenderTarget& rt, uint32_t width, uint32_t height, uint32_t internalFormat);
         RenderTarget& NextHDRTarget();
+        // Full Screen Pass (Image Effect Shader): kaynak doku -> hedef
+        bool RunFullScreenPass(const struct FullScreenPassEntry& pass, uint32_t source, RenderTarget& target, float time);
+        RenderTarget m_AfterPass[2];
         glm::mat4 JitteredProjection(const RenderCamera& camera) const;
         void ReleaseEffectTargets();
 
@@ -113,6 +128,16 @@ namespace Conqueror
         RenderTarget m_SSR, m_Fog, m_Clouds, m_DOFHalf, m_DOFBlur;
         RenderTarget m_History[2];      // TAA geçmişi
         int m_HistoryIndex = 0;
+        // TAA tutarsızlık sayacı (R16F, geçmişle aynı sırada): geçmiş kaç karedir üst üste komşuluk kutusunun dışında.
+        // Jitter titremesi bir kare tutar bir kare tutmaz (güven sürer); hareket eden gölge üst üste tutmaz (güven kalkar)
+        RenderTarget m_TAAState[2];
+        uint32_t m_TAAFramebuffer[2] = { 0, 0 };     // renk 0: geçmiş, renk 1: durum
+        RenderTarget m_TAADebug;                      // r.TAADebug: renk 2, pikselin geçmiş yolu (yalnız gösterilir)
+        RenderTarget m_Reactive;                      // TAA tepki maskesi (R8): parçacıkların kapladığı pikseller
+        uint32_t m_ReactiveFramebuffer = 0;           // renk: m_Reactive, derinlik: sahne derinliği (salt okunur)
+        bool m_ReactiveUsed = false;                  // bu karede maskeye çizildi (ilk çizimde temizlenir)
+        RenderTarget m_Velocity;                      // nesne hareket vektörleri (RGBA16F: xy uv hızı, z 1 kesin / 0.5 yaklaşık)
+        uint32_t m_VelocityFramebuffer = 0;           // renk: m_Velocity, derinlik: sahne derinliği (salt okunur)
         bool m_HistoryValid = false;
         uint32_t m_FrameIndex = 0;
         glm::vec2 m_JitterNDC{ 0.0f };
@@ -122,6 +147,7 @@ namespace Conqueror
         bool m_HasNormals = false;
         bool m_WantAlbedo = false;      // SSGI albedo eki (normal ekiyle birlikte)
         bool m_HasAlbedo = false;
+        bool m_HasShadowMask = false;
         RenderTarget m_GI, m_GITemp, m_GIHistory[2];
         int m_GIHistoryIndex = 0;
         bool m_GIHistoryValid = false;
@@ -129,6 +155,10 @@ namespace Conqueror
         bool m_HasPrevViewProj = false;
         float m_LastTime = -1.0f;
         glm::vec2 m_CloudWind{ 0.0f };
+        RenderTarget m_CloudHistory[2];         // bulutların zamansal birikimi (çeyrek çözünürlük)
+        int m_CloudHistoryIndex = 0;
+        bool m_CloudHistoryValid = false;
+        glm::mat4 m_PrevCloudViewProj{ 1.0f };  // önceki karede bulutların hesaplandığı matris
         float m_DeltaTime = 0.0f;
         uint32_t m_LumTexture = 0, m_LumFramebuffer = 0;
         RenderTarget m_Adapt[2];
@@ -162,5 +192,7 @@ namespace Conqueror
         // Paylaşılan kaynaklar
         static void DrawFullscreenQuad();
         static std::shared_ptr<Shader> GetShader(const char* name);
+        // Full Screen Pass shader'ının son derleme hatası (Inspector gösterir)
+        static std::string GetFullScreenPassError(const std::string& path);
     };
 }

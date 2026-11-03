@@ -1,3 +1,4 @@
+#include "Scene/Signals.h"
 #include "TimelineSystem.h"
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"
@@ -121,7 +122,12 @@ namespace Conqueror
                 for (const auto& m : track.Markers)
                 {
                     const bool crossed = (from < 0.0 ? m.Time >= 0.0f : m.Time > from) && m.Time <= to;
-                    if (!crossed || m.Method.empty())
+                    if (!crossed)
+                        continue;
+                    // Signal Emitter: Signal varlığı bağlı nesnenin Signal Receiver'ına gider
+                    if (!m.Signal.empty())
+                        SignalAssets::Send(scene, (uint32_t)(entt::entity)target, m.Signal);
+                    if (m.Method.empty())
                         continue;
                     if (m.Argument.empty())
                         scene.InvokeScriptMethod((uint32_t)(entt::entity)target, m.Method.c_str(), nullptr, 0);
@@ -314,7 +320,7 @@ namespace Conqueror
                     if (!outgoing)
                         break;
                     // Klip zamanı; döngüsüz klip animasyon bitince son karede kalır
-                    const ModelComponent* model = target.HasComponent<ModelComponent>() ? &target.GetComponent<ModelComponent>() : nullptr;
+                    const MeshRendererComponent* model = target.HasComponent<MeshRendererComponent>() ? &target.GetComponent<MeshRendererComponent>() : nullptr;
                     auto clipTime = [&](const TimelineClip& c) {
                         float time = c.ClipIn + (float)(t - c.Start) * c.Speed;
                         if (!c.Loop && model && model->ModelData && c.AnimationIndex >= 0 &&

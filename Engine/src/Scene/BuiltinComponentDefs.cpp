@@ -191,7 +191,17 @@ namespace Conqueror
                 return path.empty() ? nullptr : Texture2D::Create(SceneSerializer::ResolveAssetPath(path));
             };
             ComponentDef<MRM>("Mesh Renderer", "MeshRendererComponent", "Rendering", ICON_FA_CUBES).Builtin()
+                // Eski "Model" bileşeni buraya katıldı: EntityAddComponent(e, "Model") ve "FilePath" alanı çalışmaya devam eder
+                .Alias("Model").Alias("ModelComponent")
                 .Field("Mesh", "Mesh", &MRM::Type).Options({ "Cube", "Sphere", "Plane", "Cylinder" })
+                .Property("FilePath", "Model", FieldKind::Asset,
+                    [](const MRM& m) { return m.ModelPath; },
+                    [](MRM& m, const std::string& path) {
+                        m.ModelPath = path;
+                        m.ModelData = path.empty() ? nullptr : ModelLoader::Load(SceneSerializer::ResolveAssetPath(path));
+                        if (!path.empty()) { m.MaterialInstance = nullptr; m.MaterialPath.clear(); }
+                    })
+                .Field("Tint", "Tint", &MRM::Tint, FieldKind::Color3)
                 .Property("Material", "Material", FieldKind::Asset,
                     [](const MRM& m) { return m.MaterialPath.empty() ? std::string() : SceneSerializer::ToAssetPath(m.MaterialPath); },
                     [](MRM& m, const std::string& path) {
@@ -202,6 +212,7 @@ namespace Conqueror
                 .Field("CastShadows", "Cast Shadows", &MRM::CastShadows)
                 .Field("ReceiveShadows", "Receive Shadows", &MRM::ReceiveShadows)
                 .Field("RealtimeGI", "Realtime GI", &MRM::RealtimeGI)
+                .Field("LightmapParameters", "Lightmap Parameters", &MRM::LightmapParameters, FieldKind::Asset).Filter(".cqlmparams")
                 // --- malzeme özellikleri (renderer.material)
                 .Property("Color", "Color", FieldKind::Color4,
                     [vec](const MRM& m) { glm::vec4 c = RM::GetColor(m); return vec(&c.x, 4); },
@@ -305,14 +316,6 @@ namespace Conqueror
         // Kamera (SceneCamera erişimcileri üzerinden): EntitySetComponentField(cam, "Camera", "OrthographicSize", 25)
         auto toText = [](float v) { char b[32]; std::snprintf(b, sizeof(b), "%g", v); return std::string(b); };
         // Model / Animation / Audio Listener: özel inspector + serileştirici; betikler ve otomasyon için alanlar
-        ComponentDef<ModelComponent>("Model", "ModelComponent", "Rendering", ICON_FA_CUBES).Builtin()
-            .Field("Tint", "Tint", &ModelComponent::Tint, FieldKind::Color3)
-            .Property("FilePath", "Model", FieldKind::Asset,
-                [](const ModelComponent& m) { return m.FilePath; },
-                [](ModelComponent& m, const std::string& path) {
-                    m.FilePath = path;
-                    m.ModelData = path.empty() ? nullptr : ModelLoader::Load(SceneSerializer::ResolveAssetPath(path));
-                });
         // Basit klip oynatıcı: Timeline Animation parçası bunu sürer (betikten EntityAddComponent(e, "Animator"))
         ComponentDef<AnimatorComponent>("Animator", "AnimatorComponent", "Animation", ICON_FA_PERSON_WALKING).Builtin()
             .Field("Playing", "Playing", &AnimatorComponent::Playing)

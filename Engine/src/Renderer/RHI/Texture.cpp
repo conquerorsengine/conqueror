@@ -1,4 +1,6 @@
+#include "Renderer/CustomRenderTexture.h"
 #include "Texture.h"
+#include "Core/Utils/ImportActivity.h"
 #include "Renderer/RenderTargetRegistry.h"
 #include <chrono>
 #include <filesystem>
@@ -30,6 +32,9 @@ namespace Conqueror
         // "rt://Ad": kamera render hedefi (SubViewport)
         if (std::string target; RenderTargetRegistry::ParsePath(path, target))
             return RenderTargetRegistry::Acquire(target);
+        // Custom Render Texture (.cqcrt): shader'ın güncellediği doku
+        if (CustomRenderTextures::IsAsset(path))
+            return CustomRenderTextures::Acquire(path);
         // Render Texture varlığı (.cqrt): aynı adlı render hedefi, dosyadaki boyutta
         if (RenderTargetRegistry::IsAsset(path))
         {
@@ -54,9 +59,15 @@ namespace Conqueror
             case RendererAPI::API::None:    CQ_CORE_ASSERT(false, "RendererAPI::None is currently not supported!"); return nullptr;
             case RendererAPI::API::OpenGL:
             {
+                const auto t0 = std::chrono::steady_clock::now();
                 auto tex = std::make_shared<OpenGLTexture2D>(path);
+                const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
                 if (!tex->GetRendererID())
+                {
+                    ImportActivity::Add(path, "Texture", ms, false, "could not be read");
                     return nullptr;
+                }
+                ImportActivity::Add(path, "Texture", ms, true, std::to_string(tex->GetWidth()) + "x" + std::to_string(tex->GetHeight()));
                 s_Cache[path] = tex;
                 Watch(tex);
                 return tex;
@@ -127,7 +138,11 @@ namespace Conqueror
                         ++it;
                         continue;
                     }
-                    if (tex->Reload())
+                    const auto t0 = std::chrono::steady_clock::now();
+                    const bool reloaded = tex->Reload();
+                    ImportActivity::Add(it->first, "Texture", std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count(),
+                                        reloaded, reloaded ? std::to_string(tex->GetWidth()) + "x" + std::to_string(tex->GetHeight()) : "could not be read", true);
+                    if (reloaded)
                     {
                         it->second.Time = time;
                         it->second.Missing = false;
@@ -151,7 +166,13 @@ namespace Conqueror
             if (!tex)
                 continue;
             if (tex->GetPath() == canonical || tex->GetPath() == path)
-                any |= tex->Reload();
+            {
+                const auto t0 = std::chrono::steady_clock::now();
+                const bool reloaded = tex->Reload();
+                ImportActivity::Add(tex->GetPath(), "Texture", std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count(),
+                                    reloaded, std::to_string(tex->GetWidth()) + "x" + std::to_string(tex->GetHeight()), true);
+                any |= reloaded;
+            }
         }
         return any;
     }

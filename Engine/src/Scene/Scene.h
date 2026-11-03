@@ -32,7 +32,6 @@ namespace Conqueror
     struct ActiveComponent;
     struct CameraComponent;
     struct SpriteRendererComponent;
-    struct ImageComponent;
     struct MeshRendererComponent;
     struct RigidBody2DComponent;
     struct BoxCollider2DComponent;
@@ -48,7 +47,6 @@ namespace Conqueror
     struct CanvasComponent;
     struct CanvasScalerComponent;
     struct GraphicRaycasterComponent;
-    struct ModelComponent;
     struct AnimatorComponent;
     struct AnimationComponent;
     struct DirectionalLightComponent;
@@ -90,13 +88,13 @@ namespace Conqueror
     struct BillboardRendererComponent; struct HaloComponent; struct LensFlareComponent; struct CameraSkyboxComponent; struct AreaLightComponent;
     struct PlayerInputComponent; struct PlayerInputManagerComponent;
     struct NavMeshModifierComponent; struct NavMeshModifierVolumeComponent; struct NavMeshLinkComponent;
-    struct VideoPlayerComponent;
+    struct VideoPlayerComponent; struct FullScreenPassComponent;
     struct GameplayTagsComponent; struct AbilitySystemComponent;
     struct PlayerStartComponent; struct GameModeComponent; struct SpringArmComponent; struct BoneAttachmentComponent;
-    struct StreamedLevelComponent; struct LevelStreamingVolumeComponent;
+    struct StreamedLevelComponent; struct LevelStreamingVolumeComponent; struct AnimationPlayerComponent;
     struct AutoLODComponent;
     struct SoundOcclusionComponent; struct SoundConcurrencyComponent;
-    struct VertexPaintComponent; struct FractureComponent; struct RagdollComponent; struct VirtualGeometryComponent; struct CharacterCustomizerComponent; struct SignalConnectionsComponent; struct CSGShapeComponent; struct MultiMeshComponent; struct RemoteTransformComponent; struct RayCastComponent; struct VisibleOnScreenNotifierComponent; struct Parallax2DComponent; struct RenderTargetComponent; struct Bone2DComponent; struct IK2DComponent;
+    struct VertexPaintComponent; struct FractureComponent; struct RagdollComponent; struct VirtualGeometryComponent; struct CharacterCustomizerComponent; struct SignalConnectionsComponent; struct SignalReceiverComponent; struct CSGShapeComponent; struct MultiMeshComponent; struct RemoteTransformComponent; struct RayCastComponent; struct VisibleOnScreenNotifierComponent; struct Parallax2DComponent; struct RenderTargetComponent; struct Bone2DComponent; struct IK2DComponent;
     struct RigComponent; struct TwoBoneIKConstraintComponent; struct MultiAimConstraintComponent; struct ChainIKConstraintComponent; struct DampedTransformComponent;
     struct ProjectileMovementComponent; struct SortingGroupComponent; struct PrefabInstanceComponent;
     struct GridComponent; struct TilemapComponent; struct TilemapCollider2DComponent;
@@ -550,7 +548,6 @@ namespace Conqueror
         template<> void Scene::OnComponentAdded<ActiveComponent>(Entity entity, ActiveComponent& component);
     template<> void Scene::OnComponentAdded<CameraComponent>(Entity entity, CameraComponent& component);
     template<> void Scene::OnComponentAdded<SpriteRendererComponent>(Entity entity, SpriteRendererComponent& component);
-    template<> void Scene::OnComponentAdded<ImageComponent>(Entity entity, ImageComponent& component);
     template<> void Scene::OnComponentAdded<MeshRendererComponent>(Entity entity, MeshRendererComponent& component);
     template<> void Scene::OnComponentAdded<RigidBody2DComponent>(Entity entity, RigidBody2DComponent& component);
     template<> void Scene::OnComponentAdded<BoxCollider2DComponent>(Entity entity, BoxCollider2DComponent& component);
@@ -566,7 +563,6 @@ namespace Conqueror
     template<> void Scene::OnComponentAdded<CanvasComponent>(Entity entity, CanvasComponent& component);
     template<> void Scene::OnComponentAdded<CanvasScalerComponent>(Entity entity, CanvasScalerComponent& component);
     template<> void Scene::OnComponentAdded<GraphicRaycasterComponent>(Entity entity, GraphicRaycasterComponent& component);
-    template<> void Scene::OnComponentAdded<ModelComponent>(Entity entity, ModelComponent& component);
     template<> void Scene::OnComponentAdded<AnimatorComponent>(Entity entity, AnimatorComponent& component);
     template<> void Scene::OnComponentAdded<AnimationComponent>(Entity entity, AnimationComponent& component);
     template<> void Scene::OnComponentAdded<DirectionalLightComponent>(Entity entity, DirectionalLightComponent& component);
@@ -623,6 +619,7 @@ namespace Conqueror
     CQ_DECL_ADDED(GameModeComponent)
     CQ_DECL_ADDED(SpringArmComponent)
     CQ_DECL_ADDED(StreamedLevelComponent)
+    CQ_DECL_ADDED(AnimationPlayerComponent)
     CQ_DECL_ADDED(LevelStreamingVolumeComponent)
     CQ_DECL_ADDED(AutoLODComponent)
     CQ_DECL_ADDED(SoundOcclusionComponent)

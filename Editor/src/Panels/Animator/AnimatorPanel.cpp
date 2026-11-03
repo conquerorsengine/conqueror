@@ -1,5 +1,6 @@
 #include "AnimatorPanel.h"
 #include "UI/EditorUI.h"
+#include "Assets/AssetUI.h"
 #include "EditorState.h"
 
 #include "Scene/Scene.h"
@@ -9,8 +10,11 @@
 #include "Core/Logging/Log.h"
 #include "Core/Automation/Automation.h"
 #include "Renderer/Utilities/Renderer3D/ModelLoader.h"
+#include "Core/Serialization/SceneSerializer.h"
+#include <yaml-cpp/yaml.h>
 
 #include <imgui.h>
+#include <IconsFontAwesome6.h>
 #include <imgui_internal.h>
 #include <nfd.h>
 
@@ -151,6 +155,25 @@ namespace Conqueror::Editor
         {
             m_TargetEntity = entity;
             auto& ac = entity.GetComponent<AnimationComponent>();
+            // Animator Override Controller: pencere temel controller'ı açar (durumlar / geçişler orada; override dosyası
+            // yalnız klip eşlemesidir, üzerine controller yazılmaz)
+            if (ac.Controller && std::filesystem::path(ac.ControllerFilePath).extension() == ".cqoverride")
+            {
+                std::string base;
+                try
+                {
+                    YAML::Node root = YAML::LoadFile(ac.ControllerFilePath);
+                    base = root["AnimatorOverrideController"]["Controller"].as<std::string>("");
+                }
+                catch (...) {}
+                if (!base.empty())
+                {
+                    base = SceneSerializer::ResolveAssetPath(base);
+                    if (base != m_ControllerFilePath)
+                        OpenController(base);
+                }
+                return;
+            }
             // Entity'nin controller'ını otomatik aç
             if (ac.Controller && ac.Controller != m_Controller)
             {
@@ -249,9 +272,9 @@ namespace Conqueror::Editor
     {
         auto pick = [](Entity e) -> const Model*
         {
-            if (e && e.HasComponent<ModelComponent>())
+            if (e && e.HasComponent<MeshRendererComponent>())
             {
-                auto& mc = e.GetComponent<ModelComponent>();
+                auto& mc = e.GetComponent<MeshRendererComponent>();
                 if (mc.ModelData && !mc.ModelData->Animations.empty())
                     return mc.ModelData.get();
             }
@@ -263,7 +286,7 @@ namespace Conqueror::Editor
         // Bu controller'ı kullanan herhangi bir entity
         if (m_Context && m_Controller)
         {
-            auto view = m_Context->m_Registry.view<AnimationComponent, ModelComponent>();
+            auto view = m_Context->m_Registry.view<AnimationComponent, MeshRendererComponent>();
             for (auto e : view)
                 if (view.get<AnimationComponent>(e).Controller == m_Controller)
                     if (const Model* m = pick(Entity{ e, m_Context }))
@@ -953,7 +976,7 @@ namespace Conqueror::Editor
             ImGui::SetCursorScreenPos(ImVec2(start.x + 6, start.y + 4));
             char nameBuf[128];
             snprintf(nameBuf, sizeof(nameBuf), "%s", layer.Name.c_str());
-            ImGui::SetNextItemWidth(w - 80.0f);
+            ImGui::SetNextItemWidth(w - 108.0f);
             if (ImGui::InputText("##lname", nameBuf, sizeof(nameBuf), ImGuiInputTextFlags_EnterReturnsTrue) && nameBuf[0])
             {
                 PushUndo();
@@ -967,6 +990,63 @@ namespace Conqueror::Editor
             ImGui::SameLine(0, 2);
             if (UI::ToggleButton("S", solo)) { PushUndo(); layer.Solo = solo; MarkDirty("solo"); }
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) ImGui::SetTooltip("Solo");
+            // Katman ayarları (Unity katman dişlisi): Mask (Avatar Mask), From Bone, Weight Parameter
+            ImGui::SameLine(0, 2);
+            const bool masked = !layer.AvatarMask.empty() || !layer.FromBone.empty();
+            if (masked)
+                ImGui::PushStyleColor(ImGuiCol_Text, UI::Colors::Accent);
+            if (ImGui::SmallButton(ICON_FA_GEAR "##layerSettings"))
+                ImGui::OpenPopup("##layerSettingsPopup");
+            if (masked)
+                ImGui::PopStyleColor();
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+                ImGui::SetTooltip(masked ? "Layer settings (masked: %s)" : "Layer settings (Mask, From Bone, Weight Parameter)",
+                                  layer.AvatarMask.empty() ? layer.FromBone.c_str() : layer.AvatarMask.c_str());
+            if (ImGui::BeginPopup("##layerSettingsPopup"))
+            {
+                ImGui::TextDisabled("%s", layer.Name.c_str());
+                ImGui::Separator();
+                ImGui::TextUnformatted("Mask");
+                ImGui::SetNextItemWidth(260.0f);
+                std::string mask = layer.AvatarMask;
+                if (AssetUI::AssetSlot("##mask", "Avatar Mask", { ".cqmask" }, mask))
+                {
+                    PushUndo();
+                    layer.AvatarMask = mask;
+                    MarkDirty("layer mask");
+                }
+                ImGui::TextDisabled("Only the masked body parts / bones take this layer's animation.");
+                ImGui::TextUnformatted("From Bone");
+                char boneBuf[128];
+                snprintf(boneBuf, sizeof(boneBuf), "%s", layer.FromBone.c_str());
+                ImGui::SetNextItemWidth(260.0f);
+                if (ImGui::InputTextWithHint("##fromBone", "empty = whole body", boneBuf, sizeof(boneBuf), ImGuiInputTextFlags_EnterReturnsTrue))
+                {
+                    PushUndo();
+                    layer.FromBone = boneBuf;
+                    MarkDirty("layer from bone");
+                }
+                ImGui::TextUnformatted("Weight Parameter");
+                ImGui::SetNextItemWidth(260.0f);
+                if (ImGui::BeginCombo("##weightParam", layer.WeightParameter.empty() ? "None (use Weight)" : layer.WeightParameter.c_str()))
+                {
+                    if (ImGui::Selectable("None (use Weight)", layer.WeightParameter.empty()))
+                    {
+                        PushUndo();
+                        layer.WeightParameter.clear();
+                        MarkDirty("layer weight parameter");
+                    }
+                    for (const auto& prm : m_Controller->Parameters)
+                        if (prm.Type == AnimParameterType::Float && ImGui::Selectable(prm.Name.c_str(), prm.Name == layer.WeightParameter))
+                        {
+                            PushUndo();
+                            layer.WeightParameter = prm.Name;
+                            MarkDirty("layer weight parameter");
+                        }
+                    ImGui::EndCombo();
+                }
+                ImGui::EndPopup();
+            }
 
             ImGui::SetCursorScreenPos(ImVec2(start.x + 6, start.y + ImGui::GetFrameHeightWithSpacing() + 4));
             ImGui::BeginDisabled(i == 0);
@@ -2552,9 +2632,27 @@ namespace Conqueror::Editor
     void AnimatorPanel::DrawBlendTreeProperties(AnimState& state)
     {
         UI::SubHeader("Blend Tree");
+        // Blend Space varlığı (Unreal Blend Space / 1D): örnekler ve tür dosyadan; parametreler eksenleri sürer
+        UI::BeginProperty("Blend Space", "A .cqblendspace file: its samples and type replace the motions below. "
+                                         "The parameters below drive its axes.");
+        std::string blendSpace = state.BlendSpace;
+        if (AssetUI::AssetSlot("##blendspace", "Blend Space", { ".cqblendspace" }, blendSpace))
+        {
+            PushUndo();
+            state.BlendSpace = blendSpace;
+            if (!state.BlendSpace.empty() && AnimationController::ApplyBlendSpace(state))
+                m_Controller->PendingClipResolve = true;
+            MarkDirty("blend space");
+        }
+        UI::EndProperty();
+        const bool fromAsset = !state.BlendSpace.empty();
+        if (fromAsset)
+            UI::InfoBox("Motions come from the Blend Space file (edit them there).", UI::InfoType::Info);
+        ImGui::BeginDisabled(fromAsset);
         const char* types[] = { "1D", "2D Simple Directional", "2D Freeform Directional", "2D Freeform Cartesian", "Direct" };
         int type = (int)state.BlendType;
         if (UI::Combo("Blend Type", type, types, 5)) { PushUndo(); state.BlendType = (AnimBlendTreeType)type; MarkDirty("blend type"); }
+        ImGui::EndDisabled();
 
         auto paramPicker = [&](const char* label, std::string& value)
         {
@@ -2587,6 +2685,7 @@ namespace Conqueror::Editor
         AnimationStateMachine::ComputeBlendWeights(state, live, weights);
 
         UI::SubHeader("Motions");
+        ImGui::BeginDisabled(fromAsset);
         int removeIdx = -1;
         for (int i = 0; i < (int)state.BlendChildren.size(); ++i)
         {
@@ -2658,6 +2757,7 @@ namespace Conqueror::Editor
                 MarkDirty("distribute");
             }
         }
+        ImGui::EndDisabled();
     }
 
     void AnimatorPanel::DrawBlendTreeView()

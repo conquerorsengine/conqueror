@@ -9,6 +9,9 @@
 #include "Core/Console/ConsoleVariables.h"
 #include "Core/Serialization/SceneSerializer.h"
 #include "Renderer/RHI/Cubemap.h"
+#include "Renderer/ComputeShaders.h"
+#include "Renderer/RayTracingShaders.h"
+#include "Scene/Signals.h"
 
 #include <glm/glm.hpp>
 
@@ -311,6 +314,58 @@ namespace Conqueror::CQS
 
     void RegisterRenderNatives(Scripting::NativeRegistry* vm)
     {
+        // Compute Shader (Unity ComputeShader.SetTexture / SetFloat / SetInt / SetVector / Dispatch)
+        vm->DefineNative("ComputeSetTexture", [](int argc, Value* args) -> Value {
+            if (argc < 3 || !args[0].IsString() || !args[1].IsString() || !args[2].IsString()) return Value::MakeBool(false);
+            return Value::MakeBool(ComputeShaders::SetTexture(args[0].AsString()->Value, args[1].AsString()->Value, args[2].AsString()->Value));
+        }, 3);
+        vm->DefineNative("ComputeSetFloat", [](int argc, Value* args) -> Value {
+            if (argc < 3 || !args[0].IsString() || !args[1].IsString()) return Value::MakeBool(false);
+            return Value::MakeBool(ComputeShaders::SetFloat(args[0].AsString()->Value, args[1].AsString()->Value, (float)args[2].ToNumber()));
+        }, 3);
+        vm->DefineNative("ComputeSetInt", [](int argc, Value* args) -> Value {
+            if (argc < 3 || !args[0].IsString() || !args[1].IsString()) return Value::MakeBool(false);
+            return Value::MakeBool(ComputeShaders::SetInt(args[0].AsString()->Value, args[1].AsString()->Value, (int)args[2].ToNumber()));
+        }, 3);
+        vm->DefineNative("ComputeSetVector", [](int argc, Value* args) -> Value {
+            if (argc < 3 || !args[0].IsString() || !args[1].IsString()) return Value::MakeBool(false);
+            float v[4] = { 0, 0, 0, 0 };
+            if (args[2].IsMap())
+            {
+                auto& m = args[2].AsMap()->Entries;
+                const char* keys[4][2] = { { "x", "r" }, { "y", "g" }, { "z", "b" }, { "w", "a" } };
+                for (int i = 0; i < 4; ++i)
+                    for (const char* k : keys[i])
+                        if (auto it = m.find(k); it != m.end()) v[i] = (float)it->second.ToNumber();
+            }
+            else if (args[2].IsList())
+            {
+                auto& l = args[2].AsList()->Elements;
+                for (int i = 0; i < 4 && i < (int)l.size(); ++i) v[i] = (float)l[(size_t)i].ToNumber();
+            }
+            else
+                v[0] = (float)args[2].ToNumber();
+            return Value::MakeBool(ComputeShaders::SetVector(args[0].AsString()->Value, args[1].AsString()->Value, glm::vec4(v[0], v[1], v[2], v[3])));
+        }, 3);
+        // Signal (Unity Signal asset): SignalSend(entity, "Assets/Door Open.cqsignal") -> çalışan tepki sayısı (Signal Receiver)
+        vm->DefineNative("SignalSend", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            if (!scene || argc < 2 || !args[1].IsString()) return Value::MakeInt(0);
+            Entity e = EntityFromValue(args[0]);
+            if (!e) return Value::MakeInt(0);
+            return Value::MakeInt(SignalAssets::Send(*scene, (uint32_t)(entt::entity)e, args[1].AsString()->Value));
+        }, 2);
+        // Ray Tracing Shader: RayTracingDispatch("Assets/X.cqraytrace", "Assets/Result.cqrt") -> bool (etkin sahne, birincil kamera)
+        vm->DefineNative("RayTracingDispatch", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            if (!scene || argc < 2 || !args[0].IsString() || !args[1].IsString()) return Value::MakeBool(false);
+            return Value::MakeBool(RayTracingShaders::Dispatch(*scene, args[0].AsString()->Value, args[1].AsString()->Value));
+        }, 2);
+        vm->DefineNative("ComputeDispatch", [](int argc, Value* args) -> Value {
+            if (argc < 2 || !args[0].IsString()) return Value::MakeBool(false);
+            const int x = (int)args[1].ToNumber(), y = argc > 2 ? (int)args[2].ToNumber() : 1, z = argc > 3 ? (int)args[3].ToNumber() : 1;
+            return Value::MakeBool(ComputeShaders::Dispatch(args[0].AsString()->Value, x, y, z));
+        }, -1);
         // SceneSetSkybox("Assets/Sky/studio.hdr") -> bool: sahnenin HDR gökyüzü (arka plan + görüntü tabanlı aydınlatma
         // ve yansımalar; Environment.Sky = Auto iken). Boş yol kaldırır. Sahneyle birlikte kaydedilir.
         vm->DefineNative("SceneSetSkybox", [](int argc, Value* args) -> Value {

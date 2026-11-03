@@ -42,6 +42,8 @@ namespace Conqueror::Editor
         void SelectTab(int tab) { m_RequestedTab = tab; }
 
     private:
+        std::shared_ptr<struct LightBakeSettings> m_LightingAssetBefore;   // Lighting Settings varlığı: kare başındaki ayarlar
+        bool m_PendingLightingSave = false;
         enum class BakeKind { None, BakedLightmap, RealtimeLightmap, APV };
 
         struct BakeJob

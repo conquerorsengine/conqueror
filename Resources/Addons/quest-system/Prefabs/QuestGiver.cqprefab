@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 2854548607790814457
+  - Entity: 6128206706355715302
     TagComponent:
       Tag: Quest Giver
       GameTag: Untagged
@@ -36,7 +36,7 @@ Entities:
       Size: [3, 2.4, 3]
       IsTrigger: true
       Version: 2
-  - Entity: 3070178394877530361
+  - Entity: 846568117908024209
     TagComponent:
       Tag: Giver Body
       GameTag: Untagged
@@ -50,12 +50,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.95, 0.8, 0.2, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 6128808297462383542
+      MaterialAsset: Packages/quest-system/Materials/Yellow.cqmat
+  - Entity: 1525001537582702191
     TagComponent:
       Tag: Exclamation
       GameTag: Untagged
@@ -69,13 +65,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 0.85, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.8, 0.1]
-      EmissionStrength: 2
-      TexturePath: CQ:Resources/Textures/texture_grid.png
+      MaterialAsset: Packages/quest-system/Materials/Yellow Glow.cqmat
 Environment:
   SkyboxExposure: 1
   SkyboxRotation: 0
@@ -172,6 +162,49 @@ Environment:
       Sharpen: false
       SharpenAmount: 0.3
       AntiAliasing: 1
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: false
+      SSRIntensity: 1
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: false
+      SSGIIntensity: 1
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: false
+      CloudCoverage: 0.45
+      CloudDensity: 1
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: false
+      FocusDistance: 10
+      Aperture: 2.8
+      FocalLength: 50
+      DOFMaxBlur: 10
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
     Environment:
       Sky: 0
       BackgroundColor: [0.1, 0.1, 0.1]
@@ -179,6 +212,13 @@ Environment:
       ReflectionIntensity: 1
       SkyboxIntensity: 1
       SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
     Bake:
       RealtimeGI: false
       BakedGI: true
@@ -218,7 +258,7 @@ Environment:
       APVGeometryBias: 0.01
       APVRayOriginBias: -0.001
 Hierarchy:
-  - Child: 3070178394877530361
-    Parent: 2854548607790814457
-  - Child: 6128808297462383542
-    Parent: 2854548607790814457
+  - Child: 846568117908024209
+    Parent: 6128206706355715302
+  - Child: 1525001537582702191
+    Parent: 6128206706355715302

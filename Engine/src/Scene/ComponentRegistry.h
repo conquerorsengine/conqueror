@@ -51,6 +51,7 @@ namespace Conqueror
         std::string Name;                    // "Character Controller"
         std::string TypeName;                // "CharacterControllerComponent" (YAML anahtarı)
         std::string ScriptName;              // "CharacterController" (betik adı)
+        std::vector<std::string> Aliases;    // eski adlar (ör. Mesh Renderer'a katılan "Model"): betikler / otomasyon çalışmaya devam eder
         std::string Category;                // "Physics"
         std::string Icon;                    // Font Awesome glifi (UTF-8)
         glm::vec4 IconColor{ 0.55f, 0.80f, 1.0f, 1.0f };
@@ -129,6 +130,7 @@ namespace Conqueror
         ComponentDef& HiddenFromMenu() { m_Info.AllowInAddMenu = false; return *this; }
         ComponentDef& Builtin() { m_Info.Builtin = true; m_Info.AllowInAddMenu = false; return *this; }
         ComponentDef& ScriptName(const char* name) { m_Info.ScriptName = name; return *this; }
+        ComponentDef& Alias(const char* name) { m_Info.Aliases.push_back(name); return *this; }
         ComponentDef& OnAddedInEditor(std::function<void(Entity)> fn) { m_Info.OnAddedInEditor = std::move(fn); return *this; }
         ComponentDef& CustomData(std::function<void(YAML::Emitter&, T&)> save, std::function<void(const YAML::Node&, T&)> load)
         {
@@ -230,6 +232,7 @@ namespace Conqueror
     void RegisterLighting2DComponents();
     void RegisterPixelPerfectComponents();
     void RegisterBillboardComponents();
+    void RegisterFullScreenPassComponents();
     void RegisterCameraSkyboxComponents();
     void RegisterAreaLightComponents();
     void RegisterPlayerInputComponents();

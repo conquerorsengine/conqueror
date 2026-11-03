@@ -22,6 +22,8 @@ namespace Conqueror
         float BlendDistance = 2.0f;               // dışarıda bu mesafe boyunca solar
         float Weight = 1.0f;                      // 0..1
         int Priority = 0;                         // yüksek olan sonra uygulanır
+        // Volume Profile (.cqvolume, Unity Volume Profile): doluysa aşağıdaki ayarlar dosyadan gelir (paylaşılan profil)
+        std::string Profile;
 
         bool OverrideExposure = false;
         float Exposure = 0.0f;                    // EV
@@ -67,6 +69,17 @@ namespace Conqueror
         // Kameranın konumuna göre sahnenin temel ayarlarına hacimleri harmanlar
         CQ_API PostProcessSettings Resolve(Scene& scene, const PostProcessSettings& base, const glm::vec3& cameraPosition);
         CQ_API void DrawGizmo(Scene& scene, uint32_t entity);
+    }
+
+    // Volume Profile varlığı: hacmin efekt ayarları (Override* ve değerleri) ayrı bir dosyada, birçok hacim paylaşabilir
+    namespace VolumeProfiles
+    {
+        constexpr const char* Extension = ".cqvolume";
+        // Şekil / ağırlık / öncelik gibi hacme ait alanlar profilde değildir
+        CQ_API bool IsProfileField(const std::string& fieldName);
+        // Profil değerlerini "values" içine yükle (önbellekli; dosya değişince yeniden okunur)
+        CQ_API bool Load(const std::string& path, PostProcessVolumeComponent& values);
+        CQ_API bool Save(const std::string& path, const PostProcessVolumeComponent& values);
     }
 
     void RegisterPostProcessVolumeComponents();

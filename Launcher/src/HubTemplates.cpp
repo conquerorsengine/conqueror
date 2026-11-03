@@ -48,6 +48,9 @@ script PlayerController2D : ConquerorScript
     public float maxFallSpeed = 18.0;
     public float coyoteTime = 0.1;
     public float jumpBuffer = 0.12;
+    [Tooltip("Holding Jump jumps again as soon as the player lands")]
+    public bool holdToJump = true;
+    public int jumps = 0;
     public int coins = 0;
     public int totalCoins = 0;
     public bool grounded = false;
@@ -97,6 +100,7 @@ script PlayerController2D : ConquerorScript
         var left = Raycast2D(p.x - halfWidth * 0.8, p.y - halfHeight + 0.02, 0, -1, 0.12, -1, true);
         var right = Raycast2D(p.x + halfWidth * 0.8, p.y - halfHeight + 0.02, 0, -1, 0.12, -1, true);
         var v = GetLinearVelocity2D();
+        var wasGrounded = grounded;
         grounded = (left != null || right != null) && v.y <= 0.1;
         if (grounded) { sinceGrounded = 0.0; } else { sinceGrounded += dt; }
 
@@ -109,6 +113,8 @@ script PlayerController2D : ConquerorScript
         var jumpDown = !finished && (IsKeyDown("Space") || IsKeyDown("W") || IsKeyDown("Up"));
         var jumpHeld = IsKeyPressed("Space") || IsKeyPressed("W") || IsKeyPressed("Up");
         sinceJumpPressed = jumpDown ? 0.0 : sinceJumpPressed + dt;
+        // Zıplama tuşu basılı tutulursa yere değdiği an yeniden zıplar
+        if (holdToJump && !finished && jumpHeld && grounded && !wasGrounded) { sinceJumpPressed = 0.0; }
 
         // Yatay: hedef hıza ivmeyle (inişte ve dönüşte kayma yok, tuş bırakılınca hemen durur)
         var target = dir * moveSpeed;
@@ -123,6 +129,7 @@ script PlayerController2D : ConquerorScript
             vy = MathSqrt(2.0 * g * jumpHeight);
             sinceGrounded = 1.0;
             sinceJumpPressed = 1.0;
+            jumps += 1;
         }
         else if (vy < 0.0) { vy -= g * (fallMultiplier - 1.0) * dt; }
         else if (vy > 0.0 && !jumpHeld) { vy -= g * (lowJumpMultiplier - 1.0) * dt; }
@@ -165,6 +172,9 @@ script FirstPersonController : ConquerorScript
     public float walkSpeed = 4.5;
     public float sprintMultiplier = 1.7;
     public float jumpHeight = 1.1;
+    [Tooltip("Holding Jump jumps again as soon as the player lands")]
+    public bool holdToJump = true;
+    public int jumps = 0;
     public float gravity = 20.0;
     public float mouseSensitivity = 0.15;
     public bool lockCursor = false;
@@ -212,11 +222,17 @@ script FirstPersonController : ConquerorScript
         var mx = (fx * iz + r.x * ix) * speed;
         var mz = (fz * iz + r.z * ix) * speed;
 
+        var wasGrounded = grounded;
         grounded = CharacterIsGrounded();
         if (grounded)
         {
             vy = -2.0;
-            if (IsKeyDown("Space")) { vy = MathSqrt(2.0 * gravity * jumpHeight); }
+            // Zıplama tuşu basılı tutulursa yere değdiği an yeniden zıplar
+            if (IsKeyDown("Space") || (holdToJump && IsKeyPressed("Space") && !wasGrounded))
+            {
+                vy = MathSqrt(2.0 * gravity * jumpHeight);
+                jumps += 1;
+            }
         }
         else
         {

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+#include <vector>
 #include <glm/glm.hpp>
 
 namespace Conqueror
@@ -65,9 +67,18 @@ namespace Conqueror
         TAA            // Temporal AA: alt piksel titreşimi + geçmiş karelerin yeniden izdüşümü (Unreal varsayılanı)
     };
 
+    // Full Screen Pass (sahnedeki bileşenlerden toplanır)
+    struct FullScreenPassEntry
+    {
+        std::string Shader;
+        float Intensity = 1.0f;
+        bool AfterPostProcess = false;
+    };
+
     struct PostProcessSettings
     {
         bool Enabled = true;
+        std::vector<FullScreenPassEntry> FullScreenPasses;   // serileştirilmez
 
         Tonemapper Tonemap = Tonemapper::Neutral;
         float Exposure = 0.0f;        // EV (2^Exposure çarpan)
@@ -197,6 +208,11 @@ namespace Conqueror
     // Lighting penceresindeki pişirme (lightmap / APV) ayarları
     struct LightBakeSettings
     {
+        // Lighting Settings varlığı (.cqlighting, Unity Lighting Settings Asset): doluysa bu ayarlar dosyadan gelir ve
+        // Lighting penceresindeki değişiklikler dosyaya yazılır (sahneler arasında paylaşılır)
+        std::string SettingsAsset;
+        // Varsayılan Lightmap Parameters (.cqlmparams); Mesh Renderer kendi parametresini seçebilir
+        std::string DefaultLightmapParameters;
         bool RealtimeGI = false;          // gerçek zamanlı lightmap'ler (otomatik güncellenir)
         bool BakedGI = true;
         int LightingMode = 0;             // 0 Shadowmask, 1 Distance Shadowmask, 2 Subtractive, 3 Baked Indirect

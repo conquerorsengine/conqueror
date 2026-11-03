@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 2209241668423093290
+  - Entity: 8514774002787191334
     TagComponent:
       Tag: Wave Spawner
       GameTag: Untagged
@@ -15,7 +15,7 @@ Entities:
     WaveSpawner_ConquerorScriptComponent:
       ScriptPath: Packages/wave-spawner/Scripts/WaveSpawner.cqs
       ClassName: WaveSpawner
-  - Entity: 7396798336977156747
+  - Entity: 4834999267880752277
     TagComponent:
       Tag: Spawn Point 1
       GameTag: Untagged
@@ -27,7 +27,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 152013158885526247
+  - Entity: 1111095261028476692
     TagComponent:
       Tag: Spawn Pad 1
       GameTag: Untagged
@@ -41,14 +41,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.5, 0.1, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.6, 0.05, 0.05]
-      EmissionStrength: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 8528827053861208622
+      MaterialAsset: Packages/wave-spawner/Materials/Red Glow.cqmat
+  - Entity: 973253328687494401
     TagComponent:
       Tag: Spawn Point 2
       GameTag: Untagged
@@ -60,7 +54,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 1467156317207833996
+  - Entity: 5242403808312007706
     TagComponent:
       Tag: Spawn Pad 2
       GameTag: Untagged
@@ -74,14 +68,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.5, 0.1, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.6, 0.05, 0.05]
-      EmissionStrength: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 4486171624105221608
+      MaterialAsset: Packages/wave-spawner/Materials/Red Glow.cqmat
+  - Entity: 635762606740152084
     TagComponent:
       Tag: Spawn Point 3
       GameTag: Untagged
@@ -93,7 +81,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 9183497614383759238
+  - Entity: 7048362063392922883
     TagComponent:
       Tag: Spawn Pad 3
       GameTag: Untagged
@@ -107,14 +95,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.5, 0.1, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.6, 0.05, 0.05]
-      EmissionStrength: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 2194919734727713293
+      MaterialAsset: Packages/wave-spawner/Materials/Red Glow.cqmat
+  - Entity: 896771776288276964
     TagComponent:
       Tag: Spawn Point 4
       GameTag: Untagged
@@ -126,7 +108,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 2482703702261321919
+  - Entity: 2592323120662191494
     TagComponent:
       Tag: Spawn Pad 4
       GameTag: Untagged
@@ -140,13 +122,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.5, 0.1, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.6, 0.05, 0.05]
-      EmissionStrength: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
+      MaterialAsset: Packages/wave-spawner/Materials/Red Glow.cqmat
 Environment:
   SkyboxExposure: 1
   SkyboxRotation: 0
@@ -243,6 +219,49 @@ Environment:
       Sharpen: false
       SharpenAmount: 0.3
       AntiAliasing: 1
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: false
+      SSRIntensity: 1
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: false
+      SSGIIntensity: 1
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: false
+      CloudCoverage: 0.45
+      CloudDensity: 1
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: false
+      FocusDistance: 10
+      Aperture: 2.8
+      FocalLength: 50
+      DOFMaxBlur: 10
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
     Environment:
       Sky: 0
       BackgroundColor: [0.1, 0.1, 0.1]
@@ -250,6 +269,13 @@ Environment:
       ReflectionIntensity: 1
       SkyboxIntensity: 1
       SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
     Bake:
       RealtimeGI: false
       BakedGI: true
@@ -289,19 +315,19 @@ Environment:
       APVGeometryBias: 0.01
       APVRayOriginBias: -0.001
 Hierarchy:
-  - Child: 2482703702261321919
-    Parent: 2194919734727713293
-  - Child: 9183497614383759238
-    Parent: 4486171624105221608
-  - Child: 1467156317207833996
-    Parent: 8528827053861208622
-  - Child: 152013158885526247
-    Parent: 7396798336977156747
-  - Child: 7396798336977156747
-    Parent: 2209241668423093290
-  - Child: 8528827053861208622
-    Parent: 2209241668423093290
-  - Child: 4486171624105221608
-    Parent: 2209241668423093290
-  - Child: 2194919734727713293
-    Parent: 2209241668423093290
+  - Child: 2592323120662191494
+    Parent: 896771776288276964
+  - Child: 7048362063392922883
+    Parent: 635762606740152084
+  - Child: 5242403808312007706
+    Parent: 973253328687494401
+  - Child: 1111095261028476692
+    Parent: 4834999267880752277
+  - Child: 4834999267880752277
+    Parent: 8514774002787191334
+  - Child: 973253328687494401
+    Parent: 8514774002787191334
+  - Child: 635762606740152084
+    Parent: 8514774002787191334
+  - Child: 896771776288276964
+    Parent: 8514774002787191334

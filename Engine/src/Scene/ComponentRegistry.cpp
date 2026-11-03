@@ -1,5 +1,6 @@
 #include "Core/Serialization/SceneSerializer.h"
 #include "ComponentRegistry.h"
+#include "Core/Animation/PropertyAnimation.h"
 #include "Core/Logging/Log.h"
 
 #include <yaml-cpp/yaml.h>
@@ -85,6 +86,7 @@ namespace Conqueror
             RegisterGridComponents();
             RegisterNetworkComponents();
             RegisterTimelineComponents();
+            PropertyClips::RegisterComponent();
             RegisterSplineComponents();
             RegisterCameraRigComponents();
             RegisterPostProcessVolumeComponents();
@@ -92,6 +94,7 @@ namespace Conqueror
             RegisterLighting2DComponents();
             RegisterPixelPerfectComponents();
             RegisterBillboardComponents();
+            RegisterFullScreenPassComponents();
             RegisterCameraSkyboxComponents();
             RegisterAreaLightComponents();
             RegisterPlayerInputComponents();
@@ -138,6 +141,10 @@ namespace Conqueror
         for (auto& info : All())
             if (Lower(info.TypeName) == key || Lower(info.Name) == key || Lower(info.ScriptName) == key)
                 return &info;
+        for (auto& info : All())
+            for (const auto& alias : info.Aliases)
+                if (Lower(alias) == key)
+                    return &info;
         // Boşluksuz ad ("CharacterController" == "Character Controller")
         for (auto& info : All())
         {

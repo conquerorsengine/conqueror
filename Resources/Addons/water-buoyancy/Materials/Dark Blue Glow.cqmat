@@ -1,0 +1,22 @@
+Material:
+  Name: Dark Blue Glow
+  Albedo: [0.08, 0.32, 0.55]
+  Opacity: 1
+  Metallic: 0.1
+  Roughness: 0.08
+  AO: 1
+  EmissionColor: [0.02, 0.12, 0.2]
+  EmissionStrength: 0.4
+  Tiling: [1, 1]
+  Offset: [0, 0]
+  RenderMode: 0
+  Culling: 0
+  AlphaClip: 0.5
+  AlbedoMap: CQ:Resources/Textures/texture_grid.png
+  NextGraphNodeID: 1
+  NextGraphLinkID: 1
+  GraphInitialized: false
+  GraphNodes:
+    []
+  GraphLinks:
+    []

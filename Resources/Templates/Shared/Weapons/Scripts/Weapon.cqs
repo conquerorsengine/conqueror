@@ -283,7 +283,9 @@ script Weapon : ConquerorScript
                     se = EntityGetParent(se);
                 }
             }
-            InvokeMethod("Impacts", "Tracer", mp.x, mp.y, mp.z, endX, endY, endZ, tracerR, tracerG, tracerB, laser ? 0.03 : 0.012, laser ? 0.12 : 0.04);
+            // Mermi izi namluya bağlı kalır (Laser Tag ışını eskisi gibi)
+            if (laser) { InvokeMethod("Impacts", "Tracer", mp.x, mp.y, mp.z, endX, endY, endZ, tracerR, tracerG, tracerB, 0.03, 0.12); }
+            else { InvokeMethod("Impacts", "TracerFrom", muzzle, mp.x, mp.y, mp.z, endX, endY, endZ, tracerR, tracerG, tracerB, 0.012, 0.04); }
         }
         return result;
     }

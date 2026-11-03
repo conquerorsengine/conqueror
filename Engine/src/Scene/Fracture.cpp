@@ -346,11 +346,15 @@ namespace Conqueror
 
             // Kaynağın görünümü ve kütlesi
             MeshRendererComponent look;
-            if (src.HasComponent<MeshRendererComponent>())
+            if (src.HasComponent<MeshRendererComponent>() && !src.GetComponent<MeshRendererComponent>().IsModel())
                 look = src.GetComponent<MeshRendererComponent>();
-            else if (src.HasComponent<ModelComponent>() && src.GetComponent<ModelComponent>().ModelData)
+            else if (src.HasComponent<MeshRendererComponent>() && src.GetComponent<MeshRendererComponent>().ModelData)
             {
-                auto& model = *src.GetComponent<ModelComponent>().ModelData;
+                // Model: parçalar ilk malzemesiyle (parçalar model değil, ilkel / özel ağ)
+                const auto& src3 = src.GetComponent<MeshRendererComponent>();
+                look.CastShadows = src3.CastShadows;
+                look.ReceiveShadows = src3.ReceiveShadows;
+                auto& model = *src3.ModelData;
                 if (!model.Materials.empty())
                     look.MaterialInstance = model.Materials[0];
             }

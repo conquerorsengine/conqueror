@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 5663213011656502989
+  - Entity: 7100365836013337515
     TagComponent:
       Tag: Coin Ring
       GameTag: Untagged
@@ -12,7 +12,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 2689260030019904462
+  - Entity: 5532273895145861246
     TagComponent:
       Tag: Coin 1
       GameTag: Untagged
@@ -32,7 +32,7 @@ Entities:
       Radius: 0.55
       IsTrigger: true
       Version: 2
-  - Entity: 4884037172718142379
+  - Entity: 2352959268534715589
     TagComponent:
       Tag: Coin 1 Mesh
       GameTag: Untagged
@@ -46,14 +46,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 0.78, 0.15, 1]
-      Metallic: 0.9
-      Roughness: 0.25
-      AO: 1
-      EmissionColor: [1, 0.7, 0.1]
-      EmissionStrength: 0.4
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 6302183946223091754
+      MaterialAsset: Packages/collectibles/Materials/Orange Glow.cqmat
+  - Entity: 3034270724898911754
     TagComponent:
       Tag: Sparkle
       GameTag: Untagged
@@ -129,7 +123,7 @@ Entities:
       SizeOverLifetime:
         - [0, 1]
         - [1, 1]
-  - Entity: 3179350312949572969
+  - Entity: 5724186013738723000
     TagComponent:
       Tag: Coin 2
       GameTag: Untagged
@@ -149,7 +143,7 @@ Entities:
       Radius: 0.55
       IsTrigger: true
       Version: 2
-  - Entity: 5666007829088637888
+  - Entity: 2676929130999404084
     TagComponent:
       Tag: Coin 2 Mesh
       GameTag: Untagged
@@ -163,14 +157,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 0.78, 0.15, 1]
-      Metallic: 0.9
-      Roughness: 0.25
-      AO: 1
-      EmissionColor: [1, 0.7, 0.1]
-      EmissionStrength: 0.4
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 3786528868007320741
+      MaterialAsset: Packages/collectibles/Materials/Orange Glow.cqmat
+  - Entity: 7009222310087049800
     TagComponent:
       Tag: Sparkle
       GameTag: Untagged
@@ -246,7 +234,7 @@ Entities:
       SizeOverLifetime:
         - [0, 1]
         - [1, 1]
-  - Entity: 6130832043370710615
+  - Entity: 721308064757265061
     TagComponent:
       Tag: Coin 3
       GameTag: Untagged
@@ -266,7 +254,7 @@ Entities:
       Radius: 0.55
       IsTrigger: true
       Version: 2
-  - Entity: 5002007168879105715
+  - Entity: 5398393145357997567
     TagComponent:
       Tag: Coin 3 Mesh
       GameTag: Untagged
@@ -280,14 +268,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 0.78, 0.15, 1]
-      Metallic: 0.9
-      Roughness: 0.25
-      AO: 1
-      EmissionColor: [1, 0.7, 0.1]
-      EmissionStrength: 0.4
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 5054330538472856280
+      MaterialAsset: Packages/collectibles/Materials/Orange Glow.cqmat
+  - Entity: 6317121061037309338
     TagComponent:
       Tag: Sparkle
       GameTag: Untagged
@@ -363,7 +345,7 @@ Entities:
       SizeOverLifetime:
         - [0, 1]
         - [1, 1]
-  - Entity: 7855047987243864396
+  - Entity: 8971077392942961887
     TagComponent:
       Tag: Coin 4
       GameTag: Untagged
@@ -383,7 +365,7 @@ Entities:
       Radius: 0.55
       IsTrigger: true
       Version: 2
-  - Entity: 5439221731524428106
+  - Entity: 2439958493659982755
     TagComponent:
       Tag: Coin 4 Mesh
       GameTag: Untagged
@@ -397,14 +379,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 0.78, 0.15, 1]
-      Metallic: 0.9
-      Roughness: 0.25
-      AO: 1
-      EmissionColor: [1, 0.7, 0.1]
-      EmissionStrength: 0.4
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 6684819137824337943
+      MaterialAsset: Packages/collectibles/Materials/Orange Glow.cqmat
+  - Entity: 64468325335718743
     TagComponent:
       Tag: Sparkle
       GameTag: Untagged
@@ -480,7 +456,7 @@ Entities:
       SizeOverLifetime:
         - [0, 1]
         - [1, 1]
-  - Entity: 4158458189705739900
+  - Entity: 6907836483557777516
     TagComponent:
       Tag: Coin 5
       GameTag: Untagged
@@ -500,7 +476,7 @@ Entities:
       Radius: 0.55
       IsTrigger: true
       Version: 2
-  - Entity: 5706280641227179452
+  - Entity: 959745540657789822
     TagComponent:
       Tag: Coin 5 Mesh
       GameTag: Untagged
@@ -514,14 +490,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 0.78, 0.15, 1]
-      Metallic: 0.9
-      Roughness: 0.25
-      AO: 1
-      EmissionColor: [1, 0.7, 0.1]
-      EmissionStrength: 0.4
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 1647330809582944984
+      MaterialAsset: Packages/collectibles/Materials/Orange Glow.cqmat
+  - Entity: 1571943803753663691
     TagComponent:
       Tag: Sparkle
       GameTag: Untagged
@@ -597,7 +567,7 @@ Entities:
       SizeOverLifetime:
         - [0, 1]
         - [1, 1]
-  - Entity: 5850958359424476942
+  - Entity: 2850402706922210852
     TagComponent:
       Tag: Coin 6
       GameTag: Untagged
@@ -617,7 +587,7 @@ Entities:
       Radius: 0.55
       IsTrigger: true
       Version: 2
-  - Entity: 5598960597644423020
+  - Entity: 7415259898278079521
     TagComponent:
       Tag: Coin 6 Mesh
       GameTag: Untagged
@@ -631,14 +601,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 0.78, 0.15, 1]
-      Metallic: 0.9
-      Roughness: 0.25
-      AO: 1
-      EmissionColor: [1, 0.7, 0.1]
-      EmissionStrength: 0.4
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 8912181936959395515
+      MaterialAsset: Packages/collectibles/Materials/Orange Glow.cqmat
+  - Entity: 5728570852211047132
     TagComponent:
       Tag: Sparkle
       GameTag: Untagged
@@ -714,7 +678,7 @@ Entities:
       SizeOverLifetime:
         - [0, 1]
         - [1, 1]
-  - Entity: 3662428296072550369
+  - Entity: 5124078376936463719
     TagComponent:
       Tag: Coin 7
       GameTag: Untagged
@@ -734,7 +698,7 @@ Entities:
       Radius: 0.55
       IsTrigger: true
       Version: 2
-  - Entity: 7286160116129388779
+  - Entity: 4414398244290047532
     TagComponent:
       Tag: Coin 7 Mesh
       GameTag: Untagged
@@ -748,14 +712,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 0.78, 0.15, 1]
-      Metallic: 0.9
-      Roughness: 0.25
-      AO: 1
-      EmissionColor: [1, 0.7, 0.1]
-      EmissionStrength: 0.4
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 8144138606208502164
+      MaterialAsset: Packages/collectibles/Materials/Orange Glow.cqmat
+  - Entity: 5923527422895344497
     TagComponent:
       Tag: Sparkle
       GameTag: Untagged
@@ -831,7 +789,7 @@ Entities:
       SizeOverLifetime:
         - [0, 1]
         - [1, 1]
-  - Entity: 68892961960135046
+  - Entity: 821236357946520266
     TagComponent:
       Tag: Coin 8
       GameTag: Untagged
@@ -851,7 +809,7 @@ Entities:
       Radius: 0.55
       IsTrigger: true
       Version: 2
-  - Entity: 7086032087717262151
+  - Entity: 642770021842336084
     TagComponent:
       Tag: Coin 8 Mesh
       GameTag: Untagged
@@ -865,14 +823,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [1, 0.78, 0.15, 1]
-      Metallic: 0.9
-      Roughness: 0.25
-      AO: 1
-      EmissionColor: [1, 0.7, 0.1]
-      EmissionStrength: 0.4
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 8720507850256611968
+      MaterialAsset: Packages/collectibles/Materials/Orange Glow.cqmat
+  - Entity: 1001302067310012336
     TagComponent:
       Tag: Sparkle
       GameTag: Untagged
@@ -1044,6 +996,49 @@ Environment:
       Sharpen: false
       SharpenAmount: 0.3
       AntiAliasing: 1
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: false
+      SSRIntensity: 1
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: false
+      SSGIIntensity: 1
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: false
+      CloudCoverage: 0.45
+      CloudDensity: 1
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: false
+      FocusDistance: 10
+      Aperture: 2.8
+      FocalLength: 50
+      DOFMaxBlur: 10
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
     Environment:
       Sky: 0
       BackgroundColor: [0.1, 0.1, 0.1]
@@ -1051,6 +1046,13 @@ Environment:
       ReflectionIntensity: 1
       SkyboxIntensity: 1
       SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
     Bake:
       RealtimeGI: false
       BakedGI: true
@@ -1090,51 +1092,51 @@ Environment:
       APVGeometryBias: 0.01
       APVRayOriginBias: -0.001
 Hierarchy:
-  - Child: 7086032087717262151
-    Parent: 68892961960135046
-  - Child: 8720507850256611968
-    Parent: 68892961960135046
-  - Child: 7286160116129388779
-    Parent: 3662428296072550369
-  - Child: 8144138606208502164
-    Parent: 3662428296072550369
-  - Child: 5598960597644423020
-    Parent: 5850958359424476942
-  - Child: 8912181936959395515
-    Parent: 5850958359424476942
-  - Child: 5439221731524428106
-    Parent: 7855047987243864396
-  - Child: 6684819137824337943
-    Parent: 7855047987243864396
-  - Child: 5002007168879105715
-    Parent: 6130832043370710615
-  - Child: 5054330538472856280
-    Parent: 6130832043370710615
-  - Child: 5666007829088637888
-    Parent: 3179350312949572969
-  - Child: 3786528868007320741
-    Parent: 3179350312949572969
-  - Child: 4884037172718142379
-    Parent: 2689260030019904462
-  - Child: 6302183946223091754
-    Parent: 2689260030019904462
-  - Child: 5706280641227179452
-    Parent: 4158458189705739900
-  - Child: 1647330809582944984
-    Parent: 4158458189705739900
-  - Child: 2689260030019904462
-    Parent: 5663213011656502989
-  - Child: 3179350312949572969
-    Parent: 5663213011656502989
-  - Child: 6130832043370710615
-    Parent: 5663213011656502989
-  - Child: 7855047987243864396
-    Parent: 5663213011656502989
-  - Child: 4158458189705739900
-    Parent: 5663213011656502989
-  - Child: 5850958359424476942
-    Parent: 5663213011656502989
-  - Child: 3662428296072550369
-    Parent: 5663213011656502989
-  - Child: 68892961960135046
-    Parent: 5663213011656502989
+  - Child: 642770021842336084
+    Parent: 821236357946520266
+  - Child: 1001302067310012336
+    Parent: 821236357946520266
+  - Child: 4414398244290047532
+    Parent: 5124078376936463719
+  - Child: 5923527422895344497
+    Parent: 5124078376936463719
+  - Child: 7415259898278079521
+    Parent: 2850402706922210852
+  - Child: 5728570852211047132
+    Parent: 2850402706922210852
+  - Child: 2439958493659982755
+    Parent: 8971077392942961887
+  - Child: 64468325335718743
+    Parent: 8971077392942961887
+  - Child: 5398393145357997567
+    Parent: 721308064757265061
+  - Child: 6317121061037309338
+    Parent: 721308064757265061
+  - Child: 2676929130999404084
+    Parent: 5724186013738723000
+  - Child: 7009222310087049800
+    Parent: 5724186013738723000
+  - Child: 2352959268534715589
+    Parent: 5532273895145861246
+  - Child: 3034270724898911754
+    Parent: 5532273895145861246
+  - Child: 959745540657789822
+    Parent: 6907836483557777516
+  - Child: 1571943803753663691
+    Parent: 6907836483557777516
+  - Child: 5532273895145861246
+    Parent: 7100365836013337515
+  - Child: 5724186013738723000
+    Parent: 7100365836013337515
+  - Child: 721308064757265061
+    Parent: 7100365836013337515
+  - Child: 8971077392942961887
+    Parent: 7100365836013337515
+  - Child: 6907836483557777516
+    Parent: 7100365836013337515
+  - Child: 2850402706922210852
+    Parent: 7100365836013337515
+  - Child: 5124078376936463719
+    Parent: 7100365836013337515
+  - Child: 821236357946520266
+    Parent: 7100365836013337515

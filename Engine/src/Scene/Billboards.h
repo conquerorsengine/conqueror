@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 // Kameraya dönük çiziciler:
 //  - Billboard Renderer (Unity): uzak ağaç / ot / tabela için tek dokulu dörtgen (alfa kesme, isteğe bağlı ışık)
@@ -41,8 +42,33 @@ namespace Conqueror
         float Intensity = 1.0f;
     };
 
+    // Lens Flare varlığı (.cqflare, Unity Lens Flare Data): sıralı parlama öğeleri
+    enum class LensFlareShape : int { Glow = 0, Ring, Hexagon, Circle, Streak };
+    struct LensFlareElement
+    {
+        LensFlareShape Shape = LensFlareShape::Glow;
+        glm::vec3 Color{ 1.0f };
+        float Size = 0.25f;          // ekran yüksekliğine oran
+        float Intensity = 1.0f;
+        float Position = 0.0f;       // 0 = ışığın üstünde, 0.5 = ekran merkezi, 1 = ışığın aynası
+        int Count = 1;               // tekrar (hayaletler)
+        float Spacing = 0.3f;        // tekrarlar arası konum adımı
+        float Stretch = 1.0f;        // yatay uzatma (çizgi)
+    };
+    namespace LensFlareAssets
+    {
+        constexpr const char* Extension = ".cqflare";
+        // Önbellekli (dosya değişince yeniden okunur)
+        CQ_API bool Load(const std::string& path, std::vector<LensFlareElement>& elements);
+        CQ_API bool Save(const std::string& path, const std::vector<LensFlareElement>& elements);
+        // Bileşenin yerleşik ayarlarına eşdeğer öğeler (yeni varlığın başlangıcı)
+        CQ_API std::vector<LensFlareElement> DefaultElements();
+    }
+
     struct LensFlareComponent
     {
+        // Lens Flare varlığı: doluysa öğeler dosyadan (aşağıdaki Elements ayarları yerine)
+        std::string Flare;
         glm::vec3 Color{ 1.0f };
         float Intensity = 1.0f;
         float Scale = 1.0f;

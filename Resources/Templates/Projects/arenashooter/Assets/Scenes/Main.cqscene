@@ -3080,6 +3080,13 @@ Entities:
     ConquerorScriptComponent:
       ScriptPath: Assets/Weapons/Scripts/FirstPersonShooter.cqs
       ClassName: ""
+      Fields:
+        avoidWalls:
+          Bool: true
+        crispStop:
+          Bool: true
+        bobRoll:
+          Float: 0.32
   - Entity: 8233599904111962226
     TagComponent:
       Tag: Camera
@@ -3133,6 +3140,7 @@ Entities:
       OrderInLayer: 0
     ModelComponent:
       FilePath: Assets/Mannequin/Models/Arms_Male.glb
+      CastShadows: false
     AnimationComponent:
       ControllerPath: Assets/Mannequin/Animations/FPArms.cqcont
       Speed: 1

@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <memory>
 #include "CQSNativeBridge.h"
+#include "Core/Animation/PropertyAnimation.h"
 #include "CQSVM.h"
 #include "CQSEngine.h"
 #include "Scripting/NativeRegistry.h"
@@ -277,6 +278,45 @@ namespace Conqueror::CQS
                     return {};
                 return Entity{ h, scene };
             };
+            // Animation bileşeni (Unity Animation): AnimationPlay([varlık,] ["Assets/Door.cqanim"])
+            static auto animated = [](int argc, Value* args, int& next) -> Entity {
+                Scene* scene = ScriptContext::GetActiveScene();
+                next = 0;
+                if (!scene)
+                    return {};
+                uint32_t id = ScriptContext::GetCurrentEntity();
+                if (argc > 0 && args[0].IsNumber() && args[0].ToNumber() >= 0)
+                {
+                    id = (uint32_t)(int64_t)args[0].ToNumber();
+                    next = 1;
+                }
+                entt::entity h = (entt::entity)id;
+                if (id == ScriptContext::NullEntity || !scene->m_Registry.valid(h) || !scene->m_Registry.all_of<AnimationPlayerComponent>(h))
+                    return {};
+                return Entity{ h, scene };
+            };
+            vm->DefineNative("AnimationPlay", [](int argc, Value* args) -> Value {
+                int next = 0;
+                Entity e = animated(argc, args, next);
+                const std::string clip = next < argc && args[next].IsString() ? args[next].AsString()->Value : std::string();
+                return Value::MakeBool(e && PropertyClips::Play(e, clip));
+            }, -1);
+            vm->DefineNative("AnimationStop", [](int argc, Value* args) -> Value {
+                int next = 0;
+                Entity e = animated(argc, args, next);
+                if (e) PropertyClips::Stop(e);
+                return Value::MakeBool((bool)e);
+            }, -1);
+            vm->DefineNative("AnimationIsPlaying", [](int argc, Value* args) -> Value {
+                int next = 0;
+                Entity e = animated(argc, args, next);
+                return Value::MakeBool(e && e.GetComponent<AnimationPlayerComponent>().Playing);
+            }, -1);
+            vm->DefineNative("AnimationTime", [](int argc, Value* args) -> Value {
+                int next = 0;
+                Entity e = animated(argc, args, next);
+                return Value::MakeFloat(e ? e.GetComponent<AnimationPlayerComponent>().Time : 0.0f);
+            }, -1);
             vm->DefineNative("TimelinePlay", [](int argc, Value* args) -> Value {
                 Entity d = director(argc, args, 0);
                 if (d) TimelineSystem::Play(*d.GetScene(), d);

@@ -158,6 +158,7 @@ namespace Conqueror
                     out << YAML::Key << "Time" << YAML::Value << m.Time;
                     out << YAML::Key << "Method" << YAML::Value << m.Method;
                     if (!m.Argument.empty()) out << YAML::Key << "Argument" << YAML::Value << m.Argument;
+                    if (!m.Signal.empty()) out << YAML::Key << "Signal" << YAML::Value << m.Signal;
                     out << YAML::EndMap;
                 }
                 out << YAML::EndSeq;
@@ -248,6 +249,7 @@ namespace Conqueror
                             m.Time = mn["Time"].as<float>(0.0f);
                             m.Method = mn["Method"].as<std::string>("");
                             m.Argument = mn["Argument"].as<std::string>("");
+                            m.Signal = mn["Signal"].as<std::string>("");
                             t.Markers.push_back(m);
                         }
                     std::sort(t.Clips.begin(), t.Clips.end(), [](const TimelineClip& a, const TimelineClip& b) { return a.Start < b.Start; });

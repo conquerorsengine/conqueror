@@ -33,6 +33,8 @@ namespace Conqueror
     {
         int DefaultTonemapper = 1;             // yeni sahneler: 0 Yok, 1 Neutral, 2 ACES, 3 AgX, 4 Reinhard
         int DefaultSky = 0;                    // yeni sahneler: 0 Prosedürel gökyüzü, 1 Düz renk
+        // Preloaded Shaders: oyun başında ısıtılan Shader Variant Collection'lar (.cqshadervariants)
+        std::vector<std::string> PreloadedShaders;
     };
 
     struct NavAreaSetting
@@ -72,6 +74,9 @@ namespace Conqueror
         static std::vector<ScriptOrderEntry>& ScriptOrder();
         // Projeye özel giriş haritası (.cqproj içinde); kapalıysa motorun varsayılan haritası
         static bool& CustomInput();
+        // Project-wide Actions (Unity 6): bir Input Actions varlığı (.cqinputactions, proje göreli). Doluysa betiklerin
+        // genel eylem sorguları (InputGetAction, InputActionVector ...) her haritada bu varlıktan okunur.
+        static std::string& ProjectWideActions();
         // Tags & Layers: projeye eklenen etiketler (yerleşiklerden sonra)
         static std::vector<std::string>& CustomTags();
 

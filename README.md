@@ -3,7 +3,7 @@
 A 2D/3D game engine and editor written in C++23, with OpenGL, Vulkan, Direct3D 11, Direct3D 12 and Metal backends,
 ten scripting languages plus visual scripting, and a Unity/Roblox-style editor.
 
-**Version:** 0.527.2
+**Version:** 0.537.2
 
 ## Documentation
 

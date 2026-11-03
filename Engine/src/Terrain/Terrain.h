@@ -29,7 +29,32 @@ namespace Conqueror
         float TargetHeight = 0.2f;    // Flatten (0..1)
         float NoiseScale = 0.15f;
         int Layer = 0;                // Paint
+        // Brush varlığı (.cqbrush, Unity Terrain Brush): gri tonlu maske dokusu fırçanın şeklini verir
+        std::string Brush;
     };
+
+    // Brush varlığı: maske (beyaz = tam etki), düşüş, döndürme, ölçek
+    struct TerrainBrushAsset
+    {
+        std::string Mask;             // gri tonlu görsel (boş = yuvarlak)
+        float Falloff = 0.0f;         // maskeye ek kenar yumuşatma (0..1)
+        float Rotation = 0.0f;        // derece
+        float Scale = 1.0f;           // yarıçap çarpanı
+        bool Invert = false;
+    };
+
+    // Terrain Layer / Brush varlık dosyaları
+    namespace TerrainAssets
+    {
+        constexpr const char* LayerExtension = ".cqterrainlayer";
+        constexpr const char* BrushExtension = ".cqbrush";
+        CQ_API bool LoadLayer(const std::string& path, TerrainLayer& out);   // önbellekli; Asset alanı korunmaz
+        CQ_API bool SaveLayer(const std::string& path, const TerrainLayer& layer);
+        CQ_API bool LoadBrush(const std::string& path, TerrainBrushAsset& out);
+        CQ_API bool SaveBrush(const std::string& path, const TerrainBrushAsset& brush);
+        // Maske örneği 0..1 (uv 0..1); maske yoksa false
+        CQ_API bool SampleBrushMask(const std::string& maskPath, float u, float v, float& out);
+    }
 
     struct TerrainNoiseSettings
     {

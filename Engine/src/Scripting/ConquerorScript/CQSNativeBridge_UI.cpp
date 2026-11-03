@@ -1,3 +1,4 @@
+#include "Core/Audio/AudioRandomContainer.h"
 #include "Scene/MeshRendererMaterial.h"
 #include "Renderer/Utilities/Renderer3D/Material.h"
 #include "CQSNativeBridge.h"
@@ -11,6 +12,8 @@
 #include "Scene/ComponentRegistry.h"
 #include "UI/UISystem.h"
 #include "Scene/PlayerInput.h"
+#include "Core/Input/InputActionRuntime.h"
+#include "Scripting/DataAssets.h"
 #include "Scene/RigConstraints.h"
 #include "AISystem/Navigation/NavAgents.h"
 #include "AISystem/Navigation/NavMesh.h"
@@ -26,6 +29,7 @@
 #include "Core/Audio/AudioOneShots.h"
 #include "Core/Audio/AudioSource.h"
 #include "Core/Audio/AudioMixer.h"
+#include "Core/Math/CurveAsset.h"
 
 #include <algorithm>
 #include <cmath>
@@ -545,6 +549,120 @@ namespace Conqueror::CQS
             auto* p = Get<PlayerInputComponent>(TargetArg(argc, args));
             return Value::MakeInt(p ? p->PlayerIndex : -1);
         }, -1);
+        // Input Actions varlığıyla (Unity InputAction): ReadValue<Vector2>, phase, WasPerformedThisFrame ...
+        vm->DefineNative("PlayerInputVector", [playerArgs](int argc, Value* args) -> Value {
+            std::string action;
+            auto* p = playerArgs(argc, args, action);
+            return Vec2(p ? PlayerInputs::GetVector(*p, action) : glm::vec2(0.0f));
+        }, -1);
+        vm->DefineNative("PlayerInputPhase", [playerArgs](int argc, Value* args) -> Value {
+            std::string action;
+            auto* p = playerArgs(argc, args, action);
+            const auto* st = p ? PlayerInputs::FindState(*p, action) : nullptr;
+            return Value::MakeString(st ? InputActionRuntime::PhaseName(st->Phase) : "Waiting");
+        }, -1);
+        vm->DefineNative("PlayerInputStarted", [playerArgs](int argc, Value* args) -> Value {
+            std::string action;
+            auto* p = playerArgs(argc, args, action);
+            const auto* st = p ? PlayerInputs::FindState(*p, action) : nullptr;
+            return Value::MakeBool(st && st->StartedThisFrame);
+        }, -1);
+        vm->DefineNative("PlayerInputPerformed", [playerArgs](int argc, Value* args) -> Value {
+            std::string action;
+            auto* p = playerArgs(argc, args, action);
+            const auto* st = p ? PlayerInputs::FindState(*p, action) : nullptr;
+            return Value::MakeBool(st && st->PerformedThisFrame);
+        }, -1);
+        vm->DefineNative("PlayerInputCanceled", [playerArgs](int argc, Value* args) -> Value {
+            std::string action;
+            auto* p = playerArgs(argc, args, action);
+            const auto* st = p ? PlayerInputs::FindState(*p, action) : nullptr;
+            return Value::MakeBool(st && st->CanceledThisFrame);
+        }, -1);
+        vm->DefineNative("PlayerInputSwitchMap", [playerArgs](int argc, Value* args) -> Value {
+            std::string map;
+            auto* p = playerArgs(argc, args, map);
+            if (!p) return Value::MakeBool(false);
+            PlayerInputs::SwitchMap(*p, map);
+            return Value::MakeBool(true);
+        }, -1);
+        vm->DefineNative("PlayerInputSwitchScheme", [playerArgs](int argc, Value* args) -> Value {
+            std::string scheme;
+            auto* p = playerArgs(argc, args, scheme);
+            if (!p) return Value::MakeBool(false);
+            PlayerInputs::SwitchScheme(*p, scheme);
+            return Value::MakeBool(true);
+        }, -1);
+        // ================================================================ Data Asset (Unity ScriptableObject)
+        // LoadDataAsset("Assets/Data/Sword.cqdata") -> {alan: değer ...} (sınıf varsayılanları + dosyadaki değerler)
+        vm->DefineNative("LoadDataAsset", [](int argc, Value* args) -> Value {
+            if (argc < 1 || !args[0].IsString()) return Value::MakeNull();
+            std::vector<std::pair<std::string, Scripting::ScriptValue>> fields;
+            if (!DataAssets::Resolve(args[0].AsString()->Value, fields)) return Value::MakeNull();
+            auto* m = new CQSMapObject();
+            for (const auto& [name, v] : fields)
+                m->Entries[name] = Scripting::ScriptRuntimes::ToValue(v);
+            return Value::MakeObject(m);
+        }, 1);
+        // DataAssetGet("Assets/Data/Sword.cqdata", "damage") -> değer (yoksa null)
+        vm->DefineNative("DataAssetGet", [](int argc, Value* args) -> Value {
+            if (argc < 2 || !args[0].IsString() || !args[1].IsString()) return Value::MakeNull();
+            std::vector<std::pair<std::string, Scripting::ScriptValue>> fields;
+            if (!DataAssets::Resolve(args[0].AsString()->Value, fields)) return Value::MakeNull();
+            for (const auto& [name, v] : fields)
+                if (name == args[1].AsString()->Value)
+                    return Scripting::ScriptRuntimes::ToValue(v);
+            return Value::MakeNull();
+        }, 2);
+        // ================================================================ Curve (Unreal Curve Float / Vector / Linear Color)
+        // CurveEvaluate("Assets/Curves/Jump.cqcurve", t) -> sayı (Float), {x, y, z} (Vector), {r, g, b, a} (Color)
+        vm->DefineNative("CurveEvaluate", [](int argc, Value* args) -> Value {
+            if (argc < 2 || !args[0].IsString()) return Value::MakeNull();
+            const CurveAsset* c = CurveAssets::Get(args[0].AsString()->Value);
+            if (!c) return Value::MakeNull();
+            const glm::vec4 v = c->Evaluate((float)args[1].ToNumber());
+            if (c->Type == CurveType::Float) return Value::MakeFloat(v.x);
+            if (c->Type == CurveType::Vector) return Vec3(glm::vec3(v));
+            auto* m = new CQSMapObject();
+            m->Entries["r"] = Value::MakeFloat(v.r);
+            m->Entries["g"] = Value::MakeFloat(v.g);
+            m->Entries["b"] = Value::MakeFloat(v.b);
+            m->Entries["a"] = Value::MakeFloat(v.a);
+            return Value::MakeObject(m);
+        }, 2);
+        // CurveTimeRange("...cqcurve") -> {x: ilk anahtar zamanı, y: son anahtar zamanı}
+        vm->DefineNative("CurveTimeRange", [](int argc, Value* args) -> Value {
+            if (argc < 1 || !args[0].IsString()) return Value::MakeNull();
+            const CurveAsset* c = CurveAssets::Get(args[0].AsString()->Value);
+            if (!c) return Value::MakeNull();
+            float t0, t1, v0, v1;
+            c->Range(t0, t1, v0, v1);
+            return Vec2(glm::vec2(t0, t1));
+        }, 1);
+        // Project-wide Actions (Project Settings > Input): "Jump" ya da "Player/Jump"
+        auto projectWide = [](int argc, Value* args) -> const InputActionState* {
+            return argc >= 1 && args[0].IsString() ? InputActionRuntime::FindProjectWide(args[0].AsString()->Value) : nullptr;
+        };
+        vm->DefineNative("InputActionVector", [projectWide](int argc, Value* args) -> Value {
+            const auto* st = projectWide(argc, args);
+            return Vec2(st ? st->Value : glm::vec2(0.0f));
+        }, 1);
+        vm->DefineNative("InputActionPhase", [projectWide](int argc, Value* args) -> Value {
+            const auto* st = projectWide(argc, args);
+            return Value::MakeString(st ? InputActionRuntime::PhaseName(st->Phase) : "Waiting");
+        }, 1);
+        vm->DefineNative("InputActionPerformed", [projectWide](int argc, Value* args) -> Value {
+            const auto* st = projectWide(argc, args);
+            return Value::MakeBool(st && st->PerformedThisFrame);
+        }, 1);
+        vm->DefineNative("InputActionStarted", [projectWide](int argc, Value* args) -> Value {
+            const auto* st = projectWide(argc, args);
+            return Value::MakeBool(st && st->StartedThisFrame);
+        }, 1);
+        vm->DefineNative("InputActionCanceled", [projectWide](int argc, Value* args) -> Value {
+            const auto* st = projectWide(argc, args);
+            return Value::MakeBool(st && st->CanceledThisFrame);
+        }, 1);
         // ================================================================ Cloth
         // ClothGetBounds([target]) -> {minX, minY, minZ, maxX, maxY, maxZ}: kumaşın dünya uzayı sınırları
         vm->DefineNative("ClothGetBounds", [](int argc, Value* args) -> Value {
@@ -676,6 +794,16 @@ namespace Conqueror::CQS
             Entity e = argc >= 2 ? Target(args[0]) : Entity{};
             glm::mat4 m;
             if (!scene || !e || !RigConstraints::GetBoneWorldTransform(*scene, (uint32_t)e, Text(args[1]), m))
+                return Value::MakeNull();
+            return Vec3(glm::vec3(m[3]));
+        }, 2);
+        // GetBoneLocalPosition(target, "hand_r") -> {x, y, z}: kemiğin modelin kendi uzayındaki konumu (son poz, IK dahil).
+        // Modelin dünya dönüşümünden bağımsızdır: aynı karede taşınan / döndürülen modelde de tutarlı
+        vm->DefineNative("GetBoneLocalPosition", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            Entity e = argc >= 2 ? Target(args[0]) : Entity{};
+            glm::mat4 m;
+            if (!scene || !e || !RigConstraints::GetBoneModelTransform(*scene, (uint32_t)e, Text(args[1]), m))
                 return Value::MakeNull();
             return Vec3(glm::vec3(m[3]));
         }, 2);
@@ -1048,7 +1176,9 @@ namespace Conqueror::CQS
         vm->DefineNative("AudioPlayEntity", [](int argc, Value* args) -> Value {
             auto* asc = Get<AudioSourceComponent>(TargetArg(argc, args));
             if (!asc) return Value::MakeBool(false);
-            if (auto* src = static_cast<AudioSource*>(asc->RuntimeSound))
+            if (AudioRandomContainers::IsAsset(asc->FilePath))
+                asc->ContainerRequest = true;   // Audio Random Container: her Play yeni klip
+            else if (auto* src = static_cast<AudioSource*>(asc->RuntimeSound))
                 src->Play();
             else
                 asc->PlayOnAwake = true;   // henüz yüklenmedi: yüklenince çalar

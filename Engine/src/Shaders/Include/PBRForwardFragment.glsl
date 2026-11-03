@@ -6,9 +6,13 @@
 #include "Include/Lighting.glsl"
 
 layout(location = 0) out vec4 FragColor;
-// SSR için: xy oktahedral dünya normali, z pürüzlülük, w 2 + metalik (opak yüzey). Şeffaflar 0 yazar:
-// karışımda kaynak alfası 0 olduğundan alttaki opak yüzeyin verisi korunur.
+// SSR için: xy oktahedral dünya normali, z pürüzlülük, w 2 + metalik (opak yüzey; bu karede hareket eden nesnede
+// 4 + metalik: Temporal AA hareket bayrağı). Şeffaflar 0 yazar: karışımda kaynak alfası 0 olduğundan alttaki opak
+// yüzeyin verisi korunur.
 layout(location = 1) out vec4 CQ_GBufferNormal;
+// 3: güneş gölgesi (TAA: gölgesi değişen yüzey, ör. hareket eden nesnenin gölgesi, geçmişe güvenmez)
+layout(location = 3) out float CQ_GBufferShadow;
+uniform float u_MotionFlag = 0.0;   // 2: bu karede hareket etti (Renderer3D)
 // SSGI için: doğrusal albedo (rgb) + ortam örtmesi (a); şeffaflar 0 (alttaki opak korunur)
 layout(location = 2) out vec4 CQ_GBufferAlbedo;
 
@@ -75,6 +79,11 @@ uniform mat4 u_Transform;
 #define u_Time CQ_Time()
 
 // #GRAPH_INJECT_UNIFORMS#
+
+// Kod shader'ı (Create > Shader > Lit Shader): include'dan önce CQ_USER_SURFACE tanımlanırsa kullanıcı yüzeyi değiştirir
+#ifdef CQ_USER_SURFACE
+void CQ_UserSurface(inout CQ_Surface surface, vec2 uv);
+#endif
 
 void main()
 {
@@ -158,11 +167,15 @@ void main()
     surface.SubsurfaceColor = u_Material.SubsurfaceColor;
     surface.SubsurfaceAmount = u_Material.SubsurfaceAmount;
     surface.Tangent = fs_in.TBN[0];
+#ifdef CQ_USER_SURFACE
+    CQ_UserSurface(surface, uv);
+#endif
 
     // Unlit: ekran-uzayı yansıma / GI bu yüzeye eklenmesin diye G-buffer'da tam pürüzlü
     bool unlit = surface.ShadingModel == 4;
-    CQ_GBufferNormal = u_RenderMode == 2 ? vec4(0.0) : vec4(CQ_OctEncode(surface.Normal), unlit ? 1.0 : surface.Roughness, 2.0 + surface.Metallic);
+    CQ_GBufferNormal = u_RenderMode == 2 ? vec4(0.0) : vec4(CQ_OctEncode(surface.Normal), unlit ? 1.0 : surface.Roughness, 2.0 + u_MotionFlag + clamp(surface.Metallic, 0.0, 1.0));
     CQ_GBufferAlbedo = u_RenderMode == 2 ? vec4(0.0) : vec4(surface.Albedo * (1.0 - surface.Metallic), surface.AO);
+    CQ_GBufferShadow = 1.0;   // gölgelendirme (aşağıda) güneş gölgesini yazar; hata ayıklama / ışıksız yolda aydınlık
 
     // Editör hata ayıklama görünümleri
     int debugView = CQ_Frame.DebugParams.x;
@@ -199,4 +212,5 @@ void main()
         return;
     }
     FragColor = CQ_FinalizeOutput(CQ_ShadeSurface(surface));
+    CQ_GBufferShadow = g_CQSunShadow;
 }

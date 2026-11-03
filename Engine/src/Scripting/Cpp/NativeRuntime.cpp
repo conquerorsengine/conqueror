@@ -1,4 +1,5 @@
 #include "Scripting/ScriptRuntime.h"
+#include "Scripting/DataAssets.h"
 #include "Scripting/NativeRegistry.h"
 #include "Scripting/ScriptContext.h"
 #include "Core/Logging/Log.h"
@@ -424,6 +425,10 @@ namespace Conqueror::Scripting
             // Söz dizimi / tür denetimi: düzenlenen dosya içeriğiyle (gerekirse tüm kaynaklarla); log + eşleşecek dosya adı
             virtual bool Check(const std::vector<fs::path>& sources, const std::string& name, const std::string& source,
                                const fs::path& workDir, std::string& log, std::string& matchFile) = 0;
+            // Projedeki başlık dosyaları (değişince yeniden derlenir); C++'ta DataAsset sınıfı tanımlayan başlıklar ayrıca
+            // derlemeye eklenir (hiçbir betik içermese de sınıf kayıtlı olur, Data Asset Inspector'ı alanları görür)
+            virtual std::vector<std::string> HeaderExtensions() const { return {}; }
+            std::vector<fs::path> DataHeaders;
         };
 
         // Motor fonksiyonları (dosyaya yazılabilir adlar)
@@ -454,6 +459,7 @@ namespace Conqueror::Scripting
             const char* Name() const override { return "C++"; }
             const char* Id() const override { return "cpp"; }
             std::vector<std::string> Extensions() const override { return { ".cpp", ".cc", ".cxx" }; }
+            std::vector<std::string> HeaderExtensions() const override { return { ".h", ".hpp", ".hh", ".hxx" }; }
             std::string Unavailable() const override { return "No C++ compiler found (install clang/gcc, or set CXX)."; }
             std::string Compiler() const override { return m_Compiler; }
 
@@ -536,6 +542,23 @@ namespace Conqueror::Scripting
                     }
                     header += "    }\n";
                 }
+                // Data Asset: .cqdata dosyasını T olarak yükle (alanlar dosyadaki, yoksa sınıftaki varsayılan değerlerle)
+                if (NativeRegistry::Get().Find("DataAssetGet") && NativeRegistry::Get().Find("LoadDataAsset"))
+                    header += "    template<typename T>\n"
+                              "    T LoadDataAsset(const std::string& path)\n"
+                              "    {\n"
+                              "        static_assert(std::is_base_of_v<DataAsset, T>, \"LoadDataAsset<T>: T must derive from cq::DataAsset\");\n"
+                              "        T asset;\n"
+                              "        asset.assetPath = path;\n"
+                              "        auto it = detail::Classes().find(detail::ClassAccess<T>::Name());\n"
+                              "        if (it == detail::Classes().end()) return asset;\n"
+                              "        for (auto& f : it->second.Fields)\n"
+                              "        {\n"
+                              "            Value v = DataAssetGet(Value(path), Value(f.Name));\n"
+                              "            if (!v.IsNull()) f.Set(&asset, v);\n"
+                              "        }\n"
+                              "        return asset;\n"
+                              "    }\n";
                 header += "}\n";
                 WriteIfChanged(dir / "NativeBridge.g.h", header);
                 WriteIfChanged(dir / "__cq_plugin_main.cpp", "// Otomatik üretildi\n#define CQ_PLUGIN_IMPLEMENTATION\n#include <Conqueror/Script.h>\n");
@@ -544,12 +567,17 @@ namespace Conqueror::Scripting
             bool Build(const std::vector<fs::path>& sources, const fs::path& outDir, const fs::path& lib, std::string& log) override
             {
                 Generate(outDir);
+                // DataAsset sınıfı tanımlayan başlıklar (Unreal'daki gibi sınıf başlıkta; betikler #include ile kullanır)
+                std::string dataUnit = "// Otomatik üretildi: projedeki Data Asset sınıfı başlıkları (kayıt için)\n";
+                for (const auto& h : DataHeaders)
+                    dataUnit += "#include \"" + h.generic_string() + "\"\n";
+                WriteIfChanged(outDir / "__cq_data_assets.cpp", dataUnit);
                 const fs::path includeDir = IncludeDir();
                 std::string cmd;
                 if (m_IsMsvc)
                 {
                     cmd = m_Compiler + " /nologo /std:c++20 /O2 /EHsc /LD /MD /I" + Quote(includeDir) + " /I" + Quote(outDir) + " /Fo" + Quote(outDir / "") + " /Fe" + Quote(lib);
-                    cmd += " " + Quote(outDir / "__cq_plugin_main.cpp");
+                    cmd += " " + Quote(outDir / "__cq_plugin_main.cpp") + " " + Quote(outDir / "__cq_data_assets.cpp");
                     for (auto& s : sources) cmd += " /Tp" + Quote(s);
                 }
                 else
@@ -560,7 +588,7 @@ namespace Conqueror::Scripting
                     const char* shared = "-shared";
 #endif
                     cmd = m_Compiler + " -std=c++20 -O2 -g -fPIC " + shared + " -fvisibility=hidden -I" + Quote(includeDir) + " -I" + Quote(outDir) +
-                          " -o " + Quote(lib) + " " + Quote(outDir / "__cq_plugin_main.cpp") + " -x c++";
+                          " -o " + Quote(lib) + " " + Quote(outDir / "__cq_plugin_main.cpp") + " " + Quote(outDir / "__cq_data_assets.cpp") + " -x c++";
                     for (auto& s : sources) cmd += " " + Quote(s);
                 }
                 int code = 0;
@@ -1312,15 +1340,18 @@ namespace Conqueror::Scripting
             return (projectDir.empty() ? fs::temp_directory_path(ec) / "ConquerorEngine" : projectDir / "Library") / "ScriptAssemblies" / m_Tool->Id();
         }
 
-        std::vector<fs::path> CollectSources() const
+        std::vector<fs::path> CollectSources() const { return CollectFiles(m_Tool->Extensions()); }
+
+        std::vector<fs::path> CollectFiles(const std::vector<std::string>& exts) const
         {
             std::vector<fs::path> sources;
+            if (exts.empty())
+                return sources;
             fs::path projectDir = Project::GetActiveProjectDirectory();
             std::error_code ec;
             fs::path assets = projectDir / "Assets";
             if (projectDir.empty() || !fs::exists(assets, ec))
                 return sources;
-            const auto exts = m_Tool->Extensions();
             for (auto it = fs::recursive_directory_iterator(assets, fs::directory_options::skip_permission_denied, ec); it != fs::recursive_directory_iterator(); it.increment(ec))
             {
                 std::string ext = it->path().extension().string();
@@ -1343,10 +1374,20 @@ namespace Conqueror::Scripting
             std::vector<fs::path> sources = CollectSources();
             std::string all = m_Tool->SdkFingerprint();
             for (auto& s : sources) { std::string t; ReadFile(s, t); all += s.string() + "\n" + t; }
+            // Başlıklar: değişince yeniden derle; DataAsset sınıfı tanımlayanlar derlemeye eklenir
+            m_Tool->DataHeaders.clear();
+            for (auto& h : CollectFiles(m_Tool->HeaderExtensions()))
+            {
+                std::string t;
+                ReadFile(h, t);
+                all += h.string() + "\n" + t;
+                if (!DataAssets::DataClassesInText(t, m_Tool->Id()).empty())
+                    m_Tool->DataHeaders.push_back(h);
+            }
             size_t hash = std::hash<std::string>{}(all);
             if (m_Built && hash == m_SourceHash)
                 return true;
-            if (sources.empty())
+            if (sources.empty() && m_Tool->DataHeaders.empty())
             {
                 if (error) *error = std::string("No ") + m_Tool->Name() + " scripts in the project";
                 return false;

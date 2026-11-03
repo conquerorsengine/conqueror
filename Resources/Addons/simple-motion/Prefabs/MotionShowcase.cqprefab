@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 1254264670408979408
+  - Entity: 7640177675617930206
     TagComponent:
       Tag: Motion Showcase
       GameTag: Untagged
@@ -12,7 +12,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 2187479752436304440
+  - Entity: 3202251598361841727
     TagComponent:
       Tag: Oscillating Cube
       GameTag: Untagged
@@ -26,15 +26,11 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.95, 0.4, 0.3, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
+      MaterialAsset: Packages/simple-motion/Materials/Red.cqmat
     Oscillator_ConquerorScriptComponent:
       ScriptPath: Packages/simple-motion/Scripts/Oscillator.cqs
       ClassName: Oscillator
-  - Entity: 1039249894611332799
+  - Entity: 8982017958832574207
     TagComponent:
       Tag: Pulsing Sphere
       GameTag: Untagged
@@ -48,15 +44,11 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.3, 0.8, 0.5, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
+      MaterialAsset: Packages/simple-motion/Materials/Green.cqmat
     Pulse_ConquerorScriptComponent:
       ScriptPath: Packages/simple-motion/Scripts/Pulse.cqs
       ClassName: Pulse
-  - Entity: 9150194335249490843
+  - Entity: 4427920335577760380
     TagComponent:
       Tag: Orbiting Sphere
       GameTag: Untagged
@@ -70,18 +62,14 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.4, 0.6, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
+      MaterialAsset: Packages/simple-motion/Materials/Blue.cqmat
     Orbit_ConquerorScriptComponent:
       ScriptPath: Packages/simple-motion/Scripts/Orbit.cqs
       ClassName: Orbit
       Fields:
         radius:
           Float: 1.2
-  - Entity: 5541817083299490792
+  - Entity: 8515678402411473673
     TagComponent:
       Tag: Color Cube
       GameTag: Untagged
@@ -95,20 +83,14 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [1, 1, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 1, 1]
-      EmissionStrength: 0.5
-      TexturePath: CQ:Resources/Textures/texture_grid.png
+      MaterialAsset: Packages/simple-motion/Materials/White Glow.cqmat
     ColorCycle_ConquerorScriptComponent:
       ScriptPath: Packages/simple-motion/Scripts/ColorCycle.cqs
       ClassName: ColorCycle
       Fields:
         emission:
           Bool: true
-  - Entity: 5277092032809857088
+  - Entity: 2210960365263917714
     TagComponent:
       Tag: Blinking Light
       GameTag: Untagged
@@ -122,13 +104,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.2, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.2, 0.1]
-      EmissionStrength: 3
-      TexturePath: CQ:Resources/Textures/texture_grid.png
+      MaterialAsset: Packages/simple-motion/Materials/Red Glow.cqmat
     PointLightComponent:
       Color: [1, 0.25, 0.1]
       Intensity: 2
@@ -141,7 +117,7 @@ Entities:
     Blink_ConquerorScriptComponent:
       ScriptPath: Packages/simple-motion/Scripts/Blink.cqs
       ClassName: Blink
-  - Entity: 1375024291943702904
+  - Entity: 7395070904573013434
     TagComponent:
       Tag: Wobbly Sign
       GameTag: Untagged
@@ -155,15 +131,11 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.9, 0.85, 0.6, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
+      MaterialAsset: Packages/simple-motion/Materials/Yellow.cqmat
     Wobble_ConquerorScriptComponent:
       ScriptPath: Packages/simple-motion/Scripts/Wobble.cqs
       ClassName: Wobble
-  - Entity: 6517838962878424019
+  - Entity: 151479729672818211
     TagComponent:
       Tag: Watcher
       GameTag: Untagged
@@ -177,15 +149,11 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.6, 0.6, 0.65, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
+      MaterialAsset: Packages/simple-motion/Materials/Light Gray.cqmat
     LookAtTarget_ConquerorScriptComponent:
       ScriptPath: Packages/simple-motion/Scripts/LookAtTarget.cqs
       ClassName: LookAtTarget
-  - Entity: 1157577957382818685
+  - Entity: 8528232403649371236
     TagComponent:
       Tag: Watcher Eye
       GameTag: Untagged
@@ -199,11 +167,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.1, 0.1, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
+      MaterialAsset: Packages/simple-motion/Materials/Dark Gray.cqmat
 Environment:
   SkyboxExposure: 1
   SkyboxRotation: 0
@@ -300,6 +264,49 @@ Environment:
       Sharpen: false
       SharpenAmount: 0.3
       AntiAliasing: 1
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: false
+      SSRIntensity: 1
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: false
+      SSGIIntensity: 1
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: false
+      CloudCoverage: 0.45
+      CloudDensity: 1
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: false
+      FocusDistance: 10
+      Aperture: 2.8
+      FocalLength: 50
+      DOFMaxBlur: 10
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
     Environment:
       Sky: 0
       BackgroundColor: [0.1, 0.1, 0.1]
@@ -307,6 +314,13 @@ Environment:
       ReflectionIntensity: 1
       SkyboxIntensity: 1
       SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
     Bake:
       RealtimeGI: false
       BakedGI: true
@@ -346,19 +360,19 @@ Environment:
       APVGeometryBias: 0.01
       APVRayOriginBias: -0.001
 Hierarchy:
-  - Child: 1157577957382818685
-    Parent: 6517838962878424019
-  - Child: 2187479752436304440
-    Parent: 1254264670408979408
-  - Child: 1039249894611332799
-    Parent: 1254264670408979408
-  - Child: 9150194335249490843
-    Parent: 1254264670408979408
-  - Child: 5541817083299490792
-    Parent: 1254264670408979408
-  - Child: 5277092032809857088
-    Parent: 1254264670408979408
-  - Child: 1375024291943702904
-    Parent: 1254264670408979408
-  - Child: 6517838962878424019
-    Parent: 1254264670408979408
+  - Child: 8528232403649371236
+    Parent: 151479729672818211
+  - Child: 3202251598361841727
+    Parent: 7640177675617930206
+  - Child: 8982017958832574207
+    Parent: 7640177675617930206
+  - Child: 4427920335577760380
+    Parent: 7640177675617930206
+  - Child: 8515678402411473673
+    Parent: 7640177675617930206
+  - Child: 2210960365263917714
+    Parent: 7640177675617930206
+  - Child: 7395070904573013434
+    Parent: 7640177675617930206
+  - Child: 151479729672818211
+    Parent: 7640177675617930206

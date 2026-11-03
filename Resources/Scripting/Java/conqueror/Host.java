@@ -222,10 +222,38 @@ public final class Host {
         }
     }
 
+    // ── Data Asset ──
+    // DataAsset.load: .cqdata değerleri (motorun LoadDataAsset'i, sınıf varsayılanlarıyla birleşmiş) public alanlara yazılır
+    static <T extends DataAsset> T loadDataAsset(Class<T> type, String path) {
+        Value map = NativeBridge.LoadDataAsset(path);
+        if (map.kind != Value.Kind.MAP) return null;
+        T asset;
+        try {
+            Constructor<T> c = type.getDeclaredConstructor();
+            c.setAccessible(true);
+            asset = c.newInstance();
+        } catch (Throwable t) {
+            fail(t);
+            return null;
+        }
+        asset.setAssetPath(path);
+        for (Field f : allFields(type)) {
+            boolean visible = Modifier.isPublic(f.getModifiers()) || f.isAnnotationPresent(SerializeField.class);
+            if (!visible || Modifier.isFinal(f.getModifiers())) continue;
+            Value v = map.get(f.getName());
+            if (v.isNull()) continue;
+            try {
+                f.setAccessible(true);
+                f.set(asset, convert(v, f.getType()));
+            } catch (Throwable ignored) {}
+        }
+        return asset;
+    }
+
     // ── Alanlar ──
     private static List<Field> allFields(Class<?> type) {
         List<Class<?>> chain = new ArrayList<>();
-        for (Class<?> c = type; c != null && c != ScriptBehaviour.class && c != Object.class; c = c.getSuperclass()) chain.add(0, c);
+        for (Class<?> c = type; c != null && c != ScriptBehaviour.class && c != DataAsset.class && c != Object.class; c = c.getSuperclass()) chain.add(0, c);
         List<Field> fields = new ArrayList<>();
         for (Class<?> c : chain)
             for (Field f : c.getDeclaredFields())
@@ -298,7 +326,7 @@ public final class Host {
             for (String n : names) {
                 Class<?> type;
                 try { type = Class.forName(n, false, probe); } catch (Throwable t) { continue; }
-                if (!ScriptBehaviour.class.isAssignableFrom(type) || Modifier.isAbstract(type.getModifiers())) continue;
+                if (!(ScriptBehaviour.class.isAssignableFrom(type) || DataAsset.class.isAssignableFrom(type)) || Modifier.isAbstract(type.getModifiers())) continue;
                 Object instance = null;
                 try {
                     Constructor<?> c = type.getDeclaredConstructor();

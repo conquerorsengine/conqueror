@@ -18,6 +18,7 @@ namespace Conqueror
         uint32_t GetWidth() const override { return m_Width; }
         uint32_t GetHeight() const override { return m_Height; }
         const std::string& GetPath() const override { return m_Path; }
+        void SetPath(const std::string& path) override { m_Path = path; }
 
     private:
         void ConvertEquirectangularToCubemap(const std::string& path, uint32_t resolution);

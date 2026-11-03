@@ -1,8 +1,13 @@
 #include "InspectorPanel.h"
+#include "AssetActions.h"
+#include "Scripting/DataAssets.h"
 #include "Scripting/NativeScriptCompiler.h"
 #include "AssetInspector.h"
 #include "MaterialEditorUI.h"
+#include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
 #include "ObjectPicker.h"
+#include "Assets/ScriptFieldUI.h"
+#include "Assets/AssetUI.h"
 #include "Core/Serialization/SceneSerializer.h"
 #include "UndoRedo/UndoRedoManager.h"
 #include "UndoRedo/EntitySnapshotCommand.h"
@@ -92,6 +97,7 @@ namespace Conqueror::Editor
     }
 
     std::function<void(const std::string&)> InspectorPanel::s_OpenSpriteEditor;
+    std::function<void(const std::string&)> InspectorPanel::s_OpenInputActions;
 
     void InspectorPanel::SetSelectedEntity(Entity entity)
     {
@@ -147,6 +153,9 @@ namespace Conqueror::Editor
         // Düzenleme başlangıcı: Inspector'a tıklama (değer aynı karede değişebileceğinden pencere çizilmeden önce)
         if (!m_UndoPending && m_WindowID != 0 && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && IsInspectorHovered())
             BeginUndoCapture();
+        // Content Browser'dan sürüklenen varlık Inspector üstünde: bırakılınca yuvaya girer (tek geri alma adımı)
+        if (!m_UndoPending && m_WindowID != 0 && ImGui::GetDragDropPayload() && IsInspectorHovered())
+            BeginUndoCapture();
         ImGui::Begin("Inspector");
         m_WindowID = ImGui::GetCurrentWindow()->ID;
 
@@ -168,7 +177,9 @@ namespace Conqueror::Editor
         if (!m_UndoPending && ImGui::IsAnyItemActive() && ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
             BeginUndoCapture();
         ImGui::End();
-        if (m_UndoPending && !ImGui::IsAnyItemActive() && !ImGui::IsMouseDown(ImGuiMouseButton_Left))
+        // Nesne seçici (◎) açıkken seçim penceresinde yapılır: kayıt seçim yuvaya alınana kadar sürer
+        if (m_UndoPending && !ImGui::IsAnyItemActive() && !ImGui::IsMouseDown(ImGuiMouseButton_Left) && !ObjectPicker::IsBusy()
+            && !ImGui::GetDragDropPayload())
             EndUndoCapture();
     }
 
@@ -601,6 +612,28 @@ namespace Conqueror::Editor
         return changed;
     }
 
+    bool InspectorPanel::DrawObjectFields(const std::string& componentType, void* object, const std::function<bool(const std::string&)>& include)
+    {
+        ComponentInfo* info = ComponentRegistry::Find(componentType);
+        if (!info || !object)
+            return false;
+        bool changed = false;
+        for (auto& f : info->Fields)
+        {
+            if (include && !include(f.Name))
+                continue;
+            // Görünürlük koşulu nesnenin kendi değerlerine göre (profil yolu hariç tutulmuş kopya)
+            if (f.VisibleIf && !f.VisibleIf(object))
+                continue;
+            if (!f.Header.empty())
+                UI::SubHeader(f.Header.c_str());
+            ImGui::PushID(f.Name.c_str());
+            changed |= DrawRegistryField(Entity{}, f, object);
+            ImGui::PopID();
+        }
+        return changed;
+    }
+
     static void DrawRegistryComponent(Entity entity, ComponentInfo& info)
     {
         const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth |
@@ -715,7 +748,8 @@ namespace Conqueror::Editor
                         it.disable_recursion_pending();
                     continue;
                 }
-                if (it->is_regular_file(ec) && Scripting::ScriptRuntimes::IsScriptFile(it->path().string()))
+                if (it->is_regular_file(ec) && Scripting::ScriptRuntimes::IsScriptFile(it->path().string()) &&
+                    !DataAssets::IsDataOnlyScript(it->path().string()))
                     s_AddMenuScripts.push_back(it->path());
             }
             std::sort(s_AddMenuScripts.begin(), s_AddMenuScripts.end(),
@@ -750,6 +784,21 @@ namespace Conqueror::Editor
                 return entry;
             }
             runtime->GetClasses(resolved, entry.Classes, &error);
+            // Data Asset sınıfları nesnede çalışmaz (Unity: ScriptableObject MonoBehaviour değildir): sınıf listesinden çıkar
+            std::vector<std::string> dataClasses;
+            entry.Classes.erase(std::remove_if(entry.Classes.begin(), entry.Classes.end(), [&](const std::string& cls) {
+                                    const bool data = DataAssets::IsDataClass(resolved, cls);
+                                    if (data)
+                                        dataClasses.push_back(cls);
+                                    return data;
+                                }),
+                                entry.Classes.end());
+            if (entry.Classes.empty() && !dataClasses.empty())
+            {
+                entry.Error = "'" + dataClasses.front() + "' is a Data Asset class: it holds data and cannot run on an object. "
+                              "Create assets from it with Create > Data Asset > " + dataClasses.front() + ".";
+                return entry;
+            }
             for (auto& cls : entry.Classes)
             {
                 std::vector<Scripting::ScriptFieldInfo> fields;
@@ -763,103 +812,13 @@ namespace Conqueror::Editor
             return entry;
         }
 
-        // "[Range(0, 10)]" -> min/max
-        bool ParseRangeAttribute(const std::vector<std::string>& attrs, float& mn, float& mx)
-        {
-            for (auto& a : attrs)
-            {
-                if (a.rfind("Range(", 0) == 0)
-                    return std::sscanf(a.c_str(), "Range(%f,%f)", &mn, &mx) == 2 || std::sscanf(a.c_str(), "Range(%f, %f)", &mn, &mx) == 2;
-            }
-            return false;
-        }
-
-        // "[Tooltip(\"...\")]", "[Header(\"...\")]" -> tırnak içindeki metin
-        std::string QuotedAttribute(const std::vector<std::string>& attrs, const char* prefix)
-        {
-            for (auto& a : attrs)
-            {
-                if (a.rfind(prefix, 0) == 0)
-                {
-                    size_t q1 = a.find('"'), q2 = a.rfind('"');
-                    if (q1 != std::string::npos && q2 > q1)
-                        return a.substr(q1 + 1, q2 - q1 - 1);
-                }
-            }
-            return "";
-        }
-
-        std::string TooltipAttribute(const std::vector<std::string>& attrs) { return QuotedAttribute(attrs, "Tooltip("); }
-
-        bool HasSpaceAttribute(const std::vector<std::string>& attrs)
-        {
-            for (auto& a : attrs)
-                if (a == "Space" || a.rfind("Space(", 0) == 0)
-                    return true;
-            return false;
-        }
-
-        std::string PrettyFieldName(const std::string& name)
-        {
-            // moveSpeed -> Move Speed, m_Health -> Health
-            std::string n = name;
-            if (n.rfind("m_", 0) == 0) n = n.substr(2);
-            std::string out;
-            for (size_t i = 0; i < n.size(); ++i)
-            {
-                char c = n[i];
-                if (c == '_') { out += ' '; continue; }
-                if (i > 0 && std::isupper((unsigned char)c) && std::islower((unsigned char)n[i - 1])) out += ' ';
-                out += (i == 0) ? (char)std::toupper((unsigned char)c) : c;
-            }
-            return out;
-        }
-
-        ScriptFieldOverride FieldDefault(const Scripting::ScriptFieldInfo& f)
-        {
-            return f.Default;
-        }
-
-        // Bir alan düzenleyicisi; değiştiyse true
-        bool DrawScriptFieldValue(const char* id, ScriptFieldOverride& v, const Scripting::ScriptFieldInfo& f)
-        {
-            float mn = 0, mx = 0;
-            bool hasRange = ParseRangeAttribute(f.Attributes, mn, mx);
-            ImGui::SetNextItemWidth(-1);
-            switch (v.Type)
-            {
-                case ScriptFieldOverride::Kind::Bool:
-                    return ImGui::Checkbox(id, &v.Bool);
-                case ScriptFieldOverride::Kind::Int:
-                {
-                    int x = (int)v.Int;
-                    bool changed = hasRange ? ImGui::SliderInt(id, &x, (int)mn, (int)mx) : ImGui::DragInt(id, &x, 0.2f);
-                    if (changed) v.Int = x;
-                    return changed;
-                }
-                case ScriptFieldOverride::Kind::Float:
-                {
-                    float x = (float)v.Float;
-                    bool changed = hasRange ? ImGui::SliderFloat(id, &x, mn, mx, "%.3f") : ImGui::DragFloat(id, &x, 0.05f, 0.0f, 0.0f, "%.3f");
-                    if (changed) v.Float = x;
-                    return changed;
-                }
-                case ScriptFieldOverride::Kind::String:
-                {
-                    char buf[512] = {};
-                    std::strncpy(buf, v.String.c_str(), sizeof(buf) - 1);
-                    if (ImGui::InputText(id, buf, sizeof(buf)))
-                    {
-                        v.String = buf;
-                        return true;
-                    }
-                    return false;
-                }
-                default:
-                    ImGui::TextDisabled("(%s)", f.TypeName.empty() ? "object" : f.TypeName.c_str());
-                    return false;
-            }
-        }
+        // Ortak betik alanı arayüzü (Assets/ScriptFieldUI): betik bileşenleri ve Data Asset aynı düzenleyiciyi kullanır
+        std::string QuotedAttribute(const std::vector<std::string>& attrs, const char* prefix) { return ScriptFieldUI::Quoted(attrs, prefix); }
+        std::string TooltipAttribute(const std::vector<std::string>& attrs) { return ScriptFieldUI::Tooltip(attrs); }
+        bool HasSpaceAttribute(const std::vector<std::string>& attrs) { return ScriptFieldUI::HasSpace(attrs); }
+        std::string PrettyFieldName(const std::string& name) { return ScriptFieldUI::PrettyName(name); }
+        ScriptFieldOverride FieldDefault(const Scripting::ScriptFieldInfo& f) { return f.Default; }
+        bool DrawScriptFieldValue(const char* id, ScriptFieldOverride& v, const Scripting::ScriptFieldInfo& f) { return ScriptFieldUI::DrawValue(id, v, f); }
     }
 
     void InspectorPanel::DrawConquerorScripts(Entity entity)
@@ -915,6 +874,8 @@ namespace Conqueror::Editor
                 ImGui::Indent(4.0f);
                 // ── Betik dosyası ──
                 auto assignScript = [&](const std::string& path) {
+                    if (AssetActions::RefuseDataScript(path))
+                        return;
                     script.ScriptPath = ToSerializablePath(path);
                     script.ClassName.clear();
                     script.FieldOverrides.clear();
@@ -1331,16 +1292,40 @@ namespace Conqueror::Editor
 
         DrawComponent<SpriteRendererComponent>("Sprite Renderer", entity, [](auto& component)
         {
-            // ---- Doku (önizleme + sürükle-bırak + yerleşik şekiller)
+            // ---- Sprite (Unity Sprite Renderer gibi tek satırlık nesne alanı: küçük önizleme + ad; Content Browser'dan
+            // sürükle-bırak; yanında ◎ seçici: Assets / Packages (Square, Circle, Triangle ...) / Scene)
             {
-                UI::BeginProperty("Texture", "Drag an image from the Content Browser");
-                const float thumb = 48.0f;
-                ImVec2 p = ImGui::GetCursorScreenPos();
-                ImGui::GetWindowDrawList()->AddRectFilled(p, ImVec2(p.x + thumb, p.y + thumb), IM_COL32(40, 41, 46, 255), 4.0f);
-                if (component.Texture && component.Texture->GetRendererID())
-                    ImGui::GetWindowDrawList()->AddImage((ImTextureID)(uint64_t)component.Texture->GetRendererID(), ImVec2(p.x + 2, p.y + 2),
-                                                         ImVec2(p.x + thumb - 2, p.y + thumb - 2), ImVec2(0, 1), ImVec2(1, 0));
-                ImGui::InvisibleButton("##texthumb", ImVec2(thumb, thumb));
+                UI::BeginProperty("Sprite", "The sprite to draw. Drag an image from the Content Browser or use the target button.");
+                const float h = ImGui::GetFrameHeight();
+                const float spacing = ImGui::GetStyle().ItemSpacing.x;
+                const bool none = !component.Texture;
+                std::string shown = "None (Sprite)";
+                if (!none)
+                {
+                    shown = !component.SpriteName.empty() ? component.SpriteName : std::filesystem::path(component.Texture->GetPath()).stem().string();
+                    if (shown.empty())
+                        shown = "Custom";
+                }
+                const float extra = (none ? 1 : 2) * (h + spacing);
+                ImGui::Button("##spriteslot", ImVec2(std::max(ImGui::GetContentRegionAvail().x - extra, h * 2.0f), 0.0f));
+                const ImVec2 rmin = ImGui::GetItemRectMin(), rmax = ImGui::GetItemRectMax();
+                ImDrawList* dl = ImGui::GetWindowDrawList();
+                float textX = rmin.x + 6.0f;
+                if (!none && component.Texture->GetRendererID())
+                {
+                    // Önizleme kutunun içinde, solda (Unity'deki sprite simgesi yerine sprite'ın kendisi)
+                    const float s = h - 6.0f;
+                    const ImVec2 i0(rmin.x + 4.0f, rmin.y + 3.0f), i1(i0.x + s, i0.y + s);
+                    dl->AddRectFilled(i0, i1, IM_COL32(30, 31, 35, 255), 2.0f);
+                    dl->AddImage((ImTextureID)(uint64_t)component.Texture->GetRendererID(), i0, i1, ImVec2(0, 1), ImVec2(1, 0));
+                    textX = i1.x + 6.0f;
+                }
+                dl->PushClipRect(rmin, rmax, true);
+                dl->AddText(ImVec2(textX, rmin.y + (h - ImGui::GetTextLineHeight()) * 0.5f),
+                            ImGui::GetColorU32(none ? UI::Colors::TextDim : ImGui::GetStyleColorVec4(ImGuiCol_Text)), shown.c_str());
+                dl->PopClipRect();
+                if (ImGui::IsItemHovered() && !none)
+                    ImGui::SetTooltip("%s\n%u x %u", component.Texture->GetPath().c_str(), component.Texture->GetWidth(), component.Texture->GetHeight());
                 if (ImGui::BeginDragDropTarget())
                 {
                     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
@@ -1355,34 +1340,32 @@ namespace Conqueror::Editor
                             Renderer2D::ApplySpriteImport(component);
                         }
                         else
-                            CQ_CORE_WARN("Sprite Renderer: unsupported texture type {0}", ext);
+                            CQ_CORE_WARN("Sprite Renderer: unsupported image type {0}", ext);
                     }
                     ImGui::EndDragDropTarget();
                 }
                 ImGui::SameLine();
-                ImGui::BeginGroup();
-                std::string texName = component.Texture ? std::filesystem::path(component.Texture->GetPath()).filename().string() : std::string("None");
-                if (texName.empty()) texName = "Custom";
-                ImGui::TextUnformatted(texName.c_str());
-                if (component.Texture)
-                    ImGui::TextDisabled("%u x %u", component.Texture->GetWidth(), component.Texture->GetHeight());
-                // Unity Object Picker: Assets / Packages (Square, Circle, Triangle ...) / Scene
                 const ImGuiID spritePick = ImGui::GetID("##spritepick");
-                if (ImGui::SmallButton(ICON_FA_BULLSEYE " Select"))
-                    ObjectPicker::Open(spritePick, "Sprite", ObjectPicker::ImageExtensions(), component.Texture ? component.Texture->GetPath() : std::string());
+                if (ObjectPicker::IconButton("##spritepick"))
+                    ObjectPicker::Open(spritePick, "Sprite", { ".png", ".jpg", ".jpeg", ".tga", ".bmp" },
+                                       component.Texture ? component.Texture->GetPath() : std::string());
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Select Sprite");
                 if (std::string picked; ObjectPicker::Consume(spritePick, picked))
                 {
                     component.Texture = picked.empty() ? nullptr : Texture2D::Create(picked);
                     component.SpriteName.clear();
                     Renderer2D::ApplySpriteImport(component);
                 }
-                ImGui::SameLine();
-                if (component.Texture && ImGui::SmallButton(ICON_FA_XMARK "##cleartex"))
+                if (!none)
                 {
-                    component.Texture = nullptr;
-                    component.SpriteName.clear();
+                    ImGui::SameLine();
+                    if (ImGui::Button(ICON_FA_XMARK "##cleartex", ImVec2(h, 0)))
+                    {
+                        component.Texture = nullptr;
+                        component.SpriteName.clear();
+                    }
                 }
-                ImGui::EndGroup();
                 UI::EndProperty();
             }
 
@@ -1390,7 +1373,7 @@ namespace Conqueror::Editor
             std::shared_ptr<SpriteSheet> sheet = (component.Texture && !component.Texture->GetPath().empty()) ? SpriteSheet::Get(component.Texture->GetPath()) : nullptr;
             if (sheet && !sheet->Sprites.empty())
             {
-                UI::BeginProperty("Sprite", "Slice from the texture's sprite sheet");
+                UI::BeginProperty("Slice", "Which sprite of the image's sprite sheet (Sprite Editor) to draw");
                 if (ImGui::BeginCombo("##subsprite", component.SpriteName.empty() ? "(Full Texture)" : component.SpriteName.c_str()))
                 {
                     if (ImGui::Selectable("(Full Texture)", component.SpriteName.empty()))
@@ -1657,16 +1640,156 @@ namespace Conqueror::Editor
         DrawComponent<MeshRendererComponent>("Mesh Renderer", entity, [entity](auto& component)
         {
             // Unity Mesh Renderer: ağ + malzeme yuvası + ışıklandırma; doku / renk / metalik malzemenin içinde
-            const char* meshTypeNames[] = { "Cube", "Sphere", "Plane", "Cylinder" };
-            int currentType = static_cast<int>(component.Type);
-            if (UI::Combo("Mesh", currentType, meshTypeNames, 4))
-                component.Type = static_cast<MeshType>(currentType);
+            // Mesh (Unity Mesh Filter alanı): kutuda ağın adı; Content Browser'dan .cqmesh ya da model dosyası (.glb / .gltf /
+            // .fbx / .obj) sürükle-bırak; ◎ seçici Packages'taki yerleşik ağları (Packages/Core/Meshes) ve projedeki ağları /
+            // modelleri listeler. Model verilince ilkel yerine model çizilir (eski Model bileşeni buraya katıldı)
+            {
+                static const char* meshTypeNames[] = { "Cube", "Sphere", "Plane", "Cylinder" };
+                auto meshFromFile = [](const std::string& file, MeshType& out) {
+                    std::ifstream in(SceneSerializer::ResolveAssetPath(file));
+                    std::string line, name = std::filesystem::path(file).stem().string();
+                    while (std::getline(in, line))
+                        if (line.rfind("Mesh:", 0) == 0)
+                        {
+                            name = line.substr(5);
+                            name.erase(0, name.find_first_not_of(" \t"));
+                            name.erase(name.find_last_not_of(" \t\r") + 1);
+                            break;
+                        }
+                    for (int i = 0; i < 4; ++i)
+                        if (name == meshTypeNames[i]) { out = static_cast<MeshType>(i); return true; }
+                    return false;
+                };
+                auto isModelFile = [](const std::string& file) {
+                    std::string ext = std::filesystem::path(file).extension().string();
+                    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+                    const auto& exts = ObjectPicker::ModelExtensions();
+                    return std::find(exts.begin(), exts.end(), ext) != exts.end();
+                };
+                // Mesh alanına dosya ata: model ya da yerleşik ağ (.cqmesh)
+                auto assign = [&](const std::string& file) {
+                    MeshType t;
+                    if (isModelFile(file))
+                    {
+                        auto model = ModelLoader::Load(file);
+                        if (!model) { CQ_CORE_WARN("Mesh Renderer: model could not be loaded: {0}", file); return; }
+                        component.ModelPath = ToSerializablePath(file);
+                        component.ModelData = model;
+                        component.MaterialInstance = nullptr;   // model kendi malzemeleriyle çizilir
+                        component.MaterialPath.clear();
+                    }
+                    else if (std::filesystem::path(file).extension() == ".cqmesh" && meshFromFile(file, t))
+                    {
+                        const bool wasModel = component.IsModel();
+                        component.ModelPath.clear();
+                        component.ModelData = nullptr;
+                        component.Type = t;
+                        if (wasModel && !component.MaterialInstance)
+                        {
+                            component.MaterialPath = MaterialAsset::DefaultGridPath();
+                            component.MaterialInstance = MaterialAsset::DefaultGrid();
+                            if (!component.MaterialInstance)
+                                component.MaterialPath.clear();
+                        }
+                    }
+                    else
+                        CQ_CORE_WARN("Mesh Renderer: '{0}' is not a mesh or model", file);
+                };
+                const int typeIndex = std::clamp(static_cast<int>(component.Type), 0, 3);
+                const bool isModel = component.IsModel();
+                std::string shown = meshTypeNames[typeIndex];
+                if (isModel)
+                    shown = std::filesystem::path(component.ModelPath).stem().string() + (component.ModelData ? "" : "  (missing)");
+                UI::BeginProperty("Mesh", "The mesh to draw. Drag a mesh or a model file (.glb, .gltf, .fbx, .obj) from the Content Browser, "
+                                          "or use the target button (Packages > Core > Meshes: Cube, Sphere, Plane, Cylinder).");
+                const float h = ImGui::GetFrameHeight();
+                ImGui::Button("##meshslot", ImVec2(std::max(ImGui::GetContentRegionAvail().x - h - ImGui::GetStyle().ItemSpacing.x, h * 2.0f), 0.0f));
+                {
+                    const ImVec2 rmin = ImGui::GetItemRectMin(), rmax = ImGui::GetItemRectMax();
+                    ImDrawList* dl = ImGui::GetWindowDrawList();
+                    dl->PushClipRect(rmin, rmax, true);
+                    const float ty = rmin.y + (h - ImGui::GetTextLineHeight()) * 0.5f;
+                    dl->AddText(ImVec2(rmin.x + 6.0f, ty), IM_COL32(150, 190, 235, 255), isModel ? ICON_FA_CUBES : ICON_FA_CUBE);
+                    dl->AddText(ImVec2(rmin.x + 6.0f + h, ty), ImGui::GetColorU32(ImGuiCol_Text), shown.c_str());
+                    dl->PopClipRect();
+                }
+                if (ImGui::IsItemHovered() && isModel)
+                    ImGui::SetTooltip("%s", component.ModelPath.c_str());
+                if (ImGui::BeginDragDropTarget())
+                {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                        assign(std::string((const char*)payload->Data));
+                    ImGui::EndDragDropTarget();
+                }
+                ImGui::SameLine();
+                const ImGuiID meshPick = ImGui::GetID("##meshpick");
+                if (ObjectPicker::IconButton("##meshpick"))
+                {
+                    std::vector<std::string> exts = { ".cqmesh" };
+                    for (const auto& e : ObjectPicker::ModelExtensions())
+                        exts.push_back(e);
+                    ObjectPicker::Open(meshPick, "Mesh", exts,
+                                       isModel ? SceneSerializer::ResolveAssetPath(component.ModelPath)
+                                               : SceneSerializer::ResolveAssetPath(std::string("CQ:Resources/Packages/Core/Meshes/") + meshTypeNames[typeIndex] + ".cqmesh"));
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Select Mesh");
+                if (std::string picked; ObjectPicker::Consume(meshPick, picked) && !picked.empty())
+                    assign(picked);
+                UI::EndProperty();
+
+                if (isModel && component.ModelData)
+                {
+                    const auto& md = *component.ModelData;
+                    if (md.IsSkinned)
+                        UI::Text("Model", "%zu skinned meshes, %zu animations, %u bones", md.SkinnedMeshes.size(), md.Animations.size(),
+                                 md.SkeletonData ? md.SkeletonData->GetBoneCount() : 0u);
+                    else
+                        UI::Text("Model", "%zu meshes", md.Meshes.size());
+                }
+                if (isModel)
+                {
+                    UI::BeginProperty("Tint", "Per-object color multiplier (the shared material is not changed)");
+                    ImGui::ColorEdit3("##tint", glm::value_ptr(component.Tint));
+                    UI::EndProperty();
+                }
+            }
 
             if (UI::BeginSection("Materials", true))
             {
                 Entity e = entity;
                 std::string name = e.HasComponent<TagComponent>() ? e.GetComponent<TagComponent>().Tag : std::string();
-                MaterialEditorUI::DrawMeshRendererMaterials(component, name);
+                if (component.IsModel())
+                {
+                    // Model: malzemeler modelin kendisinden (içe aktarma ayarlarındaki eşleme / Extract Materials). Burada
+                    // bu oturum için ince ayar yapılabilir (Unity'de modelin malzemeleri gibi)
+                    const size_t count = component.ModelData ? component.ModelData->Materials.size() : 0;
+                    UI::Text("Size", "%zu", count);
+                    for (size_t i = 0; i < count; ++i)
+                    {
+                        auto& mat = component.ModelData->Materials[i];
+                        if (!mat)
+                            continue;
+                        const std::string label = "Element " + std::to_string(i) + "  " + (mat->Name.empty() ? std::string("Material") : mat->Name) +
+                                                  "##modelmat" + std::to_string(i);
+                        if (ImGui::TreeNode(label.c_str()))
+                        {
+                            ImGui::PushID((int)i);
+                            UI::Color3("Albedo", mat->Albedo);
+                            UI::SliderFloat("Metallic", mat->Metallic, 0.0f, 1.0f);
+                            UI::SliderFloat("Roughness", mat->Roughness, 0.0f, 1.0f);
+                            UI::SliderFloat("AO", mat->AO, 0.0f, 1.0f);
+                            UI::Color3("Emission Color", mat->EmissionColor);
+                            UI::DragFloat("Emission Strength", mat->EmissionStrength, 0.1f, 0.0f, 100.0f);
+                            ImGui::PopID();
+                            ImGui::TreePop();
+                        }
+                    }
+                    UI::InfoBox("Model materials come from the model's import settings (select the model file: Materials tab, "
+                                "Extract Materials to edit them as .cqmat files).", UI::InfoType::Info);
+                }
+                else
+                    MaterialEditorUI::DrawMeshRendererMaterials(component, name);
                 UI::EndSection();
             }
 
@@ -1675,145 +1798,11 @@ namespace Conqueror::Editor
                 UI::Checkbox("Cast Shadows", component.CastShadows);
                 UI::Checkbox("Receive Shadows", component.ReceiveShadows);
                 UI::Checkbox("Realtime GI", component.RealtimeGI);
+                MaterialEditorUI::AssetPathSlot("Lightmap Parameters", component.LightmapParameters, ".cqlmparams", "Lightmap Parameters",
+                                                "Bake quality for this object (anti-aliasing, backface tolerance, pushoff). "
+                                                "Empty = the default set in Lighting Settings.");
                 UI::EndSection();
             }
-        });
-
-        DrawComponent<ModelComponent>("Model", entity, [](auto& component)
-        {
-            ImGui::ColorEdit3("Tint##Model", glm::value_ptr(component.Tint));
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Per-object color multiplier (the shared material is not changed)");
-            // Model path
-            if (!component.FilePath.empty())
-            {
-                ImGui::Text("Model: %s", component.FilePath.c_str());
-            }
-            else
-            {
-                ImGui::Text("Model: None");
-            }
-
-            if (ImGui::Button("Load Model..."))
-            {
-                nfdu8char_t* outPath = nullptr;
-                nfdfilteritem_t filters[4] = { { "3D Models", "obj,fbx,gltf,glb" }, { "OBJ", "obj" }, { "FBX", "fbx" }, { "GLTF", "gltf,glb" } };
-                nfdresult_t result = NFD_OpenDialogU8(&outPath, filters, 4, nullptr);
-                
-                if (result == NFD_OKAY)
-                {
-                    component.FilePath = ToSerializablePath(outPath);
-                    component.ModelData = ModelLoader::Load(outPath);
-                    NFD_FreePathU8(outPath);
-                }
-                else if (result == NFD_CANCEL)
-                {
-                    CQ_CORE_INFO("Model load cancelled");
-                }
-                else
-                {
-                    CQ_CORE_ERROR("NFD Error: {0}", NFD_GetError());
-                }
-            }
-            
-            // Drag & Drop target
-            if (ImGui::BeginDragDropTarget())
-            {
-                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
-                {
-                    std::string droppedPath((const char*)payload->Data, payload->DataSize - 1);
-                    std::filesystem::path path(droppedPath);
-                    std::string ext = path.extension().string();
-                    
-                    if (ext == ".obj" || ext == ".fbx" || ext == ".gltf" || ext == ".glb")
-                    {
-                        component.FilePath = ToSerializablePath(droppedPath);
-                        component.ModelData = ModelLoader::Load(droppedPath);
-                        CQ_CORE_INFO("Model loaded: {0}", droppedPath);
-                    }
-                }
-                ImGui::EndDragDropTarget();
-            }
-            ImGui::SameLine();
-            if (std::string picked; ObjectPicker::Button("modelpick", "Model", ObjectPicker::ModelExtensions(), component.FilePath, picked))
-            {
-                if (picked.empty())
-                {
-                    component.FilePath.clear();
-                    component.ModelData = nullptr;
-                }
-                else
-                {
-                    component.FilePath = ToSerializablePath(picked);
-                    component.ModelData = ModelLoader::Load(picked);
-                }
-            }
-
-            // Model info
-            if (component.ModelData)
-            {
-                ImGui::Separator();
-                if (component.ModelData->IsSkinned)
-                {
-                    ImGui::Text("Skinned meshes: %zu", component.ModelData->SkinnedMeshes.size());
-                    ImGui::Text("Animations: %zu", component.ModelData->Animations.size());
-                    if (component.ModelData->SkeletonData)
-                        ImGui::Text("Bones: %u", component.ModelData->SkeletonData->GetBoneCount());
-                }
-                else
-                    ImGui::Text("Meshes: %zu", component.ModelData->Meshes.size());
-                ImGui::Text("Materials: %zu", component.ModelData->Materials.size());
-
-                if (!component.ModelData->Materials.empty())
-                {
-                    ImGui::Separator();
-                    ImGui::Text("Material Properties");
-
-                    for (size_t i = 0; i < component.ModelData->Materials.size(); i++)
-                    {
-                        auto& mat = component.ModelData->Materials[i];
-                        if (!mat) continue;
-
-                        std::string matLabel = "Material " + std::to_string(i) + "##modelmat" + std::to_string(i);
-                        if (ImGui::TreeNode(matLabel.c_str()))
-                        {
-                            char buffer[256] = {};
-                            strncpy(buffer, mat->Name.c_str(), sizeof(buffer) - 1);
-                            std::string nameId = "Name##modelmat" + std::to_string(i);
-                            if (ImGui::InputText(nameId.c_str(), buffer, sizeof(buffer)))
-                                mat->Name = buffer;
-
-                            std::string albedoId = "Albedo##modelmat" + std::to_string(i);
-                            ImGui::ColorEdit3(albedoId.c_str(), glm::value_ptr(mat->Albedo));
-
-                            std::string metallicId = "Metallic##modelmat" + std::to_string(i);
-                            ImGui::SliderFloat(metallicId.c_str(), &mat->Metallic, 0.0f, 1.0f);
-
-                            std::string roughnessId = "Roughness##modelmat" + std::to_string(i);
-                            ImGui::SliderFloat(roughnessId.c_str(), &mat->Roughness, 0.0f, 1.0f);
-
-                            std::string aoId = "AO##modelmat" + std::to_string(i);
-                            ImGui::SliderFloat(aoId.c_str(), &mat->AO, 0.0f, 1.0f);
-
-                            std::string emColorId = "Emission Color##modelmat" + std::to_string(i);
-                            ImGui::ColorEdit3(emColorId.c_str(), glm::value_ptr(mat->EmissionColor));
-
-                            std::string emStrId = "Emission Strength##modelmat" + std::to_string(i);
-                            ImGui::DragFloat(emStrId.c_str(), &mat->EmissionStrength, 0.1f, 0.0f, 100.0f);
-
-                            ImGui::TreePop();
-                        }
-                    }
-                }
-
-                if (ImGui::Button("Add Material"))
-                {
-                    component.ModelData->Materials.push_back(Material::CreateDefault());
-                }
-            }
-
-            ImGui::Separator();
-            ImGui::Checkbox("Realtime GI", &component.RealtimeGI);
         });
 
         DrawComponent<AnimatorComponent>("Animator", entity, [](auto& component)
@@ -1852,38 +1841,18 @@ namespace Conqueror::Editor
 
             if (open)
             {
-                // Controller file path
-                ImGui::Text("Controller:");
-                ImGui::SameLine();
-                char ctrlPathBuf[512];
-                memset(ctrlPathBuf, 0, sizeof(ctrlPathBuf));
-                strncpy(ctrlPathBuf, component.ControllerFilePath.c_str(), sizeof(ctrlPathBuf) - 1);
-                if (ImGui::InputText("##ctrlpath", ctrlPathBuf, sizeof(ctrlPathBuf)))
+                // Controller (Unity Animator.controller): Animator Controller ya da Animator Override Controller; Content
+                // Browser'dan bırak ya da ◎ ile seç
                 {
-                    std::string newPath = ctrlPathBuf;
-                    if (newPath != component.ControllerFilePath)
+                    std::string rel = component.ControllerFilePath.empty() ? std::string()
+                                                                           : AssetUI::ToProjectRelative(std::filesystem::path(component.ControllerFilePath));
+                    ImGui::AlignTextToFramePadding();
+                    ImGui::TextUnformatted("Controller");
+                    ImGui::SameLine(110.0f);
+                    if (AssetUI::AssetSlot("##animcontroller", "Animator Controller", { ".cqcont", ".cqoverride" }, rel))
                     {
-                        component.ControllerFilePath = newPath;
-                        if (!newPath.empty())
-                            component.Controller = AnimationController::Deserialize(newPath);
-                    }
-                }
-
-                ImGui::SameLine();
-                if (ImGui::SmallButton("..."))
-                {
-                    auto projectDir = Project::GetActiveProjectDirectory();
-                    if (!projectDir.empty())
-                    {
-                        nfdchar_t* outPath = nullptr;
-                        nfdfilteritem_t filterItem[] = { { "Animation Controller", "cqcont" } };
-                        nfdresult_t result = NFD_OpenDialog(&outPath, filterItem, 1, projectDir.string().c_str());
-                        if (result == NFD_OKAY)
-                        {
-                            component.ControllerFilePath = outPath;
-                            component.Controller = AnimationController::Deserialize(outPath);
-                            NFD_FreePath(outPath);
-                        }
+                        component.ControllerFilePath = rel.empty() ? std::string() : AssetUI::Resolve(rel).string();
+                        component.Controller = rel.empty() ? nullptr : AnimationController::Deserialize(component.ControllerFilePath);
                     }
                 }
 
@@ -1930,81 +1899,6 @@ namespace Conqueror::Editor
             if (removeComponent)
                 entity.RemoveComponent<AnimationComponent>();
         }
-
-        DrawComponent<ImageComponent>("Image", entity, [](auto& component)
-        {
-            ImGui::ColorEdit4("Color", glm::value_ptr(component.Color));
-
-            // Texture path input
-            ImGui::Text("Texture:");
-            ImGui::SameLine();
-            
-            char imgPathBuffer[256];
-            memset(imgPathBuffer, 0, sizeof(imgPathBuffer));
-            if (component.Texture)
-            {
-                std::string texPath = component.Texture->GetPath();
-                auto projectDir = Project::GetActiveProjectDirectory();
-                if (!projectDir.empty())
-                {
-                    std::error_code ec;
-                    auto relative = std::filesystem::relative(texPath, projectDir, ec);
-                    if (!ec && !relative.empty() && relative.native()[0] != '.')
-                        texPath = relative.generic_string();
-                }
-                strncpy(imgPathBuffer, texPath.c_str(), sizeof(imgPathBuffer) - 1);
-            }
-            
-            if (ImGui::InputText("##ImagePath", imgPathBuffer, sizeof(imgPathBuffer)))
-            {
-                std::string inputPath = std::string(imgPathBuffer);
-                if (std::filesystem::path(inputPath).is_relative())
-                {
-                    auto projectDir = Project::GetActiveProjectDirectory();
-                    if (!projectDir.empty())
-                        inputPath = (projectDir / inputPath).string();
-                }
-                if (!inputPath.empty() && std::filesystem::exists(inputPath))
-                    component.Texture = Texture2D::Create(inputPath);
-            }
-
-            if (ImGui::Button("Browse..."))
-            {
-                nfdu8char_t* outPath = nullptr;
-                nfdfilteritem_t filters[1] = { { "Images", "png,jpg,jpeg,bmp,tga" } };
-                nfdresult_t result = NFD_OpenDialogU8(&outPath, filters, 1, nullptr);
-                
-                if (result == NFD_OKAY)
-                {
-                    component.Texture = Texture2D::Create(outPath);
-                    NFD_FreePathU8(outPath);
-                }
-            }
-            
-            // Drag & Drop target
-            if (ImGui::BeginDragDropTarget())
-            {
-                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
-                {
-                    std::string droppedPath((const char*)payload->Data, payload->DataSize - 1);
-                    std::filesystem::path path(droppedPath);
-                    std::string ext = path.extension().string();
-                    
-                    if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp" || ext == ".tga")
-                    {
-                        component.Texture = Texture2D::Create(droppedPath);
-                        CQ_CORE_INFO("Image texture set: {0}", droppedPath);
-                    }
-                }
-                ImGui::EndDragDropTarget();
-            }
-            ImGui::SameLine();
-            if (std::string picked; ObjectPicker::Button("imgpick", "Texture", ObjectPicker::ImageExtensions(),
-                                                         component.Texture ? component.Texture->GetPath() : std::string(), picked))
-                component.Texture = picked.empty() ? nullptr : Texture2D::Create(picked);
-
-            ImGui::DragFloat("Tiling Factor", &component.TilingFactor, 0.1f, 0.1f, 10.0f);
-        });
 
         DrawComponent<TextRendererComponent>("Text Renderer", entity, [](auto& component)
         {
@@ -3304,7 +3198,6 @@ namespace Conqueror::Editor
             if (meshOpen || !searchString.empty())
             {
                 drawEntry("Mesh Renderer", [&]() { DrawAddComponentEntry<MeshRendererComponent>("Mesh Renderer"); });
-                drawEntry("Model", [&]() { DrawAddComponentEntry<ModelComponent>("Model"); });
                 drawRegistryCategory("Mesh");
                 endCategory(meshOpen);
             }
@@ -3350,6 +3243,11 @@ namespace Conqueror::Editor
             {
                 // Her dildeki betik aynı Script bileşenine eklenir; çalışma zamanı dosya uzantısından seçilir
                 auto attachScript = [&](const std::string& path) {
+                    if (!path.empty() && AssetActions::RefuseDataScript(path))
+                    {
+                        ImGui::CloseCurrentPopup();
+                        return;
+                    }
                     if (!m_SelectionContext.HasComponent<ConquerorScriptComponent>())
                         m_SelectionContext.AddComponent<ConquerorScriptComponent>();
                     ConquerorScriptData data;
@@ -3490,7 +3388,6 @@ namespace Conqueror::Editor
                 drawEntry("Canvas", [&]() { DrawAddComponentEntry<CanvasComponent>("Canvas"); });
                 drawEntry("Canvas Scaler", [&]() { DrawAddComponentEntry<CanvasScalerComponent>("Canvas Scaler"); });
                 drawEntry("Graphic Raycaster", [&]() { DrawAddComponentEntry<GraphicRaycasterComponent>("Graphic Raycaster"); });
-                drawEntry("Image", [&]() { DrawAddComponentEntry<ImageComponent>("Image"); });
                 drawEntry("Text Renderer", [&]() { DrawAddComponentEntry<TextRendererComponent>("Text Renderer"); });
                 drawEntry("Rect Transform", [&]() { DrawAddComponentEntry<RectTransformComponent>("Rect Transform"); });
                 drawEntry("UI Image", [&]() { DrawAddComponentEntry<UIImageComponent>("UI Image"); });

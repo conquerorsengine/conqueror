@@ -1,11 +1,20 @@
 // glad diğer başlıklardan (GLFW) önce: gpu_probe GL geri okuma çağrıları
 #define GLFW_INCLUDE_NONE
+#include "Scene/Signals.h"
+#include "Core/Input/InputActionAssets.h"
 #include "Panels/MaterialEditorUI.h"
 #include "Panels/ObjectPicker.h"
 #include "Renderer/Utilities/Renderer3D/Material.h"
 #include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
 #include "Scene/MeshRendererMaterial.h"
 #include "Assets/SceneTemplate.h"
+#include <yaml-cpp/yaml.h>
+#include "Assets/VolumeProfileInspector.h"
+#include "Assets/ShaderVariantInspector.h"
+#include "Assets/AudioAssetsInspector.h"
+#include "Assets/SignalReceiverInspector.h"
+#include "Assets/AnimationClipInspector.h"
+#include "Assets/AssetUI.h"
 #include "Renderer/SpriteAtlas.h"
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
@@ -25,6 +34,10 @@
 #include "Grid/GridSystem.h"
 #include "Core/Serialization/PrefabSerializer.h"
 #include "AssetActions.h"
+#include "Assets/CubemapInspector.h"
+#include "Renderer/Utilities/Renderer3D/ModelLoader.h"
+#include "Scene/LevelStreaming.h"
+#include "Panels/ImportActivityPanel.h"
 #include "Renderer/RHI/Texture.h"
 #include "Panels/AssetInspector.h"
 #include "Addons/AddonHost.h"
@@ -75,6 +88,7 @@
 #include <algorithm>
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <cstring>
 #include <nfd.h>
 
 #ifdef CQ_PLATFORM_LINUX
@@ -172,6 +186,81 @@ namespace Conqueror::Editor
         {
             CQ_CORE_INFO("EditorLayer: Creating ContentBrowserPanel...");
             m_ContentBrowserPanel = std::make_unique<ContentBrowserPanel>();
+            m_ImportActivityPanel = std::make_unique<ImportActivityPanel>();
+            // Unity Project menüsünün sahne / pencere işlemleri
+            ContentBrowserPanel::s_FindReferencesInScene = [this](const std::string& path) {
+                if (!m_ActiveScene)
+                    return 0;
+                const std::string rel = SceneSerializer::ToAssetPath(path);
+                std::vector<Entity> found;
+                m_ActiveScene->m_Registry.view<IDComponent>().each([&](auto id, auto&) {
+                    Entity e{ id, m_ActiveScene.get() };
+                    const std::string text = SceneSerializer::SerializeEntityToString(e);
+                    if (!rel.empty() && text.find(rel) != std::string::npos)
+                        found.push_back(e);
+                });
+                EditorState::Get().SelectMultipleEntities(found);
+                if (!found.empty())
+                    SelectEntityEverywhere(found.front());
+                return (int)found.size();
+            };
+            ContentBrowserPanel::s_OpenSceneAdditive = [this](const std::string& path) {
+                if (!m_ActiveScene || !EditorState::Get().IsEditing())
+                    return false;
+                // Kaydedilmemiş değişiklik algılaması sahne içeriğini karşılaştırır: yeni kök kendiliğinden "değişti" sayılır
+                return LevelStreaming::LoadAdditive(*m_ActiveScene, SceneSerializer::ToAssetPath(path)) != 0xFFFFFFFFu;
+            };
+            ContentBrowserPanel::s_ReloadModelInScene = [this](const std::string& path) {
+                ModelLoader::Invalidate(path);
+                ModelLoader::Invalidate(SceneSerializer::ToAssetPath(path));
+                std::error_code ec;
+                const std::string canonical = std::filesystem::weakly_canonical(path, ec).string();
+                std::shared_ptr<Model> reloaded;
+                if (m_ActiveScene)
+                    m_ActiveScene->m_Registry.view<MeshRendererComponent>().each([&](auto, MeshRendererComponent& mc) {
+                        if (mc.ModelPath.empty())
+                            return;
+                        const std::string resolved = SceneSerializer::ResolveAssetPath(mc.ModelPath);
+                        if (std::filesystem::weakly_canonical(resolved, ec).string() != canonical)
+                            return;
+                        if (!reloaded)
+                        {
+                            ModelLoader::Invalidate(mc.ModelPath);
+                            ModelLoader::Invalidate(resolved);
+                            reloaded = ModelLoader::Load(resolved);
+                        }
+                        if (reloaded)
+                            mc.ModelData = reloaded;
+                    });
+                if (!reloaded)
+                    ModelLoader::Load(path);
+            };
+            ContentBrowserPanel::s_OpenAddonManager = [this](const std::string& id) {
+                m_ShowAddonManager = true;
+                if (m_AddonManagerPanel)
+                    m_AddonManagerPanel->Select(id, false);
+            };
+            ContentBrowserPanel::s_OpenScriptProject = [this]() {
+                const std::string dir = Project::GetActive() ? Project::GetActiveProjectDirectory().string() : std::string();
+                if (!dir.empty() && OpenInExternalEditor(dir))
+                    return;
+                if (m_CodeEditorPanel)
+                    m_CodeEditorPanel->GetIsOpen() = true;
+            };
+            CubemapInspector::s_UseAsSkybox = [this](const std::string& path) {
+                if (!m_ActiveScene)
+                    return;
+                if (auto cube = Cubemap::CreateFromEquirectangular(path, 512); cube && cube->GetRendererID())
+                {
+                    m_ActiveScene->SetSkybox(cube);
+                    m_ActiveScene->InvalidateReflectionProbes();
+                }
+            };
+            ContentBrowserPanel::s_OpenImportActivity = [this](const std::string& filter) {
+                m_ShowImportActivity = true;
+                if (m_ImportActivityPanel)
+                    m_ImportActivityPanel->SetFilter(filter);
+            };
             CQ_CORE_INFO("EditorLayer: ContentBrowserPanel created");
         }
         catch (const std::exception& e)
@@ -227,22 +316,93 @@ namespace Conqueror::Editor
             m_MultiplayerPanel = std::make_unique<MultiplayerPanel>();
             m_MultiplayerPanel->SetRequestPlay([this]() { if (EditorState::Get().IsEditing()) OnPlayButtonPressed(); });
             m_TimelinePanel = std::make_unique<TimelinePanel>();
+            m_AnimationWindow = std::make_unique<AnimationWindow>();
+            AnimationClipInspector::s_OpenWindow = [this](const std::string& path) {
+                if (!m_AnimationWindow)
+                    return;
+                m_AnimationWindow->OpenClip(path);
+                m_ShowAnimation = true;
+                m_PendingFocusWindow = "###AnimationWindow";
+            };
+            AnimationClipInspector::s_ClipChanged = [this]() {
+                if (m_AnimationWindow)
+                    m_AnimationWindow->InvalidateClip();
+            };
             m_BuildSettingsPanel = std::make_unique<BuildSettingsPanel>();
             m_BuildSettingsPanel->SetCurrentSceneProvider([this]() { return m_CurrentScenePath; });
             m_BuildSettingsPanel->SetSaveProject([this]() { if (EditorState::Get().IsEditing()) SaveProject(); });
             m_SpriteEditorPanel = std::make_unique<SpriteEditorPanel>();
+            m_InputActionsEditor = std::make_unique<InputActionsEditorPanel>();
+            // Input Actions varlığı: Inspector'daki "Edit Asset" ve Content Browser çift tıkı bu pencereyi açar
+            InspectorPanel::s_OpenInputActions = [this](const std::string& path) {
+                if (m_InputActionsEditor && m_InputActionsEditor->Open(path))
+                    m_PendingFocusWindow = "###InputActionsEditor";
+            };
             m_TerrainPanel = std::make_unique<TerrainPanel>();
             m_TerrainPanel->SetContext(m_ActiveScene.get());
             m_AddonManagerPanel = std::make_unique<AddonManagerPanel>();
             m_TilePalettePanel = std::make_unique<TilePalettePanel>();
             m_TilePalettePanel->SetContext(m_ActiveScene.get());
             TilePalettePanel::s_OpenPanel = [this]() { m_ShowTilePalette = true; m_PendingFocusWindow = "###TilePalette"; };
+            AudioAssetsInspector::SetOpenMixerWindow([this]() { m_ShowAudioMixer = true; });
+            if (auto* receiverInfo = ComponentRegistry::Find("SignalReceiverComponent"))
+                receiverInfo->ExtraInspector = &SignalReceiverInspector::Draw;
+            if (auto* volumeInfo = ComponentRegistry::Find("PostProcessVolumeComponent"))
+                volumeInfo->ExtraInspector = &VolumeProfileInspector::DrawVolumeExtra;
             if (auto* tilemapInfo = ComponentRegistry::Find("TilemapComponent"))
                 tilemapInfo->ExtraInspector = &TilePalettePanel::DrawTilemapInspector;
+            // Animation bileşeni: Unity "Animations" listesi (AnimationPlay(nesne, "Ad") ile seçilen klipler) + pencere
+            if (auto* animInfo = ComponentRegistry::Find("AnimationPlayerComponent"))
+                animInfo->ExtraInspector = [this](Entity e) {
+                    auto& a = e.GetComponent<AnimationPlayerComponent>();
+                    UI::SubHeader("Animations");
+                    for (size_t i = 0; i < a.Clips.size(); ++i)
+                    {
+                        ImGui::PushID((int)i);
+                        if (ImGui::SmallButton(ICON_FA_XMARK "##removeclip"))
+                        {
+                            a.Clips.erase(a.Clips.begin() + (std::ptrdiff_t)i);
+                            ImGui::PopID();
+                            break;
+                        }
+                        ImGui::SameLine();
+                        std::string clip = a.Clips[i];
+                        if (AssetUI::AssetSlot("##animclip", "Animation Clip", { PropertyClips::Extension }, clip))
+                            a.Clips[i] = clip;
+                        ImGui::PopID();
+                    }
+                    if (ImGui::Button(ICON_FA_PLUS " Add Clip##AnimComponentAddClip"))
+                        a.Clips.emplace_back();
+                    ImGui::SameLine();
+                    if (ImGui::Button(ICON_FA_CLAPPERBOARD " Open Animation Window##AnimComponentOpen"))
+                    {
+                        m_ShowAnimation = true;
+                        m_PendingFocusWindow = "###AnimationWindow";
+                    }
+                };
             // Mesh Paint: Vertex Paint bileşeni denetçisinde fırça ayarları, viewport'ta boyama
             MeshPaintTool::Get().SetSceneProvider([this]() { return m_ActiveScene; });
             if (auto* paintInfo = ComponentRegistry::Find("VertexPaintComponent"))
                 paintInfo->ExtraInspector = [](Entity e) { MeshPaintTool::Get().DrawInspector(e); };
+            // Ek açılmış sahne (Open Scene Additive / Level Streaming): ana sahneye kaydedilmez; Save Level kendi dosyasına yazar
+            if (auto* levelInfo = ComponentRegistry::Find("StreamedLevelComponent"))
+                levelInfo->ExtraInspector = [this](Entity e) {
+                    const auto& level = e.GetComponent<StreamedLevelComponent>();
+                    UI::InfoBox(("Objects under this root belong to " + level.Source +
+                                 ". Saving this scene does not store them; Save Level writes them back to their own scene file.").c_str(),
+                                UI::InfoType::Info);
+                    const float w = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) * 0.5f;
+                    ImGui::BeginDisabled(!EditorState::Get().IsEditing());
+                    if (ImGui::Button(ICON_FA_FLOPPY_DISK " Save Level", ImVec2(w, 0)))
+                        SaveStreamedLevel(e);
+                    ImGui::SameLine();
+                    if (ImGui::Button(ICON_FA_XMARK " Unload Level", ImVec2(w, 0)))
+                    {
+                        EditorState::Get().ClearSelection();
+                        m_ActiveScene->DestroyEntity(e);
+                    }
+                    ImGui::EndDisabled();
+                };
             if (auto* prefabInfo = ComponentRegistry::Find("PrefabInstanceComponent"))
                 prefabInfo->ExtraInspector = [this](Entity e) {
                     const std::string& prefab = e.GetComponent<PrefabInstanceComponent>().Prefab;
@@ -367,6 +527,22 @@ namespace Conqueror::Editor
                 const auto& spec = fb->GetSpecification();
                 return WriteProjectThumbnail(fb->GetColorAttachmentRendererID(0), spec.Width, spec.Height, out, 640, 360);
             });
+            // Shader Variant Collection "Add Shaders Used In Scene": sahnedeki malzeme dosyaları ve kod shader'ları
+            ShaderVariantInspector::SetSceneProvider([this]() {
+                std::vector<std::string> out;
+                if (!m_ActiveScene)
+                    return out;
+                auto add = [&](const std::string& p) {
+                    if (p.empty()) return;
+                    std::string rel = AssetUI::ToProjectRelative(p);
+                    if (std::find(out.begin(), out.end(), rel) == out.end()) out.push_back(rel);
+                };
+                m_ActiveScene->m_Registry.view<MeshRendererComponent>().each([&](auto, MeshRendererComponent& mr) {
+                    add(mr.MaterialPath);
+                    if (mr.MaterialInstance) add(mr.MaterialInstance->ShaderPath);
+                });
+                return out;
+            });
             // Nesne seçici "Scene" sekmesi: açık sahnenin kullandığı dosyalar
             ObjectPicker::SetSceneProvider([this]() {
                 std::vector<std::string> out;
@@ -452,6 +628,17 @@ namespace Conqueror::Editor
                     {
                         m_VisualScriptPanel->Open(path);
                         m_VisualScriptPanel->GetIsOpen() = true;
+                    }
+                    else if (ext == InputActionAssets::Extension)
+                    {
+                        if (InspectorPanel::s_OpenInputActions)
+                            InspectorPanel::s_OpenInputActions(path.string());
+                    }
+                    else if (ext == PropertyClips::Extension)
+                    {
+                        // Unity: Animation Clip çift tıkı Animation penceresini açar
+                        if (AnimationClipInspector::s_OpenWindow)
+                            AnimationClipInspector::s_OpenWindow(path.string());
                     }
                     else if (OpenInExternalEditor(path.string()))
                         return;
@@ -1142,6 +1329,7 @@ namespace Conqueror::Editor
                 ImGui::DockBuilderDockWindow("Log", dock_id_down);
                 ImGui::DockBuilderDockWindow("Console", dock_id_down);
                 ImGui::DockBuilderDockWindow("###Timeline", dock_id_down);
+                ImGui::DockBuilderDockWindow("###AnimationWindow", dock_id_down);   // Unity: Animation alt bölmede (Project / Console yanında)
                 ImGui::DockBuilderDockWindow("Viewport", dockspace_id);
                 ImGui::DockBuilderDockWindow("Game", dockspace_id);
                 ImGui::DockBuilderDockWindow("Animator", dockspace_id);
@@ -1534,6 +1722,7 @@ namespace Conqueror::Editor
                     { ICON_FA_MOUNTAIN_SUN, "Terrain", &m_ShowTerrain }, { ICON_FA_TABLE_CELLS, "Tiles", &m_ShowTilePalette },
                     { ICON_FA_GAMEPAD, "Game", &m_ShowGame }, { ICON_FA_GAUGE_HIGH, "Profiler", &m_ShowProfiler },
                     { ICON_FA_TOWER_BROADCAST, "Network", &m_ShowMultiplayer }, { ICON_FA_FILM, "Timeline", &m_ShowTimeline },
+                    { ICON_FA_CLAPPERBOARD, "Animation", &m_ShowAnimation },
                 };
                 for (int i = 0; i < (int)(sizeof(wins) / sizeof(wins[0])); ++i)
                 {
@@ -1842,6 +2031,13 @@ namespace Conqueror::Editor
             else
                 m_TimelinePanel->StopPreview();   // pencere kapanınca önizlenen nesneler geri yüklenir
         }
+        if (m_AnimationWindow)
+        {
+            if (m_ShowAnimation)
+                m_AnimationWindow->OnImGuiRender(&m_ShowAnimation, !EditorState::Get().IsEditing());
+            else
+                m_AnimationWindow->StopPreview();   // Unity: pencere kapanınca canlandırılan değerler geri döner
+        }
         if (m_BuildSettingsPanel && (m_ShowBuildSettings || BuildPipeline::Get().IsRunning()))
         {
             m_ShowBuildSettings = true;
@@ -1866,6 +2062,8 @@ namespace Conqueror::Editor
 
         if (m_ShowAddonManager && m_AddonManagerPanel)
             m_AddonManagerPanel->OnImGuiRender(&m_ShowAddonManager);
+        if (m_ImportActivityPanel)
+            m_ImportActivityPanel->OnImGuiRender(&m_ShowImportActivity);
         AddonHost::Get().DrawPanels();
 
         if (m_ShowProjectSettings && m_ProjectSettingsPanel)
@@ -1897,6 +2095,9 @@ namespace Conqueror::Editor
 
         if (m_VisualScriptPanel && m_VisualScriptPanel->GetIsOpen())
             m_VisualScriptPanel->OnImGuiRender();
+
+        if (m_InputActionsEditor)
+            m_InputActionsEditor->OnImGuiRender();
 
         if (m_ShowAIPanel && m_AIPanel)
         {
@@ -1957,6 +2158,8 @@ namespace Conqueror::Editor
             // Zaman çizelgesi önizlemesi oyun kopyasına taşınmasın
             if (m_TimelinePanel)
                 m_TimelinePanel->StopPreview();
+            if (m_AnimationWindow)
+                m_AnimationWindow->StopPreview();
             if (m_LogPanel)
                 m_LogPanel->OnPlay();
             // Sprite Atlas: kaynakları değişen atlaslar Play'den önce yeniden paketlenir (Unity gibi)
@@ -2339,10 +2542,12 @@ namespace Conqueror::Editor
             ImGui::MenuItem("Profiler", "Ctrl+7", &m_ShowProfiler);
             ImGui::MenuItem("Multiplayer", nullptr, &m_ShowMultiplayer);
             ImGui::MenuItem("Timeline", nullptr, &m_ShowTimeline);
+            ImGui::MenuItem("Animation", "Ctrl+6", &m_ShowAnimation);
             ImGui::MenuItem("Sprite Editor", nullptr, &m_ShowSpriteEditor);
             ImGui::MenuItem("Terrain", nullptr, &m_ShowTerrain);
             ImGui::MenuItem("Tile Palette", nullptr, &m_ShowTilePalette);
             ImGui::MenuItem("Addon Manager", nullptr, &m_ShowAddonManager);
+            ImGui::MenuItem("Import Activity", nullptr, &m_ShowImportActivity);
             ImGui::MenuItem("Project Settings", nullptr, &m_ShowProjectSettings);
             ImGui::MenuItem("Log", nullptr, &m_ShowLog);
             ImGui::MenuItem("Console (Terminal)", nullptr, &m_ShowConsole);
@@ -2398,6 +2603,7 @@ namespace Conqueror::Editor
         DrawRecoveryPopup();
         DrawUnsavedChangesPopup();
         DrawNewSceneDialog();
+        DrawMessagePopup();
 
         // Konum her kare BeginPopupModal'dan hemen önce verilir: araya giren kapalı popup'lar
         // (kurtarma / kaydedilmemiş değişiklik) SetNextWindow* verisini tüketiyordu ve pencere üstte açılıyordu
@@ -2561,6 +2767,13 @@ namespace Conqueror::Editor
             CQ_CORE_WARN("Stop Play mode before saving the scene (changes made while playing are not saved).");
             return;
         }
+        // Animation penceresi önizlemesi: dosyaya özgün değerler yazılır, önizleme sonra sürer
+        struct PreviewGuard
+        {
+            AnimationWindow* W;
+            explicit PreviewGuard(AnimationWindow* w) : W(w) { if (W) W->BeginSceneSave(); }
+            ~PreviewGuard() { if (W) W->EndSceneSave(); }
+        } previewGuard(m_AnimationWindow.get());
         if (m_CurrentScenePath.empty())
         {
             SaveSceneAs();
@@ -2629,6 +2842,35 @@ namespace Conqueror::Editor
             std::filesystem::remove(recovery, ec);
     }
 
+    // Ek açılmış sahnenin nesnelerini kendi .cqscene dosyasına yaz (ortam ayarları dosyadakilerle kalır)
+    bool EditorLayer::SaveStreamedLevel(Entity root)
+    {
+        if (!root || !root.HasComponent<StreamedLevelComponent>())
+            return false;
+        const std::string file = SceneSerializer::ResolveAssetPath(root.GetComponent<StreamedLevelComponent>().Source);
+        auto temp = std::make_shared<Scene>();
+        {
+            SceneSerializer loader(temp);
+            if (!loader.Deserialize(file))
+            {
+                CQ_CORE_ERROR("Save Level: cannot read {0}", file);
+                return false;
+            }
+        }
+        temp->m_Registry.clear();
+        std::unordered_map<uint64_t, uint64_t> uuidMap;
+        std::vector<Entity> copies;
+        for (Entity child : root.GetChildren())
+            copies.push_back(temp->DuplicateEntityTree(child, "", Entity{}, &uuidMap));
+        for (Entity c : copies)
+            temp->RemapEntityReferences(c, uuidMap);
+        temp->UpdateWorldTransforms();
+        SceneSerializer(temp).Serialize(file);
+        LevelStreaming::ClearCache();
+        CQ_CORE_INFO("Saved level {0} ({1} root objects)", file, copies.size());
+        return true;
+    }
+
     bool EditorLayer::HasUnsavedChanges()
     {
         if (!m_EditorScene)
@@ -2648,17 +2890,45 @@ namespace Conqueror::Editor
         auto normalized = [](const std::filesystem::path& p) {
             std::ifstream f(p, std::ios::binary);
             std::string out, line;
-            bool skipping = false;
+            bool skipping = false, hierarchy = false;
+            // Hierarchy bölümü: (çocuk, ebeveyn) çiftleri ebeveyne göre (kardeş sırası korunarak) sıralanır; eski dosyalar
+            // çiftleri karma tablo sırasıyla yazıyordu, ilişkiler aynıyken sıra farkı değişiklik sayılmasın
+            std::vector<std::pair<std::string, std::string>> pairs;   // (ebeveyn, çocuk)
+            auto flushPairs = [&]() {
+                std::stable_sort(pairs.begin(), pairs.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
+                for (const auto& [parent, child] : pairs)
+                    out += "  - Child: " + child + "\n    Parent: " + parent + "\n";
+                pairs.clear();
+            };
+            std::string pendingChild;
             while (std::getline(f, line))
             {
                 if (!line.empty() && line.back() == '\r')
                     line.pop_back();
-                // Sahne görünümü kamerası değişiklik sayılmaz
                 if (!line.empty() && line[0] != ' ' && line[0] != '\t' && line[0] != '-')
+                {
+                    if (hierarchy)
+                        flushPairs();
+                    // Sahne görünümü kamerası değişiklik sayılmaz
                     skipping = line.rfind("EditorCamera:", 0) == 0;
-                if (!skipping)
-                    out += line + "\n";
+                    hierarchy = line.rfind("Hierarchy:", 0) == 0;
+                }
+                if (skipping)
+                    continue;
+                if (hierarchy)
+                {
+                    if (const size_t c = line.find("- Child: "); c != std::string::npos)
+                        pendingChild = line.substr(c + 9);
+                    else if (const size_t q = line.find("Parent: "); q != std::string::npos)
+                        pairs.push_back({ line.substr(q + 8), pendingChild });
+                    else
+                        out += line + "\n";
+                    continue;
+                }
+                out += line + "\n";
             }
+            if (hierarchy)
+                flushPairs();
             return out;
         };
         const bool changed = normalized(probe) != normalized(m_CurrentScenePath);
@@ -2732,6 +3002,30 @@ namespace Conqueror::Editor
         SelectEntityEverywhere({});
         CQ_CORE_INFO("New scene from template '{0}'", t.Name);
         return true;
+    }
+
+    // EditorState::ShowMessage iletisi (Unity'nin "Can't add script" gibi uyarı pencereleri)
+    void EditorLayer::DrawMessagePopup()
+    {
+        static std::string s_Title, s_Text;
+        if (std::string title, text; EditorState::Get().TakeMessage(title, text))
+        {
+            s_Title = title;
+            s_Text = text;
+            ImGui::OpenPopup("###EditorMessage");
+        }
+        ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+        ImGui::SetNextWindowSize(ImVec2(460.0f, 0.0f), ImGuiCond_Always);
+        if (!ImGui::BeginPopupModal((s_Title + "###EditorMessage").c_str(), nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize))
+            return;
+        ImGui::TextColored(UI::Colors::Warning, ICON_FA_TRIANGLE_EXCLAMATION);
+        ImGui::SameLine();
+        ImGui::TextWrapped("%s", s_Text.c_str());
+        ImGui::Spacing();
+        ImGui::SetCursorPosX(ImGui::GetWindowSize().x - 110.0f);
+        if (ImGui::Button("OK", ImVec2(100.0f, 0.0f)) || ImGui::IsKeyPressed(ImGuiKey_Enter) || ImGui::IsKeyPressed(ImGuiKey_Escape))
+            ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
     }
 
     void EditorLayer::DrawNewSceneDialog()
@@ -3052,6 +3346,12 @@ namespace Conqueror::Editor
             CQ_CORE_WARN("Stop Play mode before saving the scene (changes made while playing are not saved).");
             return;
         }
+        struct PreviewGuard
+        {
+            AnimationWindow* W;
+            explicit PreviewGuard(AnimationWindow* w) : W(w) { if (W) W->BeginSceneSave(); }
+            ~PreviewGuard() { if (W) W->EndSceneSave(); }
+        } previewGuard(m_AnimationWindow.get());
         nfdu8char_t* outPath = nullptr;
         nfdfilteritem_t filters[1] = { { "Scene Files", "cqscene" } };
         nfdresult_t result = NFD_SaveDialogU8(&outPath, filters, 1, nullptr, "Scene.cqscene");
@@ -3113,6 +3413,7 @@ namespace Conqueror::Editor
         if (n == "build" || n == "buildsettings" || n == "build settings") return &m_ShowBuildSettings;
         if (n == "multiplayer" || n == "network") return &m_ShowMultiplayer;
         if (n == "timeline") return &m_ShowTimeline;
+        if (n == "animation") return &m_ShowAnimation;
         if (n == "spriteeditor" || n == "sprite editor") return &m_ShowSpriteEditor;
         if (n == "terrain") return &m_ShowTerrain;
         if (n == "tilepalette" || n == "tile palette" || n == "tiles") return &m_ShowTilePalette;
@@ -3209,6 +3510,30 @@ namespace Conqueror::Editor
             else { err = "unknown property " + a[2]; return false; }
             return true;
         });
+        // audio expect_clip <varlık> <dosya soneki> | expect_plays <varlık> <en az n>  (Audio Random Container)
+        Automation::RegisterCommand("audio", [this](const Args& a, std::string& err) {
+            if (a.size() < 4 || !m_ActiveScene) { err = "audio expect_clip|expect_plays <entity> <value>"; return false; }
+            Entity e{};
+            m_ActiveScene->m_Registry.view<TagComponent>().each([&](auto id, auto& tag) {
+                if (!e && tag.Tag == a[2]) e = Entity{ id, m_ActiveScene.get() };
+            });
+            if (!e || !e.HasComponent<AudioSourceComponent>()) { err = "no audio source on " + a[2]; return false; }
+            const auto& s = e.GetComponent<AudioSourceComponent>();
+            Automation::Report("AUDIO " + a[2] + " clip=" + s.ContainerClip + " plays=" + std::to_string(s.ContainerPlays));
+            if (a[1] == "expect_clip")
+            {
+                const bool ok = s.ContainerClip.size() >= a[3].size() && s.ContainerClip.compare(s.ContainerClip.size() - a[3].size(), a[3].size(), a[3]) == 0;
+                if (!ok) { err = "clip is " + s.ContainerClip; return false; }
+                return true;
+            }
+            if (a[1] == "expect_plays")
+            {
+                if (s.ContainerPlays < std::atoi(a[3].c_str())) { err = "plays " + std::to_string(s.ContainerPlays); return false; }
+                return true;
+            }
+            err = "unknown audio command";
+            return false;
+        });
         Automation::RegisterCommand("expect_meter", [](const Args& a, std::string& err) {
             // expect_meter <group> <above|below> <dB>
             if (a.size() < 4) { err = "expect_meter <group> <above|below> <dB>"; return false; }
@@ -3289,6 +3614,47 @@ namespace Conqueror::Editor
                 for (float tt = 0.0f; tt < secs; tt += 1.0f / 60.0f)
                     tp.ApplyStroke(e, { (float)std::atof(a[2].c_str()), (float)std::atof(a[3].c_str()) }, 1.0f / 60.0f, invert);
                 return true;
+            }
+            // terrain brush_asset <yol.cqbrush|none> | layer_asset <i> <yol.cqterrainlayer|none>
+            //   | expect_layer <i> <tint r g b | tiling v | texture <son ek>> (varlıktan eşitlenmiş değer)
+            if (a[1] == "brush_asset" && a.size() > 2)
+            {
+                tp.GetBrush().Brush = a[2] == "none" ? std::string() : SceneSerializer::ResolveAssetPath(a[2]);
+                return true;
+            }
+            if (a[1] == "layer_asset" && a.size() > 3)
+            {
+                const int i = std::atoi(a[2].c_str());
+                if (i < 0 || i >= t.LayerCount) { err = "no layer " + a[2]; return false; }
+                t.Layers[(size_t)i].Asset = a[3] == "none" ? std::string() : SceneSerializer::ResolveAssetPath(a[3]);
+                return true;
+            }
+            if (a[1] == "expect_layer" && a.size() > 4)
+            {
+                const int i = std::atoi(a[2].c_str());
+                if (i < 0 || i >= t.LayerCount) { err = "no layer " + a[2]; return false; }
+                TerrainSystem::UpdateGPU(t);   // varlıktan eşitle
+                const auto& l = t.Layers[(size_t)i];
+                if (a[3] == "tint" && a.size() > 6)
+                {
+                    const glm::vec3 want((float)std::atof(a[4].c_str()), (float)std::atof(a[5].c_str()), (float)std::atof(a[6].c_str()));
+                    Automation::Report("TERRAIN layer " + a[2] + " tint=" + std::to_string(l.Tint.r) + "," + std::to_string(l.Tint.g) + "," + std::to_string(l.Tint.b));
+                    if (glm::length(l.Tint - want) > 0.01f) { err = "tint differs"; return false; }
+                    return true;
+                }
+                if (a[3] == "tiling")
+                {
+                    Automation::Report("TERRAIN layer " + a[2] + " tiling=" + std::to_string(l.Tiling));
+                    if (std::fabs(l.Tiling - (float)std::atof(a[4].c_str())) > 0.01f) { err = "tiling differs"; return false; }
+                    return true;
+                }
+                if (a[3] == "texture")
+                {
+                    Automation::Report("TERRAIN layer " + a[2] + " texture=" + l.TexturePath);
+                    if (l.TexturePath.size() < a[4].size() || l.TexturePath.compare(l.TexturePath.size() - a[4].size(), a[4].size(), a[4]) != 0)
+                    { err = "texture " + l.TexturePath; return false; }
+                    return true;
+                }
             }
             if (a[1] == "expect_height" && a.size() > 5)
             {
@@ -3904,6 +4270,14 @@ namespace Conqueror::Editor
                 SelectEntityEverywhere(copy);
                 return true;
             }
+            // entity static <name> <true|false>: Inspector'daki Static (pişirmeye katılır)
+            if (a[1] == "static" && a.size() > 3)
+            {
+                Entity e = findByName(a[2]);
+                if (!e) { err = "entity '" + a[2] + "' not found"; return false; }
+                e.GetComponent<TagComponent>().IsStatic = a[3] == "true" || a[3] == "1";
+                return true;
+            }
             if (a[1] == "delete")
             {
                 SelectEntityEverywhere({});
@@ -4136,7 +4510,7 @@ namespace Conqueror::Editor
         });
         Automation::RegisterCommand("script", [this](const Args& a, std::string& err) {
             // script add <entity> <path>                 betik bileşeni ekle (sınıf: dosyadaki ilk script)
-            // script set <entity> <field> <int|float|bool|string> <value>   Inspector alan değeri
+            // script set <entity> <field> <int|float|bool|string> <value>   Inspector alan değeri (oyun modunda canlı değer de)
             // script expect <entity> <field> <value>     oyun modunda canlı alan değeri (metin karşılaştırma)
             // script expect_pos <entity> <axis x|y|z> <above|below> <value>
             // <entity> yerine "Varlık@Sınıf": aynı varlıktaki birden çok betikten adı verileni seç
@@ -4164,6 +4538,8 @@ namespace Conqueror::Editor
             if (!e) { err = "no entity " + entityName; return false; }
             if (a[1] == "add" && a.size() > 3)
             {
+                // Inspector'a bırakmakla aynı kural: Data Asset sınıfı nesneye eklenmez (uyarı penceresi açılır)
+                if (AssetActions::RefuseDataScript(a[3])) { err = "'" + a[3] + "' defines only Data Asset classes"; return false; }
                 auto& sc = e.HasComponent<ConquerorScriptComponent>() ? e.GetComponent<ConquerorScriptComponent>() : e.AddComponent<ConquerorScriptComponent>();
                 ConquerorScriptData data;
                 data.ScriptPath = a[3];
@@ -4198,6 +4574,16 @@ namespace Conqueror::Editor
                 else if (a[4] == "bool") { v.Type = ScriptFieldOverride::Kind::Bool; v.Bool = a[5] == "true"; }
                 else { v.Type = ScriptFieldOverride::Kind::String; v.String = a[5]; }
                 script.FieldOverrides[a[3]] = v;
+                // Oyun modunda betik çalışıyorsa canlı değer de değişir (yalnız başlangıç değeri değil)
+                if (script.Instance && script.Runtime)
+                {
+                    Scripting::ScriptValue sv;
+                    if (a[4] == "int") sv = Scripting::ScriptValue::MakeInt(std::atoll(a[5].c_str()));
+                    else if (a[4] == "float") sv = Scripting::ScriptValue::MakeFloat(std::atof(a[5].c_str()));
+                    else if (a[4] == "bool") sv = Scripting::ScriptValue::MakeBool(a[5] == "true");
+                    else sv = Scripting::ScriptValue::MakeString(a[5]);
+                    if (!static_cast<Scripting::ScriptRuntime*>(script.Runtime)->SetField(script.Instance, a[3], sv)) { err = "no live field " + a[3]; return false; }
+                }
                 return true;
             }
             if (a[1] == "expect" && a.size() > 4)
@@ -4867,16 +5253,36 @@ namespace Conqueror::Editor
             err = "unknown material command";
             return false;
         });
-        // select_asset <path>: varlığı seç (Inspector'da açılır; Content Browser'da tıklamakla aynı)
-        Automation::RegisterCommand("select_asset", [](const Args& a, std::string& err) {
-            if (a.size() < 2) { err = "select_asset <path>"; return false; }
-            std::string p = a[1];
-            for (size_t i = 2; i < a.size(); ++i) p += " " + a[i];
-            std::filesystem::path x(p);
-            if (x.is_relative() && Project::GetActive()) x = Project::GetActiveProjectDirectory() / x;
-            if (!std::filesystem::exists(x)) { err = "no asset " + x.string(); return false; }
-            EditorState::Get().SelectAsset(x.string());
-            return true;
+        // lighting generate | expect_done | asset <path.cqlighting|none> | default_params <path.cqlmparams|none> | expect_value <alan> <değer>
+        Automation::RegisterCommand("lighting", [this](const Args& a, std::string& err) {
+            if (a.size() < 2 || !m_LightingPanel || !m_ActiveScene) { err = "lighting generate|expect_done|asset|default_params|expect_value"; return false; }
+            auto& b = m_ActiveScene->GetRenderSettings().Bake;
+            auto abs = [](std::string p) {
+                if (p == "none") return std::string();
+                std::filesystem::path x(p);
+                return (x.is_relative() && Project::GetActive() ? Project::GetActiveProjectDirectory() / x : x).string();
+            };
+            auto rest = [&](size_t from) { std::string p = a[from]; for (size_t i = from + 1; i < a.size(); ++i) p += " " + a[i]; return p; };
+            if (a[1] == "generate") { m_LightingPanel->SetContext(m_ActiveScene); m_LightingPanel->GenerateLighting(); return true; }
+            if (a[1] == "expect_done") { if (m_LightingPanel->IsBaking()) { err = "still baking"; return false; } return true; }
+            if (a[1] == "asset" && a.size() > 2)
+            {
+                b.SettingsAsset = abs(rest(2));
+                if (!b.SettingsAsset.empty() && !SceneSerializer::LoadLightingSettings(b.SettingsAsset, b)) { err = "cannot read " + b.SettingsAsset; return false; }
+                b.SettingsAsset = abs(rest(2));
+                return true;
+            }
+            if (a[1] == "default_params" && a.size() > 2) { b.DefaultLightmapParameters = abs(rest(2)); return true; }
+            if (a[1] == "expect_value" && a.size() > 3)
+            {
+                YAML::Node n = YAML::Load(SceneSerializer::LightingSettingsToString(b));
+                const std::string have = n[a[2]] ? n[a[2]].as<std::string>() : std::string("<missing>");
+                Automation::Report("LIGHTING " + a[2] + " = " + have);
+                if (have != a[3]) { err = a[2] + " is " + have; return false; }
+                return true;
+            }
+            err = "unknown lighting command";
+            return false;
         });
         // select_asset <path>: varlığı seç (Inspector'da açılır; Content Browser'da tıklamakla aynı)
         Automation::RegisterCommand("select_asset", [](const Args& a, std::string& err) {
@@ -4888,6 +5294,247 @@ namespace Conqueror::Editor
             if (!std::filesystem::exists(x)) { err = "no asset " + x.string(); return false; }
             EditorState::Get().SelectAsset(x.string());
             return true;
+        });
+        // create_asset <tür>: Content Browser sağ tık menüsündeki girişle aynı kod (geçerli klasöre); yolu raporlar
+        Automation::RegisterCommand("create_asset", [this](const Args& a, std::string& err) {
+            if (a.size() < 2 || !m_ContentBrowserPanel) { err = "create_asset <kind>"; return false; }
+            const std::filesystem::path path = m_ContentBrowserPanel->CreateAssetOfKind(a[1]);
+            if (path.empty()) { err = "could not create " + a[1]; return false; }
+            Automation::Report("CREATED " + path.string());
+            return true;
+        });
+        // content copy|cut <yol> | paste <klasör> | refs <yol> | deps <yol> | scene_refs <yol> | expect_results <N>
+        //   | export <çıktı.cqpackage> <yollar...> | import <paket> | reimport <yol> | reimport_all | properties <yol>
+        //   | extract <model> | additive <sahne> | exists <yol> <0|1> | select <yol>
+        // Content Browser sağ tık menüsündeki işlemlerin kendisi (dosya pencereleri olmadan); yollar proje göreli olabilir
+        Automation::RegisterCommand("content", [this](const Args& a, std::string& err) {
+            if (a.size() < 2 || !m_ContentBrowserPanel) { err = "content <command> ..."; return false; }
+            auto& cb = *m_ContentBrowserPanel;
+            auto abs = [](const std::string& p) {
+                std::filesystem::path x(p);
+                return (x.is_relative() && Project::GetActive() ? Project::GetActiveProjectDirectory() / x : x);
+            };
+            const std::string& op = a[1];
+            if ((op == "copy" || op == "cut") && a.size() > 2) { cb.CopyAssets({ abs(a[2]) }, op == "cut"); return true; }
+            if (op == "paste" && a.size() > 2)
+            {
+                if (!cb.PasteInto(abs(a[2]))) { err = "paste failed"; return false; }
+                return true;
+            }
+            if ((op == "refs" || op == "deps") && a.size() > 2)
+            {
+                const auto p = abs(a[2]);
+                auto list = op == "refs" ? cb.FindReferencesInProject(p) : cb.CollectDependencies(p);
+                std::string names;
+                for (const auto& f : list)
+                    names += " " + f.filename().string();
+                Automation::Report((op == "refs" ? "REFS " : "DEPS ") + std::to_string(list.size()) + ":" + names);
+                cb.ShowResults((op == "refs" ? "References to " : "Dependencies of ") + p.filename().string(), list);
+                return true;
+            }
+            if (op == "expect_results" && a.size() > 2)
+            {
+                const int want = std::atoi(a[2].c_str());
+                if ((int)cb.GetResults().size() != want) { err = "results " + std::to_string(cb.GetResults().size()) + " != " + a[2]; return false; }
+                return true;
+            }
+            if (op == "scene_refs" && a.size() > 2)
+            {
+                const int n = ContentBrowserPanel::s_FindReferencesInScene ? ContentBrowserPanel::s_FindReferencesInScene(abs(a[2]).string()) : -1;
+                Automation::Report("SCENE_REFS " + std::to_string(n));
+                if (a.size() > 3 && n != std::atoi(a[3].c_str())) { err = "scene refs " + std::to_string(n); return false; }
+                return true;
+            }
+            if (op == "export" && a.size() > 3)
+            {
+                std::vector<std::filesystem::path> files;
+                for (size_t i = 3; i < a.size(); ++i)
+                {
+                    const auto p = abs(a[i]);
+                    std::error_code ec;
+                    if (std::filesystem::is_directory(p, ec))
+                    {
+                        for (std::filesystem::recursive_directory_iterator it(p, ec), end; !ec && it != end; it.increment(ec))
+                            if (it->is_regular_file(ec) && it->path().extension() != ".meta")
+                                files.push_back(it->path());
+                    }
+                    else
+                        for (const auto& d : cb.CollectDependencies(p))
+                            files.push_back(d);
+                }
+                std::string error;
+                if (!cb.ExportPackage(files, abs(a[2]), &error)) { err = error; return false; }
+                Automation::Report("EXPORTED " + std::to_string(files.size()));
+                return true;
+            }
+            if (op == "import" && a.size() > 2)
+            {
+                std::string error;
+                if (!cb.BeginImportPackage(abs(a[2]), &error)) { err = error; return false; }
+                if (a.size() > 3 && a[3] == "dialog")
+                    return true;   // pencere açık kalsın (ekran görüntüsü)
+                Automation::Report("IMPORTED " + std::to_string(cb.CommitImportPackage()));
+                return true;
+            }
+            if (op == "reimport" && a.size() > 2) { cb.Reimport(abs(a[2])); return true; }
+            if (op == "reimport_all") { cb.ReimportAll(); return true; }
+            if (op == "properties" && a.size() > 2) { cb.OpenProperties(abs(a[2])); return true; }
+            if (op == "extract" && a.size() > 2)
+            {
+                if (!cb.ExtractModelMaterials(abs(a[2]))) { err = "extract failed"; return false; }
+                return true;
+            }
+            if (op == "additive" && a.size() > 2)
+            {
+                if (!ContentBrowserPanel::s_OpenSceneAdditive || !ContentBrowserPanel::s_OpenSceneAdditive(abs(a[2]).string())) { err = "additive failed"; return false; }
+                return true;
+            }
+            if (op == "exists" && a.size() > 3)
+            {
+                std::error_code ec;
+                const bool e = std::filesystem::exists(abs(a[2]), ec);
+                Automation::Report("EXISTS " + a[2] + " = " + (e ? "1" : "0"));
+                if (e != (a[3] == "1")) { err = a[2] + (e ? " exists" : " is missing"); return false; }
+                return true;
+            }
+            if (op == "select" && a.size() > 2) { cb.SelectAndReveal(abs(a[2])); return true; }
+            err = "unknown content command " + op;
+            return false;
+        });
+        // inputactions open <yol> | add_map [ad] | add_action <harita> [ad] | add_binding <harita> <eylem> <yol>
+        //   | add_composite <harita> <eylem> <2DVector|1DAxis|OneModifier|TwoModifiers> [parça yolları...]
+        //   | kind <harita> <eylem> <Value|Button|PassThrough> [Any|Button|Axis|Vector2]
+        //   | interactions|processors <harita> <eylem> <bağlama|-1> <dizge|none> | path <harita> <eylem> <bağlama> <yol>
+        //   | select <harita> [eylem] [bağlama] | rename <ad> | delete | duplicate | undo | redo | save | autosave <0|1>
+        //   | scheme <ad|all> | add_scheme <ad> <aygıtlar...> | expect_dirty <0|1> | projectwide <yol|none>
+        //   | expect <dosya> <harita> <eylem> <bindings N | kind K | interactions S | path B P | groups B G>
+        // Harita / eylem: ad ya da sıra numarası. Pencerenin düğmeleriyle aynı düzenleme işlemleri.
+        Automation::RegisterCommand("inputactions", [this](const Args& a, std::string& err) {
+            if (a.size() < 2 || !m_InputActionsEditor) { err = "inputactions <command> ..."; return false; }
+            auto& ed = *m_InputActionsEditor;
+            auto abs = [](const std::string& p) {
+                std::filesystem::path x(p);
+                return (x.is_relative() && Project::GetActive() ? Project::GetActiveProjectDirectory() / x : x).string();
+            };
+            auto isNum = [](const std::string& t) { return !t.empty() && (std::isdigit((unsigned char)t[0]) || (t[0] == '-' && t.size() > 1)); };
+            auto mapIndex = [&](const InputActionAssetData& d, const std::string& m) {
+                if (isNum(m)) return std::atoi(m.c_str());
+                for (size_t i = 0; i < d.Maps.size(); ++i) if (d.Maps[i].Name == m) return (int)i;
+                return -1;
+            };
+            auto actionIndex = [&](const InputActionAssetData& d, int mi, const std::string& n) {
+                if (mi < 0 || mi >= (int)d.Maps.size()) return -1;
+                if (isNum(n)) return std::atoi(n.c_str());
+                const auto& acts = d.Maps[(size_t)mi].Actions;
+                for (size_t i = 0; i < acts.size(); ++i) if (acts[i].Name == n) return (int)i;
+                return -1;
+            };
+            auto rest = [&](size_t from) { std::string r; for (size_t i = from; i < a.size(); ++i) r += (i > from ? " " : "") + a[i]; return r; };
+            const std::string& c = a[1];
+            if (c == "open" && a.size() > 2)
+            {
+                if (!ed.Open(abs(rest(2)))) { err = "cannot open " + rest(2); return false; }
+                m_PendingFocusWindow = "###InputActionsEditor";
+                return true;
+            }
+            if (c == "add_map") return ed.AddMap(a.size() > 2 ? rest(2) : std::string()) >= 0;
+            if (c == "add_action" && a.size() > 2)
+            {
+                const int mi = mapIndex(ed.Data(), a[2]);
+                if (ed.AddAction(mi, a.size() > 3 ? rest(3) : std::string()) < 0) { err = "no map " + a[2]; return false; }
+                return true;
+            }
+            if ((c == "add_binding" || c == "add_composite" || c == "kind" || c == "interactions" || c == "processors" || c == "path") && a.size() > 3)
+            {
+                const int mi = mapIndex(ed.Data(), a[2]);
+                const int ai = actionIndex(ed.Data(), mi, a[3]);
+                if (ai < 0) { err = "no action " + a[3] + " in " + a[2]; return false; }
+                if (c == "add_binding") return a.size() > 4 && ed.AddBinding(mi, ai, a[4]) >= 0;
+                if (c == "add_composite" && a.size() > 4)
+                {
+                    std::vector<std::string> parts(a.begin() + 5, a.end());
+                    if (ed.AddComposite(mi, ai, a[4], parts) < 0) { err = "bad composite " + a[4]; return false; }
+                    return true;
+                }
+                if (c == "kind" && a.size() > 4)
+                {
+                    const std::string& k = a[4];
+                    InputActionKind kind = k == "Value" ? InputActionKind::Value : k == "PassThrough" ? InputActionKind::PassThrough : InputActionKind::Button;
+                    const std::string ctl = a.size() > 5 ? a[5] : std::string("Any");
+                    InputControlKind control = ctl == "Button" ? InputControlKind::Button : ctl == "Axis" ? InputControlKind::Axis
+                                             : ctl == "Vector2" ? InputControlKind::Vector2 : InputControlKind::Any;
+                    return ed.SetActionKind(mi, ai, kind, control);
+                }
+                if ((c == "interactions" || c == "processors") && a.size() > 5)
+                {
+                    const std::string spec = rest(5) == "none" ? std::string() : rest(5);
+                    const int bi = std::atoi(a[4].c_str());
+                    return c == "interactions" ? ed.SetInteractions(mi, ai, bi, spec) : ed.SetProcessors(mi, ai, bi, spec);
+                }
+                if (c == "path" && a.size() > 5)
+                    return ed.SetBindingPath(mi, ai, std::atoi(a[4].c_str()), a[5]);
+            }
+            if (c == "select" && a.size() > 2)
+            {
+                const int mi = mapIndex(ed.Data(), a[2]);
+                const int ai = a.size() > 3 ? actionIndex(ed.Data(), mi, a[3]) : -1;
+                ed.Select(mi, ai, a.size() > 4 ? std::atoi(a[4].c_str()) : -1);
+                return true;
+            }
+            if (c == "rename" && a.size() > 2) return ed.RenameSelection(rest(2));
+            if (c == "delete") return ed.DeleteSelection();
+            if (c == "duplicate") return ed.DuplicateSelection();
+            if (c == "undo") { if (!ed.Undo()) { err = "nothing to undo"; return false; } return true; }
+            if (c == "redo") { if (!ed.Redo()) { err = "nothing to redo"; return false; } return true; }
+            if (c == "save") return ed.Save();
+            if (c == "autosave" && a.size() > 2) { ed.SetAutoSave(a[2] == "1"); return true; }
+            if (c == "scheme" && a.size() > 2) { ed.SetScheme(a[2] == "all" ? std::string() : rest(2)); return true; }
+            if (c == "add_scheme" && a.size() > 3) return ed.AddScheme(a[2], std::vector<std::string>(a.begin() + 3, a.end()));
+            if (c == "expect_dirty" && a.size() > 2)
+            {
+                if (ed.IsDirty() != (a[2] == "1")) { err = std::string("dirty is ") + (ed.IsDirty() ? "1" : "0"); return false; }
+                return true;
+            }
+            if (c == "projectwide" && a.size() > 2)
+            {
+                ProjectSettings::ProjectWideActions() = a[2] == "none" ? std::string() : rest(2);
+                ProjectSettings::Apply();
+                return true;
+            }
+            if (c == "expect" && a.size() > 6)
+            {
+                InputActionAssetData d;
+                if (!InputActionAssets::Load(abs(a[2]), d)) { err = "cannot read " + a[2]; return false; }
+                const int mi = mapIndex(d, a[3]);
+                const int ai = actionIndex(d, mi, a[4]);
+                if (ai < 0 || ai >= (int)d.Maps[(size_t)mi].Actions.size()) { err = "no action " + a[4]; return false; }
+                const auto& act = d.Maps[(size_t)mi].Actions[(size_t)ai];
+                std::string have;
+                const std::string& what = a[5];
+                if (what == "bindings") have = std::to_string(act.Bindings.size());
+                else if (what == "kind") have = InputActionAssets::KindName(act.Kind) + std::string("/") + InputActionAssets::ControlName(act.Control);
+                else if (what == "interactions") have = act.Interactions.empty() ? "none" : act.Interactions;
+                else if ((what == "path" || what == "groups" || what == "processors" || what == "binteractions") && a.size() > 7)
+                {
+                    const int bi = std::atoi(a[6].c_str());
+                    if (bi < 0 || bi >= (int)act.Bindings.size()) { err = "no binding " + a[6]; return false; }
+                    const auto& b = act.Bindings[(size_t)bi];
+                    if (what == "path") have = b.Path.empty() ? "none" : b.Path;
+                    else if (what == "processors") have = b.Processors.empty() ? "none" : b.Processors;
+                    else if (what == "binteractions") have = b.Interactions.empty() ? "none" : b.Interactions;
+                    else { for (size_t g = 0; g < b.Groups.size(); ++g) have += (g ? ";" : "") + b.Groups[g]; if (have.empty()) have = "none"; }
+                    const std::string want = rest(7);
+                    Automation::Report("INPUTACTIONS " + what + " = " + have);
+                    if (have != want) { err = what + " is " + have + ", expected " + want; return false; }
+                    return true;
+                }
+                const std::string want = rest(6);
+                Automation::Report("INPUTACTIONS " + what + " = " + have);
+                if (have != want) { err = what + " is " + have + ", expected " + want; return false; }
+                return true;
+            }
+            err = "unknown inputactions command " + c;
+            return false;
         });
         // sprite_atlas pack <atlas> | pack_all | expect <doku> <in|out>: görselin atlastan çizilip çizilmediği
         Automation::RegisterCommand("sprite_atlas", [](const Args& a, std::string& err) {
@@ -4974,6 +5621,161 @@ namespace Conqueror::Editor
         // timeline create <entity> | select <entity> | add_track <type> [bindEntity] | key <track> <time> | clip <track> <start> <dur> [asset]
         //          | signal <track> <time> <method> | property <track> <component> <field> | preview <time> | stop_preview | expect_tracks <n>
         //          | expect_keys <track> <n> | undo | redo
+        // signal reaction <alıcı> <yol.cqsignal> <metot> [hedef|self] [argüman] | send <alıcı> <yol.cqsignal> [beklenen tepki sayısı]
+        Automation::RegisterCommand("signal", [this, findByName](const Args& a, std::string& err) {
+            if (a.size() < 4 || !m_ActiveScene) { err = "signal reaction|send <entity> <path.cqsignal> ..."; return false; }
+            Entity e = findByName(a[2]);
+            if (!e) { err = "no entity " + a[2]; return false; }
+            if (a[1] == "reaction" && a.size() > 4)
+            {
+                auto& rc = e.HasComponent<SignalReceiverComponent>() ? e.GetComponent<SignalReceiverComponent>() : e.AddComponent<SignalReceiverComponent>();
+                SignalReaction r;
+                r.Signal = a[3];
+                r.Method = a[4];
+                if (a.size() > 5 && a[5] != "self")
+                {
+                    Entity target = findByName(a[5]);
+                    if (!target) { err = "no entity " + a[5]; return false; }
+                    r.Target = (uint64_t)target.GetComponent<IDComponent>().ID;
+                }
+                if (a.size() > 6) r.Argument = a[6];
+                rc.Reactions.push_back(r);
+                return true;
+            }
+            if (a[1] == "send")
+            {
+                const int n = SignalAssets::Send(*m_ActiveScene, (uint32_t)(entt::entity)e, a[3]);
+                Automation::Report("SIGNAL reactions=" + std::to_string(n));
+                if (a.size() > 4 && n != std::atoi(a[4].c_str())) { err = "reactions " + std::to_string(n); return false; }
+                return true;
+            }
+            err = "unknown signal command";
+            return false;
+        });
+        Automation::RegisterCommand("animation", [this, findByName](const Args& a, std::string& err) {
+            // animation open | create <nesne> | select_clip <yol> | add_property <yol|.> <Bileşen|Transform> <Alan> | key <eğri|-1> <t>
+            //   | event <t> <metod> [metin] | time <t> | preview on|off | record on|off | play on|off | view dopesheet|curves
+            //   | expect_curves <n> | expect_keys <eğri> <n> | expect_key <eğri> <i> <t> [x y z w] | expect_events <n>
+            //   | expect_event <i> <t> <metod> | expect_clip <ad> | expect_length <s> | expect_state preview|record|none
+            //   | expect_value <nesne> <Bileşen|Transform> <Alan> <x> [y z w]
+            if (a.size() < 2 || !m_AnimationWindow) { err = "animation <open|create|select_clip|add_property|key|event|time|preview|record|play|view|expect_*>"; return false; }
+            auto& w = *m_AnimationWindow;
+            const std::string& sub = a[1];
+            auto on = [&](size_t i) { return a.size() > i && (a[i] == "on" || a[i] == "1" || a[i] == "true"); };
+            auto approx = [](float x, float y, float tol) { return std::abs(x - y) <= tol * std::max(1.0f, std::abs(y)); };
+            if (sub == "open")
+            {
+                m_ShowAnimation = true;
+                m_PendingFocusWindow = "###AnimationWindow";
+                Automation::WaitFrames(2);
+                return true;
+            }
+            if (sub == "create" && a.size() > 2)
+            {
+                Entity e = findByName(a[2]);
+                if (!e) { err = "no entity " + a[2]; return false; }
+                m_ShowAnimation = true;
+                SelectEntityEverywhere(e);
+                return w.CreateClip(e, &err);
+            }
+            if (sub == "select_clip" && a.size() > 2) return w.SelectClip(a[2], &err);
+            if (sub == "add_property" && a.size() > 4) return w.AddProperty(a[2] == "." ? std::string() : a[2], a[3], a[4], &err);
+            if (sub == "key" && a.size() > 3) return w.AddKeyAt(std::stoi(a[2]), std::stof(a[3]), &err);
+            if (sub == "event" && a.size() > 3) return w.AddEventAt(std::stof(a[2]), a[3], a.size() > 4 ? a[4] : std::string(), &err);
+            if (sub == "time" && a.size() > 2) { w.SetTime(std::stof(a[2])); Automation::WaitFrames(2); return true; }
+            if (sub == "preview" && a.size() > 2) { w.SetPreviewing(on(2)); Automation::WaitFrames(2); return true; }
+            if (sub == "record" && a.size() > 2) { w.SetRecording(on(2)); Automation::WaitFrames(2); return true; }
+            if (sub == "play" && a.size() > 2) { w.SetPlaying(on(2)); return true; }
+            if (sub == "view" && a.size() > 2) { w.SetCurvesView(a[2] == "curves"); Automation::WaitFrames(2); return true; }
+            // box <eğri|-1> <t0> <t1>: dopesheet satırında t1'den t0'a gerçek fare sürüklemesi (kutu seçimi)
+            if (sub == "box" && a.size() > 4)
+            {
+                ImVec2 p0, p1;
+                if (!w.LanePoint(std::stoi(a[2]), std::stof(a[4]), p0) || !w.LanePoint(std::stoi(a[2]), std::stof(a[3]), p1)) { err = "row not visible"; return false; }
+                Automation::QueueMouseDrag(p0.x, p0.y - 3.0f, p1.x, p1.y + 3.0f, 12, 0);
+                return true;
+            }
+            const PropertyClip& clip = w.GetClip();
+            if (sub == "expect_curves" && a.size() > 2)
+            {
+                if ((int)clip.Curves.size() != std::stoi(a[2])) { err = "clip has " + std::to_string(clip.Curves.size()) + " curves"; return false; }
+                return true;
+            }
+            if (sub == "expect_keys" && a.size() > 3)
+            {
+                const int c = std::stoi(a[2]);
+                if (c < 0 || c >= (int)clip.Curves.size()) { err = "no curve " + a[2]; return false; }
+                const int n = (int)clip.Curves[(size_t)c].Channel.Keys.size();
+                if (n != std::stoi(a[3])) { err = "curve " + a[2] + " has " + std::to_string(n) + " keys"; return false; }
+                return true;
+            }
+            if (sub == "expect_key" && a.size() > 4)
+            {
+                const int c = std::stoi(a[2]), i = std::stoi(a[3]);
+                if (c < 0 || c >= (int)clip.Curves.size() || i < 0 || i >= (int)clip.Curves[(size_t)c].Channel.Keys.size()) { err = "no key " + a[2] + "/" + a[3]; return false; }
+                const TimelineKey& k = clip.Curves[(size_t)c].Channel.Keys[(size_t)i];
+                const float half = 0.5f / std::max(1.0f, clip.FrameRate);
+                if (std::abs(k.Time - std::stof(a[4])) > half) { err = "key time " + std::to_string(k.Time); return false; }
+                for (size_t j = 5; j < a.size() && j < 9; ++j)
+                    if (!approx(k.Value[(int)(j - 5)], std::stof(a[j]), 2e-3f))
+                    {
+                        err = "key value[" + std::to_string(j - 5) + "] = " + std::to_string(k.Value[(int)(j - 5)]);
+                        return false;
+                    }
+                return true;
+            }
+            if (sub == "expect_events" && a.size() > 2)
+            {
+                if ((int)clip.Events.size() != std::stoi(a[2])) { err = "clip has " + std::to_string(clip.Events.size()) + " events"; return false; }
+                return true;
+            }
+            if (sub == "expect_event" && a.size() > 4)
+            {
+                const int i = std::stoi(a[2]);
+                if (i < 0 || i >= (int)clip.Events.size()) { err = "no event " + a[2]; return false; }
+                const auto& e = clip.Events[(size_t)i];
+                const float half = 0.5f / std::max(1.0f, clip.FrameRate);
+                if (std::abs(e.Time - std::stof(a[3])) > half || e.Function != a[4])
+                {
+                    err = "event " + a[2] + " is " + e.Function + " at " + std::to_string(e.Time);
+                    return false;
+                }
+                return true;
+            }
+            if (sub == "expect_clip" && a.size() > 2)
+            {
+                const std::string stem = std::filesystem::path(w.GetClipPath()).stem().string();
+                if (stem != a[2]) { err = "clip is '" + stem + "'"; return false; }
+                return true;
+            }
+            if (sub == "expect_length" && a.size() > 2)
+            {
+                if (!approx(clip.Length, std::stof(a[2]), 1e-3f)) { err = "length " + std::to_string(clip.Length); return false; }
+                return true;
+            }
+            if (sub == "expect_state" && a.size() > 2)
+            {
+                const std::string state = w.IsRecording() ? "record" : w.IsPreviewing() ? "preview" : "none";
+                if (state != a[2]) { err = "state is " + state; return false; }
+                return true;
+            }
+            if (sub == "expect_value" && a.size() > 5)
+            {
+                Entity e = findByName(a[2]);
+                if (!e) { err = "no entity " + a[2]; return false; }
+                glm::vec4 v(0.0f);
+                if (!PropertyClips::ReadValue(e, a[3], a[4], v)) { err = "no property " + a[3] + "." + a[4]; return false; }
+                for (size_t j = 5; j < a.size() && j < 9; ++j)
+                    if (!approx(v[(int)(j - 5)], std::stof(a[j]), 2e-3f))
+                    {
+                        err = a[4] + "[" + std::to_string(j - 5) + "] = " + std::to_string(v[(int)(j - 5)]);
+                        return false;
+                    }
+                return true;
+            }
+            err = "unknown animation command " + sub;
+            return false;
+        });
         Automation::RegisterCommand("timeline", [this, findByName](const Args& a, std::string& err) {
             if (a.size() < 2 || !m_TimelinePanel) { err = "timeline <create|select|add_track|key|clip|signal|property|preview|stop_preview|expect_tracks|expect_keys|undo|redo>"; return false; }
             const std::string& sub = a[1];
@@ -5725,8 +6527,15 @@ namespace Conqueror::Editor
         bool shift = io.KeyShift;
 
         bool textActive = io.WantTextInput;
-        // İçerik tarayıcısı odaktaysa kopyala/sil/F2 gibi varlık kısayolları dosyalara uygulanır (panel kendisi işler)
-        const bool assetFocus = m_ContentBrowserPanel && m_ContentBrowserPanel->IsFocused();
+        // İçerik tarayıcısı odaktaysa kopyala/sil/F2 gibi varlık kısayolları dosyalara uygulanır (panel kendisi işler).
+        // Kendi seçimi olan pencereler (Animation: anahtarlar, Timeline: klipler, Animator: durumlar, Sprite Editor, Input
+        // Actions) odaktayken Delete / Ctrl+C / Ctrl+D... o pencereye aittir; sahnedeki nesne silinmez (Unity gibi)
+        bool panelOwnsKeys = false;
+        for (ImGuiWindow* w = GImGui->NavWindow; w && !panelOwnsKeys; w = w->ParentWindow)
+            for (const char* id : { "###AnimationWindow", "###Timeline", "###Animator", "###Sprite Editor", "###InputActionsEditor" })
+                if (std::strstr(w->Name, id))
+                    panelOwnsKeys = true;
+        const bool assetFocus = (m_ContentBrowserPanel && m_ContentBrowserPanel->IsFocused()) || panelOwnsKeys;
 
         if (ctrl && !textActive && ImGui::IsKeyPressed(ImGuiKey_Z))
         {
@@ -5795,6 +6604,13 @@ namespace Conqueror::Editor
             m_ShowBuildSettings = true;
             m_PendingFocusWindow = "###BuildSettings";
         }
+        else if (ctrl && !shift && !textActive && ImGui::IsKeyPressed(ImGuiKey_6, false))
+        {
+            // Unity: Ctrl+6 Animation
+            m_ShowAnimation = !m_ShowAnimation;
+            if (m_ShowAnimation)
+                m_PendingFocusWindow = "###AnimationWindow";
+        }
         else if (ctrl && !shift && !textActive && ImGui::IsKeyPressed(ImGuiKey_7, false))
         {
             // Unity: Ctrl+7 Profiler
@@ -5834,6 +6650,7 @@ namespace Conqueror::Editor
         m_PanelSceneContext = m_ActiveScene.get();
         if (m_MultiplayerPanel) m_MultiplayerPanel->SetContext(m_ActiveScene);
         if (m_TimelinePanel) m_TimelinePanel->SetContext(m_ActiveScene);
+        if (m_AnimationWindow) m_AnimationWindow->SetContext(m_ActiveScene);
         if (m_HierarchyPanel) m_HierarchyPanel->SetContext(m_ActiveScene);
         if (m_InspectorPanel) m_InspectorPanel->SetContext(m_ActiveScene.get());
         if (m_ViewportPanel) m_ViewportPanel->SetContext(m_ActiveScene);

@@ -78,6 +78,8 @@ namespace Conqueror
         // ── Karakter denetleyicisi ──
         bool HasCharacter(Entity entity) const;
         Physics3D::CharacterState MoveCharacter(Entity entity, const glm::vec3& displacement);
+        // Kare başı (betiklerden önce): bu karenin süresi ve karakter hareket istekleri sıfırlanır
+        void BeginFrame(Timestep ts);
         // Unity SimpleMove: yatay hız + otomatik yerçekimi
         Physics3D::CharacterState SimpleMoveCharacter(Entity entity, const glm::vec3& velocity);
         Physics3D::CharacterState GetCharacterState(Entity entity) const;
@@ -144,7 +146,18 @@ namespace Conqueror
             glm::vec3 LastWrittenPos{ 0.0f };
             float VerticalVelocity = 0.0f;
             size_t Signature = 0;
+            // Karakter fizik adımlarında hareket eder (Jolt önerisi): betiğin bu karede istediği hız, adımlar içinde uygulanır;
+            // ekrandaki konum son iki adım arasında ara değerlenir. Karakter kutularla aynı adımda ilerler, aradaki karelerde
+            // henüz kıpırdamamış kutuya takılıp kamerayı sarsmaz
+            glm::vec3 RequestedVelocity{ 0.0f };
+            bool Requested = false;
+            uint64_t RequestFrame = 0;   // isteğin yapıldığı kare (betikler fizikten sonra çalışır: sonraki karenin adımları uygular)
+            glm::vec3 PrevPos{ 0.0f }, CurrPos{ 0.0f };
+            bool HasPose = false;
         };
+        void SyncCharacterTeleport(uint32_t entity, CharacterRecord& rec);
+        void MoveCharactersFixed(float dt);
+        void WriteCharacterTransforms(float alpha);
 
         void CreateBackend();
         void ProcessDirty();
@@ -221,6 +234,8 @@ namespace Conqueror
         float m_Accumulator = 0.0f;
         float m_FixedDt = 1.0f / 60.0f;
         float m_FrameDt = 1.0f / 60.0f;
+        float m_ScriptDt = 1.0f / 60.0f;   // bu karenin süresi (betikler yer değiştirmeyi bununla hesaplar)
+        uint64_t m_FrameIndex = 0;
         int m_LastStepCount = 0;
         float m_LastStepMs = 0.0f;
         int m_FixedStepCounter = 0;

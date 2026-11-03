@@ -12,7 +12,7 @@ namespace Conqueror::CQS
         bool IsNativeBaseClass(const std::string& name)
         {
             static const std::unordered_set<std::string> s_Names = {
-                "", "ConquerorScript", "MonoBehaviour", "Behaviour", "Script", "Component", "Object", "ScriptableObject",
+                "", "ConquerorScript", "MonoBehaviour", "Behaviour", "Script", "Component", "Object", "ScriptableObject", "DataAsset",
                 "CQScript", "EntityScript", "NativeScript",
             };
             return s_Names.count(name) != 0;

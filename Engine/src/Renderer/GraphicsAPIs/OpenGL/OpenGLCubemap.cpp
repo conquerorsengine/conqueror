@@ -9,6 +9,7 @@
 
 #include <glad/glad.h>
 #include <stb_image.h>
+#include <stb_image_resize2.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -22,8 +23,8 @@ namespace Conqueror
 
     OpenGLCubemap::OpenGLCubemap(const std::string faces[6])
     {
-        // 6 face path'ini birleştir (serialization için)
-        m_Path = faces[0]; // İlk face'i path olarak kullan
+        // Yol: ilk yüz (Cubemap varlığından gelince SetPath ile .cqcubemap olur); nullptr: boş küp (yansıma yoklaması)
+        m_Path = faces ? faces[0] : std::string();
         LoadFromFaces(faces);
     }
 
@@ -219,37 +220,80 @@ namespace Conqueror
     {
         glGenTextures(1, &m_RendererID);
         glBindTexture(GL_TEXTURE_CUBE_MAP, m_RendererID);
-
-        int width, height, channels;
-        for (uint32_t i = 0; i < 6; i++)
-        {
-            unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &channels, 0);
-            if (data)
-            {
-                GLenum format = GL_RGB;
-                if (channels == 4)
-                    format = GL_RGBA;
-
-                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-                stbi_image_free(data);
-
-                if (i == 0)
-                {
-                    m_Width = width;
-                    m_Height = height;
-                }
-            }
-            else
-            {
-                CQ_CORE_ERROR("Cubemap texture failed to load: {0}", faces[i]);
-                stbi_image_free(data);
-            }
-        }
-
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+        if (!faces)
+        {
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            return;
+        }
+
+        // Yüzler: HDR (float) ya da LDR (sRGB); boyutlar farklıysa en büyük kare boyuta ölçeklenir, eksik yüz gri olur
+        struct Face
+        {
+            std::vector<float> Hdr;
+            std::vector<unsigned char> Ldr;
+            int W = 0, H = 0;
+        };
+        Face loaded[6];
+        int size = 0;
+        for (int i = 0; i < 6; ++i)
+        {
+            if (faces[i].empty())
+                continue;
+            int w = 0, h = 0, c = 0;
+            if (stbi_is_hdr(faces[i].c_str()))
+            {
+                if (float* data = stbi_loadf(faces[i].c_str(), &w, &h, &c, 4))
+                {
+                    loaded[i].Hdr.assign(data, data + (size_t)w * h * 4);
+                    stbi_image_free(data);
+                }
+            }
+            else if (unsigned char* data = stbi_load(faces[i].c_str(), &w, &h, &c, 4))
+            {
+                loaded[i].Ldr.assign(data, data + (size_t)w * h * 4);
+                stbi_image_free(data);
+            }
+            if (w <= 0 || h <= 0)
+            {
+                CQ_CORE_ERROR("Cubemap face failed to load: {0}", faces[i]);
+                continue;
+            }
+            loaded[i].W = w;
+            loaded[i].H = h;
+            size = std::max(size, std::max(w, h));
+        }
+        size = std::clamp(size > 0 ? size : 4, 4, 4096);
+        m_Width = m_Height = (uint32_t)size;
+        for (int i = 0; i < 6; ++i)
+        {
+            Face& f = loaded[i];
+            std::vector<float> rgba((size_t)size * size * 4, 0.5f);
+            for (size_t k = 3; k < rgba.size(); k += 4)
+                rgba[k] = 1.0f;
+            if (f.W > 0)
+            {
+                std::vector<float> src((size_t)f.W * f.H * 4);
+                if (!f.Hdr.empty())
+                    src = f.Hdr;
+                else
+                    for (size_t k = 0; k < src.size(); ++k)
+                    {
+                        // sRGB -> doğrusal (HDR akışında gökyüzü doğru parlaklıkta)
+                        const float v = f.Ldr[k] / 255.0f;
+                        src[k] = (k % 4 == 3) ? v : (v <= 0.04045f ? v / 12.92f : std::pow((v + 0.055f) / 1.055f, 2.4f));
+                    }
+                if (f.W == size && f.H == size)
+                    rgba = std::move(src);
+                else
+                    stbir_resize_float_linear(src.data(), f.W, f.H, 0, rgba.data(), size, size, 0, STBIR_RGBA);
+            }
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA16F, size, size, 0, GL_RGBA, GL_FLOAT, rgba.data());
+        }
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
     }
 }

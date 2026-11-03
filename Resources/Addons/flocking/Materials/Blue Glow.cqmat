@@ -1,0 +1,22 @@
+Material:
+  Name: Blue Glow
+  Albedo: [0.85, 0.85, 0.95]
+  Opacity: 1
+  Metallic: 0
+  Roughness: 0.5
+  AO: 1
+  EmissionColor: [0.6, 0.7, 1]
+  EmissionStrength: 0.3
+  Tiling: [1, 1]
+  Offset: [0, 0]
+  RenderMode: 0
+  Culling: 0
+  AlphaClip: 0.5
+  AlbedoMap: CQ:Resources/Textures/texture_grid.png
+  NextGraphNodeID: 1
+  NextGraphLinkID: 1
+  GraphInitialized: false
+  GraphNodes:
+    []
+  GraphLinks:
+    []

@@ -1,0 +1,40 @@
+#language GLSL
+// Nesne hareket vektörleri (Temporal AA): bu karede dönüşümü değişen opak meshler sahne derinliğine (LEQUAL, derinlik
+// yazmadan) yeniden çizilir; piksel başına ekran hareketi (uv: şimdiki - önceki, titreşimsiz) yazılır. Kameraya bağlı silah
+// gibi nesneler kamera hareketiyle değil kendi hareketleriyle yeniden izdüşürülür.
+#type vertex
+#version 450 core
+layout(location = 0) in vec3 a_Position;
+uniform mat4 u_Transform;
+uniform mat4 u_PrevTransform;
+uniform mat4 u_ViewProjJittered;   // ana geçişle aynı derinlik
+uniform mat4 u_ViewProj;           // titreşimsiz
+uniform mat4 u_PrevViewProj;
+out vec4 v_Curr;
+out vec4 v_Prev;
+void main()
+{
+    vec4 world = u_Transform * vec4(a_Position, 1.0);
+    v_Curr = u_ViewProj * world;
+    v_Prev = u_PrevViewProj * (u_PrevTransform * vec4(a_Position, 1.0));
+    gl_Position = u_ViewProjJittered * world;
+}
+
+#type fragment
+#version 450 core
+layout(location = 0) out vec4 Velocity;
+in vec4 v_Curr;
+in vec4 v_Prev;
+uniform float u_Exact = 1.0;       // 1: kesin (katı nesne), 0.5: yaklaşık (kemik / shader hareketi dahil değil)
+uniform int u_PrevCoverage = 0;   // 1: nesne önceki konumunda çizilir, yalnız w = 2 (açılan alan işareti) yazılır
+void main()
+{
+    if (u_PrevCoverage == 1)
+    {
+        Velocity = vec4(0.0, 0.0, 0.0, 2.0);
+        return;
+    }
+    vec2 curr = v_Curr.xy / max(v_Curr.w, 1e-6);
+    vec2 prev = v_Prev.xy / max(v_Prev.w, 1e-6);
+    Velocity = vec4((curr - prev) * 0.5, u_Exact, 1.0);
+}

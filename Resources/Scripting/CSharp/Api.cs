@@ -14,6 +14,19 @@ namespace Conqueror
         public string name => NativeBridge.GetEntityName();
     }
 
+    /// <summary>Data Asset sınıflarının temel sınıfı (Unity ScriptableObject, Unreal UDataAsset): public alanları veri şablonudur,
+    /// değerleri .cqdata dosyalarında durur (Content Browser > Create > Data Asset). Oyunda:
+    /// <c>var sword = DataAsset.Load&lt;WeaponData&gt;("Assets/Sword.cqdata"); sword.damage</c></summary>
+    public abstract class DataAsset
+    {
+        /// <summary>Yüklendiği .cqdata dosyası (proje göreli).</summary>
+        public string assetPath { get; internal set; }
+
+        /// <summary>.cqdata dosyasını T olarak yükle: alanlar dosyadaki değerlerle (dosyada yoksa sınıftaki varsayılanla) dolar.
+        /// Dosya okunamazsa null.</summary>
+        public static T Load<T>(string path) where T : DataAsset, new() => (T)Conqueror.Hosting.Host.LoadDataAsset(typeof(T), path);
+    }
+
     [AttributeUsage(AttributeTargets.Field)] public sealed class SerializeFieldAttribute : Attribute { }
     [AttributeUsage(AttributeTargets.Field)] public sealed class HideInInspectorAttribute : Attribute { }
     [AttributeUsage(AttributeTargets.Field)]

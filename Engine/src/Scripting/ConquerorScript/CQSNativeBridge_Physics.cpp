@@ -516,6 +516,10 @@ namespace Conqueror::CQS
                 return Value::MakeNull();
             return HitToValue(hit);
         }, -1);
+        // GetFixedDeltaTime(): fizik sabit adımı (saniye). Enterpolasyonlu gövdeler ekranda en çok bu kadar geriden çizilir
+        vm->DefineNative("GetFixedDeltaTime", [](int, Value*) -> Value {
+            return Value::MakeFloat(PhysicsSettings::Get().FixedTimestep);
+        }, 0);
         vm->DefineNative("OverlapSphere", [](int argc, Value* args) -> Value {
             std::vector<uint32_t> ids;
             if (PhysicsWorld3D* w = World(); w && argc >= 4)

@@ -24,6 +24,8 @@ namespace Conqueror::Editor
         // Otomasyon
         void SelectPage(const std::string& page) { m_Page = page; }
         bool Save();
+        // Proje dosyasını (.cqproj, proje ayarlarıyla) yaz: panel dışından da (Input Actions > Project-wide)
+        static bool SaveProjectFile();
 
     private:
         void DrawGeneral();

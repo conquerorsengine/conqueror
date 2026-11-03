@@ -1,0 +1,56 @@
+#language GLSL
+// Animasyonlu modeller için hareket vektörleri: bu karenin kemikleriyle; önceki kare için model dönüşümü değişir, kemik
+// hareketi yaklaşık sayılır (TAA bu piksellerde sıkı kırpar)
+#type vertex
+#version 450 core
+#define MAX_BONES 128
+layout(location = 0) in vec3 a_Position;
+layout(location = 4) in ivec4 a_BoneIDs;
+layout(location = 5) in vec4 a_BoneWeights;
+uniform mat4 u_Transform;
+uniform mat4 u_PrevTransform;
+uniform mat4 u_BoneTransforms[MAX_BONES];
+uniform mat4 u_ViewProjJittered;
+uniform mat4 u_ViewProj;
+uniform mat4 u_PrevViewProj;
+out vec4 v_Curr;
+out vec4 v_Prev;
+void main()
+{
+    mat4 skin = mat4(0.0);
+    float total = 0.0;
+    for (int i = 0; i < 4; i++)
+    {
+        float w = a_BoneWeights[i];
+        int bid = a_BoneIDs[i];
+        if (w <= 0.0 || bid < 0 || bid >= MAX_BONES)
+            continue;
+        skin += u_BoneTransforms[bid] * w;
+        total += w;
+    }
+    skin = total < 1e-5 ? mat4(1.0) : skin / total;
+    vec4 local = skin * vec4(a_Position, 1.0);
+    vec4 world = u_Transform * local;
+    v_Curr = u_ViewProj * world;
+    v_Prev = u_PrevViewProj * (u_PrevTransform * local);
+    gl_Position = u_ViewProjJittered * world;
+}
+
+#type fragment
+#version 450 core
+layout(location = 0) out vec4 Velocity;
+in vec4 v_Curr;
+in vec4 v_Prev;
+uniform float u_Exact = 0.5;
+uniform int u_PrevCoverage = 0;   // 1: nesne önceki konumunda çizilir, yalnız w = 2 (açılan alan işareti) yazılır
+void main()
+{
+    if (u_PrevCoverage == 1)
+    {
+        Velocity = vec4(0.0, 0.0, 0.0, 2.0);
+        return;
+    }
+    vec2 curr = v_Curr.xy / max(v_Curr.w, 1e-6);
+    vec2 prev = v_Prev.xy / max(v_Prev.w, 1e-6);
+    Velocity = vec4((curr - prev) * 0.5, u_Exact, 1.0);
+}

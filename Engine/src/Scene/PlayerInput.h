@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Base/Base.h"
+#include "Core/Input/InputActionRuntime.h"
 
 #include <glm/glm.hpp>
 
@@ -9,20 +10,26 @@
 #include <vector>
 
 // Unity Input System bileşenleri:
-//  - Player Input: proje girdi haritasının (.cqinput) bir bağlamını bu oyuncuya bağlar; eylem değişince aynı
-//    varlıktaki betiklere "On<Eylem>(değer)" mesajı gönderir (Send Messages). WASD / ok tuşları / sol çubuktan
-//    "OnMove(x, y)", fare / sağ çubuktan "OnLook(dx, dy)" otomatik üretilir. Her oyuncu kendi gamepad'ini okur.
+//  - Player Input: bir Input Actions varlığının (.cqinputactions, "Actions" yuvası) ya da yuva boşsa proje girdi
+//    haritasının (Project Settings > Input) bir eylem haritasını bu oyuncuya bağlar. Varlıkla: eylem gerçekleşince
+//    (performed; Value eylemlerinde bırakılınca da) betiklere "On<Eylem>(değer)" ya da 2B eylemlerde
+//    "On<Eylem>(x, y)" gönderilir (Send Messages: bu nesne, Broadcast Messages: çocuklarıyla birlikte). Haritada
+//    Move / Look yoksa WASD / ok tuşları / sol çubuktan "OnMove(x, y)", fare / sağ çubuktan "OnLook(dx, dy)" üretilir.
+//    Her oyuncu kendi gamepad'ini okur; Default Scheme seçilirse yalnız o şemanın bağlamaları kullanılır.
 //  - Player Input Manager: yerel çok oyunculu: yeni bir gamepad (ya da klavye) düğmeye basınca oyuncu prefabı
 //    oluşturulur ve o cihaz ona atanır; yöneticideki betiklere "OnPlayerJoined(index)" gönderilir.
 namespace Conqueror
 {
     class Scene;
 
-    enum class PlayerInputBehavior : int { SendMessages = 0, None };
+    enum class PlayerInputBehavior : int { SendMessages = 0, None = 1, BroadcastMessages = 2 };
 
     struct PlayerInputComponent
     {
+        // Input Actions varlığı (.cqinputactions); boşsa proje girdi haritası (Project Settings > Input) kullanılır
+        std::string Actions;
         std::string ActionMap = "Gameplay";
+        std::string DefaultScheme;        // kontrol şeması (boş: hepsi)
         int PlayerIndex = 0;              // okunacak gamepad (-1: yok)
         bool UseKeyboardMouse = true;     // klavye + fare bu oyuncuya mı
         PlayerInputBehavior Behavior = PlayerInputBehavior::SendMessages;
@@ -33,6 +40,7 @@ namespace Conqueror
         std::unordered_map<std::string, float> Previous;
         glm::vec2 Move{ 0.0f }, Look{ 0.0f };
         glm::vec2 PrevMove{ 0.0f };
+        InputActionPlayerState AssetState;   // Actions varlığıyla eylem durumları (aşamalar, etkileşimler)
     };
 
     enum class PlayerJoinBehavior : int { JoinOnButtonPress = 0, Manual };
@@ -55,6 +63,12 @@ namespace Conqueror
         CQ_API float GetValue(const PlayerInputComponent& c, const std::string& action);
         CQ_API bool WasPressed(const PlayerInputComponent& c, const std::string& action);
         CQ_API bool WasReleased(const PlayerInputComponent& c, const std::string& action);
+        // Actions varlığıyla: eylemin 2B değeri, aşaması ve bu karedeki aşama geçişleri (yoksa nullptr)
+        CQ_API const InputActionState* FindState(const PlayerInputComponent& c, const std::string& action);
+        CQ_API glm::vec2 GetVector(const PlayerInputComponent& c, const std::string& action);
+        // Eylem haritası / kontrol şeması değiştir (Unity SwitchCurrentActionMap / SwitchCurrentControlScheme)
+        CQ_API void SwitchMap(PlayerInputComponent& c, const std::string& map);
+        CQ_API void SwitchScheme(PlayerInputComponent& c, const std::string& scheme);
         // Yönetici: elle katılım (Manual) — prefab örneği döner (0 = başarısız)
         CQ_API uint32_t JoinPlayer(Scene& scene, uint32_t manager, int device);
     }

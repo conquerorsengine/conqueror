@@ -1162,20 +1162,22 @@ namespace Conqueror::AI
         }
         else if (type == "OBJ" || type == "Model" || !modelPath.empty())
         {
-            auto& mc = entity.AddComponent<ModelComponent>();
-            mc.FilePath = modelPath.empty() ? ("Assets/Models/" + name + ".obj") : modelPath;
+            auto& mc = entity.HasComponent<MeshRendererComponent>() ? entity.GetComponent<MeshRendererComponent>() : entity.AddComponent<MeshRendererComponent>();
+            mc.MaterialInstance = nullptr;
+            mc.MaterialPath.clear();
+            mc.ModelPath = modelPath.empty() ? ("Assets/Models/" + name + ".obj") : modelPath;
 
             std::filesystem::path projDir = Project::GetActiveProjectDirectory();
-            std::filesystem::path fullPath = projDir.empty() ? std::filesystem::path(mc.FilePath) : (projDir / mc.FilePath);
+            std::filesystem::path fullPath = projDir.empty() ? std::filesystem::path(mc.ModelPath) : (projDir / mc.ModelPath);
             
             // Try loading from full absolute path first, then relative path
             if (std::filesystem::exists(fullPath))
             {
                 mc.ModelData = ModelLoader::Load(fullPath.string());
             }
-            if (!mc.ModelData && std::filesystem::exists(mc.FilePath))
+            if (!mc.ModelData && std::filesystem::exists(mc.ModelPath))
             {
-                mc.ModelData = ModelLoader::Load(mc.FilePath);
+                mc.ModelData = ModelLoader::Load(mc.ModelPath);
             }
             if (!mc.ModelData)
             {
@@ -1414,9 +1416,10 @@ namespace Conqueror::AI
         }
         else if (componentType == "Image")
         {
-            if (!entity.HasComponent<ImageComponent>())
-                entity.AddComponent<ImageComponent>();
-            return "Added Image (UI) component to '" + nameOrUuid + "'.";
+            // Eski Image bileşeni Sprite Renderer'a katıldı
+            if (!entity.HasComponent<SpriteRendererComponent>())
+                entity.AddComponent<SpriteRendererComponent>();
+            return "Added Sprite Renderer component to '" + nameOrUuid + "'.";
         }
         else if (componentType == "Button")
         {
@@ -2056,10 +2059,10 @@ namespace Conqueror::AI
         Entity entity = FindEntityByName(scene, nameOrUuid);
         if (!entity) return "Entity '" + nameOrUuid + "' not found.";
 
-        if (!entity.HasComponent<ImageComponent>())
-            entity.AddComponent<ImageComponent>();
+        if (!entity.HasComponent<SpriteRendererComponent>())
+            entity.AddComponent<SpriteRendererComponent>();
 
-        auto& image = entity.GetComponent<ImageComponent>();
+        auto& image = entity.GetComponent<SpriteRendererComponent>();
         if (!colorHex.empty()) image.Color = ParseHexColorRGBA(colorHex);
         if (tilingFactor > 0.0f) image.TilingFactor = tilingFactor;
 

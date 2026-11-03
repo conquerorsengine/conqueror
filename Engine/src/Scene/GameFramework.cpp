@@ -286,7 +286,7 @@ namespace Conqueror
                 // İskeletli model: en yakın ata (ya da varlığın kendisi değil)
                 Entity model;
                 for (Entity p = e.GetParent(); p; p = p.GetParent())
-                    if (p.HasComponent<ModelComponent>())
+                    if (p.HasComponent<MeshRendererComponent>() && p.GetComponent<MeshRendererComponent>().IsModel())
                     {
                         model = p;
                         break;

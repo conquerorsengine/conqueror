@@ -17,6 +17,8 @@ namespace Conqueror::Editor::ObjectPicker
     void Open(ImGuiID owner, const std::string& typeName, const std::vector<std::string>& extensions, const std::string& current);
     bool Consume(ImGuiID owner, std::string& picked);
     bool IsOpenFor(ImGuiID owner);
+    // Pencere açık ya da seçimi henüz yuvaya alınmadı (Inspector geri alma kaydını o zamana kadar açık tutar)
+    bool IsBusy();
 
     // Pencereyi çiz (EditorLayer her kare)
     void Draw();
@@ -35,6 +37,8 @@ namespace Conqueror::Editor::ObjectPicker
     std::string TypeNameFor(const std::vector<std::string>& extensions);
 
     // Unity nesne alanı yanındaki ◎ düğmesi: tıklanınca pencereyi açar, seçim yapılınca true (picked "" = None)
+    // Seçici düğmesi (Unity'deki daire-nokta): kare, simge görünen sınırlarına göre tam ortada. label: "##kimlik"
+    bool IconButton(const char* label);
     bool Button(const char* id, const std::string& typeName, const std::vector<std::string>& extensions, const std::string& current,
                 std::string& picked);
 }

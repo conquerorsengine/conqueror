@@ -1,0 +1,69 @@
+#language GLSL
+// Hacimsel bulutların zamansal birikimi (çeyrek çözünürlük). Önceki karenin bulutları yön uzayında yeniden izdüşürülür
+// (gökyüzü sonsuzda: kamera dönerken ve yürürken birebir doğru) ve yeni kareyle harmanlanır. Işın yürütmesinin kareden
+// kareye değişen gürültüsü ve çeyrek çözünürlüğün ufka yakın örtüşmesi kamera hareket ederken de ortalanır; bulutlar
+// sahneyle birlikte düzgün kayar (ufka yakın bulut şeridi kendi kendine oynamaz).
+#type vertex
+#version 450 core
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+out vec2 v_UV;
+void main()
+{
+    v_UV = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+
+layout(location = 0) out vec4 FragColor;
+in vec2 v_UV;
+
+uniform sampler2D u_Current;      // bu karenin ışın yürütmesi (rgb içe saçılım, a geçirgenlik)
+uniform sampler2D u_History;      // önceki karenin birikmiş bulutları
+uniform mat4 u_InvViewProj;       // bu karenin bulut matrisi
+uniform mat4 u_PrevViewProj;      // önceki karenin bulut matrisi
+uniform vec3 u_CameraPos;
+uniform vec2 u_Texel;             // çeyrek çözünürlük texel boyutu (uv)
+uniform int u_HistoryValid = 0;
+uniform float u_Feedback = 0.9;
+
+void main()
+{
+    vec4 current = texture(u_Current, v_UV);
+    if (any(isnan(current)))
+        current = vec4(0.0, 0.0, 0.0, 1.0);
+    if (u_HistoryValid == 0)
+    {
+        FragColor = current;
+        return;
+    }
+    // Bu texelin bakış yönü ve önceki karede o yönün ekran konumu
+    vec4 far = u_InvViewProj * vec4(v_UV * 2.0 - 1.0, 1.0, 1.0);
+    vec3 dir = normalize(far.xyz / far.w - u_CameraPos);
+    vec4 prevClip = u_PrevViewProj * vec4(u_CameraPos + dir * 10000.0, 1.0);
+    if (prevClip.w <= 0.0)
+    {
+        FragColor = current;
+        return;
+    }
+    vec2 prevUV = prevClip.xy / prevClip.w * 0.5 + 0.5;
+    if (any(lessThan(prevUV, vec2(0.0))) || any(greaterThan(prevUV, vec2(1.0))))
+    {
+        FragColor = current;
+        return;
+    }
+    vec4 history = texture(u_History, prevUV);
+    // 3x3 komşuluk kutusu: gürültülü örnekler ortalamayı içerir (geçmiş korunur); bulut gerçekten değişirse kırpılır
+    vec4 lo = current, hi = current;
+    for (int y = -1; y <= 1; ++y)
+    for (int x = -1; x <= 1; ++x)
+    {
+        vec4 c = texture(u_Current, v_UV + vec2(float(x), float(y)) * u_Texel);
+        lo = min(lo, c);
+        hi = max(hi, c);
+    }
+    history = clamp(history, lo, hi);
+    FragColor = mix(current, history, u_Feedback);
+}

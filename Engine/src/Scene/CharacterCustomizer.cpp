@@ -154,11 +154,11 @@ namespace Conqueror
 
         void Update(Scene& scene)
         {
-            auto view = scene.m_Registry.view<CharacterCustomizerComponent, ModelComponent>();
+            auto view = scene.m_Registry.view<CharacterCustomizerComponent, MeshRendererComponent>();
             for (auto h : view)
             {
                 auto& c = view.get<CharacterCustomizerComponent>(h);
-                auto& mc = view.get<ModelComponent>(h);
+                auto& mc = view.get<MeshRendererComponent>(h);
                 if (!mc.ModelData)
                     continue;
                 // Model değiştiyse (yeni dosya / sahne yükleme / kopyalanan bileşen) örnek kopyası yeniden kurulur

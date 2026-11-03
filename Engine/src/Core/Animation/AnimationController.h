@@ -176,6 +176,8 @@ namespace Conqueror
         std::vector<AnimNotify> Notifies;
 
         // Blend tree
+        // Doluysa örnekler bu Blend Space varlığından (.cqblendspace) gelir: tür (1D / 2D) ve çocuklar yüklenirken kurulur
+        std::string BlendSpace;
         AnimBlendTreeType BlendType = AnimBlendTreeType::Simple1D;
         std::string BlendParameter;
         std::string BlendParameterY;
@@ -215,6 +217,8 @@ namespace Conqueror
         AnimLayerBlending Blending = AnimLayerBlending::Override;
         // Avatar Mask / Layered blend per bone: doluysa katman yalnızca bu kemiği ve altını etkiler (ör. "spine_01")
         std::string FromBone;
+        // Avatar Mask varlığı (.cqmask, Unity Layer > Mask): doluysa katman yalnız maskedeki kemikleri karıştırır
+        std::string AvatarMask;
         // Doluysa katman ağırlığı bu float parametreden okunur (0..1; ör. nişan alırken üst gövde)
         std::string WeightParameter;
 
@@ -266,7 +270,17 @@ namespace Conqueror
         int NextNodeID = 1;
 
         bool Serialize(const std::string& filepath) const;
+        // .cqcont ya da .cqoverride (Animator Override Controller: temel controller + klip değiştirme listesi)
         static std::shared_ptr<AnimationController> Deserialize(const std::string& filepath);
+
+        // Animator Override Controller (Unity): klip adı -> yeni klip adı. Override yüklenince durumların klip adları
+        // değişir, dizinleri modelden ada göre bulunur (ilk güncellemede ResolveClips)
+        bool PendingClipResolve = false;
+        void ResolveClips(const struct Model& model);
+        // Temel controller'daki tüm klip adları (durumlar + blend tree çocukları, sırayla, tekrarsız)
+        std::vector<std::string> CollectClipNames() const;
+        // Blend Space varlığını duruma uygula: tür + çocuklar (klip dizinleri modelden ada göre, ResolveClips)
+        static bool ApplyBlendSpace(AnimState& state);
         // Varsayılan "Base Layer" içeren yeni controller
         static std::shared_ptr<AnimationController> CreateDefault();
 

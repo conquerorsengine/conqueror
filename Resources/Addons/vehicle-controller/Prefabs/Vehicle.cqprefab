@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 7008700258175506051
+  - Entity: 4127251011748166105
     TagComponent:
       Tag: Vehicle
       GameTag: Untagged
@@ -36,7 +36,7 @@ Entities:
       Size: [1.8, 0.5, 4]
       IsTrigger: false
       Version: 2
-  - Entity: 721909172529886193
+  - Entity: 2656963894859115824
     TagComponent:
       Tag: Car Body
       GameTag: Untagged
@@ -50,12 +50,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.85, 0.12, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 5398923953122170846
+      MaterialAsset: Packages/vehicle-controller/Materials/Red.cqmat
+  - Entity: 9022606782953459589
     TagComponent:
       Tag: Cabin
       GameTag: Untagged
@@ -69,12 +65,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.15, 0.17, 0.2, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 6317645856401141260
+      MaterialAsset: Packages/vehicle-controller/Materials/Dark Gray.cqmat
+  - Entity: 8600527203509742388
     TagComponent:
       Tag: WheelFL
       GameTag: Untagged
@@ -109,8 +101,8 @@ Entities:
       MotorTorque: 0
       BrakeTorque: 0
       SteerAngle: 0
-      WheelModel: 8969356358480640886
-  - Entity: 8969356358480640886
+      WheelModel: 3181835917112811651
+  - Entity: 3181835917112811651
     TagComponent:
       Tag: WheelFL Mesh
       GameTag: Untagged
@@ -124,12 +116,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.08, 0.08, 0.08, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 2439363436934400986
+      MaterialAsset: Packages/vehicle-controller/Materials/Black.cqmat
+  - Entity: 6089768220743484394
     TagComponent:
       Tag: WheelFR
       GameTag: Untagged
@@ -164,8 +152,8 @@ Entities:
       MotorTorque: 0
       BrakeTorque: 0
       SteerAngle: 0
-      WheelModel: 63944109280698994
-  - Entity: 63944109280698994
+      WheelModel: 6632526438761184589
+  - Entity: 6632526438761184589
     TagComponent:
       Tag: WheelFR Mesh
       GameTag: Untagged
@@ -179,12 +167,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.08, 0.08, 0.08, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 6907314440219387508
+      MaterialAsset: Packages/vehicle-controller/Materials/Black.cqmat
+  - Entity: 5978946637034936087
     TagComponent:
       Tag: WheelRL
       GameTag: Untagged
@@ -219,8 +203,8 @@ Entities:
       MotorTorque: 0
       BrakeTorque: 0
       SteerAngle: 0
-      WheelModel: 961402205354472371
-  - Entity: 961402205354472371
+      WheelModel: 4707231446850781706
+  - Entity: 4707231446850781706
     TagComponent:
       Tag: WheelRL Mesh
       GameTag: Untagged
@@ -234,12 +218,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.08, 0.08, 0.08, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 1573603183943428068
+      MaterialAsset: Packages/vehicle-controller/Materials/Black.cqmat
+  - Entity: 8248047411057471993
     TagComponent:
       Tag: WheelRR
       GameTag: Untagged
@@ -274,8 +254,8 @@ Entities:
       MotorTorque: 0
       BrakeTorque: 0
       SteerAngle: 0
-      WheelModel: 2848684429829431751
-  - Entity: 2848684429829431751
+      WheelModel: 1625556807981598707
+  - Entity: 1625556807981598707
     TagComponent:
       Tag: WheelRR Mesh
       GameTag: Untagged
@@ -289,11 +269,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.08, 0.08, 0.08, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
+      MaterialAsset: Packages/vehicle-controller/Materials/Black.cqmat
 Environment:
   SkyboxExposure: 1
   SkyboxRotation: 0
@@ -390,6 +366,49 @@ Environment:
       Sharpen: false
       SharpenAmount: 0.3
       AntiAliasing: 1
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: false
+      SSRIntensity: 1
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: false
+      SSGIIntensity: 1
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: false
+      CloudCoverage: 0.45
+      CloudDensity: 1
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: false
+      FocusDistance: 10
+      Aperture: 2.8
+      FocalLength: 50
+      DOFMaxBlur: 10
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
     Environment:
       Sky: 0
       BackgroundColor: [0.1, 0.1, 0.1]
@@ -397,6 +416,13 @@ Environment:
       ReflectionIntensity: 1
       SkyboxIntensity: 1
       SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
     Bake:
       RealtimeGI: false
       BakedGI: true
@@ -436,23 +462,23 @@ Environment:
       APVGeometryBias: 0.01
       APVRayOriginBias: -0.001
 Hierarchy:
-  - Child: 721909172529886193
-    Parent: 7008700258175506051
-  - Child: 5398923953122170846
-    Parent: 7008700258175506051
-  - Child: 6317645856401141260
-    Parent: 7008700258175506051
-  - Child: 8969356358480640886
-    Parent: 7008700258175506051
-  - Child: 2439363436934400986
-    Parent: 7008700258175506051
-  - Child: 63944109280698994
-    Parent: 7008700258175506051
-  - Child: 6907314440219387508
-    Parent: 7008700258175506051
-  - Child: 961402205354472371
-    Parent: 7008700258175506051
-  - Child: 1573603183943428068
-    Parent: 7008700258175506051
-  - Child: 2848684429829431751
-    Parent: 7008700258175506051
+  - Child: 2656963894859115824
+    Parent: 4127251011748166105
+  - Child: 9022606782953459589
+    Parent: 4127251011748166105
+  - Child: 8600527203509742388
+    Parent: 4127251011748166105
+  - Child: 3181835917112811651
+    Parent: 4127251011748166105
+  - Child: 6089768220743484394
+    Parent: 4127251011748166105
+  - Child: 6632526438761184589
+    Parent: 4127251011748166105
+  - Child: 5978946637034936087
+    Parent: 4127251011748166105
+  - Child: 4707231446850781706
+    Parent: 4127251011748166105
+  - Child: 8248047411057471993
+    Parent: 4127251011748166105
+  - Child: 1625556807981598707
+    Parent: 4127251011748166105

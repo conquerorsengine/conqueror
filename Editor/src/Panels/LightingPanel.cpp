@@ -10,6 +10,8 @@
 #include "Renderer/Utilities/Renderer3D/ModelLoader.h"
 #include "Core/Logging/Log.h"
 #include "Core/Project/Project.h"
+#include "Core/Serialization/SceneSerializer.h"
+#include <filesystem>
 #include "Core/Utils/FileSystem.h"
 #include "Scene/Components.h"
 
@@ -229,6 +231,101 @@ namespace Conqueror::Editor
         auto& rs = m_Context->GetRenderSettings();
         auto& b = rs.Bake;
 
+        // ---- Lighting Settings varlığı (Unity: Lighting Settings Asset + New / Clone)
+        {
+            static std::string watched;
+            static std::filesystem::file_time_type watchedTime{};
+            std::error_code ec;
+            if (!b.SettingsAsset.empty())
+            {
+                // Dosya başka yerde değiştiyse (başka sahne / dış düzenleme) sahneye yükle
+                const auto t = std::filesystem::last_write_time(SceneSerializer::ResolveAssetPath(b.SettingsAsset), ec);
+                if (!ec && (watched != b.SettingsAsset || t != watchedTime))
+                {
+                    const std::string asset = b.SettingsAsset;
+                    SceneSerializer::LoadLightingSettings(asset, b);
+                    b.SettingsAsset = asset;
+                    watched = asset;
+                    watchedTime = t;
+                }
+            }
+            const LightBakeSettings before = b;
+            UI::BeginProperty("Lighting Settings Asset", "Bake settings stored in a .cqlighting file that several scenes can share. "
+                                                          "Changes made here are written to the asset.");
+            {
+                std::string shown = b.SettingsAsset.empty() ? std::string("None (scene's own settings)")
+                                                            : std::filesystem::path(b.SettingsAsset).filename().string();
+                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 2.0f * (ImGui::GetFrameHeight() + 4.0f) - 54.0f);
+                ImGui::BeginDisabled();
+                char buf[512];
+                snprintf(buf, sizeof(buf), "%s", shown.c_str());
+                ImGui::InputText("##lightingasset", buf, sizeof(buf), ImGuiInputTextFlags_ReadOnly);
+                ImGui::EndDisabled();
+                if (ImGui::BeginDragDropTarget())
+                {
+                    if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                    {
+                        std::string dropped((const char*)p->Data);
+                        if (std::filesystem::path(dropped).extension() == ".cqlighting")
+                        {
+                            SceneSerializer::LoadLightingSettings(dropped, b);
+                            b.SettingsAsset = dropped;
+                        }
+                    }
+                    ImGui::EndDragDropTarget();
+                }
+                ImGui::SameLine(0.0f, 4.0f);
+                std::string picked;
+                if (ObjectPicker::Button("##pickLighting", "Lighting Settings", { ".cqlighting" }, b.SettingsAsset, picked))
+                {
+                    if (!picked.empty())
+                        SceneSerializer::LoadLightingSettings(picked, b);
+                    b.SettingsAsset = picked;
+                }
+                ImGui::SameLine(0.0f, 4.0f);
+                if (ImGui::Button(b.SettingsAsset.empty() ? "New" : "Clone") && Project::GetActive())
+                {
+                    const std::filesystem::path dir = Project::GetActiveProjectDirectory() / "Assets";
+                    std::filesystem::path file = dir / "Lighting Settings.cqlighting";
+                    for (int i = 1; std::filesystem::exists(file, ec); ++i)
+                        file = dir / ("Lighting Settings " + std::to_string(i) + ".cqlighting");
+                    if (SceneSerializer::SaveLightingSettings(file.string(), b))
+                        b.SettingsAsset = file.string();
+                }
+            }
+            UI::EndProperty();
+            UI::BeginProperty("Default Lightmap Parameters", "Bake quality (anti-aliasing, backface tolerance, pushoff) for renderers "
+                                                              "that do not pick their own Lightmap Parameters.");
+            {
+                std::string shown = b.DefaultLightmapParameters.empty() ? std::string("Default (built-in)")
+                                                                        : std::filesystem::path(b.DefaultLightmapParameters).filename().string();
+                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - ImGui::GetFrameHeight() - 4.0f);
+                ImGui::BeginDisabled();
+                char buf[512];
+                snprintf(buf, sizeof(buf), "%s", shown.c_str());
+                ImGui::InputText("##lmparams", buf, sizeof(buf), ImGuiInputTextFlags_ReadOnly);
+                ImGui::EndDisabled();
+                if (ImGui::BeginDragDropTarget())
+                {
+                    if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                    {
+                        std::string dropped((const char*)p->Data);
+                        if (std::filesystem::path(dropped).extension() == ".cqlmparams")
+                            b.DefaultLightmapParameters = dropped;
+                    }
+                    ImGui::EndDragDropTarget();
+                }
+                ImGui::SameLine(0.0f, 4.0f);
+                std::string picked;
+                if (ObjectPicker::Button("##pickLmParams", "Lightmap Parameters", { ".cqlmparams" }, b.DefaultLightmapParameters, picked))
+                    b.DefaultLightmapParameters = picked;
+            }
+            UI::EndProperty();
+            ImGui::Spacing();
+            // Bu karede yapılan değişiklikler (alt bölümler dahil) sonraki karede dosyaya yazılır
+            m_LightingAssetBefore = std::make_shared<LightBakeSettings>(before);
+        }
+
         if (UI::BeginSection("Realtime Lighting"))
         {
             UI::Checkbox("Realtime Global Illumination", b.RealtimeGI,
@@ -284,6 +381,25 @@ namespace Conqueror::Editor
             UI::EndSection();
         }
 
+        // Lighting Settings varlığına yaz (bu karede ayar değiştiyse)
+        if (!b.SettingsAsset.empty() && m_LightingAssetBefore)
+        {
+            auto dump = [](const LightBakeSettings& s) {
+                LightBakeSettings c = s;
+                c.SettingsAsset.clear();
+                return std::string(SceneSerializer::LightingSettingsToString(c));
+            };
+            if (dump(*m_LightingAssetBefore) != dump(b) && !ImGui::IsMouseDown(ImGuiMouseButton_Left))
+                SceneSerializer::SaveLightingSettings(b.SettingsAsset, b);
+            else if (dump(*m_LightingAssetBefore) != dump(b))
+                m_PendingLightingSave = true;
+        }
+        if (m_PendingLightingSave && !ImGui::IsMouseDown(ImGuiMouseButton_Left) && !b.SettingsAsset.empty())
+        {
+            SceneSerializer::SaveLightingSettings(b.SettingsAsset, b);
+            m_PendingLightingSave = false;
+        }
+
         if (UI::BeginSection("Workflow", false))
         {
             const char* onLoad[] = { "Never", "If lighting data is missing" };
@@ -326,7 +442,7 @@ namespace Conqueror::Editor
                         return;
                     std::string ext = entry.path().extension().string();
                     std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-                    if (ext == ".hdr" || ext == ".exr")
+                    if (ext == ".hdr" || ext == ".exr" || ext == ".cqcubemap")
                         m_SkyboxCandidates.push_back(entry.path().string());
                 };
                 if (recursive)
@@ -403,11 +519,11 @@ namespace Conqueror::Editor
             }
             ImGui::Separator();
             if (ImGui::Selectable(ICON_FA_BULLSEYE "  Select..."))
-                ObjectPicker::Open(skyPick, "Sky (HDR)", { ".hdr", ".exr" }, skybox ? skybox->GetPath() : std::string());
+                ObjectPicker::Open(skyPick, "Sky (HDR / Cubemap)", { ".hdr", ".exr", ".cqcubemap" }, skybox ? skybox->GetPath() : std::string());
             if (ImGui::Selectable("Browse..."))
             {
                 nfdu8char_t* outPath = nullptr;
-                nfdfilteritem_t filters[1] = { { "HDR Images", "hdr,exr" } };
+                nfdfilteritem_t filters[1] = { { "Sky (HDR / Cubemap)", "hdr,exr,cqcubemap" } };
                 if (NFD_OpenDialogU8(&outPath, filters, 1, nullptr) == NFD_OKAY)
                 {
                     loadSkybox(outPath);

@@ -205,6 +205,23 @@ namespace Conqueror
         static void ExtractFrustum(const glm::mat4& viewProjection, glm::vec4 planes[6]);
         // Görüş hacmi kırpma (Unreal / Unity görünürlük kırpması): kameranın kesik konisi dışındaki meshler çizilmez, gölge
         // kademeleri de kendi ışık hacimleriyle kırpar. r.FrustumCulling 0: her şey çizilir (hata ayıklama / ölçüm)
+        // Temporal AA hareket maskesi: bu görünümde (PostProcessStack) son karede hareket eden nesnelerin ekran
+        // dikdörtgenleri (uv: minx, miny, maxx, maxy), önceki karenin dikdörtgenleriyle birlikte
+        static void GetMovingRects(const void* view, std::vector<glm::vec4>& out);
+        // Hareket eden opak nesnelerin / animasyonlu modellerin dünya kutuları (bu + önceki kare; çift: min, max; gölge yumuşaklığı
+        // payıyla büyütülmüş) ve güneşe doğru yön. TAA pikselin dünya noktasından güneşe ışın atar: kutulardan birine çarpıyorsa
+        // nokta hareket eden bir nesnenin gölge hacmindedir. Güneş yoksa false
+        static bool GetMovingShadowBoxes(const void* view, std::vector<glm::vec4>& minMax, glm::vec3& towardSun);
+        // Temporal AA nesne hareket vektörleri: bu görünümde bu karede hareket eden opak meshleri / animasyonlu modelleri
+        // bağlı çerçeve tamponuna (renk: RGBA16F hız, derinlik: sahne derinliği; derinlik yazılmaz) çizer. Çizim yoksa false
+        static bool RenderVelocity(const void* view, const glm::mat4& jitteredViewProj, const glm::mat4& viewProj, const glm::mat4& prevViewProj);
+        static bool HasVelocityDraws(const void* view);
+        // Sonraki çizimlerin nesnesi gölge düşürüyor mu (Mesh Renderer / Model Cast Shadows): düşürmeyenin gölge kutusu yok
+        static void SetDrawCastsShadows(bool castsShadows);
+        // Sonraki çizimler View Model mi (first person kollar / silah): kameraya doğru bu oranda yaklaştırılmış konumla
+        // rasterleştirilir (1 = kapalı)
+        // Mesh dışı çizimler (parçacıklar vb.) için: bu dünya kutusu bu karede hareketli (TAA iz bırakmasın)
+        static void MarkMovingBounds(const glm::vec3& center, const glm::vec3& extents);
         static void SetFrustumCulling(bool enabled);
         static bool GetFrustumCulling();
         // Dünya uzayı eksen hizalı kutu (merkez, yarı boyut) düzlemlerin içinde ya da onları kesiyor mu

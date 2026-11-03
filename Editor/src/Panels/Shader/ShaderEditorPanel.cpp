@@ -251,17 +251,17 @@ namespace Conqueror::Editor
             return;
         }
 
-        if (!m_SelectedEntity || (!m_SelectedEntity.HasComponent<MeshRendererComponent>() && !m_SelectedEntity.HasComponent<SpriteRendererComponent>() && !m_SelectedEntity.HasComponent<ModelComponent>()))
+        if (!m_SelectedEntity || (!m_SelectedEntity.HasComponent<MeshRendererComponent>() && !m_SelectedEntity.HasComponent<SpriteRendererComponent>()))
         {
-            ImGui::TextUnformatted("Select an entity with a MeshRenderer, SpriteRenderer, or Model to edit its Material.");
+            ImGui::TextUnformatted("Select an entity with a Mesh Renderer or Sprite Renderer to edit its Material.");
             ImGui::End();
             return;
         }
 
-        // ModelComponent için material seçimi
-        if (m_SelectedEntity.HasComponent<ModelComponent>())
+        // Mesh alanında model: modelin malzemelerinden seçim
+        if (m_SelectedEntity.HasComponent<MeshRendererComponent>() && m_SelectedEntity.GetComponent<MeshRendererComponent>().IsModel())
         {
-            auto& modelComp = m_SelectedEntity.GetComponent<ModelComponent>();
+            auto& modelComp = m_SelectedEntity.GetComponent<MeshRendererComponent>();
             if (!modelComp.ModelData || modelComp.ModelData->Materials.empty())
             {
                 ImGui::TextUnformatted("Model has no materials.");

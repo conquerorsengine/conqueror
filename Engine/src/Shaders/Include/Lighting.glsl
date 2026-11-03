@@ -606,6 +606,9 @@ vec3 CQ_AreaLightContribution(CQ_Surface s, CQ_AreaLight al, vec3 V, vec3 F0, ve
 
 // ---------------------------------------------------------------- Ana fonksiyon
 
+// Son gölgelendirilen yüzeyin güneş gölgesi (G-buffer gölge eki / TAA gölge değişimi)
+float g_CQSunShadow = 1.0;
+
 vec4 CQ_ShadeSurface(CQ_Surface s)
 {
     vec3 V = normalize(CQ_CameraPosition() - s.Position);
@@ -626,6 +629,7 @@ vec4 CQ_ShadeSurface(CQ_Surface s)
     {
         vec3 L = normalize(-CQ_Frame.SunDirection.xyz);
         float shadow = CQ_SunShadow(s.Position, s.GeometricNormal, L, pixel);
+        g_CQSunShadow = shadow;
         vec3 radiance = CQ_Frame.SunColor.rgb;
         vec3 direct = CQ_EvaluateBRDF(s, V, L, radiance, F0, energyCompensation);
         Lo += direct * mix(CQ_Frame.ShadowColor.rgb, vec3(1.0), shadow);

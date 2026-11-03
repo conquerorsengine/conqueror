@@ -18,6 +18,10 @@ namespace Conqueror::Editor
 
         // Sprite Renderer -> "Open Sprite Editor" (EditorLayer bağlar)
         static std::function<void(const std::string&)> s_OpenSpriteEditor;
+        // Input Actions penceresini bu varlıkla aç (Inspector > Edit Asset)
+        static std::function<void(const std::string&)> s_OpenInputActions;
+        // Kayıtlı bir bileşen türünün alanlarını sahneden bağımsız bir nesne üzerinde çiz (ör. Volume Profile varlığı); değişince true
+        static bool DrawObjectFields(const std::string& componentType, void* object, const std::function<bool(const std::string&)>& include);
         static std::function<void(const std::string&)> s_OpenCodeEditor;
         // Geri alma komutlarının tuttuğu sahne (EditorLayer bağlar)
         static std::function<std::shared_ptr<class Scene>()> s_SharedScene;

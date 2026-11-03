@@ -456,21 +456,7 @@ namespace Conqueror
                              glm::vec2(us[x], vs[y]), glm::vec2(us[x + 1], vs[y + 1]), tintColor);
     }
 
-    void Renderer2D::DrawSprite(const glm::mat4& transform, const std::shared_ptr<Texture2D>& texture, float tilingFactor, const glm::vec4& tintColor, ImageComponent& image)
-    {
-        (void)image;
-        if (!texture)
-            return;
-        // PNG'nin piksel boyutlarını 100'e bölerek dünya birimine çevir
-        float halfWidth = (float)texture->GetWidth() / 200.0f;
-        float halfHeight = (float)texture->GetHeight() / 200.0f;
-        glm::vec2 uvMax(std::max(1.0f, tilingFactor));
-        DrawRect(transform, glm::vec2(-halfWidth, -halfHeight), glm::vec2(halfWidth, halfHeight), texture, glm::vec2(0.0f), uvMax, tintColor);
-        s_Data.Stats.SpriteCount++;
-    }
-
     void Renderer2D::InitializeSpriteResources(SpriteRendererComponent&) {}
-    void Renderer2D::InitializeImageResources(ImageComponent&) {}
 
     void Renderer2D::ResetStats()
     {
@@ -515,9 +501,9 @@ namespace Conqueror
         (void)color;
     }
 
-    void Renderer2D::DrawSprite9Slice(const glm::mat4& transform, const std::shared_ptr<Texture2D>& texture, float borderSize, const glm::vec4& tintColor, ImageComponent& image)
+    void Renderer2D::DrawSprite9Slice(const glm::mat4& transform, const std::shared_ptr<Texture2D>& texture, float borderSize, const glm::vec4& tintColor, SpriteRendererComponent& sprite)
     {
-        (void)image;
+        (void)sprite;
         if (!texture)
             return;
         const float texW = (float)texture->GetWidth(), texH = (float)texture->GetHeight();

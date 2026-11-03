@@ -77,6 +77,8 @@ namespace Conqueror
         CQ_API bool HasConstraints(uint32_t modelEntity);
         // Kemiğin dünya dönüşümü (son poz); bulunamazsa false
         CQ_API bool GetBoneWorldTransform(Scene& scene, uint32_t modelEntity, const std::string& bone, glm::mat4& out);
+        // Kemiğin modelin kendi uzayındaki dönüşümü (son poz, IK dahil); modelin dünya dönüşümünden bağımsız
+        CQ_API bool GetBoneModelTransform(Scene& scene, uint32_t modelEntity, const std::string& bone, glm::mat4& out);
     }
 
     void RegisterRigComponents();

@@ -1,3 +1,5 @@
+#include "Core/Project/Project.h"
+#include "Assets/AssetUI.h"
 #include "ObjectPicker.h"
 #include "TerrainPanel.h"
 #include "EditorState.h"
@@ -341,6 +343,14 @@ namespace Conqueror::Editor
     {
         if (m_Tool == Tool::None || !UI::BeginSection("Brush", true, ICON_FA_PAINTBRUSH))
             return;
+        // Brush varlığı (Unity: fırça şekli maskeden)
+        UI::BeginProperty("Brush Shape", "A .cqbrush asset (mask texture). Empty = round brush.");
+        {
+            std::string shape = m_Brush.Brush.empty() ? std::string() : Editor::AssetUI::ToProjectRelative(m_Brush.Brush);
+            if (Editor::AssetUI::AssetSlot("brushshape", "Brush", { TerrainAssets::BrushExtension }, shape))
+                m_Brush.Brush = shape.empty() ? std::string() : Editor::AssetUI::Resolve(shape).string();
+        }
+        UI::EndProperty();
         UI::SliderFloat("Size", m_Brush.Radius, 0.5f, std::max(t.Width, t.Length) * 0.5f, "%.1f m");
         UI::SliderFloat("Strength", m_Brush.Strength, 0.01f, 1.0f, "%.2f");
         UI::SliderFloat("Falloff", m_Brush.Falloff, 0.0f, 1.0f, "%.2f");
@@ -402,6 +412,31 @@ namespace Conqueror::Editor
             ImGui::SameLine();
             std::string tex = l.TexturePath.empty() ? std::string("(color)") : std::filesystem::path(l.TexturePath).filename().string();
             ImGui::TextDisabled("%s", tex.c_str());
+            // Terrain Layer varlığı (Unity: katmanlar varlıktır, araziler arasında paylaşılır)
+            const TerrainLayer beforeEdit = l;
+            UI::BeginProperty("Terrain Layer", "A .cqterrainlayer asset shared by terrains. Empty = this terrain's own values.");
+            {
+                std::string asset = l.Asset;
+                if (Editor::AssetUI::AssetSlot("layerasset", "Terrain Layer", { TerrainAssets::LayerExtension }, asset))
+                {
+                    l.Asset = Editor::AssetUI::Resolve(asset).string();
+                    if (asset.empty()) l.Asset.clear();
+                    t.SplatDirty = true;
+                }
+            }
+            UI::EndProperty();
+            if (l.Asset.empty() && ImGui::SmallButton(ICON_FA_FLOPPY_DISK " Save as Terrain Layer") && Project::GetActive())
+            {
+                std::error_code ec;
+                const std::filesystem::path dir = Project::GetActiveProjectDirectory() / "Assets" / "Terrain Layers";
+                std::filesystem::create_directories(dir, ec);
+                std::string name = l.TexturePath.empty() ? "Layer " + std::to_string(i + 1) : std::filesystem::path(l.TexturePath).stem().string();
+                std::filesystem::path file = dir / (name + TerrainAssets::LayerExtension);
+                for (int n = 1; std::filesystem::exists(file, ec); ++n)
+                    file = dir / (name + " " + std::to_string(n) + TerrainAssets::LayerExtension);
+                if (TerrainAssets::SaveLayer(file.string(), l))
+                    l.Asset = file.string();
+            }
 
             UI::BeginProperty("Albedo", "Drag a texture from the Content Browser");
             ImVec2 p = ImGui::GetCursorScreenPos();
@@ -438,6 +473,10 @@ namespace Conqueror::Editor
             UI::DragFloat("Tiling", l.Tiling, 0.1f, 0.1f, 1000.0f, "%.1f");
             UI::SliderFloat("Roughness", l.Roughness, 0.0f, 1.0f);
             UI::SliderFloat("Metallic", l.Metallic, 0.0f, 1.0f);
+            // Varlıklı katman: düzenlemeler dosyaya (diğer araziler de güncellenir)
+            if (!l.Asset.empty() && (l.TexturePath != beforeEdit.TexturePath || l.Tint != beforeEdit.Tint || l.Tiling != beforeEdit.Tiling ||
+                                     l.Roughness != beforeEdit.Roughness || l.Metallic != beforeEdit.Metallic))
+                TerrainAssets::SaveLayer(l.Asset, l);
             if (ImGui::SmallButton("Fill Entire Terrain"))
             {
                 PushUndo(GetTarget());

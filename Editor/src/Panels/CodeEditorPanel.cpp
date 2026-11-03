@@ -159,7 +159,7 @@ namespace Conqueror::Editor
             if (ext == ".lua" || ext == ".luau") return "lua";
             if (ext == ".py") return "py";
             if (ext == ".java") return "java";
-            if (ext == ".glsl" || ext == ".vert" || ext == ".frag" || ext == ".comp" || ext == ".cqsh") return "glsl";
+            if (ext == ".glsl" || ext == ".vert" || ext == ".frag" || ext == ".comp" || ext == ".cqsh" || ext == ".cqraytrace") return "glsl";
             if (ext == ".hlsl") return "hlsl";
             return "text";
         }

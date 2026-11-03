@@ -1,4 +1,5 @@
 #include "AnimationStateMachine.h"
+#include "Core/Animation/AvatarMask.h"
 #include "Scene/Components.h"
 #include "Renderer/Utilities/Renderer3D/ModelLoader.h"
 
@@ -983,6 +984,9 @@ namespace Conqueror
         const bool hasController = ac.Controller && !ac.Controller->Layers.empty();
         if (!hasController && !ac.Montage.Active)
             return;
+        // Animator Override Controller: değiştirilen kliplerin dizinleri bu modelden ada göre
+        if (hasController && ac.Controller->PendingClipResolve)
+            ac.Controller->ResolveClips(model);
 
         const Skeleton& skeleton = *model.SkeletonData;
         static thread_local Pose s_Bind, s_Final, s_LayerPose, s_NextPose;
@@ -1045,6 +1049,31 @@ namespace Conqueror
                     s_Final = s_LayerPose;
                 else if (layer.Blending == AnimLayerBlending::Additive)
                     Animator::ApplyAdditive(s_Final, s_LayerPose, s_Bind, weight);
+                else if (const AvatarMask* mask = layer.AvatarMask.empty() ? nullptr : AvatarMasks::Get(layer.AvatarMask))
+                {
+                    // Avatar Mask: insan bölümleri ya da seçili kemikler (Unity katman maskesi)
+                    const auto& nodes = Animator::Flatten(skeleton);
+                    static thread_local std::vector<std::string> s_Names;
+                    static thread_local std::vector<int> s_Parents;
+                    static thread_local std::vector<uint8_t> s_MaskBits;
+                    s_Names.resize(nodes.size());
+                    s_Parents.resize(nodes.size());
+                    for (size_t i = 0; i < nodes.size(); ++i)
+                    {
+                        s_Names[i] = nodes[i].Node ? nodes[i].Node->Name : std::string();
+                        s_Parents[i] = nodes[i].Parent;
+                    }
+                    AvatarMasks::BuildNodeMask(*mask, s_Names, s_Parents, s_MaskBits);
+                    const size_t n = std::min({ nodes.size(), s_Final.size(), s_LayerPose.size() });
+                    for (size_t i = 0; i < n; ++i)
+                    {
+                        if (!s_MaskBits[i])
+                            continue;
+                        s_Final[i].Translation = glm::mix(s_Final[i].Translation, s_LayerPose[i].Translation, weight);
+                        s_Final[i].Rotation = glm::normalize(glm::slerp(s_Final[i].Rotation, s_LayerPose[i].Rotation, weight));
+                        s_Final[i].Scale = glm::mix(s_Final[i].Scale, s_LayerPose[i].Scale, weight);
+                    }
+                }
                 else if (!layer.FromBone.empty())
                 {
                     // Kemik maskesi: yalnızca FromBone ve altındaki düğümler

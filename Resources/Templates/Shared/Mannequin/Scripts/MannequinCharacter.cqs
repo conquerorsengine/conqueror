@@ -17,6 +17,8 @@ script MannequinCharacter : ConquerorScript
     public float braking = 16.0;
     public float airControl = 0.35;
     public float jumpHeight = 1.2;
+    [Tooltip("Holding Jump jumps again as soon as the character lands")]
+    public bool holdToJump = true;
     public float gravity = 20.0;
     public float turnRate = 10.0;
 
@@ -131,6 +133,7 @@ script MannequinCharacter : ConquerorScript
         var iy = moveInputY;
         var wantSprint = sprintInput;
         var wantJump = jumpInput;
+        var jumpHeld = false;
         var wantWalk = false;
         jumpInput = false;
         if (mode != "None" && !dead)
@@ -144,6 +147,7 @@ script MannequinCharacter : ConquerorScript
             wantSprint = wantSprint || IsKeyPressed("LeftShift") || Pad(8);
             wantWalk = IsKeyPressed("LeftAlt");
             wantJump = wantJump || IsKeyDown("Space") || PadDown(0);
+            jumpHeld = IsKeyPressed("Space") || Pad(0);
             if (IsKeyDown("C") || IsKeyDown("LeftControl") || PadDown(1)) { crouching = !crouching; }
             aiming = canAim && !aimBlocked && (aimHold || IsMouseButtonPressed(1) || Axis(4) > 0.3);
             // Bakış
@@ -176,7 +180,10 @@ script MannequinCharacter : ConquerorScript
         var tx = mx * maxSpeed;
         var tz = mz * maxSpeed;
 
+        var wasOnGround = onGround;
         onGround = CharacterIsGrounded();
+        // Zıplama tuşu basılı tutulursa yere değdiği an yeniden zıplar (Unreal Character gibi)
+        if (holdToJump && jumpHeld && onGround && !wasOnGround) { wantJump = true; }
         var accel = il > 0.01 ? acceleration : braking;
         if (!onGround) { accel *= airControl; }
         var k = 1.0 - MathExp(-accel * dt);

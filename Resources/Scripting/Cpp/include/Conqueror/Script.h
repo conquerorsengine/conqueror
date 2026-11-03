@@ -230,6 +230,15 @@ namespace cq
         uint32_t entity = 0xFFFFFFFFu;
     };
 
+    // Data Asset sınıflarının temel sınıfı (Unreal UDataAsset, Unity ScriptableObject): CQ_FIELD alanları veri şablonudur,
+    // değerleri .cqdata dosyalarında durur (Content Browser > Create > Data Asset). Sınıf CQ_SCRIPT(...) ile kaydedilir.
+    // Oyunda: auto sword = cq::LoadDataAsset<WeaponData>("Assets/Sword.cqdata"); sword.damage
+    class DataAsset : public Script
+    {
+    public:
+        std::string assetPath;   // yüklendiği .cqdata dosyası
+    };
+
     namespace detail
     {
         enum class FieldType { Bool, Int, Float, Double, String };
@@ -340,6 +349,13 @@ namespace cq
             }
         };
 
+        // Sınıf adına erişim (CQ_SCRIPT_CLASS sınıfın özel kısmında kalsa da: friend), ör. LoadDataAsset<T>
+        template<typename T>
+        struct ClassAccess
+        {
+            static constexpr const char* Name() { return T::ThisScriptName; }
+        };
+
         template<typename C>
         struct ClassRegistrar
         {
@@ -356,7 +372,8 @@ namespace cq
 // Sınıf gövdesinin başına: alan/metot kayıtları için tür adı
 #define CQ_SCRIPT_CLASS(Class) \
     using ThisScriptClass = Class; \
-    static constexpr const char* ThisScriptName = #Class;
+    static constexpr const char* ThisScriptName = #Class; \
+    template<typename> friend struct ::cq::detail::ClassAccess;
 
 // Inspector alanı: tür, ad, varsayılan
 #define CQ_FIELD(Type, Name, Default) \

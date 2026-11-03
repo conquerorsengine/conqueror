@@ -1,3 +1,6 @@
+#include "Renderer/RayTracingShaders.h"
+#include "Renderer/ComputeShaders.h"
+#include "Renderer/CustomRenderTexture.h"
 #include "Renderer/SpriteAtlas.h"
 #include "Renderer.h"
 #include "Particles/ParticleSystem.h"
@@ -49,6 +52,9 @@ namespace Conqueror
         RibbonRenderer::Shutdown();
         GridSystem::Shutdown();
         SpriteAtlases::Shutdown();
+        CustomRenderTextures::Shutdown();
+        ComputeShaders::Shutdown();
+        RayTracingShaders::Shutdown();
         UISystem::Shutdown();
         Lighting2D::Shutdown();
         Billboards::Shutdown();

@@ -19,6 +19,10 @@ script EmberGame : ConquerorScript
     [Tooltip("Time of the recorded solution (s); medal times derive from it")]
     public float demoTime = 10;
 
+    [Header("Controls")]
+    [Tooltip("Holding Jump jumps again as soon as the player lands (the recorded solutions replay without it)")]
+    public bool holdToJump = true;
+
     [Header("Test")]
     public bool autopilot = false;
     public bool autoStart = false;
@@ -27,6 +31,7 @@ script EmberGame : ConquerorScript
     // 0 title card, 1 play, 2 dying, 3 paused, 4 goal reached, 5 results
     public int state = 0;
     public int playTick = 0;
+    public int jumpCount = 0;
     public bool won = false;
     public int deaths = 0;
     public int embers = 0;
@@ -98,6 +103,7 @@ script EmberGame : ConquerorScript
     private float facing = 1;
     private int ride = -1;
     private bool jumpprev = false;
+    private bool groundPrev = false;
     private bool dead = false;
     private int cp = -1;
     private var events = [];
@@ -345,7 +351,10 @@ script EmberGame : ConquerorScript
 
     func PlayerStep(move, jump, dashIn)
     {
-        var jumpPressed = jump && !jumpprev;
+        // Basılı tutulan zıplama yere inince yeniden zıplatır (yalnız oyuncu girdisi: kayıtlı çözümler aynen oynasın)
+        var landed = ground && !groundPrev;
+        groundPrev = ground;
+        var jumpPressed = (jump && !jumpprev) || (holdToJump && !autopilot && jump && landed);
         jumpprev = jump;
         buf = jumpPressed ? BUFFER : buf - DT;
         coyote = ground ? COYOTE : coyote - DT;
@@ -387,6 +396,7 @@ script EmberGame : ConquerorScript
             coyote = 0.0;
             ground = false;
             ride = -1;
+            jumpCount += 1;
             events.Add("jump");
         }
         // Yerçekimi

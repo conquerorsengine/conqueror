@@ -205,10 +205,9 @@ namespace Conqueror::Editor::TileAssetInspector
                     char label[24];
                     snprintf(label, sizeof(label), "Frame %d", i);
                     AssetUI::Row(label);
-                    ImGui::SetNextItemWidth(-30.0f);
-                    changed |= AssetUI::AssetSlot("frame", "Sprite", Images(), d.Frames[(size_t)i]);
-                    ImGui::SameLine();
                     if (ImGui::SmallButton(ICON_FA_XMARK)) remove = i;
+                    ImGui::SameLine();
+                    changed |= AssetUI::AssetSlot("frame", "Sprite", Images(), d.Frames[(size_t)i]);
                     ImGui::PopID();
                 }
                 AssetUI::EndProperties();
@@ -268,10 +267,9 @@ namespace Conqueror::Editor::TileAssetInspector
                 char label[24];
                 snprintf(label, sizeof(label), "Tile %d", i);
                 AssetUI::Row(label);
-                ImGui::SetNextItemWidth(-30.0f);
-                changed |= AssetUI::AssetSlot("tile", "Tile", { GridSystem::TileExtension }, palette.Tiles[(size_t)i]);
-                ImGui::SameLine();
                 if (ImGui::SmallButton(ICON_FA_XMARK)) remove = i;
+                ImGui::SameLine();
+                changed |= AssetUI::AssetSlot("tile", "Tile", { GridSystem::TileExtension }, palette.Tiles[(size_t)i]);
                 ImGui::PopID();
             }
             AssetUI::EndProperties();

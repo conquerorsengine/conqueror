@@ -1,6 +1,7 @@
 #include "Scene/MeshRendererMaterial.h"
 #include "Renderer/Utilities/Renderer3D/Material.h"
 #include "LightmapBaker.h"
+#include "LightmapParameters.h"
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"
 #include "Scene/Components.h"
@@ -29,6 +30,11 @@ namespace Conqueror
         glm::vec3 albedo;
         int meshID;
         float cellUMin, cellUMax, cellVMin, cellVMax;
+        // Lightmap Parameters (nesne başına)
+        float pushoff = 0.02f;
+        float backfaceTolerance = 0.9f;
+        int aaSamples = 1;
+        float indirectScale = 1.0f;
     };
 
     static bool RayTriTest(const glm::vec3& o, const glm::vec3& d,
@@ -149,6 +155,7 @@ namespace Conqueror
             }
 
             auto [tf, mr] = meshView.get<TransformComponent, MeshRendererComponent>(e);
+            if (mr.IsModel()) continue;   // model ağı model döngüsünde
 
             // Realtime modda sadece RealtimeGI=true olan entity'ler
             if (m_RealtimeMode && !mr.RealtimeGI) continue;
@@ -164,6 +171,9 @@ namespace Conqueror
             }
             if (!mesh) continue;
             glm::vec3 alb = MeshRendererMaterial::Shared(mr).Albedo;
+            LightmapParameters lp;
+            if (!LightmapParameterAssets::Load(mr.LightmapParameters, lp))
+                LightmapParameterAssets::Load(scene->GetRenderSettings().Bake.DefaultLightmapParameters, lp);
             const auto& vs = mesh->GetVertices();
             const auto& is = mesh->GetIndices();
             for (size_t i = 0; i + 2 < is.size(); i += 3)
@@ -180,6 +190,10 @@ namespace Conqueror
                 }
                 bt.albedo = alb;
                 bt.meshID = meshCounter;
+                bt.pushoff = lp.Pushoff;
+                bt.backfaceTolerance = lp.BackfaceTolerance;
+                bt.aaSamples = lp.AntiAliasingSamples;
+                bt.indirectScale = lp.IndirectSampleScale;
                 // uv0/uv1/uv2 = mesh'in original UV1'i (cube icin her face 0-1 arasi)
                 bt.uv0 = vs[is[i+0]].TexCoords;
                 bt.uv1 = vs[is[i+1]].TexCoords;
@@ -189,7 +203,7 @@ namespace Conqueror
             meshCounter++;
         }
 
-        auto modelView = reg.view<TransformComponent, ModelComponent>();
+        auto modelView = reg.view<TransformComponent, MeshRendererComponent>();
         for (auto e : modelView)
         {
             if (reg.all_of<TagComponent>(e))
@@ -198,7 +212,7 @@ namespace Conqueror
                 if (!tc.IsStatic) continue;
             }
 
-            auto [tf, mc] = modelView.get<TransformComponent, ModelComponent>(e);
+            auto [tf, mc] = modelView.get<TransformComponent, MeshRendererComponent>(e);
             if (!mc.ModelData) continue;
             if (m_RealtimeMode && !mc.RealtimeGI) continue;
             glm::mat4 wt = tf.WorldTransform;
@@ -226,6 +240,14 @@ namespace Conqueror
                     }
                     bt.albedo = alb;
                     bt.meshID = meshCounter;
+                    {
+                        LightmapParameters lp;
+                        LightmapParameterAssets::Load(scene->GetRenderSettings().Bake.DefaultLightmapParameters, lp);
+                        bt.pushoff = lp.Pushoff;
+                        bt.backfaceTolerance = lp.BackfaceTolerance;
+                        bt.aaSamples = lp.AntiAliasingSamples;
+                        bt.indirectScale = lp.IndirectSampleScale;
+                    }
                     bt.uv0 = vs[is[i+0]].TexCoords;
                     bt.uv1 = vs[is[i+1]].TexCoords;
                     bt.uv2 = vs[is[i+2]].TexCoords;
@@ -374,15 +396,24 @@ namespace Conqueror
                     if (!BaryTest(glm::vec2(pu, pv), tri.uv0, tri.uv1, tri.uv2, b0, b1, b2))
                         continue;
 
-                    glm::vec3 wp = tri.v0 * b0 + tri.v1 * b1 + tri.v2 * b2;
-                    glm::vec3 n = glm::normalize(tri.n0 * b0 + tri.n1 * b1 + tri.n2 * b2);
+                    // Anti-aliasing: texel içinde n x n alt örnek (aynı üçgenin düzleminde)
+                    const int aa = std::max(1, (int)std::lround(std::sqrt((float)tri.aaSamples)));
+                    glm::vec3 sum(0.0f);
+                    for (int sy = 0; sy < aa; ++sy)
+                        for (int sx = 0; sx < aa; ++sx)
+                        {
+                            glm::vec2 uv(((float)px + ((float)sx + 0.5f) / (float)aa) / (float)W, ((float)py + ((float)sy + 0.5f) / (float)aa) / (float)H);
+                            float c0, c1, c2;
+                            if (!BaryTest(uv, tri.uv0, tri.uv1, tri.uv2, c0, c1, c2)) { c0 = b0; c1 = b1; c2 = b2; }
+                            glm::vec3 wp = tri.v0 * c0 + tri.v1 * c1 + tri.v2 * c2;
+                            glm::vec3 n = glm::normalize(tri.n0 * c0 + tri.n1 * c1 + tri.n2 * c2);
+                            // Direkt isik + ambient
+                            bool shadow = AnyHitExcl(wp + n * tri.pushoff, -lightDir, tris, 500, tri.meshID);
+                            float direct = shadow ? 0.0f : std::max(0.0f, glm::dot(n, -lightDir));
+                            sum += ambient + lightColor * lightIntensity * 0.2f * direct;
+                        }
 
-                    // Direkt isik + ambient
-                    bool shadow = AnyHitExcl(wp + n * 0.02f, -lightDir, tris, 500, tri.meshID);
-                    float direct = shadow ? 0.0f : std::max(0.0f, glm::dot(n, -lightDir));
-                    glm::vec3 light = ambient + lightColor * lightIntensity * 0.2f * direct;
-
-                    m_Atlas.Texels[py * W + px] = light;
+                    m_Atlas.Texels[py * W + px] = sum / (float)(aa * aa);
                     break;
                 }
             }
@@ -391,6 +422,7 @@ namespace Conqueror
         // Indirect (1 bounce)
         ReportProgress(0.4f, "Indirect lighting...");
         std::vector<glm::vec3> ind(W * H, glm::vec3(0));
+        std::vector<uint8_t> invalid(W * H, 0);   // Backface Tolerance: arka yüz gören texel
         for (uint32_t py = 0; py < H; py++)
         {
             if (py % 16 == 0) ReportProgress(0.4f + 0.3f * ((float)py / (float)H), "Indirect: " + std::to_string(py) + "/" + std::to_string(H));
@@ -406,16 +438,20 @@ namespace Conqueror
                     glm::vec3 wp = tri.v0 * b0 + tri.v1 * b1 + tri.v2 * b2;
                     glm::vec3 n = glm::normalize(tri.n0 * b0 + tri.n1 * b1 + tri.n2 * b2);
                     glm::vec3 il(0);
-                    int samples = std::min(m_Settings.IndirectSamples, 64);
+                    int samples = std::max(1, (int)((float)std::min(m_Settings.IndirectSamples, 64) * tri.indirectScale));
+                    int hits = 0, backHits = 0;
                     for (int s = 0; s < samples; s++)
                     {
                         glm::vec3 dir = CosHemi(n, gen);
                         float ct; int ci; float cu, cv;
-                        if (Closest(wp + n * 0.02f, dir, tris, ct, ci, cu, cv))
+                        if (Closest(wp + n * tri.pushoff, dir, tris, ct, ci, cu, cv))
                         {
                             auto& ht = tris[ci];
                             glm::vec3 hp = ht.v0 * (1 - cu - cv) + ht.v1 * cu + ht.v2 * cv;
                             glm::vec3 hn = glm::normalize(ht.n0 * (1 - cu - cv) + ht.n1 * cu + ht.n2 * cv);
+                            ++hits;
+                            if (glm::dot(hn, dir) > 0.0f)
+                                ++backHits;
                             bool sh = AnyHitExcl(hp + hn * 0.02f, -lightDir, tris, 500, ht.meshID);
                             float nl = std::max(0.0f, glm::dot(hn, -lightDir));
                             glm::vec3 hitLight = sh ? glm::vec3(1.0f) : lightColor * lightIntensity * nl + glm::vec3(1.0f);
@@ -423,12 +459,48 @@ namespace Conqueror
                         }
                     }
                     ind[py * W + px] = il / (float)samples;
+                    // Ön yüze çarpan oran toleransın altındaysa texel geometrinin içinde: geçersiz
+                    if (hits > 0 && (float)(hits - backHits) / (float)hits < tri.backfaceTolerance)
+                        invalid[py * W + px] = 1;
                     break;
                 }
             }
         }
         for (size_t i = 0; i < m_Atlas.Texels.size(); i++)
             m_Atlas.Texels[i] += ind[i] * 1.0f;
+        // Geçersiz texel'ler geçerli komşularının ortalamasıyla doldurulur (sızıntı yerine)
+        for (int pass = 0; pass < 4; ++pass)
+        {
+            bool any = false;
+            std::vector<uint8_t> next = invalid;
+            for (uint32_t y = 0; y < H; ++y)
+                for (uint32_t x = 0; x < W; ++x)
+                {
+                    if (!invalid[y * W + x])
+                        continue;
+                    glm::vec3 acc(0.0f);
+                    int n = 0;
+                    for (int dy = -1; dy <= 1; ++dy)
+                        for (int dx = -1; dx <= 1; ++dx)
+                        {
+                            const int nx = (int)x + dx, ny = (int)y + dy;
+                            if ((dx || dy) && nx >= 0 && ny >= 0 && nx < (int)W && ny < (int)H && !invalid[(size_t)ny * W + nx])
+                            {
+                                acc += m_Atlas.Texels[(size_t)ny * W + nx];
+                                ++n;
+                            }
+                        }
+                    if (n > 0)
+                    {
+                        m_Atlas.Texels[y * W + x] = acc / (float)n;
+                        next[y * W + x] = 0;
+                        any = true;
+                    }
+                }
+            invalid.swap(next);
+            if (!any)
+                break;
+        }
 
         // IndirectIntensity + AlbedoBoost uygula
         for (size_t i = 0; i < m_Atlas.Texels.size(); i++)
@@ -462,7 +534,7 @@ namespace Conqueror
                         for (int s = 0; s < 32; s++)
                         {
                             glm::vec3 dir = CosHemi(n, gen);
-                            if (AnyHitExcl(wp + n * 0.02f, dir, tris, 2.0f, tri.meshID))
+                            if (AnyHitExcl(wp + n * tri.pushoff, dir, tris, 2.0f, tri.meshID))
                                 ao += 1.0f;
                         }
                         m_Atlas.Texels[py * W + px] *= (1.0f - ao / 32.0f * 0.7f);

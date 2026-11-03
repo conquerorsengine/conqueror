@@ -1,8 +1,28 @@
 #include "AssetInspector.h"
+#include "InspectorPanel.h"
 #include "Assets/SceneTemplate.h"
 #include "Assets/AssetUI.h"
 #include "Assets/TileAssetInspector.h"
 #include "Assets/SpriteAtlasInspector.h"
+#include "Assets/VolumeProfileInspector.h"
+#include "Assets/LightingAssetsInspector.h"
+#include "Assets/LensFlareInspector.h"
+#include "Assets/CustomRenderTextureInspector.h"
+#include "Renderer/ComputeShaders.h"
+#include "Renderer/RayTracingShaders.h"
+#include "Assets/ShaderVariantInspector.h"
+#include "Assets/AudioAssetsInspector.h"
+#include "Assets/TerrainAssetsInspector.h"
+#include "Assets/SignalReceiverInspector.h"
+#include "Assets/InputActionsInspector.h"
+#include "Assets/DataAssetInspector.h"
+#include "Assets/ModelInspector.h"
+#include "Assets/CurveInspector.h"
+#include "Assets/CubemapInspector.h"
+#include "Assets/AvatarMaskInspector.h"
+#include "Assets/AnimatorOverrideInspector.h"
+#include "Assets/BlendSpaceInspector.h"
+#include "Assets/AnimationClipInspector.h"
 #include "EditorState.h"
 #include <yaml-cpp/yaml.h>
 #include "Core/PhysicsSystem/PhysicsMaterial.h"
@@ -645,6 +665,153 @@ namespace Conqueror::Editor::AssetInspector
         if (Lower(fs::path(path).extension().string()) == ".cqmat")
         {
             MaterialEditorUI::DrawAssetInspector(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".cqblendspace")
+        {
+            BlendSpaceInspector::Draw(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".cqoverride")
+        {
+            AnimatorOverrideInspector::Draw(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".cqmask")
+        {
+            AvatarMaskInspector::Draw(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".cqanim")
+        {
+            AnimationClipInspector::Draw(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".cqcubemap")
+        {
+            CubemapInspector::Draw(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".cqcurve")
+        {
+            CurveInspector::Draw(path);
+            return;
+        }
+        if (ModelInspector::IsModel(path))
+        {
+            ModelInspector::Draw(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".cqdata")
+        {
+            DataAssetInspector::Draw(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".cqinputactions")
+        {
+            InputActionsInspector::Draw(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".cqsignal")
+        {
+            SignalReceiverInspector::DrawAsset(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".cqterrainlayer")
+        {
+            TerrainAssetsInspector::DrawLayer(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".cqbrush")
+        {
+            TerrainAssetsInspector::DrawBrush(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".cqaudiorandom")
+        {
+            AudioAssetsInspector::DrawRandomContainer(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".cqmixer")
+        {
+            AudioAssetsInspector::DrawMixer(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".cqraytrace")
+        {
+            ImGui::TextColored(UI::Colors::Accent, ICON_FA_WAND_MAGIC_SPARKLES);
+            ImGui::SameLine();
+            ImGui::TextUnformatted(fs::path(path).filename().string().c_str());
+            ImGui::SameLine();
+            ImGui::TextDisabled("Ray Tracing Shader");
+            ImGui::Separator();
+            const std::string error = RayTracingShaders::GetError(path);
+            if (!error.empty())
+                UI::InfoBox(error.c_str(), UI::InfoType::Error);
+            else
+                UI::InfoBox("Compiled.", UI::InfoType::Success);
+            if (RayTracingShaders::GetTriangleCount() > 0)
+                UI::Text("Last acceleration structure", "%d triangles, %d BVH nodes", RayTracingShaders::GetTriangleCount(), RayTracingShaders::GetNodeCount());
+            ImGui::TextWrapped("Run it from a script: RayTracingDispatch(\"%s\", \"Assets/<render texture>.cqrt\"). The active scene's "
+                               "Mesh Renderers form the acceleration structure; the primary camera generates the rays.",
+                               AssetUI::ToProjectRelative(path).c_str());
+            if (ImGui::Button(ICON_FA_FILE_CODE "  Edit") && InspectorPanel::s_OpenCodeEditor)
+                InspectorPanel::s_OpenCodeEditor(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".cqshadervariants")
+        {
+            ShaderVariantInspector::Draw(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".comp")
+        {
+            ImGui::TextColored(UI::Colors::Accent, ICON_FA_MICROCHIP);
+            ImGui::SameLine();
+            ImGui::TextUnformatted(fs::path(path).filename().string().c_str());
+            ImGui::SameLine();
+            ImGui::TextDisabled("Compute Shader");
+            ImGui::Separator();
+            const auto info = ComputeShaders::Inspect(path);
+            if (!info.Compiled)
+                UI::InfoBox(info.Error.empty() ? "Not compiled." : info.Error.c_str(), UI::InfoType::Error);
+            else
+            {
+                UI::Text("Thread Group Size", "%d x %d x %d", info.GroupSize.x, info.GroupSize.y, info.GroupSize.z);
+                UI::SubHeader("Parameters");
+                for (const auto& [name, type] : info.Uniforms)
+                    UI::Text(name.c_str(), "%s", type.c_str());
+            }
+            ImGui::Spacing();
+            ImGui::TextWrapped("Run it from a script: ComputeSetTexture / ComputeSetFloat / ComputeSetInt / ComputeSetVector, "
+                               "then ComputeDispatch(shader, groupsX, groupsY, groupsZ). image2D parameters write into Render Textures.");
+            if (ImGui::Button(ICON_FA_FILE_CODE "  Edit") && InspectorPanel::s_OpenCodeEditor)
+                InspectorPanel::s_OpenCodeEditor(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".cqcrt")
+        {
+            CustomRenderTextureInspector::Draw(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".cqflare")
+        {
+            LensFlareInspector::Draw(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".cqlighting")
+        {
+            LightingAssetsInspector::DrawLightingSettings(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".cqlmparams")
+        {
+            LightingAssetsInspector::DrawLightmapParameters(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".cqvolume")
+        {
+            VolumeProfileInspector::DrawAsset(path);
             return;
         }
         if (Lower(fs::path(path).extension().string()) == ".cqspriteatlas")

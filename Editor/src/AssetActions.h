@@ -22,6 +22,8 @@ namespace Conqueror::Editor::AssetActions
     // Nesneye uygulanan varlıklar (yeni nesne oluşturmaz): .cqmat -> Mesh Renderer malzemesi, .cqphysmat -> çarpıştırıcı
     bool IsAppliedToEntity(const std::string& path);
     bool ApplyToEntity(Entity entity, const std::string& path);
+    // Betik yalnız Data Asset sınıfı tanımlıyorsa nesneye eklenmez: Unity'nin "Can't add script" penceresi gösterilir, true döner
+    bool RefuseDataScript(const std::string& scriptPath);
     // Alt ağacı klasöre prefab olarak kaydet (benzersiz ad); kaynak varlık örneğe dönüşür. Yazılan yol döner (hata: boş)
     std::filesystem::path CreatePrefab(Entity root, const std::filesystem::path& directory);
 }

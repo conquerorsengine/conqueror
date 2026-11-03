@@ -1,0 +1,24 @@
+Material:
+  Name: Sand 1
+  Albedo: [0.95, 0.78, 0.62]
+  Opacity: 1
+  Metallic: 0
+  Roughness: 0.95
+  AO: 1
+  EmissionColor: [0, 0, 0]
+  EmissionStrength: 0
+  Tiling: [0.125, 0.125]
+  Offset: [0, 0]
+  WorldAligned: true
+  AlignToObject: true
+  RenderMode: 0
+  Culling: 0
+  AlphaClip: 0.5
+  AlbedoMap: Assets/Textures/sand.png
+  NextGraphNodeID: 1
+  NextGraphLinkID: 1
+  GraphInitialized: false
+  GraphNodes:
+    []
+  GraphLinks:
+    []

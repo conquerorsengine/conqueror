@@ -1,3 +1,7 @@
+#include <sstream>
+#include <fstream>
+#include <filesystem>
+#include "Core/Serialization/SceneSerializer.h"
 #include "PostProcess.h"
 #include "Core/Profiling/FrameProfiler.h"
 #include "Core/Tiering/QualitySettings.h"
@@ -97,6 +101,7 @@ namespace Conqueror
         LoadShader("SSR", "Engine/src/Shaders/PostProcess/SSR.cqsh");
         LoadShader("VolumetricFog", "Engine/src/Shaders/PostProcess/VolumetricFog.cqsh");
         LoadShader("Clouds", "Engine/src/Shaders/PostProcess/Clouds.cqsh");
+        LoadShader("CloudsResolve", "Engine/src/Shaders/PostProcess/CloudsResolve.cqsh");
         LoadShader("CloudNoise", "Engine/src/Shaders/PostProcess/CloudNoise.cqsh");
         LoadShader("SceneFX", "Engine/src/Shaders/PostProcess/SceneFX.cqsh");
         LoadShader("TAA", "Engine/src/Shaders/PostProcess/TAA.cqsh");
@@ -156,6 +161,8 @@ namespace Conqueror
     PostProcessStack::~PostProcessStack()
     {
         DestroyTarget(m_AO);
+        DestroyTarget(m_AfterPass[0]);
+        DestroyTarget(m_AfterPass[1]);
         DestroyTarget(m_AOBlur);
         for (auto& rt : m_BloomMips) DestroyTarget(rt);
         for (auto& rt : m_BloomUp) DestroyTarget(rt);
@@ -200,9 +207,14 @@ namespace Conqueror
         // Temporal AA kendi kenar yumuşatmasını yapar: MSAA ile birlikte gereksiz maliyet
         if (m_WantTAA)
             samples = 1;
-        // Albedo eki normal ekini gerektirir (ek sırası sabit: 1 normal, 2 albedo)
-        const bool wantNormals = m_WantNormals || m_WantAlbedo;
-        if (m_SceneFramebuffer && m_Width == width && m_Height == height && m_Samples == samples && m_HasNormals == wantNormals && m_HasAlbedo == m_WantAlbedo)
+        // Albedo eki normal ekini gerektirir (ek sırası sabit: 1 normal, 2 albedo). Temporal AA da normal ekinin w'sindeki
+        // hareket bayrağını okur (hareket eden nesne iz bırakmasın)
+        const bool wantNormals = m_WantNormals || m_WantAlbedo || m_WantTAA;
+        // TAA: güneş gölgesi eki (3) de yazılır; ek sırası sabit olduğundan albedo eki (2) de oluşturulur
+        const bool wantShadowMask = m_WantTAA;
+        const bool wantAlbedo = m_WantAlbedo || wantShadowMask;
+        if (m_SceneFramebuffer && m_Width == width && m_Height == height && m_Samples == samples && m_HasNormals == wantNormals &&
+            m_HasAlbedo == wantAlbedo && m_HasShadowMask == wantShadowMask)
             return;
 
         if (m_Width != width || m_Height != height)
@@ -210,18 +222,23 @@ namespace Conqueror
             m_HistoryValid = false;
             m_HasPrevViewProj = false;
             m_GIHistoryValid = false;
+            m_CloudHistoryValid = false;
         }
         m_Width = width;
         m_Height = height;
         m_Samples = samples;
         m_HasNormals = wantNormals;
-        m_HasAlbedo = m_WantAlbedo;
+        m_HasAlbedo = wantAlbedo;
+        m_HasShadowMask = wantShadowMask;
 
         FramebufferSpecification spec;
         spec.Width = width;
         spec.Height = height;
         // SSR / SSGI açıkken ek renk ekleri: PBR shader'ları normal / pürüzlülük / metaliklik ve albedo yazar
-        if (m_HasAlbedo)
+        if (m_HasShadowMask)
+            spec.Attachments = { FramebufferTextureFormat::RGBA16F, FramebufferTextureFormat::RGBA16F, FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::R8,
+                                 FramebufferTextureFormat::Depth };
+        else if (m_HasAlbedo)
             spec.Attachments = { FramebufferTextureFormat::RGBA16F, FramebufferTextureFormat::RGBA16F, FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::Depth };
         else if (m_HasNormals)
             spec.Attachments = { FramebufferTextureFormat::RGBA16F, FramebufferTextureFormat::RGBA16F, FramebufferTextureFormat::Depth };
@@ -271,11 +288,13 @@ namespace Conqueror
         EnsureTargets(width, height);
         m_SceneFramebuffer->Bind();
         s_Current = this;
-        // Temporal AA: Halton(2,3) dizisiyle 8 karelik alt piksel titreşimi
+        m_ReactiveUsed = false;
+        // Temporal AA: Halton(2,3) dizisiyle 16 karelik alt piksel titreşimi. 8 konum küçük nesnelerin / küçük pencerede
+        // kenarların örtüsünü 8 kaba basamağa bölüyordu (hafif merdiven); durunca birikim uzun olduğundan 16'nın ortalaması alınır
         m_JitterActive = m_WantTAA;
         if (m_JitterActive)
         {
-            const uint32_t i = (m_FrameIndex % 8u) + 1u;
+            const uint32_t i = (m_FrameIndex % 16u) + 1u;
             const glm::vec2 pixel(Halton(i, 2) - 0.5f, Halton(i, 3) - 0.5f);
             m_JitterNDC = pixel * 2.0f / glm::vec2((float)m_Width, (float)m_Height);
         }
@@ -293,6 +312,64 @@ namespace Conqueror
             return false;
         outNDC = s_Current->m_JitterNDC;
         return true;
+    }
+
+    const void* PostProcessStack::GetCurrentStack()
+    {
+        return s_Current;
+    }
+
+    uint32_t PostProcessStack::BeginReactiveDraw()
+    {
+        PostProcessStack* st = s_Current;
+        if (!st || !st->m_JitterActive || !st->m_SceneFramebuffer || st->m_Samples > 1)
+            return 0;
+        GLint drawFBO = 0;
+        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFBO);
+        if ((uint32_t)drawFBO != st->m_SceneFramebuffer->GetRendererID())
+            return 0;
+        st->EnsureTarget(st->m_Reactive, st->m_Width, st->m_Height, GL_R8);
+        if (!st->m_ReactiveFramebuffer)
+            glCreateFramebuffers(1, &st->m_ReactiveFramebuffer);
+        // Ekler her seferinde: boyut değişince dokular yeniden oluşur
+        glNamedFramebufferTexture(st->m_ReactiveFramebuffer, GL_COLOR_ATTACHMENT0, st->m_Reactive.Texture, 0);
+        glNamedFramebufferTexture(st->m_ReactiveFramebuffer, GL_DEPTH_ATTACHMENT, st->m_SceneFramebuffer->GetDepthAttachmentRendererID(), 0);
+        if (glCheckNamedFramebufferStatus(st->m_ReactiveFramebuffer, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            return 0;
+        glBindFramebuffer(GL_FRAMEBUFFER, st->m_ReactiveFramebuffer);
+        if (!st->m_ReactiveUsed)
+        {
+            const float zero[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+            glClearBufferfv(GL_COLOR, 0, zero);
+            st->m_ReactiveUsed = true;
+        }
+        return st->m_ReactiveFramebuffer;
+    }
+
+    void PostProcessStack::EndReactiveDraw()
+    {
+        if (s_Current && s_Current->m_SceneFramebuffer)
+            glBindFramebuffer(GL_FRAMEBUFFER, s_Current->m_SceneFramebuffer->GetRendererID());
+    }
+
+    uint32_t PostProcessStack::GetCurrentSceneDepth()
+    {
+        if (!s_Current || !s_Current->m_SceneFramebuffer || s_Current->m_Samples > 1)
+            return 0;
+        GLint drawFBO = 0;
+        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFBO);
+        if ((uint32_t)drawFBO != s_Current->m_SceneFramebuffer->GetRendererID())
+            return 0;
+        return s_Current->m_SceneFramebuffer->GetDepthAttachmentRendererID();
+    }
+
+    uint32_t PostProcessStack::GetSceneShadowMaskTexture() const
+    {
+        if (!m_HasShadowMask)
+            return 0;
+        if (m_ResolvedFramebuffer)
+            return m_ResolvedFramebuffer->GetColorAttachmentRendererID(3);
+        return m_SceneFramebuffer ? m_SceneFramebuffer->GetColorAttachmentRendererID(3) : 0;
     }
 
     uint32_t PostProcessStack::GetSceneNormalTexture() const
@@ -513,8 +590,10 @@ namespace Conqueror
         // Temporal AA HDR'de çözüldü: burada uzamsal AA yok, TAA yumuşaklığını keskinleştirme dengeler
         // (ortografik kamerada TAA yok: FXAA'ya düşer)
         const bool taa = aa == AntiAliasingMode::TAA && m_TAAResolved;
+        // TAA çözüldüyse de FXAA geçişi çalışır ama yalnız hareket eden piksellerde (TAA durum dokusunun hareket payı):
+        // hızlı kayan kenarlarda (duvarın dibinde zıplarken) kalan merdivenlenme yumuşar, durağan görüntü aynen kalır
         if (aa == AntiAliasingMode::TAA)
-            aa = m_TAAResolved ? AntiAliasingMode::None : AntiAliasingMode::FXAA;
+            aa = AntiAliasingMode::FXAA;
         const float sharpenAmount = (taa ? settings.TAASharpness : 0.0f) + (settings.Sharpen ? settings.SharpenAmount : 0.0f);
         const bool doSharpen = !m_PointUpscale && settings.Enabled && sharpenAmount > 0.0f && Valid(sharpen);
         const GLint ldrFilter = m_PointUpscale ? GL_NEAREST : GL_LINEAR;
@@ -561,7 +640,10 @@ namespace Conqueror
             fxaa->Bind();
             fxaa->SetInt("u_ScreenTexture", 0);
             fxaa->SetFloat2("u_InverseScreenSize", invSize);
+            fxaa->SetInt("u_MotionMask", 1);
+            fxaa->SetInt("u_UseMotionMask", taa ? 1 : 0);
             BindTexture(0, m_LDR.Texture);
+            BindTexture(1, taa ? m_TAAState[m_HistoryIndex].Texture : 0);
             PostProcess::DrawFullscreenQuad();
             aaResult = m_Temp.Texture;
         }
@@ -594,6 +676,8 @@ namespace Conqueror
         }
         Renderer::GetStats().PostProcessPasses++;
     }
+
+    namespace { GLuint CompileStage(GLenum type, const std::string& src, std::string& error); }
 
     void PostProcessStack::Render(const PostProcessSettings& settings, const RenderCamera& camera, float time, bool litScene)
     {
@@ -639,6 +723,14 @@ namespace Conqueror
             RunDepthOfField(settings, camera);
         if (fx && settings.MotionBlur)
             RunMotionBlur(settings, camera);
+        // Full Screen Pass (Before Post Processing): HDR sahne rengi üzerinde
+        for (const auto& pass : settings.FullScreenPasses)
+            if (!pass.AfterPostProcess)
+            {
+                RenderTarget& out = NextHDRTarget();
+                if (RunFullScreenPass(pass, m_Source, out, time))
+                    m_Source = out.Texture;
+            }
         m_UseAutoExposure = false;
         if (fx && settings.AutoExposure)
             RunAutoExposure(settings, deltaTime);
@@ -650,7 +742,46 @@ namespace Conqueror
         else
             m_BloomResult = 0;
         RunComposite(settings, time);
-        RunFinal(settings, (uint32_t)outputFBO, outputViewport);
+        const bool afterPasses = std::any_of(settings.FullScreenPasses.begin(), settings.FullScreenPasses.end(),
+                                             [](const FullScreenPassEntry& p) { return p.AfterPostProcess; });
+        if (!afterPasses)
+            RunFinal(settings, (uint32_t)outputFBO, outputViewport);
+        else
+        {
+            // Full Screen Pass (After Post Processing): son görüntü ara hedefe, geçişler, sonra çıktıya kopya
+            const uint32_t w = (uint32_t)std::max(outputViewport[2], 1), h = (uint32_t)std::max(outputViewport[3], 1);
+            EnsureTarget(m_AfterPass[0], w, h, GL_RGBA8);
+            EnsureTarget(m_AfterPass[1], w, h, GL_RGBA8);
+            const int local[4] = { 0, 0, (int)w, (int)h };
+            RunFinal(settings, m_AfterPass[0].Framebuffer, local);
+            int cur = 0;
+            for (const auto& pass : settings.FullScreenPasses)
+                if (pass.AfterPostProcess && RunFullScreenPass(pass, m_AfterPass[cur].Texture, m_AfterPass[1 - cur], time))
+                    cur = 1 - cur;
+            // Çıktıya tam ekran kopya (çıktı tamponunda tamsayı ekler olabilir: blit yerine çizim)
+            static GLuint copyProgram = 0;
+            if (!copyProgram)
+            {
+                std::string err;
+                const char* vs = "#version 450 core\nlayout(location = 0) in vec2 a_Position;\nlayout(location = 1) in vec2 a_TexCoord;\n"
+                                 "out vec2 v_UV;\nvoid main() { v_UV = a_TexCoord; gl_Position = vec4(a_Position, 0.0, 1.0); }\n";
+                const char* fs = "#version 450 core\nin vec2 v_UV;\nlayout(location = 0) out vec4 o_Color;\nuniform sampler2D u_Source;\n"
+                                 "void main() { o_Color = texture(u_Source, v_UV); }\n";
+                GLuint v = CompileStage(GL_VERTEX_SHADER, vs, err), f = CompileStage(GL_FRAGMENT_SHADER, fs, err);
+                copyProgram = glCreateProgram();
+                glAttachShader(copyProgram, v);
+                glAttachShader(copyProgram, f);
+                glLinkProgram(copyProgram);
+                glDeleteShader(v);
+                glDeleteShader(f);
+            }
+            glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)outputFBO);
+            glViewport(outputViewport[0], outputViewport[1], outputViewport[2], outputViewport[3]);
+            glUseProgram(copyProgram);
+            glBindTextureUnit(0, m_AfterPass[cur].Texture);
+            glUniform1i(glGetUniformLocation(copyProgram, "u_Source"), 0);
+            PostProcess::DrawFullscreenQuad();
+        }
 
         // Sonraki kare için: titreşimsiz görüş-izdüşüm (TAA / hareket bulanıklığı yeniden izdüşümü), istekler
         m_PrevViewProj = camera.Projection * camera.View;
@@ -668,6 +799,116 @@ namespace Conqueror
         if (cull) glEnable(GL_CULL_FACE);
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)outputFBO);
         glViewport(outputViewport[0], outputViewport[1], outputViewport[2], outputViewport[3]);
+    }
+
+    namespace
+    {
+        // Image Effect Shader programları (dosya değişince yeniden derlenir)
+        struct FullScreenProgram { GLuint Program = 0; std::filesystem::file_time_type Time{}; std::string Error; };
+        std::unordered_map<std::string, FullScreenProgram>& FullScreenPrograms()
+        {
+            static auto* m = new std::unordered_map<std::string, FullScreenProgram>();
+            return *m;
+        }
+
+        GLuint CompileStage(GLenum type, const std::string& src, std::string& error)
+        {
+            GLuint s = glCreateShader(type);
+            const char* c = src.c_str();
+            glShaderSource(s, 1, &c, nullptr);
+            glCompileShader(s);
+            GLint ok = 0;
+            glGetShaderiv(s, GL_COMPILE_STATUS, &ok);
+            if (!ok)
+            {
+                char log[2048];
+                glGetShaderInfoLog(s, sizeof(log), nullptr, log);
+                error = log;
+                glDeleteShader(s);
+                return 0;
+            }
+            return s;
+        }
+
+        GLuint FullScreenProgramFor(const std::string& path)
+        {
+            const std::string file = SceneSerializer::ResolveAssetPath(path);
+            std::error_code ec;
+            const auto t = std::filesystem::last_write_time(file, ec);
+            if (ec)
+                return 0;
+            auto& p = FullScreenPrograms()[file];
+            if (p.Time == t && (p.Program || !p.Error.empty()))
+                return p.Program;
+            p.Time = t;
+            if (p.Program)
+                glDeleteProgram(p.Program);
+            p.Program = 0;
+            p.Error.clear();
+            std::ifstream f(file);
+            std::stringstream ss;
+            ss << f.rdbuf();
+            const char* vs =
+                "#version 450 core\n"
+                "layout(location = 0) in vec2 a_Position;\nlayout(location = 1) in vec2 a_TexCoord;\nout vec2 v_UV;\n"
+                "void main() { v_UV = a_TexCoord; gl_Position = vec4(a_Position, 0.0, 1.0); }\n";
+            const std::string fs =
+                "#version 450 core\nin vec2 v_UV;\nlayout(location = 0) out vec4 o_Color;\n"
+                "uniform sampler2D u_Source;\nuniform sampler2D u_Depth;\nuniform float u_Time;\nuniform vec2 u_Resolution;\nuniform float u_Intensity;\n"
+                "#line 1\n" + ss.str() +
+                "\nvoid main() { vec4 src = texture(u_Source, v_UV); vec4 fx = Effect(v_UV); o_Color = mix(src, fx, u_Intensity); }\n";
+            GLuint v = CompileStage(GL_VERTEX_SHADER, vs, p.Error);
+            GLuint fr = v ? CompileStage(GL_FRAGMENT_SHADER, fs, p.Error) : 0;
+            if (!v || !fr)
+            {
+                if (v) glDeleteShader(v);
+                CQ_CORE_ERROR("[Full Screen Pass] {0}: {1}", std::filesystem::path(file).filename().string(), p.Error);
+                return 0;
+            }
+            p.Program = glCreateProgram();
+            glAttachShader(p.Program, v);
+            glAttachShader(p.Program, fr);
+            glLinkProgram(p.Program);
+            glDeleteShader(v);
+            glDeleteShader(fr);
+            GLint ok = 0;
+            glGetProgramiv(p.Program, GL_LINK_STATUS, &ok);
+            if (!ok)
+            {
+                char log[2048];
+                glGetProgramInfoLog(p.Program, sizeof(log), nullptr, log);
+                p.Error = log;
+                glDeleteProgram(p.Program);
+                p.Program = 0;
+            }
+            return p.Program;
+        }
+    }
+
+    bool PostProcessStack::RunFullScreenPass(const FullScreenPassEntry& pass, uint32_t source, RenderTarget& target, float time)
+    {
+        GLuint program = FullScreenProgramFor(pass.Shader);
+        if (!program || !source || !target.Framebuffer)
+            return false;
+        glBindFramebuffer(GL_FRAMEBUFFER, target.Framebuffer);
+        glViewport(0, 0, (GLsizei)target.Width, (GLsizei)target.Height);
+        glUseProgram(program);
+        glBindTextureUnit(0, source);
+        glUniform1i(glGetUniformLocation(program, "u_Source"), 0);
+        glBindTextureUnit(1, GetSceneDepthTexture());
+        glUniform1i(glGetUniformLocation(program, "u_Depth"), 1);
+        glUniform1f(glGetUniformLocation(program, "u_Time"), time);
+        glUniform2f(glGetUniformLocation(program, "u_Resolution"), (float)target.Width, (float)target.Height);
+        glUniform1f(glGetUniformLocation(program, "u_Intensity"), pass.Intensity);
+        PostProcess::DrawFullscreenQuad();
+        Renderer::GetStats().PostProcessPasses += 1;
+        return true;
+    }
+
+    std::string PostProcess::GetFullScreenPassError(const std::string& path)
+    {
+        auto it = FullScreenPrograms().find(SceneSerializer::ResolveAssetPath(path));
+        return it == FullScreenPrograms().end() ? std::string() : it->second.Error;
     }
 
     void PostProcessStack::ApplyFXAA()

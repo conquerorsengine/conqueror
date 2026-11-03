@@ -1,4 +1,7 @@
 #include "AudioSource.h"
+#include "Core/Utils/ImportActivity.h"
+
+#include <chrono>
 #include "Core/Project/ProjectSettings.h"
 #include "AudioEngine.h"
 #include "Core/Logging/Log.h"
@@ -41,7 +44,10 @@ namespace Conqueror
         if (!m_IsSpatialized)
             flags |= MA_SOUND_FLAG_NO_SPATIALIZATION;
 
+        const auto importStart = std::chrono::steady_clock::now();
         ma_result result = ma_sound_init_from_file(engine, filepath.c_str(), flags, nullptr, nullptr, m_Sound);
+        ImportActivity::Add(filepath, "Audio", std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - importStart).count(),
+                            result == MA_SUCCESS, result == MA_SUCCESS ? std::string() : std::string("could not be decoded"));
         
         if (result != MA_SUCCESS)
         {

@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 8317960807078444179
+  - Entity: 8317922827153279249
     TagComponent:
       Tag: Directional Light
       GameTag: Untagged
@@ -19,7 +19,7 @@ Entities:
       Intensity: 3.2
       CastShadows: true
       Mode: 0
-  - Entity: 8996090093354081885
+  - Entity: 8996203811538425369
     TagComponent:
       Tag: Floor
       GameTag: Untagged
@@ -55,7 +55,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7806088898715609318
+  - Entity: 7806052670291707310
     TagComponent:
       Tag: Wall North
       GameTag: Untagged
@@ -91,7 +91,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 3606402974413892721
+  - Entity: 3606507613084260489
     TagComponent:
       Tag: Wall South
       GameTag: Untagged
@@ -127,7 +127,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4281250918147056325
+  - Entity: 4281349791895296042
     TagComponent:
       Tag: Wall East
       GameTag: Untagged
@@ -163,7 +163,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2737986907495336568
+  - Entity: 2737959191444171459
     TagComponent:
       Tag: Wall West
       GameTag: Untagged
@@ -199,7 +199,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 3915125464676861333
+  - Entity: 3915094999821257964
     TagComponent:
       Tag: Platform
       GameTag: Untagged
@@ -235,7 +235,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6991479761018513072
+  - Entity: 6991519812005593128
     TagComponent:
       Tag: Ramp
       GameTag: Untagged
@@ -271,7 +271,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5312858138230353704
+  - Entity: 5312971743955460087
     TagComponent:
       Tag: High Platform
       GameTag: Untagged
@@ -307,7 +307,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 775771956151760810
+  - Entity: 775885287070445671
     TagComponent:
       Tag: Steps0
       GameTag: Untagged
@@ -343,7 +343,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1941670690793121536
+  - Entity: 1941707579821279199
     TagComponent:
       Tag: Steps1
       GameTag: Untagged
@@ -379,7 +379,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 681413298100095615
+  - Entity: 681374218571874882
     TagComponent:
       Tag: Steps2
       GameTag: Untagged
@@ -415,7 +415,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 930590742798606758
+  - Entity: 930688956166305704
     TagComponent:
       Tag: Steps3
       GameTag: Untagged
@@ -451,7 +451,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 610493942721940620
+  - Entity: 610394930448635509
     TagComponent:
       Tag: Steps4
       GameTag: Untagged
@@ -487,7 +487,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7437925805381513849
+  - Entity: 7437894799553015502
     TagComponent:
       Tag: Steps5
       GameTag: Untagged
@@ -523,7 +523,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6432218780478121225
+  - Entity: 6432181590970043335
     TagComponent:
       Tag: Steps6
       GameTag: Untagged
@@ -559,7 +559,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6237181235025887407
+  - Entity: 6237077275755955183
     TagComponent:
       Tag: Steps7
       GameTag: Untagged
@@ -595,7 +595,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 5296022205603004680
+  - Entity: 5295995494485944041
     TagComponent:
       Tag: Steps8
       GameTag: Untagged
@@ -631,7 +631,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2867009687115262904
+  - Entity: 2867049051218421407
     TagComponent:
       Tag: Steps9
       GameTag: Untagged
@@ -667,7 +667,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4437488796969422936
+  - Entity: 4437531596706666046
     TagComponent:
       Tag: Steps10
       GameTag: Untagged
@@ -703,7 +703,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6595645945505221341
+  - Entity: 6595546942606026830
     TagComponent:
       Tag: Steps11
       GameTag: Untagged
@@ -739,7 +739,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 3161141193954613447
+  - Entity: 3161182653665941256
     TagComponent:
       Tag: Bridge
       GameTag: Untagged
@@ -775,7 +775,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4370664786799930946
+  - Entity: 4370707715692076565
     TagComponent:
       Tag: Bridge Support
       GameTag: Untagged
@@ -811,7 +811,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 9189476781369378503
+  - Entity: 9189581317189336613
     TagComponent:
       Tag: Block A
       GameTag: Untagged
@@ -847,7 +847,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1155645565423028551
+  - Entity: 1155677370129278287
     TagComponent:
       Tag: Block B
       GameTag: Untagged
@@ -883,7 +883,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6608963057899751011
+  - Entity: 6608934697613564344
     TagComponent:
       Tag: Block C
       GameTag: Untagged
@@ -919,7 +919,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 35578774509435280
+  - Entity: 35467229456143769
     TagComponent:
       Tag: Pillar A
       GameTag: Untagged
@@ -955,7 +955,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 7572579003486250257
+  - Entity: 7572613170559851638
     TagComponent:
       Tag: Pillar B
       GameTag: Untagged
@@ -991,7 +991,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 1212264490840228027
+  - Entity: 1212228975155426824
     TagComponent:
       Tag: Cylinder A
       GameTag: Untagged
@@ -1029,7 +1029,7 @@ Entities:
       Direction: 1
       IsTrigger: false
       Version: 2
-  - Entity: 2482020349963235503
+  - Entity: 2481922849293990664
     TagComponent:
       Tag: Cylinder B
       GameTag: Untagged
@@ -1067,7 +1067,7 @@ Entities:
       Direction: 1
       IsTrigger: false
       Version: 2
-  - Entity: 476226037415819766
+  - Entity: 476118204263494246
     TagComponent:
       Tag: Cylinder C
       GameTag: Untagged
@@ -1105,7 +1105,7 @@ Entities:
       Direction: 1
       IsTrigger: false
       Version: 2
-  - Entity: 7755090753581676468
+  - Entity: 7755191990872899724
     TagComponent:
       Tag: Cube 0
       GameTag: Untagged
@@ -1141,7 +1141,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4235083906620471527
+  - Entity: 4235193079940785477
     TagComponent:
       Tag: Cube 1
       GameTag: Untagged
@@ -1177,7 +1177,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2946154677207438742
+  - Entity: 2946128096141009150
     TagComponent:
       Tag: Cube 2
       GameTag: Untagged
@@ -1213,7 +1213,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6448823090497824262
+  - Entity: 6448791397481817445
     TagComponent:
       Tag: Cube 3
       GameTag: Untagged
@@ -1249,7 +1249,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 6696779887677918533
+  - Entity: 6696811030033342467
     TagComponent:
       Tag: Cube 4
       GameTag: Untagged
@@ -1285,7 +1285,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 2369054009370945766
+  - Entity: 2369163767881659879
     TagComponent:
       Tag: Cube 5
       GameTag: Untagged
@@ -1321,7 +1321,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 8052671781167420755
+  - Entity: 8052631455232326556
     TagComponent:
       Tag: Big Cube
       GameTag: Untagged
@@ -1357,7 +1357,7 @@ Entities:
       Size: [2, 2, 2]
       IsTrigger: false
       Version: 2
-  - Entity: 4361641431791354287
+  - Entity: 4361681473284258936
     TagComponent:
       Tag: Player
       GameTag: Untagged
@@ -1390,7 +1390,7 @@ Entities:
       Fields:
         canAim:
           Bool: false
-  - Entity: 5264359713420924106
+  - Entity: 5264326097333212794
     TagComponent:
       Tag: Mesh
       GameTag: Untagged
@@ -1402,11 +1402,12 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
+    MeshRendererComponent:
+      MeshType: 0
+      Model: Assets/Mannequin/Models/Mannequin_Male.glb
     ConquerorScriptComponent:
       ScriptPath: Assets/Mannequin/Scripts/MannequinAnimation.cqs
       ClassName: ""
-    ModelComponent:
-      FilePath: Assets/Mannequin/Models/Mannequin_Male.glb
     AnimationComponent:
       ControllerPath: Assets/Mannequin/Animations/Mannequin.cqcont
       Speed: 1
@@ -1442,7 +1443,7 @@ Entities:
           FloatValue: 0
           BoolValue: false
           IntValue: 0
-  - Entity: 4679178030671573138
+  - Entity: 4679134827430258125
     TagComponent:
       Tag: CameraBoom
       GameTag: Untagged
@@ -1465,7 +1466,7 @@ Entities:
       UseControlRotation: true
       ControlYaw: 360
       ControlPitch: -12
-  - Entity: 2355743742127933801
+  - Entity: 2355716336836423143
     TagComponent:
       Tag: FollowCamera
       GameTag: Untagged
@@ -1699,9 +1700,9 @@ EditorCamera:
   Yaw: 0
   OrthographicSize: 10
 Hierarchy:
-  - Child: 2355743742127933801
-    Parent: 4679178030671573138
-  - Child: 5264359713420924106
-    Parent: 4361641431791354287
-  - Child: 4679178030671573138
-    Parent: 4361641431791354287
+  - Child: 5264326097333212794
+    Parent: 4361681473284258936
+  - Child: 4679134827430258125
+    Parent: 4361681473284258936
+  - Child: 2355716336836423143
+    Parent: 4679134827430258125

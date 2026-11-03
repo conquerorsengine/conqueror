@@ -25,6 +25,7 @@
 #include <cstdio>
 #include <limits>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace Conqueror
 {
@@ -69,6 +70,7 @@ namespace Conqueror
             float Distance;
             uint32_t VertexColors = 0;   // Mesh Paint tamponu (0 = yok)
             glm::vec3 Tint{ 1.0f };      // örnek renk çarpanı (Model.Tint)
+            bool Moving = false;         // Temporal AA hareket bayrağı
         };
 
         // Kuyruğa alınan opak çizim: çizim anındaki örnek durumu (köşe rengi, renk çarpanı, gölge alma) yakalanır
@@ -83,6 +85,7 @@ namespace Conqueror
             glm::vec3 Tint;
             bool DoubleSided;
             bool ReceiveShadows;
+            bool Moving;                 // Temporal AA hareket bayrağı
         };
 
         // Mesh Paint: sonraki çizimlerin mesh sırasına göre köşe rengi tamponları
@@ -269,6 +272,11 @@ namespace Conqueror
         EnvironmentMap::GetBRDFLUT();
     }
 
+    namespace
+    {
+        void ReleaseVelocityResources();
+    }
+
     void Renderer3D::Shutdown()
     {
         s_ShadowPass.Shutdown();
@@ -289,6 +297,7 @@ namespace Conqueror
         EnvironmentMap::Shutdown();
         s_PBRShader.reset();
         s_PBRSkinnedShader.reset();
+        ReleaseVelocityResources();   // hareket kayıtları meshleri / modelleri canlı tutar: GL bağlamı kapanmadan bırakılır
         s_UnlitShader.reset();
         s_TerrainShader.reset();
         s_TerrainWhite.reset();
@@ -302,6 +311,323 @@ namespace Conqueror
         s_SphereMesh.reset();
         s_ConeMesh.reset();
         s_ArrowMesh.reset();
+    }
+
+    // ------------------------------------------------------------------ Hareket maskesi (Temporal AA)
+    // TAA hareketi yalnızca kameradan bilir. Bu karede dönüşümü değişen opak meshler ve animasyonlu modeller G-buffer'a
+    // piksel hassasiyetinde "hareketli" bayrağı yazar (normal ekinin w'si 2 yerine 4 + metalik); saydam nesneler ve
+    // parçacıklar G-buffer'a yazmadığından onların ekran dikdörtgenleri ayrıca verilir. TAA hareketli yerde geçmişi
+    // sıkı kırpar (hareket eden nesne iz bırakmaz), hareketsiz yerde geçmişe güvenir (alt piksel çizgiler yanıp
+    // sönmez). Görünüm (sahne hedefi) başına izlenir; nesne kimliği = mesh + bu karedeki kaçıncı çizimi olduğu.
+    namespace
+    {
+        struct MotionTrack
+        {
+            std::unordered_map<uint64_t, glm::mat4> Prev, Cur;
+            std::unordered_map<const void*, uint32_t> Occurrence;
+            std::vector<glm::vec4> LastRects;   // önceki karenin dikdörtgenleri (nesnenin ayrıldığı yer)
+            std::vector<glm::vec4> Rects;       // bu kare
+            // Hareket eden opak nesnelerin dünya kutuları (bu ve önceki kare; min, max çifti): TAA bunların gölge hacmindeki
+            // gölgeli piksellerde geçmişe güvenmez (gölge eski yerinde iz bırakmaz, yeni yerine gecikmeden geçer)
+            std::vector<glm::vec4> LastShadowBoxes;
+            std::vector<glm::vec4> ShadowBoxes;
+            // Nesne hareket vektörü çizimleri (bu kare): katı meshler önceki dönüşümleriyle, animasyonlu modeller bu karenin
+            // kemikleriyle
+            struct VelocityDraw
+            {
+                std::shared_ptr<Mesh> MeshRef;   // LOD meshini canlı tutar
+                const Mesh* Draw = nullptr;
+                glm::mat4 Cur{ 1.0f }, Prev{ 1.0f };
+                int Cull = 1;                    // 0 kapalı, 1 arka, 2 ön
+                bool Exact = true;
+            };
+            struct SkinnedVelocityDraw
+            {
+                std::shared_ptr<Model> ModelRef;
+                glm::mat4 Cur{ 1.0f }, Prev{ 1.0f };
+                std::vector<glm::mat4> Bones;
+            };
+            std::vector<VelocityDraw> Velocity;
+            std::vector<SkinnedVelocityDraw> SkinnedVelocity;
+            std::unordered_map<uint64_t, glm::mat4> PrevSkinned, CurSkinned;
+            std::unordered_map<const void*, uint32_t> SkinnedOccurrence;
+        };
+        std::unordered_map<const void*, MotionTrack> s_Motion;
+        MotionTrack* s_MotionCur = nullptr;
+        glm::mat4 s_MotionViewProj{ 1.0f };
+        bool s_QueuedMoving = false;   // kuyruktan çizilen öğenin hareket bayrağı
+        bool s_DrawCastsShadows = true;   // çizilen nesne gölge düşürüyor mu (gölge kutusu yalnız düşürenlere)
+
+        // Kutunun yakın düzlemin önündeki kısmının ekran dikdörtgeni (kenarlar yakın düzlemde kırpılır)
+        void AddMotionBox(const glm::vec3& c, const glm::vec3& e)
+        {
+            if (!s_MotionCur)
+                return;
+            constexpr float kNearW = 0.01f;
+            glm::vec4 clip[8];
+            for (int i = 0; i < 8; ++i)
+            {
+                const glm::vec3 p = c + e * glm::vec3((i & 1) ? 1.0f : -1.0f, (i & 2) ? 1.0f : -1.0f, (i & 4) ? 1.0f : -1.0f);
+                clip[i] = s_MotionViewProj * glm::vec4(p, 1.0f);
+            }
+            glm::vec2 lo(1e9f), hi(-1e9f);
+            bool any = false;
+            auto include = [&](const glm::vec4& q) {
+                const glm::vec2 uv = glm::vec2(q) / q.w * 0.5f + 0.5f;
+                lo = glm::min(lo, uv);
+                hi = glm::max(hi, uv);
+                any = true;
+            };
+            for (int i = 0; i < 8; ++i)
+                if (clip[i].w > kNearW)
+                    include(clip[i]);
+            // 12 kenar: bir ucu önde bir ucu arkada olanın yakın düzlemle kesişimi
+            for (int i = 0; i < 8; ++i)
+                for (int bit = 1; bit < 8; bit <<= 1)
+                {
+                    const int j = i | bit;
+                    if (j == i)
+                        continue;
+                    const glm::vec4& a = clip[i];
+                    const glm::vec4& b = clip[j];
+                    if ((a.w > kNearW) == (b.w > kNearW))
+                        continue;
+                    const float t = (kNearW - a.w) / (b.w - a.w);
+                    include(a + (b - a) * t);
+                }
+            if (!any)
+                return;
+            lo = glm::clamp(lo, glm::vec2(0.0f), glm::vec2(1.0f));
+            hi = glm::clamp(hi, glm::vec2(0.0f), glm::vec2(1.0f));
+            if (hi.x <= lo.x || hi.y <= lo.y)
+                return;
+            s_MotionCur->Rects.push_back(glm::vec4(lo, hi));
+        }
+
+        // Hareket eden kutu gölge düşürür: dünya kutusu, gölge süzgecinin yumuşattığı kenar payıyla saklanır. Gölgenin nereye
+        // düştüğü TAA'da piksel piksel bulunur (noktadan güneşe ışın bu kutuya çarpıyor mu); zemin yüksekliği tahmin edilmez.
+        void AddShadowBox(const glm::vec3& c, const glm::vec3& e)
+        {
+            if (!s_MotionCur || !s || !s->HasSun || !s_DrawCastsShadows)
+                return;
+            const float margin = 0.15f + 0.1f * std::max(e.x, std::max(e.y, e.z));
+            s_MotionCur->ShadowBoxes.push_back(glm::vec4(c - e - margin, 0.0f));
+            s_MotionCur->ShadowBoxes.push_back(glm::vec4(c + e + margin, 0.0f));
+        }
+
+        // Nesne bu karede önceki kareye göre hareket etti mi (yeni beliren nesne de hareketli). prevOut: önceki dönüşüm
+        // (yeni beliren nesnede yok)
+        bool TrackMeshMotion(const void* mesh, const glm::mat4& transform, const glm::mat4** prevOut = nullptr)
+        {
+            if (prevOut)
+                *prevOut = nullptr;
+            if (!s_MotionCur)
+                return false;
+            const uint32_t occurrence = s_MotionCur->Occurrence[mesh]++;
+            const uint64_t key = ((uint64_t)(uintptr_t)mesh * 0x9E3779B97F4A7C15ull) ^ ((uint64_t)occurrence * 0xC2B2AE3D27D4EB4Full);
+            s_MotionCur->Cur[key] = transform;
+            auto it = s_MotionCur->Prev.find(key);
+            if (it == s_MotionCur->Prev.end())
+                return true;
+            const glm::mat4& prev = it->second;
+            if (prevOut)
+                *prevOut = &prev;
+            for (int col = 0; col < 3; ++col)
+                for (int row = 0; row < 3; ++row)
+                    if (std::abs(prev[col][row] - transform[col][row]) > 1e-5f)
+                        return true;
+            for (int row = 0; row < 3; ++row)
+                if (std::abs(prev[3][row] - transform[3][row]) > 1e-4f)
+                    return true;
+            return false;
+        }
+    }
+
+    void Renderer3D::MarkMovingBounds(const glm::vec3& center, const glm::vec3& extents)
+    {
+        AddMotionBox(center, extents);
+    }
+
+    bool Renderer3D::HasVelocityDraws(const void* view)
+    {
+        auto it = s_Motion.find(view);
+        return it != s_Motion.end() && (!it->second.Velocity.empty() || !it->second.SkinnedVelocity.empty());
+    }
+
+    namespace
+    {
+        std::shared_ptr<Shader> s_VelocityShader, s_VelocitySkinnedShader;
+
+        void ReleaseVelocityResources()
+        {
+            s_VelocityShader.reset();
+            s_VelocitySkinnedShader.reset();
+            s_Motion.clear();
+            s_MotionCur = nullptr;
+        }
+    }
+
+    bool Renderer3D::RenderVelocity(const void* view, const glm::mat4& jitteredViewProj, const glm::mat4& viewProj, const glm::mat4& prevViewProj)
+    {
+        auto it = s_Motion.find(view);
+        if (it == s_Motion.end() || (it->second.Velocity.empty() && it->second.SkinnedVelocity.empty()))
+            return false;
+        if (!s_VelocityShader)
+            s_VelocityShader = Shader::Create("Engine/src/Shaders/3D/Velocity.cqsh");
+        if (!s_VelocitySkinnedShader)
+            s_VelocitySkinnedShader = Shader::Create("Engine/src/Shaders/3D/VelocitySkinned.cqsh");
+        // Durum: sahne derinliğine LEQUAL (biraz öne çekilmiş), derinlik / harmanlama yazılmaz; çağıran çerçeve tamponunu bağlar
+        GLboolean depthTest = glIsEnabled(GL_DEPTH_TEST), cullFace = glIsEnabled(GL_CULL_FACE), blend = glIsEnabled(GL_BLEND);
+        GLboolean offsetFill = glIsEnabled(GL_POLYGON_OFFSET_FILL);
+        GLint depthFunc = GL_LESS, cullMode = GL_BACK;
+        GLboolean depthMask = GL_TRUE;
+        glGetIntegerv(GL_DEPTH_FUNC, &depthFunc);
+        glGetIntegerv(GL_CULL_FACE_MODE, &cullMode);
+        glGetBooleanv(GL_DEPTH_WRITEMASK, &depthMask);
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LEQUAL);
+        glDepthMask(GL_FALSE);
+        glDisable(GL_BLEND);
+        glEnable(GL_POLYGON_OFFSET_FILL);
+        glPolygonOffset(-1.0f, -1.0f);
+        bool drew = false;
+        auto setCull = [](int cull) {
+            if (cull == 0)
+                glDisable(GL_CULL_FACE);
+            else
+            {
+                glEnable(GL_CULL_FACE);
+                glCullFace(cull == 2 ? GL_FRONT : GL_BACK);
+            }
+        };
+        if (s_VelocityShader && s_VelocityShader->IsValid())
+        {
+            auto& sh = s_VelocityShader;
+            sh->Bind();
+            sh->SetMat4("u_ViewProjJittered", jitteredViewProj);
+            sh->SetMat4("u_ViewProj", viewProj);
+            sh->SetMat4("u_PrevViewProj", prevViewProj);
+            for (const auto& d : it->second.Velocity)
+            {
+                if (!d.Draw || !d.Draw->GetVertexArray())
+                    continue;
+                setCull(d.Cull);
+                sh->SetMat4("u_Transform", d.Cur);
+                sh->SetMat4("u_PrevTransform", d.Prev);
+                sh->SetFloat("u_Exact", d.Exact ? 1.0f : 0.5f);
+                RenderCommand::DrawIndexed(d.Draw->GetVertexArray(), d.Draw->GetIndexCount());
+                drew = true;
+            }
+        }
+        if (s_VelocitySkinnedShader && s_VelocitySkinnedShader->IsValid())
+        {
+            auto& sh = s_VelocitySkinnedShader;
+            sh->Bind();
+            sh->SetMat4("u_ViewProjJittered", jitteredViewProj);
+            sh->SetMat4("u_ViewProj", viewProj);
+            sh->SetMat4("u_PrevViewProj", prevViewProj);
+            sh->SetFloat("u_Exact", 0.5f);
+            for (const auto& d : it->second.SkinnedVelocity)
+            {
+                if (!d.ModelRef || d.Bones.empty())
+                    continue;
+                sh->SetMat4("u_Transform", d.Cur);
+                sh->SetMat4("u_PrevTransform", d.Prev);
+                sh->SetMat4Array("u_BoneTransforms", d.Bones.data(), (uint32_t)d.Bones.size());
+                for (size_t i = 0; i < d.ModelRef->SkinnedMeshes.size(); ++i)
+                {
+                    const auto& mesh = d.ModelRef->SkinnedMeshes[i];
+                    if (!mesh || !mesh->GetVertexArray())
+                        continue;
+                    const auto& material = i < d.ModelRef->Materials.size() ? d.ModelRef->Materials[i] : nullptr;
+                    const Material::CullMode cull = material ? material->Culling : Material::CullMode::Back;
+                    setCull(cull == Material::CullMode::Off ? 0 : (cull == Material::CullMode::Front ? 2 : 1));
+                    RenderCommand::DrawIndexed(mesh->GetVertexArray(), mesh->GetIndexCount());
+                    drew = true;
+                }
+            }
+        }
+        // Açılan alan: nesnelerin önceki konumları (bu karenin kamerasıyla) yalnız w kanalına 2 olarak işaretlenir, derinlik
+        // testi yok. Hareketsiz duran nesne kıpırdamaya başladığı ilk karede eski yeri "önceki karede hareket etti" sayılmıyor,
+        // geçmişte orada kalan görüntüsü (yerde yatan hedef levhası) açılan zeminde bir süre iz bırakıyordu
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
+        glColorMaski(0, GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+        if (s_VelocityShader && s_VelocityShader->IsValid())
+        {
+            auto& sh = s_VelocityShader;
+            sh->Bind();
+            sh->SetInt("u_PrevCoverage", 1);
+            for (const auto& d : it->second.Velocity)
+            {
+                if (!d.Draw || !d.Draw->GetVertexArray())
+                    continue;
+                sh->SetMat4("u_Transform", d.Prev);
+                sh->SetMat4("u_PrevTransform", d.Prev);
+                RenderCommand::DrawIndexed(d.Draw->GetVertexArray(), d.Draw->GetIndexCount());
+            }
+            sh->SetInt("u_PrevCoverage", 0);
+        }
+        if (s_VelocitySkinnedShader && s_VelocitySkinnedShader->IsValid())
+        {
+            auto& sh = s_VelocitySkinnedShader;
+            sh->Bind();
+            sh->SetInt("u_PrevCoverage", 1);
+            for (const auto& d : it->second.SkinnedVelocity)
+            {
+                if (!d.ModelRef || d.Bones.empty())
+                    continue;
+                sh->SetMat4("u_Transform", d.Prev);
+                sh->SetMat4("u_PrevTransform", d.Prev);
+                sh->SetMat4Array("u_BoneTransforms", d.Bones.data(), (uint32_t)d.Bones.size());
+                for (const auto& mesh : d.ModelRef->SkinnedMeshes)
+                    if (mesh && mesh->GetVertexArray())
+                        RenderCommand::DrawIndexed(mesh->GetVertexArray(), mesh->GetIndexCount());
+            }
+            sh->SetInt("u_PrevCoverage", 0);
+        }
+        glColorMaski(0, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+        glEnable(GL_DEPTH_TEST);
+        glPolygonOffset(0.0f, 0.0f);
+        if (!offsetFill) glDisable(GL_POLYGON_OFFSET_FILL);
+        glDepthMask(depthMask);
+        glDepthFunc((GLenum)depthFunc);
+        if (!depthTest) glDisable(GL_DEPTH_TEST);
+        if (cullFace) { glEnable(GL_CULL_FACE); glCullFace((GLenum)cullMode); } else glDisable(GL_CULL_FACE);
+        if (blend) glEnable(GL_BLEND);
+        return drew;
+    }
+
+    void Renderer3D::GetMovingRects(const void* view, std::vector<glm::vec4>& out)
+    {
+        out.clear();
+        auto it = s_Motion.find(view);
+        if (it == s_Motion.end())
+            return;
+        out = it->second.Rects;
+        out.insert(out.end(), it->second.LastRects.begin(), it->second.LastRects.end());
+    }
+
+    void Renderer3D::SetDrawCastsShadows(bool castsShadows)
+    {
+        s_DrawCastsShadows = castsShadows;
+    }
+
+    bool Renderer3D::GetMovingShadowBoxes(const void* view, std::vector<glm::vec4>& minMax, glm::vec3& towardSun)
+    {
+        minMax.clear();
+        if (!s || !s->HasSun)
+            return false;
+        const glm::vec3 L = glm::normalize(s->Sun.Direction);
+        if (L.y > -0.05f)
+            return false;   // güneş ufukta / altında
+        towardSun = -L;
+        auto it = s_Motion.find(view);
+        if (it == s_Motion.end())
+            return true;
+        minMax = it->second.ShadowBoxes;
+        minMax.insert(minMax.end(), it->second.LastShadowBoxes.begin(), it->second.LastShadowBoxes.end());
+        return true;
     }
 
     // ------------------------------------------------------------------ Kare
@@ -325,12 +651,31 @@ namespace Conqueror
         }
         // Temporal AA: bu görünümün sahne hedefine çiziliyorsa alt piksel titreşimi (NDC kayması)
         glm::vec2 jitter;
+        s_MotionCur = nullptr;
         if (PostProcessStack::GetCurrentJitter(jitter))
+        {
             for (int c = 0; c < 4; ++c)
             {
                 s->Camera.Projection[c][0] += jitter.x * s->Camera.Projection[c][3];
                 s->Camera.Projection[c][1] += jitter.y * s->Camera.Projection[c][3];
             }
+            // Hareket maskesi bu görünüm için: önceki karenin kutuları / dikdörtgenleri saklanır
+            MotionTrack& track = s_Motion[PostProcessStack::GetCurrentStack()];
+            std::swap(track.Prev, track.Cur);
+            track.Cur.clear();
+            track.Occurrence.clear();
+            track.LastRects.swap(track.Rects);
+            track.Rects.clear();
+            track.LastShadowBoxes.swap(track.ShadowBoxes);
+            track.ShadowBoxes.clear();
+            track.Velocity.clear();
+            track.SkinnedVelocity.clear();
+            std::swap(track.PrevSkinned, track.CurSkinned);
+            track.CurSkinned.clear();
+            track.SkinnedOccurrence.clear();
+            s_MotionCur = &track;
+            s_MotionViewProj = s->Camera.Projection * s->Camera.View;
+        }
         // Proje kalite düzeyi: gölge atlası / kademe / mesafe üst sınırı (Unity Quality Settings)
         {
             const QualityPreset& q = QualitySettings::GetPreset();
@@ -1077,6 +1422,18 @@ namespace Conqueror
     {
         if (!meshIn)
             return;
+        // Hareket (TAA): kimlik kararlı kalsın diye kırpmadan önce; graph malzeme zamanla değişebilir -> hareketli
+        const glm::mat4* prevTransform = nullptr;
+        const bool transformMoved = !fromQueue && TrackMeshMotion(meshIn.get(), transform, &prevTransform);
+        const glm::mat4 prevCopy = prevTransform ? *prevTransform : transform;   // harita sonraki çizimlerde değişebilir
+        const bool moving = fromQueue ? s_QueuedMoving : (transformMoved || (s_MotionCur && materialIn && materialIn->MaterialShader));
+        // Yer değiştiren nesnenin gölgesi de yer değiştirir (kamera görmese de gölgesi görüş alanına düşebilir)
+        if (transformMoved && s_MotionCur && meshIn->GetBoundsRadius() > 0.0f && (!materialIn || materialIn->Rendering != Material::RenderMode::Transparent))
+        {
+            glm::vec3 c, e;
+            TransformBox(transform, meshIn->GetBoundsCenter(), meshIn->GetBoundsExtents(), c, e);
+            AddShadowBox(c, e);
+        }
         // Görüş kırpması: kameranın kesik konisi dışındaki mesh çizilmez, saydam kuyruğa da alınmaz
         if (!fromQueue && !CameraSeesMesh(*meshIn, transform))
             return;
@@ -1089,8 +1446,48 @@ namespace Conqueror
         if (material->Rendering == Material::RenderMode::Transparent && !fromQueue && s->FrameActive)
         {
             float dist = glm::length(glm::vec3(transform[3]) - s->Camera.Position);
-            s->Transparent.push_back({ meshIn, transform, material, doubleSided, dist, CurrentVertexColors(), s->Tint });
+            s->Transparent.push_back({ meshIn, transform, material, doubleSided, dist, CurrentVertexColors(), s->Tint, moving });
+            // Saydamlar G-buffer'a yazmaz: hareketliyse ekran dikdörtgeni
+            if (moving && meshIn->GetBoundsRadius() > 0.0f)
+            {
+                glm::vec3 c, e;
+                TransformBox(transform, meshIn->GetBoundsCenter(), meshIn->GetBoundsExtents(), c, e);
+                AddMotionBox(c, e);
+            }
             return;
+        }
+        // Hareket eden opak nesne: TAA hareket vektörü geçişinde kendi hareketiyle çizilir (önceki konumu biliniyorsa)
+        if (!fromQueue && transformMoved && prevTransform && s_MotionCur && material->Rendering != Material::RenderMode::Transparent)
+        {
+            MotionTrack::VelocityDraw v;
+            v.MeshRef = meshIn;
+            v.Draw = mesh;
+            v.Cur = transform;
+            v.Prev = prevCopy;
+            const Material::CullMode cull = material->Culling;
+            v.Cull = (doubleSided || cull == Material::CullMode::Off) ? 0 : (cull == Material::CullMode::Front ? 2 : 1);
+            v.Exact = !material->MaterialShader;   // graph malzemede köşe hareketi olabilir: yaklaşık
+            s_MotionCur->Velocity.push_back(std::move(v));
+            // Bir karede ekranda büyük sıçrama (ışınlanma, yeniden doğma, hızlı nesne): eski yeri ayrıca bildirilir. Hareketsiz
+            // duran nesne ilk karesinde birden yer değiştirince eski yeri "önceki karede hareket etti" sayılmıyor, geçmişte
+            // orada kalan görüntüsü bir süre iz bırakıyordu (TAA o dikdörtgende sıkı kırpar)
+            if (meshIn->GetBoundsRadius() > 0.0f)
+            {
+                const glm::vec3 lc = meshIn->GetBoundsCenter();
+                const glm::vec4 a = s_MotionViewProj * (transform * glm::vec4(lc, 1.0f));
+                const glm::vec4 b = s_MotionViewProj * (prevCopy * glm::vec4(lc, 1.0f));
+                if (a.w > 0.01f && b.w > 0.01f)
+                {
+                    const glm::vec2 d = (glm::vec2(a) / a.w - glm::vec2(b) / b.w) * 0.5f *
+                                        glm::vec2((float)std::max(s->Camera.ViewportWidth, 1u), (float)std::max(s->Camera.ViewportHeight, 1u));
+                    if (glm::dot(d, d) > 4.0f * 4.0f)
+                    {
+                        glm::vec3 c, e;
+                        TransformBox(prevCopy, meshIn->GetBoundsCenter(), meshIn->GetBoundsExtents(), c, e);
+                        AddMotionBox(c, e);
+                    }
+                }
+            }
         }
         // Opak: kuyruğa (FlushOpaque yakından uzağa çizer)
         if (!fromQueue && s->FrameActive && s_OpaqueSorting)
@@ -1106,7 +1503,7 @@ namespace Conqueror
             const float dist2 = far * far;
             // Alfa kesmeli (discard): erken derinlik testi yapılamaz, opakların derinliği yazıldıktan sonra çizilir
             const uint32_t key = material->Rendering == Material::RenderMode::Cutout ? 1u : 0u;
-            s->Opaque.push_back({ meshIn, transform, material, dist2, key, vertexColors, s->Tint, doubleSided, s->ReceiveShadows });
+            s->Opaque.push_back({ meshIn, transform, material, dist2, key, vertexColors, s->Tint, doubleSided, s->ReceiveShadows, moving });
             return;
         }
 
@@ -1147,7 +1544,11 @@ namespace Conqueror
             glEnableVertexAttribArray(kVertexColorAttrib);
             glVertexAttribPointer(kVertexColorAttrib, 4, GL_UNSIGNED_BYTE, GL_TRUE, 4, nullptr);
         }
+        if (moving)
+            shader->SetFloat("u_MotionFlag", 2.0f);
         RenderCommand::DrawIndexed(mesh->GetVertexArray(), mesh->GetIndexCount());
+        if (moving)
+            shader->SetFloat("u_MotionFlag", 0.0f);   // aynı programı kullanan sonraki çizimler hareketsiz başlar
         if (painted)
         {
             mesh->GetVertexArray()->Bind();
@@ -1499,6 +1900,36 @@ namespace Conqueror
         shader->SetMat4("u_NormalMatrix", glm::mat4(glm::inverseTranspose(glm::mat3(transform))));
         shader->SetMat4Array("u_BoneTransforms", s_Scratch.data(), palette);
         shader->SetFloat3("u_Tint", s->Tint);
+        // Animasyonlu model her karede hareketli (kemikler dönüşüm değişmeden de oynar): TAA bu piksellerde iz bırakmaz
+        shader->SetFloat("u_MotionFlag", s_MotionCur ? 2.0f : 0.0f);
+        // Hareket vektörü: önceki model dönüşümü (aynı modelin kaçıncı çizimi olduğuna göre); kemikler bu karenin
+        if (s_MotionCur)
+        {
+            const uint32_t occurrence = s_MotionCur->SkinnedOccurrence[model.get()]++;
+            const uint64_t key = ((uint64_t)(uintptr_t)model.get() * 0x9E3779B97F4A7C15ull) ^ ((uint64_t)occurrence * 0xC2B2AE3D27D4EB4Full);
+            s_MotionCur->CurSkinned[key] = transform;
+            auto prev = s_MotionCur->PrevSkinned.find(key);
+            if (prev != s_MotionCur->PrevSkinned.end())
+            {
+                MotionTrack::SkinnedVelocityDraw v;
+                v.ModelRef = model;
+                v.Cur = transform;
+                v.Prev = prev->second;
+                v.Bones.assign(s_Scratch.begin(), s_Scratch.begin() + palette);
+                s_MotionCur->SkinnedVelocity.push_back(std::move(v));
+            }
+        }
+        // Gölgesi de her karede değişir
+        if (s_MotionCur)
+        {
+            glm::vec3 center, extents;
+            if (SkinnedModelBounds(*model, s_Scratch.data(), palette, palette, center, extents))
+            {
+                glm::vec3 worldCenter, worldExtents;
+                TransformBox(transform, center, extents, worldCenter, worldExtents);
+                AddShadowBox(worldCenter, worldExtents);
+            }
+        }
 
         for (size_t i = 0; i < model->SkinnedMeshes.size(); ++i)
         {
@@ -1518,6 +1949,7 @@ namespace Conqueror
             stats.Vertices += mesh->GetVertexCount();
             stats.Triangles += mesh->GetIndexCount() / 3;
         }
+        shader->SetFloat("u_MotionFlag", 0.0f);
         glDisable(GL_CULL_FACE);
     }
 
@@ -1539,11 +1971,13 @@ namespace Conqueror
             s_QueuedVertexColors = item.VertexColors;
             s->Tint = item.Tint;
             s->ReceiveShadows = item.ReceiveShadows;
+            s_QueuedMoving = item.Moving;
             DrawMeshInternal(item.MeshRef, item.Transform, item.MaterialRef, item.DoubleSided, true);
         }
         s->Tint = tint;
         s->ReceiveShadows = receive;
         s_QueuedVertexColors = 0;
+        s_QueuedMoving = false;
         s->Opaque.clear();
     }
 
@@ -1559,13 +1993,16 @@ namespace Conqueror
             {
                 s_QueuedVertexColors = item.VertexColors;
                 s->Tint = item.Tint;
+                s_QueuedMoving = item.Moving;
                 DrawMeshInternal(item.MeshRef, item.Transform, item.MaterialRef, item.DoubleSided, true);
             }
             s->Tint = tint;
             s_QueuedVertexColors = 0;
+            s_QueuedMoving = false;
             s->Transparent.clear();
         }
         s->FrameActive = false;
+        s_MotionCur = nullptr;
     }
 
     // ------------------------------------------------------------------ Gizmo'lar

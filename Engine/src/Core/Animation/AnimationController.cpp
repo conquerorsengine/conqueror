@@ -1,4 +1,9 @@
 #include "AnimationController.h"
+#include "Renderer/Utilities/Renderer3D/ModelLoader.h"
+#include "Core/Animation/BlendSpace.h"
+#include <algorithm>
+#include <filesystem>
+#include <unordered_map>
 #include "Core/Logging/Log.h"
 #include "Core/Project/Project.h"
 
@@ -223,11 +228,14 @@ namespace Conqueror
             EmitNotifies(out, s.Notifies);
             if (s.Type == AnimStateType::BlendTree)
             {
+                if (!s.BlendSpace.empty())
+                    out << YAML::Key << "BlendSpace" << YAML::Value << s.BlendSpace;
                 out << YAML::Key << "BlendType" << YAML::Value << (int)s.BlendType;
                 out << YAML::Key << "BlendParameter" << YAML::Value << s.BlendParameter;
                 out << YAML::Key << "BlendParameterY" << YAML::Value << s.BlendParameterY;
                 out << YAML::Key << "BlendChildren" << YAML::Value << YAML::BeginSeq;
-                for (const auto& c : s.BlendChildren)
+                // Blend Space'li durumda çocuklar varlıktan (dosyaya yazılmaz)
+                for (const auto& c : s.BlendSpace.empty() ? s.BlendChildren : std::vector<AnimBlendChild>{})
                 {
                     out << YAML::BeginMap;
                     out << YAML::Key << "ClipIndex" << YAML::Value << c.ClipIndex;
@@ -273,6 +281,7 @@ namespace Conqueror
             s.BlendType = (AnimBlendTreeType)std::clamp(blendType, 0, 4);
             ReadIf(n, "BlendParameter", s.BlendParameter);
             ReadIf(n, "BlendParameterY", s.BlendParameterY);
+            ReadIf(n, "BlendSpace", s.BlendSpace);
             if (auto children = n["BlendChildren"])
             {
                 for (auto c : children)
@@ -288,6 +297,8 @@ namespace Conqueror
                     s.BlendChildren.push_back(child);
                 }
             }
+            if (!s.BlendSpace.empty())
+                AnimationController::ApplyBlendSpace(s);
             return s;
         }
 
@@ -408,6 +419,8 @@ namespace Conqueror
             out << YAML::Key << "Blending" << YAML::Value << (int)layer.Blending;
             if (!layer.FromBone.empty())
                 out << YAML::Key << "FromBone" << YAML::Value << layer.FromBone;
+            if (!layer.AvatarMask.empty())
+                out << YAML::Key << "AvatarMask" << YAML::Value << layer.AvatarMask;
             if (!layer.WeightParameter.empty())
                 out << YAML::Key << "WeightParameter" << YAML::Value << layer.WeightParameter;
             SerializeMachineFields(out, layer);
@@ -453,9 +466,121 @@ namespace Conqueror
         return true;
     }
 
+    namespace
+    {
+        template<typename Fn>
+        void ForEachClipRef(AnimStateMachine& machine, Fn&& fn)
+        {
+            for (auto& st : machine.States)
+            {
+                fn(st.ClipName, st.ClipIndex);
+                for (auto& c : st.BlendChildren)
+                    fn(c.ClipName, c.ClipIndex);
+            }
+            for (auto& sub : machine.SubStates)
+                ForEachClipRef(sub, fn);
+        }
+    }
+
+    std::vector<std::string> AnimationController::CollectClipNames() const
+    {
+        std::vector<std::string> names;
+        auto* self = const_cast<AnimationController*>(this);
+        for (auto& layer : self->Layers)
+            ForEachClipRef(layer, [&](std::string& name, int&) {
+                if (!name.empty() && std::find(names.begin(), names.end(), name) == names.end())
+                    names.push_back(name);
+            });
+        return names;
+    }
+
+    bool AnimationController::ApplyBlendSpace(AnimState& state)
+    {
+        BlendSpaceAsset asset;
+        std::string error;
+        if (state.BlendSpace.empty() || !BlendSpaces::Load(state.BlendSpace, asset, &error))
+        {
+            if (!state.BlendSpace.empty())
+                CQ_CORE_WARN("Blend Space '{0}' could not be read: {1}", state.BlendSpace, error);
+            return false;
+        }
+        state.Type = AnimStateType::BlendTree;
+        state.BlendType = asset.Is2D ? AnimBlendTreeType::FreeformCartesian2D : AnimBlendTreeType::Simple1D;
+        state.BlendChildren.clear();
+        for (const auto& sample : asset.Samples)
+        {
+            AnimBlendChild child;
+            child.ClipName = sample.Clip;
+            child.ClipIndex = -1;
+            child.Threshold = sample.Position.x;
+            child.Position = sample.Position;
+            state.BlendChildren.push_back(child);
+        }
+        // 1D: eşikler artan sırada olmalı
+        if (!asset.Is2D)
+            std::sort(state.BlendChildren.begin(), state.BlendChildren.end(), [](const AnimBlendChild& a, const AnimBlendChild& b) { return a.Threshold < b.Threshold; });
+        return true;
+    }
+
+    void AnimationController::ResolveClips(const Model& model)
+    {
+        for (auto& layer : Layers)
+            ForEachClipRef(layer, [&](std::string& name, int& index) {
+                if (index >= 0 || name.empty())
+                    return;
+                for (size_t i = 0; i < model.Animations.size(); ++i)
+                    if (model.Animations[i] && model.Animations[i]->Name == name)
+                    {
+                        index = (int)i;
+                        return;
+                    }
+                CQ_CORE_WARN("Animator Override Controller: clip '{0}' not found in the model", name);
+            });
+        PendingClipResolve = false;
+    }
+
     std::shared_ptr<AnimationController> AnimationController::Deserialize(const std::string& filepath)
     {
         std::string resolvedPath = ResolveSerializablePath(filepath);
+
+        // Animator Override Controller: temel controller'ı yükle, klip adlarını değiştir (dizinler modelden ada göre)
+        if (std::filesystem::path(resolvedPath).extension() == ".cqoverride")
+        {
+            YAML::Node root;
+            try { root = YAML::LoadFile(resolvedPath); }
+            catch (const std::exception& e)
+            {
+                CQ_CORE_ERROR("Failed to load Animator Override Controller '{0}': {1}", filepath, e.what());
+                return nullptr;
+            }
+            YAML::Node o = root["AnimatorOverrideController"];
+            if (!o || !o["Controller"] || o["Controller"].as<std::string>().empty())
+            {
+                CQ_CORE_WARN("Animator Override Controller '{0}' has no base controller", filepath);
+                return nullptr;
+            }
+            auto base = Deserialize(o["Controller"].as<std::string>());
+            if (!base)
+                return nullptr;
+            std::unordered_map<std::string, std::string> map;
+            if (auto list = o["Overrides"]; list && list.IsSequence())
+                for (const auto& item : list)
+                {
+                    const std::string from = item["Original"].as<std::string>(""), to = item["Override"].as<std::string>("");
+                    if (!from.empty() && !to.empty())
+                        map[from] = to;
+                }
+            for (auto& layer : base->Layers)
+                ForEachClipRef(layer, [&](std::string& name, int& index) {
+                    auto it = map.find(name);
+                    if (it == map.end())
+                        return;
+                    name = it->second;
+                    index = -1;
+                    base->PendingClipResolve = true;
+                });
+            return base;
+        }
 
         YAML::Node data;
         try
@@ -491,6 +616,7 @@ namespace Conqueror
                 ReadIf(layerNode, "Blending", blending);
                 layer.Blending = blending == 1 ? AnimLayerBlending::Additive : AnimLayerBlending::Override;
                 ReadIf(layerNode, "FromBone", layer.FromBone);
+                ReadIf(layerNode, "AvatarMask", layer.AvatarMask);
                 ReadIf(layerNode, "WeightParameter", layer.WeightParameter);
                 DeserializeMachineFields(layerNode, layer);
                 controller->Layers.push_back(std::move(layer));
@@ -512,6 +638,13 @@ namespace Conqueror
                 controller->Parameters.push_back(param);
             }
         }
+
+        // Blend Space örnekleri adla gelir: dizinler ilk güncellemede modelden
+        for (auto& layer : controller->Layers)
+            ForEachClipRef(layer, [&](std::string& name, int& index) {
+                if (index < 0 && !name.empty())
+                    controller->PendingClipResolve = true;
+            });
 
         CQ_CORE_INFO("AnimationController loaded: {0}", filepath);
         return controller;

@@ -38,9 +38,11 @@ script ShootingTarget : ConquerorScript
 
     func Update(dt)
     {
-        clock += dt;
+        // Gidip gelme saati yalnız hedef ayaktayken ilerler: devrilen hedef düştüğü yerde kalkar ve yoluna oradan devam eder
+        // (devrikken saat ilerleyince kalkar kalkmaz başka bir yere ışınlanıyordu)
         if (moving && !down && raise >= 1.0)
         {
+            clock += dt;
             var off = MathSin(clock * moveSpeed) * moveAmplitude;
             var r = MathDegToRad(yaw);
             EntitySetPosition(GetEntityId(), basePos.x + MathCos(r) * off, basePos.y, basePos.z - MathSin(r) * off);
@@ -88,13 +90,18 @@ script ShootingTarget : ConquerorScript
     func OnShot(instigator, px, py, pz)
     {
         if (down || raise < 1.0) { return; }
+        // Yalnız levha / çerçeve vuruşu devirir: direğe ya da tabana gelen mermi (artık katılar) hedefi düşürmez
+        var c = EntityGetWorldPosition(GetEntityId());
+        var ry = MathDegToRad(GetRotation().y);
+        var lateral = (px - c.x) * MathCos(ry) - (pz - c.z) * MathSin(ry);
+        var ly = py - c.y;
+        if (hinge != null && hinge >= 0 && (ly < 1.03 || ly > 1.81 || MathAbs(lateral) > 0.41)) { return; }
         down = true;
         landed = false;
         hits += 1;
         timer = resetTime;
         velocity = -75.0;               // kurşunun itişi
         // Puan: merkeze uzaklık (halka 10 .. 1)
-        var c = EntityGetWorldPosition(GetEntityId());
         var cy = c.y + 1.45;
         var d = MathSqrt((px - c.x) * (px - c.x) + (py - cy) * (py - cy) + (pz - c.z) * (pz - c.z));
         var score = int(MathClamp(10 - MathFloor(d / radius * 10), 1, 10));

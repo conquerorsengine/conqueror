@@ -1,4 +1,5 @@
 #include "SceneSerializer.h"
+#include "Scene/LevelStreaming.h"
 #include "Scene/MeshRendererMaterial.h"
 #include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
 #include "Scripting/NativeScriptCompiler.h"
@@ -291,6 +292,7 @@ namespace Conqueror
         out << YAML::Key << "RenderMode" << YAML::Value << (int)mat.Rendering;
         out << YAML::Key << "Culling" << YAML::Value << (int)mat.Culling;
         out << YAML::Key << "AlphaClip" << YAML::Value << mat.AlphaClip;
+        if (!mat.ShaderPath.empty()) out << YAML::Key << "Shader" << YAML::Value << ToSerializablePath(mat.ShaderPath);
         if (mat.Shading != Material::ShadingModel::DefaultLit)
         {
             out << YAML::Key << "ShadingModel" << YAML::Value << (int)mat.Shading;
@@ -393,6 +395,8 @@ namespace Conqueror
         readMap("AOMap", mat.AOMap);
         readMap("EmissionMap", mat.EmissionMap);
         if (n["Parent"]) mat.ParentPath = ResolveSerializablePath(n["Parent"].as<std::string>());
+        if (n["Shader"]) mat.ShaderPath = ResolveSerializablePath(n["Shader"].as<std::string>());
+        else if (!partial) mat.ShaderPath.clear();
         const bool hasGraph = !partial || n["GraphNodes"] || n["GraphLinks"];
 
         if (n["NextGraphNodeID"]) mat.NextGraphNodeID = n["NextGraphNodeID"].as<int>();
@@ -430,6 +434,53 @@ namespace Conqueror
             mat.CompileShaderGraph();
             mat.ApplyGraphToProperties();
         }
+        else if (!mat.ShaderPath.empty())
+            mat.LoadShaderFile();   // kod shader'ı (.cqsh)
+    }
+
+    static void EmitBakeSettings(YAML::Emitter& out, const LightBakeSettings& bk);
+    static void ReadBakeSettings(const YAML::Node& bake, LightBakeSettings& b);
+
+    bool SceneSerializer::SaveLightingSettings(const std::string& path, const LightBakeSettings& settings)
+    {
+        LightBakeSettings copy = settings;
+        copy.SettingsAsset.clear();
+        YAML::Emitter out;
+        out << YAML::BeginMap << YAML::Key << "LightingSettings" << YAML::Value << YAML::BeginMap;
+        EmitBakeSettings(out, copy);
+        out << YAML::EndMap << YAML::EndMap;
+        std::ofstream f(ResolveAssetPath(path), std::ios::trunc);
+        if (!f)
+            return false;
+        f << out.c_str() << "\n";
+        return true;
+    }
+
+    std::string SceneSerializer::LightingSettingsToString(const LightBakeSettings& settings)
+    {
+        YAML::Emitter out;
+        out << YAML::BeginMap;
+        EmitBakeSettings(out, settings);
+        out << YAML::EndMap;
+        return out.c_str();
+    }
+
+    bool SceneSerializer::LoadLightingSettings(const std::string& path, LightBakeSettings& settings)
+    {
+        try
+        {
+            YAML::Node root = YAML::LoadFile(ResolveAssetPath(path));
+            YAML::Node n = root["LightingSettings"];
+            if (!n)
+                return false;
+            LightBakeSettings loaded;
+            n.remove("SettingsAsset");
+            ReadBakeSettings(n, loaded);
+            loaded.SettingsAsset.clear();
+            settings = loaded;
+            return true;
+        }
+        catch (...) { return false; }
     }
 
     std::string MaterialAsset::ToYaml(const Material& material)
@@ -769,6 +820,52 @@ namespace Conqueror
 
 
     // ---- RenderSettings (gölge / sis / post-process / ortam) ------------------
+    // Bake (Lighting Settings) alanları: sahne dosyası ve .cqlighting varlığı aynı biçimi kullanır
+    static void EmitBakeSettings(YAML::Emitter& out, const LightBakeSettings& bk)
+    {
+        if (!bk.SettingsAsset.empty())
+            out << YAML::Key << "SettingsAsset" << YAML::Value << ToSerializablePath(bk.SettingsAsset);
+        if (!bk.DefaultLightmapParameters.empty())
+            out << YAML::Key << "DefaultLightmapParameters" << YAML::Value << ToSerializablePath(bk.DefaultLightmapParameters);
+        out << YAML::Key << "RealtimeGI" << YAML::Value << bk.RealtimeGI;
+        out << YAML::Key << "BakedGI" << YAML::Value << bk.BakedGI;
+        out << YAML::Key << "LightingMode" << YAML::Value << bk.LightingMode;
+        out << YAML::Key << "Lightmapper" << YAML::Value << bk.Lightmapper;
+        out << YAML::Key << "ImportanceSampling" << YAML::Value << bk.ImportanceSampling;
+        out << YAML::Key << "DirectSamples" << YAML::Value << bk.DirectSamples;
+        out << YAML::Key << "IndirectSamples" << YAML::Value << bk.IndirectSamples;
+        out << YAML::Key << "EnvironmentSamples" << YAML::Value << bk.EnvironmentSamples;
+        out << YAML::Key << "MaxBounces" << YAML::Value << bk.MaxBounces;
+        out << YAML::Key << "Filtering" << YAML::Value << bk.Filtering;
+        out << YAML::Key << "Packing" << YAML::Value << bk.Packing;
+        out << YAML::Key << "Resolution" << YAML::Value << bk.Resolution;
+        out << YAML::Key << "MaxLightmapSize" << YAML::Value << bk.MaxLightmapSize;
+        out << YAML::Key << "UseMipmapLimits" << YAML::Value << bk.UseMipmapLimits;
+        out << YAML::Key << "Compression" << YAML::Value << bk.Compression;
+        out << YAML::Key << "AmbientOcclusion" << YAML::Value << bk.AmbientOcclusion;
+        out << YAML::Key << "DirectionalMode" << YAML::Value << bk.DirectionalMode;
+        out << YAML::Key << "AlbedoBoost" << YAML::Value << bk.AlbedoBoost;
+        out << YAML::Key << "IndirectIntensity" << YAML::Value << bk.IndirectIntensity;
+        out << YAML::Key << "RealtimeResolution" << YAML::Value << bk.RealtimeResolution;
+        out << YAML::Key << "RealtimeIndirectSamples" << YAML::Value << bk.RealtimeIndirectSamples;
+        out << YAML::Key << "RealtimeMaxBounces" << YAML::Value << bk.RealtimeMaxBounces;
+        out << YAML::Key << "AutoGenerate" << YAML::Value << bk.AutoGenerate;
+        out << YAML::Key << "BakeOnSceneLoad" << YAML::Value << bk.BakeOnSceneLoad;
+        out << YAML::Key << "APVFitToScene" << YAML::Value << bk.APVFitToScene;
+        out << YAML::Key << "APVOrigin" << YAML::Value << bk.APVOrigin;
+        out << YAML::Key << "APVSize" << YAML::Value << bk.APVSize;
+        out << YAML::Key << "APVProbeOffset" << YAML::Value << bk.APVProbeOffset;
+        out << YAML::Key << "APVMinSpacing" << YAML::Value << bk.APVMinSpacing;
+        out << YAML::Key << "APVMaxSpacing" << YAML::Value << bk.APVMaxSpacing;
+        out << YAML::Key << "APVBakingMode" << YAML::Value << bk.APVBakingMode;
+        out << YAML::Key << "APVDilation" << YAML::Value << bk.APVDilation;
+        out << YAML::Key << "APVVirtualOffset" << YAML::Value << bk.APVVirtualOffset;
+        out << YAML::Key << "APVValidityThreshold" << YAML::Value << bk.APVValidityThreshold;
+        out << YAML::Key << "APVSearchDistanceMultiplier" << YAML::Value << bk.APVSearchDistanceMultiplier;
+        out << YAML::Key << "APVGeometryBias" << YAML::Value << bk.APVGeometryBias;
+        out << YAML::Key << "APVRayOriginBias" << YAML::Value << bk.APVRayOriginBias;
+    }
+
     static void SerializeRenderSettings(YAML::Emitter& out, const RenderSettings& rs)
     {
         out << YAML::Key << "RenderSettings" << YAML::Value << YAML::BeginMap;
@@ -896,45 +993,8 @@ namespace Conqueror
         out << YAML::Key << "AtmosphereGroundAlbedo" << YAML::Value << env.AtmosphereGroundAlbedo;
         out << YAML::EndMap;
 
-        const auto& bk = rs.Bake;
         out << YAML::Key << "Bake" << YAML::Value << YAML::BeginMap;
-        out << YAML::Key << "RealtimeGI" << YAML::Value << bk.RealtimeGI;
-        out << YAML::Key << "BakedGI" << YAML::Value << bk.BakedGI;
-        out << YAML::Key << "LightingMode" << YAML::Value << bk.LightingMode;
-        out << YAML::Key << "Lightmapper" << YAML::Value << bk.Lightmapper;
-        out << YAML::Key << "ImportanceSampling" << YAML::Value << bk.ImportanceSampling;
-        out << YAML::Key << "DirectSamples" << YAML::Value << bk.DirectSamples;
-        out << YAML::Key << "IndirectSamples" << YAML::Value << bk.IndirectSamples;
-        out << YAML::Key << "EnvironmentSamples" << YAML::Value << bk.EnvironmentSamples;
-        out << YAML::Key << "MaxBounces" << YAML::Value << bk.MaxBounces;
-        out << YAML::Key << "Filtering" << YAML::Value << bk.Filtering;
-        out << YAML::Key << "Packing" << YAML::Value << bk.Packing;
-        out << YAML::Key << "Resolution" << YAML::Value << bk.Resolution;
-        out << YAML::Key << "MaxLightmapSize" << YAML::Value << bk.MaxLightmapSize;
-        out << YAML::Key << "UseMipmapLimits" << YAML::Value << bk.UseMipmapLimits;
-        out << YAML::Key << "Compression" << YAML::Value << bk.Compression;
-        out << YAML::Key << "AmbientOcclusion" << YAML::Value << bk.AmbientOcclusion;
-        out << YAML::Key << "DirectionalMode" << YAML::Value << bk.DirectionalMode;
-        out << YAML::Key << "AlbedoBoost" << YAML::Value << bk.AlbedoBoost;
-        out << YAML::Key << "IndirectIntensity" << YAML::Value << bk.IndirectIntensity;
-        out << YAML::Key << "RealtimeResolution" << YAML::Value << bk.RealtimeResolution;
-        out << YAML::Key << "RealtimeIndirectSamples" << YAML::Value << bk.RealtimeIndirectSamples;
-        out << YAML::Key << "RealtimeMaxBounces" << YAML::Value << bk.RealtimeMaxBounces;
-        out << YAML::Key << "AutoGenerate" << YAML::Value << bk.AutoGenerate;
-        out << YAML::Key << "BakeOnSceneLoad" << YAML::Value << bk.BakeOnSceneLoad;
-        out << YAML::Key << "APVFitToScene" << YAML::Value << bk.APVFitToScene;
-        out << YAML::Key << "APVOrigin" << YAML::Value << bk.APVOrigin;
-        out << YAML::Key << "APVSize" << YAML::Value << bk.APVSize;
-        out << YAML::Key << "APVProbeOffset" << YAML::Value << bk.APVProbeOffset;
-        out << YAML::Key << "APVMinSpacing" << YAML::Value << bk.APVMinSpacing;
-        out << YAML::Key << "APVMaxSpacing" << YAML::Value << bk.APVMaxSpacing;
-        out << YAML::Key << "APVBakingMode" << YAML::Value << bk.APVBakingMode;
-        out << YAML::Key << "APVDilation" << YAML::Value << bk.APVDilation;
-        out << YAML::Key << "APVVirtualOffset" << YAML::Value << bk.APVVirtualOffset;
-        out << YAML::Key << "APVValidityThreshold" << YAML::Value << bk.APVValidityThreshold;
-        out << YAML::Key << "APVSearchDistanceMultiplier" << YAML::Value << bk.APVSearchDistanceMultiplier;
-        out << YAML::Key << "APVGeometryBias" << YAML::Value << bk.APVGeometryBias;
-        out << YAML::Key << "APVRayOriginBias" << YAML::Value << bk.APVRayOriginBias;
+        EmitBakeSettings(out, rs.Bake);
         out << YAML::EndMap;
 
         out << YAML::EndMap; // RenderSettings
@@ -956,6 +1016,56 @@ namespace Conqueror
         int v = (int)value;
         ReadIf(node, key, v);
         value = (E)v;
+    }
+
+    static void ReadBakeSettings(const YAML::Node& bake, LightBakeSettings& b)
+    {
+        if (bake["SettingsAsset"]) b.SettingsAsset = ResolveSerializablePath(bake["SettingsAsset"].as<std::string>());
+        if (bake["DefaultLightmapParameters"]) b.DefaultLightmapParameters = ResolveSerializablePath(bake["DefaultLightmapParameters"].as<std::string>());
+        ReadIf(bake, "RealtimeGI", b.RealtimeGI);
+        ReadIf(bake, "BakedGI", b.BakedGI);
+        ReadIf(bake, "LightingMode", b.LightingMode);
+        ReadIf(bake, "Lightmapper", b.Lightmapper);
+        ReadIf(bake, "ImportanceSampling", b.ImportanceSampling);
+        ReadIf(bake, "DirectSamples", b.DirectSamples);
+        ReadIf(bake, "IndirectSamples", b.IndirectSamples);
+        ReadIf(bake, "EnvironmentSamples", b.EnvironmentSamples);
+        ReadIf(bake, "MaxBounces", b.MaxBounces);
+        ReadIf(bake, "Filtering", b.Filtering);
+        ReadIf(bake, "Packing", b.Packing);
+        ReadIf(bake, "Resolution", b.Resolution);
+        ReadIf(bake, "MaxLightmapSize", b.MaxLightmapSize);
+        ReadIf(bake, "UseMipmapLimits", b.UseMipmapLimits);
+        ReadIf(bake, "Compression", b.Compression);
+        ReadIf(bake, "AmbientOcclusion", b.AmbientOcclusion);
+        ReadIf(bake, "DirectionalMode", b.DirectionalMode);
+        ReadIf(bake, "AlbedoBoost", b.AlbedoBoost);
+        ReadIf(bake, "IndirectIntensity", b.IndirectIntensity);
+        ReadIf(bake, "RealtimeResolution", b.RealtimeResolution);
+        ReadIf(bake, "RealtimeIndirectSamples", b.RealtimeIndirectSamples);
+        ReadIf(bake, "RealtimeMaxBounces", b.RealtimeMaxBounces);
+        ReadIf(bake, "AutoGenerate", b.AutoGenerate);
+        ReadIf(bake, "BakeOnSceneLoad", b.BakeOnSceneLoad);
+        ReadIf(bake, "APVFitToScene", b.APVFitToScene);
+        ReadIf(bake, "APVOrigin", b.APVOrigin);
+        ReadIf(bake, "APVSize", b.APVSize);
+        ReadIf(bake, "APVProbeOffset", b.APVProbeOffset);
+        ReadIf(bake, "APVMinSpacing", b.APVMinSpacing);
+        ReadIf(bake, "APVMaxSpacing", b.APVMaxSpacing);
+        ReadIf(bake, "APVBakingMode", b.APVBakingMode);
+        ReadIf(bake, "APVDilation", b.APVDilation);
+        ReadIf(bake, "APVVirtualOffset", b.APVVirtualOffset);
+        ReadIf(bake, "APVValidityThreshold", b.APVValidityThreshold);
+        ReadIf(bake, "APVSearchDistanceMultiplier", b.APVSearchDistanceMultiplier);
+        ReadIf(bake, "APVGeometryBias", b.APVGeometryBias);
+        ReadIf(bake, "APVRayOriginBias", b.APVRayOriginBias);
+        // Lighting Settings varlığı: ayarlar dosyadan (varlık yolu korunur)
+        if (!b.SettingsAsset.empty())
+        {
+            const std::string asset = b.SettingsAsset;
+            if (SceneSerializer::LoadLightingSettings(asset, b))
+                b.SettingsAsset = asset;
+        }
     }
 
     static void DeserializeRenderSettings(const YAML::Node& node, RenderSettings& rs)
@@ -1086,46 +1196,7 @@ namespace Conqueror
             ReadIf(env, "AtmosphereGroundAlbedo", e.AtmosphereGroundAlbedo);
         }
         if (auto bake = node["Bake"])
-        {
-            auto& b = rs.Bake;
-            ReadIf(bake, "RealtimeGI", b.RealtimeGI);
-            ReadIf(bake, "BakedGI", b.BakedGI);
-            ReadIf(bake, "LightingMode", b.LightingMode);
-            ReadIf(bake, "Lightmapper", b.Lightmapper);
-            ReadIf(bake, "ImportanceSampling", b.ImportanceSampling);
-            ReadIf(bake, "DirectSamples", b.DirectSamples);
-            ReadIf(bake, "IndirectSamples", b.IndirectSamples);
-            ReadIf(bake, "EnvironmentSamples", b.EnvironmentSamples);
-            ReadIf(bake, "MaxBounces", b.MaxBounces);
-            ReadIf(bake, "Filtering", b.Filtering);
-            ReadIf(bake, "Packing", b.Packing);
-            ReadIf(bake, "Resolution", b.Resolution);
-            ReadIf(bake, "MaxLightmapSize", b.MaxLightmapSize);
-            ReadIf(bake, "UseMipmapLimits", b.UseMipmapLimits);
-            ReadIf(bake, "Compression", b.Compression);
-            ReadIf(bake, "AmbientOcclusion", b.AmbientOcclusion);
-            ReadIf(bake, "DirectionalMode", b.DirectionalMode);
-            ReadIf(bake, "AlbedoBoost", b.AlbedoBoost);
-            ReadIf(bake, "IndirectIntensity", b.IndirectIntensity);
-            ReadIf(bake, "RealtimeResolution", b.RealtimeResolution);
-            ReadIf(bake, "RealtimeIndirectSamples", b.RealtimeIndirectSamples);
-            ReadIf(bake, "RealtimeMaxBounces", b.RealtimeMaxBounces);
-            ReadIf(bake, "AutoGenerate", b.AutoGenerate);
-            ReadIf(bake, "BakeOnSceneLoad", b.BakeOnSceneLoad);
-            ReadIf(bake, "APVFitToScene", b.APVFitToScene);
-            ReadIf(bake, "APVOrigin", b.APVOrigin);
-            ReadIf(bake, "APVSize", b.APVSize);
-            ReadIf(bake, "APVProbeOffset", b.APVProbeOffset);
-            ReadIf(bake, "APVMinSpacing", b.APVMinSpacing);
-            ReadIf(bake, "APVMaxSpacing", b.APVMaxSpacing);
-            ReadIf(bake, "APVBakingMode", b.APVBakingMode);
-            ReadIf(bake, "APVDilation", b.APVDilation);
-            ReadIf(bake, "APVVirtualOffset", b.APVVirtualOffset);
-            ReadIf(bake, "APVValidityThreshold", b.APVValidityThreshold);
-            ReadIf(bake, "APVSearchDistanceMultiplier", b.APVSearchDistanceMultiplier);
-            ReadIf(bake, "APVGeometryBias", b.APVGeometryBias);
-            ReadIf(bake, "APVRayOriginBias", b.APVRayOriginBias);
-        }
+            ReadBakeSettings(bake, rs.Bake);
 
         // Akıl sağlığı sınırları (elle düzenlenmiş dosyalar için)
         rs.Shadows.CascadeCount = std::clamp(rs.Shadows.CascadeCount, 1, 4);
@@ -1338,6 +1409,7 @@ namespace Conqueror
                 out << YAML::Key << "Tiling" << YAML::Value << l.Tiling;
                 out << YAML::Key << "Roughness" << YAML::Value << l.Roughness;
                 out << YAML::Key << "Metallic" << YAML::Value << l.Metallic;
+                if (!l.Asset.empty()) out << YAML::Key << "Asset" << YAML::Value << ToSerializablePath(l.Asset);
                 out << YAML::EndMap;
             }
             out << YAML::EndSeq;
@@ -1353,18 +1425,27 @@ namespace Conqueror
 
             auto& meshRenderer = entity.GetComponent<MeshRendererComponent>();
             out << YAML::Key << "MeshType" << YAML::Value << static_cast<int>(meshRenderer.Type);
+            // Mesh alanında model dosyası (eski Model bileşeni)
+            if (!meshRenderer.ModelPath.empty())
+                out << YAML::Key << "Model" << YAML::Value << ToSerializablePath(meshRenderer.ModelPath);
+            if (meshRenderer.Tint != glm::vec3(1.0f))
+                out << YAML::Key << "Tint" << YAML::Value << meshRenderer.Tint;
             if (!meshRenderer.CastShadows)
                 out << YAML::Key << "CastShadows" << YAML::Value << false;
             if (!meshRenderer.ReceiveShadows)
                 out << YAML::Key << "ReceiveShadows" << YAML::Value << false;
             if (meshRenderer.RealtimeGI)
                 out << YAML::Key << "RealtimeGI" << YAML::Value << true;
+            if (!meshRenderer.LightmapParameters.empty())
+                out << YAML::Key << "LightmapParameters" << YAML::Value << ToSerializablePath(meshRenderer.LightmapParameters);
 
             // Malzeme: dosyaya başvuru (Unity / Unreal), yoksa sahneye gömülü
             // Dosya yeniden adlandırıldı / taşındıysa güncel yol önbellekten
             const std::string materialPath = meshRenderer.MaterialPath.empty() ? std::string()
                 : [&] { std::string now = MaterialAsset::PathOf(meshRenderer.MaterialInstance.get()); return now.empty() ? meshRenderer.MaterialPath : now; }();
-            if (!materialPath.empty())
+            if (!meshRenderer.ModelPath.empty())
+                ;   // model kendi malzemeleriyle çizilir (içe aktarma ayarları / .meta eşlemesi)
+            else if (!materialPath.empty())
                 out << YAML::Key << "MaterialAsset" << YAML::Value << ToSerializablePath(materialPath);
             else if (meshRenderer.MaterialInstance)
             {
@@ -1479,19 +1560,6 @@ namespace Conqueror
             }
         }
 
-        if (entity.HasComponent<ModelComponent>())
-        {
-            out << YAML::Key << "ModelComponent";
-            out << YAML::BeginMap;
-
-            auto& model = entity.GetComponent<ModelComponent>();
-            out << YAML::Key << "FilePath" << YAML::Value << ToSerializablePath(model.FilePath);
-            if (model.Tint != glm::vec3(1.0f))
-                out << YAML::Key << "Tint" << YAML::Value << model.Tint;
-
-            out << YAML::EndMap;
-        }
-
         if (entity.HasComponent<AnimatorComponent>())
         {
             out << YAML::Key << "AnimatorComponent";
@@ -1525,33 +1593,6 @@ namespace Conqueror
                 out << YAML::EndMap;
             }
             out << YAML::EndSeq;
-
-            out << YAML::EndMap;
-        }
-
-        if (entity.HasComponent<ImageComponent>())
-        {
-            out << YAML::Key << "ImageComponent";
-            out << YAML::BeginMap;
-
-            auto& image = entity.GetComponent<ImageComponent>();
-            out << YAML::Key << "Color" << YAML::Value << image.Color;
-            out << YAML::Key << "TilingFactor" << YAML::Value << image.TilingFactor;
-            
-            // Texture path kaydet
-            if (image.Texture)
-            {
-                std::string texPath = image.Texture->GetPath();
-                auto projectDir = Project::GetActiveProjectDirectory();
-                if (!projectDir.empty())
-                {
-                    std::error_code ec;
-                    auto relative = std::filesystem::relative(texPath, projectDir, ec);
-                    if (!ec && !relative.empty() && relative.native()[0] != '.')
-                        texPath = relative.generic_string();
-                }
-                out << YAML::Key << "TexturePath" << YAML::Value << texPath;
-            }
 
             out << YAML::EndMap;
         }
@@ -1960,10 +2001,18 @@ namespace Conqueror
         // Entity'leri kaydet
         out << YAML::Key << "Entities" << YAML::Value << YAML::BeginSeq;
 
+        // Ek açılmış / akışla yüklenmiş seviyeler (StreamedLevelComponent kökü ve altı) bu sahneye yazılmaz: kendi
+        // .cqscene dosyalarına aittir (Unity'de ek açılan sahne ayrı kaydedilir). Geri al anlık görüntüleri (akış) bunları tutar.
+        auto inStreamedLevel = [&](Entity e) {
+            for (Entity p = e; p; p = p.GetParent())
+                if (p.HasComponent<StreamedLevelComponent>())
+                    return true;
+            return false;
+        };
         for (entt::entity entityID : SerializationOrder(m_Scene->m_Registry))
         {
             Entity entity = { entityID, m_Scene.get() };
-            if (!entity)
+            if (!entity || inStreamedLevel(entity))
                 continue;
 
             SerializeEntity(out, entity);
@@ -2063,20 +2112,27 @@ namespace Conqueror
         // Hierarchy (parent-child ilişkileri) kaydet
         out << YAML::Key << "Hierarchy" << YAML::Value << YAML::BeginSeq;
         
-        // Çocuk sırası korunur (ebeveyn başına vektör sırası)
-        for (const auto& [parent, children] : m_Scene->m_EntityChildren)
-        for (auto child : children)
+        // Çocuk sırası korunur (ebeveyn başına vektör sırası); ebeveynler varlık listesi sırasıyla yazılır, böylece aynı
+        // sahne her kayıtta aynı metni verir (eskiden karma tablo sırasıydı: kaydedilmemiş değişiklik yanlış algılanıyordu)
+        for (entt::entity parent : SerializationOrder(m_Scene->m_Registry))
+        {
+        auto childrenIt = m_Scene->m_EntityChildren.find(parent);
+        if (childrenIt == m_Scene->m_EntityChildren.end())
+            continue;
+        for (auto child : childrenIt->second)
         {
             Entity childEntity = { child, m_Scene.get() };
             Entity parentEntity = { parent, m_Scene.get() };
             
-            if (childEntity && parentEntity && m_Scene->m_Registry.valid(child) && m_Scene->m_Registry.valid(parent))
+            if (childEntity && parentEntity && m_Scene->m_Registry.valid(child) && m_Scene->m_Registry.valid(parent) &&
+                !inStreamedLevel(childEntity))
             {
                 out << YAML::BeginMap;
                 out << YAML::Key << "Child" << YAML::Value << childEntity.GetComponent<IDComponent>().ID;
                 out << YAML::Key << "Parent" << YAML::Value << parentEntity.GetComponent<IDComponent>().ID;
                 out << YAML::EndMap;
             }
+        }
         }
         
         out << YAML::EndSeq;
@@ -2187,9 +2243,14 @@ namespace Conqueror
         // Hierarchy (parent-child ilişkileri) kaydet
         out << YAML::Key << "Hierarchy" << YAML::Value << YAML::BeginSeq;
         
-        // Çocuk sırası korunur (ebeveyn başına vektör sırası)
-        for (const auto& [parent, children] : m_Scene->m_EntityChildren)
-        for (auto child : children)
+        // Çocuk sırası korunur (ebeveyn başına vektör sırası); ebeveynler varlık listesi sırasıyla yazılır, böylece aynı
+        // sahne her kayıtta aynı metni verir (eskiden karma tablo sırasıydı: kaydedilmemiş değişiklik yanlış algılanıyordu)
+        for (entt::entity parent : SerializationOrder(m_Scene->m_Registry))
+        {
+        auto childrenIt = m_Scene->m_EntityChildren.find(parent);
+        if (childrenIt == m_Scene->m_EntityChildren.end())
+            continue;
+        for (auto child : childrenIt->second)
         {
             Entity childEntity = { child, m_Scene.get() };
             Entity parentEntity = { parent, m_Scene.get() };
@@ -2201,6 +2262,7 @@ namespace Conqueror
                 out << YAML::Key << "Parent" << YAML::Value << parentEntity.GetComponent<IDComponent>().ID;
                 out << YAML::EndMap;
             }
+        }
         }
         
         out << YAML::EndSeq;
@@ -2413,6 +2475,7 @@ namespace Conqueror
                         l.Tiling = ln["Tiling"].as<float>(12.0f);
                         l.Roughness = ln["Roughness"].as<float>(0.85f);
                         l.Metallic = ln["Metallic"].as<float>(0.0f);
+                        if (ln["Asset"]) l.Asset = ResolveSerializablePath(ln["Asset"].as<std::string>());
                     }
                     if (!n["Heights"] || !TerrainSystem::DecodeHeights(t, n["Heights"].as<std::string>("")))
                         TerrainSystem::Initialize(t, t.Resolution);
@@ -2434,6 +2497,18 @@ namespace Conqueror
                     if (auto v = n["CastShadows"]) mrc.CastShadows = v.as<bool>();
                     if (auto v = n["ReceiveShadows"]) mrc.ReceiveShadows = v.as<bool>();
                     if (auto v = n["RealtimeGI"]) mrc.RealtimeGI = v.as<bool>();
+                    if (auto v = n["LightmapParameters"]) mrc.LightmapParameters = ResolveSerializablePath(v.as<std::string>());
+                    if (auto v = n["Tint"]) mrc.Tint = v.as<glm::vec3>();
+                    if (auto v = n["Model"])
+                    {
+                        mrc.ModelPath = ResolveSerializablePath(v.as<std::string>());
+                        if (!mrc.ModelPath.empty())
+                        {
+                            mrc.ModelData = ModelLoader::Load(mrc.ModelPath);
+                            if (!mrc.ModelData)
+                                CQ_CORE_WARN("Deserialize: Failed to load model: {0}", mrc.ModelPath);
+                        }
+                    }
 
                     // Eski biçim: renk / doku / ışıma ... Mesh Renderer'daydı -> malzemeye taşınır (görünüm aynı kalır)
                     MeshRendererMaterial::LegacyFields legacy;
@@ -2576,18 +2651,24 @@ namespace Conqueror
                         slc.Mode = (LightMode)spotLightComponent["Mode"].as<int>();
                 }
 
+                // Eski "Model" bileşeni Mesh Renderer'a katıldı: model dosyası Mesh alanına yüklenir
                 auto modelComponent = entity["ModelComponent"];
                 if (modelComponent)
                 {
-                    auto& mc = deserializedEntity.AddComponent<ModelComponent>();
-                    mc.FilePath = ResolveSerializablePath(modelComponent["FilePath"].as<std::string>());
+                    auto& mc = deserializedEntity.HasComponent<MeshRendererComponent>() ? deserializedEntity.GetComponent<MeshRendererComponent>()
+                                                                                         : deserializedEntity.AddComponent<MeshRendererComponent>();
+                    if (modelComponent["FilePath"])
+                        mc.ModelPath = ResolveSerializablePath(modelComponent["FilePath"].as<std::string>());
                     if (auto t = modelComponent["Tint"]) mc.Tint = t.as<glm::vec3>();
-                    
-                    if (!mc.FilePath.empty())
+                    if (auto cs = modelComponent["CastShadows"]) mc.CastShadows = cs.as<bool>();
+                    if (auto gi = modelComponent["RealtimeGI"]) mc.RealtimeGI = gi.as<bool>();
+                    mc.MaterialInstance = nullptr;
+                    mc.MaterialPath.clear();
+                    if (!mc.ModelPath.empty())
                     {
-                        mc.ModelData = ModelLoader::Load(mc.FilePath);
+                        mc.ModelData = ModelLoader::Load(mc.ModelPath);
                         if (!mc.ModelData)
-                            CQ_CORE_WARN("Deserialize: Failed to load model (Play/runtime): {0}", mc.FilePath);
+                            CQ_CORE_WARN("Deserialize: Failed to load model (Play/runtime): {0}", mc.ModelPath);
                     }
                 }
 
@@ -2737,20 +2818,21 @@ namespace Conqueror
                     }
                 }
 
+                // Eski Image bileşeni kaldırıldı (Sprite Renderer ile aynı işi yapıyordu): eski sahnelerde Sprite Renderer olarak
+                // yüklenir (renk, doku, döşeme); varlıkta zaten Sprite Renderer varsa ona dokunulmaz
                 auto imageComponent = entity["ImageComponent"];
-                if (imageComponent)
+                if (imageComponent && !deserializedEntity.HasComponent<SpriteRendererComponent>())
                 {
-                    auto& ic = deserializedEntity.AddComponent<ImageComponent>();
-                    ic.Color = imageComponent["Color"].as<glm::vec4>();
-                    ic.TilingFactor = imageComponent["TilingFactor"].as<float>();
-                    
+                    auto& sr = deserializedEntity.AddComponent<SpriteRendererComponent>();
+                    if (imageComponent["Color"])
+                        sr.Color = imageComponent["Color"].as<glm::vec4>();
+                    if (imageComponent["TilingFactor"])
+                        sr.TilingFactor = imageComponent["TilingFactor"].as<float>();
                     if (imageComponent["TexturePath"])
                     {
                         std::string texturePath = ResolveSerializablePath(imageComponent["TexturePath"].as<std::string>());
                         if (!texturePath.empty())
-                        {
-                            ic.Texture = Texture2D::Create(texturePath);
-                        }
+                            sr.Texture = Texture2D::Create(texturePath);
                     }
                 }
 

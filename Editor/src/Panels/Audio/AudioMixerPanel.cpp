@@ -191,6 +191,15 @@ namespace Conqueror::Editor
             return;
         }
         mixer.EnsureProjectLoaded(Project::GetActiveProjectDirectory());
+        // Audio Mixer varlıkları dışarıda değiştiyse / silindiyse (saniyede bir)
+        {
+            static double lastCheck = 0.0;
+            if (ImGui::GetTime() - lastCheck > 1.0 && !m_Dirty)
+            {
+                lastCheck = ImGui::GetTime();
+                mixer.CheckAssetChanges();
+            }
+        }
         mixer.Update();
         if (!mixer.FindGroup(m_SelectedGroup))
             SelectGroup("Master");
@@ -224,7 +233,7 @@ namespace Conqueror::Editor
             m_AutoSaveTimer += ImGui::GetIO().DeltaTime;
             if (m_AutoSaveTimer > 1.0f && !ImGui::IsAnyItemActive())
             {
-                mixer.SaveProject();
+                mixer.SaveAll();   // proje mikseri + Audio Mixer varlıkları
                 m_Dirty = false;
                 m_AutoSaveTimer = 0.0f;
             }
@@ -240,7 +249,7 @@ namespace Conqueror::Editor
 
         if (ImGui::Button(m_Dirty ? ICON_FA_FLOPPY_DISK " Save*" : ICON_FA_FLOPPY_DISK " Save"))
         {
-            if (mixer.SaveProject())
+            if (mixer.SaveAll())
                 m_Dirty = false;
         }
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))

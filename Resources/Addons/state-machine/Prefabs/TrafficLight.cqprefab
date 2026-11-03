@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 3034793323804722436
+  - Entity: 1718991870000340056
     TagComponent:
       Tag: Traffic Light
       GameTag: Untagged
@@ -21,7 +21,7 @@ Entities:
     TrafficLight_ConquerorScriptComponent:
       ScriptPath: Packages/state-machine/Scripts/TrafficLight.cqs
       ClassName: TrafficLight
-  - Entity: 5725836058362070536
+  - Entity: 5977588214847567775
     TagComponent:
       Tag: Pole
       GameTag: Untagged
@@ -35,12 +35,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.25, 0.25, 0.28, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 2675271818779175670
+      MaterialAsset: Packages/state-machine/Materials/Gray.cqmat
+  - Entity: 6110941874121091044
     TagComponent:
       Tag: Housing
       GameTag: Untagged
@@ -54,12 +50,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.1, 0.1, 0.12, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 7008700372593463459
+      MaterialAsset: Packages/state-machine/Materials/Dark Gray.cqmat
+  - Entity: 4473991169690226795
     TagComponent:
       Tag: Red Lamp
       GameTag: Untagged
@@ -73,14 +65,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.12, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.12, 0.1]
-      EmissionStrength: 0
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 721909149374659755
+      MaterialAsset: Packages/state-machine/Materials/Red.cqmat
+  - Entity: 2730489788089186706
     TagComponent:
       Tag: Yellow Lamp
       GameTag: Untagged
@@ -94,14 +80,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [1, 0.8, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [1, 0.8, 0.1]
-      EmissionStrength: 0
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 5398923844202799085
+      MaterialAsset: Packages/state-machine/Materials/Yellow.cqmat
+  - Entity: 6264373630848995150
     TagComponent:
       Tag: Green Lamp
       GameTag: Untagged
@@ -115,13 +95,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.1, 1, 0.25, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.1, 1, 0.25]
-      EmissionStrength: 0
-      TexturePath: CQ:Resources/Textures/texture_grid.png
+      MaterialAsset: Packages/state-machine/Materials/Green.cqmat
 Environment:
   SkyboxExposure: 1
   SkyboxRotation: 0
@@ -218,6 +192,49 @@ Environment:
       Sharpen: false
       SharpenAmount: 0.3
       AntiAliasing: 1
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: false
+      SSRIntensity: 1
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: false
+      SSGIIntensity: 1
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: false
+      CloudCoverage: 0.45
+      CloudDensity: 1
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: false
+      FocusDistance: 10
+      Aperture: 2.8
+      FocalLength: 50
+      DOFMaxBlur: 10
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
     Environment:
       Sky: 0
       BackgroundColor: [0.1, 0.1, 0.1]
@@ -225,6 +242,13 @@ Environment:
       ReflectionIntensity: 1
       SkyboxIntensity: 1
       SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
     Bake:
       RealtimeGI: false
       BakedGI: true
@@ -264,13 +288,13 @@ Environment:
       APVGeometryBias: 0.01
       APVRayOriginBias: -0.001
 Hierarchy:
-  - Child: 5725836058362070536
-    Parent: 3034793323804722436
-  - Child: 2675271818779175670
-    Parent: 3034793323804722436
-  - Child: 7008700372593463459
-    Parent: 3034793323804722436
-  - Child: 721909149374659755
-    Parent: 3034793323804722436
-  - Child: 5398923844202799085
-    Parent: 3034793323804722436
+  - Child: 5977588214847567775
+    Parent: 1718991870000340056
+  - Child: 6110941874121091044
+    Parent: 1718991870000340056
+  - Child: 4473991169690226795
+    Parent: 1718991870000340056
+  - Child: 2730489788089186706
+    Parent: 1718991870000340056
+  - Child: 6264373630848995150
+    Parent: 1718991870000340056

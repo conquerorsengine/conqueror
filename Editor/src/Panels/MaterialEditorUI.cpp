@@ -46,7 +46,7 @@ namespace Conqueror::Editor::MaterialEditorUI
         bool IsImagePath(const std::string& path)
         {
             const std::string ext = Lower(fs::path(path).extension().string());
-            return ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".tga" || ext == ".bmp" || ext == ".hdr" || ext == ".cqrt";
+            return ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".tga" || ext == ".bmp" || ext == ".hdr" || ext == ".cqrt" || ext == ".cqcrt";
         }
 
         // Unity doku yuvası: küçük önizleme + dosya adı (sürükle-bırak / dosya seç) + kaldır
@@ -95,7 +95,7 @@ namespace Conqueror::Editor::MaterialEditorUI
             }
             ImGui::SameLine();
             const ImGuiID pickId = ImGui::GetID("##texpick");
-            if (ImGui::Button(ICON_FA_BULLSEYE "##texpick", ImVec2(h, 0)))
+            if (ObjectPicker::IconButton("##texpick"))
                 ObjectPicker::Open(pickId, "Texture", ObjectPicker::ImageExtensions(), tex ? tex->GetPath() : std::string());
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select Texture");
@@ -143,6 +143,21 @@ namespace Conqueror::Editor::MaterialEditorUI
             {
                 m.Shading = (Material::ShadingModel)shading;
                 changed = true;
+            }
+            // Kod shader'ı (Create > Shader > Lit / Unlit Shader): doluysa bu .cqsh dosyası çizer
+            if (!options.Embedded && (m.GraphNodes.empty() || !m.GraphInitialized))
+            {
+                std::string before = m.ShaderPath;
+                if (AssetPathSlot("Shader File", m.ShaderPath, ".cqsh", "Shader",
+                                  "A code shader (.cqsh) that draws this material instead of the built-in Lit shader. Empty = built-in.") &&
+                    m.ShaderPath != before)
+                {
+                    if (m.ShaderPath.empty() || !m.LoadShaderFile())
+                        m.MaterialShader = nullptr;
+                    changed = true;
+                }
+                if (!m.ShaderPath.empty() && !m.MaterialShader)
+                    UI::InfoBox("The shader did not compile (see the Console); the built-in Lit shader is used.", UI::InfoType::Warning);
             }
             const char* surfaceNames[] = { "Opaque", "Cutout", "Transparent" };
             int surface = (int)m.Rendering;
@@ -338,7 +353,7 @@ namespace Conqueror::Editor::MaterialEditorUI
         }
         ImGui::SameLine();
         const ImGuiID pickId = ImGui::GetID("##assetpick");
-        if (ImGui::Button(ICON_FA_BULLSEYE "##assetpick", ImVec2(h, 0)))
+        if (ObjectPicker::IconButton("##assetpick"))
             ObjectPicker::Open(pickId, typeName, { extension }, path);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select %s", typeName);
@@ -406,7 +421,7 @@ namespace Conqueror::Editor::MaterialEditorUI
         }
         ImGui::SameLine();
         const ImGuiID matPickId = ImGui::GetID("##matpick");
-        if (ImGui::Button(ICON_FA_BULLSEYE "##matpick", ImVec2(h, 0)))
+        if (ObjectPicker::IconButton("##matpick"))
             ObjectPicker::Open(matPickId, "Material", { ".cqmat" }, component.MaterialPath);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select Material");

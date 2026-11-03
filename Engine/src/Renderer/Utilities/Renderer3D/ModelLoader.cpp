@@ -1,5 +1,12 @@
 #include "ModelLoader.h"
 #include "Core/Logging/Log.h"
+#include "Core/Utils/ImportActivity.h"
+#include <fstream>
+#include <yaml-cpp/yaml.h>
+#include "Core/Serialization/SceneSerializer.h"
+#include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
+
+#include <chrono>
 
 #include <algorithm>
 #include <cmath>
@@ -89,6 +96,29 @@ namespace Conqueror
             return primary.string();
         }
 
+        // Extract Materials: gömülü doku dizini -> çıkarılan dosya
+        const std::unordered_map<int, std::string>* g_EmbeddedTextureFiles = nullptr;
+        // Load sırasında modelin malzeme eşlemesi (ad -> çözülmüş .cqmat yolu)
+        const std::unordered_map<std::string, std::string>* g_MaterialRemap = nullptr;
+
+        std::string MaterialNameOf(const aiMaterial* material, unsigned index)
+        {
+            aiString name;
+            if (material && material->Get(AI_MATKEY_NAME, name) == AI_SUCCESS && name.length > 0)
+                return name.C_Str();
+            return "Material " + std::to_string(index);
+        }
+
+        std::string SafeFileName(std::string n)
+        {
+            for (char& c : n)
+                if (c == '/' || c == '\\' || c == ':' || c == '*' || c == '?' || c == '"' || c == '<' || c == '>' || c == '|')
+                    c = '_';
+            while (!n.empty() && (n.back() == ' ' || n.back() == '.'))
+                n.pop_back();
+            return n.empty() ? std::string("Material") : n;
+        }
+
         std::shared_ptr<Texture2D> LoadTextureSlot(aiMaterial* material, aiTextureType texType, unsigned texIndex,
             const aiScene* scene, const std::string& directory)
         {
@@ -106,6 +136,10 @@ namespace Conqueror
             if (rel[0] == '*')
             {
                 const int embedIndex = std::atoi(rel.c_str() + 1);
+                // Extract Materials sırasında: dosyaya yazılmış gömülü doku (malzeme dosyası yolu saklayabilsin)
+                if (g_EmbeddedTextureFiles)
+                    if (auto it = g_EmbeddedTextureFiles->find(embedIndex); it != g_EmbeddedTextureFiles->end())
+                        return Texture2D::Create(it->second);
                 if (!scene || embedIndex < 0 || static_cast<unsigned>(embedIndex) >= scene->mNumTextures)
                 {
                     CQ_CORE_WARN("Invalid embedded texture reference '{0}'", rel);
@@ -424,6 +458,7 @@ namespace Conqueror
                 return cached;
         }
 
+        const auto importStart = std::chrono::steady_clock::now();
         Assimp::Importer importer;
         // FBX PreRotation/PostRotation/Pivots'ı ara node olarak tutma,
         // bunları hem node transform'a hem animasyon keyframe'lerine bake et.
@@ -444,8 +479,20 @@ namespace Conqueror
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
         {
             CQ_CORE_ERROR("Assimp: {0}", importer.GetErrorString());
+            ImportActivity::Add(path, "Model", std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - importStart).count(),
+                                false, importer.GetErrorString());
             return nullptr;
         }
+        // Model içe aktarma ayarı: çıkarılmış / atanmış malzemeler (Unity Remapped Materials)
+        std::unordered_map<std::string, std::string> remap;
+        for (const auto& [name, file] : ReadMaterialRemap(path))
+            if (!file.empty())
+                remap[name] = SceneSerializer::ResolveAssetPath(file);
+        g_MaterialRemap = remap.empty() ? nullptr : &remap;
+        struct ClearRemap
+        {
+            ~ClearRemap() { g_MaterialRemap = nullptr; }
+        } clearRemap;
 
         auto model = std::make_shared<Model>();
         const size_t sep = path.find_last_of("/\\");
@@ -470,6 +517,9 @@ namespace Conqueror
             CQ_CORE_INFO("Model loaded: {0} ({1} meshes)", path, model->Meshes.size());
 
         s_Cache[path] = model;
+        ImportActivity::Add(path, "Model", std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - importStart).count(), true,
+                            std::to_string(model->Meshes.size() + model->SkinnedMeshes.size()) + " meshes, " + std::to_string(model->Materials.size()) +
+                                " materials" + (model->Animations.empty() ? std::string() : ", " + std::to_string(model->Animations.size()) + " animations"));
         return model;
     }
 
@@ -492,7 +542,11 @@ namespace Conqueror
             if (mesh->mMaterialIndex >= 0)
             {
                 aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-                model->Materials.push_back(ProcessMaterial(material, scene, model->Directory));
+                std::shared_ptr<Material> remapped;
+                if (g_MaterialRemap)
+                    if (auto it = g_MaterialRemap->find(MaterialNameOf(material, mesh->mMaterialIndex)); it != g_MaterialRemap->end())
+                        remapped = MaterialAsset::Load(it->second);
+                model->Materials.push_back(remapped ? remapped : ProcessMaterial(material, scene, model->Directory));
             }
             else
                 model->Materials.push_back(Material::CreateDefault());
@@ -725,5 +779,182 @@ namespace Conqueror
         }
 
         return mat;
+    }
+
+    // ------------------------------------------------------------------ Malzeme çıkarma / eşleme (<model>.meta)
+
+    std::vector<std::pair<std::string, std::string>> ModelLoader::ReadMaterialRemap(const std::string& path)
+    {
+        std::vector<std::pair<std::string, std::string>> out;
+        std::error_code ec;
+        const std::string meta = path + ".meta";
+        if (!std::filesystem::exists(meta, ec))
+            return out;
+        try
+        {
+            YAML::Node root = YAML::LoadFile(meta);
+            if (auto remap = root["ModelImport"]["MaterialRemap"]; remap && remap.IsMap())
+                for (auto it = remap.begin(); it != remap.end(); ++it)
+                    out.push_back({ it->first.as<std::string>(), it->second.as<std::string>() });
+        }
+        catch (const std::exception& e)
+        {
+            CQ_CORE_WARN("Model import settings {0}: {1}", meta, e.what());
+        }
+        return out;
+    }
+
+    bool ModelLoader::WriteMaterialRemap(const std::string& path, const std::vector<std::pair<std::string, std::string>>& remap)
+    {
+        const std::string meta = path + ".meta";
+        std::error_code ec;
+        bool any = false;
+        for (const auto& [name, file] : remap)
+            any |= !file.empty();
+        if (!any)
+        {
+            std::filesystem::remove(meta, ec);
+            Invalidate(path);
+            return true;
+        }
+        YAML::Emitter out;
+        out << YAML::BeginMap << YAML::Key << "ModelImport" << YAML::Value << YAML::BeginMap;
+        out << YAML::Key << "MaterialRemap" << YAML::Value << YAML::BeginMap;
+        for (const auto& [name, file] : remap)
+            if (!file.empty())
+                out << YAML::Key << name << YAML::Value << file;
+        out << YAML::EndMap << YAML::EndMap << YAML::EndMap;
+        std::ofstream f(meta, std::ios::binary | std::ios::trunc);
+        if (!f)
+            return false;
+        f << "# Conqueror's Engine - model import settings\n" << out.c_str() << "\n";
+        Invalidate(path);
+        return true;
+    }
+
+    std::vector<std::string> ModelLoader::MaterialNames(const std::string& path)
+    {
+        std::vector<std::string> names;
+        Assimp::Importer importer;
+        const aiScene* scene = importer.ReadFile(path, 0);
+        if (!scene)
+            return names;
+        for (unsigned i = 0; i < scene->mNumMaterials; ++i)
+        {
+            const std::string n = MaterialNameOf(scene->mMaterials[i], i);
+            if (std::find(names.begin(), names.end(), n) == names.end())
+                names.push_back(n);
+        }
+        return names;
+    }
+
+    bool ModelLoader::ExtractMaterials(const std::string& path, const std::string& outDirectory, std::vector<std::string>& created, std::string* error)
+    {
+        namespace fs = std::filesystem;
+        Assimp::Importer importer;
+        const aiScene* scene = importer.ReadFile(path, 0);
+        if (!scene)
+        {
+            if (error) *error = importer.GetErrorString();
+            return false;
+        }
+        std::error_code ec;
+        fs::create_directories(outDirectory, ec);
+        auto unique = [](fs::path p) {
+            std::error_code e;
+            if (!fs::exists(p, e))
+                return p;
+            for (int i = 1; i < 10000; ++i)
+            {
+                fs::path c = p.parent_path() / (p.stem().string() + " " + std::to_string(i) + p.extension().string());
+                if (!fs::exists(c, e))
+                    return c;
+            }
+            return p;
+        };
+        const std::string stem = fs::path(path).stem().string();
+
+        // 1) Gömülü dokular -> dosya (Unity Extract Textures)
+        std::unordered_map<int, std::string> textureFiles;
+        for (unsigned i = 0; i < scene->mNumTextures; ++i)
+        {
+            const aiTexture* tex = scene->mTextures[i];
+            if (!tex || !tex->pcData)
+                continue;
+            std::string base = tex->mFilename.length > 0 ? fs::path(tex->mFilename.C_Str()).stem().string() : std::string();
+            if (base.empty())
+                base = stem + " Texture " + std::to_string(i);
+            fs::path file;
+            if (tex->mHeight == 0)
+            {
+                std::string ext = tex->achFormatHint[0] ? std::string(tex->achFormatHint) : std::string("png");
+                if (ext == "jpeg")
+                    ext = "jpg";
+                file = unique(fs::path(outDirectory) / (SafeFileName(base) + "." + ext));
+                std::ofstream(file, std::ios::binary).write(reinterpret_cast<const char*>(tex->pcData), tex->mWidth);
+            }
+            else
+            {
+                // Sıkıştırılmamış BGRA -> TGA (başlık + satırlar, sıkıştırmasız)
+                file = unique(fs::path(outDirectory) / (SafeFileName(base) + ".tga"));
+                std::ofstream f(file, std::ios::binary);
+                unsigned char header[18] = {};
+                header[2] = 2;
+                header[12] = (unsigned char)(tex->mWidth & 0xFF);
+                header[13] = (unsigned char)((tex->mWidth >> 8) & 0xFF);
+                header[14] = (unsigned char)(tex->mHeight & 0xFF);
+                header[15] = (unsigned char)((tex->mHeight >> 8) & 0xFF);
+                header[16] = 32;
+                header[17] = 0x28;   // üstten başlayan satırlar, 8 bit alfa
+                f.write(reinterpret_cast<const char*>(header), sizeof(header));
+                f.write(reinterpret_cast<const char*>(tex->pcData), (std::streamsize)tex->mWidth * tex->mHeight * 4);
+            }
+            textureFiles[(int)i] = file.string();
+            created.push_back(file.string());
+        }
+
+        // 2) Malzemeler -> .cqmat (dokular dosya yoluyla)
+        g_EmbeddedTextureFiles = &textureFiles;
+        std::vector<std::pair<std::string, std::string>> remap;
+        const std::string directory = fs::path(path).parent_path().string();
+        for (unsigned i = 0; i < scene->mNumMaterials; ++i)
+        {
+            const std::string name = MaterialNameOf(scene->mMaterials[i], i);
+            bool done = false;
+            for (const auto& r : remap)
+                done |= r.first == name;
+            if (done)
+                continue;
+            auto mat = ProcessMaterial(scene->mMaterials[i], scene, directory);
+            if (!mat)
+                continue;
+            mat->Name = name;
+            const fs::path file = unique(fs::path(outDirectory) / (SafeFileName(name) + ".cqmat"));
+            if (!MaterialAsset::Create(file.string(), mat.get()))
+                continue;
+            created.push_back(file.string());
+            remap.push_back({ name, SceneSerializer::ToAssetPath(file.string()) });
+        }
+        g_EmbeddedTextureFiles = nullptr;
+        if (remap.empty())
+        {
+            if (error) *error = "The model has no materials.";
+            return false;
+        }
+        // Var olan eşlemeler korunur, çıkarılanlar üzerine yazılır
+        auto existing = ReadMaterialRemap(path);
+        for (const auto& r : remap)
+        {
+            bool replaced = false;
+            for (auto& e : existing)
+                if (e.first == r.first)
+                {
+                    e.second = r.second;
+                    replaced = true;
+                }
+            if (!replaced)
+                existing.push_back(r);
+        }
+        return WriteMaterialRemap(path, existing);
     }
 }

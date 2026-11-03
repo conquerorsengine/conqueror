@@ -51,11 +51,11 @@ namespace Conqueror
         void Update(Scene& scene)
         {
             MeshLOD::Update();
-            auto view = scene.m_Registry.view<AutoLODComponent, ModelComponent>();
+            auto view = scene.m_Registry.view<AutoLODComponent, MeshRendererComponent>();
             for (auto h : view)
             {
                 auto& c = view.get<AutoLODComponent>(h);
-                auto& mc = view.get<ModelComponent>(h);
+                auto& mc = view.get<MeshRendererComponent>(h);
                 if (!mc.ModelData)
                     continue;
                 const MeshLOD::Settings settings = SettingsOf(c);
@@ -88,9 +88,9 @@ namespace Conqueror
         int GenerateNow(Scene& scene, uint32_t entity)
         {
             entt::entity h = (entt::entity)entity;
-            if (!scene.m_Registry.valid(h) || !scene.m_Registry.all_of<ModelComponent>(h))
+            if (!scene.m_Registry.valid(h) || !scene.m_Registry.all_of<MeshRendererComponent>(h))
                 return 0;
-            auto& mc = scene.m_Registry.get<ModelComponent>(h);
+            auto& mc = scene.m_Registry.get<MeshRendererComponent>(h);
             if (!mc.ModelData)
                 return 0;
             if (!scene.m_Registry.all_of<AutoLODComponent>(h))

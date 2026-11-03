@@ -4,14 +4,22 @@
 #include "Scene/Entity.h"
 #include "Scene/Components.h"
 #include "Scene/ComponentRegistry.h"
+#include "Scene/FullScreenPass.h"
 #include "Core/Debug/DebugDraw.h"
 #include "Core/Math/Math.h"
 
 #include <IconsFontAwesome6.h>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "Core/Serialization/SceneSerializer.h"
+
+#include <yaml-cpp/yaml.h>
+
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
+#include <fstream>
+#include <unordered_map>
 #include <vector>
 
 namespace Conqueror
@@ -61,6 +69,22 @@ namespace Conqueror
         PostProcessSettings Resolve(Scene& scene, const PostProcessSettings& base, const glm::vec3& cameraPosition)
         {
             PostProcessSettings out = ResolveVolumes(scene, base, cameraPosition);
+            // Full Screen Pass bileşenleri (Order sırasıyla)
+            {
+                std::vector<std::pair<int, FullScreenPassEntry>> passes;
+                auto view = scene.m_Registry.view<FullScreenPassComponent>();
+                for (auto e : view)
+                {
+                    const auto& p = view.get<FullScreenPassComponent>(e);
+                    if (!scene.IsEntityActive(e) || p.Shader.empty() || p.Intensity <= 0.0f)
+                        continue;
+                    passes.push_back({ p.Order, { p.Shader, std::clamp(p.Intensity, 0.0f, 1.0f), p.Injection == FullScreenPassInjection::AfterPostProcess } });
+                }
+                std::stable_sort(passes.begin(), passes.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
+                out.FullScreenPasses.clear();
+                for (auto& p : passes)
+                    out.FullScreenPasses.push_back(p.second);
+            }
             ConsoleSystem::ApplyPostOverrides(out);   // r.* konsol değişkenleri en son uygulanır
             return out;
         }
@@ -77,9 +101,13 @@ namespace Conqueror
             });
             for (entt::entity e : volumes)
             {
-                auto& v = view.get<PostProcessVolumeComponent>(e);
+                auto& vol = view.get<PostProcessVolumeComponent>(e);
+                // Profil kullanan hacim: efekt ayarları paylaşılan .cqvolume dosyasından
+                PostProcessVolumeComponent fromProfile;
+                const bool useProfile = !vol.Profile.empty() && (fromProfile = vol, VolumeProfiles::Load(vol.Profile, fromProfile));
+                const PostProcessVolumeComponent& v = useProfile ? fromProfile : vol;
                 float w = scene.IsEntityActive(e) ? std::clamp(v.Weight, 0.0f, 1.0f) * Influence(scene, e, v, cameraPosition) : 0.0f;
-                v.CurrentInfluence = w;
+                vol.CurrentInfluence = w;
                 if (w <= 0.0f)
                     continue;
                 if (v.OverrideExposure)
@@ -169,6 +197,67 @@ namespace Conqueror
         }
     }
 
+    namespace VolumeProfiles
+    {
+        bool IsProfileField(const std::string& n)
+        {
+            return n != "Shape" && n != "Size" && n != "Radius" && n != "BlendDistance" && n != "Weight" && n != "Priority" &&
+                   n != "Profile" && n != "CurrentInfluence";
+        }
+
+        bool Load(const std::string& path, PostProcessVolumeComponent& values)
+        {
+            struct Cached { std::filesystem::file_time_type Time; std::vector<std::pair<std::string, std::string>> Fields; };
+            static std::unordered_map<std::string, Cached> cache;
+            const std::string file = SceneSerializer::ResolveAssetPath(path);
+            std::error_code ec;
+            const auto t = std::filesystem::last_write_time(file, ec);
+            if (ec)
+                return false;
+            auto it = cache.find(file);
+            if (it == cache.end() || it->second.Time != t)
+            {
+                try
+                {
+                    YAML::Node root = YAML::LoadFile(file);
+                    YAML::Node n = root["VolumeProfile"];
+                    if (!n || !n.IsMap())
+                        return false;
+                    Cached c{ t, {} };
+                    for (auto kv = n.begin(); kv != n.end(); ++kv)
+                        c.Fields.emplace_back(kv->first.as<std::string>(), kv->second.IsScalar() ? kv->second.as<std::string>() : YAML::Dump(kv->second));
+                    it = cache.insert_or_assign(file, std::move(c)).first;
+                }
+                catch (...) { return false; }
+            }
+            const ComponentInfo* info = ComponentRegistry::Find("PostProcessVolumeComponent");
+            if (!info)
+                return false;
+            for (const auto& [name, text] : it->second.Fields)
+                if (const ComponentField* f = ComponentRegistry::FindField(*info, name); f && IsProfileField(name))
+                    ComponentRegistry::FieldFromString(*f, &values, text);
+            return true;
+        }
+
+        bool Save(const std::string& path, const PostProcessVolumeComponent& values)
+        {
+            const ComponentInfo* info = ComponentRegistry::Find("PostProcessVolumeComponent");
+            if (!info)
+                return false;
+            YAML::Emitter out;
+            out << YAML::BeginMap << YAML::Key << "VolumeProfile" << YAML::Value << YAML::BeginMap;
+            for (const auto& f : info->Fields)
+                if (IsProfileField(f.Name) && !f.ReadOnly)
+                    out << YAML::Key << f.Name << YAML::Value << ComponentRegistry::FieldToString(f, const_cast<PostProcessVolumeComponent*>(&values));
+            out << YAML::EndMap << YAML::EndMap;
+            std::ofstream file(SceneSerializer::ResolveAssetPath(path), std::ios::trunc);
+            if (!file)
+                return false;
+            file << out.c_str() << "\n";
+            return true;
+        }
+    }
+
     void RegisterPostProcessVolumeComponents()
     {
         using V = PostProcessVolumeComponent;
@@ -180,6 +269,9 @@ namespace Conqueror
             .Field("BlendDistance", "Blend Distance", &V::BlendDistance).Range(0.0f, 1000.0f, 0.05f).VisibleIf([](const V& v) { return v.Shape != VolumeShape::Global; })
             .Field("Weight", "Weight", &V::Weight).Range(0.0f, 1.0f, 0.01f)
             .Field("Priority", "Priority", &V::Priority).Range(-1000.0f, 1000.0f, 1.0f)
+            .Field("Profile", "Profile", &V::Profile, FieldKind::Asset).Filter(".cqvolume")
+                .Tooltip("Volume Profile asset: the overrides come from this file and are shared by every volume that uses it. "
+                         "Empty = the overrides below.")
             .Field("OverrideExposure", "Exposure", &V::OverrideExposure).Header("Overrides")
             .Field("Exposure", "Post Exposure (EV)", &V::Exposure).Range(-10.0f, 10.0f, 0.05f).VisibleIf([](const V& v) { return v.OverrideExposure; })
             .Field("OverrideBloom", "Bloom", &V::OverrideBloom)
@@ -208,5 +300,13 @@ namespace Conqueror
             .Field("Aperture", "Aperture (f-stop)", &V::Aperture).Range(0.7f, 32.0f, 0.05f).VisibleIf([](const V& v) { return v.OverrideDepthOfField; })
             .Field("FocalLength", "Focal Length (mm)", &V::FocalLength).Range(8.0f, 300.0f, 0.5f).VisibleIf([](const V& v) { return v.OverrideDepthOfField; })
             .Field("CurrentInfluence", "Current Influence", &V::CurrentInfluence).ReadOnly().Header("Runtime");
+        // Profil kullanılırken hacmin kendi efekt alanları gizlenir (profil düzenlenir)
+        if (ComponentInfo* info = ComponentRegistry::Find("PostProcessVolumeComponent"))
+            for (auto& f : info->Fields)
+                if (VolumeProfiles::IsProfileField(f.Name))
+                {
+                    auto old = f.VisibleIf;
+                    f.VisibleIf = [old](const void* c) { return static_cast<const V*>(c)->Profile.empty() && (!old || old(c)); };
+                }
     }
 }

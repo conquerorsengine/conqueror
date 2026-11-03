@@ -68,6 +68,8 @@ namespace Conqueror
         bool Solo = false;
         bool BypassEffects = false;
         glm::vec3 Color = glm::vec3(0.35f, 0.62f, 0.95f);
+        // Audio Mixer varlığı (.cqmixer): boş = proje mikseri; doluysa grubun ait olduğu dosya (ad "<Mikser>/<Grup>")
+        std::string Asset;
         std::vector<MixerEffect> Effects;
 
         // Ducking (yan zincir): kaynak grup bu eşiği aşınca bu grup kısılır
@@ -156,6 +158,16 @@ namespace Conqueror
         void EnsureProjectLoaded(const std::filesystem::path& projectDirectory);
         const std::filesystem::path& GetFilePath() const { return m_FilePath; }
         bool SaveProject() const { return !m_FilePath.empty() && Save(m_FilePath); }
+
+        // ---- Audio Mixer varlıkları (Unity: Create > Audio Mixer): her dosya kendi grup ağacı, Master'ı "Output" grubuna gider.
+        // Gruplar "<dosya adı>/<grup>" adıyla Audio Source Output listesinde görünür.
+        bool LoadAssetMixer(const std::filesystem::path& path);
+        bool SaveAssetMixer(const std::filesystem::path& path) const;
+        void LoadAllAssetMixers();
+        int CheckAssetChanges();
+        // Proje mikseri + tüm varlık mikserleri
+        bool SaveAll() const;
+        static std::string AssetPrefix(const std::filesystem::path& assetPath);
         void ResetToDefault();
 
         static float DbToLinear(float db) { return db <= -79.9f ? 0.0f : std::pow(10.0f, db / 20.0f); }
@@ -184,5 +196,6 @@ namespace Conqueror
         struct SavedGroupState { std::string Name; float VolumeDb; bool Mute; };
         std::vector<SavedGroupState> m_PlaySessionState;
         bool m_InPlaySession = false;
+        std::unordered_map<std::string, std::filesystem::file_time_type> m_AssetTimes;
     };
 }

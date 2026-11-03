@@ -28,6 +28,8 @@ script Player : ConquerorScript
     public int maxAirJumps = 1;
     [Tooltip("Kenardan düştükten sonra hâlâ zıplanabilen süre (s)")]
     public float coyoteTime = 0.12;
+    [Tooltip("Zıplama tuşu basılı tutulursa yere iner inmez yeniden zıplar")]
+    public bool holdToJump = true;
     [Tooltip("Yere inmeden hemen önce basılan zıplamanın hatırlanma süresi (s)")]
     public float jumpBuffer = 0.15;
     [Tooltip("Zıplatma pedinin verdiği dikey hız (m/s)")]
@@ -77,6 +79,7 @@ script Player : ConquerorScript
 
     [Header("Otopilot (test / demo)")]
     public bool autopilot = false;
+    private bool justLanded = false;
     public float botMoveX = 0;
     public float botMoveY = 0;
     public bool botJump = false;
@@ -350,6 +353,9 @@ script Player : ConquerorScript
 
         if (buffer > 0) { buffer -= dt; }
         if (!braking && JumpPressed()) { buffer = jumpBuffer; }
+        // Basılı tutulan zıplama yere inince yeniden zıplatır (yalnız oyuncu; autopilot zıplamalarını kendi verir)
+        if (!braking && !autopilot && holdToJump && justLanded && JumpHeld()) { buffer = jumpBuffer; }
+        justLanded = false;
         jumpHeld = !braking && JumpHeld();
         if (!braking && SlidePressed()) { slideQueue = 0.3; }
         else if (slideQueue > 0) { slideQueue -= dt; }
@@ -426,7 +432,11 @@ script Player : ConquerorScript
         standingOn = groundId;
         if (grounded)
         {
-            if (!was) { Land(); }
+            if (!was)
+            {
+                Land();
+                justLanded = true;
+            }
             coyote = coyoteTime;
             airJumps = maxAirJumps;
             padFlight = false;

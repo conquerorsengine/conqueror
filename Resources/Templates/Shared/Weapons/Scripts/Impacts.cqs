@@ -14,6 +14,9 @@ script Impacts : ConquerorScript
     private int nextDecal = 0;
     private var tracers = [];
     private var tracerTime = [];
+    private var tracerFrom = [];        // izin başı bu varlığa (namlu) bağlı: -1 sabit
+    private var tracerEnd = [];         // izin sonu (isabet noktası)
+    private var tracerWidth = [];
     private int nextTracer = 0;
 
     func MakeDecal(i)
@@ -63,6 +66,24 @@ script Impacts : ConquerorScript
             EntitySetActive(t, false);
             tracers.Add(t);
             tracerTime.Add(0.0);
+            tracerFrom.Add(-1);
+            tracerEnd.Add({x: 0.0, y: 0.0, z: 0.0});
+            tracerWidth.Add(0.0);
+        }
+    }
+
+    // İz görünür kaldığı sürece başı namlunun o anki yerinde: silah geri teper / oyuncu yürür ya da döner. Atış anındaki
+    // namlu konumunda sabit kalan iz namludan kopup alevin yanında ikinci bir mermi gibi görünüyordu. Betiklerin Update'inden
+    // sonra (silahın bu karedeki pozu kurulduktan sonra)
+    func LateUpdate(dt)
+    {
+        for (var i = 0; i < tracers.Count; i++)
+        {
+            if (tracerTime[i] <= 0.0 || tracerFrom[i] < 0) { continue; }
+            if (!EntityIsValid(tracerFrom[i])) { tracerFrom[i] = -1; continue; }
+            var a = EntityGetWorldPosition(tracerFrom[i]);
+            var b = tracerEnd[i];
+            PlaceTracer(tracers[i], a.x, a.y, a.z, b.x, b.y, b.z, tracerWidth[i]);
         }
     }
 
@@ -130,21 +151,37 @@ script Impacts : ConquerorScript
     // İz: (ax, ay, az) -> (bx, by, bz) kısa süre parlayan ince çubuk
     func Tracer(ax, ay, az, bx, by, bz, r, g, b, width, life)
     {
-        var t = tracers[nextTracer];
-        tracerTime[nextTracer] = life;
+        TracerFrom(-1, ax, ay, az, bx, by, bz, r, g, b, width, life);
+    }
+
+    // İz, başı "from" varlığına (namlu) bağlı: görünür kaldığı sürece namluyla birlikte kalır (from -1: sabit)
+    func TracerFrom(from, ax, ay, az, bx, by, bz, r, g, b, width, life)
+    {
+        var i = nextTracer;
+        var t = tracers[i];
         nextTracer = (nextTracer + 1) % tracers.Count;
+        tracerTime[i] = life;
+        tracerFrom[i] = from;
+        tracerEnd[i] = {x: bx, y: by, z: bz};
+        tracerWidth[i] = width;
+        if (!PlaceTracer(t, ax, ay, az, bx, by, bz, width)) { tracerTime[i] = 0.0; return; }
+        EntitySetActive(t, true);
+        EntitySetColor(t, r, g, b, 1);
+        EntitySetComponentField(t, "MeshRenderer", "EmissionColor", {r: r, g: g, b: b});
+    }
+
+    func PlaceTracer(t, ax, ay, az, bx, by, bz, width)
+    {
         var dx = bx - ax;
         var dy = by - ay;
         var dz = bz - az;
         var len = MathSqrt(dx * dx + dy * dy + dz * dz);
-        if (len < 0.01) { return; }
-        EntitySetActive(t, true);
+        if (len < 0.01) { EntitySetActive(t, false); return false; }
         EntitySetPosition(t, (ax + bx) / 2.0, (ay + by) / 2.0, (az + bz) / 2.0);
         var yaw = MathRadToDeg(MathAtan2(dx, dz));
         var pitch = -MathRadToDeg(MathAsin(dy / len));
         EntitySetRotation(t, pitch, yaw, 0);
         EntitySetScale(t, width, width, len / 2.0);
-        EntitySetColor(t, r, g, b, 1);
-        EntitySetComponentField(t, "MeshRenderer", "EmissionColor", {r: r, g: g, b: b});
+        return true;
     }
 }

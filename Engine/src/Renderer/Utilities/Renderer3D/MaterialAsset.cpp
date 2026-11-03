@@ -1,6 +1,10 @@
 #include "MaterialAsset.h"
+#include "Core/Utils/ImportActivity.h"
+
+#include <chrono>
 #include "Material.h"
 #include "Core/Serialization/SceneSerializer.h"
+#include "Core/Project/Project.h"
 
 #include "Core/Logging/Log.h"
 
@@ -68,8 +72,8 @@ namespace Conqueror
                 return false;
             }
             fresh.Name = std::filesystem::path(key).stem().string();
-            if (fresh.GraphNodes.empty() || !fresh.GraphInitialized)
-                fresh.MaterialShader = nullptr;   // graph yok: varsayılan PBR
+            if ((fresh.GraphNodes.empty() || !fresh.GraphInitialized) && !fresh.LoadShaderFile())
+                fresh.MaterialShader = nullptr;   // graph / kod shader'ı yok: varsayılan PBR
             *entry.Mat = fresh;
             return true;
         }
@@ -99,6 +103,8 @@ namespace Conqueror
             if (auto it = cache.find(key); it != cache.end())
                 return it->second.Mat;
 
+            const auto t0 = std::chrono::steady_clock::now();
+            auto elapsed = [&]() { return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count(); };
             std::string text;
             if (!ReadText(path, text))
                 return nullptr;
@@ -108,10 +114,12 @@ namespace Conqueror
             if (!FromYaml(text, *mat, &error))
             {
                 CQ_CORE_ERROR("Material '{0}' could not be read: {1}", path, error);
+                ImportActivity::Add(path, "Material", elapsed(), false, error);
                 return nullptr;
             }
             mat->Name = std::filesystem::path(path).stem().string();
             cache[key] = { mat, MTime(path) };
+            ImportActivity::Add(path, "Material", elapsed(), true);
             return mat;
         }
 
@@ -214,7 +222,14 @@ namespace Conqueror
             static const std::string root =
                 Key(std::filesystem::path(SceneSerializer::ResolveAssetPath("CQ:Resources/Packages")).string());
             const std::string k = Key(path);
-            return k.rfind(root + "/", 0) == 0;
+            if (k.rfind(root + "/", 0) == 0)
+                return true;
+            // Projenin Packages klasörü de salt okunur (Content Browser ile aynı kural)
+            const std::filesystem::path project = Project::GetActiveProjectDirectory();
+            if (project.empty())
+                return false;
+            const std::string pk = Key((project / "Packages").string());
+            return k.rfind(pk + "/", 0) == 0;
         }
 
         int CheckFileChanges()
@@ -235,6 +250,10 @@ namespace Conqueror
                     CQ_CORE_INFO("Material reloaded: {0}", key);
                 }
             }
+            // Kod shader'ı (.cqsh) dosyası değiştiyse yeniden derle (Unity: shader kaydedilince malzemeler güncellenir)
+            for (auto& [key, entry] : Cache())
+                if (entry.Mat && !entry.Mat->ShaderPath.empty() && entry.Mat->MaterialShader && entry.Mat->MaterialShader->IsSourceModified())
+                    entry.Mat->LoadShaderFile();
             const int count = (int)changed.size();
             if (count)
                 RefreshVariantsOf(std::move(changed));

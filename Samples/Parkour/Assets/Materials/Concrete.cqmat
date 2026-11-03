@@ -1,0 +1,24 @@
+Material:
+  Name: Concrete
+  Albedo: [0.9, 0.84, 0.78]
+  Opacity: 1
+  Metallic: 0
+  Roughness: 0.85
+  AO: 1
+  EmissionColor: [0, 0, 0]
+  EmissionStrength: 0
+  Tiling: [0.3333, 0.3333]
+  Offset: [0, 0]
+  WorldAligned: true
+  AlignToObject: true
+  RenderMode: 0
+  Culling: 0
+  AlphaClip: 0.5
+  AlbedoMap: Assets/Textures/concrete.png
+  NextGraphNodeID: 1
+  NextGraphLinkID: 1
+  GraphInitialized: false
+  GraphNodes:
+    []
+  GraphLinks:
+    []

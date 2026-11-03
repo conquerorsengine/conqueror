@@ -82,6 +82,7 @@ namespace Conqueror
         for (auto e : meshView)
         {
             auto [tf, mr] = meshView.get<TransformComponent, MeshRendererComponent>(e);
+            if (mr.IsModel()) continue;   // model ağı model döngüsünde
             glm::mat4 wt = tf.WorldTransform;
             std::shared_ptr<Mesh> mesh;
             switch (mr.Type) {
@@ -101,10 +102,10 @@ namespace Conqueror
             geomAABBs.push_back({ lMin, lMax });
         }
 
-        auto modelView = reg.view<TransformComponent, ModelComponent>();
+        auto modelView = reg.view<TransformComponent, MeshRendererComponent>();
         for (auto e : modelView)
         {
-            auto [tf, mc] = modelView.get<TransformComponent, ModelComponent>(e);
+            auto [tf, mc] = modelView.get<TransformComponent, MeshRendererComponent>(e);
             if (!mc.ModelData) continue;
             glm::mat4 wt = tf.WorldTransform;
             for (auto& mesh : mc.ModelData->Meshes)
@@ -338,6 +339,7 @@ namespace Conqueror
         for (auto e : meshView)
         {
             auto [tf, mr] = meshView.get<TransformComponent, MeshRendererComponent>(e);
+            if (mr.IsModel()) continue;   // model ağı model döngüsünde
             glm::mat4 wt = tf.WorldTransform;
             glm::mat3 nm = glm::mat3(glm::transpose(glm::inverse(wt)));
             glm::vec3 alb = MeshRendererMaterial::Shared(mr).Albedo;
@@ -370,10 +372,10 @@ namespace Conqueror
             }
         }
 
-        auto modelView = reg.view<TransformComponent, ModelComponent>();
+        auto modelView = reg.view<TransformComponent, MeshRendererComponent>();
         for (auto e : modelView)
         {
-            auto [tf, mc] = modelView.get<TransformComponent, ModelComponent>(e);
+            auto [tf, mc] = modelView.get<TransformComponent, MeshRendererComponent>(e);
             if (!mc.ModelData) continue;
 
             glm::mat4 wt = tf.WorldTransform;
@@ -670,6 +672,7 @@ namespace Conqueror
         for (auto e : meshView)
         {
             auto [tf, mr] = meshView.get<TransformComponent, MeshRendererComponent>(e);
+            if (mr.IsModel()) continue;   // model ağı model döngüsünde
             glm::mat4 wt = tf.WorldTransform;
             std::shared_ptr<Mesh> mesh;
             switch (mr.Type) {
@@ -692,10 +695,10 @@ namespace Conqueror
             }
         }
 
-        auto modelView = reg.view<TransformComponent, ModelComponent>();
+        auto modelView = reg.view<TransformComponent, MeshRendererComponent>();
         for (auto e : modelView)
         {
-            auto [tf, mc] = modelView.get<TransformComponent, ModelComponent>(e);
+            auto [tf, mc] = modelView.get<TransformComponent, MeshRendererComponent>(e);
             if (!mc.ModelData) continue;
             glm::mat4 wt = tf.WorldTransform;
 

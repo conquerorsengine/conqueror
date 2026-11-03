@@ -151,6 +151,10 @@ namespace Conqueror
 
         // Shader referansı (nullptr ise default PBR shader kullanılır)
         std::shared_ptr<Shader> MaterialShader;
+        // Kod shader'ı (.cqsh, Unity: malzemenin Shader seçimi): doluysa (graph yokken) bu dosya derlenip kullanılır
+        std::string ShaderPath;
+        // ShaderPath'i derle (yoksa / graph varsa dokunmaz); başarısızsa false (varsayılan PBR kalır)
+        bool LoadShaderFile();
 
         // PBR Parametreleri
         glm::vec3 Albedo = glm::vec3(1.0f);

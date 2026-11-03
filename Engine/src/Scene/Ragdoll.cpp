@@ -52,9 +52,9 @@ namespace Conqueror
 
         const Model* SkinnedModel(Entity e)
         {
-            if (!e.HasComponent<ModelComponent>())
+            if (!e.HasComponent<MeshRendererComponent>())
                 return nullptr;
-            const auto& model = e.GetComponent<ModelComponent>().ModelData;
+            const auto& model = e.GetComponent<MeshRendererComponent>().ModelData;
             return model && model->IsSkinned && model->SkeletonData ? model.get() : nullptr;
         }
 

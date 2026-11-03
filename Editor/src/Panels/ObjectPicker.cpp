@@ -9,6 +9,8 @@
 #include <IconsFontAwesome6.h>
 
 #include <algorithm>
+#include <cmath>
+#include <imgui.h>
 #include <filesystem>
 #include <memory>
 #include <unordered_map>
@@ -33,6 +35,7 @@ namespace Conqueror::Editor::ObjectPicker
             std::vector<std::string> Lists[3];
             // Sonuç: sahibi bir sonraki karede alır
             bool HasResult = false;
+            int UnconsumedFrames = 0;   // kapandıktan sonra alınmayan seçim (yuva artık çizilmiyor) birkaç karede düşer
             std::string Result;
             bool CloseRequested = false;   // çift tıklama: fare bırakılınca kapanır (tık alttaki Viewport'a geçmesin)
         };
@@ -162,7 +165,7 @@ namespace Conqueror::Editor::ObjectPicker
 
     const std::vector<std::string>& ImageExtensions()
     {
-        static const std::vector<std::string> exts = { ".png", ".jpg", ".jpeg", ".tga", ".bmp", ".hdr", ".cqrt" };
+        static const std::vector<std::string> exts = { ".png", ".jpg", ".jpeg", ".tga", ".bmp", ".hdr", ".cqrt", ".cqcrt" };
         return exts;
     }
 
@@ -174,7 +177,7 @@ namespace Conqueror::Editor::ObjectPicker
 
     const std::vector<std::string>& AudioExtensions()
     {
-        static const std::vector<std::string> exts = { ".wav", ".mp3", ".ogg", ".flac" };
+        static const std::vector<std::string> exts = { ".wav", ".mp3", ".ogg", ".flac", ".cqaudiorandom" };
         return exts;
     }
 
@@ -221,8 +224,26 @@ namespace Conqueror::Editor::ObjectPicker
         if (has(".cqphysmat2d")) return "Physics Material 2D";
         if (has(".cqtile")) return "Tile";
         if (has(".cqspriteatlas")) return "Sprite Atlas";
+        if (has(".cqvolume")) return "Volume Profile";
+        if (has(".cqflare")) return "Lens Flare";
+        if (has(".cqcrt")) return "Custom Render Texture";
+        if (has(".cqmixer")) return "Audio Mixer";
+        if (has(".cqaudiorandom")) return "Audio Random Container";
+        if (has(".cqterrainlayer")) return "Terrain Layer";
+        if (has(".cqbrush")) return "Brush";
+        if (has(".cqsignal")) return "Signal";
+        if (has(".cqinputactions")) return "Input Actions";
+        if (has(".cqdata")) return "Data Asset";
+        if (has(".cqcurve")) return "Curve";
+        if (has(".cqmask")) return "Avatar Mask";
+        if (has(".cqcubemap") && !has(".hdr")) return "Cubemap";
+        if (has(".cqlighting")) return "Lighting Settings";
+        if (has(".cqlmparams")) return "Lightmap Parameters";
         if (has(".cqpalette")) return "Tile Palette";
         if (has(".cqphysmat")) return "Physics Material";
+        if (has(".cqmesh")) return "Mesh";
+        if (has(".cqblendspace")) return "Blend Space";
+        if (has(".cqoverride")) return "Animator Override Controller";
         if (has(".cqrt") && exts.size() == 1) return "Render Texture";
         if (has(".png") || has(".jpg")) return "Texture";
         if (has(".wav") || has(".ogg") || has(".mp3")) return "Audio Clip";
@@ -238,12 +259,27 @@ namespace Conqueror::Editor::ObjectPicker
         return "Asset";
     }
 
+    bool IconButton(const char* label)
+    {
+        const float h = ImGui::GetFrameHeight();
+        const ImVec2 pos = ImGui::GetCursorScreenPos();
+        const bool pressed = ImGui::Button(label, ImVec2(h, h));
+        // Simge görünen (mürekkep) sınırlarına göre piksel hassasında ortalanır: metin hizalaması glyph'in ilerleme
+        // genişliğini kullandığından daire-nokta simgesi kutunun ortasından kayık duruyordu
+        if (ImFontGlyph* glyph = ImGui::GetFontBaked()->FindGlyphNoFallback((ImWchar)0xf140))
+        {
+            const float x = std::round(pos.x + h * 0.5f - (glyph->X0 + glyph->X1) * 0.5f);
+            const float y = std::round(pos.y + h * 0.5f - (glyph->Y0 + glyph->Y1) * 0.5f);
+            ImGui::GetWindowDrawList()->AddText(ImVec2(x, y), ImGui::GetColorU32(ImGuiCol_Text), ICON_FA_BULLSEYE);
+        }
+        return pressed;
+    }
+
     bool Button(const char* id, const std::string& typeName, const std::vector<std::string>& extensions, const std::string& current,
                 std::string& picked)
     {
         const ImGuiID owner = ImGui::GetID(id);
-        const float h = ImGui::GetFrameHeight();
-        if (ImGui::Button((std::string(ICON_FA_BULLSEYE) + "##" + id).c_str(), ImVec2(h, 0)))
+        if (IconButton((std::string("##") + id).c_str()))
             Open(owner, typeName, extensions, current);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select %s", typeName.c_str());
@@ -272,6 +308,8 @@ namespace Conqueror::Editor::ObjectPicker
             s.Tab = 1;
     }
 
+    bool IsBusy() { return s.Open || s.HasResult; }
+
     bool IsOpenFor(ImGuiID owner) { return s.Open && s.Owner == owner; }
 
     bool Consume(ImGuiID owner, std::string& picked)
@@ -286,7 +324,12 @@ namespace Conqueror::Editor::ObjectPicker
     void Draw()
     {
         if (!s.Open)
+        {
+            if (s.HasResult && ++s.UnconsumedFrames > 3)
+                s.HasResult = false;
             return;
+        }
+        s.UnconsumedFrames = 0;
         if (s.CloseRequested && !ImGui::IsMouseDown(ImGuiMouseButton_Left) && !ImGui::IsMouseReleased(ImGuiMouseButton_Left))
         {
             s.CloseRequested = false;

@@ -17,6 +17,9 @@ void main()
 #include "Include/Common.glsl"
 
 layout(location = 0) out vec4 FragColor;
+// Gölge durumu: y = bu pikselin güneş gölgesi (sonraki kare karşılaştırır); x kullanılmıyor
+layout(location = 1) out vec4 StateOut;   // x hareket payı (son geçiş FXAA), y güneş gölgesi, z durgunluk yaşı (kare)
+layout(location = 2) out vec4 DebugOut;   // r.TAADebug: pikselin geçmiş yolu (geçmişe yazılmaz, yalnız gösterilir)
 in vec2 v_UV;
 
 uniform sampler2D u_Current;
@@ -28,6 +31,41 @@ uniform vec2 u_Texel;
 uniform vec2 u_JitterUV;          // bu karenin alt piksel kayması (uv)
 uniform float u_Feedback = 0.9;
 uniform int u_HistoryValid = 0;
+uniform vec4 u_MovingRects[32];   // saydam nesne / parçacık: bu ve önceki karede hareket edenlerin ekran dikdörtgenleri (uv)
+uniform int u_MovingCount = 0;
+uniform sampler2D u_GNormal;      // w >= 3.5: bu karede hareket eden opak nesne (Renderer3D hareket bayrağı)
+uniform int u_HasMotionFlag = 0;
+uniform sampler2D u_State;        // önceki karenin gölge durumu (y: güneş gölgesi)
+uniform sampler2D u_GShadow;      // bu karenin güneş gölgesi (0 gölge .. 1 aydınlık)
+uniform int u_HasShadowMask = 0;
+uniform vec4 u_ShadowBoxes[64];   // hareket eden gölge düşürücülerin dünya kutuları (bu + önceki kare): [2i] min, [2i+1] max
+uniform int u_ShadowBoxCount = 0;
+uniform vec3 u_TowardSun = vec3(0.0, 1.0, 0.0);
+uniform sampler2D u_Velocity;     // nesne hareket vektörleri: xy uv hızı (şimdiki - önceki), z 1 kesin / 0.5 yaklaşık; x > 5000: yok
+uniform int u_HasVelocity = 0;
+uniform int u_Debug = 0;          // 1: hata ayıklama görünümü (r.TAADebug): pikselin geçmiş yolu renkle
+uniform int u_CameraStill = 0;
+uniform sampler2D u_Reactive;     // parçacık tepki maskesi (R: bu karede duman / toz / kıvılcım örtüsü)
+uniform int u_HasReactive = 0;    // 1: kamera önceki karedeki yerinde (sabit yüzeylerin hareketi tam sıfır)
+
+// Dünya noktası hareket eden bir nesnenin gölge hacminde mi: noktadan güneşe giden ışın kutulardan birine çarpıyor mu
+bool InMovingShadow(vec3 p)
+{
+    vec3 dir = u_TowardSun;
+    dir = mix(dir, vec3(1e-6), lessThan(abs(dir), vec3(1e-6)));
+    vec3 inv = 1.0 / dir;
+    for (int i = 0; i < u_ShadowBoxCount; ++i)
+    {
+        vec3 t1 = (u_ShadowBoxes[2 * i].xyz - p) * inv;
+        vec3 t2 = (u_ShadowBoxes[2 * i + 1].xyz - p) * inv;
+        vec3 tn = min(t1, t2), tf = max(t1, t2);
+        float tNear = max(max(tn.x, tn.y), max(tn.z, 0.0));
+        float tFar = min(min(tf.x, tf.y), tf.z);
+        if (tFar >= tNear)
+            return true;
+    }
+    return false;
+}
 
 vec3 RGBToYCoCg(vec3 c) { return vec3(dot(c, vec3(0.25, 0.5, 0.25)), dot(c, vec3(0.5, 0.0, -0.5)), dot(c, vec3(-0.25, 0.5, -0.25))); }
 vec3 YCoCgToRGB(vec3 c) { return vec3(c.x + c.y - c.z, c.x + c.z, c.x - c.y - c.z); }
@@ -55,67 +93,313 @@ vec3 SampleHistory(vec2 uv)
            + texture(u_History, vec2(tc3.x, tc12.y)).rgb * (w3.x * w12.y)
            + texture(u_History, vec2(tc12.x, tc3.y)).rgb * (w12.x * w3.y);
     float wsum = w12.x * w0.y + w0.x * w12.y + w12.x * w12.y + w3.x * w12.y + w12.x * w3.y;
-    return max(r / max(wsum, 1e-4), vec3(0.0));
+    // Halka önleme: Catmull-Rom'un eksi lobları keskin kenarda (duvar üstü / gökyüzü) alt / üst taşma üretir; geçmiş alt
+    // piksel kayarken (zıplama, yavaş yürüme) kenarın altında koyu, üstünde parlak çizgi birikir ve kenar merdivenli
+    // görünür. Sonuç bilineer ayak izindeki 4 geçmiş pikselin aralığına sınırlanır (keskinlik korunur, halka oluşmaz).
+    ivec2 hsz = textureSize(u_History, 0);
+    ivec2 i0 = clamp(ivec2(floor(pos - 0.5)), ivec2(0), hsz - 1);
+    ivec2 i1 = clamp(i0 + 1, ivec2(0), hsz - 1);
+    vec3 t00 = texelFetch(u_History, i0, 0).rgb;
+    vec3 t10 = texelFetch(u_History, ivec2(i1.x, i0.y), 0).rgb;
+    vec3 t01 = texelFetch(u_History, ivec2(i0.x, i1.y), 0).rgb;
+    vec3 t11 = texelFetch(u_History, i1, 0).rgb;
+    vec3 lo = min(min(t00, t10), min(t01, t11));
+    vec3 hi = max(max(t00, t10), max(t01, t11));
+    return clamp(max(r / max(wsum, 1e-4), vec3(0.0)), lo, hi);
+}
+
+// Derinlik tamponu değerinden görüş uzaklığı (kırpma uzayı w)
+float ViewW(vec2 uv, float depth)
+{
+    vec4 w = u_InvViewProj * vec4(uv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+    return 1.0 / max(abs(w.w), 1e-8);
+}
+
+// Hata ayıklama: yol rengi sahnenin parlaklığıyla karıştırılır (yer seçilebilsin)
+vec4 DebugColor(vec3 compressedRGB, vec3 tint, float alpha)
+{
+    float l = clamp(dot(compressedRGB, vec3(0.2126, 0.7152, 0.0722)), 0.0, 1.0);
+    return vec4(Expand(mix(vec3(l), tint, 0.65)), alpha);
 }
 
 void main()
 {
-    // Titreşimsiz konumdaki içerik (çizim u_JitterUV kadar kaydırıldı)
-    vec3 current = Compress(max(texture(u_Current, v_UV + u_JitterUV).rgb, vec3(0.0)));
-    if (any(isnan(current)))
-        current = vec3(0.0);
-
-    // 3x3 komşuluk istatistikleri + en yakın derinlik (nesne kenarlarında doğru hareket)
+    // Güncel renk: 3x3 komşuluk, her örneğin titreşimsiz konumunun bu piksele uzaklığına göre ağırlıklı
+    // (Blackman-Harris yaklaşığı, Unreal TAA gibi). Bilineer "uv + jitter" örneklemesi her karede kenarın
+    // netliğini değiştiriyor, yüksek kontrastlı kenarlar (duvar / gökyüzü) kamera dönerken titriyordu.
+    vec2 jitterPx = u_JitterUV / u_Texel;
     vec3 m1 = vec3(0.0), m2 = vec3(0.0);
     vec3 nmin = vec3(1e9), nmax = vec3(-1e9);
+    vec3 currentSum = vec3(0.0);
+    float weightSum = 0.0;
     float closestDepth = 1.0;
     vec2 closestUV = v_UV;
+    bool movingNow = false;
+    int movingWhy = 0;   // hata ayıklama: 1 hareket bayrağı, 2 saydam dikdörtgen, 3 önceki kapsama
     for (int y = -1; y <= 1; ++y)
     for (int x = -1; x <= 1; ++x)
     {
-        vec2 uv = v_UV + vec2(x, y) * u_Texel;
-        vec3 c = RGBToYCoCg(Compress(max(texture(u_Current, uv).rgb, vec3(0.0))));
+        vec2 o = vec2(x, y);
+        vec2 uv = v_UV + o * u_Texel;
+        vec3 raw = Compress(max(texture(u_Current, uv).rgb, vec3(0.0)));
+        if (any(isnan(raw)))
+            raw = vec3(0.0);
+        vec2 d = o - jitterPx;
+        float w = exp(-2.29 * dot(d, d));
+        currentSum += raw * w;
+        weightSum += w;
+        vec3 c = RGBToYCoCg(raw);
         m1 += c;
         m2 += c * c;
         nmin = min(nmin, c);
         nmax = max(nmax, c);
-        float d = texture(u_Depth, uv).r;
-        if (d < closestDepth) { closestDepth = d; closestUV = uv; }
+        float dep = texture(u_Depth, uv).r;
+        if (dep < closestDepth) { closestDepth = dep; closestUV = uv; }
+        if (u_HasMotionFlag == 1 && texture(u_GNormal, uv).w >= 3.5)
+        {
+            movingNow = true;
+            movingWhy = 1;
+        }
     }
+    vec3 current = currentSum / max(weightSum, 1e-4);
+    // Saydam nesne / parçacık dikdörtgenleri (G-buffer'a yazmazlar)
+    vec2 pad = u_Texel * 3.0;
+    for (int i = 0; i < u_MovingCount && !movingNow; ++i)
+    {
+        vec4 r = u_MovingRects[i];
+        if (all(greaterThanEqual(v_UV, r.xy - pad)) && all(lessThanEqual(v_UV, r.zw + pad)))
+        {
+            movingNow = true;
+            movingWhy = 2;
+        }
+    }
+    // Parçacık (duman, toz, kıvılcım): derinlik ve hareket bayrağı yazmaz, her karede hareket eder. Kapladığı piksel hareket
+    // eden nesne gibi işlenir (geçmişe güvenilmez, sonraki karede ayrıldığı yer de sıkı). Yoksa duman duran yüzey gibi
+    // geçmişte kalıyor, bazı piksellerde hiç görünmeyip düz sınırlarla kesiliyordu
+    if (u_HasReactive == 1 && !movingNow)
+    {
+        ivec2 rsz = textureSize(u_Reactive, 0);
+        if (texelFetch(u_Reactive, clamp(ivec2(v_UV * vec2(rsz)), ivec2(0), rsz - 1), 0).r > 0.02)
+        {
+            movingNow = true;
+            movingWhy = 4;
+        }
+    }
+    // Açılan alan (hareket vektörü geçişi): bu piksel hareket eden bir nesnenin önceki karedeki konumunda. Nesne ilk kez
+    // kıpırdadığında eski yerindeki geçmiş (yerde yatan levha, ışınlanan nesne) burada iz bırakmasın
+    if (u_HasVelocity == 1 && !movingNow)
+    {
+        ivec2 vsz = textureSize(u_Velocity, 0);
+        if (texelFetch(u_Velocity, clamp(ivec2(v_UV * vec2(vsz)), ivec2(0), vsz - 1), 0).w > 1.5)
+        {
+            movingNow = true;
+            movingWhy = 3;
+        }
+    }
+    // Geçmişin alfa kanalı: 3x3 içindeki en yakın görüş uzaklığı (titreşimle değişmez; sonraki karede aynı yüzey testi),
+    // işareti hareket bayrağı (eksi: bu karede burada hareket eden nesne vardı -> sonraki karede ayrıldığı yer de sıkı)
+    float closestW = ViewW(closestUV, closestDepth);
+    float outAlpha = movingNow ? -closestW : closestW;
+    float shadowNow = u_HasShadowMask == 1 ? texture(u_GShadow, v_UV).r : 1.0;
+    // Durum x: hareket payı (0 durağan .. 1 hızlı / geçmişsiz). Son geçiş hızlı kayan kenarlarda kalan merdiveni FXAA ile
+    // yumuşatır; durağan görüntüye dokunulmaz
+    StateOut = vec4(1.0, shadowNow, 0.0, 0.0);
     if (u_HistoryValid == 0)
     {
-        FragColor = vec4(Expand(current), 1.0);
+        FragColor = vec4(Expand(current), outAlpha);
+        DebugOut = DebugColor(current, vec3(1.0), 1.0);
         return;
     }
-    vec4 world = u_InvViewProj * vec4(closestUV * 2.0 - 1.0, closestDepth * 2.0 - 1.0, 1.0);
-    world /= world.w;
-    vec4 prevClip = u_PrevViewProj * world;
-    // En yakın derinlikli komşunun hareketi bu piksele uygulanır
-    vec2 velocity = closestUV - (prevClip.xy / prevClip.w * 0.5 + 0.5);
+    // Yeniden izdüşüm. Gökyüzü pikseli komşusunda geometri varsa iki aday vardır: kendi hareketi (sonsuzdaki gökyüzü
+    // yürürken kaymaz; duvarın hareketini almak gökyüzünün alt şeridini duvarla birlikte oynatıyordu) ve en yakın
+    // derinliğin (duvarın) hareketi (zıplarken duvarın üst kenarı dikey kayar; kenar pikseli titreşimle bazen duvar
+    // bazen gökyüzü olur, kendi hareketiyle eski kenarı yanlış yerden alıp merdivenleniyordu). Akım komşuluğuna daha
+    // iyi uyan geçmiş seçilir.
+    vec3 boxMean = m1 / 9.0;
+    vec3 boxSigma = sqrt(max(m2 / 9.0 - boxMean * boxMean, vec3(0.0)));
+    float centerDepth = texture(u_Depth, v_UV).r;
+    vec2 velocity;
+    vec4 prevClip;
+    {
+        vec4 world = u_InvViewProj * vec4(closestUV * 2.0 - 1.0, closestDepth * 2.0 - 1.0, 1.0);
+        world /= world.w;
+        prevClip = u_PrevViewProj * world;
+        // closestUV titreşimli çizimdeki konum: titreşimsiz konumu (closestUV - u_JitterUV) önceki karenin titreşimsiz
+        // konumuyla karşılaştırılır (yoksa kamera dururken bile geçmiş her karede alt piksel kayar)
+        velocity = (closestUV - u_JitterUV) - (prevClip.xy / prevClip.w * 0.5 + 0.5);
+        // Kamera kıpırdamıyorsa sabit yüzeyin hareketi tam sıfır: derinlikten yeniden izdüşüm uzak yüzeylerde kayan nokta
+        // hatasıyla piksel altı "hareket" üretiyor, piksel durağan sayılmıyor, geçmiş birikmiyor ve uzak kenarlar (duvar
+        // üstü, küplerin arası) titreşim döngüsüyle yanıp sönüyordu (Viewport'ta her şey uzakta olduğundan en çok orada)
+        if (u_CameraStill == 1)
+            velocity = vec2(0.0);
+    }
+    // Nesnenin kendi hareketi (hareket vektörü geçişi): kameraya bağlı silah / eller, düşen küp, kalkan hedef geçmişini
+    // kamera hareketine göre değil kendi hareketine göre alır
+    vec4 objectVelocity = vec4(1e4);
+    if (u_HasVelocity == 1)
+        objectVelocity = texelFetch(u_Velocity, clamp(ivec2(closestUV * vec2(textureSize(u_Velocity, 0))), ivec2(0), textureSize(u_Velocity, 0) - 1), 0);
+    bool hasObjectVelocity = objectVelocity.x < 5000.0;
+    if (hasObjectVelocity)
+    {
+        velocity = objectVelocity.xy;
+        prevClip = vec4(0.0, 0.0, 0.0, ViewW(closestUV, closestDepth));   // önceki uzaklık yaklaşık: bugünkü
+    }
+    if (centerDepth >= 1.0)
+    {
+        vec4 skyWorld = u_InvViewProj * vec4(v_UV * 2.0 - 1.0, 1.0, 1.0);
+        skyWorld /= skyWorld.w;
+        vec4 skyClip = u_PrevViewProj * skyWorld;
+        vec2 skyVelocity = u_CameraStill == 1 ? vec2(0.0) : (v_UV - u_JitterUV) - (skyClip.xy / skyClip.w * 0.5 + 0.5);
+        // Komşulukta geometri yoksa gökyüzünün kendi hareketi (sonsuzdaki gökyüzü yürürken kaymaz). Geometri varsa (kenar)
+        // en yakın derinliğin hareketi: kenar pikseli titreşimle kimi karede gök kimi karede duvar olsa da hep aynı geçmişi
+        // alır; piksel başına seçim duvarın dibinde hızlı zıplarken kenarda 1-2 piksellik çentikler yapıyordu
+        bool useSky = closestDepth >= 1.0;
+        if (useSky)
+        {
+            velocity = skyVelocity;
+            prevClip = skyClip;
+            closestDepth = 1.0;
+        }
+    }
     vec2 prevUV = v_UV - velocity;
     if (prevClip.w <= 0.0 || any(lessThan(prevUV, vec2(0.0))) || any(greaterThan(prevUV, vec2(1.0))))
     {
-        FragColor = vec4(Expand(current), 1.0);
+        FragColor = vec4(Expand(current), outAlpha);
+        DebugOut = DebugColor(current, vec3(1.0), 1.0);
         return;
     }
+    // Önceki karenin o noktadaki 4 komşu texeli: hareket bayrağı (herhangi biri) ve saklanan en yakın uzaklık
+    ivec2 histSize = textureSize(u_History, 0);
+    vec2 hp = prevUV * vec2(histSize) - 0.5;
+    ivec2 h0 = clamp(ivec2(floor(hp)), ivec2(0), histSize - 1);
+    ivec2 h1 = clamp(h0 + ivec2(1), ivec2(0), histSize - 1);
+    float a00 = texelFetch(u_History, h0, 0).a;
+    float a10 = texelFetch(u_History, ivec2(h1.x, h0.y), 0).a;
+    float a01 = texelFetch(u_History, ivec2(h0.x, h1.y), 0).a;
+    float a11 = texelFetch(u_History, h1, 0).a;
+    bool movedBefore = min(min(a00, a10), min(a01, a11)) < 0.0;
+    ivec2 hn = clamp(ivec2(floor(prevUV * vec2(histSize))), ivec2(0), histSize - 1);
+    float storedW = abs(texelFetch(u_History, hn, 0).a);
+    bool sameSurface = closestDepth < 1.0 && abs(storedW - prevClip.w) < 0.03 * prevClip.w + 0.02;
     vec3 history = RGBToYCoCg(Compress(SampleHistory(prevUV)));
 
-    // Varyans kırpması (min/max ile kesişim)
-    vec3 mean = m1 / 9.0;
-    vec3 sigma = sqrt(max(m2 / 9.0 - mean * mean, vec3(0.0)));
-    vec3 lo = max(mean - sigma * 1.25, nmin);
-    vec3 hi = min(mean + sigma * 1.25, nmax);
+    // Varyans kırpması (min/max ile kesişim). Hareketsiz piksellerde kutu genişler: alt piksel inceliğindeki
+    // çizgiler (küplerin arası, merdiven basamakları) bazı titreşim karelerinde hiç çizilmez; dar kutu o karelerde
+    // geçmişi kırpar ve çizgi yanıp söner (Unreal TAA da hareketsiz piksellerde geçmişe daha çok güvenir).
+    // Hareket eden nesnede (ateş eden silah, düşen küp, animasyonlu karakter) ve ayrıldığı yerde sıkı kırpma: iz yok.
+    float speed = length(velocity / u_Texel);
+    float stillness = 1.0 - clamp(speed / 0.75, 0.0, 1.0);
+    // Hareket eden nesnenin gölgesi: pikselin dünya noktası hareket eden bir nesnenin (bu ya da önceki karedeki yerinin)
+    // gölge hacmindeyse ve bu ya da önceki karede gölgede kaldıysa hareket eden nesne gibi sıkı kırpılır; aydınlığı
+    // değiştiyse (gölge geldi / gitti) geçmişin ağırlığı farkla düşer. Gölge gecikmeden yeni yerine geçer, eski yerinde iz
+    // kalmaz. Bu hacimlerin dışındaki sabit gölgeler ve ince ayrıntılar (merdiven, küplerin arası) geçmişe güvenmeyi sürdürür.
+    vec4 stateBefore = texelFetch(u_State, hn, 0);
+    float shadowBefore = stateBefore.y;
+    bool dynamicShadow = false;
+    bool nearMovingShadow = false;   // hareket eden bir nesnenin (genişletilmiş) gölge hacminde: yarı gölge dahil
+    if (u_HasShadowMask == 1 && u_ShadowBoxCount > 0 && centerDepth < 1.0)
+    {
+        vec4 wp = u_InvViewProj * vec4(v_UV * 2.0 - 1.0, centerDepth * 2.0 - 1.0, 1.0);
+        nearMovingShadow = InMovingShadow(wp.xyz / wp.w);
+        dynamicShadow = nearMovingShadow && (shadowNow < 0.9 || shadowBefore < 0.9);
+    }
+    float shadowReset = dynamicShadow ? smoothstep(0.2, 0.5, abs(shadowNow - shadowBefore)) : 0.0;
+    bool shadowChanged = dynamicShadow;
+    // Pikselin kendisi kesin hareket vektörlü katı nesnedeyse (ve en yakın derinlik aynı hareketteyse) geçmiş doğru yerden
+    // gelir: hareket eden nesne gibi sıkı kırpılmaz (kameraya bağlı silah zıplarken / dönerken titremez, dalgalanmaz).
+    // Kenar pikselleri (merkez arka planda) ve nesnenin ayrıldığı yer sıkı kırpılmayı sürdürür
+    bool centerExact = false;
+    if (hasObjectVelocity && objectVelocity.z > 0.75)
+    {
+        vec4 cv = texelFetch(u_Velocity, clamp(ivec2(v_UV * vec2(textureSize(u_Velocity, 0))), ivec2(0), textureSize(u_Velocity, 0) - 1), 0);
+        centerExact = cv.x < 5000.0 && cv.z > 0.75 && length((cv.xy - objectVelocity.xy) / u_Texel) < 0.5;
+    }
+    // Yavaş kayan güvenilir yüzey (yürürken uzaktaki duvar üstü / zemin çizgileri, durmadan hemen önceki sönümlenme): geçmiş
+    // doğru yerden gelir (uzaklık aynı, hareket eden nesne / gölge değil). Hareket kırpması titreşim döngüsüyle ince kenarları
+    // karede bir farklı kırpıp gökyüzünün alt kenarını ve küplerin arasını titretiyordu: hız 3 pikselin altındayken kırpma
+    // durağandaki kadar geniş, geçmişin ağırlığı yüksek. Hızlı harekette (zıplama, dönüş) eski davranış (son geçiş FXAA dahil)
+    float trust = 0.0;
+    if (((movingNow || movedBefore) && !centerExact) || shadowChanged)
+    {
+        stillness = 0.0;
+        sameSurface = false;
+    }
+    else if (closestDepth < 1.0 && !nearMovingShadow)
+    {
+        float tol = 0.03 * prevClip.w + 0.02;
+        trust = (1.0 - smoothstep(tol, 2.0 * tol, abs(storedW - prevClip.w))) * (1.0 - smoothstep(1.5, 3.0, speed));
+    }
+    float wide = max(stillness, trust);
+    vec3 mean = boxMean;
+    vec3 sigma = boxSigma;
+    float gamma = mix(1.25, 2.5, wide);
+    vec3 lo = mix(max(mean - sigma * gamma, nmin), mean - sigma * gamma, wide);
+    vec3 hi = mix(min(mean + sigma * gamma, nmax), mean + sigma * gamma, wide);
     vec3 center = 0.5 * (hi + lo);
     vec3 extent = max(0.5 * (hi - lo), vec3(1e-5));
+    vec3 rawHistory = history;
     vec3 offset = history - center;
     vec3 unit = abs(offset / extent);
     float maxUnit = max(unit.x, max(unit.y, unit.z));
     if (maxUnit > 1.0)
         history = center + offset / maxUnit;
+    // Hareketsiz kamera + aynı yüzey: geçmiş kutunun biraz dışına çıkabilir (alt piksel çizgiler bazı karelerde hiç
+    // çizilmez, kutu o karede onları içermez). Koyu tarafa geniş pay (ince koyu boşluklar), parlak tarafa dar
+    // (parlama / namlu alevi ışığı iz bırakmaz)
+    if (sameSurface)
+    {
+        // Paylar yalnız görüntü neredeyse hiç kaymıyorken (< 0.1 px / kare): yavaş kayan kenarda (zıplamanın tepesi) koyu
+        // geçmiş kenarın arkasında iz bırakmasın
+        float hold = nearMovingShadow ? 0.0 : stillness * (1.0 - clamp(speed / 0.1, 0.0, 1.0));
+        vec3 below = vec3(0.2, 0.08, 0.08) * hold;
+        vec3 above = vec3(0.04, 0.04, 0.04) * hold;
+        history = clamp(rawHistory, history - below, history + above);
+    }
 
-    // Hızlı hareket ve büyük farkta geçmişe daha az güven
-    float speed = length(velocity / u_Texel);
+    // Hızlı hareket ve büyük farkta geçmişe daha az güven; hareketsizken daha çok
     float feedback = clamp(u_Feedback - clamp(speed * 0.01, 0.0, 0.2), 0.5, 0.97);
+    feedback = mix(feedback, max(feedback, 0.96), trust);
+    // Durgunluk yaşı: piksel kaç karedir kıpırdamıyor. Kamera durunca ilk karelerde birikimli ortalama (1/2, 1/3, 1/4 ...):
+    // hareket sırasında sıkı kırpılan geçmiş birkaç karede (titreşim döngüsü) oturur. Sabit 0.95 geri beslemeyle oturması
+    // 1-2 saniye sürüyor, bu sürede küplerin arasındaki ince boşluk yanıp sönüyordu
+    float stillAge = stillness > 0.99 ? min(stateBefore.z + 1.0, 128.0) : 0.0;
+    // Oturmuş durağan piksel: kamera ve sahne birkaç karedir kıpırdamıyor, yerel parlaklık (3x3 ortalaması, zamanla
+    // yumuşatılmış) değişmedi. Alt piksel inceliğindeki boşluklar (küplerin arası) ve gökyüzüne bakan kenarlar
+    // titreşimin yalnız bazı karelerinde çizilir; komşuluk kırpması o karelerde geçmişi kırpıp onları yanıp söndürüyordu.
+    // Oturmuş pikselde kırpma yapılmaz ve birikim daha uzun sürer (en çok 0.985): geçmiş titreşim döngüsünün ortalamasına
+    // oturur. Işık değişince (namlu alevi) yerel ortalama sıçrar, piksel yeniden kırpılır (iz kalmaz)
+    float meanY = boxMean.x;
+    // Hareket eden bir nesnenin gölge hacmindeki (ve çevresindeki) pikseller oturmaz: gölge gelip gidince eski hali iz bırakmasın
+    bool settled = stillAge >= 8.0 && !nearMovingShadow && abs(meanY - stateBefore.w) < 0.12;
+    // Yavaşlarken (yürürken ansızın durunca kamera yarım saniyede durulur): güvenilir, 1 pikselden yavaş kayan ve yerel
+    // parlaklığı değişmeyen pikselde de kırpma yapılmaz; küplerin arası durulma boyunca yanıp sönüyordu
+    bool calm = trust > 0.9 && speed < 1.0 && !nearMovingShadow && abs(meanY - stateBefore.w) < 0.08;
+    if (settled || calm)
+        history = rawHistory;
+    float meanOut = (stillAge > 0.0 || trust > 0.5) ? mix(stateBefore.w, meanY, 0.25) : meanY;
+    float accumulate = min(1.0 - 1.0 / (stillAge + 2.0), settled ? 0.985 : 0.96);   // 0.67, 0.75, 0.8 ... (ilk karede sıçrama yok)
+    feedback = mix(feedback, stillAge > 0.0 ? accumulate : max(feedback, 0.95), stillness);
+    // Aydınlatması değişen yüzey (gölge geldi / gitti): eski renk artık yanlış, geçmişin ağırlığı değişimle düşer
+    // Yavaşlayan sakin piksel: durağandaki gibi uzun birikim (0.96'da 8 titreşim konumu ince boşlukta her karede ~%2 oynuyordu)
+    if (calm)
+        feedback = max(feedback, 0.98);
+    feedback *= 1.0 - shadowReset;
     vec3 result = mix(RGBToYCoCg(current), history, feedback);
-    FragColor = vec4(Expand(max(YCoCgToRGB(result), vec3(0.0))), 1.0);
+    StateOut = vec4(clamp((speed - 0.5) / 4.0, 0.0, 1.0), shadowNow, stillAge, meanOut);
+    FragColor = vec4(Expand(max(YCoCgToRGB(result), vec3(0.0))), outAlpha);
+    if (u_Debug == 1)
+    {
+        // Kırmızı: hareket eden nesne / ayrıldığı yer, turuncu: hareketli gölge, yeşil: oturmuş durağan, camgöbeği: sakin
+        // (yavaşlayan), mavi: güvenilir geniş kırpma, sarı: normal kırpma (koyu sarı: geçmiş kırpılmadı), eflatun: gökyüzü
+        vec3 tint;
+        if ((movingNow || movedBefore) && !centerExact)
+            tint = movingWhy == 1 ? vec3(1.0, 0.0, 0.0) : movingWhy == 2 ? vec3(0.5, 0.0, 0.0) : movingWhy == 3 ? vec3(1.0, 0.4, 0.6) : movingWhy == 4 ? vec3(0.6, 0.0, 1.0) : vec3(0.45, 0.25, 0.1);
+        else if (shadowChanged) tint = vec3(1.0, 0.5, 0.0);
+        else if (settled) tint = vec3(0.0, 1.0, 0.0);
+        else if (calm) tint = vec3(0.0, 1.0, 1.0);
+        else if (trust > 0.5) tint = vec3(0.1, 0.3, 1.0) * (maxUnit > 1.0 ? 1.0 : 0.55);
+        else if (centerDepth >= 1.0) tint = vec3(1.0, 0.0, 1.0) * (maxUnit > 1.0 ? 1.0 : 0.55);
+        else tint = vec3(1.0, 1.0, 0.0) * (maxUnit > 1.0 ? 1.0 : 0.55);
+        DebugOut = DebugColor(YCoCgToRGB(result), tint, 1.0);
+    }
 }

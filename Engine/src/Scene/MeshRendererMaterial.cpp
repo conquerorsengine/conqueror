@@ -2,11 +2,14 @@
 
 #include "Scene/Components.h"
 #include "Scene/Scene.h"
+#include "Core/Serialization/SceneSerializer.h"
 #include "Renderer/RHI/Texture.h"
 #include "Renderer/Utilities/Renderer3D/Material.h"
 #include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
 
+#include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <map>
 
 namespace Conqueror::MeshRendererMaterial
@@ -21,6 +24,30 @@ namespace Conqueror::MeshRendererMaterial
             if (!fallback)
                 fallback = std::make_shared<Material>();
             return *fallback;
+        }
+
+        // Rengin okunur adı (malzeme dosya adları için)
+        std::string ColorName(const glm::vec3& c)
+        {
+            const float mx = std::max({ c.r, c.g, c.b }), mn = std::min({ c.r, c.g, c.b });
+            const float l = (mx + mn) * 0.5f, d = mx - mn;
+            if (d < 0.08f)
+                return l > 0.85f ? "White" : (l > 0.55f ? "Light Gray" : (l > 0.25f ? "Gray" : (l > 0.08f ? "Dark Gray" : "Black")));
+            float h;
+            if (mx == c.r) h = std::fmod((c.g - c.b) / d, 6.0f);
+            else if (mx == c.g) h = (c.b - c.r) / d + 2.0f;
+            else h = (c.r - c.g) / d + 4.0f;
+            h *= 60.0f;
+            if (h < 0.0f) h += 360.0f;
+            static const struct { float H; const char* N; } hues[] = { { 15, "Red" }, { 40, "Orange" }, { 65, "Yellow" }, { 90, "Lime" },
+                { 150, "Green" }, { 195, "Cyan" }, { 250, "Blue" }, { 285, "Purple" }, { 330, "Magenta" }, { 361, "Red" } };
+            std::string n = "Red";
+            for (const auto& e : hues)
+                if (h < e.H) { n = e.N; break; }
+            if (n == "Orange" && l < 0.35f) n = "Brown";
+            if (l < 0.25f) return "Dark " + n;
+            if (l > 0.8f) return "Light " + n;
+            return n;
         }
 
         bool IsInstanceSuffix(const std::string& name)
@@ -142,7 +169,17 @@ namespace Conqueror::MeshRendererMaterial
                 const bool legacyName = name == tag;   // eski sahneden gelen "<nesne> (Instance)"
                 const fs::path packaged = fs::path(MaterialAsset::DefaultGridPath()).parent_path() / (name + MaterialAsset::Extension);
                 std::string tex = src.AlbedoMap ? fs::path(src.AlbedoMap->GetPath()).stem().string() : std::string();
-                if (!tex.empty() && (legacyName || name.empty() || fs::exists(packaged, ec)))
+                // Paketteki ızgara dokusu yalnız "varsayılan görünüm": böyle malzemeler renklerine göre adlandırılır
+                if (src.AlbedoMap && (MaterialAsset::IsReadOnly(src.AlbedoMap->GetPath()) ||
+                                      SceneSerializer::ToAssetPath(src.AlbedoMap->GetPath()).rfind("CQ:", 0) == 0))
+                    tex.clear();
+                if (tex.empty() && (legacyName || name.empty() || fs::exists(packaged, ec)))
+                {
+                    name = ColorName(src.Albedo) + (src.EmissionStrength > 0.0f && glm::length(src.EmissionColor) > 0.0f ? " Glow" : "");
+                    if (src.EmissionStrength > 0.0f && glm::length(src.EmissionColor) > 0.0f)
+                        name = ColorName(src.EmissionColor) + " Glow";
+                }
+                else if (!tex.empty() && (legacyName || name.empty() || fs::exists(packaged, ec)))
                 {
                     for (char& ch : tex)
                         if (ch == '_' || ch == '-') ch = ' ';

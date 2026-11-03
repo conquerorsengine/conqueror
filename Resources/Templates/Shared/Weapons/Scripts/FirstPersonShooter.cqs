@@ -15,6 +15,9 @@ script FirstPersonShooter : ConquerorScript
     public float acceleration = 14.0;
     public float airControl = 0.3;
     public float jumpHeight = 1.15;
+    [Tooltip("Holding Jump jumps again as soon as the player lands")]
+    public bool holdToJump = true;
+    public int jumps = 0;                   // istatistik / testler
     public float gravity = 20.0;
     public float eyeHeight = 0.72;          // kapsül merkezinden göze
     public float crouchEyeHeight = 0.2;
@@ -27,6 +30,12 @@ script FirstPersonShooter : ConquerorScript
 
     [Header("View Model")]
     public float bobAmount = 0.012;
+    // Yürürken kameranın sağa sola yatması (derece)
+    public float bobRoll = 0.4;
+    [Tooltip("Near walls and obstacles the weapon is lowered (or raised over low cover) instead of sinking into them")]
+    public bool avoidWalls = false;
+    [Tooltip("Stop completely when nearly stopped (the camera settles at once; thin details do not shimmer while it settles)")]
+    public bool crispStop = false;
     public float swayAmount = 0.0016;
     public float aimInSpeed = 12.0;
 
@@ -68,6 +77,12 @@ script FirstPersonShooter : ConquerorScript
     private float vy = 0.0;
     private float coyote = 0.0;
     private float bobPhase = 0.0;
+    private float bobWeight = 0.0;      // yerdeyken 1, havada 0; yumuşak geçiş (zıplayıp inince kamera / silah sıçramaz)
+    private float wallT = 0.0;          // duvar pozu: 0 serbest, 1 tam indirilmiş / kaldırılmış
+    private int wallMode = 0;           // 0: aşağı (low ready), 1: yukarı (alçak siper arkasında)
+    public float wallAmount = 0.0;      // dışarıdan okunur (testler): o karedeki duvar pozu
+    public bool wallCheck = false;      // testler: silahın (namlu ucu, eller) ekranda bir engelin içinde göründüğü kareleri say
+    public int wallClipFrames = 0;
     private float aim01 = 0.0;
     private float recoil = 0.0;          // kamerada geri dönecek tepme
     private float kick = 0.0;            // silahın geri tepmesi
@@ -122,6 +137,218 @@ script FirstPersonShooter : ConquerorScript
         }
     }
 
+    // Motorun Euler sırası (glm::quat(euler) = Rz * Ry * Rx), açılar derece
+    func RotEuler(v, ex, ey, ez)
+    {
+        var a = ex * 0.017453292;
+        var b = ey * 0.017453292;
+        var c = ez * 0.017453292;
+        var ca = MathCos(a);
+        var sa = MathSin(a);
+        var cb = MathCos(b);
+        var sb = MathSin(b);
+        var cc = MathCos(c);
+        var sc = MathSin(c);
+        var y1 = v.y * ca - v.z * sa;
+        var z1 = v.y * sa + v.z * ca;
+        var x2 = v.x * cb + z1 * sb;
+        var z2 = z1 * cb - v.x * sb;
+        return {x: x2 * cc - y1 * sc, y: x2 * sc + y1 * cc, z: z2};
+    }
+
+    // Duvar pozu: görünüm modeli (silah + kollar) omuz noktası çevresinde döner; t 0..1. mode 0: aşağı (en çok 80°),
+    // mode 1: yukarı (en çok 25°, biraz dışa yatar). mode 0'da t 1..2: silah ayrıca aşağı / geri çekilir, t = 2'de görüş
+    // alanının tamamen dışındadır (hiçbir poz temiz değilse). Sonuç: görünüm modelinin yerel konumu ve Euler açıları
+    func WallPose(p0, e0, t, mode)
+    {
+        var pivot = {x: 0.15, y: -0.18, z: 0.02};
+        var tr = MathMin(t, 1.0);
+        var ex = e0.x + (mode == 0 ? -80.0 : 25.0) * tr;
+        var ez = e0.z + (mode == 0 ? 0.0 : -8.0) * tr;
+        var k0 = RotEuler(pivot, e0.x, e0.y, e0.z);
+        var k1 = RotEuler(pivot, ex, e0.y, ez);
+        var pull = 0.05 * MathMin(tr * 3.0, 1.0);
+        var stow = MathMax(t - 1.0, 0.0) * 0.6;
+        return {px: p0.x + k0.x - k1.x, py: p0.y + k0.y - k1.y - 0.02 * tr - stow, pz: p0.z + k0.z - k1.z + pull + stow * 0.3, ex: ex, ey: e0.y, ez: ez};
+    }
+
+    // Silahın uç noktaları görünüm modeli uzayında (bu karenin şarjör / geri tepme pozuyla): namlu ucu, iki el ve
+    // kabzadan namlu ucuna namlunun kendisi (uçlar dışarıda kalıp namlu bir köşeden geçmesin). ext > 0: namlu ucu o kadar
+    // ileri uzatılmış bir nokta daha eklenir (silah engele değmeden önce inmeye başlar, son anda birden düşmez)
+    func WallProbes(w, ext, handRad, muzzleRad, glove)
+    {
+        var list = [];
+        var wp = EntityGetPosition(w);
+        var wr = EntityGetRotation(w);
+        var grip = null;
+        var muzzle = null;
+        foreach (var nm in ["IK R", "IK L", "Muzzle"])
+        {
+            var c = Child(w, nm);
+            if (c < 0) { continue; }
+            var lp = EntityGetPosition(c);
+            var r = RotEuler(lp, wr.x, wr.y, wr.z);
+            var pt = {x: wp.x + r.x, y: wp.y + r.y, z: wp.z + r.z, rad: nm == "Muzzle" ? muzzleRad : handRad, seg: false};
+            list.Add(pt);
+            if (nm == "IK R") { grip = pt; }
+            if (nm == "Muzzle") { muzzle = pt; }
+            if (nm == "Muzzle" && ext > 0.0)
+            {
+                var re = RotEuler({x: lp.x, y: lp.y, z: lp.z - ext}, wr.x, wr.y, wr.z);
+                muzzle = {x: wp.x + re.x, y: wp.y + re.y, z: wp.z + re.z, rad: muzzleRad, seg: false};
+                list.Add(muzzle);
+            }
+        }
+        if (grip != null && muzzle != null)
+        {
+            list.Add({x: muzzle.x, y: muzzle.y, z: muzzle.z, rad: muzzleRad, seg: true, sx: grip.x, sy: grip.y, sz: grip.z});
+        }
+        // Eldivenler (kol modelinin kemikleri, bu karenin IK pozuyla): bilek, parmak kökü, parmak uçları, avuç ve ön kol.
+        // Yalnız silahın uç noktaları denetlenince parmaklar / bilek bir yüzeyin içinde kalabiliyordu
+        if (arms >= 0 && glove > 0.0)
+        {
+            var ap = EntityGetPosition(arms);
+            var ar = EntityGetRotation(arms);
+            foreach (var sd in ["_r", "_l"])
+            {
+                var pts = {};
+                foreach (var bn in ["hand", "middle_01", "index_04_leaf", "pinky_04_leaf", "thumb_04_leaf", "lowerarm"])
+                {
+                    var b = GetBoneLocalPosition(arms, bn + sd);
+                    if (b == null) { continue; }
+                    var rb = RotEuler(b, ar.x, ar.y, ar.z);
+                    pts[bn] = {x: ap.x + rb.x, y: ap.y + rb.y, z: ap.z + rb.z};
+                }
+                if (pts.Has("hand"))
+                {
+                    var hd = pts["hand"];
+                    list.Add({x: hd.x, y: hd.y, z: hd.z, rad: 0.045 * glove, seg: false});
+                    foreach (var tip in ["middle_01", "index_04_leaf", "pinky_04_leaf", "thumb_04_leaf"])
+                    {
+                        if (!pts.Has(tip)) { continue; }
+                        var tp = pts[tip];
+                        var tr2 = tip == "middle_01" ? 0.035 : 0.018;
+                        list.Add({x: tp.x, y: tp.y, z: tp.z, rad: tr2 * glove, seg: false});
+                        if (tip == "middle_01") { list.Add({x: tp.x, y: tp.y, z: tp.z, rad: tr2 * glove, seg: true, sx: hd.x, sy: hd.y, sz: hd.z}); }
+                    }
+                    if (pts.Has("lowerarm"))
+                    {
+                        // Ön kol iki parça: görüş alanı dışındaki parça (dirseğe yakın) silahı boşuna indirmesin
+                        var la = pts["lowerarm"];
+                        var mx = (hd.x + la.x) * 0.5;
+                        var my = (hd.y + la.y) * 0.5;
+                        var mz = (hd.z + la.z) * 0.5;
+                        list.Add({x: mx, y: my, z: mz, rad: 0.04 * glove, seg: true, sx: hd.x, sy: hd.y, sz: hd.z});
+                        list.Add({x: la.x, y: la.y, z: la.z, rad: 0.04 * glove, seg: true, sx: mx, sy: my, sz: mz});
+                    }
+                }
+            }
+        }
+        return list;
+    }
+
+    // Görünüm modeli uzayındaki nokta bu pozda kameraya göre nerede (kamera uzayı, -Z ileri)
+    func WallCamPoint(v, pose)
+    {
+        var r = RotEuler(v, pose.ex, pose.ey, pose.ez);
+        return {x: pose.px + r.x, y: pose.py + r.y, z: pose.pz + r.z};
+    }
+
+    // Kamera uzayındaki küre (merkez c, yarıçap r) görüş alanına giriyor mu. tv = tan(dikey FOV / 2); yatayda 2.4 en-boy
+    // oranı (geniş ekranları da kapsar). Görüş alanı dışındaki parça bir engelin içinde olsa da görünmez
+    func WallSeen(c, r, tv)
+    {
+        var th = tv * 2.4;
+        return -c.z > -r && MathAbs(c.y) + c.z * tv < r * MathSqrt(1.0 + tv * tv) && MathAbs(c.x) + c.z * th < r * MathSqrt(1.0 + th * th);
+    }
+
+    // Bu pozda silahın / eldivenlerin ekranda görünen her noktasına kameradan engelsiz ulaşılıyor mu (nokta engelin içindeyse
+    // yol kesilir); parçalar (namlu, avuç, ön kol) kendi uçları arasında taranır. pad: her yarıçapa eklenen pay
+    func WallClear(probes, pose, cpos, R3, U3, F3, pad, tv)
+    {
+        foreach (var q in probes)
+        {
+            var c = WallCamPoint(q, pose);
+            var rad = q.rad + pad;
+            var ox = cpos.x;
+            var oy = cpos.y;
+            var oz = cpos.z;
+            if (q.seg)
+            {
+                var g = WallCamPoint({x: q.sx, y: q.sy, z: q.sz}, pose);
+                if (!WallSeen(c, rad, tv) && !WallSeen(g, rad, tv)) { continue; }
+                ox = cpos.x + R3.x * g.x + U3.x * g.y - F3.x * g.z;
+                oy = cpos.y + R3.y * g.x + U3.y * g.y - F3.y * g.z;
+                oz = cpos.z + R3.z * g.x + U3.z * g.y - F3.z * g.z;
+            }
+            else if (!WallSeen(c, rad, tv)) { continue; }
+            var dx = cpos.x + R3.x * c.x + U3.x * c.y - F3.x * c.z - ox;
+            var dy = cpos.y + R3.y * c.x + U3.y * c.y - F3.y * c.z - oy;
+            var dz = cpos.z + R3.z * c.x + U3.z * c.y - F3.z * c.z - oz;
+            var len = MathSqrt(dx * dx + dy * dy + dz * dz);
+            if (len < 0.02) { continue; }
+            var hit = SphereCast(ox, oy, oz, rad, dx / len, dy / len, dz / len, len, -1, true);
+            if (hit != null && !hit.isTrigger) { return false; }
+        }
+        return true;
+    }
+
+    // Enterpolasyonlu (hareketli) gövdeler ekranda fizik konumlarından en çok bir fizik adımı geride çizilir: itilen küp
+    // ekranda silaha fizikteki konumundan daha yakındır. Yakındaki en hızlı gövdenin bir adımda aldığı yol kadar pay
+    func WallDynamicPad(cpos)
+    {
+        var pad = 0.0;
+        var step = GetFixedDeltaTime();
+        var me = GetEntityId();
+        foreach (var e in OverlapSphere(cpos.x, cpos.y, cpos.z, 2.0))
+        {
+            if (e == me) { continue; }
+            var v = GetLinearVelocity(e);
+            if (v == null) { continue; }
+            var sp = MathSqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+            var av = GetAngularVelocity(e);
+            if (av != null)
+            {
+                var bb = EntityGetBounds(e);
+                var rr = bb == null ? 0.5 : 0.5 * MathSqrt(bb.size.x * bb.size.x + bb.size.y * bb.size.y + bb.size.z * bb.size.z);
+                sp += MathSqrt(av.x * av.x + av.y * av.y + av.z * av.z) * rr;
+            }
+            pad = MathMax(pad, sp * step);
+        }
+        return MathMin(pad, 0.3);
+    }
+
+    // Testler: silahın / eldivenlerin ekranda görünen bir noktası engelin içinde / arkasında mı
+    func WallVisibleClip(probes, pose, cpos, R3, U3, F3, tv)
+    {
+        return !WallClear(probes, pose, cpos, R3, U3, F3, 0.0, tv);
+    }
+
+    // Silahın engele değmemesi için en az ne kadar indirilmesi / kaldırılması gerektiği (hiçbiri yetmiyorsa -1).
+    // Aşağı: 0..2 (1'den sonrası silahı görüş dışına çeker, 2'de her zaman temiz); yukarı: 0..1
+    func SolveWall(probes, p0, e0, mode, cpos, R3, U3, F3, pad, tv)
+    {
+        var prev = 0.0;
+        var stepT = mode == 0 ? 0.25 : 0.125;
+        for (var i = 1; i <= 8; i++)
+        {
+            var t = i * stepT;
+            if (WallClear(probes, WallPose(p0, e0, t, mode), cpos, R3, U3, F3, pad, tv))
+            {
+                var lo = prev;
+                var hi = t;
+                for (var k = 0; k < 5; k++)
+                {
+                    var mid = (lo + hi) * 0.5;
+                    if (WallClear(probes, WallPose(p0, e0, mid, mode), cpos, R3, U3, F3, pad, tv)) { hi = mid; } else { lo = mid; }
+                }
+                return hi;
+            }
+            prev = t;
+        }
+        return mode == 0 ? 2.0 : -1.0;
+    }
+
     func Child(parent, name)
     {
         if (parent == null || parent < 0) { return -1; }
@@ -166,6 +393,12 @@ script FirstPersonShooter : ConquerorScript
         return 1.0;
     }
 
+    func Ease(t)
+    {
+        t = MathClamp(t, 0.0, 1.0);
+        return t * t * (3.0 - 2.0 * t);
+    }
+
     func SelectWeapon(i, instant)
     {
         if (weapons.Count == 0) { return; }
@@ -205,6 +438,7 @@ script FirstPersonShooter : ConquerorScript
         var iy = moveInputY;
         var sprint = false;
         var jump = false;
+        var jumpHeld = false;
         var fire = fireInput;
         aiming = aimInput;
         if (inputEnabled && !dead)
@@ -217,6 +451,7 @@ script FirstPersonShooter : ConquerorScript
             iy -= Axis(1);
             sprint = IsKeyPressed("LeftShift") || Pad(8);
             jump = IsKeyDown("Space") || PadDown(0);
+            jumpHeld = IsKeyPressed("Space") || Pad(0);
             if (IsKeyDown("C") || IsKeyDown("LeftControl") || PadDown(1)) { crouching = !crouching; }
             fire = fire || IsMouseButtonPressed(0) || Axis(5) > 0.3;
             aiming = aiming || IsMouseButtonPressed(1) || Axis(4) > 0.3;
@@ -264,10 +499,16 @@ script FirstPersonShooter : ConquerorScript
         if (sprint && iy > 0.3 && !aiming) { maxSpeed = sprintSpeed; crouching = false; }
         if (crouching) { maxSpeed = crouchSpeed; }
         if (aiming) { maxSpeed = MathMin(maxSpeed, aimMoveSpeed); }
+        var wasGrounded = grounded;
         grounded = CharacterIsGrounded();
+        // Zıplama tuşu basılı tutulursa yere değdiği an yeniden zıplar (Unreal Character, çoğu FPS gibi)
+        if (holdToJump && jumpHeld && grounded && !wasGrounded) { jump = true; }
         var k = 1.0 - MathExp(-(grounded ? acceleration : acceleration * airControl) * dt);
         vx += (mx * maxSpeed - vx) * k;
         vz += (mz * maxSpeed - vz) * k;
+        // Durunca hız sonsuza dek sönümlenmesin: girdi yokken çok yavaşlayınca tam dur. Yoksa kamera (yürüme salınımı,
+        // yatma) saniyelerce piksel altı kıpırdıyor, görüntü oturamıyor, ince ayrıntılar (küplerin arası) yanıp sönüyordu
+        if (crispStop && il < 0.01 && vx * vx + vz * vz < 0.0025) { vx = 0.0; vz = 0.0; }
         speed = MathSqrt(vx * vx + vz * vz);
         if (grounded)
         {
@@ -284,6 +525,7 @@ script FirstPersonShooter : ConquerorScript
             vy = MathSqrt(2.0 * gravity * jumpHeight);
             coyote = 0.0;
             crouching = false;
+            jumps += 1;
         }
         var flags = CharacterMove(vx * dt, vy * dt, vz * dt);
         if (vy > 0.0 && flags != null && (int(flags) % 4) >= 2) { vy = 0.0; }
@@ -295,11 +537,14 @@ script FirstPersonShooter : ConquerorScript
         var aimFov = w >= 0 ? GetScriptField(w, "aimFov") : 60.0;
         if (cam >= 0)
         {
-            var bob = grounded ? MathMin(speed / walkSpeed, 1.6) : 0.0;
+            // Yürüme salınımı yere değince yumuşakça açılır, havada yumuşakça kapanır: basılı tutulan zıplamada her inişte
+            // bir karelik salınım / yatma sıçraması kamerayı ve silahı sarsıyordu
+            bobWeight = MathLerp(bobWeight, grounded ? 1.0 : 0.0, 1.0 - MathExp(-10.0 * dt));
+            var bob = MathMin(speed / walkSpeed, 1.6) * bobWeight;
             bobPhase += dt * (5.0 + speed * 1.4);
             var by = MathSin(bobPhase * 2.0) * bobAmount * bob * (1.0 - aim01 * 0.8);
             EntitySetPosition(cam, 0, eye + by, 0);
-            EntitySetRotation(cam, pitch, 0, MathSin(bobPhase) * 0.4 * bob * (1.0 - aim01));
+            EntitySetRotation(cam, pitch, 0, MathSin(bobPhase) * bobRoll * bob * (1.0 - aim01));
             EntitySetComponentField(cam, "Camera", "FieldOfView", MathLerp(fov, aimFov, aim01));
         }
         // Silah modeli: sallanma, yürüme salınımı, geri tepme, nişana gelme
@@ -309,7 +554,7 @@ script FirstPersonShooter : ConquerorScript
         kick = MathLerp(kick, 0.0, 1.0 - MathExp(-14.0 * dt));
         if (viewModel >= 0)
         {
-            var bob2 = grounded ? MathMin(speed / walkSpeed, 1.6) * (1.0 - aim01 * 0.85) : 0.0;
+            var bob2 = MathMin(speed / walkSpeed, 1.6) * (1.0 - aim01 * 0.85) * bobWeight;
             var hipX = -0.05;
             var hipY = -0.03;
             // Nişan: silahın "Sight" noktası kamera eksenine (ve gözün eyeRelief önüne) gelecek kayma
@@ -354,7 +599,17 @@ script FirstPersonShooter : ConquerorScript
                     var lb = leftBase["" + w];
                     if (GetScriptField(w, "weaponName") == "Pistol")
                     {
-                        if (ikL >= 0) { EntitySetComponentField(ikL, "TwoBoneIKConstraint", "Weight", 1.0 - rl); }
+                        // Sol el IK'da kalır (bırakılırsa kendi duruşuna dönüp tabancanın içinden geçer):
+                        // aşağı iner (yeni şarjör), kabzanın altına gelir, şarjörü iter, sonra kabzaya geri döner
+                        if (ikL >= 0) { EntitySetComponentField(ikL, "TwoBoneIKConstraint", "Weight", 1.0); }
+                        var hx = 0.0;
+                        var hy = 0.0;
+                        var hz = 0.0;
+                        if (rf > 0.12 && rf < 0.40) { var k1 = Ease((rf - 0.12) / 0.28); hx = -0.06 * k1; hy = -0.30 * k1; hz = 0.06 * k1; }
+                        else if (rf >= 0.40 && rf < 0.52) { var k2 = Ease((rf - 0.40) / 0.12); hx = MathLerp(-0.06, 0.09, k2); hy = MathLerp(-0.30, -0.13, k2); hz = 0.06; }
+                        else if (rf >= 0.52 && rf < 0.62) { var k3 = Ease((rf - 0.52) / 0.10); hx = 0.09; hy = MathLerp(-0.13, -0.08, k3); hz = 0.06; }
+                        else if (rf >= 0.62 && rf < 0.85) { var k4 = Ease((rf - 0.62) / 0.23); hx = MathLerp(0.09, 0.0, k4); hy = MathLerp(-0.08, 0.0, k4); hz = MathLerp(0.06, 0.0, k4); }
+                        EntitySetPosition(lt, lb.x + hx, lb.y + hy, lb.z + hz);
                     }
                     else
                     {
@@ -364,11 +619,68 @@ script FirstPersonShooter : ConquerorScript
                 }
             }
             var sprintDrop = (speed > walkSpeed + 0.5 && !aiming) ? 0.04 : 0.0;
-            EntitySetPosition(viewModel,
-                MathLerp(hipX, adsX, aim01) + swayX + MathCos(bobPhase) * 0.008 * bob2,
-                MathLerp(hipY, adsY, aim01) + swayY - MathAbs(MathSin(bobPhase)) * 0.006 * bob2 - down - sprintDrop,
-                MathLerp(0.0, adsZ, aim01) + kick);
-            EntitySetRotation(viewModel, -kick * 60.0 + sprintDrop * 300.0, swayX * 200.0, swayX * 300.0);
+            // Silahsız (duvarsız) poz
+            var p0 = {x: MathLerp(hipX, adsX, aim01) + swayX + MathCos(bobPhase) * 0.008 * bob2,
+                      y: MathLerp(hipY, adsY, aim01) + swayY - MathAbs(MathSin(bobPhase)) * 0.006 * bob2 - down - sprintDrop,
+                      z: MathLerp(0.0, adsZ, aim01) + kick};
+            var e0 = {x: -kick * 60.0 + sprintDrop * 300.0, y: swayX * 200.0, z: swayX * 300.0};
+            // Duvar / engel: silah hiçbir karede içine girmez (gerçek FPS'lerdeki gibi). Silahın uç noktaları (namlu ucu,
+            // iki el) bu karenin gerçek pozuyla hesaplanır, kameradan bu noktalara küre süpürülür. Bir nokta engele
+            // değiyorsa silah omuz çevresinde gerektiği kadar aşağı indirilir (alçak siper arkasında aşağısı da doluysa
+            // yukarı kaldırılır); aynı karede uygulanır, engel kalkınca yumuşakça yerine döner
+            var pose = WallPose(p0, e0, 0.0, 0);
+            if (avoidWalls && w >= 0)
+            {
+                var cpos = EntityGetWorldPosition(cam);
+                var R3 = EntityGetRight(cam);
+                var U3 = EntityGetUp(cam);
+                var F3 = EntityGetForward(cam);
+                var probes = WallProbes(w, 0.15, 0.05, 0.035, 1.0);
+                var tv = MathTan(MathLerp(fov, aimFov, aim01) * 0.5 * 0.017453292) * 1.05;
+                var pad = WallDynamicPad(cpos);
+                var tReq = 0.0;
+                var modeReq = wallMode;
+                if (!WallClear(probes, pose, cpos, R3, U3, F3, pad, tv))
+                {
+                    // Önce aşağı indirme; yukarı kaldırma yalnız küçük açıyla (alçak siperin üstünden aşmak için) ve aşağı
+                    // indirme işe yaramıyorsa ya da çok indirmek gerekiyorsa. Hiçbiri yetmiyorsa silah görüş alanının
+                    // dışına çekilir. Aşağıdan yukarıya geçmek için yukarı pozun 2 cm fazla payla temiz olması gerekir:
+                    // sınırda iki poz arasında her karede gidip gelip silah yanıp sönmesin
+                    var tLow = -1.0;
+                    var tHigh = -1.0;
+                    var highTried = false;
+                    if (wallMode == 1) { tHigh = SolveWall(probes, p0, e0, 1, cpos, R3, U3, F3, pad, tv); highTried = true; }
+                    if (tHigh < 0.0)
+                    {
+                        tLow = SolveWall(probes, p0, e0, 0, cpos, R3, U3, F3, pad, tv);
+                        if (tLow > 0.375 && !highTried) { tHigh = SolveWall(probes, p0, e0, 1, cpos, R3, U3, F3, pad + 0.02, tv); }
+                    }
+                    if (tHigh >= 0.0 && (tLow < 0.0 || tLow > 0.375)) { modeReq = 1; tReq = tHigh; }
+                    else { modeReq = 0; tReq = tLow >= 0.0 ? tLow : 2.0; }
+                }
+                if (modeReq != wallMode)
+                {
+                    // Yön değişimi (alçak siper / duvar): yeni yönün gerektirdiği poz hemen uygulanır
+                    wallMode = modeReq;
+                    wallT = tReq;
+                }
+                else
+                {
+                    // Engel yaklaşınca anında (içine girmesin), uzaklaşınca yumuşak
+                    wallT = tReq >= wallT ? tReq : MathLerp(wallT, tReq, 1.0 - MathExp(-9.0 * dt));
+                }
+                if (wallT < 0.001 && tReq <= 0.0) { wallT = 0.0; wallMode = 0; }
+                pose = WallPose(p0, e0, wallT, wallMode);
+                if (wallCheck && WallVisibleClip(WallProbes(w, 0.0, 0.01, 0.01, 0.3), pose, cpos, R3, U3, F3, tv)) { wallClipFrames += 1; }
+            }
+            else
+            {
+                wallT = 0.0;
+                wallMode = 0;
+            }
+            wallAmount = wallMode == 0 ? wallT : -wallT;
+            EntitySetPosition(viewModel, pose.px, pose.py, pose.pz);
+            EntitySetRotation(viewModel, pose.ex, pose.ey, pose.ez);
         }
         if (switchTimer > 0.0) { switchTimer -= dt; }
 

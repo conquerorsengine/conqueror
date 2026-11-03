@@ -102,27 +102,9 @@ float PhaseHG(float c, float g)
 
 void main()
 {
-    float depth = texture(u_Depth, v_UV).r;
-    if (depth < 1.0)
-    {
-        // Gökyüzüne komşu (bir düşük çözünürlük pikseli içinde) duvar / nesne pikselleri de hesaplanır: tam çözünürlükteki
-        // gökyüzü pikselleri bilineer büyütmede bu komşuları da kullanır. Buraya "bulut yok" yazılınca duvarların hemen
-        // üstünde koyu, kamera hareket ettikçe (düşük çözünürlüklü ızgara kaydıkça) titreyen bir şerit oluşuyordu.
-        vec2 lowTexel = 4.0 / vec2(textureSize(u_Depth, 0));
-        bool nearSky = false;
-        for (int y = -1; y <= 1 && !nearSky; ++y)
-            for (int x = -1; x <= 1; ++x)
-                if (texture(u_Depth, v_UV + vec2(float(x), float(y)) * lowTexel).r >= 1.0)
-                {
-                    nearSky = true;
-                    break;
-                }
-        if (!nearSky)
-        {
-            FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-            return;
-        }
-    }
+    // Bulut yalnızca bakış yönüne bağlıdır: duvar / nesne arkasındaki yönler de hesaplanır. Zamansal birikim
+    // (CloudsResolve) kamera dönünce açılan gökyüzünde önceki karenin bulutunu kullanır; burada "bulut yok" yazılsaydı
+    // duvar kenarının arkasında bulutsuz bir iz kalırdı (birleştirme bulutu yalnız gökyüzü piksellerine uygular)
     vec4 far = u_InvViewProj * vec4(v_UV * 2.0 - 1.0, 1.0, 1.0);
     vec3 dir = normalize(far.xyz / far.w - u_CameraPos);
     if (dir.y < -0.02)

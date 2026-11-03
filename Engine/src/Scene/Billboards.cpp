@@ -13,8 +13,12 @@
 #include <IconsFontAwesome6.h>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <yaml-cpp/yaml.h>
+
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
+#include <fstream>
 #include <map>
 #include <unordered_map>
 #include <vector>
@@ -487,6 +491,21 @@ namespace Conqueror
                     const LensFlareComponent& f = *d.F;
                     const float s = std::max(f.Scale, 0.0f);
                     const glm::vec3 col = d.Color * d.Fade;
+                    // Lens Flare varlığı: öğeler dosyadan
+                    std::vector<LensFlareElement> elements;
+                    if (!f.Flare.empty() && LensFlareAssets::Load(f.Flare, elements))
+                    {
+                        for (const auto& el : elements)
+                            for (int i = 0; i < std::clamp(el.Count, 1, 32); ++i)
+                            {
+                                const float t = el.Position + (float)i * el.Spacing;
+                                const glm::vec2 p = d.Ndc * (1.0f - 2.0f * t);
+                                const float shape = el.Shape == LensFlareShape::Glow ? 1.0f : el.Shape == LensFlareShape::Ring ? 2.0f
+                                                  : el.Shape == LensFlareShape::Hexagon ? 3.0f : el.Shape == LensFlareShape::Circle ? 4.0f : 5.0f;
+                                element(p, el.Size * s, col * el.Color, el.Intensity, shape, std::max(el.Stretch, 0.01f));
+                            }
+                        continue;
+                    }
                     element(d.Ndc, f.GlowSize * s, col, f.GlowIntensity, 1.0f);
                     element(d.Ndc, f.RingSize * s, col, f.RingIntensity, 2.0f);
                     element(d.Ndc, f.GlowSize * s, col, f.StreakIntensity, 5.0f, std::max(f.StreakLength, 0.0f) / std::max(f.GlowSize, 1e-3f) * 1.5f);
@@ -556,6 +575,86 @@ namespace Conqueror
         }
     }
 
+    namespace LensFlareAssets
+    {
+        std::vector<LensFlareElement> DefaultElements()
+        {
+            LensFlareComponent f;   // yerleşik görünümün aynısı
+            std::vector<LensFlareElement> e;
+            e.push_back({ LensFlareShape::Glow, glm::vec3(1.0f), f.GlowSize, f.GlowIntensity, 0.0f, 1, 0.0f, 1.0f });
+            e.push_back({ LensFlareShape::Ring, glm::vec3(1.0f), f.RingSize, f.RingIntensity, 0.0f, 1, 0.0f, 1.0f });
+            e.push_back({ LensFlareShape::Streak, glm::vec3(1.0f), f.GlowSize, f.StreakIntensity, 0.0f, 1, 0.0f, f.StreakLength / f.GlowSize * 1.5f });
+            e.push_back({ LensFlareShape::Hexagon, glm::vec3(1.0f, 0.75f, 0.45f), f.GhostSize, f.GhostIntensity, 0.5f, 2, f.GhostSpacing, 1.0f });
+            e.push_back({ LensFlareShape::Hexagon, glm::vec3(0.45f, 0.75f, 1.0f), f.GhostSize * 1.3f, f.GhostIntensity, 0.5f + 2.0f * f.GhostSpacing, 2, f.GhostSpacing, 1.0f });
+            return e;
+        }
+
+        bool Load(const std::string& path, std::vector<LensFlareElement>& elements)
+        {
+            struct Cached { std::filesystem::file_time_type Time; std::vector<LensFlareElement> Elements; };
+            static std::unordered_map<std::string, Cached> cache;
+            const std::string file = SceneSerializer::ResolveAssetPath(path);
+            std::error_code ec;
+            const auto t = std::filesystem::last_write_time(file, ec);
+            if (ec)
+                return false;
+            auto it = cache.find(file);
+            if (it == cache.end() || it->second.Time != t)
+            {
+                try
+                {
+                    YAML::Node n = YAML::LoadFile(file)["LensFlare"];
+                    if (!n || !n["Elements"])
+                        return false;
+                    Cached c{ t, {} };
+                    for (const auto& x : n["Elements"])
+                    {
+                        LensFlareElement el;
+                        if (x["Shape"]) el.Shape = (LensFlareShape)std::clamp(x["Shape"].as<int>(), 0, 4);
+                        if (auto col = x["Color"]; col && col.IsSequence() && col.size() == 3) el.Color = { col[0].as<float>(), col[1].as<float>(), col[2].as<float>() };
+                        if (x["Size"]) el.Size = x["Size"].as<float>();
+                        if (x["Intensity"]) el.Intensity = x["Intensity"].as<float>();
+                        if (x["Position"]) el.Position = x["Position"].as<float>();
+                        if (x["Count"]) el.Count = x["Count"].as<int>();
+                        if (x["Spacing"]) el.Spacing = x["Spacing"].as<float>();
+                        if (x["Stretch"]) el.Stretch = x["Stretch"].as<float>();
+                        c.Elements.push_back(el);
+                    }
+                    it = cache.insert_or_assign(file, std::move(c)).first;
+                }
+                catch (...) { return false; }
+            }
+            elements = it->second.Elements;
+            return true;
+        }
+
+        bool Save(const std::string& path, const std::vector<LensFlareElement>& elements)
+        {
+            YAML::Emitter out;
+            out << YAML::BeginMap << YAML::Key << "LensFlare" << YAML::Value << YAML::BeginMap;
+            out << YAML::Key << "Elements" << YAML::Value << YAML::BeginSeq;
+            for (const auto& el : elements)
+            {
+                out << YAML::BeginMap;
+                out << YAML::Key << "Shape" << YAML::Value << (int)el.Shape;
+                out << YAML::Key << "Color" << YAML::Value << YAML::Flow << YAML::BeginSeq << el.Color.r << el.Color.g << el.Color.b << YAML::EndSeq;
+                out << YAML::Key << "Size" << YAML::Value << el.Size;
+                out << YAML::Key << "Intensity" << YAML::Value << el.Intensity;
+                out << YAML::Key << "Position" << YAML::Value << el.Position;
+                out << YAML::Key << "Count" << YAML::Value << el.Count;
+                out << YAML::Key << "Spacing" << YAML::Value << el.Spacing;
+                out << YAML::Key << "Stretch" << YAML::Value << el.Stretch;
+                out << YAML::EndMap;
+            }
+            out << YAML::EndSeq << YAML::EndMap << YAML::EndMap;
+            std::ofstream f(SceneSerializer::ResolveAssetPath(path), std::ios::trunc);
+            if (!f)
+                return false;
+            f << out.c_str() << "\n";
+            return true;
+        }
+    }
+
     void RegisterBillboardComponents()
     {
         using B = BillboardRendererComponent;
@@ -580,6 +679,8 @@ namespace Conqueror
         using F = LensFlareComponent;
         ComponentDef<F>("Lens Flare", "LensFlareComponent", "Rendering", ICON_FA_STAR)
             .Describe("Camera lens flare from this object or light (on a Directional Light it follows the sun). Fades when hidden behind geometry or leaving the screen.")
+            .Field("Flare", "Lens Flare Data", &F::Flare, FieldKind::Asset).Filter(".cqflare")
+                .Tooltip("Lens Flare asset (.cqflare): its elements replace the Elements settings below.")
             .Field("Color", "Color", &F::Color, FieldKind::Color3)
             .Field("Intensity", "Intensity", &F::Intensity).Range(0.0f, 100.0f, 0.01f)
             .Field("Scale", "Scale", &F::Scale).Range(0.0f, 10.0f, 0.01f)
@@ -599,5 +700,20 @@ namespace Conqueror
             .Field("StreakLength", "Streak Length", &F::StreakLength).Range(0.0f, 4.0f, 0.01f)
             .Field("StreakIntensity", "Streak Intensity", &F::StreakIntensity).Range(0.0f, 20.0f, 0.01f)
             .Field("Visibility", "Visibility", &F::Visibility).ReadOnly();
+        // Varlık kullanılırken yerleşik öğe ayarları gizli
+        if (ComponentInfo* info = ComponentRegistry::Find("LensFlareComponent"))
+        {
+            bool elements = false;
+            for (auto& f : info->Fields)
+            {
+                if (f.Name == "GlowSize") elements = true;
+                if (f.Name == "Visibility") elements = false;
+                if (elements)
+                {
+                    auto old = f.VisibleIf;
+                    f.VisibleIf = [old](const void* c) { return static_cast<const F*>(c)->Flare.empty() && (!old || old(c)); };
+                }
+            }
+        }
     }
 }

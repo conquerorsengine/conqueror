@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 5923004927053419433
+  - Entity: 8584783242413186105
     TagComponent:
       Tag: Companion
       GameTag: Untagged
@@ -15,7 +15,7 @@ Entities:
     Follower_ConquerorScriptComponent:
       ScriptPath: Packages/follower/Scripts/Follower.cqs
       ClassName: Follower
-  - Entity: 820705486920216453
+  - Entity: 7330176702555405986
     TagComponent:
       Tag: Companion Body
       GameTag: Untagged
@@ -29,12 +29,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.95, 0.65, 0.3, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 643371236011836458
+      MaterialAsset: Packages/follower/Materials/Orange.cqmat
+  - Entity: 7729758319786313242
     TagComponent:
       Tag: Companion Nose
       GameTag: Untagged
@@ -48,11 +44,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 1
-      Color: [0.1, 0.08, 0.08, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
+      MaterialAsset: Packages/follower/Materials/Dark Gray.cqmat
 Environment:
   SkyboxExposure: 1
   SkyboxRotation: 0
@@ -149,6 +141,49 @@ Environment:
       Sharpen: false
       SharpenAmount: 0.3
       AntiAliasing: 1
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: false
+      SSRIntensity: 1
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: false
+      SSGIIntensity: 1
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: false
+      CloudCoverage: 0.45
+      CloudDensity: 1
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: false
+      FocusDistance: 10
+      Aperture: 2.8
+      FocalLength: 50
+      DOFMaxBlur: 10
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
     Environment:
       Sky: 0
       BackgroundColor: [0.1, 0.1, 0.1]
@@ -156,6 +191,13 @@ Environment:
       ReflectionIntensity: 1
       SkyboxIntensity: 1
       SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
     Bake:
       RealtimeGI: false
       BakedGI: true
@@ -195,7 +237,7 @@ Environment:
       APVGeometryBias: 0.01
       APVRayOriginBias: -0.001
 Hierarchy:
-  - Child: 820705486920216453
-    Parent: 5923004927053419433
-  - Child: 643371236011836458
-    Parent: 5923004927053419433
+  - Child: 7330176702555405986
+    Parent: 8584783242413186105
+  - Child: 7729758319786313242
+    Parent: 8584783242413186105

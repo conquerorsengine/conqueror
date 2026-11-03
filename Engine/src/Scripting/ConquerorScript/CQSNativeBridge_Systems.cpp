@@ -1,3 +1,4 @@
+#include "Core/Audio/AudioRandomContainer.h"
 #include "Scene/MeshRendererMaterial.h"
 #include "Renderer/Utilities/Renderer3D/Material.h"
 #include "CQSNativeBridge.h"
@@ -9,6 +10,7 @@
 #include "Scripting/ScriptContext.h"
 #include "Core/Logging/Log.h"
 #include "Core/Input/Input.h"
+#include "Core/Input/InputActionRuntime.h"
 #include "Core/Time/TimeManager.h"
 #include "Core/Audio/AudioEngine.h"
 #include "Core/Audio/AudioSource.h"
@@ -252,7 +254,12 @@ namespace Conqueror::CQS
         Entity e = GetCurrentEntity_S(); if (!e) return Value::MakeNull();
         if (!e.HasComponent<AudioSourceComponent>()) return Value::MakeNull();
         auto& asc = e.GetComponent<AudioSourceComponent>();
-        if (asc.RuntimeSound)
+        if (AudioRandomContainers::IsAsset(asc.FilePath))
+        {
+            asc.ContainerRequest = true;   // Audio Random Container: her Play yeni klip seçer
+            asc.IsPlaying = true;
+        }
+        else if (asc.RuntimeSound)
         {
             auto* src = static_cast<AudioSource*>(asc.RuntimeSound);
             src->Play();
@@ -938,24 +945,38 @@ namespace Conqueror::CQS
         Input::BindChord(args[0].AsString()->Value, args[1].AsString()->Value, mods, key);
         return Value::MakeNull();
     }
+    // Project-wide Actions atanmışsa eylemler önce oradan ("Jump" ya da "Player/Jump"), yoksa proje girdi haritasından
     Value CQSNativeBridge::InputGetAction(int argCount, Value* args)
     {
         if (argCount < 1 || !args[0].IsString()) return Value::MakeBool(false);
+        if (const auto* st = InputActionRuntime::FindProjectWide(args[0].AsString()->Value))
+            return Value::MakeBool(st->Pressed);
         return Value::MakeBool(Input::GetActionButton(args[0].AsString()->Value));
     }
     Value CQSNativeBridge::InputGetActionState(int argCount, Value* args)
     {
         if (argCount < 1 || !args[0].IsString()) return Value::MakeInt(0);
+        if (const auto* st = InputActionRuntime::FindProjectWide(args[0].AsString()->Value))
+        {
+            InputTriggerState s = st->PressedThisFrame ? InputTriggerState::Started
+                                : st->ReleasedThisFrame ? InputTriggerState::Completed
+                                : st->Pressed ? InputTriggerState::Ongoing : InputTriggerState::None;
+            return Value::MakeInt((int)s);
+        }
         return Value::MakeInt((int)Input::GetActionState(args[0].AsString()->Value));
     }
     Value CQSNativeBridge::InputGetActionAxis1D(int argCount, Value* args)
     {
         if (argCount < 1 || !args[0].IsString()) return Value::MakeFloat(0.0);
+        if (const auto* st = InputActionRuntime::FindProjectWide(args[0].AsString()->Value))
+            return Value::MakeFloat(st->Vector ? st->Magnitude : st->Value.x);
         return Value::MakeFloat(Input::GetActionAxis1D(args[0].AsString()->Value));
     }
     Value CQSNativeBridge::InputGetActionAxis2D(int argCount, Value* args)
     {
         if (argCount < 1 || !args[0].IsString()) return Value::MakeObject(MakeV2(0,0));
+        if (const auto* st = InputActionRuntime::FindProjectWide(args[0].AsString()->Value))
+            return Value::MakeObject(MakeV2(st->Value.x, st->Value.y));
         glm::vec2 v = Input::GetActionAxis2D(args[0].AsString()->Value);
         return Value::MakeObject(MakeV2(v.x, v.y));
     }

@@ -583,8 +583,17 @@ namespace Conqueror
     MixerGroup* AudioMixer::AddGroup(const std::string& name, const std::string& parent)
     {
         MixerGroup g;
-        g.Name = MakeUniqueName(name.empty() ? std::string("Group") : name);
         g.Parent = FindGroupIndex(parent) >= 0 ? parent : std::string("Master");
+        // Audio Mixer varlığının grubuna eklenen grup o varlığa ait ("<Mikser>/<ad>")
+        std::string base = name.empty() ? std::string("Group") : name;
+        if (const MixerGroup* p = FindGroup(g.Parent); p && !p->Asset.empty())
+        {
+            g.Asset = p->Asset;
+            const std::string prefix = AssetPrefix(p->Asset) + "/";
+            if (base.rfind(prefix, 0) != 0)
+                base = prefix + base;
+        }
+        g.Name = MakeUniqueName(base);
         static const glm::vec3 palette[] = { { 0.35f, 0.62f, 0.95f }, { 0.95f, 0.55f, 0.30f }, { 0.55f, 0.85f, 0.40f },
                                              { 0.80f, 0.45f, 0.90f }, { 0.95f, 0.80f, 0.35f }, { 0.40f, 0.85f, 0.85f } };
         g.Color = palette[m_Groups.size() % 6];
@@ -626,18 +635,31 @@ namespace Conqueror
     bool AudioMixer::RenameGroup(const std::string& oldName, const std::string& newName)
     {
         int idx = FindGroupIndex(oldName);
-        if (idx <= 0 || newName.empty() || FindGroupIndex(newName) >= 0)
+        if (idx <= 0 || newName.empty())
             return false;
-        m_Groups[(size_t)idx].Name = newName;
+        // Varlık grubu: "<Mikser>/" öneki korunur; varlığın Master'ı yeniden adlandırılamaz
+        std::string finalName = newName;
+        if (const std::string& asset = m_Groups[(size_t)idx].Asset; !asset.empty())
+        {
+            const std::string prefix = AssetPrefix(asset) + "/";
+            if (oldName == prefix + "Master")
+                return false;
+            if (finalName.rfind(prefix, 0) != 0)
+                finalName = prefix + finalName;
+        }
+        if (FindGroupIndex(finalName) >= 0)
+            return false;
+        const std::string& resolvedNew = finalName;
+        m_Groups[(size_t)idx].Name = resolvedNew;
         for (auto& g : m_Groups)
         {
-            if (g.Parent == oldName) g.Parent = newName;
-            if (g.DuckSource == oldName) g.DuckSource = newName;
+            if (g.Parent == oldName) g.Parent = resolvedNew;
+            if (g.DuckSource == oldName) g.DuckSource = resolvedNew;
         }
         for (auto& s : m_Snapshots)
         {
-            if (auto it = s.VolumesDb.find(oldName); it != s.VolumesDb.end()) { s.VolumesDb[newName] = it->second; s.VolumesDb.erase(it); }
-            if (auto it = s.Mutes.find(oldName); it != s.Mutes.end()) { s.Mutes[newName] = it->second; s.Mutes.erase(it); }
+            if (auto it = s.VolumesDb.find(oldName); it != s.VolumesDb.end()) { s.VolumesDb[resolvedNew] = it->second; s.VolumesDb.erase(it); }
+            if (auto it = s.Mutes.find(oldName); it != s.Mutes.end()) { s.Mutes[resolvedNew] = it->second; s.Mutes.erase(it); }
         }
         ++m_RoutingGeneration; // kaynaklar adla bağlanır
         return true;
@@ -976,7 +998,8 @@ namespace Conqueror
 
     // ------------------------------------------------------------------ Kayıt
 
-    bool AudioMixer::Save(const std::filesystem::path& path) const
+    // Mikser dosyası yazıcı (proje mikseri ve .cqmixer varlıkları aynı biçim)
+    static bool WriteMixerFile(const std::filesystem::path& path, const std::vector<MixerGroup>& m_Groups, const std::vector<MixerSnapshot>& m_Snapshots)
     {
         YAML::Emitter out;
         out << YAML::BeginMap;
@@ -1046,7 +1069,8 @@ namespace Conqueror
         return true;
     }
 
-    bool AudioMixer::Load(const std::filesystem::path& path)
+    // Mikser dosyası okuyucu
+    static bool ParseMixerFile(const std::filesystem::path& path, std::vector<MixerGroup>& outGroups, std::vector<MixerSnapshot>& outSnapshots)
     {
         YAML::Node root;
         try
@@ -1126,6 +1150,21 @@ namespace Conqueror
             snapshots.push_back(std::move(s));
         }
 
+        outGroups = std::move(groups);
+        outSnapshots = std::move(snapshots);
+        return true;
+    }
+
+    bool AudioMixer::Load(const std::filesystem::path& path)
+    {
+        std::vector<MixerGroup> groups;
+        std::vector<MixerSnapshot> snapshots;
+        if (!ParseMixerFile(path, groups, snapshots))
+            return false;
+        // Yüklü Audio Mixer varlıklarının grupları korunur
+        for (auto& g : m_Groups)
+            if (!g.Asset.empty())
+                groups.push_back(g);
         bool wasInit = m_Initialized;
         if (wasInit)
             Shutdown();
@@ -1136,6 +1175,152 @@ namespace Conqueror
             Init();
         CQ_CORE_INFO("AudioMixer loaded: {0} ({1} groups)", path.string(), m_Groups.size());
         return true;
+    }
+
+    bool AudioMixer::Save(const std::filesystem::path& path) const
+    {
+        // Proje mikseri: yalnız varlığa ait olmayan gruplar
+        std::vector<MixerGroup> project;
+        for (const auto& g : m_Groups)
+            if (g.Asset.empty())
+                project.push_back(g);
+        return WriteMixerFile(path, project, m_Snapshots);
+    }
+
+    std::string AudioMixer::AssetPrefix(const std::filesystem::path& assetPath)
+    {
+        return assetPath.stem().string();
+    }
+
+    bool AudioMixer::LoadAssetMixer(const std::filesystem::path& path)
+    {
+        std::vector<MixerGroup> groups;
+        std::vector<MixerSnapshot> snapshots;
+        if (!ParseMixerFile(path, groups, snapshots))
+            return false;
+        std::string output = "Master";
+        try
+        {
+            YAML::Node root = YAML::LoadFile(path.string());
+            if (root["Output"]) output = root["Output"].as<std::string>("Master");
+        }
+        catch (...) {}
+        const std::string key = std::filesystem::weakly_canonical(path).string();
+        const std::string prefix = AssetPrefix(path);
+        for (auto& g : groups)
+        {
+            const bool isMaster = g.Name == "Master";
+            g.Name = prefix + "/" + g.Name;
+            g.Parent = isMaster ? (output.empty() ? std::string("Master") : output) : prefix + "/" + (g.Parent.empty() ? "Master" : g.Parent);
+            if (!g.DuckSource.empty() && g.DuckSource.find('/') == std::string::npos && g.DuckSource != "Master")
+                g.DuckSource = prefix + "/" + g.DuckSource;
+            g.Asset = key;
+        }
+        const bool wasInit = m_Initialized;
+        if (wasInit)
+            Shutdown();
+        m_Groups.erase(std::remove_if(m_Groups.begin(), m_Groups.end(), [&](const MixerGroup& g) { return g.Asset == key; }), m_Groups.end());
+        for (auto& g : groups)
+            m_Groups.push_back(std::move(g));
+        std::error_code ec;
+        m_AssetTimes[key] = std::filesystem::last_write_time(path, ec);
+        if (wasInit)
+            Init();
+        ++m_RoutingGeneration;
+        CQ_CORE_INFO("Audio Mixer asset loaded: {0}", path.filename().string());
+        return true;
+    }
+
+    bool AudioMixer::SaveAssetMixer(const std::filesystem::path& path) const
+    {
+        const std::string key = std::filesystem::weakly_canonical(path).string();
+        const std::string prefix = AssetPrefix(path) + "/";
+        std::vector<MixerGroup> groups;
+        std::string output = "Master";
+        for (const auto& g : m_Groups)
+        {
+            if (g.Asset != key)
+                continue;
+            MixerGroup c = g;
+            auto strip = [&](std::string& n) { if (n.rfind(prefix, 0) == 0) n = n.substr(prefix.size()); };
+            if (c.Name == prefix + "Master")
+                output = c.Parent;
+            strip(c.Name);
+            if (c.Name == "Master")
+                c.Parent.clear();
+            else
+                strip(c.Parent);
+            strip(c.DuckSource);
+            c.Asset.clear();
+            groups.push_back(c);
+        }
+        if (groups.empty())
+            return false;
+        if (!WriteMixerFile(path, groups, {}))
+            return false;
+        // Çıkış grubu (başka miksere yönlendirme)
+        try
+        {
+            YAML::Node root = YAML::LoadFile(path.string());
+            root["Output"] = output;
+            YAML::Emitter e;
+            e << root;
+            std::ofstream(path, std::ios::trunc) << e.c_str();
+        }
+        catch (...) {}
+        return true;
+    }
+
+    bool AudioMixer::SaveAll() const
+    {
+        bool ok = SaveProject();
+        std::vector<std::string> assets;
+        for (const auto& g : m_Groups)
+            if (!g.Asset.empty() && std::find(assets.begin(), assets.end(), g.Asset) == assets.end())
+                assets.push_back(g.Asset);
+        for (const auto& a : assets)
+            ok = SaveAssetMixer(a) && ok;
+        return ok;
+    }
+
+    void AudioMixer::LoadAllAssetMixers()
+    {
+        if (m_ProjectDirectory.empty())
+            return;
+        std::error_code ec;
+        for (auto it = std::filesystem::recursive_directory_iterator(m_ProjectDirectory / "Assets", std::filesystem::directory_options::skip_permission_denied, ec);
+             it != std::filesystem::recursive_directory_iterator(); it.increment(ec))
+            if (!ec && it->path().extension() == ".cqmixer")
+                LoadAssetMixer(it->path());
+    }
+
+    int AudioMixer::CheckAssetChanges()
+    {
+        int changed = 0;
+        std::vector<std::string> gone;
+        for (auto& [key, time] : m_AssetTimes)
+        {
+            std::error_code ec;
+            if (!std::filesystem::exists(key, ec))
+            {
+                gone.push_back(key);
+                continue;
+            }
+            const auto t = std::filesystem::last_write_time(key, ec);
+            if (!ec && t != time && LoadAssetMixer(key))
+                ++changed;
+        }
+        for (const auto& key : gone)
+        {
+            m_AssetTimes.erase(key);
+            const bool wasInit = m_Initialized;
+            if (wasInit) Shutdown();
+            m_Groups.erase(std::remove_if(m_Groups.begin(), m_Groups.end(), [&](const MixerGroup& g) { return g.Asset == key; }), m_Groups.end());
+            if (wasInit) Init();
+            ++m_RoutingGeneration;
+            ++changed;
+        }
+        return changed;
     }
 
     void AudioMixer::EnsureProjectLoaded(const std::filesystem::path& projectDirectory)
@@ -1150,5 +1335,9 @@ namespace Conqueror
             ResetToDefault();
             m_FilePath = path;
         }
+        // Projedeki Audio Mixer varlıkları (Unity: her .mixer kendi grup ağacı)
+        m_Groups.erase(std::remove_if(m_Groups.begin(), m_Groups.end(), [](const MixerGroup& g) { return !g.Asset.empty(); }), m_Groups.end());
+        m_AssetTimes.clear();
+        LoadAllAssetMixers();
     }
 }

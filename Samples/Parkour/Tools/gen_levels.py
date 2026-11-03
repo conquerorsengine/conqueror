@@ -210,7 +210,7 @@ class Course:
         n = self.north(p)
         b = f"beam{self.n}"
         self.emit(f'var {b} = Solid(Mesh("Beam{self.n}", "Cube", {f(p["x"])}, {f(p["top"] - 0.3)}, {f(n - length / 2)}, 2.0, 0.6, {f(length)}, platColor));')
-        self.emit(f'Surface({b}, platTex, 1, {f(length / 3)}, platMetal, platRough);')
+        self.emit(f'Surface({b}, platTex, 0.3333, 0.3333, platMetal, platRough);')
         self.emit(f'Strip({b}, "Beam{self.n} EdgeL", {f(p["x"] - 0.96)}, {f(p["top"] + 0.02)}, {f(n - length / 2)}, 0.08, 0.06, {f(length)}, ACC2, 6);')
         self.emit(f'Strip({b}, "Beam{self.n} EdgeR", {f(p["x"] + 0.96)}, {f(p["top"] + 0.02)}, {f(n - length / 2)}, 0.08, 0.06, {f(length)}, ACC2, 6);')
         self.step("go", p["x"], n + 0.8)
@@ -487,7 +487,7 @@ PIECE_HELPERS = r'''
 func Hurdle(name, x, top, z)
 {
     var hb = Solid(Mesh(name, "Cube", x, top + 0.45, z, 6, 0.9, 0.4, {r: 0.62, g: 0.64, b: 0.72, a: 1}));
-    Surface(hb, "Assets/Textures/metal.png", 3, 0.5, 0.6, 0.45);
+    Surface(hb, "Assets/Textures/metal.png", 0.5, 0.5, 0.6, 0.45);
     Strip(hb, name + " Top", x, top + 0.92, z, 6.04, 0.05, 0.44, ACC3, 3.5);
     Strip(hb, name + " Band", x, top + 0.5, z + 0.21, 6.0, 0.08, 0.02, {r: 1.0, g: 0.7, b: 0.15}, 2.2);
     return hb;
@@ -497,7 +497,7 @@ func Hurdle(name, x, top, z)
 func Tunnel(name, x, top, z)
 {
     var tn = Solid(Mesh(name, "Cube", x, top + 2.3, z, 6.8, 2.0, 8, {r: 0.52, g: 0.54, b: 0.60, a: 1}));
-    Surface(tn, "Assets/Textures/metal.png", 3, 4, 0.6, 0.45);
+    Surface(tn, "Assets/Textures/metal.png", 0.5, 0.5, 0.6, 0.45);
     Strip(tn, name + " Sign", x, top + 1.36, z + 4.03, 6.8, 0.1, 0.06, {r: 1.0, g: 0.85, b: 0.2}, 8);
     Solid(Mesh(name + " WallL", "Cube", x - 3.2, top + 1.65, z, 0.4, 3.3, 8, {r: 0.42, g: 0.44, b: 0.50, a: 1}));
     Solid(Mesh(name + " WallR", "Cube", x + 3.2, top + 1.65, z, 0.4, 3.3, 8, {r: 0.42, g: 0.44, b: 0.50, a: 1}));
@@ -592,7 +592,7 @@ def scenery(t, length, xmin, xmax):
               "    var c = Place(w);",
               "    var hgt = 40 + Rand() * 110;",
               "    var b = Mesh(\"Tower\" + i, \"Cube\", c.x, -40 + hgt / 2.0, c.z, w, hgt, d, {r: 0.92, g: 0.94, b: 1.0, a: 1});",
-              "    Surface(b, \"Assets/Textures/windows.png\", MathMax(w, d) / 12.0, hgt / 24.0, 0.4, 0.3);",
+              "    Surface(b, \"Assets/Textures/windows.png\", 0.0833, 0.0417, 0.4, 0.3);",
               "    EntitySetComponentField(b, \"MeshRenderer\", \"EmissionColor\", {r: 1, g: 1, b: 1});",
               f"    EntitySetComponentField(b, \"MeshRenderer\", \"EmissionStrength\", {emis});",
               "    EntitySetComponentField(b, \"MeshRenderer\", \"EmissionFromTexture\", true);",
@@ -617,16 +617,16 @@ def scenery(t, length, xmin, xmax):
               "    var c = Place(w);",
               "    var hgt = 25 + Rand() * 60;",
               "    var b = Mesh(\"Mesa\" + i, \"Cube\", c.x, -40 + hgt / 2.0, c.z, w, hgt, d, {r: 0.95, g: 0.78, b: 0.62, a: 1});",
-              "    Surface(b, \"Assets/Textures/sand.png\", w / 8.0, hgt / 8.0, 0.0, 0.95);",
+              "    Surface(b, \"Assets/Textures/sand.png\", 0.125, 0.125, 0.0, 0.95);",
               "    EntitySetRotation(b, 0, Rand() * 90, 0);",
               "    EntitySetComponentField(b, \"MeshRenderer\", \"CastShadows\", false);",
               "    // Kademeli tepe",
               "    var cap = Mesh(\"Mesa\" + i + \" Cap\", \"Cube\", c.x, -40 + hgt + 3.0, c.z, w * 0.6, 6, d * 0.6, {r: 0.98, g: 0.82, b: 0.66, a: 1});",
-              "    Surface(cap, \"Assets/Textures/sand.png\", w / 12.0, 1, 0.0, 0.95);",
+              "    Surface(cap, \"Assets/Textures/sand.png\", 0.0833, 0.1667, 0.0, 0.95);",
               "    EntitySetComponentField(cap, \"MeshRenderer\", \"CastShadows\", false);",
               "    if (Rand() < 0.3)", "    {",
               "        var ob = Mesh(\"Obelisk\" + i, \"Cube\", c.x, -40 + hgt + 14, c.z, 2.2, 22, 2.2, {r: 0.9, g: 0.75, b: 0.55, a: 1});",
-              "        Surface(ob, \"Assets/Textures/sand.png\", 1, 4, 0.0, 0.9);",
+              "        Surface(ob, \"Assets/Textures/sand.png\", 0.5, 0.2, 0.0, 0.9);",
               "        Glow(Mesh(\"Obelisk\" + i + \" Tip\", \"Sphere\", c.x, -40 + hgt + 25.5, c.z, 1.4, 1.4, 1.4, dark), ACC0, 6);",
               "    }",
               "}"]
@@ -636,7 +636,7 @@ def scenery(t, length, xmin, xmax):
               "    var c = Place(w);",
               "    var hgt = 30 + Rand() * 90;",
               "    var b = Mesh(\"Berg\" + i, \"Cube\", c.x, -40 + hgt / 2.0, c.z, w, hgt, w * (0.7 + Rand() * 0.5), {r: 0.86, g: 0.93, b: 1.0, a: 1});",
-              "    Surface(b, \"Assets/Textures/ice.png\", w / 10.0, hgt / 10.0, 0.0, 0.3);",
+              "    Surface(b, \"Assets/Textures/ice.png\", 0.1, 0.1, 0.0, 0.3);",
               "    EntitySetRotation(b, (Rand() - 0.5) * 10, Rand() * 90, (Rand() - 0.5) * 10);",
               "    EntitySetComponentField(b, \"MeshRenderer\", \"CastShadows\", false);",
               "    // Karlı tepe",
@@ -650,12 +650,12 @@ def scenery(t, length, xmin, xmax):
               "    var c = Place(w * 3);",
               "    var hgt = 50 + Rand() * 90;",
               "    var b = Mesh(\"Chimney\" + i, \"Cylinder\", c.x, -40 + hgt / 2.0, c.z, w, hgt, w, {r: 0.85, g: 0.8, b: 0.78, a: 1});",
-              "    Surface(b, \"Assets/Textures/rust.png\", 2, hgt / 6.0, 0.5, 0.6);",
+              "    Surface(b, \"Assets/Textures/rust.png\", 0.2, 0.1667, 0.5, 0.6);",
               "    EntitySetComponentField(b, \"MeshRenderer\", \"CastShadows\", false);",
               "    Glow(Mesh(\"Chimney\" + i + \" Ring\", \"Cylinder\", c.x, -40 + hgt - 3, c.z, w * 1.08, 0.6, w * 1.08, dark), ACC0, 4);",
               "    // Yanında fabrika binası",
               "    var hall = Mesh(\"Hall\" + i, \"Cube\", c.x + w * 1.6, -40 + hgt * 0.25, c.z, w * 2.2, hgt * 0.5, w * 3, {r: 0.55, g: 0.52, b: 0.5, a: 1});",
-              "    Surface(hall, \"Assets/Textures/metal.png\", 3, hgt / 12.0, 0.6, 0.5);",
+              "    Surface(hall, \"Assets/Textures/metal.png\", 0.25, 0.0833, 0.6, 0.5);",
               "    EntitySetComponentField(hall, \"MeshRenderer\", \"CastShadows\", false);",
               "    if (Rand() < 0.5)", "    {",
               "        var sm = CreateEntity(\"Smoke\" + i);",
@@ -678,10 +678,10 @@ def scenery(t, length, xmin, xmax):
               "    var c = Place(w * 6);",
               "    var hgt = 50 + Rand() * 60;",
               "    var b = Mesh(\"Tree\" + i, \"Cylinder\", c.x, -40 + hgt / 2.0, c.z, w, hgt, w, {r: 0.42, g: 0.31, b: 0.22, a: 1});",
-              "    Surface(b, \"Assets/Textures/moss.png\", 1, hgt / 8.0, 0.0, 0.95);",
+              "    Surface(b, \"Assets/Textures/moss.png\", 0.5, 0.125, 0.0, 0.95);",
               "    EntitySetComponentField(b, \"MeshRenderer\", \"CastShadows\", false);",
               "    var cr = w * (4 + Rand() * 3);",
-              "    var crown = Mesh(\"Tree\" + i + \" Crown\", \"Sphere\", c.x, -40 + hgt, c.z, cr * 2, cr * 1.1, cr * 2, {r: 0.16 + Rand() * 0.08, g: 0.38 + Rand() * 0.14, b: 0.12, a: 1});",
+              "    var crown = Mesh(\"Tree\" + i + \" Crown\", \"Sphere\", c.x, -40 + hgt, c.z, cr * 2, cr * 1.1, cr * 2, [{r: 0.17, g: 0.40, b: 0.12, a: 1}, {r: 0.20, g: 0.45, b: 0.12, a: 1}, {r: 0.23, g: 0.51, b: 0.12, a: 1}][int(Rand() * 2.99)]);",
               "    EntitySetComponentField(crown, \"MeshRenderer\", \"Roughness\", 0.9);",
               "    EntitySetComponentField(crown, \"MeshRenderer\", \"CastShadows\", false);",
               "}",
@@ -850,7 +850,7 @@ def main():
         with open(path, "w", encoding="utf-8") as fp:
             fp.write(out)
         auto += ["new_scene", f'run_cqs_file "{path}"', "wait 3", "entity expect_active BuildSceneDone true",
-                 "entity delete BuildSceneDone", f'save_scene_as "{os.path.join(ROOT, "Assets", "Scenes", scene + ".cqscene")}"']
+                 "entity delete BuildSceneDone", "material_bake Assets/Materials", f'save_scene_as "{os.path.join(ROOT, "Assets", "Scenes", scene + ".cqscene")}"']
         summary.append(f"{scene:12s} {name:16s} cp={course.cp} len={length:.0f} gold={gold}")
     data = ";".join(THEMES[c]["title"] + ":" + ",".join(
         f"{scene_name(c, i)}|{level_id(c, i)}|{(LEVELS[c][i] or ('SKYLINE RUN',))[0]}" for i in range(4)) for c in CATEGORIES)
@@ -858,7 +858,7 @@ def main():
     with open(path, "w", encoding="utf-8") as fp:
         fp.write(build_menu(head, sec, data))
     auto += ["new_scene", f'run_cqs_file "{path}"', "wait 3", "entity expect_active BuildSceneDone true",
-             "entity delete BuildSceneDone", f'save_scene_as "{os.path.join(ROOT, "Assets", "Scenes", "Menu.cqscene")}"']
+             "entity delete BuildSceneDone", "material_bake Assets/Materials", f'save_scene_as "{os.path.join(ROOT, "Assets", "Scenes", "Menu.cqscene")}"']
     auto.append("quit")
     with open(os.path.join(OUT, "build_levels.txt"), "w", encoding="utf-8") as fp:
         fp.write("\n".join(auto) + "\n")

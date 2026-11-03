@@ -42,9 +42,42 @@ namespace Conqueror::Editor
         {
             NavigateTo(file.parent_path());
             m_SelectedPath = file;
+            m_ScrollToSelected = true;
         }
         // Panel klavye odağında mı (genel kısayollar varlık yerine dosyaya uygulanmasın)
         bool IsFocused() const { return m_Focused; }
+        // Sağ tık menüsündeki "<tür>" girişiyle aynı varlığı geçerli klasörde oluştur (otomasyon / testler); yeni yol
+        std::filesystem::path CreateAssetOfKind(const std::string& kind) { return CreateAsset(kind); }
+
+        // ---- Unity Project menüsü (sağ tık) işlemleri: menü, kısayollar ve otomasyon aynı yolu kullanır ----
+        // EditorLayer bağlantıları (sahne ve pencere işleri)
+        static inline std::function<int(const std::string&)> s_FindReferencesInScene;   // eşleşen nesneleri seçer, sayıyı döner
+        static inline std::function<bool(const std::string&)> s_OpenSceneAdditive;
+        static inline std::function<void(const std::string&)> s_ReloadModelInScene;
+        static inline std::function<void(const std::string&)> s_OpenAddonManager;       // addon kimliği
+        static inline std::function<void()> s_OpenScriptProject;
+        static inline std::function<void(const std::string&)> s_OpenImportActivity;    // süzgeç (yol)
+
+        void CopyAssets(const std::vector<std::filesystem::path>& paths, bool cut);
+        bool PasteInto(const std::filesystem::path& directory);
+        bool HasClipboard() const { return !m_Clipboard.empty(); }
+        // Find References In Project: bu varlığın yolunu içeren proje dosyaları (sahne, prefab, malzeme, betik ...)
+        std::vector<std::filesystem::path> FindReferencesInProject(const std::filesystem::path& asset) const;
+        // Select Dependencies: varlığın kullandığı proje dosyaları (özyineli; kendisi dahil)
+        std::vector<std::filesystem::path> CollectDependencies(const std::filesystem::path& asset) const;
+        // Sonuç görünümü (Unity'de Project penceresi süzgeci): başlık + dosyalar; boş başlık kapatır
+        void ShowResults(const std::string& title, std::vector<std::filesystem::path> results);
+        const std::vector<std::filesystem::path>& GetResults() const { return m_Results; }
+        // Paketler (.cqpackage: tar.gz; yollar proje köküne göre)
+        bool ExportPackage(const std::vector<std::filesystem::path>& files, const std::filesystem::path& file, std::string* error = nullptr);
+        bool BeginImportPackage(const std::filesystem::path& file, std::string* error = nullptr);   // "Import Package" penceresini açar
+        int CommitImportPackage();                                                                  // seçili dosyaları yazar
+        void BeginExportPackage(const std::vector<std::filesystem::path>& roots);                   // "Exporting Package" penceresi
+        void Reimport(const std::filesystem::path& path);
+        void ReimportAll();
+        void OpenProperties(const std::filesystem::path& path);
+        bool ExtractModelMaterials(const std::filesystem::path& model);
+        void SelectAndReveal(const std::filesystem::path& path);
 
         // Varlık türü bilgisi (ikon + renk + ad)
         struct AssetTypeInfo
@@ -78,6 +111,40 @@ namespace Conqueror::Editor
         void DrawItemContextMenu(const Entry& entry);
         void DrawBackgroundContextMenu();
         void DrawCreateMenu();
+        // Create menüsü girdileri (kategori > alt menü > giriş); arama da bunları kullanır
+        struct CreateItem
+        {
+            std::string Category;    // "" en üst, "~" en alt, diğerleri Scene / 2D / Rendering ...
+            std::string SubMenu;     // ör. 2D > Sprites
+            std::string Label;
+            std::string Icon;
+            std::string Kind;        // CreateAsset türü; boş: bilgi satırı
+            std::string Tooltip;
+            bool Enabled = true;
+            bool SeparatorBefore = false;
+        };
+        std::vector<CreateItem> CollectCreateItems();
+        void RunCreate(const std::string& kind);
+        // Unity Project menüsü: en üstte arama ve Asset Options ikonları, sonra türe özel seçenekler ve Project girişleri
+        void DrawProjectMenu(const std::filesystem::path& target, bool isDirectory);
+        // Menü işlemi: normal menüde ve aramada aynı tanım
+        struct MenuAction
+        {
+            std::string Label;
+            std::string Icon;
+            std::string Shortcut;
+            std::string SubMenu;     // ör. "Import Package"
+            bool Enabled = true;
+            bool SeparatorBefore = false;
+            std::string Tooltip;
+            std::function<void()> Run;
+        };
+        std::vector<MenuAction> TypeActions(const std::filesystem::path& target, bool isDirectory);
+        std::vector<MenuAction> ProjectActions(const std::filesystem::path& target, bool isDirectory);
+        void DrawPackageWindows();
+        void DrawPropertyWindows();
+        Entry MakeEntry(const std::filesystem::path& path) const;
+        static bool CopyWithSidecars(const std::filesystem::path& source, const std::filesystem::path& target);
         void DrawModals();
         void DrawStatusBar();
         void HandleItemInteraction(const Entry& entry);
@@ -149,5 +216,34 @@ namespace Conqueror::Editor
 
         FileOpenCallbackFn m_FileOpenCallback;
         FileOpenCallbackFn m_SpriteEditorCallback;
+
+        // Varlık panosu (Asset Options: Kes / Kopyala / Yapıştır)
+        std::vector<std::filesystem::path> m_Clipboard;
+        bool m_ClipboardCut = false;
+        // Menü araması
+        char m_MenuSearch[96] = {};
+        // Sonuç görünümü
+        std::string m_ResultsTitle;
+        std::vector<std::filesystem::path> m_Results;
+        // Paket pencereleri
+        struct PackageItem
+        {
+            std::string Path;        // proje köküne göre
+            bool Selected = true;
+            bool Exists = false;     // içe aktarmada: projede zaten var (üzerine yazılır)
+            size_t Size = 0;
+        };
+        bool m_ExportOpen = false;
+        bool m_ExportDependencies = true;
+        std::vector<std::filesystem::path> m_ExportRoots;
+        std::vector<PackageItem> m_ExportItems;
+        bool m_ImportOpen = false;
+        std::string m_ImportFile;
+        std::vector<PackageItem> m_ImportItems;
+        std::vector<std::pair<std::string, std::vector<uint8_t>>> m_ImportData;
+        // Properties pencereleri (Alt+P)
+        std::vector<std::filesystem::path> m_PropertyWindows;
+        // Reveal / Select: seçili varlık görünür olsun diye bir kez kaydır (Unity "ping")
+        bool m_ScrollToSelected = false;
     };
 }

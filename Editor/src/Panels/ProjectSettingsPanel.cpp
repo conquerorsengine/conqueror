@@ -62,19 +62,24 @@ namespace Conqueror::Editor
         }
     }
 
-    bool ProjectSettingsPanel::Save()
+    bool ProjectSettingsPanel::SaveProjectFile()
     {
         auto project = Project::GetActive();
         if (!project)
             return false;
         std::filesystem::path path = ProjectFilePath();
         ProjectSerializer serializer(project);
-        bool ok = serializer.Serialize(path);
+        const bool ok = serializer.Serialize(path);
         if (ok)
-        {
-            m_Dirty = false;
             CQ_CORE_INFO("Project settings saved: {0}", path.string());
-        }
+        return ok;
+    }
+
+    bool ProjectSettingsPanel::Save()
+    {
+        const bool ok = SaveProjectFile();
+        if (ok)
+            m_Dirty = false;
         return ok;
     }
 

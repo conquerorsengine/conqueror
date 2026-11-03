@@ -29,5 +29,7 @@ for (var i = 0; i < 3; i++) { Target("Moving Target " + i, -8 + i * 8, 0, -22, 0
 Target("Platform Target", 10, 3, -16, 0, false);
 
 var player = FPPlayer("Player", 0, 0, 14, 0, ["Pistol", "Rifle"], "Blue", 100, 3);
+// Silah duvara / kübe yaklaşınca geri çekilip iner (içine girmez); yürürken kamera yatması hafif
+SetFields(player, {avoidWalls: true, crispStop: true, bobRoll: 0.32});
 Game("Range", 0, 0);
 ShooterHUD();

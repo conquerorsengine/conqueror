@@ -2,6 +2,7 @@
 #include "Core/Tiering/QualitySettings.h"
 #include "Core/Logging/Log.h"
 #include "Renderer/Renderer.h"
+#include "Renderer/PostProcess.h"
 #include "Renderer/RHI/Shader.h"
 #include "Renderer/RHI/Texture.h"
 #include "Renderer/Utilities/Renderer3D/Renderer3D.h"
@@ -493,6 +494,16 @@ namespace Conqueror
         if (rt.Texture)
             rt.Texture->Bind(0);
         shader->SetInt("u_Texture", 0);
+        // Yumuşak parçacık: sahne derinliği okunur (derinlik yazılmaz; bariyer sonrası aynı dokuyu örneklemek tanımlı).
+        // Yoksa düz dörtgen yüzeyi (küp, silah, zemin) kestiği yerde dümdüz bir çizgiyle kesiliyordu
+        const uint32_t sceneDepth = PostProcessStack::GetCurrentSceneDepth();
+        shader->SetInt("u_SoftDepth", sceneDepth ? 1 : 0);
+        shader->SetInt("u_SceneDepth", 1);
+        if (sceneDepth)
+        {
+            glTextureBarrier();
+            glBindTextureUnit(1, sceneDepth);
+        }
 
         GLboolean blend = glIsEnabled(GL_BLEND), cull = glIsEnabled(GL_CULL_FACE);
         GLboolean depthMask = GL_TRUE;
@@ -505,7 +516,21 @@ namespace Conqueror
         glDepthMask(GL_FALSE);
 
         glBindVertexArray(r.VAO);
+        shader->SetInt("u_ReactivePass", 0);
         glDrawArraysInstanced(GL_TRIANGLES, 0, 6, (GLsizei)r.Instances.size());
+        // TAA tepki maskesi: parçacıklar her karede hareket eder, derinlik ve hareket bayrağı yazmaz. Kapladıkları pikseller
+        // ayrı maskeye (en büyük örtü) yazılır, TAA yalnız o piksellerde geçmişe güvenmez. Maske yokken duman duran yüzey
+        // gibi işleniyor, piksel piksel farklı yola düşüp düz sınırlarla kesiliyordu
+        if (PostProcessStack::BeginReactiveDraw())
+        {
+            shader->SetInt("u_ReactivePass", 1);
+            glBlendEquation(GL_MAX);
+            glBlendFunc(GL_ONE, GL_ONE);
+            glDrawArraysInstanced(GL_TRIANGLES, 0, 6, (GLsizei)r.Instances.size());
+            glBlendEquation(GL_FUNC_ADD);
+            shader->SetInt("u_ReactivePass", 0);
+            PostProcessStack::EndReactiveDraw();
+        }
         glBindVertexArray(0);
 
         glDepthMask(depthMask);

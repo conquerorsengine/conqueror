@@ -1,4 +1,8 @@
 #include "Signals.h"
+#include <fstream>
+#include <filesystem>
+#include <yaml-cpp/yaml.h>
+#include "Core/Serialization/SceneSerializer.h"
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"
 #include "Scene/Components.h"
@@ -206,6 +210,59 @@ namespace Conqueror
         }
     }
 
+    namespace SignalAssets
+    {
+        bool Create(const std::string& path)
+        {
+            std::ofstream f(path);
+            if (!f)
+                return false;
+            f << "Signal: " << std::filesystem::path(path).stem().string() << "\n";
+            return true;
+        }
+
+        bool Same(const std::string& a, const std::string& b)
+        {
+            if (a.empty() || b.empty())
+                return false;
+            std::error_code ec;
+            const auto ka = std::filesystem::weakly_canonical(SceneSerializer::ResolveAssetPath(a), ec);
+            const auto kb = std::filesystem::weakly_canonical(SceneSerializer::ResolveAssetPath(b), ec);
+            return ka == kb;
+        }
+
+        int Send(Scene& scene, uint32_t receiver, const std::string& signalPath)
+        {
+            auto* rc = scene.m_Registry.try_get<SignalReceiverComponent>((entt::entity)receiver);
+            if (!rc)
+                return 0;
+            int count = 0;
+            const auto reactions = rc->Reactions;   // tepki nesneleri değiştirebilir
+            for (const auto& r : reactions)
+            {
+                if (r.Method.empty() || !Same(r.Signal, signalPath))
+                    continue;
+                uint32_t target = receiver;
+                if (r.Target)
+                {
+                    Entity t = scene.FindEntityByUUID(r.Target);
+                    if (!t)
+                        continue;
+                    target = (uint32_t)(entt::entity)t;
+                }
+                if (r.Argument.empty())
+                    scene.InvokeScriptMethod(target, r.Method.c_str(), nullptr, 0);
+                else
+                {
+                    CQS::Value arg = CQS::Value::MakeString(r.Argument);
+                    scene.InvokeScriptMethod(target, r.Method.c_str(), &arg, 1);
+                }
+                ++count;
+            }
+            return count;
+        }
+    }
+
     void RegisterSignalComponents()
     {
         using C = SignalConnectionsComponent;
@@ -214,5 +271,35 @@ namespace Conqueror
                       "use \"self\" as the target for this object. Scripts emit with SignalEmit(self, \"signal\", ...); the engine emits "
                       "body_entered / body_exited (triggers), collided and pressed / value_changed (UI).")
             .Field("Connections", "Connections", &C::Connections);
+
+        using R = SignalReceiverComponent;
+        ComponentDef<R>("Signal Receiver", "SignalReceiverComponent", "Scripting", ICON_FA_TOWER_BROADCAST)
+            .Describe("Reacts to Signal assets (.cqsignal) sent to this object by a Timeline Signal track or SignalSend(): "
+                      "each reaction calls a script method on this or another object.")
+            .CustomData([](YAML::Emitter& out, R& r) {
+                out << YAML::Key << "Reactions" << YAML::Value << YAML::BeginSeq;
+                for (const auto& x : r.Reactions)
+                {
+                    out << YAML::BeginMap;
+                    out << YAML::Key << "Signal" << YAML::Value << SceneSerializer::ToAssetPath(SceneSerializer::ResolveAssetPath(x.Signal));
+                    out << YAML::Key << "Target" << YAML::Value << x.Target;
+                    out << YAML::Key << "Method" << YAML::Value << x.Method;
+                    if (!x.Argument.empty()) out << YAML::Key << "Argument" << YAML::Value << x.Argument;
+                    out << YAML::EndMap;
+                }
+                out << YAML::EndSeq;
+            }, [](const YAML::Node& n, R& r) {
+                r.Reactions.clear();
+                if (auto list = n["Reactions"]; list && list.IsSequence())
+                    for (const auto& x : list)
+                    {
+                        SignalReaction s;
+                        s.Signal = x["Signal"].as<std::string>("");
+                        s.Target = x["Target"].as<uint64_t>(0);
+                        s.Method = x["Method"].as<std::string>("");
+                        s.Argument = x["Argument"].as<std::string>("");
+                        r.Reactions.push_back(s);
+                    }
+            });
     }
 }

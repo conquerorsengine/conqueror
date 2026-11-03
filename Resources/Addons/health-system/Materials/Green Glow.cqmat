@@ -1,0 +1,22 @@
+Material:
+  Name: Green Glow
+  Albedo: [0.2, 1, 0.45]
+  Opacity: 1
+  Metallic: 0
+  Roughness: 0.5
+  AO: 1
+  EmissionColor: [0.2, 1, 0.45]
+  EmissionStrength: 1.5
+  Tiling: [1, 1]
+  Offset: [0, 0]
+  RenderMode: 0
+  Culling: 0
+  AlphaClip: 0.5
+  AlbedoMap: CQ:Resources/Textures/texture_grid.png
+  NextGraphNodeID: 1
+  NextGraphLinkID: 1
+  GraphInitialized: false
+  GraphNodes:
+    []
+  GraphLinks:
+    []

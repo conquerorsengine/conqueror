@@ -165,7 +165,7 @@ namespace Conqueror
         {
             if (n.AutoBounds)
             {
-                if (auto* mr = scene.m_Registry.try_get<MeshRendererComponent>(e))
+                if (auto* mr = scene.m_Registry.try_get<MeshRendererComponent>(e); mr && !mr->IsModel())
                 {
                     std::shared_ptr<Mesh> mesh = mr->CustomMesh;
                     if (!mesh)
@@ -185,7 +185,7 @@ namespace Conqueror
                         return true;
                     }
                 }
-                if (auto* mc = scene.m_Registry.try_get<ModelComponent>(e); mc && mc->ModelData && !mc->ModelData->Meshes.empty())
+                if (auto* mc = scene.m_Registry.try_get<MeshRendererComponent>(e); mc && mc->ModelData && !mc->ModelData->Meshes.empty())
                 {
                     glm::vec3 mn(1e30f), mx(-1e30f);
                     for (const auto& m : mc->ModelData->Meshes)

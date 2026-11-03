@@ -29,7 +29,8 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-BIN = os.path.join(ROOT, "build", "bin")
+# CQ_REGRESSION_BIN: build/bin'in bir kopyası (regresyon arka planda sürerken yeniden derleme sonuçları bozmasın)
+BIN = os.environ.get("CQ_REGRESSION_BIN") or os.path.join(ROOT, "build", "bin")
 CASES = os.path.join(HERE, "cases")
 WORK = os.path.join(os.path.expanduser("~"), ".cache", "cq-build", "regression")
 

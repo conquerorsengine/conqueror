@@ -1,8 +1,24 @@
+#include "Core/Serialization/SceneSerializer.h"
 #include "Material.h"
 #include "Renderer3D.h"
 
 namespace Conqueror
 {
+    bool Material::LoadShaderFile()
+    {
+        if (ShaderPath.empty() || (GraphInitialized && !GraphNodes.empty()))
+            return false;
+        auto shader = Shader::Create(SceneSerializer::ResolveAssetPath(ShaderPath));
+        if (!shader || !shader->IsValid())
+        {
+            CQ_CORE_ERROR("[Material] Shader '{0}' could not be compiled; using the default Lit shader.", ShaderPath);
+            MaterialShader = nullptr;
+            return false;
+        }
+        MaterialShader = shader;
+        return true;
+    }
+
     Material::Material()
     {
         CreateDefaultTextures();

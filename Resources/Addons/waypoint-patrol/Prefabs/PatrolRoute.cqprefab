@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 1000770792556952909
+  - Entity: 8127276529705646514
     TagComponent:
       Tag: Patrol Route
       GameTag: Untagged
@@ -12,7 +12,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 1254261536612034617
+  - Entity: 3853367531358471116
     TagComponent:
       Tag: Patroller
       GameTag: Untagged
@@ -26,15 +26,11 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.95, 0.55, 0.15, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
+      MaterialAsset: Packages/waypoint-patrol/Materials/Orange.cqmat
     WaypointPatrol_ConquerorScriptComponent:
       ScriptPath: Packages/waypoint-patrol/Scripts/WaypointPatrol.cqs
       ClassName: WaypointPatrol
-  - Entity: 2187480672047573578
+  - Entity: 2050452720516319454
     TagComponent:
       Tag: Waypoints
       GameTag: Untagged
@@ -46,7 +42,7 @@ Entities:
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
-  - Entity: 1039253372006635808
+  - Entity: 98160728693664628
     TagComponent:
       Tag: Waypoint 1
       GameTag: Untagged
@@ -60,14 +56,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.2, 0.6, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.6, 1]
-      EmissionStrength: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 9150195615738156160
+      MaterialAsset: Packages/waypoint-patrol/Materials/Blue Glow.cqmat
+  - Entity: 4717164410214801049
     TagComponent:
       Tag: Waypoint 2
       GameTag: Untagged
@@ -81,14 +71,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.2, 0.6, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.6, 1]
-      EmissionStrength: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 5541818347617566586
+      MaterialAsset: Packages/waypoint-patrol/Materials/Blue Glow.cqmat
+  - Entity: 7580153595503301699
     TagComponent:
       Tag: Waypoint 3
       GameTag: Untagged
@@ -102,14 +86,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.2, 0.6, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.6, 1]
-      EmissionStrength: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 5277088555411286869
+      MaterialAsset: Packages/waypoint-patrol/Materials/Blue Glow.cqmat
+  - Entity: 3697927955061885920
     TagComponent:
       Tag: Waypoint 4
       GameTag: Untagged
@@ -123,13 +101,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.2, 0.6, 1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      EmissionColor: [0.2, 0.6, 1]
-      EmissionStrength: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
+      MaterialAsset: Packages/waypoint-patrol/Materials/Blue Glow.cqmat
 Environment:
   SkyboxExposure: 1
   SkyboxRotation: 0
@@ -226,6 +198,49 @@ Environment:
       Sharpen: false
       SharpenAmount: 0.3
       AntiAliasing: 1
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: false
+      SSRIntensity: 1
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: false
+      SSGIIntensity: 1
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: false
+      CloudCoverage: 0.45
+      CloudDensity: 1
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: false
+      FocusDistance: 10
+      Aperture: 2.8
+      FocalLength: 50
+      DOFMaxBlur: 10
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
     Environment:
       Sky: 0
       BackgroundColor: [0.1, 0.1, 0.1]
@@ -233,6 +248,13 @@ Environment:
       ReflectionIntensity: 1
       SkyboxIntensity: 1
       SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
     Bake:
       RealtimeGI: false
       BakedGI: true
@@ -272,15 +294,15 @@ Environment:
       APVGeometryBias: 0.01
       APVRayOriginBias: -0.001
 Hierarchy:
-  - Child: 1039253372006635808
-    Parent: 2187480672047573578
-  - Child: 9150195615738156160
-    Parent: 2187480672047573578
-  - Child: 5541818347617566586
-    Parent: 2187480672047573578
-  - Child: 5277088555411286869
-    Parent: 2187480672047573578
-  - Child: 1254261536612034617
-    Parent: 1000770792556952909
-  - Child: 2187480672047573578
-    Parent: 1000770792556952909
+  - Child: 98160728693664628
+    Parent: 2050452720516319454
+  - Child: 4717164410214801049
+    Parent: 2050452720516319454
+  - Child: 7580153595503301699
+    Parent: 2050452720516319454
+  - Child: 3697927955061885920
+    Parent: 2050452720516319454
+  - Child: 3853367531358471116
+    Parent: 8127276529705646514
+  - Child: 2050452720516319454
+    Parent: 8127276529705646514

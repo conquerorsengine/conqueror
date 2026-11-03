@@ -16,7 +16,9 @@
 #include "Panels/MultiplayerPanel.h"
 #include "Panels/BuildSettingsPanel.h"
 #include "Panels/TimelinePanel.h"
+#include "Panels/Animation/AnimationWindow.h"
 #include "Panels/SpriteEditorPanel.h"
+#include "Panels/InputActionsEditorPanel.h"
 #include "Panels/TerrainPanel.h"
 #include "Panels/MeshPaintTool.h"
 #include "Panels/TilePalettePanel.h"
@@ -99,6 +101,7 @@ namespace Conqueror::Editor
         void ApplyNewSceneTemplate();
         // File > New Scene penceresi (yerleşik şablonlar + projedeki .cqscenetemplate dosyaları)
         void DrawNewSceneDialog();
+        void DrawMessagePopup();
         void ConfirmNewScene(const std::string& choice);
         bool CreateNewScene(const std::string& choice);   // "builtin:basic" | "builtin:empty" | şablon dosyası yolu
         bool OpenInExternalEditor(const std::string& path);
@@ -114,6 +117,7 @@ namespace Conqueror::Editor
         void DrawRecoveryPopup();
         // Kaydedilmemiş değişiklikler: kapatma / yeni sahne / başka sahne açma öncesi sor
         bool HasUnsavedChanges();
+        bool SaveStreamedLevel(Entity root);
         void RequestNewScene();
         void RequestOpenScene(const std::filesystem::path& path);
         void DrawUnsavedChangesPopup();
@@ -171,10 +175,14 @@ namespace Conqueror::Editor
         std::unique_ptr<MultiplayerPanel> m_MultiplayerPanel;
         std::unique_ptr<BuildSettingsPanel> m_BuildSettingsPanel;
         std::unique_ptr<TimelinePanel> m_TimelinePanel;
+        std::unique_ptr<AnimationWindow> m_AnimationWindow;   // Window > Animation (Unity Animation penceresi)
         std::unique_ptr<SpriteEditorPanel> m_SpriteEditorPanel;
+        std::unique_ptr<InputActionsEditorPanel> m_InputActionsEditor;
         std::unique_ptr<TerrainPanel> m_TerrainPanel;
         std::unique_ptr<TilePalettePanel> m_TilePalettePanel;
         std::unique_ptr<AddonManagerPanel> m_AddonManagerPanel;
+        std::unique_ptr<class ImportActivityPanel> m_ImportActivityPanel;
+        bool m_ShowImportActivity = false;
         std::unique_ptr<ProjectSettingsPanel> m_ProjectSettingsPanel;
         std::unique_ptr<StatsPanel> m_StatsPanel;
         std::unique_ptr<AnimatorPanel> m_AnimatorPanel;
@@ -197,6 +205,7 @@ namespace Conqueror::Editor
         bool m_ShowMultiplayer = false;
         bool m_ShowBuildSettings = false;
         bool m_ShowTimeline = false;
+        bool m_ShowAnimation = false;
         bool m_ShowSpriteEditor = false;
         bool m_ShowTerrain = true;
         bool m_ShowTilePalette = false;

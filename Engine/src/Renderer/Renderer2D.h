@@ -31,10 +31,9 @@ namespace Conqueror
 
         // Primitives - Textured (Her sprite için ayrı render)
         static void DrawSprite(const glm::mat4& transform, const std::shared_ptr<Texture2D>& texture, float tilingFactor, const glm::vec4& tintColor, struct SpriteRendererComponent& sprite);
-        static void DrawSprite(const glm::mat4& transform, const std::shared_ptr<Texture2D>& texture, float tilingFactor, const glm::vec4& tintColor, struct ImageComponent& image);
         
         // 9-Slice rendering
-        static void DrawSprite9Slice(const glm::mat4& transform, const std::shared_ptr<Texture2D>& texture, float borderSize, const glm::vec4& tintColor, struct ImageComponent& image);
+        static void DrawSprite9Slice(const glm::mat4& transform, const std::shared_ptr<Texture2D>& texture, float borderSize, const glm::vec4& tintColor, struct SpriteRendererComponent& sprite);
 
         // ---- Toplu (batched) çizim temel öğeleri
         static void DrawQuad(const glm::mat4& transform, const glm::vec4& color);
@@ -79,6 +78,5 @@ namespace Conqueror
 
     private:
         static void InitializeSpriteResources(struct SpriteRendererComponent& sprite);
-        static void InitializeImageResources(struct ImageComponent& image);
     };
 }

@@ -405,10 +405,11 @@ namespace Conqueror
             }
             if (cmd == "drag_item")
             {
-                // drag_item <label> <dx> <dy> [window]
-                if (t.size() < 4) { error = "drag_item <label> <dx> <dy> [window]"; return false; }
-                const char* window = t.size() > 4 ? t[4].c_str() : nullptr;
-                const auto* item = CQAutomation::FindItem(t[1].c_str(), window, 0);
+                // drag_item <label> <dx> <dy> [window] [kaçıncı eşleşme]
+                if (t.size() < 4) { error = "drag_item <label> <dx> <dy> [window] [occurrence]"; return false; }
+                const char* window = t.size() > 4 && t[4] != "-" ? t[4].c_str() : nullptr;
+                const int occurrence = t.size() > 5 ? std::atoi(t[5].c_str()) : 0;
+                const auto* item = CQAutomation::FindItem(t[1].c_str(), window, occurrence);
                 if (!item) { error = "item '" + t[1] + "' not found"; return false; }
                 float cx = (item->Min.x + item->Max.x) * 0.5f;
                 float cy = (item->Min.y + item->Max.y) * 0.5f;

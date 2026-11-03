@@ -54,6 +54,18 @@ namespace Conqueror::Editor
 
         // Varlık (dosya) seçimi: Inspector varlık yerine dosyayı gösterir (Unity: Project penceresi seçimi)
         void SelectAsset(const std::string& path) { m_SelectedAsset = path; if (!path.empty()) m_SelectedEntities.clear(); }
+
+        // Editör ileti penceresi (ör. Unity'nin "Can't add script" iletişim kutusu): EditorLayer bir sonraki karede gösterir
+        void ShowMessage(const std::string& title, const std::string& text) { m_MessageTitle = title; m_MessageText = text; m_MessagePending = true; }
+        bool TakeMessage(std::string& title, std::string& text)
+        {
+            if (!m_MessagePending)
+                return false;
+            m_MessagePending = false;
+            title = m_MessageTitle;
+            text = m_MessageText;
+            return true;
+        }
         const std::string& GetSelectedAsset() const { return m_SelectedAsset; }
 
         // Copy/Paste clipboard
@@ -128,6 +140,8 @@ namespace Conqueror::Editor
         // Selection
         std::vector<Entity> m_SelectedEntities;
         std::string m_SelectedAsset;
+        std::string m_MessageTitle, m_MessageText;
+        bool m_MessagePending = false;
 
         // Clipboard
         std::vector<Entity> m_ClipboardEntities;

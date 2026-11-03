@@ -1,0 +1,22 @@
+Material:
+  Name: Yellow Glow 14
+  Albedo: [0.08, 0.08, 0.1]
+  Opacity: 1
+  Metallic: 0
+  Roughness: 0.5
+  AO: 1
+  EmissionColor: [1, 0.75, 0.2]
+  EmissionStrength: 2.4
+  Tiling: [1, 1]
+  Offset: [0, 0]
+  RenderMode: 0
+  Culling: 0
+  AlphaClip: 0.5
+  AlbedoMap: CQ:Resources/Packages/Core/Textures/Grid.png
+  NextGraphNodeID: 1
+  NextGraphLinkID: 1
+  GraphInitialized: false
+  GraphNodes:
+    []
+  GraphLinks:
+    []

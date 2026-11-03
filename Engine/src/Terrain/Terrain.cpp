@@ -1,4 +1,8 @@
 #include "Terrain.h"
+#include <filesystem>
+#include <unordered_map>
+#include <yaml-cpp/yaml.h>
+#include "Core/Serialization/SceneSerializer.h"
 #include "Core/Logging/Log.h"
 #include "Renderer/RHI/Texture.h"
 #include "Renderer/Utilities/Renderer3D/Mesh.h"
@@ -352,6 +356,21 @@ namespace Conqueror
         for (int i = 0; i < t.LayerCount; ++i)
         {
             auto& layer = t.Layers[(size_t)i];
+            // Terrain Layer varlığı: değerler dosyadan
+            if (!layer.Asset.empty())
+            {
+                TerrainLayer fromAsset;
+                if (TerrainAssets::LoadLayer(layer.Asset, fromAsset))
+                {
+                    if (fromAsset.TexturePath != layer.TexturePath)
+                        layer.Albedo.reset();
+                    layer.TexturePath = fromAsset.TexturePath;
+                    layer.Tint = fromAsset.Tint;
+                    layer.Tiling = fromAsset.Tiling;
+                    layer.Roughness = fromAsset.Roughness;
+                    layer.Metallic = fromAsset.Metallic;
+                }
+            }
             if (!layer.TexturePath.empty() && (!layer.Albedo || layer.Albedo->GetPath() != layer.TexturePath))
                 layer.Albedo = Texture2D::Create(layer.TexturePath);
             else if (layer.TexturePath.empty())
@@ -387,7 +406,32 @@ namespace Conqueror
         const float radius = std::max(brush.Radius, 0.01f);
         const float strength = std::clamp(brush.Strength, 0.0f, 1.0f);
 
-        auto weightAt = [&](float dist) {
+        // Brush varlığı: maske dokusu şekli verir (döndürme / ölçek / ek yumuşatma)
+        TerrainBrushAsset shape;
+        const bool masked = !brush.Brush.empty() && TerrainAssets::LoadBrush(brush.Brush, shape) && !shape.Mask.empty();
+        const float shapeRadius = radius * (masked ? std::max(shape.Scale, 0.05f) : 1.0f);
+        const float rot = glm::radians(shape.Rotation), cr = std::cos(rot), sr2 = std::sin(rot);
+        auto weightAtVec = [&](const glm::vec2& d) {
+            const float dist = glm::length(d);
+            if (masked)
+            {
+                // Fırça alanı kare: maske uv'si (döndürülmüş)
+                glm::vec2 q(d.x * cr + d.y * sr2, -d.x * sr2 + d.y * cr);
+                glm::vec2 uv = q / (2.0f * shapeRadius) + 0.5f;
+                if (uv.x < 0.0f || uv.y < 0.0f || uv.x > 1.0f || uv.y > 1.0f)
+                    return 0.0f;
+                float m = 0.0f;
+                if (!TerrainAssets::SampleBrushMask(shape.Mask, uv.x, uv.y, m))
+                    return 0.0f;
+                if (shape.Invert)
+                    m = 1.0f - m;
+                if (shape.Falloff > 0.0f)
+                {
+                    const float edge = std::min(std::min(uv.x, 1.0f - uv.x), std::min(uv.y, 1.0f - uv.y)) * 2.0f;
+                    m *= std::clamp(edge / std::max(shape.Falloff, 1e-3f), 0.0f, 1.0f);
+                }
+                return m;
+            }
             float x = std::clamp(dist / radius, 0.0f, 1.0f);
             if (x >= 1.0f) return 0.0f;
             float hard = 1.0f - std::clamp(brush.Falloff, 0.0f, 1.0f);
@@ -395,19 +439,22 @@ namespace Conqueror
             float s = (x - hard) / std::max(1e-4f, 1.0f - hard);
             return 0.5f * (1.0f + std::cos(s * 3.14159265f)); // kosinüs düşüşü
         };
+        auto weightAt = [&](float dist) { return weightAtVec(glm::vec2(dist, 0.0f)); };
+        (void)weightAt;
+        const float reach = masked ? shapeRadius * 1.415f : radius;   // döndürülmüş kare maskenin köşeleri dahil
 
         if (op == TerrainBrushOp::Paint)
         {
             const int sr = t.SplatResolution;
             const float sx = t.Width / sr, sz = t.Length / sr;
-            int x0 = std::max(0, (int)std::floor((c.x - radius) / sx)), x1 = std::min(sr - 1, (int)std::ceil((c.x + radius) / sx));
-            int z0 = std::max(0, (int)std::floor((c.y - radius) / sz)), z1 = std::min(sr - 1, (int)std::ceil((c.y + radius) / sz));
+            int x0 = std::max(0, (int)std::floor((c.x - reach) / sx)), x1 = std::min(sr - 1, (int)std::ceil((c.x + reach) / sx));
+            int z0 = std::max(0, (int)std::floor((c.y - reach) / sz)), z1 = std::min(sr - 1, (int)std::ceil((c.y + reach) / sz));
             const int layer = std::clamp(brush.Layer, 0, TerrainComponent::MaxLayers - 1);
             for (int z = z0; z <= z1; ++z)
                 for (int x = x0; x <= x1; ++x)
                 {
                     glm::vec2 p((x + 0.5f) * sx, (z + 0.5f) * sz);
-                    float w = weightAt(glm::length(p - c)) * strength * std::min(1.0f, dt * 6.0f);
+                    float w = weightAtVec(p - c) * strength * std::min(1.0f, dt * 6.0f);
                     if (w <= 0.0f)
                         continue;
                     uint8_t* px = &t.Splat[((size_t)z * sr + x) * 4];
@@ -425,8 +472,8 @@ namespace Conqueror
 
         const int r = t.Resolution;
         const float sx = t.Width / (r - 1), sz = t.Length / (r - 1);
-        int x0 = std::max(0, (int)std::floor((c.x - radius) / sx)), x1 = std::min(r - 1, (int)std::ceil((c.x + radius) / sx));
-        int z0 = std::max(0, (int)std::floor((c.y - radius) / sz)), z1 = std::min(r - 1, (int)std::ceil((c.y + radius) / sz));
+        int x0 = std::max(0, (int)std::floor((c.x - reach) / sx)), x1 = std::min(r - 1, (int)std::ceil((c.x + reach) / sx));
+        int z0 = std::max(0, (int)std::floor((c.y - reach) / sz)), z1 = std::min(r - 1, (int)std::ceil((c.y + reach) / sz));
         if (x0 > x1 || z0 > z1)
             return;
 
@@ -441,7 +488,7 @@ namespace Conqueror
         {
             for (int x = x0; x <= x1; ++x)
             {
-                float w = weightAt(glm::length(glm::vec2(x * sx, z * sz) - c));
+                float w = weightAtVec(glm::vec2(x * sx, z * sz) - c);
                 if (w <= 0.0f)
                     continue;
                 float& h = t.Heights[(size_t)Idx(t, x, z)];
@@ -770,5 +817,129 @@ namespace Conqueror
         t.Splat = std::move(bytes);
         t.SplatDirty = true;
         return true;
+    }
+    namespace TerrainAssets
+    {
+        namespace
+        {
+            struct Mask { std::filesystem::file_time_type Time{}; int W = 0, H = 0; std::vector<uint8_t> Px; };
+            std::unordered_map<std::string, Mask>& Masks() { static std::unordered_map<std::string, Mask> m; return m; }
+            template<typename T> struct Cached { std::filesystem::file_time_type Time{}; T Value; };
+        }
+
+        bool LoadLayer(const std::string& path, TerrainLayer& out)
+        {
+            static std::unordered_map<std::string, Cached<TerrainLayer>> cache;
+            const std::string file = SceneSerializer::ResolveAssetPath(path);
+            std::error_code ec;
+            const auto t = std::filesystem::last_write_time(file, ec);
+            if (ec) return false;
+            auto it = cache.find(file);
+            if (it == cache.end() || it->second.Time != t)
+            {
+                try
+                {
+                    YAML::Node n = YAML::LoadFile(file)["TerrainLayer"];
+                    if (!n) return false;
+                    TerrainLayer l;
+                    l.TexturePath = n["Texture"] ? SceneSerializer::ResolveAssetPath(n["Texture"].as<std::string>()) : std::string();
+                    if (l.TexturePath == SceneSerializer::ResolveAssetPath("")) l.TexturePath.clear();
+                    if (auto c = n["Tint"]; c && c.IsSequence() && c.size() == 3) l.Tint = { c[0].as<float>(), c[1].as<float>(), c[2].as<float>() };
+                    if (n["Tiling"]) l.Tiling = n["Tiling"].as<float>();
+                    if (n["Roughness"]) l.Roughness = n["Roughness"].as<float>();
+                    if (n["Metallic"]) l.Metallic = n["Metallic"].as<float>();
+                    it = cache.insert_or_assign(file, Cached<TerrainLayer>{ t, l }).first;
+                }
+                catch (...) { return false; }
+            }
+            out = it->second.Value;
+            return true;
+        }
+
+        bool SaveLayer(const std::string& path, const TerrainLayer& l)
+        {
+            YAML::Emitter e;
+            e << YAML::BeginMap << YAML::Key << "TerrainLayer" << YAML::Value << YAML::BeginMap;
+            e << YAML::Key << "Texture" << YAML::Value << (l.TexturePath.empty() ? std::string() : SceneSerializer::ToAssetPath(l.TexturePath));
+            e << YAML::Key << "Tint" << YAML::Value << YAML::Flow << YAML::BeginSeq << l.Tint.r << l.Tint.g << l.Tint.b << YAML::EndSeq;
+            e << YAML::Key << "Tiling" << YAML::Value << l.Tiling;
+            e << YAML::Key << "Roughness" << YAML::Value << l.Roughness;
+            e << YAML::Key << "Metallic" << YAML::Value << l.Metallic;
+            e << YAML::EndMap << YAML::EndMap;
+            std::ofstream f(SceneSerializer::ResolveAssetPath(path), std::ios::trunc);
+            if (!f) return false;
+            f << e.c_str() << "\n";
+            return true;
+        }
+
+        bool LoadBrush(const std::string& path, TerrainBrushAsset& out)
+        {
+            static std::unordered_map<std::string, Cached<TerrainBrushAsset>> cache;
+            const std::string file = SceneSerializer::ResolveAssetPath(path);
+            std::error_code ec;
+            const auto t = std::filesystem::last_write_time(file, ec);
+            if (ec) return false;
+            auto it = cache.find(file);
+            if (it == cache.end() || it->second.Time != t)
+            {
+                try
+                {
+                    YAML::Node n = YAML::LoadFile(file)["Brush"];
+                    if (!n) return false;
+                    TerrainBrushAsset b;
+                    if (n["Mask"]) b.Mask = n["Mask"].as<std::string>();
+                    if (n["Falloff"]) b.Falloff = std::clamp(n["Falloff"].as<float>(), 0.0f, 1.0f);
+                    if (n["Rotation"]) b.Rotation = n["Rotation"].as<float>();
+                    if (n["Scale"]) b.Scale = std::clamp(n["Scale"].as<float>(), 0.05f, 10.0f);
+                    if (n["Invert"]) b.Invert = n["Invert"].as<bool>();
+                    it = cache.insert_or_assign(file, Cached<TerrainBrushAsset>{ t, b }).first;
+                }
+                catch (...) { return false; }
+            }
+            out = it->second.Value;
+            return true;
+        }
+
+        bool SaveBrush(const std::string& path, const TerrainBrushAsset& b)
+        {
+            YAML::Emitter e;
+            e << YAML::BeginMap << YAML::Key << "Brush" << YAML::Value << YAML::BeginMap;
+            e << YAML::Key << "Mask" << YAML::Value << b.Mask;
+            e << YAML::Key << "Falloff" << YAML::Value << b.Falloff;
+            e << YAML::Key << "Rotation" << YAML::Value << b.Rotation;
+            e << YAML::Key << "Scale" << YAML::Value << b.Scale;
+            e << YAML::Key << "Invert" << YAML::Value << b.Invert;
+            e << YAML::EndMap << YAML::EndMap;
+            std::ofstream f(SceneSerializer::ResolveAssetPath(path), std::ios::trunc);
+            if (!f) return false;
+            f << e.c_str() << "\n";
+            return true;
+        }
+
+        bool SampleBrushMask(const std::string& maskPath, float u, float v, float& out)
+        {
+            const std::string file = SceneSerializer::ResolveAssetPath(maskPath);
+            std::error_code ec;
+            const auto t = std::filesystem::last_write_time(file, ec);
+            if (ec) return false;
+            Mask& m = Masks()[file];
+            if (m.Time != t || m.Px.empty())
+            {
+                m.Time = t;
+                int w = 0, h = 0, c = 0;
+                stbi_set_flip_vertically_on_load(1);
+                stbi_uc* data = stbi_load(file.c_str(), &w, &h, &c, 1);
+                if (!data) { m.Px.clear(); return false; }
+                m.W = w; m.H = h;
+                m.Px.assign(data, data + (size_t)w * h);
+                stbi_image_free(data);
+            }
+            const float fx = std::clamp(u, 0.0f, 1.0f) * (float)(m.W - 1), fy = std::clamp(v, 0.0f, 1.0f) * (float)(m.H - 1);
+            const int x0 = (int)fx, y0 = (int)fy, x1 = std::min(x0 + 1, m.W - 1), y1 = std::min(y0 + 1, m.H - 1);
+            const float tx = fx - (float)x0, ty = fy - (float)y0;
+            auto px = [&](int x, int y) { return (float)m.Px[(size_t)y * m.W + x] / 255.0f; };
+            out = (px(x0, y0) * (1 - tx) + px(x1, y0) * tx) * (1 - ty) + (px(x0, y1) * (1 - tx) + px(x1, y1) * tx) * ty;
+            return true;
+        }
     }
 }

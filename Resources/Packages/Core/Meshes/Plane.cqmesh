@@ -1,0 +1,2 @@
+# Conqueror built-in mesh (Packages/Core, read-only). Assign it with the Mesh slot of a Mesh Renderer.
+Mesh: Plane

@@ -46,6 +46,7 @@ namespace Conqueror
         int SSR = -1, VolumetricFog = -1, VolumetricClouds = -1, DepthOfField = -1, MotionBlur = -1, AutoExposure = -1;
         int SkyAtmosphere = -1, SSGI = -1;
         float SSGIIntensity = NAN;
+        int TAADebug = -1;   // 1: TAA hata ayıklama görünümü (her pikselin geçmiş yolu renkle)
     };
 
     class CQ_API ConsoleSystem

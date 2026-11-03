@@ -642,13 +642,16 @@ script Wanderer : ConquerorScript
                 Entity mesh = FindByName(scene, w);
                 if (!mesh)
                     continue;
-                if (mesh.HasComponent<MeshRendererComponent>())
-                    mesh.RemoveComponent<MeshRendererComponent>();
+                if (!mesh.HasComponent<MeshRendererComponent>())
+                    mesh.AddComponent<MeshRendererComponent>();
                 auto& tc = mesh.GetComponent<TransformComponent>();
                 const bool left = std::string(w).find('L', 5) == 5;   // WheelFL / WheelRL
                 tc.Rotation = { 0.0f, glm::radians(left ? 180.0f : 0.0f), 0.0f };
                 tc.Scale = glm::vec3(1.2f);
-                mesh.AddComponent<ModelComponent>().FilePath = "Assets/Models/Cars/wheel-default.glb";
+                auto& wheelRenderer = mesh.GetComponent<MeshRendererComponent>();
+                wheelRenderer.ModelPath = "Assets/Models/Cars/wheel-default.glb";
+                wheelRenderer.MaterialInstance = nullptr;
+                wheelRenderer.MaterialPath.clear();
             }
             scene.UpdateWorldTransforms();
 

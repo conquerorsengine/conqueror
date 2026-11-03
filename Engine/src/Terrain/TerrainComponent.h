@@ -24,6 +24,9 @@ namespace Conqueror
         float Tiling = 12.0f;               // terrain boyunca tekrar sayısı
         float Roughness = 0.85f;
         float Metallic = 0.0f;
+        // Terrain Layer varlığı (.cqterrainlayer, Unity Terrain Layer): doluysa yukarıdaki değerler dosyadan
+        // (birçok arazi aynı katmanı paylaşır; Terrain panelindeki değişiklikler dosyaya yazılır)
+        std::string Asset;
     };
 
     // Unity Terrain karşılığı: yükseklik haritası + 4 katmanlı splat (RGBA ağırlık).

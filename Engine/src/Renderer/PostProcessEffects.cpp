@@ -1,4 +1,5 @@
 #include "PostProcess.h"
+#include "Core/Console/ConsoleVariables.h"
 #include "Core/Profiling/FrameProfiler.h"
 #include "Core/Logging/Log.h"
 #include "Renderer/Renderer.h"
@@ -8,6 +9,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <algorithm>
+#include <limits>
 #include <cmath>
 
 // Unreal render paketi: ekran uzayı yansımalar, hacimsel sis (gölgeli güneş huzmeleri), hacimsel bulutlar,
@@ -75,8 +77,21 @@ namespace Conqueror
     void PostProcessStack::ReleaseEffectTargets()
     {
         for (auto* rt : { &m_HDR[0], &m_HDR[1], &m_SSR, &m_Fog, &m_Clouds, &m_DOFHalf, &m_DOFBlur, &m_History[0], &m_History[1], &m_Adapt[0], &m_Adapt[1],
-                          &m_GI, &m_GITemp, &m_GIHistory[0], &m_GIHistory[1] })
+                          &m_GI, &m_GITemp, &m_GIHistory[0], &m_GIHistory[1], &m_CloudHistory[0], &m_CloudHistory[1], &m_TAAState[0], &m_TAAState[1],
+                          &m_Velocity, &m_TAADebug, &m_Reactive })
             DestroyTarget(*rt);
+        if (m_VelocityFramebuffer)
+            glDeleteFramebuffers(1, &m_VelocityFramebuffer);
+        m_VelocityFramebuffer = 0;
+        if (m_ReactiveFramebuffer)
+            glDeleteFramebuffers(1, &m_ReactiveFramebuffer);
+        m_ReactiveFramebuffer = 0;
+        for (int i = 0; i < 2; ++i)
+        {
+            if (m_TAAFramebuffer[i])
+                glDeleteFramebuffers(1, &m_TAAFramebuffer[i]);
+            m_TAAFramebuffer[i] = 0;
+        }
         if (m_LumFramebuffer) glDeleteFramebuffers(1, &m_LumFramebuffer);
         if (m_LumTexture) glDeleteTextures(1, &m_LumTexture);
         m_LumFramebuffer = m_LumTexture = 0;
@@ -109,6 +124,8 @@ namespace Conqueror
         const bool gi = settings.ScreenSpaceGI && !camera.Orthographic && GetSceneNormalTexture() != 0 && GetSceneAlbedoTexture() != 0;
         const bool clouds = settings.VolumetricClouds && !camera.Orthographic;
         const bool fog = settings.VolumetricFog && !camera.Orthographic;
+        if (!clouds)
+            m_CloudHistoryValid = false;
         if (!ssr && !gi && !clouds && !fog)
             return;
         auto combine = PostProcess::GetShader("SceneFX");
@@ -122,6 +139,7 @@ namespace Conqueror
         const uint32_t halfW = std::max(m_Width / 2, 1u), halfH = std::max(m_Height / 2, 1u);
 
         bool ssrDone = false, cloudsDone = false, fogDone = false, giDone = false;
+        uint32_t cloudsTexture = 0;
         if (gi)
         {
             auto shader = PostProcess::GetShader("SSGI");
@@ -238,8 +256,40 @@ namespace Conqueror
                 glBindTexture(GL_TEXTURE_2D, 0);
                 Renderer::GetStats().PostProcessPasses++;
                 cloudsDone = true;
+                cloudsTexture = m_Clouds.Texture;
+
+                // Zamansal birikim: önceki karenin bulutları yön uzayında yeniden izdüşürülüp harmanlanır (kamera
+                // dönerken / yürürken ufka yakın bulutlar kendi kendine oynamaz, ışın yürütme gürültüsü ortalanır)
+                auto resolve = PostProcess::GetShader("CloudsResolve");
+                if (Valid(resolve))
+                {
+                    const int next = 1 - m_CloudHistoryIndex;
+                    EnsureTarget(m_CloudHistory[0], m_Clouds.Width, m_Clouds.Height, GL_RGBA16F);
+                    EnsureTarget(m_CloudHistory[1], m_Clouds.Width, m_Clouds.Height, GL_RGBA16F);
+                    glBindFramebuffer(GL_FRAMEBUFFER, m_CloudHistory[next].Framebuffer);
+                    glViewport(0, 0, m_CloudHistory[next].Width, m_CloudHistory[next].Height);
+                    resolve->Bind();
+                    resolve->SetInt("u_Current", 0);
+                    resolve->SetInt("u_History", 1);
+                    resolve->SetMat4("u_InvViewProj", invViewProj);
+                    resolve->SetMat4("u_PrevViewProj", m_PrevCloudViewProj);
+                    resolve->SetFloat3("u_CameraPos", camera.Position);
+                    resolve->SetFloat2("u_Texel", glm::vec2(1.0f / (float)m_Clouds.Width, 1.0f / (float)m_Clouds.Height));
+                    resolve->SetInt("u_HistoryValid", m_CloudHistoryValid ? 1 : 0);
+                    resolve->SetFloat("u_Feedback", 0.9f);
+                    BindTexture(0, m_Clouds.Texture);
+                    BindTexture(1, m_CloudHistory[m_CloudHistoryIndex].Texture);
+                    PostProcess::DrawFullscreenQuad();
+                    Renderer::GetStats().PostProcessPasses++;
+                    m_CloudHistoryIndex = next;
+                    m_CloudHistoryValid = true;
+                    m_PrevCloudViewProj = projection * camera.View;
+                    cloudsTexture = m_CloudHistory[next].Texture;
+                }
             }
         }
+        if (!cloudsDone)
+            m_CloudHistoryValid = false;
         if (fog)
         {
             auto shader = PostProcess::GetShader("VolumetricFog");
@@ -305,7 +355,7 @@ namespace Conqueror
         BindTexture(2, m_AOBlur.Texture);
         BindTexture(3, ssrDone ? m_SSR.Texture : 0);
         BindTexture(4, ssrDone ? GetSceneNormalTexture() : 0);
-        BindTexture(5, cloudsDone ? m_Clouds.Texture : 0);
+        BindTexture(5, cloudsDone ? cloudsTexture : 0);
         BindTexture(6, fogDone ? m_Fog.Texture : 0);
         BindTexture(7, giDone ? m_GI.Texture : 0);
         BindTexture(8, giDone ? GetSceneAlbedoTexture() : 0);
@@ -327,7 +377,50 @@ namespace Conqueror
         RenderTarget& next = m_History[1 - m_HistoryIndex];
         EnsureTarget(prev, m_Width, m_Height, GL_RGBA16F);
         EnsureTarget(next, m_Width, m_Height, GL_RGBA16F);
-        glBindFramebuffer(GL_FRAMEBUFFER, next.Framebuffer);
+        RenderTarget& prevState = m_TAAState[m_HistoryIndex];
+        RenderTarget& nextState = m_TAAState[1 - m_HistoryIndex];
+        EnsureTarget(prevState, m_Width, m_Height, GL_RGBA16F);
+        EnsureTarget(nextState, m_Width, m_Height, GL_RGBA16F);
+        // Nesne hareket vektörleri: bu karede hareket eden opak nesneler sahne derinliğine kendi önceki konumlarıyla çizilir.
+        // Kameraya bağlı silah / eller kamera hareketiyle değil kendi hareketleriyle yeniden izdüşürülür (zıplarken, dönerken
+        // dalgalanmaz); düşen küp, hedef gibi nesneler geçmişini doğru yerden alır. Yazılmayan piksel: kamera hareketi (derinlik)
+        bool hasVelocity = false;
+        const glm::mat4 jitteredViewProj = JitteredProjection(camera) * camera.View;
+        const glm::mat4 viewProj = camera.Projection * camera.View;
+        const uint32_t sceneDepth = GetSceneDepthTexture();
+        if (sceneDepth && m_HasPrevViewProj && Renderer3D::HasVelocityDraws(this))
+        {
+            EnsureTarget(m_Velocity, m_Width, m_Height, GL_RGBA16F);
+            if (!m_VelocityFramebuffer)
+                glCreateFramebuffers(1, &m_VelocityFramebuffer);
+            glNamedFramebufferTexture(m_VelocityFramebuffer, GL_COLOR_ATTACHMENT0, m_Velocity.Texture, 0);
+            glNamedFramebufferTexture(m_VelocityFramebuffer, GL_DEPTH_STENCIL_ATTACHMENT, sceneDepth, 0);
+            if (glCheckNamedFramebufferStatus(m_VelocityFramebuffer, GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
+            {
+                glBindFramebuffer(GL_FRAMEBUFFER, m_VelocityFramebuffer);
+                glViewport(0, 0, m_Width, m_Height);
+                const float none[4] = { 1.0e4f, 1.0e4f, 0.0f, 0.0f };   // hız yok: TAA derinlikten kamera hareketini kullanır
+                glClearBufferfv(GL_COLOR, 0, none);
+                hasVelocity = Renderer3D::RenderVelocity(this, jitteredViewProj, viewProj, m_PrevViewProj);
+            }
+        }
+        // Geçmiş + durum tek geçişte (iki renk eki). Ekler her karede bağlanır: boyut değişince dokular yeniden oluşur ve
+        // OpenGL silinen dokunun numarasını yeni dokuya verebilir; numaraya bakan önbellek eski (yetim) dokuya çizdirip her
+        // ikinci kareyi siyah bırakıyordu
+        const int ni = 1 - m_HistoryIndex;
+        if (!m_TAAFramebuffer[ni])
+            glCreateFramebuffers(1, &m_TAAFramebuffer[ni]);
+        const bool taaDebug = ConsoleSystem::Overrides().TAADebug == 1;
+        if (taaDebug)
+            EnsureTarget(m_TAADebug, m_Width, m_Height, GL_RGBA16F);
+        {
+            const GLenum buffers[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+            glNamedFramebufferDrawBuffers(m_TAAFramebuffer[ni], taaDebug ? 3 : 2, buffers);
+        }
+        glNamedFramebufferTexture(m_TAAFramebuffer[ni], GL_COLOR_ATTACHMENT0, next.Texture, 0);
+        glNamedFramebufferTexture(m_TAAFramebuffer[ni], GL_COLOR_ATTACHMENT1, nextState.Texture, 0);
+        glNamedFramebufferTexture(m_TAAFramebuffer[ni], GL_COLOR_ATTACHMENT2, taaDebug ? m_TAADebug.Texture : 0, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, m_TAAFramebuffer[ni]);
         glViewport(0, 0, next.Width, next.Height);
         shader->Bind();
         shader->SetInt("u_Current", 0);
@@ -338,13 +431,128 @@ namespace Conqueror
         shader->SetFloat2("u_Texel", glm::vec2(1.0f / (float)m_Width, 1.0f / (float)m_Height));
         shader->SetFloat2("u_JitterUV", m_JitterActive ? m_JitterNDC * 0.5f : glm::vec2(0.0f));
         shader->SetFloat("u_Feedback", std::clamp(settings.TAAFeedback, 0.5f, 0.97f));
+        shader->SetInt("u_Debug", taaDebug ? 1 : 0);
         shader->SetInt("u_HistoryValid", (m_HistoryValid && m_HasPrevViewProj) ? 1 : 0);
+        // Kamera kıpırdamıyor (titreşimsiz görüş-izdüşüm önceki kareyle aynı): sabit yüzeylerin hareketi tam sıfır. Derinlikten
+        // yeniden izdüşüm uzak yüzeylerde kayan nokta hatasıyla piksel altı "hareket" üretiyor, piksel durağan sayılmıyor,
+        // geçmiş birikmiyor ve uzak kenarlar (duvar üstü, küplerin arası) titreşim döngüsüyle yanıp sönüyordu
+        bool cameraStill = m_HasPrevViewProj;
+        {
+            const glm::mat4 now = camera.Projection * camera.View;
+            for (int c = 0; c < 4 && cameraStill; ++c)
+                for (int r = 0; r < 4; ++r)
+                    if (std::abs(now[c][r] - m_PrevViewProj[c][r]) > 1e-6f * std::max(1.0f, std::abs(now[c][r])))
+                    {
+                        cameraStill = false;
+                        break;
+                    }
+        }
+        shader->SetInt("u_CameraStill", cameraStill ? 1 : 0);
+        // Hareket eden nesnelerin ekran dikdörtgenleri (fazlası son dikdörtgende birleşir)
+        {
+            static std::vector<glm::vec4> s_Rects;
+            Renderer3D::GetMovingRects(this, s_Rects);
+            constexpr size_t kMax = 32;
+            if (s_Rects.size() > kMax)
+            {
+                for (size_t i = kMax; i < s_Rects.size(); ++i)
+                {
+                    s_Rects[kMax - 1].x = std::min(s_Rects[kMax - 1].x, s_Rects[i].x);
+                    s_Rects[kMax - 1].y = std::min(s_Rects[kMax - 1].y, s_Rects[i].y);
+                    s_Rects[kMax - 1].z = std::max(s_Rects[kMax - 1].z, s_Rects[i].z);
+                    s_Rects[kMax - 1].w = std::max(s_Rects[kMax - 1].w, s_Rects[i].w);
+                }
+                s_Rects.resize(kMax);
+            }
+            shader->SetInt("u_MovingCount", (int)s_Rects.size());
+            for (size_t i = 0; i < s_Rects.size(); ++i)
+                shader->SetFloat4("u_MovingRects[" + std::to_string(i) + "]", s_Rects[i]);
+        }
+        // Hareket eden nesnelerin dünya kutuları (gölge hacmi testi; fazlası son kutuda birleşir)
+        {
+            static std::vector<glm::vec4> s_ShadowBoxes;
+            glm::vec3 towardSun(0.0f, 1.0f, 0.0f);
+            if (!Renderer3D::GetMovingShadowBoxes(this, s_ShadowBoxes, towardSun))
+                s_ShadowBoxes.clear();
+            constexpr size_t kMaxBoxes = 32;
+            if (s_ShadowBoxes.size() > kMaxBoxes * 2)
+            {
+                // Fazla kutular birbirine en yakın olanlar birleştirilerek azaltılır: her adımda birleşimi en az hacim
+                // ekleyen çift (aynı nesnenin parçaları, bu ve önceki karedeki yeri). Fazlası eskiden hep son kutuda
+                // birleşiyordu: uzaktaki hareketli hedeflerle oyuncunun silahı arasındaki bütün arena tek kutu oluyor, zemin
+                // ve küpler "hareket eden gölgenin içinde" sayılıp geçmişe güvenilmiyor, oyunda yürürken küplerin arası
+                // yanıp sönüyordu (Viewport'ta hareketli nesne olmadığı için orada olmuyordu)
+                struct Box { glm::vec3 Lo, Hi; };
+                static std::vector<Box> s_Merge;
+                s_Merge.clear();
+                for (size_t i = 0; i + 1 < s_ShadowBoxes.size(); i += 2)
+                    s_Merge.push_back({ glm::vec3(s_ShadowBoxes[i]), glm::vec3(s_ShadowBoxes[i + 1]) });
+                auto volume = [](const glm::vec3& lo, const glm::vec3& hi) {
+                    const glm::vec3 d = glm::max(hi - lo, glm::vec3(0.05f));
+                    return d.x * d.y * d.z;
+                };
+                while (s_Merge.size() > kMaxBoxes)
+                {
+                    size_t bestA = 0, bestB = 1;
+                    float bestCost = std::numeric_limits<float>::max();
+                    for (size_t a = 0; a < s_Merge.size(); ++a)
+                    {
+                        const float va = volume(s_Merge[a].Lo, s_Merge[a].Hi);
+                        for (size_t b = a + 1; b < s_Merge.size(); ++b)
+                        {
+                            const float cost = volume(glm::min(s_Merge[a].Lo, s_Merge[b].Lo), glm::max(s_Merge[a].Hi, s_Merge[b].Hi))
+                                             - va - volume(s_Merge[b].Lo, s_Merge[b].Hi);
+                            if (cost < bestCost)
+                            {
+                                bestCost = cost;
+                                bestA = a;
+                                bestB = b;
+                            }
+                        }
+                    }
+                    s_Merge[bestA].Lo = glm::min(s_Merge[bestA].Lo, s_Merge[bestB].Lo);
+                    s_Merge[bestA].Hi = glm::max(s_Merge[bestA].Hi, s_Merge[bestB].Hi);
+                    s_Merge[bestB] = s_Merge.back();
+                    s_Merge.pop_back();
+                }
+                s_ShadowBoxes.clear();
+                for (const Box& b : s_Merge)
+                {
+                    s_ShadowBoxes.push_back(glm::vec4(b.Lo, 0.0f));
+                    s_ShadowBoxes.push_back(glm::vec4(b.Hi, 0.0f));
+                }
+            }
+            shader->SetInt("u_ShadowBoxCount", (int)(s_ShadowBoxes.size() / 2));
+            shader->SetFloat3("u_TowardSun", towardSun);
+            for (size_t i = 0; i < s_ShadowBoxes.size(); ++i)
+                shader->SetFloat4("u_ShadowBoxes[" + std::to_string(i) + "]", s_ShadowBoxes[i]);
+        }
+        // Hareket bayrağı (normal ekinin w'si): TAA açıkken normal eki her zaman var
+        const uint32_t normals = GetSceneNormalTexture();
+        shader->SetInt("u_GNormal", 3);
+        shader->SetInt("u_HasMotionFlag", normals ? 1 : 0);
         BindTexture(0, m_Source);
         BindTexture(1, prev.Texture);
         BindTexture(2, GetSceneDepthTexture());
+        BindTexture(3, normals);
+        shader->SetInt("u_State", 4);
+        BindTexture(4, prevState.Texture);
+        // Güneş gölgesi eki: gölgesi değişen yüzey (hareket eden nesnenin gölgesi) geçmişe güvenmez
+        const uint32_t shadowMask = GetSceneShadowMaskTexture();
+        shader->SetInt("u_GShadow", 5);
+        shader->SetInt("u_HasShadowMask", shadowMask ? 1 : 0);
+        BindTexture(5, shadowMask);
+        shader->SetInt("u_Velocity", 6);
+        shader->SetInt("u_HasVelocity", hasVelocity ? 1 : 0);
+        BindTexture(6, hasVelocity ? m_Velocity.Texture : 0);
+        // Parçacık tepki maskesi: bu karede duman / toz / kıvılcımın kapladığı pikseller
+        shader->SetInt("u_Reactive", 7);
+        shader->SetInt("u_HasReactive", m_ReactiveUsed ? 1 : 0);
+        BindTexture(7, m_ReactiveUsed ? m_Reactive.Texture : 0);
         PostProcess::DrawFullscreenQuad();
         Renderer::GetStats().PostProcessPasses++;
-        m_Source = next.Texture;
+        // Hata ayıklama görünümü: geçmiş etkilenmez, yalnız gösterilen görüntü renkli yol haritasıdır
+        m_Source = taaDebug ? m_TAADebug.Texture : next.Texture;
         m_HistoryIndex = 1 - m_HistoryIndex;
         m_HistoryValid = true;
         m_TAAResolved = true;

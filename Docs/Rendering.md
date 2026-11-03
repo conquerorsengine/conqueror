@@ -104,6 +104,15 @@ changes all of them, and edits made outside the editor are picked up while it ru
   onto the slot, onto the object in the Scene view or onto its row in the Hierarchy, or pick one with the target
   button. **New** saves the current look as `Assets/Materials/<object>.cqmat`. New 3D objects use the read-only
   `Default Grid` material from Packages/Core. Templates and samples keep their materials in `Assets/Materials`.
+- **Mesh slot.** The Mesh field works like Unity's Mesh Filter: drag a built-in mesh (Packages/Core/Meshes: Cube, Sphere,
+  Plane, Cylinder) or a model file (`.glb`, `.gltf`, `.fbx`, `.obj`) onto it, or pick one with the target button. With a
+  model the renderer draws the model (skinned models animate with an Animation component), shows its mesh / bone count, a
+  per-object **Tint** and the model's own materials (set in the model's import settings; Extract Materials makes `.cqmat`
+  files). There is no separate Model component any more; scenes and scripts that used it (`EntityAddComponent(e, "Model")`,
+  the `FilePath` field) keep working and load into the Mesh Renderer.
+- **Sprites.** 2D images use the Sprite Renderer (Sprite slot with the same target button: Assets, Packages > Core >
+  Sprites, Scene). The old Image component was removed; older scenes load their images as Sprite Renderers. UI images on
+  a Canvas use UI Image.
 - **Instances.** Setting a color or texture on one object from a script, a tween or automation gives that object its
   own copy named `<material> (Instance)` (like Unity's `renderer.material`); the file and the other objects keep the
   original. The copy is saved inside the scene. The `material_bake [folder]` automation command turns these copies

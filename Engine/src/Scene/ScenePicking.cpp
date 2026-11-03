@@ -113,7 +113,7 @@ namespace Conqueror
             any = true;
         };
 
-        if (entity.HasComponent<MeshRendererComponent>())
+        if (entity.HasComponent<MeshRendererComponent>() && !entity.GetComponent<MeshRendererComponent>().IsModel())
         {
             auto& mr = entity.GetComponent<MeshRendererComponent>();
             std::shared_ptr<Mesh> mesh = mr.CustomMesh;   // prosedürel ağ (kumaş, Spline Extrude) çizildiği gibi seçilir
@@ -155,9 +155,9 @@ namespace Conqueror
             if (Billboards::GetLocalBounds(*entity.GetScene(), (uint32_t)entity, b.Min, b.Max))
                 merge(b);
         }
-        if (entity.HasComponent<ModelComponent>())
+        if (entity.HasComponent<MeshRendererComponent>() && entity.GetComponent<MeshRendererComponent>().IsModel())
         {
-            auto& mc = entity.GetComponent<ModelComponent>();
+            auto& mc = entity.GetComponent<MeshRendererComponent>();
             if (mc.ModelData)
             {
                 for (auto& m : mc.ModelData->Meshes)
@@ -172,14 +172,6 @@ namespace Conqueror
             glm::vec2 mn(-0.5f), mx(0.5f);
             Renderer2D::GetSpriteLocalBounds(sr, mn, mx);
             merge({ glm::vec3(mn, -0.01f), glm::vec3(mx, 0.01f) });
-        }
-        if (entity.HasComponent<ImageComponent>())
-        {
-            auto& img = entity.GetComponent<ImageComponent>();
-            glm::vec2 half(0.5f);
-            if (img.Texture && img.Texture->GetWidth() > 0)
-                half = glm::vec2((float)img.Texture->GetWidth(), (float)img.Texture->GetHeight()) / 200.0f;
-            merge({ glm::vec3(-half, -0.01f), glm::vec3(half, 0.01f) });
         }
         if (entity.HasComponent<TextRendererComponent>() && !any)
         {

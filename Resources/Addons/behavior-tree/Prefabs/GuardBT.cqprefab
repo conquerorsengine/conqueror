@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 6317645884789124719
+  - Entity: 3606407407218116473
     TagComponent:
       Tag: BT Guard
       GameTag: Untagged
@@ -21,7 +21,7 @@ Entities:
     GuardBrain_ConquerorScriptComponent:
       ScriptPath: Packages/behavior-tree/Scripts/GuardBrain.cqs
       ClassName: GuardBrain
-  - Entity: 8969356318283605950
+  - Entity: 4281237757690383384
     TagComponent:
       Tag: Guard Body
       GameTag: Untagged
@@ -35,12 +35,8 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 3
-      Color: [0.3, 0.35, 0.75, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
-  - Entity: 2439363326943748216
+      MaterialAsset: Packages/behavior-tree/Materials/Blue.cqmat
+  - Entity: 2737982543133819592
     TagComponent:
       Tag: Guard Nose
       GameTag: Untagged
@@ -54,11 +50,7 @@ Entities:
       OrderInLayer: 0
     MeshRendererComponent:
       MeshType: 0
-      Color: [0.1, 0.1, 0.1, 1]
-      Metallic: 0
-      Roughness: 0.5
-      AO: 1
-      TexturePath: CQ:Resources/Textures/texture_grid.png
+      MaterialAsset: Packages/behavior-tree/Materials/Dark Gray.cqmat
 Environment:
   SkyboxExposure: 1
   SkyboxRotation: 0
@@ -155,6 +147,49 @@ Environment:
       Sharpen: false
       SharpenAmount: 0.3
       AntiAliasing: 1
+      TAAFeedback: 0.9
+      TAASharpness: 0.25
+      ScreenSpaceReflections: false
+      SSRIntensity: 1
+      SSRMaxDistance: 40
+      SSRThickness: 0.5
+      SSRMaxRoughness: 0.6
+      ScreenSpaceGI: false
+      SSGIIntensity: 1
+      SSGIRadius: 4
+      SSGIRays: 4
+      VolumetricFog: false
+      VolumetricFogDensity: 0.01
+      VolumetricFogHeightFalloff: 0.1
+      VolumetricFogBaseHeight: 0
+      VolumetricFogAnisotropy: 0.2
+      VolumetricFogIntensity: 1
+      VolumetricFogDistance: 80
+      VolumetricFogAlbedo: [1, 1, 1]
+      VolumetricFogAmbient: 0.3
+      VolumetricClouds: false
+      CloudCoverage: 0.45
+      CloudDensity: 1
+      CloudBottom: 1500
+      CloudThickness: 1800
+      CloudScale: 1
+      CloudWindSpeed: 12
+      CloudWindDirection: 30
+      CloudColor: [1, 1, 1]
+      DepthOfField: false
+      FocusDistance: 10
+      Aperture: 2.8
+      FocalLength: 50
+      DOFMaxBlur: 10
+      MotionBlur: false
+      MotionBlurIntensity: 0.5
+      MotionBlurMax: 32
+      AutoExposure: false
+      AutoExposureMin: -3
+      AutoExposureMax: 3
+      AutoExposureSpeedUp: 3
+      AutoExposureSpeedDown: 1
+      AutoExposureCompensation: 0
     Environment:
       Sky: 0
       BackgroundColor: [0.1, 0.1, 0.1]
@@ -162,6 +197,13 @@ Environment:
       ReflectionIntensity: 1
       SkyboxIntensity: 1
       SpecularOcclusion: true
+      AtmosphereRayleigh: 1
+      AtmosphereMie: 1
+      AtmosphereMieAnisotropy: 0.8
+      AtmosphereOzone: 1
+      AtmosphereSunDisk: 1
+      AtmosphereIntensity: 1
+      AtmosphereGroundAlbedo: [0.12, 0.12, 0.12]
     Bake:
       RealtimeGI: false
       BakedGI: true
@@ -201,7 +243,7 @@ Environment:
       APVGeometryBias: 0.01
       APVRayOriginBias: -0.001
 Hierarchy:
-  - Child: 8969356318283605950
-    Parent: 6317645884789124719
-  - Child: 2439363326943748216
-    Parent: 6317645884789124719
+  - Child: 4281237757690383384
+    Parent: 3606407407218116473
+  - Child: 2737982543133819592
+    Parent: 3606407407218116473

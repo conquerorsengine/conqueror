@@ -2,7 +2,7 @@
 using nativebridge;
 
 // Parkur örnek sahnesini kurar (editörde, oyun dışında):
-//   automation: new_scene -> run_cqs_file Tools/BuildScene.cqs -> save_scene_as Assets/Scenes/Main.cqscene
+//   automation: new_scene -> run_cqs_file Tools/BuildScene.cqs -> material_bake -> save_scene_as Assets/Scenes/Main.cqscene
 // Parkur -Z yönünde ilerler. Motor küpü -1..1 olduğundan ölçek = boyut / 2.
 // Mesafeler oyuncu fiziğine göre seçildi (yerçekimi 26, zıplama 9 m/s -> tepe 1.56 m;
 // depar 11.5 m/s ile tek zıplama ~7.5 m, çift zıplama ~12 m).
@@ -57,10 +57,14 @@ func Glow(e, c, strength)
     return e;
 }
 
-func Surface(e, tex, tx, ty, metallic, roughness)
+// Yüzey malzemesi: doku metre başına sabit döşenir (nesne boyutundan bağımsız, nesneyle birlikte hareket eder).
+// Böylece aynı yüzey türündeki tüm nesneler tek malzemeyi paylaşır (normal oyunlarda olduğu gibi).
+func Surface(e, tex, perU, perV, metallic, roughness)
 {
     EntitySetComponentField(e, "MeshRenderer", "Texture", tex);
-    EntitySetComponentField(e, "MeshRenderer", "Tiling", {x: tx, y: ty});
+    EntitySetComponentField(e, "MeshRenderer", "Tiling", {x: perU, y: perV});
+    EntitySetComponentField(e, "MeshRenderer", "WorldAlignedUV", true);
+    EntitySetComponentField(e, "MeshRenderer", "AlignToObject", true);
     EntitySetComponentField(e, "MeshRenderer", "Metallic", metallic);
     EntitySetComponentField(e, "MeshRenderer", "Roughness", roughness);
     return e;
@@ -80,7 +84,7 @@ func Platform(name, x, top, z, sx, sz, edge, pillars)
 {
     var thick = 1.2;
     var p = Solid(Mesh(name, "Cube", x, top - thick / 2.0, z, sx, thick, sz, platColor));
-    Surface(p, platTex, sx / 3.0, sz / 3.0, platMetal, platRough);
+    Surface(p, platTex, 0.3333, 0.3333, platMetal, platRough);
     var w = 0.16;
     var h = 0.08;
     var y = top + h / 2.0 - 0.02;
@@ -101,7 +105,7 @@ func Platform(name, x, top, z, sx, sz, edge, pillars)
             var px = sx >= sz ? x + t * sx : x;
             var pz = sx >= sz ? z : z + t * sz;
             var col = Mesh(name + " Pillar" + i, "Cube", px, top - thick - 29.0, pz, size, 58, size, legColor);
-            Surface(col, legTex, 1, 14, 0.6, 0.5);
+            Surface(col, legTex, 0.5, 0.25, 0.6, 0.5);
             EntitySetComponentField(col, "MeshRenderer", "CastShadows", false);
         }
     }
@@ -111,14 +115,14 @@ func Platform(name, x, top, z, sx, sz, edge, pillars)
 func Wall(name, x, bottom, z, sx, sy, sz, edge)
 {
     var wl = Solid(Mesh(name, "Cube", x, bottom + sy / 2.0, z, sx, sy, sz, wallColor));
-    Surface(wl, wallTex, sz / 3.0, sy / 3.0, 0.25, 0.5);
+    Surface(wl, wallTex, 0.3333, 0.3333, 0.25, 0.5);
     // Koşu yönünü gösteren neon çizgiler (her iki yüzde); ortadaki göz hizasının hemen üstünde
     Strip(wl, name + " StripLow", x, bottom + 1.6, z, sx + 0.04, 0.12, sz + 0.02, edge, 5);
     Strip(wl, name + " StripMid", x, bottom + 6.4, z, sx + 0.04, 0.08, sz + 0.02, edge, 3);
     Strip(wl, name + " StripHigh", x, bottom + sy - 0.5, z, sx + 0.04, 0.12, sz + 0.02, edge, 5);
     // Uzun duvar ayakları (siste kaybolur)
     var leg = Mesh(name + " Leg", "Cube", x, bottom - 29.0, z, sx * 0.8, 58, 2.0, legColor);
-    Surface(leg, legTex, 1, 14, 0.6, 0.5);
+    Surface(leg, legTex, 0.5, 0.25, 0.6, 0.5);
     EntitySetComponentField(leg, "MeshRenderer", "CastShadows", false);
     return wl;
 }
@@ -176,7 +180,7 @@ legTex = "Assets/Textures/concrete.png";
 func Hurdle(name, x, top, z)
 {
     var hb = Solid(Mesh(name, "Cube", x, top + 0.45, z, 6, 0.9, 0.4, {r: 0.62, g: 0.64, b: 0.72, a: 1}));
-    Surface(hb, "Assets/Textures/metal.png", 3, 0.5, 0.6, 0.45);
+    Surface(hb, "Assets/Textures/metal.png", 0.5, 0.5, 0.6, 0.45);
     Strip(hb, name + " Top", x, top + 0.92, z, 6.04, 0.05, 0.44, ACC3, 3.5);
     Strip(hb, name + " Band", x, top + 0.5, z + 0.21, 6.0, 0.08, 0.02, {r: 1.0, g: 0.7, b: 0.15}, 2.2);
     return hb;
@@ -186,7 +190,7 @@ func Hurdle(name, x, top, z)
 func Tunnel(name, x, top, z)
 {
     var tn = Solid(Mesh(name, "Cube", x, top + 2.3, z, 6.8, 2.0, 8, {r: 0.52, g: 0.54, b: 0.60, a: 1}));
-    Surface(tn, "Assets/Textures/metal.png", 3, 4, 0.6, 0.45);
+    Surface(tn, "Assets/Textures/metal.png", 0.5, 0.5, 0.6, 0.45);
     Strip(tn, name + " Sign", x, top + 1.36, z + 4.03, 6.8, 0.1, 0.06, {r: 1.0, g: 0.85, b: 0.2}, 8);
     Solid(Mesh(name + " WallL", "Cube", x - 3.2, top + 1.65, z, 0.4, 3.3, 8, {r: 0.42, g: 0.44, b: 0.50, a: 1}));
     Solid(Mesh(name + " WallR", "Cube", x + 3.2, top + 1.65, z, 0.4, 3.3, 8, {r: 0.42, g: 0.44, b: 0.50, a: 1}));
@@ -288,7 +292,7 @@ Platform("P1", -2.01, 0.24, -15.31, 8, 6, ACC0, true);
 Platform("P2", 1.53, 0.11, -26.81, 8, 8, ACC0, true);
 Gate("Checkpoint1", 1.53, 0.11, -25.81, 6, ACC1);
 var beam2 = Solid(Mesh("Beam2", "Cube", 1.53, -0.19, -36.95, 2.0, 0.6, 12.28, platColor));
-Surface(beam2, platTex, 1, 4.09, platMetal, platRough);
+Surface(beam2, platTex, 0.3333, 0.3333, platMetal, platRough);
 Strip(beam2, "Beam2 EdgeL", 0.57, 0.13, -36.95, 0.08, 0.06, 12.28, ACC2, 6);
 Strip(beam2, "Beam2 EdgeR", 2.49, 0.13, -36.95, 0.08, 0.06, 12.28, ACC2, 6);
 Platform("P3", 1.53, 0.11, -47.09, 8, 8, ACC2, true);
@@ -324,10 +328,10 @@ for (var i = 0; i < 96; i++)
     var c = Place(w * 6);
     var hgt = 50 + Rand() * 60;
     var b = Mesh("Tree" + i, "Cylinder", c.x, -40 + hgt / 2.0, c.z, w, hgt, w, {r: 0.42, g: 0.31, b: 0.22, a: 1});
-    Surface(b, "Assets/Textures/moss.png", 1, hgt / 8.0, 0.0, 0.95);
+    Surface(b, "Assets/Textures/moss.png", 0.5, 0.125, 0.0, 0.95);
     EntitySetComponentField(b, "MeshRenderer", "CastShadows", false);
     var cr = w * (4 + Rand() * 3);
-    var crown = Mesh("Tree" + i + " Crown", "Sphere", c.x, -40 + hgt, c.z, cr * 2, cr * 1.1, cr * 2, {r: 0.16 + Rand() * 0.08, g: 0.38 + Rand() * 0.14, b: 0.12, a: 1});
+    var crown = Mesh("Tree" + i + " Crown", "Sphere", c.x, -40 + hgt, c.z, cr * 2, cr * 1.1, cr * 2, [{r: 0.17, g: 0.40, b: 0.12, a: 1}, {r: 0.20, g: 0.45, b: 0.12, a: 1}, {r: 0.23, g: 0.51, b: 0.12, a: 1}][int(Rand() * 2.99)]);
     EntitySetComponentField(crown, "MeshRenderer", "Roughness", 0.9);
     EntitySetComponentField(crown, "MeshRenderer", "CastShadows", false);
 }
