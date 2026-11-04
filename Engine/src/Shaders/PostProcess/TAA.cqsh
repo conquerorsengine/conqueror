@@ -341,8 +341,12 @@ void main()
     vec3 offset = history - center;
     vec3 unit = abs(offset / extent);
     float maxUnit = max(unit.x, max(unit.y, unit.z));
+    // Her kanal kendi aralığına sınırlanır (parlaklık ve renk tonu ayrı). Geçmişi kutu ortasına doğru tek oranla çekmek,
+    // gri duvar ile gökyüzü gibi neredeyse aynı renk tonundaki komşulukta (renk tonu genişliği ~0) en küçük ton sapmasında
+    // parlaklığı da kutunun koyu ortasına çekiyordu: yürürken kamera yatınca duvar üstünün hemen üstündeki gökyüzü
+    // satırında tek karelik koyu kesikler çıkıp gökyüzünün alt kısmı titriyordu
     if (maxUnit > 1.0)
-        history = center + offset / maxUnit;
+        history = clamp(history, center - extent, center + extent);
     // Hareketsiz kamera + aynı yüzey: geçmiş kutunun biraz dışına çıkabilir (alt piksel çizgiler bazı karelerde hiç
     // çizilmez, kutu o karede onları içermez). Koyu tarafa geniş pay (ince koyu boşluklar), parlak tarafa dar
     // (parlama / namlu alevi ışığı iz bırakmaz)

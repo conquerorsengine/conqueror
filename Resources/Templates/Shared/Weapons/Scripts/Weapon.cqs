@@ -283,9 +283,9 @@ script Weapon : ConquerorScript
                     se = EntityGetParent(se);
                 }
             }
-            // Mermi izi namluya bağlı kalır (Laser Tag ışını eskisi gibi)
+            // Mermi: namludan hedefe uçan tek kısa iz (Laser Tag ışını eskisi gibi sabit)
             if (laser) { InvokeMethod("Impacts", "Tracer", mp.x, mp.y, mp.z, endX, endY, endZ, tracerR, tracerG, tracerB, 0.03, 0.12); }
-            else { InvokeMethod("Impacts", "TracerFrom", muzzle, mp.x, mp.y, mp.z, endX, endY, endZ, tracerR, tracerG, tracerB, 0.012, 0.04); }
+            else { InvokeMethod("Impacts", "Bullet", mp.x, mp.y, mp.z, endX, endY, endZ, tracerR, tracerG, tracerB, 0.012); }
         }
         return result;
     }

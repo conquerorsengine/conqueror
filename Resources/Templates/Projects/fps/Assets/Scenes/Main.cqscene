@@ -1263,7 +1263,7 @@ Entities:
       MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
-      Mass: 30
+      Mass: 55
       LinearDrag: 0.05
       AngularDrag: 0.05
       GravityScale: 1
@@ -1299,7 +1299,7 @@ Entities:
       MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
-      Mass: 30
+      Mass: 55
       LinearDrag: 0.05
       AngularDrag: 0.05
       GravityScale: 1
@@ -1335,7 +1335,7 @@ Entities:
       MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
-      Mass: 30
+      Mass: 55
       LinearDrag: 0.05
       AngularDrag: 0.05
       GravityScale: 1
@@ -1371,7 +1371,7 @@ Entities:
       MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
-      Mass: 30
+      Mass: 55
       LinearDrag: 0.05
       AngularDrag: 0.05
       GravityScale: 1
@@ -1407,7 +1407,7 @@ Entities:
       MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
-      Mass: 30
+      Mass: 55
       LinearDrag: 0.05
       AngularDrag: 0.05
       GravityScale: 1
@@ -1443,7 +1443,7 @@ Entities:
       MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
-      Mass: 30
+      Mass: 55
       LinearDrag: 0.05
       AngularDrag: 0.05
       GravityScale: 1
@@ -1479,7 +1479,7 @@ Entities:
       MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
-      Mass: 30
+      Mass: 55
       LinearDrag: 0.05
       AngularDrag: 0.05
       GravityScale: 1
@@ -1515,7 +1515,7 @@ Entities:
       MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
-      Mass: 30
+      Mass: 55
       LinearDrag: 0.05
       AngularDrag: 0.05
       GravityScale: 1
@@ -1551,7 +1551,7 @@ Entities:
       MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
-      Mass: 30
+      Mass: 55
       LinearDrag: 0.05
       AngularDrag: 0.05
       GravityScale: 1
@@ -1587,7 +1587,7 @@ Entities:
       MaterialAsset: Assets/Materials/WorldGridBlue.cqmat
     RigidbodyComponent:
       BodyType: 1
-      Mass: 30
+      Mass: 55
       LinearDrag: 0.05
       AngularDrag: 0.05
       GravityScale: 1
@@ -5371,6 +5371,12 @@ Entities:
           Bool: true
         bobRoll:
           Float: 0.32
+        walkSpeed:
+          Float: 5.46
+        sprintSpeed:
+          Float: 8.84
+        crouchSpeed:
+          Float: 2.86
   - Entity: 1021178394455252899
     TagComponent:
       Tag: Camera
