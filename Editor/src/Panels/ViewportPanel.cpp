@@ -230,6 +230,13 @@ namespace Conqueror::Editor
             }
         }
 
+        // 4. Işık / kamera simgeleri son görüntünün üstüne (Unity gibi): TAA'ya girmez, büyürken / dönerken iz bırakmaz
+        if (m_Context)
+        {
+            RenderCommand::SetViewport(0, 0, width, height);
+            m_Context->RenderEditorIcons(m_EditorCamera, GetViewportBounds());
+        }
+
         m_Framebuffer->Unbind();
     }
 

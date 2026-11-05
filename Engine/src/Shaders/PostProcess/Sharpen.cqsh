@@ -36,10 +36,11 @@ void main()
     vec3 mx = max(c, max(max(n, s), max(e, w)));
     vec3 amp = clamp(min(mn, 1.0 - mx) / max(mx, vec3(1e-4)), 0.0, 1.0);
     amp = sqrt(amp);
-    // Sert geometri kenarında (duvar üstü / gökyüzü, nesne silueti) keskinleştirme yapılmaz: TAA'nın yumuşattığı kenarı
-    // yeniden basamaklandırıp 5-6 metreden "dikenli" gösteriyordu. Doku ayrıntısı (düşük kontrast) keskinleşmeye devam eder
+    // Sert geometri kenarında (duvar üstü / gökyüzü, nesne silueti: yerel kontrast 0.35 üstü) keskinleştirme yapılmaz: TAA'nın
+    // yumuşattığı kenarı yeniden basamaklandırıp 5-6 metreden "dikenli" gösteriyordu. Orta kontrastlı ince ayrıntı (uzaktaki
+    // basamak çizgisi, küplerin arası: 0.1-0.25) keskinleşir; eskiden 0.06'dan itibaren kesildiği için uzak ayrıntı yumuşak kalıyordu
     float lumRange = dot(mx - mn, vec3(0.2126, 0.7152, 0.0722));
-    float edgeFade = 1.0 - smoothstep(0.06, 0.2, lumRange);
+    float edgeFade = 1.0 - smoothstep(0.15, 0.35, lumRange);
     vec3 wgt = -amp * mix(0.125, 0.2, clamp(u_Amount, 0.0, 1.0)) * edgeFade;
     vec3 result = (c + (n + s + e + w) * wgt) / (1.0 + 4.0 * wgt);
     // Hale yok: sonuç komşuluğun aralığında kalır. Keskin kenarda (duvar üstü / gökyüzü) eksi ağırlıklar kenarın bir yanında

@@ -78,6 +78,17 @@ void main()
 {
     vec3 color = FxaaPixelShader(v_TexCoord, u_ScreenTexture, u_InverseScreenSize);
     if (u_UseMotionMask == 1)
-        color = mix(texture(u_ScreenTexture, v_TexCoord).rgb, color, clamp(texture(u_MotionMask, v_TexCoord).x, 0.0, 1.0));
+    {
+        // Payın ±2 piksellik artıdaki en küçüğü: TAA'nın FXAA'sız bıraktığı ince ayrıntının (küplerin arası, basamak) hemen
+        // yanındaki piksel de yumuşatılmaz; FXAA aralığın kenarını karede bir farklı yöne yayıp yanıp söndürüyordu
+        float m = texture(u_MotionMask, v_TexCoord).x;
+        for (int i = 1; i <= 2; ++i)
+        {
+            vec2 o = u_InverseScreenSize * float(i);
+            m = min(m, min(min(texture(u_MotionMask, v_TexCoord + vec2(o.x, 0.0)).x, texture(u_MotionMask, v_TexCoord - vec2(o.x, 0.0)).x),
+                           min(texture(u_MotionMask, v_TexCoord + vec2(0.0, o.y)).x, texture(u_MotionMask, v_TexCoord - vec2(0.0, o.y)).x)));
+        }
+        color = mix(texture(u_ScreenTexture, v_TexCoord).rgb, color, clamp(m, 0.0, 1.0));
+    }
     FragColor = vec4(color, 1.0);
 }

@@ -171,6 +171,8 @@ namespace Conqueror
         void OnUpdateSimulation(Timestep ts);
         void OnUpdateEditor(Timestep ts, EditorCamera& camera);
         void OnUpdateEditor(Timestep ts, EditorCamera& camera, const glm::vec2* viewportBounds);
+        // Işık / kamera simgeleri işlenmiş son görüntünün üstüne (viewport, post-process sonrası)
+        void RenderEditorIcons(EditorCamera& camera, const glm::vec2* viewportBounds);
         // Editör seçimi (çarpıştırıcı gizmo'ları için)
         void SetEditorSelection(std::vector<uint32_t> selection) { m_EditorSelection = std::move(selection); }
         void DrawPhysicsGizmos();

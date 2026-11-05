@@ -186,6 +186,9 @@ namespace Conqueror
         // Editör simgesi (ampul, güneş, kamera...): kameraya dönük, sabit ekran boyunda, her şeyin üstünde (Unity gibi)
         static void DrawGizmoIcon(const std::string& iconPath, const glm::vec3& position, const glm::vec3& cameraRight, const glm::vec3& cameraUp,
                                   float worldSize, const glm::vec3& color, float alpha = 1.0f);
+        // İşlenmiş son görüntünün üstüne (TAA / ton eşleme sonrası, sRGB çıktı) simge: sahne geçişinin dışında çağrılır
+        static void DrawGizmoIconOverlay(const std::string& iconPath, const glm::vec3& position, const glm::vec3& cameraRight, const glm::vec3& cameraUp,
+                                         float worldSize, const glm::vec3& color, float alpha, const glm::mat4& viewProjection);
         static void DrawSpotLightGizmo(const glm::vec3& position, const glm::vec3& direction, const glm::vec3& color, float size = 0.2f);
         static void DrawDirectionalLightGizmo(const glm::vec3& position, const glm::vec3& direction, const glm::vec3& color, float size = 0.3f);
 

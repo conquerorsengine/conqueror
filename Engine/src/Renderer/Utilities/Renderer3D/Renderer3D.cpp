@@ -2028,12 +2028,38 @@ namespace Conqueror
         DrawUnlit(s_UnlitShader, s_SphereMesh, s->GizmoViewProjection, transform, color, s->Env.HDROutput);
     }
 
+    namespace
+    {
+        // Simge çizimi: görüş-izdüşümü ve çıktı (doğrusal HDR sahne / sRGB son görüntü) çağırana göre
+        void DrawIconQuad(const std::string& iconPath, const glm::vec3& position, const glm::vec3& cameraRight, const glm::vec3& cameraUp,
+                          float worldSize, const glm::vec3& color, float alpha, const glm::mat4& viewProjection, bool linearOutput,
+                          const std::shared_ptr<Mesh>& plane);
+    }
+
     void Renderer3D::DrawGizmoIcon(const std::string& iconPath, const glm::vec3& position, const glm::vec3& cameraRight, const glm::vec3& cameraUp,
                                    float worldSize, const glm::vec3& color, float alpha)
     {
+        DrawIconQuad(iconPath, position, cameraRight, cameraUp, worldSize, color, alpha, s->GizmoViewProjection, s->Env.HDROutput, s_PlaneMesh);
+    }
+
+    void Renderer3D::DrawGizmoIconOverlay(const std::string& iconPath, const glm::vec3& position, const glm::vec3& cameraRight, const glm::vec3& cameraUp,
+                                          float worldSize, const glm::vec3& color, float alpha, const glm::mat4& viewProjection)
+    {
+        // Son görüntünün ikinci eki (nesne kimliği, fareyle seçim) değişmez
+        glColorMaski(1, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+        DrawIconQuad(iconPath, position, cameraRight, cameraUp, worldSize, color, alpha, viewProjection, false, s_PlaneMesh);
+        glColorMaski(1, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    }
+
+    namespace
+    {
+    void DrawIconQuad(const std::string& iconPath, const glm::vec3& position, const glm::vec3& cameraRight, const glm::vec3& cameraUp,
+                      float worldSize, const glm::vec3& color, float alpha, const glm::mat4& viewProjection, bool linearOutput,
+                      const std::shared_ptr<Mesh>& plane)
+    {
         if (!s_IconShader)
             s_IconShader = Shader::Create("Engine/src/Shaders/Editor/GizmoIcon.cqsh");
-        if (!s_IconShader || !s_IconShader->IsValid() || !s_PlaneMesh)
+        if (!s_IconShader || !s_IconShader->IsValid() || !plane)
             return;
         auto& tex = s_Icons[iconPath];
         if (!tex)
@@ -2056,18 +2082,19 @@ namespace Conqueror
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         s_IconShader->Bind();
-        s_IconShader->SetMat4("u_ViewProjection", s->GizmoViewProjection);
+        s_IconShader->SetMat4("u_ViewProjection", viewProjection);
         s_IconShader->SetMat4("u_Transform", transform);
         s_IconShader->SetFloat3("u_Color", color);
         s_IconShader->SetFloat("u_Alpha", alpha);
-        s_IconShader->SetInt("u_LinearOutput", s->Env.HDROutput ? 1 : 0);
+        s_IconShader->SetInt("u_LinearOutput", linearOutput ? 1 : 0);
         tex->Bind(0);
         s_IconShader->SetInt("u_Icon", 0);
-        RenderCommand::DrawIndexed(s_PlaneMesh->GetVertexArray(), s_PlaneMesh->GetIndexCount());
+        RenderCommand::DrawIndexed(plane->GetVertexArray(), plane->GetIndexCount());
         Renderer::GetStats().DrawCalls++;
         if (depth) glEnable(GL_DEPTH_TEST);
         if (!blend) glDisable(GL_BLEND);
         if (cull) glEnable(GL_CULL_FACE);
+    }
     }
 
     void Renderer3D::DrawSpotLightGizmo(const glm::vec3& position, const glm::vec3& direction, const glm::vec3& color, float size)

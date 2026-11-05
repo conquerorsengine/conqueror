@@ -1850,6 +1850,51 @@ namespace Conqueror
         OnUpdateEditor(ts, camera, nullptr);
     }
 
+    // Işık / kamera simgeleri (Unity / Unreal gibi): ekranda sabit boyda (~34 piksel), kameraya dönük düz simge, ışık renginde,
+    // her şeyin üstünde. Unity'deki gibi işlenmiş son görüntünün üstüne çizilir (TAA, ton eşleme, bloom sonrası): sahneyle
+    // birlikte TAA'ya girince derinliğe yazmayan simge arkasındaki yüzeyin parçası sanılıyor, kamera yaklaşıp uzaklaşınca ya da
+    // dönünce eski boyutları kırpılmadan üst üste kalıp silikleşiyor, titreyerek kat kat büyüyordu. Gizli nesnelerinki çizilmez
+    void Scene::RenderEditorIcons(EditorCamera& camera, const glm::vec2* viewportBounds)
+    {
+        if (!m_EditorViewOptions.Gizmos)
+            return;
+        const glm::vec3 eye = camera.GetPosition();
+        const glm::vec3 camRight = camera.GetRightDirection();
+        const glm::vec3 camUp = camera.GetUpDirection();
+        const glm::mat4 viewProjection = camera.GetViewProjection();
+        const float gizmoVpH = viewportBounds ? std::max(1.0f, viewportBounds[1].y - viewportBounds[0].y) : (float)std::max(m_ViewportHeight, 1u);
+        const float pixelWorld = 2.0f * std::tan(glm::radians(camera.GetFOV()) * 0.5f) / gizmoVpH;
+        auto iconSize = [&](const glm::vec3& p) {
+            return 34.0f * pixelWorld * std::max(glm::distance(eye, p), 0.05f);
+        };
+        auto selected = [&](entt::entity e) {
+            return std::find(m_EditorSelection.begin(), m_EditorSelection.end(), (uint32_t)e) != m_EditorSelection.end();
+        };
+        auto icon = [&](const char* path, entt::entity e, const glm::vec3& color) {
+            const glm::vec3 p = glm::vec3(m_Registry.get<TransformComponent>(e).WorldTransform[3]);
+            // Renk çok koyuysa simge görünsün diye açılır; seçiliyken tam parlak
+            glm::vec3 c = glm::max(color, glm::vec3(0.0f));
+            const float m = std::max({ c.r, c.g, c.b, 1e-3f });
+            c = glm::mix(glm::vec3(1.0f), c / m, 0.75f);
+            Renderer3D::DrawGizmoIconOverlay(path, p, camRight, camUp, iconSize(p), c, selected(e) ? 1.0f : 0.85f, viewProjection);
+        };
+        for (auto e : m_Registry.view<TransformComponent, PointLightComponent>())
+            if (IsEntityActive(e))
+                icon("Resources/Icons/Gizmos/light_point.png", e, m_Registry.get<PointLightComponent>(e).Color);
+        for (auto e : m_Registry.view<TransformComponent, SpotLightComponent>())
+            if (IsEntityActive(e))
+                icon("Resources/Icons/Gizmos/light_spot.png", e, m_Registry.get<SpotLightComponent>(e).Color);
+        for (auto e : m_Registry.view<TransformComponent, DirectionalLightComponent>())
+            if (IsEntityActive(e))
+                icon("Resources/Icons/Gizmos/light_directional.png", e, m_Registry.get<DirectionalLightComponent>(e).Color);
+        for (auto e : m_Registry.view<TransformComponent, AreaLightComponent>())
+            if (IsEntityActive(e))
+                icon("Resources/Icons/Gizmos/light_area.png", e, m_Registry.get<AreaLightComponent>(e).Color);
+        for (auto e : m_Registry.view<TransformComponent, CameraComponent>())
+            if (IsEntityActive(e))
+                icon("Resources/Icons/Gizmos/camera.png", e, m_Registry.get<CameraComponent>(e).Primary ? glm::vec3(1.0f, 0.95f, 0.55f) : glm::vec3(1.0f));
+    }
+
     void Scene::OnUpdateEditor([[maybe_unused]] Timestep ts, EditorCamera& camera, const glm::vec2* viewportBounds)
     {
         // Stats'ı sıfırla
@@ -1924,40 +1969,12 @@ namespace Conqueror
             Renderer3D::BeginScene(camera);
             const glm::vec3 eye = camera.GetPosition();
             const glm::vec3 camRight = camera.GetRightDirection();
-            const glm::vec3 camUp = camera.GetUpDirection();
             const float gizmoVpH = viewportBounds ? std::max(1.0f, viewportBounds[1].y - viewportBounds[0].y) : (float)std::max(m_ViewportHeight, 1u);
             const float pixelWorld = 2.0f * std::tan(glm::radians(camera.GetFOV()) * 0.5f) / gizmoVpH;
             auto iconSize = [&](const glm::vec3& p) {
-                // Ortografik görünümde mesafe yerine sabit
                 return 34.0f * pixelWorld * std::max(glm::distance(eye, p), 0.05f);
             };
-            auto selected = [&](entt::entity e) {
-                return std::find(m_EditorSelection.begin(), m_EditorSelection.end(), (uint32_t)e) != m_EditorSelection.end();
-            };
-            auto icon = [&](const char* path, entt::entity e, const glm::vec3& color) {
-                const glm::vec3 p = glm::vec3(m_Registry.get<TransformComponent>(e).WorldTransform[3]);
-                // Renk çok koyuysa simge görünsün diye açılır; seçiliyken tam parlak
-                glm::vec3 c = glm::max(color, glm::vec3(0.0f));
-                const float m = std::max({ c.r, c.g, c.b, 1e-3f });
-                c = glm::mix(glm::vec3(1.0f), c / m, 0.75f);
-                Renderer3D::DrawGizmoIcon(path, p, camRight, camUp, iconSize(p), c, selected(e) ? 1.0f : 0.85f);
-            };
-
-            for (auto e : m_Registry.view<TransformComponent, PointLightComponent>())
-                if (IsEntityActive(e))
-                    icon("Resources/Icons/Gizmos/light_point.png", e, m_Registry.get<PointLightComponent>(e).Color);
-            for (auto e : m_Registry.view<TransformComponent, SpotLightComponent>())
-                if (IsEntityActive(e))
-                    icon("Resources/Icons/Gizmos/light_spot.png", e, m_Registry.get<SpotLightComponent>(e).Color);
-            for (auto e : m_Registry.view<TransformComponent, DirectionalLightComponent>())
-                if (IsEntityActive(e))
-                    icon("Resources/Icons/Gizmos/light_directional.png", e, m_Registry.get<DirectionalLightComponent>(e).Color);
-            for (auto e : m_Registry.view<TransformComponent, AreaLightComponent>())
-                if (IsEntityActive(e))
-                    icon("Resources/Icons/Gizmos/light_area.png", e, m_Registry.get<AreaLightComponent>(e).Color);
-            for (auto e : m_Registry.view<TransformComponent, CameraComponent>())
-                if (IsEntityActive(e))
-                    icon("Resources/Icons/Gizmos/camera.png", e, m_Registry.get<CameraComponent>(e).Primary ? glm::vec3(1.0f, 0.95f, 0.55f) : glm::vec3(1.0f));
+            // Simgelerin kendisi burada çizilmez: RenderEditorIcons (işlenmiş son görüntünün üstüne, TAA'dan sonra)
 
             // Seçili ışıkların / kameraların tel şekilleri
             for (uint32_t id : m_EditorSelection)
