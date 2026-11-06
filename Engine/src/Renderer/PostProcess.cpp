@@ -397,7 +397,7 @@ namespace Conqueror
         {
             glBindFramebuffer(GL_READ_FRAMEBUFFER, m_SceneFramebuffer->GetRendererID());
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_ResolvedFramebuffer->GetRendererID());
-            glBlitFramebuffer(0, 0, m_Width, m_Height, 0, 0, m_Width, m_Height, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+            glBlitFramebuffer(0, 0, m_Width, m_Height, 0, 0, m_Width, m_Height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
             glBlitFramebuffer(0, 0, m_Width, m_Height, 0, 0, m_Width, m_Height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
             if (m_HasNormals)
             {
@@ -646,6 +646,7 @@ namespace Conqueror
             fxaa->SetFloat2("u_InverseScreenSize", invSize);
             fxaa->SetInt("u_MotionMask", 1);
             fxaa->SetInt("u_UseMotionMask", taa ? 1 : 0);
+            fxaa->SetInt("u_CameraStill", (taa && m_CameraStill) ? 1 : 0);
             BindTexture(0, m_LDR.Texture);
             BindTexture(1, taa ? m_TAAState[m_HistoryIndex].Texture : 0);
             PostProcess::DrawFullscreenQuad();

@@ -38,13 +38,12 @@ void main()
         return;
     }
 
-    vec4 finalColor = colorM;
+    vec2 blendOffset = vec2(0.0);
 
     // 1. Yatay Kenar İşleme (üst veya alt komşuyla sınır)
     if (edges.r > 0.25)
     {
         float stepY = edges.r > 0.75 ? -u_InverseScreenSize.y : u_InverseScreenSize.y;
-        vec4 colorH = texture(u_ScreenTexture, v_TexCoord + vec2(0.0, stepY));
 
         // Kenar boyunca teğetsel (sol ve sağ) arama
         float distLeft = 0.0;
@@ -73,15 +72,8 @@ void main()
 
         float span = distLeft + distRight;
         // Analitik yamuk örtü alanı:
-        // Kenarın ortasında (distLeft == distRight) örtüşme maksimumdur (0.5).
-        // Kenar uçlarına doğru örtüşme yumuşakça 0'a iner.
         float weightH = clamp(0.5 * (1.0 - abs(distLeft - distRight) / max(span + 1.0, 1.0)), 0.0, 0.5);
-
-        if (weightH > 0.005)
-        {
-            vec4 colorH = texture(u_ScreenTexture, v_TexCoord + vec2(0.0, stepY * weightH * 2.0));
-            finalColor = mix(finalColor, colorH, weightH);
-        }
+        blendOffset.y = stepY * weightH;
     }
 
     // 2. Dikey Kenar İşleme (sağ veya sol komşuyla sınır)
@@ -116,13 +108,9 @@ void main()
 
         float span = distTop + distBottom;
         float weightV = clamp(0.5 * (1.0 - abs(distTop - distBottom) / max(span + 1.0, 1.0)), 0.0, 0.5);
-
-        if (weightV > 0.005)
-        {
-            vec4 colorV = texture(u_ScreenTexture, v_TexCoord + vec2(stepX * weightV * 2.0, 0.0));
-            finalColor = mix(finalColor, colorV, weightV);
-        }
+        blendOffset.x = stepX * weightV;
     }
 
-    FragColor = finalColor;
+    // Gerçek SMAA: Çift doğrusal donanım örneğiyle kusursuz alt-piksel harmanlama (çift harmanlama bulanıklığı yok)
+    FragColor = texture(u_ScreenTexture, v_TexCoord + blendOffset);
 }

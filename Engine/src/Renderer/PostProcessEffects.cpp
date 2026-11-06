@@ -447,6 +447,7 @@ namespace Conqueror
                         break;
                     }
         }
+        m_CameraStill = cameraStill;
         shader->SetInt("u_CameraStill", cameraStill ? 1 : 0);
         // Hareket eden nesnelerin ekran dikdörtgenleri (fazlası son dikdörtgende birleşir)
         {

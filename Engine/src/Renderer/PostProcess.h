@@ -143,6 +143,7 @@ namespace Conqueror
         uint32_t m_FrameIndex = 0;
         glm::vec2 m_JitterNDC{ 0.0f };
         bool m_JitterActive = false;    // bu karede sahne titreşimli çizildi
+        bool m_CameraStill = false;     // bu karede kamera durağan (TAA + FXAA geçişi için)
         bool m_WantTAA = false;         // sonraki karede titreşim uygula
         bool m_WantNormals = false;     // sahne hedefinde SSR normal eki
         bool m_HasNormals = false;

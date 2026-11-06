@@ -25,11 +25,12 @@ uniform vec2 u_InverseScreenSize;
 // TAA sonrası: yalnız hareket eden piksellerde uygulanır (u_UseMotionMask == 1)
 uniform sampler2D u_MotionMask;
 uniform int u_UseMotionMask = 0;
+uniform int u_CameraStill = 0;
 
 #define FXAA_EDGE_THRESHOLD_MIN 0.0312
 #define FXAA_EDGE_THRESHOLD_REL 0.125
 #define FXAA_SUBPIX_QUALITY     0.75
-#define FXAA_SEARCH_STEPS       12
+#define FXAA_SEARCH_STEPS       16
 
 float GetLuma(vec3 c)
 {
@@ -62,7 +63,8 @@ vec3 FxaaQuality(vec2 pos, sampler2D tex, vec2 rcpFrame)
     // İnce aralıklarda (küp boşlukları, teller) piksel titreşimini yok eder
     float lumaL = (lumaN + lumaS + lumaW + lumaE) * 2.0 + (lumaNW + lumaNE + lumaSW + lumaSE);
     float subpix = abs(lumaL / 12.0 - lumaM) / max(range, 1e-5);
-    float subpixBlend = clamp(subpix * subpix * FXAA_SUBPIX_QUALITY, 0.0, 0.5);
+    float subpixTrim = max(0.0, subpix - 0.2) * 1.25;
+    float subpixBlend = clamp(subpixTrim * subpixTrim * FXAA_SUBPIX_QUALITY, 0.0, 0.5);
 
     // 2. Kenar yönü tespiti (Yatay vs Dikey)
     float edgeH = abs(lumaNW + lumaSW - 2.0 * lumaW) + 2.0 * abs(lumaN + lumaS - 2.0 * lumaM) + abs(lumaNE + lumaSE - 2.0 * lumaE);
@@ -133,6 +135,14 @@ vec3 FxaaQuality(vec2 pos, sampler2D tex, vec2 rcpFrame)
 
 void main()
 {
+    // TAA + FXAA: Kamera dururken TAA zaten 16 karelik zamansal yumuşatmayı tamamlamıştır.
+    // FXAA'nın durağan görüntüdeki alt-piksel titreşimine takılıp titremesi engellenir.
+    if (u_UseMotionMask == 1 && u_CameraStill == 1)
+    {
+        FragColor = vec4(texture(u_ScreenTexture, v_TexCoord).rgb, 1.0);
+        return;
+    }
+
     vec3 color = FxaaQuality(v_TexCoord, u_ScreenTexture, u_InverseScreenSize);
     if (u_UseMotionMask == 1)
     {
