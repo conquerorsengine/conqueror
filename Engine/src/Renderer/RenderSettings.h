@@ -64,7 +64,10 @@ namespace Conqueror
         None = 0,
         FXAA,
         SMAA,
-        TAA            // Temporal AA: alt piksel titreşimi + geçmiş karelerin yeniden izdüşümü (Unreal varsayılanı)
+        TAA,            // Temporal AA: alt piksel titreşimi + geçmiş karelerin yeniden izdüşümü (Unreal varsayılanı)
+        TAA_FXAA,       // TAA + FXAA: Zamansal rekonstrüksiyon üstüne hafif FXAA son geçişi
+        MSAA,           // Donanımsal Çoklu Örnekleme (2x/4x/8x seçilebilir)
+        CSAA            // Coverage Sampling AA: 8x MSAA + örtü alanı kenar süzgeci
     };
 
     // Full Screen Pass (sahnedeki bileşenlerden toplanır)
@@ -119,6 +122,7 @@ namespace Conqueror
         float SharpenAmount = 0.3f;
 
         AntiAliasingMode AntiAliasing = AntiAliasingMode::FXAA;
+        int MSAASamples = 4;              // MSAA örnekleme sayısı (2, 4 veya 8)
         float TAAFeedback = 0.9f;         // geçmiş ağırlığı (yüksek = pürüzsüz, hareket izi riski)
         float TAASharpness = 0.25f;
 

@@ -120,6 +120,7 @@ namespace Conqueror
         uint32_t m_Width = 0;
         uint32_t m_Height = 0;
         uint32_t m_Samples = 1;
+        uint32_t m_WantSamples = 1;
 
         // Efekt zinciri
         uint32_t m_Source = 0;          // zincirin şu anki HDR kaynağı (sahne ya da bir efekt çıktısı)

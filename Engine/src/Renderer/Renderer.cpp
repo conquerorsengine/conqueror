@@ -16,6 +16,7 @@
 #include "Scene/Billboards.h"
 #include "AISystem/Navigation/NavAgents.h"
 #include "Scene/VideoPlayer.h"
+#include "Core/Tiering/QualitySettings.h"
 #include "Utilities/Renderer3D/Renderer3D.h"
 
 namespace Conqueror
@@ -24,6 +25,7 @@ namespace Conqueror
 
     void Renderer::Init()
     {
+        QualitySettings::Init();
         ShaderCompiler::Init();
         RenderCommand::Init();
         Renderer2D::Init();

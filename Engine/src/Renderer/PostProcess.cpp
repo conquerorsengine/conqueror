@@ -203,7 +203,7 @@ namespace Conqueror
 
     void PostProcessStack::EnsureTargets(uint32_t width, uint32_t height)
     {
-        uint32_t samples = std::max(1u, (uint32_t)QualitySettings::GetPreset().AntiAliasing);
+        uint32_t samples = m_WantSamples > 0 ? m_WantSamples : 1;
         // Temporal AA kendi kenar yumuşatmasını yapar: MSAA ile birlikte gereksiz maliyet
         if (m_WantTAA)
             samples = 1;
@@ -397,7 +397,7 @@ namespace Conqueror
         {
             glBindFramebuffer(GL_READ_FRAMEBUFFER, m_SceneFramebuffer->GetRendererID());
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_ResolvedFramebuffer->GetRendererID());
-            glBlitFramebuffer(0, 0, m_Width, m_Height, 0, 0, m_Width, m_Height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            glBlitFramebuffer(0, 0, m_Width, m_Height, 0, 0, m_Width, m_Height, GL_COLOR_BUFFER_BIT, GL_LINEAR);
             glBlitFramebuffer(0, 0, m_Width, m_Height, 0, 0, m_Width, m_Height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
             if (m_HasNormals)
             {
@@ -589,11 +589,15 @@ namespace Conqueror
             aa = AntiAliasingMode::None;
         // Temporal AA HDR'de çözüldü: burada uzamsal AA yok, TAA yumuşaklığını keskinleştirme dengeler
         // (ortografik kamerada TAA yok: FXAA'ya düşer)
-        const bool taa = aa == AntiAliasingMode::TAA && m_TAAResolved;
-        // TAA çözüldüyse de FXAA geçişi çalışır ama yalnız hareket eden piksellerde (TAA durum dokusunun hareket payı):
-        // hızlı kayan kenarlarda (duvarın dibinde zıplarken) kalan merdivenlenme yumuşar, durağan görüntü aynen kalır
+        const bool taa = (aa == AntiAliasingMode::TAA || aa == AntiAliasingMode::TAA_FXAA) && m_TAAResolved;
         if (aa == AntiAliasingMode::TAA)
+            aa = AntiAliasingMode::None;
+        else if (aa == AntiAliasingMode::TAA_FXAA)
             aa = AntiAliasingMode::FXAA;
+        else if (aa == AntiAliasingMode::CSAA)
+            aa = AntiAliasingMode::SMAA; // 8x donanımsal MSAA üstüne analitik örtü alanı süzgeci
+        else if (aa == AntiAliasingMode::MSAA)
+            aa = AntiAliasingMode::None; // Donanımsal MSAA EndScene'de GL_LINEAR ile çözüldü
         const float sharpenAmount = (taa ? settings.TAASharpness : 0.0f) + (settings.Sharpen ? settings.SharpenAmount : 0.0f);
         const bool doSharpen = !m_PointUpscale && settings.Enabled && sharpenAmount > 0.0f && Valid(sharpen);
         const GLint ldrFilter = m_PointUpscale ? GL_NEAREST : GL_LINEAR;
@@ -715,7 +719,7 @@ namespace Conqueror
         if (fx)
             RunSceneEffects(settings, camera, time);
         m_TAAResolved = false;
-        if (fx && settings.AntiAliasing == AntiAliasingMode::TAA && !camera.Orthographic)
+        if (fx && (settings.AntiAliasing == AntiAliasingMode::TAA || settings.AntiAliasing == AntiAliasingMode::TAA_FXAA) && !camera.Orthographic)
             RunTAA(settings, camera);
         else
             m_HistoryValid = false;
@@ -787,7 +791,13 @@ namespace Conqueror
         m_PrevViewProj = camera.Projection * camera.View;
         m_HasPrevViewProj = true;
         ++m_FrameIndex;
-        m_WantTAA = fx && settings.AntiAliasing == AntiAliasingMode::TAA && !camera.Orthographic;
+        m_WantTAA = fx && (settings.AntiAliasing == AntiAliasingMode::TAA || settings.AntiAliasing == AntiAliasingMode::TAA_FXAA) && !camera.Orthographic;
+        if (settings.AntiAliasing == AntiAliasingMode::MSAA)
+            m_WantSamples = (uint32_t)std::clamp(settings.MSAASamples, 2, 8);
+        else if (settings.AntiAliasing == AntiAliasingMode::CSAA)
+            m_WantSamples = 8;
+        else
+            m_WantSamples = 1;
         m_WantNormals = fx && (settings.ScreenSpaceReflections || settings.ScreenSpaceGI) && !camera.Orthographic;
         m_WantAlbedo = fx && settings.ScreenSpaceGI && !camera.Orthographic;
         if (!m_WantAlbedo)

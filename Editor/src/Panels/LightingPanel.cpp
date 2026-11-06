@@ -1117,10 +1117,18 @@ namespace Conqueror::Editor
 
         if (UI::BeginSection("Anti-Aliasing & Sharpening"))
         {
-            const char* aa[] = { "None", "FXAA", "SMAA", "TAA (Temporal)" };
-            UI::ComboEnum("Anti-Aliasing", p.AntiAliasing, aa, 4, "FXAA/SMAA run after tonemapping. TAA jitters the camera and blends with previous frames in HDR "
-                                                               "(smoothest edges, also cleans up noise; replaces MSAA). MSAA is configured in Project Settings > Quality.");
-            if (p.AntiAliasing == AntiAliasingMode::TAA)
+            const char* aa[] = { "None", "FXAA", "SMAA", "TAA (Temporal)", "TAA + FXAA", "MSAA", "CSAA" };
+            UI::ComboEnum("Anti-Aliasing", p.AntiAliasing, aa, 7, "FXAA/SMAA: LDR kenar filtreleme. TAA: HDR zamansal rekonstrüksiyon. "
+                                                                   "TAA + FXAA: Zamansal stabilite + anlık alt piksel temizliği. "
+                                                                   "MSAA: Donanımsal çoklu örnekleme. CSAA: 8x MSAA + SMAA analitik süzgeci.");
+            if (p.AntiAliasing == AntiAliasingMode::MSAA)
+            {
+                const char* msaaOpts[] = { "2x", "4x", "8x" };
+                int msaaIdx = p.MSAASamples >= 8 ? 2 : p.MSAASamples >= 4 ? 1 : 0;
+                if (UI::Combo("MSAA Samples", msaaIdx, msaaOpts, 3, "Donanımsal çoklu örnekleme çarpanı"))
+                    p.MSAASamples = msaaIdx == 0 ? 2 : msaaIdx == 1 ? 4 : 8;
+            }
+            if (p.AntiAliasing == AntiAliasingMode::TAA || p.AntiAliasing == AntiAliasingMode::TAA_FXAA)
             {
                 UI::SliderFloat("History Weight", p.TAAFeedback, 0.5f, 0.97f, "%.2f", "Higher = smoother but more ghosting on fast motion");
                 UI::SliderFloat("TAA Sharpness", p.TAASharpness, 0.0f, 1.0f);

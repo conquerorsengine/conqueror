@@ -931,6 +931,7 @@ namespace Conqueror
         out << YAML::Key << "Sharpen" << YAML::Value << pp.Sharpen;
         out << YAML::Key << "SharpenAmount" << YAML::Value << pp.SharpenAmount;
         out << YAML::Key << "AntiAliasing" << YAML::Value << (int)pp.AntiAliasing;
+        out << YAML::Key << "MSAASamples" << YAML::Value << pp.MSAASamples;
         out << YAML::Key << "TAAFeedback" << YAML::Value << pp.TAAFeedback;
         out << YAML::Key << "TAASharpness" << YAML::Value << pp.TAASharpness;
         out << YAML::Key << "ScreenSpaceReflections" << YAML::Value << pp.ScreenSpaceReflections;
@@ -1134,6 +1135,7 @@ namespace Conqueror
             ReadIf(pp, "Sharpen", p.Sharpen);
             ReadIf(pp, "SharpenAmount", p.SharpenAmount);
             ReadEnumIf(pp, "AntiAliasing", p.AntiAliasing);
+            ReadIf(pp, "MSAASamples", p.MSAASamples);
             ReadIf(pp, "TAAFeedback", p.TAAFeedback);
             ReadIf(pp, "TAASharpness", p.TAASharpness);
             ReadIf(pp, "ScreenSpaceReflections", p.ScreenSpaceReflections);
