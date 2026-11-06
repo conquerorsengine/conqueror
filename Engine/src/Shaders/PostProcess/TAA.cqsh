@@ -132,6 +132,8 @@ void main()
     vec3 nmin = vec3(1e9), nmax = vec3(-1e9);
     vec3 currentSum = vec3(0.0);
     float weightSum = 0.0;
+    vec3 narrowSum = vec3(0.0);   // dar süzgeç (kamera bir süredir duruyorken: ince ayrıntı daha net)
+    float narrowWeight = 0.0;
     float closestDepth = 1.0;
     vec2 closestUV = v_UV;
     float maxCurL = 0.0;       // 3x3'ün en parlak (sıkıştırılmış) parlaklığı
@@ -152,9 +154,12 @@ void main()
         vec2 d = o - jitterPx;
         // Kamera dururken süzgeç dar (16 titreşim karesinin ortalaması kenarı zaten yumuşatır; geniş süzgeç uzaktaki basamak /
         // küp aralığı gibi ince ayrıntıyı gereksiz bulanıklaştırıyordu). Hareket ederken Blackman-Harris yaklaşığı
-        float w = exp(-(u_CameraStill == 1 ? 4.5 : 2.29) * dot(d, d));
+        float w = exp(-2.29 * dot(d, d));
         currentSum += raw * w;
         weightSum += w;
+        float wn = exp(-4.5 * dot(d, d));
+        narrowSum += raw * wn;
+        narrowWeight += wn;
         vec3 c = RGBToYCoCg(raw);
         m1 += c;
         m2 += c * c;
@@ -383,9 +388,6 @@ void main()
         float tol = 0.03 * prevClip.w + 0.02;
         trust = (1.0 - smoothstep(tol, 2.0 * tol, abs(storedW - prevClip.w))) * (1.0 - smoothstep(1.5, 3.0, speed));
     }
-    // Ölçeklenen (yakınlaştırılan) geçmiş bulanık / kaymıştır: geniş kutu ve titreme tutması onu içeri alıp hayalet bırakıyordu
-    if (zoomNow)
-        trust = 0.0;
     float wide = max(stillness, trust);
     vec3 mean = boxMean;
     vec3 sigma = boxSigma;
@@ -448,6 +450,9 @@ void main()
     float flickerBefore = floor(zHi * 0.5 + 1e-3);
     bool outsideBefore = zHi - 2.0 * flickerBefore > 0.5;
     float stillAge = stillness > 0.99 ? min(stillBefore + 1.0, 31.0) : 0.0;
+    // Dar süzgeç yalnız kamera birkaç karedir duruyorken, kademeli: süzgeç her hareketsiz karede değişince fareyle döndürürken
+    // (aradaki tek hareketsiz kareler) görüntü karede bir keskin karede bir yumuşak olup yanıp sönüyordu
+    current = mix(current, narrowSum / max(narrowWeight, 1e-4), clamp((stillAge - 4.0) / 8.0, 0.0, 1.0));
     // Hareketten sonra durunca yeniden birikim (Unreal'ın kamera kesmesindeki gibi): hareket ya da yakınlaştırma sırasında
     // geçmiş her karede yeniden örneklenip bulanıklaşır. Durunca bu bulanık geçmiş birikimin içinde 1-2 saniye kalıyordu
     // (uzaklaşıp yakınlaşınca küpler bulanık / hayaletli, sonra keskinleşiyordu). Hareketten sonraki ilk 16 durgun karede
@@ -467,7 +472,9 @@ void main()
     bool settled = stillAge >= 8.0 && !nearMovingShadow && abs(meanY - meanBefore) < 0.12;
     // Yavaşlarken (yürürken ansızın durunca kamera yarım saniyede durulur): güvenilir, 1 pikselden yavaş kayan ve yerel
     // parlaklığı değişmeyen pikselde de kırpma yapılmaz; küplerin arası durulma boyunca yanıp sönüyordu
-    bool calm = trust > 0.9 && speed < 1.0 && !nearMovingShadow && abs(meanY - meanBefore) < 0.08;
+    // Yakınlaşırken / uzaklaşırken (görüntü karede %0,8'den çok ölçekleniyor; döndürmede %0,5'in altında) sakin yol kullanılmaz: ekranın ortasında hız 1
+    // pikselin altında kalıyor, 0.98 ağırlıkla her karede yeniden örneklenen geçmiş bulanıklaşıyordu (durunca 1-2 saniye bulanık)
+    bool calm = trust > 0.9 && speed < 1.0 && zoomRate < 0.008 && !nearMovingShadow && abs(meanY - meanBefore) < 0.08;
     // Oturmuş / sakin piksel (kamera duruyor ya da çok yavaş): kutu küçük bir payla genişler. Titreşimin bıraktığı küçük
     // sapmalar korunur (fareyle döndürürken aradaki hareketsiz karelerde görüntü titreşimli tek kareye çekilip titriyordu);
     // büyük değişim (namlu alevi ışığı, yakınlaştırmanın bulanık geçmişi) yine kırpılır, iz ve kesik leke kalmaz
@@ -507,7 +514,7 @@ void main()
     bool historyValid = closestDepth < 1.0 && farDepth < 1.0 && abs(storedW - prevClip.w) < 0.03 * prevClip.w + 0.02
                         && !((movingNow || movedBefore) && !centerExact) && !nearMovingShadow && !shadowChanged && parallaxPx < 0.06;
     float flicker = historyValid ? clamp(flickerBefore - 1.0 + (outsideNow != outsideBefore ? 6.0 : 0.0), 0.0, 16.0) : 0.0;
-    bool hold = historyValid && flicker >= 8.0 && !zoomNow && !restart;
+    bool hold = historyValid && flicker >= 8.0 && !restart;
     if (hold)
         history = rawHistory;
     // Yavaş kayan gökyüzü kenarı (yürürken kamera yatınca duvar üstü / gökyüzü kenarı karede 1 pikselden az dik kayar): kenar
@@ -531,17 +538,17 @@ void main()
         feedback = max(feedback, 0.96);
     if (silhouetteSlow)
         feedback = 0.98;
-    // Büyüyen geçmiş her karede yeniden örneklenip bulanıklaşır: payı büyüme oranıyla azalır (dokunmatik yüzeyle / tekerlekle
-    // 1 saniye süren yavaş yakınlaşmada bulanıklık birikmez; yürürken büyüme %1'in altında, etkisiz)
-    if (zoomRate > 0.01)
-        feedback = min(feedback, clamp(1.0 - (zoomRate - 0.01) * 15.0, 0.6, 0.97));
+    // Yakınlaşma / uzaklaşma sırasında ağırlık değiştirilmez (düşürülünce küplerin arası gibi ince ayrıntı yakınlaşırken ve
+    // durunca yanıp sönüyordu); büyütülerek bulanıklaşan geçmiş kamera durunca yeniden birikimle (aşağıda) atılır
     if (restart)
     {
         // Bu kameradan alınmış yeni karelerin ortalaması: kırpılmaz (aynı yerden, iz olamaz), ilk karede yalnız bu kare
         // Duruşun ilk karesinde eski (bulanık) geçmişin payı yarı, sonra 1 / (n + 1) ile azalır: 16 karede %6
         history = rawHistory;
+        // Eski geçmişin payı en az 0.85: tek titreşimli karenin payı büyükken ince ayrıntı (küplerin arası) durunca bir an
+        // yanıp sönüyordu
         float n = stillAge - 2.0;
-        feedback = n / (n + 1.0);
+        feedback = max(n / (n + 1.0), 0.85);
     }
     // Açılan alan (geçmiş başka yüzeyden: küpün arkasından çıkınca duvarın yeni görünen kısmı): eski renk yanlış, sürüklenen
     // çizgiler ve tek karenin gürültüsü dalgalı görünüyordu. Geçmişe az güvenilir, birkaç karede bu yüzeyin rengine oturur
