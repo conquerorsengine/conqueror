@@ -120,8 +120,15 @@ vec3 FxaaQuality(vec2 pos, sampler2D tex, vec2 rcpFrame)
     if (!doneN) distN = float(FXAA_SEARCH_STEPS);
 
     float totalDist = distP + distN;
+    bool isDirectionNear = distP < distN;
     float dMin = min(distP, distN);
     float edgeBlend = clamp(0.5 - dMin / max(totalDist, 1.0), 0.0, 0.5);
+
+    // FXAA 3.11 Kenar Uç Kontrolü: Yalnızca gerçek kenar geçişlerinde harmanlama yapılır.
+    // Düz çizgi boyunca gereksiz kaymayı ve hareket halindeki parıldamayı/yanıp sönmeyi önler.
+    float lEnd = isDirectionNear ? GetLuma(texture(tex, posP).rgb) : GetLuma(texture(tex, posN).rgb);
+    if ((lEnd - edgeTargetLuma < 0.0) == (lumaM - edgeTargetLuma < 0.0))
+        edgeBlend = 0.0;
 
     float blend = max(subpixBlend, edgeBlend);
     vec2 finalUV = pos;
