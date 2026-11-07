@@ -392,8 +392,13 @@ void main()
     // yaklaşınca görüntü bu oranda büyür; döndürmede uzaklık neredeyse değişmez (komşu piksellerin hız farkı döndürmede de
     // ekran kenarına doğru büyüyordu, döndürürken aralık korumasını kapatıp yanıp söndürüyordu)
     float zoomRate = 0.0;
+    float magnify = 0.0;   // yaklaşma: görüntünün bu karede büyüme oranı (uzaklaşmada 0)
     if (u_CameraStill == 0 && closestDepth < 1.0 && !hasObjectVelocity && prevClip.w > 0.0)
-        zoomRate = abs(prevClip.w / max(ViewW(closestUV, closestDepth), 1e-4) - 1.0);
+    {
+        float distRatio = prevClip.w / max(ViewW(closestUV, closestDepth), 1e-4);
+        zoomRate = abs(distRatio - 1.0);
+        magnify = max(distRatio - 1.0, 0.0);
+    }
     bool zoomNow = zoomRate > 0.05;   // tekerlekle yakınlaşma: görüntü bir karede %5ten çok büyüyor (duvara yakın yürürken %2-3)
     bool dynamicShadow = false;
     bool nearMovingShadow = false;   // hareket eden bir nesnenin (genişletilmiş) gölge hacminde: yarı gölge dahil
@@ -620,6 +625,13 @@ void main()
         history = clamp(rawHistory, nmin, nmax);
         feedback = min(feedback, 0.25);
     }
+    // Yaklaşırken (sağ tık + Shift+W, tekerlekle yakınlaştırma) geçmiş bu kareden düşük çözünürlüklüdür: önceki kareler nesneyi
+    // daha küçük (daha az pikselde) görmüştü, büyütülerek yeniden örneklenen geçmiş o ayrıntıyı içermez. 0.85-0.96 ağırlıkla
+    // karıştırılınca küpler bulanıklaşıyor, yüzlerde benekli / bloklu desen çıkıyor, aralar kalınlaşıp açılıyor (beyazlaşıyor),
+    // durunca netleşiyordu (Unreal TSR de büyütülen geçmişin örnek sayısını düşürür). Geçmişin ağırlığı büyütme oranıyla düşer:
+    // karıştırılan geçmişin ortalama büyütmesi ~%12'yi aşmaz. Yavaş yaklaşmada (uzaktaki ince aralıklar, büyüme < %1) değişmez
+    if (magnify > 0.0 && !restart)
+        feedback = min(feedback, 0.12 / (0.12 + magnify));
     feedback *= 1.0 - shadowReset;
     if (u_Variant == 1)
     {

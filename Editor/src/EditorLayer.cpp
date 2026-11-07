@@ -905,8 +905,28 @@ namespace Conqueror::Editor
         m_TrackVersion = undo.GetVersion();
     }
 
+    namespace
+    {
+        // camera_fly otomasyonu: editör kamerası her karede sürekli hareket eder (RMB + Shift+W gibi: ivmesiz, anında durur)
+        struct AutomationFly
+        {
+            glm::vec3 LocalVelocity{ 0.0f };   // x sağ, y yukarı, z ileri (m / sn)
+            int Frames = 0;
+        };
+        AutomationFly s_AutomationFly;
+    }
+
     void EditorLayer::OnUpdate(Timestep ts)
     {
+        if (s_AutomationFly.Frames > 0 && m_ViewportPanel)
+        {
+            auto& cam = m_ViewportPanel->GetEditorCamera();
+            const glm::vec3 v = s_AutomationFly.LocalVelocity;
+            const glm::vec3 world = cam.GetRightDirection() * v.x + cam.GetUpDirection() * v.y + cam.GetForwardDirection() * v.z;
+            // Sabit 1/60 sn adım: başsız test ortamında kare süresi değişken (10-60 FPS); hareket 60 FPS'teki Shift+W ile aynı olsun
+            cam.SetFocalPoint(cam.GetFocalPoint() + world * (1.0f / 60.0f));
+            --s_AutomationFly.Frames;
+        }
         SyncPanelContexts();
         TrackCreatedEntities();
         FeedGameInput();
@@ -6332,6 +6352,15 @@ namespace Conqueror::Editor
             cam.SetYaw(glm::radians(std::stof(a[3])));
             cam.SetDistance(std::stof(a[1]));
             Automation::WaitFrames(2);
+            return true;
+        });
+        // camera_fly <sağ> <yukarı> <ileri> <kare>: editör kamerası verilen hızla (m / sn) her karede sürekli hareket eder, sonra
+        // anında durur (sağ tık + Shift+W ile hızlı ileri uçuşun aynısı; camera komutu adım başına 2 kare beklediği için dur-kalk olur)
+        Automation::RegisterCommand("camera_fly", [this](const Args& a, std::string& err) {
+            if (!m_ViewportPanel || a.size() < 5) { err = "camera_fly <right> <up> <forward> <frames>"; return false; }
+            s_AutomationFly.LocalVelocity = { std::stof(a[1]), std::stof(a[2]), std::stof(a[3]) };
+            s_AutomationFly.Frames = std::max(0, std::stoi(a[4]));
+            // Beklemez: hareket sürerken sonraki komutlar (her karede screenshot) çalışabilsin
             return true;
         });
         Automation::RegisterCommand("camera_info", [this](const Args&, std::string& err) {
