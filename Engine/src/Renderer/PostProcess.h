@@ -10,6 +10,8 @@
 #include <memory>
 #include <vector>
 
+namespace Conqueror { class FSR2Upscaler; }
+
 namespace Conqueror
 {
     struct RenderCamera;
@@ -21,7 +23,7 @@ namespace Conqueror
     class CQ_API PostProcessStack
     {
     public:
-        PostProcessStack() = default;
+        PostProcessStack();   // tanımı PostProcess.cpp'de (FSR2Upscaler eksik tür)
         ~PostProcessStack();
         PostProcessStack(const PostProcessStack&) = delete;
         PostProcessStack& operator=(const PostProcessStack&) = delete;
@@ -153,6 +155,13 @@ namespace Conqueror
         bool m_T2xValid = false;
         bool m_FinalHasVelocity = false;
         glm::mat4 m_FinalInvViewProj{ 1.0f };
+        // AMD FSR 2 (Upscaling > FSR 2, Anti-Aliasing > FSR AA): bağlam, tam ekran hareket vektörleri, çıktı ve kamera bilgisi
+        std::unique_ptr<FSR2Upscaler> m_FSR2;
+        RenderTarget m_MotionVectors;
+        RenderTarget m_FSR2Output;
+        bool m_UseFSR2 = false;
+        bool m_FSR2Valid = false;
+        float m_FinalNear = 0.1f, m_FinalFar = 1000.0f, m_FinalFovY = 1.0f;
         // TAAU: çıktı çözünürlüğünde geçmiş (RGBA16F, LDR)
         RenderTarget m_TAAUHistory[2];
         int m_TAAUIndex = 0;

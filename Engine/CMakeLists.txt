@@ -63,6 +63,16 @@ set_source_files_properties(${CQ_SLJIT_SOURCE} PROPERTIES
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../External/sljit/sljit_src)
 target_compile_definitions(${PROJECT_NAME} PRIVATE SLJIT_CONFIG_AUTO=1)
 
+# AMD FidelityFX Super Resolution 2 SDK çekirdeği (MIT): OpenGL arka ucu src/Renderer/FSR2/FSR2GL.cpp
+set(CQ_FSR2_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../External/FidelityFX-FSR2/src/ffx-fsr2-api)
+set(CQ_FSR2_SOURCES ${CQ_FSR2_DIR}/ffx_fsr2.cpp ${CQ_FSR2_DIR}/ffx_assert.cpp)
+target_sources(${PROJECT_NAME} PRIVATE ${CQ_FSR2_SOURCES})
+set_source_files_properties(${CQ_FSR2_SOURCES} PROPERTIES
+    SKIP_PRECOMPILE_HEADERS ON
+    COMPILE_DEFINITIONS "FFX_GCC=1"
+    COMPILE_OPTIONS "$<IF:$<CXX_COMPILER_ID:MSVC>,/w,-w;-include;${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/FSR2/fsr2_compat.h>")
+target_compile_definitions(${PROJECT_NAME} PRIVATE FFX_GCC=1)
+
 # Position Independent Code (shared library'ler için gerekli)
 set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 

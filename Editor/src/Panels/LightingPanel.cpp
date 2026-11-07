@@ -1265,8 +1265,9 @@ namespace Conqueror::Editor
                     UI::SliderFloat("Render Scale", p.UpscaleRenderScale, 0.33f, 1.0f, "%.2f", "Internal resolution per axis (1 = native)");
                 else
                     UI::Text("Render Scale", "%.0f%%", 100.0f * GetQualityModeScale(p.UpscaleQuality, p.UpscaleRenderScale));
-                if (p.Upscaler == UpscalerMode::FSR1 || p.Upscaler == UpscalerMode::CAS || p.Upscaler == UpscalerMode::NIS || p.Upscaler == UpscalerMode::TAAU)
-                    UI::SliderFloat("Upscale Sharpness", p.UpscaleSharpness, 0.0f, 1.0f, "%.2f", "Sharpening done by the upscaler (FSR 1 RCAS / CAS / NIS / TAAU)");
+                if (p.Upscaler == UpscalerMode::FSR1 || p.Upscaler == UpscalerMode::CAS || p.Upscaler == UpscalerMode::NIS || p.Upscaler == UpscalerMode::TAAU ||
+                    p.Upscaler == UpscalerMode::FSR2)
+                    UI::SliderFloat("Upscale Sharpness", p.UpscaleSharpness, 0.0f, 1.0f, "%.2f", "Sharpening done by the upscaler (FSR 1 / FSR 2 RCAS, CAS, NIS, TAAU)");
                 if (p.Upscaler == UpscalerMode::TAAU)
                     UI::SliderFloat("History Weight", p.TAAFeedback, 0.5f, 0.97f, "%.2f", "TAAU history weight: higher = smoother but more ghosting on fast motion");
                 if (p.Upscaler == UpscalerMode::NIS && GetQualityModeScale(p.UpscaleQuality, p.UpscaleRenderScale) < 0.5f)

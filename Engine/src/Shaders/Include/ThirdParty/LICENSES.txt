@@ -2,3 +2,4 @@ SMAA.hlsl: Copyright (C) 2013 Jorge Jimenez et al., MIT License (External/smaa/L
 ffx_a.h, ffx_fsr1.h, ffx_cas.h: Copyright (c) AMD, MIT License (External/FidelityFX-FSR/license.txt, External/FidelityFX-CAS/LICENSE.txt)
 NIS_Scaler.h: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES, MIT License (External/NVIDIAImageScaling/licence.txt); texture macros adapted to OpenGL combined samplers
 PostProcess/CMAA2_*.cqsh: translated from Intel CMAA2.hlsl, Copyright (c) 2018 Intel Corporation, Apache License 2.0 (External/CMAA2/license.txt); converted with glslang + SPIRV-Cross, changes are listed in each file header
+FSR2/*: AMD FidelityFX Super Resolution 2.2 shaders, Copyright (c) AMD, MIT License (FSR2/LICENSE.txt); compiled at runtime by Engine/src/Renderer/FSR2/FSR2GL.cpp (glslang + SPIRV-Cross)

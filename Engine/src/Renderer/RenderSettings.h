@@ -118,6 +118,7 @@ namespace Conqueror
         XeSS,           // Intel XeSS
         MetalFX,        // Apple MetalFX
         PSSR,           // Sony PlayStation Spectral Super Resolution
+        FSR2,           // AMD FidelityFX Super Resolution 2.2 (zamansal)
         Count
     };
 

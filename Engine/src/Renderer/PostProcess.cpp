@@ -11,6 +11,7 @@
 #include "Renderer/Renderer.h"
 #include "Renderer/Utilities/Renderer3D/Renderer3D.h"
 #include "Renderer/AntiAliasing.h"
+#include "Renderer/FSR2/FSR2Upscaler.h"
 #include "Scene/Scene.h"
 
 #include <glad/glad.h>
@@ -117,6 +118,7 @@ namespace Conqueror
         LoadShader("SMAABlend", "Engine/src/Shaders/PostProcess/SMAA_Blend.cqsh");
         LoadShader("SMAAT2xResolve", "Engine/src/Shaders/PostProcess/SMAA_T2xResolve.cqsh");
         LoadShader("TAAU", "Engine/src/Shaders/PostProcess/TAAU.cqsh");
+        LoadShader("MotionVectors", "Engine/src/Shaders/PostProcess/MotionVectors.cqsh");
         LoadShader("MLAAEdge", "Engine/src/Shaders/PostProcess/MLAA_Edge.cqsh");
         LoadShader("MLAAWeights", "Engine/src/Shaders/PostProcess/MLAA_Weights.cqsh");
         LoadShader("DEAA", "Engine/src/Shaders/PostProcess/DEAA.cqsh");
@@ -197,6 +199,8 @@ namespace Conqueror
 
     // ================================================================== PostProcessStack
 
+    PostProcessStack::PostProcessStack() = default;
+
     PostProcessStack::~PostProcessStack()
     {
         DestroyTarget(m_AO);
@@ -215,6 +219,9 @@ namespace Conqueror
         DestroyTarget(m_T2xHistory[1]);
         DestroyTarget(m_TAAUHistory[0]);
         DestroyTarget(m_TAAUHistory[1]);
+        DestroyTarget(m_MotionVectors);
+        DestroyTarget(m_FSR2Output);
+        m_FSR2.reset();
         DestroyCoverageFramebuffer();
         if (m_SMAAAreaTex) glDeleteTextures(1, &m_SMAAAreaTex);
         if (m_SMAASearchTex) glDeleteTextures(1, &m_SMAASearchTex);
@@ -611,6 +618,11 @@ namespace Conqueror
                 // SMAA T2x: iki konum (±0.25 piksel çapraz), SMAA'nın alt örnek indisleriyle eşleşir (RunFinal)
                 pixel = SMAAT2xJitter(m_FrameIndex);
             }
+            else if (m_TAAVariant == 4)
+            {
+                // FSR 2: SDK'nın titreşim dizisi (evre sayısı 8 x (çıktı / iç)²)
+                pixel = FSR2Upscaler::JitterOffset(m_FrameIndex, m_Width, std::max(m_OutputWidth, m_Width));
+            }
             else
             {
                 // TAA: Halton(2,3) 16 konum; TSSAA (8TX): ilk 8 konum
@@ -847,6 +859,7 @@ namespace Conqueror
         m_Upscaler = UpscalerMode::None;
         m_CASSharpen = false;
         m_CASStrength = 0.0f;
+        m_UseFSR2 = false;
         if (m_PointUpscale)
         {
             m_AAMode = AntiAliasingMode::None;
@@ -862,7 +875,7 @@ namespace Conqueror
                 aa = AntiAliasingMode::MSAA;
             else if (aa == AntiAliasingMode::TAA || aa == AntiAliasingMode::TAA_FXAA || aa == AntiAliasingMode::TSAA || aa == AntiAliasingMode::TSSAA)
                 aa = AntiAliasingMode::FXAA;
-            else if (aa == AntiAliasingMode::SMAA_T2X)
+            else if (aa == AntiAliasingMode::SMAA_T2X || aa == AntiAliasingMode::FSRAA)
                 aa = AntiAliasingMode::SMAA;   // titreşim yok: yalnız SMAA 1x
         }
         m_AAMode = aa;
@@ -872,8 +885,17 @@ namespace Conqueror
         if (!AntiAliasing::IsSupersampling(aa))
             m_Upscaler = AntiAliasing::ResolveUpscalerForThisSystem(plan.Upscaler);
         // Ortografik kamerada titreşim yok: zamansal yükseltici yerine uzamsal FSR 1
-        if (camera.Orthographic && m_Upscaler == UpscalerMode::TAAU)
+        if (camera.Orthographic && (m_Upscaler == UpscalerMode::TAAU || m_Upscaler == UpscalerMode::FSR2))
             m_Upscaler = UpscalerMode::FSR1;
+        // FSR 2 bağlamı kurulamadıysa (gölgelendirici / sürücü): yükseltici FSR 1, FSR AA yerine TAA
+        if (m_FSR2 && m_FSR2->HasFailed())
+        {
+            if (m_Upscaler == UpscalerMode::FSR2)
+                m_Upscaler = UpscalerMode::FSR1;
+            if (m_AAMode == AntiAliasingMode::FSRAA)
+                m_AAMode = AntiAliasingMode::TAA;
+        }
+        m_UseFSR2 = !camera.Orthographic && (m_Upscaler == UpscalerMode::FSR2 || m_AAMode == AntiAliasingMode::FSRAA);
         m_CASSharpen = plan.CASSharpen;
         m_CASStrength = std::clamp(AntiAliasing::IsLegacyUpscaler(settings.AntiAliasing) ? settings.UpscaleSharpness : settings.SharpenAmount, 0.0f, 1.0f);
     }
@@ -1213,6 +1235,63 @@ namespace Conqueror
             sharpenAmount = 0.0f;
         const float upSharp = std::clamp(settings.UpscaleSharpness, 0.0f, 1.0f);
 
+        auto motion = PostProcess::GetShader("MotionVectors");
+        if (m_UseFSR2 && m_JitterActive && Valid(motion) && Valid(sharpen) && !(m_FSR2 && m_FSR2->HasFailed()))
+        {
+            // FSR 2: tam ekran hareket vektörleri (iç çözünürlük) -> FSR 2 (çıktı çözünürlüğünde görüntü) -> çıktıya kopya
+            EnsureTarget(m_MotionVectors, m_Width, m_Height, GL_RG16F);
+            glBindFramebuffer(GL_FRAMEBUFFER, m_MotionVectors.Framebuffer);
+            glViewport(0, 0, (GLsizei)m_Width, (GLsizei)m_Height);
+            motion->Bind();
+            motion->SetInt("u_Depth", 0);
+            motion->SetInt("u_Velocity", 1);
+            motion->SetInt("u_HasVelocity", m_FinalHasVelocity ? 1 : 0);
+            motion->SetInt("u_CameraStill", m_CameraStill ? 1 : 0);
+            motion->SetMat4("u_InvViewProj", m_FinalInvViewProj);
+            motion->SetMat4("u_PrevViewProj", m_PrevViewProj);
+            motion->SetFloat2("u_JitterUV", m_JitterNDC * 0.5f);
+            BindTexture(0, GetSceneDepthTexture());
+            BindTexture(1, m_FinalHasVelocity ? m_Velocity.Texture : 0);
+            PostProcess::DrawFullscreenQuad();
+            EnsureTarget(m_FSR2Output, outW, outH, GL_RGBA8);
+            if (!m_FSR2)
+                m_FSR2 = std::make_unique<FSR2Upscaler>();
+            FSR2Upscaler::Params prm;
+            prm.Color = cur;
+            prm.ColorFormat = GL_RGBA8;
+            prm.Depth = GetSceneDepthTexture();
+            prm.DepthFormat = GL_DEPTH24_STENCIL8;
+            prm.Motion = m_MotionVectors.Texture;
+            prm.Reactive = m_ReactiveUsed ? m_Reactive.Texture : 0;
+            prm.Output = m_FSR2Output.Texture;
+            prm.OutputFormat = GL_RGBA8;
+            prm.RenderWidth = m_Width;
+            prm.RenderHeight = m_Height;
+            prm.DisplayWidth = outW;
+            prm.DisplayHeight = outH;
+            prm.JitterPixels = m_JitterNDC * 0.5f * glm::vec2((float)m_Width, (float)m_Height);
+            prm.Near = m_FinalNear;
+            prm.Far = m_FinalFar;
+            prm.FovY = m_FinalFovY;
+            prm.FrameTimeMs = m_DeltaTime * 1000.0f;
+            prm.Reset = !m_FSR2Valid;
+            prm.Sharpen = upSharp > 0.0f;
+            prm.Sharpness = upSharp;
+            if (m_FSR2->Dispatch(prm))
+            {
+                m_FSR2Valid = true;
+                toOutput();
+                sharpen->Bind();
+                sharpen->SetInt("u_ScreenTexture", 0);
+                sharpen->SetFloat2("u_InverseScreenSize", glm::vec2(1.0f / (float)outW, 1.0f / (float)outH));
+                sharpen->SetFloat("u_Amount", std::min((settings.Sharpen && !m_CASSharpen) ? settings.SharpenAmount : 0.0f, 1.0f));
+                BindTexture(0, m_FSR2Output.Texture);
+                PostProcess::DrawFullscreenQuad();
+                Renderer::GetStats().PostProcessPasses += 2;
+                return;
+            }
+        }
+
         auto taau = PostProcess::GetShader("TAAU");
         if (up == UpscalerMode::TAAU && m_JitterActive && Valid(taau) && Valid(sharpen))
         {
@@ -1439,12 +1518,12 @@ namespace Conqueror
             RunSceneEffects(settings, camera, time);
         m_TAAResolved = false;
         // TAAU seçiliyken zamansal kenar yumuşatma TAAU'nun kendisidir (Unreal'daki gibi zamansal yükseltici TAA'nın yerini alır)
-        if (fx && UsesTemporalAA(m_AAMode) && !camera.Orthographic && m_Upscaler != UpscalerMode::TAAU)
+        if (fx && UsesTemporalAA(m_AAMode) && !camera.Orthographic && m_Upscaler != UpscalerMode::TAAU && !m_UseFSR2)
             RunTAA(settings, camera);
         else
             m_HistoryValid = false;
         // SMAA T2x / TAAU: çözüm RunFinal'da (LDR); hız vektörleri ve bu karenin titreşimli ters matrisi şimdi
-        if (fx && (m_AAMode == AntiAliasingMode::SMAA_T2X || m_Upscaler == UpscalerMode::TAAU) && !camera.Orthographic && m_JitterActive)
+        if (fx && (m_AAMode == AntiAliasingMode::SMAA_T2X || m_Upscaler == UpscalerMode::TAAU || m_UseFSR2) && !camera.Orthographic && m_JitterActive)
         {
             m_FinalHasVelocity = RenderObjectVelocity(camera);
             m_FinalInvViewProj = glm::inverse(JitteredProjection(camera) * camera.View);
@@ -1462,11 +1541,19 @@ namespace Conqueror
                 m_T2xValid = false;
             if (m_Upscaler != UpscalerMode::TAAU)
                 m_TAAUValid = false;
+            if (!m_UseFSR2)
+                m_FSR2Valid = false;
+            // FSR 2 kamera bilgisi (OpenGL perspektif matrisinden)
+            const glm::mat4& P = camera.Projection;
+            m_FinalFovY = 2.0f * std::atan(1.0f / std::max(std::abs(P[1][1]), 1e-6f));
+            m_FinalNear = P[3][2] / (P[2][2] - 1.0f);
+            m_FinalFar = P[3][2] / (P[2][2] + 1.0f);
         }
         else
         {
             m_T2xValid = false;
             m_TAAUValid = false;
+            m_FSR2Valid = false;
         }
         if (fx && settings.DepthOfField)
             RunDepthOfField(settings, camera);
@@ -1542,10 +1629,11 @@ namespace Conqueror
             const bool temporal = fx && !camera.Orthographic && UsesTemporalAA(next);
             const bool t2x = fx && !camera.Orthographic && next == AntiAliasingMode::SMAA_T2X;
             const bool taau = fx && !camera.Orthographic && m_Upscaler == UpscalerMode::TAAU;
-            m_WantTAA = temporal || t2x || taau;   // titreşim (+ hareket bayrağı için normal eki)
-            m_WantTXAA = temporal && next == AntiAliasingMode::TXAA;
-            // TAAU: 16 konumlu Halton titreşimi (zamansal yükseltici kenar yumuşatmanın yerini alır)
-            m_WantTAAVariant = taau ? 0 : next == AntiAliasingMode::TSAA ? 1 : next == AntiAliasingMode::TSSAA ? 2 : t2x ? 3 : 0;
+            const bool fsr2 = fx && m_UseFSR2;
+            m_WantTAA = temporal || t2x || taau || fsr2;   // titreşim (+ hareket bayrağı için normal eki)
+            m_WantTXAA = temporal && next == AntiAliasingMode::TXAA && !fsr2;
+            // TAAU: 16 konumlu Halton titreşimi; FSR 2: SDK'nın dizisi (zamansal yükseltici kenar yumuşatmanın yerini alır)
+            m_WantTAAVariant = fsr2 ? 4 : taau ? 0 : next == AntiAliasingMode::TSAA ? 1 : next == AntiAliasingMode::TSSAA ? 2 : t2x ? 3 : 0;
             switch (next)
             {
                 case AntiAliasingMode::MSAA:   m_WantSamples = (uint32_t)std::clamp(settings.MSAASamples, 2, 8); break;

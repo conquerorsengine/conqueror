@@ -46,7 +46,7 @@ namespace Conqueror::AntiAliasing
             { M::MetalFX,  "MetalFX",    "MetalFX",                                        G::Legacy,        "Moved to Upscaling > MetalFX." },
             { M::NIS,      "NIS",        "NVIDIA Image Scaling",                           G::Legacy,        "Moved to Upscaling > NIS." },
             { M::CAS,      "CAS",        "Contrast Adaptive Sharpening",                   G::Legacy,        "Moved to Sharpening > CAS (and Upscaling > CAS)." },
-            { M::FSRAA,    "FSR AA",     "FidelityFX Super Resolution Native AA (AMD)",    G::VendorNative,  "FSR 2 at native resolution (anti-aliasing only)." },
+            { M::FSRAA,    "FSR AA",     "FidelityFX Super Resolution Native AA (AMD)",    G::VendorNative,  "AMD FSR 2.2 at native resolution (anti-aliasing only, temporal)." },
             { M::XeSSAA,   "XeSS AA",    "XeSS Native AA / XeAA (Intel)",                  G::VendorNative,  "XeSS at native resolution (anti-aliasing only)." },
             { M::OGSSAA,   "OGSSAA",     "Ordered Grid Supersampling Anti-Aliasing",       G::Supersampling, "Integer ordered-grid supersampling (2x2 / 3x3 / 4x4), downsampled with a box filter." },
             { M::SGSSAA,   "SGSSAA",     "Sparse Grid Supersampling Anti-Aliasing",        G::Supersampling, "Shades every sample at the sparse-grid positions of 8x MSAA (true supersampling)." },
@@ -69,6 +69,7 @@ namespace Conqueror::AntiAliasing
             { U::XeSS,    "XeSS",    "Xe Super Sampling (Intel)",                       "AI upscaling on Intel XMX / DP4a.", true },
             { U::MetalFX, "MetalFX", "MetalFX (Apple)",                                 "Apple Metal spatial / temporal upscaling.", true },
             { U::PSSR,    "PSSR",    "PlayStation Spectral Super Resolution (Sony)",    "PS5 Pro AI upscaling.", true },
+            { U::FSR2,    "FSR 2",   "AMD FidelityFX Super Resolution 2.2",             "Temporal upscaler: reconstructs the output resolution from jittered frames, depth and motion vectors (open source, any GPU).", true },
         };
         static_assert(sizeof(s_Upscalers) / sizeof(s_Upscalers[0]) == (size_t)UpscalerMode::Count, "Upscaler table out of sync");
 
@@ -204,7 +205,6 @@ namespace Conqueror::AntiAliasing
                 return { false, kXeSSReason };
             case M::TSRAA:
                 return { false, kTSRReason };
-            case M::FSRAA:
             case M::GBAA:
             case M::SRAA:
                 return { false, kNotImplemented };

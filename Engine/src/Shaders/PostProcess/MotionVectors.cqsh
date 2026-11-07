@@ -1,0 +1,42 @@
+#language GLSL
+// Tam ekran hareket vektörleri (FSR 2 girişi): her pikselin önceki karedeki titreşimsiz konumu - bu karedeki titreşimsiz konumu
+// (uv). Kamera hareketi derinlikten yeniden izdüşümle; hareket eden opak nesnelerde kendi hız vektörü (m_Velocity).
+#type vertex
+#version 450 core
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+out vec2 v_UV;
+void main()
+{
+    v_UV = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+layout(location = 0) out vec2 MotionOut;
+in vec2 v_UV;
+uniform sampler2D u_Depth;
+uniform sampler2D u_Velocity;    // xy uv: şimdiki - önceki; x > 5000: yok
+uniform int u_HasVelocity = 0;
+uniform int u_CameraStill = 0;
+uniform mat4 u_InvViewProj;      // titreşimli
+uniform mat4 u_PrevViewProj;     // önceki karenin titreşimsiz matrisi
+uniform vec2 u_JitterUV;
+void main()
+{
+    float depth = texture(u_Depth, v_UV).r;
+    vec4 world = u_InvViewProj * vec4(v_UV * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+    world /= world.w;
+    vec4 prev = u_PrevViewProj * world;
+    vec2 velocity = (v_UV - u_JitterUV) - (prev.xy / prev.w * 0.5 + 0.5);
+    if (u_CameraStill == 1 || prev.w <= 0.0)
+        velocity = vec2(0.0);
+    if (u_HasVelocity == 1)
+    {
+        vec4 ov = texture(u_Velocity, v_UV);
+        if (ov.x < 5000.0)
+            velocity = ov.xy;
+    }
+    MotionOut = -velocity;   // FSR 2: önceki konum = uv + hareket
+}
