@@ -47,6 +47,10 @@ namespace Conqueror
         uint32_t GetBloomTexture() const { return m_BloomMips.empty() ? 0 : m_BloomMips[0].Texture; }
         uint32_t GetWidth() const { return m_Width; }
         uint32_t GetHeight() const { return m_Height; }
+        // Bu karede uygulanan kenar yumuşatma yöntemi (seçilen yöntem bu sistemde yoksa en yakın karşılığı) ve iç çözünürlük
+        // çarpanı (SSAA > 1, FSR / NIS < 1)
+        AntiAliasingMode GetAppliedAntiAliasing() const { return m_AAMode; }
+        float GetRenderScale() const { return m_RenderScale; }
         std::shared_ptr<Framebuffer> GetSceneFramebuffer() const { return m_SceneFramebuffer; }
 
         // Eski API uyumluluğu (yalnızca AA; ton eşleme yok)
@@ -85,6 +89,15 @@ namespace Conqueror
         void CreateTarget(RenderTarget& rt, uint32_t width, uint32_t height, uint32_t internalFormat);
         void DestroyTarget(RenderTarget& rt);
         void EnsureTargets(uint32_t width, uint32_t height);
+        // Kenar yumuşatma: seçilen yöntemin bu karedeki gerçek uygulaması (ortografik kamera, nokta büyütme, sistemde olmayan yöntem)
+        AntiAliasingMode ResolveAntiAliasing(const PostProcessSettings& settings, const RenderCamera& camera) const;
+        // EQAA (AMD) / CSAA (NVIDIA): renk örneğinden fazla kapsam örnekli renderbuffer çerçeve tamponu
+        bool CreateCoverageFramebuffer(uint32_t width, uint32_t height);
+        void DestroyCoverageFramebuffer();
+        // SMAA alan / arama dokuları (Jimenez, External/smaa/Textures)
+        void EnsureSMAATextures();
+        // MSAA renk çözümü (ton eşleme ağırlıklı; TXAA'da geniş çadır süzgeci)
+        void ResolveMultisampleColor();
         void RunSSAO(const PostProcessSettings& settings, const RenderCamera& camera, float time);
         void RunBloom(const PostProcessSettings& settings);
         void RunComposite(const PostProcessSettings& settings, float time);
@@ -113,7 +126,25 @@ namespace Conqueror
         std::vector<RenderTarget> m_BloomUp;     // yukarı örnekleme zinciri (geri besleme döngüsü olmasın)
         RenderTarget m_LDR;
         RenderTarget m_SMAAEdges;
+        RenderTarget m_SMAAWeights;    // SMAA / MLAA karışım ağırlıkları
         RenderTarget m_Temp;
+        RenderTarget m_Temp2;          // iç çözünürlükte ikinci LDR ara hedef (zincirli son geçişler)
+        RenderTarget m_Upscale;        // çıktı çözünürlüğünde ara hedef (FSR: EASU -> RCAS)
+        uint32_t m_SMAAAreaTex = 0, m_SMAASearchTex = 0;
+        // Kenar yumuşatma planı (Renderer/AntiAliasing.h): bu karede uygulanan ve sonraki kare için istenen
+        AntiAliasingMode m_AAMode = AntiAliasingMode::None;
+        float m_RenderScale = 1.0f, m_WantRenderScale = 1.0f;     // iç çözünürlük / çıktı çözünürlüğü
+        uint32_t m_OutputWidth = 0, m_OutputHeight = 0;           // panelin gerçek boyutu
+        bool m_SampleShading = false, m_WantSampleShading = false; // SGSSAA / RGSS: her MSAA örneğinde gölgelendirme
+        uint32_t m_CoverageSamples = 0, m_WantCoverageSamples = 0; // EQAA / CSAA kapsam örneği (0 = kapalı)
+        uint32_t m_CoverageColorSamples = 0;
+        bool m_CoverageNV = false;                                 // CSAA (NV) mı EQAA (AMD) mı
+        uint32_t m_CoverageFramebuffer = 0;
+        std::vector<uint32_t> m_CoverageRenderbuffers;
+        bool m_TXAA = false, m_WantTXAA = false;                   // MSAA + TAA (titreşim MSAA ile birlikte)
+        int m_TAAVariant = 0, m_WantTAAVariant = 0;                // 0 TAA, 1 TSAA, 2 TSSAA
+        uint32_t m_SamplePositionsFor = 0;                         // u_SamplePos önbelleğinin örnek sayısı
+        float m_SamplePositions[32] = {};
         uint32_t m_BloomResult = 0;
         bool m_AOValid = false;
         bool m_LitScene = true;

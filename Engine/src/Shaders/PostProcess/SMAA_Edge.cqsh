@@ -1,71 +1,38 @@
 #language GLSL
+// SMAA 1x (Ultra) 1. geçiş: parlaklık kenarı algılama (kenarsız piksel atılır, hedef önceden temizlenir)
+// Jorge Jimenez ve ark., SMAA (MIT lisansı, External/smaa/LICENSE.txt)
 #type vertex
 #version 450 core
-
 layout(location = 0) in vec2 a_Position;
 layout(location = 1) in vec2 a_TexCoord;
-
+uniform vec4 u_RTMetrics;   // (1/genişlik, 1/yükseklik, genişlik, yükseklik)
+#define SMAA_RT_METRICS u_RTMetrics
+#define SMAA_GLSL_4 1
+#define SMAA_PRESET_ULTRA 1
+#define SMAA_INCLUDE_PS 0
+#include "Include/ThirdParty/SMAA.hlsl"
 out vec2 v_TexCoord;
-
+out vec4 v_Offset[3];
 void main()
 {
     v_TexCoord = a_TexCoord;
+    SMAAEdgeDetectionVS(a_TexCoord, v_Offset);
     gl_Position = vec4(a_Position, 0.0, 1.0);
 }
 
 #type fragment
 #version 450 core
-
-layout(location = 0) out vec4 out_Color;
-
+layout(location = 0) out vec4 FragColor;
+uniform vec4 u_RTMetrics;
+#define SMAA_RT_METRICS u_RTMetrics
+#define SMAA_GLSL_4 1
+#define SMAA_PRESET_ULTRA 1
+#define SMAA_INCLUDE_VS 0
+#include "Include/ThirdParty/SMAA.hlsl"
 in vec2 v_TexCoord;
-
-uniform sampler2D u_ScreenTexture;
-uniform vec2 u_InverseScreenSize;
-
-#define EDGE_THRESHOLD_MIN 0.03
-#define EDGE_THRESHOLD_MAX 0.125
-
-float GetLuma(vec3 color)
-{
-    return dot(color, vec3(0.2126, 0.7152, 0.0722));
-}
-
+in vec4 v_Offset[3];
+uniform sampler2D u_ColorTex;
 void main()
 {
-    vec2 offset = u_InverseScreenSize;
-    float lumaM = GetLuma(texture(u_ScreenTexture, v_TexCoord).rgb);
-    float lumaW = GetLuma(texture(u_ScreenTexture, v_TexCoord + vec2(-offset.x, 0.0)).rgb);
-    float lumaE = GetLuma(texture(u_ScreenTexture, v_TexCoord + vec2( offset.x, 0.0)).rgb);
-    float lumaN = GetLuma(texture(u_ScreenTexture, v_TexCoord + vec2(0.0, -offset.y)).rgb);
-    float lumaS = GetLuma(texture(u_ScreenTexture, v_TexCoord + vec2(0.0,  offset.y)).rgb);
-
-    float maxLuma = max(lumaM, max(max(lumaN, lumaS), max(lumaW, lumaE)));
-    float minLuma = min(lumaM, min(min(lumaN, lumaS), min(lumaW, lumaE)));
-    float contrast = maxLuma - minLuma;
-
-    float threshold = max(EDGE_THRESHOLD_MIN, maxLuma * EDGE_THRESHOLD_MAX);
-    if (contrast < threshold)
-    {
-        out_Color = vec4(0.0);
-        return;
-    }
-
-    // Yatay kenar farkları (üst vs alt)
-    float diffN = abs(lumaM - lumaN);
-    float diffS = abs(lumaM - lumaS);
-    float edgeH = max(diffN, diffS);
-
-    // Dikey kenar farkları (sol vs sağ)
-    float diffW = abs(lumaM - lumaW);
-    float diffE = abs(lumaM - lumaE);
-    float edgeV = max(diffW, diffE);
-
-    // R: Yatay kenar varlığı ve yönü (1.0 = Kuzey/üst komşuyla sınır, 0.5 = Güney/alt komşuyla sınır)
-    // G: Dikey kenar varlığı ve yönü (1.0 = Doğu/sağ komşuyla sınır, 0.5 = Batı/sol komşuyla sınır)
-    // B: Kontrast büyüklüğü (bölgesel ağırlık için)
-    float hCode = edgeH >= threshold ? (diffN >= diffS ? 1.0 : 0.5) : 0.0;
-    float vCode = edgeV >= threshold ? (diffE >= diffW ? 1.0 : 0.5) : 0.0;
-
-    out_Color = vec4(hCode, vCode, clamp(contrast * 2.0, 0.0, 1.0), 1.0);
+    FragColor = vec4(SMAALumaEdgeDetectionPS(v_TexCoord, v_Offset, u_ColorTex), 0.0, 1.0);
 }

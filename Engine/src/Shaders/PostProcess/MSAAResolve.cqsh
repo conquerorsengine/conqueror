@@ -1,0 +1,51 @@
+#language GLSL
+// MSAA çözümü (HDR): örnekler ton eşlenmiş uzayda ortalanır (Karis ağırlığı 1 / (1 + parlaklık)). Doğrusal HDR ortalamasında
+// gökyüzü / ışık gibi çok parlak tek örnek kenar pikselini tümüyle parlak yapıyor, ton eşlemeden sonra kenar MSAA'sız gibi
+// basamaklı kalıyordu. u_Wide (TXAA): komşu piksellerin örnekleri de 1.5 piksel yarıçaplı çadır süzgeciyle katılır.
+#type vertex
+#version 450 core
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+void main()
+{
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+layout(location = 0) out vec4 FragColor;
+uniform sampler2DMS u_Color;
+uniform int u_Samples = 4;
+uniform int u_Wide = 0;
+uniform vec2 u_SamplePos[16];   // piksel içi örnek konumları (0..1)
+
+float Lum(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
+
+void main()
+{
+    ivec2 p = ivec2(gl_FragCoord.xy);
+    ivec2 size = textureSize(u_Color);
+    vec3 sum = vec3(0.0);
+    float wsum = 0.0;
+    int r = u_Wide == 1 ? 1 : 0;
+    for (int y = -r; y <= r; ++y)
+    for (int x = -r; x <= r; ++x)
+    {
+        ivec2 q = clamp(p + ivec2(x, y), ivec2(0), size - 1);
+        for (int i = 0; i < u_Samples; ++i)
+        {
+            vec3 c = max(texelFetch(u_Color, q, i).rgb, vec3(0.0));
+            if (any(isnan(c)) || any(isinf(c)))
+                c = vec3(0.0);
+            float w = 1.0 / (1.0 + Lum(c));
+            if (u_Wide == 1)
+            {
+                vec2 d = vec2(float(x), float(y)) + u_SamplePos[i] - 0.5;
+                w *= max(0.0, 1.0 - length(d) / 1.5);
+            }
+            sum += c * w;
+            wsum += w;
+        }
+    }
+    FragColor = vec4(sum / max(wsum, 1e-6), 1.0);
+}

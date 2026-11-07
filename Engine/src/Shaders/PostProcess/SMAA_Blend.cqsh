@@ -1,129 +1,39 @@
 #language GLSL
+// SMAA / MLAA 3. geçiş: komşu karışımı (ağırlıklara göre kenarın karşı yanındaki pikselle karıştırma)
+// Jorge Jimenez ve ark., SMAA (MIT lisansı, External/smaa/LICENSE.txt)
 #type vertex
 #version 450 core
-
 layout(location = 0) in vec2 a_Position;
 layout(location = 1) in vec2 a_TexCoord;
-
+uniform vec4 u_RTMetrics;   // (1/genişlik, 1/yükseklik, genişlik, yükseklik)
+#define SMAA_RT_METRICS u_RTMetrics
+#define SMAA_GLSL_4 1
+#define SMAA_PRESET_ULTRA 1
+#define SMAA_INCLUDE_PS 0
+#include "Include/ThirdParty/SMAA.hlsl"
 out vec2 v_TexCoord;
-
+out vec4 v_Offset;
 void main()
 {
     v_TexCoord = a_TexCoord;
+    SMAANeighborhoodBlendingVS(a_TexCoord, v_Offset);
     gl_Position = vec4(a_Position, 0.0, 1.0);
 }
 
 #type fragment
 #version 450 core
-
 layout(location = 0) out vec4 FragColor;
-
+uniform vec4 u_RTMetrics;
+#define SMAA_RT_METRICS u_RTMetrics
+#define SMAA_GLSL_4 1
+#define SMAA_PRESET_ULTRA 1
+#define SMAA_INCLUDE_VS 0
+#include "Include/ThirdParty/SMAA.hlsl"
 in vec2 v_TexCoord;
-
-uniform sampler2D u_ScreenTexture;
-uniform sampler2D u_EdgeTexture;
-uniform vec2 u_InverseScreenSize;
-
-#define MAX_SEARCH_STEPS 16
-
+in vec4 v_Offset;
+uniform sampler2D u_ColorTex;
+uniform sampler2D u_BlendTex;
 void main()
 {
-    vec4 edges = texture(u_EdgeTexture, v_TexCoord);
-    vec4 colorM = texture(u_ScreenTexture, v_TexCoord);
-
-    // Kenar yoksa doğrudan orijinal rengi döndür
-    if (edges.r < 0.25 && edges.g < 0.25)
-    {
-        FragColor = colorM;
-        return;
-    }
-
-    vec2 blendOffset = vec2(0.0);
-
-    // 1. Yatay Kenar İşleme (üst veya alt komşuyla sınır)
-    if (edges.r > 0.25)
-    {
-        float stepY = edges.r > 0.75 ? -u_InverseScreenSize.y : u_InverseScreenSize.y;
-
-        // Kenar boyunca teğetsel (sol ve sağ) arama
-        float distLeft = 0.0;
-        for (int i = 1; i <= MAX_SEARCH_STEPS; ++i)
-        {
-            vec2 uv = v_TexCoord + vec2(-float(i) * u_InverseScreenSize.x, 0.0);
-            if (texture(u_EdgeTexture, uv).r < 0.25)
-            {
-                distLeft = float(i) - 0.5;
-                break;
-            }
-            distLeft = float(i);
-        }
-
-        float distRight = 0.0;
-        for (int i = 1; i <= MAX_SEARCH_STEPS; ++i)
-        {
-            vec2 uv = v_TexCoord + vec2(float(i) * u_InverseScreenSize.x, 0.0);
-            if (texture(u_EdgeTexture, uv).r < 0.25)
-            {
-                distRight = float(i) - 0.5;
-                break;
-            }
-            distRight = float(i);
-        }
-
-        bool hasEndLeft = distLeft < float(MAX_SEARCH_STEPS) - 0.6;
-        bool hasEndRight = distRight < float(MAX_SEARCH_STEPS) - 0.6;
-        float weightH = 0.0;
-        if (hasEndLeft || hasEndRight)
-        {
-            float span = distLeft + distRight + 1.0;
-            float d = min(distLeft, distRight);
-            weightH = clamp(0.5 - (d + 0.5) / span, 0.0, 0.5);
-        }
-        blendOffset.y = stepY * weightH;
-    }
-
-    // 2. Dikey Kenar İşleme (sağ veya sol komşuyla sınır)
-    if (edges.g > 0.25)
-    {
-        float stepX = edges.g > 0.75 ? u_InverseScreenSize.x : -u_InverseScreenSize.x;
-
-        // Kenar boyunca teğetsel (yukarı ve aşağı) arama
-        float distTop = 0.0;
-        for (int i = 1; i <= MAX_SEARCH_STEPS; ++i)
-        {
-            vec2 uv = v_TexCoord + vec2(0.0, -float(i) * u_InverseScreenSize.y);
-            if (texture(u_EdgeTexture, uv).g < 0.25)
-            {
-                distTop = float(i) - 0.5;
-                break;
-            }
-            distTop = float(i);
-        }
-
-        float distBottom = 0.0;
-        for (int i = 1; i <= MAX_SEARCH_STEPS; ++i)
-        {
-            vec2 uv = v_TexCoord + vec2(0.0, float(i) * u_InverseScreenSize.y);
-            if (texture(u_EdgeTexture, uv).g < 0.25)
-            {
-                distBottom = float(i) - 0.5;
-                break;
-            }
-            distBottom = float(i);
-        }
-
-        bool hasEndTop = distTop < float(MAX_SEARCH_STEPS) - 0.6;
-        bool hasEndBottom = distBottom < float(MAX_SEARCH_STEPS) - 0.6;
-        float weightV = 0.0;
-        if (hasEndTop || hasEndBottom)
-        {
-            float span = distTop + distBottom + 1.0;
-            float d = min(distTop, distBottom);
-            weightV = clamp(0.5 - (d + 0.5) / span, 0.0, 0.5);
-        }
-        blendOffset.x = stepX * weightV;
-    }
-
-    // Gerçek SMAA: Çift doğrusal donanım örneğiyle kusursuz alt-piksel harmanlama (çift harmanlama bulanıklığı yok)
-    FragColor = texture(u_ScreenTexture, v_TexCoord + blendOffset);
+    FragColor = SMAANeighborhoodBlendingPS(v_TexCoord, v_Offset, u_ColorTex, u_BlendTex);
 }

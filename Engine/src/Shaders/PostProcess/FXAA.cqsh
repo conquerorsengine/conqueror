@@ -1,4 +1,7 @@
 #language GLSL
+// FXAA 3.11 (Timothy Lottes, NVIDIA) PC kalite yolu, önayar 39 (12 arama adımı: 1,1,1,1,1,1.5,2,2,2,2,4,8).
+// Ton eşlenmiş (gama kodlu) LDR görüntüde çalışır; parlaklık her örnekte algısal ağırlıkla hesaplanır.
+// TAA ile birlikte (u_UseMotionMask): yalnız hızlı hareket eden / geçmişi olmayan piksellere uygulanır.
 #type vertex
 #version 450 core
 
@@ -26,141 +29,201 @@ uniform vec2 u_InverseScreenSize;
 uniform sampler2D u_MotionMask;
 uniform int u_UseMotionMask = 0;
 uniform int u_CameraStill = 0;
+// 1: yalnız TAA'nın geçmişini reddettiği (yeni açılan / yüzeyi değişen) pikseller (durum x >= 1.5); TAA modunda
+uniform int u_RejectOnly = 0;
 
-#define FXAA_EDGE_THRESHOLD_MIN 0.0312
-#define FXAA_EDGE_THRESHOLD_REL 0.125
-#define FXAA_SUBPIX_QUALITY     0.75
-#define FXAA_SEARCH_STEPS       16
+// Kalite ayarları (FXAA 3.11 belgesindeki "yüksek kalite" değerleri)
+const float kSubpix = 0.75;               // alt piksel yumuşatma miktarı
+const float kEdgeThreshold = 0.125;       // kenar sayılması için gereken yerel kontrast (yüksek kalite)
+const float kEdgeThresholdMin = 0.0312;   // koyu bölgelerde işlenmeyecek en düşük kontrast (görünürlük sınırı)
 
-float GetLuma(vec3 c)
+float FxaaLuma(vec3 rgb)
 {
-    return dot(c, vec3(0.2126, 0.7152, 0.0722));
+    return dot(rgb, vec3(0.299, 0.587, 0.114));
 }
 
-vec3 FxaaQuality(vec2 pos, sampler2D tex, vec2 rcpFrame)
+vec4 FxaaTexTop(vec2 p) { return textureLod(u_ScreenTexture, p, 0.0); }
+float FxaaLumaAt(vec2 p) { return FxaaLuma(textureLod(u_ScreenTexture, p, 0.0).rgb); }
+// Doku ofseti derleme zamanı sabiti olmalı: işlev değil makro
+#define FxaaLumaOff(p, o) FxaaLuma(textureLodOffset(u_ScreenTexture, p, 0.0, o).rgb)
+
+vec3 FxaaPixelShader(vec2 pos, vec2 rcpFrame)
 {
-    vec3 rgbM = texture(tex, pos).rgb;
-    float lumaM = GetLuma(rgbM);
+    vec2 posM = pos;
+    vec4 rgbyM = FxaaTexTop(posM);
+    float lumaM = FxaaLuma(rgbyM.rgb);
+    float lumaS = FxaaLumaOff(posM, ivec2( 0,  1));
+    float lumaE = FxaaLumaOff(posM, ivec2( 1,  0));
+    float lumaN = FxaaLumaOff(posM, ivec2( 0, -1));
+    float lumaW = FxaaLumaOff(posM, ivec2(-1,  0));
 
-    float lumaN = GetLuma(texture(tex, pos + vec2(0.0, -rcpFrame.y)).rgb);
-    float lumaS = GetLuma(texture(tex, pos + vec2(0.0,  rcpFrame.y)).rgb);
-    float lumaW = GetLuma(texture(tex, pos + vec2(-rcpFrame.x, 0.0)).rgb);
-    float lumaE = GetLuma(texture(tex, pos + vec2( rcpFrame.x, 0.0)).rgb);
+    float maxSM = max(lumaS, lumaM);
+    float minSM = min(lumaS, lumaM);
+    float maxESM = max(lumaE, maxSM);
+    float minESM = min(lumaE, minSM);
+    float maxWN = max(lumaN, lumaW);
+    float minWN = min(lumaN, lumaW);
+    float rangeMax = max(maxWN, maxESM);
+    float rangeMin = min(minWN, minESM);
+    float rangeMaxScaled = rangeMax * kEdgeThreshold;
+    float range = rangeMax - rangeMin;
+    float rangeMaxClamped = max(kEdgeThresholdMin, rangeMaxScaled);
+    if (range < rangeMaxClamped)
+        return rgbyM.rgb;
 
-    float maxLuma = max(lumaM, max(max(lumaN, lumaS), max(lumaW, lumaE)));
-    float minLuma = min(lumaM, min(min(lumaN, lumaS), min(lumaW, lumaE)));
-    float range = maxLuma - minLuma;
+    float lumaNW = FxaaLumaOff(posM, ivec2(-1, -1));
+    float lumaSE = FxaaLumaOff(posM, ivec2( 1,  1));
+    float lumaNE = FxaaLumaOff(posM, ivec2( 1, -1));
+    float lumaSW = FxaaLumaOff(posM, ivec2(-1,  1));
 
-    if (range < max(FXAA_EDGE_THRESHOLD_MIN, maxLuma * FXAA_EDGE_THRESHOLD_REL))
-        return rgbM;
+    float lumaNS = lumaN + lumaS;
+    float lumaWE = lumaW + lumaE;
+    float subpixRcpRange = 1.0 / range;
+    float subpixNSWE = lumaNS + lumaWE;
+    float edgeHorz1 = (-2.0 * lumaM) + lumaNS;
+    float edgeVert1 = (-2.0 * lumaM) + lumaWE;
 
-    float lumaNW = GetLuma(texture(tex, pos + vec2(-rcpFrame.x, -rcpFrame.y)).rgb);
-    float lumaNE = GetLuma(texture(tex, pos + vec2( rcpFrame.x, -rcpFrame.y)).rgb);
-    float lumaSW = GetLuma(texture(tex, pos + vec2(-rcpFrame.x,  rcpFrame.y)).rgb);
-    float lumaSE = GetLuma(texture(tex, pos + vec2( rcpFrame.x,  rcpFrame.y)).rgb);
+    float lumaNESE = lumaNE + lumaSE;
+    float lumaNWNE = lumaNW + lumaNE;
+    float edgeHorz2 = (-2.0 * lumaE) + lumaNESE;
+    float edgeVert2 = (-2.0 * lumaN) + lumaNWNE;
 
-    // 1. Alt-piksel titremesi önleme (Sub-pixel aliasing removal)
-    // İnce aralıklarda (küp boşlukları, teller) piksel titreşimini yok eder
-    float lumaL = (lumaN + lumaS + lumaW + lumaE) * 2.0 + (lumaNW + lumaNE + lumaSW + lumaSE);
-    float subpix = abs(lumaL / 12.0 - lumaM) / max(range, 1e-5);
-    float subpixTrim = max(0.0, subpix - 0.2) * 1.25;
-    float subpixBlend = clamp(subpixTrim * subpixTrim * FXAA_SUBPIX_QUALITY, 0.0, 0.5);
+    float lumaNWSW = lumaNW + lumaSW;
+    float lumaSWSE = lumaSW + lumaSE;
+    float edgeHorz4 = (abs(edgeHorz1) * 2.0) + abs(edgeHorz2);
+    float edgeVert4 = (abs(edgeVert1) * 2.0) + abs(edgeVert2);
+    float edgeHorz3 = (-2.0 * lumaW) + lumaNWSW;
+    float edgeVert3 = (-2.0 * lumaS) + lumaSWSE;
+    float edgeHorz = abs(edgeHorz3) + edgeHorz4;
+    float edgeVert = abs(edgeVert3) + edgeVert4;
 
-    // 2. Kenar yönü tespiti (Yatay vs Dikey)
-    float edgeH = abs(lumaNW + lumaSW - 2.0 * lumaW) + 2.0 * abs(lumaN + lumaS - 2.0 * lumaM) + abs(lumaNE + lumaSE - 2.0 * lumaE);
-    float edgeV = abs(lumaNW + lumaNE - 2.0 * lumaN) + 2.0 * abs(lumaW + lumaE - 2.0 * lumaM) + abs(lumaSW + lumaSE - 2.0 * lumaS);
-    bool isHorizontal = (edgeH >= edgeV);
+    float subpixNWSWNESE = lumaNWSW + lumaNESE;
+    float lengthSign = rcpFrame.x;
+    bool horzSpan = edgeHorz >= edgeVert;
+    float subpixA = subpixNSWE * 2.0 + subpixNWSWNESE;
 
-    float pLuma = isHorizontal ? lumaN : lumaE;
-    float nLuma = isHorizontal ? lumaS : lumaW;
-    float pGrad = abs(pLuma - lumaM);
-    float nGrad = abs(nLuma - lumaM);
+    if (!horzSpan) lumaN = lumaW;
+    if (!horzSpan) lumaS = lumaE;
+    if (horzSpan) lengthSign = rcpFrame.y;
+    float subpixB = (subpixA * (1.0 / 12.0)) - lumaM;
 
-    float stepLength = isHorizontal ? rcpFrame.y : rcpFrame.x;
-    float gradient = max(pGrad, nGrad);
-    if (pGrad < nGrad)
+    float gradientN = lumaN - lumaM;
+    float gradientS = lumaS - lumaM;
+    float lumaNN = lumaN + lumaM;
+    float lumaSS = lumaS + lumaM;
+    bool pairN = abs(gradientN) >= abs(gradientS);
+    float gradient = max(abs(gradientN), abs(gradientS));
+    if (pairN) lengthSign = -lengthSign;
+    float subpixC = clamp(abs(subpixB) * subpixRcpRange, 0.0, 1.0);
+
+    vec2 posB = posM;
+    vec2 offNP;
+    offNP.x = (!horzSpan) ? 0.0 : rcpFrame.x;
+    offNP.y = ( horzSpan) ? 0.0 : rcpFrame.y;
+    if (!horzSpan) posB.x += lengthSign * 0.5;
+    if ( horzSpan) posB.y += lengthSign * 0.5;
+
+    // Önayar 39 adım uzunlukları
+    const float kStep[12] = float[12](1.0, 1.0, 1.0, 1.0, 1.0, 1.5, 2.0, 2.0, 2.0, 2.0, 4.0, 8.0);
+    vec2 posN = posB - offNP * kStep[0];
+    vec2 posP = posB + offNP * kStep[0];
+    float subpixD = ((-2.0) * subpixC) + 3.0;
+    float lumaEndN = FxaaLumaAt(posN);
+    float subpixE = subpixC * subpixC;
+    float lumaEndP = FxaaLumaAt(posP);
+
+    if (!pairN) lumaNN = lumaSS;
+    float gradientScaled = gradient * 1.0 / 4.0;
+    float lumaMM = lumaM - lumaNN * 0.5;
+    float subpixF = subpixD * subpixE;
+    bool lumaMLTZero = lumaMM < 0.0;
+
+    lumaEndN -= lumaNN * 0.5;
+    lumaEndP -= lumaNN * 0.5;
+    bool doneN = abs(lumaEndN) >= gradientScaled;
+    bool doneP = abs(lumaEndP) >= gradientScaled;
+    if (!doneN) posN -= offNP * kStep[1];
+    bool doneNP = (!doneN) || (!doneP);
+    if (!doneP) posP += offNP * kStep[1];
+
+    for (int i = 2; i < 12 && doneNP; ++i)
     {
-        stepLength = -stepLength;
-        pLuma = nLuma;
+        if (!doneN) lumaEndN = FxaaLumaAt(posN) - lumaNN * 0.5;
+        if (!doneP) lumaEndP = FxaaLumaAt(posP) - lumaNN * 0.5;
+        doneN = abs(lumaEndN) >= gradientScaled;
+        doneP = abs(lumaEndP) >= gradientScaled;
+        if (!doneN) posN -= offNP * kStep[i];
+        doneNP = (!doneN) || (!doneP);
+        if (!doneP) posP += offNP * kStep[i];
     }
 
-    vec2 edgePos = pos;
-    if (isHorizontal)
-        edgePos.y += stepLength * 0.5;
-    else
-        edgePos.x += stepLength * 0.5;
+    float dstN = posM.x - posN.x;
+    float dstP = posP.x - posM.x;
+    if (!horzSpan) dstN = posM.y - posN.y;
+    if (!horzSpan) dstP = posP.y - posM.y;
 
-    vec2 stepDir = isHorizontal ? vec2(rcpFrame.x, 0.0) : vec2(0.0, rcpFrame.y);
-    float edgeTargetLuma = (lumaM + pLuma) * 0.5;
-    float gradScaled = gradient * 0.25;
+    bool goodSpanN = (lumaEndN < 0.0) != lumaMLTZero;
+    float spanLength = (dstP + dstN);
+    bool goodSpanP = (lumaEndP < 0.0) != lumaMLTZero;
+    float spanLengthRcp = 1.0 / spanLength;
 
-    // 3. Kenar boyunca arama
-    vec2 posP = edgePos + stepDir;
-    vec2 posN = edgePos - stepDir;
-    float distP = 0.0, distN = 0.0;
-    bool doneP = false, doneN = false;
+    bool directionN = dstN < dstP;
+    float dst = min(dstN, dstP);
+    bool goodSpan = directionN ? goodSpanN : goodSpanP;
+    float subpixG = subpixF * subpixF;
+    float pixelOffset = (dst * (-spanLengthRcp)) + 0.5;
+    float subpixH = subpixG * kSubpix;
 
-    for (int i = 1; i <= FXAA_SEARCH_STEPS; ++i)
-    {
-        if (!doneP)
-        {
-            float lP = GetLuma(texture(tex, posP).rgb);
-            if (abs(lP - edgeTargetLuma) >= gradScaled) { distP = float(i); doneP = true; }
-            else posP += stepDir;
-        }
-        if (!doneN)
-        {
-            float lN = GetLuma(texture(tex, posN).rgb);
-            if (abs(lN - edgeTargetLuma) >= gradScaled) { distN = float(i); doneN = true; }
-            else posN -= stepDir;
-        }
-        if (doneP && doneN) break;
-    }
-    if (!doneP) distP = float(FXAA_SEARCH_STEPS);
-    if (!doneN) distN = float(FXAA_SEARCH_STEPS);
-
-    float totalDist = distP + distN;
-    bool isDirectionNear = distP < distN;
-    float dMin = min(distP, distN);
-    float edgeBlend = clamp(0.5 - dMin / max(totalDist, 1.0), 0.0, 0.5);
-
-    // FXAA 3.11 Kenar Uç Kontrolü: Yalnızca gerçek kenar geçişlerinde harmanlama yapılır.
-    // Düz çizgi boyunca gereksiz kaymayı ve hareket halindeki parıldamayı/yanıp sönmeyi önler.
-    float lEnd = isDirectionNear ? GetLuma(texture(tex, posP).rgb) : GetLuma(texture(tex, posN).rgb);
-    if ((lEnd - edgeTargetLuma < 0.0) == (lumaM - edgeTargetLuma < 0.0))
-        edgeBlend = 0.0;
-
-    float blend = max(subpixBlend, edgeBlend);
-    vec2 finalUV = pos;
-    if (isHorizontal)
-        finalUV.y += stepLength * blend;
-    else
-        finalUV.x += stepLength * blend;
-
-    return texture(tex, finalUV).rgb;
+    float pixelOffsetGood = goodSpan ? pixelOffset : 0.0;
+    float pixelOffsetSubpix = max(pixelOffsetGood, subpixH);
+    if (!horzSpan) posM.x += pixelOffsetSubpix * lengthSign;
+    if ( horzSpan) posM.y += pixelOffsetSubpix * lengthSign;
+    return FxaaTexTop(posM).rgb;
 }
 
 void main()
 {
-    // TAA + FXAA: Kamera dururken TAA zaten 16 karelik zamansal yumuşatmayı tamamlamıştır.
-    // FXAA'nın durağan görüntüdeki alt-piksel titreşimine takılıp titremesi engellenir.
-    if (u_UseMotionMask == 1 && u_CameraStill == 1)
-    {
-        FragColor = vec4(texture(u_ScreenTexture, v_TexCoord).rgb, 1.0);
-        return;
-    }
-
-    vec3 color = FxaaQuality(v_TexCoord, u_ScreenTexture, u_InverseScreenSize);
+    vec3 original = texture(u_ScreenTexture, v_TexCoord).rgb;
     if (u_UseMotionMask == 1)
     {
-        float m = texture(u_MotionMask, v_TexCoord).x;
-        for (int i = 1; i <= 2; ++i)
+        // TAA + FXAA: kamera dururken TAA zaten zamansal yumuşatmayı tamamlar; durağan görüntüye dokunulmaz
+        float m;
+        if (u_RejectOnly == 1)
         {
-            vec2 o = u_InverseScreenSize * float(i);
-            m = min(m, min(min(texture(u_MotionMask, v_TexCoord + vec2(o.x, 0.0)).x, texture(u_MotionMask, v_TexCoord - vec2(o.x, 0.0)).x),
-                           min(texture(u_MotionMask, v_TexCoord + vec2(0.0, o.y)).x, texture(u_MotionMask, v_TexCoord - vec2(0.0, o.y)).x)));
+            // Yalnız TAA'nın geçmişini reddettiği pikseller (yeni açılan alan): TAA'nın tek karesi orada basamaklı kalırdı
+            float x = texture(u_MotionMask, v_TexCoord).x;
+            m = x >= 1.5 ? 1.0 : 0.0;
+            if (m <= 0.0)
+            {
+                FragColor = vec4(original, 1.0);
+                return;
+            }
         }
-        color = mix(texture(u_ScreenTexture, v_TexCoord).rgb, color, clamp(m, 0.0, 1.0));
+        else
+        {
+            if (u_CameraStill == 1)
+            {
+                FragColor = vec4(original, 1.0);
+                return;
+            }
+            // Hareket payı: ±2 piksellik artının en küçüğü (hareketli kenarın yanındaki durağan pikseller karışmaz)
+            m = min(texture(u_MotionMask, v_TexCoord).x, 1.0);
+            for (int i = 1; i <= 2; ++i)
+            {
+                vec2 o = u_InverseScreenSize * float(i);
+                m = min(m, min(min(texture(u_MotionMask, v_TexCoord + vec2(o.x, 0.0)).x, texture(u_MotionMask, v_TexCoord - vec2(o.x, 0.0)).x),
+                               min(texture(u_MotionMask, v_TexCoord + vec2(0.0, o.y)).x, texture(u_MotionMask, v_TexCoord - vec2(0.0, o.y)).x)));
+            }
+            m = clamp(m, 0.0, 1.0);
+            if (m <= 0.0)
+            {
+                FragColor = vec4(original, 1.0);
+                return;
+            }
+        }
+        vec3 aa = FxaaPixelShader(v_TexCoord, u_InverseScreenSize);
+        FragColor = vec4(mix(original, aa, m), 1.0);
+        return;
     }
-    FragColor = vec4(color, 1.0);
+    FragColor = vec4(FxaaPixelShader(v_TexCoord, u_InverseScreenSize), 1.0);
 }

@@ -59,15 +59,46 @@ namespace Conqueror
         Reinhard
     };
 
+    // Kenar yumuşatma yöntemleri. Değerler sahne dosyalarına sayı olarak yazılır: yeni yöntemler HEP sona eklenir.
+    // Her yöntemin adı, grubu, açıklaması ve bu sistemde kullanılabilirliği Renderer/AntiAliasing.h'dedir.
     enum class AntiAliasingMode : int
     {
         None = 0,
-        FXAA,
-        SMAA,
+        FXAA,           // Fast Approximate AA (NVIDIA FXAA 3.11 kalite önayarı)
+        SMAA,           // Subpixel Morphological AA (Jimenez, 1x: kenar + alan dokusu + komşu karışımı)
         TAA,            // Temporal AA: alt piksel titreşimi + geçmiş karelerin yeniden izdüşümü (Unreal varsayılanı)
         TAA_FXAA,       // TAA + FXAA: Zamansal rekonstrüksiyon üstüne hafif FXAA son geçişi
         MSAA,           // Donanımsal Çoklu Örnekleme (2x/4x/8x seçilebilir)
-        CSAA            // Coverage Sampling AA: 8x MSAA + örtü alanı kenar süzgeci
+        CSAA,           // Coverage Sampled AA (NVIDIA): ayrı örtü örnekleri (NV_framebuffer_multisample_coverage)
+        SSAA,           // Supersampling: sahne eksen başına SSAAScale kat çözünürlükte çizilir, Lanczos ile küçültülür
+        FSAA,           // Full Scene AA: tüm sahnenin 2x2 süper örneklenmesi (SSAA'nın tarihsel adı), çadır süzgeci
+        EQAA,           // Enhanced Quality AA (AMD): kapsam örneği > renk örneği (AMD_framebuffer_multisample_advanced)
+        MLAA,           // Morphological AA (Reshetov / Jimenez GPU MLAA): yalnız dik kenar desenleri
+        CMAA,           // Conservative Morphological AA (Intel CMAA2)
+        TXAA,           // MSAA + zamansal süzgeç (NVIDIA TXAA tarzı): geniş MSAA çözümü + TAA birikimi
+        TSAA,           // Temporal Super Sampling AA: iki titreşim konumu, iki karenin yeniden izdüşümlü ortalaması
+        TAAU,           // TAA Upsampling: düşük iç çözünürlük, TAA tam çözünürlüğe yeniden kurar
+        SMAA_T2X,       // SMAA 1x + 2 alt örnekli zamansal çözüm
+        TSRAA,          // Temporal Super Resolution yerel çözünürlükte (AA olarak)
+        TSR,            // Temporal Super Resolution (Epic): zamansal yükseltme
+        DLSS,           // NVIDIA DLSS (RTX + NGX)
+        DLAA,           // NVIDIA DLAA (DLSS yerel çözünürlükte)
+        FSR,            // AMD FidelityFX Super Resolution 1 (EASU yükseltme + RCAS keskinlik)
+        XeSS,           // Intel XeSS
+        PSSR,           // Sony PlayStation Spectral Super Resolution (PS5 Pro)
+        MetalFX,        // Apple MetalFX
+        NIS,            // NVIDIA Image Scaling (yükseltme + keskinlik)
+        CAS,            // AMD FidelityFX Contrast Adaptive Sharpening
+        FSRAA,          // FSR yerel çözünürlükte (Native AA)
+        XeSSAA,         // XeSS yerel çözünürlükte (XeAA)
+        OGSSAA,         // Ordered Grid SSAA: tam sayı ızgara (2x2 / 3x3 / 4x4), kutu süzgeci
+        SGSSAA,         // Sparse Grid SSAA: 8x MSAA seyrek örnek konumları + her örnekte gölgelendirme
+        RGSS,           // Rotated Grid Super Sampling: 4x döndürülmüş ızgara + her örnekte gölgelendirme
+        TSSAA,          // Temporal Super Sampling AA (id Tech 8TX): 8 titreşim konumu, standart kırpma
+        DEAA,           // Directionally Enhanced AA: kenar yönünde uzun / kısa yumuşatma
+        GBAA,           // Geometry Buffer AA (Humus): geometriden kenar uzaklığı
+        SRAA,           // Subpixel Reconstruction AA (NVIDIA): çok örnekli geometri, tek örnekli gölgelendirme
+        Count
     };
 
     // Full Screen Pass (sahnedeki bileşenlerden toplanır)
@@ -125,6 +156,10 @@ namespace Conqueror
         int MSAASamples = 4;              // MSAA örnekleme sayısı (2, 4 veya 8)
         float TAAFeedback = 0.9f;         // geçmiş ağırlığı (yüksek = pürüzsüz, hareket izi riski)
         float TAASharpness = 0.25f;
+        float SSAAScale = 2.0f;           // SSAA / OGSSAA: eksen başına süper örnekleme çarpanı (1.5 .. 4; OGSSAA tam sayıya yuvarlar)
+        float UpscaleRenderScale = 0.67f; // FSR / NIS / TAAU / TSR: iç çözünürlük oranı (0.5 .. 1)
+        float UpscaleSharpness = 0.5f;    // FSR (RCAS) / NIS / CAS keskinliği (0 .. 1)
+        int EQAASamples = 8;              // EQAA kapsam örneği (4 / 8 / 16); renk depolama örneği yarısı
 
         // Ekran uzayı yansımalar (SSR): parlak zemin / su / metal yüzeyler sahneyi yansıtır
         bool ScreenSpaceReflections = false;

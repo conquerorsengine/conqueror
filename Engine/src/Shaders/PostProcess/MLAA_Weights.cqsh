@@ -1,0 +1,51 @@
+#language GLSL
+// MLAA (Jimenez GPU MLAA) 2. geçiş: karışım ağırlıkları (kenar boyu arama + alan dokusu)
+// Jorge Jimenez ve ark., SMAA (MIT lisansı, External/smaa/LICENSE.txt)
+#type vertex
+#version 450 core
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+uniform vec4 u_RTMetrics;   // (1/genişlik, 1/yükseklik, genişlik, yükseklik)
+#define SMAA_RT_METRICS u_RTMetrics
+#define SMAA_GLSL_4 1
+#define SMAA_THRESHOLD 0.1
+#define SMAA_MAX_SEARCH_STEPS 8
+#define SMAA_DISABLE_DIAG_DETECTION 1
+#define SMAA_DISABLE_CORNER_DETECTION 1
+#define SMAA_LOCAL_CONTRAST_ADAPTATION_FACTOR 1000.0
+#define SMAA_INCLUDE_PS 0
+#include "Include/ThirdParty/SMAA.hlsl"
+out vec2 v_TexCoord;
+out vec2 v_PixCoord;
+out vec4 v_Offset[3];
+void main()
+{
+    v_TexCoord = a_TexCoord;
+    SMAABlendingWeightCalculationVS(a_TexCoord, v_PixCoord, v_Offset);
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+layout(location = 0) out vec4 FragColor;
+uniform vec4 u_RTMetrics;
+#define SMAA_RT_METRICS u_RTMetrics
+#define SMAA_GLSL_4 1
+#define SMAA_THRESHOLD 0.1
+#define SMAA_MAX_SEARCH_STEPS 8
+#define SMAA_DISABLE_DIAG_DETECTION 1
+#define SMAA_DISABLE_CORNER_DETECTION 1
+#define SMAA_LOCAL_CONTRAST_ADAPTATION_FACTOR 1000.0
+#define SMAA_INCLUDE_VS 0
+#include "Include/ThirdParty/SMAA.hlsl"
+in vec2 v_TexCoord;
+in vec2 v_PixCoord;
+in vec4 v_Offset[3];
+uniform sampler2D u_EdgesTex;
+uniform sampler2D u_AreaTex;
+uniform sampler2D u_SearchTex;
+uniform vec4 u_SubsampleIndices = vec4(0.0);
+void main()
+{
+    FragColor = SMAABlendingWeightCalculationPS(v_TexCoord, v_PixCoord, v_Offset, u_EdgesTex, u_AreaTex, u_SearchTex, u_SubsampleIndices);
+}

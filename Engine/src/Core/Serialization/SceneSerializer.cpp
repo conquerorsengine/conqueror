@@ -934,6 +934,10 @@ namespace Conqueror
         out << YAML::Key << "MSAASamples" << YAML::Value << pp.MSAASamples;
         out << YAML::Key << "TAAFeedback" << YAML::Value << pp.TAAFeedback;
         out << YAML::Key << "TAASharpness" << YAML::Value << pp.TAASharpness;
+        out << YAML::Key << "SSAAScale" << YAML::Value << pp.SSAAScale;
+        out << YAML::Key << "UpscaleRenderScale" << YAML::Value << pp.UpscaleRenderScale;
+        out << YAML::Key << "UpscaleSharpness" << YAML::Value << pp.UpscaleSharpness;
+        out << YAML::Key << "EQAASamples" << YAML::Value << pp.EQAASamples;
         out << YAML::Key << "ScreenSpaceReflections" << YAML::Value << pp.ScreenSpaceReflections;
         out << YAML::Key << "SSRIntensity" << YAML::Value << pp.SSRIntensity;
         out << YAML::Key << "SSRMaxDistance" << YAML::Value << pp.SSRMaxDistance;
@@ -1138,6 +1142,10 @@ namespace Conqueror
             ReadIf(pp, "MSAASamples", p.MSAASamples);
             ReadIf(pp, "TAAFeedback", p.TAAFeedback);
             ReadIf(pp, "TAASharpness", p.TAASharpness);
+            ReadIf(pp, "SSAAScale", p.SSAAScale);
+            ReadIf(pp, "UpscaleRenderScale", p.UpscaleRenderScale);
+            ReadIf(pp, "UpscaleSharpness", p.UpscaleSharpness);
+            ReadIf(pp, "EQAASamples", p.EQAASamples);
             ReadIf(pp, "ScreenSpaceReflections", p.ScreenSpaceReflections);
             ReadIf(pp, "SSRIntensity", p.SSRIntensity);
             ReadIf(pp, "SSRMaxDistance", p.SSRMaxDistance);

@@ -1,0 +1,2 @@
+SMAA.hlsl: Copyright (C) 2013 Jorge Jimenez et al., MIT License (External/smaa/LICENSE.txt)
+ffx_a.h, ffx_fsr1.h, ffx_cas.h: Copyright (c) AMD, MIT License (External/FidelityFX-FSR/license.txt, External/FidelityFX-CAS/LICENSE.txt)

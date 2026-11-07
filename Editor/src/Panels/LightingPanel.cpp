@@ -1,3 +1,4 @@
+#include "Renderer/AntiAliasing.h"
 #include "Scene/MeshRendererMaterial.h"
 #include "Renderer/Utilities/Renderer3D/Material.h"
 #include "ObjectPicker.h"
@@ -1117,21 +1118,87 @@ namespace Conqueror::Editor
 
         if (UI::BeginSection("Anti-Aliasing & Sharpening"))
         {
-            const char* aa[] = { "None", "FXAA", "SMAA", "TAA (Temporal)", "TAA + FXAA", "MSAA", "CSAA" };
-            UI::ComboEnum("Anti-Aliasing", p.AntiAliasing, aa, 7, "FXAA/SMAA: LDR kenar filtreleme. TAA: HDR zamansal rekonstrüksiyon. "
-                                                                   "TAA + FXAA: Zamansal stabilite + anlık alt piksel temizliği. "
-                                                                   "MSAA: Donanımsal çoklu örnekleme. CSAA: 8x MSAA + SMAA analitik süzgeci.");
-            if (p.AntiAliasing == AntiAliasingMode::MSAA)
+            // Tüm yöntemler gruplu liste: bu sistemde (GPU / sürücü / işletim sistemi) çalışmayanlar soluk, nedeni ipucunda
+            {
+                using namespace Conqueror::AntiAliasing;
+                const ModeInfo& curInfo = GetInfo(p.AntiAliasing);
+                UI::BeginProperty("Anti-Aliasing", "Kenar yumuşatma yöntemi. Soluk olanlar bu sistemde çalışamaz (nedeni üzerine gelince yazar).");
+                std::string preview = std::string(curInfo.Name) + " - " + curInfo.FullName;
+                ImGui::SetNextItemWidth(-1.0f);
+                if (ImGui::BeginCombo("##aa_mode", preview.c_str(), ImGuiComboFlags_HeightLargest))
+                {
+                    const Group groups[] = { Group::Classic, Group::Temporal, Group::Upscaling, Group::Special };
+                    for (Group g : groups)
+                    {
+                        ImGui::SeparatorText(GetGroupName(g));
+                        for (int i = 0; i < GetModeCount(); ++i)
+                        {
+                            const ModeInfo& info = GetInfo((AntiAliasingMode)i);
+                            if (info.Category != g)
+                                continue;
+                            const Availability av = GetAvailability(info.Mode);
+                            const bool selected = p.AntiAliasing == info.Mode;
+                            std::string label = std::string(info.Name) + "   " + info.FullName;
+                            if (!av.Available)
+                                ImGui::BeginDisabled();
+                            if (ImGui::Selectable(label.c_str(), selected))
+                                p.AntiAliasing = info.Mode;
+                            if (!av.Available)
+                                ImGui::EndDisabled();
+                            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                            {
+                                if (av.Available)
+                                    ImGui::SetTooltip("%s", info.Description);
+                                else
+                                    ImGui::SetTooltip("%s\n\nBu sistemde kullanılamaz: %s", info.Description, av.Reason);
+                            }
+                            if (selected)
+                                ImGui::SetItemDefaultFocus();
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+                UI::EndProperty();
+                const Availability curAv = GetAvailability(p.AntiAliasing);
+                if (!curAv.Available)
+                {
+                    std::string msg = std::string(curInfo.Name) + " bu sistemde çalışamaz: " + curAv.Reason + " Şu an kullanılan: " +
+                                      GetInfo(ResolveForThisSystem(p.AntiAliasing)).Name + ".";
+                    UI::InfoBox(msg.c_str(), UI::InfoType::Warning);
+                }
+                else
+                    ImGui::TextWrapped("%s", curInfo.Description);
+            }
+            const AntiAliasingMode aaNow = p.AntiAliasing;
+            if (aaNow == AntiAliasingMode::MSAA)
             {
                 const char* msaaOpts[] = { "2x", "4x", "8x" };
                 int msaaIdx = p.MSAASamples >= 8 ? 2 : p.MSAASamples >= 4 ? 1 : 0;
                 if (UI::Combo("MSAA Samples", msaaIdx, msaaOpts, 3, "Donanımsal çoklu örnekleme çarpanı"))
                     p.MSAASamples = msaaIdx == 0 ? 2 : msaaIdx == 1 ? 4 : 8;
             }
-            if (p.AntiAliasing == AntiAliasingMode::TAA || p.AntiAliasing == AntiAliasingMode::TAA_FXAA)
+            if (aaNow == AntiAliasingMode::EQAA)
+            {
+                const char* eqOpts[] = { "4 kapsam / 2 renk", "8 kapsam / 4 renk", "16 kapsam / 8 renk" };
+                int eqIdx = p.EQAASamples >= 16 ? 2 : p.EQAASamples >= 8 ? 1 : 0;
+                if (UI::Combo("EQAA Samples", eqIdx, eqOpts, 3, "Kapsam örneği / renk depolama örneği (AMD EQAA)"))
+                    p.EQAASamples = eqIdx == 0 ? 4 : eqIdx == 1 ? 8 : 16;
+            }
+            if (aaNow == AntiAliasingMode::SSAA || aaNow == AntiAliasingMode::OGSSAA)
+                UI::SliderFloat("SSAA Scale", p.SSAAScale, 1.25f, 4.0f, "%.2fx",
+                                "Eksen başına iç çözünürlük çarpanı (2 = 4x örnek). OGSSAA tam sayıya yuvarlar. Maliyet çarpanın karesiyle artar.");
+            if (aaNow == AntiAliasingMode::FSR || aaNow == AntiAliasingMode::CAS || aaNow == AntiAliasingMode::NIS)
+            {
+                UI::SliderFloat("Render Scale", p.UpscaleRenderScale, 0.5f, 1.0f, "%.2f",
+                                "İç çözünürlük oranı (0.77 Ultra Quality, 0.67 Quality, 0.59 Balanced, 0.5 Performance). CAS'ta 1 = yalnız keskinleştirme.");
+                UI::SliderFloat("Upscale Sharpness", p.UpscaleSharpness, 0.0f, 1.0f, "%.2f", "FSR RCAS / CAS keskinliği");
+            }
+            if (aaNow == AntiAliasingMode::TAA || aaNow == AntiAliasingMode::TAA_FXAA || aaNow == AntiAliasingMode::TXAA || aaNow == AntiAliasingMode::TSAA ||
+                aaNow == AntiAliasingMode::TSSAA || aaNow == AntiAliasingMode::FSR || aaNow == AntiAliasingMode::CAS)
             {
                 UI::SliderFloat("History Weight", p.TAAFeedback, 0.5f, 0.97f, "%.2f", "Higher = smoother but more ghosting on fast motion");
-                UI::SliderFloat("TAA Sharpness", p.TAASharpness, 0.0f, 1.0f);
+                if (aaNow != AntiAliasingMode::FSR && aaNow != AntiAliasingMode::CAS)
+                    UI::SliderFloat("TAA Sharpness", p.TAASharpness, 0.0f, 1.0f);
             }
             UI::Checkbox("Sharpen", p.Sharpen);
             if (p.Sharpen)

@@ -1,0 +1,65 @@
+#language GLSL
+// DEAA (Directionally Enhanced Anti-Aliasing): kenarın yönü Sobel gradyanıyla bulunur ve görüntü YALNIZ kenar boyunca
+// yumuşatılır (kenara dik bulanıklık yok, ayrıntı korunur). Kısa geçiş ±0.5 / ±1.5 piksel; neredeyse yatay / dikey uzun
+// basamaklarda (duvar üstü, ufuk çizgisi) uzun geçiş ±3.5 / ±6 piksel (Andreev DLAA'nın uzun kenar fikri). Sonuç 3x3'ün
+// aralığında kalır (hale yok).
+#type vertex
+#version 450 core
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+out vec2 v_TexCoord;
+void main()
+{
+    v_TexCoord = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+layout(location = 0) out vec4 FragColor;
+in vec2 v_TexCoord;
+uniform sampler2D u_ScreenTexture;
+uniform vec2 u_InverseScreenSize;
+
+float L(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
+vec3 Tex(vec2 uv) { return textureLod(u_ScreenTexture, uv, 0.0).rgb; }
+
+void main()
+{
+    vec2 t = u_InverseScreenSize;
+    vec3 c = Tex(v_TexCoord);
+    vec3 cn = Tex(v_TexCoord + vec2(0.0, t.y)), cs = Tex(v_TexCoord - vec2(0.0, t.y));
+    vec3 ce = Tex(v_TexCoord + vec2(t.x, 0.0)), cw = Tex(v_TexCoord - vec2(t.x, 0.0));
+    vec3 cne = Tex(v_TexCoord + t), csw = Tex(v_TexCoord - t);
+    vec3 cnw = Tex(v_TexCoord + vec2(-t.x, t.y)), cse = Tex(v_TexCoord + vec2(t.x, -t.y));
+    float n = L(cn), s = L(cs), e = L(ce), w = L(cw), ne = L(cne), sw = L(csw), nw = L(cnw), se = L(cse), m = L(c);
+    float gx = (ne + 2.0 * e + se) - (nw + 2.0 * w + sw);
+    float gy = (nw + 2.0 * n + ne) - (sw + 2.0 * s + se);
+    float g = length(vec2(gx, gy));
+    float lmax = max(m, max(max(max(n, s), max(e, w)), max(max(ne, sw), max(nw, se))));
+    float lmin = min(m, min(min(min(n, s), min(e, w)), min(min(ne, sw), min(nw, se))));
+    float threshold = max(0.05, 0.12 * lmax);
+    if (g < threshold || lmax - lmin < 0.04)
+    {
+        FragColor = vec4(c, 1.0);
+        return;
+    }
+    // Kenar boyunca (gradyana dik) birim yön
+    vec2 dir = normalize(vec2(-gy, gx));
+    vec3 shortBlur = (Tex(v_TexCoord + dir * 0.5 * t) + Tex(v_TexCoord - dir * 0.5 * t)
+                    + Tex(v_TexCoord + dir * 1.5 * t) + Tex(v_TexCoord - dir * 1.5 * t)) * 0.25;
+    vec3 blur = shortBlur;
+    // Neredeyse yatay / dikey kenar: basamaklar uzun, kısa geçiş yetmez
+    if (max(abs(dir.x), abs(dir.y)) > 0.92)
+    {
+        vec3 longBlur = (Tex(v_TexCoord + dir * 3.5 * t) + Tex(v_TexCoord - dir * 3.5 * t)
+                       + Tex(v_TexCoord + dir * 6.0 * t) + Tex(v_TexCoord - dir * 6.0 * t)) * 0.25;
+        // Uzun örnekler aynı kenar üzerindeyse (parlaklıkları kısa ortalamaya yakın) katılır; köşede katılmaz
+        float agree = 1.0 - clamp(abs(L(longBlur) - L(shortBlur)) / max(lmax - lmin, 1e-3) * 2.0, 0.0, 1.0);
+        blur = mix(shortBlur, 0.5 * (shortBlur + longBlur), agree);
+    }
+    float strength = clamp((g - threshold) / (3.0 * threshold), 0.0, 1.0);
+    vec3 lo = min(c, min(min(min(cn, cs), min(ce, cw)), min(min(cne, csw), min(cnw, cse))));
+    vec3 hi = max(c, max(max(max(cn, cs), max(ce, cw)), max(max(cne, csw), max(cnw, cse))));
+    FragColor = vec4(clamp(mix(c, blur, 0.8 * strength), lo, hi), 1.0);
+}

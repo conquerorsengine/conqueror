@@ -451,6 +451,8 @@ namespace Conqueror
         shader->SetInt("u_CameraStill", cameraStill ? 1 : 0);
         // Nokta / spot ışığın gücü bu karede değişti (namlu alevi): TAA aydınlığı değişen piksellerde geçmişe az güvenir
         shader->SetInt("u_LightingChanged", Renderer3D::ConsumeLightingChange(this) ? 1 : 0);
+        // Zamansal yöntem çeşidi (TSAA / TSSAA); TXAA ve TAA ana yolu kullanır
+        shader->SetInt("u_Variant", m_TAAVariant);
         // Hareket eden nesnelerin ekran dikdörtgenleri (fazlası son dikdörtgende birleşir)
         {
             static std::vector<glm::vec4> s_Rects;

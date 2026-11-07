@@ -1,0 +1,77 @@
+#language GLSL
+// Süper örnekleme küçültmesi (SSAA / OGSSAA / FSAA): iç çözünürlükteki görüntü çıktı çözünürlüğüne doğrusal ışıkta süzülür.
+// u_Mode 0: Lanczos-2 (SSAA, kesirli çarpan da olur), 1: kutu (OGSSAA, tam sayı ızgara: her çıktı pikseli kendi k x k
+// örneğinin tam ortalaması), 2: çadır (FSAA, komşu çıktı piksellerine yarım piksel taşan yumuşak süzgeç)
+#type vertex
+#version 450 core
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+void main()
+{
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+layout(location = 0) out vec4 FragColor;
+uniform sampler2D u_Source;
+uniform vec2 u_OutOrigin;      // çıktı görünüm alanının sol alt köşesi (piksel)
+uniform vec2 u_Scale;          // kaynak piksel / çıktı pikseli (eksen başına)
+uniform int u_Mode = 0;
+
+float Lanczos2(float x)
+{
+    x = abs(x);
+    if (x < 1e-4) return 1.0;
+    if (x >= 2.0) return 0.0;
+    float px = 3.14159265 * x;
+    return 2.0 * sin(px) * sin(px * 0.5) / (px * px);
+}
+
+vec3 ToLinear(vec3 c) { return pow(max(c, vec3(0.0)), vec3(2.2)); }
+vec3 ToGamma(vec3 c) { return pow(max(c, vec3(0.0)), vec3(1.0 / 2.2)); }
+
+void main()
+{
+    ivec2 srcSize = textureSize(u_Source, 0);
+    vec2 dst = gl_FragCoord.xy - u_OutOrigin;            // çıktı pikseli (merkezi .5)
+    vec2 center = dst * u_Scale;                          // kaynak piksel uzayında çıktı pikselinin merkezi
+    vec3 sum = vec3(0.0);
+    float wsum = 0.0;
+    if (u_Mode == 1)
+    {
+        ivec2 k = ivec2(round(u_Scale));
+        ivec2 base = ivec2(floor(dst)) * k;
+        for (int y = 0; y < k.y; ++y)
+        for (int x = 0; x < k.x; ++x)
+            sum += ToLinear(texelFetch(u_Source, clamp(base + ivec2(x, y), ivec2(0), srcSize - 1), 0).rgb);
+        FragColor = vec4(ToGamma(sum / float(k.x * k.y)), 1.0);
+        return;
+    }
+    float radius = u_Mode == 2 ? 1.0 : 2.0;               // çıktı pikseli cinsinden süzgeç yarıçapı
+    vec2 r = radius * u_Scale;
+    ivec2 lo = ivec2(floor(center - r));
+    ivec2 hi = ivec2(ceil(center + r));
+    // Halka önleme: Lanczos'un eksi lobları gökyüzü / koyu küp gibi sert kenarda kenarın yanında daha koyu / daha parlak
+    // pikseller üretiyordu (kenar basamaklı görünüyordu); sonuç çıktı pikselinin kendi ayak izindeki örneklerin aralığında kalır
+    vec3 cmin = vec3(1e9), cmax = vec3(-1e9);
+    for (int y = lo.y; y <= hi.y; ++y)
+    for (int x = lo.x; x <= hi.x; ++x)
+    {
+        vec2 d = (vec2(x, y) + 0.5 - center) / u_Scale;     // çıktı pikseli cinsinden uzaklık
+        float w = u_Mode == 2 ? max(0.0, 1.0 - abs(d.x)) * max(0.0, 1.0 - abs(d.y)) : Lanczos2(d.x) * Lanczos2(d.y);
+        if (w == 0.0) continue;
+        vec3 c = ToLinear(texelFetch(u_Source, clamp(ivec2(x, y), ivec2(0), srcSize - 1), 0).rgb);
+        sum += c * w;
+        wsum += w;
+        if (max(abs(d.x), abs(d.y)) <= 0.75)
+        {
+            cmin = min(cmin, c);
+            cmax = max(cmax, c);
+        }
+    }
+    vec3 result = max(sum / max(wsum, 1e-6), vec3(0.0));
+    if (cmax.x >= cmin.x)
+        result = clamp(result, cmin, cmax);
+    FragColor = vec4(ToGamma(result), 1.0);
+}
