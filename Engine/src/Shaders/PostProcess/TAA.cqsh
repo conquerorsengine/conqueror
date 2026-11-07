@@ -323,13 +323,43 @@ void main()
     float a01 = texelFetch(u_History, ivec2(h0.x, h1.y), 0).a;
     float a11 = texelFetch(u_History, h1, 0).a;
     bool movedBefore = min(min(a00, a10), min(a01, a11)) < 0.0;
+    // Paralaks ve alt-piksel aralık tespiti (küplerin arası)
+    float parallaxPx = 0.0;
+    if (closestDepth < 1.0 && farDepth > closestDepth && !hasObjectVelocity && u_CameraStill == 0)
+    {
+        vec4 qa = u_InvViewProj * vec4(closestUV * 2.0 - 1.0, closestDepth * 2.0 - 1.0, 1.0);
+        vec4 qb = u_InvViewProj * vec4(farUV * 2.0 - 1.0, farDepth * 2.0 - 1.0, 1.0);
+        vec4 pa = u_PrevViewProj * (qa / qa.w);
+        vec4 pb = u_PrevViewProj * (qb / qb.w);
+        parallaxPx = length(((closestUV - (pa.xy / pa.w * 0.5 + 0.5)) - (farUV - (pb.xy / pb.w * 0.5 + 0.5))) / u_Texel);
+    }
+    bool enclosed = false;
+    float cw = ViewW(closestUV, closestDepth);
+    if (closestDepth < 1.0)
+    {
+        bool nr[8];
+        for (int k = 0; k < 8; ++k)
+            nr[k] = axisDepth[k] < 1.0 && abs(ViewW(v_UV, axisDepth[k]) - cw) < 0.02 * cw + 0.02;
+        enclosed = ((nr[0] || nr[5]) && (nr[1] || nr[4])) || ((nr[2] || nr[7]) && (nr[3] || nr[6]));
+        if (enclosed && parallaxPx >= 0.06)
+            parallaxPx = 0.0;
+    }
+    float depthSpread = ViewW(farUV, farDepth) - cw;
+    // Geometrik alt-piksel tespiti: 5cm aralıklar ve merdiven basamakları.
+    // Düz küp yüzeyinde depthSpread ~ 0'dır, asla alt-piksel sayılmaz.
+    bool hasDepthStep = (depthSpread > 0.035 * cw + 0.06) || enclosed;
+    bool isSubpixelFeature = hasDepthStep;
+
     ivec2 hn = clamp(ivec2(floor(prevUV * vec2(histSize))), ivec2(0), histSize - 1);
     float storedW = abs(texelFetch(u_History, hn, 0).a);
-    bool sameSurface = closestDepth < 1.0 && abs(storedW - prevClip.w) < 0.03 * prevClip.w + 0.02;
-    // Açılan alan: geçmişteki en yakın yüzey bu pikseldekinden belirgin farklı VE bu pikselin 3x3'ü tek yüzey (kenar değil:
-    // kenarda en yakın derinlik titreşimle karede bir ön karede bir arka yüzey olur, o açılma değildir)
-    bool disoccluded = closestDepth < 1.0 && farDepth < 1.0 && abs(storedW - prevClip.w) > 0.06 * prevClip.w + 0.04
-                       && ViewW(farUV, farDepth) < ViewW(closestUV, closestDepth) * 1.05 + 0.05;
+    float depthDiff = abs(storedW - prevClip.w);
+    float depthTol = 0.04 * prevClip.w + 0.03;
+    bool sameSurface = closestDepth < 1.0 && depthDiff < depthTol;
+    // Yüzey değişimi / açılma (disocclusion): Geçmişteki yüzey ile bu karedeki yüzey farklıdır.
+    // 5cm küp aralıkları hariç (enclosed): aralıklar geometrik alt-piksel yarıktır, açılma değildir.
+    // Kamera yaklaşırken (zoom in) veya uzaklaşırken (zoom out) arkadaki beyaz zeminin rengi küpün kenarına geçmiş olarak taşınamaz.
+    bool surfaceChanged = (closestDepth < 1.0 && depthDiff > depthTol && !enclosed);
+    bool disoccluded = surfaceChanged;
     vec3 history = RGBToYCoCg(Compress(SampleHistory(prevUV)));
 
     // Varyans kırpması (min/max ile kesişim). Hareketsiz piksellerde kutu genişler: alt piksel inceliğindeki
@@ -382,7 +412,7 @@ void main()
     // karede bir farklı kırpıp gökyüzünün alt kenarını ve küplerin arasını titretiyordu: hız 3 pikselin altındayken kırpma
     // durağandaki kadar geniş, geçmişin ağırlığı yüksek. Hızlı harekette (zıplama, dönüş) eski davranış (son geçiş FXAA dahil)
     float trust = 0.0;
-    if (((movingNow || movedBefore) && !centerExact) || shadowChanged)
+    if (((movingNow || movedBefore) && !centerExact) || shadowChanged || surfaceChanged)
     {
         stillness = 0.0;
         sameSurface = false;
@@ -463,37 +493,6 @@ void main()
     // Yakınlaşırken / uzaklaşırken (görüntü karede %0,8'den çok ölçekleniyor; döndürmede %0,5'in altında) sakin yol kullanılmaz: ekranın ortasında hız 1
     // pikselin altında kalıyor, 0.98 ağırlıkla her karede yeniden örneklenen geçmiş bulanıklaşıyordu (durunca 1-2 saniye bulanık)
     bool calm = trust > 0.9 && speed < 1.0 && zoomRate < 0.008 && !nearMovingShadow && abs(meanY - meanBefore) < 0.08;
-    // İnce aralık (küplerin arası): aralığın iki yanı en yakın yüzeyle (aynı uzaklıktaki ön yüzler) çevrili. Aralık ön yüzlerle
-    // birlikte kayar, içi derin görünse de kenar paralaksı sayılmaz (sağdaki aralıklardan arkanın derinliği görünüp aralık
-    // tutulmuyor, yanlara yürürken yanıp sönüyordu)
-    float parallaxPx = 0.0;
-    if (closestDepth < 1.0 && farDepth > closestDepth && !hasObjectVelocity && u_CameraStill == 0)
-    {
-        vec4 qa = u_InvViewProj * vec4(closestUV * 2.0 - 1.0, closestDepth * 2.0 - 1.0, 1.0);
-        vec4 qb = u_InvViewProj * vec4(farUV * 2.0 - 1.0, farDepth * 2.0 - 1.0, 1.0);
-        vec4 pa = u_PrevViewProj * (qa / qa.w);
-        vec4 pb = u_PrevViewProj * (qb / qb.w);
-        parallaxPx = length(((closestUV - (pa.xy / pa.w * 0.5 + 0.5)) - (farUV - (pb.xy / pb.w * 0.5 + 0.5))) / u_Texel);
-    }
-    bool enclosed = false;
-    float cw = ViewW(closestUV, closestDepth);
-    if (closestDepth < 1.0)
-    {
-        bool nr[8];
-        for (int k = 0; k < 8; ++k)
-            nr[k] = axisDepth[k] < 1.0 && abs(ViewW(v_UV, axisDepth[k]) - cw) < 0.02 * cw + 0.02;
-        // nr: 0 sol1, 1 sağ1, 2 üst1, 3 alt1, 4 sağ2, 5 sol2, 6 alt2, 7 üst2
-        enclosed = ((nr[0] || nr[5]) && (nr[1] || nr[4])) || ((nr[2] || nr[7]) && (nr[3] || nr[6]));
-        if (enclosed && parallaxPx >= 0.06)
-            parallaxPx = 0.0;
-    }
-    float depthSpread = ViewW(farUV, farDepth) - cw;
-    // Geometrik alt-piksel ayrıntı tespiti (küp boşlukları, merdiven basamakları, silüetler, ince delikler):
-    // Düz mavi küp yüzeyinde 3x3'teki tüm örneklerin derinliği aynıdır (depthSpread ~ 0), asla alt-piksel sayılmaz.
-    // 5cm boşlukta veya basamakta arkadaki derinlik görünür veya çevreleyen geometri vardır (enclosed).
-    bool hasDepthStep = (depthSpread > 0.035 * cw + 0.06) || enclosed || skyNear;
-    bool isSubpixelFeature = hasDepthStep;
-
     // Oturmuş / sakin piksel (kamera duruyor ya da çok yavaş): kutu küçük bir payla genişler. Titreşimin bıraktığı küçük
     // sapmalar korunur (fareyle döndürürken aradaki hareketsiz karelerde görüntü titreşimli tek kareye çekilip titriyordu);
     // büyük değişim (namlu alevi ışığı, yakınlaştırmanın bulanık geçmişi) yine kırpılır, iz ve kesik leke kalmaz
@@ -508,12 +507,12 @@ void main()
     bool outsideNow = maxUnit > 1.0;
     float centerWCurrent = ViewW(v_UV, centerDepth);
     bool depthValid = abs(storedW - prevClip.w) < 0.04 * prevClip.w + 0.03 || abs(storedW - centerWCurrent) < 0.04 * centerWCurrent + 0.03;
-    bool historyValid = closestDepth < 1.0 && farDepth < 1.0 && depthValid
+    bool historyValid = closestDepth < 1.0 && farDepth < 1.0 && depthValid && !surfaceChanged
                         && !((movingNow || movedBefore) && !centerExact) && !nearMovingShadow && !shadowChanged && parallaxPx < 0.06;
     float flicker = historyValid ? clamp(flickerBefore - 1.0 + (outsideNow != outsideBefore ? 6.0 : 0.0), 0.0, 16.0) : 0.0;
-    // hold: Yalnızca gerçek alt-piksel boşluklarda/basamaklarda veya durağan kamerada etkinleşebilir.
-    // Düz küp yüzeylerinde (isSubpixelFeature == false) hareket ederken ASLA hold açılmaz, kutu dışına taşma engellenir.
-    bool canHold = isSubpixelFeature || u_CameraStill == 1;
+    // hold: Yalnızca gerçek alt-piksel boşluklarda/basamaklarda (isSubpixelFeature) ve yüzey değişmediğinde etkinleşebilir.
+    // Düz küp yüzeylerinde veya açılan kenarlarda (surfaceChanged) ASLA hold açılmaz.
+    bool canHold = isSubpixelFeature && !surfaceChanged;
     bool hold = historyValid && flicker >= 8.0 && !restart && canHold;
     if (hold)
         history = rawHistory;
@@ -538,10 +537,15 @@ void main()
         feedback = max(feedback, u_CameraStill == 1 ? 0.96 : 0.95);
     if (silhouetteSlow)
         feedback = 0.98;
-    // Yakınlaşma / büyüme sırasında düz yüzeylerde eski bulanık geçmişi sınırla (beyazlama ve silikleşmeyi %100 önler)
-    // İnce aralıklar ve basamaklar (isSubpixelFeature) yüksek ağırlıkta kalarak titreşimsiz kalır
-    if (zoomNow && !isSubpixelFeature)
-        feedback = min(feedback, 0.70);
+
+    // Yakınlaşma / büyüme sırasında düz yüzeylerde eski bulanık geçmişi sınırla (beyazlama ve silikleşmeyi önler).
+    // Hızlı zoom (Shift + W) sırasında geçmiş ağırlığı orantılı düşer; böylece küpün üzerindeki parlama/sis hemen temizlenir.
+    if (!isSubpixelFeature && u_CameraStill == 0)
+    {
+        float motionFeedback = clamp(u_Feedback - zoomRate * 8.0 - speed * 0.02, 0.40, 0.88);
+        feedback = min(feedback, motionFeedback);
+    }
+
     if (restart)
     {
         // Bu kameradan alınmış yeni karelerin ortalaması: kırpılmaz (aynı yerden, iz olamaz), ilk karede yalnız bu kare
@@ -552,10 +556,13 @@ void main()
         float n = stillAge - 2.0;
         feedback = max(n / (n + 1.0), 0.85);
     }
-    // Açılan alan (geçmiş başka yüzeyden: küpün arkasından çıkınca duvarın yeni görünen kısmı): eski renk yanlış, sürüklenen
-    // çizgiler ve tek karenin gürültüsü dalgalı görünüyordu. Geçmişe az güvenilir, birkaç karede bu yüzeyin rengine oturur
-    if (disoccluded)
-        feedback = min(feedback, 0.6);
+    // Açılan / değişen yüzey: geçmişteki yüzey bu pikselle aynı değil (örneğin arkadaki beyaz zemin/ışık).
+    // Eski yüzeyin rengi bu yüzeyin üstüne sürülemez; anında sıfır geri beslemeyle doğrudan güncel renk verilir.
+    if (surfaceChanged)
+    {
+        feedback = 0.0;
+        history = current;
+    }
     feedback *= 1.0 - shadowReset;
     vec3 result = mix(RGBToYCoCg(current), history, feedback);
     StateOut = vec4((hold || silhouetteSlow) ? 0.0 : clamp((speed - 0.5) / 4.0, 0.0, 1.0), shadowNow, stillAge + 32.0 * (2.0 * flicker + (outsideNow ? 1.0 : 0.0)), clamp(meanOut, 0.0, 0.999) + 2.0 * blurAge);
