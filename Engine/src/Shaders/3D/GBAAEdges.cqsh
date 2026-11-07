@@ -1,0 +1,74 @@
+#language GLSL
+// GBAA (Geometry Buffer Anti-Aliasing, Emil Persson / Humus 2011) 1. geçiş: her pikselin, kendisini kapsayan üçgenin en
+// yakın kenarına o kenarın büyük ekseni boyunca uzaklığı (piksel) yazılır. Geometri gölgelendiricisi üç kenarın ekran uzayı
+// doğru denklemlerinden köşe başına "karşı kenara uzaklık" üretir; ekranda doğrusal (noperspective) aradeğerleme parça başına
+// kesin uzaklığı verir. RG16F: R yatay uzaklık (dikeye yakın kenar), G dikey uzaklık (yataya yakın kenar); kullanılmayan 9.
+#type vertex
+#version 450 core
+layout(location = 0) in vec3 a_Position;
+uniform mat4 u_Transform;
+uniform mat4 u_ViewProj;
+void main()
+{
+    gl_Position = u_ViewProj * u_Transform * vec4(a_Position, 1.0);
+}
+
+#type geometry
+#version 450 core
+layout(triangles) in;
+layout(triangle_strip, max_vertices = 3) out;
+uniform vec2 u_ViewportSize;
+noperspective out vec3 g_EdgeDist;   // üç kenara büyük eksen boyunca işaretli uzaklık (piksel)
+flat out vec3 g_EdgeMajorY;          // 1: kenar yataya yakın (dikey uzaklık), 0: dikeye yakın (yatay uzaklık)
+void main()
+{
+    bool valid = gl_in[0].gl_Position.w > 0.0 && gl_in[1].gl_Position.w > 0.0 && gl_in[2].gl_Position.w > 0.0;
+    vec2 p[3];
+    for (int i = 0; i < 3; ++i)
+        p[i] = (gl_in[i].gl_Position.xy / max(gl_in[i].gl_Position.w, 1e-6) * 0.5 + 0.5) * u_ViewportSize;
+    vec3 major = vec3(0.0);
+    vec3 opposite = vec3(9.0);
+    for (int i = 0; i < 3 && valid; ++i)
+    {
+        // Kenar i: köşe (i+1) -> (i+2); karşısındaki köşe i
+        vec2 a = p[(i + 1) % 3];
+        vec2 d = p[(i + 2) % 3] - a;
+        vec2 c = p[i];
+        if (abs(d.x) >= abs(d.y))
+        {
+            major[i] = 1.0;
+            float t = (c.x - a.x) / (abs(d.x) > 1e-6 ? d.x : 1e-6);
+            opposite[i] = (a.y + t * d.y) - c.y;
+        }
+        else
+        {
+            float t = (c.y - a.y) / (abs(d.y) > 1e-6 ? d.y : 1e-6);
+            opposite[i] = (a.x + t * d.x) - c.x;
+        }
+    }
+    for (int v = 0; v < 3; ++v)
+    {
+        gl_Position = gl_in[v].gl_Position;
+        // Köşe v, karşısındaki kenar dışındaki iki kenarın üstündedir (uzaklık 0)
+        vec3 e = valid ? vec3(0.0) : vec3(9.0);
+        if (valid)
+            e[v] = opposite[v];
+        g_EdgeDist = e;
+        g_EdgeMajorY = major;
+        EmitVertex();
+    }
+    EndPrimitive();
+}
+
+#type fragment
+#version 450 core
+noperspective in vec3 g_EdgeDist;
+flat in vec3 g_EdgeMajorY;
+layout(location = 0) out vec2 o_Offset;
+void main()
+{
+    vec3 ad = abs(g_EdgeDist);
+    int k = ad.x < ad.y ? (ad.x < ad.z ? 0 : 2) : (ad.y < ad.z ? 1 : 2);
+    float dist = g_EdgeDist[k];
+    o_Offset = g_EdgeMajorY[k] > 0.5 ? vec2(9.0, dist) : vec2(dist, 9.0);
+}

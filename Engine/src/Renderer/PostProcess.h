@@ -72,6 +72,9 @@ namespace Conqueror
         // pikselleri buraya yazar; TAA o piksellerde geçmişe güvenmez. Begin maskenin çerçeve tamponunu bağlar (bu görünümün
         // TAA'lı sahne hedefine çizilmiyorsa 0), End sahne hedefini geri bağlar
         static uint32_t BeginReactiveDraw();
+        // GBAA / SRAA: bu görünümün opak geometrisi bu karede toplanıp özel gölgelendiriciyle yeniden çizilecek mi (sahne hedefi
+        // bağlıyken Renderer3D sorar)
+        static bool WantsGeometry();
         static void EndReactiveDraw();
         // SSR normal/pürüzlülük tamponu (yoksa 0)
         uint32_t GetSceneNormalTexture() const;
@@ -104,6 +107,9 @@ namespace Conqueror
         void EnsureNISResources();
         // Nesne hız geçişi (TAA, SMAA T2x): hareket eden opak nesneler m_Velocity'ye; çizildiyse true
         bool RenderObjectVelocity(const RenderCamera& camera);
+        // GBAA kenar uzaklığı (RG16F) ya da SRAA çok örnekli normal + derinlik hedefini çizer (son geçişten önce)
+        void RenderAAGeometry(const RenderCamera& camera);
+        void DestroySRAATargets();
         void EnsureCMAA2Resources(uint32_t width, uint32_t height);
         void DestroyCMAA2Resources();
         // CMAA2'yi texture üzerinde yerinde uygular (RGBA8, iç çözünürlük)
@@ -160,6 +166,13 @@ namespace Conqueror
         RenderTarget m_MotionVectors;
         RenderTarget m_FSR2Output;
         bool m_UseFSR2 = false;
+        // GBAA / SRAA geometri geçişi
+        bool m_WantGeometry = false;      // sonraki kare için istek
+        bool m_GeometryReady = false;     // bu karenin hedefi çizildi
+        RenderTarget m_GBAAEdges;
+        uint32_t m_GeometryFramebuffer = 0;
+        uint32_t m_SRAAFramebuffer = 0, m_SRAANormalMS = 0, m_SRAADepthMS = 0;
+        uint32_t m_SRAAWidth = 0, m_SRAAHeight = 0;
         bool m_FSR2Valid = false;
         float m_FinalNear = 0.1f, m_FinalFar = 1000.0f, m_FinalFovY = 1.0f;
         // TAAU: çıktı çözünürlüğünde geçmiş (RGBA16F, LDR)

@@ -119,6 +119,8 @@ namespace Conqueror
         LoadShader("SMAAT2xResolve", "Engine/src/Shaders/PostProcess/SMAA_T2xResolve.cqsh");
         LoadShader("TAAU", "Engine/src/Shaders/PostProcess/TAAU.cqsh");
         LoadShader("MotionVectors", "Engine/src/Shaders/PostProcess/MotionVectors.cqsh");
+        LoadShader("GBAAResolve", "Engine/src/Shaders/PostProcess/GBAA_Resolve.cqsh");
+        LoadShader("SRAAResolve", "Engine/src/Shaders/PostProcess/SRAA_Resolve.cqsh");
         LoadShader("MLAAEdge", "Engine/src/Shaders/PostProcess/MLAA_Edge.cqsh");
         LoadShader("MLAAWeights", "Engine/src/Shaders/PostProcess/MLAA_Weights.cqsh");
         LoadShader("DEAA", "Engine/src/Shaders/PostProcess/DEAA.cqsh");
@@ -222,6 +224,9 @@ namespace Conqueror
         DestroyTarget(m_MotionVectors);
         DestroyTarget(m_FSR2Output);
         m_FSR2.reset();
+        DestroyTarget(m_GBAAEdges);
+        if (m_GeometryFramebuffer) glDeleteFramebuffers(1, &m_GeometryFramebuffer);
+        DestroySRAATargets();
         DestroyCoverageFramebuffer();
         if (m_SMAAAreaTex) glDeleteTextures(1, &m_SMAAAreaTex);
         if (m_SMAASearchTex) glDeleteTextures(1, &m_SMAASearchTex);
@@ -273,7 +278,7 @@ namespace Conqueror
         samples = std::min<uint32_t>(samples, (uint32_t)std::max(1, AntiAliasing::GetCaps().MaxSamples));
         // Albedo eki normal ekini gerektirir (ek sırası sabit: 1 normal, 2 albedo). Temporal AA da normal ekinin w'sindeki
         // hareket bayrağını okur (hareket eden nesne iz bırakmasın)
-        const bool wantNormals = m_WantNormals || m_WantAlbedo || m_WantTAA;
+        const bool wantNormals = m_WantNormals || m_WantAlbedo || m_WantTAA || m_WantGeometry;
         // TAA: güneş gölgesi eki (3) de yazılır; ek sırası sabit olduğundan albedo eki (2) de oluşturulur
         const bool wantShadowMask = m_WantTAA;
         const bool wantAlbedo = m_WantAlbedo || wantShadowMask;
@@ -651,6 +656,84 @@ namespace Conqueror
     const void* PostProcessStack::GetCurrentStack()
     {
         return s_Current;
+    }
+
+    bool PostProcessStack::WantsGeometry()
+    {
+        PostProcessStack* st = s_Current;
+        if (!st || !st->m_WantGeometry || !st->m_SceneFramebuffer)
+            return false;
+        GLint drawFBO = 0;
+        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFBO);
+        return (uint32_t)drawFBO == st->m_SceneFramebuffer->GetRendererID();
+    }
+
+    void PostProcessStack::DestroySRAATargets()
+    {
+        if (m_SRAAFramebuffer) glDeleteFramebuffers(1, &m_SRAAFramebuffer);
+        if (m_SRAANormalMS) glDeleteTextures(1, &m_SRAANormalMS);
+        if (m_SRAADepthMS) glDeleteTextures(1, &m_SRAADepthMS);
+        m_SRAAFramebuffer = m_SRAANormalMS = m_SRAADepthMS = 0;
+        m_SRAAWidth = m_SRAAHeight = 0;
+    }
+
+    void PostProcessStack::RenderAAGeometry(const RenderCamera& camera)
+    {
+        m_GeometryReady = false;
+        const uint32_t depth = GetSceneDepthTexture();
+        const glm::mat4 viewProj = camera.Projection * camera.View;   // uzamsal yöntemler: titreşimsiz
+        const glm::vec2 size((float)m_Width, (float)m_Height);
+        // Kamera bilgisi (SRAA derinliği doğrusallaştırır)
+        const glm::mat4& P = camera.Projection;
+        if (!camera.Orthographic)
+        {
+            m_FinalNear = P[3][2] / (P[2][2] - 1.0f);
+            m_FinalFar = P[3][2] / (P[2][2] + 1.0f);
+        }
+        if (m_AAMode == AntiAliasingMode::GBAA)
+        {
+            if (!depth)
+                return;
+            EnsureTarget(m_GBAAEdges, m_Width, m_Height, GL_RG16F);
+            if (!m_GeometryFramebuffer)
+                glCreateFramebuffers(1, &m_GeometryFramebuffer);
+            glNamedFramebufferTexture(m_GeometryFramebuffer, GL_COLOR_ATTACHMENT0, m_GBAAEdges.Texture, 0);
+            glNamedFramebufferTexture(m_GeometryFramebuffer, GL_DEPTH_STENCIL_ATTACHMENT, depth, 0);
+            if (glCheckNamedFramebufferStatus(m_GeometryFramebuffer, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+                return;
+            glBindFramebuffer(GL_FRAMEBUFFER, m_GeometryFramebuffer);
+            glViewport(0, 0, (GLsizei)m_Width, (GLsizei)m_Height);
+            const float none[4] = { 9.0f, 9.0f, 0.0f, 0.0f };   // kenar bilgisi yok
+            glClearBufferfv(GL_COLOR, 0, none);
+            Renderer3D::RenderGeometry(this, Renderer3D::GeometryPass::GBAAEdges, viewProj, size);
+            m_GeometryReady = true;
+        }
+        else if (m_AAMode == AntiAliasingMode::SRAA)
+        {
+            if (m_SRAAWidth != m_Width || m_SRAAHeight != m_Height || !m_SRAAFramebuffer)
+            {
+                DestroySRAATargets();
+                glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &m_SRAANormalMS);
+                glTextureStorage2DMultisample(m_SRAANormalMS, 4, GL_RG16F, (GLsizei)m_Width, (GLsizei)m_Height, GL_TRUE);
+                glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &m_SRAADepthMS);
+                glTextureStorage2DMultisample(m_SRAADepthMS, 4, GL_DEPTH_COMPONENT32F, (GLsizei)m_Width, (GLsizei)m_Height, GL_TRUE);
+                glCreateFramebuffers(1, &m_SRAAFramebuffer);
+                glNamedFramebufferTexture(m_SRAAFramebuffer, GL_COLOR_ATTACHMENT0, m_SRAANormalMS, 0);
+                glNamedFramebufferTexture(m_SRAAFramebuffer, GL_DEPTH_ATTACHMENT, m_SRAADepthMS, 0);
+                m_SRAAWidth = m_Width;
+                m_SRAAHeight = m_Height;
+            }
+            if (glCheckNamedFramebufferStatus(m_SRAAFramebuffer, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+                return;
+            glBindFramebuffer(GL_FRAMEBUFFER, m_SRAAFramebuffer);
+            glViewport(0, 0, (GLsizei)m_Width, (GLsizei)m_Height);
+            const float zero[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+            glClearBufferfv(GL_COLOR, 0, zero);
+            const float one = 1.0f;
+            glClearBufferfv(GL_DEPTH, 0, &one);
+            Renderer3D::RenderGeometry(this, Renderer3D::GeometryPass::SRAANormalDepth, viewProj, size);
+            m_GeometryReady = true;
+        }
     }
 
     uint32_t PostProcessStack::BeginReactiveDraw()
@@ -1188,6 +1271,46 @@ namespace Conqueror
             RunCMAA2(dst.Texture);
             cur = dst.Texture;
         }
+        else if (aa == AntiAliasingMode::GBAA && m_GeometryReady && Valid(PostProcess::GetShader("GBAAResolve")))
+        {
+            auto gbaa = PostProcess::GetShader("GBAAResolve");
+            RenderTarget& dst = internalPass();
+            gbaa->Bind();
+            gbaa->SetInt("u_Color", 0);
+            gbaa->SetInt("u_Edges", 1);
+            gbaa->SetFloat2("u_Texel", invSize);
+            BindTexture(0, cur);
+            BindTexture(1, m_GBAAEdges.Texture);
+            PostProcess::DrawFullscreenQuad();
+            cur = dst.Texture;
+            Renderer::GetStats().PostProcessPasses++;
+        }
+        else if (aa == AntiAliasingMode::SRAA && m_GeometryReady && Valid(PostProcess::GetShader("SRAAResolve")))
+        {
+            auto sraa = PostProcess::GetShader("SRAAResolve");
+            RenderTarget& dst = internalPass();
+            const uint32_t normals = GetSceneNormalTexture();
+            sraa->Bind();
+            sraa->SetInt("u_Color", 0);
+            sraa->SetInt("u_Depth", 1);
+            sraa->SetInt("u_Normal", 2);
+            sraa->SetInt("u_SubNormal", 3);
+            sraa->SetInt("u_SubDepth", 4);
+            sraa->SetInt("u_HasNormal", normals ? 1 : 0);
+            sraa->SetInt("u_Samples", 4);
+            sraa->SetFloat("u_Near", m_FinalNear);
+            sraa->SetFloat("u_Far", m_FinalFar);
+            BindTexture(0, cur);
+            BindTexture(1, GetSceneDepthTexture());
+            BindTexture(2, normals);
+            glBindTextureUnit(3, m_SRAANormalMS);
+            glBindTextureUnit(4, m_SRAADepthMS);
+            PostProcess::DrawFullscreenQuad();
+            glBindTextureUnit(3, 0);
+            glBindTextureUnit(4, 0);
+            cur = dst.Texture;
+            Renderer::GetStats().PostProcessPasses++;
+        }
         else if (aa == AntiAliasingMode::DEAA)
         {
             auto deaa = PostProcess::GetShader("DEAA");
@@ -1578,6 +1701,10 @@ namespace Conqueror
         else
             m_BloomResult = 0;
         RunComposite(settings, time);
+        // GBAA / SRAA: kenar uzaklığı ya da çok örnekli geometri hedefi (RunFinal'daki çözüm için)
+        m_GeometryReady = false;
+        if (m_AAMode == AntiAliasingMode::GBAA || m_AAMode == AntiAliasingMode::SRAA)
+            RenderAAGeometry(camera);
         const bool afterPasses = std::any_of(settings.FullScreenPasses.begin(), settings.FullScreenPasses.end(),
                                              [](const FullScreenPassEntry& p) { return p.AfterPostProcess; });
         if (!afterPasses)
@@ -1650,6 +1777,7 @@ namespace Conqueror
             else
                 m_WantCoverageSamples = 0;
             m_WantRenderScale = (fx && !m_PointUpscale) ? AntiAliasing::RenderScale(settings, next, m_Upscaler) : 1.0f;
+            m_WantGeometry = next == AntiAliasingMode::GBAA || next == AntiAliasingMode::SRAA;
         }
         m_WantNormals = fx && (settings.ScreenSpaceReflections || settings.ScreenSpaceGI) && !camera.Orthographic;
         m_WantAlbedo = fx && settings.ScreenSpaceGI && !camera.Orthographic;

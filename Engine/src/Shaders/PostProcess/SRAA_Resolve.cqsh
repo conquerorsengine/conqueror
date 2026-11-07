@@ -1,0 +1,81 @@
+#language GLSL
+// SRAA çözümü: her pikselin her alt örneği (çok örnekli geometri) için 3x3 komşu piksellerden (tek örnekli gölgelendirme) en çok
+// benzeyen geometriye sahip olanın rengi alınır (göreli derinlik + normal farkı; yumuşak argmin, eşitlikte merkez). Alt
+// örneklerin ortalaması pikselin rengidir: kenarı geçen piksel iki yüzeyin rengini alt örneklerinin oranında karıştırır.
+#type vertex
+#version 450 core
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+void main()
+{
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+layout(location = 0) out vec4 FragColor;
+uniform sampler2D u_Color;          // tek örnekli renk (ton eşlenmiş)
+uniform sampler2D u_Depth;          // tek örnekli sahne derinliği
+uniform sampler2D u_Normal;         // tek örnekli G-buffer (xy oktahedral dünya normali)
+uniform sampler2DMS u_SubNormal;    // çok örnekli normal (xy)
+uniform sampler2DMS u_SubDepth;     // çok örnekli derinlik
+uniform int u_HasNormal = 1;
+uniform int u_Samples = 4;
+uniform float u_Near = 0.1;
+uniform float u_Far = 1000.0;
+
+vec3 OctDecode(vec2 e)
+{
+    vec3 n = vec3(e, 1.0 - abs(e.x) - abs(e.y));
+    if (n.z < 0.0)
+        n.xy = (1.0 - abs(n.yx)) * vec2(n.x >= 0.0 ? 1.0 : -1.0, n.y >= 0.0 ? 1.0 : -1.0);
+    return normalize(n);
+}
+
+float ViewDepth(float d)
+{
+    return d >= 1.0 ? 1e9 : u_Near * u_Far / max(u_Far - d * (u_Far - u_Near), 1e-6);
+}
+
+void main()
+{
+    ivec2 p = ivec2(gl_FragCoord.xy);
+    ivec2 size = textureSize(u_Color, 0);
+    float nz[9];
+    vec3 nn[9];
+    vec3 nc[9];
+    for (int j = 0; j < 9; ++j)
+    {
+        ivec2 q = clamp(p + ivec2(j % 3 - 1, j / 3 - 1), ivec2(0), size - 1);
+        nz[j] = ViewDepth(texelFetch(u_Depth, q, 0).r);
+        nn[j] = u_HasNormal == 1 ? OctDecode(texelFetch(u_Normal, q, 0).xy) : vec3(0.0);
+        nc[j] = texelFetch(u_Color, q, 0).rgb;
+    }
+    vec3 sum = vec3(0.0);
+    for (int s = 0; s < u_Samples; ++s)
+    {
+        float sz = ViewDepth(texelFetch(u_SubDepth, p, s).r);
+        vec3 sn = OctDecode(texelFetch(u_SubNormal, p, s).xy);
+        // Alt örneğe en çok benzeyen gölgelendirilmiş örnek (yumuşak argmin); eşitlikte merkez kazanır (düz yüzeyde komşular
+        // karışmaz, görüntü bulanıklaşmaz)
+        float score[9];
+        float best = 1e9;
+        for (int j = 0; j < 9; ++j)
+        {
+            float dz = (sz >= 1e8 || nz[j] >= 1e8) ? ((sz >= 1e8 && nz[j] >= 1e8) ? 0.0 : 1.0) : abs(sz - nz[j]) / max(min(sz, nz[j]), 1e-3);
+            float dn = u_HasNormal == 1 && sz < 1e8 && nz[j] < 1e8 ? 1.0 - clamp(dot(sn, nn[j]), -1.0, 1.0) : 0.0;
+            score[j] = dz * 60.0 + dn * 6.0 - (j == 4 ? 0.3 : 0.0);
+            best = min(best, score[j]);
+        }
+        vec3 acc = vec3(0.0);
+        float wsum = 0.0;
+        for (int j = 0; j < 9; ++j)
+        {
+            float w = exp(-(score[j] - best) * 20.0);
+            acc += nc[j] * w;
+            wsum += w;
+        }
+        sum += acc / max(wsum, 1e-6);
+    }
+    FragColor = vec4(sum / float(max(u_Samples, 1)), 1.0);
+}

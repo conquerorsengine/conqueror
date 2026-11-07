@@ -64,7 +64,7 @@ Open the Console panel and type a name to read it, `name value` to set it, `name
 | `r.SSR` | `0` | Screen space reflections on/off |
 | `r.TAADebug` | `0` | TAA debug view: 0 off, 1 per-pixel history path (red moving, green settled, cyan calm, blue trusted, yellow clamped, magenta sky, white no history) |
 | `r.Tonemapper` | `1` | 0 none, 1 Neutral, 2 ACES, 3 AgX, 4 Reinhard |
-| `r.Upscaler` | `0` | Upscaler: 0 off (native), 1 FSR 1, 2 CAS, 3 NIS, 4 TAAU, 5 TSR, 6 DLSS, 7 XeSS, 8 MetalFX, 9 PSSR (an upscaler this system cannot run falls back to FSR 1) |
+| `r.Upscaler` | `0` | Upscaler: 0 off (native), 1 FSR 1, 2 CAS, 3 NIS, 4 TAAU, 5 TSR, 6 DLSS, 7 XeSS, 8 MetalFX, 9 PSSR, 10 FSR 2 (an upscaler this system cannot run falls back to FSR 1) |
 | `r.Vignette` | `0` | Vignette on/off |
 | `r.VolumetricClouds` | `0` | Volumetric clouds on/off |
 | `r.VolumetricFog` | `0` | Volumetric fog (shadowed light shafts) on/off |

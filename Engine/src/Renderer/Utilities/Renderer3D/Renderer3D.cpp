@@ -358,6 +358,17 @@ namespace Conqueror
         std::unordered_map<const void*, MotionTrack> s_Motion;
         MotionTrack* s_MotionCur = nullptr;
         glm::mat4 s_MotionViewProj{ 1.0f };
+        // GBAA / SRAA geometri geçişi: görünüm başına bu karenin opak mesh çizimleri (yalnız istendiğinde toplanır)
+        struct GeometryDraw
+        {
+            std::shared_ptr<Mesh> MeshRef;
+            const Mesh* Draw = nullptr;
+            glm::mat4 Transform{ 1.0f };
+            int Cull = 1;   // 0 kapalı, 1 arka, 2 ön
+        };
+        std::unordered_map<const void*, std::vector<GeometryDraw>> s_Geometry;
+        std::vector<GeometryDraw>* s_GeometryCur = nullptr;
+        std::shared_ptr<Shader> s_GBAAShader, s_SRAAShader;
         bool s_QueuedMoving = false;   // kuyruktan çizilen öğenin hareket bayrağı
         uint64_t s_DrawIdentity = 0;   // sonraki çizimlerin varlık kimliği (0 = yok)
 
@@ -516,7 +527,74 @@ namespace Conqueror
             s_VelocitySkinnedShader.reset();
             s_Motion.clear();
             s_MotionCur = nullptr;
+            // GBAA / SRAA geometri listeleri meshleri canlı tutar, gölgelendiriciler GL nesnesidir: bağlam kapanmadan bırakılır
+            s_Geometry.clear();
+            s_GeometryCur = nullptr;
+            s_GBAAShader.reset();
+            s_SRAAShader.reset();
         }
+    }
+
+    bool Renderer3D::RenderGeometry(const void* view, GeometryPass pass, const glm::mat4& viewProj, const glm::vec2& viewportSize)
+    {
+        auto it = s_Geometry.find(view);
+        if (it == s_Geometry.end() || it->second.empty())
+            return false;
+        std::shared_ptr<Shader>& sh = pass == GeometryPass::GBAAEdges ? s_GBAAShader : s_SRAAShader;
+        if (!sh)
+            sh = Shader::Create(pass == GeometryPass::GBAAEdges ? "Engine/src/Shaders/3D/GBAAEdges.cqsh" : "Engine/src/Shaders/3D/SRAAGeometry.cqsh");
+        if (!sh || !sh->IsValid())
+            return false;
+        GLboolean depthTest = glIsEnabled(GL_DEPTH_TEST), cullFace = glIsEnabled(GL_CULL_FACE), blend = glIsEnabled(GL_BLEND);
+        GLboolean offsetFill = glIsEnabled(GL_POLYGON_OFFSET_FILL);
+        GLint depthFunc = GL_LESS, cullMode = GL_BACK;
+        GLboolean depthMask = GL_TRUE;
+        glGetIntegerv(GL_DEPTH_FUNC, &depthFunc);
+        glGetIntegerv(GL_CULL_FACE_MODE, &cullMode);
+        glGetBooleanv(GL_DEPTH_WRITEMASK, &depthMask);
+        glEnable(GL_DEPTH_TEST);
+        glDisable(GL_BLEND);
+        if (pass == GeometryPass::GBAAEdges)
+        {
+            // Sahne derinliğine LEQUAL (biraz öne çekilmiş): yalnız görünen yüzeyin kenar bilgisi yazılır
+            glDepthFunc(GL_LEQUAL);
+            glDepthMask(GL_FALSE);
+            glEnable(GL_POLYGON_OFFSET_FILL);
+            glPolygonOffset(-1.0f, -1.0f);
+        }
+        else
+        {
+            glDepthFunc(GL_LESS);
+            glDepthMask(GL_TRUE);
+            glDisable(GL_POLYGON_OFFSET_FILL);
+        }
+        sh->Bind();
+        sh->SetMat4("u_ViewProj", viewProj);
+        sh->SetFloat2("u_ViewportSize", viewportSize);
+        bool drew = false;
+        for (const auto& d : it->second)
+        {
+            if (!d.Draw || !d.Draw->GetVertexArray())
+                continue;
+            if (d.Cull == 0)
+                glDisable(GL_CULL_FACE);
+            else
+            {
+                glEnable(GL_CULL_FACE);
+                glCullFace(d.Cull == 2 ? GL_FRONT : GL_BACK);
+            }
+            sh->SetMat4("u_Transform", d.Transform);
+            RenderCommand::DrawIndexed(d.Draw->GetVertexArray(), d.Draw->GetIndexCount());
+            drew = true;
+        }
+        if (depthTest) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+        if (cullFace) glEnable(GL_CULL_FACE); else glDisable(GL_CULL_FACE);
+        if (blend) glEnable(GL_BLEND); else glDisable(GL_BLEND);
+        if (offsetFill) glEnable(GL_POLYGON_OFFSET_FILL); else glDisable(GL_POLYGON_OFFSET_FILL);
+        glDepthFunc((GLenum)depthFunc);
+        glCullFace((GLenum)cullMode);
+        glDepthMask(depthMask);
+        return drew;
     }
 
     bool Renderer3D::RenderVelocity(const void* view, const glm::mat4& jitteredViewProj, const glm::mat4& viewProj, const glm::mat4& prevViewProj)
@@ -700,6 +778,13 @@ namespace Conqueror
             glGetIntegerv(GL_VIEWPORT, viewport);
             s->Camera.ViewportWidth = (uint32_t)std::max(viewport[2], 1);
             s->Camera.ViewportHeight = (uint32_t)std::max(viewport[3], 1);
+        }
+        // GBAA / SRAA: bu görünümün opak çizimleri bu karede toplanır (son geçişte özel gölgelendiriciyle yeniden çizilir)
+        s_GeometryCur = nullptr;
+        if (PostProcessStack::WantsGeometry())
+        {
+            s_GeometryCur = &s_Geometry[PostProcessStack::GetCurrentStack()];
+            s_GeometryCur->clear();
         }
         // Temporal AA: bu görünümün sahne hedefine çiziliyorsa alt piksel titreşimi (NDC kayması)
         glm::vec2 jitter;
@@ -1509,6 +1594,12 @@ namespace Conqueror
                 AddMotionBox(c, e);
             }
             return;
+        }
+        // GBAA / SRAA geometri listesi (yalnız Opaque kipi: alfa kesmeli yüzeyin görünen kenarı üçgen kenarı değildir)
+        if (!fromQueue && s_GeometryCur && material->Rendering == Material::RenderMode::Opaque)
+        {
+            const Material::CullMode cull = material->Culling;
+            s_GeometryCur->push_back({ meshIn, mesh, transform, (doubleSided || cull == Material::CullMode::Off) ? 0 : (cull == Material::CullMode::Front ? 2 : 1) });
         }
         // Hareket eden opak nesne: TAA hareket vektörü geçişinde kendi hareketiyle çizilir (önceki konumu biliniyorsa)
         if (!fromQueue && transformMoved && prevTransform && s_MotionCur && material->Rendering != Material::RenderMode::Transparent)

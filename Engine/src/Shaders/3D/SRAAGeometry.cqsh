@@ -1,0 +1,33 @@
+#language GLSL
+// SRAA (Subpixel Reconstruction Anti-Aliasing, Chajdas / McGuire / Luebke, NVIDIA 2011) geometri geçişi: opak meshler çok
+// örnekli (4x) hedefe dünya normali (oktahedral, sahnenin G-buffer'ı gibi) + derinlik olarak yeniden çizilir. Gölgelendirme
+// tek örnekli ana geçişte kalır; alt örnek geometrisi SRAA çözümünde komşu piksellerin rengini seçer.
+#type vertex
+#version 450 core
+layout(location = 0) in vec3 a_Position;
+layout(location = 1) in vec3 a_Normal;
+uniform mat4 u_Transform;
+uniform mat4 u_ViewProj;
+out vec3 v_Normal;
+void main()
+{
+    v_Normal = transpose(inverse(mat3(u_Transform))) * a_Normal;
+    gl_Position = u_ViewProj * u_Transform * vec4(a_Position, 1.0);
+}
+
+#type fragment
+#version 450 core
+in vec3 v_Normal;
+layout(location = 0) out vec2 o_Normal;
+vec2 OctEncode(vec3 n)
+{
+    n /= max(abs(n.x) + abs(n.y) + abs(n.z), 1e-5);
+    if (n.z < 0.0)
+        n.xy = (1.0 - abs(n.yx)) * vec2(n.x >= 0.0 ? 1.0 : -1.0, n.y >= 0.0 ? 1.0 : -1.0);
+    return n.xy;
+}
+void main()
+{
+    vec3 n = normalize(v_Normal);
+    o_Normal = OctEncode(gl_FrontFacing ? n : -n);
+}

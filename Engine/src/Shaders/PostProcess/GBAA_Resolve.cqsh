@@ -1,0 +1,49 @@
+#language GLSL
+// GBAA 2. geçiş: kenarın geçtiği piksel, kenarın öbür yanındaki komşuyla örtü oranında karıştırılır (|uzaklık| < 0.5 ise öbür
+// yanın payı 0.5 - |uzaklık|). Kendi kenar bilgisi olmayan piksel (siluetin arkasındaki gökyüzü / zemin) komşunun kenarı bu
+// piksele taşıyorsa (komşu uzaklığı 0.5 .. 1) o komşuyla taşan pay kadar karıştırılır: siluetin iki yanı da yumuşar.
+#type vertex
+#version 450 core
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+out vec2 v_UV;
+void main()
+{
+    v_UV = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+layout(location = 0) out vec4 FragColor;
+in vec2 v_UV;
+uniform sampler2D u_Color;
+uniform sampler2D u_Edges;
+uniform vec2 u_Texel;
+void main()
+{
+    vec3 c = texture(u_Color, v_UV).rgb;
+    vec2 o = texture(u_Edges, v_UV).xy;
+    vec3 result = c;
+    if (abs(o.x) < 0.5)
+        result = mix(c, texture(u_Color, v_UV + vec2(sign(o.x) * u_Texel.x, 0.0)).rgb, 0.5 - abs(o.x));
+    else if (abs(o.y) < 0.5)
+        result = mix(c, texture(u_Color, v_UV + vec2(0.0, sign(o.y) * u_Texel.y)).rgb, 0.5 - abs(o.y));
+    else
+    {
+        // Komşunun kenarı bu piksele taşıyor mu (sol: +0.5..1, sağ: -1..-0.5, alt / üst aynı)
+        vec2 l = texture(u_Edges, v_UV - vec2(u_Texel.x, 0.0)).xy;
+        vec2 r = texture(u_Edges, v_UV + vec2(u_Texel.x, 0.0)).xy;
+        vec2 dn = texture(u_Edges, v_UV - vec2(0.0, u_Texel.y)).xy;
+        vec2 up = texture(u_Edges, v_UV + vec2(0.0, u_Texel.y)).xy;
+        if (l.x > 0.5 && l.x < 1.0)
+            result = mix(c, texture(u_Color, v_UV - vec2(u_Texel.x, 0.0)).rgb, l.x - 0.5);
+        else if (r.x < -0.5 && r.x > -1.0)
+            result = mix(c, texture(u_Color, v_UV + vec2(u_Texel.x, 0.0)).rgb, -r.x - 0.5);
+        else if (dn.y > 0.5 && dn.y < 1.0)
+            result = mix(c, texture(u_Color, v_UV - vec2(0.0, u_Texel.y)).rgb, dn.y - 0.5);
+        else if (up.y < -0.5 && up.y > -1.0)
+            result = mix(c, texture(u_Color, v_UV + vec2(0.0, u_Texel.y)).rgb, -up.y - 0.5);
+    }
+    FragColor = vec4(result, 1.0);
+}

@@ -73,7 +73,6 @@ namespace Conqueror::AntiAliasing
         };
         static_assert(sizeof(s_Upscalers) / sizeof(s_Upscalers[0]) == (size_t)UpscalerMode::Count, "Upscaler table out of sync");
 
-        constexpr const char* kNotImplemented = "Not implemented in this version yet.";
 
         Caps s_Caps;
 
@@ -205,9 +204,10 @@ namespace Conqueror::AntiAliasing
                 return { false, kXeSSReason };
             case M::TSRAA:
                 return { false, kTSRReason };
-            case M::GBAA:
             case M::SRAA:
-                return { false, kNotImplemented };
+                if (c.MaxSamples < 4)
+                    return { false, "4x MSAA textures are not supported." };
+                return {};
             default:
                 if (IsLegacyUpscaler(mode))
                     return mode == M::CAS ? Availability{} : GetUpscalerAvailability(LegacyUpscaler(mode));

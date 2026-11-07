@@ -219,6 +219,11 @@ namespace Conqueror
         // bağlı çerçeve tamponuna (renk: RGBA16F hız, derinlik: sahne derinliği; derinlik yazılmaz) çizer. Çizim yoksa false
         static bool RenderVelocity(const void* view, const glm::mat4& jitteredViewProj, const glm::mat4& viewProj, const glm::mat4& prevViewProj);
         static bool HasVelocityDraws(const void* view);
+        // GBAA / SRAA: bu görünümün bu karedeki opak (Opaque kipli) mesh çizimlerini bağlı çerçeve tamponuna yeniden çizer.
+        // GBAAEdges: RG16F kenar uzaklığı (sahne derinliğine LEQUAL, derinlik yazılmaz); SRAANormalDepth: çok örnekli normal +
+        // derinlik (derinlik yazılır). Çizim yoksa false
+        enum class GeometryPass { GBAAEdges, SRAANormalDepth };
+        static bool RenderGeometry(const void* view, GeometryPass pass, const glm::mat4& viewProj, const glm::vec2& viewportSize);
         // Bu görünümde nokta / spot ışıkların toplam gücü önceki çağrıdan beri değişti mi (namlu alevi ışığı yanıp söner):
         // TAA yalnız böyle karelerde aydınlığı değişen piksellerde geçmişe az güvenir
         static bool ConsumeLightingChange(const void* view);
