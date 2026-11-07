@@ -90,7 +90,7 @@ namespace Conqueror::CQS
     std::string CQSRuntime::GetNewScriptTemplate(const std::string& className) const
     {
         return "using nativebridge;\n\nscript " + className + " : ConquerorScript\n{\n"
-               "    // Public alanlar Inspector'da görünür\n"
+               "    // Public fields appear in the Inspector\n"
                "    public float speed = 1.0;\n\n"
                "    func Start()\n    {\n    }\n\n"
                "    func Update(dt)\n    {\n    }\n}\n";

@@ -245,11 +245,11 @@ namespace Conqueror::Scripting
             // öznitelikleri veri şablonudur; oyunda WeaponData.load("Assets/Sword.cqdata") alanları dolu bir nesne verir
             static const char* kDataAsset =
                 "class DataAsset:\n"
-                "    \"\"\"Data Asset sınıflarının temeli: sınıf öznitelikleri veri şablonudur, değerler .cqdata dosyasında.\"\"\"\n"
+                "    \"\"\"Base of Data Asset classes: class attributes are the data template, values live in the .cqdata file.\"\"\"\n"
                 "    _asset_path = None\n"
                 "    @classmethod\n"
                 "    def load(cls, path):\n"
-                "        \"\"\".cqdata dosyasını bu sınıf olarak yükle (okunamazsa None).\"\"\"\n"
+                "        \"\"\"Load a .cqdata file as this class (None if it cannot be read).\"\"\"\n"
                 "        data = LoadDataAsset(path)\n"
                 "        if data is None:\n"
                 "            return None\n"
@@ -598,7 +598,7 @@ namespace Conqueror::Scripting
         {
             return "from nativebridge import *\n\n\n"
                    "class " + className + ":\n"
-                   "    # Sınıf öznitelikleri Inspector'da görünür ('_' ile başlayanlar gizli)\n"
+                   "    # Class attributes appear in the Inspector (names starting with '_' are hidden)\n"
                    "    speed = 1.0\n\n"
                    "    def start(self):\n"
                    "        pass\n\n"

@@ -1,0 +1,94 @@
+#language GLSL
+// Intel CMAA2 (Conservative Morphological Anti-Aliasing 2.0), Apache 2.0 lisansı (External/CMAA2/license.txt): dolaylı gönderim argümanları ve sayaçlar.
+// External/CMAA2/CMAA2.hlsl (kalite HIGH, luma kenar algılama, LDR) glslang (HLSL -> SPIR-V) ve SPIRV-Cross (SPIR-V ->
+// GLSL 450) ile çevrildi. Elle değişiklikler: renk görüntüsü rgba8, değişken ofsetli texelFetchOffset -> texelFetch,
+// ekleme tamponlarına sınır denetimi (D3D taşan yazmaları yok sayar, OpenGL'de tanımsız), inout geçici değişkenleri 0 ile
+// başlatılır (sürücü uyarısı). Motor görüntü / örnekleyici layout(binding)'ini siler: birimler RunCMAA2'de adla atanır.
+#type compute
+#version 450
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(binding = 6, std430) buffer g_workingControlBuffer
+{
+    uint _data[];
+} g_workingControlBuffer_1;
+
+layout(binding = 2, std430) buffer g_workingShapeCandidates
+{
+    uint _data[];
+} g_workingShapeCandidates_1;
+
+layout(binding = 7, std430) buffer g_workingExecuteIndirectBuffer
+{
+    uint _data[];
+} g_workingExecuteIndirectBuffer_1;
+
+layout(binding = 3, std430) buffer g_workingDeferredBlendLocationList
+{
+    uint _data[];
+} g_workingDeferredBlendLocationList_1;
+
+layout(binding = 4, std430) buffer g_workingDeferredBlendItemList
+{
+    uvec2 _data[];
+} g_workingDeferredBlendItemList_1;
+
+layout(binding = 0, rgba8) uniform readonly writeonly image2D g_inoutColorWriteonly;
+layout(binding = 1, r32ui) uniform readonly writeonly uimage2D g_workingEdges;
+layout(binding = 5, r32ui) uniform readonly writeonly uimage2D g_workingDeferredBlendItemListHeads;
+
+shared uint g_groupSharedBlendItemCount;
+shared uvec2 g_groupSharedBlendItems[768];
+shared vec4 g_groupShared2x2FracEdgesH[256];
+shared vec4 g_groupShared2x2FracEdgesV[256];
+
+void _ComputeDispatchArgsCS(uvec3 groupID)
+{
+    if (groupID.x == 1u)
+    {
+        uint shapeCandidateCount = g_workingControlBuffer_1._data[16 >> 2];
+        uint appendBufferMaxCount = uint(g_workingShapeCandidates_1._data.length());
+        uint appendBufferStride = 4u;
+        shapeCandidateCount = min(shapeCandidateCount, appendBufferMaxCount);
+        int byteAddrTemp = 0 >> 2;
+        g_workingExecuteIndirectBuffer_1._data[byteAddrTemp] = ((shapeCandidateCount + 128u) - 1u) / 128u;
+        int byteAddrTemp_1 = 4 >> 2;
+        g_workingExecuteIndirectBuffer_1._data[byteAddrTemp_1] = 1u;
+        int byteAddrTemp_2 = 8 >> 2;
+        g_workingExecuteIndirectBuffer_1._data[byteAddrTemp_2] = 1u;
+        int byteAddrTemp_3 = 12 >> 2;
+        g_workingControlBuffer_1._data[byteAddrTemp_3] = shapeCandidateCount;
+    }
+    else
+    {
+        if (groupID.y == 1u)
+        {
+            uint blendLocationCount = g_workingControlBuffer_1._data[32 >> 2];
+            uint appendBufferMaxCount_1 = uint(g_workingDeferredBlendLocationList_1._data.length());
+            uint appendBufferStride_1 = 4u;
+            blendLocationCount = min(blendLocationCount, appendBufferMaxCount_1);
+            int byteAddrTemp_4 = 0 >> 2;
+            g_workingExecuteIndirectBuffer_1._data[byteAddrTemp_4] = 1u;
+            int byteAddrTemp_5 = 4 >> 2;
+            g_workingExecuteIndirectBuffer_1._data[byteAddrTemp_5] = ((blendLocationCount + 32u) - 1u) / 32u;
+            int byteAddrTemp_6 = 8 >> 2;
+            g_workingExecuteIndirectBuffer_1._data[byteAddrTemp_6] = 1u;
+            int byteAddrTemp_7 = 12 >> 2;
+            g_workingControlBuffer_1._data[byteAddrTemp_7] = blendLocationCount;
+            int byteAddrTemp_8 = 16 >> 2;
+            g_workingControlBuffer_1._data[byteAddrTemp_8] = 0u;
+            int byteAddrTemp_9 = 32 >> 2;
+            g_workingControlBuffer_1._data[byteAddrTemp_9] = 0u;
+            int byteAddrTemp_10 = 48 >> 2;
+            g_workingControlBuffer_1._data[byteAddrTemp_10] = 0u;
+        }
+    }
+}
+
+void main()
+{
+    uvec3 groupID = gl_WorkGroupID;
+    uvec3 param = groupID;
+    _ComputeDispatchArgsCS(param);
+}
+

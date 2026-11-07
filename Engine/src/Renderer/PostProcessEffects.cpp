@@ -367,23 +367,12 @@ namespace Conqueror
 
     // ------------------------------------------------------------------ Temporal AA
 
-    void PostProcessStack::RunTAA(const PostProcessSettings& settings, const RenderCamera& camera)
+    // Nesne hareket vektörleri: bu karede hareket eden opak nesneler sahne derinliğine kendi önceki konumlarıyla çizilir.
+    // Kameraya bağlı silah / eller kamera hareketiyle değil kendi hareketleriyle yeniden izdüşürülür (zıplarken, dönerken
+    // dalgalanmaz); düşen küp, hedef gibi nesneler geçmişini doğru yerden alır. Yazılmayan piksel: kamera hareketi (derinlik).
+    // TAA ve SMAA T2x çözümü kullanır
+    bool PostProcessStack::RenderObjectVelocity(const RenderCamera& camera)
     {
-        auto shader = PostProcess::GetShader("TAA");
-        if (!Valid(shader))
-            return;
-        CQ_PROFILE_SAMPLE("Render.PostProcess.TAA", Rendering);
-        RenderTarget& prev = m_History[m_HistoryIndex];
-        RenderTarget& next = m_History[1 - m_HistoryIndex];
-        EnsureTarget(prev, m_Width, m_Height, GL_RGBA16F);
-        EnsureTarget(next, m_Width, m_Height, GL_RGBA16F);
-        RenderTarget& prevState = m_TAAState[m_HistoryIndex];
-        RenderTarget& nextState = m_TAAState[1 - m_HistoryIndex];
-        EnsureTarget(prevState, m_Width, m_Height, GL_RGBA16F);
-        EnsureTarget(nextState, m_Width, m_Height, GL_RGBA16F);
-        // Nesne hareket vektörleri: bu karede hareket eden opak nesneler sahne derinliğine kendi önceki konumlarıyla çizilir.
-        // Kameraya bağlı silah / eller kamera hareketiyle değil kendi hareketleriyle yeniden izdüşürülür (zıplarken, dönerken
-        // dalgalanmaz); düşen küp, hedef gibi nesneler geçmişini doğru yerden alır. Yazılmayan piksel: kamera hareketi (derinlik)
         bool hasVelocity = false;
         const glm::mat4 jitteredViewProj = JitteredProjection(camera) * camera.View;
         const glm::mat4 viewProj = camera.Projection * camera.View;
@@ -399,11 +388,29 @@ namespace Conqueror
             {
                 glBindFramebuffer(GL_FRAMEBUFFER, m_VelocityFramebuffer);
                 glViewport(0, 0, m_Width, m_Height);
-                const float none[4] = { 1.0e4f, 1.0e4f, 0.0f, 0.0f };   // hız yok: TAA derinlikten kamera hareketini kullanır
+                const float none[4] = { 1.0e4f, 1.0e4f, 0.0f, 0.0f };   // hız yok: derinlikten kamera hareketi kullanılır
                 glClearBufferfv(GL_COLOR, 0, none);
                 hasVelocity = Renderer3D::RenderVelocity(this, jitteredViewProj, viewProj, m_PrevViewProj);
             }
         }
+        return hasVelocity;
+    }
+
+    void PostProcessStack::RunTAA(const PostProcessSettings& settings, const RenderCamera& camera)
+    {
+        auto shader = PostProcess::GetShader("TAA");
+        if (!Valid(shader))
+            return;
+        CQ_PROFILE_SAMPLE("Render.PostProcess.TAA", Rendering);
+        RenderTarget& prev = m_History[m_HistoryIndex];
+        RenderTarget& next = m_History[1 - m_HistoryIndex];
+        EnsureTarget(prev, m_Width, m_Height, GL_RGBA16F);
+        EnsureTarget(next, m_Width, m_Height, GL_RGBA16F);
+        RenderTarget& prevState = m_TAAState[m_HistoryIndex];
+        RenderTarget& nextState = m_TAAState[1 - m_HistoryIndex];
+        EnsureTarget(prevState, m_Width, m_Height, GL_RGBA16F);
+        EnsureTarget(nextState, m_Width, m_Height, GL_RGBA16F);
+        const bool hasVelocity = RenderObjectVelocity(camera);
         // Geçmiş + durum tek geçişte (iki renk eki). Ekler her karede bağlanır: boyut değişince dokular yeniden oluşur ve
         // OpenGL silinen dokunun numarasını yeni dokuya verebilir; numaraya bakan önbellek eski (yetim) dokuya çizdirip her
         // ikinci kareyi siyah bırakıyordu

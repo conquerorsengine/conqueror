@@ -4,7 +4,7 @@ using nativebridge;
 // Public alanlar Inspector'da düzenlenebilir (sahneyle kaydedilir).
 script PlayerController : ConquerorScript
 {
-    [Tooltip("Yatay hareket hızı (birim/saniye)")]
+    [Tooltip("Horizontal movement speed (units per second)")]
     [Range(0, 20)]
     public float moveSpeed = 5.0;
 

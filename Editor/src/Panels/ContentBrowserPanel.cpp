@@ -1785,7 +1785,7 @@ namespace Conqueror::Editor
             {
                 path = MakeUniquePath(dir / "NewShader.cqsh");
                 std::ofstream f(path);
-                f << "// Conqueror shader: PBR yüzey fonksiyonu ile özel shader\n"
+                f << "// Conqueror shader: custom shader with a PBR surface function\n"
                      "#type vertex\n#version 460 core\n"
                      "layout(location = 0) in vec3 a_Position;\n"
                      "layout(location = 1) in vec3 a_Normal;\n"
@@ -1829,7 +1829,7 @@ namespace Conqueror::Editor
                 name.erase(std::remove(name.begin(), name.end(), ' '), name.end());
                 std::ofstream f(path);
                 f << "using nativebridge;\n\nscript " << name << " : ConquerorScript\n{\n"
-                     "    // Public alanlar Inspector'da görünür\n"
+                     "    // Public fields appear in the Inspector\n"
                      "    public float speed = 1.0;\n\n"
                      "    func Start()\n    {\n    }\n\n"
                      "    func Update(dt)\n    {\n    }\n}\n";

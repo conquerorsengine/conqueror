@@ -1,0 +1,87 @@
+#language GLSL
+// SMAA T2x zamansal çözümü (Jimenez ve ark. SMAAResolve, MIT lisansı, External/smaa/LICENSE.txt): iki titreşim konumunda
+// (±0.25 piksel çapraz) çizilip ayrı ayrı SMAA 1x (alt örnek indisleriyle) uygulanmış iki kare birleştirilir (2x zamansal süper
+// örnekleme, uzun birikim yok). Önceki kare derinlikten yeniden izdüşümle alınır (3x3 en yakın derinlik; hareket eden opak
+// nesnede kendi hız vektörü). Ağırlık SMAA'nın formülüyle iki karenin hız büyüklüğü farkına göre 0.5'ten düşer (kenarın iki
+// yanı farklı hızla kayınca hayalet kalmaz); bu karede hareket eden nesnenin pikselinde önceki kare kullanılmaz.
+// Çıktı 0: birleşik görüntü; çıktı 1: bu karenin SMAA görüntüsü + alfa'da hız (SMAA: sqrt(5 |hız|)), sonraki karenin girdisi.
+#type vertex
+#version 450 core
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+out vec2 v_UV;
+void main()
+{
+    v_UV = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+layout(location = 0) out vec4 FragColor;
+layout(location = 1) out vec4 HistoryOut;
+in vec2 v_UV;
+
+uniform sampler2D u_Current;    // bu karenin SMAA 1x çıktısı
+uniform sampler2D u_Previous;   // önceki karenin SMAA 1x çıktısı (alfa: hız)
+uniform sampler2D u_Depth;      // sahne derinliği (bu karenin titreşimiyle)
+uniform sampler2D u_Velocity;   // nesne hızları (xy uv: şimdiki - önceki; x > 5000: yok)
+uniform sampler2D u_GNormal;    // w >= 3.5: bu karede hareket eden opak nesne
+uniform int u_HasVelocity = 0;
+uniform int u_HasMotionFlag = 0;
+uniform int u_HistoryValid = 0;
+uniform int u_CameraStill = 0;
+uniform mat4 u_InvViewProj;     // titreşimli
+uniform mat4 u_PrevViewProj;    // önceki karenin titreşimsiz matrisi
+uniform vec2 u_Texel;
+uniform vec2 u_JitterUV;        // bu karenin titreşimi (uv)
+
+const float kReprojectionWeightScale = 30.0;   // SMAA_REPROJECTION_WEIGHT_SCALE
+
+void main()
+{
+    vec4 current = texture(u_Current, v_UV);
+    float closest = 1.0;
+    vec2 closestUV = v_UV;
+    bool moving = false;
+    for (int y = -1; y <= 1; ++y)
+    for (int x = -1; x <= 1; ++x)
+    {
+        vec2 uv = v_UV + vec2(x, y) * u_Texel;
+        float d = texture(u_Depth, uv).r;
+        if (d < closest)
+        {
+            closest = d;
+            closestUV = uv;
+        }
+        if (u_HasMotionFlag == 1 && texture(u_GNormal, uv).w >= 3.5)
+            moving = true;
+    }
+    // Yeniden izdüşüm: titreşimsiz şimdiki konum - önceki titreşimsiz konum (gökyüzünde uzak düzlem yönü)
+    vec4 world = u_InvViewProj * vec4(closestUV * 2.0 - 1.0, min(closest, 1.0) * 2.0 - 1.0, 1.0);
+    world /= world.w;
+    vec4 prevClip = u_PrevViewProj * world;
+    vec2 velocity = (closestUV - u_JitterUV) - (prevClip.xy / prevClip.w * 0.5 + 0.5);
+    if (u_CameraStill == 1 || prevClip.w <= 0.0)
+        velocity = vec2(0.0);
+    if (u_HasVelocity == 1)
+    {
+        ivec2 vsz = textureSize(u_Velocity, 0);
+        vec4 ov = texelFetch(u_Velocity, clamp(ivec2(closestUV * vec2(vsz)), ivec2(0), vsz - 1), 0);
+        if (ov.x < 5000.0)
+            velocity = ov.xy;
+    }
+    float speedCode = clamp(sqrt(5.0 * length(velocity)), 0.0, 1.0);
+    HistoryOut = vec4(current.rgb, speedCode);
+    vec2 prevUV = v_UV - velocity;
+    if (u_HistoryValid == 0 || moving || any(lessThan(prevUV, vec2(0.0))) || any(greaterThan(prevUV, vec2(1.0))))
+    {
+        FragColor = vec4(current.rgb, 1.0);
+        return;
+    }
+    vec4 previous = texture(u_Previous, prevUV);
+    // SMAAResolvePS: delta = | |hız_şimdi| - |hız_önceki| |, ağırlık = 0.5 * doygun(1 - sqrt(delta) * 30)
+    float delta = abs(speedCode * speedCode - previous.a * previous.a) / 5.0;
+    float weight = 0.5 * clamp(1.0 - sqrt(delta) * kReprojectionWeightScale, 0.0, 1.0);
+    FragColor = vec4(mix(current.rgb, previous.rgb, weight), 1.0);
+}

@@ -1,0 +1,520 @@
+#language GLSL
+// Intel CMAA2 (Conservative Morphological Anti-Aliasing 2.0), Apache 2.0 lisansı (External/CMAA2/license.txt): şekil adaylarını işler, karışım renklerini erteleme listesine yazar.
+// External/CMAA2/CMAA2.hlsl (kalite HIGH, luma kenar algılama, LDR) glslang (HLSL -> SPIR-V) ve SPIRV-Cross (SPIR-V ->
+// GLSL 450) ile çevrildi. Elle değişiklikler: renk görüntüsü rgba8, değişken ofsetli texelFetchOffset -> texelFetch,
+// ekleme tamponlarına sınır denetimi (D3D taşan yazmaları yok sayar, OpenGL'de tanımsız), inout geçici değişkenleri 0 ile
+// başlatılır (sürücü uyarısı). Motor görüntü / örnekleyici layout(binding)'ini siler: birimler RunCMAA2'de adla atanır.
+#type compute
+#version 450
+#if defined(GL_EXT_control_flow_attributes)
+#extension GL_EXT_control_flow_attributes : require
+#define SPIRV_CROSS_FLATTEN [[flatten]]
+#define SPIRV_CROSS_BRANCH [[dont_flatten]]
+#define SPIRV_CROSS_UNROLL [[unroll]]
+#define SPIRV_CROSS_LOOP [[dont_unroll]]
+#else
+#define SPIRV_CROSS_FLATTEN
+#define SPIRV_CROSS_BRANCH
+#define SPIRV_CROSS_UNROLL
+#define SPIRV_CROSS_LOOP
+#endif
+layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
+
+layout(binding = 6, std430) buffer g_workingControlBuffer
+{
+    uint _data[];
+} g_workingControlBuffer_1;
+
+layout(binding = 4, std430) buffer g_workingDeferredBlendItemList
+{
+    uvec2 _data[];
+} g_workingDeferredBlendItemList_1;
+
+layout(binding = 3, std430) buffer g_workingDeferredBlendLocationList
+{
+    uint _data[];
+} g_workingDeferredBlendLocationList_1;
+
+layout(binding = 2, std430) buffer g_workingShapeCandidates
+{
+    uint _data[];
+} g_workingShapeCandidates_1;
+
+layout(binding = 7, std430) buffer g_workingExecuteIndirectBuffer
+{
+    uint _data[];
+} g_workingExecuteIndirectBuffer_1;
+
+layout(binding = 5, r32ui) uniform uimage2D g_workingDeferredBlendItemListHeads;
+layout(binding = 1, r32ui) uniform readonly uimage2D g_workingEdges;
+layout(binding = 0, rgba8) uniform readonly writeonly image2D g_inoutColorWriteonly;
+layout(binding = 8) uniform sampler2D SPIRV_Cross_Combinedg_inoutColorReadonlySPIRV_Cross_DummySampler;
+
+shared uint g_groupSharedBlendItemCount;
+shared uvec2 g_groupSharedBlendItems[768];
+shared vec4 g_groupShared2x2FracEdgesH[256];
+shared vec4 g_groupShared2x2FracEdgesV[256];
+
+uint LoadEdge(ivec2 pixelPos, ivec2 offset, uint msaaSampleIndex)
+{
+    uint a = uint(pixelPos.x + offset.x) % 2u;
+    uint edge = imageLoad(g_workingEdges, ivec2(uvec2(uint(pixelPos.x + offset.x) / 2u, uint(pixelPos.y + offset.y)))).x;
+    edge = (edge >> (a * 4u)) & 15u;
+    return edge;
+}
+
+vec4 UnpackEdgesFlt(uint value)
+{
+    vec4 ret;
+    ret.x = float((value & 1u) != 0u);
+    ret.y = float((value & 2u) != 0u);
+    ret.z = float((value & 4u) != 0u);
+    ret.w = float((value & 8u) != 0u);
+    return ret;
+}
+
+vec4 ComputeSimpleShapeBlendValues(vec4 edges, vec4 edgesLeft, vec4 edgesRight, vec4 edgesTop, vec4 edgesBottom, bool dontTestShapeValidity)
+{
+    float fromRight = edges.x;
+    float fromBelow = edges.y;
+    float fromLeft = edges.z;
+    float fromAbove = edges.w;
+    float blurCoeff = 0.100000001490116119384765625;
+    float numberOfEdges = dot(edges, vec4(1.0));
+    float numberOfEdgesAllAround = dot(((edgesLeft.zyw + edgesRight.xyw) + edgesTop.xzw) + edgesBottom.xyz, vec3(1.0));
+    if (!dontTestShapeValidity)
+    {
+        if (numberOfEdges == 1.0)
+        {
+            blurCoeff = 0.0;
+        }
+        if (numberOfEdges == 2.0)
+        {
+            blurCoeff *= ((1.0 - (fromBelow * fromAbove)) * (1.0 - (fromRight * fromLeft)));
+        }
+    }
+    if (numberOfEdges == 2.0)
+    {
+        blurCoeff *= 0.75;
+        float k = 0.89999997615814208984375;
+        fromRight += (k * (((edges.y * edgesTop.x) * (1.0 - edgesLeft.y)) + ((edges.w * edgesBottom.x) * (1.0 - edgesLeft.w))));
+        fromBelow += (k * (((edges.z * edgesRight.y) * (1.0 - edgesTop.z)) + ((edges.x * edgesLeft.y) * (1.0 - edgesTop.x))));
+        fromLeft += (k * (((edges.w * edgesBottom.z) * (1.0 - edgesRight.w)) + ((edges.y * edgesTop.z) * (1.0 - edgesRight.y))));
+        fromAbove += (k * (((edges.x * edgesLeft.w) * (1.0 - edgesBottom.x)) + ((edges.z * edgesRight.w) * (1.0 - edgesBottom.z))));
+    }
+    blurCoeff *= clamp(1.2999999523162841796875 - (numberOfEdgesAllAround / 10.0), 0.0, 1.0);
+    return vec4(fromLeft, fromAbove, fromRight, fromBelow) * blurCoeff;
+}
+
+vec3 LoadSourceColor(uvec2 pixelPos, ivec2 offset, int sampleIndex)
+{
+    vec3 color = texelFetch(SPIRV_Cross_Combinedg_inoutColorReadonlySPIRV_Cross_DummySampler, ivec3(ivec2(pixelPos), 0).xy + offset, ivec3(ivec2(pixelPos), 0).z).xyz;
+    return color;
+}
+
+uint Pack_R11G11B10_E4_FLOAT(inout vec3 rgb)
+{
+    rgb = clamp(rgb, vec3(0.0), vec3(intBitsToFloat(1073741823)));
+    uint r = ((packHalf2x16(vec2(rgb.x, 0.0)) + 4u) >> uint(3)) & 2047u;
+    uint g = ((packHalf2x16(vec2(rgb.y, 0.0)) + 4u) << uint(8)) & 4192256u;
+    uint b = ((packHalf2x16(vec2(rgb.z, 0.0)) + 8u) << uint(18)) & 4290772992u;
+    return (r | g) | b;
+}
+
+uint InternalPackColor(vec3 color)
+{
+    vec3 param = color;
+    uint _213 = Pack_R11G11B10_E4_FLOAT(param);
+    return _213;
+}
+
+void StoreColorSample(uvec2 pixelPos, vec3 color, bool isComplexShape, uint msaaSampleIndex)
+{
+    uint _227 = atomicAdd(g_workingControlBuffer_1._data[48 >> 2], 1);
+    uint counterIndex = _227;
+    if (counterIndex >= uint(g_workingDeferredBlendItemList_1._data.length()))
+    {
+        return;
+    }
+    uvec2 quadPos = pixelPos / uvec2(2u);
+    uint offsetXY = ((pixelPos.y % 2u) * 2u) + (pixelPos.x % 2u);
+    uint header = ((offsetXY << uint(30)) | (msaaSampleIndex << uint(27))) | uint(int(isComplexShape) << 26);
+    uint counterIndexWithHeader = counterIndex | header;
+    uint _267 = imageAtomicExchange(g_workingDeferredBlendItemListHeads, ivec2(quadPos), counterIndexWithHeader);
+    uint originalIndex = _267;
+    vec3 param = color;
+    g_workingDeferredBlendItemList_1._data[counterIndex] = uvec2(originalIndex, InternalPackColor(param));
+    if (originalIndex == 4294967295u)
+    {
+        uint _289 = atomicAdd(g_workingControlBuffer_1._data[32 >> 2], 1);
+        uint edgeListCounter = _289;
+        if (edgeListCounter < uint(g_workingDeferredBlendLocationList_1._data.length()))
+        g_workingDeferredBlendLocationList_1._data[edgeListCounter] = (quadPos.x << uint(16)) | quadPos.y;
+    }
+}
+
+void DetectZsHorizontal(vec4 edges, vec4 edgesM1P0, vec4 edgesP1P0, vec4 edgesP2P0, inout float invertedZScore, inout float normalZScore)
+{
+    invertedZScore = (edges.x * edges.y) * edgesP1P0.w;
+    invertedZScore *= (((2.0 + (edgesM1P0.y + edgesP2P0.w)) - (edges.w + edgesP1P0.y)) - (0.699999988079071044921875 * (((edgesP2P0.y + edgesM1P0.w) + edges.z) + edgesP1P0.x)));
+    normalZScore = (edges.x * edges.w) * edgesP1P0.y;
+    normalZScore *= (((2.0 + (edgesM1P0.w + edgesP2P0.y)) - (edges.y + edgesP1P0.w)) - (0.699999988079071044921875 * (((edgesP2P0.w + edgesM1P0.y) + edges.z) + edgesP1P0.x)));
+}
+
+void FindZLineLengths(inout float lineLengthLeft, inout float lineLengthRight, uvec2 screenPos, bool horizontal, bool invertedZShape, vec2 stepRight, uint msaaSampleIndex)
+{
+    uint maskTraceLeft;
+    uint maskTraceRight;
+    if (horizontal)
+    {
+        maskTraceLeft = 8u;
+        maskTraceRight = 2u;
+    }
+    else
+    {
+        maskTraceLeft = 4u;
+        maskTraceRight = 1u;
+    }
+    if (invertedZShape)
+    {
+        uint temp = maskTraceLeft;
+        maskTraceLeft = maskTraceRight;
+        maskTraceRight = temp;
+    }
+    uint maskLeft = maskTraceLeft;
+    uint bitsContinueLeft = maskTraceLeft;
+    uint maskRight = maskTraceRight;
+    uint bitsContinueRight = maskTraceRight;
+    bool continueLeft = true;
+    bool continueRight = true;
+    lineLengthLeft = 1.0;
+    lineLengthRight = 1.0;
+    SPIRV_CROSS_LOOP
+    for (;;)
+    {
+        ivec2 param = ivec2(vec2(screenPos) - (stepRight * lineLengthLeft));
+        ivec2 param_1 = ivec2(0);
+        uint param_2 = msaaSampleIndex;
+        uint edgeLeft = LoadEdge(param, param_1, param_2);
+        ivec2 param_3 = ivec2(vec2(screenPos) + (stepRight * (lineLengthRight + 1.0)));
+        ivec2 param_4 = ivec2(0);
+        uint param_5 = msaaSampleIndex;
+        uint edgeRight = LoadEdge(param_3, param_4, param_5);
+        continueLeft = continueLeft && ((edgeLeft & maskLeft) == bitsContinueLeft);
+        continueRight = continueRight && ((edgeRight & maskRight) == bitsContinueRight);
+        lineLengthLeft += float(continueLeft);
+        lineLengthRight += float(continueRight);
+        float maxLR = max(lineLengthRight, lineLengthLeft);
+        if ((!continueLeft) && (!continueRight))
+        {
+            maxLR = 86.0;
+        }
+        if (maxLR >= min(86.0, (1.25 * min(lineLengthRight, lineLengthLeft)) - 0.25))
+        {
+            break;
+        }
+        continue;
+    }
+}
+
+bool CollectBlendZs(uvec2 screenPos, bool horizontal, bool invertedZShape, float shapeQualityScore, float lineLengthLeft, float lineLengthRight, vec2 stepRight, uint msaaSampleIndex)
+{
+    float leftOdd = 0.2199999988079071044921875 * mod(lineLengthLeft, 2.0);
+    float rightOdd = 0.2199999988079071044921875 * mod(lineLengthRight, 2.0);
+    float dampenEffect = clamp(((lineLengthLeft + lineLengthRight) - shapeQualityScore) * 0.1500000059604644775390625, 0.0, 1.0);
+    float loopFrom = (-floor((lineLengthLeft + 1.0) / 2.0)) + 1.0;
+    float loopTo = floor((lineLengthRight + 1.0) / 2.0);
+    uint blendItemCount = uint((loopTo - loopFrom) + 1.0);
+    uint _653 = atomicAdd(g_groupSharedBlendItemCount, blendItemCount);
+    uint itemIndex = _653;
+    if ((itemIndex + blendItemCount) > 768u)
+    {
+        return false;
+    }
+    float totalLength = (((loopTo - loopFrom) + 1.0) - leftOdd) - rightOdd;
+    float lerpStep = 1.0 / totalLength;
+    float lerpFromK = ((0.5 - leftOdd) - loopFrom) * lerpStep;
+    uint itemHeader = ((screenPos.x << uint(18)) | (msaaSampleIndex << uint(14))) | screenPos.y;
+    uint itemValStatic = uint((int(horizontal) << 31) | (int(invertedZShape) << 30));
+    ivec2 encodedItem;
+    for (float i = loopFrom; i <= loopTo; i += 1.0)
+    {
+        float lerpVal = (lerpStep * i) + lerpFromK;
+        float secondPart = float(i > 0.0);
+        float srcOffset = 1.0 - (secondPart * 2.0);
+        float lerpK = (((lerpStep * i) + lerpFromK) * srcOffset) + secondPart;
+        lerpK *= dampenEffect;
+        encodedItem.x = int(itemHeader);
+        encodedItem.y = int(((itemValStatic | (uint(i + 256.0) << uint(20))) | (uint(srcOffset + 256.0) << uint(10))) | uint((clamp(lerpK, 0.0, 1.0) * 1023.0) + 0.5));
+        uint _771 = itemIndex;
+        itemIndex = _771 + uint(1);
+        g_groupSharedBlendItems[_771] = uvec2(encodedItem);
+    }
+    return true;
+}
+
+void BlendZs(uvec2 screenPos, bool horizontal, bool invertedZShape, float shapeQualityScore, float lineLengthLeft, float lineLengthRight, vec2 stepRight, uint msaaSampleIndex)
+{
+    vec2 blendDir = mix(vec2(-1.0, 0.0), vec2(0.0, -1.0), bvec2(horizontal));
+    if (invertedZShape)
+    {
+        blendDir = -blendDir;
+    }
+    float leftOdd = 0.2199999988079071044921875 * mod(lineLengthLeft, 2.0);
+    float rightOdd = 0.2199999988079071044921875 * mod(lineLengthRight, 2.0);
+    float dampenEffect = clamp(((lineLengthLeft + lineLengthRight) - shapeQualityScore) * 0.1500000059604644775390625, 0.0, 1.0);
+    float loopFrom = (-floor((lineLengthLeft + 1.0) / 2.0)) + 1.0;
+    float loopTo = floor((lineLengthRight + 1.0) / 2.0);
+    float totalLength = (((loopTo - loopFrom) + 1.0) - leftOdd) - rightOdd;
+    float lerpStep = 1.0 / totalLength;
+    float lerpFromK = ((0.5 - leftOdd) - loopFrom) * lerpStep;
+    for (float i = loopFrom; i <= loopTo; i += 1.0)
+    {
+        float lerpVal = (lerpStep * i) + lerpFromK;
+        float secondPart = float(i > 0.0);
+        float srcOffset = 1.0 - (secondPart * 2.0);
+        float lerpK = (((lerpStep * i) + lerpFromK) * srcOffset) + secondPart;
+        lerpK *= dampenEffect;
+        vec2 pixelPos = vec2(screenPos) + (stepRight * i);
+        uvec2 param = uvec2(pixelPos);
+        ivec2 param_1 = ivec2(0);
+        int param_2 = int(msaaSampleIndex);
+        vec3 colorCenter = LoadSourceColor(param, param_1, param_2);
+        uvec2 param_3 = uvec2(pixelPos + (blendDir * vec2(srcOffset)));
+        ivec2 param_4 = ivec2(0);
+        int param_5 = int(msaaSampleIndex);
+        vec3 colorFrom = LoadSourceColor(param_3, param_4, param_5);
+        vec3 _output = mix(colorCenter, colorFrom, vec3(lerpK));
+        uvec2 param_6 = uvec2(pixelPos);
+        vec3 param_7 = _output;
+        bool param_8 = true;
+        uint param_9 = msaaSampleIndex;
+        StoreColorSample(param_6, param_7, param_8, param_9);
+    }
+}
+
+void _ProcessCandidatesCS(uvec3 dispatchThreadID, uvec3 groupThreadID)
+{
+    if (groupThreadID.x == 0u)
+    {
+        g_groupSharedBlendItemCount = 0u;
+    }
+    barrier();
+    uint msaaSampleIndex = 0u;
+    uint numCandidates = g_workingControlBuffer_1._data[12 >> 2];
+    if (dispatchThreadID.x < numCandidates)
+    {
+        uint pixelID = g_workingShapeCandidates_1._data[dispatchThreadID.x];
+        uvec2 pixelPos = uvec2(pixelID >> uint(18), pixelID & 16383u);
+        ivec3 loadPosCenter = ivec3(ivec2(pixelPos), 0);
+        ivec2 param = ivec2(pixelPos);
+        ivec2 param_1 = ivec2(0);
+        uint param_2 = msaaSampleIndex;
+        uint edgesCenterPacked = LoadEdge(param, param_1, param_2);
+        uint param_3 = edgesCenterPacked;
+        vec4 edges = UnpackEdgesFlt(param_3);
+        ivec2 param_4 = ivec2(pixelPos);
+        ivec2 param_5 = ivec2(-1, 0);
+        uint param_6 = msaaSampleIndex;
+        uint param_7 = LoadEdge(param_4, param_5, param_6);
+        vec4 edgesLeft = UnpackEdgesFlt(param_7);
+        ivec2 param_8 = ivec2(pixelPos);
+        ivec2 param_9 = ivec2(1, 0);
+        uint param_10 = msaaSampleIndex;
+        uint param_11 = LoadEdge(param_8, param_9, param_10);
+        vec4 edgesRight = UnpackEdgesFlt(param_11);
+        ivec2 param_12 = ivec2(pixelPos);
+        ivec2 param_13 = ivec2(0, 1);
+        uint param_14 = msaaSampleIndex;
+        uint param_15 = LoadEdge(param_12, param_13, param_14);
+        vec4 edgesBottom = UnpackEdgesFlt(param_15);
+        ivec2 param_16 = ivec2(pixelPos);
+        ivec2 param_17 = ivec2(0, -1);
+        uint param_18 = msaaSampleIndex;
+        uint param_19 = LoadEdge(param_16, param_17, param_18);
+        vec4 edgesTop = UnpackEdgesFlt(param_19);
+        vec4 param_20 = edges;
+        vec4 param_21 = edgesLeft;
+        vec4 param_22 = edgesRight;
+        vec4 param_23 = edgesTop;
+        vec4 param_24 = edgesBottom;
+        vec4 blendVal = ComputeSimpleShapeBlendValues(param_20, param_21, param_22, param_23, param_24, true);
+        float fourWeightSum = dot(blendVal, vec4(1.0));
+        float centerWeight = 1.0 - fourWeightSum;
+        uvec2 param_25 = pixelPos;
+        ivec2 param_26 = ivec2(0);
+        int param_27 = int(msaaSampleIndex);
+        vec3 outColor = LoadSourceColor(param_25, param_26, param_27) * centerWeight;
+        SPIRV_CROSS_FLATTEN
+        if (blendVal.x > 0.0)
+        {
+            uvec2 param_28 = pixelPos;
+            ivec2 param_29 = ivec2(-1, 0);
+            int param_30 = int(msaaSampleIndex);
+            vec3 pixelL = LoadSourceColor(param_28, param_29, param_30);
+            outColor += (pixelL * blendVal.x);
+        }
+        SPIRV_CROSS_FLATTEN
+        if (blendVal.y > 0.0)
+        {
+            uvec2 param_31 = pixelPos;
+            ivec2 param_32 = ivec2(0, -1);
+            int param_33 = int(msaaSampleIndex);
+            vec3 pixelT = LoadSourceColor(param_31, param_32, param_33);
+            outColor += (pixelT * blendVal.y);
+        }
+        SPIRV_CROSS_FLATTEN
+        if (blendVal.z > 0.0)
+        {
+            uvec2 param_34 = pixelPos;
+            ivec2 param_35 = ivec2(1, 0);
+            int param_36 = int(msaaSampleIndex);
+            vec3 pixelR = LoadSourceColor(param_34, param_35, param_36);
+            outColor += (pixelR * blendVal.z);
+        }
+        SPIRV_CROSS_FLATTEN
+        if (blendVal.w > 0.0)
+        {
+            uvec2 param_37 = pixelPos;
+            ivec2 param_38 = ivec2(0, 1);
+            int param_39 = int(msaaSampleIndex);
+            vec3 pixelB = LoadSourceColor(param_37, param_38, param_39);
+            outColor += (pixelB * blendVal.w);
+        }
+        uvec2 param_40 = pixelPos;
+        vec3 param_41 = outColor;
+        bool param_42 = false;
+        uint param_43 = msaaSampleIndex;
+        StoreColorSample(param_40, param_41, param_42, param_43);
+        bool horizontal = true;
+        bool invertedZ = false;
+        vec4 edgesM1P0 = edgesLeft;
+        vec4 edgesP1P0 = edgesRight;
+        ivec2 param_44 = ivec2(pixelPos);
+        ivec2 param_45 = ivec2(2, 0);
+        uint param_46 = msaaSampleIndex;
+        uint param_47 = LoadEdge(param_44, param_45, param_46);
+        vec4 edgesP2P0 = UnpackEdgesFlt(param_47);
+        vec4 param_48 = edges;
+        vec4 param_49 = edgesM1P0;
+        vec4 param_50 = edgesP1P0;
+        vec4 param_51 = edgesP2P0;
+        float param_52 = 0.0;
+        float param_53 = 0.0;
+        DetectZsHorizontal(param_48, param_49, param_50, param_51, param_52, param_53);
+        float invertedZScore = param_52;
+        float normalZScore = param_53;
+        float maxScore = max(invertedZScore, normalZScore);
+        if (maxScore > 0.0)
+        {
+            invertedZ = invertedZScore > normalZScore;
+        }
+        vec4 edgesM1P0_1 = edgesBottom;
+        vec4 edgesP1P0_1 = edgesTop;
+        ivec2 param_54 = ivec2(pixelPos);
+        ivec2 param_55 = ivec2(0, -2);
+        uint param_56 = msaaSampleIndex;
+        uint param_57 = LoadEdge(param_54, param_55, param_56);
+        vec4 edgesP2P0_1 = UnpackEdgesFlt(param_57);
+        vec4 param_58 = edges.wxyz;
+        vec4 param_59 = edgesM1P0_1.wxyz;
+        vec4 param_60 = edgesP1P0_1.wxyz;
+        vec4 param_61 = edgesP2P0_1.wxyz;
+        float param_62 = 0.0;
+        float param_63 = 0.0;
+        DetectZsHorizontal(param_58, param_59, param_60, param_61, param_62, param_63);
+        invertedZScore = param_62;
+        normalZScore = param_63;
+        float vertScore = max(invertedZScore, normalZScore);
+        if (vertScore > maxScore)
+        {
+            maxScore = vertScore;
+            horizontal = false;
+            invertedZ = invertedZScore > normalZScore;
+        }
+        if (maxScore > 0.0)
+        {
+            float shapeQualityScore = floor(clamp(4.0 - maxScore, 0.0, 3.0));
+            vec2 stepRight = mix(vec2(0.0, -1.0), vec2(1.0, 0.0), bvec2(horizontal));
+            uvec2 param_66 = pixelPos;
+            uint param_67 = msaaSampleIndex;
+            float param_64 = 0.0;
+            float param_65 = 0.0;
+            FindZLineLengths(param_64, param_65, param_66, horizontal, invertedZ, stepRight, param_67);
+            float lineLengthLeft = param_64;
+            float lineLengthRight = param_65;
+            lineLengthLeft -= shapeQualityScore;
+            lineLengthRight -= shapeQualityScore;
+            if ((lineLengthLeft + lineLengthRight) >= 5.0)
+            {
+                uvec2 param_68 = pixelPos;
+                bool param_69 = horizontal;
+                bool param_70 = invertedZ;
+                float param_71 = shapeQualityScore;
+                float param_72 = lineLengthLeft;
+                float param_73 = lineLengthRight;
+                vec2 param_74 = stepRight;
+                uint param_75 = msaaSampleIndex;
+                bool _1351 = CollectBlendZs(param_68, param_69, param_70, param_71, param_72, param_73, param_74, param_75);
+                if (!_1351)
+                {
+                    uvec2 param_76 = pixelPos;
+                    bool param_77 = horizontal;
+                    bool param_78 = invertedZ;
+                    float param_79 = shapeQualityScore;
+                    float param_80 = lineLengthLeft;
+                    float param_81 = lineLengthRight;
+                    vec2 param_82 = stepRight;
+                    uint param_83 = msaaSampleIndex;
+                    BlendZs(param_76, param_77, param_78, param_79, param_80, param_81, param_82, param_83);
+                }
+            }
+        }
+    }
+    barrier();
+    uint totalItemCount = min(768u, g_groupSharedBlendItemCount);
+    uint loops = ((totalItemCount + 127u) - groupThreadID.x) / 128u;
+    for (uint loop = 0u; loop < loops; loop++)
+    {
+        uint index = (loop * 128u) + groupThreadID.x;
+        uvec2 itemVal = g_groupSharedBlendItems[index];
+        uvec2 startingPos = uvec2(itemVal.x >> uint(18), itemVal.x & 16383u);
+        uint itemMSAASampleIndex = 0u;
+        bool itemHorizontal = ((itemVal.y >> uint(31)) & 1u) != 0u;
+        bool itemInvertedZ = ((itemVal.y >> uint(30)) & 1u) != 0u;
+        float itemStepIndex = float((itemVal.y >> uint(20)) & 1023u) - 256.0;
+        float itemSrcOffset = float((itemVal.y >> uint(10)) & 1023u) - 256.0;
+        float itemLerpK = float(itemVal.y & 1023u) / 1023.0;
+        vec2 itemStepRight = mix(vec2(0.0, -1.0), vec2(1.0, 0.0), bvec2(itemHorizontal));
+        vec2 itemBlendDir = mix(vec2(-1.0, 0.0), vec2(0.0, -1.0), bvec2(itemHorizontal));
+        if (itemInvertedZ)
+        {
+            itemBlendDir = -itemBlendDir;
+        }
+        uvec2 itemPixelPos = uvec2(vec2(startingPos) + (itemStepRight * itemStepIndex));
+        uvec2 param_84 = itemPixelPos;
+        ivec2 param_85 = ivec2(0);
+        int param_86 = int(itemMSAASampleIndex);
+        vec3 colorCenter = LoadSourceColor(param_84, param_85, param_86);
+        uvec2 param_87 = uvec2(vec2(itemPixelPos) + (itemBlendDir * vec2(itemSrcOffset)));
+        ivec2 param_88 = ivec2(0);
+        int param_89 = int(itemMSAASampleIndex);
+        vec3 colorFrom = LoadSourceColor(param_87, param_88, param_89);
+        vec3 outputColor = mix(colorCenter, colorFrom, vec3(itemLerpK));
+        uvec2 param_90 = itemPixelPos;
+        vec3 param_91 = outputColor;
+        bool param_92 = true;
+        uint param_93 = itemMSAASampleIndex;
+        StoreColorSample(param_90, param_91, param_92, param_93);
+    }
+}
+
+void main()
+{
+    uvec3 dispatchThreadID = gl_GlobalInvocationID;
+    uvec3 groupThreadID = gl_LocalInvocationID;
+    uvec3 param = dispatchThreadID;
+    uvec3 param_1 = groupThreadID;
+    _ProcessCandidatesCS(param, param_1);
+}
+

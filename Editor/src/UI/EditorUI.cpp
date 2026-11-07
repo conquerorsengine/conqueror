@@ -227,7 +227,7 @@ namespace Conqueror::Editor::UI
                 changed = true;
             }
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
-                ImGui::SetTooltip("Sıfırla (%.2f)", resetValue);
+                ImGui::SetTooltip("Reset (%.2f)", resetValue);
             ImGui::PopStyleColor(3);
             ImGui::SameLine();
             ImGui::SetNextItemWidth(fieldW);

@@ -12,9 +12,11 @@
 #include "Core/Tiering/QualitySettings.h"
 #include "Core/Time/TimeManager.h"
 #include "Renderer/RenderSettings.h"
+#include "Renderer/AntiAliasing.h"
 #include "Scene/Scene.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cctype>
 #include <fstream>
 #include <map>
@@ -380,6 +382,14 @@ namespace Conqueror
         if (o.Bloom >= 0) p.Bloom = o.Bloom != 0;
         if (o.SSAO >= 0) p.AmbientOcclusion = o.SSAO != 0;
         if (o.AntiAliasing >= 0) p.AntiAliasing = (AntiAliasingMode)o.AntiAliasing;
+        if (o.Upscaler >= 0) p.Upscaler = (UpscalerMode)o.Upscaler;
+        if (!std::isnan(o.ScreenPercentage))
+        {
+            p.UpscaleQuality = UpscaleQualityMode::Custom;
+            p.UpscaleRenderScale = std::clamp(o.ScreenPercentage / 100.0f, 0.33f, 1.0f);
+        }
+        // Eski numaralar (r.AntiAliasing 20 = FSR ...): TAA + Upscaling karşılığı
+        AntiAliasing::MigrateLegacy(p);
         if (o.Tonemapper >= 0) p.Tonemap = (Tonemapper)o.Tonemapper;
         if (o.Vignette >= 0) p.Vignette = o.Vignette != 0;
         if (o.FilmGrain >= 0) p.FilmGrain = o.FilmGrain != 0;
@@ -422,10 +432,18 @@ namespace Conqueror
         AddFloatOverride("r.Bloom.Intensity", "Bloom intensity", &R::BloomIntensity, [](Scene& s) { return s.GetRenderSettings().Post.BloomIntensity; }, 0.0f, 20.0f);
         AddBoolOverride("r.SSAO", "Screen space ambient occlusion on/off", &R::SSAO, [](Scene& s) { return s.GetRenderSettings().Post.AmbientOcclusion; });
         AddIntOverride("r.TAADebug", "TAA debug view: 0 off, 1 per-pixel history path (red moving, green settled, cyan calm, blue trusted, yellow clamped, magenta sky, white no history)", &R::TAADebug, [](Scene&) { return 0; }, 0, 1);
-        AddIntOverride("r.AntiAliasing", "Anti-aliasing: 0 off, 1 FXAA, 2 SMAA, 3 TAA, 4 TAA+FXAA, 5 MSAA, 6 CSAA, 7 SSAA, 8 FSAA, 9 EQAA, 10 MLAA, 11 CMAA, 12 TXAA, 13 TSAA, "
-                       "14 TAAU, 15 SMAA T2x, 16 TSRAA, 17 TSR, 18 DLSS, 19 DLAA, 20 FSR, 21 XeSS, 22 PSSR, 23 MetalFX, 24 NIS, 25 CAS, 26 FSR AA, 27 XeSS AA, 28 OGSSAA, "
-                       "29 SGSSAA, 30 RGSS, 31 TSSAA, 32 DEAA, 33 GBAA, 34 SRAA (sistemde olmayan en yakın karşılığa düşer)",
+        AddIntOverride("r.AntiAliasing", "Anti-aliasing method: 0 off, 1 FXAA, 2 SMAA, 3 TAA, 4 TAA+FXAA, 5 MSAA, 6 CSAA, 7 SSAA, 8 FSAA, 9 EQAA, 10 MLAA, 11 CMAA, "
+                       "12 TXAA, 13 TSAA, 15 SMAA T2x, 16 TSRAA, 19 DLAA, 26 FSR AA, 27 XeSS AA, 28 OGSSAA, 29 SGSSAA, 30 RGSS, 31 TSSAA, 32 DEAA, 33 GBAA, 34 SRAA "
+                       "(a method this system cannot run falls back to the closest one; old upscaler numbers 14, 17, 18, 20-25 map to TAA + r.Upscaler)",
                        &R::AntiAliasing, [](Scene& s) { return (int)s.GetRenderSettings().Post.AntiAliasing; }, 0, (int)AntiAliasingMode::Count - 1);
+        AddIntOverride("r.Upscaler", "Upscaler: 0 off (native), 1 FSR 1, 2 CAS, 3 NIS, 4 TAAU, 5 TSR, 6 DLSS, 7 XeSS, 8 MetalFX, 9 PSSR "
+                       "(an upscaler this system cannot run falls back to FSR 1)",
+                       &R::Upscaler, [](Scene& s) { return (int)s.GetRenderSettings().Post.Upscaler; }, 0, (int)UpscalerMode::Count - 1);
+        AddFloatOverride("r.ScreenPercentage", "Upscaler internal resolution in percent (33 .. 100); sets the quality mode to Custom",
+                         &R::ScreenPercentage, [](Scene& s) {
+                             const auto& p = s.GetRenderSettings().Post;
+                             return 100.0f * AntiAliasing::GetQualityModeScale(p.UpscaleQuality, p.UpscaleRenderScale);
+                         }, 33.0f, 100.0f);
         AddBoolOverride("r.SSR", "Screen space reflections on/off", &R::SSR, [](Scene& s) { return s.GetRenderSettings().Post.ScreenSpaceReflections; });
         AddBoolOverride("r.VolumetricFog", "Volumetric fog (shadowed light shafts) on/off", &R::VolumetricFog, [](Scene& s) { return s.GetRenderSettings().Post.VolumetricFog; });
         AddBoolOverride("r.VolumetricClouds", "Volumetric clouds on/off", &R::VolumetricClouds, [](Scene& s) { return s.GetRenderSettings().Post.VolumetricClouds; });

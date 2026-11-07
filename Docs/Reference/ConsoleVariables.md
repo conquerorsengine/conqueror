@@ -32,7 +32,7 @@ Open the Console panel and type a name to read it, `name value` to set it, `name
 
 | Variable | Default | Description |
 |---|---|---|
-| `r.AntiAliasing` | `1` | Post anti-aliasing: 0 off, 1 FXAA, 2 SMAA, 3 TAA |
+| `r.AntiAliasing` | `1` | Anti-aliasing method: 0 off, 1 FXAA, 2 SMAA, 3 TAA, 4 TAA+FXAA, 5 MSAA, 6 CSAA, 7 SSAA, 8 FSAA, 9 EQAA, 10 MLAA, 11 CMAA, 12 TXAA, 13 TSAA, 15 SMAA T2x, 16 TSRAA, 19 DLAA, 26 FSR AA, 27 XeSS AA, 28 OGSSAA, 29 SGSSAA, 30 RGSS, 31 TSSAA, 32 DEAA, 33 GBAA, 34 SRAA (a method this system cannot run falls back to the closest one; old upscaler numbers 14, 17, 18, 20-25 map to TAA + r.Upscaler) |
 | `r.AutoExposure` | `0` | Eye adaptation (auto exposure) on/off |
 | `r.Bloom` | `1` | Bloom on/off |
 | `r.Bloom.Intensity` | `0.6` | Bloom intensity |
@@ -45,10 +45,13 @@ Open the Console panel and type a name to read it, `name value` to set it, `name
 | `r.Fog` | `0` | Scene fog on/off |
 | `r.Fog.Density` | `0.02` | Exponential fog density |
 | `r.ForceLOD` | `-1` | Force a mesh LOD level on every Auto LOD mesh (-1 = automatic by screen size) |
+| `r.FrustumCulling` | `1` | Skip meshes outside the camera view and outside each shadow cascade (0 = draw everything, for debugging) |
 | `r.MotionBlur` | `0` | Camera motion blur on/off |
+| `r.OpaqueSort` | `1` | Opaque draw order: 1 front to back, alpha-tested (cutout) after opaque (default); 0 submission order |
 | `r.PostProcess` | `1` | Whole post processing stack on/off |
 | `r.Quality` | `2` | Quality level: 0 Low, 1 Medium, 2 High, 3 Ultra |
 | `r.Saturation` | `1` | Color grading saturation |
+| `r.ScreenPercentage` | `66.6667` | Upscaler internal resolution in percent (33 .. 100); sets the quality mode to Custom |
 | `r.Shadows` | `1` | Realtime shadows on/off |
 | `r.Shadows.Cascades` | `2` | Directional light shadow cascades (1..4) |
 | `r.Shadows.Distance` | `80` | Shadow draw distance in meters |
@@ -59,7 +62,9 @@ Open the Console panel and type a name to read it, `name value` to set it, `name
 | `r.SSGI` | `0` | Screen space global illumination (Lumen-style screen traces) on/off |
 | `r.SSGI.Intensity` | `1` | Screen space GI bounce strength |
 | `r.SSR` | `0` | Screen space reflections on/off |
+| `r.TAADebug` | `0` | TAA debug view: 0 off, 1 per-pixel history path (red moving, green settled, cyan calm, blue trusted, yellow clamped, magenta sky, white no history) |
 | `r.Tonemapper` | `1` | 0 none, 1 Neutral, 2 ACES, 3 AgX, 4 Reinhard |
+| `r.Upscaler` | `0` | Upscaler: 0 off (native), 1 FSR 1, 2 CAS, 3 NIS, 4 TAAU, 5 TSR, 6 DLSS, 7 XeSS, 8 MetalFX, 9 PSSR (an upscaler this system cannot run falls back to FSR 1) |
 | `r.Vignette` | `0` | Vignette on/off |
 | `r.VolumetricClouds` | `0` | Volumetric clouds on/off |
 | `r.VolumetricFog` | `0` | Volumetric fog (shadowed light shafts) on/off |

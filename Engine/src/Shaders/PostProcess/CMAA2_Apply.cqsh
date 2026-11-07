@@ -1,0 +1,121 @@
+#language GLSL
+// Intel CMAA2 (Conservative Morphological Anti-Aliasing 2.0), Apache 2.0 lisansı (External/CMAA2/license.txt): ertelenmiş karışım renklerini görüntüye uygular (yerinde).
+// External/CMAA2/CMAA2.hlsl (kalite HIGH, luma kenar algılama, LDR) glslang (HLSL -> SPIR-V) ve SPIRV-Cross (SPIR-V ->
+// GLSL 450) ile çevrildi. Elle değişiklikler: renk görüntüsü rgba8, değişken ofsetli texelFetchOffset -> texelFetch,
+// ekleme tamponlarına sınır denetimi (D3D taşan yazmaları yok sayar, OpenGL'de tanımsız), inout geçici değişkenleri 0 ile
+// başlatılır (sürücü uyarısı). Motor görüntü / örnekleyici layout(binding)'ini siler: birimler RunCMAA2'de adla atanır.
+#type compute
+#version 450
+layout(local_size_x = 4, local_size_y = 32, local_size_z = 1) in;
+
+const ivec2 _140[4] = ivec2[](ivec2(0), ivec2(1, 0), ivec2(0, 1), ivec2(1));
+
+layout(binding = 6, std430) buffer g_workingControlBuffer
+{
+    uint _data[];
+} g_workingControlBuffer_1;
+
+layout(binding = 3, std430) buffer g_workingDeferredBlendLocationList
+{
+    uint _data[];
+} g_workingDeferredBlendLocationList_1;
+
+layout(binding = 4, std430) buffer g_workingDeferredBlendItemList
+{
+    uvec2 _data[];
+} g_workingDeferredBlendItemList_1;
+
+layout(binding = 2, std430) buffer g_workingShapeCandidates
+{
+    uint _data[];
+} g_workingShapeCandidates_1;
+
+layout(binding = 7, std430) buffer g_workingExecuteIndirectBuffer
+{
+    uint _data[];
+} g_workingExecuteIndirectBuffer_1;
+
+layout(binding = 0, rgba8) uniform writeonly image2D g_inoutColorWriteonly;
+layout(binding = 5, r32ui) uniform readonly uimage2D g_workingDeferredBlendItemListHeads;
+layout(binding = 1, r32ui) uniform readonly writeonly uimage2D g_workingEdges;
+
+shared uint g_groupSharedBlendItemCount;
+shared uvec2 g_groupSharedBlendItems[768];
+shared vec4 g_groupShared2x2FracEdgesH[256];
+shared vec4 g_groupShared2x2FracEdgesV[256];
+
+vec3 Unpack_R11G11B10_E4_FLOAT(uint rgb)
+{
+    float r = unpackHalf2x16((rgb << uint(3)) & 16376u).x;
+    float g = unpackHalf2x16((rgb >> uint(8)) & 16376u).x;
+    float b = unpackHalf2x16((rgb >> uint(18)) & 16368u).x;
+    return vec3(r, g, b);
+}
+
+vec3 InternalUnpackColor(uint packedColor)
+{
+    uint param = packedColor;
+    return Unpack_R11G11B10_E4_FLOAT(param);
+}
+
+void FinalUAVStore(uvec2 pixelPos, vec3 color)
+{
+    vec4 storeTemp = vec4(color, 0.0);
+    imageStore(g_inoutColorWriteonly, ivec2(pixelPos), storeTemp);
+}
+
+void _DeferredColorApply2x2CS(uvec3 dispatchThreadID, uvec3 groupThreadID)
+{
+    uint numCandidates = g_workingControlBuffer_1._data[12 >> 2];
+    uint currentCandidate = dispatchThreadID.y;
+    uint currentQuadOffsetXY = groupThreadID.x;
+    if (currentCandidate >= numCandidates)
+    {
+        return;
+    }
+    uint pixelID = g_workingDeferredBlendLocationList_1._data[currentCandidate];
+    uvec2 quadPos = uvec2(pixelID >> uint(16), pixelID & 65535u);
+    uvec2 pixelPos = (quadPos * uvec2(2u)) + uvec2(_140[currentQuadOffsetXY]);
+    uint counterIndexWithHeader = imageLoad(g_workingDeferredBlendItemListHeads, ivec2(quadPos)).x;
+    int counter = 0;
+    vec4 outColors = vec4(0.0);
+    for (uint i = 0u; (counterIndexWithHeader != 4294967295u) && (i < 32u); i++)
+    {
+        uint offsetXY = (counterIndexWithHeader >> uint(30)) & 3u;
+        uint msaaSampleIndex = (counterIndexWithHeader >> uint(27)) & 7u;
+        bool isComplexShape = ((counterIndexWithHeader >> uint(26)) & 1u) != 0u;
+        uvec2 val = g_workingDeferredBlendItemList_1._data[counterIndexWithHeader & 67108863u];
+        counterIndexWithHeader = val.x;
+        if (offsetXY == currentQuadOffsetXY)
+        {
+            uint param = val.y;
+            vec3 color = InternalUnpackColor(param);
+            float weight = 0.800000011920928955078125 + (1.0 * float(isComplexShape));
+            outColors += vec4(color * weight, weight);
+        }
+    }
+    if (outColors.w == 0.0)
+    {
+        return;
+    }
+    vec4 outColor = outColors;
+    float _245 = outColor.w;
+    vec4 _246 = outColor;
+    vec3 _249 = _246.xyz / vec3(_245);
+    outColor.x = _249.x;
+    outColor.y = _249.y;
+    outColor.z = _249.z;
+    uvec2 param_1 = pixelPos;
+    vec3 param_2 = outColor.xyz;
+    FinalUAVStore(param_1, param_2);
+}
+
+void main()
+{
+    uvec3 dispatchThreadID = gl_GlobalInvocationID;
+    uvec3 groupThreadID = gl_LocalInvocationID;
+    uvec3 param = dispatchThreadID;
+    uvec3 param_1 = groupThreadID;
+    _DeferredColorApply2x2CS(param, param_1);
+}
+

@@ -345,8 +345,8 @@ namespace Conqueror
 
         std::ofstream script(dir / "Editor" / (cls + "Editor.cqs"));
         script << "using nativebridge;\n\n"
-               << "// Editör eklentisi: OnLoad'da menü / araç düğmesi / panel kaydedilir.\n"
-               << "// Menü ve düğme çağrıları otomatik olarak geri alınabilir (Ctrl+Z).\n"
+               << "// Editor addon: menus / toolbar buttons / panels are registered in OnLoad.\n"
+               << "// Menu and button actions can be undone automatically (Ctrl+Z).\n"
                << "script " << cls << "Editor : ConquerorScript\n"
                << "{\n"
                << "    public int count = 3;\n"

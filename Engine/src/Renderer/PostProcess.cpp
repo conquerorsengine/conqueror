@@ -18,10 +18,13 @@
 // SMAA alan / arama dokuları (Jimenez ve ark., MIT): iryoku/smaa Textures/*.h
 #include "../../../External/smaa/Textures/AreaTex.h"
 #include "../../../External/smaa/Textures/SearchTex.h"
+#include "../../../External/NVIDIAImageScaling/NIS/NIS_Config.h"
+#include "Renderer/TextureSlots.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <cstdlib>
 #include <unordered_map>
 
 namespace Conqueror
@@ -43,6 +46,19 @@ namespace Conqueror
 
         // Şu an sahnesi çizilen yığın (Temporal AA titreşimi için)
         PostProcessStack* s_Current = nullptr;
+
+        // SMAA T2x titreşimi ve SMAA alt örnek indisleri. SMAA.hlsl: jitters { (0.25, -0.25), (-0.25, 0.25) } ile
+        // subsampleIndices { (1, 1, 1, 0), (2, 2, 2, 0) } D3D doku uzayında (y aşağı); OpenGL doku uzayında y yukarı olduğundan
+        // titreşimin y bileşeni ters: (0.25, 0.25) -> S0, (-0.25, -0.25) -> S1
+        glm::vec2 SMAAT2xJitter(uint32_t frame)
+        {
+            return (frame & 1u) ? glm::vec2(-0.25f, -0.25f) : glm::vec2(0.25f, 0.25f);
+        }
+
+        glm::vec4 SMAAT2xSubsampleIndices(uint32_t frame)
+        {
+            return (frame & 1u) ? glm::vec4(2.0f, 2.0f, 2.0f, 0.0f) : glm::vec4(1.0f, 1.0f, 1.0f, 0.0f);
+        }
 
         float Halton(uint32_t index, uint32_t base)
         {
@@ -99,6 +115,8 @@ namespace Conqueror
         LoadShader("SMAAEdge", "Engine/src/Shaders/PostProcess/SMAA_Edge.cqsh");
         LoadShader("SMAAWeights", "Engine/src/Shaders/PostProcess/SMAA_Weights.cqsh");
         LoadShader("SMAABlend", "Engine/src/Shaders/PostProcess/SMAA_Blend.cqsh");
+        LoadShader("SMAAT2xResolve", "Engine/src/Shaders/PostProcess/SMAA_T2xResolve.cqsh");
+        LoadShader("TAAU", "Engine/src/Shaders/PostProcess/TAAU.cqsh");
         LoadShader("MLAAEdge", "Engine/src/Shaders/PostProcess/MLAA_Edge.cqsh");
         LoadShader("MLAAWeights", "Engine/src/Shaders/PostProcess/MLAA_Weights.cqsh");
         LoadShader("DEAA", "Engine/src/Shaders/PostProcess/DEAA.cqsh");
@@ -108,6 +126,11 @@ namespace Conqueror
         LoadShader("FSR_RCAS", "Engine/src/Shaders/PostProcess/FSR_RCAS.cqsh");
         LoadShader("CAS", "Engine/src/Shaders/PostProcess/CAS.cqsh");
         LoadShader("CAS_Scale", "Engine/src/Shaders/PostProcess/CAS_Scale.cqsh");
+        LoadShader("NIS", "Engine/src/Shaders/PostProcess/NIS.cqsh");
+        LoadShader("CMAA2Edges", "Engine/src/Shaders/PostProcess/CMAA2_Edges.cqsh");
+        LoadShader("CMAA2Args", "Engine/src/Shaders/PostProcess/CMAA2_Args.cqsh");
+        LoadShader("CMAA2Process", "Engine/src/Shaders/PostProcess/CMAA2_Process.cqsh");
+        LoadShader("CMAA2Apply", "Engine/src/Shaders/PostProcess/CMAA2_Apply.cqsh");
         LoadShader("HaloFlare", "Engine/src/Shaders/PostProcess/HaloFlare.cqsh");
         LoadShader("Bloom", "Engine/src/Shaders/PostProcess/Bloom.cqsh");
         LoadShader("SSAO", "Engine/src/Shaders/PostProcess/SSAO.cqsh");
@@ -188,9 +211,17 @@ namespace Conqueror
         DestroyTarget(m_Temp);
         DestroyTarget(m_Temp2);
         DestroyTarget(m_Upscale);
+        DestroyTarget(m_T2xHistory[0]);
+        DestroyTarget(m_T2xHistory[1]);
+        DestroyTarget(m_TAAUHistory[0]);
+        DestroyTarget(m_TAAUHistory[1]);
         DestroyCoverageFramebuffer();
         if (m_SMAAAreaTex) glDeleteTextures(1, &m_SMAAAreaTex);
         if (m_SMAASearchTex) glDeleteTextures(1, &m_SMAASearchTex);
+        if (m_NISCoefScaler) glDeleteTextures(1, &m_NISCoefScaler);
+        if (m_NISCoefUSM) glDeleteTextures(1, &m_NISCoefUSM);
+        if (m_NISConstants) glDeleteBuffers(1, &m_NISConstants);
+        DestroyCMAA2Resources();
         ReleaseEffectTargets();
         if (s_Current == this)
             s_Current = nullptr;
@@ -318,7 +349,7 @@ namespace Conqueror
                 m_CoverageSamples = m_WantCoverageSamples;
             else
             {
-                CQ_CORE_WARN("PostProcess: kapsam örnekli (EQAA / CSAA) çerçeve tamponu kurulamadı, kenar yumuşatma yok");
+                CQ_CORE_WARN("PostProcess: could not create the coverage-sampled (EQAA / CSAA) framebuffer; anti-aliasing is off");
                 m_WantCoverageSamples = 0;
             }
         }
@@ -365,12 +396,12 @@ namespace Conqueror
         const GLenum status = glCheckNamedFramebufferStatus(m_CoverageFramebuffer, GL_FRAMEBUFFER);
         if (status != GL_FRAMEBUFFER_COMPLETE)
         {
-            CQ_CORE_WARN("PostProcess: {0} çerçeve tamponu eksik (0x{1:x}), kapsam {2} / renk {3}", m_CoverageNV ? "CSAA" : "EQAA", (unsigned)status, coverage, color);
+            CQ_CORE_WARN("PostProcess: {0} framebuffer incomplete (0x{1:x}), coverage {2} / color {3}", m_CoverageNV ? "CSAA" : "EQAA", (unsigned)status, coverage, color);
             DestroyCoverageFramebuffer();
             return false;
         }
         m_CoverageColorSamples = color;
-        CQ_CORE_INFO("PostProcess: {0} {1} kapsam / {2} renk örneği ({3}x{4})", m_CoverageNV ? "CSAA" : "EQAA", coverage, color, width, height);
+        CQ_CORE_INFO("PostProcess: {0} {1} coverage / {2} color samples ({3}x{4})", m_CoverageNV ? "CSAA" : "EQAA", coverage, color, width, height);
         return true;
     }
 
@@ -405,6 +436,130 @@ namespace Conqueror
         glTextureParameteri(m_SMAASearchTex, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTextureParameteri(m_SMAASearchTex, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTextureParameteri(m_SMAASearchTex, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    }
+
+    void PostProcessStack::EnsureNISResources()
+    {
+        if (m_NISCoefScaler && m_NISCoefUSM && m_NISConstants)
+            return;
+        // Satır başına bir evre (64), satırda 8 katsayı = 2 RGBA32F texel (NIS örneğindeki düzen)
+        auto makeCoef = [](uint32_t& tex, const float (*coef)[kFilterSize]) {
+            glCreateTextures(GL_TEXTURE_2D, 1, &tex);
+            glTextureStorage2D(tex, 1, GL_RGBA32F, (GLsizei)(kFilterSize / 4), (GLsizei)kPhaseCount);
+            glTextureSubImage2D(tex, 0, 0, 0, (GLsizei)(kFilterSize / 4), (GLsizei)kPhaseCount, GL_RGBA, GL_FLOAT, coef);
+            glTextureParameteri(tex, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTextureParameteri(tex, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTextureParameteri(tex, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTextureParameteri(tex, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        };
+        makeCoef(m_NISCoefScaler, coef_scale);
+        makeCoef(m_NISCoefUSM, coef_usm);
+        glCreateBuffers(1, &m_NISConstants);
+        glNamedBufferStorage(m_NISConstants, sizeof(NISConfig), nullptr, GL_DYNAMIC_STORAGE_BIT);
+    }
+
+    void PostProcessStack::DestroyCMAA2Resources()
+    {
+        if (m_CMAA2Edges) glDeleteTextures(1, &m_CMAA2Edges);
+        if (m_CMAA2Heads) glDeleteTextures(1, &m_CMAA2Heads);
+        for (uint32_t& b : m_CMAA2Buffers)
+            if (b) glDeleteBuffers(1, &b);
+        m_CMAA2Edges = m_CMAA2Heads = 0;
+        for (uint32_t& b : m_CMAA2Buffers)
+            b = 0;
+        m_CMAA2Width = m_CMAA2Height = 0;
+    }
+
+    void PostProcessStack::EnsureCMAA2Resources(uint32_t width, uint32_t height)
+    {
+        if (m_CMAA2Edges && m_CMAA2Width == width && m_CMAA2Height == height)
+            return;
+        DestroyCMAA2Resources();
+        m_CMAA2Width = width;
+        m_CMAA2Height = height;
+        // Kenarlar: iki pikselin 4 bitlik kenar bilgisi bir texelde (yarım genişlik); liste başları: 2x2 dörtlü başına
+        glCreateTextures(GL_TEXTURE_2D, 1, &m_CMAA2Edges);
+        glTextureStorage2D(m_CMAA2Edges, 1, GL_R32UI, (GLsizei)((width + 1) / 2), (GLsizei)height);
+        glCreateTextures(GL_TEXTURE_2D, 1, &m_CMAA2Heads);
+        glTextureStorage2D(m_CMAA2Heads, 1, GL_R32UI, (GLsizei)((width + 1) / 2), (GLsizei)((height + 1) / 2));
+        const uint32_t clearHead = 0xFFFFFFFFu;
+        glClearTexImage(m_CMAA2Heads, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, &clearHead);
+        const GLsizeiptr pixels = (GLsizeiptr)width * (GLsizeiptr)height;
+        const GLsizeiptr quads = (GLsizeiptr)((width + 1) / 2) * (GLsizeiptr)((height + 1) / 2);
+        const GLsizeiptr sizes[5] = {
+            pixels * 4,    // şekil adayları (piksel başına en çok bir)
+            quads * 4,     // ertelenmiş karışım konumları (dörtlü başına en çok bir)
+            pixels * 8,    // karışım öğeleri (uvec2; taşarsa gölgelendirici atlar)
+            16 * 4,        // sayaçlar
+            4 * 4          // dolaylı gönderim argümanları
+        };
+        glCreateBuffers(5, m_CMAA2Buffers);
+        for (int i = 0; i < 5; ++i)
+        {
+            glNamedBufferStorage(m_CMAA2Buffers[i], sizes[i], nullptr, GL_DYNAMIC_STORAGE_BIT);
+            const uint32_t zero = 0;
+            glClearNamedBufferData(m_CMAA2Buffers[i], GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
+        }
+    }
+
+    void PostProcessStack::RunCMAA2(uint32_t texture)
+    {
+        auto edges = PostProcess::GetShader("CMAA2Edges");
+        auto args = PostProcess::GetShader("CMAA2Args");
+        auto process = PostProcess::GetShader("CMAA2Process");
+        auto apply = PostProcess::GetShader("CMAA2Apply");
+        if (!Valid(edges) || !Valid(args) || !Valid(process) || !Valid(apply))
+            return;
+        EnsureCMAA2Resources(m_Width, m_Height);
+        // Bağlamalar (HLSL kayıtlarıyla aynı): görüntüler u0 renk, u1 kenarlar, u5 liste başları; tamponlar u2 adaylar,
+        // u3 konumlar, u4 öğeler, u6 sayaçlar, u7 dolaylı argümanlar; renk dokusu t0 -> doku birimi 8
+        glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
+        glBindImageTexture(1, m_CMAA2Edges, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+        glBindImageTexture(5, m_CMAA2Heads, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+        const GLuint ssboBinding[5] = { 2, 3, 4, 6, 7 };
+        for (int i = 0; i < 5; ++i)
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, ssboBinding[i], m_CMAA2Buffers[i]);
+        glBindTextureUnit(8, texture);
+        glBindBuffer(GL_DISPATCH_INDIRECT_BUFFER, m_CMAA2Buffers[4]);
+        // Motorun gölgelendirici yolu görüntü / örnekleyici layout(binding)'ini siler (ada göre atanır): birimler her çekirdekte
+        auto bindUnits = [](const std::shared_ptr<Shader>& sh)
+        {
+            sh->SetInt("g_inoutColorWriteonly", 0);
+            sh->SetInt("g_workingEdges", 1);
+            sh->SetInt("g_workingDeferredBlendItemListHeads", 5);
+            sh->SetInt("SPIRV_Cross_Combinedg_inoutColorReadonlySPIRV_Cross_DummySampler", 8);
+        };
+        const GLbitfield storage = GL_SHADER_STORAGE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT;
+        // 1) Kenar algılama: 16x16 iş parçacığı, kenar şeridi hariç 14x14'ü 2x2 piksel işler (28x28 piksel / grup)
+        edges->Bind();
+        bindUnits(edges);
+        glDispatchCompute((m_Width + 27) / 28, (m_Height + 27) / 28, 1);
+        glMemoryBarrier(storage);
+        // 2) Şekil adayları için dolaylı gönderim argümanları
+        args->Bind();
+        glDispatchCompute(2, 1, 1);
+        glMemoryBarrier(storage | GL_COMMAND_BARRIER_BIT);
+        // 3) Adaylar: şekiller izlenir, karışım renkleri ertelenmiş listeye
+        process->Bind();
+        bindUnits(process);
+        glDispatchComputeIndirect(0);
+        glMemoryBarrier(storage);
+        // 4) Ertelenmiş uygulama için argümanlar (sayaçlar sonraki kare için sıfırlanır)
+        args->Bind();
+        glDispatchCompute(1, 2, 1);
+        glMemoryBarrier(storage | GL_COMMAND_BARRIER_BIT);
+        // 5) Karışım renkleri görüntüye yazılır (değişmeyen pikseller olduğu gibi kalır)
+        apply->Bind();
+        bindUnits(apply);
+        glDispatchComputeIndirect(0);
+        glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_FRAMEBUFFER_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        glBindBuffer(GL_DISPATCH_INDIRECT_BUFFER, 0);
+        for (GLuint unit : { 0u, 1u, 5u })
+            glBindImageTexture(unit, 0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
+        for (int i = 0; i < 5; ++i)
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, ssboBinding[i], 0);
+        glBindTextureUnit(8, 0);
+        Renderer::GetStats().PostProcessPasses += 5;
     }
 
     void PostProcessStack::BeginScene(uint32_t width, uint32_t height)
@@ -450,6 +605,11 @@ namespace Conqueror
             {
                 // TSAA: iki konum (çapraz beşli düzen), karede bir değişir
                 pixel = (m_FrameIndex & 1u) ? glm::vec2(0.25f, -0.25f) : glm::vec2(-0.25f, 0.25f);
+            }
+            else if (m_TAAVariant == 3)
+            {
+                // SMAA T2x: iki konum (±0.25 piksel çapraz), SMAA'nın alt örnek indisleriyle eşleşir (RunFinal)
+                pixel = SMAAT2xJitter(m_FrameIndex);
             }
             else
             {
@@ -660,9 +820,6 @@ namespace Conqueror
                 case AntiAliasingMode::TXAA:
                 case AntiAliasingMode::TSAA:
                 case AntiAliasingMode::TSSAA:
-                case AntiAliasingMode::FSR:
-                case AntiAliasingMode::NIS:
-                case AntiAliasingMode::CAS:
                     return true;
                 default:
                     return false;
@@ -685,20 +842,40 @@ namespace Conqueror
         }
     }
 
-    AntiAliasingMode PostProcessStack::ResolveAntiAliasing(const PostProcessSettings& settings, const RenderCamera& camera) const
+    void PostProcessStack::ResolveAntiAliasing(const PostProcessSettings& settings, const RenderCamera& camera)
     {
+        m_Upscaler = UpscalerMode::None;
+        m_CASSharpen = false;
+        m_CASStrength = 0.0f;
         if (m_PointUpscale)
-            return AntiAliasingMode::None;
-        AntiAliasingMode aa = AntiAliasing::ResolveForThisSystem(settings.Enabled ? settings.AntiAliasing : AntiAliasingMode::FXAA);
+        {
+            m_AAMode = AntiAliasingMode::None;
+            return;
+        }
+        // Eski sahnelerin AA listesindeki yükselticiler (FSR, DLSS, CAS ...) planda TAA + yükseltici / keskinleştirme olur
+        const AntiAliasing::Plan plan = AntiAliasing::GetPlan(settings);
+        AntiAliasingMode aa = AntiAliasing::ResolveForThisSystem(settings.Enabled ? plan.AA : AntiAliasingMode::FXAA);
         // Ortografik kamerada zamansal yöntem yok (TAA FXAA'ya, TXAA MSAA'ya düşer)
         if (camera.Orthographic)
         {
             if (aa == AntiAliasingMode::TXAA)
-                return AntiAliasingMode::MSAA;
-            if (aa == AntiAliasingMode::TAA || aa == AntiAliasingMode::TAA_FXAA || aa == AntiAliasingMode::TSAA || aa == AntiAliasingMode::TSSAA)
-                return AntiAliasingMode::FXAA;
+                aa = AntiAliasingMode::MSAA;
+            else if (aa == AntiAliasingMode::TAA || aa == AntiAliasingMode::TAA_FXAA || aa == AntiAliasingMode::TSAA || aa == AntiAliasingMode::TSSAA)
+                aa = AntiAliasingMode::FXAA;
+            else if (aa == AntiAliasingMode::SMAA_T2X)
+                aa = AntiAliasingMode::SMAA;   // titreşim yok: yalnız SMAA 1x
         }
-        return aa;
+        m_AAMode = aa;
+        if (!settings.Enabled)
+            return;
+        // Süper örnekleme yerelden yüksek çözünürlükte çizer: o sırada yükseltici kullanılmaz
+        if (!AntiAliasing::IsSupersampling(aa))
+            m_Upscaler = AntiAliasing::ResolveUpscalerForThisSystem(plan.Upscaler);
+        // Ortografik kamerada titreşim yok: zamansal yükseltici yerine uzamsal FSR 1
+        if (camera.Orthographic && m_Upscaler == UpscalerMode::TAAU)
+            m_Upscaler = UpscalerMode::FSR1;
+        m_CASSharpen = plan.CASSharpen;
+        m_CASStrength = std::clamp(AntiAliasing::IsLegacyUpscaler(settings.AntiAliasing) ? settings.UpscaleSharpness : settings.SharpenAmount, 0.0f, 1.0f);
     }
 
     uint32_t PostProcessStack::GetSceneColorTexture() const
@@ -890,9 +1067,10 @@ namespace Conqueror
         };
 
         // 1) Uzamsal kenar yumuşatma (iç çözünürlükte, ton eşlenmiş görüntüde)
-        if (aa == AntiAliasingMode::SMAA || aa == AntiAliasingMode::MLAA)
+        if (aa == AntiAliasingMode::SMAA || aa == AntiAliasingMode::MLAA || aa == AntiAliasingMode::SMAA_T2X)
         {
             const bool mlaa = aa == AntiAliasingMode::MLAA;
+            const bool t2x = aa == AntiAliasingMode::SMAA_T2X && m_JitterActive;
             auto edge = PostProcess::GetShader(mlaa ? "MLAAEdge" : "SMAAEdge");
             auto weights = PostProcess::GetShader(mlaa ? "MLAAWeights" : "SMAAWeights");
             auto neighborhood = PostProcess::GetShader("SMAABlend");
@@ -918,7 +1096,8 @@ namespace Conqueror
                 weights->SetInt("u_EdgesTex", 0);
                 weights->SetInt("u_AreaTex", 1);
                 weights->SetInt("u_SearchTex", 2);
-                weights->SetFloat4("u_SubsampleIndices", glm::vec4(0.0f));
+                // SMAA T2x: bu karenin titreşim konumuna karşılık gelen alt örnek indisleri
+                weights->SetFloat4("u_SubsampleIndices", t2x ? SMAAT2xSubsampleIndices(m_FrameIndex) : glm::vec4(0.0f));
                 BindTexture(0, m_SMAAEdges.Texture);
                 BindTexture(1, m_SMAAAreaTex);
                 BindTexture(2, m_SMAASearchTex);
@@ -934,7 +1113,58 @@ namespace Conqueror
                 PostProcess::DrawFullscreenQuad();
                 cur = dst.Texture;
                 Renderer::GetStats().PostProcessPasses += 3;
+                auto resolve = PostProcess::GetShader("SMAAT2xResolve");
+                if (t2x && Valid(resolve))
+                {
+                    // İki karenin SMAA çıktısının yeniden izdüşümlü birleşimi; bu karenin çıktısı (alfa: hız) sonraki kareye
+                    RenderTarget& out = internalPass();
+                    const int ni = 1 - m_T2xIndex;
+                    EnsureTarget(m_T2xHistory[0], m_Width, m_Height, GL_RGBA8);
+                    EnsureTarget(m_T2xHistory[1], m_Width, m_Height, GL_RGBA8);
+                    static GLuint s_T2xFramebuffer = 0;
+                    if (!s_T2xFramebuffer)
+                        glCreateFramebuffers(1, &s_T2xFramebuffer);
+                    glNamedFramebufferTexture(s_T2xFramebuffer, GL_COLOR_ATTACHMENT0, out.Texture, 0);
+                    glNamedFramebufferTexture(s_T2xFramebuffer, GL_COLOR_ATTACHMENT1, m_T2xHistory[ni].Texture, 0);
+                    const GLenum buffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+                    glNamedFramebufferDrawBuffers(s_T2xFramebuffer, 2, buffers);
+                    glBindFramebuffer(GL_FRAMEBUFFER, s_T2xFramebuffer);
+                    glViewport(0, 0, (GLsizei)m_Width, (GLsizei)m_Height);
+                    resolve->Bind();
+                    resolve->SetInt("u_Current", 0);
+                    resolve->SetInt("u_Previous", 1);
+                    resolve->SetInt("u_Depth", 2);
+                    resolve->SetInt("u_GNormal", 3);
+                    resolve->SetInt("u_Velocity", 4);
+                    const uint32_t normals = GetSceneNormalTexture();
+                    resolve->SetInt("u_HasMotionFlag", normals ? 1 : 0);
+                    resolve->SetInt("u_HasVelocity", m_FinalHasVelocity ? 1 : 0);
+                    resolve->SetInt("u_HistoryValid", (m_T2xValid && m_HasPrevViewProj) ? 1 : 0);
+                    resolve->SetInt("u_CameraStill", m_CameraStill ? 1 : 0);
+                    resolve->SetMat4("u_InvViewProj", m_FinalInvViewProj);
+                    resolve->SetMat4("u_PrevViewProj", m_PrevViewProj);
+                    resolve->SetFloat2("u_Texel", invSize);
+                    resolve->SetFloat2("u_JitterUV", m_JitterNDC * 0.5f);
+                    BindTexture(0, cur);
+                    BindTexture(1, m_T2xHistory[m_T2xIndex].Texture);
+                    BindTexture(2, GetSceneDepthTexture());
+                    BindTexture(3, normals);
+                    BindTexture(4, m_FinalHasVelocity ? m_Velocity.Texture : 0);
+                    PostProcess::DrawFullscreenQuad();
+                    cur = out.Texture;
+                    m_T2xIndex = ni;
+                    m_T2xValid = true;
+                    Renderer::GetStats().PostProcessPasses++;
+                }
             }
+        }
+        else if (aa == AntiAliasingMode::CMAA)
+        {
+            // CMAA2 yerinde çalışır: giriş ara hedefe kopyalanır, yalnız kenar pikselleri değişir
+            RenderTarget& dst = internalPass();
+            glCopyImageSubData(cur, GL_TEXTURE_2D, 0, 0, 0, 0, dst.Texture, GL_TEXTURE_2D, 0, 0, 0, 0, (GLsizei)m_Width, (GLsizei)m_Height, 1);
+            RunCMAA2(dst.Texture);
+            cur = dst.Texture;
         }
         else if (aa == AntiAliasingMode::DEAA)
         {
@@ -971,25 +1201,77 @@ namespace Conqueror
             Renderer::GetStats().PostProcessPasses++;
         }
 
-        // 2) Çıktı: keskinleştirme, süper örnekleme küçültmesi ya da yükseltme
-        const bool upscaler = aa == AntiAliasingMode::FSR || aa == AntiAliasingMode::CAS || aa == AntiAliasingMode::NIS;
+        // 2) Çıktı: keskinleştirme, süper örnekleme küçültmesi ya da yükseltme (Upscaling bölümündeki yükseltici)
+        const UpscalerMode up = m_Upscaler;
+        auto cas = PostProcess::GetShader("CAS");
+        // Yerel çözünürlükte CAS: Sharpening > CAS ya da ölçeksiz (Render Scale 1) CAS yükselticisi
+        const bool casNative = !resample && (m_CASSharpen || up == UpscalerMode::CAS) && Valid(cas);
         // FSR (RCAS) ve CAS kendi keskinleştirmesini yapar: TAA keskinliği eklenmez
-        float sharpenAmount = ((taa && !upscaler) ? settings.TAASharpness : 0.0f) + (settings.Sharpen ? settings.SharpenAmount : 0.0f);
+        const bool ownSharpen = casNative || (resample && (up == UpscalerMode::FSR1 || up == UpscalerMode::CAS));
+        float sharpenAmount = ((taa && !ownSharpen) ? settings.TAASharpness : 0.0f) + ((settings.Sharpen && !m_CASSharpen) ? settings.SharpenAmount : 0.0f);
         if (!settings.Enabled || m_PointUpscale)
             sharpenAmount = 0.0f;
         const float upSharp = std::clamp(settings.UpscaleSharpness, 0.0f, 1.0f);
 
+        auto taau = PostProcess::GetShader("TAAU");
+        if (up == UpscalerMode::TAAU && m_JitterActive && Valid(taau) && Valid(sharpen))
+        {
+            // TAAU: iç çözünürlükteki titreşimli kare + çıktı çözünürlüğündeki geçmiş -> yeni geçmiş, sonra çıktıya keskinleştirerek
+            const int ni = 1 - m_TAAUIndex;
+            EnsureTarget(m_TAAUHistory[0], outW, outH, GL_RGBA16F);
+            EnsureTarget(m_TAAUHistory[1], outW, outH, GL_RGBA16F);
+            glBindFramebuffer(GL_FRAMEBUFFER, m_TAAUHistory[ni].Framebuffer);
+            glViewport(0, 0, (GLsizei)outW, (GLsizei)outH);
+            taau->Bind();
+            taau->SetInt("u_Current", 0);
+            taau->SetInt("u_History", 1);
+            taau->SetInt("u_Depth", 2);
+            taau->SetInt("u_GNormal", 3);
+            taau->SetInt("u_Velocity", 4);
+            const uint32_t normals = GetSceneNormalTexture();
+            taau->SetInt("u_HasMotionFlag", normals ? 1 : 0);
+            taau->SetInt("u_HasVelocity", m_FinalHasVelocity ? 1 : 0);
+            taau->SetInt("u_HistoryValid", (m_TAAUValid && m_HasPrevViewProj && m_TAAUHistory[m_TAAUIndex].Width == outW &&
+                                            m_TAAUHistory[m_TAAUIndex].Height == outH) ? 1 : 0);
+            taau->SetInt("u_CameraStill", m_CameraStill ? 1 : 0);
+            taau->SetMat4("u_InvViewProj", m_FinalInvViewProj);
+            taau->SetMat4("u_PrevViewProj", m_PrevViewProj);
+            taau->SetFloat2("u_InTexel", invSize);
+            taau->SetFloat2("u_OutTexel", glm::vec2(1.0f / (float)outW, 1.0f / (float)outH));
+            taau->SetFloat2("u_JitterUV", m_JitterNDC * 0.5f);
+            taau->SetFloat("u_Feedback", std::clamp(settings.TAAFeedback, 0.5f, 0.97f));
+            glTextureParameteri(cur, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            BindTexture(0, cur);
+            BindTexture(1, m_TAAUHistory[m_TAAUIndex].Texture);
+            BindTexture(2, GetSceneDepthTexture());
+            BindTexture(3, normals);
+            BindTexture(4, m_FinalHasVelocity ? m_Velocity.Texture : 0);
+            PostProcess::DrawFullscreenQuad();
+            glTextureParameteri(cur, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            m_TAAUIndex = ni;
+            m_TAAUValid = true;
+            toOutput();
+            sharpen->Bind();
+            sharpen->SetInt("u_ScreenTexture", 0);
+            sharpen->SetFloat2("u_InverseScreenSize", glm::vec2(1.0f / (float)outW, 1.0f / (float)outH));
+            sharpen->SetFloat("u_Amount", std::min(0.5f * upSharp + ((settings.Sharpen && !m_CASSharpen) ? settings.SharpenAmount : 0.0f), 1.0f));
+            BindTexture(0, m_TAAUHistory[ni].Texture);
+            PostProcess::DrawFullscreenQuad();
+            Renderer::GetStats().PostProcessPasses += 2;
+            return;
+        }
+
         if (!resample)
         {
-            auto cas = PostProcess::GetShader("CAS");
-            if (aa == AntiAliasingMode::CAS && Valid(cas))
+            if (casNative)
             {
                 toOutput();
                 cas->Bind();
                 cas->SetInt("u_Source", 0);
                 cas->SetFloat2("u_OutOrigin", outOrigin);
                 const float w = (float)m_Width, h = (float)m_Height;
-                const float sharp = -1.0f / glm::mix(8.0f, 5.0f, upSharp);
+                const float strength = up == UpscalerMode::CAS ? upSharp : m_CASStrength;
+                const float sharp = -1.0f / glm::mix(8.0f, 5.0f, strength);
                 SetUInt4(cas, "u_Const0", glm::uvec4(FloatBits(1.0f), FloatBits(1.0f), FloatBits(0.0f), FloatBits(0.0f)));
                 SetUInt4(cas, "u_Const1", glm::uvec4(FloatBits(sharp), glm::packHalf2x16(glm::vec2(sharp, 0.0f)), FloatBits(8.0f * w / w), 0u));
                 BindTexture(0, cur);
@@ -1014,7 +1296,33 @@ namespace Conqueror
             auto easu = PostProcess::GetShader("FSR_EASU");
             auto rcas = PostProcess::GetShader("FSR_RCAS");
             auto casScale = PostProcess::GetShader("CAS_Scale");
-            if ((aa == AntiAliasingMode::SSAA || aa == AntiAliasingMode::OGSSAA || aa == AntiAliasingMode::FSAA) && Valid(down))
+            auto nis = PostProcess::GetShader("NIS");
+            // NVIDIA Image Scaling: hesaplama gölgelendiricisi iç çözünürlük görüntüsünü m_Upscale'e (çıktı boyutu) yazar
+            auto NISUpscale = [&](uint32_t source, uint32_t w, uint32_t h, float sharpness) -> bool
+            {
+                NISConfig config{};
+                if (!Valid(sharpen) || !NVScalerUpdateConfig(config, sharpness, 0, 0, m_Width, m_Height, m_Width, m_Height, 0, 0, w, h, w, h, NISHDRMode::None))
+                    return false;
+                EnsureNISResources();
+                EnsureTarget(m_Upscale, w, h, GL_RGBA8);
+                glNamedBufferSubData(m_NISConstants, 0, sizeof(NISConfig), &config);
+                nis->Bind();
+                nis->SetInt("in_texture", 0);
+                nis->SetInt("coef_scaler", 1);
+                nis->SetInt("coef_usm", 2);
+                nis->SetInt("out_texture", 0);   // görüntü birimi (motor layout(binding)'i siler, ada göre atanır)
+                glBindBufferBase(GL_UNIFORM_BUFFER, UniformBinding::PostProcessConstants, m_NISConstants);
+                BindTexture(0, source);
+                BindTexture(1, m_NISCoefScaler);
+                BindTexture(2, m_NISCoefUSM);
+                glBindImageTexture(0, m_Upscale.Texture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+                glDispatchCompute((w + 31) / 32, (h + 23) / 24, 1);
+                glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_FRAMEBUFFER_BARRIER_BIT);
+                glBindImageTexture(0, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+                Renderer::GetStats().PostProcessPasses++;
+                return true;
+            };
+            if (AntiAliasing::IsSupersampling(aa) && Valid(down))
             {
                 toOutput();
                 down->Bind();
@@ -1025,7 +1333,7 @@ namespace Conqueror
                 BindTexture(0, cur);
                 PostProcess::DrawFullscreenQuad();
             }
-            else if (aa == AntiAliasingMode::FSR && Valid(easu) && Valid(rcas))
+            else if (up == UpscalerMode::FSR1 && Valid(easu) && Valid(rcas))
             {
                 // EASU: iç çözünürlük -> çıktı boyutunda ara hedef
                 EnsureTarget(m_Upscale, outW, outH, GL_RGBA8);
@@ -1052,7 +1360,19 @@ namespace Conqueror
                 PostProcess::DrawFullscreenQuad();
                 Renderer::GetStats().PostProcessPasses++;
             }
-            else if (aa == AntiAliasingMode::CAS && Valid(casScale))
+            else if (up == UpscalerMode::NIS && Valid(nis) && NISUpscale(cur, outW, outH, upSharp))
+            {
+                // NIS çıktısı çıktı boyutunda ara hedefte: çıktıya kopya (keskinleştirmesiz)
+                toOutput();
+                sharpen->Bind();
+                sharpen->SetInt("u_ScreenTexture", 0);
+                sharpen->SetFloat2("u_InverseScreenSize", glm::vec2(1.0f / oW, 1.0f / oH));
+                sharpen->SetFloat("u_Amount", 0.0f);
+                BindTexture(0, m_Upscale.Texture);
+                PostProcess::DrawFullscreenQuad();
+                Renderer::GetStats().PostProcessPasses++;
+            }
+            else if (up == UpscalerMode::CAS && Valid(casScale))
             {
                 toOutput();
                 casScale->Bind();
@@ -1088,7 +1408,7 @@ namespace Conqueror
         CQ_PROFILE_SAMPLE("Render.PostProcess", Rendering);
         CQ_PROFILE_GPU("Post Processing");
         m_LitScene = litScene;
-        m_AAMode = ResolveAntiAliasing(settings, camera);
+        ResolveAntiAliasing(settings, camera);
 
         GLint outputFBO = 0;
         GLint outputViewport[4];
@@ -1118,10 +1438,36 @@ namespace Conqueror
         if (fx)
             RunSceneEffects(settings, camera, time);
         m_TAAResolved = false;
-        if (fx && UsesTemporalAA(m_AAMode) && !camera.Orthographic)
+        // TAAU seçiliyken zamansal kenar yumuşatma TAAU'nun kendisidir (Unreal'daki gibi zamansal yükseltici TAA'nın yerini alır)
+        if (fx && UsesTemporalAA(m_AAMode) && !camera.Orthographic && m_Upscaler != UpscalerMode::TAAU)
             RunTAA(settings, camera);
         else
             m_HistoryValid = false;
+        // SMAA T2x / TAAU: çözüm RunFinal'da (LDR); hız vektörleri ve bu karenin titreşimli ters matrisi şimdi
+        if (fx && (m_AAMode == AntiAliasingMode::SMAA_T2X || m_Upscaler == UpscalerMode::TAAU) && !camera.Orthographic && m_JitterActive)
+        {
+            m_FinalHasVelocity = RenderObjectVelocity(camera);
+            m_FinalInvViewProj = glm::inverse(JitteredProjection(camera) * camera.View);
+            bool still = m_HasPrevViewProj;
+            const glm::mat4 now = camera.Projection * camera.View;
+            for (int c = 0; c < 4 && still; ++c)
+                for (int r = 0; r < 4; ++r)
+                    if (std::abs(now[c][r] - m_PrevViewProj[c][r]) > 1e-6f * std::max(1.0f, std::abs(now[c][r])))
+                    {
+                        still = false;
+                        break;
+                    }
+            m_CameraStill = still;
+            if (m_AAMode != AntiAliasingMode::SMAA_T2X)
+                m_T2xValid = false;
+            if (m_Upscaler != UpscalerMode::TAAU)
+                m_TAAUValid = false;
+        }
+        else
+        {
+            m_T2xValid = false;
+            m_TAAUValid = false;
+        }
         if (fx && settings.DepthOfField)
             RunDepthOfField(settings, camera);
         if (fx && settings.MotionBlur)
@@ -1194,9 +1540,12 @@ namespace Conqueror
             // Kenar yumuşatma istekleri (sonraki karenin sahne hedefi ve titreşimi)
             const AntiAliasingMode next = m_AAMode;
             const bool temporal = fx && !camera.Orthographic && UsesTemporalAA(next);
-            m_WantTAA = temporal;
+            const bool t2x = fx && !camera.Orthographic && next == AntiAliasingMode::SMAA_T2X;
+            const bool taau = fx && !camera.Orthographic && m_Upscaler == UpscalerMode::TAAU;
+            m_WantTAA = temporal || t2x || taau;   // titreşim (+ hareket bayrağı için normal eki)
             m_WantTXAA = temporal && next == AntiAliasingMode::TXAA;
-            m_WantTAAVariant = next == AntiAliasingMode::TSAA ? 1 : next == AntiAliasingMode::TSSAA ? 2 : 0;
+            // TAAU: 16 konumlu Halton titreşimi (zamansal yükseltici kenar yumuşatmanın yerini alır)
+            m_WantTAAVariant = taau ? 0 : next == AntiAliasingMode::TSAA ? 1 : next == AntiAliasingMode::TSSAA ? 2 : t2x ? 3 : 0;
             switch (next)
             {
                 case AntiAliasingMode::MSAA:   m_WantSamples = (uint32_t)std::clamp(settings.MSAASamples, 2, 8); break;
@@ -1212,7 +1561,7 @@ namespace Conqueror
                 m_WantCoverageSamples = 16;
             else
                 m_WantCoverageSamples = 0;
-            m_WantRenderScale = (fx && !m_PointUpscale) ? AntiAliasing::RenderScale(settings, next) : 1.0f;
+            m_WantRenderScale = (fx && !m_PointUpscale) ? AntiAliasing::RenderScale(settings, next, m_Upscaler) : 1.0f;
         }
         m_WantNormals = fx && (settings.ScreenSpaceReflections || settings.ScreenSpaceGI) && !camera.Orthographic;
         m_WantAlbedo = fx && settings.ScreenSpaceGI && !camera.Orthographic;

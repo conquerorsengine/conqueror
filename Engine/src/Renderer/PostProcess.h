@@ -47,9 +47,10 @@ namespace Conqueror
         uint32_t GetBloomTexture() const { return m_BloomMips.empty() ? 0 : m_BloomMips[0].Texture; }
         uint32_t GetWidth() const { return m_Width; }
         uint32_t GetHeight() const { return m_Height; }
-        // Bu karede uygulanan kenar yumuşatma yöntemi (seçilen yöntem bu sistemde yoksa en yakın karşılığı) ve iç çözünürlük
-        // çarpanı (SSAA > 1, FSR / NIS < 1)
+        // Bu karede uygulanan kenar yumuşatma yöntemi ve yükseltici (seçilen yöntem bu sistemde yoksa en yakın karşılığı) ve iç
+        // çözünürlük çarpanı (SSAA > 1, yükseltici < 1)
         AntiAliasingMode GetAppliedAntiAliasing() const { return m_AAMode; }
+        UpscalerMode GetAppliedUpscaler() const { return m_Upscaler; }
         float GetRenderScale() const { return m_RenderScale; }
         std::shared_ptr<Framebuffer> GetSceneFramebuffer() const { return m_SceneFramebuffer; }
 
@@ -89,13 +90,22 @@ namespace Conqueror
         void CreateTarget(RenderTarget& rt, uint32_t width, uint32_t height, uint32_t internalFormat);
         void DestroyTarget(RenderTarget& rt);
         void EnsureTargets(uint32_t width, uint32_t height);
-        // Kenar yumuşatma: seçilen yöntemin bu karedeki gerçek uygulaması (ortografik kamera, nokta büyütme, sistemde olmayan yöntem)
-        AntiAliasingMode ResolveAntiAliasing(const PostProcessSettings& settings, const RenderCamera& camera) const;
+        // Kenar yumuşatma ve yükseltme: seçilen yöntemlerin bu karedeki gerçek uygulaması (ortografik kamera, nokta büyütme,
+        // sistemde olmayan yöntem, eski sahnelerin AA listesindeki yükselticiler)
+        void ResolveAntiAliasing(const PostProcessSettings& settings, const RenderCamera& camera);
         // EQAA (AMD) / CSAA (NVIDIA): renk örneğinden fazla kapsam örnekli renderbuffer çerçeve tamponu
         bool CreateCoverageFramebuffer(uint32_t width, uint32_t height);
         void DestroyCoverageFramebuffer();
         // SMAA alan / arama dokuları (Jimenez, External/smaa/Textures)
         void EnsureSMAATextures();
+        // NIS katsayı dokuları (2x64 RGBA32F) ve sabit tamponu
+        void EnsureNISResources();
+        // Nesne hız geçişi (TAA, SMAA T2x): hareket eden opak nesneler m_Velocity'ye; çizildiyse true
+        bool RenderObjectVelocity(const RenderCamera& camera);
+        void EnsureCMAA2Resources(uint32_t width, uint32_t height);
+        void DestroyCMAA2Resources();
+        // CMAA2'yi texture üzerinde yerinde uygular (RGBA8, iç çözünürlük)
+        void RunCMAA2(uint32_t texture);
         // MSAA renk çözümü (ton eşleme ağırlıklı; TXAA'da geniş çadır süzgeci)
         void ResolveMultisampleColor();
         void RunSSAO(const PostProcessSettings& settings, const RenderCamera& camera, float time);
@@ -131,8 +141,27 @@ namespace Conqueror
         RenderTarget m_Temp2;          // iç çözünürlükte ikinci LDR ara hedef (zincirli son geçişler)
         RenderTarget m_Upscale;        // çıktı çözünürlüğünde ara hedef (FSR: EASU -> RCAS)
         uint32_t m_SMAAAreaTex = 0, m_SMAASearchTex = 0;
+        uint32_t m_NISCoefScaler = 0, m_NISCoefUSM = 0, m_NISConstants = 0;   // NVIDIA Image Scaling katsayı dokuları + sabitler
+        // Intel CMAA2 çalışma kaynakları (iç çözünürlükte): kenar ve liste başı dokuları (R32UI), tamponlar (şekil adayları,
+        // ertelenmiş karışım konumları, karışım öğeleri, sayaçlar, dolaylı gönderim argümanları)
+        uint32_t m_CMAA2Edges = 0, m_CMAA2Heads = 0;
+        uint32_t m_CMAA2Buffers[5] = {};
+        uint32_t m_CMAA2Width = 0, m_CMAA2Height = 0;
+        // SMAA T2x: iki karenin SMAA çıktısı (LDR, alfa: hız büyüklüğü); T2x ve TAAU çözümü için bu karenin matrisleri / hız durumu
+        RenderTarget m_T2xHistory[2];
+        int m_T2xIndex = 0;
+        bool m_T2xValid = false;
+        bool m_FinalHasVelocity = false;
+        glm::mat4 m_FinalInvViewProj{ 1.0f };
+        // TAAU: çıktı çözünürlüğünde geçmiş (RGBA16F, LDR)
+        RenderTarget m_TAAUHistory[2];
+        int m_TAAUIndex = 0;
+        bool m_TAAUValid = false;
         // Kenar yumuşatma planı (Renderer/AntiAliasing.h): bu karede uygulanan ve sonraki kare için istenen
         AntiAliasingMode m_AAMode = AntiAliasingMode::None;
+        UpscalerMode m_Upscaler = UpscalerMode::None;
+        bool m_CASSharpen = false;                                 // keskinleştirme AMD CAS ile
+        float m_CASStrength = 0.0f;
         float m_RenderScale = 1.0f, m_WantRenderScale = 1.0f;     // iç çözünürlük / çıktı çözünürlüğü
         uint32_t m_OutputWidth = 0, m_OutputHeight = 0;           // panelin gerçek boyutu
         bool m_SampleShading = false, m_WantSampleShading = false; // SGSSAA / RGSS: her MSAA örneğinde gölgelendirme

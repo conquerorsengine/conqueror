@@ -1,0 +1,65 @@
+#language GLSL
+// NVIDIA Image Scaling (NIS) 1.0.3, MIT lisansı (External/NVIDIAImageScaling): 6 dokunuşlu yön duyarlı ölçekleme +
+// uyarlamalı keskinleştirme. Ton eşlenmiş iç çözünürlük görüntüsünü çıktı çözünürlüğüne (en çok 2x) büyütür.
+// Katsayılar (NIS_Config.h coef_scale / coef_usm) 2x64 RGBA32F dokularda, sabitler std140 tamponunda (NISConfig ile aynı düzen).
+#type compute
+#version 450 core
+#define NIS_GLSL 1
+#define NIS_SCALER 1
+#define NIS_HDR_MODE 0
+#define NIS_USE_HALF_PRECISION 0
+#define NIS_BLOCK_WIDTH 32
+#define NIS_BLOCK_HEIGHT 24
+#define NIS_THREAD_GROUP_SIZE 256
+
+layout(std140, binding = 7) uniform const_buffer   // UniformBinding::PostProcessConstants
+{
+    float kDetectRatio;
+    float kDetectThres;
+    float kMinContrastRatio;
+    float kRatioNorm;
+
+    float kContrastBoost;
+    float kEps;
+    float kSharpStartY;
+    float kSharpScaleY;
+
+    float kSharpStrengthMin;
+    float kSharpStrengthScale;
+    float kSharpLimitMin;
+    float kSharpLimitScale;
+
+    float kScaleX;
+    float kScaleY;
+
+    float kDstNormX;
+    float kDstNormY;
+    float kSrcNormX;
+    float kSrcNormY;
+
+    uint kInputViewportOriginX;
+    uint kInputViewportOriginY;
+    uint kInputViewportWidth;
+    uint kInputViewportHeight;
+
+    uint kOutputViewportOriginX;
+    uint kOutputViewportOriginY;
+    uint kOutputViewportWidth;
+    uint kOutputViewportHeight;
+
+    float reserved0;
+    float reserved1;
+};
+
+uniform sampler2D in_texture;
+uniform sampler2D coef_scaler;
+uniform sampler2D coef_usm;
+layout(rgba8, binding = 0) uniform writeonly image2D out_texture;
+
+#include "Include/ThirdParty/NIS_Scaler.h"
+
+layout(local_size_x = NIS_THREAD_GROUP_SIZE) in;
+void main()
+{
+    NVScaler(gl_WorkGroupID.xy, gl_LocalInvocationID.x);
+}

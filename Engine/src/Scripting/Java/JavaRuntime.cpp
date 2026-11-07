@@ -393,7 +393,7 @@ namespace Conqueror::Scripting
             return "import conqueror.*;\n"
                    "import static conqueror.NativeBridge.*;\n\n"
                    "public class " + className + " extends ScriptBehaviour {\n"
-                   "    // Public alanlar Inspector'da görünür\n"
+                   "    // Public fields appear in the Inspector\n"
                    "    public float speed = 1f;\n\n"
                    "    public void start() {\n    }\n\n"
                    "    public void update(float dt) {\n    }\n}\n";
@@ -557,7 +557,7 @@ namespace Conqueror::Scripting
 
         std::string GenerateBridgeSource()
         {
-            std::string src = "// Otomatik üretildi: motorun nativebridge fonksiyonları\npackage conqueror;\n\n"
+            std::string src = "// Auto-generated: engine nativebridge functions\npackage conqueror;\n\n"
                               "public final class NativeBridge {\n    private NativeBridge() {}\n";
             const auto& fns = NativeRegistry::Get().GetFunctions();
             for (size_t i = 0; i < fns.size(); ++i)

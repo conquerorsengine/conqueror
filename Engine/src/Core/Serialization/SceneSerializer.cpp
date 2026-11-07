@@ -18,6 +18,7 @@
 #include "Renderer/RHI/Cubemap.h"
 #include "Renderer/Utilities/Renderer3D/ModelLoader.h"
 #include "Renderer/Utilities/Renderer3D/Renderer3D.h"
+#include "Renderer/AntiAliasing.h"
 #include "Scripting/ScriptEngine.h"
 #include "AISystem/Navigation/NavMesh.h"
 
@@ -930,11 +931,14 @@ namespace Conqueror
         out << YAML::Key << "FilmGrainIntensity" << YAML::Value << pp.FilmGrainIntensity;
         out << YAML::Key << "Sharpen" << YAML::Value << pp.Sharpen;
         out << YAML::Key << "SharpenAmount" << YAML::Value << pp.SharpenAmount;
+        out << YAML::Key << "SharpenMode" << YAML::Value << (int)pp.SharpenMode;
         out << YAML::Key << "AntiAliasing" << YAML::Value << (int)pp.AntiAliasing;
         out << YAML::Key << "MSAASamples" << YAML::Value << pp.MSAASamples;
         out << YAML::Key << "TAAFeedback" << YAML::Value << pp.TAAFeedback;
         out << YAML::Key << "TAASharpness" << YAML::Value << pp.TAASharpness;
         out << YAML::Key << "SSAAScale" << YAML::Value << pp.SSAAScale;
+        out << YAML::Key << "Upscaler" << YAML::Value << (int)pp.Upscaler;
+        out << YAML::Key << "UpscaleQuality" << YAML::Value << (int)pp.UpscaleQuality;
         out << YAML::Key << "UpscaleRenderScale" << YAML::Value << pp.UpscaleRenderScale;
         out << YAML::Key << "UpscaleSharpness" << YAML::Value << pp.UpscaleSharpness;
         out << YAML::Key << "EQAASamples" << YAML::Value << pp.EQAASamples;
@@ -1138,13 +1142,23 @@ namespace Conqueror
             ReadIf(pp, "FilmGrainIntensity", p.FilmGrainIntensity);
             ReadIf(pp, "Sharpen", p.Sharpen);
             ReadIf(pp, "SharpenAmount", p.SharpenAmount);
+            ReadEnumIf(pp, "SharpenMode", p.SharpenMode);
             ReadEnumIf(pp, "AntiAliasing", p.AntiAliasing);
             ReadIf(pp, "MSAASamples", p.MSAASamples);
             ReadIf(pp, "TAAFeedback", p.TAAFeedback);
             ReadIf(pp, "TAASharpness", p.TAASharpness);
             ReadIf(pp, "SSAAScale", p.SSAAScale);
+            ReadEnumIf(pp, "Upscaler", p.Upscaler);
+            ReadEnumIf(pp, "UpscaleQuality", p.UpscaleQuality);
             ReadIf(pp, "UpscaleRenderScale", p.UpscaleRenderScale);
             ReadIf(pp, "UpscaleSharpness", p.UpscaleSharpness);
+            // Aralık dışı değerler (elle düzenlenmiş / yeni sürümden dosya) varsayılana
+            if ((int)p.Upscaler < 0 || (int)p.Upscaler >= (int)UpscalerMode::Count) p.Upscaler = UpscalerMode::None;
+            if ((int)p.UpscaleQuality < 0 || (int)p.UpscaleQuality >= (int)UpscaleQualityMode::Count) p.UpscaleQuality = UpscaleQualityMode::Quality;
+            if ((int)p.SharpenMode < 0 || (int)p.SharpenMode >= (int)SharpenMethod::Count) p.SharpenMode = SharpenMethod::EdgeAware;
+            // Eski sürümlerde Anti-Aliasing listesindeki yükselticiler (FSR, DLSS, TSR, CAS ...): Unity / Unreal gibi ayrı
+            // Upscaling / Sharpening ayarına taşınır
+            AntiAliasing::MigrateLegacy(p);
             ReadIf(pp, "EQAASamples", p.EQAASamples);
             ReadIf(pp, "ScreenSpaceReflections", p.ScreenSpaceReflections);
             ReadIf(pp, "SSRIntensity", p.SSRIntensity);

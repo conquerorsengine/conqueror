@@ -14,13 +14,13 @@ namespace Conqueror::Editor::ShaderTemplates
             "layout(location = 2) in vec3 a_Tangent;\n"
             "layout(location = 3) in vec2 a_TexCoord;\n"
             "layout(location = 4) in vec2 a_TexCoord2;\n"
-            "layout(location = 6) in vec4 a_Color;           // Mesh Paint köşe rengi\n"
-            "uniform int u_UseVertexColor = 0;               // 0: bağlı değil (beyaz; emüle arka uçlarda varsayılan öznitelik siyahtır)\n"
+            "layout(location = 6) in vec4 a_Color;           // Mesh Paint vertex color\n"
+            "uniform int u_UseVertexColor = 0;               // 0: not bound (white; emulated backends default the attribute to black)\n"
             "\n"
             "uniform mat4 u_Transform;\n"
             "uniform mat4 u_NormalMatrix;\n"
             "\n"
-            "// MultiMesh (GPU örnekleme): örnek başına yerel matris (sütunlar) ve renk çarpanı\n"
+            "// MultiMesh (GPU instancing): per-instance local matrix (columns) and color multiplier\n"
             "layout(location = 8) in vec4 a_Instance0;\n"
             "layout(location = 9) in vec4 a_Instance1;\n"
             "layout(location = 10) in vec4 a_Instance2;\n"
@@ -54,7 +54,7 @@ namespace Conqueror::Editor::ShaderTemplates
             "\n"
             "    vec3 N = normalize(normalMatrix * a_Normal);\n"
             "    vec3 T = normalMatrix * a_Tangent;\n"
-            "    // Gram-Schmidt; tanjantı olmayan meshlerde (sıfır vektör) güvenli yedek\n"
+            "    // Gram-Schmidt; safe fallback for meshes without tangents (zero vector)\n"
             "    T = T - dot(T, N) * N;\n"
             "    if (dot(T, T) < 1e-8)\n"
             "        T = abs(N.y) < 0.999 ? cross(vec3(0.0, 1.0, 0.0), N) : vec3(1.0, 0.0, 0.0);\n"
@@ -74,21 +74,21 @@ namespace Conqueror::Editor::ShaderTemplates
 
     std::string Lit()
     {
-        return std::string("#language GLSL\n// Lit Shader: yerleşik PBR aydınlatma + CQ_UserSurface ile kendi yüzeyiniz.\n"
-                           "// Malzemenin Inspector'ında Shader File yuvasına atayın.\n") + kVertex + "\n" +
+        return std::string("#language GLSL\n// Lit Shader: built-in PBR lighting + your own surface through CQ_UserSurface.\n"
+                           "// Assign it to the Shader File slot in the material's Inspector.\n") + kVertex + "\n" +
             "#type fragment\n"
             "#version 450 core\n"
             "\n"
-            "// Bu tanım, yerleşik Lit (PBR) aydınlatmasına yüzeyi değiştirme kancası ekler\n"
+            "// This define adds a surface modification hook to the built-in Lit (PBR) lighting\n"
             "#define CQ_USER_SURFACE\n"
             "#include \"Include/PBRForwardFragment.glsl\"\n"
             "\n"
-            "// Yüzeyi burada değiştirin (Unity Surface Shader'daki surf işlevi gibi).\n"
-            "// surface: Albedo, Normal, Metallic, Roughness, AO, Emission, Alpha (malzemedeki değerlerle dolu gelir)\n"
-            "// uv: döşeme / kaydırma uygulanmış doku koordinatı. CQ_Time() saniye, CQ_CameraPosition() kamera.\n"
+            "// Modify the surface here (like the surf function of a Unity Surface Shader).\n"
+            "// surface: Albedo, Normal, Metallic, Roughness, AO, Emission, Alpha (filled with the material's values)\n"
+            "// uv: texture coordinate with tiling / offset applied. CQ_Time() is seconds, CQ_CameraPosition() is the camera.\n"
             "void CQ_UserSurface(inout CQ_Surface surface, vec2 uv)\n"
             "{\n"
-            "    // Örnek: kenarlarda hafif parıltı (Fresnel)\n"
+            "    // Example: soft rim glow at the edges (Fresnel)\n"
             "    vec3 viewDir = normalize(CQ_CameraPosition() - surface.Position);\n"
             "    float rim = pow(1.0 - max(dot(surface.Normal, viewDir), 0.0), 3.0);\n"
             "    surface.Emission += vec3(0.2, 0.5, 1.0) * rim * 0.5;\n"
@@ -98,7 +98,7 @@ namespace Conqueror::Editor::ShaderTemplates
 
     std::string Unlit()
     {
-        return std::string("#language GLSL\n// Unlit Shader: ışıktan etkilenmez (doku x renk + ışıma). Malzemenin Shader File yuvasına atayın.\n") +
+        return std::string("#language GLSL\n// Unlit Shader: not affected by lights (texture x color + emission). Assign it to the material's Shader File slot.\n") +
                kVertex + "\n" +
             "#type fragment\n"
             "#version 450 core\n"
@@ -121,7 +121,7 @@ namespace Conqueror::Editor::ShaderTemplates
             "    vec4 Color;\n"
             "} fs_in;\n"
             "\n"
-            "// Malzemenin değerleri (Inspector'daki Base Map / Base Color / Emission / Tiling)\n"
+            "// Material values (Base Map / Base Color / Emission / Tiling in the Inspector)\n"
             "struct UnlitMaterial {\n"
             "    vec3 Albedo;\n"
             "    vec3 EmissionColor;\n"
@@ -145,7 +145,7 @@ namespace Conqueror::Editor::ShaderTemplates
             "        discard;\n"
             "    vec3 color = SRGBToLinear(tex.rgb * u_Material.Albedo) + u_Material.EmissionColor * u_Material.EmissionStrength;\n"
             "    FragColor = CQ_FinalizeOutput(vec4(color, u_RenderMode == 2 ? alpha : 1.0));\n"
-            "    // Aydınlatılmayan yüzey: ekran uzayı efektleri dokunmasın\n"
+            "    // Unlit surface: keep screen-space effects away from it\n"
             "    CQ_GBufferNormal = vec4(0.0);\n"
             "    CQ_GBufferAlbedo = vec4(0.0);\n"
             "}\n"
@@ -155,13 +155,13 @@ namespace Conqueror::Editor::ShaderTemplates
     std::string ImageEffect()
     {
         return
-            "// Image Effect Shader: Full Screen Pass bileşeniyle kameranın görüntüsüne uygulanır.\n"
-            "// Effect(uv) son rengi döndürür. Hazır değişkenler:\n"
-            "//   u_Source (sahne rengi), u_Depth (derinlik), u_Time (s), u_Resolution (piksel), u_Intensity (0..1, karışım)\n"
+            "// Image Effect Shader: applied to the camera image with a Full Screen Pass component.\n"
+            "// Effect(uv) returns the final color. Available variables:\n"
+            "//   u_Source (scene color), u_Depth (depth), u_Time (s), u_Resolution (pixels), u_Intensity (0..1, blend)\n"
             "vec4 Effect(vec2 uv)\n"
             "{\n"
             "    vec4 color = texture(u_Source, uv);\n"
-            "    // Örnek: renkleri ters çevir\n"
+            "    // Example: invert the colors\n"
             "    return vec4(1.0 - color.rgb, color.a);\n"
             "}\n"
             "\n";
@@ -170,14 +170,14 @@ namespace Conqueror::Editor::ShaderTemplates
     std::string Compute()
     {
         return
-            "// Compute Shader: betikten çalıştırılır.\n"
-            "//   ComputeSetTexture(\"Assets/<bu dosya>.comp\", \"u_Result\", \"Assets/<render texture>.cqrt\");\n"
-            "//   ComputeSetFloat(\"Assets/<bu dosya>.comp\", \"u_Time\", Time());\n"
-            "//   ComputeDispatch(\"Assets/<bu dosya>.comp\", genişlik / 8, yükseklik / 8, 1);\n"
+            "// Compute Shader: dispatched from a script.\n"
+            "//   ComputeSetTexture(\"Assets/<this file>.comp\", \"u_Result\", \"Assets/<render texture>.cqrt\");\n"
+            "//   ComputeSetFloat(\"Assets/<this file>.comp\", \"u_Time\", Time());\n"
+            "//   ComputeDispatch(\"Assets/<this file>.comp\", width / 8, height / 8, 1);\n"
             "#version 450 core\n"
             "layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;\n"
             "\n"
-            "layout(rgba8) uniform image2D u_Result;   // yazılan doku (Render Texture)\n"
+            "layout(rgba8) uniform image2D u_Result;   // output texture (Render Texture)\n"
             "uniform float u_Time;\n"
             "\n"
             "void main()\n"
@@ -187,7 +187,7 @@ namespace Conqueror::Editor::ShaderTemplates
             "    if (pixel.x >= size.x || pixel.y >= size.y)\n"
             "        return;\n"
             "    vec2 uv = vec2(pixel) / vec2(size);\n"
-            "    // Örnek: hareketli dalga deseni\n"
+            "    // Example: animated wave pattern\n"
             "    float v = 0.5 + 0.5 * sin(uv.x * 20.0 + u_Time * 3.0) * cos(uv.y * 20.0 - u_Time * 2.0);\n"
             "    imageStore(u_Result, pixel, vec4(v, uv.x, 1.0 - v, 1.0));\n"
             "}\n";
@@ -196,18 +196,18 @@ namespace Conqueror::Editor::ShaderTemplates
     std::string RayTracing()
     {
         return
-            "// Ray Tracing Shader: sahnenin üçgenlerine ışın gönderir (BVH, GPU compute). Betikten:\n"
-            "//   RayTracingDispatch(\"Assets/<bu dosya>.cqraytrace\", \"Assets/<render texture>.cqrt\");\n"
-            "// Hazır: CQ_CameraRay(uv, origin, direction), CQ_TraceRay(origin, direction, maxDistance, hit) -> bool,\n"
-            "//        hit.Distance / Position / Normal / Albedo, u_SunDirection (ışığın gittiği yön), u_SunColor, u_Time\n"
+            "// Ray Tracing Shader: casts rays against the scene triangles (BVH, GPU compute). From a script:\n"
+            "//   RayTracingDispatch(\"Assets/<this file>.cqraytrace\", \"Assets/<render texture>.cqrt\");\n"
+            "// Available: CQ_CameraRay(uv, origin, direction), CQ_TraceRay(origin, direction, maxDistance, hit) -> bool,\n"
+            "//            hit.Distance / Position / Normal / Albedo, u_SunDirection (direction the light travels), u_SunColor, u_Time\n"
             "vec4 RayGeneration(ivec2 pixel, vec2 uv)\n"
             "{\n"
             "    vec3 origin, direction;\n"
             "    CQ_CameraRay(uv, origin, direction);\n"
             "    CQ_RayHit hit;\n"
             "    if (!CQ_TraceRay(origin, direction, 1000.0, hit))\n"
-            "        return vec4(0.45, 0.6, 0.85, 1.0);   // gökyüzü\n"
-            "    // Işın izlenmiş gölge: güneşe doğru ikinci ışın\n"
+            "        return vec4(0.45, 0.6, 0.85, 1.0);   // sky\n"
+            "    // Ray-traced shadow: a second ray toward the sun\n"
             "    vec3 toSun = -normalize(u_SunDirection);\n"
             "    CQ_RayHit blocker;\n"
             "    bool shadowed = CQ_TraceRay(hit.Position + hit.Normal * 0.01, toSun, 1000.0, blocker);\n"
@@ -220,13 +220,13 @@ namespace Conqueror::Editor::ShaderTemplates
     std::string CustomRenderTexture()
     {
         return
-            "// Custom Render Texture Shader: Custom Render Texture varlığının \"Shader\" yuvasına atanır.\n"
-            "// Update(uv) dokunun yeni rengini döndürür. Hazır değişkenler:\n"
-            "//   u_SelfTexture (önceki kare, Double Buffered açıkken), u_InitTexture, u_Time, u_DeltaTime, u_Resolution, u_FrameCount\n"
+            "// Custom Render Texture Shader: assigned to the \"Shader\" slot of a Custom Render Texture asset.\n"
+            "// Update(uv) returns the new texture color. Available variables:\n"
+            "//   u_SelfTexture (previous frame, when Double Buffered is on), u_InitTexture, u_Time, u_DeltaTime, u_Resolution, u_FrameCount\n"
             "vec4 Update(vec2 uv)\n"
             "{\n"
             "    vec4 previous = texture(u_SelfTexture, uv);\n"
-            "    // Örnek: dışa yayılan halkalar, önceki kare yavaşça söner\n"
+            "    // Example: rings spreading outward while the previous frame slowly fades\n"
             "    float ring = smoothstep(0.02, 0.0, abs(length(uv - 0.5) - fract(u_Time * 0.5) * 0.7));\n"
             "    return max(previous * 0.96, vec4(vec3(ring), 1.0));\n"
             "}\n"

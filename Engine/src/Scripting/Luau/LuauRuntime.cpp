@@ -534,8 +534,8 @@ namespace Conqueror::Scripting
         std::string GetNewScriptTemplate(const std::string& className) const override
         {
             if (m_LuaQ)
-                return "-- " + className + ": LuaQ betiği (Lua 5.4 + Luau + sınıflar, ?. ??, match, enum, defer, async/await).\n"
-                       "-- Sınıf alanları Inspector'da görünür ('_' ile başlayanlar gizli); dosya sınıfı kendiliğinden döndürür.\n"
+                return "-- " + className + ": LuaQ script (Lua 5.4 + Luau + classes, ?. ??, match, enum, defer, async/await).\n"
+                       "-- Class fields appear in the Inspector (names starting with '_' are hidden); the file returns the class automatically.\n"
                        "class " + className + "\n"
                        "    speed = 1.0\n\n"
                        "    function Start()\n"
@@ -544,7 +544,7 @@ namespace Conqueror::Scripting
                        "    end\n"
                        "end\n";
             return "--!strict\n"
-                   "-- " + className + ": Luau betiği. Public alanlar Inspector'da görünür ('_' ile başlayanlar gizli).\n"
+                   "-- " + className + ": Luau script. Public fields appear in the Inspector (names starting with '_' are hidden).\n"
                    "local " + className + " = {}\n\n"
                    + className + ".speed = 1.0\n\n"
                    "function " + className + ":Start()\n"

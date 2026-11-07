@@ -497,7 +497,7 @@ namespace Conqueror::Scripting
                        "class " + className + " : public cq::Script\n{\n"
                        "    CQ_SCRIPT_CLASS(" + className + ")\n"
                        "public:\n"
-                       "    // Inspector alanları\n"
+                       "    // Inspector fields\n"
                        "    CQ_FIELD(float, speed, 1.0f)\n\n"
                        "    void Start() override\n    {\n    }\n\n"
                        "    void Update(float dt) override\n    {\n        (void)dt;\n    }\n};\n"
@@ -509,7 +509,7 @@ namespace Conqueror::Scripting
             {
                 std::error_code ec;
                 fs::create_directories(dir, ec);
-                std::string header = "// Otomatik üretildi: motorun nativebridge fonksiyonları (düzenlemeyin)\n#pragma once\n#include <Conqueror/Script.h>\n\nnamespace cq\n{\n";
+                std::string header = "// Auto-generated: engine nativebridge functions (do not edit)\n#pragma once\n#include <Conqueror/Script.h>\n\nnamespace cq\n{\n";
                 for (const NativeFunctionInfo* f : BridgeFunctions())
                 {
                     if (f->Name == "Log" || f->Name == "Script" || f->Name == "Value") continue;
@@ -561,14 +561,14 @@ namespace Conqueror::Scripting
                               "    }\n";
                 header += "}\n";
                 WriteIfChanged(dir / "NativeBridge.g.h", header);
-                WriteIfChanged(dir / "__cq_plugin_main.cpp", "// Otomatik üretildi\n#define CQ_PLUGIN_IMPLEMENTATION\n#include <Conqueror/Script.h>\n");
+                WriteIfChanged(dir / "__cq_plugin_main.cpp", "// Auto-generated\n#define CQ_PLUGIN_IMPLEMENTATION\n#include <Conqueror/Script.h>\n");
             }
 
             bool Build(const std::vector<fs::path>& sources, const fs::path& outDir, const fs::path& lib, std::string& log) override
             {
                 Generate(outDir);
                 // DataAsset sınıfı tanımlayan başlıklar (Unreal'daki gibi sınıf başlıkta; betikler #include ile kullanır)
-                std::string dataUnit = "// Otomatik üretildi: projedeki Data Asset sınıfı başlıkları (kayıt için)\n";
+                std::string dataUnit = "// Auto-generated: Data Asset class headers of the project (for registration)\n";
                 for (const auto& h : DataHeaders)
                     dataUnit += "#include \"" + h.generic_string() + "\"\n";
                 WriteIfChanged(outDir / "__cq_data_assets.cpp", dataUnit);
@@ -662,9 +662,9 @@ namespace Conqueror::Scripting
             {
                 return "#include <conqueror.h>\n"
                        "#include \"nativebridge.h\"\n\n"
-                       "// " + className + ": C betiği. Alanlar Inspector'da görünür; yöntemler CQ_METHODS ile motora bağlanır.\n"
+                       "// " + className + ": C script. Fields appear in the Inspector; methods are bound to the engine with CQ_METHODS.\n"
                        "typedef struct " + className + "\n{\n"
-                       "    CQ_OBJECT;          /* ilk üye olmalı */\n"
+                       "    CQ_OBJECT;          /* must be the first member */\n"
                        "    float speed;\n"
                        "} " + className + ";\n\n"
                        "static void " + className + "_Start(" + className + "* self, const cq_value* args, int argc)\n{\n"
@@ -682,7 +682,7 @@ namespace Conqueror::Scripting
             {
                 std::error_code ec;
                 fs::create_directories(dir, ec);
-                std::string header = "/* Otomatik üretildi: motorun nativebridge fonksiyonları (düzenlemeyin) */\n#ifndef CQ_NATIVEBRIDGE_H\n#define CQ_NATIVEBRIDGE_H\n#include <conqueror.h>\n\n";
+                std::string header = "/* Auto-generated: engine nativebridge functions (do not edit) */\n#ifndef CQ_NATIVEBRIDGE_H\n#define CQ_NATIVEBRIDGE_H\n#include <conqueror.h>\n\n";
                 for (const NativeFunctionInfo* f : BridgeFunctions())
                 {
                     header += "static int cq__i_" + f->Name + " = -2;\n";
@@ -717,7 +717,7 @@ namespace Conqueror::Scripting
                         if (std::find(classes.begin(), classes.end(), (*it)[1].str()) == classes.end())
                             classes.push_back((*it)[1].str());
                 }
-                std::string main = "/* Otomatik üretildi */\n#define CQ_PLUGIN_IMPLEMENTATION\n#include <conqueror.h>\n\n";
+                std::string main = "/* Auto-generated */\n#define CQ_PLUGIN_IMPLEMENTATION\n#include <conqueror.h>\n\n";
                 for (const auto& c : classes)
                     main += "extern const cq_class_desc cq_class_" + c + ";\n";
                 main += "const cq_class_desc* const cq__classes[] = { ";
@@ -821,7 +821,7 @@ namespace Conqueror::Scripting
             {
                 return "use crate::conqueror::*;\n"
                        "use crate::nativebridge::*;\n\n"
-                       "// " + className + ": Rust betiği. script! içindeki alanlar Inspector'da görünür.\n"
+                       "// " + className + ": Rust script. Fields inside script! appear in the Inspector.\n"
                        "script! {\n"
                        "    pub struct " + className + " {\n"
                        "        speed: f32 = 1.0,\n"
@@ -849,14 +849,14 @@ namespace Conqueror::Scripting
             {
                 std::error_code ec;
                 fs::create_directories(dir, ec);
-                std::string bridge = "// Otomatik üretildi: motorun nativebridge fonksiyonları (düzenlemeyin)\n"
+                std::string bridge = "// Auto-generated: engine nativebridge functions (do not edit)\n"
                                      "#![allow(non_snake_case, dead_code)]\nuse crate::conqueror::{call_cached, Value};\nuse std::sync::atomic::AtomicI32;\n\n";
                 for (const NativeFunctionInfo* f : BridgeFunctions())
                     bridge += "pub fn " + f->Name + "(args: &[Value]) -> Value { static I: AtomicI32 = AtomicI32::new(-2); call_cached(&I, \"" + f->Name + "\", args) }\n";
                 WriteIfChanged(dir / "nativebridge.rs", bridge);
 
                 static const std::regex structRe(R"(script!\s*\{[^}]*?struct\s+([A-Za-z_]\w*))");
-                std::string lib = "// Otomatik üretildi\n#![allow(non_snake_case, non_camel_case_types, dead_code, unused_imports, unused_variables, unused_mut, unused_macros)]\n"
+                std::string lib = "// Auto-generated\n#![allow(non_snake_case, non_camel_case_types, dead_code, unused_imports, unused_variables, unused_mut, unused_macros)]\n"
                                   "#[path = \"" + Slashes(SdkDir() / "conqueror.rs") + "\"]\n#[macro_use]\npub mod conqueror;\n"
                                   "#[path = \"" + Slashes(dir / "nativebridge.rs") + "\"]\npub mod nativebridge;\n";
                 std::string classes;
@@ -958,7 +958,7 @@ namespace Conqueror::Scripting
             {
                 return "const cq = @import(\"conqueror.zig\");\n"
                        "const nb = @import(\"nativebridge.zig\");\n\n"
-                       "// " + className + ": Zig betiği. Alanlar Inspector'da görünür; pub fn yöntemleri motor olaylarıdır.\n"
+                       "// " + className + ": Zig script. Fields appear in the Inspector; pub fn methods are engine events.\n"
                        "pub const " + className + " = struct {\n"
                        "    speed: f32 = 1.0,\n\n"
                        "    pub fn start(self: *" + className + ") void {\n"
@@ -979,13 +979,13 @@ namespace Conqueror::Scripting
                 std::string sdk;
                 ReadFile(SdkDir() / "conqueror.zig", sdk);
                 WriteIfChanged(dir / "conqueror.zig", sdk);
-                std::string bridge = "// Otomatik üretildi: motorun nativebridge fonksiyonları (düzenlemeyin)\nconst cq = @import(\"conqueror.zig\");\n\n";
+                std::string bridge = "// Auto-generated: engine nativebridge functions (do not edit)\nconst cq = @import(\"conqueror.zig\");\n\n";
                 for (const NativeFunctionInfo* f : BridgeFunctions())
                     bridge += "pub fn " + f->Name + "(args: anytype) cq.Value { const S = struct { var index: i32 = -2; }; return cq.callCached(&S.index, \"" + f->Name + "\", args); }\n";
                 WriteIfChanged(dir / "nativebridge.zig", bridge);
 
                 static const std::regex structRe(R"(pub\s+const\s+([A-Za-z_]\w*)\s*=\s*(?:extern\s+|packed\s+)?struct\b)");
-                std::string root = "// Otomatik üretildi\nconst cq = @import(\"conqueror.zig\");\n";
+                std::string root = "// Auto-generated\nconst cq = @import(\"conqueror.zig\");\n";
                 std::string classes;
                 for (size_t i = 0; i < sources.size(); ++i)
                 {

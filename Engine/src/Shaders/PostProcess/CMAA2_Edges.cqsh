@@ -1,0 +1,339 @@
+#language GLSL
+// Intel CMAA2 (Conservative Morphological Anti-Aliasing 2.0), Apache 2.0 lisansı (External/CMAA2/license.txt): kenar algılama ve şekil adayları (her iş parçacığı 2x2 piksel).
+// External/CMAA2/CMAA2.hlsl (kalite HIGH, luma kenar algılama, LDR) glslang (HLSL -> SPIR-V) ve SPIRV-Cross (SPIR-V ->
+// GLSL 450) ile çevrildi. Elle değişiklikler: renk görüntüsü rgba8, değişken ofsetli texelFetchOffset -> texelFetch,
+// ekleme tamponlarına sınır denetimi (D3D taşan yazmaları yok sayar, OpenGL'de tanımsız), inout geçici değişkenleri 0 ile
+// başlatılır (sürücü uyarısı). Motor görüntü / örnekleyici layout(binding)'ini siler: birimler RunCMAA2'de adla atanır.
+#type compute
+#version 450
+#if defined(GL_EXT_control_flow_attributes)
+#extension GL_EXT_control_flow_attributes : require
+#define SPIRV_CROSS_FLATTEN [[flatten]]
+#define SPIRV_CROSS_BRANCH [[dont_flatten]]
+#define SPIRV_CROSS_UNROLL [[unroll]]
+#define SPIRV_CROSS_LOOP [[dont_unroll]]
+#else
+#define SPIRV_CROSS_FLATTEN
+#define SPIRV_CROSS_BRANCH
+#define SPIRV_CROSS_UNROLL
+#define SPIRV_CROSS_LOOP
+#endif
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+const uvec2 _763[4] = uvec2[](uvec2(0u), uvec2(1u, 0u), uvec2(0u, 1u), uvec2(1u));
+
+layout(binding = 6, std430) buffer g_workingControlBuffer
+{
+    uint _data[];
+} g_workingControlBuffer_1;
+
+layout(binding = 2, std430) buffer g_workingShapeCandidates
+{
+    uint _data[];
+} g_workingShapeCandidates_1;
+
+layout(binding = 3, std430) buffer g_workingDeferredBlendLocationList
+{
+    uint _data[];
+} g_workingDeferredBlendLocationList_1;
+
+layout(binding = 4, std430) buffer g_workingDeferredBlendItemList
+{
+    uvec2 _data[];
+} g_workingDeferredBlendItemList_1;
+
+layout(binding = 7, std430) buffer g_workingExecuteIndirectBuffer
+{
+    uint _data[];
+} g_workingExecuteIndirectBuffer_1;
+
+layout(binding = 5, r32ui) uniform writeonly uimage2D g_workingDeferredBlendItemListHeads;
+layout(binding = 1, r32ui) uniform writeonly uimage2D g_workingEdges;
+layout(binding = 0, rgba8) uniform readonly writeonly image2D g_inoutColorWriteonly;
+layout(binding = 8) uniform sampler2D SPIRV_Cross_Combinedg_inoutColorReadonlySPIRV_Cross_DummySampler;
+
+shared vec4 g_groupShared2x2FracEdgesH[256];
+shared vec4 g_groupShared2x2FracEdgesV[256];
+shared uint g_groupSharedBlendItemCount;
+shared uvec2 g_groupSharedBlendItems[768];
+
+vec3 LoadSourceColor(uvec2 pixelPos, ivec2 offset, int sampleIndex)
+{
+    vec3 color = texelFetch(SPIRV_Cross_Combinedg_inoutColorReadonlySPIRV_Cross_DummySampler, ivec3(ivec2(pixelPos), 0).xy + offset, ivec3(ivec2(pixelPos), 0).z).xyz;
+    return color;
+}
+
+float RGBToLumaForEdges(vec3 linearRGB)
+{
+    float luma = dot(sqrt(linearRGB), vec3(0.2989999949932098388671875, 0.58700001239776611328125, 0.114000000059604644775390625));
+    return luma;
+}
+
+vec2 ComputeEdgeLuma(int x, int y, float pixelLumas[8])
+{
+    vec2 temp;
+    temp.x = abs(pixelLumas[x + (y * 3)] - pixelLumas[(x + 1) + (y * 3)]);
+    temp.y = abs(pixelLumas[x + (y * 3)] - pixelLumas[x + ((y + 1) * 3)]);
+    return temp;
+}
+
+void GroupsharedLoadQuadHV(uint addr, inout vec2 e00, inout vec2 e10, inout vec2 e01, inout vec2 e11)
+{
+    vec4 valH = g_groupShared2x2FracEdgesH[addr];
+    e00.y = valH.x;
+    e10.y = valH.y;
+    e01.y = valH.z;
+    e11.y = valH.w;
+    vec4 valV = g_groupShared2x2FracEdgesV[addr];
+    e00.x = valV.x;
+    e10.x = valV.y;
+    e01.x = valV.z;
+    e11.x = valV.w;
+}
+
+float ComputeLocalContrastH(int x, int y, vec2 neighbourhood[4][4])
+{
+    return max(max(neighbourhood[x + 0][y + 1].x, neighbourhood[x + 1][y + 1].x), max(neighbourhood[x + 0][y + 2].x, neighbourhood[x + 1][y + 2].x)) * 0.100000001490116119384765625;
+}
+
+float GetActualEdgeThreshold()
+{
+    float retVal = 0.070000000298023223876953125;
+    return retVal;
+}
+
+float ComputeLocalContrastV(int x, int y, vec2 neighbourhood[4][4])
+{
+    return max(max(neighbourhood[x + 1][y + 0].y, neighbourhood[x + 1][y + 1].y), max(neighbourhood[x + 2][y + 0].y, neighbourhood[x + 2][y + 1].y)) * 0.100000001490116119384765625;
+}
+
+uint PackEdges(vec4 edges)
+{
+    return uint(dot(edges, vec4(1.0, 2.0, 4.0, 8.0)));
+}
+
+void _EdgesColor2x2CS(uvec3 groupID, uvec3 groupThreadID)
+{
+    uvec2 pixelPos = ((groupID.xy * uvec2(14u)) + groupThreadID.xy) - uvec2(1u);
+    pixelPos *= uvec2(2u);
+    uint centerAddr2x2 = groupThreadID.x + (groupThreadID.y * 16u);
+    bool inOutputKernel = !any(bvec4(groupThreadID.x == 15u, groupThreadID.x == 0u, groupThreadID.y == 15u, groupThreadID.y == 0u));
+    uvec4 outEdges = uvec4(0u);
+    uint msaaSampleIndex = 0u;
+    uint i = 0u;
+    float pixelLumas[8];
+    SPIRV_CROSS_UNROLL
+    for (; i < 8u; i++)
+    {
+        uvec2 param = pixelPos;
+        ivec2 param_1 = ivec2(int(i % 3u), int(i / 3u));
+        int param_2 = int(msaaSampleIndex);
+        vec3 color = LoadSourceColor(param, param_1, param_2);
+        vec3 param_3 = color;
+        pixelLumas[i] = RGBToLumaForEdges(param_3);
+    }
+    int param_4 = 0;
+    int param_5 = 0;
+    float param_6[8] = pixelLumas;
+    vec2 qe0 = ComputeEdgeLuma(param_4, param_5, param_6);
+    int param_7 = 1;
+    int param_8 = 0;
+    float param_9[8] = pixelLumas;
+    vec2 qe1 = ComputeEdgeLuma(param_7, param_8, param_9);
+    int param_10 = 0;
+    int param_11 = 1;
+    float param_12[8] = pixelLumas;
+    vec2 qe2 = ComputeEdgeLuma(param_10, param_11, param_12);
+    int param_13 = 1;
+    int param_14 = 1;
+    float param_15[8] = pixelLumas;
+    vec2 qe3 = ComputeEdgeLuma(param_13, param_14, param_15);
+    g_groupShared2x2FracEdgesV[centerAddr2x2 + 0u] = vec4(qe0.x, qe1.x, qe2.x, qe3.x);
+    g_groupShared2x2FracEdgesH[centerAddr2x2 + 0u] = vec4(qe0.y, qe1.y, qe2.y, qe3.y);
+    barrier();
+    SPIRV_CROSS_BRANCH
+    if (inOutputKernel)
+    {
+        vec2 topRow = g_groupShared2x2FracEdgesH[centerAddr2x2 - 16u].zw;
+        vec2 leftColumn = g_groupShared2x2FracEdgesV[centerAddr2x2 - 1u].yw;
+        bool someNonZeroEdges = any(notEqual((vec4(qe0, qe1) + vec4(qe2, qe3)) + vec4(topRow.x, topRow.y, leftColumn.x, leftColumn.y), vec4(0.0)));
+        SPIRV_CROSS_BRANCH
+        if (someNonZeroEdges)
+        {
+            uint storeTemp = 4294967295u;
+            imageStore(g_workingDeferredBlendItemListHeads, ivec2(pixelPos / uvec2(2u)), uvec4(storeTemp));
+            uint param_16 = (centerAddr2x2 - 16u) - 1u;
+            vec2 param_17;
+            vec2 param_18;
+            vec2 param_19;
+            vec2 param_20;
+            GroupsharedLoadQuadHV(param_16, param_17, param_18, param_19, param_20);
+            vec2 dummyd0 = param_17;
+            vec2 dummyd1 = param_18;
+            vec2 dummyd2 = param_19;
+            vec2 neighbourhood[4][4];
+            neighbourhood[0][0] = param_20;
+            uint param_21 = centerAddr2x2 - 16u;
+            vec2 param_22;
+            vec2 param_23;
+            vec2 param_24;
+            vec2 param_25;
+            GroupsharedLoadQuadHV(param_21, param_22, param_23, param_24, param_25);
+            dummyd0 = param_22;
+            dummyd1 = param_23;
+            neighbourhood[1][0] = param_24;
+            neighbourhood[2][0] = param_25;
+            uint param_26 = (centerAddr2x2 - 16u) + 1u;
+            vec2 param_27;
+            vec2 param_28;
+            vec2 param_29;
+            vec2 param_30;
+            GroupsharedLoadQuadHV(param_26, param_27, param_28, param_29, param_30);
+            dummyd0 = param_27;
+            dummyd1 = param_28;
+            neighbourhood[3][0] = param_29;
+            dummyd2 = param_30;
+            uint param_31 = centerAddr2x2 - 1u;
+            vec2 param_32;
+            vec2 param_33;
+            vec2 param_34;
+            vec2 param_35;
+            GroupsharedLoadQuadHV(param_31, param_32, param_33, param_34, param_35);
+            dummyd0 = param_32;
+            neighbourhood[0][1] = param_33;
+            dummyd1 = param_34;
+            neighbourhood[0][2] = param_35;
+            uint param_36 = centerAddr2x2 + 1u;
+            vec2 param_37;
+            vec2 param_38;
+            vec2 param_39;
+            vec2 param_40;
+            GroupsharedLoadQuadHV(param_36, param_37, param_38, param_39, param_40);
+            neighbourhood[3][1] = param_37;
+            dummyd0 = param_38;
+            neighbourhood[3][2] = param_39;
+            dummyd1 = param_40;
+            uint param_41 = (centerAddr2x2 - 1u) + 16u;
+            vec2 param_42;
+            vec2 param_43;
+            vec2 param_44;
+            vec2 param_45;
+            GroupsharedLoadQuadHV(param_41, param_42, param_43, param_44, param_45);
+            dummyd0 = param_42;
+            neighbourhood[0][3] = param_43;
+            dummyd1 = param_44;
+            dummyd2 = param_45;
+            uint param_46 = centerAddr2x2 + 16u;
+            vec2 param_47;
+            vec2 param_48;
+            vec2 param_49;
+            vec2 param_50;
+            GroupsharedLoadQuadHV(param_46, param_47, param_48, param_49, param_50);
+            neighbourhood[1][3] = param_47;
+            neighbourhood[2][3] = param_48;
+            dummyd0 = param_49;
+            dummyd1 = param_50;
+            neighbourhood[1][0].y = topRow.x;
+            neighbourhood[2][0].y = topRow.y;
+            neighbourhood[0][1].x = leftColumn.x;
+            neighbourhood[0][2].x = leftColumn.y;
+            neighbourhood[1][1] = qe0;
+            neighbourhood[2][1] = qe1;
+            neighbourhood[1][2] = qe2;
+            neighbourhood[2][2] = qe3;
+            int param_51 = 0;
+            int param_52 = -1;
+            vec2 param_53[4][4] = neighbourhood;
+            topRow.x = float((topRow.x - ComputeLocalContrastH(param_51, param_52, param_53)) > GetActualEdgeThreshold());
+            int param_54 = 1;
+            int param_55 = -1;
+            vec2 param_56[4][4] = neighbourhood;
+            topRow.y = float((topRow.y - ComputeLocalContrastH(param_54, param_55, param_56)) > GetActualEdgeThreshold());
+            int param_57 = -1;
+            int param_58 = 0;
+            vec2 param_59[4][4] = neighbourhood;
+            leftColumn.x = float((leftColumn.x - ComputeLocalContrastV(param_57, param_58, param_59)) > GetActualEdgeThreshold());
+            int param_60 = -1;
+            int param_61 = 1;
+            vec2 param_62[4][4] = neighbourhood;
+            leftColumn.y = float((leftColumn.y - ComputeLocalContrastV(param_60, param_61, param_62)) > GetActualEdgeThreshold());
+            int param_63 = 0;
+            int param_64 = 0;
+            vec2 param_65[4][4] = neighbourhood;
+            vec4 ce[4];
+            ce[0].x = float((qe0.x - ComputeLocalContrastV(param_63, param_64, param_65)) > GetActualEdgeThreshold());
+            int param_66 = 0;
+            int param_67 = 0;
+            vec2 param_68[4][4] = neighbourhood;
+            ce[0].y = float((qe0.y - ComputeLocalContrastH(param_66, param_67, param_68)) > GetActualEdgeThreshold());
+            int param_69 = 1;
+            int param_70 = 0;
+            vec2 param_71[4][4] = neighbourhood;
+            ce[1].x = float((qe1.x - ComputeLocalContrastV(param_69, param_70, param_71)) > GetActualEdgeThreshold());
+            int param_72 = 1;
+            int param_73 = 0;
+            vec2 param_74[4][4] = neighbourhood;
+            ce[1].y = float((qe1.y - ComputeLocalContrastH(param_72, param_73, param_74)) > GetActualEdgeThreshold());
+            int param_75 = 0;
+            int param_76 = 1;
+            vec2 param_77[4][4] = neighbourhood;
+            ce[2].x = float((qe2.x - ComputeLocalContrastV(param_75, param_76, param_77)) > GetActualEdgeThreshold());
+            int param_78 = 0;
+            int param_79 = 1;
+            vec2 param_80[4][4] = neighbourhood;
+            ce[2].y = float((qe2.y - ComputeLocalContrastH(param_78, param_79, param_80)) > GetActualEdgeThreshold());
+            int param_81 = 1;
+            int param_82 = 1;
+            vec2 param_83[4][4] = neighbourhood;
+            ce[3].x = float((qe3.x - ComputeLocalContrastV(param_81, param_82, param_83)) > GetActualEdgeThreshold());
+            int param_84 = 1;
+            int param_85 = 1;
+            vec2 param_86[4][4] = neighbourhood;
+            ce[3].y = float((qe3.y - ComputeLocalContrastH(param_84, param_85, param_86)) > GetActualEdgeThreshold());
+            ce[0].z = leftColumn.x;
+            ce[1].z = ce[0].x;
+            ce[2].z = leftColumn.y;
+            ce[3].z = ce[2].x;
+            ce[0].w = topRow.x;
+            ce[1].w = topRow.y;
+            ce[2].w = ce[0].y;
+            ce[3].w = ce[1].y;
+            i = 0u;
+            SPIRV_CROSS_UNROLL
+            for (; i < 4u; i++)
+            {
+                uvec2 localPixelPos = pixelPos + _763[i];
+                vec4 edges = ce[i];
+                bool isCandidate = ((((edges.x * edges.y) + (edges.y * edges.z)) + (edges.z * edges.w)) + (edges.w * edges.x)) != 0.0;
+                if (isCandidate)
+                {
+                    uint _811 = atomicAdd(g_workingControlBuffer_1._data[16 >> 2], 1);
+                    uint counterIndex = _811;
+                    if (counterIndex < uint(g_workingShapeCandidates_1._data.length()))
+                    g_workingShapeCandidates_1._data[counterIndex] = ((localPixelPos.x << uint(18)) | (msaaSampleIndex << uint(14))) | localPixelPos.y;
+                }
+                vec4 param_87 = edges;
+                uint packedEdge = PackEdges(param_87);
+                outEdges[i] = packedEdge;
+            }
+        }
+    }
+    SPIRV_CROSS_BRANCH
+    if (inOutputKernel)
+    {
+        uint storeTemp_1 = (outEdges.y << uint(4)) | outEdges.x;
+        imageStore(g_workingEdges, ivec2(int(pixelPos.x / 2u), int(pixelPos.y + 0u)), uvec4(storeTemp_1));
+        uint storeTemp_2 = (outEdges.w << uint(4)) | outEdges.z;
+        imageStore(g_workingEdges, ivec2(int(pixelPos.x / 2u), int(pixelPos.y + 1u)), uvec4(storeTemp_2));
+    }
+}
+
+void main()
+{
+    uvec3 groupID = gl_WorkGroupID;
+    uvec3 groupThreadID = gl_LocalInvocationID;
+    uvec3 param = groupID;
+    uvec3 param_1 = groupThreadID;
+    _EdgesColor2x2CS(param, param_1);
+}
+

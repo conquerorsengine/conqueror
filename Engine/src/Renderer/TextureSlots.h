@@ -28,5 +28,6 @@ namespace Conqueror
     {
         constexpr uint32_t Frame = 0;
         constexpr uint32_t Lights = 1;
+        constexpr uint32_t PostProcessConstants = 7;   // son geçiş hesaplama gölgelendiricilerinin sabitleri (NIS ...)
     }
 }

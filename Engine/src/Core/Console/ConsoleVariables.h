@@ -41,6 +41,8 @@ namespace Conqueror
         int Fog = -1;
         float FogDensity = NAN;
         int PostProcess = -1, Bloom = -1, SSAO = -1, AntiAliasing = -1, Tonemapper = -1;
+        int Upscaler = -1;
+        float ScreenPercentage = NAN;   // yükseltici iç çözünürlüğü (%), Unreal r.ScreenPercentage gibi
         int Vignette = -1, FilmGrain = -1, ChromaticAberration = -1, Sharpen = -1, ColorGrading = -1;
         float BloomIntensity = NAN, Exposure = NAN, Saturation = NAN, Contrast = NAN;
         int SSR = -1, VolumetricFog = -1, VolumetricClouds = -1, DepthOfField = -1, MotionBlur = -1, AutoExposure = -1;

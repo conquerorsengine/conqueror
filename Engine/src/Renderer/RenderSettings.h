@@ -100,6 +100,46 @@ namespace Conqueror
         SRAA,           // Subpixel Reconstruction AA (NVIDIA): çok örnekli geometri, tek örnekli gölgelendirme
         Count
     };
+    // Not: TAAU, TSR, DLSS, FSR, XeSS, PSSR, MetalFX, NIS ve CAS eski sahnelerle uyum için enum'da kalır; arayüzde Anti-Aliasing
+    // listesinde gösterilmez (Unity / Unreal gibi yükselticiler ayrı "Upscaling" bölümündedir). Yüklenirken TAA + ilgili
+    // yükselticiye (CAS: keskinleştirmeye) dönüştürülür: AntiAliasing::MigrateLegacy
+
+    // Yükseltici (Unity: Render Scale + Upscaling Filter, Unreal: Screen Percentage + zamansal / uzamsal yükseltici).
+    // Değerler sahne dosyalarına sayı olarak yazılır: yeni yöntemler HEP sona eklenir.
+    enum class UpscalerMode : int
+    {
+        None = 0,       // yerel çözünürlük
+        FSR1,           // AMD FidelityFX Super Resolution 1.0 (EASU yükseltme + RCAS keskinlik)
+        CAS,            // AMD FidelityFX Contrast Adaptive Sharpening ölçekleme
+        NIS,            // NVIDIA Image Scaling
+        TAAU,           // Temporal AA Upsampling
+        TSR,            // Temporal Super Resolution (Epic)
+        DLSS,           // NVIDIA DLSS
+        XeSS,           // Intel XeSS
+        MetalFX,        // Apple MetalFX
+        PSSR,           // Sony PlayStation Spectral Super Resolution
+        Count
+    };
+
+    // Yükseltici kalite kipi -> iç çözünürlük oranı (DLSS / FSR / XeSS adlandırması)
+    enum class UpscaleQualityMode : int
+    {
+        UltraQuality = 0,   // %77
+        Quality,            // %67
+        Balanced,           // %59
+        Performance,        // %50
+        UltraPerformance,   // %33
+        Custom,             // Render Scale kaydırıcısı
+        Count
+    };
+
+    // Keskinleştirme yöntemi
+    enum class SharpenMethod : int
+    {
+        EdgeAware = 0,   // motorun kenar duyarlı keskinleştirmesi
+        CAS,             // AMD FidelityFX Contrast Adaptive Sharpening
+        Count
+    };
 
     // Full Screen Pass (sahnedeki bileşenlerden toplanır)
     struct FullScreenPassEntry
@@ -151,14 +191,17 @@ namespace Conqueror
 
         bool Sharpen = false;
         float SharpenAmount = 0.3f;
+        SharpenMethod SharpenMode = SharpenMethod::EdgeAware;
 
         AntiAliasingMode AntiAliasing = AntiAliasingMode::FXAA;
         int MSAASamples = 4;              // MSAA örnekleme sayısı (2, 4 veya 8)
         float TAAFeedback = 0.9f;         // geçmiş ağırlığı (yüksek = pürüzsüz, hareket izi riski)
         float TAASharpness = 0.25f;
         float SSAAScale = 2.0f;           // SSAA / OGSSAA: eksen başına süper örnekleme çarpanı (1.5 .. 4; OGSSAA tam sayıya yuvarlar)
-        float UpscaleRenderScale = 0.67f; // FSR / NIS / TAAU / TSR: iç çözünürlük oranı (0.5 .. 1)
-        float UpscaleSharpness = 0.5f;    // FSR (RCAS) / NIS / CAS keskinliği (0 .. 1)
+        UpscalerMode Upscaler = UpscalerMode::None;
+        UpscaleQualityMode UpscaleQuality = UpscaleQualityMode::Quality;
+        float UpscaleRenderScale = 0.67f; // Custom kalite kipinde iç çözünürlük oranı (0.33 .. 1)
+        float UpscaleSharpness = 0.5f;    // FSR (RCAS) / NIS / CAS yükseltme keskinliği (0 .. 1)
         int EQAASamples = 8;              // EQAA kapsam örneği (4 / 8 / 16); renk depolama örneği yarısı
 
         // Ekran uzayı yansımalar (SSR): parlak zemin / su / metal yüzeyler sahneyi yansıtır
