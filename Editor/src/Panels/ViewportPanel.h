@@ -83,6 +83,7 @@ namespace Conqueror::Editor
         ViewportShading GetShading() const { return m_Shading; }
         void SetShading(ViewportShading shading) { m_Shading = shading; }
         EditorViewOptions& GetViewOptions() { return m_ViewOptions; }
+        PostProcessStack& GetPostProcessStack() { return m_PostStack; }
 
         // Seçili nesneleri kadraja al (F)
         void FrameSelected();

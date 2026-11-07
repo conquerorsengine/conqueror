@@ -52,6 +52,7 @@ namespace Conqueror
         // Eski API uyumluluğu (yalnızca AA; ton eşleme yok)
         void ApplyFXAA();
         void ApplySMAA();
+        void ResetHistory() { m_HistoryValid = false; m_HasPrevViewProj = false; }
 
         // Renderer3D: şu an bu görünümün sahne hedefine çiziliyorsa Temporal AA alt piksel titreşimi (NDC)
         static bool GetCurrentJitter(glm::vec2& outNDC);

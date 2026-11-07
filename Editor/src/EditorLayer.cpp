@@ -2751,6 +2751,8 @@ namespace Conqueror::Editor
         m_EditorScene = m_ActiveScene;
         m_CurrentScenePath = path;
         m_AutoSaveTimer = 0.0f;
+        if (m_ViewportPanel)
+            m_ViewportPanel->GetPostProcessStack().ResetHistory();
         EditorState::Get().ClearSelection();
         RefreshAllPanels();
         SelectEntityEverywhere({});

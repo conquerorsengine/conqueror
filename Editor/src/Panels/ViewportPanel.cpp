@@ -1052,6 +1052,7 @@ namespace Conqueror::Editor
             m_EditorCamera.SetFocalPoint(center);
             m_EditorCamera.SetDistance(std::max(distance, m_EditorCamera.GetNearClip() * 4.0f));
         }
+        m_PostStack.ResetHistory();
     }
 
     void ViewportPanel::OnEvent(Event& e)

@@ -247,9 +247,12 @@ void main()
     float closestW = ViewW(closestUV, closestDepth);
     float outAlpha = movingNow ? -closestW : closestW;
     float shadowNow = u_HasShadowMask == 1 ? texture(u_GShadow, v_UV).r : 1.0;
+    vec3 boxMean = m1 / 9.0;
+    vec3 boxSigma = sqrt(max(m2 / 9.0 - boxMean * boxMean, vec3(0.0)));
     // Durum x: hareket payı (0 durağan .. 1 hızlı / geçmişsiz). Son geçiş hızlı kayan kenarlarda kalan merdiveni FXAA ile
-    // yumuşatır; durağan görüntüye dokunulmaz
-    StateOut = vec4(1.0, shadowNow, 0.0, 0.0);
+    // yumuşatır; durağan görüntüye dokunulmaz. İlk karede yerel ortalama parlaklık (boxMean.x) kaydedilir, böylece
+    // sonraki karede yapay parlaklık sıçraması ve beyazlama yaşanmaz.
+    StateOut = vec4(0.0, shadowNow, 0.0, clamp(boxMean.x, 0.0, 0.999));
     if (u_HistoryValid == 0)
     {
         FragColor = vec4(Expand(current), outAlpha);
@@ -261,8 +264,6 @@ void main()
     // derinliğin (duvarın) hareketi (zıplarken duvarın üst kenarı dikey kayar; kenar pikseli titreşimle bazen duvar
     // bazen gökyüzü olur, kendi hareketiyle eski kenarı yanlış yerden alıp merdivenleniyordu). Akım komşuluğuna daha
     // iyi uyan geçmiş seçilir.
-    vec3 boxMean = m1 / 9.0;
-    vec3 boxSigma = sqrt(max(m2 / 9.0 - boxMean * boxMean, vec3(0.0)));
     vec2 velocity;
     vec4 prevClip;
     {
@@ -333,22 +334,24 @@ void main()
         vec4 pb = u_PrevViewProj * (qb / qb.w);
         parallaxPx = length(((closestUV - (pa.xy / pa.w * 0.5 + 0.5)) - (farUV - (pb.xy / pb.w * 0.5 + 0.5))) / u_Texel);
     }
-    bool enclosed = false;
     float cw = ViewW(closestUV, closestDepth);
-    if (closestDepth < 1.0)
+    float depthSpread = ViewW(farUV, farDepth) - cw;
+    // Gerçek alt-piksel aralık (iki küp arasındaki 5cm boşluk):
+    // 1) 3x3 komşulukta belirgin bir derinlik süreksizliği olmalıdır (depthSpread). Düz küp yüzeyinde depthSpread ~ 0'dır!
+    // 2) Aralığın iki karşıt yönünde (sol-sağ veya üst-alt) aynı derinlikte (cw) ön yüzey geometrisi mevcuttur.
+    bool hasDepthDiscontinuity = depthSpread > 0.035 * cw + 0.03;
+    bool enclosedGap = false;
+    if (closestDepth < 1.0 && hasDepthDiscontinuity)
     {
         bool nr[8];
         for (int k = 0; k < 8; ++k)
             nr[k] = axisDepth[k] < 1.0 && abs(ViewW(v_UV, axisDepth[k]) - cw) < 0.02 * cw + 0.02;
-        enclosed = ((nr[0] || nr[5]) && (nr[1] || nr[4])) || ((nr[2] || nr[7]) && (nr[3] || nr[6]));
-        if (enclosed && parallaxPx >= 0.06)
+        enclosedGap = ((nr[0] || nr[5]) && (nr[1] || nr[4])) || ((nr[2] || nr[7]) && (nr[3] || nr[6]));
+        if (enclosedGap && parallaxPx >= 0.06)
             parallaxPx = 0.0;
     }
-    float depthSpread = ViewW(farUV, farDepth) - cw;
-    // Geometrik alt-piksel tespiti: 5cm aralıklar ve merdiven basamakları.
-    // Düz küp yüzeyinde depthSpread ~ 0'dır, asla alt-piksel sayılmaz.
-    bool hasDepthStep = (depthSpread > 0.035 * cw + 0.06) || enclosed;
-    bool isSubpixelFeature = hasDepthStep;
+    // Alt-piksel özellik: Yalnızca gerçek alt-piksel aralıklar (5cm küp boşlukları). Düz yüzeyler ASLA dahil değildir.
+    bool isSubpixelFeature = enclosedGap;
 
     ivec2 hn = clamp(ivec2(floor(prevUV * vec2(histSize))), ivec2(0), histSize - 1);
     float storedW = abs(texelFetch(u_History, hn, 0).a);
@@ -356,9 +359,9 @@ void main()
     float depthTol = 0.04 * prevClip.w + 0.03;
     bool sameSurface = closestDepth < 1.0 && depthDiff < depthTol;
     // Yüzey değişimi / açılma (disocclusion): Geçmişteki yüzey ile bu karedeki yüzey farklıdır.
-    // 5cm küp aralıkları hariç (enclosed): aralıklar geometrik alt-piksel yarıktır, açılma değildir.
+    // 5cm küp aralıkları hariç (enclosedGap): aralıklar geometrik alt-piksel yarıktır, açılma değildir.
     // Kamera yaklaşırken (zoom in) veya uzaklaşırken (zoom out) arkadaki beyaz zeminin rengi küpün kenarına geçmiş olarak taşınamaz.
-    bool surfaceChanged = (closestDepth < 1.0 && depthDiff > depthTol && !enclosed);
+    bool surfaceChanged = (closestDepth < 1.0 && depthDiff > depthTol && !enclosedGap);
     bool disoccluded = surfaceChanged;
     vec3 history = RGBToYCoCg(Compress(SampleHistory(prevUV)));
 
@@ -542,19 +545,17 @@ void main()
     // Hızlı zoom (Shift + W) sırasında geçmiş ağırlığı orantılı düşer; böylece küpün üzerindeki parlama/sis hemen temizlenir.
     if (!isSubpixelFeature && u_CameraStill == 0)
     {
-        float motionFeedback = clamp(u_Feedback - zoomRate * 8.0 - speed * 0.02, 0.40, 0.88);
+        float motionFeedback = clamp(u_Feedback - zoomRate * 10.0 - speed * 0.03, 0.15, 0.88);
         feedback = min(feedback, motionFeedback);
     }
 
     if (restart)
     {
-        // Bu kameradan alınmış yeni karelerin ortalaması: kırpılmaz (aynı yerden, iz olamaz), ilk karede yalnız bu kare
-        // Duruşun ilk karesinde eski (bulanık) geçmişin payı yarı, sonra 1 / (n + 1) ile azalır: 16 karede %6
-        history = rawHistory;
-        // Eski geçmişin payı en az 0.85: tek titreşimli karenin payı büyükken ince ayrıntı (küplerin arası) durunca bir an
-        // yanıp sönüyordu
-        float n = stillAge - 2.0;
-        feedback = max(n / (n + 1.0), 0.85);
+        // Duruş anında yeni karelerin ağırlığını kademeli yükselt (1/2, 2/3, 3/4...).
+        // ASLA kırpılmamış rawHistory verme: geçmiş her zaman varyans kutusuyla sınırlandırılmış olmalıdır.
+        float n = max(stillAge - 2.0, 1.0);
+        float restartFeedback = clamp(n / (n + 1.0), 0.50, 0.88);
+        feedback = min(feedback, restartFeedback);
     }
     // Açılan / değişen yüzey: geçmişteki yüzey bu pikselle aynı değil (örneğin arkadaki beyaz zemin/ışık).
     // Eski yüzeyin rengi bu yüzeyin üstüne sürülemez; anında sıfır geri beslemeyle doğrudan güncel renk verilir.
@@ -566,11 +567,11 @@ void main()
     feedback *= 1.0 - shadowReset;
     vec3 result = mix(RGBToYCoCg(current), history, feedback);
     StateOut = vec4((hold || silhouetteSlow) ? 0.0 : clamp((speed - 0.5) / 4.0, 0.0, 1.0), shadowNow, stillAge + 32.0 * (2.0 * flicker + (outsideNow ? 1.0 : 0.0)), clamp(meanOut, 0.0, 0.999) + 2.0 * blurAge);
-    // Parlaklık sınırı: sonuç bu karenin 3x3'ündeki ve geçmişteki en parlak (sıkıştırılmış) değeri aşamaz. Kırpılan geçmiş
-    // RGB'ye dönünce sıkıştırılmış parlaklık 1'e yaklaşabiliyor, Expand onu yüzlerce kat büyütüyordu: tek piksel bloomla beyaz
-    // yuvarlak bir lekeye, büyükse bir anlık tüm ekran beyazlığına dönüyordu
+    // Parlaklık sınırı: sonuç bu karenin 3x3'ündeki en parlak değeri aşamaz.
+    // Kırpılan geçmiş RGB'ye dönünce sıkıştırılmış parlaklık 1'e yaklaşabiliyor, Expand onu yüzlerce kat büyütüyordu: tek piksel bloomla beyaz
+    // yuvarlak bir lekeye, büyükse bir anlık tüm ekran beyazlığına dönüyordu.
     vec3 outRGB = max(YCoCgToRGB(result), vec3(0.0));
-    float capL = min(max(maxCurL, Luminance(max(YCoCgToRGB(rawHistory), vec3(0.0)))), 0.995);
+    float capL = min(maxCurL + 0.03, 0.96);
     float outL = Luminance(outRGB);
     if (outL > capL)
         outRGB *= capL / max(outL, 1e-6);

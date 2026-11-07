@@ -318,13 +318,15 @@ namespace Conqueror
     // piksel hassasiyetinde "hareketli" bayrağı yazar (normal ekinin w'si 2 yerine 4 + metalik); saydam nesneler ve
     // parçacıklar G-buffer'a yazmadığından onların ekran dikdörtgenleri ayrıca verilir. TAA hareketli yerde geçmişi
     // sıkı kırpar (hareket eden nesne iz bırakmaz), hareketsiz yerde geçmişe güvenir (alt piksel çizgiler yanıp
-    // sönmez). Görünüm (sahne hedefi) başına izlenir; nesne kimliği = mesh + bu karedeki kaçıncı çizimi olduğu.
+    // sönmez). Görünüm (sahne hedefi) başına izlenir; nesne kimliği = varlığın UUID'si + mesh + varlığın içinde kaçıncı çizimi
+    // olduğu (kimliksiz çizimde mesh + bu karedeki kaçıncı çizimi olduğu).
     namespace
     {
         struct MotionTrack
         {
             std::unordered_map<uint64_t, glm::mat4> Prev, Cur;
             std::unordered_map<const void*, uint32_t> Occurrence;
+            std::unordered_map<uint64_t, uint32_t> IdentityOccurrence;
             std::vector<glm::vec4> LastRects;   // önceki karenin dikdörtgenleri (nesnenin ayrıldığı yer)
             std::vector<glm::vec4> Rects;       // bu kare
             // Hareket eden opak nesnelerin dünya kutuları (bu ve önceki kare; min, max çifti): TAA bunların gölge hacmindeki
@@ -351,11 +353,31 @@ namespace Conqueror
             std::vector<SkinnedVelocityDraw> SkinnedVelocity;
             std::unordered_map<uint64_t, glm::mat4> PrevSkinned, CurSkinned;
             std::unordered_map<const void*, uint32_t> SkinnedOccurrence;
+            std::unordered_map<uint64_t, uint32_t> SkinnedIdentityOccurrence;
         };
         std::unordered_map<const void*, MotionTrack> s_Motion;
         MotionTrack* s_MotionCur = nullptr;
         glm::mat4 s_MotionViewProj{ 1.0f };
         bool s_QueuedMoving = false;   // kuyruktan çizilen öğenin hareket bayrağı
+        uint64_t s_DrawIdentity = 0;   // sonraki çizimlerin varlık kimliği (0 = yok)
+
+        // Çizimin kareden kareye kararlı anahtarı. Varlık kimliği varsa: varlık + mesh + varlığın içinde kaçıncı çizim. Mesh +
+        // karedeki sıra tek başına kararsızdı: aynı meshi kullanan bir nesne belirip kaybolunca (havuzdan etkinleşen mermi izi
+        // küpü) sonraki bütün küplerin sırası kayıyor, hepsi başka bir küpün önceki dönüşümüyle "hareket etmiş" sayılıp tüm
+        // ekranda TAA geçmişi atılıyordu (ateş edince ve iz sönünce küplerin arası ve çizgiler silikleşip sonra netleşiyordu)
+        uint64_t MotionKey(std::unordered_map<const void*, uint32_t>& occurrences, std::unordered_map<uint64_t, uint32_t>& identityOccurrences,
+                           const void* mesh)
+        {
+            const uint64_t m = (uint64_t)(uintptr_t)mesh * 0x9E3779B97F4A7C15ull;
+            if (s_DrawIdentity != 0)
+            {
+                const uint64_t base = m ^ (s_DrawIdentity * 0xD6E8FEB86659FD93ull) ^ 0xA5A5A5A5A5A5A5A5ull;
+                const uint32_t occurrence = identityOccurrences[base]++;
+                return base ^ ((uint64_t)occurrence * 0xC2B2AE3D27D4EB4Full);
+            }
+            const uint32_t occurrence = occurrences[mesh]++;
+            return m ^ ((uint64_t)occurrence * 0xC2B2AE3D27D4EB4Full);
+        }
         bool s_DrawCastsShadows = true;   // çizilen nesne gölge düşürüyor mu (gölge kutusu yalnız düşürenlere)
 
         // Kutunun yakın düzlemin önündeki kısmının ekran dikdörtgeni (kenarlar yakın düzlemde kırpılır)
@@ -423,8 +445,7 @@ namespace Conqueror
                 *prevOut = nullptr;
             if (!s_MotionCur)
                 return false;
-            const uint32_t occurrence = s_MotionCur->Occurrence[mesh]++;
-            const uint64_t key = ((uint64_t)(uintptr_t)mesh * 0x9E3779B97F4A7C15ull) ^ ((uint64_t)occurrence * 0xC2B2AE3D27D4EB4Full);
+            const uint64_t key = MotionKey(s_MotionCur->Occurrence, s_MotionCur->IdentityOccurrence, mesh);
             s_MotionCur->Cur[key] = transform;
             auto it = s_MotionCur->Prev.find(key);
             if (it == s_MotionCur->Prev.end())
@@ -448,10 +469,41 @@ namespace Conqueror
         AddMotionBox(center, extents);
     }
 
+    void Renderer3D::SetDrawIdentity(uint64_t identity)
+    {
+        s_DrawIdentity = identity;
+    }
+
     bool Renderer3D::HasVelocityDraws(const void* view)
     {
         auto it = s_Motion.find(view);
         return it != s_Motion.end() && (!it->second.Velocity.empty() || !it->second.SkinnedVelocity.empty());
+    }
+
+    bool Renderer3D::ConsumeLightingChange(const void* view)
+    {
+        struct LightEnergy { float Sum = 0.0f; int Count = 0; bool Valid = false; };
+        static std::unordered_map<const void*, LightEnergy> s_LightEnergy;
+        if (!s)
+            return false;
+        float sum = 0.0f;
+        for (int i = 0; i < s->PointCount; ++i)
+        {
+            const glm::vec4& c = s->Lights.PointLights[i].ColorIntensity;
+            sum += c.r + c.g + c.b;
+        }
+        for (int i = 0; i < s->SpotCount; ++i)
+        {
+            const glm::vec4& c = s->Lights.SpotLights[i].ColorIntensity;
+            sum += c.r + c.g + c.b;
+        }
+        const int count = s->PointCount + s->SpotCount;
+        LightEnergy& last = s_LightEnergy[view];
+        const bool changed = last.Valid && (count != last.Count || std::abs(sum - last.Sum) > 0.02f * std::max(sum, last.Sum) + 1e-3f);
+        last.Sum = sum;
+        last.Count = count;
+        last.Valid = true;
+        return changed;
     }
 
     namespace
@@ -664,6 +716,7 @@ namespace Conqueror
             std::swap(track.Prev, track.Cur);
             track.Cur.clear();
             track.Occurrence.clear();
+            track.IdentityOccurrence.clear();
             track.LastRects.swap(track.Rects);
             track.Rects.clear();
             track.LastShadowBoxes.swap(track.ShadowBoxes);
@@ -673,6 +726,7 @@ namespace Conqueror
             std::swap(track.PrevSkinned, track.CurSkinned);
             track.CurSkinned.clear();
             track.SkinnedOccurrence.clear();
+            track.SkinnedIdentityOccurrence.clear();
             s_MotionCur = &track;
             s_MotionViewProj = s->Camera.Projection * s->Camera.View;
         }
@@ -1902,11 +1956,10 @@ namespace Conqueror
         shader->SetFloat3("u_Tint", s->Tint);
         // Animasyonlu model her karede hareketli (kemikler dönüşüm değişmeden de oynar): TAA bu piksellerde iz bırakmaz
         shader->SetFloat("u_MotionFlag", s_MotionCur ? 2.0f : 0.0f);
-        // Hareket vektörü: önceki model dönüşümü (aynı modelin kaçıncı çizimi olduğuna göre); kemikler bu karenin
+        // Hareket vektörü: önceki model dönüşümü (varlık kimliğine, yoksa aynı modelin kaçıncı çizimi olduğuna göre); kemikler bu karenin
         if (s_MotionCur)
         {
-            const uint32_t occurrence = s_MotionCur->SkinnedOccurrence[model.get()]++;
-            const uint64_t key = ((uint64_t)(uintptr_t)model.get() * 0x9E3779B97F4A7C15ull) ^ ((uint64_t)occurrence * 0xC2B2AE3D27D4EB4Full);
+            const uint64_t key = MotionKey(s_MotionCur->SkinnedOccurrence, s_MotionCur->SkinnedIdentityOccurrence, model.get());
             s_MotionCur->CurSkinned[key] = transform;
             auto prev = s_MotionCur->PrevSkinned.find(key);
             if (prev != s_MotionCur->PrevSkinned.end())

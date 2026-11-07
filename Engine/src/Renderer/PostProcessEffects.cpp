@@ -449,6 +449,8 @@ namespace Conqueror
         }
         m_CameraStill = cameraStill;
         shader->SetInt("u_CameraStill", cameraStill ? 1 : 0);
+        // Nokta / spot ışığın gücü bu karede değişti (namlu alevi): TAA aydınlığı değişen piksellerde geçmişe az güvenir
+        shader->SetInt("u_LightingChanged", Renderer3D::ConsumeLightingChange(this) ? 1 : 0);
         // Hareket eden nesnelerin ekran dikdörtgenleri (fazlası son dikdörtgende birleşir)
         {
             static std::vector<glm::vec4> s_Rects;

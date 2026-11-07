@@ -219,12 +219,17 @@ namespace Conqueror
         // bağlı çerçeve tamponuna (renk: RGBA16F hız, derinlik: sahne derinliği; derinlik yazılmaz) çizer. Çizim yoksa false
         static bool RenderVelocity(const void* view, const glm::mat4& jitteredViewProj, const glm::mat4& viewProj, const glm::mat4& prevViewProj);
         static bool HasVelocityDraws(const void* view);
+        // Bu görünümde nokta / spot ışıkların toplam gücü önceki çağrıdan beri değişti mi (namlu alevi ışığı yanıp söner):
+        // TAA yalnız böyle karelerde aydınlığı değişen piksellerde geçmişe az güvenir
+        static bool ConsumeLightingChange(const void* view);
         // Sonraki çizimlerin nesnesi gölge düşürüyor mu (Mesh Renderer / Model Cast Shadows): düşürmeyenin gölge kutusu yok
         static void SetDrawCastsShadows(bool castsShadows);
         // Sonraki çizimler View Model mi (first person kollar / silah): kameraya doğru bu oranda yaklaştırılmış konumla
         // rasterleştirilir (1 = kapalı)
         // Mesh dışı çizimler (parçacıklar vb.) için: bu dünya kutusu bu karede hareketli (TAA iz bırakmasın)
         static void MarkMovingBounds(const glm::vec3& center, const glm::vec3& extents);
+        // TAA hareket takibi: sonraki çizimlerin kararlı nesne kimliği (varlığın UUID'si). 0 = kimlik yok (mesh + çizim sırası)
+        static void SetDrawIdentity(uint64_t identity);
         static void SetFrustumCulling(bool enabled);
         static bool GetFrustumCulling();
         // Dünya uzayı eksen hizalı kutu (merkez, yarı boyut) düzlemlerin içinde ya da onları kesiyor mu

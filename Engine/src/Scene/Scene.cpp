@@ -103,6 +103,14 @@ namespace Conqueror
 
     namespace
     {
+        // TAA hareket takibinde varlığın kararlı kimliği: UUID (Play'e geçişte sahne kopyalanınca da aynı kalır), yoksa tutamaç
+        uint64_t MotionIdentity(const entt::registry& registry, entt::entity entity)
+        {
+            const auto* id = registry.try_get<IDComponent>(entity);
+            const uint64_t value = (id && id->ID != 0) ? id->ID : (uint64_t)(uint32_t)entity + 1ull;
+            return value != 0 ? value : 1ull;
+        }
+
         // Varlığın ses çalışma zamanı nesneleri: önce kaynak (grafikten ayrılır), sonra filtre düğümleri.
         // Oyun sırasında silinen varlıkların sesleri (ör. döngüsel motor sesi) böylece susar ve sızmaz.
         void ReleaseAudioRuntime(entt::registry& registry, entt::entity entity)
@@ -2757,6 +2765,8 @@ namespace Conqueror
             if (meshRenderer.IsModel())
                 continue;   // model ağı aşağıda (Modeller)
             Renderer3D::SetDrawCastsShadows(meshRenderer.CastShadows);
+            // TAA hareket takibi bu varlığın kimliğiyle (başka nesnelerin belirip kaybolması bu nesneyi "hareketli" yapmaz)
+            Renderer3D::SetDrawIdentity(MotionIdentity(m_Registry, entity));
 
             // Unity gibi: renk, doku, ışıma ve Shader Graph malzemenin içinde; malzemesiz nesne varsayılan malzemeyle çizilir
             std::shared_ptr<Material> material = meshRenderer.MaterialInstance;
@@ -2792,6 +2802,7 @@ namespace Conqueror
             if (painted)
                 Renderer3D::SetVertexColorBuffers(nullptr);
         }
+        Renderer3D::SetDrawIdentity(0);
         Renderer3D::SetReceiveShadows(true);
 
         // 3D karo haritaları (altıgen/kutu prizmalar)
@@ -2809,6 +2820,7 @@ namespace Conqueror
             Renderer3D::SetDrawCastsShadows(modelComp.CastShadows);
             if (!modelComp.ModelData)
                 continue;
+            Renderer3D::SetDrawIdentity(MotionIdentity(m_Registry, entity));
 
             Entity ren{ entity, this };
             // Örnek rengi (Model.Tint): yalnız bu nesnenin çizimleri için; döngü sonunda 1'e döner
@@ -2879,6 +2891,7 @@ namespace Conqueror
             Renderer3D::SetTint(glm::vec3(1.0f));
         }
 
+        Renderer3D::SetDrawIdentity(0);
         // Sonraki çizimler (kuyruk, MultiMesh, arazi, parçacık) varsayılan: gölge düşürür
         Renderer3D::SetDrawCastsShadows(true);
         // Kuyruktaki opak meshler / modeller yakından uzağa; MultiMesh ve araziler (büyük, çoğunlukla arkada) sonra çizilir
