@@ -63,6 +63,12 @@ namespace Conqueror
 
         // Renderer3D: şu an bu görünümün sahne hedefine çiziliyorsa Temporal AA alt piksel titreşimi (NDC)
         static bool GetCurrentJitter(glm::vec2& outNDC);
+        // Bu görünüm bu karede hareket verisi istiyor mu (nesne hareket vektörleri, hareket bayrağı, önceki konum): zamansal
+        // yöntemler ve tek kare yöntemlerindeki zamansal kararlılık katmanı. Titreşim yalnız GetCurrentJitter ile uygulanır
+        static bool WantsMotionData();
+        // Şu an bu görünümün sahne hedefine çiziliyorsa ve tek kare yöntemlerinin zamansal kararlılık katmanı açıksa true
+        // (tepki maskesi yazılamadığında, MSAA'da, parçacıklar ekran dikdörtgenlerini bildirir)
+        static bool IsStabilityActive();
         // Şu an sahne hedefine çizilen görünüm (Renderer3D hareket maskesi anahtarı)
         static const void* GetCurrentStack();
         // Şu an bu görünümün (çok örneklemesiz) sahne hedefine çiziliyorsa sahne derinliği, değilse 0. Derinlik yazmayan
@@ -219,6 +225,14 @@ namespace Conqueror
         // Jitter titremesi bir kare tutar bir kare tutmaz (güven sürer); hareket eden gölge üst üste tutmaz (güven kalkar)
         RenderTarget m_TAAState[2];
         uint32_t m_TAAFramebuffer[2] = { 0, 0 };     // renk 0: geçmiş, renk 1: durum
+        // Zamansal kararlılık (tek kare yöntemleri): önceki çıktı + durum (titreme puanı, en yakın uzaklık), sıra sıra
+        RenderTarget m_StabHistory[2];
+        RenderTarget m_StabState[2];
+        uint32_t m_StabFramebuffer[2] = { 0, 0 };
+        uint32_t m_StabIndex = 0;
+        bool m_StabValid = false;
+        bool m_WantStability = false;   // sonraki karede kararlılık katmanı (hareket verisi toplanır)
+        bool m_StabilityActive = false; // bu kare
         RenderTarget m_TAADebug;                      // r.TAADebug: renk 2, pikselin geçmiş yolu (yalnız gösterilir)
         RenderTarget m_Reactive;                      // TAA tepki maskesi (R8): parçacıkların kapladığı pikseller
         uint32_t m_ReactiveFramebuffer = 0;           // renk: m_Reactive, derinlik: sahne derinliği (salt okunur)

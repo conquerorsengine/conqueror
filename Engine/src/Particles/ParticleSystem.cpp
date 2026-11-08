@@ -531,6 +531,21 @@ namespace Conqueror
             shader->SetInt("u_ReactivePass", 0);
             PostProcessStack::EndReactiveDraw();
         }
+        else if (PostProcessStack::IsStabilityActive() && !r.Instances.empty())
+        {
+            // Maske yazılamıyorsa (MSAA) tek kare yöntemlerinin zamansal kararlılık katmanı parçacıkların ekran dikdörtgeninde
+            // kendini kapatır: dünya kutusu (uzatılmış dörtgende hızla uzayan boy dahil) bildirilir
+            glm::vec3 lo(1e30f), hi(-1e30f);
+            const bool stretched = ps.RenderMode == ParticleRenderMode::StretchedBillboard;
+            for (const auto& inst : r.Instances)
+            {
+                const float along = stretched ? 0.5f * (ps.LengthScale + inst.Params.z * ps.SpeedScale) : 0.0f;
+                const float radius = inst.PosSize.w * std::max(0.75f, along);
+                lo = glm::min(lo, glm::vec3(inst.PosSize) - radius);
+                hi = glm::max(hi, glm::vec3(inst.PosSize) + radius);
+            }
+            Renderer3D::MarkMovingBounds((lo + hi) * 0.5f, (hi - lo) * 0.5f);
+        }
         glBindVertexArray(0);
 
         glDepthMask(depthMask);

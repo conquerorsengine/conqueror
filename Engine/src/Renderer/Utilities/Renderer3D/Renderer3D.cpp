@@ -477,6 +477,19 @@ namespace Conqueror
 
     void Renderer3D::MarkMovingBounds(const glm::vec3& center, const glm::vec3& extents)
     {
+        // Parçacıklar sahne bittikten (EndScene) sonra çizilir: hareket kaydı kapanmıştır, şu an çizilen görünümün kaydı
+        // (BeginScene'deki görüş-izdüşümüyle) kullanılır
+        if (!s_MotionCur && PostProcessStack::WantsMotionData())
+        {
+            auto it = s_Motion.find(PostProcessStack::GetCurrentStack());
+            if (it != s_Motion.end())
+            {
+                s_MotionCur = &it->second;
+                AddMotionBox(center, extents);
+                s_MotionCur = nullptr;
+            }
+            return;
+        }
         AddMotionBox(center, extents);
     }
 
@@ -839,6 +852,11 @@ namespace Conqueror
                 s->Camera.Projection[c][0] += jitter.x * s->Camera.Projection[c][3];
                 s->Camera.Projection[c][1] += jitter.y * s->Camera.Projection[c][3];
             }
+        }
+        // Hareket verisi (zamansal yöntemler ve tek kare yöntemlerindeki zamansal kararlılık katmanı): nesne hareket vektörleri,
+        // hareket bayrağı, hareket eden nesnenin önceki yeri
+        if (PostProcessStack::WantsMotionData())
+        {
             // Hareket maskesi bu görünüm için: önceki karenin kutuları / dikdörtgenleri saklanır
             MotionTrack& track = s_Motion[PostProcessStack::GetCurrentStack()];
             std::swap(track.Prev, track.Cur);

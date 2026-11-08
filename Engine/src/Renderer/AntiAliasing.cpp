@@ -171,6 +171,18 @@ namespace Conqueror::AntiAliasing
         return mode == M::SSAA || mode == M::FSAA || mode == M::OGSSAA;
     }
 
+    bool IsSingleFrame(AntiAliasingMode mode)
+    {
+        switch (mode)
+        {
+            case M::FXAA: case M::SMAA: case M::MSAA: case M::CSAA: case M::SSAA: case M::FSAA: case M::EQAA: case M::MLAA:
+            case M::CMAA: case M::OGSSAA: case M::SGSSAA: case M::RGSS: case M::DEAA: case M::GBAA: case M::SRAA:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     bool IsLegacyUpscaler(AntiAliasingMode mode)
     {
         return GetInfo(mode).Category == Group::Legacy;

@@ -49,6 +49,7 @@ namespace Conqueror
         int SkyAtmosphere = -1, SSGI = -1;
         float SSGIIntensity = NAN;
         int TAADebug = -1;   // 1: TAA hata ayıklama görünümü (her pikselin geçmiş yolu renkle)
+        int TemporalStability = -1;   // tek kare yöntemlerinde zamansal kararlılık (0 kapalı, 1 açık)
     };
 
     class CQ_API ConsoleSystem

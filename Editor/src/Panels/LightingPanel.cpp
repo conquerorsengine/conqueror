@@ -913,6 +913,7 @@ namespace Conqueror::Editor
         p.SSAAScale = keep.SSAAScale;
         p.TAAFeedback = keep.TAAFeedback;
         p.TAASharpness = keep.TAASharpness;
+        p.TemporalStability = keep.TemporalStability;
         p.Upscaler = keep.Upscaler;
         p.UpscaleQuality = keep.UpscaleQuality;
         p.UpscaleRenderScale = keep.UpscaleRenderScale;
@@ -1197,6 +1198,10 @@ namespace Conqueror::Editor
                 if (UI::Combo("EQAA Samples", eqIdx, eqOpts, 3, "Coverage samples / stored color samples (AMD EQAA)"))
                     p.EQAASamples = eqIdx == 0 ? 4 : eqIdx == 1 ? 8 : 16;
             }
+            if (AntiAliasing::IsSingleFrame(aaNow))
+                UI::Checkbox("Temporal Stability", p.TemporalStability,
+                             "Keeps thin details (gaps, distant stair edges, thin lines) from blinking while you move by averaging only the pixels "
+                             "that flicker between frames. Still images stay exactly as this method renders them; large edges and textures keep their sharpness.");
             if (aaNow == AntiAliasingMode::SSAA || aaNow == AntiAliasingMode::OGSSAA)
                 UI::SliderFloat("SSAA Scale", p.SSAAScale, 1.25f, 4.0f, "%.2fx",
                                 "Internal resolution multiplier per axis (2 = 4x samples). OGSSAA rounds it to a whole number. The cost grows with the square of the value.");

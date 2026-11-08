@@ -78,8 +78,9 @@ namespace Conqueror
     {
         for (auto* rt : { &m_HDR[0], &m_HDR[1], &m_SSR, &m_Fog, &m_Clouds, &m_DOFHalf, &m_DOFBlur, &m_History[0], &m_History[1], &m_Adapt[0], &m_Adapt[1],
                           &m_GI, &m_GITemp, &m_GIHistory[0], &m_GIHistory[1], &m_CloudHistory[0], &m_CloudHistory[1], &m_TAAState[0], &m_TAAState[1],
-                          &m_Velocity, &m_TAADebug, &m_Reactive })
+                          &m_Velocity, &m_TAADebug, &m_Reactive, &m_StabHistory[0], &m_StabHistory[1], &m_StabState[0], &m_StabState[1] })
             DestroyTarget(*rt);
+        m_StabValid = false;
         if (m_VelocityFramebuffer)
             glDeleteFramebuffers(1, &m_VelocityFramebuffer);
         m_VelocityFramebuffer = 0;
@@ -91,6 +92,9 @@ namespace Conqueror
             if (m_TAAFramebuffer[i])
                 glDeleteFramebuffers(1, &m_TAAFramebuffer[i]);
             m_TAAFramebuffer[i] = 0;
+            if (m_StabFramebuffer[i])
+                glDeleteFramebuffers(1, &m_StabFramebuffer[i]);
+            m_StabFramebuffer[i] = 0;
         }
         if (m_LumFramebuffer) glDeleteFramebuffers(1, &m_LumFramebuffer);
         if (m_LumTexture) glDeleteTextures(1, &m_LumTexture);

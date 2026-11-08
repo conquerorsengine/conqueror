@@ -1,0 +1,195 @@
+#language GLSL
+// Zamansal kararlılık (TAA olmayan kenar yumuşatma yöntemleri: FXAA, SMAA, MSAA ...): kenar yumuşatması yapılmış bu kare,
+// önceki karenin çıktısıyla yalnız YANIP SÖNEN ince ayrıntılarda (küplerin arası, uzak merdiven kenarları, ince çizgiler)
+// ortalanır. Bu yöntemler tek kareye bakar: pikselden ince ayrıntı kamera kaydıkça pikselin örnek noktasına bazen denk gelir
+// bazen gelmez, yürürken görünüp kaybolur. Titreşim (jitter) yok: kamera dururken önceki çıktı bu karenin aynısıdır, hiçbir
+// piksel sapmaz ve görüntü yöntemin kendi görüntüsüyle birebir aynı kalır. Hareket ederken bir görünüp bir kaybolan piksel
+// (geçmiş kutunun karede bir dışında karede bir içinde) titreme puanı toplar; yalnız bu piksellerde geçmiş kırpılmadan tutulup
+// ortalanır (TAA'daki titreme tutması gibi). Büyük kenarlar, dokular ve düz yüzeyler bu karenin keskin görüntüsü olarak kalır.
+// Hareket eden nesne kendi hareket vektörüyle, kamera derinlikle yeniden izdüşürülür; yüzeyi değişen, açılan, parçacık /
+// saydam hareketli nesne kaplayan ve çok hızlı kayan piksellerde katman kendini kapatır (iz kalmaz)
+#type vertex
+#version 450 core
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+out vec2 v_UV;
+void main()
+{
+    v_UV = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+layout(location = 0) out vec4 FragColor;
+layout(location = 1) out vec4 StateOut;   // x titreme puanı (0..16), y geçmiş bu karede kutunun dışındaydı, z en yakın görüş uzaklığı,
+                                          // w piksel bu karede parçacık / saydam hareketli nesne altındaydı
+in vec2 v_UV;
+
+uniform sampler2D u_Current;     // bu karenin kenar yumuşatması yapılmış görüntüsü (ton eşlenmiş)
+uniform sampler2D u_History;     // önceki karenin çıktısı
+uniform sampler2D u_State;       // önceki karenin durumu
+uniform sampler2D u_Depth;
+uniform sampler2D u_Velocity;    // nesne hareket vektörleri (x >= 5000: yok; w > 1.5: hareket eden nesnenin önceki yeri)
+uniform sampler2D u_Reactive;    // parçacık / saydam hareketli nesne maskesi
+uniform int u_HasVelocity = 0;
+uniform int u_HasReactive = 0;
+uniform vec4 u_MovingRects[32];  // maske yokken (MSAA) hareket eden saydam nesne / parçacık ekran dikdörtgenleri (bu ve önceki kare, uv)
+uniform int u_MovingCount = 0;
+uniform int u_HistoryValid = 0;
+uniform int u_CameraStill = 0;
+uniform mat4 u_InvViewProj;
+uniform mat4 u_PrevViewProj;
+uniform vec2 u_Texel;
+
+float ViewW(vec2 uv, float depth)
+{
+    vec4 w = u_InvViewProj * vec4(uv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+    return 1.0 / max(abs(w.w), 1e-8);
+}
+
+// Catmull-Rom (5 çift doğrusal okuma), halka önleme için sonuç 2x2 texel aralığında
+vec3 SampleHistory(vec2 uv)
+{
+    vec2 size = 1.0 / u_Texel;
+    vec2 pos = uv * size;
+    vec2 c = floor(pos - 0.5) + 0.5;
+    vec2 f = pos - c;
+    vec2 w0 = f * (-0.5 + f * (1.0 - 0.5 * f));
+    vec2 w1 = 1.0 + f * f * (-2.5 + 1.5 * f);
+    vec2 w2 = f * (0.5 + f * (2.0 - 1.5 * f));
+    vec2 w3 = f * f * (-0.5 + 0.5 * f);
+    vec2 w12 = w1 + w2;
+    vec2 t0 = (c - 1.0) * u_Texel;
+    vec2 t3 = (c + 2.0) * u_Texel;
+    vec2 t12 = (c + w2 / w12) * u_Texel;
+    vec3 r = texture(u_History, vec2(t12.x, t0.y)).rgb * (w12.x * w0.y)
+           + texture(u_History, vec2(t0.x, t12.y)).rgb * (w0.x * w12.y)
+           + texture(u_History, vec2(t12.x, t12.y)).rgb * (w12.x * w12.y)
+           + texture(u_History, vec2(t3.x, t12.y)).rgb * (w3.x * w12.y)
+           + texture(u_History, vec2(t12.x, t3.y)).rgb * (w12.x * w3.y);
+    float wsum = w12.x * w0.y + w0.x * w12.y + w12.x * w12.y + w3.x * w12.y + w12.x * w3.y;
+    r /= max(wsum, 1e-4);
+    vec3 a = texture(u_History, c * u_Texel).rgb;
+    vec3 b = texture(u_History, (c + vec2(1.0, 0.0)) * u_Texel).rgb;
+    vec3 d = texture(u_History, (c + vec2(0.0, 1.0)) * u_Texel).rgb;
+    vec3 e = texture(u_History, (c + vec2(1.0, 1.0)) * u_Texel).rgb;
+    return clamp(r, min(min(a, b), min(d, e)), max(max(a, b), max(d, e)));
+}
+
+void main()
+{
+    ivec2 size = textureSize(u_Current, 0);
+    ivec2 pix = clamp(ivec2(v_UV * vec2(size)), ivec2(0), size - 1);
+    vec3 cur = texelFetch(u_Current, pix, 0).rgb;
+
+    // 3x3 komşuluk (titreme algılama kutusu, en yakın derinlik) ve ±2 eksen örnekleri (geniş güvenlik aralığı)
+    vec3 nmin = cur, nmax = cur;
+    vec3 emin = cur, emax = cur;
+    float closestDepth = 1.0;
+    vec2 closestUV = v_UV;
+    for (int y = -1; y <= 1; ++y)
+    for (int x = -1; x <= 1; ++x)
+    {
+        ivec2 p = clamp(pix + ivec2(x, y), ivec2(0), size - 1);
+        vec3 c = texelFetch(u_Current, p, 0).rgb;
+        nmin = min(nmin, c);
+        nmax = max(nmax, c);
+        float d = texelFetch(u_Depth, p, 0).r;
+        if (d < closestDepth)
+        {
+            closestDepth = d;
+            closestUV = (vec2(p) + 0.5) * u_Texel;
+        }
+    }
+    emin = nmin;
+    emax = nmax;
+    for (int i = 0; i < 4; ++i)
+    {
+        ivec2 o = i == 0 ? ivec2(2, 0) : i == 1 ? ivec2(-2, 0) : i == 2 ? ivec2(0, 2) : ivec2(0, -2);
+        vec3 c = texelFetch(u_Current, clamp(pix + o, ivec2(0), size - 1), 0).rgb;
+        emin = min(emin, c);
+        emax = max(emax, c);
+    }
+
+    // Yeniden izdüşüm: hareket eden nesne kendi hareket vektörüyle, gerisi kamera hareketiyle (dururken tam sıfır)
+    vec2 velocity = vec2(0.0);
+    float prevW = ViewW(closestUV, closestDepth);
+    bool objectMotion = false;
+    bool leftBehind = false;   // bu piksel hareket eden bir nesnenin önceki karedeki yerinde (açılan alan)
+    if (u_HasVelocity == 1)
+    {
+        ivec2 vsz = textureSize(u_Velocity, 0);
+        vec4 ov = texelFetch(u_Velocity, clamp(ivec2(closestUV * vec2(vsz)), ivec2(0), vsz - 1), 0);
+        if (ov.x < 5000.0)
+        {
+            velocity = ov.xy;
+            objectMotion = true;
+        }
+        leftBehind = texelFetch(u_Velocity, clamp(ivec2(v_UV * vec2(vsz)), ivec2(0), vsz - 1), 0).w > 1.5;
+    }
+    if (!objectMotion && u_CameraStill == 0)
+    {
+        // Gökyüzünde uzak düzlemdeki nokta: yürürken neredeyse kaymaz, dönerken kayar
+        vec4 world = u_InvViewProj * vec4(closestUV * 2.0 - 1.0, closestDepth * 2.0 - 1.0, 1.0);
+        world /= world.w;
+        vec4 prevClip = u_PrevViewProj * world;
+        if (prevClip.w > 1e-6)
+        {
+            velocity = closestUV - (prevClip.xy / prevClip.w * 0.5 + 0.5);
+            prevW = prevClip.w;
+        }
+        else if (closestDepth < 1.0)
+            prevW = -1.0;
+    }
+    vec2 prevUV = v_UV - velocity;
+    bool inside = all(greaterThanEqual(prevUV, vec2(0.0))) && all(lessThanEqual(prevUV, vec2(1.0)));
+    float speed = length(velocity / u_Texel);
+
+    vec4 stateBefore = texelFetch(u_State, clamp(ivec2(prevUV * vec2(size)), ivec2(0), size - 1), 0);
+    float flickerBefore = stateBefore.x;
+    bool outsideBefore = stateBefore.y > 0.5;
+    float storedW = stateBefore.z;
+    bool sky = closestDepth >= 1.0;
+    bool sameSurface = sky ? storedW <= 0.0 : (prevW > 0.0 && abs(storedW - prevW) < 0.03 * prevW + 0.02);
+    bool reactive = false;
+    if (u_HasReactive == 1)
+    {
+        ivec2 rsz = textureSize(u_Reactive, 0);
+        reactive = texelFetch(u_Reactive, clamp(ivec2(v_UV * vec2(rsz)), ivec2(0), rsz - 1), 0).r > 0.02;
+    }
+    vec2 pad = u_Texel * 3.0;
+    for (int i = 0; i < u_MovingCount && !reactive; ++i)
+    {
+        vec4 r = u_MovingRects[i];
+        reactive = all(greaterThanEqual(v_UV, r.xy - pad)) && all(lessThanEqual(v_UV, r.zw + pad));
+    }
+    // Önceki karede parçacık / saydam hareketli nesne (namlu alevi, mermi izi) bu pikselde ya da hemen yanındaysa geçmiş o
+    // nesneyi taşır: nesne kaybolduktan sonraki ilk karede geçmiş kullanılmaz (yoksa alev bir iki kare iz bırakıyordu)
+    bool reactiveBefore = false;
+    ivec2 sp = clamp(ivec2(prevUV * vec2(size)), ivec2(0), size - 1);
+    for (int y = -1; y <= 1; ++y)
+    for (int x = -1; x <= 1; ++x)
+        reactiveBefore = reactiveBefore || texelFetch(u_State, clamp(sp + ivec2(x, y), ivec2(0), size - 1), 0).w > 0.5;
+    bool valid = u_HistoryValid == 1 && inside && sameSurface && !leftBehind && !reactive && !reactiveBefore;
+
+    vec3 history = valid ? SampleHistory(prevUV) : cur;
+    // Kutunun dışı: geçmiş bu karenin 3x3 aralığının belirgin dışında (8 bitlik gürültü payı)
+    const vec3 margin = vec3(3.0 / 255.0);
+    bool outsideNow = any(lessThan(history, nmin - margin)) || any(greaterThan(history, nmax + margin));
+    // Titreme puanı: kutunun içi / dışı karede bir değişiyorsa artar, değişmiyorsa söner. Tek bir geçiş (kenarın piksel
+    // üzerinden bir kez geçmesi) yalnız hafif ve kısa tutma verir, geçmiş ±2 çevreye kırpıldığı için iz bırakmaz; görünüp
+    // kaybolma sürdükçe puan yüksek kalır ve tutma tamlaşır
+    float flicker = valid ? clamp(flickerBefore - 1.0 + ((outsideNow != outsideBefore) ? 6.0 : 0.0), 0.0, 16.0) : 0.0;
+    float hold = smoothstep(3.0, 8.0, flicker) * (1.0 - smoothstep(12.0, 32.0, speed));
+    vec3 result = cur;
+    if (hold > 0.0)
+    {
+        // Yanıp sönen ayrıntı: geçmiş kırpılmadan (yalnız ±2 çevredeki bu karenin aralığında) ortalanır; bu karede örnek
+        // noktasına denk gelmeyen ince aralık geçmişte kalır, kareden kareye ortalaması görünür
+        vec3 held = clamp(history, emin, emax);
+        result = mix(cur, held, 0.96 * hold);
+    }
+    FragColor = vec4(result, 1.0);
+    StateOut = vec4(flicker, outsideNow ? 1.0 : 0.0, sky ? 0.0 : ViewW(closestUV, closestDepth), reactive ? 1.0 : 0.0);
+}

@@ -103,6 +103,7 @@ namespace Conqueror::CQS
                 CQ_RS("Post.UpscaleSharpness", Kind::Float, Post.UpscaleSharpness),
                 CQ_RS("Post.EQAASamples", Kind::Int, Post.EQAASamples),
                 CQ_RS("Post.TAAFeedback", Kind::Float, Post.TAAFeedback),
+                CQ_RS("Post.TemporalStability", Kind::Bool, Post.TemporalStability),
                 CQ_RS("Post.TAASharpness", Kind::Float, Post.TAASharpness),
                 CQ_RS("Post.ScreenSpaceReflections", Kind::Bool, Post.ScreenSpaceReflections),
                 CQ_RS("Post.SSRIntensity", Kind::Float, Post.SSRIntensity),

@@ -64,6 +64,9 @@ namespace Conqueror::AntiAliasing
     CQ_API const char* GetGroupName(Group group);
     CQ_API Availability GetAvailability(AntiAliasingMode mode);
     CQ_API bool IsSupersampling(AntiAliasingMode mode);
+    // Tek kareye bakan (zamansal birikim kullanmayan) yöntem: FXAA, SMAA, MSAA, süper örnekleme ... (None ve zamansal yöntemler
+    // hariç). Bunlarda "Temporal Stability" katmanı yanıp sönen ince ayrıntıları sabitleyebilir
+    CQ_API bool IsSingleFrame(AntiAliasingMode mode);
     CQ_API bool IsLegacyUpscaler(AntiAliasingMode mode);
 
     // Seçilen yöntem bu sistemde çalışamıyorsa en yakın gerçek karşılığı (CSAA -> EQAA / 8x MSAA, DLAA -> TAA ...).

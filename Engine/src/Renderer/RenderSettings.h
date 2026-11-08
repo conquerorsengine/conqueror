@@ -198,6 +198,9 @@ namespace Conqueror
         int MSAASamples = 4;              // MSAA örnekleme sayısı (2, 4 veya 8)
         float TAAFeedback = 0.9f;         // geçmiş ağırlığı (yüksek = pürüzsüz, hareket izi riski)
         float TAASharpness = 0.25f;
+        // Tek kareye bakan yöntemlerde (FXAA, SMAA, MSAA ...) zamansal kararlılık: yürürken yanıp sönen ince ayrıntılar (küplerin
+        // arası, uzak merdiven kenarları, ince çizgiler) önceki karelerle ortalanır; dururken görüntü değişmez
+        bool TemporalStability = true;
         float SSAAScale = 2.0f;           // SSAA / OGSSAA: eksen başına süper örnekleme çarpanı (1.5 .. 4; OGSSAA tam sayıya yuvarlar)
         UpscalerMode Upscaler = UpscalerMode::None;
         UpscaleQualityMode UpscaleQuality = UpscaleQualityMode::Quality;

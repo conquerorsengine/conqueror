@@ -936,6 +936,7 @@ namespace Conqueror
         out << YAML::Key << "MSAASamples" << YAML::Value << pp.MSAASamples;
         out << YAML::Key << "TAAFeedback" << YAML::Value << pp.TAAFeedback;
         out << YAML::Key << "TAASharpness" << YAML::Value << pp.TAASharpness;
+        out << YAML::Key << "TemporalStability" << YAML::Value << pp.TemporalStability;
         out << YAML::Key << "SSAAScale" << YAML::Value << pp.SSAAScale;
         out << YAML::Key << "Upscaler" << YAML::Value << (int)pp.Upscaler;
         out << YAML::Key << "UpscaleQuality" << YAML::Value << (int)pp.UpscaleQuality;
@@ -1147,6 +1148,7 @@ namespace Conqueror
             ReadIf(pp, "MSAASamples", p.MSAASamples);
             ReadIf(pp, "TAAFeedback", p.TAAFeedback);
             ReadIf(pp, "TAASharpness", p.TAASharpness);
+            ReadIf(pp, "TemporalStability", p.TemporalStability);
             ReadIf(pp, "SSAAScale", p.SSAAScale);
             ReadEnumIf(pp, "Upscaler", p.Upscaler);
             ReadEnumIf(pp, "UpscaleQuality", p.UpscaleQuality);

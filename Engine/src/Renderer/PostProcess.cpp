@@ -148,6 +148,7 @@ namespace Conqueror
         LoadShader("CloudNoise", "Engine/src/Shaders/PostProcess/CloudNoise.cqsh");
         LoadShader("SceneFX", "Engine/src/Shaders/PostProcess/SceneFX.cqsh");
         LoadShader("TAA", "Engine/src/Shaders/PostProcess/TAA.cqsh");
+        LoadShader("Stabilize", "Engine/src/Shaders/PostProcess/Stabilize.cqsh");
         LoadShader("DepthOfField", "Engine/src/Shaders/PostProcess/DepthOfField.cqsh");
         LoadShader("MotionBlur", "Engine/src/Shaders/PostProcess/MotionBlur.cqsh");
         LoadShader("AutoExposure", "Engine/src/Shaders/PostProcess/AutoExposure.cqsh");
@@ -290,6 +291,7 @@ namespace Conqueror
         if (m_Width != width || m_Height != height)
         {
             m_HistoryValid = false;
+            m_StabValid = false;
             m_HasPrevViewProj = false;
             m_GIHistoryValid = false;
             m_CloudHistoryValid = false;
@@ -610,6 +612,9 @@ namespace Conqueror
         // Temporal AA: Halton(2,3) dizisiyle 16 karelik alt piksel titreşimi. 8 konum küçük nesnelerin / küçük pencerede
         // kenarların örtüsünü 8 kaba basamağa bölüyordu (hafif merdiven); durunca birikim uzun olduğundan 16'nın ortalaması alınır
         m_JitterActive = m_WantTAA;
+        m_StabilityActive = m_WantStability && !m_WantTAA;
+        if (!m_StabilityActive)
+            m_StabValid = false;
         if (m_JitterActive)
         {
             glm::vec2 pixel;
@@ -651,6 +656,27 @@ namespace Conqueror
             return false;
         outNDC = s_Current->m_JitterNDC;
         return true;
+    }
+
+    bool PostProcessStack::WantsMotionData()
+    {
+        if (!s_Current || !s_Current->m_SceneFramebuffer)
+            return false;
+        const bool temporal = s_Current->m_JitterActive && (s_Current->m_Samples <= 1 || s_Current->m_TXAA);
+        if (!temporal && !s_Current->m_StabilityActive)
+            return false;
+        GLint drawFBO = 0;
+        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFBO);
+        return (uint32_t)drawFBO == s_Current->m_SceneFramebuffer->GetRendererID();
+    }
+
+    bool PostProcessStack::IsStabilityActive()
+    {
+        if (!s_Current || !s_Current->m_StabilityActive || !s_Current->m_SceneFramebuffer)
+            return false;
+        GLint drawFBO = 0;
+        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFBO);
+        return (uint32_t)drawFBO == s_Current->m_SceneFramebuffer->GetRendererID();
     }
 
     const void* PostProcessStack::GetCurrentStack()
@@ -739,13 +765,13 @@ namespace Conqueror
     bool PostProcessStack::CanDrawReactive()
     {
         const PostProcessStack* st = s_Current;
-        return st && st->m_JitterActive && st->m_SceneFramebuffer && st->m_Samples <= 1;
+        return st && (st->m_JitterActive || st->m_StabilityActive) && st->m_SceneFramebuffer && st->m_Samples <= 1;
     }
 
     uint32_t PostProcessStack::BeginReactiveDraw()
     {
         PostProcessStack* st = s_Current;
-        if (!st || !st->m_JitterActive || !st->m_SceneFramebuffer || st->m_Samples > 1)
+        if (!st || !(st->m_JitterActive || st->m_StabilityActive) || !st->m_SceneFramebuffer || st->m_Samples > 1)
             return 0;
         GLint drawFBO = 0;
         glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFBO);
@@ -1352,6 +1378,74 @@ namespace Conqueror
             Renderer::GetStats().PostProcessPasses++;
         }
 
+        // 1b) Tek kare yöntemlerinde zamansal kararlılık: yürürken yanıp sönen ince ayrıntılar önceki çıktıyla ortalanır
+        auto stab = PostProcess::GetShader("Stabilize");
+        if (m_StabilityActive && Valid(stab) && GetSceneDepthTexture())
+        {
+            const uint32_t si = 1 - m_StabIndex;
+            RenderTarget& prevOut = m_StabHistory[m_StabIndex];
+            RenderTarget& nextOut = m_StabHistory[si];
+            EnsureTarget(prevOut, m_Width, m_Height, GL_RGBA16F);
+            EnsureTarget(nextOut, m_Width, m_Height, GL_RGBA16F);
+            EnsureTarget(m_StabState[m_StabIndex], m_Width, m_Height, GL_RGBA16F);
+            EnsureTarget(m_StabState[si], m_Width, m_Height, GL_RGBA16F);
+            if (!m_StabFramebuffer[si])
+                glCreateFramebuffers(1, &m_StabFramebuffer[si]);
+            const GLenum buffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+            glNamedFramebufferDrawBuffers(m_StabFramebuffer[si], 2, buffers);
+            glNamedFramebufferTexture(m_StabFramebuffer[si], GL_COLOR_ATTACHMENT0, nextOut.Texture, 0);
+            glNamedFramebufferTexture(m_StabFramebuffer[si], GL_COLOR_ATTACHMENT1, m_StabState[si].Texture, 0);
+            glBindFramebuffer(GL_FRAMEBUFFER, m_StabFramebuffer[si]);
+            glViewport(0, 0, (GLsizei)m_Width, (GLsizei)m_Height);
+            stab->Bind();
+            stab->SetInt("u_Current", 0);
+            stab->SetInt("u_History", 1);
+            stab->SetInt("u_State", 2);
+            stab->SetInt("u_Depth", 3);
+            stab->SetInt("u_Velocity", 4);
+            stab->SetInt("u_Reactive", 5);
+            stab->SetInt("u_HasVelocity", m_FinalHasVelocity ? 1 : 0);
+            stab->SetInt("u_HasReactive", m_ReactiveUsed ? 1 : 0);
+            stab->SetInt("u_HistoryValid", (m_StabValid && m_HasPrevViewProj) ? 1 : 0);
+            stab->SetInt("u_CameraStill", m_CameraStill ? 1 : 0);
+            stab->SetMat4("u_InvViewProj", m_FinalInvViewProj);
+            stab->SetMat4("u_PrevViewProj", m_PrevViewProj);
+            stab->SetFloat2("u_Texel", invSize);
+            // Tepki maskesi yazılamıyorsa (MSAA) hareket eden saydam nesnelerin / parçacıkların bu ve önceki karedeki ekran
+            // dikdörtgenleri: katman orada kendini kapatır (namlu alevi kaybolduktan sonra iz kalmaz). Fazlası sonuncuda birleşir
+            {
+                static std::vector<glm::vec4> s_StabRects;
+                Renderer3D::GetMovingRects(this, s_StabRects);
+                constexpr size_t kMaxRects = 32;
+                if (s_StabRects.size() > kMaxRects)
+                {
+                    glm::vec4& last = s_StabRects[kMaxRects - 1];
+                    for (size_t i = kMaxRects; i < s_StabRects.size(); ++i)
+                    {
+                        last.x = std::min(last.x, s_StabRects[i].x);
+                        last.y = std::min(last.y, s_StabRects[i].y);
+                        last.z = std::max(last.z, s_StabRects[i].z);
+                        last.w = std::max(last.w, s_StabRects[i].w);
+                    }
+                    s_StabRects.resize(kMaxRects);
+                }
+                stab->SetInt("u_MovingCount", (int)s_StabRects.size());
+                for (size_t i = 0; i < s_StabRects.size(); ++i)
+                    stab->SetFloat4("u_MovingRects[" + std::to_string(i) + "]", s_StabRects[i]);
+            }
+            BindTexture(0, cur);
+            BindTexture(1, prevOut.Texture);
+            BindTexture(2, m_StabState[m_StabIndex].Texture);
+            BindTexture(3, GetSceneDepthTexture());
+            BindTexture(4, m_FinalHasVelocity ? m_Velocity.Texture : 0);
+            BindTexture(5, m_ReactiveUsed ? m_Reactive.Texture : 0);
+            PostProcess::DrawFullscreenQuad();
+            Renderer::GetStats().PostProcessPasses++;
+            cur = nextOut.Texture;
+            m_StabIndex = si;
+            m_StabValid = true;
+        }
+
         // 2) Çıktı: keskinleştirme, süper örnekleme küçültmesi ya da yükseltme (Upscaling bölümündeki yükseltici)
         const UpscalerMode up = m_Upscaler;
         auto cas = PostProcess::GetShader("CAS");
@@ -1684,6 +1778,25 @@ namespace Conqueror
             m_TAAUValid = false;
             m_FSR2Valid = false;
         }
+        // Tek kare yöntemlerinde zamansal kararlılık (RunFinal'da, kenar yumuşatmasından sonra): nesne hareket vektörleri, bu
+        // karenin (titreşimsiz) ters matrisi ve kameranın kıpırdayıp kıpırdamadığı şimdi
+        if (fx && m_StabilityActive && !camera.Orthographic)
+        {
+            m_FinalHasVelocity = RenderObjectVelocity(camera);
+            m_FinalInvViewProj = glm::inverse(camera.Projection * camera.View);
+            bool still = m_HasPrevViewProj;
+            const glm::mat4 now = camera.Projection * camera.View;
+            for (int c = 0; c < 4 && still; ++c)
+                for (int r = 0; r < 4; ++r)
+                    if (std::abs(now[c][r] - m_PrevViewProj[c][r]) > 1e-6f * std::max(1.0f, std::abs(now[c][r])))
+                    {
+                        still = false;
+                        break;
+                    }
+            m_CameraStill = still;
+        }
+        else
+            m_StabValid = false;
         if (fx && settings.DepthOfField)
             RunDepthOfField(settings, camera);
         if (fx && settings.MotionBlur)
@@ -1784,6 +1897,8 @@ namespace Conqueror
                 m_WantCoverageSamples = 0;
             m_WantRenderScale = (fx && !m_PointUpscale) ? AntiAliasing::RenderScale(settings, next, m_Upscaler) : 1.0f;
             m_WantGeometry = next == AntiAliasingMode::GBAA || next == AntiAliasingMode::SRAA;
+            // Tek kare yöntemlerinde zamansal kararlılık: hareket verisi (nesne hareket vektörleri, önceki konum) toplanır
+            m_WantStability = fx && !camera.Orthographic && settings.TemporalStability && !m_WantTAA && AntiAliasing::IsSingleFrame(next);
         }
         m_WantNormals = fx && (settings.ScreenSpaceReflections || settings.ScreenSpaceGI) && !camera.Orthographic;
         m_WantAlbedo = fx && settings.ScreenSpaceGI && !camera.Orthographic;

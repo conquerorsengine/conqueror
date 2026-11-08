@@ -408,6 +408,7 @@ namespace Conqueror
         if (o.AutoExposure >= 0) p.AutoExposure = o.AutoExposure != 0;
         if (o.SSGI >= 0) p.ScreenSpaceGI = o.SSGI != 0;
         if (!std::isnan(o.SSGIIntensity)) p.SSGIIntensity = o.SSGIIntensity;
+        if (o.TemporalStability >= 0) p.TemporalStability = o.TemporalStability != 0;
     }
 
     void ConsoleSystem::RegisterBuiltins()
@@ -431,6 +432,8 @@ namespace Conqueror
         AddBoolOverride("r.Bloom", "Bloom on/off", &R::Bloom, [](Scene& s) { return s.GetRenderSettings().Post.Bloom; });
         AddFloatOverride("r.Bloom.Intensity", "Bloom intensity", &R::BloomIntensity, [](Scene& s) { return s.GetRenderSettings().Post.BloomIntensity; }, 0.0f, 20.0f);
         AddBoolOverride("r.SSAO", "Screen space ambient occlusion on/off", &R::SSAO, [](Scene& s) { return s.GetRenderSettings().Post.AmbientOcclusion; });
+        AddIntOverride("r.TemporalStability", "Temporal stability for single-frame AA methods (FXAA, SMAA, MSAA ...): 1 averages only the thin details that blink while moving, 0 off",
+                       &R::TemporalStability, [](Scene& s) { return s.GetRenderSettings().Post.TemporalStability ? 1 : 0; }, 0, 1);
         AddIntOverride("r.TAADebug", "TAA debug view: 0 off, 1 per-pixel history path (red moving, green settled, cyan calm, blue trusted, yellow clamped, magenta sky, white no history)", &R::TAADebug, [](Scene&) { return 0; }, 0, 1);
         AddIntOverride("r.AntiAliasing", "Anti-aliasing method: 0 off, 1 FXAA, 2 SMAA, 3 TAA, 4 TAA+FXAA, 5 MSAA, 6 CSAA, 7 SSAA, 8 FSAA, 9 EQAA, 10 MLAA, 11 CMAA, "
                        "12 TXAA, 13 TSAA, 15 SMAA T2x, 16 TSRAA, 19 DLAA, 26 FSR AA, 27 XeSS AA, 28 OGSSAA, 29 SGSSAA, 30 RGSS, 31 TSSAA, 32 DEAA, 33 GBAA, 34 SRAA "
