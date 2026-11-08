@@ -1,0 +1,22 @@
+#language GLSL
+// TAA tepki maskesi (reactive mask): bu karede hareket eden saydam mesh (mermi izi, namlu alevi, yeni beliren iz) kapladığı
+// piksellere 1 yazar. Sahne derinliğine LEQUAL test edilir, derinlik yazılmaz; harmanlama en büyük değer (MAX). TAA yalnız bu
+// piksellerde geçmişe güvenmez. Eskiden nesnenin ekran dikdörtgeni işaretleniyordu: ince bir mermi izinin dikdörtgeni bile
+// namludan hedefe kadar geniş bir alanı (üstünde durulan küpün tamamını) kaplıyor, orada geçmiş atılıp çizgiler siliniyordu
+#type vertex
+#version 450 core
+layout(location = 0) in vec3 a_Position;
+uniform mat4 u_Transform;
+uniform mat4 u_ViewProjection;   // ana geçişle aynı (titreşimli) görüş-izdüşüm: derinlik testi sahne derinliğiyle eşleşir
+void main()
+{
+    gl_Position = u_ViewProjection * (u_Transform * vec4(a_Position, 1.0));
+}
+
+#type fragment
+#version 450 core
+layout(location = 0) out vec4 o_Reactive;
+void main()
+{
+    o_Reactive = vec4(1.0);
+}

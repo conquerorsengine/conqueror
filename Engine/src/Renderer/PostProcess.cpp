@@ -736,6 +736,12 @@ namespace Conqueror
         }
     }
 
+    bool PostProcessStack::CanDrawReactive()
+    {
+        const PostProcessStack* st = s_Current;
+        return st && st->m_JitterActive && st->m_SceneFramebuffer && st->m_Samples <= 1;
+    }
+
     uint32_t PostProcessStack::BeginReactiveDraw()
     {
         PostProcessStack* st = s_Current;

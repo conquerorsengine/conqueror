@@ -151,6 +151,7 @@ void main()
     vec3 nmin = vec3(1e9), nmax = vec3(-1e9);
     vec3 currentSum = vec3(0.0);
     float weightSum = 0.0;
+    vec3 curLinSum = vec3(0.0);   // 3x3'ün doğrusal (sıkıştırılmamış) renk toplamı: ışık değişiminde geçmişi ölçeklemek için
     vec3 narrowSum = vec3(0.0);   // dar süzgeç (kamera bir süredir duruyorken: ince ayrıntı daha net)
     float narrowWeight = 0.0;
     float closestDepth = 1.0;
@@ -167,7 +168,11 @@ void main()
     {
         vec2 o = vec2(x, y);
         vec2 uv = v_UV + o * u_Texel;
-        vec3 raw = Compress(max(texture(u_Current, uv).rgb, vec3(0.0)));
+        vec3 lin = max(texture(u_Current, uv).rgb, vec3(0.0));
+        if (any(isnan(lin)))
+            lin = vec3(0.0);
+        curLinSum += lin;
+        vec3 raw = Compress(lin);
         if (any(isnan(raw)))
             raw = vec3(0.0);
         vec2 d = o - jitterPx;
@@ -346,29 +351,110 @@ void main()
     // kenarda en yakın derinlik titreşimle karede bir ön karede bir arka yüzey olur, o açılma değildir)
     bool disoccluded = closestDepth < 1.0 && farDepth < 1.0 && abs(storedW - prevClip.w) > 0.06 * prevClip.w + 0.04
                        && ViewW(farUV, farDepth) < ViewW(closestUV, closestDepth) * 1.05 + 0.05;
-    vec3 history = RGBToYCoCg(Compress(SampleHistory(prevUV)));
+    vec3 historyLin = SampleHistory(prevUV);
     // Aydınlatma değişimi (yalnız motorun bir ışığın gücünün değiştiğini bildirdiği karelerde, ör. namlu alevi): geçmişin 3x3
     // ortalaması bu karenin 3x3 ortalamasından iki komşuluğun kendi dokusunu aşan oranda farklı. Alevin tek karesinde koyu çizgi
     // pikselleri geçmişte yeni (aydınlık) en koyu değere çekiliyor, ışık sönünce bu soluk çizgi kırpılmayıp 0.95-0.98 ağırlıkla
     // yavaş geri geliyordu (ateş edince küpün çizgileri silinip sonra netleşiyordu). Hareket ederken her karede bakılırsa ince
     // boşluk / merdiven / gökyüzü kenarında komşuluk ortalaması titreşimle oynayıp yanıp sönüyordu: bu yüzden yalnız o karelerde
     bool lightChanged = false;
+    bool lightUneven = false;   // ışık değişimi komşulukta tek oranla açıklanamıyor (gölgeli zemin / aydınlık yüz kenarı)
     if (u_LightingChanged == 1 && closestDepth < 1.0)
     {
         float hm1 = 0.0, hm2 = 0.0;
+        vec3 histLinSum = vec3(0.0);
         for (int y = -1; y <= 1; ++y)
         for (int x = -1; x <= 1; ++x)
         {
             vec3 hs = max(texelFetch(u_History, clamp(hn + ivec2(x, y), ivec2(0), histSize - 1), 0).rgb, vec3(0.0));
-            float hy = any(isnan(hs)) ? 0.0 : RGBToYCoCg(Compress(hs)).x;
+            if (any(isnan(hs)))
+                hs = vec3(0.0);
+            float hy = RGBToYCoCg(Compress(hs)).x;
             hm1 += hy;
             hm2 += hy * hy;
+            histLinSum += hs;
         }
         float histMeanY = hm1 / 9.0;
         float histSigmaY = sqrt(max(hm2 / 9.0 - histMeanY * histMeanY, 0.0));
         float lightDelta = abs(histMeanY - boxMean.x);
         lightChanged = lightDelta > 1.5 * max(boxSigma.x, histSigmaY) + 0.004 && lightDelta > 0.08 * max(max(boxMean.x, histMeanY), 0.02);
+        // Güneş gölgesi sınırındaki komşuluk (küpün kenarı ile gölgesi): komşuluğun kendi farkı büyük olduğundan yukarıdaki
+        // eşik ışık değişimini görmüyordu; namlu alevi gölgedeki zemini aydınlatınca kenar eski gölgeyle kalıp dişleniyordu
+        bool shadowEdge = false;
+        if (u_HasShadowMask == 1)
+        {
+            // 3x3 + ±2 eksen örnekleri: kenarın 1 piksel içindeki yüz pikseli de (3x3'ü gölgeye değmeyen) alev sönünce
+            // eski parlaklığı bir kare taşıyıp kenarda ince açık çizgi bırakıyordu
+            float shMin = 1.0, shMax = 0.0;
+            for (int k = 0; k < 13; ++k)
+            {
+                vec2 o = k < 9 ? vec2(k % 3 - 1, k / 3 - 1) : (k == 9 ? vec2(2.0, 0.0) : k == 10 ? vec2(-2.0, 0.0) : k == 11 ? vec2(0.0, 2.0) : vec2(0.0, -2.0));
+                float sv = texture(u_GShadow, v_UV + o * u_Texel).r;
+                shMin = min(shMin, sv);
+                shMax = max(shMax, sv);
+            }
+            shadowEdge = shMax - shMin > 0.5;
+        }
+        float lumHist = Luminance(histLinSum), lumCur = Luminance(curLinSum);
+        if (shadowEdge && abs(lumCur - lumHist) > 0.05 * max(lumHist, 1e-4))
+            lightChanged = true;
+        // Işık değişti: geçmiş atılmaz, yeni ışığa göre ölçeklenir (iki komşuluğun doğrusal ortalamalarının kanal kanal oranı).
+        // Yüzeye eklenen ışık rengi albedoyla çarpıldığı için yüz de üstündeki ince koyu çizgi de aynı oranda aydınlanır: geçmişteki
+        // çizgiler ve kenar yumuşatması korunur, parlaklık hemen yeni ışıkta olur. Eskiden geçmiş bu karenin komşuluğuna sıkı
+        // kırpılıp %25 ağırlık alıyordu: küpün üstünde ateş edince alev karesinde köşeler merdivenleşiyor, çizgiler (bu karenin
+        // titreşiminde örneklenmeyenler) siliniyor, ardından gelen geri tepme hareketinde de geri gelmeyip soluk kalıyordu
+        if (lightChanged)
+        {
+            // Kenarın iki yanı farklı oranda aydınlandıysa (alev küpün gölgesindeki zemini mavi yüzden kat kat fazla aydınlatır)
+            // tek oran kenar pikselinde eski gölgeyi bırakıyordu: alev karesinde kenar boyunca koyu dişler. Sol / sağ sütun ve
+            // üst / alt satırın oranları çok farklıysa iki yüzey ayrı ayrı yeni ışığa taşınır: 3x3'te geçmişten bu kareye kanal
+            // başına doğrusal eşleme (en küçük kareler). Kenar pikselinin geçmişi iki yüzeyin karışımıdır, eşleme karışım oranını
+            // koruyarak her yüzü kendi yeni rengine götürür (kenar yumuşak kalır, eski gölge kalmaz)
+            float rMin = 1e9, rMax = 0.0;
+            vec3 sh = vec3(0.0), sc = vec3(0.0), shh = vec3(0.0), shc = vec3(0.0);
+            for (int gi = 0; gi < 4; ++gi)
+            {
+                vec3 cs = vec3(0.0), hsum = vec3(0.0);
+                for (int k = -1; k <= 1; ++k)
+                {
+                    ivec2 o = gi == 0 ? ivec2(-1, k) : gi == 1 ? ivec2(1, k) : gi == 2 ? ivec2(k, -1) : ivec2(k, 1);
+                    vec3 cv = max(texture(u_Current, v_UV + vec2(o) * u_Texel).rgb, vec3(0.0));
+                    vec3 hv = max(texelFetch(u_History, clamp(hn + o, ivec2(0), histSize - 1), 0).rgb, vec3(0.0));
+                    cs += any(isnan(cv)) ? vec3(0.0) : cv;
+                    hsum += any(isnan(hv)) ? vec3(0.0) : hv;
+                }
+                float r = (Luminance(cs) + 1e-4) / (Luminance(hsum) + 1e-4);
+                rMin = min(rMin, r);
+                rMax = max(rMax, r);
+            }
+            lightUneven = rMax > 1.6 * rMin || shadowEdge;
+            if (lightUneven)
+            {
+                for (int y = -1; y <= 1; ++y)
+                for (int x = -1; x <= 1; ++x)
+                {
+                    vec3 cv = max(texture(u_Current, v_UV + vec2(x, y) * u_Texel).rgb, vec3(0.0));
+                    vec3 hv = max(texelFetch(u_History, clamp(hn + ivec2(x, y), ivec2(0), histSize - 1), 0).rgb, vec3(0.0));
+                    cv = any(isnan(cv)) ? vec3(0.0) : cv;
+                    hv = any(isnan(hv)) ? vec3(0.0) : hv;
+                    sh += hv;
+                    sc += cv;
+                    shh += hv * hv;
+                    shc += hv * cv;
+                }
+                vec3 varH = 9.0 * shh - sh * sh;
+                vec3 slope = clamp((9.0 * shc - sh * sc) / max(varH, vec3(1e-8)), vec3(0.0), vec3(8.0));
+                vec3 ratio = clamp((curLinSum / 9.0 + 1e-4) / (histLinSum / 9.0 + 1e-4), vec3(0.2), vec3(5.0));
+                // Kanalda geçmiş neredeyse düz (iki yüz o kanalda aynı): eşleme anlamsız, oran kullanılır
+                bvec3 flatCh = lessThan(varH, 81.0 * 1e-6 * max(sh * sh / 81.0, vec3(1e-6)));
+                vec3 mapped = (sc - slope * sh) / 9.0 + slope * historyLin;
+                historyLin = max(mix(mapped, historyLin * ratio, vec3(flatCh)), vec3(0.0));
+            }
+            else
+                historyLin *= clamp((curLinSum / 9.0 + 1e-4) / (histLinSum / 9.0 + 1e-4), vec3(0.2), vec3(5.0));
+        }
     }
+    vec3 history = RGBToYCoCg(Compress(historyLin));
 
     // Varyans kırpması (min/max ile kesişim). Hareketsiz piksellerde kutu genişler: alt piksel inceliğindeki
     // çizgiler (küplerin arası, merdiven basamakları) bazı titreşim karelerinde hiç çizilmez; dar kutu o karelerde
@@ -386,6 +472,9 @@ void main()
     // Durum w: yerel ortalama parlaklık (0..1) + 2 x büyütme bulanıklığı sayacı (0..8)
     float blurBefore = floor(stateBefore.w * 0.5 + 1e-3);
     float meanBefore = stateBefore.w - 2.0 * blurBefore;
+    // Işık değişiminde yerel ortalama da yeni ışıkta sayılır (geçmiş ölçeklendi): oturmuş / sakin piksel oturmuş kalır
+    if (lightChanged)
+        meanBefore = boxMean.x;
     // Büyütme / küçültme (viewport'ta yakınlaştırma, hızlı ileri geri): geçmiş her karede ölçeklenerek yeniden örneklenir ve
     // bulanıklaşır. Kamera durunca bu bulanık geçmiş yüksek ağırlıkla ortalanıyor, küpler 1-2 saniye bulanık / hayaletli kalıp
     // sonra keskinleşiyordu. Büyüme komşu piksellerin hareket farkından (piksel / piksel); ölçeklenirken ve sonraki 8 karede
@@ -561,12 +650,12 @@ void main()
     bool outsideNow = maxUnit > 1.0;
     bool historyValid = closestDepth < 1.0 && farDepth < 1.0 && abs(storedW - prevClip.w) < 0.03 * prevClip.w + 0.02
                         && !((movingNow || movedBefore) && !centerExact) && !nearMovingShadow && !shadowChanged && parallaxPx < 0.06;
-    // Işık değiştiği karede (namlu alevi yanıp söner) geçmiş kutunun dışına taşar; bu bir titreme değildir, sayaç sıfırlanır
-    float flicker = (historyValid && u_LightingChanged == 0) ? clamp(flickerBefore - 1.0 + (outsideNow != outsideBefore ? 6.0 : 0.0), 0.0, 16.0) : 0.0;
-    // Işık değiştiği karede tutma yok: ateş edince (ışık yanıp sönünce) bazı pikseller tutulup eski ışıkta, komşuları kırpılıp
-    // yeni ışıkta kalıyor, zeminde ve küpte piksel piksel beyaz karıncalanma (çizik) yapıyordu. Tutmayı geometriyle sınırlamak
-    // uzaktaki küp aralarını da (derinlik farkı küçük) dışarıda bırakıp onları yeniden yanıp söndürüyordu
-    bool hold = historyValid && flicker >= 8.0 && !restart && u_LightingChanged == 0;
+    // Işık değiştiği pikselde (namlu alevi yanıp söner) kutunun içi / dışı değişimi titreme sayılmaz ama sayaç da sıfırlanmaz:
+    // geçmiş yeni ışığa ölçeklendiği için tutma güvenli. Eskiden alev karesi sayacı sıfırlıyor, ince çizgilerin tutması
+    // kalkıyor ve hemen ardından gelen geri tepme hareketi küpün üstündeki çizgileri kırpıp siliyordu (beyazlaşma).
+    // Tutmayı geometriyle sınırlamak uzaktaki küp aralarını da (derinlik farkı küçük) dışarıda bırakıp yanıp söndürüyordu
+    float flicker = historyValid ? clamp(flickerBefore - 1.0 + ((outsideNow != outsideBefore && !lightChanged) ? 6.0 : 0.0), 0.0, 16.0) : 0.0;
+    bool hold = historyValid && flicker >= 8.0 && !restart;
     if (hold)
         history = rawHistory;
     // Yavaş kayan gökyüzü kenarı (yürürken kamera yatınca duvar üstü / gökyüzü kenarı karede 1 pikselden az dik kayar): kenar
@@ -618,12 +707,6 @@ void main()
                            && fpMaxW < prevClip.w * 0.85 - 0.05 && !((movingNow || movedBefore) && !centerExact);
     if (edgeDisoccluded)
     {
-        history = clamp(rawHistory, nmin, nmax);
-        feedback = min(feedback, 0.25);
-    }
-    if (lightChanged)
-    {
-        // Eski ışıktaki geçmiş bu karenin komşuluğuna sıkı kırpılır ve az ağırlık alır: çizgi / doku bu kareden gelir
         history = clamp(rawHistory, nmin, nmax);
         feedback = min(feedback, 0.25);
     }

@@ -72,6 +72,9 @@ namespace Conqueror
         // pikselleri buraya yazar; TAA o piksellerde geçmişe güvenmez. Begin maskenin çerçeve tamponunu bağlar (bu görünümün
         // TAA'lı sahne hedefine çizilmiyorsa 0), End sahne hedefini geri bağlar
         static uint32_t BeginReactiveDraw();
+        // Bu görünüm tepki maskesi kullanabiliyor mu (titreşimli tek örnekli sahne hedefi; çerçeve tamponu bağı sorulmaz):
+        // hareket eden saydam mesh ekran dikdörtgeni yerine maskeye piksel piksel yazılır
+        static bool CanDrawReactive();
         // GBAA / SRAA: bu görünümün opak geometrisi bu karede toplanıp özel gölgelendiriciyle yeniden çizilecek mi (sahne hedefi
         // bağlıyken Renderer3D sorar)
         static bool WantsGeometry();

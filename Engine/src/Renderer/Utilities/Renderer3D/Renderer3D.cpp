@@ -519,12 +519,13 @@ namespace Conqueror
 
     namespace
     {
-        std::shared_ptr<Shader> s_VelocityShader, s_VelocitySkinnedShader;
+        std::shared_ptr<Shader> s_VelocityShader, s_VelocitySkinnedShader, s_ReactiveMeshShader;
 
         void ReleaseVelocityResources()
         {
             s_VelocityShader.reset();
             s_VelocitySkinnedShader.reset();
+            s_ReactiveMeshShader.reset();
             s_Motion.clear();
             s_MotionCur = nullptr;
             // GBAA / SRAA geometri listeleri meshleri canlı tutar, gölgelendiriciler GL nesnesidir: bağlam kapanmadan bırakılır
@@ -532,6 +533,48 @@ namespace Conqueror
             s_GeometryCur = nullptr;
             s_GBAAShader.reset();
             s_SRAAShader.reset();
+        }
+
+        // Hareket eden saydam meshin kapladığı pikseller TAA tepki maskesine yazılır (bu görünümün sahne derinliğine LEQUAL,
+        // derinlik yazılmaz, en büyük değer harmanlaması). Maske bu görünümde kullanılamıyorsa false
+        bool DrawReactiveMesh(const Mesh& mesh, const glm::mat4& transform)
+        {
+            if (!mesh.GetVertexArray() || mesh.GetIndexCount() == 0)
+                return false;
+            if (!s_ReactiveMeshShader)
+                s_ReactiveMeshShader = Shader::Create("Engine/src/Shaders/3D/ReactiveMask.cqsh");
+            if (!s_ReactiveMeshShader || !s_ReactiveMeshShader->IsValid())
+                return false;
+            if (!PostProcessStack::BeginReactiveDraw())
+                return false;
+            const GLboolean blend = glIsEnabled(GL_BLEND), depthTest = glIsEnabled(GL_DEPTH_TEST), cull = glIsEnabled(GL_CULL_FACE);
+            GLboolean depthMask = GL_TRUE;
+            glGetBooleanv(GL_DEPTH_WRITEMASK, &depthMask);
+            GLint depthFunc = GL_LESS;
+            glGetIntegerv(GL_DEPTH_FUNC, &depthFunc);
+            glEnable(GL_BLEND);
+            glBlendEquation(GL_MAX);
+            glBlendFunc(GL_ONE, GL_ONE);
+            glEnable(GL_DEPTH_TEST);
+            glDepthFunc(GL_LEQUAL);
+            glDepthMask(GL_FALSE);
+            glDisable(GL_CULL_FACE);
+            s_ReactiveMeshShader->Bind();
+            s_ReactiveMeshShader->SetMat4("u_ViewProjection", s_MotionViewProj);
+            s_ReactiveMeshShader->SetMat4("u_Transform", transform);
+            RenderCommand::DrawIndexed(mesh.GetVertexArray(), mesh.GetIndexCount());
+            glBlendEquation(GL_FUNC_ADD);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            if (!blend)
+                glDisable(GL_BLEND);
+            if (!depthTest)
+                glDisable(GL_DEPTH_TEST);
+            if (cull)
+                glEnable(GL_CULL_FACE);
+            glDepthFunc((GLenum)depthFunc);
+            glDepthMask(depthMask);
+            PostProcessStack::EndReactiveDraw();
+            return true;
         }
     }
 
@@ -1586,8 +1629,9 @@ namespace Conqueror
         {
             float dist = glm::length(glm::vec3(transform[3]) - s->Camera.Position);
             s->Transparent.push_back({ meshIn, transform, material, doubleSided, dist, CurrentVertexColors(), s->Tint, moving });
-            // Saydamlar G-buffer'a yazmaz: hareketliyse ekran dikdörtgeni
-            if (moving && meshIn->GetBoundsRadius() > 0.0f)
+            // Saydamlar G-buffer'a yazmaz: hareketliyse çizilirken TAA tepki maskesine kapladığı pikseller yazılır (aşağıda);
+            // maske kullanılamıyorsa (MSAA / TXAA) ekran dikdörtgeni
+            if (moving && meshIn->GetBoundsRadius() > 0.0f && !PostProcessStack::CanDrawReactive())
             {
                 glm::vec3 c, e;
                 TransformBox(transform, meshIn->GetBoundsCenter(), meshIn->GetBoundsExtents(), c, e);
@@ -1613,26 +1657,10 @@ namespace Conqueror
             v.Cull = (doubleSided || cull == Material::CullMode::Off) ? 0 : (cull == Material::CullMode::Front ? 2 : 1);
             v.Exact = !material->MaterialShader;   // graph malzemede köşe hareketi olabilir: yaklaşık
             s_MotionCur->Velocity.push_back(std::move(v));
-            // Bir karede ekranda büyük sıçrama (ışınlanma, yeniden doğma, hızlı nesne): eski yeri ayrıca bildirilir. Hareketsiz
-            // duran nesne ilk karesinde birden yer değiştirince eski yeri "önceki karede hareket etti" sayılmıyor, geçmişte
-            // orada kalan görüntüsü bir süre iz bırakıyordu (TAA o dikdörtgende sıkı kırpar)
-            if (meshIn->GetBoundsRadius() > 0.0f)
-            {
-                const glm::vec3 lc = meshIn->GetBoundsCenter();
-                const glm::vec4 a = s_MotionViewProj * (transform * glm::vec4(lc, 1.0f));
-                const glm::vec4 b = s_MotionViewProj * (prevCopy * glm::vec4(lc, 1.0f));
-                if (a.w > 0.01f && b.w > 0.01f)
-                {
-                    const glm::vec2 d = (glm::vec2(a) / a.w - glm::vec2(b) / b.w) * 0.5f *
-                                        glm::vec2((float)std::max(s->Camera.ViewportWidth, 1u), (float)std::max(s->Camera.ViewportHeight, 1u));
-                    if (glm::dot(d, d) > 4.0f * 4.0f)
-                    {
-                        glm::vec3 c, e;
-                        TransformBox(prevCopy, meshIn->GetBoundsCenter(), meshIn->GetBoundsExtents(), c, e);
-                        AddMotionBox(c, e);
-                    }
-                }
-            }
+            // Eski yeri (ışınlanma, yeniden doğma, hızlı nesne) hareket vektörü geçişinin "önceki konum" çizimi piksel piksel
+            // işaretler. Burada ayrıca eklenen kaba ekran dikdörtgeni kaldırıldı: dünya eksenine hizalı kutu, çapraz uçan ince
+            // mermide (havuzdan gelen ölçekli küp) namludan ekranın üstüne kadar geniş bir şeridi kaplıyor, TAA orada üç kare
+            // geçmişi atıyordu: küpün üstünde ateş edince çizgiler silinip köşeler merdivenleşiyordu
         }
         // Opak: kuyruğa (FlushOpaque yakından uzağa çizer)
         if (!fromQueue && s->FrameActive && s_OpaqueSorting)
@@ -1707,6 +1735,15 @@ namespace Conqueror
             glDepthMask(GL_TRUE);
             glDisable(GL_BLEND);
             Renderer::GetStats().TransparentDraws++;
+            // Hareket eden saydam mesh (mermi izi, namlu alevi): TAA tepki maskesine yalnız kapladığı pikseller yazılır. Maske
+            // yazılamazsa (sahne hedefi bağlı değil) ekran dikdörtgenine dönülür
+            if (moving && PostProcessStack::CanDrawReactive() && !DrawReactiveMesh(*mesh, transform)
+                && meshIn->GetBoundsRadius() > 0.0f)
+            {
+                glm::vec3 c, e;
+                TransformBox(transform, meshIn->GetBoundsCenter(), meshIn->GetBoundsExtents(), c, e);
+                AddMotionBox(c, e);
+            }
         }
         glDisable(GL_CULL_FACE);
 
