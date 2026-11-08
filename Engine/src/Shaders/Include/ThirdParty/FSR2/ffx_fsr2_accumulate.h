@@ -67,7 +67,9 @@ void RectifyHistory(
     // Conqueror Engine change (native AA): the box scale above is 1 (tightest) at 1:1, so sub-pixel lines missed by the current
     // jitter sample were clipped out of the history every few frames. At ratios near 1:1 the box is widened to 3 while still;
     // velocity, depth clip and the accumulation mask shrink it back to 1 exactly as before
-    fScaleFactorInfluence = ffxMax(fScaleFactorInfluence, ffxLerp(1.0f, 3.0f, ffxSaturate((DownscaleFactor().x - 0.7f) / 0.3f)));
+    // Completely still (zero motion): 6, so a sub-pixel line that the current jitter sample misses stays in the history
+    const FfxFloat32 fNativeBox = ffxSaturate((DownscaleFactor().x - 0.7f) / 0.3f);
+    fScaleFactorInfluence = ffxMax(fScaleFactorInfluence, ffxLerp(ffxLerp(1.0f, 3.0f, fNativeBox), 6.0f, fNativeBox * FfxFloat32(params.fHrVelocity < 0.001f)));
 
     const FfxFloat32 fVecolityFactor = ffxSaturate(params.fHrVelocity / 20.0f);
     const FfxFloat32 fBoxScaleT = ffxMax(params.fDepthClipFactor, ffxMax(params.fAccumulationMask, fVecolityFactor));
@@ -79,8 +81,13 @@ void RectifyHistory(
     FfxFloat32x3 boxCenter = clippingBox.boxCenter;
     FfxFloat32 boxVecSize = length(clippingBox.boxVec);
 
-    boxMin = ffxMax(clippingBox.aabbMin, boxMin);
-    boxMax = ffxMin(clippingBox.aabbMax, boxMax);
+    // Conqueror Engine change (native AA, still camera): the variance box was always cut to the min/max of this frame's 3x3
+    // samples, so whatever box scale was used, a sub-pixel line missed by the current jitter sample fell outside and was
+    // clipped (and the accumulation dropped to 0.1). With zero motion near 1:1 only the variance box is used: in flat areas it
+    // stays tight (light changes are still clipped), at thin features it keeps the line in the history
+    const FfxFloat32 fStillNative = fNativeBox * FfxFloat32(params.fHrVelocity < 0.001f);
+    boxMin = ffxLerp(ffxMax(clippingBox.aabbMin, boxMin), boxMin, fStillNative);
+    boxMax = ffxLerp(ffxMin(clippingBox.aabbMax, boxMax), boxMax, fStillNative);
 
     if (any(FFX_GREATER_THAN(boxMin, fHistoryColor)) || any(FFX_GREATER_THAN(fHistoryColor, boxMax))) {
 
@@ -133,7 +140,10 @@ FfxFloat32x3 ComputeBaseAccumulationWeight(const AccumulationPassCommonParams pa
     // pattern stayed visible on thin features even with a still camera. The history weight rises to 8 as the ratio approaches
     // 1:1; upscaling ratios (render <= 70% of display) keep the SDK value. Motion still lowers it below (velocity terms)
     const FfxFloat32 fNativeT = ffxSaturate((DownscaleFactor().x - 0.7f) / 0.3f);
-    FfxFloat32 fBaseAccumulation = ffxLerp(fMaxAccumulationLanczosWeight, 8.0f, fNativeT) * FfxFloat32(params.bIsExistingSample) * (1.0f - fThisFrameReactiveFactor) * (1.0f - params.fDepthClipFactor);
+    // With a completely still camera (zero motion) the history weight near 1:1 rises further, to 24, as in a still TAA; a
+    // light change still clips the history in RectifyHistory, which then drops the accumulation, so flashes are not dimmed
+    const FfxFloat32 fStillT = fNativeT * FfxFloat32(params.fHrVelocity < 0.001f);
+    FfxFloat32 fBaseAccumulation = ffxLerp(ffxLerp(fMaxAccumulationLanczosWeight, 8.0f, fNativeT), 24.0f, fStillT) * FfxFloat32(params.bIsExistingSample) * (1.0f - fThisFrameReactiveFactor) * (1.0f - params.fDepthClipFactor);
 
     fBaseAccumulation = ffxMin(fBaseAccumulation, ffxLerp(fBaseAccumulation, fUpsampledWeight * 10.0f, ffxMax(FfxFloat32(bInMotionLastFrame), ffxSaturate(params.fHrVelocity * FfxFloat32(10)))));
 

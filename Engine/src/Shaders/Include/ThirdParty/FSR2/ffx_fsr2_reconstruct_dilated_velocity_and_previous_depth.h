@@ -110,7 +110,14 @@ FfxFloat32 ComputeLockInputLuma(FfxInt32x2 iPxLrPos)
 #endif
 
     //compute luma used to lock pixels, if used elsewhere the ffxPow must be moved!
+#if FFX_FSR2_OPTION_HDR_COLOR_INPUT
     const FfxFloat32 fLockInputLuma = ffxPow(RGBToPerceivedLuma(fRgb), FfxFloat32(1.0 / 6.0));
+#else
+    // Conqueror Engine change (tone-mapped input): the 1/6 power is meant for HDR luminance; on [0,1] input it squeezed a 30%
+    // contrast line under the 5% similarity threshold of the thin-feature test, so stair edges and gaps were almost never
+    // locked and blinked with the jitter cycle. A square root keeps the same test meaningful for LDR values
+    const FfxFloat32 fLockInputLuma = ffxPow(RGBToPerceivedLuma(fRgb), FfxFloat32(0.5));
+#endif
 
     return fLockInputLuma;
 }
