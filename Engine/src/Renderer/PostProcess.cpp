@@ -1636,7 +1636,10 @@ namespace Conqueror
             prm.FovY = m_FinalFovY;
             prm.FrameTimeMs = m_DeltaTime * 1000.0f;
             prm.Reset = !m_FSR2Valid;
-            prm.Sharpen = upSharp > 0.0f;
+            // FSR AA (yerel çözünürlük): RCAS birikmiş görüntüdeki ince çizgileri (duvar ızgarası, uzak kenar) noktalı / benekli
+            // keskinleştiriyordu; yerel çözünürlükte keskinlik TAA'nınkiyle aynı (TAA Sharpness + hareket ederken artış)
+            const bool nativeFSR = m_AAMode == AntiAliasingMode::FSRAA && outW == m_Width && outH == m_Height;
+            prm.Sharpen = !nativeFSR && upSharp > 0.0f;
             prm.Sharpness = upSharp;
             if (m_FSR2->Dispatch(prm))
             {
@@ -1645,9 +1648,12 @@ namespace Conqueror
                 sharpen->Bind();
                 sharpen->SetInt("u_ScreenTexture", 0);
                 sharpen->SetFloat2("u_InverseScreenSize", glm::vec2(1.0f / (float)outW, 1.0f / (float)outH));
-                sharpen->SetFloat("u_Amount", std::min((settings.Sharpen && !m_CASSharpen) ? settings.SharpenAmount : 0.0f, 1.0f));
+                sharpen->SetFloat("u_Amount", std::min((nativeFSR ? settings.TAASharpness : 0.0f) + ((settings.Sharpen && !m_CASSharpen) ? settings.SharpenAmount : 0.0f), 1.0f));
+                sharpen->SetInt("u_HasMotionState", (nativeFSR && !m_CameraStill) ? 2 : 0);
+                sharpen->SetFloat("u_MotionAmount", kTAAMotionSharpen);
                 BindTexture(0, m_FSR2Output.Texture);
                 PostProcess::DrawFullscreenQuad();
+                sharpen->SetInt("u_HasMotionState", 0);
                 Renderer::GetStats().PostProcessPasses += 2;
                 return;
             }
