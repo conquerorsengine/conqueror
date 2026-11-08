@@ -67,7 +67,7 @@ jobs:
       - name: Configure
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
       - name: Build
-        run: cmake --build build --parallel
+        run: cmake --build build --parallel -- -k 0
 
   freebsd:
     name: FreeBSD (player, in a VM)
@@ -85,7 +85,7 @@ jobs:
               libxkbcommon wayland wayland-protocols evdev-proto
           run: |
             cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCQ_RUNTIME_ONLY=ON
-            cmake --build build --target ConquerorRuntime
+            cmake --build build --target ConquerorRuntime -- -k 0
 
   android:
     name: Android (NDK, arm64-v8a player)

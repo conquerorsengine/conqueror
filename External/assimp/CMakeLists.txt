@@ -315,8 +315,8 @@ ELSEIF(MSVC)
   elseif((GENERATOR_IS_MULTI_CONFIG) OR (CMAKE_BUILD_TYPE MATCHES Release))
     message("-- MSVC PDB generation disabled. Release binary will not be debuggable.")
   endif()
-  # Source code is encoded in UTF-8
-  ADD_COMPILE_OPTIONS(/source-charset:utf-8)
+  # Source code is encoded in UTF-8. Conqueror Engine change: /source-charset:utf-8 removed; the top-level CMakeLists
+  # already passes /utf-8 (source + execution charset) to every target and MSVC rejects the two together (D8016)
 ELSEIF (CMAKE_CXX_COMPILER_ID MATCHES "Clang" )
   IF(NOT ASSIMP_HUNTER_ENABLED)
     SET(CMAKE_POSITION_INDEPENDENT_CODE ON)
