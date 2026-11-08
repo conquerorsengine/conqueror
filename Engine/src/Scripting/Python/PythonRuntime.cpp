@@ -356,10 +356,10 @@ namespace Conqueror::Scripting
             PyObject* module = ExecModule(source, path, error);
             if (!module)
                 return false;
-            if (it != m_Modules.end() && it->second.Module)
+            if (it != m_Modules.end() && it->second.Object)
             {
-                ForgetModule(it->second.Module);
-                Py_XDECREF(it->second.Module);
+                ForgetModule(it->second.Object);
+                Py_XDECREF(it->second.Object);
             }
             m_Modules[path] = { module, hash };
             return true;
@@ -371,7 +371,7 @@ namespace Conqueror::Scripting
             if (it != m_Modules.end())
             {
                 std::vector<std::string> classes;
-                CollectClasses(it->second.Module, classes);
+                CollectClasses(it->second.Object, classes);
                 std::string stem = std::filesystem::path(path).stem().string();
                 for (auto& c : classes) if (c == stem) return c;
                 if (!classes.empty()) return classes.front();
@@ -383,7 +383,7 @@ namespace Conqueror::Scripting
         {
             auto it = m_Modules.find(path);
             if (it == m_Modules.end()) return nullptr;
-            PyObject* cls = PyObject_GetAttrString(it->second.Module, className.c_str());
+            PyObject* cls = PyObject_GetAttrString(it->second.Object, className.c_str());
             if (!cls || !PyType_Check(cls))
             {
                 Py_XDECREF(cls);
@@ -494,7 +494,7 @@ namespace Conqueror::Scripting
             if (!LoadScript(path, error))
                 return -1;
             int updated = 0;
-            PyObject* module = m_Modules[path].Module;
+            PyObject* module = m_Modules[path].Object;
             for (Instance* inst : m_Instances)
             {
                 if (inst->Path != path) continue;
@@ -609,7 +609,8 @@ namespace Conqueror::Scripting
     private:
         struct Module
         {
-            PyObject* Module = nullptr;
+            // Üye adı yapının adıyla aynı olamaz (MSVC onu yapıcı sanıyor: C2461 / C7624)
+            PyObject* Object = nullptr;
             size_t Hash = 0;
         };
 
@@ -826,8 +827,8 @@ namespace Conqueror::Scripting
             m_Instances.clear();
             for (auto& [p, m] : m_Modules)
             {
-                if (m.Module) ForgetModule(m.Module);
-                Py_XDECREF(m.Module);
+                if (m.Object) ForgetModule(m.Object);
+                Py_XDECREF(m.Object);
             }
             m_Modules.clear();
         }

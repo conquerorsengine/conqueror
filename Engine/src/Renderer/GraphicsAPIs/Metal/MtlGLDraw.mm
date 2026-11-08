@@ -606,7 +606,7 @@ fragment ClearOut cq_clear(VSOut i [[stage_in]], constant Params& p [[buffer(0)]
         Hasher dk;
         dk.Add(mask);
         dk.Add(c.S.StencilWriteMask & 0xFF);
-        id<MTLDepthStencilState>& ds = s_Helpers.DepthStates[dk.H];
+        __strong id<MTLDepthStencilState>& ds = s_Helpers.DepthStates[dk.H];
         if (!ds)
         {
             MTLDepthStencilDescriptor* d = [MTLDepthStencilDescriptor new];
@@ -800,7 +800,7 @@ fragment ClearOut cq_clear(VSOut i [[stage_in]], constant Params& p [[buffer(0)]
         xk.Add((uint64_t)c.RenderingDepthFormat);
         xk.Add(c.RenderingHasStencil);
         xk.Add(c.RenderingSamples);
-        id<MTLRenderPipelineState>& pso = c.Pipelines[xk.H];
+        __strong id<MTLRenderPipelineState>& pso = c.Pipelines[xk.H];
         if (!pso)
         {
             MTLRenderPipelineDescriptor* d = [MTLRenderPipelineDescriptor new];
@@ -863,7 +863,7 @@ fragment ClearOut cq_clear(VSOut i [[stage_in]], constant Params& p [[buffer(0)]
             dk.Add(c.S.StencilZFail);
             dk.Add(c.S.StencilZPass);
         }
-        id<MTLDepthStencilState>& ds = c.DepthStates[dk.H];
+        __strong id<MTLDepthStencilState>& ds = c.DepthStates[dk.H];
         if (!ds)
         {
             MTLDepthStencilDescriptor* d = [MTLDepthStencilDescriptor new];

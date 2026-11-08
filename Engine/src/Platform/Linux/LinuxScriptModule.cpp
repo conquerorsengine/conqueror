@@ -1,6 +1,14 @@
 #include "LinuxScriptModule.h"
 #include "Core/Logging/Log.h"
+#if defined(__APPLE__)
+// macOS: betik modülü (.dylib) Mach-O biçimindedir, ELF değil
+#include <mach-o/fat.h>
+#include <mach-o/loader.h>
+#include <mach-o/nlist.h>
+#include <libkern/OSByteOrder.h>
+#else
 #include <elf.h>
+#endif
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -110,6 +118,76 @@ namespace Conqueror
             return classNames;
         }
 
+#if defined(__APPLE__)
+        // Mach-O: evrensel (fat) dosyada bu işlemcinin dilimi seçilir, LC_SYMTAB'daki tanımlı dış simgelerden "Create*" olanlar
+        // sınıf adını verir (C simgelerinin başında '_' vardır)
+        const char* base = static_cast<const char*>(mapped);
+        size_t size = (size_t)st.st_size;
+        if (size >= sizeof(fat_header) && OSSwapBigToHostInt32(reinterpret_cast<const fat_header*>(base)->magic) == FAT_MAGIC)
+        {
+            const auto* fh = reinterpret_cast<const fat_header*>(base);
+            const uint32_t count = OSSwapBigToHostInt32(fh->nfat_arch);
+            const auto* archs = reinterpret_cast<const fat_arch*>(base + sizeof(fat_header));
+#if defined(__aarch64__) || defined(__arm64__)
+            const cpu_type_t want = CPU_TYPE_ARM64;
+#else
+            const cpu_type_t want = CPU_TYPE_X86_64;
+#endif
+            const char* slice = nullptr;
+            size_t sliceSize = 0;
+            for (uint32_t i = 0; i < count && sizeof(fat_header) + (i + 1) * sizeof(fat_arch) <= size; ++i)
+                if ((cpu_type_t)OSSwapBigToHostInt32((uint32_t)archs[i].cputype) == want)
+                {
+                    const uint32_t off = OSSwapBigToHostInt32(archs[i].offset), len = OSSwapBigToHostInt32(archs[i].size);
+                    if ((size_t)off + len <= size)
+                    {
+                        slice = base + off;
+                        sliceSize = len;
+                    }
+                }
+            base = slice;
+            size = sliceSize;
+        }
+        if (!base || size < sizeof(mach_header_64) || reinterpret_cast<const mach_header_64*>(base)->magic != MH_MAGIC_64)
+        {
+            CQ_CORE_ERROR("LinuxScriptModule::GetExportedClassNames - Not a valid 64-bit Mach-O file");
+            munmap(mapped, st.st_size);
+            return classNames;
+        }
+        const auto* mh = reinterpret_cast<const mach_header_64*>(base);
+        size_t cmdOffset = sizeof(mach_header_64);
+        for (uint32_t i = 0; i < mh->ncmds && cmdOffset + sizeof(load_command) <= size; ++i)
+        {
+            const auto* lc = reinterpret_cast<const load_command*>(base + cmdOffset);
+            if (lc->cmd == LC_SYMTAB && cmdOffset + sizeof(symtab_command) <= size)
+            {
+                const auto* sym = reinterpret_cast<const symtab_command*>(lc);
+                if ((size_t)sym->symoff + (size_t)sym->nsyms * sizeof(nlist_64) <= size && (size_t)sym->stroff + sym->strsize <= size)
+                {
+                    const auto* syms = reinterpret_cast<const nlist_64*>(base + sym->symoff);
+                    const char* strs = base + sym->stroff;
+                    for (uint32_t k = 0; k < sym->nsyms; ++k)
+                    {
+                        if (!(syms[k].n_type & N_EXT) || (syms[k].n_type & N_TYPE) != N_SECT || syms[k].n_un.n_strx >= sym->strsize)
+                            continue;
+                        const char* name = strs + syms[k].n_un.n_strx;
+                        if (name[0] == '_')
+                            ++name;
+                        if (strncmp(name, "Create", 6) == 0 && strlen(name) > 6)
+                        {
+                            classNames.emplace_back(name + 6);
+                            CQ_CORE_INFO("LinuxScriptModule::GetExportedClassNames - Found: {0} -> class: {1}", name, name + 6);
+                        }
+                    }
+                }
+            }
+            if (lc->cmdsize == 0)
+                break;
+            cmdOffset += lc->cmdsize;
+        }
+        munmap(mapped, st.st_size);
+        return classNames;
+#else
         auto* ehdr = static_cast<Elf64_Ehdr*>(mapped);
         if (memcmp(ehdr->e_ident, ELFMAG, SELFMAG) != 0)
         {
@@ -157,5 +235,6 @@ namespace Conqueror
 
         munmap(mapped, st.st_size);
         return classNames;
+#endif
     }
 }

@@ -17,7 +17,8 @@ namespace Conqueror::Launcher
     {
     public:
         LauncherLayer();
-        virtual ~LauncherLayer() = default;
+        // Yıkıcı .cpp'de: ProjectHub orada tam tür (unique_ptr eksik türü silemez, libc++ bunu hata sayar)
+        ~LauncherLayer() override;
 
         void OnAttach() override;
         void OnDetach() override;

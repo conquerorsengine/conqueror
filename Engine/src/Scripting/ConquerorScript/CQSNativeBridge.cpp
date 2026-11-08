@@ -1,4 +1,6 @@
 #include <charconv>
+#include <locale>
+#include <sstream>
 #include <cctype>
 #include <unordered_map>
 #include <memory>
@@ -3706,7 +3708,15 @@ namespace Conqueror::CQS
         while (begin < end && std::isspace((unsigned char)*begin)) ++begin;
         if (begin < end && *begin == '+') ++begin;
         double d = 0.0;
+#if defined(__cpp_lib_to_chars) && __cpp_lib_to_chars >= 201611L
         std::from_chars(begin, end, d);
+#else
+        // Kayan nokta from_chars'ı olmayan standart kütüphaneler (FreeBSD ve eski Apple libc++): yerel ayardan bağımsız akış
+        std::istringstream in(std::string(begin, end));
+        in.imbue(std::locale::classic());
+        if (!(in >> d))
+            d = 0.0;
+#endif
         return d;
     }
     Value CQSNativeBridge::ToInt(int argCount, Value* args)

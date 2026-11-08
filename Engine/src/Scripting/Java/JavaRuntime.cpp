@@ -677,7 +677,12 @@ namespace Conqueror::Scripting
             options[2].optionString = userLang.data();
             options[3].optionString = const_cast<char*>("-Dfile.encoding=UTF-8");
             JavaVMInitArgs args{};
+#ifdef JNI_VERSION_10
             args.version = JNI_VERSION_10;
+#else
+            // Eski JDK başlıkları (Windows CI'daki JDK 8): her yeni JVM daha eski sürümle de başlar
+            args.version = JNI_VERSION_1_8;
+#endif
             args.nOptions = 4;
             args.options = options;
             args.ignoreUnrecognized = JNI_TRUE;
