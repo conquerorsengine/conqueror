@@ -67,6 +67,9 @@ namespace Conqueror::AntiAliasing
     // Tek kareye bakan (zamansal birikim kullanmayan) yöntem: FXAA, SMAA, MSAA, süper örnekleme ... (None ve zamansal yöntemler
     // hariç). Bunlarda "Temporal Stability" katmanı yanıp sönen ince ayrıntıları sabitleyebilir
     CQ_API bool IsSingleFrame(AntiAliasingMode mode);
+    // Ton eşlenmiş tek kareyi işleyen kenar yumuşatma (FXAA, SMAA, MLAA, CMAA, DEAA). "Temporal Stability" açıkken bunlar
+    // TAA'nın birikimiyle (alt piksel titreşimi + geçmiş) çalışır; yöntem yalnız TAA'nın geçmişi olmayan piksellerde uygulanır
+    CQ_API bool IsPostProcess(AntiAliasingMode mode);
     CQ_API bool IsLegacyUpscaler(AntiAliasingMode mode);
 
     // Seçilen yöntem bu sistemde çalışamıyorsa en yakın gerçek karşılığı (CSAA -> EQAA / 8x MSAA, DLAA -> TAA ...).

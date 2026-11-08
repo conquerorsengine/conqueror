@@ -18,11 +18,22 @@ in vec2 v_UV;
 uniform sampler2D u_ScreenTexture;
 uniform vec2 u_InverseScreenSize;
 uniform float u_Amount = 0.0;
+// TAA durumu (z: durgunluk yaşı 0..31 + 32 x titreme bilgisi): kamera hareket ederken geçmiş her karede piksel altı kaymayla
+// yeniden örneklenip yumuşar; hareketteki ve duruştan sonraki ilk karelerde (yeniden birikim keskinleştirene kadar) keskinlik artar
+uniform sampler2D u_MotionState;
+uniform int u_HasMotionState = 0;
+uniform float u_MotionAmount = 0.0;
 
 void main()
 {
     vec3 c = texture(u_ScreenTexture, v_UV).rgb;
-    if (u_Amount <= 0.0)
+    float amount = u_Amount;
+    if (u_HasMotionState == 1 && u_MotionAmount > 0.0)
+    {
+        float stillAge = mod(max(texture(u_MotionState, v_UV).z, 0.0), 32.0);
+        amount += u_MotionAmount * (1.0 - clamp(stillAge / 8.0, 0.0, 1.0));
+    }
+    if (amount <= 0.0)
     {
         FragColor = vec4(c, 1.0);
         return;
@@ -41,7 +52,7 @@ void main()
     // basamak çizgisi, küplerin arası: 0.1-0.25) keskinleşir; eskiden 0.06'dan itibaren kesildiği için uzak ayrıntı yumuşak kalıyordu
     float lumRange = dot(mx - mn, vec3(0.2126, 0.7152, 0.0722));
     float edgeFade = 1.0 - smoothstep(0.15, 0.35, lumRange);
-    vec3 wgt = -amp * mix(0.125, 0.2, clamp(u_Amount, 0.0, 1.0)) * edgeFade;
+    vec3 wgt = -amp * mix(0.125, 0.2, clamp(amount, 0.0, 1.0)) * edgeFade;
     vec3 result = (c + (n + s + e + w) * wgt) / (1.0 + 4.0 * wgt);
     // Hale yok: sonuç komşuluğun aralığında kalır. Keskin kenarda (duvar üstü / gökyüzü) eksi ağırlıklar kenarın bir yanında
     // koyu, öbür yanında parlak çizgi üretiyordu; kamera hareket ederken bu çizgi kenarı merdivenli gösteriyordu

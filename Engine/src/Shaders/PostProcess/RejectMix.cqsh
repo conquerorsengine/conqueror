@@ -1,0 +1,29 @@
+#language GLSL
+// Temporal Stability (post-process yöntemleri TAA çözümünün üstünde): SMAA / MLAA / CMAA / DEAA sonucu yalnız TAA'nın geçmişini
+// reddettiği piksellerde (yeni açılan / yüzeyi değişen: TAA'nın orada yalnız bu titreşimli karesi var, basamaklı kalırdı)
+// kullanılır; geri kalanında TAA'nın birikmiş görüntüsü aynen kalır (yöntem onu ikinci kez yumuşatmaz)
+#type vertex
+#version 450 core
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+out vec2 v_UV;
+void main()
+{
+    v_UV = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+layout(location = 0) out vec4 FragColor;
+in vec2 v_UV;
+uniform sampler2D u_Base;        // TAA'nın çözdüğü görüntü (ton eşlenmiş)
+uniform sampler2D u_Processed;   // aynı görüntünün kenar yumuşatması yapılmış hâli
+uniform sampler2D u_State;       // TAA durumu: x >= 1.5 geçmiş reddedildi
+void main()
+{
+    vec3 base = texture(u_Base, v_UV).rgb;
+    vec3 processed = texture(u_Processed, v_UV).rgb;
+    float rejected = texture(u_State, v_UV).x >= 1.5 ? 1.0 : 0.0;
+    FragColor = vec4(mix(base, processed, rejected), 1.0);
+}

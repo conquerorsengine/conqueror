@@ -149,6 +149,7 @@ namespace Conqueror
         LoadShader("SceneFX", "Engine/src/Shaders/PostProcess/SceneFX.cqsh");
         LoadShader("TAA", "Engine/src/Shaders/PostProcess/TAA.cqsh");
         LoadShader("Stabilize", "Engine/src/Shaders/PostProcess/Stabilize.cqsh");
+        LoadShader("RejectMix", "Engine/src/Shaders/PostProcess/RejectMix.cqsh");
         LoadShader("DepthOfField", "Engine/src/Shaders/PostProcess/DepthOfField.cqsh");
         LoadShader("MotionBlur", "Engine/src/Shaders/PostProcess/MotionBlur.cqsh");
         LoadShader("AutoExposure", "Engine/src/Shaders/PostProcess/AutoExposure.cqsh");
@@ -1000,6 +1001,16 @@ namespace Conqueror
             }
         }
 
+        // Bu kipte HDR TAA çözümü çalışır mı: zamansal yöntemler ve "Temporal Stability" açıkken post-process yöntemleri
+        // (FXAA, SMAA, MLAA, CMAA, DEAA). Tek kareye bakan bu yöntemlerde pikselden ince ayrıntı (küplerin arası, uzak basamak)
+        // kamera kaydıkça örnek noktasına bir denk gelip bir gelmiyor, yürürken yanıp sönüyordu; önceki karelerle ortalamak
+        // yanıp sönmeyi tam kesmiyor, aralıkları da açıyordu. Alt piksel titreşimi + birikim ayrıntıyı her karede pikselin farklı
+        // bir noktasından örnekler (TAA); yöntem yalnız TAA'nın geçmişi olmayan (yeni açılan) piksellerde uygulanır
+        bool UsesTAAResolve(AntiAliasingMode aa, const PostProcessSettings& settings)
+        {
+            return UsesTemporalAA(aa) || (settings.TemporalStability && AntiAliasing::IsPostProcess(aa));
+        }
+
         uint32_t FloatBits(float f)
         {
             uint32_t u = 0;
@@ -1219,6 +1230,9 @@ namespace Conqueror
         Renderer::GetStats().PostProcessPasses++;
     }
 
+    // TAA hareket keskinliği: kamera hareket ederken TAA keskinleştirmesine eklenen miktar (Sharpen.cqsh, 0..1)
+    static constexpr float kTAAMotionSharpen = 0.6f;
+
     void PostProcessStack::RunFinal(const PostProcessSettings& settings, uint32_t outputFramebuffer, const int outputViewport[4])
     {
         auto fxaa = PostProcess::GetShader("FXAA");
@@ -1251,6 +1265,10 @@ namespace Conqueror
         };
 
         // 1) Uzamsal kenar yumuşatma (iç çözünürlükte, ton eşlenmiş görüntüde)
+        // Temporal Stability: TAA çözümünün üstünde SMAA / MLAA / CMAA / DEAA yalnız TAA'nın geçmişini reddettiği piksellerde
+        // kalır (aşağıda); FXAA bunu kendi içinde yapar (u_RejectOnly)
+        const uint32_t beforeSpatial = cur;
+        const bool rejectOnlySpatial = taa && AntiAliasing::IsPostProcess(aa) && aa != AntiAliasingMode::FXAA;
         if (aa == AntiAliasingMode::SMAA || aa == AntiAliasingMode::MLAA || aa == AntiAliasingMode::SMAA_T2X)
         {
             const bool mlaa = aa == AntiAliasingMode::MLAA;
@@ -1420,6 +1438,22 @@ namespace Conqueror
             fxaa->SetInt("u_RejectOnly", (taa && aa != AntiAliasingMode::TAA_FXAA) ? 1 : 0);
             BindTexture(0, cur);
             BindTexture(1, taa ? m_TAAState[m_HistoryIndex].Texture : 0);
+            PostProcess::DrawFullscreenQuad();
+            cur = dst.Texture;
+            Renderer::GetStats().PostProcessPasses++;
+        }
+
+        auto rejectMix = PostProcess::GetShader("RejectMix");
+        if (rejectOnlySpatial && cur != beforeSpatial && Valid(rejectMix))
+        {
+            RenderTarget& dst = internalPass();
+            rejectMix->Bind();
+            rejectMix->SetInt("u_Base", 0);
+            rejectMix->SetInt("u_Processed", 1);
+            rejectMix->SetInt("u_State", 2);
+            BindTexture(0, beforeSpatial);
+            BindTexture(1, cur);
+            BindTexture(2, m_TAAState[m_HistoryIndex].Texture);
             PostProcess::DrawFullscreenQuad();
             cur = dst.Texture;
             Renderer::GetStats().PostProcessPasses++;
@@ -1647,8 +1681,17 @@ namespace Conqueror
                 sharpen->SetInt("u_ScreenTexture", 0);
                 sharpen->SetFloat2("u_InverseScreenSize", invSize);
                 sharpen->SetFloat("u_Amount", std::min(sharpenAmount, 1.0f));
+                // TAA: hareket ederken geçmiş her karede piksel altı kaymayla yeniden örneklenip yumuşar (dokular, küplerin arası);
+                // o piksellerde keskinlik artar, durunca (yeniden birikimle geçmiş keskinleşince) eski değerine döner
+                const bool motionSharpen = taa && !ownSharpen;
+                sharpen->SetInt("u_MotionState", 1);
+                sharpen->SetInt("u_HasMotionState", motionSharpen ? 1 : 0);
+                sharpen->SetFloat("u_MotionAmount", motionSharpen ? kTAAMotionSharpen : 0.0f);
                 BindTexture(0, cur);
+                BindTexture(1, motionSharpen ? m_TAAState[m_HistoryIndex].Texture : 0);
                 PostProcess::DrawFullscreenQuad();
+                // Diğer keskinleştirme geçişleri bu tekdüzeyi kurmaz: program durumunda açık kalmasın
+                sharpen->SetInt("u_HasMotionState", 0);
             }
         }
         else
@@ -1801,7 +1844,7 @@ namespace Conqueror
             RunSceneEffects(settings, camera, time);
         m_TAAResolved = false;
         // TAAU seçiliyken zamansal kenar yumuşatma TAAU'nun kendisidir (Unreal'daki gibi zamansal yükseltici TAA'nın yerini alır)
-        if (fx && UsesTemporalAA(m_AAMode) && !camera.Orthographic && m_Upscaler != UpscalerMode::TAAU && !m_UseFSR2)
+        if (fx && UsesTAAResolve(m_AAMode, settings) && !camera.Orthographic && m_Upscaler != UpscalerMode::TAAU && !m_UseFSR2)
             RunTAA(settings, camera);
         else
             m_HistoryValid = false;
@@ -1932,7 +1975,7 @@ namespace Conqueror
         {
             // Kenar yumuşatma istekleri (sonraki karenin sahne hedefi ve titreşimi)
             const AntiAliasingMode next = m_AAMode;
-            const bool temporal = fx && !camera.Orthographic && UsesTemporalAA(next);
+            const bool temporal = fx && !camera.Orthographic && UsesTAAResolve(next, settings);
             const bool t2x = fx && !camera.Orthographic && next == AntiAliasingMode::SMAA_T2X;
             const bool taau = fx && !camera.Orthographic && m_Upscaler == UpscalerMode::TAAU;
             const bool fsr2 = fx && m_UseFSR2;

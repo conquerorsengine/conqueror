@@ -183,6 +183,11 @@ namespace Conqueror::AntiAliasing
         }
     }
 
+    bool IsPostProcess(AntiAliasingMode mode)
+    {
+        return mode == M::FXAA || mode == M::SMAA || mode == M::MLAA || mode == M::CMAA || mode == M::DEAA;
+    }
+
     bool IsLegacyUpscaler(AntiAliasingMode mode)
     {
         return GetInfo(mode).Category == Group::Legacy;
