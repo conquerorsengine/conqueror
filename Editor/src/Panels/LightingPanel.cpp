@@ -1198,11 +1198,11 @@ namespace Conqueror::Editor
                 if (UI::Combo("EQAA Samples", eqIdx, eqOpts, 3, "Coverage samples / stored color samples (AMD EQAA)"))
                     p.EQAASamples = eqIdx == 0 ? 4 : eqIdx == 1 ? 8 : 16;
             }
-            if (AntiAliasing::IsSingleFrame(aaNow))
+            if (AntiAliasing::IsSingleFrame(aaNow) || aaNow == AntiAliasingMode::SMAA_T2X)
                 UI::Checkbox("Temporal Stability", p.TemporalStability,
                              "Keeps thin details (gaps, distant stair edges, thin lines) from blinking while you move. FXAA, SMAA, MLAA, CMAA and DEAA "
-                             "then accumulate sub-pixel jittered frames like TAA and smooth only newly revealed pixels themselves; MSAA, supersampling "
-                             "and the other methods average only the pixels that flicker between frames.");
+                             "then accumulate sub-pixel jittered frames like TAA and smooth only newly revealed pixels themselves; MSAA, supersampling, "
+                             "SMAA T2x and the other methods average only the pixels that flicker between frames.");
             if (aaNow == AntiAliasingMode::SSAA || aaNow == AntiAliasingMode::OGSSAA)
                 UI::SliderFloat("SSAA Scale", p.SSAAScale, 1.25f, 4.0f, "%.2fx",
                                 "Internal resolution multiplier per axis (2 = 4x samples). OGSSAA rounds it to a whole number. The cost grows with the square of the value.");

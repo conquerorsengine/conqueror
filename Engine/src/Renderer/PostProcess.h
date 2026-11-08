@@ -233,6 +233,7 @@ namespace Conqueror
         bool m_StabValid = false;
         bool m_WantStability = false;   // sonraki karede kararlılık katmanı (hareket verisi toplanır)
         bool m_StabilityActive = false; // bu kare
+        glm::mat4 m_StabInvViewProj{ 1.0f };   // kararlılık katmanı: bu karenin titreşimsiz ters görüş-izdüşümü
         RenderTarget m_TAADebug;                      // r.TAADebug: renk 2, pikselin geçmiş yolu (yalnız gösterilir)
         RenderTarget m_Reactive;                      // TAA tepki maskesi (R8): parçacıkların kapladığı pikseller
         uint32_t m_ReactiveFramebuffer = 0;           // renk: m_Reactive, derinlik: sahne derinliği (salt okunur)

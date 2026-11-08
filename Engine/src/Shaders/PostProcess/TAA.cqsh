@@ -752,6 +752,14 @@ void main()
         if ((movingNow || movedBefore) && !centerExact)
             feedback = 0.6;
     }
+    // Titreme tutması TSAA / TSSAA'da da: pikselden ince ayrıntı (küplerin arası, uzak basamak) titreşimin yalnız bazı karelerinde
+    // çizilir; kısa birikim ve standart kırpma onu ıskalanan karelerde silip yürürken yanıp söndürüyor, dururken bile aralığı
+    // açıyordu. Yalnız geçmişi karede bir kutunun içinde karede bir dışında kalan (yanıp sönen) piksel kırpılmadan tutulur
+    if ((u_Variant == 1 || u_Variant == 2) && hold)
+    {
+        history = rawHistory;
+        feedback = max(feedback, u_Variant == 2 ? 0.96 : 0.9);
+    }
     vec3 result = mix(RGBToYCoCg(current), history, feedback);
     // Durum x: hareket payı (0..1, TAA + FXAA'da son geçiş FXAA'sı) + 2 x geçmişi reddedilen (yeni açılan / yüzeyi değişen)
     // piksel: TAA'nın orada yalnız bu karesi var, basamaklı kalırdı; son geçiş yalnız bu piksellere FXAA uygular

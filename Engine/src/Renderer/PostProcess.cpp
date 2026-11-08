@@ -613,7 +613,7 @@ namespace Conqueror
         // Temporal AA: Halton(2,3) dizisiyle 16 karelik alt piksel titreşimi. 8 konum küçük nesnelerin / küçük pencerede
         // kenarların örtüsünü 8 kaba basamağa bölüyordu (hafif merdiven); durunca birikim uzun olduğundan 16'nın ortalaması alınır
         m_JitterActive = m_WantTAA;
-        m_StabilityActive = m_WantStability && !m_WantTAA;
+        m_StabilityActive = m_WantStability;
         if (!m_StabilityActive)
             m_StabValid = false;
         if (m_JitterActive)
@@ -1489,7 +1489,7 @@ namespace Conqueror
             stab->SetInt("u_HasReactive", m_ReactiveUsed ? 1 : 0);
             stab->SetInt("u_HistoryValid", (m_StabValid && m_HasPrevViewProj) ? 1 : 0);
             stab->SetInt("u_CameraStill", m_CameraStill ? 1 : 0);
-            stab->SetMat4("u_InvViewProj", m_FinalInvViewProj);
+            stab->SetMat4("u_InvViewProj", m_StabInvViewProj);
             stab->SetMat4("u_PrevViewProj", m_PrevViewProj);
             stab->SetFloat2("u_Texel", invSize);
             // Tepki maskesi yazılamıyorsa (MSAA) hareket eden saydam nesnelerin / parçacıkların bu ve önceki karedeki ekran
@@ -1885,8 +1885,11 @@ namespace Conqueror
         // karenin (titreşimsiz) ters matrisi ve kameranın kıpırdayıp kıpırdamadığı şimdi
         if (fx && m_StabilityActive && !camera.Orthographic)
         {
-            m_FinalHasVelocity = RenderObjectVelocity(camera);
-            m_FinalInvViewProj = glm::inverse(camera.Projection * camera.View);
+            // SMAA T2x: hız vektörleri ve titreşimli ters matris yukarıda (T2x çözümü için) hazırlandı; katman titreşimsiz matrisi kullanır
+            const bool t2xPrepared = m_AAMode == AntiAliasingMode::SMAA_T2X && m_JitterActive;
+            if (!t2xPrepared)
+                m_FinalHasVelocity = RenderObjectVelocity(camera);
+            m_StabInvViewProj = glm::inverse(camera.Projection * camera.View);
             bool still = m_HasPrevViewProj;
             const glm::mat4 now = camera.Projection * camera.View;
             for (int c = 0; c < 4 && still; ++c)
@@ -2001,7 +2004,10 @@ namespace Conqueror
             m_WantRenderScale = (fx && !m_PointUpscale) ? AntiAliasing::RenderScale(settings, next, m_Upscaler) : 1.0f;
             m_WantGeometry = next == AntiAliasingMode::GBAA || next == AntiAliasingMode::SRAA;
             // Tek kare yöntemlerinde zamansal kararlılık: hareket verisi (nesne hareket vektörleri, önceki konum) toplanır
-            m_WantStability = fx && !camera.Orthographic && settings.TemporalStability && !m_WantTAA && AntiAliasing::IsSingleFrame(next);
+            // SMAA T2x: iki titreşim konumunu birleştirir, hareket ederken pikselden ince ayrıntı yine yanıp sönüyordu; katman T2x'in
+            // birleşik çıktısında çalışır (dururken çıktı sabit, katman dokunmaz)
+            m_WantStability = fx && !camera.Orthographic && settings.TemporalStability && !temporal && !taau && !fsr2
+                              && (AntiAliasing::IsSingleFrame(next) || t2x);
         }
         m_WantNormals = fx && (settings.ScreenSpaceReflections || settings.ScreenSpaceGI) && !camera.Orthographic;
         m_WantAlbedo = fx && settings.ScreenSpaceGI && !camera.Orthographic;
