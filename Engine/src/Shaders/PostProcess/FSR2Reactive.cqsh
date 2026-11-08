@@ -20,6 +20,10 @@ in vec2 v_UV;
 uniform sampler2D u_Depth;
 uniform sampler2D u_Reactive;
 uniform int u_HasReactive = 0;
+uniform sampler2D u_Shadow;       // bu karenin güneş gölgesi (G-buffer, 0 gölge .. 1 aydınlık)
+uniform sampler2D u_PrevShadow;   // önceki karenin güneş gölgesi
+uniform sampler2D u_Motion;       // FSR 2 hareket vektörleri (uv: önceki konum = uv + hareket)
+uniform int u_HasPrevShadow = 0;
 uniform mat4 u_InvViewProj;
 uniform vec4 u_ShadowBoxes[64];   // [2i] min, [2i+1] max (dünya)
 uniform int u_ShadowBoxCount = 0;
@@ -50,8 +54,15 @@ void main()
     if (depth < 1.0 && u_ShadowBoxCount > 0)
     {
         vec4 wp = u_InvViewProj * vec4(v_UV * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
-        if (InMovingShadow(wp.xyz / wp.w))
-            reactive = max(reactive, 0.8);
+        // Yalnız gölgesi gerçekten değişen piksel (hareketli gölgenin yeni ve eski kenarı): gölge hacminin tamamı (hedefin arkasındaki
+        // uzak duvar dahil) tepkili sayılınca FSR 2 orada geçmişi bırakıyor, duvar üstü merdivenleniyordu
+        if (u_HasPrevShadow == 1 && InMovingShadow(wp.xyz / wp.w))
+        {
+            vec2 prevUV = v_UV + texture(u_Motion, v_UV).xy;
+            float now = texture(u_Shadow, v_UV).r;
+            float before = texture(u_PrevShadow, clamp(prevUV, vec2(0.0), vec2(1.0))).r;
+            reactive = max(reactive, 0.8 * smoothstep(0.05, 0.2, abs(now - before)));
+        }
     }
     FragColor = vec4(reactive, 0.0, 0.0, 1.0);
 }

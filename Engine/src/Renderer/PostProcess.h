@@ -177,6 +177,7 @@ namespace Conqueror
         std::unique_ptr<FSR2Upscaler> m_FSR2;
         RenderTarget m_MotionVectors;
         RenderTarget m_FSR2Reactive;    // FSR 2 tepki maskesi: m_Reactive + hareket eden nesnelerin gölge hacimleri (R8)
+        RenderTarget m_FSR2PrevShadow;  // önceki karenin güneş gölgesi (FSR 2 tepki maskesi: gölgesi değişen pikseller)
         RenderTarget m_FSR2Output;
         bool m_UseFSR2 = false;
         // GBAA / SRAA geometri geçişi

@@ -1605,7 +1605,9 @@ namespace Conqueror
                 if (!Renderer3D::GetMovingShadowBoxes(this, s_FSRShadowBoxes, towardSun))
                     s_FSRShadowBoxes.clear();
                 MergeShadowBoxes(s_FSRShadowBoxes, 32);
-                if (!s_FSRShadowBoxes.empty())
+                const uint32_t shadowMask = GetSceneShadowMaskTexture();
+                const bool hasPrevShadow = shadowMask && m_FSR2PrevShadow.Texture && m_FSR2PrevShadow.Width == m_Width && m_FSR2PrevShadow.Height == m_Height;
+                if (!s_FSRShadowBoxes.empty() && hasPrevShadow)
                 {
                     EnsureTarget(m_FSR2Reactive, m_Width, m_Height, GL_R8);
                     glBindFramebuffer(GL_FRAMEBUFFER, m_FSR2Reactive.Framebuffer);
@@ -1613,6 +1615,10 @@ namespace Conqueror
                     fsrReactivePass->Bind();
                     fsrReactivePass->SetInt("u_Depth", 0);
                     fsrReactivePass->SetInt("u_Reactive", 1);
+                    fsrReactivePass->SetInt("u_Shadow", 2);
+                    fsrReactivePass->SetInt("u_PrevShadow", 3);
+                    fsrReactivePass->SetInt("u_Motion", 4);
+                    fsrReactivePass->SetInt("u_HasPrevShadow", 1);
                     fsrReactivePass->SetInt("u_HasReactive", m_ReactiveUsed ? 1 : 0);
                     fsrReactivePass->SetMat4("u_InvViewProj", m_FinalInvViewProj);
                     fsrReactivePass->SetInt("u_ShadowBoxCount", (int)(s_FSRShadowBoxes.size() / 2));
@@ -1621,9 +1627,19 @@ namespace Conqueror
                         fsrReactivePass->SetFloat4("u_ShadowBoxes[" + std::to_string(i) + "]", s_FSRShadowBoxes[i]);
                     BindTexture(0, GetSceneDepthTexture());
                     BindTexture(1, m_ReactiveUsed ? m_Reactive.Texture : 0);
+                    BindTexture(2, shadowMask);
+                    BindTexture(3, m_FSR2PrevShadow.Texture);
+                    BindTexture(4, m_MotionVectors.Texture);
                     PostProcess::DrawFullscreenQuad();
                     Renderer::GetStats().PostProcessPasses++;
                     fsrReactive = m_FSR2Reactive.Texture;
+                }
+                // Sonraki kare için bu karenin güneş gölgesi
+                if (shadowMask)
+                {
+                    EnsureTarget(m_FSR2PrevShadow, m_Width, m_Height, GL_R8);
+                    glCopyImageSubData(shadowMask, GL_TEXTURE_2D, 0, 0, 0, 0, m_FSR2PrevShadow.Texture, GL_TEXTURE_2D, 0, 0, 0, 0,
+                                       (GLsizei)m_Width, (GLsizei)m_Height, 1);
                 }
             }
             prm.Reactive = fsrReactive;

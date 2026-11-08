@@ -1,7 +1,7 @@
 #language GLSL
 // MSAA çözümü (HDR): örnekler ton eşlenmiş uzayda ortalanır (Karis ağırlığı 1 / (1 + parlaklık)). Doğrusal HDR ortalamasında
 // gökyüzü / ışık gibi çok parlak tek örnek kenar pikselini tümüyle parlak yapıyor, ton eşlemeden sonra kenar MSAA'sız gibi
-// basamaklı kalıyordu. u_Wide (TXAA): komşu piksellerin örnekleri de 1.5 piksel yarıçaplı çadır süzgeciyle katılır.
+// basamaklı kalıyordu. u_Wide (TXAA): komşu piksellerin örnekleri de 1 piksel yarıçaplı çadır süzgeciyle katılır.
 #type vertex
 #version 450 core
 layout(location = 0) in vec2 a_Position;
@@ -41,7 +41,8 @@ void main()
             if (u_Wide == 1)
             {
                 vec2 d = vec2(float(x), float(y)) + u_SamplePos[i] - 0.5;
-                w *= max(0.0, 1.0 - length(d) / 1.5);
+                // 1 piksel yarıçap: 1.5 piksellik çadır üstüne TAA birikimiyle görüntü (dokular, ince ayrıntı) belirgin şekilde bulanıktı
+                w *= max(0.0, 1.0 - length(d));
             }
             sum += c * w;
             wsum += w;
