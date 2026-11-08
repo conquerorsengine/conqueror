@@ -162,7 +162,7 @@ vec3 CalculateSpotLight(SpotLight light, vec3 N, vec3 V, vec3 FragPos, vec3 albe
 
 void main()
 {
-    vec3 albedo = u_UseAlbedoMap ? texture(u_AlbedoMap, fs_in.TexCoord).rgb * u_Albedo : u_Albedo;
+    vec3 albedo = u_UseAlbedoMap ? texture(u_AlbedoMap, fs_in.TexCoord, CQ_Frame.RenderParams.x).rgb * u_Albedo : u_Albedo;
     albedo = pow(albedo, vec3(2.2)); // sRGB to linear
     
     vec3 N = normalize(fs_in.Normal);

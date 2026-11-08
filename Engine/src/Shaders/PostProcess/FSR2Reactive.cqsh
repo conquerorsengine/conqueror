@@ -1,0 +1,57 @@
+#language GLSL
+// FSR 2 tepki maskesi: parçacık / saydam hareketli nesne maskesi (varsa) + hareket eden nesnelerin gölge hacimleri. Hareket eden
+// hedefin gölgesi duran zeminin üstünde kayar (yüzey aynı, hız sıfır): FSR 2 eski gölgeyi geçmişte tutup kenarını benekli
+// bırakıyordu. Noktadan güneşe giden ışın hareket eden bir nesnenin (bu + önceki karedeki) kutusuna çarpıyorsa piksel tepkili
+#type vertex
+#version 450 core
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+out vec2 v_UV;
+void main()
+{
+    v_UV = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+layout(location = 0) out vec4 FragColor;
+in vec2 v_UV;
+uniform sampler2D u_Depth;
+uniform sampler2D u_Reactive;
+uniform int u_HasReactive = 0;
+uniform mat4 u_InvViewProj;
+uniform vec4 u_ShadowBoxes[64];   // [2i] min, [2i+1] max (dünya)
+uniform int u_ShadowBoxCount = 0;
+uniform vec3 u_TowardSun = vec3(0.0, 1.0, 0.0);
+
+bool InMovingShadow(vec3 p)
+{
+    vec3 dir = u_TowardSun;
+    dir = mix(dir, vec3(1e-6), lessThan(abs(dir), vec3(1e-6)));
+    vec3 inv = 1.0 / dir;
+    for (int i = 0; i < u_ShadowBoxCount; ++i)
+    {
+        vec3 t1 = (u_ShadowBoxes[2 * i].xyz - p) * inv;
+        vec3 t2 = (u_ShadowBoxes[2 * i + 1].xyz - p) * inv;
+        vec3 tn = min(t1, t2), tf = max(t1, t2);
+        float tNear = max(max(tn.x, tn.y), max(tn.z, 0.0));
+        float tFar = min(min(tf.x, tf.y), tf.z);
+        if (tFar >= tNear)
+            return true;
+    }
+    return false;
+}
+
+void main()
+{
+    float reactive = u_HasReactive == 1 ? texture(u_Reactive, v_UV).r : 0.0;
+    float depth = texture(u_Depth, v_UV).r;
+    if (depth < 1.0 && u_ShadowBoxCount > 0)
+    {
+        vec4 wp = u_InvViewProj * vec4(v_UV * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+        if (InMovingShadow(wp.xyz / wp.w))
+            reactive = max(reactive, 0.8);
+    }
+    FragColor = vec4(reactive, 0.0, 0.0, 1.0);
+}

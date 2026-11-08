@@ -112,10 +112,10 @@ void main()
         vec2 uvZ = p.xy + u_Material.Offset;
         uv = (wn.x > wn.y && wn.x > wn.z) ? uvX : ((wn.y > wn.z) ? uvY : uvZ);
         if (u_UseAlbedoMap)
-            albedoSample = texture(u_AlbedoMap, uvX) * w.x + texture(u_AlbedoMap, uvY) * w.y + texture(u_AlbedoMap, uvZ) * w.z;
+            albedoSample = texture(u_AlbedoMap, uvX, CQ_Frame.RenderParams.x) * w.x + texture(u_AlbedoMap, uvY, CQ_Frame.RenderParams.x) * w.y + texture(u_AlbedoMap, uvZ, CQ_Frame.RenderParams.x) * w.z;
     }
     else if (u_UseAlbedoMap)
-        albedoSample = texture(u_AlbedoMap, uv);
+        albedoSample = texture(u_AlbedoMap, uv, CQ_Frame.RenderParams.x);
     float alpha = albedoSample.a * u_Opacity;
     if (u_RenderMode == 1 && alpha < u_AlphaClip)
         discard;
@@ -123,13 +123,13 @@ void main()
     // Mesh Paint köşe rengi albedoyu çarpar (boyanmamış nesnede beyaz)
     vec3 albedo = SRGBToLinear(albedoSample.rgb * u_Material.Albedo * u_Tint * fs_in.Color.rgb);
 
-    float metallic = u_UseMetallicMap ? texture(u_MetallicMap, uv)[u_MetallicChannel] * (u_MapsScaleFactors ? u_Material.Metallic : 1.0)
+    float metallic = u_UseMetallicMap ? texture(u_MetallicMap, uv, CQ_Frame.RenderParams.x)[u_MetallicChannel] * (u_MapsScaleFactors ? u_Material.Metallic : 1.0)
                                       : u_Material.Metallic;
-    float roughness = u_UseRoughnessMap ? texture(u_RoughnessMap, uv)[u_RoughnessChannel] * (u_MapsScaleFactors ? u_Material.Roughness : 1.0)
+    float roughness = u_UseRoughnessMap ? texture(u_RoughnessMap, uv, CQ_Frame.RenderParams.x)[u_RoughnessChannel] * (u_MapsScaleFactors ? u_Material.Roughness : 1.0)
                                         : u_Material.Roughness;
-    float ao = u_UseAOMap ? texture(u_AOMap, uv).r * u_Material.AO : u_Material.AO;
+    float ao = u_UseAOMap ? texture(u_AOMap, uv, CQ_Frame.RenderParams.x).r * u_Material.AO : u_Material.AO;
 
-    vec3 emission = u_UseEmissionMap ? SRGBToLinear(texture(u_EmissionMap, uv).rgb) * u_Material.EmissionColor
+    vec3 emission = u_UseEmissionMap ? SRGBToLinear(texture(u_EmissionMap, uv, CQ_Frame.RenderParams.x).rgb) * u_Material.EmissionColor
                                      : u_Material.EmissionColor;
     emission *= u_Material.EmissionStrength;
 
@@ -140,7 +140,7 @@ void main()
     vec3 N;
     if (u_UseNormalMap)
     {
-        vec3 tangentNormal = texture(u_NormalMap, uv).xyz * 2.0 - 1.0;
+        vec3 tangentNormal = texture(u_NormalMap, uv, CQ_Frame.RenderParams.x).xyz * 2.0 - 1.0;
         N = normalize(fs_in.TBN * tangentNormal);
         if (!gl_FrontFacing)
             N = -N;

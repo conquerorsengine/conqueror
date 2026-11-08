@@ -33,6 +33,8 @@ void main()
         float stillAge = mod(max(texture(u_MotionState, v_UV).z, 0.0), 32.0);
         amount += u_MotionAmount * (1.0 - clamp(stillAge / 8.0, 0.0, 1.0));
     }
+    else if (u_HasMotionState == 2)
+        amount += u_MotionAmount;   // TAAU: piksel durumu yok, kamera bu karede kıpırdadıysa tüm görüntüde
     if (amount <= 0.0)
     {
         FragColor = vec4(c, 1.0);

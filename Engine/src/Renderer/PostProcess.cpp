@@ -150,6 +150,7 @@ namespace Conqueror
         LoadShader("TAA", "Engine/src/Shaders/PostProcess/TAA.cqsh");
         LoadShader("Stabilize", "Engine/src/Shaders/PostProcess/Stabilize.cqsh");
         LoadShader("RejectMix", "Engine/src/Shaders/PostProcess/RejectMix.cqsh");
+        LoadShader("FSR2Reactive", "Engine/src/Shaders/PostProcess/FSR2Reactive.cqsh");
         LoadShader("DepthOfField", "Engine/src/Shaders/PostProcess/DepthOfField.cqsh");
         LoadShader("MotionBlur", "Engine/src/Shaders/PostProcess/MotionBlur.cqsh");
         LoadShader("AutoExposure", "Engine/src/Shaders/PostProcess/AutoExposure.cqsh");
@@ -678,6 +679,17 @@ namespace Conqueror
         GLint drawFBO = 0;
         glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFBO);
         return (uint32_t)drawFBO == s_Current->m_SceneFramebuffer->GetRendererID();
+    }
+
+    float PostProcessStack::GetCurrentTextureLodBias()
+    {
+        if (!s_Current || !s_Current->m_SceneFramebuffer || s_Current->m_RenderScale >= 0.999f)
+            return 0.0f;
+        GLint drawFBO = 0;
+        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFBO);
+        if ((uint32_t)drawFBO != s_Current->m_SceneFramebuffer->GetRendererID())
+            return 0.0f;
+        return std::log2(std::max(s_Current->m_RenderScale, 0.25f));
     }
 
     const void* PostProcessStack::GetCurrentStack()
@@ -1579,7 +1591,39 @@ namespace Conqueror
             prm.Depth = GetSceneDepthTexture();
             prm.DepthFormat = GL_DEPTH24_STENCIL8;
             prm.Motion = m_MotionVectors.Texture;
-            prm.Reactive = m_ReactiveUsed ? m_Reactive.Texture : 0;
+            // Tepki maskesi: parçacıklar / saydam hareketli nesneler + hareket eden nesnelerin gölge hacimleri. Gölge duran yüzeyin
+            // üstünde kayar (yüzey aynı, hız sıfır); FSR 2 eski gölgeyi geçmişte tutup kenarını benekli bırakıyordu
+            uint32_t fsrReactive = m_ReactiveUsed ? m_Reactive.Texture : 0;
+            auto fsrReactivePass = PostProcess::GetShader("FSR2Reactive");
+            if (Valid(fsrReactivePass))
+            {
+                static std::vector<glm::vec4> s_FSRShadowBoxes;
+                glm::vec3 towardSun(0.0f, 1.0f, 0.0f);
+                if (!Renderer3D::GetMovingShadowBoxes(this, s_FSRShadowBoxes, towardSun))
+                    s_FSRShadowBoxes.clear();
+                MergeShadowBoxes(s_FSRShadowBoxes, 32);
+                if (!s_FSRShadowBoxes.empty())
+                {
+                    EnsureTarget(m_FSR2Reactive, m_Width, m_Height, GL_R8);
+                    glBindFramebuffer(GL_FRAMEBUFFER, m_FSR2Reactive.Framebuffer);
+                    glViewport(0, 0, (GLsizei)m_Width, (GLsizei)m_Height);
+                    fsrReactivePass->Bind();
+                    fsrReactivePass->SetInt("u_Depth", 0);
+                    fsrReactivePass->SetInt("u_Reactive", 1);
+                    fsrReactivePass->SetInt("u_HasReactive", m_ReactiveUsed ? 1 : 0);
+                    fsrReactivePass->SetMat4("u_InvViewProj", m_FinalInvViewProj);
+                    fsrReactivePass->SetInt("u_ShadowBoxCount", (int)(s_FSRShadowBoxes.size() / 2));
+                    fsrReactivePass->SetFloat3("u_TowardSun", towardSun);
+                    for (size_t i = 0; i < s_FSRShadowBoxes.size(); ++i)
+                        fsrReactivePass->SetFloat4("u_ShadowBoxes[" + std::to_string(i) + "]", s_FSRShadowBoxes[i]);
+                    BindTexture(0, GetSceneDepthTexture());
+                    BindTexture(1, m_ReactiveUsed ? m_Reactive.Texture : 0);
+                    PostProcess::DrawFullscreenQuad();
+                    Renderer::GetStats().PostProcessPasses++;
+                    fsrReactive = m_FSR2Reactive.Texture;
+                }
+            }
+            prm.Reactive = fsrReactive;
             prm.Output = m_FSR2Output.Texture;
             prm.OutputFormat = GL_RGBA8;
             prm.RenderWidth = m_Width;
@@ -1636,6 +1680,9 @@ namespace Conqueror
             taau->SetFloat2("u_OutTexel", glm::vec2(1.0f / (float)outW, 1.0f / (float)outH));
             taau->SetFloat2("u_JitterUV", m_JitterNDC * 0.5f);
             taau->SetFloat("u_Feedback", std::clamp(settings.TAAFeedback, 0.5f, 0.97f));
+            taau->SetInt("u_Reactive", 5);
+            taau->SetInt("u_HasReactive", m_ReactiveUsed ? 1 : 0);
+            BindTexture(5, m_ReactiveUsed ? m_Reactive.Texture : 0);
             glTextureParameteri(cur, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             BindTexture(0, cur);
             BindTexture(1, m_TAAUHistory[m_TAAUIndex].Texture);
@@ -1651,8 +1698,12 @@ namespace Conqueror
             sharpen->SetInt("u_ScreenTexture", 0);
             sharpen->SetFloat2("u_InverseScreenSize", glm::vec2(1.0f / (float)outW, 1.0f / (float)outH));
             sharpen->SetFloat("u_Amount", std::min(0.5f * upSharp + ((settings.Sharpen && !m_CASSharpen) ? settings.SharpenAmount : 0.0f), 1.0f));
+            // Hareket ederken geçmiş her karede yeniden örneklenip yumuşar (TAA'daki gibi): kamera kıpırdadıysa keskinlik artar
+            sharpen->SetInt("u_HasMotionState", m_CameraStill ? 0 : 2);
+            sharpen->SetFloat("u_MotionAmount", kTAAMotionSharpen);
             BindTexture(0, m_TAAUHistory[ni].Texture);
             PostProcess::DrawFullscreenQuad();
+            sharpen->SetInt("u_HasMotionState", 0);
             Renderer::GetStats().PostProcessPasses += 2;
             return;
         }

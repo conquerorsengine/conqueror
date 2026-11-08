@@ -101,6 +101,7 @@ namespace Conqueror
             SceneEnvironment Env;
             bool FrameActive = false;
             bool FrameDirty = true;
+            float TextureLodBias = 0.0f;   // malzeme dokusu mip sapması (BeginScene'de, sahne hedefi bağlıyken alınır)
             // Görüş kırpması: kameranın kesik koni düzlemleri (kamera değişince yeniden çıkarılır)
             glm::vec4 Frustum[6]{};
             bool FrustumDirty = true;
@@ -855,6 +856,9 @@ namespace Conqueror
         }
         // Hareket verisi (zamansal yöntemler ve tek kare yöntemlerindeki zamansal kararlılık katmanı): nesne hareket vektörleri,
         // hareket bayrağı, hareket eden nesnenin önceki yeri
+        // Yükseltici iç çözünürlükte çiziyorsa malzeme dokularının mip sapması (gölge geçişi başka hedef bağlamadan önce, şimdi)
+        s->TextureLodBias = PostProcessStack::GetCurrentTextureLodBias();
+        s->FrameDirty = true;
         if (PostProcessStack::WantsMotionData())
         {
             // Hareket maskesi bu görünüm için: önceki karenin kutuları / dikdörtgenleri saklanır
@@ -1198,6 +1202,8 @@ namespace Conqueror
         bool apvOn = env.APV && env.APV->IsBaked();
         f.FeatureFlags = glm::ivec4(env.HDROutput ? 1 : 0, env.Lightmap ? 1 : 0, apvOn ? 1 : 0, (int)s->Probes.size());
         f.DebugParams = glm::ivec4(s->DebugView, s->AreaCount, 0, 0);
+        // Yükseltici iç çözünürlükte çiziyorsa dokular çıktı çözünürlüğüne uygun mipten örneklenir (yoksa her şey ölçekten de bulanık)
+        f.RenderParams = glm::vec4(s->TextureLodBias, 0.0f, 0.0f, 0.0f);
 
         glBindBuffer(GL_UNIFORM_BUFFER, s->FrameUBOID);
         glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(FrameUBO), &f);

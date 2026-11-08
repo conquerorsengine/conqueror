@@ -46,8 +46,9 @@ namespace Conqueror
 
         glm::ivec4 FeatureFlags;
         glm::ivec4 DebugParams;   // x: görünüm modu (0 normal, 1 unlit, 2 normals, 3 lighting only, 4 metal/rough, 5 AO), y: alan ışığı sayısı
+        glm::vec4 RenderParams;   // x: malzeme dokusu mip sapması (yükseltici iç çözünürlüğü: log2(ölçek), yerelde 0)
     };
-    static_assert(sizeof(FrameUBO) == 1088, "FrameUBO must match std140 CQ_FrameBlock");
+    static_assert(sizeof(FrameUBO) == 1104, "FrameUBO must match std140 CQ_FrameBlock");
 
     struct GPUPointLight
     {

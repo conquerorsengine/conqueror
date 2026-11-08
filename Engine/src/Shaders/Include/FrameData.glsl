@@ -44,6 +44,7 @@ layout(std140, binding = 0) uniform CQ_FrameBlock
 
     ivec4 FeatureFlags;          // x HDR çıktı, y lightmap, z APV, w yansıma probu sayısı
     ivec4 DebugParams;           // x görünüm modu (editör), y alan ışığı sayısı
+    vec4 RenderParams;           // x malzeme dokusu mip sapması (yükseltme: iç çözünürlük düşükken dokular çıktı çözünürlüğündeki mipten)
 } CQ_Frame;
 
 struct CQ_PointLight

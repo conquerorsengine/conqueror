@@ -35,6 +35,8 @@ uniform vec2 u_InTexel;         // 1 / iç çözünürlük
 uniform vec2 u_OutTexel;        // 1 / çıktı çözünürlüğü
 uniform vec2 u_JitterUV;        // bu karenin titreşimi (uv)
 uniform float u_Feedback = 0.92;
+uniform sampler2D u_Reactive;   // parçacık / saydam hareketli nesne maskesi (iç çözünürlükte)
+uniform int u_HasReactive = 0;
 
 vec3 RGBToYCoCg(vec3 c) { return vec3(dot(c, vec3(0.25, 0.5, 0.25)), dot(c, vec3(0.5, 0.0, -0.5)), dot(c, vec3(-0.25, 0.5, -0.25))); }
 vec3 YCoCgToRGB(vec3 c) { return vec3(c.x + c.y - c.z, c.x + c.z, c.x - c.y - c.z); }
@@ -78,6 +80,10 @@ void main()
     vec3 sum = vec3(0.0);
     float wsum = 0.0;
     float wmax = 0.0;
+    vec3 sumN = vec3(0.0);      // dar süzgeç (kamera dururken: biriken ayrıntı keskin)
+    float wsumN = 0.0;
+    float wmaxN = 0.0;
+    bool skyNear = false;       // 3x3'te gökyüzü: siluet kenarı (duvar üstü / gökyüzü)
     vec3 mn = vec3(1e9), mx = vec3(-1e9), m1 = vec3(0.0), m2 = vec3(0.0);
     float closest = 1.0;
     ivec2 closestTex = clamp(base, ivec2(0), inMax);
@@ -89,16 +95,24 @@ void main()
         vec3 c = max(texelFetch(u_Current, t, 0).rgb, vec3(0.0));
         // Uzaklık çıktı pikseli biriminde (iç piksel / ölçek): süzgeç çıktı pikselinde dar kalır, ayrıntı titreşim döngüsünde birikir
         vec2 d = (vec2(t) - inPos) * (u_InTexel / u_OutTexel);
-        float w = exp(-2.29 * dot(d, d));
+        // Hareket ederken Blackman-Harris yaklaşığı (kenarlar her karede yumuşak kalır); dururken dar süzgeç: geniş süzgeç her
+        // örneği komşu çıktı piksellerine yayıp birikmiş yükseltmeyi bulanıklaştırıyordu
+        float w = exp(-2.7 * dot(d, d));
         sum += c * w;
         wsum += w;
         wmax = max(wmax, w);
+        float wn = exp(-3.2 * dot(d, d));
+        sumN += c * wn;
+        wsumN += wn;
+        wmaxN = max(wmaxN, wn);
         vec3 yc = RGBToYCoCg(c);
         mn = min(mn, yc);
         mx = max(mx, yc);
         m1 += yc;
         m2 += yc * yc;
         float dep = texelFetch(u_Depth, t, 0).r;
+        if (dep >= 1.0)
+            skyNear = true;
         if (dep < closest)
         {
             closest = dep;
@@ -130,25 +144,70 @@ void main()
     vec2 prevUV = v_UV - velocity;
     if (u_HistoryValid == 0 || any(lessThan(prevUV, vec2(0.0))) || any(greaterThan(prevUV, vec2(1.0))))
     {
-        FragColor = vec4(current, 1.0);
+        FragColor = vec4(current, 0.0);
         return;
     }
     vec3 history = SampleHistory(prevUV);
+    // Geçmişin alfası durum: 64 x (2 x biriken örnek ağırlığı, 0..31) + 2 x titreme puanı (0..16) + geçmiş geçen karede kutunun dışındaydı
+    vec2 outSize = 1.0 / u_OutTexel;
+    float stateBefore = max(texelFetch(u_History, clamp(ivec2(prevUV * outSize), ivec2(0), ivec2(outSize) - 1), 0).a, 0.0);
+    float accBefore = floor(stateBefore / 64.0 + 1e-3);
+    float lowBefore = stateBefore - 64.0 * accBefore;
+    accBefore *= 0.5;
+    float flickerBefore = floor(lowBefore * 0.5 + 1e-3);
+    bool outsideBefore = lowBefore - 2.0 * flickerBefore > 0.5;
+    bool reactive = false;
+    if (u_HasReactive == 1)
+        reactive = texelFetch(u_Reactive, clamp(base, ivec2(0), inMax), 0).r > 0.02;
     // Varyans kırpması (ortalama ± 1.25 sapma ∩ min / max), kanal kanal
     vec3 mean = m1 / 9.0;
     vec3 sigma = sqrt(max(m2 / 9.0 - mean * mean, vec3(0.0)));
     vec3 lo = max(mean - 1.25 * sigma, mn);
     vec3 hi = min(mean + 1.25 * sigma, mx);
-    history = YCoCgToRGB(clamp(RGBToYCoCg(history), lo, hi));
+    vec3 historyY = RGBToYCoCg(history);
+    // Titreme tutması (TAA'daki gibi): pikselden ince ayrıntı (küplerin arası) titreşimin yalnız bazı karelerinde düşük çözünürlüklü
+    // örneğe denk gelir; geçmiş karede bir kutunun içinde karede bir dışında kalır. Böyle aralıklı sapan piksel kırpılmaz (yürürken
+    // yanıp sönüyordu); bir kez değişen ya da hep dışarıda kalan geçmiş kırpılır
+    bool outsideNow = any(lessThan(historyY, lo - vec3(0.01))) || any(greaterThan(historyY, hi + vec3(0.01)));
+    // Gökyüzüne bakan siluette tutulmaz: kenar kayarken geçmiş tutulunca uzak duvarın üstü basamaklı kalıyordu
+    float flicker = (moving || reactive || skyNear) ? 0.0 : clamp(flickerBefore - 1.0 + ((outsideNow != outsideBefore) ? 6.0 : 0.0), 0.0, 16.0);
+    // Yalnız ince çizgi tutulur: bu karenin 3x3'ü düzgün (ayrıntı bu karede ıskalandı) ya da geçmiş kutunun aralığından çok
+    // dışarıda. İki büyük yüzeyin kenarında (duvarın zemine değdiği yer) 3x3 iki rengi de içerir; orada basamak deseni kayarken
+    // tutulunca kenar basamaklı kalıyordu
+    float rangeY = mx.x - mn.x;
+    float excessY = max(max(lo.x - historyY.x, historyY.x - hi.x), 0.0);
+    bool hold = flicker >= 8.0 && (rangeY < 0.06 || excessY > rangeY);
+    // Kamera duruyorken: geçmiş her karede bu düşük çözünürlüklü 3x3'ün aralığına kırpılınca çıktı çözünürlüğünde biriken ayrıntı
+    // siliniyordu (yükseltme bulanık kalıyordu). Kutu küçük bir payla genişler (büyük değişim, namlu alevi ışığı yine kırpılır)
+    bool settle = u_CameraStill == 1 && !moving && !reactive;
+    if (!hold)
+    {
+        vec3 pad = settle ? vec3(0.06, 0.03, 0.03) : vec3(0.0);
+        history = YCoCgToRGB(clamp(historyY, lo - pad, hi + pad));
+    }
     // Hızlı harekette ve hareket eden nesnede geçmişe daha az güven; çıktı pikselinin yakınında örnek yoksa az güncelleme
     float speed = length(velocity * inSize);
     float feedback = mix(u_Feedback, 0.7, clamp(speed / 16.0, 0.0, 1.0));
-    if (moving)
+    // Dururken: kamera durduğundan beri gelen örneklerin ağırlıklı ortalaması (her örneğin ağırlığı çıktı pikseline yakınlığı,
+    // biriken ağırlık en çok 15.5). Oyun başlarken / durunca geçmiş yarım saniyede bu konumun ortalamasına oturur. Eskiden güncelleme
+    // sabit 0.96 x yakınlıktı: yakınına örnek düşmeyen çıktı pikselleri 2 saniye boyunca yavaşça değişiyordu (küplerin arası başta
+    // açık, bir iki saniye sonra koyu). Hareket ederken geçmiş 4 örnek değerinde sayılır (durunca ilk kare tek titreşimli kareye atlamaz)
+    float acc = 4.0;
+    float alphaSettle = -1.0;
+    if (settle)
+    {
+        current = sumN / max(wsumN, 1e-4);
+        alphaSettle = wmaxN / (min(accBefore, 15.5) + wmaxN);
+        acc = min(accBefore + wmaxN, 15.5);
+    }
+    if (hold)
+        feedback = max(feedback, 0.94);
+    if (moving || reactive)
         feedback = min(feedback, 0.5);
     // Yaklaşırken geçmiş bu kareden düşük çözünürlüklüdür (TAA ile aynı ilke): ağırlık büyütme oranıyla sınırlı
     float magnify = (u_CameraStill == 0 && closest < 1.0 && !objectVelocity) ? max(prevClip.w / curW - 1.0, 0.0) : 0.0;
     if (magnify > 0.0)
         feedback = min(feedback, 0.12 / (0.12 + magnify));
-    float alpha = max((1.0 - feedback) * wmax, 0.02);
-    FragColor = vec4(max(mix(history, current, alpha), vec3(0.0)), 1.0);
+    float alpha = alphaSettle >= 0.0 ? max(alphaSettle, 0.02) : max((1.0 - feedback) * wmax, 0.02);
+    FragColor = vec4(max(mix(history, current, alpha), vec3(0.0)), floor(acc * 2.0) * 64.0 + flicker * 2.0 + (outsideNow ? 1.0 : 0.0));
 }

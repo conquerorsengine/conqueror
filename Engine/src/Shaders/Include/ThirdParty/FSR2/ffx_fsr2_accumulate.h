@@ -85,7 +85,9 @@ void RectifyHistory(
     // samples, so whatever box scale was used, a sub-pixel line missed by the current jitter sample fell outside and was
     // clipped (and the accumulation dropped to 0.1). With zero motion near 1:1 only the variance box is used: in flat areas it
     // stays tight (light changes are still clipped), at thin features it keeps the line in the history
-    const FfxFloat32 fStillNative = fNativeBox * FfxFloat32(params.fHrVelocity < 0.001f);
+    // Moving near 1:1 the cut caused the same loss every frame (sub-pixel gaps blinked while walking): it now fades in with
+    // velocity only (fully back from 20 px / frame), depth clip and the accumulation mask, like the box scale itself
+    const FfxFloat32 fStillNative = fNativeBox * (1.0f - fBoxScaleT);
     boxMin = ffxLerp(ffxMax(clippingBox.aabbMin, boxMin), boxMin, fStillNative);
     boxMax = ffxLerp(ffxMin(clippingBox.aabbMax, boxMax), boxMax, fStillNative);
 

@@ -78,7 +78,7 @@ namespace Conqueror
     {
         for (auto* rt : { &m_HDR[0], &m_HDR[1], &m_SSR, &m_Fog, &m_Clouds, &m_DOFHalf, &m_DOFBlur, &m_History[0], &m_History[1], &m_Adapt[0], &m_Adapt[1],
                           &m_GI, &m_GITemp, &m_GIHistory[0], &m_GIHistory[1], &m_CloudHistory[0], &m_CloudHistory[1], &m_TAAState[0], &m_TAAState[1],
-                          &m_Velocity, &m_TAADebug, &m_Reactive, &m_StabHistory[0], &m_StabHistory[1], &m_StabState[0], &m_StabState[1] })
+                          &m_Velocity, &m_TAADebug, &m_Reactive, &m_StabHistory[0], &m_StabHistory[1], &m_StabState[0], &m_StabState[1], &m_FSR2Reactive })
             DestroyTarget(*rt);
         m_StabValid = false;
         if (m_VelocityFramebuffer)

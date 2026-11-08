@@ -69,6 +69,9 @@ namespace Conqueror
         // Şu an bu görünümün sahne hedefine çiziliyorsa ve tek kare yöntemlerinin zamansal kararlılık katmanı açıksa true
         // (tepki maskesi yazılamadığında, MSAA'da, parçacıklar ekran dikdörtgenlerini bildirir)
         static bool IsStabilityActive();
+        // Şu an bu görünümün sahne hedefine çiziliyorsa ve yükseltici iç çözünürlükte çiziyorsa malzeme dokularının mip sapması
+        // (log2(iç ölçek), eksi); yerel çözünürlükte / süper örneklemede 0
+        static float GetCurrentTextureLodBias();
         // Şu an sahne hedefine çizilen görünüm (Renderer3D hareket maskesi anahtarı)
         static const void* GetCurrentStack();
         // Şu an bu görünümün (çok örneklemesiz) sahne hedefine çiziliyorsa sahne derinliği, değilse 0. Derinlik yazmayan
@@ -173,6 +176,7 @@ namespace Conqueror
         // AMD FSR 2 (Upscaling > FSR 2, Anti-Aliasing > FSR AA): bağlam, tam ekran hareket vektörleri, çıktı ve kamera bilgisi
         std::unique_ptr<FSR2Upscaler> m_FSR2;
         RenderTarget m_MotionVectors;
+        RenderTarget m_FSR2Reactive;    // FSR 2 tepki maskesi: m_Reactive + hareket eden nesnelerin gölge hacimleri (R8)
         RenderTarget m_FSR2Output;
         bool m_UseFSR2 = false;
         // GBAA / SRAA geometri geçişi
