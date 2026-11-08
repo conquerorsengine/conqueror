@@ -937,6 +937,53 @@ namespace Conqueror
 
     namespace
     {
+        // Hareket eden gölge düşürücülerin dünya kutularını (min, max çiftleri) en çok maxBoxes kutuya indirir: her adımda
+        // birleşimi en az hacim ekleyen çift birleşir (aynı nesnenin parçaları, bu ve önceki karedeki yeri). Hepsini tek
+        // kutuda birleştirmek uzaktaki hedeflerle silah arasındaki bütün arenayı "gölge hacmi" yapardı (TAA'daki birleştirmeyle aynı)
+        void MergeShadowBoxes(std::vector<glm::vec4>& minMax, size_t maxBoxes)
+        {
+            if (minMax.size() <= maxBoxes * 2)
+                return;
+            struct Box { glm::vec3 Lo, Hi; };
+            std::vector<Box> boxes;
+            for (size_t i = 0; i + 1 < minMax.size(); i += 2)
+                boxes.push_back({ glm::vec3(minMax[i]), glm::vec3(minMax[i + 1]) });
+            auto volume = [](const glm::vec3& lo, const glm::vec3& hi) {
+                const glm::vec3 d = glm::max(hi - lo, glm::vec3(0.05f));
+                return d.x * d.y * d.z;
+            };
+            while (boxes.size() > maxBoxes)
+            {
+                size_t bestA = 0, bestB = 1;
+                float bestCost = std::numeric_limits<float>::max();
+                for (size_t a = 0; a < boxes.size(); ++a)
+                {
+                    const float va = volume(boxes[a].Lo, boxes[a].Hi);
+                    for (size_t b = a + 1; b < boxes.size(); ++b)
+                    {
+                        const float cost = volume(glm::min(boxes[a].Lo, boxes[b].Lo), glm::max(boxes[a].Hi, boxes[b].Hi))
+                                         - va - volume(boxes[b].Lo, boxes[b].Hi);
+                        if (cost < bestCost)
+                        {
+                            bestCost = cost;
+                            bestA = a;
+                            bestB = b;
+                        }
+                    }
+                }
+                boxes[bestA].Lo = glm::min(boxes[bestA].Lo, boxes[bestB].Lo);
+                boxes[bestA].Hi = glm::max(boxes[bestA].Hi, boxes[bestB].Hi);
+                boxes[bestB] = boxes.back();
+                boxes.pop_back();
+            }
+            minMax.clear();
+            for (const Box& b : boxes)
+            {
+                minMax.push_back(glm::vec4(b.Lo, 0.0f));
+                minMax.push_back(glm::vec4(b.Hi, 0.0f));
+            }
+        }
+
         // Zamansal birikim (TAA geçişi) kullanan yöntemler
         bool UsesTemporalAA(AntiAliasingMode aa)
         {
@@ -1432,6 +1479,19 @@ namespace Conqueror
                 stab->SetInt("u_MovingCount", (int)s_StabRects.size());
                 for (size_t i = 0; i < s_StabRects.size(); ++i)
                     stab->SetFloat4("u_MovingRects[" + std::to_string(i) + "]", s_StabRects[i]);
+            }
+            // Hareket eden nesnelerin gölge hacimleri (dünya kutuları + güneş yönü): gölge duran yüzeyin üstünde kayar, katman
+            // orada kendini kapatır (yoksa gölgenin kenarı beneklenip lekeleniyordu)
+            {
+                static std::vector<glm::vec4> s_StabShadowBoxes;
+                glm::vec3 towardSun(0.0f, 1.0f, 0.0f);
+                if (!Renderer3D::GetMovingShadowBoxes(this, s_StabShadowBoxes, towardSun))
+                    s_StabShadowBoxes.clear();
+                MergeShadowBoxes(s_StabShadowBoxes, 32);
+                stab->SetInt("u_ShadowBoxCount", (int)(s_StabShadowBoxes.size() / 2));
+                stab->SetFloat3("u_TowardSun", towardSun);
+                for (size_t i = 0; i < s_StabShadowBoxes.size(); ++i)
+                    stab->SetFloat4("u_ShadowBoxes[" + std::to_string(i) + "]", s_StabShadowBoxes[i]);
             }
             BindTexture(0, cur);
             BindTexture(1, prevOut.Texture);

@@ -36,6 +36,9 @@ uniform int u_HasVelocity = 0;
 uniform int u_HasReactive = 0;
 uniform vec4 u_MovingRects[32];  // maske yokken (MSAA) hareket eden saydam nesne / parçacık ekran dikdörtgenleri (bu ve önceki kare, uv)
 uniform int u_MovingCount = 0;
+uniform vec4 u_ShadowBoxes[64];  // hareket eden gölge düşürücülerin dünya kutuları (bu + önceki kare): [2i] min, [2i+1] max
+uniform int u_ShadowBoxCount = 0;
+uniform vec3 u_TowardSun = vec3(0.0, 1.0, 0.0);
 uniform int u_HistoryValid = 0;
 uniform int u_CameraStill = 0;
 uniform mat4 u_InvViewProj;
@@ -46,6 +49,25 @@ float ViewW(vec2 uv, float depth)
 {
     vec4 w = u_InvViewProj * vec4(uv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
     return 1.0 / max(abs(w.w), 1e-8);
+}
+
+// Dünya noktası hareket eden bir nesnenin gölge hacminde mi: noktadan güneşe giden ışın kutulardan birine çarpıyor mu
+bool InMovingShadow(vec3 p)
+{
+    vec3 dir = u_TowardSun;
+    dir = mix(dir, vec3(1e-6), lessThan(abs(dir), vec3(1e-6)));
+    vec3 inv = 1.0 / dir;
+    for (int i = 0; i < u_ShadowBoxCount; ++i)
+    {
+        vec3 t1 = (u_ShadowBoxes[2 * i].xyz - p) * inv;
+        vec3 t2 = (u_ShadowBoxes[2 * i + 1].xyz - p) * inv;
+        vec3 tn = min(t1, t2), tf = max(t1, t2);
+        float tNear = max(max(tn.x, tn.y), max(tn.z, 0.0));
+        float tFar = min(min(tf.x, tf.y), tf.z);
+        if (tFar >= tNear)
+            return true;
+    }
+    return false;
 }
 
 // Catmull-Rom (5 çift doğrusal okuma), halka önleme için sonuç 2x2 texel aralığında
@@ -163,6 +185,14 @@ void main()
     {
         vec4 r = u_MovingRects[i];
         reactive = all(greaterThanEqual(v_UV, r.xy - pad)) && all(lessThanEqual(v_UV, r.zw + pad));
+    }
+    // Hareket eden nesnenin gölgesi duran yüzeyin üstünde kayar (yüzey aynı, yalnız ışık değişir): gölge hacmindeki
+    // piksellerde katman kapanır, yoksa gölgenin kenarı beneklenip lekeleniyordu
+    float centerDepth = texelFetch(u_Depth, pix, 0).r;
+    if (!reactive && u_ShadowBoxCount > 0 && centerDepth < 1.0)
+    {
+        vec4 wp = u_InvViewProj * vec4(v_UV * 2.0 - 1.0, centerDepth * 2.0 - 1.0, 1.0);
+        reactive = InMovingShadow(wp.xyz / wp.w);
     }
     // Önceki karede parçacık / saydam hareketli nesne (namlu alevi, mermi izi) bu pikselde ya da hemen yanındaysa geçmiş o
     // nesneyi taşır: nesne kaybolduktan sonraki ilk karede geçmiş kullanılmaz (yoksa alev bir iki kare iz bırakıyordu)
