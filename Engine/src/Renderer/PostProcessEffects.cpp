@@ -164,7 +164,22 @@ namespace Conqueror
                 shader->SetMat4("u_PrevViewProj", m_HasPrevViewProj ? m_PrevViewProj : camera.Projection * camera.View);
                 shader->SetFloat("u_Radius", std::max(settings.SSGIRadius, 0.1f));
                 shader->SetInt("u_Rays", std::clamp(settings.SSGIRays, 1, 16));
-                shader->SetFloat("u_Frame", (float)(m_FrameIndex % 64u));
+                // Işın gürültüsü her karede değişir (TAA birikimi 64 deseni ortalar). TAA olmayan kipte (FXAA, SMAA, MSAA ...)
+                // bu değişim ortalanmıyordu: kamera dururken bile küplerin arası ve köşeler (dolaylı ışığın en etkili olduğu
+                // yerler) kare kare yanıp sönüyordu. Titreşimsiz kipte kamera dururken desen sabit: görüntü kare kare aynı
+                bool cameraStill = m_HasPrevViewProj;
+                {
+                    const glm::mat4 now = camera.Projection * camera.View;
+                    for (int c = 0; c < 4 && cameraStill; ++c)
+                        for (int r = 0; r < 4; ++r)
+                            if (std::abs(now[c][r] - m_PrevViewProj[c][r]) > 1e-6f * std::max(1.0f, std::abs(now[c][r])))
+                            {
+                                cameraStill = false;
+                                break;
+                            }
+                }
+                const bool fixedNoise = !m_JitterActive && cameraStill;
+                shader->SetFloat("u_Frame", fixedNoise ? 0.0f : (float)(m_FrameIndex % 64u));
                 shader->SetFloat("u_Feedback", 0.88f);
                 shader->SetFloat2("u_Texel", texel);
                 glViewport(0, 0, halfW, halfH);
