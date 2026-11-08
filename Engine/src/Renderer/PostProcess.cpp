@@ -1244,6 +1244,9 @@ namespace Conqueror
 
     // TAA hareket keskinliği: kamera hareket ederken TAA keskinleştirmesine eklenen miktar (Sharpen.cqsh, 0..1)
     static constexpr float kTAAMotionSharpen = 0.6f;
+    // NIS keskinliği yükseltme keskinliğinin yarısı: düşük çözünürlüklü görüntüyü büyütürken tam keskinlik basamakları (duvar üstü,
+    // ince ızgara çizgileri) yerel çözünürlükte olmayan merdivenlere çeviriyordu
+    static constexpr float kNISSharpnessScale = 0.5f;
 
     void PostProcessStack::RunFinal(const PostProcessSettings& settings, uint32_t outputFramebuffer, const int outputViewport[4])
     {
@@ -1822,7 +1825,7 @@ namespace Conqueror
                 PostProcess::DrawFullscreenQuad();
                 Renderer::GetStats().PostProcessPasses++;
             }
-            else if (up == UpscalerMode::NIS && Valid(nis) && NISUpscale(cur, outW, outH, upSharp))
+            else if (up == UpscalerMode::NIS && Valid(nis) && NISUpscale(cur, outW, outH, kNISSharpnessScale * upSharp))
             {
                 // NIS çıktısı çıktı boyutunda ara hedefte: çıktıya kopya (keskinleştirmesiz)
                 toOutput();
