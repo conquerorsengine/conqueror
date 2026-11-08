@@ -18,7 +18,7 @@ void main()
 
 layout(location = 0) out vec4 FragColor;
 // Gölge durumu: y = bu pikselin güneş gölgesi (sonraki kare karşılaştırır); x kullanılmıyor
-layout(location = 1) out vec4 StateOut;   // x hareket payı (son geçiş FXAA), y güneş gölgesi, z durgunluk yaşı (kare)
+layout(location = 1) out vec4 StateOut;   // x hareket payı (son geçiş FXAA), y güneş gölgesi + 2 x geçmiş yaşı, z durgunluk yaşı (kare)
 layout(location = 2) out vec4 DebugOut;   // r.TAADebug: pikselin geçmiş yolu (geçmişe yazılmaz, yalnız gösterilir)
 in vec2 v_UV;
 
@@ -263,7 +263,8 @@ void main()
     float shadowNow = u_HasShadowMask == 1 ? texture(u_GShadow, v_UV).r : 1.0;
     // Durum x: hareket payı (0 durağan .. 1 hızlı / geçmişsiz). Son geçiş hızlı kayan kenarlarda kalan merdiveni FXAA ile
     // yumuşatır; durağan görüntüye dokunulmaz
-    StateOut = vec4(1.0, shadowNow, 0.0, 0.0);
+    // Durum y: güneş gölgesi (0..0.99) + 2 x geçmiş yaşı (geçmişteki kare sayısı, 1..16). Geçmişi olmayan piksel: yaş 1
+    StateOut = vec4(1.0, min(shadowNow, 0.99) + 2.0, 0.0, 0.0);
     if (u_HistoryValid == 0)
     {
         FragColor = vec4(Expand(current), outAlpha);
@@ -380,7 +381,8 @@ void main()
     // değiştiyse (gölge geldi / gitti) geçmişin ağırlığı farkla düşer. Gölge gecikmeden yeni yerine geçer, eski yerinde iz
     // kalmaz. Bu hacimlerin dışındaki sabit gölgeler ve ince ayrıntılar (merdiven, küplerin arası) geçmişe güvenmeyi sürdürür.
     vec4 stateBefore = texelFetch(u_State, hn, 0);
-    float shadowBefore = stateBefore.y;
+    float ageBefore = floor(max(stateBefore.y, 0.0) * 0.5 + 1e-3);
+    float shadowBefore = stateBefore.y - 2.0 * ageBefore;
     // Durum w: yerel ortalama parlaklık (0..1) + 2 x büyütme bulanıklığı sayacı (0..8)
     float blurBefore = floor(stateBefore.w * 0.5 + 1e-3);
     float meanBefore = stateBefore.w - 2.0 * blurBefore;
@@ -633,6 +635,24 @@ void main()
     if (magnify > 0.0 && !restart)
         feedback = min(feedback, 0.12 / (0.12 + magnify));
     feedback *= 1.0 - shadowReset;
+    // Geçmiş yaşı (Unreal TSR / FSR 2'deki piksel başına örnek sayısı gibi): geçmişi yeni reddedilen (açılan) pikselde ilk 16
+    // kare eşit ağırlıklı birikim (1/2, 1/3 ... 1/16), hareket ederken de. Duvarın arkasından çıkınca öndeki uzak duvarın yeni
+    // görünen üst ve alt kenarı ilk (basamaklı) karesinden başlıyor, harekette 0.96-0.98 ağırlıkla o kare 30 kare sonra bile
+    // %55 payla kalıyordu: kenar uzun süre merdivenli / dalgalı, ancak durunca (yeniden birikimle) düzeliyordu. Böylece 10-15
+    // karede dururkenki kalitesine oturur
+    if (ageBefore < 16.0)
+        feedback = min(feedback, ageBefore / (ageBefore + 1.0));
+    // Yaş yalnız gerçek açılmada sıfırlanır. Gökyüzü pikselinde geçmişteki yüzey ±2 piksel çevredeki HER yüzeyden açıkça yakın
+    // olmalı (önündeki örtücü çekildi): yürürken baş sallanmasıyla duvar üstü kenarı karede 1-2 piksel oynayınca kenarın 2
+    // piksel üstündeki gökyüzü pikseli de kenarda açılma sayılıyordu (geçmişinde duvarın uzaklığı); yaşı sıfırlanınca 16 kare
+    // düşük ağırlıkla titreşimi izleyip gökyüzünün alt satırında tek karelik koyu düşüşler yapıyordu. Yüzey pikselinde kenarda
+    // açılma testi zaten geçmişin 3x3'teki en yakın yüzeyden de açıkça yakın olmasını ister
+    float nearW = closestDepth < 1.0 ? ViewW(closestUV, closestDepth) : 1e9;
+    for (int k = 4; k < 8; ++k)
+        if (axisDepth[k] < 1.0)
+            nearW = min(nearW, ViewW(v_UV, axisDepth[k]));
+    bool historyOccluder = disoccluded || (edgeDisoccluded && (centerDepth < 1.0 || fpMaxW < nearW * 0.85 - 0.05));
+    float ageNow = historyOccluder ? 1.0 : min(ageBefore + 1.0, 16.0);
     if (u_Variant == 1)
     {
         // TSAA: geçmiş yalnız bir önceki karenin (öteki titreşim konumunun) görüntüsü; bu karenin 3x3 aralığına kırpılıp eşit
@@ -652,7 +672,8 @@ void main()
     vec3 result = mix(RGBToYCoCg(current), history, feedback);
     // Durum x: hareket payı (0..1, TAA + FXAA'da son geçiş FXAA'sı) + 2 x geçmişi reddedilen (yeni açılan / yüzeyi değişen)
     // piksel: TAA'nın orada yalnız bu karesi var, basamaklı kalırdı; son geçiş yalnız bu piksellere FXAA uygular
-    StateOut = vec4(((hold || silhouetteSlow) ? 0.0 : clamp((speed - 0.5) / 4.0, 0.0, 1.0)) + ((disoccluded || edgeDisoccluded) ? 2.0 : 0.0), shadowNow, stillAge + 32.0 * (2.0 * flicker + (outsideNow ? 1.0 : 0.0)), clamp(meanOut, 0.0, 0.999) + 2.0 * blurAge);
+    // Son geçiş FXAA'sı açılan pikselin ilk iki karesinde (geçmiş henüz 1-2 kare: basamak birikimle tam kapanmadı)
+    StateOut = vec4(((hold || silhouetteSlow) ? 0.0 : clamp((speed - 0.5) / 4.0, 0.0, 1.0)) + ((disoccluded || edgeDisoccluded || ageNow <= 2.0) ? 2.0 : 0.0), min(shadowNow, 0.99) + 2.0 * ageNow, stillAge + 32.0 * (2.0 * flicker + (outsideNow ? 1.0 : 0.0)), clamp(meanOut, 0.0, 0.999) + 2.0 * blurAge);
     // Parlaklık sınırı: sonuç bu karenin 3x3'ündeki ve geçmişteki en parlak (sıkıştırılmış) değeri aşamaz. Kırpılan geçmiş
     // RGB'ye dönünce sıkıştırılmış parlaklık 1'e yaklaşabiliyor, Expand onu yüzlerce kat büyütüyordu: tek piksel bloomla beyaz
     // yuvarlak bir lekeye, büyükse bir anlık tüm ekran beyazlığına dönüyordu
