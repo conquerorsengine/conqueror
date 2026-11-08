@@ -6,6 +6,7 @@
 #include <glad/glad.h>
 
 #include <cstdlib>
+#include <cstring>
 
 namespace Conqueror
 {
@@ -20,6 +21,13 @@ namespace Conqueror
     {
         // Mesaj biçim dizesi olarak verilmez ({} içeren GL mesajları fmt istisnası atardı).
         // GL hataları çökme dökümü üretmez: kritik log + dosya diyaloğu motoru dondururdu.
+        // Gölgelendirici derleyicisinin uyarıları (Mesa bunları yüksek önemle bildirir, ör. FSR 2'nin çalışma anında derlenen
+        // geçişlerindeki "used uninitialized") hata değildir: konsolda kırmızı hata olarak görünmesin
+        if (message && std::strstr(message, ": warning:"))
+        {
+            CQ_CORE_WARN("[GL] {0}", message);
+            return;
+        }
         switch (severity)
         {
             case GL_DEBUG_SEVERITY_HIGH:         CQ_CORE_ERROR("[GL] {0}", message); return;

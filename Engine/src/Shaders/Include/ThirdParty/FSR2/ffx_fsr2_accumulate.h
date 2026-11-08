@@ -64,6 +64,10 @@ void RectifyHistory(
     FfxFloat32 fLumaInstabilityFactor)
 {
     FfxFloat32 fScaleFactorInfluence = ffxMin(20.0f, ffxPow(FfxFloat32(1.0f / length(DownscaleFactor().x * DownscaleFactor().y)), 3.0f));
+    // Conqueror Engine change (native AA): the box scale above is 1 (tightest) at 1:1, so sub-pixel lines missed by the current
+    // jitter sample were clipped out of the history every few frames. At ratios near 1:1 the box is widened to 3 while still;
+    // velocity, depth clip and the accumulation mask shrink it back to 1 exactly as before
+    fScaleFactorInfluence = ffxMax(fScaleFactorInfluence, ffxLerp(1.0f, 3.0f, ffxSaturate((DownscaleFactor().x - 0.7f) / 0.3f)));
 
     const FfxFloat32 fVecolityFactor = ffxSaturate(params.fHrVelocity / 20.0f);
     const FfxFloat32 fBoxScaleT = ffxMax(params.fDepthClipFactor, ffxMax(params.fAccumulationMask, fVecolityFactor));
@@ -124,7 +128,12 @@ void FinalizeLockStatus(const AccumulationPassCommonParams params, FfxFloat32x2 
 FfxFloat32x3 ComputeBaseAccumulationWeight(const AccumulationPassCommonParams params, FfxFloat32 fThisFrameReactiveFactor, FfxBoolean bInMotionLastFrame, FfxFloat32 fUpsampledWeight, LockState lockState)
 {
     // Always assume max accumulation was reached
-    FfxFloat32 fBaseAccumulation = fMaxAccumulationLanczosWeight * FfxFloat32(params.bIsExistingSample) * (1.0f - fThisFrameReactiveFactor) * (1.0f - params.fDepthClipFactor);
+    // Conqueror Engine change (native AA): at a 1:1 render/display ratio every output pixel gets a current-frame sample within
+    // half a pixel, its Lanczos weight is ~1, so a history weight of 1 blended 50% of each jittered frame in and the jitter
+    // pattern stayed visible on thin features even with a still camera. The history weight rises to 8 as the ratio approaches
+    // 1:1; upscaling ratios (render <= 70% of display) keep the SDK value. Motion still lowers it below (velocity terms)
+    const FfxFloat32 fNativeT = ffxSaturate((DownscaleFactor().x - 0.7f) / 0.3f);
+    FfxFloat32 fBaseAccumulation = ffxLerp(fMaxAccumulationLanczosWeight, 8.0f, fNativeT) * FfxFloat32(params.bIsExistingSample) * (1.0f - fThisFrameReactiveFactor) * (1.0f - params.fDepthClipFactor);
 
     fBaseAccumulation = ffxMin(fBaseAccumulation, ffxLerp(fBaseAccumulation, fUpsampledWeight * 10.0f, ffxMax(FfxFloat32(bInMotionLastFrame), ffxSaturate(params.fHrVelocity * FfxFloat32(10)))));
 

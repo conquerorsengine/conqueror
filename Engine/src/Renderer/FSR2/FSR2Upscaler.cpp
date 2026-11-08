@@ -80,8 +80,11 @@ namespace Conqueror
                 s.Failed = true;
                 return false;
             }
-            // LDR (ton eşlenmiş) giriş, iç çözünürlükte titreşimsiz hareket vektörleri, standart (ters olmayan) derinlik
-            desc.flags = FFX_FSR2_ENABLE_AUTO_EXPOSURE;
+            // LDR (ton eşlenmiş) giriş, iç çözünürlükte titreşimsiz hareket vektörleri, standart (ters olmayan) derinlik.
+            // Otomatik pozlama kapalı (pozlama 1): giriş zaten ton eşlenmiş. Açıkken FSR 2 ince ayrıntı kilitlerini ve parlaklık
+            // geçmişini kendi ölçtüğü pozlamayla hesaplıyor, dururken bile ince çizgiler / merdiven kenarları 8 karelik titreşim
+            // döngüsüyle yanıp sönüyordu
+            desc.flags = 0;
             desc.maxRenderSize = { p.RenderWidth, p.RenderHeight };
             desc.displaySize = { p.DisplayWidth, p.DisplayHeight };
             desc.device = (FfxDevice)(uintptr_t)1;
