@@ -17,7 +17,8 @@ namespace Conqueror::MtlGL
 
     namespace
     {
-        id<MTLFunction> CompileStage(std::vector<uint32_t> words, bool vertex, uint64_t id, std::string& log)
+        // Parametre adı 'id' olamaz: Objective-C'nin id türünü gölgeliyordu (id<MTLLibrary> derlenmiyordu)
+        id<MTLFunction> CompileStage(std::vector<uint32_t> words, bool vertex, uint64_t programId, std::string& log)
         {
             std::string msl;
             std::string entry = "main0";
@@ -51,7 +52,7 @@ namespace Conqueror::MtlGL
             }
             static const char* s_Dump = std::getenv("CQ_MTLGL_DUMP");
             if (s_Dump && *s_Dump)
-                std::ofstream(std::string(s_Dump) + "/prog" + std::to_string(id) + (vertex ? ".vs.metal" : ".fs.metal")) << msl;
+                std::ofstream(std::string(s_Dump) + "/prog" + std::to_string(programId) + (vertex ? ".vs.metal" : ".fs.metal")) << msl;
             NSError* err = nil;
             MTLCompileOptions* opts = [MTLCompileOptions new];
             id<MTLLibrary> lib = [Core::Get().Device() newLibraryWithSource:[NSString stringWithUTF8String:msl.c_str()] options:opts error:&err];
@@ -94,11 +95,11 @@ namespace Conqueror::MtlGL
         GLEmu::ReflectedProgram rp;
         if (!GLEmu::ReflectProgram(shaders, limits, rp, p.Log))
             return false;
-        const uint64_t id = c.NextProgramId;
-        p.VS = CompileStage(std::move(rp.VertexSpirv), true, id, p.Log);
+        const uint64_t programId = c.NextProgramId;
+        p.VS = CompileStage(std::move(rp.VertexSpirv), true, programId, p.Log);
         if (!p.VS)
             return false;
-        p.PS = CompileStage(std::move(rp.FragmentSpirv), false, id, p.Log);
+        p.PS = CompileStage(std::move(rp.FragmentSpirv), false, programId, p.Log);
         if (!p.PS)
             return false;
 
