@@ -14,6 +14,8 @@ namespace Conqueror::Launcher
     {
     }
 
+    LauncherLayer::~LauncherLayer() = default;
+
     void LauncherLayer::OnAttach()
     {
         CQ_CORE_INFO("LauncherLayer: Initializing...");
