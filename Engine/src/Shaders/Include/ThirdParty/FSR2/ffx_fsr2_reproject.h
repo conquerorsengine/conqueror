@@ -103,7 +103,7 @@ void ComputeReprojectedUVs(const AccumulationPassCommonParams params, FFX_PARAME
     bIsExistingSample = IsUvInside(fReprojectedHrUv);
 }
 
-void ReprojectHistoryColor(const AccumulationPassCommonParams params, FFX_PARAMETER_OUT FfxFloat32x3 fHistoryColor, FFX_PARAMETER_OUT FfxFloat32 fTemporalReactiveFactor, FFX_PARAMETER_OUT FfxBoolean bInMotionLastFrame)
+void ReprojectHistoryColor(const AccumulationPassCommonParams params, FFX_PARAMETER_OUT FfxFloat32x3 fHistoryColor, FFX_PARAMETER_OUT FfxFloat32 fTemporalReactiveFactor, FFX_PARAMETER_OUT FfxBoolean bInMotionLastFrame, FFX_PARAMETER_OUT FfxFloat32 fStillFrames)
 {
     FfxFloat32x4 fHistory = HistorySample(params.fReprojectedHrUv, DisplaySize());
 
@@ -112,7 +112,11 @@ void ReprojectHistoryColor(const AccumulationPassCommonParams params, FFX_PARAME
     fHistoryColor = RGBToYCoCg(fHistoryColor);
 
     //Compute temporal reactivity info
-    fTemporalReactiveFactor = ffxSaturate(abs(fHistory.w));
+    // Conqueror Engine change: the integer part of the history alpha counts the frames since this pixel stopped moving, the
+    // fraction is the temporal reactive factor
+    const FfxFloat32 fEncoded = abs(fHistory.w);
+    fStillFrames = floor(fEncoded);
+    fTemporalReactiveFactor = ffxSaturate(fEncoded - fStillFrames);
     bInMotionLastFrame = (fHistory.w < 0.0f);
 }
 

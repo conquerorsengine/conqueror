@@ -1919,6 +1919,20 @@ namespace Conqueror
         if (m_LastTime >= 0.0f && time - m_LastTime > 0.5f)
             m_HistoryValid = false;   // görünüm bir süre çizilmedi: eski geçmiş güvenilmez
         m_LastTime = time;
+        // Kamera kesmesi (ışınlanma, yeniden doğma): önceki karenin görüntüsünün bu kareyle ilgisi yok, zamansal yöntemler baştan başlar.
+        // FSR 2 eski konumdan kalan ince ayrıntı kilitlerini koruyup dururken bile görüntüyü bozuk bırakıyordu (aralıklar soluk, kenarlar koyu)
+        if (m_HasPrevViewProj && !camera.Orthographic)
+        {
+            const glm::vec4 e = glm::inverse(m_PrevViewProj)[2];
+            if (std::abs(e.w) > 1e-12f && glm::distance(glm::vec3(e) / e.w, camera.Position) > 8.0f)
+            {
+                m_HistoryValid = false;
+                m_FSR2Valid = false;
+                m_TAAUValid = false;
+                m_T2xValid = false;
+                m_StabValid = false;
+            }
+        }
         m_DeltaTime = deltaTime;
         m_Source = GetSceneColorTexture();
         m_AOApplied = false;

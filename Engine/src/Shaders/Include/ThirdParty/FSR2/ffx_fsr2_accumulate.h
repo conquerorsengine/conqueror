@@ -108,11 +108,11 @@ void RectifyHistory(
         const FfxFloat32x3 fAccumulationMin = ffxMin(fAccumulation, FFX_BROADCAST_FLOAT32X3(0.1f));
         // Conqueror Engine change (native AA, moving): every clip dropped the accumulation to 0.1, so in the frames whose jitter
         // missed a sub-pixel gap the gap was clipped and replaced by this frame's sample almost completely: the gaps between the
-        // cubes blinked while walking. Near 1:1 a small excursion (a sub-pixel detail, < 0.04 in YCoCg) keeps the accumulation
+        // cubes blinked while walking. Near 1:1, and while moving at upscaling ratios, a small excursion (a sub-pixel detail, < 0.04 in YCoCg) keeps the accumulation
         // (the history is still clipped, as in TAA); a large one (a tracer or flash that just vanished, a missed disocclusion)
         // still drops it, so new and vanished bright objects are not dimmed or smeared
         const FfxFloat32 fExcursion = length(fHistoryColor - fClampedHistoryColor);
-        const FfxFloat32 fNativeKeep = fNativeBox * (1.0f - ffxMax(params.fDepthClipFactor, params.fAccumulationMask)) * (1.0f - smoothstep(0.04f, 0.12f, fExcursion));
+        const FfxFloat32 fNativeKeep = ffxLerp(ffxSaturate(params.fHrVelocity * 10.0f), 1.0f, ffxSaturate((DownscaleFactor().x - 0.7f) / 0.3f)) * (1.0f - ffxMax(params.fDepthClipFactor, params.fAccumulationMask)) * (1.0f - smoothstep(0.04f, 0.12f, fExcursion));
         fAccumulation = ffxLerp(fAccumulationMin, fAccumulation, ffxSaturate(ffxMax(fHistoryContribution, FFX_BROADCAST_FLOAT32X3(fNativeKeep))));
     }
 }
@@ -141,7 +141,7 @@ void FinalizeLockStatus(const AccumulationPassCommonParams params, FfxFloat32x2 
 }
 
 
-FfxFloat32x3 ComputeBaseAccumulationWeight(const AccumulationPassCommonParams params, FfxFloat32 fThisFrameReactiveFactor, FfxBoolean bInMotionLastFrame, FfxFloat32 fUpsampledWeight, LockState lockState, FfxFloat32 fLumaInstabilityFactor)
+FfxFloat32x3 ComputeBaseAccumulationWeight(const AccumulationPassCommonParams params, FfxFloat32 fThisFrameReactiveFactor, FfxBoolean bInMotionLastFrame, FfxFloat32 fUpsampledWeight, LockState lockState, FfxFloat32 fLumaInstabilityFactor, FfxFloat32 fStillFrames)
 {
     // Always assume max accumulation was reached
     // Conqueror Engine change (native AA): at a 1:1 render/display ratio every output pixel gets a current-frame sample within
@@ -152,17 +152,21 @@ FfxFloat32x3 ComputeBaseAccumulationWeight(const AccumulationPassCommonParams pa
     // With a completely still camera (zero motion) the history weight near 1:1 rises further, to 24, as in a still TAA; a
     // light change still clips the history in RectifyHistory, which then drops the accumulation, so flashes are not dimmed
     const FfxFloat32 fStillT = fNativeT * FfxFloat32(params.fHrVelocity < 0.001f);
-    FfxFloat32 fBaseAccumulation = ffxLerp(ffxLerp(fMaxAccumulationLanczosWeight, 8.0f, fNativeT), 24.0f, fStillT) * FfxFloat32(params.bIsExistingSample) * (1.0f - fThisFrameReactiveFactor) * (1.0f - params.fDepthClipFactor);
+    // Conqueror Engine change (native AA, still camera): a sample weighs about 0.06 here, so a fixed history weight of 24 blends 0.25% of
+    // each frame and the image took 10 seconds to settle after moving (the gaps between the cubes slowly grew darker). The history weight
+    // now follows the samples gathered since the pixel stopped: an average of those frames, 15% of the new frame at most
+    const FfxFloat32 fStillBase = ffxMin(24.0f, fUpsampledWeight * ffxMax(fStillFrames, 5.67f));
+    FfxFloat32 fBaseAccumulation = ffxLerp(ffxLerp(fMaxAccumulationLanczosWeight, 8.0f, fNativeT), fStillBase, fStillT) * FfxFloat32(params.bIsExistingSample) * (1.0f - fThisFrameReactiveFactor) * (1.0f - params.fDepthClipFactor);
 
     fBaseAccumulation = ffxMin(fBaseAccumulation, ffxLerp(fBaseAccumulation, fUpsampledWeight * 10.0f, ffxMax(FfxFloat32(bInMotionLastFrame), ffxSaturate(params.fHrVelocity * FfxFloat32(10)))));
 
     fBaseAccumulation = ffxMin(fBaseAccumulation, ffxLerp(fBaseAccumulation, fUpsampledWeight, ffxSaturate(params.fHrVelocity / FfxFloat32(20))));
 
-    // Conqueror Engine change (native AA): a flickering pixel (luma instability: a sub-pixel detail drawn only in some jitter
-    // frames, its history kept unclipped) accumulates at least 16 frames, like TAA's flicker hold, so the held detail averages
-    // over the whole jitter cycle instead of following each frame
-    const FfxFloat32 fHoldT = ffxSaturate((DownscaleFactor().x - 0.7f) / 0.3f) * fLumaInstabilityFactor * FfxFloat32(params.bIsExistingSample) * (1.0f - params.fDepthClipFactor) * (1.0f - params.fAccumulationMask);
-    fBaseAccumulation = ffxMax(fBaseAccumulation, 16.0f * fHoldT);
+    // Conqueror Engine change: a flickering pixel (luma instability: a sub-pixel detail drawn only in some jitter frames, its history
+    // kept unclipped) keeps a high history weight, like TAA's flicker hold, so the held detail averages over the whole jitter cycle
+    // instead of following each frame (16 near 1:1; 4 at upscaling ratios, where the history is denser, and only while moving)
+    const FfxFloat32 fHoldT = ffxLerp(ffxSaturate(params.fHrVelocity * 10.0f), 1.0f, ffxSaturate((DownscaleFactor().x - 0.7f) / 0.3f)) * fLumaInstabilityFactor * FfxFloat32(params.bIsExistingSample) * (1.0f - params.fDepthClipFactor) * (1.0f - params.fAccumulationMask);
+    fBaseAccumulation = ffxMax(fBaseAccumulation, ffxLerp(4.0f, 16.0f, ffxSaturate((DownscaleFactor().x - 0.7f) / 0.3f)) * fHoldT);
     return fBaseAccumulation.xxx;
 }
 
@@ -209,7 +213,7 @@ FfxFloat32 ComputeLumaInstabilityFactor(const AccumulationPassCommonParams param
         fLumaInstability = FfxFloat32(fMin != abs(fDiffs0)) * fBoxSizeFactor;
         // Conqueror Engine change (native AA): the box size factor above only protects high contrast neighbourhoods, but in the
         // frames whose jitter misses a sub-pixel gap the 3x3 box is flat and the gap was clipped away (blinking while walking).
-        // Near 1:1 a pixel also counts as unstable when at least two of the last four frames differ from this one in the same
+        // Near 1:1 (at upscaling ratios only while moving) a pixel also counts as unstable when at least two of the last four frames differ from this one in the same
         // direction (the detail keeps coming and going) and the change is small (< 0.08: a tracer or muzzle flash that lit the
         // pixel for one frame differs a lot, in one frame only, and is not held)
         FfxInt32 iDiffer = 0;
@@ -217,7 +221,7 @@ FfxFloat32 ComputeLumaInstabilityFactor(const AccumulationPassCommonParams param
             const FfxFloat32 fD = fCurrentFrameLuma - fCurrentFrameLumaHistory[i];
             iDiffer += (sign(fD) == sign(fDiffs0) && abs(fD) > 2.0f * fUnormThreshold) ? 1 : 0;
         }
-        const FfxFloat32 fNativeFlicker = ffxSaturate((DownscaleFactor().x - 0.7f) / 0.3f) * FfxFloat32(fMin != abs(fDiffs0)) * FfxFloat32(iDiffer >= 2) * FfxFloat32(abs(fDiffs0) < 0.08f);
+        const FfxFloat32 fNativeFlicker = ffxLerp(ffxSaturate(params.fHrVelocity * 10.0f), 1.0f, ffxSaturate((DownscaleFactor().x - 0.7f) / 0.3f)) * FfxFloat32(fMin != abs(fDiffs0)) * FfxFloat32(iDiffer >= 2) * FfxFloat32(abs(fDiffs0) < 0.08f);
         fLumaInstability = ffxMax(fLumaInstability, fNativeFlicker);
         fLumaInstability = FfxFloat32(fLumaInstability > fUnormThreshold);
 
@@ -239,10 +243,10 @@ FfxFloat32 ComputeTemporalReactiveFactor(const AccumulationPassCommonParams para
 {
     FfxFloat32 fNewFactor = ffxMin(0.99f, fTemporalReactiveFactor);
 
-    // Conqueror Engine change (native AA): from 1 px / frame of motion every pixel became 0.4 reactive, which cut the history
-    // weight, the lock lifetime and the instability protection of thin details on every moving frame. Near 1:1 the motion term
-    // is off; moving objects and shadows keep their reactive masks and depth clip
-    fNewFactor = ffxMax(fNewFactor, ffxLerp(fNewFactor, ffxLerp(0.4f, 0.0f, ffxSaturate((DownscaleFactor().x - 0.7f) / 0.3f)), ffxSaturate(params.fHrVelocity)));
+    // Conqueror Engine change: from 1 px / frame of motion every pixel became 0.4 reactive, which cut the history weight, the lock
+    // lifetime and the instability protection of thin details on every moving frame. The motion term is off at every ratio; moving
+    // objects and shadows keep their reactive masks and depth clip
+    fNewFactor = ffxMax(fNewFactor, ffxLerp(fNewFactor, 0.0f, ffxSaturate(params.fHrVelocity)));
 
     fNewFactor = ffxMax(fNewFactor * fNewFactor, ffxMax(params.fDepthClipFactor * 0.1f, params.fDilatedReactiveFactor));
 
@@ -294,9 +298,10 @@ void Accumulate(FfxInt32x2 iPxHrPos)
 
     FfxFloat32 fTemporalReactiveFactor = 0.0f;
     FfxBoolean bInMotionLastFrame = FFX_FALSE;
+    FfxFloat32 fStillFrames = 0.0f;
     LockState lockState = { FFX_FALSE , FFX_FALSE };
     if (params.bIsExistingSample && !params.bIsResetFrame) {
-        ReprojectHistoryColor(params, fHistoryColor, fTemporalReactiveFactor, bInMotionLastFrame);
+        ReprojectHistoryColor(params, fHistoryColor, fTemporalReactiveFactor, bInMotionLastFrame, fStillFrames);
         lockState = ReprojectHistoryLockStatus(params, fLockStatus);
     }
 
@@ -313,7 +318,7 @@ void Accumulate(FfxInt32x2 iPxHrPos)
     const FfxFloat32 fLumaInstabilityFactor = ComputeLumaInstabilityFactor(params, clippingBox, fThisFrameReactiveFactor, fLuminanceDiff);
 
 
-    FfxFloat32x3 fAccumulation = ComputeBaseAccumulationWeight(params, fThisFrameReactiveFactor, bInMotionLastFrame, fUpsampledColorAndWeight.w, lockState, fLumaInstabilityFactor);
+    FfxFloat32x3 fAccumulation = ComputeBaseAccumulationWeight(params, fThisFrameReactiveFactor, bInMotionLastFrame, fUpsampledColorAndWeight.w, lockState, fLumaInstabilityFactor, fStillFrames);
 
     if (params.bIsNewSample) {
         fHistoryColor = YCoCgToRGB(fUpsampledColorAndWeight.xyz);
@@ -331,7 +336,9 @@ void Accumulate(FfxInt32x2 iPxHrPos)
     // Get new temporal reactive factor
     fTemporalReactiveFactor = ComputeTemporalReactiveFactor(params, fThisFrameReactiveFactor);
 
-    StoreInternalColorAndWeight(iPxHrPos, FfxFloat32x4(fHistoryColor, fTemporalReactiveFactor));
+    // Conqueror Engine change: alpha = sign (in motion) x (still frames + reactive factor), see ReprojectHistoryColor
+    const FfxFloat32 fStillNow = FfxFloat32(params.fHrVelocity < 0.001f && DownscaleFactor().x > 0.7f) * ffxMin(fStillFrames + 1.0f, 400.0f);
+    StoreInternalColorAndWeight(iPxHrPos, FfxFloat32x4(fHistoryColor, (fTemporalReactiveFactor < 0.0f ? -1.0f : 1.0f) * (ffxMin(abs(fTemporalReactiveFactor), 0.99f) + fStillNow)));
 
     // Output final color when RCAS is disabled
 #if FFX_FSR2_OPTION_APPLY_SHARPENING == 0
