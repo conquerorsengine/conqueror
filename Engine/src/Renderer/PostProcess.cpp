@@ -1880,12 +1880,18 @@ namespace Conqueror
             }
             else if (up == UpscalerMode::NIS && Valid(nis) && NISUpscale(cur, outW, outH, kNISSharpnessScale * upSharp))
             {
-                // NIS çıktısı çıktı boyutunda ara hedefte: çıktıya kopya (keskinleştirmesiz)
+                // NIS çıktısı çıktı boyutunda ara hedefte: çıktıya FXAA ile. NIS'in yön duyarlı büyütmesi iç çözünürlüğün kenarlarını
+                // (duvar üstü) çıktıda 1.5 piksellik basamaklara çeviriyordu; çıktı çözünürlüğündeki FXAA bu basamakları yumuşatır
                 toOutput();
-                sharpen->Bind();
-                sharpen->SetInt("u_ScreenTexture", 0);
-                sharpen->SetFloat2("u_InverseScreenSize", glm::vec2(1.0f / oW, 1.0f / oH));
-                sharpen->SetFloat("u_Amount", 0.0f);
+                const bool fxaaOut = Valid(fxaa);
+                auto& copy = fxaaOut ? fxaa : sharpen;
+                copy->Bind();
+                copy->SetInt("u_ScreenTexture", 0);
+                copy->SetFloat2("u_InverseScreenSize", glm::vec2(1.0f / oW, 1.0f / oH));
+                if (fxaaOut)
+                    copy->SetInt("u_UseMotionMask", 0);
+                else
+                    copy->SetFloat("u_Amount", 0.0f);
                 BindTexture(0, m_Upscale.Texture);
                 PostProcess::DrawFullscreenQuad();
                 Renderer::GetStats().PostProcessPasses++;

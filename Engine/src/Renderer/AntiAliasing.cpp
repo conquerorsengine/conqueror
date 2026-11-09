@@ -62,7 +62,7 @@ namespace Conqueror::AntiAliasing
             { U::None,    "None",    "Native Resolution",                               "Renders at the output resolution (no upscaling).", false },
             { U::FSR1,    "FSR 1",   "AMD FidelityFX Super Resolution 1.0",             "Spatial upscaler: EASU edge-adaptive upscaling plus RCAS sharpening (open source, any GPU).", false },
             { U::CAS,     "CAS",     "AMD FidelityFX Contrast Adaptive Sharpening",     "Spatial upscaler: contrast adaptive sharpening with scaling (open source, any GPU).", false },
-            { U::NIS,     "NIS",     "NVIDIA Image Scaling",                            "Spatial upscaler: 6-tap directional scaling plus adaptive sharpening (open source, any GPU; at most 2x per axis).", false },
+            { U::NIS,     "NIS",     "NVIDIA Image Scaling",                            "Spatial upscaler: 6-tap directional scaling plus adaptive sharpening, then FXAA at output resolution to smooth the stair steps left by upscaling (open source, any GPU; at most 2x per axis).", false },
             { U::TAAU,    "TAAU",    "Temporal Anti-Aliasing Upsampling",               "TAA reconstructs the output resolution from jittered low-resolution frames.", true },
             { U::TSR,     "TSR",     "Temporal Super Resolution (Epic Games)",          "Temporal upscaler: reconstructs the output resolution from history (the Unreal Engine 5 default).", true },
             { U::DLSS,    "DLSS",    "Deep Learning Super Sampling (NVIDIA)",           "AI upscaling on NVIDIA RTX tensor cores.", true },
