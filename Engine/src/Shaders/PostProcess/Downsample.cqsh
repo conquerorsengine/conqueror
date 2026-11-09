@@ -38,7 +38,9 @@ void main()
     vec2 center = dst * u_Scale;                          // kaynak piksel uzayında çıktı pikselinin merkezi
     vec3 sum = vec3(0.0);
     float wsum = 0.0;
-    if (u_Mode == 1)
+    // Kutu süzgeci yalnız tam sayı çarpanda: yöntem değiştiği karede (yükseltici açık FSR AA'dan OGSSAA'ya) iç çözünürlük henüz eski
+    // (%67) oluyor, tam sayıya yuvarlanan çarpan (1) görüntüyü çıktının sol alt 2/3'üne çiziyor, gerisi kenardan uzuyordu
+    if (u_Mode == 1 && all(lessThan(abs(u_Scale - round(u_Scale)), vec2(1e-3))))
     {
         ivec2 k = ivec2(round(u_Scale));
         ivec2 base = ivec2(floor(dst)) * k;
