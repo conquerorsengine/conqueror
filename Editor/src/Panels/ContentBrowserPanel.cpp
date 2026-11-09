@@ -2035,12 +2035,21 @@ namespace Conqueror::Editor
             return;
 
         const std::string ext = ToLower(path.extension().string());
-        if (ext == ".cqmat")
+        if (ext == ".cqmat" || ext == ".cqmatfunc")
         {
             if (!IsReadOnly(path))
                 MaterialEditorUI::OpenGraph(path.string());   // Unreal: malzeme çift tıkla Material Editor'de açılır
             return;
         }
+        // Grafik varlıkları kendi düzenleyicisinde açılır; Inspector'da düzenlenen varlıklar açılınca dosya yöneticisi çıkmaz
+        if (NodeAssetPanel::SchemaForExtension(ext) || ext == ".cqsearch" || ext == ".cqeqs" || ext == UIToolkit::DocumentExtension || ext == UIToolkit::StyleExtension)
+        {
+            if (m_FileOpenCallback)
+                m_FileOpenCallback(path);
+            return;
+        }
+        if (SimpleAssets::ForExtension(ext) || ext == ".cqplayable" || ext == ParticleAssets::Extension || ext == ".cqdatatable" || ext == ".cqcurvetable")
+            return;
         static const char* internal[] = { ".cpp", ".h", ".hpp", ".c", ".cs", ".cqs", ".cqsh", ".glsl", ".cqcont", ".cqscene",
                                           ".lua", ".luaq", ".luau", ".py", ".java", ".txt", ".md", ".json", ".yaml", ".yml", ".ini",
                                           ".cqprefab", ".cqgraph", ".cqmontage", ".cqinputactions", ".cqanim" };
