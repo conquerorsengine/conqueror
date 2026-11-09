@@ -779,8 +779,18 @@ void main()
     // pikselleri dahil: gökyüzünün saklanan uzaklığı uzak düzlemdir). Kenarın titreşimle karede bir yer değiştirmesi ayak izinin
     // yalnız bir kısmını değiştirir, tetiklemez
     float fpMaxW = max(max(abs(a00), abs(a10)), max(abs(a01), abs(a11)));
+    // Gökyüzü pikselinde geçmişteki yüzey ±2 piksel çevredeki HER yüzeyden açıkça yakın olmalı. Geçmişin alfası 3x3'ün en yakın
+    // uzaklığıdır: duvar üstünün 1 piksel üstündeki gökyüzü pikseli de duvarın uzaklığını saklar. Yürürken baş sallanması kenarı
+    // 1 piksel kaydırınca kenarın 2 piksel üstündeki gökyüzü pikseli (3x3'ü tamamen gökyüzü, karşılaştırılan uzaklık uzak düzlem)
+    // açılma sayılıyor, geçmişi atılıp titreşimli tek kare gösteriliyordu: gökyüzünün duvarla birleştiği çizgide tek karelik
+    // koyu / açık titreme (yana yürürken en çok)
+    float nearW = closestDepth < 1.0 ? ViewW(closestUV, closestDepth) : 1e9;
+    for (int k = 4; k < 8; ++k)
+        if (axisDepth[k] < 1.0)
+            nearW = min(nearW, ViewW(v_UV, axisDepth[k]));
     bool edgeDisoccluded = !disoccluded && u_CameraStill == 0 && !hasObjectVelocity && prevClip.w > 0.0
-                           && fpMaxW < prevClip.w * 0.85 - 0.05 && !((movingNow || movedBefore) && !centerExact);
+                           && fpMaxW < prevClip.w * 0.85 - 0.05 && !((movingNow || movedBefore) && !centerExact)
+                           && (centerDepth < 1.0 || fpMaxW < nearW * 0.85 - 0.05);
     if (edgeDisoccluded)
     {
         history = clamp(rawHistory, nmin, nmax);
@@ -801,16 +811,8 @@ void main()
     // karede dururkenki kalitesine oturur
     if (ageBefore < 16.0)
         feedback = min(feedback, ageBefore / (ageBefore + 1.0));
-    // Yaş yalnız gerçek açılmada sıfırlanır. Gökyüzü pikselinde geçmişteki yüzey ±2 piksel çevredeki HER yüzeyden açıkça yakın
-    // olmalı (önündeki örtücü çekildi): yürürken baş sallanmasıyla duvar üstü kenarı karede 1-2 piksel oynayınca kenarın 2
-    // piksel üstündeki gökyüzü pikseli de kenarda açılma sayılıyordu (geçmişinde duvarın uzaklığı); yaşı sıfırlanınca 16 kare
-    // düşük ağırlıkla titreşimi izleyip gökyüzünün alt satırında tek karelik koyu düşüşler yapıyordu. Yüzey pikselinde kenarda
-    // açılma testi zaten geçmişin 3x3'teki en yakın yüzeyden de açıkça yakın olmasını ister
-    float nearW = closestDepth < 1.0 ? ViewW(closestUV, closestDepth) : 1e9;
-    for (int k = 4; k < 8; ++k)
-        if (axisDepth[k] < 1.0)
-            nearW = min(nearW, ViewW(v_UV, axisDepth[k]));
-    bool historyOccluder = disoccluded || (edgeDisoccluded && (centerDepth < 1.0 || fpMaxW < nearW * 0.85 - 0.05));
+    // Yaş yalnız gerçek açılmada sıfırlanır (gökyüzü pikselinde yukarıdaki ±2 piksel koşulu kenarda açılmanın içinde)
+    bool historyOccluder = disoccluded || edgeDisoccluded;
     float ageNow = historyOccluder ? 1.0 : min(ageBefore + 1.0, 16.0);
     // Titreme tutması TSAA / TSSAA'da da: pikselden ince ayrıntı (küplerin arası, uzak basamak) titreşimin yalnız bazı karelerinde
     // çizilir; kısa birikim ve standart kırpma onu ıskalanan karelerde silip yürürken yanıp söndürüyor, dururken bile aralığı
