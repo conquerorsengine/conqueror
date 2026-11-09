@@ -1707,6 +1707,12 @@ namespace Conqueror
                                             m_TAAUHistory[m_TAAUIndex].Height == outH) ? 1 : 0);
             taau->SetInt("u_CameraStill", m_CameraStill ? 1 : 0);
             taau->SetMat4("u_InvViewProj", m_FinalInvViewProj);
+            {
+                // Bu ve önceki karenin göz noktası (kırpma uzayında (0, 0, k, 0)): yüzeye bakış yönünün karede ne kadar döndüğü için
+                const auto eyeOf = [](const glm::vec4& e) { return std::abs(e.w) > 1e-12f ? glm::vec3(e) / e.w : glm::vec3(0.0f); };
+                taau->SetFloat3("u_CameraPos", eyeOf(m_FinalInvViewProj[2]));
+                taau->SetFloat3("u_PrevCameraPos", eyeOf(glm::inverse(m_PrevViewProj)[2]));
+            }
             taau->SetMat4("u_PrevViewProj", m_PrevViewProj);
             taau->SetFloat2("u_InTexel", invSize);
             taau->SetFloat2("u_OutTexel", glm::vec2(1.0f / (float)outW, 1.0f / (float)outH));

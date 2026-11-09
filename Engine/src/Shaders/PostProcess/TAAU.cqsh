@@ -36,6 +36,8 @@ uniform vec2 u_OutTexel;        // 1 / çıktı çözünürlüğü
 uniform vec2 u_JitterUV;        // bu karenin titreşimi (uv)
 uniform float u_Feedback = 0.92;
 uniform sampler2D u_Reactive;   // parçacık / saydam hareketli nesne maskesi (iç çözünürlükte)
+uniform vec3 u_CameraPos;      // kameranın bu ve önceki karedeki konumu (dünya)
+uniform vec3 u_PrevCameraPos;
 uniform int u_HasReactive = 0;
 
 vec3 RGBToYCoCg(vec3 c) { return vec3(dot(c, vec3(0.25, 0.5, 0.25)), dot(c, vec3(0.5, 0.0, -0.5)), dot(c, vec3(-0.25, 0.5, -0.25))); }
@@ -128,6 +130,8 @@ void main()
     float curW = 1.0 / max(abs(world.w), 1e-8);   // görüş uzaklığı
     world /= world.w;
     vec4 prevClip = u_PrevViewProj * world;
+    // Bakış yönü dönüşü (radyan / kare): kamera bir nesnenin etrafında dönerken yüzler döner, geçmişe güvenen yollar kapanır (TAA ile aynı)
+    float viewTurn = (closest < 1.0 && u_CameraStill == 0) ? length(cross(normalize(world.xyz - u_CameraPos), normalize(world.xyz - u_PrevCameraPos))) : 0.0;
     vec2 velocity = (closestUV - u_JitterUV) - (prevClip.xy / prevClip.w * 0.5 + 0.5);
     if (u_CameraStill == 1 || prevClip.w <= 0.0)
         velocity = vec2(0.0);
@@ -176,14 +180,18 @@ void main()
     // tutulunca kenar basamaklı kalıyordu
     float rangeY = mx.x - mn.x;
     float excessY = max(max(lo.x - historyY.x, historyY.x - hi.x), 0.0);
-    bool hold = flicker >= 8.0 && (rangeY < 0.06 || excessY > rangeY);
+    bool hold = flicker >= 8.0 && (rangeY < 0.06 || excessY > rangeY) && viewTurn < 0.008;
+    // Yavaş kayan güvenilir yüzey (ileri geri yürürken küplerin arası, TAA'daki güvenilir yol): kırpma kutusu geniş, geçmişin ağırlığı
+    // yüksek; dar kutu ıskalanan karelerde ince aralığı kırpıp geri yürürken yanıp söndürüyordu
+    float speedPx = length(velocity * inSize);
+    float slowTrust = (moving || reactive || objectVelocity || u_CameraStill == 1) ? 0.0 : (1.0 - smoothstep(1.5, 3.0, speedPx)) * (1.0 - smoothstep(0.003, 0.006, viewTurn));
     // Kamera duruyorken: geçmiş her karede bu düşük çözünürlüklü 3x3'ün aralığına kırpılınca çıktı çözünürlüğünde biriken ayrıntı
     // siliniyordu (yükseltme bulanık kalıyordu). Kutu küçük bir payla genişler (büyük değişim, namlu alevi ışığı yine kırpılır)
     bool settle = u_CameraStill == 1 && !moving && !reactive;
     if (!hold)
     {
         vec3 pad = settle ? vec3(0.06, 0.03, 0.03) : vec3(0.0);
-        history = YCoCgToRGB(clamp(historyY, lo - pad, hi + pad));
+        history = YCoCgToRGB(clamp(historyY, mix(lo - pad, mean - 2.5 * sigma, slowTrust), mix(hi + pad, mean + 2.5 * sigma, slowTrust)));
     }
     // Hızlı harekette ve hareket eden nesnede geçmişe daha az güven; çıktı pikselinin yakınında örnek yoksa az güncelleme
     float speed = length(velocity * inSize);
@@ -202,6 +210,7 @@ void main()
     }
     if (hold)
         feedback = max(feedback, 0.94);
+    feedback = mix(feedback, max(feedback, 0.96), slowTrust);
     if (moving || reactive)
         feedback = min(feedback, 0.5);
     // Yaklaşırken geçmiş bu kareden düşük çözünürlüklüdür (TAA ile aynı ilke): ağırlık büyütme oranıyla sınırlı
