@@ -29,6 +29,7 @@
 #include "Renderer/Utilities/Renderer3D/Material.h"
 #include "ContentBrowserPanel.h"
 #include "NodeAssetPanel.h"
+#include "Assets/AssetPreview.h"
 #include "UI/UIToolkit.h"
 #include "Particles/ParticleSystem.h"
 #include "AISystem/EQS/EnvQuery.h"
@@ -339,6 +340,8 @@ namespace Conqueror::Editor
 
     std::shared_ptr<Texture2D> ContentBrowserPanel::GetThumbnail(const Entry& entry)
     {
+        if (AssetPreview::CanPreview(entry.Path))
+            return AssetPreview::Get(entry.Path);
         if (!IsImage(entry.Extension) || entry.Size > 64ull * 1024 * 1024)
             return nullptr;
 

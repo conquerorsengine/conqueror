@@ -1,5 +1,6 @@
 #include "ObjectPicker.h"
 #include "NodeAssetPanel.h"
+#include "Assets/AssetPreview.h"
 #include "Core/Assets/SimpleAsset.h"
 
 #include "ContentBrowserPanel.h"
@@ -98,6 +99,8 @@ namespace Conqueror::Editor::ObjectPicker
 
         std::shared_ptr<Texture2D> Thumb(const std::string& path)
         {
+            if (AssetPreview::CanPreview(path))
+                return AssetPreview::Get(path);
             auto it = s_Thumbs.find(path);
             if (it != s_Thumbs.end())
                 return it->second;
