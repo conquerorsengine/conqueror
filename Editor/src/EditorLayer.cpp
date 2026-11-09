@@ -950,6 +950,16 @@ namespace Conqueror::Editor
         SyncPanelContexts();
         TrackCreatedEntities();
         FeedGameInput();
+        // Kaydedilmemiş değişiklik temeli: sahne ya da yolu değişince (açma, yeni proje) birkaç kare sonra alınır
+        if (m_EditorScene.get() != m_BaselineScene || m_CurrentScenePath != m_BaselinePath)
+        {
+            m_BaselineScene = m_EditorScene.get();
+            m_BaselinePath = m_CurrentScenePath;
+            m_SceneBaseline.clear();
+            m_SceneBaselineDelay = 3;
+        }
+        if (m_SceneBaselineDelay > 0 && --m_SceneBaselineDelay == 0)
+            CaptureSceneBaseline();
         // Project Settings > Editor > Auto Save: kayıtlı ve değişmiş sahneyi belirli aralıkla kaydet
         if (const int minutes = ProjectSettings::Editor().AutoSaveMinutes; minutes > 0 && EditorState::Get().IsEditing() && !Automation::IsActive())
         {
@@ -2831,6 +2841,7 @@ namespace Conqueror::Editor
             }
             
             serializer.Serialize(m_CurrentScenePath);
+            CaptureSceneBaseline();
             RemoveRecoverySnapshot(m_CurrentScenePath);
             m_AutoSaveTimer = 0.0f;
             CQ_CORE_INFO("Scene saved: {0}", m_CurrentScenePath.string());
@@ -2913,23 +2924,11 @@ namespace Conqueror::Editor
         return true;
     }
 
-    bool EditorLayer::HasUnsavedChanges()
+    namespace
     {
-        if (!m_EditorScene)
-            return false;
-        // Adsız sahne: yalnızca kullanıcı bir şey düzenlediyse
-        if (m_CurrentScenePath.empty())
-            return UndoRedoManager::Get().CanUndo();
-        std::error_code ec;
-        if (!std::filesystem::exists(m_CurrentScenePath, ec))
-            return true;
-        const auto projectDir = Project::GetActiveProjectDirectory();
-        const std::filesystem::path probe = (projectDir.empty() ? std::filesystem::temp_directory_path(ec) : projectDir / "Library") / ".unsaved_check.cqscene";
-        std::filesystem::create_directories(probe.parent_path(), ec);
-        // Oyun modunda da düzenleyici sahnesi karşılaştırılır (oyun kopyası değil)
-        SceneSerializer serializer(m_EditorScene);
-        serializer.Serialize(probe);
-        auto normalized = [](const std::filesystem::path& p) {
+        // Sahne dosyasının karşılaştırılacak metni: sahne görünümü kamerası atlanır, Hierarchy çiftleri ebeveyne göre sıralanır
+        std::string NormalizeSceneFile(const std::filesystem::path& p)
+        {
             std::ifstream f(p, std::ios::binary);
             std::string out, line;
             bool skipping = false, hierarchy = false;
@@ -2972,10 +2971,49 @@ namespace Conqueror::Editor
             if (hierarchy)
                 flushPairs();
             return out;
-        };
-        const bool changed = normalized(probe) != normalized(m_CurrentScenePath);
+        }
+    }
+
+    std::string EditorLayer::NormalizedSceneText()
+    {
+        std::error_code ec;
+        const auto projectDir = Project::GetActiveProjectDirectory();
+        const std::filesystem::path probe = (projectDir.empty() ? std::filesystem::temp_directory_path(ec) : projectDir / "Library") / ".unsaved_check.cqscene";
+        std::filesystem::create_directories(probe.parent_path(), ec);
+        // Oyun modunda da düzenleyici sahnesi karşılaştırılır (oyun kopyası değil)
+        SceneSerializer serializer(m_EditorScene);
+        serializer.Serialize(probe);
+        std::string text = NormalizeSceneFile(probe);
         std::filesystem::remove(probe, ec);
-        return changed;
+        return text;
+    }
+
+    void EditorLayer::CaptureSceneBaseline()
+    {
+        m_BaselineScene = m_EditorScene.get();
+        m_BaselinePath = m_CurrentScenePath;
+        m_SceneBaselineDelay = 0;
+        m_SceneBaseline = (m_EditorScene && !m_CurrentScenePath.empty()) ? NormalizedSceneText() : std::string();
+    }
+
+    bool EditorLayer::HasUnsavedChanges()
+    {
+        if (!m_EditorScene)
+            return false;
+        // Adsız sahne: yalnızca kullanıcı bir şey düzenlediyse
+        if (m_CurrentScenePath.empty())
+            return UndoRedoManager::Get().CanUndo();
+        std::error_code ec;
+        if (!std::filesystem::exists(m_CurrentScenePath, ec))
+            return true;
+        // Sahne yeni açıldı: temel birkaç kare içinde alınacak, bu arada düzenleme olamaz
+        if (m_SceneBaselineDelay > 0)
+            return false;
+        // Karşılaştırma açılıştaki / son kayıttaki sahneyle yapılır, diskteki dosyayla değil: eski sürümün yazdığı dosyada olmayan
+        // yeni alanlar, otomatik taşınan eski bileşenler (Model -> Mesh Renderer) ve betik alanlarının farklı sırası hiçbir şey
+        // değiştirilmese de fark çıkarıyor, çıkarken "Don't Save" sorusu geliyordu
+        const std::string now = NormalizedSceneText();
+        return now != (m_SceneBaseline.empty() ? NormalizeSceneFile(m_CurrentScenePath) : m_SceneBaseline);
     }
 
     void EditorLayer::RequestNewScene()
@@ -3342,6 +3380,9 @@ namespace Conqueror::Editor
                 {
                     m_ActiveScene = scene;
                     m_EditorScene = scene;
+                    // Geri yüklenen kopya kaydedilmemiş sayılır: temel, dosyadan açılan sahneninki olarak kalır
+                    m_BaselineScene = scene.get();
+                    m_SceneBaselineDelay = 0;
                     EditorState::Get().ClearSelection();
                     RefreshAllPanels();
                     SelectEntityEverywhere({});
@@ -3411,6 +3452,7 @@ namespace Conqueror::Editor
             }
             
             serializer.Serialize(m_CurrentScenePath);
+            CaptureSceneBaseline();
             WriteThumbnail();
             
             CQ_CORE_INFO("Scene saved as: {0}", outPath);

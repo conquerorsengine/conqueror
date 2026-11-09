@@ -117,6 +117,8 @@ namespace Conqueror::Editor
         void DrawRecoveryPopup();
         // Kaydedilmemiş değişiklikler: kapatma / yeni sahne / başka sahne açma öncesi sor
         bool HasUnsavedChanges();
+        std::string NormalizedSceneText();     // düzenleyici sahnesinin karşılaştırmalık metni
+        void CaptureSceneBaseline();           // kaydedilmemiş değişiklik karşılaştırmasının temeli (açılış / son kayıt)
         bool SaveStreamedLevel(Entity root);
         void RequestNewScene();
         void RequestOpenScene(const std::filesystem::path& path);
@@ -220,6 +222,10 @@ namespace Conqueror::Editor
 
         // Scene file path
         std::filesystem::path m_CurrentScenePath;
+        std::string m_SceneBaseline;           // açılıştaki / son kayıttaki sahne metni
+        const void* m_BaselineScene = nullptr; // temelin ait olduğu sahne ve yol: değişince temel yeniden alınır
+        std::filesystem::path m_BaselinePath;
+        int m_SceneBaselineDelay = 0;          // sahne açıldıktan sonra temel alınana kadar kalan kare
 
         // New Project Popup state
         bool m_ShowNewProjectPopup = false;
