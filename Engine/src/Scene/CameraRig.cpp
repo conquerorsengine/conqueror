@@ -318,6 +318,21 @@ namespace Conqueror
                 }
                 brain.HasPose = true;
             }
+
+            // Camera Brain yoksa: darbeler birincil kameranın konumuna eklenir (Camera Shake varlıkları düz kamerada da çalışır)
+            static std::unordered_map<const Scene*, glm::vec3> s_PlainShake;
+            if (reg.view<CameraBrainComponent>().empty())
+            {
+                if (Entity cam = scene.GetPrimaryCameraEntity())
+                {
+                    auto& tc = cam.GetComponent<TransformComponent>();
+                    glm::vec3& last = s_PlainShake[&scene];
+                    tc.Position -= last;
+                    const glm::vec3 shake = ImpulseDisplacement(scene, glm::vec3(tc.WorldTransform[3]), 1.0f);
+                    tc.Position += shake;
+                    last = shake;
+                }
+            }
         }
     }
 

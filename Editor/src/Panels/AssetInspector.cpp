@@ -2,6 +2,8 @@
 #include "NodeAssetPanel.h"
 #include "Assets/SimpleAssetInspector.h"
 #include "Assets/PlayableAssetInspector.h"
+#include "Assets/CsvGridInspector.h"
+#include "Scripting/TestRunner.h"
 #include "InspectorPanel.h"
 #include "Assets/SceneTemplate.h"
 #include "Assets/AssetUI.h"
@@ -703,6 +705,29 @@ namespace Conqueror::Editor::AssetInspector
         if (ModelInspector::IsModel(path))
         {
             ModelInspector::Draw(path);
+            return;
+        }
+        if (Lower(fs::path(path).extension().string()) == ".cqs" && Scripting::TestRunner::IsEditorUtility(path))
+        {
+            ImGui::TextColored(UI::Colors::Accent, ICON_FA_WAND_MAGIC_SPARKLES);
+            ImGui::SameLine();
+            ImGui::TextUnformatted(fs::path(path).filename().string().c_str());
+            ImGui::SameLine();
+            ImGui::TextDisabled("Editor Utility");
+            ImGui::Separator();
+            static std::string s_UtilityError;
+            if (UI::ButtonFullWidth(ICON_FA_PLAY "  Run", 28.0f) && InspectorPanel::s_SharedScene)
+            {
+                s_UtilityError.clear();
+                Scripting::TestRunner::RunEditorUtility(path, InspectorPanel::s_SharedScene().get(), &s_UtilityError);
+            }
+            if (!s_UtilityError.empty())
+                UI::InfoBox(s_UtilityError.c_str(), UI::InfoType::Error);
+            ImGui::Spacing();
+        }
+        if (CsvGridInspector::IsGrid(path))
+        {
+            CsvGridInspector::Draw(path);
             return;
         }
         if (PlayableAssetInspector::IsPlayable(path))

@@ -6,6 +6,7 @@
 #include "UI/UIToolkit.h"
 #include "Scene/AudioOcclusion.h"
 #include "AISystem/BehaviorTree/BehaviorTreeAsset.h"
+#include "Scene/AssetRuntime.h"
 
 // Create menüsündeki varlık türlerinin betik çağrıları
 namespace Conqueror::CQS
@@ -18,6 +19,7 @@ namespace Conqueror::CQS
         Scripting::TestRunner::RegisterNatives(vm);
         UIToolkit::RegisterNatives(vm);
         BehaviorTrees::RegisterNatives(vm);
+        AssetRuntime::RegisterNatives(vm);
         // Ses varlıkları
         vm->DefineNative("SoundMixPush", [](int argc, Value* args) -> Value {
             return Value::MakeBool(argc > 0 && args[0].IsString() && SoundMixes::Push(args[0].AsString()->Value));

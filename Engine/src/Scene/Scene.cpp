@@ -1,5 +1,6 @@
 #include "Core/Audio/AudioRandomContainer.h"
 #include "AISystem/BehaviorTree/BehaviorTreeAsset.h"
+#include "Scene/AssetRuntime.h"
 #include "Core/Audio/SoundCue.h"
 #include "Renderer/ShaderVariantCollection.h"
 #include "Renderer/CustomRenderTexture.h"
@@ -223,6 +224,7 @@ namespace Conqueror
             SoundCues::Reset();
             SoundMixes::Clear();
             Dialogue::Clear();
+            AssetRuntime::Reset();
             ShaderVariantCollections::ResetPreloaded();
             ShaderVariantCollections::WarmUpPreloaded();
         }
@@ -1286,6 +1288,7 @@ namespace Conqueror
             CQ_PROFILE_SAMPLE("AI.NavMeshAgents", AI);
             NavAgents::Update(*this, (float)ts);
             BehaviorTrees::Update(*this, (float)ts);
+            AssetRuntime::Update(*this, (float)ts);
         }
 
         // Video oynatıcılar (kare çözme + hedef dokular)

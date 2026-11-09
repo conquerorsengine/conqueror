@@ -46,4 +46,7 @@ namespace Conqueror::Scripting::TestRunner
     // "Test Script" şablonu
     CQ_API std::string NewScriptTemplate(const std::string& className);
     void RegisterNatives(NativeRegistry* vm);
+    // Editor Utility betiği: Run metodu düzenleyici sahnesinde çalışır
+    CQ_API bool RunEditorUtility(const std::string& script, Scene* scene, std::string* error = nullptr);
+    CQ_API bool IsEditorUtility(const std::string& script);
 }

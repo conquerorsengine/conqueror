@@ -142,6 +142,36 @@ namespace Conqueror::SimpleAssets
             "A saved Content Browser search: double-click it to run it again.",
             { T("Query", "", "The text typed in the Content Browser search box.") });
 
+        // Medya
+        add("MediaSource", ".cqmediasource", "Media Source", "Media", "", ICON_FA_FILM, Rgb(200, 120, 255),
+            "A video to play. Assign it to a Video Player's Source, or list it in a Media Playlist.",
+            { A("File", { ".avi", ".gif", ".mp4", ".mkv", ".mov", ".webm" }, "The video file.") });
+        add("MediaPlaylist", ".cqmediaplaylist", "Media Playlist", "Media", "", ICON_FA_LIST, Rgb(200, 120, 255),
+            "Videos played one after another.",
+            { Tab("Items", { ColA("Source", { ".cqmediasource", ".avi", ".gif", ".mp4", ".mkv", ".mov", ".webm" }) }) });
+        add("MediaPlayer", ".cqmediaplayer", "Media Player", "Media", "", ICON_FA_CIRCLE_PLAY, Rgb(200, 120, 255),
+            "A playlist with playback options. Assign it to a Video Player's Source.",
+            { A("Playlist", { ".cqmediaplaylist" }), B("Loop", false, "Start the playlist again after the last item."), B("Shuffle", false, "Random order."),
+              F("Rate", 1.0f, "Playback speed.", 0.1f, 4.0f) });
+
+        // Oyun (Unreal Misc)
+        add("CameraShake", ".cqcamerashake", "Camera Shake", "Miscellaneous", "", ICON_FA_CAMERA, Rgb(170, 190, 220),
+            "A reusable camera shake. Scripts call CameraShakePlay(path, scale).",
+            { F("Amplitude", 1.0f, "Meters of positional shake."), F("Frequency", 12.0f, "Hz."), F("Duration", 0.4f, "Seconds."), F("Radius", 1000.0f, "Cameras farther away feel nothing.") });
+        add("ForceFeedback", ".cqforcefeedback", "Force Feedback Effect", "Miscellaneous", "", ICON_FA_GAMEPAD, Rgb(170, 190, 220),
+            "Gamepad vibration over time. Scripts call ForceFeedbackPlay(path).",
+            { B("Looping", false), Tab("Keys", { ColF("Time"), ColF("Left", "0.5"), ColF("Right", "0.5") }, "Motor strengths at each time; values between keys are interpolated.") });
+        add("TouchInterface", ".cqtouchinterface", "Touch Interface Setup", "Miscellaneous", "", ICON_FA_HAND_POINTER, Rgb(170, 190, 220),
+            "On-screen touch controls that drive the gamepad input. Scripts call TouchInterfaceActivate(path).",
+            { Tab("Controls", { Col("Name", "Move"), ColE("Type", { "Joystick", "Button" }), ColF("X", "0.15"), ColF("Y", "0.2"), ColF("Radius", "0.12"),
+                                ColE("Control", { "Left Stick", "Right Stick", "A", "B", "X", "Y", "Left Bumper", "Right Bumper", "Back", "Start" }) },
+                  "X and Y are fractions of the screen, measured from the lower left; Radius is a fraction of the screen height.") });
+
+        // Paper2D
+        add("Flipbook", ".cqflipbook", "Flipbook", "2D", "", ICON_FA_FILM, Rgb(120, 200, 255),
+            "A sprite animation. Add a Flipbook Player next to a Sprite Renderer to play it.",
+            { F("Frames Per Second", 12.0f), B("Loop", true), Tab("Frames", { ColA("Sprite", { ".png", ".jpg", ".jpeg", ".tga", ".bmp" }), ColF("Hold", "1") }, "Hold is how many frames this sprite stays.") });
+
         // Yapay zekâ
         add("Blackboard", ".cqblackboard", "Blackboard", "AI", "", ICON_FA_DATABASE, Rgb(120, 180, 255),
             "The memory of a Behavior Tree: named values shared by its tasks and decorators. Scripts use BlackboardSet / BlackboardGet.",

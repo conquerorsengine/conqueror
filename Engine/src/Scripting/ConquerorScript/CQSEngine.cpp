@@ -1,4 +1,8 @@
 #include "CQSEngine.h"
+#include <regex>
+#include <unordered_set>
+#include <filesystem>
+#include "Core/Project/Project.h"
 #include "CQSCompiler.h"
 #include "CQSLexer.h"
 #include "CQSParser.h"
@@ -128,6 +132,36 @@ namespace Conqueror::CQS
         CQ_CORE_ERROR("[Script] {0}", message);
     }
 
+    namespace
+    {
+        void LoadUsedLibraries(const std::string& source, const std::string& self, std::string* error)
+        {
+            static const std::regex kUsing(R"((^|\n)\s*using\s+([A-Za-z_]\w*)\s*;)");
+            static std::unordered_set<std::string> loading;
+            const auto assets = Project::GetAssetDirectory();
+            if (assets.empty())
+                return;
+            for (std::sregex_iterator m(source.begin(), source.end(), kUsing), end; m != end; ++m)
+            {
+                const std::string name = (*m)[2].str();
+                if (name == "nativebridge" || name == "System" || loading.count(name))
+                    continue;
+                std::error_code ec;
+                for (std::filesystem::recursive_directory_iterator it(assets, std::filesystem::directory_options::skip_permission_denied, ec), done; it != done; it.increment(ec))
+                {
+                    if (ec)
+                        break;
+                    if (it->path().stem().string() != name || it->path().extension() != ".cqs" || it->path().string() == self)
+                        continue;
+                    loading.insert(name);
+                    CQSEngine::LoadScript(it->path().string(), error);
+                    loading.erase(name);
+                    break;
+                }
+            }
+        }
+    }
+
     bool CQSEngine::LoadScript(const std::string& path, std::string* error)
     {
         if (!s_VM)
@@ -145,6 +179,9 @@ namespace Conqueror::CQS
         auto it = s_LoadedHashes.find(path);
         if (it != s_LoadedHashes.end() && it->second == hash)
             return true;
+
+        // "using Ad;": projedeki Ad.cqs önce yüklenir (Library / Enum / Struct betikleri)
+        LoadUsedLibraries(source, path, error);
 
         std::vector<std::string> errors;
         CQSFunctionObject* fn = s_VM->Compile(source, path, errors);

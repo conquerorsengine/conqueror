@@ -335,6 +335,44 @@ namespace Conqueror::Scripting::TestRunner
                "}\n";
     }
 
+    bool IsEditorUtility(const std::string& script)
+    {
+        std::ifstream in(script, std::ios::binary);
+        std::string line;
+        while (std::getline(in, line))
+            if (line.find(": EditorUtility") != std::string::npos || line.find(":EditorUtility") != std::string::npos)
+                return true;
+        return false;
+    }
+
+    bool RunEditorUtility(const std::string& script, Scene* scene, std::string* error)
+    {
+        auto* runtime = ScriptRuntimes::ForPath(script);
+        if (!runtime || !runtime->IsAvailable())
+        {
+            if (error) *error = "No runtime for this script.";
+            return false;
+        }
+        if (!runtime->LoadScript(script, error))
+            return false;
+        Scene* previous = ScriptContext::GetActiveScene();
+        ScriptContext::SetActiveScene(scene);
+        bool ok = false;
+        {
+            ScriptContext::EntityScope scope(ScriptContext::NullEntity);
+            void* instance = runtime->CreateInstance(script, runtime->GetDefaultClass(script), ScriptContext::NullEntity);
+            if (instance)
+            {
+                ok = !runtime->HasMethod(instance, "Run") || runtime->Invoke(instance, "Run", nullptr, 0);
+                runtime->DestroyInstance(instance);
+            }
+        }
+        ScriptContext::SetActiveScene(previous);
+        if (!ok && error && error->empty())
+            *error = "The script raised an error (see Console).";
+        return ok;
+    }
+
     void RegisterNatives(NativeRegistry* vm)
     {
         using CQS::Value;

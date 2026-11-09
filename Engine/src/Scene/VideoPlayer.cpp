@@ -1,6 +1,7 @@
 #include "Scene/MeshRendererMaterial.h"
 #include "Renderer/Utilities/Renderer3D/Material.h"
 #include "VideoPlayer.h"
+#include "Core/Assets/SimpleAsset.h"
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"
 #include "Scene/Components.h"
@@ -396,6 +397,10 @@ namespace Conqueror
         {
             std::unique_ptr<VideoSource> Source;
             std::string LoadedSource;
+            std::vector<std::string> Playlist;       // Media Playlist / Player
+            int PlaylistIndex = 0;
+            bool MediaLoop = false, MediaShuffle = false;
+            float MediaRate = 1.0f;
             std::string Error;
             std::shared_ptr<Texture2D> Texture;
             std::vector<uint8_t> Pixels;
@@ -423,6 +428,46 @@ namespace Conqueror
         std::shared_ptr<Shader> s_PlaneShader;
         GLuint s_PlaneVao = 0;
 
+        // Media Source / Playlist / Player -> oynatılacak dosya
+        std::string MediaFileOf(const std::string& item)
+        {
+            if (!SimpleAssets::IsKind(item, "MediaSource"))
+                return item;
+            SimpleAssets::Data data;
+            return SimpleAssets::Load(item, data) ? data.Str("File") : std::string();
+        }
+
+        std::string ResolveMediaSource(Instance& inst, const VideoPlayerComponent& vp)
+        {
+            std::string playlist;
+            if (SimpleAssets::IsKind(vp.Source, "MediaPlayer"))
+            {
+                SimpleAssets::Data data;
+                if (SimpleAssets::Load(vp.Source, data))
+                {
+                    playlist = data.Str("Playlist");
+                    inst.MediaLoop = data.Bool("Loop");
+                    inst.MediaShuffle = data.Bool("Shuffle");
+                    inst.MediaRate = data.Float("Rate", 1.0f);
+                }
+            }
+            else if (SimpleAssets::IsKind(vp.Source, "MediaPlaylist"))
+                playlist = vp.Source;
+            if (playlist.empty())
+                return MediaFileOf(vp.Source);
+            SimpleAssets::Data list;
+            if (!SimpleAssets::Load(playlist, list))
+                return {};
+            inst.Playlist.clear();
+            for (const auto& row : list.Table("Items"))
+                if (const std::string file = MediaFileOf(SimpleAssets::Cell(row, 0)); !file.empty())
+                    inst.Playlist.push_back(file);
+            if (inst.Playlist.empty())
+                return {};
+            inst.PlaylistIndex = std::clamp(inst.PlaylistIndex, 0, (int)inst.Playlist.size() - 1);
+            return inst.Playlist[(size_t)inst.PlaylistIndex];
+        }
+
         bool OpenSource(Instance& inst, const VideoPlayerComponent& vp)
         {
             inst.ReleaseAudio();
@@ -434,7 +479,7 @@ namespace Conqueror
             inst.Time = 0.0;
             if (vp.Source.empty())
                 return false;
-            std::string path = SceneSerializer::ResolveAssetPath(vp.Source);
+            std::string path = SceneSerializer::ResolveAssetPath(ResolveMediaSource(inst, vp));
             std::error_code ec;
             if (fs::is_directory(path, ec))
             {
@@ -572,6 +617,8 @@ namespace Conqueror
                 {
                     const bool ok = OpenSource(inst, vp);
                     vp.Status = ok ? "Ready" : inst.Error;
+                    if (ok && inst.Playlist.size() > 1)
+                        vp.Status += " (item " + std::to_string(inst.PlaylistIndex + 1) + " of " + std::to_string(inst.Playlist.size()) + ")";
                     if (!ok && !inst.Error.empty())
                         CQ_CORE_WARN("[Video] {}", inst.Error);
                     inst.Started = false;
@@ -615,13 +662,28 @@ namespace Conqueror
                     if (inst.Sound && ma_sound_is_playing(inst.Sound) && ma_sound_get_cursor_in_seconds(inst.Sound, &cursor) == MA_SUCCESS)
                         inst.Time = cursor;
                     else
-                        inst.Time += (double)dt * std::max(vp.PlaybackSpeed, 0.0f);
+                        inst.Time += (double)dt * std::max(vp.PlaybackSpeed, 0.0f) * inst.MediaRate;
                     if (inst.Time >= duration)
                     {
                         if (vp.Loop)
                         {
                             inst.Time = std::fmod(inst.Time, duration);
                             if (inst.Sound) ma_sound_seek_to_pcm_frame(inst.Sound, (ma_uint64)(inst.Time * src.AudioRate));
+                        }
+                        else if (inst.Playlist.size() > 0 && (inst.PlaylistIndex + 1 < (int)inst.Playlist.size() || inst.MediaLoop))
+                        {
+                            // Sıradaki öğe (Shuffle: rastgele, aynısı tekrar seçilmez)
+                            if (inst.MediaShuffle && inst.Playlist.size() > 1)
+                            {
+                                int next = inst.PlaylistIndex;
+                                while (next == inst.PlaylistIndex)
+                                    next = std::rand() % (int)inst.Playlist.size();
+                                inst.PlaylistIndex = next;
+                            }
+                            else
+                                inst.PlaylistIndex = (inst.PlaylistIndex + 1) % (int)inst.Playlist.size();
+                            inst.LoadedSource.clear();
+                            continue;
                         }
                         else
                         {
@@ -791,7 +853,7 @@ namespace Conqueror
         using V = VideoPlayerComponent;
         ComponentDef<V>("Video Player", "VideoPlayerComponent", "Video", ICON_FA_FILM)
             .Describe("Plays Motion-JPEG AVI, GIF or an image folder (other formats are converted once with ffmpeg if it is installed) onto a mesh, a Raw Image, a Sprite or the camera background.")
-            .Field("Source", "Source", &V::Source, FieldKind::Asset).Filter(".avi;.gif;.mp4;.webm;.mov;.mkv")
+            .Field("Source", "Source", &V::Source, FieldKind::Asset).Filter(".avi;.gif;.mp4;.webm;.mov;.mkv;.cqmediasource;.cqmediaplaylist;.cqmediaplayer")
             .Field("PlayOnAwake", "Play On Awake", &V::PlayOnAwake)
             .Field("Loop", "Loop", &V::Loop)
             .Field("PlaybackSpeed", "Playback Speed", &V::PlaybackSpeed).Range(0.0f, 10.0f, 0.01f)

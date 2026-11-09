@@ -5475,6 +5475,11 @@ namespace Conqueror::Editor
             err = "unknown nodeasset command";
             return false;
         });
+        // editor_utility <yol>: Editor Utility betiğini düzenleyici sahnesinde çalıştır
+        Automation::RegisterCommand("editor_utility", [this](const Args& a, std::string& err) {
+            if (a.size() < 2 || !m_ActiveScene) { err = "editor_utility <path>"; return false; }
+            return Scripting::TestRunner::RunEditorUtility(AssetUI::Resolve(a[1]).string(), m_ActiveScene.get(), &err);
+        });
         // soundinfo <varlık>: Audio Source'un çözülen ses varlığı değerleri
         Automation::RegisterCommand("soundinfo", [this, findByName](const Args& a, std::string& err) {
             if (a.size() < 2 || !m_ActiveScene) { err = "soundinfo <entity>"; return false; }

@@ -2,6 +2,7 @@
 #include "ComponentRegistry.h"
 #include "UI/UIToolkit.h"
 #include "AISystem/BehaviorTree/BehaviorTreeAsset.h"
+#include "Scene/AssetRuntime.h"
 #include "Core/Animation/PropertyAnimation.h"
 #include "Core/Logging/Log.h"
 
@@ -117,6 +118,7 @@ namespace Conqueror
             RegisterSignalComponents();
             UIToolkit::RegisterComponents();
             BehaviorTrees::RegisterComponents();
+            AssetRuntime::RegisterComponents();
             RegisterCSGComponents();
             RegisterMultiMeshComponents();
             RegisterGodotNodeComponents();

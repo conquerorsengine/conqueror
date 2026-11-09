@@ -1,6 +1,7 @@
 #include "UISystem.h"
 #include "UI/UIToolkit.h"
 #include "Scene/AudioOcclusion.h"
+#include "Scene/AssetRuntime.h"
 #include "Core/Input/InputGlyphs.h"
 #include "FontAtlas.h"
 #include "RichText.h"
@@ -1894,6 +1895,28 @@ namespace Conqueror
     void UISystem::Update(Scene& scene, const glm::vec2& screenSize, const UIInputState& rawInput, float dt)
     {
         UIToolkit::Update(scene);
+        // Touch Interface: ekran denetimleri fare / dokunuşla sanal kumandayı sürer
+        if (auto& controls = AssetRuntime::ActiveTouchControls(); !controls.empty())
+        {
+            for (auto& c : controls)
+            {
+                const glm::vec2 center = c.Center * screenSize;
+                const float radius = c.Radius * screenSize.y;
+                const glm::vec2 offset = rawInput.MousePosition - center;
+                if (rawInput.MousePressed && rawInput.Valid && glm::length(offset) <= radius)
+                    c.Held = true;
+                if (!rawInput.MouseDown)
+                    c.Held = false;
+                c.Knob = c.Held ? glm::clamp(offset / std::max(radius, 1.0f), glm::vec2(-1.0f), glm::vec2(1.0f)) : glm::vec2(0.0f);
+                if (c.AxisX >= 0)
+                {
+                    Input::SetVirtualGamepadAxis(c.AxisX, c.Knob.x);
+                    Input::SetVirtualGamepadAxis(c.AxisY, -c.Knob.y);
+                }
+                if (c.Button >= 0)
+                    Input::SetVirtualGamepadButton(c.Button, c.Held);
+            }
+        }
         UIInputState input = rawInput;
         bool oskConsumed = false;
         // Ekran klavyesi açıksa: tuşları karakter / silme / bitti olarak girdiye ekler, üstündeki tıklamayı yutar
@@ -2542,7 +2565,7 @@ namespace Conqueror
         for (Entity c : canvases)
             any |= c.GetComponent<CanvasComponent>().Mode != CanvasComponent::RenderMode::WorldSpace;
         std::string subtitleSpeaker, subtitleText;
-        if (!any && !Dialogue::GetSubtitle(subtitleSpeaker, subtitleText))
+        if (!any && !Dialogue::GetSubtitle(subtitleSpeaker, subtitleText) && AssetRuntime::ActiveTouchControls().empty())
             return;
 
         GLint vp[4];
@@ -2562,6 +2585,26 @@ namespace Conqueror
             Renderer2D::BeginScene(ortho * toPx, false);
             Renderer2D::SetOutputMode(0);
             RenderItems(items, toPx, true, screenSize);
+            Renderer2D::EndScene();
+            Renderer2D::SetOutputMode(-1);
+        }
+        // Touch Interface denetimleri
+        if (const auto& controls = AssetRuntime::ActiveTouchControls(); !controls.empty())
+        {
+            Renderer2D::BeginScene(ortho, false);
+            Renderer2D::SetOutputMode(0);
+            const glm::mat4 identity(1.0f);
+            for (const auto& c : controls)
+            {
+                const glm::vec2 center = c.Center * screenSize;
+                const float radius = c.Radius * screenSize.y;
+                Circle(identity, center, radius, glm::vec4(1.0f, 1.0f, 1.0f, c.Held ? 0.45f : 0.25f));
+                if (c.AxisX >= 0)
+                    Circle(identity, center + c.Knob * radius * 0.6f, radius * 0.4f, glm::vec4(1.0f, 1.0f, 1.0f, 0.6f));
+                else
+                    DrawTextBlock(glm::translate(identity, glm::vec3(center.x - radius, center.y - radius, 0.0f)), glm::vec2(radius * 2.0f), c.Name, "", radius * 0.5f,
+                                  glm::vec4(1.0f), UITextAlignH::Center, UITextAlignV::Middle, false, 1.0f);
+            }
             Renderer2D::EndScene();
             Renderer2D::SetOutputMode(-1);
         }

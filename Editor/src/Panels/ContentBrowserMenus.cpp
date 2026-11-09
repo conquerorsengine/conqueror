@@ -332,6 +332,11 @@ namespace Conqueror::Editor
             "A ScriptableEntity class using the engine's C++ API. Drag it onto a Native Script component; the engine compiles it when you press Play.",
             true, true);
         add("Scripting", "", "Visual Script Graph", ICON_FA_DIAGRAM_PROJECT, "visualscript");
+        add("Scripting", "Script", "Interface", "", "scripttpl:interface", "Method signatures other scripts can implement. Call them with SendMessage().");
+        add("Scripting", "Script", "Library", "", "scripttpl:library", "Shared functions. Other scripts load it with: using FileName;");
+        add("Scripting", "Script", "Enum", "", "scripttpl:enum", "A named list of values shared by scripts with: using FileName;");
+        add("Scripting", "Script", "Struct", "", "scripttpl:struct", "A data type shared by scripts with: using FileName;");
+        add("Scripting", "", "Editor Utility", ICON_FA_WAND_MAGIC_SPARKLES, "editorutility", "A script that runs inside the editor (select it and press Run in the Inspector).");
         add("Scripting", "Testing", "Test Script", ICON_FA_FLASK_VIAL, "testscript", "Test* methods run from Window > Test Runner in Edit Mode, PlayTest* methods in Play Mode.");
         RegisterBuiltinNodeAssetSchemas();
         for (const auto& schema : NodeAssetPanel::Schemas())
@@ -364,6 +369,8 @@ namespace Conqueror::Editor
         }
 
         // Curve (Unreal Curve Float / Vector / Linear Color): CurveEvaluate ile okunur
+        add("Data", "", "Data Table", ICON_FA_TABLE, "datatable", "Rows of game data edited as a grid. Scripts read it with DataTableGetValue(path, row, column).");
+        add("Data", "Curve", "Curve Table", ICON_FA_CHART_LINE, "curvetable", "Named curves in a grid. Scripts read it with CurveTableEvaluate(path, row, time).");
         add("Data", "Curve", "Float Curve", ICON_FA_CHART_LINE, "curve:float", "One value over time (Unreal Curve Float). Read with CurveEvaluate(path, t).");
         add("Data", "Curve", "Vector Curve", ICON_FA_CHART_LINE, "curve:vector", "X, Y and Z over time (Unreal Curve Vector).");
         add("Data", "Curve", "Color Curve", ICON_FA_CHART_LINE, "curve:color", "R, G, B and A over time (Unreal Curve Linear Color), with a gradient preview.");
@@ -407,7 +414,7 @@ namespace Conqueror::Editor
             { "Scene", ICON_FA_CLAPPERBOARD },      { "2D", ICON_FA_SHAPES },           { "Rendering", ICON_FA_CIRCLE_HALF_STROKE },
             { "Shader", ICON_FA_WAND_MAGIC_SPARKLES }, { "Physics", ICON_FA_BASKETBALL }, { "Terrain", ICON_FA_MOUNTAIN_SUN },
             { "Audio", ICON_FA_VOLUME_HIGH },       { "Animation", ICON_FA_PERSON_RUNNING }, { "Timeline", ICON_FA_FILM },
-            { "Scripting", ICON_FA_FILE_CODE },     { "Data", ICON_FA_DATABASE },       { "Input", ICON_FA_GAMEPAD },         { "UI", ICON_FA_WINDOW_MAXIMIZE },          { "AI", ICON_FA_SITEMAP },
+            { "Scripting", ICON_FA_FILE_CODE },     { "Data", ICON_FA_DATABASE },       { "Input", ICON_FA_GAMEPAD },         { "UI", ICON_FA_WINDOW_MAXIMIZE },          { "AI", ICON_FA_SITEMAP },          { "Media", ICON_FA_FILM },         { "Miscellaneous", ICON_FA_SHAPES },
         };
     }
 

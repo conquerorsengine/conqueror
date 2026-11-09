@@ -138,6 +138,8 @@ namespace Conqueror::Editor
         const std::string ext = ToLower(path.extension().string());
         if (ext == UIToolkit::DocumentExtension) return { ICON_FA_WINDOW_MAXIMIZE, IM_COL32(120, 200, 255, 255), "UI Document" };
         if (ext == UIToolkit::StyleExtension) return { ICON_FA_FILE_LINES, IM_COL32(120, 200, 255, 255), "Style Sheet" };
+        if (ext == ".cqdatatable") return { ICON_FA_TABLE, IM_COL32(150, 220, 160, 255), "Data Table" };
+        if (ext == ".cqcurvetable") return { ICON_FA_CHART_LINE, IM_COL32(120, 220, 210, 255), "Curve Table" };
         if (ext == ".cqeqs") return { ICON_FA_LOCATION_CROSSHAIRS, IM_COL32(120, 180, 255, 255), "Environment Query" };
         if (ext == ".cqplayable") return { ICON_FA_FILE_CODE, IM_COL32(140, 185, 100, 255), "Playable Asset" };
         if (const SimpleAssets::Def* simple = SimpleAssets::ForExtension(ext))
@@ -1660,6 +1662,37 @@ namespace Conqueror::Editor
                                    " : ConquerorScript\n{\n    public float intensity = 1.0;\n\n    // The clip started\n    func OnClipStart() { }\n\n"
                                    "    // Every frame during the clip: time = seconds since it started, progress = 0..1\n    func OnClipUpdate(time, progress) { }\n\n"
                                    "    // The clip ended or the Timeline stopped\n    func OnClipStop() { }\n}\n");
+                if (!out.good())
+                    path.clear();
+            }
+            else if (kind == "datatable" || kind == "curvetable")
+            {
+                const bool curve = kind == "curvetable";
+                path = MakeUniquePath(dir / (curve ? "New Curve Table.cqcurvetable" : "New Data Table.cqdatatable"));
+                std::ofstream out(path, std::ios::binary);
+                out << (curve ? "Name,0,1\nRow1,0,1\n" : "Name,Value\nRow1,0\n");
+                if (!out.good())
+                    path.clear();
+            }
+            else if (kind.rfind("scripttpl:", 0) == 0 || kind == "editorutility")
+            {
+                const std::string t = kind == "editorutility" ? "utility" : kind.substr(10);
+                const std::string stem = t == "interface" ? "INewInterface" : t == "library" ? "NewLibrary" : t == "enum" ? "NewEnum" : t == "struct" ? "NewStruct" : "NewEditorUtility";
+                path = MakeUniquePath(dir / (stem + ".cqs"));
+                const std::string name = Visual::SanitizeIdentifier(path.stem().string());
+                std::string text;
+                if (t == "interface")
+                    text = "// Implement it in a script: script Enemy : ConquerorScript, " + name + "\n// Call it on any object with: SendMessage(target, \"TakeDamage\", 10);\ninterface " + name + "\n{\n    func TakeDamage(amount);\n}\n";
+                else if (t == "library")
+                    text = "// Other scripts load it with: using " + name + ";\n// Then call: " + name + ".Double(3)\nclass " + name + "\n{\n    static func Double(value) { return value * 2; }\n}\n";
+                else if (t == "enum")
+                    text = "// Other scripts load it with: using " + name + ";\nenum " + name + "\n{\n    First,\n    Second\n}\n";
+                else if (t == "struct")
+                    text = "// Other scripts load it with: using " + name + ";\nstruct " + name + "\n{\n    public float value = 0.0;\n}\n";
+                else
+                    text = "using nativebridge;\n\n// Select this file and press Run in the Inspector.\nscript " + name + " : EditorUtility\n{\n    func Run()\n    {\n        Log(\"Hello from the editor\");\n    }\n}\n";
+                std::ofstream out(path, std::ios::binary);
+                out << text;
                 if (!out.good())
                     path.clear();
             }
