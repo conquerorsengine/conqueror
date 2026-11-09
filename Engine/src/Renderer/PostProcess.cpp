@@ -1027,7 +1027,8 @@ namespace Conqueror
         // bir noktasından örnekler (TAA); yöntem yalnız TAA'nın geçmişi olmayan (yeni açılan) piksellerde uygulanır
         bool UsesTAAResolve(AntiAliasingMode aa, const PostProcessSettings& settings)
         {
-            return UsesTemporalAA(aa) || (settings.TemporalStability && AntiAliasing::IsSingleFrame(aa));
+            // SMAA T2x: Temporal Stability açıkken TAA çözümüne girer (SMAA + birikim); kapalıyken kendi iki karelik çözümü
+            return UsesTemporalAA(aa) || (settings.TemporalStability && (AntiAliasing::IsSingleFrame(aa) || aa == AntiAliasingMode::SMAA_T2X));
         }
 
         uint32_t FloatBits(float f)
@@ -1290,11 +1291,11 @@ namespace Conqueror
         // Temporal Stability: TAA çözümünün üstünde SMAA / MLAA / CMAA / DEAA yalnız TAA'nın geçmişini reddettiği piksellerde
         // kalır (aşağıda); FXAA bunu kendi içinde yapar (u_RejectOnly)
         const uint32_t beforeSpatial = cur;
-        const bool rejectOnlySpatial = taa && (AntiAliasing::IsPostProcess(aa) || aa == AntiAliasingMode::GBAA || aa == AntiAliasingMode::SRAA) && aa != AntiAliasingMode::FXAA;
+        const bool rejectOnlySpatial = taa && (AntiAliasing::IsPostProcess(aa) || aa == AntiAliasingMode::SMAA_T2X || aa == AntiAliasingMode::GBAA || aa == AntiAliasingMode::SRAA) && aa != AntiAliasingMode::FXAA;
         if (aa == AntiAliasingMode::SMAA || aa == AntiAliasingMode::MLAA || aa == AntiAliasingMode::SMAA_T2X)
         {
             const bool mlaa = aa == AntiAliasingMode::MLAA;
-            const bool t2x = aa == AntiAliasingMode::SMAA_T2X && m_JitterActive;
+            const bool t2x = aa == AntiAliasingMode::SMAA_T2X && m_JitterActive && !taa;
             auto edge = PostProcess::GetShader(mlaa ? "MLAAEdge" : "SMAAEdge");
             auto weights = PostProcess::GetShader(mlaa ? "MLAAWeights" : "SMAAWeights");
             auto neighborhood = PostProcess::GetShader("SMAABlend");
@@ -1952,7 +1953,8 @@ namespace Conqueror
         else
             m_HistoryValid = false;
         // SMAA T2x / TAAU: çözüm RunFinal'da (LDR); hız vektörleri ve bu karenin titreşimli ters matrisi şimdi
-        if (fx && (m_AAMode == AntiAliasingMode::SMAA_T2X || m_Upscaler == UpscalerMode::TAAU || m_UseFSR2) && !camera.Orthographic && m_JitterActive)
+        const bool t2xSeparate = m_AAMode == AntiAliasingMode::SMAA_T2X && !UsesTAAResolve(m_AAMode, settings);
+        if (fx && (t2xSeparate || m_Upscaler == UpscalerMode::TAAU || m_UseFSR2) && !camera.Orthographic && m_JitterActive)
         {
             m_FinalHasVelocity = RenderObjectVelocity(camera);
             m_FinalInvViewProj = glm::inverse(JitteredProjection(camera) * camera.View);
@@ -1989,7 +1991,7 @@ namespace Conqueror
         if (fx && m_StabilityActive && !camera.Orthographic)
         {
             // SMAA T2x: hız vektörleri ve titreşimli ters matris yukarıda (T2x çözümü için) hazırlandı; katman titreşimsiz matrisi kullanır
-            const bool t2xPrepared = m_AAMode == AntiAliasingMode::SMAA_T2X && m_JitterActive;
+            const bool t2xPrepared = t2xSeparate && m_JitterActive;
             if (!t2xPrepared)
                 m_FinalHasVelocity = RenderObjectVelocity(camera);
             m_StabInvViewProj = glm::inverse(camera.Projection * camera.View);
@@ -2082,7 +2084,7 @@ namespace Conqueror
             // Kenar yumuşatma istekleri (sonraki karenin sahne hedefi ve titreşimi)
             const AntiAliasingMode next = m_AAMode;
             const bool temporal = fx && !camera.Orthographic && UsesTAAResolve(next, settings);
-            const bool t2x = fx && !camera.Orthographic && next == AntiAliasingMode::SMAA_T2X;
+            const bool t2x = fx && !camera.Orthographic && next == AntiAliasingMode::SMAA_T2X && !temporal;
             const bool taau = fx && !camera.Orthographic && m_Upscaler == UpscalerMode::TAAU;
             const bool fsr2 = fx && m_UseFSR2;
             m_WantTAA = temporal || t2x || taau || fsr2;   // titreşim (+ hareket bayrağı için normal eki)

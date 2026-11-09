@@ -812,22 +812,6 @@ void main()
             nearW = min(nearW, ViewW(v_UV, axisDepth[k]));
     bool historyOccluder = disoccluded || (edgeDisoccluded && (centerDepth < 1.0 || fpMaxW < nearW * 0.85 - 0.05));
     float ageNow = historyOccluder ? 1.0 : min(ageBefore + 1.0, 16.0);
-    if (u_Variant == 1)
-    {
-        // TSAA: geçmiş yalnız bir önceki karenin (öteki titreşim konumunun) görüntüsü; bu karenin 3x3 aralığına kırpılıp eşit
-        // ağırlıkla ortalanır (2x zamansal süper örnekleme, uzun birikim / iz yok)
-        history = clamp(rawHistory, nmin, nmax);
-        feedback = ((movingNow || movedBefore) && !centerExact) ? 0.2 : 0.5;
-    }
-    else if (u_Variant == 2)
-    {
-        // TSSAA (8TX): standart varyans kırpması (ortalama ± 1 sapma ∩ min/max), hızla düşen ağırlık
-        vec3 vlo = max(boxMean - boxSigma, nmin), vhi = min(boxMean + boxSigma, nmax);
-        history = clamp(rawHistory, vlo, vhi);
-        feedback = mix(0.92, 0.8, clamp(speed / 20.0, 0.0, 1.0));
-        if ((movingNow || movedBefore) && !centerExact)
-            feedback = 0.6;
-    }
     // Titreme tutması TSAA / TSSAA'da da: pikselden ince ayrıntı (küplerin arası, uzak basamak) titreşimin yalnız bazı karelerinde
     // çizilir; kısa birikim ve standart kırpma onu ıskalanan karelerde silip yürürken yanıp söndürüyor, dururken bile aralığı
     // açıyordu. Yalnız geçmişi karede bir kutunun içinde karede bir dışında kalan (yanıp sönen) piksel kırpılmadan tutulur
