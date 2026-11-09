@@ -914,6 +914,15 @@ namespace Conqueror::Editor
             int Frames = 0;
         };
         AutomationFly s_AutomationFly;
+        // camera_spin otomasyonu: editör kamerası her karede sabit hızla döner (odak noktası çevresinde ya da yerinde), sonra
+        // anında durur
+        struct AutomationSpin
+        {
+            glm::vec2 RateDeg{ 0.0f };   // x yaw, y pitch (derece / sn)
+            int Frames = 0;
+            bool InPlace = false;        // true: kamera yerinde döner (sağ tıkla bakınmak), false: odak noktası çevresinde
+        };
+        AutomationSpin s_AutomationSpin;
     }
 
     void EditorLayer::OnUpdate(Timestep ts)
@@ -926,6 +935,17 @@ namespace Conqueror::Editor
             // Sabit 1/60 sn adım: başsız test ortamında kare süresi değişken (10-60 FPS); hareket 60 FPS'teki Shift+W ile aynı olsun
             cam.SetFocalPoint(cam.GetFocalPoint() + world * (1.0f / 60.0f));
             --s_AutomationFly.Frames;
+        }
+        if (s_AutomationSpin.Frames > 0 && m_ViewportPanel)
+        {
+            auto& cam = m_ViewportPanel->GetEditorCamera();
+            const glm::vec3 eye = cam.GetPosition();
+            cam.SetYaw(cam.GetYaw() + glm::radians(s_AutomationSpin.RateDeg.x / 60.0f));
+            cam.SetPitch(cam.GetPitch() + glm::radians(s_AutomationSpin.RateDeg.y / 60.0f));
+            // Yerinde dönme: odak noktası, kamera konumu değişmeyecek şekilde yeni bakış yönüne taşınır
+            if (s_AutomationSpin.InPlace)
+                cam.SetFocalPoint(cam.GetFocalPoint() + (eye - cam.GetPosition()));
+            --s_AutomationSpin.Frames;
         }
         SyncPanelContexts();
         TrackCreatedEntities();
@@ -6361,6 +6381,15 @@ namespace Conqueror::Editor
             s_AutomationFly.LocalVelocity = { std::stof(a[1]), std::stof(a[2]), std::stof(a[3]) };
             s_AutomationFly.Frames = std::max(0, std::stoi(a[4]));
             // Beklemez: hareket sürerken sonraki komutlar (her karede screenshot) çalışabilsin
+            return true;
+        });
+        // camera_spin <yaw derece/sn> <pitch derece/sn> <kare>: editör kamerası her karede sabit hızla döner, sonra anında durur
+        // (sabit 1/60 sn adım: döndürürken TAA'nın davranışını ölçmek için)
+        Automation::RegisterCommand("camera_spin", [this](const Args& a, std::string& err) {
+            if (!m_ViewportPanel || a.size() < 4) { err = "camera_spin <yawDegPerSec> <pitchDegPerSec> <frames> [inplace]"; return false; }
+            s_AutomationSpin.RateDeg = { std::stof(a[1]), std::stof(a[2]) };
+            s_AutomationSpin.Frames = std::max(0, std::stoi(a[3]));
+            s_AutomationSpin.InPlace = a.size() >= 5 && a[4] == "inplace";
             return true;
         });
         Automation::RegisterCommand("camera_info", [this](const Args&, std::string& err) {
