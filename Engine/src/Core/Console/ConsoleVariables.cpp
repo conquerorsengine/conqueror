@@ -432,7 +432,7 @@ namespace Conqueror
         AddBoolOverride("r.Bloom", "Bloom on/off", &R::Bloom, [](Scene& s) { return s.GetRenderSettings().Post.Bloom; });
         AddFloatOverride("r.Bloom.Intensity", "Bloom intensity", &R::BloomIntensity, [](Scene& s) { return s.GetRenderSettings().Post.BloomIntensity; }, 0.0f, 20.0f);
         AddBoolOverride("r.SSAO", "Screen space ambient occlusion on/off", &R::SSAO, [](Scene& s) { return s.GetRenderSettings().Post.AmbientOcclusion; });
-        AddIntOverride("r.TemporalStability", "Temporal stability for single-frame AA methods: 1 on (FXAA, SMAA, MLAA, CMAA, DEAA accumulate jittered frames like TAA; MSAA, SSAA ... average the thin details that blink while moving), 0 off",
+        AddIntOverride("r.TemporalStability", "Temporal stability for single-frame AA methods: 1 on (the method's result is accumulated over sub-pixel jittered frames like TAA; SMAA T2x averages only flickering pixels), 0 off",
                        &R::TemporalStability, [](Scene& s) { return s.GetRenderSettings().Post.TemporalStability ? 1 : 0; }, 0, 1);
         AddIntOverride("r.TAADebug", "TAA debug view: 0 off, 1 per-pixel history path (red moving, green settled, cyan calm, blue trusted, yellow clamped, magenta sky, white no history)", &R::TAADebug, [](Scene&) { return 0; }, 0, 1);
         AddIntOverride("r.AntiAliasing", "Anti-aliasing method: 0 off, 1 FXAA, 2 SMAA, 3 TAA, 4 TAA+FXAA, 5 MSAA, 6 CSAA, 7 SSAA, 8 FSAA, 9 EQAA, 10 MLAA, 11 CMAA, "

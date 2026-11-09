@@ -78,7 +78,7 @@ namespace Conqueror
     {
         for (auto* rt : { &m_HDR[0], &m_HDR[1], &m_SSR, &m_Fog, &m_Clouds, &m_DOFHalf, &m_DOFBlur, &m_History[0], &m_History[1], &m_Adapt[0], &m_Adapt[1],
                           &m_GI, &m_GITemp, &m_GIHistory[0], &m_GIHistory[1], &m_CloudHistory[0], &m_CloudHistory[1], &m_TAAState[0], &m_TAAState[1],
-                          &m_Velocity, &m_TAADebug, &m_Reactive, &m_StabHistory[0], &m_StabHistory[1], &m_StabState[0], &m_StabState[1], &m_FSR2Reactive, &m_FSR2PrevShadow })
+                          &m_Velocity, &m_TAADebug, &m_TAADisplay, &m_Reactive, &m_StabHistory[0], &m_StabHistory[1], &m_StabState[0], &m_StabState[1], &m_FSR2Reactive, &m_FSR2PrevShadow })
             DestroyTarget(*rt);
         m_StabValid = false;
         if (m_VelocityFramebuffer)
@@ -439,10 +439,21 @@ namespace Conqueror
         const bool taaDebug = ConsoleSystem::Overrides().TAADebug == 1;
         if (taaDebug)
             EnsureTarget(m_TAADebug, m_Width, m_Height, GL_RGBA16F);
+        // Nokta / spot ışığın gücü bu karede değişti (namlu alevi): TAA aydınlığı değişen piksellerde geçmişe az güvenir. En çok 6 kare süren
+        // kısa değişim geçmişe hiç yazılmaz (sürekli yanıp sönen ışıkta yazılır, yoksa geçmiş bayatlar)
+        const bool lightingChanged = Renderer3D::ConsumeLightingChange(this);
+        m_LightChangeFrames = lightingChanged ? m_LightChangeFrames + 1 : 0;
+        const bool lightingFreeze = lightingChanged && m_LightChangeFrames <= 6;
+        // Parçacık ya da kısa ışık değişimi olan karede gösterilen görüntü geçmişten ayrı bir hedefe yazılır (duman ve alev geçmişe girmez)
+        const bool separateDisplay = m_ReactiveUsed || lightingFreeze;
+        if (separateDisplay)
+            EnsureTarget(m_TAADisplay, m_Width, m_Height, GL_RGBA16F);
         {
-            const GLenum buffers[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-            glNamedFramebufferDrawBuffers(m_TAAFramebuffer[ni], taaDebug ? 3 : 2, buffers);
+            const GLenum buffers[4] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, taaDebug ? (GLenum)GL_COLOR_ATTACHMENT2 : (GLenum)GL_NONE,
+                                        separateDisplay ? (GLenum)GL_COLOR_ATTACHMENT3 : (GLenum)GL_NONE };
+            glNamedFramebufferDrawBuffers(m_TAAFramebuffer[ni], 4, buffers);
         }
+        glNamedFramebufferTexture(m_TAAFramebuffer[ni], GL_COLOR_ATTACHMENT3, separateDisplay ? m_TAADisplay.Texture : 0, 0);
         glNamedFramebufferTexture(m_TAAFramebuffer[ni], GL_COLOR_ATTACHMENT0, next.Texture, 0);
         glNamedFramebufferTexture(m_TAAFramebuffer[ni], GL_COLOR_ATTACHMENT1, nextState.Texture, 0);
         glNamedFramebufferTexture(m_TAAFramebuffer[ni], GL_COLOR_ATTACHMENT2, taaDebug ? m_TAADebug.Texture : 0, 0);
@@ -488,8 +499,8 @@ namespace Conqueror
             shader->SetFloat3("u_CameraPos", eyeOf(viewProjNow));
             shader->SetFloat3("u_PrevCameraPos", eyeOf(m_HasPrevViewProj ? m_PrevViewProj : viewProjNow));
         }
-        // Nokta / spot ışığın gücü bu karede değişti (namlu alevi): TAA aydınlığı değişen piksellerde geçmişe az güvenir
-        shader->SetInt("u_LightingChanged", Renderer3D::ConsumeLightingChange(this) ? 1 : 0);
+        shader->SetInt("u_LightingChanged", lightingChanged ? 1 : 0);
+        shader->SetInt("u_LightingFreeze", lightingFreeze ? 1 : 0);
         // Zamansal yöntem çeşidi (TSAA / TSSAA); TXAA ve TAA ana yolu kullanır
         shader->SetInt("u_Variant", m_TAAVariant);
         // Hareket eden nesnelerin ekran dikdörtgenleri (fazlası son dikdörtgende birleşir)
@@ -596,7 +607,7 @@ namespace Conqueror
         PostProcess::DrawFullscreenQuad();
         Renderer::GetStats().PostProcessPasses++;
         // Hata ayıklama görünümü: geçmiş etkilenmez, yalnız gösterilen görüntü renkli yol haritasıdır
-        m_Source = taaDebug ? m_TAADebug.Texture : next.Texture;
+        m_Source = taaDebug ? m_TAADebug.Texture : (separateDisplay ? m_TAADisplay.Texture : next.Texture);
         m_HistoryIndex = 1 - m_HistoryIndex;
         m_HistoryValid = true;
         m_TAAResolved = true;

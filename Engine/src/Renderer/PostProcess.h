@@ -207,6 +207,8 @@ namespace Conqueror
         uint32_t m_CoverageFramebuffer = 0;
         std::vector<uint32_t> m_CoverageRenderbuffers;
         bool m_TXAA = false, m_WantTXAA = false;                   // MSAA + TAA (titreşim MSAA ile birlikte)
+        bool m_MultisampleTAA = false, m_WantMultisampleTAA = false;   // Temporal Stability: MSAA / CSAA / EQAA / RGSS / SGSSAA + TAA çözümü
+        bool IsSceneDrawTarget(uint32_t framebuffer) const;        // bu kare sahnenin çizildiği çerçeve tamponu (EQAA / CSAA: kapsam örnekli olan)
         int m_TAAVariant = 0, m_WantTAAVariant = 0;                // 0 TAA, 1 TSAA, 2 TSSAA
         uint32_t m_SamplePositionsFor = 0;                         // u_SamplePos önbelleğinin örnek sayısı
         float m_SamplePositions[32] = {};
@@ -239,6 +241,8 @@ namespace Conqueror
         bool m_WantStability = false;   // sonraki karede kararlılık katmanı (hareket verisi toplanır)
         bool m_StabilityActive = false; // bu kare
         glm::mat4 m_StabInvViewProj{ 1.0f };   // kararlılık katmanı: bu karenin titreşimsiz ters görüş-izdüşümü
+        RenderTarget m_TAADisplay;                    // duman / kıvılcım / alev olan karede gösterilen görüntü (bunlar geçmişe yazılmaz)
+        int m_LightChangeFrames = 0;                  // üst üste kaç karedir bir ışığın gücü değişiyor
         RenderTarget m_TAADebug;                      // r.TAADebug: renk 2, pikselin geçmiş yolu (yalnız gösterilir)
         RenderTarget m_Reactive;                      // TAA tepki maskesi (R8): parçacıkların kapladığı pikseller
         uint32_t m_ReactiveFramebuffer = 0;           // renk: m_Reactive, derinlik: sahne derinliği (salt okunur)

@@ -1200,9 +1200,9 @@ namespace Conqueror::Editor
             }
             if (AntiAliasing::IsSingleFrame(aaNow) || aaNow == AntiAliasingMode::SMAA_T2X)
                 UI::Checkbox("Temporal Stability", p.TemporalStability,
-                             "Keeps thin details (gaps, distant stair edges, thin lines) from blinking while you move. FXAA, SMAA, MLAA, CMAA and DEAA "
-                             "then accumulate sub-pixel jittered frames like TAA and smooth only newly revealed pixels themselves; MSAA, supersampling, "
-                             "SMAA T2x and the other methods average only the pixels that flicker between frames.");
+                             "Keeps thin details (gaps, distant stair edges, thin lines) from blinking while you move and smooths stair-stepped edges: "
+                             "the method's result is accumulated over sub-pixel jittered frames like TAA. FXAA, SMAA, MLAA, CMAA, DEAA, GBAA and SRAA then "
+                             "smooth only newly revealed pixels themselves; SMAA T2x averages only the pixels that flicker between frames.");
             if (aaNow == AntiAliasingMode::SSAA || aaNow == AntiAliasingMode::OGSSAA)
                 UI::SliderFloat("SSAA Scale", p.SSAAScale, 1.25f, 4.0f, "%.2fx",
                                 "Internal resolution multiplier per axis (2 = 4x samples). OGSSAA rounds it to a whole number. The cost grows with the square of the value.");

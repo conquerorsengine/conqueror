@@ -273,7 +273,7 @@ namespace Conqueror
     {
         uint32_t samples = m_WantSamples > 0 ? m_WantSamples : 1;
         // Temporal AA kendi kenar yumuşatmasını yapar: MSAA ile birlikte gereksiz maliyet (TXAA hariç: MSAA + zamansal süzgeç)
-        if (m_WantTAA && !m_WantTXAA)
+        if (m_WantTAA && !m_WantTXAA && !m_WantMultisampleTAA)
             samples = 1;
         // EQAA / CSAA: sahne ayrı (kapsam örnekli renderbuffer) çerçeve tamponuna çizilir; sahne hedefi çözülmüş tek örnek
         if (m_WantCoverageSamples > 0)
@@ -608,6 +608,7 @@ namespace Conqueror
             glMinSampleShading(1.0f);
         }
         m_TXAA = m_WantTXAA && m_Samples > 1;
+        m_MultisampleTAA = m_WantMultisampleTAA && (m_Samples > 1 || m_CoverageSamples > 0);
         m_TAAVariant = m_WantTAAVariant;
         s_Current = this;
         m_ReactiveUsed = false;
@@ -648,13 +649,18 @@ namespace Conqueror
             m_JitterNDC = glm::vec2(0.0f);
     }
 
+    bool PostProcessStack::IsSceneDrawTarget(uint32_t framebuffer) const
+    {
+        return framebuffer == m_SceneFramebuffer->GetRendererID() || (m_CoverageSamples > 0 && framebuffer == m_CoverageFramebuffer);
+    }
+
     bool PostProcessStack::GetCurrentJitter(glm::vec2& outNDC)
     {
-        if (!s_Current || !s_Current->m_JitterActive || !s_Current->m_SceneFramebuffer || (s_Current->m_Samples > 1 && !s_Current->m_TXAA))
+        if (!s_Current || !s_Current->m_JitterActive || !s_Current->m_SceneFramebuffer || (s_Current->m_Samples > 1 && !s_Current->m_TXAA && !s_Current->m_MultisampleTAA))
             return false;
         GLint drawFBO = 0;
         glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFBO);
-        if ((uint32_t)drawFBO != s_Current->m_SceneFramebuffer->GetRendererID())
+        if (!s_Current->IsSceneDrawTarget((uint32_t)drawFBO))
             return false;
         outNDC = s_Current->m_JitterNDC;
         return true;
@@ -664,12 +670,12 @@ namespace Conqueror
     {
         if (!s_Current || !s_Current->m_SceneFramebuffer)
             return false;
-        const bool temporal = s_Current->m_JitterActive && (s_Current->m_Samples <= 1 || s_Current->m_TXAA);
+        const bool temporal = s_Current->m_JitterActive && (s_Current->m_Samples <= 1 || s_Current->m_TXAA || s_Current->m_MultisampleTAA);
         if (!temporal && !s_Current->m_StabilityActive)
             return false;
         GLint drawFBO = 0;
         glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFBO);
-        return (uint32_t)drawFBO == s_Current->m_SceneFramebuffer->GetRendererID();
+        return s_Current->IsSceneDrawTarget((uint32_t)drawFBO);
     }
 
     bool PostProcessStack::IsStabilityActive()
@@ -1013,14 +1019,15 @@ namespace Conqueror
             }
         }
 
-        // Bu kipte HDR TAA çözümü çalışır mı: zamansal yöntemler ve "Temporal Stability" açıkken post-process yöntemleri
-        // (FXAA, SMAA, MLAA, CMAA, DEAA). Tek kareye bakan bu yöntemlerde pikselden ince ayrıntı (küplerin arası, uzak basamak)
+        // Bu kipte HDR TAA çözümü çalışır mı: zamansal yöntemler ve "Temporal Stability" açıkken bütün tek kare yöntemleri (FXAA, SMAA,
+        // MLAA, CMAA, DEAA, GBAA, SRAA; MSAA, EQAA, RGSS, SGSSAA, SSAA ailesi kendi çoklu örnekli sonucuyla TAA'ya girer, duvar üstü
+        // merdiveni de birikimle kapanır). Tek kareye bakan bu yöntemlerde pikselden ince ayrıntı (küplerin arası, uzak basamak)
         // kamera kaydıkça örnek noktasına bir denk gelip bir gelmiyor, yürürken yanıp sönüyordu; önceki karelerle ortalamak
         // yanıp sönmeyi tam kesmiyor, aralıkları da açıyordu. Alt piksel titreşimi + birikim ayrıntıyı her karede pikselin farklı
         // bir noktasından örnekler (TAA); yöntem yalnız TAA'nın geçmişi olmayan (yeni açılan) piksellerde uygulanır
         bool UsesTAAResolve(AntiAliasingMode aa, const PostProcessSettings& settings)
         {
-            return UsesTemporalAA(aa) || (settings.TemporalStability && AntiAliasing::IsPostProcess(aa));
+            return UsesTemporalAA(aa) || (settings.TemporalStability && AntiAliasing::IsSingleFrame(aa));
         }
 
         uint32_t FloatBits(float f)
@@ -1283,7 +1290,7 @@ namespace Conqueror
         // Temporal Stability: TAA çözümünün üstünde SMAA / MLAA / CMAA / DEAA yalnız TAA'nın geçmişini reddettiği piksellerde
         // kalır (aşağıda); FXAA bunu kendi içinde yapar (u_RejectOnly)
         const uint32_t beforeSpatial = cur;
-        const bool rejectOnlySpatial = taa && AntiAliasing::IsPostProcess(aa) && aa != AntiAliasingMode::FXAA;
+        const bool rejectOnlySpatial = taa && (AntiAliasing::IsPostProcess(aa) || aa == AntiAliasingMode::GBAA || aa == AntiAliasingMode::SRAA) && aa != AntiAliasingMode::FXAA;
         if (aa == AntiAliasingMode::SMAA || aa == AntiAliasingMode::MLAA || aa == AntiAliasingMode::SMAA_T2X)
         {
             const bool mlaa = aa == AntiAliasingMode::MLAA;
@@ -2060,6 +2067,10 @@ namespace Conqueror
             const bool fsr2 = fx && m_UseFSR2;
             m_WantTAA = temporal || t2x || taau || fsr2;   // titreşim (+ hareket bayrağı için normal eki)
             m_WantTXAA = temporal && next == AntiAliasingMode::TXAA && !fsr2;
+            // Temporal Stability: çoklu örnekli yöntemlerde de titreşim sahneye uygulanır (TXAA gibi); uygulanmayınca TAA olmayan bir
+            // titreşimi geri alıyor, görüntüyü yarım piksel oynatıp yumuşatıyordu
+            m_WantMultisampleTAA = temporal && !taau && !fsr2 && (next == AntiAliasingMode::MSAA || next == AntiAliasingMode::CSAA || next == AntiAliasingMode::EQAA
+                                                                  || next == AntiAliasingMode::RGSS || next == AntiAliasingMode::SGSSAA);
             // TAAU: 16 konumlu Halton titreşimi; FSR 2: SDK'nın dizisi (zamansal yükseltici kenar yumuşatmanın yerini alır)
             m_WantTAAVariant = fsr2 ? 4 : taau ? 0 : next == AntiAliasingMode::TSAA ? 1 : next == AntiAliasingMode::TSSAA ? 2 : t2x ? 3 : 0;
             switch (next)
