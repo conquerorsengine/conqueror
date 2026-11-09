@@ -3,6 +3,8 @@
 #include "UI/UIToolkit.h"
 #include "AISystem/BehaviorTree/BehaviorTreeAsset.h"
 #include "Scene/AssetRuntime.h"
+#include "Scene/Foliage.h"
+#include "Renderer/LightProfile.h"
 #include "Core/Animation/PropertyAnimation.h"
 #include "Core/Logging/Log.h"
 
@@ -119,6 +121,8 @@ namespace Conqueror
             UIToolkit::RegisterComponents();
             BehaviorTrees::RegisterComponents();
             AssetRuntime::RegisterComponents();
+            Foliage::RegisterComponents();
+            LightProfiles::RegisterComponents();
             RegisterCSGComponents();
             RegisterMultiMeshComponents();
             RegisterGodotNodeComponents();
@@ -184,6 +188,122 @@ namespace Conqueror
         return nullptr;
     }
 
+    void ComponentRegistry::WriteComponentFields(YAML::Emitter& out, const ComponentInfo& info, void* c)
+    {
+        for (auto& f : info.Fields)
+        {
+            if (!f.Serialize)
+                continue;
+            if (!f.Ptr)
+            {
+                if (f.GetString)
+                    out << YAML::Key << f.Name << YAML::Value << f.GetString(c);
+                continue;
+            }
+            void* p = f.Ptr(c);
+            out << YAML::Key << f.Name << YAML::Value;
+            switch (f.Kind)
+            {
+                case FieldKind::Bool: out << *(bool*)p; break;
+                case FieldKind::Int: out << *(int*)p; break;
+                case FieldKind::Float:
+                case FieldKind::Angle: out << *(float*)p; break;
+                case FieldKind::Vec2: WriteSeq<2>(out, (float*)p); break;
+                case FieldKind::Vec3:
+                case FieldKind::Color3: WriteSeq<3>(out, (float*)p); break;
+                case FieldKind::Vec4:
+                case FieldKind::Color4: WriteSeq<4>(out, (float*)p); break;
+                case FieldKind::String: out << *(std::string*)p; break;
+                // Dosya yolu proje göreli / CQ:Resources yazılır (mutlak yol proje taşınınca bozulurdu)
+                case FieldKind::Asset: out << SceneSerializer::ToAssetPath(*(std::string*)p); break;
+                case FieldKind::Enum: out << ReadEnum(f, p); break;
+                case FieldKind::EntityRef: out << *(uint64_t*)p; break;
+                case FieldKind::LayerMask: out << *(uint32_t*)p; break;
+                case FieldKind::Vec2List:
+                {
+                    out << YAML::Flow << YAML::BeginSeq;
+                    for (auto& v : *(std::vector<glm::vec2>*)p)
+                        out << YAML::Flow << YAML::BeginSeq << v.x << v.y << YAML::EndSeq;
+                    out << YAML::EndSeq;
+                    break;
+                }
+                case FieldKind::Vec3List:
+                {
+                    out << YAML::Flow << YAML::BeginSeq;
+                    for (auto& v : *(std::vector<glm::vec3>*)p)
+                        out << YAML::Flow << YAML::BeginSeq << v.x << v.y << v.z << YAML::EndSeq;
+                    out << YAML::EndSeq;
+                    break;
+                }
+            }
+        }
+        if (info.CustomSerialize)
+            info.CustomSerialize(out, c);
+    }
+
+    void ComponentRegistry::ReadComponentFields(const YAML::Node& node, const ComponentInfo& info, void* c)
+    {
+        for (auto& f : info.Fields)
+        {
+            if (!f.Serialize)
+                continue;
+            YAML::Node v = node[f.Name];
+            if (!v)
+                continue;
+            if (!f.Ptr)
+            {
+                if (f.SetString && v.IsScalar())
+                    f.SetString(c, v.as<std::string>());
+                continue;
+            }
+            void* p = f.Ptr(c);
+            try
+            {
+                switch (f.Kind)
+                {
+                    case FieldKind::Bool: *(bool*)p = v.as<bool>(); break;
+                    case FieldKind::Int: *(int*)p = v.as<int>(); break;
+                    case FieldKind::Float:
+                    case FieldKind::Angle: *(float*)p = v.as<float>(); break;
+                    case FieldKind::Vec2: ReadSeq<2>(v, (float*)p); break;
+                    case FieldKind::Vec3:
+                    case FieldKind::Color3: ReadSeq<3>(v, (float*)p); break;
+                    case FieldKind::Vec4:
+                    case FieldKind::Color4: ReadSeq<4>(v, (float*)p); break;
+                    case FieldKind::String:
+                    case FieldKind::Asset: *(std::string*)p = v.as<std::string>(); break;
+                    case FieldKind::Enum: WriteEnum(f, p, v.as<int>()); break;
+                    case FieldKind::EntityRef: *(uint64_t*)p = v.as<uint64_t>(); break;
+                    case FieldKind::LayerMask: *(uint32_t*)p = v.as<uint32_t>(); break;
+                    case FieldKind::Vec2List:
+                    {
+                        auto& list = *(std::vector<glm::vec2>*)p;
+                        list.clear();
+                        if (v.IsSequence())
+                            for (auto item : v)
+                                if (item.IsSequence() && item.size() >= 2)
+                                    list.emplace_back(item[0].as<float>(), item[1].as<float>());
+                        break;
+                    }
+                    case FieldKind::Vec3List:
+                    {
+                        auto& list = *(std::vector<glm::vec3>*)p;
+                        list.clear();
+                        if (v.IsSequence())
+                            for (auto item : v)
+                                if (item.IsSequence() && item.size() >= 3)
+                                    list.emplace_back(item[0].as<float>(), item[1].as<float>(), item[2].as<float>());
+                        break;
+                    }
+                }
+            }
+            catch (const YAML::Exception& e)
+            {
+                CQ_CORE_WARN("[Scene] {0}.{1}: {2}", info.TypeName, f.Name, e.what());
+            }
+        }
+    }
+
     void ComponentRegistry::SerializeEntity(YAML::Emitter& out, Entity entity)
     {
         for (auto& info : All())
@@ -192,55 +312,7 @@ namespace Conqueror
                 continue;
             void* c = info.Get(entity);
             out << YAML::Key << info.TypeName << YAML::Value << YAML::BeginMap;
-            for (auto& f : info.Fields)
-            {
-                if (!f.Serialize)
-                    continue;
-                if (!f.Ptr)
-                {
-                    if (f.GetString)
-                        out << YAML::Key << f.Name << YAML::Value << f.GetString(c);
-                    continue;
-                }
-                void* p = f.Ptr(c);
-                out << YAML::Key << f.Name << YAML::Value;
-                switch (f.Kind)
-                {
-                    case FieldKind::Bool: out << *(bool*)p; break;
-                    case FieldKind::Int: out << *(int*)p; break;
-                    case FieldKind::Float:
-                    case FieldKind::Angle: out << *(float*)p; break;
-                    case FieldKind::Vec2: WriteSeq<2>(out, (float*)p); break;
-                    case FieldKind::Vec3:
-                    case FieldKind::Color3: WriteSeq<3>(out, (float*)p); break;
-                    case FieldKind::Vec4:
-                    case FieldKind::Color4: WriteSeq<4>(out, (float*)p); break;
-                    case FieldKind::String: out << *(std::string*)p; break;
-                    // Dosya yolu proje göreli / CQ:Resources yazılır (mutlak yol proje taşınınca bozulurdu)
-                    case FieldKind::Asset: out << SceneSerializer::ToAssetPath(*(std::string*)p); break;
-                    case FieldKind::Enum: out << ReadEnum(f, p); break;
-                    case FieldKind::EntityRef: out << *(uint64_t*)p; break;
-                    case FieldKind::LayerMask: out << *(uint32_t*)p; break;
-                    case FieldKind::Vec2List:
-                    {
-                        out << YAML::Flow << YAML::BeginSeq;
-                        for (auto& v : *(std::vector<glm::vec2>*)p)
-                            out << YAML::Flow << YAML::BeginSeq << v.x << v.y << YAML::EndSeq;
-                        out << YAML::EndSeq;
-                        break;
-                    }
-                    case FieldKind::Vec3List:
-                    {
-                        out << YAML::Flow << YAML::BeginSeq;
-                        for (auto& v : *(std::vector<glm::vec3>*)p)
-                            out << YAML::Flow << YAML::BeginSeq << v.x << v.y << v.z << YAML::EndSeq;
-                        out << YAML::EndSeq;
-                        break;
-                    }
-                }
-            }
-            if (info.CustomSerialize)
-                info.CustomSerialize(out, c);
+            WriteComponentFields(out, info, c);
             out << YAML::EndMap;
         }
     }
@@ -264,65 +336,7 @@ namespace Conqueror
                 try { info.CustomDeserialize(node, c); }
                 catch (const YAML::Exception& e) { CQ_CORE_WARN("[Scene] {0}: {1}", info.TypeName, e.what()); }
             }
-            for (auto& f : info.Fields)
-            {
-                if (!f.Serialize)
-                    continue;
-                YAML::Node v = node[f.Name];
-                if (!v)
-                    continue;
-                if (!f.Ptr)
-                {
-                    if (f.SetString && v.IsScalar())
-                        f.SetString(c, v.as<std::string>());
-                    continue;
-                }
-                void* p = f.Ptr(c);
-                try
-                {
-                    switch (f.Kind)
-                    {
-                        case FieldKind::Bool: *(bool*)p = v.as<bool>(); break;
-                        case FieldKind::Int: *(int*)p = v.as<int>(); break;
-                        case FieldKind::Float:
-                        case FieldKind::Angle: *(float*)p = v.as<float>(); break;
-                        case FieldKind::Vec2: ReadSeq<2>(v, (float*)p); break;
-                        case FieldKind::Vec3:
-                        case FieldKind::Color3: ReadSeq<3>(v, (float*)p); break;
-                        case FieldKind::Vec4:
-                        case FieldKind::Color4: ReadSeq<4>(v, (float*)p); break;
-                        case FieldKind::String:
-                        case FieldKind::Asset: *(std::string*)p = v.as<std::string>(); break;
-                        case FieldKind::Enum: WriteEnum(f, p, v.as<int>()); break;
-                        case FieldKind::EntityRef: *(uint64_t*)p = v.as<uint64_t>(); break;
-                        case FieldKind::LayerMask: *(uint32_t*)p = v.as<uint32_t>(); break;
-                        case FieldKind::Vec2List:
-                        {
-                            auto& list = *(std::vector<glm::vec2>*)p;
-                            list.clear();
-                            if (v.IsSequence())
-                                for (auto item : v)
-                                    if (item.IsSequence() && item.size() >= 2)
-                                        list.emplace_back(item[0].as<float>(), item[1].as<float>());
-                            break;
-                        }
-                        case FieldKind::Vec3List:
-                        {
-                            auto& list = *(std::vector<glm::vec3>*)p;
-                            list.clear();
-                            if (v.IsSequence())
-                                for (auto item : v)
-                                    if (item.IsSequence() && item.size() >= 3)
-                                        list.emplace_back(item[0].as<float>(), item[1].as<float>(), item[2].as<float>());
-                            break;
-                        }
-                    }
-                }
-                catch (const YAML::Exception& e)
-                {
-                    CQ_CORE_WARN("[Scene] {0}.{1}: {2}", info.TypeName, f.Name, e.what());
-                }
-            }
+            ReadComponentFields(node, info, c);
         }
     }
 

@@ -55,6 +55,7 @@ namespace Conqueror
         glm::vec4 PositionRange;
         glm::vec4 ColorIntensity;
         glm::vec4 Attenuation;
+        glm::vec4 Profile0{ 1.0f }, Profile1{ 1.0f };   // Light Profile (8 örnek)
     };
 
     struct GPUSpotLight
@@ -63,6 +64,7 @@ namespace Conqueror
         glm::vec4 ColorIntensity;
         glm::vec4 DirectionCosOuter;
         glm::vec4 AttenuationCosInner;
+        glm::vec4 Profile0{ 1.0f }, Profile1{ 1.0f };   // Light Profile (8 örnek)
     };
 
     // Dikdörtgen / disk alan ışığı: merkez + yarım genişlik / yükseklik vektörleri, ışık +Z (sağ x yukarı) yönüne yayar
@@ -80,5 +82,5 @@ namespace Conqueror
         GPUSpotLight SpotLights[kMaxSpotLights];
         GPUAreaLight AreaLights[kMaxAreaLights];
     };
-    static_assert(sizeof(LightsUBO) == kMaxPointLights * 48 + kMaxSpotLights * 64 + kMaxAreaLights * 64, "LightsUBO must match std140 CQ_LightBlock");
+    static_assert(sizeof(LightsUBO) == kMaxPointLights * 80 + kMaxSpotLights * 96 + kMaxAreaLights * 64, "LightsUBO must match std140 CQ_LightBlock");
 }

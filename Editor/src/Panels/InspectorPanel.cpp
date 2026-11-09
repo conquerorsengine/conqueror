@@ -429,6 +429,12 @@ namespace Conqueror::Editor
 
     static bool DrawRegistryField(Entity entity, const ComponentField& f, void* component)
     {
+        if (f.Action)
+        {
+            if (UI::ButtonFullWidth(f.Label.c_str(), 26.0f))
+                f.Action(entity, component);
+            return false;
+        }
         if (!f.Ptr)
         {
             // Sanal metin/varlık alanı
@@ -1060,6 +1066,208 @@ namespace Conqueror::Editor
         }
     }
 
+    void DrawParticleSystemUI(ParticleSystemComponent& ps)
+{
+        auto& rt = *ps.RT;
+        UI::BeginProperty("Asset", "A Particle System asset (.cqparticle): when set, these settings come from the file.");
+        AssetUI::AssetSlot("##psasset", "Particle System", { ".cqparticle" }, ps.Asset);
+        UI::EndProperty();
+        if (!ps.Asset.empty())
+        {
+            if (ImGui::Button(ICON_FA_FLOPPY_DISK "  Save To Asset"))
+                ParticleAssets::Save(ps.Asset, ps);
+            ImGui::SameLine();
+            if (ImGui::Button(ICON_FA_ROTATE "  Load From Asset"))
+                rt.AppliedAsset.clear();
+        }
+        UI::BeginProperty("Sub UV", "A Sub UV Animation asset (.cqsubuv): sets the texture sheet.");
+        AssetUI::AssetSlot("##pssubuv", "Sub UV Animation", { ".cqsubuv" }, ps.SubUV);
+        UI::EndProperty();
+        // Oynatma kontrolleri + hazır ayarlar
+        {
+            if (ImGui::Button(rt.Playing && !rt.Paused ? ICON_FA_PAUSE " Pause" : ICON_FA_PLAY " Play"))
+            {
+                if (rt.Playing && !rt.Paused) ParticleSystem::Pause(ps);
+                else ParticleSystem::Play(ps);
+            }
+            ImGui::SameLine();
+            if (ImGui::Button(ICON_FA_ROTATE_RIGHT " Restart")) ParticleSystem::Restart(ps);
+            ImGui::SameLine();
+            if (ImGui::Button(ICON_FA_STOP " Stop")) ParticleSystem::Stop(ps, true);
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(-1.0f);
+            if (ImGui::BeginCombo("##preset", ICON_FA_WAND_MAGIC_SPARKLES " Preset"))
+            {
+                for (const auto& name : ParticleSystem::GetPresetNames())
+                    if (ImGui::Selectable(name.c_str()))
+                        ParticleSystem::ApplyPreset(ps, name);
+                ImGui::EndCombo();
+            }
+            ImGui::TextDisabled("Particles: %zu   |   Time: %.2f s", rt.Particles.size(), rt.Time);
+        }
+
+        auto module = [](const char* name, bool* enabled, bool defaultOpen = false) -> bool {
+            ImGui::PushID(name);
+            ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_FramePadding;
+            if (defaultOpen) flags |= ImGuiTreeNodeFlags_DefaultOpen;
+            bool open = ImGui::TreeNodeEx("##mod", flags, "%s%s", enabled ? "       " : "", name);
+            if (enabled)
+            {
+                ImVec2 min = ImGui::GetItemRectMin();
+                ImGui::SetCursorScreenPos(ImVec2(min.x + ImGui::GetTreeNodeToLabelSpacing() - 2.0f, min.y + 1.0f));
+                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
+                ImGui::Checkbox("##en", enabled);
+                ImGui::PopStyleVar();
+            }
+            ImGui::PopID();
+            if (open && enabled && !*enabled) ImGui::BeginDisabled();
+            return open;
+        };
+        auto endModule = [](bool* enabled) {
+            if (enabled && !*enabled) ImGui::EndDisabled();
+            ImGui::TreePop();
+        };
+
+        if (module("Main", nullptr, true))
+        {
+            UI::DragFloat("Duration", ps.Duration, 0.05f, 0.05f, 1000.0f, "%.2f s");
+            UI::Checkbox("Looping", ps.Looping);
+            UI::Checkbox("Prewarm", ps.Prewarm);
+            static const char* const kStopActions[] = { "None", "Disable", "Destroy" };
+            UI::Combo("Stop Action", ps.StopAction, kStopActions, 3, "What happens to the object when the system has finished playing (non-looping) and every particle has died");
+            UI::DragFloat("Start Delay", ps.StartDelay, 0.05f, 0.0f, 100.0f, "%.2f s");
+            UI::Vec2("Start Lifetime", ps.StartLifetime, 0.05f);
+            UI::Vec2("Start Speed", ps.StartSpeed, 0.05f);
+            UI::Vec2("Start Size", ps.StartSize, 0.01f);
+            UI::Vec2("Start Rotation", ps.StartRotation, 1.0f);
+            UI::Color4("Start Color A", ps.StartColorA);
+            UI::Color4("Start Color B", ps.StartColorB);
+            UI::DragFloat("Gravity Modifier", ps.GravityModifier, 0.01f, -10.0f, 10.0f);
+            const char* spaces[] = { "Local", "World" };
+            UI::ComboEnum("Simulation Space", ps.SimulationSpace, spaces, 2);
+            UI::DragFloat("Simulation Speed", ps.SimulationSpeed, 0.01f, 0.0f, 10.0f);
+            UI::Checkbox("Play On Awake", ps.PlayOnAwake);
+            UI::DragInt("Max Particles", ps.MaxParticles, 10.0f, 1, 100000);
+            endModule(nullptr);
+        }
+        if (module("Emission", &ps.EmissionEnabled, true))
+        {
+            UI::DragFloat("Rate over Time", ps.RateOverTime, 0.5f, 0.0f, 100000.0f, "%.1f /s");
+            UI::DragFloat("Rate over Distance", ps.RateOverDistance, 0.1f, 0.0f, 10000.0f, "%.1f /m");
+            int remove = -1;
+            for (int i = 0; i < (int)ps.Bursts.size(); ++i)
+            {
+                ImGui::PushID(i);
+                auto& b = ps.Bursts[(size_t)i];
+                UI::BeginProperty("Burst", "Time (s), Count, Cycles, Interval (s)");
+                float w = (ImGui::GetContentRegionAvail().x - 34.0f) / 4.0f;
+                ImGui::SetNextItemWidth(w); ImGui::DragFloat("##t", &b.Time, 0.01f, 0.0f, 1000.0f, "%.2fs"); ImGui::SameLine(0, 2);
+                ImGui::SetNextItemWidth(w); ImGui::DragInt("##c", &b.Count, 1.0f, 0, 100000); ImGui::SameLine(0, 2);
+                ImGui::SetNextItemWidth(w); ImGui::DragInt("##y", &b.Cycles, 0.1f, 1, 1000, "x%d"); ImGui::SameLine(0, 2);
+                ImGui::SetNextItemWidth(w); ImGui::DragFloat("##i", &b.Interval, 0.01f, 0.001f, 100.0f, "%.2fs"); ImGui::SameLine(0, 2);
+                if (ImGui::SmallButton(ICON_FA_XMARK)) remove = i;
+                UI::EndProperty();
+                ImGui::PopID();
+            }
+            if (remove >= 0) ps.Bursts.erase(ps.Bursts.begin() + remove);
+            UI::BeginProperty("");
+            if (ImGui::SmallButton(ICON_FA_PLUS " Add Burst")) ps.Bursts.push_back({});
+            UI::EndProperty();
+            endModule(&ps.EmissionEnabled);
+        }
+        if (module("Shape", &ps.ShapeEnabled))
+        {
+            const char* shapes[] = { "Sphere", "Hemisphere", "Cone", "Box", "Circle", "Edge", "Point" };
+            UI::ComboEnum("Shape", ps.Shape, shapes, 7);
+            if (ps.Shape == ParticleShape::Box) UI::Vec3("Box Size", ps.BoxSize, 0.05f, 1.0f);
+            else if (ps.Shape != ParticleShape::Point) UI::DragFloat("Radius", ps.Radius, 0.01f, 0.0f, 1000.0f);
+            if (ps.Shape == ParticleShape::Cone) UI::SliderFloat("Angle", ps.Angle, 0.0f, 89.0f, "%.0f deg");
+            UI::Checkbox("Emit from Shell", ps.EmitFromShell);
+            UI::SliderFloat("Randomize Direction", ps.RandomizeDirection, 0.0f, 1.0f);
+            endModule(&ps.ShapeEnabled);
+        }
+        if (module("Velocity over Lifetime", &ps.VelocityEnabled))
+        {
+            UI::Vec3("Linear", ps.VelocityOverLifetime, 0.05f);
+            UI::DragFloat("Orbital (Y)", ps.OrbitalSpeed, 0.05f, -100.0f, 100.0f, "%.2f rad/s");
+            endModule(&ps.VelocityEnabled);
+        }
+        if (module("Limit Velocity", &ps.LimitVelocityEnabled))
+        {
+            UI::DragFloat("Drag", ps.Drag, 0.01f, 0.0f, 100.0f);
+            UI::DragFloat("Speed Limit", ps.SpeedLimit, 0.1f, 0.0f, 10000.0f);
+            endModule(&ps.LimitVelocityEnabled);
+        }
+        if (module("Noise", &ps.NoiseEnabled))
+        {
+            UI::DragFloat("Strength", ps.NoiseStrength, 0.01f, 0.0f, 100.0f);
+            UI::DragFloat("Frequency", ps.NoiseFrequency, 0.01f, 0.0f, 50.0f);
+            UI::DragFloat("Scroll Speed", ps.NoiseScrollSpeed, 0.01f, 0.0f, 50.0f);
+            endModule(&ps.NoiseEnabled);
+        }
+        if (module("Color over Lifetime", &ps.ColorOverLifetimeEnabled))
+        {
+            UI::GradientEditor("Color", ps.ColorOverLifetime);
+            endModule(&ps.ColorOverLifetimeEnabled);
+        }
+        if (module("Size over Lifetime", &ps.SizeOverLifetimeEnabled))
+        {
+            UI::CurveEditor("Size", ps.SizeOverLifetime, 0.0f, 3.0f);
+            endModule(&ps.SizeOverLifetimeEnabled);
+        }
+        if (module("Rotation over Lifetime", &ps.RotationOverLifetimeEnabled))
+        {
+            UI::DragFloat("Angular Velocity", ps.AngularVelocity, 1.0f, -3600.0f, 3600.0f, "%.0f deg/s");
+            endModule(&ps.RotationOverLifetimeEnabled);
+        }
+        if (module("Collision (Ground Plane)", &ps.CollisionEnabled))
+        {
+            UI::DragFloat("Plane Height", ps.CollisionPlaneY, 0.05f, -10000.0f, 10000.0f);
+            UI::SliderFloat("Bounce", ps.Bounce, 0.0f, 1.0f);
+            UI::SliderFloat("Lifetime Loss", ps.LifetimeLoss, 0.0f, 1.0f);
+            endModule(&ps.CollisionEnabled);
+        }
+        if (module("Texture Sheet Animation", &ps.TextureSheetEnabled))
+        {
+            UI::BeginProperty("Tiles");
+            ImGui::DragInt2("##tiles", &ps.Tiles.x, 0.1f, 1, 64);
+            UI::EndProperty();
+            UI::DragFloat("Cycles", ps.AnimationCycles, 0.05f, 0.01f, 100.0f);
+            UI::Checkbox("Random Start Frame", ps.RandomStartFrame);
+            endModule(&ps.TextureSheetEnabled);
+        }
+        if (module("Renderer", nullptr, true))
+        {
+            const char* modes[] = { "Billboard", "Stretched Billboard", "Horizontal Billboard", "Vertical Billboard" };
+            UI::ComboEnum("Render Mode", ps.RenderMode, modes, 4);
+            if (ps.RenderMode == ParticleRenderMode::StretchedBillboard)
+            {
+                UI::DragFloat("Length Scale", ps.LengthScale, 0.01f, 0.0f, 100.0f);
+                UI::DragFloat("Speed Scale", ps.SpeedScale, 0.01f, 0.0f, 10.0f);
+            }
+            const char* blends[] = { "Alpha Blended", "Additive", "Premultiplied" };
+            UI::ComboEnum("Blend", ps.Blend, blends, 3);
+            UI::BeginProperty("Texture", "Drag an image from the Content Browser (empty = soft circle)");
+            std::string texName = ps.TexturePath.empty() ? std::string("Default (soft circle)") : std::filesystem::path(ps.TexturePath).filename().string();
+            ImGui::Button(texName.c_str(), ImVec2(ImGui::GetContentRegionAvail().x - 2.0f * (ImGui::GetFrameHeight() + 4.0f), 0));
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                    ps.TexturePath = (const char*)p->Data;
+                ImGui::EndDragDropTarget();
+            }
+            ImGui::SameLine(0, 4);
+            if (std::string picked; ObjectPicker::Button("ptexpick", "Texture", ObjectPicker::ImageExtensions(), ps.TexturePath, picked))
+                ps.TexturePath = picked;
+            ImGui::SameLine(0, 4);
+            if (ImGui::Button(ICON_FA_XMARK "##cleartex", ImVec2(ImGui::GetFrameHeight(), 0))) ps.TexturePath.clear();
+            UI::EndProperty();
+            UI::DragFloat("Emissive (HDR)", ps.EmissiveIntensity, 0.05f, 0.0f, 100.0f);
+            UI::Checkbox("Sort by Distance", ps.SortByDistance);
+            endModule(nullptr);
+        }
+    }
+
     void InspectorPanel::DrawComponents(Entity entity)
     {
         // ---- Başlık: aktiflik | ikon | ad | Static
@@ -1429,193 +1637,7 @@ namespace Conqueror::Editor
             }
         });
 
-        DrawComponent<ParticleSystemComponent>("Particle System", entity, [](auto& ps)
-        {
-            auto& rt = *ps.RT;
-            // Oynatma kontrolleri + hazır ayarlar
-            {
-                if (ImGui::Button(rt.Playing && !rt.Paused ? ICON_FA_PAUSE " Pause" : ICON_FA_PLAY " Play"))
-                {
-                    if (rt.Playing && !rt.Paused) ParticleSystem::Pause(ps);
-                    else ParticleSystem::Play(ps);
-                }
-                ImGui::SameLine();
-                if (ImGui::Button(ICON_FA_ROTATE_RIGHT " Restart")) ParticleSystem::Restart(ps);
-                ImGui::SameLine();
-                if (ImGui::Button(ICON_FA_STOP " Stop")) ParticleSystem::Stop(ps, true);
-                ImGui::SameLine();
-                ImGui::SetNextItemWidth(-1.0f);
-                if (ImGui::BeginCombo("##preset", ICON_FA_WAND_MAGIC_SPARKLES " Preset"))
-                {
-                    for (const auto& name : ParticleSystem::GetPresetNames())
-                        if (ImGui::Selectable(name.c_str()))
-                            ParticleSystem::ApplyPreset(ps, name);
-                    ImGui::EndCombo();
-                }
-                ImGui::TextDisabled("Particles: %zu   |   Time: %.2f s", rt.Particles.size(), rt.Time);
-            }
-
-            auto module = [](const char* name, bool* enabled, bool defaultOpen = false) -> bool {
-                ImGui::PushID(name);
-                ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_FramePadding;
-                if (defaultOpen) flags |= ImGuiTreeNodeFlags_DefaultOpen;
-                bool open = ImGui::TreeNodeEx("##mod", flags, "%s%s", enabled ? "       " : "", name);
-                if (enabled)
-                {
-                    ImVec2 min = ImGui::GetItemRectMin();
-                    ImGui::SetCursorScreenPos(ImVec2(min.x + ImGui::GetTreeNodeToLabelSpacing() - 2.0f, min.y + 1.0f));
-                    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
-                    ImGui::Checkbox("##en", enabled);
-                    ImGui::PopStyleVar();
-                }
-                ImGui::PopID();
-                if (open && enabled && !*enabled) ImGui::BeginDisabled();
-                return open;
-            };
-            auto endModule = [](bool* enabled) {
-                if (enabled && !*enabled) ImGui::EndDisabled();
-                ImGui::TreePop();
-            };
-
-            if (module("Main", nullptr, true))
-            {
-                UI::DragFloat("Duration", ps.Duration, 0.05f, 0.05f, 1000.0f, "%.2f s");
-                UI::Checkbox("Looping", ps.Looping);
-                UI::Checkbox("Prewarm", ps.Prewarm);
-                static const char* const kStopActions[] = { "None", "Disable", "Destroy" };
-                UI::Combo("Stop Action", ps.StopAction, kStopActions, 3, "What happens to the object when the system has finished playing (non-looping) and every particle has died");
-                UI::DragFloat("Start Delay", ps.StartDelay, 0.05f, 0.0f, 100.0f, "%.2f s");
-                UI::Vec2("Start Lifetime", ps.StartLifetime, 0.05f);
-                UI::Vec2("Start Speed", ps.StartSpeed, 0.05f);
-                UI::Vec2("Start Size", ps.StartSize, 0.01f);
-                UI::Vec2("Start Rotation", ps.StartRotation, 1.0f);
-                UI::Color4("Start Color A", ps.StartColorA);
-                UI::Color4("Start Color B", ps.StartColorB);
-                UI::DragFloat("Gravity Modifier", ps.GravityModifier, 0.01f, -10.0f, 10.0f);
-                const char* spaces[] = { "Local", "World" };
-                UI::ComboEnum("Simulation Space", ps.SimulationSpace, spaces, 2);
-                UI::DragFloat("Simulation Speed", ps.SimulationSpeed, 0.01f, 0.0f, 10.0f);
-                UI::Checkbox("Play On Awake", ps.PlayOnAwake);
-                UI::DragInt("Max Particles", ps.MaxParticles, 10.0f, 1, 100000);
-                endModule(nullptr);
-            }
-            if (module("Emission", &ps.EmissionEnabled, true))
-            {
-                UI::DragFloat("Rate over Time", ps.RateOverTime, 0.5f, 0.0f, 100000.0f, "%.1f /s");
-                UI::DragFloat("Rate over Distance", ps.RateOverDistance, 0.1f, 0.0f, 10000.0f, "%.1f /m");
-                int remove = -1;
-                for (int i = 0; i < (int)ps.Bursts.size(); ++i)
-                {
-                    ImGui::PushID(i);
-                    auto& b = ps.Bursts[(size_t)i];
-                    UI::BeginProperty("Burst", "Time (s), Count, Cycles, Interval (s)");
-                    float w = (ImGui::GetContentRegionAvail().x - 34.0f) / 4.0f;
-                    ImGui::SetNextItemWidth(w); ImGui::DragFloat("##t", &b.Time, 0.01f, 0.0f, 1000.0f, "%.2fs"); ImGui::SameLine(0, 2);
-                    ImGui::SetNextItemWidth(w); ImGui::DragInt("##c", &b.Count, 1.0f, 0, 100000); ImGui::SameLine(0, 2);
-                    ImGui::SetNextItemWidth(w); ImGui::DragInt("##y", &b.Cycles, 0.1f, 1, 1000, "x%d"); ImGui::SameLine(0, 2);
-                    ImGui::SetNextItemWidth(w); ImGui::DragFloat("##i", &b.Interval, 0.01f, 0.001f, 100.0f, "%.2fs"); ImGui::SameLine(0, 2);
-                    if (ImGui::SmallButton(ICON_FA_XMARK)) remove = i;
-                    UI::EndProperty();
-                    ImGui::PopID();
-                }
-                if (remove >= 0) ps.Bursts.erase(ps.Bursts.begin() + remove);
-                UI::BeginProperty("");
-                if (ImGui::SmallButton(ICON_FA_PLUS " Add Burst")) ps.Bursts.push_back({});
-                UI::EndProperty();
-                endModule(&ps.EmissionEnabled);
-            }
-            if (module("Shape", &ps.ShapeEnabled))
-            {
-                const char* shapes[] = { "Sphere", "Hemisphere", "Cone", "Box", "Circle", "Edge", "Point" };
-                UI::ComboEnum("Shape", ps.Shape, shapes, 7);
-                if (ps.Shape == ParticleShape::Box) UI::Vec3("Box Size", ps.BoxSize, 0.05f, 1.0f);
-                else if (ps.Shape != ParticleShape::Point) UI::DragFloat("Radius", ps.Radius, 0.01f, 0.0f, 1000.0f);
-                if (ps.Shape == ParticleShape::Cone) UI::SliderFloat("Angle", ps.Angle, 0.0f, 89.0f, "%.0f deg");
-                UI::Checkbox("Emit from Shell", ps.EmitFromShell);
-                UI::SliderFloat("Randomize Direction", ps.RandomizeDirection, 0.0f, 1.0f);
-                endModule(&ps.ShapeEnabled);
-            }
-            if (module("Velocity over Lifetime", &ps.VelocityEnabled))
-            {
-                UI::Vec3("Linear", ps.VelocityOverLifetime, 0.05f);
-                UI::DragFloat("Orbital (Y)", ps.OrbitalSpeed, 0.05f, -100.0f, 100.0f, "%.2f rad/s");
-                endModule(&ps.VelocityEnabled);
-            }
-            if (module("Limit Velocity", &ps.LimitVelocityEnabled))
-            {
-                UI::DragFloat("Drag", ps.Drag, 0.01f, 0.0f, 100.0f);
-                UI::DragFloat("Speed Limit", ps.SpeedLimit, 0.1f, 0.0f, 10000.0f);
-                endModule(&ps.LimitVelocityEnabled);
-            }
-            if (module("Noise", &ps.NoiseEnabled))
-            {
-                UI::DragFloat("Strength", ps.NoiseStrength, 0.01f, 0.0f, 100.0f);
-                UI::DragFloat("Frequency", ps.NoiseFrequency, 0.01f, 0.0f, 50.0f);
-                UI::DragFloat("Scroll Speed", ps.NoiseScrollSpeed, 0.01f, 0.0f, 50.0f);
-                endModule(&ps.NoiseEnabled);
-            }
-            if (module("Color over Lifetime", &ps.ColorOverLifetimeEnabled))
-            {
-                UI::GradientEditor("Color", ps.ColorOverLifetime);
-                endModule(&ps.ColorOverLifetimeEnabled);
-            }
-            if (module("Size over Lifetime", &ps.SizeOverLifetimeEnabled))
-            {
-                UI::CurveEditor("Size", ps.SizeOverLifetime, 0.0f, 3.0f);
-                endModule(&ps.SizeOverLifetimeEnabled);
-            }
-            if (module("Rotation over Lifetime", &ps.RotationOverLifetimeEnabled))
-            {
-                UI::DragFloat("Angular Velocity", ps.AngularVelocity, 1.0f, -3600.0f, 3600.0f, "%.0f deg/s");
-                endModule(&ps.RotationOverLifetimeEnabled);
-            }
-            if (module("Collision (Ground Plane)", &ps.CollisionEnabled))
-            {
-                UI::DragFloat("Plane Height", ps.CollisionPlaneY, 0.05f, -10000.0f, 10000.0f);
-                UI::SliderFloat("Bounce", ps.Bounce, 0.0f, 1.0f);
-                UI::SliderFloat("Lifetime Loss", ps.LifetimeLoss, 0.0f, 1.0f);
-                endModule(&ps.CollisionEnabled);
-            }
-            if (module("Texture Sheet Animation", &ps.TextureSheetEnabled))
-            {
-                UI::BeginProperty("Tiles");
-                ImGui::DragInt2("##tiles", &ps.Tiles.x, 0.1f, 1, 64);
-                UI::EndProperty();
-                UI::DragFloat("Cycles", ps.AnimationCycles, 0.05f, 0.01f, 100.0f);
-                UI::Checkbox("Random Start Frame", ps.RandomStartFrame);
-                endModule(&ps.TextureSheetEnabled);
-            }
-            if (module("Renderer", nullptr, true))
-            {
-                const char* modes[] = { "Billboard", "Stretched Billboard", "Horizontal Billboard", "Vertical Billboard" };
-                UI::ComboEnum("Render Mode", ps.RenderMode, modes, 4);
-                if (ps.RenderMode == ParticleRenderMode::StretchedBillboard)
-                {
-                    UI::DragFloat("Length Scale", ps.LengthScale, 0.01f, 0.0f, 100.0f);
-                    UI::DragFloat("Speed Scale", ps.SpeedScale, 0.01f, 0.0f, 10.0f);
-                }
-                const char* blends[] = { "Alpha Blended", "Additive", "Premultiplied" };
-                UI::ComboEnum("Blend", ps.Blend, blends, 3);
-                UI::BeginProperty("Texture", "Drag an image from the Content Browser (empty = soft circle)");
-                std::string texName = ps.TexturePath.empty() ? std::string("Default (soft circle)") : std::filesystem::path(ps.TexturePath).filename().string();
-                ImGui::Button(texName.c_str(), ImVec2(ImGui::GetContentRegionAvail().x - 2.0f * (ImGui::GetFrameHeight() + 4.0f), 0));
-                if (ImGui::BeginDragDropTarget())
-                {
-                    if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
-                        ps.TexturePath = (const char*)p->Data;
-                    ImGui::EndDragDropTarget();
-                }
-                ImGui::SameLine(0, 4);
-                if (std::string picked; ObjectPicker::Button("ptexpick", "Texture", ObjectPicker::ImageExtensions(), ps.TexturePath, picked))
-                    ps.TexturePath = picked;
-                ImGui::SameLine(0, 4);
-                if (ImGui::Button(ICON_FA_XMARK "##cleartex", ImVec2(ImGui::GetFrameHeight(), 0))) ps.TexturePath.clear();
-                UI::EndProperty();
-                UI::DragFloat("Emissive (HDR)", ps.EmissiveIntensity, 0.05f, 0.0f, 100.0f);
-                UI::Checkbox("Sort by Distance", ps.SortByDistance);
-                endModule(nullptr);
-            }
-        });
+        DrawComponent<ParticleSystemComponent>("Particle System", entity, [](auto& ps) { DrawParticleSystemUI(ps); });
 
         DrawComponent<TerrainComponent>("Terrain", entity, [](auto& t)
         {

@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <vector>
 
 // Ragdoll (Unreal Physics Asset, otomatik): iskeletten yeterince uzun kemikler seçilir, her biri için kapsül
@@ -19,6 +20,7 @@ namespace Conqueror
     struct RagdollComponent
     {
         bool StartActive = false;         // oyun başlar başlamaz ragdoll
+        std::string PhysicsAsset;         // .cqphysicsasset: gövdeler dosyadan (boşsa iskeletten otomatik)
         float TotalMass = 60.0f;
         float RadiusScale = 0.22f;        // kapsül yarıçapı = kemik uzunluğu x ölçek
         float MinBoneLength = 0.06f;      // iskelet boyuna oranla (daha kısa kemikler gövde almaz)
@@ -34,11 +36,11 @@ namespace Conqueror
 
         RagdollComponent() = default;
         RagdollComponent(const RagdollComponent& o)
-            : StartActive(o.StartActive), TotalMass(o.TotalMass), RadiusScale(o.RadiusScale), MinBoneLength(o.MinBoneLength),
+            : StartActive(o.StartActive), PhysicsAsset(o.PhysicsAsset), TotalMass(o.TotalMass), RadiusScale(o.RadiusScale), MinBoneLength(o.MinBoneLength),
               MaxBodies(o.MaxBodies), SwingLimit(o.SwingLimit), TwistLimit(o.TwistLimit), LinearDamping(o.LinearDamping) {}
         RagdollComponent& operator=(const RagdollComponent& o)
         {
-            StartActive = o.StartActive; TotalMass = o.TotalMass; RadiusScale = o.RadiusScale; MinBoneLength = o.MinBoneLength;
+            StartActive = o.StartActive; PhysicsAsset = o.PhysicsAsset; TotalMass = o.TotalMass; RadiusScale = o.RadiusScale; MinBoneLength = o.MinBoneLength;
             MaxBodies = o.MaxBodies; SwingLimit = o.SwingLimit; TwistLimit = o.TwistLimit; LinearDamping = o.LinearDamping;
             Simulating = false; BodyCount = 0; Runtime.reset();
             return *this;
@@ -60,5 +62,7 @@ namespace Conqueror
         CQ_API void Update(Scene& scene);
     }
 
+    // Physics Asset üretimi: modelin gövde alabilecek kemik adları
+    CQ_API std::vector<std::string> RagdollBoneNames(const std::string& modelPath);
     void RegisterRagdollComponents();
 }

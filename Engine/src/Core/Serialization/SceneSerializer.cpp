@@ -563,6 +563,7 @@ namespace Conqueror
     {
         out << YAML::Key << "ParticleSystemComponent" << YAML::BeginMap;
 #define CQ_PS_OUT(field) out << YAML::Key << #field << YAML::Value << ps.field
+        CQ_PS_OUT(Asset); CQ_PS_OUT(SubUV);
         CQ_PS_OUT(Duration); CQ_PS_OUT(Looping); CQ_PS_OUT(Prewarm); CQ_PS_OUT(PlayOnAwake); CQ_PS_OUT(StopAction); CQ_PS_OUT(StartDelay);
         CQ_PS_OUT(StartLifetime); CQ_PS_OUT(StartSpeed); CQ_PS_OUT(StartSize); CQ_PS_OUT(StartRotation);
         CQ_PS_OUT(StartColorA); CQ_PS_OUT(StartColorB); CQ_PS_OUT(GravityModifier); CQ_PS_OUT(SimulationSpeed); CQ_PS_OUT(MaxParticles);
@@ -600,6 +601,7 @@ namespace Conqueror
     static void DeserializeParticleSystem(const YAML::Node& n, ParticleSystemComponent& ps)
     {
 #define CQ_PS_IN(field, T) if (n[#field]) ps.field = n[#field].as<T>()
+        CQ_PS_IN(Asset, std::string); CQ_PS_IN(SubUV, std::string);
         CQ_PS_IN(Duration, float); CQ_PS_IN(Looping, bool); CQ_PS_IN(Prewarm, bool); CQ_PS_IN(PlayOnAwake, bool); CQ_PS_IN(StopAction, int); CQ_PS_IN(StartDelay, float);
         CQ_PS_IN(StartLifetime, glm::vec2); CQ_PS_IN(StartSpeed, glm::vec2); CQ_PS_IN(StartSize, glm::vec2); CQ_PS_IN(StartRotation, glm::vec2);
         CQ_PS_IN(StartColorA, glm::vec4); CQ_PS_IN(StartColorB, glm::vec4); CQ_PS_IN(GravityModifier, float); CQ_PS_IN(SimulationSpeed, float); CQ_PS_IN(MaxParticles, int);
@@ -2016,6 +2018,50 @@ namespace Conqueror
         YAML::Emitter out;
         SerializeEntity(out, entity);
         return out.c_str();
+    }
+
+    namespace ParticleAssets
+    {
+        bool Save(const std::string& path, const ParticleSystemComponent& ps)
+        {
+            YAML::Emitter out;
+            out << YAML::BeginMap;
+            SerializeParticleSystem(out, ps);
+            out << YAML::EndMap;
+            std::ofstream file(SceneSerializer::ResolveAssetPath(path), std::ios::binary);
+            if (!file)
+                return false;
+            file << out.c_str() << "\n";
+            return file.good();
+        }
+
+        bool Load(const std::string& path, ParticleSystemComponent& ps)
+        {
+            try
+            {
+                YAML::Node root = YAML::LoadFile(SceneSerializer::ResolveAssetPath(path));
+                YAML::Node n = root["ParticleSystemComponent"];
+                if (!n)
+                    return false;
+                const std::string asset = ps.Asset;
+                DeserializeParticleSystem(n, ps);
+                ps.Asset = asset;
+                return true;
+            }
+            catch (...)
+            {
+                return false;
+            }
+        }
+
+        std::string ToText(const ParticleSystemComponent& ps)
+        {
+            YAML::Emitter out;
+            out << YAML::BeginMap;
+            SerializeParticleSystem(out, ps);
+            out << YAML::EndMap;
+            return out.c_str();
+        }
     }
 
     void SceneSerializer::Serialize(const std::filesystem::path& filepath)

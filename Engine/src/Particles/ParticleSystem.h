@@ -137,6 +137,8 @@ namespace Conqueror
         ParticleRenderMode RenderMode = ParticleRenderMode::Billboard;
         ParticleBlend Blend = ParticleBlend::Alpha;
         std::string TexturePath;                     // boşsa yumuşak daire
+        std::string SubUV;                           // .cqsubuv: Texture Sheet Animation ayarları
+        std::string Asset;                           // .cqparticle: ayarlar bu dosyadan gelir
         float LengthScale = 2.0f;                    // Stretched
         float SpeedScale = 0.1f;
         bool SortByDistance = true;
@@ -164,6 +166,7 @@ namespace Conqueror
             std::mt19937 Rng{ 12345u };
             std::shared_ptr<Texture2D> Texture;
             std::string LoadedTexturePath;
+            std::string AppliedAsset;                // uygulanan .cqparticle
         };
         std::shared_ptr<Runtime> RT = std::make_shared<Runtime>();
         bool EditorPreview = false;                   // editör seçiliyken önizleme
@@ -181,6 +184,15 @@ namespace Conqueror
             return *this;
         }
     };
+
+    // Particle System varlığı (.cqparticle): ayarlar dosyada, Particle System bileşeninin Asset yuvasından kullanılır
+    namespace ParticleAssets
+    {
+        constexpr const char* Extension = ".cqparticle";
+        CQ_API bool Save(const std::string& path, const ParticleSystemComponent& ps);
+        CQ_API bool Load(const std::string& path, ParticleSystemComponent& ps);
+        CQ_API std::string ToText(const ParticleSystemComponent& ps);
+    }
 
     class CQ_API ParticleSystem
     {

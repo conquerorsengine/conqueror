@@ -268,6 +268,7 @@ namespace Conqueror::Editor
             "Per-object bake quality: anti-aliasing, backface tolerance, pushoff (Mesh Renderer > Lighting).");
         add("Rendering", "", "Volume Profile", ICON_FA_CUBES_STACKED, "volumeprofile",
             "Post-processing overrides (bloom, exposure, color, vignette, depth of field...) that Post Process Volumes share.", true, true);
+        add("Rendering", "", "Particle System", ICON_FA_FIRE, "particleasset", "Particle settings in a file (Unreal Niagara System). Assign it to a Particle System component's Asset slot.");
         add("Rendering", "", "Lens Flare", ICON_FA_STAR, "lensflare", "Lens flare elements (glow, ring, ghosts, streak) for the Lens Flare component.");
 
         // Shader
@@ -414,7 +415,7 @@ namespace Conqueror::Editor
             { "Scene", ICON_FA_CLAPPERBOARD },      { "2D", ICON_FA_SHAPES },           { "Rendering", ICON_FA_CIRCLE_HALF_STROKE },
             { "Shader", ICON_FA_WAND_MAGIC_SPARKLES }, { "Physics", ICON_FA_BASKETBALL }, { "Terrain", ICON_FA_MOUNTAIN_SUN },
             { "Audio", ICON_FA_VOLUME_HIGH },       { "Animation", ICON_FA_PERSON_RUNNING }, { "Timeline", ICON_FA_FILM },
-            { "Scripting", ICON_FA_FILE_CODE },     { "Data", ICON_FA_DATABASE },       { "Input", ICON_FA_GAMEPAD },         { "UI", ICON_FA_WINDOW_MAXIMIZE },          { "AI", ICON_FA_SITEMAP },          { "Media", ICON_FA_FILM },         { "Miscellaneous", ICON_FA_SHAPES },
+            { "Scripting", ICON_FA_FILE_CODE },     { "Data", ICON_FA_DATABASE },       { "Input", ICON_FA_GAMEPAD },         { "UI", ICON_FA_WINDOW_MAXIMIZE },          { "AI", ICON_FA_SITEMAP },          { "Media", ICON_FA_FILM },         { "Foliage", ICON_FA_TREE },         { "Miscellaneous", ICON_FA_SHAPES },
         };
     }
 

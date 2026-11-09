@@ -574,6 +574,8 @@ namespace Conqueror
 
         // ---- Particle System (Shuriken): ana modül, emisyon, şekil, oluşturucu
         ComponentDef<ParticleSystemComponent>("Particle System", "ParticleSystemComponent", "Effects", ICON_FA_FIRE).Builtin()
+            .Field("Asset", "Asset", &ParticleSystemComponent::Asset, FieldKind::Asset).Filter(".cqparticle")
+            .Field("SubUV", "Sub UV", &ParticleSystemComponent::SubUV, FieldKind::Asset).Filter(".cqsubuv")
             .Field("Duration", "Duration", &ParticleSystemComponent::Duration)
             .Field("Looping", "Looping", &ParticleSystemComponent::Looping)
             .Field("Prewarm", "Prewarm", &ParticleSystemComponent::Prewarm)

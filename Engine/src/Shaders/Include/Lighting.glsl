@@ -609,6 +609,16 @@ vec3 CQ_AreaLightContribution(CQ_Surface s, CQ_AreaLight al, vec3 V, vec3 F0, ve
 // Son gölgelendirilen yüzeyin güneş gölgesi (G-buffer gölge eki / TAA gölge değişimi)
 float g_CQSunShadow = 1.0;
 
+// Light Profile: 8 örnek arasında doğrusal (t: 0..1)
+float CQ_LightProfile(vec4 p0, vec4 p1, float t)
+{
+    float x = clamp(t, 0.0, 1.0) * 7.0;
+    int i = min(int(x), 6);
+    float samples[8] = float[8](p0.x, p0.y, p0.z, p0.w, p1.x, p1.y, p1.z, p1.w);
+    return mix(samples[i], samples[i + 1], x - float(i));
+}
+
+
 vec4 CQ_ShadeSurface(CQ_Surface s)
 {
     vec3 V = normalize(CQ_CameraPosition() - s.Position);
@@ -646,6 +656,7 @@ vec4 CQ_ShadeSurface(CQ_Surface s)
             continue;
         vec3 L = toLight / max(dist, 1e-4);
         float att = CQ_Attenuation(dist, pl.PositionRange.w, pl.Attenuation.xyz);
+        att *= CQ_LightProfile(pl.Profile0, pl.Profile1, acos(clamp(-L.y, -1.0, 1.0)) / 3.14159265);
         Lo += CQ_EvaluateBRDF(s, V, L, pl.ColorIntensity.rgb * att, F0, energyCompensation);
     }
 
@@ -664,6 +675,7 @@ vec4 CQ_ShadeSurface(CQ_Surface s)
         if (cone <= 0.0)
             continue;
         float att = CQ_Attenuation(dist, sl.PositionRange.w, sl.AttenuationCosInner.xyz) * cone;
+        att *= CQ_LightProfile(sl.Profile0, sl.Profile1, acos(clamp(cosTheta, -1.0, 1.0)) / max(acos(clamp(sl.DirectionCosOuter.w, -1.0, 1.0)), 1e-3));
         Lo += CQ_EvaluateBRDF(s, V, L, sl.ColorIntensity.rgb * att, F0, energyCompensation);
     }
 

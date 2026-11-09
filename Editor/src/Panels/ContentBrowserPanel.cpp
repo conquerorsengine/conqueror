@@ -30,6 +30,7 @@
 #include "ContentBrowserPanel.h"
 #include "NodeAssetPanel.h"
 #include "UI/UIToolkit.h"
+#include "Particles/ParticleSystem.h"
 #include "AISystem/EQS/EnvQuery.h"
 #include "Scripting/TestRunner.h"
 #include "Scripting/Visual/VisualGraph.h"
@@ -138,6 +139,7 @@ namespace Conqueror::Editor
         const std::string ext = ToLower(path.extension().string());
         if (ext == UIToolkit::DocumentExtension) return { ICON_FA_WINDOW_MAXIMIZE, IM_COL32(120, 200, 255, 255), "UI Document" };
         if (ext == UIToolkit::StyleExtension) return { ICON_FA_FILE_LINES, IM_COL32(120, 200, 255, 255), "Style Sheet" };
+        if (ext == ParticleAssets::Extension) return { ICON_FA_FIRE, IM_COL32(255, 150, 90, 255), "Particle System" };
         if (ext == ".cqdatatable") return { ICON_FA_TABLE, IM_COL32(150, 220, 160, 255), "Data Table" };
         if (ext == ".cqcurvetable") return { ICON_FA_CHART_LINE, IM_COL32(120, 220, 210, 255), "Curve Table" };
         if (ext == ".cqeqs") return { ICON_FA_LOCATION_CROSSHAIRS, IM_COL32(120, 180, 255, 255), "Environment Query" };
@@ -1663,6 +1665,13 @@ namespace Conqueror::Editor
                                    "    // Every frame during the clip: time = seconds since it started, progress = 0..1\n    func OnClipUpdate(time, progress) { }\n\n"
                                    "    // The clip ended or the Timeline stopped\n    func OnClipStop() { }\n}\n");
                 if (!out.good())
+                    path.clear();
+            }
+            else if (kind == "particleasset")
+            {
+                path = MakeUniquePath(dir / (std::string("New Particle System") + ParticleAssets::Extension));
+                ParticleSystemComponent ps;
+                if (!ParticleAssets::Save(path.string(), ps))
                     path.clear();
             }
             else if (kind == "datatable" || kind == "curvetable")

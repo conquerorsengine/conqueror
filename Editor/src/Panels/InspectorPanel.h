@@ -6,8 +6,13 @@
 #include <memory>
 #include <string>
 
+namespace Conqueror { struct ParticleSystemComponent; }
+
 namespace Conqueror::Editor
 {
+    // Particle System ayarları arayüzü (bileşen ve .cqparticle varlığı)
+    void DrawParticleSystemUI(ParticleSystemComponent& ps);
+
     class InspectorPanel
     {
     public:

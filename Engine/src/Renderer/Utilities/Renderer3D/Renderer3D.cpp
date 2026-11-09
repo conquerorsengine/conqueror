@@ -1003,6 +1003,26 @@ namespace Conqueror
         s->FrameDirty = true;
     }
 
+    void Renderer3D::SetLastPointLightProfile(const glm::vec4& p0, const glm::vec4& p1)
+    {
+        if (s->PointCount <= 0)
+            return;
+        auto& gpu = s->Lights.PointLights[s->PointCount - 1];
+        gpu.Profile0 = p0;
+        gpu.Profile1 = p1;
+        s->FrameDirty = true;
+    }
+
+    void Renderer3D::SetLastSpotLightProfile(const glm::vec4& p0, const glm::vec4& p1)
+    {
+        if (s->SpotCount <= 0)
+            return;
+        auto& gpu = s->Lights.SpotLights[s->SpotCount - 1];
+        gpu.Profile0 = p0;
+        gpu.Profile1 = p1;
+        s->FrameDirty = true;
+    }
+
     void Renderer3D::AddPointLight(const glm::vec3& position, const PointLightComponent& light)
     {
         if (s->PointCount >= kMaxPointLights || LightIsBakedAway(light.Mode))
@@ -1011,6 +1031,7 @@ namespace Conqueror
         gpu.PositionRange = glm::vec4(position, std::max(light.Range, 0.01f));
         gpu.ColorIntensity = glm::vec4(light.Color * light.Intensity, 0.0f);
         gpu.Attenuation = glm::vec4(light.Constant, light.Linear, light.Quadratic, 0.0f);
+        gpu.Profile0 = gpu.Profile1 = glm::vec4(1.0f);
         s->FrameDirty = true;
     }
 
@@ -1031,6 +1052,7 @@ namespace Conqueror
         gpu.ColorIntensity = glm::vec4(light.Color * light.Intensity, 0.0f);
         gpu.DirectionCosOuter = glm::vec4(dir, std::cos(glm::radians(outer)));
         gpu.AttenuationCosInner = glm::vec4(light.Constant, light.Linear, light.Quadratic, std::cos(glm::radians(inner)));
+        gpu.Profile0 = gpu.Profile1 = glm::vec4(1.0f);
         s->FrameDirty = true;
     }
 

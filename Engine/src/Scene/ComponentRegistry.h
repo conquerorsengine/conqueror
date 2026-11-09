@@ -44,6 +44,8 @@ namespace Conqueror
         // Sanal alan (Ptr yok): metin erişimcileri (ör. doku yolu <-> Texture2D)
         std::function<std::string(void*)> GetString;
         std::function<void(void*, const std::string&)> SetString;
+        // Inspector düğmesi (Action): alan değil, tıklanınca çalışan işlem
+        std::function<void(Entity, void*)> Action;
     };
 
     struct ComponentInfo
@@ -86,6 +88,9 @@ namespace Conqueror
 
         static void SerializeEntity(YAML::Emitter& out, Entity entity);
         static void DeserializeEntity(const YAML::Node& entityNode, Entity entity);
+        // Tek bileşenin alanları (varlık dosyaları: .cqparticle ...)
+        static void WriteComponentFields(YAML::Emitter& out, const ComponentInfo& info, void* component);
+        static void ReadComponentFields(const YAML::Node& node, const ComponentInfo& info, void* component);
         static void CopyAll(Entity source, Entity destination);
         static void AddWithRequirements(const ComponentInfo& info, Entity entity);
 
@@ -210,6 +215,19 @@ namespace Conqueror
         ComponentDef& ReadOnly() { Last().ReadOnly = true; Last().Serialize = false; return *this; }
         ComponentDef& NoSerialize() { Last().Serialize = false; return *this; }
         ComponentDef& Filter(const char* filter) { Last().AssetFilter = filter; return *this; }
+        // Inspector'da düğme
+        ComponentDef& Action(const char* label, std::function<void(Entity, T&)> action)
+        {
+            ComponentField f;
+            f.Name = std::string("__action_") + label;
+            f.Label = label;
+            f.Kind = FieldKind::String;
+            f.Serialize = false;
+            f.ReadOnly = true;
+            f.Action = [action = std::move(action)](Entity e, void* c) { action(e, *static_cast<T*>(c)); };
+            m_Info.Fields.push_back(std::move(f));
+            return *this;
+        }
         ComponentDef& VisibleIf(std::function<bool(const T&)> pred)
         {
             Last().VisibleIf = [pred](const void* c) { return pred(*static_cast<const T*>(c)); };

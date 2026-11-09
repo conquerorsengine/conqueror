@@ -142,6 +142,34 @@ namespace Conqueror::SimpleAssets
             "A saved Content Browser search: double-click it to run it again.",
             { T("Query", "", "The text typed in the Content Browser search box.") });
 
+        // Görüntü (Unreal)
+        add("SubUVAnimation", ".cqsubuv", "Sub UV Animation", "Rendering", "", ICON_FA_TABLE_CELLS, Rgb(255, 180, 120),
+            "A sprite sheet for particles. Assign it to a Particle System's Sub UV slot.",
+            { A("Texture", { ".png", ".jpg", ".jpeg", ".tga", ".bmp" }), I("Columns", 4, "", 1, 64), I("Rows", 4, "", 1, 64), F("Cycles", 1.0f, "How many times the sheet plays over a particle's life.") });
+        add("LightProfile", ".cqlightprofile", "Light Profile", "Rendering", "", ICON_FA_LIGHTBULB, Rgb(255, 210, 110),
+            "The angular falloff of a light. Add a Light Profile component to a Spot or Point Light.",
+            { A("Source", { ".ies" }, "An IES photometric file. Leave empty to use Points."), F("Brightness", 1.0f, "Multiplies the profile."),
+              Tab("Points", { ColF("Angle"), ColF("Intensity", "1") }, "Degrees from the light axis and relative intensity, in increasing angle order.") });
+
+        add("PhysicsAsset", ".cqphysicsasset", "Physics Asset", "Physics", "", ICON_FA_PERSON_FALLING, Rgb(120, 200, 120),
+            "Which bones of a skeleton get physics bodies, and how. Assign it to a Ragdoll component.",
+            { A("Preview Model", { ".glb", ".gltf", ".fbx", ".dae" }, "Used by Generate Bodies."),
+              Tab("Bodies", { Col("Bone"), ColF("Radius", "0"), ColF("Mass", "0"), ColF("Swing Limit", "0"), ColF("Twist Limit", "0") },
+                  "0 uses the Ragdoll component's automatic value.") });
+
+        // Bitki örtüsü (Unreal Foliage)
+        add("FoliageType", ".cqfoliage", "Foliage Type", "Foliage", "", ICON_FA_TREE, Rgb(150, 200, 110),
+            "One kind of plant or rock: mesh, density and placement rules. Used by a Procedural Foliage Spawner.",
+            { A("Mesh", { ".glb", ".gltf", ".fbx", ".obj", ".dae", ".blend", ".3ds", ".cqmesh" }), F("Density", 10.0f, "Instances per 100 square meters."), F("Scale Min", 0.8f), F("Scale Max", 1.2f), B("Random Yaw", true),
+              F("Slope Min", 0.0f, "Degrees.", 0.0f, 90.0f), F("Slope Max", 45.0f, "Degrees.", 0.0f, 90.0f) });
+        add("GrassType", ".cqgrasstype", "Landscape Grass Type", "Foliage", "", ICON_FA_SEEDLING, Rgb(150, 200, 110),
+            "Grass that grows where a Terrain layer is painted. Assign it to a Foliage Volume.",
+            { I("Terrain Layer", 0, "The painted Terrain layer it grows on.", 0, 3),
+              Tab("Varieties", { ColA("Mesh", { ".glb", ".gltf", ".fbx", ".obj", ".dae", ".blend", ".3ds", ".cqmesh" }), ColF("Density", "100"), ColF("Scale Min", "0.8"), ColF("Scale Max", "1.2") }) });
+        add("FoliageSpawner", ".cqfoliagespawner", "Procedural Foliage Spawner", "Foliage", "", ICON_FA_WAND_MAGIC_SPARKLES, Rgb(150, 200, 110),
+            "A set of Foliage Types scattered together. Assign it to a Foliage Volume and press Generate.",
+            { I("Random Seed", 1), Tab("Foliage Types", { ColA("Foliage Type", { ".cqfoliage" }), ColF("Density Scale", "1") }) });
+
         // Medya
         add("MediaSource", ".cqmediasource", "Media Source", "Media", "", ICON_FA_FILM, Rgb(200, 120, 255),
             "A video to play. Assign it to a Video Player's Source, or list it in a Media Playlist.",

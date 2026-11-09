@@ -1,4 +1,7 @@
 #include "ParticleSystem.h"
+#include "Core/Assets/SimpleAsset.h"
+#include "Core/Serialization/SceneSerializer.h"
+#include "Core/Logging/Log.h"
 #include "Core/Tiering/QualitySettings.h"
 #include "Core/Logging/Log.h"
 #include "Renderer/Renderer.h"
@@ -256,6 +259,25 @@ namespace Conqueror
     void ParticleSystem::Update(ParticleSystemComponent& ps, const glm::mat4& world, float dtIn)
     {
         auto& rt = *ps.RT;
+        // Particle System varlığı ve Sub UV Animation
+        if (ps.Asset != rt.AppliedAsset)
+        {
+            rt.AppliedAsset = ps.Asset;
+            if (!ps.Asset.empty() && !ParticleAssets::Load(ps.Asset, ps))
+                CQ_CORE_WARN("[Particles] Cannot load {0}", ps.Asset);
+        }
+        if (!ps.SubUV.empty())
+        {
+            SimpleAssets::Data subUV;
+            if (SimpleAssets::Load(ps.SubUV, subUV))
+            {
+                ps.TextureSheetEnabled = true;
+                ps.Tiles = glm::ivec2(std::max(subUV.Int("Columns", 1), 1), std::max(subUV.Int("Rows", 1), 1));
+                if (const std::string tex = subUV.Str("Texture"); !tex.empty())
+                    ps.TexturePath = SceneSerializer::ResolveAssetPath(tex);
+                ps.AnimationCycles = subUV.Float("Cycles", ps.AnimationCycles);
+            }
+        }
         if (ps.PlayOnAwake && !rt.Started && !rt.Playing)
             Play(ps);
         if (rt.Playing || !rt.Particles.empty())

@@ -15,6 +15,7 @@
 #include "Assets/SignalReceiverInspector.h"
 #include "Assets/AnimationClipInspector.h"
 #include "Assets/AssetUI.h"
+#include "Scene/Ragdoll.h"
 #include "Scene/AudioOcclusion.h"
 #include "Core/Assets/SimpleAsset.h"
 #include "Assets/SimpleAssetInspector.h"
@@ -601,6 +602,16 @@ namespace Conqueror::Editor
             m_TestRunnerPanel = std::make_unique<TestRunnerPanel>();
             m_TestRunnerPanel->OnEnterPlay = [this]() { if (EditorState::Get().IsEditing()) OnPlayButtonPressed(); };
             m_TestRunnerPanel->OnOpenScript = [](const std::string& path) { if (InspectorPanel::s_OpenCodeEditor) InspectorPanel::s_OpenCodeEditor(path); };
+            SimpleAssetInspector::RegisterExtra("PhysicsAsset", [](const std::string& path, SimpleAssets::Data& data) {
+                if (ImGui::Button(ICON_FA_PERSON_FALLING "  Generate Bodies From Preview Model"))
+                {
+                    data.Tables["Bodies"].clear();
+                    for (const auto& bone : RagdollBoneNames(data.Str("Preview Model")))
+                        data.Tables["Bodies"].push_back({ bone, "0", "0", "0", "0" });
+                    if (const auto* def = SimpleAssets::ForKind("PhysicsAsset"))
+                        SimpleAssets::Save(path, *def, data);
+                }
+            });
             SimpleAssetInspector::RegisterExtra("SavedSearch", [this](const std::string&, SimpleAssets::Data& data) {
                 if (ImGui::Button(ICON_FA_MAGNIFYING_GLASS "  Run Search") && m_ContentBrowserPanel)
                     m_ContentBrowserPanel->SetSearch(data.Str("Query"));

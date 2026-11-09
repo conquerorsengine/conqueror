@@ -2,6 +2,7 @@
 
 #include "Scripting/Visual/StateGraph.h"
 #include "Core/Audio/SoundCue.h"
+#include "Scene/Foliage.h"
 #include "AISystem/BehaviorTree/BehaviorTreeAsset.h"
 
 #include <IconsFontAwesome6.h>
@@ -242,6 +243,49 @@ namespace Conqueror::Editor
         }
     }
 
+    namespace
+    {
+        void RegisterPcg()
+        {
+            NodeAssetSchema s;
+            s.Kind = Foliage::GraphKind;
+            s.Extension = Foliage::GraphExtension;
+            s.Title = "PCG Graph";
+            s.Icon = ICON_FA_DIAGRAM_PROJECT;
+            s.Hint = "Points flow from a Surface Sampler through filters into Spawn nodes. Assign the graph to a Foliage Volume and press Generate.";
+            s.MenuCategory = "Foliage";
+            s.MenuTooltip = "Procedural placement as a node graph (Unreal PCG). Runs inside a Foliage Volume.";
+            s.Color = IM_COL32(170, 200, 110, 255);
+            const ImU32 source = IM_COL32(45, 118, 72, 255), filter = IM_COL32(85, 88, 98, 255), spawn = IM_COL32(45, 82, 158, 255);
+            auto make = [](const char* id, const char* title, const char* category, ImU32 color, std::vector<NodeAssetProp> props, bool input, bool output, const char* description = "") {
+                NodeAssetType t;
+                t.Id = id; t.Title = title; t.Category = category; t.Color = color; t.Description = description;
+                if (input) t.Inputs = { "In" };
+                if (output) t.Outputs = { "Out" };
+                t.Props = std::move(props);
+                return t;
+            };
+            const std::vector<std::string> models = { ".glb", ".gltf", ".fbx", ".obj", ".dae", ".blend", ".3ds", ".cqmesh" };
+            s.Types = {
+                make("sampler", "Surface Sampler", "Sources", source, { Number("Spacing", "2", "Meters between points."), Number("Jitter", "0.5", "Random offset, as a fraction of Spacing."), Number("Slope Max", "60", "Skip steeper ground.") }, false, true, "Points over the Foliage Volume, resting on the Terrain."),
+                make("noise", "Density Noise", "Filters", filter, { Number("Scale", "10", "Meters per noise cell."), Number("Seed", "0") }, true, true, "Gives each point a smooth 0 to 1 density."),
+                make("filter", "Density Filter", "Filters", filter, { Number("Min", "0.5"), Number("Max", "1") }, true, true, "Keeps the points whose density is in range."),
+                make("random", "Random Choice", "Filters", filter, { Number("Keep", "0.5", "Fraction of the points to keep.") }, true, true),
+                make("transform", "Transform Points", "Filters", filter, { Number("Scale Min", "1"), Number("Scale Max", "1"), Number("Height Offset", "0"), Flag("Random Yaw", "true") }, true, true),
+                make("mesh", "Spawn Mesh", "Output", spawn, { Asset("Mesh", models) }, true, false, "One instanced mesh at every point."),
+                make("prefab", "Spawn Prefab", "Output", spawn, { Asset("Prefab", { ".cqprefab" }) }, true, false, "A prefab copy at every point (at most 2000)."),
+            };
+            s.Populate = [](NodeAssets::File& f) {
+                int a = f.Add("sampler", 40.0f, 100.0f);
+                int b = f.Add("transform", 360.0f, 100.0f);
+                int c = f.Add("mesh", 680.0f, 100.0f);
+                f.Connect(a, 0, b, 0);
+                f.Connect(b, 0, c, 0);
+            };
+            NodeAssetPanel::Register(std::move(s));
+        }
+    }
+
     void RegisterBuiltinNodeAssetSchemas()
     {
         if (!NodeAssetPanel::Schemas().empty())
@@ -249,5 +293,6 @@ namespace Conqueror::Editor
         RegisterStateGraph();
         RegisterSoundCue();
         RegisterBehaviorTree();
+        RegisterPcg();
     }
 }

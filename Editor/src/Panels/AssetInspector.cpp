@@ -3,6 +3,7 @@
 #include "Assets/SimpleAssetInspector.h"
 #include "Assets/PlayableAssetInspector.h"
 #include "Assets/CsvGridInspector.h"
+#include "Assets/ParticleAssetInspector.h"
 #include "Scripting/TestRunner.h"
 #include "InspectorPanel.h"
 #include "Assets/SceneTemplate.h"
@@ -724,6 +725,11 @@ namespace Conqueror::Editor::AssetInspector
             if (!s_UtilityError.empty())
                 UI::InfoBox(s_UtilityError.c_str(), UI::InfoType::Error);
             ImGui::Spacing();
+        }
+        if (ParticleAssetInspector::IsParticleAsset(path))
+        {
+            ParticleAssetInspector::Draw(path);
+            return;
         }
         if (CsvGridInspector::IsGrid(path))
         {

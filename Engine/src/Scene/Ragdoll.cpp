@@ -1,4 +1,6 @@
 #include "Ragdoll.h"
+#include "Core/Assets/SimpleAsset.h"
+#include "Core/Serialization/SceneSerializer.h"
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"
 #include "Scene/Components.h"
@@ -156,6 +158,19 @@ namespace Conqueror
                 std::sort(sorted.begin(), sorted.end(), [](const Candidate& a, const Candidate& b) { return a.Node < b.Node; });
                 candidates = std::move(sorted);
             }
+            // Physics Asset: yalnız listedeki kemikler, yarıçap / kütle / sınırlar dosyadan
+            SimpleAssets::Data physicsAsset;
+            const bool hasPhysicsAsset = !rc.PhysicsAsset.empty() && SimpleAssets::Load(rc.PhysicsAsset, physicsAsset);
+            const auto assetRow = [&](int node) -> const std::vector<std::string>* {
+                if (!hasPhysicsAsset || !nodes[(size_t)node].Node)
+                    return nullptr;
+                for (const auto& row : physicsAsset.Table("Bodies"))
+                    if (SimpleAssets::Cell(row, 0) == nodes[(size_t)node].Node->Name)
+                        return &row;
+                return nullptr;
+            };
+            if (hasPhysicsAsset)
+                candidates.erase(std::remove_if(candidates.begin(), candidates.end(), [&](const Candidate& c) { return assetRow(c.Node) == nullptr; }), candidates.end());
             if (candidates.size() < 2)
             {
                 CQ_CORE_WARN("[Ragdoll] '{0}': not enough bones for a ragdoll", e.GetComponent<TagComponent>().Tag);
@@ -168,7 +183,8 @@ namespace Conqueror
             float totalWeight = 0.0f;
             for (const auto& c : candidates)
             {
-                const float r = std::max(c.Length * rc.RadiusScale, size * 0.01f);
+                const auto* assetData = assetRow(c.Node);
+                const float r = assetData && SimpleAssets::CellFloat(*assetData, 1) > 0.0f ? SimpleAssets::CellFloat(*assetData, 1) : std::max(c.Length * rc.RadiusScale, size * 0.01f);
                 totalWeight += c.Length * r * r;
             }
             const std::string base = e.GetComponent<TagComponent>().Tag + " Ragdoll";
@@ -177,7 +193,8 @@ namespace Conqueror
             {
                 const glm::vec3 dir = glm::normalize(c.End - c.Start);
                 const glm::vec3 mid = (c.Start + c.End) * 0.5f;
-                const float r = std::max(c.Length * rc.RadiusScale, size * 0.01f);
+                const auto* assetData = assetRow(c.Node);
+                const float r = assetData && SimpleAssets::CellFloat(*assetData, 1) > 0.0f ? SimpleAssets::CellFloat(*assetData, 1) : std::max(c.Length * rc.RadiusScale, size * 0.01f);
                 glm::quat q = glm::rotation(glm::vec3(0.0f, 1.0f, 0.0f), dir);
                 if (glm::dot(dir, glm::vec3(0.0f, 1.0f, 0.0f)) < -0.9999f)
                     q = glm::angleAxis(glm::pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -189,6 +206,8 @@ namespace Conqueror
                 auto& rb = body.AddComponent<RigidbodyComponent>();
                 rb.Type = RigidbodyComponent::BodyType::Dynamic;
                 rb.Mass = std::max(rc.TotalMass * (c.Length * r * r) / std::max(totalWeight, 1e-9f), 0.05f);
+                if (assetData && SimpleAssets::CellFloat(*assetData, 2) > 0.0f)
+                    rb.Mass = SimpleAssets::CellFloat(*assetData, 2);
                 rb.LinearDrag = rc.LinearDamping;
                 rb.AngularDrag = 0.5f;
                 rb.RuntimeBody = nullptr;
@@ -210,8 +229,14 @@ namespace Conqueror
                     j.SwingAxis = glm::vec3(1.0f, 0.0f, 0.0f);
                     j.LowTwistLimit = -std::abs(rc.TwistLimit);
                     j.HighTwistLimit = std::abs(rc.TwistLimit);
-                    j.Swing1Limit = std::abs(rc.SwingLimit);
-                    j.Swing2Limit = std::abs(rc.SwingLimit);
+                    const float swing = assetData && SimpleAssets::CellFloat(*assetData, 3) > 0.0f ? SimpleAssets::CellFloat(*assetData, 3) : std::abs(rc.SwingLimit);
+                    j.Swing1Limit = swing;
+                    j.Swing2Limit = swing;
+                    if (assetData && SimpleAssets::CellFloat(*assetData, 4) > 0.0f)
+                    {
+                        j.LowTwistLimit = -SimpleAssets::CellFloat(*assetData, 4);
+                        j.HighTwistLimit = SimpleAssets::CellFloat(*assetData, 4);
+                    }
                     j.EnableCollision = false;
                 }
                 RagdollRuntime::Bone bone;
@@ -336,12 +361,31 @@ namespace Conqueror
         }
     }
 
+    std::vector<std::string> RagdollBoneNames(const std::string& modelPath)
+    {
+        std::vector<std::string> names;
+        auto model = ModelLoader::Load(SceneSerializer::ResolveAssetPath(modelPath));
+        if (!model || !model->SkeletonData)
+            return names;
+        const Skeleton& skeleton = *model->SkeletonData;
+        const auto& nodes = Animator::Flatten(skeleton);
+        std::vector<int> children(nodes.size(), 0);
+        for (size_t i = 0; i < nodes.size(); ++i)
+            if (nodes[i].Parent >= 0 && nodes[i].BoneIndex >= 0)
+                ++children[(size_t)nodes[i].Parent];
+        for (size_t i = 0; i < nodes.size(); ++i)
+            if (nodes[i].BoneIndex >= 0 && children[i] > 0 && nodes[i].Node)
+                names.push_back(nodes[i].Node->Name);
+        return names;
+    }
+
     void RegisterRagdollComponents()
     {
         using C = RagdollComponent;
         ComponentDef<C>("Ragdoll", "RagdollComponent", "Physics", ICON_FA_PERSON_FALLING)
             .Describe("Builds a physics ragdoll from the skinned model's skeleton (capsule per long bone, character joints with swing/twist limits), "
                       "like Unreal's Physics Asset. RagdollActivate switches from animation to physics; RagdollDeactivate goes back.")
+            .Field("PhysicsAsset", "Physics Asset", &C::PhysicsAsset, FieldKind::Asset).Filter(".cqphysicsasset").Tooltip("A Physics Asset: only its bones get bodies, with its radius, mass and limits.")
             .Field("StartActive", "Start Active", &C::StartActive)
             .Field("TotalMass", "Total Mass", &C::TotalMass).Range(0.1f, 10000.0f, 0.5f)
             .Field("RadiusScale", "Radius Scale", &C::RadiusScale).Range(0.02f, 1.0f, 0.01f)

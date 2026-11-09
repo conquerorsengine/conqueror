@@ -1,6 +1,8 @@
 #include "Core/Audio/AudioRandomContainer.h"
 #include "AISystem/BehaviorTree/BehaviorTreeAsset.h"
 #include "Scene/AssetRuntime.h"
+#include "Scene/Foliage.h"
+#include "Renderer/LightProfile.h"
 #include "Core/Audio/SoundCue.h"
 #include "Renderer/ShaderVariantCollection.h"
 #include "Renderer/CustomRenderTexture.h"
@@ -1287,6 +1289,7 @@ namespace Conqueror
         {
             CQ_PROFILE_SAMPLE("AI.NavMeshAgents", AI);
             NavAgents::Update(*this, (float)ts);
+            Foliage::Update(*this);
             BehaviorTrees::Update(*this, (float)ts);
             AssetRuntime::Update(*this, (float)ts);
         }
@@ -2707,6 +2710,12 @@ namespace Conqueror
                 continue;
             auto [transform, pointLight] = pointLightView.get<TransformComponent, PointLightComponent>(entity);
             Renderer3D::AddPointLight(glm::vec3(transform.WorldTransform[3]), pointLight);
+            if (auto* profile = m_Registry.try_get<LightProfileComponent>(entity))
+            {
+                glm::vec4 p0, p1;
+                if (LightProfiles::Sample(profile->Profile, 180.0f, p0, p1))
+                    Renderer3D::SetLastPointLightProfile(p0, p1);
+            }
             lightCount++;
         }
         auto spotLightView = m_Registry.view<TransformComponent, SpotLightComponent>();
@@ -2716,6 +2725,12 @@ namespace Conqueror
                 continue;
             auto [transform, spotLight] = spotLightView.get<TransformComponent, SpotLightComponent>(entity);
             Renderer3D::AddSpotLight(glm::vec3(transform.WorldTransform[3]), spotLight);
+            if (auto* profile = m_Registry.try_get<LightProfileComponent>(entity))
+            {
+                glm::vec4 p0, p1;
+                if (LightProfiles::Sample(profile->Profile, std::max(spotLight.InnerConeAngle, spotLight.OuterConeAngle), p0, p1))
+                    Renderer3D::SetLastSpotLightProfile(p0, p1);
+            }
             lightCount++;
         }
         AreaLights::Submit(*this);

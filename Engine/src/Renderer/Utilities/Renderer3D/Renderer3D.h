@@ -107,6 +107,9 @@ namespace Conqueror
         static void SetDirectionalLight(const DirectionalLightComponent& light);
         static void ClearDirectionalLight();
         static void AddPointLight(const glm::vec3& position, const PointLightComponent& light);
+        // Son eklenen ışığın Light Profile örnekleri (8 örnek, 2 vec4)
+        static void SetLastPointLightProfile(const glm::vec4& p0, const glm::vec4& p1);
+        static void SetLastSpotLightProfile(const glm::vec4& p0, const glm::vec4& p1);
         static void AddSpotLight(const glm::vec3& position, const SpotLightComponent& light);
         static void AddSpotLight(const glm::vec3& position, const glm::vec3& direction, const SpotLightComponent& light);
         // Dikdörtgen / disk alan ışığı (+Z = sağ x yukarı yönüne yayar); radiance = renk * yoğunluk

@@ -52,6 +52,7 @@ struct CQ_PointLight
     vec4 PositionRange;          // xyz, w menzil
     vec4 ColorIntensity;         // rgb * yoğunluk
     vec4 Attenuation;            // x sabit, y doğrusal, z karesel
+    vec4 Profile0, Profile1;     // Light Profile: açıya göre 8 örnek (varsayılan 1)
 };
 
 struct CQ_SpotLight
@@ -60,6 +61,7 @@ struct CQ_SpotLight
     vec4 ColorIntensity;
     vec4 DirectionCosOuter;      // xyz yön, w cos(dış açı)
     vec4 AttenuationCosInner;    // x sabit, y doğrusal, z karesel, w cos(iç açı)
+    vec4 Profile0, Profile1;     // Light Profile: eksen -> dış açı arası 8 örnek (varsayılan 1)
 };
 
 // Dikdörtgen / disk alan ışığı (+Z = sağ x yukarı yönüne yayar)
