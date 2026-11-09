@@ -260,6 +260,9 @@ namespace Conqueror::FSR2GL
                 options.es = false;
                 options.vulkan_semantics = false;
                 options.enable_420pack_extension = true;
+                // SPIRV-Cross'un ürettiği geçici değişkenler (out / inout parametreleri için param_N, FSR 2'nin clippingBox'ı) ilk değersiz
+                // kalıyordu: OpenGL sürücüsü her derlemede "used uninitialized" uyarısı yazıyordu
+                options.force_zero_initialized_variables = true;
                 comp.set_common_options(options);
                 comp.build_dummy_sampler_for_combined_images();
                 comp.build_combined_image_samplers();

@@ -28,7 +28,7 @@ namespace Conqueror
         std::mutex s_Mutex;
         ShaderCompiler::Settings s_Settings;
         ShaderCompiler::Stats s_Stats;
-        constexpr uint32_t kCacheVersion = 5;   // 4: hedef profil (330 / 410 / ES) + ES blok adları
+        constexpr uint32_t kCacheVersion = 6;   // 4: hedef profil (330 / 410 / ES) + ES blok adları; 6: değişkenlere sıfır ilk değer
 
         EShLanguage ToGlslang(ShaderStage s)
         {
@@ -350,6 +350,9 @@ namespace Conqueror
                 // Hedef: etkin OpenGL profili (4.5: 450; 4.1 / 3.3 core; ES 3.x: 300/310/320 es)
                 const auto& profile = GLProfile::Current();
                 spirv_cross::CompilerGLSL::Options opt;
+                // SPIRV-Cross'un out / inout parametreleri için ürettiği geçici değişkenler (param_N) ilk değersiz kalınca OpenGL sürücüsü her
+                // derlemede "used uninitialized" uyarısı yazıyordu
+                opt.force_zero_initialized_variables = true;
                 opt.version = profile.GLSLVersion;
                 opt.es = profile.GLSLES;
                 opt.vulkan_semantics = false;
