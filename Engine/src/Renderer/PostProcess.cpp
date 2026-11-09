@@ -1,6 +1,7 @@
 #include <sstream>
 #include <fstream>
 #include <filesystem>
+#include <chrono>
 #include "Core/Serialization/SceneSerializer.h"
 #include "PostProcess.h"
 #include "Core/Profiling/FrameProfiler.h"
@@ -691,6 +692,19 @@ namespace Conqueror
         GLint drawFBO = 0;
         glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFBO);
         return (uint32_t)drawFBO == s_Current->m_SceneFramebuffer->GetRendererID();
+    }
+
+    void PostProcessStack::ResetTemporalHistory()
+    {
+        m_HistoryValid = false;
+        m_HasPrevViewProj = false;
+        m_FSR2Valid = false;
+        m_TAAUValid = false;
+        m_T2xValid = false;
+        m_StabValid = false;
+        m_GIHistoryValid = false;
+        m_CloudHistoryValid = false;
+        m_PrevDepthValid = false;
     }
 
     float PostProcessStack::GetCurrentTextureLodBias()
@@ -1957,6 +1971,14 @@ namespace Conqueror
         m_LastTime = time;
         // Kamera kesmesi (ışınlanma, yeniden doğma): önceki karenin görüntüsünün bu kareyle ilgisi yok, zamansal yöntemler baştan başlar.
         // FSR 2 eski konumdan kalan ince ayrıntı kilitlerini koruyup dururken bile görüntüyü bozuk bırakıyordu (aralıklar soluk, kenarlar koyu)
+        // Görünüm bir süre çizilmediyse (sekmesi gizliydi, Realtime kapalıyken bekledi, uzun takılma) zamansal geçmiş bayattır: eski
+        // kameradan kalan görüntü yeni kareyle karışıp bir süre silik bir kopya olarak sönüyordu (oyun oynarken Viewport'a dönünce)
+        {
+            const double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+            if (m_LastRunSeconds >= 0.0 && now - m_LastRunSeconds > 0.25)
+                ResetTemporalHistory();
+            m_LastRunSeconds = now;
+        }
         if (m_HasPrevViewProj && !camera.Orthographic)
         {
             const glm::vec4 e = glm::inverse(m_PrevViewProj)[2];

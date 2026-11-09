@@ -128,6 +128,8 @@ namespace Conqueror::Editor
         // Görünüm seçenekleri
         ViewportShading m_Shading = ViewportShading::Shaded;
         EditorViewOptions m_ViewOptions;
+        EditorViewOptions m_AppliedViewOptions;   // son karede sahneye verilen (değişince zamansal geçmiş yeniden başlar)
+        bool m_ViewOptionsApplied = false;
         bool m_ShowSelectionOutline = true;
         bool m_ShowCanvasBounds = true;
         bool m_ShowViewCube = true;

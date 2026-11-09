@@ -166,6 +166,19 @@ namespace Conqueror::Editor
             }
             Renderer3D::SetDebugView(debugView);
             Renderer3D::SetWireframe(m_Shading == ViewportShading::Wireframe);
+            {
+                // Izgara, gizmo ve gösterim seçenekleri sahneyle birlikte TAA'dan geçer: kapatılan ızgara / gizmo çizgisi geçmişte kalıp
+                // bir süre yavaşça siliniyordu. Seçenek değişince zamansal geçmiş yeniden başlar (Realtime görüntüyü değiştirmez)
+                const EditorViewOptions& a = m_AppliedViewOptions;
+                const EditorViewOptions& b = m_ViewOptions;
+                const bool changed = a.Grid != b.Grid || a.Gizmos != b.Gizmos || a.Skybox != b.Skybox || a.Fog != b.Fog || a.Shadows != b.Shadows
+                                     || a.PostEffects != b.PostEffects || a.Sprites2D != b.Sprites2D || a.UI != b.UI || a.Colliders != b.Colliders
+                                     || a.AllColliders != b.AllColliders;
+                if (changed && m_ViewOptionsApplied)
+                    m_PostStack.ResetTemporalHistory();
+                m_AppliedViewOptions = m_ViewOptions;
+                m_ViewOptionsApplied = true;
+            }
             m_Context->SetEditorViewOptions(m_ViewOptions);
             {
                 std::vector<uint32_t> selection;

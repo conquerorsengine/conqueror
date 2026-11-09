@@ -60,6 +60,9 @@ namespace Conqueror
         void ApplyFXAA();
         void ApplySMAA();
         void ResetHistory() { m_HistoryValid = false; m_HasPrevViewProj = false; }
+        // Bütün zamansal geçmişler (TAA, TAAU, FSR 2, SMAA T2x, kararlılık, GI, bulutlar) yeniden başlar: görüntünün bir kısmı birden
+        // değişti (editörde ızgara / gizmo kapatıldı) ya da görünüm bir süre çizilmedi
+        void ResetTemporalHistory();
 
         // Renderer3D: şu an bu görünümün sahne hedefine çiziliyorsa Temporal AA alt piksel titreşimi (NDC)
         static bool GetCurrentJitter(glm::vec2& outNDC);
@@ -280,6 +283,7 @@ namespace Conqueror
         bool m_CloudHistoryValid = false;
         glm::mat4 m_PrevCloudViewProj{ 1.0f };  // önceki karede bulutların hesaplandığı matris
         float m_DeltaTime = 0.0f;
+        double m_LastRunSeconds = -1.0;   // bu yığının en son çalıştığı an (s, tekdüze saat): bayat geçmiş testi
         uint32_t m_LumTexture = 0, m_LumFramebuffer = 0;
         RenderTarget m_Adapt[2];
         int m_AdaptIndex = 0;
