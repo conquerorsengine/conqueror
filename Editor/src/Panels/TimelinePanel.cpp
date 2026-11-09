@@ -1,5 +1,6 @@
 #include "Scene/Signals.h"
 #include "Assets/AssetUI.h"
+#include "Scripting/ScriptRuntime.h"
 #include <filesystem>
 #include "TimelinePanel.h"
 #include "EditorState.h"
@@ -39,6 +40,7 @@ namespace Conqueror::Editor
                 case TimelineTrackType::Audio: c = ImVec4(0.95f, 0.66f, 0.25f, 1.0f); break;
                 case TimelineTrackType::Signal: c = ImVec4(0.95f, 0.38f, 0.45f, 1.0f); break;
                 case TimelineTrackType::Animation: c = ImVec4(0.30f, 0.82f, 0.85f, 1.0f); break;
+                case TimelineTrackType::Playable: c = ImVec4(0.55f, 0.72f, 0.40f, 1.0f); break;
                 default: c = ImVec4(0.6f, 0.6f, 0.6f, 1.0f); break;
             }
             c.w = alpha;
@@ -55,6 +57,7 @@ namespace Conqueror::Editor
                 case TimelineTrackType::Audio: return ICON_FA_VOLUME_HIGH;
                 case TimelineTrackType::Signal: return ICON_FA_BOLT;
                 case TimelineTrackType::Animation: return ICON_FA_PERSON_RUNNING;
+                case TimelineTrackType::Playable: return ICON_FA_FILE_CODE;
                 default: return ICON_FA_CIRCLE;
             }
         }
@@ -66,7 +69,8 @@ namespace Conqueror::Editor
 
         bool IsClipTrack(const TimelineTrack& t)
         {
-            return t.Type == TimelineTrackType::Activation || t.Type == TimelineTrackType::Audio || t.Type == TimelineTrackType::Animation;
+            return t.Type == TimelineTrackType::Activation || t.Type == TimelineTrackType::Audio || t.Type == TimelineTrackType::Animation ||
+                   t.Type == TimelineTrackType::Playable;
         }
 
         // Parçadaki tüm kanalların anahtar zamanları (birleşik)
@@ -993,6 +997,22 @@ namespace Conqueror::Editor
             if (!err.empty()) m_Status = err;
             ImGui::EndPopup();
         }
+        // Playable Asset / davranış betiği bırakma
+        if (t.Type == TimelineTrackType::Playable && ImGui::BeginDragDropTarget())
+        {
+            if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+            {
+                fs::path path(std::string((const char*)p->Data, (size_t)p->DataSize - 1));
+                if (path.extension() == ".cqplayable" || Scripting::ScriptRuntimes::IsScriptFile(path.string()))
+                {
+                    std::error_code ec;
+                    fs::path rel = fs::relative(path, Project::GetActiveProjectDirectory(), ec);
+                    std::string err;
+                    AddClipAt(index, hoverTime, 2.0f, ec ? path.generic_string() : rel.generic_string(), &err);
+                }
+            }
+            ImGui::EndDragDropTarget();
+        }
         // Ses dosyası bırakma: imleç konumunda ses klibi
         if (t.Type == TimelineTrackType::Audio && ImGui::BeginDragDropTarget())
         {
@@ -1288,6 +1308,25 @@ namespace Conqueror::Editor
                     UI::EndProperty();
                     float vol = c.Volume;
                     if (UI::SliderFloat("Volume", vol, 0.0f, 2.0f)) { track(true); c.Volume = vol; } else track(false);
+                }
+                if (t.Type == TimelineTrackType::Playable)
+                {
+                    std::vector<std::string> exts = { ".cqplayable" };
+                    for (auto* runtime : Scripting::ScriptRuntimes::All())
+                        for (const auto& e : runtime->GetExtensions())
+                            exts.push_back(e);
+                    UI::BeginProperty("Playable", "A Playable Asset, or a script with OnClipStart / OnClipUpdate(time, progress) / OnClipStop.");
+                    std::string asset = c.Asset;
+                    if (AssetUI::AssetSlot("##cplayable", "Playable Asset", exts, asset))
+                    {
+                        track(true);
+                        c.Asset = asset;
+                        if (!asset.empty())
+                            c.Name = fs::path(asset).stem().string();
+                    }
+                    else
+                        track(false);
+                    UI::EndProperty();
                 }
                 if (t.Type == TimelineTrackType::Animation)
                 {

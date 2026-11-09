@@ -22,6 +22,7 @@ namespace Conqueror
         Audio,            // ses klipleri
         Signal,           // işaretçiler: betik metodunu çağırır
         Animation,        // Animator klip indeksini ve zamanını sürer
+        Playable,         // Playable Asset / davranış betiği klipleri (OnClipStart, OnClipUpdate, OnClipStop)
         Count
     };
 
@@ -46,7 +47,7 @@ namespace Conqueror
         float Start = 0.0f;
         float Duration = 1.0f;
         std::string Name;
-        std::string Asset;               // ses dosyası (proje göreli)
+        std::string Asset;               // ses dosyası ya da Playable Asset / betik (proje göreli)
         float Volume = 1.0f;
         float Speed = 1.0f;
         float ClipIn = 0.0f;             // kaynağın içinden başlangıç (s)

@@ -1,4 +1,5 @@
 #include "Scripting/ScriptRuntime.h"
+#include "Scripting/NativeModules.h"
 #include "Scripting/DataAssets.h"
 #include "Scripting/NativeRegistry.h"
 #include "Scripting/ScriptContext.h"
@@ -429,6 +430,7 @@ namespace Conqueror::Scripting
             // derlemeye eklenir (hiçbir betik içermese de sınıf kayıtlı olur, Data Asset Inspector'ı alanları görür)
             virtual std::vector<std::string> HeaderExtensions() const { return {}; }
             std::vector<fs::path> DataHeaders;
+            std::vector<fs::path> ExtraIncludes;   // Native Script Module klasörleri
         };
 
         // Motor fonksiyonları (dosyaya yazılabilir adlar)
@@ -577,6 +579,7 @@ namespace Conqueror::Scripting
                 if (m_IsMsvc)
                 {
                     cmd = m_Compiler + " /nologo /std:c++20 /O2 /EHsc /LD /MD /I" + Quote(includeDir) + " /I" + Quote(outDir) + " /Fo" + Quote(outDir / "") + " /Fe" + Quote(lib);
+                    for (const auto& inc : ExtraIncludes) cmd += " /I" + Quote(inc);
                     cmd += " " + Quote(outDir / "__cq_plugin_main.cpp") + " " + Quote(outDir / "__cq_data_assets.cpp");
                     for (auto& s : sources) cmd += " /Tp" + Quote(s);
                 }
@@ -587,8 +590,9 @@ namespace Conqueror::Scripting
 #else
                     const char* shared = "-shared";
 #endif
-                    cmd = m_Compiler + " -std=c++20 -O2 -g -fPIC " + shared + " -fvisibility=hidden -I" + Quote(includeDir) + " -I" + Quote(outDir) +
-                          " -o " + Quote(lib) + " " + Quote(outDir / "__cq_plugin_main.cpp") + " " + Quote(outDir / "__cq_data_assets.cpp") + " -x c++";
+                    cmd = m_Compiler + " -std=c++20 -O2 -g -fPIC " + shared + " -fvisibility=hidden -I" + Quote(includeDir) + " -I" + Quote(outDir);
+                    for (const auto& inc : ExtraIncludes) cmd += " -I" + Quote(inc);
+                    cmd += " -o " + Quote(lib) + " " + Quote(outDir / "__cq_plugin_main.cpp") + " " + Quote(outDir / "__cq_data_assets.cpp") + " -x c++";
                     for (auto& s : sources) cmd += " " + Quote(s);
                 }
                 int code = 0;
@@ -736,6 +740,7 @@ namespace Conqueror::Scripting
                 if (m_IsMsvc)
                 {
                     cmd = m_Compiler + " /nologo " + Flags() + " /O2 /LD /MD /I" + Quote(IncludeDir()) + " /I" + Quote(outDir) + " /Fo" + Quote(outDir / "") + " /Fe" + Quote(lib);
+                    for (const auto& inc : ExtraIncludes) cmd += " /I" + Quote(inc);
                     cmd += " /Tc" + Quote(outDir / "__cq_main.c");
                     for (auto& s : sources) cmd += " /Tc" + Quote(s);
                 }
@@ -746,8 +751,9 @@ namespace Conqueror::Scripting
 #else
                     const char* shared = "-shared";
 #endif
-                    cmd = m_Compiler + " " + Flags() + " -O2 -g -fPIC " + shared + " -fvisibility=hidden -I" + Quote(IncludeDir()) + " -I" + Quote(outDir) +
-                          " -o " + Quote(lib) + " -x c " + Quote(outDir / "__cq_main.c");
+                    cmd = m_Compiler + " " + Flags() + " -O2 -g -fPIC " + shared + " -fvisibility=hidden -I" + Quote(IncludeDir()) + " -I" + Quote(outDir);
+                    for (const auto& inc : ExtraIncludes) cmd += " -I" + Quote(inc);
+                    cmd += " -o " + Quote(lib) + " -x c " + Quote(outDir / "__cq_main.c");
                     for (auto& s : sources) cmd += " " + Quote(s);
                     cmd += " -lm";
                 }
@@ -1384,6 +1390,13 @@ namespace Conqueror::Scripting
                 if (!DataAssets::DataClassesInText(t, m_Tool->Id()).empty())
                     m_Tool->DataHeaders.push_back(h);
             }
+            const bool usesModules = std::string(m_Tool->Id()) == "cpp" || std::string(m_Tool->Id()) == "c";
+            std::vector<NativeModules::Module> modules;
+            if (usesModules)
+            {
+                modules = NativeModules::Resolve();
+                all += NativeModules::Fingerprint(modules);
+            }
             size_t hash = std::hash<std::string>{}(all);
             if (m_Built && hash == m_SourceHash)
                 return true;
@@ -1406,6 +1419,8 @@ namespace Conqueror::Scripting
             fs::path lib = m_OutDir / ("CQScripts_" + std::to_string(++m_BuildCounter) + "_" + std::to_string(hash % 100000) + LibExtension());
             double t0 = Now();
             std::string log;
+            if (usesModules)
+                sources = NativeModules::ApplyModules(modules, sources, m_OutDir, std::string(m_Tool->Id()) == "cpp" ? ".cpp" : ".c", m_Tool->ExtraIncludes);
             if (!m_Tool->Build(sources, m_OutDir, lib, log))
             {
                 auto errors = ParseDiagnostics(log, "", "");

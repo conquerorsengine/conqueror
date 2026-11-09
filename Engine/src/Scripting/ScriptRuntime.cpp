@@ -24,6 +24,7 @@ namespace Conqueror::Scripting
     std::unique_ptr<ScriptRuntime> CreateRustRuntime();
     std::unique_ptr<ScriptRuntime> CreateZigRuntime();
     std::unique_ptr<ScriptRuntime> CreateVisualScriptRuntime();
+    std::unique_ptr<ScriptRuntime> CreateStateGraphRuntime();
 
 #ifdef CQ_PYTHON_MODULE
     // Python ayrı modülde (libCQPython.so, libEngine.so'nun yanında): yalnızca açılabiliyorsa (sistemde libpython
@@ -107,6 +108,7 @@ namespace Conqueror::Scripting
         add(CreateRustRuntime());
         add(CreateZigRuntime());
         add(CreateVisualScriptRuntime());
+        add(CreateStateGraphRuntime());
         std::string names;
         for (auto* r : Views())
             names += std::string(names.empty() ? "" : ", ") + r->GetName() + (r->IsAvailable() ? "" : " (unavailable)");

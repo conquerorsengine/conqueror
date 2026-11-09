@@ -1,4 +1,6 @@
 #include "ObjectPicker.h"
+#include "NodeAssetPanel.h"
+#include "Core/Assets/SimpleAsset.h"
 
 #include "ContentBrowserPanel.h"
 #include "Core/Project/Project.h"
@@ -220,6 +222,13 @@ namespace Conqueror::Editor::ObjectPicker
         if (exts.empty())
             return "Asset";
         auto has = [&](const char* e) { return std::find(exts.begin(), exts.end(), e) != exts.end(); };
+        if (exts.size() == 1)
+            if (const SimpleAssets::Def* simple = SimpleAssets::ForExtension(exts.front()))
+                return simple->Label;
+        if (exts.size() == 1)
+            if (const NodeAssetSchema* graph = NodeAssetPanel::SchemaForExtension(exts.front()))
+                return graph->Title;
+        if (has(".cqplayable")) return "Playable Asset";
         if (has(".cqmat")) return "Material";
         if (has(".cqphysmat2d")) return "Physics Material 2D";
         if (has(".cqtile")) return "Tile";

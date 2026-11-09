@@ -28,6 +28,11 @@
 #include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
 #include "Renderer/Utilities/Renderer3D/Material.h"
 #include "ContentBrowserPanel.h"
+#include "NodeAssetPanel.h"
+#include "Scripting/TestRunner.h"
+#include "Scripting/Visual/VisualGraph.h"
+#include "Core/Assets/SimpleAsset.h"
+#include "Assets/SimpleAssetInspector.h"
 #include "Assets/SceneTemplate.h"
 #include "EditorState.h"
 #include <sstream>
@@ -129,6 +134,11 @@ namespace Conqueror::Editor
             return { ICON_FA_FOLDER, IM_COL32(232, 184, 76, 255), "Folder" };
 
         const std::string ext = ToLower(path.extension().string());
+        if (ext == ".cqplayable") return { ICON_FA_FILE_CODE, IM_COL32(140, 185, 100, 255), "Playable Asset" };
+        if (const SimpleAssets::Def* simple = SimpleAssets::ForExtension(ext))
+            return { simple->Icon, simple->Color, simple->Label.c_str() };
+        if (const NodeAssetSchema* graph = NodeAssetPanel::SchemaForExtension(ext))
+            return { graph->Icon.c_str(), graph->Color, graph->Title.c_str() };
         if (ext == ".cqmat") return { ICON_FA_CIRCLE_HALF_STROKE, IM_COL32(235, 120, 190, 255), "Material" };
         if (ext == ".cqphysmat") return { ICON_FA_BASKETBALL, IM_COL32(120, 200, 120, 255), "Physics Material" };
         if (ext == ".cqmesh") return { ICON_FA_CUBE, IM_COL32(150, 190, 235, 255), "Mesh" };
@@ -1163,7 +1173,8 @@ namespace Conqueror::Editor
             if (!it->is_regular_file(ec))
                 continue;
             const std::string ext = ToLower(it->path().extension().string());
-            if (std::find_if(std::begin(exts), std::end(exts), [&](const char* e) { return ext == e; }) == std::end(exts))
+            if (std::find_if(std::begin(exts), std::end(exts), [&](const char* e) { return ext == e; }) == std::end(exts) &&
+                !SimpleAssets::ForExtension(ext) && !NodeAssetPanel::SchemaForExtension(ext))
                 continue;
             std::ifstream in(it->path(), std::ios::binary);
             std::stringstream ss;
@@ -1627,6 +1638,46 @@ namespace Conqueror::Editor
                 TimelineAsset timeline;
                 if (!timeline.Save(path))
                     path.clear();
+            }
+            else if (kind == "testscript" || kind == "playablescript")
+            {
+                const bool test = kind == "testscript";
+                path = MakeUniquePath(dir / (test ? "NewTests.cqs" : "NewPlayableBehaviour.cqs"));
+                const std::string className = Visual::SanitizeIdentifier(path.stem().string());
+                std::ofstream out(path, std::ios::binary);
+                out << (test ? Scripting::TestRunner::NewScriptTemplate(className)
+                             : "using nativebridge;\n\n// Add to a Playable track clip, directly or through a Playable Asset.\nscript " + className +
+                                   " : ConquerorScript\n{\n    public float intensity = 1.0;\n\n    // The clip started\n    func OnClipStart() { }\n\n"
+                                   "    // Every frame during the clip: time = seconds since it started, progress = 0..1\n    func OnClipUpdate(time, progress) { }\n\n"
+                                   "    // The clip ended or the Timeline stopped\n    func OnClipStop() { }\n}\n");
+                if (!out.good())
+                    path.clear();
+            }
+            else if (kind == "playableasset")
+            {
+                path = MakeUniquePath(dir / "New Playable Asset.cqplayable");
+                DataAssets::DataAssetFile file;
+                if (!DataAssets::Save(path.string(), file))
+                    path.clear();
+            }
+            else if (kind.rfind("simple:", 0) == 0)
+            {
+                if (const SimpleAssets::Def* def = SimpleAssets::ForKind(kind.substr(7)))
+                {
+                    path = MakeUniquePath(dir / ("New " + def->Label + def->Extension));
+                    if (!SimpleAssetInspector::CreateDefault(*def, path.string()))
+                        path.clear();
+                }
+            }
+            else if (kind.rfind("nodeasset:", 0) == 0)
+            {
+                RegisterBuiltinNodeAssetSchemas();
+                if (const NodeAssetSchema* schema = NodeAssetPanel::SchemaForKind(kind.substr(10)))
+                {
+                    path = MakeUniquePath(dir / ("New " + schema->Title + schema->Extension));
+                    if (!NodeAssetPanel::CreateFile(*schema, path))
+                        path.clear();
+                }
             }
             else if (kind == "visualscript")
             {

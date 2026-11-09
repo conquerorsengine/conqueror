@@ -1,4 +1,7 @@
 #include "AssetInspector.h"
+#include "NodeAssetPanel.h"
+#include "Assets/SimpleAssetInspector.h"
+#include "Assets/PlayableAssetInspector.h"
 #include "InspectorPanel.h"
 #include "Assets/SceneTemplate.h"
 #include "Assets/AssetUI.h"
@@ -700,6 +703,37 @@ namespace Conqueror::Editor::AssetInspector
         if (ModelInspector::IsModel(path))
         {
             ModelInspector::Draw(path);
+            return;
+        }
+        if (PlayableAssetInspector::IsPlayable(path))
+        {
+            PlayableAssetInspector::Draw(path);
+            return;
+        }
+        if (SimpleAssetInspector::IsSimpleAsset(path))
+        {
+            SimpleAssetInspector::Draw(path);
+            return;
+        }
+        if (const NodeAssetSchema* graph = NodeAssetPanel::SchemaForExtension(fs::path(path).extension().string()))
+        {
+            ImGui::TextColored(UI::Colors::Accent, "%s", graph->Icon.c_str());
+            ImGui::SameLine();
+            ImGui::TextUnformatted(fs::path(path).filename().string().c_str());
+            ImGui::SameLine();
+            ImGui::TextDisabled("%s", graph->Title.c_str());
+            ImGui::Separator();
+            NodeAssets::File file;
+            if (NodeAssets::Load(path, file))
+                ImGui::Text("%d nodes, %d links", (int)file.Nodes.size(), (int)file.Links.size());
+            ImGui::Spacing();
+            if (ImGui::Button((std::string(ICON_FA_DIAGRAM_PROJECT "  Open ") + graph->Title).c_str()) && NodeAssetPanel::s_Open)
+                NodeAssetPanel::s_Open(path);
+            if (!graph->MenuTooltip.empty())
+            {
+                ImGui::Spacing();
+                ImGui::TextWrapped("%s", graph->MenuTooltip.c_str());
+            }
             return;
         }
         if (Lower(fs::path(path).extension().string()) == ".cqdata")

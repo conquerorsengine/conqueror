@@ -30,6 +30,8 @@ namespace Conqueror::CQS
     void RegisterRenderNatives(Scripting::NativeRegistry* vm);
     // CQSNativeBridge_Gameplay.cpp: Gameplay Tags, Data Tables, Ability System
     void RegisterGameplayNatives(Scripting::NativeRegistry* vm);
+    // CQSNativeBridge_Assets.cpp: State Graph, Behavior Tree, ses varlıkları ve diğer varlık türlerinin çağrıları
+    void RegisterAssetNatives(Scripting::NativeRegistry* vm);
     // Ekran (pencere/viewport piksel) noktasından dünya ışını: betik kamerası (Primary ya da editör kamerası)
     bool ScreenPointToWorldRay(Conqueror::Scene* scene, float sx, float sy, glm::vec3& origin, glm::vec3& direction);
     // Dünya noktası -> ekran pikseli (GetMousePosition ile aynı uzay) ve viewport içi 0..1 (sol üst köşe 0,0).

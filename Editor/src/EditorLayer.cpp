@@ -15,6 +15,7 @@
 #include "Assets/SignalReceiverInspector.h"
 #include "Assets/AnimationClipInspector.h"
 #include "Assets/AssetUI.h"
+#include "Scripting/TestRunner.h"
 #include "Renderer/SpriteAtlas.h"
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
@@ -594,6 +595,14 @@ namespace Conqueror::Editor
                     rt->HotReload(path.string(), nullptr);
             };
             CQ_CORE_INFO("EditorLayer: CodeEditorPanel created");
+            m_TestRunnerPanel = std::make_unique<TestRunnerPanel>();
+            m_TestRunnerPanel->OnEnterPlay = [this]() { if (EditorState::Get().IsEditing()) OnPlayButtonPressed(); };
+            m_TestRunnerPanel->OnOpenScript = [](const std::string& path) { if (InspectorPanel::s_OpenCodeEditor) InspectorPanel::s_OpenCodeEditor(path); };
+            m_NodeAssetPanel = std::make_unique<NodeAssetPanel>();
+            NodeAssetPanel::s_Open = [this](const std::string& path) {
+                m_NodeAssetPanel->Open(path);
+                m_NodeAssetPanel->GetIsOpen() = true;
+            };
             m_VisualScriptPanel = std::make_unique<VisualScriptPanel>();
             m_VisualScriptPanel->OnFileSaved = m_CodeEditorPanel->OnFileSaved;
 
@@ -628,6 +637,11 @@ namespace Conqueror::Editor
                     {
                         m_VisualScriptPanel->Open(path);
                         m_VisualScriptPanel->GetIsOpen() = true;
+                    }
+                    else if (NodeAssetPanel::IsNodeAsset(path) && m_NodeAssetPanel)
+                    {
+                        m_NodeAssetPanel->Open(path);
+                        m_NodeAssetPanel->GetIsOpen() = true;
                     }
                     else if (ext == InputActionAssets::Extension)
                     {
@@ -927,6 +941,9 @@ namespace Conqueror::Editor
 
     void EditorLayer::OnUpdate(Timestep ts)
     {
+        if (EditorState::Get().IsPlaying() && m_ActiveScene && Scripting::TestRunner::HasQueuedPlayMode() &&
+            Scripting::TestRunner::UpdatePlayMode(*m_ActiveScene, (float)ts))
+            OnStopButtonPressed();
         if (s_AutomationFly.Frames > 0 && m_ViewportPanel)
         {
             auto& cam = m_ViewportPanel->GetEditorCamera();
@@ -1390,6 +1407,7 @@ namespace Conqueror::Editor
                 ImGui::DockBuilderDockWindow("Shader Graph Editor", dockspace_id);
                 ImGui::DockBuilderDockWindow("Code Editor###CodeEditor", dockspace_id);
                 ImGui::DockBuilderDockWindow("###VisualScript", dockspace_id);
+                ImGui::DockBuilderDockWindow("###NodeAsset", dockspace_id);
 
                 ImGui::DockBuilderFinish(dockspace_id);
             }
@@ -2145,6 +2163,10 @@ namespace Conqueror::Editor
 
         if (m_VisualScriptPanel && m_VisualScriptPanel->GetIsOpen())
             m_VisualScriptPanel->OnImGuiRender();
+        if (m_NodeAssetPanel && m_NodeAssetPanel->GetIsOpen())
+            m_NodeAssetPanel->OnImGuiRender();
+        if (m_TestRunnerPanel && m_TestRunnerPanel->GetIsOpen())
+            m_TestRunnerPanel->OnImGuiRender();
 
         if (m_InputActionsEditor)
             m_InputActionsEditor->OnImGuiRender();
@@ -2283,6 +2305,8 @@ namespace Conqueror::Editor
 
     void EditorLayer::OnStopButtonPressed()
     {
+        if (Scripting::TestRunner::HasQueuedPlayMode())
+            Scripting::TestRunner::CancelPlayMode();
         auto& editorState = EditorState::Get();
         
         if (!editorState.IsEditing())
@@ -2612,6 +2636,10 @@ namespace Conqueror::Editor
                 ImGui::MenuItem("Code Editor", nullptr, &m_CodeEditorPanel->GetIsOpen());
             if (m_VisualScriptPanel)
                 ImGui::MenuItem("Visual Script", nullptr, &m_VisualScriptPanel->GetIsOpen());
+            if (m_NodeAssetPanel)
+                ImGui::MenuItem("Graph Editor", nullptr, &m_NodeAssetPanel->GetIsOpen());
+            if (m_TestRunnerPanel)
+                ImGui::MenuItem("Test Runner", nullptr, &m_TestRunnerPanel->GetIsOpen());
             ImGui::MenuItem("AI Assistant", nullptr, &m_ShowAIPanel);
             ImGui::MenuItem("Stats", nullptr, &m_ShowStats);
             ImGui::MenuItem("Game", nullptr, &m_ShowGame);
@@ -5378,6 +5406,61 @@ namespace Conqueror::Editor
             if (!std::filesystem::exists(x)) { err = "no asset " + x.string(); return false; }
             EditorState::Get().SelectAsset(x.string());
             return true;
+        });
+        // testrunner open | run_edit [metot] | run_play [metot] | expect <geçen> <kalan>
+        Automation::RegisterCommand("testrunner", [this](const Args& a, std::string& err) {
+            if (a.size() < 2 || !m_TestRunnerPanel) { err = "testrunner open|run_edit|run_play|expect"; return false; }
+            if (a[1] == "open") { m_TestRunnerPanel->GetIsOpen() = true; return true; }
+            if (a[1] == "run_edit") { Scripting::TestRunner::RunEditMode(a.size() > 2 ? a[2] : ""); return true; }
+            if (a[1] == "run_play")
+            {
+                Scripting::TestRunner::QueuePlayMode(a.size() > 2 ? a[2] : "");
+                if (m_TestRunnerPanel->OnEnterPlay) m_TestRunnerPanel->OnEnterPlay();
+                return true;
+            }
+            if (a[1] == "expect" && a.size() > 3)
+            {
+                const int p = Scripting::TestRunner::CountWithStatus(Scripting::TestRunner::Status::Passed);
+                const int f = Scripting::TestRunner::CountWithStatus(Scripting::TestRunner::Status::Failed);
+                std::string details;
+                for (const auto& t : Scripting::TestRunner::Tests())
+                    for (const auto& m : t.Messages)
+                        details += " [" + t.Method + ": " + m + "]";
+                Automation::Report("TESTS passed=" + std::to_string(p) + " failed=" + std::to_string(f) + details);
+                if (p != std::atoi(a[2].c_str()) || f != std::atoi(a[3].c_str())) { err = "passed " + std::to_string(p) + " failed " + std::to_string(f); return false; }
+                return true;
+            }
+            err = "unknown testrunner command";
+            return false;
+        });
+        // nodeasset open <yol> | connect <düğüm> <pin> <düğüm> <pin> | prop <düğüm> <ad> <değer> | expect_nodes <n> | save
+        Automation::RegisterCommand("nodeasset", [this](const Args& a, std::string& err) {
+            if (a.size() < 2 || !m_NodeAssetPanel) { err = "nodeasset open|prop|save|expect_nodes ..."; return false; }
+            auto& panel = *m_NodeAssetPanel;
+            if (a[1] == "open" && a.size() >= 3)
+            {
+                panel.Open(AssetUI::Resolve(a[2]));
+                panel.GetIsOpen() = true;
+                if (panel.GetPath().empty()) { err = "cannot open " + a[2]; return false; }
+                return true;
+            }
+            if (a[1] == "prop" && a.size() >= 5)
+            {
+                auto* n = panel.GetFile().Find(std::atoi(a[2].c_str()));
+                if (!n) { err = "no node " + a[2]; return false; }
+                n->Props[a[3]] = a[4];
+                panel.MarkEdited();
+                return true;
+            }
+            if (a[1] == "save")
+                return panel.Save();
+            if (a[1] == "expect_nodes" && a.size() >= 3)
+            {
+                if ((int)panel.GetFile().Nodes.size() != std::atoi(a[2].c_str())) { err = "nodes: " + std::to_string(panel.GetFile().Nodes.size()); return false; }
+                return true;
+            }
+            err = "unknown nodeasset command";
+            return false;
         });
         // create_asset <tür>: Content Browser sağ tık menüsündeki girişle aynı kod (geçerli klasöre); yolu raporlar
         Automation::RegisterCommand("create_asset", [this](const Args& a, std::string& err) {

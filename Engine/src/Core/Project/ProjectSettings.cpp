@@ -78,6 +78,11 @@ namespace Conqueror
     NavigationProjectSettings& ProjectSettings::Navigation() { return s_Navigation; }
     EditorProjectSettings& ProjectSettings::Editor() { return s_Editor; }
     std::vector<ScriptOrderEntry>& ProjectSettings::ScriptOrder() { return s_ScriptOrder; }
+    std::vector<std::string>& ProjectSettings::ScriptDefines()
+    {
+        static std::vector<std::string> s_Defines;
+        return s_Defines;
+    }
     std::vector<std::string>& ProjectSettings::CustomTags()
     {
         static std::vector<std::string> tags;
@@ -121,6 +126,7 @@ namespace Conqueror
         s_Navigation = {};
         s_Editor = {};
         s_ScriptOrder.clear();
+        ScriptDefines().clear();
         s_OrderCacheValid = false;
         CustomTags().clear();
         ProjectWideActions().clear();
@@ -176,6 +182,7 @@ namespace Conqueror
         out << YAML::EndSeq;
 
         out << YAML::Key << "Tags" << YAML::Value << YAML::Flow << CustomTags();
+        out << YAML::Key << "ScriptDefines" << YAML::Value << YAML::Flow << ScriptDefines();
 
         if (CustomInput())
             out << YAML::Key << "InputConfig" << YAML::Value << YAML::Literal << Input::SaveConfigToString();
@@ -243,6 +250,12 @@ namespace Conqueror
         }
         if (auto pw = root["ProjectWideActions"]; pw && pw.IsScalar())
             ProjectWideActions() = pw.as<std::string>();
+        if (auto d = root["ScriptDefines"]; d && d.IsSequence())
+            for (const auto& symbol : d)
+            {
+                try { ScriptDefines().push_back(symbol.as<std::string>()); }
+                catch (const YAML::Exception&) {}
+            }
         if (auto t = root["Tags"]; t && t.IsSequence())
             for (const auto& tag : t)
             {

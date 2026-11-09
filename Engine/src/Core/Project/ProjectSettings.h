@@ -72,6 +72,8 @@ namespace Conqueror
         static NavigationProjectSettings& Navigation();
         static EditorProjectSettings& Editor();
         static std::vector<ScriptOrderEntry>& ScriptOrder();
+        // Scripting Define Symbols: Native Script Module kısıtları ve C/C++ betikleri için
+        static std::vector<std::string>& ScriptDefines();
         // Projeye özel giriş haritası (.cqproj içinde); kapalıysa motorun varsayılan haritası
         static bool& CustomInput();
         // Project-wide Actions (Unity 6): bir Input Actions varlığı (.cqinputactions, proje göreli). Doluysa betiklerin

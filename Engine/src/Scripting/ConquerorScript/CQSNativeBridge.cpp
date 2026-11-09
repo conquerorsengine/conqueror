@@ -1325,6 +1325,7 @@ namespace Conqueror::CQS
         RegisterUINatives(vm);
         RegisterRenderNatives(vm);
         RegisterGameplayNatives(vm);
+        RegisterAssetNatives(vm);
 
         CQ_CORE_INFO("[CQS] NativeBridge: All systems registered.");
     }

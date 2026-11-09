@@ -1,4 +1,8 @@
 #include "Scene/Signals.h"
+#include "Scripting/DataAssets.h"
+#include "Scripting/ScriptContext.h"
+#include "Scripting/ScriptRuntime.h"
+#include "Core/Serialization/SceneSerializer.h"
 #include "TimelineSystem.h"
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"
@@ -45,8 +49,49 @@ namespace Conqueror
             return s;
         }
 
+        // Playable klipleri: her klip için bir davranış örneği; klip süresince OnClipUpdate alır
+        struct PlayableInstance
+        {
+            Scripting::ScriptRuntime* Runtime = nullptr;
+            void* Instance = nullptr;
+            uint32_t Entity = 0;
+        };
+
+        std::map<AudioKey, PlayableInstance>& PlayableInstances()
+        {
+            static std::map<AudioKey, PlayableInstance> s;
+            return s;
+        }
+
+        void StopPlayable(PlayableInstance& p)
+        {
+            if (!p.Instance || !p.Runtime)
+                return;
+            ScriptContext::EntityScope scope(p.Entity);
+            if (p.Runtime->HasMethod(p.Instance, "OnClipStop"))
+                p.Runtime->Invoke(p.Instance, "OnClipStop", nullptr, 0);
+            Scripting::ScriptRuntimes::RetireInstance(p.Runtime, p.Instance);
+            p.Instance = nullptr;
+        }
+
+        void StopPlayables(Scene* scene, uint32_t director)
+        {
+            auto& map = PlayableInstances();
+            for (auto it = map.begin(); it != map.end();)
+            {
+                if (std::get<0>(it->first) == scene && (director == 0xffffffffu || std::get<1>(it->first) == director))
+                {
+                    StopPlayable(it->second);
+                    it = map.erase(it);
+                }
+                else
+                    ++it;
+            }
+        }
+
         void StopDirectorAudio(Scene* scene, uint32_t director)
         {
+            StopPlayables(scene, director);
             auto& sources = AudioSources();
             for (auto it = sources.begin(); it != sources.end();)
             {
@@ -135,6 +180,76 @@ namespace Conqueror
                     {
                         CQS::Value arg = CQS::Value::MakeString(m.Argument);
                         scene.InvokeScriptMethod((uint32_t)(entt::entity)target, m.Method.c_str(), &arg, 1);
+                    }
+                }
+            }
+        }
+
+        void UpdatePlayables(Scene& scene, Entity director, const TimelineAsset& asset, double time)
+        {
+            auto& map = PlayableInstances();
+            const uint32_t dirId = (uint32_t)(entt::entity)director;
+            for (size_t ti = 0; ti < asset.Tracks.size(); ++ti)
+            {
+                const auto& track = asset.Tracks[ti];
+                if (track.Type != TimelineTrackType::Playable)
+                    continue;
+                Entity target = TimelineSystem::ResolveBinding(scene, director, ti);
+                for (size_t ci = 0; ci < track.Clips.size(); ++ci)
+                {
+                    const auto& clip = track.Clips[ci];
+                    const AudioKey key{ &scene, dirId, (uint32_t)ti, (uint32_t)ci };
+                    const bool inside = target && !track.Muted && time >= clip.Start && time < clip.End() && !clip.Asset.empty();
+                    auto it = map.find(key);
+                    if (!inside)
+                    {
+                        if (it != map.end())
+                        {
+                            StopPlayable(it->second);
+                            map.erase(it);
+                        }
+                        continue;
+                    }
+                    if (it == map.end())
+                    {
+                        std::string script = clip.Asset;
+                        std::map<std::string, Scripting::ScriptValue> fields;
+                        if (std::filesystem::path(script).extension() == ".cqplayable")
+                        {
+                            DataAssets::DataAssetFile file;
+                            if (!DataAssets::Load(script, file) || file.Script.empty())
+                            {
+                                CQ_CORE_WARN("[Timeline] Playable Asset has no script: {0}", clip.Asset);
+                                continue;
+                            }
+                            script = file.Script;
+                            fields = file.Fields;
+                        }
+                        const std::string path = SceneSerializer::ResolveAssetPath(script);
+                        auto* runtime = Scripting::ScriptRuntimes::ForPath(path);
+                        if (!runtime || !runtime->LoadScript(path, nullptr))
+                        {
+                            CQ_CORE_WARN("[Timeline] Playable script failed to load: {0}", script);
+                            continue;
+                        }
+                        const uint32_t entity = (uint32_t)(entt::entity)target;
+                        void* instance = runtime->CreateInstance(path, runtime->GetDefaultClass(path), entity);
+                        if (!instance)
+                            continue;
+                        for (const auto& [name, value] : fields)
+                            runtime->SetField(instance, name, value);
+                        it = map.emplace(key, PlayableInstance{ runtime, instance, entity }).first;
+                        ScriptContext::EntityScope scope(entity);
+                        if (runtime->HasMethod(instance, "OnClipStart"))
+                            runtime->Invoke(instance, "OnClipStart", nullptr, 0);
+                    }
+                    PlayableInstance& p = it->second;
+                    if (p.Instance && p.Runtime->HasMethod(p.Instance, "OnClipUpdate"))
+                    {
+                        ScriptContext::EntityScope scope(p.Entity);
+                        const double local = time - clip.Start;
+                        CQS::Value args[2] = { CQS::Value::MakeFloat(local), CQS::Value::MakeFloat(local / std::max(0.001f, clip.Duration)) };
+                        p.Runtime->Invoke(p.Instance, "OnClipUpdate", args, 2);
                     }
                 }
             }
@@ -408,6 +523,9 @@ namespace Conqueror
             auto& dd = scene.m_Registry.get<PlayableDirectorComponent>(e);
             dd.LastSignalTime = dd.Time;
             UpdateAudio(scene, director, *asset, finished ? duration + 1.0 : dd.Time);
+            UpdatePlayables(scene, director, *asset, finished ? duration + 1.0 : dd.Time);
+            if (!scene.m_Registry.valid(e))
+                continue;   // davranış yönetmeni silmiş olabilir
             if (finished)
             {
                 dd.Playing = false;
@@ -480,6 +598,7 @@ namespace Conqueror
 
     void TimelineSystem::ForgetScene(Scene* scene)
     {
+        StopPlayables(scene, 0xffffffffu);
         auto& sources = AudioSources();
         for (auto it = sources.begin(); it != sources.end();)
         {
@@ -496,6 +615,7 @@ namespace Conqueror
 
     void TimelineSystem::Shutdown()
     {
+        PlayableInstances().clear();
         AudioSources().clear();
         Cache().clear();
     }

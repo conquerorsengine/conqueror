@@ -3276,6 +3276,8 @@ namespace Conqueror::Editor
                     ImGui::TextDisabled("Language");
                     for (auto* runtime : Scripting::ScriptRuntimes::All())
                     {
+                        if (std::string(runtime->GetLanguageId()) == "stategraph")
+                            continue;
                         bool available = runtime->IsAvailable();
                         std::string label = std::string(runtime->GetName()) + "  (" + runtime->GetExtensions().front() + ")##lang_" + runtime->GetLanguageId();
                         ImGui::BeginDisabled(!available);

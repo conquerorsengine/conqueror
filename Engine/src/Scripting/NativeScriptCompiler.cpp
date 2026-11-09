@@ -1,4 +1,5 @@
 #include "NativeScriptCompiler.h"
+#include "NativeModules.h"
 
 #include "Scripting/ScriptEngine.h"
 #include "Scene/Scene.h"
@@ -161,6 +162,19 @@ namespace Conqueror::NativeScriptCompiler
 #if defined(__APPLE__)
         cmd += " -undefined dynamic_lookup";    // motor sembolleri yükleyen süreçten
 #endif
+        // Native Script Module: tanımlar ve içerme klasörleri; modül dışlandıysa derlenmez
+        {
+            const auto modules = NativeModules::Resolve();
+            if (const auto* module = NativeModules::ForSource(modules, source))
+            {
+                if (!module->Active)
+                {
+                    r.Log = "Excluded by Native Script Module '" + module->Name + "': " + module->Why;
+                    return r;
+                }
+                cmd += NativeModules::CompilerFlags(*module);
+            }
+        }
         cmd += " " + Quote(source) + " -o " + Quote(tmp);
         CQ_CORE_INFO("Compiling native script {0}", source.filename().string());
         int code = 0;

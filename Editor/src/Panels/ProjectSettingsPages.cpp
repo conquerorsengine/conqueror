@@ -686,5 +686,35 @@ namespace Conqueror::Editor
             ProjectSettings::InvalidateScriptOrderCache();
             m_Dirty = true;
         }
+
+        // Scripting Define Symbols: C / C++ betiklerine -D olarak gider, Native Script Module kısıtları bunlara bakar
+        UI::SubHeader("Scripting Define Symbols");
+        auto& defines = ProjectSettings::ScriptDefines();
+        int removeDefine = -1;
+        for (size_t i = 0; i < defines.size(); ++i)
+        {
+            ImGui::PushID(1000 + (int)i);
+            UI::BeginProperty(defines[i].c_str());
+            if (ImGui::Button(ICON_FA_TRASH_CAN, ImVec2(ImGui::GetFrameHeight(), 0)))
+                removeDefine = (int)i;
+            UI::EndProperty();
+            ImGui::PopID();
+        }
+        if (removeDefine >= 0)
+        {
+            defines.erase(defines.begin() + removeDefine);
+            m_Dirty = true;
+        }
+        static char s_NewDefine[96] = {};
+        ImGui::SetNextItemWidth(-90.0f);
+        ImGui::InputTextWithHint("##adddefine", "SYMBOL_NAME", s_NewDefine, sizeof(s_NewDefine));
+        ImGui::SameLine();
+        if (ImGui::Button("Add##adddefine", ImVec2(-1, 0)) && s_NewDefine[0])
+        {
+            if (std::find(defines.begin(), defines.end(), std::string(s_NewDefine)) == defines.end())
+                defines.emplace_back(s_NewDefine);
+            s_NewDefine[0] = 0;
+            m_Dirty = true;
+        }
     }
 }

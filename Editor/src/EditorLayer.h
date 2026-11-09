@@ -29,6 +29,8 @@
 #include "Panels/Animator/AnimatorPanel.h"
 #include "Panels/Shader/ShaderEditorPanel.h"
 #include "Panels/VisualScript/VisualScriptPanel.h"
+#include "Panels/NodeAssetPanel.h"
+#include "Panels/TestRunnerPanel.h"
 #include "Panels/CodeEditorPanel.h"
 #include "Panels/AIPanel.h"
 #include "UndoRedo/UndoRedoManager.h"
@@ -190,6 +192,8 @@ namespace Conqueror::Editor
         std::unique_ptr<AnimatorPanel> m_AnimatorPanel;
         std::unique_ptr<ShaderEditorPanel> m_ShaderEditorPanel;
         std::unique_ptr<VisualScriptPanel> m_VisualScriptPanel;
+        std::unique_ptr<NodeAssetPanel> m_NodeAssetPanel;
+        std::unique_ptr<TestRunnerPanel> m_TestRunnerPanel;
         std::unique_ptr<CodeEditorPanel> m_CodeEditorPanel;
         std::unique_ptr<AIPanel> m_AIPanel;
 

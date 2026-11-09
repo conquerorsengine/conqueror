@@ -7,6 +7,8 @@
 //    Import New Asset, Extract Materials, Find References In Scene / Project, Select Dependencies, Refresh, Reimport,
 //    Reimport All, Open Script Project, View in Import Activity Window, Properties.
 #include "ContentBrowserPanel.h"
+#include "Panels/NodeAssetPanel.h"
+#include "Core/Assets/SimpleAsset.h"
 
 #include "AssetActions.h"
 #include "EditorState.h"
@@ -313,11 +315,15 @@ namespace Conqueror::Editor
 
         // Timeline
         add("Timeline", "", "Timeline", ICON_FA_FILM, "timeline");
+        add("Timeline", "Playables", "Playable Asset", ICON_FA_FILE_CODE, "playableasset", "A Timeline clip for a Playable track: names a Playable Behaviour script and keeps its field values.");
+        add("Timeline", "Playables", "Playable Behaviour Script", ICON_FA_FILE_CODE, "playablescript", "A script with OnClipStart, OnClipUpdate(time, progress) and OnClipStop, played by Playable track clips.");
         add("Timeline", "", "Signal", ICON_FA_TOWER_BROADCAST, "signal", "A Timeline signal: Signal track markers emit it, Signal Receiver components react to it.");
 
         // Scripting
         for (auto* runtime : Scripting::ScriptRuntimes::All())
         {
+            if (std::string(runtime->GetLanguageId()) == "stategraph")
+                continue;
             const bool available = runtime->IsAvailable();
             add("Scripting", "Script", std::string(runtime->GetName()) + " (" + runtime->GetExtensions().front() + ")", "",
                 std::string("script:") + runtime->GetLanguageId(), available ? std::string() : runtime->GetUnavailableReason(), available);
@@ -326,6 +332,10 @@ namespace Conqueror::Editor
             "A ScriptableEntity class using the engine's C++ API. Drag it onto a Native Script component; the engine compiles it when you press Play.",
             true, true);
         add("Scripting", "", "Visual Script Graph", ICON_FA_DIAGRAM_PROJECT, "visualscript");
+        add("Scripting", "Testing", "Test Script", ICON_FA_FLASK_VIAL, "testscript", "Test* methods run from Window > Test Runner in Edit Mode, PlayTest* methods in Play Mode.");
+        RegisterBuiltinNodeAssetSchemas();
+        for (const auto& schema : NodeAssetPanel::Schemas())
+            add(schema.MenuCategory, schema.MenuSubmenu, schema.Title, schema.Icon, "nodeasset:" + schema.Kind, schema.MenuTooltip);
         for (auto* runtime : Scripting::ScriptRuntimes::All())
         {
             if (!DataAssets::SupportsDataClasses(runtime->GetLanguageId()))
@@ -362,6 +372,10 @@ namespace Conqueror::Editor
         add("Input", "", "Input Actions", ICON_FA_GAMEPAD, "inputactions",
             "Action maps, actions and their keyboard / mouse / gamepad bindings (Unity Input Actions, Unreal Input Action\n"
             "+ Mapping Context). Double-click to edit; assign it to a Player Input component's Actions slot.");
+
+        // Tabloyla tanımlı varlıklar
+        for (const auto& def : SimpleAssets::All())
+            add(def.Category, def.Submenu, def.Label, def.Icon, "simple:" + def.Kind, def.Tooltip);
 
         add("~", "", "Text File", ICON_FA_FILE_LINES, "text");
         return v;

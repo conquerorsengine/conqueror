@@ -67,6 +67,7 @@ namespace Conqueror
             case TimelineTrackType::Audio: return "Audio";
             case TimelineTrackType::Signal: return "Signal";
             case TimelineTrackType::Animation: return "Animation";
+            case TimelineTrackType::Playable: return "Playable";
             default: return "Track";
         }
     }

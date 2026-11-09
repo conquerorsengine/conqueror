@@ -110,6 +110,8 @@ namespace Conqueror::Visual
             add(Make("event.update", "On Update", "Events", E, {}, { ExecOut(), Out("Delta Time", N) }, "", "Called every frame."));
             add(Make("event.lateupdate", "On Late Update", "Events", E, {}, { ExecOut(), Out("Delta Time", N) }, "", "Called every frame after all updates."));
             add(Make("event.destroy", "On Destroy", "Events", E, {}, { ExecOut() }, "", "Called when play stops or the entity is destroyed."));
+            add(Make("event.enterstate", "On Enter State", "Events", E, {}, { ExecOut() }, "", "State Graph: called each time this graph's state becomes active."));
+            add(Make("event.exitstate", "On Exit State", "Events", E, {}, { ExecOut() }, "", "State Graph: called each time this graph's state is left."));
             {
                 NodeDef d = Make("event.custom", "Custom Event", "Events", E, {}, { ExecOut(), Out("Value", X), Out("Kind", S) }, "",
                                  "Callable by name: UI buttons (OnClick), other scripts.");
@@ -1089,7 +1091,7 @@ namespace Conqueror::Visual
             void GenerateEvents()
             {
                 // Olayları türlerine göre grupla (aynı türden birden çok düğüm tek fonksiyonda birleşir)
-                std::vector<const Node*> start, awake, update, late, destroy, perFrame;
+                std::vector<const Node*> start, awake, update, late, destroy, perFrame, enterState, exitState;
                 std::map<std::string, std::vector<const Node*>> custom;
                 for (auto& n : m_Graph.Nodes)
                 {
@@ -1098,6 +1100,8 @@ namespace Conqueror::Visual
                     else if (n.Type == "event.update") update.push_back(&n);
                     else if (n.Type == "event.lateupdate") late.push_back(&n);
                     else if (n.Type == "event.destroy") destroy.push_back(&n);
+                    else if (n.Type == "event.enterstate") enterState.push_back(&n);
+                    else if (n.Type == "event.exitstate") exitState.push_back(&n);
                     else if (n.Type == "event.keydown" || n.Type == "event.keyheld" || n.Type == "event.mouse" || n.Type == "event.timer") perFrame.push_back(&n);
                     else if (n.Type == "event.custom")
                     {
@@ -1169,7 +1173,9 @@ namespace Conqueror::Visual
                     Line("    }", 0);
                 }
                 simple("OnDestroy", destroy);
-                static const std::set<std::string> reserved = { "Start", "Awake", "Update", "LateUpdate", "OnDestroy", "OnUpdate", "OnCreate", "init" };
+                simple("OnEnterState", enterState);
+                simple("OnExitState", exitState);
+                static const std::set<std::string> reserved = { "Start", "Awake", "Update", "LateUpdate", "OnDestroy", "OnUpdate", "OnCreate", "OnEnterState", "OnExitState", "init" };
                 for (auto& [name, nodes] : custom)
                 {
                     if (reserved.count(name))
@@ -1187,7 +1193,7 @@ namespace Conqueror::Visual
                     }
                     Line("    }", 0);
                 }
-                if (start.empty() && awake.empty() && update.empty() && late.empty() && destroy.empty() && perFrame.empty() && custom.empty())
+                if (start.empty() && awake.empty() && update.empty() && late.empty() && destroy.empty() && perFrame.empty() && custom.empty() && enterState.empty() && exitState.empty())
                     Warning(0, "The graph has no event nodes; nothing will run. Add 'On Start' or 'On Update'.");
             }
         };
