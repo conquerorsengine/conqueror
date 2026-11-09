@@ -5374,7 +5374,7 @@ Entities:
         walkSpeed:
           Float: 5.46
         sprintSpeed:
-          Float: 8.84
+          Float: 7
         crouchSpeed:
           Float: 2.86
   - Entity: 1021178394455252899

@@ -31,6 +31,6 @@ Target("Platform Target", 10, 3, -16, 0, false);
 var player = FPPlayer("Player", 0, 0, 14, 0, ["Pistol", "Rifle"], "Blue", 100, 3);
 // Silah duvara / kübe yaklaşınca geri çekilip iner (içine girmez); yürürken kamera yatması hafif. Hız varsayılanın 1.3 katı;
 // küpler daha ağır (55 kg): hızlı oyuncu küpleri savuramaz
-SetFields(player, {avoidWalls: true, crispStop: true, bobRoll: 0.32, walkSpeed: 5.46, sprintSpeed: 8.84, crouchSpeed: 2.86});
+SetFields(player, {avoidWalls: true, crispStop: true, bobRoll: 0.32, walkSpeed: 5.46, sprintSpeed: 7.0, crouchSpeed: 2.86});
 Game("Range", 0, 0);
 ShooterHUD();
