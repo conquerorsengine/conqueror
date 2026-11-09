@@ -224,6 +224,12 @@ namespace Conqueror
         DestroyTarget(m_T2xHistory[1]);
         DestroyTarget(m_TAAUHistory[0]);
         DestroyTarget(m_TAAUHistory[1]);
+        if (m_PrevDepth)
+        {
+            glDeleteTextures(1, &m_PrevDepth);
+            m_PrevDepth = 0;
+        }
+        m_PrevDepthValid = false;
         DestroyTarget(m_MotionVectors);
         DestroyTarget(m_FSR2Output);
         m_FSR2.reset();
@@ -1722,6 +1728,13 @@ namespace Conqueror
             taau->SetInt("u_Reactive", 5);
             taau->SetInt("u_HasReactive", m_ReactiveUsed ? 1 : 0);
             BindTexture(5, m_ReactiveUsed ? m_Reactive.Texture : 0);
+            // Önceki karenin derinliği (iç çözünürlük): açılma testi
+            const bool prevDepth = PrevDepthUsable();
+            taau->SetInt("u_PrevDepth", 6);
+            taau->SetInt("u_HasPrevDepth", prevDepth ? 1 : 0);
+            taau->SetMat4("u_PrevInvViewProj", glm::inverse(m_PrevViewProj));
+            taau->SetMat4("u_ViewProjNow", m_FinalViewProj);
+            BindTexture(6, prevDepth ? m_PrevDepth : 0);
             glTextureParameteri(cur, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             BindTexture(0, cur);
             BindTexture(1, m_TAAUHistory[m_TAAUIndex].Texture);
@@ -1958,6 +1971,7 @@ namespace Conqueror
         {
             m_FinalHasVelocity = RenderObjectVelocity(camera);
             m_FinalInvViewProj = glm::inverse(JitteredProjection(camera) * camera.View);
+            m_FinalViewProj = camera.Projection * camera.View;
             bool still = m_HasPrevViewProj;
             const glm::mat4 now = camera.Projection * camera.View;
             for (int c = 0; c < 4 && still; ++c)
@@ -2076,6 +2090,8 @@ namespace Conqueror
             PostProcess::DrawFullscreenQuad();
         }
 
+        // Sonraki karenin TAA / TAAU açılma testi için bu karenin derinliği (bütün geçişlerden sonra)
+        SavePrevDepth(fx && !camera.Orthographic && m_JitterActive);
         // Sonraki kare için: titreşimsiz görüş-izdüşüm (TAA / hareket bulanıklığı yeniden izdüşümü), istekler
         m_PrevViewProj = camera.Projection * camera.View;
         m_HasPrevViewProj = true;

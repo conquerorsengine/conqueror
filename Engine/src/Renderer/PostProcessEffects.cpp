@@ -415,6 +415,60 @@ namespace Conqueror
         return hasVelocity;
     }
 
+    // Bu karenin sahne derinliğini sonraki kare için saklar (aynı biçimde doku, GPU'da kopya)
+    void PostProcessStack::SavePrevDepth(bool wanted)
+    {
+        const uint32_t depth = wanted ? GetSceneDepthTexture() : 0;
+        if (!depth)
+        {
+            m_PrevDepthValid = false;
+            return;
+        }
+        // Çok örnekli derinlik kopyalanmaz (TAA / TAAU tek örnekli çözülmüş derinliği okur). GL_TEXTURE_TARGET sorgusu Mesa'da 0
+        // döndürüyor: örnek sayısına bakılır
+        GLint w = 0, h = 0, fmt = 0, samples = 0;
+        glGetTextureLevelParameteriv(depth, 0, GL_TEXTURE_WIDTH, &w);
+        glGetTextureLevelParameteriv(depth, 0, GL_TEXTURE_HEIGHT, &h);
+        glGetTextureLevelParameteriv(depth, 0, GL_TEXTURE_INTERNAL_FORMAT, &fmt);
+        glGetTextureLevelParameteriv(depth, 0, GL_TEXTURE_SAMPLES, &samples);
+        if (samples > 1 || w <= 0 || h <= 0 || fmt == 0)
+        {
+            m_PrevDepthValid = false;
+            return;
+        }
+        if (!m_PrevDepth || m_PrevDepthWidth != (uint32_t)w || m_PrevDepthHeight != (uint32_t)h || m_PrevDepthFormat != (uint32_t)fmt)
+        {
+            if (m_PrevDepth)
+                glDeleteTextures(1, &m_PrevDepth);
+            glCreateTextures(GL_TEXTURE_2D, 1, &m_PrevDepth);
+            glTextureStorage2D(m_PrevDepth, 1, (GLenum)fmt, w, h);
+            glTextureParameteri(m_PrevDepth, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTextureParameteri(m_PrevDepth, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTextureParameteri(m_PrevDepth, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTextureParameteri(m_PrevDepth, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glTextureParameteri(m_PrevDepth, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+            if (fmt == GL_DEPTH24_STENCIL8 || fmt == GL_DEPTH32F_STENCIL8)
+                glTextureParameteri(m_PrevDepth, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_DEPTH_COMPONENT);
+            m_PrevDepthWidth = (uint32_t)w;
+            m_PrevDepthHeight = (uint32_t)h;
+            m_PrevDepthFormat = (uint32_t)fmt;
+        }
+        glCopyImageSubData(depth, GL_TEXTURE_2D, 0, 0, 0, 0, m_PrevDepth, GL_TEXTURE_2D, 0, 0, 0, 0, w, h, 1);
+        m_PrevDepthValid = true;
+    }
+
+    // Önceki karenin derinliği bu karenin sahne derinliğiyle aynı boyutta ve önceki kare geçerli
+    bool PostProcessStack::PrevDepthUsable() const
+    {
+        const uint32_t depth = GetSceneDepthTexture();
+        if (!m_PrevDepthValid || !m_PrevDepth || !depth || !m_HasPrevViewProj)
+            return false;
+        GLint w = 0, h = 0;
+        glGetTextureLevelParameteriv(depth, 0, GL_TEXTURE_WIDTH, &w);
+        glGetTextureLevelParameteriv(depth, 0, GL_TEXTURE_HEIGHT, &h);
+        return (uint32_t)w == m_PrevDepthWidth && (uint32_t)h == m_PrevDepthHeight;
+    }
+
     void PostProcessStack::RunTAA(const PostProcessSettings& settings, const RenderCamera& camera)
     {
         auto shader = PostProcess::GetShader("TAA");
@@ -604,6 +658,13 @@ namespace Conqueror
         shader->SetInt("u_Reactive", 7);
         shader->SetInt("u_HasReactive", m_ReactiveUsed ? 1 : 0);
         BindTexture(7, m_ReactiveUsed ? m_Reactive.Texture : 0);
+        // Önceki karenin derinliği (açılma testi: pikselin kendi noktası önceki karede bir örtücünün arkasında mıydı)
+        const bool prevDepth = PrevDepthUsable();
+        shader->SetInt("u_PrevDepth", 8);
+        shader->SetInt("u_HasPrevDepth", prevDepth ? 1 : 0);
+        shader->SetMat4("u_PrevInvViewProj", glm::inverse(m_HasPrevViewProj ? m_PrevViewProj : camera.Projection * camera.View));
+        shader->SetMat4("u_ViewProjNow", camera.Projection * camera.View);
+        BindTexture(8, prevDepth ? m_PrevDepth : 0);
         PostProcess::DrawFullscreenQuad();
         Renderer::GetStats().PostProcessPasses++;
         // Hata ayıklama görünümü: geçmiş etkilenmez, yalnız gösterilen görüntü renkli yol haritasıdır

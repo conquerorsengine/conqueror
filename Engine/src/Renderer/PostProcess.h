@@ -193,6 +193,14 @@ namespace Conqueror
         RenderTarget m_TAAUHistory[2];
         int m_TAAUIndex = 0;
         bool m_TAAUValid = false;
+        glm::mat4 m_FinalViewProj{ 1.0f };   // bu karenin titreşimsiz görüş-izdüşümü (TAAU açılma testi)
+        // Önceki karenin sahne derinliği (kare sonunda kopyalanır): TAA / TAAU açılma testi. Pikselin kendi noktası önceki karede
+        // daha yakın bir yüzeyin arkasındaysa ve o yüzey uzaklaştıysa geçmiş o örtücünündür (arka kenarda iz / çentik)
+        uint32_t m_PrevDepth = 0;
+        uint32_t m_PrevDepthWidth = 0, m_PrevDepthHeight = 0, m_PrevDepthFormat = 0;
+        bool m_PrevDepthValid = false;
+        void SavePrevDepth(bool wanted);
+        bool PrevDepthUsable() const;
         // Kenar yumuşatma planı (Renderer/AntiAliasing.h): bu karede uygulanan ve sonraki kare için istenen
         AntiAliasingMode m_AAMode = AntiAliasingMode::None;
         UpscalerMode m_Upscaler = UpscalerMode::None;

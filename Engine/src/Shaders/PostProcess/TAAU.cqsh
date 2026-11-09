@@ -39,6 +39,48 @@ uniform sampler2D u_Reactive;   // parçacık / saydam hareketli nesne maskesi (
 uniform vec3 u_CameraPos;      // kameranın bu ve önceki karedeki konumu (dünya)
 uniform vec3 u_PrevCameraPos;
 uniform int u_HasReactive = 0;
+uniform sampler2D u_PrevDepth;  // önceki karenin derinliği (iç çözünürlük, titreşimli)
+uniform int u_HasPrevDepth = 0;
+uniform mat4 u_PrevInvViewProj; // önceki karenin titreşimsiz ters görüş-izdüşümü
+uniform mat4 u_ViewProjNow;     // bu karenin titreşimsiz görüş-izdüşümü
+
+// Derinlik değerinden görüş uzaklığı (izdüşümün yakın / uzak düzlemine bağlı; konumdan bağımsız)
+float ViewW(vec2 uv, float depth)
+{
+    vec4 w = u_InvViewProj * vec4(uv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+    return 1.0 / max(abs(w.w), 1e-8);
+}
+
+// Açılma: pikselin kendi noktası (titreşimsiz konumu uv, derinliği depth, önceki karedeki yeri prevUV, uzaklığı prevW) önceki karede
+// belirgin daha yakın bir yüzeyin arkasındaydı (önceki derinliğin 2x2 ayak izinin en uzağı bile yakın) ve o yüzey bu karede bu noktaya
+// göre en az bir iç piksel uzaklaştı. Geçmiş o örtücünün rengidir (küpün arkasından açılan duvarda mavi iz). Duvar üstü ile gökyüzü
+// gibi aynı kalan kenarın baş sallanmasıyla oynaması (piksel altı) açılma sayılmaz. Dönen değer örtücünün bu noktaya göre kayması (iç
+// piksel; örtücü yoksa -1), occW örtücünün uzaklığı
+float RevealShift(vec2 uv, vec2 prevUV, float prevW, vec2 inSize, out float occW)
+{
+    occW = 1e9;
+    if (u_HasPrevDepth == 0 || u_CameraStill == 1 || any(lessThan(prevUV, vec2(0.0))) || any(greaterThan(prevUV, vec2(1.0))))
+        return -1.0;
+    ivec2 psz = textureSize(u_PrevDepth, 0);
+    vec2 pp = prevUV * vec2(psz) - 0.5;
+    ivec2 p0 = ivec2(floor(pp));
+    float dmax = 0.0;
+    for (int j = 0; j <= 1; ++j)
+    for (int i = 0; i <= 1; ++i)
+        dmax = max(dmax, texelFetch(u_PrevDepth, clamp(p0 + ivec2(i, j), ivec2(0), psz - 1), 0).r);
+    occW = ViewW(prevUV, dmax);
+    if (dmax >= 1.0 || occW >= prevW * 0.85 - 0.05)
+        return -1.0;
+    // Örtücünün o noktası (önceki karedeki yeri) bu karede nerede (duran yüzey varsayımı)
+    float dq = texelFetch(u_PrevDepth, clamp(ivec2(prevUV * vec2(psz)), ivec2(0), psz - 1), 0).r;
+    vec4 q = u_PrevInvViewProj * vec4(prevUV * 2.0 - 1.0, dq * 2.0 - 1.0, 1.0);
+    q /= q.w;
+    vec4 qn = u_ViewProjNow * q;
+    if (qn.w <= 0.0)
+        return 1e3;
+    vec2 quv = qn.xy / qn.w * 0.5 + 0.5;
+    return length((quv - uv) * inSize);
+}
 
 vec3 RGBToYCoCg(vec3 c) { return vec3(dot(c, vec3(0.25, 0.5, 0.25)), dot(c, vec3(0.5, 0.0, -0.5)), dot(c, vec3(-0.25, 0.5, -0.25))); }
 vec3 YCoCgToRGB(vec3 c) { return vec3(c.x + c.y - c.z, c.x + c.z, c.x - c.y - c.z); }
@@ -90,11 +132,27 @@ void main()
     float closest = 1.0;
     ivec2 closestTex = clamp(base, ivec2(0), inMax);
     bool moving = false;
+    // Pikselin kendi noktası: çıktı pikseline en yakın iç örnek. Aynı yüzeyin örnekleri (uzaklığı bu noktanınkine yakın) ayrı
+    // aralıkta toplanır: açılan pikselin geçmişi yalnız kendi yüzeyinin renklerine kırpılır
+    ivec2 cTex = clamp(base, ivec2(0), inMax);
+    float cDepth = texelFetch(u_Depth, cTex, 0).r;
+    vec2 cUV = (vec2(cTex) + 0.5) * u_InTexel;
+    float cW = ViewW(cUV, cDepth);
+    vec3 sMin = vec3(1e9), sMax = vec3(-1e9);
     for (int y = -1; y <= 1; ++y)
     for (int x = -1; x <= 1; ++x)
     {
         ivec2 t = clamp(base + ivec2(x, y), ivec2(0), inMax);
         vec3 c = max(texelFetch(u_Current, t, 0).rgb, vec3(0.0));
+        {
+            float sd = texelFetch(u_Depth, t, 0).r;
+            bool same = cDepth >= 1.0 ? sd >= 1.0 : (sd < 1.0 && abs(ViewW((vec2(t) + 0.5) * u_InTexel, sd) - cW) < 0.05 * cW + 0.02);
+            if (same)
+            {
+                sMin = min(sMin, RGBToYCoCg(c));
+                sMax = max(sMax, RGBToYCoCg(c));
+            }
+        }
         // Uzaklık çıktı pikseli biriminde (iç piksel / ölçek): süzgeç çıktı pikselinde dar kalır, ayrıntı titreşim döngüsünde birikir
         vec2 d = (vec2(t) - inPos) * (u_InTexel / u_OutTexel);
         // Hareket ederken Blackman-Harris yaklaşığı (kenarlar her karede yumuşak kalır); dururken dar süzgeç: geniş süzgeç her
@@ -151,6 +209,32 @@ void main()
         FragColor = vec4(current, 0.0);
         return;
     }
+    // Açılma: kendi noktasının kendi hareketiyle önceki karedeki yeri (en yakın derinliğin hareketi değil: küpün kenarındaki arka plan
+    // pikseli küpün hareketini alıp geçmişini küpten çekiyor, yana yürürken küpün arkasında mavi iz kalıyordu)
+    bool revealed = false;
+    {
+        vec4 cWorld = u_InvViewProj * vec4(cUV * 2.0 - 1.0, cDepth * 2.0 - 1.0, 1.0);
+        cWorld /= cWorld.w;
+        vec4 cPrev = u_PrevViewProj * cWorld;
+        vec2 cNow = cUV - u_JitterUV;
+        vec2 cPrevUV = cPrev.xy / cPrev.w * 0.5 + 0.5;
+        float cPrevW = cPrev.w;
+        if (u_HasVelocity == 1)
+        {
+            vec4 ov = texelFetch(u_Velocity, cTex, 0);
+            if (ov.x < 5000.0)
+            {
+                cPrevUV = cNow - ov.xy;
+                cPrevW = cW;
+            }
+        }
+        // Gökyüzü pikselinde örtücü hâlâ yanındaysa (3x3'teki en yakın yüzey kadar uzak) en az 2 iç piksel kaymalı (baş sallanması)
+        float nearW = closest < 1.0 ? ViewW((vec2(closestTex) + 0.5) * u_InTexel, closest) : 1e9;
+        float occW = 1e9;
+        float shiftPx = cPrev.w > 0.0 ? RevealShift(cNow, cPrevUV, cPrevW, inSize, occW) : -1.0;
+        bool occluderAdjacent = cDepth >= 1.0 && occW >= nearW * 0.85 - 0.05;
+        revealed = shiftPx >= (occluderAdjacent ? 2.0 : 1.0);
+    }
     vec3 history = SampleHistory(prevUV);
     // Geçmişin alfası durum: 64 x (2 x biriken örnek ağırlığı, 0..31) + 2 x titreme puanı (0..16) + geçmiş geçen karede kutunun dışındaydı
     vec2 outSize = 1.0 / u_OutTexel;
@@ -180,11 +264,14 @@ void main()
     // tutulunca kenar basamaklı kalıyordu
     float rangeY = mx.x - mn.x;
     float excessY = max(max(lo.x - historyY.x, historyY.x - hi.x), 0.0);
-    bool hold = flicker >= 8.0 && (rangeY < 0.06 || excessY > rangeY) && viewTurn < 0.008;
+    // Genç piksel (açıldıktan sonraki birkaç kare: biriken ağırlık 4'ün altında) tutulmaz, güvenilir yola girmez: ilk karenin titreşimli
+    // değeri geniş kutu ve yüksek ağırlıkla kalıyor, küpün arkasında açılan gökyüzünde / duvarda dikey tarak deseni bırakıyordu
+    bool young = u_CameraStill == 0 && accBefore < 3.99;
+    bool hold = flicker >= 8.0 && (rangeY < 0.06 || excessY > rangeY) && viewTurn < 0.008 && !young;
     // Yavaş kayan güvenilir yüzey (ileri geri yürürken küplerin arası, TAA'daki güvenilir yol): kırpma kutusu geniş, geçmişin ağırlığı
     // yüksek; dar kutu ıskalanan karelerde ince aralığı kırpıp geri yürürken yanıp söndürüyordu
     float speedPx = length(velocity * inSize);
-    float slowTrust = (moving || reactive || objectVelocity || u_CameraStill == 1) ? 0.0 : (1.0 - smoothstep(1.5, 3.0, speedPx)) * (1.0 - smoothstep(0.003, 0.006, viewTurn));
+    float slowTrust = (moving || reactive || objectVelocity || u_CameraStill == 1 || young) ? 0.0 : (1.0 - smoothstep(1.5, 3.0, speedPx)) * (1.0 - smoothstep(0.003, 0.006, viewTurn));
     // Kamera duruyorken: geçmiş her karede bu düşük çözünürlüklü 3x3'ün aralığına kırpılınca çıktı çözünürlüğünde biriken ayrıntı
     // siliniyordu (yükseltme bulanık kalıyordu). Kutu küçük bir payla genişler (büyük değişim, namlu alevi ışığı yine kırpılır)
     bool settle = u_CameraStill == 1 && !moving && !reactive;
@@ -218,5 +305,19 @@ void main()
     if (magnify > 0.0)
         feedback = min(feedback, 0.12 / (0.12 + magnify));
     float alpha = alphaSettle >= 0.0 ? max(alphaSettle, 0.02) : max((1.0 - feedback) * wmax, 0.02);
+    // Genç piksel eşit ağırlıklı birikir (her örnek çıktı pikseline yakınlığıyla): birkaç karede titreşim konumlarının ortalamasına oturur
+    if (young && alphaSettle < 0.0)
+    {
+        alpha = max(alpha, wmax / (accBefore + wmax));
+        acc = min(accBefore + wmax, 4.0);
+    }
+    if (revealed)
+    {
+        // Geçmiş örtücünün: yalnız bu noktanın yüzeyine ait örneklerin aralığına kırpılır, bu kare ağırlıklı
+        history = YCoCgToRGB(clamp(historyY, sMin, sMax));
+        alpha = max(alpha, 0.6);
+        acc = 1.0;
+        flicker = 0.0;
+    }
     FragColor = vec4(max(mix(history, current, alpha), vec3(0.0)), floor(acc * 2.0) * 64.0 + flicker * 2.0 + (outsideNow ? 1.0 : 0.0));
 }

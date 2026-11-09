@@ -55,6 +55,10 @@ uniform int u_LightingFreeze = 0;    // kısa ışık değişimi (namlu alevi: e
 uniform int u_LightingChanged = 0;   // bu karede bir nokta / spot ışığın gücü değişti (namlu alevi; motor bildirir)
 uniform sampler2D u_Reactive;     // parçacık tepki maskesi (R: bu karede duman / toz / kıvılcım örtüsü)
 uniform int u_HasReactive = 0;    // 1: kamera önceki karedeki yerinde (sabit yüzeylerin hareketi tam sıfır)
+uniform sampler2D u_PrevDepth;    // önceki karenin sahne derinliği (titreşimli): açılma testi
+uniform int u_HasPrevDepth = 0;
+uniform mat4 u_PrevInvViewProj;   // önceki karenin titreşimsiz ters görüş-izdüşümü
+uniform mat4 u_ViewProjNow;       // bu karenin titreşimsiz görüş-izdüşümü
 
 // Dünya noktası hareket eden bir nesnenin gölge hacminde mi: noktadan güneşe giden ışın kutulardan birine çarpıyor mu
 bool InMovingShadow(vec3 p)
@@ -138,6 +142,37 @@ float ViewW(vec2 uv, float depth)
     return 1.0 / max(abs(w.w), 1e-8);
 }
 
+// Açılma (önceki karenin derinliğinden): pikselin kendi noktası (bu karedeki titreşimsiz yeri uv, önceki karedeki yeri prevUV,
+// uzaklığı prevW) önceki karede belirgin daha yakın bir yüzeyin arkasındaydı (önceki derinliğin 2x2 ayak izinin en uzağı bile yakın)
+// ve o yüzey bu karede bu noktaya göre en az 1.5 piksel uzaklaştı. Geçmişteki alfa 3x3'ün en yakın uzaklığıdır ve geçmiş en yakın
+// derinliğin hareketiyle alınır: örtücünün kenarına bitişik arka plan pikseli örtücünün hareketini alıp onun rengini taşıyordu
+// (duvarın arkasından çıkınca öndeki uzak duvarın üst kenarında çentikler, gökyüzünde dikey çizikler). Baş sallanmasıyla aynı
+// kenarın piksel altı oynaması (duvar üstü / gökyüzü) açılma sayılmaz. Dönen değer örtücünün bu noktaya göre kayması (piksel; örtücü
+// yoksa -1), occW örtücünün uzaklığı
+float RevealShift(vec2 uv, vec2 prevUV, float prevW, out float occW)
+{
+    occW = 1e9;
+    if (any(lessThan(prevUV, vec2(0.0))) || any(greaterThan(prevUV, vec2(1.0))))
+        return -1.0;
+    ivec2 psz = textureSize(u_PrevDepth, 0);
+    vec2 pp = prevUV * vec2(psz) - 0.5;
+    ivec2 p0 = ivec2(floor(pp));
+    float dmax = 0.0;
+    for (int j = 0; j <= 1; ++j)
+    for (int i = 0; i <= 1; ++i)
+        dmax = max(dmax, texelFetch(u_PrevDepth, clamp(p0 + ivec2(i, j), ivec2(0), psz - 1), 0).r);
+    occW = ViewW(prevUV, dmax);
+    if (dmax >= 1.0 || occW >= prevW * 0.85 - 0.05)
+        return -1.0;
+    float dq = texelFetch(u_PrevDepth, clamp(ivec2(prevUV * vec2(psz)), ivec2(0), psz - 1), 0).r;
+    vec4 q = u_PrevInvViewProj * vec4(prevUV * 2.0 - 1.0, dq * 2.0 - 1.0, 1.0);
+    q /= q.w;
+    vec4 qn = u_ViewProjNow * q;
+    if (qn.w <= 0.0)
+        return 1e3;
+    return length((qn.xy / qn.w * 0.5 + 0.5 - uv) / u_Texel);
+}
+
 // Hata ayıklama: yol rengi sahnenin parlaklığıyla karıştırılır (yer seçilebilsin)
 vec4 DebugColor(vec3 compressedRGB, vec3 tint, float alpha)
 {
@@ -168,6 +203,8 @@ void main()
     vec2 farUV = v_UV;
     bool movingNow = false;
     int movingWhy = 0;   // hata ayıklama: 1 hareket bayrağı, 2 saydam dikdörtgen, 3 önceki kapsama
+    float sampleDepth[9];   // 3x3 örneklerinin derinliği ve rengi (YCoCg): açılan pikselin kendi yüzeyinin aralığı için
+    vec3 sampleYC[9];
     for (int y = -1; y <= 1; ++y)
     for (int x = -1; x <= 1; ++x)
     {
@@ -191,12 +228,14 @@ void main()
         narrowSum += raw * wn;
         narrowWeight += wn;
         vec3 c = RGBToYCoCg(raw);
+        sampleYC[(y + 1) * 3 + (x + 1)] = c;
         m1 += c;
         m2 += c * c;
         nmin = min(nmin, c);
         nmax = max(nmax, c);
         maxCurL = max(maxCurL, Luminance(raw));
         float dep = texture(u_Depth, uv).r;
+        sampleDepth[(y + 1) * 3 + (x + 1)] = dep;
         if (dep < closestDepth) { closestDepth = dep; closestUV = uv; }
         if (dep > farDepth) { farDepth = dep; farUV = uv; }
         if (dep >= 1.0)
@@ -796,6 +835,51 @@ void main()
         history = clamp(rawHistory, nmin, nmax);
         feedback = min(feedback, 0.25);
     }
+    // Açılma (önceki karenin derinliğinden, pikselin kendi noktasıyla): geçmiş yalnız bu noktanın yüzeyine ait örneklerin aralığına
+    // kırpılır (3x3'teki örtücü renkleri aralığa girmez), ağırlığı düşük
+    bool revealedPD = false;
+    if (!disoccluded && !edgeDisoccluded && u_HasPrevDepth == 1 && u_CameraStill == 0 && !((movingNow || movedBefore) && !centerExact))
+    {
+        vec4 cw = u_InvViewProj * vec4(v_UV * 2.0 - 1.0, centerDepth * 2.0 - 1.0, 1.0);
+        cw /= cw.w;
+        vec4 cp = u_PrevViewProj * cw;
+        vec2 cNow = v_UV - u_JitterUV;
+        vec2 cPrevUV = cp.xy / cp.w * 0.5 + 0.5;
+        float cPrevW = cp.w;
+        if (u_HasVelocity == 1)
+        {
+            vec4 ov = texelFetch(u_Velocity, clamp(ivec2(v_UV * vec2(textureSize(u_Velocity, 0))), ivec2(0), textureSize(u_Velocity, 0) - 1), 0);
+            if (ov.x < 5000.0)
+            {
+                cPrevUV = cNow - ov.xy;
+                cPrevW = ViewW(v_UV, centerDepth);
+            }
+        }
+        // Gökyüzü pikselinde örtücü hâlâ yanındaysa (±2 pikseldeki en yakın yüzey kadar uzak: uzak duvarın kendisi) en az 3 piksel
+        // kaymalı: koşarken baş sallanması uzak duvarın üstündeki gökyüzü satırını açılma saydırıp tek karelik titretiyordu. Duvarın
+        // arkasından koşarak çıkınca öndeki duvar karede 5-12 piksel kayar
+        float occW = 1e9;
+        float shiftPx = cp.w > 0.0 ? RevealShift(cNow, cPrevUV, cPrevW, occW) : -1.0;
+        bool occluderAdjacent = centerDepth >= 1.0 && occW >= nearW * 0.85 - 0.05;
+        revealedPD = shiftPx >= (occluderAdjacent ? 3.0 : 1.5);
+    }
+    if (revealedPD)
+    {
+        float cwv = ViewW(v_UV, centerDepth);
+        vec3 sMin = vec3(1e9), sMax = vec3(-1e9);
+        for (int k = 0; k < 9; ++k)
+        {
+            float sd = sampleDepth[k];
+            bool same = centerDepth >= 1.0 ? sd >= 1.0 : (sd < 1.0 && abs(ViewW(v_UV, sd) - cwv) < 0.05 * cwv + 0.02);
+            if (same)
+            {
+                sMin = min(sMin, sampleYC[k]);
+                sMax = max(sMax, sampleYC[k]);
+            }
+        }
+        history = clamp(rawHistory, sMin, sMax);
+        feedback = min(feedback, 0.25);
+    }
     // Yaklaşırken (sağ tık + Shift+W, tekerlekle yakınlaştırma) geçmiş bu kareden düşük çözünürlüklüdür: önceki kareler nesneyi
     // daha küçük (daha az pikselde) görmüştü, büyütülerek yeniden örneklenen geçmiş o ayrıntıyı içermez. 0.85-0.96 ağırlıkla
     // karıştırılınca küpler bulanıklaşıyor, yüzlerde benekli / bloklu desen çıkıyor, aralar kalınlaşıp açılıyor (beyazlaşıyor),
@@ -812,7 +896,7 @@ void main()
     if (ageBefore < 16.0)
         feedback = min(feedback, ageBefore / (ageBefore + 1.0));
     // Yaş yalnız gerçek açılmada sıfırlanır (gökyüzü pikselinde yukarıdaki ±2 piksel koşulu kenarda açılmanın içinde)
-    bool historyOccluder = disoccluded || edgeDisoccluded;
+    bool historyOccluder = disoccluded || edgeDisoccluded || revealedPD;
     float ageNow = historyOccluder ? 1.0 : min(ageBefore + 1.0, 16.0);
     // Titreme tutması TSAA / TSSAA'da da: pikselden ince ayrıntı (küplerin arası, uzak basamak) titreşimin yalnız bazı karelerinde
     // çizilir; kısa birikim ve standart kırpma onu ıskalanan karelerde silip yürürken yanıp söndürüyor, dururken bile aralığı
