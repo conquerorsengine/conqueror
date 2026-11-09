@@ -142,6 +142,28 @@ namespace Conqueror::SimpleAssets
             "A saved Content Browser search: double-click it to run it again.",
             { T("Query", "", "The text typed in the Content Browser search box.") });
 
+        // Animasyon (Unreal)
+        add("Skeleton", ".cqskeleton", "Skeleton", "Animation", "", ICON_FA_BONE, Rgb(255, 150, 190),
+            "A character's bone hierarchy, taken from a model. IK Rigs and Retargeters refer to it.",
+            { A("Model", { ".glb", ".gltf", ".fbx", ".dae" }, "The skinned model.") });
+        add("PoseAsset", ".cqpose", "Pose Asset", "Animation", "", ICON_FA_PERSON, Rgb(255, 150, 190),
+            "Named poses captured from a clip. Add a Pose Asset Player to blend one over the animation.",
+            { A("Model", { ".glb", ".gltf", ".fbx", ".dae" }, "Used by Capture Pose."), T("Clip", "", "The clip to capture from."), F("Time", 0.0f, "Seconds into the clip."), T("Pose Name", "Pose"),
+              Tab("Bones", { Col("Pose"), Col("Bone"), ColF("TX"), ColF("TY"), ColF("TZ"), ColF("QX"), ColF("QY"), ColF("QZ"), ColF("QW", "1") }, "Filled by Capture Pose.") });
+        add("AimOffset", ".cqaimoffset", "Aim Offset", "Animation", "", ICON_FA_CROSSHAIRS, Rgb(255, 150, 190),
+            "Additive poses arranged by yaw and pitch, layered over the animation by an Aim Offset Player.",
+            { A("Model", { ".glb", ".gltf", ".fbx", ".dae" }, "The skinned model these clips belong to."), T("Base Clip", "", "Poses are taken relative to the first frame of this clip."),
+              Tab("Samples", { Col("Clip"), ColF("Yaw"), ColF("Pitch") }) });
+        add("IKRig", ".cqikrig", "IK Rig", "Animation", "", ICON_FA_DIAGRAM_NEXT, Rgb(255, 150, 190),
+            "Bone chains that reach for target objects. Add an IK Rig component to the model.",
+            { A("Skeleton", { ".cqskeleton" }, "The skeleton these bones belong to."),
+              Tab("Chains", { Col("Name"), Col("Root Bone"), Col("Tip Bone"), Col("Target Object"), ColF("Weight", "1") }, "Target Object is found by name when the game starts.") });
+        add("IKRetargeter", ".cqretarget", "IK Retargeter", "Animation", "", ICON_FA_PERSON_RUNNING, Rgb(255, 150, 190),
+            "Plays one skeleton's animation on another. Add a Retarget Player to the target model.",
+            { A("Source Skeleton", { ".cqskeleton", ".glb", ".gltf", ".fbx", ".dae" }, "The skeleton that has the clip."), T("Clip", "", "The clip to play."),
+              B("Copy Root Translation", false), F("Translation Scale", 1.0f, "Scales the root movement for different body sizes."),
+              Tab("Bone Map", { Col("Source Bone"), Col("Target Bone") }, "Leave empty to match bones with the same names.") });
+
         // Doku ve malzeme (Unreal)
         add("TextureArray", ".cqtexarray", "Texture 2D Array", "Rendering", "Texture", ICON_FA_LAYER_GROUP, Rgb(130, 200, 250),
             "Several textures in one, chosen by index in a Shader Graph (Texture Array Sample node).",

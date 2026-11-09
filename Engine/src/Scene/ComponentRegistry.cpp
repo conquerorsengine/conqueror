@@ -6,6 +6,7 @@
 #include "Scene/Foliage.h"
 #include "Renderer/LightProfile.h"
 #include "Renderer/ExtraTextures.h"
+#include "Scene/AnimationAssets.h"
 #include "Core/Animation/PropertyAnimation.h"
 #include "Core/Logging/Log.h"
 
@@ -125,6 +126,7 @@ namespace Conqueror
             Foliage::RegisterComponents();
             LightProfiles::RegisterComponents();
             ExtraTextures::RegisterComponents();
+            AnimationAssets::RegisterComponents();
             RegisterCSGComponents();
             RegisterMultiMeshComponents();
             RegisterGodotNodeComponents();

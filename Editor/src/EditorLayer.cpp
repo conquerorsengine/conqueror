@@ -15,6 +15,7 @@
 #include "Assets/SignalReceiverInspector.h"
 #include "Assets/AnimationClipInspector.h"
 #include "Assets/AssetUI.h"
+#include "Scene/AnimationAssets.h"
 #include "Scene/Ragdoll.h"
 #include "Scene/AudioOcclusion.h"
 #include "Core/Assets/SimpleAsset.h"
@@ -611,6 +612,23 @@ namespace Conqueror::Editor
                     if (const auto* def = SimpleAssets::ForKind("PhysicsAsset"))
                         SimpleAssets::Save(path, *def, data);
                 }
+            });
+            SimpleAssetInspector::RegisterExtra("PoseAsset", [](const std::string& path, SimpleAssets::Data& data) {
+                if (ImGui::Button(ICON_FA_CAMERA "  Capture Pose") && !data.Str("Pose Name").empty())
+                    AnimationAssets::CapturePose(path, data.Str("Model"), data.Str("Clip"), data.Float("Time"), data.Str("Pose Name"));
+                if (const auto clips = AnimationAssets::ClipNames(data.Str("Model")); !clips.empty())
+                {
+                    std::string list;
+                    for (const auto& c : clips)
+                        list += (list.empty() ? "" : ", ") + c;
+                    ImGui::TextDisabled("Clips: %s", list.c_str());
+                }
+            });
+            SimpleAssetInspector::RegisterExtra("Skeleton", [](const std::string&, SimpleAssets::Data& data) {
+                const auto bones = AnimationAssets::BoneNames(data.Str("Model"));
+                ImGui::Text("%d bones", (int)bones.size());
+                for (const auto& b : bones)
+                    ImGui::BulletText("%s", b.c_str());
             });
             SimpleAssetInspector::RegisterExtra("SavedSearch", [this](const std::string&, SimpleAssets::Data& data) {
                 if (ImGui::Button(ICON_FA_MAGNIFYING_GLASS "  Run Search") && m_ContentBrowserPanel)
@@ -5490,6 +5508,13 @@ namespace Conqueror::Editor
         Automation::RegisterCommand("editor_utility", [this](const Args& a, std::string& err) {
             if (a.size() < 2 || !m_ActiveScene) { err = "editor_utility <path>"; return false; }
             return Scripting::TestRunner::RunEditorUtility(AssetUI::Resolve(a[1]).string(), m_ActiveScene.get(), &err);
+        });
+        // pose_capture <yol.cqpose>: Inspector'daki Capture Pose ile aynı (varlığın Model / Clip / Time / Pose Name alanlarıyla)
+        Automation::RegisterCommand("pose_capture", [](const Args& a, std::string& err) {
+            SimpleAssets::Data data;
+            if (a.size() < 2 || !SimpleAssets::Load(a[1], data)) { err = "pose_capture <path.cqpose>"; return false; }
+            if (!AnimationAssets::CapturePose(a[1], data.Str("Model"), data.Str("Clip"), data.Float("Time"), data.Str("Pose Name"))) { err = "capture failed"; return false; }
+            return true;
         });
         // soundinfo <varlık>: Audio Source'un çözülen ses varlığı değerleri
         Automation::RegisterCommand("soundinfo", [this, findByName](const Args& a, std::string& err) {

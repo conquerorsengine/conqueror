@@ -2,6 +2,7 @@
 #include "AISystem/BehaviorTree/BehaviorTreeAsset.h"
 #include "Scene/AssetRuntime.h"
 #include "Scene/Foliage.h"
+#include "Scene/AnimationAssets.h"
 #include "Renderer/LightProfile.h"
 #include "Renderer/ExtraTextures.h"
 #include "Core/Audio/SoundCue.h"
@@ -1294,6 +1295,7 @@ namespace Conqueror
             Foliage::Update(*this);
             BehaviorTrees::Update(*this, (float)ts);
             AssetRuntime::Update(*this, (float)ts);
+            AnimationAssets::Update(*this);
         }
 
         // Video oynatıcılar (kare çözme + hedef dokular)
@@ -5228,6 +5230,7 @@ namespace Conqueror
                                      true, s_BlendPose);
                 Animator::BlendPoses(s_Pose, s_BlendPose, anim.BlendWeight, s_Pose);
             }
+            AnimationAssets::Apply(*this, (uint32_t)entity, *mc.ModelData->SkeletonData, s_Pose, (float)ts);
             if (RigConstraints::HasConstraints((uint32_t)entity))
                 RigConstraints::Apply(*this, (uint32_t)entity, *mc.ModelData->SkeletonData, s_Pose);
             if (auto* customizer = m_Registry.try_get<CharacterCustomizerComponent>(entity))
@@ -5258,7 +5261,9 @@ namespace Conqueror
             {
                 // Poz sonrası: Animation Rigging kısıtları, ardından Character Customizer oranları
                 const Skeleton& skeleton = *mc.ModelData->SkeletonData;
-                const std::function<void(Pose&)> post = [this, entity, &skeleton, hasRig, customizer](Pose& pose) {
+                const float postDt = ac.Playing ? dt : 0.0f;
+                const std::function<void(Pose&)> post = [this, entity, &skeleton, hasRig, customizer, postDt](Pose& pose) {
+                    AnimationAssets::Apply(*this, (uint32_t)entity, skeleton, pose, postDt);
                     if (hasRig)
                         RigConstraints::Apply(*this, (uint32_t)entity, skeleton, pose);
                     if (customizer)
