@@ -170,6 +170,11 @@ namespace Conqueror
                 glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
                 glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
                 glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+                // İlk yakalamaya kadar siyah (ayrılmış ama yazılmamış içerik tanımsızdır)
+                const std::vector<float> black((size_t)s * s * 4, 0.0f);
+                for (int face = 0; face < 6; ++face)
+                    glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, 0, 0, s, s, GL_RGBA, GL_FLOAT, black.data());
+                glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
                 e.Size = s;
                 return true;
             }, size);
