@@ -668,7 +668,7 @@ namespace Conqueror::Editor::AssetInspector
             DrawRenderTexture(path);
             return;
         }
-        if (Lower(fs::path(path).extension().string()) == ".cqmat")
+        if (Lower(fs::path(path).extension().string()) == ".cqmat" || Lower(fs::path(path).extension().string()) == ".cqmatfunc")
         {
             MaterialEditorUI::DrawAssetInspector(path);
             return;

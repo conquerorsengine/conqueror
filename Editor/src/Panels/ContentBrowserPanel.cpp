@@ -148,6 +148,7 @@ namespace Conqueror::Editor
             return { simple->Icon, simple->Color, simple->Label.c_str() };
         if (const NodeAssetSchema* graph = NodeAssetPanel::SchemaForExtension(ext))
             return { graph->Icon.c_str(), graph->Color, graph->Title.c_str() };
+        if (ext == ".cqmatfunc") return { ICON_FA_DIAGRAM_PROJECT, IM_COL32(190, 120, 255, 255), "Material Function" };
         if (ext == ".cqmat") return { ICON_FA_CIRCLE_HALF_STROKE, IM_COL32(235, 120, 190, 255), "Material" };
         if (ext == ".cqphysmat") return { ICON_FA_BASKETBALL, IM_COL32(120, 200, 120, 255), "Physics Material" };
         if (ext == ".cqmesh") return { ICON_FA_CUBE, IM_COL32(150, 190, 235, 255), "Mesh" };
@@ -1666,6 +1667,23 @@ namespace Conqueror::Editor
                                    "    // The clip ended or the Timeline stopped\n    func OnClipStop() { }\n}\n");
                 if (!out.good())
                     path.clear();
+            }
+            else if (kind == "materialfunction")
+            {
+                path = MakeUniquePath(dir / "New Material Function.cqmatfunc");
+                Material m;
+                m.GraphNodes.emplace_back(1, ShaderGraphNodeType::MasterOutput, glm::vec2(700.0f, 120.0f));
+                m.GraphNodes.emplace_back(2, ShaderGraphNodeType::FunctionInput, glm::vec2(120.0f, 120.0f));
+                m.GraphNodes.emplace_back(3, ShaderGraphNodeType::FunctionOutput, glm::vec2(460.0f, 120.0f));
+                m.NextGraphNodeID = 4;
+                m.GraphLinks.emplace_back(1, 2, 0, 3, 0);
+                m.NextGraphLinkID = 2;
+                m.GraphInitialized = true;
+                auto mat = MaterialAsset::Create(path.string(), &m);
+                if (!mat)
+                    path.clear();
+                else
+                    MaterialEditorUI::OpenGraph(path.string());
             }
             else if (kind == "particleasset")
             {

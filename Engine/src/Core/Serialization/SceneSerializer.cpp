@@ -316,6 +316,13 @@ namespace Conqueror
         // Shader Graph
         out << YAML::Key << "NextGraphNodeID" << YAML::Value << mat.NextGraphNodeID;
         out << YAML::Key << "NextGraphLinkID" << YAML::Value << mat.NextGraphLinkID;
+        if (!mat.Layers.empty())
+        {
+            out << YAML::Key << "Layers" << YAML::Value << YAML::BeginSeq;
+            for (const auto& [layer, blend] : mat.Layers)
+                out << YAML::Flow << YAML::BeginSeq << layer << blend << YAML::EndSeq;
+            out << YAML::EndSeq;
+        }
         out << YAML::Key << "GraphInitialized" << YAML::Value << mat.GraphInitialized;
         out << YAML::Key << "GraphNodes" << YAML::Value << YAML::BeginSeq;
         for (const auto& node : mat.GraphNodes)
@@ -430,6 +437,14 @@ namespace Conqueror
                                             link["ToPin"].as<int>());
         // Shader Graph'lı malzeme yüklenince derlenir (eskiden yalnız graph düzenleyicide derleniyordu: kaydedilip açılan
         // sahnede graph sonucu görünmüyordu)
+        if (auto layers = n["Layers"]; layers && layers.IsSequence())
+        {
+            mat.Layers.clear();
+            for (const auto& row : layers)
+                if (row.IsSequence() && row.size() >= 2)
+                    mat.Layers.emplace_back(row[0].as<std::string>(), row[1].as<std::string>());
+            mat.BuildLayerGraph();
+        }
         if (hasGraph && mat.GraphInitialized && !mat.GraphNodes.empty())
         {
             mat.CompileShaderGraph();

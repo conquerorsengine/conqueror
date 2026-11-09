@@ -537,6 +537,7 @@ namespace Conqueror
         bool m_EditorView2D = false;                     // editör kamerası 2D modunda
         entt::entity m_BackgroundCamera = entt::null;    // oyun görünümünün arka planını belirleyen kamera
         void CaptureReflectionProbes();
+        void CaptureSceneCubes();
 
         friend class Entity;
         friend class SceneSerializer;

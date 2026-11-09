@@ -99,7 +99,16 @@ namespace Conqueror
         CameraDepthFade,
         ObjectPosition,
         ObjectBounds,
-        CustomExpression
+        CustomExpression,
+
+        // Varlıkları kullanan düğümler (Unreal Material Function / Material Parameter Collection, doku türleri)
+        MaterialFunctionCall,      // TexturePath: .cqmatfunc
+        FunctionInput,             // IntValue: giriş sırası, CustomCode: ad
+        FunctionOutput,            // IntValue: çıkış sırası, CustomCode: ad
+        CollectionParameter,       // TexturePath: .cqmpc, CustomCode: parametre adı
+        TextureArraySample,        // TexturePath: .cqtexarray
+        VolumeTextureSample,       // TexturePath: .cqvoltex
+        CubeTargetSample           // TexturePath: .cqcubert
     };
 
     struct ShaderGraphNode
@@ -153,6 +162,8 @@ namespace Conqueror
         std::shared_ptr<Shader> MaterialShader;
         // Kod shader'ı (.cqsh, Unity: malzemenin Shader seçimi): doluysa (graph yokken) bu dosya derlenip kullanılır
         std::string ShaderPath;
+        // Material Layer yığını (.cqmatlayer, .cqmatblend): (katman, karışım) satırları, ilk satırın karışımı yok sayılır
+        std::vector<std::pair<std::string, std::string>> Layers;
         // ShaderPath'i derle (yoksa / graph varsa dokunmaz); başarısızsa false (varsayılan PBR kalır)
         bool LoadShaderFile();
 
@@ -222,6 +233,10 @@ namespace Conqueror
 
         // Graph node uniform'larini shader'a gonderir
         void BindGraphUniforms(std::shared_ptr<Shader> shader) const;
+        // Material Function çağrılarını açar (derleme ve bağlama bu düğümleri kullanır)
+        void ExpandFunctions(std::vector<ShaderGraphNode>& nodes, std::vector<ShaderGraphLink>& links, int depth = 0) const;
+        // Material Layers: katman yığınından Shader Graph kurar (varsa)
+        void BuildLayerGraph();
 
         // Graph bağlantılarına göre PBR parametrelerini günceller
         void ApplyGraphToProperties();

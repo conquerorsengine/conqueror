@@ -1,4 +1,6 @@
 #include "UISystem.h"
+#include "Core/Serialization/SceneSerializer.h"
+#include <unordered_map>
 #include "UI/UIToolkit.h"
 #include "Scene/AudioOcclusion.h"
 #include "Scene/AssetRuntime.h"
@@ -2554,6 +2556,62 @@ namespace Conqueror
         // Bu karenin olayları (scriptler aynı karede okur)
         s_Events = std::move(s_PendingEvents);
         s_PendingEvents.clear();
+    }
+
+    void UISystem::DrawCanvas(uint32_t framebuffer, uint32_t width, uint32_t height, const std::vector<CanvasCommand>& commands)
+    {
+        GLint prevFbo = 0;
+        GLint prevViewport[4];
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFbo);
+        glGetIntegerv(GL_VIEWPORT, prevViewport);
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+        glViewport(0, 0, (GLsizei)width, (GLsizei)height);
+        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        static auto& textures = *new std::unordered_map<std::string, std::shared_ptr<Texture2D>>();
+        const glm::mat4 ortho = glm::ortho(0.0f, (float)width, 0.0f, (float)height, -1.0f, 1.0f);
+        const glm::mat4 identity(1.0f);
+        const float W = (float)width, H = (float)height;
+        Renderer2D::BeginScene(ortho, false);
+        Renderer2D::SetOutputMode(0);
+        for (const auto& c : commands)
+        {
+            const float y = H - c.Box.y - c.Box.w;
+            switch (c.Type)
+            {
+                case CanvasCommand::Kind::Clear:
+                    Renderer2D::EndScene();
+                    glClearColor(c.Color.r, c.Color.g, c.Color.b, c.Color.a);
+                    glClear(GL_COLOR_BUFFER_BIT);
+                    Renderer2D::BeginScene(ortho, false);
+                    Renderer2D::SetOutputMode(0);
+                    break;
+                case CanvasCommand::Kind::Rect:
+                    Quad(identity, { c.Box.x, y }, { c.Box.x + c.Box.z, y + c.Box.w }, nullptr, { 0, 0 }, { 1, 1 }, c.Color);
+                    break;
+                case CanvasCommand::Kind::Image:
+                {
+                    auto& tex = textures[c.Text];
+                    if (!tex)
+                        tex = Texture2D::Create(SceneSerializer::ResolveAssetPath(c.Text));
+                    if (tex)
+                        Quad(identity, { c.Box.x, y }, { c.Box.x + c.Box.z, y + c.Box.w }, tex, { 0, 0 }, { 1, 1 }, c.Color);
+                    break;
+                }
+                case CanvasCommand::Kind::Text:
+                {
+                    const float lineH = c.Size * 1.3f;
+                    DrawTextBlock(glm::translate(identity, glm::vec3(c.Box.x, H - c.Box.y - lineH, 0.0f)), { W - c.Box.x, lineH }, c.Text, "", c.Size, c.Color,
+                                  UITextAlignH::Left, UITextAlignV::Middle, false, 1.0f);
+                    break;
+                }
+            }
+        }
+        Renderer2D::EndScene();
+        Renderer2D::SetOutputMode(-1);
+        glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)prevFbo);
+        glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
     }
 
     void UISystem::RenderScreenSpace(Scene& scene, const glm::vec2& screenSize)

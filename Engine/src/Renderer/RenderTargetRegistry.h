@@ -57,6 +57,7 @@ namespace Conqueror
         // Render Texture varlığı (.cqrt, Unity Render Texture): ad = dosya adı, boyut dosyada. Her doku yuvasına ve
         // Render Target bileşeninin "Target Texture" yuvasına sürüklenir.
         constexpr const char* AssetExtension = ".cqrt";
+        constexpr const char* CanvasExtension = ".cqcanvasrt";   // Canvas Render Target: betikten çizilir
         CQ_API bool IsAsset(const std::string& path);
         CQ_API bool ReadAsset(const std::string& path, std::string& outName, int& outWidth, int& outHeight);
         CQ_API bool WriteAsset(const std::string& path, int width, int height);

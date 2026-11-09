@@ -1,5 +1,11 @@
 #include "Core/Serialization/SceneSerializer.h"
 #include "Material.h"
+#include "MaterialAsset.h"
+#include "Renderer/ExtraTextures.h"
+#include "Core/Assets/SimpleAsset.h"
+#include "Core/Serialization/SceneSerializer.h"
+#include <glad/glad.h>
+#include <unordered_map>
 #include "Renderer3D.h"
 
 namespace Conqueror
@@ -208,7 +214,19 @@ namespace Conqueror
         int textureSlot = 0;
         constexpr int kFirstGraphTextureSlot = 8;   // 8..11 (12+ renderer'a ayrılmış)
         constexpr int kMaxGraphTextures = 4;
-        for (const auto& node : GraphNodes)
+        // Material Function içindeki düğümler de bağlanır (derlemeyle aynı açılmış liste)
+        std::vector<ShaderGraphNode> expanded = GraphNodes;
+        std::vector<ShaderGraphLink> expandedLinks = GraphLinks;
+        ExpandFunctions(expanded, expandedLinks);
+        const auto bindExtra = [&](GLenum target, uint32_t handle, const std::string& uniform) {
+            if (!handle || textureSlot >= kMaxGraphTextures)
+                return;
+            const int slot = kFirstGraphTextureSlot + textureSlot++;
+            glActiveTexture(GL_TEXTURE0 + slot);
+            glBindTexture(target, handle);
+            shader->SetInt(uniform, slot);
+        };
+        for (const auto& node : expanded)
         {
             std::string idStr = std::to_string(node.ID);
             switch (node.Type)
@@ -225,6 +243,25 @@ namespace Conqueror
                 case ShaderGraphNodeType::Vec3:
                     shader->SetFloat3("u_Node" + idStr + "_Vec3", node.Vec3Value);
                     break;
+                case ShaderGraphNodeType::CollectionParameter:
+                {
+                    glm::vec4 value(0.0f);
+                    float scalar = 0.0f;
+                    if (MaterialParameterCollections::GetVector(node.TexturePath, node.CustomCode, value))
+                        shader->SetFloat4("u_Node" + idStr + "_MPC", value);
+                    else if (MaterialParameterCollections::GetScalar(node.TexturePath, node.CustomCode, scalar))
+                        shader->SetFloat4("u_Node" + idStr + "_MPC", glm::vec4(scalar));
+                    break;
+                }
+                case ShaderGraphNodeType::TextureArraySample:
+                    bindExtra(GL_TEXTURE_2D_ARRAY, ExtraTextures::TextureArray(node.TexturePath), "u_Node" + idStr + "_Tex");
+                    break;
+                case ShaderGraphNodeType::VolumeTextureSample:
+                    bindExtra(GL_TEXTURE_3D, ExtraTextures::Volume(node.TexturePath), "u_Node" + idStr + "_Tex");
+                    break;
+                case ShaderGraphNodeType::CubeTargetSample:
+                    bindExtra(GL_TEXTURE_CUBE_MAP, ExtraTextures::Cube(node.TexturePath), "u_Node" + idStr + "_Tex");
+                    break;
                 case ShaderGraphNodeType::TextureSample:
                 case ShaderGraphNodeType::NormalMap:
                     if (node.TextureRef && textureSlot < kMaxGraphTextures)
@@ -238,6 +275,197 @@ namespace Conqueror
                     break;
             }
         }
+    }
+
+    void Material::ExpandFunctions(std::vector<ShaderGraphNode>& nodes, std::vector<ShaderGraphLink>& links, int depth) const
+    {
+        if (depth > 8)
+            return;
+        bool any = false;
+        for (const auto& n : nodes)
+            any |= n.Type == ShaderGraphNodeType::MaterialFunctionCall;
+        if (!any)
+            return;
+        int nextId = 0;
+        for (const auto& n : nodes)
+            nextId = std::max(nextId, n.ID);
+        std::vector<ShaderGraphNode> callNodes;
+        for (const auto& n : nodes)
+            if (n.Type == ShaderGraphNodeType::MaterialFunctionCall)
+                callNodes.push_back(n);
+        for (const auto& call : callNodes)
+        {
+            std::shared_ptr<Material> func = call.TexturePath.empty() ? nullptr : MaterialAsset::Load(call.TexturePath);
+            std::unordered_map<int, int> remap;
+            std::unordered_map<int, int> inputPins, outputPins;
+            std::vector<ShaderGraphNode> added;
+            if (func)
+                for (auto n : func->GraphNodes)
+                {
+                    if (n.Type == ShaderGraphNodeType::MasterOutput)
+                        continue;
+                    const int original = n.ID;
+                    n.ID = ++nextId;
+                    remap[original] = n.ID;
+                    if (n.Type == ShaderGraphNodeType::FunctionInput)
+                        inputPins[original] = n.IntValue;
+                    if (n.Type == ShaderGraphNodeType::FunctionOutput)
+                        outputPins[original] = n.IntValue;
+                    if (!n.TexturePath.empty() && !n.TextureRef)
+                        n.TextureRef = Texture2D::Create(n.TexturePath);
+                    added.push_back(n);
+                }
+            std::vector<ShaderGraphLink> result;
+            int nextLink = 1 << 20;
+            // Dış bağlantılar: çağrının çıkışı -> iç FunctionOutput'a bağlanan kaynak
+            for (const auto& l : links)
+            {
+                if (l.ToNodeID == call.ID)
+                    continue;   // girişler aşağıda iç düğümlere bağlanır
+                if (l.FromNodeID != call.ID)
+                {
+                    result.push_back(l);
+                    continue;
+                }
+                bool wired = false;
+                if (func)
+                    for (const auto& inner : func->GraphLinks)
+                        if (outputPins.count(inner.ToNodeID) && outputPins[inner.ToNodeID] == l.FromPinIndex && remap.count(inner.FromNodeID))
+                        {
+                            result.emplace_back(nextLink++, remap[inner.FromNodeID], inner.FromPinIndex, l.ToNodeID, l.ToPinIndex);
+                            wired = true;
+                        }
+                (void)wired;
+            }
+            if (func)
+                for (const auto& inner : func->GraphLinks)
+                {
+                    if (outputPins.count(inner.ToNodeID) || !remap.count(inner.ToNodeID))
+                        continue;
+                    if (inputPins.count(inner.FromNodeID))
+                    {
+                        // Giriş düğümü: çağrıya bağlı kaynak varsa ona, yoksa düğümün varsayılanına
+                        bool found = false;
+                        for (const auto& outer : links)
+                            if (outer.ToNodeID == call.ID && outer.ToPinIndex == inputPins[inner.FromNodeID])
+                            {
+                                result.emplace_back(nextLink++, outer.FromNodeID, outer.FromPinIndex, remap[inner.ToNodeID], inner.ToPinIndex);
+                                found = true;
+                            }
+                        if (!found)
+                            result.emplace_back(nextLink++, remap[inner.FromNodeID], inner.FromPinIndex, remap[inner.ToNodeID], inner.ToPinIndex);
+                    }
+                    else if (remap.count(inner.FromNodeID))
+                        result.emplace_back(nextLink++, remap[inner.FromNodeID], inner.FromPinIndex, remap[inner.ToNodeID], inner.ToPinIndex);
+                }
+            links = std::move(result);
+            nodes.erase(std::remove_if(nodes.begin(), nodes.end(), [&](const ShaderGraphNode& n) { return n.ID == call.ID; }), nodes.end());
+            for (auto& n : added)
+            {
+                // Bağlanmamış giriş düğümü: renk sabitine dönüşür; çıkış düğümleri listeden çıkar
+                if (n.Type == ShaderGraphNodeType::FunctionInput)
+                    n.Type = ShaderGraphNodeType::Color;
+                if (n.Type != ShaderGraphNodeType::FunctionOutput)
+                    nodes.push_back(n);
+            }
+        }
+        ExpandFunctions(nodes, links, depth + 1);
+    }
+
+    void Material::BuildLayerGraph()
+    {
+        if (Layers.empty())
+            return;
+        GraphNodes.clear();
+        GraphLinks.clear();
+        int nextNode = 1, nextLink = 1;
+        const auto addNode = [&](ShaderGraphNodeType type) {
+            GraphNodes.emplace_back(nextNode, type);
+            return nextNode++;
+        };
+        const auto addLink = [&](int from, int fromPin, int to, int toPin) { GraphLinks.emplace_back(nextLink++, from, fromPin, to, toPin); };
+        const int master = addNode(ShaderGraphNodeType::MasterOutput);
+        int albedo = 0, roughness = 0, metallic = 0, normal = 0;
+        for (size_t i = 0; i < Layers.size(); ++i)
+        {
+            SimpleAssets::Data layer;
+            if (!SimpleAssets::Load(Layers[i].first, layer))
+                continue;
+            // Katman renkleri: doku varsa doku x renk
+            const int color = addNode(ShaderGraphNodeType::Color);
+            GraphNodes.back().ColorValue = layer.Color("Tint");
+            int albedoNode = color;
+            if (const std::string texture = layer.Str("Albedo"); !texture.empty())
+            {
+                const int tex = addNode(ShaderGraphNodeType::TextureSample);
+                GraphNodes.back().TexturePath = texture;
+                GraphNodes.back().TextureRef = Texture2D::Create(SceneSerializer::ResolveAssetPath(texture));
+                const int mul = addNode(ShaderGraphNodeType::Multiply);
+                addLink(color, 0, mul, 0);
+                addLink(tex, 0, mul, 1);
+                albedoNode = mul;
+            }
+            const int rough = addNode(ShaderGraphNodeType::Float);
+            GraphNodes.back().FloatValue = layer.Float("Roughness", 0.5f);
+            const int metal = addNode(ShaderGraphNodeType::Float);
+            GraphNodes.back().FloatValue = layer.Float("Metallic", 0.0f);
+            if (i == 0 || !albedo)
+            {
+                albedo = albedoNode;
+                roughness = rough;
+                metallic = metal;
+                continue;
+            }
+            // Karışım: maske (doku / köşe rengi / eğim) + keskinlik
+            SimpleAssets::Data blend;
+            const bool hasBlend = SimpleAssets::Load(Layers[i].second, blend);
+            const std::string mode = hasBlend ? blend.Str("Mode", "Mask Texture") : "Mask Texture";
+            int mask = 0;
+            if (mode == "Vertex Color" )
+                mask = addNode(ShaderGraphNodeType::VertexColor);
+            else if (mode == "Slope")
+            {
+                const int normalNode = addNode(ShaderGraphNodeType::NormalVector);
+                const int up = addNode(ShaderGraphNodeType::Vec3);
+                GraphNodes.back().Vec3Value = glm::vec3(0.0f, 1.0f, 0.0f);
+                mask = addNode(ShaderGraphNodeType::Dot);
+                addLink(normalNode, 0, mask, 0);
+                addLink(up, 0, mask, 1);
+            }
+            else
+            {
+                mask = addNode(ShaderGraphNodeType::TextureSample);
+                if (hasBlend && !blend.Str("Mask").empty())
+                {
+                    GraphNodes.back().TexturePath = blend.Str("Mask");
+                    GraphNodes.back().TextureRef = Texture2D::Create(SceneSerializer::ResolveAssetPath(blend.Str("Mask")));
+                }
+            }
+            const int low = addNode(ShaderGraphNodeType::Float);
+            GraphNodes.back().FloatValue = hasBlend ? blend.Float("Threshold", 0.5f) - blend.Float("Softness", 0.1f) : 0.4f;
+            const int high = addNode(ShaderGraphNodeType::Float);
+            GraphNodes.back().FloatValue = hasBlend ? blend.Float("Threshold", 0.5f) + blend.Float("Softness", 0.1f) : 0.6f;
+            const int smooth = addNode(ShaderGraphNodeType::Smoothstep);
+            addLink(low, 0, smooth, 0);
+            addLink(high, 0, smooth, 1);
+            addLink(mask, 0, smooth, 2);
+            const auto mix = [&](int base, int top) {
+                const int m = addNode(ShaderGraphNodeType::Mix);
+                addLink(base, 0, m, 0);
+                addLink(top, 0, m, 1);
+                addLink(smooth, 0, m, 2);
+                return m;
+            };
+            albedo = mix(albedo, albedoNode);
+            roughness = mix(roughness, rough);
+            metallic = mix(metallic, metal);
+        }
+        if (albedo) addLink(albedo, 0, master, 0);
+        if (metallic) addLink(metallic, 0, master, 2);
+        if (roughness) addLink(roughness, 0, master, 3);
+        (void)normal;
+        NextGraphNodeID = nextNode;
+        GraphInitialized = true;
     }
 
     void Material::ApplyGraphToProperties()

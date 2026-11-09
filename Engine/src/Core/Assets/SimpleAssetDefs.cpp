@@ -142,6 +142,30 @@ namespace Conqueror::SimpleAssets
             "A saved Content Browser search: double-click it to run it again.",
             { T("Query", "", "The text typed in the Content Browser search box.") });
 
+        // Doku ve malzeme (Unreal)
+        add("TextureArray", ".cqtexarray", "Texture 2D Array", "Rendering", "Texture", ICON_FA_LAYER_GROUP, Rgb(130, 200, 250),
+            "Several textures in one, chosen by index in a Shader Graph (Texture Array Sample node).",
+            { I("Size", 512, "Every slice is resized to this.", 4, 4096), Tab("Slices", { ColA("Texture", { ".png", ".jpg", ".jpeg", ".tga", ".bmp" }) }) });
+        add("VolumeTexture", ".cqvoltex", "Volume Texture", "Rendering", "Texture", ICON_FA_CUBE, Rgb(130, 200, 250),
+            "A 3D texture from a sheet of slices. Sample it with a Volume Texture Sample node in a Shader Graph.",
+            { A("Source", { ".png", ".jpg", ".jpeg", ".tga", ".bmp" }, "A grid of slices, left to right, top to bottom."), I("Columns", 4, "", 1, 64), I("Rows", 4, "", 1, 64) });
+        add("CubeRenderTarget", ".cqcubert", "Cube Render Target", "Rendering", "Texture", ICON_FA_CUBE, Rgb(130, 200, 250),
+            "A cubemap a Scene Capture Cube component renders into; read it with a Cube Render Target Sample node.",
+            { I("Size", 256, "Pixels per face.", 16, 2048) });
+        add("CanvasRenderTarget", ".cqcanvasrt", "Canvas Render Target", "Rendering", "Texture", ICON_FA_PAINTBRUSH, Rgb(130, 200, 250),
+            "A texture scripts draw on: CanvasBegin, CanvasClear, CanvasDrawRect, CanvasDrawText, CanvasDrawTexture, CanvasEnd. Use it like a Render Texture.",
+            { I("Width", 512, "", 1, 4096), I("Height", 512, "", 1, 4096) });
+        add("MaterialParameterCollection", ".cqmpc", "Material Parameter Collection", "Shader", "", ICON_FA_SLIDERS, Rgb(190, 120, 255),
+            "Global values shared by Shader Graphs (Collection Parameter node). Scripts change them with MPCSetScalar and MPCSetVector.",
+            { Tab("Scalars", { Col("Name"), ColF("Value", "0") }), Tab("Vectors", { Col("Name"), ColF("R", "1"), ColF("G", "1"), ColF("B", "1"), ColF("A", "1") }) });
+        add("MaterialLayer", ".cqmatlayer", "Material Layer", "Shader", "", ICON_FA_LAYER_GROUP, Rgb(190, 120, 255),
+            "One layer of a layered material. Add it in a Material's Layers list.",
+            { C("Tint"), A("Albedo", { ".png", ".jpg", ".jpeg", ".tga", ".bmp" }), F("Metallic", 0.0f, "", 0.0f, 1.0f), F("Roughness", 0.5f, "", 0.0f, 1.0f) });
+        add("MaterialLayerBlend", ".cqmatblend", "Material Layer Blend", "Shader", "", ICON_FA_LAYER_GROUP, Rgb(190, 120, 255),
+            "How a Material Layer mixes over the layers below it.",
+            { E("Mode", { "Mask Texture", "Vertex Color", "Slope" }), A("Mask", { ".png", ".jpg", ".jpeg", ".tga", ".bmp" }, "Mask Texture mode: white shows this layer."),
+              F("Threshold", 0.5f, "", 0.0f, 1.0f), F("Softness", 0.1f, "", 0.0f, 1.0f) });
+
         // Görüntü (Unreal)
         add("SubUVAnimation", ".cqsubuv", "Sub UV Animation", "Rendering", "", ICON_FA_TABLE_CELLS, Rgb(255, 180, 120),
             "A sprite sheet for particles. Assign it to a Particle System's Sub UV slot.",

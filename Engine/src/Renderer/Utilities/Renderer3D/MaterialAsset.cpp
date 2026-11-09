@@ -91,7 +91,7 @@ namespace Conqueror
         {
             std::string ext = std::filesystem::path(path).extension().string();
             std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-            return ext == Extension;
+            return ext == Extension || ext == ".cqmatfunc";
         }
 
         std::shared_ptr<Material> Load(const std::string& path)

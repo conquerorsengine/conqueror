@@ -35,6 +35,16 @@ namespace Conqueror
         float Value = 0.0f;
     };
 
+    // Canvas Render Target çizim komutu (sol üst köken, piksel)
+    struct CanvasCommand
+    {
+        enum class Kind { Clear, Rect, Text, Image } Type = Kind::Clear;
+        glm::vec4 Color{ 1.0f };
+        glm::vec4 Box{ 0.0f };   // x, y, w, h
+        std::string Text;        // yazı ya da doku yolu
+        float Size = 24.0f;
+    };
+
     // Unity UGUI karşılığı: RectTransform yerleşimi, Canvas Scaler, widget'lar,
     // olay sistemi ve çizim (ekran üstü / dünya uzayı / editör).
     class CQ_API UISystem
@@ -76,6 +86,9 @@ namespace Conqueror
         static Entity CreateElement(Scene& scene, const std::string& type, Entity parent);
         // Sahne görünümünde UI öğesini taşı (dünya deltası -> AnchoredPosition)
         static void MoveElementWorld(Entity element, const glm::vec3& worldDelta, const glm::vec2& screenSize);
+
+        // Canvas Render Target'a çiz (framebuffer: hedefin FBO'su)
+        static void DrawCanvas(uint32_t framebuffer, uint32_t width, uint32_t height, const std::vector<CanvasCommand>& commands);
 
         static void Shutdown();
 

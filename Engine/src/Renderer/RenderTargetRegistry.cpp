@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include "RenderTargetRegistry.h"
+#include "Core/Assets/SimpleAsset.h"
 
 #include <glad/glad.h>
 
@@ -84,7 +85,7 @@ namespace Conqueror
         {
             std::string ext = std::filesystem::path(path).extension().string();
             std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-            return ext == AssetExtension;
+            return ext == AssetExtension || ext == CanvasExtension;
         }
 
         bool ReadAsset(const std::string& path, std::string& outName, int& outWidth, int& outHeight)
@@ -94,6 +95,16 @@ namespace Conqueror
             std::filesystem::path file(path);
             if (file.is_relative() && Project::GetActive())
                 file = Project::GetActiveProjectDirectory() / file;   // "Assets/Monitor.cqrt"
+            if (file.extension() == CanvasExtension)
+            {
+                SimpleAssets::Data data;
+                if (!SimpleAssets::Load(file.string(), data))
+                    return false;
+                outName = file.stem().string();
+                outWidth = std::clamp(data.Int("Width", 512), 1, 4096);
+                outHeight = std::clamp(data.Int("Height", 512), 1, 4096);
+                return true;
+            }
             try
             {
                 YAML::Node n = YAML::LoadFile(file.string())["RenderTexture"];

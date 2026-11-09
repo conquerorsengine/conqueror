@@ -3,6 +3,7 @@
 #include "Scene/AssetRuntime.h"
 #include "Scene/Foliage.h"
 #include "Renderer/LightProfile.h"
+#include "Renderer/ExtraTextures.h"
 #include "Core/Audio/SoundCue.h"
 #include "Renderer/ShaderVariantCollection.h"
 #include "Renderer/CustomRenderTexture.h"
@@ -227,6 +228,7 @@ namespace Conqueror
             SoundMixes::Clear();
             Dialogue::Clear();
             AssetRuntime::Reset();
+            MaterialParameterCollections::ResetOverrides();
             ShaderVariantCollections::ResetPreloaded();
             ShaderVariantCollections::WarmUpPreloaded();
         }
@@ -2637,6 +2639,66 @@ namespace Conqueror
         m_CapturingProbes = false;
     }
 
+    void Scene::CaptureSceneCubes()
+    {
+        auto view = m_Registry.view<TransformComponent, SceneCaptureCubeComponent>();
+        if (view.begin() == view.end() || m_CapturingProbes)
+            return;
+        const float dt = TimeManager::GetUnscaledDeltaTime();
+        for (auto e : view)
+        {
+            auto& capture = view.get<SceneCaptureCubeComponent>(e);
+            capture.Timer += dt;
+            const bool due = !capture.Captured || (capture.Interval > 0.0f && capture.Timer >= capture.Interval);
+            if (!due || !IsEntityActive(e) || capture.Target.empty())
+                continue;
+            int size = 0;
+            const uint32_t cube = ExtraTextures::Cube(capture.Target, &size);
+            if (!cube || size <= 0)
+                continue;
+            capture.Captured = true;
+            capture.Timer = 0.0f;
+            m_CapturingProbes = true;
+            GLint prevFBO = 0;
+            GLint prevViewport[4];
+            glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFBO);
+            glGetIntegerv(GL_VIEWPORT, prevViewport);
+            uint32_t depth = 0, fbo = 0;
+            glGenRenderbuffers(1, &depth);
+            glBindRenderbuffer(GL_RENDERBUFFER, depth);
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, size, size);
+            glGenFramebuffers(1, &fbo);
+            glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth);
+            const glm::vec3 pos = glm::vec3(view.get<TransformComponent>(e).WorldTransform[3]);
+            const glm::vec3 dirs[6] = { {1,0,0}, {-1,0,0}, {0,1,0}, {0,-1,0}, {0,0,1}, {0,0,-1} };
+            const glm::vec3 ups[6] = { {0,-1,0}, {0,-1,0}, {0,0,1}, {0,0,-1}, {0,-1,0}, {0,-1,0} };
+            for (int face = 0; face < 6; ++face)
+            {
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, cube, 0);
+                glViewport(0, 0, size, size);
+                glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                RenderCamera cam;
+                cam.View = glm::lookAt(pos, pos + dirs[face], ups[face]);
+                cam.Projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.05f, 500.0f);
+                cam.Position = pos;
+                cam.NearClip = 0.05f;
+                cam.FarClip = 500.0f;
+                cam.ViewportWidth = (uint32_t)size;
+                cam.ViewportHeight = (uint32_t)size;
+                RenderScene3D(cam, false);
+            }
+            glBindTexture(GL_TEXTURE_CUBE_MAP, cube);
+            glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+            glDeleteFramebuffers(1, &fbo);
+            glDeleteRenderbuffers(1, &depth);
+            glBindFramebuffer(GL_FRAMEBUFFER, prevFBO);
+            glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
+            m_CapturingProbes = false;
+        }
+    }
+
     void Scene::RenderSceneFromCamera(entt::entity cameraEntity, uint32_t width, uint32_t height)
     {
         if (!m_Registry.valid(cameraEntity) || !m_Registry.all_of<CameraComponent, TransformComponent>(cameraEntity))
@@ -2658,6 +2720,7 @@ namespace Conqueror
         CustomRenderTextures::UpdateAll();   // Custom Render Texture'lar (karede bir kez)
         if (!m_CapturingProbes)
             CaptureReflectionProbes();
+            CaptureSceneCubes();
 
         SceneEnvironment env = BuildRenderEnvironment(true);
         if (editorView)

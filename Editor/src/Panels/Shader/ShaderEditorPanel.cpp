@@ -4,6 +4,7 @@
 #include "Panels/MaterialEditorUI.h"
 #include "Core/Project/Project.h"
 #include "ShaderEditorPanel.h"
+#include "Assets/AssetUI.h"
 
 #include "Scene/Components.h"
 #include "Renderer/Utilities/Renderer3D/Material.h"
@@ -114,6 +115,13 @@ namespace Conqueror::Editor
                 case ShaderGraphNodeType::ObjectPosition:  return "Object Position";
                 case ShaderGraphNodeType::ObjectBounds:    return "Object Bounds";
                 case ShaderGraphNodeType::CustomExpression: return "Custom Expression";
+                case ShaderGraphNodeType::MaterialFunctionCall: return "Material Function";
+                case ShaderGraphNodeType::FunctionInput: return "Function Input";
+                case ShaderGraphNodeType::FunctionOutput: return "Function Output";
+                case ShaderGraphNodeType::CollectionParameter: return "Collection Parameter";
+                case ShaderGraphNodeType::TextureArraySample: return "Texture Array Sample";
+                case ShaderGraphNodeType::VolumeTextureSample: return "Volume Texture Sample";
+                case ShaderGraphNodeType::CubeTargetSample: return "Cube Target Sample";
                 default: return "Unknown";
             }
         }
@@ -442,6 +450,13 @@ namespace Conqueror::Editor
                     addNodeButton("Vec3", ShaderGraphNodeType::Vec3);
                     addNodeButton("Texture", ShaderGraphNodeType::TextureSample);
                     addNodeButton("TextureObj", ShaderGraphNodeType::TextureObject);
+                    addNodeButton("Texture Array", ShaderGraphNodeType::TextureArraySample);
+                    addNodeButton("Volume Texture", ShaderGraphNodeType::VolumeTextureSample);
+                    addNodeButton("Cube Target", ShaderGraphNodeType::CubeTargetSample);
+                    addNodeButton("Collection Parameter", ShaderGraphNodeType::CollectionParameter);
+                    addNodeButton("Material Function", ShaderGraphNodeType::MaterialFunctionCall);
+                    addNodeButton("Function Input", ShaderGraphNodeType::FunctionInput);
+                    addNodeButton("Function Output", ShaderGraphNodeType::FunctionOutput);
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Math"))
@@ -645,6 +660,88 @@ namespace Conqueror::Editor
                         material->ApplyGraphToProperties();
                     ImGui::PopItemWidth();
 
+                    ImNodes::BeginOutputAttribute(GetOutputAttributeID(node.ID, 0));
+                    ImGui::Indent(40.0f);
+                    ImGui::TextUnformatted("Out");
+                    ImNodes::EndOutputAttribute();
+                    break;
+                }
+                case ShaderGraphNodeType::MaterialFunctionCall:
+                {
+                    ImGui::PushItemWidth(150.0f);
+                    if (AssetUI::AssetSlot("##func", "Material Function", { ".cqmatfunc" }, node.TexturePath))
+                        material->CompileShaderGraph();
+                    ImGui::PopItemWidth();
+                    for (int pin = 0; pin < 4; ++pin)
+                    {
+                        ImNodes::BeginInputAttribute(GetInputAttributeID(node.ID, pin));
+                        ImGui::Text("In %d", pin);
+                        ImNodes::EndInputAttribute();
+                        ImGui::SameLine(110.0f);
+                        ImNodes::BeginOutputAttribute(GetOutputAttributeID(node.ID, pin));
+                        ImGui::Text("Out %d", pin);
+                        ImNodes::EndOutputAttribute();
+                    }
+                    break;
+                }
+                case ShaderGraphNodeType::FunctionInput:
+                case ShaderGraphNodeType::FunctionOutput:
+                {
+                    const bool input = node.Type == ShaderGraphNodeType::FunctionInput;
+                    ImGui::PushItemWidth(120.0f);
+                    AssetUI::InputString("Name", node.CustomCode);
+                    ImGui::DragInt("Index", &node.IntValue, 0.2f, 0, 3);
+                    if (input)
+                        ImGui::ColorEdit4("Preview", &node.ColorValue.x, ImGuiColorEditFlags_NoInputs);
+                    ImGui::PopItemWidth();
+                    if (input)
+                    {
+                        ImNodes::BeginOutputAttribute(GetOutputAttributeID(node.ID, 0));
+                        ImGui::Indent(40.0f);
+                        ImGui::TextUnformatted("Out");
+                        ImNodes::EndOutputAttribute();
+                    }
+                    else
+                    {
+                        ImNodes::BeginInputAttribute(GetInputAttributeID(node.ID, 0));
+                        ImGui::TextUnformatted("In");
+                        ImNodes::EndInputAttribute();
+                    }
+                    break;
+                }
+                case ShaderGraphNodeType::CollectionParameter:
+                {
+                    ImGui::PushItemWidth(150.0f);
+                    AssetUI::AssetSlot("##mpc", "Material Parameter Collection", { ".cqmpc" }, node.TexturePath);
+                    AssetUI::InputString("Parameter", node.CustomCode);
+                    ImGui::PopItemWidth();
+                    ImNodes::BeginOutputAttribute(GetOutputAttributeID(node.ID, 0));
+                    ImGui::Indent(40.0f);
+                    ImGui::TextUnformatted("Out");
+                    ImNodes::EndOutputAttribute();
+                    break;
+                }
+                case ShaderGraphNodeType::TextureArraySample:
+                case ShaderGraphNodeType::VolumeTextureSample:
+                case ShaderGraphNodeType::CubeTargetSample:
+                {
+                    const bool arraySample = node.Type == ShaderGraphNodeType::TextureArraySample;
+                    const bool volume = node.Type == ShaderGraphNodeType::VolumeTextureSample;
+                    ImGui::PushItemWidth(150.0f);
+                    AssetUI::AssetSlot("##tex", arraySample ? "Texture 2D Array" : volume ? "Volume Texture" : "Cube Render Target",
+                                       { arraySample ? ".cqtexarray" : volume ? ".cqvoltex" : ".cqcubert" }, node.TexturePath);
+                    if (arraySample)
+                        ImGui::DragFloat("Slice", &node.FloatValue, 0.05f, 0.0f, 256.0f);
+                    ImGui::PopItemWidth();
+                    ImNodes::BeginInputAttribute(GetInputAttributeID(node.ID, 0));
+                    ImGui::TextUnformatted(arraySample ? "UV" : volume ? "UVW" : "Direction");
+                    ImNodes::EndInputAttribute();
+                    if (arraySample)
+                    {
+                        ImNodes::BeginInputAttribute(GetInputAttributeID(node.ID, 1));
+                        ImGui::TextUnformatted("Slice");
+                        ImNodes::EndInputAttribute();
+                    }
                     ImNodes::BeginOutputAttribute(GetOutputAttributeID(node.ID, 0));
                     ImGui::Indent(40.0f);
                     ImGui::TextUnformatted("Out");

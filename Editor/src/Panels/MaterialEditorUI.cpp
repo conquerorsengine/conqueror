@@ -159,6 +159,50 @@ namespace Conqueror::Editor::MaterialEditorUI
                 if (!m.ShaderPath.empty() && !m.MaterialShader)
                     UI::InfoBox("The shader did not compile (see the Console); the built-in Lit shader is used.", UI::InfoType::Warning);
             }
+            // Material Layers (Unreal Material Layer + Layer Blend): satır sırasıyla üst üste karışır
+            if (!options.Embedded)
+            {
+                UI::SubHeader("Layers");
+                bool layersChanged = false;
+                int removeLayer = -1;
+                for (size_t i = 0; i < m.Layers.size(); ++i)
+                {
+                    ImGui::PushID((int)i);
+                    if (AssetPathSlot("Layer", m.Layers[i].first, ".cqmatlayer", "Material Layer", "A Material Layer asset."))
+                        layersChanged = true;
+                    if (i > 0 && AssetPathSlot("Blend", m.Layers[i].second, ".cqmatblend", "Material Layer Blend", "How this layer mixes over the ones below it."))
+                        layersChanged = true;
+                    if (ImGui::SmallButton(ICON_FA_XMARK "  Remove Layer"))
+                        removeLayer = (int)i;
+                    ImGui::PopID();
+                }
+                if (removeLayer >= 0)
+                {
+                    m.Layers.erase(m.Layers.begin() + removeLayer);
+                    layersChanged = true;
+                }
+                if (ImGui::SmallButton(ICON_FA_PLUS "  Add Layer"))
+                {
+                    m.Layers.emplace_back();
+                    layersChanged = true;
+                }
+                if (layersChanged)
+                {
+                    if (m.Layers.empty())
+                    {
+                        m.GraphNodes.clear();
+                        m.GraphLinks.clear();
+                        m.GraphInitialized = false;
+                        m.MaterialShader = nullptr;
+                    }
+                    else
+                    {
+                        m.BuildLayerGraph();
+                        m.CompileShaderGraph();
+                    }
+                    changed = true;
+                }
+            }
             const char* surfaceNames[] = { "Opaque", "Cutout", "Transparent" };
             int surface = (int)m.Rendering;
             if (UI::Combo("Surface Type", surface, surfaceNames, 3,

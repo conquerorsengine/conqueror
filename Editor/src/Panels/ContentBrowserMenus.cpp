@@ -272,6 +272,7 @@ namespace Conqueror::Editor
         add("Rendering", "", "Lens Flare", ICON_FA_STAR, "lensflare", "Lens flare elements (glow, ring, ghosts, streak) for the Lens Flare component.");
 
         // Shader
+        add("Shader", "", "Material Function", ICON_FA_DIAGRAM_PROJECT, "materialfunction", "A Shader Graph used as one node in other graphs (Function Input / Output nodes).");
         add("Shader", "", "Shader Graph", ICON_FA_DIAGRAM_PROJECT, "shadergraph", "A material driven by a node graph; opens in the Shader Graph editor.");
         add("Shader", "", "Lit Shader", "", "shader:lit",
             "Built-in PBR lighting with your own surface function (Standard Surface Shader). Material > Shader File.", true, true);

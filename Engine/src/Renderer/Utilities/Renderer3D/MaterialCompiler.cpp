@@ -18,6 +18,12 @@ namespace Conqueror
     void Material::CompileShaderGraph()
     {
         CQ_CORE_INFO("[ShaderGraph] CompileShaderGraph started - Material: '{0}'", Name);
+        // Material Function çağrıları açılır; aşağıdaki kod açılmış listeyi kullanır (üyeleri gizleyen yerel adlar)
+        std::vector<ShaderGraphNode> expandedNodes = GraphNodes;
+        std::vector<ShaderGraphLink> expandedLinks = GraphLinks;
+        ExpandFunctions(expandedNodes, expandedLinks);
+        auto& GraphNodes = expandedNodes;
+        auto& GraphLinks = expandedLinks;
         CQ_CORE_INFO("[ShaderGraph] Graph node count: {0}, link count: {1}", GraphNodes.size(), GraphLinks.size());
 
         std::string pbrSource = ReadFile("Engine/src/Shaders/3D/Forward/PBR.cqsh");
@@ -139,6 +145,42 @@ namespace Conqueror
                     addUniform("uniform sampler2D u_Node" + id + "_Tex;\n");
                     std::string uv = getInputValue(0, "fs_in.TexCoord");
                     code = "vec4 " + nodeVar + " = texture(u_Node" + id + "_Tex, " + uv + ");\n";
+                    nodeOutputs[nodeID] = nodeVar;
+                    break;
+                }
+                case ShaderGraphNodeType::CollectionParameter:
+                {
+                    std::string id = std::to_string(nodeID);
+                    addUniform("uniform vec4 u_Node" + id + "_MPC;\n");
+                    code = "vec4 " + nodeVar + " = u_Node" + id + "_MPC;\n";
+                    nodeOutputs[nodeID] = nodeVar;
+                    break;
+                }
+                case ShaderGraphNodeType::TextureArraySample:
+                {
+                    std::string id = std::to_string(nodeID);
+                    addUniform("uniform sampler2DArray u_Node" + id + "_Tex;\n");
+                    std::string uv = getInputValue(0, "fs_in.TexCoord");
+                    std::string slice = getInputValue(1, "vec4(" + std::to_string(node->FloatValue) + ")");
+                    code = "vec4 " + nodeVar + " = texture(u_Node" + id + "_Tex, vec3(vec2(" + uv + "), float(" + slice + ".x)));\n";
+                    nodeOutputs[nodeID] = nodeVar;
+                    break;
+                }
+                case ShaderGraphNodeType::VolumeTextureSample:
+                {
+                    std::string id = std::to_string(nodeID);
+                    addUniform("uniform sampler3D u_Node" + id + "_Tex;\n");
+                    std::string uvw = getInputValue(0, "vec3(fs_in.TexCoord, 0.5)");
+                    code = "vec4 " + nodeVar + " = texture(u_Node" + id + "_Tex, vec3(" + uvw + "));\n";
+                    nodeOutputs[nodeID] = nodeVar;
+                    break;
+                }
+                case ShaderGraphNodeType::CubeTargetSample:
+                {
+                    std::string id = std::to_string(nodeID);
+                    addUniform("uniform samplerCube u_Node" + id + "_Tex;\n");
+                    std::string dir = getInputValue(0, "reflect(normalize(fs_in.FragPos - CQ_CameraPosition()), N)");
+                    code = "vec4 " + nodeVar + " = texture(u_Node" + id + "_Tex, normalize(vec3(" + dir + ")));\n";
                     nodeOutputs[nodeID] = nodeVar;
                     break;
                 }
