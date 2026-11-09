@@ -38,6 +38,36 @@ namespace Conqueror
         int Stopped = 0;                  // sınır yüzünden durdurulma sayısı
     };
 
+    // Sound Settings: Audio Source'a ses varlıklarını bağlar (Unreal Sound Attenuation / Class / Concurrency, Reverb Effect)
+    struct SoundSettingsComponent
+    {
+        std::string Attenuation;          // .cqattenuation
+        std::string SoundClass;           // .cqsoundclass
+        std::string Concurrency;          // .cqconcurrency
+        std::string Reverb;               // .cqreverb
+
+        // Çalışma zamanı
+        float Gain = 1.0f, Pitch = 1.0f;  // Sound Class zinciri + etkin Sound Mix'ler
+        std::string AppliedReverb;
+    };
+
+    // Sound Mix: Sound Class'ların sesini geçici olarak değiştirir (Push / Pop)
+    namespace SoundMixes
+    {
+        CQ_API bool Push(const std::string& path);
+        CQ_API bool Pop(const std::string& path);
+        CQ_API void Clear();
+    }
+
+    // Dialogue Wave: seslendirme + altyazı
+    namespace Dialogue
+    {
+        CQ_API bool Play(const std::string& path, float volume = 1.0f);
+        // Şu an gösterilecek altyazı (yoksa boş)
+        CQ_API bool GetSubtitle(std::string& speaker, std::string& text);
+        CQ_API void Clear();
+    }
+
     namespace AudioOcclusion
     {
         // Oyun modunda, ses kaynakları güncellenmeden önce

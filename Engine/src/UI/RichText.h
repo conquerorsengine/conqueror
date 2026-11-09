@@ -5,8 +5,11 @@
 #include <glm/glm.hpp>
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
+
+namespace Conqueror { class Texture2D; }
 
 // Zengin metin (Godot RichTextLabel BBCode + TextMeshPro etiketleri): [b] [i] [u] [s] [color=#ff8800|red]
 // [size=24] / [font_size=24] [wave amp=.. freq=..] [shake rate=.. level=..] [rainbow freq=..] [lb] [rb];
@@ -36,7 +39,13 @@ namespace Conqueror::RichText
         float ShakeLevel = 3.0f;         // piksel
         float ShakeRate = 20.0f;
         float RainbowFrequency = 0.5f;
+        const glm::vec4* Gradient = nullptr;   // <gradient=Ad>: sol alt, sağ alt, sağ üst, sol üst
     };
+
+    // Color Gradient varlığı (.cqcolorgradient) köşe renkleri: ad (dosya adı) ya da yol; bulunamazsa nullptr
+    CQ_API const glm::vec4* FindGradient(const std::string& nameOrPath);
+    // Sprite Asset (<sprite name=X>) dokusu ve ölçeği
+    CQ_API std::shared_ptr<Conqueror::Texture2D> SpriteTexture(const std::string& name, float* scale = nullptr);
 
     // Tuş simgeleri metinde özel kod noktası olarak taşınır (Unicode özel kullanım alanı, düzlem 16)
     CQ_API uint32_t GlyphCodepoint(const std::string& spec);

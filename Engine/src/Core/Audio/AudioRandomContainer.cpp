@@ -1,6 +1,7 @@
 #include "AudioRandomContainer.h"
 
 #include "Core/Serialization/SceneSerializer.h"
+#include "Core/Audio/SoundCue.h"
 
 #include <yaml-cpp/yaml.h>
 
@@ -42,7 +43,7 @@ namespace Conqueror::AudioRandomContainers
     {
         std::string e = std::filesystem::path(path).extension().string();
         std::transform(e.begin(), e.end(), e.begin(), [](unsigned char c) { return (char)std::tolower(c); });
-        return e == Extension;
+        return e == Extension || e == SoundCues::Extension;
     }
 
     bool Load(const std::string& path, AudioRandomContainerAsset& a)
@@ -110,6 +111,8 @@ namespace Conqueror::AudioRandomContainers
 
     bool Next(const std::string& path, uint64_t owner, Pick& out)
     {
+        if (std::filesystem::path(path).extension() == SoundCues::Extension)
+            return SoundCues::Next(path, owner, out);
         AudioRandomContainerAsset a;
         if (!Load(path, a) || a.Clips.empty())
             return false;

@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace Conqueror
@@ -29,14 +30,35 @@ namespace Conqueror
     public:
         static constexpr float BaseSize = 48.0f;
 
+        // Font Asset (.cqfontasset) ayarları
+        struct Options
+        {
+            std::vector<std::string> Fallbacks;   // eksik karakterler sırayla bu yazı tiplerinden
+            bool Static = false;                  // yalnız Characters'daki karakterler kullanılabilir
+            std::string Characters;               // önceden üretilen karakterler
+            float LineSpacing = 1.0f;
+        };
+        // Custom Font (.cqcustomfont): doku üzerinde ızgara hücreleri
+        struct BitmapOptions
+        {
+            std::string Texture, Characters;
+            int Columns = 16, Rows = 16;
+            float Spacing = 0.0f, LineSpacing = 1.0f;
+            std::vector<std::pair<uint32_t, float>> Widths;   // karakter, hücre genişliğine oran
+        };
+
         explicit FontAtlas(const std::string& path);
+        FontAtlas(const std::string& path, const Options& options);
+        explicit FontAtlas(const BitmapOptions& bitmap);
         ~FontAtlas();
 
         // Boş yol: varsayılan (OpenSans Regular)
         static std::shared_ptr<FontAtlas> Get(const std::string& path = "");
         static void ShutdownAll();
 
-        bool IsValid() const { return m_Face != nullptr; }
+        bool IsValid() const { return m_Face != nullptr || m_Bitmap != nullptr; }
+        // Bit eşlem yazı tipi: SDF değil, doku olduğu gibi çizilir
+        bool IsBitmap() const { return m_Bitmap != nullptr; }
         const SDFGlyph& GetGlyph(uint32_t codepoint);
         float GetKerning(uint32_t left, uint32_t right) const;
         std::shared_ptr<Texture2D> GetTexture();   // gerekirse yükler
@@ -53,7 +75,12 @@ namespace Conqueror
 
     private:
         bool Rasterize(uint32_t codepoint, SDFGlyph& out);
+        void InitFace(const std::string& path);
 
+        std::vector<void*> m_Fallbacks;
+        bool m_Static = false;
+        float m_LineSpacing = 1.0f;
+        std::shared_ptr<Texture2D> m_Bitmap;
         std::string m_Path;
         void* m_Library = nullptr;
         void* m_Face = nullptr;

@@ -1,4 +1,6 @@
 #include "UISystem.h"
+#include "UI/UIToolkit.h"
+#include "Scene/AudioOcclusion.h"
 #include "Core/Input/InputGlyphs.h"
 #include "FontAtlas.h"
 #include "RichText.h"
@@ -428,6 +430,29 @@ namespace Conqueror
             DrawCorners(p, uv, tex ? tex : Renderer2D::GetWhiteTexture(), color, tiling);
         }
 
+        // Metin dörtgeni: bit eşlem yazı tipinde (Custom Font) SDF değil, renk geçişi varsa köşe başına renk
+        bool s_BitmapFont = false;
+        const glm::vec4* s_TextGradient = nullptr;
+
+        void TextQuad(const glm::mat4& m, glm::vec2 mn, glm::vec2 mx, const std::shared_ptr<Texture2D>& tex, glm::vec2 uv0, glm::vec2 uv1, const glm::vec4& color,
+                      float skew, float baseline, const glm::vec4* gradient)
+        {
+            auto P = [&](float x, float y) { return glm::vec3(m * glm::vec4(x + skew * (y - baseline), y, 0, 1)); };
+            glm::vec3 p[4] = { P(mn.x, mn.y), P(mx.x, mn.y), P(mx.x, mx.y), P(mn.x, mx.y) };
+            glm::vec2 uv[4] = { { uv0.x, uv0.y }, { uv1.x, uv0.y }, { uv1.x, uv1.y }, { uv0.x, uv1.y } };
+            const float mode = s_BitmapFont ? 1.0f : -1.0f;
+            const std::shared_ptr<Texture2D>& t = tex ? tex : Renderer2D::GetWhiteTexture();
+            if (gradient)
+            {
+                glm::vec4 c[4];
+                for (int i = 0; i < 4; ++i)
+                    c[i] = glm::vec4(glm::vec3(gradient[i]), gradient[i].a * color.a * s_DrawAlpha);
+                Renderer2D::DrawQuadCornersColors(p, uv, t, c, mode);
+                return;
+            }
+            DrawCorners(p, uv, t, color, mode);
+        }
+
         void Triangle(const glm::mat4& m, glm::vec2 a, glm::vec2 b, glm::vec2 c, const glm::vec4& color)
         {
             glm::vec3 p[4] = { glm::vec3(m * glm::vec4(a, 0, 1)), glm::vec3(m * glm::vec4(b, 0, 1)), glm::vec3(m * glm::vec4(c, 0, 1)), glm::vec3(m * glm::vec4(c, 0, 1)) };
@@ -527,6 +552,7 @@ namespace Conqueror
             static thread_local std::vector<uint32_t> cps;
             static thread_local std::vector<TextLine> lines;
             FontAtlas::DecodeUTF8(text, cps);
+            s_BitmapFont = font->IsBitmap();
             LayoutLines(*font, cps, fontSize, size.x, wrap, lines);
             const float scale = fontSize / FontAtlas::BaseSize;
             const float lineH = font->GetLineHeight() * scale * lineSpacing;
@@ -551,7 +577,7 @@ namespace Conqueror
                     if (g.Size.x > 0.0f)
                     {
                         glm::vec2 mn(x + g.Bearing.x * scale, baseline + (g.Bearing.y - g.Size.y) * scale);
-                        Quad(m, mn + offset, mn + g.Size * scale + offset, tex, g.UVMin, g.UVMax, color, -1.0f);
+                        TextQuad(m, mn + offset, mn + g.Size * scale + offset, tex, g.UVMin, g.UVMax, color, 0.0f, 0.0f, s_TextGradient);
                     }
                     x += g.Advance * scale;
                     if (i + 1 < line.End)
@@ -564,12 +590,9 @@ namespace Conqueror
 
         // İtalik için eğik dörtgen: üst kenar taban çizgisine göre kaydırılır
         void GlyphQuad(const glm::mat4& m, glm::vec2 mn, glm::vec2 mx, const std::shared_ptr<Texture2D>& tex, glm::vec2 uv0, glm::vec2 uv1,
-                       const glm::vec4& color, float skew, float baseline)
+                       const glm::vec4& color, float skew, float baseline, const glm::vec4* gradient)
         {
-            auto P = [&](float x, float y) { return glm::vec3(m * glm::vec4(x + skew * (y - baseline), y, 0, 1)); };
-            glm::vec3 p[4] = { P(mn.x, mn.y), P(mx.x, mn.y), P(mx.x, mx.y), P(mn.x, mx.y) };
-            glm::vec2 uv[4] = { { uv0.x, uv0.y }, { uv1.x, uv0.y }, { uv1.x, uv1.y }, { uv0.x, uv1.y } };
-            DrawCorners(p, uv, tex ? tex : Renderer2D::GetWhiteTexture(), color, -1.0f);
+            TextQuad(m, mn, mx, tex, uv0, uv1, color, skew, baseline, gradient);
         }
 
         glm::vec3 HueToRGB(float h)
@@ -599,6 +622,7 @@ namespace Conqueror
             RichText::Parse(text, cps, styles);
             if (cps.empty())
                 return;
+            s_BitmapFont = font->IsBitmap();
             px.resize(cps.size());
             for (size_t i = 0; i < cps.size(); ++i)
             {
@@ -606,9 +630,26 @@ namespace Conqueror
                 px[i] = v > 0.0f ? v * sizeRatio : v < 0.0f ? fontSize * -v : fontSize;
             }
             // Tuş simgesi: satır yüksekliğinde resim (genişlik dokunun en-boy oranından)
-            auto glyphTexture = [&](size_t i) { return RichText::IsGlyph(cps[i]) ? InputGlyphs::Texture(RichText::GlyphSpec(cps[i])) : nullptr; };
+            auto glyphTexture = [&](size_t i) -> std::shared_ptr<Texture2D> {
+                if (!RichText::IsGlyph(cps[i]))
+                    return nullptr;
+                const std::string spec = RichText::GlyphSpec(cps[i]);
+                if (spec.rfind("sprite:", 0) == 0)
+                    return RichText::SpriteTexture(spec.substr(7));
+                return InputGlyphs::Texture(spec);
+            };
+            auto glyphScale = [&](size_t i) {
+                float scale = 1.0f;
+                if (RichText::IsGlyph(cps[i]))
+                {
+                    const std::string spec = RichText::GlyphSpec(cps[i]);
+                    if (spec.rfind("sprite:", 0) == 0)
+                        RichText::SpriteTexture(spec.substr(7), &scale);
+                }
+                return scale;
+            };
             auto glyphWidth = [&](size_t i, const std::shared_ptr<Texture2D>& t) {
-                const float h = px[i] * 1.25f;
+                const float h = px[i] * 1.25f * glyphScale(i);
                 return t && t->GetHeight() > 0 ? h * (float)t->GetWidth() / (float)t->GetHeight() : h;
             };
             auto advance = [&](size_t i) {
@@ -690,7 +731,7 @@ namespace Conqueror
                     if (RichText::IsGlyph(cps[i]))
                     {
                         auto gt = glyphTexture(i);
-                        const float h = px[i] * 1.25f, w = glyphWidth(i, gt);
+                        const float h = px[i] * 1.25f * glyphScale(i), w = glyphWidth(i, gt);
                         // Yazının x yüksekliğine ortalanır
                         const float centerY = baseline + px[i] * 0.33f;
                         glm::vec4 tint(1.0f, 1.0f, 1.0f, baseColor.a);
@@ -731,12 +772,13 @@ namespace Conqueror
                         const glm::vec2 mx = mn + g.Size * scale;
                         const float skew = (st.Flags & RichText::Italic) ? 0.2f : 0.0f;
                         const float base = baseline + offset.y + jitter.y;
-                        GlyphQuad(m, mn, mx, tex, g.UVMin, g.UVMax, color, skew, base);
+                        const glm::vec4* gradient = overrideColor ? nullptr : (st.Gradient ? st.Gradient : s_TextGradient);
+                        GlyphQuad(m, mn, mx, tex, g.UVMin, g.UVMax, color, skew, base, gradient);
                         // Kalın: yatayda hafif kaydırılmış ikinci çizim (SDF kenarı kalınlaşır)
                         if (st.Flags & RichText::Bold)
                         {
                             const glm::vec2 d(std::max(0.75f, px[i] * 0.035f), 0.0f);
-                            GlyphQuad(m, mn + d, mx + d, tex, g.UVMin, g.UVMax, color, skew, base);
+                            GlyphQuad(m, mn + d, mx + d, tex, g.UVMin, g.UVMax, color, skew, base, gradient);
                         }
                     }
                     if (st.Flags & (RichText::Underline | RichText::Strike))
@@ -1167,6 +1209,8 @@ namespace Conqueror
                 // Zengin metin: aynı çağrı imzası, harf başına stil (gölge / dış çizgi tek renk)
                 const float sizeRatio = t.FontSize > 0.0f ? fs / t.FontSize : 1.0f;
                 auto drawText = [&](const glm::mat4& tm, const glm::vec4& col, bool overrideColor, glm::vec2 off) {
+                    s_TextGradient = !overrideColor && !t.ColorGradient.empty() ? RichText::FindGradient(t.ColorGradient) : nullptr;
+                    struct Reset { ~Reset() { s_TextGradient = nullptr; } } reset;
                     if (t.RichText)
                         DrawRichTextBlock(tm, size, t.Text, t.FontPath, fs, sizeRatio, col, overrideColor, t.AlignH, t.AlignV, t.WordWrap, t.LineSpacing, off);
                     else
@@ -1849,6 +1893,7 @@ namespace Conqueror
 
     void UISystem::Update(Scene& scene, const glm::vec2& screenSize, const UIInputState& rawInput, float dt)
     {
+        UIToolkit::Update(scene);
         UIInputState input = rawInput;
         bool oskConsumed = false;
         // Ekran klavyesi açıksa: tuşları karakter / silme / bitti olarak girdiye ekler, üstündeki tıklamayı yutar
@@ -2496,7 +2541,8 @@ namespace Conqueror
         bool any = false;
         for (Entity c : canvases)
             any |= c.GetComponent<CanvasComponent>().Mode != CanvasComponent::RenderMode::WorldSpace;
-        if (!any)
+        std::string subtitleSpeaker, subtitleText;
+        if (!any && !Dialogue::GetSubtitle(subtitleSpeaker, subtitleText))
             return;
 
         GLint vp[4];
@@ -2518,6 +2564,23 @@ namespace Conqueror
             RenderItems(items, toPx, true, screenSize);
             Renderer2D::EndScene();
             Renderer2D::SetOutputMode(-1);
+        }
+        // Dialogue Wave altyazısı (ekranın altı)
+        {
+            std::string speaker, text;
+            if (Dialogue::GetSubtitle(speaker, text))
+            {
+                const float size = std::max(18.0f, screenSize.y * 0.03f);
+                const std::string line = speaker.empty() ? text : speaker + ": " + text;
+                const glm::vec2 box(screenSize.x * 0.8f, size * 2.0f);
+                const glm::mat4 at = glm::translate(glm::mat4(1.0f), glm::vec3(screenSize.x * 0.1f, size * 1.2f, 0.0f));
+                Renderer2D::BeginScene(ortho, false);
+                Renderer2D::SetOutputMode(0);
+                Quad(at, glm::vec2(0.0f), box, nullptr, { 0, 0 }, { 1, 1 }, glm::vec4(0.0f, 0.0f, 0.0f, 0.55f));
+                DrawTextBlock(at, box, line, "", size, glm::vec4(1.0f), UITextAlignH::Center, UITextAlignV::Middle, true, 1.0f);
+                Renderer2D::EndScene();
+                Renderer2D::SetOutputMode(-1);
+            }
         }
         if (s_Osk.Open)
         {

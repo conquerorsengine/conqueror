@@ -38,6 +38,7 @@ namespace Conqueror
             std::string Clip;
             float VolumeScale = 1.0f;
             float PitchScale = 1.0f;
+            bool Loop = false;      // Sound Cue: Looping düğümü
         };
         // Sıradaki klip (owner: kaynak başına sıra / karıştırma / geçmiş durumu)
         CQ_API bool Next(const std::string& path, uint64_t owner, Pick& out);

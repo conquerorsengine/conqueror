@@ -1,10 +1,19 @@
 #include "RichText.h"
 #include "Core/Input/InputGlyphs.h"
 #include "UI/FontAtlas.h"
+#include "Core/Assets/SimpleAsset.h"
+#include "Core/Project/Project.h"
+#include "Core/Serialization/SceneSerializer.h"
+#include "Renderer/RHI/Texture.h"
 
 #include <algorithm>
 #include <cstdlib>
 #include <utility>
+#include <array>
+#include <chrono>
+#include <filesystem>
+#include <map>
+#include <deque>
 
 namespace Conqueror::RichText
 {
@@ -31,6 +40,14 @@ namespace Conqueror::RichText
             std::string Name;
             std::string Value;
             std::vector<std::pair<std::string, std::string>> Params;
+
+            std::string ParamText(const char* key) const
+            {
+                for (const auto& [k, v] : Params)
+                    if (k == key)
+                        return v;
+                return "";
+            }
 
             float Param(const char* key, float fallback) const
             {
@@ -88,7 +105,7 @@ namespace Conqueror::RichText
 
         bool IsKnown(const std::string& name)
         {
-            static const char* kNames[] = { "b", "i", "u", "s", "color", "size", "font_size", "wave", "shake", "rainbow", "lb", "rb", "glyph" };
+            static const char* kNames[] = { "b", "i", "u", "s", "color", "size", "font_size", "wave", "shake", "rainbow", "lb", "rb", "glyph", "sprite", "gradient" };
             for (const char* n : kNames)
                 if (name == n)
                     return true;
@@ -103,6 +120,11 @@ namespace Conqueror::RichText
             else if (n == "i") style.Flags |= Italic;
             else if (n == "u") style.Flags |= Underline;
             else if (n == "s") style.Flags |= Strike;
+            else if (n == "gradient")
+            {
+                style.Gradient = FindGradient(Unquote(tag.Value));
+                return style.Gradient != nullptr;
+            }
             else if (n == "color")
             {
                 glm::vec4 c;
@@ -199,6 +221,141 @@ namespace Conqueror::RichText
         }
     }
 
+    namespace
+    {
+        namespace fs = std::filesystem;
+
+        // Proje içi varlık taraması (saniyede en fazla bir kez)
+        const std::vector<std::string>& AssetsOfKind(const char* kind)
+        {
+            struct Entry { double Time = -10.0; std::vector<std::string> Files; };
+            static std::map<std::string, Entry> cache;
+            auto& e = cache[kind];
+            using namespace std::chrono;
+            const double now = duration<double>(steady_clock::now().time_since_epoch()).count();
+            if (now - e.Time > 1.0)
+            {
+                e.Time = now;
+                e.Files = SimpleAssets::FindAll(kind);
+            }
+            return e.Files;
+        }
+
+        std::string ExpandStyles(const std::string& text)
+        {
+            if (text.find("style") == std::string::npos)
+                return text;
+            std::string out;
+            std::vector<std::string> closing;
+            size_t i = 0;
+            const auto findStyle = [](const std::string& name, std::string& open, std::string& close) {
+                for (const auto& file : AssetsOfKind("TextStyleSheet"))
+                {
+                    SimpleAssets::Data data;
+                    if (!SimpleAssets::Load(file, data))
+                        continue;
+                    for (const auto& row : data.Table("Styles"))
+                        if (SimpleAssets::Cell(row, 0) == name)
+                        {
+                            open = SimpleAssets::Cell(row, 1);
+                            close = SimpleAssets::Cell(row, 2);
+                            return true;
+                        }
+                }
+                return false;
+            };
+            while (i < text.size())
+            {
+                if (text[i] == '<' || text[i] == '[')
+                {
+                    const char closeChar = text[i] == '<' ? '>' : ']';
+                    const size_t end = text.find(closeChar, i + 1);
+                    if (end != std::string::npos && end - i <= 96)
+                    {
+                        Tag tag;
+                        if (ParseTag(text.substr(i + 1, end - i - 1), tag) && tag.Name == "style")
+                        {
+                            if (tag.Closing)
+                            {
+                                if (!closing.empty())
+                                {
+                                    out += closing.back();
+                                    closing.pop_back();
+                                }
+                            }
+                            else
+                            {
+                                std::string open, close;
+                                const std::string name = tag.Value.empty() ? tag.ParamText("name") : tag.Value;
+                                if (findStyle(Unquote(name), open, close))
+                                {
+                                    out += open;
+                                    closing.push_back(close);
+                                }
+                            }
+                            i = end + 1;
+                            continue;
+                        }
+                    }
+                }
+                out += text[i++];
+            }
+            return out;
+        }
+    }
+
+    const glm::vec4* FindGradient(const std::string& nameOrPath)
+    {
+        if (nameOrPath.empty())
+            return nullptr;
+        static std::map<std::string, std::array<glm::vec4, 4>> stored;
+        std::string file;
+        if (nameOrPath.find('.') != std::string::npos || nameOrPath.find('/') != std::string::npos)
+            file = nameOrPath;
+        else
+            for (const auto& f : AssetsOfKind("TextColorGradient"))
+                if (fs::path(f).stem().string() == nameOrPath)
+                {
+                    file = f;
+                    break;
+                }
+        SimpleAssets::Data data;
+        if (file.empty() || !SimpleAssets::Load(file, data))
+            return nullptr;
+        const std::string mode = data.Str("Mode");
+        glm::vec4 tl = data.Color("Top Left"), tr = data.Color("Top Right"), bl = data.Color("Bottom Left"), br = data.Color("Bottom Right");
+        if (mode == "Single") tr = bl = br = tl;
+        else if (mode == "Horizontal") { bl = tl; br = tr; }
+        else if (mode == "Vertical") { tr = tl; br = bl; }
+        auto& slot = stored[file];
+        slot = { bl, br, tr, tl };
+        return slot.data();
+    }
+
+    std::shared_ptr<Conqueror::Texture2D> SpriteTexture(const std::string& name, float* scale)
+    {
+        static auto& textures = *new std::map<std::string, std::shared_ptr<Texture2D>>();
+        for (const auto& file : AssetsOfKind("SpriteAsset"))
+        {
+            SimpleAssets::Data data;
+            if (!SimpleAssets::Load(file, data))
+                continue;
+            for (const auto& row : data.Table("Sprites"))
+            {
+                if (SimpleAssets::Cell(row, 0) != name)
+                    continue;
+                if (scale)
+                    *scale = SimpleAssets::CellFloat(row, 2, 1.0f);
+                const std::string path = SceneSerializer::ResolveAssetPath(SimpleAssets::Cell(row, 1));
+                auto& tex = textures[path];
+                if (!tex)
+                    tex = Texture2D::Create(path);
+                return tex;
+            }
+        }
+        return nullptr;
+    }
+
     uint32_t GlyphCodepoint(const std::string& spec)
     {
         auto& table = GlyphTable();
@@ -215,8 +372,9 @@ namespace Conqueror::RichText
 
     std::string GlyphSpec(uint32_t cp) { return IsGlyph(cp) ? GlyphTable()[cp - kGlyphBase] : std::string(); }
 
-    void Parse(const std::string& text, std::vector<uint32_t>& codepoints, std::vector<Style>& styles)
+    void Parse(const std::string& input, std::vector<uint32_t>& codepoints, std::vector<Style>& styles)
     {
+        const std::string text = ExpandStyles(input);
         codepoints.clear();
         styles.clear();
         Style current;
@@ -254,6 +412,21 @@ namespace Conqueror::RichText
                                 flush();
                                 codepoints.push_back(GlyphCodepoint(tag.Value));
                                 styles.push_back(current);
+                            }
+                            i = end + 1;
+                            continue;
+                        }
+                        if (tag.Name == "sprite")
+                        {
+                            if (!tag.Closing)
+                            {
+                                const std::string name = Unquote(tag.Value.empty() ? tag.ParamText("name") : tag.Value);
+                                if (!name.empty())
+                                {
+                                    flush();
+                                    codepoints.push_back(GlyphCodepoint("sprite:" + name));
+                                    styles.push_back(current);
+                                }
                             }
                             i = end + 1;
                             continue;
@@ -307,6 +480,8 @@ namespace Conqueror::RichText
         {
             if (IsGlyph(cp))
             {
+                if (GlyphSpec(cp).rfind("sprite:", 0) == 0)
+                    continue;
                 out += "[" + InputGlyphs::Label(GlyphSpec(cp)) + "]";
                 continue;
             }

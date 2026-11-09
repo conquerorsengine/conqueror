@@ -73,6 +73,7 @@ namespace Conqueror
         glm::vec4 ShadowColor{ 0.0f, 0.0f, 0.0f, 0.5f };
         bool RaycastTarget = false;
         bool RichText = false;                 // BBCode / TMP etiketleri ([b] [color=red] [wave] ...)
+        std::string ColorGradient;             // .cqcolorgradient: harf başına renk geçişi
     };
 
     enum class UITransition : int { None = 0, ColorTint, Scale };

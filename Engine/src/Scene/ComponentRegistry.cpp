@@ -1,5 +1,7 @@
 #include "Core/Serialization/SceneSerializer.h"
 #include "ComponentRegistry.h"
+#include "UI/UIToolkit.h"
+#include "AISystem/BehaviorTree/BehaviorTreeAsset.h"
 #include "Core/Animation/PropertyAnimation.h"
 #include "Core/Logging/Log.h"
 
@@ -113,6 +115,8 @@ namespace Conqueror
             RegisterVirtualGeometryComponents();
             RegisterCharacterCustomizerComponents();
             RegisterSignalComponents();
+            UIToolkit::RegisterComponents();
+            BehaviorTrees::RegisterComponents();
             RegisterCSGComponents();
             RegisterMultiMeshComponents();
             RegisterGodotNodeComponents();

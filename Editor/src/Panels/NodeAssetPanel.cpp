@@ -13,6 +13,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 
 namespace Conqueror::Editor
 {
@@ -531,7 +532,9 @@ namespace Conqueror::Editor
         std::string shown = type.Title;
         if (!type.TitleProp.empty())
         {
-            const std::string named = node.Str(type.TitleProp);
+            std::string named = node.Str(type.TitleProp);
+            if (named.find('/') != std::string::npos)
+                named = std::filesystem::path(named).stem().string();
             if (!named.empty())
                 shown = named + "  (" + type.Title + ")";
         }

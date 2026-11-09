@@ -179,13 +179,13 @@ namespace Conqueror::Editor::ObjectPicker
 
     const std::vector<std::string>& AudioExtensions()
     {
-        static const std::vector<std::string> exts = { ".wav", ".mp3", ".ogg", ".flac", ".cqaudiorandom" };
+        static const std::vector<std::string> exts = { ".wav", ".mp3", ".ogg", ".flac", ".cqaudiorandom", ".cqsoundcue" };
         return exts;
     }
 
     const std::vector<std::string>& FontExtensions()
     {
-        static const std::vector<std::string> exts = { ".ttf", ".otf" };
+        static const std::vector<std::string> exts = { ".ttf", ".otf", ".cqfontasset", ".cqcustomfont" };
         return exts;
     }
 

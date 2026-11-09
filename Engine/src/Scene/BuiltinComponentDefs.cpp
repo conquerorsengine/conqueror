@@ -433,6 +433,7 @@ namespace Conqueror
                 [resolveAsset](UITextComponent& t, const std::string& path) { t.FontPath = resolveAsset(path); })
             .Field("FontSize", "Font Size", &UITextComponent::FontSize)
             .Field("Color", "Color", &UITextComponent::Color, FieldKind::Color4)
+            .Field("ColorGradient", "Color Gradient", &UITextComponent::ColorGradient, FieldKind::Asset).Filter(".cqcolorgradient")
             .Field("AlignH", "Horizontal Align", &UITextComponent::AlignH).Options({ "Left", "Center", "Right" })
             .Field("AlignV", "Vertical Align", &UITextComponent::AlignV).Options({ "Top", "Middle", "Bottom" })
             .Field("WordWrap", "Word Wrap", &UITextComponent::WordWrap)

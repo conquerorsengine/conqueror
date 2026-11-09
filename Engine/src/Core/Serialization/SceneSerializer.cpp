@@ -683,7 +683,7 @@ namespace Conqueror
         {
             auto& c = entity.GetComponent<UITextComponent>();
             out << YAML::Key << "UITextComponent" << YAML::BeginMap;
-            CQ_O(c, Text); out << YAML::Key << "FontPath" << YAML::Value << ToSerializablePath(c.FontPath); CQ_O(c, FontSize); CQ_O(c, Color);
+            CQ_O(c, Text); out << YAML::Key << "FontPath" << YAML::Value << ToSerializablePath(c.FontPath); CQ_O(c, ColorGradient); CQ_O(c, FontSize); CQ_O(c, Color);
             CQ_OE(c, AlignH); CQ_OE(c, AlignV); CQ_O(c, WordWrap); CQ_O(c, BestFit); CQ_O(c, MinSize); CQ_O(c, MaxSize); CQ_O(c, LineSpacing);
             CQ_O(c, Outline); CQ_O(c, OutlineColor); CQ_O(c, Shadow); CQ_O(c, ShadowOffset); CQ_O(c, ShadowColor); CQ_O(c, RaycastTarget); CQ_O(c, RichText);
             out << YAML::EndMap;
@@ -763,7 +763,7 @@ namespace Conqueror
         if (auto n = entity["UITextComponent"])
         {
             auto& c = e.AddComponent<UITextComponent>();
-            CQ_I(n, c, Text, std::string); if (n["FontPath"]) c.FontPath = ResolveSerializablePath(n["FontPath"].as<std::string>());
+            CQ_I(n, c, Text, std::string); CQ_I(n, c, ColorGradient, std::string); if (n["FontPath"]) c.FontPath = ResolveSerializablePath(n["FontPath"].as<std::string>());
             CQ_I(n, c, FontSize, float); CQ_I(n, c, Color, glm::vec4); CQ_IE(n, c, AlignH, UITextAlignH); CQ_IE(n, c, AlignV, UITextAlignV);
             CQ_I(n, c, WordWrap, bool); CQ_I(n, c, BestFit, bool); CQ_I(n, c, MinSize, float); CQ_I(n, c, MaxSize, float); CQ_I(n, c, LineSpacing, float);
             CQ_I(n, c, Outline, bool); CQ_I(n, c, OutlineColor, glm::vec4); CQ_I(n, c, Shadow, bool); CQ_I(n, c, ShadowOffset, glm::vec2);

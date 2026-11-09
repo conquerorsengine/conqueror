@@ -1,5 +1,7 @@
 #include "FontAtlas.h"
 #include "Core/Logging/Log.h"
+#include "Core/Assets/SimpleAsset.h"
+#include "Core/Serialization/SceneSerializer.h"
 #include "Core/Utils/FileSystem.h"
 #include "Renderer/RHI/Texture.h"
 
@@ -36,6 +38,87 @@ namespace Conqueror
     FontAtlas::FontAtlas(const std::string& path)
         : m_Path(path)
     {
+        InitFace(path);
+    }
+
+    FontAtlas::FontAtlas(const std::string& path, const Options& options)
+        : m_Path(path), m_LineSpacing(options.LineSpacing)
+    {
+        InitFace(path);
+        if (!m_Face)
+            return;
+        m_LineHeight *= m_LineSpacing;
+        FT_Library lib = (FT_Library)m_Library;
+        for (const auto& fallback : options.Fallbacks)
+        {
+            FT_Face face = nullptr;
+            if (FT_New_Face(lib, SceneSerializer::ResolveAssetPath(fallback).c_str(), 0, &face) != 0)
+            {
+                CQ_CORE_WARN("FontAtlas: cannot load fallback font {0}", fallback);
+                continue;
+            }
+            FT_Set_Pixel_Sizes(face, 0, (FT_UInt)BaseSize);
+            m_Fallbacks.push_back(face);
+        }
+        std::vector<uint32_t> cps;
+        DecodeUTF8(options.Characters, cps);
+        for (uint32_t c : cps)
+            GetGlyph(c);
+        // Statik atlas: başlangıçta üretilen ASCII yalnız Characters boşsa kalır
+        if (options.Static && !cps.empty())
+            for (auto it = m_Glyphs.begin(); it != m_Glyphs.end();)
+            {
+                if (std::find(cps.begin(), cps.end(), it->first) == cps.end())
+                    it = m_Glyphs.erase(it);
+                else
+                    ++it;
+            }
+        m_Static = options.Static;
+    }
+
+    FontAtlas::FontAtlas(const BitmapOptions& bitmap)
+        : m_Path(bitmap.Texture)
+    {
+        m_LineSpacing = bitmap.LineSpacing;
+        m_Bitmap = Texture2D::Create(SceneSerializer::ResolveAssetPath(bitmap.Texture));
+        if (!m_Bitmap || m_Bitmap->GetWidth() == 0)
+        {
+            CQ_CORE_ERROR("FontAtlas: Custom Font texture not found: {0}", bitmap.Texture);
+            m_Bitmap = nullptr;
+            return;
+        }
+        const int columns = std::max(1, bitmap.Columns), rows = std::max(1, bitmap.Rows);
+        const float cellW = (float)m_Bitmap->GetWidth() / (float)columns, cellH = (float)m_Bitmap->GetHeight() / (float)rows;
+        const float width = BaseSize * cellW / cellH;
+        m_Ascender = BaseSize * 0.8f;
+        m_Descender = -BaseSize * 0.2f;
+        m_LineHeight = BaseSize * m_LineSpacing;
+        std::vector<uint32_t> cps;
+        DecodeUTF8(bitmap.Characters, cps);
+        for (size_t i = 0; i < cps.size() && i < (size_t)columns * rows; ++i)
+        {
+            const int col = (int)i % columns, row = (int)i / columns;
+            SDFGlyph g;
+            // Dokular alttan yukarı: ilk satır üstte
+            g.UVMin = { (float)col / columns, 1.0f - (float)(row + 1) / rows };
+            g.UVMax = { (float)(col + 1) / columns, 1.0f - (float)row / rows };
+            float ratio = 1.0f;
+            for (const auto& [c, w] : bitmap.Widths)
+                if (c == cps[i])
+                    ratio = w;
+            g.Size = { width, BaseSize };
+            g.Bearing = { 0.0f, m_Ascender };
+            g.Advance = width * ratio + bitmap.Spacing * BaseSize;
+            g.Valid = true;
+            m_Glyphs[cps[i]] = g;
+        }
+        m_Static = true;
+        m_Dirty = false;
+    }
+
+    void FontAtlas::InitFace(const std::string& path)
+    {
+
         FT_Library lib = nullptr;
         if (FT_Init_FreeType(&lib) != 0)
         {
@@ -72,12 +155,70 @@ namespace Conqueror
 
     FontAtlas::~FontAtlas()
     {
+        for (void* face : m_Fallbacks)
+            FT_Done_Face((FT_Face)face);
         if (m_Face) FT_Done_Face((FT_Face)m_Face);
         if (m_Library) FT_Done_FreeType((FT_Library)m_Library);
     }
 
+    namespace
+    {
+        // Varlıktan yazı tipi; dosya değişince yeniden üretilir (eskisi önbellekte kalır: çizimde kullanılıyor olabilir)
+        std::shared_ptr<FontAtlas> GetFromAsset(const std::string& path, bool bitmap)
+        {
+            std::error_code ec;
+            const std::string file = SceneSerializer::ResolveAssetPath(path);
+            const auto time = std::filesystem::last_write_time(file, ec);
+            const std::string key = file + "#" + std::to_string(ec ? 0 : (long long)time.time_since_epoch().count());
+            auto& cache = Cache();
+            if (auto it = cache.find(key); it != cache.end())
+                return it->second;
+            SimpleAssets::Data data;
+            std::shared_ptr<FontAtlas> atlas;
+            if (SimpleAssets::Load(file, data))
+            {
+                if (bitmap)
+                {
+                    FontAtlas::BitmapOptions o;
+                    o.Texture = data.Str("Texture");
+                    o.Characters = data.Str("Characters");
+                    o.Columns = data.Int("Columns", 16);
+                    o.Rows = data.Int("Rows", 16);
+                    o.Spacing = data.Float("Spacing");
+                    o.LineSpacing = data.Float("Line Spacing", 1.0f);
+                    for (const auto& row : data.Table("Character Widths"))
+                    {
+                        std::vector<uint32_t> cps;
+                        FontAtlas::DecodeUTF8(SimpleAssets::Cell(row, 0), cps);
+                        if (!cps.empty())
+                            o.Widths.emplace_back(cps.front(), SimpleAssets::CellFloat(row, 1, 1.0f));
+                    }
+                    atlas = std::make_shared<FontAtlas>(o);
+                }
+                else
+                {
+                    FontAtlas::Options o;
+                    o.Static = data.Str("Atlas Population") == "Static";
+                    o.Characters = data.Str("Characters");
+                    o.LineSpacing = data.Float("Line Spacing", 1.0f);
+                    for (const auto& row : data.Table("Fallback Fonts"))
+                        if (const std::string f = SimpleAssets::Cell(row, 0); !f.empty())
+                            o.Fallbacks.push_back(f);
+                    atlas = std::make_shared<FontAtlas>(SceneSerializer::ResolveAssetPath(data.Str("Source Font")), o);
+                }
+            }
+            if (!atlas || !atlas->IsValid())
+                return FontAtlas::Get("");
+            cache[key] = atlas;
+            return atlas;
+        }
+    }
+
     std::shared_ptr<FontAtlas> FontAtlas::Get(const std::string& path)
     {
+        const std::string ext = std::filesystem::path(path).extension().string();
+        if (ext == ".cqfontasset" || ext == ".cqcustomfont")
+            return GetFromAsset(path, ext == ".cqcustomfont");
         std::string key = path.empty() ? DefaultFontPath() : path;
         auto& cache = Cache();
         auto it = cache.find(key);
@@ -101,6 +242,15 @@ namespace Conqueror
         if (!face)
             return false;
         FT_UInt index = FT_Get_Char_Index(face, codepoint);
+        // Eksik karakter: yedek yazı tipleri (Font Asset Fallback listesi)
+        if (index == 0)
+            for (void* fallback : m_Fallbacks)
+                if (FT_UInt i = FT_Get_Char_Index((FT_Face)fallback, codepoint); i != 0)
+                {
+                    face = (FT_Face)fallback;
+                    index = i;
+                    break;
+                }
         if (FT_Load_Glyph(face, index, FT_LOAD_DEFAULT) != 0)
             return false;
         out.Advance = face->glyph->advance.x / 64.0f;
@@ -168,6 +318,13 @@ namespace Conqueror
         auto it = m_Glyphs.find(codepoint);
         if (it != m_Glyphs.end())
             return it->second;
+        // Statik atlas (Font Asset / Custom Font): listede olmayan karakter üretilmez
+        if (m_Static)
+        {
+            if (codepoint != '?' && m_Glyphs.count('?'))
+                return m_Glyphs.at('?');
+            return s_Empty;
+        }
         SDFGlyph g;
         if (!Rasterize(codepoint, g))
         {
@@ -191,6 +348,8 @@ namespace Conqueror
 
     std::shared_ptr<Texture2D> FontAtlas::GetTexture()
     {
+        if (m_Bitmap)
+            return m_Bitmap;
         if (!m_Texture || m_Texture->GetHeight() != (uint32_t)m_Height)
         {
             m_Texture = Texture2D::Create((uint32_t)m_Width, (uint32_t)m_Height);

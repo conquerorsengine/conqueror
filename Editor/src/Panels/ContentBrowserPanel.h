@@ -86,6 +86,10 @@ namespace Conqueror::Editor
             ImU32 Color;
             const char* Label;
         };
+        // Kayıtlı aramayı uygula (Search varlığı)
+        void SetSearch(const std::string& query);
+        const char* GetSearch() const { return m_Search; }
+
         // Motor paketleri (Packages/Core) salt okunur
         static bool IsReadOnly(const std::filesystem::path& path);
         // Yeni varlıkların yazılacağı klasör (paket içindeyken proje Assets)
@@ -161,7 +165,9 @@ namespace Conqueror::Editor
         bool IsImage(const std::string& ext) const;
 
         // Dosya işlemleri
+    public:
         void OpenFile(const std::filesystem::path& path);
+    private:
         bool MoveInto(const std::filesystem::path& source, const std::filesystem::path& directory);
         void BeginRename(const std::filesystem::path& path);
         void CommitRename();

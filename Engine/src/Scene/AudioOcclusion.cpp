@@ -4,6 +4,10 @@
 #include "Scene/Components.h"
 #include "Scene/ComponentRegistry.h"
 #include "Core/Audio/AudioSource.h"
+#include "Core/Audio/AudioOneShots.h"
+#include "Core/Audio/SoundCue.h"
+#include "Core/Assets/SimpleAsset.h"
+#include "Core/Serialization/SceneSerializer.h"
 #include "Core/PhysicsSystem/Physics3D/PhysicsWorld3D.h"
 
 #include <IconsFontAwesome6.h>
@@ -15,6 +19,8 @@
 
 namespace Conqueror
 {
+    template<> void Scene::OnComponentAdded<SoundSettingsComponent>(Entity, SoundSettingsComponent&) {}
+
     namespace
     {
         entt::entity RootOf(Scene& scene, entt::entity e)
@@ -51,11 +57,213 @@ namespace Conqueror
         }
     }
 
+    namespace
+    {
+        struct ActiveMix
+        {
+            std::string Path;
+            float Weight = 0.0f;
+            float FadeIn = 0.0f, FadeOut = 0.0f, Duration = 0.0f, Time = 0.0f;
+            bool Releasing = false;
+        };
+
+        std::vector<ActiveMix>& Mixes()
+        {
+            static std::vector<ActiveMix> m;
+            return m;
+        }
+
+        void UpdateMixes(float dt)
+        {
+            auto& mixes = Mixes();
+            for (auto& m : mixes)
+            {
+                m.Time += dt;
+                if (m.Duration > 0.0f && m.Time >= m.Duration)
+                    m.Releasing = true;
+                if (m.Releasing)
+                    m.Weight = m.FadeOut > 0.0f ? std::max(0.0f, m.Weight - dt / m.FadeOut) : 0.0f;
+                else
+                    m.Weight = m.FadeIn > 0.0f ? std::min(1.0f, m.Weight + dt / m.FadeIn) : 1.0f;
+            }
+            mixes.erase(std::remove_if(mixes.begin(), mixes.end(), [](const ActiveMix& m) { return m.Releasing && m.Weight <= 0.0f; }), mixes.end());
+        }
+
+        // Sound Class zinciri: kendi + üst sınıfların ses / perdesi, etkin Sound Mix ayarları
+        void EvaluateClass(const std::string& path, float& gain, float& pitch)
+        {
+            std::string current = path;
+            std::vector<std::string> visited;
+            for (int depth = 0; depth < 16 && !current.empty(); ++depth)
+            {
+                if (std::find(visited.begin(), visited.end(), current) != visited.end())
+                    break;
+                visited.push_back(current);
+                SimpleAssets::Data data;
+                if (!SimpleAssets::Load(current, data))
+                    break;
+                gain *= data.Float("Volume", 1.0f);
+                pitch *= data.Float("Pitch", 1.0f);
+                const std::string key = SceneSerializer::ResolveAssetPath(current);
+                for (const auto& mix : Mixes())
+                {
+                    SimpleAssets::Data mixData;
+                    if (!SimpleAssets::Load(mix.Path, mixData))
+                        continue;
+                    for (const auto& row : mixData.Table("Adjusters"))
+                        if (SceneSerializer::ResolveAssetPath(SimpleAssets::Cell(row, 0)) == key)
+                        {
+                            gain *= 1.0f + (SimpleAssets::CellFloat(row, 1, 1.0f) - 1.0f) * mix.Weight;
+                            pitch *= 1.0f + (SimpleAssets::CellFloat(row, 2, 1.0f) - 1.0f) * mix.Weight;
+                        }
+                }
+                current = data.Str("Parent");
+            }
+        }
+
+        void ApplySoundSettings(Scene& scene)
+        {
+            auto& reg = scene.m_Registry;
+            auto view = reg.view<SoundSettingsComponent, AudioSourceComponent>();
+            for (auto e : view)
+            {
+                auto& settings = view.get<SoundSettingsComponent>(e);
+                auto& src = view.get<AudioSourceComponent>(e);
+                settings.Gain = settings.Pitch = 1.0f;
+                if (!settings.SoundClass.empty())
+                    EvaluateClass(settings.SoundClass, settings.Gain, settings.Pitch);
+                SimpleAssets::Data data;
+                if (!settings.Attenuation.empty() && SimpleAssets::Load(settings.Attenuation, data))
+                {
+                    const std::string model = data.Str("Model");
+                    src.Attenuation = model == "None" ? AudioSourceComponent::AttenuationModel::None
+                                      : model == "Linear" ? AudioSourceComponent::AttenuationModel::Linear
+                                      : model == "Exponential" ? AudioSourceComponent::AttenuationModel::Exponential
+                                                               : AudioSourceComponent::AttenuationModel::Inverse;
+                    src.MinDistance = data.Float("Min Distance", src.MinDistance);
+                    src.MaxDistance = data.Float("Max Distance", src.MaxDistance);
+                    src.RolloffFactor = data.Float("Rolloff", src.RolloffFactor);
+                    src.Is3D = data.Bool("Spatialize", src.Is3D);
+                }
+                if (!settings.Concurrency.empty() && SimpleAssets::Load(settings.Concurrency, data))
+                {
+                    auto& con = reg.get_or_emplace<SoundConcurrencyComponent>(e);
+                    con.Group = settings.Concurrency;
+                    con.MaxCount = data.Int("Max Count", 4);
+                    const std::string rule = data.Str("Resolution Rule");
+                    con.Rule = rule == "Stop Farthest" ? ConcurrencyRule::StopFarthest : rule == "Stop Quietest" ? ConcurrencyRule::StopQuietest
+                               : rule == "Prevent New" ? ConcurrencyRule::PreventNew : ConcurrencyRule::StopOldest;
+                }
+                if (settings.Reverb != settings.AppliedReverb && SimpleAssets::Load(settings.Reverb, data))
+                {
+                    settings.AppliedReverb = settings.Reverb;
+                    auto& r = reg.get_or_emplace<AudioReverbFilterComponent>(e);
+                    r.DecayTime = data.Float("Decay Time", r.DecayTime);
+                    r.DecayHFRatio = data.Float("Decay HF Ratio", r.DecayHFRatio);
+                    r.Density = data.Float("Density", r.Density);
+                    r.Diffusion = data.Float("Diffusion", r.Diffusion);
+                    r.DryLevel = data.Float("Dry Level", r.DryLevel);
+                    r.Room = data.Float("Room", r.Room);
+                    r.ReverbLevel = data.Float("Reverb Level", r.ReverbLevel);
+                    src.NeedsReconnection = true;
+                }
+            }
+        }
+
+        struct Subtitle
+        {
+            std::string Speaker, Text;
+            float Remaining = 0.0f;
+        } s_Subtitle;
+    }
+
+    namespace SoundMixes
+    {
+        bool Push(const std::string& path)
+        {
+            SimpleAssets::Data data;
+            if (!SimpleAssets::Load(path, data))
+                return false;
+            for (auto& m : Mixes())
+                if (m.Path == path)
+                {
+                    m.Releasing = false;
+                    m.Time = 0.0f;
+                    return true;
+                }
+            ActiveMix mix;
+            mix.Path = path;
+            mix.FadeIn = data.Float("Fade In");
+            mix.FadeOut = data.Float("Fade Out");
+            mix.Duration = data.Float("Duration");
+            Mixes().push_back(std::move(mix));
+            return true;
+        }
+
+        bool Pop(const std::string& path)
+        {
+            for (auto& m : Mixes())
+                if (m.Path == path)
+                {
+                    m.Releasing = true;
+                    return true;
+                }
+            return false;
+        }
+
+        void Clear()
+        {
+            Mixes().clear();
+        }
+    }
+
+    namespace Dialogue
+    {
+        bool Play(const std::string& path, float volume)
+        {
+            SimpleAssets::Data data;
+            if (!SimpleAssets::Load(path, data))
+                return false;
+            if (const std::string voice = data.Str("Voice"); !voice.empty())
+                AudioOneShots::Play(SceneSerializer::ResolveAssetPath(voice), volume, 1.0f, 0.0f, "SFX");
+            s_Subtitle.Speaker = data.Str("Speaker");
+            s_Subtitle.Text = data.Str("Spoken Text");
+            float duration = data.Float("Duration");
+            if (duration <= 0.0f)
+            {
+                int words = 1;
+                for (char c : s_Subtitle.Text)
+                    words += c == ' ' ? 1 : 0;
+                duration = std::max(1.5f, (float)words / 2.5f);
+            }
+            s_Subtitle.Remaining = duration;
+            return true;
+        }
+
+        bool GetSubtitle(std::string& speaker, std::string& text)
+        {
+            if (s_Subtitle.Remaining <= 0.0f)
+                return false;
+            speaker = s_Subtitle.Speaker;
+            text = s_Subtitle.Text;
+            return true;
+        }
+
+        void Clear()
+        {
+            s_Subtitle = {};
+        }
+    }
+
     namespace AudioOcclusion
     {
         void Update(Scene& scene, float dt, double time)
         {
             auto& reg = scene.m_Registry;
+            UpdateMixes(dt);
+            s_Subtitle.Remaining = std::max(0.0f, s_Subtitle.Remaining - dt);
+            SoundCues::UpdatePending(dt);
+            ApplySoundSettings(scene);
             glm::vec3 listener(0.0f);
             entt::entity listenerEntity = entt::null;
             const bool hasListener = ListenerPosition(scene, listener, listenerEntity);
@@ -177,6 +385,17 @@ namespace Conqueror
 
     void RegisterAudioOcclusionComponents()
     {
+        {
+            using C = SoundSettingsComponent;
+            ComponentDef<C>("Sound Settings", "SoundSettingsComponent", "Audio", ICON_FA_SLIDERS)
+                .Describe("Binds sound assets to this Audio Source: Sound Attenuation, Sound Class, Sound Concurrency and Reverb Effect.")
+                .Field("Attenuation", "Attenuation", &C::Attenuation, FieldKind::Asset).Filter(".cqattenuation")
+                .Field("SoundClass", "Sound Class", &C::SoundClass, FieldKind::Asset).Filter(".cqsoundclass")
+                .Field("Concurrency", "Concurrency", &C::Concurrency, FieldKind::Asset).Filter(".cqconcurrency")
+                .Field("Reverb", "Reverb Effect", &C::Reverb, FieldKind::Asset).Filter(".cqreverb")
+                .Field("Gain", "Gain", &C::Gain).ReadOnly()
+                .Field("Pitch", "Pitch", &C::Pitch).ReadOnly();
+        }
         {
             using C = SoundOcclusionComponent;
             ComponentDef<C>("Sound Occlusion", "SoundOcclusionComponent", "Audio", ICON_FA_VOLUME_LOW)

@@ -138,6 +138,85 @@ namespace Conqueror::SimpleAssets
               Tab("Exclude Platforms", { ColE("Platform", kPlatforms) }, "The module's scripts are not compiled on these platforms."),
               Tab("Define Constraints", { Col("Symbol") }, "Compiled only when every symbol here is defined in Project Settings > Script Execution Order > Scripting Define Symbols.") });
 
+        add("SavedSearch", ".cqsearch", "Search", "~", "", ICON_FA_MAGNIFYING_GLASS, Rgb(170, 190, 220),
+            "A saved Content Browser search: double-click it to run it again.",
+            { T("Query", "", "The text typed in the Content Browser search box.") });
+
+        // Yapay zekâ
+        add("Blackboard", ".cqblackboard", "Blackboard", "AI", "", ICON_FA_DATABASE, Rgb(120, 180, 255),
+            "The memory of a Behavior Tree: named values shared by its tasks and decorators. Scripts use BlackboardSet / BlackboardGet.",
+            { Tab("Keys", { Col("Name"), ColE("Type", { "Number", "Bool", "String", "Vector" }), Col("Default") }) });
+
+        // Ses (Unreal)
+        add("SoundAttenuation", ".cqattenuation", "Sound Attenuation", "Audio", "", ICON_FA_VOLUME_LOW, Rgb(255, 170, 90),
+            "How a sound fades with distance. Assign it in a Sound Settings component.",
+            { E("Model", { "Inverse", "Linear", "Exponential", "None" }), F("Min Distance", 1.0f, "Full volume inside this distance."),
+              F("Max Distance", 50.0f, "Silent or minimum volume beyond this distance."), F("Rolloff", 1.0f), B("Spatialize", true, "Position the sound in 3D.") });
+        add("SoundClass", ".cqsoundclass", "Sound Class", "Audio", "", ICON_FA_LAYER_GROUP, Rgb(255, 170, 90),
+            "A shared volume and pitch: all Audio Sources of a class follow it, through its parent chain.",
+            { F("Volume", 1.0f, "", 0.0f, 2.0f), F("Pitch", 1.0f, "", 0.1f, 3.0f), A("Parent", { ".cqsoundclass" }, "Volume and pitch multiply through the parents.") });
+        add("SoundMix", ".cqsoundmix", "Sound Mix", "Audio", "", ICON_FA_SLIDERS, Rgb(255, 170, 90),
+            "Temporarily changes Sound Classes. Scripts call SoundMixPush(path) and SoundMixPop(path).",
+            { F("Fade In", 0.2f), F("Fade Out", 0.2f), F("Duration", 0.0f, "Pops itself after this many seconds; 0 keeps it until popped."),
+              Tab("Adjusters", { ColA("Sound Class", { ".cqsoundclass" }), ColF("Volume", "1"), ColF("Pitch", "1") }) });
+        add("SoundConcurrency", ".cqconcurrency", "Sound Concurrency", "Audio", "", ICON_FA_LAYER_GROUP, Rgb(255, 170, 90),
+            "Limits how many sounds using this asset play together.",
+            { I("Max Count", 4, "", 1, 64), E("Resolution Rule", { "Stop Oldest", "Stop Farthest", "Stop Quietest", "Prevent New" }) });
+        add("ReverbEffect", ".cqreverb", "Reverb Effect", "Audio", "", ICON_FA_WAVE_SQUARE, Rgb(255, 170, 90),
+            "Reverb settings for an Audio Source. Assign it in a Sound Settings component.",
+            { F("Decay Time", 1.49f, "Seconds.", 0.1f, 20.0f), F("Decay HF Ratio", 0.83f, "", 0.1f, 2.0f), F("Density", 100.0f, "%", 0.0f, 100.0f),
+              F("Diffusion", 100.0f, "%", 0.0f, 100.0f), F("Dry Level", 0.0f, "dB"), F("Room", -1000.0f, "dB"), F("Reverb Level", 200.0f, "dB") });
+        add("DialogueWave", ".cqdialogue", "Dialogue Wave", "Audio", "", ICON_FA_COMMENT, Rgb(255, 170, 90),
+            "A voice line with its subtitle. Scripts call DialoguePlay(path).",
+            { T("Speaker", ""), Long("Spoken Text", ""), A("Voice", { ".wav", ".mp3", ".ogg", ".flac" }, "The recorded line."), F("Duration", 0.0f, "Subtitle seconds; 0 estimates from the text.") });
+
+        // Metin (TextMeshPro karşılıkları)
+        add("FontAsset", ".cqfontasset", "Font Asset", "UI", "Text", ICON_FA_FONT, Rgb(235, 170, 90),
+            "A signed-distance font: stays sharp at any size. Use it in a Text component's Font slot.",
+            { A("Source Font", { ".ttf", ".otf" }, "The font file its glyphs come from."),
+              E("Atlas Population", { "Dynamic", "Static" }, "Dynamic adds characters as text needs them. Static keeps only the Characters list."),
+              Long("Characters", "", "Characters prepared when the font loads."),
+              Tab("Fallback Fonts", { ColA("Font", { ".ttf", ".otf" }) }, "Searched in order for characters the source font lacks."),
+              F("Line Spacing", 1.0f, "Multiplies the font's line height.", 0.5f, 3.0f) });
+        add("SpriteAsset", ".cqspriteasset", "Sprite Asset", "UI", "Text", ICON_FA_FACE_SMILE, Rgb(235, 170, 90),
+            "Inline images for rich text: write <sprite name=coin> in a Text component with Rich Text on.",
+            { Tab("Sprites", { Col("Name"), ColA("Texture", { ".png", ".jpg", ".jpeg", ".tga", ".bmp" }), ColF("Scale", "1") }) });
+        add("TextColorGradient", ".cqcolorgradient", "Color Gradient", "UI", "Text", ICON_FA_PALETTE, Rgb(235, 170, 90),
+            "A four-corner color preset for each character. Assign it to a Text component or use <gradient=Name> in rich text.",
+            { E("Mode", { "Four Corners", "Horizontal", "Vertical", "Single" }), C("Top Left"), C("Top Right"), C("Bottom Left"), C("Bottom Right") });
+        add("TextStyleSheet", ".cqtextstyle", "Text Style Sheet", "UI", "Text", ICON_FA_FILE_LINES, Rgb(235, 170, 90),
+            "Named sets of rich text tags. <style=Heading>Text</style> expands to the tags of the Heading row.",
+            { Tab("Styles", { Col("Name"), Col("Opening Tags"), Col("Closing Tags") }) });
+
+        // Eski (Legacy)
+        add("CustomFont", ".cqcustomfont", "Custom Font", "UI", "Legacy", ICON_FA_FONT, Rgb(200, 160, 110),
+            "A bitmap font from a texture grid. Use it in a Text component's Font slot.",
+            { A("Texture", { ".png", ".jpg", ".jpeg", ".tga", ".bmp" }, "Cells run left to right, top to bottom."),
+              I("Columns", 16, "", 1, 64), I("Rows", 16, "", 1, 64),
+              Long("Characters", "", "The characters in the cells, in order."),
+              F("Spacing", 0.0f, "Extra space between characters, as a fraction of the font size."),
+              F("Line Spacing", 1.0f, "", 0.5f, 3.0f),
+              Tab("Character Widths", { Col("Character"), ColF("Width", "1") }, "Character width as a fraction of the cell width.") });
+        add("GUISkin", ".cqguiskin", "GUI Skin", "UI", "Legacy", ICON_FA_PALETTE, Rgb(200, 160, 110),
+            "One look for a whole UI: add a UI Skin component to a Canvas and every widget under it uses these colors when the game plays.",
+            { A("Font", { ".ttf", ".otf", ".cqfontasset", ".cqcustomfont" }), C("Text Color", "0.1 0.1 0.12 1"),
+              C("Panel Color", "1 1 1 0.55"), A("Panel Background", { ".png", ".jpg", ".jpeg", ".tga", ".bmp" }),
+              C("Button Color", "1 1 1 1"), A("Button Background", { ".png", ".jpg", ".jpeg", ".tga", ".bmp" }),
+              C("Normal", "1 1 1 1"), C("Highlighted", "0.92 0.92 0.92 1"), C("Pressed", "0.75 0.75 0.75 1"), C("Disabled", "0.78 0.78 0.78 0.5"),
+              C("Slider Background", "0.8 0.8 0.82 1"), C("Slider Fill", "0.26 0.59 0.98 1"), C("Slider Handle", "1 1 1 1"),
+              C("Input Background", "1 1 1 1") });
+
+        // UI Toolkit
+        add("PanelSettings", ".cqpanelsettings", "Panel Settings", "UI", "UI Toolkit", ICON_FA_SLIDERS, Rgb(120, 200, 255),
+            "How UI Documents are scaled and themed. Assign it to a UI Document component.",
+            { E("Scale Mode", { "Scale With Screen Size", "Constant Pixel Size" }), V("Reference Resolution", "1920 1080 0", "Width and height (the third value is unused)."),
+              F("Match", 0.5f, "0 follows the width, 1 the height.", 0.0f, 1.0f), I("Sort Order", 0, "Higher panels draw on top."),
+              A("Theme", { ".cqtheme" }, "Style sheets applied to every document on this panel.") });
+        add("UITheme", ".cqtheme", "Theme Style Sheet", "UI", "UI Toolkit", ICON_FA_SWATCHBOOK, Rgb(120, 200, 255),
+            "Base style sheets and variables shared by every UI Document on a panel.",
+            { A("Inherits", { ".cqtheme" }, "Another theme applied first."),
+              Tab("Style Sheets", { ColA("Style Sheet", { ".cquss" }) }), Tab("Variables", { Col("Name"), Col("Value") }, "Used in style sheets as var(--name).") });
+
         return d;
     }
 }

@@ -46,6 +46,10 @@ namespace Conqueror
         static void DrawQuadCorners(const glm::vec3 positions[4], const glm::vec2 uvs[4], const std::shared_ptr<Texture2D>& texture, const glm::vec4& tintColor,
                                     float tilingFactor = 1.0f);
 
+        // Köşe başına renk (metin renk geçişleri): sıra positions ile aynı
+        static void DrawQuadCornersColors(const glm::vec3 positions[4], const glm::vec2 uvs[4], const std::shared_ptr<Texture2D>& texture, const glm::vec4 colors[4],
+                                          float tilingFactor = 1.0f);
+
         // Sprite'ın yerel uzaydaki sınırları (pivot, PPU, sayfa dilimi, çizim modu dahil)
         static bool GetSpriteLocalBounds(const struct SpriteRendererComponent& sprite, glm::vec2& outMin, glm::vec2& outMax);
         // Doku atandığında (Unity: sprite içe aktarma ayarları): .meta'daki Pixels Per Unit ve dokunun tek dilimi (9-slice) uygulanır

@@ -280,6 +280,22 @@ namespace Conqueror
         s_Data.Stats.Triangles += 2;
     }
 
+    void Renderer2D::DrawQuadCornersColors(const glm::vec3 positions[4], const glm::vec2 uvs[4], const std::shared_ptr<Texture2D>& texture, const glm::vec4 colors[4],
+                                           float tilingFactor)
+    {
+        if (!s_Data.TextureShader)
+            return;
+        if (s_Data.IndexCount + 6 > Renderer2DData::MaxIndices)
+            Flush();
+        const float texIndex = GetTextureSlot(texture);
+        for (int i = 0; i < 4; ++i)
+            s_Data.Vertices.push_back({ positions[i], colors[i], uvs[i], texIndex, tilingFactor });
+        s_Data.IndexCount += 6;
+        s_Data.Stats.QuadCount++;
+        s_Data.Stats.Vertices += 4;
+        s_Data.Stats.Triangles += 2;
+    }
+
     void Renderer2D::DrawRect(const glm::mat4& transform, const glm::vec2& mn, const glm::vec2& mx, const std::shared_ptr<Texture2D>& texture,
                               const glm::vec2& uvMin, const glm::vec2& uvMax, const glm::vec4& tintColor)
     {

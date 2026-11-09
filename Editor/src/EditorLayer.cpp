@@ -15,6 +15,9 @@
 #include "Assets/SignalReceiverInspector.h"
 #include "Assets/AnimationClipInspector.h"
 #include "Assets/AssetUI.h"
+#include "Scene/AudioOcclusion.h"
+#include "Core/Assets/SimpleAsset.h"
+#include "Assets/SimpleAssetInspector.h"
 #include "Scripting/TestRunner.h"
 #include "Renderer/SpriteAtlas.h"
 #include <GLFW/glfw3.h>
@@ -598,6 +601,10 @@ namespace Conqueror::Editor
             m_TestRunnerPanel = std::make_unique<TestRunnerPanel>();
             m_TestRunnerPanel->OnEnterPlay = [this]() { if (EditorState::Get().IsEditing()) OnPlayButtonPressed(); };
             m_TestRunnerPanel->OnOpenScript = [](const std::string& path) { if (InspectorPanel::s_OpenCodeEditor) InspectorPanel::s_OpenCodeEditor(path); };
+            SimpleAssetInspector::RegisterExtra("SavedSearch", [this](const std::string&, SimpleAssets::Data& data) {
+                if (ImGui::Button(ICON_FA_MAGNIFYING_GLASS "  Run Search") && m_ContentBrowserPanel)
+                    m_ContentBrowserPanel->SetSearch(data.Str("Query"));
+            });
             m_NodeAssetPanel = std::make_unique<NodeAssetPanel>();
             NodeAssetPanel::s_Open = [this](const std::string& path) {
                 m_NodeAssetPanel->Open(path);
@@ -637,6 +644,12 @@ namespace Conqueror::Editor
                     {
                         m_VisualScriptPanel->Open(path);
                         m_VisualScriptPanel->GetIsOpen() = true;
+                    }
+                    else if (ext == ".cqsearch" && m_ContentBrowserPanel)
+                    {
+                        SimpleAssets::Data data;
+                        if (SimpleAssets::Load(path.string(), data))
+                            m_ContentBrowserPanel->SetSearch(data.Str("Query"));
                     }
                     else if (NodeAssetPanel::IsNodeAsset(path) && m_NodeAssetPanel)
                     {
@@ -5461,6 +5474,38 @@ namespace Conqueror::Editor
             }
             err = "unknown nodeasset command";
             return false;
+        });
+        // soundinfo <varlık>: Audio Source'un çözülen ses varlığı değerleri
+        Automation::RegisterCommand("soundinfo", [this, findByName](const Args& a, std::string& err) {
+            if (a.size() < 2 || !m_ActiveScene) { err = "soundinfo <entity>"; return false; }
+            Entity e = findByName(a[1]);
+            if (!e || !e.HasComponent<AudioSourceComponent>()) { err = "no audio source"; return false; }
+            const auto& c = e.GetComponent<AudioSourceComponent>();
+            std::string line = "SOUND clip=" + c.ContainerClip + " vol=" + std::to_string(c.ContainerVolume) + " pitch=" + std::to_string(c.ContainerPitch) +
+                               " max=" + std::to_string(c.MaxDistance) + " min=" + std::to_string(c.MinDistance) + " playing=" + std::to_string((int)c.IsPlaying);
+            if (e.HasComponent<SoundSettingsComponent>())
+            {
+                const auto& ss = e.GetComponent<SoundSettingsComponent>();
+                line += " gain=" + std::to_string(ss.Gain) + " classPitch=" + std::to_string(ss.Pitch);
+            }
+            if (e.HasComponent<SoundConcurrencyComponent>())
+                line += " conMax=" + std::to_string(e.GetComponent<SoundConcurrencyComponent>().MaxCount);
+            Automation::Report(line);
+            return true;
+        });
+        // search_set <metin> | search_expect <metin>: Content Browser arama kutusu
+        Automation::RegisterCommand("search_set", [this](const Args& a, std::string&) { if (m_ContentBrowserPanel) m_ContentBrowserPanel->SetSearch(a.size() > 1 ? a[1] : ""); return true; });
+        Automation::RegisterCommand("search_expect", [this](const Args& a, std::string& err) {
+            const std::string got = m_ContentBrowserPanel ? m_ContentBrowserPanel->GetSearch() : "";
+            const std::string want = a.size() > 1 ? a[1] : "";
+            if (got != want) { err = "search is '" + got + "'"; return false; }
+            return true;
+        });
+        // open_asset <yol>: Content Browser çift tıklamasıyla aynı
+        Automation::RegisterCommand("open_asset", [this](const Args& a, std::string& err) {
+            if (a.size() < 2 || !m_ContentBrowserPanel) { err = "open_asset <path>"; return false; }
+            m_ContentBrowserPanel->OpenFile(AssetUI::Resolve(a[1]));
+            return true;
         });
         // create_asset <tür>: Content Browser sağ tık menüsündeki girişle aynı kod (geçerli klasöre); yolu raporlar
         Automation::RegisterCommand("create_asset", [this](const Args& a, std::string& err) {

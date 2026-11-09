@@ -29,6 +29,8 @@
 #include "Renderer/Utilities/Renderer3D/Material.h"
 #include "ContentBrowserPanel.h"
 #include "NodeAssetPanel.h"
+#include "UI/UIToolkit.h"
+#include "AISystem/EQS/EnvQuery.h"
 #include "Scripting/TestRunner.h"
 #include "Scripting/Visual/VisualGraph.h"
 #include "Core/Assets/SimpleAsset.h"
@@ -134,6 +136,9 @@ namespace Conqueror::Editor
             return { ICON_FA_FOLDER, IM_COL32(232, 184, 76, 255), "Folder" };
 
         const std::string ext = ToLower(path.extension().string());
+        if (ext == UIToolkit::DocumentExtension) return { ICON_FA_WINDOW_MAXIMIZE, IM_COL32(120, 200, 255, 255), "UI Document" };
+        if (ext == UIToolkit::StyleExtension) return { ICON_FA_FILE_LINES, IM_COL32(120, 200, 255, 255), "Style Sheet" };
+        if (ext == ".cqeqs") return { ICON_FA_LOCATION_CROSSHAIRS, IM_COL32(120, 180, 255, 255), "Environment Query" };
         if (ext == ".cqplayable") return { ICON_FA_FILE_CODE, IM_COL32(140, 185, 100, 255), "Playable Asset" };
         if (const SimpleAssets::Def* simple = SimpleAssets::ForExtension(ext))
             return { simple->Icon, simple->Color, simple->Label.c_str() };
@@ -1132,6 +1137,11 @@ namespace Conqueror::Editor
 
     // ------------------------------------------------------------------ Dosya işlemleri
 
+    void ContentBrowserPanel::SetSearch(const std::string& query)
+    {
+        std::snprintf(m_Search, sizeof(m_Search), "%s", query.c_str());
+    }
+
     fs::path ContentBrowserPanel::MakeUniquePath(const fs::path& desired) const
     {
         std::error_code ec;
@@ -1653,6 +1663,26 @@ namespace Conqueror::Editor
                 if (!out.good())
                     path.clear();
             }
+            else if (kind == "eqs")
+            {
+                path = MakeUniquePath(dir / "New Environment Query.cqeqs");
+                EnvQueryDesc desc;
+                EnvTest test;
+                test.Type = EnvTestType::Distance;
+                test.Weight = -1.0f;
+                desc.Tests.push_back(test);
+                if (!EnvQuery::Save(path.string(), desc))
+                    path.clear();
+            }
+            else if (kind == "uidocument" || kind == "uistyle")
+            {
+                const bool document = kind == "uidocument";
+                path = MakeUniquePath(dir / (document ? std::string("NewUIDocument") + UIToolkit::DocumentExtension : std::string("NewStyleSheet") + UIToolkit::StyleExtension));
+                std::ofstream out(path, std::ios::binary);
+                out << (document ? UIToolkit::NewDocumentTemplate() : UIToolkit::NewStyleTemplate());
+                if (!out.good())
+                    path.clear();
+            }
             else if (kind == "playableasset")
             {
                 path = MakeUniquePath(dir / "New Playable Asset.cqplayable");
@@ -1665,7 +1695,11 @@ namespace Conqueror::Editor
                 if (const SimpleAssets::Def* def = SimpleAssets::ForKind(kind.substr(7)))
                 {
                     path = MakeUniquePath(dir / ("New " + def->Label + def->Extension));
-                    if (!SimpleAssetInspector::CreateDefault(*def, path.string()))
+                    SimpleAssets::Data data = SimpleAssets::Defaults(*def);
+                    // Search: o anki arama metni kaydedilir
+                    if (def->Kind == "SavedSearch")
+                        data.Values["Query"] = m_Search;
+                    if (!SimpleAssets::Save(path.string(), *def, data))
                         path.clear();
                 }
             }

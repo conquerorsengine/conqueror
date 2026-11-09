@@ -373,6 +373,10 @@ namespace Conqueror::Editor
             "Action maps, actions and their keyboard / mouse / gamepad bindings (Unity Input Actions, Unreal Input Action\n"
             "+ Mapping Context). Double-click to edit; assign it to a Player Input component's Actions slot.");
 
+        add("AI", "", "Environment Query", ICON_FA_LOCATION_CROSSHAIRS, "eqs", "Finds the best spots or objects around an AI. Run it from a Behavior Tree task or EQSRunAsset().");
+        add("UI", "UI Toolkit", "UI Document", ICON_FA_WINDOW_MAXIMIZE, "uidocument", "UI layout in a text file (.cquxml). Show it with a UI Document component.");
+        add("UI", "UI Toolkit", "Style Sheet", ICON_FA_FILE_LINES, "uistyle", "Selectors and properties (.cquss) for UI Documents.");
+
         // Tabloyla tanımlı varlıklar
         for (const auto& def : SimpleAssets::All())
             add(def.Category, def.Submenu, def.Label, def.Icon, "simple:" + def.Kind, def.Tooltip);
@@ -403,7 +407,7 @@ namespace Conqueror::Editor
             { "Scene", ICON_FA_CLAPPERBOARD },      { "2D", ICON_FA_SHAPES },           { "Rendering", ICON_FA_CIRCLE_HALF_STROKE },
             { "Shader", ICON_FA_WAND_MAGIC_SPARKLES }, { "Physics", ICON_FA_BASKETBALL }, { "Terrain", ICON_FA_MOUNTAIN_SUN },
             { "Audio", ICON_FA_VOLUME_HIGH },       { "Animation", ICON_FA_PERSON_RUNNING }, { "Timeline", ICON_FA_FILM },
-            { "Scripting", ICON_FA_FILE_CODE },     { "Data", ICON_FA_DATABASE },       { "Input", ICON_FA_GAMEPAD },
+            { "Scripting", ICON_FA_FILE_CODE },     { "Data", ICON_FA_DATABASE },       { "Input", ICON_FA_GAMEPAD },         { "UI", ICON_FA_WINDOW_MAXIMIZE },          { "AI", ICON_FA_SITEMAP },
         };
     }
 

@@ -1,6 +1,8 @@
 #include "NodeAssetPanel.h"
 
 #include "Scripting/Visual/StateGraph.h"
+#include "Core/Audio/SoundCue.h"
+#include "AISystem/BehaviorTree/BehaviorTreeAsset.h"
 
 #include <IconsFontAwesome6.h>
 
@@ -98,10 +100,154 @@ namespace Conqueror::Editor
         }
     }
 
+    namespace
+    {
+        void RegisterSoundCue()
+        {
+            NodeAssetSchema s;
+            s.Kind = SoundCues::Kind;
+            s.Extension = SoundCues::Extension;
+            s.Title = "Sound Cue";
+            s.Icon = ICON_FA_MUSIC;
+            s.Hint = "Wave Players flow through Random, Mixer, Modulator and Delay nodes into Output. Assign the cue to an Audio Source Clip.";
+            s.MenuCategory = "Audio";
+            s.MenuTooltip = "A node graph that builds a sound each time it plays. Assign it to an Audio Source's Clip slot.";
+            s.Color = IM_COL32(255, 150, 80, 255);
+            const ImU32 source = IM_COL32(150, 92, 30, 255), logic = IM_COL32(85, 88, 98, 255), output = IM_COL32(165, 45, 45, 255);
+            const std::vector<std::string> audio = { ".wav", ".mp3", ".ogg", ".flac" };
+
+            NodeAssetType out;
+            out.Id = "output"; out.Title = "Output"; out.Category = "Output"; out.Color = output;
+            out.Inputs = { "In" }; out.Single = true; out.SingleInput = true;
+            out.Props = { Number("Volume", "1"), Number("Pitch", "1") };
+
+            NodeAssetType wave;
+            wave.Id = "wave"; wave.Title = "Wave Player"; wave.Category = "Sources"; wave.Color = source;
+            wave.Outputs = { "Out" }; wave.TitleProp = "Clip";
+            wave.Props = { Asset("Clip", audio), Flag("Looping") };
+
+            NodeAssetType random;
+            random.Id = "random"; random.Title = "Random"; random.Category = "Logic"; random.Color = logic;
+            random.Inputs = { "A", "B", "C", "D" }; random.Outputs = { "Out" };
+            random.Description = "Picks one connected input each time, by weight.";
+            random.Props = { Number("Weight A", "1"), Number("Weight B", "1"), Number("Weight C", "1"), Number("Weight D", "1"),
+                             Flag("No Repeats", "false", "Never picks the same input twice in a row.") };
+
+            NodeAssetType sequence;
+            sequence.Id = "sequence"; sequence.Title = "Sequence"; sequence.Category = "Logic"; sequence.Color = logic;
+            sequence.Inputs = { "A", "B", "C", "D" }; sequence.Outputs = { "Out" };
+            sequence.Description = "Each play takes the next connected input.";
+
+            NodeAssetType mixer;
+            mixer.Id = "mixer"; mixer.Title = "Mixer"; mixer.Category = "Logic"; mixer.Color = logic;
+            mixer.Inputs = { "A", "B", "C", "D" }; mixer.Outputs = { "Out" };
+            mixer.Description = "Plays all connected inputs together.";
+            mixer.Props = { Number("Volume A", "1"), Number("Volume B", "1"), Number("Volume C", "1"), Number("Volume D", "1") };
+
+            NodeAssetType modulator;
+            modulator.Id = "modulator"; modulator.Title = "Modulator"; modulator.Category = "Modify"; modulator.Color = logic;
+            modulator.Inputs = { "In" }; modulator.Outputs = { "Out" }; modulator.SingleInput = true;
+            modulator.Description = "Random volume and pitch on each play.";
+            modulator.Props = { Number("Volume Min", "1"), Number("Volume Max", "1"), Number("Pitch Min", "1"), Number("Pitch Max", "1") };
+
+            NodeAssetType delay;
+            delay.Id = "delay"; delay.Title = "Delay"; delay.Category = "Modify"; delay.Color = logic;
+            delay.Inputs = { "In" }; delay.Outputs = { "Out" }; delay.SingleInput = true;
+            delay.Props = { Number("Min", "0.1"), Number("Max", "0.1") };
+
+            NodeAssetType loop;
+            loop.Id = "loop"; loop.Title = "Looping"; loop.Category = "Modify"; loop.Color = logic;
+            loop.Inputs = { "In" }; loop.Outputs = { "Out" }; loop.SingleInput = true;
+
+            s.Types = { out, wave, random, sequence, mixer, modulator, delay, loop };
+            s.Populate = [](NodeAssets::File& f) {
+                int o = f.Add("output", 500.0f, 80.0f);
+                int w = f.Add("wave", 60.0f, 80.0f);
+                f.Connect(w, 0, o, 0);
+            };
+            s.Validate = [](const NodeAssets::File& f) -> std::string {
+                int outputs = 0;
+                for (const auto& n : f.Nodes)
+                    outputs += n.Type == "output" ? 1 : 0;
+                return outputs == 0 ? "Add an Output node." : "";
+            };
+            NodeAssetPanel::Register(std::move(s));
+        }
+    }
+
+    namespace
+    {
+        void RegisterBehaviorTree()
+        {
+            NodeAssetSchema s;
+            s.Kind = BehaviorTrees::Kind;
+            s.Extension = BehaviorTrees::Extension;
+            s.Title = "Behavior Tree";
+            s.Icon = ICON_FA_SITEMAP;
+            s.Hint = "Root flows down through composites and decorators to tasks; children run left to right. Add a Behavior Tree component to use it.";
+            s.MenuCategory = "AI";
+            s.MenuTooltip = "AI logic as a tree of composites, decorators and tasks. Add a Behavior Tree component to run it.";
+            s.Color = IM_COL32(120, 180, 255, 255);
+            const ImU32 composite = IM_COL32(85, 88, 98, 255), decorator = IM_COL32(118, 62, 140, 255), task = IM_COL32(45, 82, 158, 255);
+            auto make = [](const char* id, const char* title, const char* category, ImU32 color, std::vector<NodeAssetProp> props, bool hasChildren, const char* description = "") {
+                NodeAssetType t;
+                t.Id = id; t.Title = title; t.Category = category; t.Color = color; t.Description = description;
+                t.Inputs = { "In" }; t.SingleInput = true;
+                if (hasChildren) t.Outputs = { "Children" };
+                t.Props = std::move(props);
+                return t;
+            };
+            NodeAssetType root;
+            root.Id = "root"; root.Title = "Root"; root.Category = "Tree"; root.Color = IM_COL32(165, 45, 45, 255);
+            root.Outputs = { "Out" }; root.Single = true;
+            root.Props = { Asset("Blackboard", { ".cqblackboard" }, "The keys this tree can read and write.") };
+
+            const std::vector<std::string> operators = { "Is Set", "Is Not Set", "Equals", "Not Equals", "Greater", "Less" };
+            s.Types = {
+                root,
+                make("selector", "Selector", "Composites", composite, {}, true, "Runs children until one succeeds."),
+                make("sequence", "Sequence", "Composites", composite, {}, true, "Runs children until one fails."),
+                make("parallel", "Parallel", "Composites", composite, { Choice("Finish When", { "All Children Finish", "Any Child Finishes" }) }, true, "Runs all children at once."),
+                make("condition", "Blackboard Condition", "Decorators", decorator, { Text("Key"), Choice("Operator", operators), Text("Value") }, true, "Runs its child only while the key test passes."),
+                make("invert", "Invert", "Decorators", decorator, {}, true),
+                make("forcesuccess", "Force Success", "Decorators", decorator, {}, true),
+                make("cooldown", "Cooldown", "Decorators", decorator, { Number("Seconds", "1") }, true, "Fails while cooling down after the child finishes."),
+                make("loop", "Loop", "Decorators", decorator, { Number("Count", "0", "0 loops forever.") }, true),
+                make("timelimit", "Time Limit", "Decorators", decorator, { Number("Seconds", "5") }, true, "Fails if the child takes longer."),
+                make("wait", "Wait", "Tasks", task, { Number("Seconds", "1"), Number("Random Deviation", "0") }, false),
+                make("moveto", "Move To", "Tasks", task, { Text("Target Key", "", "A Vector key."), Number("Acceptance", "0.5"), Number("Speed", "3", "Used without a NavMesh Agent.") }, false),
+                make("setkey", "Set Blackboard Key", "Tasks", task, { Text("Key"), Text("Value") }, false),
+                make("eqs", "Run EQS Query", "Tasks", task, { Asset("Query", { ".cqeqs" }), Text("Result Key", "", "A Vector key receiving the best point.") }, false),
+                make("script", "Run Script Method", "Tasks", task, { Text("Method", "", "Called on this object's scripts with the delta time. Return false to fail, \"running\" to continue.") }, false),
+                make("log", "Log", "Tasks", task, { Text("Text") }, false),
+            };
+            s.Populate = [](NodeAssets::File& f) {
+                int r = f.Add("root", 300.0f, 40.0f);
+                int seq = f.Add("sequence", 300.0f, 220.0f);
+                int wait = f.Add("wait", 120.0f, 400.0f);
+                int log = f.Add("log", 480.0f, 400.0f);
+                f.Find(log)->Props["Text"] = "Hello from the Behavior Tree";
+                f.Connect(r, 0, seq, 0);
+                f.Connect(seq, 0, wait, 0);
+                f.Connect(seq, 0, log, 0);
+            };
+            s.Validate = [](const NodeAssets::File& f) -> std::string {
+                for (const auto& n : f.Nodes)
+                    if (n.Type == "root")
+                        return f.Out(n.Id).empty() ? "Connect the Root to a node." : "";
+                return "Add a Root node.";
+            };
+            s.ActiveNodes = [](const std::string& path) { return BehaviorTrees::ActiveNodes(path); };
+            NodeAssetPanel::Register(std::move(s));
+        }
+    }
+
     void RegisterBuiltinNodeAssetSchemas()
     {
         if (!NodeAssetPanel::Schemas().empty())
             return;
         RegisterStateGraph();
+        RegisterSoundCue();
+        RegisterBehaviorTree();
     }
 }

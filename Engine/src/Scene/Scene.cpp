@@ -1,4 +1,6 @@
 #include "Core/Audio/AudioRandomContainer.h"
+#include "AISystem/BehaviorTree/BehaviorTreeAsset.h"
+#include "Core/Audio/SoundCue.h"
 #include "Renderer/ShaderVariantCollection.h"
 #include "Renderer/CustomRenderTexture.h"
 #include "Scene/MeshRendererMaterial.h"
@@ -218,6 +220,9 @@ namespace Conqueror
             AudioMixer::Get().BeginPlaySession();
             // Preloaded Shaders (Project Settings > Graphics): ilk kullanımda derleme takılması olmasın
             AudioRandomContainers::ResetAll();
+            SoundCues::Reset();
+            SoundMixes::Clear();
+            Dialogue::Clear();
             ShaderVariantCollections::ResetPreloaded();
             ShaderVariantCollections::WarmUpPreloaded();
         }
@@ -1280,6 +1285,7 @@ namespace Conqueror
         {
             CQ_PROFILE_SAMPLE("AI.NavMeshAgents", AI);
             NavAgents::Update(*this, (float)ts);
+            BehaviorTrees::Update(*this, (float)ts);
         }
 
         // Video oynatıcılar (kare çözme + hedef dokular)
@@ -4875,6 +4881,8 @@ namespace Conqueror
                     audioSource.ContainerClip = pick.Clip;
                     audioSource.ContainerVolume = pick.VolumeScale;
                     audioSource.ContainerPitch = pick.PitchScale;
+                    if (pick.Loop)
+                        audioSource.Loop = true;
                     playNow = audioSource.ContainerRequest;
                     audioSource.ContainerRequest = false;
                 }
@@ -4938,8 +4946,9 @@ namespace Conqueror
             
             // Temel Ayarlar (Sound Occlusion çarpanı dahil)
             const auto* occlusion = m_Registry.try_get<SoundOcclusionComponent>(entityID);
-            source->SetVolume(audioSource.Volume * (container ? audioSource.ContainerVolume : 1.0f) * (occlusion ? occlusion->Gain : 1.0f));
-            source->SetPitch(audioSource.Pitch * (container ? audioSource.ContainerPitch : 1.0f));
+            const auto* soundSettings = m_Registry.try_get<SoundSettingsComponent>(entityID);
+            source->SetVolume(audioSource.Volume * (container ? audioSource.ContainerVolume : 1.0f) * (occlusion ? occlusion->Gain : 1.0f) * (soundSettings ? soundSettings->Gain : 1.0f));
+            source->SetPitch(audioSource.Pitch * (container ? audioSource.ContainerPitch : 1.0f) * (soundSettings ? soundSettings->Pitch : 1.0f));
             // Audio Random Container: Automatic tetikleme (Unity Pulse) ya da Loop'ta bitince sıradaki klip
             if (container && m_IsRuntimeScene && audioSource.ContainerPlays > 0)
             {
