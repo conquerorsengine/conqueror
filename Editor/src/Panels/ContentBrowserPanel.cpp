@@ -1720,7 +1720,7 @@ namespace Conqueror::Editor
                 else if (t == "struct")
                     text = "// Other scripts load it with: using " + name + ";\nstruct " + name + "\n{\n    public float value = 0.0;\n}\n";
                 else
-                    text = "using nativebridge;\n\n// Select this file and press Run in the Inspector.\nscript " + name + " : EditorUtility\n{\n    func Run()\n    {\n        Log(\"Hello from the editor\");\n    }\n}\n";
+                    text = "using nativebridge;\n\n// Select this file and press Run in the Inspector.\nscript " + name + " : EditorUtility\n{\n    func Run()\n    {\n        print(\"Hello from the editor\");\n    }\n}\n";
                 std::ofstream out(path, std::ios::binary);
                 out << text;
                 if (!out.good())

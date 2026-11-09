@@ -5516,6 +5516,15 @@ namespace Conqueror::Editor
             if (!AnimationAssets::CapturePose(a[1], data.Str("Model"), data.Str("Clip"), data.Float("Time"), data.Str("Pose Name"))) { err = "capture failed"; return false; }
             return true;
         });
+        // psinfo <varlık>: Particle System'in çözülen doku sayfası ayarları
+        Automation::RegisterCommand("psinfo", [this, findByName](const Args& a, std::string& err) {
+            if (a.size() < 2) { err = "psinfo <entity>"; return false; }
+            Entity e = findByName(a[1]);
+            if (!e || !e.HasComponent<ParticleSystemComponent>()) { err = "no particle system"; return false; }
+            const auto& ps = e.GetComponent<ParticleSystemComponent>();
+            Automation::Report("PS sheet=" + std::to_string((int)ps.TextureSheetEnabled) + " tiles=" + std::to_string(ps.Tiles.x) + "x" + std::to_string(ps.Tiles.y) + " cycles=" + std::to_string(ps.AnimationCycles) + " texture=" + ps.TexturePath);
+            return true;
+        });
         // soundinfo <varlık>: Audio Source'un çözülen ses varlığı değerleri
         Automation::RegisterCommand("soundinfo", [this, findByName](const Args& a, std::string& err) {
             if (a.size() < 2 || !m_ActiveScene) { err = "soundinfo <entity>"; return false; }
@@ -5531,6 +5540,8 @@ namespace Conqueror::Editor
             }
             if (e.HasComponent<SoundConcurrencyComponent>())
                 line += " conMax=" + std::to_string(e.GetComponent<SoundConcurrencyComponent>().MaxCount);
+            if (e.HasComponent<AudioReverbFilterComponent>())
+                line += " reverbDecay=" + std::to_string(e.GetComponent<AudioReverbFilterComponent>().DecayTime);
             Automation::Report(line);
             return true;
         });
