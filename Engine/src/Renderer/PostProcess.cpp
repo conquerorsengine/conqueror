@@ -695,13 +695,23 @@ namespace Conqueror
 
     float PostProcessStack::GetCurrentTextureLodBias()
     {
-        if (!s_Current || !s_Current->m_SceneFramebuffer || s_Current->m_RenderScale >= 0.999f)
+        if (!s_Current || !s_Current->m_SceneFramebuffer)
+            return 0.0f;
+        const float scale = s_Current->m_RenderScale;
+        // Yerel çözünürlükte zamansal kenar yumuşatma (TAA ve TAA çözümünü kullanan yöntemler: titreşim + birikim): geçmiş 16 titreşim
+        // konumunun ortalamasıdır, piksel içinde süper örnekleme gibi. Dokular piksel boyutundaki mipten örneklenince bu ortalama onları
+        // bir kez daha yumuşatıyordu: TAA'da zemin ve duvar dokuları yürürken SSAA'dan %10-21 bulanık. Bir ince mip (SSAA'nın iki kat
+        // çözünürlükte örneklediği mip): yürürken ayrıntı SSAA düzeyinde, doku titremesi SSAA'nın altında kalır
+        const bool temporalNative = scale >= 0.999f && scale <= 1.001f && s_Current->m_JitterActive;
+        if (scale >= 0.999f && !temporalNative)
             return 0.0f;
         GLint drawFBO = 0;
         glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFBO);
         if ((uint32_t)drawFBO != s_Current->m_SceneFramebuffer->GetRendererID())
             return 0.0f;
-        return std::log2(std::max(s_Current->m_RenderScale, 0.25f));
+        if (temporalNative)
+            return -1.0f;
+        return std::log2(std::max(scale, 0.25f));
     }
 
     const void* PostProcessStack::GetCurrentStack()
