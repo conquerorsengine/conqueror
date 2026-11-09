@@ -44,6 +44,9 @@ namespace Conqueror::Launcher
     // Klasör yapısı, .cqproj, başlangıç sahnesi, betikler ve addon'lar
     bool CreateProject(const NewProjectOptions& options, std::filesystem::path& outProjectDir, std::string& error);
     bool IsValidProjectName(const std::string& name, std::string* why = nullptr);
+    // Unity Hub gibi: ad o konumda boşsa adın kendisi, doluysa sıradaki ilk boş numara ("My Game (1)", "My Game (2)" ...).
+    // Silinmiş projelerin numaraları yeniden kullanılır (40 proje olsa da (1) boşsa (1))
+    std::string UniqueProjectName(const std::filesystem::path& location, const std::string& name);
 
     // HubTemplatesPro.cpp: sektör şablonları (Third Person, Top Down, Vehicle, Virtual Production, Archviz, Configurator, Crowd)
     bool IsProTemplate(const std::string& id);

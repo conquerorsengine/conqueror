@@ -26,6 +26,7 @@ namespace Conqueror::Editor
 {
     namespace
     {
+        const char* const kDefaultProjectName = "My Game";
         namespace fs = std::filesystem;
         using Launcher::GetTemplates;
         using Launcher::HubTemplate;
@@ -873,17 +874,29 @@ namespace Conqueror::Editor
             ImGui::Spacing();
         }
         ImGui::TextUnformatted("Project name");
+        // Unity Hub gibi: kullanıcı adı elle yazmadıysa kutuda bu konumdaki ilk boş ad görünür ("My Game", doluysa "My Game (1)" ...)
+        if (!m_NewNameEdited && --m_NewNameRefresh <= 0)
+        {
+            m_NewName = Launcher::UniqueProjectName(m_NewLocation, kDefaultProjectName);
+            m_NewNameRefresh = 30;
+        }
         char nameBuf[128];
         std::snprintf(nameBuf, sizeof(nameBuf), "%s", m_NewName.c_str());
         ImGui::SetNextItemWidth(-1);
         if (ImGui::InputText("##pname", nameBuf, sizeof(nameBuf)))
+        {
             m_NewName = nameBuf;
+            m_NewNameEdited = true;
+        }
         ImGui::TextUnformatted("Location");
         char locBuf[512];
         std::snprintf(locBuf, sizeof(locBuf), "%s", m_NewLocation.c_str());
         ImGui::SetNextItemWidth(-40.0f);
         if (ImGui::InputText("##ploc", locBuf, sizeof(locBuf)))
+        {
             m_NewLocation = locBuf;
+            m_NewNameRefresh = 0;
+        }
         ImGui::SameLine();
         if (ImGui::Button(ICON_FA_FOLDER "##browse", ImVec2(-1, 0)))
         {
@@ -891,6 +904,7 @@ namespace Conqueror::Editor
             if (NFD_PickFolderU8(&out, m_NewLocation.c_str()) == NFD_OKAY && out)
             {
                 m_NewLocation = out;
+                m_NewNameRefresh = 0;
                 NFD_FreePathU8(out);
             }
         }
@@ -911,13 +925,11 @@ namespace Conqueror::Editor
         ImGui::Spacing();
         std::string why;
         const bool valid = Launcher::IsValidProjectName(m_NewName, &why);
-        const fs::path target = fs::path(m_NewLocation) / m_NewName;
-        std::error_code ec;
-        const bool exists = valid && fs::exists(target, ec) && !fs::is_empty(target, ec);
+        // Yazılan ad doluysa proje sıradaki ilk boş numarayla oluşur; alttaki yol gerçek hedefi gösterir
+        const std::string finalName = valid ? Launcher::UniqueProjectName(m_NewLocation, m_NewName) : m_NewName;
+        const fs::path target = fs::path(m_NewLocation) / finalName;
         if (!valid)
             ImGui::TextColored(ImVec4(1.0f, 0.55f, 0.45f, 1.0f), "%s", why.c_str());
-        else if (exists)
-            ImGui::TextColored(ImVec4(1.0f, 0.55f, 0.45f, 1.0f), "That folder already exists and is not empty");
         else
         {
             ImGui::PushStyleColor(ImGuiCol_Text, kTextDim);
@@ -925,9 +937,13 @@ namespace Conqueror::Editor
             ImGui::PopStyleColor();
         }
         ImGui::Spacing();
-        ImGui::BeginDisabled(!valid || exists || !t);
+        ImGui::BeginDisabled(!valid || !t);
         if (AccentButton(ICON_FA_ROCKET "  Create Project", ImVec2(-1, 40.0f)))
-            CreateFromTemplate(m_TemplateId, m_NewName, m_NewLocation, true);
+        {
+            CreateFromTemplate(m_TemplateId, finalName, m_NewLocation, true);
+            m_NewNameEdited = false;
+            m_NewNameRefresh = 0;
+        }
         ImGui::EndDisabled();
         if (!m_Status.empty() && m_StatusIsError)
             ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.45f, 1.0f), "%s", m_Status.c_str());
@@ -1137,6 +1153,25 @@ namespace Conqueror::Editor
             if (a[1] == "create" && a.size() > 4)
             {
                 if (!CreateFromTemplate(a[2], a[3], a[4], false)) { err = m_Status; return false; }
+                return true;
+            }
+            // Yeni Proje sayfasının otomatik adı (test): konum, beklenen ad, kutudaki adla oluşturma
+            if (a[1] == "location" && a.size() > 2)
+            {
+                m_NewLocation = a[2];
+                m_NewNameEdited = false;
+                m_NewNameRefresh = 0;
+                return true;
+            }
+            if (a[1] == "expect_name" && a.size() > 2)
+            {
+                if (m_NewName != a[2]) { err = "project name is '" + m_NewName + "'"; return false; }
+                return true;
+            }
+            if (a[1] == "create_named")
+            {
+                if (!CreateFromTemplate(m_TemplateId, Launcher::UniqueProjectName(m_NewLocation, m_NewName), m_NewLocation, false)) { err = m_Status; return false; }
+                m_NewNameRefresh = 0;
                 return true;
             }
             if (a[1] == "expect_projects" && a.size() > 2)

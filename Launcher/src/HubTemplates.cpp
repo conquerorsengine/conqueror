@@ -546,9 +546,9 @@ script FirstPersonController : ConquerorScript
             return false;
         }
         for (unsigned char c : name)
-            if (!(std::isalnum(c) || c == ' ' || c == '_' || c == '-' || c >= 0x80))
+            if (!(std::isalnum(c) || c == ' ' || c == '_' || c == '-' || c == '(' || c == ')' || c >= 0x80))
             {
-                if (why) *why = "Use letters, numbers, spaces, '-' or '_'";
+                if (why) *why = "Use letters, numbers, spaces, parentheses, '-' or '_'";
                 return false;
             }
         if (name.front() == ' ' || name.back() == ' ')
@@ -557,6 +557,39 @@ script FirstPersonController : ConquerorScript
             return false;
         }
         return true;
+    }
+
+    std::string UniqueProjectName(const fs::path& location, const std::string& name)
+    {
+        const auto isFree = [&location](const std::string& candidate) {
+            std::error_code ec;
+            const fs::path p = location / candidate;
+            if (!fs::exists(p, ec))
+                return true;
+            return fs::is_directory(p, ec) && fs::is_empty(p, ec);
+        };
+        if (isFree(name))
+            return name;
+        // Ad zaten numaralıysa ("My Game (3)") numaralar tabandan başlar
+        std::string base = name;
+        if (!base.empty() && base.back() == ')')
+            if (const size_t open = base.rfind(" ("); open != std::string::npos && open + 3 < base.size())
+            {
+                bool digits = true;
+                for (size_t i = open + 2; i + 1 < base.size(); ++i)
+                    digits = digits && std::isdigit((unsigned char)base[i]);
+                if (digits)
+                    base.erase(open);
+            }
+        if (base != name && isFree(base))
+            return base;
+        for (int n = 1; n < 100000; ++n)
+        {
+            const std::string candidate = base + " (" + std::to_string(n) + ")";
+            if (isFree(candidate))
+                return candidate;
+        }
+        return name;
     }
 
     // Klasör şablonları (Unreal'deki gibi hazır içerik): Resources/Templates/Projects/<id>/ projeye kopyalanır,
