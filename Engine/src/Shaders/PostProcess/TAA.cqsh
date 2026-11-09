@@ -45,6 +45,8 @@ uniform sampler2D u_Velocity;     // nesne hareket vektörleri: xy uv hızı (ş
 uniform int u_HasVelocity = 0;
 uniform int u_Debug = 0;          // 1: hata ayıklama görünümü (r.TAADebug): pikselin geçmiş yolu renkle
 uniform int u_CameraStill = 0;
+uniform vec3 u_CameraPos;         // kameranın bu ve önceki karedeki konumu (dünya): yüzey noktasının bakış yönü dönüşü için
+uniform vec3 u_PrevCameraPos;
 // Zamansal yöntem çeşidi: 0 TAA (ve TXAA), 1 TSAA (iki titreşim konumu, iki karenin eşit ortalaması),
 // 2 TSSAA (id Tech 8TX: 8 titreşim konumu, standart varyans kırpması)
 uniform int u_Variant = 0;
@@ -286,10 +288,15 @@ void main()
     float centerDepth = texture(u_Depth, v_UV).r;
     vec2 velocity;
     vec4 prevClip;
+    // Bakış yönü dönüşü (radyan / kare): yüzey noktasından kameraya giden yönün bu karede döndüğü açı. Yerinde dönerken ve düz
+    // ileri yürürken ~0; kamera bir nesnenin etrafında dönerken (Viewport'ta yörünge) yörünge hızı kadar (60 FPS'te 30°/s: 0.009)
+    float viewTurn = 0.0;
     {
         vec4 world = u_InvViewProj * vec4(closestUV * 2.0 - 1.0, closestDepth * 2.0 - 1.0, 1.0);
         world /= world.w;
         prevClip = u_PrevViewProj * world;
+        if (closestDepth < 1.0 && u_CameraStill == 0)
+            viewTurn = length(cross(normalize(world.xyz - u_CameraPos), normalize(world.xyz - u_PrevCameraPos)));
         // closestUV titreşimli çizimdeki konum: titreşimsiz konumu (closestUV - u_JitterUV) önceki karenin titreşimsiz
         // konumuyla karşılaştırılır (yoksa kamera dururken bile geçmiş her karede alt piksel kayar)
         velocity = (closestUV - u_JitterUV) - (prevClip.xy / prevClip.w * 0.5 + 0.5);
@@ -309,6 +316,7 @@ void main()
     {
         velocity = objectVelocity.xy;
         prevClip = vec4(0.0, 0.0, 0.0, ViewW(closestUV, closestDepth));   // önceki uzaklık yaklaşık: bugünkü
+        viewTurn = 0.0;   // kendi hareketiyle izlenen nesne (kameraya bağlı silah: kamerayla birlikte döner)
     }
     if (centerDepth >= 1.0)
     {
@@ -462,6 +470,12 @@ void main()
     // Hareket eden nesnede (ateş eden silah, düşen küp, animasyonlu karakter) ve ayrıldığı yerde sıkı kırpma: iz yok.
     float speed = length(velocity / u_Texel);
     float stillness = 1.0 - clamp(speed / 0.75, 0.0, 1.0);
+    // Yüzeyin görünüşü değişiyor: kamera bir nesnenin etrafında dönünce yüzleri döner, biri görünür olurken komşusu kaybolur.
+    // Kırpmasız / geniş kırpmalı yollar (durağan, güvenilir, sakin, titreme tutması) kaybolan yüzün açık rengini yanındaki yüzde
+    // tutuyordu: Viewport'ta döndürürken mavi küplerin yanlarında beyazlık, durunca kayboluyordu (yerinde dönüşte yoktu). Bakış
+    // yönü karede ~0.2°'den çok dönen piksel bu yollara girmez; yürürken 10-14 m'deki küplerde dönüş 0.1-0.3°
+    float turnTrust = 1.0 - smoothstep(0.003, 0.006, viewTurn);
+    stillness *= turnTrust;
     // Hareket eden nesnenin gölgesi: pikselin dünya noktası hareket eden bir nesnenin (bu ya da önceki karedeki yerinin)
     // gölge hacmindeyse ve bu ya da önceki karede gölgede kaldıysa hareket eden nesne gibi sıkı kırpılır; aydınlığı
     // değiştiyse (gölge geldi / gitti) geçmişin ağırlığı farkla düşer. Gölge gecikmeden yeni yerine geçer, eski yerinde iz
@@ -523,7 +537,7 @@ void main()
     else if (closestDepth < 1.0 && !nearMovingShadow)
     {
         float tol = 0.03 * prevClip.w + 0.02;
-        trust = (1.0 - smoothstep(tol, 2.0 * tol, abs(storedW - prevClip.w))) * (1.0 - smoothstep(1.5, 3.0, speed));
+        trust = (1.0 - smoothstep(tol, 2.0 * tol, abs(storedW - prevClip.w))) * (1.0 - smoothstep(1.5, 3.0, speed)) * turnTrust;
     }
     float wide = max(stillness, trust);
     vec3 mean = boxMean;
@@ -655,7 +669,8 @@ void main()
     // kalkıyor ve hemen ardından gelen geri tepme hareketi küpün üstündeki çizgileri kırpıp siliyordu (beyazlaşma).
     // Tutmayı geometriyle sınırlamak uzaktaki küp aralarını da (derinlik farkı küçük) dışarıda bırakıp yanıp söndürüyordu
     float flicker = historyValid ? clamp(flickerBefore - 1.0 + ((outsideNow != outsideBefore && !lightChanged) ? 6.0 : 0.0), 0.0, 16.0) : 0.0;
-    bool hold = historyValid && flicker >= 8.0 && !restart;
+    // Yörüngede tutma da kapalı (bakış yönü karede 0.46°'den çok dönüyor); yana yürürken 14 m'deki küplerde dönüş 0.31°, tutma kalır
+    bool hold = historyValid && flicker >= 8.0 && !restart && viewTurn < 0.008;
     if (hold)
         history = rawHistory;
     // Yavaş kayan gökyüzü kenarı (yürürken kamera yatınca duvar üstü / gökyüzü kenarı karede 1 pikselden az dik kayar): kenar

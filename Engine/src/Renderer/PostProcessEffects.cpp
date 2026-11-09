@@ -475,6 +475,19 @@ namespace Conqueror
         }
         m_CameraStill = cameraStill;
         shader->SetInt("u_CameraStill", cameraStill ? 1 : 0);
+        // Kameranın bu ve önceki karedeki konumu: TAA yüzey noktasının bakış yönünün karede ne kadar döndüğüne bakar (kamera bir
+        // nesnenin etrafında dönerken geçmişe güvenen yollar kapanır). Perspektif izdüşümde göz noktası kırpma uzayında (0, 0, k, 0)
+        // noktasına gider: ters görüş-izdüşümün üçüncü sütunu
+        {
+            const auto eyeOf = [](const glm::mat4& viewProj)
+            {
+                const glm::vec4 e = glm::inverse(viewProj)[2];
+                return std::abs(e.w) > 1e-12f ? glm::vec3(e) / e.w : glm::vec3(0.0f);
+            };
+            const glm::mat4 viewProjNow = camera.Projection * camera.View;
+            shader->SetFloat3("u_CameraPos", eyeOf(viewProjNow));
+            shader->SetFloat3("u_PrevCameraPos", eyeOf(m_HasPrevViewProj ? m_PrevViewProj : viewProjNow));
+        }
         // Nokta / spot ışığın gücü bu karede değişti (namlu alevi): TAA aydınlığı değişen piksellerde geçmişe az güvenir
         shader->SetInt("u_LightingChanged", Renderer3D::ConsumeLightingChange(this) ? 1 : 0);
         // Zamansal yöntem çeşidi (TSAA / TSSAA); TXAA ve TAA ana yolu kullanır
