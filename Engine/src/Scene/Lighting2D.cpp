@@ -7,6 +7,7 @@
 #include "Core/Debug/DebugDraw.h"
 #include "Core/Serialization/SceneSerializer.h"
 #include "Renderer/Renderer2D.h"
+#include "Renderer/SpriteSheet.h"
 #include "Renderer/RHI/Shader.h"
 #include "Renderer/RHI/Texture.h"
 
@@ -32,7 +33,9 @@ namespace Conqueror
 
         struct State
         {
-            std::shared_ptr<Shader> LightShader, StencilShader;
+            std::shared_ptr<Shader> LightShader, StencilShader, NormalShader;
+            GLuint NormalFbo = 0, NormalTex = 0;
+            int NormalW = 0, NormalH = 0;
             GLuint Vao = 0, Vbo = 0;
             size_t VboCapacity = 0;
             std::vector<LightTarget> Targets;
@@ -301,6 +304,101 @@ namespace Conqueror
             return false;
         }
 
+        const char* kNormalVS = R"(#version 450 core
+layout(location = 0) in vec4 a_PosUV;
+uniform mat4 u_ViewProjection;
+out vec2 v_UV;
+void main() { v_UV = a_PosUV.zw; gl_Position = u_ViewProjection * vec4(a_PosUV.xy, 0.0, 1.0); }
+)";
+        const char* kNormalFS = R"(#version 450 core
+layout(location = 0) out vec4 FragColor;
+in vec2 v_UV;
+uniform sampler2D u_Base;
+uniform sampler2D u_Normal;
+void main()
+{
+    if (texture(u_Base, v_UV).a < 0.1) discard;
+    FragColor = vec4(texture(u_Normal, v_UV).rgb, 1.0);
+}
+)";
+
+        // Ekran boyutunda sprite normalleri: _NormalMap ikincil dokusu olan sprite'lar (a = 1), diğer pikseller a = 0
+        bool DrawSpriteNormals(Scene& scene, const glm::mat4& viewProjection, int w, int h, GLint restoreFbo)
+        {
+            auto& reg = scene.m_Registry;
+            struct Item { entt::entity E; float Z; std::shared_ptr<Texture2D> Normal; };
+            std::vector<Item> items;
+            for (auto e : reg.view<SpriteRendererComponent, TransformComponent>())
+            {
+                if (!scene.IsEntityActive(e))
+                    continue;
+                auto& sr = reg.get<SpriteRendererComponent>(e);
+                if (!sr.Texture || sr.Texture->GetPath().empty())
+                    continue;
+                auto sheet = SpriteSheet::Get(sr.Texture->GetPath());
+                if (!sheet)
+                    continue;
+                for (const auto& t : sheet->SecondaryTextures)
+                    if (t.Name == "_NormalMap" && !t.Path.empty())
+                    {
+                        auto tex = Texture2D::Create(SceneSerializer::ResolveAssetPath(t.Path));
+                        if (tex)
+                            items.push_back({ e, reg.get<TransformComponent>(e).WorldTransform[3][2], tex });
+                        break;
+                    }
+            }
+            if (items.empty())
+                return false;
+            std::sort(items.begin(), items.end(), [](const Item& a, const Item& b) { return a.Z < b.Z; });
+            State& st = S();
+            if (!st.NormalShader)
+                st.NormalShader = Shader::Create("Sprite2DNormals", kNormalVS, kNormalFS);
+            if (!st.NormalShader || !st.NormalShader->IsValid())
+                return false;
+            if (!st.NormalFbo || st.NormalW != w || st.NormalH != h)
+            {
+                if (st.NormalTex) glDeleteTextures(1, &st.NormalTex);
+                if (st.NormalFbo) glDeleteFramebuffers(1, &st.NormalFbo);
+                glCreateTextures(GL_TEXTURE_2D, 1, &st.NormalTex);
+                glTextureStorage2D(st.NormalTex, 1, GL_RGBA8, w, h);
+                glTextureParameteri(st.NormalTex, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTextureParameteri(st.NormalTex, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glCreateFramebuffers(1, &st.NormalFbo);
+                glNamedFramebufferTexture(st.NormalFbo, GL_COLOR_ATTACHMENT0, st.NormalTex, 0);
+                st.NormalW = w;
+                st.NormalH = h;
+            }
+            glBindFramebuffer(GL_FRAMEBUFFER, st.NormalFbo);
+            glViewport(0, 0, w, h);
+            glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+            glDisable(GL_BLEND);
+            st.NormalShader->Bind();
+            st.NormalShader->SetMat4("u_ViewProjection", viewProjection);
+            st.NormalShader->SetInt("u_Base", 0);
+            st.NormalShader->SetInt("u_Normal", 1);
+            for (const auto& it : items)
+            {
+                auto& sr = reg.get<SpriteRendererComponent>(it.E);
+                const glm::mat4& world = reg.get<TransformComponent>(it.E).WorldTransform;
+                glm::vec2 mn, mx, uvMin, uvMax;
+                std::shared_ptr<Texture2D> base;
+                if (!Renderer2D::GetSpriteLocalBounds(sr, mn, mx) || !Renderer2D::GetSpriteUV(sr, base, uvMin, uvMax) || !base)
+                    continue;
+                base->Bind(0);
+                it.Normal->Bind(1);
+                const glm::vec4 c[4] = { world * glm::vec4(mn.x, mn.y, 0.0f, 1.0f), world * glm::vec4(mx.x, mn.y, 0.0f, 1.0f),
+                                         world * glm::vec4(mx.x, mx.y, 0.0f, 1.0f), world * glm::vec4(mn.x, mx.y, 0.0f, 1.0f) };
+                const glm::vec2 uv[4] = { { uvMin.x, uvMin.y }, { uvMax.x, uvMin.y }, { uvMax.x, uvMax.y }, { uvMin.x, uvMax.y } };
+                std::vector<glm::vec4> verts;
+                for (int k : { 0, 1, 2, 0, 2, 3 })
+                    verts.emplace_back(c[k].x, c[k].y, uv[k].x, uv[k].y);
+                DrawTriangles(verts);
+            }
+            glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)restoreFbo);
+            return true;
+        }
+
         void SetLightUniforms(Shader& sh, const LightDraw& d, float factor)
         {
             const Light2DComponent& l = *d.L;
@@ -421,6 +519,15 @@ namespace Conqueror
                         break;
                     }
 
+                // Normal haritalı sprite'lar (en az bir ışık istiyorsa)
+                bool haveNormals = false;
+                for (auto& d : draws)
+                    if (d.L->UseNormalMap && d.L->NormalDistance > 0.0f)
+                    {
+                        haveNormals = DrawSpriteNormals(scene, viewProjection, vp[2], vp[3], prevFbo);
+                        break;
+                    }
+
                 LightTarget* t = AcquireTarget(vp[2], vp[3]);
                 glBindFramebuffer(GL_FRAMEBUFFER, t->Fbo);
                 glViewport(0, 0, vp[2], vp[3]);
@@ -489,6 +596,14 @@ namespace Conqueror
                     }
                     light.Bind();
                     light.SetMat4("u_ViewProjection", viewProjection);
+                    const bool litByNormals = haveNormals && d.L->UseNormalMap && d.L->Type == Light2DType::Point;
+                    light.SetInt("u_HasNormals", litByNormals ? 1 : 0);
+                    if (litByNormals)
+                    {
+                        light.SetFloat("u_NormalDistance", std::max(d.L->NormalDistance, 0.01f));
+                        glBindTextureUnit(1, S().NormalTex);
+                        light.SetInt("u_Normals", 1);
+                    }
                     if (shadowed)
                     {
                         glStencilFunc(GL_EQUAL, 0, 0xFF);
@@ -601,6 +716,7 @@ namespace Conqueror
             Shader& light = *S().LightShader;
             light.Bind();
             light.SetMat4("u_ViewProjection", viewProjection);
+            light.SetInt("u_HasNormals", 0);
             for (auto& d : draws)
             {
                 SetLightUniforms(light, d, std::clamp(d.L->VolumeIntensity, 0.0f, 4.0f));
@@ -744,6 +860,9 @@ namespace Conqueror
             .Field("FalloffDistance", "Falloff", &L::FalloffDistance).Range(0.0f, 100.0f, 0.01f).VisibleIf([](const L& l) { return l.Type == Light2DType::Freeform; })
             .Field("Shadows", "Shadows", &L::Shadows).Header("Shadows").VisibleIf([](const L& l) { return l.Type != Light2DType::Global; })
             .Field("ShadowStrength", "Shadow Strength", &L::ShadowStrength).Range(0.0f, 1.0f, 0.01f).VisibleIf([](const L& l) { return l.Type != Light2DType::Global && l.Shadows; })
+            .Field("UseNormalMap", "Use Normal Map", &L::UseNormalMap).Header("Normal Map").VisibleIf([](const L& l) { return l.Type == Light2DType::Point; })
+                .Tooltip("Sprites with a _NormalMap secondary texture (Sprite Editor) are shaded by this light's direction.")
+            .Field("NormalDistance", "Distance", &L::NormalDistance).Range(0.01f, 100.0f, 0.05f).VisibleIf([](const L& l) { return l.Type == Light2DType::Point && l.UseNormalMap; })
             .Field("VolumeIntensity", "Volumetric Intensity", &L::VolumeIntensity).Range(0.0f, 4.0f, 0.01f).VisibleIf([](const L& l) { return l.Type != Light2DType::Global; })
                 .Tooltip("Adds the light on top of everything, like a beam through dust or fog.");
 

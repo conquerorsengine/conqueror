@@ -4,11 +4,66 @@
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"
 #include "Terrain/TerrainComponent.h"
+#include "Core/Serialization/SceneSerializer.h"
+#include "Renderer/Renderer2D.h"
+#include "Renderer/SpriteSheet.h"
+#include "Renderer/RHI/Texture.h"
 
 #include <IconsFontAwesome6.h>
+#include <stb_image.h>
+#include <yaml-cpp/yaml.h>
 
 namespace Conqueror
 {
+    namespace
+    {
+        // Sprite'ın Custom Physics Shape'i, yoksa saydam olmayan bölgesi -> Polygon Collider 2D noktaları (Unity: bileşen eklenince)
+        void FitPolygonToSprite(Entity e)
+        {
+            if (!e.HasComponent<SpriteRendererComponent>() || !e.HasComponent<PolygonCollider2DComponent>())
+                return;
+            auto& sr = e.GetComponent<SpriteRendererComponent>();
+            if (!sr.Texture || sr.Texture->GetPath().empty())
+                return;
+            glm::vec2 mn, mx;
+            if (!Renderer2D::GetSpriteLocalBounds(sr, mn, mx))
+                return;
+            auto sheet = SpriteSheet::Get(sr.Texture->GetPath());
+            const SpriteDef* def = sheet ? sheet->FindForSprite(sr.SpriteName, glm::vec2((float)sr.Texture->GetWidth(), (float)sr.Texture->GetHeight())) : nullptr;
+            std::vector<std::vector<glm::vec2>> shapes;
+            if (def)
+                shapes = def->PhysicsShapes;
+            int w = 0, h = 0, ch = 0;
+            glm::vec4 rect = def ? def->Rect : glm::vec4(0.0f);
+            if (shapes.empty() || !def)
+            {
+                stbi_set_flip_vertically_on_load(0);
+                unsigned char* rgba = stbi_load(SceneSerializer::ResolveAssetPath(sr.Texture->GetPath()).c_str(), &w, &h, &ch, 4);
+                if (!rgba)
+                    return;
+                if (!def)
+                    rect = glm::vec4(0.0f, 0.0f, (float)w, (float)h);
+                if (shapes.empty())
+                    shapes = SpriteSheet::GenerateOutline(rgba, w, h, rect, 0.5f);
+                stbi_image_free(rgba);
+            }
+            if (shapes.empty())
+                return;
+            const glm::vec2 size(std::max(rect.z, 1.0f), std::max(rect.w, 1.0f));
+            auto& pc = e.GetComponent<PolygonCollider2DComponent>();
+            pc.Points.clear();
+            pc.ExtraPaths.clear();
+            for (size_t i = 0; i < shapes.size(); ++i)
+            {
+                std::vector<glm::vec2> local;
+                for (const auto& p : shapes[i])
+                    local.push_back(mn + (mx - mn) * (p / size));
+                if (i == 0) pc.Points = std::move(local);
+                else pc.ExtraPaths.push_back(std::move(local));
+            }
+        }
+    }
+
     namespace
     {
         const glm::vec4 kPhysicsColor{ 0.45f, 0.85f, 0.55f, 1.0f };
@@ -157,7 +212,33 @@ namespace Conqueror
         }
         {
             ComponentDef<PolygonCollider2DComponent> def("Polygon Collider 2D", "PolygonCollider2DComponent", "Physics 2D", ICON_FA_DRAW_POLYGON);
-            def.Color(k2DColor).Describe("Convex polygon (up to 8 points; concave outlines use their convex hull).")
+            def.Color(k2DColor).Describe("Polygon collider. Added to a sprite it takes the sprite's Custom Physics Shape, or its opaque outline.")
+               .OnAddedInEditor([](Entity e) { FitPolygonToSprite(e); })
+               .Action("Reset From Sprite", [](Entity e, PolygonCollider2DComponent&) { FitPolygonToSprite(e); })
+               .CustomData(
+                   [](YAML::Emitter& out, PolygonCollider2DComponent& c) {
+                       if (c.ExtraPaths.empty())
+                           return;
+                       out << YAML::Key << "ExtraPaths" << YAML::Value << YAML::BeginSeq;
+                       for (const auto& path : c.ExtraPaths)
+                       {
+                           std::vector<float> flat;
+                           for (const auto& p : path) { flat.push_back(p.x); flat.push_back(p.y); }
+                           out << YAML::Flow << flat;
+                       }
+                       out << YAML::EndSeq;
+                   },
+                   [](const YAML::Node& n, PolygonCollider2DComponent& c) {
+                       c.ExtraPaths.clear();
+                       if (auto list = n["ExtraPaths"]; list && list.IsSequence())
+                           for (const auto& path : list)
+                           {
+                               std::vector<glm::vec2> pts;
+                               for (std::size_t i = 0; i + 1 < path.size(); i += 2)
+                                   pts.push_back({ path[i].as<float>(), path[i + 1].as<float>() });
+                               c.ExtraPaths.push_back(std::move(pts));
+                           }
+                   })
                .Field("IsTrigger", "Is Trigger", &PolygonCollider2DComponent::IsTrigger)
                .Field("Offset", "Offset", &PolygonCollider2DComponent::Offset).Speed(0.01f)
                .Field("Points", "Points", &PolygonCollider2DComponent::Points).Speed(0.01f)

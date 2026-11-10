@@ -474,6 +474,12 @@ namespace Conqueror
                     std::vector<glm::vec2> poly;
                     for (auto& p : pc.Points) poly.push_back(sxf(p + pc.Offset));
                     if (poly.size() >= 3) sources.push_back(std::move(poly));
+                    for (const auto& extra : pc.ExtraPaths)
+                    {
+                        std::vector<glm::vec2> part;
+                        for (auto& p : extra) part.push_back(sxf(p + pc.Offset));
+                        if (part.size() >= 3) sources.push_back(std::move(part));
+                    }
                 }
                 if (sub.HasComponent<TilemapCollider2DComponent>() && sub.HasComponent<TilemapComponent>())
                 {
@@ -594,8 +600,9 @@ namespace Conqueror
         if (e.HasComponent<PolygonCollider2DComponent>())
         {
             auto& pc = e.GetComponent<PolygonCollider2DComponent>();
+            auto addPath = [&](const std::vector<glm::vec2>& path) {
             std::vector<glm::vec2> pts;
-            for (auto& p : pc.Points) pts.push_back(xf(p + pc.Offset));
+            for (auto& p : path) pts.push_back(xf(p + pc.Offset));
             // İçbükey ya da 8'den çok köşeli çokgen (Unity gibi): üçgenlere bölünüp her üçgen ayrı dışbükey şekil olur
             std::vector<uint32_t> tris;
             if (pts.size() >= 3 && (!Triangulate2D::IsConvex(pts) || pts.size() > B2_MAX_POLYGON_VERTICES) && Triangulate2D::Triangulate(pts, tris))
@@ -634,6 +641,10 @@ namespace Conqueror
                     registerShape(b2CreatePolygonShape(body, &d, &poly), d);
                 }
             }
+            };
+            addPath(pc.Points);
+            for (const auto& extra : pc.ExtraPaths)
+                addPath(extra);
         }
         if (e.HasComponent<EdgeCollider2DComponent>())
         {
@@ -715,7 +726,7 @@ namespace Conqueror
             if (e.HasComponent<BoxCollider2DComponent>()) { auto& c = e.GetComponent<BoxCollider2DComponent>(); HashV(h, c.Size); HashV(h, c.Offset); HashF(h, c.Density); HashF(h, c.Friction); HashF(h, c.Restitution); HashF(h, c.EdgeRadius); HashCombine(h, c.IsTrigger + 11); any = true; }
             if (e.HasComponent<CircleCollider2DComponent>()) { auto& c = e.GetComponent<CircleCollider2DComponent>(); HashF(h, c.Radius); HashV(h, c.Offset); HashF(h, c.Density); HashF(h, c.Friction); HashF(h, c.Restitution); HashCombine(h, c.IsTrigger + 13); any = true; }
             if (e.HasComponent<CapsuleCollider2DComponent>()) { auto& c = e.GetComponent<CapsuleCollider2DComponent>(); HashV(h, c.Size); HashV(h, c.Offset); HashF(h, c.Density); HashF(h, c.Friction); HashCombine(h, c.Direction * 2 + c.IsTrigger + 17); any = true; }
-            if (e.HasComponent<PolygonCollider2DComponent>()) { auto& c = e.GetComponent<PolygonCollider2DComponent>(); for (auto& pt : c.Points) HashV(h, pt); HashV(h, c.Offset); HashF(h, c.Density); HashCombine(h, c.IsTrigger + 19); any = true; }
+            if (e.HasComponent<PolygonCollider2DComponent>()) { auto& c = e.GetComponent<PolygonCollider2DComponent>(); for (auto& pt : c.Points) HashV(h, pt); for (auto& path : c.ExtraPaths) for (auto& pt : path) HashV(h, pt); HashV(h, c.Offset); HashF(h, c.Density); HashCombine(h, c.IsTrigger + 19); any = true; }
             if (e.HasComponent<EdgeCollider2DComponent>()) { auto& c = e.GetComponent<EdgeCollider2DComponent>(); for (auto& pt : c.Points) HashV(h, pt); HashV(h, c.Offset); HashF(h, c.EdgeRadius); HashCombine(h, c.Loop + 23); any = true; }
             if (e.HasComponent<SurfaceEffector2DComponent>()) HashF(h, e.GetComponent<SurfaceEffector2DComponent>().Speed);
             // Physics Material 2D (dosya değişince de yeniden kurulur)

@@ -77,6 +77,16 @@ namespace Conqueror::Editor
         m_RedoStack.clear();
         m_Dirty = false;
         m_RequestFrame = true;
+        m_PolyPath = m_PolyVertex = -1;
+        m_SelectedBone = m_SecondarySelected = -1;
+        m_SelectedVerts.clear();
+        m_BonePlacing = false;
+        m_PoseRotation.clear();
+        m_PoseOffset.clear();
+        m_SecondaryPreview.reset();
+        m_SecondaryPreviewPath.clear();
+        if (m_Mode != EditorMode::Sprite && m_Mode != EditorMode::Secondary)
+            EnsureSingleSprite();
         CQ_CORE_INFO("Sprite Editor: opened {0} ({1}x{2}, {3} sprites)", texturePath.filename().string(), w, h, m_Sheet.Sprites.size());
         return true;
     }
@@ -132,6 +142,7 @@ namespace Conqueror::Editor
         m_Sheet.Sprites = m_UndoStack.back();
         m_UndoStack.pop_back();
         m_Selected = std::min(m_Selected, (int)m_Sheet.Sprites.size() - 1);
+        ValidateModeSelection();
         MarkDirty();
     }
 
@@ -143,6 +154,7 @@ namespace Conqueror::Editor
         m_Sheet.Sprites = m_RedoStack.back();
         m_RedoStack.pop_back();
         m_Selected = std::min(m_Selected, (int)m_Sheet.Sprites.size() - 1);
+        ValidateModeSelection();
         MarkDirty();
     }
 
@@ -287,7 +299,9 @@ namespace Conqueror::Editor
             if (!m_ReadOnly && io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Y, false)) Redo();
             if (!m_ReadOnly && io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S, false)) Apply();
             if (ImGui::IsKeyPressed(ImGuiKey_F, false)) FrameAll();
-            if (!m_ReadOnly && m_Selected >= 0 && m_Selected < (int)m_Sheet.Sprites.size())
+            if (m_Mode != EditorMode::Sprite)
+                HandleModeShortcuts();
+            else if (!m_ReadOnly && m_Selected >= 0 && m_Selected < (int)m_Sheet.Sprites.size())
             {
                 if (ImGui::IsKeyPressed(ImGuiKey_Delete, false))
                 {
@@ -319,23 +333,38 @@ namespace Conqueror::Editor
     void SpriteEditorPanel::DrawToolbar()
     {
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 4.0f));
+        // Mod menüsü (Unity: sol üstteki açılır liste)
+        static const char* const kModes[] = { "Sprite Editor", "Custom Outline", "Custom Physics Shape", "Secondary Textures", "Skinning Editor" };
+        int mode = (int)m_Mode;
+        ImGui::SetNextItemWidth(186.0f);
+        if (ImGui::Combo("##EditorMode", &mode, kModes, 5))
+            SetMode((EditorMode)mode);
+        ImGui::SameLine();
         ImGui::BeginDisabled(m_ReadOnly);
-        if (ImGui::Button(ICON_FA_TABLE_CELLS " Slice " ICON_FA_CARET_DOWN))
-            ImGui::OpenPopup("##SlicePopup");
-        DrawSlicePopup();
-        ImGui::SameLine();
-        ImGui::BeginDisabled(m_Selected < 0);
-        if (ImGui::Button(ICON_FA_CROP_SIMPLE " Trim") && m_Selected >= 0)
+        if (m_Mode == EditorMode::Sprite)
         {
-            PushUndo();
-            auto& r = m_Sheet.Sprites[(size_t)m_Selected].Rect;
-            r = SpriteSheet::Trim(m_Pixels.data(), m_Width, m_Height, r);
-            MarkDirty();
+            if (ImGui::Button(ICON_FA_TABLE_CELLS " Slice " ICON_FA_CARET_DOWN))
+                ImGui::OpenPopup("##SlicePopup");
+            DrawSlicePopup();
+            ImGui::SameLine();
+            ImGui::BeginDisabled(m_Selected < 0);
+            if (ImGui::Button(ICON_FA_CROP_SIMPLE " Trim") && m_Selected >= 0)
+            {
+                PushUndo();
+                auto& r = m_Sheet.Sprites[(size_t)m_Selected].Rect;
+                r = SpriteSheet::Trim(m_Pixels.data(), m_Width, m_Height, r);
+                MarkDirty();
+            }
+            ImGui::EndDisabled();
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort | ImGuiHoveredFlags_AllowWhenDisabled))
+                ImGui::SetTooltip("Shrink the selected rect to its opaque pixels");
+            ImGui::SameLine();
         }
-        ImGui::EndDisabled();
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort | ImGuiHoveredFlags_AllowWhenDisabled))
-            ImGui::SetTooltip("Shrink the selected rect to its opaque pixels");
-        ImGui::SameLine();
+        else if (m_Mode == EditorMode::Outline || m_Mode == EditorMode::Physics)
+        {
+            DrawPolygonToolbar();
+            ImGui::SameLine();
+        }
         ImGui::BeginDisabled(m_UndoStack.empty());
         if (ImGui::Button(ICON_FA_ROTATE_LEFT)) Undo();
         ImGui::EndDisabled();
@@ -346,6 +375,9 @@ namespace Conqueror::Editor
         ImGui::EndDisabled();
 
         ImGui::SameLine(0.0f, 20.0f);
+        // Dar panelde araçlar görünüm düğmeleriyle ve Revert / Apply ile çakışmasın: görünüm düğmeleri alt satıra iner
+        if (ImGui::GetCursorPosX() + 340.0f + 200.0f > ImGui::GetWindowContentRegionMax().x)
+            ImGui::NewLine();
         ImGui::Checkbox("Pixel Grid", &m_ShowGrid);
         ImGui::SameLine();
         ImGui::SetNextItemWidth(120.0f);
@@ -467,7 +499,14 @@ namespace Conqueror::Editor
                     dl->AddRectFilled(ImVec2(x, y), ImVec2(std::min(x + cell, b.x), std::min(y + cell, b.y)),
                                       dark ? IM_COL32(52, 52, 56, 255) : IM_COL32(70, 70, 75, 255));
                 }
-            dl->AddImage((ImTextureID)(uint64_t)m_Texture->GetRendererID(), ImVec2(tmin.x, tmin.y), ImVec2(tmax.x, tmax.y), ImVec2(0, 1), ImVec2(1, 0));
+            // Secondary Textures: seçili ikincil doku gösterilir; Skinning Editor: ağı olan dilimde doku soluk, ağ üstte tam renk çizilir
+            uint32_t shownTexture = m_Texture->GetRendererID();
+            if (m_Mode == EditorMode::Secondary && m_SecondaryPreview)
+                shownTexture = m_SecondaryPreview->GetRendererID();
+            const bool dimForSkin = m_Mode == EditorMode::Skin && m_Selected >= 0 && m_Selected < (int)m_Sheet.Sprites.size() &&
+                                    !m_Sheet.Sprites[(size_t)m_Selected].Skin.Vertices.empty();
+            dl->AddImage((ImTextureID)(uint64_t)shownTexture, ImVec2(tmin.x, tmin.y), ImVec2(tmax.x, tmax.y), ImVec2(0, 1), ImVec2(1, 0),
+                         dimForSkin ? IM_COL32(255, 255, 255, 60) : IM_COL32_WHITE);
             dl->AddRect(ImVec2(tmin.x - 1, tmin.y - 1), ImVec2(tmax.x + 1, tmax.y + 1), IM_COL32(0, 0, 0, 180));
         }
 
@@ -491,6 +530,14 @@ namespace Conqueror::Editor
         const glm::vec2 mouseTex = ScreenToTex({ io.MousePos.x, io.MousePos.y });
         const glm::vec2 mouseTexSnapped = glm::clamp(glm::round(mouseTex), glm::vec2(0.0f), glm::vec2((float)m_Width, (float)m_Height));
         const float handle = 5.0f;
+
+        if (m_Mode != EditorMode::Sprite)
+        {
+            DrawModeCanvas(hovered);
+            DrawCanvasInfo(hovered, mouseTex);
+            dl->PopClipRect();
+            return;
+        }
 
         // Sprite dikdörtgenleri
         for (int i = 0; i < (int)m_Sheet.Sprites.size(); ++i)
@@ -728,6 +775,14 @@ namespace Conqueror::Editor
         if (!active && m_Drag != DragMode::None && !ImGui::IsMouseDown(ImGuiMouseButton_Left) && !ImGui::IsMouseDown(ImGuiMouseButton_Middle))
             m_Drag = DragMode::None;
 
+        DrawCanvasInfo(hovered, mouseTex);
+        dl->PopClipRect();
+    }
+
+    void SpriteEditorPanel::DrawCanvasInfo(bool hovered, const glm::vec2& mouseTex)
+    {
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        const ImVec2 canvasMax(m_CanvasMin.x + m_CanvasSize.x, m_CanvasMin.y + m_CanvasSize.y);
         // Bilgi çubuğu
         {
             char info[128];
@@ -752,12 +807,38 @@ namespace Conqueror::Editor
             dl->AddText(p, IM_COL32(255, 200, 60, 255), ICON_FA_TRIANGLE_EXCLAMATION);
             dl->AddText(ImVec2(p.x + iconW, p.y), IM_COL32(226, 226, 230, 255), msg);
         }
-        dl->PopClipRect();
+    }
+
+    void SpriteEditorPanel::DrawSpriteList()
+    {
+        if (UI::BeginSection("Sprites", true, ICON_FA_TABLE_CELLS))
+        {
+            ImGui::BeginChild("##spritelist", ImVec2(0, m_Mode == EditorMode::Sprite ? 170.0f : 96.0f), ImGuiChildFlags_Borders);
+            for (int i = 0; i < (int)m_Sheet.Sprites.size(); ++i)
+            {
+                ImGui::PushID(i);
+                const auto& s = m_Sheet.Sprites[(size_t)i];
+                // Küçük önizleme
+                float th = ImGui::GetTextLineHeight() + 4.0f;
+                glm::vec2 uv0(s.Rect.x / m_Width, (s.Rect.y + s.Rect.w) / m_Height), uv1((s.Rect.x + s.Rect.z) / m_Width, s.Rect.y / m_Height);
+                ImVec2 cur = ImGui::GetCursorScreenPos();
+                if (ImGui::Selectable("##sel", i == m_Selected, 0, ImVec2(0, th)))
+                    SelectSprite(i);
+                ImGui::GetWindowDrawList()->AddImage((ImTextureID)(uint64_t)m_Texture->GetRendererID(), ImVec2(cur.x + 2, cur.y + 1),
+                                                     ImVec2(cur.x + th, cur.y + th - 1), ImVec2(uv0.x, uv0.y), ImVec2(uv1.x, uv1.y));
+                ImGui::GetWindowDrawList()->AddText(ImVec2(cur.x + th + 6.0f, cur.y + 2.0f), ImGui::GetColorU32(ImGuiCol_Text), s.Name.c_str());
+                ImGui::PopID();
+            }
+            if (m_Sheet.Sprites.empty())
+                ImGui::TextDisabled("No sprites. Use Slice or drag on the texture.");
+            ImGui::EndChild();
+            UI::EndSection();
+        }
     }
 
     void SpriteEditorPanel::DrawSidebar()
     {
-        if (UI::BeginSection("Texture", true, ICON_FA_IMAGE))
+        if (m_Mode == EditorMode::Sprite && UI::BeginSection("Texture", true, ICON_FA_IMAGE))
         {
             UI::Text("File", "%s", m_TexturePath.filename().string().c_str());
             UI::Text("Size", "%d x %d", m_Width, m_Height);
@@ -775,28 +856,22 @@ namespace Conqueror::Editor
             UI::EndSection();
         }
 
-        if (UI::BeginSection("Sprites", true, ICON_FA_TABLE_CELLS))
+        DrawSpriteList();
+
+        if (m_Mode == EditorMode::Outline || m_Mode == EditorMode::Physics)
         {
-            ImGui::BeginChild("##spritelist", ImVec2(0, 170), ImGuiChildFlags_Borders);
-            for (int i = 0; i < (int)m_Sheet.Sprites.size(); ++i)
-            {
-                ImGui::PushID(i);
-                const auto& s = m_Sheet.Sprites[(size_t)i];
-                // Küçük önizleme
-                float th = ImGui::GetTextLineHeight() + 4.0f;
-                glm::vec2 uv0(s.Rect.x / m_Width, (s.Rect.y + s.Rect.w) / m_Height), uv1((s.Rect.x + s.Rect.z) / m_Width, s.Rect.y / m_Height);
-                ImVec2 cur = ImGui::GetCursorScreenPos();
-                if (ImGui::Selectable("##sel", i == m_Selected, 0, ImVec2(0, th)))
-                    m_Selected = i;
-                ImGui::GetWindowDrawList()->AddImage((ImTextureID)(uint64_t)m_Texture->GetRendererID(), ImVec2(cur.x + 2, cur.y + 1),
-                                                     ImVec2(cur.x + th, cur.y + th - 1), ImVec2(uv0.x, uv0.y), ImVec2(uv1.x, uv1.y));
-                ImGui::GetWindowDrawList()->AddText(ImVec2(cur.x + th + 6.0f, cur.y + 2.0f), ImGui::GetColorU32(ImGuiCol_Text), s.Name.c_str());
-                ImGui::PopID();
-            }
-            if (m_Sheet.Sprites.empty())
-                ImGui::TextDisabled("No sprites. Use Slice or drag on the texture.");
-            ImGui::EndChild();
-            UI::EndSection();
+            DrawPolygonSidebar();
+            return;
+        }
+        if (m_Mode == EditorMode::Secondary)
+        {
+            DrawSecondarySidebar();
+            return;
+        }
+        if (m_Mode == EditorMode::Skin)
+        {
+            DrawSkinSidebar();
+            return;
         }
 
         if (m_Selected >= 0 && m_Selected < (int)m_Sheet.Sprites.size() && UI::BeginSection("Selected Sprite", true, ICON_FA_OBJECT_UNGROUP))

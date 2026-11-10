@@ -9,6 +9,7 @@
 #include "Core/Utils/Crypto.h"
 #include "Core/Logging/Log.h"
 #include "Renderer/Renderer2D.h"
+#include "Renderer/SpriteSheet.h"
 #include "Renderer/RHI/Texture.h"
 
 #include <IconsFontAwesome6.h>
@@ -76,7 +77,7 @@ namespace Conqueror
         {
             std::string out;
             auto put = [&](const void* p, size_t n) { out.append((const char*)p, n); };
-            const uint32_t version = 1, bones = (uint32_t)s.BonePaths.size(), verts = (uint32_t)s.Vertices.size();
+            const uint32_t version = 2, bones = (uint32_t)s.BonePaths.size(), verts = (uint32_t)s.Vertices.size();
             put(&version, 4);
             put(&bones, 4);
             for (uint32_t i = 0; i < bones; ++i)
@@ -97,6 +98,10 @@ namespace Conqueror
                 put(&s.BoneIndex[i], sizeof(glm::ivec4));
                 put(&s.BoneWeight[i], sizeof(glm::vec4));
             }
+            const uint32_t indices = (uint32_t)s.Indices.size();
+            put(&indices, 4);
+            if (indices)
+                put(s.Indices.data(), indices * sizeof(uint32_t));
             return out;
         }
 
@@ -105,7 +110,7 @@ namespace Conqueror
             size_t at = 0;
             auto get = [&](void* p, size_t n) { if (at + n > data.size()) return false; std::memcpy(p, data.data() + at, n); at += n; return true; };
             uint32_t version = 0, bones = 0, verts = 0;
-            if (!get(&version, 4) || version != 1 || !get(&bones, 4) || bones > 4096)
+            if (!get(&version, 4) || (version != 1 && version != 2) || !get(&bones, 4) || bones > 4096)
                 return false;
             SpriteSkinComponent t;
             for (uint32_t i = 0; i < bones; ++i)
@@ -131,6 +136,16 @@ namespace Conqueror
                 if (!get(&t.Vertices[i], sizeof(glm::vec2)) || !get(&t.UVs[i], sizeof(glm::vec2)) || !get(&t.BoneIndex[i], sizeof(glm::ivec4)) ||
                     !get(&t.BoneWeight[i], sizeof(glm::vec4)))
                     return false;
+            if (version >= 2)
+            {
+                uint32_t indices = 0;
+                if (!get(&indices, 4) || indices > 1u << 24)
+                    return false;
+                t.Indices.resize(indices);
+                if (indices && !get(t.Indices.data(), indices * sizeof(uint32_t)))
+                    return false;
+            }
+            s.Indices = std::move(t.Indices);
             s.BonePaths = std::move(t.BonePaths);
             s.BindInverse = std::move(t.BindInverse);
             s.Vertices = std::move(t.Vertices);
@@ -228,6 +243,96 @@ namespace Conqueror
             }
         }
 
+        // Sprite'ın (seçili dilim, yoksa kemikli ilk dilim) Skinning Editor verisi
+        const SpriteDef* SliceWithSkin(const SpriteRendererComponent& sprite)
+        {
+            if (!sprite.Texture || sprite.Texture->GetPath().empty())
+                return nullptr;
+            auto sheet = SpriteSheet::Get(sprite.Texture->GetPath());
+            if (!sheet)
+                return nullptr;
+            auto valid = [](const SpriteDef& d) { return !d.Skin.Bones.empty() && !d.Skin.Vertices.empty() && d.Skin.BoneIndex.size() == d.Skin.Vertices.size(); };
+            if (!sprite.SpriteName.empty())
+            {
+                const SpriteDef* d = sheet->Find(sprite.SpriteName);
+                return d && valid(*d) ? d : nullptr;
+            }
+            for (const auto& d : sheet->Sprites)
+                if (valid(d))
+                    return &d;
+            return nullptr;
+        }
+
+        bool CreateBones(Scene& scene, entt::entity entity, std::string& error)
+        {
+            Entity e(entity, &scene);
+            if (!e || !e.HasComponent<SpriteSkinComponent>() || !e.HasComponent<SpriteRendererComponent>())
+            {
+                error = "Sprite Skin needs a Sprite Renderer on the same object.";
+                return false;
+            }
+            auto& sprite = e.GetComponent<SpriteRendererComponent>();
+            const SpriteDef* def = SliceWithSkin(sprite);
+            if (!def)
+            {
+                error = "The sprite has no bones and weights yet: open Sprite Editor > Skinning Editor.";
+                return false;
+            }
+            glm::vec2 mn, mx;
+            if (!Renderer2D::GetSpriteLocalBounds(sprite, mn, mx))
+            {
+                error = "The sprite has no size (assign a texture).";
+                return false;
+            }
+            auto& skin = e.GetComponent<SpriteSkinComponent>();
+            // Önceki kurulumun kökü
+            if (Entity old = skin.RootBone ? scene.FindEntityByUUID(skin.RootBone) : Entity{})
+                if (old.GetParent() == e && old.GetComponent<TagComponent>().Tag == "Bones")
+                    scene.DestroyEntity(old);
+            const glm::vec2 rect(std::max(def->Rect.z, 1.0f), std::max(def->Rect.w, 1.0f));
+            auto toLocal = [&](const glm::vec2& px) { return mn + (mx - mn) * (px / rect); };
+            Entity root = scene.CreateEntity("Bones");
+            scene.SetEntityParent(root, e, false);
+            auto& rt = root.GetComponent<TransformComponent>();
+            rt.Position = glm::vec3(0.0f);
+            rt.Rotation = glm::vec3(0.0f);
+            rt.Scale = glm::vec3(1.0f);
+            const auto& bones = def->Skin.Bones;
+            std::vector<Entity> created(bones.size());
+            std::vector<float> angles(bones.size(), 0.0f);
+            std::function<void(int)> make = [&](int i) {
+                if (created[(size_t)i])
+                    return;
+                const SpriteBone& b = bones[(size_t)i];
+                const glm::vec2 a = toLocal(b.Position), tip = toLocal(b.Tip);
+                const float angle = std::atan2(tip.y - a.y, tip.x - a.x);
+                angles[(size_t)i] = angle;
+                Entity parent = root;
+                glm::vec2 local = a;
+                float parentAngle = 0.0f;
+                if (b.Parent >= 0 && b.Parent < (int)bones.size() && b.Parent != i)
+                {
+                    make(b.Parent);
+                    parent = created[(size_t)b.Parent];
+                    parentAngle = angles[(size_t)b.Parent];
+                    const glm::vec2 d = a - toLocal(bones[(size_t)b.Parent].Position);
+                    local = glm::vec2(d.x * std::cos(-parentAngle) - d.y * std::sin(-parentAngle), d.x * std::sin(-parentAngle) + d.y * std::cos(-parentAngle));
+                }
+                Entity be = scene.CreateEntity(b.Name);
+                scene.SetEntityParent(be, parent, false);
+                auto& t = be.GetComponent<TransformComponent>();
+                t.Position = glm::vec3(local, 0.0f);
+                t.Rotation = glm::vec3(0.0f, 0.0f, angle - parentAngle);
+                t.Scale = glm::vec3(1.0f);
+                be.AddComponent<Bone2DComponent>().Length = glm::length(tip - a);
+                created[(size_t)i] = be;
+            };
+            for (int i = 0; i < (int)bones.size(); ++i)
+                make(i);
+            skin.RootBone = root.GetComponent<IDComponent>().ID;
+            return Bind(scene, entity, error);
+        }
+
         void Unbind(SpriteSkinComponent& s)
         {
             s.BonePaths.clear();
@@ -236,6 +341,7 @@ namespace Conqueror
             s.UVs.clear();
             s.BoneIndex.clear();
             s.BoneWeight.clear();
+            s.Indices.clear();
             s.BoundGridX = s.BoundGridY = 0;
             s.BoundBones = s.BoundVertices = 0;
         }
@@ -289,6 +395,46 @@ namespace Conqueror
             }
             const glm::mat4 spriteWorld = scene.ComputeWorldMatrix(entity);
             Unbind(skin);
+            // Skinning Editor verisi varsa onun ağı ve ağırlıkları kullanılır (kemikler ada göre eşlenir)
+            if (const SpriteDef* def = SliceWithSkin(sprite))
+            {
+                const auto& data = def->Skin;
+                std::vector<int> map(data.Bones.size(), -1);
+                for (size_t b = 0; b < data.Bones.size(); ++b)
+                    for (size_t i = 0; i < bones.size(); ++i)
+                    {
+                        const size_t cut = bones[i].Path.find_last_of('/');
+                        const std::string leaf = cut == std::string::npos ? bones[i].Path : bones[i].Path.substr(cut + 1);
+                        if (leaf == data.Bones[b].Name)
+                            map[b] = (int)i;
+                    }
+                if (std::find(map.begin(), map.end(), -1) == map.end())
+                {
+                    for (const auto& b : bones)
+                    {
+                        skin.BonePaths.push_back(b.Path);
+                        skin.BindInverse.push_back(glm::inverse(b.World) * spriteWorld);
+                    }
+                    const glm::vec2 rect(std::max(def->Rect.z, 1.0f), std::max(def->Rect.w, 1.0f));
+                    for (size_t v = 0; v < data.Vertices.size(); ++v)
+                    {
+                        const glm::vec2 f = data.Vertices[v] / rect;
+                        skin.Vertices.push_back(mn + (mx - mn) * f);
+                        skin.UVs.push_back(f);
+                        glm::ivec4 idx(-1);
+                        for (int k = 0; k < 4; ++k)
+                            if (data.BoneIndex[v][k] >= 0 && data.BoneIndex[v][k] < (int)map.size())
+                                idx[k] = map[(size_t)data.BoneIndex[v][k]];
+                        skin.BoneIndex.push_back(idx);
+                        skin.BoneWeight.push_back(data.BoneWeight[v]);
+                    }
+                    skin.Indices = data.Indices;
+                    skin.BoundGridX = skin.BoundGridY = 1;
+                    skin.BoundBones = (int)skin.BonePaths.size();
+                    skin.BoundVertices = (int)skin.Vertices.size();
+                    return true;
+                }
+            }
             const int gx = std::clamp(skin.GridX, 1, 64), gy = std::clamp(skin.GridY, 1, 64);
             skin.BoundGridX = gx;
             skin.BoundGridY = gy;
@@ -336,7 +482,7 @@ namespace Conqueror
         {
             auto* skin = scene.m_Registry.try_get<SpriteSkinComponent>(entity);
             if (!skin || skin->BonePaths.empty() || skin->BoundGridX <= 0 || skin->BoundGridY <= 0 ||
-                (int)skin->Vertices.size() != (skin->BoundGridX + 1) * (skin->BoundGridY + 1))
+                (skin->Indices.empty() && (int)skin->Vertices.size() != (skin->BoundGridX + 1) * (skin->BoundGridY + 1)))
                 return false;
             Entity root = skin->RootBone ? scene.FindEntityByUUID(skin->RootBone) : Entity{};
             if (!root)
@@ -374,6 +520,19 @@ namespace Conqueror
             }
             const int gx = skin->BoundGridX, gy = skin->BoundGridY;
             auto uvAt = [&](size_t v) { return uvMin + (uvMax - uvMin) * skin->UVs[v]; };
+            if (!skin->Indices.empty())
+            {
+                for (size_t t = 0; t + 2 < skin->Indices.size(); t += 3)
+                {
+                    const uint32_t a = skin->Indices[t], b = skin->Indices[t + 1], c = skin->Indices[t + 2];
+                    if (a >= n || b >= n || c >= n)
+                        continue;
+                    const glm::vec3 corners[4] = { pos[a], pos[b], pos[c], pos[c] };
+                    const glm::vec2 uvs[4] = { uvAt(a), uvAt(b), uvAt(c), uvAt(c) };
+                    Renderer2D::DrawQuadCorners(corners, uvs, tex, color);
+                }
+                return true;
+            }
             for (int y = 0; y < gy; ++y)
                 for (int x = 0; x < gx; ++x)
                 {
@@ -420,6 +579,11 @@ namespace Conqueror
                 .Field("RootBone", "Root Bone", &C::RootBone)
                 .Field("GridX", "Grid Columns", &C::GridX).Range(1.0f, 64.0f, 1.0f)
                 .Field("GridY", "Grid Rows", &C::GridY).Range(1.0f, 64.0f, 1.0f)
+                .Action("Create Bones", [](Entity e, C&) {
+                    std::string err;
+                    if (e.GetScene() && !SpriteAnimation2D::CreateBones(*e.GetScene(), (entt::entity)e, err))
+                        CQ_CORE_WARN("Sprite Skin: {0}", err);
+                })
                 .Action("Bind Bones", [](Entity e, C&) {
                     std::string err;
                     if (e.GetScene() && !SpriteAnimation2D::Bind(*e.GetScene(), (entt::entity)e, err))

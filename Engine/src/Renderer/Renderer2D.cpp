@@ -330,6 +330,7 @@ namespace Conqueror
             glm::vec4 BorderPx;
             float PPU;
             glm::vec2 TexSize;
+            const std::vector<glm::vec2>* Outline = nullptr;   // Custom Outline üçgenleri (piksel, dilime göre)
         };
 
         bool ResolveSprite(const SpriteRendererComponent& sprite, SpriteGeometry& g)
@@ -341,15 +342,21 @@ namespace Conqueror
             g.Pivot = sprite.Pivot;
             g.BorderPx = sprite.Border;
             g.PPU = sprite.PixelsPerUnit > 0.0f ? sprite.PixelsPerUnit : 100.0f;
-            if (!sprite.SpriteName.empty() && !sprite.Texture->GetPath().empty())
+            if (!sprite.Texture->GetPath().empty())
             {
                 auto sheet = SpriteSheet::Get(sprite.Texture->GetPath());
-                if (const SpriteDef* def = sheet ? sheet->Find(sprite.SpriteName) : nullptr)
+                if (const SpriteDef* def = sheet ? sheet->FindForSprite(sprite.SpriteName, g.TexSize) : nullptr)
                 {
-                    g.RectPx = def->Rect;
-                    g.Pivot = def->Pivot;
-                    g.BorderPx = def->Border;
-                    g.PPU = sheet->PixelsPerUnit > 0.0f ? sheet->PixelsPerUnit : 100.0f;
+                    // Sprite Mode: Single (ad boş, tek dilim tüm doku): boyut ve pivot bileşenden, yalnız çizim ağı dilimden
+                    if (!sprite.SpriteName.empty())
+                    {
+                        g.RectPx = def->Rect;
+                        g.Pivot = def->Pivot;
+                        g.BorderPx = def->Border;
+                        g.PPU = sheet->PixelsPerUnit > 0.0f ? sheet->PixelsPerUnit : 100.0f;
+                    }
+                    if (!sheet->FullRectMesh && !def->OutlineTriangles.empty() && (sprite.Rect.z <= 0.0f || !sprite.SpriteName.empty()))
+                        g.Outline = &def->OutlineTriangles;
                 }
             }
             return g.RectPx.z > 0.0f && g.RectPx.w > 0.0f;
@@ -456,6 +463,30 @@ namespace Conqueror
         if (sprite.DrawMode == SpriteDrawMode::Simple)
         {
             glm::vec2 mn = -g.Pivot * nativeSize;
+            if (g.Outline)
+            {
+                // Custom Outline (Mesh Type: Tight): yalnız çokgenin içi çizilir; çevrilmiş sprite'ta çokgen de çevrilir
+                const glm::vec2 rectSize(std::max(g.RectPx.z, 1.0f), std::max(g.RectPx.w, 1.0f));
+                auto corner = [&](const glm::vec2& px, glm::vec3& pos, glm::vec2& uv) {
+                    glm::vec2 f = px / rectSize;
+                    if (sprite.FlipX) f.x = 1.0f - f.x;
+                    if (sprite.FlipY) f.y = 1.0f - f.y;
+                    pos = glm::vec3(transform * glm::vec4(mn + nativeSize * f, 0.0f, 1.0f));
+                    uv = uvMin + (uvMax - uvMin) * f;
+                };
+                for (size_t t = 0; t + 2 < g.Outline->size(); t += 3)
+                {
+                    glm::vec3 p[4];
+                    glm::vec2 uv[4];
+                    corner((*g.Outline)[t], p[0], uv[0]);
+                    corner((*g.Outline)[t + 1], p[1], uv[1]);
+                    corner((*g.Outline)[t + 2], p[2], uv[2]);
+                    p[3] = p[2];
+                    uv[3] = uv[2];
+                    DrawQuadCorners(p, uv, tex, tintColor);
+                }
+                return;
+            }
             DrawRect(transform, mn, mn + nativeSize, tex, uvMin, uvMax, tintColor);
             return;
         }

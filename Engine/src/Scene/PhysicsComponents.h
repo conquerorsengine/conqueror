@@ -227,6 +227,7 @@ namespace Conqueror
     {
         glm::vec2 Offset{ 0.0f };
         std::vector<glm::vec2> Points{ { -0.5f, -0.5f }, { 0.5f, -0.5f }, { 0.5f, 0.5f }, { -0.5f, 0.5f } };
+        std::vector<std::vector<glm::vec2>> ExtraPaths;   // sprite'ın fizik şeklindeki diğer parçalar
         float Density = 1.0f;
         float Friction = 0.4f;
         std::string PhysicsMaterial;   // .cqphysmat2d

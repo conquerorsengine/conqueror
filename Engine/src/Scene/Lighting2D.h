@@ -44,6 +44,9 @@ namespace Conqueror
         bool Shadows = false;
         float ShadowStrength = 0.8f;      // 0..1 (1 = tam karanlık)
 
+        // Normal haritası: Sprite Editor > Secondary Textures'taki _NormalMap dokuları bu ışığa tepki verir (Point / Spot)
+        bool UseNormalMap = false;
+        float NormalDistance = 3.0f;      // ışığın sprite düzleminden yüksekliği (dünya birimi)
         float VolumeIntensity = 0.0f;     // sisli ortamda görünen ışık hüzmesi (sprite'ların üstüne eklenir)
 
         // Çalışma zamanı

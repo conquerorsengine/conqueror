@@ -45,6 +45,7 @@ namespace Conqueror
         std::vector<glm::vec2> UVs;           // sprite dikdörtgeni içindeki oran (0..1)
         std::vector<glm::ivec4> BoneIndex;    // köşe başına en çok 4 kemik (-1 yok)
         std::vector<glm::vec4> BoneWeight;
+        std::vector<uint32_t> Indices;        // Skinning Editor ağı (boşsa ızgara)
         int BoundGridX = 0, BoundGridY = 0;
         // Bilgi
         int BoundBones = 0;
@@ -57,6 +58,8 @@ namespace Conqueror
         CQ_API void Update(Scene& scene);
         // Sprite Skin bağlıysa deforme ağı çizer (true); değilse çağıran normal sprite çizer
         CQ_API bool DrawSkinned(Scene& scene, entt::entity entity, SpriteRendererComponent& sprite, const glm::vec4& color);
+        // Sprite'ın Skinning Editor kemiklerinden Bone 2D nesneleri kurar ve bağlar (Unity Sprite Skin > Create Bones)
+        CQ_API bool CreateBones(Scene& scene, entt::entity entity, std::string& error);
         // Şimdiki pozda kemikleri bağla: ızgara ağ + otomatik ağırlıklar
         CQ_API bool Bind(Scene& scene, entt::entity entity, std::string& error);
         CQ_API void Unbind(SpriteSkinComponent& skin);

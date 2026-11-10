@@ -3873,6 +3873,65 @@ namespace Conqueror::Editor
                 if ((int)se.GetSheet().Sprites.size() != want) { err = "sprite count " + std::to_string(se.GetSheet().Sprites.size()) + " != " + a[2]; return false; }
                 return true;
             }
+            auto F = [&](size_t i) { return (float)std::atof(a[i].c_str()); };
+            using EM = SpriteEditorPanel::EditorMode;
+            using ST = SpriteEditorPanel::SkinTool;
+            if (a[1] == "mode" && a.size() > 2)
+            {
+                static const std::map<std::string, EM> modes = { { "sprite", EM::Sprite }, { "outline", EM::Outline }, { "physics", EM::Physics }, { "secondary", EM::Secondary }, { "skin", EM::Skin } };
+                auto it = modes.find(a[2]);
+                if (it == modes.end()) { err = "mode sprite|outline|physics|secondary|skin"; return false; }
+                se.SetMode(it->second);
+                return true;
+            }
+            if (a[1] == "select" && a.size() > 2) { se.SelectSprite(std::atoi(a[2].c_str())); return true; }
+            if (a[1] == "generate") { se.GenerateShapes(a.size() > 2 ? F(2) : 0.5f); return true; }
+            if ((a[1] == "click" && a.size() > 3) || (a[1] == "drag" && a.size() > 5))
+            {
+                const glm::vec2 p0 = se.CanvasPoint({ F(2), F(3) });
+                if (a[1] == "click") { Automation::QueueMouseClick(p0.x, p0.y); return true; }
+                const glm::vec2 p1 = se.CanvasPoint({ F(4), F(5) });
+                Automation::QueueMouseDrag(p0.x, p0.y, p1.x, p1.y, 16);
+                return true;
+            }
+            if (a[1] == "expect_shapes" && a.size() > 2)
+            {
+                const int selected = se.GetSelectedSprite();
+                if (selected < 0 || selected >= (int)se.GetSheet().Sprites.size()) { err = "no selected sprite"; return false; }
+                const auto& def = se.GetSheet().Sprites[(size_t)selected];
+                const auto& shapes = se.GetMode() == EM::Physics ? def.PhysicsShapes : def.Outlines;
+                size_t points = 0;
+                for (const auto& shape : shapes) points += shape.size();
+                Automation::Report("SHAPES " + std::to_string(shapes.size()) + " POINTS " + std::to_string(points));
+                if ((int)shapes.size() < std::atoi(a[2].c_str())) { err = "shapes " + std::to_string(shapes.size()) + " < " + a[2]; return false; }
+                if (a.size() > 3 && (int)points != std::atoi(a[3].c_str())) { err = "points " + std::to_string(points) + " != " + a[3]; return false; }
+                return true;
+            }
+            if (a[1] == "secondary" && a.size() > 3) { se.AddSecondaryTexture(a[2], a[3]); return true; }
+            if (a[1] == "tool" && a.size() > 2)
+            {
+                static const std::map<std::string, ST> tools = { { "pose", ST::PreviewPose }, { "edit_bone", ST::EditBone }, { "create_bone", ST::CreateBone }, { "split_bone", ST::SplitBone },
+                    { "auto_geometry", ST::AutoGeometry }, { "edit_geometry", ST::EditGeometry }, { "create_vertex", ST::CreateVertex },
+                    { "auto_weights", ST::AutoWeights }, { "weight_slider", ST::WeightSlider }, { "weight_brush", ST::WeightBrush } };
+                auto it = tools.find(a[2]);
+                if (it == tools.end()) { err = "unknown skin tool"; return false; }
+                se.SetSkinTool(it->second);
+                return true;
+            }
+            if (a[1] == "bone" && a.size() > 5) { se.SkinAddBone({ F(2), F(3) }, { F(4), F(5) }, a.size() > 6 ? std::atoi(a[6].c_str()) : -1); return true; }
+            if (a[1] == "auto_geometry") { se.SkinAutoGeometry(a.size() > 2 ? std::atoi(a[2].c_str()) : 12, 1); return true; }
+            if (a[1] == "auto_weights") { se.SkinAutoWeights(); return true; }
+            if (a[1] == "pose" && a.size() > 3) { se.SkinSetPose(std::atoi(a[2].c_str()), F(3)); return true; }
+            if (a[1] == "expect_skin" && a.size() > 3)
+            {
+                const int selected = se.GetSelectedSprite();
+                if (selected < 0 || selected >= (int)se.GetSheet().Sprites.size()) { err = "no selected sprite"; return false; }
+                const auto& skin = se.GetSheet().Sprites[(size_t)selected].Skin;
+                Automation::Report("SKIN bones " + std::to_string(skin.Bones.size()) + " vertices " + std::to_string(skin.Vertices.size()) + " triangles " + std::to_string(skin.Indices.size() / 3));
+                if ((int)skin.Bones.size() != std::atoi(a[2].c_str())) { err = "bones " + std::to_string(skin.Bones.size()) + " != " + a[2]; return false; }
+                if ((int)skin.Vertices.size() < std::atoi(a[3].c_str())) { err = "vertices " + std::to_string(skin.Vertices.size()) + " < " + a[3]; return false; }
+                return true;
+            }
             err = "unknown sprite_editor command";
             return false;
         });
