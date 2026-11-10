@@ -37,6 +37,7 @@
 #include "MaterialEditorUI.h"
 #include "Renderer/RHI/Texture.h"
 #include "Renderer/RHI/TextureSettings.h"
+#include "Renderer/SpriteSheet.h"
 #include "Core/Logging/Log.h"
 #include "Core/Animation/AnimationController.h"
 #include "Core/Serialization/PrefabSerializer.h"
@@ -265,6 +266,31 @@ namespace Conqueror::Editor::AssetInspector
         ImGui::SameLine();
         ImGui::TextDisabled("Texture Import Settings");
         ImGui::Separator();
+
+        // İçerik Tarayıcısı > okundan seçilen dilim: adı, boyutu ve önizlemesi
+        if (const std::string& sliceName = EditorState::Get().GetSelectedAssetSlice(); !sliceName.empty())
+            if (auto sheet = SpriteSheet::Get(path))
+                if (const SpriteDef* slice = sheet->Find(sliceName))
+                {
+                    if (UI::BeginSection("Sprite", true, ICON_FA_OBJECT_UNGROUP))
+                    {
+                        UI::Text("Name", "%s", slice->Name.c_str());
+                        UI::Text("Rect", "%d, %d  -  %d x %d", (int)slice->Rect.x, (int)slice->Rect.y, (int)slice->Rect.z, (int)slice->Rect.w);
+                        UI::Text("Pivot", "%.2f, %.2f", slice->Pivot.x, slice->Pivot.y);
+                        if (auto texture = Texture2D::Create(path); texture && texture->GetWidth() > 0 && texture->GetHeight() > 0 && slice->Rect.z > 0.0f && slice->Rect.w > 0.0f)
+                        {
+                            const float W = (float)texture->GetWidth(), H = (float)texture->GetHeight();
+                            const float maxW = ImGui::GetContentRegionAvail().x, maxH = 140.0f;
+                            const float scale = std::min(maxW / slice->Rect.z, maxH / slice->Rect.w);
+                            const ImVec2 size(slice->Rect.z * scale, slice->Rect.w * scale);
+                            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (maxW - size.x) * 0.5f);
+                            ImGui::Image((ImTextureID)(uint64_t)texture->GetRendererID(), size, ImVec2(slice->Rect.x / W, (slice->Rect.y + slice->Rect.w) / H),
+                                         ImVec2((slice->Rect.x + slice->Rect.z) / W, slice->Rect.y / H));
+                        }
+                        UI::EndSection();
+                    }
+                    ImGui::Separator();
+                }
 
         // Packages varlıkları değiştirilemez (Unity: içe aktarma ayarları kilitli)
         const bool readOnly = ContentBrowserPanel::IsReadOnly(path);

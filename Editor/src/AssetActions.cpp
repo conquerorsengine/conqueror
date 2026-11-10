@@ -1,6 +1,8 @@
 #include "Renderer/Renderer2D.h"
 #include "Panels/MaterialEditorUI.h"
 #include "AssetActions.h"
+#include "Renderer/RHI/TextureSettings.h"
+#include "Panels/ContentBrowserPanel.h"
 #include "EditorState.h"
 #include "Scripting/DataAssets.h"
 #include "Scene/Scene.h"
@@ -129,7 +131,17 @@ namespace Conqueror::Editor::AssetActions
         return false;
     }
 
-    Entity SpawnFromAsset(Scene* scene, const std::string& path, Entity parent, const glm::vec3* worldPosition)
+    void EnsureSpriteImport(const std::string& path)
+    {
+        TextureImportSettings existing;
+        if (TextureImportSettings::Load(path, existing) || ContentBrowserPanel::IsReadOnly(path))
+            return;
+        if (!TextureImportSettings::DefaultsFor(TextureType::Sprite).Save(path))
+            return;
+        Texture2D::ReloadFromDisk(path);
+    }
+
+    Entity SpawnFromAsset(Scene* scene, const std::string& path, Entity parent, const glm::vec3* worldPosition, const std::string& spriteSlice)
     {
         if (!scene || path.empty())
             return {};
@@ -157,9 +169,11 @@ namespace Conqueror::Editor::AssetActions
         }
         else if (IsTexture(e))
         {
-            created = scene->CreateEntity(name);
+            EnsureSpriteImport(path);
+            created = scene->CreateEntity(spriteSlice.empty() ? name : spriteSlice);
             auto& sprite = created.AddComponent<SpriteRendererComponent>();
             sprite.Texture = Texture2D::Create(path);
+            sprite.SpriteName = spriteSlice;
             Renderer2D::ApplySpriteImport(sprite);
         }
         else if (IsAudio(e))

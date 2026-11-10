@@ -112,7 +112,7 @@ namespace Conqueror
         void EnsureTargets(uint32_t width, uint32_t height);
         // Kenar yumuşatma ve yükseltme: seçilen yöntemlerin bu karedeki gerçek uygulaması (ortografik kamera, nokta büyütme,
         // sistemde olmayan yöntem, eski sahnelerin AA listesindeki yükselticiler)
-        void ResolveAntiAliasing(const PostProcessSettings& settings, const RenderCamera& camera);
+        void ResolveAntiAliasing(const PostProcessSettings& settings, const RenderCamera& camera, bool litScene);
         // EQAA (AMD) / CSAA (NVIDIA): renk örneğinden fazla kapsam örnekli renderbuffer çerçeve tamponu
         bool CreateCoverageFramebuffer(uint32_t width, uint32_t height);
         void DestroyCoverageFramebuffer();

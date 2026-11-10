@@ -5,11 +5,14 @@
 
 #include <chrono>
 #include <filesystem>
+#include <set>
 #include <functional>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+namespace Conqueror { struct SpriteDef; }
 
 namespace Conqueror
 {
@@ -113,6 +116,7 @@ namespace Conqueror::Editor
         void DrawFolderTree(const std::filesystem::path& path, int depth);
         void DrawContent();
         void DrawGridItem(const Entry& entry, float thumb);
+        void DrawSliceItem(const Entry& entry, const SpriteDef& slice, float thumb);
         void DrawListItem(const Entry& entry);
         void DrawItemContextMenu(const Entry& entry);
         void DrawBackgroundContextMenu();
@@ -211,6 +215,9 @@ namespace Conqueror::Editor
 
         // Seçim / yeniden adlandırma
         std::filesystem::path m_SelectedPath;
+        std::string m_SelectedSlice;                 // görselin seçili dilimi (> oku)
+        std::string m_PendingInspectorSlice;         // fare bırakılınca Inspector'a geçecek dilim
+        std::set<std::string> m_ExpandedSheets;      // > oku açık görseller
         std::filesystem::path m_PendingInspectorAsset;   // tıklandı, bırakılınca Inspector'da açılacak
         std::filesystem::path m_RenamingPath;
         char m_RenameBuffer[256] = {};

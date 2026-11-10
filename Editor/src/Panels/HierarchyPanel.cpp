@@ -342,6 +342,16 @@ namespace Conqueror::Editor
                     Select(created);
                 }
             }
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_SPRITE"))
+            {
+                const std::string path((const char*)payload->Data);
+                const std::string slice((const char*)payload->Data + path.size() + 1);
+                if (Entity created = AssetActions::SpawnFromAsset(m_Context.get(), path, Entity{}, nullptr, slice))
+                {
+                    EditorState::Get().SelectEntity(created);
+                    Select(created);
+                }
+            }
             ImGui::EndDragDropTarget();
         }
         if (ImGui::BeginPopupContextItem("##HierarchyEmptyCtx", ImGuiPopupFlags_MouseButtonRight))
@@ -480,6 +490,16 @@ namespace Conqueror::Editor
                     }
                 }
                 else if (Entity created = AssetActions::SpawnFromAsset(m_Context.get(), path, entity))
+                {
+                    EditorState::Get().SelectEntity(created);
+                    Select(created);
+                }
+            }
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_SPRITE"))
+            {
+                const std::string path((const char*)payload->Data);
+                const std::string slice((const char*)payload->Data + path.size() + 1);
+                if (Entity created = AssetActions::SpawnFromAsset(m_Context.get(), path, entity, nullptr, slice))
                 {
                     EditorState::Get().SelectEntity(created);
                     Select(created);

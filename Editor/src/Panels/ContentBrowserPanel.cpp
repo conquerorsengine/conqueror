@@ -226,6 +226,11 @@ namespace Conqueror::Editor
         m_CurrentDirectory = m_BaseDirectory / "Assets";
     }
 
+    static bool IsSpriteImage(const std::string& extension)
+    {
+        return extension == ".png" || extension == ".jpg" || extension == ".jpeg" || extension == ".tga" || extension == ".bmp";
+    }
+
     void ContentBrowserPanel::RefreshContext()
     {
         auto project = Project::GetActive();
@@ -733,12 +738,23 @@ namespace Conqueror::Editor
             ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 6.0f));
             ImGui::Dummy(ImVec2(0, 2.0f));
             int col = 0;
-            for (const auto& e : *entries)
-            {
+            auto nextCell = [&]() {
                 if (col > 0)
                     ImGui::SameLine(0.0f, 0.0f);
-                DrawGridItem(e, thumb);
                 col = (col + 1) % columns;
+            };
+            for (const auto& e : *entries)
+            {
+                nextCell();
+                DrawGridItem(e, thumb);
+                // Oku açılmış görsel: dilimleri peşinden gelir (Unity Project penceresi)
+                if (m_ExpandedSheets.count(e.Path.string()))
+                    if (auto sheet = SpriteSheet::Get(e.Path.string()))
+                        for (const auto& slice : sheet->Sprites)
+                        {
+                            nextCell();
+                            DrawSliceItem(e, slice, thumb);
+                        }
             }
             ImGui::PopStyleVar();
         }
@@ -848,7 +864,7 @@ namespace Conqueror::Editor
         const float cellW = thumb + 18.0f;
         const float textH = ImGui::GetTextLineHeight();
         const ImVec2 cellSize(cellW, thumb + textH + 14.0f);
-        const bool selected = m_SelectedPath == entry.Path;
+        const bool selected = m_SelectedPath == entry.Path && m_SelectedSlice.empty();
         const bool renaming = m_RenamingPath == entry.Path;
 
         ImGui::PushID(entry.Path.string().c_str());
@@ -863,6 +879,7 @@ namespace Conqueror::Editor
             m_ScrollToSelected = false;
         }
         const bool hovered = ImGui::IsItemHovered();
+        const bool cellVisible = ImGui::IsItemVisible();
         if (hovered && entry.IsDirectory)
             m_HoveredFolder = entry.Path;
 
@@ -890,6 +907,31 @@ namespace Conqueror::Editor
 
         HandleItemInteraction(entry);
 
+        // Dilimli görsel: sağdaki ok dilimleri açar / kapar (Unity Project penceresi)
+        if (cellVisible && !entry.IsDirectory && IsSpriteImage(entry.Extension))
+            if (auto sheet = SpriteSheet::Get(entry.Path.string()); sheet && !sheet->Sprites.empty())
+            {
+                const std::string key = entry.Path.string();
+                const bool expanded = m_ExpandedSheets.count(key) != 0;
+                const float r = 9.0f;
+                const ImVec2 center(cellMin.x + cellW - r - 3.0f, thumbMin.y + thumb * 0.5f);
+                ImGui::SetCursorScreenPos(ImVec2(center.x - r - 2.0f, center.y - r - 2.0f));
+                if (ImGui::InvisibleButton(("##expand_" + entry.Path.filename().string()).c_str(), ImVec2((r + 2.0f) * 2.0f, (r + 2.0f) * 2.0f)))
+                {
+                    if (expanded)
+                        m_ExpandedSheets.erase(key);
+                    else
+                        m_ExpandedSheets.insert(key);
+                    if (expanded && m_SelectedPath == entry.Path)
+                        m_SelectedSlice.clear();
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip(expanded ? "Hide sprites" : "Show sprites");
+                dl->AddCircleFilled(center, r, ImGui::IsItemHovered() ? IM_COL32(255, 255, 255, 255) : IM_COL32(205, 205, 210, 255), 18);
+                const float a = 3.2f, b = 4.2f, dir = expanded ? -1.0f : 1.0f;
+                dl->AddTriangleFilled(ImVec2(center.x - a * dir, center.y - b), ImVec2(center.x + a * dir, center.y), ImVec2(center.x - a * dir, center.y + b), IM_COL32(40, 40, 44, 255));
+            }
+
         // Ad / yeniden adlandırma
         const ImVec2 textPos(cellMin.x + 6.0f, thumbMin.y + thumb + 4.0f);
         if (renaming)
@@ -916,6 +958,95 @@ namespace Conqueror::Editor
         // Kart sonrası imleci hücre sonuna koy (sonraki SameLine için)
         ImGui::SetCursorScreenPos(ImVec2(cellMin.x, cellMin.y));
         ImGui::Dummy(cellSize);
+        ImGui::PopID();
+    }
+
+    void ContentBrowserPanel::DrawSliceItem(const Entry& entry, const SpriteDef& slice, float thumb)
+    {
+        const float cellW = thumb + 18.0f;
+        const ImVec2 cellSize(cellW, thumb + ImGui::GetTextLineHeight() + 14.0f);
+        const bool selected = m_SelectedPath == entry.Path && m_SelectedSlice == slice.Name;
+
+        ImGui::PushID((entry.Path.string() + "#" + slice.Name).c_str());
+        const ImVec2 cellMin = ImGui::GetCursorScreenPos();
+        ImGui::InvisibleButton(("##slice_" + slice.Name).c_str(), cellSize, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
+        const bool hovered = ImGui::IsItemHovered();
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        const ImVec2 cardMin(cellMin.x + 4.0f, cellMin.y + 2.0f), cardMax(cellMin.x + cellW - 4.0f, cellMin.y + cellSize.y - 2.0f);
+        // Dilimler görselden ayrılsın diye gri zemin (Unity'deki alt varlık şeridi)
+        dl->AddRectFilled(cardMin, cardMax, selected ? ImGui::GetColorU32(ImVec4(0.26f, 0.59f, 0.98f, 0.30f)) : hovered ? IM_COL32(255, 255, 255, 34) : IM_COL32(255, 255, 255, 18), 6.0f);
+        if (selected)
+            dl->AddRect(cardMin, cardMax, ImGui::GetColorU32(ImVec4(0.26f, 0.59f, 0.98f, 0.8f)), 6.0f, 0, 1.2f);
+
+        const ImVec2 thumbMin(cellMin.x + 9.0f, cellMin.y + 6.0f);
+        std::shared_ptr<Texture2D> texture = GetThumbnail(entry);
+        ImVec2 uv0(0, 1), uv1(1, 0);
+        if (texture && texture->GetWidth() > 0 && texture->GetHeight() > 0 && slice.Rect.z > 0.0f && slice.Rect.w > 0.0f)
+        {
+            const float W = (float)texture->GetWidth(), H = (float)texture->GetHeight();
+            uv0 = ImVec2(slice.Rect.x / W, (slice.Rect.y + slice.Rect.w) / H);
+            uv1 = ImVec2((slice.Rect.x + slice.Rect.z) / W, slice.Rect.y / H);
+            const float scale = std::min((thumb - 6.0f) / slice.Rect.z, (thumb - 6.0f) / slice.Rect.w);
+            const ImVec2 size(slice.Rect.z * scale, slice.Rect.w * scale);
+            const ImVec2 p(thumbMin.x + (thumb - size.x) * 0.5f, thumbMin.y + (thumb - size.y) * 0.5f);
+            const float cell = std::max(4.0f, thumb / 12.0f);
+            dl->PushClipRect(p, ImVec2(p.x + size.x, p.y + size.y), true);
+            for (float yy = p.y; yy < p.y + size.y; yy += cell)
+                for (float xx = p.x; xx < p.x + size.x; xx += cell)
+                {
+                    const bool dark = ((int)((xx - p.x) / cell) + (int)((yy - p.y) / cell)) & 1;
+                    dl->AddRectFilled(ImVec2(xx, yy), ImVec2(xx + cell, yy + cell), dark ? IM_COL32(60, 60, 64, 255) : IM_COL32(85, 85, 90, 255));
+                }
+            dl->PopClipRect();
+            dl->AddImage((ImTextureID)(uint64_t)texture->GetRendererID(), p, ImVec2(p.x + size.x, p.y + size.y), uv0, uv1);
+        }
+
+        if (ImGui::IsItemClicked(ImGuiMouseButton_Left) || ImGui::IsItemClicked(ImGuiMouseButton_Right))
+        {
+            m_RenamingPath.clear();
+            m_SelectedPath = entry.Path;
+            m_SelectedSlice = slice.Name;
+            if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+                m_PendingInspectorSlice = slice.Name;
+        }
+        if (m_PendingInspectorSlice == slice.Name && !m_PendingInspectorSlice.empty() && m_SelectedPath == entry.Path && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+        {
+            if (hovered)
+            {
+                EditorState::Get().SelectAsset(entry.Path.string());
+                EditorState::Get().SetSelectedAssetSlice(slice.Name);
+            }
+            m_PendingInspectorSlice.clear();
+        }
+        if (hovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+            OpenFile(entry.Path);
+        if (hovered && !ImGui::IsMouseDragging(ImGuiMouseButton_Left) && ImGui::BeginItemTooltip())
+        {
+            ImGui::TextUnformatted(slice.Name.c_str());
+            ImGui::TextDisabled("Sprite  |  %d x %d", (int)slice.Rect.z, (int)slice.Rect.w);
+            ImGui::EndTooltip();
+        }
+        // Sürükle: sahneye, Hiyerarşiye ve Sprite yuvalarına (yol + NUL + dilim adı)
+        if (ImGui::BeginDragDropSource())
+        {
+            m_PendingInspectorSlice.clear();
+            std::string data = entry.Path.string();
+            data.push_back('\0');
+            data += slice.Name;
+            ImGui::SetDragDropPayload("CONTENT_BROWSER_SPRITE", data.c_str(), data.size() + 1);
+            if (texture)
+            {
+                const float h = ImGui::GetTextLineHeight();
+                ImGui::Image((ImTextureID)(uint64_t)texture->GetRendererID(), ImVec2(h, h), uv0, uv1);
+                ImGui::SameLine();
+            }
+            ImGui::TextUnformatted(slice.Name.c_str());
+            ImGui::EndDragDropSource();
+        }
+
+        const std::string label = Ellipsize(slice.Name, cellW - 12.0f);
+        const float textW = ImGui::CalcTextSize(label.c_str()).x;
+        dl->AddText(ImVec2(cellMin.x + (cellW - textW) * 0.5f, thumbMin.y + thumb + 4.0f), ImGui::GetColorU32(ImGuiCol_Text), label.c_str());
         ImGui::PopID();
     }
 
@@ -978,6 +1109,7 @@ namespace Conqueror::Editor
             if (m_RenamingPath != entry.Path)
                 m_RenamingPath.clear();
             m_SelectedPath = entry.Path;
+            m_SelectedSlice.clear();
             // Inspector dosyayı fare BIRAKILINCA gösterir, sürükleme başladıysa göstermez (Unity): seçili nesnenin bir
             // yuvasına sürüklerken Inspector o nesnede kalır
             if (!entry.IsDirectory && ImGui::IsItemClicked(ImGuiMouseButton_Left))
@@ -986,7 +1118,10 @@ namespace Conqueror::Editor
         if (!m_PendingInspectorAsset.empty() && m_PendingInspectorAsset == entry.Path && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
         {
             if (hovered)
+            {
                 EditorState::Get().SelectAsset(entry.Path.string());
+                EditorState::Get().SetSelectedAssetSlice({});
+            }
             m_PendingInspectorAsset.clear();
         }
         if (hovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
@@ -1123,7 +1258,8 @@ namespace Conqueror::Editor
             else if (alt && !ctrl && ImGui::IsKeyPressed(ImGuiKey_P, false))
                 OpenProperties(m_SelectedPath);
         }
-        if (!m_SelectedPath.empty())
+        // Dilim seçiliyken dosya işlemleri yok: Delete görseli silmesin
+        if (!m_SelectedPath.empty() && m_SelectedSlice.empty())
         {
             if (ImGui::IsKeyPressed(ImGuiKey_F2, false))
                 BeginRename(m_SelectedPath);

@@ -53,7 +53,7 @@ namespace Conqueror::Editor
         size_t GetSelectionCount() const { return m_SelectedEntities.size(); }
 
         // Varlık (dosya) seçimi: Inspector varlık yerine dosyayı gösterir (Unity: Project penceresi seçimi)
-        void SelectAsset(const std::string& path) { m_SelectedAsset = path; if (!path.empty()) m_SelectedEntities.clear(); }
+        void SelectAsset(const std::string& path) { m_SelectedAsset = path; m_SelectedAssetSlice.clear(); if (!path.empty()) m_SelectedEntities.clear(); }
 
         // Editör ileti penceresi (ör. Unity'nin "Can't add script" iletişim kutusu): EditorLayer bir sonraki karede gösterir
         void ShowMessage(const std::string& title, const std::string& text) { m_MessageTitle = title; m_MessageText = text; m_MessagePending = true; }
@@ -67,6 +67,9 @@ namespace Conqueror::Editor
             return true;
         }
         const std::string& GetSelectedAsset() const { return m_SelectedAsset; }
+        // Seçili görselin dilimi (İçerik Tarayıcısı > oku); boşsa görselin kendisi
+        void SetSelectedAssetSlice(const std::string& slice) { m_SelectedAssetSlice = slice; }
+        const std::string& GetSelectedAssetSlice() const { return m_SelectedAssetSlice; }
 
         // Copy/Paste clipboard
         void CopyEntities(const std::vector<Entity>& entities);
@@ -140,6 +143,7 @@ namespace Conqueror::Editor
         // Selection
         std::vector<Entity> m_SelectedEntities;
         std::string m_SelectedAsset;
+        std::string m_SelectedAssetSlice;
         std::string m_MessageTitle, m_MessageText;
         bool m_MessagePending = false;
 

@@ -1077,7 +1077,7 @@ namespace Conqueror
         }
     }
 
-    void PostProcessStack::ResolveAntiAliasing(const PostProcessSettings& settings, const RenderCamera& camera)
+    void PostProcessStack::ResolveAntiAliasing(const PostProcessSettings& settings, const RenderCamera& camera, bool litScene)
     {
         m_Upscaler = UpscalerMode::None;
         m_CASSharpen = false;
@@ -1101,6 +1101,9 @@ namespace Conqueror
             else if (aa == AntiAliasingMode::SMAA_T2X || aa == AntiAliasingMode::FSRAA)
                 aa = AntiAliasingMode::SMAA;   // titreşim yok: yalnız SMAA 1x
         }
+        // Saf 2D sahne (yalnız sprite, düz arka plan): varsayılan FXAA sprite içindeki ince ayrıntıyı bulandırır, yumuşatılacak 3B kenar yok
+        if (aa == AntiAliasingMode::FXAA && !litScene)
+            aa = AntiAliasingMode::None;
         m_AAMode = aa;
         if (!settings.Enabled)
             return;
@@ -1946,7 +1949,7 @@ namespace Conqueror
         CQ_PROFILE_SAMPLE("Render.PostProcess", Rendering);
         CQ_PROFILE_GPU("Post Processing");
         m_LitScene = litScene;
-        ResolveAntiAliasing(settings, camera);
+        ResolveAntiAliasing(settings, camera, litScene);
 
         GLint outputFBO = 0;
         GLint outputViewport[4];

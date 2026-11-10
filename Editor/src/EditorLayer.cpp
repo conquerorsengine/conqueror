@@ -1729,6 +1729,8 @@ namespace Conqueror::Editor
             ImGui::SameLine();
             if (RibbonButton(ICON_FA_UP_RIGHT_AND_DOWN_LEFT_FROM_CENTER, "Scale", "Scale (R)", gizmo == ImGuizmo::SCALE)) setGizmo(ImGuizmo::SCALE);
             ImGui::SameLine();
+            if (RibbonButton(ICON_FA_VECTOR_SQUARE, "Rect", "Rect tool (T): drag a 2D object to move it, drag its handles to resize it", gizmo == ViewportPanel::kGizmoRect)) setGizmo(ViewportPanel::kGizmoRect);
+            ImGui::SameLine();
             if (RibbonButton(ICON_FA_CUBES, "Transform", "Universal transform (Y)", gizmo == ImGuizmo::UNIVERSAL)) setGizmo(ImGuizmo::UNIVERSAL);
             EndRibbonGroup(g, top);
         };
@@ -3776,6 +3778,14 @@ namespace Conqueror::Editor
             }
             err = "unknown pathtracer command " + a[1];
             return false;
+        });
+        Automation::RegisterCommand("viewport_drag2d", [this](const Args& a, std::string& err) {
+            // viewport_drag2d <wx0> <wy0> <wx1> <wy1>: 2D görünümde dünya koordinatlarıyla sürükleme
+            if (a.size() < 5 || !m_ViewportPanel) { err = "viewport_drag2d x0 y0 x1 y1"; return false; }
+            const glm::vec2 p0 = m_ViewportPanel->WorldToScreen2D({ (float)std::atof(a[1].c_str()), (float)std::atof(a[2].c_str()) });
+            const glm::vec2 p1 = m_ViewportPanel->WorldToScreen2D({ (float)std::atof(a[3].c_str()), (float)std::atof(a[4].c_str()) });
+            Automation::QueueMouseDrag(p0.x, p0.y, p1.x, p1.y, 16);
+            return true;
         });
         Automation::RegisterCommand("viewport_click", [this](const Args& a, std::string& err) {
             if (a.size() < 3 || !m_ViewportPanel) { err = "viewport_click <nx 0..1> <ny 0..1>"; return false; }
@@ -7320,6 +7330,7 @@ namespace Conqueror::Editor
             else if (ImGui::IsKeyPressed(ImGuiKey_W, false)) m_ViewportPanel->SetGizmoType(ImGuizmo::TRANSLATE);
             else if (ImGui::IsKeyPressed(ImGuiKey_E, false)) m_ViewportPanel->SetGizmoType(ImGuizmo::ROTATE);
             else if (ImGui::IsKeyPressed(ImGuiKey_R, false)) m_ViewportPanel->SetGizmoType(ImGuizmo::SCALE);
+            else if (ImGui::IsKeyPressed(ImGuiKey_T, false)) m_ViewportPanel->SetGizmoType(ViewportPanel::kGizmoRect);
             else if (ImGui::IsKeyPressed(ImGuiKey_Y, false)) m_ViewportPanel->SetGizmoType(ImGuizmo::UNIVERSAL);
         }
     }

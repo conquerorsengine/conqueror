@@ -18,7 +18,10 @@ namespace Conqueror::Editor::AssetActions
     bool CanSpawn(const std::string& path);
     // Varlığı sahneye yerleştir: prefab örneği, model, sprite, ses kaynağı; betik hedef varlığa eklenir.
     // parent: ebeveyn (betikte hedef). worldPosition: kök için dünya konumu (yoksa varsayılan).
-    Entity SpawnFromAsset(Scene* scene, const std::string& path, Entity parent = {}, const glm::vec3* worldPosition = nullptr);
+    // spriteSlice: görselin bir dilimi (İçerik Tarayıcısı > oku); boşsa tüm görsel
+    Entity SpawnFromAsset(Scene* scene, const std::string& path, Entity parent = {}, const glm::vec3* worldPosition = nullptr, const std::string& spriteSlice = {});
+    // Görsel ilk kez sprite olarak kullanılıyorsa içe aktarma türü Sprite olur (mipmapsız, bulanmaz); ayarı olan görsele dokunulmaz
+    void EnsureSpriteImport(const std::string& path);
     // Nesneye uygulanan varlıklar (yeni nesne oluşturmaz): .cqmat -> Mesh Renderer malzemesi, .cqphysmat -> çarpıştırıcı
     bool IsAppliedToEntity(const std::string& path);
     bool ApplyToEntity(Entity entity, const std::string& path);

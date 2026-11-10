@@ -367,6 +367,16 @@ namespace Conqueror::Editor
                     if (created && m_SelectionCallback)
                         m_SelectionCallback(created, false);
                 }
+                // İçerik Tarayıcısı > oku: görselin bir dilimi
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_SPRITE"))
+                {
+                    const std::string path((const char*)payload->Data);
+                    const std::string slice((const char*)payload->Data + path.size() + 1);
+                    glm::vec3 drop = DropPointOnGround(glm::vec2(ImGui::GetMousePos().x - imgMin.x, ImGui::GetMousePos().y - imgMin.y));
+                    Entity created = m_Context ? AssetActions::SpawnFromAsset(m_Context.get(), path, Entity{}, &drop, slice) : Entity{};
+                    if (created && m_SelectionCallback)
+                        m_SelectionCallback(created, false);
+                }
                 ImGui::EndDragDropTarget();
             }
         dropDone:;
@@ -427,6 +437,7 @@ namespace Conqueror::Editor
         {
             DrawGizmo();
             HandlePicking();
+            Handle2DDrag();
         }
         else
         {
@@ -840,6 +851,14 @@ namespace Conqueror::Editor
         std::vector<Entity> selectedCopy(selectedEntities.begin(), selectedEntities.end());
         const bool is2D = m_EditorCamera.Is2D();
         ImGuizmo::SetOrthographic(is2D);
+        // Rect Tool: 2D'de sprite'ta kendi tutamaçları; diğer durumlarda taşıma gizmosu
+        int operation = m_GizmoType;
+        if (operation == kGizmoRect)
+        {
+            if (is2D && primaryEntity.HasComponent<SpriteRendererComponent>())
+                return;
+            operation = ImGuizmo::TRANSLATE;
+        }
 
         // UI öğesi: yalnızca taşıma; dünya deltası AnchoredPosition'a çevrilir
         if (primaryEntity.HasComponent<RectTransformComponent>())
@@ -901,7 +920,7 @@ namespace Conqueror::Editor
         float snapValues[3] = { snapValue, snapValue, snapValue };
         ImGuizmo::MODE mode = (es.GetGizmoMode() == GizmoMode::World && m_GizmoType != ImGuizmo::SCALE) ? ImGuizmo::WORLD : ImGuizmo::LOCAL;
         ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(cameraProjection),
-                             (ImGuizmo::OPERATION)m_GizmoType, mode, glm::value_ptr(transform), nullptr, snap ? snapValues : nullptr);
+                             (ImGuizmo::OPERATION)operation, mode, glm::value_ptr(transform), nullptr, snap ? snapValues : nullptr);
 
         if (!ImGuizmo::IsUsing())
             return;
@@ -1008,7 +1027,7 @@ namespace Conqueror::Editor
     void ViewportPanel::HandlePicking()
     {
         ImGuiIO& io = ImGui::GetIO();
-        const bool overGizmo = (m_GizmoType != -1 && EditorState::Get().HasSelection() && (ImGuizmo::IsOver() || ImGuizmo::IsUsing()))
+        const bool overGizmo = (m_GizmoType != -1 && m_GizmoType != kGizmoRect && EditorState::Get().HasSelection() && (ImGuizmo::IsOver() || ImGuizmo::IsUsing()))
                                || ImGuizmo::IsViewManipulateHovered() || ImGuizmo::IsUsingViewManipulate();
 
         if (m_ImageHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !io.KeyAlt && !overGizmo)

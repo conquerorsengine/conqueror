@@ -1544,12 +1544,21 @@ namespace Conqueror::Editor
                         std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
                         if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".tga" || ext == ".bmp")
                         {
+                            AssetActions::EnsureSpriteImport(path.string());
                             component.Texture = Texture2D::Create(path.string());
                             component.SpriteName.clear();
                             Renderer2D::ApplySpriteImport(component);
                         }
                         else
                             CQ_CORE_WARN("Sprite Renderer: unsupported image type {0}", ext);
+                    }
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_SPRITE"))
+                    {
+                        const std::string path((const char*)payload->Data);
+                        AssetActions::EnsureSpriteImport(path);
+                        component.Texture = Texture2D::Create(path);
+                        component.SpriteName = (const char*)payload->Data + path.size() + 1;
+                        Renderer2D::ApplySpriteImport(component);
                     }
                     ImGui::EndDragDropTarget();
                 }

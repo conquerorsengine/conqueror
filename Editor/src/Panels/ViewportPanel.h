@@ -9,6 +9,7 @@
 #include "Scene/EditorCamera.h"
 #include "Scene/Entity.h"
 #include "Scene/Scene.h"
+#include "Scene/Components.h"
 
 #include <imgui.h>
 #include <glm/glm.hpp>
@@ -57,7 +58,10 @@ namespace Conqueror::Editor
         // additive: Ctrl/Shift ile tıklandı (seçime ekle/çıkar)
         using SelectionCallback = std::function<void(Entity entity, bool additive)>;
 
+        static constexpr int kGizmoRect = -2;   // Rect Tool (T): ImGuizmo dışı, 2D görünümde tutamaçlar
+
         ViewportPanel();
+        glm::vec2 WorldToScreen2D(const glm::vec2& world) const;
         ~ViewportPanel() = default;
 
         void SetContext(const std::shared_ptr<Scene>& scene) { m_Context = scene; }
@@ -103,6 +107,8 @@ namespace Conqueror::Editor
         void DrawGizmo();
         void DrawViewCube();
         void HandlePicking();
+        void Handle2DDrag();
+        glm::vec2 ScreenToWorld2D(const ImVec2& screen) const;
 
         // Dünya uzayında çizgi -> ekran (yakın düzlem kırpmalı)
         void DrawWorldLine(ImDrawList* drawList, const glm::vec3& a, const glm::vec3& b, ImU32 color, float thickness) const;
@@ -117,6 +123,28 @@ namespace Conqueror::Editor
         bool m_ViewportFocused = false;
         bool m_ViewportHovered = false;
         bool m_TabVisible = false;
+
+        // 2D görünümde sprite'ı doğrudan sürükleme / Rect Tool
+        enum class Drag2DMode { None, Pending, Move, Resize };
+        struct Drag2DItem
+        {
+            uint64_t Id = 0;
+            TransformComponent Old;
+            glm::vec2 OldSize{ 0.0f };
+            glm::vec2 StartWorld{ 0.0f };
+            glm::mat4 ParentInverse{ 1.0f };
+        };
+        struct Drag2DState
+        {
+            Drag2DMode Mode = Drag2DMode::None;
+            Entity Target;
+            ImVec2 Start{ 0, 0 };
+            int Handle = -1;
+            glm::vec2 StartMin{ 0.0f }, StartMax{ 0.0f }, AxisX{ 1.0f, 0.0f }, AxisY{ 0.0f, 1.0f }, WorldScale{ 1.0f }, GrabOffset{ 0.0f };
+            bool UsesSize = false;
+            std::vector<Drag2DItem> Items;
+        };
+        Drag2DState m_Drag2D;
 
         // Gizmo
         int m_GizmoType = 7; // ImGuizmo::OPERATION::TRANSLATE
