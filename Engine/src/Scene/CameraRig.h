@@ -65,6 +65,66 @@ namespace Conqueror
         glm::vec3 StatePosition{ 0.0f };
         glm::quat StateRotation{ 1, 0, 0, 0 };
         float NoiseTime = 0.0f;
+        float EffectiveFov = -1.0f;       // Follow Zoom gibi eklerin bu karedeki FOV'u (< 0: FieldOfView)
+        // Eklerden (Confiner, Deoccluder, Group Framing) sonraki son poz: gövdenin sönümlü durumu (State*) bozulmaz
+        glm::vec3 FinalPosition{ 0.0f };
+        glm::quat FinalRotation{ 1, 0, 0, 0 };
+    };
+
+    // ── Cinemachine ekleri (sanal kameranın varlığına eklenir) ──
+
+    // Confiner 3D: sanal kamera bir hacmin içinde kalır (Bounding Volume varlığının kutusu: Box Collider'ı varsa onun kutusu, yoksa konum + ölçek)
+    struct CinemachineConfiner3DComponent
+    {
+        uint64_t BoundingVolume = 0;
+        float SlowingDistance = 0.0f;     // kenara bu mesafeden itibaren yavaşlar (0 = sert sınır)
+    };
+
+    // Confiner 2D: sanal kamera bir 2B şeklin içinde kalır (Box Collider 2D / Polygon Collider 2D; yoksa konum + ölçek kutusu)
+    struct CinemachineConfiner2DComponent
+    {
+        uint64_t BoundingShape = 0;
+    };
+
+    // Deoccluder: hedefle kamera arasında çarpıştırıcı varsa kamera hedefe doğru öne alınır (görüş açılır)
+    struct CinemachineDeoccluderComponent
+    {
+        uint32_t CollideAgainst = 0xFFFFFFFFu;   // katmanlar
+        float CameraRadius = 0.2f;
+        float MinimumDistanceFromTarget = 0.3f;
+        float Damping = 0.2f;                     // s: engel kalkınca geri çekilme
+        // Çalışma zamanı
+        float Pull = 0.0f;                        // hedefe doğru çekilen mesafe
+    };
+
+    // Group Framing: Follow / LookAt hedefi bir Target Group ise kamera grubu ekrana sığacak uzaklığa gelir (Dolly)
+    struct CinemachineGroupFramingComponent
+    {
+        float FramingSize = 0.8f;         // grubun ekranın ne kadarını kaplayacağı (0..1)
+        float Damping = 1.0f;             // s
+        float MinDistance = 1.0f, MaxDistance = 100.0f;
+        // Çalışma zamanı
+        float Distance = -1.0f;
+    };
+
+    // Follow Zoom: FOV, hedefin çevresindeki Width metrelik alanı ekranda sabit boyda tutacak şekilde ayarlanır
+    struct CinemachineFollowZoomComponent
+    {
+        float Width = 2.0f;               // m
+        float MinFov = 3.0f, MaxFov = 60.0f;
+        float Damping = 1.0f;             // s
+        // Çalışma zamanı
+        float Fov = -1.0f;
+    };
+
+    // Target Group: kameraların takip edebileceği grup; bu varlık her karede hedeflerin ağırlıklı merkezine konur
+    struct CinemachineTargetGroupComponent
+    {
+        uint64_t Target1 = 0, Target2 = 0, Target3 = 0, Target4 = 0;
+        float Weight1 = 1.0f, Weight2 = 1.0f, Weight3 = 1.0f, Weight4 = 1.0f;
+        float Radius1 = 1.0f, Radius2 = 1.0f, Radius3 = 1.0f, Radius4 = 1.0f;
+        // Çalışma zamanı: grubu kapsayan küre
+        float BoundingRadius = 0.0f;
     };
 
     struct CameraBrainComponent

@@ -68,6 +68,92 @@ namespace Conqueror
         glm::quat Rotation{ 1, 0, 0, 0 };
     };
 
+    // Kemik, kaynak nesnelerin ağırlıklı dönüşümünü ebeveyni gibi izler (Unity Multi-Parent Constraint): silah eldeyken iki el, binen
+    // karakter. Maintain Offset: ilk karedeki göreli duruş korunur
+    struct MultiParentConstraintComponent
+    {
+        float Weight = 1.0f;
+        std::string Bone;
+        uint64_t Source1 = 0, Source2 = 0, Source3 = 0;
+        float SourceWeight1 = 1.0f, SourceWeight2 = 1.0f, SourceWeight3 = 1.0f;
+        bool MaintainOffset = true;
+        bool ConstrainPosition = true, ConstrainRotation = true;
+        // Çalışma zamanı
+        bool OffsetsCaptured = false;
+        glm::mat4 Offsets[3] = { glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f) };
+    };
+
+    // Kemiğin konumu kaynakların ağırlıklı ortalaması (Unity Multi-Position Constraint), eksen eksen
+    struct MultiPositionConstraintComponent
+    {
+        float Weight = 1.0f;
+        std::string Bone;
+        uint64_t Source1 = 0, Source2 = 0, Source3 = 0;
+        float SourceWeight1 = 1.0f, SourceWeight2 = 1.0f, SourceWeight3 = 1.0f;
+        bool MaintainOffset = false;
+        glm::vec3 Offset{ 0.0f };
+        bool ConstrainX = true, ConstrainY = true, ConstrainZ = true;
+        bool OffsetCaptured = false;
+        glm::vec3 CapturedOffset{ 0.0f };
+    };
+
+    // Kemiğin dönüşü kaynakların ağırlıklı ortalaması (Unity Multi-Rotation Constraint)
+    struct MultiRotationConstraintComponent
+    {
+        float Weight = 1.0f;
+        std::string Bone;
+        uint64_t Source1 = 0, Source2 = 0, Source3 = 0;
+        float SourceWeight1 = 1.0f, SourceWeight2 = 1.0f, SourceWeight3 = 1.0f;
+        bool MaintainOffset = false;
+        glm::vec3 Offset{ 0.0f };            // derece
+        bool ConstrainX = true, ConstrainY = true, ConstrainZ = true;
+        bool OffsetCaptured = false;
+        glm::quat CapturedOffset{ 1, 0, 0, 0 };
+    };
+
+    enum class RigOverrideSpace : int { World = 0, Local, Pivot };
+
+    // Kemiğin dönüşümünü bir kaynak nesneyle ya da elle girilen değerle değiştirir (Unity Override Transform)
+    struct OverrideTransformComponent
+    {
+        float Weight = 1.0f;
+        std::string Bone;
+        uint64_t Source = 0;                 // varsa onun dönüşümü, yoksa Position / Rotation
+        RigOverrideSpace Space = RigOverrideSpace::Pivot;
+        glm::vec3 Position{ 0.0f };
+        glm::vec3 Rotation{ 0.0f };          // derece
+        float PositionWeight = 1.0f, RotationWeight = 1.0f;
+    };
+
+    // Kaynak kemiğin (el) bükülmesini (eksen etrafındaki dönüşü) ara kemiklere (ön kol bükülme kemikleri) ağırlıkla dağıtır
+    // (Unity Twist Correction): bilek dönünce ön kolun deri ağı ezilmez
+    struct TwistCorrectionComponent
+    {
+        float Weight = 1.0f;
+        std::string Source;
+        RigAxis TwistAxis = RigAxis::Y;
+        std::string Twist1, Twist2, Twist3;
+        float TwistWeight1 = 0.5f, TwistWeight2 = 0.0f, TwistWeight3 = 0.0f;
+    };
+
+    // Kemik iki kaynak arasında karışır (Unity Blend Constraint): konum ve dönüş ayrı oranla
+    struct BlendConstraintComponent
+    {
+        float Weight = 1.0f;
+        std::string Bone;
+        uint64_t SourceA = 0, SourceB = 0;
+        bool BlendPosition = true, BlendRotation = true;
+        float PositionWeight = 0.5f, RotationWeight = 0.5f;   // 0 = A, 1 = B
+    };
+
+    // Kökten uca zincirin dönüşleri kök ve uç hedefleri arasında yumuşakça dağılır (Unity Twist Chain Constraint): omurga, kuyruk
+    struct TwistChainConstraintComponent
+    {
+        float Weight = 1.0f;
+        std::string Root, Tip;
+        uint64_t RootTarget = 0, TipTarget = 0;
+    };
+
     namespace RigConstraints
     {
         // Animasyon güncellemesinin başında: kısıtları sahiplerine (iskeletli modele) göre grupla

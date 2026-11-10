@@ -1,3 +1,4 @@
+#include "UI/UIExtras.h"
 #include "Core/Serialization/SceneSerializer.h"
 #include "ComponentRegistry.h"
 #include "UI/UIToolkit.h"
@@ -121,6 +122,7 @@ namespace Conqueror
             RegisterCharacterCustomizerComponents();
             RegisterSignalComponents();
             UIToolkit::RegisterComponents();
+            UIExtras::RegisterComponents();
             BehaviorTrees::RegisterComponents();
             AssetRuntime::RegisterComponents();
             Foliage::RegisterComponents();

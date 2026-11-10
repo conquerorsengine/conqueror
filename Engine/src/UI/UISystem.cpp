@@ -1,3 +1,4 @@
+#include "UI/UIExtras.h"
 #include "UISystem.h"
 #include "Core/Serialization/SceneSerializer.h"
 #include <unordered_map>
@@ -850,6 +851,7 @@ namespace Conqueror
             if (e.HasComponent<UIInputFieldComponent>()) return &e.GetComponent<UIInputFieldComponent>().Selectable;
             if (e.HasComponent<UIDropdownComponent>()) return &e.GetComponent<UIDropdownComponent>().Selectable;
             if (e.HasComponent<UIScrollbarComponent>()) return &e.GetComponent<UIScrollbarComponent>().Selectable;
+            if (e.HasComponent<UISelectableComponent>()) return &e.GetComponent<UISelectableComponent>().Selectable;
             return nullptr;
         }
 
@@ -2159,24 +2161,10 @@ namespace Conqueror
                 }
                 if (pressed.HasComponent<UIToggleComponent>())
                 {
-                    auto& tg = pressed.GetComponent<UIToggleComponent>();
-                    if (CanInteract(tg.Selectable) && !(tg.Group != 0 && tg.IsOn))
+                    // Grup: numaralı grup ya da en yakın üstteki Toggle Group bileşeni (UIExtras)
+                    if (CanInteract(pressed.GetComponent<UIToggleComponent>().Selectable) && UIExtras::ClickToggle(scene, (entt::entity)pressed))
                     {
-                        tg.IsOn = !tg.IsOn;
-                        tg.ChangedThisFrame = true;
-                        if (tg.Group != 0 && tg.IsOn)
-                        {
-                            auto view = scene.m_Registry.view<UIToggleComponent>();
-                            for (auto o : view)
-                            {
-                                auto& other = view.get<UIToggleComponent>(o);
-                                if (o != (entt::entity)pressed && other.Group == tg.Group && other.IsOn)
-                                {
-                                    other.IsOn = false;
-                                    other.ChangedThisFrame = true;
-                                }
-                            }
-                        }
+                        auto& tg = pressed.GetComponent<UIToggleComponent>();
                         PushEvent(pressed, tg.OnValueChanged, "ValueChanged", tg.IsOn ? 1.0f : 0.0f);
                     }
                 }
@@ -2304,6 +2292,14 @@ namespace Conqueror
             Entity triggerHover;
             for (Entity e = hovered; e; e = e.GetParent())
                 if (e.HasComponent<T>()) { triggerHover = e; break; }
+            // UI öğesinin üstünde değilse dünya nesnesi (kamerada Physics / Physics 2D Raycaster): Event Trigger'ı olan en yakın üst nesne
+            if (!hovered && input.Valid)
+            {
+                const entt::entity w = UIExtras::WorldPointerTarget(scene, screenSize, input.MousePosition);
+                if (w != entt::null && scene.m_Registry.valid(w))
+                    for (Entity e(w, &scene); e; e = e.GetParent())
+                        if (e.HasComponent<T>()) { triggerHover = e; break; }
+            }
             Entity prevHover = s_TriggerHover.Get(scene);
             if (triggerHover != prevHover)
             {
@@ -2330,6 +2326,8 @@ namespace Conqueror
             if (input.Scroll != 0.0f && triggerHover)
                 Trigger(scene, triggerHover, &T::Scroll, input.Scroll);
         }
+        // Ekran denetimleri (On-Screen Stick / Button): sanal gamepad
+        const bool onScreenHeld = UIExtras::UpdateOnScreenControls(scene, input, hovered ? (entt::entity)hovered : entt::null);
 
         // ---- Klavye / gamepad gezinmesi (Unity EventSystem)
         {
@@ -2352,7 +2350,7 @@ namespace Conqueror
             // Gamepad: d-pad ya da sol çubuk; basılı tutunca tekrarlar (GLFW standart eşleme)
             glm::ivec2 pad(0);
             bool padSubmit = false, padCancel = false;
-            if (Input::IsGamepadConnected(0))
+            if (Input::IsGamepadConnected(0) && !onScreenHeld)
             {
                 glm::vec2 st = Input::GetGamepadLeftStick(0);
                 if (Input::IsGamepadButtonPressed(11, 0) || st.y < -0.6f) pad.y = 1;
@@ -2466,21 +2464,10 @@ namespace Conqueror
                         b.ClickedThisFrame = true;
                         PushEvent(cur, b.OnClick, "Click");
                     }
-                    if (cur.HasComponent<UIToggleComponent>())
+                    if (cur.HasComponent<UIToggleComponent>() && UIExtras::ClickToggle(scene, (entt::entity)cur))
                     {
                         auto& tg = cur.GetComponent<UIToggleComponent>();
-                        if (!(tg.Group != 0 && tg.IsOn))
-                        {
-                            tg.IsOn = !tg.IsOn;
-                            tg.ChangedThisFrame = true;
-                            if (tg.Group != 0 && tg.IsOn)
-                                for (auto o : scene.m_Registry.view<UIToggleComponent>())
-                                {
-                                    auto& other = scene.m_Registry.get<UIToggleComponent>(o);
-                                    if (o != (entt::entity)cur && other.Group == tg.Group && other.IsOn) { other.IsOn = false; other.ChangedThisFrame = true; }
-                                }
-                            PushEvent(cur, tg.OnValueChanged, "ValueChanged", tg.IsOn ? 1.0f : 0.0f);
-                        }
+                        PushEvent(cur, tg.OnValueChanged, "ValueChanged", tg.IsOn ? 1.0f : 0.0f);
                     }
                     if (cur.HasComponent<UIDropdownComponent>())
                     {

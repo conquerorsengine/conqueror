@@ -337,6 +337,20 @@ namespace Conqueror
         ComponentDef<AudioListenerComponent>("Audio Listener", "AudioListenerComponent", "Audio", ICON_FA_EAR_LISTEN).Builtin()
             .Field("IsActive", "Active", &AudioListenerComponent::IsActive);
 
+        // Yansıma probu ve uyarlanabilir prob hacmi: serileştirme ve denetçi kendi kodlarında; kayıt betik / otomasyon erişimi için
+        ComponentDef<ReflectionProbeComponent>("Reflection Probe", "ReflectionProbeComponent", "Rendering", ICON_FA_GLOBE).Builtin()
+            .Field("Intensity", "Intensity", &ReflectionProbeComponent::Intensity)
+            .Property("Resolution", "Resolution", FieldKind::Int,
+                [](const ReflectionProbeComponent& p) { return std::to_string(p.Resolution); },
+                [](ReflectionProbeComponent& p, const std::string& t) { p.Resolution = (uint32_t)std::clamp(std::atoi(t.c_str()), 16, 1024); p.NeedsCapture = true; })
+            .Field("RealtimeUpdate", "Realtime", &ReflectionProbeComponent::RealtimeUpdate)
+            .Field("BlendDistance", "Blend Distance", &ReflectionProbeComponent::BlendDistance)
+            .Property("Captured", "Captured", FieldKind::String,
+                [](const ReflectionProbeComponent& p) { return std::string(p.Captured ? "true" : "false"); },
+                [](ReflectionProbeComponent&, const std::string&) {});
+        ComponentDef<AdaptiveProbeVolumeComponent>("Adaptive Probe Volume", "AdaptiveProbeVolumeComponent", "Rendering", ICON_FA_CUBES).Builtin()
+            .Field("MinSpacing", "Min Probe Spacing", &AdaptiveProbeVolumeComponent::MinSpacing)
+            .Field("MaxSpacing", "Max Probe Spacing", &AdaptiveProbeVolumeComponent::MaxSpacing);
         ComponentDef<CameraComponent>("Camera", "CameraComponent", "Rendering", ICON_FA_VIDEO).Builtin()
             .Field("Primary", "Primary", &CameraComponent::Primary)
             .Field("FixedAspectRatio", "Fixed Aspect Ratio", &CameraComponent::FixedAspectRatio)

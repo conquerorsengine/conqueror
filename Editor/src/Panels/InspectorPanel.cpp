@@ -2902,6 +2902,64 @@ namespace Conqueror::Editor
             }
         });
 
+        // Yansıma probu (Unity Reflection Probe): Box Size tam boy, Box Offset kutu merkezinin probun yerine göre kayması. Bileşen kutuyu
+        // en küçük köşe (BoxOffset) + yarı boy (BoxSize) olarak saklar
+        DrawComponent<ReflectionProbeComponent>("Reflection Probe", entity, [](auto& probe)
+        {
+            glm::vec3 size = probe.BoxSize * 2.0f;
+            glm::vec3 offset = probe.BoxOffset + probe.BoxSize;
+            bool box = ImGui::DragFloat3("Box Size", &size.x, 0.05f, 0.01f, 100000.0f, "%.2f");
+            box |= ImGui::DragFloat3("Box Offset", &offset.x, 0.05f, -100000.0f, 100000.0f, "%.2f");
+            if (box)
+            {
+                size = glm::max(size, glm::vec3(0.01f));
+                probe.BoxSize = size * 0.5f;
+                probe.BoxOffset = offset - probe.BoxSize;
+            }
+            ImGui::DragFloat("Blend Distance", &probe.BlendDistance, 0.05f, 0.0f, 100.0f, "%.2f");
+            ImGui::DragFloat("Intensity", &probe.Intensity, 0.01f, 0.0f, 10.0f, "%.2f");
+            static const uint32_t kResolutions[] = { 16, 32, 64, 128, 256, 512, 1024 };
+            const char* resNames[] = { "16", "32", "64", "128", "256", "512", "1024" };
+            int ri = 3;
+            for (int i = 0; i < 7; ++i)
+                if (probe.Resolution == kResolutions[i])
+                    ri = i;
+            if (ImGui::Combo("Resolution", &ri, resNames, 7))
+            {
+                probe.Resolution = kResolutions[ri];
+                probe.NeedsCapture = true;
+            }
+            int type = probe.RealtimeUpdate ? 1 : 0;
+            const char* types[] = { "Baked", "Realtime" };
+            if (ImGui::Combo("Type", &type, types, 2))
+                probe.RealtimeUpdate = type == 1;
+            if (probe.RealtimeUpdate)
+                ImGui::DragFloat("Update Interval", &probe.UpdateInterval, 0.01f, 0.0f, 10.0f, "%.2f s");
+            ImGui::TextDisabled("%s", probe.Captured ? "Captured" : "Not captured yet");
+            if (ImGui::Button("Bake"))
+                probe.NeedsCapture = true;
+        });
+
+        // Uyarlanabilir prob hacmi (Unity Probe Volume): kutu nesnenin konumu ve ölçeği; Lighting > Probes > Bake Probe Volume bu kutuyu pişirir
+        DrawComponent<AdaptiveProbeVolumeComponent>("Adaptive Probe Volume", entity, [](auto& v)
+        {
+            ImGui::TextWrapped("The volume box is this object's position and scale. Bake it in Window > Lighting > Probes > Bake Probe Volume.");
+            ImGui::DragFloat3("Probe Offset", &v.ProbeOffset.x, 0.05f, -100.0f, 100.0f, "%.2f");
+            ImGui::DragFloat("Min Probe Spacing", &v.MinSpacing, 0.05f, 0.1f, 50.0f, "%.2f m");
+            ImGui::DragFloat("Max Probe Spacing", &v.MaxSpacing, 0.1f, v.MinSpacing, 250.0f, "%.2f m");
+            const char* modes[] = { "Single Scene", "Baking Set" };
+            ImGui::Combo("Baking Mode", &v.BakingMode, modes, 2);
+            ImGui::Checkbox("Dilation", &v.Dilation);
+            ImGui::Checkbox("Virtual Offset", &v.VirtualOffset);
+            if (v.VirtualOffset)
+            {
+                ImGui::SliderFloat("Validity Threshold", &v.ValidityThreshold, 0.0f, 1.0f);
+                ImGui::SliderFloat("Search Distance", &v.SearchDistanceMultiplier, 0.0f, 1.0f);
+                ImGui::DragFloat("Geometry Bias", &v.GeometryBias, 0.001f, 0.0f, 0.5f, "%.3f");
+                ImGui::DragFloat("Ray Origin Bias", &v.RayOriginBias, 0.0005f, -0.1f, 0.0f, "%.4f");
+            }
+        });
+
         if (entity.HasComponent<NativeScriptComponent>())
         {
             auto& nsc = entity.GetComponent<NativeScriptComponent>();
@@ -3256,6 +3314,8 @@ namespace Conqueror::Editor
                 drawEntry("Sprite Renderer", [&]() { DrawAddComponentEntry<SpriteRendererComponent>("Sprite Renderer"); });
                 drawEntry("Terrain", [&]() { DrawAddComponentEntry<TerrainComponent>("Terrain"); });
                 drawEntry("Particle System", [&]() { DrawAddComponentEntry<ParticleSystemComponent>("Particle System"); });
+                drawEntry("Reflection Probe", [&]() { DrawAddComponentEntry<ReflectionProbeComponent>("Reflection Probe"); });
+                drawEntry("Adaptive Probe Volume", [&]() { DrawAddComponentEntry<AdaptiveProbeVolumeComponent>("Adaptive Probe Volume"); });
                 drawRegistryCategory("Rendering");
                 endCategory(rendOpen);
             }

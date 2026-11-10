@@ -7,6 +7,7 @@
 #include "Core/Input/Input.h"
 #include "Core/Math/Math.h"
 #include "Core/PhysicsSystem/Physics3D/PhysicsWorld3D.h"
+#include "Scene/PhysicsComponents.h"
 
 #include <IconsFontAwesome6.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -57,6 +58,88 @@ namespace Conqueror
             Math::DecomposeTransform(scene.ComputeWorldMatrix((entt::entity)e), position, r, s);
             rotation = glm::quat(r);
             return true;
+        }
+
+        // Varlığın dünya kutusu: Box Collider'ı varsa onun kutusu (ofset + boyut x ölçek), yoksa konum + ölçek
+        bool WorldBox(Scene& scene, uint64_t uuid, glm::vec3& mn, glm::vec3& mx)
+        {
+            Entity e = scene.FindEntityByUUID(uuid);
+            if (!e || !e.HasComponent<TransformComponent>())
+                return false;
+            const glm::mat4 w = scene.ComputeWorldMatrix((entt::entity)e);
+            glm::vec3 c(0.0f), size(1.0f);
+            if (e.HasComponent<BoxColliderComponent>())
+            {
+                c = e.GetComponent<BoxColliderComponent>().Offset;
+                size = e.GetComponent<BoxColliderComponent>().Size;
+            }
+            // Döndürülmüş kutunun eksen hizalı sınırları: 8 köşe
+            mn = glm::vec3(1e30f);
+            mx = glm::vec3(-1e30f);
+            for (int i = 0; i < 8; ++i)
+            {
+                const glm::vec3 corner = c + 0.5f * size * glm::vec3((i & 1) ? 1.0f : -1.0f, (i & 2) ? 1.0f : -1.0f, (i & 4) ? 1.0f : -1.0f);
+                const glm::vec3 p = glm::vec3(w * glm::vec4(corner, 1.0f));
+                mn = glm::min(mn, p);
+                mx = glm::max(mx, p);
+            }
+            return true;
+        }
+
+        // 2B şekil (dünya XY): Polygon Collider 2D noktaları, Box Collider 2D ya da konum + ölçek kutusu
+        bool WorldShape2D(Scene& scene, uint64_t uuid, std::vector<glm::vec2>& out)
+        {
+            Entity e = scene.FindEntityByUUID(uuid);
+            if (!e || !e.HasComponent<TransformComponent>())
+                return false;
+            const glm::mat4 w = scene.ComputeWorldMatrix((entt::entity)e);
+            std::vector<glm::vec2> local;
+            if (e.HasComponent<PolygonCollider2DComponent>())
+            {
+                const auto& pc = e.GetComponent<PolygonCollider2DComponent>();
+                for (const glm::vec2& p : pc.Points)
+                    local.push_back(p + pc.Offset);
+            }
+            else
+            {
+                glm::vec2 c(0.0f), s(1.0f);
+                if (e.HasComponent<BoxCollider2DComponent>())
+                {
+                    c = e.GetComponent<BoxCollider2DComponent>().Offset;
+                    s = e.GetComponent<BoxCollider2DComponent>().Size;
+                }
+                local = { c + glm::vec2(-0.5f, -0.5f) * s, c + glm::vec2(0.5f, -0.5f) * s, c + glm::vec2(0.5f, 0.5f) * s, c + glm::vec2(-0.5f, 0.5f) * s };
+            }
+            if (local.size() < 3)
+                return false;
+            out.clear();
+            for (const glm::vec2& p : local)
+                out.push_back(glm::vec2(w * glm::vec4(p, 0.0f, 1.0f)));
+            return true;
+        }
+
+        bool InsidePolygon(const std::vector<glm::vec2>& poly, const glm::vec2& p)
+        {
+            bool inside = false;
+            for (size_t i = 0, j = poly.size() - 1; i < poly.size(); j = i++)
+                if (((poly[i].y > p.y) != (poly[j].y > p.y)) && (p.x < (poly[j].x - poly[i].x) * (p.y - poly[i].y) / (poly[j].y - poly[i].y + 1e-12f) + poly[i].x))
+                    inside = !inside;
+            return inside;
+        }
+
+        glm::vec2 ClosestOnPolygon(const std::vector<glm::vec2>& poly, const glm::vec2& p)
+        {
+            glm::vec2 best = poly[0];
+            float bestD = 1e30f;
+            for (size_t i = 0, j = poly.size() - 1; i < poly.size(); j = i++)
+            {
+                const glm::vec2 a = poly[j], b = poly[i], ab = b - a;
+                const float t = glm::clamp(glm::dot(p - a, ab) / std::max(glm::dot(ab, ab), 1e-12f), 0.0f, 1.0f);
+                const glm::vec2 q = a + ab * t;
+                const float d = glm::dot(p - q, p - q);
+                if (d < bestD) { bestD = d; best = q; }
+            }
+            return best;
         }
 
         float Damp(float damping, float dt)
@@ -141,6 +224,34 @@ namespace Conqueror
                     src.GenerateOnStart = false;   // yalnızca bir kez (çalışma zamanı kopyasında)
                     GenerateImpulse(scene, (uint32_t)h, 1.0f);
                 }
+            }
+
+            // ── Target Group: hedeflerin ağırlıklı merkezi ve onları kapsayan küre (kameralardan önce) ──
+            for (auto h : reg.view<TransformComponent, CinemachineTargetGroupComponent>())
+            {
+                auto& g = reg.get<CinemachineTargetGroupComponent>(h);
+                const uint64_t ids[4] = { g.Target1, g.Target2, g.Target3, g.Target4 };
+                const float ws[4] = { g.Weight1, g.Weight2, g.Weight3, g.Weight4 };
+                const float rs[4] = { g.Radius1, g.Radius2, g.Radius3, g.Radius4 };
+                glm::vec3 ps[4];
+                bool ok[4];
+                glm::vec3 sum(0.0f);
+                float total = 0.0f;
+                for (int k = 0; k < 4; ++k)
+                {
+                    glm::quat r;
+                    ok[k] = ws[k] > 0.0f && WorldPose(scene, ids[k], ps[k], r);
+                    if (ok[k]) { sum += ps[k] * ws[k]; total += ws[k]; }
+                }
+                if (total <= 0.0f)
+                    continue;
+                const glm::vec3 center = sum / total;
+                float radius = 0.0f;
+                for (int k = 0; k < 4; ++k)
+                    if (ok[k])
+                        radius = std::max(radius, glm::length(ps[k] - center) + std::max(rs[k], 0.0f));
+                g.BoundingRadius = radius;
+                scene.SetEntityWorldPose(Entity{ h, &scene }, center, nullptr);
             }
 
             // ── Sanal kameralar ──
@@ -252,7 +363,113 @@ namespace Conqueror
                 }
                 vc.StateRotation = glm::normalize(aimRot);
 
-                // Kendi dönüşümüne yaz (sahne görünümünde nereden baktığı görünsün)
+                // ── Ekler: son pozu düzeltir (gövdenin sönümlü durumu korunur) ──
+                vc.FinalPosition = vc.StatePosition;
+                vc.FinalRotation = vc.StateRotation;
+                vc.EffectiveFov = -1.0f;
+                bool moved = false;
+                const glm::vec3 lookPoint = hasLook ? lPos + vc.LookAtOffset : (hasFollow ? tPos : vc.StatePosition + vc.StateRotation * glm::vec3(0, 0, -1));
+                if (auto* gf = reg.try_get<CinemachineGroupFramingComponent>(h))
+                {
+                    // Takip ya da bakış hedefi bir Target Group ise: grubun küresi ekranın FramingSize kadarını kaplayacak uzaklık (Dolly)
+                    for (uint64_t id : { vc.LookAt, vc.Follow })
+                    {
+                        Entity ge = scene.FindEntityByUUID(id);
+                        if (!ge || !ge.HasComponent<CinemachineTargetGroupComponent>())
+                            continue;
+                        const float r = ge.GetComponent<CinemachineTargetGroupComponent>().BoundingRadius;
+                        if (r <= 0.0f)
+                            break;
+                        const glm::vec3 gc = glm::vec3(scene.ComputeWorldMatrix((entt::entity)ge)[3]);
+                        const float half = glm::radians(std::clamp(vc.FieldOfView, 1.0f, 179.0f)) * 0.5f;
+                        const float want = std::clamp(r / (std::max(gf->FramingSize, 0.05f) * std::tan(half)), gf->MinDistance, std::max(gf->MaxDistance, gf->MinDistance));
+                        gf->Distance = gf->Distance < 0.0f ? want : gf->Distance + (want - gf->Distance) * Damp(gf->Damping, dt);
+                        glm::vec3 dir = vc.FinalPosition - gc;
+                        if (glm::length(dir) < 1e-4f)
+                            dir = vc.FinalRotation * glm::vec3(0, 0, 1);
+                        vc.FinalPosition = gc + glm::normalize(dir) * gf->Distance;
+                        moved = true;
+                        break;
+                    }
+                }
+                if (auto* cf = reg.try_get<CinemachineConfiner3DComponent>(h))
+                {
+                    glm::vec3 mn, mx;
+                    if (WorldBox(scene, cf->BoundingVolume, mn, mx))
+                    {
+                        glm::vec3 p = glm::clamp(vc.FinalPosition, mn, mx);
+                        if (cf->SlowingDistance > 0.0f)
+                        {
+                            // Kenara yaklaşırken yumuşak: kutunun içinde kenara SlowingDistance kadar yaklaşınca sınıra doğru sıkışır
+                            const glm::vec3 lo = mn + glm::vec3(cf->SlowingDistance), hi = mx - glm::vec3(cf->SlowingDistance);
+                            for (int a = 0; a < 3; ++a)
+                            {
+                                if (lo[a] >= hi[a]) continue;
+                                if (vc.FinalPosition[a] < lo[a]) p[a] = lo[a] - cf->SlowingDistance * std::tanh((lo[a] - vc.FinalPosition[a]) / cf->SlowingDistance);
+                                if (vc.FinalPosition[a] > hi[a]) p[a] = hi[a] + cf->SlowingDistance * std::tanh((vc.FinalPosition[a] - hi[a]) / cf->SlowingDistance);
+                            }
+                        }
+                        moved = moved || glm::length(p - vc.FinalPosition) > 1e-6f;
+                        vc.FinalPosition = p;
+                    }
+                }
+                if (auto* cf2 = reg.try_get<CinemachineConfiner2DComponent>(h))
+                {
+                    std::vector<glm::vec2> poly;
+                    if (WorldShape2D(scene, cf2->BoundingShape, poly))
+                    {
+                        const glm::vec2 xy(vc.FinalPosition);
+                        if (!InsidePolygon(poly, xy))
+                        {
+                            const glm::vec2 q = ClosestOnPolygon(poly, xy);
+                            vc.FinalPosition.x = q.x;
+                            vc.FinalPosition.y = q.y;
+                            moved = true;
+                        }
+                    }
+                }
+                if (auto* de = reg.try_get<CinemachineDeoccluderComponent>(h); de && (hasLook || hasFollow))
+                {
+                    if (PhysicsWorld3D* physics = scene.GetPhysicsWorld3D(); physics && physics->IsRunning())
+                    {
+                        const glm::vec3 target = hasLook ? lPos + vc.LookAtOffset : tPos;
+                        const glm::vec3 toCam = vc.FinalPosition - target;
+                        const float dist = glm::length(toCam);
+                        if (dist > 1e-3f)
+                        {
+                            const glm::vec3 dir = toCam / dist;
+                            Entity tgt = scene.FindEntityByUUID(vc.LookAt ? vc.LookAt : vc.Follow);
+                            const uint32_t ignore = tgt ? (uint32_t)(entt::entity)tgt : Physics3D::NoEntity;
+                            Physics3D::RaycastHit hit;
+                            float want = 0.0f;
+                            if (physics->SphereCast(target, std::max(de->CameraRadius, 0.01f), dir, dist, hit, de->CollideAgainst, ignore))
+                                want = dist - std::max(hit.Distance - 0.05f, de->MinimumDistanceFromTarget);
+                            // Engel gelince hemen öne, kalkınca sönümle geri
+                            de->Pull = want > de->Pull ? want : de->Pull + (want - de->Pull) * Damp(de->Damping, dt);
+                            if (de->Pull > 1e-4f)
+                            {
+                                vc.FinalPosition = target + dir * std::max(dist - de->Pull, de->MinimumDistanceFromTarget);
+                                moved = true;
+                            }
+                        }
+                    }
+                }
+                if (moved && hasLook && (vc.Aim == VCamAim::Composer || vc.Aim == VCamAim::HardLookAt))
+                {
+                    const glm::vec3 to = lookPoint - vc.FinalPosition;
+                    if (glm::length(to) > 1e-4f)
+                        vc.FinalRotation = glm::quatLookAt(glm::normalize(to), glm::vec3(0, 1, 0));
+                }
+                if (auto* fz = reg.try_get<CinemachineFollowZoomComponent>(h))
+                {
+                    const float d = std::max(glm::length(lookPoint - vc.FinalPosition), 1e-3f);
+                    const float want = std::clamp(glm::degrees(2.0f * std::atan(std::max(fz->Width, 1e-3f) * 0.5f / d)), fz->MinFov, std::max(fz->MaxFov, fz->MinFov));
+                    fz->Fov = fz->Fov < 0.0f ? want : fz->Fov + (want - fz->Fov) * Damp(fz->Damping, dt);
+                    vc.EffectiveFov = fz->Fov;
+                }
+
+                // Kendi dönüşümüne ham (eklentisiz) pozu yaz: Unity gibi; düzeltilmiş poz yazılsaydı Do Nothing gövdesinde Deoccluder / Confiner
+                // düzeltmesi bir sonraki karenin başlangıcı olur, engel kalkınca kamera geri dönmezdi. Gerçek kamera Final pozu kullanır
                 Entity self{ h, &scene };
                 scene.SetEntityWorldPose(self, vc.StatePosition, &vc.StateRotation);
 
@@ -299,21 +516,22 @@ namespace Conqueror
 
                 // Gürültü ve sarsıntı canlı kameranın üstüne eklenir (harmanlanmış pozda)
                 vc.NoiseTime += dt * std::max(vc.NoiseFrequency, 0.0f);
-                glm::vec3 shake = ImpulseDisplacement(scene, vc.StatePosition, vc.ImpulseGain);
+                glm::vec3 shake = ImpulseDisplacement(scene, vc.FinalPosition, vc.ImpulseGain);
                 glm::vec3 noiseEuler(0.0f);
                 if (vc.NoiseAmplitude > 0.0f)
                     noiseEuler = glm::radians(glm::vec3(Noise1(vc.NoiseTime * 2.1f), Noise1(vc.NoiseTime * 1.7f + 37.0f), Noise1(vc.NoiseTime * 1.3f + 71.0f) * 0.5f) * vc.NoiseAmplitude);
-                glm::quat targetRot = vc.StateRotation * glm::quat(noiseEuler) * glm::angleAxis(glm::radians(vc.Dutch), glm::vec3(0, 0, 1));
+                glm::quat targetRot = vc.FinalRotation * glm::quat(noiseEuler) * glm::angleAxis(glm::radians(vc.Dutch), glm::vec3(0, 0, 1));
                 // Sarsıntının küçük bir kısmı açısal (daha inandırıcı)
                 targetRot = targetRot * glm::quat(glm::vec3(shake.y, shake.x, 0.0f) * 0.02f);
-                glm::vec3 targetPos = vc.StatePosition + shake;
+                glm::vec3 targetPos = vc.FinalPosition + shake;
 
                 glm::vec3 pos = brain.BlendProgress >= 1.0f ? targetPos : glm::mix(brain.BlendFromPosition, targetPos, t);
                 glm::quat rot = brain.BlendProgress >= 1.0f ? targetRot : glm::slerp(brain.BlendFromRotation, targetRot, t);
                 scene.SetEntityWorldPose(Entity{ h, &scene }, pos, &rot);
                 if (brain.ApplyFieldOfView && cam.Camera.GetProjectionType() == SceneCamera::ProjectionType::Perspective)
                 {
-                    float fov = brain.BlendProgress >= 1.0f ? vc.FieldOfView : glm::mix(brain.BlendFromFov, vc.FieldOfView, t);
+                    const float liveFov = vc.EffectiveFov > 0.0f ? vc.EffectiveFov : vc.FieldOfView;
+                    float fov = brain.BlendProgress >= 1.0f ? liveFov : glm::mix(brain.BlendFromFov, liveFov, t);
                     cam.Camera.SetPerspectiveVerticalFOV(glm::radians(std::clamp(fov, 1.0f, 179.0f)));
                 }
                 brain.HasPose = true;
@@ -335,6 +553,13 @@ namespace Conqueror
             }
         }
     }
+
+    template<> void Scene::OnComponentAdded<CinemachineConfiner3DComponent>(Entity, CinemachineConfiner3DComponent&) {}
+    template<> void Scene::OnComponentAdded<CinemachineConfiner2DComponent>(Entity, CinemachineConfiner2DComponent&) {}
+    template<> void Scene::OnComponentAdded<CinemachineDeoccluderComponent>(Entity, CinemachineDeoccluderComponent&) {}
+    template<> void Scene::OnComponentAdded<CinemachineGroupFramingComponent>(Entity, CinemachineGroupFramingComponent&) {}
+    template<> void Scene::OnComponentAdded<CinemachineFollowZoomComponent>(Entity, CinemachineFollowZoomComponent&) {}
+    template<> void Scene::OnComponentAdded<CinemachineTargetGroupComponent>(Entity, CinemachineTargetGroupComponent&) {}
 
     void RegisterCameraRigComponents()
     {
@@ -402,5 +627,46 @@ namespace Conqueror
             .Field("Radius", "Radius", &ImpulseSourceComponent::Radius).Range(0.0f, 100000.0f, 0.1f)
             .Field("GenerateOnStart", "Generate On Start", &ImpulseSourceComponent::GenerateOnStart)
             .Field("GenerateOnCollision", "Generate On Collision", &ImpulseSourceComponent::GenerateOnCollision);
+
+        using C3 = CinemachineConfiner3DComponent;
+        ComponentDef<C3>("Cinemachine Confiner 3D", "CinemachineConfiner3DComponent", "Cameras", ICON_FA_CUBE).Color(kCamColor)
+            .Describe("Keeps this Virtual Camera inside the Bounding Volume: its Box Collider box, or its position and scale.")
+            .Field("BoundingVolume", "Bounding Volume", &C3::BoundingVolume)
+            .Field("SlowingDistance", "Slowing Distance", &C3::SlowingDistance).Range(0.0f, 100.0f, 0.05f);
+        using C2 = CinemachineConfiner2DComponent;
+        ComponentDef<C2>("Cinemachine Confiner 2D", "CinemachineConfiner2DComponent", "Cameras", ICON_FA_SQUARE).Color(kCamColor)
+            .Describe("Keeps this Virtual Camera inside a 2D shape (XY): the Bounding Shape's Polygon Collider 2D or Box Collider 2D.")
+            .Field("BoundingShape", "Bounding Shape 2D", &C2::BoundingShape);
+        using DO = CinemachineDeoccluderComponent;
+        ComponentDef<DO>("Cinemachine Deoccluder", "CinemachineDeoccluderComponent", "Cameras", ICON_FA_EYE).Color(kCamColor)
+            .Describe("When a collider blocks the view of the Look At (or Follow) target, the camera moves in front of it; it eases back when the view is clear.")
+            .Field("CollideAgainst", "Collide Against", &DO::CollideAgainst)
+            .Field("CameraRadius", "Camera Radius", &DO::CameraRadius).Range(0.0f, 5.0f, 0.01f)
+            .Field("MinimumDistanceFromTarget", "Minimum Distance From Target", &DO::MinimumDistanceFromTarget).Range(0.0f, 50.0f, 0.01f)
+            .Field("Damping", "Damping", &DO::Damping).Range(0.0f, 10.0f, 0.01f).Format("%.2f s");
+        using GF = CinemachineGroupFramingComponent;
+        ComponentDef<GF>("Cinemachine Group Framing", "CinemachineGroupFramingComponent", "Cameras", ICON_FA_USERS).Color(kCamColor)
+            .Describe("When this Virtual Camera follows or looks at a Target Group, it moves to the distance where the whole group fills Framing Size of the screen.")
+            .Field("FramingSize", "Framing Size", &GF::FramingSize).Range(0.05f, 1.0f, 0.01f)
+            .Field("Damping", "Damping", &GF::Damping).Range(0.0f, 10.0f, 0.01f).Format("%.2f s")
+            .Field("MinDistance", "Min Distance", &GF::MinDistance).Range(0.0f, 10000.0f, 0.1f)
+            .Field("MaxDistance", "Max Distance", &GF::MaxDistance).Range(0.0f, 10000.0f, 0.1f);
+        using FZ = CinemachineFollowZoomComponent;
+        ComponentDef<FZ>("Cinemachine Follow Zoom", "CinemachineFollowZoomComponent", "Cameras", ICON_FA_MAGNIFYING_GLASS_PLUS).Color(kCamColor)
+            .Describe("Changes the field of view so that Width metres around the target always look the same size on screen.")
+            .Field("Width", "Width", &FZ::Width).Range(0.01f, 1000.0f, 0.05f)
+            .Field("MinFov", "Min FOV", &FZ::MinFov).Range(1.0f, 179.0f, 0.5f)
+            .Field("MaxFov", "Max FOV", &FZ::MaxFov).Range(1.0f, 179.0f, 0.5f)
+            .Field("Damping", "Damping", &FZ::Damping).Range(0.0f, 10.0f, 0.01f).Format("%.2f s");
+        using TG = CinemachineTargetGroupComponent;
+        ComponentDef<TG>("Cinemachine Target Group", "CinemachineTargetGroupComponent", "Cameras", ICON_FA_PEOPLE_GROUP).Color(kCamColor)
+            .Describe("A group that Virtual Cameras can follow or look at: this object moves to the weighted centre of its targets every frame; "
+                      "Group Framing uses the radius that holds all of them.")
+            .Field("Target1", "Target 1", &TG::Target1).Field("Weight1", "Weight 1", &TG::Weight1).Range(0.0f, 10.0f, 0.01f).Field("Radius1", "Radius 1", &TG::Radius1).Range(0.0f, 100.0f, 0.05f)
+            .Field("Target2", "Target 2", &TG::Target2).Field("Weight2", "Weight 2", &TG::Weight2).Range(0.0f, 10.0f, 0.01f).Field("Radius2", "Radius 2", &TG::Radius2).Range(0.0f, 100.0f, 0.05f)
+            .Field("Target3", "Target 3", &TG::Target3).Field("Weight3", "Weight 3", &TG::Weight3).Range(0.0f, 10.0f, 0.01f).Field("Radius3", "Radius 3", &TG::Radius3).Range(0.0f, 100.0f, 0.05f)
+            .Field("Target4", "Target 4", &TG::Target4).Field("Weight4", "Weight 4", &TG::Weight4).Range(0.0f, 10.0f, 0.01f).Field("Radius4", "Radius 4", &TG::Radius4).Range(0.0f, 100.0f, 0.05f)
+            .Field("BoundingRadius", "Bounding Radius", &TG::BoundingRadius).ReadOnly().Header("Runtime");
     }
+
 }

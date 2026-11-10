@@ -1695,7 +1695,6 @@ namespace Conqueror::Editor
             settings.MaxSpacing = b.APVMaxSpacing;
             settings.BakingMode = b.APVBakingMode;
             settings.ProbeResolution = 32;
-            m_Bake.APV = AdaptiveProbeVolume::Create(settings);
             ProbeInvaliditySettings inv;
             inv.Dilation = b.APVDilation;
             inv.VirtualOffset = b.APVVirtualOffset;
@@ -1703,6 +1702,50 @@ namespace Conqueror::Editor
             inv.SearchDistanceMultiplier = b.APVSearchDistanceMultiplier;
             inv.GeometryBias = b.APVGeometryBias;
             inv.RayOriginBias = b.APVRayOriginBias;
+            // Sahnede Adaptive Probe Volume bileşeni varsa (Unity'deki Probe Volume gibi) pişirme hacmi bileşenlerin kutularının birleşimidir
+            // (konum = merkez, ölçek = boyut); aralık ve geçersizlik ayarları ilk bileşenden
+            {
+                auto apvView = snapshot->m_Registry.view<TransformComponent, AdaptiveProbeVolumeComponent>();
+                bool first = true;
+                glm::vec3 mn(0.0f), mx(0.0f);
+                for (auto e : apvView)
+                {
+                    const auto& tc = apvView.get<TransformComponent>(e);
+                    const auto& vc = apvView.get<AdaptiveProbeVolumeComponent>(e);
+                    const glm::vec3 c = glm::vec3(tc.WorldTransform[3]);
+                    const glm::vec3 half = 0.5f * glm::vec3(glm::length(glm::vec3(tc.WorldTransform[0])), glm::length(glm::vec3(tc.WorldTransform[1])),
+                                                            glm::length(glm::vec3(tc.WorldTransform[2])));
+                    if (first)
+                    {
+                        mn = c - half;
+                        mx = c + half;
+                        settings.ProbeOffset = vc.ProbeOffset;
+                        settings.MinSpacing = std::max(vc.MinSpacing, 0.1f);
+                        settings.MaxSpacing = std::max(vc.MaxSpacing, settings.MinSpacing);
+                        settings.BakingMode = vc.BakingMode;
+                        inv.Dilation = vc.Dilation;
+                        inv.VirtualOffset = vc.VirtualOffset;
+                        inv.ValidityThreshold = vc.ValidityThreshold;
+                        inv.SearchDistanceMultiplier = vc.SearchDistanceMultiplier;
+                        inv.GeometryBias = vc.GeometryBias;
+                        inv.RayOriginBias = vc.RayOriginBias;
+                        first = false;
+                    }
+                    else
+                    {
+                        mn = glm::min(mn, c - half);
+                        mx = glm::max(mx, c + half);
+                    }
+                }
+                if (!first)
+                {
+                    settings.Origin = mn;
+                    settings.Size = glm::max(mx - mn, glm::vec3(0.5f));
+                    CQ_CORE_INFO("APV bake: volume from Adaptive Probe Volume components, origin ({:.2f}, {:.2f}, {:.2f}) size ({:.2f}, {:.2f}, {:.2f})",
+                                 mn.x, mn.y, mn.z, settings.Size.x, settings.Size.y, settings.Size.z);
+                }
+            }
+            m_Bake.APV = AdaptiveProbeVolume::Create(settings);
             m_Bake.APV->SetInvaliditySettings(inv);
             m_Bake.APV->SetProgressCallback(progressCallback);
             auto* apv = m_Bake.APV.get();
@@ -1785,9 +1828,10 @@ namespace Conqueror::Editor
         {
             auto& baker = *m_Bake.Baker;
             const auto& atlas = baker.GetAtlas();
-            if (baker.WasCancelled() || atlas.Width == 0 || atlas.Texels.empty())
+            const bool cancelled = baker.WasCancelled();
+            if (cancelled || atlas.Width == 0 || atlas.Texels.empty())
             {
-                m_StatusMessage = baker.WasCancelled() ? "Lightmap bake cancelled." : "Nothing to bake: no static geometry.";
+                m_StatusMessage = cancelled ? "Lightmap bake cancelled." : "Nothing to bake: no static geometry.";
             }
             else
             {
@@ -1827,16 +1871,15 @@ namespace Conqueror::Editor
                             m_Context->SetBakedLightmapPath("Assets/Lightmaps/baked_lightmap.png");
                     }
                     m_StatusMessage = "Lightmaps baked in " + std::to_string((int)(seconds * 10.0f) / 10.0f).substr(0, 4) + " s.";
-
-                    // Zincir: APV bileşeni varsa onu da pişir
-                    if (!m_Context->m_Registry.view<AdaptiveProbeVolumeComponent>().empty() && !silent)
-                    {
-                        m_Bake.Snapshot.reset();
-                        m_StatusTime = std::chrono::steady_clock::now();
-                        StartBake(BakeKind::APV, silent);
-                        return;
-                    }
                 }
+            }
+            // Zincir: APV bileşeni varsa onu da pişir; lightmap'lenecek statik nesne olmasa da (Unity gibi: problar ışıkları / gökyüzünü yakalar)
+            if (kind == BakeKind::BakedLightmap && !cancelled && !silent && !m_Context->m_Registry.view<AdaptiveProbeVolumeComponent>().empty())
+            {
+                m_Bake.Snapshot.reset();
+                m_StatusTime = std::chrono::steady_clock::now();
+                StartBake(BakeKind::APV, silent);
+                return;
             }
         }
 

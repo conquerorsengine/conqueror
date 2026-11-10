@@ -151,6 +151,43 @@ namespace Conqueror
             return true;
         }
 
+        // Kaynak nesnenin dönüşümü modelin düğüm uzayında
+        bool SourceMatrix(Scene& scene, uint64_t uuid, const glm::mat4& nodeFromWorld, glm::mat4& out)
+        {
+            if (!uuid)
+                return false;
+            Entity t = scene.FindEntityByUUID(uuid);
+            if (!t || !t.HasComponent<TransformComponent>())
+                return false;
+            out = nodeFromWorld * t.GetComponent<TransformComponent>().WorldTransform;
+            return true;
+        }
+
+        // Kaynakların ağırlıklı konum ve dönüş ortalaması (kuaterniyonlar ilkiyle aynı yarıküreye çevrilip toplanır)
+        struct WeightedAverage
+        {
+            glm::vec3 Pos{ 0.0f };
+            glm::quat Rot{ 0.0f, 0.0f, 0.0f, 0.0f };
+            float Total = 0.0f;
+            bool HasFirst = false;
+            glm::quat First{ 1, 0, 0, 0 };
+            void Add(const glm::mat4& m, float w)
+            {
+                if (w <= 0.0f)
+                    return;
+                glm::quat q = RotationOf(m);
+                if (!HasFirst) { First = q; HasFirst = true; }
+                if (glm::dot(q, First) < 0.0f)
+                    q = -q;
+                Pos += glm::vec3(m[3]) * w;
+                Rot = Rot + q * w;
+                Total += w;
+            }
+            bool Valid() const { return Total > 0.0f; }
+            glm::vec3 Position() const { return Pos / Total; }
+            glm::quat Rotation() const { return glm::normalize(Rot); }
+        };
+
         bool SkinnedModelOf(Entity e)
         {
             if (!e.HasComponent<MeshRendererComponent>())
@@ -197,6 +234,13 @@ namespace Conqueror
             Gather<MultiAimConstraintComponent>(scene);
             Gather<ChainIKConstraintComponent>(scene);
             Gather<DampedTransformComponent>(scene);
+            Gather<MultiParentConstraintComponent>(scene);
+            Gather<MultiPositionConstraintComponent>(scene);
+            Gather<MultiRotationConstraintComponent>(scene);
+            Gather<OverrideTransformComponent>(scene);
+            Gather<TwistCorrectionComponent>(scene);
+            Gather<BlendConstraintComponent>(scene);
+            Gather<TwistChainConstraintComponent>(scene);
             // Unity gibi hiyerarşi (oluşturma) sırasıyla
             for (auto& [owner, list] : s_ByOwner)
                 std::sort(list.begin(), list.end(), [](const ConstraintRef& a, const ConstraintRef& b) { return (uint32_t)a.E < (uint32_t)b.E; });
@@ -353,6 +397,181 @@ namespace Conqueror
                     s.SetGlobalRotation(bone, glm::slerp(animRot, damp->Rotation, w));
                     s.SetGlobalPosition(bone, glm::mix(animPos, damp->Position, w));
                 }
+                else if (auto* mp = reg.try_get<MultiParentConstraintComponent>(ref.E))
+                {
+                    const int bone = FindNode(nodes, mp->Bone);
+                    if (bone < 0)
+                        continue;
+                    const uint64_t src[3] = { mp->Source1, mp->Source2, mp->Source3 };
+                    const float sw[3] = { mp->SourceWeight1, mp->SourceWeight2, mp->SourceWeight3 };
+                    glm::mat4 m[3];
+                    bool ok[3];
+                    for (int k = 0; k < 3; ++k)
+                        ok[k] = SourceMatrix(scene, src[k], nodeFromWorld, m[k]);
+                    if (mp->MaintainOffset && !mp->OffsetsCaptured)
+                    {
+                        // İlk karede kemiğin kaynaklara göre duruşu (ebeveyne bağlarken kalan ofset gibi)
+                        for (int k = 0; k < 3; ++k)
+                            mp->Offsets[k] = ok[k] ? glm::inverse(m[k]) * s.G[(size_t)bone] : glm::mat4(1.0f);
+                        mp->OffsetsCaptured = true;
+                    }
+                    WeightedAverage avg;
+                    for (int k = 0; k < 3; ++k)
+                        if (ok[k])
+                            avg.Add(mp->MaintainOffset ? m[k] * mp->Offsets[k] : m[k], sw[k]);
+                    if (!avg.Valid())
+                        continue;
+                    if (mp->ConstrainRotation)
+                        s.SetGlobalRotation(bone, glm::slerp(s.Rot(bone), avg.Rotation(), w));
+                    if (mp->ConstrainPosition)
+                        s.SetGlobalPosition(bone, glm::mix(s.Pos(bone), avg.Position(), w));
+                }
+                else if (auto* mpos = reg.try_get<MultiPositionConstraintComponent>(ref.E))
+                {
+                    const int bone = FindNode(nodes, mpos->Bone);
+                    if (bone < 0)
+                        continue;
+                    const uint64_t src[3] = { mpos->Source1, mpos->Source2, mpos->Source3 };
+                    const float sw[3] = { mpos->SourceWeight1, mpos->SourceWeight2, mpos->SourceWeight3 };
+                    WeightedAverage avg;
+                    for (int k = 0; k < 3; ++k)
+                    {
+                        glm::mat4 m;
+                        if (SourceMatrix(scene, src[k], nodeFromWorld, m))
+                            avg.Add(m, sw[k]);
+                    }
+                    if (!avg.Valid())
+                        continue;
+                    const glm::vec3 cur = s.Pos(bone);
+                    if (mpos->MaintainOffset && !mpos->OffsetCaptured)
+                    {
+                        mpos->CapturedOffset = cur - avg.Position();
+                        mpos->OffsetCaptured = true;
+                    }
+                    const glm::vec3 target = avg.Position() + (mpos->MaintainOffset ? mpos->CapturedOffset : glm::vec3(0.0f)) + mpos->Offset;
+                    glm::vec3 next = cur;
+                    if (mpos->ConstrainX) next.x = target.x;
+                    if (mpos->ConstrainY) next.y = target.y;
+                    if (mpos->ConstrainZ) next.z = target.z;
+                    s.SetGlobalPosition(bone, glm::mix(cur, next, w));
+                }
+                else if (auto* mrot = reg.try_get<MultiRotationConstraintComponent>(ref.E))
+                {
+                    const int bone = FindNode(nodes, mrot->Bone);
+                    if (bone < 0)
+                        continue;
+                    const uint64_t src[3] = { mrot->Source1, mrot->Source2, mrot->Source3 };
+                    const float sw[3] = { mrot->SourceWeight1, mrot->SourceWeight2, mrot->SourceWeight3 };
+                    WeightedAverage avg;
+                    for (int k = 0; k < 3; ++k)
+                    {
+                        glm::mat4 m;
+                        if (SourceMatrix(scene, src[k], nodeFromWorld, m))
+                            avg.Add(m, sw[k]);
+                    }
+                    if (!avg.Valid())
+                        continue;
+                    const glm::quat cur = s.Rot(bone);
+                    if (mrot->MaintainOffset && !mrot->OffsetCaptured)
+                    {
+                        mrot->CapturedOffset = glm::normalize(glm::inverse(avg.Rotation()) * cur);
+                        mrot->OffsetCaptured = true;
+                    }
+                    glm::quat target = avg.Rotation() * (mrot->MaintainOffset ? mrot->CapturedOffset : glm::quat(1, 0, 0, 0)) *
+                                       glm::quat(glm::radians(mrot->Offset));
+                    if (!(mrot->ConstrainX && mrot->ConstrainY && mrot->ConstrainZ))
+                    {
+                        // Eksen eksen: yalnız seçili Euler eksenleri hedefe gider
+                        glm::vec3 ce = glm::eulerAngles(cur), te = glm::eulerAngles(target);
+                        if (!mrot->ConstrainX) te.x = ce.x;
+                        if (!mrot->ConstrainY) te.y = ce.y;
+                        if (!mrot->ConstrainZ) te.z = ce.z;
+                        target = glm::quat(te);
+                    }
+                    s.SetGlobalRotation(bone, glm::slerp(cur, glm::normalize(target), w));
+                }
+                else if (auto* ov = reg.try_get<OverrideTransformComponent>(ref.E))
+                {
+                    const int bone = FindNode(nodes, ov->Bone);
+                    if (bone < 0)
+                        continue;
+                    glm::mat4 target;
+                    if (!SourceMatrix(scene, ov->Source, nodeFromWorld, target))
+                    {
+                        const glm::mat4 local = glm::translate(glm::mat4(1.0f), ov->Position) * glm::mat4_cast(glm::quat(glm::radians(ov->Rotation)));
+                        const int parent = nodes[(size_t)bone].Parent;
+                        switch (ov->Space)
+                        {
+                            case RigOverrideSpace::World: target = nodeFromWorld * local; break;
+                            case RigOverrideSpace::Local: target = (parent >= 0 ? s.G[(size_t)parent] : glm::mat4(1.0f)) * local; break;
+                            default: target = s.G[(size_t)bone] * local; break;   // Pivot: animasyonlu duruşa göre
+                        }
+                    }
+                    const float pw = std::clamp(ov->PositionWeight, 0.0f, 1.0f) * w, rw = std::clamp(ov->RotationWeight, 0.0f, 1.0f) * w;
+                    if (rw > 0.0f)
+                        s.SetGlobalRotation(bone, glm::slerp(s.Rot(bone), RotationOf(target), rw));
+                    if (pw > 0.0f)
+                        s.SetGlobalPosition(bone, glm::mix(s.Pos(bone), glm::vec3(target[3]), pw));
+                }
+                else if (auto* tw = reg.try_get<TwistCorrectionComponent>(ref.E))
+                {
+                    const int source = FindNode(nodes, tw->Source);
+                    if (source < 0)
+                        continue;
+                    // Kaynağın yerel dönüşünün bükülme ekseni etrafındaki kısmı (swing-twist ayrıştırması)
+                    const glm::vec3 axis = AxisVector(tw->TwistAxis);
+                    const glm::quat lq = glm::normalize(s.P[(size_t)source].Rotation);
+                    const float angle = 2.0f * std::atan2(glm::dot(glm::vec3(lq.x, lq.y, lq.z), axis), lq.w);
+                    const std::string* names[3] = { &tw->Twist1, &tw->Twist2, &tw->Twist3 };
+                    const float tws[3] = { tw->TwistWeight1, tw->TwistWeight2, tw->TwistWeight3 };
+                    for (int k = 0; k < 3; ++k)
+                    {
+                        const int node = FindNode(nodes, *names[k]);
+                        if (node < 0 || std::fabs(tws[k]) < 1e-5f)
+                            continue;
+                        s.P[(size_t)node].Rotation = glm::normalize(s.P[(size_t)node].Rotation * glm::angleAxis(angle * tws[k] * w, axis));
+                        s.Recompute((size_t)node);
+                    }
+                }
+                else if (auto* bl = reg.try_get<BlendConstraintComponent>(ref.E))
+                {
+                    const int bone = FindNode(nodes, bl->Bone);
+                    glm::mat4 a, b;
+                    if (bone < 0 || !SourceMatrix(scene, bl->SourceA, nodeFromWorld, a) || !SourceMatrix(scene, bl->SourceB, nodeFromWorld, b))
+                        continue;
+                    if (bl->BlendRotation)
+                    {
+                        const glm::quat q = glm::slerp(RotationOf(a), RotationOf(b), std::clamp(bl->RotationWeight, 0.0f, 1.0f));
+                        s.SetGlobalRotation(bone, glm::slerp(s.Rot(bone), q, w));
+                    }
+                    if (bl->BlendPosition)
+                    {
+                        const glm::vec3 p = glm::mix(glm::vec3(a[3]), glm::vec3(b[3]), std::clamp(bl->PositionWeight, 0.0f, 1.0f));
+                        s.SetGlobalPosition(bone, glm::mix(s.Pos(bone), p, w));
+                    }
+                }
+                else if (auto* tc = reg.try_get<TwistChainConstraintComponent>(ref.E))
+                {
+                    const int root = FindNode(nodes, tc->Root), tip = FindNode(nodes, tc->Tip);
+                    glm::mat4 rt, tt;
+                    if (root < 0 || tip < 0 || !IsAncestor(nodes, root, tip) || !SourceMatrix(scene, tc->RootTarget, nodeFromWorld, rt) ||
+                        !SourceMatrix(scene, tc->TipTarget, nodeFromWorld, tt))
+                        continue;
+                    std::vector<int> joints;
+                    for (int n = tip; n >= 0; n = nodes[(size_t)n].Parent)
+                    {
+                        joints.push_back(n);
+                        if (n == root) break;
+                    }
+                    std::reverse(joints.begin(), joints.end());
+                    const glm::quat qr = RotationOf(rt), qt = RotationOf(tt);
+                    const size_t count = joints.size();
+                    for (size_t k = 0; k < count; ++k)
+                    {
+                        const float f = count > 1 ? (float)k / (float)(count - 1) : 1.0f;
+                        s.SetGlobalRotation(joints[k], glm::slerp(s.Rot(joints[k]), glm::slerp(qr, qt, f), w));
+                    }
+                }
             }
         }
 
@@ -395,6 +614,14 @@ namespace Conqueror
             return true;
         }
     }
+
+    template<> void Scene::OnComponentAdded<MultiParentConstraintComponent>(Entity, MultiParentConstraintComponent&) {}
+    template<> void Scene::OnComponentAdded<MultiPositionConstraintComponent>(Entity, MultiPositionConstraintComponent&) {}
+    template<> void Scene::OnComponentAdded<MultiRotationConstraintComponent>(Entity, MultiRotationConstraintComponent&) {}
+    template<> void Scene::OnComponentAdded<OverrideTransformComponent>(Entity, OverrideTransformComponent&) {}
+    template<> void Scene::OnComponentAdded<TwistCorrectionComponent>(Entity, TwistCorrectionComponent&) {}
+    template<> void Scene::OnComponentAdded<BlendConstraintComponent>(Entity, BlendConstraintComponent&) {}
+    template<> void Scene::OnComponentAdded<TwistChainConstraintComponent>(Entity, TwistChainConstraintComponent&) {}
 
     void RegisterRigComponents()
     {
@@ -444,5 +671,87 @@ namespace Conqueror
             .Field("Bone", "Constrained Bone", &D::Bone)
             .Field("DampPosition", "Damp Position", &D::DampPosition).Range(0.0f, 1.0f, 0.01f)
             .Field("DampRotation", "Damp Rotation", &D::DampRotation).Range(0.0f, 1.0f, 0.01f);
+
+        using MP = MultiParentConstraintComponent;
+        ComponentDef<MP>("Multi-Parent Constraint", "MultiParentConstraintComponent", "Animation Rigging", ICON_FA_SITEMAP)
+            .Describe("The bone follows the weighted source objects as if it were their child (a weapon held in both hands, a rider). "
+                      "Maintain Offset keeps the pose it had on the first frame relative to them.")
+            .Field("Weight", "Weight", &MP::Weight).Range(0.0f, 1.0f, 0.01f)
+            .Field("Bone", "Constrained Bone", &MP::Bone)
+            .Field("Source1", "Source 1", &MP::Source1).Field("SourceWeight1", "Source 1 Weight", &MP::SourceWeight1).Range(0.0f, 1.0f, 0.01f)
+            .Field("Source2", "Source 2", &MP::Source2).Field("SourceWeight2", "Source 2 Weight", &MP::SourceWeight2).Range(0.0f, 1.0f, 0.01f)
+            .Field("Source3", "Source 3", &MP::Source3).Field("SourceWeight3", "Source 3 Weight", &MP::SourceWeight3).Range(0.0f, 1.0f, 0.01f)
+            .Field("MaintainOffset", "Maintain Offset", &MP::MaintainOffset)
+            .Field("ConstrainPosition", "Constrain Position", &MP::ConstrainPosition)
+            .Field("ConstrainRotation", "Constrain Rotation", &MP::ConstrainRotation);
+
+        using MPO = MultiPositionConstraintComponent;
+        ComponentDef<MPO>("Multi-Position Constraint", "MultiPositionConstraintComponent", "Animation Rigging", ICON_FA_UP_DOWN_LEFT_RIGHT)
+            .Describe("Moves the bone to the weighted average position of the sources, on the chosen axes.")
+            .Field("Weight", "Weight", &MPO::Weight).Range(0.0f, 1.0f, 0.01f)
+            .Field("Bone", "Constrained Bone", &MPO::Bone)
+            .Field("Source1", "Source 1", &MPO::Source1).Field("SourceWeight1", "Source 1 Weight", &MPO::SourceWeight1).Range(0.0f, 1.0f, 0.01f)
+            .Field("Source2", "Source 2", &MPO::Source2).Field("SourceWeight2", "Source 2 Weight", &MPO::SourceWeight2).Range(0.0f, 1.0f, 0.01f)
+            .Field("Source3", "Source 3", &MPO::Source3).Field("SourceWeight3", "Source 3 Weight", &MPO::SourceWeight3).Range(0.0f, 1.0f, 0.01f)
+            .Field("MaintainOffset", "Maintain Offset", &MPO::MaintainOffset)
+            .Field("Offset", "Offset", &MPO::Offset)
+            .Field("ConstrainX", "X", &MPO::ConstrainX).Field("ConstrainY", "Y", &MPO::ConstrainY).Field("ConstrainZ", "Z", &MPO::ConstrainZ);
+
+        using MR = MultiRotationConstraintComponent;
+        ComponentDef<MR>("Multi-Rotation Constraint", "MultiRotationConstraintComponent", "Animation Rigging", ICON_FA_ROTATE)
+            .Describe("Turns the bone to the weighted average rotation of the sources, on the chosen axes.")
+            .Field("Weight", "Weight", &MR::Weight).Range(0.0f, 1.0f, 0.01f)
+            .Field("Bone", "Constrained Bone", &MR::Bone)
+            .Field("Source1", "Source 1", &MR::Source1).Field("SourceWeight1", "Source 1 Weight", &MR::SourceWeight1).Range(0.0f, 1.0f, 0.01f)
+            .Field("Source2", "Source 2", &MR::Source2).Field("SourceWeight2", "Source 2 Weight", &MR::SourceWeight2).Range(0.0f, 1.0f, 0.01f)
+            .Field("Source3", "Source 3", &MR::Source3).Field("SourceWeight3", "Source 3 Weight", &MR::SourceWeight3).Range(0.0f, 1.0f, 0.01f)
+            .Field("MaintainOffset", "Maintain Offset", &MR::MaintainOffset)
+            .Field("Offset", "Offset", &MR::Offset)
+            .Field("ConstrainX", "X", &MR::ConstrainX).Field("ConstrainY", "Y", &MR::ConstrainY).Field("ConstrainZ", "Z", &MR::ConstrainZ);
+
+        using OT = OverrideTransformComponent;
+        ComponentDef<OT>("Override Transform", "OverrideTransformComponent", "Animation Rigging", ICON_FA_ARROWS_TO_DOT)
+            .Describe("Replaces the bone's animated transform with the source object's, or with the Position / Rotation below in World, Local "
+                      "(parent) or Pivot (relative to the animated pose) space.")
+            .Field("Weight", "Weight", &OT::Weight).Range(0.0f, 1.0f, 0.01f)
+            .Field("Bone", "Constrained Bone", &OT::Bone)
+            .Field("Source", "Source", &OT::Source)
+            .Field("Space", "Space", &OT::Space).Options({ "World", "Local", "Pivot" })
+            .Field("Position", "Position", &OT::Position)
+            .Field("Rotation", "Rotation", &OT::Rotation)
+            .Field("PositionWeight", "Position Weight", &OT::PositionWeight).Range(0.0f, 1.0f, 0.01f)
+            .Field("RotationWeight", "Rotation Weight", &OT::RotationWeight).Range(0.0f, 1.0f, 0.01f);
+
+        using TW = TwistCorrectionComponent;
+        ComponentDef<TW>("Twist Correction", "TwistCorrectionComponent", "Animation Rigging", ICON_FA_ARROWS_SPIN)
+            .Describe("Spreads the source bone's twist around the twist axis to the twist bones (forearm twist bones follow the wrist), "
+                      "so the skin does not collapse.")
+            .Field("Weight", "Weight", &TW::Weight).Range(0.0f, 1.0f, 0.01f)
+            .Field("Source", "Source Bone", &TW::Source)
+            .Field("TwistAxis", "Twist Axis", &TW::TwistAxis).Options(axisOptions)
+            .Field("Twist1", "Twist Bone 1", &TW::Twist1).Field("TwistWeight1", "Twist Bone 1 Weight", &TW::TwistWeight1).Range(-1.0f, 1.0f, 0.01f)
+            .Field("Twist2", "Twist Bone 2", &TW::Twist2).Field("TwistWeight2", "Twist Bone 2 Weight", &TW::TwistWeight2).Range(-1.0f, 1.0f, 0.01f)
+            .Field("Twist3", "Twist Bone 3", &TW::Twist3).Field("TwistWeight3", "Twist Bone 3 Weight", &TW::TwistWeight3).Range(-1.0f, 1.0f, 0.01f);
+
+        using BL = BlendConstraintComponent;
+        ComponentDef<BL>("Blend Constraint", "BlendConstraintComponent", "Animation Rigging", ICON_FA_CODE_MERGE)
+            .Describe("Puts the bone between two source objects: 0 is Source A, 1 is Source B, separately for position and rotation.")
+            .Field("Weight", "Weight", &BL::Weight).Range(0.0f, 1.0f, 0.01f)
+            .Field("Bone", "Constrained Bone", &BL::Bone)
+            .Field("SourceA", "Source A", &BL::SourceA)
+            .Field("SourceB", "Source B", &BL::SourceB)
+            .Field("BlendPosition", "Blend Position", &BL::BlendPosition)
+            .Field("PositionWeight", "Position A -> B", &BL::PositionWeight).Range(0.0f, 1.0f, 0.01f)
+            .Field("BlendRotation", "Blend Rotation", &BL::BlendRotation)
+            .Field("RotationWeight", "Rotation A -> B", &BL::RotationWeight).Range(0.0f, 1.0f, 0.01f);
+
+        using TC = TwistChainConstraintComponent;
+        ComponentDef<TC>("Twist Chain Constraint", "TwistChainConstraintComponent", "Animation Rigging", ICON_FA_LINK)
+            .Describe("Turns every bone from Root to Tip smoothly between the rotation of the Root Target and the Tip Target (spine, tail).")
+            .Field("Weight", "Weight", &TC::Weight).Range(0.0f, 1.0f, 0.01f)
+            .Field("Root", "Root Bone", &TC::Root)
+            .Field("Tip", "Tip Bone", &TC::Tip)
+            .Field("RootTarget", "Root Target", &TC::RootTarget)
+            .Field("TipTarget", "Tip Target", &TC::TipTarget);
     }
 }
