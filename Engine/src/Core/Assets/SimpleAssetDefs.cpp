@@ -253,6 +253,17 @@ namespace Conqueror::SimpleAssets
             { Tab("Entries", { Col("Category"), Col("Label"), ColA("Sprite", { ".png", ".jpg", ".jpeg", ".tga", ".bmp" }), Col("Sprite Name") },
                   "Sprite Name is optional: a slice of a sprite sheet (Sprite Editor).") });
 
+        // Unity 2D SpriteShape: Sprite Shape Profile (Sprite Shape Controller kullanır)
+        add("SpriteShapeProfile", ".cqspriteshape", "Sprite Shape Profile", "2D", "", ICON_FA_DRAW_POLYGON, Rgb(130, 230, 160),
+            "Looks of a Sprite Shape: the fill texture inside closed shapes and the sprites repeated along its edges.",
+            { A("Fill Texture", { ".png", ".jpg", ".jpeg", ".tga", ".bmp" }, "Tiled inside closed shapes. Set the texture's Wrap Mode to Repeat."),
+              F("Fill Tiling", 4.0f, "World units covered by one repeat of the fill texture."),
+              A("Edge Sprite", { ".png", ".jpg", ".jpeg", ".tga", ".bmp" }, "Repeated along edges that no angle range below covers."),
+              F("Edge Height", 0.5f, "Thickness of the edge strip in world units."),
+              F("Edge Offset", 0.0f, "-0.5 = edge inside the fill, 0 = centered on the line, 0.5 = edge outside.", -0.5f, 0.5f),
+              Tab("Angle Ranges", { ColF("Start", "-45"), ColF("End", "45"), ColA("Sprite", { ".png", ".jpg", ".jpeg", ".tga", ".bmp" }) },
+                  "Which way the edge's outer side faces: 0 = up, 90 = right, -90 = left, 180 = down. First matching row wins.") });
+
         // Yapay zekâ
         add("Blackboard", ".cqblackboard", "Blackboard", "AI", "", ICON_FA_DATABASE, Rgb(120, 180, 255),
             "The memory of a Behavior Tree: named values shared by its tasks and decorators. Scripts use BlackboardSet / BlackboardGet.",

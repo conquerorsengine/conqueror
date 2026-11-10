@@ -7,6 +7,7 @@
 #include "Renderer/Renderer2D.h"
 #include "Grid/GridSystem.h"
 #include "PolygonUnion.h"
+#include "Core/Math/Triangulate2D.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -595,7 +596,24 @@ namespace Conqueror
             auto& pc = e.GetComponent<PolygonCollider2DComponent>();
             std::vector<glm::vec2> pts;
             for (auto& p : pc.Points) pts.push_back(xf(p + pc.Offset));
-            pts = ConvexHull(pts);
+            // İçbükey ya da 8'den çok köşeli çokgen (Unity gibi): üçgenlere bölünüp her üçgen ayrı dışbükey şekil olur
+            std::vector<uint32_t> tris;
+            if (pts.size() >= 3 && (!Triangulate2D::IsConvex(pts) || pts.size() > B2_MAX_POLYGON_VERTICES) && Triangulate2D::Triangulate(pts, tris))
+            {
+                b2ShapeDef d = baseDef(pc.Density, pc.Friction, pc.Restitution, pc.IsTrigger, pc.PhysicsMaterial);
+                for (size_t t = 0; t + 2 < tris.size(); t += 3)
+                {
+                    const b2Vec2 tri[3] = { B(pts[tris[t]]), B(pts[tris[t + 1]]), B(pts[tris[t + 2]]) };
+                    b2Hull hull = b2ComputeHull(tri, 3);
+                    if (hull.count < 3)
+                        continue;   // dejenere (alanı sıfır) üçgen
+                    b2Polygon poly = b2MakePolygon(&hull, 0.0f);
+                    registerShape(b2CreatePolygonShape(body, &d, &poly), d);
+                }
+                pts.clear();
+            }
+            else
+                pts = ConvexHull(pts);
             if (pts.size() > B2_MAX_POLYGON_VERTICES)
             {
                 // Eşit aralıklı 8 kabuk noktası

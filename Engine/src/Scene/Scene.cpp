@@ -68,6 +68,7 @@
 #include "Scene/AreaLight.h"
 #include "Scene/LightProbeGroup.h"
 #include "Scene/SpriteAnimation2D.h"
+#include "Scene/SpriteShape.h"
 #include "Scene/PlayerInput.h"
 #include "Scene/RigConstraints.h"
 #include "AISystem/Navigation/NavAgents.h"
@@ -1280,6 +1281,7 @@ namespace Conqueror
                 GameFramework::LateUpdate(*this, (float)ts);   // Spring Arm kamera kolları
                 Skeleton2D::Update(*this, true);               // 2D IK: animasyon ve betiklerden sonra
                 SpriteAnimation2D::Update(*this);              // Sprite Resolver: kütüphaneden sprite seçimi
+                SpriteShapes::Update(*this);                   // Sprite Shape -> Edge / Polygon Collider 2D
             }
             {
                 CQ_PROFILE_SAMPLE("UI.Events", UI);
@@ -1391,7 +1393,7 @@ namespace Conqueror
             // Tüm render edilebilir entity'leri topla (sprite + image + text)
             struct RenderItem
             {
-                enum class Type { Sprite, Image, Text, Tilemap };
+                enum class Type { Sprite, Image, Text, Tilemap, SpriteShape };
                 Type ItemType;
                 entt::entity Entity;
                 TransformComponent* Transform;
@@ -1454,6 +1456,16 @@ namespace Conqueror
                     continue;
                 int32_t layer = m_Registry.all_of<LayerComponent>(entity) ? m_Registry.get<LayerComponent>(entity).Layer : 0;
                 renderItems.push_back({ RenderItem::Type::Tilemap, entity, &transform, (void*)&tilemap, layer, tilemap.OrderInLayer, transform.WorldTransform[3][2] });
+            }
+            // Sprite Shape'ler
+            for (auto entity : m_Registry.view<TransformComponent, SpriteShapeRendererComponent, SpriteShapeControllerComponent>())
+            {
+                if (!IsEntityActive(entity))
+                    continue;
+                auto& transform = m_Registry.get<TransformComponent>(entity);
+                int32_t layer = 0, order = 0;
+                if (const auto* lc = m_Registry.try_get<LayerComponent>(entity)) { layer = lc->Layer; order = lc->OrderInLayer; }
+                renderItems.push_back({ RenderItem::Type::SpriteShape, entity, &transform, nullptr, layer, order, transform.WorldTransform[3][2] });
             }
 
             // Layer ve OrderInLayer'a göre sırala
@@ -1565,7 +1577,7 @@ namespace Conqueror
                 switchPass(isScreenSpace ? Pass2D::Screen : (depthTestEnabled ? Pass2D::World : Pass2D::WorldNoDepth), isText != lastWasText);
                 lastWasText = isText;
                 // Sprite ve karo haritaları 2D ışıkla çarpılır; UI ve metin ışıksız
-                const bool litItem = lit2D && !isCanvasChild && (item.ItemType == RenderItem::Type::Sprite || item.ItemType == RenderItem::Type::Tilemap);
+                const bool litItem = lit2D && !isCanvasChild && (item.ItemType == RenderItem::Type::Sprite || item.ItemType == RenderItem::Type::Tilemap || item.ItemType == RenderItem::Type::SpriteShape);
                 Renderer2D::SetLit(litItem);
                 Renderer2D::SetMaskInteraction(item.ItemType == RenderItem::Type::Sprite ? (int)((SpriteRendererComponent*)item.Component)->MaskInteraction : 0);
                 
@@ -1642,6 +1654,10 @@ namespace Conqueror
                 if (item.ItemType == RenderItem::Type::Tilemap)
                 {
                     GridSystem::DrawTilemap2D(*this, itemEntity);
+                }
+                else if (item.ItemType == RenderItem::Type::SpriteShape)
+                {
+                    SpriteShapes::Draw(*this, item.Entity);
                 }
                 else if (item.ItemType == RenderItem::Type::Sprite)
                 {
@@ -1951,6 +1967,7 @@ namespace Conqueror
             GodotNodes::Update(*this, (float)ts, false);
             Skeleton2D::Update(*this, false);
             SpriteAnimation2D::Update(*this);
+            SpriteShapes::Update(*this);
         }
         // Auto LOD / Virtual Geometry: bekleyen arka plan yapımları (düzenleyicide de)
         AutoLOD::Update(*this);
@@ -2076,7 +2093,7 @@ namespace Conqueror
         // Tüm render edilebilir entity'leri topla (sprite + text + karo haritası)
         struct RenderItem
         {
-            enum class Type { Sprite, Text, Tilemap };
+            enum class Type { Sprite, Text, Tilemap, SpriteShape };
             Type ItemType;
             entt::entity Entity;
             TransformComponent* Transform;
@@ -2155,6 +2172,16 @@ namespace Conqueror
                     continue;
                 int32_t layer = m_Registry.all_of<LayerComponent>(entity) ? m_Registry.get<LayerComponent>(entity).Layer : 0;
                 renderItems.push_back({ RenderItem::Type::Tilemap, entity, &transform, (void*)&tilemap, layer, tilemap.OrderInLayer, transform.WorldTransform[3][2] });
+            }
+            // Sprite Shape'ler
+            for (auto entity : m_Registry.view<TransformComponent, SpriteShapeRendererComponent, SpriteShapeControllerComponent>())
+            {
+                if (!IsEntityActive(entity))
+                    continue;
+                auto& transform = m_Registry.get<TransformComponent>(entity);
+                int32_t layer = 0, order = 0;
+                if (const auto* lc = m_Registry.try_get<LayerComponent>(entity)) { layer = lc->Layer; order = lc->OrderInLayer; }
+                renderItems.push_back({ RenderItem::Type::SpriteShape, entity, &transform, nullptr, layer, order, transform.WorldTransform[3][2] });
             }
         }
 
@@ -2258,7 +2285,7 @@ namespace Conqueror
                 currentDepth = depthTestEnabled;
             }
             lastWasText = isText;
-            Renderer2D::SetLit(lit2D && !isCanvasChild && (item.ItemType == RenderItem::Type::Sprite || item.ItemType == RenderItem::Type::Tilemap));
+            Renderer2D::SetLit(lit2D && !isCanvasChild && (item.ItemType == RenderItem::Type::Sprite || item.ItemType == RenderItem::Type::Tilemap || item.ItemType == RenderItem::Type::SpriteShape));
             Renderer2D::SetMaskInteraction(item.ItemType == RenderItem::Type::Sprite ? (int)((SpriteRendererComponent*)item.Component)->MaskInteraction : 0);
             
             // Pixel Perfect: Canvas child ise ve Pixel Perfect açıksa pozisyonu yuvarla
@@ -2342,6 +2369,10 @@ namespace Conqueror
             if (item.ItemType == RenderItem::Type::Tilemap)
             {
                 GridSystem::DrawTilemap2D(*this, itemEntity);
+            }
+            else if (item.ItemType == RenderItem::Type::SpriteShape)
+            {
+                SpriteShapes::Draw(*this, item.Entity);
             }
             else if (item.ItemType == RenderItem::Type::Sprite)
             {
@@ -2428,6 +2459,7 @@ namespace Conqueror
             Lighting2D::DrawGizmo(*this, id);
             AreaLights::DrawGizmo(*this, id);
             LightProbeGroups::DrawGizmo(*this, id);
+            SpriteShapes::DrawGizmo(*this, id);
             // Gezinme: Link uçları ve yayı, Modifier Volume / Obstacle kutusu
             entt::entity e = (entt::entity)id;
             if (!m_Registry.valid(e) || !m_Registry.all_of<TransformComponent>(e))
