@@ -416,11 +416,28 @@ void main()
     }
     // Açılan alan: geçmişteki en yakın yüzey bu pikseldekinden belirgin farklı VE bu pikselin 3x3'ü tek yüzey (kenar değil:
     // kenarda en yakın derinlik titreşimle karede bir ön karede bir arka yüzey olur, o açılma değildir)
-    // Kamera duruyor ve burada hareket eden nesne yoksa açılma olamaz: alt piksel ince ayrıntıda (uzaktaki yaprak, pencere kenarı)
-    // titreşimin bazı karelerinde 3x3 tek yüzey olur, saklanan derinlik ön yüzeydendir; geçmiş her seferinde atılıp yaprak yanıp sönüyordu
+    // Kamera duruyor ve burada hareket eden nesne yoksa açılma sayılmaz: alt piksel ince ayrıntıda (uzaktaki yaprak, pencere kenarı)
+    // titreşimin bazı karelerinde 3x3 tek yüzey olur, saklanan derinlik ön yüzeydendir; geçmiş her seferinde atılıp yaprak yanıp
+    // sönüyordu. Silinen / gizlenen nesnenin eski yeri hareket vektörü geçişinde işaretlenir (movingNow), orada geçmiş yine atılır
     bool disoccluded = (u_CameraStill == 0 || hasObjectVelocity || movingNow || movedBefore)
                        && closestDepth < 1.0 && farDepth < 1.0 && abs(storedW - prevClip.w) > 0.06 * prevClip.w + 0.04
                        && ViewW(farUV, farDepth) < ViewW(closestUV, closestDepth) * 1.05 + 0.05;
+    // Gökyüzü açıldı: 3x3'ün tamamı şimdi gökyüzü, geçmişte burada bir yüzey vardı (önündeki nesne silindi / gizlendi / kalktı).
+    // Gökyüzü pikseli açılma denetiminin dışındaydı: boş sahnede küp silinince eski görüntüsü saniyelerce hayalet gibi sönüyordu
+    // Yalnız geçmişin 3x3'ünün tamamı yüzeyse: gökyüzüne karşı ince dal / yaprak titreşimin bazı karelerinde 3x3'ten kaybolur,
+    // geçmişinde gökyüzü de vardır; orada geçmiş atılırsa yaprak yanıp söner
+    bool skyRevealed = false;
+    if (closestDepth >= 1.0 && u_HistoryValid == 1)
+    {
+        int surfaces = 0;
+        for (int y = -1; y <= 1; ++y)
+        for (int x = -1; x <= 1; ++x)
+        {
+            float w = abs(texelFetch(u_History, clamp(hn + ivec2(x, y), ivec2(0), histSize - 1), 0).a);
+            if (w > 0.0 && w < 0.5 * closestW) ++surfaces;
+        }
+        skyRevealed = surfaces == 9;
+    }
     vec3 historyLin = SampleHistory(prevUV);
     const vec3 historyBeforeLight = historyLin;   // ışık ölçeklemesinden önceki geçmiş (donan piksele aynen yazılır)
     // Aydınlatma değişimi (yalnız motorun bir ışığın gücünün değiştiğini bildirdiği karelerde, ör. namlu alevi): geçmişin 3x3
@@ -813,6 +830,8 @@ void main()
     // çizgiler ve tek karenin gürültüsü dalgalı görünüyordu. Geçmişe az güvenilir, birkaç karede bu yüzeyin rengine oturur
     if (disoccluded)
         feedback = min(feedback, 0.6);
+    if (skyRevealed)
+        feedback = 0.0;
     // Kenarda açılan alan: kamera hareket ederken geçmişte bu noktada açıkça DAHA YAKIN bir yüzey (örtücü) vardı. Duvarın / küpün
     // arkasından çıkınca öndeki uzak duvarın üst ve alt kenarı (3x3'te gökyüzü ya da ikinci yüzey olduğu için yukarıdaki iç
     // piksel testine girmiyordu) örtücünün açık rengini taşıyıp kısa çizikli / dalgalı görünüyordu. Dururken (titreşimle kenar

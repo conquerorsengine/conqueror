@@ -206,6 +206,7 @@ namespace Conqueror
         bool PrevDepthUsable() const;
         // Kenar yumuşatma planı (Renderer/AntiAliasing.h): bu karede uygulanan ve sonraki kare için istenen
         AntiAliasingMode m_AAMode = AntiAliasingMode::None;
+        float m_LastCameraStep = 0.0f;   // önceki karede kameranın yer değiştirmesi (m): kamera kesmesi algılama
         UpscalerMode m_Upscaler = UpscalerMode::None;
         bool m_CASSharpen = false;                                 // keskinleştirme AMD CAS ile
         float m_CASStrength = 0.0f;

@@ -361,6 +361,15 @@ namespace Conqueror
             std::vector<VelocityDraw> Velocity;
             std::vector<SkinnedVelocityDraw> SkinnedVelocity;
             std::unordered_map<uint64_t, glm::mat4> PrevSkinned, CurSkinned;
+            // Bu ve önceki karede çizilen opak meshler: önceki karede olup bu karede olmayan (silinen, gizlenen) nesnenin eski
+            // yeri hareket vektörü geçişinde "önceki konum" olarak işaretlenir; TAA orada geçmişe güvenmez (küp silinince
+            // eski görüntüsü hayalet gibi sönmez)
+            struct Footprint
+            {
+                std::shared_ptr<Mesh> MeshRef;
+                glm::mat4 Transform{ 1.0f };
+            };
+            std::unordered_map<uint64_t, Footprint> PrevFoot, CurFoot;
             std::unordered_map<const void*, uint32_t> SkinnedOccurrence;
             std::unordered_map<uint64_t, uint32_t> SkinnedIdentityOccurrence;
         };
@@ -459,13 +468,15 @@ namespace Conqueror
 
         // Nesne bu karede önceki kareye göre hareket etti mi (yeni beliren nesne de hareketli). prevOut: önceki dönüşüm
         // (yeni beliren nesnede yok)
-        bool TrackMeshMotion(const void* mesh, const glm::mat4& transform, const glm::mat4** prevOut = nullptr)
+        bool TrackMeshMotion(const void* mesh, const glm::mat4& transform, const glm::mat4** prevOut = nullptr, uint64_t* keyOut = nullptr)
         {
             if (prevOut)
                 *prevOut = nullptr;
             if (!s_MotionCur)
                 return false;
             const uint64_t key = MotionKey(s_MotionCur->Occurrence, s_MotionCur->IdentityOccurrence, mesh);
+            if (keyOut)
+                *keyOut = key;
             s_MotionCur->Cur[key] = transform;
             auto it = s_MotionCur->Prev.find(key);
             if (it == s_MotionCur->Prev.end())
@@ -510,7 +521,15 @@ namespace Conqueror
     bool Renderer3D::HasVelocityDraws(const void* view)
     {
         auto it = s_Motion.find(view);
-        return it != s_Motion.end() && (!it->second.Velocity.empty() || !it->second.SkinnedVelocity.empty());
+        if (it == s_Motion.end())
+            return false;
+        if (!it->second.Velocity.empty() || !it->second.SkinnedVelocity.empty())
+            return true;
+        // Silinen / gizlenen nesnenin eski yeri de bu geçişte işaretlenir
+        for (const auto& [key, f] : it->second.PrevFoot)
+            if (!it->second.Cur.count(key))
+                return true;
+        return false;
     }
 
     bool Renderer3D::ConsumeLightingChange(const void* view)
@@ -665,7 +684,17 @@ namespace Conqueror
     bool Renderer3D::RenderVelocity(const void* view, const glm::mat4& jitteredViewProj, const glm::mat4& viewProj, const glm::mat4& prevViewProj)
     {
         auto it = s_Motion.find(view);
-        if (it == s_Motion.end() || (it->second.Velocity.empty() && it->second.SkinnedVelocity.empty()))
+        if (it == s_Motion.end())
+            return false;
+        // Silinen / gizlenen opak nesne var mı (hareket eden nesne olmasa da eski yeri işaretlenmeli)
+        bool vanished = false;
+        for (const auto& [key, f] : it->second.PrevFoot)
+            if (!it->second.Cur.count(key))
+            {
+                vanished = true;
+                break;
+            }
+        if (it->second.Velocity.empty() && it->second.SkinnedVelocity.empty() && !vanished)
             return false;
         if (!s_VelocityShader)
             s_VelocityShader = Shader::Create("Engine/src/Shaders/3D/Velocity.cqsh");
@@ -762,6 +791,20 @@ namespace Conqueror
                 sh->SetMat4("u_PrevTransform", d.Prev);
                 RenderCommand::DrawIndexed(d.Draw->GetVertexArray(), d.Draw->GetIndexCount());
             }
+            // Önceki karede çizilip bu karede çizilmeyen (silinen / gizlenen) opak nesnelerin eski yeri. Derinlik testiyle: yalnız
+            // şimdi arkasındaki yüzeyin göründüğü pikseller (önünde başka nesne olan, örtülme kırpmasıyla gizlenen nesnenin yeri işaretlenmez)
+            glEnable(GL_DEPTH_TEST);
+            glDepthFunc(GL_LEQUAL);
+            for (const auto& [key, f] : it->second.PrevFoot)
+            {
+                if (it->second.Cur.count(key) || !f.MeshRef || !f.MeshRef->GetVertexArray())
+                    continue;
+                sh->SetMat4("u_Transform", f.Transform);
+                sh->SetMat4("u_PrevTransform", f.Transform);
+                RenderCommand::DrawIndexed(f.MeshRef->GetVertexArray(), f.MeshRef->GetIndexCount());
+                drew = true;
+            }
+            glDisable(GL_DEPTH_TEST);
             sh->SetInt("u_PrevCoverage", 0);
         }
         if (s_VelocitySkinnedShader && s_VelocitySkinnedShader->IsValid())
@@ -828,6 +871,17 @@ namespace Conqueror
         if (it == s_Motion.end())
             return true;
         minMax = it->second.ShadowBoxes;
+        // Silinen / gizlenen gölge düşürücü: eski gölgesi de bu karede kalkar (gölgenin eski yeri geçmişte iz bırakmasın)
+        for (const auto& [key, f] : it->second.PrevFoot)
+        {
+            if (it->second.Cur.count(key) || !f.MeshRef || f.MeshRef->GetBoundsRadius() <= 0.0f)
+                continue;
+            glm::vec3 c, e;
+            TransformBox(f.Transform, f.MeshRef->GetBoundsCenter(), f.MeshRef->GetBoundsExtents(), c, e);
+            const float margin = 0.15f + 0.1f * std::max(e.x, std::max(e.y, e.z));
+            minMax.push_back(glm::vec4(c - e - margin, 0.0f));
+            minMax.push_back(glm::vec4(c + e + margin, 0.0f));
+        }
         minMax.insert(minMax.end(), it->second.LastShadowBoxes.begin(), it->second.LastShadowBoxes.end());
         return true;
     }
@@ -890,6 +944,8 @@ namespace Conqueror
             track.SkinnedVelocity.clear();
             std::swap(track.PrevSkinned, track.CurSkinned);
             track.CurSkinned.clear();
+            std::swap(track.PrevFoot, track.CurFoot);
+            track.CurFoot.clear();
             track.SkinnedOccurrence.clear();
             track.SkinnedIdentityOccurrence.clear();
             s_MotionCur = &track;
@@ -1689,7 +1745,10 @@ namespace Conqueror
             return;
         // Hareket (TAA): kimlik kararlı kalsın diye kırpmadan önce; graph malzeme zamanla değişebilir -> hareketli
         const glm::mat4* prevTransform = nullptr;
-        const bool transformMoved = !fromQueue && TrackMeshMotion(meshIn.get(), transform, &prevTransform);
+        uint64_t motionKey = 0;
+        const bool transformMoved = !fromQueue && TrackMeshMotion(meshIn.get(), transform, &prevTransform, &motionKey);
+        if (!fromQueue && s_MotionCur && (!materialIn || materialIn->Rendering != Material::RenderMode::Transparent))
+            s_MotionCur->CurFoot[motionKey] = { meshIn, transform };
         const glm::mat4 prevCopy = prevTransform ? *prevTransform : transform;   // harita sonraki çizimlerde değişebilir
         const bool moving = fromQueue ? s_QueuedMoving : (transformMoved || (s_MotionCur && materialIn && materialIn->MaterialShader));
         // Yer değiştiren nesnenin gölgesi de yer değiştirir (kamera görmese de gölgesi görüş alanına düşebilir)

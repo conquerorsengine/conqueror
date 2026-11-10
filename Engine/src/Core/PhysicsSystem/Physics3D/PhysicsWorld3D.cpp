@@ -1658,6 +1658,10 @@ namespace Conqueror
         {
             m_Backend->SetCharacterPosition(it->second.Character, position);
             it->second.LastWrittenPos = position;
+            // Ekrandaki ara değerleme de yeni yerden başlar: yoksa bir iki kare eski yer ile yeni yer arasından görünüyordu
+            // (Archviz'de 1-4 ile bakış noktası değişince ilk an başka bir görüntü)
+            it->second.PrevPos = it->second.CurrPos = position;
+            it->second.HasPose = true;
         }
     }
 

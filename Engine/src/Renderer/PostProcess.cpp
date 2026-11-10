@@ -1142,6 +1142,7 @@ namespace Conqueror
 
     void PostProcessStack::RunSSAO(const PostProcessSettings& settings, const RenderCamera& camera, float time)
     {
+        CQ_PROFILE_GPU("SSAO");
         auto ssao = PostProcess::GetShader("SSAO");
         auto blur = PostProcess::GetShader("SSAOBlur");
         m_AOValid = false;
@@ -1176,6 +1177,7 @@ namespace Conqueror
 
     void PostProcessStack::RunBloom(const PostProcessSettings& settings)
     {
+        CQ_PROFILE_GPU("Bloom");
         m_BloomResult = 0;
         auto bloom = PostProcess::GetShader("Bloom");
         if (!Valid(bloom) || m_BloomMips.empty())
@@ -1232,6 +1234,7 @@ namespace Conqueror
 
     void PostProcessStack::RunComposite(const PostProcessSettings& settings, float time)
     {
+        CQ_PROFILE_GPU("Composite");
         auto composite = PostProcess::GetShader("Composite");
         glBindFramebuffer(GL_FRAMEBUFFER, m_LDR.Framebuffer);
         glViewport(0, 0, m_LDR.Width, m_LDR.Height);
@@ -1291,6 +1294,7 @@ namespace Conqueror
 
     void PostProcessStack::RunFinal(const PostProcessSettings& settings, uint32_t outputFramebuffer, const int outputViewport[4])
     {
+        CQ_PROFILE_GPU("Final");
         auto fxaa = PostProcess::GetShader("FXAA");
         auto sharpen = PostProcess::GetShader("Sharpen");
         const glm::vec2 invSize(1.0f / m_Width, 1.0f / m_Height);
@@ -1984,8 +1988,23 @@ namespace Conqueror
         }
         if (m_HasPrevViewProj && !camera.Orthographic)
         {
-            const glm::vec4 e = glm::inverse(m_PrevViewProj)[2];
-            if (std::abs(e.w) > 1e-12f && glm::distance(glm::vec3(e) / e.w, camera.Position) > 8.0f)
+            // Kamera kesmesi: bir karede 2 m'den çok ve önceki karenin adımının 4 katından çok yer değiştirme (ışınlanma, bakış noktası
+            // değişimi; hızlı giden araçta / düşük FPS'te sürekli büyük adım kesme sayılmaz) ya da 60 dereceden çok dönüş. Eski eşik 8 m'ydi:
+            // odadaki bakış noktaları arasında geçmiş yeni görüntüye karışıyordu
+            const glm::mat4 prevInv = glm::inverse(m_PrevViewProj);
+            const glm::mat4 curInv = glm::inverse(camera.Projection * camera.View);
+            auto unproject = [](const glm::mat4& inv, float z) {
+                const glm::vec4 p = inv * glm::vec4(0.0f, 0.0f, z, 1.0f);
+                return glm::vec3(p) / (std::abs(p.w) > 1e-12f ? p.w : 1.0f);
+            };
+            const glm::vec3 prevNear = unproject(prevInv, -1.0f), curNear = unproject(curInv, -1.0f);
+            const glm::vec3 prevDir = glm::normalize(unproject(prevInv, 0.5f) - prevNear), curDir = glm::normalize(unproject(curInv, 0.5f) - curNear);
+            const glm::vec4 e = prevInv[2];
+            const bool jumped = std::abs(e.w) > 1e-12f && glm::distance(glm::vec3(e) / e.w, camera.Position) > 8.0f;
+            const float step = glm::distance(prevNear, curNear);
+            const bool teleported = step > 2.0f && step > 4.0f * std::max(m_LastCameraStep, 0.05f);
+            m_LastCameraStep = step;
+            if (jumped || teleported || glm::dot(prevDir, curDir) < 0.5f)
             {
                 m_HistoryValid = false;
                 m_FSR2Valid = false;

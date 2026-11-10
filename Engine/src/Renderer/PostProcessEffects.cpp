@@ -149,7 +149,7 @@ namespace Conqueror
             auto shader = PostProcess::GetShader("SSGI");
             if (Valid(shader))
             {
-                CQ_PROFILE_SAMPLE("Render.PostProcess.SSGI", Rendering);
+                CQ_PROFILE_SAMPLE("Render.PostProcess.SSGI", Rendering); CQ_PROFILE_GPU("SSGI");
                 EnsureTarget(m_GI, halfW, halfH, GL_RGBA16F);
                 EnsureTarget(m_GITemp, halfW, halfH, GL_RGBA16F);
                 EnsureTarget(m_GIHistory[0], halfW, halfH, GL_RGBA16F);
@@ -242,6 +242,7 @@ namespace Conqueror
         }
         if (clouds)
         {
+            CQ_PROFILE_GPU("Volumetric Clouds");
             auto shader = PostProcess::GetShader("Clouds");
             uint32_t noise = CloudNoiseTexture();
             if (Valid(shader) && noise)
@@ -474,7 +475,7 @@ namespace Conqueror
         auto shader = PostProcess::GetShader("TAA");
         if (!Valid(shader))
             return;
-        CQ_PROFILE_SAMPLE("Render.PostProcess.TAA", Rendering);
+        CQ_PROFILE_SAMPLE("Render.PostProcess.TAA", Rendering); CQ_PROFILE_GPU("TAA");
         RenderTarget& prev = m_History[m_HistoryIndex];
         RenderTarget& next = m_History[1 - m_HistoryIndex];
         EnsureTarget(prev, m_Width, m_Height, GL_RGBA16F);
@@ -681,7 +682,7 @@ namespace Conqueror
         auto shader = PostProcess::GetShader("DepthOfField");
         if (!Valid(shader))
             return;
-        CQ_PROFILE_SAMPLE("Render.PostProcess.DOF", Rendering);
+        CQ_PROFILE_SAMPLE("Render.PostProcess.DOF", Rendering); CQ_PROFILE_GPU("Depth of Field");
         const uint32_t halfW = std::max(m_Width / 2, 1u), halfH = std::max(m_Height / 2, 1u);
         EnsureTarget(m_DOFHalf, halfW, halfH, GL_RGBA16F);
         EnsureTarget(m_DOFBlur, halfW, halfH, GL_RGBA16F);
@@ -733,7 +734,7 @@ namespace Conqueror
         auto shader = PostProcess::GetShader("MotionBlur");
         if (!Valid(shader) || !m_HasPrevViewProj || settings.MotionBlurIntensity <= 0.0f)
             return;
-        CQ_PROFILE_SAMPLE("Render.PostProcess.MotionBlur", Rendering);
+        CQ_PROFILE_SAMPLE("Render.PostProcess.MotionBlur", Rendering); CQ_PROFILE_GPU("Motion Blur");
         RenderTarget& out = NextHDRTarget();
         glBindFramebuffer(GL_FRAMEBUFFER, out.Framebuffer);
         glViewport(0, 0, out.Width, out.Height);

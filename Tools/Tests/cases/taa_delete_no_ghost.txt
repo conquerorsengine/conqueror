@@ -1,0 +1,20 @@
+# template: empty
+# TAA / Temporal Stability: silinen nesne hayalet gibi sönmez; silindikten 2 kare sonra yeri arka planla aynı (kamera duruyor)
+wait 40
+create_primitive Cube GhostCube 0 0.5 0
+select GhostCube
+focus Viewport
+frame_selected
+wait 5
+select_asset Assets
+wait 80
+viewport_region 0.45 0.4 0.55 0.6 lum mean <135
+select GhostCube
+wait 3
+focus Viewport
+key delete
+wait 2
+viewport_region 0.45 0.4 0.55 0.6 lum mean >145
+wait 60
+viewport_region 0.45 0.4 0.55 0.6 lum mean >145
+quit
