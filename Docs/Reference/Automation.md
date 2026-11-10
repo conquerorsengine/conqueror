@@ -11,18 +11,25 @@ Descriptions are taken from the comments next to each command in the source (Tur
 | `addon` | addon list \| reload \| install\|uninstall\|enable\|disable <id> \| create <name> \| invoke <id> <method> \| button <id> <label> \| insert <id> <name> \| open_panel <id> <title> \| expect_loaded <id> \| expect_error <id> <none\|substring> \| expect_counts <id> <menu> <buttons> <panels> Usage: `addon list\|reload\|install\|uninstall\|uninstall_all\|enable\|disable\|create\|invoke\|button\|insert\|open_panel\|expect_*` |
 | `anim_expect` | anim_expect <entity> <param> <value \| >v \| <v>: Animation parametresinin değeri (bool 0/1) Usage: `anim_expect <entity> <param> <value>` |
 | `anim_param` | anim_param <entity> <param> <value>  (aktif sahnedeki çalışma zamanı değeri) |
+| `animation` | animation open \| create <nesne> \| select_clip <yol> \| add_property <yol\|.> <Bileşen\|Transform> <Alan> \| key <eğri\|-1> <t> \| event <t> <metod> [metin] \| time <t> \| preview on\|off \| record on\|off \| play on\|off \| view dopesheet\|curves \| expect_curves <n> \| expect_keys <eğri> <n> \| expect_key <eğri> <i> <t> [x y z w] \| expect_events <n> \| expect_event <i> <t> <metod> \| expect_clip <ad> \| expect_length <s> \| expect_state preview\|record\|none \| expect_value <nesne> <Bileşen\|Transform> <Alan> <x> [y z w] |
 | `animator_open` | Usage: `animator_open <controller path>` |
 | `animator_select` | Usage: `animator_select <node>` |
+| `audio` | audio expect_clip <varlık> <dosya soneki> \| expect_plays <varlık> <en az n>  (Audio Random Container) Usage: `audio expect_clip\|expect_plays <entity> <value>` |
 | `build` | build open \| add_scene <path> \| clear_scenes \| output <dir> \| platform <name\|host> \| start [run] \| all (every ready platform) \| results \| expect_done \| expect_success \| report Usage: `build <open\|add_scene\|clear_scenes\|output\|platform\|start\|all\|results\|expect_done\|expect_success\|report>` |
 | `camera` | camera <distance> <pitchDeg> <yawDeg> [fx fy fz] |
+| `camera_fly` | camera_fly <sağ> <yukarı> <ileri> <kare>: editör kamerası verilen hızla (m / sn) her karede sürekli hareket eder, sonra anında durur (sağ tık + Shift+W ile hızlı ileri uçuşun aynısı; camera komutu adım başına 2 kare beklediği için dur-kalk olur) Usage: `camera_fly <right> <up> <forward> <frames>` |
 | `camera_info` |  |
 | `camera_mode` | Usage: `camera_mode 2d\|3d` |
+| `camera_spin` | camera_spin <yaw derece/sn> <pitch derece/sn> <kare>: editör kamerası her karede sabit hızla döner, sonra anında durur (sabit 1/60 sn adım: döndürürken TAA'nın davranışını ölçmek için) Usage: `camera_spin <yawDegPerSec> <pitchDegPerSec> <frames> [inplace]` |
 | `click` | `click <x> <y> [button]` — click at window coordinates. |
 | `click_item` | `click_item <label> [window]` — click an ImGui widget by its label. |
 | `code` | code open <path> \| type <text> \| expect_completion <label> \| accept [i] \| expect_text <substring> code expect_problems <n> \| save Usage: `code open\|type\|expect_completion\|accept\|expect_text\|expect_problems\|save` |
 | `comp` | comp add\|remove <entity> <component> \| comp set <entity> <component> <field> <value...> comp expect <entity> <component> <field> <value \| >N \| <N> Usage: `comp add\|remove\|set\|expect <entity> <component> ...` |
+| `content` | content copy\|cut <yol> \| paste <klasör> \| refs <yol> \| deps <yol> \| scene_refs <yol> \| expect_results <N> \| export <çıktı.cqpackage> <yollar...> \| import <paket> \| reimport <yol> \| reimport_all \| properties <yol> \| extract <model> \| additive <sahne> \| exists <yol> <0\|1> \| select <yol> Content Browser sağ tık menüsündeki işlemlerin kendisi (dosya pencereleri olmadan); yollar proje göreli olabilir Usage: `content <command> ...` |
+| `content_drop` | content_drop <yol...>: dosya yöneticisinden bırakma (işletim sistemi olayıyla aynı yol) Usage: `content_drop <path...>` |
 | `cqs` | cqs <kod...>   etkin betik VM'inde değerlendir, sonucu raporla |
 | `crash_test` | Deliberately crash (tests the crash handler). |
+| `create_asset` | create_asset <tür>: Content Browser sağ tık menüsündeki girişle aynı kod (geçerli klasöre); yolu raporlar Usage: `create_asset <kind>` |
 | `create_primitive` | create_primitive <cube\|sphere\|plane\|cylinder> <name> <x> <y> <z> [dynamic\|static] Usage: `create_primitive <type> <name> <x> <y> <z> [dynamic\|static]` |
 | `cvar` | cvar <konsol satırı...> \| cvar expect <ad> <değer \| >N \| <N> Usage: `cvar <line> \| cvar expect <name> <value>` |
 | `dclick` | `dclick <x> <y>` — double-click. |
@@ -31,6 +38,7 @@ Descriptions are taken from the comments next to each command in the source (Tur
 | `drag` | `drag <x0> <y0> <x1> <y1> [steps]` — left-button drag. |
 | `drag_item` | `drag_item <label> <dx> <dy> [window]` — drag a widget. |
 | `dump_items` | Write all visible widget labels to the log (for writing scripts). |
+| `editor_utility` | editor_utility <yol>: Editor Utility betiğini düzenleyici sahnesinde çalıştır Usage: `editor_utility <path>` |
 | `entity` | entity create <name> [x y z] \| parent <child> <parent> \| scale <name> x y z \| rotate <name> x y z \| move <name> x y z \| tag <name> <tag> Usage: `entity create\|parent\|scale\|rotate\|move ...` |
 | `exit` | Same as `quit`. |
 | `expect_entities` | expect_entities <n> [name-prefix]: sahnedeki (önekle eşleşen) varlık sayısı Usage: `expect_entities <n> [prefix]` |
@@ -39,69 +47,96 @@ Descriptions are taken from the comments next to each command in the source (Tur
 | `expect_no_item` | `expect_no_item <label> [window]` — fail if the widget is visible. |
 | `expect_position` | expect_position <name> <x\|y\|z> <above\|below> <value>  (oyun modunda aktif sahne) Usage: `expect_position <name> <axis> <above\|below> <value>` |
 | `expect_selected` |  |
+| `expect_state` | expect_state edit\|play\|pause: oynatma durumu Usage: `expect_state edit\|play\|pause` |
 | `expect_unsaved` | expect_unsaved <true\|false>: kaydedilmemiş değişiklik algılaması (kapatma sorusu bunu kullanır) |
 | `focus` | Usage: `focus <window name>` |
 | `frame_selected` |  |
 | `game_pixel_world` | game_pixel_world <x> <y> [z] [<r\|g\|b\|a> <v \| >v \| <v> ...]: birincil kameradan dünya noktasının Game görünümündeki rengi (0..255) Usage: `game_pixel_world x y [channel cond]...` |
-| `game_region` | game_region <u0> <v0> <u1> <v1> [<kanal> <min\|max\|mean> <v \| >v \| <v>]...: Game görünümünde bölge istatistiği (u, v 0..1, sol alt köşe 0,0). Kanal: r g b a lum, red/green/blue = o kanalın diğerlerinden baskınlığı (r - max(g, b)). Usage: `game_region u0 v0 u1 v1 [channel stat cond]...` |
+| `game_region` |  |
 | `gamepad` | `gamepad connect [name] | disconnect | down/up/tap <button> | axis <axis> <value>` — virtual gamepad. |
 | `gizmo_drag` | gizmo_drag <x\|y\|z> <piksel>: seçili nesnenin taşıma okunu ekranda bulup eksen yönünde sürükler (UI öğeleri yerel eksenlerle). Gizmo davranışının gerçek fareyle testi için. Usage: `gizmo_drag <x\|y\|z> <pixels>` |
 | `gpu_probe` | gpu_probe <brdf\|viewport\|sh\|prefiltered>: GPU verisini GL API'si üzerinden geri okur (her arka uçta çalışır) Usage: `gpu_probe <brdf\|viewport\|sh\|prefiltered>` |
 | `hover_item` | Hover a widget by label. |
+| `inputactions` | inputactions open <yol> \| add_map [ad] \| add_action <harita> [ad] \| add_binding <harita> <eylem> <yol> \| add_composite <harita> <eylem> <2DVector\|1DAxis\|OneModifier\|TwoModifiers> [parça yolları...] \| kind <harita> <eylem> <Value\|Button\|PassThrough> [Any\|Button\|Axis\|Vector2] \| interactions\|processors <harita> <eylem> <bağlama\|-1> <dizge\|none> \| path <harita> <eylem> <bağlama> <yol> \| select <harita> [eylem] [bağlama] \| rename <ad> \| delete \| duplicate \| undo \| redo \| save \| autosave <0\|1> \| scheme <ad\|all> \| add_scheme <ad> <aygıtlar...> \| expect_dirty <0\|1> \| projectwide <yol\|none> \| expect <dosya> <harita> <eylem> <bindings N \| kind K \| interactions S \| path B P \| groups B G> Harita / eylem: ad ya da sıra numarası. Pencerenin düğmeleriyle aynı düzenleme işlemleri. Usage: `inputactions <command> ...` |
 | `key` | `key <combo>` — press and release a key or chord (`key ctrl+s`). |
 | `key_down` | `key_down <key>` — hold a key (game input tests). |
 | `key_up` | `key_up <key>` — release a held key. |
+| `lighting` | Usage: `lighting generate\|expect_done\|asset\|default_params\|expect_value` |
 | `log` | `log <text>` — write a line to the log and the result file. |
+| `material` | material assign <entity> <path.cqmat\|path.cqphysmat>   (Content Browser'dan nesneye bırakmakla aynı) material expect <entity> <path\|none> Usage: `material assign\|expect <entity> <path>` |
+| `material_bake` | material_bake [klasör=Assets/Materials]: sahnedeki gömülü (Instance) malzemeleri içerik bazında tekilleştirip .cqmat dosyalarına yazar ve Mesh Renderer'lara atar (eski sahne / şablon taşıma) |
 | `mdrag` | Middle-button drag (same arguments as `drag`). |
 | `mixer_set` | mixer_set <group> volume\|mute\|solo\|effect <value> Usage: `mixer_set <group> <volume\|mute\|solo\|effect> <value>` |
 | `mixer_tone` | Usage: `mixer_tone <group> [freq] [seconds]` |
 | `move` | `move <x> <y>` — move the mouse (window coordinates). |
 | `net` | net host\|server [port] \| client <addr> [port] \| stop \| expect_connected \| expect_mode <m> \| expect_clients <n> \| expect_objects <n> \| expect_position <owner> <x\|y\|z> <above\|below> <v> \| expect_var <owner> <name> <equals\|above\|below> <v> \| spawn <prefab> x y z [owner] \| report Usage: `net <host\|server\|client\|stop\|expect_*\|spawn\|report>` |
-| `new_scene` |  |
+| `new_scene` | record_start [mp4\|webm\|gif\|png] [fps=<n>] [quality=<0..1>] [fixed] [out=<dir>]: Game görünümünü kaydet (fixed: çevrimdışı sabit adım, her kare bir video karesi) |
+| `new_scene_dialog` | material_bake [klasör=Assets/Materials]: sahnedeki gömülü (Instance) malzemeleri içerik bazında tekilleştirip .cqmat dosyalarına yazar ve Mesh Renderer'lara atar (eski sahne / şablon taşıma) |
+| `new_scene_from_template` | new_scene_from_template <şablon.cqscenetemplate \| builtin:basic \| builtin:empty>  (File > New Scene penceresinde Create) Usage: `new_scene_from_template <path\|builtin:basic\|builtin:empty>` |
+| `nodeasset` | nodeasset open <yol> \| connect <düğüm> <pin> <düğüm> <pin> \| prop <düğüm> <ad> <değer> \| expect_nodes <n> \| save Usage: `nodeasset open\|prop\|save\|expect_nodes ...` |
+| `occlusion` | occlusion bake [hücre boyu] \| clear \| expect_hidden <varlık> <true\|false> \| expect_cells <n\|>n> \| visualize on\|off Usage: `occlusion bake\|clear\|expect_hidden\|expect_cells\|visualize` |
+| `open_asset` | open_asset <yol>: Content Browser çift tıklamasıyla aynı Usage: `open_asset <path>` |
 | `open_scene` | Usage: `open_scene <path>` |
 | `ortho_size` | Usage: `ortho_size <size>` |
 | `panel` | Usage: `panel <name> [on\|off]` |
 | `particles` | particles create <preset> <name> [x y z] \| expect_count <name> <above\|below> <n> Usage: `particles create <preset> <name> \| expect_count <name> <above\|below> <n>` |
-| `pause` | timeline create <entity> \| select <entity> \| add_track <type> [bindEntity] \| key <track> <time> \| clip <track> <start> <dur> [asset] \| signal <track> <time> <method> \| property <track> <component> <field> \| preview <time> \| stop_preview \| expect_tracks <n> \| expect_keys <track> <n> \| undo \| redo |
+| `pathtracer` | pathtracer expect_samples <n\|>n\|<n> \| reset \| bounces <n> \| max <n> \| spp <n> Usage: `pathtracer expect_samples\|reset\|bounces\|max\|spp` |
+| `pause` | timeline create <entity> \| select <entity> \| add_track <type> [bindEntity] \| key <track> <time> \| clip <track> <start> <dur> [asset] \| signal <track> <time> <method> \| property <track> <component> <field> \| preview <time> \| stop_preview \| expect_tracks <n> \| expect_keys <track> <n> \| undo \| redo signal reaction <alıcı> <yol.cqsignal> <metot> [hedef\|self] [argüman] \| send <alıcı> <yol.cqsignal> [beklenen tepki sayısı] |
 | `phys` | phys backend <jolt\|mujoco> \| expect_backend <name> \| setting <key> <value> phys raycast ox oy oz dx dy dz <expectedEntity\|none> \| overlap ox oy oz r <count> Usage: `phys backend\|expect_backend\|setting\|raycast\|overlap` |
 | `play` |  |
+| `pose_capture` | pose_capture <yol.cqpose>: Inspector'daki Capture Pose ile aynı (varlığın Model / Clip / Time / Pose Name alanlarıyla) Usage: `pose_capture <path.cqpose>` |
 | `prefab` | prefab save <entity> <path> \| spawn <path> [x y z] \| apply <entity> \| revert <entity> \| unpack <entity> \| expect_instance <entity> <path-suffix\|none> \| expect_children <entity> <n> \| drop <path> <viewport-x> <viewport-y> Usage: `prefab save\|spawn\|apply\|revert\|unpack\|expect_instance\|expect_children\|drop` |
 | `profiler` | Usage: `profiler <open\|close\|record\|view\|select\|expect_frames\|expect_sample\|expect_gpu\|expect_category\|export\|report>` |
-| `projsettings` | projsettings set <key> <value> \| expect <key> <value> \| order <Class> <n> \| save \| reload anahtarlar: quality.level, quality.fps, quality.aa, audio.volume, audio.doppler, nav.cost.<i>, nav.name.<i>, editor.mode, editor.newscene, graphics.tonemapper, input.custom Usage: `projsettings set\|expect\|order\|save\|reload\|reset\|newscene ...` |
+| `projsettings` | projsettings set <key> <value> \| expect <key> <value> \| order <Class> <n> \| save \| reload anahtarlar: quality.level, quality.fps, quality.aa, audio.volume, audio.doppler, nav.cost.<i>, nav.name.<i>, editor.mode, editor.newscene, graphics.tonemapper, input.custom, streaming.enabled, streaming.allcameras, streaming.budget, streaming.maxreduction Usage: `projsettings set\|expect\|order\|save\|reload\|reset\|newscene ...` |
+| `psinfo` | psinfo <varlık>: Particle System'in çözülen doku sayfası ayarları Usage: `psinfo <entity>` |
 | `quit` | Close the application (script ends). |
 | `rclick` | `rclick <x> <y>` — right-click. |
 | `rclick_item` | Right-click a widget by label. |
 | `rdrag` | Right-button drag (same arguments as `drag`). |
-| `record_start` | Start recording frames to a video / image sequence. |
+| `record_start` | record_start [mp4\|webm\|gif\|png] [fps=<n>] [quality=<0..1>] [fixed] [out=<dir>]: Game görünümünü kaydet (fixed: çevrimdışı sabit adım, her kare bir video karesi) |
 | `record_stop` | Stop recording. |
 | `redo` |  |
+| `render_stats` | render_stats: son çizilen görünümün işleme sayaçları (profiler penceresi açmadan; ekran görüntüsünü kapatmaz) |
 | `resolution` | Usage: `resolution <preset index>` |
 | `run_cqs_file` | run_cqs_file <yol>: düzenleyici sahnesinde (oyun dışında) bir CQS dosyası çalıştır — sahne kurulum betikleri Usage: `run_cqs_file <path>` |
 | `save_scene` | expect_unsaved <true\|false>: kaydedilmemiş değişiklik algılaması (kapatma sorusu bunu kullanır) |
 | `save_scene_as` | save_scene_as <yol>: iletişim kutusu olmadan farklı kaydet Usage: `save_scene_as <path>` |
 | `screenshot` | `screenshot <png>` — capture the main window. |
-| `script` | script add <entity> <path>                 betik bileşeni ekle (sınıf: dosyadaki ilk script) script set <entity> <field> <int\|float\|bool\|string> <value>   Inspector alan değeri script expect <entity> <field> <value>     oyun modunda canlı alan değeri (metin karşılaştırma) script expect_pos <entity> <axis x\|y\|z> <above\|below> <value> <entity> yerine "Varlık@Sınıf": aynı varlıktaki birden çok betikten adı verileni seç script new <dil kimliği> <yol>              "New Script" şablonunu yaz (Content Browser ile aynı) |
+| `script` | script add <entity> <path>                 betik bileşeni ekle (sınıf: dosyadaki ilk script) script set <entity> <field> <int\|float\|bool\|string> <value>   Inspector alan değeri (oyun modunda canlı değer de) script expect <entity> <field> <value>     oyun modunda canlı alan değeri (metin karşılaştırma) script expect_pos <entity> <axis x\|y\|z> <above\|below> <value> <entity> yerine "Varlık@Sınıf": aynı varlıktaki birden çok betikten adı verileni seç script new <dil kimliği> <yol>              "New Script" şablonunu yaz (Content Browser ile aynı) |
 | `script_errors` | script_errors mark \| expect <n>: işaretten bu yana bildirilen ConquerorScript hata sayısı |
 | `scroll` | `scroll <x> <y> <amount>` — mouse wheel. |
+| `search_expect` |  |
+| `search_set` | search_set <metin> \| search_expect <metin>: Content Browser arama kutusu |
 | `select` | Usage: `select <entity name> [more names...] \| select --all <name> \| select --none` |
+| `select_asset` | select_asset <path>: varlığı seç (Inspector'da açılır; Content Browser'da tıklamakla aynı) |
 | `settings_page` | settings_page <page name...>  Project Settings sayfasını açar Usage: `settings_page <name>` |
 | `shader_dump` | shader_dump <stage 0\|1> <source\|glsl\|spirv\|hlsl\|msl> <path>   (PBR shader) Usage: `shader_dump <stage> <view> <path>` |
-| `shading` | Usage: `shading <shaded\|wireframe\|unlit\|normals\|lighting\|metalrough\|ao>` |
+| `shading` | Usage: `shading <shaded\|wireframe\|unlit\|normals\|lighting\|metalrough\|ao\|pathtracing>` |
+| `signal` | timeline create <entity> \| select <entity> \| add_track <type> [bindEntity] \| key <track> <time> \| clip <track> <start> <dur> [asset] \| signal <track> <time> <method> \| property <track> <component> <field> \| preview <time> \| stop_preview \| expect_tracks <n> \| expect_keys <track> <n> \| undo \| redo signal reaction <alıcı> <yol.cqsignal> <metot> [hedef\|self] [argüman] \| send <alıcı> <yol.cqsignal> [beklenen tepki sayısı] Usage: `signal reaction\|send <entity> <path.cqsignal> ...` |
 | `skybox` | skybox <equirect hdr/png yolu \| none>: Lighting panelindeki gibi gökyüzü yükler Usage: `skybox <path\|none>` |
 | `sleep` | `sleep <ms>` — wait real time. |
+| `soundinfo` | soundinfo <varlık>: Audio Source'un çözülen ses varlığı değerleri Usage: `soundinfo <entity>` |
+| `sprite_atlas` | sprite_atlas pack <atlas> \| pack_all \| expect <doku> <in\|out>: görselin atlastan çizilip çizilmediği Usage: `sprite_atlas pack <atlas>\|pack_all\|expect <texture> <in\|out>` |
 | `sprite_editor` | sprite_editor open <path> \| slice grid <w> <h> \| slice count <c> <r> \| slice auto \| apply Usage: `sprite_editor open <path> \| slice ... \| apply` |
-| `stop` |  |
+| `stop` | content_drop <yol...>: dosya yöneticisinden bırakma (işletim sistemi olayıyla aynı yol) |
 | `terrain` | terrain create [res] \| generate [seed] \| tool <raise\|smooth\|flatten\|noise\|paint\|none> \| stroke <x> <z> <seconds> [invert] \| autopaint Usage: `terrain create\|generate\|tool\|stroke\|autopaint\|expect_height` |
+| `testrunner` | testrunner open \| run_edit [metot] \| run_play [metot] \| expect <geçen> <kalan> Usage: `testrunner open\|run_edit\|run_play\|expect` |
 | `texture` | texture select <path> \| set <path> <key> <value> [<key> <value>...] (+ uygula) \| expect <path> <mips\|width\|height\|format\|filter\|memory_kb_below> <value> Usage: `texture select\|set\|expect <path> ...` |
 | `tile` | tile create <rect\|hex\|hexflat\|iso> [xy\|xz] [3d] \| tool <paint\|box\|fill\|erase\|picker\|none> \| brush <size> [tile] \| apply <x> <y> [<x2> <y2>] [invert] \| set <x> <y> <tile> \| expect <x> <y> <tile\|-1> \| expect_count <n> \| expect_selected <tile> \| expect_hover <x> <y> \| expect_path <x0> <y0> <x1> <y1> <cells\|none> \| expect_distance <x0> <y0> <x1> <y1> <d> \| drag <x0> <y0> <x1> <y1> [steps] \| click <x> <y> \| hover <x> <y> \| undo \| redo |
-| `timeline` | timeline create <entity> \| select <entity> \| add_track <type> [bindEntity] \| key <track> <time> \| clip <track> <start> <dur> [asset] \| signal <track> <time> <method> \| property <track> <component> <field> \| preview <time> \| stop_preview \| expect_tracks <n> \| expect_keys <track> <n> \| undo \| redo Usage: `timeline <create\|select\|add_track\|key\|clip\|signal\|property\|preview\|stop_preview\|expect_tracks\|expect_keys\|undo\|redo>` |
+| `timeline` | Usage: `timeline <create\|select\|add_track\|key\|clip\|signal\|property\|preview\|stop_preview\|expect_tracks\|expect_keys\|undo\|redo>` |
 | `timeout` | `timeout <seconds>` — fail the script if it runs longer. |
 | `type` | `type <text>` — type text into the focused field. |
 | `ui` | ui create <Canvas\|Panel\|Image\|Text\|Button\|Toggle\|Slider\|InputField\|Dropdown\|ScrollView\|LayoutGroup> [name] [x y] ui click <name>   (Game görünümünde gerçek fare tıklaması) ui drag <name> dx dy   (öğenin ortasından ekran pikseli kadar sürükle) ui expect_rect <name> <x\|y\|w\|h> <v \| >v \| <v>   ui expect_value <name> <v \| >v \| <v>   ui expect_selected <name\|none> Usage: `ui create\|click\|drag\|dump\|expect_rect\|expect_value\|expect_selected ...` |
 | `undo` |  |
 | `view_option` | Usage: `view_option <grid\|gizmos\|skybox\|fog\|shadows\|post\|sprites\|realtime> <on\|off>` |
+| `viewport_camera` | viewport_camera mark \| expect_moved <en az mesafe>: sahne görünümü kamerası hareket etti mi Usage: `viewport_camera mark\|expect_moved <distance>` |
 | `viewport_click` | Usage: `viewport_click <nx 0..1> <ny 0..1>` |
+| `viewport_drag2d` | viewport_drag2d <wx0> <wy0> <wx1> <wy1>: 2D görünümde dünya koordinatlarıyla sürükleme Usage: `viewport_drag2d x0 y0 x1 y1` |
+| `viewport_region` | viewport_region: aynı istatistik Viewport (sahne görünümü) görüntüsünde |
 | `vs` | vs new <path> \| open <path> \| node <alias> <type> [x y] \| link <a> <pin> <b> <pin> vs default <alias> <pin> <value> \| prop <alias> <key> <value> \| var <name> <type> <default> [private] vs save \| expect_errors <n> \| expect_code <substring> \| remove <alias> \| undo \| redo Usage: `vs new\|open\|node\|link\|default\|prop\|var\|save\|expect_errors\|expect_code` |
 | `wait` | `wait <frames>` — let N frames pass (default 1). |
 | `wait_until` | `wait_until <timeoutMs> <command ...>` — retry a command every frame until it succeeds or the timeout expires. |
+| `window_float` | window_float <ad> <x> <y> <g> <y>: paneli yuvadan çıkarır; window_size <ad> <g> <y>: yüzen pencereyi boyutlandırır Usage: `window_float <name> <x> <y> <w> <h>` |
+| `window_size` | Usage: `window_size <name> <w> <h>` |
 | `write_recovery` | write_recovery: otomatik kaydı hemen çalıştır (zamanlayıcıyı beklemeden) |
+| `xr` | lighting generate \| expect_done \| asset <path.cqlighting\|none> \| default_params <path.cqlmparams\|none> \| expect_value <alan> <değer> xr buttons <0 sol\|1 sağ> <grip> <trigger> <teleport> (-1 serbest) \| xr look <yaw> <pitch>: XR Device Simulator'ı sür |

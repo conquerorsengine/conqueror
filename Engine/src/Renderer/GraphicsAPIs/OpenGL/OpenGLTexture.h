@@ -4,6 +4,9 @@
 
 #include <glad/glad.h>
 
+#include <cstdint>
+#include <vector>
+
 namespace Conqueror
 {
     class OpenGLTexture2D : public Texture2D
@@ -37,6 +40,25 @@ namespace Conqueror
         bool Reload() override;
         void SetMissing() override;
 
+        // Texture Streaming (Unity Mipmap Streaming). GPU'daki en ayrıntılı seviye (0 = tam boyut)
+        bool IsStreamed() const override { return m_Streamed; }
+        int GetStreamingLevel() const override { return m_StreamLevel; }
+        int GetStreamingMaxLevel() const override;
+        // Daha kaba seviyeye in: GPU'da kopya, anında
+        bool StreamDropTo(int level) override;
+        // Arka planda çözülmüş daha ayrıntılı seviye (TextureStreaming ana iş parçacığında çağırır)
+        struct StreamingPixels
+        {
+            std::vector<uint8_t> Pixels;
+            uint32_t Width = 0, Height = 0;
+            int Comps = 4;
+            uint32_t InternalFormat = 0, DataFormat = 0;
+            int Level = 0;
+        };
+        void StreamUpload(const StreamingPixels& pixels);
+        // Dosyadan "level" seviyesinin pikselleri (yalnız CPU: arka plan iş parçacığında çalışır)
+        static bool DecodeStreamingLevel(const std::string& path, const TextureImportSettings& settings, int level, StreamingPixels& out);
+
         /// stbi_load_from_memory ile yüklenen sıkıştırılmış görüntü (png/jpg vb.)
         OpenGLTexture2D(const unsigned char* imageBytes, uint32_t byteLength);
         /// Assimp sıkıştırılmamış gömülü; pcData BGRA (aiTexel), veri kopyalanır
@@ -49,6 +71,7 @@ namespace Conqueror
                     uint32_t bytesPerPixel);
         void ApplySampler();
         void Release();
+        void UpdateMemory(uint32_t width, uint32_t height);
 
         std::string m_Path;
         uint32_t m_Width = 0;
@@ -60,6 +83,9 @@ namespace Conqueror
         uint32_t m_MipLevels = 1;
         uint64_t m_MemoryBytes = 0;
         uint32_t m_SourceWidth = 0, m_SourceHeight = 0, m_SourceChannels = 4;
+        uint32_t m_BytesPerPixel = 4;
+        bool m_Streamed = false;
+        int m_StreamLevel = 0;
         TextureImportSettings m_Settings;
     };
 }

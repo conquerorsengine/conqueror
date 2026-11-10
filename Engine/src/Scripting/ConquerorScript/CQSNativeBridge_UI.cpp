@@ -23,6 +23,7 @@
 #include "Core/PhysicsSystem/Physics3D/PhysicsWorld3D.h"
 #include "Core/Serialization/SceneSerializer.h"
 #include "Core/Utils/PlayerPrefs.h"
+#include "Renderer/TextureStreaming.h"
 #include "Core/Utils/Platform.h"
 #include "Core/Input/InputGlyphs.h"
 #include "Core/Project/Project.h"
@@ -1280,6 +1281,32 @@ namespace Conqueror::CQS
         }, 0);
         vm->DefineNative("GetPersistentDataPath", [](int, Value*) -> Value {
             return Value::MakeString(PlayerPrefs::GetPersistentDataPath());
+        }, 0);
+
+        // ================================================================ Texture Streaming (Unity StreamingController / Texture)
+        // StreamingSetPreloading(kamera, saniye): kamera çizilmeden önce (ör. kamera geçişinden önce) dokularını yüklet
+        vm->DefineNative("StreamingSetPreloading", [](int argc, Value* args) -> Value {
+            Entity e = TargetArg(argc, args, 0);
+            if (!e || !e.HasComponent<StreamingControllerComponent>()) return Value::MakeBool(false);
+            e.GetComponent<StreamingControllerComponent>().PreloadTimeLeft = std::max(0.0f, Num(argc, args, 1, 0.0f));
+            return Value::MakeBool(true);
+        }, -1);
+        vm->DefineNative("StreamingIsPreloading", [](int argc, Value* args) -> Value {
+            Entity e = TargetArg(argc, args, 0);
+            if (!e || !e.HasComponent<StreamingControllerComponent>()) return Value::MakeBool(false);
+            return Value::MakeBool(e.GetComponent<StreamingControllerComponent>().PreloadTimeLeft > 0.0f && TextureStreaming::PendingCount() > 0);
+        }, -1);
+        vm->DefineNative("TextureStreamingInfo", [](int, Value*) -> Value {
+            const TextureStreaming::Stats st = TextureStreaming::GetStats();
+            auto* m = new CQSMapObject();
+            m->Entries["enabled"] = Value::MakeBool(st.Enabled);
+            m->Entries["streamingTextures"] = Value::MakeInt(st.StreamingTextures);
+            m->Entries["pending"] = Value::MakeInt(st.PendingLoads);
+            m->Entries["streamingMB"] = Value::MakeFloat(st.StreamingMB);
+            m->Entries["desiredMB"] = Value::MakeFloat(st.DesiredMB);
+            m->Entries["totalMB"] = Value::MakeFloat(st.TotalMB);
+            m->Entries["budgetMB"] = Value::MakeFloat(st.BudgetMB);
+            return Value::MakeObject(m);
         }, 0);
     }
 }

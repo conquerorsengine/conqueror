@@ -9,6 +9,7 @@
 #include "Core/Project/SplashLayout.h"
 #include "Renderer/RHI/Texture.h"
 #include "Core/Project/ProjectSettings.h"
+#include "Renderer/TextureStreaming.h"
 #include "Core/Tiering/QualitySettings.h"
 #include "Core/Input/Input.h"
 #include "Core/Input/GameInput.h"
@@ -428,6 +429,24 @@ namespace Conqueror::Editor
         }
         UI::SubHeader("Frame Rate");
         m_Dirty |= UI::DragInt("Target Frame Rate", q.TargetFrameRate, 1.0f, 0, 1000, "0 = unlimited (limited by VSync).");
+
+        // Unity Quality > Textures > Mipmap Streaming: yalnız "Streaming Mipmaps" açık dokular (doku içe aktarma ayarı)
+        UI::SubHeader("Texture Streaming");
+        auto& ts = q.Streaming;
+        m_Dirty |= UI::Checkbox("Texture Streaming", ts.Enabled,
+                                "Textures with Streaming Mipmaps (import settings) load only the mip levels the cameras need.");
+        ImGui::BeginDisabled(!ts.Enabled);
+        m_Dirty |= UI::Checkbox("Add All Cameras", ts.AddAllCameras, "Off: only cameras with a Streaming Controller request textures.");
+        m_Dirty |= UI::DragFloat("Memory Budget", ts.MemoryBudgetMB, 4.0f, 1.0f, 65536.0f, "%.0f MB",
+                                 "All textures together. Above it, low priority streamed textures drop mip levels first.");
+        m_Dirty |= UI::DragInt("Renderers Per Frame", ts.RenderersPerFrame, 4.0f, 1, 1 << 20, "Mesh Renderers checked every frame.");
+        m_Dirty |= UI::SliderInt("Max Level Reduction", ts.MaxLevelReduction, 0, 7,
+                                 "Mip levels a texture may drop; textures also load at this level first.");
+        m_Dirty |= UI::DragInt("Max IO Requests", ts.MaxIORequests, 4.0f, 1, 1 << 16, "Texture loads waiting at the same time.");
+        ImGui::EndDisabled();
+        const TextureStreaming::Stats st = TextureStreaming::GetStats();
+        UI::Text("Streamed Textures", "%d (%.1f MB, wanted %.1f MB)", st.StreamingTextures, st.StreamingMB, st.DesiredMB);
+        UI::Text("All Textures", "%.1f MB of %.0f MB%s", st.TotalMB, st.BudgetMB, st.PendingLoads > 0 ? ", loading" : "");
     }
 
     void ProjectSettingsPanel::DrawGraphics()

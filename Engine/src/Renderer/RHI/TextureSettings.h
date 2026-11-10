@@ -58,6 +58,10 @@ namespace Conqueror
         TextureCompression Compression = TextureCompression::None;
         bool UseCrunch = false;          // oyun derlenirken kayıplı boyut küçültme
         int CrunchQuality = 50;
+        // Unity Streaming Mipmaps: Texture Streaming açıkken (Quality) doku yalnız kameraların gerektirdiği mip seviyesine
+        // kadar GPU'ya yüklenir; bütçe aşılınca önce düşük öncelikliler küçülür
+        bool StreamingMipmaps = false;
+        int StreamingPriority = 0;       // Mip Map Priority (-128..127)
         PlatformTextureSettings Platforms[kTexturePlatformCount];
 
         bool operator==(const TextureImportSettings& o) const;

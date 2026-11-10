@@ -17,6 +17,7 @@ namespace Conqueror
                std::fabs(PixelsPerUnit - o.PixelsPerUnit) < 1e-6f && Shape == o.Shape && SpriteMode == o.SpriteMode && PolygonSides == o.PolygonSides &&
                TightMesh == o.TightMesh && ExtrudeEdges == o.ExtrudeEdges && GeneratePhysicsShape == o.GeneratePhysicsShape && Resize == o.Resize &&
                Format == o.Format && Compression == o.Compression && UseCrunch == o.UseCrunch && CrunchQuality == o.CrunchQuality &&
+               StreamingMipmaps == o.StreamingMipmaps && StreamingPriority == o.StreamingPriority &&
                Platforms[0] == o.Platforms[0] && Platforms[1] == o.Platforms[1] && Platforms[2] == o.Platforms[2];
     }
 
@@ -132,6 +133,8 @@ namespace Conqueror
             if (t["MeshType"]) out.TightMesh = t["MeshType"].as<std::string>() != "FullRect";
             if (t["ExtrudeEdges"]) out.ExtrudeEdges = std::clamp(t["ExtrudeEdges"].as<int>(), 0, 32);
             if (t["GeneratePhysicsShape"]) out.GeneratePhysicsShape = t["GeneratePhysicsShape"].as<bool>();
+            if (t["StreamingMipmaps"]) out.StreamingMipmaps = t["StreamingMipmaps"].as<bool>();
+            if (t["StreamingPriority"]) out.StreamingPriority = std::clamp(t["StreamingPriority"].as<int>(), -128, 127);
             auto readPlatform = [](const YAML::Node& n, int& maxSize, TextureResizeAlgorithm& resize, TextureFormatChoice& format, TextureCompression& compression, bool& crunch, int& quality) {
                 static const char* resizes[] = { "Mitchell", "Bilinear" };
                 static const char* formats[] = { "Automatic", "RGBA32", "RGB24", "R8" };
@@ -185,6 +188,11 @@ namespace Conqueror
         out << YAML::Key << "MeshType" << YAML::Value << (TightMesh ? "Tight" : "FullRect");
         out << YAML::Key << "ExtrudeEdges" << YAML::Value << ExtrudeEdges;
         out << YAML::Key << "GeneratePhysicsShape" << YAML::Value << GeneratePhysicsShape;
+        if (StreamingMipmaps)
+        {
+            out << YAML::Key << "StreamingMipmaps" << YAML::Value << StreamingMipmaps;
+            out << YAML::Key << "StreamingPriority" << YAML::Value << StreamingPriority;
+        }
         auto writePlatform = [&out](TextureResizeAlgorithm resize, TextureFormatChoice format, TextureCompression compression, bool crunch, int quality) {
             static const char* formats[] = { "Automatic", "RGBA32", "RGB24", "R8" };
             static const char* compressions[] = { "None", "Low", "Normal", "High" };

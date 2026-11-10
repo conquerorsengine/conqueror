@@ -82,6 +82,7 @@
 #include "Scene/BlendShapes.h"
 #include "Scene/MetaHuman.h"
 #include "Scene/TreeCreator.h"
+#include "Renderer/TextureStreaming.h"
 #include "Scene/PlayerInput.h"
 #include "Scene/RigConstraints.h"
 #include "AISystem/Navigation/NavAgents.h"
@@ -2904,6 +2905,25 @@ namespace Conqueror
         CQ_PROFILE_GPU("Scene 3D");
         // Tree Creator: ayarı değişen ağaçlar yeniden üretilir, Mesh Renderer'a verilir (yüklenen sahnede ilk karede de)
         TreeCreator::Update(*this);
+        // Texture Streaming: bu görünümün gerektirdiği doku mip seviyeleri. Editörün sahne görünümü her zaman; oyunda kamera
+        // Streaming Controller'lıysa ya da Add All Cameras açıksa (Unity gibi)
+        if (!m_CapturingProbes && !m_RenderingPlanar && TextureStreaming::Settings().Enabled)
+        {
+            float bias = 0.0f;
+            bool counts = editorView;
+            if (!editorView)
+            {
+                const auto* controller = m_BackgroundCamera != entt::null && m_Registry.valid(m_BackgroundCamera)
+                                       ? m_Registry.try_get<StreamingControllerComponent>(m_BackgroundCamera) : nullptr;
+                counts = TextureStreaming::Settings().AddAllCameras || controller;
+                if (controller)
+                    bias = controller->StreamingMipBias;
+            }
+            if (counts)
+                TextureStreaming::RequestView(*this, camera, bias);
+            if (!editorView)
+                TextureStreaming::RequestPreloads(*this, camera.ViewportWidth, camera.ViewportHeight);
+        }
         CustomRenderTextures::UpdateAll();   // Custom Render Texture'lar (karede bir kez)
         if (!m_CapturingProbes)
             CaptureReflectionProbes();

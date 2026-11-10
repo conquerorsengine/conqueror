@@ -20,6 +20,7 @@
 #include "Core/Audio/AudioMixer.h"
 #include "Renderer/Renderer.h"
 #include "Core/Time/TimeManager.h"
+#include "Renderer/TextureStreaming.h"
 #include "Core/PhysicsSystem/Physics3D/PhysicsWorld3D.h"
 #include "Core/Utils/Platform.h"
 #include "Core/Utils/FileSystem.h"
@@ -174,6 +175,8 @@ namespace Conqueror
             Input::Update();
             InputGlyphs::Update();
             Automation::OnFrameBegin();
+            // Texture Streaming: önceki karede kameraların istediği mip seviyeleri uygulanır, biten çözmeler yüklenir
+            TextureStreaming::Tick();
 
             if (!m_Minimized)
             {

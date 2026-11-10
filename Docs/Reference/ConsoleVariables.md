@@ -63,6 +63,7 @@ Open the Console panel and type a name to read it, `name value` to set it, `name
 | `r.SSGI.Intensity` | `1` | Screen space GI bounce strength |
 | `r.SSR` | `0` | Screen space reflections on/off |
 | `r.TAADebug` | `0` | TAA debug view: 0 off, 1 per-pixel history path (red moving, green settled, cyan calm, blue trusted, yellow clamped, magenta sky, white no history) |
+| `r.TemporalStability` | `1` | Temporal stability for single-frame AA methods: 1 on (the method's result is accumulated over sub-pixel jittered frames like TAA; SMAA T2x averages only flickering pixels), 0 off |
 | `r.Tonemapper` | `1` | 0 none, 1 Neutral, 2 ACES, 3 AgX, 4 Reinhard |
 | `r.Upscaler` | `0` | Upscaler: 0 off (native), 1 FSR 1, 2 CAS, 3 NIS, 4 TAAU, 5 TSR, 6 DLSS, 7 XeSS, 8 MetalFX, 9 PSSR, 10 FSR 2 (an upscaler this system cannot run falls back to FSR 1) |
 | `r.Vignette` | `0` | Vignette on/off |

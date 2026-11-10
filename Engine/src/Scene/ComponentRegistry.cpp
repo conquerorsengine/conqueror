@@ -121,6 +121,7 @@ namespace Conqueror
             RegisterBlendShapeComponents();
             RegisterMetaHumanComponents();
             RegisterTreeComponents();
+            RegisterTextureStreamingComponents();
             RegisterPlayerInputComponents();
             RegisterRigComponents();
             RegisterNavigationComponents();

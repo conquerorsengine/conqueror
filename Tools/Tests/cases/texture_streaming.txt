@@ -1,0 +1,22 @@
+# template: empty
+# Texture Streaming (Quality) + Streaming Mipmaps: kameraya yakın 2048'lik doku tam (16 MB) yüklenir, 300 m uzakta en çok
+# 2 seviye küçülür (1 MB), yaklaşınca arka planda yeniden tam boyuta çıkar. Paket: doku (+ .meta) ve malzeme
+wait 40
+content import "{dir}/assets/texture_streaming.cqpackage"
+wait 5
+projsettings set streaming.enabled 1
+create_primitive Cube Box 0 2 6.6
+material assign Box Assets/Materials/Big.cqmat
+focus Game
+wait 60
+run_cqs_file "{dir}/checks/stream_full_a.cqs"
+entity expect_active Stream_FULL_A true
+entity move Box 0 1 -300
+wait 40
+run_cqs_file "{dir}/checks/stream_small.cqs"
+entity expect_active Stream_SMALL true
+entity move Box 0 2 6.6
+wait 90
+run_cqs_file "{dir}/checks/stream_full_b.cqs"
+entity expect_active Stream_FULL_B true
+quit

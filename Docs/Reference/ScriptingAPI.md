@@ -4,28 +4,29 @@
 
 Native functions available to every scripting language (ConquerorScript, Luau, LuaQ, Python, C#, Java, C++, C, Rust, Zig and Visual Script nodes). The names are identical in all languages; see [Scripting](../Scripting.md) for how each language calls them. Functions that act on "this" use the entity the script is attached to.
 
-533 functions in 42 categories.
+589 functions in 45 categories.
 
 ## Categories
 
-- [AI](#ai) (3)
+- [AI](#ai) (6)
 - [Abilities](#abilities) (14)
-- [Animation](#animation) (12)
-- [Audio](#audio) (20)
-- [Camera](#camera) (5)
+- [Animation](#animation) (17)
+- [Assets](#assets) (4)
+- [Audio](#audio) (23)
+- [Camera](#camera) (6)
 - [Cameras](#cameras) (3)
 - [Character](#character) (7)
 - [Collections](#collections) (2)
 - [Components](#components) (5)
 - [Console](#console) (3)
 - [Core](#core) (8)
-- [Data](#data) (7)
+- [Data](#data) (8)
 - [Editor](#editor) (17)
 - [Editor GUI](#editor-gui) (21)
 - [Entity](#entity) (47)
 - [Gameplay](#gameplay) (11)
 - [Grid](#grid) (19)
-- [Input](#input) (29)
+- [Input](#input) (45)
 - [Log](#log) (4)
 - [Math](#math) (19)
 - [MultiMesh](#multimesh) (7)
@@ -33,28 +34,33 @@ Native functions available to every scripting language (ConquerorScript, Luau, L
 - [Network](#network) (33)
 - [Noise](#noise) (7)
 - [Particles](#particles) (12)
-- [Physics](#physics) (47)
+- [Physics](#physics) (48)
 - [Physics 2D](#physics-2d) (14)
 - [Prefs](#prefs) (13)
 - [Profiler](#profiler) (3)
-- [Rendering](#rendering) (20)
+- [Rendering](#rendering) (31)
 - [Scene](#scene) (7)
 - [Scenes](#scenes) (4)
+- [Scripting](#scripting) (3)
 - [Scripts](#scripts) (10)
 - [Signals](#signals) (5)
 - [Splines](#splines) (7)
 - [Steam](#steam) (11)
+- [Testing](#testing) (6)
 - [Time](#time) (4)
-- [Timeline](#timeline) (7)
+- [Timeline](#timeline) (8)
 - [Transform](#transform) (9)
 - [Tween](#tween) (7)
-- [UI](#ui) (34)
+- [UI](#ui) (35)
 - [Video](#video) (8)
 
 ## AI
 
 | Function | Description |
 |---|---|
+| `BlackboardGet(target, "Key") -> value` | Reads a blackboard key. |
+| `BlackboardSet(target, "Key", value) -> bool` | Writes a Behavior Tree blackboard key. |
+| `BlackboardSetVector(target, "Key", x, y, z) -> bool` | Writes a Vector blackboard key. |
 | `EQSDebugDraw(seconds = 2) -> int` | Draws the last query's items (green = best, red = filtered out). |
 | `EQSQuery(querier, {generator: "grid"\|"ring"\|"entities", radius, spacing, rings, points, tag, center, nav, tests: [{type: "distance"\|"visibility"\|"dot"\|"path"\|"height", mode: "score"\|"filter"\|"both", context, min, max, visible, weight, prefer: "near"}], max, debug}) -> [{x,y,z,score,entity}]` | Environment Query (Unreal EQS): generates candidate points/objects, filters and scores them with tests, returns the best ones (e.g. a hidden cover point near me that the player cannot see). |
 | `EQSRunAsset("Assets/AI/FindCover.cqeqs", querier, target = null) -> [{x,y,z,score,entity}]` | Runs a saved .cqeqs query; tests with Context: target use the given target object. |
@@ -82,6 +88,10 @@ Native functions available to every scripting language (ConquerorScript, Luau, L
 
 | Function | Description |
 |---|---|
+| `AnimationIsPlaying([entity]) -> bool` | True while the Animation component plays a clip. |
+| `AnimationPlay([entity,] ["Assets/Door.cqanim"]) -> bool` | Plays the Animation component's clip (or the given Animation Clip) from the start. |
+| `AnimationStop([entity]) -> bool` | Stops the Animation component (the object keeps its current pose). |
+| `AnimationTime([entity]) -> float` | Seconds since the Animation component's clip started. |
 | `AnimGetNotifyCount(target = self) -> int` | How many anim notifies fired so far (debugging). Notifies call OnAnimNotify(name), notify states OnAnimNotifyBegin(name) / OnAnimNotifyEnd(name). |
 | `AnimGetState(target = self, layer = 0) -> string` | Current state of an Animation (state machine) layer. |
 | `AnimMontageGetName(target = self) -> string` | Name of the playing montage ("" if none). |
@@ -93,7 +103,17 @@ Native functions available to every scripting language (ConquerorScript, Luau, L
 | `AnimMontagePlay(target, "Assets/Anim/Attack.cqmontage" \| clipName, rate = 1, section = "", blendIn = -1, blendOut = -1, fromBone = "") -> seconds` | Plays a one-shot montage over the state machine (target may be the character root). fromBone limits it to that bone and its children (upper-body attacks while running). Events: OnMontageBlendingOut(name, interrupted), OnMontageEnded(name, interrupted). Returns 0 on failure. |
 | `AnimMontageSetNextSection(target, fromSection, toSection) -> bool` | When fromSection ends continue with toSection (combos; "Stop" ends the montage, a section linked to itself loops). |
 | `AnimMontageStop(target = self, blendOut = -1) -> bool` | Blends the playing montage out (interrupted = true). |
+| `GetBoneLocalPosition(target, "hand_r") -> {x, y, z}` | Position of a bone in the skinned model's own space (final pose, after IK). Independent of the model's world transform. |
 | `GetBonePosition(target, "LeftHand") -> {x, y, z}` | World position of a bone of a skinned model in its final pose (after IK). Name suffixes match ("Hand" finds "mixamorig:LeftHand"). |
+
+## Assets
+
+| Function | Description |
+|---|---|
+| `CurveEvaluate("Assets/Curves/Jump.cqcurve", t) -> number \| {x, y, z} \| {r, g, b, a}` | Value of a Curve asset at time t (Float, Vector or Color curve; Clamp / Loop / PingPong / Linear outside its keys). |
+| `CurveTimeRange("Assets/Curves/Jump.cqcurve") -> {x, y}` | Time of the first (x) and last (y) key of a Curve asset. |
+| `DataAssetGet("Assets/Data/Sword.cqdata", "damage") -> value` | One field of a Data Asset (null when it has no such field). |
+| `LoadDataAsset("Assets/Data/Sword.cqdata") -> {field: value ...}` | Reads a Data Asset (Unity ScriptableObject): its class defaults plus the values set in the Inspector. |
 
 ## Audio
 
@@ -119,11 +139,15 @@ Native functions available to every scripting language (ConquerorScript, Luau, L
 | `AudioStopAllOneShots()` | Stops every one-shot. |
 | `AudioStopEntity(target) -> bool` | Stops another entity's Audio Source. |
 | `AudioStopOneShot(handle)` | Stops a one-shot early. |
+| `DialoguePlay("Assets/X.cqdialogue", volume = 1) -> bool` | Plays a Dialogue Wave with its subtitle. |
+| `SoundMixPop("Assets/X.cqsoundmix") -> bool` | Fades a Sound Mix out. |
+| `SoundMixPush("Assets/X.cqsoundmix") -> bool` | Activates a Sound Mix. |
 
 ## Camera
 
 | Function | Description |
 |---|---|
+| `CameraShakePlay("Assets/X.cqcamerashake", scale = 1) -> bool` | Plays a Camera Shake asset. |
 | `GetMainCamera() -> entity \| null` | The primary (main) camera entity, or the first active camera. |
 | `RaycastFromScreen(mouseX, mouseY, maxDistance = 1000, layerMask = -1) -> hit \| null` | Physics raycast under the mouse (object picking). |
 | `ScreenPointToRay(mouseX, mouseY) -> {origin, direction}` | World ray through a screen point (game camera). |
@@ -192,6 +216,7 @@ Native functions available to every scripting language (ConquerorScript, Luau, L
 
 | Function | Description |
 |---|---|
+| `CurveTableEvaluate("Assets/X.cqcurvetable", "Row", time) -> number` | Reads a Curve Table row at a time. |
 | `DataTableColumns(path) -> [string]` | Column names of a data table. |
 | `DataTableError(path) -> string` | Load / parse error of a data table (empty when fine). |
 | `DataTableFindRows(path, column, value) -> [{...}]` | Rows whose column equals the value. |
@@ -344,6 +369,8 @@ Native functions available to every scripting language (ConquerorScript, Luau, L
 
 | Function | Description |
 |---|---|
+| `ForceFeedbackPlay("Assets/X.cqforcefeedback", gamepad = 0, scale = 1) -> bool` | Plays a gamepad vibration effect. |
+| `ForceFeedbackStop(path = null)` | Stops vibration effects. |
 | `GetButtonGlyph(spec) -> string` | Texture path of the button icon for the current device. spec: "a", "dpad_up", "key_space", "a\|key_space" or an input action name. |
 | `GetButtonLabel(spec) -> string` | Button name for the current device: "A", "Cross", "Space" ... |
 | `GetGamepadAxis(pad, axis) -> float` | Raw axis (0 LX, 1 LY, 2 RX, 3 RY, 4 LT, 5 RT). One argument = axis on pad 0. |
@@ -355,6 +382,11 @@ Native functions available to every scripting language (ConquerorScript, Luau, L
 | `GetMouseDelta() -> {x, y}` | Cursor movement since last frame. |
 | `GetMousePosition() -> {x, y}` | Cursor position in window pixels. |
 | `GetMouseScrollDelta() -> float` | Wheel movement this frame. |
+| `InputActionCanceled("Jump") -> bool` | True in the frame a Project-wide Actions action was canceled. |
+| `InputActionPerformed("Jump") -> bool` | True in the frame a Project-wide Actions action was performed. |
+| `InputActionPhase("Jump") -> string` | Phase of a Project-wide Actions action: Waiting, Started, Performed or Canceled. |
+| `InputActionStarted("Jump") -> bool` | True in the frame a Project-wide Actions action started. |
+| `InputActionVector("Player/Move") -> {x, y}` | 2D value of a Project-wide Actions action (Project Settings > Input). |
 | `IsGamepadButtonPressed(pad, button) -> bool` | Gamepad button held (0 A, 1 B, 2 X, 3 Y, 4 LB, 5 RB, 6 Back, 7 Start, 8 Guide, 9 LS, 10 RS, 11-14 D-pad up/right/down/left). One argument = button on pad 0. |
 | `IsGamepadConnected(pad = 0) -> bool` | True if the gamepad is plugged in. |
 | `IsKeyDown(Key.X) -> bool` | True on the frame the key went down. |
@@ -364,15 +396,24 @@ Native functions available to every scripting language (ConquerorScript, Luau, L
 | `IsMouseButtonPressed(button) -> bool` | 0 left, 1 right, 2 middle. |
 | `IsSteamDeck() -> bool` | True when running on a Steam Deck. |
 | `IsUsingGamepad() -> bool` | True when the player last used a gamepad (false: keyboard / mouse). |
+| `PlayerInputCanceled([target,] "Interact") -> bool` | True in the frame the action was canceled (released early, held too long for a Tap). |
 | `PlayerInputIndex(target) -> int` | Gamepad assigned to this player (-1 = keyboard only). |
 | `PlayerInputLook(target) -> {x, y}` | Look delta from the mouse / right stick of this player. |
 | `PlayerInputMove(target) -> {x, y}` | Movement from WASD / arrows / left stick of this player (length <= 1). |
+| `PlayerInputPerformed([target,] "Interact") -> bool` | True in the frame the action was performed (e.g. a Hold completed, a Tap was released). |
+| `PlayerInputPhase([target,] "Interact") -> string` | Phase of an Input Actions action: Waiting, Started, Performed or Canceled. |
 | `PlayerInputPressed([target,] "Jump") -> bool` | True in the frame the action started for this player. |
 | `PlayerInputReleased([target,] "Jump") -> bool` | True in the frame the action ended for this player. |
+| `PlayerInputStarted([target,] "Interact") -> bool` | True in the frame the action started (e.g. a Hold began). |
+| `PlayerInputSwitchMap([target,] "UI") -> bool` | Switches the player's action map (Unity SwitchCurrentActionMap). |
+| `PlayerInputSwitchScheme([target,] "Gamepad") -> bool` | Uses only the bindings of this control scheme ("" = all schemes). |
 | `PlayerInputValue([target,] "Jump") -> float` | Current value of an action for this Player Input (button 0/1, axis -1..1). |
+| `PlayerInputVector([target,] "Move") -> {x, y}` | 2D value of an action (Input Actions asset: composites, sticks, mouse delta). |
 | `PlayerJoin(manager, device = -1) -> id` | Spawns a player from the Player Input Manager's prefab for a gamepad (-1 = keyboard). |
 | `SetCursorMode(mode)` | 0 normal, 1 hidden, 2 locked (FPS camera). Esc or losing focus releases the lock (the cursor appears in the middle of the game view and the game gets no mouse input); clicking the game view locks it again without passing that click to the game. |
 | `SetGlyphStyle(style)` | Force a glyph style (auto, keyboard, xbox, playstation, nintendo, deck). |
+| `TouchInterfaceActivate("Assets/X.cqtouchinterface") -> bool` | Shows on-screen touch controls. |
+| `TouchInterfaceDeactivate()` | Hides the on-screen touch controls. |
 
 ## Log
 
@@ -520,6 +561,7 @@ Native functions available to every scripting language (ConquerorScript, Luau, L
 | `GetContactOther() -> entity` | Other entity of the current collision/trigger callback. |
 | `GetContactPoint() -> {x, y, z}` | Contact point of the current collision callback. |
 | `GetContactRelativeVelocity() -> {x, y, z}` | Relative velocity at impact. |
+| `GetFixedDeltaTime() -> float` | Physics fixed timestep in seconds. Interpolated bodies are drawn at most this far behind their simulated pose. |
 | `GetGravity() -> {x, y, z}` | World gravity. |
 | `GetLinearVelocity(entity = self) -> {x, y, z}` | Rigidbody velocity. |
 | `GetMass() -> float` | Mass of this entity's rigidbody. |
@@ -605,6 +647,12 @@ Native functions available to every scripting language (ConquerorScript, Luau, L
 | `CameraSetOrthographic(size) / CameraSetOrthographic(target, size)` | Orthographic projection (size = visible height); primary camera when no target. |
 | `CameraSetPerspective(fov) / CameraSetPerspective(target, fov, near, far)` | Perspective projection (vertical FOV in degrees); target -1 = primary camera. |
 | `CameraSetPrimary(target) -> bool` | Makes a camera the one that renders the game. |
+| `CanvasBegin("Assets/X.cqcanvasrt") -> bool` | Starts drawing on a Canvas Render Target. |
+| `CanvasClear(r, g, b, a)` | Clears the canvas. |
+| `CanvasDrawRect(x, y, w, h, r, g, b, a)` | Draws a filled rectangle (top-left origin, pixels). |
+| `CanvasDrawText(x, y, "text", size, r, g, b, a)` | Draws text on the canvas. |
+| `CanvasDrawTexture("Assets/X.png", x, y, w, h, r, g, b, a)` | Draws a texture on the canvas. |
+| `CanvasEnd() -> bool` | Finishes drawing and updates the texture. |
 | `EntityGetColor(target) -> {r, g, b, a}` | Current tint (see EntitySetColor). |
 | `EntityGetModel(target = self) -> string` | Project path of the object's model. |
 | `EntitySetColor(target, r, g, b, a = 1) -> bool` | Tint of a Sprite Renderer, Mesh Renderer, UI Image / Text or Text Renderer. |
@@ -613,10 +661,15 @@ Native functions available to every scripting language (ConquerorScript, Luau, L
 | `MeshGenerateLODs(target = self, levels = 3, reduction = 0.5) -> int` | Adds Auto LOD to a model and builds its simplified LOD meshes now; returns the number of levels. |
 | `MeshGetCurrentLOD(target = self) -> int` | LOD level the renderer picks for the object (Auto LOD component). |
 | `MeshGetLODTriangles(target = self) -> [int]` | Triangle count of every LOD level of the model (LOD0 first). |
+| `MPCSetScalar("Assets/X.cqmpc", "Name", value) -> bool` | Sets a Material Parameter Collection scalar. |
+| `MPCSetVector("Assets/X.cqmpc", "Name", r, g, b, a) -> bool` | Sets a Material Parameter Collection vector. |
 | `RenderSettingGet("Fog.Color") -> value` | Reads a scene render setting. |
 | `RenderSettingNames() -> [string]` | Every setting name accepted by RenderSettingSet. |
 | `RenderSettingSet("Post.BloomIntensity", 0.8) -> bool` | Changes a scene render setting (Fog.*, Shadows.*, Post.*, Environment.*); see RenderSettingNames(). |
 | `SceneSetSkybox(path) -> bool` | HDR sky (.hdr / .exr) used as background, image-based lighting and reflections while Environment.Sky is Auto; "" removes it. |
+| `StreamingIsPreloading(camera) -> bool` | True while the camera's preloading time runs and streamed textures are still loading. |
+| `StreamingSetPreloading(camera, seconds) -> bool` | Texture Streaming: loads the textures a camera with a Streaming Controller needs before it renders (e.g. before a camera cut). |
+| `TextureStreamingInfo() -> {enabled, streamingTextures, pending, streamingMB, desiredMB, totalMB, budgetMB}` | Texture Streaming state and texture memory. |
 | `VertexPaintFill(target, color) -> bool` | Sets every vertex color of the object. |
 | `VertexPaintGetColor(target, meshIndex, vertex) -> [r,g,b,a]` | Painted color of one vertex (white if unpainted). |
 | `VertexPaintSphere(target, x, y, z, radius, color, strength = 1, falloff = 0.5) -> int` | Paints vertex colors inside a world-space sphere (Mesh Paint brush); returns the painted vertex count. color: {r,g,b,a} or [r,g,b,a]. |
@@ -641,6 +694,14 @@ Native functions available to every scripting language (ConquerorScript, Luau, L
 | `LevelIsLoaded(nameOrPath) -> bool` | True while the level is loaded. |
 | `LevelLoadAdditive("Assets/Scenes/Dungeon.cqscene", x = 0, y = 0, z = 0) -> entity \| null` | Loads another scene's objects into the current one (under a "[Level] Name" root). |
 | `LevelUnload(nameOrPath) -> bool` | Unloads an additively loaded level. |
+
+## Scripting
+
+| Function | Description |
+|---|---|
+| `StateGraphGetState(target) -> string` | The name of the current state. |
+| `StateGraphSetVariable(target, "Name", value) -> bool` | Sets a variable read by Variable transitions. |
+| `StateGraphTrigger(target, "Name") -> bool` | Sends a trigger to the State Graphs on this object. |
 
 ## Scripts
 
@@ -695,6 +756,17 @@ Native functions available to every scripting language (ConquerorScript, Luau, L
 | `SteamRequestLobbyList() -> bool` | Searches public lobbies; OnSteamLobbyList(list) follows. |
 | `SteamSetLobbyData(key, value) -> bool` | Metadata on the current lobby (owner only). |
 
+## Testing
+
+| Function | Description |
+|---|---|
+| `AssertEqual(actual, expected, message = "")` | Test Script: fails when the values differ. |
+| `AssertFail(message)` | Test Script: fails the running test. |
+| `AssertFalse(condition, message = "")` | Test Script: fails the running test when true. |
+| `AssertNear(actual, expected, tolerance, message = "")` | Test Script: fails when the numbers differ by more than tolerance. |
+| `AssertNotEqual(a, b, message = "")` | Test Script: fails when the values match. |
+| `AssertTrue(condition, message = "")` | Test Script: fails the running test when false. |
+
 ## Time
 
 | Function | Description |
@@ -708,6 +780,7 @@ Native functions available to every scripting language (ConquerorScript, Luau, L
 
 | Function | Description |
 |---|---|
+| `TimelineBind(track, target, entity?) -> bool` | Binds a track (index or name) to an entity, like Unity's SetGenericBinding. Saved with the scene. |
 | `TimelineGetDuration(entity?) -> float` | Length of the timeline in seconds. |
 | `TimelineGetTime(entity?) -> float` | Current timeline time in seconds. |
 | `TimelineIsPlaying(entity?) -> bool` | True while the timeline plays. |
@@ -760,6 +833,7 @@ Native functions available to every scripting language (ConquerorScript, Luau, L
 | `UIIsInteractable(target) -> bool` | True if the selectable accepts input. |
 | `UIIsPointerOver() -> bool` | True if the mouse is over an interactive UI element (ignore world clicks). |
 | `UIIsVisible(target) -> bool` | True if the element and all its parents are active. |
+| `UIQuery(document, "#name" \| ".class" \| "Type") -> entity` | Finds an element of a UI Document. |
 | `UISetAlpha(target, alpha) -> bool` | Fades a whole UI subtree through its Canvas Group (added if missing). |
 | `UISetColor(target, r, g, b, a = 1) -> bool` | Tints a UI Image (or UI Text / Sprite Renderer). |
 | `UISetDropdownOptions(target, ["A", "B"]) -> bool` | Replaces the options of a Dropdown. |

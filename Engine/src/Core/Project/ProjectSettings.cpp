@@ -146,6 +146,17 @@ namespace Conqueror
         out << YAML::Key << "TargetFrameRate" << YAML::Value << s_Quality.TargetFrameRate;
         out << YAML::Key << "Custom" << YAML::Value;
         WritePreset(out, s_Quality.Custom);
+        {
+            const auto& ts = s_Quality.Streaming;
+            out << YAML::Key << "TextureStreaming" << YAML::Value << YAML::BeginMap;
+            out << YAML::Key << "Enabled" << YAML::Value << ts.Enabled;
+            out << YAML::Key << "AddAllCameras" << YAML::Value << ts.AddAllCameras;
+            out << YAML::Key << "MemoryBudgetMB" << YAML::Value << ts.MemoryBudgetMB;
+            out << YAML::Key << "RenderersPerFrame" << YAML::Value << ts.RenderersPerFrame;
+            out << YAML::Key << "MaxLevelReduction" << YAML::Value << ts.MaxLevelReduction;
+            out << YAML::Key << "MaxIORequests" << YAML::Value << ts.MaxIORequests;
+            out << YAML::EndMap;
+        }
         out << YAML::EndMap;
 
         out << YAML::Key << "Graphics" << YAML::Value << YAML::BeginMap;
@@ -206,6 +217,20 @@ namespace Conqueror
             Read(q, "TargetFrameRate", s_Quality.TargetFrameRate);
             ReadPreset(q["Custom"], s_Quality.Custom);
             s_Quality.Level = std::clamp(s_Quality.Level, 0, (int)QualityLevel::Custom);
+            if (auto t = q["TextureStreaming"])
+            {
+                auto& ts = s_Quality.Streaming;
+                Read(t, "Enabled", ts.Enabled);
+                Read(t, "AddAllCameras", ts.AddAllCameras);
+                Read(t, "MemoryBudgetMB", ts.MemoryBudgetMB);
+                Read(t, "RenderersPerFrame", ts.RenderersPerFrame);
+                Read(t, "MaxLevelReduction", ts.MaxLevelReduction);
+                Read(t, "MaxIORequests", ts.MaxIORequests);
+                ts.MemoryBudgetMB = std::max(ts.MemoryBudgetMB, 1.0f);
+                ts.RenderersPerFrame = std::clamp(ts.RenderersPerFrame, 1, 1 << 20);
+                ts.MaxLevelReduction = std::clamp(ts.MaxLevelReduction, 0, 7);
+                ts.MaxIORequests = std::clamp(ts.MaxIORequests, 1, 1 << 16);
+            }
         }
         if (auto g = root["Graphics"])
         {

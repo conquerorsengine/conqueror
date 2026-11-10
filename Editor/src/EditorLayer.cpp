@@ -4741,7 +4741,8 @@ namespace Conqueror::Editor
         Automation::RegisterCommand("projsettings", [this](const Args& a, std::string& err) {
             // projsettings set <key> <value> | expect <key> <value> | order <Class> <n> | save | reload
             // anahtarlar: quality.level, quality.fps, quality.aa, audio.volume, audio.doppler, nav.cost.<i>, nav.name.<i>,
-            //             editor.mode, editor.newscene, graphics.tonemapper, input.custom
+            //             editor.mode, editor.newscene, graphics.tonemapper, input.custom, streaming.enabled, streaming.allcameras,
+            //             streaming.budget, streaming.maxreduction
             if (a.size() < 2) { err = "projsettings set|expect|order|save|reload|reset|newscene ..."; return false; }
             auto& q = ProjectSettings::Quality();
             auto& au = ProjectSettings::Audio();
@@ -4760,6 +4761,10 @@ namespace Conqueror::Editor
                 else if (key == "editor.newscene") out = ed.NewSceneWithCameraAndLight ? "1" : "0";
                 else if (key == "graphics.tonemapper") out = std::to_string(ProjectSettings::Graphics().DefaultTonemapper);
                 else if (key == "input.custom") out = ProjectSettings::CustomInput() ? "1" : "0";
+                else if (key == "streaming.enabled") out = q.Streaming.Enabled ? "1" : "0";
+                else if (key == "streaming.allcameras") out = q.Streaming.AddAllCameras ? "1" : "0";
+                else if (key == "streaming.budget") { std::snprintf(buf, sizeof(buf), "%g", q.Streaming.MemoryBudgetMB); out = buf; }
+                else if (key == "streaming.maxreduction") out = std::to_string(q.Streaming.MaxLevelReduction);
                 else return false;
                 return true;
             };
@@ -4777,6 +4782,11 @@ namespace Conqueror::Editor
                 else if (k == "editor.newscene") ed.NewSceneWithCameraAndLight = v == "1" || v == "true";
                 else if (k == "graphics.tonemapper") ProjectSettings::Graphics().DefaultTonemapper = std::stoi(v);
                 else if (k == "input.custom") ProjectSettings::CustomInput() = v == "1" || v == "true";
+                // Texture Streaming (Quality)
+                else if (k == "streaming.enabled") q.Streaming.Enabled = v == "1" || v == "true";
+                else if (k == "streaming.allcameras") q.Streaming.AddAllCameras = v == "1" || v == "true";
+                else if (k == "streaming.budget") q.Streaming.MemoryBudgetMB = std::max(1.0f, std::stof(v));
+                else if (k == "streaming.maxreduction") q.Streaming.MaxLevelReduction = std::clamp(std::stoi(v), 0, 7);
                 else { err = "unknown key " + k; return false; }
                 ProjectSettings::Apply();
                 return true;

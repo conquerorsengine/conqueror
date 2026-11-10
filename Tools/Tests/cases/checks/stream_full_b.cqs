@@ -1,0 +1,4 @@
+using nativebridge;
+var info = TextureStreamingInfo();
+LogInfo("REGRESSION texture_streaming full_b streamingMB=" + info.streamingMB + " textures=" + info.streamingTextures);
+if (info.enabled && info.streamingTextures == 1 && info.streamingMB > 15.0) { CreateEntity("Stream_FULL_B"); }

@@ -437,6 +437,13 @@ namespace Conqueror::Editor::AssetInspector
             UI::SliderInt("Aniso Level", s.Anisotropy, 1, 16, "Sharper textures on surfaces seen at grazing angles");
             ImGui::EndDisabled();
             UI::Checkbox("Generate Mipmaps", s.Mipmaps, "Smaller copies used at a distance: removes shimmering on 3D surfaces");
+            // Unity Streaming Mipmaps (Texture Streaming açıkken: Project Settings > Quality)
+            ImGui::BeginDisabled(!s.Mipmaps);
+            UI::Checkbox("Streaming Mipmaps", s.StreamingMipmaps,
+                         "With Texture Streaming on (Project Settings > Quality), only the mip levels the cameras need are loaded.");
+            if (s.StreamingMipmaps)
+                UI::SliderInt("Mip Map Priority", s.StreamingPriority, -128, 127, "Over the memory budget, lower priority textures drop levels first.");
+            ImGui::EndDisabled();
         }
 
         // Platform sekmeleri (Unity: Default / PC / Web ...)

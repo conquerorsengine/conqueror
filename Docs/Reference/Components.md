@@ -4,34 +4,122 @@
 
 Every component that can be added to an entity (Inspector > Add Component, `comp add <Entity> <Component>` in automation, `AddComponent("Name")` from scripts). Field names are the keys used in scene files and by `GetComponentField` / `SetComponentField` in scripts; defaults are the values of a freshly added component.
 
-158 components in 24 categories.
+245 components in 29 categories.
 
 ## Categories
 
+- **2D**: [Sprite Shape Controller](#sprite-shape-controller), [Sprite Shape Renderer](#sprite-shape-renderer)
+- **2D Animation**: [Sprite Library](#sprite-library), [Sprite Resolver](#sprite-resolver), [Sprite Skin](#sprite-skin)
+- **AI**: [Behavior Tree](#behavior-tree)
 - **AI & Navigation**: [NavMesh Agent](#navmesh-agent), [NavMesh Link](#navmesh-link), [NavMesh Modifier](#navmesh-modifier), [NavMesh Modifier Volume](#navmesh-modifier-volume), [NavMesh Obstacle](#navmesh-obstacle), [NavMesh Surface](#navmesh-surface)
-- **Animation**: [Animation](#animation), [Bone Attachment](#bone-attachment), [Character Customizer](#character-customizer), [Playable Director](#playable-director)
-- **Animation Rigging**: [Bone 2D](#bone-2d), [Chain IK Constraint](#chain-ik-constraint), [Damped Transform](#damped-transform), [IK 2D](#ik-2d), [Multi-Aim Constraint](#multi-aim-constraint), [Rig](#rig), [Two Bone IK Constraint](#two-bone-ik-constraint)
-- **Audio**: [Audio Listener](#audio-listener), [Audio Source](#audio-source), [Sound Concurrency](#sound-concurrency), [Sound Occlusion](#sound-occlusion)
+- **Animation**: [Aim Offset Player](#aim-offset-player), [Animation](#animation), [Animation](#animation), [Animator](#animator), [Blend Shapes](#blend-shapes), [Bone Attachment](#bone-attachment), [Character Customizer](#character-customizer), [IK Rig](#ik-rig), [Leader Pose](#leader-pose), [Live Link Face](#live-link-face), [MetaHuman](#metahuman), [Playable Director](#playable-director), [Pose Asset Player](#pose-asset-player), [Retarget Player](#retarget-player)
+- **Animation Rigging**: [Blend Constraint](#blend-constraint), [Bone 2D](#bone-2d), [Chain IK Constraint](#chain-ik-constraint), [Damped Transform](#damped-transform), [IK 2D](#ik-2d), [Multi-Aim Constraint](#multi-aim-constraint), [Multi-Parent Constraint](#multi-parent-constraint), [Multi-Position Constraint](#multi-position-constraint), [Multi-Rotation Constraint](#multi-rotation-constraint), [Override Transform](#override-transform), [Rig](#rig), [Twist Chain Constraint](#twist-chain-constraint), [Twist Correction](#twist-correction), [Two Bone IK Constraint](#two-bone-ik-constraint)
+- **Audio**: [Audio Listener](#audio-listener), [Audio Source](#audio-source), [MetaSound Source](#metasound-source), [Sound Concurrency](#sound-concurrency), [Sound Occlusion](#sound-occlusion), [Sound Settings](#sound-settings)
 - **Camera**: [Spring Arm](#spring-arm)
-- **Cameras**: [Camera Brain](#camera-brain), [Impulse Source](#impulse-source), [Render Target](#render-target), [Virtual Camera](#virtual-camera)
+- **Cameras**: [Camera Brain](#camera-brain), [Cine Camera](#cine-camera), [Cinemachine Confiner 2D](#cinemachine-confiner-2d), [Cinemachine Confiner 3D](#cinemachine-confiner-3d), [Cinemachine Deoccluder](#cinemachine-deoccluder), [Cinemachine Follow Zoom](#cinemachine-follow-zoom), [Cinemachine Group Framing](#cinemachine-group-framing), [Cinemachine Impulse Listener](#cinemachine-impulse-listener), [Cinemachine Target Group](#cinemachine-target-group), [Impulse Source](#impulse-source), [Render Target](#render-target), [Virtual Camera](#virtual-camera)
 - **Constraints**: [Aim Constraint](#aim-constraint), [Look At Constraint](#look-at-constraint), [Parent Constraint](#parent-constraint), [Position Constraint](#position-constraint), [Rotation Constraint](#rotation-constraint), [Scale Constraint](#scale-constraint)
 - **Core**: [Transform](#transform)
-- **Effects**: [Line Renderer](#line-renderer), [Particle System](#particle-system), [Particle System Force Field](#particle-system-force-field), [Trail Renderer](#trail-renderer), [Wind Zone](#wind-zone)
-- **Gameplay**: [Ability System](#ability-system), [Camera Follow](#camera-follow), [Game Mode](#game-mode), [Gameplay Tags](#gameplay-tags), [Player Start](#player-start), [Projectile Movement](#projectile-movement), [Rotator](#rotator)
+- **Effects**: [Line Renderer](#line-renderer), [Particle System](#particle-system), [Particle System Force Field](#particle-system-force-field), [Trail Renderer](#trail-renderer), [Visual Effect](#visual-effect), [Wind Zone](#wind-zone)
+- **Gameplay**: [Ability System](#ability-system), [Camera Follow](#camera-follow), [Floating Pawn Movement](#floating-pawn-movement), [Game Mode](#game-mode), [Gameplay Tags](#gameplay-tags), [Interp To Movement](#interp-to-movement), [Player Start](#player-start), [Projectile Movement](#projectile-movement), [Rotator](#rotator), [Target Point](#target-point)
 - **Grid**: [Grid](#grid), [Tilemap](#tilemap), [Tilemap Collider 2D](#tilemap-collider-2d)
-- **Input**: [Player Input](#player-input), [Player Input Manager](#player-input-manager)
-- **Lighting**: [Area Light](#area-light), [Directional Light](#directional-light), [Point Light](#point-light), [Spot Light](#spot-light)
+- **Input**: [On-Screen Button](#on-screen-button), [On-Screen Stick](#on-screen-stick), [Player Input](#player-input), [Player Input Manager](#player-input-manager)
+- **Lighting**: [Area Light](#area-light), [Directional Light](#directional-light), [Exponential Height Fog](#exponential-height-fog), [Light Probe Group](#light-probe-group), [Point Light](#point-light), [Sky Atmosphere](#sky-atmosphere), [Sky Light](#sky-light), [Spot Light](#spot-light), [Volumetric Cloud](#volumetric-cloud)
 - **Network**: [Network Animator](#network-animator), [Network Manager](#network-manager), [Network Object](#network-object), [Network Rigidbody](#network-rigidbody), [Network Transform](#network-transform)
-- **Physics**: [Ball Joint](#ball-joint), [Box Collider](#box-collider), [Capsule Collider](#capsule-collider), [Character Controller](#character-controller), [Character Joint](#character-joint), [Cloth](#cloth), [Configurable Joint](#configurable-joint), [Constant Force](#constant-force), [Fixed Joint](#fixed-joint), [Fracture](#fracture), [Hinge Joint](#hinge-joint), [Mesh Collider](#mesh-collider), [Ragdoll](#ragdoll), [Ray Cast](#ray-cast), [Rigidbody](#rigidbody), [Slider Joint](#slider-joint), [Sphere Collider](#sphere-collider), [Spring Joint](#spring-joint), [Wheel Collider](#wheel-collider)
+- **Physics**: [Articulation Body](#articulation-body), [Ball Joint](#ball-joint), [Box Collider](#box-collider), [Buoyancy](#buoyancy), [Capsule Collider](#capsule-collider), [Character Controller](#character-controller), [Character Joint](#character-joint), [Cloth](#cloth), [Configurable Joint](#configurable-joint), [Constant Force](#constant-force), [Fixed Joint](#fixed-joint), [Fracture](#fracture), [Hinge Joint](#hinge-joint), [Mesh Collider](#mesh-collider), [Radial Force](#radial-force), [Ragdoll](#ragdoll), [Ray Cast](#ray-cast), [Rigidbody](#rigidbody), [Slider Joint](#slider-joint), [Sphere Collider](#sphere-collider), [Spring Joint](#spring-joint), [Terrain Collider](#terrain-collider), [Wheel Collider](#wheel-collider)
 - **Physics 2D**: [Area Effector 2D](#area-effector-2d), [Box Collider 2D](#box-collider-2d), [Buoyancy Effector 2D](#buoyancy-effector-2d), [Capsule Collider 2D](#capsule-collider-2d), [Circle Collider 2D](#circle-collider-2d), [Composite Collider 2D](#composite-collider-2d), [Constant Force 2D](#constant-force-2d), [Distance Joint 2D](#distance-joint-2d), [Edge Collider 2D](#edge-collider-2d), [Fixed Joint 2D](#fixed-joint-2d), [Friction Joint 2D](#friction-joint-2d), [Hinge Joint 2D](#hinge-joint-2d), [Platform Effector 2D](#platform-effector-2d), [Point Effector 2D](#point-effector-2d), [Polygon Collider 2D](#polygon-collider-2d), [Relative Joint 2D](#relative-joint-2d), [Rigidbody 2D](#rigidbody-2d), [Slider Joint 2D](#slider-joint-2d), [Spring Joint 2D](#spring-joint-2d), [Surface Effector 2D](#surface-effector-2d), [Target Joint 2D](#target-joint-2d), [Wheel Joint 2D](#wheel-joint-2d)
 - **Prefab**: [Prefab Instance](#prefab-instance)
-- **Rendering**: [Auto LOD](#auto-lod), [Billboard Renderer](#billboard-renderer), [CSG Shape](#csg-shape), [Camera](#camera), [Decal Projector](#decal-projector), [Halo](#halo), [LOD Group](#lod-group), [Lens Flare](#lens-flare), [Light 2D](#light-2d), [Mesh Renderer](#mesh-renderer), [Model](#model), [Multi Mesh](#multi-mesh), [Parallax 2D](#parallax-2d), [Pixel Perfect Camera](#pixel-perfect-camera), [Post Process Volume](#post-process-volume), [Shadow Caster 2D](#shadow-caster-2d), [Skybox](#skybox), [Sorting Group](#sorting-group), [Sprite Mask](#sprite-mask), [Sprite Renderer](#sprite-renderer), [Text Renderer](#text-renderer), [Vertex Paint](#vertex-paint), [Virtual Geometry](#virtual-geometry), [Visible On Screen Notifier](#visible-on-screen-notifier)
-- **Scripting**: [Signal Connections](#signal-connections)
-- **Splines**: [Spline Animate](#spline-animate), [Spline Container](#spline-container), [Spline Extrude](#spline-extrude), [Spline Instantiate](#spline-instantiate)
+- **Rendering**: [Adaptive Probe Volume](#adaptive-probe-volume), [Arrow](#arrow), [Auto LOD](#auto-lod), [Billboard Renderer](#billboard-renderer), [CSG Shape](#csg-shape), [Cable](#cable), [Camera](#camera), [Decal Projector](#decal-projector), [Flipbook Player](#flipbook-player), [Foliage Volume](#foliage-volume), [Full Screen Pass](#full-screen-pass), [Halo](#halo), [LOD Group](#lod-group), [Lens Flare](#lens-flare), [Light 2D](#light-2d), [Light Profile](#light-profile), [Mesh Renderer](#mesh-renderer), [Multi Mesh](#multi-mesh), [Note](#note), [Occlusion Area](#occlusion-area), [Occlusion Portal](#occlusion-portal), [Parallax 2D](#parallax-2d), [Pixel Perfect Camera](#pixel-perfect-camera), [Planar Reflection](#planar-reflection), [Post Process Volume](#post-process-volume), [Reflection Probe](#reflection-probe), [Scene Capture Cube](#scene-capture-cube), [Shadow Caster 2D](#shadow-caster-2d), [Skybox](#skybox), [Sorting Group](#sorting-group), [Sprite Mask](#sprite-mask), [Sprite Renderer](#sprite-renderer), [Streaming Controller](#streaming-controller), [Text Renderer](#text-renderer), [Tree](#tree), [Vertex Paint](#vertex-paint), [Virtual Geometry](#virtual-geometry), [Visible On Screen Notifier](#visible-on-screen-notifier), [Water Body](#water-body)
+- **Scripting**: [Signal Connections](#signal-connections), [Signal Receiver](#signal-receiver)
+- **Splines**: [Spline Animate](#spline-animate), [Spline Container](#spline-container), [Spline Extrude](#spline-extrude), [Spline Instantiate](#spline-instantiate), [Spline Mesh](#spline-mesh)
 - **Transform**: [Remote Transform](#remote-transform)
-- **UI**: [Aspect Ratio Fitter](#aspect-ratio-fitter), [Button](#button), [Canvas](#canvas), [Canvas Group](#canvas-group), [Canvas Scaler](#canvas-scaler), [Content Size Fitter](#content-size-fitter), [Dropdown](#dropdown), [Event System](#event-system), [Event Trigger](#event-trigger), [Image](#image), [Input Field](#input-field), [Layout Element](#layout-element), [Layout Group](#layout-group), [Mask](#mask), [Outline](#outline), [Raw Image](#raw-image), [Rect Mask 2D](#rect-mask-2d), [Rect Transform](#rect-transform), [Scroll Rect](#scroll-rect), [Scrollbar](#scrollbar), [Shadow](#shadow), [Slider](#slider), [Text](#text), [Toggle](#toggle)
+- **UI**: [Aspect Ratio Fitter](#aspect-ratio-fitter), [Button](#button), [Canvas](#canvas), [Canvas Group](#canvas-group), [Canvas Scaler](#canvas-scaler), [Content Size Fitter](#content-size-fitter), [Dropdown](#dropdown), [Event System](#event-system), [Event Trigger](#event-trigger), [Image](#image), [Input Field](#input-field), [Layout Element](#layout-element), [Layout Group](#layout-group), [Mask](#mask), [Outline](#outline), [Physics 2D Raycaster](#physics-2d-raycaster), [Physics Raycaster](#physics-raycaster), [Position As UV1](#position-as-uv1), [Raw Image](#raw-image), [Rect Mask 2D](#rect-mask-2d), [Rect Transform](#rect-transform), [Scroll Rect](#scroll-rect), [Scrollbar](#scrollbar), [Selectable](#selectable), [Shadow](#shadow), [Slider](#slider), [Text](#text), [Toggle](#toggle), [Toggle Group](#toggle-group), [UI Document](#ui-document), [UI Skin](#ui-skin)
 - **Video**: [Video Player](#video-player)
-- **World**: [Level Streaming Volume](#level-streaming-volume), [Streamed Level](#streamed-level)
+- **Volumes**: [Cull Distance Volume](#cull-distance-volume), [Kill Z Volume](#kill-z-volume), [Pain Causing Volume](#pain-causing-volume), [Physics Volume](#physics-volume)
+- **World**: [Always Loaded](#always-loaded), [Level Streaming Volume](#level-streaming-volume), [Streamed Level](#streamed-level), [World Partition](#world-partition), [World Partition Streaming Source](#world-partition-streaming-source)
+- **XR**: [Continuous Move Provider](#continuous-move-provider), [Snap Turn Provider](#snap-turn-provider), [Teleportation Anchor](#teleportation-anchor), [Teleportation Area](#teleportation-area), [XR Controller](#xr-controller), [XR Grab Interactable](#xr-grab-interactable), [XR Origin](#xr-origin), [XR Ray Interactor](#xr-ray-interactor)
+
+## 2D
+
+### Sprite Shape Controller
+
+A 2D shape drawn through points: closed shapes are filled with the profile's fill texture, every edge gets the edge sprite picked by its angle (grass on top, rock on the sides). Updates an Edge Collider 2D or Polygon Collider 2D on this object to the same outline.
+
+Type `SpriteShapeControllerComponent`; script name `SpriteShapeController`; requires `SpriteShapeRendererComponent`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Profile | `Profile` | Asset |  |  |
+| Points | `Points` | Vec2List |  | Local positions of the shape's points. |
+| Closed | `Closed` | Bool | `true` | Closed shapes are filled; open shapes only get edges. |
+| Smooth | `Smooth` | Bool | `false` | Curve through the points instead of straight lines. |
+| Detail | `Detail` | Int | `8` |  |
+| Update Collider | `UpdateCollider` | Bool | `true` | Keeps an Edge Collider 2D / Polygon Collider 2D on this object on the shape's outline. |
+
+### Sprite Shape Renderer
+
+Draws the shape of the Sprite Shape Controller: fill and edge sprites from its profile. Sorting uses the object's Layer.
+
+Type `SpriteShapeRendererComponent`; script name `SpriteShapeRenderer`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Color | `Color` | Color4 | `1 1 1 1` |  |
+
+## 2D Animation
+
+### Sprite Library
+
+Gives this object and its children a Sprite Library Asset: named sprites grouped by category. Sprite Resolvers below pick sprites from it by category and label.
+
+Type `SpriteLibraryComponent`; script name `SpriteLibrary`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Sprite Library Asset | `Asset` | Asset |  |  |
+
+### Sprite Resolver
+
+Sets the Sprite Renderer's sprite from the nearest Sprite Library by Category and Label. Change the label to swap the sprite (outfits, faces); animate Label Index for frame-by-frame animation.
+
+Type `SpriteResolverComponent`; script name `SpriteResolver`; requires `SpriteRendererComponent`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Category | `Category` | String |  |  |
+| Label | `Label` | String |  |  |
+| Label Index | `LabelIndex` | Int | `-1` | 0, 1, 2 ... picks the label at that position in the category (for animation). -1 uses Label. |
+
+### Sprite Skin
+
+Bends the sprite with a 2D skeleton (Bone 2D objects). Set the Root Bone, pose the bones in their rest pose and press Bind Bones: the sprite is split into a grid whose points follow the nearest bones.
+
+Type `SpriteSkinComponent`; script name `SpriteSkin`; requires `SpriteRendererComponent`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Root Bone | `RootBone` | EntityRef | `0` |  |
+| Grid Columns | `GridX` | Int | `6` |  |
+| Grid Rows | `GridY` | Int | `6` |  |
+| Create Bones | `__action_Create Bones` | String |  |  |
+| Bind Bones | `__action_Bind Bones` | String |  |  |
+| Unbind | `__action_Unbind` | String |  |  |
+| Bound Bones | `BoundBones` | Int | `0` |  |
+| Bound Vertices | `BoundVertices` | Int | `0` |  |
+
+## AI
+
+### Behavior Tree
+
+Runs a Behavior Tree (.cqbt) while the game plays. Move To tasks use this object's NavMesh Agent when it has one.
+
+Type `BehaviorTreeComponent`; script name `BehaviorTree`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Tree | `Tree` | Asset |  |  |
+| Enabled | `Enabled` | Bool | `true` |  |
+| Tick Interval | `TickInterval` | Float | `0` | Seconds between updates; 0 runs every frame. |
+| Running Task | `RunningTask` | String |  |  |
 
 ## AI & Navigation
 
@@ -132,6 +220,19 @@ Type `NavMeshSurfaceComponent`; script name `NavMeshSurface`.
 
 ## Animation
 
+### Aim Offset Player
+
+Layers an Aim Offset (.cqaimoffset) over the animation: Yaw and Pitch pick additive poses.
+
+Type `AimOffsetComponent`; script name `AimOffset`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Asset | `Asset` | Asset |  |  |
+| Yaw | `Yaw` | Float | `0` |  |
+| Pitch | `Pitch` | Float | `0` |  |
+| Weight | `Weight` | Float | `1` |  |
+
 ### Animation
 
 Type `AnimationComponent`; script name `Animation`.
@@ -142,6 +243,41 @@ Type `AnimationComponent`; script name `Animation`.
 | Play On Awake | `PlayOnAwake` | Bool | `true` |  |
 | Apply Root Motion | `ApplyRootMotion` | Bool | `false` |  |
 | Controller | `ControllerPath` | Asset |  |  |
+
+### Animation
+
+Plays an Animation Clip (.cqanim) on this object and its children (Unity Animation component): keyed positions, rotations, scales and component fields, with Animation Events. Edit clips in Window > Animation.
+
+Type `AnimationPlayerComponent`; script name `AnimationPlayer`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Clip | `Clip` | Asset |  |  |
+| Play Automatically | `PlayAutomatically` | Bool | `true` |  |
+| Wrap Mode | `WrapMode` | Enum | `Default` | Options: Default, Once, Loop, Ping Pong, Clamp Forever. |
+| Speed | `Speed` | Float | `1` |  |
+
+### Animator
+
+Type `AnimatorComponent`; script name `Animator`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Playing | `Playing` | Bool | `true` |  |
+| Speed | `Speed` | Float | `1` |  |
+| Clip | `ActiveClipIndex` | Int | `0` |  |
+| Time | `CurrentTime` | Float | `0` |  |
+
+### Blend Shapes
+
+Morph target weights of the model (Unity Blend Shapes, Unreal Morph Targets): sliders per shape; animation clips with morph curves add to these. Scripts: SetBlendShapeWeight(entity, "Name", w), GetBlendShapeWeight, GetBlendShapeCount / Name.
+
+Type `BlendShapesComponent`; script name `BlendShapes`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| _Runtime_: Blend Shapes | `Count` | Int | `0` |  |
+| Active | `Active` | Int | `0` |  |
 
 ### Bone Attachment
 
@@ -175,6 +311,68 @@ Type `CharacterCustomizerComponent`; script name `CharacterCustomizer`.
 | Skin Materials | `SkinMaterials` | String | `skin,body,face,head` | Comma separated parts of material names, * = all |
 | Hair Materials | `HairMaterials` | String | `hair,brow,beard` |  |
 | Eye Materials | `EyeMaterials` | String | `eye,iris` |  |
+| Outfit Texture | `OutfitTexture` | Asset |  | Base color texture painted in the model's UV space (clothes, shoes, hair); replaces the skin tint on the matching materials |
+| Outfit Materials | `OutfitMaterials` | String | `*` | Comma separated parts of material names, * = all |
+| Outfit Roughness | `OutfitRoughness` | Float | `0.72` |  |
+| Keep Model Normal Map | `OutfitKeepNormalMap` | Bool | `false` | Off: the outfit replaces the model's own normal map (e.g. a costume's seams and muscles) |
+
+### IK Rig
+
+Solves the chains of an IK Rig (.cqikrig) to their target objects while the game plays.
+
+Type `IKRigComponent`; script name `IKRig`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Rig | `Rig` | Asset |  |  |
+| Weight | `Weight` | Float | `1` |  |
+
+### Leader Pose
+
+This skinned mesh follows the Leader's skeleton pose by bone name (Unreal Set Leader Pose Component): heads, hair and clothes move with the body; bones the leader lacks keep this mesh's own animation.
+
+Type `LeaderPoseComponent`; script name `LeaderPose`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Leader | `Leader` | EntityRef | `0` |  |
+| _Runtime_: Shared Bones | `SharedBones` | Int | `0` |  |
+
+### Live Link Face
+
+Plays a Live Link Face (iPhone ARKit) CSV recording on this mesh's blend shapes: the 52 ARKit curves (eyeBlinkLeft, jawOpen, mouthSmileLeft ...) drive shapes of the same name, or names given in Remap.
+
+Type `LiveLinkFaceComponent`; script name `LiveLinkFace`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Recording | `Recording` | Asset |  |  |
+| Playing | `Playing` | Bool | `true` |  |
+| Loop | `Loop` | Bool | `true` |  |
+| Speed | `Speed` | Float | `1` |  |
+| Intensity | `Intensity` | Float | `1` |  |
+| Timecode Frame Rate | `FrameRate` | Float | `60` |  |
+| Remap (ARKit=Shape; ...) | `Remap` | String |  |  |
+| _Runtime_: Time | `Time` | Float | `0` |  |
+| Duration | `Duration` | Float | `0` |  |
+| Curves | `Curves` | Int | `0` |  |
+| Mapped | `Mapped` | Int | `0` |  |
+
+### MetaHuman
+
+Assembles a MetaHuman export (FBX / glTF parts in a folder: body, face, hair, eyebrows, eyelashes, beard, eyes, teeth, clothes) into this character: parts follow the body with Leader Pose, skin uses Subsurface and hair the Hair shading model; add Live Link Face to the face for ARKit facial capture.
+
+Type `MetaHumanComponent`; script name `MetaHuman`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Export Folder | `Folder` | String |  |  |
+| Skin Shading | `SkinShading` | Bool | `true` |  |
+| Hair Shading | `HairShading` | Bool | `true` |  |
+| Assemble | `__action_Assemble` | String |  |  |
+| _Runtime_: Parts | `Parts` | Int | `0` |  |
+| Body | `Body` | String |  |  |
+| Face | `Face` | String |  |  |
 
 ### Playable Director
 
@@ -189,7 +387,49 @@ Type `PlayableDirectorComponent`; script name `PlayableDirector`.
 | Wrap Mode | `WrapMode` | Int | `0` | Options: Hold, Loop, None. |
 | Speed | `Speed` | Float | `1` |  |
 
+### Pose Asset Player
+
+Blends a named pose from a Pose Asset (.cqpose) over the animation, for facial or hand poses.
+
+Type `PoseAssetComponent`; script name `PoseAsset`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Asset | `Asset` | Asset |  |  |
+| Pose | `PoseName` | String |  |  |
+| Weight | `Weight` | Float | `1` |  |
+
+### Retarget Player
+
+Plays a clip from another skeleton on this model through an IK Retargeter (.cqretarget).
+
+Type `RetargetPlayerComponent`; script name `RetargetPlayer`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Retargeter | `Retargeter` | Asset |  |  |
+| Playing | `Playing` | Bool | `true` |  |
+| Speed | `Speed` | Float | `1` |  |
+| Weight | `Weight` | Float | `1` |  |
+
 ## Animation Rigging
+
+### Blend Constraint
+
+Puts the bone between two source objects: 0 is Source A, 1 is Source B, separately for position and rotation.
+
+Type `BlendConstraintComponent`; script name `BlendConstraint`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Weight | `Weight` | Float | `1` |  |
+| Constrained Bone | `Bone` | String |  |  |
+| Source A | `SourceA` | EntityRef | `0` |  |
+| Source B | `SourceB` | EntityRef | `0` |  |
+| Blend Position | `BlendPosition` | Bool | `true` |  |
+| Position A -> B | `PositionWeight` | Float | `0.5` |  |
+| Blend Rotation | `BlendRotation` | Bool | `true` |  |
+| Rotation A -> B | `RotationWeight` | Float | `0.5` |  |
 
 ### Bone 2D
 
@@ -264,6 +504,87 @@ Type `MultiAimConstraintComponent`; script name `MultiAimConstraint`.
 | Up Axis | `UpAxis` | Enum | `Y` | Options: X, -X, Y, -Y, Z, -Z. |
 | Max Angle | `MaxAngle` | Float | `180` |  |
 
+### Multi-Parent Constraint
+
+The bone follows the weighted source objects as if it were their child (a weapon held in both hands, a rider). Maintain Offset keeps the pose it had on the first frame relative to them.
+
+Type `MultiParentConstraintComponent`; script name `MultiParentConstraint`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Weight | `Weight` | Float | `1` |  |
+| Constrained Bone | `Bone` | String |  |  |
+| Source 1 | `Source1` | EntityRef | `0` |  |
+| Source 1 Weight | `SourceWeight1` | Float | `1` |  |
+| Source 2 | `Source2` | EntityRef | `0` |  |
+| Source 2 Weight | `SourceWeight2` | Float | `1` |  |
+| Source 3 | `Source3` | EntityRef | `0` |  |
+| Source 3 Weight | `SourceWeight3` | Float | `1` |  |
+| Maintain Offset | `MaintainOffset` | Bool | `true` |  |
+| Constrain Position | `ConstrainPosition` | Bool | `true` |  |
+| Constrain Rotation | `ConstrainRotation` | Bool | `true` |  |
+
+### Multi-Position Constraint
+
+Moves the bone to the weighted average position of the sources, on the chosen axes.
+
+Type `MultiPositionConstraintComponent`; script name `MultiPositionConstraint`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Weight | `Weight` | Float | `1` |  |
+| Constrained Bone | `Bone` | String |  |  |
+| Source 1 | `Source1` | EntityRef | `0` |  |
+| Source 1 Weight | `SourceWeight1` | Float | `1` |  |
+| Source 2 | `Source2` | EntityRef | `0` |  |
+| Source 2 Weight | `SourceWeight2` | Float | `1` |  |
+| Source 3 | `Source3` | EntityRef | `0` |  |
+| Source 3 Weight | `SourceWeight3` | Float | `1` |  |
+| Maintain Offset | `MaintainOffset` | Bool | `false` |  |
+| Offset | `Offset` | Vec3 | `0 0 0` |  |
+| X | `ConstrainX` | Bool | `true` |  |
+| Y | `ConstrainY` | Bool | `true` |  |
+| Z | `ConstrainZ` | Bool | `true` |  |
+
+### Multi-Rotation Constraint
+
+Turns the bone to the weighted average rotation of the sources, on the chosen axes.
+
+Type `MultiRotationConstraintComponent`; script name `MultiRotationConstraint`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Weight | `Weight` | Float | `1` |  |
+| Constrained Bone | `Bone` | String |  |  |
+| Source 1 | `Source1` | EntityRef | `0` |  |
+| Source 1 Weight | `SourceWeight1` | Float | `1` |  |
+| Source 2 | `Source2` | EntityRef | `0` |  |
+| Source 2 Weight | `SourceWeight2` | Float | `1` |  |
+| Source 3 | `Source3` | EntityRef | `0` |  |
+| Source 3 Weight | `SourceWeight3` | Float | `1` |  |
+| Maintain Offset | `MaintainOffset` | Bool | `false` |  |
+| Offset | `Offset` | Vec3 | `0 0 0` |  |
+| X | `ConstrainX` | Bool | `true` |  |
+| Y | `ConstrainY` | Bool | `true` |  |
+| Z | `ConstrainZ` | Bool | `true` |  |
+
+### Override Transform
+
+Replaces the bone's animated transform with the source object's, or with the Position / Rotation below in World, Local (parent) or Pivot (relative to the animated pose) space.
+
+Type `OverrideTransformComponent`; script name `OverrideTransform`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Weight | `Weight` | Float | `1` |  |
+| Constrained Bone | `Bone` | String |  |  |
+| Source | `Source` | EntityRef | `0` |  |
+| Space | `Space` | Enum | `Pivot` | Options: World, Local, Pivot. |
+| Position | `Position` | Vec3 | `0 0 0` |  |
+| Rotation | `Rotation` | Vec3 | `0 0 0` |  |
+| Position Weight | `PositionWeight` | Float | `1` |  |
+| Rotation Weight | `RotationWeight` | Float | `1` |  |
+
 ### Rig
 
 Groups the bone constraints below it; Weight fades all of them in or out.
@@ -273,6 +594,38 @@ Type `RigComponent`; script name `Rig`.
 | Field | Key | Type | Default | Description |
 |---|---|---|---|---|
 | Weight | `Weight` | Float | `1` |  |
+
+### Twist Chain Constraint
+
+Turns every bone from Root to Tip smoothly between the rotation of the Root Target and the Tip Target (spine, tail).
+
+Type `TwistChainConstraintComponent`; script name `TwistChainConstraint`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Weight | `Weight` | Float | `1` |  |
+| Root Bone | `Root` | String |  |  |
+| Tip Bone | `Tip` | String |  |  |
+| Root Target | `RootTarget` | EntityRef | `0` |  |
+| Tip Target | `TipTarget` | EntityRef | `0` |  |
+
+### Twist Correction
+
+Spreads the source bone's twist around the twist axis to the twist bones (forearm twist bones follow the wrist), so the skin does not collapse.
+
+Type `TwistCorrectionComponent`; script name `TwistCorrection`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Weight | `Weight` | Float | `1` |  |
+| Source Bone | `Source` | String |  |  |
+| Twist Axis | `TwistAxis` | Enum | `Y` | Options: X, -X, Y, -Y, Z, -Z. |
+| Twist Bone 1 | `Twist1` | String |  |  |
+| Twist Bone 1 Weight | `TwistWeight1` | Float | `0.5` |  |
+| Twist Bone 2 | `Twist2` | String |  |  |
+| Twist Bone 2 Weight | `TwistWeight2` | Float | `0` |  |
+| Twist Bone 3 | `Twist3` | String |  |  |
+| Twist Bone 3 Weight | `TwistWeight3` | Float | `0` |  |
 
 ### Two Bone IK Constraint
 
@@ -319,6 +672,24 @@ Type `AudioSourceComponent`; script name `AudioSource`.
 | Max Distance | `MaxDistance` | Float | `100` |  |
 | Output | `OutputGroup` | String | `Master` |  |
 
+### MetaSound Source
+
+Plays a MetaSound graph (.cqmetasound): sound generated live from oscillators, envelopes, filters and delays. Scripts: MetaSoundPlay / MetaSoundStop(entity), MetaSoundSetFloat(entity, "Input", value).
+
+Type `MetaSoundSourceComponent`; script name `MetaSoundSource`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| MetaSound | `Asset` | Asset |  |  |
+| Play On Awake | `PlayOnAwake` | Bool | `true` |  |
+| Volume | `Volume` | Float | `1` |  |
+| Spatialize | `Spatialize` | Bool | `true` |  |
+| Min Distance | `MinDistance` | Float | `1` |  |
+| Max Distance | `MaxDistance` | Float | `50` |  |
+| Output Group | `Group` | String | `SFX` |  |
+| _Runtime_: Playing | `Playing` | Bool | `false` |  |
+| Peak Level | `PeakLevel` | Float | `0` |  |
+
 ### Sound Concurrency
 
 Limits how many Audio Sources of the same group play at once (Unreal Sound Concurrency).
@@ -347,6 +718,21 @@ Type `SoundOcclusionComponent`; script name `SoundOcclusion`.
 | Occlusion | `Occlusion` | Float | `0` |  |
 | Occluded | `Occluded` | Bool | `false` |  |
 | Gain | `Gain` | Float | `1` |  |
+
+### Sound Settings
+
+Binds sound assets to this Audio Source: Sound Attenuation, Sound Class, Sound Concurrency and Reverb Effect.
+
+Type `SoundSettingsComponent`; script name `SoundSettings`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Attenuation | `Attenuation` | Asset |  |  |
+| Sound Class | `SoundClass` | Asset |  |  |
+| Concurrency | `Concurrency` | Asset |  |  |
+| Reverb Effect | `Reverb` | Asset |  |  |
+| Gain | `Gain` | Float | `1` |  |
+| Pitch | `Pitch` | Float | `1` |  |
 
 ## Camera
 
@@ -386,6 +772,119 @@ Type `CameraBrainComponent`; script name `CameraBrain`; requires `CameraComponen
 | Apply Field Of View | `ApplyFieldOfView` | Bool | `true` |  |
 | _Runtime_: Blend Progress | `BlendProgress` | Float | `1` |  |
 
+### Cine Camera
+
+Film camera settings (Unreal Cine Camera): the field of view comes from the sensor size and focal length, and the depth of field from the aperture and focus (manual distance or tracking an object).
+
+Type `CineCameraComponent`; script name `CineCamera`; requires `CameraComponent`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| _Filmback_: Sensor Width (mm) | `SensorWidth` | Float | `23.76` |  |
+| Sensor Height (mm) | `SensorHeight` | Float | `13.365` |  |
+| _Lens_: Focal Length (mm) | `FocalLength` | Float | `35` |  |
+| Aperture (f-stop) | `Aperture` | Float | `2.8` |  |
+| _Focus_: Focus Method | `FocusMethod` | Enum | `Manual` | Options: Do Not Override, Manual, Tracking, Disable. |
+| Manual Focus Distance | `ManualFocusDistance` | Float | `10` |  |
+| Actor To Track | `TrackingTarget` | EntityRef | `0` |  |
+| _Info_: Field Of View | `FieldOfView` | Float | `0` |  |
+| Current Focus Distance | `CurrentFocusDistance` | Float | `0` |  |
+
+### Cinemachine Confiner 2D
+
+Keeps this Virtual Camera inside a 2D shape (XY): the Bounding Shape's Polygon Collider 2D or Box Collider 2D.
+
+Type `CinemachineConfiner2DComponent`; script name `CinemachineConfiner2D`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Bounding Shape 2D | `BoundingShape` | EntityRef | `0` |  |
+
+### Cinemachine Confiner 3D
+
+Keeps this Virtual Camera inside the Bounding Volume: its Box Collider box, or its position and scale.
+
+Type `CinemachineConfiner3DComponent`; script name `CinemachineConfiner3D`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Bounding Volume | `BoundingVolume` | EntityRef | `0` |  |
+| Slowing Distance | `SlowingDistance` | Float | `0` |  |
+
+### Cinemachine Deoccluder
+
+When a collider blocks the view of the Look At (or Follow) target, the camera moves in front of it; it eases back when the view is clear.
+
+Type `CinemachineDeoccluderComponent`; script name `CinemachineDeoccluder`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Collide Against | `CollideAgainst` | LayerMask | `4294967295` |  |
+| Camera Radius | `CameraRadius` | Float | `0.2` |  |
+| Minimum Distance From Target | `MinimumDistanceFromTarget` | Float | `0.3` |  |
+| Damping | `Damping` | Float | `0.2` |  |
+
+### Cinemachine Follow Zoom
+
+Changes the field of view so that Width metres around the target always look the same size on screen.
+
+Type `CinemachineFollowZoomComponent`; script name `CinemachineFollowZoom`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Width | `Width` | Float | `2` |  |
+| Min FOV | `MinFov` | Float | `3` |  |
+| Max FOV | `MaxFov` | Float | `60` |  |
+| Damping | `Damping` | Float | `1` |  |
+
+### Cinemachine Group Framing
+
+When this Virtual Camera follows or looks at a Target Group, it moves to the distance where the whole group fills Framing Size of the screen.
+
+Type `CinemachineGroupFramingComponent`; script name `CinemachineGroupFraming`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Framing Size | `FramingSize` | Float | `0.8` |  |
+| Damping | `Damping` | Float | `1` |  |
+| Min Distance | `MinDistance` | Float | `1` |  |
+| Max Distance | `MaxDistance` | Float | `100` |  |
+
+### Cinemachine Impulse Listener
+
+Put it on a Virtual Camera: sets how the camera reacts to Impulse Sources. It replaces the camera's Impulse Gain.
+
+Type `CinemachineImpulseListenerComponent`; script name `CinemachineImpulseListener`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Gain | `Gain` | Float | `1` | 0 = the camera ignores impulses. |
+| Use 2D Distance | `Use2DDistance` | Bool | `false` | Distance to the source ignores Z (2D games). |
+| Use Camera Space | `UseCameraSpace` | Bool | `true` | Shake along the camera's own right / up / forward axes. |
+| Frequency Gain | `FrequencyGain` | Float | `1` |  |
+
+### Cinemachine Target Group
+
+A group that Virtual Cameras can follow or look at: this object moves to the weighted centre of its targets every frame; Group Framing uses the radius that holds all of them.
+
+Type `CinemachineTargetGroupComponent`; script name `CinemachineTargetGroup`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Target 1 | `Target1` | EntityRef | `0` |  |
+| Weight 1 | `Weight1` | Float | `1` |  |
+| Radius 1 | `Radius1` | Float | `1` |  |
+| Target 2 | `Target2` | EntityRef | `0` |  |
+| Weight 2 | `Weight2` | Float | `1` |  |
+| Radius 2 | `Radius2` | Float | `1` |  |
+| Target 3 | `Target3` | EntityRef | `0` |  |
+| Weight 3 | `Weight3` | Float | `1` |  |
+| Radius 3 | `Radius3` | Float | `1` |  |
+| Target 4 | `Target4` | EntityRef | `0` |  |
+| Weight 4 | `Weight4` | Float | `1` |  |
+| Radius 4 | `Radius4` | Float | `1` |  |
+| _Runtime_: Bounding Radius | `BoundingRadius` | Float | `0` |  |
+
 ### Impulse Source
 
 Camera shake emitter (explosions, landings). Trigger it with ImpulseGenerate(entity, strength), on start or on collision.
@@ -409,6 +908,7 @@ Type `RenderTargetComponent`; script name `RenderTarget`; requires `CameraCompon
 
 | Field | Key | Type | Default | Description |
 |---|---|---|---|---|
+| Target Texture | `Asset` | Asset |  | A Render Texture asset (.cqrt, Create > Render Texture). Sets the name and size below. |
 | Name | `Name` | String | `CameraView` | Texture path is rt://<Name> |
 | Width | `Width` | Int | `512` |  |
 | Height | `Height` | Int | `512` |  |
@@ -448,7 +948,7 @@ Type `VirtualCameraComponent`; script name `VirtualCamera`.
 | Dutch | `Dutch` | Angle | `0` |  |
 | _Noise_: Noise Amplitude | `NoiseAmplitude` | Float | `0` | Hand-held camera wobble. |
 | Noise Frequency | `NoiseFrequency` | Float | `1` |  |
-| Impulse Gain | `ImpulseGain` | Float | `1` | How strongly Impulse Sources shake this camera (0 = ignore). |
+| Impulse Gain | `ImpulseGain` | Float | `1` | How strongly Impulse Sources shake this camera (0 = ignore). A Cinemachine Impulse Listener component replaces it. |
 | _Runtime_: Live | `Live` | Bool | `false` |  |
 
 ## Constraints
@@ -586,6 +1086,8 @@ Type `ParticleSystemComponent`; script name `ParticleSystem`.
 
 | Field | Key | Type | Default | Description |
 |---|---|---|---|---|
+| Asset | `Asset` | Asset |  |  |
+| Sub UV | `SubUV` | Asset |  |  |
 | Duration | `Duration` | Float | `5` |  |
 | Looping | `Looping` | Bool | `true` |  |
 | Prewarm | `Prewarm` | Bool | `false` |  |
@@ -672,6 +1174,22 @@ Type `TrailRendererComponent`; script name `TrailRenderer`.
 | Texture | `Texture` | Asset |  |  |
 | Emission | `Emissive` | Float | `1` |  |
 
+### Visual Effect
+
+Plays a VFX Graph (.cqvfx) on the GPU: hundreds of thousands of particles. Edit the graph's Spawn, Initialize, Update and Output contexts by double-clicking the asset.
+
+Type `VisualEffectComponent`; script name `VisualEffect`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Asset Template | `Asset` | Asset |  |  |
+| Playing | `Playing` | Bool | `true` | Off: no new particles; existing ones finish their life. |
+| Play Rate | `PlayRate` | Float | `1` |  |
+| Seed | `Seed` | Int | `0` |  |
+| Restart | `__action_Restart` | String |  |  |
+| _Info_: Systems | `Systems` | Int | `0` |  |
+| Capacity | `Capacity` | Int | `0` |  |
+
 ### Wind Zone
 
 Blows particles (and optionally rigidbodies). Directional wind blows along -Z.
@@ -726,6 +1244,20 @@ Type `CameraFollowComponent`; script name `CameraFollow`.
 | Sensitivity | `OrbitSensitivity` | Float | `0.2` |  |
 | Dead Zone | `DeadZone` | Vec2 | `0 0` |  |
 
+### Floating Pawn Movement
+
+Flying movement without gravity (Unreal Floating Pawn Movement): accelerates towards the input, slows down when it stops. Default input: WASD and E / Q; scripts call AddMovementInput(entity, x, y, z).
+
+Type `FloatingPawnMovementComponent`; script name `FloatingPawnMovement`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Max Speed | `MaxSpeed` | Float | `12` |  |
+| Acceleration | `Acceleration` | Float | `40` |  |
+| Deceleration | `Deceleration` | Float | `80` |  |
+| Turning Boost | `TurningBoost` | Float | `8` |  |
+| Use Default Input | `UseDefaultInput` | Bool | `true` |  |
+
 ### Game Mode
 
 Spawns the Default Pawn prefab at a Player Start when play begins and makes its camera primary. Scripts: GameModeRestartPlayer, GameModeRespawn, GameModeGetPawn; message OnPlayerSpawned(pawn).
@@ -751,6 +1283,19 @@ Type `GameplayTagsComponent`; script name `GameplayTags`.
 | Field | Key | Type | Default | Description |
 |---|---|---|---|---|
 | Tags | `Tags` | String |  | Comma separated, dot hierarchy: Status.Burning, Team.Red |
+
+### Interp To Movement
+
+Moves the object through Control Points (relative to where it starts) in Duration seconds: platforms, doors, elevators.
+
+Type `InterpToMovementComponent`; script name `InterpToMovement`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Duration | `Duration` | Float | `2` |  |
+| Behaviour Type | `Behaviour` | Enum | `Ping Pong` | Options: One Shot, One Shot Reverse, Loop Reset, Ping Pong. |
+| Control Points | `ControlPoints` | Vec3List |  |  |
+| Auto Activate | `AutoActivate` | Bool | `true` |  |
 
 ### Player Start
 
@@ -792,6 +1337,16 @@ Type `RotatorComponent`; script name `Rotator`.
 | Local Space | `LocalSpace` | Bool | `true` |  |
 | Run In Editor | `RunInEditor` | Bool | `false` |  |
 
+### Target Point
+
+A marked position for scripts and AI (spawn spots, waypoints). Find it with FindEntity or by tag.
+
+Type `TargetPointComponent`; script name `TargetPoint`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Gizmo Size | `Size` | Float | `0.5` |  |
+
 ## Grid
 
 ### Grid
@@ -831,23 +1386,47 @@ Type `TilemapCollider2DComponent`; script name `TilemapCollider2D`; requires `Ti
 | Field | Key | Type | Default | Description |
 |---|---|---|---|---|
 | Is Trigger | `IsTrigger` | Bool | `false` |  |
+| Material | `PhysicsMaterial` | Asset |  |  |
 | Friction | `Friction` | Float | `0.4` |  |
 | Bounciness | `Restitution` | Float | `0` |  |
 
 ## Input
 
+### On-Screen Button
+
+Put it on a UI element: while it is pressed, the chosen virtual gamepad button is held down.
+
+Type `OnScreenButtonComponent`; script name `OnScreenButton`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Button | `Button` | Enum | `A (South)` | Options: A (South), B (East), X (West), Y (North), Left Shoulder, Right Shoulder, Select, Start, Guide, Left Stick Press, Right Stick Press, D-Pad Up, D-Pad Right, D-Pad Down, D-Pad Left. |
+
+### On-Screen Stick
+
+Put it on a UI Image: press and drag it to move it within Movement Range and drive the virtual gamepad's left or right stick. Player Input actions bound to the gamepad stick read it like a real controller.
+
+Type `OnScreenStickComponent`; script name `OnScreenStick`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Movement Range | `MovementRange` | Float | `50` |  |
+| Control | `Control` | Enum | `Left Stick` | Options: Left Stick, Right Stick. |
+
 ### Player Input
 
-Binds an action map of the project's input settings to this player. Sends On<Action>(value), OnMove(x, y) and OnLook(dx, dy) to this object's scripts. Each player reads its own gamepad.
+Binds an action map to this player: from an Input Actions asset (Actions slot) or, when the slot is empty, from the project's input settings. Sends On<Action>(value), OnMove(x, y) and OnLook(dx, dy) to this object's scripts. Each player reads its own gamepad.
 
 Type `PlayerInputComponent`; script name `PlayerInput`.
 
 | Field | Key | Type | Default | Description |
 |---|---|---|---|---|
-| Action Map | `ActionMap` | String | `Gameplay` | Context name in the input settings (e.g. Gameplay, Vehicle). |
+| Actions | `Actions` | Asset |  | Input Actions asset (.cqinputactions). Empty = Project Settings > Input. |
+| Default Map | `ActionMap` | String | `Gameplay` | Action map to use (e.g. Player, UI, Vehicle). With an Actions asset, an unknown name uses the asset's first map. |
+| Default Scheme | `DefaultScheme` | String |  | Control scheme of the Actions asset (e.g. Keyboard&Mouse, Gamepad). Empty = bindings of every scheme. |
 | Player Index (Gamepad) | `PlayerIndex` | Int | `0` | -1 = no gamepad. |
 | Keyboard & Mouse | `UseKeyboardMouse` | Bool | `true` |  |
-| Behavior | `Behavior` | Enum | `Send Messages` | Options: Send Messages, None (poll from scripts). |
+| Behavior | `Behavior` | Enum | `Send Messages` | Send Messages: On<Action> on this object's scripts. Broadcast Messages: also on its children. Options: Send Messages, None (poll from scripts), Broadcast Messages. |
 | Generate Move / Look | `GenerateMoveLook` | Bool | `true` | WASD / arrows / left stick -> OnMove, mouse / right stick -> OnLook. |
 
 ### Player Input Manager
@@ -892,6 +1471,34 @@ Type `DirectionalLightComponent`; script name `DirectionalLight`.
 | Cast Shadows | `CastShadows` | Bool | `true` |  |
 | Direction | `Direction` | Vec3 | `0 -1 0` | World direction the light shines towards; set it by rotating the object. |
 
+### Exponential Height Fog
+
+Fog that thins out with height (Unreal Exponential Height Fog): the fog starts at this object's height. Replaces the Lighting window fog while in the scene.
+
+Type `ExponentialHeightFogComponent`; script name `ExponentialHeightFog`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Fog Density | `FogDensity` | Float | `0.02` |  |
+| Fog Height Falloff | `HeightFalloff` | Float | `0.2` |  |
+| Fog Inscattering Color | `InscatteringColor` | Color3 | `0.45 0.55 0.7` |  |
+| Start Distance | `StartDistance` | Float | `0` |  |
+| _Volumetric Fog_: Volumetric Fog | `VolumetricFog` | Bool | `false` |  |
+| Scattering Intensity | `ScatteringIntensity` | Float | `1` |  |
+| Albedo | `Albedo` | Color3 | `1 1 1` |  |
+| View Distance | `ViewDistance` | Float | `80` |  |
+
+### Light Probe Group
+
+Hand-placed light probes. Generate Lighting bakes the indirect light at each probe; moving objects take their ambient light from the nearest probes. Place probes where the lighting changes (doorways, shadows, under bridges).
+
+Type `LightProbeGroupComponent`; script name `LightProbeGroup`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Probe Positions | `Probes` | Vec3List |  | Local positions of the probes. |
+| Reset To Cube | `__action_Reset To Cube` | String |  |  |
+
 ### Point Light
 
 Type `PointLightComponent`; script name `PointLight`.
@@ -902,6 +1509,33 @@ Type `PointLightComponent`; script name `PointLight`.
 | Intensity | `Intensity` | Float | `1` |  |
 | Range | `Range` | Float | `10` |  |
 | Cast Shadows | `CastShadows` | Bool | `false` |  |
+
+### Sky Atmosphere
+
+Physically based sky (Rayleigh + Mie + ozone) lit by the Directional Light: sunsets and twilight follow the sun angle.
+
+Type `SkyAtmosphereComponent`; script name `SkyAtmosphere`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Rayleigh Scattering Scale | `RayleighScale` | Float | `1` |  |
+| Mie Scattering Scale | `MieScale` | Float | `1` |  |
+| Mie Anisotropy | `MieAnisotropy` | Float | `0.8` |  |
+| Ozone Absorption Scale | `OzoneScale` | Float | `1` |  |
+| Sun Disk Scale | `SunDiskScale` | Float | `1` |  |
+| Sky Luminance Factor | `Intensity` | Float | `1` |  |
+| Ground Albedo | `GroundAlbedo` | Color3 | `0.12 0.12 0.12` |  |
+
+### Sky Light
+
+Light from the sky: sets the strength of the ambient light and reflections that come from the sky.
+
+Type `SkyLightComponent`; script name `SkyLight`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Intensity Scale | `Intensity` | Float | `1` |  |
+| Reflection Intensity | `ReflectionIntensity` | Float | `1` |  |
 
 ### Spot Light
 
@@ -915,6 +1549,23 @@ Type `SpotLightComponent`; script name `SpotLight`.
 | Inner Angle | `InnerConeAngle` | Float | `12.5` |  |
 | Outer Angle | `OuterConeAngle` | Float | `17.5` |  |
 | Cast Shadows | `CastShadows` | Bool | `false` |  |
+
+### Volumetric Cloud
+
+Ray-marched cloud layer drifting with the wind, lit by the sun.
+
+Type `VolumetricCloudComponent`; script name `VolumetricCloud`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Coverage | `Coverage` | Float | `0.45` |  |
+| Density | `Density` | Float | `1` |  |
+| Layer Bottom Altitude | `LayerBottomAltitude` | Float | `1500` |  |
+| Layer Height | `LayerHeight` | Float | `1800` |  |
+| Shape Scale | `Scale` | Float | `1` |  |
+| Wind Speed | `WindSpeed` | Float | `12` |  |
+| Wind Direction | `WindDirection` | Float | `30` |  |
+| Albedo | `Color` | Color3 | `1 1 1` |  |
 
 ## Network
 
@@ -992,6 +1643,50 @@ Type `NetworkTransformComponent`; script name `NetworkTransform`; requires `Netw
 
 ## Physics
 
+### Articulation Body
+
+A link of a jointed chain (robot arm, crane): nest links in the hierarchy; each one joins the Articulation Body above it with the chosen joint. The top one is the root (Immovable keeps it in place). Drives pull a joint towards Target with Stiffness and Damping. Add colliders to the links for collisions.
+
+Type `ArticulationBodyComponent`; script name `ArticulationBody`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Mass | `Mass` | Float | `1` |  |
+| Immovable | `Immovable` | Bool | `false` | Root only: the root stays fixed in the world. |
+| Use Gravity | `UseGravity` | Bool | `true` |  |
+| Linear Damping | `LinearDamping` | Float | `0.05` |  |
+| Angular Damping | `AngularDamping` | Float | `0.05` |  |
+| _Joint_: Articulation Joint Type | `JointType` | Enum | `Revolute` | Ignored on the root. Options: Fixed, Prismatic, Revolute, Spherical. |
+| Anchor Position | `AnchorPosition` | Vec3 | `0 0 0` |  |
+| Anchor Rotation | `AnchorRotation` | Vec3 | `0 0 0` | Joint frame: revolute turns and prismatic slides along its X. |
+| Prismatic Axis | `PrismaticAxis` | Enum | `X` | Options: X, Y, Z. |
+| Linear Motion | `LinearMotion` | Enum | `Limited` | Options: Locked, Limited, Free. |
+| Twist Motion | `TwistMotion` | Enum | `Limited` | Options: Locked, Limited, Free. |
+| Swing Y Motion | `SwingYMotion` | Enum | `Limited` | Options: Locked, Limited, Free. |
+| Swing Z Motion | `SwingZMotion` | Enum | `Limited` | Options: Locked, Limited, Free. |
+| _X Drive_: Lower Limit | `XDriveLowerLimit` | Float | `-90` |  |
+| Upper Limit | `XDriveUpperLimit` | Float | `90` |  |
+| Stiffness | `XDriveStiffness` | Float | `0` |  |
+| Damping | `XDriveDamping` | Float | `0` |  |
+| Force Limit | `XDriveForceLimit` | Float | `1e+06` |  |
+| Target | `XDriveTarget` | Float | `0` |  |
+| Target Velocity | `XDriveTargetVelocity` | Float | `0` |  |
+| _Y Drive_: Lower Limit | `YDriveLowerLimit` | Float | `-90` |  |
+| Upper Limit | `YDriveUpperLimit` | Float | `90` |  |
+| Stiffness | `YDriveStiffness` | Float | `0` |  |
+| Damping | `YDriveDamping` | Float | `0` |  |
+| Force Limit | `YDriveForceLimit` | Float | `1e+06` |  |
+| Target | `YDriveTarget` | Float | `0` |  |
+| Target Velocity | `YDriveTargetVelocity` | Float | `0` |  |
+| _Z Drive_: Lower Limit | `ZDriveLowerLimit` | Float | `-90` |  |
+| Upper Limit | `ZDriveUpperLimit` | Float | `90` |  |
+| Stiffness | `ZDriveStiffness` | Float | `0` |  |
+| Damping | `ZDriveDamping` | Float | `0` |  |
+| Force Limit | `ZDriveForceLimit` | Float | `1e+06` |  |
+| Target | `ZDriveTarget` | Float | `0` |  |
+| Target Velocity | `ZDriveTargetVelocity` | Float | `0` |  |
+| _Runtime_: Joint Position | `JointPosition` | Float | `0` |  |
+
 ### Ball Joint
 
 Free rotation around a shared point (chains, pendulums).
@@ -1016,6 +1711,22 @@ Type `BoxColliderComponent`; script name `BoxCollider`.
 | Center | `Offset` | Vec3 | `0 0 0` |  |
 | Size | `Size` | Vec3 | `1 1 1` |  |
 | Is Trigger | `IsTrigger` | Bool | `false` |  |
+
+### Buoyancy
+
+Floats a Rigidbody on Water Bodies: each pontoon pushes up as it sinks (half under water carries its share of the weight), so boats tilt and bob on the waves.
+
+Type `BuoyancyComponent`; script name `Buoyancy`; requires `RigidbodyComponent`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Pontoons | `Pontoons` | Vec3List |  | Local points that feel the water. |
+| Pontoon Radius | `PontoonRadius` | Float | `0.5` |  |
+| Buoyancy Coefficient | `BuoyancyCoefficient` | Float | `1` |  |
+| Water Drag | `WaterDrag` | Float | `3` |  |
+| Water Angular Drag | `WaterAngularDrag` | Float | `3` |  |
+| _Runtime_: In Water | `InWater` | Bool | `false` |  |
+| Submerged | `Submerged` | Float | `0` |  |
 
 ### Capsule Collider
 
@@ -1224,6 +1935,22 @@ Type `MeshColliderComponent`; script name `MeshCollider`.
 | Convex | `IsConvex` | Bool | `false` |  |
 | Is Trigger | `IsTrigger` | Bool | `false` |  |
 
+### Radial Force
+
+Pushes physics objects away from this point: a constant force, or an impulse when fired (Fire Impulse button, Fire On Start, or from scripts).
+
+Type `RadialForceComponent`; script name `RadialForce`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Radius | `Radius` | Float | `5` |  |
+| Falloff | `Falloff` | Enum | `Constant` | Options: Constant, Linear. |
+| Impulse Strength | `ImpulseStrength` | Float | `10` |  |
+| Impulse Vel Change | `ImpulseVelChange` | Bool | `false` | Change velocity directly, ignoring mass. |
+| Force Strength | `ForceStrength` | Float | `0` |  |
+| Fire On Start | `FireOnStart` | Bool | `false` |  |
+| Fire Impulse | `__action_Fire Impulse` | String |  |  |
+
 ### Ragdoll
 
 Builds a physics ragdoll from the skinned model's skeleton (capsule per long bone, character joints with swing/twist limits), like Unreal's Physics Asset. RagdollActivate switches from animation to physics; RagdollDeactivate goes back.
@@ -1232,6 +1959,7 @@ Type `RagdollComponent`; script name `Ragdoll`.
 
 | Field | Key | Type | Default | Description |
 |---|---|---|---|---|
+| Physics Asset | `PhysicsAsset` | Asset |  | A Physics Asset: only its bones get bodies, with its radius, mass and limits. |
 | Start Active | `StartActive` | Bool | `false` |  |
 | Total Mass | `TotalMass` | Float | `60` |  |
 | Radius Scale | `RadiusScale` | Float | `0.22` |  |
@@ -1343,6 +2071,16 @@ Type `SpringJointComponent`; script name `SpringJoint`; requires `RigidbodyCompo
 | Min Distance | `MinDistance` | Float | `0` |  |
 | Max Distance | `MaxDistance` | Float | `0` | 0 = rest at the starting distance. |
 
+### Terrain Collider
+
+Makes the Terrain on this object solid (height field collider). Without it, objects fall through the terrain.
+
+Type `TerrainColliderComponent`; script name `TerrainCollider`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Material | `PhysicsMaterial` | Asset |  | Friction and bounciness of the ground. Empty = project defaults. |
+
 ### Wheel Collider
 
 Vehicle wheel: raycast suspension and tyre friction. Put it on a child of a Rigidbody; drive it with Motor Torque, Brake Torque and Steer Angle.
@@ -1410,6 +2148,7 @@ Type `BoxCollider2DComponent`; script name `BoxCollider2D`.
 | Density | `Density` | Float | `1` |  |
 | Friction | `Friction` | Float | `0.5` |  |
 | Bounciness | `Restitution` | Float | `0` |  |
+| Material | `PhysicsMaterial` | Asset |  |  |
 
 ### Buoyancy Effector 2D
 
@@ -1436,7 +2175,8 @@ Type `CapsuleCollider2DComponent`; script name `CapsuleCollider2D`.
 | Offset | `Offset` | Vec2 | `0 0` |  |
 | Size | `Size` | Vec2 | `0.5 1` |  |
 | Direction | `Direction` | Enum | `Vertical` | Options: Vertical, Horizontal. |
-| _Material_: Density | `Density` | Float | `1` |  |
+| _Material_: Material | `PhysicsMaterial` | Asset |  |  |
+| Density | `Density` | Float | `1` |  |
 | Friction | `Friction` | Float | `0.4` |  |
 | Bounciness | `Restitution` | Float | `0` |  |
 
@@ -1452,6 +2192,7 @@ Type `CircleCollider2DComponent`; script name `CircleCollider2D`.
 | Density | `Density` | Float | `1` |  |
 | Friction | `Friction` | Float | `0.5` |  |
 | Bounciness | `Restitution` | Float | `0` |  |
+| Material | `PhysicsMaterial` | Asset |  |  |
 
 ### Composite Collider 2D
 
@@ -1463,6 +2204,7 @@ Type `CompositeCollider2DComponent`; script name `CompositeCollider2D`.
 |---|---|---|---|---|
 | Geometry Type | `GeometryType` | Enum | `Outlines` | Options: Outlines, Polygons. |
 | Vertex Distance | `VertexDistance` | Float | `0.05` | Sampling step for non-rectangular shapes. Axis-aligned boxes and tiles are merged exactly. |
+| Material | `PhysicsMaterial` | Asset |  |  |
 | Density | `Density` | Float | `1` |  |
 | Friction | `Friction` | Float | `0.4` |  |
 | Bounciness | `Restitution` | Float | `0` |  |
@@ -1514,7 +2256,8 @@ Type `EdgeCollider2DComponent`; script name `EdgeCollider2D`.
 | Points | `Points` | Vec2List |  |  |
 | Loop | `Loop` | Bool | `false` |  |
 | Edge Radius | `EdgeRadius` | Float | `0` |  |
-| _Material_: Friction | `Friction` | Float | `0.4` |  |
+| _Material_: Material | `PhysicsMaterial` | Asset |  |  |
+| Friction | `Friction` | Float | `0.4` |  |
 | Bounciness | `Restitution` | Float | `0` |  |
 
 ### Fixed Joint 2D
@@ -1603,16 +2346,18 @@ Type `PointEffector2DComponent`; script name `PointEffector2D`.
 
 ### Polygon Collider 2D
 
-Convex polygon (up to 8 points; concave outlines use their convex hull).
+Polygon collider. Added to a sprite it takes the sprite's Custom Physics Shape, or its opaque outline.
 
 Type `PolygonCollider2DComponent`; script name `PolygonCollider2D`.
 
 | Field | Key | Type | Default | Description |
 |---|---|---|---|---|
+| Reset From Sprite | `__action_Reset From Sprite` | String |  |  |
 | Is Trigger | `IsTrigger` | Bool | `false` |  |
 | Offset | `Offset` | Vec2 | `0 0` |  |
 | Points | `Points` | Vec2List |  |  |
-| _Material_: Density | `Density` | Float | `1` |  |
+| _Material_: Material | `PhysicsMaterial` | Asset |  |  |
+| Density | `Density` | Float | `1` |  |
 | Friction | `Friction` | Float | `0.4` |  |
 | Bounciness | `Restitution` | Float | `0` |  |
 
@@ -1655,6 +2400,7 @@ Type `RigidBody2DComponent`; script name `Rigidbody2D`.
 | Interpolate | `Interpolate` | Bool | `true` |  |
 | Continuous | `ContinuousCollision` | Bool | `false` |  |
 | Allow Sleep | `AllowSleep` | Bool | `true` |  |
+| Material | `PhysicsMaterial` | Asset |  |  |
 
 ### Slider Joint 2D
 
@@ -1762,6 +2508,26 @@ Type `PrefabInstanceComponent`; script name `PrefabInstance`.
 
 ## Rendering
 
+### Adaptive Probe Volume
+
+Type `AdaptiveProbeVolumeComponent`; script name `AdaptiveProbeVolume`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Min Probe Spacing | `MinSpacing` | Float | `1` |  |
+| Max Probe Spacing | `MaxSpacing` | Float | `9` |  |
+
+### Arrow
+
+An arrow in the editor showing this object's forward direction (spawn points, launchers).
+
+Type `ArrowComponent`; script name `Arrow`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Arrow Color | `Color` | Color4 | `1 0.2 0.2 1` |  |
+| Arrow Size | `Size` | Float | `1` |  |
+
 ### Auto LOD
 
 Generates simplified levels of detail for this model's meshes (quadric edge collapse) and switches them by screen size, like Unreal's Static Mesh LOD settings. LODs belong to the mesh asset: every object using the model shares them. r.ForceLOD forces a level for debugging.
@@ -1818,6 +2584,23 @@ Type `CSGShapeComponent`; script name `CSGShape`.
 | Use Collision | `UseCollision` | Bool | `true` |  |
 | Triangles | `Triangles` | Int | `0` |  |
 
+### Cable
+
+A hanging cable or rope from this object to Attach End To (or End Location): simulated with gravity, also in the editor.
+
+Type `CableComponent`; script name `Cable`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Attach End To | `AttachEndTo` | EntityRef | `0` |  |
+| End Location | `EndLocation` | Vec3 | `1 0 0` |  |
+| Cable Length | `CableLength` | Float | `1` |  |
+| Num Segments | `NumSegments` | Int | `10` |  |
+| Solver Iterations | `SolverIterations` | Int | `4` |  |
+| Cable Width | `CableWidth` | Float | `0.03` |  |
+| Cable Gravity Scale | `GravityScale` | Float | `1` |  |
+| Color | `Color` | Color4 | `0.15 0.15 0.15 1` |  |
+
 ### Camera
 
 Type `CameraComponent`; script name `Camera`.
@@ -1849,6 +2632,50 @@ Type `DecalProjectorComponent`; script name `DecalProjector`.
 | Offset | `Offset` | Vec2 | `0 0` |  |
 | Angle Fade | `AngleFade` | Angle | `80` | Surfaces turned further than this from the projection direction fade out. |
 | Emission | `Emission` | Float | `0` |  |
+
+### Flipbook Player
+
+Plays a Flipbook (.cqflipbook) on this object's Sprite Renderer (Unreal Paper2D).
+
+Type `FlipbookComponent`; script name `Flipbook`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Flipbook | `Flipbook` | Asset |  |  |
+| Playing | `Playing` | Bool | `true` |  |
+| Speed | `Speed` | Float | `1` |  |
+| Frame | `Frame` | Int | `-1` |  |
+
+### Foliage Volume
+
+Generates foliage inside its box from a Procedural Foliage Spawner, a Landscape Grass Type and / or a PCG Graph. Sits on the Terrain when there is one.
+
+Type `FoliageVolumeComponent`; script name `FoliageVolume`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Foliage Spawner | `Spawner` | Asset |  |  |
+| Grass Type | `GrassType` | Asset |  |  |
+| PCG Graph | `Graph` | Asset |  |  |
+| Size | `Size` | Vec3 | `40 0 40` |  |
+| Seed | `Seed` | Int | `1` |  |
+| Generate On Play | `GenerateOnPlay` | Bool | `false` |  |
+| Generate | `__action_Generate` | String |  |  |
+| Clear | `__action_Clear` | String |  |  |
+| Instances | `Instances` | Int | `0` |  |
+
+### Full Screen Pass
+
+Applies your own full-screen shader (Create > Shader > Image Effect Shader) to the camera image: outlines, pixelation, scan lines, color effects. Active passes run in Order.
+
+Type `FullScreenPassComponent`; script name `FullScreenPass`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Image Effect Shader | `Shader` | Asset |  |  |
+| Intensity | `Intensity` | Float | `1` |  |
+| Order | `Order` | Int | `0` |  |
+| Injection Point | `Injection` | Enum | `Before Post Processing (HDR)` | Options: Before Post Processing (HDR), After Post Processing. |
 
 ### Halo
 
@@ -1890,6 +2717,7 @@ Type `LensFlareComponent`; script name `LensFlare`.
 
 | Field | Key | Type | Default | Description |
 |---|---|---|---|---|
+| Lens Flare Data | `Flare` | Asset |  | Lens Flare asset (.cqflare): its elements replace the Elements settings below. |
 | Color | `Color` | Color3 | `1 1 1` |  |
 | Intensity | `Intensity` | Float | `1` |  |
 | Scale | `Scale` | Float | `1` |  |
@@ -1931,7 +2759,19 @@ Type `Light2DComponent`; script name `Light2D`.
 | Falloff | `FalloffDistance` | Float | `0.5` |  |
 | _Shadows_: Shadows | `Shadows` | Bool | `false` |  |
 | Shadow Strength | `ShadowStrength` | Float | `0.8` |  |
+| _Normal Map_: Use Normal Map | `UseNormalMap` | Bool | `false` | Sprites with a _NormalMap secondary texture (Sprite Editor) are shaded by this light's direction. |
+| Distance | `NormalDistance` | Float | `3` |  |
 | Volumetric Intensity | `VolumeIntensity` | Float | `0` | Adds the light on top of everything, like a beam through dust or fog. |
+
+### Light Profile
+
+Gives a Spot Light or Point Light on this object the angular falloff of a photometric profile (.cqlightprofile or .ies).
+
+Type `LightProfileComponent`; script name `LightProfile`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Profile | `Profile` | Asset |  |  |
 
 ### Mesh Renderer
 
@@ -1940,33 +2780,30 @@ Type `MeshRendererComponent`; script name `MeshRenderer`.
 | Field | Key | Type | Default | Description |
 |---|---|---|---|---|
 | Mesh | `Mesh` | Enum | `Cube` | Options: Cube, Sphere, Plane, Cylinder. |
+| Model | `FilePath` | Asset |  |  |
+| Tint | `Tint` | Color3 | `1 1 1` |  |
+| Material | `Material` | Asset | `CQ:Resources/Packages/Core/Materials/...` |  |
+| Cast Shadows | `CastShadows` | Bool | `true` |  |
+| Receive Shadows | `ReceiveShadows` | Bool | `true` |  |
+| Realtime GI | `RealtimeGI` | Bool | `false` |  |
+| Lightmap Parameters | `LightmapParameters` | Asset |  |  |
 | Color | `Color` | Color4 | `1 1 1 1` |  |
 | Metallic | `Metallic` | Float | `0` |  |
 | Roughness | `Roughness` | Float | `0.5` |  |
+| Occlusion | `AO` | Float | `1` |  |
 | Emission Color | `EmissionColor` | Color3 | `0 0 0` |  |
-| Emission Strength | `EmissionStrength` | Float | `0` |  |
-| Emission From Texture | `EmissionFromTexture` | Bool | `false` |  |
-| Tiling | `Tiling` | Vec2 | `1 1` |  |
-| World Aligned UV | `WorldAlignedUV` | Bool | `false` | Projects the texture from world position (Tiling = repeats per metre), like Unreal's world-aligned grid material. |
-| Align To Object | `AlignToObject` | Bool | `false` | World Aligned UV in the object's own space: the texture moves and rotates with the object (physics props) and keeps its size when scaled. |
+| Emission Intensity | `EmissionStrength` | Float | `0` |  |
+| Emission Uses Base Map | `EmissionFromTexture` | Bool | `false` |  |
+| Tiling | `Tiling` | Vec2 | `0.5 0.5` |  |
 | Offset | `Offset` | Vec2 | `0 0` |  |
-| Cast Shadows | `CastShadows` | Bool | `true` |  |
-| Receive Shadows | `ReceiveShadows` | Bool | `true` |  |
+| World Aligned UV | `WorldAlignedUV` | Bool | `true` |  |
+| Align To Object | `AlignToObject` | Bool | `false` |  |
 | Unlit | `Unlit` | Bool | `false` |  |
 | Alpha Clipping | `AlphaClip` | Bool | `false` |  |
 | Alpha Clip Threshold | `AlphaClipThreshold` | Float | `0.5` |  |
-| Texture | `Texture` | Asset | `Resources/Textures/texture_grid.png` |  |
+| Base Map | `Texture` | Asset | `CQ:Resources/Packages/Core/Textures/G...` |  |
 | Normal Map | `NormalMap` | Asset |  |  |
 | Mask Map (AO / Rough / Metal) | `MaskMap` | Asset |  |  |
-
-### Model
-
-Type `ModelComponent`; script name `Model`.
-
-| Field | Key | Type | Default | Description |
-|---|---|---|---|---|
-| Tint | `Tint` | Color3 | `1 1 1` |  |
-| Model | `FilePath` | Asset |  |  |
 
 ### Multi Mesh
 
@@ -2000,6 +2837,40 @@ Type `MultiMeshComponent`; script name `MultiMesh`.
 | Instances | `Instances` | Int | `0` |  |
 | Draw Calls | `DrawCalls` | Int | `0` |  |
 
+### Note
+
+A text note shown in the editor at this object's position (for the team; not in the game).
+
+Type `NoteComponent`; script name `Note`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Text | `Text` | String | `Note` |  |
+
+### Occlusion Area
+
+Where the camera can go: Occlusion Culling bakes view cells inside this box (without any area, around all static objects). Bake in Window > Occlusion Culling.
+
+Type `OcclusionAreaComponent`; script name `OcclusionArea`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Center | `Center` | Vec3 | `0 0 0` |  |
+| Size | `Size` | Vec3 | `10 5 10` |  |
+| Is View Volume | `IsViewVolume` | Bool | `true` |  |
+
+### Occlusion Portal
+
+A door for Occlusion Culling: while it is closed, static objects seen only through it are hidden. Set Open from scripts when the door opens.
+
+Type `OcclusionPortalComponent`; script name `OcclusionPortal`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Open | `Open` | Bool | `true` |  |
+| Center | `Center` | Vec3 | `0 0 0` |  |
+| Size | `Size` | Vec3 | `1 2 0.2` |  |
+
 ### Parallax 2D
 
 Godot Parallax2D: the layer scrolls at Scroll Scale times the camera movement (0.5 = half speed, far away). Autoscroll moves it on its own (clouds); Repeat Size keeps copies laid out at that spacing endlessly around the camera.
@@ -2030,6 +2901,20 @@ Type `PixelPerfectCameraComponent`; script name `PixelPerfectCamera`.
 | Stretch Fill | `StretchFill` | Bool | `false` |  |
 | Current Zoom | `CurrentZoom` | Int | `1` |  |
 
+### Planar Reflection
+
+A mirror plane through this object, facing its +Y (Unreal Planar Reflection): floors, puddles and mirrors near the plane reflect the scene sharply. Costs one extra scene render per frame at Screen Percentage.
+
+Type `PlanarReflectionComponent`; script name `PlanarReflection`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Screen Percentage | `ScreenPercentage` | Float | `50` |  |
+| Distance From Plane Fade End | `DistanceFromPlaneFadeEnd` | Float | `1` |  |
+| Normal Distortion Strength | `NormalDistortionStrength` | Float | `0.03` |  |
+| Max Roughness | `MaxRoughness` | Float | `0.6` |  |
+| _Info_: Renders | `Renders` | Int | `0` |  |
+
 ### Post Process Volume
 
 Changes post-processing while the camera is inside (Unity Volume / Unreal Post Process Volume). Global volumes apply everywhere.
@@ -2044,6 +2929,7 @@ Type `PostProcessVolumeComponent`; script name `PostProcessVolume`.
 | Blend Distance | `BlendDistance` | Float | `2` |  |
 | Weight | `Weight` | Float | `1` |  |
 | Priority | `Priority` | Int | `0` |  |
+| Profile | `Profile` | Asset |  | Volume Profile asset: the overrides come from this file and are shared by every volume that uses it. Empty = the overrides below. |
 | _Overrides_: Exposure | `OverrideExposure` | Bool | `false` |  |
 | Post Exposure (EV) | `Exposure` | Float | `0` |  |
 | Bloom | `OverrideBloom` | Bool | `false` |  |
@@ -2066,7 +2952,34 @@ Type `PostProcessVolumeComponent`; script name `PostProcessVolume`.
 | Grain Intensity | `FilmGrainIntensity` | Float | `0.15` |  |
 | Ambient Occlusion | `OverrideAmbientOcclusion` | Bool | `false` |  |
 | AO Intensity | `AOIntensity` | Float | `1` |  |
+| Depth Of Field | `OverrideDepthOfField` | Bool | `false` |  |
+| Focus Distance | `FocusDistance` | Float | `10` |  |
+| Aperture (f-stop) | `Aperture` | Float | `2.8` |  |
+| Focal Length (mm) | `FocalLength` | Float | `50` |  |
 | _Runtime_: Current Influence | `CurrentInfluence` | Float | `0` |  |
+
+### Reflection Probe
+
+Type `ReflectionProbeComponent`; script name `ReflectionProbe`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Intensity | `Intensity` | Float | `1` |  |
+| Resolution | `Resolution` | Int | `128` |  |
+| Realtime | `RealtimeUpdate` | Bool | `false` |  |
+| Blend Distance | `BlendDistance` | Float | `1` |  |
+| Captured | `Captured` | String | `false` |  |
+
+### Scene Capture Cube
+
+Renders the scene around this object into a Cube Render Target (.cqcubert), for Cube Render Target Sample nodes in Shader Graphs.
+
+Type `SceneCaptureCubeComponent`; script name `SceneCaptureCube`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Target | `Target` | Asset |  |  |
+| Interval | `Interval` | Float | `0` | Seconds between captures; 0 captures once when the game starts. |
 
 ### Shadow Caster 2D
 
@@ -2136,6 +3049,17 @@ Type `SpriteRendererComponent`; script name `SpriteRenderer`.
 | Mask Interaction | `MaskInteraction` | Enum | `None` | Options: None, Visible Inside Mask, Visible Outside Mask. |
 | Texture | `Texture` | Asset |  |  |
 
+### Streaming Controller
+
+Texture Streaming (Project Settings > Quality): textures with Streaming Mipmaps load the mip levels this camera needs. With Add All Cameras off, only cameras with a Streaming Controller (and the Scene view) request textures.
+
+Type `StreamingControllerComponent`; script name `StreamingController`; requires `CameraComponent`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Mip Map Bias | `StreamingMipBias` | Float | `0` | Positive: coarser mip levels (less memory). Negative: more detailed. |
+| Preloading | `PreloadTimeLeft` | Float | `0` | StreamingSetPreloading(camera, seconds): requests this camera's textures before it renders. |
+
 ### Text Renderer
 
 Type `TextRendererComponent`; script name `TextRenderer`.
@@ -2146,6 +3070,19 @@ Type `TextRendererComponent`; script name `TextRenderer`.
 | Color | `Color` | Color4 | `1 1 1 1` |  |
 | Font Size | `FontSize` | Float | `1` |  |
 | Alignment | `Alignment` | Enum | `Left` | Options: Left, Center, Right. |
+
+### Tree
+
+Procedural tree (Unity Tree Creator): branch and leaf groups grown from a seed. The generated bark and leaves are drawn by this object's Mesh Renderer.
+
+Type `TreeComponent`; script name `Tree`; requires `MeshRendererComponent`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Seed | `Seed` | Int | `1234` |  |
+| LOD Quality | `LODQuality` | Float | `0.6` | Rings around and segments along every branch. |
+| Area Spread | `AreaSpread` | Float | `0` | Radius over which several trunks are spread. |
+| Ground Offset | `GroundOffset` | Float | `0` | How far the trunk starts below the object's origin. |
 
 ### Vertex Paint
 
@@ -2191,6 +3128,31 @@ Type `VisibleOnScreenNotifierComponent`; script name `VisibleOnScreenNotifier`.
 | Bounds Size | `BoundsSize` | Vec3 | `1 1 1` |  |
 | On Screen | `OnScreen` | Bool | `false` |  |
 
+### Water Body
+
+A water surface (Unreal Water Body): Ocean follows the camera to the horizon, Lake / Custom cover Size. Gerstner waves, sky reflections, shallow-to-deep color, soft shores and foam. Buoyancy components float on it.
+
+Type `WaterBodyComponent`; script name `WaterBody`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Water Body Type | `Type` | Enum | `Lake` | Options: Ocean, Lake, Custom. |
+| Size | `Size` | Vec2 | `20 20` |  |
+| Resolution | `Resolution` | Int | `128` |  |
+| _Waves_: Wave Count | `WaveCount` | Int | `3` |  |
+| Amplitude | `WaveAmplitude` | Float | `0.25` |  |
+| Wavelength | `WaveLength` | Float | `8` |  |
+| Speed | `WaveSpeed` | Float | `2` |  |
+| Direction | `WaveDirection` | Float | `30` |  |
+| Steepness | `Steepness` | Float | `0.5` |  |
+| _Look_: Shallow Color | `ShallowColor` | Color3 | `0.12 0.6 0.62` |  |
+| Deep Color | `DeepColor` | Color3 | `0.02 0.12 0.2` |  |
+| Opacity | `Opacity` | Float | `0.85` |  |
+| Depth Fade | `DepthFade` | Float | `4` |  |
+| Shore Fade | `ShoreFade` | Float | `0.5` |  |
+| Roughness | `Roughness` | Float | `0.05` |  |
+| Foam | `Foam` | Float | `0.5` |  |
+
 ## Scripting
 
 ### Signal Connections
@@ -2202,6 +3164,14 @@ Type `SignalConnectionsComponent`; script name `SignalConnections`.
 | Field | Key | Type | Default | Description |
 |---|---|---|---|---|
 | Connections | `Connections` | String |  |  |
+
+### Signal Receiver
+
+Reacts to Signal assets (.cqsignal) sent to this object by a Timeline Signal track or SignalSend(): each reaction calls a script method on this or another object.
+
+Type `SignalReceiverComponent`; script name `SignalReceiver`.
+
+_No editable fields (edited with its own inspector or from code)._
 
 ## Splines
 
@@ -2271,6 +3241,22 @@ Type `SplineInstantiateComponent`; script name `SplineInstantiate`.
 | Spacing | `Spacing` | Float | `1` |  |
 | Align To Path | `AlignToPath` | Bool | `true` |  |
 | Position Offset | `PositionOffset` | Vec3 | `0 0 0` |  |
+
+### Spline Mesh
+
+Bends a mesh along a spline (Unreal Spline Mesh): pipes, rails, fences, roads. Source Model, or the Mesh Renderer's shape. Tile repeats the mesh at its own length instead of stretching it once.
+
+Type `SplineMeshComponent`; script name `SplineMesh`; requires `MeshRendererComponent`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Spline | `Container` | EntityRef | `0` | Empty = the Spline Container on this object. |
+| Source Model | `SourceModel` | Asset |  |  |
+| Forward Axis | `ForwardAxis` | Enum | `Z` | Options: X, Y, Z. |
+| Range Start | `RangeStart` | Float | `0` |  |
+| Range End | `Range` | Float | `1` |  |
+| Tile | `Tile` | Bool | `false` |  |
+| Scale | `Scale` | Vec2 | `1 1` |  |
 
 ## Transform
 
@@ -2414,6 +3400,7 @@ Type `UIImageComponent`; script name `UIImage`.
 | Preserve Aspect | `PreserveAspect` | Bool | `false` |  |
 | Raycast Target | `RaycastTarget` | Bool | `true` |  |
 | Corner Radius | `CornerRadius` | Float | `0` |  |
+| Material | `MaterialPath` | Asset |  | A material whose Shader is a UI shader (Create > Shader > UI Shader). Empty = default UI drawing. |
 
 ### Input Field
 
@@ -2484,6 +3471,35 @@ Type `UIOutlineComponent`; script name `UIOutline`.
 | Effect Distance | `EffectDistance` | Vec2 | `1 -1` |  |
 | Use Graphic Alpha | `UseGraphicAlpha` | Bool | `true` |  |
 
+### Physics 2D Raycaster
+
+Put it on the camera: the 2D collider under the pointer gets the Event Trigger pointer events (when the pointer is not over UI).
+
+Type `Physics2DRaycasterComponent`; script name `Physics2DRaycaster`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Event Mask | `EventMask` | LayerMask | `4294967295` |  |
+
+### Physics Raycaster
+
+Put it on the camera: when the pointer is not over UI, a ray from this camera finds the 3D collider under the pointer and its object (or the nearest parent with an Event Trigger) gets Pointer Enter, Exit, Down, Up, Click, Drag and Scroll.
+
+Type `PhysicsRaycasterComponent`; script name `PhysicsRaycaster`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Event Mask | `EventMask` | LayerMask | `4294967295` |  |
+| Max Ray Distance | `MaxRayDistance` | Float | `0` | 0 uses the camera's far clip plane |
+
+### Position As UV1
+
+Writes each vertex's local position (relative to the pivot, in canvas pixels) into the second UV channel (UV1) of this Image, Raw Image or Text. Custom UI shaders read it as a_UV1 (Image > Material, Create > Shader > UI Shader).
+
+Type `UIPositionAsUV1Component`; script name `UIPositionAsUV1`.
+
+_No editable fields (edited with its own inspector or from code)._
+
 ### Raw Image
 
 Shows any texture with a UV rectangle (video, render texture, atlas region).
@@ -2496,6 +3512,7 @@ Type `UIRawImageComponent`; script name `UIRawImage`.
 | Color | `Color` | Color4 | `1 1 1 1` |  |
 | UV Rect | `UVRect` | Vec4 | `0 0 1 1` | x, y, width, height in 0..1 texture space. |
 | Raycast Target | `RaycastTarget` | Bool | `true` |  |
+| Material | `MaterialPath` | Asset |  | A material whose Shader is a UI shader (Create > Shader > UI Shader). Empty = default UI drawing. |
 
 ### Rect Mask 2D
 
@@ -2553,6 +3570,22 @@ Type `UIScrollbarComponent`; script name `UIScrollbar`.
 | Handle | `HandleColor` | Color4 | `0.55 0.56 0.62 1` |  |
 | On Value Changed | `OnValueChanged` | String |  |  |
 
+### Selectable
+
+Makes this UI element interactive like a Button without a click action: hover, press and disabled colors (or scale), and keyboard / gamepad navigation. Add an Event Trigger to react to pointer and navigation events.
+
+Type `UISelectableComponent`; script name `UISelectable`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Interactable | `Interactable` | Bool | `true` |  |
+| Transition | `Transition` | Enum | `Color Tint` | Options: None, Color Tint, Scale. |
+| Normal Color | `NormalColor` | Color4 | `1 1 1 1` |  |
+| Highlighted Color | `HighlightedColor` | Color4 | `0.92 0.92 0.92 1` |  |
+| Pressed Color | `PressedColor` | Color4 | `0.75 0.75 0.75 1` |  |
+| Disabled Color | `DisabledColor` | Color4 | `0.78 0.78 0.78 0.5` |  |
+| Fade Duration | `FadeDuration` | Float | `0.1` |  |
+
 ### Shadow
 
 Draws the image or text again behind itself, offset and tinted (drop shadow).
@@ -2593,6 +3626,7 @@ Type `UITextComponent`; script name `UIText`.
 | Font | `Font` | Asset |  |  |
 | Font Size | `FontSize` | Float | `32` |  |
 | Color | `Color` | Color4 | `0.12 0.12 0.14 1` |  |
+| Color Gradient | `ColorGradient` | Asset |  |  |
 | Horizontal Align | `AlignH` | Enum | `Left` | Options: Left, Center, Right. |
 | Vertical Align | `AlignV` | Enum | `Middle` | Options: Top, Middle, Bottom. |
 | Word Wrap | `WordWrap` | Bool | `true` |  |
@@ -2613,6 +3647,38 @@ Type `UIToggleComponent`; script name `UIToggle`.
 | Is On | `IsOn` | Bool | `true` |  |
 | Group | `Group` | Int | `0` |  |
 | On Value Changed | `OnValueChanged` | String |  |  |
+
+### Toggle Group
+
+Makes the Toggles under this object (and on it) mutually exclusive: turning one on turns the others off. With Allow Switch Off unchecked, clicking the toggle that is on keeps it on, so one option always stays selected. A Toggle whose Group number is not 0 uses that numbered group instead.
+
+Type `ToggleGroupComponent`; script name `ToggleGroup`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Allow Switch Off | `AllowSwitchOff` | Bool | `false` |  |
+
+### UI Document
+
+Shows a UI Document (.cquxml) when the game plays: its elements become Canvas UI laid out with flexbox and styled by its style sheets. Scripts find elements with UIQuery(self, "#name").
+
+Type `UIDocumentComponent`; script name `UIDocument`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Source | `Source` | Asset |  |  |
+| Panel Settings | `PanelSettings` | Asset |  |  |
+| Sort Order | `SortOrder` | Int | `0` |  |
+
+### UI Skin
+
+Applies a GUI Skin (.cqguiskin) to this Canvas and everything under it when the game plays.
+
+Type `UISkinComponent`; script name `UISkin`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Skin | `Skin` | Asset |  |  |
 
 ## Video
 
@@ -2641,7 +3707,68 @@ Type `VideoPlayerComponent`; script name `VideoPlayer`.
 | Frame | `Frame` | Int | `-1` |  |
 | Status | `Status` | String |  |  |
 
+## Volumes
+
+### Cull Distance Volume
+
+Hides small static objects inside this box when the camera is far away: each row pairs an object size with the distance beyond which objects of about that size are not drawn (0 = always drawn).
+
+Type `CullDistanceVolumeComponent`; script name `CullDistanceVolume`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Size | `Size` | Vec3 | `100 50 100` |  |
+| Cull Distances (Size, Distance) | `CullDistances` | Vec2List |  |  |
+
+### Kill Z Volume
+
+Objects with physics that enter this box fall out of the world: the player respawns at a Player Start (Game Mode), other objects are destroyed (scripts get OnFellOutOfWorld first).
+
+Type `KillZVolumeComponent`; script name `KillZVolume`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Size | `Size` | Vec3 | `200 10 200` |  |
+
+### Pain Causing Volume
+
+Hurts what stands inside: every Pain Interval seconds lowers the Ability System Health attribute and calls OnTakeDamage(amount).
+
+Type `PainCausingVolumeComponent`; script name `PainCausingVolume`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Size | `Size` | Vec3 | `4 4 4` |  |
+| Pain Causing | `PainCausing` | Bool | `true` |  |
+| Damage Per Sec | `DamagePerSec` | Float | `10` |  |
+| Pain Interval | `PainInterval` | Float | `1` |  |
+| Damage Type | `DamageType` | String | `Pain` |  |
+
+### Physics Volume
+
+Changes physics inside: fluid friction slows bodies, speed is capped at Terminal Velocity; Water Volume pushes bodies up by Buoyancy and scripts can ask IsInWaterVolume.
+
+Type `PhysicsVolumeComponent`; script name `PhysicsVolume`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Size | `Size` | Vec3 | `4 4 4` |  |
+| Fluid Friction | `FluidFriction` | Float | `0.3` |  |
+| Terminal Velocity | `TerminalVelocity` | Float | `40` |  |
+| Water Volume | `WaterVolume` | Bool | `false` |  |
+| Buoyancy | `Buoyancy` | Float | `0` |  |
+
 ## World
+
+### Always Loaded
+
+World Partition never unloads this object (Unreal: Is Spatially Loaded off).
+
+Type `AlwaysLoadedComponent`; script name `AlwaysLoaded`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Enabled | `Enabled` | Bool | `true` |  |
 
 ### Level Streaming Volume
 
@@ -2670,3 +3797,125 @@ Type `StreamedLevelComponent`; script name `StreamedLevel`.
 |---|---|---|---|---|
 | Source | `Source` | String |  |  |
 | Level | `LevelName` | String |  |  |
+
+### World Partition
+
+Splits the world into a grid (Unreal World Partition): in play, cells within Loading Range of a Streaming Source (or the main camera) are loaded and the rest are unloaded, so big open worlds stay in one scene.
+
+Type `WorldPartitionComponent`; script name `WorldPartition`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Enable Streaming | `EnableStreaming` | Bool | `true` |  |
+| Cell Size | `CellSize` | Float | `64` |  |
+| Loading Range | `LoadingRange` | Float | `128` |  |
+| Update Interval | `UpdateInterval` | Float | `0.25` |  |
+| _Runtime_: Cells | `Cells` | Int | `0` |  |
+| Loaded Cells | `LoadedCells` | Int | `0` |  |
+| Streamed Actors | `StreamedActors` | Int | `0` |  |
+
+### World Partition Streaming Source
+
+World Partition loads the cells around this object (the player, a vehicle). Without any, the main camera is used.
+
+Type `WorldPartitionStreamingSourceComponent`; script name `WorldPartitionStreamingSource`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Enabled | `Enabled` | Bool | `true` |  |
+
+## XR
+
+### Continuous Move Provider
+
+Put it on the XR Origin: walks where the head looks (WASD in the simulator).
+
+Type `ContinuousMoveProviderComponent`; script name `ContinuousMoveProvider`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Move Speed | `MoveSpeed` | Float | `2` |  |
+| Enable Strafe | `EnableStrafe` | Bool | `true` |  |
+
+### Snap Turn Provider
+
+Put it on the XR Origin: turns the player in steps (Q / E in the simulator).
+
+Type `SnapTurnProviderComponent`; script name `SnapTurnProvider`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Turn Amount | `TurnAmount` | Float | `45` |  |
+
+### Teleportation Anchor
+
+A fixed teleport spot (needs a collider): the XR Origin lands on this object's position and can face its direction.
+
+Type `TeleportationAnchorComponent`; script name `TeleportationAnchor`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Match Orientation | `MatchOrientation` | Bool | `true` |  |
+
+### Teleportation Area
+
+Put it on a floor with a collider: a projectile ray can teleport the XR Origin anywhere on it.
+
+Type `TeleportationAreaComponent`; script name `TeleportationArea`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Match Orientation | `MatchOrientation` | Bool | `false` |  |
+
+### XR Controller
+
+A hand: follows the left or right controller (simulated without a headset). Add an XR Ray Interactor to point, grab or teleport.
+
+Type `XRControllerComponent`; script name `XRController`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Hand | `Hand` | Enum | `Right` | Options: Left, Right. |
+| _Input_: Grip | `Grip` | Bool | `false` |  |
+| Trigger | `Trigger` | Bool | `false` |  |
+
+### XR Grab Interactable
+
+Can be grabbed with a ray and thrown. Scripts get OnHoverEntered / OnHoverExited / OnSelectEntered / OnSelectExited / OnActivated.
+
+Type `XRGrabInteractableComponent`; script name `XRGrabInteractable`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Movement Type | `MovementType` | Enum | `Velocity Tracking` | Options: Velocity Tracking, Kinematic, Instantaneous. |
+| Track Rotation | `TrackRotation` | Bool | `true` |  |
+| Throw On Detach | `ThrowOnDetach` | Bool | `true` |  |
+| Throw Velocity Scale | `ThrowVelocityScale` | Float | `1.5` |  |
+| _Runtime_: Is Selected | `IsSelected` | Bool | `false` |  |
+| Is Hovered | `IsHovered` | Bool | `false` |  |
+
+### XR Origin
+
+The player in VR: its child camera is the head and its XR Controller children are the hands. Without a headset the XR Device Simulator runs: mouse looks, right click grabs, left click triggers, Space aims a teleport, Q / E turn, WASD walks.
+
+Type `XROriginComponent`; script name `XROrigin`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Camera Y Offset | `CameraYOffset` | Float | `1.36` | Eye height without a headset. |
+| Simulator Look Sensitivity | `LookSensitivity` | Float | `0.12` |  |
+
+### XR Ray Interactor
+
+A ray from the hand: Straight rays grab XR Grab Interactables with the grip; Projectile rays aim a teleport arc at Teleportation Areas and Anchors (teleports on release).
+
+Type `XRRayInteractorComponent`; script name `XRRayInteractor`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Line Type | `LineType` | Enum | `Straight` | Options: Straight, Projectile. |
+| Max Raycast Distance | `MaxDistance` | Float | `30` |  |
+| Projectile Velocity | `Velocity` | Float | `8.5` |  |
+| Line Width | `LineWidth` | Float | `0.01` |  |
+| Valid Color | `ValidColor` | Color4 | `1 1 1 1` |  |
+| Invalid Color | `InvalidColor` | Color4 | `1 0.3 0.3 1` |  |

@@ -41,6 +41,12 @@ namespace Conqueror
         virtual bool Reload() { return false; }
         // Kaynak dosya silindi: içerik saydam 1x1 olur (Unity'de referansı kayıp doku gibi görünmez), yol korunur
         virtual void SetMissing() {}
+        // Texture Streaming (Unity Mipmap Streaming, içe aktarmada Streaming Mipmaps): GPU'daki en ayrıntılı mip seviyesi
+        // (0 = tam boyut) ve dokunun en kaba seviyesi. Genişlik / yükseklik her zaman tam boyuttur
+        virtual bool IsStreamed() const { return false; }
+        virtual int GetStreamingLevel() const { return 0; }
+        virtual int GetStreamingMaxLevel() const { return 0; }
+        virtual bool StreamDropTo(int level) { (void)level; return false; }
     };
 
     class CQ_API Texture2D : public Texture

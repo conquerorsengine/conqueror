@@ -22,11 +22,24 @@ namespace Conqueror
         bool DisableAudio = false;
     };
 
+    // Unity Quality > Texture Streaming (Mipmap Streaming): içe aktarmada "Streaming Mipmaps" açık dokular GPU'ya yalnız
+    // kameraların gerektirdiği mip seviyesine kadar yüklenir (Renderer/TextureStreaming)
+    struct TextureStreamingSettings
+    {
+        bool Enabled = false;
+        bool AddAllCameras = true;      // kapalıysa yalnız Streaming Controller'lı kameralar (ve editörün sahne görünümü)
+        float MemoryBudgetMB = 512.0f;  // tüm dokular (akışa girmeyenler dahil)
+        int RenderersPerFrame = 512;    // bir karede incelenen Mesh Renderer sayısı (fazlası sonraki karelere)
+        int MaxLevelReduction = 2;      // bir doku en çok kaç mip seviyesi küçülebilir; yüklenirken de bu seviyeden başlar
+        int MaxIORequests = 1024;       // aynı anda bekleyen çözme isteği üst sınırı
+    };
+
     struct QualityProjectSettings
     {
         int Level = (int)QualityLevel::High;   // Low, Medium, High, Ultra, Custom
         QualityPreset Custom;
         int TargetFrameRate = 0;               // 0 = sınırsız (VSync'e bağlı)
+        TextureStreamingSettings Streaming;
     };
 
     struct GraphicsProjectSettings

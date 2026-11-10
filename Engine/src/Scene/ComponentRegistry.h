@@ -269,6 +269,7 @@ namespace Conqueror
     void RegisterBlendShapeComponents();
     void RegisterMetaHumanComponents();
     void RegisterTreeComponents();
+    void RegisterTextureStreamingComponents();
     void RegisterPlayerInputComponents();
     void RegisterRigComponents();
     void RegisterNavigationComponents();

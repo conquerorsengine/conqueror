@@ -1,0 +1,4 @@
+using nativebridge;
+var info = TextureStreamingInfo();
+LogInfo("REGRESSION texture_streaming small streamingMB=" + info.streamingMB + " textures=" + info.streamingTextures);
+if (info.enabled && info.streamingTextures == 1 && info.streamingMB < 2.0) { CreateEntity("Stream_SMALL"); }
