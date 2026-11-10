@@ -1,6 +1,9 @@
 #include "PhysicsComponents.h"
 #include "Scene/ComponentRegistry.h"
 #include "Scene/Components.h"
+#include "Scene/Scene.h"
+#include "Scene/Entity.h"
+#include "Terrain/TerrainComponent.h"
 
 #include <IconsFontAwesome6.h>
 
@@ -27,8 +30,14 @@ namespace Conqueror
         }
     }
 
+    template<> void Scene::OnComponentAdded<TerrainColliderComponent>(Entity, TerrainColliderComponent&) {}
+
     void RegisterPhysicsComponents()
     {
+        ComponentDef<TerrainColliderComponent>("Terrain Collider", "TerrainColliderComponent", "Physics", ICON_FA_MOUNTAIN).Color(kPhysicsColor)
+            .Describe("Makes the Terrain on this object solid (height field collider). Without it, objects fall through the terrain.")
+            .Field("PhysicsMaterial", "Material", &TerrainColliderComponent::PhysicsMaterial, FieldKind::Asset).Filter(".cqphysmat")
+                .Tooltip("Friction and bounciness of the ground. Empty = project defaults.");
         {
             ComponentDef<CharacterControllerComponent> def("Character Controller", "CharacterControllerComponent", "Physics", ICON_FA_PERSON_WALKING);
             def.Color(kPhysicsColor)

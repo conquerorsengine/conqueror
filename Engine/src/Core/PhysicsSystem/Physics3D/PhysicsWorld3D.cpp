@@ -406,7 +406,7 @@ namespace Conqueror
         if (e.HasComponent<BoxColliderComponent>() || e.HasComponent<SphereColliderComponent>() ||
             e.HasComponent<CapsuleColliderComponent>() || e.HasComponent<MeshColliderComponent>())
             return true;
-        return e.HasComponent<TerrainComponent>() && e.GetComponent<TerrainComponent>().EnableCollider;
+        return e.HasComponent<TerrainComponent>() && e.HasComponent<TerrainColliderComponent>();
     }
 
     uint32_t PhysicsWorld3D::FindOwner(uint32_t entity) const
@@ -540,7 +540,7 @@ namespace Conqueror
             else
                 CQ_CORE_WARN("[Physics] Mesh Collider on '{0}' has no mesh (add a Mesh Renderer).", e.GetComponent<TagComponent>().Tag);
         }
-        if (e.HasComponent<TerrainComponent>() && e.GetComponent<TerrainComponent>().EnableCollider)
+        if (e.HasComponent<TerrainComponent>() && e.HasComponent<TerrainColliderComponent>())
         {
             auto& terrain = e.GetComponent<TerrainComponent>();
             TerrainSystem::EnsureData(terrain);
@@ -617,6 +617,7 @@ namespace Conqueror
             if (pm.empty() && o.HasComponent<SphereColliderComponent>()) pm = o.GetComponent<SphereColliderComponent>().PhysicsMaterial;
             if (pm.empty() && o.HasComponent<CapsuleColliderComponent>()) pm = o.GetComponent<CapsuleColliderComponent>().PhysicsMaterial;
             if (pm.empty() && o.HasComponent<MeshColliderComponent>()) pm = o.GetComponent<MeshColliderComponent>().PhysicsMaterial;
+            if (pm.empty() && o.HasComponent<TerrainColliderComponent>()) pm = o.GetComponent<TerrainColliderComponent>().PhysicsMaterial;
             PhysicsMaterialAsset mat;
             if (!pm.empty() && PhysicsMaterials::Load(pm, mat))
             {
@@ -651,6 +652,7 @@ namespace Conqueror
             if (path.empty() && o.HasComponent<SphereColliderComponent>()) path = o.GetComponent<SphereColliderComponent>().PhysicsMaterial;
             if (path.empty() && o.HasComponent<CapsuleColliderComponent>()) path = o.GetComponent<CapsuleColliderComponent>().PhysicsMaterial;
             if (path.empty() && o.HasComponent<MeshColliderComponent>()) path = o.GetComponent<MeshColliderComponent>().PhysicsMaterial;
+            if (path.empty() && o.HasComponent<TerrainColliderComponent>()) path = o.GetComponent<TerrainColliderComponent>().PhysicsMaterial;
             if (!path.empty())
             {
                 HashCombine(h, std::hash<std::string>()(path));
@@ -686,7 +688,7 @@ namespace Conqueror
             if (e.HasComponent<TerrainComponent>())
             {
                 auto& tc = e.GetComponent<TerrainComponent>();
-                HashCombine(h, tc.EnableCollider + 29);
+                HashCombine(h, (size_t)e.HasComponent<TerrainColliderComponent>() + 29);
                 HashF(h, tc.Width); HashF(h, tc.Length); HashF(h, tc.Height); HashCombine(h, (size_t)tc.Resolution);
                 any = true;
             }

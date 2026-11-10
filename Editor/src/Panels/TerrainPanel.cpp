@@ -50,6 +50,7 @@ namespace Conqueror::Editor
         t.Layers[2].Roughness = 0.6f;
         t.Layers[3].Tint = glm::vec3(0.82f, 0.74f, 0.52f);
         e.AddComponent<TerrainComponent>(t);
+        e.AddComponent<TerrainColliderComponent>();   // Unity gibi: arazi Terrain Collider ile birlikte oluşur
         // Merkezi orijine al
         e.GetComponent<TransformComponent>().Position = glm::vec3(-size * 0.5f, 0.0f, -size * 0.5f);
         return e;
@@ -555,7 +556,15 @@ namespace Conqueror::Editor
         UI::EndProperty();
         UI::Checkbox("Cast Shadows", t.CastShadows);
         UI::Checkbox("Receive Shadows", t.ReceiveShadows);
-        UI::Checkbox("Collider", t.EnableCollider);
+        // Çarpışma = Terrain Collider bileşeni (Unity gibi ayrı bileşen); bu kutu onu ekler / kaldırır
+        {
+            bool collider = e.HasComponent<TerrainColliderComponent>();
+            if (UI::Checkbox("Collider", collider, "Adds or removes the Terrain Collider component."))
+            {
+                if (collider && !e.HasComponent<TerrainColliderComponent>()) e.AddComponent<TerrainColliderComponent>();
+                else if (!collider && e.HasComponent<TerrainColliderComponent>()) e.RemoveComponent<TerrainColliderComponent>();
+            }
+        }
 
         ImGui::Spacing();
         float bw = (ImGui::GetContentRegionAvail().x - 4.0f) * 0.5f;

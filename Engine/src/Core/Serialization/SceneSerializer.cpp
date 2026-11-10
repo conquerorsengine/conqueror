@@ -1443,7 +1443,8 @@ namespace Conqueror
             out << YAML::Key << "LayerCount" << YAML::Value << t.LayerCount;
             out << YAML::Key << "CastShadows" << YAML::Value << t.CastShadows;
             out << YAML::Key << "ReceiveShadows" << YAML::Value << t.ReceiveShadows;
-            out << YAML::Key << "EnableCollider" << YAML::Value << t.EnableCollider;
+            // Eski sürümler için: çarpıştırıcı artık Terrain Collider bileşeni (bu bayrak onun varlığını yansıtır)
+            out << YAML::Key << "EnableCollider" << YAML::Value << entity.HasComponent<TerrainColliderComponent>();
             out << YAML::Key << "Layers" << YAML::Value << YAML::BeginSeq;
             for (int i = 0; i < TerrainComponent::MaxLayers; ++i)
             {
@@ -2577,6 +2578,9 @@ namespace Conqueror
                         TerrainSystem::EnsureData(t);
                     }
                     deserializedEntity.AddComponent<TerrainComponent>(t);
+                    // Eski sahneler: Terrain'in "Collider" işareti Terrain Collider bileşenine dönüşür (Unity'deki gibi ayrı bileşen)
+                    if (t.EnableCollider && !deserializedEntity.HasComponent<TerrainColliderComponent>())
+                        deserializedEntity.AddComponent<TerrainColliderComponent>();
                 }
 
                 auto meshRendererComponent = entity["MeshRendererComponent"];

@@ -29,6 +29,12 @@ namespace Conqueror
         std::string Asset;
     };
 
+    // Terrain Collider (Unity): aynı nesnedeki Terrain'in yükseklik alanı çarpıştırıcısı. Bileşen yoksa arazi katı değildir
+    struct TerrainColliderComponent
+    {
+        std::string PhysicsMaterial;        // .cqphysmat (sürtünme / sekme); boşsa varsayılan
+    };
+
     // Unity Terrain karşılığı: yükseklik haritası + 4 katmanlı splat (RGBA ağırlık).
     // Yerel uzayda (0,0,0)-(Width, Height, Length) aralığını kaplar; dönüşümle taşınır.
     struct TerrainComponent

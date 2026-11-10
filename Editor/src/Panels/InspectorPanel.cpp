@@ -1639,7 +1639,7 @@ namespace Conqueror::Editor
 
         DrawComponent<ParticleSystemComponent>("Particle System", entity, [](auto& ps) { DrawParticleSystemUI(ps); });
 
-        DrawComponent<TerrainComponent>("Terrain", entity, [](auto& t)
+        DrawComponent<TerrainComponent>("Terrain", entity, [entity](auto& t)
         {
             TerrainSystem::EnsureData(t);
             UI::Text("Heightmap", "%d x %d", t.Resolution, t.Resolution);
@@ -1655,7 +1655,15 @@ namespace Conqueror::Editor
             UI::SliderInt("Texture Layers", t.LayerCount, 1, TerrainComponent::MaxLayers);
             UI::Checkbox("Cast Shadows", t.CastShadows);
             UI::Checkbox("Receive Shadows", t.ReceiveShadows);
-            UI::Checkbox("Collider", t.EnableCollider);
+            {
+                Entity e = entity;
+                bool collider = e.HasComponent<TerrainColliderComponent>();
+                if (UI::Checkbox("Collider", collider, "Adds or removes the Terrain Collider component."))
+                {
+                    if (collider && !e.HasComponent<TerrainColliderComponent>()) e.AddComponent<TerrainColliderComponent>();
+                    else if (!collider && e.HasComponent<TerrainColliderComponent>()) e.RemoveComponent<TerrainColliderComponent>();
+                }
+            }
             UI::InfoBox("Sculpt, paint and generate in the Terrain panel (Window > Terrain).", UI::InfoType::Info);
         });
 
