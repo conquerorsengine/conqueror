@@ -58,6 +58,7 @@ namespace Conqueror::Editor
         std::shared_ptr<Scene> m_Context;
         std::shared_ptr<Framebuffer> m_Framebuffer;
         glm::vec2 m_ViewportSize = { 0.0f, 0.0f };
+        glm::vec2 m_PendingViewportSize = { 0.0f, 0.0f };   // panel boyutu değişti: bir sonraki çizimden hemen önce uygulanır
         glm::vec2 m_ViewportBounds[2]{};
 
         bool m_ViewportFocused = false;

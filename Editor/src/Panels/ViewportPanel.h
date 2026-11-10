@@ -129,6 +129,9 @@ namespace Conqueror::Editor
         // Görünüm seçenekleri
         ViewportShading m_Shading = ViewportShading::Shaded;
         EditorViewOptions m_ViewOptions;
+        ViewportShading m_AppliedShading = ViewportShading::Shaded;   // son karedeki kip (değişince zamansal geçmiş yeniden başlar)
+        glm::vec2 m_PendingViewportSize = { 0.0f, 0.0f };             // panel boyutu değişti: bir sonraki çizimden hemen önce uygulanır
+        void ApplyViewportSize(const glm::vec2& size);
         EditorViewOptions m_AppliedViewOptions;   // son karede sahneye verilen (değişince zamansal geçmiş yeniden başlar)
         bool m_ViewOptionsApplied = false;
         bool m_ShowSelectionOutline = true;

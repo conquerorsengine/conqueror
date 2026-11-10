@@ -143,7 +143,6 @@ namespace Conqueror
         }
 
         // 3. WASD + QE Kamera Gezinmesi (W: İleri, S: Geri, A: Sol, D: Sağ, E: Yukarı, Q: Aşağı)
-        // Play modunda tuşla gezinme kapalıdır (orbit/pan/zoom çalışmaya devam eder).
         if (allowKeyMovement)
         {
         // Uzaklaşınca tuşla gezinme de hızlanır (3000 m'de 12 m/s piksel altında kalıyordu)

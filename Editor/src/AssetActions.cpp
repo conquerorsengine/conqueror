@@ -201,6 +201,19 @@ namespace Conqueror::Editor::AssetActions
         return created;
     }
 
+    void AddPrimitiveCollider(Entity entity)
+    {
+        if (!entity || !entity.HasComponent<MeshRendererComponent>())
+            return;
+        switch (entity.GetComponent<MeshRendererComponent>().Type)
+        {
+            case MeshType::Sphere: entity.AddComponent<SphereColliderComponent>(); break;
+            case MeshType::Plane: entity.AddComponent<MeshColliderComponent>(); break;
+            case MeshType::Cylinder: entity.AddComponent<MeshColliderComponent>().IsConvex = true; break;
+            default: entity.AddComponent<BoxColliderComponent>(); break;
+        }
+    }
+
     bool RefuseDataScript(const std::string& scriptPath)
     {
         const std::string resolved = SceneSerializer::ResolveAssetPath(scriptPath);

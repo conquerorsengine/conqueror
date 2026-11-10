@@ -123,18 +123,28 @@ namespace Conqueror::Editor
         m_Framebuffer = Framebuffer::Create(fbSpec);
     }
 
+    void ViewportPanel::ApplyViewportSize(const glm::vec2& size)
+    {
+        m_ViewportSize = size;
+        m_Framebuffer->Resize((uint32_t)size.x, (uint32_t)size.y);
+        m_EditorCamera.SetViewportSize(size.x, size.y);
+        if (m_Context)
+            m_Context->OnViewportResize((uint32_t)size.x, (uint32_t)size.y);
+    }
+
     void ViewportPanel::OnUpdate(Timestep ts)
     {
-        // Play modunda sadece WASD/QE tuş gezinmesi kapalıdır; orbit/pan/zoom
-        // dahil tüm fare hareketleri çalışmaya devam eder.
-        // Gizmo kullanılıyorsa, viewport odakta değilse veya ImGui text girişi
-        // aktifse kamera güncellenmez (yazı yazarken kamera kaçmasın).
-        const bool playing = EditorState::Get().IsPlaying();
+        // Panel boyutu değiştiyse hedefler çizimden hemen önce boyutlanır: gösterilen kare hiç boş (gri) kalmaz
+        if (m_PendingViewportSize.x > 0.0f && m_PendingViewportSize.y > 0.0f && m_PendingViewportSize != m_ViewportSize)
+            ApplyViewportSize(m_PendingViewportSize);
+
+        // Gizmo kullanılıyorsa, viewport odakta değilse veya ImGui text girişi aktifse kamera güncellenmez (yazı yazarken kamera
+        // kaçmasın). Oyun çalışırken de WASD/QE ile gezilir: klavye oyuna yalnız Game görünümü odaktayken gider.
         const bool wantText = ImGui::GetIO().WantTextInput;
         // Tekerlek: yalnız fare görünümün üstündeyken (odak başka paneldeyken de; Inspector'da kaydırınca kamera oynamaz)
         m_EditorCamera.SetScrollEnabled(m_ViewportHovered);
         if (m_ViewportFocused && !ImGuizmo::IsUsing() && !ImGuizmo::IsUsingViewManipulate() && !wantText)
-            m_EditorCamera.OnUpdate(ts, !playing);
+            m_EditorCamera.OnUpdate(ts, true);
         else if (m_ViewportHovered && !wantText)
             m_EditorCamera.UpdateScrollOnly();
 
@@ -176,10 +186,11 @@ namespace Conqueror::Editor
                 const EditorViewOptions& b = m_ViewOptions;
                 const bool changed = a.Grid != b.Grid || a.Gizmos != b.Gizmos || a.Skybox != b.Skybox || a.Fog != b.Fog || a.Shadows != b.Shadows
                                      || a.PostEffects != b.PostEffects || a.Sprites2D != b.Sprites2D || a.UI != b.UI || a.Colliders != b.Colliders
-                                     || a.AllColliders != b.AllColliders;
+                                     || a.AllColliders != b.AllColliders || m_AppliedShading != m_Shading;
                 if (changed && m_ViewOptionsApplied)
                     m_PostStack.ResetTemporalHistory();
                 m_AppliedViewOptions = m_ViewOptions;
+                m_AppliedShading = m_Shading;
                 m_ViewOptionsApplied = true;
             }
             m_Context->SetEditorViewOptions(m_ViewOptions);
@@ -291,33 +302,32 @@ namespace Conqueror::Editor
         m_ViewportBounds[1] = { imagePos.x + newViewportSize.x, imagePos.y + newViewportSize.y };
         EditorState::Get().SetViewportBounds(m_ViewportBounds[0], m_ViewportBounds[1]);
 
-        if (newViewportSize.x > 0.0f && newViewportSize.y > 0.0f)
+        const bool validSize = newViewportSize.x > 0.0f && newViewportSize.y > 0.0f;
+        if (validSize)
         {
-            const uint32_t newWidth = (uint32_t)newViewportSize.x;
-            const uint32_t newHeight = (uint32_t)newViewportSize.y;
-            if (m_Framebuffer->GetSpecification().Width != newWidth || m_Framebuffer->GetSpecification().Height != newHeight ||
-                m_ViewportSize != newViewportSize)
+            if (m_ViewportSize.x <= 0.0f || m_ViewportSize.y <= 0.0f)
             {
-                m_ViewportSize = newViewportSize;
-                m_Framebuffer->Resize(newWidth, newHeight);
-                m_EditorCamera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
-                if (m_Context)
-                    m_Context->OnViewportResize(newWidth, newHeight);
-
-                // Resize sonrası hemen temizle (glitch önleme)
+                // İlk kare: gösterilecek önceki görüntü yok
+                ApplyViewportSize(newViewportSize);
                 m_Framebuffer->Bind();
                 RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1.0f });
                 RenderCommand::Clear();
                 m_Framebuffer->ClearAttachment(1, -1);
                 m_Framebuffer->Unbind();
             }
+            else
+                m_PendingViewportSize = newViewportSize;   // OnUpdate çizimden önce uygular; bu karede önceki görüntü panele sığdırılır
         }
 
         if (m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f)
         {
             uint64_t textureID = m_Framebuffer->GetColorAttachmentRendererID(0);
-            ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+            const glm::vec2 shownSize = validSize ? newViewportSize : m_ViewportSize;
+            ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ shownSize.x, shownSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
             m_ImageHovered = ImGui::IsItemHovered();
+            // Sağ tık da görünüme odaklanır (Unity Scene): basılı tutup WASD ile uçmak için önce sol tıklamak gerekmez
+            if (m_ImageHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+                ImGui::SetWindowFocus();
             if (m_Shading == ViewportShading::PathTracing && !m_EditorCamera.Is2D())
             {
                 // Birikim durumu (Unreal: örnek sayısı / üst sınır)

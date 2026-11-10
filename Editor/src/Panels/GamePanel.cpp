@@ -46,6 +46,12 @@ namespace Conqueror::Editor
     {
         if (!m_TabVisible && !m_Playing)
             return;
+        // Panel boyutu değiştiyse hedef çizimden hemen önce boyutlanır: gösterilen kare hiç boş (gri) kalmaz
+        if (m_Framebuffer && m_PendingViewportSize.x > 0 && m_PendingViewportSize.y > 0 && m_PendingViewportSize != m_ViewportSize)
+        {
+            m_Framebuffer->Resize((uint32_t)m_PendingViewportSize.x, (uint32_t)m_PendingViewportSize.y);
+            m_ViewportSize = m_PendingViewportSize;
+        }
         if (m_Framebuffer && m_ViewportSize.x > 0 && m_ViewportSize.y > 0)
         {
             uint32_t width = static_cast<uint32_t>(m_ViewportSize.x);
@@ -378,17 +384,19 @@ namespace Conqueror::Editor
         ImVec2 imagePos(std::floor(areaPos.x + (area.x - displaySize.x) * 0.5f), std::floor(areaPos.y + (area.y - displaySize.y) * 0.5f));
 
         glm::vec2 newViewportSize = { (float)renderSize.x, (float)renderSize.y };
-        if (m_Framebuffer->GetSpecification().Width != (uint32_t)renderSize.x ||
-            m_Framebuffer->GetSpecification().Height != (uint32_t)renderSize.y)
+        if (m_ViewportSize.x <= 0.0f || m_ViewportSize.y <= 0.0f)
         {
+            // İlk kare: gösterilecek önceki görüntü yok
             m_Framebuffer->Resize((uint32_t)renderSize.x, (uint32_t)renderSize.y);
             m_Framebuffer->Bind();
             RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1.0f });
             RenderCommand::Clear();
             m_Framebuffer->ClearAttachment(1, -1);
             m_Framebuffer->Unbind();
+            m_ViewportSize = newViewportSize;
         }
-        m_ViewportSize = newViewportSize;
+        else
+            m_PendingViewportSize = newViewportSize;   // OnUpdate çizimden önce uygular; bu karede önceki görüntü alana sığdırılır
 
         // Görüntü (alan dışına taşarsa kırp)
         ImGui::PushClipRect(areaPos, ImVec2(areaPos.x + area.x, areaPos.y + area.y), true);

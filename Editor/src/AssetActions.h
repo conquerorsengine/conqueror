@@ -24,6 +24,9 @@ namespace Conqueror::Editor::AssetActions
     bool ApplyToEntity(Entity entity, const std::string& path);
     // Betik yalnız Data Asset sınıfı tanımlıyorsa nesneye eklenmez: Unity'nin "Can't add script" penceresi gösterilir, true döner
     bool RefuseDataScript(const std::string& scriptPath);
+    // Menüden oluşturulan 3B ilkele şekline uygun çarpıştırıcı ekler (Unity gibi): küp Box, küre Sphere, düzlem Mesh; silindir Convex Mesh
+    // (bizim silindirde yükseklik = çap: Capsule tam küre olurdu, üstündeki nesneler yuvarlanırdı)
+    void AddPrimitiveCollider(Entity entity);
     // Alt ağacı klasöre prefab olarak kaydet (benzersiz ad); kaynak varlık örneğe dönüşür. Yazılan yol döner (hata: boş)
     std::filesystem::path CreatePrefab(Entity root, const std::filesystem::path& directory);
 }

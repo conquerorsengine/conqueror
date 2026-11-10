@@ -875,7 +875,7 @@ namespace Conqueror::Editor
         }
         ImGui::TextUnformatted("Project name");
         // Unity Hub gibi: kullanıcı adı elle yazmadıysa kutuda bu konumdaki ilk boş ad görünür ("My Game", doluysa "My Game (1)" ...)
-        if (!m_NewNameEdited && --m_NewNameRefresh <= 0)
+        if (!m_NewNameEdited && !m_ShouldClose && --m_NewNameRefresh <= 0)
         {
             m_NewName = Launcher::UniqueProjectName(m_NewLocation, kDefaultProjectName);
             m_NewNameRefresh = 30;
@@ -926,7 +926,9 @@ namespace Conqueror::Editor
         std::string why;
         const bool valid = Launcher::IsValidProjectName(m_NewName, &why);
         // Yazılan ad doluysa proje sıradaki ilk boş numarayla oluşur; alttaki yol gerçek hedefi gösterir
-        const std::string finalName = valid ? Launcher::UniqueProjectName(m_NewLocation, m_NewName) : m_NewName;
+        // (Proje oluşturulup pencere kapanırken klasör artık var: ad sıradaki numaraya atlamasın, oluşturulan adda kalır)
+        const std::string finalName = m_ShouldClose && !m_CreatedName.empty() ? m_CreatedName
+                                    : valid ? Launcher::UniqueProjectName(m_NewLocation, m_NewName) : m_NewName;
         const fs::path target = fs::path(m_NewLocation) / finalName;
         if (!valid)
             ImGui::TextColored(ImVec4(1.0f, 0.55f, 0.45f, 1.0f), "%s", why.c_str());
@@ -940,6 +942,7 @@ namespace Conqueror::Editor
         ImGui::BeginDisabled(!valid || !t);
         if (AccentButton(ICON_FA_ROCKET "  Create Project", ImVec2(-1, 40.0f)))
         {
+            m_CreatedName = finalName;
             CreateFromTemplate(m_TemplateId, finalName, m_NewLocation, true);
             m_NewNameEdited = false;
             m_NewNameRefresh = 0;

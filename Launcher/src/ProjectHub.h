@@ -98,6 +98,7 @@ namespace Conqueror::Editor
         std::string m_TemplateId = "basic3d";
         std::string m_Industry = "Games";   // Yeni Proje: seçili sektör (Unreal gibi)
         std::string m_NewName = "My Game";
+        std::string m_CreatedName;      // son "Create Project" ile oluşturulan ad (pencere kapanırken gösterilir)
         bool m_NewNameEdited = false;   // kullanıcı adı elle yazdı: otomatik numaralama kutudaki adı değiştirmez
         int m_NewNameRefresh = 0;       // konumdaki boş ad birkaç karede bir yeniden bakılır (dosya sistemi her karede taranmasın)
         std::string m_NewLocation;

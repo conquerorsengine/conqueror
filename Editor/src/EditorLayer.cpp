@@ -1760,6 +1760,7 @@ namespace Conqueror::Editor
                 Entity e = m_ActiveScene->CreateEntity(name);
                 auto& mr = e.AddComponent<MeshRendererComponent>();
                 mr.Type = type;
+                AssetActions::AddPrimitiveCollider(e);
                 return e;
             };
         };
@@ -6746,6 +6747,55 @@ namespace Conqueror::Editor
             return false;
         });
         Automation::RegisterCommand("stop", [this](const Args&, std::string&) { OnStopButtonPressed(); return true; });
+        // expect_state edit|play|pause: oynatma durumu
+        Automation::RegisterCommand("expect_state", [](const Args& a, std::string& err) {
+            if (a.size() < 2) { err = "expect_state edit|play|pause"; return false; }
+            auto& st = EditorState::Get();
+            const char* now = st.IsEditing() ? "edit" : st.IsPaused() ? "pause" : "play";
+            Automation::Report(std::string("STATE ") + now);
+            if (a[1] != now) { err = std::string("state is ") + now; return false; }
+            return true;
+        });
+        // window_float <ad> <x> <y> <g> <y>: paneli yuvadan çıkarır; window_size <ad> <g> <y>: yüzen pencereyi boyutlandırır
+        Automation::RegisterCommand("window_float", [](const Args& a, std::string& err) {
+            if (a.size() < 6) { err = "window_float <name> <x> <y> <w> <h>"; return false; }
+            ImGuiWindow* w = nullptr;
+            for (ImGuiWindow* c : GImGui->Windows)
+                if (!std::strchr(c->Name, '/') && std::strncmp(c->Name, a[1].c_str(), a[1].size()) == 0) { w = c; break; }
+            if (!w) { err = "no window " + a[1]; return false; }
+            ImGui::DockContextQueueUndockWindow(GImGui, w);
+            ImGui::SetWindowPos(w, ImVec2(std::stof(a[2]), std::stof(a[3])));
+            ImGui::SetWindowSize(w, ImVec2(std::stof(a[4]), std::stof(a[5])));
+            Automation::WaitFrames(3);
+            return true;
+        });
+        Automation::RegisterCommand("window_size", [](const Args& a, std::string& err) {
+            if (a.size() < 4) { err = "window_size <name> <w> <h>"; return false; }
+            for (ImGuiWindow* c : GImGui->Windows)
+                if (!std::strchr(c->Name, '/') && std::strncmp(c->Name, a[1].c_str(), a[1].size()) == 0)
+                {
+                    ImGui::SetWindowSize(c, ImVec2(std::stof(a[2]), std::stof(a[3])));
+                    return true;
+                }
+            err = "no window " + a[1];
+            return false;
+        });
+        // viewport_camera mark | expect_moved <en az mesafe>: sahne görünümü kamerası hareket etti mi
+        Automation::RegisterCommand("viewport_camera", [this](const Args& a, std::string& err) {
+            static glm::vec3 s_Mark(0.0f);
+            if (a.size() < 2 || !m_ViewportPanel) { err = "viewport_camera mark|expect_moved <distance>"; return false; }
+            const glm::vec3 p = m_ViewportPanel->GetEditorCamera().GetPosition();
+            if (a[1] == "mark") { s_Mark = p; return true; }
+            if (a[1] == "expect_moved" && a.size() > 2)
+            {
+                const float d = glm::distance(p, s_Mark);
+                Automation::Report("VIEWPORT CAMERA moved " + std::to_string(d));
+                if (d < std::stof(a[2])) { err = "moved only " + std::to_string(d); return false; }
+                return true;
+            }
+            err = "unknown viewport_camera command";
+            return false;
+        });
         Automation::RegisterCommand("focus", [this](const Args& a, std::string& err) {
             if (a.size() < 2) { err = "focus <window name>"; return false; }
             m_PendingFocusWindow = a[1];
@@ -7079,6 +7129,35 @@ namespace Conqueror::Editor
                 if (std::strstr(w->Name, id))
                     panelOwnsKeys = true;
         const bool assetFocus = (m_ContentBrowserPanel && m_ContentBrowserPanel->IsFocused()) || panelOwnsKeys;
+
+        // Unity oynatma kısayolları: Ctrl+P Play / Stop, Ctrl+Shift+P Pause / Resume, Ctrl+Alt+P Step (oyun görünümü odaktayken de)
+        if (ctrl && !textActive && ImGui::IsKeyPressed(ImGuiKey_P, false))
+        {
+            auto& state = EditorState::Get();
+            const bool editing = state.IsEditing(), paused = state.IsPaused(), playing = state.IsPlaying();
+            if (io.KeyAlt)
+            {
+                if (!editing)
+                {
+                    if (playing) OnPauseButtonPressed();
+                    m_StepFrame = true;
+                }
+            }
+            else if (shift)
+            {
+                if (!editing)
+                {
+                    if (paused) OnPlayButtonPressed();
+                    else OnPauseButtonPressed();
+                }
+            }
+            else if (editing) OnPlayButtonPressed();
+            else OnStopButtonPressed();
+            return;
+        }
+        // Oynarken oyun görünümü odaktaysa tuşlar oyunundur: Ctrl+A / Ctrl+D (çömelip yürümek) sahnedeki nesneleri seçmez, çoğaltmaz
+        if (!EditorState::Get().IsEditing() && m_GamePanel && (m_GamePanel->IsViewportFocused() || m_GameMouseCaptured))
+            return;
 
         if (ctrl && !textActive && ImGui::IsKeyPressed(ImGuiKey_Z))
         {
