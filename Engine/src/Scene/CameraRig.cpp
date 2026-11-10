@@ -147,7 +147,7 @@ namespace Conqueror
             return damping <= 1e-4f ? 1.0f : 1.0f - std::exp(-dt / damping);
         }
 
-        glm::vec3 ImpulseDisplacement(const Scene& scene, const glm::vec3& at, float gain)
+        glm::vec3 ImpulseDisplacement(const Scene& scene, const glm::vec3& at, float gain, bool use2DDistance = false, float frequencyGain = 1.0f)
         {
             glm::vec3 total(0.0f);
             auto it = Impulses().find(&scene);
@@ -155,12 +155,12 @@ namespace Conqueror
                 return total;
             for (const auto& im : it->second)
             {
-                float d = glm::distance(at, im.Position);
+                float d = use2DDistance ? glm::distance(glm::vec2(at), glm::vec2(im.Position)) : glm::distance(at, im.Position);
                 if (d >= im.Radius) continue;
                 float falloff = 1.0f - d / std::max(im.Radius, 1e-3f);
                 float env = 1.0f - std::clamp(im.Elapsed / std::max(im.Duration, 1e-3f), 0.0f, 1.0f);
                 env *= env;
-                float w = 6.2831853f * im.Frequency * im.Elapsed + im.Phase;
+                float w = 6.2831853f * im.Frequency * std::max(frequencyGain, 0.0f) * im.Elapsed + im.Phase;
                 total += glm::vec3(std::sin(w), std::sin(w * 1.31f + 1.7f), std::sin(w * 0.87f + 4.1f)) * im.Amplitude * env * falloff * gain;
             }
             return total;
@@ -516,7 +516,16 @@ namespace Conqueror
 
                 // Gürültü ve sarsıntı canlı kameranın üstüne eklenir (harmanlanmış pozda)
                 vc.NoiseTime += dt * std::max(vc.NoiseFrequency, 0.0f);
-                glm::vec3 shake = ImpulseDisplacement(scene, vc.FinalPosition, vc.ImpulseGain);
+                // Impulse Listener varsa onun ayarları (Unity), yoksa sanal kameranın Impulse Gain'i
+                glm::vec3 shake;
+                if (const auto* li = reg.try_get<CinemachineImpulseListenerComponent>((entt::entity)live))
+                {
+                    shake = ImpulseDisplacement(scene, vc.FinalPosition, li->Gain, li->Use2DDistance, li->FrequencyGain);
+                    if (li->UseCameraSpace)
+                        shake = vc.FinalRotation * shake;
+                }
+                else
+                    shake = ImpulseDisplacement(scene, vc.FinalPosition, vc.ImpulseGain);
                 glm::vec3 noiseEuler(0.0f);
                 if (vc.NoiseAmplitude > 0.0f)
                     noiseEuler = glm::radians(glm::vec3(Noise1(vc.NoiseTime * 2.1f), Noise1(vc.NoiseTime * 1.7f + 37.0f), Noise1(vc.NoiseTime * 1.3f + 71.0f) * 0.5f) * vc.NoiseAmplitude);
@@ -560,6 +569,7 @@ namespace Conqueror
     template<> void Scene::OnComponentAdded<CinemachineGroupFramingComponent>(Entity, CinemachineGroupFramingComponent&) {}
     template<> void Scene::OnComponentAdded<CinemachineFollowZoomComponent>(Entity, CinemachineFollowZoomComponent&) {}
     template<> void Scene::OnComponentAdded<CinemachineTargetGroupComponent>(Entity, CinemachineTargetGroupComponent&) {}
+    template<> void Scene::OnComponentAdded<CinemachineImpulseListenerComponent>(Entity, CinemachineImpulseListenerComponent&) {}
 
     void RegisterCameraRigComponents()
     {
@@ -608,7 +618,7 @@ namespace Conqueror
                 .Tooltip("Hand-held camera wobble.")
             .Field("NoiseFrequency", "Noise Frequency", &VirtualCameraComponent::NoiseFrequency).Range(0.0f, 50.0f, 0.05f)
             .Field("ImpulseGain", "Impulse Gain", &VirtualCameraComponent::ImpulseGain).Range(0.0f, 10.0f, 0.05f)
-                .Tooltip("How strongly Impulse Sources shake this camera (0 = ignore).")
+                .Tooltip("How strongly Impulse Sources shake this camera (0 = ignore). A Cinemachine Impulse Listener component replaces it.")
             .Field("Live", "Live", &VirtualCameraComponent::Live).ReadOnly().Header("Runtime");
 
         ComponentDef<CameraBrainComponent>("Camera Brain", "CameraBrainComponent", "Cameras", ICON_FA_BRAIN).Color(kCamColor)
@@ -627,6 +637,13 @@ namespace Conqueror
             .Field("Radius", "Radius", &ImpulseSourceComponent::Radius).Range(0.0f, 100000.0f, 0.1f)
             .Field("GenerateOnStart", "Generate On Start", &ImpulseSourceComponent::GenerateOnStart)
             .Field("GenerateOnCollision", "Generate On Collision", &ImpulseSourceComponent::GenerateOnCollision);
+        using IL = CinemachineImpulseListenerComponent;
+        ComponentDef<IL>("Cinemachine Impulse Listener", "CinemachineImpulseListenerComponent", "Cameras", ICON_FA_EAR_LISTEN).Color(kCamColor)
+            .Describe("Put it on a Virtual Camera: sets how the camera reacts to Impulse Sources. It replaces the camera's Impulse Gain.")
+            .Field("Gain", "Gain", &IL::Gain).Range(0.0f, 10.0f, 0.05f).Tooltip("0 = the camera ignores impulses.")
+            .Field("Use2DDistance", "Use 2D Distance", &IL::Use2DDistance).Tooltip("Distance to the source ignores Z (2D games).")
+            .Field("UseCameraSpace", "Use Camera Space", &IL::UseCameraSpace).Tooltip("Shake along the camera's own right / up / forward axes.")
+            .Field("FrequencyGain", "Frequency Gain", &IL::FrequencyGain).Range(0.0f, 10.0f, 0.05f);
 
         using C3 = CinemachineConfiner3DComponent;
         ComponentDef<C3>("Cinemachine Confiner 3D", "CinemachineConfiner3DComponent", "Cameras", ICON_FA_CUBE).Color(kCamColor)

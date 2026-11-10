@@ -127,6 +127,16 @@ namespace Conqueror
         float BoundingRadius = 0.0f;
     };
 
+    // Impulse Listener (Unity Cinemachine): bu sanal kameranın Impulse Source sarsıntılarına tepkisi. Varsa Virtual Camera'nın Impulse Gain
+    // alanının yerine geçer
+    struct CinemachineImpulseListenerComponent
+    {
+        float Gain = 1.0f;                // 0 = sarsılmaz
+        bool Use2DDistance = false;       // kaynağa uzaklık Z yok sayılarak (2B oyunlar)
+        bool UseCameraSpace = true;       // sarsıntı kameranın kendi eksenlerinde (sağ / yukarı / ileri)
+        float FrequencyGain = 1.0f;       // titreşim hızı çarpanı
+    };
+
     struct CameraBrainComponent
     {
         float DefaultBlend = 1.5f;        // s
