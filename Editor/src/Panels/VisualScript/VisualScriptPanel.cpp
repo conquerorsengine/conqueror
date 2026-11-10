@@ -815,6 +815,55 @@ namespace Conqueror::Editor
             std::strncpy(buf, v.c_str(), sizeof(buf) - 1);
             if (ImGui::InputTextMultiline("##text", buf, sizeof(buf), ImVec2(Z(220.0f), Z(70.0f)))) { v = buf; changed = true; }
         }
+        else if (const NodeDef* base = NodeLibrary::Find(node.Type))
+        {
+            // Diğer düğümler: tanımdaki özellikler (açık / kapalı, seçim listesi, fonksiyon seçimi ya da metin)
+            for (auto& [key, defValue] : base->Properties)
+            {
+                ImGui::PushID(key.c_str());
+                ImGui::TextDisabled("%s", key.c_str());
+                ImGui::SameLine();
+                std::string& v = node.Properties[key];
+                std::vector<const char*> options;
+                if (key == "Phase")
+                    options = node.Type == "event.inputaction" ? std::vector<const char*>{ "Started", "Performed", "Canceled" }
+                                                               : std::vector<const char*>{ "Enter", "Stay", "Exit" };
+                else if (key == "Physics")
+                    options = { "3D", "2D" };
+                if (defValue == "true" || defValue == "false")
+                {
+                    bool b = v == "true";
+                    if (ImGui::Checkbox("##b", &b)) { v = b ? "true" : "false"; changed = true; }
+                }
+                else if (!options.empty())
+                {
+                    ImGui::SetNextItemWidth(Z(100.0f));
+                    if (ImGui::BeginCombo("##c", v.c_str()))
+                    {
+                        for (const char* o : options)
+                            if (ImGui::Selectable(o, v == o)) { v = o; changed = true; }
+                        ImGui::EndCombo();
+                    }
+                }
+                else if (key == "Function")
+                {
+                    ImGui::SetNextItemWidth(Z(130.0f));
+                    if (ImGui::BeginCombo("##f", v.empty() ? "(select)" : v.c_str()))
+                    {
+                        for (auto& other : m_Graph.Nodes)
+                        {
+                            if (other.Type != "event.function") continue;
+                            const std::string name = other.Properties["Name"];
+                            if (ImGui::Selectable(name.c_str(), v == name)) { v = name; changed = true; }
+                        }
+                        ImGui::EndCombo();
+                    }
+                }
+                else
+                    propText(key.c_str(), 130.0f, key.c_str());
+                ImGui::PopID();
+            }
+        }
         return changed;
     }
 
@@ -1222,8 +1271,9 @@ namespace Conqueror::Editor
             if (filter.empty() && a.Category != b.Category)
             {
                 // Sık kullanılanlar önce
-                static const char* order[] = { "Events", "Flow", "Variables", "Debug", "Math", "Logic", "Vector", "Text", "Literals", "Collections" };
-                auto rank = [&](const std::string& c) { for (int i = 0; i < 10; ++i) if (c == order[i]) return i; return 10; };
+                static const char* order[] = { "Events", "Flow", "Functions", "Variables", "Debug", "Math", "Logic", "Vector", "Text", "Literals", "Collections" };
+                constexpr int kOrderCount = (int)(sizeof(order) / sizeof(order[0]));
+                auto rank = [&](const std::string& c) { for (int i = 0; i < kOrderCount; ++i) if (c == order[i]) return i; return kOrderCount; };
                 int ra = rank(a.Category), rb = rank(b.Category);
                 if (ra != rb) return ra < rb;
                 return a.Category < b.Category;

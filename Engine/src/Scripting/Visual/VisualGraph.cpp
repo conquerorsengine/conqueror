@@ -138,6 +138,38 @@ namespace Conqueror::Visual
                 d.Properties = { { "Interval", "1.0" } };
                 add(d);
             }
+            {
+                NodeDef d = Make("event.collision", "On Collision", "Events", E, {}, { ExecOut(), Out("Other", X), Out("Other Name", S), Out("Normal", V), Out("Impulse", N) }, "",
+                                 "A physics contact with another collider (Unreal Event Hit). Phase: Enter, Stay or Exit; Physics: 3D or 2D.");
+                d.Properties = { { "Phase", "Enter" }, { "Physics", "3D" } };
+                add(d);
+            }
+            {
+                NodeDef d = Make("event.trigger", "On Trigger", "Events", E, {}, { ExecOut(), Out("Other", X), Out("Other Name", S) }, "",
+                                 "Another collider entered, stayed in or left this trigger (Unreal Begin / End Overlap).");
+                d.Properties = { { "Phase", "Enter" }, { "Physics", "3D" } };
+                add(d);
+            }
+            {
+                NodeDef d = Make("event.inputaction", "On Input Action", "Events", E, {}, { ExecOut(), Out("Value", X) }, "",
+                                 "Input action from Project Settings > Input (Unreal Enhanced Input event): Started, Performed (Triggered) or Canceled (Completed).");
+                d.Properties = { { "Action", "Jump" }, { "Phase", "Performed" } };
+                add(d);
+            }
+
+            // ── Fonksiyonlar ──
+            {
+                NodeDef d = Make("event.function", "Function", "Functions", E, {}, { ExecOut() }, "",
+                                 "Entry of a function with inputs (comma separated) and an optional Return Value; call it with Call Function, or from other scripts with InvokeMethod.");
+                d.Properties = { { "Name", "MyFunction" }, { "Inputs", "A, B" } };
+                add(d);
+            }
+            add(Make("flow.returnvalue", "Return Value", "Functions", F, { ExecIn(), In("Value", X) }, {}, "", "Ends the function and returns the value to the caller."));
+            {
+                NodeDef d = Make("action.callfunction", "Call Function", "Functions", A, { ExecIn() }, { ExecOut(), Out("Result", X) }, "", "Calls a function of this graph and gives its return value.");
+                d.Properties = { { "Function", "MyFunction" } };
+                add(d);
+            }
 
             // ── Akış ──
             add(Make("flow.branch", "Branch", "Flow", F, { ExecIn(), In("Condition", B, "true") }, { ExecOut("True"), ExecOut("False") }, "", "If / else."));
@@ -149,6 +181,43 @@ namespace Conqueror::Visual
             add(Make("flow.flipflop", "Flip Flop", "Flow", F, { ExecIn() }, { ExecOut("A"), ExecOut("B"), Out("Is A", B) }, "", "Alternates between A and B."));
             add(Make("flow.return", "Return", "Flow", F, { ExecIn() }, {}, "", "Stops the current event."));
             add(Make("flow.select", "Select", "Flow", P, { In("Condition", B, "true"), In("A", X), In("B", X) }, { Out("Result", X, "({0} ? {1} : {2})") }, "", "Picks A if the condition is true, otherwise B."));
+            add(Make("flow.delay", "Delay", "Flow", F, { ExecIn(), In("Duration", N, "1") }, { ExecOut("Completed") }, "",
+                     "Latent: continues after Duration seconds; calls while it is counting down are ignored."));
+            add(Make("flow.retriggerabledelay", "Retriggerable Delay", "Flow", F, { ExecIn(), In("Duration", N, "1") }, { ExecOut("Completed") }, "",
+                     "Latent: every call restarts the countdown; continues Duration seconds after the last call."));
+            {
+                NodeDef d = Make("flow.gate", "Gate", "Flow", F, { { "Enter", PinType::Exec, "" }, { "Open", PinType::Exec, "" }, { "Close", PinType::Exec, "" }, { "Toggle", PinType::Exec, "" } },
+                                 { ExecOut("Exit") }, "", "Enter passes to Exit only while the gate is open.");
+                d.Properties = { { "Start Closed", "false" } };
+                add(d);
+            }
+            {
+                NodeDef d = Make("flow.multigate", "MultiGate", "Flow", F, { ExecIn(), { "Reset", PinType::Exec, "" } },
+                                 { ExecOut("Out 0"), ExecOut("Out 1"), ExecOut("Out 2"), ExecOut("Out 3") }, "",
+                                 "Each call fires the next connected output (or a random unused one); with Loop it starts over after the last.");
+                d.Properties = { { "Random", "false" }, { "Loop", "false" } };
+                add(d);
+            }
+            add(Make("flow.don", "Do N", "Flow", F, { { "Enter", PinType::Exec, "" }, In("N", N, "1"), { "Reset", PinType::Exec, "" } }, { ExecOut("Exit"), Out("Counter", N) }, "",
+                     "Passes through N times (until Reset)."));
+            {
+                NodeDef d = Make("flow.switchint", "Switch on Int", "Flow", F, { ExecIn(), In("Selection", N, "0") }, {}, "", "Runs the output whose case equals the value, otherwise Default.");
+                d.Properties = { { "Cases", "0, 1, 2" } };
+                add(d);
+            }
+            {
+                NodeDef d = Make("flow.switchstring", "Switch on String", "Flow", F, { ExecIn(), In("Selection", S, "") }, {}, "", "Runs the output whose case equals the text, otherwise Default.");
+                d.Properties = { { "Cases", "A, B, C" } };
+                add(d);
+            }
+            {
+                NodeDef d = Make("flow.timeline", "Timeline", "Flow", F,
+                                 { { "Play", PinType::Exec, "" }, { "Play from Start", PinType::Exec, "" }, { "Stop", PinType::Exec, "" }, { "Reverse", PinType::Exec, "" }, { "Reverse from End", PinType::Exec, "" } },
+                                 { ExecOut("Update"), ExecOut("Finished"), Out("Value", N), Out("Time", N) }, "",
+                                 "Plays a float track over time (Unreal Timeline): Update fires every frame while playing, Finished at the end. Keys: time:value pairs.");
+                d.Properties = { { "Length", "1" }, { "Keys", "0:0, 1:1" }, { "Loop", "false" } };
+                add(d);
+            }
 
             // ── Değişken / sabit ──
             {
@@ -420,6 +489,24 @@ namespace Conqueror::Visual
         Links.erase(std::remove_if(Links.begin(), Links.end(), [&](const Link& l) { return l.FromNode == id || l.ToNode == id; }), Links.end());
     }
 
+    namespace
+    {
+        // "A, B, C" -> {"A", "B", "C"} (boşluklar kırpılır, boş öğeler atlanır)
+        std::vector<std::string> SplitList(const std::string& s)
+        {
+            std::vector<std::string> out;
+            std::stringstream ss(s);
+            std::string part;
+            while (std::getline(ss, part, ','))
+            {
+                const size_t a = part.find_first_not_of(" \t"), b = part.find_last_not_of(" \t");
+                if (a != std::string::npos)
+                    out.push_back(part.substr(a, b - a + 1));
+            }
+            return out;
+        }
+    }
+
     NodeDef Graph::ResolveDef(const Node& node) const
     {
         const NodeDef* base = NodeLibrary::Find(node.Type);
@@ -456,6 +543,53 @@ namespace Conqueror::Visual
         {
             auto it = node.Properties.find("Interval");
             d.Title = "Every " + (it != node.Properties.end() ? it->second : std::string("1")) + " s";
+        }
+        else
+        {
+            auto prop = [&](const char* key, const std::string& def) {
+                auto it = node.Properties.find(key);
+                return it != node.Properties.end() ? it->second : def;
+            };
+            if (node.Type == "event.collision" || node.Type == "event.trigger")
+                d.Title = std::string(node.Type == "event.collision" ? "On Collision " : "On Trigger ") + prop("Phase", "Enter") + (prop("Physics", "3D") == "2D" ? " 2D" : "");
+            else if (node.Type == "event.inputaction")
+                d.Title = "Input Action: " + prop("Action", "?") + " (" + prop("Phase", "Performed") + ")";
+            else if (node.Type == "event.function")
+            {
+                d.Title = "Function: " + prop("Name", "?");
+                for (auto& p : SplitList(prop("Inputs", "")))
+                    d.Outputs.push_back({ p, PinType::Any, "" });
+            }
+            else if (node.Type == "action.callfunction")
+            {
+                const std::string fn = prop("Function", "");
+                d.Title = "Call " + (fn.empty() ? std::string("(function)") : fn);
+                std::string args;
+                int idx = 0;
+                for (auto& n : Nodes)
+                {
+                    if (n.Type != "event.function") continue;
+                    auto name = n.Properties.find("Name");
+                    if (name == n.Properties.end() || name->second != fn) continue;
+                    auto inputs = n.Properties.find("Inputs");
+                    for (auto& p : SplitList(inputs != n.Properties.end() ? inputs->second : ""))
+                    {
+                        d.Inputs.push_back({ p, PinType::Any, "" });
+                        args += (idx ? ", {" : "{") + std::to_string(idx) + "}";
+                        ++idx;
+                    }
+                    break;
+                }
+                d.Expression = SanitizeIdentifier(fn) + "(" + args + ")";
+            }
+            else if (node.Type == "flow.switchint" || node.Type == "flow.switchstring")
+            {
+                for (auto& c : SplitList(prop("Cases", "")))
+                    d.Outputs.push_back({ c, PinType::Exec, "" });
+                d.Outputs.push_back({ "Default", PinType::Exec, "" });
+            }
+            else if (node.Type == "flow.timeline")
+                d.Title = "Timeline (" + prop("Length", "1") + " s" + (prop("Loop", "false") == "true" ? ", loop)" : ")");
         }
         return d;
     }
@@ -818,7 +952,7 @@ namespace Conqueror::Visual
             std::vector<std::pair<std::string, int>> m_Out;
             std::set<std::string> m_HiddenFields;
             std::set<std::string> m_HiddenNumberFields;
-            std::set<int> m_ExecStack;
+            std::set<std::pair<int, std::string>> m_ExecStack;   // (düğüm, giriş pini): Gate Exit -> Close gibi bağlantılar döngü değildir
             std::set<int> m_DataStack;
 
             void Line(const std::string& text, int node) { m_Out.emplace_back(text, node); }
@@ -873,6 +1007,9 @@ namespace Conqueror::Visual
                         if (n.Type == "flow.foreach" && pin == "Index") { m_HiddenNumberFields.insert(Field("i", n.Id)); return Field("i", n.Id); }
                         if (n.Type == "flow.foreach" && pin == "Element") { m_HiddenFields.insert(Field("el", n.Id)); return Field("el", n.Id); }
                         if (n.Type == "flow.flipflop" && pin == "Is A") { m_HiddenFields.insert(Field("ff", n.Id)); return "(" + Field("ff", n.Id) + " != true)"; }
+                        if (n.Type == "flow.don" && pin == "Counter") { m_HiddenNumberFields.insert(Field("dn", n.Id)); return Field("dn", n.Id); }
+                        if (n.Type == "flow.timeline" && pin == "Value") { m_HiddenNumberFields.insert(Field("tlv", n.Id)); return Field("tlv", n.Id); }
+                        if (n.Type == "flow.timeline" && pin == "Time") { m_HiddenNumberFields.insert(Field("tlt", n.Id)); return Field("tlt", n.Id); }
                         if (def.Kind == NodeKind::Flow)
                         {
                             // Pure akış düğümü (Select)
@@ -947,29 +1084,325 @@ namespace Conqueror::Visual
             {
                 for (const Link* l : m_Graph.FindOutputLinks(n.Id, pin))
                     if (const Node* target = m_Graph.FindNode(l->ToNode))
+                        Exec(*target, indent, l->ToPin);
+            }
+
+            static std::string Num(double v)
+            {
+                char b[64];
+                std::snprintf(b, sizeof(b), "%.9g", v);
+                return FloatLiteral(b);
+            }
+
+            double TimelineLength(const Node& n) const { return std::max(std::atof(Prop(n, "Length", "1").c_str()), 0.001); }
+
+            // Timeline anahtarları (zaman:değer) arasında doğrusal ara değer ifadesi
+            std::string TimelineValueExpr(const Node& n, const std::string& t)
+            {
+                std::vector<std::pair<double, double>> keys;
+                auto trim = [](const std::string& x) {
+                    const size_t a = x.find_first_not_of(" \t"), b = x.find_last_not_of(" \t");
+                    return a == std::string::npos ? std::string() : x.substr(a, b - a + 1);
+                };
+                for (auto& k : SplitList(Prop(n, "Keys", "")))
+                {
+                    const size_t c = k.find(':');
+                    double kt = 0, kv = 0;
+                    if (c == std::string::npos || !IsNumber(trim(k.substr(0, c)), &kt) || !IsNumber(trim(k.substr(c + 1)), &kv))
                     {
-                        if (l->ToPin == "Reset" && target->Type == "flow.doonce")
-                        {
-                            Line(Indent(indent) + Field("once", target->Id) + " = false;", target->Id);
-                            m_HiddenFields.insert(Field("once", target->Id));
-                            continue;
-                        }
-                        Exec(*target, indent);
+                        Warning(n.Id, "Timeline key '" + k + "' is not time:value.");
+                        continue;
                     }
+                    keys.push_back({ kt, kv });
+                }
+                if (keys.empty())
+                    return "0.0";
+                std::sort(keys.begin(), keys.end());
+                std::string expr = Num(keys.back().second);
+                for (size_t i = keys.size() - 1; i > 0; --i)
+                {
+                    const auto& [t0, v0] = keys[i - 1];
+                    const auto& [t1, v1] = keys[i];
+                    const std::string seg = t1 - t0 > 1e-9 ? "(" + Num(v0) + " + " + Num(v1 - v0) + " * ((" + t + " - " + Num(t0) + ") / " + Num(t1 - t0) + "))" : Num(v1);
+                    expr = "(" + t + " <= " + Num(t1) + " ? " + seg + " : " + expr + ")";
+                }
+                return "(" + t + " <= " + Num(keys.front().first) + " ? " + Num(keys.front().second) + " : " + expr + ")";
+            }
+
+            // Delay / Timeline: Update başında geri sayım ve devam akışı
+            void EmitLatentTick(const Node& n)
+            {
+                if (n.Type == "flow.timeline")
+                {
+                    const std::string p = Field("tlp", n.Id), dir = Field("tld", n.Id), t = Field("tlt", n.Id), v = Field("tlv", n.Id), fin = Field("tlf", n.Id);
+                    m_HiddenFields.insert(p);
+                    m_HiddenFields.insert(fin);
+                    m_HiddenNumberFields.insert(dir);
+                    m_HiddenNumberFields.insert(t);
+                    m_HiddenNumberFields.insert(v);
+                    const std::string L = Num(TimelineLength(n));
+                    const bool loop = Prop(n, "Loop", "false") == "true";
+                    Line("        if (" + p + " == true)", n.Id);
+                    Line("        {", n.Id);
+                    Line("            " + fin + " = false;", n.Id);
+                    Line("            " + t + " += dt * " + dir + ";", n.Id);
+                    Line("            if (" + dir + " > 0.0 && " + t + " >= " + L + ")", n.Id);
+                    Line("            {", n.Id);
+                    if (loop)
+                        Line("                " + t + " -= " + L + ";", n.Id);
+                    else
+                    {
+                        Line("                " + t + " = " + L + ";", n.Id);
+                        Line("                " + p + " = false;", n.Id);
+                        Line("                " + fin + " = true;", n.Id);
+                    }
+                    Line("            }", n.Id);
+                    Line("            if (" + dir + " < 0.0 && " + t + " <= 0.0)", n.Id);
+                    Line("            {", n.Id);
+                    if (loop)
+                        Line("                " + t + " += " + L + ";", n.Id);
+                    else
+                    {
+                        Line("                " + t + " = 0.0;", n.Id);
+                        Line("                " + p + " = false;", n.Id);
+                        Line("                " + fin + " = true;", n.Id);
+                    }
+                    Line("            }", n.Id);
+                    Line("            " + v + " = " + TimelineValueExpr(n, t) + ";", n.Id);
+                    FollowExec(n, "Update", 3);
+                    Line("            if (" + fin + " == true)", n.Id);
+                    Line("            {", n.Id);
+                    FollowExec(n, "Finished", 4);
+                    Line("            }", n.Id);
+                    Line("        }", n.Id);
+                    return;
+                }
+                const std::string on = Field("dly", n.Id), t = Field("dlt", n.Id);
+                m_HiddenFields.insert(on);
+                m_HiddenNumberFields.insert(t);
+                Line("        if (" + on + " == true)", n.Id);
+                Line("        {", n.Id);
+                Line("            " + t + " -= dt;", n.Id);
+                Line("            if (" + t + " <= 0.0)", n.Id);
+                Line("            {", n.Id);
+                Line("                " + on + " = false;", n.Id);
+                FollowExec(n, "Completed", 4);
+                Line("            }", n.Id);
+                Line("        }", n.Id);
             }
 
             static std::string Indent(int n) { return std::string((size_t)n * 4, ' '); }
 
-            void Exec(const Node& n, int indent)
+            void Exec(const Node& n, int indent, const std::string& inPin = "In")
             {
-                if (!m_ExecStack.insert(n.Id).second)
+                if (!m_ExecStack.insert({ n.Id, inPin }).second)
                 {
                     Error(n.Id, "Execution loop: the flow returns to this node. Use a While/For loop node instead.");
                     return;
                 }
                 NodeDef def = m_Graph.ResolveDef(n);
                 const std::string ind = Indent(indent);
-                if (n.Type == "flow.branch")
+                if (n.Type == "flow.doonce" && inPin == "Reset")
+                {
+                    Line(ind + Field("once", n.Id) + " = false;", n.Id);
+                    m_HiddenFields.insert(Field("once", n.Id));
+                }
+                else if (n.Type == "flow.delay" || n.Type == "flow.retriggerabledelay")
+                {
+                    const std::string on = Field("dly", n.Id), t = Field("dlt", n.Id);
+                    m_HiddenFields.insert(on);
+                    m_HiddenNumberFields.insert(t);
+                    if (n.Type == "flow.delay")
+                    {
+                        Line(ind + "if (" + on + " != true)", n.Id);
+                        Line(ind + "{", n.Id);
+                        Line(ind + "    " + on + " = true;", n.Id);
+                        Line(ind + "    " + t + " = " + InputExpr(n, def.Inputs[1]) + ";", n.Id);
+                        Line(ind + "}", n.Id);
+                    }
+                    else
+                    {
+                        Line(ind + on + " = true;", n.Id);
+                        Line(ind + t + " = " + InputExpr(n, def.Inputs[1]) + ";", n.Id);
+                    }
+                }
+                else if (n.Type == "flow.gate")
+                {
+                    const std::string f = Field("gate", n.Id);
+                    m_HiddenFields.insert(f);
+                    const std::string isOpen = Prop(n, "Start Closed", "false") == "true" ? "(" + f + " == true)" : "(" + f + " != false)";
+                    if (inPin == "Open") Line(ind + f + " = true;", n.Id);
+                    else if (inPin == "Close") Line(ind + f + " = false;", n.Id);
+                    else if (inPin == "Toggle") Line(ind + f + " = " + isOpen + " ? false : true;", n.Id);
+                    else
+                    {
+                        Line(ind + "if " + isOpen, n.Id);
+                        Line(ind + "{", n.Id);
+                        FollowExec(n, "Exit", indent + 1);
+                        Line(ind + "}", n.Id);
+                    }
+                }
+                else if (n.Type == "flow.multigate")
+                {
+                    int count = 0;   // bağlı en yüksek çıkışa kadar
+                    for (int k = 0; k < 4; ++k)
+                        if (!m_Graph.FindOutputLinks(n.Id, "Out " + std::to_string(k)).empty()) count = k + 1;
+                    const bool random = Prop(n, "Random", "false") == "true", loop = Prop(n, "Loop", "false") == "true";
+                    const std::string idx = Field("mg", n.Id), cnt = std::to_string(count) + ".0";
+                    m_HiddenNumberFields.insert(idx);
+                    std::vector<std::string> used;
+                    for (int k = 0; k < count; ++k)
+                    {
+                        used.push_back(Field("mgu", n.Id, std::to_string(k)));
+                        if (random) m_HiddenFields.insert(used.back());
+                    }
+                    if (inPin == "Reset")
+                    {
+                        Line(ind + idx + " = 0.0;", n.Id);
+                        if (random)
+                            for (auto& u : used) Line(ind + u + " = false;", n.Id);
+                    }
+                    else if (count > 0 && !random)
+                    {
+                        if (loop)
+                        {
+                            Line(ind + "if (" + idx + " >= " + cnt + ")", n.Id);
+                            Line(ind + "{", n.Id);
+                            Line(ind + "    " + idx + " = 0.0;", n.Id);
+                            Line(ind + "}", n.Id);
+                        }
+                        Line(ind + "if (" + idx + " < " + cnt + ")", n.Id);
+                        Line(ind + "{", n.Id);
+                        Line(ind + "    " + idx + " += 1.0;", n.Id);
+                        for (int k = 0; k < count; ++k)
+                        {
+                            Line(ind + (k ? "    else if (" : "    if (") + idx + " == " + std::to_string(k + 1) + ".0)", n.Id);
+                            Line(ind + "    {", n.Id);
+                            FollowExec(n, "Out " + std::to_string(k), indent + 2);
+                            Line(ind + "    }", n.Id);
+                        }
+                        Line(ind + "}", n.Id);
+                    }
+                    else if (count > 0)
+                    {
+                        // Rastgele: henüz çalışmamış çıkışlardan biri
+                        const std::string free = Field("mgk", n.Id), pick = Field("mgr", n.Id);
+                        m_HiddenNumberFields.insert(free);
+                        m_HiddenNumberFields.insert(pick);
+                        Line(ind + free + " = 0.0;", n.Id);
+                        for (auto& u : used)
+                        {
+                            Line(ind + "if (" + u + " != true)", n.Id);
+                            Line(ind + "{", n.Id);
+                            Line(ind + "    " + free + " += 1.0;", n.Id);
+                            Line(ind + "}", n.Id);
+                        }
+                        if (loop)
+                        {
+                            Line(ind + "if (" + free + " == 0.0)", n.Id);
+                            Line(ind + "{", n.Id);
+                            for (auto& u : used) Line(ind + "    " + u + " = false;", n.Id);
+                            Line(ind + "    " + free + " = " + cnt + ";", n.Id);
+                            Line(ind + "}", n.Id);
+                        }
+                        Line(ind + "if (" + free + " > 0.0)", n.Id);
+                        Line(ind + "{", n.Id);
+                        Line(ind + "    " + pick + " = float(random(int(0), int(" + free + ")));", n.Id);
+                        for (int k = 0; k < count; ++k)
+                        {
+                            Line(ind + "    if (" + used[(size_t)k] + " != true)", n.Id);
+                            Line(ind + "    {", n.Id);
+                            Line(ind + "        if (" + pick + " == 0.0)", n.Id);
+                            Line(ind + "        {", n.Id);
+                            Line(ind + "            " + used[(size_t)k] + " = true;", n.Id);
+                            Line(ind + "            " + pick + " = -1.0;", n.Id);
+                            FollowExec(n, "Out " + std::to_string(k), indent + 3);
+                            Line(ind + "        }", n.Id);
+                            Line(ind + "        else", n.Id);
+                            Line(ind + "        {", n.Id);
+                            Line(ind + "            " + pick + " -= 1.0;", n.Id);
+                            Line(ind + "        }", n.Id);
+                            Line(ind + "    }", n.Id);
+                        }
+                        Line(ind + "}", n.Id);
+                    }
+                }
+                else if (n.Type == "flow.don")
+                {
+                    const std::string c = Field("dn", n.Id);
+                    m_HiddenNumberFields.insert(c);
+                    if (inPin == "Reset")
+                        Line(ind + c + " = 0.0;", n.Id);
+                    else
+                    {
+                        Line(ind + "if (" + c + " < " + InputExpr(n, def.Inputs[1]) + ")", n.Id);
+                        Line(ind + "{", n.Id);
+                        Line(ind + "    " + c + " += 1.0;", n.Id);
+                        FollowExec(n, "Exit", indent + 1);
+                        Line(ind + "}", n.Id);
+                    }
+                }
+                else if (n.Type == "flow.switchint" || n.Type == "flow.switchstring")
+                {
+                    const bool isInt = n.Type == "flow.switchint";
+                    const std::string f = Field("sw", n.Id);
+                    m_HiddenFields.insert(f);
+                    Line(ind + f + " = " + (isInt ? "float(int(" + InputExpr(n, def.Inputs[1]) + "))" : "str(" + InputExpr(n, def.Inputs[1]) + ")") + ";", n.Id);
+                    bool first = true;
+                    for (auto& o : def.Outputs)
+                    {
+                        if (o.Type != PinType::Exec || o.Name == "Default") continue;
+                        if (isInt && !IsNumber(o.Name))
+                        {
+                            Warning(n.Id, "Case '" + o.Name + "' is not a number.");
+                            continue;
+                        }
+                        Line(ind + (first ? "if (" : "else if (") + f + " == " + (isInt ? FloatLiteral(o.Name) : QuoteString(o.Name)) + ")", n.Id);
+                        Line(ind + "{", n.Id);
+                        FollowExec(n, o.Name, indent + 1);
+                        Line(ind + "}", n.Id);
+                        first = false;
+                    }
+                    if (!m_Graph.FindOutputLinks(n.Id, "Default").empty())
+                    {
+                        if (first)
+                            FollowExec(n, "Default", indent);
+                        else
+                        {
+                            Line(ind + "else", n.Id);
+                            Line(ind + "{", n.Id);
+                            FollowExec(n, "Default", indent + 1);
+                            Line(ind + "}", n.Id);
+                        }
+                    }
+                }
+                else if (n.Type == "flow.timeline")
+                {
+                    const std::string p = Field("tlp", n.Id), dir = Field("tld", n.Id), t = Field("tlt", n.Id);
+                    m_HiddenFields.insert(p);
+                    m_HiddenNumberFields.insert(dir);
+                    m_HiddenNumberFields.insert(t);
+                    if (inPin == "Stop")
+                        Line(ind + p + " = false;", n.Id);
+                    else
+                    {
+                        const bool reverse = inPin == "Reverse" || inPin == "Reverse from End";
+                        if (inPin == "Play from Start") Line(ind + t + " = 0.0;", n.Id);
+                        if (inPin == "Reverse from End") Line(ind + t + " = " + Num(TimelineLength(n)) + ";", n.Id);
+                        Line(ind + p + " = true;", n.Id);
+                        Line(ind + dir + " = " + (reverse ? "-1.0" : "1.0") + ";", n.Id);
+                    }
+                }
+                else if (n.Type == "flow.returnvalue")
+                {
+                    Line(ind + "return " + InputExpr(n, def.Inputs[1]) + ";", n.Id);
+                }
+                else if (n.Type == "action.callfunction" && Prop(n, "Function").empty())
+                {
+                    Error(n.Id, "Call Function has no function selected.");
+                    FollowExec(n, "Then", indent);
+                }
+                else if (n.Type == "flow.branch")
                 {
                     Line(ind + "if (" + InputExpr(n, def.Inputs[1]) + ")", n.Id);
                     Line(ind + "{", n.Id);
@@ -1074,7 +1507,7 @@ namespace Conqueror::Visual
                 }
                 else
                     Warning(n.Id, "This node cannot be executed (it has no execution input).");
-                m_ExecStack.erase(n.Id);
+                m_ExecStack.erase({ n.Id, inPin });
             }
 
             void EmitEventPrologue(const Node& n, const std::vector<std::pair<std::string, std::string>>& params, int indent)
@@ -1091,11 +1524,25 @@ namespace Conqueror::Visual
             void GenerateEvents()
             {
                 // Olayları türlerine göre grupla (aynı türden birden çok düğüm tek fonksiyonda birleşir)
-                std::vector<const Node*> start, awake, update, late, destroy, perFrame, enterState, exitState;
-                std::map<std::string, std::vector<const Node*>> custom;
+                std::vector<const Node*> start, awake, update, late, destroy, perFrame, enterState, exitState, functions, latent;
+                std::map<std::string, std::vector<const Node*>> custom, physics;
                 for (auto& n : m_Graph.Nodes)
                 {
-                    if (n.Type == "event.start") start.push_back(&n);
+                    if (n.Type == "flow.delay" || n.Type == "flow.retriggerabledelay" || n.Type == "flow.timeline")
+                        latent.push_back(&n);
+                    if (n.Type == "event.collision" || n.Type == "event.trigger")
+                    {
+                        std::string phase = Prop(n, "Phase", "Enter");
+                        if (phase != "Enter" && phase != "Stay" && phase != "Exit")
+                        {
+                            Warning(n.Id, "Unknown phase '" + phase + "', using Enter.");
+                            phase = "Enter";
+                        }
+                        physics[std::string(n.Type == "event.collision" ? "OnCollision" : "OnTrigger") + phase + (Prop(n, "Physics", "3D") == "2D" ? "2D" : "")].push_back(&n);
+                    }
+                    else if (n.Type == "event.inputaction") perFrame.push_back(&n);
+                    else if (n.Type == "event.function") functions.push_back(&n);
+                    else if (n.Type == "event.start") start.push_back(&n);
                     else if (n.Type == "event.awake") awake.push_back(&n);
                     else if (n.Type == "event.update") update.push_back(&n);
                     else if (n.Type == "event.lateupdate") late.push_back(&n);
@@ -1121,11 +1568,14 @@ namespace Conqueror::Visual
                 };
                 simple("Awake", awake);
                 simple("Start", start);
-                if (!update.empty() || !perFrame.empty())
+                if (!update.empty() || !perFrame.empty() || !latent.empty())
                 {
                     Line("", 0);
-                    Line("    func Update(dt)", update.empty() ? perFrame.front()->Id : update.front()->Id);
+                    Line("    func Update(dt)", !update.empty() ? update.front()->Id : !perFrame.empty() ? perFrame.front()->Id : latent.front()->Id);
                     Line("    {", 0);
+                    // Gecikmeler / Timeline'lar önce: bu karede başlatılan bir geri sayım bir sonraki karede ilerler (Unreal gibi)
+                    for (const Node* n : latent)
+                        EmitLatentTick(*n);
                     for (const Node* n : update)
                     {
                         EmitEventPrologue(*n, { { "Delta Time", "dt" } }, 2);
@@ -1133,6 +1583,19 @@ namespace Conqueror::Visual
                     }
                     for (const Node* n : perFrame)
                     {
+                        if (n->Type == "event.inputaction")
+                        {
+                            const std::string action = QuoteString(Prop(*n, "Action", "Jump"));
+                            const std::string phase = Prop(*n, "Phase", "Performed");
+                            const char* fn = phase == "Started" ? "InputActionStarted"
+                                           : (phase == "Canceled" || phase == "Completed") ? "InputActionCanceled" : "InputActionPerformed";
+                            Line(std::string("        if (") + fn + "(" + action + "))", n->Id);
+                            Line("        {", n->Id);
+                            EmitEventPrologue(*n, { { "Value", "InputActionVector(" + action + ")" } }, 3);
+                            FollowExec(*n, "Then", 3);
+                            Line("        }", n->Id);
+                            continue;
+                        }
                         if (n->Type == "event.timer")
                         {
                             std::string t = Field("t", n->Id);
@@ -1176,9 +1639,54 @@ namespace Conqueror::Visual
                 simple("OnEnterState", enterState);
                 simple("OnExitState", exitState);
                 static const std::set<std::string> reserved = { "Start", "Awake", "Update", "LateUpdate", "OnDestroy", "OnUpdate", "OnCreate", "OnEnterState", "OnExitState", "init" };
+                // Fizik olayları (Unity adları; Unreal Event Hit / Begin Overlap / End Overlap)
+                for (auto& [method, nodes] : physics)
+                {
+                    Line("", 0);
+                    Line("    func " + method + "(other, otherName)", nodes.front()->Id);
+                    Line("    {", 0);
+                    for (const Node* n : nodes)
+                    {
+                        std::vector<std::pair<std::string, std::string>> params = { { "Other", "other" }, { "Other Name", "otherName" } };
+                        if (n->Type == "event.collision")
+                        {
+                            params.push_back({ "Normal", "GetContactNormal()" });
+                            params.push_back({ "Impulse", "GetContactImpulse()" });
+                        }
+                        EmitEventPrologue(*n, params, 2);
+                        FollowExec(*n, "Then", 2);
+                    }
+                    Line("    }", 0);
+                }
+                // Fonksiyonlar: girişler _a0, _a1 ... parametreleri; giriş düğümünün çıkışları bu değerleri verir
+                std::set<std::string> functionNames;
+                for (const Node* n : functions)
+                {
+                    const std::string name = SanitizeIdentifier(Prop(*n, "Name", "MyFunction"));
+                    if (reserved.count(name) || custom.count(name) || physics.count(name) || !functionNames.insert(name).second)
+                    {
+                        Error(n->Id, "Function name '" + name + "' is already used by another event or function.");
+                        continue;
+                    }
+                    const auto inputs = SplitList(Prop(*n, "Inputs", ""));
+                    std::string signature;
+                    std::vector<std::pair<std::string, std::string>> params;
+                    for (size_t i = 0; i < inputs.size(); ++i)
+                    {
+                        const std::string arg = "_a" + std::to_string(i);
+                        signature += (i ? ", " : "") + arg;
+                        params.push_back({ inputs[i], arg });
+                    }
+                    Line("", 0);
+                    Line("    func " + name + "(" + signature + ")", n->Id);
+                    Line("    {", 0);
+                    EmitEventPrologue(*n, params, 2);
+                    FollowExec(*n, "Then", 2);
+                    Line("    }", 0);
+                }
                 for (auto& [name, nodes] : custom)
                 {
-                    if (reserved.count(name))
+                    if (reserved.count(name) || physics.count(name))
                     {
                         Error(nodes.front()->Id, "Custom event name '" + name + "' is reserved; use the matching event node instead.");
                         continue;
@@ -1193,7 +1701,8 @@ namespace Conqueror::Visual
                     }
                     Line("    }", 0);
                 }
-                if (start.empty() && awake.empty() && update.empty() && late.empty() && destroy.empty() && perFrame.empty() && custom.empty() && enterState.empty() && exitState.empty())
+                if (start.empty() && awake.empty() && update.empty() && late.empty() && destroy.empty() && perFrame.empty() && custom.empty() && enterState.empty() && exitState.empty()
+                    && physics.empty() && functions.empty())
                     Warning(0, "The graph has no event nodes; nothing will run. Add 'On Start' or 'On Update'.");
             }
         };
