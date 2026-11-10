@@ -116,8 +116,10 @@ namespace Conqueror::Visual
         bool Save(const std::string& path) const;
         bool Load(const std::string& path, std::string* error = nullptr);
 
-        // ConquerorScript koduna çevir. lineToNode: üretilen satır (1 tabanlı) -> düğüm
-        std::string Transpile(const std::string& className, std::vector<CompileMessage>& messages, std::vector<int>* lineToNode = nullptr) const;
+        // ConquerorScript koduna çevir. lineToNode: üretilen satır (1 tabanlı) -> düğüm.
+        // trace: her yürütülen düğümden önce VSTrace(sınıf, düğüm) çağrısı (Blueprint hata ayıklayıcısı, editörde)
+        std::string Transpile(const std::string& className, std::vector<CompileMessage>& messages, std::vector<int>* lineToNode = nullptr,
+                              bool trace = false) const;
     };
 
     // Düğüm kitaplığı (yerleşik + nativebridge fonksiyonlarından otomatik)
@@ -130,4 +132,26 @@ namespace Conqueror::Visual
 
     // Geçerli bir CQS tanımlayıcısı (değişken/olay adı)
     CQ_API std::string SanitizeIdentifier(const std::string& name);
+
+    // Blueprint hata ayıklayıcısı: editörde üretilen kod her yürütülen düğümde VSTrace çağırır; grafik paneli son çalışan düğümleri
+    // ve bağlantıları vurgular, isabet sayısını gösterir. Kesme noktasına gelinince editör oyunu duraklatır (o karenin sonunda) ve
+    // grafiği o düğümde açar. Grafik anahtarı: üretilen sınıf adı (dosya adı).
+    class CQ_API Debugger
+    {
+    public:
+        static void SetEnabled(bool enabled);
+        static bool IsEnabled();
+        static void RegisterGraph(const std::string& graph, const std::string& path);
+        static std::string GetGraphPath(const std::string& graph);
+        static void Trace(const std::string& graph, int node);
+        // Son yürütme zamanı (s, Debugger saatine göre; hiç çalışmadıysa < 0) ve isabet sayısı
+        static double LastExecuted(const std::string& graph, int node);
+        static uint64_t HitCount(const std::string& graph, int node);
+        static double Now();
+        static void ClearHits();
+        static void SetBreakpoint(const std::string& graph, int node, bool enabled);
+        static bool HasBreakpoint(const std::string& graph, int node);
+        // Kesme noktası tetiklendiyse bir kez true (editör duraklatır)
+        static bool ConsumeBreak(std::string& graph, int& node);
+    };
 }

@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <chrono>
 #include <cmath>
 #include <fstream>
 #include <functional>
@@ -320,7 +321,7 @@ namespace Conqueror::Visual
             add(Make("list.contains", "List Contains", "Collections", P, { In("List", L), In("Item", X) }, { Out("Result", B, "({0}).Contains({1})") }));
 
             // ── nativebridge: tüm motor fonksiyonları ──
-            std::unordered_set<std::string> covered = { "print", "LogInfo" };
+            std::unordered_set<std::string> covered = { "print", "LogInfo", "VSTrace" };
             const auto& docs = Scripting::GetNativeDocs();
             for (const auto& f : Scripting::NativeRegistry::Get().GetFunctions())
             {
@@ -890,10 +891,11 @@ namespace Conqueror::Visual
         class Transpiler
         {
         public:
-            Transpiler(const Graph& g, std::vector<CompileMessage>& msgs) : m_Graph(g), m_Messages(msgs) {}
+            Transpiler(const Graph& g, std::vector<CompileMessage>& msgs, bool trace) : m_Graph(g), m_Messages(msgs), m_Trace(trace) {}
 
             std::string Run(const std::string& className, std::vector<int>* lineToNode)
             {
+                m_ClassName = className;
                 m_LineToNode = lineToNode;
                 if (m_LineToNode) m_LineToNode->clear();
                 Line("// Generated from visual script '" + m_Graph.Name + "' - do not edit, changes are overwritten.", 0);
@@ -948,6 +950,8 @@ namespace Conqueror::Visual
         private:
             const Graph& m_Graph;
             std::vector<CompileMessage>& m_Messages;
+            bool m_Trace = false;
+            std::string m_ClassName;
             std::vector<int>* m_LineToNode = nullptr;
             std::vector<std::pair<std::string, int>> m_Out;
             std::set<std::string> m_HiddenFields;
@@ -1080,6 +1084,13 @@ namespace Conqueror::Visual
             }
 
             // ── Akış ──
+            // Blueprint hata ayıklayıcısı: düğüm yürütüldü
+            void TraceNode(const Node& n, int indent)
+            {
+                if (m_Trace)
+                    Line(Indent(indent) + "VSTrace(" + QuoteString(m_ClassName) + ", " + std::to_string(n.Id) + ");", n.Id);
+            }
+
             void FollowExec(const Node& n, const std::string& pin, int indent)
             {
                 for (const Link* l : m_Graph.FindOutputLinks(n.Id, pin))
@@ -1169,6 +1180,7 @@ namespace Conqueror::Visual
                     }
                     Line("            }", n.Id);
                     Line("            " + v + " = " + TimelineValueExpr(n, t) + ";", n.Id);
+                    TraceNode(n, 3);
                     FollowExec(n, "Update", 3);
                     Line("            if (" + fin + " == true)", n.Id);
                     Line("            {", n.Id);
@@ -1186,6 +1198,7 @@ namespace Conqueror::Visual
                 Line("            if (" + t + " <= 0.0)", n.Id);
                 Line("            {", n.Id);
                 Line("                " + on + " = false;", n.Id);
+                TraceNode(n, 4);
                 FollowExec(n, "Completed", 4);
                 Line("            }", n.Id);
                 Line("        }", n.Id);
@@ -1202,6 +1215,7 @@ namespace Conqueror::Visual
                 }
                 NodeDef def = m_Graph.ResolveDef(n);
                 const std::string ind = Indent(indent);
+                TraceNode(n, indent);
                 if (n.Type == "flow.doonce" && inPin == "Reset")
                 {
                     Line(ind + Field("once", n.Id) + " = false;", n.Id);
@@ -1563,7 +1577,11 @@ namespace Conqueror::Visual
                     Line("", 0);
                     Line(std::string("    func ") + fn + "()", nodes.front()->Id);
                     Line("    {", nodes.front()->Id);
-                    for (const Node* n : nodes) FollowExec(*n, "Then", 2);
+                    for (const Node* n : nodes)
+                    {
+                        TraceNode(*n, 2);
+                        FollowExec(*n, "Then", 2);
+                    }
                     Line("    }", 0);
                 };
                 simple("Awake", awake);
@@ -1579,6 +1597,7 @@ namespace Conqueror::Visual
                     for (const Node* n : update)
                     {
                         EmitEventPrologue(*n, { { "Delta Time", "dt" } }, 2);
+                        TraceNode(*n, 2);
                         FollowExec(*n, "Then", 2);
                     }
                     for (const Node* n : perFrame)
@@ -1592,6 +1611,7 @@ namespace Conqueror::Visual
                             Line(std::string("        if (") + fn + "(" + action + "))", n->Id);
                             Line("        {", n->Id);
                             EmitEventPrologue(*n, { { "Value", "InputActionVector(" + action + ")" } }, 3);
+                            TraceNode(*n, 3);
                             FollowExec(*n, "Then", 3);
                             Line("        }", n->Id);
                             continue;
@@ -1605,6 +1625,7 @@ namespace Conqueror::Visual
                             Line("        if (" + t + " >= " + interval + ")", n->Id);
                             Line("        {", n->Id);
                             Line("            " + t + " -= " + interval + ";", n->Id);
+                            TraceNode(*n, 3);
                             FollowExec(*n, "Then", 3);
                             Line("        }", n->Id);
                             continue;
@@ -1618,6 +1639,7 @@ namespace Conqueror::Visual
                         Line("        {", n->Id);
                         if (n->Type == "event.keyheld")
                             EmitEventPrologue(*n, { { "Delta Time", "dt" } }, 3);
+                        TraceNode(*n, 3);
                         FollowExec(*n, "Then", 3);
                         Line("        }", n->Id);
                     }
@@ -1631,6 +1653,7 @@ namespace Conqueror::Visual
                     for (const Node* n : late)
                     {
                         EmitEventPrologue(*n, { { "Delta Time", "dt" } }, 2);
+                        TraceNode(*n, 2);
                         FollowExec(*n, "Then", 2);
                     }
                     Line("    }", 0);
@@ -1654,6 +1677,7 @@ namespace Conqueror::Visual
                             params.push_back({ "Impulse", "GetContactImpulse()" });
                         }
                         EmitEventPrologue(*n, params, 2);
+                        TraceNode(*n, 2);
                         FollowExec(*n, "Then", 2);
                     }
                     Line("    }", 0);
@@ -1681,6 +1705,7 @@ namespace Conqueror::Visual
                     Line("    func " + name + "(" + signature + ")", n->Id);
                     Line("    {", 0);
                     EmitEventPrologue(*n, params, 2);
+                    TraceNode(*n, 2);
                     FollowExec(*n, "Then", 2);
                     Line("    }", 0);
                 }
@@ -1697,6 +1722,7 @@ namespace Conqueror::Visual
                     for (const Node* n : nodes)
                     {
                         EmitEventPrologue(*n, { { "Value", "value" }, { "Kind", "kind" } }, 2);
+                        TraceNode(*n, 2);
                         FollowExec(*n, "Then", 2);
                     }
                     Line("    }", 0);
@@ -1708,9 +1734,108 @@ namespace Conqueror::Visual
         };
     }
 
-    std::string Graph::Transpile(const std::string& className, std::vector<CompileMessage>& messages, std::vector<int>* lineToNode) const
+    std::string Graph::Transpile(const std::string& className, std::vector<CompileMessage>& messages, std::vector<int>* lineToNode, bool trace) const
     {
-        Transpiler t(*this, messages);
+        Transpiler t(*this, messages, trace);
         return t.Run(SanitizeIdentifier(className), lineToNode);
+    }
+}
+
+namespace Conqueror::Visual
+{
+    namespace
+    {
+        struct DebugState
+        {
+            bool Enabled = false;
+            std::unordered_map<std::string, std::string> Paths;
+            std::unordered_map<std::string, std::unordered_map<int, std::pair<double, uint64_t>>> Hits;   // zaman, sayı
+            std::unordered_map<std::string, std::unordered_set<int>> Breakpoints;
+            bool BreakPending = false;
+            std::string BreakGraph;
+            int BreakNode = 0;
+        };
+        DebugState& D() { static auto& d = *new DebugState(); return d; }
+    }
+
+    void Debugger::SetEnabled(bool enabled) { D().Enabled = enabled; }
+    bool Debugger::IsEnabled() { return D().Enabled; }
+    void Debugger::RegisterGraph(const std::string& graph, const std::string& path) { D().Paths[graph] = path; }
+    std::string Debugger::GetGraphPath(const std::string& graph)
+    {
+        auto it = D().Paths.find(graph);
+        return it != D().Paths.end() ? it->second : std::string();
+    }
+
+    double Debugger::Now()
+    {
+        using namespace std::chrono;
+        static const auto start = steady_clock::now();
+        return duration<double>(steady_clock::now() - start).count();
+    }
+
+    void Debugger::Trace(const std::string& graph, int node)
+    {
+        DebugState& d = D();
+        if (!d.Enabled)
+            return;
+        auto& hit = d.Hits[graph][node];
+        hit.first = Now();
+        ++hit.second;
+        if (!d.BreakPending)
+        {
+            auto it = d.Breakpoints.find(graph);
+            if (it != d.Breakpoints.end() && it->second.count(node))
+            {
+                d.BreakPending = true;
+                d.BreakGraph = graph;
+                d.BreakNode = node;
+            }
+        }
+    }
+
+    double Debugger::LastExecuted(const std::string& graph, int node)
+    {
+        auto g = D().Hits.find(graph);
+        if (g == D().Hits.end()) return -1.0;
+        auto n = g->second.find(node);
+        return n == g->second.end() ? -1.0 : n->second.first;
+    }
+
+    uint64_t Debugger::HitCount(const std::string& graph, int node)
+    {
+        auto g = D().Hits.find(graph);
+        if (g == D().Hits.end()) return 0;
+        auto n = g->second.find(node);
+        return n == g->second.end() ? 0 : n->second.second;
+    }
+
+    void Debugger::ClearHits()
+    {
+        D().Hits.clear();
+        D().BreakPending = false;
+    }
+
+    void Debugger::SetBreakpoint(const std::string& graph, int node, bool enabled)
+    {
+        if (enabled) D().Breakpoints[graph].insert(node);
+        else D().Breakpoints[graph].erase(node);
+    }
+
+    bool Debugger::HasBreakpoint(const std::string& graph, int node)
+    {
+        auto it = D().Breakpoints.find(graph);
+        return it != D().Breakpoints.end() && it->second.count(node) != 0;
+    }
+
+    bool Debugger::ConsumeBreak(std::string& graph, int& node)
+    {
+        DebugState& d = D();
+        if (!d.BreakPending)
+            return false;
+        d.BreakPending = false;
+        graph = d.BreakGraph;
+        node = d.BreakNode;
+        return true;
     }
 }

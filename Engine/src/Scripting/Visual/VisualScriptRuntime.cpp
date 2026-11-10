@@ -217,7 +217,11 @@ namespace Conqueror::Scripting
             }
             std::vector<Visual::CompileMessage> messages;
             std::vector<int> lineToNode;
-            std::string code = graph.Transpile(GetDefaultClass(path), messages, &lineToNode);
+            // Editörde düğüm izleri (Blueprint hata ayıklayıcısı: vurgu, isabet sayısı, kesme noktası)
+            const bool trace = Visual::Debugger::IsEnabled();
+            if (trace)
+                Visual::Debugger::RegisterGraph(GetDefaultClass(path), path);
+            std::string code = graph.Transpile(GetDefaultClass(path), messages, &lineToNode, trace);
             bool ok = true;
             for (auto& m : messages)
             {

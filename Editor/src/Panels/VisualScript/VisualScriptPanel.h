@@ -35,6 +35,11 @@ namespace Conqueror::Editor
         int GetErrorCount() const;
         bool IsDirty() const { return m_Dirty; }
 
+        // Blueprint hata ayıklayıcısı: grafik anahtarı (üretilen sınıf adı), kesme noktası, tetiklenen kesme noktasını göster
+        std::string DebugKey() const;
+        void ToggleBreakpoint(int node);
+        void ShowBreakpointHit(int node);
+
         // Kaydedildiğinde çağrılır (oynatma sırasında sıcak yeniden yükleme)
         std::function<void(const std::filesystem::path&)> OnFileSaved;
 
@@ -108,6 +113,7 @@ namespace Conqueror::Editor
         std::string m_Toast;
         double m_ToastTime = 0.0;
         int m_FocusNode = 0;
+        int m_BreakHitNode = 0;            // tetiklenen kesme noktası (oyun duraklatıldı)
         char m_NewVariableName[64] = {};
         bool m_FocusSearch = false;
         bool m_RequestFocus = false;      // açıldığında sekmeyi öne getir

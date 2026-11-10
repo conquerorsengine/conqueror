@@ -4,6 +4,7 @@
 #include "Scripting/ConquerorScript/CQSEngine.h"
 #include "Scripting/NativeRegistry.h"
 #include "UI/EditorUI.h"
+#include "EditorState.h"
 
 #include <IconsFontAwesome6.h>
 #include <imgui_internal.h>
@@ -509,6 +510,21 @@ namespace Conqueror::Editor
         ImGui::End();
     }
 
+    std::string VisualScriptPanel::DebugKey() const { return SanitizeIdentifier(m_Path.stem().string()); }
+
+    void VisualScriptPanel::ToggleBreakpoint(int node)
+    {
+        const std::string key = DebugKey();
+        Debugger::SetBreakpoint(key, node, !Debugger::HasBreakpoint(key, node));
+    }
+
+    void VisualScriptPanel::ShowBreakpointHit(int node)
+    {
+        m_BreakHitNode = node;
+        m_IsOpen = true;
+        FocusNode(node);
+    }
+
     void VisualScriptPanel::RenderToolbar()
     {
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6, 4));
@@ -550,6 +566,21 @@ namespace Conqueror::Editor
         }
         ImGui::SameLine(0, 16);
         ImGui::TextDisabled("%zu nodes", m_Graph.Nodes.size());
+        // Hata ayıklayıcı: oyun kesme noktasında duraklatıldı
+        if (m_BreakHitNode && EditorState::Get().IsPaused())
+        {
+            const Node* hit = m_Graph.FindNode(m_BreakHitNode);
+            ImGui::SameLine(0, 16);
+            ImGui::TextColored(UI::Colors::Error, ICON_FA_CIRCLE " Breakpoint: %s", hit ? m_Graph.ResolveDef(*hit).Title.c_str() : "?");
+            ImGui::SameLine();
+            if (ImGui::SmallButton(ICON_FA_PLAY " Resume (F8)"))
+            {
+                m_BreakHitNode = 0;
+                EditorState::Get().SetSceneState(SceneState::Play);
+            }
+        }
+        else if (!EditorState::Get().IsPaused())
+            m_BreakHitNode = 0;
         ImGui::SameLine(0, 16);
         char zoomLabel[32];
         std::snprintf(zoomLabel, sizeof(zoomLabel), "%d%%##zoom", (int)std::round(m_Zoom * 100.0f));
@@ -872,19 +903,40 @@ namespace Conqueror::Editor
         NodeDef def = m_Graph.ResolveDef(node);
         ImU32 title = TitleColor(def);
         bool hasError = m_ErrorNodes.count(node.Id) != 0;
+        // Blueprint hata ayıklayıcısı: son 0.4 sn içinde yürütülen düğüm sarı çerçeveyle parlar
+        const std::string debugKey = DebugKey();
+        const double executedAgo = Debugger::Now() - Debugger::LastExecuted(debugKey, node.Id);
+        const bool executed = Debugger::LastExecuted(debugKey, node.Id) >= 0.0 && executedAgo < 0.4;
+        const bool breakpoint = Debugger::HasBreakpoint(debugKey, node.Id);
+        const bool breakHit = m_BreakHitNode == node.Id && EditorState::Get().IsPaused();
         ImNodes::PushColorStyle(ImNodesCol_TitleBar, title);
         ImNodes::PushColorStyle(ImNodesCol_TitleBarHovered, Brighten(title, 1.15f));
         ImNodes::PushColorStyle(ImNodesCol_TitleBarSelected, Brighten(title, 1.3f));
-        ImNodes::PushColorStyle(ImNodesCol_NodeOutline, hasError ? IM_COL32(255, 70, 70, 255) : IM_COL32(18, 18, 22, 255));
-        if (hasError) ImNodes::PushStyleVar(ImNodesStyleVar_NodeBorderThickness, 2.5f);
+        ImNodes::PushColorStyle(ImNodesCol_NodeOutline, hasError ? IM_COL32(255, 70, 70, 255)
+                                                      : breakHit ? IM_COL32(255, 60, 60, 255)
+                                                      : executed ? IM_COL32(255, 214, 90, (int)(255.0 * (1.0 - executedAgo / 0.4)))
+                                                                 : IM_COL32(18, 18, 22, 255));
+        const bool thick = hasError || breakHit || executed;
+        if (thick) ImNodes::PushStyleVar(ImNodesStyleVar_NodeBorderThickness, 2.5f);
 
         ImNodes::BeginNode(node.Id);
         ImNodes::BeginNodeTitleBar();
+        if (breakpoint)
+        {
+            ImGui::TextColored(ImVec4(1.0f, 0.25f, 0.25f, 1.0f), ICON_FA_CIRCLE);
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("Breakpoint (F9): play pauses when this node runs (at the end of that frame).");
+            ImGui::SameLine();
+        }
         ImGui::TextUnformatted(KindIcon(def));
         ImGui::SameLine();
         ImGui::TextUnformatted(def.Title.c_str());
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal) && !def.Description.empty())
             ImGui::SetTooltip("%s", def.Description.c_str());
+        if (const uint64_t hits = Debugger::HitCount(debugKey, node.Id); hits > 0 && !EditorState::Get().IsEditing())
+        {
+            ImGui::SameLine();
+            ImGui::TextDisabled("x%llu", (unsigned long long)hits);
+        }
         ImNodes::EndNodeTitleBar();
 
         bool changed = false;
@@ -953,7 +1005,7 @@ namespace Conqueror::Editor
             ImGui::Dummy(ImVec2(Z(80.0f), Z(4.0f)));
         ImNodes::EndNode();
 
-        if (hasError) ImNodes::PopStyleVar();
+        if (thick) ImNodes::PopStyleVar();
         ImNodes::PopColorStyle();
         ImNodes::PopColorStyle();
         ImNodes::PopColorStyle();
@@ -1019,6 +1071,13 @@ namespace Conqueror::Editor
             for (size_t i = 0; i < td.Inputs.size(); ++i) if (td.Inputs[i].Name == l.ToPin) ti = (int)i;
             if (fi < 0 || ti < 0) continue;
             ImU32 color = PinColor(fd.Outputs[(size_t)fi].Type);
+            if (fd.Outputs[(size_t)fi].Type == PinType::Exec)
+            {
+                const double last = Debugger::LastExecuted(DebugKey(), l.FromNode);
+                const double lastTo = Debugger::LastExecuted(DebugKey(), l.ToNode);
+                if (last >= 0.0 && lastTo >= 0.0 && Debugger::Now() - lastTo < 0.4)
+                    color = IM_COL32(255, 214, 90, 255);
+            }
             ImNodes::PushColorStyle(ImNodesCol_Link, color);
             ImNodes::PushColorStyle(ImNodesCol_LinkHovered, Brighten(color, 1.3f));
             ImNodes::PushColorStyle(ImNodesCol_LinkSelected, IM_COL32(255, 200, 80, 255));
@@ -1155,6 +1214,20 @@ namespace Conqueror::Editor
             if (ctrl && ImGui::IsKeyPressed(ImGuiKey_Y, false)) Redo();
             if (ctrl && ImGui::IsKeyPressed(ImGuiKey_S, false)) Save();
             if (!ctrl && ImGui::IsKeyPressed(ImGuiKey_F, false)) FrameAll();
+            if (ImGui::IsKeyPressed(ImGuiKey_F9, false))
+            {
+                const int selected = ImNodes::NumSelectedNodes();
+                std::vector<int> ids((size_t)std::max(selected, 0));
+                if (selected > 0) ImNodes::GetSelectedNodes(ids.data());
+                int hoveredNode = 0;
+                if (ids.empty() && ImNodes::IsNodeHovered(&hoveredNode)) ids.push_back(hoveredNode);
+                for (int id : ids) ToggleBreakpoint(id);
+            }
+            if (ImGui::IsKeyPressed(ImGuiKey_F8, false) && EditorState::Get().IsPaused() && m_BreakHitNode)
+            {
+                m_BreakHitNode = 0;
+                EditorState::Get().SetSceneState(SceneState::Play);
+            }
             if (!ctrl && hovered && (ImGui::IsKeyPressed(ImGuiKey_Space, false) || ImGui::IsKeyPressed(ImGuiKey_Tab, false)))
             {
                 m_OpenSearch = true;

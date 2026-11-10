@@ -30,6 +30,7 @@
 #include "Core/Audio/AudioSource.h"
 #include "Core/Audio/AudioMixer.h"
 #include "Core/Math/CurveAsset.h"
+#include "Scripting/Visual/VisualGraph.h"
 
 #include <algorithm>
 #include <cmath>
@@ -942,6 +943,13 @@ namespace Conqueror::CQS
             if (!ps) return Value::MakeBool(false);
             ps->RateOverTime = std::max(0.0f, Num(argc, args, 1));
             return Value::MakeBool(true);
+        }, 2);
+
+        // VSTrace("Sınıf", düğüm): görsel betik hata ayıklayıcısı (üretilen kod çağırır; düğüm kitaplığında gösterilmez)
+        vm->DefineNative("VSTrace", [](int argc, Value* args) -> Value {
+            if (argc >= 2 && args[0].IsString())
+                Visual::Debugger::Trace(args[0].AsString()->Value, (int)args[1].ToNumber());
+            return Value::MakeNull();
         }, 2);
 
         // ================================================================ Betikler arası

@@ -138,6 +138,8 @@ namespace Conqueror::Editor
 
         // Konsol değişkenleri (r.*, t.*, stat ...): etkilenen sahne = etkin sahne; "stat" istatistik panelini açar
         ConsoleSystem::SetSceneProvider([this]() { return m_ActiveScene.get(); });
+        // Görsel betiklerin Blueprint hata ayıklayıcısı (düğüm izleri yalnızca editörde üretilir)
+        Visual::Debugger::SetEnabled(true);
         ConsoleSystem::RegisterBuiltins();
         ConsoleSystem::RegisterCommand("stat", "Statistics overlay: stat fps | unit | none", [this](const std::vector<std::string>& args) {
             const std::string what = args.empty() ? "fps" : args[0];
@@ -1058,6 +1060,23 @@ namespace Conqueror::Editor
         SyncPanelContexts();
         TrackCreatedEntities();
         FeedGameInput();
+        {
+            // Görsel betik kesme noktası: oyun bu karenin sonunda duraklar, grafik o düğümde açılır
+            std::string graph;
+            int node = 0;
+            if (Visual::Debugger::ConsumeBreak(graph, node) && EditorState::Get().IsPlaying())
+            {
+                OnPauseButtonPressed();
+                if (m_VisualScriptPanel)
+                {
+                    const std::string path = Visual::Debugger::GetGraphPath(graph);
+                    if (!path.empty() && m_VisualScriptPanel->GetPath() != std::filesystem::path(path))
+                        m_VisualScriptPanel->Open(path);
+                    m_VisualScriptPanel->ShowBreakpointHit(node);
+                }
+                CQ_CORE_WARN("[Visual Script] Breakpoint hit in {0} (node {1}): play paused", graph, node);
+            }
+        }
         // Kaydedilmemiş değişiklik temeli: sahne ya da yolu değişince (açma, yeni proje) birkaç kare sonra alınır
         if (m_EditorScene.get() != m_BaselineScene || m_CurrentScenePath != m_BaselinePath)
         {
@@ -2325,6 +2344,7 @@ namespace Conqueror::Editor
         
         if (editorState.IsEditing())
         {
+            Visual::Debugger::ClearHits();
             // Zaman çizelgesi önizlemesi oyun kopyasına taşınmasın
             if (m_TimelinePanel)
                 m_TimelinePanel->StopPreview();
@@ -5068,6 +5088,27 @@ namespace Conqueror::Editor
                 return true;
             }
             if (a[1] == "save") { if (!panel.Save()) { err = "save failed"; return false; } return true; }
+            // vs breakpoint <alias> on|off | expect_hits <alias> <n|>n> | expect_paused true|false
+            if (a[1] == "breakpoint" && a.size() > 3)
+            {
+                Visual::Debugger::SetBreakpoint(panel.DebugKey(), node(a[2]), a[3] == "on");
+                return true;
+            }
+            if (a[1] == "expect_hits" && a.size() > 3)
+            {
+                const uint64_t n = Visual::Debugger::HitCount(panel.DebugKey(), node(a[2]));
+                Automation::Report("VS HITS " + a[2] + " = " + std::to_string(n));
+                const bool ok = a[3][0] == '>' ? n > (uint64_t)std::stoll(a[3].substr(1)) : n == (uint64_t)std::stoll(a[3]);
+                if (!ok) { err = "hits " + std::to_string(n); return false; }
+                return true;
+            }
+            if (a[1] == "expect_paused" && a.size() > 2)
+            {
+                const bool paused = EditorState::Get().IsPaused();
+                Automation::Report(std::string("VS PAUSED ") + (paused ? "true" : "false"));
+                if (paused != (a[2] == "true")) { err = paused ? "paused" : "not paused"; return false; }
+                return true;
+            }
             if (a[1] == "expect_errors" && a.size() > 2)
             {
                 std::string code = panel.GetGeneratedCode();
