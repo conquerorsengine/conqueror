@@ -76,6 +76,7 @@
 #include "Scene/WorldActors.h"
 #include "Scene/ActorComponents.h"
 #include "Scene/Water.h"
+#include "Scene/PlanarReflection.h"
 #include "Scene/PlayerInput.h"
 #include "Scene/RigConstraints.h"
 #include "AISystem/Navigation/NavAgents.h"
@@ -2786,6 +2787,70 @@ namespace Conqueror
         m_BackgroundCamera = previous;
     }
 
+    void Scene::RenderPlanarReflection(const RenderCamera& camera)
+    {
+        Renderer3D::SetPlanarReflection(0, glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(0.0f));
+        entt::entity best = entt::null;
+        float bestDist = 1e30f;
+        for (auto e : m_Registry.view<TransformComponent, PlanarReflectionComponent>())
+        {
+            if (!IsEntityActive(e))
+                continue;
+            const float d = glm::distance(glm::vec3(m_Registry.get<TransformComponent>(e).WorldTransform[3]), camera.Position);
+            if (d < bestDist) { bestDist = d; best = e; }
+        }
+        if (best == entt::null)
+            return;
+        auto& pr = m_Registry.get<PlanarReflectionComponent>(best);
+        const glm::mat4 w = ComputeWorldMatrix(best);
+        const glm::vec3 p0 = glm::vec3(w[3]), n = glm::normalize(glm::vec3(w[1]));
+        RenderCamera mirrored;
+        if (!PlanarReflections::BuildMirroredCamera(camera, p0, n, mirrored))
+            return;
+        const float pct = std::clamp(pr.ScreenPercentage, 10.0f, 100.0f) / 100.0f;
+        const uint32_t rw = std::max(1u, (uint32_t)(camera.ViewportWidth * pct)), rh = std::max(1u, (uint32_t)(camera.ViewportHeight * pct));
+        mirrored.ViewportWidth = rw;
+        mirrored.ViewportHeight = rh;
+        static GLuint s_Fbo = 0, s_Color = 0, s_Depth = 0;
+        static uint32_t s_W = 0, s_H = 0;
+        if (!s_Fbo || s_W != rw || s_H != rh)
+        {
+            if (s_Fbo) { glDeleteFramebuffers(1, &s_Fbo); glDeleteTextures(1, &s_Color); glDeleteRenderbuffers(1, &s_Depth); }
+            glCreateTextures(GL_TEXTURE_2D, 1, &s_Color);
+            glTextureStorage2D(s_Color, 1, GL_RGBA16F, (GLsizei)rw, (GLsizei)rh);
+            glTextureParameteri(s_Color, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTextureParameteri(s_Color, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTextureParameteri(s_Color, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTextureParameteri(s_Color, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glCreateRenderbuffers(1, &s_Depth);
+            glNamedRenderbufferStorage(s_Depth, GL_DEPTH24_STENCIL8, (GLsizei)rw, (GLsizei)rh);
+            glCreateFramebuffers(1, &s_Fbo);
+            glNamedFramebufferTexture(s_Fbo, GL_COLOR_ATTACHMENT0, s_Color, 0);
+            glNamedFramebufferRenderbuffer(s_Fbo, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, s_Depth);
+            s_W = rw;
+            s_H = rh;
+        }
+        GLint prevFbo = 0, prevViewport[4] = {};
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFbo);
+        glGetIntegerv(GL_VIEWPORT, prevViewport);
+        glBindFramebuffer(GL_FRAMEBUFFER, s_Fbo);
+        glViewport(0, 0, (GLsizei)rw, (GLsizei)rh);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
+        // Aynalanmış görünüm el yönünü çevirir: ön yüzler saat yönünde
+        glFrontFace(GL_CW);
+        m_RenderingPlanar = true;
+        RenderScene3D(mirrored, false);
+        m_RenderingPlanar = false;
+        glFrontFace(GL_CCW);
+        glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)prevFbo);
+        glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
+        Renderer3D::SetPlanarReflection(s_Color, glm::vec4(n, -glm::dot(n, p0)),
+                                        glm::vec4(1.0f, std::max(pr.DistanceFromPlaneFadeEnd, 0.01f), pr.NormalDistortionStrength, std::max(pr.MaxRoughness, 0.01f)));
+        pr.Renders++;
+    }
+
     void Scene::RenderScene3D(const RenderCamera& camera, bool editorView)
     {
         CQ_PROFILE_SAMPLE("Render.3D", Rendering);
@@ -2794,6 +2859,10 @@ namespace Conqueror
         if (!m_CapturingProbes)
             CaptureReflectionProbes();
             CaptureSceneCubes();
+
+        // Planar Reflection: ana görünümden önce aynalanmış sahne (kendi dokusuna)
+        if (!m_RenderingPlanar && !m_CapturingProbes)
+            RenderPlanarReflection(camera);
 
         SceneEnvironment env = BuildRenderEnvironment(true);
         if (editorView)

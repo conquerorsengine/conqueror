@@ -21,6 +21,7 @@ namespace Conqueror
         constexpr uint32_t ReflectionProbeFirst = 16; // 16..19
         constexpr uint32_t APVPositions = 20;
         constexpr uint32_t APVSH = 21;
+        constexpr uint32_t PlanarReflection = 22;
         constexpr uint32_t MaxReflectionProbes = 4;
     }
 

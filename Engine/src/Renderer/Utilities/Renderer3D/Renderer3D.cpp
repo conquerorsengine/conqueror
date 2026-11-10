@@ -149,6 +149,9 @@ namespace Conqueror
             uint64_t EnvCheckedFrame = 0;
             bool ReceiveShadows = true;
             bool Lightmapped = true;
+            uint32_t PlanarTexture = 0;
+            glm::vec4 PlanarPlane{ 0.0f, 1.0f, 0.0f, 0.0f };
+            glm::vec4 PlanarParams{ 0.0f };
             glm::vec3 Tint{ 1.0f };
             int DebugView = 0;
             bool Wireframe = false;
@@ -1314,6 +1317,8 @@ namespace Conqueror
         glBindTexture(GL_TEXTURE_2D, s->APVProbeCount ? s->APVPositionTex : s->FallbackBlack2D);
         glActiveTexture(GL_TEXTURE0 + TextureSlot::APVSH);
         glBindTexture(GL_TEXTURE_2D, s->APVProbeCount ? s->APVSHTex : s->FallbackBlack2D);
+        glActiveTexture(GL_TEXTURE0 + TextureSlot::PlanarReflection);
+        glBindTexture(GL_TEXTURE_2D, (s->PlanarTexture && s->PlanarParams.x > 0.5f) ? s->PlanarTexture : s->FallbackBlack2D);
         glActiveTexture(GL_TEXTURE0);
 
         // Shader başına sampler/probe uniform'ları yeniden gönderilsin
@@ -1336,6 +1341,9 @@ namespace Conqueror
         shader->SetInt("u_APVPositionTex", (int)TextureSlot::APVPositions);
         shader->SetInt("u_APVSHTex", (int)TextureSlot::APVSH);
         shader->SetInt("u_APVNumProbes", s->APVProbeCount);
+        shader->SetInt("u_PlanarReflection", (int)TextureSlot::PlanarReflection);
+        shader->SetFloat4("u_PlanarPlane", s->PlanarPlane);
+        shader->SetFloat4("u_PlanarParams", (s->PlanarTexture ? s->PlanarParams : glm::vec4(0.0f)));
         int probeUnits[TextureSlot::MaxReflectionProbes];
         for (uint32_t i = 0; i < TextureSlot::MaxReflectionProbes; ++i)
             probeUnits[i] = (int)(TextureSlot::ReflectionProbeFirst + i);
@@ -1945,6 +1953,18 @@ namespace Conqueror
     Renderer3D::DebugView Renderer3D::GetDebugView() { return (DebugView)s->DebugView; }
     void Renderer3D::SetWireframe(bool wireframe) { s->Wireframe = wireframe; }
     bool Renderer3D::GetWireframe() { return s->Wireframe; }
+
+    void Renderer3D::SetPlanarReflection(uint32_t texture, const glm::vec4& plane, const glm::vec4& params)
+    {
+        if (s->PlanarTexture == texture && s->PlanarPlane == plane && s->PlanarParams == params)
+            return;
+        s->PlanarTexture = texture;
+        s->PlanarPlane = plane;
+        s->PlanarParams = params;
+        s->FrameDirty = true;
+        // Shader başına uniform'lar bu karede yeniden gönderilsin
+        s->ShaderFrame.clear();
+    }
 
     void Renderer3D::PrepareCustomShader(const std::shared_ptr<Shader>& shader)
     {

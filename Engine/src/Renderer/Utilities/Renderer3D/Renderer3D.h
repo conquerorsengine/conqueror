@@ -263,6 +263,9 @@ namespace Conqueror
         static const RenderCamera& GetCamera();
         static std::shared_ptr<EnvironmentMap> GetActiveEnvironmentMap();
 
+        // Planar Reflection: aynalanmış sahne dokusu ve düzlem (n, d); params x açık, y düzleme uzaklık sınırı (m), z bozulma, w en çok pürüzlülük.
+        // Dokuyu çizerken kapatılır (kendini yansıtmasın)
+        static void SetPlanarReflection(uint32_t texture, const glm::vec4& plane, const glm::vec4& params);
         // Özel çizimler (su, ...): kare verisi (kamera, güneş, ortam, sis) ve IBL / gölge / prob dokuları bu shader'a bağlanır
         static void PrepareCustomShader(const std::shared_ptr<Shader>& shader);
 

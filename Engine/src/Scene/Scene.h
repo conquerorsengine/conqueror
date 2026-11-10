@@ -544,6 +544,8 @@ namespace Conqueror
         std::shared_ptr<OcclusionData> m_OcclusionData;
         bool m_OcclusionVisualize = false;
         std::unordered_set<uint32_t> m_OcclusionHidden;
+        bool m_RenderingPlanar = false;          // aynalanmış kameradan çizim sürüyor (iç içe yansıma yok)
+        void RenderPlanarReflection(const RenderCamera& camera);
         bool m_CapturingProbes = false;
         bool m_EditorView2D = false;                     // editör kamerası 2D modunda
         entt::entity m_BackgroundCamera = entt::null;    // oyun görünümünün arka planını belirleyen kamera

@@ -20,7 +20,11 @@ uniform vec4 u_ProbeBoxMax[CQ_MAX_REFLECTION_PROBES];   // w = mip sayısı
 uniform sampler2D u_APVPositionTex;
 uniform sampler2D u_APVSHTex;
 uniform int u_APVNumProbes = 0;
-uniform int u_Lightmapped = 1;   // 0: hareketli nesne (ortam ışığı lightmap yerine ışık problarından / gökyüzünden)
+uniform int u_Lightmapped = 1;
+// Planar Reflection (Unreal): aynalanmış sahne; düzleme yakın ve ona bakan yüzeylerde ekran uzayında örneklenir
+uniform sampler2D u_PlanarReflection;
+uniform vec4 u_PlanarPlane = vec4(0.0, 1.0, 0.0, 0.0);
+uniform vec4 u_PlanarParams = vec4(0.0);   // x açık, y düzleme uzaklık sınırı, z normal bozulması, w en çok pürüzlülük   // 0: hareketli nesne (ortam ışığı lightmap yerine ışık problarından / gökyüzünden)
 uniform int u_ReceiveShadows = 1;
 
 struct CQ_Surface
@@ -710,6 +714,18 @@ vec4 CQ_ShadeSurface(CQ_Surface s)
     // Pürüzlülük arttıkça yansıma normale doğru kayar (Frostbite)
     R = mix(R, s.Normal, roughness * roughness);
     vec3 prefiltered = CQ_SpecularEnvironment(R, roughness, s.Position);
+    if (u_PlanarParams.x > 0.5)
+    {
+        float planeDist = abs(dot(u_PlanarPlane.xyz, s.Position) + u_PlanarPlane.w);
+        float facing = dot(s.Normal, u_PlanarPlane.xyz);
+        if (planeDist < u_PlanarParams.y && facing > 0.6 && roughness < u_PlanarParams.w)
+        {
+            vec2 uv = gl_FragCoord.xy * CQ_Frame.ScreenSize.zw + (s.Normal.xz - u_PlanarPlane.xz * facing) * u_PlanarParams.z;
+            vec3 planar = texture(u_PlanarReflection, clamp(uv, vec2(0.001), vec2(0.999))).rgb;
+            float w = (1.0 - planeDist / u_PlanarParams.y) * smoothstep(0.6, 0.9, facing) * (1.0 - roughness / u_PlanarParams.w);
+            prefiltered = mix(prefiltered, planar, clamp(w, 0.0, 1.0));
+        }
+    }
     vec3 specularIndirect = prefiltered * (F0 * envBRDF.x + envBRDF.y) * energyCompensation;
 
     float specOcclusion = Saturate(pow(NdotV + s.AO, exp2(-16.0 * roughness - 1.0)) - 1.0 + s.AO);
