@@ -69,6 +69,7 @@
 #include "Scene/LightProbeGroup.h"
 #include "Scene/SpriteAnimation2D.h"
 #include "Scene/SpriteShape.h"
+#include "Scene/OcclusionCulling.h"
 #include "Scene/PlayerInput.h"
 #include "Scene/RigConstraints.h"
 #include "AISystem/Navigation/NavAgents.h"
@@ -1023,6 +1024,7 @@ namespace Conqueror
         m_AmbientOcclusion = source->m_AmbientOcclusion;
         m_Filtering = source->m_Filtering;
         m_APV = source->m_APV;
+        m_OcclusionData = source->m_OcclusionData;
 
         m_Layers = source->GetLayers();
     }
@@ -2454,12 +2456,16 @@ namespace Conqueror
             DrawPhysicsGizmos();
         GridSystem::DrawEditorGizmos(*this, m_EditorSelection);
         Skeleton2D::DrawEditorGizmos(*this, m_EditorSelection);
+        // Occlusion Culling görselleştirme: pişirilmiş hücre ızgarası ve kameranın hücresi
+        if (m_OcclusionVisualize)
+            OcclusionCulling::DrawCells(*this, camera.GetPosition());
         for (uint32_t id : m_EditorSelection)
         {
             Lighting2D::DrawGizmo(*this, id);
             AreaLights::DrawGizmo(*this, id);
             LightProbeGroups::DrawGizmo(*this, id);
             SpriteShapes::DrawGizmo(*this, id);
+            OcclusionCulling::DrawGizmo(*this, id);
             // Gezinme: Link uçları ve yayı, Modifier Volume / Obstacle kutusu
             entt::entity e = (entt::entity)id;
             if (!m_Registry.valid(e) || !m_Registry.all_of<TransformComponent>(e))
@@ -2862,6 +2868,10 @@ namespace Conqueror
 
         // LOD grupları: bu kamera için gizlenecek seviyeler
         GameplaySystems::UpdateLOD(*this, camera, m_LODHidden);
+        // Occlusion Culling: kameranın hücresinden görünmeyen statik nesneler (oyunda; düzenleyicide Visualize açıkken)
+        m_OcclusionHidden.clear();
+        if (!m_CapturingProbes && (!editorView || m_OcclusionVisualize))
+            OcclusionCulling::ComputeHidden(*this, camera.Position, m_OcclusionHidden);
 
         // Gölgeler -> gökyüzü
         {
@@ -2887,7 +2897,7 @@ namespace Conqueror
         auto meshView = m_Registry.view<TransformComponent, MeshRendererComponent>();
         for (auto entity : meshView)
         {
-            if (!IsEntityActive(entity) || m_LODHidden.count((uint32_t)entity))
+            if (!IsEntityActive(entity) || m_LODHidden.count((uint32_t)entity) || m_OcclusionHidden.count((uint32_t)entity))
                 continue;
             auto [transform, meshRenderer] = meshView.get<TransformComponent, MeshRendererComponent>(entity);
             if (meshRenderer.IsModel())
@@ -2945,7 +2955,7 @@ namespace Conqueror
         auto modelView = m_Registry.view<TransformComponent, MeshRendererComponent>();
         for (auto entity : modelView)
         {
-            if (!IsEntityActive(entity) || m_LODHidden.count((uint32_t)entity))
+            if (!IsEntityActive(entity) || m_LODHidden.count((uint32_t)entity) || m_OcclusionHidden.count((uint32_t)entity))
                 continue;
             auto [transform, modelComp] = modelView.get<TransformComponent, MeshRendererComponent>(entity);
             if (!modelComp.IsModel())

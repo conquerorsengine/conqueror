@@ -174,6 +174,7 @@ namespace Conqueror::Editor
         std::unique_ptr<ViewportPanel> m_ViewportPanel;
         std::unique_ptr<GamePanel> m_GamePanel;
         std::unique_ptr<LightingPanel> m_LightingPanel;
+        std::unique_ptr<class OcclusionPanel> m_OcclusionPanel;
         std::unique_ptr<AudioMixerPanel> m_AudioMixerPanel;
         std::unique_ptr<ProfilerPanel> m_ProfilerPanel;
         std::unique_ptr<MultiplayerPanel> m_MultiplayerPanel;
@@ -206,6 +207,7 @@ namespace Conqueror::Editor
         bool m_ShowViewport = true;
         bool m_ShowGame = true;
         bool m_ShowLighting = true;
+        bool m_ShowOcclusion = false;
         bool m_ShowAudioMixer = false;
         bool m_ShowProfiler = false;
         bool m_ShowMultiplayer = false;

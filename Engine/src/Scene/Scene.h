@@ -108,6 +108,7 @@ namespace Conqueror
     class PhysicsWorld2D;
     class PhysicsWorld3D;
     class AdaptiveProbeVolume;
+    struct OcclusionData;
     struct RenderCamera;
     struct SceneEnvironment;
 
@@ -217,6 +218,13 @@ namespace Conqueror
         const glm::vec2& GetUIScreenSize() const { return m_UIScreenSize; }
 
         void SetAdaptiveProbeVolume(std::shared_ptr<AdaptiveProbeVolume> apv) { m_APV = apv; }
+        // Pişirilmiş Occlusion Culling verisi (sahneyle kaydedilir)
+        void SetOcclusionData(std::shared_ptr<OcclusionData> data) { m_OcclusionData = std::move(data); }
+        std::shared_ptr<OcclusionData> GetOcclusionData() const { return m_OcclusionData; }
+        // Düzenleyici sahne görünümünde de ayıkla (Occlusion Culling penceresi: Visualize)
+        void SetOcclusionVisualize(bool on) { m_OcclusionVisualize = on; }
+        bool GetOcclusionVisualize() const { return m_OcclusionVisualize; }
+        size_t GetOcclusionHiddenCount() const { return m_OcclusionHidden.size(); }
         std::shared_ptr<AdaptiveProbeVolume> GetAdaptiveProbeVolume() const { return m_APV; }
 
         Entity GetPrimaryCameraEntity();
@@ -533,6 +541,9 @@ namespace Conqueror
 
         // Işık verisi (sahneye bağlı; sahne değişince eski lightmap kalmaz)
         std::shared_ptr<AdaptiveProbeVolume> m_APV;
+        std::shared_ptr<OcclusionData> m_OcclusionData;
+        bool m_OcclusionVisualize = false;
+        std::unordered_set<uint32_t> m_OcclusionHidden;
         bool m_CapturingProbes = false;
         bool m_EditorView2D = false;                     // editör kamerası 2D modunda
         entt::entity m_BackgroundCamera = entt::null;    // oyun görünümünün arka planını belirleyen kamera

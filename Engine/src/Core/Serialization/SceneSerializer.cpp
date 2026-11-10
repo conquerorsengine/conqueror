@@ -13,6 +13,7 @@
 #include "Terrain/Terrain.h"
 #include "Core/Utils/Crypto.h"
 #include "Renderer/Probe/AdaptiveProbeVolume.h"
+#include "Scene/OcclusionCulling.h"
 #include "Core/Logging/Log.h"
 #include "Core/Project/Project.h"
 #include "Core/Animation/AnimationController.h"
@@ -2177,6 +2178,9 @@ namespace Conqueror
         // Pişirilmiş ışık probları (Adaptive Probe Volume + Light Probe Group): sahneyle birlikte saklanır
         if (auto apv = m_Scene->GetAdaptiveProbeVolume(); apv && apv->IsBaked() && apv->GetTotalProbeCount() > 0)
             out << YAML::Key << "BakedProbes" << YAML::Value << Crypto::Base64Encode(apv->SerializeProbes());
+        // Pişirilmiş Occlusion Culling
+        if (auto occ = m_Scene->GetOcclusionData(); occ && !occ->Cells.empty())
+            out << YAML::Key << "BakedOcclusion" << YAML::Value << Crypto::Base64Encode(occ->Serialize());
         out << YAML::Key << "LightmapResolution" << YAML::Value << m_Scene->GetLightmapResolution();
         out << YAML::Key << "MaxLightmapSize" << YAML::Value << m_Scene->GetMaxLightmapSize();
         out << YAML::Key << "MaxBounces" << YAML::Value << m_Scene->GetMaxBounces();
@@ -3419,6 +3423,11 @@ namespace Conqueror
                         m_Scene->SetBakedLightmapTexture(lmTex);
                     }
                 }
+            }
+            if (environment["BakedOcclusion"])
+            {
+                if (auto occ = OcclusionData::Deserialize(Crypto::Base64Decode(environment["BakedOcclusion"].as<std::string>())))
+                    m_Scene->SetOcclusionData(occ);
             }
             if (environment["BakedProbes"])
             {

@@ -1,5 +1,7 @@
 // glad diğer başlıklardan (GLFW) önce: gpu_probe GL geri okuma çağrıları
 #define GLFW_INCLUDE_NONE
+#include "Panels/OcclusionPanel.h"
+#include "Scene/OcclusionCulling.h"
 #include "Scene/SpriteAnimation2D.h"
 #include "Scene/Signals.h"
 #include "Core/Input/InputActionAssets.h"
@@ -318,6 +320,7 @@ namespace Conqueror::Editor
         {
             CQ_CORE_INFO("EditorLayer: Creating LightingPanel...");
             m_LightingPanel = std::make_unique<LightingPanel>();
+            m_OcclusionPanel = std::make_unique<OcclusionPanel>();
             m_AudioMixerPanel = std::make_unique<AudioMixerPanel>();
             m_ProfilerPanel = std::make_unique<ProfilerPanel>();
             m_MultiplayerPanel = std::make_unique<MultiplayerPanel>();
@@ -2172,6 +2175,13 @@ namespace Conqueror::Editor
 
         if (m_ShowLighting && m_LightingPanel)
             m_LightingPanel->OnImGuiRender(&m_ShowLighting);
+        if (m_OcclusionPanel)
+        {
+            m_OcclusionPanel->SetContext(m_ActiveScene.get());
+            m_OcclusionPanel->Tick();
+            if (m_ShowOcclusion)
+                m_OcclusionPanel->OnImGuiRender(&m_ShowOcclusion);
+        }
 
         if (m_ShowAudioMixer && m_AudioMixerPanel)
             m_AudioMixerPanel->OnImGuiRender(&m_ShowAudioMixer);
@@ -2697,6 +2707,7 @@ namespace Conqueror::Editor
             ImGui::MenuItem("Hierarchy", nullptr, &m_ShowHierarchy);
             ImGui::MenuItem("Inspector", nullptr, &m_ShowInspector);
             ImGui::MenuItem("Lighting", nullptr, &m_ShowLighting);
+            ImGui::MenuItem("Occlusion Culling", nullptr, &m_ShowOcclusion);
             ImGui::MenuItem("Audio Mixer", nullptr, &m_ShowAudioMixer);
             ImGui::MenuItem("Profiler", "Ctrl+7", &m_ShowProfiler);
             ImGui::MenuItem("Multiplayer", nullptr, &m_ShowMultiplayer);
@@ -3605,6 +3616,7 @@ namespace Conqueror::Editor
         if (n == "viewport" || n == "scene") return &m_ShowViewport;
         if (n == "game") return &m_ShowGame;
         if (n == "lighting") return &m_ShowLighting;
+        if (n == "occlusion" || n == "occlusionculling" || n == "occlusion culling") return &m_ShowOcclusion;
         if (n == "audiomixer" || n == "audio mixer" || n == "mixer") return &m_ShowAudioMixer;
         if (n == "profiler") return &m_ShowProfiler;
         if (n == "build" || n == "buildsettings" || n == "build settings") return &m_ShowBuildSettings;
@@ -5461,6 +5473,49 @@ namespace Conqueror::Editor
             return false;
         });
         // lighting generate | expect_done | asset <path.cqlighting|none> | default_params <path.cqlmparams|none> | expect_value <alan> <değer>
+        // occlusion bake [hücre boyu] | clear | expect_hidden <varlık> <true|false> | expect_cells <n|>n> | visualize on|off
+        Automation::RegisterCommand("occlusion", [this](const Args& a, std::string& err) {
+            if (a.size() < 2 || !m_OcclusionPanel || !m_ActiveScene) { err = "occlusion bake|clear|expect_hidden|expect_cells|visualize"; return false; }
+            m_OcclusionPanel->SetContext(m_ActiveScene.get());
+            if (a[1] == "bake")
+            {
+                if (a.size() > 2) m_OcclusionPanel->Settings().CellSize = std::stof(a[2]);
+                if (!m_OcclusionPanel->StartBake(err)) return false;
+                // Otomasyonda bitene kadar burada (GL bağlamı bu iş parçacığında)
+                while (m_OcclusionPanel->IsBaking()) m_OcclusionPanel->Tick();
+                Automation::Report("OCCLUSION " + m_OcclusionPanel->Status());
+                return m_ActiveScene->GetOcclusionData() != nullptr;
+            }
+            if (a[1] == "clear") { m_OcclusionPanel->Clear(); return true; }
+            if (a[1] == "visualize" && a.size() > 2) { m_ActiveScene->SetOcclusionVisualize(a[2] == "on" || a[2] == "true"); return true; }
+            if (a[1] == "expect_cells" && a.size() > 2)
+            {
+                auto d = m_ActiveScene->GetOcclusionData();
+                const int n = d ? (int)d->Cells.size() : 0;
+                Automation::Report("OCCLUSION cells = " + std::to_string(n));
+                const bool ok = a[2][0] == '>' ? n > std::stoi(a[2].substr(1)) : n == std::stoi(a[2]);
+                if (!ok) { err = "cells " + std::to_string(n); return false; }
+                return true;
+            }
+            if (a[1] == "expect_hidden" && a.size() > 3)
+            {
+                Entity e;
+                for (auto h : m_ActiveScene->m_Registry.view<TagComponent>())
+                    if (m_ActiveScene->m_Registry.get<TagComponent>(h).Tag == a[2]) { e = Entity{ h, m_ActiveScene.get() }; break; }
+                if (!e) { err = "no entity " + a[2]; return false; }
+                // Ana kameranın konumundan hesapla
+                std::unordered_set<uint32_t> hidden;
+                Entity cam = m_ActiveScene->GetPrimaryCameraEntity();
+                if (!cam) { err = "no primary camera"; return false; }
+                OcclusionCulling::ComputeHidden(*m_ActiveScene, glm::vec3(cam.GetComponent<TransformComponent>().WorldTransform[3]), hidden);
+                const bool got = hidden.count((uint32_t)(entt::entity)e) > 0, want = a[3] == "true";
+                Automation::Report(std::string("OCCLUSION ") + a[2] + " hidden = " + (got ? "true" : "false") + " (hidden " + std::to_string(hidden.size()) + ")");
+                if (got != want) { err = std::string("hidden is ") + (got ? "true" : "false"); return false; }
+                return true;
+            }
+            err = "unknown occlusion command";
+            return false;
+        });
         Automation::RegisterCommand("lighting", [this](const Args& a, std::string& err) {
             if (a.size() < 2 || !m_LightingPanel || !m_ActiveScene) { err = "lighting generate|expect_done|asset|default_params|expect_value"; return false; }
             auto& b = m_ActiveScene->GetRenderSettings().Bake;
