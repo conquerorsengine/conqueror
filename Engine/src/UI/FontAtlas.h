@@ -76,6 +76,10 @@ namespace Conqueror
     private:
         bool Rasterize(uint32_t codepoint, SDFGlyph& out);
         void InitFace(const std::string& path);
+        // Önceden üretilen glifler (ASCII + Türkçe) disk önbelleğinde: FreeType SDF üretimi ~200 ms sürüyor (açılışın ilk karesi).
+        // Aynı yazı tipi dosyası / boyut / FreeType sürümü için sonuç bit bit aynıdır
+        bool LoadPreloadCache(const std::string& file);
+        void SavePreloadCache(const std::string& file) const;
 
         std::vector<void*> m_Fallbacks;
         bool m_Static = false;

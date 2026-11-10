@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <iterator>
 #include <memory>
@@ -187,6 +188,70 @@ namespace Conqueror::FSR2GL
             }
         }
 
+        // Çevrilmiş GLSL önbelleği: glslang + SPIRV-Cross bir geçiş için ~30 ms; FSR 2 ilk seçildiğinde ~250 ms takılma yapıyordu.
+        // Anahtar: FSR 2 gölgelendirici klasöründeki tüm dosyalar + geçiş dosyası + tanımlar (çıktı aynı GLSL'dir)
+        uint64_t HashBytes(const void* data, size_t size, uint64_t h = 1469598103934665603ull)
+        {
+            const auto* b = (const unsigned char*)data;
+            for (size_t i = 0; i < size; ++i)
+                h = (h ^ b[i]) * 1099511628211ull;
+            return h;
+        }
+
+        uint64_t ShaderDirHash(const std::string& dir)
+        {
+            static std::string s_Dir;
+            static uint64_t s_Hash = 0;
+            if (s_Dir == dir && s_Hash)
+                return s_Hash;
+            std::vector<std::filesystem::path> files;
+            std::error_code ec;
+            for (const auto& e : std::filesystem::recursive_directory_iterator(dir, ec))
+                if (e.is_regular_file(ec))
+                    files.push_back(e.path());
+            std::sort(files.begin(), files.end());
+            uint64_t h = 1469598103934665603ull;
+            for (const auto& f : files)
+            {
+                std::ifstream in(f, std::ios::binary);
+                const std::string data((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+                const std::string name = f.filename().string();
+                h = HashBytes(name.data(), name.size(), h);
+                h = HashBytes(data.data(), data.size(), h);
+            }
+            s_Dir = dir;
+            s_Hash = h ? h : 1;
+            return s_Hash;
+        }
+
+        std::filesystem::path TranslatedCacheDir()
+        {
+            static std::filesystem::path s_Dir;
+            static bool s_Done = false;
+            if (s_Done)
+                return s_Dir;
+            s_Done = true;
+            std::error_code ec;
+            auto writable = [](const std::filesystem::path& dir) {
+                std::error_code e;
+                std::filesystem::create_directories(dir, e);
+                if (!std::filesystem::is_directory(dir, e))
+                    return false;
+                const auto probe = dir / ".cq_write_test";
+                {
+                    std::ofstream t(probe, std::ios::binary);
+                    if (!t || !(t << "1"))
+                        return false;
+                }
+                std::filesystem::remove(probe, e);
+                return true;
+            };
+            const auto local = std::filesystem::current_path(ec) / "Cache" / "FSR2";
+            if (!ec && writable(local))
+                s_Dir = local;
+            return s_Dir;
+        }
+
         // FSR 2 geçişini derler: Vulkan GLSL -> SPIR-V -> OpenGL GLSL 450 -> GL hesaplama programı
         GLuint CompilePass(Context* c, FfxFsr2Pass pass, uint32_t contextFlags, std::string& error)
         {
@@ -223,6 +288,22 @@ namespace Conqueror::FSR2GL
                 << "#define FFX_FSR2_OPTION_APPLY_SHARPENING " << (pass == FFX_FSR2_PASS_ACCUMULATE_SHARPEN ? 1 : 0) << "\n";
             const std::string preamble = pre.str();
 
+            std::string glsl;
+            std::filesystem::path cacheFile;
+            if (const auto cacheDir = TranslatedCacheDir(); !cacheDir.empty())
+            {
+                uint64_t key = ShaderDirHash(c->ShaderDir);
+                key = HashBytes(file, std::strlen(file), key);
+                key = HashBytes(preamble.data(), preamble.size(), key);
+                char name[40];
+                snprintf(name, sizeof(name), "%016llx.glsl", (unsigned long long)key);
+                cacheFile = cacheDir / name;
+                std::ifstream cached(cacheFile, std::ios::binary);
+                if (cached)
+                    glsl.assign((std::istreambuf_iterator<char>(cached)), std::istreambuf_iterator<char>());
+            }
+            if (glsl.empty())
+            {
             ShaderCompiler::Init();
             glslang::TShader shader(EShLangCompute);
             const char* src = source.c_str();
@@ -251,7 +332,6 @@ namespace Conqueror::FSR2GL
             glslang::SpvOptions spvOptions;
             glslang::GlslangToSpv(*program.getIntermediate(EShLangCompute), spirv, &spvOptions);
 
-            std::string glsl;
             try
             {
                 spirv_cross::CompilerGLSL comp(std::move(spirv));
@@ -282,6 +362,17 @@ namespace Conqueror::FSR2GL
             {
                 error = std::string(file) + ": SPIRV-Cross: " + e.what();
                 return 0;
+            }
+            if (!cacheFile.empty() && !glsl.empty())
+            {
+                const auto tmp = cacheFile.string() + ".tmp";
+                {
+                    std::ofstream out(tmp, std::ios::binary | std::ios::trunc);
+                    out << glsl;
+                }
+                std::error_code ec;
+                std::filesystem::rename(tmp, cacheFile, ec);
+            }
             }
 
             GLuint cs = glCreateShader(GL_COMPUTE_SHADER);

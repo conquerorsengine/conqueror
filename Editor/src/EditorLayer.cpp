@@ -1084,6 +1084,14 @@ namespace Conqueror::Editor
 
     void EditorLayer::OnUpdate(Timestep ts)
     {
+        // Yeni açılan sahne: "Bake On Play" gezinme ağı önbelleğe şimdi pişer (açılışın zaten yavaş olan ilk karesinde); ilk Play'de
+        // ~70 ms takılma olmaz
+        if (m_EditorScene && m_EditorScene.get() != m_NavPrebakedScene && EditorState::Get().IsEditing())
+        {
+            m_NavPrebakedScene = m_EditorScene.get();
+            CQ_PROFILE_SAMPLE("Navigation.Prebake", AI);
+            NavAgents::Prebake(*m_EditorScene);
+        }
         if (EditorState::Get().IsPlaying() && m_ActiveScene && Scripting::TestRunner::HasQueuedPlayMode() &&
             Scripting::TestRunner::UpdatePlayMode(*m_ActiveScene, (float)ts))
             OnStopButtonPressed();
@@ -1716,7 +1724,10 @@ namespace Conqueror::Editor
         // ---- Ribbon içeriği
         ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x, ImGui::GetCursorScreenPos().y + 3.0f));
         const float top = ImGui::GetCursorScreenPos().y;
-        const float playGroupW = 5 * 46.0f + 40.0f;
+        // Sağdaki oynatma grubunun gerçek genişliği (Play, Pause, Step 46 + Record 52 + kayıt ayarları oku, aralar ve ayırıcı payı):
+        // eskiden sabit 270 px ayrılıyor, okun sağında ~50 px boş kalıyor, sol şeritteki gruplar sığmıyordu
+        const float recCaretW = std::max(20.0f, ImGui::CalcTextSize(ICON_FA_CARET_DOWN).x + 12.0f);
+        const float playGroupW = 3 * 46.0f + 52.0f + recCaretW + 3 * ImGui::GetStyle().ItemSpacing.x + 8.0f + 4.0f;
         ImGui::BeginChild("##ribbon", ImVec2(ImGui::GetContentRegionAvail().x - playGroupW, 74.0f), ImGuiChildFlags_None,
                           ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBackground);
         const int gizmo = m_ViewportPanel ? m_ViewportPanel->GetGizmoType() : 7;
@@ -2411,13 +2422,23 @@ namespace Conqueror::Editor
                 m_AnimationWindow->StopPreview();
             if (m_LogPanel)
                 m_LogPanel->OnPlay();
+            CQ_PROFILE_SAMPLE("Play.Start", Editor);
             // Sprite Atlas: kaynakları değişen atlaslar Play'den önce yeniden paketlenir (Unity gibi)
-            SpriteAtlases::PackAllIfStale();
+            {
+                CQ_PROFILE_SAMPLE("Play.SpriteAtlases", Editor);
+                SpriteAtlases::PackAllIfStale();
+            }
             // Editor scene'i direkt memory'den klonla (YAML yok, disk I/O yok)
             uint64_t selectedUUID = GetSelectedEntityUUID();
             m_RuntimeScene = std::make_shared<Scene>();
-            m_RuntimeScene->CloneSceneFrom(m_EditorScene);
-            m_RuntimeScene->OnRuntimeStart();
+            {
+                CQ_PROFILE_SAMPLE("Play.CloneScene", Editor);
+                m_RuntimeScene->CloneSceneFrom(m_EditorScene);
+            }
+            {
+                CQ_PROFILE_SAMPLE("Play.RuntimeStart", Editor);
+                m_RuntimeScene->OnRuntimeStart();
+            }
             
             // Active scene'i runtime'a çevir
             m_ActiveScene = m_RuntimeScene;
@@ -2425,8 +2446,11 @@ namespace Conqueror::Editor
             SceneManager::SetActiveScenePath(m_CurrentScenePath);
             
             // Tüm panelleri yeni (çalışma zamanı) sahneye bağla; seçim klondaki aynı varlığa taşınır
-            RefreshAllPanels();
-            RestoreSelectionByUUID(selectedUUID);
+            {
+                CQ_PROFILE_SAMPLE("Play.RefreshPanels", Editor);
+                RefreshAllPanels();
+                RestoreSelectionByUUID(selectedUUID);
+            }
 
             // Unity gibi: Play oyun görünümünü öne getirir (klavye odağı oyuna gider); Stop sahne görünümüne döner
             m_ReturnToViewportOnStop = m_ViewportPanel && m_ViewportPanel->IsTabVisible();
@@ -3038,6 +3062,8 @@ namespace Conqueror::Editor
         }
         else
         {
+            // Kaydedilen sahne: gezinme ağı önbelleği güncellenir (sonraki Play'de pişirme takılması olmaz)
+            NavAgents::Prebake(*m_EditorScene);
             SceneSerializer serializer(m_EditorScene);
             
             // Viewport kamerasını serializer'a ver
@@ -5339,11 +5365,10 @@ namespace Conqueror::Editor
             }
             return true;
         });
-        Automation::RegisterCommand("game_region", [this](const Args& a, std::string& err) {
+        auto regionProbe = [](const std::shared_ptr<Framebuffer>& fb, const Args& a, std::string& err) -> bool {
             // game_region <u0> <v0> <u1> <v1> [<kanal> <min|max|mean> <v | >v | <v>]...: Game görünümünde bölge istatistiği
             // (u, v 0..1, sol alt köşe 0,0). Kanal: r g b a lum, red/green/blue = o kanalın diğerlerinden baskınlığı (r - max(g, b)).
-            if (a.size() < 5 || !m_GamePanel || !m_GamePanel->GetFramebuffer()) { err = "game_region u0 v0 u1 v1 [channel stat cond]..."; return false; }
-            auto fb = m_GamePanel->GetFramebuffer();
+            if (a.size() < 5 || !fb) { err = "region u0 v0 u1 v1 [channel stat cond]..."; return false; }
             const auto& spec = fb->GetSpecification();
             auto toPx = [](const std::string& v, uint32_t size) { return std::clamp((int)(std::stof(v) * (float)size), 0, (int)size - 1); };
             const int x0 = toPx(a[1], spec.Width), y0 = toPx(a[2], spec.Height), x1 = toPx(a[3], spec.Width), y1 = toPx(a[4], spec.Height);
@@ -5392,6 +5417,13 @@ namespace Conqueror::Editor
             }
             Automation::Report(report);
             return true;
+        };
+        Automation::RegisterCommand("game_region", [this, regionProbe](const Args& a, std::string& err) {
+            return regionProbe(m_GamePanel ? m_GamePanel->GetFramebuffer() : nullptr, a, err);
+        });
+        // viewport_region: aynı istatistik Viewport (sahne görünümü) görüntüsünde
+        Automation::RegisterCommand("viewport_region", [this, regionProbe](const Args& a, std::string& err) {
+            return regionProbe(m_ViewportPanel ? m_ViewportPanel->GetFramebuffer() : nullptr, a, err);
         });
         Automation::RegisterCommand("gpu_probe", [this](const Args& a, std::string& err) {
             // gpu_probe <brdf|viewport|sh|prefiltered>: GPU verisini GL API'si üzerinden geri okur (her arka uçta çalışır)
@@ -6794,6 +6826,24 @@ namespace Conqueror::Editor
                 }
                 err = "sample '" + a[2] + "' not found in the last " + std::to_string(look) + " frames";
                 return false;
+            }
+            // Son 10 karede bu ad hiç yok (gizli görünüm çizilmiyor gibi denetimler)
+            if (sub == "expect_no_sample" && a.size() > 2)
+            {
+                const size_t look = std::min<size_t>(frames.size(), 10);
+                if (look == 0) { err = "no frames recorded"; return false; }
+                for (size_t i = 0; i < look; ++i)
+                {
+                    const auto& f = frames[frames.size() - 1 - i];
+                    for (const auto& smp : f.Samples)
+                        if (a[2] == smp.Name)
+                        {
+                            err = "sample '" + a[2] + "' present (frame " + std::to_string(f.Index) + ")";
+                            return false;
+                        }
+                }
+                Automation::Report("PROFILER no sample " + a[2] + " in the last " + std::to_string(look) + " frames");
+                return true;
             }
             if (sub == "expect_gpu")
             {

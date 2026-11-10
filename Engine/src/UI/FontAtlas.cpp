@@ -3,6 +3,7 @@
 #include "Core/Assets/SimpleAsset.h"
 #include "Core/Serialization/SceneSerializer.h"
 #include "Core/Utils/FileSystem.h"
+#include "Core/Utils/Platform.h"
 #include "Renderer/RHI/Texture.h"
 
 #include <ft2build.h>
@@ -12,6 +13,7 @@
 #include <algorithm>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
 
 namespace Conqueror
 {
@@ -33,6 +35,185 @@ namespace Conqueror
         }
 
         const SDFGlyph s_Empty{};
+
+        constexpr uint32_t kPreloadCacheVersion = 1;
+        constexpr int kSdfSpread = 6;
+
+        uint64_t Fnv1a(const void* data, size_t size, uint64_t h = 1469598103934665603ull)
+        {
+            const auto* p = (const unsigned char*)data;
+            for (size_t i = 0; i < size; ++i)
+                h = (h ^ p[i]) * 1099511628211ull;
+            return h;
+        }
+
+        // Çalışma klasöründeki Cache/FontCache (yazılamıyorsa kullanıcı veri klasörü)
+        std::filesystem::path FontCacheDir()
+        {
+            static std::filesystem::path s_Dir;
+            static bool s_Done = false;
+            if (s_Done)
+                return s_Dir;
+            s_Done = true;
+            std::error_code ec;
+            auto writable = [](const std::filesystem::path& dir) {
+                std::error_code e;
+                std::filesystem::create_directories(dir, e);
+                if (!std::filesystem::is_directory(dir, e))
+                    return false;
+                const auto probe = dir / ".cq_write_test";
+                {
+                    std::ofstream f(probe, std::ios::binary);
+                    if (!f || !(f << "1"))
+                        return false;
+                }
+                std::filesystem::remove(probe, e);
+                return true;
+            };
+            const auto local = std::filesystem::current_path(ec) / "Cache" / "FontCache";
+            if (!ec && writable(local))
+                s_Dir = local;
+            else
+            {
+                std::string base = Platform::GetUserAppDataDirectory();
+                if (base.empty())
+                    base = Platform::GetTempDirectory();
+                const auto user = std::filesystem::path(base) / "ConquerorEngine" / "FontCache";
+                if (writable(user))
+                    s_Dir = user;
+            }
+            return s_Dir;
+        }
+
+        // Önbellek dosyası: yazı tipi dosyası (yol, boyut, değişim zamanı), temel boyut, SDF yayılımı, FreeType sürümü
+        std::string PreloadCacheFile(const std::string& fontPath)
+        {
+            const auto dir = FontCacheDir();
+            if (dir.empty())
+                return {};
+            std::error_code ec;
+            const auto absolute = std::filesystem::weakly_canonical(fontPath, ec);
+            const std::string key = (ec ? fontPath : absolute.string());
+            const auto size = std::filesystem::file_size(fontPath, ec);
+            if (ec)
+                return {};
+            const auto time = std::filesystem::last_write_time(fontPath, ec).time_since_epoch().count();
+            uint64_t h = Fnv1a(key.data(), key.size());
+            h = Fnv1a(&size, sizeof(size), h);
+            h = Fnv1a(&time, sizeof(time), h);
+            const float base = FontAtlas::BaseSize;
+            const int spread = kSdfSpread, ftMajor = FREETYPE_MAJOR, ftMinor = FREETYPE_MINOR, ftPatch = FREETYPE_PATCH;
+            h = Fnv1a(&base, sizeof(base), h);
+            h = Fnv1a(&spread, sizeof(spread), h);
+            h = Fnv1a(&ftMajor, sizeof(ftMajor), h);
+            h = Fnv1a(&ftMinor, sizeof(ftMinor), h);
+            h = Fnv1a(&ftPatch, sizeof(ftPatch), h);
+            h = Fnv1a(&kPreloadCacheVersion, sizeof(kPreloadCacheVersion), h);
+            char name[40];
+            snprintf(name, sizeof(name), "%016llx.cqfontcache", (unsigned long long)h);
+            return (dir / name).string();
+        }
+
+        const std::vector<uint32_t>& PreloadCodepoints()
+        {
+            static const std::vector<uint32_t> s_List = [] {
+                std::vector<uint32_t> list;
+                for (uint32_t c = 32; c < 127; ++c)
+                    list.push_back(c);
+                for (uint32_t c : { 0x00E7u, 0x00C7u, 0x011Fu, 0x011Eu, 0x0131u, 0x0130u, 0x00F6u, 0x00D6u, 0x015Fu, 0x015Eu, 0x00FCu, 0x00DCu })
+                    list.push_back(c);
+                return list;
+            }();
+            return s_List;
+        }
+    }
+
+    bool FontAtlas::LoadPreloadCache(const std::string& file)
+    {
+        if (file.empty())
+            return false;
+        std::ifstream f(file, std::ios::binary);
+        if (!f)
+            return false;
+        auto read = [&f](void* data, size_t size) { return (bool)f.read((char*)data, (std::streamsize)size); };
+        char magic[4];
+        uint32_t version = 0, count = 0;
+        int32_t w = 0, h = 0, cx = 0, cy = 0, row = 0;
+        if (!read(magic, 4) || std::memcmp(magic, "CQFA", 4) != 0 || !read(&version, 4) || version != kPreloadCacheVersion)
+            return false;
+        if (!read(&w, 4) || !read(&h, 4) || !read(&cx, 4) || !read(&cy, 4) || !read(&row, 4) || !read(&count, 4))
+            return false;
+        if (w <= 0 || h <= 0 || w > 8192 || h > 8192 || count > 100000)
+            return false;
+        std::unordered_map<uint32_t, SDFGlyph> glyphs;
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            uint32_t cp = 0;
+            float v[9];
+            uint8_t valid = 0;
+            if (!read(&cp, 4) || !read(v, sizeof(v)) || !read(&valid, 1))
+                return false;
+            SDFGlyph g;
+            g.UVMin = { v[0], v[1] };
+            g.UVMax = { v[2], v[3] };
+            g.Size = { v[4], v[5] };
+            g.Bearing = { v[6], v[7] };
+            g.Advance = v[8];
+            g.Valid = valid != 0;
+            glyphs.emplace(cp, g);
+        }
+        std::vector<uint8_t> alpha((size_t)w * (size_t)h);
+        if (!read(alpha.data(), alpha.size()))
+            return false;
+        m_Width = w;
+        m_Height = h;
+        m_CursorX = cx;
+        m_CursorY = cy;
+        m_RowHeight = row;
+        m_Glyphs = std::move(glyphs);
+        m_Pixels.assign((size_t)w * (size_t)h * 4, 255);
+        for (size_t i = 0; i < alpha.size(); ++i)
+            m_Pixels[i * 4 + 3] = alpha[i];
+        m_Texture.reset();
+        m_Dirty = true;
+        return true;
+    }
+
+    void FontAtlas::SavePreloadCache(const std::string& file) const
+    {
+        if (file.empty())
+            return;
+        const std::string tmp = file + ".tmp";
+        {
+            std::ofstream f(tmp, std::ios::binary | std::ios::trunc);
+            if (!f)
+                return;
+            auto write = [&f](const void* data, size_t size) { f.write((const char*)data, (std::streamsize)size); };
+            const int32_t header[5] = { m_Width, m_Height, m_CursorX, m_CursorY, m_RowHeight };
+            const uint32_t count = (uint32_t)m_Glyphs.size();
+            write("CQFA", 4);
+            write(&kPreloadCacheVersion, 4);
+            write(header, sizeof(header));
+            write(&count, 4);
+            for (const auto& [cp, g] : m_Glyphs)
+            {
+                const float v[9] = { g.UVMin.x, g.UVMin.y, g.UVMax.x, g.UVMax.y, g.Size.x, g.Size.y, g.Bearing.x, g.Bearing.y, g.Advance };
+                const uint8_t valid = g.Valid ? 1 : 0;
+                write(&cp, 4);
+                write(v, sizeof(v));
+                write(&valid, 1);
+            }
+            std::vector<uint8_t> alpha((size_t)m_Width * (size_t)m_Height);
+            for (size_t i = 0; i < alpha.size(); ++i)
+                alpha[i] = m_Pixels[i * 4 + 3];
+            write(alpha.data(), alpha.size());
+            if (!f)
+                return;
+        }
+        std::error_code ec;
+        std::filesystem::rename(tmp, file, ec);
+        if (ec)
+            std::filesystem::remove(tmp, ec);
     }
 
     FontAtlas::FontAtlas(const std::string& path)
@@ -135,7 +316,7 @@ namespace Conqueror
         m_Face = face;
         FT_Set_Pixel_Sizes(face, 0, (FT_UInt)BaseSize);
         // SDF yayılımı (piksel)
-        FT_Int spread = 6;
+        FT_Int spread = kSdfSpread;
         FT_Property_Set(lib, "sdf", "spread", &spread);
         m_Ascender = face->size->metrics.ascender / 64.0f;
         m_Descender = face->size->metrics.descender / 64.0f;
@@ -146,11 +327,13 @@ namespace Conqueror
         {
             m_Pixels[i] = m_Pixels[i + 1] = m_Pixels[i + 2] = 255;
         }
-        // Sık kullanılan glifleri önceden yükle (ASCII + Türkçe)
-        for (uint32_t c = 32; c < 127; ++c)
+        // Sık kullanılan glifleri önceden yükle (ASCII + Türkçe): diskteki önbellekten, yoksa üret ve kaydet
+        const std::string cacheFile = PreloadCacheFile(path);
+        if (LoadPreloadCache(cacheFile))
+            return;
+        for (uint32_t c : PreloadCodepoints())
             GetGlyph(c);
-        for (uint32_t c : { 0x00E7u, 0x00C7u, 0x011Fu, 0x011Eu, 0x0131u, 0x0130u, 0x00F6u, 0x00D6u, 0x015Fu, 0x015Eu, 0x00FCu, 0x00DCu })
-            GetGlyph(c);
+        SavePreloadCache(cacheFile);
     }
 
     FontAtlas::~FontAtlas()

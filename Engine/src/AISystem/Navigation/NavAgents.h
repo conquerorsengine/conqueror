@@ -19,6 +19,12 @@ namespace Conqueror
         CQ_API void OnRuntimeStart(Scene& scene);
         // Editör "Bake" düğmesi / betik: pişir ve önbelleğe al
         CQ_API void Bake(Scene& scene);
+        // Sahne geometrisi son pişirmeden beri değişmediyse önbellekteki ağı kullanır, değiştiyse pişirir (betikten NavBake: her
+        // Play'de ~60 ms yeniden pişirme yapılmaz)
+        CQ_API void BakeCached(Scene& scene);
+        // Editörde sahne açılınca / kaydedilince: "Bake On Play" ağı önbelleğe önceden pişirilir (sahnenin kendi ağına dokunulmaz);
+        // ilk Play'de pişirme takılması olmaz (aynı geometri)
+        CQ_API void Prebake(Scene& scene);
         CQ_API void Update(Scene& scene, float dt);
         CQ_API bool SetDestination(Scene& scene, uint32_t agent, const glm::vec3& destination);
         CQ_API void Warp(Scene& scene, uint32_t agent, const glm::vec3& position);

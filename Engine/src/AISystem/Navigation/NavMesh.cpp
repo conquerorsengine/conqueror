@@ -715,7 +715,9 @@ namespace Conqueror
         h = HashFloat(h, settings.StepHeight); h = HashFloat(h, settings.CellSize);
         for (auto& s : sources)
         {
-            h = HashMix(h, (uint64_t)(uint32_t)s.E + 7);
+            // Varlık kimliği (UUID): editör sahnesi ile Play kopyasında aynı (entt tutamacı kopyada farklı olabilir)
+            const auto* id = reg.try_get<IDComponent>(s.E);
+            h = HashMix(h, (id ? (uint64_t)id->ID : (uint64_t)(uint32_t)s.E) + 7);
             h = HashMix(h, s.Area);
             const glm::mat4& w = reg.get<TransformComponent>(s.E).WorldTransform;
             for (int c = 0; c < 4; ++c)

@@ -154,6 +154,7 @@ namespace Conqueror::Editor
         bool m_ReturnToViewportOnStop = false;
         // Prefab Revert varlığı yeniden oluşturur: denetçi çizimi bittikten sonra (sonraki karede) uygulanır
         Entity m_PendingPrefabRevert;
+        const Scene* m_NavPrebakedScene = nullptr;   // gezinme ağı önceden pişirilen editör sahnesi
         // Sahne anlık görüntüsüyle geri alınabilir eylem (addon'lar, toplu düzenlemeler)
         std::function<void(const std::string&, const std::function<void()>&)> m_AddonUndoable;
         bool m_StepFrame = false;

@@ -333,7 +333,9 @@ namespace Conqueror::Scripting
         const char* GetLanguageId() const override { return "py"; }
         std::vector<std::string> GetExtensions() const override { return { ".py" }; }
 
-        void OnPlayStart() override { EnsureInit(); ClearAll(); }
+        // Yorumlayıcı ilk Python betiği yüklenirken başlar (LoadScript): Python betiği olmayan projede Play'in ilk karesi ~0,2 sn
+        // yorumlayıcı açılışını beklemesin
+        void OnPlayStart() override { if (m_Initialized) ClearAll(); }
         void OnPlayStop() override { if (m_Initialized) ClearAll(); }
 
         bool LoadScript(const std::string& path, std::string* error) override

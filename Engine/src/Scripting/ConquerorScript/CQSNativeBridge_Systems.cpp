@@ -679,7 +679,7 @@ namespace Conqueror::CQS
     {
         auto* scene = ScriptContext::GetActiveScene();
         if (!scene) return Value::MakeNull();
-        NavAgents::Bake(*scene);
+        NavAgents::BakeCached(*scene);
         return Value::MakeInt((int64_t)scene->GetNavMesh().GetCellCount());
     }
 

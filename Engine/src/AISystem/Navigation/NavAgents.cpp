@@ -87,6 +87,39 @@ namespace Conqueror
             cache.Valid = nav.IsBaked();
         }
 
+        void BakeCached(Scene& scene)
+        {
+            const uint64_t sig = NavMeshBuilder::ComputeSceneSignature(&scene);
+            auto& cache = Cache();
+            if (cache.Valid && cache.Signature == sig)
+            {
+                scene.GetNavMesh() = cache.Mesh;
+                ApplyAreaCosts(scene.GetNavMesh());
+                return;
+            }
+            Bake(scene);
+        }
+
+        void Prebake(Scene& scene)
+        {
+            bool bakeOnPlay = false;
+            for (auto e : scene.m_Registry.view<NavMeshSurfaceComponent>())
+                bakeOnPlay |= scene.m_Registry.get<NavMeshSurfaceComponent>(e).BakeOnPlay && scene.IsEntityActive(e);
+            if (!bakeOnPlay)
+                return;
+            scene.UpdateWorldTransforms();
+            const uint64_t sig = NavMeshBuilder::ComputeSceneSignature(&scene);
+            auto& cache = Cache();
+            if (cache.Valid && cache.Signature == sig)
+                return;
+            NavMesh nav;
+            ApplyAreaCosts(nav);
+            NavMeshBuilder::Bake(&scene, nav);
+            cache.Signature = sig;
+            cache.Mesh = nav;
+            cache.Valid = nav.IsBaked();
+        }
+
         void OnRuntimeStart(Scene& scene)
         {
             bool bakeOnPlay = false;

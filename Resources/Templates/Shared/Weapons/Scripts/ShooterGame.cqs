@@ -33,7 +33,8 @@ script ShooterGame : ConquerorScript
     func Start()
     {
         player = FindEntity("Player");
-        navCells = NavBake();
+        // Yol ağı yalnız botlar için (atış poligonunda bot yok: Play başında boşuna ~60 ms pişirme yapılmaz)
+        if (FindEntitiesWithScript("ShooterAI").Count > 0) { navCells = NavBake(); }
         if (mode == "Range") { Message("SHOOT THE TARGETS", 3.0); }
         else if (mode == "LaserTag") { Message("BLUE VS RED  -  FIRST TO " + scoreLimit, 3.0); }
         else if (mode == "Arena") { Message("FREE FOR ALL  -  FIRST TO " + scoreLimit, 3.0); }

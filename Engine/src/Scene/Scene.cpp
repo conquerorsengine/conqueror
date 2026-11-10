@@ -232,11 +232,15 @@ namespace Conqueror
     void Scene::OnRuntimeStart(bool newPlaySession)
     {
         // Native Script .cpp kaynakları: değiştiyse derlenir, modül yüklenir, sınıf bağlanır (oyunda hazır kitaplık)
-        NativeScriptCompiler::PrepareScene(*this);
+        {
+            CQ_PROFILE_SAMPLE("RuntimeStart.NativeScripts", Scripts);
+            NativeScriptCompiler::PrepareScene(*this);
+        }
         // Her oyun oturumu temiz betik çalışma zamanlarıyla başlar (statik durum taşınmaz);
         // oyun içi sahne geçişlerinde (LoadScene) çalışma zamanları korunur
         if (newPlaySession)
         {
+            CQ_PROFILE_SAMPLE("RuntimeStart.Session", Scripts);
             Scripting::ScriptRuntimes::PlayStart();
             AudioMixer::Get().BeginPlaySession();
             // Preloaded Shaders (Project Settings > Graphics): ilk kullanımda derleme takılması olmasın
@@ -256,6 +260,7 @@ namespace Conqueror
         // 3D fizik: tüm gövde/eklem/karakterler kurulur; sabit adımda betiklerin FixedUpdate'i çağrılır
         if (m_PhysicsWorld3D)
         {
+            CQ_PROFILE_SAMPLE("RuntimeStart.Physics3D", Physics);
             UpdateWorldTransforms();
             m_PhysicsWorld3D->OnFixedUpdate = [this](float dt) {
                 // Sabit adım kuvvetleri (her fizik adımına uygulanır): yüzdürme, Physics Volume, radyal kuvvet; sonra betiklerin FixedUpdate'i
@@ -282,8 +287,11 @@ namespace Conqueror
         }
 
         // Gezinme ağı: NavMesh Surface "Bake On Play" (aynı sahne geometrisi için önbellekten)
-        UpdateWorldTransforms();
-        NavAgents::OnRuntimeStart(*this);
+        {
+            CQ_PROFILE_SAMPLE("RuntimeStart.Navigation", AI);
+            UpdateWorldTransforms();
+            NavAgents::OnRuntimeStart(*this);
+        }
 
         // Game Mode: varsayılan oyuncuyu (Default Pawn) bir Player Start'ta oluştur
         GameFramework::BeginPlay(*this);
@@ -1085,6 +1093,7 @@ namespace Conqueror
         };
 
         std::vector<std::tuple<Scripting::ScriptRuntime*, void*, entt::entity>> created;
+        std::vector<const char*> createdNames;   // profiler örnek adı (sınıf adı)
         for (auto [entity, index] : pending)
         {
             ConquerorScriptData* script = findScript(entity, index);
@@ -1105,6 +1114,8 @@ namespace Conqueror
                 }
             }
 
+            // Profiler: betik başına yükleme + örnekleme (Play başındaki takılmanın hangi betikten geldiği görünsün)
+            CQ_PROFILE_SAMPLE(Profiling::FrameProfiler::Intern("Load " + p.filename().string()), Scripts);
             auto* runtime = Scripting::ScriptRuntimes::ForPath(resolvedPath);
             if (!runtime || !runtime->IsAvailable())
             {
@@ -1134,16 +1145,19 @@ namespace Conqueror
             for (auto& [field, value] : overrides)
                 runtime->SetField(instance, field, value);
             created.emplace_back(runtime, instance, entity);
+            createdNames.push_back(Profiling::FrameProfiler::Intern(className));
         }
 
         // Unity sırası: bu partideki tüm Awake'ler, sonra tüm Start'lar (Start'ta diğer betiklerin Awake'i bitmiş olur)
         for (const char* phase : { "Awake", "Start" })
         {
-            for (auto& [runtime, instance, entity] : created)
+            for (size_t ci = 0; ci < created.size(); ++ci)
             {
+                auto& [runtime, instance, entity] = created[ci];
                 if (Scripting::ScriptRuntimes::IsRetired(instance))
                     continue;
                 ScriptContext::EntityScope scope((uint32_t)entity);
+                CQ_PROFILE_SAMPLE(createdNames[ci], Scripts);
                 if (phase[0] == 'A')
                 {
                     runtime->Invoke(instance, "Awake", nullptr, 0);
@@ -2037,8 +2051,14 @@ namespace Conqueror
             const uint32_t vpW = viewportBounds ? (uint32_t)std::max(1.0f, viewportBounds[1].x - viewportBounds[0].x) : std::max(m_ViewportWidth, 1u);
             const uint32_t vpH = viewportBounds ? (uint32_t)std::max(1.0f, viewportBounds[1].y - viewportBounds[0].y) : std::max(m_ViewportHeight, 1u);
             m_EditorView2D = camera.Is2D();
-            CameraRenderTargets::Render(*this);
-            RenderScene3D(RenderCamera::FromEditorCamera(camera, vpW, vpH), true);
+            {
+                CQ_PROFILE_SAMPLE("Render.CameraTargets", Rendering);
+                CameraRenderTargets::Render(*this);
+            }
+            {
+                CQ_PROFILE_SAMPLE("Render.SceneEditor", Rendering);
+                RenderScene3D(RenderCamera::FromEditorCamera(camera, vpW, vpH), true);
+            }
 
             // 2D görünüm: ızgara arka plan katmanıdır (Unity gibi); sprite ve modeller hep önünde kalır
             if (camera.Is2D() && m_EditorViewOptions.Grid)
@@ -2483,13 +2503,19 @@ namespace Conqueror
             if (m_EditorViewOptions.UI)
             {
                 Renderer2D::Flush();
-                UISystem::RenderEditorOverlayCanvases(*this, camera.GetViewProjection(), m_UIScreenSize, !camera.Is2D());
+                {
+                    CQ_PROFILE_SAMPLE("Render.EditorCanvases", UI);
+                    UISystem::RenderEditorOverlayCanvases(*this, camera.GetViewProjection(), m_UIScreenSize, !camera.Is2D());
+                }
                 Renderer2D::BeginScene(camera, true);
             }
         }
 
         if (m_EditorViewOptions.Colliders || m_EditorViewOptions.AllColliders)
+        {
+            CQ_PROFILE_SAMPLE("Render.PhysicsGizmos", Rendering);
             DrawPhysicsGizmos();
+        }
         GridSystem::DrawEditorGizmos(*this, m_EditorSelection);
         Skeleton2D::DrawEditorGizmos(*this, m_EditorSelection);
         // Occlusion Culling görselleştirme: pişirilmiş hücre ızgarası ve kameranın hücresi
@@ -2532,10 +2558,15 @@ namespace Conqueror
         }
         if (m_ShowNavMesh)
             NavAgents::DrawDebug(m_NavMesh, camera.GetViewProjection());
-        DebugDraw::Render(camera.GetViewProjection());
-
-        Renderer2D::EndScene();
-        TextRenderer::EndScene();
+        {
+            CQ_PROFILE_SAMPLE("Render.DebugDraw", Rendering);
+            DebugDraw::Render(camera.GetViewProjection());
+        }
+        {
+            CQ_PROFILE_SAMPLE("Render.2DText", Rendering);
+            Renderer2D::EndScene();
+            TextRenderer::EndScene();
+        }
         DebugMetrics::SyncToRendererStats(Renderer::GetStats());
         DebugDraw::Clear();
     }
@@ -3216,7 +3247,10 @@ namespace Conqueror
             GameplaySystems::RenderRibbons(*this);
         }
         // Halolar ve lens parlamaları (toplamalı; parlama örtülmesi GPU sorgusuyla)
-        Billboards::RenderEffects(*this, camera);
+        {
+            CQ_PROFILE_SAMPLE("Render.Flares", Rendering);
+            Billboards::RenderEffects(*this, camera);
+        }
         // Video Player "Camera Near Plane": sahnenin önünde
         if (!editorView && !m_CapturingProbes)
             VideoPlayers::RenderCameraPlanes(*this, false);
