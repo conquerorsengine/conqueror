@@ -160,12 +160,37 @@ namespace Conqueror
         }
     }
 
-    void SpriteSheet::BuildOutlineTriangles(SpriteDef& sprite)
+    void SpriteSheet::BuildOutlineTriangles(SpriteDef& sprite, int extrude)
     {
         sprite.OutlineTriangles.clear();
         std::vector<uint32_t> tris;
-        for (const auto& poly : sprite.Outlines)
+        const glm::vec2 size(std::max(sprite.Rect.z, 1.0f), std::max(sprite.Rect.w, 1.0f));
+        for (const auto& source : sprite.Outlines)
         {
+            std::vector<glm::vec2> poly = source;
+            if (extrude > 0 && source.size() >= 3)
+            {
+                // Her köşe, iki kenarının dışa bakan normallerinin ortalaması boyunca kayar (dilimin dışına taşmaz)
+                const float side = Triangulate2D::SignedArea(source) >= 0.0f ? 1.0f : -1.0f;
+                const size_t n = source.size();
+                for (size_t i = 0; i < n; ++i)
+                {
+                    const glm::vec2 a = source[(i + n - 1) % n], b = source[i], c = source[(i + 1) % n];
+                    const glm::vec2 e0 = b - a, e1 = c - b;
+                    if (glm::dot(e0, e0) < 1e-6f || glm::dot(e1, e1) < 1e-6f)
+                        continue;
+                    const glm::vec2 n0 = glm::normalize(glm::vec2(e0.y, -e0.x)) * side, n1 = glm::normalize(glm::vec2(e1.y, -e1.x)) * side;
+                    glm::vec2 m = n0 + n1;
+                    const float len = glm::length(m);
+                    if (len < 1e-4f)
+                        continue;
+                    m /= len;
+                    const float cosHalf = std::max(glm::dot(m, n0), 0.35f);
+                    poly[i] = glm::clamp(b + m * ((float)extrude / cosHalf), glm::vec2(0.0f), size);
+                }
+                if (!Triangulate2D::Triangulate(poly, tris))
+                    poly = source;
+            }
             if (!Triangulate2D::Triangulate(poly, tris))
                 continue;
             for (uint32_t i : tris)
@@ -296,6 +321,8 @@ namespace Conqueror
         out << YAML::EndSeq;
         if (FullRectMesh)
             out << YAML::Key << "MeshType" << YAML::Value << "FullRect";
+        if (ExtrudeEdges > 0)
+            out << YAML::Key << "ExtrudeEdges" << YAML::Value << ExtrudeEdges;
         if (!SecondaryTextures.empty())
         {
             out << YAML::Key << "SecondaryTextures" << YAML::Value << YAML::BeginSeq;
@@ -376,10 +403,11 @@ namespace Conqueror
                             d.Skin.BoneWeight.push_back({ bw[i].as<float>(), bw[i + 1].as<float>(), bw[i + 2].as<float>(), bw[i + 3].as<float>() });
                         }
                 }
-                BuildOutlineTriangles(d);
+                BuildOutlineTriangles(d, root["ExtrudeEdges"].as<int>(0));
                 Sprites.push_back(d);
             }
             FullRectMesh = root["MeshType"].as<std::string>("") == "FullRect";
+            ExtrudeEdges = root["ExtrudeEdges"].as<int>(0);
             SecondaryTextures.clear();
             if (auto list = root["SecondaryTextures"]; list && list.IsSequence())
                 for (const auto& n : list)

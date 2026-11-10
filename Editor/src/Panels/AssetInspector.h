@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Renderer/RHI/TextureSettings.h"
+
 #include <string>
 
 namespace Conqueror::Editor::AssetInspector
@@ -10,6 +12,8 @@ namespace Conqueror::Editor::AssetInspector
     bool IsTexture(const std::string& path);
     // Otomasyon / araçlar: ayarları yaz ve yüklü dokuyu yerinde yenile
     bool ApplyTextureSettings(const std::string& path);
+    // Apply'ın görsel dışı sonuçları: Sprite Mode / Mesh Type / Extrude Edges (.cqsprite), Texture Shape: Cube (.cqcubemap)
+    void ApplyImportSideEffects(const std::string& path, const TextureImportSettings& settings);
     // Dışarıdan değişen ayarlardan sonra denetçi durumunu yeniden oku
     void Invalidate();
 }

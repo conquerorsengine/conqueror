@@ -38,12 +38,16 @@
 #include "Renderer/RHI/Texture.h"
 #include "Renderer/RHI/TextureSettings.h"
 #include "Renderer/SpriteSheet.h"
+#include "Core/Serialization/SceneSerializer.h"
+#include "Renderer/CubemapAsset.h"
 #include "Core/Logging/Log.h"
 #include "Core/Animation/AnimationController.h"
 #include "Core/Serialization/PrefabSerializer.h"
 #include "UI/EditorUI.h"
 
 #include <imgui.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 #include <IconsFontAwesome6.h>
 #include <stb_image.h>
 #include <stb_image_resize2.h>
@@ -247,8 +251,68 @@ namespace Conqueror::Editor::AssetInspector
         }
         st.Original = st.Edited;
         st.HasMeta = true;
+        ApplyImportSideEffects(path, st.Edited);
         Texture2D::ReloadFromDisk(path);
         return true;
+    }
+
+    void ApplyImportSideEffects(const std::string& path, const TextureImportSettings& s)
+    {
+        std::error_code ec;
+        // Texture Shape: Cube -> görselden cubemap varlığı
+        if (s.Shape == TextureShape::Cube && s.Type != TextureType::Sprite && s.Type != TextureType::UI)
+        {
+            const fs::path cube = fs::path(path).replace_extension(CubemapAssets::Extension);
+            if (!fs::exists(cube, ec))
+            {
+                CubemapAssetData data;
+                data.Source = CubemapAssetData::SourceKind::Panorama;
+                data.Panorama = SceneSerializer::ToAssetPath(path);
+                CubemapAssets::Save(cube.string(), data);
+            }
+        }
+        if (s.Type != TextureType::Sprite)
+            return;
+        SpriteSheet sheet;
+        sheet.TexturePath = path;
+        sheet.Load();
+        stbi_set_flip_vertically_on_load(0);
+        int w = 0, h = 0, channels = 0;
+        unsigned char* rgba = stbi_load(path.c_str(), &w, &h, &channels, 4);
+        if (!rgba)
+            return;
+        const glm::vec4 fullRect(0.0f, 0.0f, (float)w, (float)h);
+        // Single / Polygon: tüm görsel tek sprite (dilimli eski veri silinmez: Multiple'a dönülürse yerinde)
+        if (s.SpriteMode != SpriteImportMode::Multiple && sheet.Sprites.empty())
+        {
+            SpriteDef d;
+            d.Name = fs::path(path).stem().string();
+            d.Rect = fullRect;
+            sheet.Sprites.push_back(d);
+        }
+        if (s.SpriteMode == SpriteImportMode::Polygon && sheet.Sprites.size() == 1)
+        {
+            // Düzgün çokgen: dikdörtgene oturan elips üzerinde (ilk köşe üstte)
+            SpriteDef& d = sheet.Sprites[0];
+            std::vector<glm::vec2> polygon;
+            const glm::vec2 c(d.Rect.z * 0.5f, d.Rect.w * 0.5f);
+            for (int i = 0; i < std::max(s.PolygonSides, 3); ++i)
+            {
+                const float a = glm::half_pi<float>() + glm::two_pi<float>() * (float)i / (float)std::max(s.PolygonSides, 3);
+                polygon.emplace_back(c.x + std::cos(a) * c.x, c.y + std::sin(a) * c.y);
+            }
+            d.Outlines = { polygon };
+        }
+        // Mesh Type: Tight -> Custom Outline'ı olmayan dilimlere görselden dış çizgi
+        if (s.TightMesh)
+            for (auto& d : sheet.Sprites)
+                if (d.Outlines.empty())
+                    d.Outlines = SpriteSheet::GenerateOutline(rgba, w, h, d.Rect, 0.5f);
+        stbi_image_free(rgba);
+        sheet.FullRectMesh = !s.TightMesh;
+        sheet.ExtrudeEdges = s.TightMesh ? s.ExtrudeEdges : 0;
+        if (!sheet.Sprites.empty())
+            sheet.Save();
     }
 
     static void DrawTexture(const std::string& path)
@@ -306,35 +370,131 @@ namespace Conqueror::Editor::AssetInspector
         {
             TextureImportSettings d = TextureImportSettings::DefaultsFor((TextureType)type);
             d.MaxSize = s.MaxSize;
+            d.Resize = s.Resize;
+            d.Format = s.Format;
+            d.Compression = s.Compression;
+            d.UseCrunch = s.UseCrunch;
+            d.CrunchQuality = s.CrunchQuality;
+            for (int i = 0; i < kTexturePlatformCount; ++i)
+                d.Platforms[i] = s.Platforms[i];
             s = d;
         }
+        const bool spriteLike = s.Type == TextureType::Sprite || s.Type == TextureType::UI;
+        {
+            const char* shapes[] = { "2D", "Cube" };
+            int shape = spriteLike ? 0 : (int)s.Shape;
+            ImGui::BeginDisabled(spriteLike);
+            if (UI::Combo("Texture Shape", shape, shapes, 2, "Cube: Apply creates a cubemap asset (.cqcubemap) from this panorama image"))
+                s.Shape = (TextureShape)shape;
+            ImGui::EndDisabled();
+        }
         if (s.Type == TextureType::Sprite)
+        {
+            const char* spriteModes[] = { "Single", "Multiple", "Polygon" };
+            int spriteMode = (int)s.SpriteMode;
+            if (UI::Combo("Sprite Mode", spriteMode, spriteModes, 3, "Single: the whole image is one sprite. Multiple: several slices. Polygon: a regular polygon"))
+                s.SpriteMode = (SpriteImportMode)spriteMode;
+            ImGui::Indent(14.0f);
+            if (s.SpriteMode == SpriteImportMode::Polygon)
+                UI::SliderInt("Polygon Sides", s.PolygonSides, 3, 64, "Number of sides of the polygon sprite");
             UI::DragFloat("Pixels Per Unit", s.PixelsPerUnit, 1.0f, 1.0f, 10000.0f, "%.0f", "Default for Sprite Renderers using this texture");
+            const char* meshTypes[] = { "Full Rect", "Tight" };
+            int meshType = s.TightMesh ? 1 : 0;
+            if (UI::Combo("Mesh Type", meshType, meshTypes, 2, "Tight: the sprite is drawn only where it has pixels (Apply generates the outline). Full Rect: a quad"))
+                s.TightMesh = meshType == 1;
+            ImGui::BeginDisabled(!s.TightMesh);
+            UI::SliderInt("Extrude Edges", s.ExtrudeEdges, 0, 32, "Pixels added around the Tight mesh so filtering does not cut the edge");
+            ImGui::EndDisabled();
+            UI::Checkbox("Generate Physics Shape", s.GeneratePhysicsShape, "Polygon Collider 2D follows the sprite's shape; off: a rectangle");
+            ImGui::Unindent(14.0f);
+            // Salt okunur görselde de açılır (görüntüleme)
+            ImGui::EndDisabled();
+            if (UI::ButtonFullWidth(ICON_FA_OBJECT_UNGROUP "  Open Sprite Editor") && InspectorPanel::s_OpenSpriteEditor)
+                InspectorPanel::s_OpenSpriteEditor(path);
+            ImGui::BeginDisabled(readOnly);
+        }
         if (s.Type == TextureType::NormalMap)
         {
             UI::Checkbox("Create From Grayscale", s.NormalFromGrayscale, "Treat the image as a height map and generate a normal map from it");
             if (s.NormalFromGrayscale)
                 UI::SliderFloat("Bumpiness", s.Bumpiness, 0.1f, 20.0f, "%.2f");
         }
-        UI::SubHeader("Sampling");
-        const char* filters[] = { "Point (no filter)", "Bilinear", "Trilinear" };
-        int filter = (int)s.Filter;
-        if (UI::Combo("Filter Mode", filter, filters, 3, "Point keeps pixel art crisp"))
-            s.Filter = (TextureFilter)filter;
-        const char* wraps[] = { "Repeat", "Clamp", "Mirror" };
-        int wrap = (int)s.Wrap;
-        if (UI::Combo("Wrap Mode", wrap, wraps, 3))
-            s.Wrap = (TextureWrap)wrap;
-        UI::Checkbox("Generate Mipmaps", s.Mipmaps, "Smaller copies used at a distance: removes shimmering on 3D surfaces");
-        ImGui::BeginDisabled(!s.Mipmaps || s.Filter == TextureFilter::Point);
-        UI::SliderInt("Aniso Level", s.Anisotropy, 1, 16, "Sharper textures on surfaces seen at grazing angles");
-        ImGui::EndDisabled();
-        const char* sizes[] = { "32", "64", "128", "256", "512", "1024", "2048", "4096", "8192", "16384" };
-        int sizeIndex = 0;
-        for (int i = 0; i < 10; ++i)
-            if (std::atoi(sizes[i]) == s.MaxSize) sizeIndex = i;
-        if (UI::Combo("Max Size", sizeIndex, sizes, 10, "Larger images are downscaled on import"))
-            s.MaxSize = std::atoi(sizes[sizeIndex]);
+        if (ImGui::CollapsingHeader("Advanced", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            const char* wraps[] = { "Repeat", "Clamp", "Mirror" };
+            int wrap = (int)s.Wrap;
+            if (UI::Combo("Wrap Mode", wrap, wraps, 3))
+                s.Wrap = (TextureWrap)wrap;
+            const char* filters[] = { "Point (no filter)", "Bilinear", "Trilinear" };
+            int filter = (int)s.Filter;
+            if (UI::Combo("Filter Mode", filter, filters, 3, "Point keeps pixel art crisp"))
+                s.Filter = (TextureFilter)filter;
+            ImGui::BeginDisabled(!s.Mipmaps || s.Filter == TextureFilter::Point);
+            UI::SliderInt("Aniso Level", s.Anisotropy, 1, 16, "Sharper textures on surfaces seen at grazing angles");
+            ImGui::EndDisabled();
+            UI::Checkbox("Generate Mipmaps", s.Mipmaps, "Smaller copies used at a distance: removes shimmering on 3D surfaces");
+        }
+
+        // Platform sekmeleri (Unity: Default / PC / Web ...)
+        ImGui::Spacing();
+        if (ImGui::BeginTabBar("##TexturePlatforms"))
+        {
+            auto platformFields = [](int& maxSize, TextureResizeAlgorithm& resize, TextureFormatChoice& format, TextureCompression& compression, bool& crunch, int& crunchQuality) {
+                const char* sizes[] = { "32", "64", "128", "256", "512", "1024", "2048", "4096", "8192", "16384" };
+                int sizeIndex = 0;
+                for (int i = 0; i < 10; ++i)
+                    if (std::atoi(sizes[i]) == maxSize) sizeIndex = i;
+                if (UI::Combo("Max Size", sizeIndex, sizes, 10, "Larger images are downscaled on import"))
+                    maxSize = std::atoi(sizes[sizeIndex]);
+                const char* resizes[] = { "Mitchell", "Bilinear" };
+                int r = (int)resize;
+                if (UI::Combo("Resize Algorithm", r, resizes, 2, "Used when the image is larger than Max Size"))
+                    resize = (TextureResizeAlgorithm)r;
+                const char* formats[] = { "Automatic", "RGBA 32 bit", "RGB 24 bit", "R 8 bit" };
+                int f = (int)format;
+                if (UI::Combo("Format", f, formats, 4, "GPU pixel format. Automatic picks one from the image and Compression"))
+                    format = (TextureFormatChoice)f;
+                ImGui::BeginDisabled(format != TextureFormatChoice::Automatic);
+                const char* compressions[] = { "None", "Low Quality", "Normal Quality", "High Quality" };
+                int c = (int)compression;
+                if (UI::Combo("Compression", c, compressions, 4, "GPU block compression: less video memory. Low / Normal: DXT1 or DXT5, High: BC7"))
+                    compression = (TextureCompression)c;
+                ImGui::BeginDisabled(compression == TextureCompression::None);
+                UI::Checkbox("Use Crunch Compression", crunch, "Lossy re-encoding of the image file when the game is built: a smaller build (JPEG, or reduced-color PNG with transparency)");
+                if (crunch)
+                    UI::SliderInt("Compressor Quality", crunchQuality, 0, 100, "Higher: better image, larger file");
+                ImGui::EndDisabled();
+                ImGui::EndDisabled();
+            };
+            if (ImGui::BeginTabItem("Default"))
+            {
+                platformFields(s.MaxSize, s.Resize, s.Format, s.Compression, s.UseCrunch, s.CrunchQuality);
+                ImGui::EndTabItem();
+            }
+            static const char* const kPlatformTabs[] = { ICON_FA_DESKTOP " PC", ICON_FA_GLOBE " Web", ICON_FA_MOBILE_SCREEN " Mobile" };
+            static const char* const kPlatformNames[] = { "Override for PC", "Override for Web", "Override for Mobile" };
+            for (int i = 0; i < kTexturePlatformCount; ++i)
+                if (ImGui::BeginTabItem(kPlatformTabs[i]))
+                {
+                    auto& o = s.Platforms[i];
+                    const bool before = o.Override;
+                    UI::Checkbox(kPlatformNames[i], o.Override, "Use different settings on this platform");
+                    if (o.Override && !before)
+                    {
+                        o.MaxSize = s.MaxSize;
+                        o.Resize = s.Resize;
+                        o.Format = s.Format;
+                        o.Compression = s.Compression;
+                        o.UseCrunch = s.UseCrunch;
+                        o.CrunchQuality = s.CrunchQuality;
+                    }
+                    ImGui::BeginDisabled(!o.Override);
+                    platformFields(o.MaxSize, o.Resize, o.Format, o.Compression, o.UseCrunch, o.CrunchQuality);
+                    ImGui::EndDisabled();
+                    ImGui::EndTabItem();
+                }
+            ImGui::EndTabBar();
+        }
 
         ImGui::Spacing();
         const bool dirty = s != st.Original;
@@ -353,6 +513,33 @@ namespace Conqueror::Editor::AssetInspector
             ImGui::TextColored(UI::Colors::Warning, "Unapplied changes");
         }
         ImGui::EndDisabled();
+
+        // ---- İçe aktarma adımları (Unity: Asset PostProcessors; bu görselde çalışan adımlar)
+        if (ImGui::CollapsingHeader("Asset PostProcessors"))
+        {
+            const TextureImportSettings& applied = st.Original;
+            std::vector<const char*> steps = { "Conqueror.Import.TextureImporter" };
+            if (applied.Mipmaps)
+                steps.push_back("Conqueror.Import.MipmapGenerator");
+            if (applied.Type == TextureType::NormalMap && applied.NormalFromGrayscale)
+                steps.push_back("Conqueror.Import.NormalFromGrayscale");
+            if (applied.Format == TextureFormatChoice::Automatic && applied.Compression != TextureCompression::None)
+                steps.push_back("Conqueror.Import.BlockCompressor");
+            if (applied.Type == TextureType::Sprite)
+            {
+                steps.push_back("Conqueror.Sprites.SpriteSheetImporter");
+                if (applied.TightMesh)
+                    steps.push_back("Conqueror.Sprites.TightMeshGenerator");
+                if (applied.GeneratePhysicsShape)
+                    steps.push_back("Conqueror.Sprites.PhysicsShapeGenerator");
+            }
+            for (const char* name : steps)
+            {
+                ImGui::Bullet();
+                ImGui::SameLine();
+                ImGui::TextUnformatted(name);
+            }
+        }
 
         // ---- Önizleme
         UI::SubHeader("Preview");
@@ -386,6 +573,16 @@ namespace Conqueror::Editor::AssetInspector
             ImVec2 size((float)st.PixelW * scale, (float)st.PixelH * scale);
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + std::max(0.0f, (avail - size.x) * 0.5f));
             ImGui::Image((ImTextureID)(uint64_t)st.Preview->GetRendererID(), size, ImVec2(0, 1), ImVec2(1, 0));
+        }
+        // Unity'deki önizleme altı satırı: 2048x880 (NPOT)  RGB Compressed DXT1|BC1 sRGB  0.9 MB
+        if (live)
+        {
+            const uint32_t iw = live->GetWidth(), ih = live->GetHeight();
+            const bool npot = (iw & (iw - 1)) != 0 || (ih & (ih - 1)) != 0;
+            const std::string line = std::to_string(iw) + "x" + std::to_string(ih) + (npot ? " (NPOT)  " : "  ") + live->GetFormatName() +
+                                     (live->GetImportSettings().Type == TextureType::NormalMap ? "" : " sRGB") + "  " + FormatBytes(live->GetMemoryBytes());
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + std::max(0.0f, (ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize(line.c_str()).x) * 0.5f));
+            ImGui::TextUnformatted(line.c_str());
         }
 
         // ---- Bilgi

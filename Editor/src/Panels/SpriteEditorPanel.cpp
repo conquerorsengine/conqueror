@@ -1,6 +1,8 @@
 #include "SpriteEditorPanel.h"
 #include "ContentBrowserPanel.h"
+#include "AssetInspector.h"
 #include "Renderer/RHI/Texture.h"
+#include "Renderer/RHI/TextureSettings.h"
 #include "Core/Logging/Log.h"
 #include "UI/EditorUI.h"
 
@@ -111,6 +113,21 @@ namespace Conqueror::Editor
         }
         if (!m_Sheet.Save())
             return false;
+        // Birden çok dilim: Sprite Mode = Multiple (içe aktarma ayarı yoksa görsel Sprite türüne geçer: mipmapsız, net)
+        if (m_Sheet.Sprites.size() > 1)
+        {
+            TextureImportSettings import;
+            const bool hasMeta = TextureImportSettings::Load(m_TexturePath.string(), import);
+            if (!hasMeta)
+                import = TextureImportSettings::DefaultsFor(TextureType::Sprite);
+            if (!hasMeta || import.SpriteMode != SpriteImportMode::Multiple)
+            {
+                import.SpriteMode = SpriteImportMode::Multiple;
+                import.Save(m_TexturePath.string());
+                Texture2D::ReloadFromDisk(m_TexturePath.string());
+                AssetInspector::Invalidate();
+            }
+        }
         m_Dirty = false;
         CQ_CORE_INFO("Sprite Editor: saved {0} sprites -> {1}", m_Sheet.Sprites.size(), SpriteSheet::MetaPathFor(m_Sheet.TexturePath).string());
         return true;

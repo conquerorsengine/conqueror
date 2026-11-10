@@ -169,17 +169,54 @@ namespace Conqueror
         if (resize)
         {
             std::vector<uint8_t> scaled((size_t)tw * th * comps);
-            // Renk dokuları sRGB kodlu: ölçekleme doğrusal uzayda (normal haritaları doğrusal)
-            if (m_Settings.Type == TextureType::NormalMap)
-                stbir_resize_uint8_linear(pixels.data(), w, h, 0, scaled.data(), (int)tw, (int)th, 0, comps == 4 ? STBIR_RGBA : STBIR_RGB);
-            else
-                stbir_resize_uint8_srgb(pixels.data(), w, h, 0, scaled.data(), (int)tw, (int)th, 0, comps == 4 ? STBIR_RGBA : STBIR_RGB);
+            // Renk dokuları sRGB kodlu: ölçekleme doğrusal uzayda (normal haritaları doğrusal). Resize Algorithm: Mitchell ya da Bilinear
+            stbir_resize(pixels.data(), w, h, 0, scaled.data(), (int)tw, (int)th, 0, comps == 4 ? STBIR_RGBA : STBIR_RGB,
+                         m_Settings.Type == TextureType::NormalMap ? STBIR_TYPE_UINT8 : STBIR_TYPE_UINT8_SRGB, STBIR_EDGE_CLAMP,
+                         m_Settings.Resize == TextureResizeAlgorithm::Bilinear ? STBIR_FILTER_TRIANGLE : STBIR_FILTER_MITCHELL);
             pixels.swap(scaled);
         }
-        if (comps == 3)
-            Upload(pixels.data(), tw, th, GL_RGB8, GL_RGB, GL_UNSIGNED_BYTE, 3);
-        else
-            Upload(pixels.data(), tw, th, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, 4);
+        // Format ve Compression (Import Settings): GPU biçimi
+        const size_t pixelCount = (size_t)tw * th;
+        if (m_Settings.Format == TextureFormatChoice::R8)
+        {
+            std::vector<uint8_t> red(pixelCount);
+            for (size_t i = 0; i < pixelCount; ++i)
+                red[i] = pixels[i * (size_t)comps];
+            Upload(red.data(), tw, th, GL_R8, GL_RED, GL_UNSIGNED_BYTE, 1);
+            return true;
+        }
+        if (m_Settings.Format == TextureFormatChoice::RGB24 && comps == 4)
+        {
+            std::vector<uint8_t> rgb(pixelCount * 3);
+            for (size_t i = 0; i < pixelCount; ++i)
+                for (int k = 0; k < 3; ++k)
+                    rgb[i * 3 + (size_t)k] = pixels[i * 4 + (size_t)k];
+            pixels.swap(rgb);
+            comps = 3;
+        }
+        else if (m_Settings.Format == TextureFormatChoice::RGBA32 && comps == 3)
+        {
+            std::vector<uint8_t> rgba(pixelCount * 4, 255);
+            for (size_t i = 0; i < pixelCount; ++i)
+                for (int k = 0; k < 3; ++k)
+                    rgba[i * 4 + (size_t)k] = pixels[i * 3 + (size_t)k];
+            pixels.swap(rgba);
+            comps = 4;
+        }
+        GLenum internalFormat = comps == 3 ? GL_RGB8 : GL_RGBA8;
+        if (m_Settings.Format == TextureFormatChoice::Automatic && m_Settings.Compression != TextureCompression::None)
+        {
+            bool hasAlpha = false;
+            if (comps == 4)
+                for (size_t i = 0; i < pixelCount && !hasAlpha; ++i)
+                    hasAlpha = pixels[i * 4 + 3] != 255;
+            // Sürücü yüklerken sıkıştırır; uzantı yoksa sıkıştırılmamış kalır
+            if (m_Settings.Compression == TextureCompression::HighQuality && (GLAD_GL_VERSION_4_2 || GLAD_GL_ARB_texture_compression_bptc))
+                internalFormat = GL_COMPRESSED_RGBA_BPTC_UNORM;
+            else if (GLAD_GL_EXT_texture_compression_s3tc)
+                internalFormat = hasAlpha ? GL_COMPRESSED_RGBA_S3TC_DXT5_EXT : GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+        }
+        Upload(pixels.data(), tw, th, internalFormat, comps == 3 ? GL_RGB : GL_RGBA, GL_UNSIGNED_BYTE, (uint32_t)comps);
         return true;
     }
 
@@ -209,6 +246,19 @@ namespace Conqueror
         uint64_t bytes = (uint64_t)width * height * bytesPerPixel;
         if (m_MipLevels > 1)
             bytes = bytes * 4 / 3;   // tam mip zinciri ~ %33 ek
+        GLint compressed = GL_FALSE;
+        glGetTextureLevelParameteriv(m_RendererID, 0, GL_TEXTURE_COMPRESSED, &compressed);
+        if (compressed == GL_TRUE)
+        {
+            // Sıkıştırılmış: gerçek boyut sürücüden
+            bytes = 0;
+            for (uint32_t level = 0; level < m_MipLevels; ++level)
+            {
+                GLint size = 0;
+                glGetTextureLevelParameteriv(m_RendererID, (GLint)level, GL_TEXTURE_COMPRESSED_IMAGE_SIZE, &size);
+                bytes += (uint64_t)std::max(size, 0);
+            }
+        }
         TrackMemory(m_MemoryBytes, bytes);
     }
 
@@ -264,6 +314,10 @@ namespace Conqueror
             case GL_RGB8: return "RGB8";
             case GL_RGBA16: return "RGBA16";
             case GL_RGBA16F: return "RGBA16F (HDR)";
+            case GL_R8: return "R8";
+            case GL_COMPRESSED_RGB_S3TC_DXT1_EXT: return "RGB Compressed DXT1|BC1";
+            case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT: return "RGBA Compressed DXT5|BC3";
+            case GL_COMPRESSED_RGBA_BPTC_UNORM: return "RGBA Compressed BC7";
             default: return "Unknown";
         }
     }
@@ -283,6 +337,7 @@ namespace Conqueror
         if (m_Path.empty())
             return false;
         TextureImportSettings::Load(m_Path, m_Settings);
+        m_Settings = m_Settings.ForPlatform(TextureImportSettings::CurrentPlatform());
         std::vector<uint8_t> bytes;
         if (!ReadFile(m_Path, bytes))
         {
@@ -333,6 +388,7 @@ namespace Conqueror
             m_Path = canonical.string();
 
         TextureImportSettings::Load(m_Path, m_Settings);
+        m_Settings = m_Settings.ForPlatform(TextureImportSettings::CurrentPlatform());
         std::vector<uint8_t> bytes;
         if (!ReadFile(m_Path, bytes))
         {

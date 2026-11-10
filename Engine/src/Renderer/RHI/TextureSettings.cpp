@@ -14,7 +14,37 @@ namespace Conqueror
     {
         return Type == o.Type && Filter == o.Filter && Wrap == o.Wrap && Mipmaps == o.Mipmaps && Anisotropy == o.Anisotropy &&
                MaxSize == o.MaxSize && NormalFromGrayscale == o.NormalFromGrayscale && std::fabs(Bumpiness - o.Bumpiness) < 1e-6f &&
-               std::fabs(PixelsPerUnit - o.PixelsPerUnit) < 1e-6f;
+               std::fabs(PixelsPerUnit - o.PixelsPerUnit) < 1e-6f && Shape == o.Shape && SpriteMode == o.SpriteMode && PolygonSides == o.PolygonSides &&
+               TightMesh == o.TightMesh && ExtrudeEdges == o.ExtrudeEdges && GeneratePhysicsShape == o.GeneratePhysicsShape && Resize == o.Resize &&
+               Format == o.Format && Compression == o.Compression && UseCrunch == o.UseCrunch && CrunchQuality == o.CrunchQuality &&
+               Platforms[0] == o.Platforms[0] && Platforms[1] == o.Platforms[1] && Platforms[2] == o.Platforms[2];
+    }
+
+    TexturePlatform TextureImportSettings::CurrentPlatform()
+    {
+#if defined(__EMSCRIPTEN__)
+        return TexturePlatform::Web;
+#elif defined(__ANDROID__) || (defined(__APPLE__) && defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE)
+        return TexturePlatform::Mobile;
+#else
+        return TexturePlatform::PC;
+#endif
+    }
+
+    TextureImportSettings TextureImportSettings::ForPlatform(TexturePlatform platform) const
+    {
+        TextureImportSettings s = *this;
+        const PlatformTextureSettings& p = Platforms[(int)platform];
+        if (p.Override)
+        {
+            s.MaxSize = p.MaxSize;
+            s.Resize = p.Resize;
+            s.Format = p.Format;
+            s.Compression = p.Compression;
+            s.UseCrunch = p.UseCrunch;
+            s.CrunchQuality = p.CrunchQuality;
+        }
+        return s;
     }
 
     TextureImportSettings TextureImportSettings::DefaultsFor(TextureType type)
@@ -94,6 +124,39 @@ namespace Conqueror
             if (t["NormalFromGrayscale"]) out.NormalFromGrayscale = t["NormalFromGrayscale"].as<bool>();
             if (t["Bumpiness"]) out.Bumpiness = t["Bumpiness"].as<float>();
             if (t["PixelsPerUnit"]) out.PixelsPerUnit = std::max(0.01f, t["PixelsPerUnit"].as<float>());
+            static const char* shapes[] = { "2D", "Cube" };
+            static const char* spriteModes[] = { "Single", "Multiple", "Polygon" };
+            out.Shape = ParseEnum(t["Shape"], shapes, 2, out.Shape);
+            out.SpriteMode = ParseEnum(t["SpriteMode"], spriteModes, 3, out.SpriteMode);
+            if (t["PolygonSides"]) out.PolygonSides = std::clamp(t["PolygonSides"].as<int>(), 3, 128);
+            if (t["MeshType"]) out.TightMesh = t["MeshType"].as<std::string>() != "FullRect";
+            if (t["ExtrudeEdges"]) out.ExtrudeEdges = std::clamp(t["ExtrudeEdges"].as<int>(), 0, 32);
+            if (t["GeneratePhysicsShape"]) out.GeneratePhysicsShape = t["GeneratePhysicsShape"].as<bool>();
+            auto readPlatform = [](const YAML::Node& n, int& maxSize, TextureResizeAlgorithm& resize, TextureFormatChoice& format, TextureCompression& compression, bool& crunch, int& quality) {
+                static const char* resizes[] = { "Mitchell", "Bilinear" };
+                static const char* formats[] = { "Automatic", "RGBA32", "RGB24", "R8" };
+                static const char* compressions[] = { "None", "Low", "Normal", "High" };
+                if (n["MaxSize"]) maxSize = std::clamp(n["MaxSize"].as<int>(), 32, 16384);
+                resize = ParseEnum(n["Resize"], resizes, 2, resize);
+                format = ParseEnum(n["Format"], formats, 4, format);
+                compression = ParseEnum(n["Compression"], compressions, 4, compression);
+                if (n["Crunch"]) crunch = n["Crunch"].as<bool>();
+                if (n["CrunchQuality"]) quality = std::clamp(n["CrunchQuality"].as<int>(), 0, 100);
+            };
+            int unused = out.MaxSize;
+            readPlatform(t, unused, out.Resize, out.Format, out.Compression, out.UseCrunch, out.CrunchQuality);
+            if (auto list = t["Platforms"]; list && list.IsMap())
+            {
+                static const char* platforms[] = { "PC", "Web", "Mobile" };
+                for (int i = 0; i < kTexturePlatformCount; ++i)
+                    if (auto n = list[platforms[i]])
+                    {
+                        auto& p = out.Platforms[i];
+                        p.Override = true;
+                        p.MaxSize = out.MaxSize;
+                        readPlatform(n, p.MaxSize, p.Resize, p.Format, p.Compression, p.UseCrunch, p.CrunchQuality);
+                    }
+            }
             return true;
         }
         catch (const std::exception& e)
@@ -116,6 +179,37 @@ namespace Conqueror
         out << YAML::Key << "NormalFromGrayscale" << YAML::Value << NormalFromGrayscale;
         out << YAML::Key << "Bumpiness" << YAML::Value << Bumpiness;
         out << YAML::Key << "PixelsPerUnit" << YAML::Value << PixelsPerUnit;
+        out << YAML::Key << "Shape" << YAML::Value << (Shape == TextureShape::Cube ? "Cube" : "2D");
+        out << YAML::Key << "SpriteMode" << YAML::Value << (SpriteMode == SpriteImportMode::Multiple ? "Multiple" : SpriteMode == SpriteImportMode::Polygon ? "Polygon" : "Single");
+        out << YAML::Key << "PolygonSides" << YAML::Value << PolygonSides;
+        out << YAML::Key << "MeshType" << YAML::Value << (TightMesh ? "Tight" : "FullRect");
+        out << YAML::Key << "ExtrudeEdges" << YAML::Value << ExtrudeEdges;
+        out << YAML::Key << "GeneratePhysicsShape" << YAML::Value << GeneratePhysicsShape;
+        auto writePlatform = [&out](TextureResizeAlgorithm resize, TextureFormatChoice format, TextureCompression compression, bool crunch, int quality) {
+            static const char* formats[] = { "Automatic", "RGBA32", "RGB24", "R8" };
+            static const char* compressions[] = { "None", "Low", "Normal", "High" };
+            out << YAML::Key << "Resize" << YAML::Value << (resize == TextureResizeAlgorithm::Bilinear ? "Bilinear" : "Mitchell");
+            out << YAML::Key << "Format" << YAML::Value << formats[(int)format];
+            out << YAML::Key << "Compression" << YAML::Value << compressions[(int)compression];
+            out << YAML::Key << "Crunch" << YAML::Value << crunch;
+            out << YAML::Key << "CrunchQuality" << YAML::Value << quality;
+        };
+        writePlatform(Resize, Format, Compression, UseCrunch, CrunchQuality);
+        if (Platforms[0].Override || Platforms[1].Override || Platforms[2].Override)
+        {
+            static const char* platforms[] = { "PC", "Web", "Mobile" };
+            out << YAML::Key << "Platforms" << YAML::Value << YAML::BeginMap;
+            for (int i = 0; i < kTexturePlatformCount; ++i)
+                if (Platforms[i].Override)
+                {
+                    const auto& p = Platforms[i];
+                    out << YAML::Key << platforms[i] << YAML::Value << YAML::BeginMap;
+                    out << YAML::Key << "MaxSize" << YAML::Value << p.MaxSize;
+                    writePlatform(p.Resize, p.Format, p.Compression, p.UseCrunch, p.CrunchQuality);
+                    out << YAML::EndMap;
+                }
+            out << YAML::EndMap;
+        }
         out << YAML::EndMap << YAML::EndMap;
         std::ofstream f(MetaPath(texturePath));
         if (!f.is_open())

@@ -59,6 +59,7 @@ namespace Conqueror
         struct SecondaryTexture { std::string Name; std::string Path; };
         std::vector<SecondaryTexture> SecondaryTextures;
         bool FullRectMesh = false;     // Mesh Type: Full Rect (Custom Outline yok sayılır)
+        int ExtrudeEdges = 0;          // çizim ağı bu kadar piksel dışa genişler (bilineer kenar kesilmesin)
 
         const SpriteDef* Find(const std::string& name) const;
         SpriteDef* Find(const std::string& name);
@@ -82,7 +83,7 @@ namespace Conqueror
         static std::vector<std::vector<glm::vec2>> GenerateOutline(const uint8_t* rgba, int width, int height, const glm::vec4& rect, float tolerance,
                                                                    uint8_t alphaThreshold = 1);
         // Outlines -> OutlineTriangles
-        static void BuildOutlineTriangles(SpriteDef& sprite);
+        static void BuildOutlineTriangles(SpriteDef& sprite, int extrude = 0);
         // Dikdörtgeni saydam kenarlardan kırp
         static glm::vec4 Trim(const uint8_t* rgba, int width, int height, const glm::vec4& rect, uint8_t alphaThreshold = 1);
 

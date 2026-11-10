@@ -7,7 +7,10 @@
 #include "Core/Project/PlatformModules.h"
 #include "Scripting/NativeScriptCompiler.h"
 #include "Core/Logging/Log.h"
+#include "Renderer/RHI/TextureSettings.h"
 
+#include <stb_image.h>
+#include "stb_image_write.h"
 #include <yaml-cpp/yaml.h>
 
 #include <algorithm>
@@ -70,6 +73,75 @@ namespace Conqueror::Editor
             size_t Files = 0;
             uint64_t Bytes = 0;
         };
+
+        // Use Crunch Compression (Texture Import): oyun klasöründeki görsel kayıplı olarak küçültülür (saydamsız JPEG, saydamlıysa renk
+        // basamakları azaltılmış PNG). Dosya adı değişmez: stb biçimi içerikten tanır. Küçülmüyorsa özgün dosya kalır
+        void CrunchTextures(const fs::path& assets)
+        {
+            std::error_code ec;
+            uint64_t before = 0, after = 0;
+            int count = 0;
+            for (fs::recursive_directory_iterator it(assets, ec), end; !ec && it != end; it.increment(ec))
+            {
+                if (it->path().extension() != ".meta")
+                    continue;
+                fs::path image = it->path();
+                image.replace_extension();
+                std::error_code fe;
+                if (!fs::is_regular_file(image, fe))
+                    continue;
+                TextureImportSettings settings;
+                if (!TextureImportSettings::Load(image.string(), settings))
+                    continue;
+                settings = settings.ForPlatform(TextureImportSettings::CurrentPlatform());
+                if (!settings.UseCrunch || settings.Compression == TextureCompression::None)
+                    continue;
+                if (stbi_is_hdr(image.string().c_str()) || stbi_is_16_bit(image.string().c_str()))
+                    continue;
+                stbi_set_flip_vertically_on_load_thread(0);
+                int w = 0, h = 0, channels = 0;
+                unsigned char* pixels = stbi_load(image.string().c_str(), &w, &h, &channels, 4);
+                if (!pixels)
+                    continue;
+                bool hasAlpha = false;
+                for (size_t i = 0; i < (size_t)w * h && !hasAlpha; ++i)
+                    hasAlpha = pixels[i * 4 + 3] != 255;
+                std::vector<unsigned char> encoded;
+                auto sink = [](void* context, void* data, int size) {
+                    auto& out = *(std::vector<unsigned char>*)context;
+                    out.insert(out.end(), (unsigned char*)data, (unsigned char*)data + size);
+                };
+                const int quality = std::clamp(settings.CrunchQuality, 0, 100);
+                if (!hasAlpha)
+                {
+                    std::vector<unsigned char> rgb((size_t)w * h * 3);
+                    for (size_t i = 0; i < (size_t)w * h; ++i)
+                        for (int k = 0; k < 3; ++k)
+                            rgb[i * 3 + (size_t)k] = pixels[i * 4 + (size_t)k];
+                    stbi_write_jpg_to_func(sink, &encoded, w, h, 3, rgb.data(), 25 + quality * 70 / 100);
+                }
+                else
+                {
+                    const int levels = 8 + quality * 56 / 100;       // kanal başına basamak
+                    for (size_t i = 0; i < (size_t)w * h * 4; ++i)
+                        if (i % 4 != 3)
+                            pixels[i] = (unsigned char)std::lround(std::floor(pixels[i] / 255.0f * (float)(levels - 1) + 0.5f) * 255.0f / (float)(levels - 1));
+                    stbi_write_png_to_func(sink, &encoded, w, h, 4, pixels, w * 4);
+                }
+                stbi_image_free(pixels);
+                const uint64_t original = (uint64_t)fs::file_size(image, fe);
+                if (!encoded.empty() && encoded.size() < original)
+                {
+                    std::ofstream out(image, std::ios::binary | std::ios::trunc);
+                    out.write((const char*)encoded.data(), (std::streamsize)encoded.size());
+                    before += original;
+                    after += encoded.size();
+                    ++count;
+                }
+            }
+            if (count > 0)
+                CQ_CORE_INFO("[Build] Crunch: {0} texture(s), {1} KB -> {2} KB", count, before / 1024, after / 1024);
+        }
 
         bool CopyTree(const fs::path& src, const fs::path& dst, CopyStats& stats, std::string& error, const std::atomic<bool>* cancel)
         {
@@ -648,6 +720,7 @@ namespace Conqueror::Editor
         step(0.35f, "Copying Assets");
         if (!CopyTree(o.ProjectDir / "Assets", dataDir / "Assets", stats, error, cancel))
             return fail(error);
+        CrunchTextures(dataDir / "Assets");
         step(0.55f, "Copying Packages");
         if (!CopyTree(o.ProjectDir / "Packages", dataDir / "Packages", stats, error, cancel))
             return fail(error);

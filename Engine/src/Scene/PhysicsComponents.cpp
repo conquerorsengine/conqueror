@@ -8,6 +8,7 @@
 #include "Renderer/Renderer2D.h"
 #include "Renderer/SpriteSheet.h"
 #include "Renderer/RHI/Texture.h"
+#include "Renderer/RHI/TextureSettings.h"
 
 #include <IconsFontAwesome6.h>
 #include <stb_image.h>
@@ -28,6 +29,14 @@ namespace Conqueror
             glm::vec2 mn, mx;
             if (!Renderer2D::GetSpriteLocalBounds(sr, mn, mx))
                 return;
+            // Import Settings > Generate Physics Shape kapalı: sprite'ın dikdörtgeni
+            if (TextureImportSettings import; TextureImportSettings::Load(sr.Texture->GetPath(), import) && import.Type == TextureType::Sprite && !import.GeneratePhysicsShape)
+            {
+                auto& pc = e.GetComponent<PolygonCollider2DComponent>();
+                pc.Points = { { mn.x, mn.y }, { mx.x, mn.y }, { mx.x, mx.y }, { mn.x, mx.y } };
+                pc.ExtraPaths.clear();
+                return;
+            }
             auto sheet = SpriteSheet::Get(sr.Texture->GetPath());
             const SpriteDef* def = sheet ? sheet->FindForSprite(sr.SpriteName, glm::vec2((float)sr.Texture->GetWidth(), (float)sr.Texture->GetHeight())) : nullptr;
             std::vector<std::vector<glm::vec2>> shapes;

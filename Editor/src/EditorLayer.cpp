@@ -4327,9 +4327,21 @@ namespace Conqueror::Editor
                     else if (k == "maxsize") s.MaxSize = std::atoi(v.c_str());
                     else if (k == "normal") s.NormalFromGrayscale = v == "true" || v == "1";
                     else if (k == "bump") s.Bumpiness = (float)std::atof(v.c_str());
+                    else if (k == "spritemode") s.SpriteMode = v == "multiple" ? SpriteImportMode::Multiple : v == "polygon" ? SpriteImportMode::Polygon : SpriteImportMode::Single;
+                    else if (k == "sides") s.PolygonSides = std::atoi(v.c_str());
+                    else if (k == "mesh") s.TightMesh = v != "fullrect";
+                    else if (k == "extrude") s.ExtrudeEdges = std::atoi(v.c_str());
+                    else if (k == "physics") s.GeneratePhysicsShape = v == "true" || v == "1";
+                    else if (k == "shape") s.Shape = v == "cube" ? TextureShape::Cube : TextureShape::Texture2D;
+                    else if (k == "resize") s.Resize = v == "bilinear" ? TextureResizeAlgorithm::Bilinear : TextureResizeAlgorithm::Mitchell;
+                    else if (k == "format") s.Format = v == "rgba32" ? TextureFormatChoice::RGBA32 : v == "rgb24" ? TextureFormatChoice::RGB24 : v == "r8" ? TextureFormatChoice::R8 : TextureFormatChoice::Automatic;
+                    else if (k == "compression") s.Compression = v == "low" ? TextureCompression::LowQuality : v == "normal" ? TextureCompression::NormalQuality : v == "high" ? TextureCompression::HighQuality : TextureCompression::None;
+                    else if (k == "crunch") s.UseCrunch = v == "true" || v == "1";
+                    else if (k == "pc_maxsize") { s.Platforms[0].Override = true; s.Platforms[0].MaxSize = std::atoi(v.c_str()); }
                     else { err = "unknown key " + k; return false; }
                 }
                 if (!s.Save(p)) { err = "cannot write meta"; return false; }
+                AssetInspector::ApplyImportSideEffects(p, s);
                 Texture2D::ReloadFromDisk(p);
                 AssetInspector::Invalidate();
                 return true;
