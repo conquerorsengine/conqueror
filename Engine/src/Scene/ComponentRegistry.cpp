@@ -117,6 +117,7 @@ namespace Conqueror
             RegisterWaterComponents();
             RegisterPlanarReflectionComponents();
             RegisterMetaSoundComponents();
+            RegisterWorldPartitionComponents();
             RegisterPlayerInputComponents();
             RegisterRigComponents();
             RegisterNavigationComponents();

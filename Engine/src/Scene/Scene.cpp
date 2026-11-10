@@ -78,6 +78,7 @@
 #include "Scene/Water.h"
 #include "Scene/PlanarReflection.h"
 #include "Core/Audio/MetaSound.h"
+#include "Scene/WorldPartition.h"
 #include "Scene/PlayerInput.h"
 #include "Scene/RigConstraints.h"
 #include "AISystem/Navigation/NavAgents.h"
@@ -266,6 +267,7 @@ namespace Conqueror
             Articulations::PrepareRuntime(*this);   // Articulation Body bağlantıları: gövde + eklem
             m_PhysicsWorld3D->OnRuntimeStart();
             WorldActors::BeginPlay(*this);
+            WorldPartition::BeginPlay(*this);
         }
         if (m_PhysicsWorld2D)
         {
@@ -290,6 +292,7 @@ namespace Conqueror
     void Scene::OnRuntimeStop(bool endPlaySession)
     {
         MetaSounds::StopAll(*this);
+        WorldPartition::Forget(*this);
         Fracture::ForgetScene(this);
         Signals::ForgetScene(this);
         Tweens::ForgetScene(this);
@@ -1168,6 +1171,8 @@ namespace Conqueror
         XRInteraction::Update(*this, (float)ts);
         // MetaSound Source: oynat / konum / bitiş
         MetaSounds::Update(*this);
+        // World Partition: akış kaynağına yakın hücreler yüklü, uzaktakiler boşaltılır
+        WorldPartition::Update(*this, (float)ts);
 
         // Update Native Scripts - OnCreate
         {
@@ -2494,6 +2499,7 @@ namespace Conqueror
             SpriteShapes::DrawGizmo(*this, id);
             OcclusionCulling::DrawGizmo(*this, id);
             WaterBodies::DrawGizmo(*this, id);
+            WorldPartition::DrawGizmo(*this, id);
             // Gezinme: Link uçları ve yayı, Modifier Volume / Obstacle kutusu
             entt::entity e = (entt::entity)id;
             if (!m_Registry.valid(e) || !m_Registry.all_of<TransformComponent>(e))
