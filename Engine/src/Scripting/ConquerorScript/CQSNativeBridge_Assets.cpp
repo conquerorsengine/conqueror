@@ -1,4 +1,5 @@
 #include "Scene/ActorComponents.h"
+#include "Core/Audio/MetaSound.h"
 #include "CQSNativeBridge.h"
 #include "CQSValue.h"
 #include "Scripting/NativeRegistry.h"
@@ -110,6 +111,7 @@ namespace Conqueror::CQS
         BehaviorTrees::RegisterNatives(vm);
         AssetRuntime::RegisterNatives(vm);
         ActorComponents::RegisterNatives(vm);
+        MetaSounds::RegisterNatives(vm);
         // Ses varlıkları
         vm->DefineNative("SoundMixPush", [](int argc, Value* args) -> Value {
             return Value::MakeBool(argc > 0 && args[0].IsString() && SoundMixes::Push(args[0].AsString()->Value));

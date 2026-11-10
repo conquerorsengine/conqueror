@@ -77,6 +77,7 @@
 #include "Scene/ActorComponents.h"
 #include "Scene/Water.h"
 #include "Scene/PlanarReflection.h"
+#include "Core/Audio/MetaSound.h"
 #include "Scene/PlayerInput.h"
 #include "Scene/RigConstraints.h"
 #include "AISystem/Navigation/NavAgents.h"
@@ -288,6 +289,7 @@ namespace Conqueror
 
     void Scene::OnRuntimeStop(bool endPlaySession)
     {
+        MetaSounds::StopAll(*this);
         Fracture::ForgetScene(this);
         Signals::ForgetScene(this);
         Tweens::ForgetScene(this);
@@ -1164,6 +1166,8 @@ namespace Conqueror
         Net::NetworkSession::Get().Update(this, (float)realTs);
         // XR: baş / el pozları (gözlük yoksa simülatör), ışınlar, tutma, ışınlanma (betiklerden ve fizikten önce)
         XRInteraction::Update(*this, (float)ts);
+        // MetaSound Source: oynat / konum / bitiş
+        MetaSounds::Update(*this);
 
         // Update Native Scripts - OnCreate
         {

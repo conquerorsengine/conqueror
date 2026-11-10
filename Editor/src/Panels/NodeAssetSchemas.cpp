@@ -5,6 +5,7 @@
 #include "Scene/Foliage.h"
 #include "AISystem/BehaviorTree/BehaviorTreeAsset.h"
 #include "Particles/VisualEffect.h"
+#include "Core/Audio/MetaSound.h"
 
 #include <IconsFontAwesome6.h>
 
@@ -374,9 +375,61 @@ namespace Conqueror::Editor
         }
     }
 
+    namespace
+    {
+        // Unreal MetaSounds: sesi örnek örnek üreten grafik
+        void RegisterMetaSound()
+        {
+            NodeAssetSchema s;
+            s.Kind = MetaSounds::Kind;
+            s.Extension = MetaSounds::Extension;
+            s.Title = "MetaSound Source";
+            s.Icon = ICON_FA_WAVE_SQUARE;
+            s.Hint = "Connect generators (Oscillator) through processors (Envelope, Filter, Delay, Mixer) into the Output. Input nodes are values scripts change with MetaSoundSetFloat.";
+            s.MenuCategory = "Audio";
+            s.MenuTooltip = "Sound generated live from a node graph (Unreal MetaSound). Play it with a MetaSound Source component.";
+            s.Color = IM_COL32(255, 170, 90, 255);
+            auto type = [](const char* id, const char* title, const char* desc, ImU32 color, std::vector<std::string> in, std::vector<std::string> out,
+                           std::vector<NodeAssetProp> props) {
+                NodeAssetType t;
+                t.Id = id; t.Title = title; t.Category = "Nodes"; t.Description = desc; t.Color = color;
+                t.Inputs = std::move(in); t.Outputs = std::move(out); t.Props = std::move(props);
+                return t;
+            };
+            NodeAssetType output = type("output", "Output", "What you hear. Duration 0 = plays until stopped.", IM_COL32(140, 70, 120, 255),
+                                        { "Audio" }, {}, { Number("Volume", "1"), Number("Duration", "0", "Seconds; 0 = until stopped.") });
+            output.Single = true;
+            s.Types = {
+                type("oscillator", "Oscillator", "A tone (FM: frequency x (1 + input), AM: amplitude x input).", IM_COL32(60, 110, 160, 255),
+                     { "FM", "AM" }, { "Out" }, { Choice("Waveform", { "Sine", "Saw", "Square", "Triangle", "Noise" }), Number("Frequency", "440"), Number("Amplitude", "0.5") }),
+                type("envelope", "Envelope (ADSR)", "Shapes the volume over time; without an input it outputs the envelope itself.", IM_COL32(70, 140, 90, 255),
+                     { "In" }, { "Out" }, { Number("Attack", "0.01"), Number("Decay", "0.1"), Number("Sustain", "0.7"), Number("Release", "0.3"),
+                                           Number("Hold", "0.5", "Seconds at the sustain level."), Number("Repeat Every", "0", "Seconds; 0 = once.") }),
+                type("filter", "Filter", "Removes highs or lows (biquad).", IM_COL32(90, 120, 150, 255),
+                     { "In", "Cutoff Mod" }, { "Out" }, { Choice("Type", { "Low Pass", "High Pass", "Band Pass" }), Number("Cutoff", "1000"), Number("Resonance", "0.707") }),
+                type("mixer", "Mixer", "Adds up to four inputs.", IM_COL32(110, 110, 110, 255),
+                     { "In 1", "In 2", "In 3", "In 4" }, { "Out" }, { Number("Gain 1", "1"), Number("Gain 2", "1"), Number("Gain 3", "1"), Number("Gain 4", "1") }),
+                type("delay", "Delay", "Echo.", IM_COL32(120, 90, 150, 255), { "In" }, { "Out" },
+                     { Number("Delay Time", "0.25"), Number("Feedback", "0.35"), Number("Mix", "0.4") }),
+                type("input", "Input", "A value scripts set with MetaSoundSetFloat(entity, Name, value).", IM_COL32(150, 92, 30, 255), {}, { "Value" },
+                     { Text("Name", "Value"), Number("Default", "0") }),
+                output
+            };
+            s.Populate = [](NodeAssets::File& f) {
+                int osc = f.Add("oscillator", 40.0f, 80.0f);
+                int env = f.Add("envelope", 360.0f, 80.0f);
+                int out = f.Add("output", 680.0f, 80.0f);
+                f.Connect(osc, 0, env, 0);
+                f.Connect(env, 0, out, 0);
+            };
+            NodeAssetPanel::Register(std::move(s));
+        }
+    }
+
     void RegisterBuiltinNodeAssetSchemas()
     {
         RegisterVFXGraph();
+        RegisterMetaSound();
         if (!NodeAssetPanel::Schemas().empty())
             return;
         RegisterStateGraph();
