@@ -1,5 +1,6 @@
 // glad diğer başlıklardan (GLFW) önce: gpu_probe GL geri okuma çağrıları
 #define GLFW_INCLUDE_NONE
+#include "Scene/SpriteAnimation2D.h"
 #include "Scene/Signals.h"
 #include "Core/Input/InputActionAssets.h"
 #include "Panels/MaterialEditorUI.h"
@@ -385,6 +386,48 @@ namespace Conqueror::Editor
                         m_ShowAnimation = true;
                         m_PendingFocusWindow = "###AnimationWindow";
                     }
+                };
+            // Sprite Resolver (Unity 2D Animation): kütüphanedeki kategori / etiket açılır listeleri
+            if (auto* resolverInfo = ComponentRegistry::Find("SpriteResolverComponent"))
+                resolverInfo->ExtraInspector = [](Entity e) {
+                    if (!e.GetScene())
+                        return;
+                    auto& r = e.GetComponent<SpriteResolverComponent>();
+                    const std::string lib = SpriteAnimation2D::FindLibraryAsset(*e.GetScene(), (entt::entity)e);
+                    if (lib.empty())
+                    {
+                        UI::InfoBox("No Sprite Library on this object or its parents.", UI::InfoType::Warning);
+                        return;
+                    }
+                    const auto categories = SpriteAnimation2D::Categories(lib);
+                    UI::BeginProperty("Pick Category", "Categories in the Sprite Library Asset");
+                    if (ImGui::BeginCombo("##resolverCategory", r.Category.c_str()))
+                    {
+                        for (const auto& c : categories)
+                            if (ImGui::Selectable(c.c_str(), c == r.Category))
+                            {
+                                r.Category = c;
+                                r.LabelIndex = -1;
+                                const auto labels = SpriteAnimation2D::Labels(lib, c);
+                                if (!labels.empty())
+                                    r.Label = labels.front();
+                            }
+                        ImGui::EndCombo();
+                    }
+                    UI::EndProperty();
+                    const auto labels = SpriteAnimation2D::Labels(lib, r.Category);
+                    UI::BeginProperty("Pick Label", "Labels in this category");
+                    if (ImGui::BeginCombo("##resolverLabel", r.Label.c_str()))
+                    {
+                        for (const auto& l : labels)
+                            if (ImGui::Selectable(l.c_str(), l == r.Label))
+                            {
+                                r.Label = l;
+                                r.LabelIndex = -1;
+                            }
+                        ImGui::EndCombo();
+                    }
+                    UI::EndProperty();
                 };
             // Mesh Paint: Vertex Paint bileşeni denetçisinde fırça ayarları, viewport'ta boyama
             MeshPaintTool::Get().SetSceneProvider([this]() { return m_ActiveScene; });
@@ -4327,6 +4370,16 @@ namespace Conqueror::Editor
             }
             if (!info->Has(e)) { err = a[2] + " has no " + info->Name; return false; }
             if (a.size() < 5) { err = "missing field"; return false; }
+            // comp action <varlık> <bileşen> <düğme etiketi>: Inspector düğmesine (Action) basar
+            if (a[1] == "action")
+            {
+                std::string label;
+                for (size_t i = 4; i < a.size(); ++i) label += (i > 4 ? " " : "") + a[i];
+                for (const auto& field : info->Fields)
+                    if (field.Action && field.Label == label) { field.Action(e, info->Get(e)); return true; }
+                err = "no action " + label;
+                return false;
+            }
             const ComponentField* f = ComponentRegistry::FindField(*info, a[4]);
             if (!f) { err = "unknown field " + a[4]; return false; }
             std::string value;

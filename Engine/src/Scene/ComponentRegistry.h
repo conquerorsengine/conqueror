@@ -254,6 +254,7 @@ namespace Conqueror
     void RegisterCameraSkyboxComponents();
     void RegisterAreaLightComponents();
     void RegisterLightProbeGroupComponents();
+    void RegisterSpriteAnimation2DComponents();
     void RegisterPlayerInputComponents();
     void RegisterRigComponents();
     void RegisterNavigationComponents();

@@ -106,6 +106,7 @@ namespace Conqueror
             RegisterCameraSkyboxComponents();
             RegisterAreaLightComponents();
             RegisterLightProbeGroupComponents();
+            RegisterSpriteAnimation2DComponents();
             RegisterPlayerInputComponents();
             RegisterRigComponents();
             RegisterNavigationComponents();

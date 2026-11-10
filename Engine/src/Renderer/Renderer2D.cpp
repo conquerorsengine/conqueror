@@ -388,6 +388,34 @@ namespace Conqueror
         return true;
     }
 
+    bool Renderer2D::GetSpriteUV(const SpriteRendererComponent& sprite, std::shared_ptr<Texture2D>& outTexture, glm::vec2& uvMin, glm::vec2& uvMax)
+    {
+        if (!sprite.Texture)
+        {
+            outTexture = s_Data.WhiteTexture;
+            uvMin = glm::vec2(0.0f);
+            uvMax = glm::vec2(1.0f);
+            return true;
+        }
+        SpriteGeometry g;
+        if (!ResolveSprite(sprite, g))
+            return false;
+        outTexture = sprite.Texture;
+        glm::vec2 atlasOffset(0.0f), uvSpace = g.TexSize;
+        SpriteAtlases::Lookup atlas;
+        if (SpriteAtlases::Find(sprite.Texture->GetPath(), atlas))
+        {
+            outTexture = atlas.Texture;
+            atlasOffset = atlas.Offset;
+            uvSpace = atlas.Size;
+        }
+        uvMin = glm::vec2((atlasOffset.x + g.RectPx.x) / uvSpace.x, (atlasOffset.y + g.RectPx.y) / uvSpace.y);
+        uvMax = glm::vec2((atlasOffset.x + g.RectPx.x + g.RectPx.z) / uvSpace.x, (atlasOffset.y + g.RectPx.y + g.RectPx.w) / uvSpace.y);
+        if (sprite.FlipX) std::swap(uvMin.x, uvMax.x);
+        if (sprite.FlipY) std::swap(uvMin.y, uvMax.y);
+        return true;
+    }
+
     void Renderer2D::DrawSprite(const glm::mat4& transform, const std::shared_ptr<Texture2D>& texture, float tilingFactor, const glm::vec4& tintColor, SpriteRendererComponent& sprite)
     {
         (void)tilingFactor;

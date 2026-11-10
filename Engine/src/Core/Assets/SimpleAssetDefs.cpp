@@ -246,6 +246,13 @@ namespace Conqueror::SimpleAssets
             "A sprite animation. Add a Flipbook Player next to a Sprite Renderer to play it.",
             { F("Frames Per Second", 12.0f), B("Loop", true), Tab("Frames", { ColA("Sprite", { ".png", ".jpg", ".jpeg", ".tga", ".bmp" }), ColF("Hold", "1") }, "Hold is how many frames this sprite stays.") });
 
+        // Unity 2D Animation: Sprite Library Asset (Sprite Library / Sprite Resolver bileşenleri kullanır)
+        add("SpriteLibrary", ".cqspritelib", "Sprite Library Asset", "2D", "", ICON_FA_IMAGES, Rgb(140, 210, 255),
+            "Named sprites grouped by category (Head, Hand, Weapon...). Put it in a Sprite Library component; Sprite Resolvers pick "
+            "sprites by category and label, so swapping a label swaps the sprite.",
+            { Tab("Entries", { Col("Category"), Col("Label"), ColA("Sprite", { ".png", ".jpg", ".jpeg", ".tga", ".bmp" }), Col("Sprite Name") },
+                  "Sprite Name is optional: a slice of a sprite sheet (Sprite Editor).") });
+
         // Yapay zekâ
         add("Blackboard", ".cqblackboard", "Blackboard", "AI", "", ICON_FA_DATABASE, Rgb(120, 180, 255),
             "The memory of a Behavior Tree: named values shared by its tasks and decorators. Scripts use BlackboardSet / BlackboardGet.",

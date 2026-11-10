@@ -67,6 +67,7 @@
 #include "Scene/CameraSkybox.h"
 #include "Scene/AreaLight.h"
 #include "Scene/LightProbeGroup.h"
+#include "Scene/SpriteAnimation2D.h"
 #include "Scene/PlayerInput.h"
 #include "Scene/RigConstraints.h"
 #include "AISystem/Navigation/NavAgents.h"
@@ -1278,6 +1279,7 @@ namespace Conqueror
                 GameplaySystems::LateUpdate(*this, (float)ts, true);
                 GameFramework::LateUpdate(*this, (float)ts);   // Spring Arm kamera kolları
                 Skeleton2D::Update(*this, true);               // 2D IK: animasyon ve betiklerden sonra
+                SpriteAnimation2D::Update(*this);              // Sprite Resolver: kütüphaneden sprite seçimi
             }
             {
                 CQ_PROFILE_SAMPLE("UI.Events", UI);
@@ -1658,7 +1660,8 @@ namespace Conqueror
                         else
                             Renderer2D::DrawSprite(finalTransform, sprite->Texture, sprite->TilingFactor, button.CurrentBackgroundColor, *sprite);
                     }
-                    else
+                    // Sprite Skin: kemiklerle bükülmüş ağ (bağlıysa)
+                    else if (!SpriteAnimation2D::DrawSkinned(*this, item.Entity, *sprite, sprite->Color))
                         Renderer2D::DrawSprite(finalTransform, sprite->Texture, sprite->TilingFactor, sprite->Color, *sprite);
                 }
                 else if (item.ItemType == RenderItem::Type::Text)
@@ -1947,6 +1950,7 @@ namespace Conqueror
             GameplaySystems::Update(*this, (float)ts, false);
             GodotNodes::Update(*this, (float)ts, false);
             Skeleton2D::Update(*this, false);
+            SpriteAnimation2D::Update(*this);
         }
         // Auto LOD / Virtual Geometry: bekleyen arka plan yapımları (düzenleyicide de)
         AutoLOD::Update(*this);
@@ -2351,7 +2355,8 @@ namespace Conqueror
                     else
                         Renderer2D::DrawSprite(finalTransform, sprite->Texture, sprite->TilingFactor, button.CurrentBackgroundColor, *sprite);
                 }
-                else
+                // Sprite Skin: kemiklerle bükülmüş ağ (bağlıysa)
+                else if (!SpriteAnimation2D::DrawSkinned(*this, item.Entity, *sprite, sprite->Color))
                     Renderer2D::DrawSprite(finalTransform, sprite->Texture, sprite->TilingFactor, sprite->Color, *sprite);
             }
             else if (item.ItemType == RenderItem::Type::Text)
