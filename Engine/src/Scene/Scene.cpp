@@ -71,6 +71,7 @@
 #include "Scene/SpriteShape.h"
 #include "Scene/OcclusionCulling.h"
 #include "Scene/Articulation.h"
+#include "Scene/XRInteraction.h"
 #include "Scene/PlayerInput.h"
 #include "Scene/RigConstraints.h"
 #include "AISystem/Navigation/NavAgents.h"
@@ -1150,6 +1151,8 @@ namespace Conqueror
         {
         // Ağ: gelen mesajlar, uzak nesne oluşturma/silme ve ara değerleme (betiklerden önce)
         Net::NetworkSession::Get().Update(this, (float)realTs);
+        // XR: baş / el pozları (gözlük yoksa simülatör), ışınlar, tutma, ışınlanma (betiklerden ve fizikten önce)
+        XRInteraction::Update(*this, (float)ts);
 
         // Update Native Scripts - OnCreate
         {

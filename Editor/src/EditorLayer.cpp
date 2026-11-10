@@ -2,6 +2,7 @@
 #define GLFW_INCLUDE_NONE
 #include "Panels/OcclusionPanel.h"
 #include "Scene/OcclusionCulling.h"
+#include "Scene/XRInteraction.h"
 #include "Scene/SpriteAnimation2D.h"
 #include "Scene/Signals.h"
 #include "Core/Input/InputActionAssets.h"
@@ -5473,6 +5474,28 @@ namespace Conqueror::Editor
             return false;
         });
         // lighting generate | expect_done | asset <path.cqlighting|none> | default_params <path.cqlmparams|none> | expect_value <alan> <değer>
+        // xr buttons <0 sol|1 sağ> <grip> <trigger> <teleport> (-1 serbest) | xr look <yaw> <pitch>: XR Device Simulator'ı sür
+        Automation::RegisterCommand("xr", [this](const Args& a, std::string& err) {
+            if (a.size() >= 6 && a[1] == "buttons")
+            {
+                XRInteraction::SetSimulatedButtons(std::stoi(a[2]), std::stoi(a[3]), std::stoi(a[4]), std::stoi(a[5]));
+                return true;
+            }
+            if (a.size() >= 4 && a[1] == "look" && m_ActiveScene)
+            {
+                for (auto e : m_ActiveScene->m_Registry.view<XROriginComponent>())
+                {
+                    auto& o = m_ActiveScene->m_Registry.get<XROriginComponent>(e);
+                    o.HeadYaw = std::stof(a[2]);
+                    o.HeadPitch = std::stof(a[3]);
+                    return true;
+                }
+                err = "no XR Origin";
+                return false;
+            }
+            err = "xr buttons <hand> <grip> <trigger> <teleport> | xr look <yaw> <pitch>";
+            return false;
+        });
         // occlusion bake [hücre boyu] | clear | expect_hidden <varlık> <true|false> | expect_cells <n|>n> | visualize on|off
         Automation::RegisterCommand("occlusion", [this](const Args& a, std::string& err) {
             if (a.size() < 2 || !m_OcclusionPanel || !m_ActiveScene) { err = "occlusion bake|clear|expect_hidden|expect_cells|visualize"; return false; }

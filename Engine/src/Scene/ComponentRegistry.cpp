@@ -110,6 +110,7 @@ namespace Conqueror
             RegisterSpriteShapeComponents();
             RegisterOcclusionComponents();
             RegisterArticulationComponents();
+            RegisterXRComponents();
             RegisterPlayerInputComponents();
             RegisterRigComponents();
             RegisterNavigationComponents();
