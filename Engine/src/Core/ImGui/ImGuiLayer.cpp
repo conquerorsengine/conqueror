@@ -1,6 +1,7 @@
 #include "ImGuiLayer.h"
 #include "Renderer/GraphicsAPIs/OpenGL/GLProfile.h"
 #include "Core/Application.h"
+#include "Core/Events/ApplicationEvent.h"
 #include "Core/Input/Input.h"
 #include "Core/KeyCodes.h"
 #include "Core/MouseCodes.h"
@@ -180,6 +181,13 @@ namespace Conqueror
         {
             GLFWwindow* backup_current_context = glfwGetCurrentContext();
             ImGui::UpdatePlatformWindows();
+            // Ayrı pencereye taşınmış paneller de dosya bırakmayı kabul eder
+            for (ImGuiViewport* vp : ImGui::GetPlatformIO().Viewports)
+                if (vp != ImGui::GetMainViewport() && vp->PlatformHandle)
+                    glfwSetDropCallback(static_cast<GLFWwindow*>(vp->PlatformHandle), [](GLFWwindow*, int count, const char* paths[]) {
+                        WindowFileDropEvent event(std::vector<std::string>(paths, paths + count));
+                        Application::Get().OnEvent(event);
+                    });
             ImGui::RenderPlatformWindowsDefault();
             glfwMakeContextCurrent(backup_current_context);
         }

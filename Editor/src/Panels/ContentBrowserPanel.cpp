@@ -432,6 +432,8 @@ namespace Conqueror::Editor
         DrawPackageWindows();
         if (m_Focused)
             HandleKeyboard();
+        if (!m_DroppedFiles.empty())
+            ImportDroppedFiles();
 
         ImGui::End();
     }
@@ -637,6 +639,7 @@ namespace Conqueror::Editor
 
     void ContentBrowserPanel::DrawContent()
     {
+        m_HoveredFolder.clear();
         // Arama: tüm alt klasörlerde ara
         std::vector<Entry> searchResults;
         const bool searching = m_Search[0] != '\0';
@@ -860,6 +863,8 @@ namespace Conqueror::Editor
             m_ScrollToSelected = false;
         }
         const bool hovered = ImGui::IsItemHovered();
+        if (hovered && entry.IsDirectory)
+            m_HoveredFolder = entry.Path;
 
         ImDrawList* dl = ImGui::GetWindowDrawList();
         const ImVec2 cardMin(cellMin.x + 4.0f, cellMin.y + 2.0f);
@@ -965,6 +970,8 @@ namespace Conqueror::Editor
     void ContentBrowserPanel::HandleItemInteraction(const Entry& entry)
     {
         const bool hovered = ImGui::IsItemHovered();
+        if (ImGui::IsItemHovered() && entry.IsDirectory)
+            m_HoveredFolder = entry.Path;
 
         if (ImGui::IsItemClicked(ImGuiMouseButton_Left) || ImGui::IsItemClicked(ImGuiMouseButton_Right))
         {
@@ -2076,6 +2083,35 @@ namespace Conqueror::Editor
 #endif
         int rc = std::system(command.c_str());
         (void)rc;
+    }
+
+    void ContentBrowserPanel::ImportDroppedFiles()
+    {
+        const fs::path target = (!m_HoveredFolder.empty() && !IsReadOnly(m_HoveredFolder)) ? m_HoveredFolder : WritableDirectory();
+        for (const std::string& file : m_DroppedFiles)
+        {
+            const fs::path source(file);
+            std::error_code ec;
+            if (!fs::exists(source, ec))
+            {
+                CQ_CORE_WARN("Import skipped, not found: {0}", file);
+                continue;
+            }
+            if (fs::weakly_canonical(source.parent_path(), ec) == fs::weakly_canonical(target, ec))
+                continue;   // zaten bu klasörde
+            const fs::path dest = MakeUniquePath(target / source.filename());
+            fs::copy(source, dest, fs::copy_options::recursive, ec);
+            if (ec)
+            {
+                CQ_CORE_ERROR("Import failed: {0} ({1})", file, ec.message());
+                continue;
+            }
+            CQ_CORE_INFO("Imported: {0}", dest.string());
+            m_SelectedPath = dest;
+            m_ScrollToSelected = true;
+        }
+        m_DroppedFiles.clear();
+        m_Dirty = true;
     }
 
     void ContentBrowserPanel::ImportFile()

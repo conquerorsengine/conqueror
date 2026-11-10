@@ -1,4 +1,5 @@
 #include "AssetInspector.h"
+#include "ContentBrowserPanel.h"
 #include "NodeAssetPanel.h"
 #include "Assets/SimpleAssetInspector.h"
 #include "Assets/PlayableAssetInspector.h"
@@ -265,6 +266,12 @@ namespace Conqueror::Editor::AssetInspector
         ImGui::TextDisabled("Texture Import Settings");
         ImGui::Separator();
 
+        // Packages varlıkları değiştirilemez (Unity: içe aktarma ayarları kilitli)
+        const bool readOnly = ContentBrowserPanel::IsReadOnly(path);
+        if (readOnly)
+            UI::InfoBox("This asset is in Packages and cannot be edited.", UI::InfoType::Info);
+        ImGui::BeginDisabled(readOnly);
+
         // ---- Ayarlar
         auto& s = st.Edited;
         const char* types[] = { "Default", "Normal Map", "Sprite (2D and UI)", "UI" };
@@ -304,7 +311,7 @@ namespace Conqueror::Editor::AssetInspector
             s.MaxSize = std::atoi(sizes[sizeIndex]);
 
         ImGui::Spacing();
-        const bool dirty = s != st.Original || !st.HasMeta;
+        const bool dirty = s != st.Original;
         ImGui::BeginDisabled(s == st.Original);
         if (ImGui::Button(ICON_FA_ROTATE_LEFT "  Revert", ImVec2(110, 0)))
             s = st.Original;
@@ -319,6 +326,7 @@ namespace Conqueror::Editor::AssetInspector
             ImGui::SameLine();
             ImGui::TextColored(UI::Colors::Warning, "Unapplied changes");
         }
+        ImGui::EndDisabled();
 
         // ---- Önizleme
         UI::SubHeader("Preview");

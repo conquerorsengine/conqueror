@@ -37,6 +37,7 @@
 #include "ProjectThumbnail.h"
 #include "Renderer/IBL/EnvironmentMap.h"
 #include "Renderer/PathTracer.h"
+#include "Core/Events/ApplicationEvent.h"
 #include "Scene/BlendShapes.h"
 #include "Scene/SceneManager.h"
 #include "Build/BuildPipeline.h"
@@ -1466,6 +1467,12 @@ namespace Conqueror::Editor
 
     void EditorLayer::OnEvent(Event& e)
     {
+        EventDispatcher dispatcher(e);
+        dispatcher.Dispatch<WindowFileDropEvent>([this](WindowFileDropEvent& drop) {
+            if (m_ContentBrowserPanel)
+                m_ContentBrowserPanel->QueueDroppedFiles(drop.GetPaths());
+            return true;
+        });
         if (m_ViewportPanel)
             m_ViewportPanel->OnEvent(e);
     }
@@ -6747,6 +6754,13 @@ namespace Conqueror::Editor
             return false;
         });
         Automation::RegisterCommand("stop", [this](const Args&, std::string&) { OnStopButtonPressed(); return true; });
+        // content_drop <yol...>: dosya yöneticisinden bırakma (işletim sistemi olayıyla aynı yol)
+        Automation::RegisterCommand("content_drop", [this](const Args& a, std::string& err) {
+            if (a.size() < 2 || !m_ContentBrowserPanel) { err = "content_drop <path...>"; return false; }
+            m_ContentBrowserPanel->QueueDroppedFiles(std::vector<std::string>(a.begin() + 1, a.end()));
+            Automation::WaitFrames(2);
+            return true;
+        });
         // expect_state edit|play|pause: oynatma durumu
         Automation::RegisterCommand("expect_state", [](const Args& a, std::string& err) {
             if (a.size() < 2) { err = "expect_state edit|play|pause"; return false; }

@@ -1,4 +1,5 @@
 #include "SpriteEditorPanel.h"
+#include "ContentBrowserPanel.h"
 #include "Renderer/RHI/Texture.h"
 #include "Core/Logging/Log.h"
 #include "UI/EditorUI.h"
@@ -65,6 +66,7 @@ namespace Conqueror::Editor
         m_Width = w;
         m_Height = h;
         m_TexturePath = texturePath;
+        m_ReadOnly = ContentBrowserPanel::IsReadOnly(texturePath);
         m_Texture = Texture2D::Create(texturePath.string());
 
         m_Sheet = SpriteSheet{};
@@ -81,7 +83,7 @@ namespace Conqueror::Editor
 
     bool SpriteEditorPanel::Apply()
     {
-        if (m_TexturePath.empty())
+        if (m_TexturePath.empty() || m_ReadOnly)
             return false;
         // Boş adları doldur, isimleri benzersiz yap
         std::string base = m_TexturePath.stem().string();
@@ -281,11 +283,11 @@ namespace Conqueror::Editor
         if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGui::GetIO().WantTextInput)
         {
             auto& io = ImGui::GetIO();
-            if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Z, false)) { if (io.KeyShift) Redo(); else Undo(); }
-            if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Y, false)) Redo();
-            if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S, false)) Apply();
+            if (!m_ReadOnly && io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Z, false)) { if (io.KeyShift) Redo(); else Undo(); }
+            if (!m_ReadOnly && io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Y, false)) Redo();
+            if (!m_ReadOnly && io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S, false)) Apply();
             if (ImGui::IsKeyPressed(ImGuiKey_F, false)) FrameAll();
-            if (m_Selected >= 0 && m_Selected < (int)m_Sheet.Sprites.size())
+            if (!m_ReadOnly && m_Selected >= 0 && m_Selected < (int)m_Sheet.Sprites.size())
             {
                 if (ImGui::IsKeyPressed(ImGuiKey_Delete, false))
                 {
@@ -317,6 +319,7 @@ namespace Conqueror::Editor
     void SpriteEditorPanel::DrawToolbar()
     {
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 4.0f));
+        ImGui::BeginDisabled(m_ReadOnly);
         if (ImGui::Button(ICON_FA_TABLE_CELLS " Slice " ICON_FA_CARET_DOWN))
             ImGui::OpenPopup("##SlicePopup");
         DrawSlicePopup();
@@ -340,6 +343,7 @@ namespace Conqueror::Editor
         ImGui::BeginDisabled(m_RedoStack.empty());
         if (ImGui::Button(ICON_FA_ROTATE_RIGHT)) Redo();
         ImGui::EndDisabled();
+        ImGui::EndDisabled();
 
         ImGui::SameLine(0.0f, 20.0f);
         ImGui::Checkbox("Pixel Grid", &m_ShowGrid);
@@ -355,7 +359,7 @@ namespace Conqueror::Editor
         // Sağ: geri al / uygula
         const float rightW = 200.0f;
         ImGui::SameLine(std::max(ImGui::GetCursorPosX() + 10.0f, ImGui::GetWindowContentRegionMax().x - rightW));
-        ImGui::BeginDisabled(!m_Dirty);
+        ImGui::BeginDisabled(!m_Dirty || m_ReadOnly);
         if (ImGui::Button("Revert", ImVec2(90, 0)))
             Revert();
         ImGui::SameLine();
@@ -525,7 +529,9 @@ namespace Conqueror::Editor
             };
             glm::vec2 pv = TexToScreen({ s.Rect.x + s.Pivot.x * s.Rect.z, s.Rect.y + s.Pivot.y * s.Rect.w });
             auto near = [&](const ImVec2& p, float r) { return std::fabs(io.MousePos.x - p.x) <= r && std::fabs(io.MousePos.y - p.y) <= r; };
-            if (near(ImVec2(pv.x, pv.y), 7.0f)) hoverMode = DragMode::Pivot;
+            // Küçük dilimde pivot tutamacı bütün dilimi kaplar: taşımak isterken pivot sürüklenmesin
+            if (!m_ReadOnly && b.x - a.x >= 28.0f && b.y - a.y >= 28.0f && near(ImVec2(pv.x, pv.y), 7.0f)) hoverMode = DragMode::Pivot;
+            if (!m_ReadOnly)
             for (auto& h : handles)
             {
                 bool hot = hoverMode == DragMode::None && near(h.P, handle + 2.0f);
@@ -534,17 +540,17 @@ namespace Conqueror::Editor
                 dl->AddRect(ImVec2(h.P.x - handle, h.P.y - handle), ImVec2(h.P.x + handle, h.P.y + handle), IM_COL32(10, 10, 12, 255));
             }
             // Kenarlık çizgileri sürüklenebilir
-            if (hoverMode == DragMode::None && io.MousePos.y > a.y && io.MousePos.y < b.y)
+            if (!m_ReadOnly && hoverMode == DragMode::None && io.MousePos.y > a.y && io.MousePos.y < b.y)
             {
                 if (std::fabs(io.MousePos.x - bl) < 4.0f && s.Border.x > 0.0f) hoverMode = DragMode::BorderL;
                 else if (std::fabs(io.MousePos.x - br) < 4.0f && s.Border.z > 0.0f) hoverMode = DragMode::BorderR;
             }
-            if (hoverMode == DragMode::None && io.MousePos.x > a.x && io.MousePos.x < b.x)
+            if (!m_ReadOnly && hoverMode == DragMode::None && io.MousePos.x > a.x && io.MousePos.x < b.x)
             {
                 if (std::fabs(io.MousePos.y - bb) < 4.0f && s.Border.y > 0.0f) hoverMode = DragMode::BorderB;
                 else if (std::fabs(io.MousePos.y - bt) < 4.0f && s.Border.w > 0.0f) hoverMode = DragMode::BorderT;
             }
-            if (hoverMode == DragMode::None && io.MousePos.x > a.x && io.MousePos.x < b.x && io.MousePos.y > a.y && io.MousePos.y < b.y)
+            if (!m_ReadOnly && hoverMode == DragMode::None && io.MousePos.x > a.x && io.MousePos.x < b.x && io.MousePos.y > a.y && io.MousePos.y < b.y)
                 hoverMode = DragMode::Move;
 
             // Pivot (daire)
@@ -566,6 +572,21 @@ namespace Conqueror::Editor
         // Fare basıldı: hangi işlem?
         if (hovered && (ImGui::IsMouseClicked(ImGuiMouseButton_Middle) || (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && io.KeyAlt)))
             m_Drag = DragMode::Pan;
+        else if (hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_ReadOnly)
+        {
+            // Salt okunur: yalnız seçim
+            m_Selected = -1;
+            float bestArea = 1e30f;
+            for (int i = 0; i < (int)m_Sheet.Sprites.size(); ++i)
+            {
+                const auto& r = m_Sheet.Sprites[(size_t)i].Rect;
+                if (mouseTex.x >= r.x && mouseTex.x <= r.x + r.z && mouseTex.y >= r.y && mouseTex.y <= r.y + r.w && r.z * r.w < bestArea)
+                {
+                    bestArea = r.z * r.w;
+                    m_Selected = i;
+                }
+            }
+        }
         else if (hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
         {
             m_DragStartTex = mouseTexSnapped;
@@ -720,6 +741,17 @@ namespace Conqueror::Editor
             dl->AddRectFilled(ImVec2(p.x - 4, p.y - 2), ImVec2(p.x + ts.x + 4, p.y + ts.y + 2), IM_COL32(0, 0, 0, 150), 4.0f);
             dl->AddText(p, IM_COL32(220, 220, 225, 255), info);
         }
+        if (m_ReadOnly)
+        {
+            const char* msg = "Editing is disabled because the asset is not editable.";
+            const ImVec2 ts = ImGui::CalcTextSize(msg);
+            const float iconW = 26.0f;
+            const ImVec2 p(m_CanvasMin.x + (m_CanvasSize.x - ts.x - iconW) * 0.5f, m_CanvasMin.y + 16.0f);
+            dl->AddRectFilled(ImVec2(p.x - 14.0f, p.y - 9.0f), ImVec2(p.x + ts.x + iconW + 12.0f, p.y + ts.y + 9.0f), IM_COL32(24, 24, 27, 240), 7.0f);
+            dl->AddRect(ImVec2(p.x - 14.0f, p.y - 9.0f), ImVec2(p.x + ts.x + iconW + 12.0f, p.y + ts.y + 9.0f), IM_COL32(74, 74, 80, 255), 7.0f);
+            dl->AddText(p, IM_COL32(255, 200, 60, 255), ICON_FA_TRIANGLE_EXCLAMATION);
+            dl->AddText(ImVec2(p.x + iconW, p.y), IM_COL32(226, 226, 230, 255), msg);
+        }
         dl->PopClipRect();
     }
 
@@ -729,6 +761,7 @@ namespace Conqueror::Editor
         {
             UI::Text("File", "%s", m_TexturePath.filename().string().c_str());
             UI::Text("Size", "%d x %d", m_Width, m_Height);
+            ImGui::BeginDisabled(m_ReadOnly);
             if (UI::DragFloat("Pixels Per Unit", m_Sheet.PixelsPerUnit, 1.0f, 1.0f, 10000.0f, "%.0f"))
                 MarkDirty();
             const char* filters[] = { "Bilinear", "Point (no filter)" };
@@ -738,6 +771,7 @@ namespace Conqueror::Editor
                 m_Sheet.FilterMode = (SpriteSheet::Filter)f;
                 MarkDirty();
             }
+            ImGui::EndDisabled();
             UI::EndSection();
         }
 
@@ -775,6 +809,7 @@ namespace Conqueror::Editor
             }
             auto& s = m_Sheet.Sprites[(size_t)m_Selected];
             bool changed = false;
+            ImGui::BeginDisabled(m_ReadOnly);
             changed |= UI::InputText("Name", s.Name);
             glm::vec2 pos(s.Rect.x, s.Rect.y), size(s.Rect.z, s.Rect.w);
             if (UI::Vec2("Position", pos, 1.0f)) { s.Rect.x = std::clamp(std::round(pos.x), 0.0f, (float)m_Width - s.Rect.z); s.Rect.y = std::clamp(std::round(pos.y), 0.0f, (float)m_Height - s.Rect.w); changed = true; }
@@ -826,6 +861,7 @@ namespace Conqueror::Editor
                 m_Selected = std::min(m_Selected, (int)m_Sheet.Sprites.size() - 1);
                 MarkDirty();
             }
+            ImGui::EndDisabled();
             UI::EndSection();
         }
     }

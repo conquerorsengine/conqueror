@@ -35,6 +35,8 @@ namespace Conqueror::Editor
         void SetSpriteEditorCallback(const FileOpenCallbackFn& callback) { m_SpriteEditorCallback = callback; }
 
         const std::filesystem::path& GetSelectedPath() const { return m_SelectedPath; }
+        // Dosya yöneticisinden bırakılanlar: bir sonraki çizimde üzerinde durulan klasöre ya da açık klasöre kopyalanır (Unity Project)
+        void QueueDroppedFiles(const std::vector<std::string>& paths) { m_DroppedFiles.insert(m_DroppedFiles.end(), paths.begin(), paths.end()); }
         const std::filesystem::path& GetCurrentDirectory() const { return m_CurrentDirectory; }
         void NavigateTo(const std::filesystem::path& directory, bool recordHistory = true);
         // Dosyanın klasörüne git ve seç (ör. "Select Prefab Asset")
@@ -176,6 +178,9 @@ namespace Conqueror::Editor
         std::filesystem::path MakeUniquePath(const std::filesystem::path& desired) const;
         std::filesystem::path CreateAsset(const std::string& kind);
         void ImportFile();
+        void ImportDroppedFiles();
+        std::vector<std::string> m_DroppedFiles;
+        std::filesystem::path m_HoveredFolder;   // bu karede fare altındaki klasör
         void RevealInFileManager(const std::filesystem::path& path);
 
     private:

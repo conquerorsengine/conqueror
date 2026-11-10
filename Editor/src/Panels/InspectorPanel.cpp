@@ -1,4 +1,5 @@
 #include "InspectorPanel.h"
+#include "ContentBrowserPanel.h"
 #include "AssetActions.h"
 #include "Scripting/DataAssets.h"
 #include "Scripting/NativeScriptCompiler.h"
@@ -1579,7 +1580,7 @@ namespace Conqueror::Editor
 
             // ---- Sprite sayfası dilimi
             std::shared_ptr<SpriteSheet> sheet = (component.Texture && !component.Texture->GetPath().empty()) ? SpriteSheet::Get(component.Texture->GetPath()) : nullptr;
-            if (sheet && !sheet->Sprites.empty())
+            if (sheet && !sheet->Sprites.empty() && !ContentBrowserPanel::IsReadOnly(component.Texture->GetPath()))
             {
                 UI::BeginProperty("Slice", "Which sprite of the image's sprite sheet (Sprite Editor) to draw");
                 if (ImGui::BeginCombo("##subsprite", component.SpriteName.empty() ? "(Full Texture)" : component.SpriteName.c_str()))

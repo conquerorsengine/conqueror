@@ -838,6 +838,7 @@ extern "C"
         if (yscale) *yscale = scale;
     }
     void glfwGetWindowContentScale(GLFWwindow*, float* xscale, float* yscale) { glfwGetMonitorContentScale(nullptr, xscale, yscale); }
+    GLFWdropfun glfwSetDropCallback(GLFWwindow*, GLFWdropfun) { return nullptr; }
     GLFWcursorenterfun glfwSetCursorEnterCallback(GLFWwindow*, GLFWcursorenterfun) { return nullptr; }
     GLFWwindowfocusfun glfwSetWindowFocusCallback(GLFWwindow*, GLFWwindowfocusfun) { return nullptr; }
     GLFWwindowposfun glfwSetWindowPosCallback(GLFWwindow*, GLFWwindowposfun) { return nullptr; }

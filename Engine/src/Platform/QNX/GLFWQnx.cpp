@@ -596,6 +596,7 @@ extern "C"
     GLFWcursorposfun glfwSetCursorPosCallback(GLFWwindow* w, GLFWcursorposfun cb) { GLFWcursorposfun p = w->CursorPosCallback; w->CursorPosCallback = cb; return p; }
     GLFWscrollfun glfwSetScrollCallback(GLFWwindow* w, GLFWscrollfun cb) { GLFWscrollfun p = w->ScrollCallback; w->ScrollCallback = cb; return p; }
     GLFWwindowsizefun glfwSetWindowSizeCallback(GLFWwindow* w, GLFWwindowsizefun cb) { GLFWwindowsizefun p = w->SizeCallback; w->SizeCallback = cb; return p; }
+    GLFWdropfun glfwSetDropCallback(GLFWwindow*, GLFWdropfun) { return nullptr; }
     GLFWwindowclosefun glfwSetWindowCloseCallback(GLFWwindow* w, GLFWwindowclosefun cb) { GLFWwindowclosefun p = w->CloseCallback; w->CloseCallback = cb; return p; }
     GLFWwindowfocusfun glfwSetWindowFocusCallback(GLFWwindow* w, GLFWwindowfocusfun cb) { GLFWwindowfocusfun p = w->FocusCallback; w->FocusCallback = cb; return p; }
     GLFWcursorenterfun glfwSetCursorEnterCallback(GLFWwindow*, GLFWcursorenterfun) { return nullptr; }

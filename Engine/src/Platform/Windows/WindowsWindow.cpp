@@ -219,6 +219,13 @@ namespace Conqueror
             data.EventCallback(event);
         });
 
+        glfwSetDropCallback(m_Window, [](GLFWwindow* window, int count, const char* paths[])
+        {
+            WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+            WindowFileDropEvent event(std::vector<std::string>(paths, paths + count));
+            data.EventCallback(event);
+        });
+
         glfwSetKeyCallback(m_Window, [](GLFWwindow* window, int key, [[maybe_unused]] int scancode, int action, [[maybe_unused]] int mods)
         {
             WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);

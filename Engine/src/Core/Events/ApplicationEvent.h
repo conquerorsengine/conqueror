@@ -2,8 +2,27 @@
 
 #include "Event.h"
 
+#include <string>
+#include <utility>
+#include <vector>
+
 namespace Conqueror
 {
+    // İşletim sisteminin dosya yöneticisinden pencereye dosya / klasör bırakıldı
+    class WindowFileDropEvent : public Event
+    {
+    public:
+        explicit WindowFileDropEvent(std::vector<std::string> paths) : m_Paths(std::move(paths)) {}
+
+        const std::vector<std::string>& GetPaths() const { return m_Paths; }
+
+        EVENT_CLASS_TYPE(WindowFileDrop)
+        EVENT_CLASS_CATEGORY(EventCategoryApplication)
+
+    private:
+        std::vector<std::string> m_Paths;
+    };
+
     class WindowResizeEvent : public Event
     {
     public:

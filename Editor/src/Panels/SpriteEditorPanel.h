@@ -69,6 +69,7 @@ namespace Conqueror::Editor
         int m_Width = 0, m_Height = 0;
 
         SpriteSheet m_Sheet;
+        bool m_ReadOnly = false;   // Packages varlığı: yalnız görüntülenir (Unity: "the asset is not editable")
         bool m_Dirty = false;
         int m_Selected = -1;
 
