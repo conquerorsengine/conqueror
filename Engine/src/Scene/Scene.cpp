@@ -74,6 +74,7 @@
 #include "Scene/XRInteraction.h"
 #include "Particles/VisualEffect.h"
 #include "Scene/WorldActors.h"
+#include "Scene/ActorComponents.h"
 #include "Scene/PlayerInput.h"
 #include "Scene/RigConstraints.h"
 #include "AISystem/Navigation/NavAgents.h"
@@ -1206,6 +1207,7 @@ namespace Conqueror
                 CQ_PROFILE_SAMPLE("Physics3D.Step", Physics);
                 Articulations::PreStep(*this);
                 WorldActors::Update(*this, (float)ts);   // Kill Z / Pain / Physics hacimleri, Radial Force
+                ActorComponents::Update(*this, (float)ts, true);   // Floating Pawn / Interp To Movement, Cable, Cine Camera
                 m_PhysicsWorld3D->Step(ts);
                 Articulations::PostStep(*this);
             }
@@ -1981,6 +1983,8 @@ namespace Conqueror
             Skeleton2D::Update(*this, false);
             SpriteAnimation2D::Update(*this);
             SpriteShapes::Update(*this);
+            if (!m_IsRuntimeScene)
+                ActorComponents::Update(*this, (float)ts, false);   // Cable sarkması, Cine Camera görüş açısı
         }
         // Auto LOD / Virtual Geometry: bekleyen arka plan yapımları (düzenleyicide de)
         AutoLOD::Update(*this);
@@ -2549,6 +2553,7 @@ namespace Conqueror
         ConsoleSystem::ApplyRenderOverrides(env.Settings);   // r.* konsol değişkenleri (oturum katmanı)
         // Ortam aktörleri (Exponential Height Fog, Sky Atmosphere, Volumetric Cloud, Sky Light) Lighting ayarlarının yerine geçer
         WorldActors::ApplyEnvironment(*this, env);
+        ActorComponents::ApplyEnvironment(*this, env);   // Cine Camera: alan derinliği
         env.Lightmap = m_BakedLightmapTexture;
         env.APV = m_APV;
         env.HDROutput = hdrOutput;
