@@ -55,7 +55,8 @@ Solid("Ceiling", 0, HC + 0.1, 0, 2 * W + 0.6, 0.2, 2 * D + 0.6, "", 1, {r: 0.95,
 var T = 0.2;
 Solid("Wall South L", -2.8, HC / 2.0, D + T / 2.0, 4.8, HC, T, PLASTER, 0.5, WHITE_WALL, 0.85);
 Solid("Wall South R", 2.9, HC / 2.0, D + T / 2.0, 4.6, HC, T, PLASTER, 0.5, WHITE_WALL, 0.85);
-Solid("Wall South Door Top", 0.1, 2.5, D + T / 2.0, 1.0, 0.8, T, PLASTER, 0.5, WHITE_WALL, 0.85);
+// Kapı kirişinin (y 2.1 - 2.15) üstünden başlar: alt yüzü kirişin alt yüzüyle aynı düzlemde olunca kapının üstünde şerit titriyordu
+Solid("Wall South Door Top", 0.1, 2.525, D + T / 2.0, 1.0, 0.75, T, PLASTER, 0.5, WHITE_WALL, 0.85);
 // Giriş kapısı (kapalı): ahşap kanat, koyu kasa, metal kol
 var TRIM = {r: 0.16, g: 0.13, b: 0.11, a: 1};
 Solid("Door Jamb L", -0.375, 1.05, D + T / 2.0, 0.05, 2.1, T + 0.04, "", 1, TRIM, 0.5);
@@ -132,7 +133,11 @@ EntitySetTag(fill, "Garden Light");
 foreach (var px in [-5.6, 5.6])
 {
     Ext("Garden Planter", "planter_box_02", px, -0.15, NZ - 0.6, 90, 1.0);
-    for (var k = 0; k < 3; k++) { Ext("Planter Shrub", "shrub_03", px, 0.25, NZ - 0.2 - k * 0.4, k * 70.0, 1.6); }
+    // shrub_03 bir sıra fidandır (yerel +x boyunca 1.37 m, başlangıcı modelin ucunda): saksı boyunca hizalı ve saksıya sığacak ölçekte üç sıra
+    var rowCenter = 0.8 * 0.61;
+    Ext("Planter Shrub", "shrub_03", px - 0.12, 0.25, NZ - 0.6 + rowCenter, 90.0, 0.8);
+    Ext("Planter Shrub", "shrub_03", px, 0.25, NZ - 0.6 - rowCenter, 270.0, 0.8);
+    Ext("Planter Shrub", "shrub_03", px + 0.12, 0.25, NZ - 0.6 + rowCenter, 90.0, 0.8);
 }
 foreach (var bx in [-3.4, -1.0, 1.4, 4.2])
 {
@@ -199,7 +204,7 @@ var CAB = {r: 0.22, g: 0.25, b: 0.27, a: 1};
 Solid("Kitchen Base", -3.3, 0.45, 3.65, 3.2, 0.9, 0.6, "", 1, CAB, 0.5);
 Solid("Kitchen Top", -3.3, 0.92, 3.62, 3.25, 0.04, 0.66, "Assets/Textures/marble_01.jpg", 1.2, {r: 1, g: 1, b: 1, a: 1}, 0.2);
 Solid("Kitchen Upper", -3.3, 2.15, 3.8, 3.2, 0.7, 0.35, "", 1, CAB, 0.5);
-Solid("Kitchen Splash", -3.3, 1.45, 3.88, 3.2, 1.0, 0.02, "Assets/Textures/marble_01.jpg", 1.2, {r: 1, g: 1, b: 1, a: 1}, 0.25);
+Solid("Kitchen Splash", -3.3, 1.45, 3.88, 3.198, 1.0, 0.02, "Assets/Textures/marble_01.jpg", 1.2, {r: 1, g: 1, b: 1, a: 1}, 0.25);
 
 // Tavan lambaları: sarkıt (model) + ışık; akşam modunda güçlenir
 foreach (var lp in [{x: -3.1, z: 0.6}, {x: -2.1, z: 0.6}, {x: 2.7, z: 0.6}])

@@ -150,9 +150,9 @@ Entities:
       GameTag: Untagged
       IsStatic: false
     TransformComponent:
-      Position: [0.1, 2.5, 4.1]
+      Position: [0.1, 2.525, 4.1]
       Rotation: [0, 0, 0]
-      Scale: [0.5, 0.4, 0.1]
+      Scale: [0.5, 0.375, 0.1]
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
@@ -1364,9 +1364,9 @@ Entities:
       GameTag: Untagged
       IsStatic: false
     TransformComponent:
-      Position: [-5.6, 0.25, -4.4]
-      Rotation: [0, 0, 0]
-      Scale: [1.6, 1.6, 1.6]
+      Position: [-5.72, 0.25, -4.312]
+      Rotation: [0, 1.5707964, 0]
+      Scale: [0.8, 0.8, 0.8]
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
@@ -1378,9 +1378,9 @@ Entities:
       GameTag: Untagged
       IsStatic: false
     TransformComponent:
-      Position: [-5.6, 0.25, -4.8]
-      Rotation: [0, 1.2217305, 0]
-      Scale: [1.6, 1.6, 1.6]
+      Position: [-5.6, 0.25, -5.288]
+      Rotation: [0, 4.712389, 0]
+      Scale: [0.8, 0.8, 0.8]
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
@@ -1392,9 +1392,9 @@ Entities:
       GameTag: Untagged
       IsStatic: false
     TransformComponent:
-      Position: [-5.6, 0.25, -5.2]
-      Rotation: [0, 2.443461, 0]
-      Scale: [1.6, 1.6, 1.6]
+      Position: [-5.48, 0.25, -4.312]
+      Rotation: [0, 1.5707964, 0]
+      Scale: [0.8, 0.8, 0.8]
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
@@ -1420,9 +1420,9 @@ Entities:
       GameTag: Untagged
       IsStatic: false
     TransformComponent:
-      Position: [5.6, 0.25, -4.4]
-      Rotation: [0, 0, 0]
-      Scale: [1.6, 1.6, 1.6]
+      Position: [5.48, 0.25, -4.312]
+      Rotation: [0, 1.5707964, 0]
+      Scale: [0.8, 0.8, 0.8]
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
@@ -1434,9 +1434,9 @@ Entities:
       GameTag: Untagged
       IsStatic: false
     TransformComponent:
-      Position: [5.6, 0.25, -4.8]
-      Rotation: [0, 1.2217305, 0]
-      Scale: [1.6, 1.6, 1.6]
+      Position: [5.6, 0.25, -5.288]
+      Rotation: [0, 4.712389, 0]
+      Scale: [0.8, 0.8, 0.8]
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
@@ -1448,9 +1448,9 @@ Entities:
       GameTag: Untagged
       IsStatic: false
     TransformComponent:
-      Position: [5.6, 0.25, -5.2]
-      Rotation: [0, 2.443461, 0]
-      Scale: [1.6, 1.6, 1.6]
+      Position: [5.72, 0.25, -4.312]
+      Rotation: [0, 1.5707964, 0]
+      Scale: [0.8, 0.8, 0.8]
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
@@ -2346,7 +2346,7 @@ Entities:
     TransformComponent:
       Position: [-3.3, 1.45, 3.88]
       Rotation: [0, 0, 0]
-      Scale: [1.6, 0.5, 0.01]
+      Scale: [1.599, 0.5, 0.01]
     LayerComponent:
       Layer: 0
       OrderInLayer: 0
