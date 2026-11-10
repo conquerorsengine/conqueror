@@ -6,6 +6,8 @@
 #include "EditorState.h"
 #include "Scene/Scene.h"
 #include "Core/Project/Project.h"
+#include "Core/Project/SplashLayout.h"
+#include "Renderer/RHI/Texture.h"
 #include "Core/Project/ProjectSettings.h"
 #include "Core/Tiering/QualitySettings.h"
 #include "Core/Input/Input.h"
@@ -20,9 +22,11 @@
 #include <imgui.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cctype>
 #include <cstring>
 #include <filesystem>
+#include <unordered_map>
 
 // Project Settings: Player, Quality, Graphics, Audio, Input, Navigation, Editor, Script Execution Order (Unity eşdeğerleri)
 namespace Conqueror::Editor
@@ -51,10 +55,129 @@ namespace Conqueror::Editor
             auto& sp = p.Splash;
             m_Dirty |= UI::Checkbox("Show Splash Screen", sp.Show, "Logos fade in and out while the first scene loads (built games only).");
             ImGui::BeginDisabled(!sp.Show);
-            m_Dirty |= UI::InputText("Splash Logo", sp.Logo, "Project-relative .png shown first (transparent background looks best). Empty: engine logo only.");
-            m_Dirty |= UI::Checkbox("Show Engine Logo", sp.ShowEngineLogo, "\"Conqueror's Engine\" logo after your logo.");
-            m_Dirty |= UI::DragFloat("Duration Per Logo", sp.Duration, 0.05f, 0.5f, 10.0f, "%.1f s");
-            UI::BeginProperty("Background");
+            // Önizleme (Unity Preview): derlenmiş oyundaki yerleşimle aynı hesap
+            static double s_PreviewStart = -1.0;
+            const auto steps = Splash::BuildSteps(sp);
+            const float total = Splash::TotalDuration(steps);
+            if (UI::AccentButton(s_PreviewStart >= 0.0 ? ICON_FA_STOP "  Stop Preview" : ICON_FA_PLAY "  Preview", ImVec2(-1, 0)))
+                s_PreviewStart = s_PreviewStart >= 0.0 ? -1.0 : ImGui::GetTime();
+            if (s_PreviewStart >= 0.0)
+            {
+                float t = (float)(ImGui::GetTime() - s_PreviewStart);
+                if (t > total)
+                {
+                    s_PreviewStart = -1.0;
+                    t = total;
+                }
+                const float pw = ImGui::GetContentRegionAvail().x;
+                const ImVec2 size(pw, pw * 9.0f / 16.0f);
+                const ImVec2 pos = ImGui::GetCursorScreenPos();
+                ImGui::Dummy(size);
+                ImDrawList* dl = ImGui::GetWindowDrawList();
+                dl->PushClipRect(pos, ImVec2(pos.x + size.x, pos.y + size.y), true);
+                auto srgb = [](float c) { return (int)std::lround(std::clamp(c, 0.0f, 1.0f) * 255.0f); };
+                dl->AddRectFilled(pos, ImVec2(pos.x + size.x, pos.y + size.y), IM_COL32(srgb(sp.BackgroundR), srgb(sp.BackgroundG), srgb(sp.BackgroundB), 255));
+                // Dokular önizleme boyunca tutulur: doku önbelleği zayıf başvuru tutar, her karede yeniden yükleniyor ve ImGui çizmeden
+                // önce siliniyordu (önizleme boş kalıyordu)
+                static std::unordered_map<std::string, std::shared_ptr<Texture2D>> s_PreviewTextures;
+                auto textureOf = [&](const std::string& relative, bool engine) -> std::shared_ptr<Texture2D> {
+                    const std::string key = engine ? std::string("|engine") : relative;
+                    if (auto it = s_PreviewTextures.find(key); it != s_PreviewTextures.end())
+                        return it->second;
+                    const std::string path = engine ? FileSystem::ResolveResourcePath("Resources/Logo/Conqueror_Logo.png") : AssetUI::Resolve(relative).string();
+                    std::error_code ec;
+                    std::shared_ptr<Texture2D> tex;
+                    if (!path.empty() && std::filesystem::exists(path, ec))
+                        tex = Texture2D::Create(path);
+                    s_PreviewTextures[key] = tex;
+                    return tex;
+                };
+                if (s_PreviewTextures.size() > 64)
+                    s_PreviewTextures.clear();
+                auto drawImage = [&](const std::shared_ptr<Texture2D>& tex, const glm::vec2& c, const glm::vec2& sz, float alpha) {
+                    dl->AddImage((ImTextureID)(uint64_t)tex->GetRendererID(), ImVec2(pos.x + c.x - sz.x * 0.5f, pos.y + c.y - sz.y * 0.5f),
+                                 ImVec2(pos.x + c.x + sz.x * 0.5f, pos.y + c.y + sz.y * 0.5f), ImVec2(0, 1), ImVec2(1, 0),
+                                 IM_COL32(255, 255, 255, (int)std::lround(std::clamp(alpha, 0.0f, 1.0f) * 255.0f)));
+                };
+                if (!sp.BackgroundImage.empty())
+                    if (auto bgTex = textureOf(sp.BackgroundImage, false); bgTex && bgTex->GetHeight() > 0)
+                    {
+                        glm::vec2 c, sz;
+                        Splash::CoverRect((float)bgTex->GetWidth() / (float)bgTex->GetHeight(), { size.x, size.y }, c, sz);
+                        drawImage(bgTex, c, sz, 1.0f);
+                    }
+                std::vector<Splash::DrawItem> items;
+                Splash::Layout(sp, steps, t, { size.x, size.y },
+                               [&](const Splash::Item& item) {
+                                   auto tex = textureOf(item.Image, item.EngineLogo);
+                                   return tex && tex->GetHeight() > 0 ? (float)tex->GetWidth() / (float)tex->GetHeight() : 0.0f;
+                               },
+                               items);
+                for (const auto& d : items)
+                    if (auto tex = textureOf(d.Source->Image, d.Source->EngineLogo))
+                        drawImage(tex, d.Center, d.Size, d.Alpha);
+                dl->PopClipRect();
+                ImGui::TextDisabled("%.1f / %.1f s", t, total);
+            }
+            m_Dirty |= UI::Checkbox("Show Engine Logo", sp.ShowEngineLogo, "Show the \"Conqueror's Engine\" logo.");
+            static const char* const drawModes[] = { "All Sequential", "Engine Logo Below", "Engine Logo Above", "Engine Logo Left", "Engine Logo Right" };
+            ImGui::BeginDisabled(!sp.ShowEngineLogo);
+            m_Dirty |= UI::Combo("Draw Mode", sp.DrawMode, drawModes, 5,
+                                 "All Sequential: every logo on its own, the engine logo last. Below / Above / Left / Right: the engine logo next to each of your logos.");
+            ImGui::EndDisabled();
+            static const char* const animations[] = { "Static", "Dolly" };
+            m_Dirty |= UI::Combo("Animation", sp.Animation, animations, 2, "Dolly: the logos slowly grow while they are shown.");
+            m_Dirty |= UI::DragFloat("Logo Scale", sp.LogoScale, 0.01f, 0.25f, 3.0f, "%.2f");
+            m_Dirty |= UI::DragFloat("Engine Logo Duration", sp.Duration, 0.05f, 0.5f, 10.0f, "%.1f s", "Seconds the engine logo is shown on its own.");
+
+            // Logolar (Unity Logos listesi): sırayla gösterilir
+            UI::BeginProperty("Logos", "Your logos, shown in order (transparent background looks best)");
+            ImGui::TextDisabled("%d logo%s", (int)sp.Logos.size(), sp.Logos.size() == 1 ? "" : "s");
+            UI::EndProperty();
+            int removeAt = -1, moveUp = -1;
+            for (int i = 0; i < (int)sp.Logos.size(); ++i)
+            {
+                ImGui::PushID(i);
+                auto& logo = sp.Logos[(size_t)i];
+                UI::BeginProperty(("Logo " + std::to_string(i + 1)).c_str());
+                const float buttons = 3.0f * (ImGui::GetFrameHeight() + 4.0f);
+                ImGui::BeginGroup();
+                ImGui::PushItemWidth(std::max(60.0f, ImGui::GetContentRegionAvail().x - buttons));
+                if (AssetUI::AssetSlot("##logo", "Sprite", ObjectPicker::ImageExtensions(), logo.Path))
+                    m_Dirty = true;
+                ImGui::PopItemWidth();
+                ImGui::EndGroup();
+                ImGui::SameLine(0.0f, 4.0f);
+                ImGui::BeginDisabled(i == 0);
+                if (ImGui::Button(ICON_FA_ARROW_UP, ImVec2(ImGui::GetFrameHeight(), 0)))
+                    moveUp = i;
+                ImGui::EndDisabled();
+                ImGui::SameLine(0.0f, 4.0f);
+                if (ImGui::Button(ICON_FA_XMARK, ImVec2(ImGui::GetFrameHeight(), 0)))
+                    removeAt = i;
+                UI::EndProperty();
+                m_Dirty |= UI::DragFloat("Duration", logo.Duration, 0.05f, 0.5f, 10.0f, "%.1f s");
+                ImGui::PopID();
+            }
+            if (moveUp > 0)
+            {
+                std::swap(sp.Logos[(size_t)moveUp], sp.Logos[(size_t)moveUp - 1]);
+                m_Dirty = true;
+            }
+            if (removeAt >= 0)
+            {
+                sp.Logos.erase(sp.Logos.begin() + removeAt);
+                m_Dirty = true;
+            }
+            if (ImGui::Button(ICON_FA_PLUS "  Add Logo", ImVec2(-1, 0)))
+            {
+                sp.Logos.push_back({ {}, 2.0f });
+                m_Dirty = true;
+            }
+            sp.Logo = sp.Logos.empty() ? std::string() : sp.Logos.front().Path;
+
+            UI::SubHeader("Background");
+            UI::BeginProperty("Background Color");
             float bg[3] = { sp.BackgroundR, sp.BackgroundG, sp.BackgroundB };
             if (ImGui::ColorEdit3("##splashbg", bg))
             {
@@ -64,6 +187,11 @@ namespace Conqueror::Editor
                 m_Dirty = true;
             }
             UI::EndProperty();
+            UI::BeginProperty("Background Image", "Covers the whole screen behind the logos (empty: the color)");
+            if (AssetUI::AssetSlot("##splashbgimage", "Sprite", ObjectPicker::ImageExtensions(), sp.BackgroundImage))
+                m_Dirty = true;
+            UI::EndProperty();
+
             ImGui::EndDisabled();
         }
 

@@ -66,13 +66,26 @@ namespace Conqueror {
     };
 
     // Açılış ekranı (Unity Splash Image): oyun açılırken logo(lar) belirip kaybolur; sahne arkada yüklenir
+    struct SplashLogoEntry
+    {
+        std::string Path;                             // proje göreli resim
+        float Duration = 2.0f;                        // saniye (belirme + bekleme + kaybolma)
+    };
     struct SplashSettings
     {
+        // Logoların motor logosuna göre yerleşimi (Unity Draw Mode: All Sequential / Unity Logo Below)
+        enum Layout : int { Sequential = 0, EngineBelow, EngineAbove, EngineLeft, EngineRight };
+        enum Motion : int { Static = 0, Dolly };      // Dolly: logo yavaşça büyür
         bool Show = true;
-        std::string Logo;                             // proje göreli .png (boş: yalnız motor logosu)
-        bool ShowEngineLogo = true;                   // proje logosundan sonra "Conqueror's Engine" logosu
-        float Duration = 2.0f;                        // logo başına saniye (belirme + bekleme + kaybolma)
+        std::string Logo;                             // eski tek logo alanı (okunurken Logos'a taşınır)
+        std::vector<SplashLogoEntry> Logos;           // sırayla gösterilen proje logoları
+        bool ShowEngineLogo = true;                   // "Conqueror's Engine" logosu
+        int DrawMode = Sequential;
+        int Animation = Static;
+        float Duration = 2.0f;                        // motor logosu (Sequential) ve yeni logoların süresi
+        float LogoScale = 1.0f;                       // logo boyutu çarpanı
         float BackgroundR = 0.067f, BackgroundG = 0.071f, BackgroundB = 0.086f;   // sRGB
+        std::string BackgroundImage;                  // proje göreli; ekranı kaplar (boş: düz renk)
     };
 
     // Derlenmiş oyunun penceresi (Unity: Player Settings)

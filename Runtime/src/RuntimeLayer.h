@@ -6,7 +6,9 @@
 #include "Core/Layer.h"
 #include "Scene/Scene.h"
 #include "Renderer/RHI/Texture.h"
+#include "Core/Project/SplashLayout.h"
 #include <memory>
+#include <unordered_map>
 #include <filesystem>
 #include <vector>
 #include <glm/glm.hpp>
@@ -38,16 +40,14 @@ namespace Conqueror::Runtime
         bool m_PrevMouseDown = false;
         bool m_WindowWasFocused = false;
 
-        struct SplashLogo
-        {
-            std::shared_ptr<Texture2D> Texture;
-            float Height = 0.3f;    // pencere yüksekliğine oran
-        };
-        std::vector<SplashLogo> m_SplashLogos;
+        SplashSettings m_SplashSettings;
+        std::vector<Splash::Step> m_SplashSteps;
+        std::unordered_map<std::string, std::shared_ptr<Texture2D>> m_SplashTextures;   // proje göreli yol -> doku ("" motor logosu)
+        std::shared_ptr<Texture2D> m_SplashBackgroundImage;
         bool m_SplashActive = false;
         bool m_ProjectLoaded = false;
         float m_SplashTime = 0.0f;
-        float m_SplashDuration = 2.0f;
+        float m_SplashTotal = 0.0f;
         glm::vec3 m_SplashBackground{ 0.067f, 0.071f, 0.086f };
     };
 }

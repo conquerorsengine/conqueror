@@ -40,8 +40,17 @@ namespace Conqueror {
         out << YAML::Key << "GraphicsAPI" << YAML::Value << player.GraphicsAPI;
         out << YAML::Key << "Splash" << YAML::Value << YAML::BeginMap;
         out << YAML::Key << "Show" << YAML::Value << player.Splash.Show;
-        out << YAML::Key << "Logo" << YAML::Value << player.Splash.Logo;
+        out << YAML::Key << "Logo" << YAML::Value << (player.Splash.Logos.empty() ? player.Splash.Logo : player.Splash.Logos.front().Path);
+        out << YAML::Key << "Logos" << YAML::Value << YAML::BeginSeq;
+        for (const auto& logo : player.Splash.Logos)
+            out << YAML::Flow << YAML::BeginMap << YAML::Key << "Path" << YAML::Value << logo.Path << YAML::Key << "Duration" << YAML::Value
+                << logo.Duration << YAML::EndMap;
+        out << YAML::EndSeq;
         out << YAML::Key << "ShowEngineLogo" << YAML::Value << player.Splash.ShowEngineLogo;
+        out << YAML::Key << "DrawMode" << YAML::Value << player.Splash.DrawMode;
+        out << YAML::Key << "Animation" << YAML::Value << player.Splash.Animation;
+        out << YAML::Key << "LogoScale" << YAML::Value << player.Splash.LogoScale;
+        out << YAML::Key << "BackgroundImage" << YAML::Value << player.Splash.BackgroundImage;
         out << YAML::Key << "Duration" << YAML::Value << player.Splash.Duration;
         out << YAML::Key << "Background" << YAML::Value << YAML::Flow << YAML::BeginSeq << player.Splash.BackgroundR << player.Splash.BackgroundG
             << player.Splash.BackgroundB << YAML::EndSeq;
@@ -187,6 +196,27 @@ namespace Conqueror {
                 readStr(n, "Logo", p.Splash.Logo);
                 readBool(n, "ShowEngineLogo", p.Splash.ShowEngineLogo);
                 try { if (n["Duration"]) p.Splash.Duration = std::clamp(n["Duration"].as<float>(), 0.5f, 10.0f); } catch (const YAML::Exception&) {}
+                readInt(n, "DrawMode", p.Splash.DrawMode, 0, 4);
+                readInt(n, "Animation", p.Splash.Animation, 0, 1);
+                try { if (n["LogoScale"]) p.Splash.LogoScale = std::clamp(n["LogoScale"].as<float>(), 0.25f, 3.0f); } catch (const YAML::Exception&) {}
+                readStr(n, "BackgroundImage", p.Splash.BackgroundImage);
+                p.Splash.Logos.clear();
+                try
+                {
+                    if (auto logos = n["Logos"]; logos && logos.IsSequence())
+                        for (const auto& l : logos)
+                        {
+                            SplashLogoEntry e;
+                            if (l["Path"]) e.Path = l["Path"].as<std::string>();
+                            if (l["Duration"]) e.Duration = std::clamp(l["Duration"].as<float>(), 0.5f, 10.0f);
+                            if (!e.Path.empty())
+                                p.Splash.Logos.push_back(e);
+                        }
+                }
+                catch (const YAML::Exception&) {}
+                // Eski projeler: tek logo alanı
+                if (p.Splash.Logos.empty() && !p.Splash.Logo.empty())
+                    p.Splash.Logos.push_back({ p.Splash.Logo, p.Splash.Duration });
                 try
                 {
                     if (auto bg = n["Background"]; bg && bg.IsSequence() && bg.size() == 3)

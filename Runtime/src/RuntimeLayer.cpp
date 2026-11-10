@@ -111,26 +111,46 @@ namespace Conqueror::Runtime
         const char* force = std::getenv("CQ_SPLASH");
         if (!splash.Show || (Automation::IsActive() && !(force && *force == '1')))
             return;
-        if (!splash.Logo.empty())
+        m_SplashSettings = splash;
+        auto load = [&](const std::string& relative) -> std::shared_ptr<Texture2D> {
+            const auto path = relative.empty() ? std::filesystem::path(FileSystem::ResolveResourcePath("Resources/Logo/Conqueror_Logo.png"))
+                                               : m_ProjectPath / relative;
+            if (!std::filesystem::exists(path, ec))
+                return nullptr;
+            auto tex = Texture2D::Create(path.string());
+            return tex && tex->GetWidth() > 0 ? tex : nullptr;
+        };
+        // Yüklenemeyen proje logoları atlanır (motor logosu kalır)
+        m_SplashSettings.Logos.clear();
+        for (const auto& l : splash.Logos)
+            if (auto tex = load(l.Path))
+            {
+                m_SplashTextures[l.Path] = tex;
+                m_SplashSettings.Logos.push_back(l);
+            }
+        if (auto engine = load({}))
+            m_SplashTextures[{}] = engine;
+        else
+            m_SplashSettings.ShowEngineLogo = false;
+        if (!splash.BackgroundImage.empty())
+            m_SplashBackgroundImage = load(splash.BackgroundImage);
+        m_SplashSteps = Splash::BuildSteps(m_SplashSettings);
+        // Hiç çizilecek logo yoksa açılış ekranı yok
+        bool any = false;
+        for (const auto& st : m_SplashSteps)
+            for (const auto& it : st.Items)
+                any = any || m_SplashTextures.count(it.EngineLogo ? std::string() : it.Image);
+        if (!any)
         {
-            const auto path = m_ProjectPath / splash.Logo;
-            if (std::filesystem::exists(path, ec))
-                if (auto tex = Texture2D::Create(path.string()); tex && tex->GetWidth() > 0)
-                    m_SplashLogos.push_back({ tex, 0.34f });
-        }
-        if (splash.ShowEngineLogo || m_SplashLogos.empty())
-        {
-            const std::string engineLogo = FileSystem::ResolveResourcePath("Resources/Logo/Conqueror_Logo.png");
-            if (auto tex = Texture2D::Create(engineLogo); tex && tex->GetWidth() > 0)
-                m_SplashLogos.push_back({ tex, 0.26f });
-        }
-        if (m_SplashLogos.empty())
+            m_SplashSteps.clear();
+            m_SplashTextures.clear();
             return;
+        }
         m_SplashActive = true;
         m_SplashTime = 0.0f;
-        m_SplashDuration = std::clamp(splash.Duration, 0.5f, 10.0f);
+        m_SplashTotal = Splash::TotalDuration(m_SplashSteps);
         m_SplashBackground = { splash.BackgroundR, splash.BackgroundG, splash.BackgroundB };
-        CQ_CORE_INFO("Splash screen: {0} logo(s), {1:.1f} s each", m_SplashLogos.size(), m_SplashDuration);
+        CQ_CORE_INFO("Splash screen: {0} step(s), {1:.1f} s", m_SplashSteps.size(), m_SplashTotal);
     }
 
     void RuntimeLayer::DrawSplash()
@@ -141,26 +161,34 @@ namespace Conqueror::Runtime
         RenderCommand::SetViewport(0, 0, (uint32_t)w, (uint32_t)h);
         RenderCommand::SetClearColor({ m_SplashBackground.r, m_SplashBackground.g, m_SplashBackground.b, 1.0f });
         RenderCommand::Clear();
-        // Sıradaki logo ve onun içindeki zaman: 0.45 s belirme, bekleme, 0.45 s kaybolma (yumuşak eğri)
-        const size_t index = std::min((size_t)(m_SplashTime / m_SplashDuration), m_SplashLogos.size() - 1);
-        const float local = m_SplashTime - (float)index * m_SplashDuration;
-        const float fade = std::min(0.45f, m_SplashDuration * 0.3f);
-        float alpha = std::clamp(std::min(local / fade, (m_SplashDuration - local) / fade), 0.0f, 1.0f);
-        alpha = alpha * alpha * (3.0f - 2.0f * alpha);
-        const auto& logo = m_SplashLogos[index];
-        const float aspect = (float)logo.Texture->GetWidth() / (float)logo.Texture->GetHeight();
-        float lh = h * logo.Height;
-        float lw = lh * aspect;
-        if (lw > w * 0.8f)
-        {
-            lw = w * 0.8f;
-            lh = lw / aspect;
-        }
+        auto textureOf = [this](const Splash::Item& item) -> std::shared_ptr<Texture2D> {
+            auto it = m_SplashTextures.find(item.EngineLogo ? std::string() : item.Image);
+            return it != m_SplashTextures.end() ? it->second : nullptr;
+        };
+        std::vector<Splash::DrawItem> items;
+        Splash::Layout(m_SplashSettings, m_SplashSteps, m_SplashTime, { w, h },
+                       [&](const Splash::Item& item) {
+                           auto tex = textureOf(item);
+                           return tex && tex->GetHeight() > 0 ? (float)tex->GetWidth() / (float)tex->GetHeight() : 0.0f;
+                       },
+                       items);
         const glm::mat4 ortho = glm::ortho(0.0f, w, 0.0f, h, -1.0f, 1.0f);
-        const glm::mat4 transform = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(w * 0.5f, h * 0.5f, 0.0f)), glm::vec3(lw, lh, 1.0f));
         Renderer2D::BeginScene(ortho, false);
         Renderer2D::SetOutputMode(0);
-        Renderer2D::DrawQuad(transform, logo.Texture, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, alpha });
+        // Yerleşim sol üst kökenli, Renderer2D sol alt
+        auto quad = [&](const std::shared_ptr<Texture2D>& tex, const glm::vec2& center, const glm::vec2& size, float alpha) {
+            const glm::mat4 transform = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(center.x, h - center.y, 0.0f)), glm::vec3(size, 1.0f));
+            Renderer2D::DrawQuad(transform, tex, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, alpha });
+        };
+        if (m_SplashBackgroundImage && m_SplashBackgroundImage->GetHeight() > 0)
+        {
+            glm::vec2 c, size;
+            Splash::CoverRect((float)m_SplashBackgroundImage->GetWidth() / (float)m_SplashBackgroundImage->GetHeight(), { w, h }, c, size);
+            quad(m_SplashBackgroundImage, c, size, 1.0f);
+        }
+        for (const auto& d : items)
+            if (auto tex = textureOf(*d.Source))
+                quad(tex, d.Center, d.Size, d.Alpha);
         Renderer2D::EndScene();
         Renderer2D::SetOutputMode(-1);
     }
@@ -182,7 +210,7 @@ namespace Conqueror::Runtime
             m_SplashTime += std::min(ts.GetSeconds(), 1.0f / 20.0f);
             DrawSplash();
             // İlk logo tam görününce proje yüklenir (takılma logonun arkasında kalır)
-            if (!m_ProjectLoaded && m_SplashTime >= std::min(0.5f, m_SplashDuration * 0.35f))
+            if (!m_ProjectLoaded && m_SplashTime >= std::min(0.5f, (m_SplashSteps.empty() ? 1.0f : m_SplashSteps.front().Duration) * 0.35f))
             {
                 m_ProjectLoaded = true;
                 if (!LoadProject())
@@ -193,10 +221,12 @@ namespace Conqueror::Runtime
                     return;
                 }
             }
-            if (m_ProjectLoaded && m_SplashTime >= m_SplashDuration * (float)m_SplashLogos.size())
+            if (m_ProjectLoaded && m_SplashTime >= m_SplashTotal)
             {
                 m_SplashActive = false;
-                m_SplashLogos.clear();
+                m_SplashSteps.clear();
+                m_SplashTextures.clear();
+                m_SplashBackgroundImage.reset();
                 CQ_CORE_INFO("Splash screen finished");
             }
             return;
