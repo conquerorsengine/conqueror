@@ -5102,7 +5102,7 @@ namespace Conqueror
     CQ_UI_ADDED(UIToggleComponent) CQ_UI_ADDED(UISliderComponent) CQ_UI_ADDED(UIInputFieldComponent) CQ_UI_ADDED(UIDropdownComponent)
     CQ_UI_ADDED(UIScrollRectComponent) CQ_UI_ADDED(UILayoutGroupComponent)
     CQ_UI_ADDED(UICanvasGroupComponent) CQ_UI_ADDED(UIRectMask2DComponent) CQ_UI_ADDED(UIMaskComponent) CQ_UI_ADDED(UIRawImageComponent) CQ_UI_ADDED(UIContentSizeFitterComponent)
-    CQ_UI_ADDED(UIAspectRatioFitterComponent) CQ_UI_ADDED(UILayoutElementComponent) CQ_UI_ADDED(UIScrollbarComponent) CQ_UI_ADDED(UIEventTriggerComponent) CQ_UI_ADDED(UIEventSystemComponent) CQ_UI_ADDED(UIShadowComponent) CQ_UI_ADDED(UIOutlineComponent)
+    CQ_UI_ADDED(UIAspectRatioFitterComponent) CQ_UI_ADDED(UILayoutElementComponent) CQ_UI_ADDED(UIScrollbarComponent) CQ_UI_ADDED(UIEventTriggerComponent) CQ_UI_ADDED(UIEventSystemComponent) CQ_UI_ADDED(UIShadowComponent) CQ_UI_ADDED(UIOutlineComponent) CQ_UI_ADDED(UIPositionAsUV1Component)
 #undef CQ_UI_ADDED
 
     template<>

@@ -6,8 +6,12 @@
 
 #include <glm/glm.hpp>
 
+#include <functional>
+
 namespace Conqueror
 {
+    class Shader;
+
     class Renderer2D
     {
     public:
@@ -42,13 +46,20 @@ namespace Conqueror
         // Yerel dikdörtgen (min/max) + dönüşüm
         static void DrawRect(const glm::mat4& transform, const glm::vec2& localMin, const glm::vec2& localMax, const std::shared_ptr<Texture2D>& texture,
                              const glm::vec2& uvMin, const glm::vec2& uvMax, const glm::vec4& tintColor);
-        // tilingFactor < 0: SDF metin modu (doku alfası mesafe alanıdır)
+        // tilingFactor < 0: SDF metin modu (doku alfası mesafe alanıdır). uv1: köşe başına ikinci UV kanalı (UI Position As UV1),
+        // nullptr = 0
         static void DrawQuadCorners(const glm::vec3 positions[4], const glm::vec2 uvs[4], const std::shared_ptr<Texture2D>& texture, const glm::vec4& tintColor,
-                                    float tilingFactor = 1.0f);
+                                    float tilingFactor = 1.0f, const glm::vec2* uv1 = nullptr);
 
         // Köşe başına renk (metin renk geçişleri): sıra positions ile aynı
         static void DrawQuadCornersColors(const glm::vec3 positions[4], const glm::vec2 uvs[4], const std::shared_ptr<Texture2D>& texture, const glm::vec4 colors[4],
-                                          float tilingFactor = 1.0f);
+                                          float tilingFactor = 1.0f, const glm::vec2* uv1 = nullptr);
+
+        // Özel shader (Unity Graphic.material, UI Image > Material): sonraki çizimler bu shader'la yapılır (önceki toplu çizim
+        // boşaltılır); nullptr = varsayılan 2D shader. Shader 2D köşe düzenini (a_Position, a_Color, a_TexCoord, a_TexIndex,
+        // a_TilingFactor, a_UV1) ve u_ViewProjection, u_Textures[31], u_OutputMode'u kullanır; uniforms ek değerleri yazar.
+        // BeginScene varsayılana döner
+        static void SetCustomShader(const std::shared_ptr<Shader>& shader, const std::function<void(Shader&)>& uniforms = {});
 
         // Sprite'ın çizileceği doku ve UV dikdörtgeni (sayfa dilimi, Sprite Atlas, FlipX/FlipY dahil); Sprite Skin gibi özel çizimler için
         static bool GetSpriteUV(const struct SpriteRendererComponent& sprite, std::shared_ptr<Texture2D>& outTexture, glm::vec2& uvMin, glm::vec2& uvMax);

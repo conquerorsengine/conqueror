@@ -2265,6 +2265,30 @@ namespace Conqueror::Editor
             ImGui::PopID();
             UI::EndProperty();
         };
+        // Unity Graphic.material: Shader alanında bir UI shader'ı olan .cqmat (Create > Shader > UI Shader); boş = varsayılan
+        auto materialField = [](std::string& path) {
+            UI::BeginProperty("Material", "A material whose Shader is a UI shader (Create > Shader > UI Shader). None = default UI drawing.");
+            std::string name = path.empty() ? std::string("None (Default UI)") : std::filesystem::path(path).stem().string();
+            ImGui::Button(name.c_str(), ImVec2(ImGui::GetContentRegionAvail().x - 2.0f * (ImGui::GetFrameHeight() + 4.0f), 0));
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                {
+                    const std::string dropped = (const char*)p->Data;
+                    if (std::filesystem::path(dropped).extension() == ".cqmat")
+                        path = SceneSerializer::ToAssetPath(dropped);
+                }
+                ImGui::EndDragDropTarget();
+            }
+            ImGui::PushID("uimaterial");
+            ImGui::SameLine(0, 4);
+            if (std::string picked; ObjectPicker::Button("uimatpick", "Material", { ".cqmat" }, path.empty() ? path : SceneSerializer::ResolveAssetPath(path), picked))
+                path = picked.empty() ? std::string() : SceneSerializer::ToAssetPath(picked);
+            ImGui::SameLine(0, 4);
+            if (ImGui::Button(ICON_FA_XMARK, ImVec2(ImGui::GetFrameHeight(), 0))) path.clear();
+            ImGui::PopID();
+            UI::EndProperty();
+        };
 
         DrawComponent<UIImageComponent>("Image (UI)", entity, [&](auto& c)
         {
@@ -2283,6 +2307,7 @@ namespace Conqueror::Editor
                     UI::EndProperty();
                 }
             UI::Color4("Color", c.Color);
+            materialField(c.MaterialPath);
             const char* types[] = { "Simple", "Sliced", "Tiled", "Filled" };
             UI::ComboEnum("Image Type", c.Type, types, 4);
             if (c.Type == UIImageType::Sliced)

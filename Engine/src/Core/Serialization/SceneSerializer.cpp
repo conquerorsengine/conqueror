@@ -697,6 +697,7 @@ namespace Conqueror
             CQ_O(c, Color); out << YAML::Key << "TexturePath" << YAML::Value << ToSerializablePath(c.TexturePath); CQ_O(c, SpriteName); CQ_OE(c, Type);
             CQ_O(c, Border); CQ_O(c, PixelsPerUnitMultiplier); CQ_OE(c, FillMethod); CQ_O(c, FillAmount); CQ_O(c, FillClockwise);
             CQ_O(c, PreserveAspect); CQ_O(c, RaycastTarget); CQ_O(c, CornerRadius);
+            if (!c.MaterialPath.empty()) out << YAML::Key << "MaterialPath" << YAML::Value << ToSerializablePath(c.MaterialPath);
             out << YAML::EndMap;
         }
         if (entity.HasComponent<UITextComponent>())
@@ -779,6 +780,7 @@ namespace Conqueror
             CQ_I(n, c, SpriteName, std::string); CQ_IE(n, c, Type, UIImageType); CQ_I(n, c, Border, glm::vec4); CQ_I(n, c, PixelsPerUnitMultiplier, float);
             CQ_IE(n, c, FillMethod, UIFillMethod); CQ_I(n, c, FillAmount, float); CQ_I(n, c, FillClockwise, bool); CQ_I(n, c, PreserveAspect, bool);
             CQ_I(n, c, RaycastTarget, bool); CQ_I(n, c, CornerRadius, float);
+            if (n["MaterialPath"]) c.MaterialPath = ResolveSerializablePath(n["MaterialPath"].as<std::string>());
         }
         if (auto n = entity["UITextComponent"])
         {

@@ -46,6 +46,8 @@ namespace Conqueror
         bool PreserveAspect = false;
         bool RaycastTarget = true;
         float CornerRadius = 0.0f;             // doku yoksa yuvarlatılmış dikdörtgen (piksel)
+        // Unity Graphic.material: .cqmat (Shader alanında bir UI shader'ı, Create > Shader > UI Shader); boş = varsayılan
+        std::string MaterialPath;
 
         std::shared_ptr<Texture2D> RuntimeTexture;
         std::string LoadedPath;
@@ -210,6 +212,7 @@ namespace Conqueror
         glm::vec4 Color{ 1.0f };
         glm::vec4 UVRect{ 0.0f, 0.0f, 1.0f, 1.0f };   // x, y, genişlik, yükseklik
         bool RaycastTarget = true;
+        std::string MaterialPath;                     // Unity Graphic.material (UI shader'lı .cqmat)
         std::shared_ptr<Texture2D> RuntimeTexture;
         std::string LoadedPath;
         std::shared_ptr<Texture2D> ExternalTexture;   // Video Player / betik atar (dosyanın önüne geçer)
@@ -257,6 +260,13 @@ namespace Conqueror
     };
 
     // Unity Shadow / Outline (BaseMeshEffect): görsel ya da metin efekt rengiyle kaydırılarak arkada tekrar çizilir
+    // Unity UI > Effects > Position As UV1: görselin (Image / Raw Image / Text) her köşesinin yerel konumu (pivota göre,
+    // canvas pikseli) ikinci UV kanalına (UV1) yazılır; özel UI shader'ları (Image > Material) a_UV1 ile okur
+    struct UIPositionAsUV1Component
+    {
+        uint8_t Reserved = 0;                   // alan yok (EnTT boş tipleri get<> ile vermez)
+    };
+
     struct UIShadowComponent
     {
         glm::vec4 EffectColor{ 0.0f, 0.0f, 0.0f, 0.5f };

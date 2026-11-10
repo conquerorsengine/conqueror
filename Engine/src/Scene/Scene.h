@@ -103,7 +103,7 @@ namespace Conqueror
     struct RectTransformComponent; struct UIImageComponent; struct UITextComponent; struct UIButtonComponent; struct UIToggleComponent;
     struct UISliderComponent; struct UIInputFieldComponent; struct UIDropdownComponent; struct UIScrollRectComponent; struct UILayoutGroupComponent;
     struct UICanvasGroupComponent; struct UIRectMask2DComponent; struct UIMaskComponent; struct UIRawImageComponent; struct UIContentSizeFitterComponent;
-    struct UIAspectRatioFitterComponent; struct UILayoutElementComponent; struct UIScrollbarComponent; struct UIEventTriggerComponent; struct UIEventSystemComponent; struct UIShadowComponent; struct UIOutlineComponent;
+    struct UIAspectRatioFitterComponent; struct UILayoutElementComponent; struct UIScrollbarComponent; struct UIEventTriggerComponent; struct UIEventSystemComponent; struct UIShadowComponent; struct UIOutlineComponent; struct UIPositionAsUV1Component;
 
     class PhysicsWorld2D;
     class PhysicsWorld3D;
@@ -684,4 +684,5 @@ namespace Conqueror
     template<> void Scene::OnComponentAdded<UIEventSystemComponent>(Entity, UIEventSystemComponent&);
     template<> void Scene::OnComponentAdded<UIShadowComponent>(Entity, UIShadowComponent&);
     template<> void Scene::OnComponentAdded<UIOutlineComponent>(Entity, UIOutlineComponent&);
+    template<> void Scene::OnComponentAdded<UIPositionAsUV1Component>(Entity, UIPositionAsUV1Component&);
 }

@@ -24,6 +24,7 @@ namespace Conqueror
         glm::vec2 TexCoord;
         float TexIndex;
         float TilingFactor;
+        glm::vec2 UV1{ 0.0f };              // ikinci UV kanalı (UI Position As UV1); varsayılan shader okumaz
     };
 
     // Toplu quad çizici: tek vertex buffer, 32 doku yuvası. Çizim sırası korunur
@@ -37,6 +38,9 @@ namespace Conqueror
         static constexpr uint32_t LightTextureSlot = 31;
 
         std::shared_ptr<Shader> TextureShader;
+        // Özel shader (UI Image > Material) ve ek uniform'ları; boşsa TextureShader
+        std::shared_ptr<Shader> CustomShader;
+        std::function<void(Shader&)> CustomUniforms;
         std::shared_ptr<Texture2D> WhiteTexture;
         std::shared_ptr<VertexArray> QuadVertexArray;
         std::shared_ptr<VertexBuffer> QuadVertexBuffer;
@@ -77,7 +81,8 @@ namespace Conqueror
             { ShaderDataType::Float4, "a_Color"        },
             { ShaderDataType::Float2, "a_TexCoord"     },
             { ShaderDataType::Float,  "a_TexIndex"     },
-            { ShaderDataType::Float,  "a_TilingFactor" }
+            { ShaderDataType::Float,  "a_TilingFactor" },
+            { ShaderDataType::Float2, "a_UV1"          }
         });
         s_Data.QuadVertexArray->AddVertexBuffer(s_Data.QuadVertexBuffer);
 
@@ -123,6 +128,12 @@ namespace Conqueror
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
 
+    static void ResetCustomShader()
+    {
+        s_Data.CustomShader.reset();
+        s_Data.CustomUniforms = {};
+    }
+
     static void StartBatch()
     {
         s_Data.Vertices.clear();
@@ -137,6 +148,7 @@ namespace Conqueror
         ResetStats();
         ApplySceneState(enableDepthTest, enableDepthWrite);
         s_Data.ViewProjection = camera.GetViewProjection();
+        ResetCustomShader();
         StartBatch();
     }
 
@@ -145,6 +157,7 @@ namespace Conqueror
         ResetStats();
         ApplySceneState(enableDepthTest, enableDepthWrite);
         s_Data.ViewProjection = camera.GetProjection() * glm::inverse(transform);
+        ResetCustomShader();
         StartBatch();
     }
 
@@ -153,6 +166,7 @@ namespace Conqueror
         // UI: depth test kapalı (her zaman en önde)
         ApplySceneState(enableDepthTest, true);
         s_Data.ViewProjection = viewProjection;
+        ResetCustomShader();
         StartBatch();
     }
 
@@ -166,17 +180,27 @@ namespace Conqueror
             if (s_Data.TextureSlots[i])
                 s_Data.TextureSlots[i]->Bind(i);
 
-        s_Data.TextureShader->Bind();
-        s_Data.TextureShader->SetMat4("u_ViewProjection", s_Data.ViewProjection);
-        s_Data.TextureShader->SetInt("u_OutputMode", s_Data.OutputMode);
+        Shader& shader = s_Data.CustomShader ? *s_Data.CustomShader : *s_Data.TextureShader;
+        shader.Bind();
+        if (s_Data.CustomShader)
+        {
+            int32_t samplers[Renderer2DData::MaxTextureSlots];
+            for (int32_t i = 0; i < (int32_t)Renderer2DData::MaxTextureSlots; ++i)
+                samplers[i] = i;
+            shader.SetIntArray("u_Textures", samplers, Renderer2DData::MaxTextureSlots);
+        }
+        shader.SetMat4("u_ViewProjection", s_Data.ViewProjection);
+        shader.SetInt("u_OutputMode", s_Data.OutputMode);
         const bool lit = s_Data.Lit && s_Data.LightTexture != 0;
-        s_Data.TextureShader->SetInt("u_Lit", lit ? 1 : 0);
+        shader.SetInt("u_Lit", lit ? 1 : 0);
         if (lit)
         {
             glBindTextureUnit(Renderer2DData::LightTextureSlot, s_Data.LightTexture);
-            s_Data.TextureShader->SetInt("u_LightTex", (int)Renderer2DData::LightTextureSlot);
-            s_Data.TextureShader->SetFloat2("u_LightOrigin", s_Data.LightOrigin);
+            shader.SetInt("u_LightTex", (int)Renderer2DData::LightTextureSlot);
+            shader.SetFloat2("u_LightOrigin", s_Data.LightOrigin);
         }
+        if (s_Data.CustomShader && s_Data.CustomUniforms)
+            s_Data.CustomUniforms(shader);
         // Sprite Mask: stencil bit 0 (Lighting2D yazar); başka kullanıcıların stencil durumuna dokunulmaz
         if (s_Data.MaskMode != 0)
         {
@@ -193,6 +217,16 @@ namespace Conqueror
         }
         s_Data.Stats.DrawCalls++;
         StartBatch();
+    }
+
+    void Renderer2D::SetCustomShader(const std::shared_ptr<Shader>& shader, const std::function<void(Shader&)>& uniforms)
+    {
+        // Varsayılan -> varsayılan: hiçbir şey (her UI görselinde çağrılır, toplu çizim bozulmasın)
+        if (!shader && !s_Data.CustomShader)
+            return;
+        Flush();
+        s_Data.CustomShader = shader;
+        s_Data.CustomUniforms = shader ? uniforms : std::function<void(Shader&)>{};
     }
 
     void Renderer2D::SetLighting(uint32_t lightTexture, const glm::vec2& viewportOrigin)
@@ -265,7 +299,7 @@ namespace Conqueror
     }
 
     void Renderer2D::DrawQuadCorners(const glm::vec3 positions[4], const glm::vec2 uvs[4], const std::shared_ptr<Texture2D>& texture, const glm::vec4& tintColor,
-                                     float tilingFactor)
+                                     float tilingFactor, const glm::vec2* uv1)
     {
         if (!s_Data.TextureShader)
             return;
@@ -273,7 +307,7 @@ namespace Conqueror
             Flush();
         const float texIndex = GetTextureSlot(texture);
         for (int i = 0; i < 4; ++i)
-            s_Data.Vertices.push_back({ positions[i], tintColor, uvs[i], texIndex, tilingFactor });
+            s_Data.Vertices.push_back({ positions[i], tintColor, uvs[i], texIndex, tilingFactor, uv1 ? uv1[i] : glm::vec2(0.0f) });
         s_Data.IndexCount += 6;
         s_Data.Stats.QuadCount++;
         s_Data.Stats.Vertices += 4;
@@ -281,7 +315,7 @@ namespace Conqueror
     }
 
     void Renderer2D::DrawQuadCornersColors(const glm::vec3 positions[4], const glm::vec2 uvs[4], const std::shared_ptr<Texture2D>& texture, const glm::vec4 colors[4],
-                                           float tilingFactor)
+                                           float tilingFactor, const glm::vec2* uv1)
     {
         if (!s_Data.TextureShader)
             return;
@@ -289,7 +323,7 @@ namespace Conqueror
             Flush();
         const float texIndex = GetTextureSlot(texture);
         for (int i = 0; i < 4; ++i)
-            s_Data.Vertices.push_back({ positions[i], colors[i], uvs[i], texIndex, tilingFactor });
+            s_Data.Vertices.push_back({ positions[i], colors[i], uvs[i], texIndex, tilingFactor, uv1 ? uv1[i] : glm::vec2(0.0f) });
         s_Data.IndexCount += 6;
         s_Data.Stats.QuadCount++;
         s_Data.Stats.Vertices += 4;

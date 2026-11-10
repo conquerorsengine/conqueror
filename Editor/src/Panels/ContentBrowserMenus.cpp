@@ -277,6 +277,8 @@ namespace Conqueror::Editor
         add("Shader", "", "Lit Shader", "", "shader:lit",
             "Built-in PBR lighting with your own surface function (Standard Surface Shader). Material > Shader File.", true, true);
         add("Shader", "", "Unlit Shader", "", "shader:unlit");
+        add("Shader", "", "UI Shader", "", "shader:ui",
+            "Draws an Image or Raw Image with your own code (material > Shader, Image > Material); reads Position As UV1.");
         add("Shader", "", "Image Effect Shader", "", "shader:imageeffect", "A full-screen effect for the Full Screen Pass component.");
         add("Shader", "", "Custom Render Texture Shader", "", "shader:crt");
         add("Shader", "", "Compute Shader", "", "shader:compute", "GPU computation run from scripts (ComputeSetTexture / ComputeSetFloat / ComputeDispatch).");

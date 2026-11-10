@@ -2061,13 +2061,13 @@ namespace Conqueror::Editor
             else if (kind.rfind("shader:", 0) == 0)
             {
                 const std::string t = kind.substr(7);
-                const char* name = t == "lit" ? "New Lit Shader.cqsh" : t == "unlit" ? "New Unlit Shader.cqsh"
+                const char* name = t == "lit" ? "New Lit Shader.cqsh" : t == "unlit" ? "New Unlit Shader.cqsh" : t == "ui" ? "New UI Shader.cqsh"
                                  : t == "imageeffect" ? "New Image Effect Shader.glsl" : t == "compute" ? "New Compute Shader.comp"
                                  : t == "raytracing" ? "New Ray Tracing Shader.cqraytrace"
                                  : "New Custom Render Texture Shader.glsl";
                 path = MakeUniquePath(dir / name);
                 std::ofstream f(path);
-                f << (t == "lit" ? ShaderTemplates::Lit() : t == "unlit" ? ShaderTemplates::Unlit()
+                f << (t == "lit" ? ShaderTemplates::Lit() : t == "unlit" ? ShaderTemplates::Unlit() : t == "ui" ? ShaderTemplates::UI()
                       : t == "imageeffect" ? ShaderTemplates::ImageEffect() : t == "compute" ? ShaderTemplates::Compute()
                       : t == "raytracing" ? ShaderTemplates::RayTracing()
                       : ShaderTemplates::CustomRenderTexture());

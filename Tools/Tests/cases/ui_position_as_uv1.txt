@@ -1,0 +1,22 @@
+# template: empty
+# UI Image > Material (UI shader) ve Position As UV1: köşelerin yerel konumu ikinci UV kanalına yazılır. Paket: gradyan
+# UI shader'ı (renk = UV1 / 400 + 0.5) ve onu kullanan malzeme. Bileşen kaldırılınca UV1 = 0 (her yer 0.5)
+wait 40
+content import "{dir}/assets/ui_position_uv1.cqpackage"
+wait 5
+ui create Canvas
+ui create Image UV1Img
+comp set UV1Img RectTransformComponent SizeDelta 400 400
+comp set UV1Img UIImageComponent MaterialPath Assets/Materials/UV1Grad.cqmat
+comp add UV1Img UIPositionAsUV1Component
+focus Game
+wait 30
+game_region 0.40 0.45 0.42 0.55 r mean <100
+game_region 0.58 0.45 0.60 0.55 r mean >150
+game_region 0.45 0.32 0.55 0.34 g mean <100
+game_region 0.45 0.66 0.55 0.68 g mean >150
+comp remove UV1Img UIPositionAsUV1Component
+wait 10
+game_region 0.40 0.45 0.42 0.55 r mean 128
+game_region 0.58 0.45 0.60 0.55 r mean 128
+quit

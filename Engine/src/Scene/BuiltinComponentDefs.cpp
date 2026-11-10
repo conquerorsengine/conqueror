@@ -437,7 +437,9 @@ namespace Conqueror
             .Field("FillClockwise", "Clockwise", &UIImageComponent::FillClockwise)
             .Field("PreserveAspect", "Preserve Aspect", &UIImageComponent::PreserveAspect)
             .Field("RaycastTarget", "Raycast Target", &UIImageComponent::RaycastTarget)
-            .Field("CornerRadius", "Corner Radius", &UIImageComponent::CornerRadius);
+            .Field("CornerRadius", "Corner Radius", &UIImageComponent::CornerRadius)
+            .Field("MaterialPath", "Material", &UIImageComponent::MaterialPath, FieldKind::Asset).Filter(".cqmat")
+                .Tooltip("A material whose Shader is a UI shader (Create > Shader > UI Shader). Empty = default UI drawing.");
         ComponentDef<UITextComponent>("Text", "UITextComponent", "UI", ICON_FA_FONT).Builtin()
             .Field("Text", "Text", &UITextComponent::Text)
             .Field("RichText", "Rich Text (BBCode)", &UITextComponent::RichText)
@@ -517,7 +519,9 @@ namespace Conqueror
             .Field("TexturePath", "Texture", &UIRawImageComponent::TexturePath, FieldKind::Asset).Filter(".png;.jpg;.jpeg;.tga;.bmp")
             .Field("Color", "Color", &UIRawImageComponent::Color, FieldKind::Color4)
             .Field("UVRect", "UV Rect", &UIRawImageComponent::UVRect).Tooltip("x, y, width, height in 0..1 texture space.")
-            .Field("RaycastTarget", "Raycast Target", &UIRawImageComponent::RaycastTarget);
+            .Field("RaycastTarget", "Raycast Target", &UIRawImageComponent::RaycastTarget)
+            .Field("MaterialPath", "Material", &UIRawImageComponent::MaterialPath, FieldKind::Asset).Filter(".cqmat")
+                .Tooltip("A material whose Shader is a UI shader (Create > Shader > UI Shader). Empty = default UI drawing.");
         ComponentDef<UIContentSizeFitterComponent>("Content Size Fitter", "UIContentSizeFitterComponent", "UI", ICON_FA_EXPAND)
             .Describe("Resizes a Text element to its content.")
             .Field("HorizontalFit", "Horizontal Fit", &UIContentSizeFitterComponent::HorizontalFit).Options({ "Unconstrained", "Min Size", "Preferred Size" })
@@ -568,6 +572,9 @@ namespace Conqueror
             .Field("EffectColor", "Effect Color", &UIOutlineComponent::EffectColor, FieldKind::Color4)
             .Field("EffectDistance", "Effect Distance", &UIOutlineComponent::EffectDistance).Speed(0.1f)
             .Field("UseGraphicAlpha", "Use Graphic Alpha", &UIOutlineComponent::UseGraphicAlpha);
+        ComponentDef<UIPositionAsUV1Component>("Position As UV1", "UIPositionAsUV1Component", "UI", ICON_FA_LOCATION_CROSSHAIRS)
+            .Describe("Writes each vertex's local position (relative to the pivot, in canvas pixels) into the second UV channel (UV1)\n"
+                      "of this Image, Raw Image or Text. Custom UI shaders read it as a_UV1 (Image > Material, Create > Shader > UI Shader).");
         ComponentDef<UIEventSystemComponent>("Event System", "UIEventSystemComponent", "UI", ICON_FA_GAMEPAD)
             .Describe("Keyboard / gamepad UI navigation settings (arrows / d-pad move, Enter / A submit, Esc / B cancel).")
             .Field("FirstSelected", "First Selected", &UIEventSystemComponent::FirstSelected)

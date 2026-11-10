@@ -14,6 +14,9 @@
 #include "Renderer/Renderer2D.h"
 #include "Renderer/SpriteSheet.h"
 #include "Renderer/RHI/Texture.h"
+#include "Renderer/RHI/Shader.h"
+#include "Renderer/Utilities/Renderer3D/Material.h"
+#include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
 #include "Core/Input/Input.h"
 #include "Core/Utils/Platform.h"
 #include "Scripting/ConquerorScript/CQSValue.h"
@@ -419,12 +422,84 @@ namespace Conqueror
         // Çizilen öğenin Canvas Group saydamlığı (tüm UI çizimleri bununla çarpılır)
         float s_DrawAlpha = 1.0f;
 
+        // Position As UV1 (Unity BaseMeshEffect): çizilen öğede varsa köşelerin yerel konumu (pivota göre, canvas pikseli)
+        // ikinci UV kanalına yazılır. Ters matris öğenin kendi matrisidir: Shadow / Outline kopyaları kendi (kaymış) konumlarını alır
+        bool s_PositionUV1 = false;
+        glm::mat4 s_UV1Inverse{ 1.0f };
+        glm::vec2 s_UV1Pivot{ 0.0f };
+
+        const glm::vec2* PositionUV1(const glm::vec3* p, glm::vec2* out)
+        {
+            if (!s_PositionUV1)
+                return nullptr;
+            for (int i = 0; i < 4; ++i)
+                out[i] = glm::vec2(s_UV1Inverse * glm::vec4(p[i], 1.0f)) - s_UV1Pivot;
+            return out;
+        }
+
         void DrawCorners(const glm::vec3* p, const glm::vec2* uv, const std::shared_ptr<Texture2D>& tex, const glm::vec4& color, float tiling = 1.0f)
         {
             glm::vec4 c = color;
             c.a *= s_DrawAlpha;
-            Renderer2D::DrawQuadCorners(p, uv, tex, c, tiling);
+            glm::vec2 uv1[4];
+            Renderer2D::DrawQuadCorners(p, uv, tex, c, tiling, PositionUV1(p, uv1));
         }
+
+        // Görselin malzemesi (Image / Raw Image > Material, Unity Graphic.material): Shader alanında bir UI shader'ı olan
+        // .cqmat. Derlenemeyen shader her karede yeniden denenmez (dosya değişince MaterialAsset yeniden derler)
+        std::shared_ptr<Material> UIMaterial(const std::string& path)
+        {
+            if (path.empty())
+                return nullptr;
+            auto mat = MaterialAsset::Load(SceneSerializer::ResolveAssetPath(path));
+            if (!mat || mat->ShaderPath.empty() || (mat->GraphInitialized && !mat->GraphNodes.empty()))
+                return nullptr;
+            if (!mat->MaterialShader)
+            {
+                static std::unordered_map<const Material*, std::string> s_Tried;
+                std::string& tried = s_Tried[mat.get()];
+                if (tried == mat->ShaderPath)
+                    return nullptr;
+                tried = mat->ShaderPath;
+                if (!mat->LoadShaderFile())
+                    return nullptr;
+            }
+            return mat->MaterialShader ? mat : nullptr;
+        }
+
+        // Malzemenin değerleri UI shader'ına (dokular 2D çizicinin yuvalarında: malzeme dokuları bağlanmaz)
+        void BindUIMaterial(Shader& shader, const Material& mat)
+        {
+            shader.SetFloat3("u_Material.Albedo", mat.Albedo);
+            shader.SetFloat("u_Opacity", mat.Opacity);
+            shader.SetFloat3("u_Material.EmissionColor", mat.EmissionColor);
+            shader.SetFloat("u_Material.EmissionStrength", mat.EmissionStrength);
+            shader.SetFloat2("u_Material.Tiling", mat.Tiling);
+            shader.SetFloat2("u_Material.Offset", mat.Offset);
+            for (const auto& [name, v] : mat.FloatProperties) shader.SetFloat(name, v);
+            for (const auto& [name, v] : mat.IntProperties) shader.SetInt(name, v);
+            for (const auto& [name, v] : mat.Vec3Properties) shader.SetFloat3(name, v);
+            for (const auto& [name, v] : mat.Vec4Properties) shader.SetFloat4(name, v);
+        }
+
+        // Bir görselin çizimi boyunca malzemesinin shader'ı (yoksa varsayılan)
+        struct ScopedUIMaterial
+        {
+            bool Active = false;
+            explicit ScopedUIMaterial(const std::string& path)
+            {
+                if (auto mat = UIMaterial(path))
+                {
+                    Renderer2D::SetCustomShader(mat->MaterialShader, [mat](Shader& s) { BindUIMaterial(s, *mat); });
+                    Active = true;
+                }
+            }
+            ~ScopedUIMaterial()
+            {
+                if (Active)
+                    Renderer2D::SetCustomShader(nullptr);
+            }
+        };
 
         void Quad(const glm::mat4& m, glm::vec2 mn, glm::vec2 mx, const std::shared_ptr<Texture2D>& tex, glm::vec2 uv0, glm::vec2 uv1, const glm::vec4& color, float tiling = 1.0f)
         {
@@ -451,7 +526,8 @@ namespace Conqueror
                 glm::vec4 c[4];
                 for (int i = 0; i < 4; ++i)
                     c[i] = glm::vec4(glm::vec3(gradient[i]), gradient[i].a * color.a * s_DrawAlpha);
-                Renderer2D::DrawQuadCornersColors(p, uv, t, c, mode);
+                glm::vec2 uv1[4];
+                Renderer2D::DrawQuadCornersColors(p, uv, t, c, mode, PositionUV1(p, uv1));
                 return;
             }
             DrawCorners(p, uv, t, color, mode);
@@ -939,6 +1015,22 @@ namespace Conqueror
                 sm = m * glm::translate(glm::mat4(1.0f), glm::vec3(size * 0.5f, 0)) * glm::scale(glm::mat4(1.0f), glm::vec3(sel->CurrentScale, sel->CurrentScale, 1)) *
                      glm::translate(glm::mat4(1.0f), glm::vec3(-size * 0.5f, 0));
 
+            // Position As UV1: bu öğenin tüm köşeleri (görsel, efekt kopyaları, metin) yerel konumlarını UV1'e yazar
+            struct UV1Scope
+            {
+                UV1Scope(bool on, const glm::mat4& m, const glm::vec2& pivot)
+                {
+                    s_PositionUV1 = on;
+                    if (on)
+                    {
+                        s_UV1Inverse = glm::inverse(m);
+                        s_UV1Pivot = pivot;
+                    }
+                }
+                ~UV1Scope() { s_PositionUV1 = false; }
+            } uv1Scope(e.HasComponent<UIPositionAsUV1Component>(), sm,
+                       size * (e.HasComponent<RectTransformComponent>() ? e.GetComponent<RectTransformComponent>().Pivot : glm::vec2(0.5f)));
+
             // Mask: "Show Mask Graphic" kapalıysa maskenin kendi görseli çizilmez (çocuklar kırpılarak çizilir)
             const bool hideGraphic = e.HasComponent<UIMaskComponent>() && !e.GetComponent<UIMaskComponent>().ShowMaskGraphic;
 
@@ -953,6 +1045,7 @@ namespace Conqueror
                 }
                 auto tex = raw.ExternalTexture ? raw.ExternalTexture : raw.RuntimeTexture;
                 glm::vec2 uv0(raw.UVRect.x, raw.UVRect.y), uv1(raw.UVRect.x + raw.UVRect.z, raw.UVRect.y + raw.UVRect.w);
+                ScopedUIMaterial material(raw.MaterialPath);
                 Quad(sm, { 0, 0 }, size, tex, uv0, uv1, raw.Color);
             }
 
@@ -1101,6 +1194,7 @@ namespace Conqueror
             };
             if (e.HasComponent<UIImageComponent>() && !hideGraphic)
             {
+                ScopedUIMaterial material(e.GetComponent<UIImageComponent>().MaterialPath);
                 drawEffects(drawImage);
                 drawImage(sm, nullptr);
             }
