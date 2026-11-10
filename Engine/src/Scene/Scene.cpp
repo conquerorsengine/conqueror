@@ -73,6 +73,7 @@
 #include "Scene/Articulation.h"
 #include "Scene/XRInteraction.h"
 #include "Particles/VisualEffect.h"
+#include "Scene/WorldActors.h"
 #include "Scene/PlayerInput.h"
 #include "Scene/RigConstraints.h"
 #include "AISystem/Navigation/NavAgents.h"
@@ -255,6 +256,7 @@ namespace Conqueror
             };
             Articulations::PrepareRuntime(*this);   // Articulation Body bağlantıları: gövde + eklem
             m_PhysicsWorld3D->OnRuntimeStart();
+            WorldActors::BeginPlay(*this);
         }
         if (m_PhysicsWorld2D)
         {
@@ -1203,6 +1205,7 @@ namespace Conqueror
             {
                 CQ_PROFILE_SAMPLE("Physics3D.Step", Physics);
                 Articulations::PreStep(*this);
+                WorldActors::Update(*this, (float)ts);   // Kill Z / Pain / Physics hacimleri, Radial Force
                 m_PhysicsWorld3D->Step(ts);
                 Articulations::PostStep(*this);
             }
@@ -2467,6 +2470,7 @@ namespace Conqueror
         // Occlusion Culling görselleştirme: pişirilmiş hücre ızgarası ve kameranın hücresi
         if (m_OcclusionVisualize)
             OcclusionCulling::DrawCells(*this, camera.GetPosition());
+        WorldActors::DrawEditorGizmos(*this, m_EditorSelection);
         for (uint32_t id : m_EditorSelection)
         {
             Lighting2D::DrawGizmo(*this, id);
@@ -2543,6 +2547,8 @@ namespace Conqueror
         env.SkyboxTint = m_SkyboxTint;
         env.Settings = m_RenderSettings;
         ConsoleSystem::ApplyRenderOverrides(env.Settings);   // r.* konsol değişkenleri (oturum katmanı)
+        // Ortam aktörleri (Exponential Height Fog, Sky Atmosphere, Volumetric Cloud, Sky Light) Lighting ayarlarının yerine geçer
+        WorldActors::ApplyEnvironment(*this, env);
         env.Lightmap = m_BakedLightmapTexture;
         env.APV = m_APV;
         env.HDROutput = hdrOutput;
@@ -2880,6 +2886,9 @@ namespace Conqueror
         m_OcclusionHidden.clear();
         if (!m_CapturingProbes && (!editorView || m_OcclusionVisualize))
             OcclusionCulling::ComputeHidden(*this, camera.Position, m_OcclusionHidden);
+        // Cull Distance Volume: uzaktaki küçük statik nesneler (Unreal: düzenleyicide de)
+        if (!m_CapturingProbes)
+            WorldActors::ComputeCullHidden(*this, camera.Position, m_OcclusionHidden);
 
         // Gölgeler -> gökyüzü
         {

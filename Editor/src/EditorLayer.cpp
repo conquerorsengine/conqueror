@@ -3,6 +3,7 @@
 #include "Panels/OcclusionPanel.h"
 #include "Scene/OcclusionCulling.h"
 #include "Scene/XRInteraction.h"
+#include "Scene/WorldActors.h"
 #include "Scene/SpriteAnimation2D.h"
 #include "Scene/Signals.h"
 #include "Core/Input/InputActionAssets.h"
@@ -5531,6 +5532,7 @@ namespace Conqueror::Editor
                 Entity cam = m_ActiveScene->GetPrimaryCameraEntity();
                 if (!cam) { err = "no primary camera"; return false; }
                 OcclusionCulling::ComputeHidden(*m_ActiveScene, glm::vec3(cam.GetComponent<TransformComponent>().WorldTransform[3]), hidden);
+                WorldActors::ComputeCullHidden(*m_ActiveScene, glm::vec3(cam.GetComponent<TransformComponent>().WorldTransform[3]), hidden);
                 const bool got = hidden.count((uint32_t)(entt::entity)e) > 0, want = a[3] == "true";
                 Automation::Report(std::string("OCCLUSION ") + a[2] + " hidden = " + (got ? "true" : "false") + " (hidden " + std::to_string(hidden.size()) + ")");
                 if (got != want) { err = std::string("hidden is ") + (got ? "true" : "false"); return false; }
