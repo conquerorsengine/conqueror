@@ -23,6 +23,8 @@ namespace Conqueror
 
         // Örneği kaynağına geri yaz (Apply) / kaynaktan yeniden oluştur (Revert; konum, ebeveyn ve isim korunur)
         static bool ApplyInstance(Entity instanceRoot);
+        // Örnekte prefab'a göre değişiklik var mı (Unity Overrides: kökün konumu, dönüşü ve adı sayılmaz)
+        static bool HasOverrides(Entity instanceRoot);
         static Entity RevertInstance(Entity instanceRoot);
         // Örneğin kaynak prefab yolu (örnek değilse boş); en yakın prefab kökü
         static std::string GetPrefabPath(Entity entity);

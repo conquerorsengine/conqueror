@@ -9,6 +9,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include <algorithm>
+#include <chrono>
 #include <fstream>
 #include <functional>
 #include <map>
@@ -244,13 +245,18 @@ namespace Conqueror
             }
         }
 
-        // Tam alt ağaç YAML'ından (variant'ın istenen hâli) taban farkını üret
-        std::string MakeVariantText(const std::string& baseRef, const std::string& fullText)
+        // İki tam alt ağaç YAML'ının farkı (eşleşme hiyerarşideki ad yoluyla, UUID'ler tabana çevrilir)
+        struct PrefabDiff
         {
-            const fs::path basePath = ResolveIn(baseRef);
-            const std::string baseText = LoadResolvedText(basePath);
-            YAML::Node base = YAML::Load(baseText);
-            YAML::Node full = YAML::Load(fullText);
+            YAML::Node Overrides = YAML::Node(YAML::NodeType::Sequence);
+            YAML::Node Added = YAML::Node(YAML::NodeType::Sequence);
+            YAML::Node RemovedEntities = YAML::Node(YAML::NodeType::Sequence);
+            bool Empty() const { return Overrides.size() == 0 && Added.size() == 0 && RemovedEntities.size() == 0; }
+        };
+
+        PrefabDiff DiffDocuments(YAML::Node base, YAML::Node full)
+        {
+            PrefabDiff diff;
             KeyIndex bk = BuildKeys(base), fk = BuildKeys(full);
 
             // Eşleşen varlıkların UUID'leri tabandakine çevrilir (referanslar tabanın kimliklerini göstersin)
@@ -263,11 +269,6 @@ namespace Conqueror
             for (YAML::Node e : base["Entities"]) baseById[e["Entity"].as<uint64_t>()] = e;
             for (YAML::Node e : full["Entities"]) fullById[e["Entity"].as<uint64_t>()] = e;
 
-            YAML::Emitter out;
-            out << YAML::BeginMap << YAML::Key << "PrefabVariant" << YAML::Value << YAML::BeginMap;
-            out << YAML::Key << "Base" << YAML::Value << baseRef;
-
-            YAML::Node overrides = YAML::Node(YAML::NodeType::Sequence);
             for (uint64_t id : fk.Order)
             {
                 auto mt = toBase.find(id);
@@ -298,11 +299,9 @@ namespace Conqueror
                 o["Key"] = fk.KeyOf[id];
                 if (comps.size()) o["Components"] = comps;
                 if (removedComps.size()) o["Removed"] = removedComps;
-                overrides.push_back(o);
+                diff.Overrides.push_back(o);
             }
-            out << YAML::Key << "Overrides" << YAML::Value << overrides;
 
-            YAML::Node added = YAML::Node(YAML::NodeType::Sequence);
             for (uint64_t id : fk.Order)
             {
                 if (toBase.count(id))
@@ -319,20 +318,31 @@ namespace Conqueror
                     else
                         a["Parent"] = pt->second;
                 }
-                added.push_back(a);
+                diff.Added.push_back(a);
             }
-            out << YAML::Key << "Added" << YAML::Value << added;
 
-            YAML::Node removedEntities = YAML::Node(YAML::NodeType::Sequence);
             for (const auto& [key, id] : bk.IdOf)
                 if (!fk.IdOf.count(key))
                 {
                     // Yalnız en üstteki silinen (ebeveyni duruyorsa)
                     auto pt = bk.ParentOf.find(id);
                     if (pt == bk.ParentOf.end() || fk.IdOf.count(bk.KeyOf[pt->second]))
-                        removedEntities.push_back(key);
+                        diff.RemovedEntities.push_back(key);
                 }
-            out << YAML::Key << "RemovedEntities" << YAML::Value << removedEntities;
+            return diff;
+        }
+
+        // Tam alt ağaç YAML'ından (variant'ın istenen hâli) taban farkını üret
+        std::string MakeVariantText(const std::string& baseRef, const std::string& fullText)
+        {
+            const fs::path basePath = ResolveIn(baseRef);
+            const PrefabDiff diff = DiffDocuments(YAML::Load(LoadResolvedText(basePath)), YAML::Load(fullText));
+            YAML::Emitter out;
+            out << YAML::BeginMap << YAML::Key << "PrefabVariant" << YAML::Value << YAML::BeginMap;
+            out << YAML::Key << "Base" << YAML::Value << baseRef;
+            out << YAML::Key << "Overrides" << YAML::Value << diff.Overrides;
+            out << YAML::Key << "Added" << YAML::Value << diff.Added;
+            out << YAML::Key << "RemovedEntities" << YAML::Value << diff.RemovedEntities;
             out << YAML::EndMap << YAML::EndMap;
             return std::string(out.c_str()) + "\n";
         }
@@ -489,6 +499,16 @@ namespace Conqueror
         Templates().clear();
     }
 
+    namespace
+    {
+        struct OverrideCheck
+        {
+            uint64_t Entity = 0;
+            bool Value = false;
+            std::chrono::steady_clock::time_point Next{};
+        } s_OverrideCheck;
+    }
+
     bool PrefabSerializer::Serialize(Entity root, const fs::path& filepath)
     {
         if (!root)
@@ -569,11 +589,73 @@ namespace Conqueror
         return root ? root.GetComponent<PrefabInstanceComponent>().Prefab : std::string();
     }
 
+    bool PrefabSerializer::HasOverrides(Entity instanceRoot)
+    {
+        Entity root = FindInstanceRoot(instanceRoot);
+        if (!root)
+            return false;
+        // Inspector her kare sorar: sonuç kısa süre saklanır (bekleme, ölçümün maliyetiyle orantılı)
+        const auto now = std::chrono::steady_clock::now();
+        const uint64_t id = root.GetComponent<IDComponent>().ID;
+        if (s_OverrideCheck.Entity == id && now < s_OverrideCheck.Next)
+            return s_OverrideCheck.Value;
+
+        const bool value = [&]() {
+            const fs::path path = Resolve(root.GetComponent<PrefabInstanceComponent>().Prefab);
+            std::error_code ec;
+            if (!fs::exists(path, ec))
+                return true;
+            PrefabTemplate* t = LoadTemplate(path);
+            if (!t)
+                return false;
+            // Iki taraf da şu anki biçimde yazılır: eski dosyadaki eksik alanlar değişiklik sayılmasın
+            std::stringstream baseText, fullText;
+            SceneSerializer(t->TemplateScene).SerializeToStream(baseText);
+            auto temp = std::make_shared<Scene>();
+            std::unordered_map<uint64_t, uint64_t> uuidMap;
+            Entity copy = temp->DuplicateEntityTree(root, "", Entity{}, &uuidMap);
+            temp->RemapEntityReferences(copy, uuidMap);
+            if (copy.HasComponent<PrefabInstanceComponent>())
+                copy.RemoveComponent<PrefabInstanceComponent>();
+            SceneSerializer(temp).SerializeToStream(fullText);
+            YAML::Node base = YAML::Load(baseText.str()), full = YAML::Load(fullText.str());
+            // Kökün yeri, dönüşü ve adı örneğe aittir (Unity bunları override saymaz)
+            auto normalizeRoot = [](YAML::Node doc) {
+                std::set<uint64_t> children;
+                if (doc["Hierarchy"])
+                    for (const auto& r : doc["Hierarchy"])
+                        children.insert(r["Child"].as<uint64_t>());
+                for (YAML::Node e : doc["Entities"])
+                    if (!children.count(e["Entity"].as<uint64_t>()))
+                    {
+                        if (e["TransformComponent"])
+                        {
+                            e["TransformComponent"].remove("Translation");
+                            e["TransformComponent"].remove("Position");
+                            e["TransformComponent"].remove("Rotation");
+                        }
+                        if (e["TagComponent"])
+                            e["TagComponent"].remove("Tag");
+                        break;
+                    }
+            };
+            normalizeRoot(base);
+            normalizeRoot(full);
+            return !DiffDocuments(base, full).Empty();
+        }();
+        const auto cost = std::chrono::steady_clock::now() - now;
+        s_OverrideCheck.Entity = id;
+        s_OverrideCheck.Value = value;
+        s_OverrideCheck.Next = std::chrono::steady_clock::now() + std::max<std::chrono::steady_clock::duration>(std::chrono::milliseconds(250), cost * 20);
+        return value;
+    }
+
     bool PrefabSerializer::ApplyInstance(Entity instanceRoot)
     {
         Entity root = FindInstanceRoot(instanceRoot);
         if (!root)
             return false;
+        s_OverrideCheck.Entity = 0;
         const std::string path = root.GetComponent<PrefabInstanceComponent>().Prefab;
         return Serialize(root, Resolve(path));
     }
@@ -583,6 +665,7 @@ namespace Conqueror
         Entity root = FindInstanceRoot(instanceRoot);
         if (!root)
             return {};
+        s_OverrideCheck.Entity = 0;
         Scene* scene = root.GetScene();
         const std::string path = root.GetComponent<PrefabInstanceComponent>().Prefab;
         const TransformComponent transform = root.GetComponent<TransformComponent>();

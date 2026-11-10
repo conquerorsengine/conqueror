@@ -523,12 +523,16 @@ namespace Conqueror::Editor
                     }
                     ImGui::EndDisabled();
                     ImGui::SameLine();
+                    // Unity Overrides gibi: değişiklik yoksa Apply / Revert kapalı (varlık kayıpsa Apply yeniden oluşturur)
+                    const bool overrides = PrefabSerializer::HasOverrides(e);
+                    ImGui::BeginDisabled(!overrides);
                     if (UI::AccentButton(ICON_FA_UPLOAD " Apply", ImVec2(w, 0)))
                         PrefabSerializer::ApplyInstance(e);
-                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
-                        ImGui::SetTooltip("Write this instance (and its children) back to the prefab asset");
+                    ImGui::EndDisabled();
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort | ImGuiHoveredFlags_AllowWhenDisabled))
+                        ImGui::SetTooltip(overrides ? "Write this instance (and its children) back to the prefab asset" : "This instance has no changes to apply");
                     ImGui::SameLine();
-                    ImGui::BeginDisabled(!exists);
+                    ImGui::BeginDisabled(!exists || !overrides);
                     if (ImGui::Button(ICON_FA_ROTATE_LEFT " Revert", ImVec2(w, 0)))
                         m_PendingPrefabRevert = e;
                     ImGui::EndDisabled();
@@ -4255,6 +4259,14 @@ namespace Conqueror::Editor
                 return true;
             }
             if (a[1] == "apply") { if (!PrefabSerializer::ApplyInstance(e)) { err = "apply failed"; return false; } return true; }
+            if (a[1] == "expect_overrides" && a.size() > 3)
+            {
+                const bool want = a[3] == "true" || a[3] == "1";
+                const bool got = PrefabSerializer::HasOverrides(e);
+                Automation::Report(std::string("OVERRIDES ") + (got ? "true" : "false"));
+                if (got != want) { err = std::string("overrides: ") + (got ? "true" : "false"); return false; }
+                return true;
+            }
             if (a[1] == "revert")
             {
                 SelectEntityEverywhere({});

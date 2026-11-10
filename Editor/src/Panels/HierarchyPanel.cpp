@@ -727,9 +727,10 @@ namespace Conqueror::Editor
             ImGui::BeginDisabled(!instanceRoot);
             if (instanceRoot)
                 ImGui::TextDisabled("%s", instanceRoot.GetComponent<PrefabInstanceComponent>().Prefab.c_str());
-            if (ImGui::MenuItem(ICON_FA_UPLOAD "  Apply Overrides to Prefab"))
+            const bool overrides = instanceRoot && PrefabSerializer::HasOverrides(instanceRoot);
+            if (ImGui::MenuItem(ICON_FA_UPLOAD "  Apply Overrides to Prefab", nullptr, false, overrides))
                 PrefabSerializer::ApplyInstance(instanceRoot);
-            if (ImGui::MenuItem(ICON_FA_ROTATE_LEFT "  Revert to Prefab"))
+            if (ImGui::MenuItem(ICON_FA_ROTATE_LEFT "  Revert to Prefab", nullptr, false, overrides))
                 m_PendingPrefabRevert = instanceRoot;
             if (ImGui::MenuItem(ICON_FA_BOX_OPEN "  Unpack Prefab"))
                 instanceRoot.RemoveComponent<PrefabInstanceComponent>();
