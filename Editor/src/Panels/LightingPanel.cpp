@@ -4,6 +4,7 @@
 #include "ObjectPicker.h"
 #include <IconsFontAwesome6.h>
 #include "LightingPanel.h"
+#include "Scene/LightProbeGroup.h"
 #include "UI/EditorUI.h"
 #include "Renderer/RHI/Cubemap.h"
 #include "Renderer/RHI/Texture.h"
@@ -1414,7 +1415,11 @@ namespace Conqueror::Editor
             }
             ImGui::Spacing();
             if (UI::AccentButton("Bake Probe Volume", ImVec2(-FLT_MIN, 0)) && !m_Bake.Active)
+            {
+                m_APVVolumeRequested = true;
                 StartBake(BakeKind::APV);
+                m_APVVolumeRequested = false;
+            }
             UI::EndSection();
         }
 
@@ -1605,7 +1610,7 @@ namespace Conqueror::Editor
         m_Context->InvalidateReflectionProbes();
         if (b.BakedGI && b.Lightmapper != 0)
             StartBake(BakeKind::BakedLightmap);
-        else if (!m_Context->m_Registry.view<AdaptiveProbeVolumeComponent>().empty())
+        else if (!m_Context->m_Registry.view<AdaptiveProbeVolumeComponent>().empty() || LightProbeGroups::Any(*m_Context))
             StartBake(BakeKind::APV);
         else
         {
@@ -1694,7 +1699,33 @@ namespace Conqueror::Editor
             settings.MinSpacing = b.APVMinSpacing;
             settings.MaxSpacing = b.APVMaxSpacing;
             settings.BakingMode = b.APVBakingMode;
-            settings.ProbeResolution = 32;
+            // L2 SH düşük frekanslı: yüz başına 16x16 (1536 yön) yeterli, 32x32'den 4 kat hızlı
+            settings.ProbeResolution = 16;
+            // Gökyüzü / ortam ışığı: son çizilen karedeki ortamla aynı (CQ_AmbientDiffuse); problar ortam ışığının yerine geçer
+            {
+                const SceneEnvironment& env = Renderer3D::GetEnvironment();
+                auto envMap = Renderer3D::GetActiveEnvironmentMap();
+                APVSkyModel& sky = settings.Sky;
+                sky.Source = env.AmbientSource;
+                sky.HasSH = envMap && env.Settings.Environment.ImageBasedLighting;
+                if (sky.HasSH)
+                {
+                    const auto& sh = envMap->GetIrradianceSH();
+                    for (int i = 0; i < 9; ++i)
+                        sky.SH[i] = sh[i];
+                }
+                sky.Sky = env.AmbientSource == 2 ? env.SkyColor : env.AmbientColor;
+                sky.Equator = env.EquatorColor;
+                sky.Ground = env.GroundColor;
+                sky.Intensity = env.AmbientIntensity * (env.AmbientSource == 0 ? env.Settings.Environment.SkyboxIntensity : 1.0f);
+                if (sky.HasSH && env.Skybox)
+                    sky.Intensity *= env.SkyboxExposure;
+                const float rot = glm::radians(env.Skybox ? env.SkyboxRotation : 0.0f);
+                sky.RotCos = std::cos(rot);
+                sky.RotSin = std::sin(rot);
+                CQ_CORE_INFO("APV bake sky: source {0}, SH {1} (L00 {2:.3f} {3:.3f} {4:.3f}), color {5:.3f} {6:.3f} {7:.3f}, intensity {8:.3f}",
+                             sky.Source, sky.HasSH, sky.SH[0].x, sky.SH[0].y, sky.SH[0].z, sky.Sky.x, sky.Sky.y, sky.Sky.z, sky.Intensity);
+            }
             ProbeInvaliditySettings inv;
             inv.Dilation = b.APVDilation;
             inv.VirtualOffset = b.APVVirtualOffset;
@@ -1745,6 +1776,18 @@ namespace Conqueror::Editor
                                  mn.x, mn.y, mn.z, settings.Size.x, settings.Size.y, settings.Size.z);
                 }
             }
+            // Light Probe Group probları (Unity): elle yerleştirilmiş, her biri olduğu yerde pişer. Hacim ızgarası yalnızca Adaptive Probe
+            // Volume bileşeni varsa ya da Bake Probe Volume düğmesiyle istenince yerleştirilir
+            LightProbeGroups::CollectWorldProbes(*snapshot, settings.ExplicitProbes);
+            if (settings.ExplicitProbes.size() > (size_t)APV_MAX_PROBES)
+            {
+                CQ_CORE_WARN("Light Probe Groups: {0} probes, only the first {1} are used", settings.ExplicitProbes.size(), APV_MAX_PROBES);
+                settings.ExplicitProbes.resize(APV_MAX_PROBES);
+            }
+            settings.PlaceVolumeProbes = m_APVVolumeRequested || !snapshot->m_Registry.view<AdaptiveProbeVolumeComponent>().empty();
+            if (!settings.ExplicitProbes.empty())
+                CQ_CORE_INFO("APV bake: {0} Light Probe Group probes{1}", settings.ExplicitProbes.size(),
+                             settings.PlaceVolumeProbes ? " + volume grid" : "");
             m_Bake.APV = AdaptiveProbeVolume::Create(settings);
             m_Bake.APV->SetInvaliditySettings(inv);
             m_Bake.APV->SetProgressCallback(progressCallback);
@@ -1874,7 +1917,8 @@ namespace Conqueror::Editor
                 }
             }
             // Zincir: APV bileşeni varsa onu da pişir; lightmap'lenecek statik nesne olmasa da (Unity gibi: problar ışıkları / gökyüzünü yakalar)
-            if (kind == BakeKind::BakedLightmap && !cancelled && !silent && !m_Context->m_Registry.view<AdaptiveProbeVolumeComponent>().empty())
+            if (kind == BakeKind::BakedLightmap && !cancelled && !silent &&
+                (!m_Context->m_Registry.view<AdaptiveProbeVolumeComponent>().empty() || LightProbeGroups::Any(*m_Context)))
             {
                 m_Bake.Snapshot.reset();
                 m_StatusTime = std::chrono::steady_clock::now();

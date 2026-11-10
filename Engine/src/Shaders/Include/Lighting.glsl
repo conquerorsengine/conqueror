@@ -20,6 +20,7 @@ uniform vec4 u_ProbeBoxMax[CQ_MAX_REFLECTION_PROBES];   // w = mip sayısı
 uniform sampler2D u_APVPositionTex;
 uniform sampler2D u_APVSHTex;
 uniform int u_APVNumProbes = 0;
+uniform int u_Lightmapped = 1;   // 0: hareketli nesne (ortam ışığı lightmap yerine ışık problarından / gökyüzünden)
 uniform int u_ReceiveShadows = 1;
 
 struct CQ_Surface
@@ -408,8 +409,11 @@ vec3 CQ_SpecularEnvironment(vec3 R, float roughness, vec3 worldPos)
 
 // ---------------------------------------------------------------- APV
 
-vec3 CQ_APVIrradiance(vec3 worldPos, vec3 n)
+// Işık probları (Adaptive Probe Volume + Light Probe Group): en yakın 8 geçerli probun ağırlıklı SH'si. Problar gökyüzü dahil tüm dolaylı
+// ışığı taşır (kosinüs lobu ile evriştirilmiş, π'ye bölünmüş; CQ_EvaluateSH ile aynı ölçek). found: kullanılabilir prob bulundu mu
+vec3 CQ_APVIrradiance(vec3 worldPos, vec3 n, out bool found)
 {
+    found = false;
     if (CQ_Frame.FeatureFlags.z == 0 || u_APVNumProbes == 0)
         return vec3(0.0);
 
@@ -452,6 +456,7 @@ vec3 CQ_APVIrradiance(vec3 worldPos, vec3 n)
     }
     if (total <= 0.0)
         return vec3(0.0);
+    found = true;
     for (int c = 0; c < 9; ++c) sh[c] /= total;
 
     vec3 r = sh[0] * 0.282095
@@ -688,13 +693,18 @@ vec4 CQ_ShadeSurface(CQ_Surface s)
     vec3 F = CQ_F_SchlickRoughness(NdotV, F0, roughness);
     vec3 kD = (1.0 - F) * (1.0 - s.Metallic);
 
+    // Unity gibi: statik nesne lightmap'ten; diğerleri ışık problarından (problar gökyüzü dahil dolaylı ışığı taşır, ortam ışığının yerine
+    // geçer), prob yoksa gökyüzü / ortam renginden
     vec3 irradiance;
-    if (CQ_Frame.FeatureFlags.y == 1)
+    bool probeFound = false;
+    if (CQ_Frame.FeatureFlags.y == 1 && u_Lightmapped == 1)
         irradiance = texture(u_Lightmap, s.LightmapUV).rgb;
     else
-        irradiance = CQ_AmbientDiffuse(s.Normal);
-    if (CQ_Frame.FeatureFlags.z == 1)
-        irradiance += CQ_APVIrradiance(s.Position, s.Normal);
+    {
+        irradiance = CQ_APVIrradiance(s.Position, s.Normal, probeFound);
+        if (!probeFound)
+            irradiance = CQ_AmbientDiffuse(s.Normal);
+    }
 
     vec3 R = reflect(-V, s.Normal);
     // Pürüzlülük arttıkça yansıma normale doğru kayar (Frostbite)

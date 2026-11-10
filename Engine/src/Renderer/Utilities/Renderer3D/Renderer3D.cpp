@@ -71,6 +71,7 @@ namespace Conqueror
             uint32_t VertexColors = 0;   // Mesh Paint tamponu (0 = yok)
             glm::vec3 Tint{ 1.0f };      // örnek renk çarpanı (Model.Tint)
             bool Moving = false;         // Temporal AA hareket bayrağı
+            bool Lightmapped = true;     // statik (lightmap'e pişirilmiş) nesne
         };
 
         // Kuyruğa alınan opak çizim: çizim anındaki örnek durumu (köşe rengi, renk çarpanı, gölge alma) yakalanır
@@ -86,6 +87,7 @@ namespace Conqueror
             bool DoubleSided;
             bool ReceiveShadows;
             bool Moving;                 // Temporal AA hareket bayrağı
+            bool Lightmapped = true;     // statik (lightmap'e pişirilmiş) nesne; değilse ortam ışığı problardan / gökyüzünden
         };
 
         // Mesh Paint: sonraki çizimlerin mesh sırasına göre köşe rengi tamponları
@@ -146,6 +148,7 @@ namespace Conqueror
 
             uint64_t EnvCheckedFrame = 0;
             bool ReceiveShadows = true;
+            bool Lightmapped = true;
             glm::vec3 Tint{ 1.0f };
             int DebugView = 0;
             bool Wireframe = false;
@@ -1611,6 +1614,7 @@ namespace Conqueror
         shader->SetMat4("u_Transform", transform);
         shader->SetMat4("u_NormalMatrix", glm::mat4(glm::inverseTranspose(glm::mat3(transform))));
         shader->SetInt("u_ReceiveShadows", s->ReceiveShadows ? 1 : 0);
+        shader->SetInt("u_Lightmapped", s->Lightmapped ? 1 : 0);
         shader->SetFloat3("u_Tint", s->Tint);
         shader->SetInt("u_UseVertexColor", 0);
         material->Bind(shader);
@@ -1674,7 +1678,7 @@ namespace Conqueror
         if (material->Rendering == Material::RenderMode::Transparent && !fromQueue && s->FrameActive)
         {
             float dist = glm::length(glm::vec3(transform[3]) - s->Camera.Position);
-            s->Transparent.push_back({ meshIn, transform, material, doubleSided, dist, CurrentVertexColors(), s->Tint, moving });
+            s->Transparent.push_back({ meshIn, transform, material, doubleSided, dist, CurrentVertexColors(), s->Tint, moving, s->Lightmapped });
             // Saydamlar G-buffer'a yazmaz: hareketliyse çizilirken TAA tepki maskesine kapladığı pikseller yazılır (aşağıda);
             // maske kullanılamıyorsa (MSAA / TXAA) ekran dikdörtgeni
             if (moving && meshIn->GetBoundsRadius() > 0.0f && !PostProcessStack::CanDrawReactive())
@@ -1722,7 +1726,7 @@ namespace Conqueror
             const float dist2 = far * far;
             // Alfa kesmeli (discard): erken derinlik testi yapılamaz, opakların derinliği yazıldıktan sonra çizilir
             const uint32_t key = material->Rendering == Material::RenderMode::Cutout ? 1u : 0u;
-            s->Opaque.push_back({ meshIn, transform, material, dist2, key, vertexColors, s->Tint, doubleSided, s->ReceiveShadows, moving });
+            s->Opaque.push_back({ meshIn, transform, material, dist2, key, vertexColors, s->Tint, doubleSided, s->ReceiveShadows, moving, s->Lightmapped });
             return;
         }
 
@@ -1737,6 +1741,7 @@ namespace Conqueror
         shader->SetMat4("u_Transform", transform);
         shader->SetMat4("u_NormalMatrix", glm::mat4(glm::inverseTranspose(glm::mat3(transform))));
         shader->SetInt("u_ReceiveShadows", s->ReceiveShadows ? 1 : 0);
+        shader->SetInt("u_Lightmapped", s->Lightmapped ? 1 : 0);
         shader->SetFloat3("u_Tint", s->Tint);
         material->Bind(shader);
         if (material->MaterialShader)
@@ -1846,6 +1851,7 @@ namespace Conqueror
         shader->SetMat4("u_Transform", transform);
         shader->SetMat4("u_NormalMatrix", glm::mat4(glm::inverseTranspose(glm::mat3(transform))));
         shader->SetInt("u_ReceiveShadows", s->ReceiveShadows ? 1 : 0);
+        shader->SetInt("u_Lightmapped", s->Lightmapped ? 1 : 0);
         shader->SetFloat3("u_Tint", s->Tint);
         shader->SetInt("u_UseVertexColor", 0);
         shader->SetInt("u_Instanced", 1);
@@ -1891,6 +1897,7 @@ namespace Conqueror
         shader->SetMat4("u_Transform", transform);
         shader->SetMat4("u_NormalMatrix", glm::mat4(glm::inverseTranspose(glm::mat3(transform))));
         shader->SetInt("u_ReceiveShadows", (params.ReceiveShadows && s->ReceiveShadows) ? 1 : 0);
+        shader->SetInt("u_Lightmapped", 1);
         shader->SetFloat3("u_Tint", glm::vec3(1.0f));
         shader->SetInt("u_LayerCount", params.LayerCount);
         shader->SetFloat2("u_TerrainSize", params.Size);
@@ -1938,6 +1945,11 @@ namespace Conqueror
     Renderer3D::DebugView Renderer3D::GetDebugView() { return (DebugView)s->DebugView; }
     void Renderer3D::SetWireframe(bool wireframe) { s->Wireframe = wireframe; }
     bool Renderer3D::GetWireframe() { return s->Wireframe; }
+
+    void Renderer3D::SetDrawLightmapped(bool lightmapped)
+    {
+        s->Lightmapped = lightmapped;
+    }
 
     void Renderer3D::SetReceiveShadows(bool receive)
     {
@@ -2192,17 +2204,19 @@ namespace Conqueror
             return a.Distance2 < b.Distance2;
         });
         const glm::vec3 tint = s->Tint;
-        const bool receive = s->ReceiveShadows;
+        const bool receive = s->ReceiveShadows, lightmapped = s->Lightmapped;
         for (auto& item : s->Opaque)
         {
             s_QueuedVertexColors = item.VertexColors;
             s->Tint = item.Tint;
             s->ReceiveShadows = item.ReceiveShadows;
+            s->Lightmapped = item.Lightmapped;
             s_QueuedMoving = item.Moving;
             DrawMeshInternal(item.MeshRef, item.Transform, item.MaterialRef, item.DoubleSided, true);
         }
         s->Tint = tint;
         s->ReceiveShadows = receive;
+        s->Lightmapped = lightmapped;
         s_QueuedVertexColors = 0;
         s_QueuedMoving = false;
         s->Opaque.clear();
@@ -2216,14 +2230,17 @@ namespace Conqueror
             std::sort(s->Transparent.begin(), s->Transparent.end(),
                 [](const TransparentItem& a, const TransparentItem& b) { return a.Distance > b.Distance; });
             const glm::vec3 tint = s->Tint;
+            const bool lightmapped = s->Lightmapped;
             for (auto& item : s->Transparent)
             {
                 s_QueuedVertexColors = item.VertexColors;
                 s->Tint = item.Tint;
+                s->Lightmapped = item.Lightmapped;
                 s_QueuedMoving = item.Moving;
                 DrawMeshInternal(item.MeshRef, item.Transform, item.MaterialRef, item.DoubleSided, true);
             }
             s->Tint = tint;
+            s->Lightmapped = lightmapped;
             s_QueuedVertexColors = 0;
             s_QueuedMoving = false;
             s->Transparent.clear();

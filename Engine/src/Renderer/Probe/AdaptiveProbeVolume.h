@@ -50,6 +50,7 @@ namespace Conqueror
         glm::vec3 Position = glm::vec3(0.0f);
         SHL2Coefficients SH;
         bool Valid = false;
+        bool Explicit = false;   // Light Probe Group'tan elle yerleştirilmiş (Virtual Offset ile kaydırılmaz)
     };
 
     struct APVBrick
@@ -59,6 +60,19 @@ namespace Conqueror
         int Level = 0;
         int ProbeIndices[8] = { -1, -1, -1, -1, -1, -1, -1, -1 }; // 8 corners
         bool HasGeometry = false;
+    };
+
+    // Pişirmede gökyüzü / ortam ışığı: shader'daki CQ_AmbientDiffuse ile aynı model (Lighting ayarlarındaki kaynak, yoğunluk, döndürme).
+    // Değerler kosinüs lobu ile evriştirilmiş, π'ye bölünmüş ışınım (irradiance / π) ölçeğindedir
+    struct APVSkyModel
+    {
+        int Source = 1;                     // 0 gökyüzü kutusu, 1 renk, 2 gradyan
+        bool HasSH = false;                 // gökyüzü kutusunun ışınım SH'si var mı
+        glm::vec3 SH[9]{};
+        glm::vec3 Sky{ 0.5f }, Equator{ 0.4f }, Ground{ 0.3f };
+        float Intensity = 1.0f;
+        float RotCos = 1.0f, RotSin = 0.0f;
+        glm::vec3 Evaluate(const glm::vec3& dir) const;
     };
 
     struct AdaptiveProbeVolumeSettings
@@ -71,6 +85,11 @@ namespace Conqueror
         int BakingMode = 0;
         int NumBounces = 2;
         int ProbeResolution = 32;
+        // Hacim ızgarası yerleştirilsin mi (yalnızca Light Probe Group pişirilirken false)
+        bool PlaceVolumeProbes = true;
+        // Light Probe Group probları (dünya konumu): listenin başına konur, böylece shader sınırında (APV_MAX_PROBES) önce onlar kalır
+        std::vector<glm::vec3> ExplicitProbes;
+        APVSkyModel Sky;
     };
 
     struct ProbeInvaliditySettings
@@ -127,6 +146,10 @@ namespace Conqueror
         int GetBrickCount(int level) const { return (int)m_Bricks[level].size(); }
 
         static std::shared_ptr<AdaptiveProbeVolume> Create(const AdaptiveProbeVolumeSettings& settings = {});
+
+        // Pişirilmiş probların ikili kaydı (sahne dosyasında saklanır; sahne açılınca ya da oyunda yeniden pişirmeden kullanılır)
+        std::string SerializeProbes() const;
+        static std::shared_ptr<AdaptiveProbeVolume> DeserializeProbes(const std::string& data);
 
     private:
         void PlaceProbes(Scene* scene);

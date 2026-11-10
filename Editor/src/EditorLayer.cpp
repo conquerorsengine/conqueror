@@ -5419,6 +5419,26 @@ namespace Conqueror::Editor
             auto rest = [&](size_t from) { std::string p = a[from]; for (size_t i = from + 1; i < a.size(); ++i) p += " " + a[i]; return p; };
             if (a[1] == "generate") { m_LightingPanel->SetContext(m_ActiveScene); m_LightingPanel->GenerateLighting(); return true; }
             if (a[1] == "expect_done") { if (m_LightingPanel->IsBaking()) { err = "still baking"; return false; } return true; }
+            // lighting expect_probes <n | >n>: pişirilmiş ışık probu sayısı (Adaptive Probe Volume + Light Probe Group)
+            if (a[1] == "expect_probes" && a.size() > 2)
+            {
+                auto apv = m_ActiveScene->GetAdaptiveProbeVolume();
+                const int n = apv && apv->IsBaked() ? apv->GetTotalProbeCount() : 0;
+                // Ortalama L00 (ışık düzeyi) ve geçerli prob sayısı: pişirmenin gerçekten ışık yakaladığını gösterir
+                glm::vec3 l00(0.0f);
+                int valid = 0;
+                for (int i = 0; i < n; ++i)
+                {
+                    l00 += apv->GetProbes()[i].SH.Coeffs[0] / (float)n;
+                    valid += apv->GetProbes()[i].Valid ? 1 : 0;
+                }
+                char buf[160];
+                std::snprintf(buf, sizeof(buf), "LIGHTING probes = %d (valid %d, mean L00 %.3f %.3f %.3f)", n, valid, l00.x, l00.y, l00.z);
+                Automation::Report(buf);
+                const bool ok = a[2][0] == '>' ? n > std::stoi(a[2].substr(1)) : n == std::stoi(a[2]);
+                if (!ok) { err = "probes " + std::to_string(n); return false; }
+                return true;
+            }
             if (a[1] == "asset" && a.size() > 2)
             {
                 b.SettingsAsset = abs(rest(2));

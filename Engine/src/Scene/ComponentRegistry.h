@@ -253,6 +253,7 @@ namespace Conqueror
     void RegisterFullScreenPassComponents();
     void RegisterCameraSkyboxComponents();
     void RegisterAreaLightComponents();
+    void RegisterLightProbeGroupComponents();
     void RegisterPlayerInputComponents();
     void RegisterRigComponents();
     void RegisterNavigationComponents();

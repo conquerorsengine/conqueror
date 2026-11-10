@@ -66,6 +66,7 @@
 #include "Scene/Billboards.h"
 #include "Scene/CameraSkybox.h"
 #include "Scene/AreaLight.h"
+#include "Scene/LightProbeGroup.h"
 #include "Scene/PlayerInput.h"
 #include "Scene/RigConstraints.h"
 #include "AISystem/Navigation/NavAgents.h"
@@ -2421,6 +2422,7 @@ namespace Conqueror
         {
             Lighting2D::DrawGizmo(*this, id);
             AreaLights::DrawGizmo(*this, id);
+            LightProbeGroups::DrawGizmo(*this, id);
             // Gezinme: Link uçları ve yayı, Modifier Volume / Obstacle kutusu
             entt::entity e = (entt::entity)id;
             if (!m_Registry.valid(e) || !m_Registry.all_of<TransformComponent>(e))
@@ -2854,6 +2856,11 @@ namespace Conqueror
             if (meshRenderer.IsModel())
                 continue;   // model ağı aşağıda (Modeller)
             Renderer3D::SetDrawCastsShadows(meshRenderer.CastShadows);
+            // Statik nesne lightmap'ten, hareketli nesne ışık problarından (yoksa gökyüzünden) ortam ışığı alır
+            {
+                const auto* tag = m_Registry.try_get<TagComponent>(entity);
+                Renderer3D::SetDrawLightmapped(tag && tag->IsStatic);
+            }
             // TAA hareket takibi bu varlığın kimliğiyle (başka nesnelerin belirip kaybolması bu nesneyi "hareketli" yapmaz)
             Renderer3D::SetDrawIdentity(MotionIdentity(m_Registry, entity));
 
@@ -2909,6 +2916,10 @@ namespace Conqueror
             Renderer3D::SetDrawCastsShadows(modelComp.CastShadows);
             if (!modelComp.ModelData)
                 continue;
+            {
+                const auto* tag = m_Registry.try_get<TagComponent>(entity);
+                Renderer3D::SetDrawLightmapped(tag && tag->IsStatic);
+            }
             Renderer3D::SetDrawIdentity(MotionIdentity(m_Registry, entity));
 
             Entity ren{ entity, this };
@@ -2983,6 +2994,7 @@ namespace Conqueror
         Renderer3D::SetDrawIdentity(0);
         // Sonraki çizimler (kuyruk, MultiMesh, arazi, parçacık) varsayılan: gölge düşürür
         Renderer3D::SetDrawCastsShadows(true);
+        Renderer3D::SetDrawLightmapped(true);
         // Kuyruktaki opak meshler / modeller yakından uzağa; MultiMesh ve araziler (büyük, çoğunlukla arkada) sonra çizilir
         Renderer3D::FlushOpaque();
 

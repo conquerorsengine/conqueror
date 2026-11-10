@@ -144,6 +144,8 @@ namespace Conqueror
 
         // Bir sonraki çizimlerin gölge alıp almayacağı (MeshRenderer.ReceiveShadows)
         static void SetReceiveShadows(bool receive);
+        // Sonraki çizimler statik (lightmap'e pişirilmiş) mi: değilse ortam ışığını ışık problarından ya da gökyüzünden alır (Unity)
+        static void SetDrawLightmapped(bool lightmapped);
         // Sonraki çizimlerin taban rengi çarpanı (Model.Tint; çizimden sonra 1'e döndürülür)
         static void SetTint(const glm::vec3& tint);
         // Mesh Paint: sonraki çizimlerde (model içi mesh sırasına göre) örneğe özel köşe rengi tamponları; nullptr = yok

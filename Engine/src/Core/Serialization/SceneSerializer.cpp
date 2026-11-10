@@ -11,6 +11,8 @@
 #include "Scene/Components.h"
 #include "Scene/EditorCamera.h"
 #include "Terrain/Terrain.h"
+#include "Core/Utils/Crypto.h"
+#include "Renderer/Probe/AdaptiveProbeVolume.h"
 #include "Core/Logging/Log.h"
 #include "Core/Project/Project.h"
 #include "Core/Animation/AnimationController.h"
@@ -2171,6 +2173,9 @@ namespace Conqueror
         
         // Baked Lightmap
         out << YAML::Key << "BakedLightmapPath" << YAML::Value << m_Scene->GetBakedLightmapPath();
+        // Pişirilmiş ışık probları (Adaptive Probe Volume + Light Probe Group): sahneyle birlikte saklanır
+        if (auto apv = m_Scene->GetAdaptiveProbeVolume(); apv && apv->IsBaked() && apv->GetTotalProbeCount() > 0)
+            out << YAML::Key << "BakedProbes" << YAML::Value << Crypto::Base64Encode(apv->SerializeProbes());
         out << YAML::Key << "LightmapResolution" << YAML::Value << m_Scene->GetLightmapResolution();
         out << YAML::Key << "MaxLightmapSize" << YAML::Value << m_Scene->GetMaxLightmapSize();
         out << YAML::Key << "MaxBounces" << YAML::Value << m_Scene->GetMaxBounces();
@@ -3410,6 +3415,11 @@ namespace Conqueror
                         m_Scene->SetBakedLightmapTexture(lmTex);
                     }
                 }
+            }
+            if (environment["BakedProbes"])
+            {
+                if (auto apv = AdaptiveProbeVolume::DeserializeProbes(Crypto::Base64Decode(environment["BakedProbes"].as<std::string>())))
+                    m_Scene->SetAdaptiveProbeVolume(apv);
             }
         }
 

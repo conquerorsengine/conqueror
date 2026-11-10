@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <cmath>
 #include <random>
+#include <cstring>
 
 namespace Conqueror
 {
@@ -38,9 +39,44 @@ namespace Conqueror
         return levels;
     }
 
+    glm::vec3 APVSkyModel::Evaluate(const glm::vec3& d) const
+    {
+        if (Source == 0)
+        {
+            if (!HasSH)
+                return Sky * Intensity;
+            // CQ_RotateSky + CQ_EvaluateSH
+            const glm::vec3 n(RotCos * d.x - RotSin * d.z, d.y, RotSin * d.x + RotCos * d.z);
+            glm::vec3 r = SH[0] * 0.282095f
+                        + SH[1] * 0.488603f * n.y + SH[2] * 0.488603f * n.z + SH[3] * 0.488603f * n.x
+                        + SH[4] * 1.092548f * n.x * n.y + SH[5] * 1.092548f * n.y * n.z
+                        + SH[6] * 0.315392f * (3.0f * n.z * n.z - 1.0f)
+                        + SH[7] * 1.092548f * n.x * n.z + SH[8] * 0.546274f * (n.x * n.x - n.y * n.y);
+            return glm::max(r, glm::vec3(0.0f)) * Intensity;
+        }
+        if (Source == 1)
+            return Sky * Intensity;
+        auto smooth = [](float x) { x = std::clamp(x, 0.0f, 1.0f); return x * x * (3.0f - 2.0f * x); };
+        const glm::vec3 c = d.y >= 0.0f ? glm::mix(Equator, Sky, smooth(d.y)) : glm::mix(Equator, Ground, smooth(-d.y));
+        return c * Intensity;
+    }
+
     void AdaptiveProbeVolume::PlaceProbes(Scene* scene)
     {
         m_Probes.clear();
+        // Light Probe Group probları önce (elle yerleştirilmiş, olduğu yerde pişer)
+        for (const glm::vec3& p : m_Settings.ExplicitProbes)
+        {
+            APVProbe probe;
+            probe.Position = p;
+            probe.Explicit = true;
+            m_Probes.push_back(probe);
+        }
+        if (!m_Settings.PlaceVolumeProbes)
+        {
+            CQ_CORE_INFO("APV: {0} Light Probe Group probes (no volume grid)", m_Probes.size());
+            return;
+        }
 
         glm::vec3 volumeMin = m_Settings.Origin + m_Settings.ProbeOffset;
 
@@ -411,7 +447,7 @@ namespace Conqueror
 
         if (tris.empty()) return;
 
-        // Get lighting
+        // Işıklar (gerçek zamanlı çizimle aynı birimler: Lambert yüzeyin çıkan ışıması = albedo / π * ışınım)
         glm::vec3 lightDir(0, -1, 0);
         glm::vec3 lightColor(0, 0, 0);
         float lightIntensity = 0.0f;
@@ -424,17 +460,16 @@ namespace Conqueror
             lightIntensity = dl.Intensity;
         }
 
-        glm::vec3 ambient = scene->GetAmbientColor() * scene->GetAmbientIntensity() * 0.01f;
-
-        // Collect point lights
-        struct BakedPointLight { glm::vec3 pos, color; float intensity, range; };
+        struct BakedPointLight { glm::vec3 pos, color; float intensity, range, c, l, q; };
         std::vector<BakedPointLight> pointLights;
         auto plView = reg.view<TransformComponent, PointLightComponent>();
         for (auto e : plView)
         {
             auto [tf, pl] = plView.get<TransformComponent, PointLightComponent>(e);
-            pointLights.push_back({ tf.Position, pl.Color, pl.Intensity, pl.Range });
+            pointLights.push_back({ glm::vec3(tf.WorldTransform[3]), pl.Color, pl.Intensity, pl.Range, pl.Constant, pl.Linear, pl.Quadratic });
         }
+        const APVSkyModel& sky = m_Settings.Sky;
+        constexpr float kInvPi = 0.31830988618f;
 
         // Ray-triangle intersection
         auto rayTriTest = [](const glm::vec3& o, const glm::vec3& d,
@@ -472,6 +507,35 @@ namespace Conqueror
                 { ct = t; ci = i; cu = u; cv = v; }
             }
             return ci >= 0;
+        };
+
+        // Bir yüzey noktasına doğrudan gelen ışınım (güneş + nokta ışıklar, gölgeli); shader'daki zayıflama ve menzil penceresiyle
+        auto directIrradiance = [&](const glm::vec3& p, const glm::vec3& n) -> glm::vec3 {
+            glm::vec3 E(0.0f);
+            const glm::vec3 o = p + n * 0.02f;
+            if (lightIntensity > 0.0f)
+            {
+                const float ndl = glm::dot(n, -lightDir);
+                if (ndl > 0.0f && !anyHit(o, -lightDir, 500.0f))
+                    E += lightColor * lightIntensity * ndl;
+            }
+            for (auto& pl : pointLights)
+            {
+                const glm::vec3 toL = pl.pos - p;
+                const float d = glm::length(toL);
+                if (d >= pl.range || d < 1e-4f)
+                    continue;
+                const glm::vec3 L = toL / d;
+                const float ndl = glm::dot(n, L);
+                if (ndl <= 0.0f)
+                    continue;
+                const float r = d / std::max(pl.range, 1e-3f), r4 = r * r * r * r;
+                const float window = std::clamp(1.0f - r4, 0.0f, 1.0f);
+                const float att = window * window / std::max(pl.c + pl.l * d + pl.q * d * d, 1e-4f);
+                if (!anyHit(o, L, d))
+                    E += pl.color * pl.intensity * ndl * att;
+            }
+            return E;
         };
 
         // 6 cubemap face directions
@@ -516,42 +580,21 @@ namespace Conqueror
                         auto& ht = tris[ci];
                         glm::vec3 hitPos = ht.v0 * (1 - cu - cv) + ht.v1 * cu + ht.v2 * cv;
                         glm::vec3 hitNormal = glm::normalize(ht.n0 * (1 - cu - cv) + ht.n1 * cu + ht.n2 * cv);
+                        if (glm::dot(hitNormal, rayDir) > 0.0f)
+                            hitNormal = -hitNormal;   // arka yüz: ışına bakan taraf
 
-                        // Direct light
-                        bool inShadow = anyHit(hitPos + hitNormal * 0.02f, -lightDir, 500.0f);
-                        float ndotl = std::max(0.0f, glm::dot(hitNormal, -lightDir));
-                        glm::vec3 directLight = inShadow ? glm::vec3(0.0f) : lightColor * lightIntensity * ndotl;
-
-                        // Point lights
-                        for (auto& pl : pointLights)
-                        {
-                            float dist = glm::length(pl.pos - hitPos);
-                            if (dist < pl.range)
-                            {
-                                glm::vec3 plDir = glm::normalize(pl.pos - hitPos);
-                                float plNdotL = std::max(0.0f, glm::dot(hitNormal, plDir));
-                                float attenuation = 1.0f / (1.0f + 0.09f * dist + 0.032f * dist * dist);
-                                bool plShadow = anyHit(hitPos + hitNormal * 0.02f, plDir, dist);
-                                if (!plShadow)
-                                    directLight += pl.color * pl.intensity * plNdotL * attenuation;
-                            }
-                        }
-
-                        // Indirect (1 bounce)
+                        // Dolaylı: kosinüs ağırlıklı yarıküre örnekleri (ortalama gelen ışıma = ışınım / π); ıska giden örnek gökyüzünü görür,
+                        // çarpan örnek o yüzeyin doğrudan ışıkla aydınlanmış ışımasını (ikinci sekme)
                         glm::vec3 indirect(0.0f);
-                        int numSamples = 8;
+                        const int numSamples = 8;
+                        glm::vec3 upVec = (std::abs(hitNormal.y) < 0.999f) ? glm::vec3(0,1,0) : glm::vec3(1,0,0);
+                        glm::vec3 tan = glm::normalize(glm::cross(upVec, hitNormal));
+                        glm::vec3 bitan = glm::cross(hitNormal, tan);
                         for (int s = 0; s < numSamples; s++)
                         {
                             float r1 = dist(gen), r2 = dist(gen), phi = 6.28318f * r1;
                             float ct = std::sqrt(1 - r2), st = std::sqrt(r2);
-                            glm::vec3 sampleDir = glm::normalize(
-                                glm::vec3(std::cos(phi) * st, std::sin(phi) * st, ct));
-
-                            // Reorient to normal
-                            glm::vec3 upVec = (std::abs(hitNormal.y) < 0.999f) ? glm::vec3(0,1,0) : glm::vec3(1,0,0);
-                            glm::vec3 tan = glm::normalize(glm::cross(upVec, hitNormal));
-                            glm::vec3 bitan = glm::cross(hitNormal, tan);
-                            sampleDir = glm::normalize(tan * std::cos(phi) * st + bitan * std::sin(phi) * st + hitNormal * ct);
+                            glm::vec3 sampleDir = glm::normalize(tan * std::cos(phi) * st + bitan * std::sin(phi) * st + hitNormal * ct);
 
                             float sT; int sCi; float sCu, sCv;
                             if (closestHit(hitPos + hitNormal * 0.02f, sampleDir, sT, sCi, sCu, sCv))
@@ -559,27 +602,23 @@ namespace Conqueror
                                 auto& sHit = tris[sCi];
                                 glm::vec3 sPos = sHit.v0 * (1 - sCu - sCv) + sHit.v1 * sCu + sHit.v2 * sCv;
                                 glm::vec3 sN = glm::normalize(sHit.n0 * (1 - sCu - sCv) + sHit.n1 * sCu + sHit.n2 * sCv);
-                                float sNdotL = std::max(0.0f, glm::dot(sN, -lightDir));
-                                bool sShadow = anyHit(sPos + sN * 0.02f, -lightDir, 500.0f);
-                                glm::vec3 sLight = sShadow ? glm::vec3(0.3f) : lightColor * lightIntensity * sNdotL + glm::vec3(0.1f);
-                                indirect += sHit.albedo * sLight;
+                                if (glm::dot(sN, sampleDir) > 0.0f)
+                                    sN = -sN;
+                                indirect += sHit.albedo * directIrradiance(sPos, sN) * kInvPi;
                             }
                             else
                             {
-                                indirect += ambient * 2.0f;
+                                indirect += sky.Evaluate(sampleDir);
                             }
                         }
                         indirect /= (float)numSamples;
 
-                        color = ht.albedo * (ambient + directLight + indirect);
+                        color = ht.albedo * (directIrradiance(hitPos, hitNormal) * kInvPi + indirect);
                     }
                     else
                     {
-                        // Sky color
-                        color = ambient * 2.0f;
-                        // Add some sky gradient
-                        float skyFactor = glm::clamp(dir.y * 0.5f + 0.5f, 0.0f, 1.0f);
-                        color += glm::vec3(0.3f, 0.5f, 0.8f) * skyFactor * 0.5f;
+                        // Gökyüzü: gerçek zamanlı çizimdeki ortam ışığıyla aynı model
+                        color = sky.Evaluate(dir);
                     }
 
                     outCubemap[face * resolution * resolution + py * resolution + px] = color;
@@ -621,8 +660,8 @@ namespace Conqueror
 
                     float x = dir.x, y = dir.y, z = dir.z;
 
-                    // Solid angle weight for this texel
-                    float weight = texelSolidAngle / (float)(1 + u * u + v * v);
+                    // Texel'in katı açısı: dA / (1 + u² + v²)^(3/2)
+                    float weight = texelSolidAngle / std::pow(1.0f + u * u + v * v, 1.5f);
 
                     glm::vec3 color = cubemapData[face * resolution * resolution + py * resolution + px];
 
@@ -642,10 +681,14 @@ namespace Conqueror
             }
         }
 
+        // Işıma SH'si (∫ L Y dω): ayrıklaştırma hatası toplam katı açıyı 4π'ye eşitleyerek düzeltilir. Sonra kosinüs lobu ile evrişim
+        // (Ramamoorthi & Hanrahan: π, 2π/3, π/4) ve π'ye bölme: shader'daki CQ_EvaluateSH ile aynı ölçek (ışınım / π)
         if (totalWeight > 0.0f)
         {
+            const float norm = 4.0f * 3.14159265f / totalWeight;
+            const float band[9] = { 1.0f, 2.0f / 3.0f, 2.0f / 3.0f, 2.0f / 3.0f, 0.25f, 0.25f, 0.25f, 0.25f, 0.25f };
             for (int i = 0; i < 9; i++)
-                outSH.Coeffs[i] /= totalWeight;
+                outSH.Coeffs[i] *= norm * band[i];
         }
     }
 
@@ -740,6 +783,8 @@ namespace Conqueror
 
         for (auto& probe : m_Probes)
         {
+            if (probe.Explicit)
+                continue;   // Light Probe Group probu: kullanıcının koyduğu yerde kalır
             glm::vec3 offset(0.0f);
 
             glm::vec3 dirs[6] = {
@@ -899,5 +944,56 @@ namespace Conqueror
     std::shared_ptr<AdaptiveProbeVolume> AdaptiveProbeVolume::Create(const AdaptiveProbeVolumeSettings& settings)
     {
         return std::make_shared<AdaptiveProbeVolume>(settings);
+    }
+
+    // Biçim: "CQPR" + sürüm(uint32) + prob sayısı(uint32) + her prob için konum(3 float) + bayraklar(float: bit0 geçerli, bit1 elle)
+    // + 27 float SH (küçük-endian; tüm hedef platformlar küçük-endian)
+    std::string AdaptiveProbeVolume::SerializeProbes() const
+    {
+        std::string out;
+        auto put = [&](const void* p, size_t n) { out.append((const char*)p, n); };
+        const char magic[4] = { 'C', 'Q', 'P', 'R' };
+        put(magic, 4);
+        const uint32_t version = 1, count = (uint32_t)m_Probes.size();
+        put(&version, 4);
+        put(&count, 4);
+        for (const auto& pr : m_Probes)
+        {
+            const float flags = (float)((pr.Valid ? 1 : 0) | (pr.Explicit ? 2 : 0));
+            put(&pr.Position, sizeof(float) * 3);
+            put(&flags, sizeof(float));
+            for (int c = 0; c < 9; ++c)
+                put(&pr.SH.Coeffs[c], sizeof(float) * 3);
+        }
+        return out;
+    }
+
+    std::shared_ptr<AdaptiveProbeVolume> AdaptiveProbeVolume::DeserializeProbes(const std::string& data)
+    {
+        const size_t perProbe = sizeof(float) * (3 + 1 + 27);
+        if (data.size() < 12 || data.compare(0, 4, "CQPR") != 0)
+            return nullptr;
+        uint32_t version = 0, count = 0;
+        std::memcpy(&version, data.data() + 4, 4);
+        std::memcpy(&count, data.data() + 8, 4);
+        if (version != 1 || data.size() < 12 + (size_t)count * perProbe)
+            return nullptr;
+        auto apv = std::make_shared<AdaptiveProbeVolume>();
+        apv->m_Probes.resize(count);
+        const char* p = data.data() + 12;
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            auto& pr = apv->m_Probes[i];
+            float flags = 0.0f;
+            std::memcpy(&pr.Position, p, sizeof(float) * 3); p += sizeof(float) * 3;
+            std::memcpy(&flags, p, sizeof(float)); p += sizeof(float);
+            for (int c = 0; c < 9; ++c) { std::memcpy(&pr.SH.Coeffs[c], p, sizeof(float) * 3); p += sizeof(float) * 3; }
+            const int f = (int)flags;
+            pr.Valid = (f & 1) != 0;
+            pr.Explicit = (f & 2) != 0;
+        }
+        apv->m_IsBaked = count > 0;
+        apv->m_Progress = 1.0f;
+        return apv;
     }
 }

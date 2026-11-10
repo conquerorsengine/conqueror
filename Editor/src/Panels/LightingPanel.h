@@ -42,6 +42,8 @@ namespace Conqueror::Editor
         void SelectTab(int tab) { m_RequestedTab = tab; }
 
     private:
+        // Bake Probe Volume düğmesi: hacim ızgarası her zaman (bileşen yoksa Lighting ayarlarındaki hacim)
+        bool m_APVVolumeRequested = false;
         std::shared_ptr<struct LightBakeSettings> m_LightingAssetBefore;   // Lighting Settings varlığı: kare başındaki ayarlar
         bool m_PendingLightingSave = false;
         enum class BakeKind { None, BakedLightmap, RealtimeLightmap, APV };
