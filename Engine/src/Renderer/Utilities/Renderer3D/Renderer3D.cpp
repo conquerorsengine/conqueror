@@ -1083,6 +1083,22 @@ namespace Conqueror
         s->FrameDirty = true;
     }
 
+    bool Renderer3D::GetSunLight(DirectionalLightComponent& out)
+    {
+        if (!s || !s->HasSun)
+            return false;
+        out = s->Sun;
+        return true;
+    }
+
+    const LightsUBO& Renderer3D::GetLightData(int& pointCount, int& spotCount, int& areaCount)
+    {
+        pointCount = s->PointCount;
+        spotCount = s->SpotCount;
+        areaCount = s->AreaCount;
+        return s->Lights;
+    }
+
     void Renderer3D::AddReflectionProbe(const glm::vec3& position, const glm::vec3& boxMin,
                                         const glm::vec3& boxMax, std::shared_ptr<Cubemap> cubemap,
                                         float intensity, float blendDistance)

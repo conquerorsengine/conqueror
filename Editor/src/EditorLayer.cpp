@@ -36,6 +36,7 @@
 #include "Core/Audio/AudioEngine.h"
 #include "ProjectThumbnail.h"
 #include "Renderer/IBL/EnvironmentMap.h"
+#include "Renderer/PathTracer.h"
 #include "Scene/SceneManager.h"
 #include "Build/BuildPipeline.h"
 #include "Networking/Multiplayer/NetworkSession.h"
@@ -3675,11 +3676,32 @@ namespace Conqueror::Editor
         });
         Automation::RegisterCommand("play", [this](const Args&, std::string&) { OnPlayButtonPressed(); return true; });
         Automation::RegisterCommand("shading", [this](const Args& a, std::string& err) {
-            if (a.size() < 2 || !m_ViewportPanel) { err = "shading <shaded|wireframe|unlit|normals|lighting|metalrough|ao>"; return false; }
-            static const char* names[] = { "shaded", "wireframe", "unlit", "normals", "lighting", "metalrough", "ao" };
-            for (int i = 0; i < 7; ++i)
+            if (a.size() < 2 || !m_ViewportPanel) { err = "shading <shaded|wireframe|unlit|normals|lighting|metalrough|ao|pathtracing>"; return false; }
+            static const char* names[] = { "shaded", "wireframe", "unlit", "normals", "lighting", "metalrough", "ao", "pathtracing" };
+            static_assert(sizeof(names) / sizeof(names[0]) == (size_t)ViewportShading::Count, "shading names");
+            for (int i = 0; i < (int)ViewportShading::Count; ++i)
                 if (a[1] == names[i]) { m_ViewportPanel->SetShading((ViewportShading)i); return true; }
             err = "unknown shading mode " + a[1];
+            return false;
+        });
+        // pathtracer expect_samples <n|>n|<n> | reset | bounces <n> | max <n> | spp <n>
+        Automation::RegisterCommand("pathtracer", [](const Args& a, std::string& err) {
+            if (a.size() < 2) { err = "pathtracer expect_samples|reset|bounces|max|spp"; return false; }
+            auto& st = PathTracer::GetSettings();
+            if (a[1] == "reset") { PathTracer::Reset(); return true; }
+            if (a.size() < 3) { err = "missing value"; return false; }
+            if (a[1] == "bounces") { st.MaxBounces = std::stoi(a[2]); return true; }
+            if (a[1] == "max") { st.MaxSamples = std::stoi(a[2]); return true; }
+            if (a[1] == "spp") { st.SamplesPerFrame = std::stoi(a[2]); return true; }
+            if (a[1] == "expect_samples")
+            {
+                const int n = PathTracer::GetSampleCount();
+                Automation::Report("PATHTRACER samples = " + std::to_string(n) + ", triangles = " + std::to_string(PathTracer::GetTriangleCount()));
+                const bool ok = a[2][0] == '>' ? n > std::stoi(a[2].substr(1)) : a[2][0] == '<' ? n < std::stoi(a[2].substr(1)) : n == std::stoi(a[2]);
+                if (!ok) { err = "samples " + std::to_string(n); return false; }
+                return true;
+            }
+            err = "unknown pathtracer command " + a[1];
             return false;
         });
         Automation::RegisterCommand("viewport_click", [this](const Args& a, std::string& err) {

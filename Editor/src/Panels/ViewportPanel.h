@@ -30,6 +30,7 @@ namespace Conqueror::Editor
         LightingOnly,
         MetallicRoughness,
         AmbientOcclusion,
+        PathTracing,          // Unreal "Path Tracing" görünüm kipi: ilerleyen GPU ışın izleme (Renderer/PathTracer.h)
         Count
     };
 

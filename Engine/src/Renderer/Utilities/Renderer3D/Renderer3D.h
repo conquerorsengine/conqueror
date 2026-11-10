@@ -21,6 +21,7 @@
 namespace Conqueror
 {
     class Scene;
+    struct LightsUBO;
 
     // Bir kare için kamera bilgisi (editör kamerası ya da oyun kamerası)
     struct RenderCamera
@@ -116,6 +117,9 @@ namespace Conqueror
         static void AddAreaLight(const glm::vec3& center, const glm::vec3& halfRight, const glm::vec3& halfUp, const glm::vec3& radiance,
                                  float range, bool twoSided, bool disc);
         static void ClearLights();
+        // Işın izleyiciler (Path Tracer) için bu karenin ışıkları: güneş (yoksa false), nokta / spot / alan ışığı dizileri
+        static bool GetSunLight(DirectionalLightComponent& out);
+        static const LightsUBO& GetLightData(int& pointCount, int& spotCount, int& areaCount);
 
         // Gölge (eski erişim)
         static ShadowPass& GetShadowPass() { return s_ShadowPass; }

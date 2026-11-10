@@ -4,6 +4,7 @@
 #include "GameViewSettings.h"
 #include "Renderer/RHI/RenderCommand.h"
 #include "Renderer/PostProcess.h"
+#include "Renderer/PathTracer.h"
 #include "Renderer/EditorGrid.h"
 #include "Renderer/Utilities/Renderer3D/Renderer3D.h"
 #include "Core/Audio/AudioEngine.h"
@@ -91,6 +92,7 @@ namespace Conqueror::Editor
                 case ViewportShading::LightingOnly: return ICON_FA_SUN;
                 case ViewportShading::MetallicRoughness: return ICON_FA_GEM;
                 case ViewportShading::AmbientOcclusion: return ICON_FA_CIRCLE_HALF_STROKE;
+                case ViewportShading::PathTracing: return ICON_FA_WAND_MAGIC_SPARKLES;
                 default: return ICON_FA_CUBE;
             }
         }
@@ -107,6 +109,7 @@ namespace Conqueror::Editor
             case ViewportShading::LightingOnly: return "Lighting Only";
             case ViewportShading::MetallicRoughness: return "Metallic / Roughness";
             case ViewportShading::AmbientOcclusion: return "Ambient Occlusion";
+            case ViewportShading::PathTracing: return "Path Tracing";
             default: return "?";
         }
     }
@@ -196,6 +199,10 @@ namespace Conqueror::Editor
         }
 
         m_PostStack.EndScene();
+
+        // Path Tracing: raster kare (ışıklar / ortam / dönüşümler bu karede güncellendi) ışın izlenmiş birikimle değiştirilir
+        if (m_Context && m_Shading == ViewportShading::PathTracing && !m_EditorCamera.Is2D())
+            PathTracer::Render(*m_Context, RenderCamera::FromEditorCamera(m_EditorCamera, width, height), m_PostStack.GetSceneColorTexture());
 
         // 2. Post-process (bloom, SSAO, ton eşleme, renk, AA) -> viewport framebuffer
         m_Framebuffer->Bind();
@@ -311,6 +318,21 @@ namespace Conqueror::Editor
             uint64_t textureID = m_Framebuffer->GetColorAttachmentRendererID(0);
             ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
             m_ImageHovered = ImGui::IsItemHovered();
+            if (m_Shading == ViewportShading::PathTracing && !m_EditorCamera.Is2D())
+            {
+                // Birikim durumu (Unreal: örnek sayısı / üst sınır)
+                const auto& pt = PathTracer::GetSettings();
+                char info[160];
+                const int spp = PathTracer::GetSampleCount();
+                snprintf(info, sizeof(info), "Path Tracing  %d / %d samples%s  |  %d triangles  |  %d bounces", spp, pt.MaxSamples,
+                         spp >= pt.MaxSamples ? " (converged)" : "", PathTracer::GetTriangleCount(), pt.MaxBounces);
+                const ImVec2 mn = ImGui::GetItemRectMin(), mx = ImGui::GetItemRectMax();
+                const ImVec2 sz = ImGui::CalcTextSize(info);
+                const ImVec2 pos(mn.x + 10.0f, mx.y - sz.y - 12.0f);
+                ImDrawList* dl = ImGui::GetWindowDrawList();
+                dl->AddRectFilled(ImVec2(pos.x - 6.0f, pos.y - 4.0f), ImVec2(pos.x + sz.x + 6.0f, pos.y + sz.y + 4.0f), IM_COL32(0, 0, 0, 150), 4.0f);
+                dl->AddText(pos, IM_COL32(235, 235, 235, 255), info);
+            }
             // İçerik Tarayıcısından sahneye bırak: prefab / model / sprite / ses (fare ışınının zeminle kesiştiği noktaya)
             if (ImGui::BeginDragDropTarget())
             {
@@ -443,10 +465,14 @@ namespace Conqueror::Editor
             if (ImGui::BeginPopup("##ShadingPopup"))
             {
                 ImGui::TextDisabled("Shading Mode");
+                static const ViewportShading kOrder[] = { ViewportShading::Shaded, ViewportShading::Wireframe, ViewportShading::PathTracing,
+                                                          ViewportShading::Unlit, ViewportShading::Normals, ViewportShading::LightingOnly,
+                                                          ViewportShading::MetallicRoughness, ViewportShading::AmbientOcclusion };
+                static_assert(sizeof(kOrder) / sizeof(kOrder[0]) == (size_t)ViewportShading::Count, "every shading mode in the menu");
                 for (int i = 0; i < (int)ViewportShading::Count; ++i)
                 {
-                    auto mode = (ViewportShading)i;
-                    if (i == 2)
+                    auto mode = kOrder[i];
+                    if (i == 3)
                     {
                         ImGui::Separator();
                         ImGui::TextDisabled("Debug Views");
@@ -455,6 +481,23 @@ namespace Conqueror::Editor
                     snprintf(item, sizeof(item), "%s  %s", ShadingIcon(mode), GetShadingName(mode));
                     if (ImGui::MenuItem(item, nullptr, m_Shading == mode))
                         m_Shading = mode;
+                }
+                if (m_Shading == ViewportShading::PathTracing)
+                {
+                    // Unreal Post Process > Path Tracing ayarları
+                    ImGui::Separator();
+                    ImGui::TextDisabled("Path Tracing");
+                    auto& pt = PathTracer::GetSettings();
+                    ImGui::SetNextItemWidth(160.0f);
+                    ImGui::SliderInt("Max Bounces", &pt.MaxBounces, 0, 32);
+                    ImGui::SetNextItemWidth(160.0f);
+                    ImGui::DragInt("Samples Per Pixel", &pt.MaxSamples, 16.0f, 1, 65536);
+                    ImGui::SetNextItemWidth(160.0f);
+                    ImGui::SliderInt("Samples Per Frame", &pt.SamplesPerFrame, 1, 16);
+                    ImGui::SetNextItemWidth(160.0f);
+                    ImGui::DragFloat("Max Path Intensity", &pt.MaxPathIntensity, 0.5f, 0.01f, 10000.0f, "%.1f");
+                    if (ImGui::Button(ICON_FA_ROTATE "  Restart Accumulation"))
+                        PathTracer::Reset();
                 }
                 ImGui::EndPopup();
             }
