@@ -70,6 +70,7 @@
 #include "Scene/SpriteAnimation2D.h"
 #include "Scene/SpriteShape.h"
 #include "Scene/OcclusionCulling.h"
+#include "Scene/Articulation.h"
 #include "Scene/PlayerInput.h"
 #include "Scene/RigConstraints.h"
 #include "AISystem/Navigation/NavAgents.h"
@@ -250,6 +251,7 @@ namespace Conqueror
                 CQS::Value arg = CQS::Value::MakeFloat((double)force);
                 InvokeScriptMethod(entity, "OnJointBreak", &arg, 1);
             };
+            Articulations::PrepareRuntime(*this);   // Articulation Body bağlantıları: gövde + eklem
             m_PhysicsWorld3D->OnRuntimeStart();
         }
         if (m_PhysicsWorld2D)
@@ -1196,7 +1198,9 @@ namespace Conqueror
             }
             {
                 CQ_PROFILE_SAMPLE("Physics3D.Step", Physics);
+                Articulations::PreStep(*this);
                 m_PhysicsWorld3D->Step(ts);
+                Articulations::PostStep(*this);
             }
             CQ_PROFILE_SAMPLE("Physics.Events", Scripts);
             DispatchPhysicsEvents();
