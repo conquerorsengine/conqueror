@@ -1,0 +1,14 @@
+# template: fps
+# Kutu yığınına yürürken silah hiçbir karede kutunun içinde görünmez ve tek karede fırlamaz (eskiden aşağı indirilmiş
+# silah bir karede yukarı kaldırılmış poza atlıyordu: 60°'lik sıçrama)
+wait 40
+script set Player@FirstPersonShooter wallCheck bool true
+focus Game
+play
+wait 40
+script call Player@FirstPersonShooter SetTestInput 0 0 0 1
+wait 240
+script expect Player@FirstPersonShooter wallMaxJump >0.5
+script expect Player@FirstPersonShooter wallClipFrames 0
+script expect Player@FirstPersonShooter wallMaxJump <20
+stop

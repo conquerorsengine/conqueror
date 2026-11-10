@@ -83,6 +83,9 @@ script FirstPersonShooter : ConquerorScript
     public float wallAmount = 0.0;      // dışarıdan okunur (testler): o karedeki duvar pozu
     public bool wallCheck = false;      // testler: silahın (namlu ucu, eller) ekranda bir engelin içinde göründüğü kareleri say
     public int wallClipFrames = 0;
+    public float wallMaxJump = 0.0;     // testler (wallCheck): duvar pozunun bir karedeki en büyük açı değişimi, derece
+    private float wallAngPrev = 0.0;
+    private bool wallAngPrevSet = false;
     private float aim01 = 0.0;
     private float recoil = 0.0;          // kamerada geri dönecek tepme
     private float kick = 0.0;            // silahın geri tepmesi
@@ -157,19 +160,23 @@ script FirstPersonShooter : ConquerorScript
     }
 
     // Duvar pozu: görünüm modeli (silah + kollar) omuz noktası çevresinde döner; t 0..1. mode 0: aşağı (en çok 80°),
-    // mode 1: yukarı (en çok 25°, biraz dışa yatar). mode 0'da t 1..2: silah ayrıca aşağı / geri çekilir, t = 2'de görüş
-    // alanının tamamen dışındadır (hiçbir poz temiz değilse). Sonuç: görünüm modelinin yerel konumu ve Euler açıları
+    // mode 1: yukarı (en çok 25°, biraz dışa yatar). t 1..2: hiçbir poz temiz değilse silah görüş alanının dışına çekilir,
+    // t = 2'de tamamen dışarıdadır (mode 0: ayrıca aşağı / geri; mode 1: namlu yukarı kalkmaya devam eder, 80°'ye kadar,
+    // ve geri çekilir). İki yönde de 0..2 kesintisiz bir yol: bir yönden ötekine geçmek gerekmez (geçiş tek karede büyük
+    // bir sıçrama olurdu). Sonuç: görünüm modelinin yerel konumu ve Euler açıları
     func WallPose(p0, e0, t, mode)
     {
         var pivot = {x: 0.15, y: -0.18, z: 0.02};
         var tr = MathMin(t, 1.0);
-        var ex = e0.x + (mode == 0 ? -80.0 : 25.0) * tr;
+        var over = MathMax(t - 1.0, 0.0);
+        var ex = e0.x + (mode == 0 ? -80.0 * tr : 25.0 * tr + 55.0 * over);
         var ez = e0.z + (mode == 0 ? 0.0 : -8.0) * tr;
         var k0 = RotEuler(pivot, e0.x, e0.y, e0.z);
         var k1 = RotEuler(pivot, ex, e0.y, ez);
         var pull = 0.05 * MathMin(tr * 3.0, 1.0);
-        var stow = MathMax(t - 1.0, 0.0) * 0.6;
-        return {px: p0.x + k0.x - k1.x, py: p0.y + k0.y - k1.y - 0.02 * tr - stow, pz: p0.z + k0.z - k1.z + pull + stow * 0.3, ex: ex, ey: e0.y, ez: ez};
+        var stow = mode == 0 ? over * 0.6 : 0.0;
+        var back = mode == 0 ? stow * 0.3 : over * 0.15;
+        return {px: p0.x + k0.x - k1.x, py: p0.y + k0.y - k1.y - 0.02 * tr - stow, pz: p0.z + k0.z - k1.z + pull + back, ex: ex, ey: e0.y, ez: ez};
     }
 
     // Silahın uç noktaları görünüm modeli uzayında (bu karenin şarjör / geri tepme pozuyla): namlu ucu, iki el ve
@@ -324,15 +331,16 @@ script FirstPersonShooter : ConquerorScript
         return !WallClear(probes, pose, cpos, R3, U3, F3, 0.0, tv);
     }
 
-    // Silahın engele değmemesi için en az ne kadar indirilmesi / kaldırılması gerektiği (hiçbiri yetmiyorsa -1).
-    // Aşağı: 0..2 (1'den sonrası silahı görüş dışına çeker, 2'de her zaman temiz); yukarı: 0..1
-    func SolveWall(probes, p0, e0, mode, cpos, R3, U3, F3, pad, tv)
+    // Silahın engele değmemesi için "from"dan başlayarak en az ne kadar indirilmesi / kaldırılması gerektiği: 0..2
+    // (1'den sonrası silahı görüş dışına çeker, 2'de her zaman temiz). Yukarı yönde 1'e kadar ince adımlarla
+    func SolveWall(probes, p0, e0, mode, from, cpos, R3, U3, F3, pad, tv)
     {
-        var prev = 0.0;
-        var stepT = mode == 0 ? 0.25 : 0.125;
-        for (var i = 1; i <= 8; i++)
+        var prev = from;
+        var t = from;
+        for (var i = 0; i < 16; i++)
         {
-            var t = i * stepT;
+            if (t >= 2.0) { break; }
+            t = MathMin(t + ((mode == 1 && t < 1.0) ? 0.125 : 0.25), 2.0);
             if (WallClear(probes, WallPose(p0, e0, t, mode), cpos, R3, U3, F3, pad, tv))
             {
                 var lo = prev;
@@ -346,7 +354,7 @@ script FirstPersonShooter : ConquerorScript
             }
             prev = t;
         }
-        return mode == 0 ? 2.0 : -1.0;
+        return 2.0;
     }
 
     func Child(parent, name)
@@ -635,43 +643,67 @@ script FirstPersonShooter : ConquerorScript
                 var R3 = EntityGetRight(cam);
                 var U3 = EntityGetUp(cam);
                 var F3 = EntityGetForward(cam);
-                var probes = WallProbes(w, 0.15, 0.05, 0.035, 1.0);
                 var tv = MathTan(MathLerp(fov, aimFov, aim01) * 0.5 * 0.017453292) * 1.05;
                 var pad = WallDynamicPad(cpos);
-                var tReq = 0.0;
+                // Sert problar: silahın kendisi (namlu ucu 15 cm uzatılmış). Erken problar: namlu ucu ayrıca oyuncunun
+                // bakış yönündeki hızıyla 0.1 s ileriye uzatılır; silah engele varmadan yumuşakça inmeye başlar, son anda
+                // tek karede düşmez
+                var hard = WallProbes(w, 0.15, 0.05, 0.035, 1.0);
+                var ahead = MathMax(vx * F3.x + vz * F3.z, 0.0) * 0.1;
+                var soft = ahead > 0.01 ? WallProbes(w, 0.15 + ahead, 0.05, 0.035, 1.0) : hard;
                 var modeReq = wallMode;
-                if (!WallClear(probes, pose, cpos, R3, U3, F3, pad, tv))
+                var tSoft = 0.0;
+                if (!WallClear(soft, pose, cpos, R3, U3, F3, pad, tv))
                 {
-                    // Önce aşağı indirme; yukarı kaldırma yalnız küçük açıyla (alçak siperin üstünden aşmak için) ve aşağı
-                    // indirme işe yaramıyorsa ya da çok indirmek gerekiyorsa. Hiçbiri yetmiyorsa silah görüş alanının
-                    // dışına çekilir. Aşağıdan yukarıya geçmek için yukarı pozun 2 cm fazla payla temiz olması gerekir:
-                    // sınırda iki poz arasında her karede gidip gelip silah yanıp sönmesin
-                    var tLow = -1.0;
-                    var tHigh = -1.0;
-                    var highTried = false;
-                    if (wallMode == 1) { tHigh = SolveWall(probes, p0, e0, 1, cpos, R3, U3, F3, pad, tv); highTried = true; }
-                    if (tHigh < 0.0)
+                    if (wallT <= 0.02)
                     {
-                        tLow = SolveWall(probes, p0, e0, 0, cpos, R3, U3, F3, pad, tv);
-                        if (tLow > 0.375 && !highTried) { tHigh = SolveWall(probes, p0, e0, 1, cpos, R3, U3, F3, pad + 0.02, tv); }
+                        // Silah serbestken yön seçilir: önce aşağı; aşağı çok indirmek gerekiyorsa ve küçük bir kaldırma
+                        // (alçak siperin üstünden) yetiyorsa yukarı. Yukarıdaysa kaldırma yettikçe yukarıda kalır.
+                        // Yukarıya geçmek için yukarı pozun 2 cm fazla payla temiz olması gerekir (sınırda gidip gelmesin)
+                        var tHigh = wallMode == 1 ? SolveWall(soft, p0, e0, 1, 0.0, cpos, R3, U3, F3, pad, tv) : 2.0;
+                        if (tHigh <= 1.0) { modeReq = 1; tSoft = tHigh; }
+                        else
+                        {
+                            modeReq = 0;
+                            tSoft = SolveWall(soft, p0, e0, 0, 0.0, cpos, R3, U3, F3, pad, tv);
+                            if (tSoft > 0.375)
+                            {
+                                tHigh = SolveWall(soft, p0, e0, 1, 0.0, cpos, R3, U3, F3, pad + 0.02, tv);
+                                if (tHigh <= 1.0) { modeReq = 1; tSoft = tHigh; }
+                            }
+                        }
                     }
-                    if (tHigh >= 0.0 && (tLow < 0.0 || tLow > 0.375)) { modeReq = 1; tReq = tHigh; }
-                    else { modeReq = 0; tReq = tLow >= 0.0 ? tLow : 2.0; }
+                    else
+                    {
+                        // İndirilmiş / kaldırılmışken yön değişmez (ters yöne geçiş tek karede büyük bir sıçrama olurdu):
+                        // aynı yönde gerektiği kadar, gerekirse görüş alanının dışına kadar gider
+                        tSoft = SolveWall(soft, p0, e0, wallMode, 0.0, cpos, R3, U3, F3, pad, tv);
+                    }
                 }
                 if (modeReq != wallMode)
                 {
-                    // Yön değişimi (alçak siper / duvar): yeni yönün gerektirdiği poz hemen uygulanır
+                    // Yalnız silah serbestken (en çok 1.6°): fark görünmez
                     wallMode = modeReq;
-                    wallT = tReq;
+                    wallT = 0.0;
                 }
-                else
+                // Erken hedefe yumuşak geçiş: engele yaklaşırken hızlı, uzaklaşırken daha yavaş
+                wallT = MathLerp(wallT, tSoft, 1.0 - MathExp(-(tSoft > wallT ? 18.0 : 9.0) * dt));
+                // Silahın kendisi hiçbir karede engelin içinde görünmez: yumuşak geçiş yetişmezse aynı karede gerektiği kadar
+                if (!WallClear(hard, WallPose(p0, e0, wallT, wallMode), cpos, R3, U3, F3, pad, tv))
                 {
-                    // Engel yaklaşınca anında (içine girmesin), uzaklaşınca yumuşak
-                    wallT = tReq >= wallT ? tReq : MathLerp(wallT, tReq, 1.0 - MathExp(-9.0 * dt));
+                    wallT = SolveWall(hard, p0, e0, wallMode, wallT, cpos, R3, U3, F3, pad, tv);
                 }
-                if (wallT < 0.001 && tReq <= 0.0) { wallT = 0.0; wallMode = 0; }
+                if (wallT < 0.001 && tSoft <= 0.0) { wallT = 0.0; wallMode = 0; }
                 pose = WallPose(p0, e0, wallT, wallMode);
                 if (wallCheck && WallVisibleClip(WallProbes(w, 0.0, 0.01, 0.01, 0.3), pose, cpos, R3, U3, F3, tv)) { wallClipFrames += 1; }
+                if (wallCheck)
+                {
+                    // Testler: duvar pozunun bir karede en çok kaç derece sıçradığı (silahın aniden fırlaması)
+                    var angNow = wallMode == 0 ? -80.0 * MathMin(wallT, 1.0) - 60.0 * MathMax(wallT - 1.0, 0.0) : 25.0 * MathMin(wallT, 1.0) + 55.0 * MathMax(wallT - 1.0, 0.0);
+                    if (wallAngPrevSet) { wallMaxJump = MathMax(wallMaxJump, MathAbs(angNow - wallAngPrev)); }
+                    wallAngPrev = angNow;
+                    wallAngPrevSet = true;
+                }
             }
             else
             {
