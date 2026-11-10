@@ -8,6 +8,9 @@
 #include "Core/Serialization/PrefabSerializer.h"
 #include "Core/Math/Math.h"
 #include "Renderer/Utilities/Renderer3D/Mesh.h"
+#include "Renderer/Utilities/Renderer3D/Renderer3D.h"
+#include "Renderer/Utilities/Renderer3D/ModelLoader.h"
+#include "Core/Serialization/SceneSerializer.h"
 
 #include <IconsFontAwesome6.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -439,6 +442,111 @@ namespace Conqueror
                         physics->MarkDirty(Entity{ h, &scene });
             }
 
+            // ── Spline Mesh: kaynak ağ eğri boyunca bükülür (düzenleyicide de) ──
+            for (auto h : reg.view<SplineMeshComponent, MeshRendererComponent>())
+            {
+                auto& sm = reg.get<SplineMeshComponent>(h);
+                auto& mr = reg.get<MeshRendererComponent>(h);
+                const uint32_t c = ResolveContainer(scene, (uint32_t)h, sm.Container);
+                if (c == 0xFFFFFFFFu || mr.IsModel())
+                {
+                    if (sm.BuiltHash) { mr.CustomMesh.reset(); sm.BuiltHash = 0; }
+                    continue;
+                }
+                const auto& spline = reg.get<SplineContainerComponent>((entt::entity)c);
+                glm::mat4 toLocal(1.0f);
+                if (c != (uint32_t)h)
+                    toLocal = glm::inverse(scene.ComputeWorldMatrix(h)) * scene.ComputeWorldMatrix((entt::entity)c);
+                size_t hash = HashSpline(spline) ^ std::hash<std::string>()(sm.SourceModel);
+                auto mix = [&](float v) { hash ^= std::hash<float>()(v) + 0x9e3779b9 + (hash << 6) + (hash >> 2); };
+                mix((float)sm.ForwardAxis); mix(sm.RangeStart); mix(sm.Range); mix(sm.Tile ? 1.0f : 0.0f); mix(sm.Scale.x); mix(sm.Scale.y);
+                mix((float)mr.Type);
+                for (int i = 0; i < 4; ++i) for (int j = 0; j < 4; ++j) mix(toLocal[i][j]);
+                if (hash == sm.BuiltHash && mr.CustomMesh)
+                    continue;
+                sm.BuiltHash = hash;
+                // Kaynak köşeler (modelin tüm ağları birleşir)
+                std::vector<Vertex> src;
+                std::vector<uint32_t> srcIdx;
+                auto append = [&](const std::shared_ptr<Mesh>& m) {
+                    if (!m) return;
+                    const uint32_t base = (uint32_t)src.size();
+                    src.insert(src.end(), m->GetVertices().begin(), m->GetVertices().end());
+                    for (uint32_t i : m->GetIndices()) srcIdx.push_back(base + i);
+                };
+                if (!sm.SourceModel.empty())
+                {
+                    if (auto model = ModelLoader::Load(SceneSerializer::ResolveAssetPath(sm.SourceModel)))
+                        for (const auto& m : model->Meshes) append(m);
+                }
+                else
+                {
+                    switch (mr.Type)
+                    {
+                        case MeshType::Sphere: append(Renderer3D::GetSphereMesh()); break;
+                        case MeshType::Plane: append(Renderer3D::GetPlaneMesh()); break;
+                        case MeshType::Cylinder: append(Renderer3D::GetCylinderMesh()); break;
+                        default: append(Renderer3D::GetCubeMesh()); break;
+                    }
+                }
+                ArcTable table = TableFor(spline);
+                if (c != (uint32_t)h)
+                {
+                    for (auto& p : table.Points) p = glm::vec3(toLocal * glm::vec4(p, 1.0f));
+                    float len = 0.0f;
+                    for (size_t i = 0; i < table.Points.size(); ++i) { if (i) len += glm::distance(table.Points[i - 1], table.Points[i]); table.Cumulative[i] = len; }
+                    table.Length = len;
+                }
+                if (src.empty() || table.Points.size() < 2 || table.Length <= 1e-5f)
+                {
+                    mr.CustomMesh.reset();
+                    continue;
+                }
+                // İleri eksen ve kesit eksenleri (sağ, yukarı)
+                const int fa = (int)sm.ForwardAxis, ra = fa == 0 ? 2 : 0, ua = fa == 1 ? 2 : 1;
+                float fMin = 1e30f, fMax = -1e30f;
+                for (const auto& v : src) { fMin = std::min(fMin, v.Position[fa]); fMax = std::max(fMax, v.Position[fa]); }
+                const float meshLen = std::max(fMax - fMin, 1e-4f);
+                const float start = std::clamp(sm.RangeStart, 0.0f, 1.0f), end = std::clamp(sm.Range, start, 1.0f);
+                const float span = (end - start) * table.Length;
+                const int copies = sm.Tile ? std::max(1, (int)std::round(span / meshLen)) : 1;
+                std::vector<Vertex> out;
+                std::vector<uint32_t> idx;
+                out.reserve(src.size() * (size_t)copies);
+                for (int k = 0; k < copies; ++k)
+                {
+                    const uint32_t base = (uint32_t)out.size();
+                    for (const auto& v : src)
+                    {
+                        const float along = (v.Position[fa] - fMin) / meshLen;
+                        const float t = start + (end - start) * ((float)k + along) / (float)copies;
+                        glm::vec3 tangent;
+                        const glm::vec3 p = SampleTable(table, t, &tangent);
+                        // Yatay çerçeve (dünya yukarısına göre): eğri dönerken burulmaz
+                        glm::vec3 ref = std::fabs(tangent.y) < 0.98f ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0);
+                        glm::vec3 right = glm::normalize(glm::cross(tangent, ref));
+                        glm::vec3 up = glm::cross(right, tangent);
+                        // Kaynağın ileri ekseni eğri yönüne (+), sağ / yukarı eksenleri çerçeveye
+                        Vertex o = v;
+                        o.Position = p + right * (v.Position[ra] * sm.Scale.x) + up * (v.Position[ua] * sm.Scale.y);
+                        const glm::vec3 n = glm::vec3(v.Normal[ra], v.Normal[ua], v.Normal[fa]);
+                        o.Normal = glm::normalize(right * n.x / std::max(sm.Scale.x, 1e-4f) + up * n.y / std::max(sm.Scale.y, 1e-4f) + tangent * n.z);
+                        const glm::vec3 tg = glm::vec3(v.Tangent[ra], v.Tangent[ua], v.Tangent[fa]);
+                        o.Tangent = glm::length(tg) > 1e-6f ? glm::normalize(right * tg.x + up * tg.y + tangent * tg.z) : v.Tangent;
+                        out.push_back(o);
+                    }
+                    for (uint32_t i : srcIdx) idx.push_back(base + i);
+                }
+                // İleri ekseni eğri ileri yönüne bağlarken sağ-yukarı-ileri sağ elli değilse üçgenler ters döner
+                const glm::vec3 axes[3] = { glm::vec3(1, 0, 0), glm::vec3(0, 1, 0), glm::vec3(0, 0, 1) };
+                if (glm::dot(glm::cross(axes[ra], axes[ua]), axes[fa]) < 0.0f)
+                    for (size_t i = 0; i + 2 < idx.size(); i += 3) std::swap(idx[i + 1], idx[i + 2]);
+                mr.CustomMesh = std::make_shared<Mesh>(out, idx);
+                if (reg.all_of<MeshColliderComponent>(h))
+                    if (PhysicsWorld3D* physics = scene.GetPhysicsWorld3D())
+                        physics->MarkDirty(Entity{ h, &scene });
+            }
+
             if (!runtime)
                 return;
 
@@ -550,6 +658,8 @@ namespace Conqueror
         }
     }
 
+    template<> void Scene::OnComponentAdded<SplineMeshComponent>(Entity, SplineMeshComponent&) {}
+
     void RegisterSplineComponents()
     {
         const glm::vec4 kSplineColor{ 0.35f, 0.85f, 1.0f, 1.0f };
@@ -578,6 +688,17 @@ namespace Conqueror
             .Field("NormalizedTime", "Normalized Time", &SplineAnimateComponent::NormalizedTime).ReadOnly().Header("Runtime")
             .Field("Playing", "Playing", &SplineAnimateComponent::Playing).ReadOnly();
 
+        ComponentDef<SplineMeshComponent>("Spline Mesh", "SplineMeshComponent", "Splines", ICON_FA_BEZIER_CURVE).Color(kSplineColor)
+            .Requires("MeshRendererComponent")
+            .Describe("Bends a mesh along a spline (Unreal Spline Mesh): pipes, rails, fences, roads. Source Model, or the Mesh Renderer's shape. "
+                      "Tile repeats the mesh at its own length instead of stretching it once.")
+            .Field("Container", "Spline", &SplineMeshComponent::Container).Tooltip("Empty = the Spline Container on this object.")
+            .Field("SourceModel", "Source Model", &SplineMeshComponent::SourceModel, FieldKind::Asset).Filter(".glb;.gltf;.fbx;.obj")
+            .Field("ForwardAxis", "Forward Axis", &SplineMeshComponent::ForwardAxis).Options({ "X", "Y", "Z" })
+            .Field("RangeStart", "Range Start", &SplineMeshComponent::RangeStart).Range(0.0f, 1.0f, 0.005f)
+            .Field("Range", "Range End", &SplineMeshComponent::Range).Range(0.0f, 1.0f, 0.005f)
+            .Field("Tile", "Tile", &SplineMeshComponent::Tile)
+            .Field("Scale", "Scale", &SplineMeshComponent::Scale).Speed(0.01f);
         ComponentDef<SplineExtrudeComponent>("Spline Extrude", "SplineExtrudeComponent", "Splines", ICON_FA_GRIP_LINES).Color(kSplineColor)
             .Requires("MeshRendererComponent")
             .Describe("Builds a mesh along a spline: a tube (pipes, cables) or your own cross-section profile (roads, kerbs, barriers, "

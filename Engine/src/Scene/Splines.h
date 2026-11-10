@@ -68,6 +68,23 @@ namespace Conqueror
         size_t BuiltHash = 0;
     };
 
+    // Spline Mesh (Unreal Spline Mesh Component): bir ağ eğri boyunca bükülür. Kaynak: Source Model ya da Mesh Renderer'ın ilkel ağı.
+    // Tile kapalıysa ağ eğrinin aralığına bir kez uzatılır; açıksa kendi boyunda tekrar eder (çit, ray, boru hattı)
+    enum class SplineMeshAxis : int { X = 0, Y, Z };
+
+    struct SplineMeshComponent
+    {
+        uint64_t Container = 0;          // 0 = bu varlık
+        std::string SourceModel;         // .glb / .gltf / .fbx / .obj (boşsa Mesh Renderer'ın ilkeli)
+        SplineMeshAxis ForwardAxis = SplineMeshAxis::Z;
+        float RangeStart = 0.0f;
+        float Range = 1.0f;
+        bool Tile = false;
+        glm::vec2 Scale{ 1.0f, 1.0f };   // kesit ölçeği (sağ, yukarı)
+        // Çalışma zamanı
+        size_t BuiltHash = 0;
+    };
+
     struct SplineInstantiateComponent
     {
         uint64_t Container = 0;          // 0 = bu varlık
