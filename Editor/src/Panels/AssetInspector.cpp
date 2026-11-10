@@ -341,7 +341,11 @@ namespace Conqueror::Editor::AssetInspector
                         UI::Text("Name", "%s", slice->Name.c_str());
                         UI::Text("Rect", "%d, %d  -  %d x %d", (int)slice->Rect.x, (int)slice->Rect.y, (int)slice->Rect.z, (int)slice->Rect.w);
                         UI::Text("Pivot", "%.2f, %.2f", slice->Pivot.x, slice->Pivot.y);
-                        if (auto texture = Texture2D::Create(path); texture && texture->GetWidth() > 0 && texture->GetHeight() > 0 && slice->Rect.z > 0.0f && slice->Rect.w > 0.0f)
+                        // Doku çizim bitene kadar tutulur (doku önbelleği zayıf başvuru tutar)
+                        static std::shared_ptr<Texture2D> s_SliceTexture;
+                        if (!s_SliceTexture || s_SliceTexture->GetPath() != path)
+                            s_SliceTexture = Texture2D::Create(path);
+                        if (auto texture = s_SliceTexture; texture && texture->GetWidth() > 0 && texture->GetHeight() > 0 && slice->Rect.z > 0.0f && slice->Rect.w > 0.0f)
                         {
                             const float W = (float)texture->GetWidth(), H = (float)texture->GetHeight();
                             const float maxW = ImGui::GetContentRegionAvail().x, maxH = 140.0f;

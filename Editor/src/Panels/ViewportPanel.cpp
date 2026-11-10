@@ -1,4 +1,5 @@
 #include "ViewportPanel.h"
+#include "Core/Profiling/FrameProfiler.h"
 #include "Core/Math/Math.h"
 #include "StatsPanel.h"
 #include "GameViewSettings.h"
@@ -19,6 +20,13 @@
 #include "UI/EditorUI.h"
 #include "AssetActions.h"
 #include "Scripting/ScriptRuntime.h"
+#include "Renderer/Renderer2D.h"
+#include "Renderer/SpriteSheet.h"
+#include "Renderer/RHI/Texture.h"
+#include "Core/Serialization/SceneSerializer.h"
+#include <stb_image.h>
+#include <filesystem>
+#include <unordered_map>
 
 #include <imgui.h>
 #include <ImGuizmo.h>
@@ -202,14 +210,20 @@ namespace Conqueror::Editor
                 m_Context->SetEditorSelection(std::move(selection));
             }
 
-            m_Context->OnUpdateEditor(ts, m_EditorCamera, GetViewportBounds());
+            {
+                CQ_PROFILE_SAMPLE("SceneView.Scene", Rendering);
+                m_Context->OnUpdateEditor(ts, m_EditorCamera, GetViewportBounds());
+            }
 
             // Game görünümü etkilenmesin
             Renderer3D::SetDebugView(Renderer3D::DebugView::Shaded);
             Renderer3D::SetWireframe(false);
         }
 
-        m_PostStack.EndScene();
+        {
+            CQ_PROFILE_SAMPLE("SceneView.EndScene", Rendering);
+            m_PostStack.EndScene();
+        }
 
         // Path Tracing: raster kare (ışıklar / ortam / dönüşümler bu karede güncellendi) ışın izlenmiş birikimle değiştirilir
         if (m_Context && m_Shading == ViewportShading::PathTracing && !m_EditorCamera.Is2D())
@@ -280,11 +294,13 @@ namespace Conqueror::Editor
 
         if (!visible)
         {
-            // Sekme gizli: kamera/seçim girdisi alma, render etme
+            // Sekme gizli: kamera/seçim girdisi alma, render etme. Bekleyen boyut da silinir: yoksa OnUpdate onu uygulayıp gizli
+            // görünümü her karede çiziyordu (Play'de Game sekmesi öndeyken sahne iki kez çiziliyor, FPS yarıya düşüyordu)
             m_ViewportFocused = false;
             m_ViewportHovered = false;
             m_ImageHovered = false;
             m_ViewportSize = { 0.0f, 0.0f };
+            m_PendingViewportSize = { 0.0f, 0.0f };
             ImGui::End();
             return;
         }
@@ -323,7 +339,7 @@ namespace Conqueror::Editor
         {
             uint64_t textureID = m_Framebuffer->GetColorAttachmentRendererID(0);
             const glm::vec2 shownSize = validSize ? newViewportSize : m_ViewportSize;
-            ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ shownSize.x, shownSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+            PanelImage((ImTextureID)textureID, m_ViewportSize, ImVec2{ shownSize.x, shownSize.y });
             m_ImageHovered = ImGui::IsItemHovered();
             // Sağ tık da görünüme odaklanır (Unity Scene): basılı tutup WASD ile uçmak için önce sol tıklamak gerekmez
             if (m_ImageHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
@@ -812,6 +828,52 @@ namespace Conqueror::Editor
         }
     }
 
+    namespace
+    {
+        // Sprite'ın görünen şekli (saydam olmayan pikseller, Unity seçim çerçevesi gibi): dilime göre piksel çokgenleri, önbellekli
+        const std::vector<std::vector<glm::vec2>>* SpriteShapeOutline(const SpriteRendererComponent& sr, glm::vec4& rectOut)
+        {
+            if (!sr.Texture || sr.Texture->GetPath().empty() || sr.Texture->GetWidth() == 0 || sr.Texture->GetHeight() == 0)
+                return nullptr;
+            const glm::vec2 texSize((float)sr.Texture->GetWidth(), (float)sr.Texture->GetHeight());
+            glm::vec4 rect = sr.Rect.z > 0.0f && sr.Rect.w > 0.0f ? sr.Rect : glm::vec4(0.0f, 0.0f, texSize.x, texSize.y);
+            auto sheet = SpriteSheet::Get(sr.Texture->GetPath());
+            const SpriteDef* def = sheet ? sheet->FindForSprite(sr.SpriteName, texSize) : nullptr;
+            if (def && !sr.SpriteName.empty())
+                rect = def->Rect;
+            rectOut = rect;
+            // Custom Outline (Sprite Editor) varsa o şekil
+            if (def && !def->Outlines.empty() && (sr.Rect.z <= 0.0f || !sr.SpriteName.empty()))
+                return &def->Outlines;
+            struct Entry
+            {
+                std::filesystem::file_time_type Time{};
+                std::vector<std::vector<glm::vec2>> Shapes;
+            };
+            static std::unordered_map<std::string, Entry> s_Cache;
+            char key[96];
+            snprintf(key, sizeof(key), "|%g|%g|%g|%g", rect.x, rect.y, rect.z, rect.w);
+            const std::string path = SceneSerializer::ResolveAssetPath(sr.Texture->GetPath());
+            const std::string cacheKey = path + key;
+            std::error_code ec;
+            const auto time = std::filesystem::last_write_time(path, ec);
+            auto it = s_Cache.find(cacheKey);
+            if (it != s_Cache.end() && it->second.Time == time)
+                return &it->second.Shapes;
+            Entry entry;
+            entry.Time = time;
+            stbi_set_flip_vertically_on_load(0);
+            int w = 0, h = 0, channels = 0;
+            if (unsigned char* rgba = stbi_load(path.c_str(), &w, &h, &channels, 4))
+            {
+                // Yarı saydam kenar saçağı şekle girmez; ayrıntılı (piksele yakın) iz
+                entry.Shapes = SpriteSheet::GenerateOutline(rgba, w, h, rect, 0.85f, 8);
+                stbi_image_free(rgba);
+            }
+            return &(s_Cache[cacheKey] = std::move(entry)).Shapes;
+        }
+    }
+
     void ViewportPanel::DrawSelectionOutline(ImDrawList* drawList)
     {
         const auto& selected = EditorState::Get().GetSelectedEntities();
@@ -820,6 +882,32 @@ namespace Conqueror::Editor
             Entity e = selected[i];
             if (!e || !e.HasComponent<TransformComponent>())
                 continue;
+            const ImU32 shapeColor = i == 0 ? IM_COL32(255, 150, 30, 230) : IM_COL32(255, 200, 90, 170);
+            // Sprite: kutu yerine görünen şekli (Unity). Sliced / Tiled çizimde ve şekil çıkmazsa kutu
+            if (e.HasComponent<SpriteRendererComponent>())
+            {
+                const auto& sr = e.GetComponent<SpriteRendererComponent>();
+                glm::vec2 smn, smx;
+                glm::vec4 rect;
+                const std::vector<std::vector<glm::vec2>>* shapes = nullptr;
+                if (sr.DrawMode == SpriteDrawMode::Simple && Renderer2D::GetSpriteLocalBounds(sr, smn, smx))
+                    shapes = SpriteShapeOutline(sr, rect);
+                if (shapes && !shapes->empty())
+                {
+                    const glm::mat4& world = e.GetComponent<TransformComponent>().WorldTransform;
+                    const glm::vec2 size(std::max(rect.z, 1.0f), std::max(rect.w, 1.0f));
+                    auto toWorld = [&](const glm::vec2& px) {
+                        glm::vec2 f = px / size;
+                        if (sr.FlipX) f.x = 1.0f - f.x;
+                        if (sr.FlipY) f.y = 1.0f - f.y;
+                        return glm::vec3(world * glm::vec4(smn + (smx - smn) * f, 0.0f, 1.0f));
+                    };
+                    for (const auto& poly : *shapes)
+                        for (size_t k = 0; k < poly.size(); ++k)
+                            DrawWorldLine(drawList, toWorld(poly[k]), toWorld(poly[(k + 1) % poly.size()]), shapeColor, i == 0 ? 1.8f : 1.2f);
+                    continue;
+                }
+            }
             glm::vec3 mn, mx;
             if (!ScenePicking::GetLocalBounds(e, mn, mx))
                 continue;

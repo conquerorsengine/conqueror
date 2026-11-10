@@ -1,4 +1,5 @@
 #include "GamePanel.h"
+#include "ViewportPanel.h"
 #include "Core/Math/Math.h"
 #include "Renderer/RHI/RenderCommand.h"
 #include "Renderer/PostProcess.h"
@@ -402,7 +403,7 @@ namespace Conqueror::Editor
         ImGui::PushClipRect(areaPos, ImVec2(areaPos.x + area.x, areaPos.y + area.y), true);
         ImGui::SetCursorScreenPos(imagePos);
         uint64_t textureID = m_Framebuffer->GetColorAttachmentRendererID(0);
-        ImGui::Image(reinterpret_cast<void*>(textureID), displaySize, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+        PanelImage((ImTextureID)textureID, m_ViewportSize, displaySize);
         m_ViewportHovered = ImGui::IsItemHovered();
         // Unity: "No cameras rendering"
         if (!m_HasCamera && !m_HasOverlayUI)

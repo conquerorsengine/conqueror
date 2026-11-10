@@ -14,11 +14,42 @@
 #include <imgui.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <cmath>
 #include <functional>
 #include <memory>
 
 namespace Conqueror::Editor
 {
+    // Panelin görüntüsü. Boyut değişirken (yeni kare çizilene kadar) önceki kare gerilmez: dikey görüş açısı sabit olduğundan
+    // yüksekliğe sığdırılır, fazla genişlik ortadan kırpılır, eksik genişlik koyu kalır. Cisimler bir sonraki karedeki boyutlarında
+    // görünür (Play'e basınca / editör açılınca ilk görüntü yatayda gerilip geniş açılı görünüyordu). Öğe her zaman tam boyuttadır
+    // (fare, sürükle-bırak hedefi). Doku dikey çevrik
+    inline void PanelImage(ImTextureID texture, const glm::vec2& textureSize, const ImVec2& size)
+    {
+        const float textureAspect = textureSize.y > 0.0f ? textureSize.x / textureSize.y : 0.0f;
+        const float shownAspect = size.y > 0.0f ? size.x / size.y : 0.0f;
+        if (textureAspect <= 0.0f || shownAspect <= 0.0f || std::fabs(textureAspect - shownAspect) < 1e-3f * shownAspect)
+        {
+            ImGui::Image(texture, size, ImVec2(0, 1), ImVec2(1, 0));
+            return;
+        }
+        const ImVec2 pos = ImGui::GetCursorScreenPos();
+        ImGui::Dummy(size);
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        dl->AddRectFilled(pos, ImVec2(pos.x + size.x, pos.y + size.y), IM_COL32(12, 12, 14, 255));
+        const float width = size.y * textureAspect;
+        if (width >= size.x)
+        {
+            const float u = 0.5f * size.x / width;
+            dl->AddImage(texture, pos, ImVec2(pos.x + size.x, pos.y + size.y), ImVec2(0.5f - u, 1.0f), ImVec2(0.5f + u, 0.0f));
+        }
+        else
+        {
+            const float x0 = pos.x + (size.x - width) * 0.5f;
+            dl->AddImage(texture, ImVec2(x0, pos.y), ImVec2(x0 + width, pos.y + size.y), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+        }
+    }
+
     class StatsPanel;
 
     // Görünüm gölgelendirme modu (Unity "Draw Mode" karşılığı)

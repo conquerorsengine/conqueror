@@ -1,0 +1,15 @@
+# template: basic3d
+# Game sekmesi öndeyken arkadaki Viewport çizilmez (eskiden gizli görünüm her karede yeniden çiziliyordu: FPS yarıya iniyordu)
+wait 30
+profiler open
+profiler record on
+focus Viewport
+wait 20
+profiler expect_sample SceneView.Scene
+focus Game
+play
+wait 40
+profiler expect_no_sample SceneView.Scene
+stop
+wait 10
+quit
