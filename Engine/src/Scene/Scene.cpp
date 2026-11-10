@@ -79,6 +79,8 @@
 #include "Scene/PlanarReflection.h"
 #include "Core/Audio/MetaSound.h"
 #include "Scene/WorldPartition.h"
+#include "Scene/BlendShapes.h"
+#include "Scene/MetaHuman.h"
 #include "Scene/PlayerInput.h"
 #include "Scene/RigConstraints.h"
 #include "AISystem/Navigation/NavAgents.h"
@@ -211,6 +213,7 @@ namespace Conqueror
 
     Scene::~Scene()
     {
+        BlendShapes::Forget(*this);
         Net::NetworkSession::Get().OnSceneStopped(this);
         TimelineSystem::ForgetScene(this);
         VideoPlayers::Release(this);
@@ -1361,6 +1364,8 @@ namespace Conqueror
         {
             CQ_PROFILE_SAMPLE("Animators.Update", Animation);
             UpdateAnimators(ts);
+            // Leader Pose (MetaHuman parçaları gövdeyi izler) ve Live Link Face yüz kaydı
+            MetaHuman::Update(*this, (float)ts);
         }
 
         // Ağ: durum gönderimi (betikler ve animasyondan sonra)
@@ -2981,6 +2986,8 @@ namespace Conqueror
         if (!m_CapturingProbes)
             WorldActors::ComputeCullHidden(*this, camera.Position, m_OcclusionHidden);
 
+        // Blend shape fark dokuları (gölge, renk ve hareket vektörü geçişleri aynı şekli kullanır)
+        BlendShapes::Update(*this);
         // Gölgeler -> gökyüzü
         {
             CQ_PROFILE_SAMPLE("Render.Shadows", Rendering);
@@ -3083,19 +3090,22 @@ namespace Conqueror
             if (modelComp.ModelData->IsSkinned && modelComp.ModelData->SkeletonData)
             {
                 const std::vector<glm::mat4>* bones = nullptr;
-                if (ren.HasComponent<AnimatorComponent>())
+                if (const auto* lp = m_Registry.try_get<LeaderPoseComponent>(entity); lp && !lp->BoneMatrices.empty())
+                    bones = &lp->BoneMatrices;
+                else if (ren.HasComponent<AnimatorComponent>())
                     bones = &ren.GetComponent<AnimatorComponent>().BoneMatricesGPU;
                 else if (ren.HasComponent<AnimationComponent>())
                     bones = &ren.GetComponent<AnimationComponent>().BoneMatricesGPU;
+                const std::vector<uint32_t>* morph = BlendShapes::GetTextures(*this, (uint32_t)entity);
                 if (bones && bones->size() == modelComp.ModelData->SkeletonData->GetBoneCount())
                 {
-                    Renderer3D::DrawSkinnedModel(transform.WorldTransform, modelComp.ModelData, *bones);
+                    Renderer3D::DrawSkinnedModel(transform.WorldTransform, modelComp.ModelData, *bones, morph);
                 }
                 else
                 {
                     static thread_local std::vector<glm::mat4> s_IdPalette;
                     s_IdPalette.assign(modelComp.ModelData->SkeletonData->GetBoneCount(), glm::mat4(1.f));
-                    Renderer3D::DrawSkinnedModel(transform.WorldTransform, modelComp.ModelData, s_IdPalette);
+                    Renderer3D::DrawSkinnedModel(transform.WorldTransform, modelComp.ModelData, s_IdPalette, morph);
                 }
             }
             else

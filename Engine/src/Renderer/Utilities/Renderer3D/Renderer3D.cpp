@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstddef>
+#include <array>
 #include <cstring>
 #include <filesystem>
 #include <cstdlib>
@@ -355,6 +356,7 @@ namespace Conqueror
                 std::shared_ptr<Model> ModelRef;
                 glm::mat4 Cur{ 1.0f }, Prev{ 1.0f };
                 std::vector<glm::mat4> Bones;
+                std::vector<uint32_t> Morph;   // ağ başına blend shape fark dokusu
             };
             std::vector<VelocityDraw> Velocity;
             std::vector<SkinnedVelocityDraw> SkinnedVelocity;
@@ -726,12 +728,13 @@ namespace Conqueror
                     continue;
                 sh->SetMat4("u_Transform", d.Cur);
                 sh->SetMat4("u_PrevTransform", d.Prev);
-                sh->SetMat4Array("u_BoneTransforms", d.Bones.data(), (uint32_t)d.Bones.size());
+                SetBonePalette(sh, d.Bones.data(), (uint32_t)d.Bones.size());
                 for (size_t i = 0; i < d.ModelRef->SkinnedMeshes.size(); ++i)
                 {
                     const auto& mesh = d.ModelRef->SkinnedMeshes[i];
                     if (!mesh || !mesh->GetVertexArray())
                         continue;
+                    SetMorphDeltas(sh, i < d.Morph.size() ? d.Morph[i] : 0u);
                     const auto& material = i < d.ModelRef->Materials.size() ? d.ModelRef->Materials[i] : nullptr;
                     const Material::CullMode cull = material ? material->Culling : Material::CullMode::Back;
                     setCull(cull == Material::CullMode::Off ? 0 : (cull == Material::CullMode::Front ? 2 : 1));
@@ -772,11 +775,17 @@ namespace Conqueror
                     continue;
                 sh->SetMat4("u_Transform", d.Prev);
                 sh->SetMat4("u_PrevTransform", d.Prev);
-                sh->SetMat4Array("u_BoneTransforms", d.Bones.data(), (uint32_t)d.Bones.size());
-                for (const auto& mesh : d.ModelRef->SkinnedMeshes)
-                    if (mesh && mesh->GetVertexArray())
-                        RenderCommand::DrawIndexed(mesh->GetVertexArray(), mesh->GetIndexCount());
+                SetBonePalette(sh, d.Bones.data(), (uint32_t)d.Bones.size());
+                for (size_t i = 0; i < d.ModelRef->SkinnedMeshes.size(); ++i)
+                {
+                    const auto& mesh = d.ModelRef->SkinnedMeshes[i];
+                    if (!mesh || !mesh->GetVertexArray())
+                        continue;
+                    SetMorphDeltas(sh, i < d.Morph.size() ? d.Morph[i] : 0u);
+                    RenderCommand::DrawIndexed(mesh->GetVertexArray(), mesh->GetIndexCount());
+                }
             }
+            SetMorphDeltas(sh, 0u);
             sh->SetInt("u_PrevCoverage", 0);
         }
         glColorMaski(0, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -2146,8 +2155,65 @@ namespace Conqueror
         s_VertexColorMesh = 0;
     }
 
+    namespace
+    {
+        // > 128 kemik: RGBA32F palet dokuları (çizim başına sıradaki; aynı karede önceki çizimin dokusu değiştirilmez)
+        struct BonePaletteTexture
+        {
+            GLuint Id = 0;
+            int Rows = 0;
+        };
+        std::array<BonePaletteTexture, 32> s_BonePalettes;
+        uint32_t s_BonePaletteNext = 0;
+    }
+
+    void Renderer3D::SetBonePalette(const std::shared_ptr<Shader>& shader, const glm::mat4* bones, uint32_t count)
+    {
+        if (!shader)
+            return;
+        if (count <= 128)
+        {
+            shader->SetInt("u_BoneTexture", 0);
+            shader->SetInt("u_BoneCount", (int)count);
+            if (count > 0)
+                shader->SetMat4Array("u_BoneTransforms", bones, count);
+            return;
+        }
+        BonePaletteTexture& t = s_BonePalettes[s_BonePaletteNext++ % s_BonePalettes.size()];
+        const int rows = (int)((count * 4 + 1023) / 1024);
+        if (!t.Id || t.Rows < rows)
+        {
+            if (t.Id) glDeleteTextures(1, &t.Id);
+            glCreateTextures(GL_TEXTURE_2D, 1, &t.Id);
+            glTextureStorage2D(t.Id, 1, GL_RGBA32F, 1024, rows);
+            glTextureParameteri(t.Id, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTextureParameteri(t.Id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            t.Rows = rows;
+        }
+        static std::vector<glm::vec4> s_Staging;
+        s_Staging.assign((size_t)rows * 1024, glm::vec4(0.0f));
+        std::memcpy(s_Staging.data(), bones, sizeof(glm::mat4) * count);
+        glTextureSubImage2D(t.Id, 0, 0, 0, 1024, rows, GL_RGBA, GL_FLOAT, s_Staging.data());
+        glBindTextureUnit(24, t.Id);
+        shader->SetInt("u_BonePalette", 24);
+        shader->SetInt("u_BoneTexture", 1);
+        shader->SetInt("u_BoneCount", (int)count);
+    }
+
+    void Renderer3D::SetMorphDeltas(const std::shared_ptr<Shader>& shader, uint32_t texture)
+    {
+        if (!shader)
+            return;
+        if (texture)
+        {
+            glBindTextureUnit(23, texture);
+            shader->SetInt("u_MorphDeltas", 23);
+        }
+        shader->SetInt("u_HasMorph", texture ? 1 : 0);
+    }
+
     void Renderer3D::DrawSkinnedModel(const glm::mat4& transform, std::shared_ptr<Model> model,
-                                      const std::vector<glm::mat4>& boneMatrices)
+                                      const std::vector<glm::mat4>& boneMatrices, const std::vector<uint32_t>* morphTextures)
     {
         if (!model || !model->IsSkinned || !model->SkeletonData || model->SkinnedMeshes.empty())
             return;
@@ -2157,8 +2223,7 @@ namespace Conqueror
         const uint32_t boneCount = model->SkeletonData->GetBoneCount();
         if (boneCount == 0)
             return;
-        constexpr uint32_t kMaxBones = 128;
-        const uint32_t palette = std::min(boneCount, kMaxBones);
+        const uint32_t palette = boneCount;   // > 128: doku paleti (SetBonePalette)
         static std::vector<glm::mat4> s_Scratch;
         s_Scratch.resize(palette);
         for (uint32_t i = 0; i < palette; ++i)
@@ -2183,7 +2248,7 @@ namespace Conqueror
         BindFrameResources(shader);
         shader->SetMat4("u_Transform", transform);
         shader->SetMat4("u_NormalMatrix", glm::mat4(glm::inverseTranspose(glm::mat3(transform))));
-        shader->SetMat4Array("u_BoneTransforms", s_Scratch.data(), palette);
+        SetBonePalette(shader, s_Scratch.data(), palette);
         shader->SetFloat3("u_Tint", s->Tint);
         // Animasyonlu model her karede hareketli (kemikler dönüşüm değişmeden de oynar): TAA bu piksellerde iz bırakmaz
         shader->SetFloat("u_MotionFlag", s_MotionCur ? 2.0f : 0.0f);
@@ -2200,6 +2265,8 @@ namespace Conqueror
                 v.Cur = transform;
                 v.Prev = prev->second;
                 v.Bones.assign(s_Scratch.begin(), s_Scratch.begin() + palette);
+                if (morphTextures)
+                    v.Morph = *morphTextures;
                 s_MotionCur->SkinnedVelocity.push_back(std::move(v));
             }
         }
@@ -2220,6 +2287,7 @@ namespace Conqueror
             auto& mesh = model->SkinnedMeshes[i];
             auto material = (i < model->Materials.size() && model->Materials[i]) ? model->Materials[i] : Material::CreateDefault();
             material->Bind(shader);
+            SetMorphDeltas(shader, morphTextures && i < morphTextures->size() ? (*morphTextures)[i] : 0u);
             ApplyCulling(material, false);
             if (s->Wireframe)
                 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -2234,6 +2302,7 @@ namespace Conqueror
             stats.Triangles += mesh->GetIndexCount() / 3;
         }
         shader->SetFloat("u_MotionFlag", 0.0f);
+        SetMorphDeltas(shader, 0u);
         glDisable(GL_CULL_FACE);
     }
 

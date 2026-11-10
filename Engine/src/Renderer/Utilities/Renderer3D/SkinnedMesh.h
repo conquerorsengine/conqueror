@@ -44,6 +44,17 @@ namespace Conqueror
         };
         const std::vector<BoneBox>& GetBoneBoxes() const { return m_BoneBoxes; }
 
+        // Blend shape (morph target): yalnız değişen köşeler (seyrek), konum ve normal farkı; Channel = Skeleton::MorphNames dizini
+        struct MorphTarget
+        {
+            int Channel = -1;
+            std::vector<uint32_t> Vertices;
+            std::vector<glm::vec3> DeltaPositions;
+            std::vector<glm::vec3> DeltaNormals;
+        };
+        const std::vector<MorphTarget>& GetMorphTargets() const { return m_MorphTargets; }
+        void SetMorphTargets(std::vector<MorphTarget> targets) { m_MorphTargets = std::move(targets); }
+
     private:
         void SetupMesh();
         void ComputeBoneBoxes();
@@ -52,6 +63,7 @@ namespace Conqueror
         std::vector<uint32_t> m_Indices;
         uint32_t m_IndexCount = 0;
         std::vector<BoneBox> m_BoneBoxes;
+        std::vector<MorphTarget> m_MorphTargets;
 
         std::shared_ptr<VertexArray> m_VertexArray;
         std::shared_ptr<VertexBuffer> m_VertexBuffer;

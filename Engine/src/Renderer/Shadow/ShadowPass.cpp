@@ -6,6 +6,8 @@
 #include "Renderer/Utilities/Renderer3D/Renderer3D.h"
 #include "Renderer/Utilities/Renderer3D/Mesh.h"
 #include "Renderer/Utilities/Renderer3D/SkinnedMesh.h"
+#include "Scene/BlendShapes.h"
+#include "Scene/MetaHuman.h"
 #include "Renderer/Utilities/Renderer3D/ModelLoader.h"
 #include "Renderer/Utilities/Renderer3D/ClusterMesh.h"
 #include "Scene/VirtualGeometry.h"
@@ -52,29 +54,52 @@ namespace Conqueror
         }
     )";
 
+    // Skinning.glsl ile aynı palet / blend shape okuma (kaynak dizesi olduğu için #include yerine burada)
     static const char* s_SkinnedDepthVertexSrc = R"(
         #version 450 core
-        #define MAX_BONES 128
         layout(location = 0) in vec3 a_Position;
         layout(location = 4) in ivec4 a_BoneIDs;
         layout(location = 5) in vec4 a_BoneWeights;
         uniform mat4 u_LightSpaceMatrix;
         uniform mat4 u_Transform;
-        uniform mat4 u_BoneTransforms[MAX_BONES];
+        uniform mat4 u_BoneTransforms[128];
+        uniform int u_BoneTexture = 0;
+        uniform int u_BoneCount = 0;
+        uniform sampler2D u_BonePalette;
+        uniform int u_HasMorph = 0;
+        uniform sampler2D u_MorphDeltas;
+        mat4 Bone(int id)
+        {
+            if (u_BoneTexture == 1)
+            {
+                int t = id * 4;
+                ivec2 p = ivec2(t % 1024, t / 1024);
+                return mat4(texelFetch(u_BonePalette, p, 0), texelFetch(u_BonePalette, p + ivec2(1, 0), 0),
+                            texelFetch(u_BonePalette, p + ivec2(2, 0), 0), texelFetch(u_BonePalette, p + ivec2(3, 0), 0));
+            }
+            return u_BoneTransforms[id];
+        }
         void main()
         {
+            int limit = u_BoneTexture == 1 ? u_BoneCount : 128;
             mat4 skin = mat4(0.0);
             float total = 0.0;
             for (int i = 0; i < 4; ++i)
             {
                 float w = a_BoneWeights[i];
                 int b = a_BoneIDs[i];
-                if (w <= 0.0 || b < 0 || b >= MAX_BONES) continue;
-                skin += u_BoneTransforms[b] * w;
+                if (w <= 0.0 || b < 0 || b >= limit) continue;
+                skin += Bone(b) * w;
                 total += w;
             }
             skin = total < 1e-5 ? mat4(1.0) : skin / total;
-            gl_Position = u_LightSpaceMatrix * u_Transform * skin * vec4(a_Position, 1.0);
+            vec3 position = a_Position;
+            if (u_HasMorph == 1)
+            {
+                int t = gl_VertexID * 2;
+                position += texelFetch(u_MorphDeltas, ivec2(t % 1024, t / 1024), 0).xyz;
+            }
+            gl_Position = u_LightSpaceMatrix * u_Transform * skin * vec4(position, 1.0);
         }
     )";
 
@@ -399,11 +424,13 @@ namespace Conqueror
                 {
                     Entity e{ entity, scene };
                     const std::vector<glm::mat4>* bones = nullptr;
-                    if (e.HasComponent<AnimatorComponent>())
+                    if (const auto* lp = registry.try_get<LeaderPoseComponent>(entity); lp && !lp->BoneMatrices.empty())
+                        bones = &lp->BoneMatrices;
+                    else if (e.HasComponent<AnimatorComponent>())
                         bones = &e.GetComponent<AnimatorComponent>().BoneMatricesGPU;
                     else if (e.HasComponent<AnimationComponent>())
                         bones = &e.GetComponent<AnimationComponent>().BoneMatricesGPU;
-                    const uint32_t boneCount = std::min<uint32_t>(model->SkeletonData->GetBoneCount(), 128u);
+                    const uint32_t boneCount = model->SkeletonData->GetBoneCount();
 
                     if (cull)
                     {
@@ -431,18 +458,23 @@ namespace Conqueror
                     m_SkinnedDepthShader->SetMat4("u_Transform", transform.WorldTransform);
                     if (bones && bones->size() >= boneCount && boneCount > 0)
                     {
-                        m_SkinnedDepthShader->SetMat4Array("u_BoneTransforms", bones->data(), boneCount);
+                        Renderer3D::SetBonePalette(m_SkinnedDepthShader, bones->data(), boneCount);
                     }
                     else
                     {
-                        static std::vector<glm::mat4> s_Identity(128, glm::mat4(1.0f));
-                        m_SkinnedDepthShader->SetMat4Array("u_BoneTransforms", s_Identity.data(), 128);
+                        static std::vector<glm::mat4> s_Identity;
+                        s_Identity.assign(std::max<uint32_t>(boneCount, 1u), glm::mat4(1.0f));
+                        Renderer3D::SetBonePalette(m_SkinnedDepthShader, s_Identity.data(), (uint32_t)s_Identity.size());
                     }
-                    for (auto& mesh : model->SkinnedMeshes)
+                    const std::vector<uint32_t>* morph = BlendShapes::GetTextures(*scene, (uint32_t)entity);
+                    for (size_t mi = 0; mi < model->SkinnedMeshes.size(); ++mi)
                     {
+                        const auto& mesh = model->SkinnedMeshes[mi];
+                        Renderer3D::SetMorphDeltas(m_SkinnedDepthShader, morph && mi < morph->size() ? (*morph)[mi] : 0u);
                         RenderCommand::DrawIndexed(mesh->GetVertexArray(), mesh->GetIndexCount());
                         Renderer::GetStats().ShadowDrawCalls++;
                     }
+                    Renderer3D::SetMorphDeltas(m_SkinnedDepthShader, 0u);
                     m_DepthShader->Bind();
                     m_DepthShader->SetMat4("u_LightSpaceMatrix", m_LightSpaceMatrices[i]);
                     continue;

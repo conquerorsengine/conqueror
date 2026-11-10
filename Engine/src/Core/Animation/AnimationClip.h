@@ -37,6 +37,8 @@ namespace Conqueror
         float DurationTicks = 0.f;
         float TicksPerSecond = 25.f;
         std::unordered_map<std::string, BoneAnimChannel> Channels;
+        // Blend shape ağırlık eğrileri: ad -> (zaman (tick), ağırlık) anahtarları (glTF / FBX morph animasyonu, ARKit yüz)
+        std::unordered_map<std::string, std::vector<std::pair<float, float>>> MorphTracks;
 
         float DurationSeconds() const
         {

@@ -48,6 +48,9 @@ namespace Conqueror
         std::vector<SkeletonBone> Bones;
         std::unordered_map<std::string, uint32_t> BoneNameToIndex;
         std::unique_ptr<AnimSceneNode> RootAnimNode;
+        // Blend shape (morph target) kanalları: modelin tüm ağlarındaki adların birleşimi. Pozun FlatNodes'tan sonraki öğeleri
+        // bu kanalların ağırlıklarıdır (Translation.x): klip örnekleme, karıştırma, katmanlar ve eklemeli pozlar ağırlıkları da taşır.
+        std::vector<std::string> MorphNames;
 
         uint32_t GetBoneCount() const { return static_cast<uint32_t>(Bones.size()); }
     };

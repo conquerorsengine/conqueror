@@ -186,8 +186,12 @@ namespace Conqueror
         static void DrawPlane(const glm::mat4& transform, std::shared_ptr<Material> material);
         static void DrawCylinder(const glm::mat4& transform, std::shared_ptr<Material> material);
         static void DrawModel(const glm::mat4& transform, std::shared_ptr<struct Model> model);
+        // morphTextures: ağ başına blend shape fark dokusu (BlendShapes; 0 / nullptr: yok)
         static void DrawSkinnedModel(const glm::mat4& transform, std::shared_ptr<struct Model> model,
-            const std::vector<glm::mat4>& boneMatrices);
+            const std::vector<glm::mat4>& boneMatrices, const std::vector<uint32_t>* morphTextures = nullptr);
+        // Animasyonlu köşe aşaması (Skinning.glsl): kemik paleti (<= 128 uniform dizisi, fazlası doku) ve blend shape fark dokusu
+        static void SetBonePalette(const std::shared_ptr<Shader>& shader, const glm::mat4* bones, uint32_t count);
+        static void SetMorphDeltas(const std::shared_ptr<Shader>& shader, uint32_t texture);
         static void DrawTerrain(const std::shared_ptr<Mesh>& mesh, const glm::mat4& transform, const TerrainDrawParams& params);
 
         // Editör gizmo'ları (unlit)

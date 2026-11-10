@@ -37,6 +37,7 @@
 #include "ProjectThumbnail.h"
 #include "Renderer/IBL/EnvironmentMap.h"
 #include "Renderer/PathTracer.h"
+#include "Scene/BlendShapes.h"
 #include "Scene/SceneManager.h"
 #include "Build/BuildPipeline.h"
 #include "Networking/Multiplayer/NetworkSession.h"
@@ -366,6 +367,50 @@ namespace Conqueror::Editor
                 volumeInfo->ExtraInspector = &VolumeProfileInspector::DrawVolumeExtra;
             if (auto* tilemapInfo = ComponentRegistry::Find("TilemapComponent"))
                 tilemapInfo->ExtraInspector = &TilePalettePanel::DrawTilemapInspector;
+            // Blend Shapes: modelin her blend shape'i için kaydırıcı (Unity Skinned Mesh Renderer > BlendShapes)
+            if (auto* blendInfo = ComponentRegistry::Find("BlendShapesComponent"))
+                blendInfo->ExtraInspector = [](Entity e) {
+                    Scene* scene = e.GetScene();
+                    const std::vector<std::string>* names = scene ? BlendShapes::Names(*scene, (uint32_t)e) : nullptr;
+                    if (!names)
+                    {
+                        ImGui::TextDisabled("The model has no blend shapes (morph targets).");
+                        return;
+                    }
+                    auto& bs = e.GetComponent<BlendShapesComponent>();
+                    static char s_Filter[64] = {};
+                    if (names->size() > 12)
+                    {
+                        ImGui::SetNextItemWidth(-1.0f);
+                        ImGui::InputTextWithHint("##bsfilter", ICON_FA_MAGNIFYING_GLASS " Filter blend shapes", s_Filter, sizeof(s_Filter));
+                    }
+                    std::string filter = s_Filter;
+                    std::transform(filter.begin(), filter.end(), filter.begin(), ::tolower);
+                    for (const auto& name : *names)
+                    {
+                        if (!filter.empty())
+                        {
+                            std::string lower = name;
+                            std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+                            if (lower.find(filter) == std::string::npos)
+                                continue;
+                        }
+                        float value = 0.0f;
+                        BlendShapeWeight* slot = nullptr;
+                        for (auto& w : bs.Weights)
+                            if (w.Name == name) { slot = &w; value = w.Weight; }
+                        ImGui::PushID(name.c_str());
+                        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.55f);
+                        if (ImGui::SliderFloat("##w", &value, 0.0f, 1.0f, "%.2f"))
+                        {
+                            if (slot) slot->Weight = value;
+                            else bs.Weights.push_back({ name, value });
+                        }
+                        ImGui::SameLine();
+                        ImGui::TextUnformatted(name.c_str());
+                        ImGui::PopID();
+                    }
+                };
             // Animation bileşeni: Unity "Animations" listesi (AnimationPlay(nesne, "Ad") ile seçilen klipler) + pencere
             if (auto* animInfo = ComponentRegistry::Find("AnimationPlayerComponent"))
                 animInfo->ExtraInspector = [this](Entity e) {

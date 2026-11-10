@@ -39,6 +39,8 @@ namespace Conqueror
         static void ApplyAdditive(Pose& base, const Pose& additive, const Pose& reference, float weight);
         // Pozdan GPU skinning matrisleri
         static void PoseToSkinning(const Skeleton& skeleton, const Pose& pose, std::vector<glm::mat4>& outMatrices);
+        // Pozun blend shape ağırlıkları (Skeleton::MorphNames sırası; kanal yoksa boş)
+        static void PoseMorphWeights(const Skeleton& skeleton, const Pose& pose, std::vector<float>& outWeights);
 
         // Eski API: tek klip, döngülü
         static void ComputeBoneMatrices(const Skeleton& skeleton, const AnimationClip& clip, float timeSeconds,

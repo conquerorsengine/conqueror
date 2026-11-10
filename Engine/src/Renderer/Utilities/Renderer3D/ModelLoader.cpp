@@ -35,7 +35,7 @@ namespace Conqueror
 {
     namespace
     {
-        constexpr uint32_t kMaxEngineBones = 128;
+        constexpr uint32_t kMaxEngineBones = 4096;   // > 128 kemik doku paletinden okunur (Skinning.glsl)
 
         std::string NormalizeSeparators(std::string p)
         {
@@ -262,6 +262,20 @@ namespace Conqueror
             return -1;
         }
 
+        // Ağı barındıran düğüm
+        aiNode* FindMeshOwner(aiNode* node, unsigned meshIdx)
+        {
+            for (unsigned i = 0; i < node->mNumMeshes; ++i)
+                if (node->mMeshes[i] == meshIdx)
+                    return node;
+            for (unsigned i = 0; i < node->mNumChildren; ++i)
+                if (aiNode* found = FindMeshOwner(node->mChildren[i], meshIdx))
+                    return found;
+            return nullptr;
+        }
+
+        bool MeshHasMorphs(const aiMesh* mesh) { return mesh->mNumAnimMeshes > 0; }
+
         void CollectBoneOrder(const aiScene* scene, std::vector<std::string>& outOrder,
             std::unordered_map<std::string, uint32_t>& outMap)
         {
@@ -271,7 +285,20 @@ namespace Conqueror
             {
                 aiMesh* mesh = scene->mMeshes[m];
                 if (!mesh->HasBones())
+                {
+                    // Kemiksiz blend shape'li ağ: barındıran düğüm tek kemik olur (köşeler ona bağlı)
+                    if (MeshHasMorphs(mesh))
+                        if (aiNode* owner = FindMeshOwner(scene->mRootNode, m))
+                        {
+                            std::string name(owner->mName.C_Str());
+                            if (outMap.count(name) == 0)
+                            {
+                                outMap[name] = static_cast<uint32_t>(outOrder.size());
+                                outOrder.push_back(name);
+                            }
+                        }
                     continue;
+                }
                 for (unsigned b = 0; b < mesh->mNumBones; ++b)
                 {
                     std::string name(mesh->mBones[b]->mName.C_Str());
@@ -288,9 +315,20 @@ namespace Conqueror
         bool SceneHasAnyBones(const aiScene* scene)
         {
             for (unsigned m = 0; m < scene->mNumMeshes; ++m)
-                if (scene->mMeshes[m]->HasBones())
+                if (scene->mMeshes[m]->HasBones() || MeshHasMorphs(scene->mMeshes[m]))
                     return true;
             return false;
+        }
+
+        // Düğümün dünya (kök hariç değil) dönüşümü: kemiksiz ağın kemik ofseti
+        glm::mat4 NodeGlobal(const aiNode* node)
+        {
+            glm::mat4 m(1.0f);
+            std::vector<const aiNode*> chain;
+            for (const aiNode* n = node; n; n = n->mParent) chain.push_back(n);
+            for (auto it = chain.rbegin(); it != chain.rend(); ++it)
+                m = m * Mat4FromAi((*it)->mTransformation);
+            return m;
         }
                // Mesh'in bağlı olduğu node'un global transform'unu bul
         // Assimp referans: globalInverseMeshTransform = GetGlobalTransform(meshNode).Inverse()
@@ -334,7 +372,7 @@ namespace Conqueror
                 return;
 
             if (boneOrder.size() > kMaxEngineBones)
-                CQ_CORE_WARN("Model has {0} bones; engine supports {1} — truncating palette sampling.", boneOrder.size(), kMaxEngineBones);
+                CQ_CORE_WARN("Model has {0} bones; engine supports {1}: extra bones are ignored.", boneOrder.size(), kMaxEngineBones);
 
             skel->Bones.resize(boneOrder.size());
             skel->BoneNameToIndex = boneMap;
@@ -400,6 +438,42 @@ namespace Conqueror
 
                     clip->Channels[nodeName] = std::move(bc);
                 }
+
+                // Blend shape ağırlık animasyonu (glTF morph weights, FBX blend shape kanalları): anahtar değerleri düğümün ağının
+                // hedef dizinleri; adlar hedef adlarından (ProcessSkinnedMesh ile aynı adlandırma)
+                for (unsigned c = 0; c < anim->mNumMorphMeshChannels; ++c)
+                {
+                    const aiMeshMorphAnim* ch = anim->mMorphMeshChannels[c];
+                    std::string target(ch->mName.C_Str());
+                    // Assimp kanal adı: "düğüm" ya de "düğüm*0" (glTF): düğümdeki ilk ağın hedefleri
+                    if (const size_t star = target.find('*'); star != std::string::npos)
+                        target = target.substr(0, star);
+                    const aiNode* node = FindAiNode(scene->mRootNode, target);
+                    const aiMesh* mesh = nullptr;
+                    if (node && node->mNumMeshes > 0)
+                        mesh = scene->mMeshes[node->mMeshes[0]];
+                    else
+                        for (unsigned m = 0; m < scene->mNumMeshes && !mesh; ++m)
+                            if (target == scene->mMeshes[m]->mName.C_Str())
+                                mesh = scene->mMeshes[m];
+                    if (!mesh)
+                        continue;
+                    for (unsigned k = 0; k < ch->mNumKeys; ++k)
+                    {
+                        const aiMeshMorphKey& key = ch->mKeys[k];
+                        for (unsigned v = 0; v < key.mNumValuesAndWeights; ++v)
+                        {
+                            const unsigned idx = key.mValues[v];
+                            if (idx >= mesh->mNumAnimMeshes)
+                                continue;
+                            const aiAnimMesh* am = mesh->mAnimMeshes[idx];
+                            const std::string name = am->mName.length ? am->mName.C_Str() : ("Target " + std::to_string(idx));
+                            clip->MorphTracks[name].push_back({ static_cast<float>(key.mTime), static_cast<float>(key.mWeights[v]) });
+                        }
+                    }
+                }
+                for (auto& [name, keys] : clip->MorphTracks)
+                    std::sort(keys.begin(), keys.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
 
                 model->Animations.push_back(std::move(clip));
             }
@@ -534,8 +608,10 @@ namespace Conqueror
         {
             aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
 
-            if (model->IsSkinned && mesh->HasBones())
+            if (model->IsSkinned && model->SkeletonData && mesh->HasBones())
                 model->SkinnedMeshes.push_back(ProcessSkinnedMesh(mesh, model));
+            else if (model->IsSkinned && model->SkeletonData && MeshHasMorphs(mesh))
+                model->SkinnedMeshes.push_back(ProcessSkinnedMesh(mesh, model, node->mName.C_Str()));
             else
                 model->Meshes.push_back(ProcessStaticMesh(mesh, scene, global));
 
@@ -604,7 +680,7 @@ namespace Conqueror
         return std::make_shared<Mesh>(vertices, indices);
     }
 
-    std::shared_ptr<SkinnedMesh> ModelLoader::ProcessSkinnedMesh(void* meshPtr, std::shared_ptr<Model> model)
+    std::shared_ptr<SkinnedMesh> ModelLoader::ProcessSkinnedMesh(void* meshPtr, std::shared_ptr<Model> model, const std::string& rigidBone)
     {
         aiMesh* mesh = static_cast<aiMesh*>(meshPtr);
         CQ_CORE_ASSERT(model && model->SkeletonData, "Skeleton required for skinned mesh");
@@ -650,6 +726,14 @@ namespace Conqueror
             }
         }
 
+        if (!rigidBone.empty())
+        {
+            auto it = model->SkeletonData->BoneNameToIndex.find(rigidBone);
+            if (it != model->SkeletonData->BoneNameToIndex.end())
+                for (auto& v : vertices)
+                    AddBoneInfluence(v, static_cast<int>(it->second), 1.0f);
+        }
+
         for (auto& v : vertices)
             NormalizeVertexBones(v);
 
@@ -660,7 +744,42 @@ namespace Conqueror
                 indices.push_back(face.mIndices[j]);
         }
 
-        return std::make_shared<SkinnedMesh>(vertices, indices);
+        auto out = std::make_shared<SkinnedMesh>(vertices, indices);
+
+        // Blend shape'ler: Assimp hedef köşeleri mutlak verir; fark = hedef - taban, yalnız değişen köşeler saklanır
+        std::vector<SkinnedMesh::MorphTarget> targets;
+        auto& names = model->SkeletonData->MorphNames;
+        for (unsigned t = 0; t < mesh->mNumAnimMeshes; ++t)
+        {
+            const aiAnimMesh* am = mesh->mAnimMeshes[t];
+            if (!am || !am->HasPositions() || am->mNumVertices != mesh->mNumVertices)
+                continue;
+            const std::string name = am->mName.length ? am->mName.C_Str() : ("Target " + std::to_string(t));
+            SkinnedMesh::MorphTarget mt;
+            auto found = std::find(names.begin(), names.end(), name);
+            mt.Channel = (int)(found - names.begin());
+            if (found == names.end())
+                names.push_back(name);
+            for (uint32_t i = 0; i < mesh->mNumVertices; ++i)
+            {
+                const glm::vec3 dp(am->mVertices[i].x - mesh->mVertices[i].x, am->mVertices[i].y - mesh->mVertices[i].y,
+                                   am->mVertices[i].z - mesh->mVertices[i].z);
+                glm::vec3 dn(0.0f);
+                if (am->HasNormals() && mesh->HasNormals())
+                    dn = glm::vec3(am->mNormals[i].x - mesh->mNormals[i].x, am->mNormals[i].y - mesh->mNormals[i].y,
+                                   am->mNormals[i].z - mesh->mNormals[i].z);
+                if (glm::dot(dp, dp) < 1e-14f && glm::dot(dn, dn) < 1e-12f)
+                    continue;
+                mt.Vertices.push_back(i);
+                mt.DeltaPositions.push_back(dp);
+                mt.DeltaNormals.push_back(dn);
+            }
+            if (!mt.Vertices.empty())
+                targets.push_back(std::move(mt));
+        }
+        if (!targets.empty())
+            out->SetMorphTargets(std::move(targets));
+        return out;
     }
 
     std::shared_ptr<Material> ModelLoader::ProcessMaterial(void* materialPtr, const void* scenePtr, const std::string& directory)

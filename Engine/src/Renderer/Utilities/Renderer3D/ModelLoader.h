@@ -49,7 +49,8 @@ namespace Conqueror
         // parentTransform: düğüm dönüşümleri (kök hariç) statik ağlara uygulanır (ör. glTF'de ayrı düğümdeki tekerlekler)
         static void ProcessNode(void* node, const void* scene, std::shared_ptr<Model> model, const glm::mat4& parentTransform, bool isRoot);
         static std::shared_ptr<Mesh> ProcessStaticMesh(void* mesh, const void* scene, const glm::mat4& transform);
-        static std::shared_ptr<SkinnedMesh> ProcessSkinnedMesh(void* mesh, std::shared_ptr<Model> model);
+        // rigidBone: kemiksiz (yalnız blend shape'li) ağ, tüm köşeleri bu düğüm kemiğine bağlanır (düğüm animasyonu da işler)
+        static std::shared_ptr<SkinnedMesh> ProcessSkinnedMesh(void* mesh, std::shared_ptr<Model> model, const std::string& rigidBone = "");
         static std::shared_ptr<Material> ProcessMaterial(void* material, const void* scene, const std::string& directory);
 
         static inline std::unordered_map<std::string, std::weak_ptr<Model>> s_Cache;

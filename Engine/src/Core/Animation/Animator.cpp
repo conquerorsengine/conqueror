@@ -81,19 +81,22 @@ namespace Conqueror
     void Animator::BindPose(const Skeleton& skeleton, Pose& out)
     {
         const auto& nodes = Flatten(skeleton);
-        out.resize(nodes.size());
+        out.resize(nodes.size() + skeleton.MorphNames.size());
         for (size_t i = 0; i < nodes.size(); ++i)
         {
             out[i].Translation = nodes[i].Node->BindPosition;
             out[i].Rotation = nodes[i].Node->BindRotation;
             out[i].Scale = nodes[i].Node->BindScale;
         }
+        // Blend shape kanalları: ağırlık 0
+        for (size_t i = nodes.size(); i < out.size(); ++i)
+            out[i] = BonePose{};
     }
 
     void Animator::SamplePose(const Skeleton& skeleton, const AnimationClip& clip, float timeSeconds, bool loop, Pose& out)
     {
         const auto& nodes = Flatten(skeleton);
-        out.resize(nodes.size());
+        out.resize(nodes.size() + skeleton.MorphNames.size());
 
         float ticks = timeSeconds * clip.TicksPerSecond;
         const float duration = clip.DurationTicks;
@@ -131,6 +134,36 @@ namespace Conqueror
             out[i].Rotation = SampleQuat(ch.Rotations, ticks, node->BindRotation);
             out[i].Scale = SampleVec3(ch.Scales, ticks, node->BindScale);
         }
+        // Blend shape ağırlıkları: doğrusal ara değer (klipte eğrisi olmayan kanal 0)
+        for (size_t m = 0; m < skeleton.MorphNames.size(); ++m)
+        {
+            BonePose& p = out[nodes.size() + m];
+            p = BonePose{};
+            auto it = clip.MorphTracks.find(skeleton.MorphNames[m]);
+            if (it == clip.MorphTracks.end() || it->second.empty())
+                continue;
+            const auto& keys = it->second;
+            float w = keys.front().second;
+            if (ticks >= keys.back().first)
+                w = keys.back().second;
+            else if (ticks > keys.front().first)
+            {
+                auto hi = std::upper_bound(keys.begin(), keys.end(), ticks, [](float t, const std::pair<float, float>& k) { return t < k.first; });
+                auto lo = hi - 1;
+                const float span = hi->first - lo->first;
+                const float f = span > 1e-6f ? (ticks - lo->first) / span : 0.0f;
+                w = lo->second + (hi->second - lo->second) * f;
+            }
+            p.Translation.x = w;
+        }
+    }
+
+    void Animator::PoseMorphWeights(const Skeleton& skeleton, const Pose& pose, std::vector<float>& outWeights)
+    {
+        const size_t base = Flatten(skeleton).size();
+        outWeights.resize(skeleton.MorphNames.size());
+        for (size_t m = 0; m < outWeights.size(); ++m)
+            outWeights[m] = base + m < pose.size() ? pose[base + m].Translation.x : 0.0f;
     }
 
     void Animator::BlendPoses(const Pose& a, const Pose& b, float t, Pose& out)

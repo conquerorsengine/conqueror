@@ -118,6 +118,8 @@ namespace Conqueror
             RegisterPlanarReflectionComponents();
             RegisterMetaSoundComponents();
             RegisterWorldPartitionComponents();
+            RegisterBlendShapeComponents();
+            RegisterMetaHumanComponents();
             RegisterPlayerInputComponents();
             RegisterRigComponents();
             RegisterNavigationComponents();

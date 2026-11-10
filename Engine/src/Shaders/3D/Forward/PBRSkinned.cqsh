@@ -3,8 +3,7 @@
 #version 450 core
 
 #include "Include/FrameData.glsl"
-
-#define MAX_BONES 128
+#include "Include/Skinning.glsl"
 
 layout(location = 0) in vec3 a_Position;
 layout(location = 1) in vec3 a_Normal;
@@ -17,7 +16,6 @@ uniform int u_UseVertexColor = 0;               // 0: bağlı değil (beyaz; em�
 
 uniform mat4 u_Transform;
 uniform mat4 u_NormalMatrix;
-uniform mat4 u_BoneTransforms[MAX_BONES];
 
 out VS_OUT {
     vec3 FragPos;
@@ -31,29 +29,18 @@ out VS_OUT {
 
 void main()
 {
-    mat4 skinMatrix = mat4(0.0);
-    float totalWeight = 0.0;
-    for (int i = 0; i < 4; i++)
-    {
-        float w = a_BoneWeights[i];
-        int bid = a_BoneIDs[i];
-        if (w <= 0.0 || bid < 0 || bid >= MAX_BONES)
-            continue;
-        skinMatrix += u_BoneTransforms[bid] * w;
-        totalWeight += w;
-    }
-    if (totalWeight < 1e-5)
-        skinMatrix = mat4(1.0);
-    else
-        skinMatrix /= totalWeight; // ağırlık toplamı 1 değilse normalize et
+    mat4 skinMatrix = CQ_SkinMatrix(a_BoneIDs, a_BoneWeights);
+    vec3 position = a_Position;
+    vec3 normal = a_Normal;
+    CQ_ApplyMorph(position, normal);
 
-    vec4 localPos = skinMatrix * vec4(a_Position, 1.0);
+    vec4 localPos = skinMatrix * vec4(position, 1.0);
     vec4 worldPos = u_Transform * localPos;
     vs_out.FragPos = worldPos.xyz;
 
     mat3 skinRot = mat3(skinMatrix);
     mat3 normalMatrix = mat3(u_NormalMatrix);
-    vec3 N = normalize(normalMatrix * (skinRot * a_Normal));
+    vec3 N = normalize(normalMatrix * (skinRot * normal));
     vec3 T = normalMatrix * (skinRot * a_Tangent);
     T = T - dot(T, N) * N;
     if (dot(T, T) < 1e-8)
