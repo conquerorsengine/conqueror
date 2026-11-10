@@ -4,6 +4,7 @@
 #include "Core/Audio/SoundCue.h"
 #include "Scene/Foliage.h"
 #include "AISystem/BehaviorTree/BehaviorTreeAsset.h"
+#include "Particles/VisualEffect.h"
 
 #include <IconsFontAwesome6.h>
 
@@ -286,8 +287,96 @@ namespace Conqueror::Editor
         }
     }
 
+    namespace
+    {
+        // Unity VFX Graph: bağlamlar (Spawn -> Initialize Particle -> Update Particle -> Output Particle); bloklar bağlam özellikleri
+        void RegisterVFXGraph()
+        {
+            NodeAssetSchema s;
+            s.Kind = VisualEffects::Kind;
+            s.Extension = VisualEffects::Extension;
+            s.Title = "VFX Graph";
+            s.Icon = ICON_FA_WAND_SPARKLES;
+            s.Hint = "Spawn > Initialize Particle > Update Particle > Output Particle. Each Initialize starts a particle system; add the asset to a Visual Effect component.";
+            s.MenuCategory = "Visual Effects";
+            s.MenuTooltip = "A GPU particle effect graph (Unity VFX Graph). Play it with a Visual Effect component.";
+            s.Color = IM_COL32(255, 160, 80, 255);
+
+            NodeAssetType spawn;
+            spawn.Id = "spawn";
+            spawn.Title = "Spawn";
+            spawn.Category = "Contexts";
+            spawn.Description = "How many particles are born: a constant rate and bursts.";
+            spawn.Color = IM_COL32(150, 90, 40, 255);
+            spawn.Outputs = { "Spawn" };
+            spawn.Props = { Number("Rate", "50", "Particles per second."), Number("Burst Count", "0", "Particles born at once."),
+                            Number("Burst Delay", "0", "Seconds before the first burst."), Number("Burst Repeat", "0", "Seconds between bursts (0 = once).") };
+
+            NodeAssetType init;
+            init.Id = "initialize";
+            init.Title = "Initialize Particle";
+            init.Category = "Contexts";
+            init.Description = "Where particles start and with what speed, life, size and color.";
+            init.Color = IM_COL32(70, 110, 160, 255);
+            init.Inputs = { "Spawn" };
+            init.Outputs = { "Particles" };
+            init.Props = { Number("Capacity", "2000", "Maximum living particles (GPU memory)."),
+                           Number("Lifetime Min", "1"), Number("Lifetime Max", "2"),
+                           Choice("Shape", { "Point", "Sphere", "Box", "Cone", "Circle" }),
+                           Text("Shape Size", "1 1 1", "Sphere / Cone / Circle: radius (first value). Box: size."),
+                           Number("Cone Angle", "25"),
+                           Choice("Velocity", { "Direction", "From Shape", "Random" }),
+                           Text("Direction", "0 1 0"), Number("Speed Min", "1"), Number("Speed Max", "3"),
+                           Number("Size Min", "0.1"), Number("Size Max", "0.2"),
+                           Text("Color", "1 0.6 0.2 1", "R G B A (above 1 glows)."), Number("Color Variation", "0"),
+                           Number("Bounds Size", "10", "Box around the effect, used by temporal anti-aliasing.") };
+
+            NodeAssetType update;
+            update.Id = "update";
+            update.Title = "Update Particle";
+            update.Category = "Contexts";
+            update.Description = "Forces every frame: gravity, drag, turbulence, ground collision.";
+            update.Color = IM_COL32(70, 140, 90, 255);
+            update.Inputs = { "Particles" };
+            update.Outputs = { "Particles" };
+            update.Props = { Text("Gravity", "0 -9.81 0"), Number("Drag", "0"), Number("Turbulence", "0"), Number("Turbulence Frequency", "1"),
+                             Flag("Ground Collision", "false"), Number("Ground Height", "0"), Number("Bounce", "0.3") };
+
+            NodeAssetType output;
+            output.Id = "output";
+            output.Title = "Output Particle Quad";
+            output.Category = "Contexts";
+            output.Description = "How particles are drawn: blending, texture, fading.";
+            output.Color = IM_COL32(140, 70, 120, 255);
+            output.Inputs = { "Particles" };
+            output.Props = { Choice("Blend", { "Additive", "Alpha", "Premultiplied" }), Asset("Texture", { ".png", ".jpg", ".jpeg", ".tga" }),
+                             Choice("Render", { "Billboard", "Stretched Billboard" }), Number("Stretch", "0.1", "Stretched: length per m/s."),
+                             Text("Color At End", "1 1 1 0", "Color multiplier at the end of life (fades with alpha 0)."),
+                             Number("Size At End", "1", "Size multiplier at the end of life."), Number("Emissive", "1") };
+
+            s.Types = { spawn, init, update, output };
+            s.Populate = [](NodeAssets::File& f) {
+                int sp = f.Add("spawn", 40.0f, 80.0f);
+                int in = f.Add("initialize", 320.0f, 80.0f);
+                int up = f.Add("update", 640.0f, 80.0f);
+                int out = f.Add("output", 960.0f, 80.0f);
+                f.Connect(sp, 0, in, 0);
+                f.Connect(in, 0, up, 0);
+                f.Connect(up, 0, out, 0);
+            };
+            s.Validate = [](const NodeAssets::File& f) -> std::string {
+                for (const auto& n : f.Nodes)
+                    if (n.Type == "initialize")
+                        return f.Out(n.Id).empty() ? "Connect Initialize Particle to Update Particle or an Output." : "";
+                return "Add an Initialize Particle context.";
+            };
+            NodeAssetPanel::Register(std::move(s));
+        }
+    }
+
     void RegisterBuiltinNodeAssetSchemas()
     {
+        RegisterVFXGraph();
         if (!NodeAssetPanel::Schemas().empty())
             return;
         RegisterStateGraph();

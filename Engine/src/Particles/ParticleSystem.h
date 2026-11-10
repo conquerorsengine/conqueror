@@ -209,6 +209,19 @@ namespace Conqueror
         static void Update(ParticleSystemComponent& ps, const glm::mat4& world, float dt);
         static void Render(ParticleSystemComponent& ps, const glm::mat4& world);
 
+        // GPU'da üretilmiş parçacıkları çiz (Visual Effect): tampon, örnek başına 4 vec4 (konum+boy, renk, parametre, hız) içerir.
+        // Gölgelendirici, yumuşak parçacık ve TAA tepki maskesi Particle System ile aynı
+        struct GPUDraw
+        {
+            int RenderMode = 0;               // ParticleRenderMode
+            int Blend = 0;                    // ParticleBlend
+            float LengthScale = 1.0f, SpeedScale = 0.0f;
+            float Emissive = 1.0f;
+            std::shared_ptr<class Texture2D> Texture;
+            glm::vec3 BoundsMin{ -1.0f }, BoundsMax{ 1.0f };   // dünya kutusu (TAA kararlılık katmanı)
+        };
+        static void DrawInstanceBuffer(uint32_t buffer, uint32_t count, const GPUDraw& draw);
+
         // Hazır ayarlar: "Fire", "Smoke", "Sparks", "Rain", "Snow", "Explosion", "Magic", "Dust"
         static bool ApplyPreset(ParticleSystemComponent& ps, const std::string& preset);
         static const std::vector<std::string>& GetPresetNames();

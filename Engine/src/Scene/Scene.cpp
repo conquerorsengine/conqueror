@@ -72,6 +72,7 @@
 #include "Scene/OcclusionCulling.h"
 #include "Scene/Articulation.h"
 #include "Scene/XRInteraction.h"
+#include "Particles/VisualEffect.h"
 #include "Scene/PlayerInput.h"
 #include "Scene/RigConstraints.h"
 #include "AISystem/Navigation/NavAgents.h"
@@ -3098,6 +3099,7 @@ namespace Conqueror
                 auto [transform, ps] = particleView.get<TransformComponent, ParticleSystemComponent>(entity);
                 ParticleSystem::Render(ps, transform.WorldTransform);
             }
+            VisualEffects::Render(*this);
             // Çizgi ve iz çiziciler (saydam)
             GameplaySystems::RenderRibbons(*this);
         }
@@ -3145,6 +3147,8 @@ namespace Conqueror
                 e.GetComponent<ParticleSystemComponent>().RT->EverActive = false;
             }
         }
+        // Visual Effect (VFX Graph): GPU simülasyonu, düzenleyicide de oynar
+        VisualEffects::Update(*this, dt);
     }
 
     void Scene::OnViewportResize(uint32_t width, uint32_t height)

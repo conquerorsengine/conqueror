@@ -581,6 +581,88 @@ namespace Conqueror
         stats.Vertices += (uint32_t)r.Instances.size() * 4;
     }
 
+    void ParticleSystem::DrawInstanceBuffer(uint32_t buffer, uint32_t count, const GPUDraw& d)
+    {
+        if (!buffer || count == 0)
+            return;
+        auto& r = GetRender();
+        if (!r.ParticleShader || !r.ParticleShader->IsValid())
+            return;
+        // Ayrı VAO: dörtgen köşeleri aynı, örnek öznitelikleri verilen tampondan
+        static GLuint s_GpuVAO = 0;
+        if (!s_GpuVAO)
+        {
+            glCreateVertexArrays(1, &s_GpuVAO);
+            glVertexArrayVertexBuffer(s_GpuVAO, 0, r.QuadVBO, 0, 2 * sizeof(float));
+            glEnableVertexArrayAttrib(s_GpuVAO, 0);
+            glVertexArrayAttribFormat(s_GpuVAO, 0, 2, GL_FLOAT, GL_FALSE, 0);
+            glVertexArrayAttribBinding(s_GpuVAO, 0, 0);
+            for (int i = 0; i < 4; ++i)
+            {
+                glEnableVertexArrayAttrib(s_GpuVAO, 1 + i);
+                glVertexArrayAttribFormat(s_GpuVAO, 1 + i, 4, GL_FLOAT, GL_FALSE, (GLuint)(sizeof(glm::vec4) * i));
+                glVertexArrayAttribBinding(s_GpuVAO, 1 + i, 1);
+            }
+            glVertexArrayBindingDivisor(s_GpuVAO, 1, 1);
+        }
+        glVertexArrayVertexBuffer(s_GpuVAO, 1, buffer, 0, sizeof(InstanceData));
+        glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
+
+        auto& shader = r.ParticleShader;
+        shader->Bind();
+        shader->SetInt("u_RenderMode", d.RenderMode);
+        shader->SetFloat("u_LengthScale", d.LengthScale);
+        shader->SetFloat("u_SpeedScale", d.SpeedScale);
+        shader->SetFloat2("u_Tiles", glm::vec2(1.0f));
+        shader->SetInt("u_Blend", d.Blend);
+        shader->SetFloat("u_Emissive", d.Emissive);
+        shader->SetInt("u_HasTexture", d.Texture && d.Texture->GetRendererID() ? 1 : 0);
+        if (d.Texture)
+            d.Texture->Bind(0);
+        shader->SetInt("u_Texture", 0);
+        const uint32_t sceneDepth = PostProcessStack::GetCurrentSceneDepth();
+        shader->SetInt("u_SoftDepth", sceneDepth ? 1 : 0);
+        shader->SetInt("u_SceneDepth", 1);
+        if (sceneDepth)
+        {
+            glTextureBarrier();
+            glBindTextureUnit(1, sceneDepth);
+        }
+        GLboolean blend = glIsEnabled(GL_BLEND), cull = glIsEnabled(GL_CULL_FACE);
+        GLboolean depthMask = GL_TRUE;
+        glGetBooleanv(GL_DEPTH_WRITEMASK, &depthMask);
+        glEnable(GL_BLEND);
+        if (d.Blend == (int)ParticleBlend::Additive) glBlendFunc(GL_ONE, GL_ONE);
+        else if (d.Blend == (int)ParticleBlend::Premultiplied) glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        else glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDisable(GL_CULL_FACE);
+        glDepthMask(GL_FALSE);
+        glBindVertexArray(s_GpuVAO);
+        shader->SetInt("u_ReactivePass", 0);
+        glDrawArraysInstanced(GL_TRIANGLES, 0, 6, (GLsizei)count);
+        if (PostProcessStack::BeginReactiveDraw())
+        {
+            shader->SetInt("u_ReactivePass", 1);
+            glBlendEquation(GL_MAX);
+            glBlendFunc(GL_ONE, GL_ONE);
+            glDrawArraysInstanced(GL_TRIANGLES, 0, 6, (GLsizei)count);
+            glBlendEquation(GL_FUNC_ADD);
+            shader->SetInt("u_ReactivePass", 0);
+            PostProcessStack::EndReactiveDraw();
+        }
+        else if (PostProcessStack::IsStabilityActive())
+            Renderer3D::MarkMovingBounds((d.BoundsMin + d.BoundsMax) * 0.5f, (d.BoundsMax - d.BoundsMin) * 0.5f);
+        glBindVertexArray(0);
+        glDepthMask(depthMask);
+        if (!blend) glDisable(GL_BLEND);
+        if (cull) glEnable(GL_CULL_FACE);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        auto& stats = Renderer::GetStats();
+        stats.DrawCalls++;
+        stats.Triangles += count * 2;
+        stats.Vertices += count * 4;
+    }
+
     void ParticleSystem::Shutdown()
     {
         if (!s_Render)
