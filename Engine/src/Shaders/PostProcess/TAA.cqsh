@@ -416,7 +416,10 @@ void main()
     }
     // Açılan alan: geçmişteki en yakın yüzey bu pikseldekinden belirgin farklı VE bu pikselin 3x3'ü tek yüzey (kenar değil:
     // kenarda en yakın derinlik titreşimle karede bir ön karede bir arka yüzey olur, o açılma değildir)
-    bool disoccluded = closestDepth < 1.0 && farDepth < 1.0 && abs(storedW - prevClip.w) > 0.06 * prevClip.w + 0.04
+    // Kamera duruyor ve burada hareket eden nesne yoksa açılma olamaz: alt piksel ince ayrıntıda (uzaktaki yaprak, pencere kenarı)
+    // titreşimin bazı karelerinde 3x3 tek yüzey olur, saklanan derinlik ön yüzeydendir; geçmiş her seferinde atılıp yaprak yanıp sönüyordu
+    bool disoccluded = (u_CameraStill == 0 || hasObjectVelocity || movingNow || movedBefore)
+                       && closestDepth < 1.0 && farDepth < 1.0 && abs(storedW - prevClip.w) > 0.06 * prevClip.w + 0.04
                        && ViewW(farUV, farDepth) < ViewW(closestUV, closestDepth) * 1.05 + 0.05;
     vec3 historyLin = SampleHistory(prevUV);
     const vec3 historyBeforeLight = historyLin;   // ışık ölçeklemesinden önceki geçmiş (donan piksele aynen yazılır)
