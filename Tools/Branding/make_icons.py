@@ -26,11 +26,13 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     emblem = os.path.join(LOGO, "Conqueror_Emblem.svg")
     pngs = {}
+    # Amblem kutuya kütle merkeziyle oturur: sınırlayıcı kutuyla ortalanınca ince burun ve kuyruk ağır gövdeyi sağ üste itiyor
+    offset = svgpath.center_of_mass_offset(emblem)
     for s in SIZES:
         # Küçük boyutlarda amblem kutuyu daha çok doldurur (16 px'de okunsun), köşe yarıçapı oransal
         pad = 0.10 if s <= 32 else 0.15
         path = os.path.join(OUT, f"conqueror_{s}.png")
-        svgpath.render(emblem, path, s, background=BLUE, padding=pad, corner=0.22)
+        svgpath.render(emblem, path, s, background=BLUE, padding=pad, corner=0.22, offset=offset)
         pngs[s] = path
     Image.open(pngs[256]).save(os.path.join(OUT, "Conqueror.ico"), sizes=[(s, s) for s in (16, 24, 32, 48, 64, 128, 256)])
     print("icons ->", os.path.relpath(OUT, ROOT))

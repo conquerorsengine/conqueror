@@ -53,8 +53,38 @@ def draw_path(ctx, d):
                 x, y = vals[4], vals[5]
 
 
-def render(svg_path, out_png, size, fill=(1, 1, 1, 1), background=None, padding=0.0, corner=0.0):
-    """Renders the SVG into a size x size (or the view aspect) PNG, centered with padding (fraction of size)."""
+def center_of_mass_offset(svg_path, resolution=512):
+    """View-unit offset that puts the center of mass of the drawing on the center of the view (a bounding box center looks off for
+    a lopsided shape: thin tips count as much as the heavy part)."""
+    view, outer, (tx, ty, sx, sy), d = parse_svg(open(svg_path).read())
+    vx, vy, vw, vh = view
+    k = resolution / max(vw, vh)
+    surf = cairo.ImageSurface(cairo.FORMAT_A8, resolution, resolution)
+    ctx = cairo.Context(surf)
+    ctx.translate((resolution - vw * k) / 2, (resolution - vh * k) / 2)
+    ctx.scale(k, k)
+    ctx.translate(-vx, -vy)
+    ctx.scale(outer, outer)
+    ctx.translate(tx, ty)
+    ctx.scale(sx, sy)
+    draw_path(ctx, d)
+    ctx.set_fill_rule(cairo.FILL_RULE_WINDING)
+    ctx.fill()
+    surf.flush()
+    data, stride = surf.get_data(), surf.get_stride()
+    total = mx = my = 0.0
+    for y in range(resolution):
+        row = bytes(data[y * stride:y * stride + resolution])
+        for x, a in enumerate(row):
+            if a:
+                total += a
+                mx += a * (x + 0.5)
+                my += a * (y + 0.5)
+    return ((resolution / 2 - mx / total) / k, (resolution / 2 - my / total) / k)
+
+
+def render(svg_path, out_png, size, fill=(1, 1, 1, 1), background=None, padding=0.0, corner=0.0, offset=(0.0, 0.0)):
+    """Renders the SVG into a size x size (or the view aspect) PNG, centered with padding (fraction of size); offset moves it (view units)."""
     view, outer, (tx, ty, sx, sy), d = parse_svg(open(svg_path).read())
     vx, vy, vw, vh = view
     w = size if isinstance(size, int) else size[0]
@@ -78,7 +108,7 @@ def render(svg_path, out_png, size, fill=(1, 1, 1, 1), background=None, padding=
     k = min((w - 2 * pad) / vw, (h - 2 * pad) / vh)
     ctx.translate((w - vw * k) / 2, (h - vh * k) / 2)
     ctx.scale(k, k)
-    ctx.translate(-vx, -vy)
+    ctx.translate(-vx + offset[0], -vy + offset[1])
     ctx.scale(outer, outer)
     ctx.translate(tx, ty)
     ctx.scale(sx, sy)
