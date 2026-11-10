@@ -1,0 +1,22 @@
+# template: empty
+# Tree (Unity Tree Creator): varsayılan ağaç (gövde, dallar, ince dallar, yapraklar) Game görünümünde yeşil taç ve koyu
+# gövdeyle çizilir; Seed değişince ağaç değişir; sahne kaydedilip yeniden açılınca gruplar korunur
+wait 40
+entity create Tree 0 -5 -6
+comp add Tree TreeComponent
+focus Game
+wait 30
+game_region 0.42 0.52 0.58 0.68 green mean >12
+game_region 0.495 0.17 0.505 0.22 lum mean <90
+comp set Tree TreeComponent Seed 99
+wait 10
+game_region 0.42 0.52 0.58 0.68 green mean >12
+save_scene
+wait 5
+open_scene Assets/Scenes/Main.cqscene
+wait 30
+focus Game
+wait 20
+game_region 0.42 0.52 0.58 0.68 green mean >12
+comp expect Tree TreeComponent Seed 99
+quit

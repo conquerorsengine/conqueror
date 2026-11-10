@@ -120,6 +120,7 @@ namespace Conqueror
             RegisterWorldPartitionComponents();
             RegisterBlendShapeComponents();
             RegisterMetaHumanComponents();
+            RegisterTreeComponents();
             RegisterPlayerInputComponents();
             RegisterRigComponents();
             RegisterNavigationComponents();

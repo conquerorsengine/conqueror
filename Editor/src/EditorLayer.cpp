@@ -9,6 +9,7 @@
 #include "Core/Input/InputActionAssets.h"
 #include "Panels/MaterialEditorUI.h"
 #include "Panels/ObjectPicker.h"
+#include "Panels/TreeInspector.h"
 #include "Renderer/Utilities/Renderer3D/Material.h"
 #include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
 #include "Scene/MeshRendererMaterial.h"
@@ -368,6 +369,8 @@ namespace Conqueror::Editor
                 volumeInfo->ExtraInspector = &VolumeProfileInspector::DrawVolumeExtra;
             if (auto* tilemapInfo = ComponentRegistry::Find("TilemapComponent"))
                 tilemapInfo->ExtraInspector = &TilePalettePanel::DrawTilemapInspector;
+            if (auto* treeInfo = ComponentRegistry::Find("TreeComponent"))
+                treeInfo->ExtraInspector = &DrawTreeInspector;
             // Blend Shapes: modelin her blend shape'i için kaydırıcı (Unity Skinned Mesh Renderer > BlendShapes)
             if (auto* blendInfo = ComponentRegistry::Find("BlendShapesComponent"))
                 blendInfo->ExtraInspector = [](Entity e) {

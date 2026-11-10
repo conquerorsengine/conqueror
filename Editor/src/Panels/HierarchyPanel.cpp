@@ -843,6 +843,13 @@ namespace Conqueror::Editor
                 if (created && parent)
                     created.SetParent(parent);
             }
+            // Unity 3D Object > Tree: Tree Creator ağacı (gövde, dallar, ince dallar, yapraklar), Mesh Renderer çizer
+            if (ImGui::MenuItem(ICON_FA_TREE "  Tree"))
+            {
+                make("Tree");
+                if (auto* info = ComponentRegistry::Find("TreeComponent"))
+                    ComponentRegistry::AddWithRequirements(*info, created);
+            }
             if (ImGui::MenuItem(ICON_FA_CHESS_BOARD "  Hex Board"))
                 created = TilePalettePanel::CreateTilemap(scene, GridLayout::HexagonPointyTop, GridPlane::XZ, true, parent);
             if (ImGui::MenuItem(ICON_FA_CHESS_BOARD "  Square Board"))

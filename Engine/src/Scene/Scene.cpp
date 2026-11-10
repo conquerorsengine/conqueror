@@ -81,6 +81,7 @@
 #include "Scene/WorldPartition.h"
 #include "Scene/BlendShapes.h"
 #include "Scene/MetaHuman.h"
+#include "Scene/TreeCreator.h"
 #include "Scene/PlayerInput.h"
 #include "Scene/RigConstraints.h"
 #include "AISystem/Navigation/NavAgents.h"
@@ -2901,6 +2902,8 @@ namespace Conqueror
     {
         CQ_PROFILE_SAMPLE("Render.3D", Rendering);
         CQ_PROFILE_GPU("Scene 3D");
+        // Tree Creator: ayarı değişen ağaçlar yeniden üretilir, Mesh Renderer'a verilir (yüklenen sahnede ilk karede de)
+        TreeCreator::Update(*this);
         CustomRenderTextures::UpdateAll();   // Custom Render Texture'lar (karede bir kez)
         if (!m_CapturingProbes)
             CaptureReflectionProbes();
