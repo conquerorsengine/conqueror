@@ -257,10 +257,13 @@ namespace Conqueror
                         glm::vec3 vel = physics->GetLinearVelocity(be) * std::max(0.0f, 1.0f - pv.FluidFriction * dt);
                         if (pv.WaterVolume && pv.Buoyancy != 0.0f)
                             vel.y += pv.Buoyancy * dt;
-                        const float sp = glm::length(vel);
+                        // Son hız adım sonundaki hıza uygulanır: bu adımda eklenecek yerçekimi hesaba katılır
+                        const glm::vec3 g = reg.get<RigidbodyComponent>(e).UseGravity ? physics->GetGravity() * reg.get<RigidbodyComponent>(e).GravityScale : glm::vec3(0.0f);
+                        glm::vec3 next = vel + g * dt;
+                        const float sp = glm::length(next);
                         if (sp > pv.TerminalVelocity && sp > 1e-5f)
-                            vel *= pv.TerminalVelocity / sp;
-                        physics->SetLinearVelocity(be, vel);
+                            next *= pv.TerminalVelocity / sp;
+                        physics->SetLinearVelocity(be, next - g * dt);
                     }
                 }
 
