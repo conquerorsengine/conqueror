@@ -75,6 +75,7 @@
 #include "Particles/VisualEffect.h"
 #include "Scene/WorldActors.h"
 #include "Scene/ActorComponents.h"
+#include "Scene/Water.h"
 #include "Scene/PlayerInput.h"
 #include "Scene/RigConstraints.h"
 #include "AISystem/Navigation/NavAgents.h"
@@ -250,7 +251,12 @@ namespace Conqueror
         if (m_PhysicsWorld3D)
         {
             UpdateWorldTransforms();
-            m_PhysicsWorld3D->OnFixedUpdate = [this](float dt) { InvokeScriptsFixedUpdate(dt); };
+            m_PhysicsWorld3D->OnFixedUpdate = [this](float dt) {
+                // Sabit adım kuvvetleri (her fizik adımına uygulanır): yüzdürme, Physics Volume, radyal kuvvet; sonra betiklerin FixedUpdate'i
+                WaterBodies::FixedUpdate(*this, dt);
+                WorldActors::FixedUpdate(*this, dt);
+                InvokeScriptsFixedUpdate(dt);
+            };
             m_PhysicsWorld3D->OnJointBreak = [this](uint32_t entity, float force) {
                 CQS::Value arg = CQS::Value::MakeFloat((double)force);
                 InvokeScriptMethod(entity, "OnJointBreak", &arg, 1);
@@ -2482,6 +2488,7 @@ namespace Conqueror
             LightProbeGroups::DrawGizmo(*this, id);
             SpriteShapes::DrawGizmo(*this, id);
             OcclusionCulling::DrawGizmo(*this, id);
+            WaterBodies::DrawGizmo(*this, id);
             // Gezinme: Link uçları ve yayı, Modifier Volume / Obstacle kutusu
             entt::entity e = (entt::entity)id;
             if (!m_Registry.valid(e) || !m_Registry.all_of<TransformComponent>(e))
@@ -3094,6 +3101,8 @@ namespace Conqueror
             CQ_PROFILE_GPU("Transparent");
             Renderer3D::EndScene();
         }
+        // Su yüzeyleri (saydam, sahne derinliğiyle kıyı yumuşaması)
+        WaterBodies::Render(*this, camera.Position);
 
         // UI: dünya uzayı canvas'ları (editörde ekran üstü canvas'lar da sahnede gösterilir)
         {

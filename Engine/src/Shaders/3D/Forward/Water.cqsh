@@ -1,0 +1,123 @@
+#language GLSL
+// Conqueror's Engine - Su yüzeyi (Unreal Water Body): Gerstner dalgaları, Fresnel yansıma, derinliğe göre renk ve kıyı yumuşaması
+#type vertex
+#version 450 core
+
+#include "Include/FrameData.glsl"
+
+layout(location = 0) in vec2 a_Grid;            // -0.5..0.5 (yerel XZ)
+
+uniform mat4 u_Transform;                       // su gövdesinin dünya dönüşümü (ölçek dahil)
+uniform vec2 u_Size;                            // yerel boy (m)
+uniform vec2 u_Offset;                          // okyanus: kamerayı izleyen ızgara kayması (dünya XZ)
+uniform int u_WaveCount = 0;
+uniform vec4 u_Waves[4];                        // xy yön, z dalga boyu, w genlik
+uniform vec4 u_WaveParams[4];                   // x hız, y diklik
+
+out vec3 v_World;
+out vec3 v_Normal;
+out float v_Crest;
+
+void main()
+{
+    vec3 base = (u_Transform * vec4(a_Grid.x * u_Size.x + u_Offset.x, 0.0, a_Grid.y * u_Size.y + u_Offset.y, 1.0)).xyz;
+    float t = CQ_Frame.CameraPosTime.w;
+    vec3 p = base;
+    vec3 n = vec3(0.0, 1.0, 0.0);
+    float crest = 0.0;
+    for (int i = 0; i < u_WaveCount; ++i)
+    {
+        vec2 d = normalize(u_Waves[i].xy + vec2(1e-5, 0.0));
+        float k = 6.2831853 / max(u_Waves[i].z, 0.01);
+        float a = u_Waves[i].w;
+        float q = clamp(u_WaveParams[i].y, 0.0, 1.0) / max(k * a * float(u_WaveCount), 1e-4);
+        float f = k * (dot(d, base.xz) - u_WaveParams[i].x * t);
+        float c = cos(f), s = sin(f);
+        p.x += q * a * d.x * c;
+        p.z += q * a * d.y * c;
+        p.y += a * s;
+        n.x -= d.x * k * a * c;
+        n.z -= d.y * k * a * c;
+        n.y -= q * k * a * s;
+        crest += s * a;
+    }
+    v_World = p;
+    v_Normal = normalize(n);
+    // Köpük yalnız dalgaların üst üste bindiği tepelerde: toplam genliğin üst %20'si
+    float ampSum = 0.0;
+    for (int i = 0; i < u_WaveCount; ++i) ampSum += u_Waves[i].w;
+    v_Crest = ampSum > 1e-4 ? smoothstep(0.55, 0.95, crest / ampSum) * clamp(u_WaveParams[0].y, 0.0, 1.0) : 0.0;
+    gl_Position = CQ_Frame.ViewProjection * vec4(p, 1.0);
+}
+
+#type fragment
+#version 450 core
+
+#include "Include/Common.glsl"
+#include "Include/FrameData.glsl"
+#include "Include/Lighting.glsl"
+
+in vec3 v_World;
+in vec3 v_Normal;
+in float v_Crest;
+layout(location = 0) out vec4 FragColor;
+
+uniform sampler2D u_WaterSceneDepth;
+uniform int u_HasSceneDepth = 0;
+uniform int u_ReactivePass = 0;
+uniform vec3 u_ShallowColor;
+uniform vec3 u_DeepColor;
+uniform float u_Opacity = 0.85;
+uniform float u_DepthFade = 4.0;               // bu derinlikte tam derin renk (m)
+uniform float u_ShoreFade = 0.5;               // kıyıda kenar yumuşaması (m)
+uniform float u_Roughness = 0.05;
+uniform float u_Foam = 0.5;
+
+void main()
+{
+    vec3 N = normalize(v_Normal);
+    vec3 V = normalize(CQ_CameraPosition() - v_World);
+    if (dot(N, V) < 0.0) N = -N;
+    float NdotV = max(dot(N, V), 0.0);
+    float fresnel = 0.02 + 0.98 * pow(1.0 - NdotV, 5.0);
+
+    // Arkadaki opak yüzeye uzaklık: sığ / derin renk ve kıyı yumuşaması
+    float waterDepth = 1e4;
+    if (u_HasSceneDepth == 1)
+    {
+        float scene = texelFetch(u_WaterSceneDepth, ivec2(gl_FragCoord.xy), 0).r;
+        if (scene < 1.0)
+        {
+            vec4 ps = CQ_Frame.InvProjection * vec4(0.0, 0.0, scene * 2.0 - 1.0, 1.0);
+            vec4 pf = CQ_Frame.InvProjection * vec4(0.0, 0.0, gl_FragCoord.z * 2.0 - 1.0, 1.0);
+            waterDepth = max((-ps.z / ps.w) - (-pf.z / pf.w), 0.0);
+        }
+    }
+    float depthT = clamp(waterDepth / max(u_DepthFade, 0.01), 0.0, 1.0);
+    vec3 body = mix(SRGBToLinear(u_ShallowColor), SRGBToLinear(u_DeepColor), depthT);
+    // Gökyüzü / prob yansıması ve güneş parlaması
+    vec3 R = reflect(-V, N);
+    vec3 refl = CQ_SpecularEnvironment(R, u_Roughness, v_World);
+    vec3 sun = vec3(0.0);
+    if (CQ_Frame.SunDirection.w > 0.5)
+    {
+        vec3 L = -normalize(CQ_Frame.SunDirection.xyz);
+        vec3 H = normalize(L + V);
+        float spec = pow(max(dot(N, H), 0.0), mix(2048.0, 64.0, clamp(u_Roughness * 4.0, 0.0, 1.0)));
+        sun = CQ_Frame.SunColor.rgb * spec * 4.0;
+        body *= 0.35 + 0.65 * max(dot(N, L), 0.0);
+    }
+    body += CQ_AmbientDiffuse(N) * SRGBToLinear(u_DeepColor) * 0.5;
+    float foam = clamp(v_Crest * u_Foam, 0.0, 1.0) + clamp(1.0 - waterDepth / max(u_ShoreFade * 2.0, 0.01), 0.0, 1.0) * u_Foam * 0.6;
+    vec3 color = mix(body, refl, fresnel) + sun + vec3(foam * 0.6);
+    float alpha = mix(u_Opacity * mix(0.6, 1.0, depthT), 1.0, fresnel);
+    alpha *= clamp(waterDepth / max(u_ShoreFade, 0.01), 0.0, 1.0);
+    alpha = clamp(alpha + foam * 0.3, 0.0, 1.0);
+    if (u_ReactivePass == 1)
+    {
+        FragColor = vec4(alpha * 0.6);
+        return;
+    }
+    color = CQ_ApplyFog(color, v_World);
+    FragColor = CQ_FinalizeOutput(vec4(color, alpha));
+}

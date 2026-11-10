@@ -1946,6 +1946,15 @@ namespace Conqueror
     void Renderer3D::SetWireframe(bool wireframe) { s->Wireframe = wireframe; }
     bool Renderer3D::GetWireframe() { return s->Wireframe; }
 
+    void Renderer3D::PrepareCustomShader(const std::shared_ptr<Shader>& shader)
+    {
+        if (!shader || !shader->IsValid())
+            return;
+        UploadFrameData();
+        shader->Bind();
+        BindFrameResources(shader);
+    }
+
     void Renderer3D::SetDrawLightmapped(bool lightmapped)
     {
         s->Lightmapped = lightmapped;

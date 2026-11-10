@@ -263,6 +263,9 @@ namespace Conqueror
         static const RenderCamera& GetCamera();
         static std::shared_ptr<EnvironmentMap> GetActiveEnvironmentMap();
 
+        // Özel çizimler (su, ...): kare verisi (kamera, güneş, ortam, sis) ve IBL / gölge / prob dokuları bu shader'a bağlanır
+        static void PrepareCustomShader(const std::shared_ptr<Shader>& shader);
+
         // Editör: shader dosyaları değiştiyse yeniden derle
         static void ReloadShaders();
         static void CheckShaderHotReload();

@@ -262,6 +262,7 @@ namespace Conqueror
     void RegisterVisualEffectComponents();
     void RegisterWorldActorComponents();
     void RegisterActorComponents();
+    void RegisterWaterComponents();
     void RegisterPlayerInputComponents();
     void RegisterRigComponents();
     void RegisterNavigationComponents();

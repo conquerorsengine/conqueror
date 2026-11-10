@@ -114,6 +114,7 @@ namespace Conqueror
             RegisterVisualEffectComponents();
             RegisterWorldActorComponents();
             RegisterActorComponents();
+            RegisterWaterComponents();
             RegisterPlayerInputComponents();
             RegisterRigComponents();
             RegisterNavigationComponents();

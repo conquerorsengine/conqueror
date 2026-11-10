@@ -224,6 +224,24 @@ namespace Conqueror
                 }
             }
 
+            // Radial Force: istenen darbe (kare başına bir kez)
+            if (physics)
+                for (auto e : reg.view<TransformComponent, RadialForceComponent>())
+                {
+                    if (!scene.IsEntityActive(e)) continue;
+                    auto& rf = reg.get<RadialForceComponent>(e);
+                    if (rf.FireRequested)
+                    {
+                        rf.FireRequested = false;
+                        Fire(scene, e, rf);
+                    }
+                }
+        }
+
+        void FixedUpdate(Scene& scene, float dt)
+        {
+            auto& reg = scene.m_Registry;
+            PhysicsWorld3D* physics = scene.GetPhysicsWorld3D();
             // Physics Volume: sıvı sürtünmesi, son hız, su hacminde kaldırma
             if (physics)
                 for (auto v : reg.view<TransformComponent, PhysicsVolumeComponent>())
@@ -246,17 +264,12 @@ namespace Conqueror
                     }
                 }
 
-            // Radial Force: sürekli kuvvet ve istenen darbe
+            // Radial Force: sürekli kuvvet
             if (physics)
                 for (auto e : reg.view<TransformComponent, RadialForceComponent>())
                 {
                     if (!scene.IsEntityActive(e)) continue;
                     auto& rf = reg.get<RadialForceComponent>(e);
-                    if (rf.FireRequested)
-                    {
-                        rf.FireRequested = false;
-                        Fire(scene, e, rf);
-                    }
                     if (rf.ForceStrength == 0.0f) continue;
                     const glm::vec3 c = glm::vec3(scene.ComputeWorldMatrix(e)[3]);
                     for (auto b : reg.view<TransformComponent, RigidbodyComponent>())

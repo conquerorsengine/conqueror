@@ -125,6 +125,8 @@ namespace Conqueror
         // Hacimler ve kuvvetler (oyunda, fizikten önce)
         CQ_API void BeginPlay(Scene& scene);
         CQ_API void Update(Scene& scene, float dt);
+        // Her sabit fizik adımında: Physics Volume ve sürekli radyal kuvvet
+        CQ_API void FixedUpdate(Scene& scene, float dt);
         // Cull Distance Volume: kameradan uzak küçük statik nesneler
         CQ_API void ComputeCullHidden(Scene& scene, const glm::vec3& cameraPosition, std::unordered_set<uint32_t>& hidden);
         // Betikler: nokta bir Physics Volume'un su hacminde mi
