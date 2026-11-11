@@ -465,6 +465,31 @@ namespace Conqueror::GameplaySystems
         return total;
     }
 
+    void SampleWindParts(const glm::vec3& position, glm::vec3& main, float& turbulence)
+    {
+        main = glm::vec3(0.0f);
+        turbulence = 0.0f;
+        for (const auto& w : s_Wind)
+        {
+            const float pulse = 1.0f + w.PulseMagnitude * std::sin(s_WindTime * w.PulseFrequency * 6.2831853f * 10.0f);
+            if (w.Mode == WindZoneMode::Directional)
+            {
+                main += w.Direction * w.Main * pulse;
+                turbulence += w.Turbulence;
+            }
+            else
+            {
+                const glm::vec3 d = position - w.Position;
+                const float dist = glm::length(d);
+                if (dist >= w.Radius || dist < 1e-4f)
+                    continue;
+                const float falloff = 1.0f - dist / std::max(w.Radius, 1e-4f);
+                main += (d / dist) * w.Main * pulse * falloff;
+                turbulence += w.Turbulence * falloff;
+            }
+        }
+    }
+
     void LateUpdate(Scene& scene, float dt, bool runtime)
     {
         if (!runtime)

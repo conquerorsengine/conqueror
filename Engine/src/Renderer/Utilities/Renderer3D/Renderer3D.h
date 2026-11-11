@@ -152,6 +152,13 @@ namespace Conqueror
         static void SetDrawLightmapped(bool lightmapped);
         // Sonraki çizimlerin taban rengi çarpanı (Model.Tint; çizimden sonra 1'e döndürülür)
         static void SetTint(const glm::vec3& tint);
+        // Ağaç rüzgârı (Tree Creator + Wind Zone, Include/TreeWind.glsl): sonraki çizimlerin köşeleri ikinci UV kanalındaki
+        // ağırlıklarla salınır; hareket vektörü ve gölge de aynı salınımla çizilir. wind: xyz yön * şiddet, w türbülans;
+        // params: x yaprak titremesi, y ağaç boyu (m). Sıfır = kapalı (çizimden sonra kapatılır)
+        static void SetDrawWind(const glm::vec4& wind, const glm::vec2& params);
+        // Rüzgâr saatinin bu ve önceki karedeki değeri (oyun zamanı; hareket vektörü iki zamandan)
+        static float GetWindTime();
+        static float GetWindPrevTime();
         // Mesh Paint: sonraki çizimlerde (model içi mesh sırasına göre) örneğe özel köşe rengi tamponları; nullptr = yok
         static void SetVertexColorBuffers(const std::vector<uint32_t>* buffers);
 

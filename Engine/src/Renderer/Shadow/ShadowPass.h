@@ -67,7 +67,8 @@ namespace Conqueror
 
         bool CutoutReady() const;
         void DrawCutout(const Mesh& mesh, const glm::mat4& transform, const glm::mat4& lightSpace, Texture2D& albedo,
-                        float alphaClip, float alpha, const glm::vec2& uvScale, const glm::vec2& uvOffset);
+                        float alphaClip, float alpha, const glm::vec2& uvScale, const glm::vec2& uvOffset, const glm::vec4& wind = glm::vec4(0.0f),
+                        const glm::vec4& windParams = glm::vec4(0.0f));
         std::vector<glm::mat4> m_LightSpaceMatrices;
         std::vector<float> m_CascadeSplits;
         std::vector<float> m_CascadeTexelWorld;

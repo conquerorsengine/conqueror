@@ -3,6 +3,7 @@
 #version 450 core
 
 #include "Include/FrameData.glsl"
+#include "Include/TreeWind.glsl"
 
 layout(location = 0) in vec3 a_Position;
 layout(location = 1) in vec3 a_Normal;
@@ -45,6 +46,9 @@ void main()
         tint = a_InstanceColor;
     }
     vec4 worldPos = model * vec4(a_Position, 1.0);
+    // Ağaç rüzgârı (Tree Creator + Wind Zone): ikinci UV kanalındaki ağırlıklarla salınım
+    if (u_TreeWindParams.y > 0.5)
+        worldPos.xyz += TreeWindOffset(worldPos.xyz, model[3].xyz, a_TexCoord2, u_TreeWindParams.x);
     vs_out.FragPos = worldPos.xyz;
 
     vec3 N = normalize(normalMatrix * a_Normal);

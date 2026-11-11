@@ -5438,6 +5438,53 @@ namespace Conqueror::Editor
         Automation::RegisterCommand("viewport_region", [this, regionProbe](const Args& a, std::string& err) {
             return regionProbe(m_ViewportPanel ? m_ViewportPanel->GetFramebuffer() : nullptr, a, err);
         });
+        // game_region_change mark <u0 v0 u1 v1> | expect <u0 v0 u1 v1> <v | >v | <v>: Game görünümündeki bölgenin işaretlenen
+        // andan bu yana piksel başına ortalama değişimi (0-255, RGB ortalaması). Hareket / salınım / durağanlık denetimi
+        Automation::RegisterCommand("game_region_change", [this](const Args& a, std::string& err) {
+            static std::vector<uint8_t> s_Marked;
+            static int s_W = 0, s_H = 0;
+            if (a.size() < 6 || !m_GamePanel || !m_GamePanel->GetFramebuffer()) { err = "game_region_change mark|expect u0 v0 u1 v1 [cond]"; return false; }
+            const auto& fb = m_GamePanel->GetFramebuffer();
+            const auto& spec = fb->GetSpecification();
+            auto toPx = [](const std::string& v, uint32_t size) { return std::clamp((int)(std::stof(v) * (float)size), 0, (int)size - 1); };
+            const int x0 = toPx(a[2], spec.Width), y0 = toPx(a[3], spec.Height), x1 = toPx(a[4], spec.Width), y1 = toPx(a[5], spec.Height);
+            const int w = std::max(1, std::abs(x1 - x0) + 1), h = std::max(1, std::abs(y1 - y0) + 1);
+            std::vector<uint8_t> px((size_t)w * h * 4);
+            glGetTextureSubImage(fb->GetColorAttachmentRendererID(0), 0, std::min(x0, x1), std::min(y0, y1), 0, w, h, 1, GL_RGBA, GL_UNSIGNED_BYTE,
+                                 (GLsizei)px.size(), px.data());
+            if (a[1] == "mark")
+            {
+                s_Marked = std::move(px);
+                s_W = w;
+                s_H = h;
+                return true;
+            }
+            if (a[1] != "expect" || a.size() < 7) { err = "game_region_change mark|expect u0 v0 u1 v1 [cond]"; return false; }
+            if (w != s_W || h != s_H || s_Marked.size() != px.size()) { err = "region differs from the marked one"; return false; }
+            double sum = 0.0;
+            int over20 = 0, peak = 0;
+            for (size_t i = 0; i < px.size(); i += 4)
+            {
+                int d = 0;
+                for (int c = 0; c < 3; ++c)
+                {
+                    const int dc = std::abs((int)px[i + c] - (int)s_Marked[i + c]);
+                    sum += dc;
+                    d = std::max(d, dc);
+                }
+                over20 += d > 20 ? 1 : 0;
+                peak = std::max(peak, d);
+            }
+            const float have = (float)(sum / (3.0 * (double)w * h));
+            Automation::Report("REGION_CHANGE " + std::to_string(have) + " pixels>20 " + std::to_string(over20) + " max " + std::to_string(peak));
+            const std::string& cond = a[6];
+            bool ok;
+            if (cond[0] == '>') ok = have > std::stof(cond.substr(1));
+            else if (cond[0] == '<') ok = have < std::stof(cond.substr(1));
+            else ok = std::abs(have - std::stof(cond)) <= 0.5f;
+            if (!ok) err = "change " + std::to_string(have);
+            return ok;
+        });
         Automation::RegisterCommand("gpu_probe", [this](const Args& a, std::string& err) {
             // gpu_probe <brdf|viewport|sh|prefiltered>: GPU verisini GL API'si üzerinden geri okur (her arka uçta çalışır)
             if (a.size() < 2) { err = "gpu_probe <brdf|viewport|sh|prefiltered>"; return false; }

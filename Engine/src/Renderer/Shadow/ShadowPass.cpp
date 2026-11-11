@@ -18,6 +18,8 @@
 #include "Renderer/Utilities/Renderer3D/Material.h"
 #include "Renderer/Renderer.h"
 #include "Core/Logging/Log.h"
+#include "Core/ShaderSystem/CQShaderLoader.h"
+#include "Scene/TreeCreator.h"
 
 #include <unordered_map>
 #include <glad/glad.h>
@@ -27,14 +29,20 @@
 
 namespace Conqueror
 {
+    // Ağaç rüzgârı (Include/TreeWind.glsl, Init'te CQShaderLoader ile açılır): gölge de ağaçla birlikte salınır
     static const char* s_DepthVertexSrc = R"(
         #version 450 core
+        #include "Include/TreeWind.glsl"
         layout(location = 0) in vec3 a_Position;
+        layout(location = 4) in vec2 a_TexCoord2;
         uniform mat4 u_LightSpaceMatrix;
         uniform mat4 u_Transform;
         void main()
         {
-            gl_Position = u_LightSpaceMatrix * u_Transform * vec4(a_Position, 1.0);
+            vec4 world = u_Transform * vec4(a_Position, 1.0);
+            if (u_TreeWindParams.y > 0.5)
+                world.xyz += TreeWindOffset(world.xyz, u_Transform[3].xyz, a_TexCoord2, u_TreeWindParams.x);
+            gl_Position = u_LightSpaceMatrix * world;
         }
     )";
 
@@ -111,8 +119,10 @@ namespace Conqueror
     // Alfa kırpmalı (Cutout) yüzeyler: yaprak kartları, tel örgü, delikli levhalar gölgede de delikli düşer
     static const char* s_CutoutDepthVertexSrc = R"(
         #version 450 core
+        #include "Include/TreeWind.glsl"
         layout(location = 0) in vec3 a_Position;
         layout(location = 3) in vec2 a_TexCoord;
+        layout(location = 4) in vec2 a_TexCoord2;
         uniform mat4 u_LightSpaceMatrix;
         uniform mat4 u_Transform;
         uniform vec2 u_UVScale;
@@ -121,7 +131,10 @@ namespace Conqueror
         void main()
         {
             v_UV = a_TexCoord * u_UVScale + u_UVOffset;
-            gl_Position = u_LightSpaceMatrix * u_Transform * vec4(a_Position, 1.0);
+            vec4 world = u_Transform * vec4(a_Position, 1.0);
+            if (u_TreeWindParams.y > 0.5)
+                world.xyz += TreeWindOffset(world.xyz, u_Transform[3].xyz, a_TexCoord2, u_TreeWindParams.x);
+            gl_Position = u_LightSpaceMatrix * world;
         }
     )";
 
@@ -148,9 +161,12 @@ namespace Conqueror
     }
 
     void ShadowPass::DrawCutout(const Mesh& mesh, const glm::mat4& transform, const glm::mat4& lightSpace, Texture2D& albedo,
-                                float alphaClip, float alpha, const glm::vec2& uvScale, const glm::vec2& uvOffset)
+                                float alphaClip, float alpha, const glm::vec2& uvScale, const glm::vec2& uvOffset, const glm::vec4& wind,
+                                const glm::vec4& windParams)
     {
         m_CutoutDepthShader->Bind();
+        m_CutoutDepthShader->SetFloat4("u_TreeWind", wind);
+        m_CutoutDepthShader->SetFloat4("u_TreeWindParams", windParams);
         m_CutoutDepthShader->SetMat4("u_LightSpaceMatrix", lightSpace);
         m_CutoutDepthShader->SetMat4("u_Transform", transform);
         m_CutoutDepthShader->SetFloat2("u_UVScale", uvScale);
@@ -165,10 +181,13 @@ namespace Conqueror
     void ShadowPass::Init()
     {
         m_DirectionalShadowMap = ShadowMap::Create(4096, 4096);
-        m_DepthShader = Shader::Create("ShadowDepthShader", s_DepthVertexSrc, s_DepthFragmentSrc);
+        // #include "Include/TreeWind.glsl" açılır (dize kaynakları include çözmez)
+        const std::string depthVertex = CQShaderLoader::LoadFromString(s_DepthVertexSrc).Source;
+        const std::string cutoutVertex = CQShaderLoader::LoadFromString(s_CutoutDepthVertexSrc).Source;
+        m_DepthShader = Shader::Create("ShadowDepthShader", depthVertex, s_DepthFragmentSrc);
         m_SkinnedDepthShader = Shader::Create("ShadowDepthSkinnedShader", s_SkinnedDepthVertexSrc, s_DepthFragmentSrc);
         m_InstancedDepthShader = Shader::Create("ShadowDepthInstancedShader", s_InstancedDepthVertexSrc, s_DepthFragmentSrc);
-        m_CutoutDepthShader = Shader::Create("ShadowDepthCutoutShader", s_CutoutDepthVertexSrc, s_CutoutDepthFragmentSrc);
+        m_CutoutDepthShader = Shader::Create("ShadowDepthCutoutShader", cutoutVertex, s_CutoutDepthFragmentSrc);
         m_LightSpaceMatrices.assign(kMaxCascades, glm::mat4(1.0f));
         m_CascadeSplits.assign(kMaxCascades, 0.0f);
         m_CascadeTexelWorld.assign(kMaxCascades, 0.05f);
@@ -344,6 +363,8 @@ namespace Conqueror
 
             m_DepthShader->Bind();
             m_DepthShader->SetMat4("u_LightSpaceMatrix", m_LightSpaceMatrices[i]);
+            // Ağaç rüzgârı yalnız ağaç modellerinde açılır (önceki kademenin son ağacından kalmasın)
+            m_DepthShader->SetFloat4("u_TreeWindParams", glm::vec4(0.0f));
             Renderer3D::ExtractFrustum(m_LightSpaceMatrices[i], planes);
 
             for (auto entity : meshView)
@@ -481,6 +502,13 @@ namespace Conqueror
                 }
 
                 m_DepthShader->SetMat4("u_Transform", transform.WorldTransform);
+                // Tree Creator ağacı rüzgârda: gölgesi de aynı salınımla
+                glm::vec4 treeWind(0.0f);
+                glm::vec2 treeWindParams(0.0f);
+                const bool windy = TreeCreator::WindFor(*scene, entity, treeWind, treeWindParams);
+                const glm::vec4 windUniform = windy ? glm::vec4(Renderer3D::GetWindTime(), 1.0f, treeWindParams.x, treeWindParams.y) : glm::vec4(0.0f);
+                m_DepthShader->SetFloat4("u_TreeWind", treeWind);
+                m_DepthShader->SetFloat4("u_TreeWindParams", windUniform);
                 // Virtual Geometry: gölgede daha kaba hata eşiğiyle küme seçimi (ana kameraya göre)
                 if (auto* vg = registry.try_get<VirtualGeometryComponent>(entity); vg && vg->Enabled && vg->Ready)
                 {
@@ -518,7 +546,7 @@ namespace Conqueror
                         const bool open = mat->Culling == Material::CullMode::Off;
                         if (open) glDisable(GL_CULL_FACE);
                         DrawCutout(*lod, transform.WorldTransform, m_LightSpaceMatrices[i], *mat->AlbedoMap, mat->AlphaClip, 1.0f,
-                                   glm::vec2(1.0f), glm::vec2(0.0f));
+                                   glm::vec2(1.0f), glm::vec2(0.0f), treeWind, windUniform);
                         if (open) glEnable(GL_CULL_FACE);
                         m_DepthShader->Bind();
                         Renderer::GetStats().ShadowDrawCalls++;
@@ -527,6 +555,8 @@ namespace Conqueror
                     RenderCommand::DrawIndexed(lod->GetVertexArray(), lod->GetIndexCount());
                     Renderer::GetStats().ShadowDrawCalls++;
                 }
+                if (windy)
+                    m_DepthShader->SetFloat4("u_TreeWindParams", glm::vec4(0.0f));
             }
 
             // MultiMesh: her toplu örnek kümesi tek çağrıda

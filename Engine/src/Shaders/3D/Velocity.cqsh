@@ -4,19 +4,34 @@
 // gibi nesneler kamera hareketiyle değil kendi hareketleriyle yeniden izdüşürülür.
 #type vertex
 #version 450 core
+#include "Include/TreeWind.glsl"
 layout(location = 0) in vec3 a_Position;
+layout(location = 3) in vec2 a_TexCoord;
+layout(location = 4) in vec2 a_TexCoord2;   // ağaç rüzgârı ağırlıkları (Tree Creator)
 uniform mat4 u_Transform;
 uniform mat4 u_PrevTransform;
 uniform mat4 u_ViewProjJittered;   // ana geçişle aynı derinlik
 uniform mat4 u_ViewProj;           // titreşimsiz
 uniform mat4 u_PrevViewProj;
+uniform float u_TreeWindPrevTime = 0.0;
+uniform vec2 u_UVScale = vec2(1.0);
+uniform vec2 u_UVOffset = vec2(0.0);
 out vec4 v_Curr;
 out vec4 v_Prev;
+out vec2 v_UV;
 void main()
 {
     vec4 world = u_Transform * vec4(a_Position, 1.0);
+    vec4 prevWorld = u_PrevTransform * vec4(a_Position, 1.0);
+    if (u_TreeWindParams.y > 0.5)
+    {
+        // Rüzgârda salınan ağaç: şimdiki ve önceki karenin zamanında (dönüşüm aynı kalsa da hareket vektörü salınımı taşır)
+        world.xyz += TreeWindOffset(world.xyz, u_Transform[3].xyz, a_TexCoord2, u_TreeWindParams.x);
+        prevWorld.xyz += TreeWindOffset(prevWorld.xyz, u_PrevTransform[3].xyz, a_TexCoord2, u_TreeWindPrevTime);
+    }
     v_Curr = u_ViewProj * world;
-    v_Prev = u_PrevViewProj * (u_PrevTransform * vec4(a_Position, 1.0));
+    v_Prev = u_PrevViewProj * prevWorld;
+    v_UV = a_TexCoord * u_UVScale + u_UVOffset;
     gl_Position = u_ViewProjJittered * world;
 }
 
@@ -25,10 +40,17 @@ void main()
 layout(location = 0) out vec4 Velocity;
 in vec4 v_Curr;
 in vec4 v_Prev;
+in vec2 v_UV;
 uniform float u_Exact = 1.0;       // 1: kesin (katı nesne), 0.5: yaklaşık (kemik / shader hareketi dahil değil)
 uniform int u_PrevCoverage = 0;   // 1: nesne önceki konumunda çizilir, yalnız w = 2 (açılan alan işareti) yazılır
+// Alfa kesmeli malzeme (yaprak kartı, tel örgü): ana geçişte atılan pikseller burada da atılır, arkadaki yüzeyin hareketi kalır
+uniform int u_Cutout = 0;
+uniform sampler2D u_AlbedoMap;
+uniform float u_AlphaClip = 0.5;
 void main()
 {
+    if (u_Cutout == 1 && texture(u_AlbedoMap, v_UV).a < u_AlphaClip)
+        discard;
     if (u_PrevCoverage == 1)
     {
         Velocity = vec4(0.0, 0.0, 0.0, 2.0);

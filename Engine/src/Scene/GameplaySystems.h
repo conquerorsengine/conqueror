@@ -27,6 +27,8 @@ namespace Conqueror
         // Etkin rüzgâr bölgelerinin bu noktadaki rüzgârı (ivme, m/s²)
         CQ_API bool HasWind();
         CQ_API glm::vec3 SampleWind(const glm::vec3& position);
+        // Wind Zone'ların bir noktadaki ana rüzgârı (yön * şiddet, nabızla) ve türbülans şiddeti (ağaç rüzgârı köşe gölgelendiricide)
+        CQ_API void SampleWindParts(const glm::vec3& position, glm::vec3& main, float& turbulence);
         // Particle System Force Field: dünya konumundaki parçacığın hızını günceller
         CQ_API bool HasForceFields();
         CQ_API void ApplyForceFields(const glm::vec3& position, glm::vec3& velocity, float dt);

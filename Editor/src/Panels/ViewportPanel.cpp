@@ -157,7 +157,13 @@ namespace Conqueror::Editor
             m_EditorCamera.UpdateScrollOnly();
 
         if (!m_Framebuffer || m_ViewportSize.x <= 0 || m_ViewportSize.y <= 0)
+        {
+            // Sahne görünümü gizli (Game sekmesi önde): çizilmez, ama düzenleme modunda düzenleyici sistemleri (kısıtlar, eğriler,
+            // Wind Zone, parçacık önizlemesi) yine her karede çalışır (Unity gibi; Game görünümü güncel sahneyi gösterir)
+            if (m_Context && !m_Context->IsRuntimeScene() && EditorState::Get().IsEditing())
+                m_Context->UpdateEditorSystems(ts);
             return;
+        }
 
         const uint32_t width = static_cast<uint32_t>(m_ViewportSize.x);
         const uint32_t height = static_cast<uint32_t>(m_ViewportSize.y);

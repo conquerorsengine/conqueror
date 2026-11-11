@@ -10,6 +10,7 @@
 #include "Renderer/Utilities/Renderer3D/ModelLoader.h"
 #include "Renderer/RHI/Texture.h"
 #include "Core/Serialization/SceneSerializer.h"
+#include "Scene/GameplaySystems.h"
 
 #include <IconsFontAwesome6.h>
 #include <yaml-cpp/yaml.h>
@@ -208,7 +209,23 @@ namespace Conqueror
             std::vector<glm::vec3> P, T, N;     // eksen noktaları (eşit aralıklı), teğet, normal (paralel taşıma)
             std::vector<float> R;               // yarıçap
             float Length = 1.0f;
+            // Rüzgâr eğilme ağırlığı: dalın başında (üst dalın o noktadaki ağırlığı) ve ucunda (0 gövde dibi .. 1 en esnek uç)
+            float BaseWeight = 0.0f, TipWeight = 0.0f;
+            int Depth = 0;                      // 0 gövde, 1 dal, 2+ ince dal
         };
+
+        float WeightAt(const Branch& b, float t)
+        {
+            t = glm::clamp(t, 0.0f, 1.0f);
+            return glm::mix(b.BaseWeight, b.TipWeight, t * t);
+        }
+
+        // Derinliğe göre esneklik: gövde az, dallar orta, ince dallar çok eğilir; grubun Main Wind'i çarpar
+        float Flex(int depth, float mainWind)
+        {
+            const float level = depth <= 0 ? 0.22f : depth == 1 ? 0.55f : 0.8f;
+            return glm::clamp(level * std::max(mainWind, 0.0f), 0.0f, 1.0f);
+        }
 
         void Sample(const Branch& b, float t, glm::vec3& p, glm::vec3& tan, glm::vec3& nor, float& r)
         {
@@ -331,7 +348,11 @@ namespace Conqueror
                     const float n = g.Noise > 0.0f ? (PeriodicNoise((float)(k % sides) * (float)period / (float)sides, along * 1.6f, period, 1 << 20, branchSeed) - 0.5f) : 0.0f;
                     const float r = b.R[j] * (1.0f + g.Noise * 0.55f * n);
                     const glm::vec3 tangent = -N * std::sin(a) + B * std::cos(a);
-                    V.push_back(MakeVertex(b.P[j] + radial * r, radial, tangent, glm::vec2((float)k / (float)sides * uRepeat, along * vScale)));
+                    Vertex vx = MakeVertex(b.P[j] + radial * r, radial, tangent, glm::vec2((float)k / (float)sides * uRepeat, along * vScale));
+                    // Rüzgâr: x eğilme ağırlığı, y ince dal ucu titremesi (Main Turbulence)
+                    const float s01 = (float)j / (float)(b.P.size() - 1);
+                    vx.TexCoords2 = glm::vec2(WeightAt(b, s01), b.Depth >= 2 ? s01 * 0.35f * std::max(g.MainTurbulence, 0.0f) : 0.0f);
+                    V.push_back(vx);
                 }
             }
             const uint32_t ring = (uint32_t)sides + 1;
@@ -344,7 +365,9 @@ namespace Conqueror
             // Uç kapağı
             const glm::vec3 tip = b.P.back(), tipT = b.T.back();
             const uint32_t center = (uint32_t)V.size();
-            V.push_back(MakeVertex(tip + tipT * b.R.back() * 0.5f, tipT, AnyPerpendicular(tipT), glm::vec2(0.5f * uRepeat, along * vScale)));
+            Vertex cap = MakeVertex(tip + tipT * b.R.back() * 0.5f, tipT, AnyPerpendicular(tipT), glm::vec2(0.5f * uRepeat, along * vScale));
+            cap.TexCoords2 = glm::vec2(b.TipWeight, b.Depth >= 2 ? 0.35f * std::max(g.MainTurbulence, 0.0f) : 0.0f);
+            V.push_back(cap);
             const uint32_t last = base + (uint32_t)(b.P.size() - 1) * ring;
             for (uint32_t k = 0; k < (uint32_t)sides; ++k)
                 I.insert(I.end(), { last + k, last + k + 1, center });
@@ -353,7 +376,7 @@ namespace Conqueror
         // Yaprak kartı: taban dal üzerinde, uzunluk ekseni L, yüz normali n. Köşe normalleri taç merkezinden dışa doğru
         // bükülür (yumuşak, top gibi ışık); çift yüzlü çizilir
         void EmitLeafQuad(const glm::vec3& basePos, const glm::vec3& L, const glm::vec3& n, float size, const glm::vec3& crownCenter,
-                          std::vector<Vertex>& V, std::vector<uint32_t>& I)
+                          float bendWeight, float flutter, std::vector<Vertex>& V, std::vector<uint32_t>& I)
         {
             const glm::vec3 W = glm::normalize(glm::cross(L, n));
             const glm::vec3 faceN = glm::normalize(glm::cross(W, L));
@@ -366,7 +389,10 @@ namespace Conqueror
                 glm::vec3 out = corners[i] - crownCenter;
                 out = glm::length(out) > 1e-4f ? glm::normalize(out) : faceN;
                 glm::vec3 nn = glm::normalize(glm::mix(faceN, out, 0.6f));
-                V.push_back(MakeVertex(corners[i], nn, W, uv[i]));
+                Vertex vx = MakeVertex(corners[i], nn, W, uv[i]);
+                // Rüzgâr: kart dalla birlikte eğilir; uç köşeler taban köşelerinden çok titrer
+                vx.TexCoords2 = glm::vec2(bendWeight, flutter * (i >= 2 ? 1.0f : 0.3f));
+                V.push_back(vx);
             }
             I.insert(I.end(), { base, base + 1, base + 2, base, base + 2, base + 3 });
         }
@@ -500,7 +526,7 @@ namespace Conqueror
                 i((int)g.Type); i(g.Parent); i(g.Seed); i(g.Frequency); i((int)g.Mode); i(g.Whorl); f(g.Twirl);
                 v2(g.Range); v2(g.GrowthScale); v2(g.GrowthAngle); v2(g.Length); i(g.RelativeLength ? 1 : 0); f(g.Radius);
                 f(g.CapTaper); f(g.Crinkliness); f(g.SeekSun); f(g.Noise); f(g.FlareRadius); f(g.FlareHeight); v2(g.Size);
-                i((int)g.Shape); f(g.PerpendicularAlign); f(g.HorizontalAlign);
+                i((int)g.Shape); f(g.PerpendicularAlign); f(g.HorizontalAlign); f(g.MainWind); f(g.MainTurbulence); f(g.EdgeTurbulence);
                 mix(g.Material.data(), g.Material.size()); i(0x5a5a);
             }
             return h == 0 ? 1 : h;
@@ -510,7 +536,7 @@ namespace Conqueror
         {
             const float lod = glm::clamp(tree.LODQuality, 0.0f, 1.0f);
             std::vector<Branch> branches;
-            struct LeafCard { glm::vec3 Base, L, N; float Size; int Group; };
+            struct LeafCard { glm::vec3 Base, L, N; float Size; int Group; float Weight; };
             std::vector<LeafCard> cards;
             const glm::vec3 up(0.0f, 1.0f, 0.0f);
 
@@ -537,7 +563,11 @@ namespace Conqueror
                         const glm::vec3 dir = glm::normalize(up * std::cos(tilt) + glm::vec3(std::cos(az), 0.0f, std::sin(az)) * std::sin(tilt));
                         const float scale = glm::mix(g.GrowthScale.x, g.GrowthScale.y, rng.Float());
                         const float length = rng.Range(std::min(g.Length.x, g.Length.y), std::max(g.Length.x, g.Length.y)) * scale;
-                        branches.push_back(Grow(g, gi, start, dir, glm::vec3(1.0f, 0.0f, 0.0f), length, g.Radius * scale, lod, rng));
+                        Branch trunk = Grow(g, gi, start, dir, glm::vec3(1.0f, 0.0f, 0.0f), length, g.Radius * scale, lod, rng);
+                        trunk.Depth = 0;
+                        trunk.BaseWeight = 0.0f;
+                        trunk.TipWeight = Flex(0, g.MainWind);
+                        branches.push_back(std::move(trunk));
                     }
                     continue;
                 }
@@ -590,7 +620,11 @@ namespace Conqueror
                             const float radius = std::min(g.Radius * scale, pr * 0.85f);
                             // Dal üst dalın içinden başlar: ek yeri boşluksuz
                             const glm::vec3 start = pp + radial * pr * 0.35f;
-                            branches.push_back(Grow(g, gi, start, dir, pt, len, radius, lod, rng));
+                            Branch child = Grow(g, gi, start, dir, pt, len, radius, lod, rng);
+                            child.Depth = parent.Depth + 1;
+                            child.BaseWeight = WeightAt(parent, t);
+                            child.TipWeight = child.BaseWeight + (1.0f - child.BaseWeight) * Flex(child.Depth, g.MainWind);
+                            branches.push_back(std::move(child));
                         }
                         else
                         {
@@ -611,7 +645,7 @@ namespace Conqueror
                             n -= L * glm::dot(n, L);
                             n = glm::length(n) > 1e-4f ? glm::normalize(n) : AnyPerpendicular(L);
                             const float size = rng.Range(std::min(g.Size.x, g.Size.y), std::max(g.Size.x, g.Size.y)) * scale;
-                            cards.push_back({ pp + radial * pr, L, n, size, gi });
+                            cards.push_back({ pp + radial * pr, L, n, size, gi, WeightAt(parent, t) });
                         }
                     }
                 }
@@ -642,7 +676,7 @@ namespace Conqueror
                     const float a = kPi * (float)p / (float)planes;
                     const glm::vec3 w = glm::normalize(glm::cross(c.L, c.N));
                     const glm::vec3 n = glm::normalize(c.N * std::cos(a) + w * std::sin(a));
-                    EmitLeafQuad(c.Base, c.L, n, c.Size, crown, target.first, target.second);
+                    EmitLeafQuad(c.Base, c.L, n, c.Size, crown, c.Weight, std::max(g.EdgeTurbulence, 0.0f), target.first, target.second);
                 }
             }
 
@@ -677,6 +711,15 @@ namespace Conqueror
                 {
                     tree.Generated = Generate(tree, &tree.VertexCount, &tree.TriangleCount);
                     tree.BuiltHash = hash;
+                    // Ağacın boyu: rüzgâr salınımının ölçeği
+                    float lo = 1e30f, hi = -1e30f;
+                    for (const auto& mesh : tree.Generated->Meshes)
+                        for (const auto& v : mesh->GetVertices())
+                        {
+                            lo = std::min(lo, v.Position.y);
+                            hi = std::max(hi, v.Position.y);
+                        }
+                    tree.Height = hi > lo ? hi - lo : 1.0f;
                 }
                 Entity e{ h, &scene };
                 auto& mr = e.HasComponent<MeshRendererComponent>() ? e.GetComponent<MeshRendererComponent>() : e.AddComponent<MeshRendererComponent>();
@@ -719,6 +762,28 @@ namespace Conqueror
                 g.Parent = g.Parent >= 0 ? remap[(size_t)g.Parent] : -1;
             tree.Groups = std::move(kept);
             tree.SelectedGroup = std::clamp(tree.SelectedGroup, 0, std::max(0, (int)tree.Groups.size() - 1));
+        }
+
+        bool WindFor(Scene& scene, entt::entity entity, glm::vec4& wind, glm::vec2& params)
+        {
+            wind = glm::vec4(0.0f);
+            params = glm::vec2(0.0f);
+            auto& reg = scene.m_Registry;
+            const auto* tree = reg.try_get<TreeComponent>(entity);
+            const auto* mr = reg.try_get<MeshRendererComponent>(entity);
+            const auto* tc = reg.try_get<TransformComponent>(entity);
+            if (!tree || !mr || !tc || !tree->Generated || mr->ModelData != tree->Generated)
+                return false;
+            glm::vec3 main(0.0f);
+            float turbulence = 0.0f;
+            GameplaySystems::SampleWindParts(glm::vec3(tc->WorldTransform[3]), main, turbulence);
+            if (glm::dot(main, main) < 1e-8f && turbulence < 1e-4f)
+                return false;
+            // Ağacın dünya boyu (ölçekli nesne daha çok salınır)
+            const float scale = glm::length(glm::vec3(tc->WorldTransform[1]));
+            wind = glm::vec4(main, turbulence);
+            params = glm::vec2(1.0f, std::max(tree->Height * scale, 0.5f));
+            return true;
         }
 
         int DuplicateGroup(TreeComponent& tree, int index)
@@ -787,6 +852,9 @@ namespace Conqueror
                         }
                         if (!g.Material.empty())
                             out << YAML::Key << "Material" << YAML::Value << g.Material;
+                        out << YAML::Key << "MainWind" << YAML::Value << g.MainWind;
+                        out << YAML::Key << "MainTurbulence" << YAML::Value << g.MainTurbulence;
+                        out << YAML::Key << "EdgeTurbulence" << YAML::Value << g.EdgeTurbulence;
                         out << YAML::EndMap;
                     }
                     out << YAML::EndSeq;
@@ -828,6 +896,9 @@ namespace Conqueror
                         Read(gn, "PerpendicularAlign", g.PerpendicularAlign);
                         Read(gn, "HorizontalAlign", g.HorizontalAlign);
                         Read(gn, "Material", g.Material);
+                        Read(gn, "MainWind", g.MainWind);
+                        Read(gn, "MainTurbulence", g.MainTurbulence);
+                        Read(gn, "EdgeTurbulence", g.EdgeTurbulence);
                         // Üst grup her zaman önce gelir
                         if (g.Parent >= (int)t.Groups.size())
                             g.Parent = -1;

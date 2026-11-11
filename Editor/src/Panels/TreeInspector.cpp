@@ -174,6 +174,14 @@ namespace Conqueror::Editor
                 UI::SliderFloat("Perpendicular Align", g.PerpendicularAlign, 0.0f, 1.0f, "%.2f", "Turn the leaves to face along the branch");
                 UI::SliderFloat("Horizontal Align", g.HorizontalAlign, 0.0f, 1.0f, "%.2f", "Lay the leaves flat, facing up");
             }
+
+            // Unity Tree Creator Wind: Wind Zone'lar ağacı sallar (editörde de)
+            UI::SubHeader("Wind");
+            UI::SliderFloat("Main Wind", g.MainWind, 0.0f, 2.0f, "%.2f", "How much this group bends with the main wind of Wind Zones");
+            if (!leaf)
+                UI::SliderFloat("Main Turbulence", g.MainTurbulence, 0.0f, 2.0f, "%.2f", "Extra shaking of thin branch tips");
+            else
+                UI::SliderFloat("Edge Turbulence", g.EdgeTurbulence, 0.0f, 2.0f, "%.2f", "Fluttering of the leaf edges");
         }
     }
 

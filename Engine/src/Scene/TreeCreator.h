@@ -3,6 +3,7 @@
 #include "Core/Base/Base.h"
 
 #include <glm/glm.hpp>
+#include <entt/entt.hpp>
 
 #include <cstdint>
 #include <memory>
@@ -53,6 +54,11 @@ namespace Conqueror
         float HorizontalAlign = 0.0f;           // yaprak yüzü yukarı (yatay)
         // Malzeme (.cqmat); boş = varsayılan kabuk / yaprak
         std::string Material;
+        // Rüzgâr (Wind Zone): grubun ana rüzgârla eğilmesi, kendi salınımı ve yaprak kenarı titremesi (Unity Main Wind,
+        // Main Turbulence, Edge Turbulence)
+        float MainWind = 1.0f;
+        float MainTurbulence = 1.0f;
+        float EdgeTurbulence = 1.0f;
     };
 
     struct TreeComponent
@@ -68,6 +74,8 @@ namespace Conqueror
         uint64_t BuiltHash = 0;
         std::shared_ptr<Model> Generated;
         uint32_t VertexCount = 0, TriangleCount = 0;
+        float Height = 1.0f;                    // üretilen ağacın boyu (rüzgâr salınımının ölçeği)
+        float LeafFlutter = 1.0f;               // yaprak gruplarının ortalama Edge Turbulence'ı
 
         TreeComponent();
     };
@@ -85,6 +93,8 @@ namespace Conqueror
         CQ_API void RemoveGroup(TreeComponent& tree, int index);
         // Grubu (alt grupları olmadan) aynı üst grubun altına kopyalar
         CQ_API int DuplicateGroup(TreeComponent& tree, int index);
+        // Varlık üretilmiş bir ağaçsa ve Wind Zone rüzgârı varsa çizim / gölge için rüzgâr (Renderer3D::SetDrawWind ile aynı)
+        CQ_API bool WindFor(Scene& scene, entt::entity entity, glm::vec4& wind, glm::vec2& params);
     }
 
     void RegisterTreeComponents();

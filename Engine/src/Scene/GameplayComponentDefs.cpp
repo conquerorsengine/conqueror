@@ -136,7 +136,7 @@ namespace Conqueror
             .Field("MultiplyDragByVelocity", "Multiply Drag By Velocity", &ParticleForceFieldComponent::MultiplyDragByVelocity);
 
         ComponentDef<WindZoneComponent>("Wind Zone", "WindZoneComponent", "Effects", ICON_FA_WIND).Color(kGameplayColor)
-            .Describe("Blows particles (and optionally rigidbodies). Directional wind blows along -Z.")
+            .Describe("Blows particles and Tree Creator trees (and optionally rigidbodies). Directional wind blows along -Z.")
             .Field("Mode", "Mode", &WindZoneComponent::Mode).Options({ "Directional", "Spherical" })
             .Field("Radius", "Radius", &WindZoneComponent::Radius).Range(0.0f, 100000.0f, 0.1f)
                 .VisibleIf([](const WindZoneComponent& c) { return c.Mode == WindZoneMode::Spherical; })

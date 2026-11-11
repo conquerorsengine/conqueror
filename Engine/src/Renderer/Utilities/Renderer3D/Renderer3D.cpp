@@ -1,3 +1,4 @@
+#include "Core/Time/TimeManager.h"
 #include "Renderer3D.h"
 #include "ClusterMesh.h"
 #include "Renderer/PostProcess.h"
@@ -89,6 +90,8 @@ namespace Conqueror
             bool ReceiveShadows;
             bool Moving;                 // Temporal AA hareket bayrağı
             bool Lightmapped = true;     // statik (lightmap'e pişirilmiş) nesne; değilse ortam ışığı problardan / gökyüzünden
+            glm::vec4 Wind{ 0.0f };      // ağaç rüzgârı (SetDrawWind)
+            glm::vec2 WindParams{ 0.0f };
         };
 
         // Mesh Paint: sonraki çizimlerin mesh sırasına göre köşe rengi tamponları
@@ -154,6 +157,8 @@ namespace Conqueror
             glm::vec4 PlanarPlane{ 0.0f, 1.0f, 0.0f, 0.0f };
             glm::vec4 PlanarParams{ 0.0f };
             glm::vec3 Tint{ 1.0f };
+            glm::vec4 Wind{ 0.0f };      // ağaç rüzgârı (SetDrawWind): xyz yön * şiddet, w türbülans
+            glm::vec2 WindParams{ 0.0f };// x yaprak titremesi, y ağaç boyu
             int DebugView = 0;
             bool Wireframe = false;
             glm::mat4 GizmoViewProjection = glm::mat4(1.0f);
@@ -350,6 +355,13 @@ namespace Conqueror
                 glm::mat4 Cur{ 1.0f }, Prev{ 1.0f };
                 int Cull = 1;                    // 0 kapalı, 1 arka, 2 ön
                 bool Exact = true;
+                // Ağaç rüzgârı (köşeler iki zamanda salınır) ve alfa kesmeli malzeme (yaprak kartının saydam kısmı arkadakine
+                // hareket yazmasın)
+                glm::vec4 Wind{ 0.0f };
+                glm::vec2 WindParams{ 0.0f };
+                std::shared_ptr<Texture2D> Cutout;
+                float AlphaClip = 0.5f;
+                glm::vec2 UVScale{ 1.0f }, UVOffset{ 0.0f };
             };
             struct SkinnedVelocityDraw
             {
@@ -739,6 +751,20 @@ namespace Conqueror
                 sh->SetMat4("u_Transform", d.Cur);
                 sh->SetMat4("u_PrevTransform", d.Prev);
                 sh->SetFloat("u_Exact", d.Exact ? 1.0f : 0.5f);
+                // Ağaç rüzgârı: şimdiki ve önceki karenin zamanında salınan köşeler (hareket vektörü salınımı içerir)
+                sh->SetFloat4("u_TreeWind", d.Wind);
+                sh->SetFloat4("u_TreeWindParams", glm::vec4(GetWindTime(), d.WindParams.y > 0.0f ? 1.0f : 0.0f, d.WindParams.x, d.WindParams.y));
+                sh->SetFloat("u_TreeWindPrevTime", GetWindPrevTime());
+                // Alfa kesmeli (yaprak kartı): saydam kısım arkadaki yüzeye hareket yazmaz
+                sh->SetInt("u_Cutout", d.Cutout ? 1 : 0);
+                if (d.Cutout)
+                {
+                    d.Cutout->Bind(0);
+                    sh->SetInt("u_AlbedoMap", 0);
+                    sh->SetFloat("u_AlphaClip", d.AlphaClip);
+                    sh->SetFloat2("u_UVScale", d.UVScale);
+                    sh->SetFloat2("u_UVOffset", d.UVOffset);
+                }
                 RenderCommand::DrawIndexed(d.Draw->GetVertexArray(), d.Draw->GetIndexCount());
                 drew = true;
             }
@@ -783,9 +809,16 @@ namespace Conqueror
             auto& sh = s_VelocityShader;
             sh->Bind();
             sh->SetInt("u_PrevCoverage", 1);
+            // Önceki çizimlerin rüzgâr / alfa kesme durumu bu geçişe taşınmaz (eski yer katı siluetle işaretlenir)
+            sh->SetInt("u_Cutout", 0);
+            sh->SetFloat4("u_TreeWindParams", glm::vec4(0.0f));
             for (const auto& d : it->second.Velocity)
             {
                 if (!d.Draw || !d.Draw->GetVertexArray())
+                    continue;
+                // Yerinde duran, yalnız rüzgârda salınan ağaç: eski yeri işaretlenmez (salınım birkaç santim; işaretlense TAA
+                // ağacın tüm silueti üzerinde her karede geçmişi atar, yapraklar titrerdi)
+                if (d.WindParams.y > 0.0f && d.Cur == d.Prev)
                     continue;
                 sh->SetMat4("u_Transform", d.Prev);
                 sh->SetMat4("u_PrevTransform", d.Prev);
@@ -1706,6 +1739,8 @@ namespace Conqueror
         shader->SetInt("u_Lightmapped", s->Lightmapped ? 1 : 0);
         shader->SetFloat3("u_Tint", s->Tint);
         shader->SetInt("u_UseVertexColor", 0);
+        // Ağaç rüzgârı yalnız DrawMeshInternal'da (programda önceki ağaç çiziminden kalmasın)
+        shader->SetFloat4("u_TreeWindParams", glm::vec4(0.0f));
         material->Bind(shader);
         if (material->MaterialShader)
             material->BindGraphUniforms(shader);
@@ -1750,9 +1785,11 @@ namespace Conqueror
         if (!fromQueue && s_MotionCur && (!materialIn || materialIn->Rendering != Material::RenderMode::Transparent))
             s_MotionCur->CurFoot[motionKey] = { meshIn, transform };
         const glm::mat4 prevCopy = prevTransform ? *prevTransform : transform;   // harita sonraki çizimlerde değişebilir
-        const bool moving = fromQueue ? s_QueuedMoving : (transformMoved || (s_MotionCur && materialIn && materialIn->MaterialShader));
-        // Yer değiştiren nesnenin gölgesi de yer değiştirir (kamera görmese de gölgesi görüş alanına düşebilir)
-        if (transformMoved && s_MotionCur && meshIn->GetBoundsRadius() > 0.0f && (!materialIn || materialIn->Rendering != Material::RenderMode::Transparent))
+        // Ağaç rüzgârı: köşeler her karede salınır (dönüşüm aynı kalsa da hareketli)
+        const bool windy = s->WindParams.y > 0.0f;
+        const bool moving = fromQueue ? s_QueuedMoving : (transformMoved || windy || (s_MotionCur && materialIn && materialIn->MaterialShader));
+        // Yer değiştiren (ya da rüzgârda salınan) nesnenin gölgesi de yer değiştirir (kamera görmese de gölgesi görüş alanına düşebilir)
+        if ((transformMoved || windy) && !fromQueue && s_MotionCur && meshIn->GetBoundsRadius() > 0.0f && (!materialIn || materialIn->Rendering != Material::RenderMode::Transparent))
         {
             glm::vec3 c, e;
             TransformBox(transform, meshIn->GetBoundsCenter(), meshIn->GetBoundsExtents(), c, e);
@@ -1781,14 +1818,16 @@ namespace Conqueror
             }
             return;
         }
-        // GBAA / SRAA geometri listesi (yalnız Opaque kipi: alfa kesmeli yüzeyin görünen kenarı üçgen kenarı değildir)
-        if (!fromQueue && s_GeometryCur && material->Rendering == Material::RenderMode::Opaque)
+        // GBAA / SRAA geometri listesi (yalnız Opaque kipi: alfa kesmeli yüzeyin görünen kenarı üçgen kenarı değildir; rüzgârda
+        // salınan ağaç geometrisi bu geçişte salınmadığından eklenmez)
+        if (!fromQueue && s_GeometryCur && material->Rendering == Material::RenderMode::Opaque && !windy)
         {
             const Material::CullMode cull = material->Culling;
             s_GeometryCur->push_back({ meshIn, mesh, transform, (doubleSided || cull == Material::CullMode::Off) ? 0 : (cull == Material::CullMode::Front ? 2 : 1) });
         }
-        // Hareket eden opak nesne: TAA hareket vektörü geçişinde kendi hareketiyle çizilir (önceki konumu biliniyorsa)
-        if (!fromQueue && transformMoved && prevTransform && s_MotionCur && material->Rendering != Material::RenderMode::Transparent)
+        // Hareket eden opak nesne: TAA hareket vektörü geçişinde kendi hareketiyle çizilir (önceki konumu biliniyorsa). Rüzgârda
+        // salınan ağaç dönüşümü değişmese de her karede (köşeler iki zamanda salınır)
+        if (!fromQueue && ((transformMoved && prevTransform) || windy) && s_MotionCur && material->Rendering != Material::RenderMode::Transparent)
         {
             MotionTrack::VelocityDraw v;
             v.MeshRef = meshIn;
@@ -1798,6 +1837,16 @@ namespace Conqueror
             const Material::CullMode cull = material->Culling;
             v.Cull = (doubleSided || cull == Material::CullMode::Off) ? 0 : (cull == Material::CullMode::Front ? 2 : 1);
             v.Exact = !material->MaterialShader;   // graph malzemede köşe hareketi olabilir: yaklaşık
+            v.Wind = windy ? s->Wind : glm::vec4(0.0f);
+            v.WindParams = windy ? s->WindParams : glm::vec2(0.0f);
+            if (material->Rendering == Material::RenderMode::Cutout && material->AlbedoMap)
+            {
+                v.Cutout = material->AlbedoMap;
+                // PBR'daki gibi: doku alfası x Opacity < Alpha Clip ise atılır
+                v.AlphaClip = material->AlphaClip / std::max(material->Opacity, 1e-3f);
+                v.UVScale = material->Tiling;
+                v.UVOffset = material->Offset;
+            }
             s_MotionCur->Velocity.push_back(std::move(v));
             // Eski yeri (ışınlanma, yeniden doğma, hızlı nesne) hareket vektörü geçişinin "önceki konum" çizimi piksel piksel
             // işaretler. Burada ayrıca eklenen kaba ekran dikdörtgeni kaldırıldı: dünya eksenine hizalı kutu, çapraz uçan ince
@@ -1818,7 +1867,8 @@ namespace Conqueror
             const float dist2 = far * far;
             // Alfa kesmeli (discard): erken derinlik testi yapılamaz, opakların derinliği yazıldıktan sonra çizilir
             const uint32_t key = material->Rendering == Material::RenderMode::Cutout ? 1u : 0u;
-            s->Opaque.push_back({ meshIn, transform, material, dist2, key, vertexColors, s->Tint, doubleSided, s->ReceiveShadows, moving, s->Lightmapped });
+            s->Opaque.push_back({ meshIn, transform, material, dist2, key, vertexColors, s->Tint, doubleSided, s->ReceiveShadows, moving, s->Lightmapped,
+                                  s->Wind, s->WindParams });
             return;
         }
 
@@ -1835,6 +1885,9 @@ namespace Conqueror
         shader->SetInt("u_ReceiveShadows", s->ReceiveShadows ? 1 : 0);
         shader->SetInt("u_Lightmapped", s->Lightmapped ? 1 : 0);
         shader->SetFloat3("u_Tint", s->Tint);
+        // Ağaç rüzgârı (Include/TreeWind.glsl): kapalıyken y = 0
+        shader->SetFloat4("u_TreeWind", s->Wind);
+        shader->SetFloat4("u_TreeWindParams", glm::vec4(GetWindTime(), s->WindParams.y > 0.0f ? 1.0f : 0.0f, s->WindParams.x, s->WindParams.y));
         material->Bind(shader);
         if (material->MaterialShader)
             material->BindGraphUniforms(shader);
@@ -1946,6 +1999,7 @@ namespace Conqueror
         shader->SetInt("u_Lightmapped", s->Lightmapped ? 1 : 0);
         shader->SetFloat3("u_Tint", s->Tint);
         shader->SetInt("u_UseVertexColor", 0);
+        shader->SetFloat4("u_TreeWindParams", glm::vec4(0.0f));   // örnekli çizim rüzgârsız (önceki ağaçtan kalmasın)
         shader->SetInt("u_Instanced", 1);
         material->Bind(shader);
         ApplyCulling(material, doubleSided);
@@ -2072,6 +2126,22 @@ namespace Conqueror
     void Renderer3D::SetTint(const glm::vec3& tint)
     {
         s->Tint = tint;
+    }
+
+    void Renderer3D::SetDrawWind(const glm::vec4& wind, const glm::vec2& params)
+    {
+        s->Wind = wind;
+        s->WindParams = params;
+    }
+
+    float Renderer3D::GetWindTime()
+    {
+        return TimeManager::GetTime();
+    }
+
+    float Renderer3D::GetWindPrevTime()
+    {
+        return TimeManager::GetTime() - TimeManager::GetDeltaTime();
     }
 
     void Renderer3D::DrawMesh(const std::shared_ptr<Mesh>& mesh, const glm::mat4& transform, std::shared_ptr<Material> material, bool doubleSided)
@@ -2385,8 +2455,12 @@ namespace Conqueror
             s->ReceiveShadows = item.ReceiveShadows;
             s->Lightmapped = item.Lightmapped;
             s_QueuedMoving = item.Moving;
+            s->Wind = item.Wind;
+            s->WindParams = item.WindParams;
             DrawMeshInternal(item.MeshRef, item.Transform, item.MaterialRef, item.DoubleSided, true);
         }
+        s->Wind = glm::vec4(0.0f);
+        s->WindParams = glm::vec2(0.0f);
         s->Tint = tint;
         s->ReceiveShadows = receive;
         s->Lightmapped = lightmapped;

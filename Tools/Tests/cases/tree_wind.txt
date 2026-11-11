@@ -1,0 +1,19 @@
+# template: empty
+# Tree + Wind Zone: rüzgârsız ağaç durur (taç bölgesi kareler arası neredeyse aynı); Wind Zone eklenince salınır (taç
+# değişir). Game sekmesi öndeyken de (sahne görünümü gizliyken düzenleyici sistemleri çalışır)
+wait 40
+entity create WTree 0 -5 -6
+comp add WTree TreeComponent
+focus Game
+wait 40
+game_region_change mark 0.38 0.45 0.62 0.75
+wait 20
+game_region_change expect 0.38 0.45 0.62 0.75 <4
+entity create Wind 0 0 0
+comp add Wind WindZoneComponent
+comp set Wind WindZoneComponent Main 1.5
+wait 40
+game_region_change mark 0.38 0.45 0.62 0.75
+wait 20
+game_region_change expect 0.38 0.45 0.62 0.75 >6
+quit

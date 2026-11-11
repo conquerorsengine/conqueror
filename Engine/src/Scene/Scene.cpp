@@ -1995,6 +1995,19 @@ namespace Conqueror
     {
         // Stats'ı sıfırla
         Renderer::ResetStats();
+        UpdateEditorSystems(ts);
+
+        // Buton input sistemi
+        UpdateButtonInput(camera, ts, viewportBounds);
+
+        // UI (RectTransform) yerleşimi: sahne görünümünde seçim/gizmo için dünya dönüşümleri
+        UISystem::UpdateEditorTransforms(*this, m_UIScreenSize);
+
+        RenderEditorView(ts, camera, viewportBounds);
+    }
+
+    void Scene::UpdateEditorSystems([[maybe_unused]] Timestep ts)
+    {
         // Kumaşların düz dinlenme hali (oyunda Jolt yumuşak gövdesi sürer)
         if (!m_IsRuntimeScene)
             ClothMesh::EnsureRestMeshes(*this);
@@ -2030,12 +2043,6 @@ namespace Conqueror
         CSG::Update(*this);
         MultiMesh::Update(*this);
 
-        // Buton input sistemi
-        UpdateButtonInput(camera, ts, viewportBounds);
-
-        // UI (RectTransform) yerleşimi: sahne görünümünde seçim/gizmo için dünya dönüşümleri
-        UISystem::UpdateEditorTransforms(*this, m_UIScreenSize);
-
         // Seçili parçacık sistemlerinin editör önizlemesi (oyun modunda çalışma zamanı günceller)
         if (!m_IsRuntimeScene)
         {
@@ -2047,7 +2054,10 @@ namespace Conqueror
         }
 
         UpdateAudioSystem(ts);
+    }
 
+    void Scene::RenderEditorView(Timestep ts, EditorCamera& camera, const glm::vec2* viewportBounds)
+    {
         // 3D sahne
         {
             const uint32_t vpW = viewportBounds ? (uint32_t)std::max(1.0f, viewportBounds[1].x - viewportBounds[0].x) : std::max(m_ViewportWidth, 1u);
@@ -3203,7 +3213,15 @@ namespace Conqueror
                 }
                 if (painted)
                     Renderer3D::SetVertexColorBuffers(VertexPaint::Prepare(ren));
+                // Tree Creator ağacı: Wind Zone rüzgârıyla salınır (görüntü, gölge ve hareket vektörü birlikte)
+                glm::vec4 treeWind(0.0f);
+                glm::vec2 treeWindParams(0.0f);
+                const bool windy = TreeCreator::WindFor(*this, entity, treeWind, treeWindParams);
+                if (windy)
+                    Renderer3D::SetDrawWind(treeWind, treeWindParams);
                 Renderer3D::DrawModel(transform.WorldTransform, modelComp.ModelData);
+                if (windy)
+                    Renderer3D::SetDrawWind(glm::vec4(0.0f), glm::vec2(0.0f));
                 if (painted)
                     Renderer3D::SetVertexColorBuffers(nullptr);
             }

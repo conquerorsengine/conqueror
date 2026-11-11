@@ -172,6 +172,11 @@ namespace Conqueror
         void OnUpdateSimulation(Timestep ts);
         void OnUpdateEditor(Timestep ts, EditorCamera& camera);
         void OnUpdateEditor(Timestep ts, EditorCamera& camera, const glm::vec2* viewportBounds);
+        // Düzenleyicide çalışan sistemler (dönüşüm hiyerarşisi, kısıtlar, eğriler, rüzgâr, parçacık önizlemesi, ses): sahne
+        // görünümü çizilmese de (Game sekmesi öndeyken) her karede
+        void UpdateEditorSystems(Timestep ts);
+        // Sahne görünümünün çizimi (OnUpdateEditor'ın çizim kısmı)
+        void RenderEditorView(Timestep ts, EditorCamera& camera, const glm::vec2* viewportBounds);
         // Işık / kamera simgeleri işlenmiş son görüntünün üstüne (viewport, post-process sonrası)
         void RenderEditorIcons(EditorCamera& camera, const glm::vec2* viewportBounds);
         // Editör seçimi (çarpıştırıcı gizmo'ları için)
