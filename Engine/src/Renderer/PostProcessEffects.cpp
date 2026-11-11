@@ -130,7 +130,11 @@ namespace Conqueror
         const bool fog = settings.VolumetricFog && !camera.Orthographic;
         if (!clouds)
             m_CloudHistoryValid = false;
-        if (!ssr && !gi && !clouds && !fog)
+        // AO da burada (TAA'dan önce) uygulanır: yalnız AO açıkken erken dönülüyordu, AO TAA'dan SONRA Composite'te bindiriliyordu.
+        // Titreşimli derinlikten her karede hesaplanan AO yumuşatılmadan görüntüye biniyor, ince ayrıntı (yapraklar, küplerin
+        // arası) titreşim döngüsüyle (16 kare) titriyordu
+        const bool aoOnly = settings.AmbientOcclusion && m_AOValid;
+        if (!ssr && !gi && !clouds && !fog && !aoOnly)
             return;
         auto combine = PostProcess::GetShader("SceneFX");
         if (!Valid(combine))

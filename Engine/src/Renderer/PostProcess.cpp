@@ -1,3 +1,4 @@
+#include "Core/Time/TimeManager.h"
 #include <sstream>
 #include <fstream>
 #include <filesystem>
@@ -1982,7 +1983,9 @@ namespace Conqueror
         // kameradan kalan görüntü yeni kareyle karışıp bir süre silik bir kopya olarak sönüyordu (oyun oynarken Viewport'a dönünce)
         {
             const double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
-            if (m_LastRunSeconds >= 0.0 && now - m_LastRunSeconds > 0.25)
+            // Kayıt (Recorder, sabit zaman adımı) sırasında kareler gerçek zamanda yavaştır (kodlama): duvar saatiyle bakılınca TAA her
+            // karede baştan başlıyor, kaydedilen videoda kenar yumuşatma hiç birikmiyordu (ince ayrıntı titreşim döngüsüyle titriyordu)
+            if (m_LastRunSeconds >= 0.0 && now - m_LastRunSeconds > 0.25 && TimeManager::GetCaptureDeltaTime() <= 0.0f)
                 ResetTemporalHistory();
             m_LastRunSeconds = now;
         }
