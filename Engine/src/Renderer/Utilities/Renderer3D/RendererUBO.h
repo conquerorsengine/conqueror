@@ -47,8 +47,13 @@ namespace Conqueror
         glm::ivec4 FeatureFlags;
         glm::ivec4 DebugParams;   // x: görünüm modu (0 normal, 1 unlit, 2 normals, 3 lighting only, 4 metal/rough, 5 AO), y: alan ışığı sayısı
         glm::vec4 RenderParams;   // x: malzeme dokusu mip sapması (yükseltici iç çözünürlüğü: log2(ölçek), yerelde 0)
+
+        // Ray Traced GI prob hacmi (RayTracedGI): sıfır = kapalı
+        glm::vec4 GIVolume0;      // xyz en küçük hücre, w prob aralığı
+        glm::vec4 GIVolume1;      // xyz prob sayısı, w atlas katman sütunu
+        glm::vec4 GIVolume2;      // x normal kaydırma, y görüş kaydırma, z yoğunluk, w gökyüzü sızıntısı
     };
-    static_assert(sizeof(FrameUBO) == 1104, "FrameUBO must match std140 CQ_FrameBlock");
+    static_assert(sizeof(FrameUBO) == 1152, "FrameUBO must match std140 CQ_FrameBlock");
 
     struct GPUPointLight
     {

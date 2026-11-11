@@ -22,6 +22,9 @@ namespace Conqueror
         constexpr uint32_t APVPositions = 20;
         constexpr uint32_t APVSH = 21;
         constexpr uint32_t PlanarReflection = 22;
+        constexpr uint32_t GIIrradiance = 23;  // Ray Traced GI atlasları (Include/DynamicGI.glsl)
+        constexpr uint32_t GIDistance = 24;
+        constexpr uint32_t GIProbeData = 25;
         constexpr uint32_t MaxReflectionProbes = 4;
     }
 

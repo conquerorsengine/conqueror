@@ -40,6 +40,8 @@ namespace Conqueror
 
         // Vertex aralığını güncelle (CPU kopyası + GPU alt bölümü); terrain fırçaları için
         void UpdateVertices(const Vertex* vertices, uint32_t first, uint32_t count);
+        // Köşe verisi her değiştiğinde artar (ışın izleme BLAS'ı yeniden dizilir)
+        uint32_t GetVersion() const { return m_Version; }
 
         // Otomatik LOD (Unreal Static Mesh LOD'ları). Seviye 0 meshin kendisi; ekran boyutu (sınır küresi
         // yarıçapı * izdüşüm / uzaklık) bir seviyenin eşiğinin altına inince o seviye çizilir.
@@ -87,6 +89,7 @@ namespace Conqueror
         std::vector<Vertex> m_Vertices;
         std::vector<uint32_t> m_Indices;
         uint32_t m_IndexCount;
+        uint32_t m_Version = 0;
         std::vector<LODLevel> m_LODs;
         uint64_t m_LODSignature = 0;
         void ComputeBounds();

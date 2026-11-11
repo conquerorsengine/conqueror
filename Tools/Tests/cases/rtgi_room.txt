@@ -1,0 +1,42 @@
+# template: empty
+# Ray Traced GI (Lumen benzeri): kapalı oda (zemin, 4 duvar, tavan) kameranın çevresinde. GI kapalıyken oda içi gökyüzü ortam
+# ışığıyla aydınlanır (raster ortam ışığı gökyüzünün görünmediğini bilmez); GI açılınca problar gökyüzünü göremez, oda kararır.
+# Duvara ışıyan bir panel konunca GI açıkken zemini aydınlatır (kapalıyken yalnız kendisi parlar)
+wait 40
+create_primitive Cube Floor 0 -0.1 4
+entity scale Floor 8.4 0.2 9.4
+create_primitive Cube Roof 0 4.1 4
+entity scale Roof 8.4 0.2 9.4
+create_primitive Cube WallL -4.1 2 4
+entity scale WallL 0.2 4.4 9.4
+create_primitive Cube WallR 4.1 2 4
+entity scale WallR 0.2 4.4 9.4
+create_primitive Cube WallB 0 2 -0.6
+entity scale WallB 8.4 4.4 0.2
+create_primitive Cube WallF 0 2 8.6
+entity scale WallF 8.4 4.4 0.2
+focus Game
+wait 60
+# GI kapalı: oda içi gökyüzü ortam ışığıyla aydınlık
+game_region 0.40 0.05 0.60 0.20 lum mean >40
+game_region 0.40 0.45 0.60 0.60 lum mean >40
+cvar r.RTGI 1
+wait 120
+# GI açık: gökyüzü görünmüyor, ışık yok -> karanlık
+game_region 0.40 0.05 0.60 0.20 lum mean <20
+game_region 0.40 0.45 0.60 0.60 lum mean <20
+# Işıyan panel (arka duvar önünde): zemini aydınlatır
+create_primitive Cube Panel 0 1.2 -0.4
+entity scale Panel 3 1.2 0.1
+comp set Panel MeshRendererComponent EmissionColor 1 1 1
+comp set Panel MeshRendererComponent EmissionStrength 6
+wait 120
+game_region 0.40 0.05 0.60 0.20 lum mean >60
+# Kamera dururken ışık sabit (prob gürültüsü titretmez; kapalı beyaz odada sekmelerle biriken ışık birkaç saniyede oturur)
+wait 360
+game_region_change mark 0.30 0.05 0.70 0.40
+wait 30
+game_region_change expect 0.30 0.05 0.70 0.40 <2
+cvar r.RTGI 0
+wait 30
+quit

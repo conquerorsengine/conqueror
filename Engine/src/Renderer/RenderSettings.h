@@ -215,6 +215,17 @@ namespace Conqueror
         float SSRThickness = 0.5f;        // yüzey kalınlık toleransı
         float SSRMaxRoughness = 0.6f;     // daha pürüzlü yüzeyler yansıtmaz
 
+        // Ray Traced GI (Lumen benzeri dinamik küresel aydınlatma; Renderer/RayTracing/RayTracedGI.h): kameranın çevresindeki ışık
+        // probları sahneye ışın izler (gökyüzü, doğrudan ışık, ışıyan yüzeyler, çoklu sekme); ortam ışığının yerine geçer
+        bool RayTracedGI = false;
+        float RTGIIntensity = 1.0f;        // dolaylı ışık çarpanı (Unreal Indirect Lighting Intensity)
+        float RTGIProbeSpacing = 2.0f;     // prob aralığı (m): küçük = ayrıntılı, daha çok prob
+        float RTGIViewDistance = 32.0f;    // problu bölgenin yatay yarı genişliği (m); ötesinde ortam ışığı
+        int RTGIRaysPerProbe = 128;        // prob başına ışın (Final Gather Quality)
+        float RTGIUpdateSpeed = 1.0f;      // ışık değişimine uyum hızı (Scene Lighting Update Speed)
+        float RTGISkyLeaking = 0.0f;       // kapalı yerlere de kalan gökyüzü ışığı payı (Skylight Leaking)
+        float RTGIDiffuseBoost = 1.0f;     // sekmede yüzey renginin gücü (Diffuse Color Boost)
+
         // Ekran uzayı küresel aydınlatma (Lumen ekran izleri benzeri): yüzeyler arası tek sıçrama dolaylı ışık
         bool ScreenSpaceGI = false;
         float SSGIIntensity = 1.0f;

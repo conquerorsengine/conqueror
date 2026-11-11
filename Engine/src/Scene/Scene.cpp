@@ -3,6 +3,8 @@
 #include "Scene/AssetRuntime.h"
 #include "Scene/Foliage.h"
 #include "Scene/AnimationAssets.h"
+#include "Renderer/RayTracing/RayTracedGI.h"
+#include "Renderer/Utilities/Renderer3D/ClusterRenderer.h"
 #include "Renderer/LightProfile.h"
 #include "Renderer/ExtraTextures.h"
 #include "Core/Audio/SoundCue.h"
@@ -124,6 +126,9 @@
 
 namespace Conqueror
 {
+    // Ray Traced GI: ikincil kamera çizimi (Render Texture kamerası) oyun görünümünün prob hacmini izlemeden kullanır
+    static bool s_GISecondaryView = false;
+
 
     namespace
     {
@@ -2841,7 +2846,10 @@ namespace Conqueror
             m_Registry.get<TransformComponent>(cameraEntity).WorldTransform, width, height);
         const entt::entity previous = m_BackgroundCamera;
         m_BackgroundCamera = cameraEntity;
+        const bool previousSecondary = s_GISecondaryView;
+        s_GISecondaryView = true;
         RenderScene3D(renderCamera, false);
+        s_GISecondaryView = previousSecondary;
         m_BackgroundCamera = previous;
     }
 
@@ -3052,12 +3060,26 @@ namespace Conqueror
 
         // Blend shape fark dokuları (gölge, renk ve hareket vektörü geçişleri aynı şekli kullanır)
         BlendShapes::Update(*this);
+        // Virtual Geometry (Nanite benzeri): bu görünümün nesneleri GPU güdümlü partilere (gölge ve opak çizim GPU'da seçer)
+        {
+            const uint32_t vgView = m_CapturingProbes ? 3u : m_RenderingPlanar ? 4u : s_GISecondaryView ? 2u : (editorView ? 0u : 1u);
+            ClusterRenderer::Gather(*this, Renderer3D::GetCamera(), vgView, [this](uint32_t e) {
+                const auto id = (entt::entity)e;
+                return IsEntityActive(id) && !m_LODHidden.count(e) && !m_OcclusionHidden.count(e);
+            });
+        }
         // Gölgeler -> gökyüzü
         {
             CQ_PROFILE_SAMPLE("Render.Shadows", Rendering);
             CQ_PROFILE_GPU("Shadows");
             Renderer3D::RenderShadows(this);
         }
+        // Ray Traced GI (Lumen benzeri): ışıklar verildikten sonra, opak çizimden önce problar güncellenir ve bağlanır. Editörün
+        // sahne görünümü ve oyun görünümü ayrı hacim; ikincil kameralar (Render Texture) oyun hacmini izlemeden kullanır.
+        // Yansıma probu / planar yakalamaları kendi ortam ışığıyla çizilir
+        const bool giView = !m_CapturingProbes && !m_RenderingPlanar;
+        if (giView)
+            RayTracedGI::Update(*this, camera, env.Settings.Post, s_GISecondaryView ? 1u : (editorView ? 0u : 1u), !s_GISecondaryView);
         {
             CQ_PROFILE_SAMPLE("Render.Sky", Rendering);
             CQ_PROFILE_GPU("Sky");
@@ -3136,6 +3158,8 @@ namespace Conqueror
         {
             if (!IsEntityActive(entity) || m_LODHidden.count((uint32_t)entity) || m_OcclusionHidden.count((uint32_t)entity))
                 continue;
+            if (ClusterRenderer::Handles((uint32_t)entity))
+                continue;   // Virtual Geometry: GPU güdümlü partide (aşağıda)
             auto [transform, modelComp] = modelView.get<TransformComponent, MeshRendererComponent>(entity);
             if (!modelComp.IsModel())
                 continue;
@@ -3233,6 +3257,8 @@ namespace Conqueror
         Renderer3D::SetDrawCastsShadows(true);
         Renderer3D::SetDrawLightmapped(true);
         // Kuyruktaki opak meshler / modeller yakından uzağa; MultiMesh ve araziler (büyük, çoğunlukla arkada) sonra çizilir
+        // Virtual Geometry partileri, 1. geçiş: önceki karede görünen kümeler (görüş + LOD GPU'da)
+        ClusterRenderer::DrawOpaque(Renderer3D::GetCamera());
         Renderer3D::FlushOpaque();
 
         // MultiMesh: GPU örneklemeli kümeler
@@ -3247,6 +3273,8 @@ namespace Conqueror
             auto [transform, terrain] = terrainView.get<TransformComponent, TerrainComponent>(entity);
             TerrainSystem::Render(terrain, transform.WorldTransform);
         }
+        // Virtual Geometry, 2. geçiş: opak derinlikten HZB; önceki karede örtülü olup artık görünen kümeler aynı karede çizilir
+        ClusterRenderer::DrawDisoccluded(Renderer3D::GetCamera());
 
         Profiling::FrameProfiler::EndGPUSample();
         Profiling::FrameProfiler::EndSample();
@@ -3295,6 +3323,10 @@ namespace Conqueror
         // Video Player "Camera Near Plane": sahnenin önünde
         if (!editorView && !m_CapturingProbes)
             VideoPlayers::RenderCameraPlanes(*this, false);
+        // Bu görünümün GI bağlantısı kaldırılır (önizleme / küçük resim çizimleri problardan etkilenmesin)
+        if (giView)
+            RayTracedGI::EndView();
+        ClusterRenderer::EndView();
         (void)editorView;
     }
 

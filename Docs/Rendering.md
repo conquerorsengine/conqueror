@@ -39,7 +39,15 @@ render-to-texture behave exactly like OpenGL.
   Soft (16-tap Poisson PCF) or Very Soft (PCSS-style, variable penumbra). Bias, softness, colour and distance are in the
   Lighting panel.
 - Image-based lighting from the skybox; reflection probes; baked lighting (Lighting > Generate).
-- Screen-space global illumination (Lumen-style, `r.SSGI`), screen-space ambient occlusion.
+- Ray traced global illumination (Lumen-style, Lighting > Post > Global Illumination (Ray Traced), `r.RTGI`): light probes
+  around the camera trace rays against a two-level BVH of the scene (every mesh once, objects as instances; moving objects
+  only rebuild the top level). Rays gather the sky, the sun and local lights with shadows, emissive surfaces and the
+  previous frame's probes (infinite bounces). The probes replace the ambient light and the sky reflections: rooms get dark
+  where the sky cannot reach, lit surfaces brighten and tint their surroundings, emissive surfaces light the scene. No
+  baking; probes near the camera update every frame, distant ones less often (ray budget). Probe Spacing, View Distance,
+  Rays per Probe, Update Speed, Skylight Leaking and Diffuse Color Boost are in the panel. Surfaces with baked lightmaps
+  keep their baked lighting.
+- Screen-space global illumination (Lumen-style screen traces, `r.SSGI`), screen-space ambient occlusion.
 
 ## Sky and atmosphere
 
@@ -72,6 +80,14 @@ Configured per camera / Post Process Volume; each effect has a console variable 
 - Meshes via Assimp (glTF, FBX, OBJ ...), automatic LOD chains (quadric simplification), Nanite-style clustered meshes
   (`VirtualGeometry` component), GPU instancing (MultiMesh), CSG shapes, terrain with sculpt / paint tools, vertex paint,
   decals, billboards, particles, splines.
+- Virtual Geometry (Nanite-style): a model is split into ~128-triangle clusters and simplified into a cluster hierarchy
+  (built in the background), so detail follows the on-screen error without cracks. Cluster selection runs on the GPU
+  (`r.Nanite`): a compute pass tests every cluster of every object for the screen-space error, the view frustum and
+  occlusion, and writes the draws; all objects that share a mesh and material are drawn by one indirect multi-draw.
+  Occlusion culling is two-pass (`r.Nanite.Occlusion`): clusters visible last frame are drawn first, a depth pyramid (HZB)
+  is built from the opaque depth, then the remaining clusters that became visible are drawn in the same frame (no
+  popping when the camera turns). Shadow cascades use the same selection with the cascade's light volume and the coarser
+  shadow error. Without GL 4.6 indirect-count draws the engine falls back to CPU selection.
 - 2D: sprites, tilemaps (auto-tiling), 2D lights, pixel-perfect camera, 2D skeletons.
 
 ## Visibility and draw order

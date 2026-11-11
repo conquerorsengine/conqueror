@@ -47,9 +47,14 @@ Open the Console panel and type a name to read it, `name value` to set it, `name
 | `r.ForceLOD` | `-1` | Force a mesh LOD level on every Auto LOD mesh (-1 = automatic by screen size) |
 | `r.FrustumCulling` | `1` | Skip meshes outside the camera view and outside each shadow cascade (0 = draw everything, for debugging) |
 | `r.MotionBlur` | `0` | Camera motion blur on/off |
+| `r.Nanite` | `1` | Virtual Geometry: 1 GPU-driven clusters (LOD, frustum and occlusion culling on the GPU, instances batched), 0 CPU selection |
+| `r.Nanite.Occlusion` | `1` | Virtual Geometry two-pass occlusion culling with a depth pyramid (HZB); 0 draws every cluster in view |
 | `r.OpaqueSort` | `1` | Opaque draw order: 1 front to back, alpha-tested (cutout) after opaque (default); 0 submission order |
 | `r.PostProcess` | `1` | Whole post processing stack on/off |
 | `r.Quality` | `2` | Quality level: 0 Low, 1 Medium, 2 High, 3 Ultra |
+| `r.RTGI` | `0` | Ray traced global illumination (Lumen-style probes traced against the scene) on/off |
+| `r.RTGI.Intensity` | `1` | Ray traced GI indirect lighting intensity |
+| `r.RTGI.Rays` | `128` | Ray traced GI rays per probe (32..256) |
 | `r.Saturation` | `1` | Color grading saturation |
 | `r.ScreenPercentage` | `66.6667` | Upscaler internal resolution in percent (33 .. 100); sets the quality mode to Custom |
 | `r.Shadows` | `1` | Realtime shadows on/off |

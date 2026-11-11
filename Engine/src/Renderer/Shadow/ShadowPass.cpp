@@ -11,6 +11,7 @@
 #include "Renderer/Utilities/Renderer3D/ModelLoader.h"
 #include "Renderer/Utilities/Renderer3D/ClusterMesh.h"
 #include "Scene/VirtualGeometry.h"
+#include "Renderer/Utilities/Renderer3D/ClusterRenderer.h"
 #include "Scene/MultiMesh.h"
 #include "Renderer/RHI/RenderCommand.h"
 #include "Renderer/TextureSlots.h"
@@ -509,7 +510,14 @@ namespace Conqueror
                 const glm::vec4 windUniform = windy ? glm::vec4(Renderer3D::GetWindTime(), 1.0f, treeWindParams.x, treeWindParams.y) : glm::vec4(0.0f);
                 m_DepthShader->SetFloat4("u_TreeWind", treeWind);
                 m_DepthShader->SetFloat4("u_TreeWindParams", windUniform);
-                // Virtual Geometry: gölgede daha kaba hata eşiğiyle küme seçimi (ana kameraya göre)
+                // Virtual Geometry: GPU güdümlü yoldaki nesneler aşağıda partiler halinde çizilir
+                if (ClusterRenderer::Handles((uint32_t)entity))
+                {
+                    if (windy)
+                        m_DepthShader->SetFloat4("u_TreeWindParams", glm::vec4(0.0f));
+                    continue;
+                }
+                // Virtual Geometry (CPU seçimi): gölgede daha kaba hata eşiğiyle küme seçimi (ana kameraya göre)
                 if (auto* vg = registry.try_get<VirtualGeometryComponent>(entity); vg && vg->Enabled && vg->Ready)
                 {
                     const RenderCamera& cam = Renderer3D::GetCamera();
@@ -574,6 +582,19 @@ namespace Conqueror
                     Renderer3D::UnbindInstanceAttributes(mesh);
                     if (doubleSided) glEnable(GL_CULL_FACE);
                     Renderer::GetStats().ShadowDrawCalls++;
+                });
+            }
+
+            // Virtual Geometry (Nanite benzeri, GPU güdümlü): kümeler kademenin ışık hacmi ve gölge eşiğiyle GPU'da seçilir, aynı
+            // küme meshli nesneler tek dolaylı çizimde
+            if (m_InstancedDepthShader && m_InstancedDepthShader->IsValid())
+            {
+                glm::vec4 lightPlanes[6];
+                Renderer3D::ExtractFrustum(m_LightSpaceMatrices[i], lightPlanes);
+                ClusterRenderer::DrawShadows(lightPlanes, [&]() {
+                    m_InstancedDepthShader->Bind();
+                    m_InstancedDepthShader->SetMat4("u_LightSpaceMatrix", m_LightSpaceMatrices[i]);
+                    m_InstancedDepthShader->SetMat4("u_Transform", glm::mat4(1.0f));
                 });
             }
         }

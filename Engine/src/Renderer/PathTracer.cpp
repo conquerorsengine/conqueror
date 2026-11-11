@@ -49,13 +49,12 @@ void main()
             else radiance += throughput * ambient(d);
             break;
         }
-        Tri tr = tris[ti];
-        Mat m = mats[int(tr.V0.w + 0.5)];
-        vec3 p = o + d * t;
-        vec3 n = normalize(tr.N0.xyz * (1.0 - bc.x - bc.y) + tr.N1.xyz * bc.x + tr.N2.xyz * bc.y);
-        vec3 ng = normalize(cross(tr.V1.xyz - tr.V0.xyz, tr.V2.xyz - tr.V0.xyz));
-        if (dot(ng, d) > 0.0) ng = -ng;
-        if (dot(n, ng) < 0.0) n = -n;
+        // İsabet (iki seviyeli BVH: örneğin dünya matrisiyle normal, malzeme doku ortalamalı); normaller ışına bakar
+        Hit hit = hitInfo(ti, o, d, t, bc);
+        Mat m = hit.M;
+        vec3 p = hit.P;
+        vec3 n = hit.N;
+        vec3 ng = hit.Ng;
         vec3 v = -d;
         vec3 po = p + ng * 1e-3;
         vec3 here = throughput * (m.Emission.rgb + directLight(p, po, n, v, m));
@@ -152,7 +151,7 @@ void main()
                 return false;
 
             // Sahne değişince BVH yeniden kurulur ve birikim baştan başlar
-            const RayTracingScene::Stats& stats = RayTracingScene::Update(scene);
+            const RayTracingScene::Stats& stats = RayTracingScene::Update(scene, true);
             if (stats.GeometryVersion != s.GeometryVersion)
             {
                 s.GeometryVersion = stats.GeometryVersion;

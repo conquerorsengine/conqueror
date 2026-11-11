@@ -1,0 +1,60 @@
+# template: empty
+# Virtual Geometry (Nanite benzeri), GPU güdümlü yol: aynı modelli 9 masa tek partide GPU'da seçilir (LOD, görüş, örtme) ve tek
+# dolaylı çizimle çizilir. Görüntü CPU seçimiyle aynı; örtme (HZB) açık / kapalı da aynı (görünen küme kaybolmaz)
+wait 40
+entity create T0 -2.6 0 -1.0
+comp add T0 MeshRendererComponent
+comp set T0 MeshRendererComponent FilePath CQ:Resources/Templates/Shared/Furniture/dining_table.glb
+comp add T0 VirtualGeometryComponent
+entity create T1 0.0 0 -1.0
+comp add T1 MeshRendererComponent
+comp set T1 MeshRendererComponent FilePath CQ:Resources/Templates/Shared/Furniture/dining_table.glb
+comp add T1 VirtualGeometryComponent
+entity create T2 2.6 0 -1.0
+comp add T2 MeshRendererComponent
+comp set T2 MeshRendererComponent FilePath CQ:Resources/Templates/Shared/Furniture/dining_table.glb
+comp add T2 VirtualGeometryComponent
+entity create T3 -2.6 0 -3.6
+comp add T3 MeshRendererComponent
+comp set T3 MeshRendererComponent FilePath CQ:Resources/Templates/Shared/Furniture/dining_table.glb
+comp add T3 VirtualGeometryComponent
+entity create T4 0.0 0 -3.6
+comp add T4 MeshRendererComponent
+comp set T4 MeshRendererComponent FilePath CQ:Resources/Templates/Shared/Furniture/dining_table.glb
+comp add T4 VirtualGeometryComponent
+entity create T5 2.6 0 -3.6
+comp add T5 MeshRendererComponent
+comp set T5 MeshRendererComponent FilePath CQ:Resources/Templates/Shared/Furniture/dining_table.glb
+comp add T5 VirtualGeometryComponent
+entity create T6 -2.6 0 -6.2
+comp add T6 MeshRendererComponent
+comp set T6 MeshRendererComponent FilePath CQ:Resources/Templates/Shared/Furniture/dining_table.glb
+comp add T6 VirtualGeometryComponent
+entity create T7 0.0 0 -6.2
+comp add T7 MeshRendererComponent
+comp set T7 MeshRendererComponent FilePath CQ:Resources/Templates/Shared/Furniture/dining_table.glb
+comp add T7 VirtualGeometryComponent
+entity create T8 2.6 0 -6.2
+comp add T8 MeshRendererComponent
+comp set T8 MeshRendererComponent FilePath CQ:Resources/Templates/Shared/Furniture/dining_table.glb
+comp add T8 VirtualGeometryComponent
+focus Game
+wait 150
+cvar r.Nanite 0
+wait 30
+game_region 0.20 0.20 0.80 0.60 lum mean >20
+game_region_change mark 0.20 0.20 0.80 0.60
+cvar r.Nanite 1
+wait 30
+game_region_change expect 0.20 0.20 0.80 0.60 <1
+# Örtme: masaların bir bölümünü kapatan duvar; HZB ile ayıklama açık / kapalı aynı görüntü
+create_primitive Cube Wall 1.3 0.6 -2.4
+entity scale Wall 2.4 1.2 0.2
+wait 30
+game_region_change mark 0.20 0.20 0.80 0.60
+cvar r.Nanite.Occlusion 0
+wait 30
+game_region_change expect 0.20 0.20 0.80 0.60 <1
+cvar r.Nanite.Occlusion 1
+cvar r.Nanite 1
+quit

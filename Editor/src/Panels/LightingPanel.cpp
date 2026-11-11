@@ -1,4 +1,5 @@
 #include "Renderer/AntiAliasing.h"
+#include "Renderer/RayTracing/RayTracedGI.h"
 #include "Scene/MeshRendererMaterial.h"
 #include "Renderer/Utilities/Renderer3D/Material.h"
 #include "ObjectPicker.h"
@@ -978,10 +979,37 @@ namespace Conqueror::Editor
             UI::EndSection();
         }
 
+        if (UI::BeginSection("Global Illumination (Ray Traced)"))
+        {
+            UI::Checkbox("Enabled##rtgi", p.RayTracedGI, "Lumen-style dynamic global illumination: light probes around the camera trace rays against the scene "
+                                                         "(sky, sun and lights with shadows, emissive surfaces, multiple bounces) and replace the ambient light. "
+                                                         "Rooms get dark where the sky cannot reach, lit surfaces brighten and tint their surroundings. No baking: "
+                                                         "updates by itself when lights or objects move. Surfaces with baked lightmaps keep their baked lighting.");
+            if (p.RayTracedGI)
+            {
+                UI::SliderFloat("Intensity##rtgi", p.RTGIIntensity, 0.0f, 4.0f, "%.2f", "Indirect lighting intensity");
+                UI::SliderFloat("Probe Spacing##rtgi", p.RTGIProbeSpacing, 0.5f, 8.0f, "%.2f m", "Distance between light probes: smaller gives finer detail and costs more");
+                UI::SliderFloat("View Distance##rtgi", p.RTGIViewDistance, 4.0f, 96.0f, "%.0f m", "How far around the camera the probes reach; beyond it the ambient light is used");
+                UI::SliderInt("Rays per Probe##rtgi", p.RTGIRaysPerProbe, 32, 256, "Final gather quality: more rays give smoother light, probes update less often");
+                UI::SliderFloat("Update Speed##rtgi", p.RTGIUpdateSpeed, 0.1f, 4.0f, "%.2f", "How fast the lighting follows changes (higher reacts faster, may flicker)");
+                UI::SliderFloat("Skylight Leaking##rtgi", p.RTGISkyLeaking, 0.0f, 1.0f, "%.2f", "Part of the sky light that still reaches closed places");
+                UI::SliderFloat("Diffuse Color Boost##rtgi", p.RTGIDiffuseBoost, 0.1f, 4.0f, "%.2f", "Strength of surface colors in bounced light");
+                const auto& st = RayTracedGI::GetStats();
+                if (st.Active)
+                {
+                    ImGui::TextDisabled("%d probes (%dx%dx%d), %d updated this frame", st.Probes, st.Counts.x, st.Counts.y, st.Counts.z, st.ProbesUpdated);
+                    ImGui::TextDisabled("Scene: %d triangles, %d instances%s", st.Triangles, st.Instances, st.PendingBuilds > 0 ? " (preparing meshes...)" : "");
+                }
+            }
+            UI::EndSection();
+        }
+
         if (UI::BeginSection("Global Illumination (Screen Traces)"))
         {
             UI::Checkbox("Enabled##ssgi", p.ScreenSpaceGI, "Lumen-style dynamic diffuse bounce light traced on screen: lit surfaces tint and brighten their neighbours. "
-                                                           "No baking; works with moving lights and objects (PBR materials).");
+                                                           "No baking; works with moving lights and objects (PBR materials). Not used while Ray Traced GI is on.");
+            if (p.ScreenSpaceGI && p.RayTracedGI)
+                ImGui::TextDisabled("Ray Traced GI is on: screen traces are not used.");
             if (p.ScreenSpaceGI)
             {
                 UI::SliderFloat("Intensity##ssgi", p.SSGIIntensity, 0.0f, 4.0f);

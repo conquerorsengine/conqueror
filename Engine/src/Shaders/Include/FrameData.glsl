@@ -45,6 +45,11 @@ layout(std140, binding = 0) uniform CQ_FrameBlock
     ivec4 FeatureFlags;          // x HDR çıktı, y lightmap, z APV, w yansıma probu sayısı
     ivec4 DebugParams;           // x görünüm modu (editör), y alan ışığı sayısı
     vec4 RenderParams;           // x malzeme dokusu mip sapması (yükseltme: iç çözünürlük düşükken dokular çıktı çözünürlüğündeki mipten)
+
+    // Ray Traced GI prob hacmi (Include/DynamicGI.glsl)
+    vec4 GIVolume0;              // xyz en küçük hücre, w prob aralığı (m; 0 = kapalı)
+    vec4 GIVolume1;              // xyz prob sayısı, w atlas katman sütunu
+    vec4 GIVolume2;              // x normal kaydırma, y görüş kaydırma (aralığa oran), z yoğunluk, w gökyüzü sızıntısı
 } CQ_Frame;
 
 struct CQ_PointLight

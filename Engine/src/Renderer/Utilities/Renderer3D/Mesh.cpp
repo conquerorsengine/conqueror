@@ -22,6 +22,7 @@ namespace Conqueror
             return;
         count = std::min<uint32_t>(count, (uint32_t)m_Vertices.size() - first);
         std::copy(vertices, vertices + count, m_Vertices.begin() + first);
+        ++m_Version;
         m_VertexBuffer->SetSubData(vertices, first * (uint32_t)sizeof(Vertex), count * (uint32_t)sizeof(Vertex));
         // Kumaş gibi her karede değişen meshler: sınırlar köşelerle birlikte güncellenir (görüş kırpması onları yanlışlıkla
         // gizlemesin). Tüm aralık yenilenince tam hesap, kısmi güncellemede (terrain fırçası) kutu yalnız büyür.

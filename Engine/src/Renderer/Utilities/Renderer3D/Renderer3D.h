@@ -224,6 +224,15 @@ namespace Conqueror
         // Sanal geometri (Nanite benzeri): kümeleri ekran uzayı hatasına göre seç ve çiz; çizilen üçgen sayısı
         static uint32_t DrawClusterMesh(const class ClusterMesh& clusters, const glm::mat4& transform, const std::shared_ptr<Material>& material,
                                         float thresholdPixels, bool debugColors = false, uint32_t* outClusterCount = nullptr);
+        // GPU güdümlü sanal geometri partisi (ClusterRenderer): aynı küme meshi + malzemeli tüm örnekler tek dolaylı çoklu çizimle.
+        // Komutlar (DrawElementsIndirectCommand, baseInstance = örnek) ve sayaç GPU'da yazılmıştır; örnek öznitelikleri instanceBuffer'da
+        // (dünya matrisi + renk). Gölge geçişinde değil (derinlik shader'ı ClusterRenderer bağlar)
+        static void DrawClusterBatch(const class ClusterMesh& clusters, const std::shared_ptr<Material>& material, uint32_t instanceBuffer,
+                                     uint32_t commandBuffer, uint32_t countBuffer, uint32_t countOffset, uint32_t maxDraws,
+                                     bool lightmapped, bool receiveShadows);
+        // Örnek özniteliklerini (8..12) bir VAO'ya bağlar / kaldırır (baseInstance'lı çizimler: ilk örnek 0)
+        static void BindInstanceAttributesVAO(uint32_t vertexArray, uint32_t instanceBuffer);
+        static void UnbindInstanceAttributesVAO(uint32_t vertexArray);
         // Görüş-izdüşüm matrisinden 6 kesik koni düzlemi (nokta·xyz + w >= 0 içeride)
         static void ExtractFrustum(const glm::mat4& viewProjection, glm::vec4 planes[6]);
         // Görüş hacmi kırpma (Unreal / Unity görünürlük kırpması): kameranın kesik konisi dışındaki meshler çizilmez, gölge
@@ -281,6 +290,15 @@ namespace Conqueror
         // Planar Reflection: aynalanmış sahne dokusu ve düzlem (n, d); params x açık, y düzleme uzaklık sınırı (m), z bozulma, w en çok pürüzlülük.
         // Dokuyu çizerken kapatılır (kendini yansıtmasın)
         static void SetPlanarReflection(uint32_t texture, const glm::vec4& plane, const glm::vec4& params);
+        // Ray Traced GI prob hacmi (RayTracedGI): kare sabitleri GIVolume0..2 ve atlas dokuları (birim 23-25); Volume0.w = 0 kapalı
+        struct DynamicGIBinding
+        {
+            glm::vec4 Volume0{ 0.0f }, Volume1{ 0.0f }, Volume2{ 0.0f };
+            uint32_t Irradiance = 0, Distance = 0, ProbeData = 0;
+        };
+        static void SetDynamicGI(const DynamicGIBinding& binding);
+        // Kare dokuları / UBO bir sonraki çizimde yeniden bağlanır (compute geçişleri doku birimlerini değiştirdikten sonra)
+        static void InvalidateFrameBindings();
         // Özel çizimler (su, ...): kare verisi (kamera, güneş, ortam, sis) ve IBL / gölge / prob dokuları bu shader'a bağlanır
         static void PrepareCustomShader(const std::shared_ptr<Shader>& shader);
 

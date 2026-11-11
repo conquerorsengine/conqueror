@@ -1,6 +1,7 @@
 #include "ConsoleVariables.h"
 #include "Core/Input/InputGlyphs.h"
 #include "UI/UISystem.h"
+#include "Renderer/Utilities/Renderer3D/ClusterRenderer.h"
 #include "Renderer/Utilities/Renderer3D/Renderer3D.h"
 #include "Core/Application.h"
 #include "Core/Audio/AudioEngine.h"
@@ -408,6 +409,9 @@ namespace Conqueror
         if (o.AutoExposure >= 0) p.AutoExposure = o.AutoExposure != 0;
         if (o.SSGI >= 0) p.ScreenSpaceGI = o.SSGI != 0;
         if (!std::isnan(o.SSGIIntensity)) p.SSGIIntensity = o.SSGIIntensity;
+        if (o.RTGI >= 0) p.RayTracedGI = o.RTGI != 0;
+        if (!std::isnan(o.RTGIIntensity)) p.RTGIIntensity = o.RTGIIntensity;
+        if (o.RTGIRays >= 0) p.RTGIRaysPerProbe = o.RTGIRays;
         if (o.TemporalStability >= 0) p.TemporalStability = o.TemporalStability != 0;
     }
 
@@ -455,6 +459,9 @@ namespace Conqueror
         AddBoolOverride("r.AutoExposure", "Eye adaptation (auto exposure) on/off", &R::AutoExposure, [](Scene& s) { return s.GetRenderSettings().Post.AutoExposure; });
         AddBoolOverride("r.SSGI", "Screen space global illumination (Lumen-style screen traces) on/off", &R::SSGI, [](Scene& s) { return s.GetRenderSettings().Post.ScreenSpaceGI; });
         AddFloatOverride("r.SSGI.Intensity", "Screen space GI bounce strength", &R::SSGIIntensity, [](Scene& s) { return s.GetRenderSettings().Post.SSGIIntensity; }, 0.0f, 8.0f);
+        AddBoolOverride("r.RTGI", "Ray traced global illumination (Lumen-style probes traced against the scene) on/off", &R::RTGI, [](Scene& s) { return s.GetRenderSettings().Post.RayTracedGI; });
+        AddFloatOverride("r.RTGI.Intensity", "Ray traced GI indirect lighting intensity", &R::RTGIIntensity, [](Scene& s) { return s.GetRenderSettings().Post.RTGIIntensity; }, 0.0f, 8.0f);
+        AddIntOverride("r.RTGI.Rays", "Ray traced GI rays per probe (32..256)", &R::RTGIRays, [](Scene& s) { return s.GetRenderSettings().Post.RTGIRaysPerProbe; }, 32, 256);
         AddBoolOverride("r.SkyAtmosphere", "Physically based sky atmosphere on/off", &R::SkyAtmosphere, [](Scene& s) { return s.GetRenderSettings().Environment.Sky == SkyMode::Atmosphere; });
         AddIntOverride("r.Tonemapper", "0 none, 1 Neutral, 2 ACES, 3 AgX, 4 Reinhard", &R::Tonemapper, [](Scene& s) { return (int)s.GetRenderSettings().Post.Tonemap; }, 0, 4);
         AddFloatOverride("r.Exposure", "Exposure in EV", &R::Exposure, [](Scene& s) { return s.GetRenderSettings().Post.Exposure; }, -16.0f, 16.0f);
@@ -473,6 +480,14 @@ namespace Conqueror
             CVarType::Bool,
             []() { return Renderer3D::GetFrustumCulling() ? std::string("1") : std::string("0"); },
             [](const std::string& t) { bool b; if (!ParseBool(t, b)) return false; Renderer3D::SetFrustumCulling(b); return true; });
+        AddValue("r.Nanite", "Virtual Geometry: 1 GPU-driven clusters (LOD, frustum and occlusion culling on the GPU, instances batched), 0 CPU selection",
+            CVarType::Bool,
+            []() { return ClusterRenderer::GetEnabled() ? std::string("1") : std::string("0"); },
+            [](const std::string& t) { bool b; if (!ParseBool(t, b)) return false; ClusterRenderer::SetEnabled(b); return true; });
+        AddValue("r.Nanite.Occlusion", "Virtual Geometry two-pass occlusion culling with a depth pyramid (HZB); 0 draws every cluster in view",
+            CVarType::Bool,
+            []() { return ClusterRenderer::GetOcclusionCulling() ? std::string("1") : std::string("0"); },
+            [](const std::string& t) { bool b; if (!ParseBool(t, b)) return false; ClusterRenderer::SetOcclusionCulling(b); return true; });
         AddValue("r.OpaqueSort", "Opaque draw order: 1 front to back, alpha-tested (cutout) after opaque (default); 0 submission order",
             CVarType::Int,
             []() { return std::to_string(Renderer3D::GetOpaqueSorting()); },

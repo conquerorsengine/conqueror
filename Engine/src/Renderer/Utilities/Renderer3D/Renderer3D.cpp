@@ -156,6 +156,7 @@ namespace Conqueror
             uint32_t PlanarTexture = 0;
             glm::vec4 PlanarPlane{ 0.0f, 1.0f, 0.0f, 0.0f };
             glm::vec4 PlanarParams{ 0.0f };
+            Renderer3D::DynamicGIBinding GI;
             glm::vec3 Tint{ 1.0f };
             glm::vec4 Wind{ 0.0f };      // ağaç rüzgârı (SetDrawWind): xyz yön * şiddet, w türbülans
             glm::vec2 WindParams{ 0.0f };// x yaprak titremesi, y ağaç boyu
@@ -1346,6 +1347,10 @@ namespace Conqueror
         f.DebugParams = glm::ivec4(s->DebugView, s->AreaCount, 0, 0);
         // Yükseltici iç çözünürlükte çiziyorsa dokular çıktı çözünürlüğüne uygun mipten örneklenir (yoksa her şey ölçekten de bulanık)
         f.RenderParams = glm::vec4(s->TextureLodBias, 0.0f, 0.0f, 0.0f);
+        const bool giOn = s->GI.Volume0.w > 0.0f && s->GI.Irradiance && s->GI.Distance && s->GI.ProbeData;
+        f.GIVolume0 = giOn ? s->GI.Volume0 : glm::vec4(0.0f);
+        f.GIVolume1 = giOn ? s->GI.Volume1 : glm::vec4(0.0f);
+        f.GIVolume2 = giOn ? s->GI.Volume2 : glm::vec4(0.0f);
 
         glBindBuffer(GL_UNIFORM_BUFFER, s->FrameUBOID);
         glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(FrameUBO), &f);
@@ -1433,6 +1438,12 @@ namespace Conqueror
         glBindTexture(GL_TEXTURE_2D, s->APVProbeCount ? s->APVSHTex : s->FallbackBlack2D);
         glActiveTexture(GL_TEXTURE0 + TextureSlot::PlanarReflection);
         glBindTexture(GL_TEXTURE_2D, (s->PlanarTexture && s->PlanarParams.x > 0.5f) ? s->PlanarTexture : s->FallbackBlack2D);
+        glActiveTexture(GL_TEXTURE0 + TextureSlot::GIIrradiance);
+        glBindTexture(GL_TEXTURE_2D, giOn ? s->GI.Irradiance : s->FallbackBlack2D);
+        glActiveTexture(GL_TEXTURE0 + TextureSlot::GIDistance);
+        glBindTexture(GL_TEXTURE_2D, giOn ? s->GI.Distance : s->FallbackBlack2D);
+        glActiveTexture(GL_TEXTURE0 + TextureSlot::GIProbeData);
+        glBindTexture(GL_TEXTURE_2D, giOn ? s->GI.ProbeData : s->FallbackBlack2D);
         glActiveTexture(GL_TEXTURE0);
 
         // Shader başına sampler/probe uniform'ları yeniden gönderilsin
@@ -1456,6 +1467,9 @@ namespace Conqueror
         shader->SetInt("u_APVSHTex", (int)TextureSlot::APVSH);
         shader->SetInt("u_APVNumProbes", s->APVProbeCount);
         shader->SetInt("u_PlanarReflection", (int)TextureSlot::PlanarReflection);
+        shader->SetInt("u_GIIrradiance", (int)TextureSlot::GIIrradiance);
+        shader->SetInt("u_GIDistance", (int)TextureSlot::GIDistance);
+        shader->SetInt("u_GIProbeData", (int)TextureSlot::GIProbeData);
         shader->SetFloat4("u_PlanarPlane", s->PlanarPlane);
         shader->SetFloat4("u_PlanarParams", (s->PlanarTexture ? s->PlanarParams : glm::vec4(0.0f)));
         int probeUnits[TextureSlot::MaxReflectionProbes];
@@ -1771,6 +1785,76 @@ namespace Conqueror
         stats.MeshCount++;
         stats.Triangles += triangles;
         return triangles;
+    }
+
+    void Renderer3D::BindInstanceAttributesVAO(uint32_t vertexArray, uint32_t instanceBuffer)
+    {
+        glBindVertexArray(vertexArray);
+        glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
+        for (GLuint i = 0; i < 5; ++i)
+        {
+            glEnableVertexAttribArray(kInstanceAttrib + i);
+            glVertexAttribPointer(kInstanceAttrib + i, 4, GL_FLOAT, GL_FALSE, kInstanceStride, (const void*)(uintptr_t)(i * 16));
+            glVertexAttribDivisor(kInstanceAttrib + i, 1);
+        }
+    }
+
+    void Renderer3D::UnbindInstanceAttributesVAO(uint32_t vertexArray)
+    {
+        glBindVertexArray(vertexArray);
+        for (GLuint i = 0; i < 5; ++i)
+        {
+            glVertexAttribDivisor(kInstanceAttrib + i, 0);
+            glDisableVertexAttribArray(kInstanceAttrib + i);
+        }
+    }
+
+    void Renderer3D::DrawClusterBatch(const ClusterMesh& clusters, const std::shared_ptr<Material>& materialIn, uint32_t instanceBuffer,
+                                      uint32_t commandBuffer, uint32_t countBuffer, uint32_t countOffset, uint32_t maxDraws,
+                                      bool lightmapped, bool receiveShadows)
+    {
+        if (!clusters.IsUploaded() || !instanceBuffer || !commandBuffer || maxDraws == 0 || !glMultiDrawElementsIndirectCount)
+            return;
+        std::shared_ptr<Material> material = materialIn ? materialIn : Material::CreateDefault();
+        UploadFrameData();
+        auto shader = (material->MaterialShader && material->MaterialShader->IsValid()) ? material->MaterialShader : s_PBRShader;
+        if (!shader || !shader->IsValid())
+            return;
+        shader->Bind();
+        BindFrameResources(shader);
+        // Örnek matrisi özniteliklerde (u_Transform birim): normal matrisi shader'da örnekten
+        shader->SetMat4("u_Transform", glm::mat4(1.0f));
+        shader->SetMat4("u_NormalMatrix", glm::mat4(1.0f));
+        shader->SetInt("u_Instanced", 1);
+        shader->SetInt("u_ReceiveShadows", receiveShadows ? 1 : 0);
+        shader->SetInt("u_Lightmapped", lightmapped ? 1 : 0);
+        shader->SetFloat3("u_Tint", glm::vec3(1.0f));   // örnek rengi (a_InstanceColor) taşır
+        shader->SetInt("u_UseVertexColor", 0);
+        shader->SetFloat4("u_TreeWindParams", glm::vec4(0.0f));
+        material->Bind(shader);
+        if (material->MaterialShader)
+            material->BindGraphUniforms(shader);
+        ApplyCulling(material, false);
+        if (s->Wireframe)
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        clusters.GetVertexArray()->Bind();
+        GLint boundVao = 0;
+        glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &boundVao);
+        const uint32_t vao = (uint32_t)boundVao;
+        BindInstanceAttributesVAO(vao, instanceBuffer);
+        glBindBuffer(GL_DRAW_INDIRECT_BUFFER, commandBuffer);
+        glBindBuffer(GL_PARAMETER_BUFFER, countBuffer);
+        glMultiDrawElementsIndirectCount(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, (GLintptr)countOffset, (GLsizei)maxDraws, 0);
+        glBindBuffer(GL_PARAMETER_BUFFER, 0);
+        glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
+        UnbindInstanceAttributesVAO(vao);
+        shader->SetInt("u_Instanced", 0);
+        if (s->Wireframe)
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glDisable(GL_CULL_FACE);
+        auto& stats = Renderer::GetStats();
+        stats.DrawCalls++;
+        stats.MeshCount++;
     }
 
     void Renderer3D::DrawMeshInternal(const std::shared_ptr<Mesh>& meshIn, const glm::mat4& transform,
@@ -2102,6 +2186,21 @@ namespace Conqueror
         s->FrameDirty = true;
         // Shader başına uniform'lar bu karede yeniden gönderilsin
         s->ShaderFrame.clear();
+    }
+
+    void Renderer3D::SetDynamicGI(const DynamicGIBinding& gi)
+    {
+        const auto& c = s->GI;
+        if (c.Volume0 == gi.Volume0 && c.Volume1 == gi.Volume1 && c.Volume2 == gi.Volume2 && c.Irradiance == gi.Irradiance &&
+            c.Distance == gi.Distance && c.ProbeData == gi.ProbeData)
+            return;
+        s->GI = gi;
+        s->FrameDirty = true;
+    }
+
+    void Renderer3D::InvalidateFrameBindings()
+    {
+        s->FrameDirty = true;
     }
 
     void Renderer3D::PrepareCustomShader(const std::shared_ptr<Shader>& shader)

@@ -125,7 +125,8 @@ namespace Conqueror
     void PostProcessStack::RunSceneEffects(const PostProcessSettings& settings, const RenderCamera& camera, float time)
     {
         const bool ssr = settings.ScreenSpaceReflections && !camera.Orthographic && GetSceneNormalTexture() != 0;
-        const bool gi = settings.ScreenSpaceGI && !camera.Orthographic && GetSceneNormalTexture() != 0 && GetSceneAlbedoTexture() != 0;
+        // Ray Traced GI açıkken ekran izli GI kullanılmaz (Unreal'da tek GI yöntemi: ilk sekme iki kez sayılmasın)
+        const bool gi = settings.ScreenSpaceGI && !settings.RayTracedGI && !camera.Orthographic && GetSceneNormalTexture() != 0 && GetSceneAlbedoTexture() != 0;
         const bool clouds = settings.VolumetricClouds && !camera.Orthographic;
         const bool fog = settings.VolumetricFog && !camera.Orthographic;
         if (!clouds)

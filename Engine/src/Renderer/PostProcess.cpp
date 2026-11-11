@@ -2197,8 +2197,9 @@ namespace Conqueror
             m_WantStability = fx && !camera.Orthographic && settings.TemporalStability && !temporal && !taau && !fsr2
                               && (AntiAliasing::IsSingleFrame(next) || t2x);
         }
-        m_WantNormals = fx && (settings.ScreenSpaceReflections || settings.ScreenSpaceGI) && !camera.Orthographic;
-        m_WantAlbedo = fx && settings.ScreenSpaceGI && !camera.Orthographic;
+        const bool ssgi = settings.ScreenSpaceGI && !settings.RayTracedGI;   // Ray Traced GI açıkken ekran izli GI yok
+        m_WantNormals = fx && (settings.ScreenSpaceReflections || ssgi) && !camera.Orthographic;
+        m_WantAlbedo = fx && ssgi && !camera.Orthographic;
         if (!m_WantAlbedo)
             m_GIHistoryValid = false;
 

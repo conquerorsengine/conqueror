@@ -3,7 +3,7 @@
 //
 // Doku birimleri (Renderer/TextureSlots.h ile aynı):
 //   12 gölge atlası, 13 IBL prefilter küp, 14 BRDF LUT, 15 lightmap,
-//   16-19 yansıma probları, 20-21 APV
+//   16-19 yansıma probları, 20-21 APV, 22 planar yansıma, 23-25 Ray Traced GI
 
 #define CQ_MAX_REFLECTION_PROBES 4
 
@@ -15,6 +15,8 @@ uniform samplerCube u_ReflectionProbes[CQ_MAX_REFLECTION_PROBES];
 uniform vec4 u_ProbePositionIntensity[CQ_MAX_REFLECTION_PROBES];
 uniform vec4 u_ProbeBoxMin[CQ_MAX_REFLECTION_PROBES];   // w = blend mesafesi
 uniform vec4 u_ProbeBoxMax[CQ_MAX_REFLECTION_PROBES];   // w = mip sayısı
+
+#include "Include/DynamicGI.glsl"
 
 // Adaptive Probe Volume
 uniform sampler2D u_APVPositionTex;
@@ -372,6 +374,12 @@ vec3 CQ_SampleReflectionProbe(int i, vec3 dir, float lod)
     }
 }
 
+// Gökyüzü yansımasının görünürlüğü (Ray Traced GI problarından; kapalı yerde gökyüzü yansımaz) ve gökyüzünün göremediği payın
+// yerine çevrenin GI ışığı (Lumen yansımalarına yakın: aydınlık odada pürüzlü yüzey odanın ışığını yansıtır). Yansıma probları
+// etkilenmez (kendi yerlerinde yakalanmışlardır)
+float g_CQSkySpecularVisibility = 1.0;
+vec3 g_CQGISpecularFill = vec3(0.0);
+
 vec3 CQ_SpecularEnvironment(vec3 R, float roughness, vec3 worldPos)
 {
     vec3 sky = vec3(0.0);
@@ -384,6 +392,7 @@ vec3 CQ_SpecularEnvironment(vec3 R, float roughness, vec3 worldPos)
     {
         sky = CQ_AmbientDiffuse(R);
     }
+    sky = sky * g_CQSkySpecularVisibility + g_CQGISpecularFill;
 
     int probeCount = CQ_Frame.FeatureFlags.w;
     vec3 result = sky;
@@ -708,6 +717,23 @@ vec4 CQ_ShadeSurface(CQ_Surface s)
         irradiance = CQ_APVIrradiance(s.Position, s.Normal, probeFound);
         if (!probeFound)
             irradiance = CQ_AmbientDiffuse(s.Normal);
+        // Ray Traced GI (Lumen benzeri): ışın izlenen prob hacmi ortam ışığının yerine geçer (gökyüzü görünürlüğü, renk taşması,
+        // ışıyan yüzeyler, çoklu sekme); hacmin dışında / kenarında eski ortam ışığına yumuşak geçiş. Pişmiş lightmap korunur
+        if (CQ_Frame.GIVolume0.w > 0.0)
+        {
+            float giCoverage, skyVisibility;
+            vec3 gi = CQ_GIIrradianceVis(s.Position, s.Normal, V, giCoverage, skyVisibility);
+            if (giCoverage > 0.0)
+            {
+                vec3 giLight = gi * CQ_Frame.GIVolume2.z;
+                gi = giLight + CQ_AmbientDiffuse(s.Normal) * CQ_Frame.GIVolume2.w;
+                irradiance = mix(irradiance, gi, giCoverage);
+                // Gökyüzü yansıması da gökyüzünü gören pay kadar (Skylight Leaking ile en az o kadar); kalan pay çevrenin GI ışığı
+                float vis = max(skyVisibility, CQ_Frame.GIVolume2.w);
+                g_CQSkySpecularVisibility = mix(1.0, vis, giCoverage);
+                g_CQGISpecularFill = giLight * (1.0 - vis) * giCoverage;
+            }
+        }
     }
 
     vec3 R = reflect(-V, s.Normal);
