@@ -45,6 +45,8 @@ namespace Conqueror::Editor
         void SelectMultipleEntities(const std::vector<Entity>& entities);
         void ToggleEntitySelection(Entity entity);
         void ClearSelection();
+        // Etkin sahneden silinmiş (tanıtıcısı geçersiz) nesneleri seçimden çıkarır; bir şey çıktıysa true
+        bool PruneSelection(const Scene* activeScene);
         bool IsEntitySelected(Entity entity) const;
         
         Entity GetSelectedEntity() const { return m_SelectedEntities.empty() ? Entity{} : m_SelectedEntities[0]; }

@@ -1087,6 +1087,15 @@ namespace Conqueror::Editor
 
     void EditorLayer::OnUpdate(Timestep ts)
     {
+        // Seçimde silinmiş nesne kalmaz (geri al / ileri al ile silinen seçili nesne, betiğin sildiği nesne): paneller ve Delete ona
+        // dokunup çökmesin
+        if (EditorState::Get().PruneSelection(m_ActiveScene.get()))
+        {
+            const std::vector<Entity> keep = EditorState::Get().GetSelectedEntities();
+            SelectEntityEverywhere(keep.empty() ? Entity{} : keep.front());
+            if (keep.size() > 1)
+                EditorState::Get().SelectMultipleEntities(keep);
+        }
         // Yeni açılan sahne: "Bake On Play" gezinme ağı önbelleğe şimdi pişer (açılışın zaten yavaş olan ilk karesinde); ilk Play'de
         // ~70 ms takılma olmaz
         if (m_EditorScene && m_EditorScene.get() != m_NavPrebakedScene && EditorState::Get().IsEditing())
@@ -7630,14 +7639,31 @@ namespace Conqueror::Editor
         if (!state.HasSelection())
             return;
 
-        size_t count = state.GetSelectionCount();
-        for (auto& entity : state.GetSelectedEntities())
+        // Yalnız en üstteki seçili nesneler silinir (çocuklar onlarla gider): ebeveyn ve çocuğu birlikte seçiliyken ebeveyn silinince
+        // çocuğun tanıtıcısı geçersiz kalıyor, sıra ona gelince editör çöküyordu (Unity de seçili alt ağacın kökünü siler)
+        std::vector<Entity> roots;
+        const auto& selected = state.GetSelectedEntities();
+        for (const Entity& entity : selected)
         {
-            if (entity)
-            {
-                auto cmd = std::make_shared<DestroyEntityCommand>(m_ActiveScene, entity);
-                UndoRedoManager::Get().Execute(cmd);
-            }
+            if (!entity || entity.GetScene() != m_ActiveScene.get() || !entity.IsValid())
+                continue;
+            bool ancestorSelected = false;
+            for (Entity p = entity.GetParent(); p && p.IsValid(); p = p.GetParent())
+                if (std::find(selected.begin(), selected.end(), p) != selected.end())
+                {
+                    ancestorSelected = true;
+                    break;
+                }
+            if (!ancestorSelected && std::find(roots.begin(), roots.end(), entity) == roots.end())
+                roots.push_back(entity);
+        }
+        size_t count = roots.size();
+        for (Entity entity : roots)
+        {
+            if (!entity.IsValid())
+                continue;
+            auto cmd = std::make_shared<DestroyEntityCommand>(m_ActiveScene, entity);
+            UndoRedoManager::Get().Execute(cmd);
         }
 
         state.ClearSelection();

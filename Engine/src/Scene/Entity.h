@@ -53,6 +53,9 @@ namespace Conqueror
         }
 
         operator bool() const { return m_EntityHandle != entt::null && m_Scene != nullptr; }
+        // Nesne hâlâ sahnede mi (silinmiş bir nesnenin tanıtıcısı da operator bool'dan geçer: silinen ebeveynin çocuğu, geri al /
+        // ileri al ile silinen seçili nesne)
+        bool IsValid() const { return m_EntityHandle != entt::null && m_Scene != nullptr && m_Scene->m_Registry.valid(m_EntityHandle); }
         operator entt::entity() const { return m_EntityHandle; }
         operator uint32_t() const { return (uint32_t)m_EntityHandle; }
 

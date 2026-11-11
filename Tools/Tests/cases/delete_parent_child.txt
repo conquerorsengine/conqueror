@@ -1,0 +1,32 @@
+# Silme çökmesi (217): ebeveyn ve çocuğu birlikte seçili silinince ve geri al / ileri al ile silinen seçili nesne yeniden silinince
+# editör çöküyordu (geçersiz tanıtıcı). Yalnız en üstteki seçili nesneler silinir, seçimdeki silinmiş nesneler ayıklanır
+# template: empty
+wait 30
+entity create ParentA 0 0 0
+entity create ChildA 1 0 0
+entity parent ChildA ParentA
+focus Hierarchy
+select ParentA ChildA
+wait 2
+key delete
+wait 5
+expect_entities 0 ParentA
+expect_entities 0 ChildA
+undo
+wait 3
+expect_entities 1 ParentA
+expect_entities 1 ChildA
+create_primitive Cube CubeB 0 0 3
+select CubeB
+wait 2
+key delete
+wait 3
+undo
+wait 3
+select CubeB
+redo
+wait 3
+key delete
+wait 5
+expect_entities 0 CubeB
+quit

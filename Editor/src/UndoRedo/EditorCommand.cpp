@@ -43,7 +43,7 @@ namespace Conqueror::Editor
     DestroyEntityCommand::DestroyEntityCommand(const std::shared_ptr<Scene>& scene, Entity entity)
         : m_Scene(scene)
     {
-        if (!entity)
+        if (!entity.IsValid())
             return;
         m_EntityName = entity.GetComponent<TagComponent>().Tag;
         m_RootUUID = (uint64_t)entity.GetComponent<IDComponent>().ID;
@@ -55,7 +55,7 @@ namespace Conqueror::Editor
 
     void DestroyEntityCommand::Execute()
     {
-        if (m_Destroyed || !m_Scene)
+        if (m_Destroyed || !m_Scene || !m_Backup)
             return;
         if (Entity e = m_Scene->FindEntityByUUID(m_RootUUID))
             m_Scene->DestroyEntity(e);

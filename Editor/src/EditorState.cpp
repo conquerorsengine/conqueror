@@ -42,6 +42,16 @@ namespace Conqueror::Editor
         m_SelectedEntities.clear();
     }
 
+    bool EditorState::PruneSelection(const Scene* activeScene)
+    {
+        const size_t before = m_SelectedEntities.size();
+        // Yalnız etkin sahnenin nesneleri denetlenir: başka (kapanmış olabilecek) bir sahnenin kayıt defterine dokunulmaz
+        m_SelectedEntities.erase(std::remove_if(m_SelectedEntities.begin(), m_SelectedEntities.end(),
+                                                [activeScene](const Entity& e) { return e.GetScene() == activeScene && !e.IsValid(); }),
+                                 m_SelectedEntities.end());
+        return m_SelectedEntities.size() != before;
+    }
+
     bool EditorState::IsEntitySelected(Entity entity) const
     {
         return std::find(m_SelectedEntities.begin(), m_SelectedEntities.end(), entity) != m_SelectedEntities.end();
