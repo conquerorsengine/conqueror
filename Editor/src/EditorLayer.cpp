@@ -5187,7 +5187,7 @@ namespace Conqueror::Editor
             return false;
         });
         Automation::RegisterCommand("vs", [this](const Args& a, std::string& err) {
-            // vs new <path> | open <path> | node <alias> <type> [x y] | link <a> <pin> <b> <pin>
+            // vs new <path> | open <path> | node <alias> <type> [x y] | link <a> <pin> <b> <pin> | macro <name> | edit <macro|graph>
             // vs default <alias> <pin> <value> | prop <alias> <key> <value> | var <name> <type> <default> [private]
             // vs save | expect_errors <n> | expect_code <substring> | remove <alias> | undo | redo
             static std::map<std::string, int> s_Alias;
@@ -5206,7 +5206,9 @@ namespace Conqueror::Editor
                 return out;
             };
             auto& panel = *m_VisualScriptPanel;
-            auto& graph = panel.GetGraph();
+            // Düğüm komutları düzenlenen grafikte (olay grafiği ya da açık makro); değişkenler üst grafikte
+            auto& top = panel.GetGraph();
+            auto& graph = panel.GetEditedGraph();
             auto node = [&](const std::string& alias) {
                 auto it = s_Alias.find(alias);
                 return it != s_Alias.end() ? it->second : std::atoi(alias.c_str());
@@ -5225,6 +5227,22 @@ namespace Conqueror::Editor
                 panel.Open(path);
                 panel.GetIsOpen() = true;
                 if (panel.GetPath() != path) { err = "cannot open " + path.string(); return false; }
+                return true;
+            }
+            // vs macro <ad>: yeni Blueprint Macro'yu oluşturup açar (tüneller: <ad>.in, <ad>.out); vs edit <makro|graph>: düzenlenen grafik
+            if (a[1] == "macro" && a.size() > 2)
+            {
+                if (top.FindMacro(a[2])) { err = "macro exists " + a[2]; return false; }
+                auto& m = top.AddMacro(a[2]);
+                for (auto& n : m.Body->Nodes)
+                    s_Alias[a[2] + (n.Type == "macro.inputs" ? ".in" : ".out")] = n.Id;
+                panel.OpenMacro(a[2]);
+                panel.MarkEdited();
+                return true;
+            }
+            if (a[1] == "edit" && a.size() > 2)
+            {
+                panel.OpenMacro(a[2] == "graph" ? std::string() : a[2]);
                 return true;
             }
             if (a[1] == "node" && a.size() > 3)
@@ -5258,8 +5276,8 @@ namespace Conqueror::Editor
                 v.Type = Visual::PinTypeFromName(a[3]);
                 v.Default = unescape(a[4]);
                 v.Public = !(a.size() > 5 && a[5] == "private");
-                if (Visual::Variable* existing = graph.FindVariable(v.Name)) *existing = v;
-                else graph.Variables.push_back(v);
+                if (Visual::Variable* existing = top.FindVariable(v.Name)) *existing = v;
+                else top.Variables.push_back(v);
                 panel.MarkEdited();
                 return true;
             }

@@ -30,6 +30,9 @@ namespace Conqueror::Editor
 
         // Otomasyon / testler
         Visual::Graph& GetGraph() { return m_Graph; }
+        // Düzenlenen grafik (olay grafiği ya da açık makronun gövdesi) ve makro açma (boş ad: olay grafiğine dön)
+        Visual::Graph& GetEditedGraph() { return G(); }
+        void OpenMacro(const std::string& name) { EditMacro(name); }
         void MarkEdited();
         std::string GetGeneratedCode();
         int GetErrorCount() const;
@@ -80,6 +83,10 @@ namespace Conqueror::Editor
         }
 
         Visual::Graph m_Graph;
+        // Düzenlenen grafik: boş = olay grafiği, değilse bu adlı makronun gövdesi (Blueprint Macro)
+        std::string m_EditMacro;
+        Visual::Graph& G();
+        void EditMacro(const std::string& name);
         std::filesystem::path m_Path;
         bool m_IsOpen = false;
         bool m_Dirty = false;

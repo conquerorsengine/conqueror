@@ -81,6 +81,17 @@ namespace Conqueror::Visual
         std::string Tooltip;
     };
 
+    class Graph;
+
+    // Blueprint Macro (Unreal): grafiğe ait, birden çok exec girişi / çıkışı olabilen, her kullanıldığı yerde satır içi açılan alt
+    // grafik. Gövdedeki "Inputs" (macro.inputs) ve "Outputs" (macro.outputs) tünel düğümlerinin "Pins" özelliği ("Ad:tip, ...",
+    // tip: exec, number, bool, string, vector, list, any) makronun pinleridir. Makro düğümü (macro.instance) bu pinlerle görünür
+    struct MacroDef
+    {
+        std::string Name;
+        std::shared_ptr<Graph> Body;
+    };
+
     struct CompileMessage
     {
         int NodeId = 0;               // 0: genel
@@ -96,6 +107,19 @@ namespace Conqueror::Visual
         std::vector<Link> Links;
         std::vector<Variable> Variables;
         int NextId = 1;
+        // Blueprint Macro'lar (bu grafiğin; gövdeleri ayrı grafikler)
+        std::vector<MacroDef> Macros;
+        // Makro gövdesi grafiğinde: makroları aranacak sahip grafik (iç içe makro düğümleri için; düzenleyici her karede bağlar)
+        const Graph* MacroScope = nullptr;
+
+        const MacroDef* FindMacro(const std::string& name) const;
+        // Yeni makro: girişte "In" exec, çıkışta "Out" exec pinli tünel düğümleriyle
+        MacroDef& AddMacro(const std::string& name);
+        // Makronun tünel düğümlerinden pinleri (girişler = Inputs düğümünün çıkışları, çıkışlar = Outputs düğümünün girişleri)
+        static void MacroPins(const Graph& body, std::vector<PinDef>& inputs, std::vector<PinDef>& outputs);
+        // Makro örneklerinin gövdeleriyle (benzersiz kimliklerle, iç içe makrolar dahil) açıldığı düz grafik. expandedToInstance:
+        // açılan düğüm -> en dıştaki makro düğümü (hata ve hata ayıklayıcı vurgusu makro düğümünde)
+        Graph ExpandMacros(std::vector<CompileMessage>& messages, std::unordered_map<int, int>* expandedToInstance = nullptr) const;
 
         Node* FindNode(int id);
         const Node* FindNode(int id) const;

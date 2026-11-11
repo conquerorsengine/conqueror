@@ -166,6 +166,23 @@ namespace Conqueror::Visual
                 add(d);
             }
             add(Make("flow.returnvalue", "Return Value", "Functions", F, { ExecIn(), In("Value", X) }, {}, "", "Ends the function and returns the value to the caller."));
+
+            // ── Makrolar (Unreal Blueprint Macro): gövde her kullanımda satır içi açılır ──
+            {
+                NodeDef d = Make("macro.inputs", "Inputs", "Macros", F, {}, {}, "", "Macro entry: its pins (Pins, e.g. \"In:exec, Speed:number\") are the macro node's inputs.");
+                d.Properties = { { "Pins", "In:exec" } };
+                add(d);
+            }
+            {
+                NodeDef d = Make("macro.outputs", "Outputs", "Macros", F, {}, {}, "", "Macro exit: its pins (Pins, e.g. \"Out:exec, Result:number\") are the macro node's outputs.");
+                d.Properties = { { "Pins", "Out:exec" } };
+                add(d);
+            }
+            {
+                NodeDef d = Make("macro.instance", "Macro", "Macros", F, {}, {}, "", "Runs a macro of this graph: its body is placed here inline (several exec inputs and outputs).");
+                d.Properties = { { "Macro", "" } };
+                add(d);
+            }
             {
                 NodeDef d = Make("action.callfunction", "Call Function", "Functions", A, { ExecIn() }, { ExecOut(), Out("Result", X) }, "", "Calls a function of this graph and gives its return value.");
                 d.Properties = { { "Function", "MyFunction" } };
@@ -583,6 +600,32 @@ namespace Conqueror::Visual
                 }
                 d.Expression = SanitizeIdentifier(fn) + "(" + args + ")";
             }
+            else if (node.Type == "macro.inputs" || node.Type == "macro.outputs")
+            {
+                std::vector<PinDef> pins;
+                for (auto& item : SplitList(prop("Pins", "")))
+                {
+                    const size_t colon = item.find(':');
+                    std::string name = colon == std::string::npos ? item : item.substr(0, colon);
+                    std::string type = colon == std::string::npos ? "any" : item.substr(colon + 1);
+                    const size_t a = name.find_last_not_of(" \t"), b = type.find_first_not_of(" \t");
+                    name = a == std::string::npos ? std::string() : name.substr(0, a + 1);
+                    type = b == std::string::npos ? std::string("any") : type.substr(b);
+                    if (!name.empty())
+                        pins.push_back({ name, PinTypeFromName(type), "" });
+                }
+                if (node.Type == "macro.inputs")
+                    d.Outputs = pins;
+                else
+                    d.Inputs = pins;
+            }
+            else if (node.Type == "macro.instance")
+            {
+                const std::string name = prop("Macro", "");
+                d.Title = name.empty() ? std::string("Macro (none)") : name;
+                if (const MacroDef* m = FindMacro(name); m && m->Body)
+                    MacroPins(*m->Body, d.Inputs, d.Outputs);
+            }
             else if (node.Type == "flow.switchint" || node.Type == "flow.switchstring")
             {
                 for (auto& c : SplitList(prop("Cases", "")))
@@ -709,6 +752,19 @@ namespace Conqueror::Visual
             links.push_back(Value::MakeMap(m));
         }
         root["links"] = Value::MakeList(links);
+        if (!Macros.empty())
+        {
+            std::vector<Value> macros;
+            for (auto& m : Macros)
+            {
+                if (!m.Body) continue;
+                std::unordered_map<std::string, Value> mm;
+                mm["name"] = Value::MakeString(m.Name);
+                mm["graph"] = JSON::Parse(m.Body->ToJson());
+                macros.push_back(Value::MakeMap(mm));
+            }
+            root["macros"] = Value::MakeList(macros);
+        }
         return JSON::Stringify(Value::MakeMap(root));
     }
 
@@ -776,7 +832,188 @@ namespace Conqueror::Visual
                 Links.push_back(l);
             }
         NextId = std::max(NextId, maxId + 1);
+        Macros.clear();
+        if (auto it = root.MapVal.find("macros"); it != root.MapVal.end())
+            for (auto& v : it->second.ListVal)
+            {
+                MacroDef m;
+                m.Name = str(v, "name");
+                m.Body = std::make_shared<Graph>();
+                if (auto g = v.MapVal.find("graph"); g != v.MapVal.end())
+                    m.Body->FromJson(JSON::Stringify(g->second), nullptr);
+                m.Body->Name = m.Name;
+                m.Body->MacroScope = this;
+                Macros.push_back(std::move(m));
+            }
         return true;
+    }
+
+    const MacroDef* Graph::FindMacro(const std::string& name) const
+    {
+        if (name.empty())
+            return nullptr;
+        for (auto& m : Macros)
+            if (m.Name == name)
+                return &m;
+        return MacroScope && MacroScope != this ? MacroScope->FindMacro(name) : nullptr;
+    }
+
+    MacroDef& Graph::AddMacro(const std::string& name)
+    {
+        MacroDef m;
+        m.Name = name;
+        m.Body = std::make_shared<Graph>();
+        m.Body->Name = name;
+        m.Body->MacroScope = this;
+        const int in = m.Body->AddNode("macro.inputs", 0.0f, 0.0f);
+        const int out = m.Body->AddNode("macro.outputs", 420.0f, 0.0f);
+        (void)in;
+        (void)out;
+        Macros.push_back(std::move(m));
+        return Macros.back();
+    }
+
+    void Graph::MacroPins(const Graph& body, std::vector<PinDef>& inputs, std::vector<PinDef>& outputs)
+    {
+        inputs.clear();
+        outputs.clear();
+        for (auto& n : body.Nodes)
+        {
+            if (n.Type == "macro.inputs" && inputs.empty())
+                inputs = body.ResolveDef(n).Outputs;
+            else if (n.Type == "macro.outputs" && outputs.empty())
+                outputs = body.ResolveDef(n).Inputs;
+        }
+    }
+
+    Graph Graph::ExpandMacros(std::vector<CompileMessage>& messages, std::unordered_map<int, int>* expandedToInstance) const
+    {
+        Graph flat;
+        flat.Name = Name;
+        flat.Variables = Variables;
+        flat.Nodes = Nodes;
+        flat.Links = Links;
+        flat.NextId = NextId;
+        int nextLink = NextId;
+        for (auto& l : flat.Links) nextLink = std::max(nextLink, l.Id + 1);
+        for (auto& n : flat.Nodes) flat.NextId = std::max(flat.NextId, n.Id + 1);
+        flat.NextId = std::max(flat.NextId, nextLink);
+        // Düğüm -> açıldığı en dıştaki makro düğümü ve açılma derinliği (kendini çağıran makro sonsuza açılmasın)
+        std::unordered_map<int, int> owner, depth;
+        for (;;)
+        {
+            auto it = std::find_if(flat.Nodes.begin(), flat.Nodes.end(), [](const Node& n) { return n.Type == "macro.instance"; });
+            if (it == flat.Nodes.end())
+                break;
+            const Node inst = *it;
+            const int topInstance = owner.count(inst.Id) ? owner[inst.Id] : inst.Id;
+            const int d = depth.count(inst.Id) ? depth[inst.Id] : 0;
+            auto propIt = inst.Properties.find("Macro");
+            const std::string macroName = propIt != inst.Properties.end() ? propIt->second : "";
+            const MacroDef* macro = FindMacro(macroName);
+            if (!macro || !macro->Body || d >= 16)
+            {
+                messages.push_back({ topInstance, !macro || !macro->Body ? "Unknown macro '" + macroName + "'." : "Macro '" + macroName + "' uses itself (recursive macro).", false });
+                flat.RemoveNode(inst.Id);
+                continue;
+            }
+            const Graph& body = *macro->Body;
+            int inputsNode = 0, outputsNode = 0;
+            for (auto& n : body.Nodes)
+            {
+                if (n.Type == "macro.inputs" && !inputsNode) inputsNode = n.Id;
+                else if (n.Type == "macro.outputs" && !outputsNode) outputsNode = n.Id;
+                else if (n.Type.rfind("event.", 0) == 0)
+                    messages.push_back({ topInstance, "Macro '" + macroName + "' contains an event node; events belong in the graph, not in macros.", false });
+            }
+            // 1) Gövde düğümlerinin kopyaları (tüneller hariç), yeni kimliklerle
+            std::unordered_map<int, int> map;
+            for (auto& n : body.Nodes)
+            {
+                if (n.Id == inputsNode || n.Id == outputsNode || n.Type == "comment")
+                    continue;
+                Node c = n;
+                c.Id = flat.NextId++;
+                map[n.Id] = c.Id;
+                owner[c.Id] = topInstance;
+                depth[c.Id] = d + 1;
+                if (expandedToInstance)
+                    (*expandedToInstance)[c.Id] = topInstance;
+                flat.Nodes.push_back(std::move(c));
+            }
+            // Örneğin dış bağlantıları
+            std::vector<Link> into, outOf;
+            for (auto& l : flat.Links)
+            {
+                if (l.ToNode == inst.Id) into.push_back(l);
+                if (l.FromNode == inst.Id) outOf.push_back(l);
+            }
+            auto addLink = [&](int fromNode, const std::string& fromPin, int toNode, const std::string& toPin) {
+                Link l;
+                l.Id = flat.NextId++;
+                l.FromNode = fromNode;
+                l.FromPin = fromPin;
+                l.ToNode = toNode;
+                l.ToPin = toPin;
+                flat.Links.push_back(l);
+            };
+            // Örnekteki bir giriş pininin kaynağı (bağlantı ya da sabit)
+            auto inputDefault = [&](const std::string& pin) -> std::string {
+                auto dit = inst.InputDefaults.find(pin);
+                return dit != inst.InputDefaults.end() ? dit->second : std::string();
+            };
+            // 2) Gövde bağlantıları
+            for (auto& l : body.Links)
+            {
+                const bool fromIn = l.FromNode == inputsNode, toOut = l.ToNode == outputsNode;
+                if (fromIn && toOut)
+                {
+                    // Doğrudan geçiş: dış kaynak -> dış hedef
+                    for (auto& src : into)
+                        if (src.ToPin == l.FromPin)
+                            for (auto& dst : outOf)
+                                if (dst.FromPin == l.ToPin)
+                                    addLink(src.FromNode, src.FromPin, dst.ToNode, dst.ToPin);
+                    continue;
+                }
+                if (fromIn)
+                {
+                    auto target = map.find(l.ToNode);
+                    if (target == map.end()) continue;
+                    bool linked = false;
+                    for (auto& src : into)
+                        if (src.ToPin == l.FromPin)
+                        {
+                            addLink(src.FromNode, src.FromPin, target->second, l.ToPin);
+                            linked = true;
+                        }
+                    // Bağlı olmayan veri girişi: örnekteki sabit iç düğümün girişine
+                    if (!linked)
+                    {
+                        const std::string def = inputDefault(l.FromPin);
+                        if (!def.empty())
+                            for (auto& n : flat.Nodes)
+                                if (n.Id == target->second) n.InputDefaults[l.ToPin] = def;
+                    }
+                    continue;
+                }
+                if (toOut)
+                {
+                    auto source = map.find(l.FromNode);
+                    if (source == map.end()) continue;
+                    for (auto& dst : outOf)
+                        if (dst.FromPin == l.ToPin)
+                            addLink(source->second, l.FromPin, dst.ToNode, dst.ToPin);
+                    continue;
+                }
+                auto a = map.find(l.FromNode), b = map.find(l.ToNode);
+                if (a != map.end() && b != map.end())
+                    addLink(a->second, l.FromPin, b->second, l.ToPin);
+            }
+            // 3) Örnek düğümü ve bağlantıları kalkar
+            flat.RemoveNode(inst.Id);
+        }
+        return flat;
     }
 
     bool Graph::Save(const std::string& path) const
@@ -1736,8 +1973,26 @@ namespace Conqueror::Visual
 
     std::string Graph::Transpile(const std::string& className, std::vector<CompileMessage>& messages, std::vector<int>* lineToNode, bool trace) const
     {
-        Transpiler t(*this, messages, trace);
-        return t.Run(SanitizeIdentifier(className), lineToNode);
+        if (Macros.empty())
+        {
+            Transpiler t(*this, messages, trace);
+            return t.Run(SanitizeIdentifier(className), lineToNode);
+        }
+        // Blueprint Macro: örnekler gövdeleriyle açılır (Unreal'daki gibi derlemede satır içi); açılan düğümlerin hataları ve satır
+        // eşlemesi makro düğümüne bağlanır
+        std::unordered_map<int, int> expanded;
+        Graph flat = ExpandMacros(messages, &expanded);
+        const size_t firstMessage = messages.size();
+        Transpiler t(flat, messages, trace);
+        std::string code = t.Run(SanitizeIdentifier(className), lineToNode);
+        for (size_t i = firstMessage; i < messages.size(); ++i)
+            if (auto it = expanded.find(messages[i].NodeId); it != expanded.end())
+                messages[i].NodeId = it->second;
+        if (lineToNode)
+            for (int& node : *lineToNode)
+                if (auto it = expanded.find(node); it != expanded.end())
+                    node = it->second;
+        return code;
     }
 }
 

@@ -1,0 +1,67 @@
+# template: empty
+# Blueprint Macro: makro gövdesi her kullanıldığı yerde satır içi açılır. "Twice": veri girişi / çıkışı (X * 2) ve exec geçişi;
+# "Classify": iki exec çıkışı (Big / Small, X > 10). Classify iki kez kullanılır (her örnek kendi dalına gider)
+wait 40
+vs new Assets/Scripts/MacroTest.cqgraph
+vs var Result number 0
+vs var Big number 0
+vs var Small number 0
+vs macro Twice
+vs prop Twice.in Pins In:exec,\sX:number
+vs prop Twice.out Pins Out:exec,\sDoubled:number
+vs node mul math.mul
+vs link Twice.in X mul A
+vs default mul B 2
+vs link mul Result Twice.out Doubled
+vs link Twice.in In Twice.out Out
+vs macro Classify
+vs prop Classify.in Pins In:exec,\sX:number
+vs prop Classify.out Pins Big:exec,\sSmall:exec
+vs node gt compare.gt
+vs link Classify.in X gt A
+vs default gt B 10
+vs node br flow.branch
+vs link Classify.in In br In
+vs link gt Result br Condition
+vs link br True Classify.out Big
+vs link br False Classify.out Small
+vs edit graph
+vs node start event.start
+vs node seq flow.sequence
+vs link start Then seq In
+vs node tw macro.instance
+vs prop tw Macro Twice
+vs default tw X 21
+vs link seq "Then 0" tw In
+vs node setR var.set
+vs prop setR Variable Result
+vs link tw Out setR In
+vs link tw Doubled setR Value
+vs node c1 macro.instance
+vs prop c1 Macro Classify
+vs default c1 X 21
+vs link seq "Then 1" c1 In
+vs node setBig var.set
+vs prop setBig Variable Big
+vs default setBig Value 1
+vs link c1 Big setBig In
+vs node c2 macro.instance
+vs prop c2 Macro Classify
+vs default c2 X 3
+vs link seq "Then 2" c2 In
+vs node setSmall var.set
+vs prop setSmall Variable Small
+vs default setSmall Value 1
+vs link c2 Small setSmall In
+vs save
+vs expect_errors 0
+create_primitive sphere Ball 0 3 0
+script add Ball Assets/Scripts/MacroTest.cqgraph
+play
+wait 20
+script expect Ball Result >41.99
+script expect Ball Result <42.01
+script expect Ball Big >0.99
+script expect Ball Small >0.99
+stop
+quit

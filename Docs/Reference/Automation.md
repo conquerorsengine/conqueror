@@ -53,6 +53,7 @@ Descriptions are taken from the comments next to each command in the source (Tur
 | `frame_selected` |  |
 | `game_pixel_world` | game_pixel_world <x> <y> [z] [<r\|g\|b\|a> <v \| >v \| <v> ...]: birincil kameradan dünya noktasının Game görünümündeki rengi (0..255) Usage: `game_pixel_world x y [channel cond]...` |
 | `game_region` |  |
+| `game_region_change` | game_region_change mark <u0 v0 u1 v1> \| expect <u0 v0 u1 v1> <v \| >v \| <v>: Game görünümündeki bölgenin işaretlenen andan bu yana piksel başına ortalama değişimi (0-255, RGB ortalaması). Hareket / salınım / durağanlık denetimi Usage: `game_region_change mark\|expect u0 v0 u1 v1 [cond]` |
 | `gamepad` | `gamepad connect [name] | disconnect | down/up/tap <button> | axis <axis> <value>` — virtual gamepad. |
 | `gizmo_drag` | gizmo_drag <x\|y\|z> <piksel>: seçili nesnenin taşıma okunu ekranda bulup eksen yönünde sürükler (UI öğeleri yerel eksenlerle). Gizmo davranışının gerçek fareyle testi için. Usage: `gizmo_drag <x\|y\|z> <pixels>` |
 | `gpu_probe` | gpu_probe <brdf\|viewport\|sh\|prefiltered>: GPU verisini GL API'si üzerinden geri okur (her arka uçta çalışır) Usage: `gpu_probe <brdf\|viewport\|sh\|prefiltered>` |
@@ -133,7 +134,7 @@ Descriptions are taken from the comments next to each command in the source (Tur
 | `viewport_click` | Usage: `viewport_click <nx 0..1> <ny 0..1>` |
 | `viewport_drag2d` | viewport_drag2d <wx0> <wy0> <wx1> <wy1>: 2D görünümde dünya koordinatlarıyla sürükleme Usage: `viewport_drag2d x0 y0 x1 y1` |
 | `viewport_region` | viewport_region: aynı istatistik Viewport (sahne görünümü) görüntüsünde |
-| `vs` | vs new <path> \| open <path> \| node <alias> <type> [x y] \| link <a> <pin> <b> <pin> vs default <alias> <pin> <value> \| prop <alias> <key> <value> \| var <name> <type> <default> [private] vs save \| expect_errors <n> \| expect_code <substring> \| remove <alias> \| undo \| redo Usage: `vs new\|open\|node\|link\|default\|prop\|var\|save\|expect_errors\|expect_code` |
+| `vs` | vs new <path> \| open <path> \| node <alias> <type> [x y] \| link <a> <pin> <b> <pin> \| macro <name> \| edit <macro\|graph> vs default <alias> <pin> <value> \| prop <alias> <key> <value> \| var <name> <type> <default> [private] vs save \| expect_errors <n> \| expect_code <substring> \| remove <alias> \| undo \| redo Usage: `vs new\|open\|node\|link\|default\|prop\|var\|save\|expect_errors\|expect_code` |
 | `wait` | `wait <frames>` — let N frames pass (default 1). |
 | `wait_until` | `wait_until <timeoutMs> <command ...>` — retry a command every frame until it succeeds or the timeout expires. |
 | `window_float` | window_float <ad> <x> <y> <g> <y>: paneli yuvadan çıkarır; window_size <ad> <g> <y>: yüzen pencereyi boyutlandırır Usage: `window_float <name> <x> <y> <w> <h>` |

@@ -1192,7 +1192,7 @@ Type `VisualEffectComponent`; script name `VisualEffect`.
 
 ### Wind Zone
 
-Blows particles (and optionally rigidbodies). Directional wind blows along -Z.
+Blows particles and Tree Creator trees (and optionally rigidbodies). Directional wind blows along -Z.
 
 Type `WindZoneComponent`; script name `WindZone`.
 

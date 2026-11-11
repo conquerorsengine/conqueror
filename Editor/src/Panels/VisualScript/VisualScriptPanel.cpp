@@ -150,6 +150,34 @@ namespace Conqueror::Editor
             ImNodes::DestroyContext(m_Context);
     }
 
+    Visual::Graph& VisualScriptPanel::G()
+    {
+        if (!m_EditMacro.empty())
+            for (auto& m : m_Graph.Macros)
+                if (m.Name == m_EditMacro && m.Body)
+                {
+                    m.Body->MacroScope = &m_Graph;
+                    return *m.Body;
+                }
+        return m_Graph;
+    }
+
+    void VisualScriptPanel::EditMacro(const std::string& name)
+    {
+        // Olay grafiği ile makro gövdesi arasında geçiş: düğüm kimlikleri grafikler arasında çakışır, imnodes seçimi ve konumları
+        // yeni grafikten yeniden kurulur
+        m_EditMacro = name;
+        if (!name.empty() && !m_Graph.FindMacro(name))
+            m_EditMacro.clear();
+        m_PositionsDirty = true;
+        if (m_Context)
+        {
+            ImNodes::SetCurrentContext(m_Context);
+            ImNodes::ClearNodeSelection();
+            ImNodes::ClearLinkSelection();
+        }
+    }
+
     void VisualScriptPanel::Open(const std::filesystem::path& path)
     {
         if (m_Dirty && !m_Path.empty() && path != m_Path)
@@ -162,6 +190,9 @@ namespace Conqueror::Editor
             return;
         }
         m_Graph = std::move(g);
+        for (auto& m : m_Graph.Macros)
+            if (m.Body) m.Body->MacroScope = &m_Graph;
+        m_EditMacro.clear();
         if (m_Graph.Name.empty() || m_Graph.Name == "NewGraph")
             m_Graph.Name = path.stem().string();
         m_Path = path;
@@ -259,6 +290,11 @@ namespace Conqueror::Editor
         m_RedoStack.push_back(m_Graph.ToJson());
         m_Graph.FromJson(m_UndoStack.back());
         m_UndoStack.pop_back();
+        for (auto& m : m_Graph.Macros)
+            if (m.Body) m.Body->MacroScope = &m_Graph;
+        if (!m_EditMacro.empty() && !m_Graph.FindMacro(m_EditMacro))
+            m_EditMacro.clear();
+        m_PositionsDirty = true;
         MarkEdited();
     }
 
@@ -268,13 +304,18 @@ namespace Conqueror::Editor
         m_UndoStack.push_back(m_Graph.ToJson());
         m_Graph.FromJson(m_RedoStack.back());
         m_RedoStack.pop_back();
+        for (auto& m : m_Graph.Macros)
+            if (m.Body) m.Body->MacroScope = &m_Graph;
+        if (!m_EditMacro.empty() && !m_Graph.FindMacro(m_EditMacro))
+            m_EditMacro.clear();
+        m_PositionsDirty = true;
         MarkEdited();
     }
 
     void VisualScriptPanel::CreateNodeAt(const std::string& type, const ImVec2& gridPos)
     {
         PushUndo();
-        int id = m_Graph.AddNode(type, gridPos.x, gridPos.y);
+        int id = G().AddNode(type, gridPos.x, gridPos.y);
         if (!id) return;
         // Bırakılan bağlantıdan açıldıysa uyumlu ilk pine bağla
         if (m_PendingLinkAttribute >= 0)
@@ -282,21 +323,21 @@ namespace Conqueror::Editor
             int srcNode, srcPin;
             bool srcOutput;
             DecodeAttribute(m_PendingLinkAttribute, srcNode, srcPin, srcOutput);
-            const Node* src = m_Graph.FindNode(srcNode);
-            const Node* dst = m_Graph.FindNode(id);
+            const Node* src = G().FindNode(srcNode);
+            const Node* dst = G().FindNode(id);
             if (src && dst)
             {
-                NodeDef sd = m_Graph.ResolveDef(*src), dd = m_Graph.ResolveDef(*dst);
+                NodeDef sd = G().ResolveDef(*src), dd = G().ResolveDef(*dst);
                 if (srcOutput && srcPin < (int)sd.Outputs.size())
                 {
                     for (auto& in : dd.Inputs)
-                        if (PinsCompatible(sd.Outputs[(size_t)srcPin].Type, in.Type) && m_Graph.Connect(srcNode, sd.Outputs[(size_t)srcPin].Name, id, in.Name))
+                        if (PinsCompatible(sd.Outputs[(size_t)srcPin].Type, in.Type) && G().Connect(srcNode, sd.Outputs[(size_t)srcPin].Name, id, in.Name))
                             break;
                 }
                 else if (!srcOutput && srcPin < (int)sd.Inputs.size())
                 {
                     for (auto& out : dd.Outputs)
-                        if (PinsCompatible(out.Type, sd.Inputs[(size_t)srcPin].Type) && m_Graph.Connect(id, out.Name, srcNode, sd.Inputs[(size_t)srcPin].Name))
+                        if (PinsCompatible(out.Type, sd.Inputs[(size_t)srcPin].Type) && G().Connect(id, out.Name, srcNode, sd.Inputs[(size_t)srcPin].Name))
                             break;
                 }
             }
@@ -314,13 +355,13 @@ namespace Conqueror::Editor
         {
             std::vector<int> links((size_t)nl);
             ImNodes::GetSelectedLinks(links.data());
-            for (int l : links) m_Graph.Disconnect(l);
+            for (int l : links) G().Disconnect(l);
         }
         if (nn > 0)
         {
             std::vector<int> nodes((size_t)nn);
             ImNodes::GetSelectedNodes(nodes.data());
-            for (int n : nodes) m_Graph.RemoveNode(n);
+            for (int n : nodes) G().RemoveNode(n);
         }
         ImNodes::ClearNodeSelection();
         ImNodes::ClearLinkSelection();
@@ -335,10 +376,10 @@ namespace Conqueror::Editor
         ImNodes::GetSelectedNodes(ids.data());
         std::set<int> selected(ids.begin(), ids.end());
         Graph clip;
-        clip.Variables = m_Graph.Variables;
-        for (auto& n : m_Graph.Nodes) if (selected.count(n.Id)) clip.Nodes.push_back(n);
-        for (auto& l : m_Graph.Links) if (selected.count(l.FromNode) && selected.count(l.ToNode)) clip.Links.push_back(l);
-        clip.NextId = m_Graph.NextId;
+        clip.Variables = G().Variables;
+        for (auto& n : G().Nodes) if (selected.count(n.Id)) clip.Nodes.push_back(n);
+        for (auto& l : G().Links) if (selected.count(l.FromNode) && selected.count(l.ToNode)) clip.Links.push_back(l);
+        clip.NextId = G().NextId;
         m_Clipboard = clip.ToJson();
         ImGui::SetClipboardText(m_Clipboard.c_str());
     }
@@ -357,17 +398,17 @@ namespace Conqueror::Editor
         for (auto& n : clip.Nodes)
         {
             Node copy = n;
-            copy.Id = m_Graph.NextId++;
+            copy.Id = G().NextId++;
             copy.X = gridPos.x + (n.X - minX);
             copy.Y = gridPos.y + (n.Y - minY);
             remap[n.Id] = copy.Id;
-            m_Graph.Nodes.push_back(copy);
+            G().Nodes.push_back(copy);
         }
         for (auto& l : clip.Links)
-            m_Graph.Connect(remap[l.FromNode], l.FromPin, remap[l.ToNode], l.ToPin);
+            G().Connect(remap[l.FromNode], l.FromPin, remap[l.ToNode], l.ToPin);
         // Yapıştırılan grafikte olup burada olmayan değişkenleri ekle
         for (auto& v : clip.Variables)
-            if (!m_Graph.FindVariable(v.Name)) m_Graph.Variables.push_back(v);
+            if (!G().FindVariable(v.Name)) G().Variables.push_back(v);
         MarkEdited();
         for (auto& [oldId, newId] : remap) m_PendingSelect.push_back(newId);
     }
@@ -381,17 +422,17 @@ namespace Conqueror::Editor
         ImNodes::GetSelectedNodes(ids.data());
         float minX = 1e9f, minY = 1e9f;
         for (int id : ids)
-            if (const Node* n = m_Graph.FindNode(id)) { minX = std::min(minX, n->X); minY = std::min(minY, n->Y); }
+            if (const Node* n = G().FindNode(id)) { minX = std::min(minX, n->X); minY = std::min(minY, n->Y); }
         Paste(ImVec2(minX + 32.0f, minY + 32.0f));
     }
 
     void VisualScriptPanel::FrameAll()
     {
-        if (m_Graph.Nodes.empty()) return;
+        if (G().Nodes.empty()) return;
         float minX = 1e9f, minY = 1e9f, maxX = -1e9f, maxY = -1e9f;
         ImNodesContext* previous = ImNodes::GetCurrentContext();
         ImNodes::SetCurrentContext(m_Context);
-        for (auto& n : m_Graph.Nodes)
+        for (auto& n : G().Nodes)
         {
             // Gerçek düğüm boyutu (son çizimden), yoksa tahmin
             ImVec2 dims = ImNodes::GetNodeDimensions(n.Id);
@@ -413,7 +454,7 @@ namespace Conqueror::Editor
 
     void VisualScriptPanel::FocusNode(int id)
     {
-        const Node* n = m_Graph.FindNode(id);
+        const Node* n = G().FindNode(id);
         if (!n) return;
         m_FrameZoom = std::max(m_Zoom, 0.8f);
         m_FrameRequest = ImVec2(n->X + 100.0f, n->Y + 50.0f);
@@ -537,6 +578,15 @@ namespace Conqueror::Editor
             ImGui::SameLine();
             return pressed;
         };
+        if (!m_EditMacro.empty())
+        {
+            if (button(ICON_FA_ARROW_LEFT, "Back to the Event Graph"))
+                EditMacro("");
+            ImGui::TextColored(UI::Colors::Accent, ICON_FA_LAYER_GROUP " %s", m_EditMacro.c_str());
+            ImGui::SameLine();
+            ImGui::TextDisabled("|");
+            ImGui::SameLine();
+        }
         if (button(ICON_FA_FLOPPY_DISK, "Save (Ctrl+S)", m_Dirty)) Save();
         if (button(ICON_FA_ROTATE_LEFT, "Undo (Ctrl+Z)", !m_UndoStack.empty())) Undo();
         if (button(ICON_FA_ROTATE_RIGHT, "Redo (Ctrl+Y)", !m_RedoStack.empty())) Redo();
@@ -633,7 +683,11 @@ namespace Conqueror::Editor
                 if (!newName.empty() && newName != v.Name && !m_Graph.FindVariable(newName))
                 {
                     PushUndo();
-                    for (auto& n : m_Graph.Nodes)
+                    std::vector<Graph*> graphs{ &m_Graph };
+                    for (auto& m : m_Graph.Macros)
+                        if (m.Body) graphs.push_back(m.Body.get());
+                    for (Graph* gr : graphs)
+                    for (auto& n : gr->Nodes)
                         if ((n.Type == "var.get" || n.Type == "var.set") && n.Properties["Variable"] == v.Name) n.Properties["Variable"] = newName;
                     v.Name = newName;
                     MarkEdited();
@@ -694,6 +748,73 @@ namespace Conqueror::Editor
         }
         if (m_Graph.Variables.empty())
             ImGui::TextDisabled("No variables. Public variables appear in the Inspector.");
+
+        // ── Makrolar (Unreal Blueprint Macro) ──
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextColored(UI::Colors::Accent, ICON_FA_LAYER_GROUP "  Macros");
+        ImGui::SameLine(ImGui::GetContentRegionAvail().x - 4.0f);
+        if (ImGui::SmallButton(ICON_FA_PLUS "##addmacro"))
+        {
+            PushUndo();
+            std::string name = "Macro";
+            for (int i = 1; m_Graph.FindMacro(name); ++i) name = "Macro" + std::to_string(i);
+            m_Graph.AddMacro(name).Body->MacroScope = &m_Graph;
+            EditMacro(name);
+            MarkEdited();
+        }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("New macro: several exec inputs / outputs, placed inline where it is used");
+        int removeMacro = -1;
+        for (size_t i = 0; i < m_Graph.Macros.size(); ++i)
+        {
+            auto& m = m_Graph.Macros[i];
+            ImGui::PushID((int)(5000 + i));
+            if (ImGui::Selectable((std::string(ICON_FA_LAYER_GROUP "  ") + m.Name).c_str(), m_EditMacro == m.Name, ImGuiSelectableFlags_AllowDoubleClick))
+                EditMacro(m.Name);
+            if (ImGui::BeginPopupContextItem("##macroctx"))
+            {
+                static char s_Rename[64] = {};
+                if (ImGui::IsWindowAppearing())
+                    std::snprintf(s_Rename, sizeof(s_Rename), "%s", m.Name.c_str());
+                ImGui::SetNextItemWidth(180.0f);
+                if (ImGui::InputText("##rename", s_Rename, sizeof(s_Rename), ImGuiInputTextFlags_EnterReturnsTrue))
+                {
+                    const std::string newName = s_Rename;
+                    if (!newName.empty() && newName != m.Name && !m_Graph.FindMacro(newName))
+                    {
+                        PushUndo();
+                        // Makro düğümleri yeni adı gösterir (olay grafiğinde ve diğer makrolarda)
+                        std::vector<Graph*> graphs{ &m_Graph };
+                        for (auto& other : m_Graph.Macros)
+                            if (other.Body) graphs.push_back(other.Body.get());
+                        for (Graph* gr : graphs)
+                            for (auto& n : gr->Nodes)
+                                if (n.Type == "macro.instance" && n.Properties["Macro"] == m.Name)
+                                    n.Properties["Macro"] = newName;
+                        if (m_EditMacro == m.Name)
+                            m_EditMacro = newName;
+                        m.Name = newName;
+                        if (m.Body) m.Body->Name = newName;
+                        MarkEdited();
+                    }
+                    ImGui::CloseCurrentPopup();
+                }
+                if (ImGui::MenuItem(ICON_FA_TRASH "  Delete"))
+                    removeMacro = (int)i;
+                ImGui::EndPopup();
+            }
+            ImGui::PopID();
+        }
+        if (removeMacro >= 0)
+        {
+            PushUndo();
+            if (m_EditMacro == m_Graph.Macros[(size_t)removeMacro].Name)
+                EditMacro("");
+            m_Graph.Macros.erase(m_Graph.Macros.begin() + removeMacro);
+            MarkEdited();
+        }
+        if (m_Graph.Macros.empty())
+            ImGui::TextDisabled("No macros. Right-click a macro to rename or delete it.");
 
         // ── Derleme mesajları ──
         ImGui::Spacing();
@@ -881,7 +1002,7 @@ namespace Conqueror::Editor
                     ImGui::SetNextItemWidth(Z(130.0f));
                     if (ImGui::BeginCombo("##f", v.empty() ? "(select)" : v.c_str()))
                     {
-                        for (auto& other : m_Graph.Nodes)
+                        for (auto& other : G().Nodes)
                         {
                             if (other.Type != "event.function") continue;
                             const std::string name = other.Properties["Name"];
@@ -900,7 +1021,7 @@ namespace Conqueror::Editor
 
     void VisualScriptPanel::RenderNode(Node& node)
     {
-        NodeDef def = m_Graph.ResolveDef(node);
+        NodeDef def = G().ResolveDef(node);
         ImU32 title = TitleColor(def);
         bool hasError = m_ErrorNodes.count(node.Id) != 0;
         // Blueprint hata ayıklayıcısı: son 0.4 sn içinde yürütülen düğüm sarı çerçeveyle parlar
@@ -960,7 +1081,7 @@ namespace Conqueror::Editor
                 const PinDef& in = def.Inputs[r];
                 ImNodes::PushColorStyle(ImNodesCol_Pin, PinColor(in.Type));
                 ImNodes::PushColorStyle(ImNodesCol_PinHovered, Brighten(PinColor(in.Type), 1.3f));
-                bool connected = m_Graph.FindInputLink(node.Id, in.Name) != nullptr;
+                bool connected = G().FindInputLink(node.Id, in.Name) != nullptr;
                 ImNodesPinShape shape = in.Type == PinType::Exec ? (connected ? ImNodesPinShape_TriangleFilled : ImNodesPinShape_Triangle)
                                                                  : (connected ? ImNodesPinShape_CircleFilled : ImNodesPinShape_Circle);
                 ImNodes::BeginInputAttribute(AttributeId(node.Id, (int)r, false), shape);
@@ -988,7 +1109,7 @@ namespace Conqueror::Editor
                 ImGui::SetCursorPosX(target);
                 ImNodes::PushColorStyle(ImNodesCol_Pin, PinColor(out.Type));
                 ImNodes::PushColorStyle(ImNodesCol_PinHovered, Brighten(PinColor(out.Type), 1.3f));
-                bool connected = !m_Graph.FindOutputLinks(node.Id, out.Name).empty();
+                bool connected = !G().FindOutputLinks(node.Id, out.Name).empty();
                 ImNodesPinShape shape = out.Type == PinType::Exec ? (connected ? ImNodesPinShape_TriangleFilled : ImNodesPinShape_Triangle)
                                                                   : (connected ? ImNodesPinShape_CircleFilled : ImNodesPinShape_Circle);
                 ImNodes::BeginOutputAttribute(AttributeId(node.Id, (int)r, true), shape);
@@ -1047,7 +1168,7 @@ namespace Conqueror::Editor
         }
         if (m_PositionsDirty)
         {
-            for (auto& n : m_Graph.Nodes)
+            for (auto& n : G().Nodes)
                 ImNodes::SetNodeGridSpacePos(n.Id, ImVec2(n.X * m_Zoom, n.Y * m_Zoom));
             m_PositionsDirty = false;
         }
@@ -1055,17 +1176,17 @@ namespace Conqueror::Editor
         ImGui::PushFont(nullptr, GImGui->FontSizeBase * m_Zoom);
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x * m_Zoom, ImGui::GetStyle().ItemSpacing.y * m_Zoom));
         ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(ImGui::GetStyle().ItemInnerSpacing.x * m_Zoom, ImGui::GetStyle().ItemInnerSpacing.y * m_Zoom));
-        for (auto& n : m_Graph.Nodes)
+        for (auto& n : G().Nodes)
             RenderNode(n);
         ImGui::PopStyleVar(2);
         ImGui::PopFont();
         // Bağlantılar (kaynak pin rengiyle)
-        for (auto& l : m_Graph.Links)
+        for (auto& l : G().Links)
         {
-            const Node* from = m_Graph.FindNode(l.FromNode);
-            const Node* to = m_Graph.FindNode(l.ToNode);
+            const Node* from = G().FindNode(l.FromNode);
+            const Node* to = G().FindNode(l.ToNode);
             if (!from || !to) continue;
-            NodeDef fd = m_Graph.ResolveDef(*from), td = m_Graph.ResolveDef(*to);
+            NodeDef fd = G().ResolveDef(*from), td = G().ResolveDef(*to);
             int fi = -1, ti = -1;
             for (size_t i = 0; i < fd.Outputs.size(); ++i) if (fd.Outputs[i].Name == l.FromPin) fi = (int)i;
             for (size_t i = 0; i < td.Inputs.size(); ++i) if (td.Inputs[i].Name == l.ToPin) ti = (int)i;
@@ -1107,7 +1228,7 @@ namespace Conqueror::Editor
 
         // Konumları geri oku (imnodes ızgara konumu / zoom = grafik konumu)
         bool moved = false;
-        for (auto& n : m_Graph.Nodes)
+        for (auto& n : G().Nodes)
         {
             ImVec2 p = ImNodes::GetNodeGridSpacePos(n.Id);
             p = ImVec2(p.x / m_Zoom, p.y / m_Zoom);
@@ -1139,7 +1260,7 @@ namespace Conqueror::Editor
         }
         if (!ImGui::IsAnyItemActive())
             m_EditingNodeValue = false;
-        m_PreFrameSnapshot = m_Graph.ToJson();
+        m_PreFrameSnapshot = G().ToJson();
 
         // Yeni bağlantı
         int start = 0, end = 0;
@@ -1150,16 +1271,16 @@ namespace Conqueror::Editor
             DecodeAttribute(start, sn, sp, so);
             DecodeAttribute(end, en, ep, eo);
             if (!so) { std::swap(sn, en); std::swap(sp, ep); }
-            const Node* a = m_Graph.FindNode(sn);
-            const Node* b = m_Graph.FindNode(en);
+            const Node* a = G().FindNode(sn);
+            const Node* b = G().FindNode(en);
             if (a && b)
             {
-                NodeDef ad = m_Graph.ResolveDef(*a), bd = m_Graph.ResolveDef(*b);
+                NodeDef ad = G().ResolveDef(*a), bd = G().ResolveDef(*b);
                 if (sp < (int)ad.Outputs.size() && ep < (int)bd.Inputs.size())
                 {
                     PushUndo();
                     std::string err;
-                    if (m_Graph.Connect(sn, ad.Outputs[(size_t)sp].Name, en, bd.Inputs[(size_t)ep].Name, &err))
+                    if (G().Connect(sn, ad.Outputs[(size_t)sp].Name, en, bd.Inputs[(size_t)ep].Name, &err))
                         MarkEdited();
                     else
                     {
@@ -1174,7 +1295,7 @@ namespace Conqueror::Editor
         if (ImNodes::IsLinkDestroyed(&destroyed))
         {
             PushUndo();
-            m_Graph.Disconnect(destroyed);
+            G().Disconnect(destroyed);
             MarkEdited();
         }
         int dropped = -1;
@@ -1244,7 +1365,7 @@ namespace Conqueror::Editor
             {
                 std::string name((const char*)payload->Data);
                 CreateNodeAt(io.KeyCtrl ? "var.set" : "var.get", mouseGrid);
-                m_Graph.Nodes.back().Properties["Variable"] = name;
+                G().Nodes.back().Properties["Variable"] = name;
                 MarkEdited();
             }
             ImGui::EndDragDropTarget();
@@ -1258,7 +1379,7 @@ namespace Conqueror::Editor
             ImGui::GetWindowDrawList()->AddRectFilled(p, ImVec2(p.x + ImGui::CalcTextSize(m_Toast.c_str()).x + 20.0f, p.y + 26.0f), IM_COL32(120, 40, 40, 230), 4.0f);
             ImGui::GetWindowDrawList()->AddText(ImVec2(p.x + 10.0f, p.y + 5.0f), IM_COL32(255, 255, 255, 255), m_Toast.c_str());
         }
-        if (m_Graph.Nodes.empty())
+        if (G().Nodes.empty())
         {
             const char* hint = "Right-click or press Space to add a node";
             ImVec2 size = ImGui::CalcTextSize(hint);
@@ -1302,14 +1423,14 @@ namespace Conqueror::Editor
             int n, p;
             bool out;
             DecodeAttribute(m_PendingLinkAttribute, n, p, out);
-            if (const Node* node = m_Graph.FindNode(n))
+            if (const Node* node = G().FindNode(n))
             {
-                NodeDef d = m_Graph.ResolveDef(*node);
+                NodeDef d = G().ResolveDef(*node);
                 const auto& pins = out ? d.Outputs : d.Inputs;
                 if (p < (int)pins.size()) { linkType = pins[(size_t)p].Type; linkFromOutput = out; hasLink = true; }
             }
         }
-        struct Entry { std::string Type, Label, Category, Desc, Variable; int Score; };
+        struct Entry { std::string Type, Label, Category, Desc, Variable; int Score; std::string Macro; };
         std::vector<Entry> entries;
         auto compatible = [&](const NodeDef& d) {
             if (!hasLink) return true;
@@ -1318,12 +1439,27 @@ namespace Conqueror::Editor
                 if (linkFromOutput ? PinsCompatible(linkType, pin.Type) : PinsCompatible(pin.Type, linkType)) return true;
             return false;
         };
+        const bool inMacro = !m_EditMacro.empty();
         for (auto& d : NodeLibrary::All())
         {
             if (d.Id == "var.get" || d.Id == "var.set") continue;
+            // Makro düğümü adlarıyla aşağıda; tüneller yalnız makro gövdesinde; olaylar makroda olmaz
+            if (d.Id == "macro.instance") continue;
+            if ((d.Id == "macro.inputs" || d.Id == "macro.outputs") && !inMacro) continue;
+            if (inMacro && d.Kind == NodeKind::Event) continue;
             if (!compatible(d)) continue;
             int s = std::max(Score(d.Title, filter), Score(d.Category, filter) > 2 ? 1 : 0);
             if (s > 0) entries.push_back({ d.Id, d.Title, d.Category, d.Description, "", s });
+        }
+        // Makro düğümleri (açık makronun kendisi hariç: kendini çağıran makro)
+        for (auto& m : m_Graph.Macros)
+        {
+            if (!m.Body || m.Name == m_EditMacro) continue;
+            NodeDef d = *NodeLibrary::Find("macro.instance");
+            Graph::MacroPins(*m.Body, d.Inputs, d.Outputs);
+            if (!compatible(d)) continue;
+            int s = Score(m.Name, filter);
+            if (filter.empty() || s > 0) entries.push_back({ "macro.instance", m.Name, "Macros", "Macro of this graph (placed inline).", "", std::max(s, 1) + 1, m.Name });
         }
         // Değişken düğümleri
         for (auto& v : m_Graph.Variables)
@@ -1415,7 +1551,12 @@ namespace Conqueror::Editor
             CreateNodeAt(e.Type, m_SearchGridPos);
             if (!e.Variable.empty())
             {
-                m_Graph.Nodes.back().Properties["Variable"] = e.Variable;
+                G().Nodes.back().Properties["Variable"] = e.Variable;
+                MarkEdited();
+            }
+            if (!e.Macro.empty() && !G().Nodes.empty() && G().Nodes.back().Type == "macro.instance")
+            {
+                G().Nodes.back().Properties["Macro"] = e.Macro;
                 MarkEdited();
             }
             ImGui::CloseCurrentPopup();
