@@ -818,23 +818,35 @@ namespace Conqueror
         return st && (st->m_JitterActive || st->m_StabilityActive) && st->m_SceneFramebuffer && st->m_Samples <= 1;
     }
 
+    namespace
+    {
+        GLint s_ReactivePrevFramebuffer = 0;   // tepki maskesi çiziminden önce bağlı sahne hedefi (EQAA / CSAA: kapsam örnekli olan)
+    }
+
     uint32_t PostProcessStack::BeginReactiveDraw()
     {
         PostProcessStack* st = s_Current;
-        if (!st || !(st->m_JitterActive || st->m_StabilityActive) || !st->m_SceneFramebuffer || st->m_Samples > 1)
+        if (!st || !(st->m_JitterActive || st->m_StabilityActive) || !st->m_SceneFramebuffer)
             return 0;
         GLint drawFBO = 0;
         glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFBO);
-        if ((uint32_t)drawFBO != st->m_SceneFramebuffer->GetRendererID())
+        if (!st->IsSceneDrawTarget((uint32_t)drawFBO))
             return 0;
+        // Çok örnekli sahne (MSAA / EQAA / CSAA / TXAA): derinliği tek örnekli maskeye bağlanamaz, maske derinlik testsiz yazılır
+        // (bu kipte TAA'nın gördüğü kare zaten çok örnekle yumuşatılmış; arkada kalan parçacığın pikselinde de geçmiş korunur).
+        // Eskiden maske hiç yazılmıyor, duman / kıvılcım / toz ekran dikdörtgeniyle bildiriliyordu: küpün üstünde ateş edince
+        // dikdörtgenin içi geçmişsiz kalıp kenarları ince çizgili bir kutu olarak görünüyordu
+        const bool multisampled = st->m_Samples > 1 || st->m_CoverageSamples > 0;
         st->EnsureTarget(st->m_Reactive, st->m_Width, st->m_Height, GL_R8);
         if (!st->m_ReactiveFramebuffer)
             glCreateFramebuffers(1, &st->m_ReactiveFramebuffer);
-        // Ekler her seferinde: boyut değişince dokular yeniden oluşur
+        // Ekler her seferinde: boyut değişince dokular yeniden oluşur (geç çizim derinlik + şablon ekini kullanır: önce ikisi de sökülür)
         glNamedFramebufferTexture(st->m_ReactiveFramebuffer, GL_COLOR_ATTACHMENT0, st->m_Reactive.Texture, 0);
-        glNamedFramebufferTexture(st->m_ReactiveFramebuffer, GL_DEPTH_ATTACHMENT, st->m_SceneFramebuffer->GetDepthAttachmentRendererID(), 0);
+        glNamedFramebufferTexture(st->m_ReactiveFramebuffer, GL_DEPTH_STENCIL_ATTACHMENT, 0, 0);
+        glNamedFramebufferTexture(st->m_ReactiveFramebuffer, GL_DEPTH_ATTACHMENT, multisampled ? 0 : st->m_SceneFramebuffer->GetDepthAttachmentRendererID(), 0);
         if (glCheckNamedFramebufferStatus(st->m_ReactiveFramebuffer, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             return 0;
+        s_ReactivePrevFramebuffer = drawFBO;
         glBindFramebuffer(GL_FRAMEBUFFER, st->m_ReactiveFramebuffer);
         if (!st->m_ReactiveUsed)
         {
@@ -847,8 +859,11 @@ namespace Conqueror
 
     void PostProcessStack::EndReactiveDraw()
     {
-        if (s_Current && s_Current->m_SceneFramebuffer)
+        if (s_ReactivePrevFramebuffer)
+            glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)s_ReactivePrevFramebuffer);
+        else if (s_Current && s_Current->m_SceneFramebuffer)
             glBindFramebuffer(GL_FRAMEBUFFER, s_Current->m_SceneFramebuffer->GetRendererID());
+        s_ReactivePrevFramebuffer = 0;
     }
 
     uint32_t PostProcessStack::GetCurrentSceneDepth()

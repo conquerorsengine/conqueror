@@ -253,8 +253,9 @@ namespace Conqueror
                 const Grid& g = GridOf(res);
                 glBindVertexArray(g.Vao);
                 glDrawElements(GL_TRIANGLES, g.Count, GL_UNSIGNED_INT, nullptr);
-                // TAA: dalgalar her karede değişir; tepki maskesi (geçmişe az güven)
-                if (PostProcessStack::BeginReactiveDraw())
+                // TAA: dalgalar her karede değişir; tepki maskesi (geçmişe az güven). Çok örnekli sahnede maske derinlik testsizdir:
+                // geniş su yüzeyi önündeki karayı da işaretlerdi, orada yazılmaz (eskisi gibi)
+                if (PostProcessStack::CanDrawReactive() && PostProcessStack::BeginReactiveDraw())
                 {
                     sh->SetInt("u_ReactivePass", 1);
                     glBlendEquation(GL_MAX);

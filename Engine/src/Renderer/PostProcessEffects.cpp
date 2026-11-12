@@ -433,6 +433,29 @@ namespace Conqueror
                 hasVelocity = Renderer3D::RenderVelocity(this, jitteredViewProj, viewProj, m_PrevViewProj);
             }
         }
+        // Çok örnekli sahne (MSAA / EQAA / CSAA / TXAA): hareket eden saydam meshler (uçan mermi izi) tepki maskesine burada,
+        // çözülmüş derinliğe karşı çizilir; sahne çizilirken maske yazılamıyordu, yerine geçmişi atılan ekran dikdörtgeni
+        // küpün üstünde ateş edince ince çizgili bir kutu olarak görünüyordu
+        if (sceneDepth && Renderer3D::HasLateReactive(this))
+        {
+            EnsureTarget(m_Reactive, m_Width, m_Height, GL_R8);
+            if (!m_ReactiveFramebuffer)
+                glCreateFramebuffers(1, &m_ReactiveFramebuffer);
+            glNamedFramebufferTexture(m_ReactiveFramebuffer, GL_COLOR_ATTACHMENT0, m_Reactive.Texture, 0);
+            glNamedFramebufferTexture(m_ReactiveFramebuffer, GL_DEPTH_STENCIL_ATTACHMENT, sceneDepth, 0);
+            if (glCheckNamedFramebufferStatus(m_ReactiveFramebuffer, GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
+            {
+                glBindFramebuffer(GL_FRAMEBUFFER, m_ReactiveFramebuffer);
+                glViewport(0, 0, m_Width, m_Height);
+                if (!m_ReactiveUsed)
+                {
+                    const float zero[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+                    glClearBufferfv(GL_COLOR, 0, zero);
+                }
+                if (Renderer3D::RenderLateReactive(this, jitteredViewProj))
+                    m_ReactiveUsed = true;
+            }
+        }
         return hasVelocity;
     }
 

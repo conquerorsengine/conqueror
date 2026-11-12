@@ -390,6 +390,10 @@ namespace Conqueror
             // bir saniye kadar silik beliriyordu
             std::unordered_set<uint64_t> PrevMovedTransparent, CurMovedTransparent;
             std::vector<Footprint> SettledTransparent;
+            // Çok örnekli sahnede (MSAA / EQAA / CSAA / TXAA) tepki maskesi sahne çizilirken yazılamaz: hareket eden saydam meshler
+            // burada toplanır, TAA'dan hemen önce çözülmüş derinliğe karşı maskeye çizilir. Eskiden ekran dikdörtgeni işaretleniyordu:
+            // uçan mermi izinin dikdörtgeni küpün üstünde ateş edince geçmişi atılan geniş bir alan, kenarları ince çizgi olarak görünüyordu
+            std::vector<Footprint> LateReactive;
             std::unordered_map<const void*, uint32_t> SkinnedOccurrence;
             std::unordered_map<uint64_t, uint32_t> SkinnedIdentityOccurrence;
         };
@@ -717,6 +721,59 @@ namespace Conqueror
             PostProcessStack::EndReactiveDraw();
             return true;
         }
+    }
+
+    bool Renderer3D::HasLateReactive(const void* view)
+    {
+        auto it = s_Motion.find(view);
+        return it != s_Motion.end() && !it->second.LateReactive.empty();
+    }
+
+    // Çok örnekli sahnenin hareket eden saydam meshleri: bağlı çerçeve tamponuna (tepki maskesi + çözülmüş sahne derinliği) LEQUAL,
+    // derinlik yazılmaz, en büyük değer harmanlaması
+    bool Renderer3D::RenderLateReactive(const void* view, const glm::mat4& jitteredViewProj)
+    {
+        auto it = s_Motion.find(view);
+        if (it == s_Motion.end() || it->second.LateReactive.empty())
+            return false;
+        if (!s_ReactiveMeshShader)
+            s_ReactiveMeshShader = Shader::Create("Engine/src/Shaders/3D/ReactiveMask.cqsh");
+        if (!s_ReactiveMeshShader || !s_ReactiveMeshShader->IsValid())
+            return false;
+        const GLboolean blend = glIsEnabled(GL_BLEND), depthTest = glIsEnabled(GL_DEPTH_TEST), cull = glIsEnabled(GL_CULL_FACE);
+        GLboolean depthMask = GL_TRUE;
+        glGetBooleanv(GL_DEPTH_WRITEMASK, &depthMask);
+        GLint depthFunc = GL_LESS;
+        glGetIntegerv(GL_DEPTH_FUNC, &depthFunc);
+        glEnable(GL_BLEND);
+        glBlendEquation(GL_MAX);
+        glBlendFunc(GL_ONE, GL_ONE);
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LEQUAL);
+        glDepthMask(GL_FALSE);
+        glDisable(GL_CULL_FACE);
+        s_ReactiveMeshShader->Bind();
+        s_ReactiveMeshShader->SetMat4("u_ViewProjection", jitteredViewProj);
+        bool drew = false;
+        for (const auto& f : it->second.LateReactive)
+        {
+            if (!f.MeshRef || !f.MeshRef->GetVertexArray() || f.MeshRef->GetIndexCount() == 0)
+                continue;
+            s_ReactiveMeshShader->SetMat4("u_Transform", f.Transform);
+            RenderCommand::DrawIndexed(f.MeshRef->GetVertexArray(), f.MeshRef->GetIndexCount());
+            drew = true;
+        }
+        glBlendEquation(GL_FUNC_ADD);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        if (!blend)
+            glDisable(GL_BLEND);
+        if (!depthTest)
+            glDisable(GL_DEPTH_TEST);
+        if (cull)
+            glEnable(GL_CULL_FACE);
+        glDepthFunc((GLenum)depthFunc);
+        glDepthMask(depthMask);
+        return drew;
     }
 
     bool Renderer3D::RenderGeometry(const void* view, GeometryPass pass, const glm::mat4& viewProj, const glm::vec2& viewportSize)
@@ -1083,6 +1140,7 @@ namespace Conqueror
             std::swap(track.PrevMovedTransparent, track.CurMovedTransparent);
             track.CurMovedTransparent.clear();
             track.SettledTransparent.clear();
+            track.LateReactive.clear();
             track.SkinnedOccurrence.clear();
             track.SkinnedIdentityOccurrence.clear();
             s_MotionCur = &track;
@@ -2008,8 +2066,10 @@ namespace Conqueror
             float dist = glm::length(glm::vec3(transform[3]) - s->Camera.Position);
             s->Transparent.push_back({ meshIn, transform, material, doubleSided, dist, CurrentVertexColors(), s->Tint, moving, s->Lightmapped });
             // Saydamlar G-buffer'a yazmaz: hareketliyse çizilirken TAA tepki maskesine kapladığı pikseller yazılır (aşağıda);
-            // maske kullanılamıyorsa (MSAA / TXAA) ekran dikdörtgeni
-            if (moving && meshIn->GetBoundsRadius() > 0.0f && !PostProcessStack::CanDrawReactive())
+            // çok örnekli sahnede TAA'dan önce çözülmüş derinliğe karşı (RenderLateReactive), o da yoksa ekran dikdörtgeni
+            if (moving && meshIn->GetBoundsRadius() > 0.0f && !PostProcessStack::CanDrawReactive() && s_MotionCur && PostProcessStack::WantsMotionData())
+                s_MotionCur->LateReactive.push_back({ meshIn, transform });
+            else if (moving && meshIn->GetBoundsRadius() > 0.0f && !PostProcessStack::CanDrawReactive())
             {
                 glm::vec3 c, e;
                 TransformBox(transform, meshIn->GetBoundsCenter(), meshIn->GetBoundsExtents(), c, e);

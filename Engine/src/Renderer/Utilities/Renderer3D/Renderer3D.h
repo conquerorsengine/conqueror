@@ -248,6 +248,10 @@ namespace Conqueror
         // bağlı çerçeve tamponuna (renk: RGBA16F hız, derinlik: sahne derinliği; derinlik yazılmaz) çizer. Çizim yoksa false
         static bool RenderVelocity(const void* view, const glm::mat4& jitteredViewProj, const glm::mat4& viewProj, const glm::mat4& prevViewProj);
         static bool HasVelocityDraws(const void* view);
+        // Çok örnekli sahnede hareket eden saydam meshler TAA tepki maskesine geç çizilir (bağlı çerçeve tamponu: maske + çözülmüş
+        // sahne derinliği). Çizim yoksa false
+        static bool HasLateReactive(const void* view);
+        static bool RenderLateReactive(const void* view, const glm::mat4& jitteredViewProj);
         // GBAA / SRAA: bu görünümün bu karedeki opak (Opaque kipli) mesh çizimlerini bağlı çerçeve tamponuna yeniden çizer.
         // GBAAEdges: RG16F kenar uzaklığı (sahne derinliğine LEQUAL, derinlik yazılmaz); SRAANormalDepth: çok örnekli normal +
         // derinlik (derinlik yazılır). Çizim yoksa false
