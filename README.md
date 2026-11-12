@@ -21,7 +21,11 @@ Guides and generated reference pages are in [Docs/](Docs/README.md): [getting st
 
 **Rendering**
 - HDR PBR forward renderer with cascaded shadow atlas, image-based lighting (prefiltered environment + L2 irradiance),
-  reflection probes, adaptive probe volumes, lightmaps, fog, SSAO, bloom, FXAA/SMAA, tonemapping
+  reflection probes, adaptive probe volumes, lightmaps, fog, SSAO, bloom, tonemapping
+- Anti-aliasing: FXAA, SMAA (and SMAA T2X), TAA, MSAA, SSAA, CMAA2, MLAA and more (some need vendor OpenGL extensions);
+  upscaling: FSR 1, FSR 2.2, NVIDIA Image Scaling, TAAU and TSR, plus CAS sharpening
+- DLSS, XeSS, MetalFX and PSSR appear in the editor but are **not integrated** (their SDKs need Vulkan/DirectX, Windows,
+  Apple or console toolchains); the editor shows the reason next to each one
 - Batched 2D renderer, sprite sheets and sprite editor, tilemaps (square/hex), text (FreeType), particles, ribbons/trails, terrain
 - Shader pipeline: GLSL -> SPIR-V (glslang) -> GLSL / HLSL / MSL (SPIRV-Cross) with a disk cache, plus a Shader Graph editor
 - Graphics backends: OpenGL 4.6, Vulkan 1.2/1.3, Direct3D 11, Direct3D 12, Metal (see [Graphics backends](#graphics-backends))
@@ -106,7 +110,7 @@ See [Docs/Automotive.md](Docs/Automotive.md) for Android, Android Automotive, AG
 
 ## Sample games
 
-Two complete games made only with the engine live in `Samples/` (open the `.cqproj` in the editor and press Play):
+Three complete games made only with the engine live in `Samples/` (open the `.cqproj` in the editor and press Play):
 
 | | |
 |---|---|
@@ -233,20 +237,6 @@ script PlayerController : ConquerorScript
 }
 ```
 
-Luau:
-
-```lua
-local Spinner = {}
-Spinner.speed = 90.0                    -- shown in the Inspector
-
-function Spinner:Update(dt: number)
-    local r = GetRotation()
-    SetRotation(r.x, r.y + self.speed * dt, r.z)
-end
-
-return Spinner
-```
-
 LuaQ:
 
 ```lua
@@ -278,9 +268,147 @@ using static Conqueror.NativeBridge;
 public class Orbiter : ScriptBehaviour
 {
     [Range(0, 20)] public float speed = 2f;
-    void Update(float dt) { /* ... */ }
+
+    void Update(float dt)
+    {
+        var r = GetRotation();
+        SetRotation(r.x, r.y + speed * dt, r.z);
+    }
 }
 ```
+
+Python:
+
+```python
+from nativebridge import *
+
+class Spinner:
+    speed = 90.0          # shown in the Inspector
+    _angle = 0.0          # names starting with _ stay hidden
+
+    def update(self, dt):
+        self._angle += self.speed * dt
+        SetRotation(0, self._angle, 0)
+```
+
+Java:
+
+```java
+import conqueror.*;
+import static conqueror.NativeBridge.*;
+
+public class Walker extends ScriptBehaviour {
+    @Range(min = 0, max = 10) public float speed = 2f;     // shown in the Inspector
+
+    public void start() { Debug.log("ready"); }
+
+    public void update(float dt) {
+        Value p = GetPosition();
+        SetPosition(p.x() + speed * dt, p.y(), p.z());
+    }
+}
+```
+
+C++:
+
+```cpp
+#include <Conqueror/Script.h>
+#include "NativeBridge.g.h"
+
+class Rotator : public cq::Script
+{
+    CQ_SCRIPT_CLASS(Rotator)
+public:
+    CQ_FIELD_RANGE(float, speed, 90.0f, 0, 360)
+    void Update(float dt) override
+    {
+        cq::Value r = cq::GetRotation();
+        cq::SetRotation(r.x(), r.y() + speed * dt, r.z());
+    }
+    void PlayBtn(float value, const char* kind) { cq::Log(kind); }
+    CQ_METHOD(PlayBtn)
+};
+CQ_SCRIPT(Rotator)
+```
+
+C:
+
+```c
+#include <conqueror.h>
+#include "nativebridge.h"            // every engine function as a macro
+
+typedef struct Spinner {
+    CQ_OBJECT;                       // must be the first member (holds the entity id)
+    float speed;
+    int ticks;
+    char label[64];                  // string fields are fixed-size char arrays
+} Spinner;
+
+static void Spinner_Update(Spinner* self, const cq_value* args, int argc)
+{
+    float dt = cq_arg_float(args, argc, 0);
+    cq_value r = GetRotation();
+    SetRotation(r.x, r.y + self->speed * dt, r.z);
+    self->ticks++;
+}
+
+CQ_FIELDS(Spinner,
+    CQ_RANGE(Spinner, speed, 90, 0, 360),         // slider in the Inspector
+    CQ_INT(Spinner, ticks, 0),
+    CQ_STRING(Spinner, label, "spin"))
+CQ_METHODS(Spinner, CQ_ON(Spinner, Update))
+CQ_CLASS(Spinner)
+```
+
+Rust:
+
+```rust
+use crate::conqueror::*;
+use crate::nativebridge::*;
+
+script! {
+    pub struct Spinner {
+        #[range(0.0, 360.0)] speed: f32 = 90.0,   // Inspector fields with defaults
+        ticks: i32 = 0,
+        label: String = String::from("spin"),
+    }
+    methods [PlayBtn]                              // extra engine / UI events, handled in on_message
+}
+
+impl Script for Spinner {
+    fn update(&mut self, dt: f32) {
+        let r = cq!(GetRotation);                  // cq!(Function, args...) converts Rust values
+        cq!(SetRotation, r.x(), r.y() + (self.speed * dt) as f64, r.z());
+        self.ticks += 1;
+    }
+    fn on_message(&mut self, name: &str, args: &[Value]) -> bool {
+        if name == "PlayBtn" { log(format!("clicked {}", args.len())); return true; }
+        false
+    }
+}
+```
+
+Zig:
+
+```zig
+const std = @import("std");
+const cq = @import("conqueror.zig");
+const nb = @import("nativebridge.zig");
+
+pub const Spinner = struct {
+    speed: f32 = 90.0,                             // every public field with a default is an Inspector field
+    ticks: i32 = 0,
+    label: cq.String = cq.String.init("spin"),
+
+    pub fn update(self: *Spinner, dt: f32) void {
+        const r = nb.GetRotation(.{});
+        _ = nb.SetRotation(.{ r.x(), r.y() + self.speed * dt, r.z() });
+        self.ticks += 1;
+    }
+};
+```
+
+More in [Scripting](Docs/Scripting.md) and [Native scripting](Docs/NativeScripting.md).
 
 ## Third-Party Libraries
 
@@ -315,10 +443,19 @@ public class Orbiter : ScriptBehaviour
 | nativefiledialog-extended | zlib |
 | zlib | zlib |
 | zstd | BSD |
+| SMAA | MIT |
+| CMAA2 | Apache-2.0 |
+| AMD FidelityFX CAS | MIT |
+| AMD FidelityFX FSR 1 | MIT |
+| AMD FidelityFX FSR 2 | MIT |
+| NVIDIA Image Scaling | MIT |
 
 ## License
 
-Conqueror's Engine (Libre Engine) is developed by **TurcoLabs** and licensed under the [Mozilla Public License 2.0](LICENSE) with an additional clause: **Any modifications made to the game engine source code must be disclosed publicly.**
+Conqueror's Engine (Libre Engine) is developed by **TurcoLabs** and licensed under the [Mozilla Public License 2.0](LICENSE).
+MPL-2.0 is file-level copyleft: if you distribute a modified version of the engine, the engine source files you changed
+must stay under MPL-2.0 and their source must be made available. Your own game code, scripts and assets are yours and can
+use any license, including closed source.
 
 Third-party libraries in the `External/` directory retain their original licenses.
 
