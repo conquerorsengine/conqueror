@@ -1,4 +1,5 @@
 # template: fps
+# serial
 # Kutu yığınına yürürken silah hiçbir karede kutunun içinde görünmez ve tek karede fırlamaz (eskiden aşağı indirilmiş
 # silah bir karede yukarı kaldırılmış poza atlıyordu: 60°'lik sıçrama)
 wait 40

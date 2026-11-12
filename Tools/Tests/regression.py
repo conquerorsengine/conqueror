@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Engine regression tests: hub templates and targeted feature checks, run through the editor's automation.
 
-usage: regression.py [--list] [case ...]       (no cases = everything)
+usage: regression.py [--list] [-j N] [case ...]       (no cases = everything; -j N runs N editors at the same time)
 
 Cases:
   template:<id>   generated for every hub template: the hub creates a fresh project, the editor opens it, presses Play
                   for 240 frames and stops. Passes with 0 script errors.
   <name>          Tools/Tests/cases/<name>.txt: an editor automation script. Header lines:
                       # template: <hub template id>   the project the case runs on (made fresh with the hub)
+                      # serial                         timing-sensitive: runs alone after the parallel cases (-j)
                   "{dir}" in the script is replaced by Tools/Tests/cases (checks/*.cqs live there). A check script
                   creates an entity named RegressionCheckOK when its condition holds; the case then expects it.
 
@@ -25,7 +26,9 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
@@ -43,11 +46,12 @@ def hub_templates():
 
 
 def run(cmd, env=None, cwd=None):
+    # Paralel çalışmada (-j) her işçinin ortamı (kendi oyun kayıt klasörü) run_case'den gelir
     p = subprocess.run(cmd, env=env, cwd=cwd, capture_output=True, text=True, check=False)
     return p.returncode, (p.stdout or "") + (p.stderr or "")
 
 
-def make_project(tid, name):
+def make_project(tid, name, env=None):
     os.makedirs(WORK, exist_ok=True)
     project = os.path.join(WORK, name)
     if os.path.isdir(project):
@@ -57,22 +61,22 @@ def make_project(tid, name):
         f.write(f'wait 20\nhub create {tid} {name} "{WORK}"\nwait 5\nquit\n')
     runner = os.environ.get("CQ_HUB_RUNNER")
     if runner:
-        run(["bash", runner, script])
+        run(["bash", runner, script], env=env)
     else:
-        run([os.path.join(BIN, "ConquerorLauncher")], env=dict(os.environ, CQ_AUTOMATION=script), cwd=BIN)
+        run([os.path.join(BIN, "ConquerorLauncher")], env=dict(env or os.environ, CQ_AUTOMATION=script), cwd=BIN)
     return project if os.path.isdir(project) else None
 
 
-def run_editor(script, project):
+def run_editor(script, project, env=None):
     if os.path.exists(script + ".result.txt"):
         os.remove(script + ".result.txt")
     runner = os.environ.get("CQ_RUNNER")
     if runner:
-        code, out = run(["bash", runner, script, project])
+        code, out = run(["bash", runner, script, project], env=env)
         m = re.search(r"ENGINE_EXIT=(\d+)", out)
         code = int(m.group(1)) if m else code
     else:
-        code, out = run([os.path.join(BIN, "ConquerorEngine"), project], env=dict(os.environ, CQ_AUTOMATION=script), cwd=BIN)
+        code, out = run([os.path.join(BIN, "ConquerorEngine"), project], env=dict(env or os.environ, CQ_AUTOMATION=script), cwd=BIN)
     result = open(script + ".result.txt").read() if os.path.exists(script + ".result.txt") else ""
     return code, result
 
@@ -87,7 +91,14 @@ def template_script():
     return "\n".join(["wait 30", "focus Game", "script_errors mark", "play", "wait 240", "script_errors expect 0", "stop", "quit"]) + "\n"
 
 
-def run_case(case):
+def is_serial(case):
+    if case.startswith("template:"):
+        return False
+    path = os.path.join(CASES, case + ".txt")
+    return os.path.exists(path) and re.search(r"^#\s*serial\b", open(path, encoding="utf-8").read(), re.M) is not None
+
+
+def run_case(case, env=None):
     start = time.time()
     if case.startswith("template:"):
         tid = case.split(":", 1)[1]
@@ -95,13 +106,13 @@ def run_case(case):
     else:
         tid, text = case_script(case)
     name = "Reg_" + re.sub(r"[^A-Za-z0-9_]", "_", case)
-    project = make_project(tid, name)
+    project = make_project(tid, name, env)
     if not project:
         return False, f"hub could not create a '{tid}' project", time.time() - start
     script = os.path.join(WORK, f"_{name}.txt")
     with open(script, "w", encoding="utf-8") as f:
         f.write(text)
-    code, result = run_editor(script, project)
+    code, result = run_editor(script, project, env)
     fails = [l for l in result.splitlines() if " FAIL " in l or l.startswith("FAIL")]
     done = re.search(r"DONE failures=(\d+)", result)
     if not done:
@@ -123,12 +134,48 @@ def main():
     if "--list" in args:
         print("\n".join(all_cases()))
         return
+    jobs = 1
+    if "-j" in args:
+        i = args.index("-j")
+        jobs = max(1, int(args[i + 1]))
+        del args[i:i + 2]
     cases = args or all_cases()
     results = []
-    for c in cases:
-        ok, why, secs = run_case(c)
-        results.append((c, ok, why))
-        print(f"{'PASS' if ok else 'FAIL'}  {c:34s} {secs:6.1f} s  {why}", flush=True)
+    lock = threading.Lock()
+
+    def report(c, ok, why, secs):
+        with lock:
+            results.append((c, ok, why))
+            print(f"{'PASS' if ok else 'FAIL'}  {c:34s} {secs:6.1f} s  {why}", flush=True)
+
+    if jobs == 1:
+        for c in cases:
+            report(c, *run_case(c))
+    else:
+        # Her işçi kendi oyun kayıt klasörüyle (XDG_DATA_HOME); zamana duyarlı (# serial) testler sonda tek başına
+        base = os.environ.get("XDG_DATA_HOME") or os.path.join(WORK, "_xdg")
+        slots = list(range(jobs))
+        slot_lock = threading.Lock()
+
+        def worker(c):
+            with slot_lock:
+                slot = slots.pop()
+            try:
+                env = dict(os.environ, XDG_DATA_HOME=os.path.join(base, f"slot{slot}"))
+                os.makedirs(env["XDG_DATA_HOME"], exist_ok=True)
+                return run_case(c, env)
+            finally:
+                with slot_lock:
+                    slots.append(slot)
+
+        parallel = [c for c in cases if not is_serial(c)]
+        serial = [c for c in cases if is_serial(c)]
+        with ThreadPoolExecutor(max_workers=jobs) as ex:
+            futures = {ex.submit(worker, c): c for c in parallel}
+            for f in as_completed(futures):
+                report(futures[f], *f.result())
+        for c in serial:
+            report(c, *run_case(c))
     failed = [r for r in results if not r[1]]
     print(f"\n{len(results) - len(failed)} / {len(results)} passed")
     sys.exit(1 if failed else 0)

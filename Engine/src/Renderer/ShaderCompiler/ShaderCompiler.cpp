@@ -1,4 +1,5 @@
 #include "ShaderCompiler.h"
+#include <random>
 #include "Core/Logging/Log.h"
 #include "Core/Utils/Platform.h"
 #include "Renderer/GraphicsAPIs/OpenGL/GLProfile.h"
@@ -141,8 +142,10 @@ namespace Conqueror
         {
             std::error_code ec;
             std::filesystem::create_directories(file.parent_path(), ec);
+            // Geçici dosya her yazımda benzersiz: aynı önbelleği paylaşan iki editör (paralel testler) aynı .tmp'ye karışık yazıp
+            // bozuk önbellek dosyası bırakmasın; rename yazılmış dosyayı tek seferde yerine koyar
             std::filesystem::path tmp = file;
-            tmp += ".tmp";
+            tmp += "." + std::to_string(std::random_device{}()) + ".tmp";
             {
                 std::ofstream f(tmp, std::ios::binary);
                 if (!f)
@@ -164,6 +167,8 @@ namespace Conqueror
                 }
             }
             std::filesystem::rename(tmp, file, ec);
+            if (ec)
+                std::filesystem::remove(tmp, ec);
         }
 
         std::string TypeName(const spirv_cross::Compiler& comp, const spirv_cross::SPIRType& type)
