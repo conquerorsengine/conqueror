@@ -285,11 +285,16 @@ void main()
     }
     // Parçacık (duman, toz, kıvılcım): derinlik ve hareket bayrağı yazmaz, her karede hareket eder. Kapladığı piksele aşağıda
     // karar verilir (arkasındaki yüzeyin geçmişi korunur; yüzey yoksa hareket eden nesne gibi)
+    // Örtü 3x3'ün en büyüğü: bu karenin rengi 3x3 süzgeçle alınır, parlak parçacığın / uçan mermi izinin hemen yanındaki durağan piksel
+    // onun ışığından pay alıyordu. O pay geçmişe girip 0.96-0.985 ağırlıkla tutuluyor, küpün üstünde ateş edince izin iki yanında
+    // ince beyaz noktalı çizgiler bir saniye kadar kalıyordu; artık o piksellerin de geçmişi korunur
     float reactiveNow = 0.0;
     if (u_HasReactive == 1)
     {
         ivec2 rsz = textureSize(u_Reactive, 0);
-        reactiveNow = texelFetch(u_Reactive, clamp(ivec2(v_UV * vec2(rsz)), ivec2(0), rsz - 1), 0).r;
+        ivec2 rc = clamp(ivec2(v_UV * vec2(rsz)), ivec2(0), rsz - 1);
+        for (int i = 0; i < 9; ++i)
+            reactiveNow = max(reactiveNow, texelFetch(u_Reactive, clamp(rc + ivec2(i % 3 - 1, i / 3 - 1), ivec2(0), rsz - 1), 0).r);
     }
     // Açılan alan (hareket vektörü geçişi): bu piksel hareket eden bir nesnenin önceki karedeki konumunda. Nesne ilk kez
     // kıpırdadığında eski yerindeki geçmiş (yerde yatan levha, ışınlanan nesne) burada iz bırakmasın

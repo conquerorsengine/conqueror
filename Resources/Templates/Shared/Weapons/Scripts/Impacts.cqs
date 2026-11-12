@@ -205,7 +205,10 @@ script Impacts : ConquerorScript
         tracerDist[i] = 0.0;
         tracerTime[i] = (len + bulletLength) / MathMax(bulletSpeed, 1.0) + 0.5;   // güvenlik süresi
         EntitySetActive(t, false);   // ilk konumu LateUpdate'te
-        EntitySetColor(t, r, g, b, 1);
+        // Saydam (alfa 0.99, görünüşü aynı): uçan iz kıvılcım gibi yalnız gösterilir, TAA geçmişine yazılmaz. Opak iz hareketli
+        // nesne olarak kendi piksellerinin ve 1 piksellik çevresinin geçmişini kendi parlak (süzülmüş) rengiyle yeniliyordu: küpün
+        // üstünde ateş edince izin iki yanında ince beyaz çizgiler bir saniye kadar kalıyordu (Laser Tag ışını Tracer'da opak kalır)
+        EntitySetColor(t, r, g, b, 0.99);
         EntitySetComponentField(t, "MeshRenderer", "EmissionColor", {r: r, g: g, b: b});
     }
 

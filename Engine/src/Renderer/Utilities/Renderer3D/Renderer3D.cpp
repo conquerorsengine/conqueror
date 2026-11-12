@@ -384,6 +384,12 @@ namespace Conqueror
                 glm::mat4 Transform{ 1.0f };
             };
             std::unordered_map<uint64_t, Footprint> PrevFoot, CurFoot;
+            // Beliren / yer değiştiren saydam mesh o karede tepki maskesine yazar (geçmişe girmez: tek kare görünen mermi izi iz
+            // bırakmaz). Bir sonraki karede yerinde duruyorsa (mermi deliği, havuzdan yeni yere taşınan delik) o karede yeri "açılan
+            // alan" olarak işaretlenir, geçmişi yenilenir. Yoksa delik duman / kıvılcım altında geçmişe hiç girmiyor, duman çekilince
+            // bir saniye kadar silik beliriyordu
+            std::unordered_set<uint64_t> PrevMovedTransparent, CurMovedTransparent;
+            std::vector<Footprint> SettledTransparent;
             std::unordered_map<const void*, uint32_t> SkinnedOccurrence;
             std::unordered_map<uint64_t, uint32_t> SkinnedIdentityOccurrence;
         };
@@ -554,7 +560,7 @@ namespace Conqueror
         auto it = s_Motion.find(view);
         if (it == s_Motion.end())
             return false;
-        if (!it->second.Velocity.empty() || !it->second.SkinnedVelocity.empty())
+        if (!it->second.Velocity.empty() || !it->second.SkinnedVelocity.empty() || !it->second.SettledTransparent.empty())
             return true;
         // Silinen / gizlenen nesnenin eski yeri de bu geçişte işaretlenir
         for (const auto& [key, f] : it->second.PrevFoot)
@@ -788,7 +794,7 @@ namespace Conqueror
                 vanished = true;
                 break;
             }
-        if (it->second.Velocity.empty() && it->second.SkinnedVelocity.empty() && !vanished)
+        if (it->second.Velocity.empty() && it->second.SkinnedVelocity.empty() && !vanished && it->second.SettledTransparent.empty())
             return false;
         if (!s_VelocityShader)
             s_VelocityShader = Shader::Create("Engine/src/Shaders/3D/Velocity.cqsh");
@@ -916,6 +922,16 @@ namespace Conqueror
             for (const auto& [key, f] : it->second.PrevFoot)
             {
                 if (it->second.Cur.count(key) || !f.MeshRef || !f.MeshRef->GetVertexArray())
+                    continue;
+                sh->SetMat4("u_Transform", f.Transform);
+                sh->SetMat4("u_PrevTransform", f.Transform);
+                RenderCommand::DrawIndexed(f.MeshRef->GetVertexArray(), f.MeshRef->GetIndexCount());
+                drew = true;
+            }
+            // Geçen kare beliren, bu karede yerinde duran saydam mesh (mermi deliği): geçmişi bu karede yenilenir
+            for (const auto& f : it->second.SettledTransparent)
+            {
+                if (!f.MeshRef || !f.MeshRef->GetVertexArray())
                     continue;
                 sh->SetMat4("u_Transform", f.Transform);
                 sh->SetMat4("u_PrevTransform", f.Transform);
@@ -1064,6 +1080,9 @@ namespace Conqueror
             track.CurSkinned.clear();
             std::swap(track.PrevFoot, track.CurFoot);
             track.CurFoot.clear();
+            std::swap(track.PrevMovedTransparent, track.CurMovedTransparent);
+            track.CurMovedTransparent.clear();
+            track.SettledTransparent.clear();
             track.SkinnedOccurrence.clear();
             track.SkinnedIdentityOccurrence.clear();
             s_MotionCur = &track;
@@ -1981,6 +2000,11 @@ namespace Conqueror
 
         if (material->Rendering == Material::RenderMode::Transparent && !fromQueue && s->FrameActive)
         {
+            // Beliren / yer değiştiren saydam ve geçen kare belirip (yer değiştirip) şimdi yerinde duran (kalıcı: geçmişi yenilenir)
+            if (s_MotionCur && transformMoved)
+                s_MotionCur->CurMovedTransparent.insert(motionKey);
+            else if (s_MotionCur && !transformMoved && prevTransform && s_MotionCur->PrevMovedTransparent.count(motionKey))
+                s_MotionCur->SettledTransparent.push_back({ meshIn, transform });
             float dist = glm::length(glm::vec3(transform[3]) - s->Camera.Position);
             s->Transparent.push_back({ meshIn, transform, material, doubleSided, dist, CurrentVertexColors(), s->Tint, moving, s->Lightmapped });
             // Saydamlar G-buffer'a yazmaz: hareketliyse çizilirken TAA tepki maskesine kapladığı pikseller yazılır (aşağıda);
