@@ -113,8 +113,12 @@ namespace Conqueror
         glm::vec2 delta = (mouse - m_InitialMousePosition) * 0.003f;
         m_InitialMousePosition = mouse;
 
+        // Tuş görünümün dışında basıldı (ör. Hierarchy'de sağ tık): fare gezinmesi yok, klavye ve tekerlek çalışır
+        if (!m_MouseNavigation)
+        {
+        }
         // 1. Alt Tuşu İle Fare Kontrolü (Orbit, Pan, Zoom)
-        if (Input::IsKeyPressed(Key::LeftAlt))
+        else if (Input::IsKeyPressed(Key::LeftAlt))
         {
             if (m_CameraMode == EditorCameraMode::Orthographic2D)
             {

@@ -23,6 +23,9 @@ namespace Conqueror
         void OnUpdate(Timestep ts, bool allowKeyMovement = true);
         // Tekerlekle yakınlaştırma yalnız fare görünümün üstündeyken
         void SetScrollEnabled(bool enabled) { m_ScrollEnabled = enabled; }
+        // Fare ile gezinme (sağ tıkla bakış, Alt + fare): görünüm yalnız tuş kendi içinde basıldıysa açar. Başka panelde (Hierarchy)
+        // basılı tutulan sağ tuş görünüme gelince kamerayı döndürmesin
+        void SetMouseNavigation(bool enabled) { m_MouseNavigation = enabled; }
         // Görünüm odakta değil ama fare üstünde: yalnız tekerlek
         void UpdateScrollOnly();
         void OnEvent(Event& e);
@@ -83,6 +86,7 @@ namespace Conqueror
     private:
         void ApplyScroll();
         bool m_ScrollEnabled = true;
+        bool m_MouseNavigation = true;
         float m_FOV = 45.0f, m_AspectRatio = 1.778f, m_NearClip = 0.1f, m_FarClip = 100000.0f;
 
         glm::mat4 m_ViewMatrix{ 1.0f };

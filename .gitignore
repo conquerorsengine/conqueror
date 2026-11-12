@@ -23,6 +23,8 @@ Thumbs.db
 *.dll
 *.exe
 *.bin
+# Şablon modellerinin glTF ikili verisi (silahlar) depoda olmalı: yoksa indirilen kopyada silahlar görünmez
+!Resources/Templates/**/*.bin
 
 # Build outputs
 ConquerorEngine

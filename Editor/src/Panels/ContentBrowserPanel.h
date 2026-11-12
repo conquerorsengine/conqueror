@@ -40,6 +40,8 @@ namespace Conqueror::Editor
         const std::filesystem::path& GetSelectedPath() const { return m_SelectedPath; }
         // Dosya yöneticisinden bırakılanlar: bir sonraki çizimde üzerinde durulan klasöre ya da açık klasöre kopyalanır (Unity Project)
         void QueueDroppedFiles(const std::vector<std::string>& paths) { m_DroppedFiles.insert(m_DroppedFiles.end(), paths.begin(), paths.end()); }
+        // Panel kapalıyken / sekmesi görünmüyorken bırakılan dosyalar: geçerli klasöre (yazılamıyorsa Assets'e) hemen içe aktarılır
+        void ImportPendingDrops();
         const std::filesystem::path& GetCurrentDirectory() const { return m_CurrentDirectory; }
         void NavigateTo(const std::filesystem::path& directory, bool recordHistory = true);
         // Dosyanın klasörüne git ve seç (ör. "Select Prefab Asset")

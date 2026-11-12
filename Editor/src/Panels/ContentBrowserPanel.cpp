@@ -383,6 +383,9 @@ namespace Conqueror::Editor
         if (!ImGui::Begin("Content Browser"))
         {
             m_Focused = false;
+            // Sekme görünmüyorken (başka sekmenin arkasında / daraltılmış) bırakılan dosyalar da hemen içe aktarılır: eskiden sekme
+            // açılana kadar sırada bekliyor, işletim sisteminden bırakınca bazen hiçbir şey olmuyordu
+            ImportPendingDrops();
             ImGui::End();
             return;
         }
@@ -2221,9 +2224,18 @@ namespace Conqueror::Editor
         (void)rc;
     }
 
+    void ContentBrowserPanel::ImportPendingDrops()
+    {
+        if (m_DroppedFiles.empty())
+            return;
+        m_HoveredFolder.clear();
+        ImportDroppedFiles();
+    }
+
     void ContentBrowserPanel::ImportDroppedFiles()
     {
         const fs::path target = (!m_HoveredFolder.empty() && !IsReadOnly(m_HoveredFolder)) ? m_HoveredFolder : WritableDirectory();
+        bool any = false;
         for (const std::string& file : m_DroppedFiles)
         {
             const fs::path source(file);
@@ -2234,7 +2246,14 @@ namespace Conqueror::Editor
                 continue;
             }
             if (fs::weakly_canonical(source.parent_path(), ec) == fs::weakly_canonical(target, ec))
-                continue;   // zaten bu klasörde
+            {
+                // Zaten bu klasörde: kopyalanmaz, ama seçilip gösterilir (eskiden sessizce atlanıyordu)
+                CQ_CORE_INFO("Already in this folder: {0}", file);
+                m_SelectedPath = source;
+                m_ScrollToSelected = true;
+                any = true;
+                continue;
+            }
             const fs::path dest = MakeUniquePath(target / source.filename());
             fs::copy(source, dest, fs::copy_options::recursive, ec);
             if (ec)
@@ -2245,9 +2264,19 @@ namespace Conqueror::Editor
             CQ_CORE_INFO("Imported: {0}", dest.string());
             m_SelectedPath = dest;
             m_ScrollToSelected = true;
+            any = true;
         }
         m_DroppedFiles.clear();
         m_Dirty = true;
+        // İçe aktarılan dosyanın klasörü gösterilir (imlecin altındaki klasöre ya da salt okunur Packages yerine Assets'e gidince
+        // dosya görünmüyor, bırakma hiçbir şey yapmamış gibi duruyordu)
+        if (any && target != m_CurrentDirectory)
+        {
+            const fs::path selected = m_SelectedPath;
+            NavigateTo(target, true);
+            m_SelectedPath = selected;
+            m_ScrollToSelected = true;
+        }
     }
 
     void ContentBrowserPanel::ImportFile()

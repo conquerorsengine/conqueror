@@ -2340,6 +2340,8 @@ namespace Conqueror::Editor
 
         if (m_ShowContentBrowser && m_ContentBrowserPanel)
             m_ContentBrowserPanel->OnImGuiRender();
+        else if (m_ContentBrowserPanel)
+            m_ContentBrowserPanel->ImportPendingDrops();   // panel kapalıyken bırakılan dosyalar da içe aktarılır
 
         if (m_ShowLog && m_LogPanel)
             m_LogPanel->OnImGuiRender(&m_ShowLog);

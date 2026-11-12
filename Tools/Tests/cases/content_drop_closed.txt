@@ -1,0 +1,12 @@
+# template: basic3d
+# İşletim sisteminden bırakılan dosya Content Browser kapalıyken de hemen içe aktarılır (179: eskiden panel açılana kadar sırada
+# bekliyordu, bırakınca bazen hiçbir şey olmuyordu)
+wait 30
+panel "Content Browser" off
+wait 5
+content_drop "{dir}/assets/loc/flag_red.png"
+wait 10
+select_asset "Assets/flag_red.png"
+panel "Content Browser" on
+wait 5
+quit

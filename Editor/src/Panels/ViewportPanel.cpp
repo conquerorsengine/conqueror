@@ -1,5 +1,6 @@
 #include "ViewportPanel.h"
 #include "Core/Profiling/FrameProfiler.h"
+#include "Core/Input/Input.h"
 #include "Core/Math/Math.h"
 #include "StatsPanel.h"
 #include "GameViewSettings.h"
@@ -151,6 +152,13 @@ namespace Conqueror::Editor
         const bool wantText = ImGui::GetIO().WantTextInput;
         // Tekerlek: yalnız fare görünümün üstündeyken (odak başka paneldeyken de; Inspector'da kaydırınca kamera oynamaz)
         m_EditorCamera.SetScrollEnabled(m_ViewportHovered);
+        // Fare ile gezinme yalnız basılı tuşların hepsi görünümün içinde basıldıysa. Sağ tık pencere odağını değiştirmez: Hierarchy'de
+        // sağ tıklayıp basılı tutarak görünüme gelince görünüm odakta kaldığı için kamera dönmeye başlıyordu
+        bool mouseInView = true;
+        for (int b = 0; b < 3; ++b)
+            if (Input::IsMouseButtonPressed((MouseCode)b) && !m_MouseDownInView[b])
+                mouseInView = false;
+        m_EditorCamera.SetMouseNavigation(mouseInView);
         if (m_ViewportFocused && !ImGuizmo::IsUsing() && !ImGuizmo::IsUsingViewManipulate() && !wantText)
             m_EditorCamera.OnUpdate(ts, true);
         else if (m_ViewportHovered && !wantText)
@@ -347,6 +355,13 @@ namespace Conqueror::Editor
             const glm::vec2 shownSize = validSize ? newViewportSize : m_ViewportSize;
             PanelImage((ImTextureID)textureID, m_ViewportSize, ImVec2{ shownSize.x, shownSize.y });
             m_ImageHovered = ImGui::IsItemHovered();
+            for (int b = 0; b < 3; ++b)
+            {
+                if (ImGui::IsMouseClicked(b))
+                    m_MouseDownInView[b] = m_ImageHovered;
+                else if (!ImGui::IsMouseDown(b))
+                    m_MouseDownInView[b] = false;
+            }
             // Sağ tık da görünüme odaklanır (Unity Scene): basılı tutup WASD ile uçmak için önce sol tıklamak gerekmez
             if (m_ImageHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
                 ImGui::SetWindowFocus();
@@ -836,7 +851,167 @@ namespace Conqueror::Editor
 
     namespace
     {
-        // Sprite'ın görünen şekli (saydam olmayan pikseller, Unity seçim çerçevesi gibi): dilime göre piksel çokgenleri, önbellekli
+        // Douglas-Peucker (kapalı çokgen): eps pikselden az sapan noktalar atılır
+        std::vector<glm::vec2> SimplifyClosed(const std::vector<glm::vec2>& loop, float eps)
+        {
+            if (loop.size() < 8)
+                return loop;
+            size_t far = 0;
+            float best = -1.0f;
+            for (size_t i = 1; i < loop.size(); ++i)
+            {
+                const float d = glm::distance(loop[0], loop[i]);
+                if (d > best) { best = d; far = i; }
+            }
+            std::vector<glm::vec2> open = loop;
+            open.push_back(loop[0]);
+            std::vector<char> keep(open.size(), 0);
+            keep[0] = keep[far] = keep[open.size() - 1] = 1;
+            std::vector<std::pair<size_t, size_t>> stack = { { 0, far }, { far, open.size() - 1 } };
+            while (!stack.empty())
+            {
+                const auto [i0, i1] = stack.back();
+                stack.pop_back();
+                if (i1 <= i0 + 1)
+                    continue;
+                const glm::vec2 a = open[i0], ab = open[i1] - a;
+                const float len2 = glm::dot(ab, ab);
+                size_t worst = i0;
+                float worstD = -1.0f;
+                for (size_t k = i0 + 1; k < i1; ++k)
+                {
+                    const glm::vec2 ap = open[k] - a;
+                    const float t = len2 > 1e-12f ? glm::clamp(glm::dot(ap, ab) / len2, 0.0f, 1.0f) : 0.0f;
+                    const float d = glm::length(ap - ab * t);
+                    if (d > worstD) { worstD = d; worst = k; }
+                }
+                if (worstD > eps)
+                {
+                    keep[worst] = 1;
+                    stack.push_back({ i0, worst });
+                    stack.push_back({ worst, i1 });
+                }
+            }
+            std::vector<glm::vec2> out;
+            for (size_t i = 0; i + 1 < open.size(); ++i)
+                if (keep[i])
+                    out.push_back(open[i]);
+            return out.size() >= 3 ? out : loop;
+        }
+
+        // Seçim çizgisi için yumuşak dış hat: saydamlık alanının eş değer eğrisi (marching squares, piksel merkezleri arasında doğrusal
+        // ara değer). Eskiden piksel kenarları ~3,5 piksellik hatayla düz parçalara indiriliyordu: yuvarlak sprite'ta (kapsül) çizgi
+        // köşeli bir çokgen olarak eğriyi kesiyordu. Noktalar dilimin sol-alt köşesine göre piksel biriminde (GenerateOutline gibi)
+        std::vector<std::vector<glm::vec2>> SmoothSpriteOutline(const uint8_t* rgba, int width, int height, const glm::vec4& rect)
+        {
+            std::vector<std::vector<glm::vec2>> result;
+            const int x0 = std::clamp((int)rect.x, 0, width), y0 = std::clamp((int)rect.y, 0, height);
+            const int w = std::min((int)rect.z, width - x0), h = std::min((int)rect.w, height - y0);
+            if (!rgba || w <= 0 || h <= 0)
+                return result;
+            // Izgara: piksel merkezleri + dışta bir sıra boşluk (eğriler kapansın); gx -1..w, gy -1..h. y aşağıdan yukarı
+            const int gw = w + 2, gh = h + 2;
+            std::vector<float> a((size_t)gw * gh, 0.0f);
+            float maxA = 0.0f;
+            for (int y = 0; y < h; ++y)
+                for (int x = 0; x < w; ++x)
+                {
+                    const int row = height - 1 - (y0 + y);
+                    const float v = rgba[((size_t)row * width + (x0 + x)) * 4 + 3] / 255.0f;
+                    a[(size_t)(y + 1) * gw + (x + 1)] = v;
+                    maxA = std::max(maxA, v);
+                }
+            // Görünen kenar: en yüksek saydamlığın yarısı (yarı saydam parıltı sprite'ında da şekil çıkar)
+            const float iso = std::max(0.5f * maxA, 8.0f / 255.0f);
+            auto val = [&](int gx, int gy) { return a[(size_t)(gy + 1) * gw + (gx + 1)]; };
+            auto pos = [](int gx, int gy) { return glm::vec2((float)gx + 0.5f, (float)gy + 0.5f); };
+            // Kenar kimliği: yatay (gx, gy)-(gx+1, gy) çift, dikey (gx, gy)-(gx, gy+1) tek
+            auto edgeId = [&](int gx, int gy, bool vertical) { return ((int64_t)(gy + 1) * (gw + 1) + (gx + 1)) * 2 + (vertical ? 1 : 0); };
+            std::unordered_map<int64_t, int64_t> next;      // çıkış kenarı -> giriş kenarı (iç taraf solda)
+            std::unordered_map<int64_t, glm::vec2> point;   // kenardaki eğri noktası
+            for (int cy = -1; cy < h; ++cy)
+                for (int cx = -1; cx < w; ++cx)
+                {
+                    // Köşeler saat yönünün tersine: sol-alt, sağ-alt, sağ-üst, sol-üst
+                    const int gxs[4] = { cx, cx + 1, cx + 1, cx };
+                    const int gys[4] = { cy, cy, cy + 1, cy + 1 };
+                    float v[4];
+                    bool in[4];
+                    int count = 0;
+                    for (int k = 0; k < 4; ++k)
+                    {
+                        v[k] = val(gxs[k], gys[k]);
+                        in[k] = v[k] >= iso;
+                        count += in[k] ? 1 : 0;
+                    }
+                    if (count == 0 || count == 4)
+                        continue;
+                    // Kenar k: köşe k -> köşe k+1. İçten dışa geçen "çıkış", dıştan içe "giriş"
+                    int64_t ids[4];
+                    int exits[2], entries[2], ne = 0, nn = 0;
+                    for (int k = 0; k < 4; ++k)
+                    {
+                        const int k1 = (k + 1) & 3;
+                        const int ex = std::min(gxs[k], gxs[k1]), ey = std::min(gys[k], gys[k1]);
+                        ids[k] = edgeId(ex, ey, gxs[k] == gxs[k1]);
+                        if (in[k] == in[k1])
+                            continue;
+                        if (!point.count(ids[k]))
+                        {
+                            const float t = glm::clamp((iso - v[k]) / (v[k1] - v[k]), 0.0f, 1.0f);
+                            glm::vec2 p = glm::mix(pos(gxs[k], gys[k]), pos(gxs[k1], gys[k1]), t);
+                            point[ids[k]] = glm::clamp(p, glm::vec2(0.0f), glm::vec2((float)w, (float)h));
+                        }
+                        if (in[k]) exits[ne++] = k; else entries[nn++] = k;
+                    }
+                    if (ne == 1 && nn == 1)
+                        next[ids[exits[0]]] = ids[entries[0]];
+                    else if (ne == 2 && nn == 2)
+                    {
+                        // Eyer: ortası içerideyse çıkış saat yönünün tersindeki sonraki kenara, dışarıdaysa önceki kenara bağlanır
+                        const bool centerIn = 0.25f * (v[0] + v[1] + v[2] + v[3]) >= iso;
+                        for (int e = 0; e < 2; ++e)
+                        {
+                            const int k = exits[e];
+                            next[ids[k]] = ids[centerIn ? ((k + 1) & 3) : ((k + 3) & 3)];
+                        }
+                    }
+                }
+            const float eps = std::max(0.3f, (float)std::max(w, h) / 2000.0f);
+            while (!next.empty())
+            {
+                const int64_t start = next.begin()->first;
+                std::vector<glm::vec2> loop;
+                int64_t cur = start;
+                const size_t limit = next.size() + 1;   // yürürken silinen kayıtlar sınırı küçültmesin (uzun hat yarıda kesiliyordu)
+                size_t guard = 0;
+                while (guard++ <= limit)
+                {
+                    auto it = next.find(cur);
+                    if (it == next.end())
+                        break;
+                    loop.push_back(point[cur]);
+                    const int64_t to = it->second;
+                    next.erase(it);
+                    cur = to;
+                    if (cur == start)
+                        break;
+                }
+                // Dış sınırlar saat yönünün tersi (delikler atlanır, eski seçim çizgisi gibi)
+                float area = 0.0f;
+                for (size_t i = 0; i < loop.size(); ++i)
+                {
+                    const glm::vec2& p = loop[i];
+                    const glm::vec2& q = loop[(i + 1) % loop.size()];
+                    area += p.x * q.y - q.x * p.y;
+                }
+                if (loop.size() >= 3 && area > 0.0f)
+                    result.push_back(SimplifyClosed(loop, eps));
+            }
+            return result;
+        }
+
+        // Sprite'ın görünen şekli (saydam olmayan pikseller, Unity seçim çerçevesi gibi): dilime göre yumuşak dış hat, önbellekli
         const std::vector<std::vector<glm::vec2>>* SpriteShapeOutline(const SpriteRendererComponent& sr, glm::vec4& rectOut)
         {
             if (!sr.Texture || sr.Texture->GetPath().empty() || sr.Texture->GetWidth() == 0 || sr.Texture->GetHeight() == 0)
@@ -872,8 +1047,8 @@ namespace Conqueror::Editor
             int w = 0, h = 0, channels = 0;
             if (unsigned char* rgba = stbi_load(path.c_str(), &w, &h, &channels, 4))
             {
-                // Yarı saydam kenar saçağı şekle girmez; ayrıntılı (piksele yakın) iz
-                entry.Shapes = SpriteSheet::GenerateOutline(rgba, w, h, rect, 0.85f, 8);
+                // Görünen kenarı izleyen yumuşak dış hat (yuvarlak kısımlar köşeli çokgen olmaz)
+                entry.Shapes = SmoothSpriteOutline(rgba, w, h, rect);
                 stbi_image_free(rgba);
             }
             return &(s_Cache[cacheKey] = std::move(entry)).Shapes;

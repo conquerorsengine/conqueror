@@ -211,6 +211,7 @@ namespace Conqueror::Editor
         bool m_PickPending = false;
         ImVec2 m_PickStart{ 0.0f, 0.0f };
         bool m_ImageHovered = false;
+        bool m_MouseDownInView[3] = { false, false, false };   // sol / sağ / orta tuş görünümün içinde basıldı (fare gezinmesi yalnız o zaman)
 
         // Bu görünümün HDR hedefleri + post-process zinciri
         PostProcessStack m_PostStack;

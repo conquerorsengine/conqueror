@@ -421,6 +421,15 @@ namespace Conqueror::Editor
 
     void SpriteEditorPanel::DrawSlicePopup()
     {
+        // Sabit genişlik (en uzun etikete göre): açılır pencere kendini içeriğe göre boyutluyor, tam genişlikli Slice düğmesi de
+        // pencereyle birlikte büyüdüğü için Type değişince pencere her karede biraz daha genişleyerek adım adım açılıyordu
+        {
+            const ImGuiStyle& st = ImGui::GetStyle();
+            float labelW = 0.0f;
+            for (const char* label : { "Type", "Minimum Size", "Pixel Size", "Column & Row", "Offset", "Padding", "Pivot", "Method" })
+                labelW = std::max(labelW, ImGui::CalcTextSize(label).x);
+            ImGui::SetNextWindowSize(ImVec2(200.0f + st.ItemInnerSpacing.x + labelW + st.WindowPadding.x * 2.0f, 0.0f), ImGuiCond_Always);
+        }
         if (!ImGui::BeginPopup("##SlicePopup"))
             return;
         ImGui::TextDisabled("Slice");
