@@ -94,7 +94,7 @@ namespace Conqueror
     struct StreamedLevelComponent; struct LevelStreamingVolumeComponent; struct AnimationPlayerComponent;
     struct AutoLODComponent;
     struct SoundOcclusionComponent; struct SoundConcurrencyComponent;
-    struct VertexPaintComponent; struct FractureComponent; struct RagdollComponent; struct VirtualGeometryComponent; struct CharacterCustomizerComponent; struct SignalConnectionsComponent; struct SignalReceiverComponent; struct CSGShapeComponent; struct MultiMeshComponent; struct RemoteTransformComponent; struct RayCastComponent; struct VisibleOnScreenNotifierComponent; struct Parallax2DComponent; struct RenderTargetComponent; struct Bone2DComponent; struct IK2DComponent;
+    struct VertexPaintComponent; struct FractureComponent; struct RagdollComponent; struct VirtualGeometryComponent; struct CharacterCustomizerComponent; struct SignalConnectionsComponent; struct SignalReceiverComponent; struct CSGShapeComponent; struct MultiMeshComponent; struct RemoteTransformComponent; struct RayCastComponent; struct VisibleOnScreenNotifierComponent; struct Parallax2DComponent; struct TimerComponent; struct ShapeCastComponent; struct VisibleOnScreenEnablerComponent; struct CharacterBody2DComponent; struct FogVolumeComponent; struct RenderTargetComponent; struct Bone2DComponent; struct IK2DComponent;
     struct RigComponent; struct TwoBoneIKConstraintComponent; struct MultiAimConstraintComponent; struct ChainIKConstraintComponent; struct DampedTransformComponent;
     struct ProjectileMovementComponent; struct SortingGroupComponent; struct PrefabInstanceComponent;
     struct GridComponent; struct TilemapComponent; struct TilemapCollider2DComponent;
@@ -267,6 +267,10 @@ namespace Conqueror
         bool HasChildren(Entity entity) const;
         // Visibility (Inspector eye toggle): visible when the component is absent
         bool IsEntityActive(entt::entity entity) const;
+        // Godot process_mode = DISABLED (Visible On Screen Enabler): nesne ve çocukları çizilir ama işlenmez (betiklerin Update /
+        // FixedUpdate'i, Animator, parçacıklar, Timer)
+        void SetProcessDisabled(uint32_t entity, bool disabled);
+        bool IsProcessDisabled(entt::entity entity) const;
 
         // Environment
         void SetSkybox(std::shared_ptr<Cubemap> skybox) { m_Skybox = skybox; }
@@ -439,6 +443,7 @@ namespace Conqueror
 
     public:
         entt::registry m_Registry;
+        std::unordered_set<uint32_t> m_ProcessDisabled;   // SetProcessDisabled
         uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 
         // Viewport bounds for scripts (set by editor)
@@ -657,6 +662,11 @@ namespace Conqueror
     CQ_DECL_ADDED(RayCastComponent)
     CQ_DECL_ADDED(VisibleOnScreenNotifierComponent)
     CQ_DECL_ADDED(Parallax2DComponent)
+    CQ_DECL_ADDED(TimerComponent)
+    CQ_DECL_ADDED(ShapeCastComponent)
+    CQ_DECL_ADDED(VisibleOnScreenEnablerComponent)
+    CQ_DECL_ADDED(CharacterBody2DComponent)
+    CQ_DECL_ADDED(FogVolumeComponent)
     CQ_DECL_ADDED(RenderTargetComponent)
     CQ_DECL_ADDED(Bone2DComponent)
     CQ_DECL_ADDED(IK2DComponent)

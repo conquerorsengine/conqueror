@@ -105,3 +105,23 @@ textures are picked from there with the target buttons.
 ## Undo
 
 Inspector edits, gizmo drags, create / delete and re-parent operations are recorded (Ctrl+Z / Ctrl+Y).
+
+## Localization
+
+**Project Settings > Localization** holds the game's translations (like Godot's TranslationServer and Unity Localization's
+string tables):
+
+- **Translations:** CSV files (first row `keys,en,tr,...`, then one key and its translations per row; an optional `?context`
+  column, columns starting with `_` are notes) and gettext PO files (one per language, `msgctxt` contexts, `msgid_plural`
+  with the file's `Plural-Forms` rule). Drop them on the list or pick them with the target button.
+- **Locale / Fallback / Test Locale / Locale Filter:** the game picks the translation closest to the player's language
+  (`pt_BR` falls back to `pt`, then to Fallback); Test Locale previews a language in the editor and in Play.
+- **Auto Translate:** UI Text, Text Renderer and Dropdown options whose text is a key show its translation and update at
+  once when the language changes. Scripts use `Tr(key, context)`, `TrN(key, pluralKey, n)`, `SetLocale(locale)`,
+  `GetLocale()` and `GetLoadedLocales()`.
+- **Remaps:** another texture, sound or font file for a language (for example a flag or voice lines); applied in the built
+  game and while playing in the editor.
+- **Pseudolocalization:** accents, doubled vowels, reversed (fake right-to-left) text, `*` override, expansion, prefix and
+  suffix, to find untranslated or overflowing texts.
+- **Generate POT:** writes a translation template with every UI Text, Text Renderer and Dropdown text in scenes and prefabs
+  and every `Tr` / `TrN` call in scripts.

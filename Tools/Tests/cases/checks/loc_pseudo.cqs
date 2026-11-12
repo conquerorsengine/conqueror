@@ -1,0 +1,8 @@
+using nativebridge;
+// Sahte yerelleştirme: önek / sonek, aksanlar, uzatma; yer tutucular korunur
+SetLocale("tr");
+var t = Tr("HELLO");
+var p = Tr("Score: %d / {0}");
+LogInfo("REGRESSION localization pseudo t=" + t + " p=" + p);
+if (t != "Merhaba" && len(t) > 8 && p == "[Šçöŕé: %d / {0}]") { CreateEntity("Pseudo_OK"); }
+SetLocale("");

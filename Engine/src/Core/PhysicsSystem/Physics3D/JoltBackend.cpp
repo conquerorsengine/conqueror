@@ -1365,6 +1365,53 @@ namespace Conqueror::Physics3D
             return true;
         }
 
+        void ShapeCastAll(CastShape shapeType, const glm::vec3& halfExtents, float radius, float halfHeight, const glm::quat& rotation,
+                          const glm::vec3& origin, const glm::vec3& direction, float maxDistance, const QueryFilter& filter,
+                          std::vector<RaycastHit>& hits, int maxResults) const override
+        {
+            hits.clear();
+            if (!m_Initialized || glm::length(direction) < 1e-8f)
+                return;
+            const glm::vec3 dir = glm::normalize(direction);
+            maxDistance = std::clamp(maxDistance, 0.0f, 1.0e6f);
+            const glm::vec3 he = glm::max(glm::abs(halfExtents), glm::vec3(0.001f));
+            JPH::SphereShape sphere(std::max(0.001f, radius));
+            JPH::BoxShape box(ToJ(he), std::min(JPH::cDefaultConvexRadius, 0.5f * std::min(he.x, std::min(he.y, he.z))));
+            JPH::CapsuleShape capsule(std::max(0.001f, halfHeight), std::max(0.001f, radius));
+            sphere.SetEmbedded();
+            box.SetEmbedded();
+            capsule.SetEmbedded();
+            const JPH::Shape* shape = shapeType == CastShape::Box ? (const JPH::Shape*)&box : shapeType == CastShape::Capsule ? (const JPH::Shape*)&capsule : (const JPH::Shape*)&sphere;
+            JPH::RShapeCast cast(shape, JPH::Vec3::sOne(), JPH::RMat44::sRotationTranslation(ToJ(rotation), ToJR(origin)), ToJ(dir * maxDistance));
+            JPH::ShapeCastSettings ss;
+            ss.mBackFaceModeTriangles = JPH::EBackFaceMode::IgnoreBackFaces;
+            JPH::AllHitCollisionCollector<JPH::CastShapeCollector> collector;
+            MaskLayerFilter lf;
+            lf.Mask = filter.LayerMask;
+            QueryBodyFilter bf;
+            bf.HitTriggers = filter.HitTriggers;
+            bf.IgnoreEntity = filter.IgnoreEntity;
+            if (filter.IgnoreBody) bf.IgnoreBodyId = (uint32_t)(filter.IgnoreBody - 1);
+            m_System->GetNarrowPhaseQuery().CastShape(cast, ss, JPH::RVec3::sZero(), collector, {}, lf, bf);
+            collector.Sort();
+            std::unordered_set<uint32_t> seen;   // gövde başına en yakın isabet (Godot da çarpan nesne başına bir sonuç verir)
+            for (const JPH::ShapeCastResult& r : collector.mHits)
+            {
+                if ((int)hits.size() >= std::max(1, maxResults))
+                    break;
+                RaycastHit h;
+                h.Entity = EntityOf(r.mBodyID2, r.mSubShapeID2);
+                if (!seen.insert(h.Entity).second)
+                    continue;
+                h.Distance = r.mFraction * maxDistance;
+                h.Point = ToG(JPH::Vec3(r.mContactPointOn2));
+                JPH::Vec3 n = -r.mPenetrationAxis;
+                h.Normal = n.LengthSq() > 1e-12f ? ToG(n.Normalized()) : -dir;
+                h.IsTrigger = IsSensor(r.mBodyID2);
+                hits.push_back(h);
+            }
+        }
+
         void OverlapSphere(const glm::vec3& center, float radius, const QueryFilter& filter, std::vector<uint32_t>& entities) const override
         {
             JPH::SphereShape sphere(std::max(0.001f, radius));

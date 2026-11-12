@@ -1,0 +1,23 @@
+# template: empty
+# Spring Bone (Godot SpringBoneSimulator3D, madde 25): gövde -> baş zinciri. Durunca dinlenme pozunda; karakter birden kayınca baş
+# geride kalıp sallanır (sapma), sonra yay ile dinlenme pozuna döner
+wait 40
+entity create Guy 0 0 0
+comp add Guy MeshRendererComponent
+comp set Guy MeshRendererComponent FilePath CQ:Resources/Templates/Kenney/Characters/character-male-a.glb
+comp add Guy AnimatorComponent
+comp add Guy SpringBoneComponent
+comp set Guy SpringBoneComponent Root torso
+comp set Guy SpringBoneComponent Tip head
+comp set Guy SpringBoneComponent Stiffness 0.5
+comp set Guy SpringBoneComponent Drag 0.2
+play
+wait 90
+comp expect Guy SpringBoneComponent Deflection <0.01
+entity move Guy 0.6 0 0
+wait 2
+comp expect Guy SpringBoneComponent Deflection >0.03
+wait 200
+comp expect Guy SpringBoneComponent Deflection <0.01
+stop
+quit

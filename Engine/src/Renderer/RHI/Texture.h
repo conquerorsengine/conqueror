@@ -39,6 +39,8 @@ namespace Conqueror
         }
         // Dosyadan ve .meta ayarlarından yerinde yeniden yükle (aynı nesne, yeni GPU dokusu)
         virtual bool Reload() { return false; }
+        // Yolu (GetPath) değiştirmeden içeriği başka bir dosyadan yükle (yerelleştirme Remaps: dile göre karşılık dosyası)
+        virtual bool ReloadFrom(const std::string& file) { (void)file; return false; }
         // Kaynak dosya silindi: içerik saydam 1x1 olur (Unity'de referansı kayıp doku gibi görünmez), yol korunur
         virtual void SetMissing() {}
         // Texture Streaming (Unity Mipmap Streaming, içe aktarmada Streaming Mipmaps): GPU'daki en ayrıntılı mip seviyesi

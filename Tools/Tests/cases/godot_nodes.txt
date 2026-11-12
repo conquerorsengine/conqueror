@@ -1,0 +1,83 @@
+# template: empty
+# Godot düğümleri (madde 25): Fog Volume (ışıyan yerel sis), Timer (tekrar / tek atış), Shape Cast 3D (zemine değme, güvenli oran; küp 2 birim: üstü y = 0.5),
+# Shape Cast 2D, Character Body 2D
+# (Auto Move: düşer, zemine iner ve durur), Visible On Screen Enabler (ekran dışındaki hedefin Timer'ı durur, görünenin sürer)
+wait 40
+# Fog Volume: hacimsel sis açıkken kutu hacmin olduğu bölge ışıyan sisle aydınlanır
+focus Game
+cvar r.VolumetricFog 1
+wait 20
+game_region 0.42 0.40 0.58 0.60 lum mean <200
+entity create Fog 0 1.5 3
+comp add Fog FogVolumeComponent
+comp set Fog FogVolumeComponent Size 3 3 3
+comp set Fog FogVolumeComponent Density 1.5
+comp set Fog FogVolumeComponent Emission 0.3 0.6 1
+wait 20
+game_region 0.42 0.40 0.58 0.60 lum mean >205
+entity delete Fog
+cvar r.VolumetricFog 0
+entity create Tick 0 0 0
+comp add Tick TimerComponent
+comp set Tick TimerComponent WaitTime 0.1
+comp set Tick TimerComponent Autostart true
+entity create Once 0 0 0
+comp add Once TimerComponent
+comp set Once TimerComponent WaitTime 0.1
+comp set Once TimerComponent Autostart true
+comp set Once TimerComponent OneShot true
+create_primitive Cube Floor 0 -0.5 0 static
+entity scale Floor 10 1 10
+entity create Caster 0 3 0
+comp add Caster ShapeCastComponent
+comp set Caster ShapeCastComponent TargetPosition 0 -5 0
+entity create Ground2D 50 -10 0
+comp add Ground2D RigidBody2DComponent
+comp set Ground2D RigidBody2DComponent BodyType Static
+comp add Ground2D BoxCollider2DComponent
+comp set Ground2D BoxCollider2DComponent Size 20 1
+entity create Caster2D 50 -5 0
+comp add Caster2D ShapeCastComponent
+comp set Caster2D ShapeCastComponent Space 1
+comp set Caster2D ShapeCastComponent Shape 1
+comp set Caster2D ShapeCastComponent Size 1 1 1
+comp set Caster2D ShapeCastComponent TargetPosition 0 -8 0
+entity create Hero 47 -6 0
+comp add Hero CapsuleCollider2DComponent
+comp set Hero CapsuleCollider2DComponent Size 0.5 1
+comp add Hero CharacterBody2DComponent
+comp set Hero CharacterBody2DComponent AutoMove true
+entity create Far 1000 0 0
+comp add Far TimerComponent
+comp set Far TimerComponent WaitTime 0.1
+comp set Far TimerComponent Autostart true
+entity create FarEnabler 1000 0 0
+comp add FarEnabler VisibleOnScreenEnablerComponent
+comp set FarEnabler VisibleOnScreenEnablerComponent AutoBounds false
+comp set FarEnabler VisibleOnScreenEnablerComponent Target @Far
+entity create Near 0 1 0
+comp add Near TimerComponent
+comp set Near TimerComponent WaitTime 0.1
+comp set Near TimerComponent Autostart true
+entity create NearEnabler 0 1 0
+comp add NearEnabler VisibleOnScreenEnablerComponent
+comp set NearEnabler VisibleOnScreenEnablerComponent AutoBounds false
+comp set NearEnabler VisibleOnScreenEnablerComponent Target @Near
+play
+wait 150
+comp expect Tick TimerComponent Timeouts >3
+comp expect Once TimerComponent Timeouts 1
+comp expect Caster ShapeCastComponent Colliding true
+comp expect Caster ShapeCastComponent Collider Floor
+comp expect Caster ShapeCastComponent SafeFraction >0.35
+comp expect Caster ShapeCastComponent SafeFraction <0.45
+comp expect Caster2D ShapeCastComponent Colliding true
+comp expect Caster2D ShapeCastComponent SafeFraction >0.4
+comp expect Caster2D ShapeCastComponent SafeFraction <0.6
+comp expect Hero CharacterBody2DComponent OnFloor true
+expect_position Hero y above -9.1
+expect_position Hero y below -8.9
+comp expect Far TimerComponent Timeouts 0
+comp expect Near TimerComponent Timeouts >3
+stop
+quit

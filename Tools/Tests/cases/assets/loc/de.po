@@ -1,0 +1,23 @@
+# German translation
+msgid ""
+msgstr ""
+"Language: de\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "HELLO"
+msgstr "Hallo"
+
+msgctxt "menu"
+msgid "HELLO"
+msgstr "Hallo (Menü)"
+
+#, multi-line
+msgid "MULTI"
+msgstr ""
+"Zeile eins\n"
+"Zeile zwei"
+
+msgid "APPLE"
+msgid_plural "APPLES"
+msgstr[0] "Apfel"
+msgstr[1] "Äpfel"

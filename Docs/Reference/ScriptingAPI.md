@@ -4,7 +4,7 @@
 
 Native functions available to every scripting language (ConquerorScript, Luau, LuaQ, Python, C#, Java, C++, C, Rust, Zig and Visual Script nodes). The names are identical in all languages; see [Scripting](../Scripting.md) for how each language calls them. Functions that act on "this" use the entity the script is attached to.
 
-589 functions in 45 categories.
+618 functions in 46 categories.
 
 ## Categories
 
@@ -24,9 +24,10 @@ Native functions available to every scripting language (ConquerorScript, Luau, L
 - [Editor](#editor) (17)
 - [Editor GUI](#editor-gui) (21)
 - [Entity](#entity) (47)
-- [Gameplay](#gameplay) (11)
+- [Gameplay](#gameplay) (17)
 - [Grid](#grid) (19)
 - [Input](#input) (45)
+- [Localization](#localization) (6)
 - [Log](#log) (4)
 - [Math](#math) (19)
 - [MultiMesh](#multimesh) (7)
@@ -34,8 +35,8 @@ Native functions available to every scripting language (ConquerorScript, Luau, L
 - [Network](#network) (33)
 - [Noise](#noise) (7)
 - [Particles](#particles) (12)
-- [Physics](#physics) (48)
-- [Physics 2D](#physics-2d) (14)
+- [Physics](#physics) (56)
+- [Physics 2D](#physics-2d) (23)
 - [Prefs](#prefs) (13)
 - [Profiler](#profiler) (3)
 - [Rendering](#rendering) (31)
@@ -340,6 +341,12 @@ Native functions available to every scripting language (ConquerorScript, Luau, L
 | `TagHasAll(target, [tags] \| "A, B", exact = false) -> bool` | True if every tag matches. |
 | `TagHasAny(target, [tags] \| "A, B", exact = false) -> bool` | True if any tag matches. |
 | `TagRemove(target, tag, removeChildren = false) -> bool` | Removes a gameplay tag (optionally its children too). |
+| `TimerGetTimeLeft(entity = self) -> float` | Seconds until the next timeout (0 when stopped). |
+| `TimerIsStopped(entity = self) -> bool` | Whether the Timer is not counting. |
+| `TimerSetPaused(entity, paused) -> bool` | Pauses or resumes the Timer without resetting it. |
+| `TimerSetWaitTime(entity, seconds) -> bool` | Sets the Timer's Wait Time (used from the next start / loop). |
+| `TimerStart(entity = self, time = -1) -> bool` | Starts (or restarts) the Timer; a positive time also sets Wait Time. |
+| `TimerStop(entity = self) -> bool` | Stops the Timer (no timeout). |
 
 ## Grid
 
@@ -414,6 +421,17 @@ Native functions available to every scripting language (ConquerorScript, Luau, L
 | `SetGlyphStyle(style)` | Force a glyph style (auto, keyboard, xbox, playstation, nintendo, deck). |
 | `TouchInterfaceActivate("Assets/X.cqtouchinterface") -> bool` | Shows on-screen touch controls. |
 | `TouchInterfaceDeactivate()` | Hides the on-screen touch controls. |
+
+## Localization
+
+| Function | Description |
+|---|---|
+| `GetLoadedLocales() -> list` | Languages that have translations (after the Locale Filter). |
+| `GetLocale() -> string` | Language in use. |
+| `GetSystemLocale() -> string` | Language of the operating system ("tr_TR", "en_US" ...). |
+| `SetLocale(locale) -> string` | Switches the language ("tr", "pt_BR" ...); the closest loaded language is used and every translated text updates at once. Returns the language in use. |
+| `Tr(key, context = "") -> string` | Translation of key in the current language (Project Settings > Localization); the key itself when there is none. |
+| `TrN(key, pluralKey, n, context = "") -> string` | Plural translation: picks the form for n with the language's plural rule (PO Plural-Forms); without a translation key when n == 1, else pluralKey. |
 
 ## Log
 
@@ -589,6 +607,14 @@ Native functions available to every scripting language (ConquerorScript, Luau, L
 | `SetAngularVelocity([entity,] x, y, z)` | Sets rigidbody angular velocity. |
 | `SetGravity(x, y, z)` | Sets world gravity. |
 | `SetLinearVelocity([entity,] x, y, z)` | Sets rigidbody velocity. |
+| `ShapeCastForceUpdate(entity = self) -> bool` | Sweeps the shape again right now (after moving it in the same frame). |
+| `ShapeCastGetCollider(entity = self, index = 0) -> entity` | Object of a Shape Cast result (null if out of range). |
+| `ShapeCastGetCollisionCount(entity = self) -> int` | How many objects the Shape Cast touches (nearest first). |
+| `ShapeCastGetNormal(entity = self, index = 0) -> {x, y, z}` | Contact normal of a Shape Cast result (null if out of range). |
+| `ShapeCastGetPoint(entity = self, index = 0) -> {x, y, z}` | Contact point of a Shape Cast result (null if out of range). |
+| `ShapeCastGetSafeFraction(entity = self) -> float` | How far (0..1 of the way to Target Position) the shape can move without touching anything. |
+| `ShapeCastIsColliding(entity = self) -> bool` | Whether the Shape Cast component's swept shape touches something this frame. |
+| `ShapeCastSetTarget(entity, x, y, z = 0) -> bool` | Sets the Shape Cast's local target position. |
 | `SphereCast(ox, oy, oz, radius, dx, dy, dz, maxDistance = 1000, layerMask = -1, ignoreSelf = false) -> hit` | Sweeps a sphere; returns the first hit or null. |
 | `Teleport(x, y, z)` | Moves the entity and its physics body instantly. |
 | `WakeUp()` | Wakes the rigidbody. |
@@ -601,6 +627,15 @@ Native functions available to every scripting language (ConquerorScript, Luau, L
 | `ApplyForceAtPosition2D(fx, fy, px, py)` | Applies a force at a world point. |
 | `ApplyImpulse2D(x, y)` | Adds a 2D impulse. |
 | `ApplyTorque2D(torque)` | Applies torque to this Rigidbody 2D. |
+| `CharacterBody2DGetFloorNormal(entity = self) -> {x, y}` | Floor normal when on the floor (null otherwise). |
+| `CharacterBody2DGetRealVelocity(entity = self) -> {x, y}` | How fast the body actually moved in the last move. |
+| `CharacterBody2DGetVelocity(entity = self) -> {x, y}` | Velocity after the last move (parts going into walls / floors removed). |
+| `CharacterBody2DGetWallNormal(entity = self) -> {x, y}` | Wall normal when touching a wall (null otherwise). |
+| `CharacterBody2DIsOnCeiling(entity = self) -> bool` | Whether the last move ended touching a ceiling. |
+| `CharacterBody2DIsOnFloor(entity = self) -> bool` | Whether the last move ended standing on a floor. |
+| `CharacterBody2DIsOnWall(entity = self) -> bool` | Whether the last move ended touching a wall. |
+| `CharacterBody2DMoveAndSlide(entity = self, dt = frame time) -> bool` | Godot move_and_slide: moves the Character Body 2D by Velocity * dt, sliding along surfaces; true if it touches something. |
+| `CharacterBody2DSetVelocity(entity, x, y) -> bool` | Sets the Character Body 2D velocity (units / second). |
 | `GetGravity2D() -> {x, y}` | 2D world gravity. |
 | `GetLinearVelocity2D(entity = self) -> {x, y}` | 2D rigidbody velocity. |
 | `GetMass2D() -> float` | Mass of this Rigidbody 2D. |

@@ -494,6 +494,31 @@ namespace Conqueror
         return ok;
     }
 
+    bool OpenGLTexture2D::ReloadFrom(const std::string& file)
+    {
+        if (file.empty())
+            return false;
+        // Karşılık dosyasının kendi içe aktarma ayarları; doku akışı kapalı (akış, mip seviyelerini GetPath'teki asıl dosyadan okurdu)
+        TextureImportSettings settings;
+        TextureImportSettings::Load(file, settings);
+        settings = settings.ForPlatform(TextureImportSettings::CurrentPlatform());
+        settings.StreamingMipmaps = false;
+        std::vector<uint8_t> bytes;
+        if (!ReadFile(file, bytes))
+        {
+            CQ_CORE_ERROR("Texture remap failed: {0}", file);
+            return false;
+        }
+        const TextureImportSettings previous = m_Settings;
+        m_Settings = settings;
+        if (!LoadEncoded(bytes.data(), bytes.size()))
+        {
+            m_Settings = previous;
+            return false;
+        }
+        return true;
+    }
+
     // ------------------------------------------------------------------ Kurucular
 
     OpenGLTexture2D::OpenGLTexture2D(uint32_t width, uint32_t height)

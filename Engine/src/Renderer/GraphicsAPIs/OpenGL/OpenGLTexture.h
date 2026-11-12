@@ -38,6 +38,7 @@ namespace Conqueror
         uint32_t GetSourceChannels() const override { return m_SourceChannels; }
         const TextureImportSettings& GetImportSettings() const override { return m_Settings; }
         bool Reload() override;
+        bool ReloadFrom(const std::string& file) override;
         void SetMissing() override;
 
         // Texture Streaming (Unity Mipmap Streaming). GPU'daki en ayrıntılı seviye (0 = tam boyut)

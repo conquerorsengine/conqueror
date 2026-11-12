@@ -1,5 +1,6 @@
 // glad diğer başlıklardan (GLFW) önce: gpu_probe GL geri okuma çağrıları
 #define GLFW_INCLUDE_NONE
+#include "Core/Localization/Localization.h"
 #include "Panels/OcclusionPanel.h"
 #include "Scene/OcclusionCulling.h"
 #include "Scene/XRInteraction.h"
@@ -2449,6 +2450,8 @@ namespace Conqueror::Editor
             }
             {
                 CQ_PROFILE_SAMPLE("Play.RuntimeStart", Editor);
+                // Yerelleştirme Remaps oyunda geçerli (dile göre doku / ses / yazı tipi karşılıkları)
+                Localization::SetRemapsActive(true);
                 m_RuntimeScene->OnRuntimeStart();
             }
             
@@ -2543,6 +2546,9 @@ namespace Conqueror::Editor
             
             // Editor scene'e geri dön
             m_ActiveScene = m_EditorScene;
+            // Oyunda betiğin seçtiği dil ve dile göre yüklenen karşılık dokular geri alınır (düzenleyici asıl dosyaları gösterir)
+            Localization::SetRemapsActive(false);
+            Localization::SetLocale(std::string());
             
             // Tüm panelleri editör sahnesine geri bağla
             RefreshAllPanels();
@@ -4774,6 +4780,8 @@ namespace Conqueror::Editor
                 else if (key == "streaming.allcameras") out = q.Streaming.AddAllCameras ? "1" : "0";
                 else if (key == "streaming.budget") { std::snprintf(buf, sizeof(buf), "%g", q.Streaming.MemoryBudgetMB); out = buf; }
                 else if (key == "streaming.maxreduction") out = std::to_string(q.Streaming.MaxLevelReduction);
+                else if (key == "localization.locale") out = Localization::GetLocale();
+                else if (key == "localization.keys") out = std::to_string(Localization::GetKeyCount());
                 else return false;
                 return true;
             };
@@ -4796,6 +4804,45 @@ namespace Conqueror::Editor
                 else if (k == "streaming.allcameras") q.Streaming.AddAllCameras = v == "1" || v == "true";
                 else if (k == "streaming.budget") q.Streaming.MemoryBudgetMB = std::max(1.0f, std::stof(v));
                 else if (k == "streaming.maxreduction") q.Streaming.MaxLevelReduction = std::clamp(std::stoi(v), 0, 7);
+                // Localization: translations = virgülle ayrılmış proje göreli dosyalar; remap = <kaynak>=<dil>:<dosya>
+                else if (k.rfind("localization.", 0) == 0)
+                {
+                    auto& ls = Localization::Settings();
+                    auto list = [](const std::string& s) {
+                        std::vector<std::string> out;
+                        std::string item;
+                        for (char c : s + ",")
+                        {
+                            if (c == ',') { if (!item.empty()) out.push_back(item); item.clear(); }
+                            else item += c;
+                        }
+                        return out;
+                    };
+                    const bool on = v == "1" || v == "true";
+                    if (k == "localization.translations") ls.Translations = list(v);
+                    else if (k == "localization.locale") ls.Locale = v == "-" ? std::string() : v;
+                    else if (k == "localization.fallback") ls.Fallback = v;
+                    else if (k == "localization.test") ls.TestLocale = v == "-" ? std::string() : v;
+                    else if (k == "localization.filter") ls.LocaleFilter = v == "-" ? std::vector<std::string>{} : list(v);
+                    else if (k == "localization.pseudo") ls.Pseudo.Enabled = on;
+                    else if (k == "localization.pseudo.accents") ls.Pseudo.Accents = on;
+                    else if (k == "localization.pseudo.doublevowels") ls.Pseudo.DoubleVowels = on;
+                    else if (k == "localization.pseudo.fakebidi") ls.Pseudo.FakeBiDi = on;
+                    else if (k == "localization.pseudo.override") ls.Pseudo.Override = on;
+                    else if (k == "localization.pseudo.expansion") ls.Pseudo.ExpansionRatio = std::stof(v);
+                    else if (k == "localization.remap")
+                    {
+                        const size_t eq = v.find('='), colon = v.find(':', eq == std::string::npos ? 0 : eq);
+                        if (eq == std::string::npos || colon == std::string::npos) { err = "remap <resource>=<locale>:<file>"; return false; }
+                        const std::string res = v.substr(0, eq), loc = v.substr(eq + 1, colon - eq - 1), file = v.substr(colon + 1);
+                        auto it = std::find_if(ls.Remaps.begin(), ls.Remaps.end(), [&](const LocalizationRemap& r) { return r.Resource == res; });
+                        if (it == ls.Remaps.end()) { ls.Remaps.push_back({ res, {} }); it = ls.Remaps.end() - 1; }
+                        it->Locales.push_back({ loc, file });
+                    }
+                    else { err = "unknown key " + k; return false; }
+                    Localization::PseudolocalizationChanged();
+                    Localization::Reload();
+                }
                 else { err = "unknown key " + k; return false; }
                 ProjectSettings::Apply();
                 return true;
@@ -6984,6 +7031,19 @@ namespace Conqueror::Editor
             return false;
         });
         Automation::RegisterCommand("stop", [this](const Args&, std::string&) { OnStopButtonPressed(); return true; });
+        // localization pot <yol> [en az kayıt]: çeviri şablonu üret (Project Settings > Localization > Generate POT)
+        Automation::RegisterCommand("localization", [](const Args& a, std::string& err) {
+            if (a.size() > 2 && a[1] == "pot")
+            {
+                const int n = Localization::GeneratePOT(a[2]);
+                Automation::Report("LOCALIZATION pot " + std::to_string(n) + " strings");
+                if (n < 0) { err = "could not write " + a[2]; return false; }
+                if (a.size() > 3 && n < std::stoi(a[3])) { err = "only " + std::to_string(n) + " strings"; return false; }
+                return true;
+            }
+            err = "localization pot <path> [min strings]";
+            return false;
+        });
         // content_drop <yol...>: dosya yöneticisinden bırakma (işletim sistemi olayıyla aynı yol)
         Automation::RegisterCommand("content_drop", [this](const Args& a, std::string& err) {
             if (a.size() < 2 || !m_ContentBrowserPanel) { err = "content_drop <path...>"; return false; }
@@ -7254,9 +7314,13 @@ namespace Conqueror::Editor
         // save_scene_as <yol>: iletişim kutusu olmadan farklı kaydet
         Automation::RegisterCommand("save_scene_as", [this](const Args& a, std::string& err) {
             if (a.size() < 2) { err = "save_scene_as <path>"; return false; }
+            // Göreli yol projeye göre (eskiden editörün çalışma klasörüne, build/bin/Assets altına yazıyordu)
+            std::filesystem::path target(a[1]);
+            if (target.is_relative() && !Project::GetActiveProjectDirectory().empty())
+                target = Project::GetActiveProjectDirectory() / target;
             std::error_code ec;
-            std::filesystem::create_directories(std::filesystem::path(a[1]).parent_path(), ec);
-            m_CurrentScenePath = a[1];
+            std::filesystem::create_directories(target.parent_path(), ec);
+            m_CurrentScenePath = target.string();
             SaveScene();
             return std::filesystem::exists(m_CurrentScenePath);
         });

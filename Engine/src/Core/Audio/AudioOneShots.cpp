@@ -1,4 +1,5 @@
 #include "AudioOneShots.h"
+#include "Core/Localization/Localization.h"
 
 #include "Core/Audio/AudioEngine.h"
 #include "Core/Audio/AudioMixer.h"
@@ -44,11 +45,12 @@ namespace Conqueror
             }
         }
 
-        uint32_t Start(const std::string& path, float volume, float pitch, float pan, const std::string& group,
+        uint32_t Start(const std::string& requestedPath, float volume, float pitch, float pan, const std::string& group,
                        bool spatial, const glm::vec3& position, float minDistance, float maxDistance)
         {
-            if (path.empty() || !AudioEngine::IsInitialized())
+            if (requestedPath.empty() || !AudioEngine::IsInitialized())
                 return 0;
+            const std::string path = Localization::Remap(requestedPath);   // yerelleştirme Remaps
             ma_engine* engine = AudioEngine::Get().GetNativeEngine();
             if (!engine)
                 return 0;

@@ -41,6 +41,7 @@ namespace Conqueror::Editor
         void DrawAudio();
         void DrawInput();
         void DrawNavigation();
+        void DrawLocalization();
         void DrawEditorSettings();
         void DrawScriptOrder();
         void DrawCollisionMatrix();

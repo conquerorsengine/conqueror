@@ -1,0 +1,31 @@
+using nativebridge;
+// Yerelleştirme (madde 25): CSV + PO, bağlam, çoğul kuralı (2 ve 3 biçim), en yakın dil, yedek dil, dil filtresi
+var bad = "";
+SetLocale("tr");
+if (Tr("HELLO") != "Merhaba") { bad = bad + " trHELLO=" + Tr("HELLO"); }
+if (Tr("HELLO", "menu") != "Merhaba (menü)") { bad = bad + " trCtx=" + Tr("HELLO", "menu"); }
+if (Tr("OPT_B") != "İkinci") { bad = bad + " trOPT_B=" + Tr("OPT_B"); }
+SetLocale("de_AT");
+if (GetLocale() != "de") { bad = bad + " closest=" + GetLocale(); }
+if (Tr("HELLO") != "Hallo") { bad = bad + " deHELLO=" + Tr("HELLO"); }
+if (Tr("HELLO", "menu") != "Hallo (Menü)") { bad = bad + " deCtx=" + Tr("HELLO", "menu"); }
+if (Tr("MULTI") != "Zeile eins\nZeile zwei") { bad = bad + " multi"; }
+if (TrN("APPLE", "APPLES", 1) != "Apfel") { bad = bad + " de1=" + TrN("APPLE", "APPLES", 1); }
+if (TrN("APPLE", "APPLES", 3) != "Äpfel") { bad = bad + " de3=" + TrN("APPLE", "APPLES", 3); }
+if (Tr("OPT_A") != "First") { bad = bad + " deFallback=" + Tr("OPT_A"); }
+SetLocale("ru_RU");
+if (TrN("APPLE", "APPLES", 1) != "яблоко") { bad = bad + " ru1"; }
+if (TrN("APPLE", "APPLES", 3) != "яблока") { bad = bad + " ru3"; }
+if (TrN("APPLE", "APPLES", 5) != "яблок") { bad = bad + " ru5"; }
+if (TrN("APPLE", "APPLES", 11) != "яблок") { bad = bad + " ru11"; }
+if (TrN("APPLE", "APPLES", 21) != "яблоко") { bad = bad + " ru21"; }
+if (TrN("APPLE", "APPLES", 22) != "яблока") { bad = bad + " ru22"; }
+SetLocale("pt_BR");
+if (GetLocale() != "en") { bad = bad + " fallbackLocale=" + GetLocale(); }
+if (Tr("HELLO") != "Hello") { bad = bad + " enHELLO=" + Tr("HELLO"); }
+if (Tr("NO_SUCH_KEY") != "NO_SUCH_KEY") { bad = bad + " missing"; }
+if (TrN("ONE_X", "MANY_X", 2) != "MANY_X") { bad = bad + " untranslatedPlural"; }
+if (len(GetLoadedLocales()) != 4) { bad = bad + " locales=" + len(GetLoadedLocales()); }
+SetLocale("");
+LogInfo("REGRESSION localization basic bad=[" + bad + "]");
+if (bad == "") { CreateEntity("Loc_OK"); }

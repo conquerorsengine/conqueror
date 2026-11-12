@@ -89,6 +89,25 @@ namespace Conqueror
         void RaycastAll(const glm::vec2& origin, const glm::vec2& direction, float maxDistance, std::vector<RaycastHit2D>& hits,
                         uint32_t layerMask = 0xFFFFFFFFu);
         void OverlapCircle(const glm::vec2& center, float radius, std::vector<uint32_t>& entities, uint32_t layerMask = 0xFFFFFFFFu);
+        // Kinematik karakter hareketi (Godot CharacterBody2D.move_and_slide, Box2D mover): kapsül (dünya; c1 - c2 ekseni, yarıçap) önce
+        // iç içe olduğu şekillerden dışarı itilir, sonra motion kadar yüzeylerde kayarak ilerler (temas düzlemleri b2SolvePlanes ile
+        // çözülür, süpürmeler kendi şekillerini yok sayar). Dönüş: kapsülün gittiği öteleme; planes: son konumdaki temaslar
+        struct MoverPlane2D
+        {
+            glm::vec2 Normal{ 0.0f, 1.0f };   // yüzeyden karaktere
+            float Offset = 0.0f;              // > 0 boşluk, < 0 iç içe
+            glm::vec2 Point{ 0.0f };
+            uint32_t Entity = 0xFFFFFFFFu;
+        };
+        glm::vec2 MoveCapsule(uint32_t self, const glm::vec2& c1, const glm::vec2& c2, float radius, const glm::vec2& motion,
+                              uint32_t layerMask, std::vector<MoverPlane2D>& planes, int maxIterations = 5);
+        // Hızın yüzeylere giren bileşenini sil (b2ClipVector)
+        static glm::vec2 ClipVelocity(const glm::vec2& velocity, const std::vector<MoverPlane2D>& planes);
+
+        // Şekil süpürme (Godot ShapeCast2D): dışbükey şekil (dünya noktaları + yuvarlama yarıçapı: daire 1 nokta, kapsül 2, kutu 4)
+        // translation boyunca; yakından uzağa, nesne başına bir isabet
+        void ShapeCastAll(const glm::vec2* points, int count, float radius, const glm::vec2& translation, std::vector<RaycastHit2D>& hits,
+                          uint32_t layerMask = 0xFFFFFFFFu, bool hitTriggers = false, int maxResults = 32);
         void OverlapBox(const glm::vec2& center, const glm::vec2& halfExtents, float angle, std::vector<uint32_t>& entities,
                         uint32_t layerMask = 0xFFFFFFFFu);
 

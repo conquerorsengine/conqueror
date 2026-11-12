@@ -9,6 +9,7 @@
 #include "Core/Project/SplashLayout.h"
 #include "Renderer/RHI/Texture.h"
 #include "Core/Project/ProjectSettings.h"
+#include "Core/Localization/Localization.h"
 #include "Renderer/TextureStreaming.h"
 #include "Core/Tiering/QualitySettings.h"
 #include "Core/Input/Input.h"
@@ -861,6 +862,275 @@ namespace Conqueror::Editor
             if (std::find(defines.begin(), defines.end(), std::string(s_NewDefine)) == defines.end())
                 defines.emplace_back(s_NewDefine);
             s_NewDefine[0] = 0;
+            m_Dirty = true;
+        }
+    }
+    // Godot Project Settings > Localization (Translations, Remaps, Locale Filter, POT Generation) ve Unity Localization'ın dil seçimi
+    void ProjectSettingsPanel::DrawLocalization()
+    {
+        auto& st = Localization::Settings();
+        bool reload = false;
+        static const std::vector<std::string> kTranslationExt = { ".csv", ".po" };
+
+        // ---- Çeviri dosyaları
+        UI::SubHeader("Translations");
+        UI::InfoBox("CSV: first row \"keys,en,tr,...\", then one key and its translations per row (a \"?context\" column is optional).\n"
+                    "PO (gettext): one file per language with msgctxt contexts and msgid_plural plural forms.\n"
+                    "UI Text, Text Renderer and Dropdown show the translation when their text is a key (Auto Translate);\n"
+                    "scripts use Tr(key), TrN(key, plural, n) and SetLocale(locale).");
+        int removeAt = -1;
+        for (size_t i = 0; i < st.Translations.size(); ++i)
+        {
+            ImGui::PushID((int)i);
+            const std::string name = std::filesystem::path(st.Translations[i]).filename().string();
+            UI::BeginProperty(("File " + std::to_string(i + 1)).c_str(), st.Translations[i].c_str());
+            const float w = ImGui::GetContentRegionAvail().x - 2.0f * (ImGui::GetFrameHeight() + ImGui::GetStyle().ItemSpacing.x);
+            ImGui::Button((std::string(ICON_FA_LANGUAGE "  ") + name + "##tr").c_str(), ImVec2(w, 0.0f));
+            if (ImGui::IsItemClicked())
+                EditorState::Get().SelectAsset(AssetUI::Resolve(st.Translations[i]).string());
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                {
+                    const std::filesystem::path dropped((const char*)p->Data);
+                    if (dropped.extension() == ".csv" || dropped.extension() == ".po")
+                    {
+                        st.Translations[i] = AssetUI::ToProjectRelative(dropped);
+                        reload = true;
+                    }
+                }
+                ImGui::EndDragDropTarget();
+            }
+            ImGui::SameLine();
+            std::string picked;
+            if (ObjectPicker::Button("##trPick", "Translation", kTranslationExt, st.Translations[i], picked) && !picked.empty())
+            {
+                st.Translations[i] = AssetUI::ToProjectRelative(picked);
+                reload = true;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button(ICON_FA_XMARK "##trDel", ImVec2(ImGui::GetFrameHeight(), 0.0f)))
+                removeAt = (int)i;
+            UI::EndProperty();
+            ImGui::PopID();
+        }
+        if (removeAt >= 0)
+        {
+            st.Translations.erase(st.Translations.begin() + removeAt);
+            reload = true;
+        }
+        {
+            // Yeni satır: sürükle-bırak ya da ◎ ile dosya eklenir
+            UI::BeginProperty("Add", "Drop a .csv or .po file from the Content Browser here, or pick one.");
+            const float w = ImGui::GetContentRegionAvail().x - ImGui::GetFrameHeight() - ImGui::GetStyle().ItemSpacing.x;
+            ImGui::Button(ICON_FA_PLUS "  Add Translation (.csv / .po)##trAdd", ImVec2(w, 0.0f));
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                {
+                    const std::filesystem::path dropped((const char*)p->Data);
+                    if (dropped.extension() == ".csv" || dropped.extension() == ".po")
+                    {
+                        st.Translations.push_back(AssetUI::ToProjectRelative(dropped));
+                        reload = true;
+                    }
+                }
+                ImGui::EndDragDropTarget();
+            }
+            ImGui::SameLine();
+            std::string picked;
+            if (ObjectPicker::Button("##trAddPick", "Translation", kTranslationExt, std::string(), picked) && !picked.empty())
+            {
+                st.Translations.push_back(AssetUI::ToProjectRelative(picked));
+                reload = true;
+            }
+            UI::EndProperty();
+        }
+
+        // ---- Dil seçimi
+        UI::SubHeader("Locale");
+        const std::vector<std::string> loaded = Localization::GetLoadedLocales();
+        auto localeCombo = [&](const char* label, std::string& value, const char* emptyName, const char* tooltip) {
+            UI::BeginProperty(label, tooltip);
+            ImGui::SetNextItemWidth(-1.0f);
+            const std::string preview = value.empty() ? std::string(emptyName) : value;
+            bool changed = false;
+            if (ImGui::BeginCombo((std::string("##") + label).c_str(), preview.c_str()))
+            {
+                if (ImGui::Selectable(emptyName, value.empty())) { value.clear(); changed = true; }
+                for (const auto& l : loaded)
+                    if (ImGui::Selectable(l.c_str(), value == l)) { value = l; changed = true; }
+                ImGui::EndCombo();
+            }
+            UI::EndProperty();
+            return changed;
+        };
+        const std::string systemName = "System Language (" + Localization::SystemLocale() + ")";
+        reload |= localeCombo("Locale", st.Locale, systemName.c_str(), "Language of the game. System Language picks the closest translation to the player's language.");
+        if (UI::InputText("Fallback", st.Fallback, "Used for keys missing in the chosen language (and when no language matches)."))
+            reload = true;
+        reload |= localeCombo("Test Locale", st.TestLocale, "None", "Previews a language in the editor and in Play without changing Locale.");
+        {
+            std::string filter;
+            for (size_t i = 0; i < st.LocaleFilter.size(); ++i)
+                filter += (i ? ", " : "") + st.LocaleFilter[i];
+            if (UI::InputText("Locale Filter", filter, "Comma separated languages the game may use (empty: all loaded languages)."))
+            {
+                st.LocaleFilter.clear();
+                std::string item;
+                for (char c : filter + ",")
+                {
+                    if (c == ',' || c == ' ')
+                    {
+                        if (!item.empty()) st.LocaleFilter.push_back(item);
+                        item.clear();
+                    }
+                    else
+                        item += c;
+                }
+                reload = true;
+            }
+        }
+        {
+            std::string langs;
+            for (size_t i = 0; i < loaded.size(); ++i)
+                langs += (i ? ", " : "") + loaded[i];
+            UI::Text("In Use", "%s (%d keys)", Localization::GetLocale().c_str(), Localization::GetKeyCount());
+            UI::Text("Loaded", "%s", langs.empty() ? "none" : langs.c_str());
+        }
+
+        // ---- Remaps: dile göre başka doku / ses / yazı tipi
+        UI::SubHeader("Remaps");
+        UI::InfoBox("Use another texture, sound or font file in a language (for example a flag image or voice lines).\n"
+                    "Applied in the built game and while playing in the editor.");
+        static const std::vector<std::string> kRemapExt = { ".png", ".jpg", ".jpeg", ".tga", ".bmp", ".hdr", ".wav", ".ogg", ".mp3", ".flac", ".ttf", ".otf" };
+        int removeRemap = -1;
+        for (size_t r = 0; r < st.Remaps.size(); ++r)
+        {
+            auto& remap = st.Remaps[r];
+            ImGui::PushID((int)(1000 + r));
+            UI::BeginProperty("Resource", remap.Resource.c_str());
+            {
+                const float w = ImGui::GetContentRegionAvail().x - 2.0f * (ImGui::GetFrameHeight() + ImGui::GetStyle().ItemSpacing.x);
+                const std::string shown = remap.Resource.empty() ? std::string("None") : std::filesystem::path(remap.Resource).filename().string();
+                ImGui::Button((std::string(ICON_FA_FILE "  ") + shown + "##res").c_str(), ImVec2(w, 0.0f));
+                if (ImGui::BeginDragDropTarget())
+                {
+                    if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                    {
+                        remap.Resource = AssetUI::ToProjectRelative(std::filesystem::path((const char*)p->Data));
+                        reload = true;
+                    }
+                    ImGui::EndDragDropTarget();
+                }
+                ImGui::SameLine();
+                std::string picked;
+                if (ObjectPicker::Button("##resPick", "Resource", kRemapExt, remap.Resource, picked))
+                {
+                    remap.Resource = picked.empty() ? std::string() : AssetUI::ToProjectRelative(picked);
+                    reload = true;
+                }
+                ImGui::SameLine();
+                if (ImGui::Button(ICON_FA_XMARK "##resDel", ImVec2(ImGui::GetFrameHeight(), 0.0f)))
+                    removeRemap = (int)r;
+            }
+            UI::EndProperty();
+            int removeLocale = -1;
+            for (size_t i = 0; i < remap.Locales.size(); ++i)
+            {
+                auto& [loc, file] = remap.Locales[i];
+                ImGui::PushID((int)i);
+                UI::BeginProperty("    Locale / File", "Language code (tr, ja, pt_BR ...) and the file used in that language.");
+                ImGui::SetNextItemWidth(70.0f);
+                char buf[32] = {};
+                std::strncpy(buf, loc.c_str(), sizeof(buf) - 1);
+                if (ImGui::InputText("##loc", buf, sizeof(buf)))
+                {
+                    loc = buf;
+                    reload = true;
+                }
+                ImGui::SameLine();
+                const float w = ImGui::GetContentRegionAvail().x - 2.0f * (ImGui::GetFrameHeight() + ImGui::GetStyle().ItemSpacing.x);
+                const std::string shown = file.empty() ? std::string("None") : std::filesystem::path(file).filename().string();
+                ImGui::Button((shown + "##file").c_str(), ImVec2(w, 0.0f));
+                if (ImGui::BeginDragDropTarget())
+                {
+                    if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                    {
+                        file = AssetUI::ToProjectRelative(std::filesystem::path((const char*)p->Data));
+                        reload = true;
+                    }
+                    ImGui::EndDragDropTarget();
+                }
+                ImGui::SameLine();
+                std::string picked;
+                if (ObjectPicker::Button("##filePick", "Resource", kRemapExt, file, picked))
+                {
+                    file = picked.empty() ? std::string() : AssetUI::ToProjectRelative(picked);
+                    reload = true;
+                }
+                ImGui::SameLine();
+                if (ImGui::Button(ICON_FA_XMARK "##locDel", ImVec2(ImGui::GetFrameHeight(), 0.0f)))
+                    removeLocale = (int)i;
+                UI::EndProperty();
+                ImGui::PopID();
+            }
+            if (removeLocale >= 0)
+            {
+                remap.Locales.erase(remap.Locales.begin() + removeLocale);
+                reload = true;
+            }
+            if (ImGui::Button(ICON_FA_PLUS "  Add Locale##addLoc"))
+                remap.Locales.push_back({ loaded.empty() ? std::string("tr") : loaded.front(), std::string() });
+            ImGui::PopID();
+        }
+        if (removeRemap >= 0)
+        {
+            st.Remaps.erase(st.Remaps.begin() + removeRemap);
+            reload = true;
+        }
+        if (ImGui::Button(ICON_FA_PLUS "  Add Remap"))
+            st.Remaps.push_back({});
+
+        // ---- Sahte yerelleştirme (Godot Pseudolocalization)
+        UI::SubHeader("Pseudolocalization");
+        auto& ps = st.Pseudo;
+        bool pseudo = false;
+        pseudo |= UI::Checkbox("Enabled", ps.Enabled, "Shows every translated text changed, to find untranslated and overflowing texts.");
+        ImGui::BeginDisabled(!ps.Enabled);
+        pseudo |= UI::Checkbox("Accents", ps.Accents, "Replaces letters with accented look-alikes (checks font coverage).");
+        pseudo |= UI::Checkbox("Double Vowels", ps.DoubleVowels, "Doubles vowels to imitate longer languages.");
+        pseudo |= UI::Checkbox("Fake BiDi", ps.FakeBiDi, "Writes texts backwards to imitate right-to-left languages.");
+        pseudo |= UI::Checkbox("Override", ps.Override, "Replaces every letter with '*' so texts that skip translation stand out.");
+        pseudo |= UI::DragFloat("Expansion Ratio", ps.ExpansionRatio, 0.01f, 0.0f, 10.0f, "%.2f", "Makes texts this much longer (0.3 = 30 %) to find texts that overflow.");
+        pseudo |= UI::InputText("Prefix", ps.Prefix, "Added before every text (shows where a text is cut).");
+        pseudo |= UI::InputText("Suffix", ps.Suffix, "Added after every text.");
+        pseudo |= UI::Checkbox("Skip Placeholders", ps.SkipPlaceholders, "Leaves %s, %d and {0} style placeholders unchanged.");
+        ImGui::EndDisabled();
+        if (pseudo)
+        {
+            Localization::PseudolocalizationChanged();
+            m_Dirty = true;
+        }
+
+        // ---- POT üretimi (Godot POT Generation)
+        UI::SubHeader("POT Generation");
+        UI::InfoBox("Writes a translation template (.pot) with every text to translate: UI Text, Text Renderer and Dropdown options\n"
+                    "in scenes and prefabs, and Tr / TrN calls in scripts. Translators make one .po file per language from it.");
+        static std::string s_POTPath = "Assets/Localization/messages.pot";
+        static std::string s_POTResult;
+        UI::InputText("Output", s_POTPath, "Project relative path of the .pot file.");
+        if (UI::AccentButton(ICON_FA_FILE_EXPORT "  Generate POT", ImVec2(-1, 0)))
+        {
+            const int n = Localization::GeneratePOT(s_POTPath, st.POTFiles);
+            s_POTResult = n < 0 ? std::string("Could not write ") + s_POTPath : std::to_string(n) + " strings written to " + s_POTPath;
+        }
+        if (!s_POTResult.empty())
+            ImGui::TextDisabled("%s", s_POTResult.c_str());
+
+        if (reload)
+        {
+            Localization::Reload();
             m_Dirty = true;
         }
     }

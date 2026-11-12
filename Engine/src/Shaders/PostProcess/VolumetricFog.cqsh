@@ -45,9 +45,54 @@ float PhaseHG(float cosTheta, float g)
     return (1.0 - g2) / (4.0 * PI * pow(max(1.0 + g2 - 2.0 * g * cosTheta, 1e-4), 1.5));
 }
 
+// Fog Volume (Godot FogVolume): birim uzaya dönüşüm ve parametreler (x şekil, y yoğunluk, z yükseklik incelmesi, w kenar)
+#define CQ_MAX_FOG_VOLUMES 32
+uniform int u_VolumeCount = 0;
+uniform mat4 u_VolumeToUnit[CQ_MAX_FOG_VOLUMES];
+uniform vec4 u_VolumeParams[CQ_MAX_FOG_VOLUMES];
+uniform vec4 u_VolumeAlbedo[CQ_MAX_FOG_VOLUMES];
+uniform vec4 u_VolumeEmission[CQ_MAX_FOG_VOLUMES];
+
 float FogDensity(vec3 p)
 {
     return u_Density * exp(-max(u_HeightFalloff, 0.0) * (p.y - u_BaseHeight));
+}
+
+// Noktadaki toplam yoğunluk; albedo yoğunluk ağırlıklı karışım, emission ışık katkısı (yoğunlukla)
+float FogSample(vec3 p, out vec3 albedo, out vec3 emission)
+{
+    float base = FogDensity(p);
+    float density = base;
+    vec3 weightedAlbedo = u_Albedo * max(base, 0.0);
+    emission = vec3(0.0);
+    for (int i = 0; i < u_VolumeCount; ++i)
+    {
+        vec4 params = u_VolumeParams[i];
+        int shape = int(params.x + 0.5);
+        float d = 0.0;   // 1: kenar, < 1 içeride
+        vec3 u = (u_VolumeToUnit[i] * vec4(p, 1.0)).xyz;
+        if (shape == 0)       d = max(max(abs(u.x), abs(u.y)), abs(u.z));      // kutu
+        else if (shape == 1)  d = length(u);                                    // elipsoit
+        else if (shape == 2)  d = max(length(u.xz), abs(u.y));                  // silindir (Y ekseni)
+        else if (shape == 3)                                                    // koni: tabanı aşağıda (y = -1), ucu yukarıda
+        {
+            float h = clamp(u.y * 0.5 + 0.5, 0.0, 1.0);
+            float r = max(1.0 - h, 1e-3);
+            d = max(length(u.xz) / r, abs(u.y));
+        }
+        else                  d = 0.0;                                          // her yer
+        if (d >= 1.0)
+            continue;
+        float fade = params.w > 1e-4 ? clamp((1.0 - d) / params.w, 0.0, 1.0) : 1.0;
+        float local = params.y * fade * exp(-params.z * (u.y + 1.0));
+        density += local;
+        weightedAlbedo += u_VolumeAlbedo[i].rgb * max(local, 0.0);
+        emission += u_VolumeEmission[i].rgb * max(local, 0.0);
+    }
+    density = max(density, 0.0);
+    albedo = density > 1e-6 ? weightedAlbedo / max(density, 1e-6) : u_Albedo;
+    albedo = min(albedo, vec3(4.0));
+    return density;
 }
 
 // Güneş görünürlüğü: cascade gölge atlasından tek örnek (1 aydınlık, 0 gölge)
@@ -108,15 +153,16 @@ void main()
     {
         float t = (float(i) + jitter) * ds;
         vec3 p = u_CameraPos + dir * t;
-        float density = FogDensity(p);
+        vec3 albedo, emission;
+        float density = FogSample(p, albedo, emission);
         if (density < 1e-6)
             continue;
         float stepT = exp(-density * ds);
         vec3 light = ambient;
         if (hasSun)
             light += sunColor * phase * 4.0 * PI * 0.25 * SunVisibility(p);
-        // Enerji korunumlu adım integrali (Frostbite): (L - L*T) / yoğunluk
-        vec3 S = light * u_Albedo * density;
+        // Enerji korunumlu adım integrali (Frostbite): (L - L*T) / yoğunluk; ışıyan sis kendi ışığını ekler
+        vec3 S = light * albedo * density + emission;
         scattered += transmittance * (S - S * stepT) / max(density, 1e-6);
         transmittance *= stepT;
         if (transmittance < 0.01)

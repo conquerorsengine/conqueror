@@ -1,4 +1,5 @@
 #include "FontAtlas.h"
+#include "Core/Localization/Localization.h"
 #include "Core/Logging/Log.h"
 #include "Core/Assets/SimpleAsset.h"
 #include "Core/Serialization/SceneSerializer.h"
@@ -397,8 +398,10 @@ namespace Conqueror
         }
     }
 
-    std::shared_ptr<FontAtlas> FontAtlas::Get(const std::string& path)
+    std::shared_ptr<FontAtlas> FontAtlas::Get(const std::string& requestedPath)
     {
+        // Yerelleştirme Remaps: etkin dilde bu yazı tipinin karşılığı (ör. Japonca için CJK yazı tipi); dil değişince sonraki çizim onu kullanır
+        const std::string path = Localization::Remap(requestedPath);
         const std::string ext = std::filesystem::path(path).extension().string();
         if (ext == ".cqfontasset" || ext == ".cqcustomfont")
             return GetFromAsset(path, ext == ".cqcustomfont");

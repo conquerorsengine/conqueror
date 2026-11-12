@@ -1,6 +1,7 @@
 #include "Renderer/CustomRenderTexture.h"
 #include "Texture.h"
 #include "Core/Utils/ImportActivity.h"
+#include "Core/Localization/Localization.h"
 #include "Renderer/RenderTargetRegistry.h"
 #include <chrono>
 #include <filesystem>
@@ -70,6 +71,7 @@ namespace Conqueror
                 ImportActivity::Add(path, "Texture", ms, true, std::to_string(tex->GetWidth()) + "x" + std::to_string(tex->GetHeight()));
                 s_Cache[path] = tex;
                 Watch(tex);
+                Localization::OnTextureLoaded(*tex);
                 return tex;
             }
         }

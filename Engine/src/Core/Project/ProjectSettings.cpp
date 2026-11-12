@@ -1,4 +1,5 @@
 #include "ProjectSettings.h"
+#include "Core/Localization/Localization.h"
 #include "Core/Audio/AudioEngine.h"
 #include "Core/Logging/Log.h"
 #include "Core/Input/Input.h"
@@ -130,6 +131,7 @@ namespace Conqueror
         s_OrderCacheValid = false;
         CustomTags().clear();
         ProjectWideActions().clear();
+        Localization::ResetToDefaults();
     }
 
     void ProjectSettings::Serialize(YAML::Emitter& out)
@@ -199,6 +201,7 @@ namespace Conqueror
             out << YAML::Key << "InputConfig" << YAML::Value << YAML::Literal << Input::SaveConfigToString();
         if (!ProjectWideActions().empty())
             out << YAML::Key << "ProjectWideActions" << YAML::Value << ProjectWideActions();
+        Localization::Serialize(out);
     }
 
     void ProjectSettings::Deserialize(const YAML::Node& root)
@@ -297,6 +300,7 @@ namespace Conqueror
                     s_ScriptOrder.push_back(entry);
             }
         s_OrderCacheValid = false;
+        Localization::Deserialize(root);
     }
 
     void ProjectSettings::Apply()

@@ -1,4 +1,5 @@
 #include "UI/UIExtras.h"
+#include "Core/Localization/Localization.h"
 #include "UISystem.h"
 #include "Core/Serialization/SceneSerializer.h"
 #include <unordered_map>
@@ -883,12 +884,19 @@ namespace Conqueror
             }
         }
 
+        // Görünen metin: Auto Translate açıksa ve metin bir çeviri anahtarıysa etkin dildeki çevirisi
+        const std::string& ShownText(const UITextComponent& t)
+        {
+            return t.AutoTranslate ? Localization::Translate(t.Text) : t.Text;
+        }
+
         glm::vec2 PreferredTextSize(const UITextComponent& t, float maxWidth)
         {
             auto font = FontAtlas::Get(t.FontPath);
             std::vector<uint32_t> cps;
             std::vector<TextLine> lines;
-            FontAtlas::DecodeUTF8(t.RichText ? RichText::Strip(t.Text) : t.Text, cps);
+            const std::string& text = ShownText(t);
+            FontAtlas::DecodeUTF8(t.RichText ? RichText::Strip(text) : text, cps);
             LayoutLines(*font, cps, t.FontSize, maxWidth, t.WordWrap && maxWidth < 1.0e5f, lines);
             float w = 0.0f;
             for (auto& l : lines) w = std::max(w, l.Width);
@@ -903,7 +911,8 @@ namespace Conqueror
             auto font = FontAtlas::Get(t.FontPath);
             std::vector<uint32_t> cps;
             std::vector<TextLine> lines;
-            FontAtlas::DecodeUTF8(t.RichText ? RichText::Strip(t.Text) : t.Text, cps);
+            const std::string& text = ShownText(t);
+            FontAtlas::DecodeUTF8(t.RichText ? RichText::Strip(text) : text, cps);
             float lo = t.MinSize, hi = t.MaxSize;
             for (int it = 0; it < 12; ++it)
             {
@@ -1293,6 +1302,8 @@ namespace Conqueror
                 RoundRect(sm, { 0, 0 }, size, 8.0f, glm::vec4(0.72f, 0.73f, 0.77f, 1.0f) * tint);
                 RoundRect(sm, { 1, 1 }, size - glm::vec2(1.0f), 7.0f, glm::vec4(1.0f) * tint);
                 std::string label = dd.Value >= 0 && dd.Value < (int)dd.Options.size() ? dd.Options[(size_t)dd.Value] : std::string();
+                if (dd.AutoTranslate)
+                    label = Localization::Translate(label);
                 DrawTextBlock(glm::translate(sm, glm::vec3(12.0f, 0, 0)), { size.x - 44.0f, size.y }, label, "", dd.FontSize,
                               glm::vec4(0.12f, 0.12f, 0.14f, 1.0f), UITextAlignH::Left, UITextAlignV::Middle, false, 1.0f);
                 float ax = size.x - 22.0f, ay = size.y * 0.5f, a = 6.0f;
@@ -1310,10 +1321,11 @@ namespace Conqueror
                 auto drawText = [&](const glm::mat4& tm, const glm::vec4& col, bool overrideColor, glm::vec2 off) {
                     s_TextGradient = !overrideColor && !t.ColorGradient.empty() ? RichText::FindGradient(t.ColorGradient) : nullptr;
                     struct Reset { ~Reset() { s_TextGradient = nullptr; } } reset;
+                    const std::string& shown = ShownText(t);
                     if (t.RichText)
-                        DrawRichTextBlock(tm, size, t.Text, t.FontPath, fs, sizeRatio, col, overrideColor, t.AlignH, t.AlignV, t.WordWrap, t.LineSpacing, off);
+                        DrawRichTextBlock(tm, size, shown, t.FontPath, fs, sizeRatio, col, overrideColor, t.AlignH, t.AlignV, t.WordWrap, t.LineSpacing, off);
                     else
-                        DrawTextBlock(tm, size, t.Text, t.FontPath, fs, col, t.AlignH, t.AlignV, t.WordWrap, t.LineSpacing, off);
+                        DrawTextBlock(tm, size, shown, t.FontPath, fs, col, t.AlignH, t.AlignV, t.WordWrap, t.LineSpacing, off);
                 };
                 if (t.Shadow)
                     drawText(sm, t.ShadowColor, true, t.ShadowOffset);
@@ -1374,7 +1386,8 @@ namespace Conqueror
                 glm::vec2 a(mn.x + 3.0f, mx.y - rowH * (float)(i + 1)), b(mx.x - 3.0f, mx.y - rowH * (float)i);
                 if (i == dd.HoveredOption) RoundRect(it.M, a, b, 6.0f, glm::vec4(0.88f, 0.92f, 1.0f, 1.0f));
                 if (i == dd.Value) RoundRect(it.M, { a.x, a.y + 6.0f }, { a.x + 3.0f, b.y - 6.0f }, 1.5f, glm::vec4(0.26f, 0.59f, 0.98f, 1.0f));
-                DrawTextBlock(glm::translate(it.M, glm::vec3(a.x + 10.0f, a.y, 0)), { b.x - a.x - 14.0f, rowH }, dd.Options[(size_t)i], "", dd.FontSize,
+                DrawTextBlock(glm::translate(it.M, glm::vec3(a.x + 10.0f, a.y, 0)), { b.x - a.x - 14.0f, rowH },
+                              dd.AutoTranslate ? Localization::Translate(dd.Options[(size_t)i]) : dd.Options[(size_t)i], "", dd.FontSize,
                               glm::vec4(0.12f, 0.12f, 0.14f, 1.0f), UITextAlignH::Left, UITextAlignV::Middle, false, 1.0f);
             }
         }

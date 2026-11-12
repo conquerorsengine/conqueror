@@ -328,6 +328,7 @@ namespace Conqueror
         glm::vec4 Color{ 1.0f, 1.0f, 1.0f, 1.0f };
         float FontSize = 1.0f;
         TextAlignment Alignment = TextAlignment::Left;
+        bool AutoTranslate = true;   // Text bir çeviri anahtarıysa etkin dildeki çevirisi çizilir (Project Settings > Localization)
         // TODO: Font reference
 
         TextRendererComponent() = default;

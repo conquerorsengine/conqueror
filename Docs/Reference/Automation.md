@@ -63,6 +63,7 @@ Descriptions are taken from the comments next to each command in the source (Tur
 | `key_down` | `key_down <key>` — hold a key (game input tests). |
 | `key_up` | `key_up <key>` — release a held key. |
 | `lighting` | Usage: `lighting generate\|expect_done\|asset\|default_params\|expect_value` |
+| `localization` | localization pot <yol> [en az kayıt]: çeviri şablonu üret (Project Settings > Localization > Generate POT) |
 | `log` | `log <text>` — write a line to the log and the result file. |
 | `material` | material assign <entity> <path.cqmat\|path.cqphysmat>   (Content Browser'dan nesneye bırakmakla aynı) material expect <entity> <path\|none> Usage: `material assign\|expect <entity> <path>` |
 | `material_bake` | material_bake [klasör=Assets/Materials]: sahnedeki gömülü (Instance) malzemeleri içerik bazında tekilleştirip .cqmat dosyalarına yazar ve Mesh Renderer'lara atar (eski sahne / şablon taşıma) |
@@ -119,7 +120,7 @@ Descriptions are taken from the comments next to each command in the source (Tur
 | `soundinfo` | soundinfo <varlık>: Audio Source'un çözülen ses varlığı değerleri Usage: `soundinfo <entity>` |
 | `sprite_atlas` | sprite_atlas pack <atlas> \| pack_all \| expect <doku> <in\|out>: görselin atlastan çizilip çizilmediği Usage: `sprite_atlas pack <atlas>\|pack_all\|expect <texture> <in\|out>` |
 | `sprite_editor` | sprite_editor open <path> \| slice grid <w> <h> \| slice count <c> <r> \| slice auto \| apply Usage: `sprite_editor open <path> \| slice ... \| apply` |
-| `stop` | content_drop <yol...>: dosya yöneticisinden bırakma (işletim sistemi olayıyla aynı yol) |
+| `stop` | localization pot <yol> [en az kayıt]: çeviri şablonu üret (Project Settings > Localization > Generate POT) |
 | `terrain` | terrain create [res] \| generate [seed] \| tool <raise\|smooth\|flatten\|noise\|paint\|none> \| stroke <x> <z> <seconds> [invert] \| autopaint Usage: `terrain create\|generate\|tool\|stroke\|autopaint\|expect_height` |
 | `testrunner` | testrunner open \| run_edit [metot] \| run_play [metot] \| expect <geçen> <kalan> Usage: `testrunner open\|run_edit\|run_play\|expect` |
 | `texture` | texture select <path> \| set <path> <key> <value> [<key> <value>...] (+ uygula) \| expect <path> <mips\|width\|height\|format\|filter\|memory_kb_below> <value> Usage: `texture select\|set\|expect <path> ...` |

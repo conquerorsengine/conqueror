@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "Core/Base/Base.h"
 #include "Core/Animation/Animator.h"
 
@@ -152,6 +154,26 @@ namespace Conqueror
         float Weight = 1.0f;
         std::string Root, Tip;
         uint64_t RootTarget = 0, TipTarget = 0;
+    };
+
+    // Godot SpringBoneSimulator3D (VRM spring bone): kökten uca kemik zinciri yay gibi sallanır — saç, kuyruk, kulak, etek, anten.
+    // Uçlar dünya uzayında Verlet ile ilerler (karakter koşunca savrulur): eylemsizlik (Drag ile sönümlenir), dinlenme pozuna dönüş
+    // (Stiffness), yerçekimi; kemik boyları korunur. Collider 1..4: Sphere / Capsule Collider'lı nesneler (kafa, omuz) içine girmez
+    struct SpringBoneComponent
+    {
+        float Weight = 1.0f;
+        std::string Root, Tip;
+        float Stiffness = 1.0f;              // dinlenme pozuna dönüş
+        float Drag = 0.4f;                   // 0 sönümsüz .. 1 hemen durur
+        float GravityPower = 0.0f;           // birim / s²
+        glm::vec3 GravityDirection{ 0.0f, -1.0f, 0.0f };
+        float Radius = 0.02f;                // eklem çarpışma yarıçapı
+        float TipLength = 0.1f;              // uç kemiğin ötesine sanal uzantı (Godot extend end bone): uç da sallanır
+        uint64_t Collider1 = 0, Collider2 = 0, Collider3 = 0, Collider4 = 0;
+        // Çalışma zamanı (dünya uzayı uçlar)
+        bool Initialized = false;
+        std::vector<glm::vec3> Current, Prev;
+        float Deflection = 0.0f;             // bilgi: uçların dinlenme pozundan en büyük sapması (birim)
     };
 
     namespace RigConstraints

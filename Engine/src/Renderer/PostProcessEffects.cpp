@@ -1,4 +1,5 @@
 #include "PostProcess.h"
+#include "Scene/FogVolume.h"
 #include "Core/Console/ConsoleVariables.h"
 #include "Core/Profiling/FrameProfiler.h"
 #include "Core/Logging/Log.h"
@@ -341,6 +342,20 @@ namespace Conqueror
                 shader->SetFloat("u_Ambient", std::max(settings.VolumetricFogAmbient, 0.0f));
                 shader->SetInt("u_Steps", 32);
                 shader->SetInt("u_UseShadows", shadowMap ? 1 : 0);
+                // Fog Volume: yerel yoğunluk hacimleri (birim uzaya dönüşüm + parametreler)
+                {
+                    const auto& volumes = FogVolumes::GetFrameVolumes();
+                    const int count = std::min((int)volumes.size(), FogVolumes::MaxVolumes);
+                    shader->SetInt("u_VolumeCount", count);
+                    for (int i = 0; i < count; ++i)
+                    {
+                        const std::string idx = "[" + std::to_string(i) + "]";
+                        shader->SetMat4("u_VolumeToUnit" + idx, volumes[(size_t)i].WorldToUnit);
+                        shader->SetFloat4("u_VolumeParams" + idx, volumes[(size_t)i].Params);
+                        shader->SetFloat4("u_VolumeAlbedo" + idx, volumes[(size_t)i].Albedo);
+                        shader->SetFloat4("u_VolumeEmission" + idx, volumes[(size_t)i].Emission);
+                    }
+                }
                 shader->SetFloat("u_Time", time);
                 BindTexture(0, depth);
                 BindTexture(1, shadowMap);

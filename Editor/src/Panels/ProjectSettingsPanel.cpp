@@ -36,6 +36,7 @@ namespace Conqueror::Editor
             { "Physics", ICON_FA_CUBES_STACKED },
             { "Physics 2D", ICON_FA_SHAPES },
             { "Navigation", ICON_FA_MAP },
+            { "Localization", ICON_FA_LANGUAGE },
             { "Time", ICON_FA_CLOCK },
             { "Tags & Layers", ICON_FA_TAGS },
             { "Editor", ICON_FA_PEN_TO_SQUARE },
@@ -157,6 +158,7 @@ namespace Conqueror::Editor
         else if (m_Page == "Audio") DrawAudio();
         else if (m_Page == "Input") DrawInput();
         else if (m_Page == "Navigation") DrawNavigation();
+        else if (m_Page == "Localization") DrawLocalization();
         else if (m_Page == "Editor") DrawEditorSettings();
         else if (m_Page == "Script Execution Order") DrawScriptOrder();
         ImGui::EndChild();

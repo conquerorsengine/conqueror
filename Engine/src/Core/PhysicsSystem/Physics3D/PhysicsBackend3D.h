@@ -286,6 +286,21 @@ namespace Conqueror::Physics3D
         virtual bool SphereCast(const glm::vec3& origin, float radius, const glm::vec3& direction, float maxDistance, const QueryFilter& filter, RaycastHit& hit) const = 0;
         virtual void OverlapSphere(const glm::vec3& center, float radius, const QueryFilter& filter, std::vector<uint32_t>& entities) const = 0;
         virtual void OverlapBox(const glm::vec3& center, const glm::vec3& halfExtents, const glm::quat& rotation, const QueryFilter& filter, std::vector<uint32_t>& entities) const = 0;
+        // Şekil süpürme (Godot ShapeCast3D): küre (radius) / kutu (halfExtents) / kapsül (radius, halfHeight: silindir yarısı, Y ekseni)
+        // rotation ile origin'den direction * maxDistance boyunca; çarpılanlar yakından uzağa (başta iç içe olanlar uzaklık 0).
+        // Varsayılan: kuşatan küreyle en yakın tek isabet (arka uç kendi şekilleriyle geçersiz kılar)
+        enum class CastShape : int { Sphere = 0, Box, Capsule };
+        virtual void ShapeCastAll(CastShape shape, const glm::vec3& halfExtents, float radius, float halfHeight, const glm::quat& rotation,
+                                  const glm::vec3& origin, const glm::vec3& direction, float maxDistance, const QueryFilter& filter,
+                                  std::vector<RaycastHit>& hits, int maxResults) const
+        {
+            (void)rotation; (void)maxResults;
+            hits.clear();
+            RaycastHit h;
+            const float r = shape == CastShape::Sphere ? radius : shape == CastShape::Capsule ? radius + halfHeight : glm::length(halfExtents);
+            if (SphereCast(origin, r, direction, maxDistance, filter, h))
+                hits.push_back(h);
+        }
 
         // Son Step'ten bu yana biriken temas olayları (ana iş parçacığında)
         virtual void DrainContactEvents(std::vector<ContactEvent>& events) = 0;

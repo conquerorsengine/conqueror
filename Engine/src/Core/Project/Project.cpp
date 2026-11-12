@@ -1,4 +1,5 @@
 #include "Project.h"
+#include "Core/Localization/Localization.h"
 #include "Core/Console/ConsoleVariables.h"
 #include "Scripting/ScriptEngine.h"
 #include "Core/Audio/AudioEngine.h"
@@ -54,6 +55,7 @@ namespace Conqueror {
             
             ScriptEngine::Init();
             ConsoleSystem::OnProjectLoaded(s_ActiveProject->m_ProjectDirectory);
+            Localization::Reload();   // çeviri dosyaları (proje göreli)
             
             // AudioEngine could be notified here
         }
@@ -80,6 +82,7 @@ namespace Conqueror {
 
             ScriptEngine::Init();
             ConsoleSystem::OnProjectLoaded(s_ActiveProject->m_ProjectDirectory);
+            Localization::Reload();
         }
     }
 }

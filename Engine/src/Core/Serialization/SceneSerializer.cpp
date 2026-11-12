@@ -706,7 +706,7 @@ namespace Conqueror
             out << YAML::Key << "UITextComponent" << YAML::BeginMap;
             CQ_O(c, Text); out << YAML::Key << "FontPath" << YAML::Value << ToSerializablePath(c.FontPath); CQ_O(c, ColorGradient); CQ_O(c, FontSize); CQ_O(c, Color);
             CQ_OE(c, AlignH); CQ_OE(c, AlignV); CQ_O(c, WordWrap); CQ_O(c, BestFit); CQ_O(c, MinSize); CQ_O(c, MaxSize); CQ_O(c, LineSpacing);
-            CQ_O(c, Outline); CQ_O(c, OutlineColor); CQ_O(c, Shadow); CQ_O(c, ShadowOffset); CQ_O(c, ShadowColor); CQ_O(c, RaycastTarget); CQ_O(c, RichText);
+            CQ_O(c, Outline); CQ_O(c, OutlineColor); CQ_O(c, Shadow); CQ_O(c, ShadowOffset); CQ_O(c, ShadowColor); CQ_O(c, RaycastTarget); CQ_O(c, RichText); CQ_O(c, AutoTranslate);
             out << YAML::EndMap;
         }
         if (entity.HasComponent<UIButtonComponent>())
@@ -745,7 +745,7 @@ namespace Conqueror
             out << YAML::Key << "UIDropdownComponent" << YAML::BeginMap;
             SerializeSelectable(out, c.Selectable);
             out << YAML::Key << "Options" << YAML::Value << YAML::Flow << c.Options;
-            CQ_O(c, Value); CQ_O(c, FontSize); CQ_O(c, OnValueChanged);
+            CQ_O(c, Value); CQ_O(c, FontSize); CQ_O(c, OnValueChanged); CQ_O(c, AutoTranslate);
             out << YAML::EndMap;
         }
         if (entity.HasComponent<UIScrollRectComponent>())
@@ -789,7 +789,7 @@ namespace Conqueror
             CQ_I(n, c, FontSize, float); CQ_I(n, c, Color, glm::vec4); CQ_IE(n, c, AlignH, UITextAlignH); CQ_IE(n, c, AlignV, UITextAlignV);
             CQ_I(n, c, WordWrap, bool); CQ_I(n, c, BestFit, bool); CQ_I(n, c, MinSize, float); CQ_I(n, c, MaxSize, float); CQ_I(n, c, LineSpacing, float);
             CQ_I(n, c, Outline, bool); CQ_I(n, c, OutlineColor, glm::vec4); CQ_I(n, c, Shadow, bool); CQ_I(n, c, ShadowOffset, glm::vec2);
-            CQ_I(n, c, ShadowColor, glm::vec4); CQ_I(n, c, RaycastTarget, bool); CQ_I(n, c, RichText, bool);
+            CQ_I(n, c, ShadowColor, glm::vec4); CQ_I(n, c, RaycastTarget, bool); CQ_I(n, c, RichText, bool); CQ_I(n, c, AutoTranslate, bool);
         }
         if (auto n = entity["UIButtonComponent"])
         {
@@ -820,7 +820,7 @@ namespace Conqueror
             auto& c = e.AddComponent<UIDropdownComponent>();
             DeserializeSelectable(n["Selectable"], c.Selectable);
             if (n["Options"]) c.Options = n["Options"].as<std::vector<std::string>>();
-            CQ_I(n, c, Value, int); CQ_I(n, c, FontSize, float); CQ_I(n, c, OnValueChanged, std::string);
+            CQ_I(n, c, Value, int); CQ_I(n, c, FontSize, float); CQ_I(n, c, OnValueChanged, std::string); CQ_I(n, c, AutoTranslate, bool);
         }
         if (auto n = entity["UIScrollRectComponent"])
         {
@@ -1405,6 +1405,8 @@ namespace Conqueror
             out << YAML::Key << "FontSize" << YAML::Value << textRenderer.FontSize;
             if (textRenderer.Alignment != TextAlignment::Left)
                 out << YAML::Key << "Alignment" << YAML::Value << (int)textRenderer.Alignment;
+            if (!textRenderer.AutoTranslate)
+                out << YAML::Key << "AutoTranslate" << YAML::Value << false;
 
             out << YAML::EndMap;
         }
@@ -2533,6 +2535,8 @@ namespace Conqueror
                     trc.FontSize = textRendererComponent["FontSize"].as<float>();
                     if (auto al = textRendererComponent["Alignment"])
                         trc.Alignment = (TextAlignment)std::clamp(al.as<int>(), 0, 2);
+                    if (auto at = textRendererComponent["AutoTranslate"])
+                        trc.AutoTranslate = at.as<bool>();
                 }
 
                 if (auto n = entity["ReflectionProbeComponent"])

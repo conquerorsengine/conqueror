@@ -4,6 +4,7 @@
 #include "Scene/Foliage.h"
 #include "Scene/AnimationAssets.h"
 #include "Renderer/RayTracing/RayTracedGI.h"
+#include "Scene/FogVolume.h"
 #include "Renderer/Utilities/Renderer3D/ClusterRenderer.h"
 #include "Renderer/LightProfile.h"
 #include "Renderer/ExtraTextures.h"
@@ -13,6 +14,7 @@
 #include "Scene/MeshRendererMaterial.h"
 #include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
 #include "Scene.h"
+#include "Core/Localization/Localization.h"
 #include "Core/Animation/PropertyAnimation.h"
 #include "Scripting/NativeScriptCompiler.h"
 #include "Core/Console/ConsoleVariables.h"
@@ -273,6 +275,7 @@ namespace Conqueror
                 // Sabit adım kuvvetleri (her fizik adımına uygulanır): yüzdürme, Physics Volume, radyal kuvvet; sonra betiklerin FixedUpdate'i
                 WaterBodies::FixedUpdate(*this, dt);
                 WorldActors::FixedUpdate(*this, dt);
+                GodotNodes::FixedUpdate(*this, dt);   // Process Callback = Physics zamanlayıcıları
                 InvokeScriptsFixedUpdate(dt);
             };
             m_PhysicsWorld3D->OnJointBreak = [this](uint32_t entity, float force) {
@@ -394,7 +397,7 @@ namespace Conqueror
         auto view = m_Registry.view<ConquerorScriptComponent>();
         for (auto entity : view)
         {
-            if (!IsEntityActive(entity))
+            if (!IsEntityActive(entity) || IsProcessDisabled(entity))
                 continue;
             for (auto& script : view.get<ConquerorScriptComponent>(entity).Scripts)
                 if (script.Instance && script.Runtime)
@@ -1762,7 +1765,7 @@ namespace Conqueror
                         }
                     }
                     
-                    TextRenderer::DrawText(text->Text, textTransform, text->FontSize / 100.0f, finalTextColor, (int)text->Alignment);
+                    TextRenderer::DrawText(text->AutoTranslate ? Localization::Translate(text->Text) : text->Text, textTransform, text->FontSize / 100.0f, finalTextColor, (int)text->Alignment);
                 }
             }
 
@@ -2495,7 +2498,7 @@ namespace Conqueror
                     }
                 }
                 
-                TextRenderer::DrawText(text->Text, textTransform, 
+                TextRenderer::DrawText(text->AutoTranslate ? Localization::Translate(text->Text) : text->Text, textTransform, 
                                        text->FontSize / 100.0f, finalTextColor, (int)text->Alignment);
             }
         }
@@ -3080,6 +3083,9 @@ namespace Conqueror
         const bool giView = !m_CapturingProbes && !m_RenderingPlanar;
         if (giView)
             RayTracedGI::Update(*this, camera, env.Settings.Post, s_GISecondaryView ? 1u : (editorView ? 0u : 1u), !s_GISecondaryView);
+        // Fog Volume: bu görünümün hacimsel sis geçişi (son işlem) yerel yoğunlukları okur
+        if (giView)
+            FogVolumes::Collect(*this);
         {
             CQ_PROFILE_SAMPLE("Render.Sky", Rendering);
             CQ_PROFILE_GPU("Sky");
@@ -3347,6 +3353,8 @@ namespace Conqueror
                 ps.RT->Started = false;
                 continue;
             }
+            if (!editorPreviewOnly && IsProcessDisabled(entity))
+                continue;   // Visible On Screen Enabler: ekran dışında benzetim durur
             ParticleSystem::Update(ps, transform.WorldTransform, dt);
             if (!editorPreviewOnly && ps.StopAction != 0 && ParticleSystem::IsFinished(ps))
                 stopped.emplace_back(entity, ps.StopAction);
@@ -3718,6 +3726,11 @@ namespace Conqueror
     CQ_PLAIN_ADDED(RayCastComponent)
     CQ_PLAIN_ADDED(VisibleOnScreenNotifierComponent)
     CQ_PLAIN_ADDED(Parallax2DComponent)
+    CQ_PLAIN_ADDED(TimerComponent)
+    CQ_PLAIN_ADDED(ShapeCastComponent)
+    CQ_PLAIN_ADDED(VisibleOnScreenEnablerComponent)
+    CQ_PLAIN_ADDED(CharacterBody2DComponent)
+    CQ_PLAIN_ADDED(FogVolumeComponent)
     CQ_PLAIN_ADDED(RenderTargetComponent)
     CQ_PLAIN_ADDED(FullScreenPassComponent)
     CQ_PLAIN_ADDED(SignalReceiverComponent)
@@ -4003,6 +4016,31 @@ namespace Conqueror
             return Entity{ it->second, const_cast<Scene*>(this) };
         
         return Entity{}; // Null entity
+    }
+
+    void Scene::SetProcessDisabled(uint32_t entity, bool disabled)
+    {
+        if (disabled)
+            m_ProcessDisabled.insert(entity);
+        else
+            m_ProcessDisabled.erase(entity);
+    }
+
+    bool Scene::IsProcessDisabled(entt::entity entity) const
+    {
+        if (m_ProcessDisabled.empty())
+            return false;
+        entt::entity current = entity;
+        for (int depth = 0; depth < 64; ++depth)
+        {
+            if (m_ProcessDisabled.count((uint32_t)current))
+                return true;
+            auto it = m_EntityParent.find(current);
+            if (it == m_EntityParent.end())
+                return false;
+            current = it->second;
+        }
+        return false;
     }
 
     bool Scene::IsEntityActive(entt::entity entity) const
@@ -5491,6 +5529,8 @@ namespace Conqueror
         auto view = m_Registry.view<AnimatorComponent, MeshRendererComponent>();
         for (auto entity : view)
         {
+            if (IsProcessDisabled(entity))
+                continue;   // Visible On Screen Enabler: ekran dışında poz donar
             auto& anim = view.get<AnimatorComponent>(entity);
             auto& mc = view.get<MeshRendererComponent>(entity);
             if (!mc.ModelData || !mc.ModelData->IsSkinned || !mc.ModelData->SkeletonData || mc.ModelData->Animations.empty())

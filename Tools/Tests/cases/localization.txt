@@ -1,0 +1,67 @@
+# template: empty
+# Yerelleştirme (madde 25, Godot TranslationServer): CSV ve PO çevirileri Project Settings > Localization'a eklenir; Tr / TrN bağlam ve çoğul
+# kuralıyla çevirir, en yakın dil / yedek dil seçilir. UI Text (Auto Translate) anahtarın çevirisini çizer ve dil değişince hemen güncellenir;
+# Auto Translate kapalıyken anahtar olduğu gibi kalır. Sahte yerelleştirme metinleri dönüştürür. Generate POT sahnedeki ve betikteki metinleri yazar
+wait 40
+content_drop "{dir}/assets/loc/game.csv" "{dir}/assets/loc/de.po" "{dir}/assets/loc/ru.po"
+wait 10
+projsettings set localization.translations Assets/game.csv,Assets/de.po,Assets/ru.po
+projsettings set localization.locale en
+projsettings expect localization.locale en
+run_cqs_file "{dir}/checks/loc_basic.cqs"
+expect_entities 1 Loc_OK
+# UI Text: anahtar TITLE (en: "Hi", tr: çok uzun W satırı)
+ui create Canvas UICanvas
+ui create Text Title 0 0
+comp set Title UITextComponent Text TITLE
+comp set Title UITextComponent FontSize 64
+comp set Title RectTransformComponent SizeDelta 1600 120
+focus Game
+wait 20
+game_region_change mark 0.15 0.40 0.85 0.60
+cqs SetLocale('tr')
+wait 10
+game_region_change expect 0.15 0.40 0.85 0.60 >2
+# Auto Translate kapalı: anahtarın kendisi çizilir, dil değişince değişmez
+comp set Title UITextComponent AutoTranslate false
+wait 10
+game_region_change mark 0.15 0.40 0.85 0.60
+cqs SetLocale('en')
+wait 10
+game_region_change expect 0.15 0.40 0.85 0.60 <0.5
+comp set Title UITextComponent AutoTranslate true
+# Sahte yerelleştirme
+projsettings set localization.pseudo 1
+run_cqs_file "{dir}/checks/loc_pseudo.cqs"
+expect_entities 1 Pseudo_OK
+projsettings set localization.pseudo 0
+# Remaps: Play'de etkin; tr dilinde kırmızı bayrak yerine mavisi yüklenir, Play bitince asıl doku geri gelir
+content_drop "{dir}/assets/loc/flag_red.png" "{dir}/assets/loc/flag_blue.png"
+wait 10
+ui create Image Flag 0 250
+comp set Flag RectTransformComponent SizeDelta 300 200
+comp set Flag UIImageComponent Texture Assets/flag_red.png
+projsettings set localization.remap Assets/flag_red.png=tr:Assets/flag_blue.png
+ui create Dropdown Choice 0 -250
+wait 10
+game_region 0.46 0.70 0.54 0.76 r mean >150
+game_region 0.46 0.70 0.54 0.76 b mean <90
+play
+wait 20
+# Dropdown seçenekleri (Auto Translate): seçili seçenek etiketi dile göre değişir
+cqs UISetDropdownOptions('Choice', ['OPT_A', 'OPT_B'])
+wait 10
+game_region_change mark 0.40 0.23 0.60 0.31
+cqs SetLocale('tr')
+wait 10
+game_region_change expect 0.40 0.23 0.60 0.31 >0.5
+game_region 0.46 0.70 0.54 0.76 b mean >150
+game_region 0.46 0.70 0.54 0.76 r mean <90
+stop
+wait 10
+game_region 0.46 0.70 0.54 0.76 r mean >150
+game_region 0.46 0.70 0.54 0.76 b mean <90
+# POT: sahnedeki TITLE metni
+save_scene_as Assets/Scenes/LocTest.cqscene
+localization pot Assets/Localization/messages.pot 1
+quit

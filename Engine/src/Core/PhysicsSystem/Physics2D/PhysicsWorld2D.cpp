@@ -12,6 +12,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <algorithm>
+#include <cfloat>
 #include <cmath>
 #include <functional>
 
@@ -1810,6 +1811,147 @@ namespace Conqueror
         hit = ctx.Best;
         hit.Distance = ctx.BestFraction * maxDistance;
         return true;
+    }
+
+    namespace
+    {
+        struct MoverContext
+        {
+            uint32_t Self = PhysicsWorld2D::NoEntity;
+            const std::unordered_map<uint32_t, uint32_t>* Owners = nullptr;
+            std::vector<b2CollisionPlane>* Planes = nullptr;
+            std::vector<PhysicsWorld2D::MoverPlane2D>* Out = nullptr;
+        };
+
+        bool MoverPlaneCallback(b2ShapeId shape, const b2PlaneResult* result, void* context)
+        {
+            auto* ctx = static_cast<MoverContext*>(context);
+            if (!result->hit || b2Shape_IsSensor(shape))
+                return true;
+            const uint32_t se = DecodeEntity(b2Shape_GetUserData(shape));
+            auto it = ctx->Owners->find(se);
+            const uint32_t owner = it != ctx->Owners->end() ? it->second : se;
+            if (owner == ctx->Self || se == ctx->Self)
+                return true;   // kendi gövdesi
+            b2CollisionPlane p;
+            p.plane = result->plane;
+            p.pushLimit = FLT_MAX;
+            p.push = 0.0f;
+            p.clipVelocity = true;
+            ctx->Planes->push_back(p);
+            if (ctx->Out)
+            {
+                PhysicsWorld2D::MoverPlane2D m;
+                m.Normal = glm::vec2(result->plane.normal.x, result->plane.normal.y);
+                m.Offset = result->plane.offset;
+                m.Point = glm::vec2(result->point.x, result->point.y);
+                m.Entity = owner;
+                ctx->Out->push_back(m);
+            }
+            return ctx->Planes->size() < 64;
+        }
+    }
+
+    glm::vec2 PhysicsWorld2D::MoveCapsule(uint32_t self, const glm::vec2& c1, const glm::vec2& c2, float radius, const glm::vec2& motion,
+                                          uint32_t layerMask, std::vector<MoverPlane2D>& planes, int maxIterations)
+    {
+        planes.clear();
+        if (B2_IS_NULL(m_WorldId))
+            return motion;
+        ProcessDirty();
+        b2QueryFilter filter = b2DefaultQueryFilter();
+        filter.maskBits = layerMask;
+        std::vector<b2CollisionPlane> solverPlanes;
+        glm::vec2 offset(0.0f);               // şu ana dek gidilen
+        const glm::vec2 target = motion;      // başlangıca göre hedef
+        const float tolerance = 0.001f;
+        for (int iteration = 0; iteration < std::max(1, maxIterations); ++iteration)
+        {
+            solverPlanes.clear();
+            b2Capsule mover{ B(c1 + offset), B(c2 + offset), std::max(radius, 0.001f) };
+            MoverContext ctx{ self, &m_ShapeOwner, &solverPlanes, nullptr };
+            b2World_CollideMover(m_WorldId, &mover, filter, MoverPlaneCallback, &ctx);
+            const b2PlaneSolverResult solved = b2SolvePlanes(B(target - offset), solverPlanes.data(), (int)solverPlanes.size());
+            const glm::vec2 translation = G(solved.translation);
+            // Süpürme: kendi şekli hariç ilk değme (kapsül vekili)
+            float fraction = 1.0f;
+            const float len = glm::length(translation);
+            if (len > 1e-6f)
+            {
+                const b2Vec2 pts[2] = { mover.center1, mover.center2 };
+                const b2ShapeProxy proxy = b2MakeProxy(pts, 2, mover.radius);
+                std::vector<std::pair<float, RaycastHit2D>> all;
+                RayContext rc{ self, false, &m_ShapeOwner, &all };
+                rc.Closest = false;
+                b2World_CastShape(m_WorldId, &proxy, solved.translation, filter, RayCallback, &rc);
+                for (const auto& [f, h] : all)
+                {
+                    // Başta değen (çözücünün zaten hesaba kattığı) düzlemler süpürmeyi durdurmaz: yalnız ileri değmeler
+                    if (f <= 0.0f)
+                        continue;
+                    fraction = std::min(fraction, f);
+                }
+                // Değmeden biraz önce dur (sonraki turda düzlem olarak çözülür)
+                if (fraction < 1.0f)
+                    fraction = std::max(0.0f, fraction - tolerance / len);
+            }
+            const glm::vec2 delta = translation * fraction;
+            offset += delta;
+            if (glm::dot(delta, delta) < tolerance * tolerance)
+                break;
+        }
+        // Son konumdaki temaslar (zemin / duvar / tavan sınıflaması ve hız kırpma)
+        solverPlanes.clear();
+        b2Capsule mover{ B(c1 + offset), B(c2 + offset), std::max(radius, 0.001f) };
+        MoverContext ctx{ self, &m_ShapeOwner, &solverPlanes, &planes };
+        b2World_CollideMover(m_WorldId, &mover, filter, MoverPlaneCallback, &ctx);
+        return offset;
+    }
+
+    glm::vec2 PhysicsWorld2D::ClipVelocity(const glm::vec2& velocity, const std::vector<MoverPlane2D>& planes)
+    {
+        glm::vec2 v = velocity;
+        // b2ClipVector: yalnız yüzeye giren bileşen silinir (temas eden düzlemler)
+        for (const auto& p : planes)
+        {
+            if (p.Offset > 0.02f)
+                continue;   // yalnız değen düzlemler
+            const float d = glm::dot(v, p.Normal);
+            if (d < 0.0f)
+                v -= d * p.Normal;
+        }
+        return v;
+    }
+
+    void PhysicsWorld2D::ShapeCastAll(const glm::vec2* points, int count, float radius, const glm::vec2& translation, std::vector<RaycastHit2D>& hits,
+                                      uint32_t layerMask, bool hitTriggers, int maxResults)
+    {
+        hits.clear();
+        if (B2_IS_NULL(m_WorldId) || !points || count < 1 || count > B2_MAX_POLYGON_VERTICES)
+            return;
+        ProcessDirty();
+        b2Vec2 pts[B2_MAX_POLYGON_VERTICES];
+        for (int i = 0; i < count; ++i)
+            pts[i] = B(points[i]);
+        const b2ShapeProxy proxy = b2MakeProxy(pts, count, std::max(radius, 0.0f));
+        b2QueryFilter filter = b2DefaultQueryFilter();
+        filter.maskBits = layerMask;
+        std::vector<std::pair<float, RaycastHit2D>> all;
+        RayContext ctx{ NoEntity, hitTriggers, &m_ShapeOwner, &all };
+        ctx.Closest = false;
+        b2World_CastShape(m_WorldId, &proxy, B(translation), filter, RayCallback, &ctx);
+        std::sort(all.begin(), all.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
+        const float length = glm::length(translation);
+        std::set<uint32_t> seen;
+        for (auto& [fraction, h] : all)
+        {
+            if ((int)hits.size() >= std::max(1, maxResults))
+                break;
+            if (!seen.insert(h.Entity).second)
+                continue;
+            h.Distance = fraction * length;
+            hits.push_back(h);
+        }
     }
 
     void PhysicsWorld2D::RaycastAll(const glm::vec2& origin, const glm::vec2& direction, float maxDistance, std::vector<RaycastHit2D>& hits, uint32_t layerMask)

@@ -241,6 +241,7 @@ namespace Conqueror
             Gather<TwistCorrectionComponent>(scene);
             Gather<BlendConstraintComponent>(scene);
             Gather<TwistChainConstraintComponent>(scene);
+            Gather<SpringBoneComponent>(scene);
             // Unity gibi hiyerarşi (oluşturma) sırasıyla
             for (auto& [owner, list] : s_ByOwner)
                 std::sort(list.begin(), list.end(), [](const ConstraintRef& a, const ConstraintRef& b) { return (uint32_t)a.E < (uint32_t)b.E; });
@@ -374,6 +375,111 @@ namespace Conqueror
                     // Eklemleri sırayla yeni konumlara çevir
                     for (size_t k = 0; k + 1 < count; ++k)
                         s.Rotate(joints[k], s.Pos(joints[k + 1]) - s.Pos(joints[k]), P[k + 1] - s.Pos(joints[k]), 1.0f);
+                }
+                else if (auto* sb = reg.try_get<SpringBoneComponent>(ref.E))
+                {
+                    const int root = FindNode(nodes, sb->Root), tip = FindNode(nodes, sb->Tip);
+                    if (root < 0 || tip < 0 || !IsAncestor(nodes, root, tip))
+                        continue;
+                    std::vector<int> joints;
+                    for (int n = tip; n >= 0; n = nodes[(size_t)n].Parent)
+                    {
+                        joints.push_back(n);
+                        if (n == root) break;
+                    }
+                    std::reverse(joints.begin(), joints.end());
+                    const size_t count = joints.size();
+                    // Uçlar: her eklemin çocuğu (son eklem için sanal uzantı); dünya uzayında
+                    auto worldOf = [&](const glm::vec3& p) { return glm::vec3(worldFromNode * glm::vec4(p, 1.0f)); };
+                    auto nodeOf = [&](const glm::vec3& p) { return glm::vec3(nodeFromWorld * glm::vec4(p, 1.0f)); };
+                    auto restTail = [&](size_t k) -> glm::vec3 {
+                        if (k + 1 < count)
+                            return worldOf(s.Pos(joints[k + 1]));
+                        // Uç kemik: üst kemikten gelen yönde TipLength kadar
+                        const glm::vec3 head = s.Pos(joints[k]);
+                        glm::vec3 dir = count > 1 ? head - s.Pos(joints[k - 1]) : glm::vec3(0.0f, 1.0f, 0.0f);
+                        if (glm::length(dir) < 1e-6f) dir = glm::vec3(0.0f, 1.0f, 0.0f);
+                        const glm::vec3 nodeTail = head + glm::normalize(dir) * (std::max(sb->TipLength, 0.0f) / std::max(glm::length(glm::vec3(worldFromNode[0])), 1e-6f));
+                        return worldOf(nodeTail);
+                    };
+                    const size_t segments = sb->TipLength > 0.0f ? count : count - 1;
+                    if (segments == 0)
+                        continue;
+                    if (!sb->Initialized || sb->Current.size() != segments)
+                    {
+                        sb->Current.resize(segments);
+                        sb->Prev.resize(segments);
+                        for (size_t k = 0; k < segments; ++k)
+                            sb->Current[k] = sb->Prev[k] = restTail(k);
+                        sb->Initialized = true;
+                    }
+                    // Çarpıştırıcılar (dünya): küre ya da kapsül (segment + yarıçap)
+                    struct Col { glm::vec3 A, B; float R; };
+                    std::vector<Col> cols;
+                    for (uint64_t id : { sb->Collider1, sb->Collider2, sb->Collider3, sb->Collider4 })
+                    {
+                        if (!id) continue;
+                        Entity ce = scene.FindEntityByUUID(id);
+                        if (!ce) continue;
+                        const glm::mat4 cw = ce.GetComponent<TransformComponent>().WorldTransform;
+                        const float sc = std::max({ glm::length(glm::vec3(cw[0])), glm::length(glm::vec3(cw[1])), glm::length(glm::vec3(cw[2])) });
+                        if (ce.HasComponent<CapsuleColliderComponent>())
+                        {
+                            const auto& c = ce.GetComponent<CapsuleColliderComponent>();
+                            glm::vec3 axis(0.0f);
+                            axis[std::clamp(c.Direction, 0, 2)] = 1.0f;
+                            const float half = std::max(c.Height * 0.5f - c.Radius, 0.0f);
+                            cols.push_back({ glm::vec3(cw * glm::vec4(c.Offset - axis * half, 1.0f)), glm::vec3(cw * glm::vec4(c.Offset + axis * half, 1.0f)), c.Radius * sc });
+                        }
+                        else if (ce.HasComponent<SphereColliderComponent>())
+                        {
+                            const auto& c = ce.GetComponent<SphereColliderComponent>();
+                            const glm::vec3 p = glm::vec3(cw * glm::vec4(c.Offset, 1.0f));
+                            cols.push_back({ p, p, c.Radius * sc });
+                        }
+                        else
+                            cols.push_back({ glm::vec3(cw[3]), glm::vec3(cw[3]), 0.5f * sc });
+                    }
+                    const float dt = std::min(std::max(s_Dt, 0.0f), 0.05f);
+                    const float drag = std::clamp(sb->Drag, 0.0f, 1.0f);
+                    const glm::vec3 gravity = (glm::length(sb->GravityDirection) > 1e-6f ? glm::normalize(sb->GravityDirection) : glm::vec3(0.0f, -1.0f, 0.0f))
+                                            * sb->GravityPower;
+                    sb->Deflection = 0.0f;
+                    for (size_t k = 0; k < segments; ++k)
+                    {
+                        const glm::vec3 head = worldOf(s.Pos(joints[k]));   // üst eklemler döndükçe güncel
+                        const glm::vec3 rest = restTail(k);
+                        const float len = glm::length(rest - head);
+                        if (len < 1e-6f)
+                            continue;
+                        const glm::vec3 restDir = (rest - head) / len;
+                        // Işınlanma (karakter uzağa taşındı): uç dinlenme pozundan başlar (savrulmaz)
+                        if (glm::length(sb->Current[k] - rest) > len * 5.0f)
+                            sb->Current[k] = sb->Prev[k] = rest;
+                        // VRM: eylemsizlik + dinlenme yönüne yay + dış kuvvet (Verlet)
+                        const glm::vec3 inertia = (sb->Current[k] - sb->Prev[k]) * (1.0f - drag);
+                        glm::vec3 next = sb->Current[k] + inertia + restDir * (std::max(sb->Stiffness, 0.0f) * dt * len * 10.0f) + gravity * dt * dt;
+                        next = head + (glm::length(next - head) > 1e-6f ? glm::normalize(next - head) : restDir) * len;
+                        for (const Col& c : cols)
+                        {
+                            const glm::vec3 ab = c.B - c.A;
+                            const float t = glm::dot(ab, ab) > 1e-12f ? std::clamp(glm::dot(next - c.A, ab) / glm::dot(ab, ab), 0.0f, 1.0f) : 0.0f;
+                            const glm::vec3 closest = c.A + ab * t;
+                            const glm::vec3 d = next - closest;
+                            const float minDist = c.R + std::max(sb->Radius, 0.0f);
+                            if (glm::dot(d, d) < minDist * minDist)
+                            {
+                                next = closest + (glm::length(d) > 1e-6f ? glm::normalize(d) : restDir) * minDist;
+                                next = head + glm::normalize(next - head) * len;
+                            }
+                        }
+                        sb->Prev[k] = sb->Current[k];
+                        sb->Current[k] = next;
+                        sb->Deflection = std::max(sb->Deflection, glm::length(next - rest));
+                        // Kemiği yeni uca çevir (ağırlıkla; düğüm uzayında)
+                        const glm::vec3 hn = s.Pos(joints[k]);
+                        s.Rotate(joints[k], nodeOf(rest) - hn, nodeOf(next) - hn, w);
+                    }
                 }
                 else if (auto* damp = reg.try_get<DampedTransformComponent>(ref.E))
                 {
@@ -622,6 +728,7 @@ namespace Conqueror
     template<> void Scene::OnComponentAdded<TwistCorrectionComponent>(Entity, TwistCorrectionComponent&) {}
     template<> void Scene::OnComponentAdded<BlendConstraintComponent>(Entity, BlendConstraintComponent&) {}
     template<> void Scene::OnComponentAdded<TwistChainConstraintComponent>(Entity, TwistChainConstraintComponent&) {}
+    template<> void Scene::OnComponentAdded<SpringBoneComponent>(Entity, SpringBoneComponent&) {}
 
     void RegisterRigComponents()
     {
@@ -663,6 +770,27 @@ namespace Conqueror
             .Field("Target", "Target", &C::Target)
             .Field("MaxIterations", "Max Iterations", &C::MaxIterations).Range(1.0f, 100.0f, 1.0f)
             .Field("Tolerance", "Tolerance", &C::Tolerance).Range(0.00001f, 1.0f, 0.0001f);
+
+        using SB = SpringBoneComponent;
+        ComponentDef<SB>("Spring Bone", "SpringBoneComponent", "Animation Rigging", ICON_FA_WAVE_SQUARE)
+            .Describe("Godot SpringBoneSimulator3D: the bone chain from Root to Tip swings like a spring - hair, tails, ears, skirts, "
+                      "antennas. It lags behind when the character moves (Drag damps it), springs back to the animated pose (Stiffness), "
+                      "falls with Gravity and keeps the bone lengths. Colliders (objects with a Sphere or Capsule Collider: head, shoulders) "
+                      "push it out. Tip Length extends the last bone so the tip swings too.")
+            .Field("Weight", "Weight", &SB::Weight).Range(0.0f, 1.0f, 0.01f)
+            .Field("Root", "Root Bone", &SB::Root)
+            .Field("Tip", "Tip Bone", &SB::Tip)
+            .Field("Stiffness", "Stiffness", &SB::Stiffness).Range(0.0f, 10.0f, 0.01f)
+            .Field("Drag", "Drag", &SB::Drag).Range(0.0f, 1.0f, 0.01f)
+            .Field("GravityPower", "Gravity Power", &SB::GravityPower).Range(0.0f, 100.0f, 0.1f)
+            .Field("GravityDirection", "Gravity Direction", &SB::GravityDirection)
+            .Field("Radius", "Radius", &SB::Radius).Range(0.0f, 1.0f, 0.001f)
+            .Field("TipLength", "Tip Length", &SB::TipLength).Range(0.0f, 10.0f, 0.01f)
+            .Field("Collider1", "Collider 1", &SB::Collider1)
+            .Field("Collider2", "Collider 2", &SB::Collider2)
+            .Field("Collider3", "Collider 3", &SB::Collider3)
+            .Field("Collider4", "Collider 4", &SB::Collider4)
+            .Field("Deflection", "Deflection", &SB::Deflection).ReadOnly();
 
         using D = DampedTransformComponent;
         ComponentDef<D>("Damped Transform", "DampedTransformComponent", "Animation Rigging", ICON_FA_WIND)

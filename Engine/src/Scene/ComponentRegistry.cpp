@@ -149,6 +149,7 @@ namespace Conqueror
             RegisterCSGComponents();
             RegisterMultiMeshComponents();
             RegisterGodotNodeComponents();
+            RegisterFogVolumeComponents();
             RegisterRenderTargetComponents();
             RegisterSkeleton2DComponents();
             Building() = false;

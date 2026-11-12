@@ -1,3 +1,4 @@
+#include "Core/Localization/Localization.h"
 #include "RuntimeLayer.h"
 #ifdef __ANDROID__
     #include "Platform/Android/AndroidPlatform.h"
@@ -394,6 +395,7 @@ namespace Conqueror::Runtime
         }
 
         Project::SetActive(project);
+        Localization::SetRemapsActive(true);   // dile göre doku / ses / yazı tipi karşılıkları (Project Settings > Localization > Remaps)
 
         std::filesystem::path startScenePath = project->GetProjectDirectory() / project->GetConfig().StartScene;
         

@@ -874,6 +874,140 @@ namespace Conqueror::CQS
             Entity e = Target(argc > 0 ? args[0] : Value::MakeNull());
             return Value::MakeBool(scene && e && GodotNodes::ForceRayCast(*scene, (uint32_t)(entt::entity)e));
         }, -1);
+        // ================================================================ Shape Cast (Godot)
+        auto shapeCast = [](const Value& v) -> ShapeCastComponent* {
+            Entity e = Target(v);
+            return e && e.HasComponent<ShapeCastComponent>() ? &e.GetComponent<ShapeCastComponent>() : nullptr;
+        };
+        auto shapeResult = [shapeCast](int argc, Value* args) -> const ShapeCastComponent::Result* {
+            auto* sc = shapeCast(argc > 0 ? args[0] : Value::MakeNull());
+            const int i = argc > 1 ? (int)args[1].ToNumber() : 0;
+            return sc && i >= 0 && i < (int)sc->Results.size() ? &sc->Results[(size_t)i] : nullptr;
+        };
+        vm->DefineNative("ShapeCastIsColliding", [shapeCast](int argc, Value* args) -> Value {
+            auto* sc = shapeCast(argc > 0 ? args[0] : Value::MakeNull());
+            return Value::MakeBool(sc && sc->Colliding);
+        }, -1);
+        vm->DefineNative("ShapeCastGetCollisionCount", [shapeCast](int argc, Value* args) -> Value {
+            auto* sc = shapeCast(argc > 0 ? args[0] : Value::MakeNull());
+            return Value::MakeInt(sc ? sc->CollisionCount : 0);
+        }, -1);
+        vm->DefineNative("ShapeCastGetPoint", [shapeResult, vecMap](int argc, Value* args) -> Value {
+            const auto* r = shapeResult(argc, args);
+            return r ? vecMap(r->Point) : Value::MakeNull();
+        }, -1);
+        vm->DefineNative("ShapeCastGetNormal", [shapeResult, vecMap](int argc, Value* args) -> Value {
+            const auto* r = shapeResult(argc, args);
+            return r ? vecMap(r->Normal) : Value::MakeNull();
+        }, -1);
+        vm->DefineNative("ShapeCastGetCollider", [shapeResult](int argc, Value* args) -> Value {
+            const auto* r = shapeResult(argc, args);
+            return r ? Value::MakeInt((int64_t)r->Entity) : Value::MakeNull();
+        }, -1);
+        vm->DefineNative("ShapeCastGetSafeFraction", [shapeCast](int argc, Value* args) -> Value {
+            auto* sc = shapeCast(argc > 0 ? args[0] : Value::MakeNull());
+            return Value::MakeFloat(sc ? sc->SafeFraction : 1.0);
+        }, -1);
+        vm->DefineNative("ShapeCastSetTarget", [shapeCast](int argc, Value* args) -> Value {
+            auto* sc = shapeCast(argc > 0 ? args[0] : Value::MakeNull());
+            if (!sc || argc < 3) return Value::MakeBool(false);
+            sc->TargetPosition = glm::vec3(Num(argc, args, 1, 0.0f), Num(argc, args, 2, 0.0f), Num(argc, args, 3, 0.0f));
+            return Value::MakeBool(true);
+        }, -1);
+        vm->DefineNative("ShapeCastForceUpdate", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            Entity e = Target(argc > 0 ? args[0] : Value::MakeNull());
+            return Value::MakeBool(scene && e && GodotNodes::ForceShapeCast(*scene, (uint32_t)(entt::entity)e));
+        }, -1);
+
+        // ================================================================ Character Body 2D (Godot)
+        auto body2d = [](const Value& v) -> CharacterBody2DComponent* {
+            Entity e = Target(v);
+            return e && e.HasComponent<CharacterBody2DComponent>() ? &e.GetComponent<CharacterBody2DComponent>() : nullptr;
+        };
+        auto vec2Map = [](const glm::vec2& p) -> Value {
+            auto* m = new CQSMapObject();
+            m->Entries["x"] = Value::MakeFloat(p.x);
+            m->Entries["y"] = Value::MakeFloat(p.y);
+            return Value::MakeObject(m);
+        };
+        vm->DefineNative("CharacterBody2DMoveAndSlide", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            Entity e = Target(argc > 0 ? args[0] : Value::MakeNull());
+            const float dt = argc > 1 ? (float)args[1].ToNumber() : -1.0f;
+            return Value::MakeBool(scene && e && GodotNodes::MoveAndSlide2D(*scene, (uint32_t)(entt::entity)e, dt));
+        }, -1);
+        vm->DefineNative("CharacterBody2DSetVelocity", [body2d](int argc, Value* args) -> Value {
+            auto* cb = body2d(argc > 0 ? args[0] : Value::MakeNull());
+            if (!cb || argc < 3) return Value::MakeBool(false);
+            cb->Velocity = glm::vec2(Num(argc, args, 1, 0.0f), Num(argc, args, 2, 0.0f));
+            return Value::MakeBool(true);
+        }, -1);
+        vm->DefineNative("CharacterBody2DGetVelocity", [body2d, vec2Map](int argc, Value* args) -> Value {
+            auto* cb = body2d(argc > 0 ? args[0] : Value::MakeNull());
+            return cb ? vec2Map(cb->Velocity) : Value::MakeNull();
+        }, -1);
+        vm->DefineNative("CharacterBody2DGetRealVelocity", [body2d, vec2Map](int argc, Value* args) -> Value {
+            auto* cb = body2d(argc > 0 ? args[0] : Value::MakeNull());
+            return cb ? vec2Map(cb->RealVelocity) : Value::MakeNull();
+        }, -1);
+        vm->DefineNative("CharacterBody2DIsOnFloor", [body2d](int argc, Value* args) -> Value {
+            auto* cb = body2d(argc > 0 ? args[0] : Value::MakeNull());
+            return Value::MakeBool(cb && cb->OnFloor);
+        }, -1);
+        vm->DefineNative("CharacterBody2DIsOnWall", [body2d](int argc, Value* args) -> Value {
+            auto* cb = body2d(argc > 0 ? args[0] : Value::MakeNull());
+            return Value::MakeBool(cb && cb->OnWall);
+        }, -1);
+        vm->DefineNative("CharacterBody2DIsOnCeiling", [body2d](int argc, Value* args) -> Value {
+            auto* cb = body2d(argc > 0 ? args[0] : Value::MakeNull());
+            return Value::MakeBool(cb && cb->OnCeiling);
+        }, -1);
+        vm->DefineNative("CharacterBody2DGetFloorNormal", [body2d, vec2Map](int argc, Value* args) -> Value {
+            auto* cb = body2d(argc > 0 ? args[0] : Value::MakeNull());
+            return cb && cb->OnFloor ? vec2Map(cb->FloorNormal) : Value::MakeNull();
+        }, -1);
+        vm->DefineNative("CharacterBody2DGetWallNormal", [body2d, vec2Map](int argc, Value* args) -> Value {
+            auto* cb = body2d(argc > 0 ? args[0] : Value::MakeNull());
+            return cb && cb->OnWall ? vec2Map(cb->WallNormal) : Value::MakeNull();
+        }, -1);
+
+        // ================================================================ Timer (Godot)
+        auto timer = [](const Value& v) -> TimerComponent* {
+            Entity e = Target(v);
+            return e && e.HasComponent<TimerComponent>() ? &e.GetComponent<TimerComponent>() : nullptr;
+        };
+        vm->DefineNative("TimerStart", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            Entity e = Target(argc > 0 ? args[0] : Value::MakeNull());
+            const float time = argc > 1 ? (float)args[1].ToNumber() : -1.0f;
+            return Value::MakeBool(scene && e && GodotNodes::TimerStart(*scene, (uint32_t)(entt::entity)e, time));
+        }, -1);
+        vm->DefineNative("TimerStop", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            Entity e = Target(argc > 0 ? args[0] : Value::MakeNull());
+            return Value::MakeBool(scene && e && GodotNodes::TimerStop(*scene, (uint32_t)(entt::entity)e));
+        }, -1);
+        vm->DefineNative("TimerIsStopped", [timer](int argc, Value* args) -> Value {
+            auto* t = timer(argc > 0 ? args[0] : Value::MakeNull());
+            return Value::MakeBool(!t || !t->Running);
+        }, -1);
+        vm->DefineNative("TimerGetTimeLeft", [timer](int argc, Value* args) -> Value {
+            auto* t = timer(argc > 0 ? args[0] : Value::MakeNull());
+            return Value::MakeFloat(t && t->Running ? std::max(t->TimeLeft, 0.0f) : 0.0);
+        }, -1);
+        vm->DefineNative("TimerSetPaused", [timer](int argc, Value* args) -> Value {
+            auto* t = timer(argc > 0 ? args[0] : Value::MakeNull());
+            if (!t || argc < 2) return Value::MakeBool(false);
+            t->Paused = args[1].IsBool() ? args[1].AsBool() : args[1].ToNumber() != 0.0;
+            return Value::MakeBool(true);
+        }, -1);
+        vm->DefineNative("TimerSetWaitTime", [timer](int argc, Value* args) -> Value {
+            auto* t = timer(argc > 0 ? args[0] : Value::MakeNull());
+            if (!t || argc < 2) return Value::MakeBool(false);
+            t->WaitTime = std::max((float)args[1].ToNumber(), 0.0f);
+            return Value::MakeBool(true);
+        }, -1);
         vm->DefineNative("IsOnScreen", [](int argc, Value* args) -> Value {
             Entity e = Target(argc > 0 ? args[0] : Value::MakeNull());
             return Value::MakeBool(e && e.HasComponent<VisibleOnScreenNotifierComponent>() && e.GetComponent<VisibleOnScreenNotifierComponent>().OnScreen);

@@ -4,7 +4,7 @@
 
 Every component that can be added to an entity (Inspector > Add Component, `comp add <Entity> <Component>` in automation, `AddComponent("Name")` from scripts). Field names are the keys used in scene files and by `GetComponentField` / `SetComponentField` in scripts; defaults are the values of a freshly added component.
 
-245 components in 29 categories.
+251 components in 29 categories.
 
 ## Categories
 
@@ -13,7 +13,7 @@ Every component that can be added to an entity (Inspector > Add Component, `comp
 - **AI**: [Behavior Tree](#behavior-tree)
 - **AI & Navigation**: [NavMesh Agent](#navmesh-agent), [NavMesh Link](#navmesh-link), [NavMesh Modifier](#navmesh-modifier), [NavMesh Modifier Volume](#navmesh-modifier-volume), [NavMesh Obstacle](#navmesh-obstacle), [NavMesh Surface](#navmesh-surface)
 - **Animation**: [Aim Offset Player](#aim-offset-player), [Animation](#animation), [Animation](#animation), [Animator](#animator), [Blend Shapes](#blend-shapes), [Bone Attachment](#bone-attachment), [Character Customizer](#character-customizer), [IK Rig](#ik-rig), [Leader Pose](#leader-pose), [Live Link Face](#live-link-face), [MetaHuman](#metahuman), [Playable Director](#playable-director), [Pose Asset Player](#pose-asset-player), [Retarget Player](#retarget-player)
-- **Animation Rigging**: [Blend Constraint](#blend-constraint), [Bone 2D](#bone-2d), [Chain IK Constraint](#chain-ik-constraint), [Damped Transform](#damped-transform), [IK 2D](#ik-2d), [Multi-Aim Constraint](#multi-aim-constraint), [Multi-Parent Constraint](#multi-parent-constraint), [Multi-Position Constraint](#multi-position-constraint), [Multi-Rotation Constraint](#multi-rotation-constraint), [Override Transform](#override-transform), [Rig](#rig), [Twist Chain Constraint](#twist-chain-constraint), [Twist Correction](#twist-correction), [Two Bone IK Constraint](#two-bone-ik-constraint)
+- **Animation Rigging**: [Blend Constraint](#blend-constraint), [Bone 2D](#bone-2d), [Chain IK Constraint](#chain-ik-constraint), [Damped Transform](#damped-transform), [IK 2D](#ik-2d), [Multi-Aim Constraint](#multi-aim-constraint), [Multi-Parent Constraint](#multi-parent-constraint), [Multi-Position Constraint](#multi-position-constraint), [Multi-Rotation Constraint](#multi-rotation-constraint), [Override Transform](#override-transform), [Rig](#rig), [Spring Bone](#spring-bone), [Twist Chain Constraint](#twist-chain-constraint), [Twist Correction](#twist-correction), [Two Bone IK Constraint](#two-bone-ik-constraint)
 - **Audio**: [Audio Listener](#audio-listener), [Audio Source](#audio-source), [MetaSound Source](#metasound-source), [Sound Concurrency](#sound-concurrency), [Sound Occlusion](#sound-occlusion), [Sound Settings](#sound-settings)
 - **Camera**: [Spring Arm](#spring-arm)
 - **Cameras**: [Camera Brain](#camera-brain), [Cine Camera](#cine-camera), [Cinemachine Confiner 2D](#cinemachine-confiner-2d), [Cinemachine Confiner 3D](#cinemachine-confiner-3d), [Cinemachine Deoccluder](#cinemachine-deoccluder), [Cinemachine Follow Zoom](#cinemachine-follow-zoom), [Cinemachine Group Framing](#cinemachine-group-framing), [Cinemachine Impulse Listener](#cinemachine-impulse-listener), [Cinemachine Target Group](#cinemachine-target-group), [Impulse Source](#impulse-source), [Render Target](#render-target), [Virtual Camera](#virtual-camera)
@@ -25,11 +25,11 @@ Every component that can be added to an entity (Inspector > Add Component, `comp
 - **Input**: [On-Screen Button](#on-screen-button), [On-Screen Stick](#on-screen-stick), [Player Input](#player-input), [Player Input Manager](#player-input-manager)
 - **Lighting**: [Area Light](#area-light), [Directional Light](#directional-light), [Exponential Height Fog](#exponential-height-fog), [Light Probe Group](#light-probe-group), [Point Light](#point-light), [Sky Atmosphere](#sky-atmosphere), [Sky Light](#sky-light), [Spot Light](#spot-light), [Volumetric Cloud](#volumetric-cloud)
 - **Network**: [Network Animator](#network-animator), [Network Manager](#network-manager), [Network Object](#network-object), [Network Rigidbody](#network-rigidbody), [Network Transform](#network-transform)
-- **Physics**: [Articulation Body](#articulation-body), [Ball Joint](#ball-joint), [Box Collider](#box-collider), [Buoyancy](#buoyancy), [Capsule Collider](#capsule-collider), [Character Controller](#character-controller), [Character Joint](#character-joint), [Cloth](#cloth), [Configurable Joint](#configurable-joint), [Constant Force](#constant-force), [Fixed Joint](#fixed-joint), [Fracture](#fracture), [Hinge Joint](#hinge-joint), [Mesh Collider](#mesh-collider), [Radial Force](#radial-force), [Ragdoll](#ragdoll), [Ray Cast](#ray-cast), [Rigidbody](#rigidbody), [Slider Joint](#slider-joint), [Sphere Collider](#sphere-collider), [Spring Joint](#spring-joint), [Terrain Collider](#terrain-collider), [Wheel Collider](#wheel-collider)
-- **Physics 2D**: [Area Effector 2D](#area-effector-2d), [Box Collider 2D](#box-collider-2d), [Buoyancy Effector 2D](#buoyancy-effector-2d), [Capsule Collider 2D](#capsule-collider-2d), [Circle Collider 2D](#circle-collider-2d), [Composite Collider 2D](#composite-collider-2d), [Constant Force 2D](#constant-force-2d), [Distance Joint 2D](#distance-joint-2d), [Edge Collider 2D](#edge-collider-2d), [Fixed Joint 2D](#fixed-joint-2d), [Friction Joint 2D](#friction-joint-2d), [Hinge Joint 2D](#hinge-joint-2d), [Platform Effector 2D](#platform-effector-2d), [Point Effector 2D](#point-effector-2d), [Polygon Collider 2D](#polygon-collider-2d), [Relative Joint 2D](#relative-joint-2d), [Rigidbody 2D](#rigidbody-2d), [Slider Joint 2D](#slider-joint-2d), [Spring Joint 2D](#spring-joint-2d), [Surface Effector 2D](#surface-effector-2d), [Target Joint 2D](#target-joint-2d), [Wheel Joint 2D](#wheel-joint-2d)
+- **Physics**: [Articulation Body](#articulation-body), [Ball Joint](#ball-joint), [Box Collider](#box-collider), [Buoyancy](#buoyancy), [Capsule Collider](#capsule-collider), [Character Controller](#character-controller), [Character Joint](#character-joint), [Cloth](#cloth), [Configurable Joint](#configurable-joint), [Constant Force](#constant-force), [Fixed Joint](#fixed-joint), [Fracture](#fracture), [Hinge Joint](#hinge-joint), [Mesh Collider](#mesh-collider), [Radial Force](#radial-force), [Ragdoll](#ragdoll), [Ray Cast](#ray-cast), [Rigidbody](#rigidbody), [Shape Cast](#shape-cast), [Slider Joint](#slider-joint), [Sphere Collider](#sphere-collider), [Spring Joint](#spring-joint), [Terrain Collider](#terrain-collider), [Wheel Collider](#wheel-collider)
+- **Physics 2D**: [Area Effector 2D](#area-effector-2d), [Box Collider 2D](#box-collider-2d), [Buoyancy Effector 2D](#buoyancy-effector-2d), [Capsule Collider 2D](#capsule-collider-2d), [Character Body 2D](#character-body-2d), [Circle Collider 2D](#circle-collider-2d), [Composite Collider 2D](#composite-collider-2d), [Constant Force 2D](#constant-force-2d), [Distance Joint 2D](#distance-joint-2d), [Edge Collider 2D](#edge-collider-2d), [Fixed Joint 2D](#fixed-joint-2d), [Friction Joint 2D](#friction-joint-2d), [Hinge Joint 2D](#hinge-joint-2d), [Platform Effector 2D](#platform-effector-2d), [Point Effector 2D](#point-effector-2d), [Polygon Collider 2D](#polygon-collider-2d), [Relative Joint 2D](#relative-joint-2d), [Rigidbody 2D](#rigidbody-2d), [Slider Joint 2D](#slider-joint-2d), [Spring Joint 2D](#spring-joint-2d), [Surface Effector 2D](#surface-effector-2d), [Target Joint 2D](#target-joint-2d), [Wheel Joint 2D](#wheel-joint-2d)
 - **Prefab**: [Prefab Instance](#prefab-instance)
-- **Rendering**: [Adaptive Probe Volume](#adaptive-probe-volume), [Arrow](#arrow), [Auto LOD](#auto-lod), [Billboard Renderer](#billboard-renderer), [CSG Shape](#csg-shape), [Cable](#cable), [Camera](#camera), [Decal Projector](#decal-projector), [Flipbook Player](#flipbook-player), [Foliage Volume](#foliage-volume), [Full Screen Pass](#full-screen-pass), [Halo](#halo), [LOD Group](#lod-group), [Lens Flare](#lens-flare), [Light 2D](#light-2d), [Light Profile](#light-profile), [Mesh Renderer](#mesh-renderer), [Multi Mesh](#multi-mesh), [Note](#note), [Occlusion Area](#occlusion-area), [Occlusion Portal](#occlusion-portal), [Parallax 2D](#parallax-2d), [Pixel Perfect Camera](#pixel-perfect-camera), [Planar Reflection](#planar-reflection), [Post Process Volume](#post-process-volume), [Reflection Probe](#reflection-probe), [Scene Capture Cube](#scene-capture-cube), [Shadow Caster 2D](#shadow-caster-2d), [Skybox](#skybox), [Sorting Group](#sorting-group), [Sprite Mask](#sprite-mask), [Sprite Renderer](#sprite-renderer), [Streaming Controller](#streaming-controller), [Text Renderer](#text-renderer), [Tree](#tree), [Vertex Paint](#vertex-paint), [Virtual Geometry](#virtual-geometry), [Visible On Screen Notifier](#visible-on-screen-notifier), [Water Body](#water-body)
-- **Scripting**: [Signal Connections](#signal-connections), [Signal Receiver](#signal-receiver)
+- **Rendering**: [Adaptive Probe Volume](#adaptive-probe-volume), [Arrow](#arrow), [Auto LOD](#auto-lod), [Billboard Renderer](#billboard-renderer), [CSG Shape](#csg-shape), [Cable](#cable), [Camera](#camera), [Decal Projector](#decal-projector), [Flipbook Player](#flipbook-player), [Fog Volume](#fog-volume), [Foliage Volume](#foliage-volume), [Full Screen Pass](#full-screen-pass), [Halo](#halo), [LOD Group](#lod-group), [Lens Flare](#lens-flare), [Light 2D](#light-2d), [Light Profile](#light-profile), [Mesh Renderer](#mesh-renderer), [Multi Mesh](#multi-mesh), [Note](#note), [Occlusion Area](#occlusion-area), [Occlusion Portal](#occlusion-portal), [Parallax 2D](#parallax-2d), [Pixel Perfect Camera](#pixel-perfect-camera), [Planar Reflection](#planar-reflection), [Post Process Volume](#post-process-volume), [Reflection Probe](#reflection-probe), [Scene Capture Cube](#scene-capture-cube), [Shadow Caster 2D](#shadow-caster-2d), [Skybox](#skybox), [Sorting Group](#sorting-group), [Sprite Mask](#sprite-mask), [Sprite Renderer](#sprite-renderer), [Streaming Controller](#streaming-controller), [Text Renderer](#text-renderer), [Tree](#tree), [Vertex Paint](#vertex-paint), [Virtual Geometry](#virtual-geometry), [Visible On Screen Enabler](#visible-on-screen-enabler), [Visible On Screen Notifier](#visible-on-screen-notifier), [Water Body](#water-body)
+- **Scripting**: [Signal Connections](#signal-connections), [Signal Receiver](#signal-receiver), [Timer](#timer)
 - **Splines**: [Spline Animate](#spline-animate), [Spline Container](#spline-container), [Spline Extrude](#spline-extrude), [Spline Instantiate](#spline-instantiate), [Spline Mesh](#spline-mesh)
 - **Transform**: [Remote Transform](#remote-transform)
 - **UI**: [Aspect Ratio Fitter](#aspect-ratio-fitter), [Button](#button), [Canvas](#canvas), [Canvas Group](#canvas-group), [Canvas Scaler](#canvas-scaler), [Content Size Fitter](#content-size-fitter), [Dropdown](#dropdown), [Event System](#event-system), [Event Trigger](#event-trigger), [Image](#image), [Input Field](#input-field), [Layout Element](#layout-element), [Layout Group](#layout-group), [Mask](#mask), [Outline](#outline), [Physics 2D Raycaster](#physics-2d-raycaster), [Physics Raycaster](#physics-raycaster), [Position As UV1](#position-as-uv1), [Raw Image](#raw-image), [Rect Mask 2D](#rect-mask-2d), [Rect Transform](#rect-transform), [Scroll Rect](#scroll-rect), [Scrollbar](#scrollbar), [Selectable](#selectable), [Shadow](#shadow), [Slider](#slider), [Text](#text), [Toggle](#toggle), [Toggle Group](#toggle-group), [UI Document](#ui-document), [UI Skin](#ui-skin)
@@ -594,6 +594,29 @@ Type `RigComponent`; script name `Rig`.
 | Field | Key | Type | Default | Description |
 |---|---|---|---|---|
 | Weight | `Weight` | Float | `1` |  |
+
+### Spring Bone
+
+Godot SpringBoneSimulator3D: the bone chain from Root to Tip swings like a spring - hair, tails, ears, skirts, antennas. It lags behind when the character moves (Drag damps it), springs back to the animated pose (Stiffness), falls with Gravity and keeps the bone lengths. Colliders (objects with a Sphere or Capsule Collider: head, shoulders) push it out. Tip Length extends the last bone so the tip swings too.
+
+Type `SpringBoneComponent`; script name `SpringBone`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Weight | `Weight` | Float | `1` |  |
+| Root Bone | `Root` | String |  |  |
+| Tip Bone | `Tip` | String |  |  |
+| Stiffness | `Stiffness` | Float | `1` |  |
+| Drag | `Drag` | Float | `0.4` |  |
+| Gravity Power | `GravityPower` | Float | `0` |  |
+| Gravity Direction | `GravityDirection` | Vec3 | `0 -1 0` |  |
+| Radius | `Radius` | Float | `0.02` |  |
+| Tip Length | `TipLength` | Float | `0.1` |  |
+| Collider 1 | `Collider1` | EntityRef | `0` |  |
+| Collider 2 | `Collider2` | EntityRef | `0` |  |
+| Collider 3 | `Collider3` | EntityRef | `0` |  |
+| Collider 4 | `Collider4` | EntityRef | `0` |  |
+| Deflection | `Deflection` | Float | `0` |  |
 
 ### Twist Chain Constraint
 
@@ -2017,6 +2040,30 @@ Type `RigidbodyComponent`; script name `Rigidbody`.
 | Friction | `Friction` | Float | `0.5` |  |
 | Restitution | `Restitution` | Float | `0` |  |
 
+### Shape Cast
+
+Godot ShapeCast3D / ShapeCast2D: sweeps a sphere, box or capsule from this object to Target Position (local) every frame and lists everything it touches, nearest first. Safe Fraction is how far the shape can move without touching. Read the results from scripts (ShapeCastIsColliding, ShapeCastGetCollisionCount, ShapeCastGetPoint ...).
+
+Type `ShapeCastComponent`; script name `ShapeCast`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Enabled | `Enabled` | Bool | `true` |  |
+| Space | `Space` | Enum | `3D Physics` | Options: 3D Physics, 2D Physics. |
+| Shape | `Shape` | Enum | `Sphere` | Options: Sphere, Box, Capsule. |
+| Radius | `Radius` | Float | `0.5` |  |
+| Size | `Size` | Vec3 | `1 1 1` |  |
+| Height | `Height` | Float | `2` |  |
+| Target Position | `TargetPosition` | Vec3 | `0 -1 0` |  |
+| Max Results | `MaxResults` | Int | `32` |  |
+| Collision Mask | `CollisionMask` | LayerMask | `4294967295` |  |
+| Exclude Parent | `ExcludeParent` | Bool | `true` | Ignore this object's own collider and its parent's |
+| Hit Triggers | `HitTriggers` | Bool | `false` |  |
+| Colliding | `Colliding` | Bool | `false` |  |
+| Collision Count | `CollisionCount` | Int | `0` |  |
+| Safe Fraction | `SafeFraction` | Float | `1` |  |
+| Collider | `Collider` | String |  |  |
+
 ### Slider Joint
 
 Slides along one axis (pistons, elevators, drawers) with optional limits and motor.
@@ -2179,6 +2226,29 @@ Type `CapsuleCollider2DComponent`; script name `CapsuleCollider2D`.
 | Density | `Density` | Float | `1` |  |
 | Friction | `Friction` | Float | `0.4` |  |
 | Bounciness | `Restitution` | Float | `0` |  |
+
+### Character Body 2D
+
+Godot CharacterBody2D: a kinematic 2D character moved by scripts. Set Velocity and call CharacterBody2DMoveAndSlide: it slides along walls and floors, walks up slopes up to Floor Max Angle, sticks to the floor going down slopes and steps (Floor Snap Length) and stops the velocity going into walls and ceilings. Is On Floor / Wall / Ceiling tell where it touches. The shape comes from this object's Capsule / Circle / Box Collider 2D. Auto Move moves it every frame with Velocity and gravity, without a script.
+
+Type `CharacterBody2DComponent`; script name `CharacterBody2D`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Velocity | `Velocity` | Vec2 | `0 0` |  |
+| Motion Mode | `MotionMode` | Enum | `Grounded` | Grounded: platformer (floor, walls, ceiling); Floating: top-down, every surface is a wall Options: Grounded, Floating. |
+| Up Direction | `UpDirection` | Vec2 | `0 1` |  |
+| Floor Max Angle | `FloorMaxAngle` | Float | `45` | Degrees: steeper surfaces are walls |
+| Floor Snap Length | `FloorSnapLength` | Float | `0.1` |  |
+| Floor Stop On Slope | `FloorStopOnSlope` | Bool | `true` | Standing still on a slope does not slide down |
+| Max Slides | `MaxSlides` | Int | `4` |  |
+| Collision Mask | `CollisionMask` | LayerMask | `4294967295` |  |
+| Auto Move | `AutoMove` | Bool | `false` | Move every frame with Velocity and gravity (no script needed) |
+| Gravity Scale | `GravityScale` | Float | `1` |  |
+| Is On Floor | `OnFloor` | Bool | `false` |  |
+| Is On Wall | `OnWall` | Bool | `false` |  |
+| Is On Ceiling | `OnCeiling` | Bool | `false` |  |
+| Real Velocity | `RealVelocity` | Vec2 | `0 0` |  |
 
 ### Circle Collider 2D
 
@@ -2646,6 +2716,22 @@ Type `FlipbookComponent`; script name `Flipbook`.
 | Speed | `Speed` | Float | `1` |  |
 | Frame | `Frame` | Int | `-1` |  |
 
+### Fog Volume
+
+Godot FogVolume / Unreal Local Fog Volume: adds local density to the volumetric fog (Lighting > Post > Volumetric Fog) inside a box, ellipsoid, cylinder or cone, or everywhere. Negative density clears the fog (caves, interiors). Edge Fade softens the border, Height Falloff thins it upwards, Albedo tints it and Emission makes it glow. Set the global fog density to 0 to see only the volumes.
+
+Type `FogVolumeComponent`; script name `FogVolume`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Shape | `Shape` | Enum | `Box` | Options: Box, Ellipsoid, Cylinder, Cone, World. |
+| Size | `Size` | Vec3 | `4 2 4` |  |
+| Density | `Density` | Float | `0.2` | Per unit; negative removes fog |
+| Albedo | `Albedo` | Color3 | `1 1 1` |  |
+| Emission | `Emission` | Color3 | `0 0 0` |  |
+| Height Falloff | `HeightFalloff` | Float | `0` |  |
+| Edge Fade | `EdgeFade` | Float | `0.1` |  |
+
 ### Foliage Volume
 
 Generates foliage inside its box from a Procedural Foliage Spawner, a Landscape Grass Type and / or a PCG Graph. Sits on the Terrain when there is one.
@@ -3070,6 +3156,7 @@ Type `TextRendererComponent`; script name `TextRenderer`.
 | Color | `Color` | Color4 | `1 1 1 1` |  |
 | Font Size | `FontSize` | Float | `1` |  |
 | Alignment | `Alignment` | Enum | `Left` | Options: Left, Center, Right. |
+| Auto Translate | `AutoTranslate` | Bool | `true` | When the text is a translation key (Project Settings > Localization), draw its translation in the current language |
 
 ### Tree
 
@@ -3114,6 +3201,20 @@ Type `VirtualGeometryComponent`; script name `VirtualGeometry`.
 | Triangles (full) | `TrianglesTotal` | Int | `0` |  |
 | Triangles Drawn | `TrianglesDrawn` | Int | `0` |  |
 | Clusters Drawn | `ClustersDrawn` | Int | `0` |  |
+
+### Visible On Screen Enabler
+
+Godot VisibleOnScreenEnabler: while these bounds are outside the main camera's view, the target (the parent when empty) and its children stop processing - script Update / FixedUpdate, Animator, particles and Timers - but stay drawn; they continue where they stopped when the bounds come back into view. Saves time on off-screen enemies.
+
+Type `VisibleOnScreenEnablerComponent`; script name `VisibleOnScreenEnabler`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Target | `Target` | EntityRef | `0` | Object to pause (empty: the parent) |
+| Auto Bounds | `AutoBounds` | Bool | `true` | Use the mesh / model / sprite bounds of this object |
+| Bounds Center | `BoundsCenter` | Vec3 | `0 0 0` |  |
+| Bounds Size | `BoundsSize` | Vec3 | `1 1 1` |  |
+| On Screen | `OnScreen` | Bool | `false` |  |
 
 ### Visible On Screen Notifier
 
@@ -3172,6 +3273,24 @@ Reacts to Signal assets (.cqsignal) sent to this object by a Timeline Signal tra
 Type `SignalReceiverComponent`; script name `SignalReceiver`.
 
 _No editable fields (edited with its own inspector or from code)._
+
+### Timer
+
+Godot Timer: counts down Wait Time seconds, then emits the timeout signal and calls OnTimeout on this object's scripts. Restarts by itself unless One Shot. Start / stop from scripts with TimerStart / TimerStop.
+
+Type `TimerComponent`; script name `Timer`.
+
+| Field | Key | Type | Default | Description |
+|---|---|---|---|---|
+| Wait Time | `WaitTime` | Float | `1` | Seconds |
+| One Shot | `OneShot` | Bool | `false` | Stop after the first timeout |
+| Autostart | `Autostart` | Bool | `false` | Start when the game starts |
+| Paused | `Paused` | Bool | `false` |  |
+| Ignore Time Scale | `IgnoreTimeScale` | Bool | `false` | Count real time (slow motion and pause do not slow it) |
+| Process Callback | `ProcessCallback` | Enum | `Idle` | Idle: every frame; Physics: every fixed physics step Options: Idle, Physics. |
+| Time Left | `TimeLeft` | Float | `0` |  |
+| Running | `Running` | Bool | `false` |  |
+| Timeouts | `Timeouts` | Int | `0` |  |
 
 ## Splines
 
@@ -3350,6 +3469,7 @@ Type `UIDropdownComponent`; script name `UIDropdown`.
 | Value | `Value` | Int | `0` |  |
 | Font Size | `FontSize` | Float | `26` |  |
 | On Value Changed | `OnValueChanged` | String |  |  |
+| Auto Translate | `AutoTranslate` | Bool | `true` | Options that are translation keys show their translation in the current language |
 
 ### Event System
 
@@ -3622,6 +3742,7 @@ Type `UITextComponent`; script name `UIText`.
 | Field | Key | Type | Default | Description |
 |---|---|---|---|---|
 | Text | `Text` | String | `New Text` |  |
+| Auto Translate | `AutoTranslate` | Bool | `true` | When the text is a translation key (Project Settings > Localization), show its translation in the current language |
 | Rich Text (BBCode) | `RichText` | Bool | `false` | [b] [i] [u] [s] [color=#ff8800] [size=40] [wave] [shake] [rainbow] (also <b> <color=red> <size=150%>) |
 | Font | `Font` | Asset |  |  |
 | Font Size | `FontSize` | Float | `32` |  |

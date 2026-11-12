@@ -1829,6 +1829,19 @@ namespace Conqueror
         return m_Backend->SphereCast(origin, radius, direction, maxDistance, f, hit);
     }
 
+    void PhysicsWorld3D::ShapeCastAll(Backend::CastShape shape, const glm::vec3& halfExtents, float radius, float halfHeight, const glm::quat& rotation,
+                                      const glm::vec3& origin, const glm::vec3& direction, float maxDistance, std::vector<RaycastHit>& hits,
+                                      uint32_t layerMask, bool hitTriggers, int maxResults)
+    {
+        hits.clear();
+        if (!m_Backend) return;
+        ProcessDirty();
+        QueryFilter f;
+        f.LayerMask = layerMask;
+        f.HitTriggers = hitTriggers;
+        m_Backend->ShapeCastAll(shape, halfExtents, radius, halfHeight, rotation, origin, direction, maxDistance, f, hits, maxResults);
+    }
+
     void PhysicsWorld3D::OverlapSphere(const glm::vec3& center, float radius, std::vector<uint32_t>& entities, uint32_t layerMask)
     {
         entities.clear();

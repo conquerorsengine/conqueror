@@ -1,4 +1,5 @@
 #include "AudioSource.h"
+#include "Core/Localization/Localization.h"
 #include "Core/Utils/ImportActivity.h"
 
 #include <chrono>
@@ -26,8 +27,10 @@ namespace Conqueror
         }
     }
 
-    bool AudioSource::LoadFromFile(const std::string& filepath)
+    bool AudioSource::LoadFromFile(const std::string& requestedPath)
     {
+        // Yerelleştirme Remaps: etkin dilde bu sesin karşılığı varsa o dosya çalınır
+        const std::string filepath = Localization::Remap(requestedPath);
         if (m_IsLoaded)
         {
             Unload();
@@ -55,7 +58,7 @@ namespace Conqueror
             return false;
         }
 
-        m_FilePath = filepath;
+        m_FilePath = requestedPath;   // yeniden yüklemede dilin karşılığı yeniden seçilir
         m_IsLoaded = true;
 
         // Varsayılan 3D ayarları uygula

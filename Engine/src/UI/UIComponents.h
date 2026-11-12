@@ -76,6 +76,7 @@ namespace Conqueror
         bool RaycastTarget = false;
         bool RichText = false;                 // BBCode / TMP etiketleri ([b] [color=red] [wave] ...)
         std::string ColorGradient;             // .cqcolorgradient: harf başına renk geçişi
+        bool AutoTranslate = true;             // Godot auto_translate: metin bir çeviri anahtarıysa etkin dildeki çevirisi gösterilir
     };
 
     enum class UITransition : int { None = 0, ColorTint, Scale };
@@ -160,6 +161,7 @@ namespace Conqueror
         UISelectableState Selectable;
         std::vector<std::string> Options{ "Option A", "Option B", "Option C" };
         int Value = 0;
+        bool AutoTranslate = true;   // seçenekler çeviri anahtarıysa çevirileri gösterilir (Godot OptionButton gibi)
         float FontSize = 26.0f;
         std::string OnValueChanged;
         bool Expanded = false;

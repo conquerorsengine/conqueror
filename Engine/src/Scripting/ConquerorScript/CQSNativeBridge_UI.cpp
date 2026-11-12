@@ -1,4 +1,5 @@
 #include "Core/Audio/AudioRandomContainer.h"
+#include "Core/Localization/Localization.h"
 #include "Scene/MeshRendererMaterial.h"
 #include "Renderer/Utilities/Renderer3D/Material.h"
 #include "CQSNativeBridge.h"
@@ -1308,5 +1309,29 @@ namespace Conqueror::CQS
             m->Entries["budgetMB"] = Value::MakeFloat(st.BudgetMB);
             return Value::MakeObject(m);
         }, 0);
+
+        // ================================================================ Yerelleştirme (Godot tr / tr_n / TranslationServer)
+        auto str = [](int argc, Value* args, int i) -> std::string {
+            return argc > i && !args[i].IsNull() ? args[i].ToString() : std::string();
+        };
+        vm->DefineNative("Tr", [str](int argc, Value* args) -> Value {
+            return Value::MakeString(Localization::Translate(str(argc, args, 0), str(argc, args, 1)));
+        }, -1);
+        vm->DefineNative("TrN", [str](int argc, Value* args) -> Value {
+            const int64_t n = argc > 2 ? (int64_t)args[2].ToNumber() : 1;
+            return Value::MakeString(Localization::TranslatePlural(str(argc, args, 0), str(argc, args, 1), n, str(argc, args, 3)));
+        }, -1);
+        vm->DefineNative("SetLocale", [str](int argc, Value* args) -> Value {
+            Localization::SetLocale(str(argc, args, 0));
+            return Value::MakeString(Localization::GetLocale());
+        }, 1);
+        vm->DefineNative("GetLocale", [](int, Value*) -> Value { return Value::MakeString(Localization::GetLocale()); }, 0);
+        vm->DefineNative("GetLoadedLocales", [](int, Value*) -> Value {
+            auto* list = new CQSListObject();
+            for (const auto& l : Localization::GetLoadedLocales())
+                list->Elements.push_back(Value::MakeString(l));
+            return Value::MakeObject(list);
+        }, 0);
+        vm->DefineNative("GetSystemLocale", [](int, Value*) -> Value { return Value::MakeString(Localization::SystemLocale()); }, 0);
     }
 }

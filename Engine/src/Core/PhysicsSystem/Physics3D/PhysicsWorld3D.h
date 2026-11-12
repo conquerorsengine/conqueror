@@ -95,6 +95,10 @@ namespace Conqueror
         bool SphereCast(const glm::vec3& origin, float radius, const glm::vec3& direction, float maxDistance, Physics3D::RaycastHit& hit,
                         uint32_t layerMask = 0xFFFFFFFFu, uint32_t ignoreEntity = Physics3D::NoEntity);
         void OverlapSphere(const glm::vec3& center, float radius, std::vector<uint32_t>& entities, uint32_t layerMask = 0xFFFFFFFFu);
+        // Şekil süpürme (Shape Cast): yakından uzağa, nesne başına bir isabet
+        void ShapeCastAll(Physics3D::Backend::CastShape shape, const glm::vec3& halfExtents, float radius, float halfHeight, const glm::quat& rotation,
+                          const glm::vec3& origin, const glm::vec3& direction, float maxDistance, std::vector<Physics3D::RaycastHit>& hits,
+                          uint32_t layerMask = 0xFFFFFFFFu, bool hitTriggers = false, int maxResults = 32);
         void OverlapBox(const glm::vec3& center, const glm::vec3& halfExtents, const glm::quat& rotation, std::vector<uint32_t>& entities,
                         uint32_t layerMask = 0xFFFFFFFFu);
 

@@ -311,7 +311,9 @@ namespace Conqueror
             .Field("Text", "Text", &TextRendererComponent::Text)
             .Field("Color", "Color", &TextRendererComponent::Color, FieldKind::Color4)
             .Field("FontSize", "Font Size", &TextRendererComponent::FontSize)
-            .Field("Alignment", "Alignment", &TextRendererComponent::Alignment).Options({ "Left", "Center", "Right" });
+            .Field("Alignment", "Alignment", &TextRendererComponent::Alignment).Options({ "Left", "Center", "Right" })
+            .Field("AutoTranslate", "Auto Translate", &TextRendererComponent::AutoTranslate)
+                .Tooltip("When the text is a translation key (Project Settings > Localization), draw its translation in the current language");
 
         // Kamera (SceneCamera erişimcileri üzerinden): EntitySetComponentField(cam, "Camera", "OrthographicSize", 25)
         auto toText = [](float v) { char b[32]; std::snprintf(b, sizeof(b), "%g", v); return std::string(b); };
@@ -442,6 +444,8 @@ namespace Conqueror
                 .Tooltip("A material whose Shader is a UI shader (Create > Shader > UI Shader). Empty = default UI drawing.");
         ComponentDef<UITextComponent>("Text", "UITextComponent", "UI", ICON_FA_FONT).Builtin()
             .Field("Text", "Text", &UITextComponent::Text)
+            .Field("AutoTranslate", "Auto Translate", &UITextComponent::AutoTranslate)
+                .Tooltip("When the text is a translation key (Project Settings > Localization), show its translation in the current language")
             .Field("RichText", "Rich Text (BBCode)", &UITextComponent::RichText)
                 .Tooltip("[b] [i] [u] [s] [color=#ff8800] [size=40] [wave] [shake] [rainbow] (also <b> <color=red> <size=150%>)")
             .Property("Font", "Font", FieldKind::Asset,
@@ -491,7 +495,9 @@ namespace Conqueror
         ComponentDef<UIDropdownComponent>("Dropdown", "UIDropdownComponent", "UI", ICON_FA_CARET_DOWN).Builtin()
             .Field("Value", "Value", &UIDropdownComponent::Value)
             .Field("FontSize", "Font Size", &UIDropdownComponent::FontSize)
-            .Field("OnValueChanged", "On Value Changed", &UIDropdownComponent::OnValueChanged);
+            .Field("OnValueChanged", "On Value Changed", &UIDropdownComponent::OnValueChanged)
+            .Field("AutoTranslate", "Auto Translate", &UIDropdownComponent::AutoTranslate)
+                .Tooltip("Options that are translation keys show their translation in the current language");
         ComponentDef<UIScrollRectComponent>("Scroll Rect", "UIScrollRectComponent", "UI", ICON_FA_SCROLL).Builtin()
             .Field("Horizontal", "Horizontal", &UIScrollRectComponent::Horizontal)
             .Field("Vertical", "Vertical", &UIScrollRectComponent::Vertical)
