@@ -363,6 +363,7 @@ namespace Conqueror
                 std::shared_ptr<Texture2D> Cutout;
                 float AlphaClip = 0.5f;
                 glm::vec2 UVScale{ 1.0f }, UVOffset{ 0.0f };
+                bool SubPixel = false;           // ekranda çeyrek pikselden az kıpırdadı: eski yeri işaretlenmez
             };
             struct SkinnedVelocityDraw
             {
@@ -506,6 +507,23 @@ namespace Conqueror
                     return true;
             return false;
         }
+
+        // Nesnenin yalnız kendi hareketinin ekrandaki karşılığı (piksel): sınır kutusunun 8 köşesi iki dönüşümle aynı görüş-izdüşümünde
+        float ScreenMotionPx(const Mesh& mesh, const glm::mat4& cur, const glm::mat4& prev)
+        {
+            const glm::vec3 c = mesh.GetBoundsCenter(), e = mesh.GetBoundsExtents();
+            const glm::vec2 half(0.5f * (float)s->Camera.ViewportWidth, 0.5f * (float)s->Camera.ViewportHeight);
+            float maxPx = 0.0f;
+            for (int i = 0; i < 8; ++i)
+            {
+                const glm::vec4 p(c + glm::vec3((i & 1) ? e.x : -e.x, (i & 2) ? e.y : -e.y, (i & 4) ? e.z : -e.z), 1.0f);
+                const glm::vec4 a = s_MotionViewProj * (cur * p), b = s_MotionViewProj * (prev * p);
+                if (a.w <= 1e-4f || b.w <= 1e-4f)
+                    return 1e9f;
+                maxPx = std::max(maxPx, glm::length((glm::vec2(a) / a.w - glm::vec2(b) / b.w) * half));
+            }
+            return maxPx;
+        }
     }
 
     void Renderer3D::MarkMovingBounds(const glm::vec3& center, const glm::vec3& extents)
@@ -545,26 +563,89 @@ namespace Conqueror
         return false;
     }
 
+    namespace
+    {
+        // Görünüm başına son tüketilen nokta / spot ışık enerjisi (TAA ışık değişimi) ve kısa değişimlerin (namlu alevi) izi
+        struct LightEnergy
+        {
+            float Sum = 0.0f;
+            int Count = 0;
+            bool Valid = false;
+            int ChangeRun = 0;          // üst üste değişen kare sayısı
+            int LastRun = 0;            // biten son değişimin uzunluğu
+            int SinceChange = 1 << 20;  // son değişimden beri geçen kare
+        };
+        std::unordered_map<const void*, LightEnergy>& LightEnergies()
+        {
+            static std::unordered_map<const void*, LightEnergy> s_LightEnergy;
+            return s_LightEnergy;
+        }
+
+        bool LightingDiffers(const LightEnergy& last, float& sum, int& count)
+        {
+            sum = 0.0f;
+            for (int i = 0; i < s->PointCount; ++i)
+            {
+                const glm::vec4& c = s->Lights.PointLights[i].ColorIntensity;
+                sum += c.r + c.g + c.b;
+            }
+            for (int i = 0; i < s->SpotCount; ++i)
+            {
+                const glm::vec4& c = s->Lights.SpotLights[i].ColorIntensity;
+                sum += c.r + c.g + c.b;
+            }
+            count = s->PointCount + s->SpotCount;
+            return last.Valid && (count != last.Count || std::abs(sum - last.Sum) > 0.02f * std::max(sum, last.Sum) + 1e-3f);
+        }
+
+        // Yerel çözünürlükte zamansal kenar yumuşatmanın keskin mip sapması (-1) kısa ışık değişiminde (namlu alevi) kapatılır:
+        // TAA alevin karelerini geçmişe yazmaz, yalnız gösterir; bu karelerde titreşimli tek kare ince doku çizgilerini (merdiven,
+        // rampa) bir mip keskin örnekleyince ateş edince çizgiler yanıp sönüyordu (ölçüm: sapma -1 ile %20 fazla). Alev bitince
+        // sapma ~10 karede yavaşça döner (geçmiş birden keskinleşmesin); 45 kareden uzun süren değişimde (titreyen meşale, sürekli
+        // ateş) keskinlik geri açılır
+        float LightingLodScale(const void* view)
+        {
+            auto& map = LightEnergies();
+            auto it = map.find(view);
+            if (it == map.end())
+                return 1.0f;
+            const LightEnergy& last = it->second;
+            float sum = 0.0f;
+            int count = 0;
+            const bool changing = LightingDiffers(last, sum, count);
+            constexpr int kShortChange = 45;   // ~0.75 s: namlu alevinin sönüşü kısa, daha uzun süren değişim sürekli ışık sayılır
+            // Uzun süren değişimde keskinlik 10 karede yumuşakça geri açılır (birden keskinleşme sıçraması olmasın)
+            auto longRun = [](int run) { return glm::clamp((float)(run - kShortChange) / 10.0f, 0.0f, 1.0f); };
+            if (changing)
+                return longRun(last.ChangeRun + 1);
+            if (last.ChangeRun > 0)
+                return longRun(last.ChangeRun);   // değişim bu kare bitti
+            if (last.LastRun == 0 || last.LastRun > kShortChange + 10)
+                return 1.0f;
+            return glm::clamp((float)(last.SinceChange - 2) / 10.0f, 0.0f, 1.0f);
+        }
+    }
+
     bool Renderer3D::ConsumeLightingChange(const void* view)
     {
-        struct LightEnergy { float Sum = 0.0f; int Count = 0; bool Valid = false; };
-        static std::unordered_map<const void*, LightEnergy> s_LightEnergy;
         if (!s)
             return false;
         float sum = 0.0f;
-        for (int i = 0; i < s->PointCount; ++i)
+        int count = 0;
+        LightEnergy& last = LightEnergies()[view];
+        const bool changed = LightingDiffers(last, sum, count);
+        if (changed)
         {
-            const glm::vec4& c = s->Lights.PointLights[i].ColorIntensity;
-            sum += c.r + c.g + c.b;
+            ++last.ChangeRun;
+            last.SinceChange = 0;
         }
-        for (int i = 0; i < s->SpotCount; ++i)
+        else
         {
-            const glm::vec4& c = s->Lights.SpotLights[i].ColorIntensity;
-            sum += c.r + c.g + c.b;
+            if (last.ChangeRun > 0)
+                last.LastRun = last.ChangeRun;
+            last.ChangeRun = 0;
+            last.SinceChange = std::min(last.SinceChange + 1, 1 << 20);
         }
-        const int count = s->PointCount + s->SpotCount;
-        LightEnergy& last = s_LightEnergy[view];
-        const bool changed = last.Valid && (count != last.Count || std::abs(sum - last.Sum) > 0.02f * std::max(sum, last.Sum) + 1e-3f);
         last.Sum = sum;
         last.Count = count;
         last.Valid = true;
@@ -820,6 +901,9 @@ namespace Conqueror
                 // Yerinde duran, yalnız rüzgârda salınan ağaç: eski yeri işaretlenmez (salınım birkaç santim; işaretlense TAA
                 // ağacın tüm silueti üzerinde her karede geçmişi atar, yapraklar titrerdi)
                 if (d.WindParams.y > 0.0f && d.Cur == d.Prev)
+                    continue;
+                // Piksel altı kıpırtı: eski yer yeni yerle örtüşür, işaretlenirse bütün silueti her karede açılan alan sayılırdı
+                if (d.SubPixel)
                     continue;
                 sh->SetMat4("u_Transform", d.Prev);
                 sh->SetMat4("u_PrevTransform", d.Prev);
@@ -1346,7 +1430,9 @@ namespace Conqueror
         f.FeatureFlags = glm::ivec4(env.HDROutput ? 1 : 0, env.Lightmap ? 1 : 0, apvOn ? 1 : 0, (int)s->Probes.size());
         f.DebugParams = glm::ivec4(s->DebugView, s->AreaCount, 0, 0);
         // Yükseltici iç çözünürlükte çiziyorsa dokular çıktı çözünürlüğüne uygun mipten örneklenir (yoksa her şey ölçekten de bulanık)
-        f.RenderParams = glm::vec4(s->TextureLodBias, 0.0f, 0.0f, 0.0f);
+        // Keskin mip sapması (TAA) namlu alevi gibi kısa ışık değişimlerinde kapanır (LightingLodScale)
+        const float lodBias = s->TextureLodBias < 0.0f ? s->TextureLodBias * LightingLodScale(PostProcessStack::GetCurrentStack()) : s->TextureLodBias;
+        f.RenderParams = glm::vec4(lodBias, 0.0f, 0.0f, 0.0f);
         const bool giOn = s->GI.Volume0.w > 0.0f && s->GI.Irradiance && s->GI.Distance && s->GI.ProbeData;
         f.GIVolume0 = giOn ? s->GI.Volume0 : glm::vec4(0.0f);
         f.GIVolume1 = giOn ? s->GI.Volume1 : glm::vec4(0.0f);
@@ -1871,9 +1957,14 @@ namespace Conqueror
         const glm::mat4 prevCopy = prevTransform ? *prevTransform : transform;   // harita sonraki çizimlerde değişebilir
         // Ağaç rüzgârı: köşeler her karede salınır (dönüşüm aynı kalsa da hareketli)
         const bool windy = s->WindParams.y > 0.0f;
-        const bool moving = fromQueue ? s_QueuedMoving : (transformMoved || windy || (s_MotionCur && materialIn && materialIn->MaterialShader));
+        // Piksel altı kıpırtı (mermi çarpınca ya da uykuya dalarken titreşen fizik küpü): hareket vektörü yine yazılır (geçmiş tam
+        // yerine oturur) ama nesne "hareket eden" sayılmaz. Eskiden 0,1 mm'lik oynama bile bütün silueti TAA'da hareketli ve eski yeri
+        // açılan alan olarak işaretliyordu: küplere ateş edince aralarındaki koyu çizgiler yarım saniyeden uzun yanıp sönüyordu
+        const bool subPixel = transformMoved && prevTransform && !windy && !(materialIn && materialIn->MaterialShader) && s_MotionCur
+                              && meshIn->GetBoundsRadius() > 0.0f && ScreenMotionPx(*meshIn, transform, *prevTransform) < 0.25f;
+        const bool moving = fromQueue ? s_QueuedMoving : ((transformMoved && !subPixel) || windy || (s_MotionCur && materialIn && materialIn->MaterialShader));
         // Yer değiştiren (ya da rüzgârda salınan) nesnenin gölgesi de yer değiştirir (kamera görmese de gölgesi görüş alanına düşebilir)
-        if ((transformMoved || windy) && !fromQueue && s_MotionCur && meshIn->GetBoundsRadius() > 0.0f && (!materialIn || materialIn->Rendering != Material::RenderMode::Transparent))
+        if (((transformMoved && !subPixel) || windy) && !fromQueue && s_MotionCur && meshIn->GetBoundsRadius() > 0.0f && (!materialIn || materialIn->Rendering != Material::RenderMode::Transparent))
         {
             glm::vec3 c, e;
             TransformBox(transform, meshIn->GetBoundsCenter(), meshIn->GetBoundsExtents(), c, e);
@@ -1923,6 +2014,7 @@ namespace Conqueror
             v.Exact = !material->MaterialShader;   // graph malzemede köşe hareketi olabilir: yaklaşık
             v.Wind = windy ? s->Wind : glm::vec4(0.0f);
             v.WindParams = windy ? s->WindParams : glm::vec2(0.0f);
+            v.SubPixel = subPixel;
             if (material->Rendering == Material::RenderMode::Cutout && material->AlbedoMap)
             {
                 v.Cutout = material->AlbedoMap;
