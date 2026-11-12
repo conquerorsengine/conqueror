@@ -76,6 +76,15 @@ namespace Conqueror
         int Order = 0;
     };
 
+    // Godot Autoload: oyun başlarken (Play / derlenmiş oyun) sahneden önce oluşturulan ve sahne değişince kalan genel nesneler.
+    // Path bir prefab (.cqprefab) ya da betik; nesne Name adıyla oluşur, betikler GetAutoload(Name) / FindEntity(Name) ile ulaşır
+    struct AutoloadEntry
+    {
+        std::string Name;
+        std::string Path;      // proje göreli
+        bool Enabled = true;
+    };
+
     class CQ_API ProjectSettings
     {
     public:
@@ -85,6 +94,7 @@ namespace Conqueror
         static NavigationProjectSettings& Navigation();
         static EditorProjectSettings& Editor();
         static std::vector<ScriptOrderEntry>& ScriptOrder();
+        static std::vector<AutoloadEntry>& Autoloads();
         // Scripting Define Symbols: Native Script Module kısıtları ve C/C++ betikleri için
         static std::vector<std::string>& ScriptDefines();
         // Projeye özel giriş haritası (.cqproj içinde); kapalıysa motorun varsayılan haritası

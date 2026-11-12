@@ -1,4 +1,8 @@
 #include "GodotNodes.h"
+#include "Scripting/ScriptRuntime.h"
+#include "Core/Serialization/PrefabSerializer.h"
+#include "Core/Serialization/SceneSerializer.h"
+#include "Core/Project/ProjectSettings.h"
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"
 #include "Scene/Components.h"
@@ -854,5 +858,49 @@ namespace Conqueror
                 .Field("Autoscroll", "Autoscroll", &C::Autoscroll)
                 .Field("RepeatSize", "Repeat Size", &C::RepeatSize);
         }
+    }
+    int GodotNodes::InstantiateAutoloads(Scene& scene)
+    {
+        int created = 0;
+        for (const AutoloadEntry& a : ProjectSettings::Autoloads())
+        {
+            if (!a.Enabled || a.Path.empty())
+                continue;
+            const std::string abs = SceneSerializer::ResolveAssetPath(a.Path);
+            const std::string name = !a.Name.empty() ? a.Name : std::filesystem::path(a.Path).stem().string();
+            Entity e;
+            if (PrefabSerializer::IsPrefabPath(abs))
+            {
+                e = PrefabSerializer::Instantiate(scene, abs);
+                if (e)
+                    e.GetComponent<TagComponent>().Tag = name;
+            }
+            else if (Scripting::ScriptRuntimes::IsScriptFile(abs))
+            {
+                e = scene.CreateEntity(name);
+                ConquerorScriptData data;
+                data.ScriptPath = SceneSerializer::ToAssetPath(abs);
+                e.AddComponent<ConquerorScriptComponent>().Scripts.push_back(data);
+            }
+            else
+                CQ_CORE_WARN("[Autoload] {0}: {1} is not a prefab or a script", name, a.Path);
+            if (!e)
+                continue;
+            scene.SetPersistent(e, true);
+            ++created;
+        }
+        if (created)
+            CQ_CORE_INFO("[Autoload] {0} object(s) created", created);
+        return created;
+    }
+
+    uint32_t GodotNodes::GetAutoload(Scene& scene, const std::string& name)
+    {
+        uint32_t found = UINT32_MAX;
+        scene.m_Registry.view<TagComponent>().each([&](auto e, const TagComponent& tag) {
+            if (found == UINT32_MAX && tag.Tag == name && scene.IsPersistent(e))
+                found = (uint32_t)e;
+        });
+        return found;
     }
 }

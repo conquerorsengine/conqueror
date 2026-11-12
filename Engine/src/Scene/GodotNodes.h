@@ -176,6 +176,11 @@ namespace Conqueror
         CQ_API bool ForceShapeCast(Scene& scene, uint32_t entity);
         // Sabit fizik adımı (Process Callback = Physics zamanlayıcıları)
         CQ_API void FixedUpdate(Scene& scene, float dt);
+        // Godot Autoload (Project Settings > Autoload): oyun başlarken listedeki prefab / betikleri Name adıyla oluşturur ve
+        // kalıcı yapar (sahne değişince kalır); oluşturulan sayı
+        CQ_API int InstantiateAutoloads(Scene& scene);
+        // Adı verilen Autoload / kalıcı nesnenin kimliği (yoksa UINT32_MAX)
+        CQ_API uint32_t GetAutoload(Scene& scene, const std::string& name);
         // Timer.start(time_sec = -1) / stop()
         CQ_API bool TimerStart(Scene& scene, uint32_t entity, float time = -1.0f);
         CQ_API bool TimerStop(Scene& scene, uint32_t entity);

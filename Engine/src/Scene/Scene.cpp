@@ -14,6 +14,7 @@
 #include "Scene/MeshRendererMaterial.h"
 #include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
 #include "Scene.h"
+#include <random>
 #include "Core/Localization/Localization.h"
 #include "Core/Animation/PropertyAnimation.h"
 #include "Scripting/NativeScriptCompiler.h"
@@ -658,6 +659,7 @@ namespace Conqueror
 
         // Betikler: önce OnDestroy (Unity gibi üstten alta), örnekler kare sonunda yok edilir
         RetireEntityScripts(entityHandle);
+        m_Persistent.erase(entityHandle);
 
         // Child'ları da sil
         auto children = GetEntityChildren(entity);
@@ -4016,6 +4018,133 @@ namespace Conqueror
             return Entity{ it->second, const_cast<Scene*>(this) };
         
         return Entity{}; // Null entity
+    }
+
+    bool Scene::SetPersistent(Entity entity, bool persistent)
+    {
+        if (!entity.IsValid() || entity.GetScene() != this)
+            return false;
+        const entt::entity h = entity;
+        if (persistent && GetEntityParent(entity))
+        {
+            // Unity: DontDestroyOnLoad yalnız kök nesnelerde çalışır
+            CQ_CORE_WARN("DontDestroyOnLoad only works for root objects ({0} has a parent)", entity.GetComponent<TagComponent>().Tag);
+            return false;
+        }
+        if (persistent)
+            m_Persistent.insert(h);
+        else
+            m_Persistent.erase(h);
+        return true;
+    }
+
+    bool Scene::IsPersistent(entt::entity entity) const
+    {
+        return m_Persistent.count(entity) > 0;
+    }
+
+    int Scene::AdoptPersistent(Scene& previous)
+    {
+        if (&previous == this || previous.m_Persistent.empty())
+            return 0;
+        // Kökler ve tüm altları (ön sıra: ebeveyn önce)
+        std::vector<entt::entity> order;
+        std::vector<entt::entity> stack;
+        for (entt::entity root : previous.m_Persistent)
+            if (previous.m_Registry.valid(root))
+                stack.push_back(root);
+        while (!stack.empty())
+        {
+            const entt::entity e = stack.back();
+            stack.pop_back();
+            order.push_back(e);
+            if (auto it = previous.m_EntityChildren.find(e); it != previous.m_EntityChildren.end())
+                for (auto c = it->second.rbegin(); c != it->second.rend(); ++c)
+                    if (previous.m_Registry.valid(*c))
+                        stack.push_back(*c);
+        }
+        int moved = 0;
+        for (entt::entity src : order)
+        {
+            // Aynı tanıtıcı: betik örnekleri kendi nesnelerini (self) bu sayıyla bilir. Sahne henüz boş olduğundan kullanılmıyor
+            const entt::entity dst = m_Registry.create(src);
+            if (dst != src)
+            {
+                CQ_CORE_ERROR("AdoptPersistent: entity id {0} is taken in the new scene", (uint32_t)src);
+                m_Registry.destroy(dst);
+                continue;
+            }
+            Entity from{ src, &previous }, to{ dst, this };
+            to.AddComponent<IDComponent>(from.GetComponent<IDComponent>().ID);
+            to.AddComponent<TransformComponent>();
+            to.AddComponent<TagComponent>(from.GetComponent<TagComponent>().Tag);
+            CopyEntityComponents(from, to, true);
+            // Çalışma zamanı bağları taşınır (kopya yeni başlatmasın): betik örnekleri ve çalan ses
+            // (önceki sahnedeki bağlar FinishAdoption'da çözülür: yükleme başarısız olursa önceki sahne olduğu gibi kalır)
+            if (from.HasComponent<ConquerorScriptComponent>())
+                m_Registry.emplace_or_replace<ConquerorScriptComponent>(dst).Scripts = from.GetComponent<ConquerorScriptComponent>().Scripts;
+            if (from.HasComponent<AudioSourceComponent>() && to.HasComponent<AudioSourceComponent>())
+                to.GetComponent<AudioSourceComponent>().RuntimeSound = from.GetComponent<AudioSourceComponent>().RuntimeSound;
+            m_Adopted.push_back(src);
+            if (auto it = previous.m_EntityParent.find(src); it != previous.m_EntityParent.end() && !previous.m_Persistent.count(src))
+            {
+                m_EntityParent[dst] = it->second;
+                m_EntityChildren[it->second].push_back(dst);
+            }
+            if (previous.m_ProcessDisabled.count((uint32_t)src))
+                m_ProcessDisabled.insert((uint32_t)dst);
+            ++moved;
+        }
+        for (entt::entity root : previous.m_Persistent)
+            if (m_Registry.valid(root))
+                m_Persistent.insert(root);
+        UpdateWorldTransforms();
+        return moved;
+    }
+
+    void Scene::FinishAdoption(Scene& previous)
+    {
+        // Taşınan nesnelerin önceki sahnedeki kopyaları: betik örnekleri ve ses artık yeni sahnenin, durdurulunca yok edilmesin
+        for (entt::entity e : m_Adopted)
+        {
+            if (!previous.m_Registry.valid(e))
+                continue;
+            if (auto* sc = previous.m_Registry.try_get<ConquerorScriptComponent>(e))
+                for (auto& s : sc->Scripts)
+                {
+                    s.Instance = nullptr;
+                    s.Runtime = nullptr;
+                    s.bLoaded = false;
+                }
+            if (auto* a = previous.m_Registry.try_get<AudioSourceComponent>(e))
+                a->RuntimeSound = nullptr;
+        }
+        m_Adopted.clear();
+        ResolvePersistentDuplicates();
+    }
+
+    void Scene::ResolvePersistentDuplicates()
+    {
+        if (m_Persistent.empty())
+            return;
+        // Taşınan nesnenin UUID'si yeni sahnede de varsa (aynı sahne yeniden yüklendi) sahneden gelen kopya yeni bir UUID alır
+        std::unordered_set<uint64_t> kept;
+        std::vector<entt::entity> stack(m_Persistent.begin(), m_Persistent.end());
+        std::unordered_set<entt::entity> persistentTree;
+        while (!stack.empty())
+        {
+            const entt::entity e = stack.back();
+            stack.pop_back();
+            if (!m_Registry.valid(e) || !persistentTree.insert(e).second)
+                continue;
+            kept.insert((uint64_t)m_Registry.get<IDComponent>(e).ID);
+            if (auto it = m_EntityChildren.find(e); it != m_EntityChildren.end())
+                stack.insert(stack.end(), it->second.begin(), it->second.end());
+        }
+        static std::mt19937_64 rng{ std::random_device{}() };
+        for (auto [e, id] : m_Registry.view<IDComponent>().each())
+            if (!persistentTree.count(e) && kept.count((uint64_t)id.ID))
+                id.ID = rng();
     }
 
     void Scene::SetProcessDisabled(uint32_t entity, bool disabled)

@@ -271,6 +271,17 @@ namespace Conqueror
         // FixedUpdate'i, Animator, parçacıklar, Timer)
         void SetProcessDisabled(uint32_t entity, bool disabled);
         bool IsProcessDisabled(entt::entity entity) const;
+        // Unity DontDestroyOnLoad / Godot Autoload: oyun içi sahne değişiminde (LoadScene) yeni sahneye alt ağacıyla taşınan kök nesne
+        // (yalnız kök nesneler, Unity gibi). Betik örnekleri (alan değerleri), çalan sesler ve animasyon durumu korunur
+        bool SetPersistent(Entity entity, bool persistent = true);
+        bool IsPersistent(entt::entity entity) const;
+        // Yeni ve henüz yüklenmemiş sahne (Deserialize'dan önce): önceki sahnenin kalıcı nesnelerini aynı tanıtıcılarla ve UUID'lerle,
+        // betik örnekleri ve çalan sesleriyle alır (yükleme başarılıysa FinishAdoption). Taşınan sayısı
+        int AdoptPersistent(Scene& previous);
+        // Yükleme başarılı: önceki sahnedeki kopyaların betik / ses bağlarını çözer ve UUID çakışmalarını giderir (Deserialize'dan sonra)
+        void FinishAdoption(Scene& previous);
+        // Taşınan nesneyle aynı UUID'yi taşıyan sahne nesnesi (aynı sahne yeniden yüklendi) yeni UUID alır
+        void ResolvePersistentDuplicates();
 
         // Environment
         void SetSkybox(std::shared_ptr<Cubemap> skybox) { m_Skybox = skybox; }
@@ -444,6 +455,8 @@ namespace Conqueror
     public:
         entt::registry m_Registry;
         std::unordered_set<uint32_t> m_ProcessDisabled;   // SetProcessDisabled
+        std::unordered_set<entt::entity> m_Persistent;   // SetPersistent (kök nesneler)
+        std::vector<entt::entity> m_Adopted;             // AdoptPersistent ile alınan, FinishAdoption bekleyen
         uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 
         // Viewport bounds for scripts (set by editor)

@@ -1,0 +1,10 @@
+using nativebridge;
+var gs = GetAutoload("GameState");
+var t = GetScriptField(gs, "ticks");
+var s = GetScriptField(gs, "starts");
+var m = GetScriptField(gs, "marker");
+var keeper = FindEntity("Keeper");
+var keeperChild = FindEntity("KeeperChild");
+var gone = FindEntity("Gone");
+LogInfo("REGRESSION autoload b gs=" + gs + " ticks=" + t + " starts=" + s + " marker=" + m + " keeper=" + keeper + " child=" + keeperChild + " gone=" + gone + " scene=" + GetSceneName());
+if (gs != null && s == 1 && m == 42 && t > 20 && keeper != null && keeperChild != null && gone == null && IsPersistent(keeper) && GetSceneName() == "Level2") { CreateEntity("Auto_B"); }

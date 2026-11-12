@@ -4,7 +4,7 @@
 
 Native functions available to every scripting language (ConquerorScript, Luau, LuaQ, Python, C#, Java, C++, C, Rust, Zig and Visual Script nodes). The names are identical in all languages; see [Scripting](../Scripting.md) for how each language calls them. Functions that act on "this" use the entity the script is attached to.
 
-618 functions in 46 categories.
+621 functions in 46 categories.
 
 ## Categories
 
@@ -40,7 +40,7 @@ Native functions available to every scripting language (ConquerorScript, Luau, L
 - [Prefs](#prefs) (13)
 - [Profiler](#profiler) (3)
 - [Rendering](#rendering) (31)
-- [Scene](#scene) (7)
+- [Scene](#scene) (10)
 - [Scenes](#scenes) (4)
 - [Scripting](#scripting) (3)
 - [Scripts](#scripts) (10)
@@ -713,10 +713,13 @@ Native functions available to every scripting language (ConquerorScript, Luau, L
 
 | Function | Description |
 |---|---|
+| `DontDestroyOnLoad(entity = self) -> bool` | Keeps a root object (with its children, script state and playing sounds) when LoadScene switches scenes (Unity DontDestroyOnLoad). |
+| `GetAutoload(name) -> entity` | Object created from Project Settings > Autoload with this name (null if none). Read or change its script with GetScriptField / SetScriptField / SendMessage. |
 | `GetSceneCount() -> int` | Number of scenes enabled in Build Settings. |
 | `GetSceneIndex() -> int` | Build Settings index of the running scene (-1 if not listed). |
 | `GetSceneLoadError() -> string` | Why the last LoadScene call failed. |
 | `GetSceneName() -> string` | Name of the running scene (file name without extension). |
+| `IsPersistent(entity = self) -> bool` | Whether the object survives scene changes (DontDestroyOnLoad or Autoload). |
 | `LoadScene(nameOrIndex) -> bool` | Loads a scene at the end of the frame: a Build Settings index, a scene name ("Level2") or a path under Assets. |
 | `QuitGame()` | Closes the game (stops Play mode in the editor). |
 | `ReloadScene() -> bool` | Restarts the current scene (end of frame). |

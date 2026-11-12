@@ -1,5 +1,6 @@
 // glad diğer başlıklardan (GLFW) önce: gpu_probe GL geri okuma çağrıları
 #define GLFW_INCLUDE_NONE
+#include "Scene/GodotNodes.h"
 #include "Core/Localization/Localization.h"
 #include "Panels/OcclusionPanel.h"
 #include "Scene/OcclusionCulling.h"
@@ -2452,6 +2453,7 @@ namespace Conqueror::Editor
                 CQ_PROFILE_SAMPLE("Play.RuntimeStart", Editor);
                 // Yerelleştirme Remaps oyunda geçerli (dile göre doku / ses / yazı tipi karşılıkları)
                 Localization::SetRemapsActive(true);
+                GodotNodes::InstantiateAutoloads(*m_RuntimeScene);   // Project Settings > Autoload (sahne değişince kalır)
                 m_RuntimeScene->OnRuntimeStart();
             }
             
@@ -2489,12 +2491,17 @@ namespace Conqueror::Editor
     {
         // Oyun içi sahne geçişi: editör sahnesi değişmez, Stop'ta ona dönülür
         auto scene = std::make_shared<Scene>();
+        // DontDestroyOnLoad / Autoload nesneleri yeni sahneye (yüklemeden önce: aynı tanıtıcılar boş sahnede serbest)
+        if (m_RuntimeScene)
+            scene->AdoptPersistent(*m_RuntimeScene);
         SceneSerializer serializer(scene);
         if (!serializer.Deserialize(path))
         {
             CQ_CORE_ERROR("LoadScene: could not load {0}", path.string());
             return;
         }
+        if (m_RuntimeScene)
+            scene->FinishAdoption(*m_RuntimeScene);
         SelectEntityEverywhere({});
         if (m_RuntimeScene)
         {
@@ -4804,6 +4811,14 @@ namespace Conqueror::Editor
                 else if (k == "streaming.allcameras") q.Streaming.AddAllCameras = v == "1" || v == "true";
                 else if (k == "streaming.budget") q.Streaming.MemoryBudgetMB = std::max(1.0f, std::stof(v));
                 else if (k == "streaming.maxreduction") q.Streaming.MaxLevelReduction = std::clamp(std::stoi(v), 0, 7);
+                // Autoload: add = <Ad>=<proje göreli prefab / betik>, clear = listeyi boşalt
+                else if (k == "autoload.add")
+                {
+                    const size_t eq = v.find('=');
+                    if (eq == std::string::npos) { err = "autoload.add <Name>=<path>"; return false; }
+                    ProjectSettings::Autoloads().push_back({ v.substr(0, eq), v.substr(eq + 1), true });
+                }
+                else if (k == "autoload.clear") ProjectSettings::Autoloads().clear();
                 // Localization: translations = virgülle ayrılmış proje göreli dosyalar; remap = <kaynak>=<dil>:<dosya>
                 else if (k.rfind("localization.", 0) == 0)
                 {

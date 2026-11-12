@@ -1,4 +1,5 @@
 #include "Core/Localization/Localization.h"
+#include "Scene/GodotNodes.h"
 #include "RuntimeLayer.h"
 #ifdef __ANDROID__
     #include "Platform/Android/AndroidPlatform.h"
@@ -431,6 +432,7 @@ namespace Conqueror::Runtime
         SceneManager::Reset();
         SceneManager::SetActiveScenePath(startScenePath);
         m_ActiveScene->SetRuntimeScene(true);
+        GodotNodes::InstantiateAutoloads(*m_ActiveScene);   // Project Settings > Autoload: sahneden önce, sahne değişince kalır
         m_ActiveScene->OnRuntimeStart();
         
         // Ensure resize is handled initially
@@ -442,12 +444,17 @@ namespace Conqueror::Runtime
     void RuntimeLayer::SwitchScene(const std::filesystem::path& path)
     {
         auto scene = std::make_shared<Scene>();
+        // DontDestroyOnLoad / Autoload nesneleri yeni sahneye (yüklemeden önce: aynı tanıtıcılar boş sahnede serbest)
+        if (m_ActiveScene)
+            scene->AdoptPersistent(*m_ActiveScene);
         SceneSerializer serializer(scene);
         if (!serializer.Deserialize(path))
         {
             CQ_CORE_ERROR("LoadScene: could not load {0}", path.string());
             return;
         }
+        if (m_ActiveScene)
+            scene->FinishAdoption(*m_ActiveScene);
         // Oyun içi geçiş: betik çalışma zamanları (statik durum) korunur
         m_ActiveScene->OnRuntimeStop(false);
         m_ActiveScene->StopAllAudio();

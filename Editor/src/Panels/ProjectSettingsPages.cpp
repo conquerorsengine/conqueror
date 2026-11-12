@@ -10,6 +10,8 @@
 #include "Renderer/RHI/Texture.h"
 #include "Core/Project/ProjectSettings.h"
 #include "Core/Localization/Localization.h"
+#include "Scripting/ScriptRuntime.h"
+#include "Core/Serialization/PrefabSerializer.h"
 #include "Renderer/TextureStreaming.h"
 #include "Core/Tiering/QualitySettings.h"
 #include "Core/Input/Input.h"
@@ -1133,5 +1135,121 @@ namespace Conqueror::Editor
             Localization::Reload();
             m_Dirty = true;
         }
+    }
+    // Godot Project Settings > Autoload: oyun başlarken sahneden önce oluşturulan, sahne değişince kalan genel nesneler
+    void ProjectSettingsPanel::DrawAutoload()
+    {
+        auto& list = ProjectSettings::Autoloads();
+        static const std::vector<std::string> kExt = { ".cqprefab", ".cqs", ".luaq", ".py", ".cs", ".java", ".cpp", ".cqgraph" };
+        UI::InfoBox("Prefabs and scripts created when the game starts (Play, built game), before the first scene, in this order.\n"
+                    "They stay when LoadScene changes scenes, with their script state and playing sounds (like Unity's DontDestroyOnLoad).\n"
+                    "Scripts reach them with GetAutoload(\"Name\") or FindEntity(\"Name\"), then GetScriptField / SetScriptField / SendMessage.");
+        auto accept = [](const std::filesystem::path& p) {
+            return PrefabSerializer::IsPrefabPath(p.string()) || Scripting::ScriptRuntimes::IsScriptFile(p.string());
+        };
+        int removeAt = -1, moveUp = -1;
+        for (size_t i = 0; i < list.size(); ++i)
+        {
+            auto& a = list[i];
+            ImGui::PushID((int)i);
+            // 1. satır: açık / ad; 2. satır: dosya, seçici, yukarı, sil (dar panelde taşmasın)
+            UI::BeginProperty(("Autoload " + std::to_string(i + 1)).c_str(), "Name the scripts use with GetAutoload(\"Name\"); untick to skip it.");
+            m_Dirty |= ImGui::Checkbox("##on", &a.Enabled);
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(-1.0f);
+            char name[96] = {};
+            std::strncpy(name, a.Name.c_str(), sizeof(name) - 1);
+            if (ImGui::InputTextWithHint("##name", "Name", name, sizeof(name)))
+            {
+                a.Name = name;
+                m_Dirty = true;
+            }
+            UI::EndProperty();
+            UI::BeginProperty("    Prefab / Script", a.Path.c_str());
+            const float w = ImGui::GetContentRegionAvail().x - 3.0f * (ImGui::GetFrameHeight() + ImGui::GetStyle().ItemSpacing.x);
+            const std::string shown = a.Path.empty() ? std::string("None (Prefab or Script)") : std::filesystem::path(a.Path).filename().string();
+            ImGui::Button((shown + "##path").c_str(), ImVec2(std::max(w, 40.0f), 0.0f));
+            if (ImGui::IsItemClicked() && !a.Path.empty())
+                EditorState::Get().SelectAsset(AssetUI::Resolve(a.Path).string());
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                {
+                    const std::filesystem::path dropped((const char*)p->Data);
+                    if (accept(dropped))
+                    {
+                        a.Path = AssetUI::ToProjectRelative(dropped);
+                        if (a.Name.empty())
+                            a.Name = dropped.stem().string();
+                        m_Dirty = true;
+                    }
+                }
+                ImGui::EndDragDropTarget();
+            }
+            ImGui::SameLine();
+            std::string picked;
+            if (ObjectPicker::Button("##pick", "Prefab or Script", kExt, a.Path, picked))
+            {
+                a.Path = picked.empty() ? std::string() : AssetUI::ToProjectRelative(picked);
+                if (a.Name.empty() && !picked.empty())
+                    a.Name = std::filesystem::path(picked).stem().string();
+                m_Dirty = true;
+            }
+            ImGui::SameLine();
+            ImGui::BeginDisabled(i == 0);
+            if (ImGui::Button(ICON_FA_ARROW_UP "##up", ImVec2(ImGui::GetFrameHeight(), 0.0f)))
+                moveUp = (int)i;
+            ImGui::EndDisabled();
+            ImGui::SameLine();
+            if (ImGui::Button(ICON_FA_XMARK "##del", ImVec2(ImGui::GetFrameHeight(), 0.0f)))
+                removeAt = (int)i;
+            UI::EndProperty();
+            ImGui::PopID();
+        }
+        if (moveUp > 0)
+        {
+            std::swap(list[(size_t)moveUp], list[(size_t)moveUp - 1]);
+            m_Dirty = true;
+        }
+        if (removeAt >= 0)
+        {
+            list.erase(list.begin() + removeAt);
+            m_Dirty = true;
+        }
+        UI::BeginProperty("Add", "Drop a prefab or script from the Content Browser here, or pick one.");
+        {
+            const float w = ImGui::GetContentRegionAvail().x - ImGui::GetFrameHeight() - ImGui::GetStyle().ItemSpacing.x;
+            ImGui::Button(ICON_FA_PLUS "  Add Autoload (Prefab or Script)##add", ImVec2(w, 0.0f));
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                {
+                    const std::filesystem::path dropped((const char*)p->Data);
+                    if (accept(dropped))
+                    {
+                        list.push_back({ dropped.stem().string(), AssetUI::ToProjectRelative(dropped), true });
+                        m_Dirty = true;
+                    }
+                }
+                ImGui::EndDragDropTarget();
+            }
+            ImGui::SameLine();
+            std::string picked;
+            if (ObjectPicker::Button("##addPick", "Prefab or Script", kExt, std::string(), picked) && !picked.empty())
+            {
+                list.push_back({ std::filesystem::path(picked).stem().string(), AssetUI::ToProjectRelative(picked), true });
+                m_Dirty = true;
+            }
+        }
+        UI::EndProperty();
+        // Aynı ad iki kez: GetAutoload ilkini döndürür
+        for (size_t i = 0; i < list.size(); ++i)
+            for (size_t j = i + 1; j < list.size(); ++j)
+                if (!list[i].Name.empty() && list[i].Name == list[j].Name)
+                {
+                    UI::InfoBox(("Two autoloads are named \"" + list[i].Name + "\"; GetAutoload returns the first.").c_str(), UI::InfoType::Warning);
+                    i = list.size();
+                    break;
+                }
     }
 }

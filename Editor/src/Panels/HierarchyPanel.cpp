@@ -306,8 +306,25 @@ namespace Conqueror::Editor
         }
         else
         {
+            // Unity: Play'de DontDestroyOnLoad / Autoload nesneleri sahneden ayrı "DontDestroyOnLoad" başlığı altında
+            std::vector<Entity> persistent;
             for (auto& entity : GetRootEntities())
-                DrawEntityNode(entity, 0);
+            {
+                if (m_Context->IsPersistent(entity))
+                    persistent.push_back(entity);
+                else
+                    DrawEntityNode(entity, 0);
+            }
+            if (!persistent.empty())
+            {
+                ImGui::Dummy(ImVec2(0.0f, 4.0f));
+                ImGui::PushStyleColor(ImGuiCol_Text, UI::Colors::TextDim);
+                ImGui::Text(ICON_FA_INFINITY "  DontDestroyOnLoad");
+                ImGui::PopStyleColor();
+                ImGui::Separator();
+                for (auto& entity : persistent)
+                    DrawEntityNode(entity, 0);
+            }
         }
         ImGui::PopStyleVar(2);
 

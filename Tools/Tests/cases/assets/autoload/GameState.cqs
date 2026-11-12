@@ -1,0 +1,19 @@
+using nativebridge;
+
+// Autoload testi: sahne değişince kalır; Start yalnız bir kez çalışır, alanlar korunur
+script GameState : ConquerorScript
+{
+    public var ticks = 0;
+    public var starts = 0;
+    public var marker = 0;
+
+    func Start()
+    {
+        starts = starts + 1;
+    }
+
+    func Update(dt)
+    {
+        ticks = ticks + 1;
+    }
+}

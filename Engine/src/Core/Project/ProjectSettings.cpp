@@ -27,6 +27,7 @@ namespace Conqueror
         NavigationProjectSettings s_Navigation;
         EditorProjectSettings s_Editor;
         std::vector<ScriptOrderEntry> s_ScriptOrder;
+        std::vector<AutoloadEntry> s_Autoloads;
         std::unordered_map<std::string, int> s_OrderCache;
         bool s_OrderCacheValid = false;
 
@@ -79,6 +80,7 @@ namespace Conqueror
     NavigationProjectSettings& ProjectSettings::Navigation() { return s_Navigation; }
     EditorProjectSettings& ProjectSettings::Editor() { return s_Editor; }
     std::vector<ScriptOrderEntry>& ProjectSettings::ScriptOrder() { return s_ScriptOrder; }
+    std::vector<AutoloadEntry>& ProjectSettings::Autoloads() { return s_Autoloads; }
     std::vector<std::string>& ProjectSettings::ScriptDefines()
     {
         static std::vector<std::string> s_Defines;
@@ -127,6 +129,7 @@ namespace Conqueror
         s_Navigation = {};
         s_Editor = {};
         s_ScriptOrder.clear();
+        s_Autoloads.clear();
         ScriptDefines().clear();
         s_OrderCacheValid = false;
         CustomTags().clear();
@@ -193,6 +196,14 @@ namespace Conqueror
         for (const auto& e : s_ScriptOrder)
             out << YAML::Flow << YAML::BeginMap << YAML::Key << "Class" << YAML::Value << e.ClassName << YAML::Key << "Order" << YAML::Value << e.Order << YAML::EndMap;
         out << YAML::EndSeq;
+        if (!s_Autoloads.empty())
+        {
+            out << YAML::Key << "Autoload" << YAML::Value << YAML::BeginSeq;
+            for (const auto& a : s_Autoloads)
+                out << YAML::Flow << YAML::BeginMap << YAML::Key << "Name" << YAML::Value << a.Name << YAML::Key << "Path" << YAML::Value << a.Path
+                    << YAML::Key << "Enabled" << YAML::Value << a.Enabled << YAML::EndMap;
+            out << YAML::EndSeq;
+        }
 
         out << YAML::Key << "Tags" << YAML::Value << YAML::Flow << CustomTags();
         out << YAML::Key << "ScriptDefines" << YAML::Value << YAML::Flow << ScriptDefines();
@@ -300,6 +311,17 @@ namespace Conqueror
                     s_ScriptOrder.push_back(entry);
             }
         s_OrderCacheValid = false;
+        s_Autoloads.clear();
+        if (auto al = root["Autoload"]; al && al.IsSequence())
+            for (const auto& e : al)
+            {
+                AutoloadEntry entry;
+                Read(e, "Name", entry.Name);
+                Read(e, "Path", entry.Path);
+                Read(e, "Enabled", entry.Enabled);
+                if (!entry.Name.empty() || !entry.Path.empty())
+                    s_Autoloads.push_back(entry);
+            }
         Localization::Deserialize(root);
     }
 

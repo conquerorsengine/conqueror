@@ -977,6 +977,23 @@ namespace Conqueror::CQS
             Entity e = Target(v);
             return e && e.HasComponent<TimerComponent>() ? &e.GetComponent<TimerComponent>() : nullptr;
         };
+        // ================================================================ Kalıcı nesneler (Unity DontDestroyOnLoad, Godot Autoload)
+        vm->DefineNative("DontDestroyOnLoad", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            Entity e = Target(argc > 0 ? args[0] : Value::MakeNull());
+            return Value::MakeBool(scene && e && scene->SetPersistent(e, true));
+        }, -1);
+        vm->DefineNative("IsPersistent", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            Entity e = Target(argc > 0 ? args[0] : Value::MakeNull());
+            return Value::MakeBool(scene && e && scene->IsPersistent(e));
+        }, -1);
+        vm->DefineNative("GetAutoload", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            if (!scene || argc < 1 || !args[0].IsString()) return Value::MakeNull();
+            const uint32_t id = GodotNodes::GetAutoload(*scene, args[0].AsString()->Value);
+            return id != UINT32_MAX ? Value::MakeInt((int64_t)id) : Value::MakeNull();
+        }, 1);
         vm->DefineNative("TimerStart", [](int argc, Value* args) -> Value {
             Scene* scene = ActiveScene();
             Entity e = Target(argc > 0 ? args[0] : Value::MakeNull());

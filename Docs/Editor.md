@@ -125,3 +125,13 @@ string tables):
   suffix, to find untranslated or overflowing texts.
 - **Generate POT:** writes a translation template with every UI Text, Text Renderer and Dropdown text in scenes and prefabs
   and every `Tr` / `TrN` call in scripts.
+
+## Autoload and DontDestroyOnLoad
+
+**Project Settings > Autoload** (as in Godot) lists prefabs and scripts that are created when the game starts (Play and the
+built game), before the first scene, in list order. They stay when `LoadScene` changes scenes, together with their children,
+script state (fields keep their values, `Start` does not run again) and playing sounds. Scripts reach them with
+`GetAutoload("Name")` (or `FindEntity("Name")`) and `GetScriptField` / `SetScriptField` / `SendMessage`.
+
+`DontDestroyOnLoad(entity)` does the same for any root object at run time (Unity: it is refused for objects that have a
+parent). During Play the Hierarchy shows these objects under a separate **DontDestroyOnLoad** header.

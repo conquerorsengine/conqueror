@@ -42,6 +42,7 @@ namespace Conqueror::Editor
             { "Editor", ICON_FA_PEN_TO_SQUARE },
             { "Script Execution Order", ICON_FA_LIST_OL },
             { "Scripting", ICON_FA_CODE },
+            { "Autoload", ICON_FA_INFINITY },
         };
 
         std::filesystem::path ProjectFilePath()
@@ -159,6 +160,7 @@ namespace Conqueror::Editor
         else if (m_Page == "Input") DrawInput();
         else if (m_Page == "Navigation") DrawNavigation();
         else if (m_Page == "Localization") DrawLocalization();
+        else if (m_Page == "Autoload") DrawAutoload();
         else if (m_Page == "Editor") DrawEditorSettings();
         else if (m_Page == "Script Execution Order") DrawScriptOrder();
         ImGui::EndChild();

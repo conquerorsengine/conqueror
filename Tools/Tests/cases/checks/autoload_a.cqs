@@ -1,0 +1,9 @@
+using nativebridge;
+var gs = GetAutoload("GameState");
+var t = GetScriptField(gs, "ticks");
+var s = GetScriptField(gs, "starts");
+LogInfo("REGRESSION autoload a gs=" + gs + " ticks=" + t + " starts=" + s);
+SetScriptField(gs, "marker", 42);
+var kept = DontDestroyOnLoad(FindEntity("Keeper"));
+var child = DontDestroyOnLoad(FindEntity("KeeperChild"));
+if (gs != null && t > 5 && s == 1 && kept && !child) { CreateEntity("Auto_A"); }

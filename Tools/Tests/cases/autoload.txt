@@ -1,0 +1,25 @@
+# template: empty
+# Autoload (madde 25, Godot) ve DontDestroyOnLoad (Unity): Project Settings > Autoload'daki betik Play'de sahneden önce oluşur; LoadScene ile sahne
+# değişince nesne, betik alanları (marker), sayaç (ticks sürer) ve Start'ın bir kez çalışması korunur. DontDestroyOnLoad'lı kök nesne çocuğuyla
+# yeni sahneye geçer (çocuğun kendisi kök olmadığı için reddedilir, Unity gibi), işaretlenmeyen nesne gider. Stop'ta Autoload kalmaz
+wait 40
+content_drop "{dir}/assets/autoload/GameState.cqs"
+wait 10
+save_scene_as Assets/Scenes/Level2.cqscene
+entity create Keeper 0 0 0
+entity create KeeperChild 1 0 0
+entity parent KeeperChild Keeper
+entity create Gone 2 0 0
+projsettings set autoload.add GameState=Assets/GameState.cqs
+play
+wait 30
+run_cqs_file "{dir}/checks/autoload_a.cqs"
+expect_entities 1 Auto_A
+cqs LoadScene('Assets/Scenes/Level2.cqscene')
+wait 30
+run_cqs_file "{dir}/checks/autoload_b.cqs"
+expect_entities 1 Auto_B
+stop
+wait 10
+expect_entities 0 GameState
+quit
