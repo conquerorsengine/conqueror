@@ -1,0 +1,33 @@
+# template: basic3d
+# 186 (Unity Version Control): Git (gerçek git: durumlar Up to date / Not versioned / Added / Modified, Revert) ve Perforce (sahte p4 ile:
+# Check Out = p4 edit, Lock = p4 lock, Unlock, Revert). Git LFS kilitleri sunucu gerektirir, burada sınanmaz
+wait 40
+content_drop "{dir}/assets/loc/flag_red.png" "{dir}/assets/vcs/fake_p4.sh"
+wait 10
+# ---- Git
+vcs mode git
+vcs init_git
+vcs expect Assets/flag_red.png Up to date
+create_asset material
+vcs expect "Assets/New Material.cqmat" Not versioned
+vcs add "Assets/New Material.cqmat"
+vcs expect "Assets/New Material.cqmat" Added
+entity create Changed 0 0 0
+save_scene
+vcs expect Assets/Scenes/Main.cqscene Modified
+vcs revert Assets/Scenes/Main.cqscene
+vcs expect Assets/Scenes/Main.cqscene Up to date
+# ---- Perforce (sahte p4)
+vcs mode perforce
+vcs p4exe Assets/fake_p4.sh
+vcs expect Assets/flag_red.png Up to date
+vcs checkout Assets/flag_red.png
+vcs expect Assets/flag_red.png Checked out
+vcs lock Assets/flag_red.png
+vcs expect Assets/flag_red.png Locked by you
+vcs unlock Assets/flag_red.png
+vcs expect Assets/flag_red.png Checked out
+vcs revert Assets/flag_red.png
+vcs expect Assets/flag_red.png Up to date
+vcs mode none
+quit

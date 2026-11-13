@@ -106,6 +106,17 @@ namespace Conqueror {
         out << YAML::EndMap;
         out << YAML::EndMap;
 
+        if (const auto& vcs = config.VersionControl; vcs.Mode != 0 || !vcs.P4Port.empty())
+        {
+            out << YAML::Key << "VersionControl" << YAML::Value << YAML::BeginMap;
+            out << YAML::Key << "Mode" << YAML::Value << (vcs.Mode == 1 ? "Git" : vcs.Mode == 2 ? "Perforce" : "None");
+            out << YAML::Key << "P4Executable" << YAML::Value << vcs.P4Executable;
+            out << YAML::Key << "P4Port" << YAML::Value << vcs.P4Port;
+            out << YAML::Key << "P4User" << YAML::Value << vcs.P4User;
+            out << YAML::Key << "P4Client" << YAML::Value << vcs.P4Client;
+            out << YAML::EndMap;
+        }
+
         const auto& build = config.Build;
         out << YAML::Key << "Build" << YAML::Value << YAML::BeginMap;
         out << YAML::Key << "OutputDirectory" << YAML::Value << build.OutputDirectory;
@@ -283,6 +294,17 @@ namespace Conqueror {
                 readBool(n, "FillDisplay", p.QNX.FillDisplay);
                 readStr(n, "ScreenAppID", p.QNX.ScreenAppID);
             }
+        }
+
+        config.VersionControl = VersionControlSettings{};
+        if (auto vcs = data["VersionControl"]; vcs && vcs.IsMap())
+        {
+            const std::string mode = vcs["Mode"].as<std::string>("None");
+            config.VersionControl.Mode = mode == "Git" ? 1 : mode == "Perforce" ? 2 : 0;
+            config.VersionControl.P4Executable = vcs["P4Executable"].as<std::string>("p4");
+            config.VersionControl.P4Port = vcs["P4Port"].as<std::string>("");
+            config.VersionControl.P4User = vcs["P4User"].as<std::string>("");
+            config.VersionControl.P4Client = vcs["P4Client"].as<std::string>("");
         }
 
         // Derleme ayarları (sahne listesi)

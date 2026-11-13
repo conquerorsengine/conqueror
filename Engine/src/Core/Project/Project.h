@@ -128,6 +128,17 @@ namespace Conqueror {
         bool WaitForDebugger = false;
     };
 
+    // Unity Project Settings > Version Control: Git (Git LFS kilitleri) ya da Perforce (Helix Core). Inspector başlığındaki Check Out /
+    // Lock düğmeleri ve Content Browser durum rozetleri bunu kullanır
+    struct VersionControlSettings
+    {
+        int Mode = 0;                         // 0 None, 1 Git, 2 Perforce
+        std::string P4Executable = "p4";     // proje göreli ya da PATH'teki komut
+        std::string P4Port;                   // P4PORT (ör. ssl:perforce.example.com:1666)
+        std::string P4User;                   // P4USER
+        std::string P4Client;                 // P4CLIENT (çalışma alanı)
+    };
+
     struct ProjectConfig
     {
         std::string Name = "Untitled";
@@ -141,6 +152,7 @@ namespace Conqueror {
 
         PlayerSettings Player;
         BuildSettings Build;
+        VersionControlSettings VersionControl;
 
         // Derlenecek sahneler (etkin olanlar, sırayla); liste boşsa başlangıç sahnesi
         std::vector<std::string> GetBuildScenes() const

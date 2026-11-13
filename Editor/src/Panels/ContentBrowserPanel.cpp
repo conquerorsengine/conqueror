@@ -28,6 +28,7 @@
 #include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
 #include "Renderer/Utilities/Renderer3D/Material.h"
 #include "ContentBrowserPanel.h"
+#include "VersionControl/VersionControl.h"
 #include "NodeAssetPanel.h"
 #include "Assets/AssetPreview.h"
 #include "UI/UIToolkit.h"
@@ -924,6 +925,31 @@ namespace Conqueror::Editor
         }
 
         HandleItemInteraction(entry);
+
+        // Sürüm denetimi rozeti (Unity Project penceresindeki simgeler): değişti, eklendi, açık, kilitli
+        if (cellVisible && !entry.IsDirectory && VersionControl::IsEnabled())
+        {
+            const auto st = VersionControl::Get(entry.Path.string());
+            const char* icon = nullptr;
+            ImU32 color = 0;
+            switch (st.Status)
+            {
+                case VersionControl::State::Modified: icon = ICON_FA_PEN; color = IM_COL32(240, 170, 60, 255); break;
+                case VersionControl::State::Added: icon = ICON_FA_PLUS; color = IM_COL32(90, 200, 110, 255); break;
+                case VersionControl::State::CheckedOut: icon = ICON_FA_CIRCLE_CHECK; color = IM_COL32(90, 170, 250, 255); break;
+                case VersionControl::State::LockedLocal: icon = ICON_FA_LOCK; color = IM_COL32(90, 200, 110, 255); break;
+                case VersionControl::State::LockedOther:
+                case VersionControl::State::CheckedOutOther: icon = ICON_FA_LOCK; color = IM_COL32(235, 80, 70, 255); break;
+                case VersionControl::State::NotVersioned: icon = ICON_FA_QUESTION; color = IM_COL32(170, 170, 175, 220); break;
+                default: break;
+            }
+            if (icon)
+            {
+                const ImVec2 at(thumbMin.x + 1.0f, thumbMin.y + thumb - ImGui::GetFontSize() - 1.0f);
+                dl->AddRectFilled(ImVec2(at.x - 2.0f, at.y - 1.0f), ImVec2(at.x + ImGui::GetFontSize() + 2.0f, at.y + ImGui::GetFontSize() + 1.0f), IM_COL32(20, 22, 26, 210), 4.0f);
+                dl->AddText(at, color, icon);
+            }
+        }
 
         // Dilimli görsel: sağdaki ok dilimleri açar / kapar (Unity Project penceresi)
         if (cellVisible && !entry.IsDirectory && IsSpriteImage(entry.Extension))

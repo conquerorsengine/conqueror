@@ -72,6 +72,7 @@
 #include "Scripting/ScriptContext.h"
 #include "Scripting/ConquerorScript/CQSValue.h"
 #include "Scripting/ScriptRuntime.h"
+#include "VersionControl/VersionControl.h"
 #include <fstream>
 #include <sstream>
 #include "Panels/GameViewSettings.h"
@@ -2300,6 +2301,8 @@ namespace Conqueror::Editor
 
     void EditorLayer::RenderPanels()
     {
+        // Sürüm denetimi durumları (arka planda, birkaç saniyede bir)
+        VersionControl::Update();
         // Create menüsünden Viewport'a sürükleme menü kapandıktan sonra da sürer (Hierarchy gizli olsa bile)
         HierarchyPanel::UpdateCreateDrag();
         if (m_ShowHierarchy && m_HierarchyPanel)
@@ -6305,6 +6308,42 @@ namespace Conqueror::Editor
             return false;
         });
         // select_asset <path>: varlığı seç (Inspector'da açılır; Content Browser'da tıklamakla aynı)
+        // vcs mode <none|git|perforce> | init_git | p4exe <yol> | refresh | expect <yol> <durum> | lock|unlock|checkout|revert|add <yol>
+        Automation::RegisterCommand("vcs", [](const Args& a, std::string& err) {
+            namespace VC = VersionControl;
+            if (a.size() < 2 || !Project::GetActive()) { err = "vcs mode|init_git|p4exe|refresh|expect|lock|unlock|checkout|revert|add"; return false; }
+            auto& cfg = Project::GetActive()->GetConfig().VersionControl;
+            auto pathArg = [&](size_t i) {
+                std::filesystem::path p = i < a.size() ? a[i] : std::string();
+                if (p.is_relative()) p = Project::GetActiveProjectDirectory() / p;
+                return p.string();
+            };
+            if (a[1] == "mode" && a.size() > 2) { cfg.Mode = a[2] == "git" ? 1 : a[2] == "perforce" ? 2 : 0; VC::Refresh(true); return true; }
+            if (a[1] == "p4exe" && a.size() > 2) { cfg.P4Executable = a[2]; return true; }
+            if (a[1] == "init_git") { std::string m; if (!VC::InitGitRepository(&m)) { err = m; return false; } return true; }
+            if (a[1] == "refresh") { VC::Refresh(true); return true; }
+            if (a[1] == "expect" && a.size() > 3)
+            {
+                VC::Refresh(true);
+                const std::string got = VC::StateName(VC::Get(pathArg(2)).Status);
+                std::string want = a[3];
+                for (size_t i = 4; i < a.size(); ++i) want += " " + a[i];
+                Automation::Report("VCS " + a[2] + " = " + got);
+                if (got != want) { err = "state '" + got + "' expected '" + want + "'"; return false; }
+                return true;
+            }
+            std::string message;
+            bool ok = false;
+            if (a[1] == "lock" && a.size() > 2) ok = VC::Lock(pathArg(2), &message);
+            else if (a[1] == "unlock" && a.size() > 2) ok = VC::Unlock(pathArg(2), &message);
+            else if (a[1] == "checkout" && a.size() > 2) ok = VC::CheckOut(pathArg(2), &message);
+            else if (a[1] == "revert" && a.size() > 2) ok = VC::Revert(pathArg(2), &message);
+            else if (a[1] == "add" && a.size() > 2) ok = VC::Add(pathArg(2), &message);
+            else { err = "unknown vcs command"; return false; }
+            Automation::Report("VCS " + a[1] + ": " + message);
+            if (!ok) err = message;
+            return ok;
+        });
         Automation::RegisterCommand("select_asset", [](const Args& a, std::string& err) {
             if (a.size() < 2) { err = "select_asset <path>"; return false; }
             std::string p = a[1];

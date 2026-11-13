@@ -1,4 +1,5 @@
 #include "ProjectSettingsPanel.h"
+#include "VersionControl/VersionControl.h"
 #include "Scene/Scene.h"
 #include "Core/Logging/Log.h"
 #include "Core/Project/Project.h"
@@ -43,6 +44,7 @@ namespace Conqueror::Editor
             { "Script Execution Order", ICON_FA_LIST_OL },
             { "Scripting", ICON_FA_CODE },
             { "Autoload", ICON_FA_INFINITY },
+            { "Version Control", ICON_FA_CODE_BRANCH },
         };
 
         std::filesystem::path ProjectFilePath()
@@ -161,10 +163,42 @@ namespace Conqueror::Editor
         else if (m_Page == "Navigation") DrawNavigation();
         else if (m_Page == "Localization") DrawLocalization();
         else if (m_Page == "Autoload") DrawAutoload();
+        else if (m_Page == "Version Control") DrawVersionControl();
         else if (m_Page == "Editor") DrawEditorSettings();
         else if (m_Page == "Script Execution Order") DrawScriptOrder();
         ImGui::EndChild();
         ImGui::End();
+    }
+
+    void ProjectSettingsPanel::DrawVersionControl()
+    {
+        // Unity Project Settings > Version Control
+        auto& vcs = Project::GetActive()->GetConfig().VersionControl;
+        static const char* kModes[] = { "None", "Git", "Perforce" };
+        m_Dirty |= UI::Combo("Mode", vcs.Mode, kModes, 3,
+                             "Git: file locks through Git LFS (git lfs lock), status from git status. Perforce: Check Out (p4 edit) and Lock (p4 lock)");
+        if (vcs.Mode == 2)
+        {
+            m_Dirty |= InputString("Server", vcs.P4Port);
+            m_Dirty |= InputString("User Name", vcs.P4User);
+            m_Dirty |= InputString("Workspace", vcs.P4Client);
+            m_Dirty |= InputString("p4 Executable", vcs.P4Executable);
+            ImGui::TextDisabled("Empty fields use the P4PORT / P4USER / P4CLIENT environment or P4CONFIG.");
+        }
+        if (vcs.Mode != 0)
+        {
+            static std::string s_Result;
+            static bool s_Ok = false;
+            if (ImGui::Button(ICON_FA_PLUG "  Test Connection"))
+                s_Ok = VersionControl::TestConnection(&s_Result);
+            if (!s_Result.empty())
+            {
+                ImGui::PushTextWrapPos(0.0f);
+                ImGui::TextColored(s_Ok ? ImVec4(0.45f, 0.85f, 0.5f, 1.0f) : ImVec4(1.0f, 0.5f, 0.45f, 1.0f), "%s", s_Result.c_str());
+                ImGui::PopTextWrapPos();
+            }
+            ImGui::TextDisabled("Select an asset: the Inspector header shows its state with Check Out / Lock / Unlock / Revert.");
+        }
     }
 
     void ProjectSettingsPanel::DrawGeneral()

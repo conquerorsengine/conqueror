@@ -1,4 +1,5 @@
 #include "AssetInspector.h"
+#include "VersionControl/VersionControl.h"
 #include "ContentBrowserPanel.h"
 #include "NodeAssetPanel.h"
 #include "Assets/SimpleAssetInspector.h"
@@ -888,8 +889,84 @@ namespace Conqueror::Editor::AssetInspector
         }
     }
 
+    // Unity Inspector başlığı: Open (dış uygulamada açar; kaydedince yeniden içe aktarılır) ve sürüm denetimi (Check Out, Lock / Unlock,
+    // Revert) düğmeleri, dosyanın durumu
+    static void DrawAssetHeaderBar(const std::string& path)
+    {
+        namespace VC = VersionControl;
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 3.0f));
+        if (ImGui::Button(ICON_FA_UP_RIGHT_FROM_SQUARE "  Open"))
+        {
+#if defined(CQ_PLATFORM_WINDOWS)
+            const std::string command = "start \"\" \"" + path + "\"";
+#elif defined(CQ_PLATFORM_MACOS)
+            const std::string command = "open \"" + path + "\"";
+#else
+            const std::string command = "xdg-open \"" + path + "\" >/dev/null 2>&1 &";
+#endif
+            const int rc = std::system(command.c_str());
+            (void)rc;
+        }
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+            ImGui::SetTooltip("Open in the default application; saving it there reimports the asset");
+        if (VC::IsEnabled())
+        {
+            static std::string s_Message;
+            const VC::FileStatus st = VC::Get(path);
+            const bool perforce = VC::Mode() == 2;
+            const bool versioned = st.Status != VC::State::NotVersioned && st.Status != VC::State::Unknown;
+            ImGui::SameLine();
+            if (!versioned)
+            {
+                if (ImGui::Button(ICON_FA_PLUS "  Add"))
+                    VC::Add(path, &s_Message);
+            }
+            else
+            {
+                if (perforce && st.Status == VC::State::Clean)
+                {
+                    if (ImGui::Button(ICON_FA_CIRCLE_CHECK "  Check Out"))
+                        VC::CheckOut(path, &s_Message);
+                    ImGui::SameLine();
+                }
+                if (st.Status == VC::State::LockedLocal)
+                {
+                    if (ImGui::Button(ICON_FA_LOCK_OPEN "  Unlock"))
+                        VC::Unlock(path, &s_Message);
+                }
+                else
+                {
+                    ImGui::BeginDisabled(st.Status == VC::State::LockedOther);
+                    if (ImGui::Button(ICON_FA_LOCK "  Lock"))
+                        VC::Lock(path, &s_Message);
+                    ImGui::EndDisabled();
+                }
+                if (st.Status == VC::State::Modified || st.Status == VC::State::CheckedOut || st.Status == VC::State::Added ||
+                    (perforce && st.Status == VC::State::LockedLocal))
+                {
+                    ImGui::SameLine();
+                    if (ImGui::Button(ICON_FA_ROTATE_LEFT "  Revert"))
+                        VC::Revert(path, &s_Message);
+                }
+            }
+            ImGui::SameLine();
+            const bool warn = st.Status == VC::State::LockedOther || st.Status == VC::State::CheckedOutOther;
+            ImGui::TextColored(warn ? ImVec4(1.0f, 0.45f, 0.4f, 1.0f) : ImVec4(0.6f, 0.62f, 0.66f, 1.0f), "%s%s%s  (%s)", VC::StateName(st.Status),
+                               st.Owner.empty() ? "" : ": ", st.Owner.c_str(), VC::ModeName());
+            if (!s_Message.empty())
+            {
+                ImGui::PushTextWrapPos(0.0f);
+                ImGui::TextDisabled("%s", s_Message.c_str());
+                ImGui::PopTextWrapPos();
+            }
+        }
+        ImGui::PopStyleVar();
+        ImGui::Separator();
+    }
+
     void Draw(const std::string& path)
     {
+        DrawAssetHeaderBar(path);
         if (Lower(fs::path(path).extension().string()) == PrefabSerializer::Extension)
         {
             DrawPrefab(path);
