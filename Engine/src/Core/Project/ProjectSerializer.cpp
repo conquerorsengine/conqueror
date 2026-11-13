@@ -117,6 +117,14 @@ namespace Conqueror {
             out << YAML::EndMap;
         }
 
+        if (const auto& xr = config.XR; xr.InitializeOnStartup || !xr.OpenXR)
+        {
+            out << YAML::Key << "XR" << YAML::Value << YAML::BeginMap;
+            out << YAML::Key << "InitializeOnStartup" << YAML::Value << xr.InitializeOnStartup;
+            out << YAML::Key << "OpenXR" << YAML::Value << xr.OpenXR;
+            out << YAML::EndMap;
+        }
+
         const auto& build = config.Build;
         out << YAML::Key << "Build" << YAML::Value << YAML::BeginMap;
         out << YAML::Key << "OutputDirectory" << YAML::Value << build.OutputDirectory;
@@ -307,6 +315,13 @@ namespace Conqueror {
             config.VersionControl.P4Port = vcs["P4Port"].as<std::string>("");
             config.VersionControl.P4User = vcs["P4User"].as<std::string>("");
             config.VersionControl.P4Client = vcs["P4Client"].as<std::string>("");
+        }
+
+        config.XR = XRSettings{};
+        if (auto xr = data["XR"]; xr && xr.IsMap())
+        {
+            config.XR.InitializeOnStartup = xr["InitializeOnStartup"].as<bool>(false);
+            config.XR.OpenXR = xr["OpenXR"].as<bool>(true);
         }
 
         // Derleme ayarları (sahne listesi)

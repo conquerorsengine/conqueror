@@ -141,6 +141,13 @@ namespace Conqueror {
         std::string P4Client;                 // P4CLIENT (çalışma alanı)
     };
 
+    // Unity Project Settings > XR Plug-in Management: oyun başlarken OpenXR gözlük oturumu (Unreal Start in VR, Godot XR > OpenXR > Enabled)
+    struct XRSettings
+    {
+        bool InitializeOnStartup = false;     // Initialize XR on Startup
+        bool OpenXR = true;                   // sağlayıcı: OpenXR (Monado, SteamVR, Meta Quest Link, Windows Mixed Reality ...)
+    };
+
     struct ProjectConfig
     {
         std::string Name = "Untitled";
@@ -155,6 +162,7 @@ namespace Conqueror {
         PlayerSettings Player;
         BuildSettings Build;
         VersionControlSettings VersionControl;
+        XRSettings XR;
 
         // Derlenecek sahneler (etkin olanlar, sırayla); liste boşsa başlangıç sahnesi
         std::vector<std::string> GetBuildScenes() const

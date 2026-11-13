@@ -43,6 +43,7 @@ namespace Conqueror::Editor
         void DrawNavigation();
         void DrawLocalization();
         void DrawVersionControl();
+        void DrawXR();
         void DrawAutoload();
         void DrawEditorSettings();
         void DrawScriptOrder();

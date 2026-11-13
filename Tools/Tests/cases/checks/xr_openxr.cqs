@@ -1,0 +1,10 @@
+using nativebridge;
+// Gözlük etkin, adı var ve şablonun rig'i kamerayı gözlüğün başına koyuyor (simülatörün 0, 1.65, 0 pozu değil)
+var active = XRIsHeadsetActive();
+var name = XRGetHeadsetName();
+var head = XRGetHeadPosition();
+var cam = EntityGetPosition(FindEntity("Main Camera"));
+var follow = MathAbs(cam.x - head.x) + MathAbs(cam.y - head.y) + MathAbs(cam.z - head.z);
+var fromSim = MathAbs(cam.x) + MathAbs(cam.y - 1.65) + MathAbs(cam.z);
+LogInfo("REGRESSION xr_openxr active=" + active + " headset=" + name + " head=" + head.x + "," + head.y + "," + head.z + " camera=" + cam.x + "," + cam.y + "," + cam.z);
+if (active && name != "" && follow < 0.03 && fromSim > 0.1) { CreateEntity("RegressionCheckOK"); }

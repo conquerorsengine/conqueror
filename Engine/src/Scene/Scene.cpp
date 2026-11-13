@@ -78,6 +78,7 @@
 #include "Scene/OcclusionCulling.h"
 #include "Scene/Articulation.h"
 #include "Scene/XRInteraction.h"
+#include "XR/OpenXR.h"
 #include "Particles/VisualEffect.h"
 #include "Scene/WorldActors.h"
 #include "Scene/ActorComponents.h"
@@ -265,6 +266,9 @@ namespace Conqueror
             MaterialParameterCollections::ResetOverrides();
             ShaderVariantCollections::ResetPreloaded();
             ShaderVariantCollections::WarmUpPreloaded();
+            // XR Plug-in Management > Initialize XR on Startup: OpenXR gözlük oturumu (çalışma zamanı yoksa XR Device Simulator kalır)
+            if (OpenXR::WantedAtStartup() && !OpenXR::GetStatus().SessionCreated)
+                OpenXR::Start();
         }
         ScriptContext::SetActiveScene(this);
         ScriptContext::SetCurrentEntity(ScriptContext::NullEntity);
@@ -349,6 +353,7 @@ namespace Conqueror
             ScriptContext::SetActiveScene(nullptr);
         if (endPlaySession)
         {
+            OpenXR::Stop();
             Scripting::ScriptRuntimes::PlayStop();
             AudioOneShots::StopAll();
             AudioMixer::Get().EndPlaySession();
@@ -1433,6 +1438,12 @@ namespace Conqueror
 
             // Kamera -> doku hedefleri (ana görünüm onları bu karede örnekleyebilsin)
             CameraRenderTargets::Render(*this);
+            // OpenXR: iki göz gözlüğe (kare bekleme + gönderim; oyun penceresi aynalı görünümü aşağıda çizer)
+            if (!renderOnly)
+            {
+                CQ_PROFILE_SAMPLE("Render.XR", Rendering);
+                OpenXR::RenderFrame(*this);
+            }
 
             // Stats'ı sıfırla
             Renderer::ResetStats();
@@ -2941,11 +2952,16 @@ namespace Conqueror
         cameraComponent.Camera.SetViewportSize(width, height);
         const RenderCamera renderCamera = RenderCamera::FromSceneCamera(cameraComponent.Camera,
             m_Registry.get<TransformComponent>(cameraEntity).WorldTransform, width, height);
+        RenderSceneSecondary(renderCamera, cameraEntity);
+    }
+
+    void Scene::RenderSceneSecondary(const RenderCamera& camera, entt::entity backgroundCamera)
+    {
         const entt::entity previous = m_BackgroundCamera;
-        m_BackgroundCamera = cameraEntity;
+        m_BackgroundCamera = backgroundCamera;
         const bool previousSecondary = s_GISecondaryView;
         s_GISecondaryView = true;
-        RenderScene3D(renderCamera, false);
+        RenderScene3D(camera, false);
         s_GISecondaryView = previousSecondary;
         m_BackgroundCamera = previous;
     }

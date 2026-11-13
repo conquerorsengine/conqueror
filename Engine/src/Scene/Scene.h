@@ -198,6 +198,8 @@ namespace Conqueror
         void RenderScene3D(const RenderCamera& camera, bool editorView);
         // Render hedefi kamerası: 3D sahneyi o kameradan (arka planı dahil) bağlı çerçeve tamponuna çizer
         void RenderSceneFromCamera(entt::entity cameraEntity, uint32_t width, uint32_t height);
+        // İkincil görünüm (XR gözleri): verilen kameradan, arka plan backgroundCamera'nın (GI ana görünümde güncellenir)
+        void RenderSceneSecondary(const RenderCamera& camera, entt::entity backgroundCamera);
         // Sahnenin ortam ayarlarından renderer ortamını oluşturur
         SceneEnvironment BuildRenderEnvironment(bool hdrOutput) const;
 

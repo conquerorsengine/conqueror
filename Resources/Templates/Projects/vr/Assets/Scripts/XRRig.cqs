@@ -4,6 +4,9 @@ using nativebridge;
 // (yay + hedef halkası + kararma), 45 derece adımlı dönüş, isteğe bağlı yumuşak yürüyüş, uzaktan tutma ve fırlatma,
 // tetikle tutulan silahı ateşleme, iki göz önizlemesi.
 //
+// OpenXR gözlüğü bağlıyken (Project Settings > XR Plug-in Management > Initialize XR on Startup) baş ve eller gözlükten
+// gelir: kumandalar rig köküne bağlanır (kök = takip uzayının kökeni, adımlı dönüşü taşır), yan tetik tutar, tetik ateşler,
+// sağ çubuk ileri ışınlanma yayı, sağa / sola adımlı dönüş, sol çubuk yürüyüş, tutma ve atışta titreşim.
 // Gözlük bağlı değilken XR Device Simulator (Unity'deki gibi) çalışır: fare başı döndürür, sağ el bakılan yeri işaret
 // eder. Kontroller: sağ tık tut (bırak = fırlat), sol tık tetik, F / G sol el tut / tetik, Space basılı tut = ışınlanma
 // yayı (bırakınca ışınlan), Q / E adımlı dönüş, WASD yürüyüş, C görüşü ortala (gözlükteki "recenter"), V iki göz
@@ -46,6 +49,9 @@ script XRRig : ConquerorScript
     private var pendingTeleport = null;
     private bool wasGripR = false;
     private bool wasGripL = false;
+    private bool hmd = false;                  // OpenXR gözlüğü çalışıyor
+    private bool snapArmed = true;             // çubukla dönüş: çubuk ortaya dönünce yeniden
+    private var prevTrigger = [false, false];
 
     func Start()
     {
@@ -63,8 +69,83 @@ script XRRig : ConquerorScript
         UISetText("DeviceText", "HEADSET: NOT CONNECTED   -   " + StringToUpper(device));
     }
 
-    func Forward() { var r = MathDegToRad(yaw); return {x: -MathSin(r), y: 0.0, z: -MathCos(r)}; }
-    func Right() { var r = MathDegToRad(yaw); return {x: MathCos(r), y: 0.0, z: -MathSin(r)}; }
+    // Yürüyüş yönü: gözlükte başın baktığı yatay yön, simülatörde yaw
+    func Forward()
+    {
+        if (hmd && head >= 0)
+        {
+            var hf = EntityGetForward(head);
+            var hl = MathMax(MathSqrt(hf.x * hf.x + hf.z * hf.z), 0.001);
+            return {x: hf.x / hl, y: 0.0, z: hf.z / hl};
+        }
+        var r = MathDegToRad(yaw);
+        return {x: -MathSin(r), y: 0.0, z: -MathCos(r)};
+    }
+    func Right() { var f = Forward(); return {x: -f.z, y: 0.0, z: f.x}; }
+
+    // Gözlük bağlandı / ayrıldı: kumandalar takip uzayına (rig köküne) bağlanır ya da dünyaya döner
+    func UpdateDevice()
+    {
+        var on = XRIsHeadsetActive();
+        if (on == hmd) { return; }
+        hmd = on;
+        foreach (var hnd in hands) { if (hnd >= 0) { EntitySetParent(hnd, hmd ? GetEntityId() : -1, true); } }
+        SetRotation(0, hmd ? yaw : 0.0, 0);
+        SetCursorMode(hmd ? 0 : 2);
+        device = hmd ? XRGetHeadsetName() : "XR Device Simulator";
+        handPos = [null, null];
+        goalPrev = [null, null];
+        UISetText("DeviceText", hmd ? "HEADSET: " + StringToUpper(device) : "HEADSET: NOT CONNECTED   -   " + StringToUpper(device));
+    }
+
+    // Adımlı dönüş: gözlükte kök başın çevresinde döner (oyuncu yerinde kalır)
+    func Turn(deg)
+    {
+        if (hmd && head >= 0)
+        {
+            var hw = EntityGetWorldPosition(head);
+            var o = EntityGetWorldPosition(GetEntityId());
+            var a = MathDegToRad(deg);
+            var dx = o.x - hw.x;
+            var dz = o.z - hw.z;
+            SetPosition(hw.x + dx * MathCos(a) + dz * MathSin(a), o.y, hw.z - dx * MathSin(a) + dz * MathCos(a));
+        }
+        yaw = MathNormalizeAngle(yaw + deg);
+        if (hmd) { SetRotation(0, yaw, 0); }
+        fade = MathMax(fade, 0.6);
+    }
+
+    // Fırlatma hızı elin (hedef) pozunun hızından; tepe değeri kısa süre tutulur: savurup hemen bırakmak da fırlatır
+    func TrackVelocity(i, g, dt)
+    {
+        var gp = goalPrev[i];
+        if (gp != null && dt > 0.0)
+        {
+            var nv = {x: (g.x - gp.x) / dt, y: (g.y - gp.y) / dt, z: (g.z - gp.z) / dt};
+            var decay = MathExp(-dt / 0.15);
+            var hv = handVel[i];
+            if (nv.x * nv.x + nv.y * nv.y + nv.z * nv.z > (hv.x * hv.x + hv.y * hv.y + hv.z * hv.z) * decay * decay) { handVel[i] = nv; }
+            else { handVel[i] = {x: hv.x * decay, y: hv.y * decay, z: hv.z * decay}; }
+        }
+        goalPrev[i] = g;
+    }
+
+    // Gözlük kumandaları: takip uzayındaki poz rig köküne göre yerel poz
+    func UpdateTrackedHands(dt)
+    {
+        for (var i = 0; i < 2; i++)
+        {
+            if (hands[i] < 0) { continue; }
+            var p = XRGetHandPosition(i);
+            var r = XRGetHandRotation(i);
+            if (p == null || r == null) { continue; }
+            EntitySetPosition(hands[i], p.x, p.y, p.z);
+            EntitySetRotation(hands[i], r.x, r.y, r.z);
+            var g = EntityGetWorldPosition(hands[i]);
+            TrackVelocity(i, g, dt);
+            handPos[i] = g;
+        }
+    }
     func HeadPos() { var p = EntityGetWorldPosition(GetEntityId()); return {x: p.x, y: p.y + eyeHeight, z: p.z}; }
     func LookDir()
     {
@@ -131,6 +212,7 @@ script XRRig : ConquerorScript
         if (GetScriptField(e, "snapToHand") == true) { ShowController(i, false); }
         pull[i] = 0.0;
         grabs++;
+        if (hmd) { XRHaptic(i, 0.5, 0.05); }
         AudioPlayOneShotAt("Assets/Weapons/Audio/empty_click.wav", t.point.x, t.point.y, t.point.z, 0.4);
     }
 
@@ -173,6 +255,7 @@ script XRRig : ConquerorScript
 
     func UpdateHands(dt)
     {
+        if (hmd) { UpdateTrackedHands(dt); return; }
         var h = HeadPos();
         var f = Forward();
         var r = Right();
@@ -191,18 +274,8 @@ script XRRig : ConquerorScript
             var g = goals[i];
             var prev = handPos[i];
             var p = prev == null ? g : {x: MathLerp(prev.x, g.x, k), y: MathLerp(prev.y, g.y, k), z: MathLerp(prev.z, g.z, k)};
-            // Fırlatma hızı elin hedef pozunun hızından (yumuşatılmış el geride kalır, savurma anında bırakılınca kaybolurdu);
-            // tepe değeri kısa süre tutulur: savurup hemen bırakmak da fırlatır
-            var gp = goalPrev[i];
-            if (gp != null && dt > 0.0)
-            {
-                var nv = {x: (g.x - gp.x) / dt, y: (g.y - gp.y) / dt, z: (g.z - gp.z) / dt};
-                var decay = MathExp(-dt / 0.15);
-                var hv = handVel[i];
-                if (nv.x * nv.x + nv.y * nv.y + nv.z * nv.z > (hv.x * hv.x + hv.y * hv.y + hv.z * hv.z) * decay * decay) { handVel[i] = nv; }
-                else { handVel[i] = {x: hv.x * decay, y: hv.y * decay, z: hv.z * decay}; }
-            }
-            goalPrev[i] = g;
+            // Fırlatma hızı elin hedef pozunun hızından (yumuşatılmış el geride kalır, savurma anında bırakılınca kaybolurdu)
+            TrackVelocity(i, g, dt);
             handPos[i] = p;
             EntitySetWorldPosition(hands[i], p.x, p.y, p.z);
             // Sağ el (ve ışınlanırken yayı çizen el) bakılan noktayı gösterir
@@ -284,14 +357,27 @@ script XRRig : ConquerorScript
     func Update(dt)
     {
         if (dt > 0.1) { dt = 0.1; }
+        UpdateDevice();
+        var stickR = hmd ? XRGetThumbstick(1) : {x: 0.0, y: 0.0};
+        var stickL = hmd ? XRGetThumbstick(0) : {x: 0.0, y: 0.0};
         // Simülatör: fare ile baş
-        var md = GetMouseDelta();
-        yaw = MathNormalizeAngle(yaw - md.x * lookSensitivity);
-        pitch = MathClamp(pitch - md.y * lookSensitivity, -85.0, 85.0);
-        if (IsKeyDown("Q")) { yaw = MathNormalizeAngle(yaw + snapAngle); fade = MathMax(fade, 0.6); }
-        if (IsKeyDown("E")) { yaw = MathNormalizeAngle(yaw - snapAngle); fade = MathMax(fade, 0.6); }
+        if (!hmd)
+        {
+            var md = GetMouseDelta();
+            yaw = MathNormalizeAngle(yaw - md.x * lookSensitivity);
+            pitch = MathClamp(pitch - md.y * lookSensitivity, -85.0, 85.0);
+        }
+        if (IsKeyDown("Q")) { Turn(snapAngle); }
+        if (IsKeyDown("E")) { Turn(-snapAngle); }
+        // Sağ çubuk sola / sağa: bir adım dönüş (Unity XRI Snap Turn Provider)
+        if (MathAbs(stickR.x) < 0.3) { snapArmed = true; }
+        else if (snapArmed && MathAbs(stickR.x) > 0.75)
+        {
+            Turn(stickR.x < 0.0 ? snapAngle : -snapAngle);
+            snapArmed = false;
+        }
         if (IsKeyDown("V")) { SetStereo(!stereo); }
-        if (IsKeyDown("C")) { yaw = startYaw; pitch = 0.0; }
+        if (IsKeyDown("C") && !hmd) { yaw = startYaw; pitch = 0.0; }
         if (IsKeyDown("R")) { foreach (var g in FindEntitiesWithScript("Grabbable")) { InvokeMethod(g, "ResetBody"); } }
         // Yumuşak yürüyüş (WASD), duvara girmez
         var mx = 0.0;
@@ -300,6 +386,8 @@ script XRRig : ConquerorScript
         if (IsKeyPressed("S")) { mz -= 1.0; }
         if (IsKeyPressed("D")) { mx += 1.0; }
         if (IsKeyPressed("A")) { mx -= 1.0; }
+        // Sol çubuk (ölü bölge 0.15)
+        if (MathSqrt(stickL.x * stickL.x + stickL.y * stickL.y) > 0.15) { mx += stickL.x; mz += stickL.y; }
         if (mx != 0.0 || mz != 0.0)
         {
             var fw = Forward();
@@ -307,8 +395,9 @@ script XRRig : ConquerorScript
             var dx = fw.x * mz + rt.x * mx;
             var dz = fw.z * mz + rt.z * mx;
             var dl = MathSqrt(dx * dx + dz * dz);
-            dx /= dl;
-            dz /= dl;
+            var amount = MathMin(dl, 1.0);
+            dx = dx / dl * amount;
+            dz = dz / dl * amount;
             var o = EntityGetWorldPosition(GetEntityId());
             var block = Raycast(o.x, o.y + 0.9, o.z, dx, 0.0, dz, 0.45, -1, false);
             if (block == null || IsGrabbable(block.entity))
@@ -318,14 +407,25 @@ script XRRig : ConquerorScript
         }
         if (head >= 0)
         {
-            EntitySetPosition(head, 0, eyeHeight, 0);
-            EntitySetRotation(head, pitch, yaw, 0);
+            var hp = hmd ? XRGetHeadPosition() : null;
+            var hr = hmd ? XRGetHeadRotation() : null;
+            if (hp != null && hr != null)
+            {
+                // Gözlük: kameranın yerel pozu = baş pozu (takip uzayı zemin kökenli, boy gerçek)
+                EntitySetPosition(head, hp.x, hp.y, hp.z);
+                EntitySetRotation(head, hr.x, hr.y, hr.z);
+            }
+            else if (!hmd)
+            {
+                EntitySetPosition(head, 0, eyeHeight, 0);
+                EntitySetRotation(head, pitch, yaw, 0);
+            }
         }
         UpdateHands(dt);
 
         // Tutma (sağ: sağ tık, sol: F) ve tetik (sol tık, G)
-        var gripR = IsMouseButtonPressed(1);
-        var gripL = IsKeyPressed("F");
+        var gripR = IsMouseButtonPressed(1) || (hmd && XRGetButton(1, "grip") > 0.5);
+        var gripL = IsKeyPressed("F") || (hmd && XRGetButton(0, "grip") > 0.5);
         if (gripR && !wasGripR && held[1] < 0) { Grab(1); }
         if (!gripR && wasGripR && held[1] >= 0) { Release(1); }
         if (gripL && !wasGripL && held[0] < 0) { Grab(0); }
@@ -334,11 +434,18 @@ script XRRig : ConquerorScript
         wasGripL = gripL;
         if (IsMouseButtonDown(0) && held[1] >= 0) { InvokeMethod(held[1], "Use"); }
         if (IsKeyDown("G") && held[0] >= 0) { InvokeMethod(held[0], "Use"); }
+        // Gözlük tetiği: basıldığı karede tutulan nesneyi kullan (silah ateşler) ve titret
+        for (var ti = 0; ti < 2; ti++)
+        {
+            var trig = hmd && XRGetButton(ti, "trigger") > 0.5;
+            if (trig && !prevTrigger[ti] && held[ti] >= 0) { InvokeMethod(held[ti], "Use"); XRHaptic(ti, 0.8, 0.05); }
+            prevTrigger[ti] = trig;
+        }
         UpdateHeld(0, dt);
         UpdateHeld(1, dt);
 
         // Işınlanma: Space basılıyken yay (sağ el doluysa sol elden), bırakınca kararıp ışınlan
-        var tele = IsKeyPressed("Space");
+        var tele = IsKeyPressed("Space") || stickR.y > 0.6;
         if (tele)
         {
             aiming = true;
@@ -361,8 +468,18 @@ script XRRig : ConquerorScript
         if (fadeTarget == 0.0) { fade = MathMax(0.0, fade - dt * 3.0); }
         if (pendingTeleport != null && fade > 0.95)
         {
-            Teleport(pendingTeleport.x, pendingTeleport.y, pendingTeleport.z);
-            SetPosition(pendingTeleport.x, pendingTeleport.y, pendingTeleport.z);
+            var tx = pendingTeleport.x;
+            var tz = pendingTeleport.z;
+            if (hmd && head >= 0)
+            {
+                // Gözlükte baş, oyun alanının ortasında olmayabilir: başı hedefin üstüne getir
+                var hw = EntityGetWorldPosition(head);
+                var o = EntityGetWorldPosition(GetEntityId());
+                tx -= hw.x - o.x;
+                tz -= hw.z - o.z;
+            }
+            Teleport(tx, pendingTeleport.y, tz);
+            SetPosition(tx, pendingTeleport.y, tz);
             handPos = [null, null];
             goalPrev = [null, null];
             handVel = [{x: 0.0, y: 0.0, z: 0.0}, {x: 0.0, y: 0.0, z: 0.0}];

@@ -10,6 +10,7 @@
 #include "Core/MouseCodes.h"
 #include "Core/Math/Math.h"
 #include "Core/PhysicsSystem/Physics3D/PhysicsWorld3D.h"
+#include "XR/OpenXR.h"
 
 #include <IconsFontAwesome6.h>
 
@@ -111,20 +112,43 @@ namespace Conqueror
             auto& xo = origin.GetComponent<XROriginComponent>();
             auto& ot = origin.GetComponent<TransformComponent>();
 
-            // ── XR Device Simulator: fare baş, tuşlar eller ──
-            if (!xo.CursorLocked)
+            // OpenXR gözlüğü varsa baş, eller ve kumanda düğmeleri ondan; yoksa XR Device Simulator (fare baş, tuşlar eller)
+            glm::vec3 xrHeadPos(0.0f);
+            glm::quat xrHeadRot(1.0f, 0.0f, 0.0f, 0.0f);
+            const bool hmd = OpenXR::IsRunning() && OpenXR::HeadPose(xrHeadPos, xrHeadRot);
+            const OpenXR::HandInput leftPad = OpenXR::Hand(0), rightPad = OpenXR::Hand(1);
+            if (!hmd)
             {
-                Input::SetCursorMode(2);
-                xo.CursorLocked = true;
+                if (!xo.CursorLocked)
+                {
+                    Input::SetCursorMode(2);
+                    xo.CursorLocked = true;
+                }
+                const glm::vec2 md = GameInput::GetMouseDelta();
+                xo.HeadYaw -= md.x * xo.LookSensitivity;
+                xo.HeadPitch = std::clamp(xo.HeadPitch - md.y * xo.LookSensitivity, -85.0f, 85.0f);
             }
-            const glm::vec2 md = GameInput::GetMouseDelta();
-            xo.HeadYaw -= md.x * xo.LookSensitivity;
-            xo.HeadPitch = std::clamp(xo.HeadPitch - md.y * xo.LookSensitivity, -85.0f, 85.0f);
+            else
+            {
+                // Gözlük başı: sapma açısı yürüme yönü için (Unity XRI: baş yönüne göre hareket)
+                const glm::vec3 f = xrHeadRot * glm::vec3(0.0f, 0.0f, -1.0f);
+                xo.HeadYaw = glm::degrees(std::atan2(-f.x, -f.z));
+                xo.HeadPitch = glm::degrees(std::asin(std::clamp(f.y, -1.0f, 1.0f)));
+            }
             if (origin.HasComponent<SnapTurnProviderComponent>())
             {
                 const float amount = glm::radians(origin.GetComponent<SnapTurnProviderComponent>().TurnAmount);
                 if (GameInput::IsKeyDown(Key::Q)) ot.Rotation.y += amount;
                 if (GameInput::IsKeyDown(Key::E)) ot.Rotation.y -= amount;
+                // Sağ çubuk sola / sağa: bir dönüş, çubuk ortaya dönünce yeniden (Unity XRI Snap Turn Provider)
+                static bool s_SnapArmed = true;
+                if (std::abs(rightPad.Stick.x) < 0.3f)
+                    s_SnapArmed = true;
+                else if (s_SnapArmed && std::abs(rightPad.Stick.x) > 0.75f)
+                {
+                    ot.Rotation.y += rightPad.Stick.x < 0.0f ? amount : -amount;
+                    s_SnapArmed = false;
+                }
             }
             const float bodyYaw = glm::degrees(ot.Rotation.y) + xo.HeadYaw;
             if (origin.HasComponent<ContinuousMoveProviderComponent>())
@@ -135,17 +159,21 @@ namespace Conqueror
                 if (GameInput::IsKeyHeld(Key::S)) in.y -= 1.0f;
                 if (mp.EnableStrafe && GameInput::IsKeyHeld(Key::D)) in.x += 1.0f;
                 if (mp.EnableStrafe && GameInput::IsKeyHeld(Key::A)) in.x -= 1.0f;
+                // Sol çubuk (ölü bölge 0.15)
+                if (glm::length(leftPad.Stick) > 0.15f)
+                    in += glm::vec2(mp.EnableStrafe ? leftPad.Stick.x : 0.0f, leftPad.Stick.y);
                 if (glm::length(in) > 0.0f)
                 {
-                    in = glm::normalize(in);
+                    in = glm::length(in) > 1.0f ? glm::normalize(in) : in;
                     const float y = glm::radians(bodyYaw);
                     const glm::vec3 fwd(-std::sin(y), 0.0f, -std::cos(y)), right(std::cos(y), 0.0f, -std::sin(y));
                     ot.Position += (fwd * in.y + right * in.x) * mp.MoveSpeed * dt;
                 }
             }
             // Baş (kamera) ve eller: XR Origin'in yerel uzayında
-            const glm::quat headRot = glm::quat(glm::vec3(glm::radians(xo.HeadPitch), glm::radians(xo.HeadYaw), 0.0f));
-            const glm::vec3 headPos(0.0f, xo.CameraYOffset, 0.0f);
+            // Gözlük: Stage uzayı zemin kökenli (boy gerçek); simülatör: Camera Y Offset
+            const glm::quat headRot = hmd ? xrHeadRot : glm::quat(glm::vec3(glm::radians(xo.HeadPitch), glm::radians(xo.HeadYaw), 0.0f));
+            const glm::vec3 headPos = hmd ? xrHeadPos : glm::vec3(0.0f, xo.CameraYOffset, 0.0f);
             Entity cam = FindCamera(origin);
             if (cam)
             {
@@ -165,11 +193,21 @@ namespace Conqueror
                 Entity c{ e, &scene };
                 auto& xc = c.GetComponent<XRControllerComponent>();
                 const int hand = xc.Hand == XRHand::Right ? 1 : 0;
-                const glm::vec3 local = headPos + headRot * glm::vec3(hand ? 0.22f : -0.22f, -0.25f, -0.45f);
+                glm::vec3 local = headPos + headRot * glm::vec3(hand ? 0.22f : -0.22f, -0.25f, -0.45f);
+                glm::quat localRot = headRot;
+                const bool tracked = hmd && OpenXR::HandPose(hand, local, localRot);
                 const glm::vec3 wp = glm::vec3(originWorld * glm::vec4(local, 1.0f));
-                const glm::quat wr = glm::quat_cast(glm::mat3(originWorld)) * headRot;
+                const glm::quat wr = glm::quat_cast(glm::mat3(originWorld)) * localRot;
                 SetWorldPose(scene, c, wp, wr);
-                if (hand)
+                if (hmd)
+                {
+                    // Kumanda: tutma = yan tetik (grip), tetik = işaret parmağı, ışınlanma = sağ çubuk ileri (Unity XRI varsayılanı)
+                    const OpenXR::HandInput& pad = hand ? rightPad : leftPad;
+                    xc.Grip = tracked && pad.Grip > 0.5f;
+                    xc.Trigger = tracked && pad.Trigger > 0.5f;
+                    xc.Teleport = tracked && hand == 1 && pad.Stick.y > 0.6f;
+                }
+                else if (hand)
                 {
                     xc.Grip = GameInput::IsMouseHeld(Mouse::Button1);
                     xc.Trigger = GameInput::IsMouseHeld(Mouse::Button0);

@@ -9,6 +9,8 @@ Cases:
   <name>          Tools/Tests/cases/<name>.txt: an editor automation script. Header lines:
                       # template: <hub template id>   the project the case runs on (made fresh with the hub)
                       # serial                         timing-sensitive: runs alone after the parallel cases (-j)
+                      # requires: VAR                  runs only when environment variable VAR is set (else SKIP)
+                      # env: K=V K2=V2                 extra environment for the editor of this case
                   "{dir}" in the script is replaced by Tools/Tests/cases (checks/*.cqs live there). A check script
                   creates an entity named RegressionCheckOK when its condition holds; the case then expects it.
 
@@ -107,6 +109,13 @@ def run_case(case, env=None):
         text = template_script()
     else:
         tid, text = case_script(case)
+        # Donanım / çalışma zamanı isteyen testler (ör. OpenXR: Monado) yalnız o ortamda; ek ortam değişkenleri
+        for var in re.findall(r"^#\s*requires:\s*(\S+)", text, re.M):
+            if not os.environ.get(var):
+                return None, f"{var} not set", time.time() - start
+        extra = dict(kv.split("=", 1) for line in re.findall(r"^#\s*env:\s*(.+)$", text, re.M) for kv in line.split() if "=" in kv)
+        if extra:
+            env = dict(env or os.environ, **extra)
     name = "Reg_" + re.sub(r"[^A-Za-z0-9_]", "_", case)
     project = make_project(tid, name, env)
     if not project:
@@ -148,7 +157,7 @@ def main():
     def report(c, ok, why, secs):
         with lock:
             results.append((c, ok, why))
-            print(f"{'PASS' if ok else 'FAIL'}  {c:34s} {secs:6.1f} s  {why}", flush=True)
+            print(f"{'SKIP' if ok is None else 'PASS' if ok else 'FAIL'}  {c:34s} {secs:6.1f} s  {why}", flush=True)
 
     if jobs == 1:
         for c in cases:
@@ -178,8 +187,9 @@ def main():
                 report(futures[f], *f.result())
         for c in serial:
             report(c, *run_case(c))
-    failed = [r for r in results if not r[1]]
-    print(f"\n{len(results) - len(failed)} / {len(results)} passed")
+    failed = [r for r in results if r[1] is False]
+    skipped = [r for r in results if r[1] is None]
+    print(f"\n{len(results) - len(failed) - len(skipped)} / {len(results) - len(skipped)} passed" + (f", {len(skipped)} skipped" if skipped else ""))
     sys.exit(1 if failed else 0)
 
 

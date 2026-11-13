@@ -1,0 +1,21 @@
+# template: vr
+# requires: XR_RUNTIME_JSON
+# env: CQ_OPENXR=1 XRT_COMPOSITOR_NULL=1 SIMULATED_ENABLE=1 SIMULATED_ROTATE=1
+# OpenXR gerçek çalışma zamanıyla (Monado: null compositor, dönen simüle gözlük): oturum çalışır, kareler gönderilir,
+# iki gözün görüntüsü boş değil, baş pozu gözlükten gelir ve XR Origin kamerası onunla döner
+wait 30
+focus Game
+script_errors mark
+play
+wait_until 30000 xr expect running
+wait_until 30000 xr expect frames 30
+xr expect eye_lit 0 0.01
+xr expect eye_lit 1 0.01
+xr mark
+wait 90
+xr expect turned 0.5
+run_cqs_file "{dir}/checks/xr_openxr.cqs"
+entity expect_active RegressionCheckOK true
+script_errors expect 0
+stop
+quit

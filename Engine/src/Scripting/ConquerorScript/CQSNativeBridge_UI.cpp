@@ -35,6 +35,7 @@
 #include "Core/Audio/AudioSource.h"
 #include "Core/Audio/AudioMixer.h"
 #include "Core/Math/CurveAsset.h"
+#include "XR/OpenXR.h"
 #include "Scripting/Visual/VisualGraph.h"
 
 #include <algorithm>
@@ -1493,6 +1494,49 @@ namespace Conqueror::CQS
             Entity e = TargetArg(argc, args);
             return Value::MakeFloat(scene && e ? InteractiveMusic::GetPosition(*scene, (uint32_t)e) : 0.0f);
         }, -1);
+
+        // ---------------------------------------------------------------- OpenXR gözlük (Unity XR InputDevices / Unreal Head Mounted Display)
+        // El: 0 / "left" sol, 1 / "right" sağ. Konumlar takip uzayında (Stage: zemin kökenli, metre)
+        static auto xrHand = [](int argc, Value* args, int i) -> int {
+            if (i >= argc) return 1;
+            if (args[i].IsString()) { const std::string s = args[i].AsString()->Value; return s == "left" || s == "Left" || s == "L" ? 0 : 1; }
+            return (int)args[i].ToNumber() == 0 ? 0 : 1;
+        };
+        vm->DefineNative("XRIsHeadsetActive", [](int, Value*) -> Value { return Value::MakeBool(OpenXR::IsRunning()); }, 0);
+        vm->DefineNative("XRGetHeadsetName", [](int, Value*) -> Value { return Value::MakeString(OpenXR::GetStatus().System); }, 0);
+        vm->DefineNative("XRGetRuntimeName", [](int, Value*) -> Value { return Value::MakeString(OpenXR::GetStatus().Runtime); }, 0);
+        vm->DefineNative("XRGetHeadPosition", [](int, Value*) -> Value {
+            glm::vec3 p(0.0f); glm::quat q(1.0f, 0.0f, 0.0f, 0.0f);
+            return OpenXR::HeadPose(p, q) ? Vec3(p) : Value::MakeNull();
+        }, 0);
+        vm->DefineNative("XRGetHandPosition", [](int argc, Value* args) -> Value {
+            glm::vec3 p(0.0f); glm::quat q(1.0f, 0.0f, 0.0f, 0.0f);
+            return OpenXR::HandPose(xrHand(argc, args, 0), p, q) ? Vec3(p) : Value::MakeNull();
+        }, 1);
+        // Dönüşler Euler derece (EntitySetRotation ile aynı düzen): yerel dönüş olarak verilince poz birebir
+        vm->DefineNative("XRGetHeadRotation", [](int, Value*) -> Value {
+            glm::vec3 p(0.0f); glm::quat q(1.0f, 0.0f, 0.0f, 0.0f);
+            return OpenXR::HeadPose(p, q) ? Vec3(glm::degrees(glm::eulerAngles(q))) : Value::MakeNull();
+        }, 0);
+        vm->DefineNative("XRGetHandRotation", [](int argc, Value* args) -> Value {
+            glm::vec3 p(0.0f); glm::quat q(1.0f, 0.0f, 0.0f, 0.0f);
+            return OpenXR::HandPose(xrHand(argc, args, 0), p, q) ? Vec3(glm::degrees(glm::eulerAngles(q))) : Value::MakeNull();
+        }, 1);
+        // XRGetButton(hand, "trigger" | "grip" | "primary" | "secondary" | "menu" | "thumbstick") -> 0..1
+        vm->DefineNative("XRGetButton", [](int argc, Value* args) -> Value {
+            const OpenXR::HandInput in = OpenXR::Hand(xrHand(argc, args, 0));
+            const std::string b = argc >= 2 ? Text(args[1]) : std::string("trigger");
+            const float v = b == "grip" ? in.Grip : b == "primary" ? (in.Primary ? 1.0f : 0.0f) : b == "secondary" ? (in.Secondary ? 1.0f : 0.0f)
+                          : b == "menu" ? (in.Menu ? 1.0f : 0.0f) : b == "thumbstick" ? (in.StickClick ? 1.0f : 0.0f) : in.Trigger;
+            return Value::MakeFloat(v);
+        }, 2);
+        vm->DefineNative("XRGetThumbstick", [](int argc, Value* args) -> Value { return Vec2(OpenXR::Hand(xrHand(argc, args, 0)).Stick); }, 1);
+        // XRHaptic(hand, amplitude 0..1, seconds): kumanda titreşimi
+        vm->DefineNative("XRHaptic", [](int argc, Value* args) -> Value {
+            if (!OpenXR::IsRunning()) return Value::MakeBool(false);
+            OpenXR::Haptic(xrHand(argc, args, 0), Num(argc, args, 1, 0.5f), Num(argc, args, 2, 0.1f));
+            return Value::MakeBool(true);
+        }, 3);
         vm->DefineNative("AudioSetEntityVolume", [](int argc, Value* args) -> Value {
             auto* asc = argc >= 2 ? Get<AudioSourceComponent>(Target(args[0])) : nullptr;
             if (!asc) return Value::MakeBool(false);

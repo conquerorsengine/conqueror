@@ -40,6 +40,7 @@
 #include "Core/Audio/InteractiveMusic.h"
 #include "Assets/GodotNodeInspectors.h"
 #include "Scene/StatusIndicator.h"
+#include "XR/OpenXR.h"
 #include "ProjectThumbnail.h"
 #include "Renderer/IBL/EnvironmentMap.h"
 #include "Renderer/PathTracer.h"
@@ -7673,6 +7674,50 @@ namespace Conqueror::Editor
                 return true;
             }
             err = "status_indicator send <entity> <request> [n] | expect <key> <value>";
+            return false;
+        });
+        // xr expect running | frames <n> | eye_lit <eye> <en az parlaklık> | mark | turned <derece>: OpenXR oturumu (Monado ile),
+        // gönderilen kareler, göz görüntüsü ve baş pozunun dönmesi (Monado simülasyonu: SIMULATED_ROTATE=1)
+        Automation::RegisterCommand("xr", [](const Args& a, std::string& err) {
+            const OpenXR::Status& st = OpenXR::GetStatus();
+            static glm::quat s_Mark(1.0f, 0.0f, 0.0f, 0.0f);
+            const std::string what = a.size() >= 3 && a[1] == "expect" ? a[2] : a.size() >= 2 ? a[1] : std::string();
+            const auto arg = [&](size_t i) { const size_t base = a.size() >= 3 && a[1] == "expect" ? 3 : 2; return a.size() > base + i ? a[base + i] : std::string(); };
+            if (what == "running")
+            {
+                if (!st.Running) { err = "session not running (state " + std::to_string(st.SessionState) + ") " + st.Error; return false; }
+                Automation::Report("XR " + st.Runtime + " | " + st.System + " | " + std::to_string(st.EyeWidth) + "x" + std::to_string(st.EyeHeight) +
+                                   " | " + st.Binding + " | frames " + std::to_string(st.FramesSubmitted));
+                return true;
+            }
+            if (what == "frames")
+            {
+                const uint64_t want = arg(0).empty() ? 1 : std::stoull(arg(0));
+                if (st.FramesSubmitted < want) { err = "frames " + std::to_string(st.FramesSubmitted); return false; }
+                Automation::Report("XR frames " + std::to_string(st.FramesSubmitted));
+                return true;
+            }
+            if (what == "eye_lit")
+            {
+                glm::vec3 mean(0.0f);
+                if (!OpenXR::ProbeEyeMean(arg(0).empty() ? 0 : std::stoi(arg(0)), mean)) { err = "no eye image"; return false; }
+                const float lum = 0.2126f * mean.r + 0.7152f * mean.g + 0.0722f * mean.b;
+                Automation::Report("XR eye mean " + std::to_string(mean.r) + " " + std::to_string(mean.g) + " " + std::to_string(mean.b));
+                if (lum < (arg(1).empty() ? 0.01f : std::stof(arg(1)))) { err = "eye too dark " + std::to_string(lum); return false; }
+                return true;
+            }
+            if (what == "mark" || what == "turned")
+            {
+                glm::vec3 p(0.0f);
+                glm::quat q(1.0f, 0.0f, 0.0f, 0.0f);
+                if (!OpenXR::HeadPose(p, q)) { err = "no head pose"; return false; }
+                if (what == "mark") { s_Mark = q; return true; }
+                const float deg = glm::degrees(2.0f * std::acos(std::clamp(std::abs(glm::dot(s_Mark, q)), 0.0f, 1.0f)));
+                Automation::Report("XR head turned " + std::to_string(deg) + " deg, at " + std::to_string(p.x) + " " + std::to_string(p.y) + " " + std::to_string(p.z));
+                if (deg < (arg(0).empty() ? 1.0f : std::stof(arg(0)))) { err = "head turned only " + std::to_string(deg); return false; }
+                return true;
+            }
+            err = "xr expect running | frames <n> | eye_lit <eye> <lum> | mark | turned <deg>";
             return false;
         });
         // app_window_size <w> <h>: işletim sistemi penceresinin boyutu (açılışta pencere büyürken olanı denemek için)

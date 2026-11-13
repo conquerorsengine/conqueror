@@ -11,6 +11,7 @@
 #include "Scripting/ScriptRuntime.h"
 #include "UI/EditorUI.h"
 #include "Build/BuildPipeline.h"
+#include "XR/OpenXR.h"
 
 #include <IconsFontAwesome6.h>
 #include <imgui.h>
@@ -45,6 +46,7 @@ namespace Conqueror::Editor
             { "Scripting", ICON_FA_CODE },
             { "Autoload", ICON_FA_INFINITY },
             { "Version Control", ICON_FA_CODE_BRANCH },
+            { "XR Plug-in Management", ICON_FA_VR_CARDBOARD },
         };
 
         std::filesystem::path ProjectFilePath()
@@ -164,6 +166,7 @@ namespace Conqueror::Editor
         else if (m_Page == "Localization") DrawLocalization();
         else if (m_Page == "Autoload") DrawAutoload();
         else if (m_Page == "Version Control") DrawVersionControl();
+        else if (m_Page == "XR Plug-in Management") DrawXR();
         else if (m_Page == "Editor") DrawEditorSettings();
         else if (m_Page == "Script Execution Order") DrawScriptOrder();
         ImGui::EndChild();
@@ -199,6 +202,47 @@ namespace Conqueror::Editor
             }
             ImGui::TextDisabled("Select an asset: the Inspector header shows its state with Check Out / Lock / Unlock / Revert.");
         }
+    }
+
+    void ProjectSettingsPanel::DrawXR()
+    {
+        // Unity Project Settings > XR Plug-in Management (+ OpenXR); Unreal Project Settings > OpenXR / Start in VR
+        auto& xr = Project::GetActive()->GetConfig().XR;
+        m_Dirty |= UI::Checkbox("Initialize XR on Startup", xr.InitializeOnStartup,
+                                "Open a headset session when Play starts and in built games (CQ_OPENXR=1 forces it). Without a headset "
+                                "or runtime the XR Device Simulator keeps working.");
+        UI::SubHeader("Plug-in Providers");
+        m_Dirty |= UI::Checkbox("OpenXR", xr.OpenXR,
+                                "The active OpenXR runtime drives the headset: Monado, SteamVR, Meta Quest Link, Windows Mixed Reality, "
+                                "Varjo, Pico. XR_RUNTIME_JSON selects another runtime.");
+        UI::SubHeader("Runtime");
+        static OpenXR::Status s_Checked;
+        static bool s_HasCheck = false;
+        if (ImGui::Button(ICON_FA_PLUG "  Check Runtime"))
+        {
+            // Oturum aç, durumu oku, kapat (oyun başlamadan gözlük ve bağlama sınanır)
+            if (!OpenXR::GetStatus().SessionCreated)
+            {
+                OpenXR::Start();
+                s_Checked = OpenXR::GetStatus();
+                OpenXR::Stop();
+            }
+            else
+                s_Checked = OpenXR::GetStatus();
+            s_HasCheck = true;
+        }
+        if (s_HasCheck)
+        {
+            const bool ok = s_Checked.SessionCreated;
+            ImGui::PushTextWrapPos(0.0f);
+            if (ok)
+                ImGui::TextColored(ImVec4(0.45f, 0.85f, 0.5f, 1.0f), "%s - %s, %u x %u per eye, %s", s_Checked.Runtime.c_str(),
+                                   s_Checked.System.c_str(), s_Checked.EyeWidth, s_Checked.EyeHeight, s_Checked.Binding.c_str());
+            else
+                ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.45f, 1.0f), "%s", s_Checked.Error.empty() ? "No OpenXR runtime" : s_Checked.Error.c_str());
+            ImGui::PopTextWrapPos();
+        }
+        ImGui::TextDisabled("Interaction profiles: Khronos Simple, Oculus Touch, Valve Index, HTC Vive.");
     }
 
     void ProjectSettingsPanel::DrawGeneral()

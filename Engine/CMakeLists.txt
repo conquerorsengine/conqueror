@@ -13,6 +13,7 @@ file(GLOB_RECURSE ENGINE_SOURCES CONFIGURE_DEPENDS
     "src/Addons/*.cpp"
     "src/UI/*.cpp"
     "src/Scripting/*.cpp"
+    "src/XR/*.cpp"
     "src/AISystem/*.cpp"
     "src/AISystem/**/*.cpp"
     "src/Networking/*.cpp"
@@ -61,6 +62,8 @@ set_source_files_properties(${CQ_SLJIT_SOURCE} PROPERTIES
     SKIP_PRECOMPILE_HEADERS ON
     COMPILE_OPTIONS "$<IF:$<C_COMPILER_ID:MSVC>,/w,-w>")
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../External/sljit/sljit_src)
+# OpenXR başlıkları (yükleyici çalışma zamanında dlopen ile: libopenxr_loader.so.1 / openxr_loader.dll)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../External/openxr/include)
 target_compile_definitions(${PROJECT_NAME} PRIVATE SLJIT_CONFIG_AUTO=1)
 
 # AMD FidelityFX Super Resolution 2 SDK çekirdeği (MIT): OpenGL arka ucu src/Renderer/FSR2/FSR2GL.cpp
