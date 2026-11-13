@@ -39,7 +39,14 @@ namespace Conqueror
         std::string Name = "Tile";
         glm::vec4 Color{ 1.0f };
         std::string Texture;
-        bool Solid = true;                  // TilemapCollider2D şekli üretir
+        bool Solid = true;                  // TilemapCollider2D şekli üretir (Unity Collider Type: None değil)
+        bool SpriteCollider = false;        // Unity Collider Type Sprite: şekil dokunun opak alanı (yoksa Grid: bütün hücre)
+        // Unity Tile Flags
+        bool LockColor = false;             // boyarken hücre rengi değişmez (karonun rengi)
+        bool LockTransform = false;         // boyarken döndürme / aynalama uygulanmaz
+        // Unity Tile.gameObject: her hücrede örneklenen prefab (karo haritasının çocuğu, hücre merkezinde)
+        std::string GameObject;
+        bool GameObjectRuntimeOnly = true;  // Instantiate GameObject Runtime Only: kapalıyken düzenleyicide de görünür (kaydedilmez)
         bool Walkable = true;               // yol bulma
         int Cost = 1;                       // yol bulma maliyeti (>= 1)
         float Height = 0.25f;               // 3D çizimde prizma yüksekliği
@@ -61,7 +68,32 @@ namespace Conqueror
         int Tile = 0;                       // Palette indisi
         glm::vec4 Color{ 1.0f };            // hücre başına renk çarpanı
         float Elevation = 0.0f;             // 3D: ek yükseklik
+        // Hücre dönüşümü (Unity Tilemap hücre matrisi; [ ] döndür, Shift+[ ] aynala): bit 0-1 saat yönü tersine çeyrek
+        // dönüş, bit 2 yatay ayna (önce aynalanır, sonra döner). Dikey ayna = yatay ayna + 180°
+        uint8_t Transform = 0;
     };
+
+    inline int TileTurns(uint8_t t) { return t & 3; }
+    inline bool TileMirrored(uint8_t t) { return (t & 4) != 0; }
+    inline uint8_t MakeTileTransform(int turns, bool mirrored) { return (uint8_t)((((turns % 4) + 4) % 4) | (mirrored ? 4 : 0)); }
+    // Görünen karoya yeni bir işlem (Unity'deki gibi fırçanın şimdiki hali üzerinden). Doku koordinatı uv = R^k(M^m(p)):
+    // görüntüyü saat yönü tersine döndürmek k'yi artırır (aynalıyken azaltır: M·R = R⁻¹·M), yatay aynalamak yalnız ayna bitini,
+    // dikey aynalamak (= 180° · yatay ayna) ayna bitini değiştirip k'ye 2 ekler
+    inline uint8_t RotateTileTransform(uint8_t t, int quarterTurnsCCW)
+    {
+        return MakeTileTransform(TileTurns(t) + (TileMirrored(t) ? -quarterTurnsCCW : quarterTurnsCCW), TileMirrored(t));
+    }
+    inline uint8_t FlipTileTransformX(uint8_t t) { return MakeTileTransform(TileTurns(t), !TileMirrored(t)); }
+    inline uint8_t FlipTileTransformY(uint8_t t) { return MakeTileTransform(TileTurns(t) + 2, !TileMirrored(t)); }
+    // Hücre içi (0..1) doku koordinatına dönüşüm
+    inline glm::vec2 ApplyTileTransform(uint8_t t, glm::vec2 uv)
+    {
+        if (TileMirrored(t))
+            uv.x = 1.0f - uv.x;
+        for (int k = 0; k < TileTurns(t); ++k)
+            uv = glm::vec2(uv.y, 1.0f - uv.x);
+        return uv;
+    }
 
     struct TilemapComponent
     {
@@ -98,6 +130,24 @@ namespace Conqueror
             Palette = { grass, water, stone, wall };
         }
     };
+
+    // Unity Tile.gameObject örneği: karo haritasının çocuğu. Düzenleyici önizlemesi (GameObjectRuntimeOnly kapalı) sahneye kaydedilmez
+    struct TileObjectComponent
+    {
+        uint64_t Tilemap = 0;          // karo haritasının UUID'si
+        int CellX = 0, CellY = 0;
+        bool EditorPreview = false;
+    };
+
+    // Ters hücre dönüşümü: görünen hücre konumu (0..1) <- doku koordinatı
+    inline glm::vec2 InverseTileTransform(uint8_t t, glm::vec2 uv)
+    {
+        for (int k = 0; k < TileTurns(t); ++k)
+            uv = glm::vec2(1.0f - uv.y, uv.x);
+        if (TileMirrored(t))
+            uv.x = 1.0f - uv.x;
+        return uv;
+    }
 
     struct TilemapCollider2DComponent
     {

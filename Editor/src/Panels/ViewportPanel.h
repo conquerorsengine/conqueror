@@ -79,6 +79,7 @@ namespace Conqueror::Editor
         float DeltaTime = 0.0f;
         ImDrawList* DrawList = nullptr;
         std::function<bool(const glm::vec3& world, ImVec2& screen)> WorldToScreen;
+        ImVec2 ViewportMin{ 0.0f, 0.0f }, ViewportMax{ 0.0f, 0.0f };   // ekran koordinatı (araçların sahne görünümü katmanları için)
     };
     // true dönerse araç fareyi kullandı (seçim/gizmo o karede devre dışı)
     using ViewportToolHook = std::function<bool(const ViewportToolContext&)>;

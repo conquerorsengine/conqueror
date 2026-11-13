@@ -363,6 +363,7 @@ namespace Conqueror::Editor
             m_AddonManagerPanel = std::make_unique<AddonManagerPanel>();
             m_TilePalettePanel = std::make_unique<TilePalettePanel>();
             m_TilePalettePanel->SetContext(m_ActiveScene.get());
+            m_TilePalettePanel->SetSceneRef(m_ActiveScene);
             TilePalettePanel::s_OpenPanel = [this]() { m_ShowTilePalette = true; m_PendingFocusWindow = "###TilePalette"; };
             AudioAssetsInspector::SetOpenMixerWindow([this]() { m_ShowAudioMixer = true; });
             if (auto* receiverInfo = ComponentRegistry::Find("SignalReceiverComponent"))
@@ -4151,10 +4152,65 @@ namespace Conqueror::Editor
                 if (!tp.SelectPaletteAssetTile(I(2))) { err = "cannot pick palette tile " + a[2]; return false; }
                 return true;
             }
+            if (a[1] == "active" && a.size() > 2)
+            {
+                if (a[2] == "none") { tp.SetActiveTilemap({}); return true; }
+                Entity found;
+                m_ActiveScene->m_Registry.view<TilemapComponent, TagComponent>().each([&](auto h, auto&, auto& tag) {
+                    if (tag.Tag == a[2]) found = Entity{ h, m_ActiveScene.get() };
+                });
+                if (!found) { err = "no tilemap named " + a[2]; return false; }
+                tp.SetActiveTilemap(found);
+                return true;
+            }
             Entity e = tp.GetTarget();
             if (!e) { err = "no tilemap"; return false; }
             auto& map = e.GetComponent<TilemapComponent>();
             const GridComponent& g = GridSystem::GridOf(e);
+            if (a[1] == "select" && a.size() > 5) { tp.SetSelection({ I(2), I(3) }, { I(4), I(5) }); return true; }
+            if (a[1] == "move_selection" && a.size() > 3) { tp.MoveSelection(e, { I(2), I(3) }); return true; }
+            if (a[1] == "delete_selection") { tp.DeleteSelection(e); return true; }
+            if (a[1] == "copy_selection") { tp.CopySelectionToBrush(e); return true; }
+            if (a[1] == "expect_transform" && a.size() > 4)
+            {
+                auto it = map.Cells.find(GridKey(I(2), I(3)));
+                const int have = it == map.Cells.end() ? -1 : (int)it->second.Transform;
+                if (have != I(4)) { err = "transform (" + a[2] + "," + a[3] + ") = " + std::to_string(have) + ", expected " + a[4]; return false; }
+                return true;
+            }
+            if (a[1] == "expect_color" && a.size() > 4)
+            {
+                auto it = map.Cells.find(GridKey(I(2), I(3)));
+                const float have = it == map.Cells.end() ? -1.0f : it->second.Color.r;
+                if (std::abs(have - std::stof(a[4])) > 0.01f) { err = "color.r (" + a[2] + "," + a[3] + ") = " + std::to_string(have); return false; }
+                return true;
+            }
+            if (a[1] == "expect_stamp" && a.size() > 2)
+            {
+                if ((int)tp.GetStamp().size() != I(2)) { err = "stamp has " + std::to_string(tp.GetStamp().size()) + " cells"; return false; }
+                return true;
+            }
+            if (a[1] == "expect_objects" && a.size() > 2)
+            {
+                int n = 0;
+                for (Entity c : e.GetChildren()) n += c.HasComponent<TransformComponent>() ? 1 : 0;
+                if (n != I(2)) { err = "tilemap has " + std::to_string(n) + " child objects"; return false; }
+                return true;
+            }
+            if (a[1] == "tile_flag" && a.size() > 4)
+            {
+                const int i = I(2);
+                if (i < 0 || i >= (int)map.Palette.size()) { err = "no palette entry " + a[2]; return false; }
+                auto& def = map.Palette[(size_t)i];
+                const bool on = a[4] == "1" || a[4] == "true";
+                if (a[3] == "lock_color") def.LockColor = on;
+                else if (a[3] == "lock_transform") def.LockTransform = on;
+                else if (a[3] == "sprite_collider") { def.Solid = true; def.SpriteCollider = on; }
+                else if (a[3] == "gameobject") { def.GameObject = a[4]; def.GameObjectRuntimeOnly = a.size() < 6 || a[5] != "editor"; }
+                else { err = "tile_flag <i> lock_color|lock_transform|sprite_collider|gameobject"; return false; }
+                map.Version++;
+                return true;
+            }
             // tile expect_texture <x> <y> <dosya-adı-soneki> [rotation]: Rule / Animated Tile çözümlemesi
             if (a[1] == "expect_texture" && a.size() > 4)
             {
@@ -4181,10 +4237,59 @@ namespace Conqueror::Editor
             };
             if (a[1] == "tool" && a.size() > 2)
             {
-                static const char* names[] = { "paint", "box", "fill", "erase", "picker" };
+                static const char* names[] = { "paint", "box", "fill", "erase", "picker", "select", "move" };
                 tp.SetTool(TilePalettePanel::Tool::None);
-                for (int i = 0; i < 5; ++i)
+                for (int i = 0; i < 7; ++i)
                     if (a[2] == names[i]) tp.SetTool((TilePalettePanel::Tool)i);
+                return true;
+            }
+            // tile brush_type <default|line|random|gameobject|group|prefab> | rotate <çeyrek dönüş, + saat yönü tersi> | flip <x|y>
+            //      | active <ad|none> | focus <none|tilemap|grid> | select <x0> <y0> <x1> <y1> | move_selection <dx> <dy>
+            //      | delete_selection | copy_selection | expect_transform <x> <y> <t> | expect_color <x> <y> <r> | expect_stamp <n>
+            //      | random <karo> <ağırlık> ... | gameobject <prefab> | prefabs <prefab> ... | group <gap> <limit>
+            //      | tile_flag <i> <lock_color|lock_transform|sprite_collider|gameobject> <değer> | pick_save <ad> | pick_apply <i>
+            //      | pick_palette_box <x0> <y0> <x1> <y1> | expect_objects <n> | color <r> <g> <b> <a>
+            if (a[1] == "brush_type" && a.size() > 2)
+            {
+                static const char* names[] = { "default", "line", "random", "gameobject", "group", "prefab" };
+                for (int i = 0; i < 6; ++i)
+                    if (a[2] == names[i]) { tp.SetBrushType((TilePalettePanel::BrushType)i); return true; }
+                err = "unknown brush type " + a[2];
+                return false;
+            }
+            if (a[1] == "rotate" && a.size() > 2) { tp.RotateBrush(I(2)); return true; }
+            if (a[1] == "flip" && a.size() > 2) { tp.FlipBrush(a[2] == "y"); return true; }
+            if (a[1] == "focus" && a.size() > 2)
+            {
+                tp.SetFocusMode(a[2] == "tilemap" ? TilePalettePanel::FocusMode::Tilemap : a[2] == "grid" ? TilePalettePanel::FocusMode::Grid
+                                                                                                          : TilePalettePanel::FocusMode::None);
+                return true;
+            }
+            if (a[1] == "color" && a.size() > 5)
+            {
+                tp.PaintColor() = glm::vec4(std::stof(a[2]), std::stof(a[3]), std::stof(a[4]), std::stof(a[5]));
+                return true;
+            }
+            if (a[1] == "random" && a.size() > 3)
+            {
+                std::vector<std::pair<int, float>> tiles;
+                for (size_t i = 2; i + 1 < a.size(); i += 2)
+                    tiles.push_back({ std::atoi(a[i].c_str()), std::stof(a[i + 1]) });
+                tp.SetRandomTiles(tiles);
+                return true;
+            }
+            if (a[1] == "gameobject" && a.size() > 2) { tp.SetGameObjectPrefab(a[2]); return true; }
+            if (a[1] == "prefabs" && a.size() > 2) { tp.SetPrefabs(std::vector<std::string>(a.begin() + 2, a.end())); return true; }
+            if (a[1] == "group" && a.size() > 3) { tp.SetGroupSettings(I(2), I(3)); return true; }
+            if (a[1] == "pick_save" && a.size() > 2) { tp.SaveBrushPick(a[2]); return true; }
+            if (a[1] == "pick_apply" && a.size() > 2)
+            {
+                if (!tp.ApplyBrushPick(I(2))) { err = "no brush pick " + a[2]; return false; }
+                return true;
+            }
+            if (a[1] == "pick_palette_box" && a.size() > 5)
+            {
+                if (!tp.PickPaletteAssetBox({ I(2), I(3) }, { I(4), I(5) })) { err = "nothing in the palette box"; return false; }
                 return true;
             }
             if (a[1] == "brush" && a.size() > 2)
@@ -7687,7 +7792,11 @@ namespace Conqueror::Editor
         if (m_ShaderEditorPanel) m_ShaderEditorPanel->SetContext(m_ActiveScene.get());
         if (m_AIPanel) m_AIPanel->SetContext(m_ActiveScene);
         if (m_TerrainPanel) m_TerrainPanel->SetContext(m_ActiveScene.get());
-        if (m_TilePalettePanel) m_TilePalettePanel->SetContext(m_ActiveScene.get());
+        if (m_TilePalettePanel)
+        {
+            m_TilePalettePanel->SetContext(m_ActiveScene.get());
+            m_TilePalettePanel->SetSceneRef(m_ActiveScene);
+        }
         // Başka sahneye ait seçim (silinmiş olabilir) bırakılır; yalnızca işaretçi karşılaştırılır
         bool stale = false;
         for (auto& e : EditorState::Get().GetSelectedEntities())

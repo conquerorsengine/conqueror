@@ -679,6 +679,18 @@ namespace Conqueror
                 if (cell.Tile < 0 || cell.Tile >= (int)map.Palette.size() || !map.Palette[(size_t)cell.Tile].Solid)
                     continue;
                 GridSystem::CellCorners(grid, GridKeyToCell(key), corners);
+                // Unity Collider Type Sprite: dokunun opak dikdörtgeni (hücre dönüşümüyle döner / aynalanır); Grid: bütün hücre
+                const TileDefinition& def = map.Palette[(size_t)cell.Tile];
+                glm::vec4 opaque;
+                if (def.SpriteCollider && GridSystem::TileOpaqueBounds(def.Texture, opaque) && !corners.empty())
+                {
+                    glm::vec2 mn(1e30f), mx(-1e30f);
+                    for (auto& p : corners) { mn = glm::min(mn, p); mx = glm::max(mx, p); }
+                    const glm::vec2 uvs[4] = { { opaque.x, opaque.y }, { opaque.z, opaque.y }, { opaque.z, opaque.w }, { opaque.x, opaque.w } };
+                    corners.clear();
+                    for (const auto& uv : uvs)
+                        corners.push_back(mn + InverseTileTransform(cell.Transform, uv) * (mx - mn));
+                }
                 std::vector<b2Vec2> bp;
                 for (auto& c : corners)
                 {

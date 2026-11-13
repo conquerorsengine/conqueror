@@ -530,6 +530,8 @@ namespace Conqueror::Editor
                 out = ImVec2(b0.x + (ndc.x * 0.5f + 0.5f) * size.x, b0.y + (1.0f - (ndc.y * 0.5f + 0.5f)) * size.y);
                 return true;
             };
+            ctx.ViewportMin = ImVec2(m_ViewportBounds[0].x, m_ViewportBounds[0].y);
+            ctx.ViewportMax = ImVec2(m_ViewportBounds[1].x, m_ViewportBounds[1].y);
             ctx.DrawList->PushClipRect(ImVec2(m_ViewportBounds[0].x, m_ViewportBounds[0].y), ImVec2(m_ViewportBounds[1].x, m_ViewportBounds[1].y), true);
             m_ToolConsumed = m_ToolHook(ctx);
             ctx.DrawList->PopClipRect();

@@ -9,7 +9,10 @@
 #include "Renderer/Utilities/Renderer3D/Material.h"
 #include "Core/Debug/DebugDraw.h"
 #include "Core/Serialization/SceneSerializer.h"
+#include "Core/Serialization/PrefabSerializer.h"
+#include "Core/Time/TimeManager.h"
 #include "stb_image_write.h"
+#include <stb_image.h>
 
 #include <yaml-cpp/yaml.h>
 #include <chrono>
@@ -539,6 +542,17 @@ namespace Conqueror::GridSystem
         out << YAML::Key << "Color" << YAML::Value << YAML::Flow << YAML::BeginSeq << t.Color.r << t.Color.g << t.Color.b << t.Color.a << YAML::EndSeq;
         out << YAML::Key << "Texture" << YAML::Value << t.Texture;
         out << YAML::Key << "Solid" << YAML::Value << t.Solid;
+        if (t.SpriteCollider)
+            out << YAML::Key << "ColliderType" << YAML::Value << "Sprite";
+        if (t.LockColor)
+            out << YAML::Key << "LockColor" << YAML::Value << true;
+        if (t.LockTransform)
+            out << YAML::Key << "LockTransform" << YAML::Value << true;
+        if (!t.GameObject.empty())
+        {
+            out << YAML::Key << "GameObject" << YAML::Value << t.GameObject;
+            out << YAML::Key << "InstantiateRuntimeOnly" << YAML::Value << t.GameObjectRuntimeOnly;
+        }
         out << YAML::Key << "Walkable" << YAML::Value << t.Walkable;
         out << YAML::Key << "Cost" << YAML::Value << t.Cost;
         out << YAML::Key << "Height" << YAML::Value << t.Height;
@@ -580,6 +594,11 @@ namespace Conqueror::GridSystem
             def.Color = { c[0].as<float>(), c[1].as<float>(), c[2].as<float>(), c[3].as<float>() };
         if (t["Texture"]) def.Texture = t["Texture"].as<std::string>();
         if (t["Solid"]) def.Solid = t["Solid"].as<bool>();
+        def.SpriteCollider = t["ColliderType"] && t["ColliderType"].as<std::string>() == "Sprite";
+        def.LockColor = t["LockColor"] && t["LockColor"].as<bool>();
+        def.LockTransform = t["LockTransform"] && t["LockTransform"].as<bool>();
+        def.GameObject = t["GameObject"] ? t["GameObject"].as<std::string>() : std::string();
+        def.GameObjectRuntimeOnly = !t["InstantiateRuntimeOnly"] || t["InstantiateRuntimeOnly"].as<bool>();
         if (t["Walkable"]) def.Walkable = t["Walkable"].as<bool>();
         if (t["Cost"]) def.Cost = t["Cost"].as<int>();
         if (t["Height"]) def.Height = t["Height"].as<float>();
@@ -736,7 +755,14 @@ namespace Conqueror::GridSystem
         out << YAML::Key << "CellSize" << YAML::Value << YAML::Flow << YAML::BeginSeq << palette.CellSize.x << palette.CellSize.y << YAML::EndSeq;
         out << YAML::Key << "Tiles" << YAML::Value << YAML::BeginSeq;
         for (const auto& t : palette.Tiles) out << t;
-        out << YAML::EndSeq << YAML::EndMap << YAML::EndMap;
+        out << YAML::EndSeq;
+        if (palette.Positions.size() == palette.Tiles.size() && !palette.Positions.empty())
+        {
+            out << YAML::Key << "Positions" << YAML::Value << YAML::BeginSeq;
+            for (const auto& p : palette.Positions) out << YAML::Flow << YAML::BeginSeq << p.x << p.y << YAML::EndSeq;
+            out << YAML::EndSeq;
+        }
+        out << YAML::EndMap << YAML::EndMap;
         std::ofstream f(SceneSerializer::ResolveAssetPath(path), std::ios::trunc);
         if (!f)
             return false;
@@ -757,6 +783,16 @@ namespace Conqueror::GridSystem
             if (auto c = n["CellSize"]; c && c.IsSequence() && c.size() == 2) palette.CellSize = { c[0].as<float>(), c[1].as<float>() };
             if (auto t = n["Tiles"]; t && t.IsSequence())
                 for (const auto& p : t) palette.Tiles.push_back(p.as<std::string>());
+            if (auto ps = n["Positions"]; ps && ps.IsSequence() && ps.size() == palette.Tiles.size())
+                for (const auto& p : ps)
+                    palette.Positions.push_back({ p[0].as<int>(), p[1].as<int>() });
+            if (palette.Positions.size() != palette.Tiles.size())
+            {
+                // Eski (konumsuz) palet: sırayla satırlara dizilir
+                palette.Positions.clear();
+                for (size_t i = 0; i < palette.Tiles.size(); ++i)
+                    palette.Positions.push_back(palette.FreePosition());
+            }
             return true;
         }
         catch (...) { return false; }
@@ -765,9 +801,132 @@ namespace Conqueror::GridSystem
     // ════════════════════════════════════════
     //  Çizim
     // ════════════════════════════════════════
+    bool TileOpaqueBounds(const std::string& texture, glm::vec4& uvMinMax)
+    {
+        static std::unordered_map<std::string, std::pair<bool, glm::vec4>> cache;
+        if (texture.empty())
+            return false;
+        auto it = cache.find(texture);
+        if (it == cache.end())
+        {
+            std::pair<bool, glm::vec4> entry{ false, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f) };
+            int w = 0, h = 0, n = 0;
+            if (unsigned char* px = stbi_load(SceneSerializer::ResolveAssetPath(texture).c_str(), &w, &h, &n, 4))
+            {
+                int x0 = w, y0 = h, x1 = -1, y1 = -1;
+                for (int y = 0; y < h; ++y)
+                    for (int x = 0; x < w; ++x)
+                        if (px[((size_t)y * (size_t)w + (size_t)x) * 4 + 3] > 64)
+                        {
+                            x0 = std::min(x0, x); x1 = std::max(x1, x);
+                            y0 = std::min(y0, y); y1 = std::max(y1, y);
+                        }
+                stbi_image_free(px);
+                if (x1 >= x0 && y1 >= y0)
+                    // Satır 0 görüntünün üstü; doku koordinatında v aşağıdan yukarı
+                    entry = { true, glm::vec4((float)x0 / (float)w, 1.0f - (float)(y1 + 1) / (float)h, (float)(x1 + 1) / (float)w, 1.0f - (float)y0 / (float)h) };
+            }
+            it = cache.emplace(texture, entry).first;
+        }
+        uvMinMax = it->second.second;
+        return it->second.first;
+    }
+
+    void SyncTileObjects(Scene& scene, bool runtime)
+    {
+        auto& reg = scene.m_Registry;
+        // Karo haritası başına son eşitlenen sürüm (düzenleyici: yalnız değişince)
+        static std::unordered_map<uint64_t, uint32_t> s_Synced;
+        static const Scene* s_SyncedScene = nullptr;
+        if (s_SyncedScene != &scene)
+        {
+            s_Synced.clear();
+            s_SyncedScene = &scene;
+        }
+        std::vector<entt::entity> remove;
+        if (runtime)
+        {
+            reg.view<TileObjectComponent>().each([&](auto h, auto& t) { if (t.EditorPreview) remove.push_back(h); });
+            for (auto h : remove)
+                if (reg.valid(h))
+                    scene.DestroyEntity(Entity{ h, &scene });
+            remove.clear();
+        }
+        std::vector<entt::entity> maps;
+        reg.view<TilemapComponent>().each([&](auto h, auto&) { maps.push_back(h); });
+        for (auto h : maps)
+        {
+            Entity e{ h, &scene };
+            auto& map = e.GetComponent<TilemapComponent>();
+            const uint64_t id = (uint64_t)e.GetComponent<IDComponent>().ID;
+            if (!runtime)
+            {
+                auto sv = s_Synced.find(id);
+                if (sv != s_Synced.end() && sv->second == map.Version)
+                    continue;
+                s_Synced[id] = map.Version;
+                // Bu haritanın önizlemeleri baştan kurulur
+                reg.view<TileObjectComponent>().each([&](auto oh, auto& t) { if (t.EditorPreview && t.Tilemap == id) remove.push_back(oh); });
+                for (auto oh : remove)
+                    if (reg.valid(oh))
+                        scene.DestroyEntity(Entity{ oh, &scene });
+                remove.clear();
+            }
+            bool any = false;
+            for (const auto& def : map.Palette)
+                any |= !def.GameObject.empty() && (runtime || !def.GameObjectRuntimeOnly);
+            if (!any)
+                continue;
+            const GridComponent& g = GridOf(e);
+            for (const auto& [key, cell] : map.Cells)
+            {
+                if (cell.Tile < 0 || cell.Tile >= (int)map.Palette.size())
+                    continue;
+                const TileDefinition& def = map.Palette[(size_t)cell.Tile];
+                if (def.GameObject.empty() || (!runtime && def.GameObjectRuntimeOnly))
+                    continue;
+                Entity inst = PrefabSerializer::Instantiate(scene, def.GameObject, e);
+                if (!inst)
+                    continue;
+                const glm::ivec2 c = GridKeyToCell(key);
+                auto& tc = inst.GetComponent<TransformComponent>();
+                tc.Position = PlaneToLocal(g, CellToPlane(g, c), cell.Elevation);
+                // Hücre dönüşümünün çeyrek dönüşü ızgara düzleminin normali çevresinde (Unity: hücre matrisi örneğe uygulanır)
+                const float turn = glm::radians(90.0f * (float)TileTurns(cell.Transform));
+                if (g.Plane == GridPlane::XZ) tc.Rotation.y += turn; else tc.Rotation.z += turn;
+                auto& to = inst.AddOrReplaceComponent<TileObjectComponent>();
+                to.Tilemap = id;
+                to.CellX = c.x;
+                to.CellY = c.y;
+                to.EditorPreview = !runtime;
+            }
+        }
+    }
+
+    namespace
+    {
+        struct EditorFocus { uint32_t Tilemap = 0, Grid = 0; int Mode = 0; uint64_t Frame = 0; } s_Focus;
+
+        // Focus Mode'da odak dışındaki karo haritaları soluk (Unity: Focus On Tilemap / Grid)
+        float FocusAlpha(Scene& scene, Entity e)
+        {
+            if (s_Focus.Mode == 0 || scene.IsRuntimeScene() || TimeManager::GetFrameCount() > s_Focus.Frame + 1)
+                return 1.0f;
+            if ((uint32_t)e == s_Focus.Tilemap)
+                return 1.0f;
+            if (s_Focus.Mode == 2 && s_Focus.Grid != 0 && e.GetParent() && (uint32_t)e.GetParent() == s_Focus.Grid)
+                return 1.0f;
+            return 0.25f;
+        }
+    }
+
+    void SetEditorFocus(uint32_t tilemapEntity, uint32_t gridEntity, int mode)
+    {
+        s_Focus = { tilemapEntity, gridEntity, mode, TimeManager::GetFrameCount() };
+    }
+
     void DrawTilemap2D(Scene& scene, Entity e)
     {
-        (void)scene;
         auto& map = e.GetComponent<TilemapComponent>();
         SyncTileAssets(map);
         if (map.Cells.empty())
@@ -780,12 +939,14 @@ namespace Conqueror::GridSystem
         std::vector<glm::vec2> corners;
         auto white = Renderer2D::GetWhiteTexture();
         const float outline = std::min(g.CellSize.x, g.CellSize.y) * 0.04f;
+        const float focusAlpha = FocusAlpha(scene, e);
         for (const auto& [key, cell] : map.Cells)
         {
             if (cell.Tile < 0 || cell.Tile >= (int)map.Palette.size())
                 continue;
             const TileDefinition& def = map.Palette[(size_t)cell.Tile];
             glm::vec4 color = def.Color * cell.Color * map.Tint;
+            color.a *= focusAlpha;
             glm::ivec2 c = GridKeyToCell(key);
             int turns = 0;
             const std::string& texPath = ResolveTileTexture(map, c, turns, now);
@@ -809,6 +970,8 @@ namespace Conqueror::GridSystem
             }
             auto uvOf = [&](const glm::vec2& p) {
                 glm::vec2 t = (p - mn) / glm::max(mx - mn, glm::vec2(1e-5f));
+                // Hücre dönüşümü (fırçanın [ ] / Shift+[ ] ile verdiği döndürme / aynalama)
+                t = ApplyTileTransform(cell.Transform, t);
                 // Rule Tile döndürmesi: doku hücre merkezinde 90°'lik adımlarla döner
                 for (int k = 0; k < turns; ++k)
                     t = glm::vec2(t.y, 1.0f - t.x);
@@ -963,9 +1126,18 @@ namespace Conqueror::GridSystem
                 // Hücre kenarları: karolar arasında ince ayrım (tahta görünümü)
                 const float inset = map.Outline ? 0.94f : 1.0f;
                 glm::vec3 scale = g.Plane == GridPlane::XZ ? glm::vec3(inset, height, inset) : glm::vec3(inset, inset, height);
-                glm::mat4 m = world * glm::translate(glm::mat4(1.0f), base) * glm::scale(glm::mat4(1.0f), scale);
+                glm::mat4 m = world * glm::translate(glm::mat4(1.0f), base);
+                // Hücre dönüşümü: kare hücrede üst yüzün dokusu çeyrek dönüşlerle döner (prizma yukarı ekseni çevresinde)
+                if (TileTurns(cell.Transform) != 0 && g.Layout == GridLayout::Rectangle && std::abs(g.CellSize.x - g.CellSize.y) < 1e-4f)
+                {
+                    const glm::vec3 up = g.Plane == GridPlane::XZ ? glm::vec3(0.0f, 1.0f, 0.0f) : glm::vec3(0.0f, 0.0f, 1.0f);
+                    m = m * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f * (float)TileTurns(cell.Transform)), up);
+                }
+                m = m * glm::scale(glm::mat4(1.0f), scale);
                 int turns = 0;
-                Renderer3D::DrawMesh(mesh, m, MaterialFor(ResolveTileTexture(map, c, turns, now), def.Color * cell.Color * map.Tint));
+                glm::vec4 color = def.Color * cell.Color * map.Tint;
+                color.a *= FocusAlpha(scene, e);
+                Renderer3D::DrawMesh(mesh, m, MaterialFor(ResolveTileTexture(map, c, turns, now), color));
             }
         }
     }

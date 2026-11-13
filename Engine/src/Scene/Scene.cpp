@@ -269,6 +269,9 @@ namespace Conqueror
         ScriptContext::SetCurrentEntity(ScriptContext::NullEntity);
         m_IsRuntimeScene = true;
 
+        // Unity Tile.gameObject: karo prefabları fizik ve betikler kurulmadan örneklenir (düzenleyici önizlemeleri kalkar)
+        GridSystem::SyncTileObjects(*this, true);
+
         // 3D fizik: tüm gövde/eklem/karakterler kurulur; sabit adımda betiklerin FixedUpdate'i çağrılır
         if (m_PhysicsWorld3D)
         {
@@ -2011,6 +2014,8 @@ namespace Conqueror
         // Stats'ı sıfırla
         Renderer::ResetStats();
         UpdateEditorSystems(ts);
+        // Instantiate GameObject Runtime Only kapalı karoların düzenleyici önizlemeleri (harita değişince)
+        GridSystem::SyncTileObjects(*this, false);
 
         // Buton input sistemi
         UpdateButtonInput(camera, ts, viewportBounds);
@@ -3743,6 +3748,7 @@ namespace Conqueror
     CQ_PLAIN_ADDED(NavigationAgent2DComponent)
     CQ_PLAIN_ADDED(NavigationObstacle2DComponent)
     CQ_PLAIN_ADDED(NavigationLink2DComponent)
+    CQ_PLAIN_ADDED(TileObjectComponent)
     CQ_PLAIN_ADDED(RenderTargetComponent)
     CQ_PLAIN_ADDED(FullScreenPassComponent)
     CQ_PLAIN_ADDED(SignalReceiverComponent)

@@ -1,0 +1,100 @@
+# template: basic2d
+# 237 (Unity Tile Palette): hücre döndürme / aynalama, Lock Color / Lock Transform, kutuyla alınan çok hücreli fırça, Select + Move +
+# Delete, Line / Random / Group fırçaları, GameObject fırçası ve karonun GameObject'i (Play'de örneklenir), Brush Picks
+wait 40
+tile create rect
+wait 5
+tile tool paint
+tile brush 1 0
+tile rotate 1
+tile apply 0 0
+tile expect_transform 0 0 1
+tile flip x
+tile apply 1 0
+tile expect_transform 1 0 5
+# Lock Transform: döndürülmüş fırça bu karoyu döndürmez
+tile tile_flag 1 lock_transform 1
+tile brush 1 1
+tile apply 2 0
+tile expect 2 0 1
+tile expect_transform 2 0 0
+# Lock Color: fırça rengi uygulanmaz
+tile color 0.5 0.5 0.5 1
+tile tile_flag 2 lock_color 1
+tile brush 1 2
+tile apply 3 0
+tile expect_color 3 0 1
+tile brush 1 0
+tile apply 4 0
+tile expect_color 4 0 0.5
+tile color 1 1 1 1
+# Picker kutusu -> çok hücreli fırça, başka yere damga (hücre dönüşümleri korunur)
+tile tool picker
+tile apply 0 0 1 0
+tile expect_stamp 2
+tile tool paint
+tile apply 0 5
+tile expect 0 5 0
+tile expect 1 5 0
+tile expect_transform 1 5 5
+# Select + Move + Delete
+tile tool select
+tile apply 0 5 1 5
+tile move_selection 0 2
+tile expect 0 5 -1
+tile expect 0 7 0
+tile expect 1 7 0
+tile delete_selection
+tile expect 0 7 -1
+# Line Brush (Fill Gaps): (0,10) - (4,12) = 7 hücre
+tile brush_type line
+tile tool paint
+tile brush 1 3
+tile apply 0 10 4 12
+tile expect 0 10 3
+tile expect 1 10 3
+tile expect 1 11 3
+tile expect 3 12 3
+tile expect 4 12 3
+# Group Brush: Picker tıklaması bağlı grubu alır
+tile brush_type group
+tile group 0 64
+tile tool picker
+tile apply 0 10
+tile expect_stamp 7
+# Random Brush: yalnız 0 ve 1 ağırlıklı
+tile brush_type random
+tile random 2 1
+tile tool paint
+tile apply 20 20
+tile expect 20 20 2
+# GameObject Brush: prefab hücreye örneklenir, Eraser siler
+create_primitive Cube Crate 0 0 0
+prefab save Crate Assets/Crate.cqprefab
+entity delete Crate
+tile brush_type gameobject
+tile gameobject Assets/Crate.cqprefab
+tile tool paint
+tile apply 30 30
+tile expect_objects 1
+tile tool erase
+tile apply 30 30
+wait 2
+tile expect_objects 0
+# Karonun GameObject'i: Play'de her hücreye örneklenir
+tile brush_type default
+tile tool paint
+tile tile_flag 0 gameobject Assets/Crate.cqprefab
+play
+wait 10
+expect_entities 3 Crate
+stop
+wait 5
+expect_entities 0 Crate
+# Brush Picks
+tile brush 1 1
+tile pick_save Wall
+tile brush 1 0
+tile pick_apply 0
+tile expect_selected 1
+quit

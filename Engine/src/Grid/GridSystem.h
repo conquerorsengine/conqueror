@@ -5,6 +5,7 @@
 
 #include <glm/glm.hpp>
 
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <vector>
@@ -78,9 +79,31 @@ namespace Conqueror
             GridLayout Layout = GridLayout::Rectangle;
             glm::vec2 CellSize{ 1.0f, 1.0f };
             std::vector<std::string> Tiles;   // .cqtile yolları (proje göreli)
+            // Paletteki ızgara konumu (Unity paleti düzenlenebilir bir ızgaradır; y yukarı). Tiles ile aynı sırada
+            std::vector<glm::ivec2> Positions;
+            // Boş bir ızgara konumu (satır başına 8 karo, yukarıdan aşağı)
+            glm::ivec2 FreePosition() const
+            {
+                for (int i = 0;; ++i)
+                {
+                    const glm::ivec2 p(i % 8, -(i / 8));
+                    if (std::find(Positions.begin(), Positions.end(), p) == Positions.end())
+                        return p;
+                }
+            }
         };
         CQ_API bool SavePalette(const std::string& path, const TilePaletteAsset& palette);
         CQ_API bool LoadPalette(const std::string& path, TilePaletteAsset& palette);
+
+        // Unity Collider Type Sprite: dokunun opak alanı (0..1, sol alt köken; alfa > %25). Doku yoksa / okunamazsa false
+        CQ_API bool TileOpaqueBounds(const std::string& texture, glm::vec4& uvMinMax);
+        // Unity Tile.gameObject: runtime = true Play başında önizlemeleri silip her karonun prefabını örnekler; false (düzenleyici,
+        // her kare) Instantiate GameObject Runtime Only kapalı karoların önizlemelerini harita değiştikçe günceller
+        CQ_API void SyncTileObjects(Scene& scene, bool runtime);
+
+        // Tile Palette Focus Mode (düzenleyici): 1 = yalnız bu karo haritası, 2 = bu ızgaranın karo haritaları belirgin, diğerleri
+        // soluk. Her karede yeniden verilir (panel kapanınca kendiliğinden biter)
+        CQ_API void SetEditorFocus(uint32_t tilemapEntity, uint32_t gridEntity, int mode);
 
         // Çizim
         CQ_API void DrawTilemap2D(Scene& scene, Entity tilemapEntity);

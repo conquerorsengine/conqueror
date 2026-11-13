@@ -18,7 +18,7 @@ namespace Conqueror
             for (const auto& t : map.Palette)
                 GridSystem::EmitTileDefinition(out, t);
             out << YAML::EndSeq;
-            // Hücreler: [x, y, karo, r, g, b, a, yükseklik] (sıralı: kararlı dosya farkları)
+            // Hücreler: [x, y, karo, r, g, b, a, yükseklik, dönüşüm] (sıralı: kararlı dosya farkları)
             std::vector<std::pair<uint64_t, TileCell>> cells(map.Cells.begin(), map.Cells.end());
             std::sort(cells.begin(), cells.end(), [](auto& a, auto& b) {
                 glm::ivec2 ca = GridKeyToCell(a.first), cb = GridKeyToCell(b.first);
@@ -29,8 +29,10 @@ namespace Conqueror
             {
                 glm::ivec2 c = GridKeyToCell(key);
                 out << YAML::Flow << YAML::BeginSeq << c.x << c.y << cell.Tile;
-                if (cell.Color != glm::vec4(1.0f) || cell.Elevation != 0.0f)
+                if (cell.Color != glm::vec4(1.0f) || cell.Elevation != 0.0f || cell.Transform != 0)
                     out << cell.Color.r << cell.Color.g << cell.Color.b << cell.Color.a << cell.Elevation;
+                if (cell.Transform != 0)
+                    out << (int)cell.Transform;
                 out << YAML::EndSeq;
             }
             out << YAML::EndSeq;
@@ -60,6 +62,8 @@ namespace Conqueror
                         cell.Color = { c[3].as<float>(), c[4].as<float>(), c[5].as<float>(), c[6].as<float>() };
                     if (c.size() >= 8)
                         cell.Elevation = c[7].as<float>();
+                    if (c.size() >= 9)
+                        cell.Transform = (uint8_t)(c[8].as<int>() & 7);
                     map.Cells[GridKey(c[0].as<int>(), c[1].as<int>())] = cell;
                 }
             }

@@ -1,4 +1,5 @@
 #include "SceneSerializer.h"
+#include "Grid/GridComponents.h"
 #include "Scene/LevelStreaming.h"
 #include "Scene/MeshRendererMaterial.h"
 #include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
@@ -2116,8 +2117,13 @@ namespace Conqueror
         // .cqscene dosyalarına aittir (Unity'de ek açılan sahne ayrı kaydedilir). Geri al anlık görüntüleri (akış) bunları tutar.
         auto inStreamedLevel = [&](Entity e) {
             for (Entity p = e; p; p = p.GetParent())
+            {
                 if (p.HasComponent<StreamedLevelComponent>())
                     return true;
+                // Karo GameObject önizlemesi (Unity: düzenleyicide örneklenen karo nesnesi) kaydedilmez, haritadan yeniden kurulur
+                if (p.HasComponent<TileObjectComponent>() && p.GetComponent<TileObjectComponent>().EditorPreview)
+                    return true;
+            }
             return false;
         };
         for (entt::entity entityID : SerializationOrder(m_Scene->m_Registry))
