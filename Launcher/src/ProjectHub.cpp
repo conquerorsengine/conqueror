@@ -1119,8 +1119,8 @@ namespace Conqueror::Editor
         ImGui::SeparatorText("About");
         ImGui::Text("Conqueror's Engine %s", EngineVersion);
         ImGui::PushStyleColor(ImGuiCol_Text, kTextDim);
-        ImGui::TextWrapped("Rendering: OpenGL 4.6 (shaders compiled through SPIR-V). Scripting: ConquerorScript (JIT), Luau, Python, C#, Java, "
-                           "C/C++, Visual Scripting. Physics: Jolt and MuJoCo (3D), Box2D (2D).");
+        ImGui::TextWrapped("Rendering: OpenGL 4.6 (shaders compiled through SPIR-V). Scripting: ConquerorScript (JIT), LuaQ, C#, Python, Java, "
+                           "C++, C, Rust, Zig, Visual Scripting. Physics: Jolt and MuJoCo (3D), Box2D (2D).");
         ImGui::TextWrapped("Third-party: Dear ImGui, ImGuizmo, imnodes, GLFW, glad, glm, EnTT, yaml-cpp, spdlog, stb, FreeType, Assimp, "
                            "Jolt Physics, Box2D, MuJoCo, Luau, sljit, glslang, SPIRV-Cross, Native File Dialog.");
         ImGui::PopStyleColor();

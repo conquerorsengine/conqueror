@@ -14,7 +14,6 @@
 namespace Conqueror::Scripting
 {
     // Diğer dillerin fabrikaları (her biri kendi dosyasında; derleme seçeneklerine göre boş olabilir)
-    std::unique_ptr<ScriptRuntime> CreateLuauRuntime();
     std::unique_ptr<ScriptRuntime> CreateLuaQRuntime();
     std::unique_ptr<ScriptRuntime> CreatePythonRuntime();
     std::unique_ptr<ScriptRuntime> CreateCSharpRuntime();
@@ -98,7 +97,6 @@ namespace Conqueror::Scripting
             Storage().push_back(std::move(r));
         };
         add(std::make_unique<CQS::CQSRuntime>());
-        add(CreateLuauRuntime());
         add(CreateLuaQRuntime());
         add(CreatePythonRuntime());
         add(CreateCSharpRuntime());

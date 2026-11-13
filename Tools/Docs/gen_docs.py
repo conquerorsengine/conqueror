@@ -81,7 +81,7 @@ def natives_page(natives):
     for n in natives:
         by_cat[n["category"] or "Other"].append(n)
     out = [HEADER, "# Scripting API\n\n",
-           "Native functions available to every scripting language (ConquerorScript, Luau, LuaQ, Python, C#, Java, C++, C, Rust, Zig "
+           "Native functions available to every scripting language (ConquerorScript, LuaQ, C#, Python, Java, C++, C, Rust, Zig "
            "and Visual Script nodes). The names are identical in all languages; see [Scripting](../Scripting.md) for how each language "
            "calls them. Functions that act on \"this\" use the entity the script is attached to.\n\n",
            f"{len(natives)} functions in {len(by_cat)} categories.\n\n## Categories\n\n"]

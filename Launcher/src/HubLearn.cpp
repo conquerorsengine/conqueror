@@ -29,7 +29,7 @@ Press Play (Ctrl+P). The Game view receives keyboard and mouse input while it is
 
 # Save
 Ctrl+S saves the scene. The project file (.cqproj) stores the start scene and project-wide settings such as physics and layers.)" },
-            { "Scripting", ICON_FA_CODE, "Write gameplay code in ConquerorScript, Luau, Python, C#, Java or C++.",
+            { "Scripting", ICON_FA_CODE, "Write gameplay code in ConquerorScript, LuaQ, C#, Python, Java, C++, C, Rust or Zig.",
               R"(# Your first script
 Create a script from the Content Browser (Create > Script) and drag it onto an object. Public fields appear in the Inspector.
 ```
@@ -55,7 +55,7 @@ script Spinner : ConquerorScript
 IsKeyPressed("Space") is true while held, IsKeyDown("Space") only on the frame it was pressed. GetMousePosition(), IsMouseButtonDown(0) and ScreenPointToRay(x, y) let you pick objects.
 
 # Other languages
-The same engine API ("nativebridge") is available in Luau (.luau), Python (.py), C# (.cs), Java (.java) and C/C++ (.cpp). Visual Scripts (.cqgraph) compile to ConquerorScript.)" },
+The same engine API ("nativebridge") is available in LuaQ (.luaq), C# (.cs), Python (.py), Java (.java), C++ (.cpp), C (.c), Rust (.rs) and Zig (.zig). Visual Scripts (.cqgraph) compile to ConquerorScript.)" },
             { "Physics", ICON_FA_WEIGHT_HANGING, "Rigidbodies, colliders, joints, queries and the MuJoCo backend.",
               R"(# Bodies and colliders
 Add a Rigidbody and a collider (Box, Sphere, Capsule, Mesh) to make an object fall and collide. A collider without a Rigidbody is static scenery. Colliders on children combine into their parent's body.

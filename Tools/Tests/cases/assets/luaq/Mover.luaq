@@ -1,0 +1,11 @@
+-- 236: LuaQ betiği Luau VM üstünde çalışır (Luau ayrı bir dil olarak kaldırıldı)
+class Mover
+    speed = 2.0
+    ticks = 0
+
+    function Update(dt: number)
+        self.ticks += 1
+        local p = GetPosition()
+        SetPosition(p.x, p.y + self.speed * dt, p.z)
+    end
+end

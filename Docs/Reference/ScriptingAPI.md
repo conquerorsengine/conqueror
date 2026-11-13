@@ -2,7 +2,7 @@
 
 # Scripting API
 
-Native functions available to every scripting language (ConquerorScript, Luau, LuaQ, Python, C#, Java, C++, C, Rust, Zig and Visual Script nodes). The names are identical in all languages; see [Scripting](../Scripting.md) for how each language calls them. Functions that act on "this" use the entity the script is attached to.
+Native functions available to every scripting language (ConquerorScript, LuaQ, C#, Python, Java, C++, C, Rust, Zig and Visual Script nodes). The names are identical in all languages; see [Scripting](../Scripting.md) for how each language calls them. Functions that act on "this" use the entity the script is attached to.
 
 621 functions in 46 categories.
 

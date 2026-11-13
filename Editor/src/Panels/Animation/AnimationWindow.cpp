@@ -2168,7 +2168,7 @@ namespace Conqueror::Editor
                 re = std::regex(R"(\bfunc\s+([A-Za-z_]\w*)\s*\()");
             else if (ext == ".py")
                 re = std::regex(R"(\bdef\s+([A-Za-z_]\w*)\s*\()");
-            else if (ext == ".lua" || ext == ".luau" || ext == ".luaq")
+            else if (ext == ".luaq")
                 re = std::regex(R"(\bfunction\s+(?:[A-Za-z_]\w*[.:])?([A-Za-z_]\w*)\s*\()");
             else
                 re = std::regex(R"(\bvoid\s+([A-Za-z_]\w*)\s*\()");

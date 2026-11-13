@@ -1,0 +1,14 @@
+# template: empty
+# 236: Luau ayrı bir betik dili olarak kaldırıldı; LuaQ derleyicisi kaynağı Luau'ya indirger ve gömülü Luau VM'de çalışır.
+# LuaQ betiği varlığa eklenir, Play'de Update her karede çalışır ve nesneyi yukarı taşır; Inspector alanı (speed) okunur
+wait 40
+content_drop "{dir}/assets/luaq/Mover.luaq"
+wait 10
+entity create Box 0 0 0
+script add Box Assets/Mover.luaq
+play
+wait 40
+script expect_pos Box y above 0.3
+stop
+wait 10
+quit

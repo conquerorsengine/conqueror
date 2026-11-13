@@ -8,10 +8,9 @@ the same engine API (see [Scripting API](Reference/ScriptingAPI.md)) and the sam
 | Language | Extension | Runtime | Notes |
 |----------|-----------|---------|-------|
 | ConquerorScript | `.cqs` | own interpreter | C#-like syntax made for the engine |
-| Luau | `.luau` | Luau VM (Roblox's typed Lua) | gradual typing, fast |
-| LuaQ | `.luaq` | compiled to Luau | Lua 5.4 + Luau + classes, `match`, `?.`, `??`, `defer`, `async`/`await` ([details](LuaQ.md)) |
-| Python | `.py` | embedded CPython 3 | method names in snake_case (`update`, `on_collision_enter`) |
+| LuaQ | `.luaq` | compiled to Luau, runs on the embedded Luau VM | Lua 5.4 + Luau + classes, `match`, `?.`, `??`, `defer`, `async`/`await` ([details](LuaQ.md)) |
 | C# | `.cs` | .NET (hosted) | class derives from the API in `Resources/Scripting/CSharp` |
+| Python | `.py` | embedded CPython 3 | method names in snake_case (`update`, `on_collision_enter`) |
 | Java | `.java` | JVM (JNI) | |
 | C++ | `.cpp` | compiled to a native library | [Native scripting](NativeScripting.md) |
 | C | `.c` | compiled as C23 | |
@@ -37,7 +36,7 @@ Script Execution Order (Project Settings) fixes the order between classes.
 
 ## Inspector fields
 
-Public fields (class attributes in Python / Luau tables, `public` in ConquerorScript and C#) appear in the Inspector and
+Public fields (class attributes in Python and LuaQ, `public` in ConquerorScript and C#) appear in the Inspector and
 are saved with the scene. Names starting with `_` stay hidden.
 
 ```cqs
@@ -124,7 +123,7 @@ A string field marked `[Asset(".cqdata")]` becomes a slot: drop a Data Asset on 
   another one. Values of fields the class no longer has are listed with a **Remove Unused Values** button.
 - C++ Data Asset classes live in a header so other scripts can `#include` them; the engine compiles them even when no
   script includes them.
-- Luau, LuaQ, C, Rust, Zig and Visual Scripts read Data Assets with `LoadDataAsset` and `DataAssetGet`.
+- LuaQ, C, Rust, Zig and Visual Scripts read Data Assets with `LoadDataAsset` and `DataAssetGet`.
 
 ## Input Actions
 

@@ -1027,7 +1027,7 @@ namespace Conqueror::Editor
                                             ImGui::TextDisabled("%s", display.c_str());
                                             continue;
                                         }
-                                        // Luau sayıları double: alan float tanımlıysa float göster
+                                        // LuaQ sayıları (Luau VM) double: alan float tanımlıysa float göster
                                         if (live.Type == ScriptFieldOverride::Kind::Int && f.Default.Type == ScriptFieldOverride::Kind::Float)
                                             live = ScriptFieldOverride::MakeFloat((double)live.Int);
                                         if (DrawScriptFieldValue(id.c_str(), live, f))

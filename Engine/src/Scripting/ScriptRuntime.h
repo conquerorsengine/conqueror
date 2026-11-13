@@ -18,8 +18,8 @@ namespace Conqueror::Scripting
     public:
         virtual ~ScriptRuntime() = default;
 
-        virtual const char* GetName() const = 0;                   // "ConquerorScript", "Luau", "Python" ...
-        virtual const char* GetLanguageId() const = 0;             // "cqs", "luau", "py", "cs", "java", "cpp"
+        virtual const char* GetName() const = 0;                   // "ConquerorScript", "LuaQ", "Python" ...
+        virtual const char* GetLanguageId() const = 0;             // "cqs", "luaq", "py", "cs", "java", "cpp"
         virtual std::vector<std::string> GetExtensions() const = 0; // ".cqs" ...
         virtual bool IsAvailable() const { return true; }
         virtual std::string GetUnavailableReason() const { return ""; }

@@ -19,17 +19,18 @@
 #include <sstream>
 #include <unordered_map>
 
-// Luau betikleri (Roblox'un Lua lehçesi; Lua 5.1 ile uyumlu, .lua da kabul edilir)
+// LuaQ betikleri (.luaq): LuaQ derleyicisi kaynağı Luau'ya indirger, gömülü Luau VM çalıştırır.
+// Luau ayrı bir betik dili olarak kaldırıldı; VM yalnızca LuaQ'nun çalışma zamanıdır.
 // ───────────────────────────────────────────────
-// Bir betik, sınıf tablosu döndüren bir modüldür:
+// Bir betik, dosya adıyla aynı adlı bir sınıf bildirir (ya da bir sınıf tablosu döndürür):
 //
-//     local Spinner = {}
-//     Spinner.speed = 90            -- Inspector'da görünen alan ('_' ile başlayanlar gizli)
-//     function Spinner:Update(dt)
-//         local r = GetRotation()   -- nativebridge fonksiyonları global (ya da nativebridge.GetRotation)
-//         SetRotation(r.x, r.y + self.speed * dt, r.z)
+//     class Spinner
+//         speed = 90                -- Inspector'da görünen alan ('_' ile başlayanlar gizli)
+//         function Update(dt)
+//             local r = GetRotation()   -- nativebridge fonksiyonları global (ya da nativebridge.GetRotation)
+//             SetRotation(r.x, r.y + self.speed * dt, r.z)
+//         end
 //     end
-//     return Spinner
 //
 // Her varlık için bir örnek tablosu oluşturulur (metatable __index = sınıf), böylece alan değerleri
 // varlık başınadır ve sıcak yeniden yüklemede korunur.
@@ -205,21 +206,17 @@ namespace Conqueror::Scripting
         };
     }
 
-    // Aynı sınıf iki dili çalıştırır: Luau (.luau/.lua) ve LuaQ (.luaq; kaynak LuaQ derleyicisiyle Luau'ya indirgenir,
-    // durum açılırken LuaQ çalışma zamanı kitaplığı yüklenir, async görevler her karede ilerletilir)
-    class LuauRuntime final : public ScriptRuntime
+    // LuaQ (.luaq): kaynak LuaQ derleyicisiyle Luau'ya indirgenir ve gömülü Luau VM'de çalışır; durum açılırken
+    // LuaQ çalışma zamanı kitaplığı yüklenir, async görevler her karede ilerletilir
+    class LuaQRuntime final : public ScriptRuntime
     {
     public:
-        explicit LuauRuntime(bool luaq = false) : m_LuaQ(luaq) {}
-        ~LuauRuntime() override { Close(); }
+        LuaQRuntime() = default;
+        ~LuaQRuntime() override { Close(); }
 
-        const char* GetName() const override { return m_LuaQ ? "LuaQ" : "Luau"; }
-        const char* GetLanguageId() const override { return m_LuaQ ? "luaq" : "luau"; }
-        std::vector<std::string> GetExtensions() const override
-        {
-            if (m_LuaQ) return { ".luaq" };
-            return { ".luau", ".lua" };
-        }
+        const char* GetName() const override { return "LuaQ"; }
+        const char* GetLanguageId() const override { return "luaq"; }
+        std::vector<std::string> GetExtensions() const override { return { ".luaq" }; }
 
         void OnPlayStart() override { Close(); Open(); }
         void OnPlayStop() override { Close(); }
@@ -228,23 +225,20 @@ namespace Conqueror::Scripting
         {
             if (!m_L)
                 return;
-            if (m_LuaQ)
+            // async / await / wait görevleri
+            lua_getglobal(m_L, "__luaq");
+            if (lua_istable(m_L, -1))
             {
-                // async / await / wait görevleri
-                lua_getglobal(m_L, "__luaq");
-                if (lua_istable(m_L, -1))
+                lua_getfield(m_L, -1, "tick");
+                m_CallStart = Now();
+                if (lua_pcall(m_L, 0, 0, 0) != LUA_OK)
                 {
-                    lua_getfield(m_L, -1, "tick");
-                    m_CallStart = Now();
-                    if (lua_pcall(m_L, 0, 0, 0) != LUA_OK)
-                    {
-                        ReportError(lua_tostring(m_L, -1) ? lua_tostring(m_L, -1) : "async tick error");
-                        lua_pop(m_L, 1);
-                    }
-                    m_CallStart = 0.0;
+                    ReportError(lua_tostring(m_L, -1) ? lua_tostring(m_L, -1) : "async tick error");
+                    lua_pop(m_L, 1);
                 }
-                lua_pop(m_L, 1);
+                m_CallStart = 0.0;
             }
+            lua_pop(m_L, 1);
             lua_gc(m_L, LUA_GCSTEP, 0);
         }
 
@@ -262,7 +256,7 @@ namespace Conqueror::Scripting
             if (it != m_Modules.end() && it->second.Hash == hash)
                 return true;
             int ref = LUA_NOREF;
-            if (!RunModule(m_L, source, path, &ref, error, m_LuaQ))
+            if (!RunModule(m_L, source, path, &ref, error))
                 return false;
             if (it != m_Modules.end() && it->second.ClassRef != LUA_NOREF)
                 lua_unref(m_L, it->second.ClassRef);
@@ -419,7 +413,7 @@ namespace Conqueror::Scripting
                 lua_pop(L, 1);
                 ++updated;
             }
-            CQ_CORE_INFO("[Luau] Hot reloaded {0} ({1} instance{2})", std::filesystem::path(path).filename().string(), updated, updated == 1 ? "" : "s");
+            CQ_CORE_INFO("[LuaQ] Hot reloaded {0} ({1} instance{2})", std::filesystem::path(path).filename().string(), updated, updated == 1 ? "" : "s");
             return updated;
         }
 
@@ -440,9 +434,9 @@ namespace Conqueror::Scripting
                 return false;
             }
             // Ayrı bir durumda modülü çalıştır ve sınıf tablosunun ilkel alanlarını oku
-            lua_State* L = NewState(m_LuaQ);
+            lua_State* L = NewState();
             int ref = LUA_NOREF;
-            bool ok = RunModule(L, source, path, &ref, error, m_LuaQ);
+            bool ok = RunModule(L, source, path, &ref, error);
             if (ok)
             {
                 lua_getref(L, ref);
@@ -492,20 +486,15 @@ namespace Conqueror::Scripting
         bool CheckSyntax(const std::string& sourceIn, const std::string& name, std::vector<std::string>& errors, std::vector<std::string>* warnings) override
         {
             (void)warnings;
-            std::string source = sourceIn;
-            if (m_LuaQ)
+            std::string source;
+            std::vector<LuaQ::Diagnostic> diags;
+            LuaQ::CompileOptions options;
+            options.ChunkName = name;
+            if (!LuaQ::Compile(sourceIn, options, source, diags))
             {
-                std::string translated;
-                std::vector<LuaQ::Diagnostic> diags;
-                LuaQ::CompileOptions options;
-                options.ChunkName = name;
-                if (!LuaQ::Compile(sourceIn, options, translated, diags))
-                {
-                    for (const auto& d : diags)
-                        errors.push_back(name + ": Line " + std::to_string(d.Line) + ": " + d.Message);
-                    return false;
-                }
-                source = std::move(translated);
+                for (const auto& d : diags)
+                    errors.push_back(name + ": Line " + std::to_string(d.Line) + ": " + d.Message);
+                return false;
             }
             lua_CompileOptions opts = {};
             opts.optimizationLevel = 1;
@@ -533,25 +522,15 @@ namespace Conqueror::Scripting
 
         std::string GetNewScriptTemplate(const std::string& className) const override
         {
-            if (m_LuaQ)
-                return "-- " + className + ": LuaQ script (Lua 5.4 + Luau + classes, ?. ??, match, enum, defer, async/await).\n"
-                       "-- Class fields appear in the Inspector (names starting with '_' are hidden); the file returns the class automatically.\n"
-                       "class " + className + "\n"
-                       "    speed = 1.0\n\n"
-                       "    function Start()\n"
-                       "    end\n\n"
-                       "    function Update(dt: number)\n"
-                       "    end\n"
-                       "end\n";
-            return "--!strict\n"
-                   "-- " + className + ": Luau script. Public fields appear in the Inspector (names starting with '_' are hidden).\n"
-                   "local " + className + " = {}\n\n"
-                   + className + ".speed = 1.0\n\n"
-                   "function " + className + ":Start()\n"
-                   "end\n\n"
-                   "function " + className + ":Update(dt: number)\n"
-                   "end\n\n"
-                   "return " + className + "\n";
+            return "-- " + className + ": LuaQ script (Lua 5.4 + Luau + classes, ?. ??, match, enum, defer, async/await).\n"
+                   "-- Class fields appear in the Inspector (names starting with '_' are hidden); the file returns the class automatically.\n"
+                   "class " + className + "\n"
+                   "    speed = 1.0\n\n"
+                   "    function Start()\n"
+                   "    end\n\n"
+                   "    function Update(dt: number)\n"
+                   "    end\n"
+                   "end\n";
         }
 
     private:
@@ -561,7 +540,6 @@ namespace Conqueror::Scripting
             size_t Hash = 0;
         };
 
-        bool m_LuaQ = false;
         lua_State* m_L = nullptr;
         std::unordered_map<std::string, Module> m_Modules;
         std::vector<Instance*> m_Instances;
@@ -575,7 +553,7 @@ namespace Conqueror::Scripting
             return std::find(m_Instances.begin(), m_Instances.end(), inst) != m_Instances.end() ? inst : nullptr;
         }
 
-        // Alanın atandığı yer: "X.anahtar =" (Luau) ya da satır başında "anahtar =" (LuaQ sınıf gövdesi)
+        // Alanın atandığı yer: "X.anahtar =" (tablo döndüren betik) ya da satır başında "anahtar =" (LuaQ sınıf gövdesi)
         static size_t FieldAssignPos(const std::string& source, const std::string& key)
         {
             size_t p = source.find("." + key);
@@ -644,7 +622,7 @@ namespace Conqueror::Scripting
                 return;
             m_LastError[message] = now;
             if (m_LastError.size() > 256) m_LastError.clear();
-            CQ_CORE_ERROR("[{0}] {1}", m_LuaQ ? "LuaQ" : "Luau", message);
+            CQ_CORE_ERROR("[LuaQ] {0}", message);
         }
 
         static void Interrupt(lua_State* L, int gc)
@@ -669,15 +647,15 @@ namespace Conqueror::Scripting
                 line += (i > 1 ? " " : "") + std::string(s, len);
                 lua_pop(L, 1);
             }
-            CQ_CORE_INFO("[Luau] {0}", line);
+            CQ_CORE_INFO("[LuaQ] {0}", line);
             return 0;
         }
 
-        static lua_State* NewState(bool luaq)
+        static lua_State* NewState()
         {
             lua_State* L = luaL_newstate();
             luaL_openlibs(L);
-            lua_callbacks(L)->interrupt = &LuauRuntime::Interrupt;
+            lua_callbacks(L)->interrupt = &LuaQRuntime::Interrupt;
             if (luau_codegen_supported())
                 luau_codegen_create(L);
             // nativebridge: hem tablo hem global
@@ -709,44 +687,36 @@ namespace Conqueror::Scripting
             lua_setglobal(L, "nativebridge");
             lua_pushcfunction(L, Print, "print");
             lua_setglobal(L, "print");
-            if (luaq)
+            // LuaQ çalışma zamanı kitaplığı: __luaq, isinstance, spawn, wait
+            const std::string prelude = LuaQ::Prelude();
+            size_t size = 0;
+            char* bytecode = luau_compile(prelude.data(), prelude.size(), nullptr, &size);
+            const int status = luau_load(L, "=luaq_prelude", bytecode, size, 0);
+            std::free(bytecode);
+            if (status != 0 || lua_pcall(L, 0, 0, 0) != LUA_OK)
             {
-                // LuaQ çalışma zamanı kitaplığı: __luaq, isinstance, spawn, wait
-                const std::string prelude = LuaQ::Prelude();
-                size_t size = 0;
-                char* bytecode = luau_compile(prelude.data(), prelude.size(), nullptr, &size);
-                const int status = luau_load(L, "=luaq_prelude", bytecode, size, 0);
-                std::free(bytecode);
-                if (status != 0 || lua_pcall(L, 0, 0, 0) != LUA_OK)
-                {
-                    CQ_CORE_ERROR("[LuaQ] runtime library failed: {0}", lua_tostring(L, -1) ? lua_tostring(L, -1) : "?");
-                    lua_pop(L, 1);
-                }
+                CQ_CORE_ERROR("[LuaQ] runtime library failed: {0}", lua_tostring(L, -1) ? lua_tostring(L, -1) : "?");
+                lua_pop(L, 1);
             }
             return L;
         }
 
-        static bool RunModule(lua_State* L, const std::string& sourceIn, const std::string& path, int* outRef, std::string* error, bool luaq)
+        static bool RunModule(lua_State* L, const std::string& sourceIn, const std::string& path, int* outRef, std::string* error)
         {
-            const char* tag = luaq ? "[LuaQ]" : "[Luau]";
-            std::string source = sourceIn;
-            if (luaq)
+            const char* tag = "[LuaQ]";
+            // LuaQ -> Luau (satırlar korunur); dosyada return yoksa dosya adıyla aynı sınıf döner
+            std::string source;
+            LuaQ::CompileOptions options;
+            options.ChunkName = std::filesystem::path(path).filename().string();
+            options.AutoReturnClass = std::filesystem::path(path).stem().string();
+            std::vector<LuaQ::Diagnostic> diags;
+            if (!LuaQ::Compile(sourceIn, options, source, diags))
             {
-                // LuaQ -> Luau (satırlar korunur); dosyada return yoksa dosya adıyla aynı sınıf döner
-                LuaQ::CompileOptions options;
-                options.ChunkName = std::filesystem::path(path).filename().string();
-                options.AutoReturnClass = std::filesystem::path(path).stem().string();
-                std::vector<LuaQ::Diagnostic> diags;
-                std::string translated;
-                if (!LuaQ::Compile(sourceIn, options, translated, diags))
-                {
-                    std::string msg = options.ChunkName + ":" + std::to_string(diags.empty() ? 0 : diags[0].Line) + ": "
-                                      + (diags.empty() ? std::string("compile error") : diags[0].Message);
-                    CQ_CORE_ERROR("{0} {1}", tag, msg);
-                    if (error) *error = msg;
-                    return false;
-                }
-                source = std::move(translated);
+                std::string msg = options.ChunkName + ":" + std::to_string(diags.empty() ? 0 : diags[0].Line) + ": "
+                                  + (diags.empty() ? std::string("compile error") : diags[0].Message);
+                CQ_CORE_ERROR("{0} {1}", tag, msg);
+                if (error) *error = msg;
+                return false;
             }
             lua_CompileOptions opts = {};
             opts.optimizationLevel = 2;
@@ -781,7 +751,7 @@ namespace Conqueror::Scripting
             {
                 lua_pop(L, 1);
                 std::string msg = std::filesystem::path(path).filename().string()
-                                  + (luaq ? ": script must declare a class named like the file (or 'return' a table)" : ": script must 'return' its class table");
+                                  + ": script must declare a class named like the file (or 'return' a table)";
                 CQ_CORE_ERROR("{0} {1}", tag, msg);
                 if (error) *error = msg;
                 return false;
@@ -794,7 +764,7 @@ namespace Conqueror::Scripting
         void Open()
         {
             if (!m_L)
-                m_L = NewState(m_LuaQ);
+                m_L = NewState();
         }
 
         void Close()
@@ -811,21 +781,11 @@ namespace Conqueror::Scripting
         }
     };
 
-    std::unique_ptr<ScriptRuntime> CreateLuauRuntime()
-    {
-        return std::make_unique<LuauRuntime>(false);
-    }
-
     std::unique_ptr<ScriptRuntime> CreateLuaQRuntime()
     {
-        return std::make_unique<LuauRuntime>(true);
+        return std::make_unique<LuaQRuntime>();
     }
 #else
-    std::unique_ptr<ScriptRuntime> CreateLuauRuntime()
-    {
-        return nullptr;
-    }
-
     std::unique_ptr<ScriptRuntime> CreateLuaQRuntime()
     {
         return nullptr;

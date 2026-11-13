@@ -194,7 +194,6 @@ namespace Conqueror::Editor
             return { ICON_FA_FILE_CODE, IM_COL32(90, 150, 230, 255), "C++ Source" };
         if (ext == ".cs") return { ICON_FA_FILE_CODE, IM_COL32(150, 110, 230, 255), "C# Script" };
         if (ext == ".luaq") return { ICON_FA_FILE_CODE, IM_COL32(150, 80, 230, 255), "LuaQ Script" };
-        if (ext == ".lua" || ext == ".luau") return { ICON_FA_FILE_CODE, IM_COL32(70, 90, 220, 255), "Luau Script" };
         if (ext == ".java") return { ICON_FA_FILE_CODE, IM_COL32(230, 120, 60, 255), "Java Source" };
         if (ext == ".py") return { ICON_FA_FILE_CODE, IM_COL32(240, 200, 70, 255), "Python Script" };
         if (ext == ".java") return { ICON_FA_FILE_CODE, IM_COL32(230, 120, 60, 255), "Java Source" };
@@ -2197,7 +2196,7 @@ namespace Conqueror::Editor
         if (SimpleAssets::ForExtension(ext) || ext == ".cqplayable" || ext == ParticleAssets::Extension || ext == ".cqdatatable" || ext == ".cqcurvetable")
             return;
         static const char* internal[] = { ".cpp", ".h", ".hpp", ".c", ".cs", ".cqs", ".cqsh", ".glsl", ".cqcont", ".cqscene",
-                                          ".lua", ".luaq", ".luau", ".py", ".java", ".txt", ".md", ".json", ".yaml", ".yml", ".ini",
+                                          ".lua", ".luaq", ".py", ".java", ".txt", ".md", ".json", ".yaml", ".yml", ".ini",
                                           ".cqprefab", ".cqgraph", ".cqmontage", ".cqinputactions", ".cqanim" };
         for (const char* e : internal)
         {

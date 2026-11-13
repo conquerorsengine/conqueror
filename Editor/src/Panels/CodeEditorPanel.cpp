@@ -156,7 +156,7 @@ namespace Conqueror::Editor
             if (ext == ".cs") return "cs";
             if (ext == ".cpp" || ext == ".cc" || ext == ".cxx" || ext == ".h" || ext == ".hpp" || ext == ".c" || ext == ".inl") return "cpp";
             if (ext == ".luaq") return "luaq";
-            if (ext == ".lua" || ext == ".luau") return "lua";
+            if (ext == ".lua") return "lua";
             if (ext == ".py") return "py";
             if (ext == ".java") return "java";
             if (ext == ".glsl" || ext == ".vert" || ext == ".frag" || ext == ".comp" || ext == ".cqsh" || ext == ".cqraytrace") return "glsl";
@@ -169,7 +169,7 @@ namespace Conqueror::Editor
             if (lang == "cqs") return "ConquerorScript";
             if (lang == "cs") return "C#";
             if (lang == "cpp") return "C/C++";
-            if (lang == "lua") return "Luau";
+            if (lang == "lua") return "Lua";
             if (lang == "luaq") return "LuaQ";
             if (lang == "py") return "Python";
             if (lang == "java") return "Java";

@@ -1,7 +1,7 @@
 # Conqueror's Engine (Libre Engine)
 
 A 2D/3D game engine and editor written in C++23, with OpenGL, Vulkan, Direct3D 11, Direct3D 12 and Metal backends,
-ten scripting languages plus visual scripting, and a Unity/Roblox-style editor.
+nine scripting languages plus visual scripting, and a Unity/Roblox-style editor.
 
 **Version:** 0.537.2
 
@@ -42,10 +42,9 @@ Guides and generated reference pages are in [Docs/](Docs/README.md): [getting st
 | Language | Runtime |
 |----------|---------|
 | ConquerorScript (`.cqs`) | own compiler + VM with an sljit JIT |
-| Luau (`.luau`) | embedded Luau |
-| LuaQ (`.luaq`) | our own Lua dialect: superset of Lua 5.4 and Luau (bitwise ops, goto, `<close>`, types, `continue`) plus classes, enums, `match`, `?.`/`??`, arrow functions, default parameters, `defer`, destructuring, spread and `async`/`await`; compiled to Luau with line numbers preserved |
-| Python (`.py`) | embedded CPython (if the development files are found) |
+| LuaQ (`.luaq`) | our own Lua dialect: superset of Lua 5.4 and Luau (bitwise ops, goto, `<close>`, types, `continue`) plus classes, enums, `match`, `?.`/`??`, arrow functions, default parameters, `defer`, destructuring, spread and `async`/`await`; compiled to Luau with line numbers preserved and run on the embedded Luau VM |
 | C# (`.cs`) | .NET via hostfxr (if a .NET SDK is installed) |
+| Python (`.py`) | embedded CPython (if the development files are found) |
 | Java (`.java`) | JNI (if a JDK is found) |
 | C++ (`.cpp`) | compiled to a shared library with the system compiler, C ABI boundary |
 | C (`.c`) | real C23 (not C++), same automatic shared-library build and C ABI |
@@ -197,7 +196,7 @@ Useful command-line options: `--opengl` / `--vulkan` / `--d3d11`, and for multip
 YourProject/
   Assets/
     Scenes/       - Scene files (.cqscene)
-    Scripts/      - .cqs, .luau, .luaq, .py, .cs, .java, .c, .cpp, .rs, .zig, .cqgraph
+    Scripts/      - .cqs, .luaq, .cs, .py, .java, .cpp, .c, .rs, .zig, .cqgraph
     Prefabs/      - .cqprefab
     Timelines/    - .cqtimeline
     Textures/, Materials/, Models/, Audio/
