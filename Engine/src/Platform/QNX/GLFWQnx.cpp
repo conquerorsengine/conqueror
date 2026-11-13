@@ -568,6 +568,7 @@ extern "C"
     void glfwSetWindowAttrib(GLFWwindow*, int, int) {}
     void glfwSetWindowMonitor(GLFWwindow*, GLFWmonitor*, int, int, int, int, int) {}
     void glfwShowWindow(GLFWwindow*) {}
+    void glfwHideWindow(GLFWwindow*) {}   // tek tam ekran pencere: ek pencereler (Window bileşeni) bu platformda açılmaz
     void glfwFocusWindow(GLFWwindow*) {}
     void glfwSetWindowOpacity(GLFWwindow*, float) {}
     GLFWmonitor* glfwGetPrimaryMonitor(void) { return &s.Monitor; }

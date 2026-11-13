@@ -29,6 +29,8 @@
     #endif
     #include <windows.h>
     #include <shellapi.h>
+#elif defined(__ANDROID__)
+    // Android: tarayıcı Intent ile açılır (NativeActivity'de JNI gerekir); şimdilik bağlantı yalnız olay üretir
 #else
     #include <spawn.h>
     #include <sys/wait.h>
@@ -719,6 +721,8 @@ namespace Conqueror
                 return;
 #if defined(_WIN32)
             ShellExecuteA(nullptr, "open", uri.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+#elif defined(__ANDROID__)
+            (void)uri;
 #else
     #if defined(__APPLE__)
             const char* tool = "open";

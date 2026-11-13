@@ -17,7 +17,20 @@ else()
     set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
     set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
     set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    # Wayland başlıkları yoksa (OpenBSD / NetBSD temel sistemi, GNU/Hurd) GLFW yalnız X11 ile derlenir; kullanıcı açıkça
+    # GLFW_BUILD_WAYLAND verdiyse ona dokunulmaz
+    if(UNIX AND NOT APPLE AND NOT DEFINED GLFW_BUILD_WAYLAND)
+        find_path(CQ_WAYLAND_CLIENT_INCLUDE wayland-client-core.h)
+        if(NOT CQ_WAYLAND_CLIENT_INCLUDE)
+            message(STATUS "Wayland headers not found: GLFW is built with X11 only")
+            set(GLFW_BUILD_WAYLAND OFF CACHE BOOL "" FORCE)
+        endif()
+    endif()
     add_subdirectory(glfw)
+    # GNU/Hurd glibc'si clock_gettime / CLOCK_MONOTONIC için özellik makrosu ister (Linux'ta GLFW kendisi tanımlar)
+    if(CMAKE_SYSTEM_NAME STREQUAL "GNU")
+        target_compile_definitions(glfw PRIVATE _GNU_SOURCE)
+    endif()
 endif()
 
 # GLAD

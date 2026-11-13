@@ -296,6 +296,7 @@ namespace Conqueror::Editor
             ImGui::PushTextWrapPos(0.0f);
             ImGui::TextDisabled("Steam Deck: the Linux build runs at 1280x800 borderless with Deck button glyphs and the on-screen keyboard.");
             ImGui::TextDisabled("Automotive Grade Linux: Wayland-only Yocto build (Tools/AGL/meta-conqueror).");
+            ImGui::TextDisabled("Linux ARM64 (Raspberry Pi 4 / 5, ARM laptops) uses these settings.");
             ImGui::PopTextWrapPos();
             ImGui::EndTabItem();
         }
@@ -322,6 +323,10 @@ namespace Conqueror::Editor
             UI::EndProperty();
             UI::Text("Minimum API Level", "26 (Android 8.0)");
             UI::Text("Target API Level", "36 (Automotive: 34)");
+            ImGui::PushTextWrapPos(0.0f);
+            ImGui::TextDisabled("Android Automotive, Android TV, ChromeOS, Meta Quest and Android XR builds use these settings "
+                                "(Meta Quest / Android XR: ARM64 only, the game starts in VR with the bundled OpenXR loader).");
+            ImGui::PopTextWrapPos();
             UI::SubHeader("Publishing (signing)");
             m_Dirty |= UI::InputText("Keystore", a.Keystore, "Release keystore (.jks / .keystore). Empty: the debug key in ~/.android/debug.keystore.");
             m_Dirty |= UI::InputText("Key Alias", a.KeyAlias, "Key inside the keystore. Empty: androiddebugkey.");

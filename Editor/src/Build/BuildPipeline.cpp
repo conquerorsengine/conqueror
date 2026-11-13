@@ -299,10 +299,22 @@ namespace Conqueror::Editor
 
     std::string BuildPipeline::HostPlatform()
     {
-#if defined(_WIN32)
+#if defined(_WIN32) && (defined(_M_ARM64) || defined(__aarch64__))
+        return "Windows ARM64";
+#elif defined(_WIN32)
         return "Windows";
 #elif defined(__APPLE__)
         return "macOS";
+#elif defined(__OpenBSD__)
+        return "OpenBSD";
+#elif defined(__NetBSD__)
+        return "NetBSD";
+#elif defined(__FreeBSD__) || defined(__DragonFly__)
+        return "FreeBSD";
+#elif defined(__gnu_hurd__) || defined(__GNU__)
+        return "GNU Hurd";
+#elif defined(__aarch64__)
+        return "Linux ARM64";
 #else
         return "Linux";
 #endif
@@ -312,13 +324,27 @@ namespace Conqueror::Editor
     {
         static const std::vector<PlatformInfo> s_Platforms = {
             { "Windows", ICON_FA_DESKTOP, "Built on Windows (MSVC / MinGW) or cross-built from Linux with MinGW (Tools/Windows)." },
+            { "Windows ARM64", ICON_FA_DESKTOP, "Windows on ARM (Snapdragon X laptops, Surface Pro): built on Windows with Visual Studio's ARM64 tools." },
             { "macOS", ICON_FA_LAPTOP, "Built on a Mac. Bundle identifier, version, minimum macOS and privacy texts are written to Info.plist." },
             { "Linux", ICON_FA_TERMINAL, "Primary platform. Also runs in the Steam Linux Runtime (Steam Deck: 1280x800 borderless)." },
-            { "FreeBSD", ICON_FA_SERVER, "Cross-built from Linux (Tools/BSD) or built on FreeBSD; the player is not yet tested on BSD." },
+            { "Linux ARM64", ICON_FA_MICROCHIP, "Raspberry Pi 4 / 5 (64-bit OS), ARM laptops and boards: built on ARM64 Linux or cross-built from x86_64 Linux (Tools/Linux)." },
+            { "Dedicated Server", ICON_FA_SERVER, "Not buildable yet: a headless server player is not part of this engine version (built games run as a server with --server)." },
+            { "Embedded Linux", ICON_FA_MICROCHIP, "Yocto / Buildroot / AGL devices: Wayland-only player with OpenGL ES, built from the command line with the device SDK." },
+            { "FreeBSD", ICON_FA_SERVER, "Cross-built from Linux (Tools/BSD) or built on FreeBSD." },
+            { "OpenBSD", ICON_FA_SERVER, "Cross-built from Linux with clang + lld and an OpenBSD sysroot (Tools/BSD), or built on OpenBSD." },
+            { "NetBSD", ICON_FA_SERVER, "Cross-built from Linux with clang + lld and a NetBSD sysroot (Tools/BSD), or built on NetBSD." },
+            { "GNU Hurd", ICON_FA_SERVER, "Debian GNU/Hurd: cross-built from Linux (Tools/Hurd/make-sysroot.sh) or built on Hurd; X11 with Mesa software OpenGL." },
             { "Android", ICON_FA_MOBILE_SCREEN, "Signed APK built from this editor with the Android SDK, NDK and a JDK (OpenGL ES 3)." },
             { "Android Automotive", ICON_FA_CAR, "Android Automotive OS APK (system bars stay visible), same tools as Android." },
+            { "Android TV", ICON_FA_TV, "Android TV / Google TV APK: TV launcher banner, remote (D-pad, OK, Back) and gamepad, no touchscreen needed." },
+            { "ChromeOS", ICON_FA_LAPTOP, "Chromebook APK (Android apps on ChromeOS): resizable window, keyboard, mouse and touchpad; the Linux build also runs in ChromeOS Linux." },
+            { "Android XR", ICON_FA_VR_CARDBOARD, "Android XR headsets such as Samsung Galaxy XR (arm64): OpenXR in Full Space with the bundled Khronos loader; same tools as Android." },
+            { "Meta Quest", ICON_FA_VR_CARDBOARD, "Meta Quest 2 / Pro / 3 / 3S APK (arm64): OpenXR with the bundled Khronos loader, the game starts in VR; same tools as Android." },
             { "iOS", ICON_FA_TABLET_SCREEN_BUTTON, "Not buildable yet: the iOS player is not part of this engine version (it needs a Mac with Xcode)." },
+            { "tvOS", ICON_FA_TV, "Not buildable yet: the Apple TV player is not part of this engine version (it needs a Mac with Xcode)." },
+            { "visionOS", ICON_FA_VR_CARDBOARD, "Not buildable yet: the Apple Vision Pro player is not part of this engine version (it needs a Mac with Xcode)." },
             { "Web", ICON_FA_GLOBE, "Not buildable yet: the web player (WebGL 2 / WebGPU) needs Emscripten and is not part of this engine version." },
+            { "Universal Windows Platform", ICON_FA_WINDOW_MAXIMIZE, "Not buildable yet: the UWP player is not part of this engine version (the Windows player runs on Windows 10 / 11)." },
             { "QNX", ICON_FA_GAUGE_HIGH, "Built with the QNX SDP from the command line (Tools/QNX, Docs/Automotive.md); OpenGL ES 3 on QNX Screen." },
         };
         return s_Platforms;
@@ -588,9 +614,23 @@ namespace Conqueror::Editor
         step(0.02f, "Validating project");
         const std::string platform = o.Config.TargetPlatform.empty() ? HostPlatform() : o.Config.TargetPlatform;
         // Android / Android Automotive: oyuncu NDK ile her masaüstünden derlenir, APK Tools/Android/package_apk.py ile paketlenir
-        const bool android = platform == "Android" || platform == "Android Automotive";
-        // Linux'tan çapraz derleme: Windows (MinGW-w64) ve FreeBSD (clang + sistem kökü); oyuncu ilk seferde derlenir
-        const bool cross = !android && platform != HostPlatform() && (platform == "Windows" || platform == "FreeBSD");
+        const bool android = platform == "Android" || platform == "Android Automotive" || platform == "Android TV" || platform == "ChromeOS" ||
+                             platform == "Meta Quest" || platform == "Android XR";
+        // Linux'tan çapraz derleme: Windows (MinGW-w64), FreeBSD / OpenBSD / NetBSD / GNU Hurd (clang + sistem kökü); oyuncu ilk seferde derlenir
+        struct CrossTarget { const char* Platform; const char* Toolchain; const char* SysrootVar; const char* LldVar; const char* RootEnv; const char* BuildDir; };
+        static const CrossTarget kCross[] = {
+            { "Windows", "Tools/Windows/mingw-w64.toolchain.cmake", "", "", "CQ_WINDOWS_BUILD_ROOT", "build-windows" },
+            { "FreeBSD", "Tools/BSD/freebsd-cross.toolchain.cmake", "CQ_FREEBSD_SYSROOT", "CQ_FREEBSD_LLD", "CQ_FREEBSD_BUILD_ROOT", "build-freebsd" },
+            { "OpenBSD", "Tools/BSD/openbsd-cross.toolchain.cmake", "CQ_OPENBSD_SYSROOT", "CQ_BSD_LLD", "CQ_OPENBSD_BUILD_ROOT", "build-openbsd" },
+            { "NetBSD", "Tools/BSD/netbsd-cross.toolchain.cmake", "CQ_NETBSD_SYSROOT", "CQ_BSD_LLD", "CQ_NETBSD_BUILD_ROOT", "build-netbsd" },
+            { "GNU Hurd", "Tools/Hurd/hurd-cross.toolchain.cmake", "CQ_HURD_SYSROOT", "CQ_HURD_LLD", "CQ_HURD_BUILD_ROOT", "build-hurd" },
+            { "Linux ARM64", "Tools/Linux/arm64-cross.toolchain.cmake", "CQ_ARM64_SYSROOT", "CQ_ARM64_LLD", "CQ_ARM64_BUILD_ROOT", "build-linux-arm64" },
+        };
+        const CrossTarget* crossTarget = nullptr;
+        for (const auto& t : kCross)
+            if (platform == t.Platform)
+                crossTarget = &t;
+        const bool cross = !android && platform != HostPlatform() && crossTarget;
         {
             const PlatformModules::Module module = PlatformModules::Detect(platform);
             if (module.State != PlatformModules::Status::Ready)
@@ -621,7 +661,7 @@ namespace Conqueror::Editor
         if (cross)
         {
             // Motor kaynak ağacı (araç zinciri dosyası) editör ikilisinin klasöründen yukarı doğru aranır
-            const char* toolchainRel = targetWindows ? "Tools/Windows/mingw-w64.toolchain.cmake" : "Tools/BSD/freebsd-cross.toolchain.cmake";
+            const char* toolchainRel = crossTarget->Toolchain;
             fs::path source;
             for (fs::path probe = o.EngineBinDir; !probe.empty(); probe = probe.parent_path())
             {
@@ -637,8 +677,8 @@ namespace Conqueror::Editor
                 return fail(std::string("Engine source tree (") + toolchainRel + ") not found near " + o.EngineBinDir.string() +
                             ": cross builds compile the player from the engine source");
             // Oyuncu derleme klasörü: CQ_WINDOWS_BUILD_ROOT / CQ_FREEBSD_BUILD_ROOT ya da kaynak kökünde build-windows / build-freebsd
-            const char* rootEnv = std::getenv(targetWindows ? "CQ_WINDOWS_BUILD_ROOT" : "CQ_FREEBSD_BUILD_ROOT");
-            const fs::path buildRoot = rootEnv && *rootEnv ? fs::path(rootEnv) : source / (targetWindows ? "build-windows" : "build-freebsd");
+            const char* rootEnv = std::getenv(crossTarget->RootEnv);
+            const fs::path buildRoot = rootEnv && *rootEnv ? fs::path(rootEnv) : source / crossTarget->BuildDir;
             const fs::path crossExe = buildRoot / "bin" / (targetWindows ? "ConquerorRuntime.exe" : "ConquerorRuntime");
             const unsigned jobs = std::max(2u, std::thread::hardware_concurrency());
             if (!fs::exists(buildRoot / "CMakeCache.txt", ec))
@@ -648,8 +688,12 @@ namespace Conqueror::Editor
                 if (!PlatformModules::FindProgram("ninja").empty())
                     configure += " -G Ninja";
                 configure += " -DCMAKE_TOOLCHAIN_FILE=\"" + (source / toolchainRel).string() + "\" -DCMAKE_BUILD_TYPE=Release -DCQ_RUNTIME_ONLY=ON";
-                if (const char* sysroot = std::getenv("CQ_FREEBSD_SYSROOT"); !targetWindows && sysroot && *sysroot)
-                    configure += std::string(" -DCQ_FREEBSD_SYSROOT=\"") + sysroot + "\"";
+                if (const char* sysroot = *crossTarget->SysrootVar ? std::getenv(crossTarget->SysrootVar) : nullptr; sysroot && *sysroot)
+                    configure += std::string(" -D") + crossTarget->SysrootVar + "=\"" + sysroot + "\"";
+                if (const char* lld = *crossTarget->LldVar ? std::getenv(crossTarget->LldVar) : nullptr; lld && *lld)
+                    configure += std::string(" -D") + crossTarget->LldVar + "=\"" + lld + "\"";
+                if (platform == "GNU Hurd")
+                    configure += " -DGLFW_BUILD_WAYLAND=OFF";
                 const int rc = RunCommand(configure, log);
                 if (rc != 0)
                     return fail("Configuring the " + platform + " player failed (exit code " + std::to_string(rc) + "), see the log");
@@ -721,7 +765,7 @@ namespace Conqueror::Editor
         }
         else if (cross)
         {
-            // FreeBSD: motorun paylaşımlı kitaplıkları lib/ altında (Linux düzeni)
+            // FreeBSD / OpenBSD / NetBSD / GNU Hurd: motorun paylaşımlı kitaplıkları lib/ altında (Linux düzeni)
             for (const auto& entry : fs::directory_iterator(playerLibDir, ec))
                 if (entry.path().filename().string().find(".so") != std::string::npos)
                     if (!CopyTree(fs::canonical(entry.path(), ec), o.OutputDir / "lib" / entry.path().filename(), stats, error, cancel))
@@ -852,6 +896,12 @@ namespace Conqueror::Editor
             auto project = std::make_shared<Project>();
             project->GetConfig() = o.Config;
             project->GetConfig().StartScene = scenes.front();
+            // Gözlük platformu: oyun VR'da açılır (Initialize XR on Startup)
+            if (platform == "Meta Quest" || platform == "Android XR")
+            {
+                project->GetConfig().XR.InitializeOnStartup = true;
+                project->GetConfig().XR.OpenXR = true;
+            }
             const fs::path projFile = dataDir / (o.ProjectFile.empty() ? product + ".cqproj" : o.ProjectFile.filename().string());
             if (!ProjectSerializer(project).Serialize(projFile))
                 return fail("Cannot write " + projFile.string());
@@ -958,6 +1008,14 @@ namespace Conqueror::Editor
                               "\" --build --build-root \"" + buildRoot.string() + "\"";
             if (platform == "Android Automotive")
                 cmd += " --automotive";
+            else if (platform == "Android TV")
+                cmd += " --tv";
+            else if (platform == "ChromeOS")
+                cmd += " --chromeos";
+            else if (platform == "Meta Quest")
+                cmd += " --quest";
+            else if (platform == "Android XR")
+                cmd += " --androidxr";
             // Project Settings > Player > Android
             {
                 const auto& ap = o.Config.Player.Android;
@@ -969,10 +1027,17 @@ namespace Conqueror::Editor
                 cmd += " --package " + package + " --version-code " + std::to_string(std::max(1, ap.VersionCode));
                 static const char* orientations[] = { "sensorLandscape", "landscape", "sensorPortrait", "portrait", "fullSensor" };
                 cmd += std::string(" --orientation ") + orientations[std::clamp(ap.Orientation, 0, 4)];
-                if (ap.ARM64)
-                    cmd += " --abi arm64-v8a";
-                if (ap.X86_64)
-                    cmd += " --abi x86_64";
+                // Quest yalnız arm64 (CQ_QUEST_ABIS ile emülatör testi için x86_64 de eklenebilir)
+                const char* questAbis = std::getenv("CQ_QUEST_ABIS");
+                if (platform == "Meta Quest" || platform == "Android XR")
+                    cmd += questAbis && *questAbis ? std::string(" ") + questAbis : std::string(" --abi arm64-v8a");
+                else
+                {
+                    if (ap.ARM64)
+                        cmd += " --abi arm64-v8a";
+                    if (ap.X86_64)
+                        cmd += " --abi x86_64";
+                }
                 auto quoted = [](const std::string& v) { return v.find('"') == std::string::npos; };
                 if (!ap.Keystore.empty())
                 {

@@ -21,12 +21,22 @@ namespace Conqueror::PlatformModules
 
         std::string HostName()
         {
-#if defined(_WIN32)
+#if defined(_WIN32) && (defined(_M_ARM64) || defined(__aarch64__))
+            return "Windows ARM64";
+#elif defined(_WIN32)
             return "Windows";
 #elif defined(__APPLE__)
             return "macOS";
+#elif defined(__OpenBSD__)
+            return "OpenBSD";
+#elif defined(__NetBSD__)
+            return "NetBSD";
 #elif defined(CQ_PLATFORM_BSD)
             return "FreeBSD";
+#elif defined(CQ_PLATFORM_HURD)
+            return "GNU";
+#elif defined(__aarch64__)
+            return "Linux ARM64";
 #else
             return "Linux";
 #endif
@@ -218,6 +228,50 @@ namespace Conqueror::PlatformModules
                 return Make(platform, Status::Ready, "This PC", "Built with the player next to the editor");
             return Make(platform, Status::NeedsHost, "GCC / Clang on Linux", "Open the project in the editor on Linux to build it");
         }
+        // ARM64 Linux (Raspberry Pi 4 / 5, ARM dizüstüleri, Jetson): ARM64 Linux'ta yerel, x86_64 Linux'tan çapraz
+        if (platform == "Linux ARM64")
+        {
+            if (host == "Linux ARM64")
+                return Make(platform, Status::Ready, "This PC (ARM64)", "Built with the player next to the editor");
+            const std::string toolchain = "Clang + lld + an ARM64 Linux sysroot (Tools/Linux/arm64-cross.toolchain.cmake)";
+            const std::string install = "Run Tools/Linux/make-arm64-sysroot.sh <folder> (Debian arm64 packages; CQ_ARM64_SUITE=bookworm "
+                                        "for Raspberry Pi OS) and set CQ_ARM64_SYSROOT";
+            if (host != "Linux")
+                return Make(platform, Status::NeedsHost, toolchain, "Build on ARM64 Linux or x86_64 Linux");
+            const std::string sysroot = Env("CQ_ARM64_SYSROOT");
+            if (sysroot.empty() || !fs::is_directory(fs::path(sysroot) / "usr" / "include", ec))
+                return Make(platform, Status::Missing, toolchain, sysroot.empty() ? "CQ_ARM64_SYSROOT is not set" : "No usr/include in " + sysroot, install);
+            if (FindProgram("clang++").empty() || FindProgram("cmake").empty())
+                return Make(platform, Status::Missing, toolchain, "clang++ or cmake not found", install);
+            if (FindProgram("ld.lld").empty() && Env("CQ_ARM64_LLD").empty())
+                return Make(platform, Status::Missing, toolchain, "ld.lld not found", "Install lld or set CQ_ARM64_LLD (the Android NDK has one)");
+            return Make(platform, Status::Ready, toolchain, "Sysroot " + sysroot + " (the first build compiles the ARM64 player)");
+        }
+        // Windows on ARM (Snapdragon X dizüstüleri, Surface Pro): ARM64 Windows'ta yerel; x64 Windows'ta Visual Studio'nun ARM64 araçlarıyla
+        if (platform == "Windows ARM64")
+        {
+            if (host == "Windows ARM64")
+                return Make(platform, Status::Ready, "This PC (ARM64)", "Built with the player next to the editor");
+            const std::string toolchain = "Visual Studio 2022 with the ARM64 build tools";
+            if (host == "Windows")
+                return Make(platform, Status::CommandLine, toolchain,
+                            "cmake -S . -B build-arm64 -G \"Visual Studio 17 2022\" -A ARM64 && cmake --build build-arm64 --config Release");
+            return Make(platform, Status::NeedsHost, toolchain, "Build on Windows (CI: windows-11-arm)");
+        }
+        // Gömülü Linux (Unity Embedded Linux; AGL / Yocto / Buildroot): yalnız Wayland, varsayılan OpenGL ES
+        if (platform == "Embedded Linux")
+            return Make(platform, Status::CommandLine, "The device's Yocto / Buildroot SDK, or Tools/Linux/arm64-cross.toolchain.cmake",
+                        "cmake -DCQ_RUNTIME_ONLY=ON -DCQ_DEFAULT_GL_PROFILE=es3.2 -DCQ_ENABLE_VULKAN=OFF -DCQ_LINUX_ENGINE_CORE_STATIC=ON "
+                        "-DGLFW_BUILD_X11=OFF -DGLFW_BUILD_WAYLAND=ON (Docs/Automotive.md)");
+        if (platform == "Dedicated Server")
+            return Make(platform, Status::NotAvailable, "The Windows / Linux / macOS player without graphics",
+                        "A headless server player is not part of this engine version; built games already run as a server with --server");
+        if (platform == "tvOS" || platform == "visionOS")
+            return Make(platform, Status::NotAvailable, "Xcode on a Mac",
+                        std::string("The ") + (platform == "tvOS" ? "Apple TV" : "Apple Vision Pro") + " player is not part of this engine version");
+        if (platform == "Universal Windows Platform")
+            return Make(platform, Status::NotAvailable, "Visual Studio with the Universal Windows Platform workload",
+                        "The UWP player is not part of this engine version (the Windows player runs on Windows 10 / 11)");
         if (platform == "FreeBSD")
         {
             if (host == "FreeBSD")
@@ -234,7 +288,34 @@ namespace Conqueror::PlatformModules
                 return Make(platform, Status::Missing, toolchain, "clang++ or cmake not found", install);
             return Make(platform, Status::Ready, toolchain, "Sysroot " + sysroot + " (the first build compiles the FreeBSD player)");
         }
-        if (platform == "Android" || platform == "Android Automotive")
+        // OpenBSD / NetBSD / GNU/Hurd: Linux'tan clang + sistem kökü ile çapraz derleme (FreeBSD gibi); bağlayıcı lld
+        if (platform == "OpenBSD" || platform == "NetBSD" || platform == "GNU Hurd")
+        {
+            const bool hurd = platform == "GNU Hurd";
+            const std::string hostName = hurd ? "GNU" : platform;
+            if (host == hostName)
+                return Make(platform, Status::Ready, "This PC", "Built with the player next to the editor");
+            const std::string var = platform == "OpenBSD" ? "CQ_OPENBSD_SYSROOT" : platform == "NetBSD" ? "CQ_NETBSD_SYSROOT" : "CQ_HURD_SYSROOT";
+            const std::string toolchain = "Clang + lld + a " + platform + " sysroot (Tools/" + (hurd ? "Hurd/hurd" : std::string("BSD/") +
+                                          (platform == "OpenBSD" ? "openbsd" : "netbsd")) + "-cross.toolchain.cmake)";
+            const std::string install = platform == "OpenBSD" ? "Extract OpenBSD comp, base, xbase and xshare sets (./usr/include ./usr/lib ./usr/X11R6) and set CQ_OPENBSD_SYSROOT"
+                                      : platform == "NetBSD" ? "Extract NetBSD base, comp, xbase and xcomp sets (./usr/include ./usr/lib ./lib ./usr/X11R7) and set CQ_NETBSD_SYSROOT"
+                                                             : "Run Tools/Hurd/make-sysroot.sh <folder> (Debian hurd-amd64 packages) and set CQ_HURD_SYSROOT";
+            if (host != "Linux")
+                return Make(platform, Status::NeedsHost, toolchain, "Build on " + platform + " or Linux");
+            const std::string sysroot = Env(var.c_str());
+            if (sysroot.empty() || !fs::is_directory(fs::path(sysroot) / "usr" / "include", ec))
+                return Make(platform, Status::Missing, toolchain, sysroot.empty() ? var + " is not set" : "No usr/include in " + sysroot, install);
+            if (FindProgram("clang++").empty() || FindProgram("cmake").empty())
+                return Make(platform, Status::Missing, toolchain, "clang++ or cmake not found", install);
+            const std::string lldVar = hurd ? "CQ_HURD_LLD" : "CQ_BSD_LLD";
+            if (FindProgram("ld.lld").empty() && Env(lldVar.c_str()).empty())
+                return Make(platform, Status::Missing, toolchain, "ld.lld not found", "Install lld or set " + lldVar + " (the Android NDK has one)");
+            return Make(platform, Status::Ready, toolchain, "Sysroot " + sysroot + " (the first build compiles the " + platform + " player)");
+        }
+        // Android TV / ChromeOS (Android uygulaması olarak) / Meta Quest: Android araçlarıyla aynı APK yolu
+        if (platform == "Android" || platform == "Android Automotive" || platform == "Android TV" || platform == "ChromeOS" ||
+            platform == "Meta Quest" || platform == "Android XR")
             return Android(platform);
         if (platform == "iOS")
             return Make(platform, Status::NotAvailable, "Xcode on a Mac", "The iOS player is not part of this engine version");
@@ -260,7 +341,9 @@ namespace Conqueror::PlatformModules
     std::vector<Module> Detect()
     {
         std::vector<Module> list;
-        for (const char* p : { "Windows", "macOS", "Linux", "FreeBSD", "Android", "Android Automotive", "iOS", "Web", "QNX" })
+        for (const char* p : { "Windows", "Windows ARM64", "macOS", "Linux", "Linux ARM64", "Dedicated Server", "Embedded Linux", "FreeBSD",
+                               "OpenBSD", "NetBSD", "GNU Hurd", "Android", "Android Automotive", "Android TV", "ChromeOS", "Meta Quest",
+                               "Android XR", "iOS", "tvOS", "visionOS", "Web", "Universal Windows Platform", "QNX" })
             list.push_back(Detect(p));
         return list;
     }

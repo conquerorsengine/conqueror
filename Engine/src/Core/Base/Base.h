@@ -11,7 +11,7 @@
     #else
         #error "x86 Builds are not supported!"
     #endif
-#elif defined(__APPLE__) || defined(__MACH__)
+#elif defined(__APPLE__)   // __MACH__ değil: GNU/Hurd da GNU Mach çekirdeği üzerinde __MACH__ tanımlar
     #include <TargetConditionals.h>
     #if TARGET_IPHONE_SIMULATOR == 1
         #error "IOS simulator is not supported!"
@@ -38,6 +38,11 @@
     // QNX Neutrino (SDP 7.1 / 8.0, otomotiv): POSIX. Pencere, girdi ve EGL bağlamı Platform/QNX katmanında (Screen),
     // grafik OpenGL ES 3.x. Linux'a özgü /proc ve sysinfo kullanımları ayrıca CQ_PLATFORM_QNX ile korunur.
     #define CQ_PLATFORM_QNX
+    #define CQ_PLATFORM_LINUX
+#elif defined(__gnu_hurd__) || defined(__GNU__)
+    // GNU/Hurd (Debian GNU/Hurd): glibc + POSIX + GLFW X11 (grafik: Mesa yazılım OpenGL). Linux yolları ortak; Linux'a özgü
+    // sysinfo ve /proc ayrıntıları ile tanımsız PATH_MAX CQ_PLATFORM_HURD ile ayrıca korunur.
+    #define CQ_PLATFORM_HURD
     #define CQ_PLATFORM_LINUX
 #elif defined(__linux__)
     #define CQ_PLATFORM_LINUX

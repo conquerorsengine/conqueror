@@ -10,14 +10,19 @@
 #include "crn_winhdr.h"
 #endif
 
+// MODIFIED by Conqueror's Engine: "pause" / _mm_pause are x86 only (ARM64 Linux, Android and Windows on ARM builds)
 #if defined(__GNUC__) && CRNLIB_PLATFORM_PC
 extern __inline__ __attribute__((__always_inline__, __gnu_inline__)) void crnlib_yield_processor() {
+#if defined(__i386__) || defined(__x86_64__)
   __asm__ __volatile__("pause");
+#elif defined(__aarch64__) || defined(__arm__)
+  __asm__ __volatile__("yield");
+#endif
 }
 #else
 CRNLIB_FORCE_INLINE void crnlib_yield_processor() {
 #if CRNLIB_USE_MSVC_INTRINSICS
-#if CRNLIB_PLATFORM_PC_X64
+#if CRNLIB_PLATFORM_PC_X64 && (defined(_M_X64) || defined(__x86_64__))
   _mm_pause();
 #else
   YieldProcessor();

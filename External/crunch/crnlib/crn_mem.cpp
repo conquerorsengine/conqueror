@@ -3,7 +3,17 @@
 #include "crn_core.h"
 #include "crn_console.h"
 #include "../inc/crnlib.h"
+// MODIFIED by Conqueror's Engine: <malloc.h> and malloc_usable_size exist only on glibc / bionic / Windows (FreeBSD: malloc_np.h,
+// macOS: malloc_size, OpenBSD / NetBSD: none, so the requested size is reported as the block size)
+#if defined(__APPLE__)
+#include <malloc/malloc.h>
+#elif defined(__FreeBSD__) || defined(__DragonFly__)
+#include <malloc_np.h>
+#elif defined(__OpenBSD__) || defined(__NetBSD__)
+#define CRNLIB_NO_MSIZE 1
+#else
 #include <malloc.h>
+#endif
 #if CRNLIB_USE_WIN32_API
 #include "crn_winhdr.h"
 #endif
@@ -11,7 +21,19 @@
 #define CRNLIB_MEM_STATS 0
 
 #if !CRNLIB_USE_WIN32_API
+#if defined(__APPLE__)
+#define _msize malloc_size
+#elif defined(CRNLIB_NO_MSIZE)
+static inline size_t crnlib_no_msize(void*) { return 0; }
+#define _msize crnlib_no_msize
+#else
 #define _msize malloc_usable_size
+#endif
+#endif
+#if defined(CRNLIB_NO_MSIZE)
+#define CRNLIB_ACTUAL_SIZE(p, requested) (requested)
+#else
+#define CRNLIB_ACTUAL_SIZE(p, requested) ::_msize(p)
 #endif
 
 namespace crnlib {
@@ -68,7 +90,7 @@ static void* crnlib_default_realloc(void* p, size_t size, size_t* pActual_size, 
     }
 
     if (pActual_size)
-      *pActual_size = p_new ? ::_msize(p_new) : 0;
+      *pActual_size = p_new ? CRNLIB_ACTUAL_SIZE(p_new, size) : 0;
   } else if (!size) {
     ::free(p);
     p_new = NULL;
@@ -98,7 +120,7 @@ static void* crnlib_default_realloc(void* p, size_t size, size_t* pActual_size, 
     }
 
     if (pActual_size)
-      *pActual_size = ::_msize(p_final_block);
+      *pActual_size = CRNLIB_ACTUAL_SIZE(p_final_block, p_new ? size : 0);
   }
 
   return p_new;

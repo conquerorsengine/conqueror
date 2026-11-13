@@ -5,7 +5,7 @@ Derlenmiş bir oyun klasörünü (editörde Build ile üretilen klasör: .cqproj
 NativeActivity tabanlı bir APK'ya dönüştürür. Oyuncu (libconqueror.so) Android NDK ile derlenir; Java kodu yoktur.
 
   python3 Tools/Android/package_apk.py <oyun-klasörü> --out MyGame.apk [--abi arm64-v8a --abi x86_64] [--build]
-                                       [--automotive] [--install] [--run]
+                                       [--automotive | --tv | --chromeos] [--install] [--run]
 
 Gerekenler: Android SDK (build-tools: aapt2, zipalign, apksigner; platforms/android-NN/android.jar), NDK (yalnızca
 --build), JDK (keytool / apksigner). SDK yolu $ANDROID_HOME, $ANDROID_SDK_ROOT ya da ~/Android/Sdk.
@@ -19,7 +19,9 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import struct
 import zipfile
+import zlib
 from pathlib import Path
 
 ENGINE_ROOT = Path(__file__).resolve().parents[2]
@@ -27,6 +29,12 @@ DEFAULT_ABIS = ["arm64-v8a", "x86_64"]
 MIN_SDK = 26          # Android 8.0: AAudio, EGL/GLES 3.2 yaygın
 TARGET_SDK = 36
 AUTOMOTIVE_TARGET_SDK = 34   # 35+ hedefleyen uygulamalar sistem çubuklarının altına çizilmeye zorlanır
+# Meta Quest (ve diğer Android OpenXR gözlükleri): Khronos'un Android OpenXR yükleyicisi APK'ya konur. Başlıklarla aynı sürüm
+# (External/openxr), Maven Central'dan indirilir ve SHA-256 ile doğrulanır; External/openxr/android/<abi>/ varsa o kullanılır
+OPENXR_LOADER_VERSION = "1.1.47"
+OPENXR_LOADER_SHA256 = "125d0537f99fc348c65bd84f67e43b482940aa0cb25c5e73a20f2827feb92677"
+OPENXR_LOADER_URL = ("https://repo1.maven.org/maven2/org/khronos/openxr/openxr_loader_for_android/{v}/"
+                     "openxr_loader_for_android-{v}.aar")
 
 
 def log(msg):
@@ -173,14 +181,161 @@ def collect_game_files(game_dir):
     return files
 
 
-def manifest_xml(package, label, version_code, version_name, orientation, automotive, debuggable, icon=False):
+def read_png_rgba(path):
+    """8 bit RGB / RGBA, taramasız PNG -> (genişlik, yükseklik, RGBA baytları); desteklenmiyorsa None (ek kütüphane gerekmez)"""
+    data = Path(path).read_bytes()
+    if data[:8] != b"\x89PNG\r\n\x1a\n":
+        return None
+    pos, idat, w = 8, b"", 0
+    while pos < len(data):
+        length, kind = struct.unpack(">I4s", data[pos:pos + 8])
+        body = data[pos + 8:pos + 8 + length]
+        if kind == b"IHDR":
+            w, h, depth, ctype, _, _, interlace = struct.unpack(">IIBBBBB", body)
+            if depth != 8 or ctype not in (2, 6) or interlace:
+                return None
+            bpp = 4 if ctype == 6 else 3
+        elif kind == b"IDAT":
+            idat += body
+        elif kind == b"IEND":
+            break
+        pos += 12 + length
+    raw = zlib.decompress(idat)
+    stride = w * bpp
+    out, prev, i = bytearray(), bytearray(stride), 0
+    for _ in range(h):
+        f, line = raw[i], bytearray(raw[i + 1:i + 1 + stride])
+        i += 1 + stride
+        for x in range(stride):
+            a = line[x - bpp] if x >= bpp else 0
+            b = prev[x]
+            c = prev[x - bpp] if x >= bpp else 0
+            if f == 1: line[x] = (line[x] + a) & 255
+            elif f == 2: line[x] = (line[x] + b) & 255
+            elif f == 3: line[x] = (line[x] + ((a + b) >> 1)) & 255
+            elif f == 4:
+                p = a + b - c
+                pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+                line[x] = (line[x] + (a if pa <= pb and pa <= pc else b if pb <= pc else c)) & 255
+        prev = line
+        for x in range(w):
+            px = line[x * bpp:x * bpp + bpp]
+            out += px if bpp == 4 else px + b"\xff"
+    return w, h, bytes(out)
+
+
+def write_png(path, w, h, rgba):
+    rows = b"".join(b"\x00" + rgba[y * w * 4:(y + 1) * w * 4] for y in range(h))
+    chunk = lambda k, d: struct.pack(">I", len(d)) + k + d + struct.pack(">I", zlib.crc32(k + d) & 0xFFFFFFFF)
+    Path(path).write_bytes(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 6, 0, 0, 0)) +
+                           chunk(b"IDAT", zlib.compress(rows, 9)) + chunk(b"IEND", b""))
+
+
+def make_tv_banner(icon, out):
+    """Android TV başlatıcı afişi (320x180): koyu zemin, ortada simge (yoksa düz zemin)"""
+    w, h = 320, 180
+    px = bytearray(b"\x1c\x24\x38\xff" * (w * h))
+    img = read_png_rgba(icon) if icon and Path(icon).is_file() else None
+    if img:
+        iw, ih, data = img
+        size = 140
+        x0, y0 = (w - size) // 2, (h - size) // 2
+        for y in range(size):
+            sy = y * ih // size
+            for x in range(size):
+                sx = x * iw // size
+                r, g, b, a = data[(sy * iw + sx) * 4:(sy * iw + sx) * 4 + 4]
+                o = ((y0 + y) * w + x0 + x) * 4
+                for k, v in enumerate((r, g, b)):
+                    px[o + k] = (v * a + px[o + k] * (255 - a)) // 255
+    write_png(out, w, h, bytes(px))
+
+
+def openxr_loader(abi, cache_dir):
+    """<abi> için libopenxr_loader.so (Khronos Android yükleyicisi; Apache-2.0)"""
+    vendored = ENGINE_ROOT / "External" / "openxr" / "android" / abi / "libopenxr_loader.so"
+    if vendored.is_file():
+        return vendored
+    cache_dir = Path(cache_dir) / f"openxr-loader-{OPENXR_LOADER_VERSION}"
+    out = cache_dir / abi / "libopenxr_loader.so"
+    if out.is_file():
+        return out
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    aar = cache_dir / f"openxr_loader_for_android-{OPENXR_LOADER_VERSION}.aar"
+    if not aar.is_file():
+        import urllib.request
+        url = OPENXR_LOADER_URL.format(v=OPENXR_LOADER_VERSION)
+        log(f"downloading the OpenXR loader {OPENXR_LOADER_VERSION} from Maven Central")
+        tmp = aar.with_suffix(".part")
+        with urllib.request.urlopen(url, timeout=120) as r, open(tmp, "wb") as f:
+            shutil.copyfileobj(r, f)
+        if hashlib.sha256(tmp.read_bytes()).hexdigest() != OPENXR_LOADER_SHA256:
+            tmp.unlink()
+            fail("OpenXR loader download does not match its SHA-256 (not used)")
+        tmp.rename(aar)
+    with zipfile.ZipFile(aar) as z:
+        name = f"jni/{abi}/libopenxr_loader.so"
+        if name not in z.namelist():
+            fail(f"the OpenXR loader has no {abi} library")
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_bytes(z.read(name))
+    return out
+
+
+def manifest_xml(package, label, version_code, version_name, orientation, automotive, debuggable, icon=False, variant="phone",
+                 banner=False):
     automotive_feature = ('    <uses-feature android:name="android.hardware.type.automotive" android:required="true"/>\n'
                           if automotive else "")
+    # Android TV: TV başlatıcısı (leanback), kumanda / gamepad; aynı APK telefonda da çalışır (required=false)
+    if variant == "tv":
+        automotive_feature += ('    <uses-feature android:name="android.software.leanback" android:required="false"/>\n'
+                               '    <uses-feature android:name="android.hardware.faketouch" android:required="false"/>\n')
+    # ChromeOS (Android uygulaması): klavye / fare / dokunmatik yüzeyli PC sınıfı cihaz
+    if variant == "chromeos":
+        automotive_feature += ('    <uses-feature android:name="android.hardware.type.pc" android:required="false"/>\n'
+                               '    <uses-feature android:name="android.hardware.faketouch" android:required="false"/>\n')
+    # Meta Quest: kafa takibi zorunlu (yalnız gözlükler), OpenXR çalışma zamanı aracısı (Khronos yükleyicisi bulur)
+    queries = ""
+    app_meta = ""
+    if variant == "quest":
+        automotive_feature += ('    <uses-feature android:name="android.hardware.vr.headtracking" android:required="true" android:version="1"/>\n'
+                               '    <uses-permission android:name="org.khronos.openxr.permission.OPENXR"/>\n'
+                               '    <uses-permission android:name="org.khronos.openxr.permission.OPENXR_SYSTEM"/>\n')
+        queries = ('    <queries>\n'
+                   '        <provider android:authorities="org.khronos.openxr.runtime_broker;org.khronos.openxr.system_runtime_broker"/>\n'
+                   '        <intent><action android:name="org.khronos.openxr.OpenXRRuntimeService"/></intent>\n'
+                   '    </queries>\n')
+        app_meta = '        <meta-data android:name="com.oculus.supportedDevices" android:value="quest2|questpro|quest3|quest3s"/>\n'
+    # Android XR (Samsung Galaxy XR ...): developer.android.com/develop/xr/openxr/get-started: OpenXR özelliği, tam alan
+    # (unmanaged) başlangıç kipi, sistemin OpenXR kitaplığı (libopenxr.google.so) ve IMMERSIVE_HMD kategorisi
+    if variant == "androidxr":
+        automotive_feature += ('    <uses-feature android:name="android.software.xr.api.openxr" android:version="0x00010000" android:required="true"/>\n'
+                               '    <uses-permission android:name="org.khronos.openxr.permission.OPENXR"/>\n'
+                               '    <uses-permission android:name="org.khronos.openxr.permission.OPENXR_SYSTEM"/>\n')
+        queries = ('    <queries>\n'
+                   '        <provider android:authorities="org.khronos.openxr.runtime_broker;org.khronos.openxr.system_runtime_broker"/>\n'
+                   '        <intent><action android:name="org.khronos.openxr.OpenXRRuntimeService"/></intent>\n'
+                   '    </queries>\n')
+        app_meta = ('        <property android:name="android.window.PROPERTY_XR_ACTIVITY_START_MODE"\n'
+                    '            android:value="XR_ACTIVITY_START_MODE_FULL_SPACE_UNMANAGED"/>\n'
+                    '        <uses-native-library android:name="libopenxr.google.so" android:required="false"/>\n')
     # Araçta sistem çubukları gizlenemez: tam ekran olmayan tema ve kenardan kenara zorlaması olmayan hedef SDK ile
     # pencere çubukların arasındaki alana yerleşir
     theme = "@android:style/Theme.DeviceDefault.NoActionBar" if automotive else "@android:style/Theme.NoTitleBar.Fullscreen"
     target_sdk = AUTOMOTIVE_TARGET_SDK if automotive else TARGET_SDK
     icon_attr = ' android:icon="@mipmap/ic_launcher"' if icon else ""
+    if banner:
+        icon_attr += ' android:banner="@drawable/banner"'
+    tv_category = '                <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>\n' if variant == "tv" else ""
+    if variant == "quest":
+        tv_category = ('                <category android:name="com.oculus.intent.category.VR"/>\n'
+                       '                <category android:name="org.khronos.openxr.intent.category.IMMERSIVE_HMD"/>\n')
+    if variant == "androidxr":
+        tv_category = '                <category android:name="org.khronos.openxr.intent.category.IMMERSIVE_HMD"/>\n'
+    # ChromeOS: pencere boyutlandırılabilir, açılışta 1280x720 serbest pencere
+    resizable = ' android:resizeableActivity="true"' if variant == "chromeos" else ' android:resizeableActivity="false"' if variant in ("quest", "androidxr") else ""
+    layout = ('            <layout android:defaultWidth="1280dp" android:defaultHeight="720dp" android:gravity="center"\n'
+              '                android:minWidth="640dp" android:minHeight="360dp"/>\n') if variant == "chromeos" else ""
     return f"""<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="{package}" android:versionCode="{version_code}" android:versionName="{version_name}">
@@ -189,17 +344,17 @@ def manifest_xml(package, label, version_code, version_name, orientation, automo
     <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
     <uses-feature android:name="android.hardware.gamepad" android:required="false"/>
 {automotive_feature}    <uses-permission android:name="android.permission.INTERNET"/>
-    <application android:label="{label}"{icon_attr} android:hasCode="false" android:extractNativeLibs="true"
+{queries}    <application android:label="{label}"{icon_attr} android:hasCode="false" android:extractNativeLibs="true"
         android:isGame="true" android:appCategory="game" android:debuggable="{str(debuggable).lower()}">
-        <activity android:name="android.app.NativeActivity" android:exported="true"
+{app_meta}        <activity android:name="android.app.NativeActivity" android:exported="true"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|navigation|uiMode|density"
             android:screenOrientation="{orientation}" android:launchMode="singleTask"
-            android:theme="{theme}">
+            android:theme="{theme}"{resizable}>
             <meta-data android:name="android.app.lib_name" android:value="conqueror"/>
-            <intent-filter>
+{layout}            <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
+{tv_category}            </intent-filter>
         </activity>
     </application>
 </manifest>
@@ -231,6 +386,15 @@ def main():
     ap.add_argument("--orientation", default="sensorLandscape",
                     choices=["sensorLandscape", "landscape", "portrait", "sensorPortrait", "fullSensor", "unspecified"])
     ap.add_argument("--automotive", action="store_true", help="Android Automotive OS (requires android.hardware.type.automotive)")
+    ap.add_argument("--tv", action="store_true", help="Android TV / Google TV: leanback launcher entry and banner (also installs on phones)")
+    ap.add_argument("--chromeos", action="store_true", help="ChromeOS: resizable window, keyboard / mouse device class")
+    ap.add_argument("--androidxr", action="store_true",
+                    help="Android XR headsets (Samsung Galaxy XR ...): OpenXR feature, full space start mode, bundled OpenXR loader; "
+                         "default ABI arm64-v8a")
+    ap.add_argument("--quest", action="store_true",
+                    help="Meta Quest (Android OpenXR headsets): VR launcher category, head tracking, bundled OpenXR loader; "
+                         "default ABI arm64-v8a")
+    ap.add_argument("--banner", help="Android TV banner .png (320x180); default: made from --icon")
     ap.add_argument("--icon", help="launcher icon .png (square, 192 px or larger)")
     ap.add_argument("--release", action="store_true", help="not debuggable")
     ap.add_argument("--keystore", help="signing keystore (default: ~/.android/debug.keystore, created if missing)")
@@ -252,7 +416,8 @@ def main():
     package = args.package or f"com.conqueror.{safe.lower()}"
     label = (args.label or name).replace("&", "&amp;").replace("\"", "&quot;").replace("<", "&lt;")
     out = Path(args.out).resolve() if args.out else game_dir.parent / f"{safe}.apk"
-    abis = args.abi or DEFAULT_ABIS
+    xr = args.quest or args.androidxr
+    abis = args.abi or (["arm64-v8a"] if xr else DEFAULT_ABIS)
     build_root = Path(args.build_root).resolve()
 
     sdk = find_sdk(args.sdk)
@@ -290,16 +455,32 @@ def main():
         # Başlatıcı simgesi: res/mipmap-xxxhdpi/ic_launcher.png (Android diğer yoğunluklar için ölçekler)
         icon = Path(args.icon) if args.icon else None
         res_flags = []
-        if icon and icon.is_file():
+        has_icon = bool(icon and icon.is_file())
+        if has_icon:
             mip = tmp / "res" / "mipmap-xxxhdpi"
             mip.mkdir(parents=True)
             shutil.copyfile(icon, mip / "ic_launcher.png")
-            run([aapt2, "compile", "--dir", tmp / "res", "-o", tmp / "res.zip"])
-            res_flags = ["-R", tmp / "res.zip", "--auto-add-overlay"]
         elif args.icon:
             log(f"icon not found: {args.icon} (APK without a launcher icon)")
+        # Android TV afişi (TV başlatıcısı simge yerine bunu gösterir)
+        has_banner = False
+        if args.tv:
+            drawable = tmp / "res" / "drawable-xhdpi"
+            drawable.mkdir(parents=True, exist_ok=True)
+            if args.banner and Path(args.banner).is_file():
+                shutil.copyfile(args.banner, drawable / "banner.png")
+            else:
+                make_tv_banner(icon if has_icon else None, drawable / "banner.png")
+            has_banner = True
+        if has_icon or has_banner:
+            run([aapt2, "compile", "--dir", tmp / "res", "-o", tmp / "res.zip"])
+            res_flags = ["-R", tmp / "res.zip", "--auto-add-overlay"]
+        variant = ("tv" if args.tv else "chromeos" if args.chromeos else "quest" if args.quest else "androidxr" if args.androidxr
+                   else "phone")
+        orientation = "unspecified" if args.chromeos else "landscape" if xr else args.orientation
         (tmp / "AndroidManifest.xml").write_text(manifest_xml(package, label, args.version_code, version_name,
-                                                              args.orientation, args.automotive, not args.release, bool(res_flags)),
+                                                              orientation, args.automotive, not args.release, has_icon,
+                                                              variant, has_banner),
                                                  encoding="utf-8")
         base = tmp / "base.apk"
         run([aapt2, "link", "-o", base, "-I", platform / "android.jar", "--manifest", tmp / "AndroidManifest.xml",
@@ -317,6 +498,8 @@ def main():
                 z.write(game_dir / rel, "assets/" + rel, compress)
             for abi, lib in libs.items():
                 z.write(strip_library(lib, tmp / abi, sdk, args.ndk), f"lib/{abi}/libconqueror.so", zipfile.ZIP_DEFLATED)
+                if xr:
+                    z.write(openxr_loader(abi, build_root), f"lib/{abi}/libopenxr_loader.so", zipfile.ZIP_DEFLATED)
 
         aligned = tmp / "aligned.apk"
         # -P 16: 16 KB sayfa boyutlu cihazlar için .so hizası (build-tools 35+); eski sürümlerde -p

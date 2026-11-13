@@ -83,7 +83,8 @@
 	#define JPH_PLATFORM_ANDROID
 #elif defined(__linux__)
 	#define JPH_PLATFORM_LINUX
-#elif defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
+#elif defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__GNU__)
+	// MODIFIED by Conqueror's Engine: GNU/Hurd (__GNU__) uses the generic POSIX path (no Linux prctl)
 	#define JPH_PLATFORM_BSD
 #elif defined(__APPLE__)
 	#include <TargetConditionals.h>

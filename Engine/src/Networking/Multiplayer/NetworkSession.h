@@ -20,18 +20,25 @@ namespace Conqueror
 namespace Conqueror::Net
 {
     // Betik değerlerinin ağ biçimi (GC dışında saklanır; okunurken CQS değerine çevrilir)
+    struct NetMapEntry;   // std::pair<string, NetValue> değil: eksik tür üzerinde pair, clang + libstdc++ 15'te derlenmiyor
     struct NetValue
     {
         enum class Type : uint8_t { Null = 0, Bool, Number, String, Map, List };
         Type Kind = Type::Null;
         double Number = 0.0;
         std::string Text;
-        std::vector<std::pair<std::string, NetValue>> Map;
+        std::vector<NetMapEntry> Map;
         std::vector<NetValue> List;
 
         static NetValue FromScript(const CQS::Value& v, int depth = 0);
         CQS::Value ToScript() const;
         bool operator==(const NetValue& o) const;
+    };
+    struct NetMapEntry
+    {
+        std::string first;
+        NetValue second;
+        bool operator==(const NetMapEntry& o) const { return first == o.first && second == o.second; }
     };
 
     enum class NetMode : uint8_t { Offline = 0, Server, Host, Client };

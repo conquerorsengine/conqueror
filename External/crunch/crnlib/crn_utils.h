@@ -167,6 +167,10 @@ static CRNLIB_FORCE_INLINE uint64 swap64(uint64 x) {
   return _byteswap_uint64(x);
 }
 #elif defined(__GNUC__)
+// MODIFIED by Conqueror's Engine: OpenBSD / NetBSD <sys/endian.h> define swap16 / swap32 / swap64 as macros
+#undef swap16
+#undef swap32
+#undef swap64
 static CRNLIB_FORCE_INLINE uint16 swap16(uint16 x) {
   return static_cast<uint16>((x << 8U) | (x >> 8U));
 }

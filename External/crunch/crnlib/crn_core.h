@@ -164,6 +164,13 @@
 #endif
 #endif
 
+// MODIFIED by Conqueror's Engine: the *64 stdio calls are glibc-only; off_t is already 64 bits on the BSDs and macOS
+#if !defined(_WIN32) && !defined(__GLIBC__) && !defined(__ANDROID__)
+#define fopen64 fopen
+#define fseeko64 fseeko
+#define ftello64 ftello
+#endif
+
 #include "crn_types.h"
 #include "crn_assert.h"
 #include "crn_platform.h"

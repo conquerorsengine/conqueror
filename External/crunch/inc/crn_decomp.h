@@ -19,8 +19,16 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+// MODIFIED by Conqueror's Engine: portable block size query (see crn_mem.cpp)
 #ifdef WIN32
 #include <memory.h>
+#elif defined(__APPLE__)
+#include <malloc/malloc.h>
+#define malloc_usable_size malloc_size
+#elif defined(__FreeBSD__) || defined(__DragonFly__)
+#include <malloc_np.h>
+#elif defined(__OpenBSD__) || defined(__NetBSD__)
+#define CRND_NO_MSIZE 1
 #else
 #include <malloc.h>
 #endif
@@ -470,6 +478,10 @@ inline void invert_buf(void* pBuf, uint32 size) {
     swap(p[i], p[size - 1U - i]);
 }
 
+// MODIFIED by Conqueror's Engine: OpenBSD / NetBSD <sys/endian.h> define swap16 / swap32 / swap64 as macros
+#undef swap16
+#undef swap32
+#undef swap64
 static inline uint16 swap16(uint16 x) {
   return static_cast<uint16>((x << 8) | (x >> 8));
 }
@@ -1928,7 +1940,11 @@ static void* crnd_default_realloc(void* p, size_t size, size_t* pActual_size, bo
 #ifdef WIN32
       *pActual_size = p_new ? ::_msize(p_new) : 0;
 #else
+#ifdef CRND_NO_MSIZE
+      *pActual_size = p_new ? size : 0;
+#else
       *pActual_size = p_new ? malloc_usable_size(p_new) : 0;
+#endif
 #endif
     }
   } else if (!size) {
@@ -1958,7 +1974,11 @@ static void* crnd_default_realloc(void* p, size_t size, size_t* pActual_size, bo
 #ifdef WIN32
       *pActual_size = ::_msize(p_final_block);
 #else
+#ifdef CRND_NO_MSIZE
+      *pActual_size = p_new ? size : 0;
+#else
       *pActual_size = ::malloc_usable_size(p_final_block);
+#endif
 #endif
     }
   }
@@ -1971,7 +1991,11 @@ static size_t crnd_default_msize(void* p, void* pUser_data) {
 #ifdef WIN32
   return p ? _msize(p) : 0;
 #else
+#ifdef CRND_NO_MSIZE
+  return 0;
+#else
   return p ? malloc_usable_size(p) : 0;
+#endif
 #endif
 }
 

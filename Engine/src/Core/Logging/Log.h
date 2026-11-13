@@ -1,5 +1,6 @@
 #pragma once
 
+#include <sstream>
 #include "Core/Base/Base.h"
 
 #ifdef _MSC_VER

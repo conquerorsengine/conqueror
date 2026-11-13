@@ -1,4 +1,5 @@
 #include "Platform.h"
+#include <filesystem>
 #include "Core/Logging/Log.h"
 
 #include <thread>
@@ -19,7 +20,7 @@
         #include "Core/Utils/SelfExecutable.h"
         #if defined(CQ_PLATFORM_BSD)
             #include <sys/sysctl.h>
-        #elif !defined(CQ_PLATFORM_QNX)
+        #elif !defined(CQ_PLATFORM_QNX) && !defined(CQ_PLATFORM_HURD)
             #include <sys/sysinfo.h>
         #endif
     #else
@@ -240,7 +241,7 @@ namespace Conqueror
 
         uint64_t GetTotalPhysicalMemory()
         {
-#if defined(CQ_PLATFORM_BSD)
+#if defined(CQ_PLATFORM_BSD) || defined(CQ_PLATFORM_HURD)
             const long pages = sysconf(_SC_PHYS_PAGES), pageSize = sysconf(_SC_PAGESIZE);
             if (pages > 0 && pageSize > 0)
                 return (uint64_t)pages * (uint64_t)pageSize;
@@ -264,11 +265,11 @@ namespace Conqueror
 
         uint64_t GetAvailablePhysicalMemory()
         {
-#if defined(CQ_PLATFORM_BSD) && defined(_SC_AVPHYS_PAGES)
+#if (defined(CQ_PLATFORM_BSD) || defined(CQ_PLATFORM_HURD)) && defined(_SC_AVPHYS_PAGES)
             const long pages = sysconf(_SC_AVPHYS_PAGES), pageSize = sysconf(_SC_PAGESIZE);
             if (pages > 0 && pageSize > 0)
                 return (uint64_t)pages * (uint64_t)pageSize;
-#elif defined(CQ_PLATFORM_LINUX) && !defined(CQ_PLATFORM_QNX) && !defined(CQ_PLATFORM_BSD)
+#elif defined(CQ_PLATFORM_LINUX) && !defined(CQ_PLATFORM_QNX) && !defined(CQ_PLATFORM_BSD) && !defined(CQ_PLATFORM_HURD)
             struct sysinfo info;
             if (sysinfo(&info) == 0)
                 return info.freeram * info.mem_unit;
@@ -374,9 +375,11 @@ namespace Conqueror
         std::string GetWorkingDirectory()
         {
 #ifdef CQ_PLATFORM_POSIX
-            char cwd[PATH_MAX];
-            if (getcwd(cwd, sizeof(cwd)))
-                return std::string(cwd);
+            // GNU/Hurd'de PATH_MAX yok (yol uzunluğu sınırsız): std::filesystem kendi arabelleğini büyütür
+            std::error_code ec;
+            const std::filesystem::path cwd = std::filesystem::current_path(ec);
+            if (!ec)
+                return cwd.string();
 #elif defined(CQ_PLATFORM_WINDOWS)
             char cwd[MAX_PATH];
             if (GetCurrentDirectoryA(MAX_PATH, cwd))

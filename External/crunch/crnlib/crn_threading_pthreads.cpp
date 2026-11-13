@@ -11,8 +11,9 @@
 #include "crn_winhdr.h"
 #endif
 
+// MODIFIED by Conqueror's Engine: get_nprocs (<sys/sysinfo.h>) is glibc-only; sysconf works on every POSIX system
 #ifdef __GNUC__
-#include <sys/sysinfo.h>
+#include <unistd.h>
 #endif
 
 #ifdef WIN32
@@ -28,15 +29,15 @@ void crn_threading_init() {
   GetSystemInfo(&g_system_info);
   g_number_of_processors = math::maximum<uint>(1U, g_system_info.dwNumberOfProcessors);
 #elif defined(__GNUC__)
-  g_number_of_processors = math::maximum<int>(1, get_nprocs());
+  g_number_of_processors = math::maximum<int>(1, (int)sysconf(_SC_NPROCESSORS_ONLN));
 #else
   g_number_of_processors = 1;
 #endif
 }
 
 crn_thread_id_t crn_get_current_thread_id() {
-  // FIXME: Not portable
-  return static_cast<crn_thread_id_t>(pthread_self());
+  // MODIFIED by Conqueror's Engine: pthread_t is a pointer on the BSDs / macOS, an integer on glibc
+  return (crn_thread_id_t)(size_t)pthread_self();
 }
 
 void crn_sleep(unsigned int milliseconds) {

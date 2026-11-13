@@ -12,7 +12,10 @@
 
 #include <stdlib.h>
 #include <string.h>
+// MODIFIED by Conqueror's Engine: <malloc.h> is not on the BSDs / macOS; stdlib.h has malloc / free
+#if !defined(__APPLE__) && !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__NetBSD__) && !defined(__DragonFly__)
 #include <malloc.h>
+#endif
 
 #include "crn_core.h"
 

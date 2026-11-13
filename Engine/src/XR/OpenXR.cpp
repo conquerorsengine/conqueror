@@ -26,7 +26,23 @@
 #if defined(__linux__) && !defined(__ANDROID__)
     #define CQ_OPENXR_LINUX 1
     #include <dlfcn.h>
-    #include <EGL/egl.h>
+    #if __has_include(<EGL/egl.h>)
+        #include <EGL/egl.h>
+    #else
+        // EGL başlıkları yoksa (ör. yalnız X11 paketli çapraz sistem kökü): OpenXR bağlama yapısının ve bizim kullandığımız türler
+        #include <cstdint>
+        typedef void* EGLDisplay;
+        typedef void* EGLConfig;
+        typedef void* EGLContext;
+        typedef int32_t EGLint;
+        typedef unsigned int EGLBoolean;
+        typedef void (*__eglMustCastToProperFunctionPointerType)(void);
+        typedef __eglMustCastToProperFunctionPointerType (*PFNEGLGETPROCADDRESSPROC)(const char* procname);
+        #define EGL_NO_DISPLAY ((EGLDisplay)0)
+        #define EGL_NO_CONTEXT ((EGLContext)0)
+        #define EGL_CONFIG_ID 0x3028
+        #define EGL_NONE 0x3038
+    #endif
     #include <X11/Xlib.h>
     #include <X11/Xutil.h>
     // GLX türleri (GL/glx.h glad ile çakışır): yalnız OpenXR bağlama yapısının istedikleri
@@ -42,12 +58,25 @@
     #endif
     #include <windows.h>
     #define XR_USE_PLATFORM_WIN32
+#elif defined(__ANDROID__)
+    // Meta Quest / Pico / Android XR: Khronos Android yükleyicisi (APK'da libopenxr_loader.so), OpenGL ES bağlamı
+    #define CQ_OPENXR_ANDROID 1
+    #include <dlfcn.h>
+    #include <jni.h>
+    #include <EGL/egl.h>
+    #include <android_native_app_glue.h>
+    #include "Platform/Android/AndroidPlatform.h"
+    #define XR_USE_PLATFORM_ANDROID
 #endif
 
-#if defined(CQ_OPENXR_LINUX) || defined(CQ_OPENXR_WINDOWS)
+#if defined(CQ_OPENXR_LINUX) || defined(CQ_OPENXR_WINDOWS) || defined(CQ_OPENXR_ANDROID)
     #define CQ_OPENXR_SUPPORTED 1
     #define XR_NO_PROTOTYPES
-    #define XR_USE_GRAPHICS_API_OPENGL
+    #if defined(CQ_OPENXR_ANDROID)
+        #define XR_USE_GRAPHICS_API_OPENGL_ES
+    #else
+        #define XR_USE_GRAPHICS_API_OPENGL
+    #endif
     #include <openxr/openxr.h>
     #include <openxr/openxr_platform.h>
 #endif
@@ -134,13 +163,30 @@ namespace Conqueror::OpenXR
             X(xrEndFrame) X(xrLocateViews) X(xrStringToPath) X(xrCreateActionSet) X(xrDestroyActionSet) X(xrCreateAction) \
             X(xrSuggestInteractionProfileBindings) X(xrAttachSessionActionSets) X(xrCreateActionSpace) X(xrSyncActions) \
             X(xrGetActionStateFloat) X(xrGetActionStateBoolean) X(xrGetActionStateVector2f) X(xrGetActionStatePose) \
-            X(xrApplyHapticFeedback) X(xrGetOpenGLGraphicsRequirementsKHR)
+            X(xrApplyHapticFeedback)
         struct Functions
         {
             #define CQ_XR_MEMBER(name) PFN_##name name = nullptr;
             CQ_XR_FUNCTIONS(CQ_XR_MEMBER)
             #undef CQ_XR_MEMBER
+#if defined(CQ_OPENXR_ANDROID)
+            PFN_xrGetOpenGLESGraphicsRequirementsKHR xrGetGraphicsRequirements = nullptr;
+#else
+            PFN_xrGetOpenGLGraphicsRequirementsKHR xrGetGraphicsRequirements = nullptr;
+#endif
         } s_Fn;
+
+#if defined(CQ_OPENXR_ANDROID)
+        using SwapchainImage = XrSwapchainImageOpenGLESKHR;
+        constexpr XrStructureType kSwapchainImageType = XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_ES_KHR;
+        constexpr bool kDesktopGL = false;   // ES: sRGB eke yazım her zaman dönüştürülür (GL_FRAMEBUFFER_SRGB yok)
+        const char* const kGraphicsExtension = XR_KHR_OPENGL_ES_ENABLE_EXTENSION_NAME;
+#else
+        using SwapchainImage = XrSwapchainImageOpenGLKHR;
+        constexpr XrStructureType kSwapchainImageType = XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR;
+        constexpr bool kDesktopGL = true;
+        const char* const kGraphicsExtension = XR_KHR_OPENGL_ENABLE_EXTENSION_NAME;
+#endif
 
         bool Check(XrResult r, const char* what)
         {
@@ -158,12 +204,28 @@ namespace Conqueror::OpenXR
         {
             if (s_GetProc)
                 return true;
-#if defined(CQ_OPENXR_LINUX)
+#if defined(CQ_OPENXR_LINUX) || defined(CQ_OPENXR_ANDROID)
             for (const char* name : { "libopenxr_loader.so.1", "libopenxr_loader.so" })
                 if ((s_Loader = dlopen(name, RTLD_NOW | RTLD_LOCAL)))
                     break;
             if (s_Loader)
                 s_GetProc = reinterpret_cast<PFN_xrGetInstanceProcAddr>(dlsym(s_Loader, "xrGetInstanceProcAddr"));
+    #if defined(CQ_OPENXR_ANDROID)
+            // Android yükleyicisi uzantı sorgusundan önce Java VM + etkinlikle başlatılmalı (XR_KHR_loader_init_android)
+            if (s_GetProc)
+            {
+                PFN_xrInitializeLoaderKHR init = nullptr;
+                s_GetProc(XR_NULL_HANDLE, "xrInitializeLoaderKHR", reinterpret_cast<PFN_xrVoidFunction*>(&init));
+                android_app* app = Android::GetApp();
+                if (!init || !app || !app->activity)
+                    return (s_GetProc = nullptr), false;
+                XrLoaderInitInfoAndroidKHR loaderInfo{ XR_TYPE_LOADER_INIT_INFO_ANDROID_KHR };
+                loaderInfo.applicationVM = app->activity->vm;
+                loaderInfo.applicationContext = app->activity->clazz;
+                if (XR_FAILED(init(reinterpret_cast<const XrLoaderInitInfoBaseHeaderKHR*>(&loaderInfo))))
+                    return (s_GetProc = nullptr), false;
+            }
+    #endif
 #else
             HMODULE lib = LoadLibraryA("openxr_loader.dll");
             s_Loader = lib;
@@ -185,7 +247,7 @@ namespace Conqueror::OpenXR
         struct Eye
         {
             XrSwapchain Swapchain = XR_NULL_HANDLE;
-            std::vector<XrSwapchainImageOpenGLKHR> Images;
+            std::vector<SwapchainImage> Images;
             std::vector<GLuint> ImageFbos;
             uint32_t Width = 0, Height = 0;
             GLuint HdrFbo = 0, HdrColor = 0, HdrDepth = 0;
@@ -312,13 +374,37 @@ namespace Conqueror::OpenXR
             static auto fn = reinterpret_cast<void* (*)(const char*)>(s_EglLib ? dlsym(s_EglLib, "eglGetProcAddress") : nullptr);
             return fn ? reinterpret_cast<PFN_xrVoidFunction>(fn(name)) : nullptr;
         }
+#elif defined(CQ_OPENXR_ANDROID)
+        XrGraphicsBindingOpenGLESAndroidKHR s_EsBinding{ XR_TYPE_GRAPHICS_BINDING_OPENGL_ES_ANDROID_KHR };
 #else
         XrGraphicsBindingOpenGLWin32KHR s_WglBinding{ XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR };
 #endif
 
         const void* MakeBinding(bool eglExtension, bool glExtension)
         {
+#if defined(CQ_OPENXR_ANDROID)
+            // Etkin EGL bağlamı (Android GLFW katmanı oluşturur)
+            (void)eglExtension;
+            if (!glExtension)
+                return nullptr;
+            s_EsBinding.display = eglGetCurrentDisplay();
+            s_EsBinding.context = eglGetCurrentContext();
+            EGLint configId = 0, count = 0;
+            EGLConfig config = nullptr;
+            eglQueryContext(s_EsBinding.display, s_EsBinding.context, EGL_CONFIG_ID, &configId);
+            const EGLint attribs[] = { EGL_CONFIG_ID, configId, EGL_NONE };
+            eglChooseConfig(s_EsBinding.display, attribs, &config, 1, &count);
+            s_EsBinding.config = config;
+            if (s_EsBinding.display == EGL_NO_DISPLAY || s_EsBinding.context == EGL_NO_CONTEXT)
+            {
+                s_Status.Error = "no EGL context";
+                return nullptr;
+            }
+            s_Status.Binding = "OpenGL ES";
+            return &s_EsBinding;
+#else
             GLFWwindow* window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
+#endif
 #if defined(CQ_OPENXR_LINUX)
             // Wayland'da GLFW'nin "yerel" bağlamı da EGL'dir (öznitelik GLFW_NATIVE_CONTEXT_API döner)
             const bool egl = glfwGetWindowAttrib(window, GLFW_CONTEXT_CREATION_API) == GLFW_EGL_CONTEXT_API ||
@@ -390,7 +476,7 @@ namespace Conqueror::OpenXR
             s_GlxBinding.glxContext = context;
             s_Status.Binding = "GLX";
             return &s_GlxBinding;
-#else
+#elif defined(CQ_OPENXR_WINDOWS)
             (void)eglExtension;
             if (!glExtension)
                 return nullptr;
@@ -670,7 +756,7 @@ namespace Conqueror::OpenXR
         auto has = [&](const char* name) {
             return std::any_of(props.begin(), props.end(), [&](const XrExtensionProperties& p) { return std::strcmp(p.extensionName, name) == 0; });
         };
-        const bool glExt = has(XR_KHR_OPENGL_ENABLE_EXTENSION_NAME);
+        const bool glExt = has(kGraphicsExtension);
 #if defined(CQ_OPENXR_LINUX)
         const bool eglExt = has(XR_MNDX_EGL_ENABLE_EXTENSION_NAME);
 #else
@@ -682,11 +768,22 @@ namespace Conqueror::OpenXR
             return false;
         }
         std::vector<const char*> extensions;
-        if (glExt) extensions.push_back(XR_KHR_OPENGL_ENABLE_EXTENSION_NAME);
+        if (glExt) extensions.push_back(kGraphicsExtension);
 #if defined(CQ_OPENXR_LINUX)
         if (eglExt) extensions.push_back(XR_MNDX_EGL_ENABLE_EXTENSION_NAME);
 #endif
         XrInstanceCreateInfo info{ XR_TYPE_INSTANCE_CREATE_INFO };
+#if defined(CQ_OPENXR_ANDROID)
+        // Android: örnek Java VM ve etkinlikle oluşturulur (XR_KHR_android_create_instance)
+        XrInstanceCreateInfoAndroidKHR androidInfo{ XR_TYPE_INSTANCE_CREATE_INFO_ANDROID_KHR };
+        if (android_app* app = Android::GetApp(); app && app->activity && has(XR_KHR_ANDROID_CREATE_INSTANCE_EXTENSION_NAME))
+        {
+            androidInfo.applicationVM = app->activity->vm;
+            androidInfo.applicationActivity = app->activity->clazz;
+            extensions.push_back(XR_KHR_ANDROID_CREATE_INSTANCE_EXTENSION_NAME);
+            info.next = &androidInfo;
+        }
+#endif
         std::strcpy(info.applicationInfo.applicationName, "Conqueror Game");
         std::strcpy(info.applicationInfo.engineName, "Conqueror Engine");
         info.applicationInfo.applicationVersion = 1;
@@ -700,6 +797,11 @@ namespace Conqueror::OpenXR
         #define CQ_XR_LOAD(name) s_Fn.name = Proc<PFN_##name>(s_Instance, #name);
         CQ_XR_FUNCTIONS(CQ_XR_LOAD)
         #undef CQ_XR_LOAD
+#if defined(CQ_OPENXR_ANDROID)
+        s_Fn.xrGetGraphicsRequirements = Proc<PFN_xrGetOpenGLESGraphicsRequirementsKHR>(s_Instance, "xrGetOpenGLESGraphicsRequirementsKHR");
+#else
+        s_Fn.xrGetGraphicsRequirements = Proc<PFN_xrGetOpenGLGraphicsRequirementsKHR>(s_Instance, "xrGetOpenGLGraphicsRequirementsKHR");
+#endif
 
         XrInstanceProperties ip{ XR_TYPE_INSTANCE_PROPERTIES };
         if (XR_SUCCEEDED(s_Fn.xrGetInstanceProperties(s_Instance, &ip)))
@@ -717,9 +819,13 @@ namespace Conqueror::OpenXR
             s_Status.System = sp.systemName;
 
         // OpenGL gereksinimleri oturumdan önce sorulmalı (OpenXR kuralı)
+#if defined(CQ_OPENXR_ANDROID)
+        XrGraphicsRequirementsOpenGLESKHR req{ XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_ES_KHR };
+#else
         XrGraphicsRequirementsOpenGLKHR req{ XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_KHR };
-        if (s_Fn.xrGetOpenGLGraphicsRequirementsKHR)
-            s_Fn.xrGetOpenGLGraphicsRequirementsKHR(s_Instance, s_System, &req);
+#endif
+        if (s_Fn.xrGetGraphicsRequirements)
+            s_Fn.xrGetGraphicsRequirements(s_Instance, s_System, &req);
 
         uint32_t viewCount = 0;
         s_Fn.xrEnumerateViewConfigurationViews(s_Instance, s_System, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, 0, &viewCount, nullptr);
@@ -800,7 +906,7 @@ namespace Conqueror::OpenXR
             }
             uint32_t imageCount = 0;
             s_Fn.xrEnumerateSwapchainImages(e.Swapchain, 0, &imageCount, nullptr);
-            e.Images.assign(imageCount, { XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR });
+            e.Images.assign(imageCount, { kSwapchainImageType });
             s_Fn.xrEnumerateSwapchainImages(e.Swapchain, imageCount, &imageCount, reinterpret_cast<XrSwapchainImageBaseHeader*>(e.Images.data()));
             CreateEyeTargets(e);
         }
@@ -956,7 +1062,7 @@ namespace Conqueror::OpenXR
                 glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFbo);
                 glGetIntegerv(GL_VIEWPORT, prevViewport);
                 const GLboolean depthTest = glIsEnabled(GL_DEPTH_TEST), blend = glIsEnabled(GL_BLEND), cull = glIsEnabled(GL_CULL_FACE),
-                                scissor = glIsEnabled(GL_SCISSOR_TEST), srgb = glIsEnabled(GL_FRAMEBUFFER_SRGB);
+                                scissor = glIsEnabled(GL_SCISSOR_TEST), srgb = kDesktopGL && glIsEnabled(GL_FRAMEBUFFER_SRGB);
                 float nearZ = 0.05f, farZ = 1000.0f;
                 entt::entity background = entt::null;
                 const glm::mat4 origin = OriginWorld(scene, nearZ, farZ, background);
@@ -994,7 +1100,7 @@ namespace Conqueror::OpenXR
                     glDisable(GL_DEPTH_TEST);
                     glDisable(GL_BLEND);
                     glDisable(GL_CULL_FACE);
-                    if (s_SrgbSwapchain) glEnable(GL_FRAMEBUFFER_SRGB); else glDisable(GL_FRAMEBUFFER_SRGB);
+                    if (kDesktopGL) { if (s_SrgbSwapchain) glEnable(GL_FRAMEBUFFER_SRGB); else glDisable(GL_FRAMEBUFFER_SRGB); }
                     if (s_Resolve && s_Resolve->IsValid())
                     {
                         s_Resolve->Bind();
@@ -1021,7 +1127,7 @@ namespace Conqueror::OpenXR
                 if (blend) glEnable(GL_BLEND); else glDisable(GL_BLEND);
                 if (cull) glEnable(GL_CULL_FACE); else glDisable(GL_CULL_FACE);
                 if (scissor) glEnable(GL_SCISSOR_TEST); else glDisable(GL_SCISSOR_TEST);
-                if (srgb) glEnable(GL_FRAMEBUFFER_SRGB); else glDisable(GL_FRAMEBUFFER_SRGB);
+                if (kDesktopGL) { if (srgb) glEnable(GL_FRAMEBUFFER_SRGB); else glDisable(GL_FRAMEBUFFER_SRGB); }
                 layer.space = s_AppSpace;
                 layer.viewCount = 2;
                 layer.views = projViews;

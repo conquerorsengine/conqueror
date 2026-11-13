@@ -26,6 +26,37 @@ jobs:
       - name: Build
         run: cmake --build build --parallel
 
+  linux-arm64:
+    name: Linux ARM64 (GCC 14, editor + player; Raspberry Pi 4 / 5, ARM laptops)
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build g++-14 libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
+            libxkbcommon-dev libwayland-dev wayland-protocols libgtk-3-dev libgl-dev python3-dev
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc-14 -DCMAKE_CXX_COMPILER=g++-14
+      - name: Build
+        run: cmake --build build --parallel
+
+  linux-arm64-cross:
+    name: Linux ARM64 player (cross-compiled from x86_64 with clang, Tools/Linux)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y ninja-build clang lld
+      - name: ARM64 sysroot (Debian arm64 packages)
+        run: Tools/Linux/make-arm64-sysroot.sh $HOME/arm64-sysroot
+      - name: Configure
+        run: >
+          cmake -S . -B build-arm64 -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=Tools/Linux/arm64-cross.toolchain.cmake
+          -DCQ_ARM64_SYSROOT=$HOME/arm64-sysroot -DCQ_RUNTIME_ONLY=ON -DGLFW_BUILD_WAYLAND=OFF
+      - name: Build
+        run: cmake --build build-arm64 --target ConquerorRuntime --parallel
+
   linux-embedded:
     name: Linux player for AGL / Yocto (Wayland only, OpenGL ES default)
     runs-on: ubuntu-24.04
@@ -53,6 +84,18 @@ jobs:
       - name: Build
         # Yalnız hatalar ve özet (binlerce üçüncü taraf uyarısı asıl hatayı gömüyordu); her proje /MP ile zaten tüm
         # çekirdekleri kullanır, aynı anda en çok 2 proje (bellek tükenip cl.exe sessizce düşmesin)
+        run: cmake --build build --config Release --parallel 2 -- '/clp:ErrorsOnly;Summary' /v:minimal
+
+  windows-arm64:
+    name: Windows on ARM (MSVC ARM64)
+    runs-on: windows-11-arm
+    # İlk ARM64 Windows derlemeleri burada yapılıyor (yerelde ARM64 Windows yok): yeşile dönene kadar iş akışını düşürmez
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+      - name: Configure
+        run: cmake -S . -B build -G "Visual Studio 17 2022" -A ARM64
+      - name: Build
         run: cmake --build build --config Release --parallel 2 -- '/clp:ErrorsOnly;Summary' /v:minimal
 
   macos:
@@ -86,6 +129,55 @@ jobs:
           run: |
             cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCQ_RUNTIME_ONLY=ON
             cmake --build build --target ConquerorRuntime
+
+  openbsd:
+    name: OpenBSD (player, in a VM)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build inside OpenBSD
+        uses: vmactions/openbsd-vm@v1
+        with:
+          mem: 12288
+          prepare: |
+            pkg_add -I cmake ninja
+          run: |
+            cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCQ_RUNTIME_ONLY=ON
+            cmake --build build --target ConquerorRuntime
+
+  netbsd:
+    name: NetBSD (player, in a VM)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build inside NetBSD
+        uses: vmactions/netbsd-vm@v1
+        with:
+          mem: 12288
+          prepare: |
+            /usr/sbin/pkg_add pkgin || true
+            pkgin -y install cmake ninja-build
+          run: |
+            cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCQ_RUNTIME_ONLY=ON
+            cmake --build build --target ConquerorRuntime
+
+  hurd:
+    name: GNU/Hurd (player, cross-compiled with clang)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y ninja-build clang lld
+      - name: GNU/Hurd sysroot (Debian hurd-amd64 packages)
+        run: Tools/Hurd/make-sysroot.sh $HOME/hurd-sysroot
+      - name: Configure
+        run: >
+          cmake -S . -B build-hurd -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=Tools/Hurd/hurd-cross.toolchain.cmake
+          -DCQ_HURD_SYSROOT=$HOME/hurd-sysroot -DCQ_RUNTIME_ONLY=ON -DGLFW_BUILD_WAYLAND=OFF
+      - name: Build
+        run: cmake --build build-hurd --target ConquerorRuntime --parallel
 
   android:
     name: Android (NDK, arm64-v8a player)

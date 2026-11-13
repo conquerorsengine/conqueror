@@ -121,6 +121,8 @@ namespace
             case AKEYCODE_FORWARD_DEL: return GLFW_KEY_DELETE;
             case AKEYCODE_TAB: return GLFW_KEY_TAB;
             case AKEYCODE_ESCAPE: case AKEYCODE_BACK: return GLFW_KEY_ESCAPE;
+            // Android TV / Google TV kumandası: orta (OK) tuşu onaylar (UI Submit)
+            case AKEYCODE_DPAD_CENTER: return GLFW_KEY_ENTER;
             case AKEYCODE_DPAD_UP: return GLFW_KEY_UP;
             case AKEYCODE_DPAD_DOWN: return GLFW_KEY_DOWN;
             case AKEYCODE_DPAD_LEFT: return GLFW_KEY_LEFT;
@@ -250,6 +252,8 @@ namespace
     }
 
     // Yeni kare: önceki karede ertelenen bırakmalar uygulanır
+    void SyncWindowSize(GLFWwindow* w);
+
     void BeginFrame()
     {
         ++s.Frame;
@@ -259,6 +263,9 @@ namespace
         GLFWwindow* w = s.Window;
         if (!w)
             return;
+        // Sürüklenerek boyutlandırılan pencere her karede (olay gelmese de) yeni boyutuna uyar
+        if (w->Surface != EGL_NO_SURFACE)
+            SyncWindowSize(w);
         for (auto [key, scancode] : w->DeferredKeyUps)
             if (w->Keys[key] == GLFW_PRESS)
             {
@@ -330,7 +337,13 @@ namespace
             {
                 SetCursor(w, x, y);
                 const int32_t buttons = AMotionEvent_getButtonState(event);
-                SetMouse(w, GLFW_MOUSE_BUTTON_LEFT, (buttons & AMOTION_EVENT_BUTTON_PRIMARY) != 0);
+                // Düğme durumu olmadan gelen basış (bazı dokunmatik yüzeyler, enjekte edilen tıklama): sol tık, bırakılana kadar
+                static bool s_ImplicitPrimary = false;
+                if (action == AMOTION_EVENT_ACTION_DOWN && buttons == 0)
+                    s_ImplicitPrimary = true;
+                else if (action == AMOTION_EVENT_ACTION_UP || action == AMOTION_EVENT_ACTION_CANCEL)
+                    s_ImplicitPrimary = false;
+                SetMouse(w, GLFW_MOUSE_BUTTON_LEFT, (buttons & AMOTION_EVENT_BUTTON_PRIMARY) != 0 || s_ImplicitPrimary);
                 SetMouse(w, GLFW_MOUSE_BUTTON_RIGHT, (buttons & AMOTION_EVENT_BUTTON_SECONDARY) != 0);
                 SetMouse(w, GLFW_MOUSE_BUTTON_MIDDLE, (buttons & AMOTION_EVENT_BUTTON_TERTIARY) != 0);
                 return 1;
@@ -417,6 +430,23 @@ namespace
             w->SizeCallback(w, cw, ch);
     }
 
+    // Pencere boyutu: EGL yüzeyinin boyutu ancak sonraki takastan sonra değişir; serbest pencerede (ChromeOS, masaüstü kipi,
+    // çoklu pencere) yeniden boyutlandırma anında doğrusu ANativeWindow'dan okunur
+    void SyncWindowSize(GLFWwindow* w)
+    {
+        if (!w || !s.App || !s.App->window)
+            return;
+        const int width = ANativeWindow_getWidth(s.App->window), height = ANativeWindow_getHeight(s.App->window);
+        if (width > 0 && height > 0 && (width != w->Width || height != w->Height))
+        {
+            w->Width = width;
+            w->Height = height;
+            s.Mode.width = width;
+            s.Mode.height = height;
+        }
+        UpdateContentRect(w, true);
+    }
+
     bool CreateSurface(GLFWwindow* w)
     {
         if (!s.App || !s.App->window || s.Display == EGL_NO_DISPLAY) return false;
@@ -457,17 +487,7 @@ namespace
             case APP_CMD_WINDOW_RESIZED:
             case APP_CMD_CONFIG_CHANGED:
                 if (s.Window && s.Window->Surface != EGL_NO_SURFACE)
-                {
-                    int width = 0, height = 0;
-                    eglQuerySurface(s.Display, s.Window->Surface, EGL_WIDTH, &width);
-                    eglQuerySurface(s.Display, s.Window->Surface, EGL_HEIGHT, &height);
-                    if (width != s.Window->Width || height != s.Window->Height)
-                    {
-                        s.Window->Width = width;
-                        s.Window->Height = height;
-                    }
-                    UpdateContentRect(s.Window, true);
-                }
+                    SyncWindowSize(s.Window);
                 break;
             case APP_CMD_CONTENT_RECT_CHANGED:
                 UpdateContentRect(s.Window, true);
@@ -816,6 +836,7 @@ extern "C"
     void glfwSetClipboardString(GLFWwindow*, const char* text) { s.Clipboard = text ? text : ""; }
     void glfwFocusWindow(GLFWwindow*) {}
     void glfwShowWindow(GLFWwindow*) {}
+    void glfwHideWindow(GLFWwindow*) {}   // tek tam ekran pencere: ek pencereler (Window bileşeni) bu platformda açılmaz
     void glfwSetWindowOpacity(GLFWwindow*, float) {}
     GLFWmonitor** glfwGetMonitors(int* count)
     {

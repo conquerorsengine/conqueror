@@ -23,7 +23,8 @@ inline void query_counter_frequency(timer_ticks* pTicks) {
   QueryPerformanceFrequency(reinterpret_cast<LARGE_INTEGER*>(pTicks));
 }
 #elif defined(__GNUC__)
-#include <sys/timex.h>
+// MODIFIED by Conqueror's Engine: only gettimeofday is used; <sys/timex.h> is Linux-only
+#include <sys/time.h>
 inline void query_counter(timer_ticks* pTicks) {
   struct timeval cur_time;
   gettimeofday(&cur_time, NULL);

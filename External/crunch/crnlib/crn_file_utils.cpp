@@ -1,6 +1,11 @@
 // File: crn_file_utils.cpp
 // See Copyright Notice and license at the end of inc/crnlib.h
 #include "crn_core.h"
+// MODIFIED by Conqueror's Engine: PATH_MAX is not defined on GNU Hurd (no path length limit)
+#include <climits>
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 #include "crn_file_utils.h"
 #include "crn_strutils.h"
 
