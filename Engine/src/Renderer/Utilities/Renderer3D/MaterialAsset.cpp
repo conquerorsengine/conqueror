@@ -215,6 +215,18 @@ namespace Conqueror
             return Load(DefaultGridPath());
         }
 
+        const std::string& DefaultGridWorldPath()
+        {
+            static const std::string path =
+                std::filesystem::path(SceneSerializer::ResolveAssetPath("CQ:Resources/Packages/Core/Materials/Default Grid World.cqmat")).lexically_normal().string();
+            return path;
+        }
+
+        std::shared_ptr<Material> DefaultGridWorld()
+        {
+            return Load(DefaultGridWorldPath());
+        }
+
         bool IsReadOnly(const std::string& path)
         {
             if (path.empty())

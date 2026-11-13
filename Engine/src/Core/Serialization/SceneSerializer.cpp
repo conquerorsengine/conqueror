@@ -2701,10 +2701,11 @@ namespace Conqueror
                                                  legacy.Offset == glm::vec2(0.0f) && !legacy.WorldAlignedUV && !legacy.NormalMap && !legacy.MaskMap &&
                                                  !legacy.Unlit && !legacy.AlphaClip &&
                                                  (texPath == "CQ:Resources/Textures/texture_grid.png" || texPath == "CQ:Resources/Packages/Core/Textures/Grid.png");
-                        if (defaultGrid && MaterialAsset::DefaultGrid())
+                        // Eski varsayılan dama dünyaya sabitti: görünüm değişmesin diye dünya hizalı kopyası
+                        if (defaultGrid && MaterialAsset::DefaultGridWorld())
                         {
-                            mrc.MaterialPath = MaterialAsset::DefaultGridPath();
-                            mrc.MaterialInstance = MaterialAsset::DefaultGrid();
+                            mrc.MaterialPath = MaterialAsset::DefaultGridWorldPath();
+                            mrc.MaterialInstance = MaterialAsset::DefaultGridWorld();
                         }
                         else
                         {
@@ -2715,9 +2716,9 @@ namespace Conqueror
                     }
                     else
                     {
-                        // Ne malzeme ne eski alan: varsayılan malzeme (eklemede atanan)
-                        mrc.MaterialPath = MaterialAsset::DefaultGridPath();
-                        mrc.MaterialInstance = MaterialAsset::DefaultGrid();
+                        // Ne malzeme ne eski alan: o sürümde eklemede atanan varsayılan (dünyaya sabit dama), görünüm değişmez
+                        mrc.MaterialPath = MaterialAsset::DefaultGridWorldPath();
+                        mrc.MaterialInstance = MaterialAsset::DefaultGridWorld();
                         if (!mrc.MaterialInstance)
                             mrc.MaterialPath.clear();
                     }

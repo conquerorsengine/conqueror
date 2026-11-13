@@ -316,11 +316,30 @@ namespace Conqueror::Editor::MaterialEditorUI
         {
             changed |= UI::Vec2("Tiling", m.Tiling, 0.05f);
             changed |= UI::Vec2("Offset", m.Offset, 0.01f);
-            changed |= UI::Checkbox("World Aligned", m.WorldAligned,
-                                    "UVs from the world position (three-axis projection): Tiling = repeats per meter. "
-                                    "Scaled blocks keep the same texel size (Unreal WorldAlignedTexture)");
-            if (m.WorldAligned)
-                changed |= UI::Checkbox("Align To Object", m.AlignToObject, "Projection in object space: the texture moves with the object");
+            // İki bayrak üç kip: kendi UV'si (WorldAligned kapalı), nesne uzayında metre izdüşümü (WorldAligned + AlignToObject: doku
+            // nesneyle gider, ölçekte boyutu korunur; varsayılan dama), dünyaya sabit (yalnız WorldAligned: Unreal WorldAlignedTexture,
+            // Godot World Triplanar). "World Aligned" kutusu yalnız dünyaya sabit kipi gösterir
+            bool worldFixed = m.WorldAligned && !m.AlignToObject;
+            if (UI::Checkbox("World Aligned", worldFixed,
+                             "The texture stays fixed in the world: moving the object slides it over the surface, and blocks placed side by "
+                             "side continue the pattern seamlessly (Unreal WorldAlignedTexture, Godot World Triplanar). Tiling = repeats per meter"))
+            {
+                m.WorldAligned = true;
+                m.AlignToObject = !worldFixed;   // kapatınca nesneye yapışık metre izdüşümüne döner (desen ölçeği korunur)
+                changed = true;
+            }
+            if (!worldFixed)
+            {
+                bool objectMeters = m.WorldAligned && m.AlignToObject;
+                if (UI::Checkbox("Object Space Projection", objectMeters,
+                                 "UVs from the object's own position in meters (three-axis projection): the texture moves and turns with the object "
+                                 "and keeps its size when the object is scaled. Off: the mesh's own UVs"))
+                {
+                    m.WorldAligned = objectMeters;
+                    m.AlignToObject = objectMeters;
+                    changed = true;
+                }
+            }
             UI::EndSection();
         }
 

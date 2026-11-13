@@ -134,9 +134,11 @@ namespace Conqueror::MeshRendererMaterial
         const bool emissionFollows = m.EmissionMap && m.EmissionMap == m.AlbedoMap;
         // Varsayılan dama malzemesinin dünya hizalı UV'si ve döşemesi dama dokusuna aittir: başka doku verilince (betikteki mermi
         // izi, Inspector'da Base Map) doku nesnenin kendi UV'siyle bir kez kaplanır. Değiştirilmiş döşeme / hizalama korunur.
-        if (auto grid = MaterialAsset::DefaultGrid(); grid && m.AlbedoMap && m.AlbedoMap == grid->AlbedoMap && texture != grid->AlbedoMap &&
-                                                     m.WorldAligned == grid->WorldAligned && m.AlignToObject == grid->AlignToObject &&
-                                                     m.Tiling == grid->Tiling && m.Offset == grid->Offset)
+        auto isDefaultGrid = [&](const std::shared_ptr<Material>& grid) {
+            return grid && m.AlbedoMap && m.AlbedoMap == grid->AlbedoMap && texture != grid->AlbedoMap && m.WorldAligned == grid->WorldAligned &&
+                   m.AlignToObject == grid->AlignToObject && m.Tiling == grid->Tiling && m.Offset == grid->Offset;
+        };
+        if (isDefaultGrid(MaterialAsset::DefaultGrid()) || isDefaultGrid(MaterialAsset::DefaultGridWorld()))
         {
             m.WorldAligned = false;
             m.AlignToObject = false;

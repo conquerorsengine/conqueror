@@ -1,0 +1,15 @@
+# template: basic3d
+# 234: yeni Plane / Cube'un dama deseni nesneye yapışık (Unity gibi taşıyınca nesneyle gider), ölçekte kare boyu korunur (nesne uzayında
+# metre izdüşümü); "World Aligned" malzemede kapalı. Eski sahnelerin dünyaya sabit daması (şablonlar) "Default Grid World" ile aynı kalır
+wait 40
+view_option grid off
+view_option gizmos off
+create_primitive Cube Box 0 0.5 0
+comp set Box TransformComponent Scale 2 1 2
+comp expect Box MeshRendererComponent WorldAlignedUV true
+comp expect Box MeshRendererComponent AlignToObject true
+select Box
+camera 5 35 20 0 0.5 0
+wait 60
+viewport_region 0.25 0.25 0.75 0.75 lum mean >10
+quit

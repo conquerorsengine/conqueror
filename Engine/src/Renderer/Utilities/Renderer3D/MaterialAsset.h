@@ -31,9 +31,14 @@ namespace Conqueror
         // Dosya taşındı / yeniden adlandırıldı: önbellek anahtarı ve varyantların üst yolu güncellenir
         CQ_API void OnFileMoved(const std::string& from, const std::string& to);
 
-        // Motorla gelen salt okunur paket (Packages/Core): yeni 3D nesnelerin varsayılan malzemesi (Unreal WorldGridMaterial)
+        // Motorla gelen salt okunur paket (Packages/Core): yeni 3D nesnelerin varsayılan malzemesi. Dama deseni nesneye yapışık
+        // (Unity gibi taşıyınca / döndürünce nesneyle gider), kareler ölçekte de 1 m kalır (nesne uzayında metre izdüşümü)
         CQ_API const std::string& DefaultGridPath();
         CQ_API std::shared_ptr<Material> DefaultGrid();
+        // Dünyaya sabit dama (Unreal WorldGridMaterial): eski sahnelerin varsayılanı; malzemesiz / eski biçimli nesneler bununla
+        // yüklenir, görünümleri değişmez
+        CQ_API const std::string& DefaultGridWorldPath();
+        CQ_API std::shared_ptr<Material> DefaultGridWorld();
         // Motor kaynaklarındaki dosyalar (Packages) düzenlenemez
         CQ_API bool IsReadOnly(const std::string& path);
 

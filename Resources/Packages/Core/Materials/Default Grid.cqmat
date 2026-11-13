@@ -5,3 +5,4 @@ Material:
   AlbedoMap: CQ:Resources/Packages/Core/Textures/Grid.png
   Tiling: [0.5, 0.5]
   WorldAligned: true
+  AlignToObject: true
