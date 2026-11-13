@@ -290,6 +290,7 @@ namespace Conqueror
     void RegisterMultiMeshComponents();
     void RegisterGodotNodeComponents();
     void RegisterFogVolumeComponents();
+    void RegisterNavigation2DComponents();
     void RegisterRenderTargetComponents();
     void RegisterSkeleton2DComponents();
     void RegisterGridComponents();

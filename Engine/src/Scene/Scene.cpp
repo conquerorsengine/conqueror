@@ -5,6 +5,7 @@
 #include "Scene/AnimationAssets.h"
 #include "Renderer/RayTracing/RayTracedGI.h"
 #include "Scene/FogVolume.h"
+#include "AISystem/Navigation/Navigation2D.h"
 #include "Renderer/Utilities/Renderer3D/ClusterRenderer.h"
 #include "Renderer/LightProfile.h"
 #include "Renderer/ExtraTextures.h"
@@ -224,6 +225,7 @@ namespace Conqueror
     Scene::~Scene()
     {
         BlendShapes::Forget(*this);
+        Navigation2D::ForgetScene(this);
         Net::NetworkSession::Get().OnSceneStopped(this);
         TimelineSystem::ForgetScene(this);
         VideoPlayers::Release(this);
@@ -302,6 +304,7 @@ namespace Conqueror
             CQ_PROFILE_SAMPLE("RuntimeStart.Navigation", AI);
             UpdateWorldTransforms();
             NavAgents::OnRuntimeStart(*this);
+            Navigation2D::OnRuntimeStart(*this);   // 2D gezinme bölgeleri (Godot NavigationRegion2D)
         }
 
         // Game Mode: varsayılan oyuncuyu (Default Pawn) bir Player Start'ta oluştur
@@ -315,6 +318,7 @@ namespace Conqueror
     {
         MetaSounds::StopAll(*this);
         WorldPartition::Forget(*this);
+        Navigation2D::ForgetScene(this);
         Fracture::ForgetScene(this);
         Signals::ForgetScene(this);
         Tweens::ForgetScene(this);
@@ -1357,6 +1361,7 @@ namespace Conqueror
         {
             CQ_PROFILE_SAMPLE("AI.NavMeshAgents", AI);
             NavAgents::Update(*this, (float)ts);
+            Navigation2D::Update(*this, (float)ts);
             Foliage::Update(*this);
             BehaviorTrees::Update(*this, (float)ts);
             AssetRuntime::Update(*this, (float)ts);
@@ -2544,6 +2549,7 @@ namespace Conqueror
         if (m_OcclusionVisualize)
             OcclusionCulling::DrawCells(*this, camera.GetPosition());
         WorldActors::DrawEditorGizmos(*this, m_EditorSelection);
+        Navigation2D::DrawEditorGizmos(*this, m_EditorSelection);
         for (uint32_t id : m_EditorSelection)
         {
             Lighting2D::DrawGizmo(*this, id);
@@ -3733,6 +3739,10 @@ namespace Conqueror
     CQ_PLAIN_ADDED(VisibleOnScreenEnablerComponent)
     CQ_PLAIN_ADDED(CharacterBody2DComponent)
     CQ_PLAIN_ADDED(FogVolumeComponent)
+    CQ_PLAIN_ADDED(NavigationRegion2DComponent)
+    CQ_PLAIN_ADDED(NavigationAgent2DComponent)
+    CQ_PLAIN_ADDED(NavigationObstacle2DComponent)
+    CQ_PLAIN_ADDED(NavigationLink2DComponent)
     CQ_PLAIN_ADDED(RenderTargetComponent)
     CQ_PLAIN_ADDED(FullScreenPassComponent)
     CQ_PLAIN_ADDED(SignalReceiverComponent)

@@ -94,7 +94,7 @@ namespace Conqueror
     struct StreamedLevelComponent; struct LevelStreamingVolumeComponent; struct AnimationPlayerComponent;
     struct AutoLODComponent;
     struct SoundOcclusionComponent; struct SoundConcurrencyComponent;
-    struct VertexPaintComponent; struct FractureComponent; struct RagdollComponent; struct VirtualGeometryComponent; struct CharacterCustomizerComponent; struct SignalConnectionsComponent; struct SignalReceiverComponent; struct CSGShapeComponent; struct MultiMeshComponent; struct RemoteTransformComponent; struct RayCastComponent; struct VisibleOnScreenNotifierComponent; struct Parallax2DComponent; struct TimerComponent; struct ShapeCastComponent; struct VisibleOnScreenEnablerComponent; struct CharacterBody2DComponent; struct FogVolumeComponent; struct RenderTargetComponent; struct Bone2DComponent; struct IK2DComponent;
+    struct VertexPaintComponent; struct FractureComponent; struct RagdollComponent; struct VirtualGeometryComponent; struct CharacterCustomizerComponent; struct SignalConnectionsComponent; struct SignalReceiverComponent; struct CSGShapeComponent; struct MultiMeshComponent; struct RemoteTransformComponent; struct RayCastComponent; struct VisibleOnScreenNotifierComponent; struct Parallax2DComponent; struct TimerComponent; struct ShapeCastComponent; struct VisibleOnScreenEnablerComponent; struct CharacterBody2DComponent; struct FogVolumeComponent; struct NavigationRegion2DComponent; struct NavigationAgent2DComponent; struct NavigationObstacle2DComponent; struct NavigationLink2DComponent; struct RenderTargetComponent; struct Bone2DComponent; struct IK2DComponent;
     struct RigComponent; struct TwoBoneIKConstraintComponent; struct MultiAimConstraintComponent; struct ChainIKConstraintComponent; struct DampedTransformComponent;
     struct ProjectileMovementComponent; struct SortingGroupComponent; struct PrefabInstanceComponent;
     struct GridComponent; struct TilemapComponent; struct TilemapCollider2DComponent;
@@ -680,6 +680,10 @@ namespace Conqueror
     CQ_DECL_ADDED(VisibleOnScreenEnablerComponent)
     CQ_DECL_ADDED(CharacterBody2DComponent)
     CQ_DECL_ADDED(FogVolumeComponent)
+    CQ_DECL_ADDED(NavigationRegion2DComponent)
+    CQ_DECL_ADDED(NavigationAgent2DComponent)
+    CQ_DECL_ADDED(NavigationObstacle2DComponent)
+    CQ_DECL_ADDED(NavigationLink2DComponent)
     CQ_DECL_ADDED(RenderTargetComponent)
     CQ_DECL_ADDED(Bone2DComponent)
     CQ_DECL_ADDED(IK2DComponent)
