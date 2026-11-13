@@ -1,0 +1,9 @@
+using nativebridge;
+// 25 (Godot NavigationServer2D / NavigationAgent2D): duvarın etrafından yol, duvarın içi yürünemez
+var path = Nav2DFindPath(-3, 0, 3, 0);
+var wallFree = Nav2DIsWalkable(0, 0);
+var openOk = Nav2DIsWalkable(-3, 0);
+var near = Nav2DClosestPoint(0, 0, 5);
+var sent = NavAgent2DSetTarget("Agent", 3, 0);
+LogInfo("REGRESSION nav2d path=" + len(path) + " wall=" + wallFree + " open=" + openOk + " sent=" + sent);
+if (len(path) >= 3 && !wallFree && openOk && near != null && sent) { CreateEntity("Nav2D_PathOK"); }

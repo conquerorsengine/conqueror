@@ -1,0 +1,20 @@
+# template: basic2d
+# 25 (Godot NavigationAgent2D / NavigationServer2D betikten): bölge + statik duvar; Nav2DFindPath duvarı dolanır, duvarın içi
+# yürünemez, NavAgent2DSetTarget ile gönderilen ajan duvarın öbür yanına yürüyüp biter
+wait 40
+entity create Region 0 0 0
+comp add Region NavigationRegion2DComponent
+entity create Wall 0 0 0
+comp add Wall BoxCollider2DComponent
+comp set Wall BoxCollider2DComponent Size 0.6 6
+entity create Agent -3 0 0
+comp add Agent NavigationAgent2DComponent
+play
+wait 20
+run_cqs_file "{dir}/checks/nav2d_path.cqs"
+expect_entities 1 Nav2D_PathOK
+wait 400
+run_cqs_file "{dir}/checks/nav2d_arrived.cqs"
+expect_entities 1 Nav2D_Arrived
+stop
+quit

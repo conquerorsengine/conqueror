@@ -18,6 +18,7 @@
 #include "Scene/RigConstraints.h"
 #include "AISystem/Navigation/NavAgents.h"
 #include "AISystem/Navigation/NavMesh.h"
+#include "AISystem/Navigation/Navigation2D.h"
 #include "Scene/VideoPlayer.h"
 #include "Renderer/Utilities/Renderer3D/Mesh.h"
 #include "Particles/ParticleSystem.h"
@@ -790,6 +791,77 @@ namespace Conqueror::CQS
             m->Entries["z"] = Value::MakeFloat(hit.z);
             return Value::MakeObject(m);
         }, 6);
+
+        // ================================================================ 2D gezinme (Godot NavigationAgent2D / NavigationServer2D)
+        // NavAgent2DSetTarget([target,] x, y) -> bool: Godot'daki target_position
+        vm->DefineNative("NavAgent2DSetTarget", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            const int o = argc >= 3 ? 1 : 0;
+            Entity e = argc >= 3 ? Target(args[0]) : Current();
+            if (!scene || !e || argc < 2) return Value::MakeBool(false);
+            return Value::MakeBool(Navigation2D::SetTarget(*scene, (uint32_t)e, { Num(argc, args, o), Num(argc, args, o + 1) }));
+        }, -1);
+        vm->DefineNative("NavAgent2DIsFinished", [](int argc, Value* args) -> Value {
+            auto* a = Get<NavigationAgent2DComponent>(TargetArg(argc, args));
+            return Value::MakeBool(a ? a->Finished : true);
+        }, -1);
+        vm->DefineNative("NavAgent2DIsReachable", [](int argc, Value* args) -> Value {
+            auto* a = Get<NavigationAgent2DComponent>(TargetArg(argc, args));
+            return Value::MakeBool(a ? a->Reachable : false);
+        }, -1);
+        vm->DefineNative("NavAgent2DGetNextPosition", [](int argc, Value* args) -> Value {
+            auto* a = Get<NavigationAgent2DComponent>(TargetArg(argc, args));
+            return a ? Vec2(a->NextPathPosition) : Value::MakeNull();
+        }, -1);
+        vm->DefineNative("NavAgent2DGetVelocity", [](int argc, Value* args) -> Value {
+            auto* a = Get<NavigationAgent2DComponent>(TargetArg(argc, args));
+            return Vec2(a ? a->Velocity : glm::vec2(0.0f));
+        }, -1);
+        vm->DefineNative("NavAgent2DGetPathLength", [](int argc, Value* args) -> Value {
+            auto* a = Get<NavigationAgent2DComponent>(TargetArg(argc, args));
+            return Value::MakeFloat(a ? a->PathLength : 0.0f);
+        }, -1);
+        vm->DefineNative("NavAgent2DDistanceToTarget", [](int argc, Value* args) -> Value {
+            Entity e = TargetArg(argc, args);
+            auto* a = Get<NavigationAgent2DComponent>(e);
+            if (!a) return Value::MakeFloat(0.0f);
+            const glm::vec2 p = glm::vec2(e.GetComponent<TransformComponent>().WorldTransform[3]);
+            return Value::MakeFloat(glm::length(a->TargetPosition - p));
+        }, -1);
+        vm->DefineNative("NavAgent2DGetPath", [](int argc, Value* args) -> Value {
+            auto* a = Get<NavigationAgent2DComponent>(TargetArg(argc, args));
+            auto* list = new CQSListObject();
+            if (a)
+                for (const auto& p : a->Path)
+                    list->Elements.push_back(Vec2(p));
+            return Value::MakeObject(list);
+        }, -1);
+        // Nav2DFindPath(x0, y0, x1, y1) -> [{x, y}] (boş: yol yok; hedefe varılamazsa en yakın noktaya)
+        vm->DefineNative("Nav2DFindPath", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            auto* list = new CQSListObject();
+            std::vector<glm::vec2> path;
+            if (scene && argc >= 4 && Navigation2D::FindPath(*scene, { Num(argc, args, 0), Num(argc, args, 1) }, { Num(argc, args, 2), Num(argc, args, 3) }, path))
+                for (const auto& p : path)
+                    list->Elements.push_back(Vec2(p));
+            return Value::MakeObject(list);
+        }, 4);
+        vm->DefineNative("Nav2DIsWalkable", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            return Value::MakeBool(scene && argc >= 2 && Navigation2D::IsWalkable(*scene, { Num(argc, args, 0), Num(argc, args, 1) }));
+        }, 2);
+        // Nav2DClosestPoint(x, y, maxDistance = 5) -> {x, y} | null
+        vm->DefineNative("Nav2DClosestPoint", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            glm::vec2 out;
+            if (!scene || argc < 2 || !Navigation2D::ClosestPoint(*scene, { Num(argc, args, 0), Num(argc, args, 1) }, out, Num(argc, args, 2, 5.0f)))
+                return Value::MakeNull();
+            return Vec2(out);
+        }, -1);
+        vm->DefineNative("Nav2DBake", [](int, Value*) -> Value {
+            if (Scene* scene = ActiveScene()) Navigation2D::Bake(*scene);
+            return Value::MakeNull();
+        }, 0);
 
         // GetBonePosition(target, "LeftHand") -> {x, y, z}: iskeletli modelin kemiğinin dünya konumu (son poz, IK dahil)
         vm->DefineNative("GetBonePosition", [](int argc, Value* args) -> Value {

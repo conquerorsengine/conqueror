@@ -1,0 +1,8 @@
+using nativebridge;
+var agent = FindEntity("Agent");
+var p = EntityGetPosition(agent);
+var done = NavAgent2DIsFinished("Agent");
+var reach = NavAgent2DIsReachable("Agent");
+var dist = NavAgent2DDistanceToTarget("Agent");
+LogInfo("REGRESSION nav2d x=" + p.x + " y=" + p.y + " done=" + done + " reach=" + reach + " dist=" + dist);
+if (done && reach && dist < 0.5 && p.x > 2.4) { CreateEntity("Nav2D_Arrived"); }
