@@ -140,8 +140,30 @@ namespace Conqueror::Editor::TileAssetInspector
             changed |= AssetUI::AssetSlot("sprite", "Sprite", Images(), d.Texture);
             AssetUI::Row("Color");
             changed |= ImGui::ColorEdit4("##color", &d.Color.r, ImGuiColorEditFlags_NoInputs);
-            AssetUI::Row("Collider (Solid)");
-            changed |= ImGui::Checkbox("##solid", &d.Solid);
+            // Unity Tile: Collider Type ve Flags, karo başına GameObject
+            AssetUI::Row("Collider Type");
+            {
+                static const char* kCollider[] = { "None", "Sprite", "Grid" };
+                int collider = !d.Solid ? 0 : (d.SpriteCollider ? 1 : 2);
+                ImGui::SetNextItemWidth(-1.0f);
+                if (ImGui::Combo("##collidertype", &collider, kCollider, 3))
+                {
+                    d.Solid = collider != 0;
+                    d.SpriteCollider = collider == 1;
+                    changed = true;
+                }
+            }
+            AssetUI::Row("Lock Color");
+            changed |= ImGui::Checkbox("##lockcolor", &d.LockColor);
+            AssetUI::Row("Lock Transform");
+            changed |= ImGui::Checkbox("##locktransform", &d.LockTransform);
+            AssetUI::Row("GameObject");
+            changed |= AssetUI::AssetSlot("gameobject", "Prefab", { ".cqprefab" }, d.GameObject);
+            if (!d.GameObject.empty())
+            {
+                AssetUI::Row("Instantiate Runtime Only");
+                changed |= ImGui::Checkbox("##goruntime", &d.GameObjectRuntimeOnly);
+            }
             AssetUI::Row("Walkable");
             changed |= ImGui::Checkbox("##walk", &d.Walkable);
             AssetUI::Row("Path Cost");
