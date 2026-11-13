@@ -1,5 +1,7 @@
 #include "Renderer/SpriteAtlas.h"
 #include "BuildPipeline.h"
+#include <crnlib.h>
+#include <thread>
 #include "Build/AssetBundleBuilder.h"
 #include <cstring>
 #include <set>
@@ -13,6 +15,7 @@
 #include "Renderer/RHI/TextureSettings.h"
 
 #include <stb_image.h>
+#include <stb_image_resize2.h>
 #include "stb_image_write.h"
 #include <yaml-cpp/yaml.h>
 
@@ -92,13 +95,14 @@ namespace Conqueror::Editor
             uint64_t Bytes = 0;
         };
 
-        // Use Crunch Compression (Texture Import): oyun klasöründeki görsel kayıplı olarak küçültülür (saydamsız JPEG, saydamlıysa renk
-        // basamakları azaltılmış PNG). Dosya adı değişmez: stb biçimi içerikten tanır. Küçülmüyorsa özgün dosya kalır
+        // Use Crunch Compression (Texture Import), Unity gibi gerçek Crunch (crnlib): oyun klasöründeki görsel MaxSize'a göre küçültülüp
+        // (mip zinciriyle) DXT1 / DXT5 bloklarına kodlanır ve "<görsel>.crn" olarak sıkıştırılır; oyun bu dosyayı doğrudan GPU biçimine
+        // çözer. Read/Write kapalıysa (ve sprite değilse: fizik dış hattı pikselleri okur) özgün görsel oyundan çıkarılır
         void CrunchTextures(const fs::path& assets)
         {
             std::error_code ec;
             uint64_t before = 0, after = 0;
-            int count = 0;
+            int count = 0, removed = 0;
             for (fs::recursive_directory_iterator it(assets, ec), end; !ec && it != end; it.increment(ec))
             {
                 if (it->path().extension() != ".meta")
@@ -112,53 +116,77 @@ namespace Conqueror::Editor
                 if (!TextureImportSettings::Load(image.string(), settings))
                     continue;
                 settings = settings.ForPlatform(TextureImportSettings::CurrentPlatform());
-                if (!settings.UseCrunch || settings.Compression == TextureCompression::None)
+                if (!settings.UseCrunch || settings.Compression == TextureCompression::None || settings.Shape != TextureShape::Texture2D ||
+                    (settings.Type == TextureType::NormalMap && settings.NormalFromGrayscale))
                     continue;
                 if (stbi_is_hdr(image.string().c_str()) || stbi_is_16_bit(image.string().c_str()))
                     continue;
-                stbi_set_flip_vertically_on_load_thread(0);
+                // Motorun dokuları dikey çevrilmiş yüklenir (OpenGL alt-sol köken): .crn de aynı yönde
+                stbi_set_flip_vertically_on_load_thread(1);
                 int w = 0, h = 0, channels = 0;
-                unsigned char* pixels = stbi_load(image.string().c_str(), &w, &h, &channels, 4);
-                if (!pixels)
+                unsigned char* loaded = stbi_load(image.string().c_str(), &w, &h, &channels, 4);
+                stbi_set_flip_vertically_on_load_thread(0);
+                if (!loaded)
                     continue;
+                std::vector<unsigned char> pixels(loaded, loaded + (size_t)w * h * 4);
+                stbi_image_free(loaded);
+                // MaxSize (en-boy oranı korunur)
+                const int maxSize = std::max(32, settings.MaxSize);
+                if (std::max(w, h) > maxSize)
+                {
+                    const float k = (float)maxSize / (float)std::max(w, h);
+                    const int tw = std::max(1, (int)std::lround(w * k)), th = std::max(1, (int)std::lround(h * k));
+                    std::vector<unsigned char> scaled((size_t)tw * th * 4);
+                    stbir_resize(pixels.data(), w, h, 0, scaled.data(), tw, th, 0, STBIR_RGBA,
+                                 settings.Type == TextureType::NormalMap ? STBIR_TYPE_UINT8 : STBIR_TYPE_UINT8_SRGB, STBIR_EDGE_CLAMP, STBIR_FILTER_MITCHELL);
+                    pixels.swap(scaled);
+                    w = tw;
+                    h = th;
+                }
                 bool hasAlpha = false;
                 for (size_t i = 0; i < (size_t)w * h && !hasAlpha; ++i)
                     hasAlpha = pixels[i * 4 + 3] != 255;
-                std::vector<unsigned char> encoded;
-                auto sink = [](void* context, void* data, int size) {
-                    auto& out = *(std::vector<unsigned char>*)context;
-                    out.insert(out.end(), (unsigned char*)data, (unsigned char*)data + size);
-                };
-                const int quality = std::clamp(settings.CrunchQuality, 0, 100);
-                if (!hasAlpha)
+                crn_comp_params comp;
+                comp.m_width = (crn_uint32)w;
+                comp.m_height = (crn_uint32)h;
+                comp.m_format = hasAlpha ? cCRNFmtDXT5 : cCRNFmtDXT1;
+                comp.m_file_type = cCRNFileTypeCRN;
+                comp.m_pImages[0][0] = reinterpret_cast<const crn_uint32*>(pixels.data());
+                // Compressor Quality 0..100 -> Crunch kalite seviyesi 0..255 (Unity ile aynı ölçek)
+                comp.m_quality_level = (crn_uint32)std::clamp(settings.CrunchQuality * 255 / 100, (int)cCRNMinQualityLevel, (int)cCRNMaxQualityLevel);
+                comp.m_num_helper_threads = std::min(15u, std::max(1u, std::thread::hardware_concurrency()) - 1u);
+                const bool linear = settings.Type == TextureType::NormalMap;
+                comp.set_flag(cCRNCompFlagPerceptual, !linear);
+                crn_mipmap_params mips;
+                mips.m_mode = settings.Mipmaps ? cCRNMipModeGenerateMips : cCRNMipModeNoMips;
+                mips.m_gamma_filtering = !linear;
+                if (!comp.check())
+                    continue;
+                crn_uint32 size = 0;
+                void* crn = crn_compress(comp, mips, size);
+                if (!crn || size == 0)
                 {
-                    std::vector<unsigned char> rgb((size_t)w * h * 3);
-                    for (size_t i = 0; i < (size_t)w * h; ++i)
-                        for (int k = 0; k < 3; ++k)
-                            rgb[i * 3 + (size_t)k] = pixels[i * 4 + (size_t)k];
-                    stbi_write_jpg_to_func(sink, &encoded, w, h, 3, rgb.data(), 25 + quality * 70 / 100);
+                    CQ_CORE_WARN("[Build] Crunch failed for {0}", image.string());
+                    continue;
                 }
-                else
-                {
-                    const int levels = 8 + quality * 56 / 100;       // kanal başına basamak
-                    for (size_t i = 0; i < (size_t)w * h * 4; ++i)
-                        if (i % 4 != 3)
-                            pixels[i] = (unsigned char)std::lround(std::floor(pixels[i] / 255.0f * (float)(levels - 1) + 0.5f) * 255.0f / (float)(levels - 1));
-                    stbi_write_png_to_func(sink, &encoded, w, h, 4, pixels, w * 4);
-                }
-                stbi_image_free(pixels);
                 const uint64_t original = (uint64_t)fs::file_size(image, fe);
-                if (!encoded.empty() && encoded.size() < original)
                 {
-                    std::ofstream out(image, std::ios::binary | std::ios::trunc);
-                    out.write((const char*)encoded.data(), (std::streamsize)encoded.size());
-                    before += original;
-                    after += encoded.size();
-                    ++count;
+                    std::ofstream out(image.string() + ".crn", std::ios::binary | std::ios::trunc);
+                    out.write((const char*)crn, (std::streamsize)size);
+                }
+                crn_free_block(crn);
+                before += original;
+                after += size;
+                ++count;
+                if (!settings.ReadWrite && settings.Type != TextureType::Sprite)
+                {
+                    fs::remove(image, fe);
+                    ++removed;
                 }
             }
             if (count > 0)
-                CQ_CORE_INFO("[Build] Crunch: {0} texture(s), {1} KB -> {2} KB", count, before / 1024, after / 1024);
+                CQ_CORE_INFO("[Build] Crunch: {0} texture(s) encoded ({1} KB images -> {2} KB .crn), {3} original image(s) left out",
+                             count, before / 1024, after / 1024, removed);
         }
 
         bool CopyTree(const fs::path& src, const fs::path& dst, CopyStats& stats, std::string& error, const std::atomic<bool>* cancel)

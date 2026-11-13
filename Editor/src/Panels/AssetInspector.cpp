@@ -438,6 +438,8 @@ namespace Conqueror::Editor::AssetInspector
             ImGui::BeginDisabled(!s.Mipmaps || s.Filter == TextureFilter::Point);
             UI::SliderInt("Aniso Level", s.Anisotropy, 1, 16, "Sharper textures on surfaces seen at grazing angles");
             ImGui::EndDisabled();
+            UI::Checkbox("Read/Write", s.ReadWrite, "Keeps the image's pixels readable in the game (scripts, generated sprite physics shapes). "
+                                                    "Off: a crunched texture ships only as its .crn data (smaller build)");
             UI::Checkbox("Generate Mipmaps", s.Mipmaps, "Smaller copies used at a distance: removes shimmering on 3D surfaces");
             // Unity Streaming Mipmaps (Texture Streaming açıkken: Project Settings > Quality)
             ImGui::BeginDisabled(!s.Mipmaps);
@@ -473,7 +475,8 @@ namespace Conqueror::Editor::AssetInspector
                 if (UI::Combo("Compression", c, compressions, 4, "GPU block compression: less video memory. Low / Normal: DXT1 or DXT5, High: BC7"))
                     compression = (TextureCompression)c;
                 ImGui::BeginDisabled(compression == TextureCompression::None);
-                UI::Checkbox("Use Crunch Compression", crunch, "Lossy re-encoding of the image file when the game is built: a smaller build (JPEG, or reduced-color PNG with transparency)");
+                UI::Checkbox("Use Crunch Compression", crunch, "Crunch (crnlib, like Unity): when the game is built the texture is encoded to DXT1 / DXT5 blocks and "
+                                                              "crunched into a small .crn file; the game unpacks it straight to the GPU format (smaller build, faster loading)");
                 if (crunch)
                     UI::SliderInt("Compressor Quality", crunchQuality, 0, 100, "Higher: better image, larger file");
                 ImGui::EndDisabled();

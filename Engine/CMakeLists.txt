@@ -137,6 +137,8 @@ endif()
 # ── Betik dilleri ──
 # Luau (gömülü, her platformda)
 target_link_libraries(${PROJECT_NAME} PRIVATE Luau.Compiler Luau.VM Luau.CodeGen)
+# Crunch (crnlib): .crn dokularını çözme (motor) ve kodlama (editör derlemesi)
+target_link_libraries(${PROJECT_NAME} PUBLIC crnlib)
 target_compile_definitions(${PROJECT_NAME} PRIVATE CQ_LUAU_ENABLED)
 
 # ── Vulkan arka ucu ── (GL -> Vulkan 1.2/1.3 çeviri katmanı; --vulkan / CQ_RENDERER=vulkan / Player Settings ile seçilir)

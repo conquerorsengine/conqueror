@@ -4735,6 +4735,8 @@ namespace Conqueror::Editor
                     else if (k == "format") s.Format = v == "rgba32" ? TextureFormatChoice::RGBA32 : v == "rgb24" ? TextureFormatChoice::RGB24 : v == "r8" ? TextureFormatChoice::R8 : TextureFormatChoice::Automatic;
                     else if (k == "compression") s.Compression = v == "low" ? TextureCompression::LowQuality : v == "normal" ? TextureCompression::NormalQuality : v == "high" ? TextureCompression::HighQuality : TextureCompression::None;
                     else if (k == "crunch") s.UseCrunch = v == "true" || v == "1";
+                    else if (k == "crunch_quality") s.CrunchQuality = std::atoi(v.c_str());
+                    else if (k == "readwrite") s.ReadWrite = v == "true" || v == "1";
                     else if (k == "pc_maxsize") { s.Platforms[0].Override = true; s.Platforms[0].MaxSize = std::atoi(v.c_str()); }
                     else { err = "unknown key " + k; return false; }
                 }
@@ -6340,6 +6342,13 @@ namespace Conqueror::Editor
             if (a[1] == "expect_file" && a.size() > 2)
             {
                 if (!std::filesystem::exists(project / a[2], ec)) { err = "missing " + a[2]; return false; }
+                return true;
+            }
+            if (a[1] == "copy" && a.size() > 3)
+            {
+                std::filesystem::create_directories((project / a[3]).parent_path(), ec);
+                std::filesystem::copy_file(project / a[2], project / a[3], std::filesystem::copy_options::overwrite_existing, ec);
+                if (ec) { err = ec.message(); return false; }
                 return true;
             }
             if (a[1] == "move_out" && a.size() > 2)

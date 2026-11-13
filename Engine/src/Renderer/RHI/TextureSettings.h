@@ -62,6 +62,9 @@ namespace Conqueror
         // kadar GPU'ya yüklenir; bütçe aşılınca önce düşük öncelikliler küçülür
         bool StreamingMipmaps = false;
         int StreamingPriority = 0;       // Mip Map Priority (-128..127)
+        // Unity Read/Write: görselin pikselleri oyunda da okunabilir kalır (betik, sprite fizik dış hattı ...). Kapalıyken Crunch'lanan
+        // doku oyuna yalnız .crn olarak girer (daha küçük derleme)
+        bool ReadWrite = false;
         PlatformTextureSettings Platforms[kTexturePlatformCount];
 
         bool operator==(const TextureImportSettings& o) const;

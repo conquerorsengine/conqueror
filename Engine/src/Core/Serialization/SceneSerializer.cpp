@@ -230,6 +230,9 @@ namespace Conqueror
                 auto absolute = projectDir / p;
                 if (std::filesystem::exists(absolute, ec))
                     return absolute.string();
+                // Crunch'lanmış doku: oyunda yalnız "<görsel>.crn" olabilir (Read/Write kapalı); doku yükleyicisi .crn'yi kendisi açar
+                if (std::filesystem::exists(absolute.string() + ".crn", ec))
+                    return absolute.string();
                 // Açık AssetBundle'lardaki varlık (oyun derlemesinde olmayan, pakette gelen)
                 if (std::string bundled = AssetBundles::ResolveMounted(path); !bundled.empty())
                     return bundled;

@@ -7,6 +7,9 @@
 
 #include <stb_image.h>
 #include <stb_image_resize2.h>
+// Crunch çözücüsü (uygulama crnlib'in crn_decomp.cpp'sinde)
+#define CRND_HEADER_FILE_ONLY
+#include <crn_decomp.h>
 
 #include <algorithm>
 #include <cmath>
@@ -226,6 +229,56 @@ namespace Conqueror
     }
 
     // ------------------------------------------------------------------ Yükleme
+
+    bool OpenGLTexture2D::LoadCrunched(const std::vector<uint8_t>& data)
+    {
+        crnd::crn_texture_info info;
+        if (data.empty() || !crnd::crnd_get_texture_info(data.data(), (crnd::uint32)data.size(), &info))
+            return false;
+        const bool dxt5 = info.m_format == cCRNFmtDXT5, dxt1 = info.m_format == cCRNFmtDXT1;
+        if ((!dxt1 && !dxt5) || info.m_faces != 1 || !GLAD_GL_EXT_texture_compression_s3tc)
+            return false;
+        crnd::crnd_unpack_context ctx = crnd::crnd_unpack_begin(data.data(), (crnd::uint32)data.size());
+        if (!ctx)
+            return false;
+        Release();
+        m_Width = m_SourceWidth = info.m_width;
+        m_Height = m_SourceHeight = info.m_height;
+        m_SourceChannels = dxt5 ? 4 : 3;
+        // Diğer yüklemelerle aynı: doğrusal biçim, sRGB çözümü gölgelendiricide
+        m_InternalFormat = dxt5 ? GL_COMPRESSED_RGBA_S3TC_DXT5_EXT : GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+        m_DataFormat = dxt5 ? GL_RGBA : GL_RGB;
+        m_DataType = GL_UNSIGNED_BYTE;
+        m_MipLevels = m_Settings.Mipmaps ? std::max(1u, info.m_levels) : 1u;
+        m_Streamed = false;
+        m_StreamLevel = 0;
+        TextureStreaming::Unregister(this);
+        glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
+        glTextureStorage2D(m_RendererID, (GLsizei)m_MipLevels, m_InternalFormat, (GLsizei)m_Width, (GLsizei)m_Height);
+        const uint32_t blockBytes = dxt5 ? 16u : 8u;
+        std::vector<uint8_t> level;
+        bool ok = true;
+        for (uint32_t l = 0; l < m_MipLevels && ok; ++l)
+        {
+            const uint32_t lw = std::max(1u, m_Width >> l), lh = std::max(1u, m_Height >> l);
+            const uint32_t rowPitch = ((lw + 3) / 4) * blockBytes, size = rowPitch * ((lh + 3) / 4);
+            level.resize(size);
+            void* dst = level.data();
+            ok = crnd::crnd_unpack_level(ctx, &dst, size, rowPitch, l);
+            if (ok)
+                glCompressedTextureSubImage2D(m_RendererID, (GLint)l, 0, 0, (GLsizei)lw, (GLsizei)lh, m_InternalFormat, (GLsizei)size, level.data());
+        }
+        crnd::crnd_unpack_end(ctx);
+        if (!ok)
+        {
+            Release();
+            return false;
+        }
+        ApplySampler();
+        m_BytesPerPixel = 1;
+        UpdateMemory(m_Width, m_Height);
+        return true;
+    }
 
     bool OpenGLTexture2D::LoadEncoded(const unsigned char* bytes, size_t size)
     {
@@ -546,6 +599,22 @@ namespace Conqueror
         m_Path = filePath.string();
 
         std::error_code ec;
+        // Crunch'lanmış doku (oyun derlemesi): "<görsel>.crn" önce; özgün görsel Read/Write kapalıysa derlemede yoktur
+        {
+            fs::path crn = filePath;
+            crn += ".crn";
+            if (fs::is_regular_file(crn, ec))
+            {
+                if (fs::path canonical = fs::weakly_canonical(filePath, ec); !ec)
+                    m_Path = canonical.string();
+                TextureImportSettings::Load(m_Path, m_Settings);
+                m_Settings = m_Settings.ForPlatform(TextureImportSettings::CurrentPlatform());
+                std::vector<uint8_t> crnBytes;
+                if (ReadFile(crn.string(), crnBytes) && LoadCrunched(crnBytes))
+                    return;
+                CQ_CORE_WARN("Crunched texture could not be loaded, using the image: {0}", crn.string());
+            }
+        }
         if (!fs::is_regular_file(filePath, ec))
         {
             CQ_CORE_ERROR("Texture file not found: {0}", m_Path);

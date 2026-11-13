@@ -327,6 +327,9 @@ set(LUAU_BUILD_WEB OFF CACHE BOOL "" FORCE)
 set(LUAU_WERROR OFF CACHE BOOL "" FORCE)
 set(LUAU_BUILD_SHARED OFF CACHE BOOL "" FORCE)
 add_subdirectory(luau)
+
+# Crunch (crnlib): Use Crunch Compression'ın gerçek kodlayıcı / çözücüsü
+add_subdirectory(crunch)
 foreach(luau_target Luau.Common Luau.Ast Luau.Bytecode Luau.Inliner Luau.Compiler Luau.Config Luau.Analysis Luau.CodeGen Luau.VM Luau.Require Luau.CLI.lib isocline)
     if(TARGET ${luau_target})
         set_target_properties(${luau_target} PROPERTIES POSITION_INDEPENDENT_CODE ON)

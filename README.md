@@ -449,6 +449,7 @@ More in [Scripting](Docs/Scripting.md) and [Native scripting](Docs/NativeScripti
 | AMD FidelityFX FSR 2 | MIT |
 | NVIDIA Image Scaling | MIT |
 | Snapdragon Game Super Resolution (Qualcomm) | BSD-3-Clause |
+| crunch / crnlib (Binomial, Unity fork) | zlib |
 
 ## License
 

@@ -68,6 +68,8 @@ namespace Conqueror
     private:
         // Kodlanmış görüntüyü çöz + ayarları uygula (boyut sınırı, normal üretimi) + GPU'ya yükle
         bool LoadEncoded(const unsigned char* bytes, size_t size);
+        // Crunch (.crn): DXT1 / DXT5 bloklarına çözülüp sürücü sıkıştırması olmadan yüklenir (Unity Crunch Compression)
+        bool LoadCrunched(const std::vector<uint8_t>& data);
         void Upload(const void* pixels, uint32_t width, uint32_t height, GLenum internalFormat, GLenum dataFormat, GLenum type,
                     uint32_t bytesPerPixel);
         void ApplySampler();

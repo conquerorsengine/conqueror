@@ -1,0 +1,27 @@
+# template: basic3d
+# 186 (Unity Crunch Compression, crnlib): oyun derlenirken doku DXT1 bloklarına kodlanıp .crn'ye sıkıştırılır, Read/Write kapalı
+# olduğundan özgün görsel oyuna girmez; .crn doku yükleyicisiyle doğrudan GPU biçimine açılır (UI Image mavi çizilir)
+# serial
+wait 40
+content_drop "{dir}/assets/loc/flag_blue.png"
+wait 10
+texture set Assets/flag_blue.png compression normal crunch true crunch_quality 60
+build output Builds/CrunchTest
+build platform host
+build start
+wait_until 600000 build expect_done
+build expect_success
+bundle expect_file Builds/CrunchTest/Assets/flag_blue.png.crn
+content exists Builds/CrunchTest/Assets/flag_blue.png 0
+# Projede de yalnız .crn bırak: doku .crn'den yüklenir
+bundle copy Builds/CrunchTest/Assets/flag_blue.png.crn Assets/flag_blue.png.crn
+bundle move_out Assets/flag_blue.png
+ui create Canvas UICanvas
+ui create Image Flag 0 0
+comp set Flag RectTransformComponent SizeDelta 600 400
+comp set Flag UIImageComponent Texture Assets/flag_blue.png
+focus Game
+wait 20
+game_region 0.4 0.4 0.6 0.6 b mean >150
+game_region 0.4 0.4 0.6 0.6 r mean <90
+quit
