@@ -32,6 +32,11 @@ namespace Conqueror::Editor
         RendererStats m_Stats;
         float m_FPS = 0.0f;
         float m_FrameTime = 0.0f;
+        // Başlıkta gösterilen: çeyrek saniyelik ortalama; açılıştaki yükleme kareleri sayılmaz (Stats ilk anda kırmızı 10 FPS gösteriyordu)
+        float m_ShownFPS = 0.0f, m_ShownFrameTime = 0.0f;
+        float m_AccumMs = 0.0f, m_SinceStartMs = 0.0f;
+        int m_AccumFrames = 0, m_GoodFrames = 0;
+        bool m_Ready = false;
         uint32_t m_EntityCount = 0;
 
         std::array<float, 120> m_FrameHistory{};

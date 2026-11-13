@@ -18,6 +18,28 @@ namespace Conqueror::Editor
         m_FrameTime = frameTime;
         m_FrameHistory[(size_t)m_HistoryOffset] = frameTime;
         m_HistoryOffset = (m_HistoryOffset + 1) % (int)m_FrameHistory.size();
+        // Açılış: yükleme kareleri (100 ms'de kırpılır) bitip üç kare normal geçene kadar (en az yarım saniye, en çok 3 saniye) sayı
+        // gösterilmez. Eskiden Stats editör açılınca ilk anda kırmızı "10 FPS 100 ms" gösteriyordu
+        m_SinceStartMs += frameTime;
+        if (!m_Ready)
+        {
+            m_GoodFrames = frameTime < 99.0f ? m_GoodFrames + 1 : 0;
+            if (!((m_GoodFrames >= 3 && m_SinceStartMs >= 500.0f) || m_SinceStartMs >= 3000.0f))
+                return;
+            m_Ready = true;
+            m_AccumMs = 0.0f;
+            m_AccumFrames = 0;
+        }
+        // Başlıkta çeyrek saniyelik ortalama (Unreal "stat fps" gibi): tek karelik sıçramalarla titremez
+        m_AccumMs += frameTime;
+        ++m_AccumFrames;
+        if (m_AccumMs >= 250.0f || (m_ShownFPS <= 0.0f && m_AccumFrames >= 3))
+        {
+            m_ShownFrameTime = m_AccumMs / (float)m_AccumFrames;
+            m_ShownFPS = 1000.0f / std::max(m_ShownFrameTime, 1e-3f);
+            m_AccumMs = 0.0f;
+            m_AccumFrames = 0;
+        }
     }
 
     void StatsPanel::OnImGuiRender()
@@ -30,11 +52,16 @@ namespace Conqueror::Editor
     void StatsPanel::DrawOverlay(const char* id, const ImVec2& anchor, bool alignRight, bool& expanded, float maxHeight)
     {
         const float width = expanded ? 250.0f : 0.0f;
-        const ImVec4 fpsColor = m_FPS >= 55.0f ? UI::Colors::Success : (m_FPS >= 30.0f ? UI::Colors::Warning : UI::Colors::Error);
+        const bool ready = m_Ready && m_ShownFPS > 0.0f;
+        const ImVec4 fpsColor = !ready ? ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled)
+                              : m_ShownFPS >= 55.0f ? UI::Colors::Success : (m_ShownFPS >= 30.0f ? UI::Colors::Warning : UI::Colors::Error);
 
         char header[96];
-        snprintf(header, sizeof(header), "%s  Stats   %.0f FPS  %.2f ms",
-                 expanded ? ICON_FA_CHEVRON_DOWN : ICON_FA_CHEVRON_RIGHT, m_FPS, m_FrameTime);
+        if (ready)
+            snprintf(header, sizeof(header), "%s  Stats   %.0f FPS  %.2f ms",
+                     expanded ? ICON_FA_CHEVRON_DOWN : ICON_FA_CHEVRON_RIGHT, m_ShownFPS, m_ShownFrameTime);
+        else
+            snprintf(header, sizeof(header), "%s  Stats", expanded ? ICON_FA_CHEVRON_DOWN : ICON_FA_CHEVRON_RIGHT);
         const ImGuiStyle& style = ImGui::GetStyle();
         const float headerW = ImGui::CalcTextSize(header).x + style.FramePadding.x * 2.0f + 8.0f;
         const float w = std::max(width, headerW);
@@ -73,7 +100,7 @@ namespace Conqueror::Editor
         float maxFrame = 1.0f;
         for (float f : m_FrameHistory) maxFrame = std::max(maxFrame, f);
         char overlay[48];
-        snprintf(overlay, sizeof(overlay), "%.1f FPS  (%.2f ms)", m_FPS, m_FrameTime);
+        snprintf(overlay, sizeof(overlay), "%.1f FPS  (%.2f ms)", m_ShownFPS, m_ShownFrameTime);
         ImGui::PushStyleColor(ImGuiCol_PlotLines, UI::Colors::Accent);
         ImGui::PlotLines("##frametime", m_FrameHistory.data(), (int)m_FrameHistory.size(), m_HistoryOffset,
                          overlay, 0.0f, maxFrame * 1.2f, ImVec2(-1.0f, 42.0f));
