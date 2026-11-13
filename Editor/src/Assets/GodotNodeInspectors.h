@@ -8,4 +8,6 @@ namespace Conqueror::Editor::GodotNodeInspectors
     void DrawResourcePreloader(Entity entity);
     // Shader Globals Override: koleksiyonun parametreleri ve geçersiz kılan değerler
     void DrawShaderGlobalsOverride(Entity entity);
+    // Status Indicator: menü öğeleri
+    void DrawStatusIndicator(Entity entity);
 }

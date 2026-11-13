@@ -3,6 +3,7 @@
 #include "Assets/AssetUI.h"
 #include "Core/Assets/SimpleAsset.h"
 #include "Scene/GodotNodes.h"
+#include "Scene/StatusIndicator.h"
 #include "UI/EditorUI.h"
 
 #include <imgui.h>
@@ -112,5 +113,34 @@ namespace Conqueror::Editor::GodotNodeInspectors
         }
         if (params.empty())
             ImGui::TextDisabled("The collection has no parameters yet.");
+    }
+
+    void DrawStatusIndicator(Entity entity)
+    {
+        auto& c = entity.GetComponent<StatusIndicatorComponent>();
+        UI::SubHeader("Menu");
+        int remove = -1;
+        for (int i = 0; i < (int)c.MenuItems.size(); ++i)
+        {
+            ImGui::PushID(i);
+            char label[24];
+            snprintf(label, sizeof(label), "Item %d", i);
+            UI::BeginProperty(label, "\"-\" is a separator. Scripts get the index in OnStatusMenuItemPressed(index).");
+            if (ImGui::SmallButton(ICON_FA_XMARK)) remove = i;
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(-1.0f);
+            char buf[256];
+            snprintf(buf, sizeof(buf), "%s", c.MenuItems[(size_t)i].c_str());
+            if (ImGui::InputText("##item", buf, sizeof(buf)))
+                c.MenuItems[(size_t)i] = buf;
+            UI::EndProperty();
+            ImGui::PopID();
+        }
+        if (remove >= 0)
+            c.MenuItems.erase(c.MenuItems.begin() + remove);
+        if (ImGui::Button(ICON_FA_PLUS "  Add Menu Item"))
+            c.MenuItems.push_back("Item " + std::to_string(c.MenuItems.size()));
+        if (!StatusIndicators::Supported())
+            UI::InfoBox("Tray icons need libdbus-1 on Linux / BSD (or Windows); this system has neither.", UI::InfoType::Warning);
     }
 }

@@ -39,6 +39,7 @@
 #include "Core/Audio/AudioEngine.h"
 #include "Core/Audio/InteractiveMusic.h"
 #include "Assets/GodotNodeInspectors.h"
+#include "Scene/StatusIndicator.h"
 #include "ProjectThumbnail.h"
 #include "Renderer/IBL/EnvironmentMap.h"
 #include "Renderer/PathTracer.h"
@@ -379,6 +380,8 @@ namespace Conqueror::Editor
                 tilemapInfo->ExtraInspector = &TilePalettePanel::DrawTilemapInspector;
             if (auto* preloaderInfo = ComponentRegistry::Find("ResourcePreloaderComponent"))
                 preloaderInfo->ExtraInspector = &GodotNodeInspectors::DrawResourcePreloader;
+            if (auto* trayInfo = ComponentRegistry::Find("StatusIndicatorComponent"))
+                trayInfo->ExtraInspector = &GodotNodeInspectors::DrawStatusIndicator;
             if (auto* globalsInfo = ComponentRegistry::Find("ShaderGlobalsOverrideComponent"))
                 globalsInfo->ExtraInspector = &GodotNodeInspectors::DrawShaderGlobalsOverride;
             if (auto* treeInfo = ComponentRegistry::Find("TreeComponent"))
@@ -7625,6 +7628,27 @@ namespace Conqueror::Editor
                 return true;
             }
             err = "Stats shows no FPS yet";
+            return false;
+        });
+        // status_indicator send <entity> getall|activate|context|secondary|layout|menu [n] | expect <key> <value>: tepsi simgesinin
+        // D-Bus hizmetine ayrı bir bağlantıdan istek (gerçek gidiş-dönüş); expect wait_until ile yanıt gelene kadar
+        Automation::RegisterCommand("status_indicator", [this, findByName](const Args& a, std::string& err) {
+            if (a.size() >= 4 && a[1] == "send")
+            {
+                Entity e = findByName(a[2]);
+                if (!e || !m_ActiveScene) { err = "no entity " + a[2]; return false; }
+                if (!StatusIndicators::ProbeSend(*m_ActiveScene, (uint32_t)e, a[3], a.size() > 4 ? std::stoi(a[4]) : 0)) { err = "send failed (no tray item yet?)"; return false; }
+                return true;
+            }
+            if (a.size() >= 4 && a[1] == "expect")
+            {
+                std::string got;
+                if (!StatusIndicators::ProbeValue(a[2], got)) { err = "no value for " + a[2] + " yet"; return false; }
+                Automation::Report("TRAY " + a[2] + " = " + got);
+                if (got != a[3]) { err = a[2] + " is '" + got + "'"; return false; }
+                return true;
+            }
+            err = "status_indicator send <entity> <request> [n] | expect <key> <value>";
             return false;
         });
         // app_window_size <w> <h>: işletim sistemi penceresinin boyutu (açılışta pencere büyürken olanı denemek için)

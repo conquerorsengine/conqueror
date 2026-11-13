@@ -1,0 +1,29 @@
+# template: basic3d
+# 25 (Godot StatusIndicator): oyunda sistem tepsisi simgesi D-Bus StatusNotifierItem olarak yayınlanır (ipucu, durum, simge,
+# dbusmenu menüsü); tepsi barındırıcısının tıklaması (Activate) ve menü seçimi (dbusmenu Event) betiğe / bileşene ulaşır. Gerçek
+# D-Bus gidiş-dönüşü ayrı bir bağlantıdan
+wait 40
+entity create Tray 0 0 0
+comp add Tray StatusIndicatorComponent
+comp set Tray StatusIndicatorComponent Tooltip "My Game Tray"
+comp data Tray StatusIndicatorComponent "{MenuItems: [Show, '-', Quit]}"
+play
+wait 10
+status_indicator send Tray getall
+wait_until 3000 status_indicator expect ToolTipTitle "My Game Tray"
+status_indicator expect Status Active
+status_indicator expect Menu /MenuBar
+status_indicator expect IconWidth 64
+status_indicator send Tray layout
+wait_until 3000 status_indicator expect MenuItems 3
+status_indicator send Tray activate
+wait_until 3000 comp expect Tray StatusIndicatorComponent Presses 1
+comp expect Tray StatusIndicatorComponent LastButton 1
+status_indicator send Tray menu 2
+wait_until 3000 comp expect Tray StatusIndicatorComponent LastMenuItem 2
+comp set Tray StatusIndicatorComponent Visible false
+wait 5
+status_indicator send Tray getall
+wait_until 3000 status_indicator expect Status Passive
+stop
+quit

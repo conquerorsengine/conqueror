@@ -317,6 +317,16 @@ else()
             target_include_directories(${PROJECT_NAME} PRIVATE /usr/local/include)
         endif()
     endif()
+    # Status Indicator (Godot): sistem tepsisi simgesi D-Bus StatusNotifierItem ile. libdbus çalışma zamanında dlopen ile yüklenir
+    # (yoksa özellik kapanır); derlemede yalnız başlıkları gerekir
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(CQ_DBUS QUIET dbus-1)
+    endif()
+    if(CQ_DBUS_FOUND)
+        target_include_directories(${PROJECT_NAME} PRIVATE ${CQ_DBUS_INCLUDE_DIRS})
+        target_compile_definitions(${PROJECT_NAME} PRIVATE CQ_HAS_DBUS_HEADERS=1)
+    endif()
     # dlopen: Linux'ta libdl, BSD'lerde libc içinde (CMAKE_DL_LIBS boş); std::thread için pthread
     find_package(Threads REQUIRED)
     target_link_libraries(${PROJECT_NAME} PUBLIC ${CMAKE_DL_LIBS} Threads::Threads)
