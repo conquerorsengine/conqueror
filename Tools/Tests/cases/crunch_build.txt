@@ -21,7 +21,7 @@ ui create Image Flag 0 0
 comp set Flag RectTransformComponent SizeDelta 600 400
 comp set Flag UIImageComponent Texture Assets/flag_blue.png
 focus Game
-wait 20
+# doku yüklenene kadar (makine yüklüyken 20 kare yetmeyebilir; yüklenmemiş doku beyaz)
+wait_until 20000 game_region 0.4 0.4 0.6 0.6 r mean <90
 game_region 0.4 0.4 0.6 0.6 b mean >150
-game_region 0.4 0.4 0.6 0.6 r mean <90
 quit
