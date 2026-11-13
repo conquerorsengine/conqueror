@@ -93,6 +93,11 @@ void main()
         if (any(lessThan(suv, vec2(0.0))) || any(greaterThan(suv, vec2(1.0))))
             continue;
         float sceneZ = ViewPos(suv).z;
+        // Kameraya 0.7 m'den yakın örtücü (birinci şahıs elleri, silah) daha uzaktaki yüzeyi örtmez (Unreal'ın First Person
+        // ilkelleri ve oyunlardaki ayrı silah geçişi gibi): duvara yakın nişan alınca elin çevresinde duvarda benekli koyu hale
+        // çiziliyor, el çekilince duvarda elin yerinde koyu benekli iz kalıyordu. Ellerin kendi örtüsü (ikisi de yakın) korunur
+        if (-sceneZ < 0.7 && -p.z >= 0.7)
+            continue;
         // Uzaklık sınırı: örten yüzey yarıçap içinde tam sayılır, yarıçapın iki katında sıfıra iner. Eskiden (radius / fark) ile
         // yumuşatılıyordu: yüzeyden 1 m önde duran nesne (birinci şahıs elleri, silah) hâlâ ~%57 örtü sayılıp arkadaki yüzeyde
         // siluetinin çevresine koyu hale çiziyordu; nişan alıp bırakınca bu hale TAA geçmişinde elin eski yerinde koyu çizgiler
