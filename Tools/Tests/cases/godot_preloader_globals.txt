@@ -1,0 +1,24 @@
+# template: basic3d
+# 25 (Godot ResourcePreloader / ShaderGlobalsOverride): Preloader'ın varlıkları oyun başında yüklenir (Loaded 2), betik adıyla yolu
+# alır; Shader Globals Override etkinken Material Parameter Collection değerleri değişir, nesne devre dışı kalınca geri döner
+wait 40
+content_drop "{dir}/assets/globals/Globals.cqmpc" "{dir}/assets/loc/flag_blue.png" "{dir}/assets/music/sting.wav"
+wait 10
+entity create Globals 0 0 0
+comp add Globals ShaderGlobalsOverrideComponent
+comp set Globals ShaderGlobalsOverrideComponent Collection Assets/Globals.cqmpc
+comp data Globals ShaderGlobalsOverrideComponent "{Entries: [{Name: Wind, Vector: false, Value: [0.75, 0, 0, 1]}, {Name: Tint, Vector: true, Value: [0, 1, 0, 1]}]}"
+entity create Preload 0 0 0
+comp add Preload ResourcePreloaderComponent
+comp data Preload ResourcePreloaderComponent "{Resources: [{Name: Flag, Path: Assets/flag_blue.png}, {Name: Sting, Path: Assets/sting.wav}]}"
+play
+wait 10
+comp expect Preload ResourcePreloaderComponent LoadedCount 2
+run_cqs_file "{dir}/checks/globals_on.cqs"
+expect_entities 1 G_On
+run_cqs_file "{dir}/checks/globals_disable.cqs"
+wait 3
+run_cqs_file "{dir}/checks/globals_off.cqs"
+expect_entities 1 G_Off
+stop
+quit

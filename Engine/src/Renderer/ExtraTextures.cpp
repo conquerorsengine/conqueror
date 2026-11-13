@@ -270,5 +270,15 @@ namespace Conqueror
         {
             Overrides().clear();
         }
+
+        void ClearOverride(const std::string& path, const std::string& name)
+        {
+            auto it = Overrides().find(Key(path));
+            if (it == Overrides().end())
+                return;
+            it->second.erase(name);
+            if (it->second.empty())
+                Overrides().erase(it);
+        }
     }
 }

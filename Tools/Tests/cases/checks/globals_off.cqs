@@ -1,0 +1,6 @@
+using nativebridge;
+// Nesne devre dışı: değerler koleksiyondakine döner (Wind 0.25, Tint G 0.5)
+var wind = MPCGetScalar("Assets/Globals.cqmpc", "Wind");
+var tint = MPCGetVector("Assets/Globals.cqmpc", "Tint");
+LogInfo("REGRESSION globals off wind=" + wind + " tintG=" + tint.y);
+if (wind > 0.24 && wind < 0.26 && tint.y > 0.49 && tint.y < 0.51) { CreateEntity("G_Off"); }

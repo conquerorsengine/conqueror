@@ -499,6 +499,11 @@ namespace Conqueror
         Templates().clear();
     }
 
+    bool PrefabSerializer::Preload(const std::string& path)
+    {
+        return LoadTemplate(Resolve(path)) != nullptr;
+    }
+
     namespace
     {
         struct OverrideCheck

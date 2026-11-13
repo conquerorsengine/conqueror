@@ -322,6 +322,7 @@ namespace Conqueror
     {
         MetaSounds::StopAll(*this);
         InteractiveMusic::StopAll(*this);
+        GodotNodes::ForgetScene(this);
         WorldPartition::Forget(*this);
         Navigation2D::ForgetScene(this);
         Fracture::ForgetScene(this);
@@ -3820,6 +3821,8 @@ namespace Conqueror
     CQ_PLAIN_ADDED(VisibleOnScreenNotifierComponent)
     CQ_PLAIN_ADDED(Parallax2DComponent)
     CQ_PLAIN_ADDED(TimerComponent)
+    CQ_PLAIN_ADDED(ResourcePreloaderComponent)
+    CQ_PLAIN_ADDED(ShaderGlobalsOverrideComponent)
     CQ_PLAIN_ADDED(ShapeCastComponent)
     CQ_PLAIN_ADDED(VisibleOnScreenEnablerComponent)
     CQ_PLAIN_ADDED(CharacterBody2DComponent)

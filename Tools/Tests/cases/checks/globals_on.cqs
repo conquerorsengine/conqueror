@@ -1,0 +1,10 @@
+using nativebridge;
+// Shader Globals Override etkin: Wind 0.75, Tint (0, 1, 0, 1); Resource Preloader varlıkları yüklü, adıyla yol
+var wind = MPCGetScalar("Assets/Globals.cqmpc", "Wind");
+var tint = MPCGetVector("Assets/Globals.cqmpc", "Tint");
+var flag = PreloaderGetResource("Preload", "Flag");
+var has = PreloaderHasResource("Preload", "Sting");
+var none = PreloaderGetResource("Preload", "Nothing");
+var names = PreloaderGetResourceList("Preload");
+LogInfo("REGRESSION globals wind=" + wind + " tintG=" + tint.y + " flag=" + flag + " has=" + has + " none=" + none + " names=" + len(names));
+if (wind > 0.74 && wind < 0.76 && tint.y > 0.99 && tint.x < 0.01 && flag == "Assets/flag_blue.png" && has && none == null && len(names) == 2) { CreateEntity("G_On"); }

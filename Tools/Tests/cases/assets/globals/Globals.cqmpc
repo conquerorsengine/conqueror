@@ -1,0 +1,6 @@
+Asset: MaterialParameterCollection
+Fields:
+  Scalars:
+    - ["Wind", "0.25"]
+  Vectors:
+    - ["Tint", "1", "0.5", "0.25", "1"]

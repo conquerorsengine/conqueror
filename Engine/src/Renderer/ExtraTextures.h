@@ -39,5 +39,7 @@ namespace Conqueror
         CQ_API void SetScalar(const std::string& path, const std::string& name, float value);
         CQ_API void SetVector(const std::string& path, const std::string& name, const glm::vec4& value);
         CQ_API void ResetOverrides();
+        // Tek geçersiz kılmayı kaldır (değer varlıktakine döner)
+        CQ_API void ClearOverride(const std::string& path, const std::string& name);
     }
 }

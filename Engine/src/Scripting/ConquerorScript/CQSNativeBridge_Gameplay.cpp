@@ -994,6 +994,39 @@ namespace Conqueror::CQS
             const uint32_t id = GodotNodes::GetAutoload(*scene, args[0].AsString()->Value);
             return id != UINT32_MAX ? Value::MakeInt((int64_t)id) : Value::MakeNull();
         }, 1);
+        // Resource Preloader (Godot): adıyla yol / adlar / ekle / kaldır. Hedef verilmezse betiğin nesnesi
+        vm->DefineNative("PreloaderGetResource", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            Entity e = argc >= 2 ? Target(args[0]) : Target(Value::MakeNull());
+            if (!scene || !e || argc < 1) return Value::MakeNull();
+            const std::string path = GodotNodes::PreloaderGet(*scene, (uint32_t)(entt::entity)e, args[argc >= 2 ? 1 : 0].ToString());
+            return path.empty() ? Value::MakeNull() : Value::MakeString(path);
+        }, -1);
+        vm->DefineNative("PreloaderHasResource", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            Entity e = argc >= 2 ? Target(args[0]) : Target(Value::MakeNull());
+            return Value::MakeBool(scene && e && argc >= 1 && !GodotNodes::PreloaderGet(*scene, (uint32_t)(entt::entity)e, args[argc >= 2 ? 1 : 0].ToString()).empty());
+        }, -1);
+        vm->DefineNative("PreloaderGetResourceList", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            Entity e = Target(argc > 0 ? args[0] : Value::MakeNull());
+            auto* list = new CQSListObject();
+            if (scene && e)
+                for (const auto& n : GodotNodes::PreloaderNames(*scene, (uint32_t)(entt::entity)e))
+                    list->Elements.push_back(Value::MakeString(n));
+            return Value::MakeObject(list);
+        }, -1);
+        vm->DefineNative("PreloaderAddResource", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            Entity e = argc >= 3 ? Target(args[0]) : Target(Value::MakeNull());
+            const int o = argc >= 3 ? 1 : 0;
+            return Value::MakeBool(scene && e && argc >= 2 && GodotNodes::PreloaderAdd(*scene, (uint32_t)(entt::entity)e, args[o].ToString(), args[o + 1].ToString()));
+        }, -1);
+        vm->DefineNative("PreloaderRemoveResource", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            Entity e = argc >= 2 ? Target(args[0]) : Target(Value::MakeNull());
+            return Value::MakeBool(scene && e && argc >= 1 && GodotNodes::PreloaderRemove(*scene, (uint32_t)(entt::entity)e, args[argc >= 2 ? 1 : 0].ToString()));
+        }, -1);
         vm->DefineNative("TimerStart", [](int argc, Value* args) -> Value {
             Scene* scene = ActiveScene();
             Entity e = Target(argc > 0 ? args[0] : Value::MakeNull());

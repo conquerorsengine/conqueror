@@ -1,0 +1,2 @@
+using nativebridge;
+EntitySetActive(FindEntity("Globals"), false);

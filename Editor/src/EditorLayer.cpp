@@ -38,6 +38,7 @@
 #include "Core/Project/ProjectSettings.h"
 #include "Core/Audio/AudioEngine.h"
 #include "Core/Audio/InteractiveMusic.h"
+#include "Assets/GodotNodeInspectors.h"
 #include "ProjectThumbnail.h"
 #include "Renderer/IBL/EnvironmentMap.h"
 #include "Renderer/PathTracer.h"
@@ -376,6 +377,10 @@ namespace Conqueror::Editor
                 volumeInfo->ExtraInspector = &VolumeProfileInspector::DrawVolumeExtra;
             if (auto* tilemapInfo = ComponentRegistry::Find("TilemapComponent"))
                 tilemapInfo->ExtraInspector = &TilePalettePanel::DrawTilemapInspector;
+            if (auto* preloaderInfo = ComponentRegistry::Find("ResourcePreloaderComponent"))
+                preloaderInfo->ExtraInspector = &GodotNodeInspectors::DrawResourcePreloader;
+            if (auto* globalsInfo = ComponentRegistry::Find("ShaderGlobalsOverrideComponent"))
+                globalsInfo->ExtraInspector = &GodotNodeInspectors::DrawShaderGlobalsOverride;
             if (auto* treeInfo = ComponentRegistry::Find("TreeComponent"))
                 treeInfo->ExtraInspector = &DrawTreeInspector;
             // Blend Shapes: modelin her blend shape'i için kaydırıcı (Unity Skinned Mesh Renderer > BlendShapes)
@@ -4958,7 +4963,7 @@ namespace Conqueror::Editor
             return found;
         };
         Automation::RegisterCommand("comp", [this, findByName](const Args& a, std::string& err) {
-            // comp add|remove <entity> <component> | comp set <entity> <component> <field> <value...>
+            // comp add|remove <entity> <component> | comp set <entity> <component> <field> <value...> | comp data <entity> <component> "<yaml>"
             // comp expect <entity> <component> <field> <value | >N | <N>
             if (a.size() < 4 || !m_ActiveScene) { err = "comp add|remove|set|expect <entity> <component> ..."; return false; }
             Entity e = findByName(a[2]);
@@ -4967,6 +4972,15 @@ namespace Conqueror::Editor
             if (!info) { err = "unknown component " + a[3]; return false; }
             if (a[1] == "add") { ComponentRegistry::AddWithRequirements(*info, e); return true; }
             if (a[1] == "remove") { if (info->Has(e)) info->Remove(e); return true; }
+            // comp data <entity> <component> "<YAML>": bileşenin liste verisi (CustomData: Resource Preloader kaynakları, Shader Globals
+            // Override değerleri ...) satır içi YAML ile
+            if (a[1] == "data" && a.size() > 4)
+            {
+                if (!info->Has(e) || !info->CustomDeserialize) { err = "no custom data on " + a[3]; return false; }
+                try { info->CustomDeserialize(YAML::Load(a[4]), info->Get(e)); }
+                catch (const std::exception& ex) { err = std::string("yaml: ") + ex.what(); return false; }
+                return true;
+            }
             if (a[1] == "expect_has" && a.size() > 4)
             {
                 bool want = a[4] == "true" || a[4] == "1";

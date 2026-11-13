@@ -94,7 +94,7 @@ namespace Conqueror
     struct StreamedLevelComponent; struct LevelStreamingVolumeComponent; struct AnimationPlayerComponent;
     struct AutoLODComponent;
     struct SoundOcclusionComponent; struct SoundConcurrencyComponent;
-    struct VertexPaintComponent; struct FractureComponent; struct RagdollComponent; struct VirtualGeometryComponent; struct CharacterCustomizerComponent; struct SignalConnectionsComponent; struct SignalReceiverComponent; struct CSGShapeComponent; struct MultiMeshComponent; struct RemoteTransformComponent; struct RayCastComponent; struct VisibleOnScreenNotifierComponent; struct Parallax2DComponent; struct TimerComponent; struct ShapeCastComponent; struct VisibleOnScreenEnablerComponent; struct CharacterBody2DComponent; struct FogVolumeComponent; struct NavigationRegion2DComponent; struct NavigationAgent2DComponent; struct NavigationObstacle2DComponent; struct NavigationLink2DComponent; struct TileObjectComponent; struct RenderTargetComponent; struct Bone2DComponent; struct IK2DComponent;
+    struct VertexPaintComponent; struct FractureComponent; struct RagdollComponent; struct VirtualGeometryComponent; struct CharacterCustomizerComponent; struct SignalConnectionsComponent; struct SignalReceiverComponent; struct CSGShapeComponent; struct MultiMeshComponent; struct RemoteTransformComponent; struct RayCastComponent; struct VisibleOnScreenNotifierComponent; struct Parallax2DComponent; struct TimerComponent; struct ResourcePreloaderComponent; struct ShaderGlobalsOverrideComponent; struct ShapeCastComponent; struct VisibleOnScreenEnablerComponent; struct CharacterBody2DComponent; struct FogVolumeComponent; struct NavigationRegion2DComponent; struct NavigationAgent2DComponent; struct NavigationObstacle2DComponent; struct NavigationLink2DComponent; struct TileObjectComponent; struct RenderTargetComponent; struct Bone2DComponent; struct IK2DComponent;
     struct RigComponent; struct TwoBoneIKConstraintComponent; struct MultiAimConstraintComponent; struct ChainIKConstraintComponent; struct DampedTransformComponent;
     struct ProjectileMovementComponent; struct SortingGroupComponent; struct PrefabInstanceComponent;
     struct GridComponent; struct TilemapComponent; struct TilemapCollider2DComponent;
@@ -682,6 +682,8 @@ namespace Conqueror
     CQ_DECL_ADDED(VisibleOnScreenNotifierComponent)
     CQ_DECL_ADDED(Parallax2DComponent)
     CQ_DECL_ADDED(TimerComponent)
+    CQ_DECL_ADDED(ResourcePreloaderComponent)
+    CQ_DECL_ADDED(ShaderGlobalsOverrideComponent)
     CQ_DECL_ADDED(ShapeCastComponent)
     CQ_DECL_ADDED(VisibleOnScreenEnablerComponent)
     CQ_DECL_ADDED(CharacterBody2DComponent)

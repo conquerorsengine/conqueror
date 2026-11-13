@@ -6,6 +6,8 @@
 
 #include <cstdint>
 #include <string>
+#include <memory>
+#include <string>
 #include <vector>
 
 // Godot düğüm eşdeğerleri:
@@ -164,8 +166,37 @@ namespace Conqueror
         int Timeouts = 0;                  // bilgi: bu oyunda kaç kez doldu
     };
 
+    // Godot ResourcePreloader: adlandırılmış varlık listesi. Oyun başlarken yüklenir (doku GPU'ya, ses belleğe, model ve prefab
+    // önbelleğe) ve nesne yaşadıkça bellekte tutulur: ilk kullanımda takılma olmaz. Betikler adıyla yolunu alır (get_resource)
+    struct ResourcePreloaderComponent
+    {
+        struct Resource { std::string Name; std::string Path; };
+        std::vector<Resource> Resources;
+        // Çalışma zamanı
+        bool Loaded = false;
+        int LoadedCount = 0;
+        std::vector<std::shared_ptr<void>> Held;   // yüklü dokular / sesler (nesneyle birlikte bırakılır)
+    };
+
+    // Godot ShaderGlobalsOverride: etkinken Material Parameter Collection'ın (genel gölgelendirici parametreleri; Unity
+    // Shader.SetGlobal*, Unreal MPC) değerlerini geçersiz kılar; devre dışı kalınca ya da silinince değerler varlıktaki haline döner.
+    // Düzenleyicide de çalışır (sahne görünümü hemen değişir)
+    struct ShaderGlobalsOverrideComponent
+    {
+        struct Entry { std::string Name; bool IsVector = false; glm::vec4 Value{ 0.0f, 0.0f, 0.0f, 1.0f }; };
+        std::string Collection;            // .cqmpc
+        std::vector<Entry> Entries;
+    };
+
     namespace GodotNodes
     {
+        // Resource Preloader: adıyla yol (yoksa boş) / adlar / ekle / kaldır (Godot get_resource, get_resource_list, add_resource ...)
+        CQ_API std::string PreloaderGet(Scene& scene, uint32_t entity, const std::string& name);
+        CQ_API std::vector<std::string> PreloaderNames(Scene& scene, uint32_t entity);
+        CQ_API bool PreloaderAdd(Scene& scene, uint32_t entity, const std::string& name, const std::string& path);
+        CQ_API bool PreloaderRemove(Scene& scene, uint32_t entity, const std::string& name);
+        // Oyun durunca: bu sahnenin Shader Globals Override değerleri kalkar
+        CQ_API void ForgetScene(Scene* scene);
         // runtime = oyun; düzenleyicide yalnızca Remote Transform çalışır
         CQ_API void Update(Scene& scene, float dt, bool runtime);
         // Işını hemen yeniden at (RayCast.force_raycast_update)

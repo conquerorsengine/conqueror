@@ -79,6 +79,27 @@ namespace Conqueror::CQS
             MaterialParameterCollections::SetVector(args[0].AsString()->Value, args[1].AsString()->Value, ColorArg(argc, args, 2));
             return Value::MakeBool(true);
         }, -1);
+        // MPCGetScalar / MPCGetVector: geçerli değer (geçersiz kılma ya da Shader Globals Override dahil; Godot
+        // RenderingServer.global_shader_parameter_get)
+        vm->DefineNative("MPCGetScalar", [](int argc, Value* args) -> Value {
+            float v = 0.0f;
+            if (argc < 2 || !args[0].IsString() || !args[1].IsString() ||
+                !MaterialParameterCollections::GetScalar(args[0].AsString()->Value, args[1].AsString()->Value, v))
+                return Value::MakeNull();
+            return Value::MakeFloat(v);
+        }, 2);
+        vm->DefineNative("MPCGetVector", [](int argc, Value* args) -> Value {
+            glm::vec4 v{ 0.0f };
+            if (argc < 2 || !args[0].IsString() || !args[1].IsString() ||
+                !MaterialParameterCollections::GetVector(args[0].AsString()->Value, args[1].AsString()->Value, v))
+                return Value::MakeNull();
+            auto* m = new CQSMapObject();
+            m->Entries["x"] = Value::MakeFloat(v.x);
+            m->Entries["y"] = Value::MakeFloat(v.y);
+            m->Entries["z"] = Value::MakeFloat(v.z);
+            m->Entries["w"] = Value::MakeFloat(v.w);
+            return Value::MakeObject(m);
+        }, 2);
         // Canvas Render Target: CanvasBegin(path) ... CanvasEnd(); ardından doku her yerde kullanılabilir
         vm->DefineNative("CanvasBegin", [](int argc, Value* args) -> Value {
             if (argc < 1 || !args[0].IsString()) return Value::MakeBool(false);

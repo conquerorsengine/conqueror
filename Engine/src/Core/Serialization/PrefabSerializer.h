@@ -42,5 +42,7 @@ namespace Conqueror
         // Mutlak yol -> proje göreli (proje dışındaysa mutlak)
         static std::string ToProjectPath(const std::filesystem::path& path);
         static void ClearCache();
+        // Prefab'ı örneklemeden önbelleğe yükle (Resource Preloader): ilk Instantiate takılmaz
+        static bool Preload(const std::string& path);
     };
 }

@@ -16,6 +16,12 @@
 #include "Renderer/Utilities/Renderer3D/Renderer3D.h"
 #include "Renderer/Utilities/Renderer3D/Mesh.h"
 #include "Renderer/Utilities/Renderer3D/ModelLoader.h"
+#include "Renderer/RHI/Texture.h"
+#include "Renderer/ExtraTextures.h"
+#include "Core/Audio/AudioEngine.h"
+#include "Core/Audio/AudioSource.h"
+#include "Core/Logging/Log.h"
+#include <yaml-cpp/yaml.h>
 
 #include <IconsFontAwesome6.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -24,6 +30,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
+#include <map>
+#include <set>
 #include <vector>
 
 namespace Conqueror
@@ -543,6 +552,13 @@ namespace Conqueror
 
     namespace GodotNodes
     {
+        // Shader Globals Override: sahne başına uygulanan (koleksiyon, parametre) çiftleri
+        std::map<const Scene*, std::set<std::pair<std::string, std::string>>>& AppliedGlobalsMap()
+        {
+            static std::map<const Scene*, std::set<std::pair<std::string, std::string>>> applied;
+            return applied;
+        }
+
         void FixedUpdate(Scene& scene, float dt)
         {
             const float scale = TimeManager::GetTimeScale();
@@ -575,11 +591,175 @@ namespace Conqueror
             return true;
         }
 
+        void ForgetScene(Scene* scene)
+        {
+            auto it = AppliedGlobalsMap().find(scene);
+            if (it == AppliedGlobalsMap().end())
+                return;
+            for (const auto& key : it->second)
+                MaterialParameterCollections::ClearOverride(key.first, key.second);
+            AppliedGlobalsMap().erase(it);
+        }
+
+        std::string LowerExt(const std::string& path)
+        {
+            std::string e = std::filesystem::path(path).extension().string();
+            std::transform(e.begin(), e.end(), e.begin(), [](unsigned char ch) { return (char)std::tolower(ch); });
+            return e;
+        }
+
+        // Resource Preloader: oyunun ilk karesinde listedeki varlıklar yüklenip tutulur
+        void PreloadResources(Scene& scene)
+        {
+            auto view = scene.m_Registry.view<ResourcePreloaderComponent>();
+            for (auto e : view)
+            {
+                auto& p = view.get<ResourcePreloaderComponent>(e);
+                if (p.Loaded)
+                    continue;
+                p.Loaded = true;
+                p.LoadedCount = 0;
+                p.Held.clear();
+                for (const auto& r : p.Resources)
+                {
+                    if (r.Path.empty())
+                        continue;
+                    const std::string ext = LowerExt(r.Path);
+                    const std::string file = SceneSerializer::ResolveAssetPath(r.Path);
+                    bool ok = false;
+                    if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".tga" || ext == ".bmp" || ext == ".psd" || ext == ".hdr" || ext == ".gif")
+                    {
+                        if (auto t = Texture2D::Create(file))
+                        {
+                            ok = t->GetWidth() > 0;
+                            p.Held.push_back(t);
+                        }
+                    }
+                    else if (ext == ".wav" || ext == ".mp3" || ext == ".ogg" || ext == ".flac")
+                    {
+                        if (AudioEngine::IsInitialized())
+                        {
+                            auto s = std::make_shared<AudioSource>();
+                            ok = s->LoadFromFile(file);   // çözülmüş veri miniaudio kaynak yöneticisinde paylaşılır
+                            if (ok)
+                                p.Held.push_back(s);
+                        }
+                    }
+                    else if (ext == ".cqprefab")
+                        ok = PrefabSerializer::Preload(r.Path);
+                    else if (ext == ".gltf" || ext == ".glb" || ext == ".fbx" || ext == ".obj" || ext == ".dae" || ext == ".blend")
+                    {
+                        if (auto m = ModelLoader::Load(file))
+                        {
+                            ok = true;
+                            p.Held.push_back(m);
+                        }
+                    }
+                    else
+                    {
+                        std::error_code ec;
+                        ok = std::filesystem::exists(file, ec);
+                    }
+                    if (ok)
+                        ++p.LoadedCount;
+                    else
+                        CQ_CORE_WARN("[Resource Preloader] Cannot load {0} ({1})", r.Name, r.Path);
+                }
+            }
+        }
+
+        // Shader Globals Override: etkin bileşenlerin değerleri her kare; artık uygulanmayanlar varlıktaki değere döner
+        void UpdateShaderGlobals(Scene& scene)
+        {
+            std::set<std::pair<std::string, std::string>> now;
+            auto view = scene.m_Registry.view<ShaderGlobalsOverrideComponent>();
+            for (auto e : view)
+            {
+                if (!scene.IsEntityActive(e))
+                    continue;
+                const auto& c = view.get<ShaderGlobalsOverrideComponent>(e);
+                if (c.Collection.empty())
+                    continue;
+                for (const auto& entry : c.Entries)
+                {
+                    if (entry.Name.empty())
+                        continue;
+                    if (entry.IsVector)
+                        MaterialParameterCollections::SetVector(c.Collection, entry.Name, entry.Value);
+                    else
+                        MaterialParameterCollections::SetScalar(c.Collection, entry.Name, entry.Value.x);
+                    now.insert({ c.Collection, entry.Name });
+                }
+            }
+            auto it = AppliedGlobalsMap().find(&scene);
+            if (it != AppliedGlobalsMap().end())
+                for (const auto& key : it->second)
+                    if (!now.count(key))
+                        MaterialParameterCollections::ClearOverride(key.first, key.second);
+            if (now.empty())
+            {
+                if (it != AppliedGlobalsMap().end())
+                    AppliedGlobalsMap().erase(it);
+            }
+            else
+                AppliedGlobalsMap()[&scene] = std::move(now);
+        }
+
+        ResourcePreloaderComponent* Preloader(Scene& scene, uint32_t entity)
+        {
+            const entt::entity e = (entt::entity)entity;
+            return scene.m_Registry.valid(e) ? scene.m_Registry.try_get<ResourcePreloaderComponent>(e) : nullptr;
+        }
+
+        std::string PreloaderGet(Scene& scene, uint32_t entity, const std::string& name)
+        {
+            if (auto* p = Preloader(scene, entity))
+                for (const auto& r : p->Resources)
+                    if (r.Name == name)
+                        return r.Path;
+            return {};
+        }
+
+        std::vector<std::string> PreloaderNames(Scene& scene, uint32_t entity)
+        {
+            std::vector<std::string> names;
+            if (auto* p = Preloader(scene, entity))
+                for (const auto& r : p->Resources)
+                    names.push_back(r.Name);
+            return names;
+        }
+
+        bool PreloaderAdd(Scene& scene, uint32_t entity, const std::string& name, const std::string& path)
+        {
+            auto* p = Preloader(scene, entity);
+            if (!p || name.empty())
+                return false;
+            auto it = std::find_if(p->Resources.begin(), p->Resources.end(), [&](const auto& r) { return r.Name == name; });
+            if (it != p->Resources.end())
+                it->Path = path;
+            else
+                p->Resources.push_back({ name, path });
+            p->Loaded = false;   // sonraki karede yeni varlık da yüklenir
+            return true;
+        }
+
+        bool PreloaderRemove(Scene& scene, uint32_t entity, const std::string& name)
+        {
+            auto* p = Preloader(scene, entity);
+            if (!p)
+                return false;
+            const size_t before = p->Resources.size();
+            p->Resources.erase(std::remove_if(p->Resources.begin(), p->Resources.end(), [&](const auto& r) { return r.Name == name; }), p->Resources.end());
+            return p->Resources.size() != before;
+        }
+
         void Update(Scene& scene, float dt, bool runtime)
         {
             UpdateRemoteTransforms(scene);
+            UpdateShaderGlobals(scene);
             if (!runtime)
                 return;
+            PreloadResources(scene);
             // Ekran bildirimleri ve Enabler önce: bu karede işlenmeyecek hedefler (Timer, betikler) baştan bilinsin
             UpdateNotifiers(scene);
             UpdateTimers(scene, dt, TimeManager::GetUnscaledDeltaTime(), TimerProcess::Idle);
@@ -795,6 +975,60 @@ namespace Conqueror
                 .Field("BoundsCenter", "Bounds Center", &C::BoundsCenter).VisibleIf([](const C& c) { return !c.AutoBounds; })
                 .Field("BoundsSize", "Bounds Size", &C::BoundsSize).VisibleIf([](const C& c) { return !c.AutoBounds; })
                 .Field("OnScreen", "On Screen", &C::OnScreen).ReadOnly();
+        }
+        {
+            using C = ResourcePreloaderComponent;
+            ComponentDef<C>("Resource Preloader", "ResourcePreloaderComponent", "Scripting", ICON_FA_BOXES_PACKING)
+                .Describe("Godot ResourcePreloader: a named list of assets loaded when the game starts (textures to the GPU, sounds into memory, "
+                          "models and prefabs into the cache) and kept loaded while this object exists, so their first use does not hitch. "
+                          "Scripts get a path by name with PreloaderGetResource. (Unity: Preloaded Assets in Player Settings.)")
+                .Field("LoadedCount", "Loaded", &C::LoadedCount).ReadOnly()
+                .CustomData(
+                    [](YAML::Emitter& out, C& c) {
+                        out << YAML::Key << "Resources" << YAML::Value << YAML::BeginSeq;
+                        for (const auto& r : c.Resources)
+                            out << YAML::BeginMap << YAML::Key << "Name" << YAML::Value << r.Name << YAML::Key << "Path" << YAML::Value << r.Path << YAML::EndMap;
+                        out << YAML::EndSeq;
+                    },
+                    [](const YAML::Node& n, C& c) {
+                        c.Resources.clear();
+                        if (auto list = n["Resources"]; list && list.IsSequence())
+                            for (const auto& r : list)
+                                c.Resources.push_back({ r["Name"] ? r["Name"].as<std::string>() : std::string(), r["Path"] ? r["Path"].as<std::string>() : std::string() });
+                    });
+        }
+        {
+            using C = ShaderGlobalsOverrideComponent;
+            ComponentDef<C>("Shader Globals Override", "ShaderGlobalsOverrideComponent", "Rendering", ICON_FA_GLOBE)
+                .Describe("Godot ShaderGlobalsOverride: while this object is active, its values replace the Material Parameter Collection's "
+                          "global shader parameters (every material reading them changes); disabled or removed, they go back to the "
+                          "collection's values. Works in the editor too. (Unity: Shader.SetGlobalFloat; Unreal: Material Parameter Collection.)")
+                .Field("Collection", "Collection", &C::Collection, FieldKind::Asset).Filter(".cqmpc")
+                .CustomData(
+                    [](YAML::Emitter& out, C& c) {
+                        out << YAML::Key << "Entries" << YAML::Value << YAML::BeginSeq;
+                        for (const auto& e : c.Entries)
+                        {
+                            out << YAML::BeginMap << YAML::Key << "Name" << YAML::Value << e.Name << YAML::Key << "Vector" << YAML::Value << e.IsVector;
+                            out << YAML::Key << "Value" << YAML::Value << YAML::Flow << YAML::BeginSeq << e.Value.x << e.Value.y << e.Value.z << e.Value.w << YAML::EndSeq;
+                            out << YAML::EndMap;
+                        }
+                        out << YAML::EndSeq;
+                    },
+                    [](const YAML::Node& n, C& c) {
+                        c.Entries.clear();
+                        if (auto list = n["Entries"]; list && list.IsSequence())
+                            for (const auto& v : list)
+                            {
+                                ShaderGlobalsOverrideComponent::Entry e;
+                                if (v["Name"]) e.Name = v["Name"].as<std::string>();
+                                if (v["Vector"]) e.IsVector = v["Vector"].as<bool>();
+                                if (auto val = v["Value"]; val && val.IsSequence())
+                                    for (std::size_t i = 0; i < 4 && i < val.size(); ++i)
+                                        e.Value[(int)i] = val[i].as<float>();
+                                c.Entries.push_back(e);
+                            }
+                    });
         }
         {
             using C = TimerComponent;
