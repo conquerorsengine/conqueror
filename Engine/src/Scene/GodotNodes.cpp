@@ -21,6 +21,7 @@
 #include "Core/Audio/AudioEngine.h"
 #include "Core/Audio/AudioSource.h"
 #include "Core/Logging/Log.h"
+#include "Scene/GameWindow.h"
 #include <yaml-cpp/yaml.h>
 
 #include <IconsFontAwesome6.h>
@@ -593,6 +594,7 @@ namespace Conqueror
 
         void ForgetScene(Scene* scene)
         {
+            GameWindows::ForgetScene(scene);
             auto it = AppliedGlobalsMap().find(scene);
             if (it == AppliedGlobalsMap().end())
                 return;
@@ -760,6 +762,7 @@ namespace Conqueror
             if (!runtime)
                 return;
             PreloadResources(scene);
+            GameWindows::Update(scene);   // Godot Window: ayrı işletim sistemi pencereleri
             // Ekran bildirimleri ve Enabler önce: bu karede işlenmeyecek hedefler (Timer, betikler) baştan bilinsin
             UpdateNotifiers(scene);
             UpdateTimers(scene, dt, TimeManager::GetUnscaledDeltaTime(), TimerProcess::Idle);

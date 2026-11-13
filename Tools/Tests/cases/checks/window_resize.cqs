@@ -1,0 +1,3 @@
+using nativebridge;
+GameWindowSetSize("Win", 500, 260);
+GameWindowSetTitle("Win", "Second View");

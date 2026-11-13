@@ -1,0 +1,30 @@
+# template: basic3d
+# 25 (Godot Window): oyunda ayrı işletim sistemi penceresi açılır, kendi kamerasının görüntüsünü gösterir (pencerenin ortası boş /
+# siyah değil), betikten boyutlanır, gizlenir; oyun durunca kapanır
+wait 40
+entity create WinCam 0 3 8
+comp add WinCam CameraComponent
+comp set WinCam CameraComponent Primary false
+entity create Win 0 0 0
+comp add Win GameWindowComponent
+comp set Win GameWindowComponent Title Second
+comp set Win GameWindowComponent Size 400 300
+comp set Win GameWindowComponent Camera @WinCam
+play
+wait 30
+comp expect Win GameWindowComponent Open true
+comp expect Win GameWindowComponent Frames >10
+comp set Win GameWindowComponent ProbeRequest true
+wait 3
+comp expect Win GameWindowComponent ProbeMean >30
+run_cqs_file "{dir}/checks/window_resize.cqs"
+wait 10
+run_cqs_file "{dir}/checks/window_check.cqs"
+expect_entities 1 W_Sized
+wait 5
+run_cqs_file "{dir}/checks/window_hidden.cqs"
+expect_entities 1 W_Hidden
+stop
+wait 5
+comp expect Win GameWindowComponent Open false
+quit

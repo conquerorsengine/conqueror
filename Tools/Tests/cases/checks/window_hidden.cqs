@@ -1,0 +1,4 @@
+using nativebridge;
+var vis = GameWindowIsVisible("Win");
+LogInfo("REGRESSION window hidden visible=" + vis);
+if (!vis) { CreateEntity("W_Hidden"); }

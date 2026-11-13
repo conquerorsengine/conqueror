@@ -1,6 +1,7 @@
 #include "UI/UIExtras.h"
 #include "Core/Serialization/SceneSerializer.h"
 #include "ComponentRegistry.h"
+#include "Scene/GameWindow.h"
 #include "UI/UIToolkit.h"
 #include "AISystem/BehaviorTree/BehaviorTreeAsset.h"
 #include "Scene/AssetRuntime.h"
@@ -149,6 +150,7 @@ namespace Conqueror
             RegisterCSGComponents();
             RegisterMultiMeshComponents();
             RegisterGodotNodeComponents();
+            RegisterGameWindowComponents();
             RegisterFogVolumeComponents();
             RegisterNavigation2DComponents();
             RegisterRenderTargetComponents();

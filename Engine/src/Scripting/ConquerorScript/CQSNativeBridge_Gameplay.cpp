@@ -19,6 +19,7 @@
 #include "Scene/Tweens.h"
 #include "Scene/MultiMesh.h"
 #include "Scene/GodotNodes.h"
+#include "Scene/GameWindow.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include "Core/Data/DataTable.h"
 #include "Core/Animation/AnimationStateMachine.h"
@@ -994,6 +995,59 @@ namespace Conqueror::CQS
             const uint32_t id = GodotNodes::GetAutoload(*scene, args[0].AsString()->Value);
             return id != UINT32_MAX ? Value::MakeInt((int64_t)id) : Value::MakeNull();
         }, 1);
+        // Window (Godot): ayrı işletim sistemi penceresi. Hedef verilmezse betiğin nesnesi
+        auto gameWindow = [](const Value& v) -> GameWindowComponent* {
+            Scene* scene = ActiveScene();
+            Entity e = Target(v);
+            return scene && e && e.HasComponent<GameWindowComponent>() ? &e.GetComponent<GameWindowComponent>() : nullptr;
+        };
+        vm->DefineNative("GameWindowShow", [gameWindow](int argc, Value* args) -> Value {
+            auto* w = gameWindow(argc > 0 ? args[0] : Value::MakeNull());
+            if (w) w->Visible = true;
+            return Value::MakeBool(w != nullptr);
+        }, -1);
+        vm->DefineNative("GameWindowHide", [gameWindow](int argc, Value* args) -> Value {
+            auto* w = gameWindow(argc > 0 ? args[0] : Value::MakeNull());
+            if (w) w->Visible = false;
+            return Value::MakeBool(w != nullptr);
+        }, -1);
+        vm->DefineNative("GameWindowIsVisible", [gameWindow](int argc, Value* args) -> Value {
+            auto* w = gameWindow(argc > 0 ? args[0] : Value::MakeNull());
+            return Value::MakeBool(w && w->Visible && w->Open);
+        }, -1);
+        vm->DefineNative("GameWindowSetTitle", [gameWindow](int argc, Value* args) -> Value {
+            auto* w = gameWindow(argc >= 2 ? args[0] : Value::MakeNull());
+            if (w && argc >= 1) w->Title = args[argc >= 2 ? 1 : 0].ToString();
+            return Value::MakeBool(w != nullptr);
+        }, -1);
+        vm->DefineNative("GameWindowSetSize", [gameWindow](int argc, Value* args) -> Value {
+            auto* w = gameWindow(argc >= 3 ? args[0] : Value::MakeNull());
+            const int o = argc >= 3 ? 1 : 0;
+            if (w && argc >= 2) w->Size = glm::vec2(std::max(1.0f, (float)args[o].ToNumber()), std::max(1.0f, (float)args[o + 1].ToNumber()));
+            return Value::MakeBool(w != nullptr);
+        }, -1);
+        vm->DefineNative("GameWindowGetSize", [gameWindow](int argc, Value* args) -> Value {
+            auto* w = gameWindow(argc > 0 ? args[0] : Value::MakeNull());
+            auto* m = new CQSMapObject();
+            m->Entries["x"] = Value::MakeFloat(w ? w->Size.x : 0.0f);
+            m->Entries["y"] = Value::MakeFloat(w ? w->Size.y : 0.0f);
+            return Value::MakeObject(m);
+        }, -1);
+        vm->DefineNative("GameWindowSetPosition", [gameWindow](int argc, Value* args) -> Value {
+            auto* w = gameWindow(argc >= 3 ? args[0] : Value::MakeNull());
+            const int o = argc >= 3 ? 1 : 0;
+            if (w && argc >= 2) w->Position = glm::vec2((float)args[o].ToNumber(), (float)args[o + 1].ToNumber());
+            return Value::MakeBool(w != nullptr);
+        }, -1);
+        vm->DefineNative("GameWindowGrabFocus", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            Entity e = Target(argc > 0 ? args[0] : Value::MakeNull());
+            return Value::MakeBool(scene && e && GameWindows::GrabFocus(*scene, (uint32_t)(entt::entity)e));
+        }, -1);
+        vm->DefineNative("GameWindowHasFocus", [gameWindow](int argc, Value* args) -> Value {
+            auto* w = gameWindow(argc > 0 ? args[0] : Value::MakeNull());
+            return Value::MakeBool(w && w->Focused);
+        }, -1);
         // Resource Preloader (Godot): adıyla yol / adlar / ekle / kaldır. Hedef verilmezse betiğin nesnesi
         vm->DefineNative("PreloaderGetResource", [](int argc, Value* args) -> Value {
             Scene* scene = ActiveScene();

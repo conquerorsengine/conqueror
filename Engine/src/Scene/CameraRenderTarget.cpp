@@ -1,4 +1,5 @@
 #include "CameraRenderTarget.h"
+#include "Scene/GameWindow.h"
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"
 #include "Scene/Components.h"
@@ -180,6 +181,7 @@ namespace Conqueror
 
         void Shutdown()
         {
+            GameWindows::Shutdown();   // pencerelerin blit gölgelendiricisi de bağlam kapanmadan
             for (auto& [name, hdr] : s_HDR)
                 ReleaseHDR(hdr);
             s_HDR.clear();

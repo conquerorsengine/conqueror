@@ -1,0 +1,7 @@
+using nativebridge;
+// Godot Window: betikten boyut / başlık, gizle -> görünmez
+var size = GameWindowGetSize("Win");
+var vis = GameWindowIsVisible("Win");
+GameWindowHide("Win");
+LogInfo("REGRESSION window size=" + size.x + "x" + size.y + " visible=" + vis);
+if (size.x > 499 && size.x < 501 && size.y > 259 && size.y < 261 && vis) { CreateEntity("W_Sized"); }
