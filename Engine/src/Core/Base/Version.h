@@ -1,9 +1,9 @@
 #pragma once
 
 // Motor sürümü (Launcher, Hakkında penceresi, proje dosyaları)
-#define CQ_ENGINE_VERSION "0.537.2"
+#define CQ_ENGINE_VERSION "0.547.2"
 #define CQ_ENGINE_VERSION_MAJOR 0
-#define CQ_ENGINE_VERSION_MINOR 537
+#define CQ_ENGINE_VERSION_MINOR 547
 #define CQ_ENGINE_VERSION_PATCH 2
 
 namespace Conqueror
