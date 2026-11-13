@@ -93,7 +93,11 @@ void main()
         if (any(lessThan(suv, vec2(0.0))) || any(greaterThan(suv, vec2(1.0))))
             continue;
         float sceneZ = ViewPos(suv).z;
-        float rangeCheck = smoothstep(0.0, 1.0, radius / max(abs(p.z - sceneZ), 1e-4));
+        // Uzaklık sınırı: örten yüzey yarıçap içinde tam sayılır, yarıçapın iki katında sıfıra iner. Eskiden (radius / fark) ile
+        // yumuşatılıyordu: yüzeyden 1 m önde duran nesne (birinci şahıs elleri, silah) hâlâ ~%57 örtü sayılıp arkadaki yüzeyde
+        // siluetinin çevresine koyu hale çiziyordu; nişan alıp bırakınca bu hale TAA geçmişinde elin eski yerinde koyu çizgiler
+        // olarak kalıyordu. Köşe ve temas örtüsü (fark yarıçaptan küçük) değişmez
+        float rangeCheck = 1.0 - smoothstep(radius, 2.0 * radius, abs(p.z - sceneZ));
         occlusion += (sceneZ >= samplePos.z + 0.02 ? 1.0 : 0.0) * rangeCheck;
     }
     float ao = 1.0 - (occlusion / 16.0) * u_Intensity;
