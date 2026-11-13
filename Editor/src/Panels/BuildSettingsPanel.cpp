@@ -464,6 +464,9 @@ namespace Conqueror::Editor
             MarkDirty();
         ImGui::Unindent(12.0f);
         ImGui::EndDisabled();
+        if (UI::Checkbox("Leave AssetBundle Assets Out", cfg.Build.ExcludeBundledAssets,
+                         "Assets with an AssetBundle name are not copied into the game; they arrive in their bundles (Build > Build AssetBundles, LoadAssetBundle)"))
+            MarkDirty();
 
         ImGui::Spacing();
         const bool canBuild = BuildPipeline::CanBuild(cfg.TargetPlatform);

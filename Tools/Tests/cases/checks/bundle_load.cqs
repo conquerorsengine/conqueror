@@ -1,0 +1,5 @@
+using nativebridge;
+var h = LoadAssetBundle("AssetBundles/Linux/textures.cqbundle");
+var has = AssetBundleContains(h, "Assets/flag_blue.png");
+LogInfo("REGRESSION bundle handle=" + h + " has=" + has);
+if (h > 0 && has) { CreateEntity("Bundle_OK"); }

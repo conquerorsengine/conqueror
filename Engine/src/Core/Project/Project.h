@@ -126,6 +126,8 @@ namespace Conqueror {
         // optimizasyonsuz ve hata ayıklama bilgisiyle; oyun başlarken bir hata ayıklayıcının bağlanmasını bekler
         bool ScriptDebugging = false;
         bool WaitForDebugger = false;
+        // AssetBundle'a atanmış varlıklar oyun klasörüne kopyalanmaz (pakette gelir; Unity'de derleme yalnız sahnelerin kullandığını alır)
+        bool ExcludeBundledAssets = false;
     };
 
     // Unity Project Settings > Version Control: Git (Git LFS kilitleri) ya da Perforce (Helix Core). Inspector başlığındaki Check Out /

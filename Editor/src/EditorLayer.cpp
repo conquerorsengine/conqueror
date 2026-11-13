@@ -73,6 +73,8 @@
 #include "Scripting/ConquerorScript/CQSValue.h"
 #include "Scripting/ScriptRuntime.h"
 #include "VersionControl/VersionControl.h"
+#include "Build/AssetBundleBuilder.h"
+#include "Core/Assets/AssetBundle.h"
 #include <fstream>
 #include <sstream>
 #include "Panels/GameViewSettings.h"
@@ -2572,6 +2574,8 @@ namespace Conqueror::Editor
         
         if (!editorState.IsEditing())
         {
+            // Unity: Play bitince açık AssetBundle'lar kapanır
+            AssetBundles::UnloadAll();
             // Seçili entity'nin UUID'sini kaydet (çalışma zamanı sahnesi silinmeden önce)
             uint64_t selectedUUID = GetSelectedEntityUUID();
             
@@ -3050,6 +3054,21 @@ namespace Conqueror::Editor
         std::ofstream(dir / "Editor.yaml", std::ios::trunc) << out.c_str() << "\n";
     }
 
+    bool EditorLayer::BuildAssetBundles()
+    {
+        auto project = Project::GetActive();
+        if (!project)
+            return false;
+        const std::string platform = project->GetConfig().TargetPlatform.empty() ? BuildPipeline::HostPlatform() : project->GetConfig().TargetPlatform;
+        auto deps = [this](const std::filesystem::path& p) {
+            return m_ContentBrowserPanel ? m_ContentBrowserPanel->CollectDependencies(p) : std::vector<std::filesystem::path>{};
+        };
+        const auto result = AssetBundleBuilder::Build(platform, deps);
+        if (!result.Ok)
+            CQ_CORE_ERROR("[AssetBundles] {0}", result.Error);
+        return result.Ok;
+    }
+
     void EditorLayer::DebugMenu()
     {
         SyncScriptDebugSetting();
@@ -3097,6 +3116,8 @@ namespace Conqueror::Editor
                 if (!m_BuildSettingsPanel->StartBuild(false, &err))
                     CQ_CORE_ERROR("Build: {0}", err);
             }
+            if (ImGui::MenuItem(ICON_FA_BOX_ARCHIVE "  Build AssetBundles", nullptr, false, !running && Project::GetActive()))
+                BuildAssetBundles();
             if (ImGui::MenuItem(ICON_FA_PLAY "  Build And Run", nullptr, false, !running && m_BuildSettingsPanel))
             {
                 m_ShowBuildSettings = true;
@@ -6308,6 +6329,32 @@ namespace Conqueror::Editor
             return false;
         });
         // select_asset <path>: varlığı seç (Inspector'da açılır; Content Browser'da tıklamakla aynı)
+        // bundle set <yol> <ad|none> | build | expect_file <yol> | move_out <yol> (dosyayı projeden Temp'e taşı) | unload_all
+        Automation::RegisterCommand("bundle", [this](const Args& a, std::string& err) {
+            if (a.size() < 2 || !Project::GetActive()) { err = "bundle set|build|expect_file|move_out|unload_all"; return false; }
+            const auto project = Project::GetActiveProjectDirectory();
+            if (a[1] == "set" && a.size() > 3) { AssetBundleBuilder::SetBundleName(a[2], a[3] == "none" ? std::string() : a[3]); return true; }
+            if (a[1] == "build") { if (!BuildAssetBundles()) { err = "build failed"; return false; } return true; }
+            if (a[1] == "unload_all") { AssetBundles::UnloadAll(); return true; }
+            std::error_code ec;
+            if (a[1] == "expect_file" && a.size() > 2)
+            {
+                if (!std::filesystem::exists(project / a[2], ec)) { err = "missing " + a[2]; return false; }
+                return true;
+            }
+            if (a[1] == "move_out" && a.size() > 2)
+            {
+                const auto from = project / a[2], to = project / "Temp" / std::filesystem::path(a[2]).filename();
+                std::filesystem::create_directories(to.parent_path(), ec);
+                std::filesystem::rename(from, to, ec);
+                if (std::filesystem::exists(std::filesystem::path(from.string() + ".meta"), ec))
+                    std::filesystem::rename(from.string() + ".meta", to.string() + ".meta", ec);
+                if (ec) { err = ec.message(); return false; }
+                return true;
+            }
+            err = "unknown bundle command";
+            return false;
+        });
         // vcs mode <none|git|perforce> | init_git | p4exe <yol> | refresh | expect <yol> <durum> | lock|unlock|checkout|revert|add <yol>
         Automation::RegisterCommand("vcs", [](const Args& a, std::string& err) {
             namespace VC = VersionControl;

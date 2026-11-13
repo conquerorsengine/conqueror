@@ -71,6 +71,8 @@ namespace Conqueror::Editor
         void BuildMenu();
         // Godot Debug menüsü + Unity Code Optimization (Debug Mode): Script Debugging, Visible Collision Shapes / Navigation / Paths
         void DebugMenu();
+        // Build > Build AssetBundles (bağımlılıklar Content Browser'ın Select Dependencies toplayıcısıyla)
+        bool BuildAssetBundles();
         void SyncScriptDebugSetting();
         void SaveScriptDebugSetting();
         const void* m_ScriptDebugProject = nullptr;   // ayarın okunduğu proje (değişince UserSettings'ten yeniden okunur)

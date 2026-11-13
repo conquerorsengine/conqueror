@@ -7,6 +7,7 @@
 //    Import New Asset, Extract Materials, Find References In Scene / Project, Select Dependencies, Refresh, Reimport,
 //    Reimport All, Open Script Project, View in Import Activity Window, Properties.
 #include "ContentBrowserPanel.h"
+#include "Build/AssetBundleBuilder.h"
 #include "Panels/NodeAssetPanel.h"
 #include "Core/Assets/SimpleAsset.h"
 
@@ -702,6 +703,32 @@ namespace Conqueror::Editor
         if (ImGui::IsWindowAppearing())
             m_SelectedPath = entry.Path;   // Unity: sağ tıklanan varlık seçilir
         DrawProjectMenu(entry.Path, entry.IsDirectory);
+        // AssetBundle ataması (klasöre verilen ad içindekilere geçer)
+        if (!IsReadOnly(entry.Path))
+        {
+            ImGui::Separator();
+            if (ImGui::BeginMenu(ICON_FA_BOX_ARCHIVE "  AssetBundle"))
+            {
+                const std::string own = AssetBundleBuilder::GetAssignedName(entry.Path.string());
+                if (ImGui::MenuItem("None", nullptr, own.empty()))
+                    AssetBundleBuilder::SetBundleName(entry.Path.string(), "");
+                for (const auto& name : AssetBundleBuilder::GetAllBundleNames())
+                    if (ImGui::MenuItem(name.c_str(), nullptr, name == own))
+                        AssetBundleBuilder::SetBundleName(entry.Path.string(), name);
+                static char s_Name[64] = "";
+                ImGui::Separator();
+                ImGui::SetNextItemWidth(160.0f);
+                ImGui::InputTextWithHint("##newbundle", "new bundle name", s_Name, sizeof(s_Name));
+                ImGui::SameLine();
+                if (ImGui::Button("Assign") && s_Name[0])
+                {
+                    AssetBundleBuilder::SetBundleName(entry.Path.string(), s_Name);
+                    s_Name[0] = '\0';
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndMenu();
+            }
+        }
         ImGui::EndPopup();
     }
 

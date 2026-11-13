@@ -1,5 +1,6 @@
 #include "AssetInspector.h"
 #include "VersionControl/VersionControl.h"
+#include "Build/AssetBundleBuilder.h"
 #include "ContentBrowserPanel.h"
 #include "NodeAssetPanel.h"
 #include "Assets/SimpleAssetInspector.h"
@@ -960,8 +961,50 @@ namespace Conqueror::Editor::AssetInspector
                 ImGui::PopTextWrapPos();
             }
         }
-        ImGui::PopStyleVar();
-        ImGui::Separator();
+        // Unity Inspector altındaki AssetBundle alanı (yalnız Assets altındaki varlıklar)
+        if (fs::path(path).generic_string().find("/Assets/") != std::string::npos)
+        {
+            const std::string own = AssetBundleBuilder::GetAssignedName(path);
+            const std::string inherited = own.empty() ? AssetBundleBuilder::GetBundleName(path) : std::string();
+            ImGui::AlignTextToFramePadding();
+            ImGui::TextDisabled(ICON_FA_BOX_ARCHIVE "  AssetBundle");
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(std::min(220.0f, ImGui::GetContentRegionAvail().x));
+            const std::string preview = !own.empty() ? own : (!inherited.empty() ? inherited + " (folder)" : std::string("None"));
+            static char s_NewName[64] = "";
+            bool openNew = false;
+            if (ImGui::BeginCombo("##assetbundle", preview.c_str()))
+            {
+                if (ImGui::Selectable("None", own.empty()))
+                    AssetBundleBuilder::SetBundleName(path, "");
+                for (const auto& name : AssetBundleBuilder::GetAllBundleNames())
+                    if (ImGui::Selectable(name.c_str(), name == own))
+                        AssetBundleBuilder::SetBundleName(path, name);
+                ImGui::Separator();
+                if (ImGui::Selectable(ICON_FA_PLUS "  New..."))
+                    openNew = true;
+                ImGui::EndCombo();
+            }
+            if (openNew)
+            {
+                s_NewName[0] = '\0';
+                ImGui::OpenPopup("##newbundle");
+            }
+            if (ImGui::BeginPopup("##newbundle"))
+            {
+                ImGui::TextUnformatted("New AssetBundle name");
+                if (ImGui::IsWindowAppearing())
+                    ImGui::SetKeyboardFocusHere();
+                const bool enter = ImGui::InputText("##bundlename", s_NewName, sizeof(s_NewName), ImGuiInputTextFlags_EnterReturnsTrue);
+                if ((enter || ImGui::Button("Create")) && s_NewName[0])
+                {
+                    AssetBundleBuilder::SetBundleName(path, s_NewName);
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+            }
+            ImGui::Separator();
+        }
     }
 
     void Draw(const std::string& path)

@@ -1,0 +1,24 @@
+# template: basic3d
+# 186 (Unity AssetBundle): doku "textures" paketine atanır, Build AssetBundles .cqbundle + manifest yazar; doku projeden kaldırılınca
+# LoadAssetBundle ile açılan paketten yüklenir (UI Image mavi görünür)
+wait 40
+content_drop "{dir}/assets/loc/flag_red.png" "{dir}/assets/loc/flag_blue.png"
+wait 10
+bundle set Assets/flag_blue.png textures
+bundle build
+bundle expect_file AssetBundles/Linux/textures.cqbundle
+bundle expect_file AssetBundles/Linux/Linux.manifest
+bundle move_out Assets/flag_blue.png
+ui create Canvas UICanvas
+ui create Image Flag 0 0
+comp set Flag RectTransformComponent SizeDelta 600 400
+focus Game
+play
+wait 10
+run_cqs_file "{dir}/checks/bundle_load.cqs"
+expect_entities 1 Bundle_OK
+comp set Flag UIImageComponent Texture Assets/flag_blue.png
+wait 10
+game_region 0.4 0.4 0.6 0.6 b mean >150
+stop
+quit

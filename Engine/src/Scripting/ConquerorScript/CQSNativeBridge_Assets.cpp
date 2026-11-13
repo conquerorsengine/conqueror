@@ -15,6 +15,7 @@
 #include "Renderer/RHI/Texture.h"
 #include "Core/Serialization/SceneSerializer.h"
 #include "UI/UISystem.h"
+#include "Core/Assets/AssetBundle.h"
 
 #include <unordered_map>
 
@@ -42,6 +43,31 @@ namespace Conqueror::CQS
 
     void RegisterAssetNatives(Scripting::NativeRegistry* vm)
     {
+        // Unity AssetBundle: LoadAssetBundle("AssetBundles/Linux/levels.cqbundle") -> tanıtıcı (0: açılamadı). Açık paketteki varlıklar
+        // her yükleyicide (LoadScene, SpawnPrefab, doku, ses ...) normal "Assets/..." yoluyla kullanılır
+        vm->DefineNative("LoadAssetBundle", [](int argc, Value* args) -> Value {
+            if (argc < 1 || !args[0].IsString()) return Value::MakeInt(0);
+            return Value::MakeInt(AssetBundles::Load(args[0].AsString()->Value));
+        }, 1);
+        vm->DefineNative("UnloadAssetBundle", [](int argc, Value* args) -> Value {
+            return Value::MakeBool(argc > 0 && AssetBundles::Unload((int)args[0].ToNumber()));
+        }, 1);
+        vm->DefineNative("AssetBundleContains", [](int argc, Value* args) -> Value {
+            return Value::MakeBool(argc > 1 && args[1].IsString() && AssetBundles::Contains((int)args[0].ToNumber(), args[1].AsString()->Value));
+        }, 2);
+        vm->DefineNative("AssetBundleGetAssetNames", [](int argc, Value* args) -> Value {
+            auto* list = new CQSListObject();
+            if (argc > 0)
+                for (const auto& n : AssetBundles::GetAssetNames((int)args[0].ToNumber()))
+                    list->Elements.push_back(Value::MakeString(n));
+            return Value::MakeObject(list);
+        }, 1);
+        vm->DefineNative("GetLoadedAssetBundles", [](int, Value*) -> Value {
+            auto* list = new CQSListObject();
+            for (const auto& n : AssetBundles::GetLoadedBundles())
+                list->Elements.push_back(Value::MakeString(n));
+            return Value::MakeObject(list);
+        }, 0);
         // Material Parameter Collection: MPCSetScalar("Assets/X.cqmpc", "Name", value), MPCSetVector(path, name, r, g, b, a)
         vm->DefineNative("MPCSetScalar", [](int argc, Value* args) -> Value {
             if (argc < 3 || !args[0].IsString() || !args[1].IsString()) return Value::MakeBool(false);

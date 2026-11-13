@@ -1,5 +1,8 @@
 #include "Renderer/SpriteAtlas.h"
 #include "BuildPipeline.h"
+#include "Build/AssetBundleBuilder.h"
+#include <cstring>
+#include <set>
 
 #include <IconsFontAwesome6.h>
 #include "Core/Base/Version.h"
@@ -57,14 +60,29 @@ namespace Conqueror::Editor
             return out.empty() ? "Game" : out;
         }
 
+        // Leave AssetBundle Assets Out: derleme başlarken doldurulur (proje göreli yollar)
+        std::set<std::string> s_BundledAssets;
+        fs::path s_BundleProjectDir;
+
         bool SkipEntry(const fs::path& p)
         {
             const std::string name = p.filename().string();
-            static const char* kSkip[] = { "Library", "Builds", "Screenshots", ".git", ".vs", ".idea", "imgui.ini" };
+            // AssetBundles: Build AssetBundles çıktısı (paketler oyunla ayrı dağıtılır), UserSettings: kullanıcıya özel editör ayarları
+            static const char* kSkip[] = { "Library", "Builds", "Screenshots", ".git", ".vs", ".idea", "imgui.ini", "AssetBundles", "UserSettings" };
             for (const char* s : kSkip)
                 if (name == s)
                     return true;
             const std::string ext = p.extension().string();
+            if (!s_BundledAssets.empty())
+            {
+                std::error_code ec;
+                std::string rel = fs::relative(p, s_BundleProjectDir, ec).generic_string();
+                for (const char* sidecar : { ".meta", ".cqsprite" })
+                    if (rel.size() > std::strlen(sidecar) && rel.compare(rel.size() - std::strlen(sidecar), std::string::npos, sidecar) == 0)
+                        rel.resize(rel.size() - std::strlen(sidecar));
+                if (!ec && s_BundledAssets.count(rel))
+                    return true;
+            }
             return ext == ".log" || ext == ".tmp";
         }
 
@@ -718,7 +736,18 @@ namespace Conqueror::Editor
 
         // 5) Proje içeriği
         step(0.35f, "Copying Assets");
-        if (!CopyTree(o.ProjectDir / "Assets", dataDir / "Assets", stats, error, cancel))
+        // Leave AssetBundle Assets Out: paketlere atanmış varlıklar (ve yan dosyaları) kopyalanmaz
+        s_BundledAssets.clear();
+        s_BundleProjectDir = o.ProjectDir;
+        if (o.Config.Build.ExcludeBundledAssets)
+            for (const auto& name : AssetBundleBuilder::GetAllBundleNames())
+                for (const auto& f : AssetBundleBuilder::GetAssetsInBundle(name))
+                    s_BundledAssets.insert(f);
+        const bool copied = CopyTree(o.ProjectDir / "Assets", dataDir / "Assets", stats, error, cancel);
+        if (!s_BundledAssets.empty())
+            CQ_CORE_INFO("[Build] {0} asset(s) left out (in AssetBundles)", s_BundledAssets.size());
+        s_BundledAssets.clear();
+        if (!copied)
             return fail(error);
         CrunchTextures(dataDir / "Assets");
         step(0.55f, "Copying Packages");

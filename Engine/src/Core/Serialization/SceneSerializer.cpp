@@ -1,5 +1,6 @@
 #include "SceneSerializer.h"
 #include "Grid/GridComponents.h"
+#include "Core/Assets/AssetBundle.h"
 #include "Scene/LevelStreaming.h"
 #include "Scene/MeshRendererMaterial.h"
 #include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
@@ -229,6 +230,9 @@ namespace Conqueror
                 auto absolute = projectDir / p;
                 if (std::filesystem::exists(absolute, ec))
                     return absolute.string();
+                // Açık AssetBundle'lardaki varlık (oyun derlemesinde olmayan, pakette gelen)
+                if (std::string bundled = AssetBundles::ResolveMounted(path); !bundled.empty())
+                    return bundled;
             }
             else if (!std::filesystem::exists(p, ec))
             {
@@ -240,6 +244,8 @@ namespace Conqueror
                     auto remapped = projectDir / std::filesystem::path(path.substr(assets + 1));
                     if (std::filesystem::exists(remapped, ec))
                         return remapped.string();
+                    if (std::string bundled = AssetBundles::ResolveMounted(path.substr(assets + 1)); !bundled.empty())
+                        return bundled;
                 }
             }
         }
