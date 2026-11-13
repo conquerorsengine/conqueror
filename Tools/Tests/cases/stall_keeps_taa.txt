@@ -1,0 +1,13 @@
+# template: fps
+# 226: pencere değiştirip dönünce (uygulama birkaç saniye hiç kare çizmez) zamansal kenar yumuşatma geçmişi korunur; eskiden duvar
+# saatine bakılıp geçmiş baştan başlıyor, görüntü bir an parlayıp ~2 saniyede eski haline sönüyordu
+wait 40
+focus Game
+wait 240
+game_region_change mark 0.05 0.05 0.95 0.95
+stall 3000
+wait 3
+game_region_change expect 0.05 0.05 0.95 0.95 <0.4
+wait 30
+game_region_change expect 0.05 0.05 0.95 0.95 <0.4
+quit

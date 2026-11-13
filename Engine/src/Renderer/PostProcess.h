@@ -285,6 +285,7 @@ namespace Conqueror
         glm::mat4 m_PrevCloudViewProj{ 1.0f };  // önceki karede bulutların hesaplandığı matris
         float m_DeltaTime = 0.0f;
         double m_LastRunSeconds = -1.0;   // bu yığının en son çalıştığı an (s, tekdüze saat): bayat geçmiş testi
+        uint64_t m_LastRunFrame = UINT64_MAX;   // bu yığının en son çalıştığı uygulama karesi (TimeManager::GetFrameCount)
         uint32_t m_LumTexture = 0, m_LumFramebuffer = 0;
         RenderTarget m_Adapt[2];
         int m_AdaptIndex = 0;

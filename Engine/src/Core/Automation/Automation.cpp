@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <thread>
 #include <cctype>
 #include <cstdlib>
 #include <cstring>
@@ -324,6 +325,13 @@ namespace Conqueror
                 st.RetryLastError.clear();
                 handled = true;
                 // Sonuç (OK/FAIL) koşul çözülünce yazılır
+                return true;
+            }
+            if (cmd == "stall")
+            {
+                // stall <ms>: ana döngüyü gerçekten bekletir (pencere arkada kalınca / Alt+Tab'da sürücünün takas beklemesi gibi);
+                // sleep'ten farkı: o sürede hiç kare çizilmez
+                std::this_thread::sleep_for(std::chrono::milliseconds((int)argf(1, 1000)));
                 return true;
             }
             if (cmd == "sleep")

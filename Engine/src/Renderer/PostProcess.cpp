@@ -1999,7 +1999,14 @@ namespace Conqueror
 
         // HDR efekt zinciri: sahne -> (SSR + bulut + hacimsel sis) -> TAA -> alan derinliği -> hareket bulanıklığı
         const float deltaTime = m_LastTime < 0.0f ? 0.0f : std::clamp(time - m_LastTime, 0.0f, 0.5f);
-        if (m_LastTime >= 0.0f && time - m_LastTime > 0.5f)
+        // Görünüm uygulama karelerini atladıysa (sekmesi gizliydi, Realtime kapalıyken bekledi) dünya o arada ilerledi: geçmiş bayat.
+        // Bütün uygulama durduysa (pencere arkada kaldı / Alt+Tab, simge durumu, takılma) görünüm bir önceki uygulama karesinde de
+        // çizilmiştir ve dünya en çok bir (kırpılmış) adım ilerler: geçmiş geçerlidir. Eskiden duvar saatine bakılıyordu; pencere
+        // değiştirip dönünce zamansal geçmiş baştan başlıyor, görüntü bir an parlayıp ~2 saniyede eski haline sönüyordu
+        const uint64_t frame = TimeManager::GetFrameCount();
+        const bool skippedFrames = m_LastRunFrame != UINT64_MAX && frame > m_LastRunFrame + 1;
+        m_LastRunFrame = frame;
+        if (m_LastTime >= 0.0f && time - m_LastTime > 0.5f && skippedFrames)
             m_HistoryValid = false;   // görünüm bir süre çizilmedi: eski geçmiş güvenilmez
         m_LastTime = time;
         // Kamera kesmesi (ışınlanma, yeniden doğma): önceki karenin görüntüsünün bu kareyle ilgisi yok, zamansal yöntemler baştan başlar.
@@ -2010,7 +2017,7 @@ namespace Conqueror
             const double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
             // Kayıt (Recorder, sabit zaman adımı) sırasında kareler gerçek zamanda yavaştır (kodlama): duvar saatiyle bakılınca TAA her
             // karede baştan başlıyor, kaydedilen videoda kenar yumuşatma hiç birikmiyordu (ince ayrıntı titreşim döngüsüyle titriyordu)
-            if (m_LastRunSeconds >= 0.0 && now - m_LastRunSeconds > 0.25 && TimeManager::GetCaptureDeltaTime() <= 0.0f)
+            if (m_LastRunSeconds >= 0.0 && now - m_LastRunSeconds > 0.25 && TimeManager::GetCaptureDeltaTime() <= 0.0f && skippedFrames)
                 ResetTemporalHistory();
             m_LastRunSeconds = now;
         }
