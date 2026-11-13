@@ -3940,7 +3940,15 @@ namespace Conqueror::Editor
             // sprite_editor open <path> | slice grid <w> <h> | slice count <c> <r> | slice auto | apply
             if (a.size() < 2 || !m_SpriteEditorPanel) { err = "sprite_editor open <path> | slice ... | apply"; return false; }
             auto& se = *m_SpriteEditorPanel;
-            if (a[1] == "open" && a.size() > 2) { m_ShowSpriteEditor = true; if (!se.Open(a[2])) { err = "cannot open " + a[2]; return false; } return true; }
+            if (a[1] == "open" && a.size() > 2)
+            {
+                std::filesystem::path path = a[2];
+                if (path.is_relative() && Project::GetActive())
+                    path = Project::GetActiveProjectDirectory() / path;   // proje göreli yol (Assets/...)
+                m_ShowSpriteEditor = true;
+                if (!se.Open(path)) { err = "cannot open " + a[2]; return false; }
+                return true;
+            }
             if (a[1] == "slice" && a.size() > 2)
             {
                 if (a[2] == "auto") se.SliceAutomatic();
@@ -3996,7 +4004,8 @@ namespace Conqueror::Editor
             {
                 static const std::map<std::string, ST> tools = { { "pose", ST::PreviewPose }, { "edit_bone", ST::EditBone }, { "create_bone", ST::CreateBone }, { "split_bone", ST::SplitBone },
                     { "auto_geometry", ST::AutoGeometry }, { "edit_geometry", ST::EditGeometry }, { "create_vertex", ST::CreateVertex },
-                    { "auto_weights", ST::AutoWeights }, { "weight_slider", ST::WeightSlider }, { "weight_brush", ST::WeightBrush } };
+                    { "auto_weights", ST::AutoWeights }, { "weight_slider", ST::WeightSlider }, { "weight_brush", ST::WeightBrush },
+                    { "create_edge", ST::CreateEdge }, { "split_edge", ST::SplitEdge } };
                 auto it = tools.find(a[2]);
                 if (it == tools.end()) { err = "unknown skin tool"; return false; }
                 se.SetSkinTool(it->second);
@@ -4006,6 +4015,110 @@ namespace Conqueror::Editor
             if (a[1] == "auto_geometry") { se.SkinAutoGeometry(a.size() > 2 ? std::atoi(a[2].c_str()) : 12, 1); return true; }
             if (a[1] == "auto_weights") { se.SkinAutoWeights(); return true; }
             if (a[1] == "pose" && a.size() > 3) { se.SkinSetPose(std::atoi(a[2].c_str()), F(3)); return true; }
+            // skin edge <a> <b> | expect_edge <a> <b> <0|1> | split_edge <a> <b> <t> | influence <kemik> <0|1> | copy_rig | paste_rig [bones|mesh]
+            //      | expect_weight <köşe> <kemik> <min> <max>
+            // edge_xy / expect_edge_xy / split_edge_xy: köşeler dilim içi piksel konumuyla (en yakın köşe); edge_xy ... fail = eklenmemeli
+            //      | expect_area <alan>: üçgenlerin toplam alanı (ağ boşluksuz ve çakışmasız)
+            auto nearestVertex = [&](float x, float y) {
+                const int selected = se.GetSelectedSprite();
+                if (selected < 0 || selected >= (int)se.GetSheet().Sprites.size()) return -1;
+                const auto& verts = se.GetSheet().Sprites[(size_t)selected].Skin.Vertices;
+                int best = -1;
+                float bestD = 1e30f;
+                for (int i = 0; i < (int)verts.size(); ++i)
+                    if (float d = glm::length(verts[(size_t)i] - glm::vec2(x, y)); d < bestD) { bestD = d; best = i; }
+                return best;
+            };
+            if (a[1] == "edge_xy" && a.size() > 5)
+            {
+                std::string message;
+                const bool ok = se.SkinCreateEdge(nearestVertex(F(2), F(3)), nearestVertex(F(4), F(5)), &message);
+                const bool wantFail = a.size() > 6 && a[6] == "fail";
+                Automation::Report("SKIN edge " + std::string(ok ? "added" : "refused: " + message));
+                if (ok == wantFail) { err = ok ? "edge was added" : "edge failed: " + message; return false; }
+                return true;
+            }
+            if (a[1] == "expect_edge_xy" && a.size() > 6)
+            {
+                const bool has = se.SkinHasEdge(nearestVertex(F(2), F(3)), nearestVertex(F(4), F(5)));
+                if (has != (a[6] == "1")) { err = std::string("edge ") + (has ? "exists" : "missing"); return false; }
+                return true;
+            }
+            if (a[1] == "split_edge_xy" && a.size() > 6)
+            {
+                if (se.SkinSplitEdge(nearestVertex(F(2), F(3)), nearestVertex(F(4), F(5)), F(6)) < 0) { err = "no such edge"; return false; }
+                return true;
+            }
+            if (a[1] == "expect_area" && a.size() > 2)
+            {
+                const int selected = se.GetSelectedSprite();
+                if (selected < 0 || selected >= (int)se.GetSheet().Sprites.size()) { err = "no selected sprite"; return false; }
+                const auto& skin = se.GetSheet().Sprites[(size_t)selected].Skin;
+                float area = 0.0f;
+                for (size_t t = 0; t + 2 < skin.Indices.size(); t += 3)
+                {
+                    const glm::vec2 p0 = skin.Vertices[skin.Indices[t]], p1 = skin.Vertices[skin.Indices[t + 1]], p2 = skin.Vertices[skin.Indices[t + 2]];
+                    area += 0.5f * std::abs((p1.x - p0.x) * (p2.y - p0.y) - (p1.y - p0.y) * (p2.x - p0.x));
+                }
+                Automation::Report("SKIN area " + std::to_string(area) + " triangles " + std::to_string(skin.Indices.size() / 3));
+                if (std::abs(area - F(2)) > 0.5f) { err = "mesh area " + std::to_string(area); return false; }
+                return true;
+            }
+            if (a[1] == "expect_weight_xy" && a.size() > 6)
+            {
+                const int v = nearestVertex(F(2), F(3));
+                const int selected = se.GetSelectedSprite();
+                if (v < 0) { err = "no vertex"; return false; }
+                const auto& skin = se.GetSheet().Sprites[(size_t)selected].Skin;
+                const int bone = std::atoi(a[4].c_str());
+                float w = 0.0f;
+                for (int k = 0; k < 4; ++k)
+                    if (skin.BoneIndex[(size_t)v][k] == bone) w = skin.BoneWeight[(size_t)v][k];
+                Automation::Report("SKIN weight at " + a[2] + "," + a[3] + " bone" + a[4] + " = " + std::to_string(w));
+                if (w < F(5) - 1e-4f || w > F(6) + 1e-4f) { err = "weight " + std::to_string(w); return false; }
+                return true;
+            }
+            if (a[1] == "edge" && a.size() > 3)
+            {
+                std::string message;
+                if (!se.SkinCreateEdge(std::atoi(a[2].c_str()), std::atoi(a[3].c_str()), &message)) { err = "edge failed: " + message; return false; }
+                return true;
+            }
+            if (a[1] == "expect_edge" && a.size() > 4)
+            {
+                const bool has = se.SkinHasEdge(std::atoi(a[2].c_str()), std::atoi(a[3].c_str()));
+                if (has != (a[4] == "1")) { err = std::string("edge ") + a[2] + "-" + a[3] + (has ? " exists" : " missing"); return false; }
+                return true;
+            }
+            if (a[1] == "split_edge" && a.size() > 4)
+            {
+                const int p = se.SkinSplitEdge(std::atoi(a[2].c_str()), std::atoi(a[3].c_str()), F(4));
+                Automation::Report("SKIN split vertex " + std::to_string(p));
+                if (p < 0) { err = "no such edge"; return false; }
+                return true;
+            }
+            if (a[1] == "influence" && a.size() > 3) { se.SkinSetBoneInfluence(std::atoi(a[2].c_str()), a[3] == "1"); return true; }
+            if (a[1] == "copy_rig") { se.SkinCopyRig(); return true; }
+            if (a[1] == "paste_rig")
+            {
+                const bool bones = a.size() < 3 || a[2] == "bones", mesh = a.size() < 3 || a[2] == "mesh";
+                if (!se.SkinPasteRig(bones, mesh)) { err = "paste rig failed"; return false; }
+                return true;
+            }
+            if (a[1] == "expect_weight" && a.size() > 5)
+            {
+                const int selected = se.GetSelectedSprite();
+                if (selected < 0 || selected >= (int)se.GetSheet().Sprites.size()) { err = "no selected sprite"; return false; }
+                const auto& skin = se.GetSheet().Sprites[(size_t)selected].Skin;
+                const int v = std::atoi(a[2].c_str()), bone = std::atoi(a[3].c_str());
+                if (v < 0 || v >= (int)skin.Vertices.size()) { err = "no vertex " + a[2]; return false; }
+                float w = 0.0f;
+                for (int k = 0; k < 4; ++k)
+                    if (skin.BoneIndex[(size_t)v][k] == bone) w = skin.BoneWeight[(size_t)v][k];
+                Automation::Report("SKIN weight v" + a[2] + " bone" + a[3] + " = " + std::to_string(w));
+                if (w < F(4) - 1e-4f || w > F(5) + 1e-4f) { err = "weight " + std::to_string(w); return false; }
+                return true;
+            }
             if (a[1] == "expect_skin" && a.size() > 3)
             {
                 const int selected = se.GetSelectedSprite();

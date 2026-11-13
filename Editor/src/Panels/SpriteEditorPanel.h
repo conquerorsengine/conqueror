@@ -27,7 +27,9 @@ namespace Conqueror::Editor
     {
     public:
         enum class EditorMode { Sprite = 0, Outline, Physics, Secondary, Skin };
-        enum class SkinTool { PreviewPose = 0, EditBone, CreateBone, SplitBone, AutoGeometry, EditGeometry, CreateVertex, AutoWeights, WeightSlider, WeightBrush };
+        // Yeni araçlar sona eklenir (otomasyon / kayıtlar). Unity Skinning Editor: Create Edge, Split Edge
+        enum class SkinTool { PreviewPose = 0, EditBone, CreateBone, SplitBone, AutoGeometry, EditGeometry, CreateVertex, AutoWeights, WeightSlider, WeightBrush,
+                              CreateEdge, SplitEdge };
 
         SpriteEditorPanel() = default;
 
@@ -61,6 +63,16 @@ namespace Conqueror::Editor
         void SkinAutoWeights();
         void SkinSetPose(int bone, float degrees);
         void SkinResetPose();
+        // Unity Create Edge: a-b köşeleri arasında kalıcı kenar (ağ yeniden üçgenlenir; kenarı kesen üçgenler kaldırılıp iki yanı doldurulur)
+        bool SkinCreateEdge(int a, int b, std::string* error = nullptr);
+        // Unity Split Edge: a-b kenarını t (0..1) noktasında böler; yeni köşe
+        int SkinSplitEdge(int a, int b, float t);
+        // Unity Bone Influence: kemiğin bu sprite'ı etkileyip etkilemediği; kapanınca ağırlıkları kalkar
+        void SkinSetBoneInfluence(int bone, bool influence);
+        // Unity Copy Rig / Paste Rig: kemikler (ve ağ + ağırlıklar) dilim boyutuna ölçeklenerek kopyalanır
+        void SkinCopyRig();
+        bool SkinPasteRig(bool bones, bool mesh);
+        bool SkinHasEdge(int a, int b) const;
         // Secondary Textures
         void AddSecondaryTexture(const std::string& name, const std::string& path);
 
@@ -184,6 +196,16 @@ namespace Conqueror::Editor
         int m_SliderMode = 0;                       // 0 Add & Subtract, 1 Smooth
         float m_SliderValue = 0.0f;
         bool m_SliderPushedUndo = false;
+        int m_EdgeStart = -1;                       // Create Edge: zincirin son köşesi
+        std::string m_SkinMessage;                  // araç uyarısı (kenar ağın dışına çıkıyor ...)
+        // Unity Visibility: kemik ve ağ saydamlığı
+        float m_BoneOpacity = 1.0f;
+        float m_MeshOpacity = 1.0f;
+        // Copy Rig panosu (dilim boyutuyla)
+        SpriteSkinData m_RigClipboard;
+        glm::vec2 m_RigClipboardSize{ 0.0f };
+        bool m_HasRigClipboard = false;
+        bool m_PasteBones = true, m_PasteMesh = true;
 
         std::vector<SpriteDef> m_SidebarSnapshot;
         bool m_SidebarEditing = false;

@@ -297,7 +297,10 @@ namespace Conqueror
                 {
                     out << YAML::Flow << YAML::BeginMap << YAML::Key << "Name" << YAML::Value << b.Name << YAML::Key << "Parent" << YAML::Value << b.Parent;
                     out << YAML::Key << "Pos" << YAML::Value << YAML::Flow << YAML::BeginSeq << b.Position.x << b.Position.y << YAML::EndSeq;
-                    out << YAML::Key << "Tip" << YAML::Value << YAML::Flow << YAML::BeginSeq << b.Tip.x << b.Tip.y << YAML::EndSeq << YAML::EndMap;
+                    out << YAML::Key << "Tip" << YAML::Value << YAML::Flow << YAML::BeginSeq << b.Tip.x << b.Tip.y << YAML::EndSeq;
+                    if (!b.Influence)
+                        out << YAML::Key << "Influence" << YAML::Value << false;
+                    out << YAML::EndMap;
                 }
                 out << YAML::EndSeq;
                 std::vector<float> flat;
@@ -386,6 +389,7 @@ namespace Conqueror
                             bone.Parent = b["Parent"].as<int>(-1);
                             if (auto v = b["Pos"]; v && v.size() == 2) bone.Position = { v[0].as<float>(), v[1].as<float>() };
                             if (auto v = b["Tip"]; v && v.size() == 2) bone.Tip = { v[0].as<float>(), v[1].as<float>() };
+                            bone.Influence = b["Influence"].as<bool>(true);
                             d.Skin.Bones.push_back(bone);
                         }
                     if (auto v = skin["Vertices"]; v && v.IsSequence())

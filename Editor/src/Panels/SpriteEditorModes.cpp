@@ -16,6 +16,7 @@
 #include <cmath>
 #include <functional>
 #include <map>
+#include <set>
 #include <unordered_map>
 
 namespace Conqueror::Editor
@@ -99,6 +100,8 @@ namespace Conqueror::Editor
                 ranked.reserve(skin.Bones.size());
                 for (int b = 0; b < (int)skin.Bones.size(); ++b)
                 {
+                    if (!skin.Bones[(size_t)b].Influence)
+                        continue;   // Bone Influence kapalı: bu sprite'ı etkilemez
                     const float d = SegmentDistance(skin.Vertices[v], skin.Bones[(size_t)b].Position, skin.Bones[(size_t)b].Tip);
                     ranked.emplace_back(1.0f / (d * d * d * d + 0.06f), b);
                 }
@@ -292,6 +295,206 @@ namespace Conqueror::Editor
             return (int)skin.Vertices.size() - 1;
         }
 
+        bool HasEdge(const SpriteSkinData& skin, uint32_t a, uint32_t b)
+        {
+            for (size_t t = 0; t + 2 < skin.Indices.size(); t += 3)
+                for (int k = 0; k < 3; ++k)
+                {
+                    const uint32_t u = skin.Indices[t + (size_t)k], w = skin.Indices[t + (size_t)((k + 1) % 3)];
+                    if ((u == a && w == b) || (u == b && w == a))
+                        return true;
+                }
+            return false;
+        }
+
+        // a-b kenarını point noktasında böler (kenarı paylaşan iki üçgen ikişer olur); yeni köşenin indisi
+        uint32_t SplitMeshEdge(SpriteSkinData& skin, uint32_t edgeA, uint32_t edgeB, const glm::vec2& point)
+        {
+            const uint32_t p = (uint32_t)AddMeshVertex(skin, point);
+            std::vector<uint32_t> next;
+            next.reserve(skin.Indices.size() + 6);
+            for (size_t t = 0; t + 2 < skin.Indices.size(); t += 3)
+            {
+                const uint32_t tri[3] = { skin.Indices[t], skin.Indices[t + 1], skin.Indices[t + 2] };
+                int e = -1;
+                for (int k = 0; k < 3; ++k)
+                    if ((tri[k] == edgeA && tri[(k + 1) % 3] == edgeB) || (tri[k] == edgeB && tri[(k + 1) % 3] == edgeA))
+                        e = k;
+                if (e < 0)
+                {
+                    next.insert(next.end(), tri, tri + 3);
+                    continue;
+                }
+                const uint32_t x = tri[e], y = tri[(e + 1) % 3], c = tri[(e + 2) % 3];
+                for (uint32_t i : { x, p, c, p, y, c })
+                    next.push_back(i);
+            }
+            skin.Indices = std::move(next);
+            return p;
+        }
+
+        // Unity Create Edge: a-b doğru parçasının kestiği üçgenler kaldırılır, oluşan boşluğun a-b'nin iki yanındaki yarıları ayrı
+        // ayrı üçgenlenir (kısıtlı kenar ekleme). Kenar ağın dışına çıkıyorsa ya da bir köşenin üstünden geçiyorsa eklenmez
+        bool InsertConstraintEdge(SpriteSkinData& skin, uint32_t a, uint32_t b, std::string& error)
+        {
+            const size_t count = skin.Vertices.size();
+            if (a == b || a >= count || b >= count)
+            {
+                error = "Pick two different vertices.";
+                return false;
+            }
+            if (HasEdge(skin, a, b))
+                return true;
+            const glm::vec2 A = skin.Vertices[a], B = skin.Vertices[b];
+            const float len = glm::length(B - A);
+            auto cross2 = [](const glm::vec2& u, const glm::vec2& v) { return u.x * v.y - u.y * v.x; };
+            const float eps = 1e-5f * std::max(1.0f, len * len);
+            auto proper = [&](const glm::vec2& p, const glm::vec2& q, const glm::vec2& r0, const glm::vec2& s) {
+                const float d1 = cross2(q - p, r0 - p), d2 = cross2(q - p, s - p), d3 = cross2(s - r0, p - r0), d4 = cross2(s - r0, q - r0);
+                return ((d1 > eps && d2 < -eps) || (d1 < -eps && d2 > eps)) && ((d3 > eps && d4 < -eps) || (d3 < -eps && d4 > eps));
+            };
+            for (size_t v = 0; v < count; ++v)
+            {
+                if (v == a || v == b)
+                    continue;
+                glm::vec2 q;
+                const float d = SegmentDistance(skin.Vertices[v], A, B, &q);
+                if (d < 0.01f * std::max(1.0f, len) && glm::length(q - A) > 1e-3f && glm::length(q - B) > 1e-3f)
+                {
+                    error = "The edge would pass through another vertex.";
+                    return false;
+                }
+            }
+            std::map<std::pair<uint32_t, uint32_t>, int> uses;
+            for (size_t t = 0; t + 2 < skin.Indices.size(); t += 3)
+                for (int k = 0; k < 3; ++k)
+                {
+                    const uint32_t u = skin.Indices[t + (size_t)k], w = skin.Indices[t + (size_t)((k + 1) % 3)];
+                    uses[{ std::min(u, w), std::max(u, w) }]++;
+                }
+            std::vector<size_t> removed;
+            for (size_t t = 0; t + 2 < skin.Indices.size(); t += 3)
+            {
+                bool crossed = false;
+                for (int k = 0; k < 3; ++k)
+                {
+                    const uint32_t u = skin.Indices[t + (size_t)k], w = skin.Indices[t + (size_t)((k + 1) % 3)];
+                    if (u == a || u == b || w == a || w == b || !proper(A, B, skin.Vertices[u], skin.Vertices[w]))
+                        continue;
+                    if (uses[{ std::min(u, w), std::max(u, w) }] < 2)
+                    {
+                        error = "The edge would leave the mesh.";
+                        return false;
+                    }
+                    crossed = true;
+                }
+                if (crossed)
+                    removed.push_back(t);
+            }
+            if (removed.empty())
+            {
+                error = "The edge would leave the mesh.";
+                return false;
+            }
+            // Kaldırılan bölgenin sınırı (yönlü kenarlar; iç kenarlar iki yönde de bulunur)
+            std::set<std::pair<uint32_t, uint32_t>> directed;
+            for (size_t t : removed)
+                for (int k = 0; k < 3; ++k)
+                    directed.insert({ skin.Indices[t + (size_t)k], skin.Indices[t + (size_t)((k + 1) % 3)] });
+            std::map<uint32_t, uint32_t> nextOf;
+            for (const auto& [u, w] : directed)
+                if (!directed.count({ w, u }))
+                {
+                    if (nextOf.count(u))
+                    {
+                        error = "The mesh around the edge is not a simple region.";
+                        return false;
+                    }
+                    nextOf[u] = w;
+                }
+            if (!nextOf.count(a) || !nextOf.count(b))
+            {
+                error = "The edge would leave the mesh.";
+                return false;
+            }
+            std::vector<uint32_t> loop;
+            uint32_t cur = a;
+            for (size_t guard = 0; guard <= nextOf.size(); ++guard)
+            {
+                loop.push_back(cur);
+                cur = nextOf[cur];
+                if (cur == a)
+                    break;
+            }
+            const auto bIt = std::find(loop.begin(), loop.end(), b);
+            if (cur != a || bIt == loop.end())
+            {
+                error = "The mesh around the edge is not a simple region.";
+                return false;
+            }
+            // Özgün üçgenlerin dönüş yönü (yeni üçgenler aynı yönde)
+            const glm::vec2 o0 = skin.Vertices[skin.Indices[removed[0]]], o1 = skin.Vertices[skin.Indices[removed[0] + 1]], o2 = skin.Vertices[skin.Indices[removed[0] + 2]];
+            const float winding = cross2(o1 - o0, o2 - o0);
+            std::vector<uint32_t> added;
+            auto fill = [&](const std::vector<uint32_t>& chain) {
+                std::vector<glm::vec2> pts;
+                for (uint32_t i : chain)
+                    pts.push_back(skin.Vertices[i]);
+                std::vector<uint32_t> tris;
+                if (chain.size() < 3 || !Triangulate2D::Triangulate(pts, tris))
+                    return false;
+                for (size_t t = 0; t + 2 < tris.size(); t += 3)
+                {
+                    uint32_t i0 = chain[tris[t]], i1 = chain[tris[t + 1]], i2 = chain[tris[t + 2]];
+                    if (cross2(skin.Vertices[i1] - skin.Vertices[i0], skin.Vertices[i2] - skin.Vertices[i0]) * winding < 0.0f)
+                        std::swap(i1, i2);
+                    added.insert(added.end(), { i0, i1, i2 });
+                }
+                return true;
+            };
+            const std::vector<uint32_t> chain1(loop.begin(), bIt + 1);
+            std::vector<uint32_t> chain2(bIt, loop.end());
+            chain2.push_back(a);
+            if (!fill(chain1) || !fill(chain2))
+            {
+                error = "Could not triangulate around the edge.";
+                return false;
+            }
+            std::sort(removed.rbegin(), removed.rend());
+            for (size_t t : removed)
+                skin.Indices.erase(skin.Indices.begin() + (std::ptrdiff_t)t, skin.Indices.begin() + (std::ptrdiff_t)t + 3);
+            skin.Indices.insert(skin.Indices.end(), added.begin(), added.end());
+            return true;
+        }
+
+        // Bone Influence kapanınca kemiğin ağırlıkları kalkar; köşenin kalan payı normalleşir (hiç kalmazsa etkileyen kemiklere bağlanır)
+        void ApplyBoneInfluence(SpriteSkinData& skin, int bone, bool influence)
+        {
+            if (bone < 0 || bone >= (int)skin.Bones.size())
+                return;
+            skin.Bones[(size_t)bone].Influence = influence;
+            if (influence)
+                return;
+            for (size_t v = 0; v < skin.Vertices.size() && v < skin.BoneIndex.size(); ++v)
+            {
+                float total = 0.0f;
+                for (int k = 0; k < 4; ++k)
+                {
+                    if (skin.BoneIndex[v][k] == bone)
+                    {
+                        skin.BoneIndex[v][k] = -1;
+                        skin.BoneWeight[v][k] = 0.0f;
+                    }
+                    if (skin.BoneIndex[v][k] >= 0)
+                        total += skin.BoneWeight[v][k];
+                }
+                if (total > 0.0f)
+                    skin.BoneWeight[v] /= total;
+                else
+                    AutoWeightVertex(skin, v);
+            }
+        }
+
         void RemoveBone(SpriteSkinData& skin, int bone)
         {
             const int parent = skin.Bones[(size_t)bone].Parent;
@@ -455,7 +658,10 @@ namespace Conqueror::Editor
     void SpriteEditorPanel::HandleModeShortcuts()
     {
         if (ImGui::IsKeyPressed(ImGuiKey_Escape, false))
+        {
             m_BonePlacing = false;
+            m_EdgeStart = -1;
+        }
         if (m_ReadOnly || !ImGui::IsKeyPressed(ImGuiKey_Delete, false) || m_Selected < 0 || m_Selected >= (int)m_Sheet.Sprites.size())
             return;
         SpriteDef& s = m_Sheet.Sprites[(size_t)m_Selected];
@@ -895,6 +1101,103 @@ namespace Conqueror::Editor
         m_SkinTool = tool;
         m_SkinDrag = SkinDrag::None;
         m_BonePlacing = false;
+        m_EdgeStart = -1;
+        m_SkinMessage.clear();
+    }
+
+    bool SpriteEditorPanel::SkinHasEdge(int a, int b) const
+    {
+        if (m_Selected < 0 || m_Selected >= (int)m_Sheet.Sprites.size() || a < 0 || b < 0)
+            return false;
+        return HasEdge(m_Sheet.Sprites[(size_t)m_Selected].Skin, (uint32_t)a, (uint32_t)b);
+    }
+
+    bool SpriteEditorPanel::SkinCreateEdge(int a, int b, std::string* error)
+    {
+        if (m_ReadOnly || m_Selected < 0 || m_Selected >= (int)m_Sheet.Sprites.size() || a < 0 || b < 0)
+            return false;
+        PushUndo();
+        std::string message;
+        const bool ok = InsertConstraintEdge(m_Sheet.Sprites[(size_t)m_Selected].Skin, (uint32_t)a, (uint32_t)b, message);
+        if (error)
+            *error = message;
+        if (ok)
+            MarkDirty();
+        return ok;
+    }
+
+    int SpriteEditorPanel::SkinSplitEdge(int a, int b, float t)
+    {
+        if (m_ReadOnly || m_Selected < 0 || m_Selected >= (int)m_Sheet.Sprites.size())
+            return -1;
+        SpriteSkinData& skin = m_Sheet.Sprites[(size_t)m_Selected].Skin;
+        if (a < 0 || b < 0 || a >= (int)skin.Vertices.size() || b >= (int)skin.Vertices.size() || !HasEdge(skin, (uint32_t)a, (uint32_t)b))
+            return -1;
+        PushUndo();
+        const int p = (int)SplitMeshEdge(skin, (uint32_t)a, (uint32_t)b, glm::mix(skin.Vertices[(size_t)a], skin.Vertices[(size_t)b], std::clamp(t, 0.0f, 1.0f)));
+        MarkDirty();
+        return p;
+    }
+
+    void SpriteEditorPanel::SkinSetBoneInfluence(int bone, bool influence)
+    {
+        if (m_ReadOnly || m_Selected < 0 || m_Selected >= (int)m_Sheet.Sprites.size())
+            return;
+        PushUndo();
+        ApplyBoneInfluence(m_Sheet.Sprites[(size_t)m_Selected].Skin, bone, influence);
+        MarkDirty();
+    }
+
+    void SpriteEditorPanel::SkinCopyRig()
+    {
+        if (m_Selected < 0 || m_Selected >= (int)m_Sheet.Sprites.size())
+            return;
+        const SpriteDef& s = m_Sheet.Sprites[(size_t)m_Selected];
+        m_RigClipboard = s.Skin;
+        m_RigClipboardSize = glm::vec2(std::max(s.Rect.z, 1.0f), std::max(s.Rect.w, 1.0f));
+        m_HasRigClipboard = true;
+    }
+
+    bool SpriteEditorPanel::SkinPasteRig(bool bones, bool mesh)
+    {
+        if (m_ReadOnly || !m_HasRigClipboard || m_Selected < 0 || m_Selected >= (int)m_Sheet.Sprites.size() || (!bones && !mesh))
+            return false;
+        PushUndo();
+        SpriteDef& s = m_Sheet.Sprites[(size_t)m_Selected];
+        SpriteSkinData& skin = s.Skin;
+        // Unity Paste Rig: kaynak dilimden hedef dilime orantılı
+        const glm::vec2 scale = glm::vec2(std::max(s.Rect.z, 1.0f), std::max(s.Rect.w, 1.0f)) / m_RigClipboardSize;
+        if (bones)
+        {
+            skin.Bones = m_RigClipboard.Bones;
+            for (auto& b : skin.Bones)
+            {
+                b.Position *= scale;
+                b.Tip *= scale;
+            }
+        }
+        if (mesh)
+        {
+            skin.Vertices = m_RigClipboard.Vertices;
+            for (auto& v : skin.Vertices)
+                v *= scale;
+            skin.Indices = m_RigClipboard.Indices;
+            skin.BoneIndex = m_RigClipboard.BoneIndex;
+            skin.BoneWeight = m_RigClipboard.BoneWeight;
+        }
+        // Yalnız biri yapıştırıldıysa ağırlıklar yeni kemik / ağ çiftine göre yeniden hesaplanır
+        if (bones != mesh)
+        {
+            skin.BoneIndex.assign(skin.Vertices.size(), glm::ivec4(-1));
+            skin.BoneWeight.assign(skin.Vertices.size(), glm::vec4(0.0f));
+            for (size_t v = 0; v < skin.Vertices.size(); ++v)
+                AutoWeightVertex(skin, v);
+        }
+        m_SelectedBone = -1;
+        m_SelectedVerts.clear();
+        EnsurePoseSize(skin);
+        MarkDirty();
+        return true;
     }
 
     std::string SpriteEditorPanel::UniqueBoneName(const SpriteSkinData& skin) const
@@ -1074,7 +1377,8 @@ namespace Conqueror::Editor
 
         const bool posing = m_SkinTool == SkinTool::PreviewPose;
         const bool showWeights = m_SkinTool == SkinTool::AutoWeights || m_SkinTool == SkinTool::WeightSlider || m_SkinTool == SkinTool::WeightBrush;
-        const bool showMesh = m_SkinTool == SkinTool::AutoGeometry || m_SkinTool == SkinTool::EditGeometry || m_SkinTool == SkinTool::CreateVertex || showWeights;
+        const bool showMesh = m_SkinTool == SkinTool::AutoGeometry || m_SkinTool == SkinTool::EditGeometry || m_SkinTool == SkinTool::CreateVertex ||
+                              m_SkinTool == SkinTool::CreateEdge || m_SkinTool == SkinTool::SplitEdge || showWeights;
 
         const std::vector<glm::mat3> pose = SkinPoseMatrices(skin);
         const int boneCount = (int)skin.Bones.size();
@@ -1119,7 +1423,8 @@ namespace Conqueror::Editor
             if (a >= vertexCount || b >= vertexCount || c >= vertexCount)
                 continue;
             const ImVec2 pc = im(toScreen(verts[c])), uc = uvOf(c);
-            dl->AddImageQuad(textureId, im(toScreen(verts[a])), im(toScreen(verts[b])), pc, pc, uvOf(a), uvOf(b), uc, uc);
+            dl->AddImageQuad(textureId, im(toScreen(verts[a])), im(toScreen(verts[b])), pc, pc, uvOf(a), uvOf(b), uc, uc,
+                             IM_COL32(255, 255, 255, (int)(255.0f * std::clamp(m_MeshOpacity, 0.0f, 1.0f))));
         }
 
         // Ağırlıklar: köşe rengi, kemik renklerinin ağırlıklı karışımı
@@ -1213,9 +1518,12 @@ namespace Conqueror::Editor
 
         // Kemikler
         const bool boneTool = posing || m_SkinTool == SkinTool::EditBone || m_SkinTool == SkinTool::CreateBone || m_SkinTool == SkinTool::SplitBone;
-        for (int i = 0; i < boneCount; ++i)
+        for (int i = 0; i < boneCount && m_BoneOpacity > 0.0f; ++i)
         {
-            const float alpha = i == hoverBone && boneTool ? 1.0f : 0.72f;
+            // Unity Visibility: kemik saydamlığı; bu sprite'ı etkilemeyen kemik (Bone Influence kapalı) soluk
+            float alpha = (i == hoverBone && boneTool ? 1.0f : 0.72f) * m_BoneOpacity;
+            if (!skin.Bones[(size_t)i].Influence)
+                alpha *= 0.35f;
             DrawBoneShape(dl, toScreen(boneA[(size_t)i]), toScreen(boneB[(size_t)i]), BoneColor(i, alpha), i == m_SelectedBone);
         }
 
@@ -1499,26 +1807,7 @@ namespace Conqueror::Editor
                 if (onEdge)
                 {
                     PushUndo();
-                    const uint32_t p = (uint32_t)AddMeshVertex(skin, glm::clamp(edgePoint, glm::vec2(0.0f), size));
-                    std::vector<uint32_t> next;
-                    next.reserve(skin.Indices.size() + 6);
-                    for (size_t t = 0; t + 2 < skin.Indices.size(); t += 3)
-                    {
-                        const uint32_t tri[3] = { skin.Indices[t], skin.Indices[t + 1], skin.Indices[t + 2] };
-                        int e = -1;
-                        for (int k = 0; k < 3; ++k)
-                            if ((tri[k] == edgeA && tri[(k + 1) % 3] == edgeB) || (tri[k] == edgeB && tri[(k + 1) % 3] == edgeA))
-                                e = k;
-                        if (e < 0)
-                        {
-                            next.insert(next.end(), tri, tri + 3);
-                            continue;
-                        }
-                        const uint32_t x = tri[e], y = tri[(e + 1) % 3], c = tri[(e + 2) % 3];
-                        for (uint32_t i : { x, p, c, p, y, c })
-                            next.push_back(i);
-                    }
-                    skin.Indices = std::move(next);
+                    const uint32_t p = SplitMeshEdge(skin, edgeA, edgeB, glm::clamp(edgePoint, glm::vec2(0.0f), size));
                     m_SelectedVerts.assign(1, (int)p);
                     MarkDirty();
                 }
@@ -1537,6 +1826,90 @@ namespace Conqueror::Editor
                         MarkDirty();
                         break;
                     }
+                break;
+            }
+            case SkinTool::SplitEdge:
+            {
+                // Unity Split Edge: tıklanan kenar o noktadan ikiye bölünür
+                if (!pressed || !editable || vertexCount == 0)
+                    break;
+                uint32_t edgeA = 0, edgeB = 0;
+                bool onEdge = false;
+                glm::vec2 edgePoint(0.0f);
+                float best = 8.0f;
+                for (size_t t = 0; t + 2 < skin.Indices.size(); t += 3)
+                    for (int e = 0; e < 3; ++e)
+                    {
+                        const uint32_t a = skin.Indices[t + (size_t)e], b = skin.Indices[t + (size_t)((e + 1) % 3)];
+                        glm::vec2 q;
+                        const float d = SegmentDistance(mouseScreen, toScreen(skin.Vertices[a]), toScreen(skin.Vertices[b]), &q);
+                        if (d < best)
+                        {
+                            best = d;
+                            edgeA = a;
+                            edgeB = b;
+                            onEdge = true;
+                            edgePoint = ScreenToTex(q) - origin;
+                        }
+                    }
+                if (onEdge)
+                {
+                    PushUndo();
+                    m_SelectedVerts.assign(1, (int)SplitMeshEdge(skin, edgeA, edgeB, glm::clamp(edgePoint, glm::vec2(0.0f), size)));
+                    MarkDirty();
+                }
+                break;
+            }
+            case SkinTool::CreateEdge:
+            {
+                // Unity Create Edge: köşeye tıkla, sonra başka köşeye (kenar); boş yere tıklamak orada köşe açar ve bağlar.
+                // Zincir sürer; sağ tık / Esc bitirir
+                if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+                    m_EdgeStart = -1;
+                if (m_EdgeStart >= 0 && m_EdgeStart < (int)vertexCount && hovered)
+                    dl->AddLine(im(toScreen(verts[(size_t)m_EdgeStart])), ImVec2(mouseScreen.x, mouseScreen.y), IM_COL32(255, 200, 60, 230), 2.0f);
+                if (!pressed || !editable || vertexCount == 0)
+                    break;
+                int hit = -1;
+                float best = 9.0f;
+                for (int v = 0; v < (int)vertexCount; ++v)
+                {
+                    const float d = glm::length(mouseScreen - toScreen(skin.Vertices[(size_t)v]));
+                    if (d < best)
+                    {
+                        best = d;
+                        hit = v;
+                    }
+                }
+                if (hit < 0)
+                {
+                    // Boş yer: üçgenin içinde yeni köşe
+                    for (size_t t = 0; t + 2 < skin.Indices.size(); t += 3)
+                    {
+                        const uint32_t a = skin.Indices[t], b = skin.Indices[t + 1], c = skin.Indices[t + 2];
+                        if (!PointInTriangle(mouseLocal, skin.Vertices[a], skin.Vertices[b], skin.Vertices[c]))
+                            continue;
+                        PushUndo();
+                        const uint32_t p = (uint32_t)AddMeshVertex(skin, mouseLocal);
+                        skin.Indices.erase(skin.Indices.begin() + (std::ptrdiff_t)t, skin.Indices.begin() + (std::ptrdiff_t)t + 3);
+                        for (uint32_t i : { a, b, p, b, c, p, c, a, p })
+                            skin.Indices.push_back(i);
+                        hit = (int)p;
+                        MarkDirty();
+                        break;
+                    }
+                    if (hit < 0)
+                        break;
+                }
+                if (m_EdgeStart >= 0 && m_EdgeStart != hit)
+                {
+                    PushUndo();
+                    m_SkinMessage.clear();
+                    if (InsertConstraintEdge(skin, (uint32_t)m_EdgeStart, (uint32_t)hit, m_SkinMessage))
+                        MarkDirty();
+                }
+                m_EdgeStart = hit;
+                m_SelectedVerts.assign(1, hit);
                 break;
             }
             case SkinTool::WeightBrush:
@@ -1616,15 +1989,34 @@ namespace Conqueror::Editor
             tool("Edit Geom.", SkinTool::EditGeometry);
             ImGui::SameLine();
             tool("Add Vertex", SkinTool::CreateVertex);
+            tool("Create Edge", SkinTool::CreateEdge);
+            ImGui::SameLine();
+            tool("Split Edge", SkinTool::SplitEdge);
             ImGui::TextDisabled("Weights");
             tool("Auto", SkinTool::AutoWeights);
             ImGui::SameLine();
             tool("Slider", SkinTool::WeightSlider);
             ImGui::SameLine();
             tool("Brush", SkinTool::WeightBrush);
+            // Unity Rig: Copy Rig / Paste Rig (kemikler, ağ ve ağırlıklar; hedef dilim boyutuna orantılı)
+            ImGui::TextDisabled("Rig");
+            if (ImGui::Button("Copy Rig", ImVec2(w, 0)))
+                SkinCopyRig();
+            ImGui::SameLine();
+            ImGui::BeginDisabled(!m_HasRigClipboard || m_ReadOnly);
+            if (ImGui::Button("Paste Rig", ImVec2(w, 0)))
+                SkinPasteRig(m_PasteBones, m_PasteMesh);
+            ImGui::EndDisabled();
+            ImGui::SameLine();
+            ImGui::BeginGroup();
+            ImGui::Checkbox("Bones##pastebones", &m_PasteBones);
+            ImGui::Checkbox("Mesh##pastemesh", &m_PasteMesh);
+            ImGui::EndGroup();
             ImGui::Spacing();
             UI::EndSection();
         }
+        if (!m_SkinMessage.empty())
+            UI::InfoBox(m_SkinMessage.c_str(), UI::InfoType::Warning);
 
         const bool validBone = m_SelectedBone >= 0 && m_SelectedBone < (int)skin.Bones.size();
         const char* hint = nullptr;
@@ -1648,6 +2040,8 @@ namespace Conqueror::Editor
                 break;
             case SkinTool::EditGeometry: hint = "Drag vertices to move them, drag on empty space for a box selection, Ctrl adds to the selection, Delete removes vertices."; break;
             case SkinTool::CreateVertex: hint = "Click a triangle or an edge to add a vertex there. Use Auto Geometry first."; break;
+            case SkinTool::CreateEdge: hint = "Click a vertex, then another vertex to connect them with an edge (the mesh is triangulated around it). Clicking inside the mesh adds a vertex there. The chain continues; right click or Esc stops."; break;
+            case SkinTool::SplitEdge: hint = "Click an edge to split it in two at that point."; break;
             case SkinTool::AutoWeights:
                 if (UI::BeginSection("Auto Weights", true))
                 {
@@ -1785,6 +2179,70 @@ namespace Conqueror::Editor
                 ImGui::EndDisabled();
             }
             UI::Text("Mesh", "%zu vertices, %zu triangles", skin.Vertices.size(), skin.Indices.size() / 3);
+            UI::EndSection();
+        }
+
+        // Unity Bone Influence: bu sprite'ı etkileyen kemikler (kapatılan kemiğin ağırlıkları kalkar, Auto Weights onu kullanmaz)
+        if (UI::BeginSection("Bone Influence", true, ICON_FA_DIAGRAM_PROJECT))
+        {
+            ImGui::BeginDisabled(m_ReadOnly);
+            for (int i = 0; i < (int)skin.Bones.size(); ++i)
+            {
+                ImGui::PushID(1000 + i);
+                bool on = skin.Bones[(size_t)i].Influence;
+                if (ImGui::Checkbox(skin.Bones[(size_t)i].Name.c_str(), &on))
+                    SkinSetBoneInfluence(i, on);
+                ImGui::PopID();
+            }
+            if (skin.Bones.empty())
+                ImGui::TextDisabled("No bones.");
+            ImGui::EndDisabled();
+            UI::EndSection();
+        }
+
+        // Unity Sprite Influence: seçili kemiğin etkilediği sprite'lar (aynı adlı kemik taşıyan dilimler; Paste Rig ile paylaşılır)
+        if (validBone && UI::BeginSection("Sprite Influence", true, ICON_FA_IMAGES))
+        {
+            const std::string boneName = skin.Bones[(size_t)m_SelectedBone].Name;
+            ImGui::BeginDisabled(m_ReadOnly);
+            for (int si = 0; si < (int)m_Sheet.Sprites.size(); ++si)
+            {
+                SpriteDef& other = m_Sheet.Sprites[(size_t)si];
+                int boneIndex = -1;
+                for (int b = 0; b < (int)other.Skin.Bones.size(); ++b)
+                    if (other.Skin.Bones[(size_t)b].Name == boneName)
+                        boneIndex = b;
+                ImGui::PushID(2000 + si);
+                if (boneIndex < 0)
+                {
+                    ImGui::BeginDisabled();
+                    bool off = false;
+                    ImGui::Checkbox(other.Name.c_str(), &off);
+                    ImGui::EndDisabled();
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                        ImGui::SetTooltip("This sprite has no bone named %s (Copy Rig / Paste Rig shares the skeleton)", boneName.c_str());
+                }
+                else
+                {
+                    bool on = other.Skin.Bones[(size_t)boneIndex].Influence;
+                    if (ImGui::Checkbox(other.Name.c_str(), &on))
+                    {
+                        PushUndo();
+                        ApplyBoneInfluence(other.Skin, boneIndex, on);
+                        MarkDirty();
+                    }
+                }
+                ImGui::PopID();
+            }
+            ImGui::EndDisabled();
+            UI::EndSection();
+        }
+
+        // Unity Visibility: kemik ve ağ saydamlığı (yalnız düzenleyici görünümü)
+        if (UI::BeginSection("Visibility", false, ICON_FA_EYE))
+        {
+            UI::SliderFloat("Bone Opacity", m_BoneOpacity, 0.0f, 1.0f);
+            UI::SliderFloat("Mesh Opacity", m_MeshOpacity, 0.0f, 1.0f);
             UI::EndSection();
         }
     }

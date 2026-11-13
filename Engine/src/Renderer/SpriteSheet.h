@@ -18,6 +18,9 @@ namespace Conqueror
         int Parent = -1;
         glm::vec2 Position{ 0.0f };
         glm::vec2 Tip{ 0.0f };
+        // Unity Bone Influence / Sprite Influence: kapalıyken kemik bu sprite'ın köşelerini etkilemez (ağırlıklardan çıkar,
+        // Auto Weights onu kullanmaz); kemik iskelette kalır
+        bool Influence = true;
     };
 
     // Skinning Editor verisi: kemikler, ağ ve köşe başına en çok 4 kemik ağırlığı

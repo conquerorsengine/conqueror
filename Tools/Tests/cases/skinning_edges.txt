@@ -1,0 +1,40 @@
+# template: basic2d
+# 181 (Unity Skinning Editor): Create Edge (kısıtlı kenar: ağ alanı korunur, köşenin üstünden geçen kenar reddedilir), Split Edge,
+# Bone Influence (kapatılan kemiğin ağırlıkları kalkar), Copy Rig / Paste Rig (kemikler + ağ başka dilime)
+wait 40
+content_drop "{dir}/assets/loc/flag_red.png"
+wait 10
+sprite_editor open Assets/flag_red.png
+wait 5
+sprite_editor slice grid 32 64
+sprite_editor mode skin
+sprite_editor select 0
+sprite_editor bone 16 4 16 32
+sprite_editor bone 16 32 16 60 0
+sprite_editor auto_geometry 4
+sprite_editor expect_skin 2 15
+sprite_editor expect_area 2048
+# Create Edge: (0,0) - (32,16) çaprazı yoktu, eklenince ağ aynı alanı kaplar
+sprite_editor expect_edge_xy 0 0 32 16 0
+sprite_editor edge_xy 0 0 32 16
+sprite_editor expect_edge_xy 0 0 32 16 1
+sprite_editor expect_area 2048
+# (0,0) - (32,32) (16,16) köşesinin üstünden geçer: eklenmez
+sprite_editor edge_xy 0 0 32 32 fail
+# Split Edge: alt kenar (0,0)-(16,0) ortadan bölünür
+sprite_editor split_edge_xy 0 0 16 0 0.5
+sprite_editor expect_skin 2 16
+sprite_editor expect_edge_xy 0 0 8 0 1
+sprite_editor expect_area 2048
+# Bone Influence: üst köşe kemik 1'e bağlı; kemik 1 kapanınca ağırlığı 0
+sprite_editor expect_weight_xy 16 64 1 0.5 1
+sprite_editor influence 1 0
+sprite_editor expect_weight_xy 16 64 1 0 0
+sprite_editor expect_weight_xy 16 64 0 1 1
+# Copy Rig / Paste Rig: ikinci dilim aynı kemikleri ve ağı alır
+sprite_editor copy_rig
+sprite_editor select 1
+sprite_editor paste_rig
+sprite_editor expect_skin 2 16
+sprite_editor expect_area 2048
+quit
