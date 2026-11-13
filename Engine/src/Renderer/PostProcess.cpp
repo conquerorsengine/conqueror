@@ -129,6 +129,7 @@ namespace Conqueror
         LoadShader("MSAAResolve", "Engine/src/Shaders/PostProcess/MSAAResolve.cqsh");
         LoadShader("Downsample", "Engine/src/Shaders/PostProcess/Downsample.cqsh");
         LoadShader("FSR_EASU", "Engine/src/Shaders/PostProcess/FSR_EASU.cqsh");
+        LoadShader("SpatialUpscale", "Engine/src/Shaders/PostProcess/SpatialUpscale.cqsh");
         LoadShader("FSR_RCAS", "Engine/src/Shaders/PostProcess/FSR_RCAS.cqsh");
         LoadShader("CAS", "Engine/src/Shaders/PostProcess/CAS.cqsh");
         LoadShader("CAS_Scale", "Engine/src/Shaders/PostProcess/CAS_Scale.cqsh");
@@ -1942,6 +1943,22 @@ namespace Conqueror
                 BindTexture(0, m_Upscale.Texture);
                 PostProcess::DrawFullscreenQuad();
                 Renderer::GetStats().PostProcessPasses++;
+            }
+            else if ((up == UpscalerMode::Bilinear || up == UpscalerMode::NearestNeighbor || up == UpscalerMode::Lanczos || up == UpscalerMode::SGSR) &&
+                     Valid(PostProcess::GetShader("SpatialUpscale")))
+            {
+                auto spatial = PostProcess::GetShader("SpatialUpscale");
+                toOutput();
+                spatial->Bind();
+                spatial->SetInt("u_Source", 0);
+                spatial->SetFloat2("u_OutOrigin", outOrigin);
+                spatial->SetFloat2("u_OutSize", glm::vec2(oW, oH));
+                spatial->SetFloat2("u_InSize", glm::vec2(inW, inH));
+                spatial->SetInt("u_Mode", up == UpscalerMode::NearestNeighbor ? 0 : up == UpscalerMode::Lanczos ? 2 : up == UpscalerMode::SGSR ? 3 : 1);
+                // SGSR kenar keskinliği: Upscaling Sharpness 0..1 -> 1..2 (resmi varsayılan 2)
+                spatial->SetFloat("u_EdgeSharpness", 1.0f + std::clamp(upSharp, 0.0f, 1.0f));
+                BindTexture(0, cur);
+                PostProcess::DrawFullscreenQuad();
             }
             else if (up == UpscalerMode::CAS && Valid(casScale))
             {

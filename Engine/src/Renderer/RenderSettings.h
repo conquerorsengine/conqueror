@@ -119,6 +119,10 @@ namespace Conqueror
         MetalFX,        // Apple MetalFX
         PSSR,           // Sony PlayStation Spectral Super Resolution
         FSR2,           // AMD FidelityFX Super Resolution 2.2 (zamansal)
+        Bilinear,       // Unity URP Upscaling Filter: çift doğrusal
+        NearestNeighbor,// Unity URP Upscaling Filter: en yakın komşu (piksel sanatı)
+        Lanczos,        // Unreal r.Upscale.Quality / Godot: Lanczos-2 (halka bastırmalı)
+        SGSR,           // Qualcomm Snapdragon Game Super Resolution 1 (uzamsal, açık kaynak)
         Count
     };
 

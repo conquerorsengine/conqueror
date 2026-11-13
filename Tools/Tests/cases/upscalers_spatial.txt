@@ -1,0 +1,22 @@
+# template: basic3d
+# 235: yeni uzamsal ölçekleyiciler (%50 iç çözünürlük): Bilinear ve Nearest-Neighbor (Unity URP), Lanczos (Unreal / Godot),
+# Snapdragon GSR 1 (Qualcomm, açık kaynak); her biri görüntüyü çizer (siyah / bozuk değil)
+wait 40
+focus Game
+wait 30
+cvar r.ScreenPercentage 50
+cvar r.Upscaler 11
+wait 20
+game_region 0.1 0.1 0.9 0.9 lum mean >60
+cvar r.Upscaler 12
+wait 20
+game_region 0.1 0.1 0.9 0.9 lum mean >60
+cvar r.Upscaler 13
+wait 20
+game_region 0.1 0.1 0.9 0.9 lum mean >60
+cvar r.Upscaler 14
+wait 20
+game_region 0.1 0.1 0.9 0.9 lum mean >60
+cvar r.Upscaler 0
+cvar r.ScreenPercentage 100
+quit

@@ -70,6 +70,10 @@ namespace Conqueror::AntiAliasing
             { U::MetalFX, "MetalFX", "MetalFX (Apple)",                                 "Apple Metal spatial / temporal upscaling.", true },
             { U::PSSR,    "PSSR",    "PlayStation Spectral Super Resolution (Sony)",    "PS5 Pro AI upscaling.", true },
             { U::FSR2,    "FSR 2",   "AMD FidelityFX Super Resolution 2.2",             "Temporal upscaler: reconstructs the output resolution from jittered frames, depth and motion vectors (open source, any GPU).", true },
+            { U::Bilinear, "Bilinear", "Bilinear Scaling",                              "Plain bilinear upscaling (Unity URP Upscaling Filter: Bilinear).", false },
+            { U::NearestNeighbor, "Nearest", "Nearest-Neighbor Scaling",               "Blocky pixel upscaling for pixel art (Unity URP Upscaling Filter: Nearest-Neighbor).", false },
+            { U::Lanczos, "Lanczos", "Lanczos-2 Scaling",                               "Sharp 4x4 Lanczos upscaling with ringing suppression (Unreal secondary spatial upscaler, Godot).", false },
+            { U::SGSR,    "SGSR",    "Snapdragon Game Super Resolution 1 (Qualcomm)",   "Spatial upscaler: edge-directed 12-tap Lanczos on edges only, single pass (open source, any GPU).", false },
         };
         static_assert(sizeof(s_Upscalers) / sizeof(s_Upscalers[0]) == (size_t)UpscalerMode::Count, "Upscaler table out of sync");
 

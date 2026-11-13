@@ -1,0 +1,139 @@
+#language GLSL
+// Uzamsal ölçekleme filtreleri (iç çözünürlük -> çıktı):
+//   0 Nearest-Neighbor ve 1 Bilinear (Unity URP Upscaling Filter), 2 Lanczos-2 (Unreal r.Upscale.Quality, Godot),
+//   3 Snapdragon Game Super Resolution 1 (Qualcomm SGSR 1, BSD-3-Clause, Include/ThirdParty/sgsr/LICENSE; kenar yönlü 12 dokunuşlu
+//     Lanczos, yalnız kenarlarda; resmi sgsr1_shader_mobile.frag'in RGBA kipi)
+#type vertex
+#version 450 core
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+void main()
+{
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+layout(location = 0) out vec4 FragColor;
+uniform sampler2D u_Source;
+uniform vec2 u_OutOrigin;
+uniform vec2 u_OutSize;
+uniform vec2 u_InSize;
+uniform int u_Mode = 1;
+uniform float u_EdgeSharpness = 2.0;   // SGSR: kenar keskinliği (resmi varsayılan 2)
+
+float Lanczos2(float x)
+{
+    x = abs(x);
+    if (x < 1e-5)
+        return 1.0;
+    if (x >= 2.0)
+        return 0.0;
+    const float pi = 3.14159265;
+    return 2.0 * sin(pi * x) * sin(pi * x * 0.5) / (pi * pi * x * x);
+}
+
+vec3 Fetch(ivec2 p)
+{
+    return texelFetch(u_Source, clamp(p, ivec2(0), ivec2(u_InSize) - 1), 0).rgb;
+}
+
+vec3 SampleLanczos(vec2 uv)
+{
+    vec2 p = uv * u_InSize - 0.5;
+    ivec2 base = ivec2(floor(p));
+    vec2 f = p - vec2(base);
+    vec3 sum = vec3(0.0);
+    float weight = 0.0;
+    for (int j = -1; j <= 2; ++j)
+        for (int i = -1; i <= 2; ++i)
+        {
+            float w = Lanczos2(float(i) - f.x) * Lanczos2(float(j) - f.y);
+            sum += Fetch(base + ivec2(i, j)) * w;
+            weight += w;
+        }
+    vec3 c = sum / max(weight, 1e-5);
+    // Halka (ringing) bastırma: en yakın 2x2 komşuluğun aralığına kırp (Unreal'in Lanczos'u gibi)
+    vec3 a = Fetch(base), b = Fetch(base + ivec2(1, 0)), d = Fetch(base + ivec2(0, 1)), e = Fetch(base + ivec2(1, 1));
+    return clamp(c, min(min(a, b), min(d, e)), max(max(a, b), max(d, e)));
+}
+
+// ---- Snapdragon GSR 1 (Qualcomm), RGBA kipi (yeşil kanal kenar ölçüsü)
+float fastLanczos2(float x)
+{
+    float wA = x - 4.0;
+    float wB = x * wA - wA;
+    wA *= wA;
+    return wB * wA;
+}
+vec2 weightY(float dx, float dy, float c, float std)
+{
+    float x = ((dx * dx) + (dy * dy)) * 0.55 + clamp(abs(c) * std, 0.0, 1.0);
+    float w = fastLanczos2(x);
+    return vec2(w, w * c);
+}
+vec3 SampleSGSR(vec2 uv)
+{
+    vec4 viewportInfo = vec4(1.0 / u_InSize, u_InSize);
+    const float edgeThreshold = 8.0 / 255.0;
+    vec4 color;
+    color.xyz = textureLod(u_Source, uv, 0.0).xyz;
+    highp vec2 imgCoord = ((uv * viewportInfo.zw) + vec2(-0.5, 0.5));
+    highp vec2 imgCoordPixel = floor(imgCoord);
+    highp vec2 coord = (imgCoordPixel * viewportInfo.xy);
+    vec2 pl = (imgCoord + (-imgCoordPixel));
+    vec4 left = textureGather(u_Source, coord, 1);
+    float edgeVote = abs(left.z - left.y) + abs(color[1] - left.y) + abs(color[1] - left.z);
+    if (edgeVote > edgeThreshold)
+    {
+        coord.x += viewportInfo.x;
+        vec4 right = textureGather(u_Source, coord + vec2(viewportInfo.x, 0.0), 1);
+        vec4 upDown;
+        upDown.xy = textureGather(u_Source, coord + vec2(0.0, -viewportInfo.y), 1).wz;
+        upDown.zw = textureGather(u_Source, coord + vec2(0.0, viewportInfo.y), 1).yx;
+        float mean = (left.y + left.z + right.x + right.w) * 0.25;
+        left = left - vec4(mean);
+        right = right - vec4(mean);
+        upDown = upDown - vec4(mean);
+        color.w = color[1] - mean;
+        float sum = (((((abs(left.x) + abs(left.y)) + abs(left.z)) + abs(left.w)) + (((abs(right.x) + abs(right.y)) + abs(right.z)) + abs(right.w))) +
+                     (((abs(upDown.x) + abs(upDown.y)) + abs(upDown.z)) + abs(upDown.w)));
+        float std = 2.181818 / sum;
+        vec2 aWY = weightY(pl.x, pl.y + 1.0, upDown.x, std);
+        aWY += weightY(pl.x - 1.0, pl.y + 1.0, upDown.y, std);
+        aWY += weightY(pl.x - 1.0, pl.y - 2.0, upDown.z, std);
+        aWY += weightY(pl.x, pl.y - 2.0, upDown.w, std);
+        aWY += weightY(pl.x + 1.0, pl.y - 1.0, left.x, std);
+        aWY += weightY(pl.x, pl.y - 1.0, left.y, std);
+        aWY += weightY(pl.x, pl.y, left.z, std);
+        aWY += weightY(pl.x + 1.0, pl.y, left.w, std);
+        aWY += weightY(pl.x - 1.0, pl.y - 1.0, right.x, std);
+        aWY += weightY(pl.x - 2.0, pl.y - 1.0, right.y, std);
+        aWY += weightY(pl.x - 2.0, pl.y, right.z, std);
+        aWY += weightY(pl.x - 1.0, pl.y, right.w, std);
+        float finalY = aWY.y / aWY.x;
+        float maxY = max(max(left.y, left.z), max(right.x, right.w));
+        float minY = min(min(left.y, left.z), min(right.x, right.w));
+        finalY = clamp(u_EdgeSharpness * finalY, minY, maxY);
+        float deltaY = finalY - color.w;
+        // yüksek karşıtlıklı girişi yumuşat
+        deltaY = clamp(deltaY, -23.0 / 255.0, 23.0 / 255.0);
+        color.xyz = clamp(color.xyz + deltaY, 0.0, 1.0);
+    }
+    return color.xyz;
+}
+
+void main()
+{
+    vec2 uv = (gl_FragCoord.xy - u_OutOrigin) / u_OutSize;
+    vec3 c;
+    if (u_Mode == 0)
+        c = Fetch(ivec2(floor(uv * u_InSize)));
+    else if (u_Mode == 2)
+        c = SampleLanczos(uv);
+    else if (u_Mode == 3)
+        c = SampleSGSR(uv);
+    else
+        c = textureLod(u_Source, uv, 0.0).rgb;
+    FragColor = vec4(c, 1.0);
+}

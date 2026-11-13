@@ -97,7 +97,7 @@ namespace Conqueror::CQS
                       "FSRAA", "XeSSAA", "OGSSAA", "SGSSAA", "RGSS", "TSSAA", "DEAA", "GBAA", "SRAA"),
                 CQ_RS("Post.MSAASamples", Kind::Int, Post.MSAASamples),
                 CQ_RS("Post.SSAAScale", Kind::Float, Post.SSAAScale),
-                CQ_RS("Post.Upscaler", Kind::Enum, Post.Upscaler, "None", "FSR1", "CAS", "NIS", "TAAU", "TSR", "DLSS", "XeSS", "MetalFX", "PSSR", "FSR2"),
+                CQ_RS("Post.Upscaler", Kind::Enum, Post.Upscaler, "None", "FSR1", "CAS", "NIS", "TAAU", "TSR", "DLSS", "XeSS", "MetalFX", "PSSR", "FSR2", "Bilinear", "NearestNeighbor", "Lanczos", "SGSR"),
                 CQ_RS("Post.UpscaleQuality", Kind::Enum, Post.UpscaleQuality, "UltraQuality", "Quality", "Balanced", "Performance", "UltraPerformance", "Custom"),
                 CQ_RS("Post.UpscaleRenderScale", Kind::Float, Post.UpscaleRenderScale),
                 CQ_RS("Post.UpscaleSharpness", Kind::Float, Post.UpscaleSharpness),

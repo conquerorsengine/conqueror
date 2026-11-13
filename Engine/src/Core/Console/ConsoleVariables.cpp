@@ -444,7 +444,7 @@ namespace Conqueror
                        "12 TXAA, 13 TSAA, 15 SMAA T2x, 16 TSRAA, 19 DLAA, 26 FSR AA, 27 XeSS AA, 28 OGSSAA, 29 SGSSAA, 30 RGSS, 31 TSSAA, 32 DEAA, 33 GBAA, 34 SRAA "
                        "(a method this system cannot run falls back to the closest one; old upscaler numbers 14, 17, 18, 20-25 map to TAA + r.Upscaler)",
                        &R::AntiAliasing, [](Scene& s) { return (int)s.GetRenderSettings().Post.AntiAliasing; }, 0, (int)AntiAliasingMode::Count - 1);
-        AddIntOverride("r.Upscaler", "Upscaler: 0 off (native), 1 FSR 1, 2 CAS, 3 NIS, 4 TAAU, 5 TSR, 6 DLSS, 7 XeSS, 8 MetalFX, 9 PSSR, 10 FSR 2 "
+        AddIntOverride("r.Upscaler", "Upscaler: 0 off (native), 1 FSR 1, 2 CAS, 3 NIS, 4 TAAU, 5 TSR, 6 DLSS, 7 XeSS, 8 MetalFX, 9 PSSR, 10 FSR 2, 11 Bilinear, 12 Nearest-Neighbor, 13 Lanczos, 14 SGSR "
                        "(an upscaler this system cannot run falls back to FSR 1)",
                        &R::Upscaler, [](Scene& s) { return (int)s.GetRenderSettings().Post.Upscaler; }, 0, (int)UpscalerMode::Count - 1);
         AddFloatOverride("r.ScreenPercentage", "Upscaler internal resolution in percent (33 .. 100); sets the quality mode to Custom",

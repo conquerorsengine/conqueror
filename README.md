@@ -23,7 +23,7 @@ Guides and generated reference pages are in [Docs/](Docs/README.md): [getting st
 - HDR PBR forward renderer with cascaded shadow atlas, image-based lighting (prefiltered environment + L2 irradiance),
   reflection probes, adaptive probe volumes, lightmaps, fog, SSAO, bloom, tonemapping
 - Anti-aliasing: FXAA, SMAA (and SMAA T2X), TAA, MSAA, SSAA, CMAA2, MLAA and more (some need vendor OpenGL extensions);
-  upscaling: FSR 1, FSR 2.2, NVIDIA Image Scaling, TAAU and TSR, plus CAS sharpening
+  upscaling: FSR 1, FSR 2.2, NVIDIA Image Scaling, TAAU, Snapdragon GSR 1, Lanczos, Bilinear and Nearest-Neighbor, plus CAS sharpening
 - DLSS, XeSS, MetalFX and PSSR appear in the editor but are **not integrated** (their SDKs need Vulkan/DirectX, Windows,
   Apple or console toolchains); the editor shows the reason next to each one
 - Batched 2D renderer, sprite sheets and sprite editor, tilemaps (square/hex), text (FreeType), particles, ribbons/trails, terrain
@@ -448,6 +448,7 @@ More in [Scripting](Docs/Scripting.md) and [Native scripting](Docs/NativeScripti
 | AMD FidelityFX FSR 1 | MIT |
 | AMD FidelityFX FSR 2 | MIT |
 | NVIDIA Image Scaling | MIT |
+| Snapdragon Game Super Resolution (Qualcomm) | BSD-3-Clause |
 
 ## License
 
