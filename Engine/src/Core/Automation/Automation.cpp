@@ -431,6 +431,21 @@ namespace Conqueror
             {
                 return FindItemArg(t, 1, error) != nullptr;
             }
+            if (cmd == "expect_item_size")
+            {
+                // expect_item_size <label> <min genişlik> <min yükseklik> [window]: pencere / öğe en az bu boyutta
+                if (t.size() < 4) { error = "expect_item_size <label> <minW> <minH> [window]"; return false; }
+                const auto* item = CQAutomation::FindItem(t[1].c_str(), t.size() > 4 ? t[4].c_str() : nullptr, 0);
+                if (!item) { error = "item '" + t[1] + "' not found"; return false; }
+                const float w = item->Max.x - item->Min.x, h = item->Max.y - item->Min.y;
+                Automation::Report("ITEM_SIZE " + t[1] + " " + std::to_string((int)w) + "x" + std::to_string((int)h));
+                if (w < argf(2) || h < argf(3))
+                {
+                    error = "item '" + t[1] + "' is " + std::to_string((int)w) + "x" + std::to_string((int)h);
+                    return false;
+                }
+                return true;
+            }
             if (cmd == "expect_no_item")
             {
                 std::string dummy;

@@ -56,6 +56,7 @@ namespace Conqueror::Editor
 
     void OcclusionPanel::OnImGuiRender(bool* open)
     {
+        ImGui::SetNextWindowSize(ImVec2(420.0f, 560.0f), ImGuiCond_FirstUseEver);
         if (!ImGui::Begin(ICON_FA_EYE_SLASH " Occlusion Culling###OcclusionCulling", open))
         {
             ImGui::End();

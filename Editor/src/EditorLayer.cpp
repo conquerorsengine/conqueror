@@ -1589,6 +1589,10 @@ namespace Conqueror::Editor
                 ImGui::DockBuilderDockWindow("Project Settings", dock_id_right);
                 ImGui::DockBuilderDockWindow("###Multiplayer", dock_id_right);
                 ImGui::DockBuilderDockWindow("AI Assistant", dock_id_right);
+                // Unity: Navigation ve Occlusion Culling pencereleri Inspector'ın yanında sekme olarak açılır (yerleşimsiz açılınca
+                // kaydırılan metne göre dar, dikey bir şerit olup Viewport'u ve Content Browser'ı örtüyorlardı)
+                ImGui::DockBuilderDockWindow("Navigation", dock_id_right);
+                ImGui::DockBuilderDockWindow("###OcclusionCulling", dock_id_right);
                 ImGui::DockBuilderDockWindow("Content Browser", dock_id_down);
                 ImGui::DockBuilderDockWindow("Log", dock_id_down);
                 ImGui::DockBuilderDockWindow("Console", dock_id_down);
@@ -2393,6 +2397,7 @@ namespace Conqueror::Editor
             m_EditorScene->SetShowNavMesh(m_ShowNavigation);
         if (m_ShowNavigation)
         {
+            ImGui::SetNextWindowSize(ImVec2(420.0f, 560.0f), ImGuiCond_FirstUseEver);
             ImGui::Begin("Navigation", &m_ShowNavigation);
             ImGui::TextWrapped("Bakes the walkable area of the geometry inside the NavMesh Surfaces (agent radius, height, max slope and step height "
                                "are set on the surface). Modifiers, Modifier Volumes and Links are applied. Surfaces with Bake On Play bake again "

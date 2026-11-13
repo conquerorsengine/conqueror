@@ -1,0 +1,13 @@
+# template: basic3d
+# 233: Navigation ve Occlusion Culling pencereleri Unity'deki gibi Inspector'ın yanında sekme olarak açılır; eskiden yerleşimsiz açılıp
+# kaydırılan metne göre dar, dikey bir şerit oluyor ve Viewport'u, Content Browser'ı örtüyordu
+wait 40
+panel "Occlusion Culling" on
+wait 10
+expect_item_size "###OcclusionCulling" 400 600 "###OcclusionCulling"
+expect_item "Bake" "###OcclusionCulling"
+panel "Occlusion Culling" off
+panel "Navigation" on
+wait 10
+expect_item_size "Navigation" 400 600 "Navigation"
+quit
