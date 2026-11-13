@@ -35,6 +35,7 @@ namespace Conqueror::Editor
         glm::vec2 GetViewportSize() const { return m_ViewportSize; }
         void RequestScreenshot() { m_ScreenshotRequested = true; }
         std::shared_ptr<Framebuffer> GetFramebuffer() const { return m_Framebuffer; }
+        const glm::vec2* GetImageBounds() const { return m_ViewportBounds; }   // ekrandaki görüntünün köşeleri (ImGui koordinatı)
         bool HasCamera() const { return m_HasCamera; }
         void SetStatsPanel(StatsPanel* stats) { m_StatsPanel = stats; }
         // Oynatma sırasında "Maximize On Play" için
@@ -58,7 +59,6 @@ namespace Conqueror::Editor
         std::shared_ptr<Scene> m_Context;
         std::shared_ptr<Framebuffer> m_Framebuffer;
         glm::vec2 m_ViewportSize = { 0.0f, 0.0f };
-        glm::vec2 m_PendingViewportSize = { 0.0f, 0.0f };   // panel boyutu değişti: bir sonraki çizimden hemen önce uygulanır
         glm::vec2 m_ViewportBounds[2]{};
 
         bool m_ViewportFocused = false;
@@ -70,6 +70,7 @@ namespace Conqueror::Editor
         bool m_ScreenshotRequested = false;
 
         void DrawToolbar();
+        void RenderGame(Timestep ts, bool isPlaying, bool renderOnly);
 
         StatsPanel* m_StatsPanel = nullptr;
         bool m_StatsExpanded = true;
@@ -77,12 +78,6 @@ namespace Conqueror::Editor
         // Son ImGui karesinde sekme görünür müydü: düzenleme modunda gizli Game sekmesi çizilmez (Unity gibi; sahne
         // görünümüyle aynı sekme grubundayken editörün GPU yükü iki katına çıkıyordu). Oyunda güncelleme sürer.
         bool m_TabVisible = true;
-        // Görünür olunca / oynatma başlayıp bitince / büyütülünce yerleşim oturana kadar panel boyutuna uymayan eski kare gösterilmez (196)
-        bool m_Settled = false;
-        int m_StableFrames = 0;
-        glm::vec2 m_LastPanelSize = { 0.0f, 0.0f };
-        bool m_LastMaximized = false;
-        bool m_LastPlaying = false;
         bool m_WasMuted = false;
         float m_SavedVolume = 1.0f;
         UIInputState m_UIInput;          // ImGui karesinde toplanır, sonraki OnUpdate'te tüketilir

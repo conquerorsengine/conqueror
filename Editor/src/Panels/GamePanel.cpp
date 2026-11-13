@@ -48,12 +48,13 @@ namespace Conqueror::Editor
     {
         if (!m_TabVisible && !m_Playing)
             return;
-        // Panel boyutu değiştiyse hedef çizimden hemen önce boyutlanır: gösterilen kare hiç boş (gri) kalmaz
-        if (m_Framebuffer && m_PendingViewportSize.x > 0 && m_PendingViewportSize.y > 0 && m_PendingViewportSize != m_ViewportSize)
-        {
-            m_Framebuffer->Resize((uint32_t)m_PendingViewportSize.x, (uint32_t)m_PendingViewportSize.y);
-            m_ViewportSize = m_PendingViewportSize;
-        }
+        RenderGame(ts, isPlaying, false);
+    }
+
+    // Oyunu görünümün boyutunda çiz. renderOnly: yalnız çizim (panel boyutu ImGui karesinde değişince aynı karede yeni boyutta yeniden
+    // çizilir; oyun, UI girdisi, hata ayıklama çizgilerinin süresi ve kayıt ilerlemez)
+    void GamePanel::RenderGame(Timestep ts, bool isPlaying, bool renderOnly)
+    {
         if (m_Framebuffer && m_ViewportSize.x > 0 && m_ViewportSize.y > 0)
         {
             uint32_t width = static_cast<uint32_t>(m_ViewportSize.x);
@@ -102,7 +103,7 @@ namespace Conqueror::Editor
             RenderCommand::Clear();
             RenderCamera postCamera;
 
-            if (m_Context && isPlaying)
+            if (m_Context && isPlaying && !renderOnly)
             {
                 m_Context->OnUpdateRuntime(ts, false);
             }
@@ -129,11 +130,13 @@ namespace Conqueror::Editor
                     glm::mat4 vp = cc.Camera.GetProjection() * viewMatrix;
                     postCamera = RenderCamera::FromSceneCamera(cc.Camera, tc.WorldTransform, sceneWidth, sceneHeight);
                     DebugDraw::SetCameraPosition(glm::vec3(tc.WorldTransform[3]));
-                    DebugDraw::Update(ts);
+                    if (!renderOnly)
+                        DebugDraw::Update(ts);
                     // Debug menüsü (Godot): oyunda çarpıştırıcılar, gezinme ağı ve ajan yolları
                     m_Context->DrawRuntimeDebug();
                     DebugDraw::Render(vp);
-                    DebugDraw::Clear();
+                    if (!renderOnly)
+                        DebugDraw::Clear();
                     if (Scene::RuntimeDebug().Navigation)
                         NavAgents::DrawDebug(m_Context->GetNavMesh(), vp);
                 }
@@ -163,21 +166,26 @@ namespace Conqueror::Editor
             if (m_Context)
             {
                 m_Context->SetUIScreenSize({ (float)width, (float)height });
-                UIInputState input = isPlaying ? m_UIInput : UIInputState{};
-                UISystem::Update(*m_Context, { (float)width, (float)height }, input, ts.GetSeconds());
-                m_UIInput.MousePressed = m_UIInput.MouseReleased = false;
-                m_UIInput.Scroll = 0.0f;
-                m_UIInput.Characters.clear();
-                m_UIInput.Backspace = m_UIInput.Delete = m_UIInput.Enter = m_UIInput.Escape = m_UIInput.Tab = false;
-                m_UIInput.Left = m_UIInput.Right = m_UIInput.Home = m_UIInput.End = false;
-                m_UIInput.Up = m_UIInput.Down = m_UIInput.Space = false;
+                // Yeniden çizimde UI güncellenmez (olaylar karede bir kez; yerleşimi RenderScreenSpace yeni boyuta göre kurar)
+                if (!renderOnly)
+                {
+                    UIInputState input = isPlaying ? m_UIInput : UIInputState{};
+                    UISystem::Update(*m_Context, { (float)width, (float)height }, input, ts.GetSeconds());
+                    m_UIInput.MousePressed = m_UIInput.MouseReleased = false;
+                    m_UIInput.Scroll = 0.0f;
+                    m_UIInput.Characters.clear();
+                    m_UIInput.Backspace = m_UIInput.Delete = m_UIInput.Enter = m_UIInput.Escape = m_UIInput.Tab = false;
+                    m_UIInput.Left = m_UIInput.Right = m_UIInput.Home = m_UIInput.End = false;
+                    m_UIInput.Up = m_UIInput.Down = m_UIInput.Space = false;
+                }
                 UISystem::RenderScreenSpace(*m_Context, { (float)width, (float)height });
             }
 
             // Kayıt ve ekran görüntüsü (son, post-process'li görüntü)
             uint32_t colorTex = m_Framebuffer->GetColorAttachmentRendererID(0);
-            Recorder::SubmitFrame(colorTex, width, height, ts.GetSeconds());
-            if (m_ScreenshotRequested)
+            if (!renderOnly)
+                Recorder::SubmitFrame(colorTex, width, height, ts.GetSeconds());
+            if (m_ScreenshotRequested && !renderOnly)
             {
                 m_ScreenshotRequested = false;
                 std::vector<uint8_t> pixels((size_t)width * height * 4);
@@ -361,7 +369,6 @@ namespace Conqueror::Editor
         {
             m_ViewportFocused = false;
             m_ViewportHovered = false;
-            m_Settled = false;
             ImGui::End();
             return;
         }
@@ -391,38 +398,20 @@ namespace Conqueror::Editor
         ImVec2 imagePos(std::floor(areaPos.x + (area.x - displaySize.x) * 0.5f), std::floor(areaPos.y + (area.y - displaySize.y) * 0.5f));
 
         glm::vec2 newViewportSize = { (float)renderSize.x, (float)renderSize.y };
-        if (m_ViewportSize.x <= 0.0f || m_ViewportSize.y <= 0.0f)
+        // Boyut değiştiyse (Play başında / büyütülünce / sekme görünür olunca / elle boyutlandırırken) oyun bu ImGui karesinde yeni boyutta
+        // hemen yeniden çizilir: gösterilen görüntü her zaman alanın boyutunda (eskiden bir kare gerilmiş ya da oturana kadar koyu: 196, 238)
+        if (newViewportSize != m_ViewportSize)
         {
-            // İlk kare: gösterilecek önceki görüntü yok
             m_Framebuffer->Resize((uint32_t)renderSize.x, (uint32_t)renderSize.y);
-            m_Framebuffer->Bind();
-            RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1.0f });
-            RenderCommand::Clear();
-            m_Framebuffer->ClearAttachment(1, -1);
-            m_Framebuffer->Unbind();
             m_ViewportSize = newViewportSize;
+            RenderGame(Timestep(0.0f), m_Playing, true);
         }
-        else
-            m_PendingViewportSize = newViewportSize;   // OnUpdate çizimden önce uygular; bu karede önceki görüntü alana sığdırılır
 
         // Görüntü (alan dışına taşarsa kırp)
         ImGui::PushClipRect(areaPos, ImVec2(areaPos.x + area.x, areaPos.y + area.y), true);
         ImGui::SetCursorScreenPos(imagePos);
         uint64_t textureID = m_Framebuffer->GetColorAttachmentRendererID(0);
-        // Görünür olunca, oynatma başlayıp bitince ve büyütülünce: boyut oturup o boyutta çizilene kadar eski kare gösterilmez (yalnız koyu
-        // alan). İlk kareler yavaş olduğu için eski boyuttaki kare yanlarda koyu bantlı ya da gerilmiş görünüyordu (196)
-        if (maximized != m_LastMaximized || m_Playing != m_LastPlaying)
-            m_Settled = false;
-        m_LastMaximized = maximized;
-        m_LastPlaying = m_Playing;
-        m_StableFrames = newViewportSize == m_LastPanelSize ? m_StableFrames + 1 : 0;
-        m_LastPanelSize = newViewportSize;
-        if (!m_Settled && m_StableFrames >= 2 && m_ViewportSize == newViewportSize)
-            m_Settled = true;
-        if (!m_Settled && m_ViewportSize != newViewportSize)
-            ImGui::Dummy(displaySize);
-        else
-            PanelImage((ImTextureID)textureID, m_ViewportSize, displaySize);
+        PanelImage((ImTextureID)textureID, m_ViewportSize, displaySize);
         m_ViewportHovered = ImGui::IsItemHovered();
         // Unity: "No cameras rendering"
         if (!m_HasCamera && !m_HasOverlayUI)

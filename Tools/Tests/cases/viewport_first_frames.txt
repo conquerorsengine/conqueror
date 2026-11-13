@@ -1,0 +1,26 @@
+# template: basic3d
+# 238: açılışta pencere büyürken (ilk karelerde boyut her kare değişir) Viewport'ta EKRANDA hep sahne görünür: koyu alan (eskiden yerleşim
+# oturana kadar gösteriliyordu, ortalama ~12) ya da gerilmiş eski kare yok; Stats FPS sayısı yarım saniye beklemeden kareler düzene girince
+# görünür. Play başında Game görünümü de ilk karesinden oyunu gösterir
+wait 1
+app_window_size 1500 850
+viewport_shown 15 >40
+wait 1
+app_window_size 1650 930
+wait 1
+app_window_size 1800 1000
+wait_until 2500 stats_ready
+wait 20
+# elle boyutlandırma: her kare yeni boyut
+app_window_size 1300 760
+viewport_shown 6 >40
+wait 1
+app_window_size 1700 980
+wait 10
+focus Game
+play
+game_shown 10 >40
+wait 30
+stop
+wait 5
+quit

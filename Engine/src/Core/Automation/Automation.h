@@ -62,5 +62,12 @@ namespace Conqueror
         static void QueueMouseClick(float x, float y, int button = 0);
         static void QueueMouseDrag(float x0, float y0, float x1, float y1, int steps = 12, int button = 0);
         static void Report(const std::string& line);
+
+        // Ekranda görünen (pencerenin arka arabelleği, takas öncesi) görüntü üzerinde sonraki N karede çalışan denetim. false + hata:
+        // FAIL; N kare geçerse OK. (Panel görüntüsünün üstüne ImGui'nin çizdiği her şey dahil: koyu alan, gerilmiş kare ...)
+        using FrameCheck = std::function<bool(uint32_t framebufferWidth, uint32_t framebufferHeight, std::string& error)>;
+        static void AddFrameCheck(const std::string& label, int frames, FrameCheck check);
+        // Arka arabellekten RGBA bölge (sol-alt köken, piksel)
+        static bool ReadBackbufferRegion(int x, int y, int w, int h, std::vector<uint8_t>& rgba);
     };
 }

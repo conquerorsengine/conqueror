@@ -201,8 +201,8 @@ namespace Conqueror::Editor
         ViewportShading m_Shading = ViewportShading::Shaded;
         EditorViewOptions m_ViewOptions;
         ViewportShading m_AppliedShading = ViewportShading::Shaded;   // son karedeki kip (değişince zamansal geçmiş yeniden başlar)
-        glm::vec2 m_PendingViewportSize = { 0.0f, 0.0f };             // panel boyutu değişti: bir sonraki çizimden hemen önce uygulanır
         void ApplyViewportSize(const glm::vec2& size);
+        void RenderView(Timestep ts, bool updateScene);
         EditorViewOptions m_AppliedViewOptions;   // son karede sahneye verilen (değişince zamansal geçmiş yeniden başlar)
         bool m_ViewOptionsApplied = false;
         bool m_ShowSelectionOutline = true;
@@ -224,10 +224,6 @@ namespace Conqueror::Editor
         ImVec2 m_PickStart{ 0.0f, 0.0f };
         bool m_ImageHovered = false;
         bool m_MouseDownInView[3] = { false, false, false };
-        // Açılış / panel ilk göründüğünde yerleşim oturana kadar panel boyutuna uymayan eski kare gösterilmez (196)
-        bool m_Settled = false;
-        int m_StableFrames = 0;
-        glm::vec2 m_LastPanelSize = { 0.0f, 0.0f };
         std::vector<uint32_t> m_PrevSelection;
         // Create menüsünden sürüklenen girişin önizlemesi (yerleştirilene kadar geri alma kaydına girmez)
         std::string m_PlaceId;

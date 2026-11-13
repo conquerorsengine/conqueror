@@ -6,6 +6,7 @@
 #include "Core/Events/KeyEvent.h"
 #include "Core/Events/MouseEvent.h"
 #include "Renderer/Renderer.h"
+#include "Core/ImGui/ImGuiLayer.h"
 
 #include <GLFW/glfw3.h>
 #include "stb_image.h"
@@ -319,7 +320,8 @@ namespace Conqueror
     void WindowsWindow::OnUpdate()
     {
         glfwPollEvents();
-        m_Context->SwapBuffers();
+        if (!ImGuiLayer::ConsumeSkipPresent())
+            m_Context->SwapBuffers();
 
         if (m_Data.SoftVSync)
         {

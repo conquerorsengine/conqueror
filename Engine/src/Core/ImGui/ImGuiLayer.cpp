@@ -160,9 +160,20 @@ namespace Conqueror
         ImGuizmo::BeginFrame();
     }
 
+    namespace { bool s_SkipPresent = false; }
+
+    bool ImGuiLayer::ConsumeSkipPresent()
+    {
+        const bool skip = s_SkipPresent;
+        s_SkipPresent = false;
+        return skip;
+    }
+
     void ImGuiLayer::End()
     {
         ImGuiIO& io = ImGui::GetIO();
+        if (ImGui::GetFrameCount() <= 1)
+            s_SkipPresent = true;
         Application& app = Application::Get();
         io.DisplaySize = ImVec2((float)app.GetWindow().GetWidth(), (float)app.GetWindow().GetHeight());
 

@@ -64,6 +64,13 @@ namespace Conqueror
             ImVec2 MousePos = { 0.0f, 0.0f };
             bool HasMousePos = false;
             std::string PendingScreenshot;
+            struct PendingFrameCheck
+            {
+                std::string Label;
+                int FramesLeft = 0;
+                Automation::FrameCheck Check;
+            };
+            std::vector<PendingFrameCheck> FrameChecks;
             std::ofstream ResultLog;
             int Failures = 0;
             std::chrono::steady_clock::time_point StartTime{};
@@ -914,10 +921,49 @@ namespace Conqueror
         return stbi_write_png(path.c_str(), (int)width, (int)height, 4, flipped.data(), (int)stride) != 0;
     }
 
+    void Automation::AddFrameCheck(const std::string& label, int frames, FrameCheck check)
+    {
+        State().FrameChecks.push_back({ label, std::max(1, frames), std::move(check) });
+    }
+
+    bool Automation::ReadBackbufferRegion(int x, int y, int w, int h, std::vector<uint8_t>& rgba)
+    {
+        if (w <= 0 || h <= 0)
+            return false;
+        rgba.assign((size_t)w * h * 4, 0);
+        GLint prevReadFbo = 0;
+        glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &prevReadFbo);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+        glReadBuffer(GL_BACK);
+        glPixelStorei(GL_PACK_ALIGNMENT, 1);
+        glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, rgba.data());
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, prevReadFbo);
+        return true;
+    }
+
     void Automation::OnFrameRendered(uint32_t framebufferWidth, uint32_t framebufferHeight)
     {
         auto& st = State();
-        if (!st.Active || st.PendingScreenshot.empty())
+        if (!st.Active)
+            return;
+        for (auto it = st.FrameChecks.begin(); it != st.FrameChecks.end();)
+        {
+            std::string error;
+            if (!it->Check(framebufferWidth, framebufferHeight, error))
+            {
+                Report("FAIL " + it->Label + ": " + error);
+                ++st.Failures;
+                it = st.FrameChecks.erase(it);
+            }
+            else if (--it->FramesLeft <= 0)
+            {
+                Report("OK frame check " + it->Label);
+                it = st.FrameChecks.erase(it);
+            }
+            else
+                ++it;
+        }
+        if (st.PendingScreenshot.empty())
             return;
         bool ok = CaptureBackbuffer(st.PendingScreenshot, framebufferWidth, framebufferHeight);
         Report(std::string(ok ? "SHOT " : "FAIL screenshot ") + st.PendingScreenshot);

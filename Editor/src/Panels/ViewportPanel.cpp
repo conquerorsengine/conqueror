@@ -145,10 +145,6 @@ namespace Conqueror::Editor
 
     void ViewportPanel::OnUpdate(Timestep ts)
     {
-        // Panel boyutu değiştiyse hedefler çizimden hemen önce boyutlanır: gösterilen kare hiç boş (gri) kalmaz
-        if (m_PendingViewportSize.x > 0.0f && m_PendingViewportSize.y > 0.0f && m_PendingViewportSize != m_ViewportSize)
-            ApplyViewportSize(m_PendingViewportSize);
-
         // Gizmo kullanılıyorsa, viewport odakta değilse veya ImGui text girişi aktifse kamera güncellenmez (yazı yazarken kamera
         // kaçmasın). Oyun çalışırken de WASD/QE ile gezilir: klavye oyuna yalnız Game görünümü odaktayken gider.
         const bool wantText = ImGui::GetIO().WantTextInput;
@@ -175,6 +171,13 @@ namespace Conqueror::Editor
             return;
         }
 
+        RenderView(ts, true);
+    }
+
+    // Sahneyi görünümün boyutunda çiz. updateScene = false: yalnız çizim (panel boyutu ImGui karesinde değişince aynı karede yeni boyutta
+    // yeniden çizilir; düzenleyici sistemleri ikinci kez ilerlemez)
+    void ViewportPanel::RenderView(Timestep ts, bool updateScene)
+    {
         const uint32_t width = static_cast<uint32_t>(m_ViewportSize.x);
         const uint32_t height = static_cast<uint32_t>(m_ViewportSize.y);
 
@@ -234,11 +237,14 @@ namespace Conqueror::Editor
 
             {
                 CQ_PROFILE_SAMPLE("SceneView.Scene", Rendering);
-                m_Context->OnUpdateEditor(ts, m_EditorCamera, GetViewportBounds());
+                if (updateScene)
+                    m_Context->OnUpdateEditor(ts, m_EditorCamera, GetViewportBounds());
+                else
+                    m_Context->RenderEditorView(ts, m_EditorCamera, GetViewportBounds());
             }
             // Seçimi kalktığı ilk iki karede nesnenin (ve gizmosunun) kutusu TAA'ya hareketli bildirilir: oradaki pikseller sıkı kırpılır,
             // eski gizmo çizgisi geçmişten hemen silinir (görüntünün geri kalanının geçmişi korunur)
-            for (auto it = m_DeselectedGizmos.begin(); it != m_DeselectedGizmos.end();)
+            for (auto it = m_DeselectedGizmos.begin(); updateScene && it != m_DeselectedGizmos.end();)
             {
                 Entity e{ (entt::entity)it->first, m_Context.get() };
                 if (e.IsValid() && e.HasComponent<TransformComponent>())
@@ -351,8 +357,6 @@ namespace Conqueror::Editor
             m_ViewportHovered = false;
             m_ImageHovered = false;
             m_ViewportSize = { 0.0f, 0.0f };
-            m_PendingViewportSize = { 0.0f, 0.0f };
-            m_Settled = false;
             if (!m_PlaceRoots.empty())
                 ClearPlacementPreview(true);
             ImGui::End();
@@ -372,46 +376,19 @@ namespace Conqueror::Editor
         m_ViewportBounds[1] = { imagePos.x + newViewportSize.x, imagePos.y + newViewportSize.y };
         EditorState::Get().SetViewportBounds(m_ViewportBounds[0], m_ViewportBounds[1]);
 
+        // Panel boyutu değiştiyse (açılışta pencere büyürken ve yerleşim otururken, sekme görünür olunca, elle boyutlandırırken) sahne bu
+        // ImGui karesinde yeni boyutta hemen yeniden çizilir: gösterilen görüntü her zaman panelin boyutundadır. Eskiden yeni boyut bir
+        // sonraki kareye kalıyor, arada eski kare gerilmiş (196) ya da açılışın yavaş ilk karelerinde koyu alan görünüyordu (238)
         const bool validSize = newViewportSize.x > 0.0f && newViewportSize.y > 0.0f;
-        if (validSize)
+        if (validSize && newViewportSize != m_ViewportSize)
         {
-            if (m_ViewportSize.x <= 0.0f || m_ViewportSize.y <= 0.0f)
-            {
-                // İlk kare: gösterilecek önceki görüntü yok
-                ApplyViewportSize(newViewportSize);
-                m_Framebuffer->Bind();
-                RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1.0f });
-                RenderCommand::Clear();
-                m_Framebuffer->ClearAttachment(1, -1);
-                m_Framebuffer->Unbind();
-            }
-            else
-                m_PendingViewportSize = newViewportSize;   // OnUpdate çizimden önce uygular; bu karede önceki görüntü panele sığdırılır
-        }
-
-        // Açılışta / panel ilk göründüğünde yerleşim oturmadan (ilk karede sekme çubuğu yok, panel ~25 px uzun; pencere büyütülüyor) eski
-        // boyutta çizilmiş kare gösterilmez: açılışın ilk kareleri yavaş olduğu için yanlış boyuttaki görüntü (gerilmiş ya da yanlarda koyu
-        // bantlı) yaklaşık bir saniye görünüyordu. Panel iki kare aynı boyutta kalıp o boyutta çizilene kadar koyu alan; sonra elle
-        // boyutlandırırken eski kare yine sığdırılarak gösterilir (gri boşluk yok)
-        if (validSize)
-        {
-            m_StableFrames = newViewportSize == m_LastPanelSize ? m_StableFrames + 1 : 0;
-            m_LastPanelSize = newViewportSize;
-            if (!m_Settled && m_StableFrames >= 2 && m_ViewportSize == newViewportSize)
-                m_Settled = true;
+            ApplyViewportSize(newViewportSize);
+            RenderView(Timestep(0.0f), false);
         }
         if (m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f)
         {
             uint64_t textureID = m_Framebuffer->GetColorAttachmentRendererID(0);
-            const glm::vec2 shownSize = validSize ? newViewportSize : m_ViewportSize;
-            if (!m_Settled && validSize && m_ViewportSize != newViewportSize)
-            {
-                const ImVec2 p = ImGui::GetCursorScreenPos();
-                ImGui::Dummy(ImVec2{ shownSize.x, shownSize.y });
-                ImGui::GetWindowDrawList()->AddRectFilled(p, ImVec2(p.x + shownSize.x, p.y + shownSize.y), IM_COL32(12, 12, 14, 255));
-            }
-            else
-                PanelImage((ImTextureID)textureID, m_ViewportSize, ImVec2{ shownSize.x, shownSize.y });
+            PanelImage((ImTextureID)textureID, m_ViewportSize, ImVec2{ m_ViewportSize.x, m_ViewportSize.y });
             m_ImageHovered = ImGui::IsItemHovered();
             for (int b = 0; b < 3; ++b)
             {

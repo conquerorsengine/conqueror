@@ -4,6 +4,7 @@
 
 #include <IconsFontAwesome6.h>
 #include <algorithm>
+#include <cmath>
 
 namespace Conqueror::Editor
 {
@@ -18,17 +19,33 @@ namespace Conqueror::Editor
         m_FrameTime = frameTime;
         m_FrameHistory[(size_t)m_HistoryOffset] = frameTime;
         m_HistoryOffset = (m_HistoryOffset + 1) % (int)m_FrameHistory.size();
-        // Açılış: yükleme kareleri (100 ms'de kırpılır) bitip üç kare normal geçene kadar (en az yarım saniye, en çok 3 saniye) sayı
-        // gösterilmez. Eskiden Stats editör açılınca ilk anda kırmızı "10 FPS 100 ms" gösteriyordu
+        // Açılış: yükleme kareleri (100 ms'de kırpılır) sayılmaz; kareler düzene girince (art arda dört kare, her biri bir öncekinden en
+        // çok %30 farklı) o karelerin ortalaması hemen gösterilir (en geç 3 saniyede). Eskiden Stats ilk anda kırmızı "10 FPS 100 ms"
+        // gösteriyordu (197); sonra da sayı en az yarım saniye boş kalıyordu, görüntü oturmuşken FPS yazmıyordu (238)
         m_SinceStartMs += frameTime;
         if (!m_Ready)
         {
-            m_GoodFrames = frameTime < 99.0f ? m_GoodFrames + 1 : 0;
-            if (!((m_GoodFrames >= 3 && m_SinceStartMs >= 500.0f) || m_SinceStartMs >= 3000.0f))
+            const bool steady = frameTime < 99.0f && m_PrevFrameMs > 0.0f &&
+                                std::fabs(frameTime - m_PrevFrameMs) <= 0.3f * std::max(frameTime, m_PrevFrameMs);
+            m_PrevFrameMs = frameTime;
+            if (steady)
+            {
+                ++m_GoodFrames;
+                m_GoodMs += frameTime;
+            }
+            else
+            {
+                m_GoodFrames = 0;
+                m_GoodMs = 0.0f;
+            }
+            if (m_GoodFrames < 4 && m_SinceStartMs < 3000.0f)
                 return;
             m_Ready = true;
             m_AccumMs = 0.0f;
             m_AccumFrames = 0;
+            m_ShownFrameTime = m_GoodFrames > 0 ? m_GoodMs / (float)m_GoodFrames : frameTime;
+            m_ShownFPS = 1000.0f / std::max(m_ShownFrameTime, 1e-3f);
+            return;
         }
         // Başlıkta çeyrek saniyelik ortalama (Unreal "stat fps" gibi): tek karelik sıçramalarla titremez
         m_AccumMs += frameTime;

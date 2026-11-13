@@ -30,6 +30,9 @@ namespace Conqueror
         enum class FontRole { Regular = 0, Bold, Large, Mono, Count };
         // Editör fontları (Font Awesome ikonları Regular/Bold/Large'a birleştirilmiştir)
         static ::ImFont* GetFont(FontRole role);
+        // Pencere bu kareyi göstermesin mi (bir kez okunur). ImGui ilk karesinde paneller henüz görünmez (yalnız menü çubuğu, gerisi
+        // siyah): o kare ekrana verilmez, pencere ilk kez tam yerleşimle görünür (238)
+        static bool ConsumeSkipPresent();
 
     private:
         void LoadFonts();

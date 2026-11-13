@@ -12,6 +12,8 @@ namespace Conqueror::Editor
     class StatsPanel
     {
     public:
+        bool IsShowingFPS() const { return m_Ready && m_ShownFPS > 0.0f; }
+        float GetShownFPS() const { return m_ShownFPS; }
         StatsPanel() = default;
         ~StatsPanel() = default;
 
@@ -36,6 +38,7 @@ namespace Conqueror::Editor
         float m_ShownFPS = 0.0f, m_ShownFrameTime = 0.0f;
         float m_AccumMs = 0.0f, m_SinceStartMs = 0.0f;
         int m_AccumFrames = 0, m_GoodFrames = 0;
+        float m_GoodMs = 0.0f, m_PrevFrameMs = 0.0f;   // açılış: art arda düzenli karelerin toplamı / önceki kare
         bool m_Ready = false;
         uint32_t m_EntityCount = 0;
 

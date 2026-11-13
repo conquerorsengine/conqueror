@@ -7559,6 +7559,66 @@ namespace Conqueror::Editor
             Automation::WaitFrames(3);
             return true;
         });
+        // viewport_shown | game_shown <kare> <ortalama koşulu, ör. >60> [u0 v0 u1 v1]: sonraki N karede EKRANDA görünen sahne / oyun
+        // görüntüsünün (panel görüntüsü + üstüne çizilenler; varsayılan iç bölge 0.2-0.8) RGB ortalaması koşulu sağlamalı. Boyut değişince
+        // koyu alan / boş kare gösterilmediğini yakalar (238)
+        auto shownCheck = [](const Args& a, std::string& err, std::function<const glm::vec2*()> bounds, const char* name) {
+            if (a.size() < 3 || a[2].size() < 2 || (a[2][0] != '>' && a[2][0] != '<')) { err = std::string(name) + " <frames> <>v|<v> [u0 v0 u1 v1]"; return false; }
+            const int frames = std::stoi(a[1]);
+            const bool greater = a[2][0] == '>';
+            const float limit = std::stof(a[2].substr(1));
+            float u0 = 0.2f, v0 = 0.2f, u1 = 0.8f, v1 = 0.8f;
+            if (a.size() >= 7) { u0 = std::stof(a[3]); v0 = std::stof(a[4]); u1 = std::stof(a[5]); v1 = std::stof(a[6]); }
+            Automation::AddFrameCheck(std::string(name) + " " + a[2], frames, [=](uint32_t fbw, uint32_t fbh, std::string& e) {
+                const glm::vec2* b = bounds();
+                if (!b || b[1].x <= b[0].x || b[1].y <= b[0].y) { e = "no image"; return false; }
+                const ImGuiIO& io = ImGui::GetIO();
+                const ImVec2 origin = ImGui::GetMainViewport()->Pos;
+                const float sx = io.DisplayFramebufferScale.x, sy = io.DisplayFramebufferScale.y;
+                auto px = [&](float x) { return (int)std::lround((x - origin.x) * sx); };
+                auto py = [&](float y) { return (int)std::lround((y - origin.y) * sy); };
+                const float w = b[1].x - b[0].x, h = b[1].y - b[0].y;
+                int x0 = std::clamp(px(b[0].x + w * u0), 0, (int)fbw - 1), x1 = std::clamp(px(b[0].x + w * u1), 0, (int)fbw - 1);
+                int y0 = std::clamp(py(b[0].y + h * v0), 0, (int)fbh - 1), y1 = std::clamp(py(b[0].y + h * v1), 0, (int)fbh - 1);
+                std::vector<uint8_t> rgba;
+                const int rw = std::max(1, x1 - x0), rh = std::max(1, y1 - y0);
+                Automation::ReadBackbufferRegion(x0, (int)fbh - (y0 + rh), rw, rh, rgba);
+                double sum = 0.0;
+                for (size_t i = 0; i < rgba.size(); i += 4)
+                    sum += (rgba[i] + rgba[i + 1] + rgba[i + 2]) / 3.0;
+                const double mean = sum / std::max<size_t>(1, rgba.size() / 4);
+                if (greater ? mean > limit : mean < limit)
+                    return true;
+                e = "shown mean is " + std::to_string(mean);
+                return false;
+            });
+            return true;
+        };
+        Automation::RegisterCommand("viewport_shown", [this, shownCheck](const Args& a, std::string& err) {
+            return shownCheck(a, err, [this]() -> const glm::vec2* { return m_ViewportPanel ? m_ViewportPanel->GetViewportBounds() : nullptr; }, "viewport_shown");
+        });
+        Automation::RegisterCommand("game_shown", [this, shownCheck](const Args& a, std::string& err) {
+            return shownCheck(a, err, [this]() -> const glm::vec2* { return m_GamePanel ? m_GamePanel->GetImageBounds() : nullptr; }, "game_shown");
+        });
+        // stats_ready: Stats başlığında FPS sayısı görünüyor mu (wait_until ile: açılıştan kaç kare sonra göründüğü)
+        Automation::RegisterCommand("stats_ready", [this](const Args&, std::string& err) {
+            if (m_StatsPanel && m_StatsPanel->IsShowingFPS())
+            {
+                Automation::Report("STATS " + std::to_string(m_StatsPanel->GetShownFPS()) + " FPS");
+                return true;
+            }
+            err = "Stats shows no FPS yet";
+            return false;
+        });
+        // app_window_size <w> <h>: işletim sistemi penceresinin boyutu (açılışta pencere büyürken olanı denemek için)
+        Automation::RegisterCommand("app_window_size", [](const Args& a, std::string& err) {
+            if (a.size() < 3) { err = "app_window_size <w> <h>"; return false; }
+            auto* window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
+            if (glfwGetWindowAttrib(window, GLFW_MAXIMIZED))
+                glfwRestoreWindow(window);
+            glfwSetWindowSize(window, std::stoi(a[1]), std::stoi(a[2]));
+            return true;
+        });
         Automation::RegisterCommand("window_size", [](const Args& a, std::string& err) {
             if (a.size() < 4) { err = "window_size <name> <w> <h>"; return false; }
             for (ImGuiWindow* c : GImGui->Windows)
