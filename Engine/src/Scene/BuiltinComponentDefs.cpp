@@ -589,7 +589,7 @@ namespace Conqueror
             .Field("RepeatRate", "Repeat Rate", &UIEventSystemComponent::RepeatRate).Range(0.02f, 1.0f, 0.01f).Format("%.2f s");
 
         ComponentDef<UILayoutGroupComponent>("Layout Group", "UILayoutGroupComponent", "UI", ICON_FA_BARS).Builtin()
-            .Field("LayoutType", "Type", &UILayoutGroupComponent::Type).Options({ "Horizontal", "Vertical", "Grid" })
+            .Field("LayoutType", "Type", &UILayoutGroupComponent::Type).Options({ "Horizontal", "Vertical", "Grid", "HorizontalFlow", "VerticalFlow" })
             .Field("Padding", "Padding", &UILayoutGroupComponent::Padding)
             .Field("Spacing", "Spacing", &UILayoutGroupComponent::Spacing)
             .Field("CellSize", "Cell Size", &UILayoutGroupComponent::CellSize)

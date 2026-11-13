@@ -1,0 +1,118 @@
+# template: basic3d
+# 25 (Godot denetimleri): Spin Box okları, Menu Button menüsü, Tab Container sekmesi, Item List seçimi, Tree katlama, Color Picker
+# Button açılır seçicisi, Split Container tutamacı, Graph Edit bağlantısı (çıkıştan girişe sürükle), Code Edit yazma, Confirmation
+# Dialog OK, File Dialog ile dosya adı yazıp kaydetme, Flow Container satır kaydırma; hepsi Game görünümünde gerçek fare / klavye ile
+wait 40
+ui create SpinBox Spin -820 440
+ui create ProgressBar Progress -820 380
+ui create MenuButton MenuBtn -560 440
+ui create ColorPickerButton ColorBtn -380 440
+ui create TabContainer Tabs 600 330
+ui create ItemList List -780 -100
+ui create Tree TreeView -440 -100
+ui create CodeEdit Code -60 -330
+ui create GraphEdit Graph 560 -260
+ui create HSplitContainer Split 40 -10
+comp set Split RectTransformComponent SizeDelta 400 240
+ui create ConfirmationDialog Confirm
+comp set Confirm RectTransformComponent AnchorMin 0.5 0.5
+comp set Confirm RectTransformComponent AnchorMax 0.5 0.5
+comp set Confirm RectTransformComponent SizeDelta 800 600
+ui create FileDialog Files
+comp set Files RectTransformComponent AnchorMin 0.5 0.5
+comp set Files RectTransformComponent AnchorMax 0.5 0.5
+comp set Files RectTransformComponent SizeDelta 800 600
+comp set Files UIFileDialogComponent FileMode 3
+comp set Progress UIProgressBarComponent Value 75
+# Flow Container (Godot HFlowContainer): Layout Group'un Horizontal Flow türü; 520 genişlikte iki düğme bir satıra sığar, üçüncüsü alta
+ui create LayoutGroup Flow 0 -700
+comp set Flow RectTransformComponent SizeDelta 520 400
+comp set Flow UILayoutGroupComponent LayoutType 3
+ui create Button B1
+ui create Button B2
+ui create Button B3
+entity parent B1 Flow
+entity parent B2 Flow
+entity parent B3 Flow
+focus Game
+play
+wait 10
+# Spin Box: yukarı iki, aşağı bir
+ui click_at Spin 190 36
+wait 3
+ui click_at Spin 190 36
+wait 3
+ui click_at Spin 190 12
+wait 3
+comp expect Spin UISpinBoxComponent Value >0.5
+comp expect Spin UISpinBoxComponent Value <1.5
+# Menu Button: aç, ikinci öğe (Open)
+ui click MenuBtn
+wait 3
+ui click_at MenuBtn 40 -63
+wait 3
+comp expect MenuBtn UIMenuButtonComponent LastPressed 1
+# Tab Container: ikinci sekme
+ui click_at Tabs 140 338
+wait 3
+comp expect Tabs UITabContainerComponent CurrentTab 1
+# Item List: ikinci satır; Tree: kökü katla, kökü seç, alttaki satır artık yok
+ui click_at List 100 200
+wait 3
+ui click_at TreeView 14 237
+wait 3
+ui click_at TreeView 120 237
+wait 3
+ui click_at TreeView 120 200
+wait 3
+run_cqs_file "{dir}/checks/godot_ui_list.cqs"
+expect_entities 1 G_Lists
+# Color Picker Button: aç, doygunluk / değer karesinden renk seç
+ui click ColorBtn
+wait 3
+ui click_at ColorBtn 200 -40
+wait 3
+run_cqs_file "{dir}/checks/godot_ui_color.cqs"
+expect_entities 1 G_Color
+ui click Progress
+wait 3
+comp expect ColorBtn UIColorPickerButtonComponent Open false
+# Split Container: tutamacı sola sürükle
+ui drag_to Split 200 120 Split 120 120
+wait 5
+comp expect Split UISplitContainerComponent SplitRatio <0.35
+# Graph Edit: Node A çıkış 0 -> Node B giriş 0; Code Edit: ilk satırın sonuna yaz
+ui drag_to "Node A" 160 62 "Node B" 0 62
+wait 5
+ui click_at Code 400 270
+wait 3
+key end
+type "!"
+wait 3
+run_cqs_file "{dir}/checks/godot_ui_graph.cqs"
+expect_entities 1 G_Graph
+# Confirmation Dialog: aç, OK
+run_cqs_file "{dir}/checks/godot_ui_dialog_open.cqs"
+wait 3
+comp expect Confirm UIDialogComponent Visible true
+ui click_at Confirm 334 217
+wait 3
+comp expect Confirm UIDialogComponent Confirmed 1
+comp expect Confirm UIDialogComponent Visible false
+# File Dialog (Save File): ada yaz, Save
+run_cqs_file "{dir}/checks/godot_ui_files_open.cqs"
+wait 3
+ui click_at Files 300 124
+wait 3
+type "save1.txt"
+wait 3
+ui click_at Files 580 74
+wait 3
+run_cqs_file "{dir}/checks/godot_ui_files.cqs"
+expect_entities 1 G_File
+ui expect_rect B2 x >250
+ui expect_rect B2 y >320
+ui expect_rect B3 x <20
+ui expect_rect B3 y <260
+stop
+quit

@@ -1048,6 +1048,25 @@ namespace Conqueror::Editor
                     const std::string type = it.Type;
                     items.push_back(Item(it.Label, [type](Scene* s, Entity p) { return UISystem::CreateElement(*s, type, UIParentFor(p)); }, P::None));
                 }
+                // Godot denetimleri (Unity UGUI'de yok)
+                {
+                    std::vector<CreateNode> controls;
+                    struct { const char* Label; const char* Type; } godot[] = {
+                        { "Spin Box", "SpinBox" }, { "Color Picker", "ColorPicker" }, { "Color Picker Button", "ColorPickerButton" },
+                        { "Menu Button", "MenuButton" }, { "Popup Menu", "PopupMenu" }, { "Menu Bar", "MenuBar" },
+                        { "Tab Container", "TabContainer" }, { "Tab Bar", "TabBar" }, { "HSplit Container", "HSplitContainer" },
+                        { "VSplit Container", "VSplitContainer" }, { "Item List", "ItemList" }, { "Tree", "Tree" },
+                        { "Link Button", "LinkButton" }, { "Progress Bar", "ProgressBar" }, { "Accept Dialog", "AcceptDialog" },
+                        { "Confirmation Dialog", "ConfirmationDialog" }, { "File Dialog", "FileDialog" }, { "Text Edit", "TextEdit" },
+                        { "Code Edit", "CodeEdit" }, { "Graph Edit", "GraphEdit" }, { "Graph Node", "GraphNode" },
+                    };
+                    for (auto& it : godot)
+                    {
+                        const std::string type = it.Type;
+                        controls.push_back(Item(it.Label, [type](Scene* s, Entity p) { return UISystem::CreateElement(*s, type, UIParentFor(p)); }, P::None));
+                    }
+                    items.push_back(Menu("Controls", controls));
+                }
                 items.push_back(Separator());
                 items.push_back(Menu("Legacy", {
                     Item("Canvas", [](Scene* s, Entity p) {

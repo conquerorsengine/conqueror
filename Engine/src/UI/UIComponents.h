@@ -299,7 +299,7 @@ namespace Conqueror
         float RepeatRate = 0.12f;              // sonraki tekrarlar (s)
     };
 
-    enum class UILayoutType : int { Horizontal = 0, Vertical, Grid };
+    enum class UILayoutType : int { Horizontal = 0, Vertical, Grid, HorizontalFlow, VerticalFlow };   // Flow: Godot H/VFlowContainer (sığmayan alt satıra)
     enum class UIChildAlignment : int { UpperLeft = 0, UpperCenter, UpperRight, MiddleLeft, MiddleCenter, MiddleRight, LowerLeft, LowerCenter, LowerRight };
 
     struct UILayoutGroupComponent

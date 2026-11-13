@@ -1,0 +1,5 @@
+using nativebridge;
+var p = FileDialogGetPath("Files");
+var ok = StringIndexOf(p, "save1.txt") >= 0;
+LogInfo("REGRESSION godotui file=" + p);
+if (ok) { CreateEntity("G_File"); }

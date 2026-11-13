@@ -1,3 +1,4 @@
+#include "UI/UIControls.h"
 #include "UI/UIExtras.h"
 #include "Core/Localization/Localization.h"
 #include "UISystem.h"
@@ -56,7 +57,7 @@ namespace Conqueror
             void Set(Entity e) { SceneRef = e ? e.GetScene() : nullptr; Handle = e ? (entt::entity)e : entt::null; }
             void Clear() { SceneRef = nullptr; Handle = entt::null; }
         };
-        EntityRef s_Pressed, s_Focused, s_OpenDropdown;
+        EntityRef s_Pressed, s_Focused, s_OpenDropdown, s_OverlayPressed;
         // Event Trigger: imlecin üstünde / basılı olduğu öğe
         EntityRef s_TriggerHover, s_TriggerPressed;
         glm::vec2 s_TriggerPressPos{ 0.0f };
@@ -222,6 +223,38 @@ namespace Conqueror
                     }
                     contentSize = glm::vec2(gridW + pad.x + pad.y, gridH + pad.z + pad.w);
                 }
+                else if (lg.Type == UILayoutType::HorizontalFlow || lg.Type == UILayoutType::VerticalFlow)
+                {
+                    // Godot HFlowContainer / VFlowContainer: sığmayan öğe sonraki satıra (sütuna) geçer
+                    const bool columns = lg.Type == UILayoutType::VerticalFlow;
+                    float cursor = 0.0f, line = 0.0f, lineSize = 0.0f;
+                    for (int i = 0; i < n; ++i)
+                    {
+                        Entity c = children[laid[(size_t)i]];
+                        glm::vec2 sz = c.GetComponent<RectTransformComponent>().SizeDelta;
+                        if (c.HasComponent<UILayoutElementComponent>())
+                        {
+                            const auto& le = c.GetComponent<UILayoutElementComponent>();
+                            if (le.PreferredWidth >= 0.0f) sz.x = le.PreferredWidth;
+                            if (le.PreferredHeight >= 0.0f) sz.y = le.PreferredHeight;
+                        }
+                        sz = glm::max(sz, glm::vec2(0.0f));
+                        const float mainSz = columns ? sz.y : sz.x, crossSz = columns ? sz.x : sz.y;
+                        if (cursor > 0.0f && cursor + mainSz > (columns ? availH : availW))
+                        {
+                            cursor = 0.0f;
+                            line += lineSize + lg.Spacing;
+                            lineSize = 0.0f;
+                        }
+                        if (columns)
+                            forced[laid[(size_t)i]] = glm::vec4(pad.x + line, parentSize.y - pad.z - cursor - sz.y, sz.x, sz.y);
+                        else
+                            forced[laid[(size_t)i]] = glm::vec4(pad.x + cursor, parentSize.y - pad.z - line - sz.y, sz.x, sz.y);
+                        cursor += mainSz + lg.Spacing;
+                        lineSize = std::max(lineSize, crossSz);
+                    }
+                    contentSize = columns ? glm::vec2(line + lineSize + pad.x + pad.y, parentSize.y) : glm::vec2(parentSize.x, line + lineSize + pad.z + pad.w);
+                }
                 else
                 {
                     const bool vertical = lg.Type == UILayoutType::Vertical;
@@ -286,14 +319,22 @@ namespace Conqueror
                 if (lg.FitContent && parent.HasComponent<RectTransformComponent>())
                 {
                     auto& prt = parent.GetComponent<RectTransformComponent>();
-                    if (lg.Type != UILayoutType::Horizontal) prt.SizeDelta.y = contentSize.y;
-                    if (lg.Type != UILayoutType::Vertical) prt.SizeDelta.x = contentSize.x;
+                    const bool fitY = lg.Type == UILayoutType::Vertical || lg.Type == UILayoutType::Grid || lg.Type == UILayoutType::HorizontalFlow;
+                    const bool fitX = lg.Type == UILayoutType::Horizontal || lg.Type == UILayoutType::Grid || lg.Type == UILayoutType::VerticalFlow;
+                    if (fitY) prt.SizeDelta.y = contentSize.y;
+                    if (fitX) prt.SizeDelta.x = contentSize.x;
                 }
             }
+
+            // Godot kapları (Tab Container, Split Container, Graph Edit): çocuk dikdörtgenleri ve gizlenen sekmeler
+            std::vector<bool> hidden(children.size(), false);
+            UIControls::LayoutChildren(parent, parentSize, children, forced, hidden);
 
             // ScrollRect: ilk çocuk içerik; kaydırma ofseti + kırpma
             glm::mat4 childBase = parentMatrix;
             glm::vec4 childClip = clip;
+            if (UIControls::ChildTransform(parent, parentSize, childBase))
+                childClip = IntersectClip(clip, TransformedAABB(parentMatrix, parentSize));
             UIScrollRectComponent* scroll = parent.HasComponent<UIScrollRectComponent>() ? &parent.GetComponent<UIScrollRectComponent>() : nullptr;
             if (scroll && scroll->Mask)
                 childClip = IntersectClip(clip, TransformedAABB(parentMatrix, parentSize));
@@ -310,6 +351,8 @@ namespace Conqueror
 
             for (size_t i = 0; i < children.size(); ++i)
             {
+                if (hidden[i])
+                    continue;
                 Entity child = children[i];
                 auto& rt = child.GetComponent<RectTransformComponent>();
                 glm::vec2 size, pivotPos;
@@ -422,6 +465,16 @@ namespace Conqueror
 
         // Çizilen öğenin Canvas Group saydamlığı (tüm UI çizimleri bununla çarpılır)
         float s_DrawAlpha = 1.0f;
+
+        // Çizim bağlamı (UIDraw::PushClip için): ekran makas mı şablon mu, canvas -> piksel, öğenin kırpması
+        struct DrawContext
+        {
+            bool Active = false;
+            bool UseScissor = true;
+            glm::mat4 ToPx{ 1.0f };
+            glm::vec4 ItemClip{ 0.0f, 0.0f, -1.0f, -1.0f };
+            int* StencilRef = nullptr;
+        } s_DrawCtx;
 
         // Position As UV1 (Unity BaseMeshEffect): çizilen öğede varsa köşelerin yerel konumu (pivota göre, canvas pikseli)
         // ikinci UV kanalına yazılır. Ters matris öğenin kendi matrisidir: Shadow / Outline kopyaları kendi (kaymış) konumlarını alır
@@ -937,7 +990,7 @@ namespace Conqueror
             if (e.HasComponent<UIDropdownComponent>()) return &e.GetComponent<UIDropdownComponent>().Selectable;
             if (e.HasComponent<UIScrollbarComponent>()) return &e.GetComponent<UIScrollbarComponent>().Selectable;
             if (e.HasComponent<UISelectableComponent>()) return &e.GetComponent<UISelectableComponent>().Selectable;
-            return nullptr;
+            return UIControls::GetSelectable(e);
         }
 
         // Etkileşim: kendi ayarı ve üstteki Canvas Group'ların ayarı
@@ -990,6 +1043,7 @@ namespace Conqueror
         bool IsRaycastTarget(Entity e)
         {
             if (GetSelectable(e)) return true;
+            if (UIControls::IsRaycastTarget(e)) return true;
             if (e.HasComponent<UIScrollRectComponent>()) return true;
             if (e.HasComponent<UIImageComponent>() && e.GetComponent<UIImageComponent>().RaycastTarget) return true;
             if (e.HasComponent<UITextComponent>() && e.GetComponent<UITextComponent>().RaycastTarget) return true;
@@ -1362,6 +1416,9 @@ namespace Conqueror
                     RoundRect(sm, { size.x - 8.0f, y1 - barH }, { size.x - 3.0f, y1 }, 2.5f, glm::vec4(0, 0, 0, 0.35f));
                 }
             }
+
+            // Godot denetimleri (Spin Box, Color Picker, Menu Bar, Tab Container, Item List, Tree, Text / Code Edit, Graph Edit ...)
+            UIControls::Draw(e, sm, size, tint);
         }
 
         // Açık dropdown listesi (en üstte çizilir) ve satır dikdörtgenleri
@@ -1457,6 +1514,7 @@ namespace Conqueror
                 if (it.Alpha <= 0.001f)
                     continue;
                 s_DrawAlpha = it.Alpha;
+                s_DrawCtx = { true, useScissor, canvasToScreenPx, currentClip, &stencilRef };
                 DrawItem(it);
                 s_DrawAlpha = 1.0f;
             }
@@ -1472,12 +1530,22 @@ namespace Conqueror
                 glDisable(GL_STENCIL_TEST);
             }
             (void)screenSize;
+            s_DrawCtx = { true, useScissor, canvasToScreenPx, glm::vec4(0, 0, -1, -1), &stencilRef };
             for (const auto& it : items)
                 {
                 Entity e = it.E;
                 if (e.HasComponent<UIDropdownComponent>() && e.GetComponent<UIDropdownComponent>().Expanded)
                     DrawDropdownList(it);
+                // Açılır menüler, renk seçici, diyaloglar
+                if (UIControls::HasOverlay(e))
+                    UIControls::DrawOverlay(e, it.M, it.Size);
             }
+            if (useScissor)
+            {
+                Renderer2D::Flush();
+                glDisable(GL_SCISSOR_TEST);
+            }
+            s_DrawCtx.Active = false;
         }
 
         bool PointInItem(const Item& it, const glm::vec2& canvasPoint, glm::vec2& local)
@@ -1678,6 +1746,9 @@ namespace Conqueror
             img.CornerRadius = 10.0f;
             e.AddComponent<UILayoutGroupComponent>();
         }
+        // Godot denetimleri (Spin Box, Tab Container, Tree, Graph Edit ...)
+        if (!e)
+            e = UIControls::CreateElement(scene, type, parent);
         return e;
     }
 
@@ -2059,6 +2130,7 @@ namespace Conqueror
         for (auto e : scene.m_Registry.view<UIDropdownComponent>()) scene.m_Registry.get<UIDropdownComponent>(e).ChangedThisFrame = false;
         for (auto e : scene.m_Registry.view<UIInputFieldComponent>()) scene.m_Registry.get<UIInputFieldComponent>(e).SubmittedThisFrame = false;
         for (auto e : scene.m_Registry.view<UIScrollbarComponent>()) scene.m_Registry.get<UIScrollbarComponent>(e).ChangedThisFrame = false;
+        UIControls::Update(scene, dt);
 
         // Seçilebilir durum sıfırlama (geçişler aşağıda)
         auto canvases = SortedCanvases(scene);
@@ -2088,9 +2160,43 @@ namespace Conqueror
         glm::vec2 hoveredLocal(0.0f);
         int dropdownOption = -1;
         Entity dropdownHit;
+        // Godot denetimlerinin açılır katmanları (menüler, renk seçici, modal diyaloglar) her şeyin üstünde
+        Entity overlayHit;
+        glm::vec2 overlayLocal(0.0f), overlaySize(0.0f);
+        // Öğenin dikdörtgeni ve imlecin onun yerelindeki konumu
+        auto itemLocal = [&](Entity target, glm::vec2& local, glm::vec2& size) {
+            for (auto& ci : all)
+                for (auto& it : ci.Items)
+                    if (it.E == target)
+                    {
+                        local = glm::vec2(glm::inverse(it.M) * glm::vec4(input.MousePosition / ci.Scale, 0, 1));
+                        size = it.Size;
+                        return true;
+                    }
+            return false;
+        };
 
         Entity openDropdown = s_OpenDropdown.Get(scene);
         if (input.Valid)
+        {
+            for (auto ci = all.rbegin(); ci != all.rend() && !overlayHit; ++ci)
+            {
+                glm::vec2 p = input.MousePosition / ci->Scale;
+                for (auto it = ci->Items.rbegin(); it != ci->Items.rend(); ++it)
+                {
+                    glm::vec2 local;
+                    if (UIControls::HasOverlay(it->E) && UIControls::OverlayHit(it->E, it->M, it->Size, p, local))
+                    {
+                        overlayHit = it->E;
+                        overlayLocal = local;
+                        overlaySize = it->Size;
+                        s_PointerOverUI = true;
+                        break;
+                    }
+                }
+            }
+        }
+        if (input.Valid && !overlayHit)
         {
             // Açık dropdown listesi her şeyin üstündedir
             if (openDropdown && openDropdown.HasComponent<UIDropdownComponent>())
@@ -2142,12 +2248,34 @@ namespace Conqueror
         for (Entity e = hovered; e; e = e.GetParent())
             if (GetSelectable(e)) { hoveredSelectable = e; break; }
 
+        // Godot denetimleri: üzerine gelinen denetim ve açık katmanların vurgusu
+        Entity hoveredControl = overlayHit ? Entity{} : UIControls::FindControl(hovered);
+        for (auto& ci : all)
+            for (auto& it : ci.Items)
+                if (UIControls::HasOverlay(it.E))
+                    UIControls::OverlayHover(it.E, glm::vec2(glm::inverse(it.M) * glm::vec4(input.MousePosition / ci.Scale, 0, 1)), it.Size, it.E == overlayHit);
+        if (hoveredControl)
+        {
+            glm::vec2 local, size;
+            if (itemLocal(hoveredControl, local, size))
+                UIControls::OnHover(hoveredControl, local, size, true);
+        }
+        Entity focusedBeforePress = s_Focused.Get(scene);
+
         // Dropdown seçenek vurgusu
         if (openDropdown && openDropdown.HasComponent<UIDropdownComponent>())
             openDropdown.GetComponent<UIDropdownComponent>().HoveredOption = dropdownHit ? dropdownOption : -1;
 
         // ---- Basma
-        if (input.MousePressed)
+        if (input.MousePressed && overlayHit)
+        {
+            bool focus = false;
+            UIControls::OverlayPress(scene, overlayHit, overlayLocal, overlaySize, focus);
+            s_OverlayPressed.Set(overlayHit);
+            s_Pressed.Clear();
+            if (focus) s_Focused.Set(overlayHit);
+        }
+        else if (input.MousePressed)
         {
             if (dropdownHit)
             {
@@ -2221,11 +2349,44 @@ namespace Conqueror
                         ApplySliderValue(sl, hoveredItem, hoveredLocal);
                     }
                 }
+                // Godot denetimleri: dışarı tıklama açık menüleri kapatır, denetim basmayı kendisi işler
+                UIControls::CloseOverlays(scene, hoveredControl);
+                if (hoveredControl)
+                {
+                    glm::vec2 local, size;
+                    bool focus = false;
+                    if (itemLocal(hoveredControl, local, size) && UIControls::OnPress(scene, hoveredControl, local, size, focus))
+                    {
+                        s_Pressed.Set(hoveredControl);
+                        if (focus) s_Focused.Set(hoveredControl);
+                    }
+                }
             }
         }
+        // Odağı kaybeden Godot denetimi (Spin Box düzenlemesi işlenir, Text Edit imleci kapanır)
+        if (input.MousePressed && focusedBeforePress && focusedBeforePress != s_Focused.Get(scene) && UIControls::FindControl(focusedBeforePress) == focusedBeforePress)
+            UIControls::Unfocus(focusedBeforePress);
+        if (input.MousePressed && focusedBeforePress && focusedBeforePress != s_Focused.Get(scene) && focusedBeforePress.HasComponent<UIFileDialogComponent>())
+            UIControls::Unfocus(focusedBeforePress);
 
         // ---- Sürükleme (slider)
         Entity pressed = s_Pressed.Get(scene);
+        if (Entity op = s_OverlayPressed.Get(scene))
+        {
+            glm::vec2 local, size;
+            if (itemLocal(op, local, size))
+            {
+                if (input.MouseDown) UIControls::OverlayDrag(scene, op, local, size);
+                if (input.MouseReleased) UIControls::OverlayRelease(scene, op, local, size);
+            }
+            if (input.MouseReleased || !input.MouseDown) s_OverlayPressed.Clear();
+        }
+        if (pressed && input.MouseDown && UIControls::FindControl(pressed) == pressed)
+        {
+            glm::vec2 local, size;
+            if (itemLocal(pressed, local, size))
+                UIControls::OnDrag(scene, pressed, local, size);
+        }
         if (pressed && input.MouseDown && pressed.HasComponent<UISliderComponent>())
         {
             auto& sl = pressed.GetComponent<UISliderComponent>();
@@ -2289,14 +2450,24 @@ namespace Conqueror
                 pressed.GetComponent<UISliderComponent>().Dragging = false;
             if (pressed.HasComponent<UIScrollbarComponent>())
                 pressed.GetComponent<UIScrollbarComponent>().Dragging = false;
+            if (UIControls::FindControl(pressed) == pressed)
+            {
+                glm::vec2 local, size;
+                if (itemLocal(pressed, local, size))
+                    UIControls::OnRelease(scene, pressed, local, size, pressed == hoveredControl);
+            }
             s_Pressed.Clear();
         }
 
         // ---- Kaydırma (fare tekerleği)
-        if (input.Scroll != 0.0f && hovered)
+        if (input.Scroll != 0.0f && overlayHit)
+            UIControls::OnScroll(scene, overlayHit, input.Scroll);
+        else if (input.Scroll != 0.0f && hovered)
         {
             for (Entity e = hovered; e; e = e.GetParent())
             {
+                if (UIControls::OnScroll(scene, e, input.Scroll))
+                    break;
                 if (e.HasComponent<UIScrollRectComponent>())
                 {
                     auto& sr = e.GetComponent<UIScrollRectComponent>();
@@ -2309,7 +2480,9 @@ namespace Conqueror
 
         // ---- Klavye (odaklı input field)
         Entity focused = s_Focused.Get(scene);
-        const bool keyboardOwnedByField = focused && focused.HasComponent<UIInputFieldComponent>();
+        const bool keyboardOwnedByField = focused && (focused.HasComponent<UIInputFieldComponent>() || UIControls::WantsKeyboard(focused));
+        if (focused && UIControls::WantsKeyboard(focused))
+            UIControls::OnKeyboard(scene, focused, input, dt);
         if (focused && focused.HasComponent<UIInputFieldComponent>())
         {
             auto& in = focused.GetComponent<UIInputFieldComponent>();
@@ -2650,6 +2823,13 @@ namespace Conqueror
         // Bu karenin olayları (scriptler aynı karede okur)
         s_Events = std::move(s_PendingEvents);
         s_PendingEvents.clear();
+        // Godot denetimlerinin sinyalleri ve betik metotları (güncelleme bittikten sonra: betik UI'yı değiştirebilir)
+        UIControls::FlushEvents(scene);
+    }
+
+    void UISystem::QueueEvent(Entity e, const std::string& configured, const char* type, float value)
+    {
+        PushEvent(e, configured, type, value);
     }
 
     void UISystem::DrawCanvas(uint32_t framebuffer, uint32_t width, uint32_t height, const std::vector<CanvasCommand>& commands)
@@ -2860,5 +3040,104 @@ namespace Conqueror
         s_Events.clear();
         s_PendingEvents.clear();
         FontAtlas::ShutdownAll();
+    }
+
+    // ================================================================ UIDraw (Godot denetimleri için çizim yardımcıları)
+    namespace UIDraw
+    {
+        void Rect(const glm::mat4& m, glm::vec2 mn, glm::vec2 mx, const glm::vec4& color) { Quad(m, mn, mx, nullptr, { 0, 0 }, { 1, 1 }, color); }
+        void RoundRect(const glm::mat4& m, glm::vec2 mn, glm::vec2 mx, float radius, const glm::vec4& color) { Conqueror::RoundRect(m, mn, mx, radius, color); }
+        void Triangle(const glm::mat4& m, glm::vec2 a, glm::vec2 b, glm::vec2 c, const glm::vec4& color) { Conqueror::Triangle(m, a, b, c, color); }
+        void Line(const glm::mat4& m, glm::vec2 a, glm::vec2 b, float thickness, const glm::vec4& color)
+        {
+            const glm::vec2 d = b - a;
+            const float len = glm::length(d);
+            if (len < 1e-4f)
+                return;
+            const glm::mat4 lm = m * glm::translate(glm::mat4(1.0f), glm::vec3(a, 0.0f)) * glm::rotate(glm::mat4(1.0f), std::atan2(d.y, d.x), glm::vec3(0, 0, 1));
+            Quad(lm, { 0.0f, -thickness * 0.5f }, { len, thickness * 0.5f }, nullptr, { 0, 0 }, { 1, 1 }, color);
+        }
+        void Image(const glm::mat4& m, glm::vec2 mn, glm::vec2 mx, const std::string& texturePath, const glm::vec4& color)
+        {
+            static std::unordered_map<std::string, std::shared_ptr<Texture2D>> cache;
+            auto& tex = cache[texturePath];
+            if (!tex && !texturePath.empty())
+                tex = Texture2D::Create(SceneSerializer::ResolveAssetPath(texturePath));
+            Quad(m, mn, mx, tex, { 0, 0 }, { 1, 1 }, color);
+        }
+        void Text(const glm::mat4& m, glm::vec2 mn, glm::vec2 mx, const std::string& text, float fontSize, const glm::vec4& color, int alignH, int alignV, bool wrap)
+        {
+            DrawTextBlock(glm::translate(m, glm::vec3(mn, 0.0f)), mx - mn, text, "", fontSize, color, (UITextAlignH)std::clamp(alignH, 0, 2),
+                          (UITextAlignV)std::clamp(alignV, 0, 2), wrap, 1.0f);
+        }
+        float TextWidth(const std::string& text, float fontSize)
+        {
+            auto font = FontAtlas::Get("");
+            if (!font || !font->IsValid())
+                return 0.0f;
+            std::vector<uint32_t> cps;
+            FontAtlas::DecodeUTF8(text, cps);
+            return font->MeasureWidth(cps, 0, cps.size(), fontSize);
+        }
+        float LineHeight(float fontSize)
+        {
+            auto font = FontAtlas::Get("");
+            return font && font->IsValid() ? font->GetLineHeight() * fontSize / FontAtlas::BaseSize : fontSize * 1.2f;
+        }
+        float CaretX(const std::string& text, int codepoint, float fontSize)
+        {
+            auto font = FontAtlas::Get("");
+            if (!font || !font->IsValid())
+                return 0.0f;
+            std::vector<uint32_t> cps;
+            FontAtlas::DecodeUTF8(text, cps);
+            return font->MeasureWidth(cps, 0, (size_t)std::clamp(codepoint, 0, (int)cps.size()), fontSize);
+        }
+        int CodepointAt(const std::string& text, float x, float fontSize)
+        {
+            auto font = FontAtlas::Get("");
+            if (!font || !font->IsValid())
+                return 0;
+            std::vector<uint32_t> cps;
+            FontAtlas::DecodeUTF8(text, cps);
+            float prev = 0.0f;
+            for (size_t i = 1; i <= cps.size(); ++i)
+            {
+                const float w = font->MeasureWidth(cps, 0, i, fontSize);
+                if (x < (prev + w) * 0.5f)
+                    return (int)i - 1;
+                prev = w;
+            }
+            return (int)cps.size();
+        }
+        namespace
+        {
+            void ApplyContextClip(const glm::vec4& clip)
+            {
+                if (!s_DrawCtx.Active)
+                    return;
+                Renderer2D::Flush();
+                if (s_DrawCtx.UseScissor)
+                {
+                    if (clip.z >= 0.0f)
+                    {
+                        glm::vec2 a = glm::vec2(s_DrawCtx.ToPx * glm::vec4(clip.x, clip.y, 0, 1));
+                        glm::vec2 b = glm::vec2(s_DrawCtx.ToPx * glm::vec4(clip.x + clip.z, clip.y + clip.w, 0, 1));
+                        glEnable(GL_SCISSOR_TEST);
+                        glScissor(s_ScreenOrigin.x + (GLint)std::floor(std::min(a.x, b.x)), s_ScreenOrigin.y + (GLint)std::floor(std::min(a.y, b.y)),
+                                  (GLsizei)std::ceil(std::fabs(b.x - a.x)), (GLsizei)std::ceil(std::fabs(b.y - a.y)));
+                    }
+                    else
+                        glDisable(GL_SCISSOR_TEST);
+                }
+                else if (s_DrawCtx.StencilRef)
+                    ApplyStencilClip(clip, *s_DrawCtx.StencilRef);
+            }
+        }
+        void PushClip(const glm::mat4& m, glm::vec2 mn, glm::vec2 mx)
+        {
+            ApplyContextClip(IntersectClip(s_DrawCtx.ItemClip, TransformedAABB(glm::translate(m, glm::vec3(mn, 0.0f)), glm::max(mx - mn, glm::vec2(0.0f)))));
+        }
+        void PopClip() { ApplyContextClip(s_DrawCtx.ItemClip); }
     }
 }

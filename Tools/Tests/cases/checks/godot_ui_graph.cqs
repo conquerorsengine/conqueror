@@ -1,0 +1,8 @@
+using nativebridge;
+var conns = GraphEditGetConnections("Graph");
+var ok = len(conns) == 1;
+if (ok) { ok = conns[0].from == "Node A" && conns[0].to == "Node B" && conns[0].fromPort == 0 && conns[0].toPort == 0; }
+var text = EntityGetComponentField(FindEntity("Code"), "UITextEditComponent", "Text");
+var typed = StringIndexOf(text, "{!") >= 0;
+LogInfo("REGRESSION godotui graph=" + len(conns) + " typed=" + typed);
+if (ok && typed) { CreateEntity("G_Graph"); }

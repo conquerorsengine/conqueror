@@ -6150,7 +6150,30 @@ namespace Conqueror::Editor
                 }
                 return true;
             }
-            if (a[1] == "click" || (a[1] == "drag" && a.size() > 4))
+            // ui drag_to <A> <xa> <ya> <B> <xb> <yb>: A'nın yerel noktasından B'nin yerel noktasına sürükle (Graph Edit bağlantısı ...)
+            if (a[1] == "drag_to" && a.size() > 7)
+            {
+                if (!m_GamePanel) { err = "no game panel"; return false; }
+                auto toScreen = [&](Entity target, glm::vec2 local, glm::ivec2& out) {
+                    if (!target || !target.HasComponent<RectTransformComponent>()) return false;
+                    Entity canvas = target.GetParent();
+                    while (canvas && !canvas.HasComponent<CanvasComponent>()) canvas = canvas.GetParent();
+                    if (!canvas) return false;
+                    const float scale = UISystem::GetCanvasScaleFactor(canvas, m_GamePanel->GetViewportSize());
+                    const glm::vec2 c = glm::vec2(target.GetComponent<RectTransformComponent>().CanvasMatrix * glm::vec4(local, 0, 1)) * scale;
+                    const glm::vec2 p = m_GamePanel->RenderToScreen(c);
+                    const ImVec2 origin = ImGui::GetMainViewport()->Pos;
+                    out = glm::ivec2((int)(p.x - origin.x), (int)(p.y - origin.y));
+                    return true;
+                };
+                glm::ivec2 p0, p1;
+                if (!toScreen(e, { std::stof(a[3]), std::stof(a[4]) }, p0) || !toScreen(find(a[5]), { std::stof(a[6]), std::stof(a[7]) }, p1))
+                { err = "drag_to: element not found / not UI"; return false; }
+                return Automation::ExecuteCommandLine("drag " + std::to_string(p0.x) + " " + std::to_string(p0.y) + " " + std::to_string(p1.x) + " " +
+                                                      std::to_string(p1.y) + " 20", err);
+            }
+            // ui click_at <name> <x> <y>: öğenin yerelinde (sol alt köken, canvas birimi; eksi değerler altında açılan menüler için)
+            if (a[1] == "click" || (a[1] == "drag" && a.size() > 4) || (a[1] == "click_at" && a.size() > 4))
             {
                 if (!m_GamePanel || !e.HasComponent<RectTransformComponent>()) { err = "no game panel / not UI"; return false; }
                 Entity canvas = e.GetParent();
@@ -6159,7 +6182,8 @@ namespace Conqueror::Editor
                 glm::vec2 screen = m_GamePanel->GetViewportSize();
                 float scale = UISystem::GetCanvasScaleFactor(canvas, screen);
                 auto& rt = e.GetComponent<RectTransformComponent>();
-                glm::vec2 c = glm::vec2(rt.CanvasMatrix * glm::vec4(rt.ComputedRect.z * 0.5f, rt.ComputedRect.w * 0.5f, 0, 1)) * scale;
+                const glm::vec2 at = a[1] == "click_at" ? glm::vec2(std::stof(a[3]), std::stof(a[4])) : glm::vec2(rt.ComputedRect.z * 0.5f, rt.ComputedRect.w * 0.5f);
+                glm::vec2 c = glm::vec2(rt.CanvasMatrix * glm::vec4(at, 0, 1)) * scale;
                 glm::vec2 p = m_GamePanel->RenderToScreen(c);
                 ImVec2 origin = ImGui::GetMainViewport()->Pos;
                 const int px = (int)(p.x - origin.x), py = (int)(p.y - origin.y);

@@ -64,6 +64,8 @@ namespace Conqueror
 
         // Olaylar (kare başına temizlenir)
         static const std::vector<UIEvent>& GetEvents();
+        // Olay kuyruğuna ekle (Godot denetimleri: UIControls)
+        static void QueueEvent(Entity e, const std::string& configured, const char* type, float value);
         static bool WasClicked(const std::string& nameOrEntity);
         static bool IsPointerOverUI();
         // Ekran klavyesi (Steam Deck / kumanda / dokunmatik): 0 otomatik, 1 her zaman, 2 kapalı (cvar ui.OnScreenKeyboard)

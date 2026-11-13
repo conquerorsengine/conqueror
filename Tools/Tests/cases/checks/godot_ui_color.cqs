@@ -1,0 +1,5 @@
+using nativebridge;
+var c = EntityGetComponentField(FindEntity("ColorBtn"), "UIColorPickerButtonComponent", "Color");
+var open = EntityGetComponentField(FindEntity("ColorBtn"), "UIColorPickerButtonComponent", "Open");
+LogInfo("REGRESSION godotui color r=" + c.r + " g=" + c.g + " b=" + c.b + " open=" + open);
+if (c.r > 0.5 && c.b < 0.5 && open) { CreateEntity("G_Color"); }

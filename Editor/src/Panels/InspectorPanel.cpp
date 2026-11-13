@@ -2487,8 +2487,8 @@ namespace Conqueror::Editor
         });
         DrawComponent<UILayoutGroupComponent>("Layout Group (UI)", entity, [](auto& c)
         {
-            const char* types[] = { "Horizontal", "Vertical", "Grid" };
-            UI::ComboEnum("Type", c.Type, types, 3);
+            const char* types[] = { "Horizontal", "Vertical", "Grid", "Horizontal Flow", "Vertical Flow" };
+            UI::ComboEnum("Type", c.Type, types, 5, "Flow: children wrap to the next row / column when they do not fit (Godot HFlowContainer / VFlowContainer)");
             UI::BeginProperty("Padding", "Left, Right, Top, Bottom");
             ImGui::DragFloat4("##pad", &c.Padding.x, 0.5f, 0.0f, 2000.0f, "%.0f");
             UI::EndProperty();

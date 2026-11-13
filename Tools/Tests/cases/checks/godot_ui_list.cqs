@@ -1,0 +1,5 @@
+using nativebridge;
+var sel = ItemListGetSelected("List");
+var tree = TreeGetSelected("TreeView");
+LogInfo("REGRESSION godotui list=" + len(sel) + " tree=" + tree);
+if (len(sel) == 1 && sel[0] == 1 && tree == 0) { CreateEntity("G_Lists"); }

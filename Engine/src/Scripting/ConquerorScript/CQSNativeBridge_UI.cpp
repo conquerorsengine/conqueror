@@ -1,5 +1,6 @@
 #include "Core/Audio/AudioRandomContainer.h"
 #include "Core/Audio/InteractiveMusic.h"
+#include "UI/UIControls.h"
 #include "Core/Localization/Localization.h"
 #include "Scene/MeshRendererMaterial.h"
 #include "Renderer/Utilities/Renderer3D/Material.h"
@@ -1280,6 +1281,190 @@ namespace Conqueror::CQS
             asc->IsPlaying = false;
             return Value::MakeBool(true);
         }, -1);
+        // ---------------------------------------------------------------- Godot denetimleri (UIControls): eylemler ve listeler
+        auto listArg = [](const Value& v) {
+            std::vector<std::string> out;
+            if (v.IsList())
+                for (const auto& x : v.AsList()->Elements) out.push_back(x.ToString());
+            return out;
+        };
+        // PopupMenuShow([target,] x, y): açılır menüyü nesnenin yerelinde (sol alt köken) sol üst köşesi bu noktada aç
+        vm->DefineNative("PopupMenuShow", [](int argc, Value* args) -> Value {
+            auto* pm = Get<UIPopupMenuComponent>(argc >= 3 ? Target(args[0]) : Current());
+            if (!pm) return Value::MakeBool(false);
+            const int o = argc >= 3 ? 1 : 0;
+            if (argc >= 2) pm->Position = { Num(argc, args, o), Num(argc, args, o + 1) };
+            pm->Visible = true;
+            return Value::MakeBool(true);
+        }, -1);
+        vm->DefineNative("PopupMenuHide", [](int argc, Value* args) -> Value {
+            auto* pm = Get<UIPopupMenuComponent>(TargetArg(argc, args));
+            if (pm) pm->Visible = false;
+            return Value::MakeBool(pm != nullptr);
+        }, -1);
+        // MenuSetItems(target, ["New", "-", "[x] Grid", "!Disabled"]): Menu Button / Popup Menu öğeleri
+        vm->DefineNative("MenuSetItems", [listArg](int argc, Value* args) -> Value {
+            Entity e = argc >= 2 ? Target(args[0]) : Entity{};
+            if (!e || argc < 2) return Value::MakeBool(false);
+            if (auto* mb = Get<UIMenuButtonComponent>(e)) { mb->Items = listArg(args[1]); return Value::MakeBool(true); }
+            if (auto* pm = Get<UIPopupMenuComponent>(e)) { pm->Items = listArg(args[1]); return Value::MakeBool(true); }
+            return Value::MakeBool(false);
+        }, 2);
+        // MenuBarAddMenu(target, "View", ["Zoom In", "Zoom Out"]) -> index
+        vm->DefineNative("MenuBarAddMenu", [listArg](int argc, Value* args) -> Value {
+            auto* bar = argc >= 2 ? Get<UIMenuBarComponent>(Target(args[0])) : nullptr;
+            if (!bar) return Value::MakeInt(-1);
+            bar->Menus.push_back({ args[1].ToString(), argc >= 3 ? listArg(args[2]) : std::vector<std::string>{} });
+            return Value::MakeInt((int64_t)bar->Menus.size() - 1);
+        }, -1);
+        vm->DefineNative("TabBarAddTab", [](int argc, Value* args) -> Value {
+            auto* tb = argc >= 2 ? Get<UITabBarComponent>(Target(args[0])) : nullptr;
+            if (!tb) return Value::MakeInt(-1);
+            tb->Tabs.push_back(args[1].ToString());
+            return Value::MakeInt((int64_t)tb->Tabs.size() - 1);
+        }, 2);
+        // Item List
+        vm->DefineNative("ItemListAddItem", [](int argc, Value* args) -> Value {
+            auto* l = argc >= 2 ? Get<UIItemListComponent>(Target(args[0])) : nullptr;
+            if (!l) return Value::MakeInt(-1);
+            l->Items.push_back({ args[1].ToString(), argc >= 3 ? args[2].ToString() : std::string(), false });
+            return Value::MakeInt((int64_t)l->Items.size() - 1);
+        }, -1);
+        vm->DefineNative("ItemListClear", [](int argc, Value* args) -> Value {
+            auto* l = Get<UIItemListComponent>(TargetArg(argc, args));
+            if (l) { l->Items.clear(); l->Selected.clear(); l->ScrollOffset = 0.0f; }
+            return Value::MakeBool(l != nullptr);
+        }, -1);
+        vm->DefineNative("ItemListGetSelected", [](int argc, Value* args) -> Value {
+            auto* l = Get<UIItemListComponent>(TargetArg(argc, args));
+            auto* list = new CQSListObject();
+            if (l) for (int i : l->Selected) list->Elements.push_back(Value::MakeInt(i));
+            return Value::MakeObject(list);
+        }, -1);
+        vm->DefineNative("ItemListSelect", [](int argc, Value* args) -> Value {
+            auto* l = argc >= 2 ? Get<UIItemListComponent>(Target(args[0])) : nullptr;
+            const int i = (int)Num(argc, args, 1);
+            if (!l || i < 0 || i >= (int)l->Items.size()) return Value::MakeBool(false);
+            l->Selected = { i };
+            return Value::MakeBool(true);
+        }, 2);
+        vm->DefineNative("ItemListGetItemText", [](int argc, Value* args) -> Value {
+            auto* l = argc >= 2 ? Get<UIItemListComponent>(Target(args[0])) : nullptr;
+            const int i = (int)Num(argc, args, 1);
+            return Value::MakeString(l && i >= 0 && i < (int)l->Items.size() ? l->Items[(size_t)i].Text : std::string());
+        }, 2);
+        // Tree
+        vm->DefineNative("TreeAddItem", [](int argc, Value* args) -> Value {
+            auto* t = argc >= 2 ? Get<UITreeComponent>(Target(args[0])) : nullptr;
+            if (!t) return Value::MakeInt(-1);
+            t->Items.push_back({ args[1].ToString(), argc >= 3 ? (int)Num(argc, args, 2) : 0, false });
+            return Value::MakeInt((int64_t)t->Items.size() - 1);
+        }, -1);
+        vm->DefineNative("TreeClear", [](int argc, Value* args) -> Value {
+            auto* t = Get<UITreeComponent>(TargetArg(argc, args));
+            if (t) { t->Items.clear(); t->Selected = -1; t->ScrollOffset = 0.0f; }
+            return Value::MakeBool(t != nullptr);
+        }, -1);
+        vm->DefineNative("TreeGetSelected", [](int argc, Value* args) -> Value {
+            auto* t = Get<UITreeComponent>(TargetArg(argc, args));
+            return Value::MakeInt(t ? t->Selected : -1);
+        }, -1);
+        vm->DefineNative("TreeGetItemText", [](int argc, Value* args) -> Value {
+            auto* t = argc >= 2 ? Get<UITreeComponent>(Target(args[0])) : nullptr;
+            const int i = (int)Num(argc, args, 1);
+            return Value::MakeString(t && i >= 0 && i < (int)t->Items.size() ? t->Items[(size_t)i].Text : std::string());
+        }, 2);
+        vm->DefineNative("TreeSetCollapsed", [](int argc, Value* args) -> Value {
+            auto* t = argc >= 3 ? Get<UITreeComponent>(Target(args[0])) : nullptr;
+            const int i = (int)Num(argc, args, 1);
+            if (!t || i < 0 || i >= (int)t->Items.size()) return Value::MakeBool(false);
+            t->Items[(size_t)i].Collapsed = args[2].IsTruthy();
+            return Value::MakeBool(true);
+        }, 3);
+        // Diyaloglar
+        vm->DefineNative("DialogPopup", [](int argc, Value* args) -> Value {
+            Entity e = argc >= 1 ? Target(args[0]) : Current();
+            if (auto* d = Get<UIDialogComponent>(e)) { if (argc >= 2) d->Text = args[1].ToString(); d->Visible = true; return Value::MakeBool(true); }
+            if (auto* f = Get<UIFileDialogComponent>(e)) { f->Visible = true; f->NeedsRefresh = true; return Value::MakeBool(true); }
+            return Value::MakeBool(false);
+        }, -1);
+        vm->DefineNative("DialogHide", [](int argc, Value* args) -> Value {
+            Entity e = TargetArg(argc, args);
+            if (auto* d = Get<UIDialogComponent>(e)) { d->Visible = false; return Value::MakeBool(true); }
+            if (auto* f = Get<UIFileDialogComponent>(e)) { f->Visible = false; return Value::MakeBool(true); }
+            return Value::MakeBool(false);
+        }, -1);
+        vm->DefineNative("FileDialogPopup", [](int argc, Value* args) -> Value {
+            auto* f = Get<UIFileDialogComponent>(TargetArg(argc, args));
+            if (!f) return Value::MakeBool(false);
+            f->Visible = true;
+            f->NeedsRefresh = true;
+            return Value::MakeBool(true);
+        }, -1);
+        // FileDialogGetPath([target]) -> son seçilen yol (Open Files: ilki; hepsi FileDialogGetPaths)
+        vm->DefineNative("FileDialogGetPath", [](int argc, Value* args) -> Value {
+            auto* f = Get<UIFileDialogComponent>(TargetArg(argc, args));
+            if (!f) return Value::MakeString("");
+            return Value::MakeString(f->LastSelected.substr(0, f->LastSelected.find(';')));
+        }, -1);
+        vm->DefineNative("FileDialogGetPaths", [](int argc, Value* args) -> Value {
+            auto* f = Get<UIFileDialogComponent>(TargetArg(argc, args));
+            auto* list = new CQSListObject();
+            if (f)
+            {
+                size_t start = 0;
+                while (start < f->LastSelected.size())
+                {
+                    size_t end = f->LastSelected.find(';', start);
+                    if (end == std::string::npos) end = f->LastSelected.size();
+                    list->Elements.push_back(Value::MakeString(f->LastSelected.substr(start, end - start)));
+                    start = end + 1;
+                }
+            }
+            return Value::MakeObject(list);
+        }, -1);
+        // Graph Edit
+        vm->DefineNative("GraphEditConnect", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            auto* g = argc >= 5 ? Get<UIGraphEditComponent>(Target(args[0])) : nullptr;
+            Entity from = argc >= 5 ? Target(args[1]) : Entity{}, to = argc >= 5 ? Target(args[3]) : Entity{};
+            if (!scene || !g || !from || !to) return Value::MakeBool(false);
+            const UIGraphEditComponent::Connection c{ (uint64_t)from.GetComponent<IDComponent>().ID, (int)Num(argc, args, 2), (uint64_t)to.GetComponent<IDComponent>().ID, (int)Num(argc, args, 4) };
+            for (const auto& x : g->Connections)
+                if (x.From == c.From && x.FromPort == c.FromPort && x.To == c.To && x.ToPort == c.ToPort) return Value::MakeBool(true);
+            g->Connections.push_back(c);
+            return Value::MakeBool(true);
+        }, 5);
+        vm->DefineNative("GraphEditDisconnect", [](int argc, Value* args) -> Value {
+            auto* g = argc >= 5 ? Get<UIGraphEditComponent>(Target(args[0])) : nullptr;
+            Entity from = argc >= 5 ? Target(args[1]) : Entity{}, to = argc >= 5 ? Target(args[3]) : Entity{};
+            if (!g || !from || !to) return Value::MakeBool(false);
+            const uint64_t f = from.GetComponent<IDComponent>().ID, t = to.GetComponent<IDComponent>().ID;
+            const size_t before = g->Connections.size();
+            g->Connections.erase(std::remove_if(g->Connections.begin(), g->Connections.end(), [&](const auto& x) {
+                return x.From == f && x.FromPort == (int)Num(argc, args, 2) && x.To == t && x.ToPort == (int)Num(argc, args, 4);
+            }), g->Connections.end());
+            return Value::MakeBool(g->Connections.size() != before);
+        }, 5);
+        // GraphEditGetConnections(target) -> [{from, fromPort, to, toPort}] (düğüm adları)
+        vm->DefineNative("GraphEditGetConnections", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            auto* g = Get<UIGraphEditComponent>(TargetArg(argc, args));
+            auto* list = new CQSListObject();
+            if (scene && g)
+                for (const auto& c : g->Connections)
+                {
+                    Entity from = scene->FindEntityByUUID(c.From), to = scene->FindEntityByUUID(c.To);
+                    auto* m = new CQSMapObject();
+                    m->Entries["from"] = Value::MakeString(from ? from.GetComponent<TagComponent>().Tag : std::string());
+                    m->Entries["fromPort"] = Value::MakeInt(c.FromPort);
+                    m->Entries["to"] = Value::MakeString(to ? to.GetComponent<TagComponent>().Tag : std::string());
+                    m->Entries["toPort"] = Value::MakeInt(c.ToPort);
+                    list->Elements.push_back(Value::MakeObject(m));
+                }
+            return Value::MakeObject(list);
+        }, -1);
+
         // ---------------------------------------------------------------- Etkileşimli müzik (Godot AudioStreamInteractive / Synchronized)
         // MusicSwitchToClip([target,] "Battle" | 2) -> bool: geçiş tablosuna göre (sonraki vuruşta / ölçüde / sonda ...) klibe geç
         vm->DefineNative("MusicSwitchToClip", [](int argc, Value* args) -> Value {

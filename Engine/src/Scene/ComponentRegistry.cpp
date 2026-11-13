@@ -3,6 +3,7 @@
 #include "ComponentRegistry.h"
 #include "Scene/GameWindow.h"
 #include "Scene/StatusIndicator.h"
+#include "UI/UIControls.h"
 #include "UI/UIToolkit.h"
 #include "AISystem/BehaviorTree/BehaviorTreeAsset.h"
 #include "Scene/AssetRuntime.h"
@@ -153,6 +154,7 @@ namespace Conqueror
             RegisterGodotNodeComponents();
             RegisterGameWindowComponents();
             RegisterStatusIndicatorComponents();
+            UIControls::RegisterComponents();
             RegisterFogVolumeComponents();
             RegisterNavigation2DComponents();
             RegisterRenderTargetComponents();

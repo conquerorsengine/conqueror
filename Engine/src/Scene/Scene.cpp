@@ -3821,6 +3821,7 @@ namespace Conqueror
     CQ_PLAIN_ADDED(VisibleOnScreenNotifierComponent)
     CQ_PLAIN_ADDED(Parallax2DComponent)
     CQ_PLAIN_ADDED(TimerComponent)
+    CQ_PLAIN_ADDED(UISpinBoxComponent) CQ_PLAIN_ADDED(UIColorPickerComponent) CQ_PLAIN_ADDED(UIColorPickerButtonComponent) CQ_PLAIN_ADDED(UIMenuButtonComponent) CQ_PLAIN_ADDED(UIPopupMenuComponent) CQ_PLAIN_ADDED(UIMenuBarComponent) CQ_PLAIN_ADDED(UITabContainerComponent) CQ_PLAIN_ADDED(UITabBarComponent) CQ_PLAIN_ADDED(UISplitContainerComponent) CQ_PLAIN_ADDED(UIItemListComponent) CQ_PLAIN_ADDED(UITreeComponent) CQ_PLAIN_ADDED(UILinkButtonComponent) CQ_PLAIN_ADDED(UIProgressBarComponent) CQ_PLAIN_ADDED(UIDialogComponent) CQ_PLAIN_ADDED(UIFileDialogComponent) CQ_PLAIN_ADDED(UITextEditComponent) CQ_PLAIN_ADDED(UIGraphEditComponent) CQ_PLAIN_ADDED(UIGraphNodeComponent)
     CQ_PLAIN_ADDED(ResourcePreloaderComponent)
     CQ_PLAIN_ADDED(ShaderGlobalsOverrideComponent)
     CQ_PLAIN_ADDED(ShapeCastComponent)
