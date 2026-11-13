@@ -4,6 +4,10 @@
 #include "Core/Project/ProjectSerializer.h"
 #include "Core/Utils/DynamicLibrary.h"
 #include "RuntimeLayer.h"
+#include "Scripting/ScriptRuntime.h"
+#include <chrono>
+#include <cstdio>
+#include <thread>
 #include <cctype>
 #include <cstdlib>
 #include <filesystem>
@@ -76,6 +80,15 @@ Conqueror::Application* Conqueror::CreateApplication(ApplicationCommandLineArgs 
             const auto& cfg = project->GetConfig();
             if (!cfg.Name.empty())
                 spec.Name = cfg.Name;
+            // Development Build: Script Debugging (betikler optimizasyonsuz) ve Wait For Debugger (bağlanana kadar bekle)
+            if (cfg.Build.DevelopmentBuild && cfg.Build.ScriptDebugging)
+                Conqueror::Scripting::ScriptDebugMode() = true;
+            if (cfg.Build.DevelopmentBuild && cfg.Build.WaitForDebugger && !Conqueror::Platform::IsDebuggerAttached())
+            {
+                std::fprintf(stderr, "Waiting for a debugger to attach (process id %u)...\n", (unsigned)Conqueror::Platform::GetProcessID());
+                while (!Conqueror::Platform::IsDebuggerAttached())
+                    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            }
             spec.Width = (uint32_t)cfg.Player.Width;
             spec.Height = (uint32_t)cfg.Player.Height;
             spec.GraphicsBackend = cfg.Player.GraphicsAPI;

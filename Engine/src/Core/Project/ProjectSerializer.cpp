@@ -110,6 +110,10 @@ namespace Conqueror {
         out << YAML::Key << "Build" << YAML::Value << YAML::BeginMap;
         out << YAML::Key << "OutputDirectory" << YAML::Value << build.OutputDirectory;
         out << YAML::Key << "DevelopmentBuild" << YAML::Value << build.DevelopmentBuild;
+        if (build.ScriptDebugging)
+            out << YAML::Key << "ScriptDebugging" << YAML::Value << true;
+        if (build.WaitForDebugger)
+            out << YAML::Key << "WaitForDebugger" << YAML::Value << true;
         out << YAML::Key << "Scenes" << YAML::Value << YAML::BeginSeq;
         for (const auto& scene : build.Scenes)
         {
@@ -289,6 +293,8 @@ namespace Conqueror {
             {
                 if (build["OutputDirectory"]) config.Build.OutputDirectory = build["OutputDirectory"].as<std::string>();
                 if (build["DevelopmentBuild"]) config.Build.DevelopmentBuild = build["DevelopmentBuild"].as<bool>();
+                config.Build.ScriptDebugging = build["ScriptDebugging"] && build["ScriptDebugging"].as<bool>();
+                config.Build.WaitForDebugger = build["WaitForDebugger"] && build["WaitForDebugger"].as<bool>();
                 if (auto scenes = build["Scenes"]; scenes && scenes.IsSequence())
                     for (const auto& s : scenes)
                     {

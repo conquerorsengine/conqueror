@@ -700,7 +700,9 @@ namespace Conqueror::Scripting
             fs::path rsp = output.parent_path() / (output.stem().string() + ".rsp");
             {
                 std::ofstream r(rsp);
-                r << "-nologo\n-preferreduilang:en-US\n-target:library\n-langversion:latest\n-nullable:disable\n-optimize+\n-debug:portable\n-deterministic\n";
+                // Script Debugging / Debug Mode: optimizasyonsuz (adım adım hata ayıklama), aksi halde optimize
+                r << "-nologo\n-preferreduilang:en-US\n-target:library\n-langversion:latest\n-nullable:disable\n" << (ScriptDebugMode() ? "-optimize-\n-define:DEBUG\n" : "-optimize+\n")
+                  << "-debug:portable\n-deterministic\n";
                 if (allowUnsafe) r << "-unsafe+\n";
                 r << "-out:\"" << output.string() << "\"\n";
                 for (auto& e : fs::directory_iterator(m_RefDir, ec))
@@ -907,7 +909,7 @@ namespace Conqueror::Scripting
                 ReadFile(s, text);
                 all += s.string() + "\n" + text;
             }
-            size_t hash = std::hash<std::string>{}(all + m_HostDll.string());
+            size_t hash = std::hash<std::string>{}(all + m_HostDll.string() + (ScriptDebugMode() ? "#debug" : "#release"));
             fs::path outDir = (projectDir.empty() ? fs::temp_directory_path(ec) / "ConquerorEngine" : projectDir / "Library") / "ScriptAssemblies";
             fs::path dll = outDir / "Assembly-CSharp.dll";
             if (m_UserBuilt && hash == m_UserHash && fs::exists(dll, ec))

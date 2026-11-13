@@ -103,6 +103,16 @@ namespace Conqueror::Scripting
 
         std::string Quote(const fs::path& p) { return "\"" + p.string() + "\""; }
 
+        // Script Debugging / Debug Mode: optimizasyonsuz, tam hata ayıklama bilgisi (gdb / lldb / Visual Studio betikte durur)
+        std::string OptimizationFlags(bool msvc)
+        {
+            if (msvc)
+                return ScriptDebugMode() ? "/Od /Z7" : "/O2";
+            return ScriptDebugMode() ? "-O0 -g3 -fno-omit-frame-pointer" : "-O2 -g";
+        }
+        // MSVC: hata ayıklama bilgisi bağlayıcıya (.pdb) iletilir
+        std::string MsvcLinkFlags() { return ScriptDebugMode() ? " /link /DEBUG:FULL" : ""; }
+
         // ── Değer dönüşümü ──
         CQS::Value FromJson(const JSON::Value& j)
         {
@@ -578,10 +588,11 @@ namespace Conqueror::Scripting
                 std::string cmd;
                 if (m_IsMsvc)
                 {
-                    cmd = m_Compiler + " /nologo /std:c++20 /O2 /EHsc /LD /MD /I" + Quote(includeDir) + " /I" + Quote(outDir) + " /Fo" + Quote(outDir / "") + " /Fe" + Quote(lib);
+                    cmd = m_Compiler + " /nologo /std:c++20 " + OptimizationFlags(true) + " /EHsc /LD /MD /I" + Quote(includeDir) + " /I" + Quote(outDir) + " /Fo" + Quote(outDir / "") + " /Fe" + Quote(lib);
                     for (const auto& inc : ExtraIncludes) cmd += " /I" + Quote(inc);
                     cmd += " " + Quote(outDir / "__cq_plugin_main.cpp") + " " + Quote(outDir / "__cq_data_assets.cpp");
                     for (auto& s : sources) cmd += " /Tp" + Quote(s);
+                    cmd += MsvcLinkFlags();
                 }
                 else
                 {
@@ -590,7 +601,7 @@ namespace Conqueror::Scripting
 #else
                     const char* shared = "-shared";
 #endif
-                    cmd = m_Compiler + " -std=c++20 -O2 -g -fPIC " + shared + " -fvisibility=hidden -I" + Quote(includeDir) + " -I" + Quote(outDir);
+                    cmd = m_Compiler + " -std=c++20 " + OptimizationFlags(false) + " -fPIC " + shared + " -fvisibility=hidden -I" + Quote(includeDir) + " -I" + Quote(outDir);
                     for (const auto& inc : ExtraIncludes) cmd += " -I" + Quote(inc);
                     cmd += " -o " + Quote(lib) + " " + Quote(outDir / "__cq_plugin_main.cpp") + " " + Quote(outDir / "__cq_data_assets.cpp") + " -x c++";
                     for (auto& s : sources) cmd += " " + Quote(s);
@@ -739,10 +750,11 @@ namespace Conqueror::Scripting
                 std::string cmd;
                 if (m_IsMsvc)
                 {
-                    cmd = m_Compiler + " /nologo " + Flags() + " /O2 /LD /MD /I" + Quote(IncludeDir()) + " /I" + Quote(outDir) + " /Fo" + Quote(outDir / "") + " /Fe" + Quote(lib);
+                    cmd = m_Compiler + " /nologo " + Flags() + " " + OptimizationFlags(true) + " /LD /MD /I" + Quote(IncludeDir()) + " /I" + Quote(outDir) + " /Fo" + Quote(outDir / "") + " /Fe" + Quote(lib);
                     for (const auto& inc : ExtraIncludes) cmd += " /I" + Quote(inc);
                     cmd += " /Tc" + Quote(outDir / "__cq_main.c");
                     for (auto& s : sources) cmd += " /Tc" + Quote(s);
+                    cmd += MsvcLinkFlags();
                 }
                 else
                 {
@@ -751,7 +763,7 @@ namespace Conqueror::Scripting
 #else
                     const char* shared = "-shared";
 #endif
-                    cmd = m_Compiler + " " + Flags() + " -O2 -g -fPIC " + shared + " -fvisibility=hidden -I" + Quote(IncludeDir()) + " -I" + Quote(outDir);
+                    cmd = m_Compiler + " " + Flags() + " " + OptimizationFlags(false) + " -fPIC " + shared + " -fvisibility=hidden -I" + Quote(IncludeDir()) + " -I" + Quote(outDir);
                     for (const auto& inc : ExtraIncludes) cmd += " -I" + Quote(inc);
                     cmd += " -o " + Quote(lib) + " -x c " + Quote(outDir / "__cq_main.c");
                     for (auto& s : sources) cmd += " " + Quote(s);
@@ -884,7 +896,8 @@ namespace Conqueror::Scripting
             bool Build(const std::vector<fs::path>& sources, const fs::path& outDir, const fs::path& lib, std::string& log) override
             {
                 Generate(outDir, sources);
-                std::string cmd = m_Compiler + " --edition 2021 --crate-type cdylib --crate-name cqscripts -C opt-level=2 -C debuginfo=1 --error-format=human -o "
+                std::string cmd = m_Compiler + " --edition 2021 --crate-type cdylib --crate-name cqscripts " +
+                                  std::string(ScriptDebugMode() ? "-C opt-level=0 -C debuginfo=2" : "-C opt-level=2 -C debuginfo=1") + " --error-format=human -o "
                                   + Quote(lib) + " " + Quote(outDir / "lib.rs");
                 int code = 0;
                 log = RunCommand(cmd, code);
@@ -1023,7 +1036,7 @@ namespace Conqueror::Scripting
             {
                 Generate(outDir, sources);
                 // Genel önbellek varsayılan yerinde (~/.cache/zig): projeler arası paylaşılır, ilk derleme bir kez yavaştır
-                std::string cmd = m_Compiler + " build-lib -dynamic -O ReleaseSafe -lc --name cqscripts --cache-dir " + Quote(outDir / "zig-cache")
+                std::string cmd = m_Compiler + " build-lib -dynamic " + std::string(ScriptDebugMode() ? "-O Debug" : "-O ReleaseSafe") + " -lc --name cqscripts --cache-dir " + Quote(outDir / "zig-cache")
                                   + " -femit-bin=" + Quote(lib) + " " + Quote(outDir / "__cq_root.zig");
                 int code = 0;
                 log = RunCommand(cmd, code);
@@ -1397,6 +1410,8 @@ namespace Conqueror::Scripting
                 modules = NativeModules::Resolve();
                 all += NativeModules::Fingerprint(modules);
             }
+            // Debug / Release değişince yeniden derlenir
+            all += ScriptDebugMode() ? "\n#debug" : "\n#release";
             size_t hash = std::hash<std::string>{}(all);
             if (m_Built && hash == m_SourceHash)
                 return true;

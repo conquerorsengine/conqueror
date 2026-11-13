@@ -1629,8 +1629,24 @@ namespace Conqueror::Editor
             AddonsMenu();
             HelpMenu();
             BuildMenu();
+            DebugMenu();
 
             float buttonWidth = 50.0f;
+            // Unity durum çubuğundaki böcek: Debug Mode açıkken görünür, tıklanınca Release'e döner
+            if (Scripting::ScriptDebugMode())
+            {
+                const float debugWidth = ImGui::CalcTextSize(ICON_FA_BUG "  Debug Mode").x + 16.0f;
+                ImGui::SameLine(std::max(ImGui::GetCursorPosX(), ImGui::GetWindowWidth() - buttonWidth - debugWidth - 20.0f));
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.75f, 0.45f, 0.10f, 0.9f));
+                if (ImGui::Button(ICON_FA_BUG "  Debug Mode"))
+                {
+                    Scripting::ScriptDebugMode() = false;
+                    SaveScriptDebugSetting();
+                }
+                ImGui::PopStyleColor();
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+                    ImGui::SetTooltip("Scripts compile without optimization and with debug info (attach a debugger to step through them).\nClick to switch to Release Mode.");
+            }
             float rightX = ImGui::GetWindowWidth() - buttonWidth - 10.0f;
             if (rightX > ImGui::GetCursorPosX())
             {
@@ -2987,6 +3003,77 @@ namespace Conqueror::Editor
 
             ImGui::EndPopup();
         }
+    }
+
+    void EditorLayer::SyncScriptDebugSetting()
+    {
+        // Unity'de Code Optimization kullanıcının proje ayarıdır (UserSettings): proje değişince okunur
+        auto project = Project::GetActive();
+        if (project.get() == m_ScriptDebugProject)
+            return;
+        m_ScriptDebugProject = project.get();
+        Scripting::ScriptDebugMode() = false;
+        if (!project)
+            return;
+        const auto path = Project::GetActiveProjectDirectory() / "UserSettings" / "Editor.yaml";
+        std::error_code ec;
+        if (!std::filesystem::exists(path, ec))
+            return;
+        try
+        {
+            YAML::Node root = YAML::LoadFile(path.string());
+            Scripting::ScriptDebugMode() = root["ScriptDebugMode"].as<bool>(false);
+        }
+        catch (...) {}
+    }
+
+    void EditorLayer::SaveScriptDebugSetting()
+    {
+        if (!Project::GetActive())
+            return;
+        const auto dir = Project::GetActiveProjectDirectory() / "UserSettings";
+        std::error_code ec;
+        std::filesystem::create_directories(dir, ec);
+        YAML::Node root;
+        try
+        {
+            if (std::filesystem::exists(dir / "Editor.yaml", ec))
+                root = YAML::LoadFile((dir / "Editor.yaml").string());
+        }
+        catch (...) {}
+        root["ScriptDebugMode"] = Scripting::ScriptDebugMode();
+        YAML::Emitter out;
+        out << root;
+        std::ofstream(dir / "Editor.yaml", std::ios::trunc) << out.c_str() << "\n";
+    }
+
+    void EditorLayer::DebugMenu()
+    {
+        SyncScriptDebugSetting();
+        if (!ImGui::BeginMenu("Debug"))
+            return;
+        bool debugMode = Scripting::ScriptDebugMode();
+        if (ImGui::MenuItem(ICON_FA_BUG "  Script Debugging (Debug Mode)", nullptr, &debugMode))
+        {
+            Scripting::ScriptDebugMode() = debugMode;
+            SaveScriptDebugSetting();
+            CQ_CORE_INFO("Code optimization: {0} (scripts recompile on the next Play)", debugMode ? "Debug" : "Release");
+        }
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+            ImGui::SetTooltip("Unity Debug Mode: C++, C, Rust, Zig and C# scripts compile without optimization and with full debug info,\n"
+                              "so a debugger attached to the editor can stop in them. Release Mode runs them optimized.");
+        ImGui::Separator();
+        auto& view = Scene::RuntimeDebug();
+        ImGui::MenuItem("Visible Collision Shapes", nullptr, &view.CollisionShapes);
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+            ImGui::SetTooltip("Draws every collider (3D and 2D) in the Game view while playing");
+        ImGui::MenuItem("Visible Navigation", nullptr, &view.Navigation);
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+            ImGui::SetTooltip("Draws the navigation mesh in the Game view while playing");
+        ImGui::MenuItem("Visible Paths", nullptr, &view.Paths);
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+            ImGui::SetTooltip("Draws the current path of every navigation agent (3D and 2D) in the Game view while playing");
+        ImGui::EndMenu();
     }
 
     void EditorLayer::BuildMenu()

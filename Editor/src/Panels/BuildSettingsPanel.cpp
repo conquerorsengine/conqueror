@@ -453,6 +453,17 @@ namespace Conqueror::Editor
         UI::Text("Build Location", "%s", DefaultOutputDir().string().c_str());
         if (UI::Checkbox("Development Build", cfg.Build.DevelopmentBuild, "Keeps the log file and console output in the build."))
             MarkDirty();
+        // Unity: Script Debugging / Wait For Managed Debugger (yalnız Development Build ile); Unreal: DebugGame yapılandırması
+        ImGui::BeginDisabled(!cfg.Build.DevelopmentBuild);
+        ImGui::Indent(12.0f);
+        if (UI::Checkbox("Script Debugging", cfg.Build.ScriptDebugging,
+                         "Compiles the scripts (C++, C, Rust, Zig, C#) without optimization and with full debug info, so a debugger attached to the game can step through them"))
+            MarkDirty();
+        if (UI::Checkbox("Wait For Debugger", cfg.Build.WaitForDebugger,
+                         "The game waits at startup (showing its process id in the log) until a debugger attaches"))
+            MarkDirty();
+        ImGui::Unindent(12.0f);
+        ImGui::EndDisabled();
 
         ImGui::Spacing();
         const bool canBuild = BuildPipeline::CanBuild(cfg.TargetPlatform);

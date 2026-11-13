@@ -181,7 +181,13 @@ namespace Conqueror
         void RenderEditorIcons(EditorCamera& camera, const glm::vec2* viewportBounds);
         // Editör seçimi (çarpıştırıcı gizmo'ları için)
         void SetEditorSelection(std::vector<uint32_t> selection) { m_EditorSelection = std::move(selection); }
-        void DrawPhysicsGizmos();
+        // all: seçimden bağımsız tüm çarpıştırıcılar (Show All Colliders ya da oyunda Visible Collision Shapes)
+        void DrawPhysicsGizmos(bool all = false);
+        // Godot Debug menüsü (Visible Collision Shapes / Visible Navigation / Visible Paths), Unreal "show collision": oyun görünümünde
+        // hata ayıklama çizimleri. Game görünümü çizerken DrawRuntimeDebug çağırır (gezinme ağı kamera matrisiyle ayrıca çizilir)
+        struct RuntimeDebugView { bool CollisionShapes = false; bool Navigation = false; bool Paths = false; };
+        static RuntimeDebugView& RuntimeDebug();
+        void DrawRuntimeDebug();
         
         void StopAllAudio();
 

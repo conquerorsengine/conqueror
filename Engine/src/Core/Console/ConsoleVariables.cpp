@@ -15,6 +15,7 @@
 #include "Renderer/RenderSettings.h"
 #include "Renderer/AntiAliasing.h"
 #include "Scene/Scene.h"
+#include "Scripting/ScriptRuntime.h"
 
 #include <algorithm>
 #include <cmath>
@@ -522,6 +523,19 @@ namespace Conqueror
                     scene->GetPhysicsWorld3D()->SetGravity(PhysicsSettings::Get().Gravity);
                 return true;
             });
+        // Debug menüsü karşılıkları (Unreal "show collision", Godot Visible Collision Shapes / Navigation / Paths)
+        AddValue("debug.CollisionShapes", "Draw every collider in the game view while playing", CVarType::Bool,
+            []() { return std::string(Scene::RuntimeDebug().CollisionShapes ? "1" : "0"); },
+            [](const std::string& t) { bool b; if (!ParseBool(t, b)) return false; Scene::RuntimeDebug().CollisionShapes = b; return true; });
+        AddValue("debug.Navigation", "Draw the navigation mesh in the game view while playing", CVarType::Bool,
+            []() { return std::string(Scene::RuntimeDebug().Navigation ? "1" : "0"); },
+            [](const std::string& t) { bool b; if (!ParseBool(t, b)) return false; Scene::RuntimeDebug().Navigation = b; return true; });
+        AddValue("debug.Paths", "Draw the paths of navigation agents in the game view while playing", CVarType::Bool,
+            []() { return std::string(Scene::RuntimeDebug().Paths ? "1" : "0"); },
+            [](const std::string& t) { bool b; if (!ParseBool(t, b)) return false; Scene::RuntimeDebug().Paths = b; return true; });
+        AddValue("debug.ScriptDebugging", "Compile scripts without optimization and with debug info (Unity Debug Mode); takes effect on the next compile", CVarType::Bool,
+            []() { return std::string(Scripting::ScriptDebugMode() ? "1" : "0"); },
+            [](const std::string& t) { bool b; if (!ParseBool(t, b)) return false; Scripting::ScriptDebugMode() = b; return true; });
         AddValue("ai.ShowNavMesh", "Draw the baked navigation mesh", CVarType::Bool,
             []() { Scene* s = ConsoleSystem::GetScene(); return s && s->IsShowingNavMesh() ? std::string("1") : std::string("0"); },
             [](const std::string& t) { bool b; Scene* s = ConsoleSystem::GetScene(); if (!ParseBool(t, b) || !s) return false; s->SetShowNavMesh(b); return true; });

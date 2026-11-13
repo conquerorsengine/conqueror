@@ -88,4 +88,9 @@ namespace Conqueror::Scripting
         static CQS::Value ToValue(const ScriptValue& v);
         static ScriptValue FromValue(const CQS::Value& v, bool* representable = nullptr);
     };
+
+    // Unity Code Optimization (durum çubuğu Debug Mode / Release Mode) ve Build Settings > Script Debugging: açıkken derlenen betikler
+    // (C++, C, Rust, Zig, C#) optimizasyonsuz ve tam hata ayıklama bilgisiyle derlenir; editöre / oyuna bir hata ayıklayıcı bağlanıp
+    // betikte adım adım ilerlenebilir. Kapalıyken (Release) optimize edilir. Değişince betikler yeniden derlenir
+    CQ_API bool& ScriptDebugMode();
 }

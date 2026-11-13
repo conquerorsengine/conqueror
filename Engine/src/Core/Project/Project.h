@@ -122,6 +122,10 @@ namespace Conqueror {
         std::vector<BuildSceneEntry> Scenes;   // ilk etkin sahne başlangıç sahnesidir (indeks 0)
         std::string OutputDirectory;           // proje göreli; boşsa Builds/<Platform>
         bool DevelopmentBuild = false;         // günlük dosyası + konsol çıktısı
+        // Development Build seçenekleri (Unity Script Debugging / Wait For Managed Debugger, Unreal DebugGame): betikler
+        // optimizasyonsuz ve hata ayıklama bilgisiyle; oyun başlarken bir hata ayıklayıcının bağlanmasını bekler
+        bool ScriptDebugging = false;
+        bool WaitForDebugger = false;
     };
 
     struct ProjectConfig

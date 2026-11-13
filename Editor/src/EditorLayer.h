@@ -69,6 +69,11 @@ namespace Conqueror::Editor
         void WindowMenu();
         void HelpMenu();
         void BuildMenu();
+        // Godot Debug menüsü + Unity Code Optimization (Debug Mode): Script Debugging, Visible Collision Shapes / Navigation / Paths
+        void DebugMenu();
+        void SyncScriptDebugSetting();
+        void SaveScriptDebugSetting();
+        const void* m_ScriptDebugProject = nullptr;   // ayarın okunduğu proje (değişince UserSettings'ten yeniden okunur)
         void AddonsMenu();
         // Oyun betiklerinin girdisi: Game görünümü odaktayken ImGui'den (otomasyon dahil) beslenir
         void FeedGameInput();

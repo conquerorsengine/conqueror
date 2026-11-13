@@ -15,6 +15,7 @@
 #include "Core/Logging/Log.h"
 #include "Core/Debug/DebugDraw.h"
 #include "Scene/Scene.h"
+#include "AISystem/Navigation/NavAgents.h"
 #include "Scene/PostProcessVolume.h"
 #include "Scene/Entity.h"
 #include "Scene/Components.h"
@@ -129,8 +130,12 @@ namespace Conqueror::Editor
                     postCamera = RenderCamera::FromSceneCamera(cc.Camera, tc.WorldTransform, sceneWidth, sceneHeight);
                     DebugDraw::SetCameraPosition(glm::vec3(tc.WorldTransform[3]));
                     DebugDraw::Update(ts);
+                    // Debug menüsü (Godot): oyunda çarpıştırıcılar, gezinme ağı ve ajan yolları
+                    m_Context->DrawRuntimeDebug();
                     DebugDraw::Render(vp);
                     DebugDraw::Clear();
+                    if (Scene::RuntimeDebug().Navigation)
+                        NavAgents::DrawDebug(m_Context->GetNavMesh(), vp);
                 }
             }
 

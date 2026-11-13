@@ -1795,7 +1795,85 @@ namespace Conqueror
 
     // Unity gibi: seçili varlıkların çarpıştırıcıları yeşil tel kafes, tetikleyiciler açık mavi,
     // karakter denetleyici kapsülü, eklem çapası ve ekseni
-    void Scene::DrawPhysicsGizmos()
+    Scene::RuntimeDebugView& Scene::RuntimeDebug()
+    {
+        static RuntimeDebugView view;
+        return view;
+    }
+
+    void Scene::DrawRuntimeDebug()
+    {
+        const RuntimeDebugView& d = RuntimeDebug();
+        if (d.CollisionShapes)
+        {
+            DrawPhysicsGizmos(true);
+            // 2D çarpıştırıcılar (Godot Visible Collision Shapes)
+            const glm::vec4 k2D(0.45f, 0.85f, 1.0f, 0.95f);
+            auto worldOf = [&](Entity e) {
+                glm::mat4 m = e.GetComponent<TransformComponent>().GetTransform();
+                for (Entity p = e.GetParent(); p; p = p.GetParent())
+                    m = p.GetComponent<TransformComponent>().GetTransform() * m;
+                return m;
+            };
+            auto toWorld = [](const glm::mat4& m, const glm::vec2& p) { return glm::vec3(m * glm::vec4(p, 0.0f, 1.0f)); };
+            for (auto h : m_Registry.view<TransformComponent, BoxCollider2DComponent>())
+            {
+                Entity e{ h, this };
+                const auto& c = e.GetComponent<BoxCollider2DComponent>();
+                const glm::mat4 m = worldOf(e);
+                const glm::vec2 hs = c.Size * 0.5f;
+                DebugDraw::Polygon({ toWorld(m, c.Offset + glm::vec2(-hs.x, -hs.y)), toWorld(m, c.Offset + glm::vec2(hs.x, -hs.y)),
+                                     toWorld(m, c.Offset + glm::vec2(hs.x, hs.y)), toWorld(m, c.Offset + glm::vec2(-hs.x, hs.y)) }, k2D, true, 0.0f, false);
+            }
+            for (auto h : m_Registry.view<TransformComponent, CircleCollider2DComponent>())
+            {
+                Entity e{ h, this };
+                const auto& c = e.GetComponent<CircleCollider2DComponent>();
+                const glm::mat4 m = worldOf(e);
+                const float scale = std::max(glm::length(glm::vec3(m[0])), glm::length(glm::vec3(m[1])));
+                DebugDraw::Circle(toWorld(m, c.Offset), glm::vec3(0.0f, 0.0f, 1.0f), c.Radius * scale, k2D, 0.0f, false);
+            }
+            for (auto h : m_Registry.view<TransformComponent, CapsuleCollider2DComponent>())
+            {
+                Entity e{ h, this };
+                const auto& c = e.GetComponent<CapsuleCollider2DComponent>();
+                const glm::mat4 m = worldOf(e);
+                const glm::vec2 hs = c.Size * 0.5f;
+                DebugDraw::Polygon({ toWorld(m, c.Offset + glm::vec2(-hs.x, -hs.y)), toWorld(m, c.Offset + glm::vec2(hs.x, -hs.y)),
+                                     toWorld(m, c.Offset + glm::vec2(hs.x, hs.y)), toWorld(m, c.Offset + glm::vec2(-hs.x, hs.y)) }, k2D, true, 0.0f, false);
+            }
+            for (auto h : m_Registry.view<TransformComponent, PolygonCollider2DComponent>())
+            {
+                Entity e{ h, this };
+                const auto& c = e.GetComponent<PolygonCollider2DComponent>();
+                const glm::mat4 m = worldOf(e);
+                std::vector<glm::vec3> pts;
+                for (const auto& p : c.Points)
+                    pts.push_back(toWorld(m, c.Offset + p));
+                if (pts.size() >= 2)
+                    DebugDraw::Polygon(pts, k2D, true, 0.0f, false);
+            }
+        }
+        if (d.Paths)
+        {
+            // Gezinme ajanlarının yolları (Godot Visible Paths)
+            const glm::vec4 kPath(1.0f, 0.85f, 0.25f, 1.0f);
+            for (auto h : m_Registry.view<NavMeshAgentComponent>())
+            {
+                const auto& a = m_Registry.get<NavMeshAgentComponent>(h);
+                for (size_t i = 1; a.HasPath && i < a.Path.size(); ++i)
+                    DebugDraw::Line(a.Path[i - 1] + glm::vec3(0.0f, 0.05f, 0.0f), a.Path[i] + glm::vec3(0.0f, 0.05f, 0.0f), kPath, 0.0f, false);
+            }
+            for (auto h : m_Registry.view<NavigationAgent2DComponent>())
+            {
+                const auto& a = m_Registry.get<NavigationAgent2DComponent>(h);
+                for (size_t i = 1; i < a.Path.size(); ++i)
+                    DebugDraw::Line({ a.Path[i - 1], 0.0f }, { a.Path[i], 0.0f }, kPath, 0.0f, false);
+            }
+        }
+    }
+
+    void Scene::DrawPhysicsGizmos(bool all)
     {
         const glm::vec4 kCollider(0.55f, 1.0f, 0.45f, 0.95f);
         const glm::vec4 kTrigger(0.45f, 0.85f, 1.0f, 0.95f);
@@ -1929,7 +2007,7 @@ namespace Conqueror
                 DebugDraw::Line(center, center - up * w.Radius, kWheel, 0.0f, false);
             }
         };
-        if (m_EditorViewOptions.AllColliders)
+        if (all || m_EditorViewOptions.AllColliders)
         {
             auto view = m_Registry.view<TransformComponent>();
             for (auto h : view)

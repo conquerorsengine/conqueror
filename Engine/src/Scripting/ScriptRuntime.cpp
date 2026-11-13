@@ -225,4 +225,10 @@ namespace Conqueror::Scripting
         if (representable) *representable = v.IsNull();
         return ScriptValue();
     }
+
+    bool& ScriptDebugMode()
+    {
+        static bool debug = false;
+        return debug;
+    }
 }

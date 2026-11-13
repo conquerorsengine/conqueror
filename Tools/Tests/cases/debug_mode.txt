@@ -1,0 +1,38 @@
+# template: basic3d
+# 232: Debug menüsü. Script Debugging (Unity Debug Mode) açıkken C++ betiği optimizasyonsuz derlenir, kapalıyken optimize;
+# Visible Collision Shapes oyunda çarpıştırıcıları çizer (Godot)
+wait 40
+content_drop "{dir}/assets/debugmode/OptProbe.cpp"
+wait 10
+entity create Holder 0 0 0
+script add Holder Assets/OptProbe.cpp
+play
+wait 60
+expect_entities 1 Probe_Optimized
+stop
+wait 10
+cvar debug.ScriptDebugging 1
+play
+wait 60
+expect_entities 1 Probe_Debug
+stop
+wait 10
+cvar debug.ScriptDebugging 0
+# Visible Collision Shapes
+create_primitive Cube Crate 0 0.5 0
+comp add Crate BoxColliderComponent
+focus Game
+play
+# zamansal kenar yumuşatma otursun (açılışta birkaç saniye yavaş değişir)
+wait 300
+game_region_change mark 0.1 0.1 0.9 0.9
+cvar debug.CollisionShapes 1
+wait 5
+game_region_change expect 0.1 0.1 0.9 0.9 >0.004
+# kapanınca çizgiler kalkar (görüntü yine değişir)
+game_region_change mark 0.1 0.1 0.9 0.9
+cvar debug.CollisionShapes 0
+wait 5
+game_region_change expect 0.1 0.1 0.9 0.9 >0.004
+stop
+quit
