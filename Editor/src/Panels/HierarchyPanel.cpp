@@ -1106,6 +1106,11 @@ namespace Conqueror::Editor
             return tree;
         }
 
+        // Menü öğesinden sürükleme: ImGui menü öğesi fare bırakılınca tetiklenir, basılıyken etkin öğe olmadığından olağan sürükleme
+        // kaynağı hiç başlamaz; açık menü de arkadaki Viewport'un fareyi görmesini engeller. Basılan giriş kaydedilir, fare sürüklenince
+        // menüler kapanır ve yük her karede dış kaynak olarak (UpdateCreateDrag) bırakılana kadar sürer
+        std::string s_PressedEntry, s_PressedLabel, s_DraggingEntry, s_DraggingLabel;
+
         Entity DrawCreateNode(const CreateNode& node, Scene* scene, Entity parent)
         {
             Entity created;
@@ -1124,20 +1129,30 @@ namespace Conqueror::Editor
                         }
                         break;
                     case CreateNode::Kind::Item:
-                        if (ImGui::MenuItem(c.Label.c_str()))
+                        if (ImGui::MenuItem(c.Label.c_str()) && s_DraggingEntry.empty())
                             created = c.Create(scene, parent);
                         // Viewport'a sürükleyip bırak (Unreal Place Actors gibi): bırakılan yüzeye oluşturulur
-                        if (c.Placement != HierarchyPanel::CreatePlacement::None && ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+                        if (c.Placement != HierarchyPanel::CreatePlacement::None)
                         {
-                            ImGui::SetDragDropPayload("CQ_CREATE_ENTRY", c.Id.c_str(), c.Id.size() + 1);
-                            ImGui::TextUnformatted(c.Label.c_str());
-                            ImGui::EndDragDropSource();
+                            if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+                            {
+                                s_PressedEntry = c.Id;
+                                s_PressedLabel = c.Label;
+                            }
+                            if (s_PressedEntry == c.Id && s_DraggingEntry.empty() && ImGui::IsMouseDragging(ImGuiMouseButton_Left))
+                            {
+                                s_DraggingEntry = c.Id;
+                                s_DraggingLabel = c.Label;
+                                ImGui::ClosePopupsExceptModals();
+                            }
                         }
                         break;
                 }
             }
             return created;
         }
+
+        // (UpdateCreateDrag aşağıda, HierarchyPanel üyesi)
 
         // Simge önekini (ve boşlukları) atlayarak etiket karşılaştırması: otomasyon yolları simgesiz yazılabilir ("3D Object/Cube")
         std::string PlainLabel(const std::string& label)
@@ -1196,6 +1211,25 @@ namespace Conqueror::Editor
             return {};
         const CreateNode tree = BuildCreateTree();
         return DrawCreateNode(tree, scene, parent);
+    }
+
+    void HierarchyPanel::UpdateCreateDrag()
+    {
+        if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
+        {
+            // Bırakıldı: yük bu karede hâlâ geçerli (önceki karede verildi), Viewport'un hedefi teslim alır
+            s_PressedEntry.clear();
+            s_DraggingEntry.clear();
+            return;
+        }
+        if (s_DraggingEntry.empty())
+            return;
+        if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceExtern))
+        {
+            ImGui::SetDragDropPayload("CQ_CREATE_ENTRY", s_DraggingEntry.c_str(), s_DraggingEntry.size() + 1);
+            ImGui::TextUnformatted(s_DraggingLabel.c_str());
+            ImGui::EndDragDropSource();
+        }
     }
 
     HierarchyPanel::CreatePlacement HierarchyPanel::GetCreatePlacement(const std::string& id)

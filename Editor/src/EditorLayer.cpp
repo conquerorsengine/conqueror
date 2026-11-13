@@ -2283,6 +2283,8 @@ namespace Conqueror::Editor
 
     void EditorLayer::RenderPanels()
     {
+        // Create menüsünden Viewport'a sürükleme menü kapandıktan sonra da sürer (Hierarchy gizli olsa bile)
+        HierarchyPanel::UpdateCreateDrag();
         if (m_ShowHierarchy && m_HierarchyPanel)
         {
             m_HierarchyPanel->SetSceneName(m_CurrentScenePath.empty() ? std::string("Untitled") : m_CurrentScenePath.stem().string());

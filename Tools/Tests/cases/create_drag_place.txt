@@ -1,0 +1,28 @@
+# template: basic3d
+# 216 (Unreal Place Actors): Create menüsündeki giriş Viewport'a sürüklenip bırakılır, imlecin altındaki yüzeye oturur (küpün yanına
+# yaslanır, küre zemine değer), seçilir ve Geri Al ile kalkar. Menü öğesinden fareyle sürükleme: basıp sürükleyince menü kapanır
+wait 40
+create_primitive Cube Base 0 0.5 0
+camera 8 30 25 0 0.5 0
+wait 10
+# Hierarchy "+" -> 3D Object -> Cube, fareyle Viewport'un ortasına
+click 24 175
+wait 5
+move 95 217
+wait 15
+drag 230 217 920 480 40
+wait 10
+expect_entities 1 Cube
+expect_selected Cube
+undo
+wait 5
+expect_entities 0 Cube
+# Kod yolu: zemine bırakılan küre (yarıçap 1) merkeziyle y = 1'de, önizlemeli sürükleme bırakınca kalır
+place_entry "3D Object/Sphere" 0.15 0.85
+expect_entities 1 Sphere
+place_drag "3D Object/Cylinder" 0.3 0.6 hold
+wait 1
+place_drag "3D Object/Cylinder" 0.4 0.65 drop
+wait 5
+expect_entities 1 Cylinder
+quit

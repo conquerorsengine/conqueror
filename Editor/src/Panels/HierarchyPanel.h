@@ -39,6 +39,8 @@ namespace Conqueror::Editor
         // id: sürükleme yükü (menü yolu + etiket, \x1f ayraçlı) ya da otomasyonda simgesiz "/" ayraçlı yol ("3D Object/Cube")
         static CreatePlacement GetCreatePlacement(const std::string& id);
         static Entity CreateFromEntry(Scene* scene, const std::string& id, Entity parent = {});
+        // Her karede bir kez (menüler çizildikten sonra): menüden başlayan Create sürüklemesini menü kapandıktan sonra da sürdürür
+        static void UpdateCreateDrag();
 
         // Bileşen ikonları (Hierarchy ve Inspector ortak)
         struct ComponentIcon
