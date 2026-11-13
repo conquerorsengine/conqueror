@@ -127,10 +127,21 @@ namespace Conqueror::Editor
         glm::vec3 DropPointOnGround(const glm::vec2& viewportLocalMouse);
         // Ekran noktasından (ImGui ekran koordinatı) nesne seç; isabet yoksa boş Entity
         Entity PickAt(const ImVec2& screenPos);
+        // Create menüsü girişini ekran noktasındaki yüzeye yerleştir (Viewport'a bırakmanın aynısı, önizlemesiz; otomasyon da kullanır)
+        Entity PlaceCreateEntry(const std::string& id, const ImVec2& screenPos);
+        // Sürükleme karesi: önizlemeyi oluştur / imlecin altındaki yüzeye taşı; delivered: bırakıldı (yerleşir, seçilir, geri alınabilir).
+        // Bir kare çağrılmazsa önizleme kaldırılır (sürükleme görünümden çıktı / iptal)
+        void UpdatePlacementDrag(const std::string& id, const ImVec2& screenPos, bool delivered);
 
         static const char* GetShadingName(ViewportShading shading);
 
     private:
+        // Create menüsünden sürükleyip yerleştirme (Unreal Place Actors gibi): imlecin altındaki yüzey noktası ve normali (önizleme
+        // nesnesi sayılmaz); nesne sınır kutusu yüzeye oturacak şekilde konur
+        bool PlacementPoint(const ImVec2& screenPos, glm::vec3& point, glm::vec3& normal);
+        void PlaceOnSurface(Entity e, const glm::vec3& point, const glm::vec3& normal);
+        void ClearPlacementPreview(bool destroy);
+
         void DrawToolbar();
         void DrawOverlays();
         void DrawCanvasBounds(ImDrawList* drawList);
@@ -211,7 +222,18 @@ namespace Conqueror::Editor
         bool m_PickPending = false;
         ImVec2 m_PickStart{ 0.0f, 0.0f };
         bool m_ImageHovered = false;
-        bool m_MouseDownInView[3] = { false, false, false };   // sol / sağ / orta tuş görünümün içinde basıldı (fare gezinmesi yalnız o zaman)
+        bool m_MouseDownInView[3] = { false, false, false };
+        // Açılış / panel ilk göründüğünde yerleşim oturana kadar panel boyutuna uymayan eski kare gösterilmez (196)
+        bool m_Settled = false;
+        int m_StableFrames = 0;
+        glm::vec2 m_LastPanelSize = { 0.0f, 0.0f };
+        std::vector<uint32_t> m_PrevSelection;
+        // Create menüsünden sürüklenen girişin önizlemesi (yerleştirilene kadar geri alma kaydına girmez)
+        std::string m_PlaceId;
+        std::vector<Entity> m_PlaceRoots;
+        std::vector<uint32_t> m_PlaceIgnore;
+        int m_PlaceSeenFrame = -10;                     // önceki karenin seçimi (seçimi kalkan nesneyi bulmak için)
+        std::vector<std::pair<uint32_t, int>> m_DeselectedGizmos;  // seçimi kalkan nesne, TAA'ya hareketli bildirilecek kare sayısı   // sol / sağ / orta tuş görünümün içinde basıldı (fare gezinmesi yalnız o zaman)
 
         // Bu görünümün HDR hedefleri + post-process zinciri
         PostProcessStack m_PostStack;

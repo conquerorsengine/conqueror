@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 
 #include <vector>
+#include <unordered_set>
 #include <memory>
 #include <string>
 
@@ -107,6 +108,12 @@ namespace Conqueror::Editor
         void SetViewportHovered(bool hovered) { m_ViewportHovered = hovered; }
         bool IsViewportHovered() const { return m_ViewportHovered; }
 
+        // Create menüsünden Viewport'a sürüklenirken önizlenen, henüz yerleştirilmemiş nesneler (UUID): geri alma kaydı onları
+        // yerleştirilene kadar saymaz (iptal edilen sürükleme geri alma geçmişinde adım bırakmaz)
+        void SetPlacementPreview(const std::vector<uint64_t>& ids) { m_PlacementPreview = std::unordered_set<uint64_t>(ids.begin(), ids.end()); }
+        void ClearPlacementPreview() { m_PlacementPreview.clear(); }
+        const std::unordered_set<uint64_t>& GetPlacementPreview() const { return m_PlacementPreview; }
+
         // Gizmo
         void SetGizmoOperation(GizmoOperation operation) { m_GizmoOperation = operation; }
         GizmoOperation GetGizmoOperation() const { return m_GizmoOperation; }
@@ -142,6 +149,8 @@ namespace Conqueror::Editor
         EditorState& operator=(const EditorState&) = delete;
 
     private:
+        std::unordered_set<uint64_t> m_PlacementPreview;
+
         // Selection
         std::vector<Entity> m_SelectedEntities;
         std::string m_SelectedAsset;

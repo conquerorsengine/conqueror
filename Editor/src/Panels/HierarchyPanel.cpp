@@ -818,247 +818,400 @@ namespace Conqueror::Editor
 
     // ------------------------------------------------------------------ Oluşturma menüsü
 
+    namespace
+    {
+        // Create menüsünün girişleri tek yerde (Hierarchy "+", sağ tık, Create Child, GameObject menüsü, şeritteki Insert): menüler bu
+        // ağaçtan çizilir; girişler Viewport'a sürüklenip bırakılabilir (Unreal Place Actors gibi). Bırakmada aynı oluşturma kodu çalışır
+        struct CreateNode
+        {
+            enum class Kind { Item, Separator, Heading, Menu };
+            Kind Type = Kind::Item;
+            std::string Label;
+            std::string Id;   // Item: menü yolu + etiket (ayraç \x1f), sürükleme yükü
+            HierarchyPanel::CreatePlacement Placement = HierarchyPanel::CreatePlacement::Preview;
+            std::function<Entity(Scene*, Entity)> Create;
+            std::vector<CreateNode> Children;
+        };
+
+        CreateNode Item(const char* label, std::function<Entity(Scene*, Entity)> create,
+                        HierarchyPanel::CreatePlacement placement = HierarchyPanel::CreatePlacement::Preview)
+        {
+            CreateNode n;
+            n.Label = label;
+            n.Create = std::move(create);
+            n.Placement = placement;
+            return n;
+        }
+        CreateNode Separator() { CreateNode n; n.Type = CreateNode::Kind::Separator; return n; }
+        CreateNode Heading(const char* text) { CreateNode n; n.Type = CreateNode::Kind::Heading; n.Label = text; return n; }
+        CreateNode Menu(const char* label, std::vector<CreateNode> children)
+        {
+            CreateNode n;
+            n.Type = CreateNode::Kind::Menu;
+            n.Label = label;
+            n.Children = std::move(children);
+            return n;
+        }
+
+        Entity MakeEntity(Scene* scene, Entity parent, const std::string& name)
+        {
+            Entity e = scene->CreateEntity(name);
+            if (parent)
+                e.SetParent(parent);
+            return e;
+        }
+        Entity MakeMesh(Scene* scene, Entity parent, const char* name, MeshType type)
+        {
+            Entity e = MakeEntity(scene, parent, name);
+            auto& mr = e.AddComponent<MeshRendererComponent>();
+            mr.Type = type;   // varsayılan malzeme (Default Grid) eklemede atanır
+            AssetActions::AddPrimitiveCollider(e);   // Unity gibi çarpıştırıcısıyla gelir
+            return e;
+        }
+        // Eski (Legacy) UI öğesi: verilen canvas / UI öğesinin, yoksa ilk canvas'ın altına
+        Entity MakeLegacyUI(Scene* scene, Entity parent, const char* name)
+        {
+            Entity canvas = (parent && (parent.HasComponent<CanvasComponent>() || parent.GetParent())) ? parent : FindOrCreateCanvas(scene);
+            Entity e = scene->CreateEntity(name);
+            e.SetParent(canvas);
+            MakeUI(e);
+            return e;
+        }
+        // UI öğeleri seçili UI öğesinin / canvas'ın altına (yoksa ilk canvas) eklenir
+        Entity UIParentFor(Entity parent)
+        {
+            if (parent)
+                return parent;
+            Entity sel = EditorState::Get().GetSelectedEntity();
+            if (sel && (sel.HasComponent<CanvasComponent>() || sel.HasComponent<RectTransformComponent>()))
+                return sel;
+            return {};
+        }
+
+        CreateNode BuildCreateTree()
+        {
+            using P = HierarchyPanel::CreatePlacement;
+            std::vector<CreateNode> root;
+            root.push_back(Item(ICON_FA_CIRCLE_DOT "  Create Empty", [](Scene* s, Entity p) { return MakeEntity(s, p, "GameObject"); }));
+            root.push_back(Separator());
+
+            root.push_back(Menu(ICON_FA_CUBE "  3D Object", {
+                Item("Cube", [](Scene* s, Entity p) { return MakeMesh(s, p, "Cube", MeshType::Cube); }),
+                Item("Sphere", [](Scene* s, Entity p) { return MakeMesh(s, p, "Sphere", MeshType::Sphere); }),
+                Item("Plane", [](Scene* s, Entity p) { return MakeMesh(s, p, "Plane", MeshType::Plane); }),
+                Item("Cylinder", [](Scene* s, Entity p) { return MakeMesh(s, p, "Cylinder", MeshType::Cylinder); }),
+                // Arazi büyük ve sahneye göre yerleşir: sürüklenmez (Unreal'de de Landscape Place Actors'ta değil)
+                Item(ICON_FA_MOUNTAIN_SUN "  Terrain", [](Scene* s, Entity p) {
+                    Entity e = TerrainPanel::CreateTerrain(s);
+                    if (e && p)
+                        e.SetParent(p);
+                    return e;
+                }, P::None),
+                // Unity 3D Object > Tree: Tree Creator ağacı (gövde, dallar, ince dallar, yapraklar), Mesh Renderer çizer
+                Item(ICON_FA_TREE "  Tree", [](Scene* s, Entity p) {
+                    Entity e = MakeEntity(s, p, "Tree");
+                    if (auto* info = ComponentRegistry::Find("TreeComponent"))
+                        ComponentRegistry::AddWithRequirements(*info, e);
+                    return e;
+                }),
+                Item(ICON_FA_CHESS_BOARD "  Hex Board", [](Scene* s, Entity p) {
+                    return TilePalettePanel::CreateTilemap(s, GridLayout::HexagonPointyTop, GridPlane::XZ, true, p);
+                }, P::OnDrop),
+                Item(ICON_FA_CHESS_BOARD "  Square Board", [](Scene* s, Entity p) {
+                    return TilePalettePanel::CreateTilemap(s, GridLayout::Rectangle, GridPlane::XZ, true, p);
+                }, P::OnDrop),
+            }));
+
+            {
+                std::vector<CreateNode> items;
+                items.push_back(Heading("Sprites"));
+                for (const char* spriteName : { "Capsule", "Circle", "Diamond", "HexagonFlat", "HexagonPoint", "IsometricDiamond",
+                                                 "NineSliced", "Pentagon", "Square", "Star", "Triangle" })
+                {
+                    const std::string name = spriteName;
+                    items.push_back(Item(spriteName, [name](Scene* s, Entity p) {
+                        Entity e = MakeEntity(s, p, name);
+                        e.AddComponent<SpriteRendererComponent>().Texture = Texture2D::Create("Resources/Packages/Core/Sprites/" + name + ".png");
+                        return e;
+                    }));
+                }
+                items.push_back(Separator());
+                items.push_back(Menu(ICON_FA_TABLE_CELLS "  Tilemap", {
+                    Item("Rectangular", [](Scene* s, Entity p) { return TilePalettePanel::CreateTilemap(s, GridLayout::Rectangle, GridPlane::XY, false, p); }, P::OnDrop),
+                    Item("Hexagonal - Pointy Top", [](Scene* s, Entity p) { return TilePalettePanel::CreateTilemap(s, GridLayout::HexagonPointyTop, GridPlane::XY, false, p); }, P::OnDrop),
+                    Item("Hexagonal - Flat Top", [](Scene* s, Entity p) { return TilePalettePanel::CreateTilemap(s, GridLayout::HexagonFlatTop, GridPlane::XY, false, p); }, P::OnDrop),
+                    Item("Isometric", [](Scene* s, Entity p) { return TilePalettePanel::CreateTilemap(s, GridLayout::Isometric, GridPlane::XY, false, p); }, P::OnDrop),
+                }));
+                items.push_back(Separator());
+                items.push_back(Item(ICON_FA_VIDEO "  2D Camera", [](Scene* s, Entity p) {
+                    // Ortografik kamera, sahnenin önünde (z=10) -Z'ye bakar
+                    Entity cam = MakeEntity(s, p, "2D Camera");
+                    cam.GetComponent<TransformComponent>().Position = { 0.0f, 0.0f, 10.0f };
+                    auto& cc = cam.AddComponent<CameraComponent>();
+                    cc.Camera.SetProjectionType(SceneCamera::ProjectionType::Orthographic);
+                    cc.Camera.SetOrthographicSize(10.0f);
+                    return cam;
+                }));
+                items.push_back(Separator());
+                items.push_back(Heading("Physics"));
+                items.push_back(Item("Dynamic Sprite (Rigidbody 2D + Box)", [](Scene* s, Entity p) {
+                    Entity e = MakeEntity(s, p, "Dynamic Sprite");
+                    e.AddComponent<SpriteRendererComponent>().Texture = Texture2D::Create("Resources/Packages/Core/Sprites/Square.png");
+                    e.AddComponent<RigidBody2DComponent>();
+                    e.AddComponent<BoxCollider2DComponent>();
+                    return e;
+                }));
+                root.push_back(Menu(ICON_FA_SHAPES "  2D Object", std::move(items)));
+            }
+
+            {
+                std::vector<CreateNode> items;
+                items.push_back(Item("Particle System", [](Scene* s, Entity p) {
+                    Entity e = MakeEntity(s, p, "Particle System");
+                    e.AddComponent<ParticleSystemComponent>();
+                    return e;
+                }));
+                items.push_back(Separator());
+                for (const auto& preset : ParticleSystem::GetPresetNames())
+                {
+                    const std::string name = preset;
+                    items.push_back(Item(preset.c_str(), [name](Scene* s, Entity p) {
+                        Entity e = MakeEntity(s, p, name);
+                        ParticleSystem::ApplyPreset(e.AddComponent<ParticleSystemComponent>(), name);
+                        return e;
+                    }));
+                }
+                root.push_back(Menu(ICON_FA_FIRE "  Effects", std::move(items)));
+            }
+
+            root.push_back(Menu(ICON_FA_LIGHTBULB "  Light", {
+                Item(ICON_FA_SUN "  Directional Light", [](Scene* s, Entity p) {
+                    Entity sun = MakeEntity(s, p, "Directional Light");
+                    auto& light = sun.AddComponent<DirectionalLightComponent>();
+                    // Yön dönüşten gelir: aşağı bakan eğik güneş
+                    sun.GetComponent<TransformComponent>().Rotation = Math::EulerForForward(glm::vec3(-0.4f, -1.0f, -0.3f));
+                    sun.GetComponent<TransformComponent>().Position = { 0.0f, 3.0f, 0.0f };
+                    light.Color = glm::vec3(1.0f);
+                    light.Intensity = 1.0f;
+                    return sun;
+                }),
+                Item(ICON_FA_LIGHTBULB "  Point Light", [](Scene* s, Entity p) {
+                    Entity e = MakeEntity(s, p, "Point Light");
+                    auto& light = e.AddComponent<PointLightComponent>();
+                    light.Color = glm::vec3(1.0f);
+                    light.Intensity = 1.0f;
+                    light.Range = 10.0f;
+                    return e;
+                }),
+                Item(ICON_FA_LIGHTBULB "  Spot Light", [](Scene* s, Entity p) {
+                    Entity spot = MakeEntity(s, p, "Spot Light");
+                    auto& light = spot.AddComponent<SpotLightComponent>();
+                    spot.GetComponent<TransformComponent>().Rotation = Math::EulerForForward(glm::vec3(0.0f, -1.0f, 0.0f));
+                    spot.GetComponent<TransformComponent>().Position = { 0.0f, 3.0f, 0.0f };
+                    light.Color = glm::vec3(1.0f);
+                    light.Intensity = 1.0f;
+                    light.Range = 10.0f;
+                    return spot;
+                }),
+                Separator(),
+                Item(ICON_FA_GLOBE "  Reflection Probe", [](Scene* s, Entity p) {
+                    Entity e = MakeEntity(s, p, "Reflection Probe");
+                    e.AddComponent<ReflectionProbeComponent>();
+                    return e;
+                }),
+                Item(ICON_FA_BRAILLE "  Adaptive Probe Volume", [](Scene* s, Entity p) {
+                    Entity e = MakeEntity(s, p, "Adaptive Probe Volume");
+                    e.AddComponent<AdaptiveProbeVolumeComponent>();
+                    return e;
+                }),
+            }));
+
+            root.push_back(Menu(ICON_FA_VOLUME_HIGH "  Audio", {
+                Item("Audio Source", [](Scene* s, Entity p) { Entity e = MakeEntity(s, p, "Audio Source"); e.AddComponent<AudioSourceComponent>(); return e; }),
+                Item("Audio Listener", [](Scene* s, Entity p) { Entity e = MakeEntity(s, p, "Audio Listener"); e.AddComponent<AudioListenerComponent>(); return e; }),
+                Item("Audio Reverb Zone", [](Scene* s, Entity p) { Entity e = MakeEntity(s, p, "Audio Reverb Zone"); e.AddComponent<AudioReverbZoneComponent>(); return e; }),
+            }));
+
+            {
+                // UI öğeleri canvas'a yerleşir (konumu RectTransform belirler): Viewport'a sürüklenmez
+                std::vector<CreateNode> items;
+                items.push_back(Item(ICON_FA_TABLE_CELLS_LARGE "  Canvas", [](Scene* s, Entity) { return UISystem::CreateCanvas(*s); }, P::None));
+                items.push_back(Separator());
+                struct { const char* Label; const char* Type; } elements[] = {
+                    { ICON_FA_SQUARE "  Panel", "Panel" }, { ICON_FA_IMAGE "  Image", "Image" }, { ICON_FA_FONT "  Text", "Text" },
+                    { ICON_FA_HAND_POINTER "  Button", "Button" }, { ICON_FA_SQUARE_CHECK "  Toggle", "Toggle" }, { ICON_FA_SLIDERS "  Slider", "Slider" },
+                    { ICON_FA_I_CURSOR "  Input Field", "InputField" }, { ICON_FA_CARET_DOWN "  Dropdown", "Dropdown" },
+                    { ICON_FA_SCROLL "  Scroll View", "ScrollView" }, { ICON_FA_GRIP "  Layout Group", "LayoutGroup" },
+                };
+                for (auto& it : elements)
+                {
+                    const std::string type = it.Type;
+                    items.push_back(Item(it.Label, [type](Scene* s, Entity p) { return UISystem::CreateElement(*s, type, UIParentFor(p)); }, P::None));
+                }
+                items.push_back(Separator());
+                items.push_back(Menu("Legacy", {
+                    Item("Canvas", [](Scene* s, Entity p) {
+                        Entity c = MakeEntity(s, p, "Canvas");
+                        c.AddComponent<CanvasComponent>();
+                        c.AddComponent<CanvasScalerComponent>();
+                        c.AddComponent<GraphicRaycasterComponent>();
+                        return c;
+                    }, P::None),
+                    Separator(),
+                    Item("Text", [](Scene* s, Entity p) {
+                        Entity e = MakeLegacyUI(s, p, "Text");
+                        e.AddComponent<TextRendererComponent>();
+                        return e;
+                    }, P::None),
+                    // Eski düğmenin arka planı Sprite Renderer (eski Image bileşeni kaldırıldı; resim / panel için yukarıdaki UI Image)
+                    Item("Button", [](Scene* s, Entity p) {
+                        Entity button = MakeLegacyUI(s, p, "Button");
+                        auto& image = button.AddComponent<SpriteRendererComponent>();
+                        image.Texture = Texture2D::Create("Resources/ui/UIButton.png");
+                        image.Color = glm::vec4(1.0f);
+                        button.AddComponent<ButtonComponent>();
+                        Entity text = s->CreateEntity("Text");
+                        auto& tr = text.AddComponent<TextRendererComponent>();
+                        tr.Text = "Button";
+                        tr.Color = glm::vec4(1.0f);
+                        MakeUI(text);
+                        text.SetParent(button);
+                        return button;
+                    }, P::None),
+                }));
+                root.push_back(Menu(ICON_FA_TABLE_CELLS_LARGE "  UI", std::move(items)));
+            }
+
+            root.push_back(Menu(ICON_FA_ROUTE "  AI", {
+                Item("NavMesh Surface", [](Scene* s, Entity p) { Entity e = MakeEntity(s, p, "NavMesh Surface"); e.AddComponent<NavMeshSurfaceComponent>(); return e; }),
+                Item("NavMesh Agent", [](Scene* s, Entity p) { Entity e = MakeEntity(s, p, "NavMesh Agent"); e.AddComponent<NavMeshAgentComponent>(); return e; }),
+                Item("NavMesh Obstacle", [](Scene* s, Entity p) { Entity e = MakeEntity(s, p, "NavMesh Obstacle"); e.AddComponent<NavMeshObstacleComponent>(); return e; }),
+            }));
+
+            root.push_back(Separator());
+            root.push_back(Item(ICON_FA_VIDEO "  Camera", [](Scene* s, Entity p) { Entity e = MakeEntity(s, p, "Camera"); e.AddComponent<CameraComponent>(); return e; }));
+
+            CreateNode tree = Menu("", std::move(root));
+            // Kimlikler: menü yolu + etiket
+            std::function<void(CreateNode&, const std::string&)> assign = [&](CreateNode& n, const std::string& prefix) {
+                for (auto& c : n.Children)
+                {
+                    if (c.Type == CreateNode::Kind::Item)
+                        c.Id = prefix + c.Label;
+                    else if (c.Type == CreateNode::Kind::Menu)
+                        assign(c, prefix + c.Label + "\x1f");
+                }
+            };
+            assign(tree, "");
+            return tree;
+        }
+
+        Entity DrawCreateNode(const CreateNode& node, Scene* scene, Entity parent)
+        {
+            Entity created;
+            for (const auto& c : node.Children)
+            {
+                switch (c.Type)
+                {
+                    case CreateNode::Kind::Separator: ImGui::Separator(); break;
+                    case CreateNode::Kind::Heading: ImGui::TextDisabled("%s", c.Label.c_str()); break;
+                    case CreateNode::Kind::Menu:
+                        if (ImGui::BeginMenu(c.Label.c_str()))
+                        {
+                            if (Entity e = DrawCreateNode(c, scene, parent))
+                                created = e;
+                            ImGui::EndMenu();
+                        }
+                        break;
+                    case CreateNode::Kind::Item:
+                        if (ImGui::MenuItem(c.Label.c_str()))
+                            created = c.Create(scene, parent);
+                        // Viewport'a sürükleyip bırak (Unreal Place Actors gibi): bırakılan yüzeye oluşturulur
+                        if (c.Placement != HierarchyPanel::CreatePlacement::None && ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+                        {
+                            ImGui::SetDragDropPayload("CQ_CREATE_ENTRY", c.Id.c_str(), c.Id.size() + 1);
+                            ImGui::TextUnformatted(c.Label.c_str());
+                            ImGui::EndDragDropSource();
+                        }
+                        break;
+                }
+            }
+            return created;
+        }
+
+        // Simge önekini (ve boşlukları) atlayarak etiket karşılaştırması: otomasyon yolları simgesiz yazılabilir ("3D Object/Cube")
+        std::string PlainLabel(const std::string& label)
+        {
+            size_t i = 0;
+            while (i < label.size() && ((unsigned char)label[i] >= 0x80 || label[i] == ' '))
+                ++i;
+            return label.substr(i);
+        }
+
+        const CreateNode* FindCreateNode(const CreateNode& node, const std::vector<std::string>& path, size_t depth, bool plain)
+        {
+            for (const auto& c : node.Children)
+            {
+                const bool match = plain ? PlainLabel(c.Label) == path[depth] : c.Label == path[depth];
+                if (!match)
+                    continue;
+                if (depth + 1 == path.size())
+                {
+                    if (c.Type == CreateNode::Kind::Item)
+                        return &c;
+                }
+                else if (c.Type == CreateNode::Kind::Menu)
+                {
+                    if (const CreateNode* r = FindCreateNode(c, path, depth + 1, plain))
+                        return r;
+                }
+            }
+            return nullptr;
+        }
+
+        // Kimlik: menü yolu \x1f ile (sürükleme yükü) ya da otomasyonda "/" ile ve simgesiz
+        const CreateNode* FindCreateEntry(const CreateNode& tree, const std::string& id)
+        {
+            const bool plain = id.find('\x1f') == std::string::npos;
+            std::vector<std::string> path;
+            size_t start = 0;
+            const char sep = plain ? '/' : '\x1f';
+            while (true)
+            {
+                const size_t k = id.find(sep, start);
+                path.push_back(id.substr(start, k == std::string::npos ? std::string::npos : k - start));
+                if (k == std::string::npos)
+                    break;
+                start = k + 1;
+            }
+            if (path.empty() || path.back().empty())
+                return nullptr;
+            return FindCreateNode(tree, path, 0, plain);
+        }
+    }
+
     Entity HierarchyPanel::DrawCreateMenuItems(Scene* scene, Entity parent)
     {
         if (!scene)
             return {};
+        const CreateNode tree = BuildCreateTree();
+        return DrawCreateNode(tree, scene, parent);
+    }
 
-        Entity created;
-        auto make = [&](const char* name) {
-            created = scene->CreateEntity(name);
-            if (parent)
-                created.SetParent(parent);
-            return created;
-        };
-        auto makeMesh = [&](const char* name, MeshType type) {
-            auto& mr = make(name).AddComponent<MeshRendererComponent>();
-            mr.Type = type;   // varsayılan malzeme (Default Grid) eklemede atanır
-            AssetActions::AddPrimitiveCollider(created);   // Unity gibi çarpıştırıcısıyla gelir
-        };
-        auto makeUI = [&](const char* name) -> Entity {
-            Entity canvas = (parent && (parent.HasComponent<CanvasComponent>() || parent.GetParent())) ? parent : FindOrCreateCanvas(scene);
-            created = scene->CreateEntity(name);
-            created.SetParent(canvas);
-            MakeUI(created);
-            return created;
-        };
+    HierarchyPanel::CreatePlacement HierarchyPanel::GetCreatePlacement(const std::string& id)
+    {
+        const CreateNode tree = BuildCreateTree();
+        const CreateNode* n = FindCreateEntry(tree, id);
+        return n ? n->Placement : CreatePlacement::None;
+    }
 
-        if (ImGui::MenuItem(ICON_FA_CIRCLE_DOT "  Create Empty"))
-            make("GameObject");
-
-        ImGui::Separator();
-
-        if (ImGui::BeginMenu(ICON_FA_CUBE "  3D Object"))
-        {
-            if (ImGui::MenuItem("Cube")) makeMesh("Cube", MeshType::Cube);
-            if (ImGui::MenuItem("Sphere")) makeMesh("Sphere", MeshType::Sphere);
-            if (ImGui::MenuItem("Plane")) makeMesh("Plane", MeshType::Plane);
-            if (ImGui::MenuItem("Cylinder")) makeMesh("Cylinder", MeshType::Cylinder);
-            if (ImGui::MenuItem(ICON_FA_MOUNTAIN_SUN "  Terrain"))
-            {
-                created = TerrainPanel::CreateTerrain(scene);
-                if (created && parent)
-                    created.SetParent(parent);
-            }
-            // Unity 3D Object > Tree: Tree Creator ağacı (gövde, dallar, ince dallar, yapraklar), Mesh Renderer çizer
-            if (ImGui::MenuItem(ICON_FA_TREE "  Tree"))
-            {
-                make("Tree");
-                if (auto* info = ComponentRegistry::Find("TreeComponent"))
-                    ComponentRegistry::AddWithRequirements(*info, created);
-            }
-            if (ImGui::MenuItem(ICON_FA_CHESS_BOARD "  Hex Board"))
-                created = TilePalettePanel::CreateTilemap(scene, GridLayout::HexagonPointyTop, GridPlane::XZ, true, parent);
-            if (ImGui::MenuItem(ICON_FA_CHESS_BOARD "  Square Board"))
-                created = TilePalettePanel::CreateTilemap(scene, GridLayout::Rectangle, GridPlane::XZ, true, parent);
-            ImGui::EndMenu();
-        }
-
-        if (ImGui::BeginMenu(ICON_FA_SHAPES "  2D Object"))
-        {
-            const char* spriteNames[] = { "Capsule", "Circle", "Diamond", "HexagonFlat", "HexagonPoint", "IsometricDiamond",
-                                          "NineSliced", "Pentagon", "Square", "Star", "Triangle" };
-            ImGui::TextDisabled("Sprites");
-            for (const char* spriteName : spriteNames)
-            {
-                if (ImGui::MenuItem(spriteName))
-                {
-                    auto& sprite = make(spriteName).AddComponent<SpriteRendererComponent>();
-                    sprite.Texture = Texture2D::Create("Resources/Packages/Core/Sprites/" + std::string(spriteName) + ".png");
-                }
-            }
-            ImGui::Separator();
-            if (ImGui::BeginMenu(ICON_FA_TABLE_CELLS "  Tilemap"))
-            {
-                if (ImGui::MenuItem("Rectangular"))
-                    created = TilePalettePanel::CreateTilemap(scene, GridLayout::Rectangle, GridPlane::XY, false, parent);
-                if (ImGui::MenuItem("Hexagonal - Pointy Top"))
-                    created = TilePalettePanel::CreateTilemap(scene, GridLayout::HexagonPointyTop, GridPlane::XY, false, parent);
-                if (ImGui::MenuItem("Hexagonal - Flat Top"))
-                    created = TilePalettePanel::CreateTilemap(scene, GridLayout::HexagonFlatTop, GridPlane::XY, false, parent);
-                if (ImGui::MenuItem("Isometric"))
-                    created = TilePalettePanel::CreateTilemap(scene, GridLayout::Isometric, GridPlane::XY, false, parent);
-                ImGui::EndMenu();
-            }
-            ImGui::Separator();
-            if (ImGui::MenuItem(ICON_FA_VIDEO "  2D Camera"))
-            {
-                // Ortografik kamera, sahnenin önünde (z=10) -Z'ye bakar
-                auto cam = make("2D Camera");
-                cam.GetComponent<TransformComponent>().Position = { 0.0f, 0.0f, 10.0f };
-                auto& cc = cam.AddComponent<CameraComponent>();
-                cc.Camera.SetProjectionType(SceneCamera::ProjectionType::Orthographic);
-                cc.Camera.SetOrthographicSize(10.0f);
-            }
-            ImGui::Separator();
-            ImGui::TextDisabled("Physics");
-            if (ImGui::MenuItem("Dynamic Sprite (Rigidbody 2D + Box)"))
-            {
-                auto e = make("Dynamic Sprite");
-                e.AddComponent<SpriteRendererComponent>().Texture = Texture2D::Create("Resources/Packages/Core/Sprites/Square.png");
-                e.AddComponent<RigidBody2DComponent>();
-                e.AddComponent<BoxCollider2DComponent>();
-            }
-            ImGui::EndMenu();
-        }
-
-        if (ImGui::BeginMenu(ICON_FA_FIRE "  Effects"))
-        {
-            if (ImGui::MenuItem("Particle System"))
-                make("Particle System").AddComponent<ParticleSystemComponent>();
-            ImGui::Separator();
-            for (const auto& preset : ParticleSystem::GetPresetNames())
-            {
-                if (ImGui::MenuItem(preset.c_str()))
-                {
-                    auto& ps = make(preset.c_str()).AddComponent<ParticleSystemComponent>();
-                    ParticleSystem::ApplyPreset(ps, preset);
-                }
-            }
-            ImGui::EndMenu();
-        }
-
-        if (ImGui::BeginMenu(ICON_FA_LIGHTBULB "  Light"))
-        {
-            if (ImGui::MenuItem(ICON_FA_SUN "  Directional Light"))
-            {
-                Entity sun = make("Directional Light");
-                auto& light = sun.AddComponent<DirectionalLightComponent>();
-                // Yön dönüşten gelir: aşağı bakan eğik güneş
-                sun.GetComponent<TransformComponent>().Rotation = Math::EulerForForward(glm::vec3(-0.4f, -1.0f, -0.3f));
-                sun.GetComponent<TransformComponent>().Position = { 0.0f, 3.0f, 0.0f };
-                light.Color = glm::vec3(1.0f);
-                light.Intensity = 1.0f;
-            }
-            if (ImGui::MenuItem(ICON_FA_LIGHTBULB "  Point Light"))
-            {
-                auto& light = make("Point Light").AddComponent<PointLightComponent>();
-                light.Color = glm::vec3(1.0f);
-                light.Intensity = 1.0f;
-                light.Range = 10.0f;
-            }
-            if (ImGui::MenuItem(ICON_FA_LIGHTBULB "  Spot Light"))
-            {
-                Entity spot = make("Spot Light");
-                auto& light = spot.AddComponent<SpotLightComponent>();
-                spot.GetComponent<TransformComponent>().Rotation = Math::EulerForForward(glm::vec3(0.0f, -1.0f, 0.0f));
-                spot.GetComponent<TransformComponent>().Position = { 0.0f, 3.0f, 0.0f };
-                light.Color = glm::vec3(1.0f);
-                light.Intensity = 1.0f;
-                light.Range = 10.0f;
-            }
-            ImGui::Separator();
-            if (ImGui::MenuItem(ICON_FA_GLOBE "  Reflection Probe"))
-                make("Reflection Probe").AddComponent<ReflectionProbeComponent>();
-            if (ImGui::MenuItem(ICON_FA_BRAILLE "  Adaptive Probe Volume"))
-                make("Adaptive Probe Volume").AddComponent<AdaptiveProbeVolumeComponent>();
-            ImGui::EndMenu();
-        }
-
-        if (ImGui::BeginMenu(ICON_FA_VOLUME_HIGH "  Audio"))
-        {
-            if (ImGui::MenuItem("Audio Source"))
-                make("Audio Source").AddComponent<AudioSourceComponent>();
-            if (ImGui::MenuItem("Audio Listener"))
-                make("Audio Listener").AddComponent<AudioListenerComponent>();
-            if (ImGui::MenuItem("Audio Reverb Zone"))
-                make("Audio Reverb Zone").AddComponent<AudioReverbZoneComponent>();
-            ImGui::EndMenu();
-        }
-
-        if (ImGui::BeginMenu(ICON_FA_TABLE_CELLS_LARGE "  UI"))
-        {
-            // UI öğeleri seçili UI öğesinin/canvas'ın altına (yoksa ilk canvas) eklenir
-            Entity uiParent = parent;
-            if (!uiParent)
-            {
-                Entity sel = EditorState::Get().GetSelectedEntity();
-                if (sel && (sel.HasComponent<CanvasComponent>() || sel.HasComponent<RectTransformComponent>()))
-                    uiParent = sel;
-            }
-            if (ImGui::MenuItem(ICON_FA_TABLE_CELLS_LARGE "  Canvas"))
-                created = UISystem::CreateCanvas(*scene);
-            ImGui::Separator();
-            struct { const char* Label; const char* Type; } items[] = {
-                { ICON_FA_SQUARE "  Panel", "Panel" }, { ICON_FA_IMAGE "  Image", "Image" }, { ICON_FA_FONT "  Text", "Text" },
-                { ICON_FA_HAND_POINTER "  Button", "Button" }, { ICON_FA_SQUARE_CHECK "  Toggle", "Toggle" }, { ICON_FA_SLIDERS "  Slider", "Slider" },
-                { ICON_FA_I_CURSOR "  Input Field", "InputField" }, { ICON_FA_CARET_DOWN "  Dropdown", "Dropdown" },
-                { ICON_FA_SCROLL "  Scroll View", "ScrollView" }, { ICON_FA_GRIP "  Layout Group", "LayoutGroup" },
-            };
-            for (auto& it : items)
-                if (ImGui::MenuItem(it.Label))
-                    created = UISystem::CreateElement(*scene, it.Type, uiParent);
-            ImGui::Separator();
-            if (ImGui::BeginMenu("Legacy"))
-            {
-            if (ImGui::MenuItem("Canvas"))
-            {
-                Entity c = make("Canvas");
-                c.AddComponent<CanvasComponent>();
-                c.AddComponent<CanvasScalerComponent>();
-                c.AddComponent<GraphicRaycasterComponent>();
-            }
-            ImGui::Separator();
-            if (ImGui::MenuItem("Text"))
-                makeUI("Text").AddComponent<TextRendererComponent>();
-            // Eski düğmenin arka planı Sprite Renderer (eski Image bileşeni kaldırıldı; resim / panel için yukarıdaki UI Image)
-            if (ImGui::MenuItem("Button"))
-            {
-                Entity button = makeUI("Button");
-                auto& image = button.AddComponent<SpriteRendererComponent>();
-                image.Texture = Texture2D::Create("Resources/ui/UIButton.png");
-                image.Color = glm::vec4(1.0f);
-                button.AddComponent<ButtonComponent>();
-
-                Entity text = scene->CreateEntity("Text");
-                auto& tr = text.AddComponent<TextRendererComponent>();
-                tr.Text = "Button";
-                tr.Color = glm::vec4(1.0f);
-                MakeUI(text);
-                text.SetParent(button);
-                created = button;
-            }
-            ImGui::EndMenu();
-            }
-            ImGui::EndMenu();
-        }
-
-        if (ImGui::BeginMenu(ICON_FA_ROUTE "  AI"))
-        {
-            if (ImGui::MenuItem("NavMesh Surface"))
-                make("NavMesh Surface").AddComponent<NavMeshSurfaceComponent>();
-            if (ImGui::MenuItem("NavMesh Agent"))
-                make("NavMesh Agent").AddComponent<NavMeshAgentComponent>();
-            if (ImGui::MenuItem("NavMesh Obstacle"))
-                make("NavMesh Obstacle").AddComponent<NavMeshObstacleComponent>();
-            ImGui::EndMenu();
-        }
-
-        ImGui::Separator();
-        if (ImGui::MenuItem(ICON_FA_VIDEO "  Camera"))
-            make("Camera").AddComponent<CameraComponent>();
-
-        return created;
+    Entity HierarchyPanel::CreateFromEntry(Scene* scene, const std::string& id, Entity parent)
+    {
+        if (!scene)
+            return {};
+        const CreateNode tree = BuildCreateTree();
+        const CreateNode* n = FindCreateEntry(tree, id);
+        return n && n->Create ? n->Create(scene, parent) : Entity{};
     }
 
     bool HierarchyPanel::IsDescendant(Entity parent, Entity potentialDescendant)

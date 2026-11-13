@@ -356,6 +356,7 @@ namespace Conqueror::Editor
         {
             m_ViewportFocused = false;
             m_ViewportHovered = false;
+            m_Settled = false;
             ImGui::End();
             return;
         }
@@ -403,7 +404,20 @@ namespace Conqueror::Editor
         ImGui::PushClipRect(areaPos, ImVec2(areaPos.x + area.x, areaPos.y + area.y), true);
         ImGui::SetCursorScreenPos(imagePos);
         uint64_t textureID = m_Framebuffer->GetColorAttachmentRendererID(0);
-        PanelImage((ImTextureID)textureID, m_ViewportSize, displaySize);
+        // Görünür olunca, oynatma başlayıp bitince ve büyütülünce: boyut oturup o boyutta çizilene kadar eski kare gösterilmez (yalnız koyu
+        // alan). İlk kareler yavaş olduğu için eski boyuttaki kare yanlarda koyu bantlı ya da gerilmiş görünüyordu (196)
+        if (maximized != m_LastMaximized || m_Playing != m_LastPlaying)
+            m_Settled = false;
+        m_LastMaximized = maximized;
+        m_LastPlaying = m_Playing;
+        m_StableFrames = newViewportSize == m_LastPanelSize ? m_StableFrames + 1 : 0;
+        m_LastPanelSize = newViewportSize;
+        if (!m_Settled && m_StableFrames >= 2 && m_ViewportSize == newViewportSize)
+            m_Settled = true;
+        if (!m_Settled && m_ViewportSize != newViewportSize)
+            ImGui::Dummy(displaySize);
+        else
+            PanelImage((ImTextureID)textureID, m_ViewportSize, displaySize);
         m_ViewportHovered = ImGui::IsItemHovered();
         // Unity: "No cameras rendering"
         if (!m_HasCamera && !m_HasOverlayUI)

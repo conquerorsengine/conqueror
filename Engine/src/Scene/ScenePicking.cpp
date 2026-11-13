@@ -87,6 +87,27 @@ namespace Conqueror
             return true;
         }
 
+        // Möller-Trumbore (iki yüzlü): ışın parametresi t
+        bool RayTriangle(const glm::vec3& o, const glm::vec3& d, const glm::vec3& a, const glm::vec3& b, const glm::vec3& c, float& t)
+        {
+            const glm::vec3 e1 = b - a, e2 = c - a;
+            const glm::vec3 p = glm::cross(d, e2);
+            const float det = glm::dot(e1, p);
+            if (std::abs(det) < 1e-12f)
+                return false;
+            const float inv = 1.0f / det;
+            const glm::vec3 s = o - a;
+            const float u = glm::dot(s, p) * inv;
+            if (u < 0.0f || u > 1.0f)
+                return false;
+            const glm::vec3 q = glm::cross(s, e1);
+            const float v = glm::dot(d, q) * inv;
+            if (v < 0.0f || u + v > 1.0f)
+                return false;
+            t = glm::dot(e2, q) * inv;
+            return t > 1e-6f;
+        }
+
         bool RaySphere(const glm::vec3& o, const glm::vec3& d, const glm::vec3& c, float r, float& t)
         {
             glm::vec3 oc = o - c;
@@ -286,6 +307,128 @@ namespace Conqueror
                     found = true;
                 }
             }
+        }
+        return found;
+    }
+
+    bool ScenePicking::RaycastSurface(Scene& scene, const glm::vec3& origin, const glm::vec3& direction, PickResult& out,
+                                      const std::vector<uint32_t>& ignore)
+    {
+        const glm::vec3 dir = glm::normalize(direction);
+        float best = std::numeric_limits<float>::max();
+        bool found = false;
+        auto consider = [&](Entity entity, const glm::vec3& point, const glm::vec3& normal) {
+            const float dist = glm::dot(point - origin, dir);
+            if (dist <= 0.0f || dist >= best)
+                return;
+            best = dist;
+            out.Hit = entity;
+            out.Distance = dist;
+            out.Point = point;
+            glm::vec3 n = glm::length(normal) > 1e-8f ? glm::normalize(normal) : glm::vec3(0.0f, 1.0f, 0.0f);
+            if (glm::dot(n, dir) > 0.0f)
+                n = -n;
+            out.Normal = n;
+            found = true;
+        };
+
+        auto view = scene.m_Registry.view<TransformComponent>();
+        for (auto e : view)
+        {
+            if (!scene.IsEntityActive(e) || std::find(ignore.begin(), ignore.end(), (uint32_t)e) != ignore.end())
+                continue;
+            Entity entity{ e, &scene };
+            const glm::mat4& world = view.get<TransformComponent>(e).WorldTransform;
+
+            // Arazi: yükseklik alanına tam ışın testi (yerleştirilen nesne dik durur)
+            if (entity.HasComponent<TerrainComponent>())
+            {
+                glm::vec3 hit;
+                if (TerrainSystem::Raycast(entity.GetComponent<TerrainComponent>(), world, origin, dir, hit))
+                    consider(entity, hit, glm::vec3(0.0f, 1.0f, 0.0f));
+                continue;
+            }
+            const bool hasMesh = entity.HasComponent<MeshRendererComponent>();
+            const bool hasSprite = entity.HasComponent<SpriteRendererComponent>();
+            if (!hasMesh && !hasSprite)
+                continue;
+            glm::vec3 mn, mx;
+            if (!GetLocalBounds(entity, mn, mx))
+                continue;
+            const glm::mat4 inv = glm::inverse(world);
+            const glm::vec3 lo = glm::vec3(inv * glm::vec4(origin, 1.0f));
+            const glm::vec3 ld = glm::vec3(inv * glm::vec4(dir, 0.0f));
+            float tBox;
+            if (!RayAABB(lo, ld, mn, mx, tBox))
+                continue;
+            // Kutusunun girişi bulunan en yakın yüzeyden uzaksa üçgenlerine bakılmaz
+            if (glm::dot(glm::vec3(world * glm::vec4(lo + ld * tBox, 1.0f)) - origin, dir) >= best)
+                continue;
+
+            float tBest = std::numeric_limits<float>::max();
+            glm::vec3 nLocal(0.0f);
+            bool hit = false;
+            auto test = [&](const auto& verts, const std::vector<uint32_t>& idx) {
+                for (size_t i = 0; i + 2 < idx.size(); i += 3)
+                {
+                    const uint32_t i0 = idx[i], i1 = idx[i + 1], i2 = idx[i + 2];
+                    if (i0 >= verts.size() || i1 >= verts.size() || i2 >= verts.size())
+                        continue;
+                    const glm::vec3 a = verts[i0].Position, b = verts[i1].Position, c = verts[i2].Position;
+                    float t;
+                    if (RayTriangle(lo, ld, a, b, c, t) && t < tBest)
+                    {
+                        tBest = t;
+                        nLocal = glm::cross(b - a, c - a);
+                        hit = true;
+                    }
+                }
+            };
+            if (hasMesh)
+            {
+                auto& mr = entity.GetComponent<MeshRendererComponent>();
+                if (mr.IsModel())
+                {
+                    if (mr.ModelData)
+                    {
+                        for (auto& m : mr.ModelData->Meshes)
+                            if (m) test(m->GetVertices(), m->GetIndices());
+                        for (auto& m : mr.ModelData->SkinnedMeshes)
+                            if (m) test(m->GetVertices(), m->GetIndices());
+                    }
+                }
+                else
+                {
+                    std::shared_ptr<Mesh> mesh = mr.CustomMesh;
+                    if (!mesh)
+                    {
+                        switch (mr.Type)
+                        {
+                            case MeshType::Sphere: mesh = Renderer3D::GetSphereMesh(); break;
+                            case MeshType::Plane: mesh = Renderer3D::GetPlaneMesh(); break;
+                            case MeshType::Cylinder: mesh = Renderer3D::GetCylinderMesh(); break;
+                            default: mesh = Renderer3D::GetCubeMesh(); break;
+                        }
+                    }
+                    if (mesh)
+                        test(mesh->GetVertices(), mesh->GetIndices());
+                }
+            }
+            // Sprite: kendi düzlemi (yerel z = 0), görünen sınırlar içinde
+            if (!hit && hasSprite && std::abs(ld.z) > 1e-9f)
+            {
+                const float t = -lo.z / ld.z;
+                const glm::vec3 p = lo + ld * t;
+                if (t > 0.0f && p.x >= mn.x && p.x <= mx.x && p.y >= mn.y && p.y <= mx.y)
+                {
+                    tBest = t;
+                    nLocal = glm::vec3(0.0f, 0.0f, 1.0f);
+                    hit = true;
+                }
+            }
+            if (!hit)
+                continue;
+            consider(entity, glm::vec3(world * glm::vec4(lo + ld * tBest, 1.0f)), glm::vec3(glm::transpose(inv) * glm::vec4(nLocal, 0.0f)));
         }
         return found;
     }

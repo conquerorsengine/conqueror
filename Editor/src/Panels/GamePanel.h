@@ -77,6 +77,12 @@ namespace Conqueror::Editor
         // Son ImGui karesinde sekme görünür müydü: düzenleme modunda gizli Game sekmesi çizilmez (Unity gibi; sahne
         // görünümüyle aynı sekme grubundayken editörün GPU yükü iki katına çıkıyordu). Oyunda güncelleme sürer.
         bool m_TabVisible = true;
+        // Görünür olunca / oynatma başlayıp bitince / büyütülünce yerleşim oturana kadar panel boyutuna uymayan eski kare gösterilmez (196)
+        bool m_Settled = false;
+        int m_StableFrames = 0;
+        glm::vec2 m_LastPanelSize = { 0.0f, 0.0f };
+        bool m_LastMaximized = false;
+        bool m_LastPlaying = false;
         bool m_WasMuted = false;
         float m_SavedVolume = 1.0f;
         UIInputState m_UIInput;          // ImGui karesinde toplanır, sonraki OnUpdate'te tüketilir

@@ -1016,11 +1016,20 @@ namespace Conqueror::Editor
             return;
         }
         auto ids = scene->m_Registry.view<IDComponent>();
-        const size_t count = ids.size();
+        // Viewport'a sürüklenirken önizlenen nesneler yerleştirilene kadar sayılmaz (yerleşince "Create" adımı olur)
+        const auto& preview = EditorState::Get().GetPlacementPreview();
+        size_t count = 0;
+        for (auto e : ids)
+            if (!preview.count((uint64_t)ids.get<IDComponent>(e).ID))
+                ++count;
         auto rebuild = [&]() {
             m_TrackIDs.clear();
             for (auto e : ids)
-                m_TrackIDs.insert((uint64_t)ids.get<IDComponent>(e).ID);
+            {
+                const uint64_t id = (uint64_t)ids.get<IDComponent>(e).ID;
+                if (!preview.count(id))
+                    m_TrackIDs.insert(id);
+            }
             m_TrackCount = count;
             m_TrackScene = scene;
             m_TrackVersion = undo.GetVersion();
@@ -1036,7 +1045,7 @@ namespace Conqueror::Editor
         for (auto e : ids)
         {
             const uint64_t id = (uint64_t)ids.get<IDComponent>(e).ID;
-            if (!m_TrackIDs.count(id))
+            if (!m_TrackIDs.count(id) && !preview.count(id))
                 created.push_back(id);
         }
         std::unordered_set<uint64_t> createdSet(created.begin(), created.end());
@@ -6104,6 +6113,42 @@ namespace Conqueror::Editor
             m_ContentBrowserPanel->OpenFile(AssetUI::Resolve(a[1]));
             return true;
         });
+        // place_entry <yol> <u> <v>: Create menüsü girişini Viewport'un (u, v) noktasındaki yüzeye bırak (sürükleyip bırakmanın aynısı).
+        // place_drag <yol> <u> <v> hold|drop: sürükleme karesi (hold: önizleme; bir kare çağrılmazsa kaldırılır, drop: yerleşir).
+        // Yol simgesiz ve "/" ayraçlı yazılabilir: "3D Object/Cube"
+        Automation::RegisterCommand("place_entry", [this](const Args& a, std::string& err) {
+            if (a.size() < 4 || !m_ViewportPanel) { err = "place_entry <menu path> <u> <v>"; return false; }
+            const glm::vec2* b = m_ViewportPanel->GetViewportBounds();
+            const ImVec2 p(b[0].x + (b[1].x - b[0].x) * std::stof(a[2]), b[0].y + (b[1].y - b[0].y) * std::stof(a[3]));
+            Entity e = m_ViewportPanel->PlaceCreateEntry(a[1], p);
+            if (!e) { err = "cannot place " + a[1]; return false; }
+            const glm::vec3 pos = e.GetComponent<TransformComponent>().Position;
+            char buf[160];
+            snprintf(buf, sizeof(buf), "PLACED %s at (%.3f, %.3f, %.3f)", e.GetComponent<TagComponent>().Tag.c_str(), pos.x, pos.y, pos.z);
+            Automation::Report(buf);
+            Automation::WaitFrames(2);
+            return true;
+        });
+        Automation::RegisterCommand("place_drag", [this](const Args& a, std::string& err) {
+            if (a.size() < 5 || !m_ViewportPanel) { err = "place_drag <menu path> <u> <v> hold|drop"; return false; }
+            const glm::vec2* b = m_ViewportPanel->GetViewportBounds();
+            const ImVec2 p(b[0].x + (b[1].x - b[0].x) * std::stof(a[2]), b[0].y + (b[1].y - b[0].y) * std::stof(a[3]));
+            m_ViewportPanel->UpdatePlacementDrag(a[1], p, a[4] == "drop");
+            return true;
+        });
+        // spawn_asset <yol> [x y z]: varlığı sahneye bırak (Viewport'a / Hierarchy'ye sürükleyip bırakmakla aynı kod)
+        Automation::RegisterCommand("spawn_asset", [this](const Args& a, std::string& err) {
+            if (a.size() < 2 || !m_ActiveScene) { err = "spawn_asset <path> [x y z]"; return false; }
+            const std::string path = AssetUI::Resolve(a[1]);
+            glm::vec3 pos(0.0f);
+            const bool hasPos = a.size() >= 5;
+            if (hasPos)
+                pos = { std::stof(a[2]), std::stof(a[3]), std::stof(a[4]) };
+            Entity created = AssetActions::SpawnFromAsset(m_ActiveScene.get(), path, Entity{}, hasPos ? &pos : nullptr);
+            if (!created) { err = "cannot spawn " + path; return false; }
+            Automation::WaitFrames(2);
+            return true;
+        });
         // create_asset <tür>: Content Browser sağ tık menüsündeki girişle aynı kod (geçerli klasöre); yolu raporlar
         Automation::RegisterCommand("create_asset", [this](const Args& a, std::string& err) {
             if (a.size() < 2 || !m_ContentBrowserPanel) { err = "create_asset <kind>"; return false; }
@@ -7314,8 +7359,17 @@ namespace Conqueror::Editor
             Automation::WaitFrames(3);
             return true;
         });
+        // ortho_size <size> | ortho_size ppu <pixels per unit>: 2D görünüm yüksekliği; ppu: 1 birim tam o kadar ekran pikseli (1:1 sprite denetimi)
         Automation::RegisterCommand("ortho_size", [this](const Args& a, std::string& err) {
-            if (!m_ViewportPanel || a.size() < 2) { err = "ortho_size <size>"; return false; }
+            if (!m_ViewportPanel || a.size() < 2) { err = "ortho_size <size> | ortho_size ppu <n>"; return false; }
+            if (a[1] == "ppu" && a.size() > 2)
+            {
+                const glm::vec2 vp = m_ViewportPanel->GetViewportSize();
+                const float ppu = std::max(std::stof(a[2]), 1e-3f);
+                m_ViewportPanel->GetEditorCamera().SetOrthographicSize(vp.y / (2.0f * ppu));
+                Automation::Report("VIEWPORT " + std::to_string((int)vp.x) + "x" + std::to_string((int)vp.y));
+                return true;
+            }
             m_ViewportPanel->GetEditorCamera().SetOrthographicSize(std::stof(a[1]));
             return true;
         });

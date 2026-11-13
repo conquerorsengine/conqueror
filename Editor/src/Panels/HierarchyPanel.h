@@ -33,6 +33,12 @@ namespace Conqueror::Editor
         // Oluşturma menüsü (Hierarchy "+" düğmesi, sağ tık ve GameObject menüsü paylaşır).
         // parent geçerliyse yeni nesne onun çocuğu olur. Oluşturulan varlığı döndürür.
         static Entity DrawCreateMenuItems(Scene* scene, Entity parent);
+        // Create girişini Viewport'a sürükleyip bırakma (Unreal Place Actors gibi). Preview: sürüklerken önizleme imlecin altındaki yüzeye
+        // oturur; OnDrop: bırakınca oluşturulur (alt nesneli ızgaralar); None: sürüklenmez (UI öğeleri canvas'a, arazi sahneye göre yerleşir)
+        enum class CreatePlacement { Preview, OnDrop, None };
+        // id: sürükleme yükü (menü yolu + etiket, \x1f ayraçlı) ya da otomasyonda simgesiz "/" ayraçlı yol ("3D Object/Cube")
+        static CreatePlacement GetCreatePlacement(const std::string& id);
+        static Entity CreateFromEntry(Scene* scene, const std::string& id, Entity parent = {});
 
         // Bileşen ikonları (Hierarchy ve Inspector ortak)
         struct ComponentIcon

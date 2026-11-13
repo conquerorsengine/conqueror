@@ -1,4 +1,5 @@
 #include "ViewportPanel.h"
+#include "HierarchyPanel.h"
 #include "Core/Profiling/FrameProfiler.h"
 #include "Core/Input/Input.h"
 #include "Core/Math/Math.h"
@@ -28,6 +29,7 @@
 #include <stb_image.h>
 #include <filesystem>
 #include <unordered_map>
+#include <unordered_set>
 
 #include <imgui.h>
 #include <ImGuizmo.h>
@@ -221,12 +223,47 @@ namespace Conqueror::Editor
                 for (auto& e : EditorState::Get().GetSelectedEntities())
                     if (e && e.GetScene() == m_Context.get())
                         selection.push_back((uint32_t)e);
+                // Seçimi kalkan nesne: gizmo çizgileri (çarpıştırıcı kutusu, ışık menzili ...) sahneyle birlikte TAA'dan geçtiği için
+                // geçmişte kalıp nesnenin kenarlarında ince beyaz çizgi olarak yaklaşık bir saniyede siliniyordu
+                for (uint32_t id : m_PrevSelection)
+                    if (std::find(selection.begin(), selection.end(), id) == selection.end())
+                        m_DeselectedGizmos.push_back({ id, 2 });
+                m_PrevSelection = selection;
                 m_Context->SetEditorSelection(std::move(selection));
             }
 
             {
                 CQ_PROFILE_SAMPLE("SceneView.Scene", Rendering);
                 m_Context->OnUpdateEditor(ts, m_EditorCamera, GetViewportBounds());
+            }
+            // Seçimi kalktığı ilk iki karede nesnenin (ve gizmosunun) kutusu TAA'ya hareketli bildirilir: oradaki pikseller sıkı kırpılır,
+            // eski gizmo çizgisi geçmişten hemen silinir (görüntünün geri kalanının geçmişi korunur)
+            for (auto it = m_DeselectedGizmos.begin(); it != m_DeselectedGizmos.end();)
+            {
+                Entity e{ (entt::entity)it->first, m_Context.get() };
+                if (e.IsValid() && e.HasComponent<TransformComponent>())
+                {
+                    glm::vec3 mn(-0.5f), mx(0.5f);
+                    ScenePicking::GetLocalBounds(e, mn, mx);
+                    const glm::mat4& world = e.GetComponent<TransformComponent>().WorldTransform;
+                    glm::vec3 lo(1e30f), hi(-1e30f);
+                    for (int k = 0; k < 8; ++k)
+                    {
+                        const glm::vec3 p = glm::vec3(world * glm::vec4((k & 1) ? mx.x : mn.x, (k & 2) ? mx.y : mn.y, (k & 4) ? mx.z : mn.z, 1.0f));
+                        lo = glm::min(lo, p);
+                        hi = glm::max(hi, p);
+                    }
+                    glm::vec3 ext = 0.5f * (hi - lo) * 1.1f + glm::vec3(0.1f);
+                    float range = 0.0f;
+                    if (e.HasComponent<PointLightComponent>()) range = std::max(range, e.GetComponent<PointLightComponent>().Range);
+                    if (e.HasComponent<SpotLightComponent>()) range = std::max(range, e.GetComponent<SpotLightComponent>().Range);
+                    ext = glm::max(ext, glm::vec3(range));
+                    Renderer3D::MarkMovingBounds(0.5f * (lo + hi), ext);
+                }
+                if (--it->second <= 0)
+                    it = m_DeselectedGizmos.erase(it);
+                else
+                    ++it;
             }
 
             // Game görünümü etkilenmesin
@@ -315,6 +352,9 @@ namespace Conqueror::Editor
             m_ImageHovered = false;
             m_ViewportSize = { 0.0f, 0.0f };
             m_PendingViewportSize = { 0.0f, 0.0f };
+            m_Settled = false;
+            if (!m_PlaceRoots.empty())
+                ClearPlacementPreview(true);
             ImGui::End();
             return;
         }
@@ -349,11 +389,29 @@ namespace Conqueror::Editor
                 m_PendingViewportSize = newViewportSize;   // OnUpdate çizimden önce uygular; bu karede önceki görüntü panele sığdırılır
         }
 
+        // Açılışta / panel ilk göründüğünde yerleşim oturmadan (ilk karede sekme çubuğu yok, panel ~25 px uzun; pencere büyütülüyor) eski
+        // boyutta çizilmiş kare gösterilmez: açılışın ilk kareleri yavaş olduğu için yanlış boyuttaki görüntü (gerilmiş ya da yanlarda koyu
+        // bantlı) yaklaşık bir saniye görünüyordu. Panel iki kare aynı boyutta kalıp o boyutta çizilene kadar koyu alan; sonra elle
+        // boyutlandırırken eski kare yine sığdırılarak gösterilir (gri boşluk yok)
+        if (validSize)
+        {
+            m_StableFrames = newViewportSize == m_LastPanelSize ? m_StableFrames + 1 : 0;
+            m_LastPanelSize = newViewportSize;
+            if (!m_Settled && m_StableFrames >= 2 && m_ViewportSize == newViewportSize)
+                m_Settled = true;
+        }
         if (m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f)
         {
             uint64_t textureID = m_Framebuffer->GetColorAttachmentRendererID(0);
             const glm::vec2 shownSize = validSize ? newViewportSize : m_ViewportSize;
-            PanelImage((ImTextureID)textureID, m_ViewportSize, ImVec2{ shownSize.x, shownSize.y });
+            if (!m_Settled && validSize && m_ViewportSize != newViewportSize)
+            {
+                const ImVec2 p = ImGui::GetCursorScreenPos();
+                ImGui::Dummy(ImVec2{ shownSize.x, shownSize.y });
+                ImGui::GetWindowDrawList()->AddRectFilled(p, ImVec2(p.x + shownSize.x, p.y + shownSize.y), IM_COL32(12, 12, 14, 255));
+            }
+            else
+                PanelImage((ImTextureID)textureID, m_ViewportSize, ImVec2{ shownSize.x, shownSize.y });
             m_ImageHovered = ImGui::IsItemHovered();
             for (int b = 0; b < 3; ++b)
             {
@@ -414,9 +472,16 @@ namespace Conqueror::Editor
                     if (created && m_SelectionCallback)
                         m_SelectionCallback(created, false);
                 }
+                // Create menüsünden (Unreal Place Actors gibi): sürüklerken önizleme imlecin altındaki yüzeye oturur, bırakınca yerleşir
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CQ_CREATE_ENTRY",
+                        ImGuiDragDropFlags_AcceptBeforeDelivery | ImGuiDragDropFlags_AcceptNoDrawDefaultRect))
+                    UpdatePlacementDrag(std::string((const char*)payload->Data), ImGui::GetMousePos(), payload->IsDelivery());
                 ImGui::EndDragDropTarget();
             }
         dropDone:;
+            // Sürükleme görünümden çıktı ya da bırakılmadan bitti: önizleme kaldırılır (Unreal'de de görünümden çıkınca kaybolur)
+            if (!m_PlaceRoots.empty() && ImGui::GetFrameCount() - m_PlaceSeenFrame > 1)
+                ClearPlacementPreview(true);
         }
         else
         {
@@ -1291,6 +1356,165 @@ namespace Conqueror::Editor
         if (ScenePicking::Raycast(*m_Context, origin, glm::normalize(dir), result, m_ViewOptions.Gizmos))
             return result.Hit;
         return {};
+    }
+
+    bool ViewportPanel::PlacementPoint(const ImVec2& screenPos, glm::vec3& point, glm::vec3& normal)
+    {
+        if (m_ViewportSize.x <= 0.0f || m_ViewportSize.y <= 0.0f)
+            return false;
+        const glm::vec2 local(screenPos.x - m_ViewportBounds[0].x, screenPos.y - m_ViewportBounds[0].y);
+        if (m_EditorCamera.Is2D() || !m_Context)
+        {
+            point = DropPointOnGround(local);
+            normal = glm::vec3(0.0f, 0.0f, 1.0f);
+            return true;
+        }
+        const float nx = local.x / m_ViewportSize.x * 2.0f - 1.0f;
+        const float ny = 1.0f - local.y / m_ViewportSize.y * 2.0f;
+        const glm::mat4 invVP = glm::inverse(m_EditorCamera.GetViewProjection());
+        const glm::vec4 nearP = invVP * glm::vec4(nx, ny, -1.0f, 1.0f), farP = invVP * glm::vec4(nx, ny, 1.0f, 1.0f);
+        if (std::abs(nearP.w) < 1e-8f || std::abs(farP.w) < 1e-8f)
+            return false;
+        const glm::vec3 origin = glm::vec3(nearP) / nearP.w;
+        glm::vec3 dir = glm::vec3(farP) / farP.w - origin;
+        if (glm::dot(dir, dir) < 1e-12f)
+            return false;
+        dir = glm::normalize(dir);
+        // Görünen yüzey (meshlerde üçgen düzeyinde, arazide yükseklik alanında); önizlemenin kendisi sayılmaz
+        PickResult hit;
+        if (ScenePicking::RaycastSurface(*m_Context, origin, dir, hit, m_PlaceIgnore))
+        {
+            point = hit.Point;
+            normal = hit.Normal;
+            return true;
+        }
+        // Yüzey yoksa zemin düzlemi (y = 0); o da önde değilse kameradan 10 m ileride
+        normal = glm::vec3(0.0f, 1.0f, 0.0f);
+        if (std::abs(dir.y) > 1e-6f)
+        {
+            const float t = -origin.y / dir.y;
+            if (t > 0.0f && t < 10000.0f)
+            {
+                point = origin + dir * t;
+                point.y = 0.0f;
+                return true;
+            }
+        }
+        point = origin + dir * 10.0f;
+        return true;
+    }
+
+    void ViewportPanel::PlaceOnSurface(Entity e, const glm::vec3& point, const glm::vec3& normal)
+    {
+        if (!e || !e.HasComponent<TransformComponent>() || e.GetParent())
+            return;
+        auto& tc = e.GetComponent<TransformComponent>();
+        if (m_EditorCamera.Is2D())
+        {
+            // 2D: yalnız düzlemdeki konum (z korunur: sprite 0, 2D kamera 10)
+            tc.Position.x = point.x;
+            tc.Position.y = point.y;
+            return;
+        }
+        // Sınır kutusunun yüzey normali yönündeki en alt noktası yüzeye değer: yere bırakılan küp zeminin içine gömülmez, duvara
+        // bırakılan nesne duvardan dışarı oturur (Unreal Place Actors gibi). Sınırı olmayan nesne (ışık, ses, kamera) noktaya konur
+        glm::vec3 offset(0.0f);
+        glm::vec3 mn, mx;
+        if (ScenePicking::GetLocalBounds(e, mn, mx))
+        {
+            const glm::mat3 rs = glm::mat3(tc.GetTransform());
+            float lowest = std::numeric_limits<float>::max();
+            for (int k = 0; k < 8; ++k)
+            {
+                const glm::vec3 c((k & 1) ? mx.x : mn.x, (k & 2) ? mx.y : mn.y, (k & 4) ? mx.z : mn.z);
+                lowest = std::min(lowest, glm::dot(rs * c, normal));
+            }
+            offset = -normal * lowest;
+        }
+        tc.Position = point + offset;
+    }
+
+    Entity ViewportPanel::PlaceCreateEntry(const std::string& id, const ImVec2& screenPos)
+    {
+        if (!m_Context || HierarchyPanel::GetCreatePlacement(id) == HierarchyPanel::CreatePlacement::None)
+            return {};
+        // Yüzey, nesne oluşturulmadan önce bulunur (yeni nesne başlangıç konumunda ışına girmesin)
+        glm::vec3 point(0.0f), normal(0.0f, 1.0f, 0.0f);
+        const bool hasPoint = PlacementPoint(screenPos, point, normal);
+        Entity e = HierarchyPanel::CreateFromEntry(m_Context.get(), id);
+        if (e && hasPoint)
+            PlaceOnSurface(e, point, normal);
+        return e;
+    }
+
+    void ViewportPanel::UpdatePlacementDrag(const std::string& id, const ImVec2& screenPos, bool delivered)
+    {
+        if (!m_Context || !EditorState::Get().IsEditing())
+            return;
+        const auto placement = HierarchyPanel::GetCreatePlacement(id);
+        if (placement == HierarchyPanel::CreatePlacement::None)
+            return;
+        m_PlaceSeenFrame = ImGui::GetFrameCount();
+        // Alt nesneli ızgaralar (Tilemap, tahta): önizlemesiz, bırakınca oluşturulur
+        if (placement == HierarchyPanel::CreatePlacement::OnDrop)
+        {
+            if (delivered)
+                if (Entity e = PlaceCreateEntry(id, screenPos); e && m_SelectionCallback)
+                    m_SelectionCallback(e, false);
+            return;
+        }
+        if (!m_PlaceRoots.empty() && m_PlaceId != id)
+            ClearPlacementPreview(true);
+        if (m_PlaceRoots.empty())
+        {
+            // Önizleme nesnesi: girişin oluşturduğu tüm nesneler önizleme sayılır (geri alma kaydına girmez, ışın testinde yok sayılır)
+            std::unordered_set<uint32_t> before;
+            for (auto h : m_Context->m_Registry.view<IDComponent>())
+                before.insert((uint32_t)h);
+            Entity root = HierarchyPanel::CreateFromEntry(m_Context.get(), id);
+            if (!root)
+                return;
+            std::vector<uint64_t> uuids;
+            m_PlaceRoots.push_back(root);
+            for (auto h : m_Context->m_Registry.view<IDComponent>())
+            {
+                if (before.count((uint32_t)h))
+                    continue;
+                Entity e{ h, m_Context.get() };
+                m_PlaceIgnore.push_back((uint32_t)h);
+                uuids.push_back((uint64_t)e.GetComponent<IDComponent>().ID);
+                if (e != root && !e.GetParent())
+                    m_PlaceRoots.push_back(e);
+            }
+            EditorState::Get().SetPlacementPreview(uuids);
+            m_PlaceId = id;
+        }
+        glm::vec3 point, normal;
+        if (PlacementPoint(screenPos, point, normal))
+            PlaceOnSurface(m_PlaceRoots.front(), point, normal);
+        if (delivered)
+        {
+            // Yerleşti: geri alma kaydı bir sonraki karede bunu "Create" adımı olarak alır
+            Entity placed = m_PlaceRoots.front();
+            EditorState::Get().ClearPlacementPreview();
+            m_PlaceRoots.clear();
+            m_PlaceIgnore.clear();
+            m_PlaceId.clear();
+            if (placed && m_SelectionCallback)
+                m_SelectionCallback(placed, false);
+        }
+    }
+
+    void ViewportPanel::ClearPlacementPreview(bool destroy)
+    {
+        if (destroy && m_Context)
+            for (Entity e : m_PlaceRoots)
+                if (e.IsValid())
+                    m_Context->DestroyEntity(e);
+        EditorState::Get().ClearPlacementPreview();
+        m_PlaceRoots.clear();
+        m_PlaceIgnore.clear();
+        m_PlaceId.clear();
     }
 
     void ViewportPanel::HandlePicking()
