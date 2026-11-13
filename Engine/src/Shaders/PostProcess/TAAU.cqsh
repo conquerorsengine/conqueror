@@ -43,6 +43,7 @@ uniform sampler2D u_PrevDepth;  // önceki karenin derinliği (iç çözünürl�
 uniform int u_HasPrevDepth = 0;
 uniform mat4 u_PrevInvViewProj; // önceki karenin titreşimsiz ters görüş-izdüşümü
 uniform mat4 u_ViewProjNow;     // bu karenin titreşimsiz görüş-izdüşümü
+uniform float u_ProjScale = 1.0; // bu karenin odak uzaklığı / önceki karenin (görüş açısı daralınca > 1)
 
 // Derinlik değerinden görüş uzaklığı (izdüşümün yakın / uzak düzlemine bağlı; konumdan bağımsız)
 float ViewW(vec2 uv, float depth)
@@ -301,7 +302,8 @@ void main()
     if (moving || reactive)
         feedback = min(feedback, 0.5);
     // Yaklaşırken geçmiş bu kareden düşük çözünürlüklüdür (TAA ile aynı ilke): ağırlık büyütme oranıyla sınırlı
-    float magnify = (u_CameraStill == 0 && closest < 1.0 && !objectVelocity) ? max(prevClip.w / curW - 1.0, 0.0) : 0.0;
+    // Görüş açısı daralınca (sağ tık nişan, dürbün) görüntü odak uzaklığı oranında büyür
+    float magnify = (u_CameraStill == 0 && closest < 1.0 && !objectVelocity) ? max(prevClip.w / curW * u_ProjScale - 1.0, 0.0) : 0.0;
     if (magnify > 0.0)
         feedback = min(feedback, 0.12 / (0.12 + magnify));
     float alpha = alphaSettle >= 0.0 ? max(alphaSettle, 0.02) : max((1.0 - feedback) * wmax, 0.02);

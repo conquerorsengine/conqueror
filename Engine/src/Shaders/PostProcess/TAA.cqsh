@@ -53,6 +53,7 @@ uniform vec3 u_PrevCameraPos;
 uniform int u_Variant = 0;
 uniform int u_LightingFreeze = 0;    // kısa ışık değişimi (namlu alevi: en çok 6 kare): bu kareler geçmişe yazılmaz, yalnız gösterilir
 uniform int u_LightingChanged = 0;   // bu karede bir nokta / spot ışığın gücü değişti (namlu alevi; motor bildirir)
+uniform float u_ProjScale = 1.0;     // bu karenin odak uzaklığı / önceki karenin (görüş açısı daralınca > 1: sağ tık nişan, dürbün)
 uniform sampler2D u_Reactive;     // parçacık tepki maskesi (R: bu karede duman / toz / kıvılcım örtüsü)
 uniform int u_HasReactive = 0;    // 1: kamera önceki karedeki yerinde (sabit yüzeylerin hareketi tam sıfır)
 uniform sampler2D u_PrevDepth;    // önceki karenin sahne derinliği (titreşimli): açılma testi
@@ -408,9 +409,48 @@ void main()
     // geçmişe yazılmaz: eskiden geçmiş alevle yükseltilip alev sönünce indiriliyordu; iki yöndeki oran hatası ateş edince zeminin
     // çizgilerini beyaz kenarlı, benekli ve 1-2 saniye soluk bırakıyordu
     bool freezeHistory = false;
+    bool healed = false;              // geçmişi aynı yüzeydeki işaretsiz komşu texelden onarıldı
+    vec3 healColor = vec3(0.0);       // onarımın kaynak texelinin rengi (doğrusal)
+    float healStateW = 0.0;
+    bool healSelf = false;            // kaynak pikselin kendi texeli (durum sayaçları korunur)
     if (!movingNow && (reactiveNow > 0.003 || u_LightingFreeze == 1))
     {
         freezeHistory = sameSurface && !movedBefore;
+        // Duman altında geçmişi kullanılamayan iç piksel (2x2 ayak izinde hareket işareti var: silahın kenarı, kamera kıpırdayınca
+        // küpün kenarı) eskiden hareket eden sayılıp kendini de işaretliyordu: işaret duman sürdükçe her karede bir piksel yayılıyor,
+        // o bölgede duman geçmişe yazılıyor, bölge arpacığın çevresinde ve küpün kenarı boyunca keskin kenarlı açık leke olarak
+        // görünüyordu. Artık 3x3'teki aynı yüzeyden işaretsiz ve oturmuş (yaşı >= 2) en yakın geçmiş texeli kullanılır, işaret yayılmaz.
+        // Komşu texelden onarılan pikselin yaşı 1'e iner: başka piksele kaynak olmaz (renk yüzeyde sürüklenmez), duman çekilince birkaç
+        // karede yenilenir; kendi texeli kullanılan pikselin geçmişi zaten kendisinindir, yaşı korunur. Kenar pikseli (3x3'te iki yüzey:
+        // küpün kenarı, silahın çevresi) onarılmaz: iç yüzeyin düz rengi kenara kopyalanınca kenar yumuşatması gidiyor, küpün kenarı birkaç
+        // kare merdivenli görünüyordu. Uygun texel yoksa eski davranış
+        if (!freezeHistory && reactiveNow > 0.003 && closestDepth < 1.0 && farDepth < 1.0
+            && ViewW(farUV, farDepth) < closestW * 1.05 + 0.05)
+        {
+            float tol = 0.03 * prevClip.w + 0.02;
+            vec2 hpos = prevUV * vec2(histSize);
+            float bestD = 1e9;
+            for (int k = 0; k < 9; ++k)
+            {
+                ivec2 t = clamp(hn + ivec2(k % 3 - 1, k / 3 - 1), ivec2(0), histSize - 1);
+                vec4 tv = texelFetch(u_History, t, 0);
+                if (tv.a <= 0.0 || abs(tv.a - prevClip.w) >= tol)
+                    continue;
+                vec4 ts = texelFetch(u_State, t, 0);
+                if (floor(max(ts.y, 0.0) * 0.5 + 1e-3) < 2.0)
+                    continue;
+                vec2 dv = vec2(t) + 0.5 - hpos;
+                if (dot(dv, dv) < bestD)
+                {
+                    bestD = dot(dv, dv);
+                    healColor = max(tv.rgb, vec3(0.0));
+                    healStateW = ts.w;
+                    healSelf = all(equal(t, hn));
+                }
+            }
+            healed = bestD < 1e8;
+            freezeHistory = healed;
+        }
         if (freezeHistory)
             outAlpha = closestW;
         else if (reactiveNow > 0.003)
@@ -619,7 +659,10 @@ void main()
     float magnify = 0.0;   // yaklaşma: görüntünün bu karede büyüme oranı (uzaklaşmada 0)
     if (u_CameraStill == 0 && closestDepth < 1.0 && !hasObjectVelocity && prevClip.w > 0.0)
     {
-        float distRatio = prevClip.w / max(ViewW(closestUV, closestDepth), 1e-4);
+        // Görüş açısı değişimi de (sağ tık nişan, dürbün) görüntüyü odak uzaklığı oranında büyütür, uzaklık değişmez. Eskiden yalnız
+        // uzaklığa bakılıyordu: nişan alırken görüntü durgun sayılıp her karede büyütülen geçmiş %98 ağırlıkla tutuluyor, piramidin
+        // kenarları bulanık / tırtıklı, küplerin arası kalın ve beyaz kalıyordu
+        float distRatio = prevClip.w / max(ViewW(closestUV, closestDepth), 1e-4) * u_ProjScale;
         zoomRate = abs(distRatio - 1.0);
         magnify = max(distRatio - 1.0, 0.0);
     }
@@ -951,8 +994,8 @@ void main()
     if (freezeHistory)
     {
         // Geçmişe arkadaki yüzey yazılır; durum sayaçları (durgunluk yaşı, titreme, yaş) geçen karedeki gibi kalır
-        FragColor = vec4(historyBeforeLight, outAlpha);
-        StateOut = vec4(0.0, stateBefore.yzw);
+        FragColor = vec4(healed ? healColor : historyBeforeLight, outAlpha);
+        StateOut = (healed && !healSelf) ? vec4(0.0, min(shadowNow, 0.99) + 2.0, 0.0, healStateW) : vec4(0.0, stateBefore.yzw);
         // Gösterilen: geçmiş + dumanın düşük frekanslı katkısı (3x3 ortalama farkı); titreşimli karenin kesik çizgileri dumanın altında
         // görünmez. Yoğun duman ve kıvılcım çekirdeğinde, ışık değişen karede doğrudan bu kare. Yalnız alev olan pikselde yukarıdaki
         // normal sonuç gösterilir (ışığa ölçeklenmiş geçmiş)
@@ -963,7 +1006,36 @@ void main()
             for (int x = -1; x <= 1; ++x)
                 histBox += RGBToYCoCg(Compress(max(texelFetch(u_History, clamp(hn + ivec2(x, y), ivec2(0), histSize - 1), 0).rgb, vec3(0.0))));
             float showCurrent = u_LightingChanged == 1 ? 1.0 : smoothstep(0.3, 0.8, reactiveNow);
-            vec3 shown = max(YCoCgToRGB(mix(rawHistory + boxMean - histBox / 9.0, RGBToYCoCg(current), showCurrent)), vec3(0.0));
+            vec3 base = rawHistory, curMean = boxMean, histMean = histBox / 9.0;
+            if (healed)
+            {
+                // Onarılan pikselde taban kaynak texel, dumanın katkısı yalnız aynı yüzeyin örneklerinden (işaretli geçmiş texelleri
+                // silahın / öteki yüzeyin rengini taşır, ortalamaya girerse piksel açık ya da koyu leke olurdu)
+                base = RGBToYCoCg(Compress(healColor));
+                float tol = 0.03 * prevClip.w + 0.02, cw = ViewW(v_UV, centerDepth);
+                vec3 hs = vec3(0.0), cs = vec3(0.0);
+                float hc = 0.0, cc = 0.0;
+                for (int k = 0; k < 9; ++k)
+                {
+                    vec4 tv = texelFetch(u_History, clamp(hn + ivec2(k % 3 - 1, k / 3 - 1), ivec2(0), histSize - 1), 0);
+                    if (tv.a > 0.0 && abs(tv.a - prevClip.w) < tol)
+                    {
+                        hs += RGBToYCoCg(Compress(max(tv.rgb, vec3(0.0))));
+                        hc += 1.0;
+                    }
+                    if (sampleDepth[k] < 1.0 && abs(ViewW(v_UV, sampleDepth[k]) - cw) < 0.03 * cw + 0.02)
+                    {
+                        cs += sampleYC[k];
+                        cc += 1.0;
+                    }
+                }
+                if (hc > 0.0 && cc > 0.0)
+                {
+                    histMean = hs / hc;
+                    curMean = cs / cc;
+                }
+            }
+            vec3 shown = max(YCoCgToRGB(mix(base + curMean - histMean, RGBToYCoCg(current), showCurrent)), vec3(0.0));
             float shownL = Luminance(shown);
             if (shownL > 0.995)
                 shown *= 0.995 / shownL;

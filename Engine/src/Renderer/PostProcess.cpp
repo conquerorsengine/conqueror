@@ -1781,6 +1781,16 @@ namespace Conqueror
             taau->SetInt("u_HasPrevDepth", prevDepth ? 1 : 0);
             taau->SetMat4("u_PrevInvViewProj", glm::inverse(m_PrevViewProj));
             taau->SetMat4("u_ViewProjNow", m_FinalViewProj);
+            {
+                // Görüş açısı değişimi (sağ tık nişan, dürbün): odak = görüş-izdüşümün y satırının uzunluğu / w satırınınki
+                const auto focalOf = [](const glm::mat4& m)
+                {
+                    const float w = glm::length(glm::vec3(m[0][3], m[1][3], m[2][3]));
+                    return w > 1e-8f ? glm::length(glm::vec3(m[0][1], m[1][1], m[2][1])) / w : 0.0f;
+                };
+                const float focalPrev = focalOf(m_PrevViewProj), focalNow = focalOf(m_FinalViewProj);
+                taau->SetFloat("u_ProjScale", (focalPrev > 1e-6f && focalNow > 1e-6f) ? focalNow / focalPrev : 1.0f);
+            }
             BindTexture(6, prevDepth ? m_PrevDepth : 0);
             glTextureParameteri(cur, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             BindTexture(0, cur);

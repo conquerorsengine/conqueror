@@ -596,6 +596,15 @@ namespace Conqueror
             const glm::mat4 viewProjNow = camera.Projection * camera.View;
             shader->SetFloat3("u_CameraPos", eyeOf(viewProjNow));
             shader->SetFloat3("u_PrevCameraPos", eyeOf(m_HasPrevViewProj ? m_PrevViewProj : viewProjNow));
+            // Görüş açısı değişimi (sağ tık nişan, dürbün): görüntü odak uzaklıklarının oranında büyür / küçülür. Görüş dönüşümü
+            // katı olduğundan odak, görüş-izdüşümün y satırının uzunluğunun w satırınınkine oranıdır
+            const auto focalOf = [](const glm::mat4& m)
+            {
+                const float w = glm::length(glm::vec3(m[0][3], m[1][3], m[2][3]));
+                return w > 1e-8f ? glm::length(glm::vec3(m[0][1], m[1][1], m[2][1])) / w : 0.0f;
+            };
+            const float focalPrev = m_HasPrevViewProj ? focalOf(m_PrevViewProj) : 0.0f, focalNow = focalOf(viewProjNow);
+            shader->SetFloat("u_ProjScale", (focalPrev > 1e-6f && focalNow > 1e-6f) ? focalNow / focalPrev : 1.0f);
         }
         shader->SetInt("u_LightingChanged", lightingChanged ? 1 : 0);
         shader->SetInt("u_LightingFreeze", lightingFreeze ? 1 : 0);
