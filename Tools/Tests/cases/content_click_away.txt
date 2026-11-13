@@ -1,0 +1,21 @@
+# template: empty
+# 219: Content Browser'da bir dosya seçiliyken boş bir yere tıklayınca seçim kalkar ve Inspector boşalır (Unity Project penceresi):
+# öğenin yanındaki boşluk da sayılır (eskiden yalnızca öğelerin altındaki alan seçimi kaldırıyordu)
+wait 40
+content_drop "{dir}/assets/loc/flag_red.png"
+wait 10
+click_item "##cell_flag_red.png" "Content Browser"
+wait 5
+expect_asset Assets/flag_red.png
+# aynı satırda, son öğenin sağındaki boşluk
+click_item_offset "##cell_flag_red.png" 160 0 "Content Browser"
+wait 5
+expect_asset <none>
+click_item "##cell_flag_red.png" "Content Browser"
+wait 5
+expect_asset Assets/flag_red.png
+# öğelerin altındaki boş alan
+click_item_offset "##cell_flag_red.png" 0 85 "Content Browser"
+wait 5
+expect_asset <none>
+quit

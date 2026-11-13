@@ -160,6 +160,8 @@ namespace Conqueror::Editor
         void DrawModals();
         void DrawStatusBar();
         void HandleItemInteraction(const Entry& entry);
+        // Boş alana tıklama (Unity Project penceresi): dosya / dilim seçimini ve Inspector'daki dosyayı bırakır
+        void ClearSelection();
         void HandleKeyboard();
 
         // Kart çizimleri

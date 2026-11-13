@@ -6003,6 +6003,23 @@ namespace Conqueror::Editor
             EditorState::Get().SelectAsset(x.string());
             return true;
         });
+        // expect_asset <yol | <none>>: Inspector'da gösterilen dosya (Content Browser seçimi)
+        Automation::RegisterCommand("expect_asset", [](const Args& a, std::string& err) {
+            const std::string& cur = EditorState::Get().GetSelectedAsset();
+            std::string want = a.size() > 1 ? a[1] : std::string("<none>");
+            for (size_t i = 2; i < a.size(); ++i) want += " " + a[i];
+            std::string got = cur.empty() ? std::string("<none>") : cur;
+            if (want != "<none>" && !cur.empty())
+            {
+                std::filesystem::path w(want);
+                if (w.is_relative() && Project::GetActive()) w = Project::GetActiveProjectDirectory() / w;
+                std::error_code ec;
+                if (std::filesystem::equivalent(w, cur, ec)) return true;
+            }
+            if (got == want) return true;
+            err = "asset '" + got + "' expected '" + want + "'";
+            return false;
+        });
         // testrunner open | run_edit [metot] | run_play [metot] | expect <geçen> <kalan>
         Automation::RegisterCommand("testrunner", [this](const Args& a, std::string& err) {
             if (a.size() < 2 || !m_TestRunnerPanel) { err = "testrunner open|run_edit|run_play|expect"; return false; }

@@ -767,7 +767,7 @@ namespace Conqueror::Editor
         {
             ImGui::InvisibleButton("##EmptyArea", ImVec2(std::max(rest.x, 1.0f), rest.y));
             if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
-                m_SelectedPath.clear();
+                ClearSelection();
             // Boş alana sağ tık: klasör menüsü (görünmez düğme pencere menüsünü engellemesin)
             ImGui::OpenPopupOnItemClick("##ContentBackground", ImGuiPopupFlags_MouseButtonRight);
             if (ImGui::BeginDragDropTarget())
@@ -780,7 +780,23 @@ namespace Conqueror::Editor
                 ImGui::EndDragDropTarget();
             }
         }
+        // Öğelerin arasındaki / yanındaki boşluk ve liste görünümünde satırların altı: hiçbir öğe (kaydırma çubuğu dahil)
+        // tıklanmadıysa seçim kalkar
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) &&
+            !ImGui::IsAnyItemHovered() && !ImGui::IsAnyItemActive())
+            ClearSelection();
         DrawBackgroundContextMenu();
+    }
+
+    void ContentBrowserPanel::ClearSelection()
+    {
+        m_SelectedPath.clear();
+        m_SelectedSlice.clear();
+        m_PendingInspectorAsset.clear();
+        m_PendingInspectorSlice.clear();
+        // Inspector bir dosya gösteriyorsa boşalır (sahnedeki nesne seçimine dokunulmaz)
+        if (!EditorState::Get().GetSelectedAsset().empty())
+            EditorState::Get().SelectAsset("");
     }
 
     void ContentBrowserPanel::DrawFolderGlyph(ImDrawList* dl, const ImVec2& min, float size, bool open, bool hasContent)

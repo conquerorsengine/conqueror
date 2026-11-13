@@ -403,6 +403,17 @@ namespace Conqueror
                 }
                 return true;
             }
+            if (cmd == "click_item_offset")
+            {
+                // click_item_offset <label> <dx> <dy> [window] [kaçıncı eşleşme]: öğenin ortasından (dx, dy) uzağa tıkla
+                if (t.size() < 4) { error = "click_item_offset <label> <dx> <dy> [window] [occurrence]"; return false; }
+                const char* window = t.size() > 4 && t[4] != "-" ? t[4].c_str() : nullptr;
+                const int occurrence = t.size() > 5 ? std::atoi(t[5].c_str()) : 0;
+                const auto* item = CQAutomation::FindItem(t[1].c_str(), window, occurrence);
+                if (!item) { error = "item '" + t[1] + "' not found"; return false; }
+                QueueClick((item->Min.x + item->Max.x) * 0.5f + argf(2), (item->Min.y + item->Max.y) * 0.5f + argf(3), 0, 1);
+                return true;
+            }
             if (cmd == "drag_item")
             {
                 // drag_item <label> <dx> <dy> [window] [kaçıncı eşleşme]

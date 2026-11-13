@@ -19,6 +19,7 @@ namespace Conqueror
     //   wait 30                       # wait N frames
     //   click_item "Lighting"         # click a widget by its label
     //   click_item "Bake" "Lighting"  # ...restricted to a window
+    //   click_item_offset "Bake" 200 0 "Lighting"  # click 200 px to the right of a widget
     //   key ctrl+s                    # keyboard shortcut
     //   screenshot out/lighting.png   # main window capture (PNG)
     //   quit
