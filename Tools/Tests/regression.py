@@ -34,6 +34,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 # CQ_REGRESSION_BIN: build/bin'in bir kopyası (regresyon arka planda sürerken yeniden derleme sonuçları bozmasın)
 BIN = os.environ.get("CQ_REGRESSION_BIN") or os.path.join(ROOT, "build", "bin")
+# Testler hoparlörden ses çıkarmasın: motor miniaudio'nun sessiz null aygıtını kullanır (saat yine gerçek zamanda ilerler)
+os.environ.setdefault("CQ_AUDIO_NULL", "1")
 CASES = os.path.join(HERE, "cases")
 WORK = os.path.join(os.path.expanduser("~"), ".cache", "cq-build", "regression")
 
@@ -63,7 +65,7 @@ def make_project(tid, name, env=None):
     if runner:
         run(["bash", runner, script], env=env)
     else:
-        run([os.path.join(BIN, "ConquerorLauncher")], env=dict(env or os.environ, CQ_AUTOMATION=script), cwd=BIN)
+        run([os.path.join(BIN, "ConquerorLauncher")], env=dict(env or os.environ, CQ_AUTOMATION=script, CQ_AUDIO_NULL="1"), cwd=BIN)
     return project if os.path.isdir(project) else None
 
 
@@ -76,7 +78,7 @@ def run_editor(script, project, env=None):
         m = re.search(r"ENGINE_EXIT=(\d+)", out)
         code = int(m.group(1)) if m else code
     else:
-        code, out = run([os.path.join(BIN, "ConquerorEngine"), project], env=dict(env or os.environ, CQ_AUTOMATION=script), cwd=BIN)
+        code, out = run([os.path.join(BIN, "ConquerorEngine"), project], env=dict(env or os.environ, CQ_AUTOMATION=script, CQ_AUDIO_NULL="1"), cwd=BIN)
     result = open(script + ".result.txt").read() if os.path.exists(script + ".result.txt") else ""
     return code, result
 

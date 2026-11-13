@@ -1,4 +1,5 @@
 #include "Core/Audio/AudioRandomContainer.h"
+#include "Core/Audio/InteractiveMusic.h"
 #include "Scene/MeshRendererMaterial.h"
 #include "Renderer/Utilities/Renderer3D/Material.h"
 #include "CQSNativeBridge.h"
@@ -254,7 +255,9 @@ namespace Conqueror::CQS
         Entity e = GetCurrentEntity_S(); if (!e) return Value::MakeNull();
         if (!e.HasComponent<AudioSourceComponent>()) return Value::MakeNull();
         auto& asc = e.GetComponent<AudioSourceComponent>();
-        if (AudioRandomContainers::IsAsset(asc.FilePath))
+        if (InteractiveMusic::IsAsset(asc.FilePath))
+            InteractiveMusic::Play(*e.GetScene(), (uint32_t)e);   // etkileşimli müzik: baştan
+        else if (AudioRandomContainers::IsAsset(asc.FilePath))
         {
             asc.ContainerRequest = true;   // Audio Random Container: her Play yeni klip seçer
             asc.IsPlaying = true;
@@ -272,7 +275,9 @@ namespace Conqueror::CQS
         Entity e = GetCurrentEntity_S(); if (!e) return Value::MakeNull();
         if (!e.HasComponent<AudioSourceComponent>()) return Value::MakeNull();
         auto& asc = e.GetComponent<AudioSourceComponent>();
-        if (asc.RuntimeSound)
+        if (InteractiveMusic::IsAsset(asc.FilePath))
+            InteractiveMusic::Stop(*e.GetScene(), (uint32_t)e);
+        else if (asc.RuntimeSound)
         {
             auto* src = static_cast<AudioSource*>(asc.RuntimeSound);
             src->Stop();

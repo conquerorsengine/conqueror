@@ -1,0 +1,6 @@
+using nativebridge;
+// Ölçü başında Battle başladı (dosya gerçekten çalınıyor: çözme imleci ilerliyor); Battle -> Calm dolgu klibiyle (Sting)
+var pos = MusicGetPosition("Holder");
+LogInfo("REGRESSION music switched pos=" + pos);
+if (pos > 0.15) { CreateEntity("M_Switched"); }
+MusicSwitchToClip("Holder", "Calm");

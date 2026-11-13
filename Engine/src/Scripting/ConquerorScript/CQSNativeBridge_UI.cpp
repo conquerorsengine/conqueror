@@ -1,4 +1,5 @@
 #include "Core/Audio/AudioRandomContainer.h"
+#include "Core/Audio/InteractiveMusic.h"
 #include "Core/Localization/Localization.h"
 #include "Scene/MeshRendererMaterial.h"
 #include "Renderer/Utilities/Renderer3D/Material.h"
@@ -1258,6 +1259,8 @@ namespace Conqueror::CQS
         vm->DefineNative("AudioPlayEntity", [](int argc, Value* args) -> Value {
             auto* asc = Get<AudioSourceComponent>(TargetArg(argc, args));
             if (!asc) return Value::MakeBool(false);
+            if (InteractiveMusic::IsAsset(asc->FilePath))
+                return Value::MakeBool(ActiveScene() && InteractiveMusic::Play(*ActiveScene(), (uint32_t)TargetArg(argc, args)));
             if (AudioRandomContainers::IsAsset(asc->FilePath))
                 asc->ContainerRequest = true;   // Audio Random Container: her Play yeni klip
             else if (auto* src = static_cast<AudioSource*>(asc->RuntimeSound))
@@ -1270,10 +1273,40 @@ namespace Conqueror::CQS
         vm->DefineNative("AudioStopEntity", [](int argc, Value* args) -> Value {
             auto* asc = Get<AudioSourceComponent>(TargetArg(argc, args));
             if (!asc) return Value::MakeBool(false);
+            if (InteractiveMusic::IsAsset(asc->FilePath) && ActiveScene())
+                InteractiveMusic::Stop(*ActiveScene(), (uint32_t)TargetArg(argc, args));
             if (auto* src = static_cast<AudioSource*>(asc->RuntimeSound))
                 src->Stop();
             asc->IsPlaying = false;
             return Value::MakeBool(true);
+        }, -1);
+        // ---------------------------------------------------------------- Etkileşimli müzik (Godot AudioStreamInteractive / Synchronized)
+        // MusicSwitchToClip([target,] "Battle" | 2) -> bool: geçiş tablosuna göre (sonraki vuruşta / ölçüde / sonda ...) klibe geç
+        vm->DefineNative("MusicSwitchToClip", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            Entity e = argc >= 2 ? Target(args[0]) : Current();
+            if (!scene || !e || argc < 1) return Value::MakeBool(false);
+            const Value& clip = args[argc >= 2 ? 1 : 0];
+            const std::string name = clip.IsString() ? clip.AsString()->Value : std::to_string((int64_t)clip.ToNumber());
+            return Value::MakeBool(InteractiveMusic::SwitchToClip(*scene, (uint32_t)e, name));
+        }, -1);
+        vm->DefineNative("MusicGetCurrentClip", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            Entity e = TargetArg(argc, args);
+            return Value::MakeString(scene && e ? InteractiveMusic::GetCurrentClip(*scene, (uint32_t)e) : std::string());
+        }, -1);
+        // MusicSetLayerVolume([target,] layer, volumeDb) -> bool: Synchronized katmanının sesi (dikey katmanlama)
+        vm->DefineNative("MusicSetLayerVolume", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            const int o = argc >= 3 ? 1 : 0;
+            Entity e = argc >= 3 ? Target(args[0]) : Current();
+            if (!scene || !e || argc < 2) return Value::MakeBool(false);
+            return Value::MakeBool(InteractiveMusic::SetLayerVolume(*scene, (uint32_t)e, (int)Num(argc, args, o), Num(argc, args, o + 1)));
+        }, -1);
+        vm->DefineNative("MusicGetPosition", [](int argc, Value* args) -> Value {
+            Scene* scene = ActiveScene();
+            Entity e = TargetArg(argc, args);
+            return Value::MakeFloat(scene && e ? InteractiveMusic::GetPosition(*scene, (uint32_t)e) : 0.0f);
         }, -1);
         vm->DefineNative("AudioSetEntityVolume", [](int argc, Value* args) -> Value {
             auto* asc = argc >= 2 ? Get<AudioSourceComponent>(Target(args[0])) : nullptr;

@@ -28,6 +28,7 @@
 #include "Core/Utils/PlayerPrefs.h"
 #include "Core/Debug/CrashHandler.h"
 #include "Core/Audio/AudioOneShots.h"
+#include "Core/Audio/InteractiveMusic.h"
 #include <chrono>
 #include <filesystem>
 #include <thread>
@@ -101,6 +102,7 @@ namespace Conqueror
         // Zaman çizelgesi ses kaynakları ses motorundan önce
         TimelineSystem::Shutdown();
         AudioOneShots::Shutdown();
+        InteractiveMusic::Shutdown();
         AudioMixer::Get().Shutdown();
         AudioEngine::Shutdown();
         PhysicsWorld3D::ShutdownGlobals();

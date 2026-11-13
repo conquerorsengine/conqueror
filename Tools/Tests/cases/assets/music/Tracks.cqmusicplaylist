@@ -1,0 +1,9 @@
+Music:
+  Type: Audio Stream Playlist
+  Clips:
+    - Stream: Assets/sting.wav
+    - Stream: Assets/sting.wav
+    - Stream: Assets/battle.wav
+  Shuffle: false
+  Loop: true
+  FadeTime: 0.1

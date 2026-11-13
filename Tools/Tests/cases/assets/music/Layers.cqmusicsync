@@ -1,0 +1,8 @@
+Music:
+  Type: Audio Stream Synchronized
+  Clips:
+    - Stream: Assets/battle.wav
+      Loop: true
+    - Stream: Assets/calm.wav
+      Loop: true
+      Volume: -6

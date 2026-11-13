@@ -1,0 +1,4 @@
+using nativebridge;
+var clip = MusicGetCurrentClip("Holder");
+LogInfo("REGRESSION music filler clip=" + clip);
+if (clip == "Sting") { CreateEntity("M_Filler"); }

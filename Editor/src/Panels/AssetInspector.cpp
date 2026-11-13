@@ -1,4 +1,5 @@
 #include "AssetInspector.h"
+#include "Core/Audio/InteractiveMusic.h"
 #include "VersionControl/VersionControl.h"
 #include "Build/AssetBundleBuilder.h"
 #include "ContentBrowserPanel.h"
@@ -1155,6 +1156,11 @@ namespace Conqueror::Editor::AssetInspector
         if (Lower(fs::path(path).extension().string()) == ".cqbrush")
         {
             TerrainAssetsInspector::DrawBrush(path);
+            return;
+        }
+        if (InteractiveMusic::IsAsset(path))
+        {
+            AudioAssetsInspector::DrawMusic(path);
             return;
         }
         if (Lower(fs::path(path).extension().string()) == ".cqaudiorandom")

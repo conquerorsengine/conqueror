@@ -1,5 +1,6 @@
 #include "AudioEngine.h"
 #include "Core/Logging/Log.h"
+#include <cstdlib>
 
 // OGG Vorbis desteği (miniaudio 0.11: stb_vorbis başlığı önce, uygulaması miniaudio'dan sonra)
 #if defined(__GNUC__)
@@ -46,8 +47,26 @@ namespace Conqueror
     AudioEngine::AudioEngine()
     {
         m_Engine = new ma_engine();
-        
-        ma_result result = ma_engine_init(nullptr, m_Engine);
+
+        // CQ_AUDIO_NULL=1 (otomatik testler): miniaudio'nun sessiz "null" aygıtı; saat gerçek zamanda ilerler, karıştırma çalışır,
+        // ama hoparlörden ses çıkmaz
+        ma_engine_config config = ma_engine_config_init();
+        if (const char* nullAudio = std::getenv("CQ_AUDIO_NULL"); nullAudio && nullAudio[0] && nullAudio[0] != '0')
+        {
+            m_Context = new ma_context();
+            const ma_backend backends[] = { ma_backend_null };
+            if (ma_context_init(backends, 1, nullptr, m_Context) == MA_SUCCESS)
+            {
+                config.pContext = m_Context;
+                CQ_CORE_INFO("Audio Engine: null device (CQ_AUDIO_NULL)");
+            }
+            else
+            {
+                delete m_Context;
+                m_Context = nullptr;
+            }
+        }
+        ma_result result = ma_engine_init(&config, m_Engine);
         if (result != MA_SUCCESS)
         {
             CQ_CORE_ERROR("Failed to initialize Audio Engine!");
@@ -66,6 +85,12 @@ namespace Conqueror
             ma_engine_uninit(m_Engine);
             delete m_Engine;
             m_Engine = nullptr;
+        }
+        if (m_Context)
+        {
+            ma_context_uninit(m_Context);
+            delete m_Context;
+            m_Context = nullptr;
         }
         
         CQ_CORE_INFO("Audio Engine shut down");

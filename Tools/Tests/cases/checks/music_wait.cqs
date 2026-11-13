@@ -1,0 +1,5 @@
+using nativebridge;
+var pos = MusicGetPosition("Holder");
+var track = MusicGetCurrentClip("Tracks");
+LogInfo("REGRESSION music wait pos=" + pos + " track=" + track);
+if (pos < 0.02 && track != "0") { CreateEntity("M_Waiting"); }

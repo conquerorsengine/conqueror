@@ -37,6 +37,7 @@
 #include "AISystem/Navigation/NavAgents.h"
 #include "Core/Project/ProjectSettings.h"
 #include "Core/Audio/AudioEngine.h"
+#include "Core/Audio/InteractiveMusic.h"
 #include "ProjectThumbnail.h"
 #include "Renderer/IBL/EnvironmentMap.h"
 #include "Renderer/PathTracer.h"
@@ -1102,6 +1103,8 @@ namespace Conqueror::Editor
 
     void EditorLayer::OnUpdate(Timestep ts)
     {
+        // Etkileşimli müzik önizlemesi (Inspector): geçişler / sıradaki parça motor saatine göre planlanır
+        InteractiveMusic::UpdatePreview();
         // Seçimde silinmiş nesne kalmaz (geri al / ileri al ile silinen seçili nesne, betiğin sildiği nesne): paneller ve Delete ona
         // dokunup çökmesin
         if (EditorState::Get().PruneSelection(m_ActiveScene.get()))

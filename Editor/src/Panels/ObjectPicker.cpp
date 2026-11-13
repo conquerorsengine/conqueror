@@ -182,7 +182,8 @@ namespace Conqueror::Editor::ObjectPicker
 
     const std::vector<std::string>& AudioExtensions()
     {
-        static const std::vector<std::string> exts = { ".wav", ".mp3", ".ogg", ".flac", ".cqaudiorandom", ".cqsoundcue" };
+        static const std::vector<std::string> exts = { ".wav", ".mp3", ".ogg", ".flac", ".cqaudiorandom", ".cqsoundcue", ".cqmusicplaylist",
+                                                       ".cqmusicsync", ".cqmusicinteractive" };
         return exts;
     }
 
@@ -241,6 +242,9 @@ namespace Conqueror::Editor::ObjectPicker
         if (has(".cqcrt")) return "Custom Render Texture";
         if (has(".cqmixer")) return "Audio Mixer";
         if (has(".cqaudiorandom")) return "Audio Random Container";
+        if (has(".cqmusicplaylist")) return "Audio Stream Playlist";
+        if (has(".cqmusicsync")) return "Audio Stream Synchronized";
+        if (has(".cqmusicinteractive")) return "Audio Stream Interactive";
         if (has(".cqterrainlayer")) return "Terrain Layer";
         if (has(".cqbrush")) return "Brush";
         if (has(".cqsignal")) return "Signal";

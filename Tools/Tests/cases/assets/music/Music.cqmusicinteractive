@@ -1,0 +1,51 @@
+Music:
+  Type: Audio Stream Interactive
+  Clips: []
+  InitialClip: 0
+  InteractiveClips:
+    - Name: Calm
+      Stream: Assets/calm.wav
+      Bpm: 120
+      BeatCount: 0
+      BarBeats: 4
+      Loop: true
+      Volume: 0
+      AutoAdvance: 0
+      NextClip: -1
+    - Name: Battle
+      Stream: Assets/battle.wav
+      Bpm: 120
+      BeatCount: 0
+      BarBeats: 4
+      Loop: true
+      Volume: 0
+      AutoAdvance: 0
+      NextClip: -1
+    - Name: Sting
+      Stream: Assets/sting.wav
+      Bpm: 120
+      BeatCount: 0
+      BarBeats: 4
+      Loop: false
+      Volume: 0
+      AutoAdvance: 0
+      NextClip: -1
+  Transitions:
+    - From: 0
+      To: 1
+      FromTime: 2
+      ToTime: 1
+      FadeMode: 3
+      FadeBeats: 1
+      UseFiller: false
+      FillerClip: -1
+      HoldPrevious: false
+    - From: 1
+      To: 0
+      FromTime: 0
+      ToTime: 1
+      FadeMode: 0
+      FadeBeats: 0
+      UseFiller: true
+      FillerClip: 2
+      HoldPrevious: false

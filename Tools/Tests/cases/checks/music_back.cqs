@@ -1,0 +1,5 @@
+using nativebridge;
+var clip = MusicGetCurrentClip("Holder");
+var pos = MusicGetPosition("Holder");
+LogInfo("REGRESSION music back clip=" + clip + " pos=" + pos);
+if (clip == "Calm" && pos > 0.1) { CreateEntity("M_Back"); }

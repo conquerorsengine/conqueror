@@ -84,6 +84,7 @@
 #include "Scene/Water.h"
 #include "Scene/PlanarReflection.h"
 #include "Core/Audio/MetaSound.h"
+#include "Core/Audio/InteractiveMusic.h"
 #include "Scene/WorldPartition.h"
 #include "Scene/BlendShapes.h"
 #include "Scene/MetaHuman.h"
@@ -320,6 +321,7 @@ namespace Conqueror
     void Scene::OnRuntimeStop(bool endPlaySession)
     {
         MetaSounds::StopAll(*this);
+        InteractiveMusic::StopAll(*this);
         WorldPartition::Forget(*this);
         Navigation2D::ForgetScene(this);
         Fracture::ForgetScene(this);
@@ -5479,13 +5481,31 @@ namespace Conqueror
             AudioOcclusion::Update(*this, ts.GetSeconds(), TimeManager::GetTime());
 
         // Audio Source'ları güncelle
+        // Silinen / klibi değişen kaynakların müzik çaları
+        InteractiveMusic::Prune(*this);
         auto audioView = m_Registry.view<TransformComponent, AudioSourceComponent>();
         for (auto entityID : audioView)
         {
             Entity entity{ entityID, this };
             auto& transform = entity.GetComponent<TransformComponent>();
             auto& audioSource = entity.GetComponent<AudioSourceComponent>();
-            
+
+            // Etkileşimli müzik (Godot AudioStreamPlaylist / Synchronized / Interactive): kendi çaları, mikser grubuna bağlı
+            if (InteractiveMusic::IsAsset(audioSource.FilePath))
+            {
+                if (audioSource.RuntimeSound)
+                {
+                    ReleaseAudioRuntime(m_Registry, entityID);
+                    audioSource.LoadedPath.clear();
+                }
+                const auto* occlusion = m_Registry.try_get<SoundOcclusionComponent>(entityID);
+                const auto* soundSettings = m_Registry.try_get<SoundSettingsComponent>(entityID);
+                const float gain = audioSource.Volume * (occlusion ? occlusion->Gain : 1.0f) * (soundSettings ? soundSettings->Gain : 1.0f);
+                InteractiveMusic::UpdateSource(*this, (uint32_t)entityID, audioSource, glm::vec3(transform.WorldTransform[3]), gain,
+                                               m_IsRuntimeScene, routingGeneration);
+                continue;
+            }
+
             // Audio Random Container: istenince (Play / otomatik tetik) yeni klip seçilir
             const bool container = AudioRandomContainers::IsAsset(audioSource.FilePath);
             if (container && audioSource.ContainerRequest && audioSource.RuntimeSound)

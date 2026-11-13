@@ -301,6 +301,15 @@ namespace Conqueror::Editor
         add("Audio", "", "Audio Random Container", ICON_FA_SHUFFLE, "audiorandom",
             "Plays a random, shuffled or sequential clip from a list with volume / pitch variation;\n"
             "Audio Sources and AudioPlay use it like a clip.");
+        add("Audio", "", "Audio Stream Playlist", ICON_FA_LIST_OL, "musicplaylist",
+            "Godot AudioStreamPlaylist: tracks one after another (or shuffled) with a fade between them, looping.\n"
+            "Put it in an Audio Source's Clip slot.");
+        add("Audio", "", "Audio Stream Synchronized", ICON_FA_LAYER_GROUP, "musicsync",
+            "Godot AudioStreamSynchronized: layers that play exactly together; scripts change each layer's volume\n"
+            "(MusicSetLayerVolume) for adaptive music.");
+        add("Audio", "", "Audio Stream Interactive", ICON_FA_DIAGRAM_PROJECT, "musicinteractive",
+            "Godot AudioStreamInteractive: music clips with a transition table (next beat / bar / end, fades, filler,\n"
+            "hold); scripts switch clips with MusicSwitchToClip.");
 
         // Animation
         add("Animation", "", "Animation Clip", ICON_FA_CLAPPERBOARD, "animclip",

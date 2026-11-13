@@ -7,6 +7,7 @@
 #include "Scene/Signals.h"
 #include "Terrain/Terrain.h"
 #include "Core/Audio/AudioRandomContainer.h"
+#include "Core/Audio/InteractiveMusic.h"
 #include "Core/Audio/AudioMixer.h"
 #include "Renderer/ShaderVariantCollection.h"
 #include "Assets/ShaderTemplates.h"
@@ -166,6 +167,9 @@ namespace Conqueror::Editor
         if (ext == ".cqterrainlayer") return { ICON_FA_LAYER_GROUP, IM_COL32(150, 200, 110, 255), "Terrain Layer" };
         if (ext == ".cqbrush") return { ICON_FA_PAINTBRUSH, IM_COL32(150, 200, 110, 255), "Brush" };
         if (ext == ".cqaudiorandom") return { ICON_FA_SHUFFLE, IM_COL32(255, 170, 90, 255), "Audio Random Container" };
+        if (ext == ".cqmusicplaylist") return { ICON_FA_LIST_OL, IM_COL32(255, 170, 90, 255), "Audio Stream Playlist" };
+        if (ext == ".cqmusicsync") return { ICON_FA_LAYER_GROUP, IM_COL32(255, 170, 90, 255), "Audio Stream Synchronized" };
+        if (ext == ".cqmusicinteractive") return { ICON_FA_DIAGRAM_PROJECT, IM_COL32(255, 170, 90, 255), "Audio Stream Interactive" };
         if (ext == ".cqmixer") return { ICON_FA_SLIDERS, IM_COL32(255, 170, 90, 255), "Audio Mixer" };
         if (ext == ".cqraytrace") return { ICON_FA_WAND_MAGIC_SPARKLES, IM_COL32(190, 120, 255, 255), "Ray Tracing Shader" };
         if (ext == ".cqshadervariants") return { ICON_FA_LAYER_GROUP, IM_COL32(190, 120, 255, 255), "Shader Variant Collection" };
@@ -1368,7 +1372,7 @@ namespace Conqueror::Editor
         const std::string newRel = fs::relative(target, projectDir, ec).generic_string();
         if (oldRel.empty() || newRel.empty() || oldRel.rfind("..", 0) == 0)
             return;
-        static const char* exts[] = { ".cqscene", ".cqprefab", ".cqmat", ".cqtimeline", ".cqcont", ".cqscenetemplate", ".cqtile", ".cqpalette", ".cqspriteatlas", ".cqvolume", ".cqlighting", ".cqflare", ".cqcrt", ".cqshadervariants", ".cqaudiorandom", ".cqmixer", ".cqterrainlayer", ".cqbrush", ".cqsignal", ".cqdata" };
+        static const char* exts[] = { ".cqscene", ".cqprefab", ".cqmat", ".cqtimeline", ".cqcont", ".cqscenetemplate", ".cqtile", ".cqpalette", ".cqspriteatlas", ".cqvolume", ".cqlighting", ".cqflare", ".cqcrt", ".cqshadervariants", ".cqaudiorandom", ".cqmusicplaylist", ".cqmusicsync", ".cqmusicinteractive", ".cqmixer", ".cqterrainlayer", ".cqbrush", ".cqsignal", ".cqdata" };
         int files = 0;
         for (fs::recursive_directory_iterator it(Project::GetAssetDirectory(), fs::directory_options::skip_permission_denied, ec), end;
              it != end; it.increment(ec))
@@ -2085,6 +2089,35 @@ namespace Conqueror::Editor
                     a.Clips.push_back(fs::relative(m_SelectedPath, m_BaseDirectory, ec).generic_string());
                 path = MakeUniquePath(dir / (std::string("New Audio Random Container") + AudioRandomContainers::Extension));
                 if (!AudioRandomContainers::Save(path.string(), a))
+                    path.clear();
+            }
+            else if (kind == "musicplaylist" || kind == "musicsync" || kind == "musicinteractive")
+            {
+                // Etkileşimli müzik (Godot): seçili ses dosyası ilk parça / katman / klip olur
+                MusicAsset a;
+                a.Kind = kind == "musicsync" ? MusicAsset::Type::Synchronized : kind == "musicinteractive" ? MusicAsset::Type::Interactive
+                                                                                    : MusicAsset::Type::Playlist;
+                const std::string ext = ToLower(m_SelectedPath.extension().string());
+                const bool audio = ext == ".wav" || ext == ".mp3" || ext == ".ogg" || ext == ".flac";
+                MusicClip clip;
+                if (audio)
+                    clip.Stream = fs::relative(m_SelectedPath, m_BaseDirectory, ec).generic_string();
+                if (a.Kind == MusicAsset::Type::Interactive)
+                {
+                    MusicInteractiveClip ic;
+                    ic.Name = audio ? m_SelectedPath.stem().string() : std::string("Clip 0");
+                    ic.Clip = clip;
+                    ic.Clip.Loop = true;
+                    a.InteractiveClips.push_back(ic);
+                }
+                else if (audio)
+                    a.Clips.push_back(clip);
+                const char* name = a.Kind == MusicAsset::Type::Synchronized ? "New Audio Stream Synchronized"
+                                 : a.Kind == MusicAsset::Type::Interactive ? "New Audio Stream Interactive" : "New Audio Stream Playlist";
+                const char* extension = a.Kind == MusicAsset::Type::Synchronized ? InteractiveMusic::SynchronizedExtension
+                                      : a.Kind == MusicAsset::Type::Interactive ? InteractiveMusic::InteractiveExtension : InteractiveMusic::PlaylistExtension;
+                path = MakeUniquePath(dir / (std::string(name) + extension));
+                if (!InteractiveMusic::Save(path.string(), a))
                     path.clear();
             }
             else if (kind == "audiomixer")

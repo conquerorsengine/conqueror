@@ -1,0 +1,51 @@
+# template: basic3d
+# 25 (Godot AudioStreamInteractive / Playlist / Synchronized): Audio Source'un Clip yuvasındaki müzik varlıkları. Calm -> Battle
+# "Next Bar" geçişi ölçü başını bekler ve tam orada başlar (çözme imleci), Battle -> Calm dolgu klibinden (Sting) geçer; Playlist
+# parçaları art arda çalar; Synchronized katman sesi betikten değişir. Ses sessiz null aygıtında (CQ_AUDIO_NULL)
+wait 40
+content_drop "{dir}/assets/music/calm.wav" "{dir}/assets/music/battle.wav" "{dir}/assets/music/sting.wav" "{dir}/assets/music/Music.cqmusicinteractive" "{dir}/assets/music/Tracks.cqmusicplaylist" "{dir}/assets/music/Layers.cqmusicsync"
+wait 10
+entity create Holder 0 0 0
+comp add Holder AudioSourceComponent
+comp set Holder AudioSourceComponent Clip Assets/Music.cqmusicinteractive
+comp set Holder AudioSourceComponent PlayOnAwake true
+comp set Holder AudioSourceComponent Is3D false
+entity create Tracks 0 0 0
+comp add Tracks AudioSourceComponent
+comp set Tracks AudioSourceComponent Clip Assets/Tracks.cqmusicplaylist
+comp set Tracks AudioSourceComponent PlayOnAwake true
+comp set Tracks AudioSourceComponent Is3D false
+entity create Layers 0 0 0
+comp add Layers AudioSourceComponent
+comp set Layers AudioSourceComponent Clip Assets/Layers.cqmusicsync
+comp set Layers AudioSourceComponent PlayOnAwake true
+comp set Layers AudioSourceComponent Is3D false
+play
+wait 3
+run_cqs_file "{dir}/checks/music_start.cqs"
+expect_entities 1 M_Start
+stall 300
+run_cqs_file "{dir}/checks/music_switch.cqs"
+expect_entities 1 M_Requested
+wait 3
+run_cqs_file "{dir}/checks/music_sched.cqs"
+expect_entities 1 M_Scheduled
+stall 700
+wait 2
+run_cqs_file "{dir}/checks/music_wait.cqs"
+expect_entities 1 M_Waiting
+stall 1300
+wait 2
+run_cqs_file "{dir}/checks/music_switched.cqs"
+expect_entities 1 M_Switched
+wait 3
+run_cqs_file "{dir}/checks/music_filler.cqs"
+expect_entities 1 M_Filler
+stall 900
+wait 3
+stall 300
+wait 2
+run_cqs_file "{dir}/checks/music_back.cqs"
+expect_entities 1 M_Back
+stop
+quit

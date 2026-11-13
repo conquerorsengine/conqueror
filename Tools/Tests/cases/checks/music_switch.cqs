@@ -1,0 +1,4 @@
+using nativebridge;
+var ok = MusicSwitchToClip("Holder", "Battle");
+LogInfo("REGRESSION music switch=" + ok + " calmPos=" + MusicGetPosition("Holder"));
+if (ok) { CreateEntity("M_Requested"); }

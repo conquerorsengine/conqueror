@@ -5,6 +5,7 @@
 
 // miniaudio forward declarations
 typedef struct ma_engine ma_engine;
+typedef struct ma_context ma_context;
 typedef struct ma_sound ma_sound;
 
 namespace Conqueror
@@ -52,6 +53,7 @@ namespace Conqueror
         static AudioEngine* s_Instance;
         
         ma_engine* m_Engine = nullptr;
+        ma_context* m_Context = nullptr;   // CQ_AUDIO_NULL: sessiz sanal aygıt (testler hoparlörden ses çıkarmasın)
         bool m_Paused = false;
         
         glm::vec3 m_ListenerPosition = glm::vec3(0.0f);

@@ -1,0 +1,8 @@
+using nativebridge;
+// Interactive ilk klibi (Calm) çalıyor, Playlist ilk parçada, Synchronized katman sesi değişir (olmayan katman false)
+var clip = MusicGetCurrentClip("Holder");
+var track = MusicGetCurrentClip("Tracks");
+var l1 = MusicSetLayerVolume("Layers", 1, -12);
+var l5 = MusicSetLayerVolume("Layers", 5, 0);
+LogInfo("REGRESSION music start clip=" + clip + " track=" + track + " l1=" + l1 + " l5=" + l5);
+if (clip == "Calm" && track == "0" && l1 && !l5) { CreateEntity("M_Start"); }

@@ -1,0 +1,6 @@
+using nativebridge;
+// Calm -> Battle: Next Bar (120 BPM, 4 vuruş = 2 s): Battle planlandı ama ölçü başına kadar çalmıyor
+var clip = MusicGetCurrentClip("Holder");
+var pos = MusicGetPosition("Holder");
+LogInfo("REGRESSION music sched clip=" + clip + " pos=" + pos);
+if (clip == "Battle" && pos < 0.02) { CreateEntity("M_Scheduled"); }
