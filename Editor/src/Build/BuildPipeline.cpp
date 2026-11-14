@@ -1016,6 +1016,9 @@ namespace Conqueror::Editor
                 cmd += " --quest";
             else if (platform == "Android XR")
                 cmd += " --androidxr";
+            // XR Plug-in Management > ARCore: telefon / tablet AR (ARCore SDK Google Maven'dan)
+            if (platform == "Android" && o.Config.XR.ARCore)
+                cmd += " --arcore";
             // Project Settings > Player > Android
             {
                 const auto& ap = o.Config.Player.Android;

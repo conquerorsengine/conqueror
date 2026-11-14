@@ -117,11 +117,12 @@ namespace Conqueror {
             out << YAML::EndMap;
         }
 
-        if (const auto& xr = config.XR; xr.InitializeOnStartup || !xr.OpenXR)
+        if (const auto& xr = config.XR; xr.InitializeOnStartup || !xr.OpenXR || xr.ARCore)
         {
             out << YAML::Key << "XR" << YAML::Value << YAML::BeginMap;
             out << YAML::Key << "InitializeOnStartup" << YAML::Value << xr.InitializeOnStartup;
             out << YAML::Key << "OpenXR" << YAML::Value << xr.OpenXR;
+            out << YAML::Key << "ARCore" << YAML::Value << xr.ARCore;
             out << YAML::EndMap;
         }
 
@@ -322,6 +323,7 @@ namespace Conqueror {
         {
             config.XR.InitializeOnStartup = xr["InitializeOnStartup"].as<bool>(false);
             config.XR.OpenXR = xr["OpenXR"].as<bool>(true);
+            config.XR.ARCore = xr["ARCore"].as<bool>(false);
         }
 
         // Derleme ayarları (sahne listesi)

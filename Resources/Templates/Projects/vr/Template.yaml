@@ -5,3 +5,5 @@ Shared: [Prototype, Weapons]
 StartScene: Assets/Scenes/Main.cqscene
 Scenes:
   - Assets/Scenes/Main.cqscene
+XR:
+  InitializeOnStartup: true

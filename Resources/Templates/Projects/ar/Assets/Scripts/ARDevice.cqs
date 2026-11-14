@@ -19,6 +19,7 @@ script ARDevice : ConquerorScript
 
     private var cam = -1;
     private float t = 0.0;
+    private bool real = false;              // ARCore: cihazın gerçek pozu
 
     func Start()
     {
@@ -32,6 +33,26 @@ script ARDevice : ConquerorScript
     {
         if (cam < 0) { return; }
         t += dt;
+        // ARCore: kamera pozu ve görüş açısı cihazdan (Unity AR Camera + Tracked Pose Driver); kök oturumun kökeninde
+        if (ARIsAvailable())
+        {
+            if (!real)
+            {
+                real = true;
+                SetPosition(0, 0, 0);
+                SetRotation(0, 0, 0);
+            }
+            var cp = ARGetCameraPosition();
+            var cr = ARGetCameraRotation();
+            if (cp != null && cr != null)
+            {
+                EntitySetPosition(cam, cp.x, cp.y, cp.z);
+                EntitySetRotation(cam, cr.x, cr.y, cr.z);
+            }
+            var fov = ARGetCameraFov();
+            if (fov > 1.0) { EntitySetComponentField(cam, "Camera", "FieldOfView", fov); }
+            return;
+        }
         if (IsMouseButtonPressed(1))
         {
             var md = GetMouseDelta();

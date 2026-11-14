@@ -6,6 +6,8 @@ using nativebridge;
 // çarptıkları yerde öznitelik noktaları (feature points) belirir, "AR Surface" etiketli yatay yüzeylerde düzlem bulunur
 // ve kamera gezdikçe büyür (ARCore / ARKit gibi). Yerleştirme RaycastPlanes ile yalnız bulunan düzlemlere ışın atar.
 // Cihaz hızlı sallanınca izleme "Limited" olur ve algılama durur.
+// Android'de ARCore açıksa (XR Plug-in Management > ARCore) gerçek düzlemler ARCore'dan gelir: simülasyon odası gizlenir,
+// kamera görüntüsü arka plan olur, yatay düzlemler (zemin, masa) sınırlarıyla çizilir ve yerleştirme onlara yapılır.
 script ARSession : ConquerorScript
 {
     public int raysPerFrame = 14;
@@ -28,6 +30,7 @@ script ARSession : ConquerorScript
     private var lastFwd = null;
     private float limited = 0.0;
     private int emitTick = 0;
+    private bool real = false;              // ARCore oturumu (gerçek kamera ve düzlemler)
 
     func Start()
     {
@@ -161,10 +164,105 @@ script ARSession : ConquerorScript
         EntitySetComponentField(pl.border, "LineRenderer", "EndColor", c);
     }
 
+    // Çokgenin içinde mi (XZ)
+    func InsidePolygon(pts, x, z)
+    {
+        var inside = false;
+        var n = pts.Count;
+        var j = n - 1;
+        for (var i = 0; i < n; i++)
+        {
+            var a = pts[i];
+            var b = pts[j];
+            if ((a.z > z) != (b.z > z) && x < (b.x - a.x) * (z - a.z) / (b.z - a.z + 0.000001) + a.x) { inside = !inside; }
+            j = i;
+        }
+        return inside;
+    }
+
+    // ARCore: bulunan yatay düzlemler (Unity ARPlaneManager.trackables); kaybolan / birleşen düzlemlerin görselleri silinir
+    func UpdateReal(dt)
+    {
+        trackingState = ARGetTrackingState();
+        var seen = Map();
+        foreach (var p in ARGetPlanes())
+        {
+            if (p.type != "Horizontal" || p.boundary.Count < 3) { continue; }
+            var key = "ar" + p.id;
+            seen[key] = true;
+            var pl = planes[key];
+            if (pl == null)
+            {
+                pl = {minX: 0.0, maxX: 0.0, minZ: 0.0, maxZ: 0.0, y: 0.0, n: 0, vis: -1, border: -1, age: 0.0,
+                      dx0: 0.0, dx1: 0.0, dz0: 0.0, dz1: 0.0, poly: []};
+                planes[key] = pl;
+                keys.Add(key);
+            }
+            pl.y = p.position.y;
+            pl.poly = p.boundary;
+            pl.minX = 1000.0;
+            pl.maxX = -1000.0;
+            pl.minZ = 1000.0;
+            pl.maxZ = -1000.0;
+            foreach (var b in p.boundary)
+            {
+                pl.minX = MathMin(pl.minX, b.x);
+                pl.maxX = MathMax(pl.maxX, b.x);
+                pl.minZ = MathMin(pl.minZ, b.z);
+                pl.maxZ = MathMax(pl.maxZ, b.z);
+            }
+            if (pl.vis < 0) { MakeVisual(pl); }
+            pl.dx0 = pl.minX;
+            pl.dx1 = pl.maxX;
+            pl.dz0 = pl.minZ;
+            pl.dz1 = pl.maxZ;
+            pl.age += dt;
+            var a = MathClamp01(pl.age / 0.6);
+            EntitySetActive(pl.vis, showPlanes);
+            EntitySetActive(pl.border, showPlanes);
+            if (showPlanes)
+            {
+                EntitySetPosition(pl.vis, (pl.minX + pl.maxX) * 0.5, pl.y + 0.004, (pl.minZ + pl.maxZ) * 0.5);
+                EntitySetScale(pl.vis, MathMax(0.01, (pl.maxX - pl.minX) * 0.5), 1, MathMax(0.01, (pl.maxZ - pl.minZ) * 0.5));
+                EntitySetColor(pl.vis, {r: 1, g: 1, b: 1, a: 0.35 * a + 0.01});
+                var line = [];
+                foreach (var b in p.boundary) { line.Add({x: b.x, y: pl.y + 0.006, z: b.z}); }
+                EntitySetComponentField(pl.border, "LineRenderer", "Positions", line);
+                var c = {r: 1, g: 1, b: 1, a: 0.9 * a};
+                EntitySetComponentField(pl.border, "LineRenderer", "StartColor", c);
+                EntitySetComponentField(pl.border, "LineRenderer", "EndColor", c);
+            }
+        }
+        var kept = [];
+        foreach (var key in keys)
+        {
+            var pl = planes[key];
+            if (seen[key] == true) { kept.Add(key); continue; }
+            if (pl.vis >= 0) { EntityDestroy(pl.vis); EntityDestroy(pl.border); }
+            planes[key] = null;
+        }
+        keys = kept;
+        planeCount = keys.Count;
+    }
+
     func Update(dt)
     {
         if (cam < 0) { return; }
         sessionTime += dt;
+        if (ARIsAvailable())
+        {
+            if (!real)
+            {
+                // Gerçek dünya kameradan: simülasyon odası ve öznitelik noktaları kapanır, simüle düzlemler silinir
+                real = true;
+                ResetSession();
+                var room = FindEntity("AR Simulation Environment");
+                if (room >= 0) { EntitySetActive(room, false); }
+                if (points >= 0) { EntitySetActive(points, false); }
+            }
+            UpdateReal(dt);
+            return;
+        }
         Track(dt);
         if (trackingState == "Tracking") { Detect(); }
         foreach (var key in keys)
@@ -187,12 +285,13 @@ script ARSession : ConquerorScript
         foreach (var key in keys)
         {
             var pl = planes[key];
-            if (pl.vis < 0 || MathAbs(dy) < 0.00001) { continue; }
+            if (pl == null || pl.vis < 0 || MathAbs(dy) < 0.00001) { continue; }
             var t = (pl.y - oy) / dy;
             if (t <= 0.0 || t >= bestT) { continue; }
             var px = ox + dx * t;
             var pz = oz + dz * t;
             if (px < pl.dx0 || px > pl.dx1 || pz < pl.dz0 || pz > pl.dz1) { continue; }
+            if (real && !InsidePolygon(pl.poly, px, pz)) { continue; }   // ARCore düzlemi: gerçek sınırı
             bestT = t;
             best = {point: {x: px, y: pl.y, z: pz}, key: key, y: pl.y};
         }
@@ -222,6 +321,6 @@ script ARSession : ConquerorScript
         planeCount = 0;
         featurePoints = 0;
         sessionTime = 0.0;
-        trackingState = "Initializing";
+        trackingState = real ? ARGetTrackingState() : "Initializing";
     }
 }

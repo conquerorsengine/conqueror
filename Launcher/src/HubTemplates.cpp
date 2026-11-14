@@ -640,6 +640,13 @@ script FirstPersonController : ConquerorScript
         if (auto scenes = meta["Scenes"])
             for (const auto& sc : scenes)
                 cfg.Build.Scenes.push_back({ sc.as<std::string>(), true });
+        // XR Plug-in Management (VR şablonu: OpenXR açılışta, AR şablonu: Android'de ARCore)
+        if (auto xr = meta["XR"]; xr && xr.IsMap())
+        {
+            cfg.XR.InitializeOnStartup = xr["InitializeOnStartup"].as<bool>(false);
+            cfg.XR.OpenXR = xr["OpenXR"].as<bool>(true);
+            cfg.XR.ARCore = xr["ARCore"].as<bool>(false);
+        }
         PhysicsSettings saved = PhysicsSettings::Get();
         PhysicsSettings::Get() = PhysicsSettings{};
         PhysicsSettings::Get().Backend = o.PhysicsBackend == 1 ? PhysicsBackend3D::MuJoCo : PhysicsBackend3D::Jolt;

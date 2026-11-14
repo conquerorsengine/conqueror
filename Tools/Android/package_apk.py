@@ -35,6 +35,12 @@ OPENXR_LOADER_VERSION = "1.1.47"
 OPENXR_LOADER_SHA256 = "125d0537f99fc348c65bd84f67e43b482940aa0cb25c5e73a20f2827feb92677"
 OPENXR_LOADER_URL = ("https://repo1.maven.org/maven2/org/khronos/openxr/openxr_loader_for_android/{v}/"
                      "openxr_loader_for_android-{v}.aar")
+# Google ARCore SDK (com.google.ar:core; "ARCore Additional Terms of Service", https://developers.google.com/ar/develop/terms):
+# depoda değil, ARCore açık projelerin APK'sı için Google Maven'dan indirilir ve SHA-256 ile doğrulanır
+ARCORE_VERSION = "1.57.0"
+ARCORE_SHA256 = "df53bb8ea8e3a9f32e256b91909959d60b2e4c60d8fcc56b905b4c3e926f5c72"
+ARCORE_MIN_APK_VERSION = "262070000"   # AAR manifestindeki com.google.ar.core.min_apk_version
+ARCORE_URL = "https://dl.google.com/dl/android/maven2/com/google/ar/core/{v}/core-{v}.aar"
 
 
 def log(msg):
@@ -282,8 +288,26 @@ def openxr_loader(abi, cache_dir):
     return out
 
 
+def arcore_aar(cache_dir):
+    """ARCore SDK .aar (Google Maven; ARCore Additional Terms of Service)"""
+    out = Path(cache_dir) / f"arcore-{ARCORE_VERSION}" / f"core-{ARCORE_VERSION}.aar"
+    if out.is_file():
+        return out
+    import urllib.request
+    out.parent.mkdir(parents=True, exist_ok=True)
+    log(f"downloading the ARCore SDK {ARCORE_VERSION} from Google Maven (ARCore Additional Terms of Service)")
+    tmp = out.with_suffix(".part")
+    with urllib.request.urlopen(ARCORE_URL.format(v=ARCORE_VERSION), timeout=180) as r, open(tmp, "wb") as f:
+        shutil.copyfileobj(r, f)
+    if hashlib.sha256(tmp.read_bytes()).hexdigest() != ARCORE_SHA256:
+        tmp.unlink()
+        fail("ARCore SDK download does not match its SHA-256 (not used)")
+    tmp.rename(out)
+    return out
+
+
 def manifest_xml(package, label, version_code, version_name, orientation, automotive, debuggable, icon=False, variant="phone",
-                 banner=False):
+                 banner=False, arcore=False):
     automotive_feature = ('    <uses-feature android:name="android.hardware.type.automotive" android:required="true"/>\n'
                           if automotive else "")
     # Android TV: TV başlatıcısı (leanback), kumanda / gamepad; aynı APK telefonda da çalışır (required=false)
@@ -319,6 +343,22 @@ def manifest_xml(package, label, version_code, version_name, orientation, automo
         app_meta = ('        <property android:name="android.window.PROPERTY_XR_ACTIVITY_START_MODE"\n'
                     '            android:value="XR_ACTIVITY_START_MODE_FULL_SPACE_UNMANAGED"/>\n'
                     '        <uses-native-library android:name="libopenxr.google.so" android:required="false"/>\n')
+    # ARCore: kamera izni, AR kamera özelliği, Google Play Services for AR (yoksa ARCore'un kurulum etkinliği kurar)
+    has_code = "false"
+    if arcore:
+        has_code = "true"
+        automotive_feature += ('    <uses-permission android:name="android.permission.CAMERA"/>\n'
+                               '    <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>\n')
+        queries += ('    <queries>\n'
+                    '        <package android:name="com.google.ar.core"/>\n'
+                    '        <package android:name="com.android.vending"/>\n'
+                    '        <intent><action android:name="com.google.android.play.core.install.BIND_INSTALL_SERVICE"/></intent>\n'
+                    '    </queries>\n')
+        app_meta += ('        <meta-data android:name="com.google.ar.core" android:value="required"/>\n'
+                     f'        <meta-data android:name="com.google.ar.core.min_apk_version" android:value="{ARCORE_MIN_APK_VERSION}"/>\n'
+                     '        <activity android:name="com.google.ar.core.InstallActivity" android:configChanges="keyboardHidden|orientation|screenSize"\n'
+                     '            android:excludeFromRecents="true" android:exported="false" android:launchMode="singleTop"\n'
+                     '            android:theme="@android:style/Theme.Material.Light.Dialog.Alert"/>\n')
     # Araçta sistem çubukları gizlenemez: tam ekran olmayan tema ve kenardan kenara zorlaması olmayan hedef SDK ile
     # pencere çubukların arasındaki alana yerleşir
     theme = "@android:style/Theme.DeviceDefault.NoActionBar" if automotive else "@android:style/Theme.NoTitleBar.Fullscreen"
@@ -344,7 +384,7 @@ def manifest_xml(package, label, version_code, version_name, orientation, automo
     <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
     <uses-feature android:name="android.hardware.gamepad" android:required="false"/>
 {automotive_feature}    <uses-permission android:name="android.permission.INTERNET"/>
-{queries}    <application android:label="{label}"{icon_attr} android:hasCode="false" android:extractNativeLibs="true"
+{queries}    <application android:label="{label}"{icon_attr} android:hasCode="{has_code}" android:extractNativeLibs="true"
         android:isGame="true" android:appCategory="game" android:debuggable="{str(debuggable).lower()}">
 {app_meta}        <activity android:name="android.app.NativeActivity" android:exported="true"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|navigation|uiMode|density"
@@ -388,6 +428,8 @@ def main():
     ap.add_argument("--automotive", action="store_true", help="Android Automotive OS (requires android.hardware.type.automotive)")
     ap.add_argument("--tv", action="store_true", help="Android TV / Google TV: leanback launcher entry and banner (also installs on phones)")
     ap.add_argument("--chromeos", action="store_true", help="ChromeOS: resizable window, keyboard / mouse device class")
+    ap.add_argument("--arcore", action="store_true",
+                    help="Google ARCore (phones / tablets): adds the ARCore SDK from Google Maven, camera permission and AR feature")
     ap.add_argument("--androidxr", action="store_true",
                     help="Android XR headsets (Samsung Galaxy XR ...): OpenXR feature, full space start mode, bundled OpenXR loader; "
                          "default ABI arm64-v8a")
@@ -475,18 +517,40 @@ def main():
         if has_icon or has_banner:
             run([aapt2, "compile", "--dir", tmp / "res", "-o", tmp / "res.zip"])
             res_flags = ["-R", tmp / "res.zip", "--auto-add-overlay"]
+        # ARCore: AAR'ın kaynakları (kurulum etkinliğinin düzeni ve metinleri) bağlanır, R sınıfı üretilir
+        arcore_dir = None
+        if args.arcore:
+            arcore_dir = tmp / "arcore"
+            with zipfile.ZipFile(arcore_aar(build_root)) as z:
+                z.extractall(arcore_dir)
+            run([aapt2, "compile", "--dir", arcore_dir / "res", "-o", tmp / "arcore_res.zip"])
+            res_flags += ["-R", tmp / "arcore_res.zip", "--auto-add-overlay", "--extra-packages", "com.google.ar.core",
+                          "--java", tmp / "gen"]
         variant = ("tv" if args.tv else "chromeos" if args.chromeos else "quest" if args.quest else "androidxr" if args.androidxr
                    else "phone")
         orientation = "unspecified" if args.chromeos else "landscape" if xr else args.orientation
         (tmp / "AndroidManifest.xml").write_text(manifest_xml(package, label, args.version_code, version_name,
                                                               orientation, args.automotive, not args.release, has_icon,
-                                                              variant, has_banner),
+                                                              variant, has_banner, args.arcore),
                                                  encoding="utf-8")
         base = tmp / "base.apk"
         run([aapt2, "link", "-o", base, "-I", platform / "android.jar", "--manifest", tmp / "AndroidManifest.xml",
              "--min-sdk-version", str(MIN_SDK),
              "--target-sdk-version", str(AUTOMOTIVE_TARGET_SDK if args.automotive else TARGET_SDK)] + res_flags)
 
+        # ARCore'un Java tarafı: AAR classes.jar + R sınıfları -> classes.dex (javac + d8; NativeActivity kodsuz kalır)
+        dex = None
+        if arcore_dir is not None:
+            javac = shutil.which("javac") or fail("javac not found (install a JDK)")
+            d8 = tool(build_tools, "d8")
+            sources = [str(p) for p in (tmp / "gen").rglob("*.java")]
+            (tmp / "rclasses").mkdir()
+            run([javac, "--release", "11", "-nowarn", "-cp", platform / "android.jar", "-d", tmp / "rclasses"] + sources)
+            classes = [str(p) for p in (tmp / "rclasses").rglob("*.class")]
+            (tmp / "dex").mkdir()
+            run([d8, "--release", "--min-api", str(MIN_SDK), "--lib", platform / "android.jar", "--output", tmp / "dex",
+                 arcore_dir / "classes.jar"] + classes)
+            dex = tmp / "dex" / "classes.dex"
         # aapt2'nin varlık süzgeci ("_" ile başlayan klasörler, "." dosyaları) oyun dosyalarını atmasın: zipfile ile ekle
         unaligned = tmp / "unaligned.apk"
         shutil.copyfile(base, unaligned)
@@ -500,6 +564,14 @@ def main():
                 z.write(strip_library(lib, tmp / abi, sdk, args.ndk), f"lib/{abi}/libconqueror.so", zipfile.ZIP_DEFLATED)
                 if xr:
                     z.write(openxr_loader(abi, build_root), f"lib/{abi}/libopenxr_loader.so", zipfile.ZIP_DEFLATED)
+                if arcore_dir is not None:
+                    for name in ("libarcore_sdk_c.so", "libarcore_sdk_jni.so"):
+                        lib_path = arcore_dir / "jni" / abi / name
+                        if not lib_path.is_file():
+                            fail(f"the ARCore SDK has no {abi} {name}")
+                        z.write(lib_path, f"lib/{abi}/{name}", zipfile.ZIP_DEFLATED)
+            if dex is not None:
+                z.write(dex, "classes.dex", zipfile.ZIP_DEFLATED)
 
         aligned = tmp / "aligned.apk"
         # -P 16: 16 KB sayfa boyutlu cihazlar için .so hizası (build-tools 35+); eski sürümlerde -p

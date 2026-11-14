@@ -4,3 +4,5 @@ Shared: [Furniture]
 StartScene: Assets/Scenes/Main.cqscene
 Scenes:
   - Assets/Scenes/Main.cqscene
+XR:
+  ARCore: true

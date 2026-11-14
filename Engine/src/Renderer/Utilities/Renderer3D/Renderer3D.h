@@ -57,6 +57,7 @@ namespace Conqueror
         glm::vec3 SkyboxTint = glm::vec3(1.0f);
         // Kameraya özel arka plan gökyüzü (Skybox bileşeni): yalnızca çizimde, IBL'de değil
         std::shared_ptr<Cubemap> BackgroundSkybox;
+        uint32_t BackgroundTexture = 0;         // 2D sRGB görüntü (AR kamera akışı): gökyüzü yerine tüm ekrana çizilir
         float BackgroundExposure = 1.0f;
         glm::vec3 BackgroundTint = glm::vec3(1.0f);
 

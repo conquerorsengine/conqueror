@@ -1655,6 +1655,57 @@ namespace Conqueror
     {
         UploadFrameData();
         auto& env = s->Env;
+        // AR: cihaz kamerasının görüntüsü arka plan (derinlik en uzakta; pozlama çarpanı geri alınır, renk değişmesin)
+        if (env.BackgroundTexture)
+        {
+            static std::shared_ptr<Shader> s_BackgroundShader;
+            if (!s_BackgroundShader)
+                s_BackgroundShader = Shader::Create("ARCameraBackground", R"(
+                    #version 450 core
+                    out vec2 v_UV;
+                    void main()
+                    {
+                        vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);
+                        v_UV = p;
+                        gl_Position = vec4(p * 2.0 - 1.0, 1.0, 1.0);
+                    }
+                )", R"(
+                    #version 450 core
+                    in vec2 v_UV;
+                    layout(location = 0) out vec4 o_Color;
+                    uniform sampler2D u_Image;
+                    uniform float u_InvExposure;
+                    void main()
+                    {
+                        vec3 c = texture(u_Image, v_UV).rgb;
+                        o_Color = vec4(pow(c, vec3(2.2)) * u_InvExposure, 1.0);
+                    }
+                )");
+            if (s_BackgroundShader && s_BackgroundShader->IsValid())
+            {
+                GLint prevDepthFunc = GL_LESS;
+                glGetIntegerv(GL_DEPTH_FUNC, &prevDepthFunc);
+                const GLboolean cull = glIsEnabled(GL_CULL_FACE);
+                glDepthFunc(GL_LEQUAL);
+                glDepthMask(GL_FALSE);
+                glDisable(GL_CULL_FACE);
+                s_BackgroundShader->Bind();
+                s_BackgroundShader->SetInt("u_Image", 0);
+                s_BackgroundShader->SetFloat("u_InvExposure", 1.0f / std::max(1e-4f, std::exp2(env.Settings.Post.Exposure)));
+                glBindTextureUnit(0, env.BackgroundTexture);
+                static uint32_t s_BgVAO = 0;
+                if (!s_BgVAO)
+                    glGenVertexArrays(1, &s_BgVAO);
+                glBindVertexArray(s_BgVAO);
+                glDrawArrays(GL_TRIANGLES, 0, 3);
+                glBindVertexArray(0);
+                glDepthMask(GL_TRUE);
+                glDepthFunc(prevDepthFunc);
+                if (cull) glEnable(GL_CULL_FACE);
+                Renderer::GetStats().DrawCalls++;
+                return;
+            }
+        }
         if (!env.DrawSky)
             return;
         uint32_t cube = 0;

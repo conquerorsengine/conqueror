@@ -1,4 +1,5 @@
 # template: vr
+# env: CQ_OPENXR=0
 # VR şablonu: Q 45 derece adımlı dönüş, V iki göz önizlemesi (XR Device Simulator)
 wait 30
 focus Game

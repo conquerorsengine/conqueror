@@ -79,6 +79,7 @@
 #include "Scene/Articulation.h"
 #include "Scene/XRInteraction.h"
 #include "XR/OpenXR.h"
+#include "XR/ARCore.h"
 #include "Particles/VisualEffect.h"
 #include "Scene/WorldActors.h"
 #include "Scene/ActorComponents.h"
@@ -269,6 +270,9 @@ namespace Conqueror
             // XR Plug-in Management > Initialize XR on Startup: OpenXR gözlük oturumu (çalışma zamanı yoksa XR Device Simulator kalır)
             if (OpenXR::WantedAtStartup() && !OpenXR::GetStatus().SessionCreated)
                 OpenXR::Start();
+            // XR Plug-in Management > Android > ARCore: telefon AR oturumu (izin / kurulum birkaç kare sürebilir)
+            if (ARCore::WantedAtStartup() && !ARCore::IsRunning())
+                ARCore::Start();
         }
         ScriptContext::SetActiveScene(this);
         ScriptContext::SetCurrentEntity(ScriptContext::NullEntity);
@@ -354,6 +358,7 @@ namespace Conqueror
         if (endPlaySession)
         {
             OpenXR::Stop();
+            ARCore::Stop();
             Scripting::ScriptRuntimes::PlayStop();
             AudioOneShots::StopAll();
             AudioMixer::Get().EndPlaySession();
@@ -1211,6 +1216,8 @@ namespace Conqueror
         {
         // Ağ: gelen mesajlar, uzak nesne oluşturma/silme ve ara değerleme (betiklerden önce)
         Net::NetworkSession::Get().Update(this, (float)realTs);
+        // ARCore: kamera görüntüsü, cihaz pozu, düzlemler (betikler bu karenin değerlerini okusun)
+        ARCore::Update();
         // XR: baş / el pozları (gözlük yoksa simülatör), ışınlar, tutma, ışınlanma (betiklerden ve fizikten önce)
         XRInteraction::Update(*this, (float)ts);
         // MetaSound Source: oynat / konum / bitiş
@@ -3077,6 +3084,10 @@ namespace Conqueror
             // Oyun görünümü: kameranın Background ayarı (yansıma probları her zaman gökyüzünü görür)
             if (!ResolveCameraBackground(Entity{ m_BackgroundCamera, this }).DrawSky)
                 env.DrawSky = false;
+            // ARCore: arka plan cihaz kamerasının görüntüsü (ana oyun görünümünde)
+            if (!s_GISecondaryView)
+                if (const uint32_t cameraImage = ARCore::BackgroundTexture())
+                    env.BackgroundTexture = cameraImage;
             // Kameraya özel gökyüzü (Skybox bileşeni)
             if (auto* sky = m_Registry.try_get<CameraSkyboxComponent>(m_BackgroundCamera))
                 if (auto cube = CameraSkybox::Resolve(*sky))

@@ -36,6 +36,7 @@
 #include "Core/Audio/AudioMixer.h"
 #include "Core/Math/CurveAsset.h"
 #include "XR/OpenXR.h"
+#include "XR/ARCore.h"
 #include "Scripting/Visual/VisualGraph.h"
 
 #include <algorithm>
@@ -1531,6 +1532,56 @@ namespace Conqueror::CQS
             return Value::MakeFloat(v);
         }, 2);
         vm->DefineNative("XRGetThumbstick", [](int argc, Value* args) -> Value { return Vec2(OpenXR::Hand(xrHand(argc, args, 0)).Stick); }, 1);
+        // ---------------------------------------------------------------- ARCore (Unity AR Foundation ARSession / ARPlaneManager / ARRaycastManager)
+        // ARIsAvailable: gerçek AR oturumu çalışıyor mu (yoksa şablon AR Simulation kullanır)
+        vm->DefineNative("ARIsAvailable", [](int, Value*) -> Value { return Value::MakeBool(ARCore::IsRunning()); }, 0);
+        vm->DefineNative("ARGetTrackingState", [](int, Value*) -> Value { return Value::MakeString(ARCore::GetTrackingState()); }, 0);
+        vm->DefineNative("ARGetCameraPosition", [](int, Value*) -> Value {
+            glm::vec3 p(0.0f); glm::quat q(1.0f, 0.0f, 0.0f, 0.0f);
+            return ARCore::CameraPose(p, q) ? Vec3(p) : Value::MakeNull();
+        }, 0);
+        vm->DefineNative("ARGetCameraRotation", [](int, Value*) -> Value {
+            glm::vec3 p(0.0f); glm::quat q(1.0f, 0.0f, 0.0f, 0.0f);
+            return ARCore::CameraPose(p, q) ? Vec3(glm::degrees(glm::eulerAngles(q))) : Value::MakeNull();
+        }, 0);
+        vm->DefineNative("ARGetCameraFov", [](int, Value*) -> Value { return Value::MakeFloat(ARCore::CameraFovY()); }, 0);
+        // ARGetPlanes() -> [{id, position, rotation, extentX, extentZ, type: "Horizontal" | "Ceiling" | "Vertical", polygon: [{x, y}]}]
+        vm->DefineNative("ARGetPlanes", [](int, Value*) -> Value {
+            auto* list = new CQSListObject();
+            for (const auto& p : ARCore::GetPlanes())
+            {
+                auto* m = new CQSMapObject();
+                m->Entries["id"] = Value::MakeString(std::to_string(p.Id));
+                m->Entries["position"] = Vec3(p.Position);
+                m->Entries["rotation"] = Vec3(glm::degrees(glm::eulerAngles(p.Rotation)));
+                m->Entries["extentX"] = Value::MakeFloat(p.ExtentX);
+                m->Entries["extentZ"] = Value::MakeFloat(p.ExtentZ);
+                m->Entries["type"] = Value::MakeString(p.Type == 2 ? "Vertical" : p.Type == 1 ? "Ceiling" : "Horizontal");
+                auto* poly = new CQSListObject();
+                for (const auto& v : p.Polygon)
+                    poly->Elements.push_back(Vec2(v));
+                m->Entries["polygon"] = Value::MakeObject(poly);
+                // Sınır dünya uzayında (merkez pozu uygulanmış): betikler dönüş hesabı yapmadan çizer / içeride mi bakar
+                auto* boundary = new CQSListObject();
+                for (const auto& v : p.Polygon)
+                    boundary->Elements.push_back(Vec3(p.Position + p.Rotation * glm::vec3(v.x, 0.0f, v.y)));
+                m->Entries["boundary"] = Value::MakeObject(boundary);
+                list->Elements.push_back(Value::MakeObject(m));
+            }
+            return Value::MakeObject(list);
+        }, 0);
+        // ARRaycast(screenX, screenY) -> {point, normal, plane, distance} | null (ekran pikseli, sol üst köken)
+        vm->DefineNative("ARRaycast", [](int argc, Value* args) -> Value {
+            ARCore::HitResult hit;
+            if (!ARCore::Raycast(Num(argc, args, 0), Num(argc, args, 1), hit))
+                return Value::MakeNull();
+            auto* m = new CQSMapObject();
+            m->Entries["point"] = Vec3(hit.Point);
+            m->Entries["normal"] = Vec3(hit.Normal);
+            m->Entries["plane"] = Value::MakeString(std::to_string(hit.PlaneId));
+            m->Entries["distance"] = Value::MakeFloat(hit.Distance);
+            return Value::MakeObject(m);
+        }, 2);
         // XRHaptic(hand, amplitude 0..1, seconds): kumanda titreşimi
         vm->DefineNative("XRHaptic", [](int argc, Value* args) -> Value {
             if (!OpenXR::IsRunning()) return Value::MakeBool(false);

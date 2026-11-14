@@ -215,6 +215,10 @@ namespace Conqueror::Editor
         m_Dirty |= UI::Checkbox("OpenXR", xr.OpenXR,
                                 "The active OpenXR runtime drives the headset: Monado, SteamVR, Meta Quest Link, Windows Mixed Reality, "
                                 "Varjo, Pico. XR_RUNTIME_JSON selects another runtime.");
+        m_Dirty |= UI::Checkbox("ARCore (Android)", xr.ARCore,
+                                "Android phones and tablets: Google ARCore drives the AR camera (pose, field of view, camera image as the "
+                                "background), plane detection and hit tests. The Android build adds the ARCore SDK from Google Maven "
+                                "(ARCore Additional Terms of Service) and the camera permission. In the editor the AR Simulation runs.");
         UI::SubHeader("Runtime");
         static OpenXR::Status s_Checked;
         static bool s_HasCheck = false;
