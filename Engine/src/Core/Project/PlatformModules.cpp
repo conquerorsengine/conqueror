@@ -384,8 +384,35 @@ namespace Conqueror::PlatformModules
         if (platform == "Android" || platform == "Android Automotive" || platform == "Android TV" || platform == "ChromeOS" ||
             platform == "Meta Quest" || platform == "Android XR")
             return Android(platform);
+        // iOS / iPadOS: oyuncu Mac'te Xcode'un iOS SDK'sıyla derlenir (Tools/iOS/package_ios.py); Team ID yoksa iOS Simülatörü için
         if (platform == "iOS")
-            return Make(platform, Status::NotAvailable, "Xcode on a Mac", "The iOS player is not part of this engine version");
+        {
+            const std::string toolchain = "Xcode with the iOS SDK + CMake + Python 3 (Tools/iOS/package_ios.py)";
+            if (host != "macOS")
+                return Make(platform, Status::NeedsHost, toolchain, "iOS apps are built on a Mac with Xcode");
+            std::vector<fs::path> developerDirs;
+            if (const std::string dev = Env("DEVELOPER_DIR"); !dev.empty())
+                developerDirs.push_back(dev);
+            developerDirs.push_back("/Applications/Xcode.app/Contents/Developer");
+            if (fs::is_directory("/Applications", ec))
+                for (const auto& e : fs::directory_iterator("/Applications", ec))
+                    if (e.path().filename().string().rfind("Xcode", 0) == 0)
+                        developerDirs.push_back(e.path() / "Contents" / "Developer");
+            fs::path sdk;
+            for (const auto& d : developerDirs)
+                if (fs::is_directory(d / "Platforms" / "iPhoneOS.platform", ec))
+                {
+                    sdk = d;
+                    break;
+                }
+            if (sdk.empty() || FindProgram("xcrun").empty())
+                return Make(platform, Status::Missing, toolchain, "Xcode with the iOS platform not found",
+                            "Install Xcode from the App Store, open it once and add the iOS platform (Xcode > Settings > Components)");
+            if (FindProgram("cmake").empty() || (FindProgram("python3").empty() && FindProgram("python").empty()))
+                return Make(platform, Status::Missing, toolchain, "CMake or Python 3 not found", "brew install cmake ninja python3");
+            return Make(platform, Status::Ready, toolchain,
+                        "Xcode " + sdk.string() + " (the first build compiles the iOS player; without a Team ID the app is built for the iOS Simulator)");
+        }
         // Web: oyuncu Emscripten ile her masaüstünden derlenir (Tools/Web/package_web.py); ya da önceden derlenmiş oyuncu
         if (platform == "Web")
         {

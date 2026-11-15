@@ -13,11 +13,12 @@
     #endif
 #elif defined(__APPLE__)   // __MACH__ değil: GNU/Hurd da GNU Mach çekirdeği üzerinde __MACH__ tanımlar
     #include <TargetConditionals.h>
-    #if TARGET_IPHONE_SIMULATOR == 1
-        #error "IOS simulator is not supported!"
-    #elif TARGET_OS_IPHONE == 1
+    #if TARGET_OS_IPHONE == 1
+        // iOS / iPadOS (aygıt ve simülatör): Darwin + POSIX yolları macOS ile ortak (CQ_PLATFORM_MACOS da tanımlı, Android'deki
+        // CQ_PLATFORM_LINUX gibi); pencere ve girdi UIKit (Platform/iOS, GLFW işlevleriyle), grafik yalnız Metal. Cocoa'ya ve
+        // iOS'ta olmayan süreç işlevlerine (system, fork / exec ile araç çalıştırma) dayanan yollar CQ_PLATFORM_IOS ile ayrılır
         #define CQ_PLATFORM_IOS
-        #error "IOS is not supported!"
+        #define CQ_PLATFORM_MACOS
     #elif TARGET_OS_MAC == 1
         // macOS: POSIX yolları + Vulkan arka ucu (MoltenVK -> Metal); motor statik bağlanır
         #define CQ_PLATFORM_MACOS

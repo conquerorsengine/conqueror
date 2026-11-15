@@ -1,4 +1,5 @@
 #include "Scene/MeshRendererMaterial.h"
+#include "Core/Utils/ShellCompat.h"
 #include "Renderer/Utilities/Renderer3D/Material.h"
 #include "VideoPlayer.h"
 #include "Core/Assets/SimpleAsset.h"
@@ -352,9 +353,9 @@ namespace Conqueror
             if (cached < 0)
             {
 #ifdef _WIN32
-                cached = std::system("where ffmpeg >NUL 2>NUL") == 0 ? 1 : 0;
+                cached = Conqueror::RunShell("where ffmpeg >NUL 2>NUL") == 0 ? 1 : 0;
 #else
-                cached = std::system("command -v ffmpeg >/dev/null 2>&1") == 0 ? 1 : 0;
+                cached = Conqueror::RunShell("command -v ffmpeg >/dev/null 2>&1") == 0 ? 1 : 0;
 #endif
             }
             return cached == 1;
@@ -384,7 +385,7 @@ namespace Conqueror
                 + " >/dev/null 2>&1";
 #endif
             CQ_CORE_INFO("[Video] Converting {} for playback (ffmpeg, cached)", source);
-            if (std::system(cmd.c_str()) != 0 || !fs::exists(out, ec))
+            if (Conqueror::RunShell(cmd.c_str()) != 0 || !fs::exists(out, ec))
             {
                 error = "ffmpeg could not convert " + source;
                 return {};

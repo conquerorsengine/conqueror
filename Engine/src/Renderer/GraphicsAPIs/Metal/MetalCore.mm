@@ -3,11 +3,17 @@
 #include "MetalCore.h"
 #include "Core/Logging/Log.h"
 
-#import <Cocoa/Cocoa.h>
-
-#define GLFW_EXPOSE_NATIVE_COCOA
-#include <GLFW/glfw3.h>
-#include <GLFW/glfw3native.h>
+#if defined(CQ_PLATFORM_IOS)
+    // iOS / iPadOS: oyun görünümünün kendi CAMetalLayer'ı (Platform/iOS/GLFWiOS.mm)
+    #import <UIKit/UIKit.h>
+    #include "Platform/iOS/iOSPlatform.h"
+    #include <GLFW/glfw3.h>
+#else
+    #import <Cocoa/Cocoa.h>
+    #define GLFW_EXPOSE_NATIVE_COCOA
+    #include <GLFW/glfw3.h>
+    #include <GLFW/glfw3native.h>
+#endif
 
 #include <algorithm>
 #include <mach/mach_time.h>
@@ -65,6 +71,20 @@ namespace Conqueror::MTL
             return false;
         }
 
+#if defined(CQ_PLATFORM_IOS)
+        m_Layer = (__bridge CAMetalLayer*)iOS::MetalLayer();
+        if (!m_Layer)
+        {
+            error = "No Metal view";
+            return false;
+        }
+        m_Layer.device = m_Device;
+        m_Layer.pixelFormat = MTLPixelFormatBGRA8Unorm;   // motor çıktısı zaten sRGB kodlu
+        m_Layer.framebufferOnly = YES;
+        m_Layer.maximumDrawableCount = 3;
+        m_Layer.contentsScale = iOS::ContentScale();
+        m_Layer.drawableSize = CGSizeMake(FramebufferWidth(), FramebufferHeight());
+#else
         NSWindow* nsWindow = (NSWindow*)glfwGetCocoaWindow(window);
         if (!nsWindow)
         {
@@ -81,6 +101,7 @@ namespace Conqueror::MTL
         NSView* view = [nsWindow contentView];
         [view setWantsLayer:YES];
         [view setLayer:m_Layer];
+#endif
 
         m_Inflight = dispatch_semaphore_create(kFrames);
         for (Frame& f : m_Frames)
@@ -95,8 +116,12 @@ namespace Conqueror::MTL
 
     void Core::SetVSync(bool enabled)
     {
+#if defined(CQ_PLATFORM_IOS)
+        (void)enabled;   // iOS'ta sunum her zaman ekran tazelemesiyle (CADisplayLink)
+#else
         if (m_Layer)
             m_Layer.displaySyncEnabled = enabled ? YES : NO;
+#endif
     }
 
     bool Core::NewChunk(Frame& f, uint64_t size)
@@ -240,12 +265,14 @@ namespace Conqueror::MTL
         for (Frame& f : m_Frames)
             f.Chunks.clear();
         m_Drawable = nil;
+#if !defined(CQ_PLATFORM_IOS)
         if (m_Layer)
         {
             NSWindow* nsWindow = (NSWindow*)glfwGetCocoaWindow(m_Window);
             if (nsWindow)
                 [[nsWindow contentView] setLayer:nil];
         }
+#endif
         m_Layer = nil;
         m_Queue = nil;
         m_Device = nil;

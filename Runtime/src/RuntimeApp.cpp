@@ -146,7 +146,8 @@ int CQ_RuntimeMain(int argc, char** argv)
     return 0;
 }
 
-#ifndef __ANDROID__
+// iOS / iPadOS: main() UIKit'i başlatır (iOSMain.mm), motor application:didFinishLaunching içinde kurulur
+#if !defined(__ANDROID__) && !defined(CQ_PLATFORM_IOS)
 int main(int argc, char** argv)
 {
     return CQ_RuntimeMain(argc, argv);

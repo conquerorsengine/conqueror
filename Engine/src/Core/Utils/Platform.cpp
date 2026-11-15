@@ -1,4 +1,5 @@
 #include "Platform.h"
+#include "Core/Utils/ShellCompat.h"
 #include <filesystem>
 #include "Core/Logging/Log.h"
 
@@ -475,7 +476,7 @@ namespace Conqueror
 
         int ExecuteCommand(const std::string& command)
         {
-            return system(command.c_str());
+            return Conqueror::RunShell(command.c_str());
         }
 
         int ExecuteCommandWithOutput(const std::string& command, std::string& output)

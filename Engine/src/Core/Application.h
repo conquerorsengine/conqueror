@@ -39,8 +39,9 @@ namespace Conqueror
         virtual ~Application();
 
         void Run();
-        // Ana döngünün tek karesi (Web: tarayıcı her animasyon karesinde çağırır)
+        // Ana döngünün tek karesi (Web: tarayıcı her animasyon karesinde çağırır; iOS: ekran tazelemesinde CADisplayLink)
         void RunFrame();
+        bool IsRunning() const { return m_Running; }
         // force=false: katmanlara sorulur (biri reddederse açık kalır); true: koşulsuz kapat
         void Close(bool force = false);
 

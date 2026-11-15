@@ -1,4 +1,8 @@
 #include "UIControls.h"
+#include "Core/Base/Base.h"
+#if defined(CQ_PLATFORM_IOS)
+    #include "Platform/iOS/iOSPlatform.h"
+#endif
 
 #include "Core/Project/Project.h"
 #include "Core/Utils/PlayerPrefs.h"
@@ -725,6 +729,8 @@ namespace Conqueror
             ShellExecuteA(nullptr, "open", uri.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
 #elif defined(__ANDROID__)
             (void)uri;
+#elif defined(CQ_PLATFORM_IOS)
+            iOS::OpenURL(uri);
 #elif defined(__EMSCRIPTEN__)
             // Web: yeni sekmede (yalnız http / https / mailto; "javascript:" adresleri sayfada kod çalıştıramasın)
             if (uri.rfind("http://", 0) != 0 && uri.rfind("https://", 0) != 0 && uri.rfind("mailto:", 0) != 0)

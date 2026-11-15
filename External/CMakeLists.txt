@@ -8,8 +8,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
 
 # GLFW
-if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "QNX" OR EMSCRIPTEN)
-    # Android / QNX'te GLFW yok: motor aynı API'yi Engine/src/Platform/Android/GLFWAndroid.cpp (NativeActivity + EGL) ve
+if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "QNX" OR EMSCRIPTEN OR IOS)
+    # iOS / iPadOS: Engine/src/Platform/iOS/GLFWiOS.mm (UIKit + CAMetalLayer). Android / QNX'te GLFW yok: motor aynı API'yi Engine/src/Platform/Android/GLFWAndroid.cpp (NativeActivity + EGL) ve
     # Engine/src/Platform/QNX/GLFWQnx.cpp (Screen + EGL) ile sağlar. Web: Emscripten'in GLFW 3 uygulaması (contrib.glfw3,
     # tarayıcı tuvali) bağlanır, başlıklar aynı
     add_library(glfw INTERFACE)
@@ -205,7 +205,7 @@ endif()
 
 # NFD (Native File Dialog) — yalnızca editör/başlatıcı kullanır; oyuncuda dosya iletişim kutusu yok (Android, QNX ve
 # yalnız oyuncu derlemelerinde GTK / X11 bağımlılığı gelmesin)
-if(ANDROID OR CQ_RUNTIME_ONLY OR CMAKE_SYSTEM_NAME STREQUAL "QNX" OR EMSCRIPTEN)
+if(ANDROID OR CQ_RUNTIME_ONLY OR CMAKE_SYSTEM_NAME STREQUAL "QNX" OR EMSCRIPTEN OR IOS)
     add_library(nfd INTERFACE)
     target_include_directories(nfd INTERFACE nativefiledialog-extended/src/include)
 else()

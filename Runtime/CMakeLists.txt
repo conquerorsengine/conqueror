@@ -22,6 +22,21 @@ if(ANDROID)
     foreach(_cfg RELEASE DEBUG RELWITHDEBINFO MINSIZEREL)
         set_target_properties(conqueror PROPERTIES LIBRARY_OUTPUT_DIRECTORY_${_cfg} ${CMAKE_BINARY_DIR}/lib/${ANDROID_ABI})
     endforeach()
+elseif(IOS)
+    # iOS / iPadOS: UIKit uygulama paketi (conqueror.app). Oyun dosyaları, adı, paket kimliği ve imza Tools/iOS/package_ios.py ile
+    add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${RUNTIME_SOURCES} src/iOSMain.mm)
+    set_source_files_properties(src/iOSMain.mm PROPERTIES COMPILE_FLAGS "-fobjc-arc" SKIP_PRECOMPILE_HEADERS ON)
+    target_include_directories(${PROJECT_NAME} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/../Engine/src)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Engine)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        OUTPUT_NAME conqueror
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/../Tools/iOS/Info.plist.in
+        MACOSX_BUNDLE_GUI_IDENTIFIER "com.conqueror.player"
+        MACOSX_BUNDLE_BUNDLE_NAME "Conqueror"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${CMAKE_PROJECT_VERSION}"
+        MACOSX_BUNDLE_BUNDLE_VERSION "1")
 elseif(RUNTIME_SOURCES)
     add_executable(${PROJECT_NAME} ${RUNTIME_SOURCES})
     if(WIN32 AND CQ_APP_ICON_RC)

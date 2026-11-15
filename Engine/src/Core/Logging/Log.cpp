@@ -1,4 +1,5 @@
 #include "Log.h"
+#include "Core/Utils/ShellCompat.h"
 #include "Core/Utils/Threads.h"
 #include "ConsoleSink.h"
 
@@ -977,7 +978,7 @@ namespace Conqueror
         std::thread([url, safeMessage]() {
             std::string payload = "{\"content\": \"**[Conqueror Engine Alert]** " + safeMessage + "\"}";
             std::string curlCmd = "curl -s -H \"Content-Type: application/json\" -X POST -d '" + payload + "' " + url + " > /dev/null 2>&1";
-            std::system(curlCmd.c_str());
+            Conqueror::RunShell(curlCmd.c_str());
         }).detach();
     }
 }

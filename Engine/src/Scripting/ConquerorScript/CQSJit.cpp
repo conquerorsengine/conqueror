@@ -1,8 +1,12 @@
 #include "CQSJit.h"
 
-#if defined(__EMSCRIPTEN__) || defined(__i386__) || defined(_M_IX86)
-// WebAssembly çalışma anında makine kodu üretemez (sayfa yeni kod yükleyemez); 32 bit x86'da değerler 16 bayt değil (JIT düzeni
-// 16 bayt varsayar): ConquerorScript yorumlayıcıyla çalışır
+#if defined(__APPLE__)
+    #include <TargetConditionals.h>
+#endif
+
+#if defined(__EMSCRIPTEN__) || defined(__i386__) || defined(_M_IX86) || (defined(__APPLE__) && TARGET_OS_IPHONE)
+// WebAssembly çalışma anında makine kodu üretemez (sayfa yeni kod yükleyemez); iOS / iPadOS App Store uygulamalarına çalıştırılabilir
+// bellek vermez; 32 bit x86'da değerler 16 bayt değil (JIT düzeni 16 bayt varsayar): ConquerorScript yorumlayıcıyla çalışır
 namespace Conqueror::CQS
 {
     bool CQSJit::IsSupported() { return false; }
