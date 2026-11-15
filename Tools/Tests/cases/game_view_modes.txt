@@ -1,0 +1,31 @@
+# template: basic3d
+# 266: Unreal gibi oyunu oynarken F1 tel kafes, F2 ışıksız, F3 ışıklı, F4 yalnız ışık; Shift+F1 görünümü değiştirmez (fareyi bırakır);
+# oyun durunca normal (ışıklı) görünüme döner. Development Build kapalı son oyunda yoktur (RuntimeLayer)
+wait 40
+focus Game
+play
+wait 60
+game_view_mode expect Lit
+game_region 0.1 0.1 0.9 0.9 lum mean >20
+key F1
+wait 15
+game_view_mode expect Wireframe
+key F2
+wait 15
+game_view_mode expect Unlit
+key F4
+wait 15
+game_view_mode expect Lighting Only
+key F3
+wait 15
+game_view_mode expect Lit
+key F1 shift
+wait 15
+game_view_mode expect Lit
+key F1
+wait 15
+game_view_mode expect Wireframe
+stop
+wait 20
+game_view_mode expect Lit
+quit

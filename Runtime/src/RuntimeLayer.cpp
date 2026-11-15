@@ -34,6 +34,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "Renderer/RHI/Texture.h"
 #include "Core/Utils/FileSystem.h"
+#include "Renderer/GameViewModes.h"
 
 namespace Conqueror::Runtime
 {
@@ -280,7 +281,15 @@ namespace Conqueror::Runtime
         glm::vec3 bg = Math::SRGBToLinear(m_ActiveScene->ResolveCameraBackground(m_ActiveScene->GetPrimaryCameraEntity()).Color);
         RenderCommand::SetClearColor({ bg.r, bg.g, bg.b, 1.0f });
         RenderCommand::Clear();
+        // Development Build: Unreal gibi F1 tel kafes / F2 ışıksız / F3 ışıklı / F4 yalnız ışık (son oyunda yok)
+        const bool devViewModes = Project::GetActive() && Project::GetActive()->GetConfig().Build.DevelopmentBuild;
+        if (devViewModes)
+            GameViewModes::HandleHotkeys();
+        else
+            GameViewModes::Set(GameViewModes::Mode::Lit);
+        GameViewModes::BeginScene();
         m_ActiveScene->OnUpdateRuntime(ts);
+        GameViewModes::EndScene();
         post.EndScene();
 
         // Pencere içinde çizim alanı: Android Automotive'de araç çubuklarının arasındaki bölge (pencere boyutu zaten bu alan)
@@ -310,8 +319,10 @@ namespace Conqueror::Runtime
         // Görünen gökyüzü her zaman ton eşlenir (boş sahnede beyaza patlamasın)
         const bool skyVisible = m_ActiveScene->GetRenderSettings().Environment.Sky != SkyMode::SolidColor
                              && m_ActiveScene->ResolveCameraBackground(m_ActiveScene->GetPrimaryCameraEntity()).DrawSky;
-        post.Render(PostProcessVolumes::Resolve(*m_ActiveScene, m_ActiveScene->GetRenderSettings().Post, camera.Position), camera, TimeManager::GetTime(),
-                    m_ActiveScene->HasRenderable3D() || skyVisible);
+        PostProcessSettings resolvedPost = PostProcessVolumes::Resolve(*m_ActiveScene, m_ActiveScene->GetRenderSettings().Post, camera.Position);
+        if (!GameViewModes::PostEffectsAllowed())
+            resolvedPost.Enabled = false;
+        post.Render(resolvedPost, camera, TimeManager::GetTime(), m_ActiveScene->HasRenderable3D() || skyVisible);
         RenderCommand::SetViewport(outX, outY, width, height);
 
         // UI (ekran üstü canvas'lar)

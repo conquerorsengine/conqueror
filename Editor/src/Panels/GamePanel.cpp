@@ -26,6 +26,7 @@
 #include "UI/EditorUI.h"
 
 #include "Scene/PixelPerfect.h"
+#include "Renderer/GameViewModes.h"
 
 #include <imgui.h>
 #include <IconsFontAwesome6.h>
@@ -103,6 +104,12 @@ namespace Conqueror::Editor
             RenderCommand::Clear();
             RenderCamera postCamera;
 
+            // Unreal gibi oynarken F1 tel kafes / F2 ışıksız / F3 ışıklı / F4 yalnız ışık (266); oyun durunca normal görünüm
+            if (!isPlaying)
+                GameViewModes::Set(GameViewModes::Mode::Lit);
+            else if (!renderOnly && m_ViewportFocused)
+                GameViewModes::HandleHotkeys();
+            GameViewModes::BeginScene();
             if (m_Context && isPlaying && !renderOnly)
             {
                 m_Context->OnUpdateRuntime(ts, false);
@@ -142,6 +149,7 @@ namespace Conqueror::Editor
                 }
             }
 
+            GameViewModes::EndScene();
             m_PostStack.EndScene();
 
             m_Framebuffer->Bind();
@@ -156,6 +164,8 @@ namespace Conqueror::Editor
 
             // Post Process Volume'lar oyun kamerasının konumuna göre harmanlanır
             PostProcessSettings post = m_Context ? PostProcessVolumes::Resolve(*m_Context, m_Context->GetRenderSettings().Post, postCamera.Position) : PostProcessSettings{};
+            if (!GameViewModes::PostEffectsAllowed())
+                post.Enabled = false;
             // Görünen gökyüzü her zaman ton eşlenir (boş sahnede beyaza patlamasın)
             const bool skyVisible = m_Context && m_Context->GetRenderSettings().Environment.Sky != SkyMode::SolidColor
                                  && m_Context->ResolveCameraBackground(m_Context->GetPrimaryCameraEntity()).DrawSky;
@@ -413,6 +423,15 @@ namespace Conqueror::Editor
         uint64_t textureID = m_Framebuffer->GetColorAttachmentRendererID(0);
         PanelImage((ImTextureID)textureID, m_ViewportSize, displaySize);
         m_ViewportHovered = ImGui::IsItemHovered();
+        // Görünüm modu değişince 2 saniye sol üstte "View Mode: Wireframe (F1)"
+        if (const std::string banner = GameViewModes::Banner(); !banner.empty() && m_Playing)
+        {
+            ImDrawList* dl = ImGui::GetWindowDrawList();
+            const ImVec2 ts = ImGui::CalcTextSize(banner.c_str());
+            const ImVec2 at(imagePos.x + 10.0f, imagePos.y + 10.0f);
+            dl->AddRectFilled(ImVec2(at.x - 6.0f, at.y - 4.0f), ImVec2(at.x + ts.x + 6.0f, at.y + ts.y + 4.0f), IM_COL32(0, 0, 0, 160), 4.0f);
+            dl->AddText(at, IM_COL32(235, 236, 240, 255), banner.c_str());
+        }
         // Unity: "No cameras rendering"
         if (!m_HasCamera && !m_HasOverlayUI)
         {
