@@ -4,7 +4,8 @@
 usage: make_logo_svg.py [font.otf]
 Source: Tools/Branding/Conqueror_Logo_Source.png (the original artwork, white on transparent). Only its emblem is used;
 the "Conqueror's Engine" wordmark is set in Montserrat ExtraBold (SIL Open Font License; Fedora package
-julietaula-montserrat-fonts) with the font's own kerning, converted to outlines.
+julietaula-montserrat-fonts) with the font's own kerning, converted to outlines. The apostrophe is the straight one of the
+website's brand font (Arial; Liberation Sans Bold, SIL Open Font License, is its metric-compatible twin on Linux).
 Writes Resources/Logo/:
   Conqueror_Logo.svg        lockup (emblem + wordmark), white, transparent background
   Conqueror_Logo_Dark.svg   the same in dark ink for light backgrounds
@@ -31,7 +32,10 @@ SRC = os.path.join(HERE, "Conqueror_Logo_Source.png")
 FONT = "/usr/share/fonts/julietaula-montserrat-fonts/Montserrat-ExtraBold.otf"
 WHITE = "#ffffff"
 INK = "#16181d"
-LINES = ["Conqueror\u2019s", "Engine"]      # typographic apostrophe
+LINES = ["Conqueror's", "Engine"]
+# Kesme işareti web sitesindeki marka yazısının yazı tipinden (conquerorsite: tarayıcıda Arial; Linux'ta metrik eşi Liberation Sans
+# Bold, Windows'ta Arial Bold): Montserrat'ın kıvrık, virgüle benzeyen işareti yerine sitedeki gibi düz işaret
+APOSTROPHE_FONT = "/usr/share/fonts/liberation-sans-fonts/LiberationSans-Bold.ttf"
 
 
 # ------------------------------------------------------------------------------------------------ emblem (potrace)
@@ -82,18 +86,26 @@ def pair_kerning(font):
     return kern
 
 
-def layout_line(font, glyphs, kern, text):
-    """[(glyph name, x)] and the advance width in font units."""
+def layout_line(font, glyphs, kern, text, apos=None):
+    """[(glyph ops, x)] and the advance width in font units. apos: (font, glyph set, scale to this font's units) for "'"."""
     cmap = font.getBestCmap()
     hmtx = font["hmtx"]
     out, x, prev = [], 0.0, None
     for ch in text:
+        if ch == "'" and apos is not None:
+            afont, aglyphs, ak = apos
+            aname = afont.getBestCmap()[ord("'")]
+            ops = [(op, tuple((p[0] * ak, p[1] * ak) for p in args)) for op, args in glyph_ops(aglyphs, aname)]
+            out.append((ops, x))
+            x += afont["hmtx"][aname][0] * ak
+            prev = None
+            continue
         name = cmap.get(ord(ch))
         if name is None:
             continue
         if prev is not None:
             x += kern.get((prev, name), 0)
-        out.append((name, x))
+        out.append((glyph_ops(glyphs, name), x))
         x += hmtx[name][0]
         prev = name
     return out, x
@@ -181,10 +193,14 @@ def main():
     top = y0 + (emblem_h - block) / 2
     baselines = [top + cap_px, top + cap_px * 2 + line_gap]
     text_x = x1 + emblem_h * 0.2
+    # Kesme işareti: sitenin yazı tipinden, büyük harf yüksekliği eşitlenerek
+    afont = TTFont(APOSTROPHE_FONT)
+    acap = afont["OS/2"].sCapHeight or 0.716 * afont["head"].unitsPerEm
+    apos = (afont, afont.getGlyphSet(), cap / acap)
     words = []
     width = 0.0
     for line, base in zip(LINES, baselines):
-        placed, adv = layout_line(font, glyphs, kern, line)
+        placed, adv = layout_line(font, glyphs, kern, line, apos)
         words.append((placed, base))
         width = max(width, adv * k)
 
@@ -197,8 +213,8 @@ def main():
     by1 = max(y1, baselines[1] + descent * 0.9) + margin
     vw, vh = bx1 - bx0, by1 - by0
 
-    text_d = " ".join(ops_to_svg(glyph_ops(glyphs, name), text_x + x * k, base, k)
-                      for placed, base in words for name, x in placed)
+    text_d = " ".join(ops_to_svg(ops, text_x + x * k, base, k)
+                      for placed, base in words for ops, x in placed)
 
     def write(path, fill):
         with open(path, "w") as f:
@@ -247,8 +263,8 @@ def main():
     ctx.fill()
     ctx.restore()
     for placed, base in words:
-        for name, x in placed:
-            draw_ops(ctx, glyph_ops(glyphs, name), text_x + x * k, base, k)
+        for ops, x in placed:
+            draw_ops(ctx, ops, text_x + x * k, base, k)
     ctx.fill()
     surf.write_to_png(os.path.join(LOGO, "Conqueror_Logo.png"))
     print("emblem box:", (x0, y0, x1, y1), "lockup:", f"{vw:.0f}x{vh:.0f}", "png:", (W, H), "kerning pairs:", len(kern))
