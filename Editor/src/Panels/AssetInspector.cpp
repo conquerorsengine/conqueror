@@ -965,6 +965,7 @@ namespace Conqueror::Editor::AssetInspector
                 ImGui::PopTextWrapPos();
             }
         }
+        ImGui::PopStyleVar();   // başlık düğmelerinin dolgusu (eskiden geri alınmıyordu: "Missing PopStyleVar()" uyarısı)
         // Unity Inspector altındaki AssetBundle alanı (yalnız Assets altındaki varlıklar)
         if (fs::path(path).generic_string().find("/Assets/") != std::string::npos)
         {

@@ -17,4 +17,6 @@ namespace Conqueror::Editor::MaterialPreview
     bool Thumbnail(const std::shared_ptr<Material>& material, const std::string& key, float size);
     // Testler / otomasyon: son büyük önizlemenin ortadaki ortalama rengi (0-1, sRGB) ve çizim sayısı
     bool LastStats(float rgb[3], int& renders);
+    // Son büyük önizlemenin dokusu (testler PNG'ye yazar)
+    unsigned int LastTexture();
 }

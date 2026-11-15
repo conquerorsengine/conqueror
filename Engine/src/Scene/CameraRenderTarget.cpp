@@ -149,7 +149,16 @@ namespace Conqueror
 
                 glBindFramebuffer(GL_FRAMEBUFFER, hdr.Framebuffer);
                 glViewport(0, 0, (GLsizei)width, (GLsizei)height);
-                glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+                // Unity Camera.targetTexture gibi: gökyüzü çizilmeyen kamera (Solid Color) dokuyu kendi arka plan rengiyle temizler
+                // (eskiden hep siyah). Renk sRGB, HDR hedefi doğrusal
+                {
+                    const Scene::CameraBackground bg = scene.ResolveCameraBackground(Entity{ e, &scene });
+                    auto lin = [](float c) { return c <= 0.04045f ? c / 12.92f : std::pow((c + 0.055f) / 1.055f, 2.4f); };
+                    if (bg.DrawSky)
+                        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+                    else
+                        glClearColor(lin(bg.Color.r), lin(bg.Color.g), lin(bg.Color.b), 1.0f);
+                }
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
                 glEnable(GL_DEPTH_TEST);
                 scene.RenderSceneFromCamera(e, width, height);

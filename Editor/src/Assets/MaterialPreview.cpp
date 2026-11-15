@@ -42,6 +42,7 @@ namespace Conqueror::Editor::MaterialPreview
             int ShapeType = 0;              // büyük önizleme: 0 küre, 1 küp, 2 silindir, 3 düzlem
             float Yaw = -25.0f, Pitch = 12.0f;
             uint32_t Framebuffer = 0;       // son büyük önizlemenin çıktısı (testler)
+            uint32_t Texture = 0;
             int Renders = 0;
         };
 
@@ -85,7 +86,7 @@ namespace Conqueror::Editor::MaterialPreview
             cc.Camera.SetPerspective(glm::radians(30.0f), 0.05f, 50.0f);
             cc.Background = CameraComponent::BackgroundMode::SolidColor;
             cc.BackgroundColor = { 0.19f, 0.20f, 0.23f, 1.0f };
-            cam.GetComponent<TransformComponent>().Position = { 0.0f, 0.0f, 2.45f };   // kamera -Z'ye bakar
+            cam.GetComponent<TransformComponent>().Position = { 0.0f, 0.0f, 4.8f };   // kamera -Z'ye bakar; birim küre karenin ~%80'i
             auto& rt = cam.AddComponent<RenderTargetComponent>();
             rt.Name = slot.Target;
             rt.Width = kSize;
@@ -131,7 +132,8 @@ namespace Conqueror::Editor::MaterialPreview
             mr.Type = ShapeMesh(shapeType);
             auto& tc = shape.GetComponent<TransformComponent>();
             tc.Rotation = glm::radians(glm::vec3(shapeType == 3 ? pitch + 60.0f : pitch, yaw, 0.0f));   // düzlem kameraya eğik bakar
-            tc.Scale = shapeType == 1 ? glm::vec3(0.72f) : shapeType == 2 ? glm::vec3(0.62f) : glm::vec3(1.0f);
+            // İlkeller renderer boyutunda (küre yarıçapı 1, küp / düzlem 2 m, silindir 1 x 2): hepsi yarıçapı ~1 olan küreye sığar
+            tc.Scale = shapeType == 1 ? glm::vec3(0.6f) : shapeType == 2 ? glm::vec3(0.72f) : shapeType == 3 ? glm::vec3(0.75f) : glm::vec3(1.0f);
             scene.UpdateWorldTransforms();
             CameraRenderTargets::Render(scene);
             auto target = RenderTargetRegistry::Acquire(slot.Target);
@@ -197,6 +199,7 @@ namespace Conqueror::Editor::MaterialPreview
         ImGui::GetWindowDrawList()->AddImage((ImTextureID)(uint64_t)target->GetRendererID(), at, ImVec2(at.x + side, at.y + side),
                                              ImVec2(0, 1), ImVec2(1, 0));
         s.Framebuffer = target->GetFramebuffer();
+        s.Texture = target->GetRendererID();
         ++s.Renders;
     }
 
@@ -211,6 +214,8 @@ namespace Conqueror::Editor::MaterialPreview
         ImGui::Image((ImTextureID)(uint64_t)target->GetRendererID(), ImVec2(size, size), ImVec2(0, 1), ImVec2(1, 0));
         return true;
     }
+
+    unsigned int LastTexture() { return S().Texture; }
 
     bool LastStats(float rgb[3], int& renders)
     {

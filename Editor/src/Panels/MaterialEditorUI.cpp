@@ -554,10 +554,15 @@ namespace Conqueror::Editor::MaterialEditorUI
         if (!MaterialPreview::Thumbnail(component.MaterialInstance, thumbKey, thumb))
             ImGui::TextColored(UI::Colors::Accent, ICON_FA_CIRCLE_HALF_STROKE);
         ImGui::SameLine();
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + std::max(0.0f, (thumb - ImGui::GetTextLineHeight()) * 0.5f));
-        ImGui::TextUnformatted(isAsset ? fs::path(component.MaterialPath).filename().string().c_str() : mat.Name.c_str());
-        ImGui::SameLine();
-        ImGui::TextDisabled("(Material)");
+        {
+            // Ad ve "(Material)" küçük kürenin ortasıyla aynı hizada
+            const float y = ImGui::GetCursorPosY() + std::max(0.0f, (thumb - ImGui::GetTextLineHeight()) * 0.5f);
+            ImGui::SetCursorPosY(y);
+            ImGui::TextUnformatted(isAsset ? fs::path(component.MaterialPath).filename().string().c_str() : mat.Name.c_str());
+            ImGui::SameLine();
+            ImGui::SetCursorPosY(y);
+            ImGui::TextDisabled("(Material)");
+        }
         if (!mat.GraphNodes.empty() && mat.GraphInitialized && mat.MaterialShader)
             UI::InfoBox("Shader Graph material: inputs wired in the graph override these values.", UI::InfoType::Info);
         if (packaged)
