@@ -33,6 +33,10 @@ namespace Conqueror::VkGLInterop
     {
         std::vector<std::string> InstanceExtensions;
         std::vector<std::string> DeviceExtensions;
+        uint32_t ApiVersion = 0;               // 0: Vulkan 1.2
+        void* FeatureChain = nullptr;          // vkCreateDevice pNext zinciri (ör. xessVKGetRequiredDeviceFeatures)
+        // Fiziksel aygıt seçildikten sonra, aygıt oluşturulmadan önce: aygıta bağlı uzantılar / özellikler (XeSS bunları aygıta göre verir)
+        std::function<bool(VkInstance, VkPhysicalDevice, Requirements&, std::string& error)> BeforeDevice;
     };
 
     // GL'in kullandığı GPU'nun Vulkan karşılığı + paylaşım (yalnız OpenGL arka ucunda; tek örnek)
@@ -53,6 +57,9 @@ namespace Conqueror::VkGLInterop
         bool Execute(const std::vector<Image*>& images, const std::function<bool(VkCommandBuffer)>& record, std::string& error);
         // Bekleyen Vulkan işinin bitmesini bekler (yeniden boyutlandırma / kapanış)
         void WaitIdle();
+        // GL derinlik dokusu (D24S8 / D32F) -> paylaşımlı R32F görüntü (yükselticiler derinliği renk görüntüsü olarak okur; Vulkan'da
+        // D24S8 her GPU'da yok). GL durumu (program, çerçeve arabelleği, görüntü alanı, VAO) korunur
+        void CopyDepth(uint32_t glDepthTexture, Image& destination);
 
         VkInstance Instance() const { return m_Instance; }
         VkPhysicalDevice Physical() const { return m_Physical; }

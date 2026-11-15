@@ -98,7 +98,7 @@ namespace Conqueror::VkGLInterop
         VkApplicationInfo app{ VK_STRUCTURE_TYPE_APPLICATION_INFO };
         app.pApplicationName = "Conqueror Engine";
         app.pEngineName = "Conqueror Engine";
-        app.apiVersion = VK_API_VERSION_1_2;
+        app.apiVersion = std::max<uint32_t>(VK_API_VERSION_1_2, extra.ApiVersion);
         VkInstanceCreateInfo ici{ VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
         ici.pApplicationInfo = &app;
         ici.enabledExtensionCount = (uint32_t)instanceExt.size();
@@ -136,12 +136,18 @@ namespace Conqueror::VkGLInterop
             return false;
         }
 
+        Requirements req = extra;
+        if (req.BeforeDevice && !req.BeforeDevice(m_Instance, m_Physical, req, error))
+        {
+            Shutdown();
+            return false;
+        }
         uint32_t extCount = 0;
         vkEnumerateDeviceExtensionProperties(m_Physical, nullptr, &extCount, nullptr);
         std::vector<VkExtensionProperties> available(extCount);
         vkEnumerateDeviceExtensionProperties(m_Physical, nullptr, &extCount, available.data());
         std::vector<const char*> deviceExt = { kMemoryExtension, kSemaphoreExtension };
-        for (const auto& e : extra.DeviceExtensions)
+        for (const auto& e : req.DeviceExtensions)
             if (std::find_if(deviceExt.begin(), deviceExt.end(), [&](const char* n) { return e == n; }) == deviceExt.end())
                 deviceExt.push_back(e.c_str());
         for (const char* e : deviceExt)
@@ -165,9 +171,8 @@ namespace Conqueror::VkGLInterop
         qci.queueFamilyIndex = m_QueueFamily;
         qci.queueCount = 1;
         qci.pQueuePriorities = &priority;
-        VkPhysicalDeviceVulkan12Features v12{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES };
-        v12.bufferDeviceAddress = VK_FALSE;   // NGX eklerse kendi uzantısıyla
         VkDeviceCreateInfo dci{ VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
+        dci.pNext = req.FeatureChain;
         dci.queueCreateInfoCount = 1;
         dci.pQueueCreateInfos = &qci;
         dci.enabledExtensionCount = (uint32_t)deviceExt.size();
@@ -472,6 +477,55 @@ namespace Conqueror::VkGLInterop
     {
         if (m_Device)
             vkDeviceWaitIdle(m_Device);
+    }
+
+    void Device::CopyDepth(uint32_t glDepthTexture, Image& destination)
+    {
+        static GLuint s_Program = 0, s_Framebuffer = 0, s_VAO = 0;
+        if (!s_Program)
+        {
+            const char* vsSrc = "#version 450 core\nvoid main(){ vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }\n";
+            const char* fsSrc = "#version 450 core\nlayout(location = 0) out float o_Depth;\nlayout(binding = 0) uniform sampler2D u_Depth;\n"
+                                "void main(){ o_Depth = texelFetch(u_Depth, ivec2(gl_FragCoord.xy), 0).r; }\n";
+            auto compile = [](GLenum type, const char* src) {
+                GLuint sh = glCreateShader(type);
+                glShaderSource(sh, 1, &src, nullptr);
+                glCompileShader(sh);
+                return sh;
+            };
+            const GLuint vs = compile(GL_VERTEX_SHADER, vsSrc), fs = compile(GL_FRAGMENT_SHADER, fsSrc);
+            s_Program = glCreateProgram();
+            glAttachShader(s_Program, vs);
+            glAttachShader(s_Program, fs);
+            glLinkProgram(s_Program);
+            glDeleteShader(vs);
+            glDeleteShader(fs);
+            glCreateFramebuffers(1, &s_Framebuffer);
+            glCreateVertexArrays(1, &s_VAO);
+        }
+        GLint prevProgram = 0, prevFramebuffer = 0, prevVAO = 0, prevViewport[4] = {};
+        glGetIntegerv(GL_CURRENT_PROGRAM, &prevProgram);
+        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &prevFramebuffer);
+        glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &prevVAO);
+        glGetIntegerv(GL_VIEWPORT, prevViewport);
+        const GLboolean depthTest = glIsEnabled(GL_DEPTH_TEST), blend = glIsEnabled(GL_BLEND);
+        glNamedFramebufferTexture(s_Framebuffer, GL_COLOR_ATTACHMENT0, destination.GLTexture, 0);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, s_Framebuffer);
+        glViewport(0, 0, (GLsizei)destination.Width, (GLsizei)destination.Height);
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_BLEND);
+        glUseProgram(s_Program);
+        glBindTextureUnit(0, glDepthTexture);
+        glBindVertexArray(s_VAO);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glBindVertexArray((GLuint)prevVAO);
+        glUseProgram((GLuint)prevProgram);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (GLuint)prevFramebuffer);
+        glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
+        if (depthTest)
+            glEnable(GL_DEPTH_TEST);
+        if (blend)
+            glEnable(GL_BLEND);
     }
 
     void Device::Shutdown()

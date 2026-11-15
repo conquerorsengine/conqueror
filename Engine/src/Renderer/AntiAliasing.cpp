@@ -4,6 +4,8 @@
 #include "GraphicsAPIs/OpenGL/GLProfile.h"
 #include "RHI/RendererAPI.h"
 #include "Upscalers/DLSSUpscaler.h"
+#include "Upscalers/XeSSUpscaler.h"
+#include "Upscalers/MetalFXUpscaler.h"
 
 #include <glad/glad.h>
 
@@ -167,22 +169,33 @@ namespace Conqueror::AntiAliasing
                 return { false, Intern(reason) };
             return {};
         }
-        const char* XeSSReason(const Caps& c)
+        // Windows: libxess.dll bulundu mu, sonra XeSS'in kendisine (Vulkan aygıtı, bağlam) sorulur
+        Availability XeSSAvailability(const Caps& c)
         {
 #if defined(_WIN32)
             if (!c.XeSSRuntime)
-                return "The Intel XeSS runtime (libxess.dll) was not found next to the game.";
-            return "The Intel XeSS runtime was found, but this engine build does not include the XeSS SDK integration yet (Direct3D 12 / Vulkan).";
+                return { false, "The Intel XeSS runtime (libxess.dll) was not found next to the game (Tools/XeSS/fetch-xess.sh)." };
+            if (!c.Simulated.empty())
+                return {};
+            std::string reason;
+            if (!XeSSUpscaler::IsAvailable(reason))
+                return { false, Intern(reason) };
+            return {};
 #else
             (void)c;
-            return "The Intel XeSS SDK runs only on Windows (Direct3D 11 / 12, Vulkan); there is no Linux, macOS or OpenGL version.";
+            return { false, "The Intel XeSS SDK runs only on Windows (Direct3D 11 / 12, Vulkan); there is no Linux, macOS or OpenGL version." };
 #endif
         }
-        const char* MetalFXReason(const Caps& c)
+        Availability MetalFXAvailability(const Caps& c)
         {
             if (!c.Apple || RendererAPI::GetBackend() != RendererAPI::Backend::Metal)
-                return "Runs only on Apple GPUs with the Metal graphics API (macOS 13 / iOS 16 or newer).";
-            return "MetalFX is not connected to the Metal backend yet.";
+                return { false, "Runs only on Apple GPUs with the Metal graphics API (macOS 13 / iOS 16 or newer)." };
+            if (!c.Simulated.empty())
+                return {};
+            std::string reason;
+            if (!MetalFXUpscaler::IsAvailable(reason))
+                return { false, Intern(reason) };
+            return {};
         }
         constexpr const char* kComputeReason = "Uses compute shaders (OpenGL 4.3 / OpenGL ES 3.1 on the OpenGL backend); not available on this system "
                                                "(macOS OpenGL 4.1, WebGL 2, the Vulkan / Direct3D / Metal / WebGPU translation layers).";
@@ -378,7 +391,7 @@ namespace Conqueror::AntiAliasing
             case M::DLAA:
                 return DLSSAvailability(c);
             case M::XeSSAA:
-                return { false, XeSSReason(c) };
+                return XeSSAvailability(c);
             case M::TSRAA:
                 return { false, kTSRReason };
             case M::SRAA:
@@ -463,8 +476,8 @@ namespace Conqueror::AntiAliasing
         switch (mode)
         {
             case U::DLSS:    return DLSSAvailability(c);
-            case U::XeSS:    return { false, XeSSReason(c) };
-            case U::MetalFX: return { false, MetalFXReason(c) };
+            case U::XeSS:    return XeSSAvailability(c);
+            case U::MetalFX: return MetalFXAvailability(c);
             case U::PSSR:    return { false, kPSSRReason };
             case U::TSR:     return { false, kTSRReason };
             case U::NIS:

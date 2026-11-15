@@ -131,10 +131,6 @@ namespace Conqueror
             return true;
         }
 
-        // GL derinliği (D24S8 / D32F) -> R32F renk: NGX derinliği renk görüntüsü olarak okur, Vulkan'da D24S8 her GPU'da yok
-        const char* kDepthVS = "#version 450 core\nvoid main(){ vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }\n";
-        const char* kDepthFS = "#version 450 core\nlayout(location = 0) out float o_Depth;\nlayout(binding = 0) uniform sampler2D u_Depth;\n"
-                               "void main(){ o_Depth = texelFetch(u_Depth, ivec2(gl_FragCoord.xy), 0).r; }\n";
     }
 
     struct DLSSUpscaler::State
@@ -143,7 +139,6 @@ namespace Conqueror
         NVSDK_NGX_Handle* Feature = nullptr;
         uint32_t RenderW = 0, RenderH = 0, DisplayW = 0, DisplayH = 0;
         NVSDK_NGX_PerfQuality_Value Quality = NVSDK_NGX_PerfQuality_Value_MaxQuality;
-        GLuint DepthProgram = 0, DepthFramebuffer = 0, EmptyVAO = 0;
         bool Failed = false;
     };
 
@@ -174,13 +169,6 @@ namespace Conqueror
         dev.DestroyImage(s.Depth);
         dev.DestroyImage(s.Motion);
         dev.DestroyImage(s.Output);
-        if (s.DepthProgram)
-            glDeleteProgram(s.DepthProgram);
-        if (s.DepthFramebuffer)
-            glDeleteFramebuffers(1, &s.DepthFramebuffer);
-        if (s.EmptyVAO)
-            glDeleteVertexArrays(1, &s.EmptyVAO);
-        s.DepthProgram = s.DepthFramebuffer = s.EmptyVAO = 0;
         s.RenderW = s.RenderH = s.DisplayW = s.DisplayH = 0;
     }
 
@@ -221,47 +209,7 @@ namespace Conqueror
                            (GLsizei)p.RenderHeight, 1);
         glCopyImageSubData(p.Motion, GL_TEXTURE_2D, 0, 0, 0, 0, s.Motion.GLTexture, GL_TEXTURE_2D, 0, 0, 0, 0, (GLsizei)p.RenderWidth,
                            (GLsizei)p.RenderHeight, 1);
-        if (!s.DepthProgram)
-        {
-            auto compile = [](GLenum type, const char* src) {
-                GLuint sh = glCreateShader(type);
-                glShaderSource(sh, 1, &src, nullptr);
-                glCompileShader(sh);
-                return sh;
-            };
-            const GLuint vs = compile(GL_VERTEX_SHADER, kDepthVS), fs = compile(GL_FRAGMENT_SHADER, kDepthFS);
-            s.DepthProgram = glCreateProgram();
-            glAttachShader(s.DepthProgram, vs);
-            glAttachShader(s.DepthProgram, fs);
-            glLinkProgram(s.DepthProgram);
-            glDeleteShader(vs);
-            glDeleteShader(fs);
-            glCreateFramebuffers(1, &s.DepthFramebuffer);
-            glCreateVertexArrays(1, &s.EmptyVAO);
-        }
-        {
-            GLint prevProgram = 0, prevFramebuffer = 0, prevVAO = 0, prevViewport[4] = {};
-            glGetIntegerv(GL_CURRENT_PROGRAM, &prevProgram);
-            glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &prevFramebuffer);
-            glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &prevVAO);
-            glGetIntegerv(GL_VIEWPORT, prevViewport);
-            const GLboolean depthTest = glIsEnabled(GL_DEPTH_TEST), blend = glIsEnabled(GL_BLEND);
-            glNamedFramebufferTexture(s.DepthFramebuffer, GL_COLOR_ATTACHMENT0, s.Depth.GLTexture, 0);
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, s.DepthFramebuffer);
-            glViewport(0, 0, (GLsizei)p.RenderWidth, (GLsizei)p.RenderHeight);
-            glDisable(GL_DEPTH_TEST);
-            glDisable(GL_BLEND);
-            glUseProgram(s.DepthProgram);
-            glBindTextureUnit(0, p.Depth);
-            glBindVertexArray(s.EmptyVAO);
-            glDrawArrays(GL_TRIANGLES, 0, 3);
-            glBindVertexArray((GLuint)prevVAO);
-            glUseProgram((GLuint)prevProgram);
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (GLuint)prevFramebuffer);
-            glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
-            if (depthTest) glEnable(GL_DEPTH_TEST);
-            if (blend) glEnable(GL_BLEND);
-        }
+        dev.CopyDepth(p.Depth, s.Depth);
 
         // Vulkan: DLSS. Paylaşımlı görüntüler Vulkan'da GL'in satır düzeniyle (alt satır önce) görünür: dikey eksen ters, bu yüzden
         // titreşimin ve hareketin y bileşeni eksiyle verilir
