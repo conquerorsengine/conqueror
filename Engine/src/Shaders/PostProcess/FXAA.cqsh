@@ -190,9 +190,14 @@ void main()
         float m;
         if (u_RejectOnly == 1)
         {
-            // Yalnız TAA'nın geçmişini reddettiği pikseller (yeni açılan alan): TAA'nın tek karesi orada basamaklı kalırdı
-            float x = texture(u_MotionMask, v_TexCoord).x;
-            m = x >= 1.5 ? 1.0 : 0.0;
+            // Yalnız TAA'nın geçmişini reddettiği pikseller (yeni açılan alan): TAA'nın tek karesi orada basamaklı kalırdı.
+            // Unreal'daki gibi geçmiş oturana kadar sürer: açılmadan sonraki ilk karelerde TAA yalnız birkaç titreşim örneğini
+            // ortalamıştır (1/2, 1/3 ...), kenar hâlâ basamaklıdır; yumuşatma geçmişin yaşıyla (durum y: 2 x yaş + gölge) 6. karede
+            // sıfıra iner. Eskiden yalnız ilk 2 karede yapılıyordu: duvarın arkasından çıkınca arkadaki duvarın yeni görünen kenarı
+            // birkaç kare keskin ve merdivenli görünüyordu. Oturmuş (yaşı 7+) pikselde değişiklik yok
+            vec4 st = texture(u_MotionMask, v_TexCoord);
+            float age = floor(max(st.y, 0.0) * 0.5 + 1e-3);
+            m = st.x >= 1.5 ? 1.0 : clamp((7.0 - age) / 4.0, 0.0, 1.0);
             if (m <= 0.0)
             {
                 FragColor = vec4(original, 1.0);
