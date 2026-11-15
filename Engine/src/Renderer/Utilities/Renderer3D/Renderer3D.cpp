@@ -682,7 +682,7 @@ namespace Conqueror
 
         // Hareket eden saydam meshin kapladığı pikseller TAA tepki maskesine yazılır (bu görünümün sahne derinliğine LEQUAL,
         // derinlik yazılmaz, en büyük değer harmanlaması). Maske bu görünümde kullanılamıyorsa false
-        bool DrawReactiveMesh(const Mesh& mesh, const glm::mat4& transform)
+        bool DrawReactiveMesh(const Mesh& mesh, const glm::mat4& transform, const Material* material)
         {
             if (!mesh.GetVertexArray() || mesh.GetIndexCount() == 0)
                 return false;
@@ -707,6 +707,18 @@ namespace Conqueror
             s_ReactiveMeshShader->Bind();
             s_ReactiveMeshShader->SetMat4("u_ViewProjection", s_MotionViewProj);
             s_ReactiveMeshShader->SetMat4("u_Transform", transform);
+            // Örtü saydam çizimdeki alfa (doku alfası x opaklık): dokunun saydam kısmının arkası işaretlenmez. Dünya hizalı / grafik
+            // malzemede alfa farklı hesaplanır: önceki gibi kapladığı her piksel
+            const bool textured = material && material->AlbedoMap && !material->WorldAligned && !material->MaterialShader;
+            s_ReactiveMeshShader->SetInt("u_UseTexture", textured ? 1 : 0);
+            if (textured)
+            {
+                material->AlbedoMap->Bind(0);
+                s_ReactiveMeshShader->SetInt("u_AlbedoMap", 0);
+                s_ReactiveMeshShader->SetFloat("u_Opacity", material->Opacity);
+                s_ReactiveMeshShader->SetFloat2("u_UVScale", material->Tiling);
+                s_ReactiveMeshShader->SetFloat2("u_UVOffset", material->Offset);
+            }
             RenderCommand::DrawIndexed(mesh.GetVertexArray(), mesh.GetIndexCount());
             glBlendEquation(GL_FUNC_ADD);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -754,6 +766,7 @@ namespace Conqueror
         glDisable(GL_CULL_FACE);
         s_ReactiveMeshShader->Bind();
         s_ReactiveMeshShader->SetMat4("u_ViewProjection", jitteredViewProj);
+        s_ReactiveMeshShader->SetInt("u_UseTexture", 0);   // çok örnekli sahnede malzeme bilinmez: kapladığı her piksel
         bool drew = false;
         for (const auto& f : it->second.LateReactive)
         {
@@ -2250,7 +2263,7 @@ namespace Conqueror
             Renderer::GetStats().TransparentDraws++;
             // Hareket eden saydam mesh (mermi izi, namlu alevi): TAA tepki maskesine yalnız kapladığı pikseller yazılır. Maske
             // yazılamazsa (sahne hedefi bağlı değil) ekran dikdörtgenine dönülür
-            if (moving && PostProcessStack::CanDrawReactive() && !DrawReactiveMesh(*mesh, transform)
+            if (moving && PostProcessStack::CanDrawReactive() && !DrawReactiveMesh(*mesh, transform, material.get())
                 && meshIn->GetBoundsRadius() > 0.0f)
             {
                 glm::vec3 c, e;

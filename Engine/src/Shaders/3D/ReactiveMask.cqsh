@@ -1,22 +1,37 @@
 #language GLSL
 // TAA tepki maskesi (reactive mask): bu karede hareket eden saydam mesh (mermi izi, namlu alevi, yeni beliren iz) kapladığı
-// piksellere 1 yazar. Sahne derinliğine LEQUAL test edilir, derinlik yazılmaz; harmanlama en büyük değer (MAX). TAA yalnız bu
+// piksellere örtüsünü yazar. Sahne derinliğine LEQUAL test edilir, derinlik yazılmaz; harmanlama en büyük değer (MAX). TAA yalnız bu
 // piksellerde geçmişe güvenmez. Eskiden nesnenin ekran dikdörtgeni işaretleniyordu: ince bir mermi izinin dikdörtgeni bile
 // namludan hedefe kadar geniş bir alanı (üstünde durulan küpün tamamını) kaplıyor, orada geçmiş atılıp çizgiler siliniyordu
+// Dokulu malzemede örtü, saydam çizimdeki gibi doku alfası x opaklıktır (parçacıklar da alfalarını yazar). Eskiden dörtgenin her
+// pikseline 1 yazılıyordu: namlu alevi dokusunun yalnız ~%27'si görünür, saydam köşelerinin arkasındaki küp kenarları da her atışta
+// TAA'nın ham (titreşimli) karesiyle gösterilip tırtıklı, gökyüzüne bakan kenarlar beyazımsı çizgili görünüyordu
 #type vertex
 #version 450 core
 layout(location = 0) in vec3 a_Position;
+layout(location = 3) in vec2 a_TexCoord;
 uniform mat4 u_Transform;
 uniform mat4 u_ViewProjection;   // ana geçişle aynı (titreşimli) görüş-izdüşüm: derinlik testi sahne derinliğiyle eşleşir
+uniform vec2 u_UVScale = vec2(1.0);
+uniform vec2 u_UVOffset = vec2(0.0);
+out vec2 v_UV;
 void main()
 {
+    v_UV = a_TexCoord * u_UVScale + u_UVOffset;
     gl_Position = u_ViewProjection * (u_Transform * vec4(a_Position, 1.0));
 }
 
 #type fragment
 #version 450 core
 layout(location = 0) out vec4 o_Reactive;
+in vec2 v_UV;
+uniform int u_UseTexture = 0;    // 1: malzemenin albedo dokusu var (örtü = doku alfası x opaklık), 0: kapladığı her piksele 1
+uniform sampler2D u_AlbedoMap;
+uniform float u_Opacity = 1.0;
 void main()
 {
-    o_Reactive = vec4(1.0);
+    float coverage = 1.0;
+    if (u_UseTexture == 1)
+        coverage = clamp(texture(u_AlbedoMap, v_UV).a * u_Opacity, 0.0, 1.0);
+    o_Reactive = vec4(coverage);
 }
