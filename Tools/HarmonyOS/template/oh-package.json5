@@ -1,0 +1,6 @@
+{
+  "modelVersion": "5.0.0",
+  "description": "@CQ_APP_LABEL@ (Conqueror Engine) for HarmonyOS",
+  "dependencies": {},
+  "devDependencies": {}
+}

@@ -105,9 +105,11 @@ Debugging: `CQ_VK_VALIDATION=1` enables the Vulkan validation layer, `CQ_VK_DEVI
 | Android Automotive OS | same APK with the automotive feature; tested on the Android 14 Automotive emulator |
 | Automotive Grade Linux / Yocto | Yocto layer in `Tools/AGL/meta-conqueror` (Wayland, OpenGL ES 3.2, player only); the configuration is tested on desktop Linux, not in a real AGL image |
 | QNX 7.1 / 8.0 | Screen + EGL platform layer and toolchain file; **not compiled** (needs the QNX SDP) |
+| HarmonyOS 5+ PC (2in1) and tablet (arm64-v8a, x86_64) | editor and player as native libraries of a HAP app (ArkTS XComponent + EGL, OpenGL ES 3, system file picker); both compile and link with the OpenHarmony 6.0 native SDK (CI job), HAP project template and packager in `Tools/HarmonyOS`; **not run yet** (no HarmonyOS device or emulator was available) |
 | FreeBSD 14 (x86-64) | engine + player cross-compiled and linked for FreeBSD 14.5 (clang, FreeBSD sysroot); not run on a FreeBSD machine yet. OpenBSD / NetBSD / DragonFly code paths exist but were not compiled |
 
-See [Docs/Automotive.md](Docs/Automotive.md) for Android, Android Automotive, AGL and QNX.
+See [Docs/Automotive.md](Docs/Automotive.md) for Android, Android Automotive, AGL and QNX, and
+[Docs/Platforms.md](Docs/Platforms.md#harmonyos-pc-and-tablet) for HarmonyOS.
 
 ## Sample games
 

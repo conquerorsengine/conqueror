@@ -35,6 +35,7 @@ was found and what to install:
 | Linux ARM (32-bit), x86 (32-bit), RISC-V, PowerPC, LoongArch | clang + lld + a Debian sysroot (`Tools/Linux/make-linux-sysroot.sh <arch>`, `CQ_LINUX_<ARCH>_SYSROOT`) | Linux |
 | iOS | not available yet | — |
 | QNX | QNX SDP (`QNX_HOST`, `QNX_TARGET`); built from the command line | Linux, Windows |
+| HarmonyOS (PC, tablet) | OpenHarmony native SDK for the libraries, DevEco Studio or hvigor for the `.hap`; built from the command line ([HarmonyOS](#harmonyos-pc-and-tablet)) | Linux (also Windows / macOS with their SDK) |
 
 Cross builds (Windows and FreeBSD from Linux) compile the player from the engine source the first time (several
 minutes) into `build-windows` / `build-freebsd` next to the engine source (`CQ_WINDOWS_BUILD_ROOT` /
@@ -53,6 +54,7 @@ Linux is started with Wine by **Build And Run** when Wine is installed.
 | Automotive Grade Linux | Yocto layer `Tools/AGL/meta-conqueror` | Wayland-only player build tested |
 | FreeBSD | Linux (cross, `Tools/BSD`) or FreeBSD | cross build links; runtime not yet tested on BSD |
 | QNX | QNX SDP (`Tools/QNX`) | compile-checked against stub headers only |
+| HarmonyOS 5+ PC (2in1) / tablet | Linux with the OpenHarmony native SDK (`Tools/HarmonyOS`) | the **editor** and the player compile and link for arm64-v8a and x86_64 (OpenHarmony 6.0 SDK, CI); HAP project template and packager; not run on a device or emulator yet |
 | iOS | — | not available yet: the iOS player is not part of this version (it needs a Mac with Xcode) |
 | Web (WebAssembly) | any desktop with emsdk (`Tools/Web/package_web.py`, also from the editor's Build Settings) | WebGL 2 and WebGPU players tested in headless Chromium (the FPS template); a static site: `index.html` + `Build/` (gzip / brotli, data cached in the browser, saves in IndexedDB); single-thread by default, multithreaded with SharedArrayBuffer (`coi-serviceworker.js` for hosts without COOP / COEP); WebGPU backend with a Dawn source tree (`CQ_DAWN_DIR`) |
 | Linux ARM (32-bit), x86 (32-bit), RISC-V 64, PowerPC 64 LE, LoongArch 64 | Linux (cross, `Tools/Linux/linux-cross.toolchain.cmake`) | players cross-built; RISC-V player runs under qemu-user up to window creation |
@@ -107,6 +109,53 @@ with a release key (empty keystore = the debug key in `~/.android/debug.keystore
   (`libCQPython`) that is loaded only when a project uses Python scripts, so built games run on systems without
   Python (verified in the Steam Linux Runtime).
 - `d3d12.dll` and the Vulkan loader are opened at runtime, so a Windows build starts on machines without them.
+
+## HarmonyOS PC and tablet
+
+HarmonyOS 5 and later (HarmonyOS NEXT) run only HAP apps: an ArkTS page plus native libraries. The editor and the player
+are built as native libraries (`libConquerorEditor.so`, `libconqueror.so`) that a small HAP project loads; the page is a
+full-window `XComponent` and the engine draws into it with EGL and OpenGL ES 3.2 (3.1 / 3.0 fallback) on its own thread.
+The device types are `2in1` (HarmonyOS PC) and `tablet`; the minimum is API 12 (HarmonyOS 5.0).
+
+Build the libraries with the OpenHarmony native SDK (the CI job uses the 6.0 Release public SDK from
+`repo.huaweicloud.com`, SHA-256 checked) and put them into a HAP project:
+
+```sh
+cmake -S . -B build/ohos-arm64 -G Ninja -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_TOOLCHAIN_FILE=<sdk>/native/build/cmake/ohos.toolchain.cmake -DOHOS_ARCH=arm64-v8a -DOHOS_STL=c++_static
+cmake --build build/ohos-arm64 --target ConquerorEngine conqueror        # editor + player
+python3 Tools/HarmonyOS/package_hap.py --out build/hap-editor --build-dir build/ohos-arm64 [--build-dir build/ohos-x86_64]
+python3 Tools/HarmonyOS/package_hap.py --out build/hap-game --player <built game folder> --build-dir build/ohos-arm64
+```
+
+The packager copies `Tools/HarmonyOS/template` (AppScope, `entry` module with `EntryAbility.ets` and `pages/Index.ets`,
+hvigor files), the libraries into `entry/libs/<abi>/` and the engine resources (editor) or the built game (player) into
+`entry/src/main/resources/rawfile/` with a `cq_files.txt` list; the app extracts them into its files folder on the first
+start (again only when they change). Open the folder in DevEco Studio, set up signing (Project Structure > Signing
+Configs) and run, or build with `hvigorw assembleHap --mode module -p product=default` (`--assemble`). `--openharmony`
+writes an OpenHarmony product instead of a HarmonyOS one (hvigor with the OpenHarmony public SDK).
+
+What the platform layer (`Engine/src/Platform/OHOS`) provides:
+
+* window and frames: the XComponent surface (created / resized / destroyed); frames follow the XComponent frame
+  callback (display refresh); the engine pauses while the surface is gone (app in the background);
+* input: mouse buttons, movement and wheel, keyboard (XComponent key codes mapped to engine keys, US-layout characters),
+  text from an input method (`insertText`), touch (first finger acts as the left mouse button);
+* the system file picker for every editor file dialog (open, open multiple, save, pick folder), cursor shapes,
+  opening links, the window close button (the editor asks about unsaved changes first), clipboard (system pasteboard on
+  API 13+, reading it needs the pasteboard permission, otherwise in-app), screen density for UI scaling, logs in hilog
+  (`hdc shell hilog -T Conqueror`);
+* there is no project hub (one app = one process): on the first start the editor copies the 3D example project to
+  `Projects/My Project` in its files folder and opens it; other projects are opened with File > Open Project... (system file picker).
+
+Not available on HarmonyOS: starting other programs (building games for other platforms, C# / C++ script compilers,
+Git, external editors), Python and Java scripting, the Vulkan backend (OpenGL ES only), gamepads (the OpenHarmony NDK
+has no gamepad API), extra OS windows (the Window component, ImGui panels outside the main window).
+
+Status: both libraries compile and link with no undefined symbols for arm64-v8a and x86_64; nothing has been run on a
+HarmonyOS device or emulator yet (the DevEco emulator needs Windows or macOS). Unverified details: the mouse wheel scale
+and direction (`CQ_OHOS_WHEEL_SCALE` overrides it), whether paths returned by the file picker can be opened from native
+code for every location, and the window close callback (`ohos.permission.PREPARE_APP_TERMINATE`).
 
 ## Web player
 

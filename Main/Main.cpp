@@ -6,7 +6,13 @@
 
 extern Conqueror::Application* Conqueror::CreateApplication(ApplicationCommandLineArgs args);
 
+#if defined(CQ_PLATFORM_OHOS)
+// HarmonyOS: editör HAP'in yüklediği paylaşımlı kitaplıktır (libConquerorEditor.so); bu gövdeyi NAPI modülü motor iş
+// parçacığında çağırır (OhosMain.cpp)
+int CQ_EditorMain(int argc, char** argv)
+#else
 int main(int argc, char** argv)
+#endif
 {
     // Working directory'yi executable'ın bulunduğu yere ayarla
     std::filesystem::path exePath = argv[0];

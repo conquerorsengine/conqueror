@@ -146,7 +146,8 @@ int CQ_RuntimeMain(int argc, char** argv)
     return 0;
 }
 
-#ifndef __ANDROID__
+// HarmonyOS: oyuncu HAP'in yüklediği paylaşımlı kitaplıktır, giriş NAPI modülünden (OhosMain.cpp)
+#if !defined(__ANDROID__) && !defined(__OHOS__)
 int main(int argc, char** argv)
 {
     return CQ_RuntimeMain(argc, argv);

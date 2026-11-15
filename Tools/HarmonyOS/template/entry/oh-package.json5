@@ -1,0 +1,11 @@
+{
+  "name": "entry",
+  "version": "@CQ_VERSION_NAME@",
+  "description": "@CQ_APP_LABEL@: Conqueror Engine native module in a full-window XComponent",
+  "main": "",
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "lib@CQ_LIBRARY@.so": "file:./src/main/cpp/types/libengine"
+  }
+}

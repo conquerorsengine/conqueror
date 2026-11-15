@@ -75,6 +75,12 @@ if(EMSCRIPTEN)
     endif()
 endif()
 
+# HarmonyOS (OpenHarmony NDK araç zinciri): araç zinciri dosyası her derlemeye --gcc-toolchain verir, clang onu kullanılmayan
+# argüman sayar; -Werror ile derlenen üçüncü taraf kodu (Jolt) bu uyarıda durmasın
+if(CMAKE_SYSTEM_NAME STREQUAL "OHOS")
+    add_compile_options(-Wno-unused-command-line-argument)
+endif()
+
 # Debug/Release configurations
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_definitions(CQ_DEBUG)
@@ -103,6 +109,17 @@ add_subdirectory(Engine)
 option(CQ_RUNTIME_ONLY "Build only the engine and the game player (embedded / automotive images)" OFF)
 if(ANDROID OR CQ_RUNTIME_ONLY OR CMAKE_SYSTEM_NAME STREQUAL "QNX")
     add_subdirectory(Runtime)
+    return()
+endif()
+
+# HarmonyOS PC / tablet (OpenHarmony native SDK araç zinciri, CMAKE_SYSTEM_NAME=OHOS): editör ve oyuncu, HAP'in yüklediği
+# paylaşımlı kitaplıklardır (lib/<OHOS_ARCH>/libConquerorEditor.so, libconqueror.so); ArkTS tarafı XComponent yüzeyini verir.
+# Başlatıcı (hub) ve komut satırı araçları ayrı süreç olarak çalışamaz (HAP uygulaması tek süreç). HAP şablonu ve paketleyici:
+# Tools/HarmonyOS
+if(CMAKE_SYSTEM_NAME STREQUAL "OHOS")
+    add_subdirectory(Editor)
+    add_subdirectory(Runtime)
+    add_subdirectory(Main)
     return()
 endif()
 

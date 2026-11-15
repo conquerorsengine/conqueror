@@ -1,0 +1,16 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "@CQ_APP_LABEL@, made with Conqueror Engine"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "@CQ_APP_LABEL@"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "@CQ_APP_LABEL@"
+    }
+  ]
+}

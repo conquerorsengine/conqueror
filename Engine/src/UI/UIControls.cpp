@@ -31,6 +31,9 @@
     #include <shellapi.h>
 #elif defined(__ANDROID__)
     // Android: tarayıcı Intent ile açılır (NativeActivity'de JNI gerekir); şimdilik bağlantı yalnız olay üretir
+#elif defined(__OHOS__)
+    // HarmonyOS: adres ArkTS tarafında (context.openLink) açılır
+    #include "Platform/OHOS/OHOSPlatform.h"
 #elif defined(__EMSCRIPTEN__)
     #include <emscripten/em_asm.h>
 #else
@@ -725,6 +728,8 @@ namespace Conqueror
             ShellExecuteA(nullptr, "open", uri.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
 #elif defined(__ANDROID__)
             (void)uri;
+#elif defined(__OHOS__)
+            Conqueror::OHOS::OpenURL(uri);
 #elif defined(__EMSCRIPTEN__)
             // Web: yeni sekmede (yalnız http / https / mailto; "javascript:" adresleri sayfada kod çalıştıramasın)
             if (uri.rfind("http://", 0) != 0 && uri.rfind("https://", 0) != 0 && uri.rfind("mailto:", 0) != 0)

@@ -1,5 +1,23 @@
 project(ConquerorEngine)
 
+# HarmonyOS: editör HAP'in yüklediği paylaşımlı kitaplıktır: lib/<OHOS_ARCH>/libConquerorEditor.so (NAPI modülü
+# "ConquerorEditor", XComponent libraryname). Kaynaklar .so'nun yanına kopyalanmaz: Tools/HarmonyOS/package_hap.py onları HAP'in
+# rawfile klasörüne koyar, uygulama ilk açılışta çıkarır
+if(CMAKE_SYSTEM_NAME STREQUAL "OHOS")
+    add_library(${PROJECT_NAME} SHARED Main.cpp OhosMain.cpp)
+    target_include_directories(${PROJECT_NAME} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../Engine/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/../Editor/src)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Engine ConquerorEditor)
+    set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME ConquerorEditor
+                          LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/${OHOS_ARCH})
+    foreach(_cfg RELEASE DEBUG RELWITHDEBINFO MINSIZEREL)
+        set_target_properties(${PROJECT_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY_${_cfg} ${CMAKE_BINARY_DIR}/lib/${OHOS_ARCH})
+    endforeach()
+    cq_apply_sanitizers(${PROJECT_NAME})
+    return()
+endif()
+
 # Create executable
 add_executable(${PROJECT_NAME}
     Main.cpp
