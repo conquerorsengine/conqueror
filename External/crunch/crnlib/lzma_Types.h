@@ -8,7 +8,9 @@
 
 #if defined(_WIN32)
 #include <windows.h>
-#define COMPRESS_MF_MT
+// MODIFIED by Conqueror's Engine: COMPRESS_MF_MT (multithreaded match finder) is not defined: its source (LzFindMt.c, Threads.c)
+// is not part of this crnlib copy, so Windows linked against missing MatchFinderMt_* functions; the single-threaded finder is used
+// on every platform
 #endif
 
 namespace crnlib {
