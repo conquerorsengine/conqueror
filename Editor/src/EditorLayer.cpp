@@ -120,6 +120,7 @@
 #include "Renderer/Upscalers/VkGLInterop.h"
 #include "Renderer/Upscalers/DLSSUpscaler.h"
 #include "Renderer/GraphicsAPIs/OpenGL/OpenGLShader.h"
+#include "Renderer/GraphicsAPIs/OpenGL/GLProfile.h"
 #include "Renderer/RHI/RendererAPI.h"
 
 #ifdef CQ_PLATFORM_LINUX
@@ -6107,6 +6108,37 @@ namespace Conqueror::Editor
                 err = "Vulkan is not part of this build";
                 return false;
 #endif
+            }
+            if (sub == "expect_gl" && a.size() > 2)
+            {
+                // gpu expect_gl <4.6|4.5|4.1|3.3|es3.2|es3.1|es3.0|webgl2>: OpenGL arka ucu istenen profille çalışıyor mu (37: --gl / CQ_GL_PROFILE);
+                // sürücü daha yüksek sürüm verse de gölgelendirici hedefi, DSA taklidi ve hesaplama kuralı o profilinki olmalı
+                GLProfile::Kind kind;
+                if (!GLProfile::Parse(a[2], kind) || kind == GLProfile::Kind::Auto) { err = "unknown profile " + a[2]; return false; }
+                const auto& prof = GLProfile::Current();
+                struct Want { bool ES; int GLSL; bool DSA; bool Compute; };
+                Want want{};
+                switch (kind)
+                {
+                    case GLProfile::Kind::GL46: case GLProfile::Kind::GL45: want = { false, 450, true, true }; break;
+                    case GLProfile::Kind::GL41: want = { false, 410, false, false }; break;
+                    case GLProfile::Kind::GL33: want = { false, 330, false, false }; break;
+                    case GLProfile::Kind::GLES32: want = { true, 320, false, true }; break;
+                    case GLProfile::Kind::GLES31: want = { true, 310, false, true }; break;
+                    default: want = { true, 300, false, false }; break;
+                }
+                const bool compute = AntiAliasing::GetRealCaps().Compute;
+                Automation::Report("GL " + prof.Description + " | requested " + GLProfile::KindName(GLProfile::GetRequested()) + " | effective " +
+                                   std::to_string(prof.Major) + "." + std::to_string(prof.Minor) + " | GLSL " + std::to_string(prof.GLSLVersion) +
+                                   (prof.GLSLES ? " es" : "") + (prof.HasDSA ? "" : " | DSA emulated") + " | compute " + (compute ? "yes" : "no"));
+                if (RendererAPI::GetBackend() != RendererAPI::Backend::OpenGL) { err = "backend is " + std::string(RendererAPI::GetBackendName()); return false; }
+                if (GLProfile::GetRequested() != kind) { err = std::string("requested profile is ") + GLProfile::KindName(GLProfile::GetRequested()); return false; }
+                if (prof.ES != want.ES || prof.GLSLES != want.ES || prof.GLSLVersion != want.GLSL || prof.HasDSA != want.DSA || compute != want.Compute)
+                {
+                    err = "profile does not match " + a[2];
+                    return false;
+                }
+                return true;
             }
             if (sub == "expect_backend" && a.size() > 2)
             {

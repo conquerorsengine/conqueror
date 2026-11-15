@@ -17,6 +17,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstring>
+#include "Renderer/GraphicsAPIs/OpenGL/GLProfile.h"
 
 namespace Conqueror
 {
@@ -417,8 +418,8 @@ void main()
                 }
 
         // GL kaynakları
-        std::string err;
-        GLuint vs = CompileShader(GL_VERTEX_SHADER, kDrawVS, err);
+        std::string err = GLProfile::RawComputeShaders() ? "" : "needs desktop OpenGL 4.3+ compute shaders";
+        GLuint vs = err.empty() ? CompileShader(GL_VERTEX_SHADER, kDrawVS, err) : 0;
         GLuint fs = vs ? CompileShader(GL_FRAGMENT_SHADER, kDrawFS, err) : 0;
         m->DrawProgram = fs ? LinkProgram({ vs, fs }, err) : 0;
         GLuint cs = m->DrawProgram ? CompileShader(GL_COMPUTE_SHADER, kGatherCS, err) : 0;

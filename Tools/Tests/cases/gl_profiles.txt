@@ -1,0 +1,21 @@
+# template: fps
+# matrix: CQ_GL_PROFILE=4.6 4.5 4.1 3.3 es3.2 es3.1 es3.0
+# 37: OpenGL 4.6 / 4.5 / 4.1 core (macOS) / 3.3 core ve OpenGL ES 3.2 / 3.1 / 3.0 (WebGL 2 düzeyi): editör her profille açılır (4.6 sürücüde
+# de o profilin kurallarıyla: GLSL hedefi, DSA taklidi, hesaplama gölgelendiricisi yok), çizim gölgelendiricilerinin hepsi bağlanır
+# (profilde olmayanlar hariç: hesaplama, sampler2DMS), FPS şablonu aynı görüntüyle çizilir ve oynanır (ölçülen: 4.6'ya göre fark < 1/255)
+wait 40
+gpu expect_backend OpenGL
+gpu expect_gl {matrix}
+focus Game
+wait 40
+gpu expect_shaders_ok
+game_region 0.1 0.1 0.9 0.9 lum mean >145
+game_region 0.1 0.1 0.9 0.9 lum mean <180
+script_errors mark
+play
+wait 180
+script_errors expect 0
+game_region 0.1 0.1 0.9 0.9 lum mean >145
+game_region 0.1 0.1 0.9 0.9 lum mean <180
+stop
+quit

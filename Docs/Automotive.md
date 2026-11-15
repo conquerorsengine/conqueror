@@ -30,7 +30,20 @@ What changes on OpenGL ES:
 - Occlusion queries count visible parts of a 4×4 grid (`GL_ANY_SAMPLES_PASSED`) instead of samples.
 - No wireframe (`glPolygonMode`), no timer queries unless `GL_EXT_disjoint_timer_query` exists.
 
-All render tests of the engine pass on `es3.0` and on desktop `3.3`.
+What changes on OpenGL 4.1 / 3.3 core and OpenGL ES 3.0 (WebGL 2 level), also when the driver itself is newer:
+
+- No compute shaders (they need OpenGL 4.3 or OpenGL ES 3.1). The methods that use them (FSR 2, NIS, CMAA, FSR AA) are greyed
+  out in the editor with the reason; virtual geometry uses its CPU cluster selection; Visual Effect (GPU particle) components,
+  hardware-style ray tracing / path tracing and occlusion baking are switched off with a log message (the regular Particle
+  System runs on the CPU and keeps working). The profile's version is what counts, not the driver's: `--gl=3.3` on an
+  OpenGL 4.6 driver behaves like a real OpenGL 3.3 GPU.
+- Shaders are compiled for GLSL 410 / 330 / 300 es; a shader stage the profile cannot run (compute, `sampler2DMS` on ES 3.0)
+  is not sent to the driver at all and is listed with its reason (`gpu expect_shaders_ok` in the editor automation).
+
+The regression test `gl_profiles` opens the First Person template in the editor once per profile (4.6, 4.5, 4.1, 3.3,
+ES 3.2, ES 3.1, ES 3.0), checks that the requested profile is really used (`gpu expect_gl`), that every draw shader links,
+and plays the game; the images of all seven profiles match the OpenGL 4.6 image (measured mean difference below 1/255 on an
+AMD RX 580 with Mesa). WebGL 2 itself is checked with the web player in headless Chromium.
 
 ## Android and Android Automotive
 

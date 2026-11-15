@@ -23,6 +23,7 @@
 #include <sstream>
 #include <unordered_map>
 #include <vector>
+#include "Renderer/GraphicsAPIs/OpenGL/GLProfile.h"
 
 namespace Conqueror::RayTracingShaders
 {
@@ -273,7 +274,7 @@ void main()
             if (p.Id) glDeleteProgram(p.Id);
             p.Id = 0;
             p.Error.clear();
-            if (!GLAD_GL_VERSION_4_3) { p.Error = "Ray tracing shaders need OpenGL 4.3 compute"; return p; }
+            if (!GLAD_GL_VERSION_4_3 || !GLProfile::RawComputeShaders()) { p.Error = "Ray tracing shaders need OpenGL 4.3 compute"; return p; }
             std::ifstream f(file);
             std::stringstream ss;
             ss << f.rdbuf();

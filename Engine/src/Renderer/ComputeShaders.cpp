@@ -12,6 +12,7 @@
 #include <memory>
 #include <sstream>
 #include <unordered_map>
+#include "Renderer/GraphicsAPIs/OpenGL/GLProfile.h"
 
 namespace Conqueror::ComputeShaders
 {
@@ -56,7 +57,7 @@ namespace Conqueror::ComputeShaders
                 glDeleteProgram(p.Id);
             p.Id = 0;
             p.Error.clear();
-            if (!GLAD_GL_VERSION_4_3)
+            if (!GLAD_GL_VERSION_4_3 || !GLProfile::RawComputeShaders())
             {
                 p.Error = "Compute shaders need OpenGL 4.3 or newer";
                 return p;

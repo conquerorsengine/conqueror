@@ -11,6 +11,8 @@ Cases:
                       # serial                         timing-sensitive: runs alone after the parallel cases (-j)
                       # requires: VAR                  runs only when environment variable VAR is set (else SKIP)
                       # env: K=V K2=V2                 extra environment for the editor of this case
+                      # matrix: VAR=v1 v2 ...          runs the case once per value as <name>@<value> with VAR=<value>;
+                                                       "{matrix}" in the script is replaced by the value
                   "{dir}" in the script is replaced by Tools/Tests/cases (checks/*.cqs live there). A check script
                   creates an entity named RegressionCheckOK when its condition holds; the case then expects it.
 
@@ -95,10 +97,19 @@ def template_script():
     return "\n".join(["wait 30", "focus Game", "script_errors mark", "play", "wait 240", "script_errors expect 0", "stop", "quit"]) + "\n"
 
 
+def matrix_of(name):
+    # "# matrix: VAR=v1 v2 ..." -> (VAR, [v1, v2, ...]) ya da None
+    path = os.path.join(CASES, name + ".txt")
+    if not os.path.exists(path):
+        return None
+    m = re.search(r"^#\s*matrix:\s*([A-Za-z_][A-Za-z0-9_]*)=(.+)$", open(path, encoding="utf-8").read(), re.M)
+    return (m.group(1), m.group(2).split()) if m else None
+
+
 def is_serial(case):
     if case.startswith("template:"):
         return False
-    path = os.path.join(CASES, case + ".txt")
+    path = os.path.join(CASES, case.split("@", 1)[0] + ".txt")
     return os.path.exists(path) and re.search(r"^#\s*serial\b", open(path, encoding="utf-8").read(), re.M) is not None
 
 
@@ -108,7 +119,12 @@ def run_case(case, env=None):
         tid = case.split(":", 1)[1]
         text = template_script()
     else:
-        tid, text = case_script(case)
+        base, _, value = case.partition("@")
+        tid, text = case_script(base)
+        matrix = matrix_of(base)
+        if matrix and value:
+            text = text.replace("{matrix}", value)
+            env = dict(env or os.environ, **{matrix[0]: value})
         # Donanım / çalışma zamanı isteyen testler (ör. OpenXR: Monado) yalnız o ortamda; ek ortam değişkenleri
         for var in re.findall(r"^#\s*requires:\s*(\S+)", text, re.M):
             if not os.environ.get(var):
@@ -136,7 +152,10 @@ def run_case(case, env=None):
 
 
 def all_cases():
-    named = sorted(f[:-4] for f in os.listdir(CASES) if f.endswith(".txt"))
+    named = []
+    for name in sorted(f[:-4] for f in os.listdir(CASES) if f.endswith(".txt")):
+        matrix = matrix_of(name)
+        named += [f"{name}@{v}" for v in matrix[1]] if matrix else [name]
     return [f"template:{t}" for t in hub_templates()] + named
 
 
@@ -150,7 +169,11 @@ def main():
         i = args.index("-j")
         jobs = max(1, int(args[i + 1]))
         del args[i:i + 2]
-    cases = args or all_cases()
+    # Matrisli testin adı tek başına verilirse her değeri çalışır (gl_profiles -> gl_profiles@4.6 ...)
+    cases = []
+    for c in args or all_cases():
+        matrix = None if "@" in c or c.startswith("template:") else matrix_of(c)
+        cases += [f"{c}@{v}" for v in matrix[1]] if matrix else [c]
     results = []
     lock = threading.Lock()
 

@@ -27,6 +27,7 @@
 #include <numeric>
 #include <unordered_map>
 #include <vector>
+#include "Renderer/GraphicsAPIs/OpenGL/GLProfile.h"
 
 namespace Conqueror
 {
@@ -876,11 +877,14 @@ void main()
             if (!s.AvgTried)
             {
                 s.AvgTried = true;
-                GLuint sh = glCreateShader(GL_COMPUTE_SHADER);
-                glShaderSource(sh, 1, &kTexAverageGLSL, nullptr);
-                glCompileShader(sh);
+                GLuint sh = GLProfile::RawComputeShaders() ? glCreateShader(GL_COMPUTE_SHADER) : 0;
                 GLint ok = 0;
-                glGetShaderiv(sh, GL_COMPILE_STATUS, &ok);
+                if (sh)
+                {
+                    glShaderSource(sh, 1, &kTexAverageGLSL, nullptr);
+                    glCompileShader(sh);
+                    glGetShaderiv(sh, GL_COMPILE_STATUS, &ok);
+                }
                 if (ok)
                 {
                     s.AvgProgram = glCreateProgram();
@@ -889,7 +893,8 @@ void main()
                     glGetProgramiv(s.AvgProgram, GL_LINK_STATUS, &ok);
                     if (!ok) { glDeleteProgram(s.AvgProgram); s.AvgProgram = 0; }
                 }
-                glDeleteShader(sh);
+                if (sh)
+                    glDeleteShader(sh);
                 if (!s.AvgProgram)
                     CQ_CORE_ERROR("[Ray Tracing] texture average shader failed");
                 glCreateTextures(GL_TEXTURE_2D, 1, &s.AvgTexture);
@@ -1065,6 +1070,8 @@ void main()
 
         uint32_t CompileCompute(const std::string& name, const std::string& localSize, const std::string& body)
         {
+            if (!GLProfile::RawComputeShaders())
+                return 0;
             const std::string source = "#version 450 core\n" + localSize + "\n" + kCommonGLSL + body;
             const char* text = source.c_str();
             GLuint sh = glCreateShader(GL_COMPUTE_SHADER);

@@ -1481,6 +1481,12 @@ namespace Conqueror::GLProfile
             case Kind::GL33: effective = std::min(effective, 33); break;
             default: break;
         }
+        // Etkin sürüm profilin sürümü: 4.6 sürücüde --gl=4.1 / 3.3 gerçek 4.1 (macOS) / 3.3 kart gibi davranır (hesaplama gölgelendiricisi yok vb.)
+        if (!s_Info.ES)
+        {
+            s_Info.Major = effective / 10;
+            s_Info.Minor = effective % 10;
+        }
         s_Info.HasDSA = !s_Info.ES && effective >= 45 && glad_glCreateTextures != nullptr;
         if (s_Info.ES)
         {
@@ -1612,6 +1618,8 @@ namespace Conqueror::GLProfile
     }
 
     const Info& Current() { return s_Info; }
+
+    bool RawComputeShaders() { return !s_Info.ES && s_Info.Major * 10 + s_Info.Minor >= 43; }
 
     const char* ImGuiGLSLVersion()
     {

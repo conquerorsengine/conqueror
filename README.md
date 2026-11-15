@@ -82,7 +82,7 @@ SPIRV-Cross and compiled with `d3dcompiler_47` (shared code in `.../DirectX/Comm
 | Backend | Selected by | Notes |
 |---------|-------------|-------|
 | OpenGL 4.6 | default on Linux, `--opengl` | reference backend |
-| OpenGL 4.5 / 4.1 / 3.3 core, OpenGL ES 3.2 / 3.1 / 3.0 | `--gl=4.1`, `--gl=es3.0`, `CQ_GL_PROFILE`; ES is the default on Android, QNX and AGL builds | missing GL 4.5 functions are emulated, shaders are cross-compiled to the target GLSL / GLSL ES version ([details](Docs/Automotive.md#opengl-profiles)) |
+| OpenGL 4.6 / 4.5 / 4.1 / 3.3 core, OpenGL ES 3.2 / 3.1 / 3.0, WebGL 2 | `--gl=4.1`, `--gl=es3.0`, `CQ_GL_PROFILE`; ES is the default on Android, QNX and AGL builds, WebGL 2 on the web | missing GL 4.5 functions are emulated, shaders are cross-compiled to the target GLSL / GLSL ES version; the test `gl_profiles` renders the same image on all seven profiles ([details](Docs/Automotive.md#opengl-profiles)) |
 | Vulkan 1.3 (or 1.2 + `VK_KHR_dynamic_rendering` / `VK_EXT_extended_dynamic_state`) | `--vulkan` | loader opened at runtime (no SDK needed to build, no hard dependency on `vulkan-1.dll` / `libvulkan`); MoltenVK portability supported |
 | Direct3D 11 (feature level 11_0) | `--d3d11`, default on Windows | own mip generation, depth resolve via shader, large sampler arrays split for the 16-sampler limit |
 | Direct3D 12 (feature level 11_0, Windows 10+) | `--d3d12` | `d3d12.dll` opened at runtime; one root signature (12 root CBVs + SRV/sampler tables), pipeline state cache, per-resource state tracking, 3 frames in flight; falls back to Direct3D 11 if unavailable |

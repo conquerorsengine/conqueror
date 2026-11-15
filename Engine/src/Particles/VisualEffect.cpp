@@ -16,6 +16,7 @@
 #include <cmath>
 #include <map>
 #include <sstream>
+#include "Renderer/GraphicsAPIs/OpenGL/GLProfile.h"
 
 namespace Conqueror
 {
@@ -147,6 +148,8 @@ void main()
 
         GLuint BuildCompute(const char* src)
         {
+            if (!GLProfile::RawComputeShaders())
+                return 0;
             GLuint sh = glCreateShader(GL_COMPUTE_SHADER);
             glShaderSource(sh, 1, &src, nullptr);
             glCompileShader(sh);

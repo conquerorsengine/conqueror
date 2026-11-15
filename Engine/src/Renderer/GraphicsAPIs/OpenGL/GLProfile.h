@@ -41,6 +41,10 @@ namespace Conqueror::GLProfile
     // Bağlam güncel + glad yüklendikten sonra: sürümü algıla, eksik işlevleri yükle / taklit et
     CQ_API void OnContextCreated(void* (*getProc)(const char* name));
     CQ_API const Info& Current();
+    // Motorun çevrilmeden derlenen masaüstü gölgelendiricileri ("#version 450 core": hesaplama yolları, sanal geometri, GPU parçacıkları,
+    // ışın izleme, örtme pişirme) bu profilde çalışır mı: masaüstü GL 4.3+. ES / WebGL 2 / 3.3 / 4.1'de bu yollar kapalı, motor yedek yola
+    // geçer (4.6 sürücüde --gl=3.3 / es3.2 de gerçek kart gibi)
+    CQ_API bool RawComputeShaders();
     // ImGui OpenGL3 arka ucu için "#version ..." dizesi
     CQ_API const char* ImGuiGLSLVersion();
 }

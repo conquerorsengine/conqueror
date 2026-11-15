@@ -8,7 +8,7 @@ rules are in the [README](../README.md#graphics-backends).
 
 | Backend | Default on | Select with |
 |---------|-----------|-------------|
-| OpenGL 4.6 (4.5 / 4.1 / 3.3, GL ES 3.x profiles) | Linux, Android (ES), automotive (ES) | `--opengl`, `--gl=es3.0` ... |
+| OpenGL 4.6 (4.5 / 4.1 / 3.3, GL ES 3.2 / 3.1 / 3.0 and WebGL 2 profiles) | Linux, Android (ES), automotive (ES), web (WebGL 2) | `--opengl`, `--gl=es3.0` ... ([OpenGL profiles](Automotive.md#opengl-profiles)) |
 | Vulkan 1.2 / 1.3 | — | `--vulkan` |
 | Direct3D 11 | Windows | `--d3d11` |
 | Direct3D 12 | — | `--d3d12` |

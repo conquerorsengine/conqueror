@@ -241,10 +241,8 @@ namespace Conqueror::AntiAliasing
         s_Caps.XeSSRuntime = Detail::FindXeSSRuntime();
         s_Caps.NVCoverage = HasExtension("GL_NV_framebuffer_multisample_coverage");
         s_Caps.AMDAdvancedMS = HasExtension("GL_AMD_framebuffer_multisample_advanced") && glNamedRenderbufferStorageMultisampleAdvancedAMD != nullptr;
-        GLint major = 0, minor = 0;
-        glGetIntegerv(GL_MAJOR_VERSION, &major);
-        glGetIntegerv(GL_MINOR_VERSION, &minor);
-        s_Caps.SampleShading = (major > 4 || (major == 4 && minor >= 0)) && glMinSampleShading != nullptr;
+        // Sürüm GL profilinden (--gl=3.3: 4.6 sürücüde de 3.3 kuralları); örnek başına gölgelendirme masaüstü GL 4.0+ (ES'de kullanılmıyor)
+        s_Caps.SampleShading = !GLProfile::Current().ES && GLProfile::Current().Major >= 4 && glMinSampleShading != nullptr;
         {
             const auto& prof = GLProfile::Current();
             s_Caps.Compute = prof.ES ? (prof.Major > 3 || (prof.Major == 3 && prof.Minor >= 1))

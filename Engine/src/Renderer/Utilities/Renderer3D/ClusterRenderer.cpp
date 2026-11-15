@@ -20,6 +20,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include "Renderer/GraphicsAPIs/OpenGL/GLProfile.h"
 
 namespace Conqueror
 {
@@ -312,7 +313,7 @@ void main()
             if (s.Tried)
                 return s.Supported;
             s.Tried = true;
-            if (!glMultiDrawElementsIndirectCount || !glDispatchCompute)
+            if (!glMultiDrawElementsIndirectCount || !glDispatchCompute || !GLProfile::RawComputeShaders())
             {
                 CQ_CORE_INFO("[Virtual Geometry] GPU-driven clusters unavailable (no glMultiDrawElementsIndirectCount); using CPU selection");
                 return false;

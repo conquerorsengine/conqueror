@@ -2,6 +2,7 @@
 #include "GLProfile.h"
 #include "Core/Logging/Log.h"
 #include "Core/ShaderSystem/CQShaderLoader.h"
+#include "Renderer/RHI/RendererAPI.h"
 
 #include <algorithm>
 #include <array>
@@ -20,6 +21,30 @@ namespace Conqueror
     namespace
     {
         std::vector<std::pair<std::string, std::string>> s_ShaderFailures;
+    }
+
+    // Bu GL profilinde sürücüye verilemeyecek aşama: neden, verilebilirse nullptr
+    static const char* UnsupportedInProfile(GLenum type, const std::string& source)
+    {
+        if (RendererAPI::GetBackend() != RendererAPI::Backend::OpenGL)
+            return nullptr;
+        const auto& prof = GLProfile::Current();
+        if (type == GL_COMPUTE_SHADER && (prof.ES ? (prof.Major == 3 && prof.Minor < 1) : (prof.Major * 10 + prof.Minor < 43)))
+            return "compute shaders are not available in this OpenGL profile (they need OpenGL 4.3 or OpenGL ES 3.1)";
+        if (!prof.MultisampleTextures && source.find("sampler2DMS") != std::string::npos)
+            return "multisample textures (sampler2DMS) are not available in this OpenGL profile (OpenGL ES 3.0 / WebGL 2)";
+        if (prof.ES)
+        {
+            const size_t v = source.find("#version");
+            if (v != std::string::npos)
+            {
+                const size_t end = source.find('\n', v);
+                const std::string line = source.substr(v, end == std::string::npos ? std::string::npos : end - v);
+                if (line.find(" es") == std::string::npos && line.find("100") == std::string::npos)
+                    return "desktop GLSL (#version without 'es') cannot be compiled on OpenGL ES";
+            }
+        }
+        return nullptr;
     }
 
     void RecordShaderFailure(const std::string& name, const std::string& reason)
@@ -336,12 +361,25 @@ namespace Conqueror
             glObjectLabel(GL_PROGRAM, program, -1, m_Name.c_str());
         std::vector<GLuint> glShaderIDs;
         bool failed = false;
+        bool profileGap = false;   // profilin çalıştıramadığı aşama: özgün GLSL ile yeniden denemenin anlamı yok
         m_LastError.clear();
 
         for (auto& kv : finalSources)
         {
             GLenum type = kv.first;
             const std::string& source = kv.second;
+
+            // Profilin çalıştıramadığı aşama sürücüye hiç verilmez: gerçek ES 3.0 / GL 3.3 / 4.1 kartı hesaplama gölgelendiricisini reddeder,
+            // ES'de masaüstü "#version 450" kaynağı derlenemez (Mesa, ES bağlamında bunları derlerken çöküyordu: --gl=es3.0 sınaması)
+            if (const char* why = UnsupportedInProfile(type, source))
+            {
+                m_LastError += std::string("[") + ShaderStageName(type) + "] " + why + "\n";
+                CQ_CORE_WARN("Shader '{0}' ({1}): {2}", m_Name, ShaderStageName(type), why);
+                RecordShaderFailure(m_Name, std::string(ShaderStageName(type)) + ": " + why);
+                failed = true;
+                profileGap = true;
+                continue;
+            }
 
             GLuint shader = glCreateShader(type);
             const GLchar* sourceCStr = source.c_str();
@@ -385,7 +423,7 @@ namespace Conqueror
                 glDeleteShader(id);
             glDeleteProgram(program);
             m_RendererID = 0;
-            if (m_FromSPIRV)
+            if (m_FromSPIRV && !profileGap)
                 return retryWithoutSPIRV();
             return false;
         }
