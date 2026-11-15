@@ -1,0 +1,27 @@
+diff --git a/External/assimp/CMakeLists.txt b/External/assimp/CMakeLists.txt
+index d45eb22..608cc04 100644
+--- a/External/assimp/CMakeLists.txt
++++ b/External/assimp/CMakeLists.txt
+@@ -315,8 +315,8 @@ ELSEIF(MSVC)
+   elseif((GENERATOR_IS_MULTI_CONFIG) OR (CMAKE_BUILD_TYPE MATCHES Release))
+     message("-- MSVC PDB generation disabled. Release binary will not be debuggable.")
+   endif()
+-  # Source code is encoded in UTF-8
+-  ADD_COMPILE_OPTIONS(/source-charset:utf-8)
++  # Source code is encoded in UTF-8. Conqueror Engine change: /source-charset:utf-8 removed; the top-level CMakeLists
++  # already passes /utf-8 (source + execution charset) to every target and MSVC rejects the two together (D8016)
+ ELSEIF (CMAKE_CXX_COMPILER_ID MATCHES "Clang" )
+   IF(NOT ASSIMP_HUNTER_ENABLED)
+     SET(CMAKE_POSITION_INDEPENDENT_CODE ON)
+diff --git a/External/assimp/contrib/poly2tri/poly2tri/common/shapes.h b/External/assimp/contrib/poly2tri/poly2tri/common/shapes.h
+index 3f4d1c0..bc4e140 100644
+--- a/External/assimp/contrib/poly2tri/poly2tri/common/shapes.h
++++ b/External/assimp/contrib/poly2tri/poly2tri/common/shapes.h
+@@ -35,6 +35,7 @@
+ 
+ #include <cmath>
+ #include <cstddef>
++#include <ostream>
+ #include <stdexcept>
+ #include <vector>
+ 

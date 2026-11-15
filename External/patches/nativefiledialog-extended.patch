@@ -1,0 +1,22 @@
+diff --git a/External/nativefiledialog-extended/src/CMakeLists.txt b/External/nativefiledialog-extended/src/CMakeLists.txt
+index d6a9edc..d6ac61a 100644
+--- a/External/nativefiledialog-extended/src/CMakeLists.txt
++++ b/External/nativefiledialog-extended/src/CMakeLists.txt
+@@ -35,13 +35,15 @@ if(nfd_PLATFORM STREQUAL PLATFORM_LINUX)
+     set(NFD_WAYLAND_PROTOCOL_XDG_FOREIGN ${CMAKE_CURRENT_SOURCE_DIR}/../3ps/wayland-protocols/unstable/xdg-foreign/xdg-foreign-unstable-v1.xml)
+     add_custom_command(
+       OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/xdg-foreign-unstable-v1.h
+-      COMMAND wayland-scanner client-header < ${NFD_WAYLAND_PROTOCOL_XDG_FOREIGN} > ${CMAKE_CURRENT_BINARY_DIR}/xdg-foreign-unstable-v1.h
++      COMMAND wayland-scanner client-header ${NFD_WAYLAND_PROTOCOL_XDG_FOREIGN} ${CMAKE_CURRENT_BINARY_DIR}/xdg-foreign-unstable-v1.h
+       MAIN_DEPENDENCY ${NFD_WAYLAND_PROTOCOL_XDG_FOREIGN}
++      VERBATIM
+     )
+     add_custom_command(
+       OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/xdg-foreign-unstable-v1.c
+-      COMMAND wayland-scanner private-code < ${NFD_WAYLAND_PROTOCOL_XDG_FOREIGN} > ${CMAKE_CURRENT_BINARY_DIR}/xdg-foreign-unstable-v1.c
++      COMMAND wayland-scanner private-code ${NFD_WAYLAND_PROTOCOL_XDG_FOREIGN} ${CMAKE_CURRENT_BINARY_DIR}/xdg-foreign-unstable-v1.c
+       MAIN_DEPENDENCY ${NFD_WAYLAND_PROTOCOL_XDG_FOREIGN}
++      VERBATIM
+     )
+     list(APPEND SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/xdg-foreign-unstable-v1.h ${CMAKE_CURRENT_BINARY_DIR}/xdg-foreign-unstable-v1.c)
+   endif()

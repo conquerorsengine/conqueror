@@ -1,0 +1,14 @@
+diff --git a/External/luau/Analysis/src/TableLiteralInference.cpp b/External/luau/Analysis/src/TableLiteralInference.cpp
+index 0548eb9..609e70d 100644
+--- a/External/luau/Analysis/src/TableLiteralInference.cpp
++++ b/External/luau/Analysis/src/TableLiteralInference.cpp
+@@ -13,6 +13,9 @@
+ #include "Luau/Type.h"
+ #include "Luau/ToString.h"
+ #include "Luau/TypeUtils.h"
++
++#include <cmath>
++#include <cstdlib>
+ #include "Luau/Unifier2.h"
+ 
+ LUAU_FASTFLAGVARIABLE(LuauBidirectionalInferenceBetterLambdaHandling)
