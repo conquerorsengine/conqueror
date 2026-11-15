@@ -41,6 +41,12 @@ namespace Conqueror
         
         // Visualization
         void GetSpectrumData(float* buffer, uint32_t count, bool isPlaying = true, float volume = 1.0f);
+
+        // Kayıt (Recorder, 249): hoparlöre giden karıştırılmış sesin kopyası (Unity Recorder "Capture Audio"). Ses iş parçacığı
+        // halka tampona yazar, ReadCapture ana iş parçacığında boşaltır (aralıklı, float, kanallar iç içe)
+        bool BeginCapture(uint32_t& channels, uint32_t& sampleRate);
+        size_t ReadCapture(float* out, size_t maxFrames);
+        void EndCapture();
         
     private:
         AudioEngine();
@@ -54,6 +60,7 @@ namespace Conqueror
         
         ma_engine* m_Engine = nullptr;
         ma_context* m_Context = nullptr;   // CQ_AUDIO_NULL: sessiz sanal aygıt (testler hoparlörden ses çıkarmasın)
+        void* m_CaptureRing = nullptr;     // ma_pcm_rb (yalnız kayıt sırasında)
         bool m_Paused = false;
         
         glm::vec3 m_ListenerPosition = glm::vec3(0.0f);

@@ -4,12 +4,17 @@
 #include "Core/Project/Project.h"
 #include "Core/Utils/ProcessRunner.h"
 #include "Core/Time/TimeManager.h"
+#include "Core/Audio/AudioEngine.h"
+#include "Core/Utils/Platform.h"
 
 #include <glad/glad.h>
 #include "stb_image_write.h"
 
 #include <algorithm>
 #include <atomic>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
 #include <chrono>
 #include <condition_variable>
 #include <cstring>
@@ -53,6 +58,14 @@ namespace Conqueror
             int FFmpegAvailable = -1;
             std::string H264Encoder;              // "libx264" / "libopenh264" / boş (MPEG-4 Part 2'ye düşer)
             bool Fixed = false;                   // bu kayıt sabit adımlı (çevrimdışı)
+            std::string FFmpegExe;                // bulunan ffmpeg (tırnaksız)
+            // Ses (249): WAV (16 bit PCM) kayıt sırasında yazılır, bitince videoyla birleştirilir
+            bool Audio = false;
+            uint32_t AudioChannels = 0, AudioRate = 0;
+            uint64_t AudioFrames = 0;
+            std::FILE* AudioFile = nullptr;
+            std::string AudioPath;
+            std::vector<float> AudioBuffer;
         };
 
         RecorderState& S()
@@ -67,6 +80,39 @@ namespace Conqueror
             char buf[32];
             std::strftime(buf, sizeof(buf), "%Y%m%d_%H%M%S", std::localtime(&t));
             return buf;
+        }
+
+        std::string Quote(const std::string& s);
+
+        // 16 bit PCM WAV: başlık şimdi, boyutlar bitince
+        void WriteWavHeader(std::FILE* f, uint32_t channels, uint32_t rate, uint32_t dataBytes)
+        {
+            auto u32 = [&](uint32_t v) { std::fwrite(&v, 4, 1, f); };
+            auto u16 = [&](uint16_t v) { std::fwrite(&v, 2, 1, f); };
+            std::fseek(f, 0, SEEK_SET);
+            std::fwrite("RIFF", 1, 4, f); u32(36 + dataBytes); std::fwrite("WAVE", 1, 4, f);
+            std::fwrite("fmt ", 1, 4, f); u32(16); u16(1); u16((uint16_t)channels); u32(rate); u32(rate * channels * 2); u16((uint16_t)(channels * 2)); u16(16);
+            std::fwrite("data", 1, 4, f); u32(dataBytes);
+        }
+
+        void DrainAudio()
+        {
+            auto& s = S();
+            if (!s.Audio || !s.AudioFile || !AudioEngine::IsInitialized())
+                return;
+            const size_t chunk = 4096;
+            s.AudioBuffer.resize(chunk * s.AudioChannels);
+            std::vector<int16_t> pcm(chunk * s.AudioChannels);
+            for (;;)
+            {
+                const size_t n = AudioEngine::Get().ReadCapture(s.AudioBuffer.data(), chunk);
+                if (n == 0)
+                    break;
+                for (size_t i = 0; i < n * s.AudioChannels; ++i)
+                    pcm[i] = (int16_t)std::lround(std::clamp(s.AudioBuffer[i], -1.0f, 1.0f) * 32767.0f);
+                std::fwrite(pcm.data(), sizeof(int16_t), n * s.AudioChannels, s.AudioFile);
+                s.AudioFrames += n;
+            }
         }
 
         std::string Quote(const std::string& s)
@@ -132,6 +178,30 @@ namespace Conqueror
     const std::string& Recorder::GetCurrentOutput() { return S().Output; }
     const std::string& Recorder::GetLastOutput() { return S().LastOutput; }
     const std::string& Recorder::GetLastError() { return S().LastError; }
+    float Recorder::GetAudioSeconds() { return S().AudioRate ? (float)((double)S().AudioFrames / S().AudioRate) : 0.0f; }
+
+    std::string Recorder::FFmpegPath()
+    {
+        namespace fs = std::filesystem;
+#ifdef _WIN32
+        const char* exe = "ffmpeg.exe";
+#else
+        const char* exe = "ffmpeg";
+#endif
+        std::error_code ec;
+        if (const char* env = std::getenv("CQ_FFMPEG"); env && env[0] && fs::exists(env, ec))
+            return env;
+        // Motorla gelen kopya (Tools/FFmpeg/fetch-ffmpeg betiği ya da sürüm paketi buraya koyar) ve kullanıcı klasörüne indirilen
+        const fs::path candidates[] = {
+            fs::current_path() / "Tools" / "ffmpeg" / exe,
+            fs::current_path() / exe,
+            fs::path(Platform::GetUserAppDataDirectory()) / "ConquerorEngine" / "ffmpeg" / exe,
+        };
+        for (const auto& c : candidates)
+            if (!c.empty() && fs::exists(c, ec))
+                return c.string();
+        return "ffmpeg";   // PATH
+    }
 
     bool Recorder::IsFFmpegAvailable()
     {
@@ -140,7 +210,8 @@ namespace Conqueror
         {
             ProcessRunner probe;
             bool ok = false;
-            if (probe.Start("ffmpeg -hide_banner -version", std::filesystem::current_path()))
+            s.FFmpegExe = FFmpegPath();
+            if (probe.Start(Quote(s.FFmpegExe) + " -hide_banner -version", std::filesystem::current_path()))
             {
                 std::string out;
                 for (int i = 0; i < 300 && probe.IsRunning(); ++i)
@@ -156,7 +227,7 @@ namespace Conqueror
             if (ok)
             {
                 ProcessRunner enc;
-                if (enc.Start("ffmpeg -hide_banner -encoders", std::filesystem::current_path()))
+                if (enc.Start(Quote(s.FFmpegExe) + " -hide_banner -encoders", std::filesystem::current_path()))
                 {
                     std::string list;
                     for (int i = 0; i < 400 && enc.IsRunning(); ++i)
@@ -223,7 +294,15 @@ namespace Conqueror
             int outW = std::max(2, (int)((float)s.Width * std::clamp(cfg.ResolutionScale, 0.1f, 1.0f))) & ~1;
             int outH = std::max(2, (int)((float)s.Height * std::clamp(cfg.ResolutionScale, 0.1f, 1.0f))) & ~1;
             std::string filters = "vflip";
-            if (outW != (int)s.Width || outH != (int)s.Height)
+            if (cfg.OutputWidth > 0 && cfg.OutputHeight > 0)
+            {
+                // Tam çıkış çözünürlüğü: oran korunarak sığdırılır, kalan kenarlar siyah
+                outW = std::clamp(cfg.OutputWidth, 2, 8192) & ~1;
+                outH = std::clamp(cfg.OutputHeight, 2, 8192) & ~1;
+                const std::string w = std::to_string(outW), h = std::to_string(outH);
+                filters += ",scale=" + w + ":" + h + ":flags=lanczos:force_original_aspect_ratio=decrease,pad=" + w + ":" + h + ":(ow-iw)/2:(oh-ih)/2:color=black";
+            }
+            else if (outW != (int)s.Width || outH != (int)s.Height)
                 filters += ",scale=" + std::to_string(outW) + ":" + std::to_string(outH) + ":flags=lanczos";
 
             std::string codec;
@@ -259,7 +338,7 @@ namespace Conqueror
                 codec = "";
             }
 
-            std::string cmd = "ffmpeg -y -hide_banner -loglevel error -f rawvideo -pix_fmt rgba -s "
+            std::string cmd = Quote(s.FFmpegExe) + " -y -hide_banner -loglevel error -f rawvideo -pix_fmt rgba -s "
                 + std::to_string(s.Width) + "x" + std::to_string(s.Height) + " -r " + std::to_string(cfg.FrameRate)
                 + " -i - -vf " + Quote(filters) + " " + codec + " " + Quote(s.Output);
             s.FFmpeg = std::make_unique<ProcessRunner>();
@@ -280,6 +359,25 @@ namespace Conqueror
             TimeManager::SetCaptureDeltaTime(1.0f / (float)cfg.FrameRate);
         s.StopWorker = false;
         s.Queue.clear();
+
+        // Ses: GIF'te yok; sabit adımlı kayıtta ses gerçek zamanda aktığından görüntüyle örtüşmez
+        s.Audio = false;
+        s.AudioFrames = 0;
+        s.AudioRate = 0;
+        if (cfg.RecordAudio && cfg.Format != RecordingFormat::GIF && !s.Fixed && AudioEngine::IsInitialized()
+            && AudioEngine::Get().BeginCapture(s.AudioChannels, s.AudioRate))
+        {
+            s.AudioPath = cfg.Format == RecordingFormat::PNGSequence ? (std::filesystem::path(s.Output) / "audio.wav").string() : s.Output + ".audio.wav";
+            s.AudioFile = std::fopen(s.AudioPath.c_str(), "wb");
+            if (s.AudioFile)
+            {
+                WriteWavHeader(s.AudioFile, s.AudioChannels, s.AudioRate, 0);
+                s.Audio = true;
+            }
+            else
+                AudioEngine::Get().EndCapture();
+        }
+
         s.Worker = std::thread(WorkerLoop);
         s.Recording = true;
         CQ_CORE_INFO("[Recorder] Recording to {0} ({1}x{2} @ {3} fps)", s.Output, s.Width, s.Height, cfg.FrameRate);
@@ -305,6 +403,26 @@ namespace Conqueror
         if (s.Worker.joinable())
             s.Worker.join();
 
+        // Sesi kapat (WAV boyutları), görüntü dosyası bitince birleştirilecek
+        bool muxAudio = false;
+        if (s.Audio)
+        {
+            DrainAudio();
+            if (AudioEngine::IsInitialized())
+                AudioEngine::Get().EndCapture();
+            const uint32_t bytes = (uint32_t)std::min<uint64_t>(s.AudioFrames * s.AudioChannels * 2, 0xFFFFFFF0u);
+            WriteWavHeader(s.AudioFile, s.AudioChannels, s.AudioRate, bytes);
+            std::fclose(s.AudioFile);
+            s.AudioFile = nullptr;
+            s.Audio = false;
+            muxAudio = s.Settings.Format != RecordingFormat::PNGSequence && s.AudioFrames > 0;
+            if (s.AudioFrames == 0 && s.Settings.Format != RecordingFormat::PNGSequence)
+            {
+                std::error_code ec;
+                std::filesystem::remove(s.AudioPath, ec);
+            }
+        }
+
         if (s.FFmpeg)
         {
             // stdin kapanınca ffmpeg dosyayı bitirir; kısa süre bekle
@@ -321,6 +439,40 @@ namespace Conqueror
             else if (s.FFmpeg->GetExitCode() != 0)
                 s.LastError = "ffmpeg exited with code " + std::to_string(s.FFmpeg->GetExitCode());
             s.FFmpeg.reset();
+        }
+        // Ses + görüntü tek dosyada (görüntü yeniden kodlanmaz)
+        if (muxAudio && s.LastError.empty())
+        {
+            namespace fs = std::filesystem;
+            const fs::path video(s.Output);
+            const fs::path tmp = video.parent_path() / (video.stem().string() + ".mux" + video.extension().string());
+            const std::string audioCodec = s.Settings.Format == RecordingFormat::WebM ? "-c:a libopus -b:a 160k" : "-c:a aac -b:a 192k";
+            const std::string cmd = Quote(s.FFmpegExe) + " -y -hide_banner -loglevel error -i " + Quote(s.Output) + " -i " + Quote(s.AudioPath)
+                + " -map 0:v:0 -map 1:a:0 -c:v copy " + audioCodec + " -shortest " + Quote(tmp.string());
+            ProcessRunner mux;
+            bool ok = false;
+            if (mux.Start(cmd, video.parent_path()))
+            {
+                for (int i = 0; i < 6000 && mux.IsRunning(); ++i)
+                {
+                    std::string out = mux.ReadAvailable();
+                    if (!out.empty())
+                        CQ_CORE_WARN("[Recorder] ffmpeg (audio): {0}", out);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                }
+                ok = !mux.IsRunning() && mux.GetExitCode() == 0;
+            }
+            std::error_code ec;
+            if (ok && fs::exists(tmp, ec) && fs::file_size(tmp, ec) > 0)
+            {
+                fs::rename(tmp, video, ec);
+                fs::remove(s.AudioPath, ec);
+            }
+            else
+            {
+                fs::remove(tmp, ec);
+                s.LastError = "could not add the sound to the video (kept next to it: " + fs::path(s.AudioPath).filename().string() + ")";
+            }
         }
         s.LastOutput = s.Output;
         CQ_CORE_INFO("[Recorder] Saved {0} frames ({1:.1f}s) to {2}", s.Frames, s.Elapsed, s.Output);
@@ -385,6 +537,7 @@ namespace Conqueror
             s.Cv.notify_all();
         }
 
+        DrainAudio();
         if (s.Settings.MaxDuration > 0.0f && s.Elapsed >= s.Settings.MaxDuration)
             Stop();
     }

@@ -21,6 +21,13 @@ namespace Conqueror
         int FrameRate = 30;
         float Quality = 0.85f;          // 0..1
         float ResolutionScale = 1.0f;   // 0.25..1 (yalnızca ffmpeg biçimlerinde)
+        // Tam çıkış çözünürlüğü (Unity Recorder "Output Resolution"): ikisi de > 0 ise ResolutionScale yerine bu boyut; oran farklıysa
+        // görüntü sığdırılır, kenarlar siyah (letterbox / pillarbox)
+        int OutputWidth = 0;
+        int OutputHeight = 0;
+        // Oyunun sesi (hoparlöre giden karıştırılmış ses) videoya eklenir (MP4: AAC, WebM: Opus); PNG dizisinde audio.wav, GIF'te ses yok.
+        // Fixed Time Step açıkken ses gerçek zamanda aktığından kaydedilmez
+        bool RecordAudio = true;
         float MaxDuration = 0.0f;       // saniye, 0 = sınırsız
         bool StartWithPlay = false;
         bool StopWithPlay = true;
@@ -50,5 +57,9 @@ namespace Conqueror
         static const std::string& GetLastOutput();
         static const std::string& GetLastError();
         static bool IsFFmpegAvailable();
+        // Kullanılan ffmpeg: CQ_FFMPEG, motorla gelen Tools/ffmpeg, kullanıcı klasöründeki indirilmiş kopya ya da PATH
+        static std::string FFmpegPath();
+        // Kayıt sırasında yakalanan ses (saniye), testler / arayüz
+        static float GetAudioSeconds();
     };
 }

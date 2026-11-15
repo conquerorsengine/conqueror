@@ -1,0 +1,13 @@
+# template: basic3d
+# 249: Recorder oyunun sesini de kaydeder (MP4'e AAC olarak eklenir) ve istenen tam çözünürlükte (1280x720) yazar; PNG dizisinde
+# audio.wav yanında. ffmpeg: Tools/ffmpeg, indirilen kopya ya da PATH
+wait 40
+focus Game
+play
+wait 20
+record_start mp4 fps=30 size=1280x720 audio
+wait 90
+record_stop
+stop
+expect_recording 1280 720 audio
+quit
