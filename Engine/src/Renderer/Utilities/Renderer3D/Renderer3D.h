@@ -91,6 +91,9 @@ namespace Conqueror
         // Geçerli karenin çizim zamanı (malzeme animasyonları; düzenleyicide Realtime kapalıyken durur)
         static float GetFrameTime();
         static void RenderShadows(Scene* scene);
+        // Güneş gölgesinin uzaklıkla solduğu bant (görüş derinliği): x gölge mesafesi (son kademenin sınırı), y bandın genişliği;
+        // gölge yoksa (0, 0). TAA kamera uzaklaşıp yaklaşırken solan gölgenin eski hâlini tutmasın diye kullanır
+        static glm::vec2 GetShadowFade();
         static void DrawEnvironment();          // skybox / prosedürel gökyüzü
         static void EndScene();                 // şeffaf kuyruğu çizer, kareyi kapatır
         // Opak kuyruk: karede toplanan opak meshler kameraya yakından uzağa çizilir (erken derinlik testi arkadaki yüzeylerin

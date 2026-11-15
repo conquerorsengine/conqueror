@@ -707,6 +707,7 @@ namespace Conqueror
         const uint32_t shadowMask = GetSceneShadowMaskTexture();
         shader->SetInt("u_GShadow", 5);
         shader->SetInt("u_HasShadowMask", shadowMask ? 1 : 0);
+        shader->SetFloat2("u_ShadowFade", Renderer3D::GetShadowFade());
         BindTexture(5, shadowMask);
         shader->SetInt("u_Velocity", 6);
         shader->SetInt("u_HasVelocity", hasVelocity ? 1 : 0);
