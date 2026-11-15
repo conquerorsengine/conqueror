@@ -468,4 +468,4 @@ Third-party libraries in the `External/` directory retain their original license
 ## Contact
 
 - LinkedIn: [Fazli Ozlemis](https://www.linkedin.com/in/fazl%C4%B1-%C3%B6zlemi%C5%9F-3929673b0/)
-- Email: urtayhan@gmail.com
+- Email: fazli@ozlemis.com
