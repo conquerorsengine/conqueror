@@ -493,7 +493,8 @@ void _glfwInitGamepadMappings(void)
 
     for (i = 0;  i < count;  i++)
     {
-        if (parseMapping(&_glfw.mappings[_glfw.mappingCount], _glfwDefaultMappings[i]))
+        // MODIFIED by Conqueror's Engine: skip the terminating NULL entry of _glfwDefaultMappings
+        if (_glfwDefaultMappings[i] && parseMapping(&_glfw.mappings[_glfw.mappingCount], _glfwDefaultMappings[i]))
             _glfw.mappingCount++;
     }
 }
