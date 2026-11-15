@@ -1,0 +1,21 @@
+# template: basic3d
+# 263 / 246: Viewport'ta sağ tuşla gezinip (uçma) imleç Hierarchy'nin üstünde bırakılınca Hierarchy'nin sağ tık menüsü açılmaz,
+# seçim değişmez; orta tuşla kaydırıp Inspector'da bırakmak da menü açmaz. Hierarchy'de sağ tıklamak menüyü yine açar
+wait 40
+select --none
+rdrag_window Viewport Hierarchy
+wait 10
+expect_popup none
+expect_selected <none>
+mdrag_window Viewport Inspector
+wait 10
+expect_popup none
+rdrag_window Viewport Content_Browser
+wait 10
+expect_popup none
+rdrag_window Hierarchy Hierarchy
+wait 10
+expect_popup any
+key Escape
+wait 5
+quit

@@ -156,6 +156,10 @@ namespace Conqueror::Editor
         Scene* m_UndoSceneOwner = nullptr;
         // Varsayılan yerleşimin araç bölgesi (Hiyerarşi altı): addon panelleri buraya sekme olarak yerleşir
         unsigned int m_ToolsDockId = 0;
+        // 247: şerit (araç çubuğu) bölmesi ve ana yerleşim alanı; şeride sekme olarak düşmüş paneller oradan geri alınır
+        unsigned int m_ToolbarDockId = 0;
+        unsigned int m_CentralDockId = 0;
+        bool m_ResetLayout = false;
         int m_RibbonTab = 0;
 
         // UI otomasyon komutları (select, play, stop, focus, panel ...)
@@ -269,6 +273,8 @@ namespace Conqueror::Editor
         float m_FPS = 0.0f;
         float m_FrameTime = 0.0f;
         bool m_GameMouseCaptured = false;   // oyun fareyi kilitledi: paneller fareyi görmez
+        // Sağ / orta fare tuşunun basıldığı pencere (ImGui kök pencere kimliği): bırakma yalnız o pencereye aittir (263)
+        unsigned int m_MousePressWindow[3] = { 0, 0, 0 };
         bool m_WindowWasFocused = false;
 };
 }

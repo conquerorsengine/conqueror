@@ -1,0 +1,42 @@
+# template: basic3d
+# 244: Game görünümündeki oran seçenekleri gerçekten o oranda çizer ve gösterir (Unity Game view "Aspect"): 16:9, 16:10, 4:3, 21:9 ve
+# sabit çözünürlükler (oyun tam o çözünürlükte çizilir, panele oranı bozulmadan sığdırılır)
+wait 40
+focus Game
+resolution 1
+wait 8
+game_aspect expect 16:9
+resolution 2
+wait 8
+game_aspect expect 16:10
+resolution 3
+wait 8
+game_aspect expect 4:3
+resolution 4
+wait 8
+game_aspect expect 21:9
+resolution 5
+wait 8
+game_aspect expect 1280x720
+resolution 6
+wait 8
+game_aspect expect 1920x1080
+resolution 9
+wait 8
+game_aspect expect 1080x1920
+resolution 11
+wait 8
+game_aspect expect 1170x2532
+resolution 12
+wait 8
+game_aspect expect 2048x1536
+resolution 13
+wait 8
+game_aspect expect 1280x800
+play
+wait 30
+game_aspect expect 1280x800
+stop
+resolution 0
+wait 5
+quit

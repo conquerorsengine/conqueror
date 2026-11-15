@@ -1,0 +1,22 @@
+# template: basic3d
+# 247: Viewport (ya da başka bir panel) şeridin / üst çubuğun bölmesine bırakılamaz; eski bir yerleşimden öyle gelmişse kendiliğinden
+# ana alana döner ve görünür. Window > Reset Layout varsayılan yerleşimi kurar, Viewport / Game menüsü paneli öne getirir
+wait 40
+layout expect_not_in_toolbar Viewport
+layout expect_visible Viewport
+layout dock Viewport toolbar
+wait 5
+layout expect_not_in_toolbar Viewport
+wait 5
+layout expect_visible Viewport
+layout dock Hierarchy toolbar
+wait 5
+layout expect_not_in_toolbar Hierarchy
+wait 5
+layout expect_visible Hierarchy
+layout reset
+wait 10
+layout expect_visible Viewport
+layout expect_visible Hierarchy
+layout expect_visible Inspector
+quit

@@ -16,6 +16,10 @@
 #include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
 #include "Scene/MeshRendererMaterial.h"
 #include "Assets/SceneTemplate.h"
+#include "Assets/MaterialPreview.h"
+#include "Core/Utils/ProcessRunner.h"
+#include <thread>
+#include "Renderer/GameViewModes.h"
 #include <yaml-cpp/yaml.h>
 #include "Assets/VolumeProfileInspector.h"
 #include "Assets/ShaderVariantInspector.h"
@@ -1434,6 +1438,22 @@ namespace Conqueror::Editor
     void EditorLayer::OnImGuiRender()
     {
         GameInput::CaptureImGuiFrameInput();
+        // 263: sağ ya da orta tuşla Viewport'ta gezinip (uçma, kaydırma) imleç başka bir panelin (Hierarchy, Inspector ...) üstünde
+        // bırakılınca o panelin sağ tık menüsü açılmaz: bırakma, basmanın başladığı pencereye aittir (Unity / Unreal gibi)
+        {
+            ImGuiContext& g = *GImGui;
+            ImGuiIO& io = ImGui::GetIO();
+            const ImGuiID hovered = g.HoveredWindow && g.HoveredWindow->RootWindow ? g.HoveredWindow->RootWindow->ID : 0;
+            for (int b : { (int)ImGuiMouseButton_Right, (int)ImGuiMouseButton_Middle })
+            {
+                if (io.MouseClicked[b])
+                    m_MousePressWindow[b] = hovered;
+                if (io.MouseReleased[b] && m_MousePressWindow[b] != 0 && hovered != m_MousePressWindow[b])
+                    io.MouseReleased[b] = false;
+                if (!io.MouseDown[b])
+                    m_MousePressWindow[b] = 0;
+            }
+        }
         SyncPanelContexts();
         if (!m_PendingFocusWindow.empty())
         {
@@ -1600,9 +1620,12 @@ namespace Conqueror::Editor
             ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 
             static auto first_time = true;
-            if (first_time)
+            if (first_time || m_ResetLayout)
             {
+                if (m_ResetLayout)
+                    m_PendingFocusWindow = "Viewport";   // varsayılan yerleşimde Viewport sekmesi önde (Game arkasında)
                 first_time = false;
+                m_ResetLayout = false;
 
                 ImGui::DockBuilderRemoveNode(dockspace_id);
                 ImGui::DockBuilderAddNode(dockspace_id, dockspace_flags | ImGuiDockNodeFlags_DockSpace);
@@ -1658,6 +1681,19 @@ namespace Conqueror::Editor
 
                 ImGui::DockBuilderFinish(dockspace_id);
             }
+
+            // 247: panel şeride (araç çubuğunun bölmesine) sekme olarak bırakılmışsa (o bölmenin sekme çubuğu yok: panel kaybolur) ya da
+            // eski bir yerleşim dosyasından öyle geldiyse ana alana geri alınır. Yeni bırakmayı araç çubuğunun pencere sınıfı engeller
+            if (ImGuiDockNode* central = ImGui::DockBuilderGetCentralNode(ImGui::GetID("MyDockSpace")))
+                m_CentralDockId = central->ID;
+            if (m_ToolbarDockId && m_CentralDockId)
+                for (ImGuiWindow* w : GImGui->Windows)
+                    if (w->DockId == m_ToolbarDockId && std::strcmp(w->Name, "##toolbar") != 0 && !(w->Flags & ImGuiWindowFlags_ChildWindow && !w->DockIsActive))
+                    {
+                        CQ_CORE_WARN("[Editor] '{0}' was docked into the toolbar: moved back to the main area", w->Name);
+                        ImGui::DockBuilderDockWindow(w->Name, m_CentralDockId);
+                        m_PendingFocusWindow = w->Name;   // geri gelen panel sekmesi öne (başka sekmenin arkasında kalmasın)
+                    }
         }
 
         style.WindowMinSize.x = minWinSizeX;
@@ -1777,7 +1813,17 @@ namespace Conqueror::Editor
     {
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6.0f, 2.0f));
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(2.0f, 0.0f));
-        ImGui::Begin("##toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+        // 247: şerit bölmesine başka panel sekme olarak eklenemez, bölünemez, şerit yerinden sökülemez (Viewport'u üst çubuğa sürükleyince
+        // kayboluyordu: bölmenin sekme çubuğu olmadığından yalnız şerit görünüyordu)
+        {
+            ImGuiWindowClass toolbarClass;
+            toolbarClass.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoTabBar | ImGuiDockNodeFlags_NoDockingSplit | ImGuiDockNodeFlags_NoUndocking
+                                                  | ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoCloseButton
+                                                  | (ImGuiDockNodeFlags)ImGuiDockNodeFlags_NoDockingOverMe | (ImGuiDockNodeFlags)ImGuiDockNodeFlags_NoDockingOverOther;
+            ImGui::SetNextWindowClass(&toolbarClass);
+        }
+        ImGui::Begin("##toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoMove);
+        m_ToolbarDockId = ImGui::GetWindowDockID();
 
         auto& editorState = EditorState::Get();
         ImDrawList* dl = ImGui::GetWindowDrawList();
@@ -2303,7 +2349,27 @@ namespace Conqueror::Editor
                 if (UI::Combo("Frame Rate", fpsIndex, fpsNames, 4))
                     rs.FrameRate = fpsValues[fpsIndex];
                 UI::SliderFloat("Quality", rs.Quality, 0.0f, 1.0f);
-                UI::SliderFloat("Resolution Scale", rs.ResolutionScale, 0.25f, 1.0f);
+                // Tam çıkış çözünürlüğü (Unity Recorder "Output Resolution"): Game View boyutu ya da yazılan genişlik x yükseklik
+                {
+                    const char* sizeNames[] = { "Game View", "Custom", "3840 x 2160 (4K)", "2560 x 1440", "1920 x 1080", "1280 x 720", "1080 x 1920", "1080 x 1080" };
+                    const int sizeW[] = { 0, -1, 3840, 2560, 1920, 1280, 1080, 1080 }, sizeH[] = { 0, -1, 2160, 1440, 1080, 720, 1920, 1080 };
+                    int si = rs.OutputWidth > 0 ? 1 : 0;
+                    for (int i = 2; i < 8; ++i) if (rs.OutputWidth == sizeW[i] && rs.OutputHeight == sizeH[i]) si = i;
+                    if (UI::Combo("Output Resolution", si, sizeNames, 8, "Exact size of the video. A different shape is fitted with black bars."))
+                    {
+                        if (si == 0) { rs.OutputWidth = rs.OutputHeight = 0; }
+                        else if (si == 1) { if (rs.OutputWidth <= 0) { rs.OutputWidth = 1920; rs.OutputHeight = 1080; } }
+                        else { rs.OutputWidth = sizeW[si]; rs.OutputHeight = sizeH[si]; }
+                    }
+                    if (rs.OutputWidth > 0)
+                    {
+                        UI::DragInt("Width", rs.OutputWidth, 2.0f, 16, 8192);
+                        UI::DragInt("Height", rs.OutputHeight, 2.0f, 16, 8192);
+                    }
+                    else
+                        UI::SliderFloat("Resolution Scale", rs.ResolutionScale, 0.25f, 1.0f);
+                }
+                UI::Checkbox("Record Audio", rs.RecordAudio, "The game's sound goes into the video (MP4: AAC, WebM: Opus; PNG: audio.wav). Not with GIF or Fixed Time Step.");
                 UI::DragFloat("Max Duration (s)", rs.MaxDuration, 0.5f, 0.0f, 3600.0f, "%.0f", "0 = unlimited");
                 UI::Checkbox("Start With Play", rs.StartWithPlay);
                 UI::Checkbox("Stop With Play", rs.StopWithPlay);
@@ -2315,7 +2381,8 @@ namespace Conqueror::Editor
                 ImGui::EndDisabled();
                 UI::SetLabelRatio(0.40f);
                 if (!Recorder::IsFFmpegAvailable() && rs.Format != RecordingFormat::PNGSequence)
-                    UI::InfoBox("ffmpeg was not found in PATH: recordings fall back to PNG sequences.", UI::InfoType::Warning);
+                    UI::InfoBox("ffmpeg was not found (Tools/ffmpeg next to the editor, the downloaded copy or PATH): recordings fall back to PNG "
+                                "sequences. Run Tools/FFmpeg/fetch-ffmpeg to download it.", UI::InfoType::Warning);
                 if (recording)
                     ImGui::Text("Recording: %.1fs, %u frames", Recorder::GetElapsedSeconds(), Recorder::GetFrameCount());
                 if (!Recorder::GetLastOutput().empty())
@@ -2954,8 +3021,25 @@ namespace Conqueror::Editor
                 ImGui::MenuItem("Test Runner", nullptr, &m_TestRunnerPanel->GetIsOpen());
             ImGui::MenuItem("AI Assistant", nullptr, &m_ShowAIPanel);
             ImGui::MenuItem("Stats", nullptr, &m_ShowStats);
-            ImGui::MenuItem("Game", nullptr, &m_ShowGame);
-            ImGui::MenuItem("Viewport", nullptr, &m_ShowViewport);
+            // Unity Window > General > Scene / Game gibi: açar ve öne getirir (başka sekmenin arkasında kalmışsa da görünür olur)
+            if (ImGui::MenuItem("Game", nullptr, m_ShowGame))
+            {
+                m_ShowGame = true;
+                m_PendingFocusWindow = "Game";
+            }
+            if (ImGui::MenuItem("Viewport", nullptr, m_ShowViewport))
+            {
+                m_ShowViewport = true;
+                m_PendingFocusWindow = "Viewport";
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Reset Layout", nullptr, false))
+            {
+                // Unity Window > Layouts > Default: varsayılan yerleşim (kaybolan ya da yanlış yere bırakılan paneller yerine döner)
+                m_ResetLayout = true;
+                m_ShowViewport = true;
+                m_ShowGame = true;
+            }
 
             ImGui::EndMenu();
         }
@@ -5040,6 +5124,73 @@ namespace Conqueror::Editor
             err = "unknown addon command";
             return false;
         });
+        // create_search <metin> expect <n|>=n> [first <menü yolu>]: Create menüsü aramasının bulduğu girişler (248)
+        Automation::RegisterCommand("create_search", [](const Args& a, std::string& err) {
+            size_t k = 1;
+            std::string q;
+            for (; k < a.size() && a[k] != "expect"; ++k) q += (q.empty() ? "" : " ") + a[k];
+            const auto found = HierarchyPanel::SearchCreateEntries(q);
+            std::string list;
+            for (size_t i = 0; i < found.size() && i < 8; ++i) list += (i ? " | " : "") + found[i];
+            Automation::Report("create_search '" + q + "': " + std::to_string(found.size()) + " (" + list + ")");
+            if (k + 1 < a.size())
+            {
+                const std::string want = a[k + 1];
+                const bool atLeast = want.rfind(">=", 0) == 0;
+                const int n = std::atoi(want.c_str() + (atLeast ? 2 : 0));
+                if (atLeast ? (int)found.size() < n : (int)found.size() != n) { err = "found " + std::to_string(found.size()) + ", want " + want; return false; }
+                if (k + 3 < a.size() && a[k + 2] == "first")
+                {
+                    std::string first;
+                    for (size_t i = k + 3; i < a.size(); ++i) first += (i > k + 3 ? " " : "") + a[i];
+                    if (found.empty() || found[0] != first) { err = "first result '" + (found.empty() ? std::string() : found[0]) + "', want '" + first + "'"; return false; }
+                }
+            }
+            return true;
+        });
+        // game_view_mode expect <Lit|Wireframe|Unlit|Lighting Only>: oynarken F1-F4 görünüm modu (266)
+        Automation::RegisterCommand("game_view_mode", [](const Args& a, std::string& err) {
+            const std::string got = GameViewModes::Name(GameViewModes::Current());
+            Automation::Report("game view mode: " + got);
+            if (a.size() > 2 && a[1] == "expect")
+            {
+                std::string want;
+                for (size_t i = 2; i < a.size(); ++i) want += (i > 2 ? " " : "") + a[i];
+                if (want != got) { err = "view mode is " + got + ", want " + want; return false; }
+            }
+            return true;
+        });
+        // layout reset | dock <pencere> toolbar | expect_not_in_toolbar <pencere> | expect_visible <pencere>: yerleşim (247)
+        Automation::RegisterCommand("layout", [this](const Args& a, std::string& err) {
+            if (a.size() < 2) { err = "layout reset | dock <window> toolbar | expect_not_in_toolbar <window> | expect_visible <window>"; return false; }
+            if (a[1] == "reset") { m_ResetLayout = true; return true; }
+            if (a.size() < 3) { err = "layout " + a[1] + " <window>"; return false; }
+            ImGuiWindow* w = ImGui::FindWindowByName(a[2].c_str());
+            if (!w) w = ImGui::FindWindowByName(("###" + a[2]).c_str());
+            if (!w) { err = "no window " + a[2]; return false; }
+            if (a[1] == "dock" && a.size() > 3 && a[3] == "toolbar")
+            {
+                // Eski / bozuk yerleşimi taklit eder: pencereyi şerit bölmesine zorla koyar
+                if (!m_ToolbarDockId) { err = "no toolbar dock node"; return false; }
+                ImGui::DockBuilderDockWindow(w->Name, m_ToolbarDockId);
+                return true;
+            }
+            if (a[1] == "expect_not_in_toolbar")
+            {
+                Automation::Report(std::string("layout ") + w->Name + " dock " + std::to_string(w->DockId) + " toolbar " + std::to_string(m_ToolbarDockId));
+                if (w->DockId == m_ToolbarDockId) { err = std::string(w->Name) + " is in the toolbar"; return false; }
+                return true;
+            }
+            if (a[1] == "expect_visible")
+            {
+                const bool visible = w->WasActive && !w->Hidden && (!w->DockIsActive || (w->DockNode && w->DockNode->VisibleWindow == w)) && w->Size.x > 50 && w->Size.y > 50;
+                Automation::Report(std::string("layout ") + w->Name + (visible ? " visible" : " NOT visible") + " size " + std::to_string((int)w->Size.x) + "x" + std::to_string((int)w->Size.y));
+                if (!visible) { err = std::string(w->Name) + " is not visible"; return false; }
+                return true;
+            }
+            err = "unknown layout command";
+            return false;
+        });
         Automation::RegisterCommand("create_primitive", [this](const Args& a, std::string& err) {
             // create_primitive <cube|sphere|plane|cylinder> <name> <x> <y> <z> [dynamic|static]
             if (a.size() < 6 || !m_ActiveScene) { err = "create_primitive <type> <name> <x> <y> <z> [dynamic|static]"; return false; }
@@ -6595,16 +6746,38 @@ namespace Conqueror::Editor
                 for (auto h : m_ActiveScene->m_Registry.view<TagComponent>())
                     if (m_ActiveScene->m_Registry.get<TagComponent>(h).Tag == a[2]) { e = Entity{ h, m_ActiveScene.get() }; break; }
                 if (!e) { err = "no entity " + a[2]; return false; }
-                // Ana kameranın konumundan hesapla
+                // Ana kameranın konumundan (ya da verilen göz noktasından: expect_hidden <varlık> <bool> <x> <y> <z>) hesapla
                 std::unordered_set<uint32_t> hidden;
-                Entity cam = m_ActiveScene->GetPrimaryCameraEntity();
-                if (!cam) { err = "no primary camera"; return false; }
-                OcclusionCulling::ComputeHidden(*m_ActiveScene, glm::vec3(cam.GetComponent<TransformComponent>().WorldTransform[3]), hidden);
-                WorldActors::ComputeCullHidden(*m_ActiveScene, glm::vec3(cam.GetComponent<TransformComponent>().WorldTransform[3]), hidden);
+                glm::vec3 eye;
+                if (a.size() > 6)
+                    eye = { std::stof(a[4]), std::stof(a[5]), std::stof(a[6]) };
+                else
+                {
+                    Entity cam = m_ActiveScene->GetPrimaryCameraEntity();
+                    if (!cam) { err = "no primary camera"; return false; }
+                    eye = glm::vec3(cam.GetComponent<TransformComponent>().WorldTransform[3]);
+                }
+                OcclusionCulling::ComputeHidden(*m_ActiveScene, eye, hidden);
+                WorldActors::ComputeCullHidden(*m_ActiveScene, eye, hidden);
                 const bool got = hidden.count((uint32_t)(entt::entity)e) > 0, want = a[3] == "true";
                 Automation::Report(std::string("OCCLUSION ") + a[2] + " hidden = " + (got ? "true" : "false") + " (hidden " + std::to_string(hidden.size()) + ")");
                 if (got != want) { err = std::string("hidden is ") + (got ? "true" : "false"); return false; }
                 return true;
+            }
+            // flags <varlık> <occluder 0|1> <occludee 0|1>: nesneyi Static yapar + Unity Occluder Static / Occludee Static (Object sekmesi)
+            if (a[1] == "flags" && a.size() > 4)
+            {
+                for (auto h : m_ActiveScene->m_Registry.view<TagComponent>())
+                {
+                    auto& tag = m_ActiveScene->m_Registry.get<TagComponent>(h);
+                    if (tag.Tag != a[2])
+                        continue;
+                    tag.IsStatic = true;
+                    tag.StaticFlags = (a[3] == "1" ? TagComponent::kOccluderStatic : 0u) | (a[4] == "1" ? TagComponent::kOccludeeStatic : 0u);
+                    return true;
+                }
+                err = "no entity " + a[2];
+                return false;
             }
             err = "unknown occlusion command";
             return false;
@@ -6737,6 +6910,34 @@ namespace Conqueror::Editor
             if (x.is_relative() && Project::GetActive()) x = Project::GetActiveProjectDirectory() / x;
             if (!std::filesystem::exists(x)) { err = "no asset " + x.string(); return false; }
             EditorState::Get().SelectAsset(x.string());
+            return true;
+        });
+        // material_preview [dominant <r|g|b> | color <r> <g> <b> [tol]]: Inspector'daki malzeme önizlemesi çizildi mi; color: şeklin ortasının
+        // ortalama rengi (0-1, sRGB, tol varsayılan 0.12)
+        Automation::RegisterCommand("material_preview", [](const Args& a, std::string& err) {
+            float rgb[3];
+            int renders = 0;
+            const bool ok = MaterialPreview::LastStats(rgb, renders);
+            char line[160];
+            std::snprintf(line, sizeof(line), "material preview: renders %d, center %.3f %.3f %.3f", renders, rgb[0], rgb[1], rgb[2]);
+            Automation::Report(line);
+            if (!ok) { err = "the material preview was not drawn (is a .cqmat selected?)"; return false; }
+            // dominant <r|g|b>: o kanal diğer ikisinden en az 0.1 büyük (ışık / ton eşlemeden bağımsız renk sınaması)
+            if (a.size() >= 3 && a[1] == "dominant")
+            {
+                const int c = a[2] == "r" ? 0 : a[2] == "g" ? 1 : 2;
+                if (rgb[c] < rgb[(c + 1) % 3] + 0.1f || rgb[c] < rgb[(c + 2) % 3] + 0.1f) { err = std::string("not ") + a[2] + "-dominant: " + line; return false; }
+            }
+            if (a.size() >= 5 && a[1] == "color")
+            {
+                const float tol = a.size() > 5 ? (float)std::atof(a[5].c_str()) : 0.12f;
+                for (int c = 0; c < 3; ++c)
+                    if (std::abs(rgb[c] - (float)std::atof(a[2 + c].c_str())) > tol)
+                    {
+                        err = std::string("preview color differs: ") + line;
+                        return false;
+                    }
+            }
             return true;
         });
         // expect_asset <yol | <none>>: Inspector'da gösterilen dosya (Content Browser seçimi)
@@ -7207,6 +7408,38 @@ namespace Conqueror::Editor
             else if (a[1] == "all_colliders") o.AllColliders = on;
             else if (a[1] == "realtime") o.Realtime = on;
             else { err = "unknown view option " + a[1]; return false; }
+            return true;
+        });
+        // game_aspect expect <oran | GxY> [tol]: Game görünümünde oyunun çizildiği çözünürlüğün ve ekranda gösterilen görüntünün en-boy
+        // oranı (244); "1920x1080" verilirse çözünürlük de birebir beklenir
+        Automation::RegisterCommand("game_aspect", [this](const Args& a, std::string& err) {
+            if (!m_GamePanel) { err = "no Game panel"; return false; }
+            const glm::vec2 r = m_GamePanel->GetRenderSize(), d = m_GamePanel->GetDisplaySize();
+            const float ra = r.y > 0 ? r.x / r.y : 0.0f, da = d.y > 0 ? d.x / d.y : 0.0f;
+            char line[200];
+            std::snprintf(line, sizeof(line), "game: render %dx%d (%.4f), shown %.0fx%.0f (%.4f), preset '%s'", (int)r.x, (int)r.y, ra, d.x, d.y, da,
+                          GameViewSettings::Get().Current().Name.c_str());
+            Automation::Report(line);
+            if (a.size() > 2 && a[1] == "expect")
+            {
+                const std::string& w = a[2];
+                const float tol = a.size() > 3 ? (float)std::atof(a[3].c_str()) : 0.01f;
+                float want = 0.0f;
+                const size_t x = w.find_first_of("x:/");
+                if (x != std::string::npos)
+                {
+                    const float ww = (float)std::atof(w.substr(0, x).c_str()), wh = (float)std::atof(w.substr(x + 1).c_str());
+                    want = wh > 0 ? ww / wh : 0.0f;
+                    if (w[x] == 'x' && ((int)r.x != (int)ww || (int)r.y != (int)wh)) { err = std::string("render size differs: ") + line; return false; }
+                }
+                else
+                    want = (float)std::atof(w.c_str());
+                if (std::abs(ra - want) > tol * want || std::abs(da - want) > tol * want + 2.0f / std::max(d.y, 1.0f) * want)
+                {
+                    err = std::string("aspect differs: ") + line;
+                    return false;
+                }
+            }
             return true;
         });
         Automation::RegisterCommand("resolution", [](const Args& a, std::string& err) {
@@ -8081,13 +8314,52 @@ namespace Conqueror::Editor
                     rs.Quality = std::clamp((float)std::atof(f.c_str() + 8), 0.0f, 1.0f);
                 else if (f.rfind("out=", 0) == 0)
                     rs.OutputDirectory = f.substr(4);
+                else if (f.rfind("size=", 0) == 0)
+                {
+                    // size=1280x720: tam çıkış çözünürlüğü (249), size=0 kapatır
+                    const size_t x = f.find('x', 5);
+                    rs.OutputWidth = x == std::string::npos ? 0 : std::atoi(f.c_str() + 5);
+                    rs.OutputHeight = x == std::string::npos ? 0 : std::atoi(f.c_str() + x + 1);
+                }
+                else if (f == "audio" || f == "noaudio")
+                    rs.RecordAudio = f == "audio";
                 else { err = "unknown record_start option " + f; return false; }
             }
             glm::vec2 size = m_GamePanel->GetViewportSize();
             if (!Recorder::Start((uint32_t)size.x, (uint32_t)size.y)) { err = Recorder::GetLastError(); return false; }
             return true;
         });
-        Automation::RegisterCommand("record_stop", [](const Args&, std::string&) { Recorder::Stop(); Automation::Report("RECORDED " + Recorder::GetLastOutput()); return true; });
+        // expect_recording <genişlik> <yükseklik> [audio]: son kaydın görüntü boyutu ve ses izi (ffprobe ile, 249)
+        Automation::RegisterCommand("expect_recording", [](const Args& a, std::string& err) {
+            const std::string file = Recorder::GetLastOutput();
+            if (file.empty() || !std::filesystem::exists(file)) { err = "no recording"; return false; }
+            std::filesystem::path probe = std::filesystem::path(Recorder::FFmpegPath()).parent_path() /
+#ifdef _WIN32
+                "ffprobe.exe";
+#else
+                "ffprobe";
+#endif
+            if (!std::filesystem::exists(probe)) probe = "ffprobe";
+            ProcessRunner run;
+            std::string out;
+            if (!run.Start("\"" + probe.string() + "\" -v error -show_entries stream=codec_type,width,height -of csv=p=0 \"" + file + "\"",
+                           std::filesystem::path(file).parent_path()))
+            { err = "ffprobe could not start"; return false; }
+            for (int i = 0; i < 500 && run.IsRunning(); ++i) { out += run.ReadAvailable(); std::this_thread::sleep_for(std::chrono::milliseconds(10)); }
+            out += run.ReadAvailable();
+            Automation::Report("RECORDING streams: " + out);
+            const std::string want = "video," + (a.size() > 2 ? a[1] + "," + a[2] : std::string());
+            if (a.size() > 2 && out.find(want) == std::string::npos) { err = "no " + want + " stream: " + out; return false; }
+            if (a.size() > 3 && a[3] == "audio" && out.find("audio") == std::string::npos) { err = "no audio stream: " + out; return false; }
+            return true;
+        });
+        Automation::RegisterCommand("record_stop", [](const Args&, std::string&) {
+            const float audio = Recorder::GetAudioSeconds();
+            Recorder::Stop();
+            Automation::Report("RECORDED " + Recorder::GetLastOutput() + " (audio " + std::to_string(audio).substr(0, 5) + " s)"
+                               + (Recorder::GetLastError().empty() ? std::string() : " error: " + Recorder::GetLastError()));
+            return true;
+        });
         Automation::RegisterCommand("animator_open", [this](const Args& a, std::string& err) {
             if (!m_AnimatorPanel || a.size() < 2) { err = "animator_open <controller path>"; return false; }
             std::filesystem::path p(a[1]);

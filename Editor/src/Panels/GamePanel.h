@@ -48,6 +48,9 @@ namespace Conqueror::Editor
         bool IsViewportHovered() const { return m_ViewportHovered; }
         // Oyun görüntüsünün ortası (ImGui ekran koordinatı)
         glm::vec2 GetViewportCenter() const { return (m_ViewportBounds[0] + m_ViewportBounds[1]) * 0.5f; }
+        // 244: oyunun çizildiği çözünürlük ve ekranda gösterilen görüntünün boyutu (en-boy oranı denetimi)
+        glm::vec2 GetRenderSize() const { return m_ViewportSize; }
+        glm::vec2 GetDisplaySize() const { return m_ViewportBounds[1] - m_ViewportBounds[0]; }
         // Oyun render pikseli (sol-alt köken) -> ImGui ekran koordinatı
         glm::vec2 RenderToScreen(const glm::vec2& renderPx) const
         {

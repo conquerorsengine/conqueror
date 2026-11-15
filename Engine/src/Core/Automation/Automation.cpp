@@ -429,6 +429,44 @@ namespace Conqueror
                 QueueClick((item->Min.x + item->Max.x) * 0.5f + argf(2), (item->Min.y + item->Max.y) * 0.5f + argf(3), 0, 1);
                 return true;
             }
+            if (cmd == "drag_window" || cmd == "rdrag_window" || cmd == "mdrag_window")
+            {
+                // drag_window <pencere> <pencere>: birinci pencerenin ortasından ikincinin ortasına (sağ / orta tuşla: rdrag_ / mdrag_).
+                // Pencere adı görünen ad ya da ### kimliği ("Viewport", "Hierarchy")
+                if (t.size() < 3) { error = cmd + " <from window> <to window>"; return false; }
+                auto find = [](std::string name) -> ImGuiWindow* {
+                    std::replace(name.begin(), name.end(), '_', ' ');   // "Content_Browser" -> "Content Browser"
+                    if (ImGuiWindow* w = ImGui::FindWindowByName(name.c_str())) return w;
+                    if (ImGuiWindow* w = ImGui::FindWindowByName(("###" + name).c_str())) return w;
+                    for (ImGuiWindow* w : GImGui->Windows)
+                    {
+                        if (!w->WasActive || (w->Flags & ImGuiWindowFlags_ChildWindow && !w->DockIsActive))
+                            continue;
+                        const std::string n = w->Name;
+                        const size_t hash = n.find("###");
+                        const std::string shown = n.substr(0, hash);
+                        if (shown == name || (shown.size() > name.size() && shown.compare(shown.size() - name.size(), name.size(), name) == 0)
+                            || (hash != std::string::npos && n.substr(hash + 3) == name))
+                            return w;
+                    }
+                    return nullptr;
+                };
+                ImGuiWindow* a = find(t[1]);
+                ImGuiWindow* b = find(t[2]);
+                if (!a || !b) { error = "window '" + (a ? t[2] : t[1]) + "' not found"; return false; }
+                const ImVec2 ca = a->InnerRect.GetCenter(), cb = b->InnerRect.GetCenter();
+                QueueDrag(ca.x, ca.y, cb.x, cb.y, 16, cmd == "rdrag_window" ? 1 : cmd == "mdrag_window" ? 2 : 0);
+                return true;
+            }
+            if (cmd == "expect_popup")
+            {
+                // expect_popup <none|any>: açık bir açılır menü / bağlam menüsü var mı
+                const bool open = ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel);
+                const bool want = t.size() > 1 && t[1] == "any";
+                Automation::Report(std::string("popup open: ") + (open ? "yes" : "no"));
+                if (open != want) { error = open ? "a popup is open" : "no popup is open"; return false; }
+                return true;
+            }
             if (cmd == "drag_item")
             {
                 // drag_item <label> <dx> <dy> [window] [kaçıncı eşleşme]
