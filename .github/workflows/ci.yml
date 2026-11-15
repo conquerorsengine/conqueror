@@ -171,6 +171,13 @@ jobs:
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
       - name: Build
         run: cmake --build build --parallel
+      - name: Metal smoke test (the hub makes a 3D project, the editor opens it with the Metal backend and the Game view renders it)
+        timeout-minutes: 20
+        run: |
+          CQ_TEST_METAL=1 python3 Tools/Tests/regression.py metal_smoke && exit 0
+          cat ~/.cache/cq-build/regression/_Reg_metal_smoke.txt.result.txt || true
+          grep -E "Metal|ERROR|CRITICAL|Graphics" build/bin/Conqueror.log | tail -40 || true
+          exit 1
 
   freebsd:
     name: FreeBSD (player, in a VM)

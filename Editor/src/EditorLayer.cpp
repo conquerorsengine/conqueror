@@ -117,6 +117,7 @@
 #include <sstream>
 #include "Renderer/AntiAliasing.h"
 #include "Renderer/UpscalerSelfTest.h"
+#include "Renderer/RHI/RendererAPI.h"
 
 #ifdef CQ_PLATFORM_LINUX
 #include <unistd.h>
@@ -6038,7 +6039,7 @@ namespace Conqueror::Editor
             return ok;
         });
         Automation::RegisterCommand("gpu", [this](const Args& a, std::string& err) {
-            // gpu simulate <preset|off> | gpu expect_aa|expect_upscaler <name> available|unavailable [reason text] |
+            // gpu expect_backend <api> | gpu simulate <preset|off> | gpu expect_aa|expect_upscaler <name> available|unavailable [reason text] |
             // gpu self_test [file] | gpu self_test_done | gpu expect_report <method> <PASS|FAIL|FALLBACK|UNAVAILABLE> | gpu report_has_no <status>
             auto norm = [](std::string v) {
                 std::string out;
@@ -6049,6 +6050,14 @@ namespace Conqueror::Editor
             };
             if (a.size() < 2) { err = "gpu simulate|expect_aa|expect_upscaler|self_test|self_test_done|expect_report|report_has_no ..."; return false; }
             const std::string sub = a[1];
+            if (sub == "expect_backend" && a.size() > 2)
+            {
+                // gpu expect_backend <OpenGL|Vulkan|Metal|...>: editörün gerçekten o grafik API'siyle çizdiği (CI: macOS'ta Metal)
+                const std::string have = RendererAPI::GetBackendName();
+                Automation::Report("BACKEND " + have + " | " + AntiAliasing::GetRealCaps().Renderer);
+                if (norm(have) != norm(a[2])) { err = "backend is " + have; return false; }
+                return true;
+            }
             if (sub == "simulate" && a.size() > 2)
             {
                 if (!AntiAliasing::SetSimulatedGPU(a[2])) { err = "unknown preset " + a[2]; return false; }

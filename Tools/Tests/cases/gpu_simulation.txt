@@ -5,6 +5,7 @@
 wait 40
 focus Game
 wait 20
+gpu expect_backend OpenGL
 # Bu bilgisayar (AMD): DLSS / DLAA / XeSS seçilemez, nedenleri karttan
 gpu expect_upscaler DLSS unavailable Requires an NVIDIA RTX GPU
 gpu expect_aa DLAA unavailable Requires an NVIDIA RTX GPU
