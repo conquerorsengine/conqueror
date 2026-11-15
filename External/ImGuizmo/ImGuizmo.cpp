@@ -731,6 +731,8 @@ namespace IMGUIZMO_NAMESPACE
       int mAxisMask = 0;
       bool mBelowPlaneLimit[3];
       float mAxisFactor[3];
+      // Conqueror: plane handle flips stored apart from the arrow flips (arrows can stay positive while planes face the camera)
+      float mPlaneFactor[3] = { 1.f, 1.f, 1.f };
 
       float mAxisLimit=0.0025f;
       float mPlaneLimit=0.02f;
@@ -766,6 +768,7 @@ namespace IMGUIZMO_NAMESPACE
       OPERATION mOperation = OPERATION(-1);
 
       bool mAllowAxisFlip = true;
+      bool mAllowArrowFlip = true;
       float mGizmoSizeClipSpace = 0.1f;
 
       inline ImGuiID GetCurrentID()
@@ -1182,8 +1185,8 @@ namespace IMGUIZMO_NAMESPACE
          belowPlaneLimit = gContext.mBelowPlaneLimit[axisIndex] && (((1<<axisIndex) == gContext.mAxisMask) || !gContext.mAxisMask);
 
          dirAxis *= gContext.mAxisFactor[axisIndex];
-         dirPlaneX *= gContext.mAxisFactor[(axisIndex + 1) % 3];
-         dirPlaneY *= gContext.mAxisFactor[(axisIndex + 2) % 3];
+         dirPlaneX *= gContext.mPlaneFactor[(axisIndex + 1) % 3];
+         dirPlaneY *= gContext.mPlaneFactor[(axisIndex + 2) % 3];
       }
       else
       {
@@ -1199,7 +1202,7 @@ namespace IMGUIZMO_NAMESPACE
 
          // For readability
          bool & allowFlip = gContext.mAllowAxisFlip;
-         float mulAxis = (allowFlip && lenDir < lenDirMinus&& fabsf(lenDir - lenDirMinus) > FLT_EPSILON) ? -1.f : 1.f;
+         float mulAxis = (allowFlip && gContext.mAllowArrowFlip && lenDir < lenDirMinus&& fabsf(lenDir - lenDirMinus) > FLT_EPSILON) ? -1.f : 1.f;
          float mulAxisX = (allowFlip && lenDirPlaneX < lenDirMinusPlaneX&& fabsf(lenDirPlaneX - lenDirMinusPlaneX) > FLT_EPSILON) ? -1.f : 1.f;
          float mulAxisY = (allowFlip && lenDirPlaneY < lenDirMinusPlaneY&& fabsf(lenDirPlaneY - lenDirMinusPlaneY) > FLT_EPSILON) ? -1.f : 1.f;
          dirAxis *= mulAxis;
@@ -1216,8 +1219,8 @@ namespace IMGUIZMO_NAMESPACE
 
          // and store values
          gContext.mAxisFactor[axisIndex] = mulAxis;
-         gContext.mAxisFactor[(axisIndex + 1) % 3] = mulAxisX;
-         gContext.mAxisFactor[(axisIndex + 2) % 3] = mulAxisY;
+         gContext.mPlaneFactor[(axisIndex + 1) % 3] = mulAxisX;
+         gContext.mPlaneFactor[(axisIndex + 2) % 3] = mulAxisY;
          gContext.mBelowAxisLimit[axisIndex] = belowAxisLimit;
          gContext.mBelowPlaneLimit[axisIndex] = belowPlaneLimit;
       }
@@ -2632,6 +2635,11 @@ namespace IMGUIZMO_NAMESPACE
    void AllowAxisFlip(bool value)
    {
      gContext.mAllowAxisFlip = value;
+   }
+
+   void AllowArrowFlip(bool value)
+   {
+     gContext.mAllowArrowFlip = value;
    }
 
    void SetAxisLimit(float value)
