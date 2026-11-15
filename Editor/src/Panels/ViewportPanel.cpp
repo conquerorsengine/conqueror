@@ -1164,6 +1164,10 @@ namespace Conqueror::Editor
         std::vector<Entity> selectedCopy(selectedEntities.begin(), selectedEntities.end());
         const bool is2D = m_EditorCamera.Is2D();
         ImGuizmo::SetOrthographic(is2D);
+        // Unity / Unreal gibi taşıma ve ölçek okları hep eksenin artı yönünü gösterir (kırmızı = +X). ImGuizmo varsayılanda kameradan
+        // uzağa bakan oku ters çevirip eksi yön işareti olarak üstüne siyah kesik çizgiler çiziyordu (okta siyah tırtıklar); düzlem
+        // kareleri Unity'deki gibi yine kameraya dönük köşeye geçer
+        ImGuizmo::AllowArrowFlip(false);
         // Rect Tool: 2D'de sprite'ta kendi tutamaçları; diğer durumlarda taşıma gizmosu
         int operation = m_GizmoType;
         if (operation == kGizmoRect)

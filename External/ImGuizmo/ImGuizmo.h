@@ -257,6 +257,11 @@ namespace IMGUIZMO_NAMESPACE
    // When false, they always stay along the positive world/local axis
    IMGUZMO_API void AllowAxisFlip(bool value);
 
+   // Conqueror: allow only the translate / scale arrows to flip
+   // When true (default), arrows flip with AllowAxisFlip (a flipped arrow is drawn hatched)
+   // When false, arrows always point along the positive axis like Unity / Unreal; plane handles still follow AllowAxisFlip
+   IMGUZMO_API void AllowArrowFlip(bool value);
+
    // Configure the limit where axis are hidden
    IMGUZMO_API void SetAxisLimit(float value);
    // Set an axis mask to permanently hide a given axis (true -> hidden, false -> shown)
