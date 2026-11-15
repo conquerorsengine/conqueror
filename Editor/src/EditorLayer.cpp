@@ -1564,6 +1564,78 @@ namespace Conqueror::Editor
         RenderToolbar();
         RenderPanels();
         HandleKeyboardShortcuts();
+        DrawStartupCover();
+    }
+
+    namespace
+    {
+        // 259 testi: örtünün kalktığı karede ekranın küçük gri kopyası (8 pikselde bir)
+        std::vector<uint8_t>& StartupRevealSnapshot()
+        {
+            static auto& v = *new std::vector<uint8_t>();
+            return v;
+        }
+        int& StartupRevealW() { static int w = 0; return w; }
+        int& StartupRevealH() { static int h = 0; return h; }
+        void SnapshotBackbuffer(uint32_t fbw, uint32_t fbh, std::vector<uint8_t>& out, int& w, int& h)
+        {
+            std::vector<uint8_t> rgba;
+            Automation::ReadBackbufferRegion(0, 0, (int)fbw, (int)fbh, rgba);
+            w = (int)fbw / 8;
+            h = (int)fbh / 8;
+            out.assign((size_t)w * h, 0);
+            for (int y = 0; y < h; ++y)
+                for (int x = 0; x < w; ++x)
+                {
+                    const size_t i = ((size_t)(y * 8) * fbw + (size_t)(x * 8)) * 4;
+                    if (i + 2 < rgba.size())
+                        out[(size_t)y * w + x] = (uint8_t)((rgba[i] + rgba[i + 1] + rgba[i + 2]) / 3);
+                }
+        }
+    }
+
+    // 259: editör ilk açıldığında ilk karelerde yerleşim oturmamış görünüyordu (Stats boş, sekme başlıkları yok, alt paneller büyük;
+    // pencere son boyutuna gelirken ImGui yerleşimi ve sekme çubukları birkaç kare sürüyor). Düzen oturana kadar (pencere boyutu 4 kare
+    // sabit, en az 5 kare geçmiş, Stats FPS'i hazır) tüm pencere editörün arka plan rengiyle örtülür; oturmuş düzen tek seferde görünür.
+    // En geç 1.5 s sonra açılır.
+    void EditorLayer::DrawStartupCover()
+    {
+        if (m_StartupSettled)
+            return;
+        ImGuiViewport* vp = ImGui::GetMainViewport();
+        const double now = ImGui::GetTime();
+        if (m_StartupFrames++ == 0)
+            m_StartupBegin = now;
+        if (vp->Size.x == m_StartupLastW && vp->Size.y == m_StartupLastH)
+            ++m_StartupStableFrames;
+        else
+        {
+            m_StartupStableFrames = 0;
+            m_StartupLastW = vp->Size.x;
+            m_StartupLastH = vp->Size.y;
+        }
+        const bool statsReady = !m_StatsPanel || m_StatsPanel->IsShowingFPS();
+        const double elapsed = now - m_StartupBegin;
+        if ((m_StartupStableFrames >= 4 && m_StartupFrames >= 5 && statsReady) || elapsed > 1.5)
+        {
+            m_StartupSettled = true;
+            CQ_CORE_INFO("[Editor] Layout settled after {0} frames ({1:.2f} s, stats {2})", m_StartupFrames, elapsed, statsReady ? "ready" : "not ready");
+            if (Automation::IsActive())
+                Automation::AddFrameCheck("startup reveal snapshot", 1, [](uint32_t fbw, uint32_t fbh, std::string&) {
+                    SnapshotBackbuffer(fbw, fbh, StartupRevealSnapshot(), StartupRevealW(), StartupRevealH());
+                    return true;
+                });
+            return;
+        }
+        ImDrawList* dl = ImGui::GetForegroundDrawList(vp);
+        ImVec4 bg = ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
+        bg.w = 1.0f;
+        dl->AddRectFilled(vp->Pos, ImVec2(vp->Pos.x + vp->Size.x, vp->Pos.y + vp->Size.y), ImGui::GetColorU32(bg));
+        const char* title = "Conqueror's Engine";
+        const float size = ImGui::GetFontSize() * 1.6f;
+        const ImVec2 ts = ImGui::GetFont()->CalcTextSizeA(size, FLT_MAX, 0.0f, title);
+        dl->AddText(ImGui::GetFont(), size, ImVec2(vp->Pos.x + (vp->Size.x - ts.x) * 0.5f, vp->Pos.y + (vp->Size.y - ts.y) * 0.5f),
+                    ImGui::GetColorU32(ImGuiCol_TextDisabled), title);
     }
 
     void EditorLayer::OnEvent(Event& e)
@@ -8165,6 +8237,32 @@ namespace Conqueror::Editor
             return shownCheck(a, err, [this]() -> const glm::vec2* { return m_GamePanel ? m_GamePanel->GetImageBounds() : nullptr; }, "game_shown");
         });
         // stats_ready: Stats başlığında FPS sayısı görünüyor mu (wait_until ile: açılıştan kaç kare sonra göründüğü)
+        // layout_settled: açılış örtüsü kalktı mı (259)
+        Automation::RegisterCommand("layout_settled", [this](const Args&, std::string& err) {
+            if (!m_StartupSettled) { err = "the editor layout has not settled yet"; return false; }
+            Automation::Report("layout settled after " + std::to_string(m_StartupFrames) + " frames");
+            return true;
+        });
+        // startup_reveal_matches <en çok % farklı>: örtünün kalktığı ilk görünen kare ile şimdiki ekran (8 pikselde bir, gri; 24 üstü
+        // fark sayılır) aynı mı: ilk görünen kare oturmuş düzenle aynı olmalı (259)
+        Automation::RegisterCommand("startup_reveal_matches", [](const Args& a, std::string& err) {
+            if (StartupRevealSnapshot().empty()) { err = "no startup reveal snapshot (the cover never lifted under automation)"; return false; }
+            const float maxPercent = a.size() > 1 ? std::stof(a[1]) : 3.0f;
+            Automation::AddFrameCheck("startup reveal matches", 1, [maxPercent](uint32_t fbw, uint32_t fbh, std::string& e) {
+                std::vector<uint8_t> now;
+                int w = 0, h = 0;
+                SnapshotBackbuffer(fbw, fbh, now, w, h);
+                if (w != StartupRevealW() || h != StartupRevealH()) { e = "window size changed after the reveal"; return false; }
+                size_t diff = 0;
+                for (size_t i = 0; i < now.size(); ++i)
+                    if (std::abs((int)now[i] - (int)StartupRevealSnapshot()[i]) > 24) ++diff;
+                const float percent = 100.0f * (float)diff / (float)std::max<size_t>(1, now.size());
+                Automation::Report("startup reveal differs in " + std::to_string(percent).substr(0, 5) + "% of the screen");
+                if (percent > maxPercent) { e = "first shown frame differs from the settled layout in " + std::to_string(percent) + "%"; return false; }
+                return true;
+            });
+            return true;
+        });
         Automation::RegisterCommand("stats_ready", [this](const Args&, std::string& err) {
             if (m_StatsPanel && m_StatsPanel->IsShowingFPS())
             {

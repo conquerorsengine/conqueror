@@ -2,6 +2,7 @@
 # 238: açılışta pencere büyürken (ilk karelerde boyut her kare değişir) Viewport'ta EKRANDA hep sahne görünür: koyu alan (eskiden yerleşim
 # oturana kadar gösteriliyordu, ortalama ~12) ya da gerilmiş eski kare yok; Stats FPS sayısı yarım saniye beklemeden kareler düzene girince
 # görünür. Play başında Game görünümü de ilk karesinden oyunu gösterir
+wait_until 3000 layout_settled
 wait 1
 app_window_size 1500 850
 viewport_shown 15 >40

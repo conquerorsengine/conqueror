@@ -1,0 +1,8 @@
+# template: basic3d
+# 259: editör açılırken yarım yerleşim (boş Stats, başlıksız sekmeler, büyük alt paneller) görünmez: düzen oturana kadar pencere
+# örtülür, örtü kalktığı anda görünen ilk kare oturmuş düzenle aynıdır (ekranın %3'ünden azı farklı: Stats sayısı / sahne)
+wait_until 3000 layout_settled
+wait 60
+startup_reveal_matches 3
+wait 2
+quit
