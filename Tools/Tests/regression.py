@@ -65,6 +65,15 @@ def make_project(tid, name, env=None):
     script = os.path.join(WORK, f"_hub_{name}.txt")
     with open(script, "w") as f:
         f.write(f'wait 20\nhub create {tid} {name} "{WORK}"\nwait 5\nquit\n')
+    # Testlerin Hub'ı kendi ayar klasörünü kullanır: kullanıcının proje listesine (hub.yaml) test projeleri eklenmez
+    env = dict(env or os.environ)
+    if "CQ_HUB_CONFIG_DIR" not in env:
+        cfg = os.path.join(WORK, "_hubconfig")
+        os.makedirs(cfg, exist_ok=True)
+        if not os.path.exists(os.path.join(cfg, "hub.yaml")):
+            with open(os.path.join(cfg, "hub.yaml"), "w") as f:
+                f.write(f'Settings:\n  DefaultLocation: "{WORK}"\nProjects: []\n')
+        env["CQ_HUB_CONFIG_DIR"] = cfg
     runner = os.environ.get("CQ_HUB_RUNNER")
     if runner:
         run(["bash", runner, script], env=env)

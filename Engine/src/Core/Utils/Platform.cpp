@@ -414,6 +414,8 @@ namespace Conqueror
             char path[MAX_PATH];
             if (SHGetFolderPathA(NULL, CSIDL_PROFILE, NULL, 0, path) == S_OK)
                 return std::string(path);
+            if (const char* profile = getenv("USERPROFILE"); profile && profile[0])
+                return std::string(profile);
 #endif
             return "";
         }

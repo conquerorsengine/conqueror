@@ -5,6 +5,7 @@
 #include "Core/Logging/Log.h"
 #include "Core/Base/Version.h"
 #include "Core/Automation/Automation.h"
+#include "Core/Utils/Platform.h"
 #include "Addons/AddonManager.h"
 
 #include <imgui.h>
@@ -205,10 +206,10 @@ namespace Conqueror::Editor
         std::error_code ec;
         fs::create_directories(ConfigDirectory(), ec);
         m_ConfigFile = ConfigDirectory() / "hub.yaml";
-        if (const char* home = std::getenv("HOME"))
+        // Kullanıcı klasörü: Windows'ta Known Folder (FOLDERID_Profile = C:\Users\<ad>; Git Bash / MSYS'in koyduğu HOME
+        // değil), Linux / macOS / BSD'de $HOME. Unity Hub ve Unreal da varsayılanı kullanıcı klasöründen alır.
+        if (const std::string home = Platform::GetUserHomeDirectory(); !home.empty())
             m_DefaultLocation = (fs::path(home) / "ConquerorProjects").string();
-        else if (const char* profile = std::getenv("USERPROFILE"))
-            m_DefaultLocation = (fs::path(profile) / "ConquerorProjects").string();
         else
             m_DefaultLocation = (fs::current_path() / "Projects").string();
         LoadConfig();
@@ -318,8 +319,27 @@ namespace Conqueror::Editor
             out << YAML::EndMap;
         }
         out << YAML::EndSeq << YAML::EndMap;
-        std::ofstream f(m_ConfigFile);
-        f << out.c_str() << "\n";
+        // Atomik yazma: önce geçici dosya, sonra yeniden adlandırma. Aynı anda açık başka bir Hub (ya da testler) dosyayı
+        // yarım yazılmışken okuyup listenin yalnızca bir kısmını göstermez.
+        std::error_code ec;
+        const fs::path tmp = m_ConfigFile.string() + ".tmp" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());
+        {
+            std::ofstream f(tmp, std::ios::binary | std::ios::trunc);
+            f << out.c_str() << "\n";
+            if (!f.good())
+            {
+                f.close();
+                fs::remove(tmp, ec);
+                CQ_CORE_ERROR("[Hub] Cannot write {0}", m_ConfigFile.string());
+                return;
+            }
+        }
+        fs::rename(tmp, m_ConfigFile, ec);
+        if (ec)
+        {
+            CQ_CORE_ERROR("[Hub] Cannot replace {0}: {1}", m_ConfigFile.string(), ec.message());
+            fs::remove(tmp, ec);
+        }
     }
 
     void ProjectHub::RefreshProjectStates()
@@ -460,6 +480,12 @@ namespace Conqueror::Editor
 
     void ProjectHub::OnImGuiRender()
     {
+        if (!m_PointerMoved)
+        {
+            const ImGuiIO& io = ImGui::GetIO();
+            if (ImGui::IsMousePosValid() && (io.MouseDelta.x != 0.0f || io.MouseDelta.y != 0.0f))
+                m_PointerMoved = true;
+        }
         ImGuiViewport* viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(viewport->Pos);
         ImGui::SetNextWindowSize(viewport->Size);
@@ -578,11 +604,11 @@ namespace Conqueror::Editor
             m_GridView = !m_GridView;
             SaveConfig();
         }
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip(m_GridView ? "List view" : "Grid view");
+        if (m_PointerMoved && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip(m_GridView ? "List view" : "Grid view");
         ImGui::SameLine();
         if (ImGui::Button(ICON_FA_FOLDER_PLUS "  Add", ImVec2(0, 0)))
             AddExistingProject();
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Add an existing project folder");
+        if (m_PointerMoved && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip("Add an existing project folder");
         ImGui::SameLine();
         if (AccentButton(ICON_FA_PLUS "  New Project", ImVec2(0, 0)))
             m_Page = Page::NewProject;
@@ -673,6 +699,7 @@ namespace Conqueror::Editor
         ImVec2 b(a.x + width, a.y + height);
         const bool clicked = ImGui::InvisibleButton("##card", ImVec2(width, height));
         const bool hovered = ImGui::IsItemHovered();
+        const bool showTip = m_PointerMoved && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip);
         DrawProjectContextMenu(project, index);
         ImDrawList* dl = ImGui::GetWindowDrawList();
         dl->AddRectFilled(a, b, hovered ? kCardHover : kCardBg, 10.0f);
@@ -718,10 +745,9 @@ namespace Conqueror::Editor
         dl->AddText(ImVec2(a.x + 12, y), IM_COL32(110, 114, 122, 255), project.Path.string().c_str());
         dl->PopClipRect();
         if (hovered)
-        {
             dl->AddRect(a, b, ImGui::GetColorU32(kAccent), 10.0f, 0, 1.5f);
+        if (showTip)
             ImGui::SetTooltip("%s\n%s", project.Path.string().c_str(), project.Missing ? "The folder no longer exists" : "Click to open, right-click for options");
-        }
         if (clicked && !project.Missing)
             OpenProject(project);
         ImGui::PopID();

@@ -1,5 +1,6 @@
 #include "AIAuth.h"
 #include "Core/Logging/Log.h"
+#include "Core/Utils/Platform.h"
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
@@ -8,10 +9,11 @@ namespace Conqueror::AI
 {
     std::filesystem::path AIAuth::GetAuthFilePath()
     {
-        const char* homeDir = std::getenv("HOME");
-        if (!homeDir)
+        // Windows'ta HOME çoğu zaman yoktur: kullanıcı klasörü Known Folder'dan (Platform::GetUserHomeDirectory)
+        std::string homeDir = Platform::GetUserHomeDirectory();
+        if (homeDir.empty())
             homeDir = ".";
-        
+
         std::filesystem::path dir = std::filesystem::path(homeDir) / ".conqueror_engine";
         std::filesystem::create_directories(dir);
         return dir / "ai_auth.json";

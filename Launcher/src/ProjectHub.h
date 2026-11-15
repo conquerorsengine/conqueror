@@ -87,6 +87,9 @@ namespace Conqueror::Editor
         std::string m_Search;
         int m_SortMode = 0;          // 0 son açılan, 1 ad, 2 yol
         bool m_GridView = true;
+        // İpuçları yalnızca fare Hub açıldıktan sonra gerçekten hareket ettiyse açılır: açılışta imleç zaten bir projenin
+        // üstünde duruyorsa kutu kendiliğinden çıkmaz (Unity Hub / tarayıcılar gibi)
+        bool m_PointerMoved = false;
         bool m_ShowMissing = true;
         float m_UIScale = 1.0f;
         std::string m_DefaultLocation;
