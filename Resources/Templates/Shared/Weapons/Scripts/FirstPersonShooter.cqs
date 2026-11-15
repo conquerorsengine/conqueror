@@ -39,6 +39,10 @@ script FirstPersonShooter : ConquerorScript
     public float swayAmount = 0.0016;
     public float aimInSpeed = 12.0;
 
+    [Header("Weapons")]
+    [Tooltip("Shortest time between two weapon changes with the mouse wheel or the gamepad button, in seconds (0 = no limit)")]
+    public float wheelSwitchCooldown = 0.5;
+
     [Header("State")]
     public float speed = 0.0;
     public bool grounded = true;
@@ -96,6 +100,7 @@ script FirstPersonShooter : ConquerorScript
     private float damageFlash = 0.0;
     private bool firePrev = false;
     private float switchTimer = 0.0;
+    private float wheelSwitchTimer = 0.0;
     private var padPrev = {};
     private float lastHealth = 100.0;
 
@@ -472,8 +477,14 @@ script FirstPersonShooter : ConquerorScript
             if (IsKeyDown("2")) { SelectWeapon(1, false); }
             if (IsKeyDown("3")) { SelectWeapon(2, false); }
             var wheel = GetMouseScrollDelta();
-            if (wheel > 0.1 || PadDown(3)) { SelectWeapon(currentWeapon + 1, false); }
-            if (wheel < -0.1) { SelectWeapon(currentWeapon - 1, false); }
+            // Tekerlekle (ve kol düğmesiyle) silah değiştirme arasında en az wheelSwitchCooldown saniye: tekerleği hızlı
+            // çevirmek silahları art arda "tak tak" değiştirmez (1 / 2 / 3 tuşları her zaman hemen seçer)
+            var wheelDir = (wheel > 0.1 || PadDown(3)) ? 1 : (wheel < -0.1 ? -1 : 0);
+            if (wheelDir != 0 && wheelSwitchTimer <= 0.0)
+            {
+                SelectWeapon(currentWeapon + wheelDir, false);
+                wheelSwitchTimer = wheelSwitchCooldown;
+            }
             // İmleç: Esc bırakır, oyun görünümüne tıklamak geri kilitler (motor yapar; o tık ateş etmez)
             var md = GetMouseDelta();
             // Nişanda hassasiyet görüş açısıyla orantılı (dürbünde fare yavaşlar)
@@ -715,6 +726,7 @@ script FirstPersonShooter : ConquerorScript
             EntitySetRotation(viewModel, pose.ex, pose.ey, pose.ez);
         }
         if (switchTimer > 0.0) { switchTimer -= dt; }
+        if (wheelSwitchTimer > 0.0) { wheelSwitchTimer -= dt; }
 
         // Ateş
         if (w >= 0 && !dead && switchTimer <= 0.0)
