@@ -32,6 +32,8 @@
 #include "Core/Debug/CrashHandler.h"
 #include "Core/Audio/AudioOneShots.h"
 #include "Core/Audio/InteractiveMusic.h"
+#include "Renderer/AntiAliasing.h"
+#include "Renderer/UpscalerSelfTest.h"
 #include <chrono>
 #include <filesystem>
 #include <thread>
@@ -46,6 +48,12 @@
 
 namespace Conqueror
 {
+    namespace
+    {
+        bool s_SelfTestPending = false;      // --upscaler-self-test
+        std::string s_SelfTestReport;
+    }
+
     Application* Application::s_Instance = nullptr;
 
     Application::Application(const ApplicationSpecification& specification)
@@ -93,10 +101,24 @@ namespace Conqueror
         PushOverlay(m_ImGuiLayer);
 
         Automation::Init(m_Specification.CommandLineArgs.Count, m_Specification.CommandLineArgs.Args);
+
+        // --simulate-gpu=<ön ayar> (menü / seçim kuralı testi), --upscaler-self-test[=rapor] (yöntemleri dener, raporu yazar, kapanır)
+        for (int i = 1; i < m_Specification.CommandLineArgs.Count; ++i)
+        {
+            const std::string a = m_Specification.CommandLineArgs.Args[i] ? m_Specification.CommandLineArgs.Args[i] : "";
+            if (a.rfind("--simulate-gpu=", 0) == 0 && !AntiAliasing::SetSimulatedGPU(a.substr(15)))
+                CQ_CORE_WARN("Unknown --simulate-gpu preset '{0}'", a.substr(15));
+            if (a == "--upscaler-self-test" || a.rfind("--upscaler-self-test=", 0) == 0)
+            {
+                s_SelfTestPending = true;
+                s_SelfTestReport = a.size() > 21 ? a.substr(21) : std::string();
+            }
+        }
     }
 
     Application::~Application()
     {
+        UpscalerSelfTest::Cancel();
         // Katmanlar (editör/oyun sahneleri) ses, fizik ve render alt sistemleri hâlâ ayaktayken kapanır:
         // sahne yıkıcıları ses kaynaklarını/GPU kaynaklarını güvenle bırakabilsin
         m_LayerStack.Clear();
@@ -201,6 +223,14 @@ namespace Conqueror
                     for (Layer* layer : m_LayerStack)
                         layer->OnUpdate(timestep);
                 }
+                // Upscaler Self-Test: sahne çizildi, arayüz ve takas henüz değil. Komut satırından istendiyse açılış ekranı ve
+                // sahnenin yüklenmesi için 5 saniye sonra başlar
+                if (s_SelfTestPending && time > 5.0f)
+                {
+                    s_SelfTestPending = false;
+                    UpscalerSelfTest::Start(s_SelfTestReport, true);
+                }
+                UpscalerSelfTest::OnFrameEnd();
 
                 CQ_PROFILE_SAMPLE("GUI", Editor);
                 m_ImGuiLayer->Begin();

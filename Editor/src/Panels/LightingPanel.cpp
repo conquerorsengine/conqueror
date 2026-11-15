@@ -1162,6 +1162,12 @@ namespace Conqueror::Editor
         if (UI::BeginSection("Anti-Aliasing"))
         {
             using namespace Conqueror::AntiAliasing;
+            if (!GetSimulatedGPU().empty())
+            {
+                const std::string sim = "Simulating " + GetCaps().Renderer + " (Debug > Rendering > Simulate GPU): the menus below follow that GPU; "
+                                        "rendering still uses " + GetRealCaps().Renderer + ".";
+                UI::InfoBox(sim.c_str(), UI::InfoType::Info);
+            }
             const ModeInfo& curInfo = GetInfo(p.AntiAliasing);
             UI::BeginProperty("Method", "Anti-aliasing method at native resolution. Methods are grouped by category; greyed-out ones cannot run on this "
                                         "system (hover for the reason).");

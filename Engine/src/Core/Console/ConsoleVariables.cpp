@@ -1,4 +1,6 @@
 #include "ConsoleVariables.h"
+#include "Renderer/AntiAliasing.h"
+#include "Renderer/UpscalerSelfTest.h"
 #include "Core/Input/InputGlyphs.h"
 #include "UI/UISystem.h"
 #include "Renderer/Utilities/Renderer3D/ClusterRenderer.h"
@@ -574,6 +576,32 @@ namespace Conqueror
                 if (key.rfind(prefix, 0) == 0) out += v.Name + " = " + (v.Get ? v.Get() : "") + "\n";
             if (!out.empty()) out.pop_back();
             return out;
+        });
+        RegisterCommand("r.SimulateGPU", "Test setting: build the anti-aliasing / upscaler menus and selection rules as if this were another GPU "
+                        "(rendering still uses this GPU): r.SimulateGPU <preset> | off | list", [](const std::vector<std::string>& args) {
+            if (args.empty() || Lower(args[0]) == "list")
+            {
+                std::string out = "Presets:";
+                for (int i = 0; i < AntiAliasing::GetGPUPresetCount(); ++i)
+                    out += std::string(" ") + AntiAliasing::GetGPUPreset(i).Id;
+                const std::string& cur = AntiAliasing::GetSimulatedGPU();
+                return out + "\nCurrent: " + (cur.empty() ? std::string("off (") + AntiAliasing::GetRealCaps().Renderer + ")" : cur);
+            }
+            if (!AntiAliasing::SetSimulatedGPU(args[0]))
+                return "Unknown preset '" + args[0] + "' (r.SimulateGPU list)";
+            const std::string& cur = AntiAliasing::GetSimulatedGPU();
+            return cur.empty() ? std::string("GPU simulation off") : "Simulating " + cur + " (" + AntiAliasing::GetCaps().Renderer + ")";
+        });
+        RegisterCommand("r.UpscalerSelfTest", "Run every anti-aliasing method and upscaler this system can select for a few frames and write a report "
+                        "(passed / failed / fell back / not available): r.UpscalerSelfTest [report file] | cancel", [](const std::vector<std::string>& args) {
+            if (!args.empty() && Lower(args[0]) == "cancel")
+            {
+                UpscalerSelfTest::Cancel();
+                return std::string("Cancelled");
+            }
+            if (!UpscalerSelfTest::Start(args.empty() ? std::filesystem::path() : std::filesystem::path(args[0])))
+                return std::string("Already running: ") + UpscalerSelfTest::GetStatus();
+            return std::string("Upscaler self-test started");
         });
         RegisterCommand("r.ResetOverrides", "Return every r.* variable to the scene's own settings", [](const std::vector<std::string>&) {
             ConsoleSystem::ClearOverrides();

@@ -3,6 +3,8 @@
 #include "Core/Base/Base.h"
 #include "Renderer/RenderSettings.h"
 
+#include <string>
+
 // Kenar yumuşatma (anti-aliasing) ve yükseltme (upscaling) yöntemleri: ad, kategori, açıklama ve bu sistemdeki
 // (GPU / sürücü / işletim sistemi) kullanılabilirlik. Unity / Unreal gibi iki ayrı ayar: Anti-Aliasing yerel çözünürlükte
 // çalışan yöntemler, Upscaling düşük iç çözünürlükten çıktıya yükselticiler. Yöntemlerin kendisi PostProcessStack'te.
@@ -56,9 +58,39 @@ namespace Conqueror::AntiAliasing
         bool NVIDIA = false;
         bool AMD = false;
         bool Intel = false;
+        bool Apple = false;
+        bool Qualcomm = false;
+        bool ARM = false;
+        bool NVIDIARTX = false;       // NVIDIA RTX (tensor çekirdekli, Turing ve sonrası): DLSS / DLAA donanımı
+        bool IntelArc = false;        // Intel Arc / Xe2 (XMX çekirdekleri): XeSS'in XMX yolu
+        bool Software = false;        // yazılımsal sürücü (llvmpipe, lavapipe, SwiftShader, softpipe, Microsoft Basic Render)
+        bool NGXRuntime = false;      // NVIDIA NGX çalışma zamanı sürücüyle kurulu (DLSS'in yüklendiği kütüphane)
+        bool XeSSRuntime = false;     // Intel XeSS kütüphanesi (libxess.dll) bulundu
+        std::string Vendor, Renderer; // GL_VENDOR / GL_RENDERER
+        std::string Simulated;        // benzetilen GPU ön ayarı (boş: gerçek GPU)
     };
 
+    // Menülerin ve seçim kurallarının kullandığı yetenekler: GPU benzetimi açıksa benzetilen GPU'nunkiler
     CQ_API const Caps& GetCaps();
+    // Bu bilgisayardaki gerçek GPU'nun yetenekleri (çizim her zaman bunlarla yapılır)
+    CQ_API const Caps& GetRealCaps();
+
+    // GPU benzetimi (test ayarı): motor menüleri ve seçim kurallarını başka bir GPU'daymış gibi kurar (RTX 4090, Intel Arc,
+    // RX 7900 ...). Yöntemin kendisi benzetilmez: gerçek GPU'nun çalıştıramadığı yöntem çizimde en yakın karşılığına düşer.
+    // "" ya da "off" gerçek GPU'ya döner; bilinmeyen ön ayarda false. Ortam değişkeni CQ_SIMULATE_GPU / --simulate-gpu=<ad>
+    struct GPUPreset
+    {
+        const char* Id;
+        const char* Vendor;
+        const char* Renderer;
+        bool NVCoverage, AMDAdvancedMS, SampleShading;
+        int MaxSamples;
+        bool Compute, MultisampleTextures, NGXRuntime, XeSSRuntime;
+    };
+    CQ_API bool SetSimulatedGPU(const std::string& preset);
+    CQ_API const std::string& GetSimulatedGPU();
+    CQ_API int GetGPUPresetCount();
+    CQ_API const GPUPreset& GetGPUPreset(int index);
 
     // ---- Anti-Aliasing
     CQ_API int GetModeCount();

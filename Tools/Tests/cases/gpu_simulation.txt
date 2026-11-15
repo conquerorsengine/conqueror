@@ -1,0 +1,50 @@
+# template: basic3d
+# 235: AA / yükseltici seçimi kartın kendisine göre (üretici, RTX, NGX çalışma zamanı, hesaplama gölgelendiricisi, çoklu örnek dokuları);
+# GPU benzetimi (Debug > Rendering > Simulate GPU) menü kurallarını başka kartlarda dener, çizim gerçek GPU'nun çalıştırabildiği karşılıkla
+# sürer; Upscaler Self-Test seçilebilen her yöntemi çalıştırıp rapor yazar
+wait 40
+focus Game
+wait 20
+# Bu bilgisayar (AMD): DLSS / DLAA / XeSS seçilemez, nedenleri karttan
+gpu expect_upscaler DLSS unavailable Requires an NVIDIA RTX GPU
+gpu expect_aa DLAA unavailable Requires an NVIDIA RTX GPU
+gpu expect_aa CSAA unavailable
+gpu expect_upscaler FSR1 available
+# RTX 4090: tensor çekirdekli kart, NGX var; DLSS tümleştirmesi bu derlemede yok (dürüst neden), CSAA NVIDIA'da var, EQAA yok
+gpu simulate rtx4090
+gpu expect_upscaler DLSS unavailable does not include the NVIDIA DLSS SDK integration
+gpu expect_aa CSAA available
+gpu expect_aa EQAA unavailable
+# GTX 1080: NVIDIA ama tensor çekirdeği yok
+gpu simulate gtx1080
+gpu expect_upscaler DLSS unavailable has none
+# RX 7900: AMD, EQAA var; DLSS yok
+gpu simulate rx7900
+gpu expect_aa EQAA available
+gpu expect_upscaler DLSS unavailable Requires an NVIDIA RTX GPU
+# Apple M2 (macOS OpenGL 4.1): hesaplama gölgelendiricisi yok -> NIS, FSR 2, CMAA, FSR AA seçilemez
+gpu simulate apple_m2
+gpu expect_upscaler NIS unavailable compute shaders
+gpu expect_upscaler FSR2 unavailable compute shaders
+gpu expect_aa CMAA unavailable
+gpu expect_aa FSRAA unavailable
+gpu expect_upscaler MetalFX unavailable
+# WebGL 2: çoklu örnek dokusu yok -> SRAA seçilemez
+gpu simulate webgl2
+gpu expect_aa SRAA unavailable multisample textures
+# Benzetimde seçilebilen ama gerçek GPU'nun çalıştıramadığı yöntem (RTX'te CSAA): görüntü gerçek karşılıkla çizilir
+gpu simulate rtx4090
+cvar r.AntiAliasing 6
+wait 30
+game_region 0.1 0.1 0.9 0.9 lum mean >40
+cvar r.ResetOverrides
+gpu simulate off
+gpu expect_aa CSAA unavailable
+# Upscaler Self-Test: bu GPU'da seçilebilen her yöntem çalışır, hiçbiri bozuk görüntü vermez
+gpu self_test
+wait_until 900000 gpu self_test_done
+gpu expect_report TAA PASS
+gpu expect_report FSR1 PASS
+gpu expect_report DLSS UNAVAILABLE
+gpu report_has_no FAIL
+quit

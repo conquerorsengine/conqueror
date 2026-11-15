@@ -114,6 +114,9 @@
 #include <imgui_internal.h>
 #include <cstring>
 #include <nfd.h>
+#include <sstream>
+#include "Renderer/AntiAliasing.h"
+#include "Renderer/UpscalerSelfTest.h"
 
 #ifdef CQ_PLATFORM_LINUX
 #include <unistd.h>
@@ -147,6 +150,26 @@ namespace Conqueror::Editor
         // Initialize DebugDraw
         DebugDraw::Init();
         CQ_CORE_INFO("EditorLayer: DebugDraw initialized");
+
+        // Upscaler Self-Test görüntüyü Game görünümünden (görünürse) ya da Viewport'tan okur
+        UpscalerSelfTest::SetImageReader([this](std::vector<uint8_t>& rgba, int& width, int& height) {
+            std::shared_ptr<Framebuffer> fb;
+            if (m_GamePanel && m_ShowGame && m_GamePanel->IsTabVisible())
+                fb = m_GamePanel->GetFramebuffer();
+            if (!fb && m_ViewportPanel)
+                fb = m_ViewportPanel->GetFramebuffer();
+            if (!fb)
+                return false;
+            const auto& spec = fb->GetSpecification();
+            width = (int)spec.Width;
+            height = (int)spec.Height;
+            if (width <= 0 || height <= 0)
+                return false;
+            rgba.resize((size_t)width * (size_t)height * 4);
+            glGetTextureSubImage(fb->GetColorAttachmentRendererID(0), 0, 0, 0, 0, width, height, 1, GL_RGBA, GL_UNSIGNED_BYTE, (GLsizei)rgba.size(),
+                                 rgba.data());
+            return true;
+        });
 
         // Konsol değişkenleri (r.*, t.*, stat ...): etkilenen sahne = etkin sahne; "stat" istatistik panelini açar
         ConsoleSystem::SetSceneProvider([this]() { return m_ActiveScene.get(); });
@@ -945,6 +968,8 @@ namespace Conqueror::Editor
 
     void EditorLayer::OnDetach()
     {
+        UpscalerSelfTest::Cancel();
+        UpscalerSelfTest::SetImageReader(nullptr);
         // Düzgün kapanış: kurtarma kopyası yalnızca çökmeler içindir
         if (!m_CurrentScenePath.empty())
             RemoveRecoverySnapshot(m_CurrentScenePath);
@@ -1645,6 +1670,7 @@ namespace Conqueror::Editor
             HelpMenu();
             BuildMenu();
             DebugMenu();
+            SelfTestReportWindow();
 
             float buttonWidth = 50.0f;
             // Unity durum çubuğundaki böcek: Debug Mode açıkken görünür, tıklanınca Release'e döner
@@ -3107,7 +3133,74 @@ namespace Conqueror::Editor
         ImGui::MenuItem("Visible Paths", nullptr, &view.Paths);
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
             ImGui::SetTooltip("Draws the current path of every navigation agent (3D and 2D) in the Game view while playing");
+        ImGui::Separator();
+        if (ImGui::BeginMenu("Rendering"))
+        {
+            // Test ayarı: menüler ve seçim kuralları başka bir GPU'daymış gibi (Unreal'in cihaz profili önizlemesi gibi)
+            if (ImGui::BeginMenu("Simulate GPU"))
+            {
+                const std::string& current = AntiAliasing::GetSimulatedGPU();
+                const std::string realLabel = "Off (" + AntiAliasing::GetRealCaps().Renderer + ")";
+                if (ImGui::MenuItem(realLabel.c_str(), nullptr, current.empty()))
+                    AntiAliasing::SetSimulatedGPU("off");
+                ImGui::Separator();
+                for (int i = 0; i < AntiAliasing::GetGPUPresetCount(); ++i)
+                {
+                    const auto& preset = AntiAliasing::GetGPUPreset(i);
+                    const std::string label = std::string(preset.Renderer) + "##" + preset.Id;
+                    if (ImGui::MenuItem(label.c_str(), nullptr, current == preset.Id))
+                        AntiAliasing::SetSimulatedGPU(preset.Id);
+                }
+                ImGui::EndMenu();
+            }
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+                ImGui::SetTooltip("Test setting: the Anti-Aliasing and Upscaling menus and their rules act as if this computer had the selected GPU\n"
+                                  "(greyed-out entries and reasons). The methods themselves are not simulated: what this GPU cannot run is drawn\n"
+                                  "with its closest equivalent. Also: console r.SimulateGPU, command line --simulate-gpu=<preset>.");
+            const bool running = UpscalerSelfTest::IsRunning();
+            const std::string runLabel = running ? "Cancel Upscaler Self-Test (" + UpscalerSelfTest::GetStatus() + ")" : std::string("Run Upscaler Self-Test");
+            if (ImGui::MenuItem(runLabel.c_str()))
+            {
+                if (running)
+                    UpscalerSelfTest::Cancel();
+                else
+                {
+                    const auto dir = Project::GetActive() ? Project::GetActiveProjectDirectory() / "Logs" : std::filesystem::path("Logs");
+                    UpscalerSelfTest::Start(dir / "UpscalerSelfTest.txt");
+                }
+            }
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+                ImGui::SetTooltip("Runs every anti-aliasing method and upscaler this GPU can select for a few frames on the open scene and writes\n"
+                                  "a report (passed / failed / fell back / not available with the reason) to the project's Logs folder.\n"
+                                  "Someone with another GPU (RTX, Intel Arc, RX 7000) can run it (or the game with --upscaler-self-test) and send the report.");
+            if (!running && !UpscalerSelfTest::GetLastReport().empty() && ImGui::MenuItem("Show Last Self-Test Report"))
+                m_ShowSelfTestReport = true;
+            ImGui::EndMenu();
+        }
         ImGui::EndMenu();
+    }
+
+    void EditorLayer::SelfTestReportWindow()
+    {
+        const bool running = UpscalerSelfTest::IsRunning();
+        if (m_SelfTestWasRunning && !running && !UpscalerSelfTest::GetLastReport().empty())
+            m_ShowSelfTestReport = true;
+        m_SelfTestWasRunning = running;
+        if (!m_ShowSelfTestReport)
+            return;
+        ImGui::SetNextWindowSize(ImVec2(900.0f, 560.0f), ImGuiCond_FirstUseEver);
+        if (ImGui::Begin("Upscaler Self-Test", &m_ShowSelfTestReport))
+        {
+            ImGui::TextUnformatted(UpscalerSelfTest::GetLastReportPath().string().c_str());
+            ImGui::SameLine();
+            if (ImGui::SmallButton("Copy Report"))
+                ImGui::SetClipboardText(UpscalerSelfTest::GetLastReport().c_str());
+            ImGui::Separator();
+            ImGui::BeginChild("##selftest_text", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+            ImGui::TextUnformatted(UpscalerSelfTest::GetLastReport().c_str());
+            ImGui::EndChild();
+        }
+        ImGui::End();
     }
 
     void EditorLayer::BuildMenu()
@@ -5943,6 +6036,98 @@ namespace Conqueror::Editor
             else ok = std::abs(have - std::stof(cond)) <= 0.5f;
             if (!ok) err = "change " + std::to_string(have);
             return ok;
+        });
+        Automation::RegisterCommand("gpu", [this](const Args& a, std::string& err) {
+            // gpu simulate <preset|off> | gpu expect_aa|expect_upscaler <name> available|unavailable [reason text] |
+            // gpu self_test [file] | gpu self_test_done | gpu expect_report <method> <PASS|FAIL|FALLBACK|UNAVAILABLE> | gpu report_has_no <status>
+            auto norm = [](std::string v) {
+                std::string out;
+                for (char c : v)
+                    if (c != ' ' && c != '_')
+                        out += (char)std::tolower((unsigned char)c);
+                return out;
+            };
+            if (a.size() < 2) { err = "gpu simulate|expect_aa|expect_upscaler|self_test|self_test_done|expect_report|report_has_no ..."; return false; }
+            const std::string sub = a[1];
+            if (sub == "simulate" && a.size() > 2)
+            {
+                if (!AntiAliasing::SetSimulatedGPU(a[2])) { err = "unknown preset " + a[2]; return false; }
+                return true;
+            }
+            if ((sub == "expect_aa" || sub == "expect_upscaler") && a.size() > 3)
+            {
+                AntiAliasing::Availability av;
+                bool found = false;
+                if (sub == "expect_aa")
+                {
+                    for (int i = 0; i < AntiAliasing::GetModeCount() && !found; ++i)
+                        if (norm(AntiAliasing::GetInfo((AntiAliasingMode)i).Name) == norm(a[2]))
+                            av = AntiAliasing::GetAvailability((AntiAliasingMode)i), found = true;
+                }
+                else
+                {
+                    for (int i = 0; i < AntiAliasing::GetUpscalerCount() && !found; ++i)
+                        if (norm(AntiAliasing::GetUpscalerInfo((UpscalerMode)i).Name) == norm(a[2]))
+                            av = AntiAliasing::GetUpscalerAvailability((UpscalerMode)i), found = true;
+                }
+                if (!found) { err = "unknown method " + a[2]; return false; }
+                Automation::Report(a[2] + (av.Available ? " available" : std::string(" unavailable: ") + av.Reason));
+                const bool want = a[3] == "available";
+                if (av.Available != want) { err = a[2] + (av.Available ? " is available" : std::string(" is unavailable: ") + av.Reason); return false; }
+                std::string text;
+                for (size_t i = 4; i < a.size(); ++i)
+                    text += (text.empty() ? "" : " ") + a[i];
+                if (!text.empty() && std::string(av.Reason).find(text) == std::string::npos) { err = std::string("reason is: ") + av.Reason; return false; }
+                return true;
+            }
+            if (sub == "self_test")
+            {
+                const auto file = a.size() > 2 ? std::filesystem::path(a[2])
+                                               : (Project::GetActive() ? Project::GetActiveProjectDirectory() / "Logs" : std::filesystem::path("Logs")) / "UpscalerSelfTest.txt";
+                if (!UpscalerSelfTest::Start(file)) { err = "already running"; return false; }
+                return true;
+            }
+            if (sub == "self_test_done")
+            {
+                if (UpscalerSelfTest::IsRunning()) { err = "running: " + UpscalerSelfTest::GetStatus(); return false; }
+                return true;
+            }
+            const std::string& report = UpscalerSelfTest::GetLastReport();
+            if (sub == "expect_report" && a.size() > 3)
+            {
+                std::istringstream lines(report);
+                std::string line;
+                while (std::getline(lines, line))
+                {
+                    std::istringstream words(line);
+                    std::string status, kind, name;
+                    words >> status >> kind >> name;
+                    if (norm(name) == norm(a[2]) || (name.size() && norm(line).find(norm(kind) + norm(a[2])) != std::string::npos))
+                    {
+                        Automation::Report("REPORT " + line);
+                        if (status != a[3]) { err = line; return false; }
+                        return true;
+                    }
+                }
+                err = "no report line for " + a[2];
+                return false;
+            }
+            if (sub == "report_has_no" && a.size() > 2)
+            {
+                std::istringstream lines(report);
+                std::string line;
+                bool ok = !report.empty();
+                while (std::getline(lines, line))
+                    if (line.rfind(a[2] + " ", 0) == 0)
+                    {
+                        Automation::Report("REPORT " + line);
+                        ok = false;
+                    }
+                if (!ok) err = report.empty() ? "no report" : "report has " + a[2] + " lines";
+                return ok;
+            }
+            err = "unknown gpu subcommand " + sub;
+            return false;
         });
         Automation::RegisterCommand("gpu_probe", [this](const Args& a, std::string& err) {
             // gpu_probe <brdf|viewport|sh|prefiltered>: GPU verisini GL API'si üzerinden geri okur (her arka uçta çalışır)

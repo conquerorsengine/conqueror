@@ -42,6 +42,7 @@ namespace Conqueror::Editor
         void SetPlaying(bool playing) { m_Playing = playing; }
         // Pencere kapalı (OnImGuiRender çağrılmıyor): düzenleme modunda çizilmez
         void MarkHidden() { m_TabVisible = false; }
+        bool IsTabVisible() const { return m_TabVisible; }
         bool IsMaximized() const;
         bool IsViewportFocused() const { return m_ViewportFocused; }
         bool IsViewportHovered() const { return m_ViewportHovered; }

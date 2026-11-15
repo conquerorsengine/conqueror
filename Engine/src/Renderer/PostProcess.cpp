@@ -287,7 +287,7 @@ namespace Conqueror
         // EQAA / CSAA: sahne ayrı (kapsam örnekli renderbuffer) çerçeve tamponuna çizilir; sahne hedefi çözülmüş tek örnek
         if (m_WantCoverageSamples > 0)
             samples = 1;
-        samples = std::min<uint32_t>(samples, (uint32_t)std::max(1, AntiAliasing::GetCaps().MaxSamples));
+        samples = std::min<uint32_t>(samples, (uint32_t)std::max(1, AntiAliasing::GetRealCaps().MaxSamples));
         // Albedo eki normal ekini gerektirir (ek sırası sabit: 1 normal, 2 albedo). Temporal AA da normal ekinin w'sindeki
         // hareket bayrağını okur (hareket eden nesne iz bırakmasın)
         const bool wantNormals = m_WantNormals || m_WantAlbedo || m_WantTAA || m_WantGeometry;
@@ -382,7 +382,7 @@ namespace Conqueror
 
     bool PostProcessStack::CreateCoverageFramebuffer(uint32_t width, uint32_t height)
     {
-        const AntiAliasing::Caps& caps = AntiAliasing::GetCaps();
+        const AntiAliasing::Caps& caps = AntiAliasing::GetRealCaps();
         const uint32_t coverage = m_WantCoverageSamples;
         // Renk depolama örneği kapsamın yarısı (EQAA 8 kapsam / 4 renk; CSAA 16 kapsam / 8 renk)
         const uint32_t color = std::max(1u, coverage / 2);
@@ -610,7 +610,7 @@ namespace Conqueror
         else
             m_SceneFramebuffer->Bind();
         // SGSSAA / RGSS: parça gölgelendirici her MSAA örneğinde ayrı çalışır (gerçek süper örnekleme)
-        m_SampleShading = m_WantSampleShading && m_Samples > 1 && AntiAliasing::GetCaps().SampleShading;
+        m_SampleShading = m_WantSampleShading && m_Samples > 1 && AntiAliasing::GetRealCaps().SampleShading;
         if (m_SampleShading)
         {
             glEnable(GL_SAMPLE_SHADING);
@@ -2234,7 +2234,7 @@ namespace Conqueror
             m_WantSampleShading = next == AntiAliasingMode::RGSS || next == AntiAliasingMode::SGSSAA;
             if (next == AntiAliasingMode::EQAA)
                 m_WantCoverageSamples = settings.EQAASamples >= 16 ? 16u : settings.EQAASamples >= 8 ? 8u : 4u;
-            else if (next == AntiAliasingMode::CSAA && AntiAliasing::GetCaps().NVCoverage)
+            else if (next == AntiAliasingMode::CSAA && AntiAliasing::GetRealCaps().NVCoverage)
                 m_WantCoverageSamples = 16;
             else
                 m_WantCoverageSamples = 0;

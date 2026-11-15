@@ -71,6 +71,10 @@ namespace Conqueror::Editor
         void BuildMenu();
         // Godot Debug menüsü + Unity Code Optimization (Debug Mode): Script Debugging, Visible Collision Shapes / Navigation / Paths
         void DebugMenu();
+        // Debug > Rendering > Run Upscaler Self-Test bitince raporu gösteren pencere
+        void SelfTestReportWindow();
+        bool m_ShowSelfTestReport = false;
+        bool m_SelfTestWasRunning = false;
         // Build > Build AssetBundles (bağımlılıklar Content Browser'ın Select Dependencies toplayıcısıyla)
         bool BuildAssetBundles();
         void SyncScriptDebugSetting();
