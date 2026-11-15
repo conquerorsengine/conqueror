@@ -1424,6 +1424,9 @@ namespace Conqueror
 
     // ------------------------------------------------------------------ UBO yükleme
 
+    static glm::vec2 s_ShadowFade = glm::vec2(0.0f);
+    glm::vec2 Renderer3D::GetShadowFade() { return s_ShadowFade; }
+
     void Renderer3D::UploadFrameData()
     {
         if (s->FrameActive && s->EnvCheckedFrame == 0)
@@ -1502,6 +1505,8 @@ namespace Conqueror
             f.CascadeSplits[i] = i < (int)splits.size() ? splits[i] : 0.0f;
             f.CascadeTexelWorld[i] = i < (int)texel.size() ? texel[i] : 0.05f;
         }
+        // Son kademenin sınırında gölge bant boyunca tamamen solar (Lighting.glsl CQ_SunShadow)
+        s_ShadowFade = (shadowsOn && cascades <= (int)splits.size()) ? glm::vec2(splits[cascades - 1], fadeBand) : glm::vec2(0.0f);
 
         bool apvOn = env.APV && env.APV->IsBaked();
         f.FeatureFlags = glm::ivec4(env.HDROutput ? 1 : 0, env.Lightmap ? 1 : 0, apvOn ? 1 : 0, (int)s->Probes.size());

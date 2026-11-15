@@ -39,6 +39,7 @@ uniform int u_HasMotionFlag = 0;
 uniform sampler2D u_State;        // önceki karenin gölge durumu (y: güneş gölgesi)
 uniform sampler2D u_GShadow;      // bu karenin güneş gölgesi (0 gölge .. 1 aydınlık)
 uniform int u_HasShadowMask = 0;
+uniform vec2 u_ShadowFade = vec2(0.0);   // gölge mesafesi (son kademe sınırı, görüş derinliği) ve solma bandının genişliği
 uniform vec4 u_ShadowBoxes[64];   // hareket eden gölge düşürücülerin dünya kutuları (bu + önceki kare): [2i] min, [2i+1] max
 uniform int u_ShadowBoxCount = 0;
 uniform vec3 u_TowardSun = vec3(0.0, 1.0, 0.0);
@@ -642,6 +643,22 @@ void main()
     vec4 stateBefore = texelFetch(u_State, hn, 0);
     float ageBefore = floor(max(stateBefore.y, 0.0) * 0.5 + 1e-3);
     float shadowBefore = stateBefore.y - 2.0 * ageBefore;
+    // Gölge mesafesinde solma: güneş gölgesi son kademenin sınırına yaklaşırken görüş derinliğine göre bant boyunca açılır
+    // (Lighting.glsl CQ_SunShadow). Kamera uzaklaşırken bant zemin boyunca kameraya doğru ilerler, aynı noktanın gölgesi kareden
+    // kareye açılır; güvenilir yüzey ve titreme tutması eski koyu gölgeyi tutuyordu: viewport'ta tekerlekle uzaklaşırken solan
+    // gölge arkasında silik bir iz ve nokta nokta koyu pikseller bırakıyor, durunca yumuşuyordu. Solmanın bu nokta için geçen
+    // kareden bu kareye değişimi aynı formülle iki derinlikten hesaplanır: tahmin yok, gölge kenarında / ateşte / yürürken
+    // (derinlik solma bandının dışında) hiç devreye girmez
+    bool shadowShift = false;
+    if (u_HasShadowMask == 1 && u_ShadowFade.y > 0.0 && centerDepth < 1.0 && (shadowNow < 0.99 || shadowBefore < 0.99))
+    {
+        vec4 fw = u_InvViewProj * vec4(v_UV * 2.0 - 1.0, centerDepth * 2.0 - 1.0, 1.0);
+        float wPrev = (u_PrevViewProj * (fw / fw.w)).w;
+        float fadeStart = u_ShadowFade.x - u_ShadowFade.y;
+        float fadeNow = clamp((ViewW(v_UV, centerDepth) - fadeStart) / u_ShadowFade.y, 0.0, 1.0);
+        float fadePrev = clamp((wPrev - fadeStart) / u_ShadowFade.y, 0.0, 1.0);
+        shadowShift = abs(fadeNow - fadePrev) > 0.01;
+    }
     // Durum w: yerel ortalama parlaklık (0..1) + 2 x büyütme bulanıklığı sayacı (0..8)
     float blurBefore = floor(stateBefore.w * 0.5 + 1e-3);
     float meanBefore = stateBefore.w - 2.0 * blurBefore;
@@ -696,7 +713,7 @@ void main()
         stillness = 0.0;
         sameSurface = false;
     }
-    else if (closestDepth < 1.0 && !nearMovingShadow)
+    else if (closestDepth < 1.0 && !nearMovingShadow && !shadowShift)
     {
         float tol = 0.03 * prevClip.w + 0.02;
         trust = (1.0 - smoothstep(tol, 2.0 * tol, abs(storedW - prevClip.w))) * (1.0 - smoothstep(1.5, 3.0, speed)) * turnTrust;
@@ -830,9 +847,10 @@ void main()
     // geçmiş yeni ışığa ölçeklendiği için tutma güvenli. Eskiden alev karesi sayacı sıfırlıyor, ince çizgilerin tutması
     // kalkıyor ve hemen ardından gelen geri tepme hareketi küpün üstündeki çizgileri kırpıp siliyordu (beyazlaşma).
     // Tutmayı geometriyle sınırlamak uzaktaki küp aralarını da (derinlik farkı küçük) dışarıda bırakıp yanıp söndürüyordu
-    float flicker = historyValid ? clamp(flickerBefore - 1.0 + ((outsideNow != outsideBefore && !lightChanged) ? 6.0 : 0.0), 0.0, 16.0) : 0.0;
+    // Gölgesi solan pikselin kutu içi / dışı değişimi de titreme sayılmaz (ışık değişimi, ince çizgi değil) ve tutulmaz
+    float flicker = historyValid ? clamp(flickerBefore - 1.0 + ((outsideNow != outsideBefore && !lightChanged && !shadowShift) ? 6.0 : 0.0), 0.0, 16.0) : 0.0;
     // Yörüngede tutma da kapalı (bakış yönü karede 0.46°'den çok dönüyor); yana yürürken 14 m'deki küplerde dönüş 0.31°, tutma kalır
-    bool hold = historyValid && flicker >= 8.0 && !restart && viewTurn < 0.008;
+    bool hold = historyValid && flicker >= 8.0 && !restart && viewTurn < 0.008 && !shadowShift;
     // Işık değişen karede yeniden ölçeklenen geçmiş en iyi tahmindir: kırpılmaz ve ağırlığı yüksek kalır. Bu karelerin titreşimli
     // örneğinde ince çizgi yoksa çizgi (üç alev karesinde %27) soluyor, zeminde kesik kesik kalıyordu
     // Siluette (3x3'te iki yüzey) yeni ölçeklenmiş geçmişe güvenilmez: alev karelerinde kenarın önceki yeri ince çizgi olarak görünüyordu
@@ -1045,12 +1063,14 @@ void main()
     if (u_Debug == 1)
     {
         // Kırmızı: hareket eden nesne / ayrıldığı yer, turuncu: hareketli gölge, yeşil: oturmuş durağan, camgöbeği: sakin
-        // (yavaşlayan), mavi: güvenilir geniş kırpma, sarı: normal kırpma (koyu sarı: geçmiş kırpılmadı), eflatun: gökyüzü
+        // (yavaşlayan), mavi: güvenilir geniş kırpma, sarı: normal kırpma (koyu sarı: geçmiş kırpılmadı), eflatun: gökyüzü,
+        // altın: gölge mesafesinde solan güneş gölgesi
         vec3 tint;
         if (freezeHistory) tint = vec3(0.75, 0.45, 1.0);   // lila: duman / kıvılcım altında geçmişi korunan piksel
         else if ((movingNow || movedBefore) && !centerExact)
             tint = movingWhy == 1 ? vec3(1.0, 0.0, 0.0) : movingWhy == 2 ? vec3(0.5, 0.0, 0.0) : movingWhy == 3 ? vec3(1.0, 0.4, 0.6) : movingWhy == 4 ? vec3(0.6, 0.0, 1.0) : vec3(0.45, 0.25, 0.1);
         else if (shadowChanged) tint = vec3(1.0, 0.5, 0.0);
+        else if (shadowShift) tint = vec3(1.0, 0.8, 0.0);   // altın: gölge mesafesinde soluyor, geçmiş tutulmaz
         else if (settled) tint = vec3(0.0, 1.0, 0.0);
         else if (hold) tint = vec3(0.5, 1.0, 0.6);
         else if (calm) tint = vec3(0.0, 1.0, 1.0);
