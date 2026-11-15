@@ -117,6 +117,9 @@
 #include <sstream>
 #include "Renderer/AntiAliasing.h"
 #include "Renderer/UpscalerSelfTest.h"
+#include "Renderer/Upscalers/VkGLInterop.h"
+#include "Renderer/Upscalers/DLSSUpscaler.h"
+#include "Renderer/GraphicsAPIs/OpenGL/OpenGLShader.h"
 #include "Renderer/RHI/RendererAPI.h"
 
 #ifdef CQ_PLATFORM_LINUX
@@ -6050,6 +6053,61 @@ namespace Conqueror::Editor
             };
             if (a.size() < 2) { err = "gpu simulate|expect_aa|expect_upscaler|self_test|self_test_done|expect_report|report_has_no ..."; return false; }
             const std::string sub = a[1];
+            if (sub == "expect_shaders_ok")
+            {
+                // Çizim gölgelendiricilerinin hepsi bu arka uçta bağlandı mı (arka ucun bilinen eksikleri hariç: hesaplama gölgelendiricisi,
+                // çok örnekli doku). Metal'de PBR / Terrain 16 örnekleyici sınırını aşıp yalnız gökyüzü çiziliyordu
+                std::string bad;
+                for (const auto& [name, reason] : GetShaderFailures())
+                {
+                    const bool known = reason.find("Only vertex and fragment shaders") != std::string::npos ||
+                                       reason.find("sampler2DMS") != std::string::npos || reason.find("Multisample textures") != std::string::npos ||
+                                       reason.find("compute") != std::string::npos || reason.find("Compute") != std::string::npos;
+                    Automation::Report(std::string("SHADER ") + (known ? "unsupported here: " : "FAILED: ") + name + " (" + reason.substr(0, 160) + ")");
+                    if (!known)
+                        bad += (bad.empty() ? "" : ", ") + name;
+                }
+                if (!bad.empty()) { err = "shaders failed: " + bad; return false; }
+                return true;
+            }
+            if (sub == "expect_dlss_rtx")
+            {
+                // Benzetilen RTX'te kural: DLSS eklentisi derlendiyse seçilebilir, derlenmediyse "eklenti yok" nedeniyle gri
+                const AntiAliasing::Availability av = AntiAliasing::GetUpscalerAvailability(UpscalerMode::DLSS);
+                Automation::Report(std::string("DLSS on simulated RTX: ") + (av.Available ? "available" : av.Reason));
+                const bool ok = DLSSUpscaler::IsCompiled() ? av.Available
+                                                           : (!av.Available && std::string(av.Reason).find("optional NVIDIA DLSS plugin") != std::string::npos);
+                if (!ok) err = av.Available ? "available without the plugin" : std::string("reason is: ") + av.Reason;
+                return ok;
+            }
+            if (sub == "dlss_probe")
+            {
+                // gpu dlss_probe [expect text]: üretici denetimini atlayıp NGX'i doğrudan başlatmayı dener (NVIDIA olmayan kartta çökmeden
+                // nedeni vermeli; RTX'te DLSS'in gerçekten kullanılabildiğini söyler)
+                std::string reason;
+                const bool available = DLSSUpscaler::IsAvailable(reason);
+                Automation::Report(std::string("DLSS ") + (DLSSUpscaler::IsCompiled() ? "plugin built, " : "plugin not built, ") +
+                                   (available ? "available" : "not available: " + reason));
+                std::string text;
+                for (size_t i = 2; i < a.size(); ++i)
+                    text += (text.empty() ? "" : " ") + a[i];
+                if (!text.empty() && reason.find(text) == std::string::npos && !available) { err = "reason is: " + reason; return false; }
+                return true;
+            }
+            if (sub == "interop_test")
+            {
+                // gpu interop_test: OpenGL <-> Vulkan görüntü paylaşımı (DLSS / XeSS köprüsü) bu GPU'da uçtan uca çalışıyor mu
+#ifdef CQ_VULKAN_ENABLED
+                std::string report;
+                const bool ok = VkGLInterop::SelfTest(report);
+                Automation::Report("INTEROP " + report);
+                if (!ok) err = report;
+                return ok;
+#else
+                err = "Vulkan is not part of this build";
+                return false;
+#endif
+            }
             if (sub == "expect_backend" && a.size() > 2)
             {
                 // gpu expect_backend <OpenGL|Vulkan|Metal|...>: editörün gerçekten o grafik API'siyle çizdiği (CI: macOS'ta Metal)

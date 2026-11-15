@@ -3,6 +3,7 @@
 #include "Core/Logging/Log.h"
 #include "GraphicsAPIs/OpenGL/GLProfile.h"
 #include "RHI/RendererAPI.h"
+#include "Upscalers/DLSSUpscaler.h"
 
 #include <glad/glad.h>
 
@@ -146,16 +147,25 @@ namespace Conqueror::AntiAliasing
         }
 
         // Karar sırası kartın kendisine sorulanlarla: üretici, RTX (tensor çekirdeği), NVIDIA'nın NGX çalışma zamanı, motor tümleştirmesi
-        const char* DLSSReason(const Caps& c)
+        // Karar sırası kartın kendisine sorulanlarla: üretici, RTX (tensor çekirdeği), NVIDIA'nın NGX çalışma zamanı, DLSS eklentisi
+        // derlenmiş mi, son olarak NGX'in kendi yanıtı (SuperSampling.Available)
+        Availability DLSSAvailability(const Caps& c)
         {
             if (!c.NVIDIA)
-                return Intern("Requires an NVIDIA RTX GPU (tensor cores); this GPU is " + c.Renderer + ".");
+                return { false, Intern("Requires an NVIDIA RTX GPU (tensor cores); this GPU is " + c.Renderer + ".") };
             if (!c.NVIDIARTX)
-                return Intern("Requires an NVIDIA RTX GPU with tensor cores (GeForce RTX 20 series or newer); " + c.Renderer + " has none.");
+                return { false, Intern("Requires an NVIDIA RTX GPU with tensor cores (GeForce RTX 20 series or newer); " + c.Renderer + " has none.") };
             if (!c.NGXRuntime)
-                return "This RTX GPU can run DLSS, but the NVIDIA NGX runtime that loads it was not found: update the NVIDIA driver.";
-            return "This RTX GPU and its NGX runtime can run DLSS, but this engine build does not include the NVIDIA DLSS SDK integration yet "
-                   "(NGX runs on Vulkan / Direct3D).";
+                return { false, "This RTX GPU can run DLSS, but the NVIDIA NGX runtime that loads it was not found: update the NVIDIA driver." };
+            if (!DLSSUpscaler::IsCompiled())
+                return { false, "This RTX GPU and its NGX runtime can run DLSS, but this engine build does not include the optional NVIDIA DLSS "
+                                "plugin (Tools/DLSS/fetch-dlss-sdk.sh, then build with -DCQ_DLSS_SDK_DIR)." };
+            if (!c.Simulated.empty())
+                return {};   // benzetilen GPU: gerçek NGX'e sorulmaz (çizim gerçek GPU'nun karşılığıyla)
+            std::string reason;
+            if (!DLSSUpscaler::IsAvailable(reason))
+                return { false, Intern(reason) };
+            return {};
         }
         const char* XeSSReason(const Caps& c)
         {
@@ -366,7 +376,7 @@ namespace Conqueror::AntiAliasing
                     return { false, "4x MSAA is not supported." };
                 return {};
             case M::DLAA:
-                return { false, DLSSReason(c) };
+                return DLSSAvailability(c);
             case M::XeSSAA:
                 return { false, XeSSReason(c) };
             case M::TSRAA:
@@ -452,7 +462,7 @@ namespace Conqueror::AntiAliasing
     {
         switch (mode)
         {
-            case U::DLSS:    return { false, DLSSReason(c) };
+            case U::DLSS:    return DLSSAvailability(c);
             case U::XeSS:    return { false, XeSSReason(c) };
             case U::MetalFX: return { false, MetalFXReason(c) };
             case U::PSSR:    return { false, kPSSRReason };

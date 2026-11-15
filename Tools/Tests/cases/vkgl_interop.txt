@@ -1,0 +1,9 @@
+# template: basic3d
+# 235: DLSS / XeSS köprüsü: OpenGL ile çizen motor, GL ile aynı GPU'da açılan Vulkan aygıtıyla görüntü paylaşır (bellek + semafor).
+# GL'in yazdığı desen Vulkan'da büyütülür, GL geri okur; dört rengin dördü de doğru olmalı (her Vulkan + GL_EXT_memory_object GPU'sunda)
+wait 40
+gpu interop_test
+# DLSS: NGX'i doğrudan başlatmak NVIDIA olmayan kartta çökmez, kullanılamaz nedenini verir (eklentisiz derlemede: eklenti yok)
+gpu dlss_probe
+gpu interop_test
+quit

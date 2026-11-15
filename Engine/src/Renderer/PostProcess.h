@@ -10,7 +10,7 @@
 #include <memory>
 #include <vector>
 
-namespace Conqueror { class FSR2Upscaler; }
+namespace Conqueror { class FSR2Upscaler; class DLSSUpscaler; }
 
 namespace Conqueror
 {
@@ -178,6 +178,11 @@ namespace Conqueror
         glm::mat4 m_FinalInvViewProj{ 1.0f };
         // AMD FSR 2 (Upscaling > FSR 2, Anti-Aliasing > FSR AA): bağlam, tam ekran hareket vektörleri, çıktı ve kamera bilgisi
         std::unique_ptr<FSR2Upscaler> m_FSR2;
+        // NVIDIA DLSS / DLAA (isteğe bağlı eklenti, Upscalers/DLSSUpscaler): FSR 2 ile aynı girdiler
+        std::unique_ptr<DLSSUpscaler> m_DLSS;
+        RenderTarget m_DLSSOutput;
+        bool m_UseDLSS = false;
+        bool m_DLSSValid = false;
         RenderTarget m_MotionVectors;
         RenderTarget m_FSR2Reactive;    // FSR 2 tepki maskesi: m_Reactive + hareket eden nesnelerin gölge hacimleri (R8)
         RenderTarget m_FSR2PrevShadow;  // önceki karenin güneş gölgesi (FSR 2 tepki maskesi: gölgesi değişen pikseller)

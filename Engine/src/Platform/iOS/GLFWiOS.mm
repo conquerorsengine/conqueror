@@ -793,6 +793,7 @@ extern "C"
     GLFWcharmodsfun glfwSetCharModsCallback(GLFWwindow*, GLFWcharmodsfun) { return nullptr; }
     GLFWmonitorfun glfwSetMonitorCallback(GLFWmonitorfun) { return nullptr; }
     int glfwVulkanSupported(void) { return GLFW_FALSE; }
+    int glfwCreateWindowSurface(void*, GLFWwindow*, const void*, void*) { return -7; }   // VK_ERROR_EXTENSION_NOT_PRESENT: Vulkan yok
     int glfwExtensionSupported(const char*) { return GLFW_FALSE; }
 }
 

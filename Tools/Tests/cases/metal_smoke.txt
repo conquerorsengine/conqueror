@@ -1,13 +1,14 @@
 # template: basic3d
 # requires: CQ_TEST_METAL
 # env: CQ_RENDERER=metal
-# 35: Metal arka ucu (macOS CI): editör Metal ile açılır (OpenGL'e düşmez), Game görünümü 3B şablonu çizer (siyah / boş değil),
+# 35: Metal arka ucu (macOS CI): editör Metal ile açılır (OpenGL'e düşmez), çizim gölgelendiricilerinin hepsi bağlanır (PBR, Terrain, 2B), Game görünümü 3B şablonu çizer (siyah / boş değil),
 # bir kare sonra görüntü oturmuş olur
 wait 60
 gpu expect_backend Metal
 focus Game
 wait 90
 game_region 0.1 0.1 0.9 0.9 lum mean >30
+gpu expect_shaders_ok
 game_region_change mark 0.1 0.1 0.9 0.9
 wait 30
 game_region_change expect 0.1 0.1 0.9 0.9 <2

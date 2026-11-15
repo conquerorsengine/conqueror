@@ -1241,7 +1241,15 @@ namespace Conqueror::Editor
             if (!safe(dataDir.string()) || !safe(app.string()))
                 return fail("The output folder path must not contain quotes");
             const auto& ip = o.Config.Player.IOS;
-            const std::string bundleId = ip.BundleIdentifier.empty() ? DefaultIdentifier(o.Config) : ip.BundleIdentifier;
+            std::string bundleId = ip.BundleIdentifier;
+            if (bundleId.empty())
+            {
+                // Varsayılan kimlik (com.<şirket>.<ürün>): iOS paket kimliğinde alt çizgi ve boşluk olamaz
+                bundleId = DefaultIdentifier(o.Config);
+                for (char& c : bundleId)
+                    if (!std::isalnum((unsigned char)c) && c != '.')
+                        c = '-';
+            }
             if (bundleId.find('.') == std::string::npos ||
                 !std::all_of(bundleId.begin(), bundleId.end(), [](char c) { return std::isalnum((unsigned char)c) || c == '.' || c == '-'; }))
                 return fail("iOS bundle identifier \"" + bundleId + "\" is not valid (letters, digits, - and at least one dot, e.g. com.company.game).");

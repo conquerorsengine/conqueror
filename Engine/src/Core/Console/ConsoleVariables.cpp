@@ -1,6 +1,7 @@
 #include "ConsoleVariables.h"
 #include "Renderer/AntiAliasing.h"
 #include "Renderer/UpscalerSelfTest.h"
+#include "Renderer/Upscalers/VkGLInterop.h"
 #include "Core/Input/InputGlyphs.h"
 #include "UI/UISystem.h"
 #include "Renderer/Utilities/Renderer3D/ClusterRenderer.h"
@@ -603,6 +604,14 @@ namespace Conqueror
                 return std::string("Already running: ") + UpscalerSelfTest::GetStatus();
             return std::string("Upscaler self-test started");
         });
+#ifdef CQ_VULKAN_ENABLED
+        RegisterCommand("r.VkGLInteropTest", "Test OpenGL <-> Vulkan image sharing (the bridge used by DLSS / XeSS with the OpenGL backend)",
+                        [](const std::vector<std::string>&) {
+            std::string report;
+            VkGLInterop::SelfTest(report);
+            return report;
+        });
+#endif
         RegisterCommand("r.ResetOverrides", "Return every r.* variable to the scene's own settings", [](const std::vector<std::string>&) {
             ConsoleSystem::ClearOverrides();
             return std::string("Render overrides cleared.");
