@@ -197,6 +197,15 @@ jobs:
           name: ios-simulator-screenshot
           path: ios_simulator.png
           if-no-files-found: ignore
+      - name: Status indicator test (the game's icon is really in the macOS menu bar; tooltip, icon and menu come from the component, a click and a menu item reach it)
+        # Runs after a failed Metal / iOS step too; its own failure does not stop the steps above
+        if: ${{ !cancelled() }}
+        timeout-minutes: 20
+        run: |
+          CQ_TEST_MACOS_TRAY=1 python3 Tools/Tests/regression.py status_indicator_macos && exit 0
+          cat ~/.cache/cq-build/regression/_Reg_status_indicator_macos.txt.result.txt || true
+          grep -E "Status Indicator|ERROR|CRITICAL" build/bin/Conqueror.log | tail -40 || true
+          exit 1
 
   ios:
     name: iOS / iPadOS player (${{ matrix.sdk }}, Xcode)

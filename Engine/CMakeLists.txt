@@ -283,6 +283,9 @@ if(APPLE)
                               "-framework CoreFoundation")
     else()
         target_link_libraries(${PROJECT_NAME} PUBLIC "-framework Metal" "-framework QuartzCore" "-framework Cocoa")
+        # Godot StatusIndicator: menü çubuğu simgesi (NSStatusItem); iOS'ta menü çubuğu yok, orada derlenmez
+        target_sources(${PROJECT_NAME} PRIVATE src/Scene/StatusIndicatorMac.mm)
+        set_source_files_properties(src/Scene/StatusIndicatorMac.mm PROPERTIES COMPILE_FLAGS "-fobjc-arc" SKIP_PRECOMPILE_HEADERS ON)
     endif()
     # MetalFX (Upscaling > MetalFX): macOS 13 / iOS 16 ve sonrası; zayıf bağlantı, eski sistemde oyun açılır, MetalFX gri kalır
     # iOS Simülatörü SDK'sında MetalFX yok (MetalFXUpscaler.mm orada yer tutucu derler)
