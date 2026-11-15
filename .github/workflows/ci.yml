@@ -47,7 +47,15 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y ninja-build clang lld
+        run: |
+          sudo apt-get update && sudo apt-get install -y ninja-build
+          # Debian sid / ports sysroots (loong64, hurd-amd64) ship GCC 16 headers that Ubuntu 24.04's clang 18 cannot parse: clang 21
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc > /dev/null
+          echo "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-21 main" | sudo tee /etc/apt/sources.list.d/llvm-21.list
+          sudo apt-get update && sudo apt-get install -y clang-21 lld-21
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/ld.lld-21 /usr/local/bin/ld.lld
       - name: ARM64 sysroot (Debian arm64 packages)
         run: Tools/Linux/make-arm64-sysroot.sh $HOME/arm64-sysroot
       - name: Configure
@@ -67,7 +75,15 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y ninja-build clang lld
+        run: |
+          sudo apt-get update && sudo apt-get install -y ninja-build
+          # Debian sid / ports sysroots (loong64, hurd-amd64) ship GCC 16 headers that Ubuntu 24.04's clang 18 cannot parse: clang 21
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc > /dev/null
+          echo "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-21 main" | sudo tee /etc/apt/sources.list.d/llvm-21.list
+          sudo apt-get update && sudo apt-get install -y clang-21 lld-21
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/ld.lld-21 /usr/local/bin/ld.lld
       - name: Sysroot (Debian ${{ matrix.arch }} packages)
         run: Tools/Linux/make-linux-sysroot.sh ${{ matrix.arch }} $HOME/sysroot
       - name: Configure
@@ -203,7 +219,10 @@ jobs:
           prepare: |
             /usr/sbin/pkg_add pkgin || true
             pkgin -y install cmake ninja-build
-            pkgin -y install libX11 libXrandr libXinerama libXcursor libXi libXext xorgproto || true
+            # The VM image has no X11 sets: native X11 (/usr/X11R7) comes from the release's xbase + xcomp sets
+            for set in xbase xcomp; do
+              ftp -o - "https://cdn.netbsd.org/pub/NetBSD/NetBSD-$(uname -r)/$(uname -m)/binary/sets/$set.tar.xz" | tar -xJpf - -C /
+            done
           run: |
             cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCQ_RUNTIME_ONLY=ON "-DCMAKE_PREFIX_PATH=/usr/X11R7;/usr/pkg"
             cmake --build build --target ConquerorRuntime
@@ -214,7 +233,15 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y ninja-build clang lld
+        run: |
+          sudo apt-get update && sudo apt-get install -y ninja-build
+          # Debian sid / ports sysroots (loong64, hurd-amd64) ship GCC 16 headers that Ubuntu 24.04's clang 18 cannot parse: clang 21
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc > /dev/null
+          echo "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-21 main" | sudo tee /etc/apt/sources.list.d/llvm-21.list
+          sudo apt-get update && sudo apt-get install -y clang-21 lld-21
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/ld.lld-21 /usr/local/bin/ld.lld
       - name: GNU/Hurd sysroot (Debian hurd-amd64 packages)
         run: Tools/Hurd/make-sysroot.sh $HOME/hurd-sysroot
       - name: Configure

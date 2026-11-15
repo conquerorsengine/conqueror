@@ -6,7 +6,8 @@
 // MODIFIED by Conqueror's Engine: <malloc.h> and malloc_usable_size exist only on glibc / bionic / Windows (FreeBSD: malloc_np.h,
 // macOS: malloc_size, OpenBSD / NetBSD: none, so the requested size is reported as the block size)
 #if defined(__APPLE__)
-#include <malloc/malloc.h>
+// <malloc/malloc.h> pulls in mach headers that need uuid_t (missing in strict -std=c++17 builds): only malloc_size is used
+extern "C" size_t malloc_size(const void* ptr);
 #elif defined(__FreeBSD__) || defined(__DragonFly__)
 #include <malloc_np.h>
 #elif defined(__OpenBSD__) || defined(__NetBSD__)

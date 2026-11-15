@@ -6608,7 +6608,7 @@ namespace Conqueror::Editor
         // spawn_asset <yol> [x y z]: varlığı sahneye bırak (Viewport'a / Hierarchy'ye sürükleyip bırakmakla aynı kod)
         Automation::RegisterCommand("spawn_asset", [this](const Args& a, std::string& err) {
             if (a.size() < 2 || !m_ActiveScene) { err = "spawn_asset <path> [x y z]"; return false; }
-            const std::string path = AssetUI::Resolve(a[1]);
+            const std::string path = AssetUI::Resolve(a[1]).string();
             glm::vec3 pos(0.0f);
             const bool hasPos = a.size() >= 5;
             if (hasPos)
