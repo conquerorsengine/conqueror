@@ -20,6 +20,10 @@
 #include <algorithm>
 #include <cctype>
 #include <cstring>
+#include <cstdio>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace Conqueror::Editor
 {
@@ -1130,6 +1134,30 @@ namespace Conqueror::Editor
         // menüler kapanır ve yük her karede dış kaynak olarak (UpdateCreateDrag) bırakılana kadar sürer
         std::string s_PressedEntry, s_PressedLabel, s_DraggingEntry, s_DraggingLabel;
 
+        // Tek giriş: tıklayınca oluşturur; basılı tutup sürükleyince Viewport'a bırakılabilir (Unreal Place Actors gibi)
+        Entity DrawCreateItem(const CreateNode& c, const char* label, Scene* scene, Entity parent)
+        {
+            Entity created;
+            if (ImGui::MenuItem(label) && s_DraggingEntry.empty())
+                created = c.Create(scene, parent);
+            // Viewport'a sürükleyip bırak (Unreal Place Actors gibi): bırakılan yüzeye oluşturulur
+            if (c.Placement != HierarchyPanel::CreatePlacement::None)
+            {
+                if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+                {
+                    s_PressedEntry = c.Id;
+                    s_PressedLabel = c.Label;
+                }
+                if (s_PressedEntry == c.Id && s_DraggingEntry.empty() && ImGui::IsMouseDragging(ImGuiMouseButton_Left))
+                {
+                    s_DraggingEntry = c.Id;
+                    s_DraggingLabel = c.Label;
+                    ImGui::ClosePopupsExceptModals();
+                }
+            }
+            return created;
+        }
+
         Entity DrawCreateNode(const CreateNode& node, Scene* scene, Entity parent)
         {
             Entity created;
@@ -1148,23 +1176,8 @@ namespace Conqueror::Editor
                         }
                         break;
                     case CreateNode::Kind::Item:
-                        if (ImGui::MenuItem(c.Label.c_str()) && s_DraggingEntry.empty())
-                            created = c.Create(scene, parent);
-                        // Viewport'a sürükleyip bırak (Unreal Place Actors gibi): bırakılan yüzeye oluşturulur
-                        if (c.Placement != HierarchyPanel::CreatePlacement::None)
-                        {
-                            if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-                            {
-                                s_PressedEntry = c.Id;
-                                s_PressedLabel = c.Label;
-                            }
-                            if (s_PressedEntry == c.Id && s_DraggingEntry.empty() && ImGui::IsMouseDragging(ImGuiMouseButton_Left))
-                            {
-                                s_DraggingEntry = c.Id;
-                                s_DraggingLabel = c.Label;
-                                ImGui::ClosePopupsExceptModals();
-                            }
-                        }
+                        if (Entity e = DrawCreateItem(c, c.Label.c_str(), scene, parent))
+                            created = e;
                         break;
                 }
             }
@@ -1224,12 +1237,108 @@ namespace Conqueror::Editor
         }
     }
 
+    namespace
+    {
+        // Arama için düz liste: her giriş ve menü yolu ("3D Object", "Light" ...)
+        void CollectCreateItems(const CreateNode& node, const std::string& path, std::vector<std::pair<const CreateNode*, std::string>>& out)
+        {
+            for (const auto& c : node.Children)
+            {
+                if (c.Type == CreateNode::Kind::Item)
+                    out.emplace_back(&c, path);
+                else if (c.Type == CreateNode::Kind::Menu)
+                    CollectCreateItems(c, path.empty() ? PlainLabel(c.Label) : path + " / " + PlainLabel(c.Label), out);
+            }
+        }
+
+        std::string LowerText(std::string s)
+        {
+            std::transform(s.begin(), s.end(), s.begin(), [](unsigned char ch) { return (char)std::tolower(ch); });
+            return s;
+        }
+
+        // Menü penceresi başına arama metni (GameObject menüsü ve içindeki Create Child aynı anda açık olabilir)
+        std::unordered_map<ImGuiID, std::string>& CreateSearchTexts()
+        {
+            static auto& m = *new std::unordered_map<ImGuiID, std::string>();
+            return m;
+        }
+    }
+
     Entity HierarchyPanel::DrawCreateMenuItems(Scene* scene, Entity parent)
     {
         if (!scene)
             return {};
         const CreateNode tree = BuildCreateTree();
-        return DrawCreateNode(tree, scene, parent);
+
+        // Arama (Unity Add Component / Godot "Create New Node" gibi): menü açılınca imleç arama kutusunda, yazınca tüm girişler
+        // menü yollarıyla düz liste olur; Enter ilk sonucu oluşturur. Kutu boşken olağan menü ağacı
+        const ImGuiID id = ImGui::GetID("##CreateSearch");
+        std::string& query = CreateSearchTexts()[id];
+        if (ImGui::IsWindowAppearing())
+        {
+            query.clear();
+            ImGui::SetKeyboardFocusHere();
+        }
+        char buffer[128];
+        std::snprintf(buffer, sizeof(buffer), "%s", query.c_str());
+        ImGui::SetNextItemWidth(std::max(ImGui::GetContentRegionAvail().x, 220.0f));
+        const bool enter = ImGui::InputTextWithHint("##CreateSearch", ICON_FA_MAGNIFYING_GLASS "  Search", buffer, sizeof(buffer),
+                                                    ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+        query = buffer;
+        if (query.empty())
+        {
+            ImGui::Separator();
+            return DrawCreateNode(tree, scene, parent);
+        }
+
+        std::vector<std::pair<const CreateNode*, std::string>> all;
+        CollectCreateItems(tree, "", all);
+        const std::string q = LowerText(query);
+        Entity created;
+        int shown = 0;
+        ImGui::Separator();
+        for (const auto& [node, path] : all)
+        {
+            const std::string plain = PlainLabel(node->Label);
+            if (LowerText(plain).find(q) == std::string::npos && LowerText(path + " / " + plain).find(q) == std::string::npos)
+                continue;
+            if (enter && shown == 0 && s_DraggingEntry.empty())
+            {
+                created = node->Create(scene, parent);
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::PushID(shown);
+            if (Entity e = DrawCreateItem(*node, node->Label.c_str(), scene, parent))
+                created = e;
+            ImGui::PopID();
+            if (!path.empty())
+            {
+                ImGui::SameLine();
+                ImGui::TextDisabled("%s", path.c_str());
+            }
+            ++shown;
+        }
+        if (shown == 0)
+            ImGui::TextDisabled("No results for \"%s\"", query.c_str());
+        return created;
+    }
+
+    // Otomasyon / testler: arama kutusunun sonuçları (menü çizilmeden), yalnız etiketler
+    std::vector<std::string> HierarchyPanel::SearchCreateEntries(const std::string& query)
+    {
+        const CreateNode tree = BuildCreateTree();
+        std::vector<std::pair<const CreateNode*, std::string>> all;
+        CollectCreateItems(tree, "", all);
+        std::vector<std::string> out;
+        const std::string q = LowerText(query);
+        for (const auto& [node, path] : all)
+        {
+            const std::string plain = PlainLabel(node->Label);
+            if (LowerText(plain).find(q) != std::string::npos || LowerText(path + " / " + plain).find(q) != std::string::npos)
+                out.push_back(path.empty() ? plain : path + " / " + plain);
+        }
+        return out;
     }
 
     void HierarchyPanel::UpdateCreateDrag()

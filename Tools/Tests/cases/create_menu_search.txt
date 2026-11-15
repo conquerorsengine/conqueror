@@ -1,0 +1,11 @@
+# template: empty
+# 248: Create menüsünde arama (Unity Add Component / Godot Create New Node gibi): yazınca tüm girişler menü yollarıyla düz liste,
+# büyük / küçük harf fark etmez, menü adıyla da bulunur; bulunamayınca boş
+wait 40
+create_search cube expect >=1 first 3D Object / Cube
+create_search CUBE expect >=1 first 3D Object / Cube
+create_search directional expect >=1 first Light / Directional Light
+create_search camera expect >=1
+create_search 3d object expect >=6
+create_search zzzz-no-such-entry expect 0
+quit
