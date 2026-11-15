@@ -2100,6 +2100,11 @@
             for (const auto& f : g_Functions)
                 if (std::strcmp(f.Name, name) == 0)
                     return f.Fn;
+#if defined(__EMSCRIPTEN__)
+            // WebAssembly dolaylı çağrıda imza denetler: imzası farklı genel saplama sayfayı durdururdu. Gösterici boş kalır,
+            // katman kurulunca GLProfile::InstallMissingStubs imzası aynı saplamaları koyar
+            return nullptr;
+#endif
             // Uygulanmamış: adını hatırlayan saplama
             for (size_t i = 0; i < g_StubCount; ++i)
                 if (std::strcmp(g_StubNames[i], name) == 0)

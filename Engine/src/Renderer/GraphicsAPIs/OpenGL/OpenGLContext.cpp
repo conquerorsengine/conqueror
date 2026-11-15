@@ -35,7 +35,8 @@ namespace Conqueror
             CQ_CORE_ERROR("Conqueror requires OpenGL 3.3+ or OpenGL ES 3.0+ (this system has {0})", profile.Description);
             return false;
         }
-        return status != 0;
+        // WebGL: glad'ın ilk yüklemesi sürüm metnini ayrıştıramayıp 0 döner; ES profili işlevleri adla yeniden yükledi
+        return status != 0 || (profile.ES && glad_glGetString != nullptr && glad_glDrawElements != nullptr);
     }
 
     void OpenGLContext::SwapBuffers()

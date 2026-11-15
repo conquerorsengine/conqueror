@@ -63,6 +63,12 @@ namespace Conqueror
 
         // vulkanRelaxed: Vulkan SPIR-V üretir; gevşek uniform'lar "CQ_Globals" bloğuna toplanır
         // (Vulkan doğrudan, DirectX için HLSL, Metal için MSL bu SPIR-V'den üretilir)
+        // GL çeviri katmanlarının gevşek Vulkan derlemesi: WebGPU (Tint) en çok SPIR-V 1.3 / Vulkan 1.1 kabul eder
+        static void SetRelaxedTargetVulkan11(bool enabled);
+        // Aşama başına 16 doku sınırlı GPU (WebGPU varsayılanı, WebGL 2, birçok mobil GPU): CQ_TEXTURE_BUDGET_16 tanımlanır
+        // (PBR yansıtma probu / APV / dinamik GI / düzlemsel yansıma örneklemez). OpenGL'de kendiliğinden (GL_MAX_TEXTURE_IMAGE_UNITS)
+        static void SetTextureBudget16(bool enabled);
+        static bool IsTextureBudget16();
         static bool CompileToSPIRV(const std::map<ShaderStage, std::string>& sources, const std::string& name,
                                    std::map<ShaderStage, std::vector<uint32_t>>& outSpirv, std::string& errors, bool vulkanRelaxed = false);
         static bool CrossCompile(const std::vector<uint32_t>& spirv, const std::string& language, std::string& out, std::string& errors);

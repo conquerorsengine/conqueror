@@ -9,6 +9,9 @@
 #include "Core/ImGui/ImGuiLayer.h"
 
 #include <GLFW/glfw3.h>
+#if defined(__EMSCRIPTEN__)
+    #include <GLFW/emscripten_glfw3.h>
+#endif
 #include "stb_image.h"
 
 #include <algorithm>
@@ -199,6 +202,10 @@ namespace Conqueror
             }
         }
 
+#if defined(__EMSCRIPTEN__)
+        // Web: tuval sayfadaki kabının (#cq-container) boyunu ve ekranın piksel yoğunluğunu izler (Default / Full Window şablonları)
+        emscripten_glfw_make_canvas_resizable(m_Window, "#cq-container", nullptr);
+#endif
         glfwSetWindowUserPointer(m_Window, &m_Data);
         SetVSync(true);
 

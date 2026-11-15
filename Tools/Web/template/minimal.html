@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}}</title>
+<style>
+  html, body { margin: 0; background: #000; color: #ccc; font: 14px system-ui, sans-serif; }
+  #cq-container { position: relative; width: {{WIDTH}}px; height: {{HEIGHT}}px; max-width: 100vw; }
+  #canvas { display: block; width: 100%; height: 100%; outline: none; }
+  #cq-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  #cq-error { display: none; position: absolute; inset: 0; padding: 16px; color: #ffb4a8; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<div id="cq-container">
+  <canvas id="canvas" tabindex="-1"></canvas>
+  <div id="cq-loading"><span id="cq-status">Loading...</span></div>
+  <div id="cq-error"></div>
+</div>
+<script>
+  window.CQ_CONFIG = {{CONFIG}};
+  window.CQ_CONFIG.template = "minimal";
+</script>
+<script>
+{{LOADER}}
+</script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>{{TITLE}}</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #000; color: #ccc; font: 14px system-ui, sans-serif; }
+  #cq-container { position: fixed; inset: 0; }
+  #canvas { display: block; width: 100%; height: 100%; outline: none; touch-action: none; }
+  #cq-loading { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+  #cq-progress { width: 40%; height: 6px; background: #333; border-radius: 3px; overflow: hidden; }
+  #cq-progress-bar { width: 0; height: 100%; background: #e0a526; }
+  #cq-error { display: none; position: absolute; inset: 0; padding: 24px; color: #ffb4a8; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<div id="cq-container">
+  <canvas id="canvas" tabindex="-1"></canvas>
+  <div id="cq-loading"><div id="cq-progress"><div id="cq-progress-bar"></div></div><div id="cq-status">Loading...</div></div>
+  <div id="cq-error"></div>
+</div>
+<script>
+  window.CQ_CONFIG = {{CONFIG}};
+  window.CQ_CONFIG.template = "fullwindow";
+</script>
+<script>
+{{LOADER}}
+</script>
+</body>
+</html>

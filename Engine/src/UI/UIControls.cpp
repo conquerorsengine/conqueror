@@ -31,6 +31,8 @@
     #include <shellapi.h>
 #elif defined(__ANDROID__)
     // Android: tarayıcı Intent ile açılır (NativeActivity'de JNI gerekir); şimdilik bağlantı yalnız olay üretir
+#elif defined(__EMSCRIPTEN__)
+    #include <emscripten/em_asm.h>
 #else
     #include <spawn.h>
     #include <sys/wait.h>
@@ -723,6 +725,11 @@ namespace Conqueror
             ShellExecuteA(nullptr, "open", uri.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
 #elif defined(__ANDROID__)
             (void)uri;
+#elif defined(__EMSCRIPTEN__)
+            // Web: yeni sekmede (yalnız http / https / mailto; "javascript:" adresleri sayfada kod çalıştıramasın)
+            if (uri.rfind("http://", 0) != 0 && uri.rfind("https://", 0) != 0 && uri.rfind("mailto:", 0) != 0)
+                return;
+            MAIN_THREAD_EM_ASM({ window.open(UTF8ToString($0), "_blank", "noopener"); }, uri.c_str());
 #else
     #if defined(__APPLE__)
             const char* tool = "open";

@@ -52,6 +52,7 @@ namespace Conqueror
             case Backend::Direct3D11: return "Direct3D 11";
             case Backend::Direct3D12: return "Direct3D 12";
             case Backend::Metal: return "Metal";
+            case Backend::WebGPU: return "WebGPU";
             default: return "OpenGL";
         }
     }
@@ -72,6 +73,9 @@ namespace Conqueror
 #endif
 #ifdef CQ_METAL_ENABLED
             case Backend::Metal: return true;
+#endif
+#ifdef CQ_WEBGPU_ENABLED
+            case Backend::WebGPU: return true;
 #endif
             default: return false;
         }
@@ -94,6 +98,11 @@ namespace Conqueror
         if (n == "metal" || n == "mtl")
         {
             out = Backend::Metal;
+            return true;
+        }
+        if (n == "webgpu" || n == "wgpu")
+        {
+            out = Backend::WebGPU;
             return true;
         }
         if (n == "direct3d12" || n == "direct3d 12" || n == "d3d12" || n == "dx12")
@@ -124,6 +133,8 @@ namespace Conqueror
                 chosen = Backend::OpenGL, decided = true;
             else if (std::strcmp(a, "--metal") == 0)
                 chosen = Backend::Metal, decided = true;
+            else if (std::strcmp(a, "--webgpu") == 0)
+                chosen = Backend::WebGPU, decided = true;
             else if (std::strcmp(a, "--d3d12") == 0 || std::strcmp(a, "--dx12") == 0)
                 chosen = Backend::Direct3D12, decided = true;
             else if (std::strcmp(a, "--d3d11") == 0 || std::strcmp(a, "--dx11") == 0 || std::strcmp(a, "--directx") == 0)

@@ -1,4 +1,5 @@
 #include "CQSNativeBridge.h"
+#include "Core/Utils/Threads.h"
 #include "CQSVM.h"
 #include <ctime>
 #include <thread>
@@ -379,13 +380,21 @@ namespace Conqueror::CQS
             successCount++;
         };
         
-        std::thread t1(threadFunc);
-        std::thread t2(threadFunc);
-        std::thread t3(threadFunc);
-        
-        t1.join();
-        t2.join();
-        t3.join();
+        if constexpr (Threads::Available)
+        {
+            std::thread t1(threadFunc);
+            std::thread t2(threadFunc);
+            std::thread t3(threadFunc);
+            t1.join();
+            t2.join();
+            t3.join();
+        }
+        else
+        {
+            threadFunc();   // Web (Threads kapalı): aynı sınama sırayla
+            threadFunc();
+            threadFunc();
+        }
         
         if (successCount == 3) {
             return Value::MakeString("Multi-Threading Testi Basarili! Cokme Yasanmadi.");

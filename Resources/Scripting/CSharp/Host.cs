@@ -12,17 +12,20 @@ using System.Text.Json;
 
 namespace Conqueror.Hosting
 {
-    // C++ tarafındaki CQNativeValue ile birebir aynı (64 bayt)
-    [StructLayout(LayoutKind.Sequential)]
+    // C++ tarafındaki CQNativeValue ile birebir aynı (64 bayt; Str 32 bit sistemlerde de 8 baytlık yuvada)
+    [StructLayout(LayoutKind.Explicit, Size = 64)]
     public unsafe struct NativeValue
     {
-        public int Type;      // 0 null, 1 bool, 2 int, 3 float, 4 string, 5 vector, 6 json
-        public int Dim;
-        public long I;
-        public double X, Y, Z, W;
-        public byte* Str;
-        public int StrLen;
-        public int Pad;
+        [FieldOffset(0)] public int Type;      // 0 null, 1 bool, 2 int, 3 float, 4 string, 5 vector, 6 json
+        [FieldOffset(4)] public int Dim;
+        [FieldOffset(8)] public long I;
+        [FieldOffset(16)] public double X;
+        [FieldOffset(24)] public double Y;
+        [FieldOffset(32)] public double Z;
+        [FieldOffset(40)] public double W;
+        [FieldOffset(48)] public byte* Str;
+        [FieldOffset(56)] public int StrLen;
+        [FieldOffset(60)] public int Pad;
     }
 
     sealed class ScriptLoadContext : AssemblyLoadContext

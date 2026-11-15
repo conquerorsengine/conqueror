@@ -1,6 +1,7 @@
 #include "NetTransport.h"
 #include "Core/Logging/Log.h"
 
+#if defined(CQ_NETWORKING_ENABLED)
 #include <enet/enet.h>
 
 #include <unordered_map>
@@ -194,3 +195,14 @@ namespace Conqueror::Net
         return std::make_unique<ENetNetTransport>();
     }
 }
+#else
+// ENet derlenmemiş platform (Web): çok oyunculu oturum "taşıyıcı yok" hatasıyla açılmaz
+namespace Conqueror::Net
+{
+    std::unique_ptr<INetTransport> CreateENetTransport()
+    {
+        CQ_CORE_WARN("Networking: ENet (UDP) is not available on this platform");
+        return nullptr;
+    }
+}
+#endif

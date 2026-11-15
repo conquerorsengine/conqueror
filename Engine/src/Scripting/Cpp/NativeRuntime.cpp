@@ -1,4 +1,5 @@
 #include "Scripting/ScriptRuntime.h"
+#include "Core/Utils/Threads.h"
 #include "Scripting/NativeModules.h"
 #include "Scripting/DataAssets.h"
 #include "Scripting/NativeRegistry.h"
@@ -49,7 +50,12 @@ namespace Conqueror::Scripting
             int32_t Dim;
             int64_t I;
             double X, Y, Z, W;
-            const char* Str;
+            // 32 bit sistemlerde de 8 bayt (yapı her mimaride 64 bayt; i386 int64 / double'ı 4 bayta hizalar)
+            union
+            {
+                const char* Str;
+                uint64_t StrStorage;
+            };
             int32_t StrLen;
             int32_t Pad;
         };
@@ -1280,6 +1286,11 @@ namespace Conqueror::Scripting
             fs::path work = fs::temp_directory_path(ec) / "ConquerorEngine" / (std::string(m_Tool->Id()) + "-check");
             fs::create_directories(work, ec);
             std::vector<fs::path> sources = CollectSources();
+            if constexpr (!Threads::Available)
+            {
+                m_CheckPending = false;   // Web: yerel derleyici yok
+                return false;
+            }
             m_CheckThread = std::thread([this, hash, name, source, work, sources]() {
                 std::string log, matchFile;
                 m_Tool->Check(sources, name, source, work, log, matchFile);

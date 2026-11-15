@@ -47,7 +47,18 @@ elseif(RUNTIME_SOURCES)
 
     # Derlenmiş oyun taşınabilir olmalı: libEngine oyunun yanındaki lib/ klasöründen yüklenir
     # (build ağacındaki ../lib de çalışsın diye ikisi birden)
-    if(UNIX AND NOT APPLE)
+    if(EMSCRIPTEN)
+        # Web oyuncusu: conqueror.js + conqueror.wasm (Tools/Web/package_web.py oyun dosyalarını ve index.html'i ekler).
+        # Modül fabrikası createConqueror(): sayfa tuvali, oyun verisinin yüklenmesi ve ilerleme çubuğu sayfadadır
+        set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME conqueror SUFFIX ".js")
+        target_link_options(${PROJECT_NAME} PRIVATE
+            -sMODULARIZE=1 -sEXPORT_NAME=createConqueror -sENVIRONMENT=web,worker
+            -sEXPORTED_RUNTIME_METHODS=FS,ENV,IDBFS,callMain,addRunDependency,removeRunDependency
+            -sEXIT_RUNTIME=0)
+        if(CQ_WEB_THREADS)
+            target_link_options(${PROJECT_NAME} PRIVATE -sPTHREAD_POOL_SIZE=16 -sPTHREAD_POOL_SIZE_STRICT=0)
+        endif()
+    elseif(UNIX AND NOT APPLE)
         set_target_properties(${PROJECT_NAME} PROPERTIES
             BUILD_RPATH "\$ORIGIN/lib;\$ORIGIN/../lib"
             INSTALL_RPATH "\$ORIGIN/lib")

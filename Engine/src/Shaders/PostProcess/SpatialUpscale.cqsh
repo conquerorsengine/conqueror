@@ -16,6 +16,7 @@ void main()
 #version 450 core
 layout(location = 0) out vec4 FragColor;
 uniform sampler2D u_Source;
+#include "Include/GatherCompat.glsl"
 uniform vec2 u_OutOrigin;
 uniform vec2 u_OutSize;
 uniform vec2 u_InSize;

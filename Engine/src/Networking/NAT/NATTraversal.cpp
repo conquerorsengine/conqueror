@@ -1,6 +1,7 @@
 #include "NATTraversal.h"
 #include "Core/Logging/Log.h"
 
+#if defined(CQ_NAT_ENABLED)
 #include <miniupnpc.h>
 #include <upnpcommands.h>
 #include <upnperrors.h>
@@ -149,3 +150,16 @@ namespace Conqueror
         return std::string(m_LanAddress);
     }
 }
+#else
+// miniupnpc derlenmemiş platform (Web): UPnP port yönlendirme yok
+namespace Conqueror
+{
+    NATTraversal::NATTraversal() = default;
+    NATTraversal::~NATTraversal() = default;
+    bool NATTraversal::Discover() { return false; }
+    bool NATTraversal::OpenPort(uint16_t, uint16_t, const std::string&, const std::string&) { return false; }
+    bool NATTraversal::ClosePort(uint16_t, const std::string&) { return false; }
+    std::string NATTraversal::GetExternalIP() const { return {}; }
+    std::string NATTraversal::GetInternalIP() const { return {}; }
+}
+#endif

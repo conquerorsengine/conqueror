@@ -1,5 +1,6 @@
 #include "EnvironmentMap.h"
 #include "Renderer/RHI/Shader.h"
+#include "Renderer/RHI/RendererAPI.h"
 #include "Core/Logging/Log.h"
 
 #include <glad/glad.h>
@@ -227,7 +228,17 @@ namespace Conqueror
         return env;
     }
 
-    void EnvironmentMap::ComputeSH(uint32_t cubemapID, uint32_t resolution)
+    void EnvironmentMap::RetrySH() const
+    {
+        // Web + WebGPU: ilk okuma sıfır döner, istek kuyruğa girer; her çağrıda son tamamlanan sonuç okunur
+        auto* self = const_cast<EnvironmentMap*>(this);
+        if (self->ComputeSH(m_SHSource, m_SHResolution))
+            m_SHRetries = 0;
+        else if (--m_SHRetries == 0)
+            CQ_CORE_WARN("EnvironmentMap: sky read-back returned no data, ambient light (SH) stays black");
+    }
+
+    bool EnvironmentMap::ComputeSH(uint32_t cubemapID, uint32_t resolution)
     {
         // ~32px'lik mip seviyesini oku (difüz için fazlasıyla yeterli)
         int level = 0;
@@ -236,8 +247,12 @@ namespace Conqueror
 
         std::array<glm::vec3, 9> sh{};
         float weightSum = 0.0f;
+        bool anyData = false;
         std::vector<float> pixels((size_t)size * size * 4);
 
+        // Kare ortasında yeniden denenebilir (RetrySH): etkin birimin küp bağlantısı geri yüklenir
+        GLint prevCube = 0;
+        glGetIntegerv(GL_TEXTURE_BINDING_CUBE_MAP, &prevCube);
         glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapID);
         glPixelStorei(GL_PACK_ALIGNMENT, 1);
         for (int face = 0; face < 6; ++face)
@@ -257,6 +272,7 @@ namespace Conqueror
                     if (!std::isfinite(c.x) || !std::isfinite(c.y) || !std::isfinite(c.z))
                         continue;
                     c = glm::min(c, glm::vec3(64.0f)); // güneş gibi aşırı değerler SH'ı çınlatmasın
+                    anyData = anyData || c.x != 0.0f || c.y != 0.0f || c.z != 0.0f || p[3] != 0.0f;
 
                     float basis[9] = {
                         0.282095f,
@@ -271,13 +287,28 @@ namespace Conqueror
             }
         }
 
+        glBindTexture(GL_TEXTURE_CUBE_MAP, (GLuint)prevCube);
+#if defined(__EMSCRIPTEN__)
+        // Tarayıcıda WebGPU geri okuması eşzamansız: veri yoksa (tamamı sıfır) sonraki karelerde yeniden dene (en çok ~4 saniye)
+        if (!anyData && RendererAPI::GetBackend() == RendererAPI::Backend::WebGPU)
+        {
+            if (m_SHRetries == 0)
+            {
+                m_SHRetries = 240;
+                m_SHSource = cubemapID;
+                m_SHResolution = resolution;
+            }
+            return false;
+        }
+#endif
         if (weightSum <= 0.0f)
-            return;
+            return true;
         const float norm = 4.0f * glm::pi<float>() / weightSum;
         // Kosinüs lobu konvolüsyonu (Ramamoorthi & Hanrahan), sonra /π
         const float band[9] = { glm::pi<float>(), 2.094395f, 2.094395f, 2.094395f, 0.785398f, 0.785398f, 0.785398f, 0.785398f, 0.785398f };
         for (int i = 0; i < 9; ++i)
             m_SH[i] = sh[i] * norm * band[i] / glm::pi<float>();
+        return true;
     }
 
     void EnvironmentMap::Prefilter(uint32_t cubemapID, uint32_t resolution)

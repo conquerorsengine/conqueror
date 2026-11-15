@@ -43,13 +43,17 @@
         #define EGL_CONFIG_ID 0x3028
         #define EGL_NONE 0x3038
     #endif
-    #include <X11/Xlib.h>
-    #include <X11/Xutil.h>
-    // GLX türleri (GL/glx.h glad ile çakışır): yalnız OpenXR bağlama yapısının istedikleri
-    typedef struct __GLXcontextRec* GLXContext;
-    typedef struct __GLXFBConfigRec* GLXFBConfig;
-    typedef XID GLXDrawable;
-    #define XR_USE_PLATFORM_XLIB
+    // Yalnız Wayland görüntüleri (AGL / Yocto, GLFW_BUILD_X11=OFF) X11 başlıkları olmadan derlenir: o zaman yalnız EGL bağlaması
+    #if __has_include(<X11/Xlib.h>)
+        #define CQ_OPENXR_XLIB 1
+        #include <X11/Xlib.h>
+        #include <X11/Xutil.h>
+        // GLX türleri (GL/glx.h glad ile çakışır): yalnız OpenXR bağlama yapısının istedikleri
+        typedef struct __GLXcontextRec* GLXContext;
+        typedef struct __GLXFBConfigRec* GLXFBConfig;
+        typedef XID GLXDrawable;
+        #define XR_USE_PLATFORM_XLIB
+    #endif
     #define XR_USE_PLATFORM_EGL
 #elif defined(_WIN32)
     #define CQ_OPENXR_WINDOWS 1
@@ -57,6 +61,8 @@
         #define NOMINMAX
     #endif
     #include <windows.h>
+    // openxr_platform.h Win32 yapıları IUnknown kullanır; WIN32_LEAN_AND_MEAN (CMake) COM başlıklarını dışarıda bırakır
+    #include <unknwn.h>
     #define XR_USE_PLATFORM_WIN32
 #elif defined(__ANDROID__)
     // Meta Quest / Pico / Android XR: Khronos Android yükleyicisi (APK'da libopenxr_loader.so), OpenGL ES bağlamı
@@ -93,9 +99,11 @@
 // GLFW yerel erişimi (glfw3native.h GL/glx.h ister): zayıf bağ, GLFW'nin o arka ucu yoksa boş
 extern "C"
 {
+#if defined(CQ_OPENXR_XLIB)
     __attribute__((weak)) Display* glfwGetX11Display(void);
     __attribute__((weak)) GLXContext glfwGetGLXContext(GLFWwindow* window);
     __attribute__((weak)) GLXDrawable glfwGetGLXWindow(GLFWwindow* window);
+#endif
     __attribute__((weak)) EGLDisplay glfwGetEGLDisplay(void);
     __attribute__((weak)) EGLContext glfwGetEGLContext(GLFWwindow* window);
 }
@@ -367,7 +375,9 @@ namespace Conqueror::OpenXR
         // ---------------------------------------------------------------- oturum bağlama yapısı (etkin OpenGL bağlamı)
 #if defined(CQ_OPENXR_LINUX)
         XrGraphicsBindingEGLMNDX s_EglBinding{ XR_TYPE_GRAPHICS_BINDING_EGL_MNDX };
+    #if defined(CQ_OPENXR_XLIB)
         XrGraphicsBindingOpenGLXlibKHR s_GlxBinding{ XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR };
+    #endif
         void* s_EglLib = nullptr;
         PFN_xrVoidFunction EglGetProc(const char* name)
         {
@@ -442,6 +452,11 @@ namespace Conqueror::OpenXR
                 s_Status.Binding = "EGL";
                 return &s_EglBinding;
             }
+    #if !defined(CQ_OPENXR_XLIB)
+            (void)glExtension;
+            s_Status.Error = "no EGL context (this build has no X11 / GLX support)";
+            return nullptr;
+    #else
             if (!glExtension || !glfwGetX11Display || !glfwGetGLXContext || !glfwGetGLXWindow)
             {
                 s_Status.Error = "no XR_KHR_opengl_enable / GLX context";
@@ -476,6 +491,7 @@ namespace Conqueror::OpenXR
             s_GlxBinding.glxContext = context;
             s_Status.Binding = "GLX";
             return &s_GlxBinding;
+    #endif
 #elif defined(CQ_OPENXR_WINDOWS)
             (void)eglExtension;
             if (!glExtension)

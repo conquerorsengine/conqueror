@@ -31,7 +31,9 @@ was found and what to install:
 | macOS | Xcode command line tools | a Mac |
 | FreeBSD | this PC, or clang + a FreeBSD 14 sysroot (`CQ_FREEBSD_SYSROOT`) on Linux | FreeBSD, Linux |
 | Android, Android Automotive | Android SDK (build-tools, a platform), NDK, JDK | any desktop |
-| iOS, Web | not available yet | — |
+| Web | Emscripten SDK (emsdk) + Python 3, or a prebuilt web player (`CQ_WEB_RUNTIME`) | any desktop |
+| Linux ARM (32-bit), x86 (32-bit), RISC-V, PowerPC, LoongArch | clang + lld + a Debian sysroot (`Tools/Linux/make-linux-sysroot.sh <arch>`, `CQ_LINUX_<ARCH>_SYSROOT`) | Linux |
+| iOS | not available yet | — |
 | QNX | QNX SDP (`QNX_HOST`, `QNX_TARGET`); built from the command line | Linux, Windows |
 
 Cross builds (Windows and FreeBSD from Linux) compile the player from the engine source the first time (several
@@ -52,7 +54,8 @@ Linux is started with Wine by **Build And Run** when Wine is installed.
 | FreeBSD | Linux (cross, `Tools/BSD`) or FreeBSD | cross build links; runtime not yet tested on BSD |
 | QNX | QNX SDP (`Tools/QNX`) | compile-checked against stub headers only |
 | iOS | — | not available yet: the iOS player is not part of this version (it needs a Mac with Xcode) |
-| Web (WebGL 2 / WebGPU) | — | not available yet: the web player needs Emscripten and is not part of this version |
+| Web (WebAssembly) | any desktop with emsdk (`Tools/Web/package_web.py`, also from the editor's Build Settings) | WebGL 2 and WebGPU players tested in headless Chromium (the FPS template); a static site: `index.html` + `Build/` (gzip / brotli, data cached in the browser, saves in IndexedDB); single-thread by default, multithreaded with SharedArrayBuffer (`coi-serviceworker.js` for hosts without COOP / COEP); WebGPU backend with a Dawn source tree (`CQ_DAWN_DIR`) |
+| Linux ARM (32-bit), x86 (32-bit), RISC-V 64, PowerPC 64 LE, LoongArch 64 | Linux (cross, `Tools/Linux/linux-cross.toolchain.cmake`) | players cross-built; RISC-V player runs under qemu-user up to window creation |
 | Steam Deck | Linux build | 1280×800 borderless, Deck button glyphs, on-screen keyboard |
 
 ## Splash screen and icons
@@ -81,7 +84,7 @@ built. The values are saved in the project file.
 | Linux, FreeBSD | display server: automatic, Wayland or X11 | the player at start (if the chosen one is missing it falls back to automatic); the `CQ_DISPLAY_SERVER` environment variable (`wayland` / `x11`) overrides it |
 | Android | package name, version code, orientation, target architectures (ARM64, x86-64), keystore and key alias | the APK packager (`Tools/Android/package_apk.py`); minimum API 26, target API 36 (Automotive 34) |
 | iOS | bundle identifier, build number, devices, minimum iOS, orientation, team ID, camera usage, ARKit, status bar | saved for the iOS player (not available yet) |
-| Web | WebGL 2 or WebGPU, page template, compression, initial memory, multithreading, data caching | saved for the web player (not available yet) |
+| Web | WebGL 2 or WebGPU, page template, compression, initial memory, multithreading, data caching | `Tools/Web/package_web.py` (page template, compression, threads player, caching) and the page loader (WebGPU device request with WebGL 2 fallback) |
 | QNX | SDP version, architecture, fill display, Screen app id | architecture: `-DCQ_QNX_ARCH` of the toolchain (the tab shows the command); fill display and app id: the player at start (`CQ_QNX_WINDOWED`, `CQ_APP_ID` override them) |
 
 The package / bundle identifier defaults to `com.<company>.<product>` (lower case; `conqueror` when the company is
@@ -104,3 +107,22 @@ with a release key (empty keystore = the debug key in `~/.android/debug.keystore
   (`libCQPython`) that is loaded only when a project uses Python scripts, so built games run on systems without
   Python (verified in the Steam Linux Runtime).
 - `d3d12.dll` and the Vulkan loader are opened at runtime, so a Windows build starts on machines without them.
+
+## Web player
+
+`Tools/Web/package_web.py <built game> --out <site> [--build]` turns a built game into a static web site; the editor's Build Settings > Web
+does the same (the first build compiles the player with Emscripten). `Tools/Web/serve.py <site> --open` serves it locally with the right
+MIME types and COOP / COEP headers (Build And Run starts it).
+
+* Graphics: WebGL 2 (OpenGL ES 3.0 level). Desktop OpenGL functions WebGL lacks are stubbed (a one-time warning per function); compute
+  shader effects (NIS, CMAA 2, FSR 2) and multisample-texture effects (SRAA) are not selectable on such GPUs (also macOS OpenGL 4.1).
+* Threads: off by default (the player runs everything on the browser's main thread and works on any host); with Player Settings >
+  Web > Threads the multithreaded player needs SharedArrayBuffer (served with COOP / COEP, or through `coi-serviceworker.js`).
+* Not in browsers: UDP networking (ENet), UPnP, native C++ scripts, video recording, the AI assistant, JIT (ConquerorScript runs
+  interpreted).
+* WebGPU: `Tools/WebGPU/fetch-dawn.sh <folder>` and `-DCQ_DAWN_DIR=<folder>` build the GL -> WebGPU translation layer (shaders
+  SPIR-V -> WGSL with Tint). The page requests a WebGPU device when Graphics API is WebGPU and falls back to WebGL 2 without it.
+  Not yet in the WebGPU backend: compute shaders and multisample textures (NIS, CMAA 2, FSR 2, SRAA and MSAA are not selectable) and
+  occlusion queries (objects count as visible). On desktop the backend needs a WebGPU library (Dawn or wgpu-native) at run time.
+* 16 textures per shader stage (WebGPU default, WebGL 2, many mobile GPUs): shaders get `CQ_TEXTURE_BUDGET_16` (reflection probes use
+  the sky reflection; APV, dynamic GI and planar reflections are off) and the 2D batch renderer uses 14 texture slots.

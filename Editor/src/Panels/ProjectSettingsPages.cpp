@@ -201,14 +201,15 @@ namespace Conqueror::Editor
 
         UI::SubHeader("Other Settings");
         // Build Settings ile aynı liste
-        static const char* apis[] = { "Auto", "OpenGL", "Vulkan", "Direct3D11", "Direct3D12", "Metal" };
+        static const char* apis[] = { "Auto", "OpenGL", "Vulkan", "Direct3D11", "Direct3D12", "Metal", "WebGPU" };
         int api = 0;
-        for (int i = 0; i < 6; ++i)
+        for (int i = 0; i < 7; ++i)
             if (p.GraphicsAPI == apis[i])
                 api = i;
-        if (UI::Combo("Graphics API", api, apis, 6,
+        if (UI::Combo("Graphics API", api, apis, 7,
                       "Desktop builds and the editor (restart required). Auto = Direct3D 11 on Windows, Metal on macOS, OpenGL on "
-                      "Linux and FreeBSD. Android, Automotive and QNX always use OpenGL ES 3; Web uses its own setting below."))
+                      "Linux and FreeBSD. WebGPU on the desktop needs a WebGPU implementation next to the game (libwebgpu_dawn or "
+                      "libwgpu_native; otherwise OpenGL is used). Android, Automotive and QNX always use OpenGL ES 3; Web uses its own setting below."))
         {
             p.GraphicsAPI = apis[api];
             m_Dirty = true;
@@ -358,7 +359,9 @@ namespace Conqueror::Editor
             status("Web");
             auto& w = p.Web;
             static const char* gapis[] = { "WebGL 2", "WebGPU" };
-            m_Dirty |= UI::Combo("Graphics API", w.GraphicsAPI, gapis, 2, "WebGL 2 runs in every current browser; WebGPU needs Chrome / Edge 113+, Safari 26+ or Firefox 141+.");
+            m_Dirty |= UI::Combo("Graphics API", w.GraphicsAPI, gapis, 2, "WebGL 2 runs in every current browser; WebGPU needs Chrome / Edge 113+, Safari 26+ "
+                                 "or Firefox 141+ (browsers without WebGPU fall back to WebGL 2). The WebGPU web player is built when the engine "
+                                 "has a Dawn source tree (CQ_DAWN_DIR, Tools/WebGPU/fetch-dawn.sh).");
             static const char* templates[] = { "Default (title and fullscreen button)", "Minimal (canvas only)", "Fullscreen" };
             m_Dirty |= UI::Combo("Page Template", w.Template, templates, 3);
             static const char* comp[] = { "Disabled", "Gzip", "Brotli" };

@@ -11,7 +11,9 @@ uniform sampler2D u_ShadowMap;
 uniform samplerCube u_IBLPrefiltered;
 uniform sampler2D u_BRDFLUT;
 uniform sampler2D u_Lightmap;
+#ifndef CQ_TEXTURE_BUDGET_16
 uniform samplerCube u_ReflectionProbes[CQ_MAX_REFLECTION_PROBES];
+#endif
 uniform vec4 u_ProbePositionIntensity[CQ_MAX_REFLECTION_PROBES];
 uniform vec4 u_ProbeBoxMin[CQ_MAX_REFLECTION_PROBES];   // w = blend mesafesi
 uniform vec4 u_ProbeBoxMax[CQ_MAX_REFLECTION_PROBES];   // w = mip sayısı
@@ -19,12 +21,16 @@ uniform vec4 u_ProbeBoxMax[CQ_MAX_REFLECTION_PROBES];   // w = mip sayısı
 #include "Include/DynamicGI.glsl"
 
 // Adaptive Probe Volume
+#ifndef CQ_TEXTURE_BUDGET_16
 uniform sampler2D u_APVPositionTex;
 uniform sampler2D u_APVSHTex;
+#endif
 uniform int u_APVNumProbes = 0;
 uniform int u_Lightmapped = 1;
 // Planar Reflection (Unreal): aynalanmış sahne; düzleme yakın ve ona bakan yüzeylerde ekran uzayında örneklenir
+#ifndef CQ_TEXTURE_BUDGET_16
 uniform sampler2D u_PlanarReflection;
+#endif
 uniform vec4 u_PlanarPlane = vec4(0.0, 1.0, 0.0, 0.0);
 uniform vec4 u_PlanarParams = vec4(0.0);   // x açık, y düzleme uzaklık sınırı, z normal bozulması, w en çok pürüzlülük   // 0: hareketli nesne (ortam ışığı lightmap yerine ışık problarından / gökyüzünden)
 uniform int u_ReceiveShadows = 1;
@@ -365,6 +371,10 @@ vec3 CQ_BoxProject(vec3 R, vec3 worldPos, vec3 boxMin, vec3 boxMax, vec3 probePo
 #endif
 vec3 CQ_SampleReflectionProbe(int i, vec3 dir, float lod)
 {
+#ifdef CQ_TEXTURE_BUDGET_16
+    // 16 doku sınırlı GPU: yansıtma probları yerine gökyüzü ortam yansıması (4 doku daha az)
+    return textureLod(u_IBLPrefiltered, dir, lod).rgb;
+#else
     switch (i)
     {
         case 0: return textureLod(u_ReflectionProbes[0], dir, lod).rgb;
@@ -372,6 +382,7 @@ vec3 CQ_SampleReflectionProbe(int i, vec3 dir, float lod)
         case 2: return textureLod(u_ReflectionProbes[2], dir, lod).rgb;
         default: return textureLod(u_ReflectionProbes[3], dir, lod).rgb;
     }
+#endif
 }
 
 // Gökyüzü yansımasının görünürlüğü (Ray Traced GI problarından; kapalı yerde gökyüzü yansımaz) ve gökyüzünün göremediği payın
@@ -427,6 +438,9 @@ vec3 CQ_SpecularEnvironment(vec3 R, float roughness, vec3 worldPos)
 vec3 CQ_APVIrradiance(vec3 worldPos, vec3 n, out bool found)
 {
     found = false;
+#ifdef CQ_TEXTURE_BUDGET_16
+    return vec3(0.0);   // 16 doku sınırlı GPU: APV örneklenmez (2 doku daha az)
+#else
     if (CQ_Frame.FeatureFlags.z == 0 || u_APVNumProbes == 0)
         return vec3(0.0);
 
@@ -478,6 +492,7 @@ vec3 CQ_APVIrradiance(vec3 worldPos, vec3 n, out bool found)
            + sh[6] * 0.315392 * (3.0 * n.z * n.z - 1.0)
            + sh[7] * 1.092548 * n.x * n.z + sh[8] * 0.546274 * (n.x * n.x - n.y * n.y);
     return max(r, vec3(0.0));
+#endif
 }
 
 // ---------------------------------------------------------------- Sis
@@ -740,6 +755,7 @@ vec4 CQ_ShadeSurface(CQ_Surface s)
     // Pürüzlülük arttıkça yansıma normale doğru kayar (Frostbite)
     R = mix(R, s.Normal, roughness * roughness);
     vec3 prefiltered = CQ_SpecularEnvironment(R, roughness, s.Position);
+#ifndef CQ_TEXTURE_BUDGET_16
     if (u_PlanarParams.x > 0.5)
     {
         float planeDist = abs(dot(u_PlanarPlane.xyz, s.Position) + u_PlanarPlane.w);
@@ -752,6 +768,7 @@ vec4 CQ_ShadeSurface(CQ_Surface s)
             prefiltered = mix(prefiltered, planar, clamp(w, 0.0, 1.0));
         }
     }
+#endif
     vec3 specularIndirect = prefiltered * (F0 * envBRDF.x + envBRDF.y) * energyCompensation;
 
     float specOcclusion = Saturate(pow(NdotV + s.AO, exp2(-16.0 * roughness - 1.0)) - 1.0 + s.AO);

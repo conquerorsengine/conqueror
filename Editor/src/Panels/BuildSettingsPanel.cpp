@@ -375,14 +375,16 @@ namespace Conqueror::Editor
 
         UI::SubHeader("Rendering");
         {
-            static const char* apis[] = { "Auto", "OpenGL", "Vulkan", "Direct3D11", "Direct3D12", "Metal" };
+            static const char* apis[] = { "Auto", "OpenGL", "Vulkan", "Direct3D11", "Direct3D12", "Metal", "WebGPU" };
             int current = 0;
-            for (int i = 0; i < 6; ++i)
+            for (int i = 0; i < 7; ++i)
                 if (player.GraphicsAPI == apis[i])
                     current = i;
-            if (UI::Combo("Graphics API", current, apis, 6,
+            if (UI::Combo("Graphics API", current, apis, 7,
                           "Used by the built game and by the editor for this project (restart required). Auto = Direct3D 11 on Windows, "
-                          "Metal on macOS, OpenGL on Linux. Direct3D 12 needs Windows 10+ (falls back to Direct3D 11). Command line --opengl / --vulkan / --d3d11 / --d3d12 / --metal or CQ_RENDERER overrides it."))
+                          "Metal on macOS, OpenGL on Linux. Direct3D 12 needs Windows 10+ (falls back to Direct3D 11). WebGPU needs a WebGPU "
+                          "implementation (Dawn / wgpu-native; falls back to OpenGL). Command line --opengl / --vulkan / --d3d11 / --d3d12 / "
+                          "--metal / --webgpu or CQ_RENDERER overrides it."))
             {
                 player.GraphicsAPI = apis[current];
                 MarkDirty();

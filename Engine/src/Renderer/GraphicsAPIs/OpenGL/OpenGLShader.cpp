@@ -1,4 +1,5 @@
 #include "OpenGLShader.h"
+#include "GLProfile.h"
 #include "Core/Logging/Log.h"
 #include "Core/ShaderSystem/CQShaderLoader.h"
 
@@ -305,6 +306,9 @@ namespace Conqueror
         }
 
         GLuint program = glCreateProgram();
+        // Hata ayıklama etiketi (RenderDoc, GL çeviri katmanlarının izleme günlüğü)
+        if (glad_glObjectLabel && program && !GLProfile::Current().ES)
+            glObjectLabel(GL_PROGRAM, program, -1, m_Name.c_str());
         std::vector<GLuint> glShaderIDs;
         bool failed = false;
         m_LastError.clear();
@@ -468,8 +472,8 @@ namespace Conqueror
 
     void OpenGLShader::Bind() const
     {
-        if (!m_RendererID)
-            return;
+        // Bağlanamamış gölgelendirici: önceki program bağlı kalırsa sonraki çizimler onunla yapılıp ekranı boyuyordu
+        // (WebGPU'da 2D toplu çizim Sharpen programıyla tüm görüntüyü beyazlatıyordu); program 0 ile çizim atlanır
         glUseProgram(m_RendererID);
     }
 

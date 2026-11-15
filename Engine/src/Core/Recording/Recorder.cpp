@@ -1,4 +1,5 @@
 #include "Recorder.h"
+#include "Core/Utils/Threads.h"
 #include "Core/Logging/Log.h"
 #include "Core/Project/Project.h"
 #include "Core/Utils/ProcessRunner.h"
@@ -176,6 +177,11 @@ namespace Conqueror
 
     bool Recorder::Start(uint32_t width, uint32_t height)
     {
+        if constexpr (!Threads::Available)
+        {
+            CQ_CORE_WARN("[Recorder] Video recording needs background threads and is not available in this build");
+            return false;
+        }
         auto& s = S();
         if (s.Recording || width < 2 || height < 2)
             return false;

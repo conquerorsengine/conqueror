@@ -39,6 +39,8 @@ namespace Conqueror
         virtual ~Application();
 
         void Run();
+        // Ana döngünün tek karesi (Web: tarayıcı her animasyon karesinde çağırır)
+        void RunFrame();
         // force=false: katmanlara sorulur (biri reddederse açık kalır); true: koşulsuz kapat
         void Close(bool force = false);
 

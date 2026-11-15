@@ -10,6 +10,7 @@
 #include "Core/Base/Version.h"
 #include "Core/Project/ProjectSerializer.h"
 #include "Core/Project/PlatformModules.h"
+#include "Core/Utils/DynamicLibrary.h"
 #include "Scripting/NativeScriptCompiler.h"
 #include "Core/Logging/Log.h"
 #include "Renderer/RHI/TextureSettings.h"
@@ -315,6 +316,16 @@ namespace Conqueror::Editor
         return "GNU Hurd";
 #elif defined(__aarch64__)
         return "Linux ARM64";
+#elif defined(__arm__)
+        return "Linux ARM (32-bit)";
+#elif defined(__i386__)
+        return "Linux x86 (32-bit)";
+#elif defined(__riscv)
+        return "Linux RISC-V";
+#elif defined(__powerpc64__)
+        return "Linux PowerPC";
+#elif defined(__loongarch64)
+        return "Linux LoongArch";
 #else
         return "Linux";
 #endif
@@ -328,6 +339,11 @@ namespace Conqueror::Editor
             { "macOS", ICON_FA_LAPTOP, "Built on a Mac. Bundle identifier, version, minimum macOS and privacy texts are written to Info.plist." },
             { "Linux", ICON_FA_TERMINAL, "Primary platform. Also runs in the Steam Linux Runtime (Steam Deck: 1280x800 borderless)." },
             { "Linux ARM64", ICON_FA_MICROCHIP, "Raspberry Pi 4 / 5 (64-bit OS), ARM laptops and boards: built on ARM64 Linux or cross-built from x86_64 Linux (Tools/Linux)." },
+            { "Linux ARM (32-bit)", ICON_FA_MICROCHIP, "ARMv7 with NEON: Raspberry Pi OS 32-bit, older single-board computers; cross-built from x86_64 Linux (Tools/Linux/make-linux-sysroot.sh armhf)." },
+            { "Linux x86 (32-bit)", ICON_FA_TERMINAL, "32-bit x86 PCs (SSE2): cross-built from x86_64 Linux (Tools/Linux/make-linux-sysroot.sh i386)." },
+            { "Linux RISC-V", ICON_FA_MICROCHIP, "RISC-V 64 boards (StarFive VisionFive 2, Milk-V, SiFive): cross-built from x86_64 Linux (Tools/Linux/make-linux-sysroot.sh riscv64)." },
+            { "Linux PowerPC", ICON_FA_SERVER, "POWER8+ little endian (IBM POWER, Raptor Talos II): cross-built from x86_64 Linux (Tools/Linux/make-linux-sysroot.sh ppc64el)." },
+            { "Linux LoongArch", ICON_FA_MICROCHIP, "LoongArch 64 (Loongson 3A5000 / 3A6000): cross-built from x86_64 Linux (Tools/Linux/make-linux-sysroot.sh loong64)." },
             { "Dedicated Server", ICON_FA_SERVER, "Not buildable yet: a headless server player is not part of this engine version (built games run as a server with --server)." },
             { "Embedded Linux", ICON_FA_MICROCHIP, "Yocto / Buildroot / AGL devices: Wayland-only player with OpenGL ES, built from the command line with the device SDK." },
             { "FreeBSD", ICON_FA_SERVER, "Cross-built from Linux (Tools/BSD) or built on FreeBSD." },
@@ -343,7 +359,7 @@ namespace Conqueror::Editor
             { "iOS", ICON_FA_TABLET_SCREEN_BUTTON, "Not buildable yet: the iOS player is not part of this engine version (it needs a Mac with Xcode)." },
             { "tvOS", ICON_FA_TV, "Not buildable yet: the Apple TV player is not part of this engine version (it needs a Mac with Xcode)." },
             { "visionOS", ICON_FA_VR_CARDBOARD, "Not buildable yet: the Apple Vision Pro player is not part of this engine version (it needs a Mac with Xcode)." },
-            { "Web", ICON_FA_GLOBE, "Not buildable yet: the web player (WebGL 2 / WebGPU) needs Emscripten and is not part of this engine version." },
+            { "Web", ICON_FA_GLOBE, "WebAssembly + WebGL 2 for browsers (Chrome, Edge, Firefox, Safari 15+): the player is compiled with Emscripten (emsdk) the first time, the game is packaged as a static web site (index.html + Build/)." },
             { "Universal Windows Platform", ICON_FA_WINDOW_MAXIMIZE, "Not buildable yet: the UWP player is not part of this engine version (the Windows player runs on Windows 10 / 11)." },
             { "QNX", ICON_FA_GAUGE_HIGH, "Built with the QNX SDP from the command line (Tools/QNX, Docs/Automotive.md); OpenGL ES 3 on QNX Screen." },
         };
@@ -394,6 +410,66 @@ namespace Conqueror::Editor
 
     bool BuildPipeline::Launch(const fs::path& executable, std::string* error)
     {
+        // Web derlemesi (index.html): file:// ile açılmaz; motorun Tools/Web/serve.py sunucusu yerelde açar ve tarayıcıyı başlatır
+        if (executable.extension() == ".html")
+        {
+            std::error_code ec;
+            fs::path serve;
+            for (fs::path probe = DynamicLibrary::ExecutableDirectory(); !probe.empty(); probe = probe.parent_path())
+            {
+                if (fs::exists(probe / "Tools" / "Web" / "serve.py", ec))
+                {
+                    serve = probe / "Tools" / "Web" / "serve.py";
+                    break;
+                }
+                if (!probe.has_parent_path() || probe.parent_path() == probe)
+                    break;
+            }
+            if (serve.empty())
+            {
+                if (error) *error = "Tools/Web/serve.py not found: serve the folder " + executable.parent_path().string() + " with a web server";
+                return false;
+            }
+#ifdef _WIN32
+            std::wstring cmd = L"python \"" + serve.wstring() + L"\" \"" + executable.parent_path().wstring() + L"\" --port 0 --open";
+            STARTUPINFOW si{};
+            si.cb = sizeof(si);
+            PROCESS_INFORMATION pi{};
+            if (!CreateProcessW(nullptr, cmd.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi))
+            {
+                if (error) *error = "Could not start Python (python " + serve.string() + ")";
+                return false;
+            }
+            CloseHandle(pi.hThread);
+            CloseHandle(pi.hProcess);
+            return true;
+#else
+            const std::string py = PlatformModules::FindProgram("python3");
+            const std::string script = serve.string(), dir = executable.parent_path().string();
+            if (py.empty())
+            {
+                if (error) *error = "python3 not found";
+                return false;
+            }
+            const pid_t pid = fork();
+            if (pid < 0)
+            {
+                if (error) *error = "fork failed";
+                return false;
+            }
+            if (pid == 0)
+            {
+                if (fork() != 0)
+                    _exit(0);
+                setsid();
+                execl(py.c_str(), py.c_str(), script.c_str(), dir.c_str(), "--port", "0", "--open", (char*)nullptr);
+                _exit(127);
+            }
+            int status = 0;
+            waitpid(pid, &status, 0);
+            return true;
+#endif
+        }
 #ifdef _WIN32
         STARTUPINFOW si{};
         si.cb = sizeof(si);
@@ -617,7 +693,9 @@ namespace Conqueror::Editor
         const bool android = platform == "Android" || platform == "Android Automotive" || platform == "Android TV" || platform == "ChromeOS" ||
                              platform == "Meta Quest" || platform == "Android XR";
         // Linux'tan çapraz derleme: Windows (MinGW-w64), FreeBSD / OpenBSD / NetBSD / GNU Hurd (clang + sistem kökü); oyuncu ilk seferde derlenir
-        struct CrossTarget { const char* Platform; const char* Toolchain; const char* SysrootVar; const char* LldVar; const char* RootEnv; const char* BuildDir; };
+        // SysrootDefine / LldDefine: toolchain dosyasının beklediği CMake değişkeni (boşsa ortam değişkeninin adı); Extra: ek tanımlar
+        struct CrossTarget { const char* Platform; const char* Toolchain; const char* SysrootVar; const char* LldVar; const char* RootEnv; const char* BuildDir;
+                             const char* SysrootDefine = ""; const char* LldDefine = ""; const char* Extra = ""; };
         static const CrossTarget kCross[] = {
             { "Windows", "Tools/Windows/mingw-w64.toolchain.cmake", "", "", "CQ_WINDOWS_BUILD_ROOT", "build-windows" },
             { "FreeBSD", "Tools/BSD/freebsd-cross.toolchain.cmake", "CQ_FREEBSD_SYSROOT", "CQ_FREEBSD_LLD", "CQ_FREEBSD_BUILD_ROOT", "build-freebsd" },
@@ -625,19 +703,32 @@ namespace Conqueror::Editor
             { "NetBSD", "Tools/BSD/netbsd-cross.toolchain.cmake", "CQ_NETBSD_SYSROOT", "CQ_BSD_LLD", "CQ_NETBSD_BUILD_ROOT", "build-netbsd" },
             { "GNU Hurd", "Tools/Hurd/hurd-cross.toolchain.cmake", "CQ_HURD_SYSROOT", "CQ_HURD_LLD", "CQ_HURD_BUILD_ROOT", "build-hurd" },
             { "Linux ARM64", "Tools/Linux/arm64-cross.toolchain.cmake", "CQ_ARM64_SYSROOT", "CQ_ARM64_LLD", "CQ_ARM64_BUILD_ROOT", "build-linux-arm64" },
+            { "Linux ARM (32-bit)", "Tools/Linux/linux-cross.toolchain.cmake", "CQ_LINUX_ARMHF_SYSROOT", "CQ_LINUX_LLD", "CQ_LINUX_ARMHF_BUILD_ROOT",
+              "build-linux-armhf", "CQ_LINUX_SYSROOT", "CQ_LINUX_LLD", " -DCQ_LINUX_ARCH=armhf -DGLFW_BUILD_WAYLAND=OFF" },
+            { "Linux x86 (32-bit)", "Tools/Linux/linux-cross.toolchain.cmake", "CQ_LINUX_I386_SYSROOT", "CQ_LINUX_LLD", "CQ_LINUX_I386_BUILD_ROOT",
+              "build-linux-i386", "CQ_LINUX_SYSROOT", "CQ_LINUX_LLD", " -DCQ_LINUX_ARCH=i386 -DGLFW_BUILD_WAYLAND=OFF" },
+            { "Linux RISC-V", "Tools/Linux/linux-cross.toolchain.cmake", "CQ_LINUX_RISCV64_SYSROOT", "CQ_LINUX_LLD", "CQ_LINUX_RISCV64_BUILD_ROOT",
+              "build-linux-riscv64", "CQ_LINUX_SYSROOT", "CQ_LINUX_LLD", " -DCQ_LINUX_ARCH=riscv64 -DGLFW_BUILD_WAYLAND=OFF" },
+            { "Linux PowerPC", "Tools/Linux/linux-cross.toolchain.cmake", "CQ_LINUX_PPC64EL_SYSROOT", "CQ_LINUX_LLD", "CQ_LINUX_PPC64EL_BUILD_ROOT",
+              "build-linux-ppc64el", "CQ_LINUX_SYSROOT", "CQ_LINUX_LLD", " -DCQ_LINUX_ARCH=ppc64el -DGLFW_BUILD_WAYLAND=OFF" },
+            { "Linux LoongArch", "Tools/Linux/linux-cross.toolchain.cmake", "CQ_LINUX_LOONG64_SYSROOT", "CQ_LINUX_LLD", "CQ_LINUX_LOONG64_BUILD_ROOT",
+              "build-linux-loong64", "CQ_LINUX_SYSROOT", "CQ_LINUX_LLD", " -DCQ_LINUX_ARCH=loong64 -DGLFW_BUILD_WAYLAND=OFF" },
         };
         const CrossTarget* crossTarget = nullptr;
         for (const auto& t : kCross)
             if (platform == t.Platform)
                 crossTarget = &t;
-        const bool cross = !android && platform != HostPlatform() && crossTarget;
+        // Web: oyuncu Emscripten ile derlenir (Tools/Web/package_web.py --build), oyun dosyaları tek veri dosyasına paketlenir
+        const bool web = platform == "Web";
+        const bool packaged = android || web;   // oyuncu ikilisi oyun klasörüne kopyalanmaz, paketleyici ekler
+        const bool cross = !packaged && platform != HostPlatform() && crossTarget;
         {
             const PlatformModules::Module module = PlatformModules::Detect(platform);
             if (module.State != PlatformModules::Status::Ready)
                 return fail(platform + " cannot be built on this computer: " + module.Detail +
                             (module.Install.empty() ? std::string(".") : ". Install: " + module.Install));
         }
-        if (!android && !cross && platform != HostPlatform())
+        if (!packaged && !cross && platform != HostPlatform())
             return fail("Target platform " + platform + " cannot be built on " + HostPlatform() + ".");
         const auto scenes = o.Config.GetBuildScenes();
         if (scenes.empty())
@@ -689,9 +780,10 @@ namespace Conqueror::Editor
                     configure += " -G Ninja";
                 configure += " -DCMAKE_TOOLCHAIN_FILE=\"" + (source / toolchainRel).string() + "\" -DCMAKE_BUILD_TYPE=Release -DCQ_RUNTIME_ONLY=ON";
                 if (const char* sysroot = *crossTarget->SysrootVar ? std::getenv(crossTarget->SysrootVar) : nullptr; sysroot && *sysroot)
-                    configure += std::string(" -D") + crossTarget->SysrootVar + "=\"" + sysroot + "\"";
+                    configure += std::string(" -D") + (*crossTarget->SysrootDefine ? crossTarget->SysrootDefine : crossTarget->SysrootVar) + "=\"" + sysroot + "\"";
                 if (const char* lld = *crossTarget->LldVar ? std::getenv(crossTarget->LldVar) : nullptr; lld && *lld)
-                    configure += std::string(" -D") + crossTarget->LldVar + "=\"" + lld + "\"";
+                    configure += std::string(" -D") + (*crossTarget->LldDefine ? crossTarget->LldDefine : crossTarget->LldVar) + "=\"" + lld + "\"";
+                configure += crossTarget->Extra;
                 if (platform == "GNU Hurd")
                     configure += " -DGLFW_BUILD_WAYLAND=OFF";
                 const int rc = RunCommand(configure, log);
@@ -707,7 +799,7 @@ namespace Conqueror::Editor
             playerLibDir = buildRoot / "lib";
         }
         const fs::path runtimeExe = playerBinDir / (targetWindows ? "ConquerorRuntime.exe" : "ConquerorRuntime");
-        if (!android && !cross && !fs::exists(runtimeExe, ec))
+        if (!packaged && !cross && !fs::exists(runtimeExe, ec))
         {
             const fs::path buildDir = o.EngineBinDir.parent_path();
             if (!o.BuildRuntimeIfMissing || !fs::exists(buildDir / "CMakeCache.txt", ec))
@@ -740,13 +832,13 @@ namespace Conqueror::Editor
         std::string error;
         const std::string product = SanitizeName(o.Config.Name);
         // Android: oyun dosyaları APK'ya girmeden önce burada toplanır (masaüstünde oyun klasörünün kendisi)
-        const fs::path dataDir = android ? o.OutputDir / "AndroidData" : o.OutputDir;
-        if (android)
+        const fs::path dataDir = android ? o.OutputDir / "AndroidData" : web ? o.OutputDir / "WebData" : o.OutputDir;
+        if (packaged)
             fs::create_directories(dataDir, ec);
 
         // 4) Çalıştırılabilir ve motor kitaplığı
         const fs::path exe = o.OutputDir / (product + (targetWindows ? ".exe" : ""));
-        if (!android)
+        if (!packaged)
         {
         step(0.2f, "Copying the player");
         if (!CopyTree(runtimeExe, exe, stats, error, cancel))
@@ -825,7 +917,7 @@ namespace Conqueror::Editor
         step(0.55f, "Copying Packages");
         if (!CopyTree(o.ProjectDir / "Packages", dataDir / "Packages", stats, error, cancel))
             return fail(error);
-        if (!android && fs::is_directory(o.ProjectDir / "Plugins", ec))
+        if (!packaged && fs::is_directory(o.ProjectDir / "Plugins", ec))
             if (!CopyTree(o.ProjectDir / "Plugins", o.OutputDir, stats, error, cancel))   // steam_api vb. oyunun yanına
                 return fail(error);
 
@@ -843,7 +935,7 @@ namespace Conqueror::Editor
                 if (text.find("CQ_NATIVE_SCRIPT(") != std::string::npos)
                     nativeSources.push_back(it->path());
             }
-            if (!nativeSources.empty() && (android || cross))
+            if (!nativeSources.empty() && (packaged || cross))
             {
                 report.Warnings.push_back("Native C++ scripts are packaged only for " + HostPlatform() + " builds; " + platform + " skips them");
                 if (log) log("WARNING: " + report.Warnings.back());
@@ -887,7 +979,7 @@ namespace Conqueror::Editor
             if (!CopyTree(root / dir, dataDir / dir, stats, error, cancel))
                 return fail(error);
         // Varsa SPIR-V önbelleği (ilk açılışta derlemeyi atlar; Android'in OpenGL ES hedefi farklı olduğundan alınmaz)
-        if (!android && fs::is_directory(o.EngineBinDir / "Cache", ec))
+        if (!packaged && fs::is_directory(o.EngineBinDir / "Cache", ec))
             CopyTree(o.EngineBinDir / "Cache", dataDir / "Cache", stats, error, cancel);
 
         // 7) Proje dosyası: başlangıç sahnesi = ilk derleme sahnesi
@@ -931,7 +1023,7 @@ namespace Conqueror::Editor
         }
 
         // Linux / FreeBSD: oyunun simgesi <ürün>.png (masaüstü kısayolu için; Wayland uygulama kimliği ürün adıdır)
-        if (!android && !targetWindows && platform != "macOS")
+        if (!packaged && !targetWindows && platform != "macOS")
         {
             const fs::path icon = !o.Config.Player.Icon.empty() ? o.ProjectDir / o.Config.Player.Icon
                                                                  : root / "Resources" / "Logo" / "AppIcon" / "conqueror_256.png";
@@ -1072,6 +1164,58 @@ namespace Conqueror::Editor
             report.Executable = apk;
         }
 
+        // 10) Web: WebAssembly oyuncusu (Emscripten, ilk derlemede birkaç dakika; sonra yalnız değişenler) + veri paketi + sayfa
+        if (web)
+        {
+            step(0.92f, "Packaging for the web (the first build compiles the web player with Emscripten, this takes a while)");
+            fs::path script;
+            for (fs::path probe = o.EngineBinDir; !probe.empty(); probe = probe.parent_path())
+            {
+                if (fs::exists(probe / "Tools" / "Web" / "package_web.py", ec))
+                {
+                    script = probe / "Tools" / "Web" / "package_web.py";
+                    break;
+                }
+                if (!probe.has_parent_path() || probe.parent_path() == probe)
+                    break;
+            }
+            if (script.empty())
+                return fail("Web packager (Tools/Web/package_web.py) not found near " + o.EngineBinDir.string());
+            const fs::path engineSource = script.parent_path().parent_path().parent_path();
+            auto safe = [](const std::string& v) { return v.find('"') == std::string::npos; };
+            if (!safe(dataDir.string()) || !safe(o.OutputDir.string()))
+                return fail("The output folder path must not contain quotes");
+#ifdef _WIN32
+            const std::string python = "python";
+#else
+            const std::string python = "python3";
+#endif
+            // Oyuncu derleme klasörü: CQ_WEB_BUILD_ROOT ya da motor kökünde build-web/ (web/ tek iş parçacıklı, web-mt/ çok)
+            const char* buildRootEnv = std::getenv("CQ_WEB_BUILD_ROOT");
+            const fs::path buildRoot = buildRootEnv && *buildRootEnv ? fs::path(buildRootEnv) : engineSource / "build-web";
+            std::string cmd = python + " \"" + script.string() + "\" \"" + dataDir.string() + "\" --out \"" + o.OutputDir.string() +
+                              "\" --build-root \"" + buildRoot.string() + "\"" + (o.Config.Player.Web.Threads ? " --threads" : " --no-threads");
+            // Emscripten kuruluysa oyuncu her derlemede güncellenir (yalnız değişenler); yoksa önceden derlenmiş oyuncu (CQ_WEB_RUNTIME)
+            if (const std::string emsdk = PlatformModules::FindEmsdk(); !emsdk.empty())
+            {
+                if (!safe(emsdk))
+                    return fail("The Emscripten SDK path must not contain quotes");
+                cmd += " --build";
+#ifdef _WIN32
+                _putenv_s("EMSDK", emsdk.c_str());
+#else
+                setenv("EMSDK", emsdk.c_str(), 1);
+#endif
+            }
+            else if (const std::string runtime = PlatformModules::FindWebRuntime(); !runtime.empty() && safe(runtime))
+                cmd += " --runtime \"" + runtime + "\"";
+            const int rc = RunCommand(cmd, log);
+            if (rc != 0 || !fs::exists(o.OutputDir / "index.html", ec))
+                return fail("Web packaging failed (exit code " + std::to_string(rc) + "), see the log. The Emscripten SDK (emsdk) is needed for the first build.");
+            fs::remove_all(dataDir, ec);   // geçici oyun klasörü: veri paketine girdi
+            report.Executable = o.OutputDir / "index.html";
+        }
+
         report.Success = true;
         report.Files = stats.Files;
         report.Bytes = stats.Bytes;
@@ -1083,8 +1227,9 @@ namespace Conqueror::Editor
 
         if (o.RunAfterBuild && !android)
         {
+            // Web: yerel sunucu (Tools/Web/serve.py, COOP / COEP) + varsayılan tarayıcı
             std::string launchError;
-            if (!Launch(exe, &launchError) && log)
+            if (!Launch(web ? report.Executable : exe, &launchError) && log)
                 log("Could not start the game: " + launchError);
         }
         return report;

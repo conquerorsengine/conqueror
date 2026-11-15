@@ -91,6 +91,22 @@ inline void backtrace_symbols_fd(void* const* frames, int count, int fd)
     }
 }
 
+#elif defined(__EMSCRIPTEN__)
+// Web: WebAssembly yığını adres olarak okunamaz; çağrı yığını Emscripten'den metin olarak yazılır (tarayıcı konsolu)
+#include <emscripten/emscripten.h>
+#include <cstdlib>
+#include <cstring>
+#include <unistd.h>
+
+inline int backtrace(void**, int) { return 0; }
+inline char** backtrace_symbols(void* const*, int) { return static_cast<char**>(std::calloc(1, sizeof(char*))); }
+inline void backtrace_symbols_fd(void* const*, int, int fd)
+{
+    static char stack[8192];
+    const int n = emscripten_get_callstack(EM_LOG_C_STACK | EM_LOG_NO_PATHS, stack, (int)sizeof(stack));
+    if (n > 0 && ::write(fd, stack, std::strlen(stack)) < 0)
+        return;
+}
 #else
     #include <execinfo.h>
 #endif

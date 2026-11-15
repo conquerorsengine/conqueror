@@ -37,6 +37,10 @@ namespace Conqueror
         CQ_API bool IsReady(const std::string& platform);
         // Yardımcılar: PATH'te program, Android SDK kökü
         CQ_API std::string FindProgram(const std::string& name);
+        // Emscripten SDK klasörü (emsdk_env.sh): $EMSDK, ~/.cache/emsdk, ~/emsdk; yoksa boş
+        CQ_API std::string FindEmsdk();
+        // Önceden derlenmiş web oyuncusu (conqueror.js + .wasm): $CQ_WEB_RUNTIME; yoksa boş
+        CQ_API std::string FindWebRuntime();
         CQ_API std::string AndroidSdkRoot();
     }
 }

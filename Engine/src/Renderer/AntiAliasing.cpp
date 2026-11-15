@@ -1,6 +1,8 @@
 #include "AntiAliasing.h"
 
 #include "Core/Logging/Log.h"
+#include "GraphicsAPIs/OpenGL/GLProfile.h"
+#include "RHI/RendererAPI.h"
 
 #include <glad/glad.h>
 
@@ -140,11 +142,22 @@ namespace Conqueror::AntiAliasing
         glGetIntegerv(GL_MAJOR_VERSION, &major);
         glGetIntegerv(GL_MINOR_VERSION, &minor);
         s_Caps.SampleShading = (major > 4 || (major == 4 && minor >= 0)) && glMinSampleShading != nullptr;
+        {
+            const auto& prof = GLProfile::Current();
+            s_Caps.Compute = prof.ES ? (prof.Major > 3 || (prof.Major == 3 && prof.Minor >= 1))
+                                     : (prof.Major > 4 || (prof.Major == 4 && prof.Minor >= 3));
+            // GL çeviri katmanları (Vulkan, Direct3D 11 / 12, Metal, WebGPU) hesaplama gölgelendiricisi çevirmez
+            if (RendererAPI::GetBackend() != RendererAPI::Backend::OpenGL)
+                s_Caps.Compute = false;
+            s_Caps.MultisampleTextures = prof.MultisampleTextures;
+            if (RendererAPI::GetBackend() == RendererAPI::Backend::WebGPU)
+                s_Caps.MultisampleTextures = false;   // WebGPU katmanı sampler2DMS çevirmiyor (henüz)
+        }
         GLint maxSamples = 4;
         glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
         s_Caps.MaxSamples = std::max(1, (int)maxSamples);
-        CQ_CORE_INFO("AntiAliasing: {0} | CSAA {1}, EQAA {2}, sample shading {3}, max samples {4}", v, s_Caps.NVCoverage, s_Caps.AMDAdvancedMS,
-                     s_Caps.SampleShading, s_Caps.MaxSamples);
+        CQ_CORE_INFO("AntiAliasing: {0} | CSAA {1}, EQAA {2}, sample shading {3}, max samples {4}, compute {5}, multisample textures {6}", v,
+                     s_Caps.NVCoverage, s_Caps.AMDAdvancedMS, s_Caps.SampleShading, s_Caps.MaxSamples, s_Caps.Compute, s_Caps.MultisampleTextures);
         return s_Caps;
     }
 
@@ -226,8 +239,18 @@ namespace Conqueror::AntiAliasing
             case M::TSRAA:
                 return { false, kTSRReason };
             case M::SRAA:
+                if (!c.MultisampleTextures)
+                    return { false, "Requires multisample textures (OpenGL 3.2 / OpenGL ES 3.1); WebGL 2 does not have them." };
                 if (c.MaxSamples < 4)
                     return { false, "4x MSAA textures are not supported." };
+                return {};
+            case M::CMAA:
+                if (!c.Compute)
+                    return { false, "CMAA 2 uses compute shaders (OpenGL 4.3 / OpenGL ES 3.1 on the OpenGL backend); not available on this system (macOS OpenGL 4.1, WebGL 2, the Vulkan / Direct3D / Metal / WebGPU translation layers)." };
+                return {};
+            case M::FSRAA:
+                if (!c.Compute)
+                    return { false, "FSR 2 uses compute shaders (OpenGL 4.3 / OpenGL ES 3.1 on the OpenGL backend); not available on this system (macOS OpenGL 4.1, WebGL 2, the Vulkan / Direct3D / Metal / WebGPU translation layers)." };
                 return {};
             default:
                 if (IsLegacyUpscaler(mode))
@@ -281,6 +304,11 @@ namespace Conqueror::AntiAliasing
             case U::MetalFX: return { false, kMetalFXReason };
             case U::PSSR:    return { false, kPSSRReason };
             case U::TSR:     return { false, kTSRReason };
+            case U::NIS:
+            case U::FSR2:
+                if (!GetCaps().Compute)
+                    return { false, "Uses compute shaders (OpenGL 4.3 / OpenGL ES 3.1 on the OpenGL backend); not available on this system (macOS OpenGL 4.1, WebGL 2, the Vulkan / Direct3D / Metal / WebGPU translation layers)." };
+                return {};
             default:         return {};
         }
     }

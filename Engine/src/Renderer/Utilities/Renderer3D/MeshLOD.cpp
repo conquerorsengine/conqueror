@@ -1,4 +1,5 @@
 #include "MeshLOD.h"
+#include "Core/Utils/Threads.h"
 #include "MeshSimplifier.h"
 #include "Core/Logging/Log.h"
 
@@ -109,7 +110,7 @@ namespace Conqueror::MeshLOD
         job.Target = mesh;
         job.Key = mesh.get();
         job.Config = settings;
-        job.Result = std::async(std::launch::async, BuildLevels, mesh->GetVertices(), mesh->GetIndices(), settings);
+        job.Result = Threads::Async(BuildLevels, mesh->GetVertices(), mesh->GetIndices(), settings);
         Jobs().push_back(std::move(job));
         return true;
     }

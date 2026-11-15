@@ -82,7 +82,12 @@ namespace Conqueror::Scripting
             int32_t Dim;
             int64_t I;
             double X, Y, Z, W;
-            const char* Str;
+            // 32 bit sistemlerde de 8 bayt (yapı her mimaride 64 bayt; i386 int64 / double'ı 4 bayta hizalar)
+            union
+            {
+                const char* Str;
+                uint64_t StrStorage;
+            };
             int32_t StrLen;
             int32_t Pad;
         };

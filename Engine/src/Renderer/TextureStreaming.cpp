@@ -1,4 +1,5 @@
 #include "TextureStreaming.h"
+#include "Core/Utils/Threads.h"
 
 #include "Renderer/Renderer.h"
 #include "Renderer/GraphicsAPIs/OpenGL/OpenGLTexture.h"
@@ -332,7 +333,7 @@ namespace Conqueror
                     const std::string path = e.Tex->GetPath();
                     const TextureImportSettings settings = e.Tex->GetImportSettings();
                     const int level = e.Desired;
-                    job.Result = std::async(std::launch::async, [path, settings, level]() {
+                    job.Result = Threads::Async([path, settings, level]() {
                         std::pair<bool, Pixels> r;
                         r.first = OpenGLTexture2D::DecodeStreamingLevel(path, settings, level, r.second);
                         return r;

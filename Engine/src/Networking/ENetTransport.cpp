@@ -1,6 +1,7 @@
 #include "ENetTransport.h"
 #include "Core/Logging/Log.h"
 
+#if defined(CQ_NETWORKING_ENABLED)
 #include <enet/enet.h>
 
 namespace Conqueror
@@ -231,3 +232,30 @@ namespace Conqueror
         return static_cast<PeerID>(reinterpret_cast<uintptr_t>(peer->data));
     }
 }
+#else
+// ENet derlenmemiş platform (Web: tarayıcıda UDP soketi yok): taşıyıcı açılmaz, oyun ağsız çalışır
+namespace Conqueror
+{
+    bool ENetTransport::s_ENetInitialized = false;
+    ENetTransport::ENetTransport() = default;
+    ENetTransport::~ENetTransport() = default;
+    bool ENetTransport::InitializeENet() { return false; }
+    void ENetTransport::ShutdownENet() {}
+    bool ENetTransport::CreateServer(uint16_t, int)
+    {
+        CQ_CORE_WARN("Networking: ENet (UDP) is not available on this platform");
+        return false;
+    }
+    bool ENetTransport::CreateClient()
+    {
+        CQ_CORE_WARN("Networking: ENet (UDP) is not available on this platform");
+        return false;
+    }
+    bool ENetTransport::Connect(const std::string&, uint16_t) { return false; }
+    void ENetTransport::Disconnect(PeerID) {}
+    void ENetTransport::Shutdown() {}
+    bool ENetTransport::PollEvents() { return false; }
+    void ENetTransport::Send(PeerID, const uint8_t*, size_t, NetworkChannel) {}
+    void ENetTransport::Broadcast(const uint8_t*, size_t, NetworkChannel) {}
+}
+#endif

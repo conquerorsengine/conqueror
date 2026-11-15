@@ -95,6 +95,39 @@ void mutex::set_spin_count(unsigned int count) {
   count;
 }
 
+#if defined(__APPLE__)
+// MODIFIED by Conqueror's Engine: Grand Central Dispatch semaphore on macOS (no sem_init / sem_timedwait there)
+semaphore::semaphore(long initialCount, long maximumCount, const char* pName) {
+  (void)maximumCount;
+  (void)pName;
+  CRNLIB_ASSERT(maximumCount >= initialCount);
+  m_sem = dispatch_semaphore_create(initialCount);
+  if (!m_sem) {
+    CRNLIB_FAIL("semaphore: dispatch_semaphore_create() failed");
+  }
+}
+
+semaphore::~semaphore() {
+  dispatch_release(m_sem);
+}
+
+void semaphore::release(long releaseCount) {
+  CRNLIB_ASSERT(releaseCount >= 1);
+  while (releaseCount-- > 0)
+    dispatch_semaphore_signal(m_sem);
+}
+
+void semaphore::try_release(long releaseCount) {
+  while (releaseCount-- > 0)
+    dispatch_semaphore_signal(m_sem);
+}
+
+bool semaphore::wait(uint32 milliseconds) {
+  const dispatch_time_t timeout = milliseconds == cUINT32_MAX ? DISPATCH_TIME_FOREVER
+                                                              : dispatch_time(DISPATCH_TIME_NOW, (int64_t)milliseconds * 1000000LL);
+  return dispatch_semaphore_wait(m_sem, timeout) == 0;
+}
+#else
 semaphore::semaphore(long initialCount, long maximumCount, const char* pName) {
   maximumCount, pName;
   CRNLIB_ASSERT(maximumCount >= initialCount);
@@ -166,7 +199,32 @@ bool semaphore::wait(uint32 milliseconds) {
 
   return true;
 }
+#endif
 
+#if defined(__APPLE__)
+// MODIFIED by Conqueror's Engine: macOS has no pthread spinlocks; the spinlock class uses a mutex there
+spinlock::spinlock() {
+  if (pthread_mutex_init(&m_spinlock, NULL)) {
+    CRNLIB_FAIL("spinlock: pthread_mutex_init() failed");
+  }
+}
+
+spinlock::~spinlock() {
+  pthread_mutex_destroy(&m_spinlock);
+}
+
+void spinlock::lock() {
+  if (pthread_mutex_lock(&m_spinlock)) {
+    CRNLIB_FAIL("spinlock: pthread_mutex_lock() failed");
+  }
+}
+
+void spinlock::unlock() {
+  if (pthread_mutex_unlock(&m_spinlock)) {
+    CRNLIB_FAIL("spinlock: pthread_mutex_unlock() failed");
+  }
+}
+#else
 spinlock::spinlock() {
   if (pthread_spin_init(&m_spinlock, 0)) {
     CRNLIB_FAIL("spinlock: pthread_spin_init() failed");
@@ -188,6 +246,7 @@ void spinlock::unlock() {
     CRNLIB_FAIL("spinlock: pthread_spin_unlock() failed");
   }
 }
+#endif
 
 task_pool::task_pool()
     : m_num_threads(0),

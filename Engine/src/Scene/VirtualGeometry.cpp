@@ -1,4 +1,5 @@
 #include "VirtualGeometry.h"
+#include "Core/Utils/Threads.h"
 #include "Scene/ComponentRegistry.h"
 #include "Renderer/Utilities/Renderer3D/ClusterMesh.h"
 #include "Renderer/Utilities/Renderer3D/Mesh.h"
@@ -56,7 +57,7 @@ namespace Conqueror
                 e.Source = mesh;
                 e.Result.reset();
                 e.Pending = true;
-                e.Job = std::async(std::launch::async, [verts = mesh->GetVertices(), idx = mesh->GetIndices(), clusterSize]() {
+                e.Job = Threads::Async([verts = mesh->GetVertices(), idx = mesh->GetIndices(), clusterSize]() {
                     return ClusterMesh::Build(verts, idx, (uint32_t)clusterSize);
                 });
             }

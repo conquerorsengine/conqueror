@@ -1,6 +1,7 @@
 #include "ShaderCompiler.h"
 #include <random>
 #include "Core/Logging/Log.h"
+#include <glad/glad.h>
 #include "Core/Utils/Platform.h"
 #include "Renderer/GraphicsAPIs/OpenGL/GLProfile.h"
 
@@ -247,6 +248,31 @@ namespace Conqueror
     ShaderCompiler::Settings& ShaderCompiler::GetSettings() { return s_Settings; }
     const ShaderCompiler::Stats& ShaderCompiler::GetStats() { return s_Stats; }
 
+    namespace
+    {
+        bool s_RelaxedVulkan11 = false;
+        int s_TextureBudget16 = -1;   // -1: OpenGL'de sorgulanır
+
+        bool TextureBudget16()
+        {
+            if (s_TextureBudget16 < 0)
+            {
+                GLint units = 32;
+                if (glad_glGetIntegerv)
+                    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &units);
+                s_TextureBudget16 = units > 0 && units < 24 ? 1 : 0;
+                if (s_TextureBudget16)
+                    CQ_CORE_INFO("Shaders: GPU has {0} texture units per stage: reflection probes, APV, dynamic GI and planar reflections are "
+                                 "not sampled (texture budget 16)", units);
+            }
+            return s_TextureBudget16 == 1;
+        }
+    }
+
+    void ShaderCompiler::SetRelaxedTargetVulkan11(bool enabled) { s_RelaxedVulkan11 = enabled; }
+    void ShaderCompiler::SetTextureBudget16(bool enabled) { s_TextureBudget16 = enabled ? 1 : 0; }
+    bool ShaderCompiler::IsTextureBudget16() { return TextureBudget16(); }
+
     bool ShaderCompiler::CompileToSPIRV(const std::map<ShaderStage, std::string>& sources, const std::string& name,
                                         std::map<ShaderStage, std::vector<uint32_t>>& outSpirv, std::string& errors, bool vulkanRelaxed)
     {
@@ -269,12 +295,14 @@ namespace Conqueror
             if (vulkanRelaxed)
             {
                 shader->setEnvInput(glslang::EShSourceGlsl, ToGlslang(stage), glslang::EShClientVulkan, 100);
-                shader->setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_2);
-                shader->setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_5);
+                shader->setEnvClient(glslang::EShClientVulkan, s_RelaxedVulkan11 ? glslang::EShTargetVulkan_1_1 : glslang::EShTargetVulkan_1_2);
+                shader->setEnvTarget(glslang::EShTargetSpv, s_RelaxedVulkan11 ? glslang::EShTargetSpv_1_3 : glslang::EShTargetSpv_1_5);
                 shader->setEnvInputVulkanRulesRelaxed();
                 shader->setGlobalUniformBlockName("CQ_Globals");
                 shader->setGlobalUniformSet(0);
                 shader->setGlobalUniformBinding(15);
+                if (s_TextureBudget16 == 1)
+                    shader->setPreamble("#define CQ_TEXTURE_BUDGET_16 1\n");
             }
             else
             {
@@ -282,8 +310,19 @@ namespace Conqueror
                 shader->setEnvClient(glslang::EShClientOpenGL, glslang::EShTargetOpenGL_450);
                 shader->setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_0);
                 // OpenGL ES hedefi: gölgelendiriciler ES'ye özgü yolları seçebilsin (ör. derinlik dokusu filtrelenemez)
-                if (GLProfile::Current().GLSLES)
-                    shader->setPreamble("#define CQ_GLES 1\n");
+                // textureGather GLSL 4.00 / ESSL 3.10 ister: WebGL 2 (ES 3.0) ve GL 3.3'te Include/GatherCompat.glsl dört okumaya çevirir
+                const auto& prof = GLProfile::Current();
+                const bool noGather = prof.GLSLES ? (prof.Major == 3 && prof.Minor == 0) : prof.GLSLVersion < 400;
+                static std::string s_Preamble;
+                s_Preamble.clear();
+                if (prof.GLSLES)
+                    s_Preamble += "#define CQ_GLES 1\n";
+                if (noGather)
+                    s_Preamble += "#define CQ_NO_GATHER 1\n";
+                if (TextureBudget16())
+                    s_Preamble += "#define CQ_TEXTURE_BUDGET_16 1\n";
+                if (!s_Preamble.empty())
+                    shader->setPreamble(s_Preamble.c_str());
             }
             shader->setAutoMapLocations(true);
             shader->setAutoMapBindings(true);

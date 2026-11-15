@@ -6,6 +6,8 @@ namespace Conqueror
     ThreadPool::ThreadPool(size_t numThreads)
         : m_Stop(false)
     {
+        if constexpr (!Threads::Available)
+            numThreads = 0;   // Submit işleri hemen çalıştırır
         for (size_t i = 0; i < numThreads; ++i)
         {
             m_Workers.emplace_back([this]() {

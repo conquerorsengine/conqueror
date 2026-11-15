@@ -30,6 +30,9 @@ else()
     list(FILTER ENGINE_SOURCES EXCLUDE REGEX ".*/Physics3D/JoltBackend\\.cpp$")
 endif()
 
+# Tint köprüsü ayrı kitaplıkta (Tint'in içerme yollarıyla) derlenir; motor kaynaklarına girmez
+list(FILTER ENGINE_SOURCES EXCLUDE REGEX ".*/WebGPU/TintBridge\\.cpp$")
+
 # Platforma özel kaynakları ayıkla (işlev kaldırılmadı, sadece yanlış platformda derlenmesin)
 # NOT: Platform/Windows altındaki dosyalar portable GLFW kodudur, Linux'ta da derlenir;
 # yalnızca dlfcn.h isteyen Linux/ klasörü Windows'ta hariç tutulur.
@@ -39,7 +42,7 @@ endif()
 
 # Linux: shared libEngine.so is easy to shadow with another copy on LD_LIBRARY_PATH / ld.so cache.
 # Static linking ships all renderer code inside the executable so you always run what you compiled.
-if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX")
+if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX" AND NOT EMSCRIPTEN)
     option(CQ_LINUX_ENGINE_CORE_STATIC "Build Engine as static on Linux (avoids wrong libEngine.so at runtime)" OFF)
 else()
     set(CQ_LINUX_ENGINE_CORE_STATIC OFF)
@@ -47,7 +50,7 @@ endif()
 
 # Windows/macOS: motor çekirdeği statik. C++ betik DLL'leri motorla yalnızca C ABI üzerinden konuşur (CQHostApi),
 # bu yüzden DLL dışa aktarım listesine (her sınıfa CQ_API) gerek kalmaz.
-if(CQ_LINUX_ENGINE_CORE_STATIC OR WIN32 OR APPLE OR ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "QNX")
+if(CQ_LINUX_ENGINE_CORE_STATIC OR WIN32 OR APPLE OR ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "QNX" OR EMSCRIPTEN)
     add_library(${PROJECT_NAME} STATIC ${ENGINE_SOURCES})
 else()
     add_library(${PROJECT_NAME} SHARED ${ENGINE_SOURCES})
@@ -57,7 +60,10 @@ endif()
 
 # sljit: ConquerorScript JIT arka ucu (x86-32/64, ARM32/64, RISC-V, PPC, s390x, LoongArch, MIPS)
 set(CQ_SLJIT_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/../External/sljit/sljit_src/sljitLir.c)
-target_sources(${PROJECT_NAME} PRIVATE ${CQ_SLJIT_SOURCE})
+# Web: WebAssembly makine kodu üretemez, JIT derlenmez (CQSJit.cpp yorumlayıcıya bırakır)
+if(NOT EMSCRIPTEN)
+    target_sources(${PROJECT_NAME} PRIVATE ${CQ_SLJIT_SOURCE})
+endif()
 set_source_files_properties(${CQ_SLJIT_SOURCE} PROPERTIES
     SKIP_PRECOMPILE_HEADERS ON
     COMPILE_OPTIONS "$<IF:$<C_COMPILER_ID:MSVC>,/w,-w>")
@@ -147,8 +153,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE CQ_LUAU_ENABLED)
 # ── Vulkan arka ucu ── (GL -> Vulkan 1.2/1.3 çeviri katmanı; --vulkan / CQ_RENDERER=vulkan / Player Settings ile seçilir)
 # Başlıklar External/Vulkan-Headers'da; yükleyici çalışma anında açılır (VulkanLoader): Vulkan SDK gerekmez ve
 # yürütülebilir dosya vulkan-1.dll / libvulkan olmadan da açılır (OpenGL / D3D11'e düşer).
-if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "QNX")
-    # Android / QNX: OpenGL ES 3.x (EGL). Vulkan arka ucu GLFW yüzeyi kullandığı için şimdilik kapalı
+if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "QNX" OR EMSCRIPTEN)
+    # Android / QNX: OpenGL ES 3.x (EGL). Vulkan arka ucu GLFW yüzeyi kullandığı için şimdilik kapalı. Web: WebGL 2 / WebGPU
     option(CQ_ENABLE_VULKAN "Build the Vulkan backend" OFF)
 else()
     option(CQ_ENABLE_VULKAN "Build the Vulkan backend" ON)
@@ -157,6 +163,58 @@ if(CQ_ENABLE_VULKAN)
     target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../External/Vulkan-Headers/include)
     target_compile_definitions(${PROJECT_NAME} PUBLIC CQ_VULKAN_ENABLED)
     message(STATUS "Conqueror: Vulkan backend enabled (runtime-loaded)")
+endif()
+
+# ── WebGPU arka ucu ── (GL -> WebGPU çeviri katmanı, Metal / Vulkan katmanlarıyla aynı ön yüz; Player Settings > Graphics API,
+# --webgpu ya da CQ_RENDERER=webgpu). Gölgelendiriciler SPIR-V -> WGSL Google Tint ile: Dawn kaynak ağacı gerekir
+# (Tools/WebGPU/fetch-dawn.sh <klasör>, CQ_DAWN_DIR). Masaüstünde WebGPU uygulaması (Dawn / wgpu-native) çalışma anında açılır;
+# Web'de tarayıcının WebGPU'su (emdawnwebgpu). Dawn yoksa arka uç derlenmez, istek OpenGL'e düşer.
+set(CQ_DAWN_DIR "$ENV{CQ_DAWN_DIR}" CACHE PATH "Dawn source tree for the WebGPU backend's shader translator (Tools/WebGPU/fetch-dawn.sh)")
+if(CQ_DAWN_DIR AND EXISTS "${CQ_DAWN_DIR}/src/tint" AND NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX")
+    foreach(_opt DAWN_BUILD_SAMPLES DAWN_BUILD_TESTS DAWN_USE_GLFW DAWN_ENABLE_VULKAN DAWN_ENABLE_DESKTOP_GL DAWN_ENABLE_OPENGLES
+                 DAWN_ENABLE_NULL DAWN_ENABLE_D3D11 DAWN_ENABLE_D3D12 DAWN_ENABLE_METAL DAWN_ENABLE_SPIRV_VALIDATION DAWN_USE_X11
+                 DAWN_USE_WAYLAND TINT_BUILD_GLSL_WRITER TINT_BUILD_GLSL_VALIDATOR TINT_BUILD_HLSL_WRITER TINT_BUILD_MSL_WRITER
+                 TINT_BUILD_SPV_WRITER TINT_BUILD_TESTS TINT_BUILD_CMD_TOOLS TINT_BUILD_BENCHMARKS TINT_BUILD_FUZZERS DAWN_FETCH_DEPENDENCIES)
+        set(${_opt} OFF CACHE BOOL "" FORCE)
+    endforeach()
+    foreach(_opt TINT_BUILD_SPV_READER TINT_BUILD_WGSL_WRITER TINT_BUILD_WGSL_READER)
+        set(${_opt} ON CACHE BOOL "" FORCE)
+    endforeach()
+    # Tint'in SPIR-V okuyucusu SPIRV-Tools ister; Dawn'ın üçüncü taraf listesi Emscripten'de onu eklemeden döner: önce biz ekleriz
+    if(NOT TARGET SPIRV-Headers)
+        set(SPIRV_HEADERS_SKIP_EXAMPLES ON CACHE BOOL "" FORCE)
+        set(SPIRV_HEADERS_SKIP_INSTALL ON CACHE BOOL "" FORCE)
+        add_subdirectory(${CQ_DAWN_DIR}/third_party/spirv-headers/src ${CMAKE_BINARY_DIR}/dawn-spirv-headers EXCLUDE_FROM_ALL)
+    endif()
+    if(NOT TARGET SPIRV-Tools)
+        set(SPIRV-Headers_SOURCE_DIR ${CQ_DAWN_DIR}/third_party/spirv-headers/src)
+        foreach(_opt SPIRV_SKIP_TESTS SPIRV_SKIP_EXECUTABLES SKIP_SPIRV_TOOLS_INSTALL)
+            set(${_opt} ON CACHE BOOL "" FORCE)
+        endforeach()
+        set(SPIRV_WERROR OFF CACHE BOOL "" FORCE)
+        add_subdirectory(${CQ_DAWN_DIR}/third_party/spirv-tools/src ${CMAKE_BINARY_DIR}/dawn-spirv-tools EXCLUDE_FROM_ALL)
+    endif()
+    add_subdirectory(${CQ_DAWN_DIR} ${CMAKE_BINARY_DIR}/dawn EXCLUDE_FROM_ALL)
+    add_library(CQTintBridge STATIC src/Renderer/GraphicsAPIs/WebGPU/TintBridge.cpp)
+    target_include_directories(CQTintBridge PRIVATE ${CQ_DAWN_DIR} ${CQ_DAWN_DIR}/include ${CMAKE_BINARY_DIR}/dawn/gen/include)
+    target_link_libraries(CQTintBridge PRIVATE tint_api tint_lang_spirv_reader tint_lang_wgsl_writer tint_lang_core_ir dawn_utils_config)
+    # Tint'in SPIR-V ayrıştırıcısı SPIRV-Tools'un üretilen tablolarını içerir; o hedef bu sırayı kendisi bildirmiyor
+    if(TARGET tint_lang_spirv_reader_parser AND TARGET core_tables)
+        add_dependencies(tint_lang_spirv_reader_parser core_tables)
+    endif()
+    target_compile_definitions(CQTintBridge PRIVATE TINT_BUILD_SPV_READER=1 TINT_BUILD_WGSL_WRITER=1)
+    set_target_properties(CQTintBridge PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_STANDARD 20)
+    target_link_libraries(${PROJECT_NAME} PRIVATE CQTintBridge)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC CQ_WEBGPU_ENABLED)
+    if(EMSCRIPTEN)
+        target_compile_options(${PROJECT_NAME} PUBLIC --use-port=emdawnwebgpu)
+        target_link_options(${PROJECT_NAME} PUBLIC --use-port=emdawnwebgpu)
+    else()
+        target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../External/webgpu-headers/include)
+    endif()
+    message(STATUS "Conqueror: WebGPU backend enabled (Tint from ${CQ_DAWN_DIR})")
+else()
+    message(STATUS "Conqueror: WebGPU backend disabled (set CQ_DAWN_DIR to a Dawn source tree, see Tools/WebGPU/fetch-dawn.sh)")
 endif()
 
 # ── Direct3D 11 arka ucu ── (Windows varsayılanı; GL -> D3D11 çeviri katmanı, HLSL SPIRV-Cross ile)
@@ -201,7 +259,7 @@ if(CQ_DEFAULT_GL_PROFILE)
 endif()
 
 # Python (CPython gömme): geliştirme dosyaları bulunursa (Android'de ana makinenin Python'u kullanılamaz)
-if(NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX")
+if(NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX" AND NOT EMSCRIPTEN)
     find_package(Python3 COMPONENTS Development.Embed QUIET)
 endif()
 if(Python3_Development.Embed_FOUND AND NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX")
@@ -215,6 +273,10 @@ if(Python3_Development.Embed_FOUND AND NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STR
         target_compile_definitions(${PROJECT_NAME} PRIVATE CQ_PYTHON_MODULE)
         add_library(CQPython SHARED src/Scripting/Python/PythonRuntime.cpp)
         target_link_libraries(CQPython PRIVATE ${PROJECT_NAME} Python3::Python)
+        # BSD'lerde Python'un bağlantı bayrakları (-lintl ...) /usr/local/lib'deki paketlere işaret eder; bağlayıcı orayı kendiliğinden aramaz
+        if(CMAKE_SYSTEM_NAME MATCHES "BSD|DragonFly")
+            target_link_directories(CQPython PRIVATE /usr/local/lib)
+        endif()
         target_compile_definitions(CQPython PRIVATE CQ_PYTHON_ENABLED CQ_PYTHON_MODULE)
         set_target_properties(CQPython PROPERTIES POSITION_INDEPENDENT_CODE ON)
         message(STATUS "ConquerorEngine: Python scripting enabled as module (${Python3_VERSION})")
@@ -226,7 +288,7 @@ if(Python3_Development.Embed_FOUND AND NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STR
 endif()
 
 # Java (JNI): yalnızca başlıklar; libjvm çalışma anında yüklenir (JAVA_HOME)
-if(NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX")
+if(NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX" AND NOT EMSCRIPTEN)
     find_package(JNI QUIET COMPONENTS JVM)
 endif()
 if(JNI_INCLUDE_DIRS AND NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX")
@@ -305,6 +367,15 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "QNX")
     # QNX: Screen (pencere / girdi) + EGL + OpenGL ES; soketler libsocket'te, dlopen libc'de (libdl yok)
     target_compile_definitions(${PROJECT_NAME} PUBLIC GLFW_INCLUDE_NONE _QNX_SOURCE)
     target_link_libraries(${PROJECT_NAME} PUBLIC screen EGL GLESv2 socket m)
+elseif(EMSCRIPTEN)
+    # Web: GLFW (contrib.glfw3: tarayıcı tuvali, HiDPI, oyun kumandası), WebGL 2 (OpenGL ES 3.0; glad işlevleri
+    # glfwGetProcAddress ile), büyüyebilen bellek, dosya sistemi (oyun dosyaları açılışta belleğe yazılır)
+    target_compile_options(${PROJECT_NAME} PUBLIC --use-port=contrib.glfw3)
+    target_link_options(${PROJECT_NAME} PUBLIC
+        --use-port=contrib.glfw3
+        -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 -sFULL_ES3=1 -sGL_ENABLE_GET_PROC_ADDRESS=1
+        -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=268435456 -sMAXIMUM_MEMORY=4294967296 -sSTACK_SIZE=8388608
+        -sFORCE_FILESYSTEM=1 -lidbfs.js)
 else()
     if(CMAKE_SYSTEM_NAME MATCHES "BSD|DragonFly")
         # BSD: GL işlevleri glad'dan; glfw3.h sistemde olmayabilecek GL/gl.h başlığını aramasın
@@ -333,6 +404,10 @@ else()
     # dlopen: Linux'ta libdl, BSD'lerde libc içinde (CMAKE_DL_LIBS boş); std::thread için pthread
     find_package(Threads REQUIRED)
     target_link_libraries(${PROJECT_NAME} PUBLIC ${CMAKE_DL_LIBS} Threads::Threads)
+    # 32 bit x86: 8 / 16 baytlık std::atomic işlemleri libatomic'te (__atomic_load ...)
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(i[3-6]86|x86)$")
+        target_link_libraries(${PROJECT_NAME} PUBLIC atomic)
+    endif()
 endif()
 
 # Precompiled headers (optional)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Base/Base.h"
+#include "Core/Utils/Threads.h"
 #include <functional>
 #include <future>
 #include <queue>
@@ -32,6 +33,12 @@ namespace Conqueror
             );
 
             std::future<ReturnType> result = task->get_future();
+            // İş parçacığı yoksa (Web, Threads kapalı) iş hemen burada çalışır
+            if constexpr (!Threads::Available)
+            {
+                (*task)();
+                return result;
+            }
             
             {
                 std::unique_lock<std::mutex> lock(m_QueueMutex);

@@ -1,4 +1,5 @@
 #include "PhysicsBackend3D.h"
+#include "Core/Utils/Threads.h"
 #include "Core/Logging/Log.h"
 
 #include <unordered_set>
@@ -8,6 +9,7 @@
 #include <Jolt/Core/Factory.h>
 #include <Jolt/Core/TempAllocator.h>
 #include <Jolt/Core/JobSystemThreadPool.h>
+#include <Jolt/Core/JobSystemSingleThreaded.h>
 #include <Jolt/Physics/PhysicsSettings.h>
 #include <Jolt/Physics/PhysicsSystem.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
@@ -69,8 +71,16 @@ namespace Conqueror::Physics3D
                 JPH::RegisterTypes();
             }
             s_TempAllocator = new JPH::TempAllocatorImpl(32 * 1024 * 1024);
-            unsigned threads = std::max(1u, std::thread::hardware_concurrency()) - 1;
-            s_JobSystem = new JPH::JobSystemThreadPool(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, (int)std::max(1u, threads));
+            if constexpr (!Threads::Available)
+            {
+                // İş parçacığı yok (Web, Threads kapalı): fizik işleri adım içinde sırayla
+                s_JobSystem = new JPH::JobSystemSingleThreaded(JPH::cMaxPhysicsJobs);
+            }
+            else
+            {
+                unsigned threads = std::max(1u, std::thread::hardware_concurrency()) - 1;
+                s_JobSystem = new JPH::JobSystemThreadPool(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, (int)std::max(1u, threads));
+            }
         }
 
         void ReleaseGlobals()

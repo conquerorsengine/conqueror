@@ -37,6 +37,16 @@ namespace Conqueror::PlatformModules
             return "GNU";
 #elif defined(__aarch64__)
             return "Linux ARM64";
+#elif defined(__arm__)
+            return "Linux ARM (32-bit)";
+#elif defined(__i386__)
+            return "Linux x86 (32-bit)";
+#elif defined(__riscv)
+            return "Linux RISC-V";
+#elif defined(__powerpc64__)
+            return "Linux PowerPC";
+#elif defined(__loongarch64)
+            return "Linux LoongArch";
 #else
             return "Linux";
 #endif
@@ -117,6 +127,35 @@ namespace Conqueror::PlatformModules
             case Status::NotAvailable: return "Not available yet";
         }
         return "";
+    }
+
+    std::string FindEmsdk()
+    {
+        std::error_code ec;
+        std::vector<fs::path> candidates;
+        if (const std::string env = Env("EMSDK"); !env.empty())
+            candidates.push_back(env);
+        if (const std::string home = Env("HOME"); !home.empty())
+        {
+            candidates.push_back(fs::path(home) / ".cache" / "emsdk");
+            candidates.push_back(fs::path(home) / "emsdk");
+        }
+        if (const std::string profile = Env("USERPROFILE"); !profile.empty())
+            candidates.push_back(fs::path(profile) / "emsdk");
+        for (const auto& c : candidates)
+            if (fs::exists(c / "emsdk_env.sh", ec) || fs::exists(c / "emsdk_env.bat", ec))
+                if (fs::exists(c / "upstream" / "emscripten", ec))
+                    return c.string();
+        return {};
+    }
+
+    std::string FindWebRuntime()
+    {
+        std::error_code ec;
+        const std::string env = Env("CQ_WEB_RUNTIME");
+        if (!env.empty() && fs::exists(fs::path(env) / "conqueror.wasm", ec) && fs::exists(fs::path(env) / "conqueror.js", ec))
+            return env;
+        return {};
     }
 
     std::string FindProgram(const std::string& name)
@@ -247,6 +286,34 @@ namespace Conqueror::PlatformModules
                 return Make(platform, Status::Missing, toolchain, "ld.lld not found", "Install lld or set CQ_ARM64_LLD (the Android NDK has one)");
             return Make(platform, Status::Ready, toolchain, "Sysroot " + sysroot + " (the first build compiles the ARM64 player)");
         }
+        // Diğer Linux işlemcileri (Godot'nun Linux dışa aktarım mimarileri gibi): x86_64 Linux'tan clang + lld + Debian sistem kökü
+        // (Tools/Linux/make-linux-sysroot.sh <arch>), o işlemcideki Linux'ta yerel
+        {
+            struct LinuxArch { const char* Platform; const char* Arch; const char* Var; };
+            static const LinuxArch kArches[] = {
+                { "Linux ARM (32-bit)", "armhf", "CQ_LINUX_ARMHF_SYSROOT" }, { "Linux x86 (32-bit)", "i386", "CQ_LINUX_I386_SYSROOT" },
+                { "Linux RISC-V", "riscv64", "CQ_LINUX_RISCV64_SYSROOT" }, { "Linux PowerPC", "ppc64el", "CQ_LINUX_PPC64EL_SYSROOT" },
+                { "Linux LoongArch", "loong64", "CQ_LINUX_LOONG64_SYSROOT" } };
+            for (const auto& a : kArches)
+            {
+                if (platform != a.Platform)
+                    continue;
+                if (host == platform)
+                    return Make(platform, Status::Ready, "This PC", "Built with the player next to the editor");
+                const std::string toolchain = "Clang + lld + a Debian " + std::string(a.Arch) + " sysroot (Tools/Linux/linux-cross.toolchain.cmake)";
+                const std::string install = "Run Tools/Linux/make-linux-sysroot.sh " + std::string(a.Arch) + " <folder> and set " + a.Var;
+                if (host != "Linux")
+                    return Make(platform, Status::NeedsHost, toolchain, "Build on x86_64 Linux");
+                const std::string sysroot = Env(a.Var);
+                if (sysroot.empty() || !fs::is_directory(fs::path(sysroot) / "usr" / "include", ec))
+                    return Make(platform, Status::Missing, toolchain, sysroot.empty() ? std::string(a.Var) + " is not set" : "No usr/include in " + sysroot, install);
+                if (FindProgram("clang++").empty() || FindProgram("cmake").empty())
+                    return Make(platform, Status::Missing, toolchain, "clang++ or cmake not found", install);
+                if (FindProgram("ld.lld").empty() && Env("CQ_LINUX_LLD").empty())
+                    return Make(platform, Status::Missing, toolchain, "ld.lld not found", "Install lld or set CQ_LINUX_LLD (the Android NDK has one)");
+                return Make(platform, Status::Ready, toolchain, "Sysroot " + sysroot + " (the first build compiles the player)");
+            }
+        }
         // Windows on ARM (Snapdragon X dizüstüleri, Surface Pro): ARM64 Windows'ta yerel; x64 Windows'ta Visual Studio'nun ARM64 araçlarıyla
         if (platform == "Windows ARM64")
         {
@@ -319,11 +386,19 @@ namespace Conqueror::PlatformModules
             return Android(platform);
         if (platform == "iOS")
             return Make(platform, Status::NotAvailable, "Xcode on a Mac", "The iOS player is not part of this engine version");
+        // Web: oyuncu Emscripten ile her masaüstünden derlenir (Tools/Web/package_web.py); ya da önceden derlenmiş oyuncu
         if (platform == "Web")
         {
-            const std::string emcc = FindProgram("emcc");
-            return Make(platform, Status::NotAvailable, "Emscripten (emsdk)",
-                        std::string("The web player is not part of this engine version") + (emcc.empty() ? "" : " (emcc found: " + emcc + ")"));
+            const std::string toolchain = "Emscripten SDK (emsdk) + Python 3 (Tools/Web/package_web.py)";
+            const std::string install = "git clone https://github.com/emscripten-core/emsdk ~/emsdk && cd ~/emsdk && ./emsdk install latest && "
+                                        "./emsdk activate latest (or set CQ_WEB_RUNTIME to a folder with a prebuilt conqueror.js + conqueror.wasm)";
+            if (FindProgram("python3").empty() && FindProgram("python").empty())
+                return Make(platform, Status::Missing, toolchain, "Python 3 not found", "Install Python 3");
+            if (const std::string emsdk = FindEmsdk(); !emsdk.empty())
+                return Make(platform, Status::Ready, toolchain, "emsdk " + emsdk + " (the first build compiles the web player)");
+            if (const std::string runtime = FindWebRuntime(); !runtime.empty())
+                return Make(platform, Status::Ready, toolchain, "Prebuilt web player " + runtime);
+            return Make(platform, Status::Missing, toolchain, "Emscripten SDK not found", install);
         }
         if (platform == "QNX")
         {
@@ -341,7 +416,8 @@ namespace Conqueror::PlatformModules
     std::vector<Module> Detect()
     {
         std::vector<Module> list;
-        for (const char* p : { "Windows", "Windows ARM64", "macOS", "Linux", "Linux ARM64", "Dedicated Server", "Embedded Linux", "FreeBSD",
+        for (const char* p : { "Windows", "Windows ARM64", "macOS", "Linux", "Linux ARM64", "Linux ARM (32-bit)", "Linux x86 (32-bit)",
+                               "Linux RISC-V", "Linux PowerPC", "Linux LoongArch", "Dedicated Server", "Embedded Linux", "FreeBSD",
                                "OpenBSD", "NetBSD", "GNU Hurd", "Android", "Android Automotive", "Android TV", "ChromeOS", "Meta Quest",
                                "Android XR", "iOS", "tvOS", "visionOS", "Web", "Universal Windows Platform", "QNX" })
             list.push_back(Detect(p));

@@ -1,12 +1,16 @@
 #include "GLProfile.h"
+#include "GLMissingStubs.h"
 #include "Core/Logging/Log.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include <algorithm>
+#include <cctype>
 #include <cstdlib>
+#include <cstdio>
 #include <cstring>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -406,9 +410,15 @@ namespace Conqueror::GLProfile
             glad_glGenerateMipmap(scope.Target);
         }
 
+        // WebGL 2: türü belirsiz bir tampon COPY_READ / COPY_WRITE hedefine ilk bağlandığında kalıcı olarak "diğer" olur ve artık
+        // ELEMENT_ARRAY_BUFFER'a bağlanamaz (WebGL 2 belirtimi 5.1). Orada nesne ilk gerçek bağlamada oluşur.
+        bool s_WebGL = false;
+
         void APIENTRY S_CreateBuffers(GLsizei n, GLuint* buffers)
         {
             glad_glGenBuffers(n, buffers);
+            if (s_WebGL)
+                return;
             for (GLsizei i = 0; i < n; ++i)
                 BufferScope scope(buffers[i]);
         }
@@ -586,6 +596,19 @@ namespace Conqueror::GLProfile
         // ES: glDrawBuffers listesinin i. öğesi ya GL_COLOR_ATTACHMENTi ya GL_NONE olmalı (masaüstünde herhangi bir ek).
         // {ATTACHMENT1} gibi bir liste ES'de geçersiz sayılır ve çizim hâlâ ATTACHMENT0'a gider (MSAA çözümünde normal
         // eki sahne renginin üstüne kopyalanıyordu) -> her ek kendi konumuna, aradakiler GL_NONE.
+#if defined(__EMSCRIPTEN__)
+        // WebGL: etkin her çizim tamponuna parça gölgelendiricisi yazmak zorunda ("Active draw buffers with missing fragment shader
+        // outputs" çizimi iptal eder; masaüstü GL tanımsız bırakır). Çerçeve tamponlarının çizim listesi burada tutulur, çizimden
+        // önce programın gerçekten yazdığı çıkışlara göre geçici olarak daraltılır.
+        struct FbDrawState
+        {
+            GLsizei Count = 1;
+            GLenum Bufs[8] = { GL_COLOR_ATTACHMENT0, GL_NONE, GL_NONE, GL_NONE, GL_NONE, GL_NONE, GL_NONE, GL_NONE };
+        };
+        std::unordered_map<GLuint, FbDrawState> g_FbDraw;
+        GLuint g_DrawFbo = 0;
+#endif
+
         void APIENTRY W_DrawBuffersES(GLsizei n, const GLenum* bufs)
         {
             GLint fbo = 0;
@@ -610,9 +633,20 @@ namespace Conqueror::GLProfile
             if (count == 0)
             {
                 const GLenum none = GL_NONE;
+#if defined(__EMSCRIPTEN__)
+                g_FbDraw[(GLuint)fbo] = FbDrawState{ 1, { GL_NONE } };
+#endif
                 o_DrawBuffers(1, &none);
                 return;
             }
+#if defined(__EMSCRIPTEN__)
+            {
+                FbDrawState st;
+                st.Count = count;
+                std::memcpy(st.Bufs, mapped, sizeof(mapped));
+                g_FbDraw[(GLuint)fbo] = st;
+            }
+#endif
             o_DrawBuffers(count, mapped);
         }
 
@@ -792,6 +826,69 @@ namespace Conqueror::GLProfile
         }
 
         // ES: glGetTexImage(hedef, ...) -> çerçeve arabelleğiyle
+        // glColorMaski (GL 3.0 / ES 3.2) yoksa (WebGL 2, ES 3.0 / 3.1): ilk hedefin maskesi genel maskeye, diğerleri yok sayılır
+        void APIENTRY S_ColorMaskiES(GLuint index, GLboolean r, GLboolean g, GLboolean b, GLboolean a)
+        {
+            if (index == 0)
+                glad_glColorMask(r, g, b, a);
+        }
+
+        // glCopyImageSubData (GL 4.3 / ES 3.2) yoksa (WebGL 2, ES 3.0 / 3.1): iki geçici çerçeve tamponu + glBlitFramebuffer.
+        // Renk denenir, olmazsa derinlik / derinlik-şablon eki (blit aynı biçim ister; motorun kopyaları aynı biçimdedir).
+        GLuint s_CopyFbo[2] = { 0, 0 };
+        void CopyAttach(GLenum fbTarget, GLenum attachment, GLuint name, GLenum target, GLint level, GLint layer)
+        {
+            if (target == GL_RENDERBUFFER)
+                glad_glFramebufferRenderbuffer(fbTarget, attachment, GL_RENDERBUFFER, name);
+            else if (target == GL_TEXTURE_CUBE_MAP)
+                glad_glFramebufferTexture2D(fbTarget, attachment, GL_TEXTURE_CUBE_MAP_POSITIVE_X + (GLenum)layer, name, level);
+            else if (target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_3D)
+                glad_glFramebufferTextureLayer(fbTarget, attachment, name, level, layer);
+            else
+                glad_glFramebufferTexture2D(fbTarget, attachment, target, name, level);
+        }
+        void CopyDetach(GLenum fbTarget, GLenum attachment)
+        {
+            glad_glFramebufferTexture2D(fbTarget, attachment, GL_TEXTURE_2D, 0, 0);
+        }
+        void APIENTRY S_CopyImageSubDataES(GLuint src, GLenum srcTarget, GLint srcLevel, GLint srcX, GLint srcY, GLint srcZ, GLuint dst,
+                                           GLenum dstTarget, GLint dstLevel, GLint dstX, GLint dstY, GLint dstZ, GLsizei w, GLsizei h,
+                                           GLsizei depth)
+        {
+            if (!s_CopyFbo[0])
+                glad_glGenFramebuffers(2, s_CopyFbo);
+            GLint prevRead = 0, prevDraw = 0;
+            glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &prevRead);
+            glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &prevDraw);
+            glad_glBindFramebuffer(GL_READ_FRAMEBUFFER, s_CopyFbo[0]);
+            glad_glBindFramebuffer(GL_DRAW_FRAMEBUFFER, s_CopyFbo[1]);
+            static const struct { GLenum Attachment; GLbitfield Mask; } kTries[] = {
+                { GL_COLOR_ATTACHMENT0, GL_COLOR_BUFFER_BIT }, { GL_DEPTH_STENCIL_ATTACHMENT, GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT },
+                { GL_DEPTH_ATTACHMENT, GL_DEPTH_BUFFER_BIT } };
+            for (GLsizei z = 0; z < std::max<GLsizei>(depth, 1); ++z)
+            {
+                for (const auto& t : kTries)
+                {
+                    CopyAttach(GL_READ_FRAMEBUFFER, t.Attachment, src, srcTarget, srcLevel, srcZ + z);
+                    CopyAttach(GL_DRAW_FRAMEBUFFER, t.Attachment, dst, dstTarget, dstLevel, dstZ + z);
+                    const bool ok = glad_glCheckFramebufferStatus(GL_READ_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE &&
+                                    glad_glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+                    if (ok)
+                    {
+                        if (t.Attachment == GL_COLOR_ATTACHMENT0)
+                            glad_glReadBuffer(GL_COLOR_ATTACHMENT0);
+                        glad_glBlitFramebuffer(srcX, srcY, srcX + w, srcY + h, dstX, dstY, dstX + w, dstY + h, t.Mask, GL_NEAREST);
+                    }
+                    CopyDetach(GL_READ_FRAMEBUFFER, t.Attachment);
+                    CopyDetach(GL_DRAW_FRAMEBUFFER, t.Attachment);
+                    if (ok)
+                        break;
+                }
+            }
+            glad_glBindFramebuffer(GL_READ_FRAMEBUFFER, (GLuint)prevRead);
+            glad_glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (GLuint)prevDraw);
+        }
+
         void APIENTRY S_GetTexImageES(GLenum target, GLint level, GLenum format, GLenum type, void* pixels)
         {
             const GLuint texture = BoundTexture(target);
@@ -1073,11 +1170,282 @@ namespace Conqueror::GLProfile
         }
     }
 
+#if defined(__EMSCRIPTEN__)
+    namespace
+    {
+        // Emscripten'in WebGL katmanı geçersiz nesne kimliğinde JavaScript hatası fırlatır (masaüstü GL yalnız GL hatası verir):
+        // WebGL'de olmayan gölgelendirici türleri (compute, geometry) 0 döndürdüğünde sonraki çağrılar sessiz kalsın
+        PFNGLCREATESHADERPROC w_CreateShader = nullptr;
+        PFNGLSHADERSOURCEPROC w_ShaderSource = nullptr;
+        PFNGLCOMPILESHADERPROC w_CompileShader = nullptr;
+        PFNGLGETSHADERIVPROC w_GetShaderiv = nullptr;
+        PFNGLGETSHADERINFOLOGPROC w_GetShaderInfoLog = nullptr;
+        PFNGLATTACHSHADERPROC w_AttachShader = nullptr;
+        PFNGLDETACHSHADERPROC w_DetachShader = nullptr;
+        PFNGLDELETESHADERPROC w_DeleteShader = nullptr;
+        PFNGLLINKPROGRAMPROC w_LinkProgram = nullptr;
+        PFNGLGETPROGRAMIVPROC w_GetProgramiv = nullptr;
+        PFNGLGETPROGRAMINFOLOGPROC w_GetProgramInfoLog = nullptr;
+
+        // Emscripten, WebGL'in tanımadığı türde de (compute, geometry, tessellation) yeni kimlik verir ama nesnesi boştur
+        // Parça gölgelendiricisinin çıkış değişkenleri (ad, dizi boyu): bağlamadan sonra glGetFragDataLocation ile gerçek konumları
+        // sorulur (önişlemciyle elenenler -1 döner)
+        struct FragOutput { std::string Name; int Count = 1; };
+        std::unordered_map<GLuint, std::vector<FragOutput>> g_FragOutputs;     // gölgelendirici -> çıkışlar
+        std::unordered_map<GLuint, std::vector<GLuint>> g_ProgramShaders;     // program -> bağlı gölgelendiriciler
+        std::unordered_map<GLuint, uint32_t> g_ProgramOutputs;                // program -> yazılan çizim tamponu bitleri
+        GLuint g_Program = 0;
+        PFNGLGETFRAGDATALOCATIONPROC w_GetFragDataLocation = nullptr;
+
+        std::vector<FragOutput> ParseFragOutputs(const std::string& source)
+        {
+            // Yorumları at, bildirimleri ';' ile böl; "layout(...) out T ad[N]" ya da "out T ad[N]" ile başlayanlar
+            std::string code;
+            code.reserve(source.size());
+            for (size_t i = 0; i < source.size(); ++i)
+            {
+                if (source[i] == '/' && i + 1 < source.size() && source[i + 1] == '/')
+                    while (i < source.size() && source[i] != '\n') ++i;
+                else if (source[i] == '/' && i + 1 < source.size() && source[i + 1] == '*')
+                {
+                    i += 2;
+                    while (i + 1 < source.size() && !(source[i] == '*' && source[i + 1] == '/')) ++i;
+                    ++i;
+                }
+                else if (source[i] == '#')
+                    while (i < source.size() && source[i] != '\n') ++i;
+                else
+                    code += source[i];
+            }
+            std::vector<FragOutput> outs;
+            size_t start = 0;
+            while (start < code.size())
+            {
+                size_t end = code.find(';', start);
+                if (end == std::string::npos) end = code.size();
+                std::string st = code.substr(start, end - start);
+                start = end + 1;
+                size_t b = st.find_first_not_of(" \t\r\n{}");
+                if (b == std::string::npos) continue;
+                st = st.substr(b);
+                if (st.rfind("layout", 0) == 0)
+                {
+                    const size_t close = st.find(')');
+                    if (close == std::string::npos) continue;
+                    st = st.substr(close + 1);
+                    const size_t c = st.find_first_not_of(" \t\r\n");
+                    if (c == std::string::npos) continue;
+                    st = st.substr(c);
+                }
+                if (st.rfind("out", 0) != 0 || st.size() < 4 || !std::isspace((unsigned char)st[3]))
+                    continue;
+                // son kelime ad (dizi boyu olabilir)
+                int count = 1;
+                const size_t lb = st.find('[');
+                if (lb != std::string::npos)
+                {
+                    count = std::max(1, std::atoi(st.c_str() + lb + 1));
+                    st = st.substr(0, lb);
+                }
+                const size_t e = st.find_last_not_of(" \t\r\n");
+                if (e == std::string::npos) continue;
+                const size_t s0 = st.find_last_of(" \t\r\n", e);
+                outs.push_back({ st.substr(s0 == std::string::npos ? 0 : s0 + 1, e - (s0 == std::string::npos ? 0 : s0 + 1) + 1), count });
+            }
+            return outs;
+        }
+
+        // Emscripten, WebGL'in tanımadığı türde de (compute, geometry, tessellation) yeni kimlik verir ama nesnesi boştur
+        GLuint APIENTRY W_CreateShader(GLenum type)
+        {
+            if (type != GL_VERTEX_SHADER && type != GL_FRAGMENT_SHADER)
+                return 0;
+            const GLuint id = w_CreateShader(type);
+            if (id && type == GL_FRAGMENT_SHADER)
+                g_FragOutputs[id];
+            return id;
+        }
+        void APIENTRY W_ShaderSource(GLuint s, GLsizei n, const GLchar* const* src, const GLint* len)
+        {
+            if (!s)
+                return;
+            if (auto it = g_FragOutputs.find(s); it != g_FragOutputs.end() && src)
+            {
+                std::string all;
+                for (GLsizei i = 0; i < n; ++i)
+                    if (src[i])
+                        all.append(src[i], len && len[i] >= 0 ? (size_t)len[i] : std::strlen(src[i]));
+                it->second = ParseFragOutputs(all);
+            }
+            w_ShaderSource(s, n, src, len);
+        }
+        void APIENTRY W_CompileShader(GLuint s) { if (s) w_CompileShader(s); }
+        void APIENTRY W_GetShaderiv(GLuint s, GLenum p, GLint* v)
+        {
+            if (s) w_GetShaderiv(s, p, v);
+            else if (v) *v = 0;
+        }
+        void APIENTRY W_GetShaderInfoLog(GLuint s, GLsizei max, GLsizei* len, GLchar* log)
+        {
+            if (s) { w_GetShaderInfoLog(s, max, len, log); return; }
+            static const char kMsg[] = "shader type not supported by WebGL 2";
+            const GLsizei n = max > 0 ? std::min<GLsizei>(max - 1, (GLsizei)sizeof(kMsg) - 1) : 0;
+            if (log && max > 0) { std::memcpy(log, kMsg, (size_t)n); log[n] = 0; }
+            if (len) *len = n;
+        }
+        void APIENTRY W_AttachShader(GLuint p, GLuint s)
+        {
+            if (!p || !s)
+                return;
+            g_ProgramShaders[p].push_back(s);
+            w_AttachShader(p, s);
+        }
+        void APIENTRY W_DetachShader(GLuint p, GLuint s)
+        {
+            if (!p || !s)
+                return;
+            auto& v = g_ProgramShaders[p];
+            v.erase(std::remove(v.begin(), v.end(), s), v.end());
+            w_DetachShader(p, s);
+        }
+        void APIENTRY W_DeleteShader(GLuint s)
+        {
+            if (!s)
+                return;
+            w_DeleteShader(s);
+        }
+        void APIENTRY W_LinkProgram(GLuint p)
+        {
+            if (!p)
+                return;
+            w_LinkProgram(p);
+            uint32_t mask = 0;
+            bool known = false;
+            for (GLuint s : g_ProgramShaders[p])
+            {
+                auto it = g_FragOutputs.find(s);
+                if (it == g_FragOutputs.end())
+                    continue;
+                known = true;
+                for (const auto& o : it->second)
+                {
+                    const GLint loc = w_GetFragDataLocation ? w_GetFragDataLocation(p, o.Name.c_str()) : -1;
+                    for (int k = 0; loc >= 0 && k < o.Count && loc + k < 32; ++k)
+                        mask |= 1u << (loc + k);
+                }
+            }
+            if (known)
+                g_ProgramOutputs[p] = mask;
+            else
+                g_ProgramOutputs.erase(p);
+        }
+
+        PFNGLUSEPROGRAMPROC w_UseProgram = nullptr;
+        PFNGLBINDFRAMEBUFFERPROC w_BindFramebuffer = nullptr;
+        PFNGLDELETEFRAMEBUFFERSPROC w_DeleteFramebuffers = nullptr;
+        PFNGLDELETEPROGRAMPROC w_DeleteProgram = nullptr;
+        PFNGLDRAWARRAYSPROC w_DrawArrays = nullptr;
+        PFNGLDRAWELEMENTSPROC w_DrawElements = nullptr;
+        PFNGLDRAWARRAYSINSTANCEDPROC w_DrawArraysInstanced = nullptr;
+        PFNGLDRAWELEMENTSINSTANCEDPROC w_DrawElementsInstanced = nullptr;
+        PFNGLDRAWRANGEELEMENTSPROC w_DrawRangeElements = nullptr;
+
+        void APIENTRY W_UseProgram(GLuint p) { g_Program = p; w_UseProgram(p); }
+        void APIENTRY W_DeleteProgram(GLuint p)
+        {
+            g_ProgramOutputs.erase(p);
+            g_ProgramShaders.erase(p);
+            if (g_Program == p) g_Program = 0;
+            w_DeleteProgram(p);
+        }
+        void APIENTRY W_BindFramebuffer(GLenum target, GLuint fb)
+        {
+            if (target == GL_FRAMEBUFFER || target == GL_DRAW_FRAMEBUFFER)
+                g_DrawFbo = fb;
+            w_BindFramebuffer(target, fb);
+        }
+        void APIENTRY W_DeleteFramebuffers(GLsizei n, const GLuint* fbs)
+        {
+            for (GLsizei i = 0; fbs && i < n; ++i)
+            {
+                g_FbDraw.erase(fbs[i]);
+                if (g_DrawFbo == fbs[i]) g_DrawFbo = 0;
+            }
+            w_DeleteFramebuffers(n, fbs);
+        }
+
+        // Çizim öncesi: etkin çizim tamponlarından programın yazmadıklarını kapat; sonra eski listeyi geri yükle
+        struct DrawBufferFix
+        {
+            const FbDrawState* Restore = nullptr;
+            DrawBufferFix()
+            {
+                if (!g_DrawFbo || !o_DrawBuffers)
+                    return;
+                const auto pit = g_ProgramOutputs.find(g_Program);
+                if (pit == g_ProgramOutputs.end())
+                    return;
+                static const FbDrawState kDefault;
+                const auto fit = g_FbDraw.find(g_DrawFbo);
+                const FbDrawState& st = fit != g_FbDraw.end() ? fit->second : kDefault;
+                GLenum adj[8];
+                bool diff = false;
+                for (GLsizei i = 0; i < st.Count; ++i)
+                {
+                    adj[i] = (st.Bufs[i] != GL_NONE && (pit->second >> i & 1u)) ? st.Bufs[i] : GL_NONE;
+                    diff |= adj[i] != st.Bufs[i];
+                }
+                if (!diff)
+                    return;
+                o_DrawBuffers(st.Count, adj);
+                Restore = &st;
+            }
+            ~DrawBufferFix()
+            {
+                if (Restore)
+                    o_DrawBuffers(Restore->Count, Restore->Bufs);
+            }
+        };
+        void APIENTRY W_DrawArrays(GLenum m, GLint f, GLsizei c) { DrawBufferFix fix; w_DrawArrays(m, f, c); }
+        void APIENTRY W_DrawElements(GLenum m, GLsizei c, GLenum t, const void* i) { DrawBufferFix fix; w_DrawElements(m, c, t, i); }
+        void APIENTRY W_DrawArraysInstanced(GLenum m, GLint f, GLsizei c, GLsizei n) { DrawBufferFix fix; w_DrawArraysInstanced(m, f, c, n); }
+        void APIENTRY W_DrawElementsInstanced(GLenum m, GLsizei c, GLenum t, const void* i, GLsizei n) { DrawBufferFix fix; w_DrawElementsInstanced(m, c, t, i, n); }
+        void APIENTRY W_DrawRangeElements(GLenum m, GLuint s, GLuint e, GLsizei c, GLenum t, const void* i) { DrawBufferFix fix; w_DrawRangeElements(m, s, e, c, t, i); }
+        void APIENTRY W_GetProgramiv(GLuint p, GLenum e, GLint* v)
+        {
+            if (p) w_GetProgramiv(p, e, v);
+            else if (v) *v = 0;
+        }
+        void APIENTRY W_GetProgramInfoLog(GLuint p, GLsizei max, GLsizei* len, GLchar* log)
+        {
+            if (p) { w_GetProgramInfoLog(p, max, len, log); return; }
+            if (log && max > 0) log[0] = 0;
+            if (len) *len = 0;
+        }
+
+        void InstallWebGLGuards()
+        {
+    #define CQ_GUARD(fn, w) if (glad_##fn && glad_##fn != &W_##w) { w_##w = glad_##fn; glad_##fn = &W_##w; }
+            CQ_GUARD(glCreateShader, CreateShader); CQ_GUARD(glShaderSource, ShaderSource); CQ_GUARD(glCompileShader, CompileShader); CQ_GUARD(glGetShaderiv, GetShaderiv);
+            CQ_GUARD(glGetShaderInfoLog, GetShaderInfoLog); CQ_GUARD(glAttachShader, AttachShader); CQ_GUARD(glDetachShader, DetachShader);
+            CQ_GUARD(glDeleteShader, DeleteShader); CQ_GUARD(glLinkProgram, LinkProgram); CQ_GUARD(glGetProgramiv, GetProgramiv);
+            CQ_GUARD(glGetProgramInfoLog, GetProgramInfoLog);
+            w_GetFragDataLocation = glad_glGetFragDataLocation;
+            CQ_GUARD(glUseProgram, UseProgram); CQ_GUARD(glDeleteProgram, DeleteProgram); CQ_GUARD(glBindFramebuffer, BindFramebuffer);
+            CQ_GUARD(glDeleteFramebuffers, DeleteFramebuffers); CQ_GUARD(glDrawArrays, DrawArrays); CQ_GUARD(glDrawElements, DrawElements);
+            CQ_GUARD(glDrawArraysInstanced, DrawArraysInstanced); CQ_GUARD(glDrawElementsInstanced, DrawElementsInstanced);
+            CQ_GUARD(glDrawRangeElements, DrawRangeElements);
+    #undef CQ_GUARD
+        }
+    }
+#endif
+
     void OnContextCreated(void* (*getProc)(const char* name))
     {
         const char* version = (const char*)glad_glGetString(GL_VERSION);
         s_Info = Info{};
         s_Info.ES = version && std::strncmp(version, "OpenGL ES", 9) == 0;
+        s_WebGL = version && std::strstr(version, "WebGL") != nullptr;
         if (s_Info.ES)
         {
             LoadAllByName(getProc);
@@ -1086,6 +1454,15 @@ namespace Conqueror::GLProfile
         GLint major = 0, minor = 0;
         glad_glGetIntegerv(GL_MAJOR_VERSION, &major);
         glad_glGetIntegerv(GL_MINOR_VERSION, &minor);
+        // WebGL GL_MAJOR_VERSION sorgusunu bilmez (0 döner): sürüm metninden ("OpenGL ES 3.0 (WebGL 2.0 ...)", "4.6.0 ...")
+        if (major == 0 && version)
+        {
+            const char* v = version;
+            while (*v && (*v < '0' || *v > '9'))
+                ++v;
+            if (std::sscanf(v, "%d.%d", &major, &minor) != 2)
+                major = minor = 0;
+        }
         // ES isteği bağlamdan düşükse (Mesa 3.0 isteğine 3.2 verir) istenen sürümün kısıtlarıyla çalış (WebGL 2 sınaması)
         if (s_Info.ES && major == 3)
         {
@@ -1198,6 +1575,10 @@ namespace Conqueror::GLProfile
             glad_glPolygonMode = &S_PolygonModeES;
             glad_glDrawBuffer = &S_DrawBufferES;
             glad_glGetTexImage = &S_GetTexImageES;
+            if (!glad_glCopyImageSubData)
+                glad_glCopyImageSubData = &S_CopyImageSubDataES;
+            if (!glad_glColorMaski)
+                glad_glColorMaski = &S_ColorMaskiES;
             glad_glTexImage2DMultisample = &S_TexImage2DMultisampleES;
             Load(o_QueryCounterEXT, getProc, "glQueryCounterEXT");
             Load(o_GetQueryObjectui64vEXT, getProc, "glGetQueryObjectui64vEXT");
@@ -1221,6 +1602,11 @@ namespace Conqueror::GLProfile
         if (!glad_glDebugMessageCallback) glad_glDebugMessageCallback = &S_DebugMessageCallbackNoop;
         if (!glad_glDebugMessageControl) glad_glDebugMessageControl = &S_DebugMessageControlNoop;
 
+#if defined(__EMSCRIPTEN__)
+        InstallWebGLGuards();
+        if (const int stubs = InstallMissingStubs(); stubs > 0)
+            CQ_CORE_INFO("WebGL 2: {0} desktop OpenGL functions are unavailable (calls are ignored with a warning)", stubs);
+#endif
         CQ_CORE_INFO("OpenGL profile: {0} (requested {1}), GLSL target {2}{3}{4}", s_Info.Description, KindName(s_Requested), s_Info.GLSLVersion,
                      s_Info.GLSLES ? " es" : "", s_Info.HasDSA ? "" : ", DSA emulated");
     }

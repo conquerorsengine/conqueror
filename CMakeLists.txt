@@ -58,6 +58,23 @@ if(WIN32 AND NOT MSVC)
     add_link_options(-static)
 endif()
 
+# Web (Emscripten, WebAssembly): yalnız oyuncu. Motor iş parçacıkları (iş havuzu, Jolt, doku akışı) Web Worker'larda çalışır
+# (SharedArrayBuffer: sayfa COOP / COEP başlıklarıyla sunulur, Build çıktısındaki servis çalışanı bunu GitHub Pages / itch.io'da da
+# sağlar); C++ istisnaları WebAssembly istisnalarıyla (tüm güncel tarayıcılar)
+if(EMSCRIPTEN)
+    set(CQ_RUNTIME_ONLY ON CACHE BOOL "" FORCE)
+    # Player Settings > Web > Threads: kapalıyken (varsayılan, her sunucuda açılır) motor iş parçacığı açmaz, işler ana
+    # iş parçacığında sırayla yürür
+    option(CQ_WEB_THREADS "Web player with threads (SharedArrayBuffer, needs COOP / COEP)" OFF)
+    add_compile_options(-fwasm-exceptions)
+    add_link_options(-fwasm-exceptions)
+    if(CQ_WEB_THREADS)
+        add_compile_options(-pthread)
+        add_link_options(-pthread)
+        add_compile_definitions(CQ_WEB_THREADS=1)
+    endif()
+endif()
+
 # Debug/Release configurations
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_definitions(CQ_DEBUG)

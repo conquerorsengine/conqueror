@@ -1,4 +1,5 @@
 #include "AIManager.h"
+#include "Core/Utils/Threads.h"
 #include "AIPromptContext.h"
 #include "AITools.h"
 #include "Core/Project/Project.h"
@@ -199,6 +200,8 @@ namespace Conqueror::AI
 
     void AIManager::StartOAuthServer()
     {
+        if constexpr (!Threads::Available)
+            return;   // Web (Threads kapalı): yerel OAuth sunucusu yok
         std::thread serverThread([]() {
             try
             {
@@ -340,6 +343,8 @@ namespace Conqueror::AI
 
     void AIManager::StartGitHubOAuthServer()
     {
+        if constexpr (!Threads::Available)
+            return;
         LoadDotEnvFromProvidersFolder();
 
         std::thread serverThread([]() {
@@ -531,6 +536,12 @@ namespace Conqueror::AI
 
     void AIManager::SendUserMessage(Scene* activeScene, const std::string& message, std::function<void(const std::string& response)> onComplete)
     {
+        if constexpr (!Threads::Available)
+        {
+            if (onComplete)
+                onComplete("The AI assistant is not available in this build (no background threads).");
+            return;
+        }
         if (message.empty()) return;
 
         // Dynamically update system prompt with current active project path if changed

@@ -1,4 +1,5 @@
 #include "Log.h"
+#include "Core/Utils/Threads.h"
 #include "ConsoleSink.h"
 
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -215,9 +216,12 @@ namespace Conqueror
     void Log::Init(const LogConfig& config)
     {
         s_Config = config;
+        if constexpr (!Threads::Available)
+            s_Config.UseAsyncLogger = false;   // Web (Threads kapalı): arka plan günlük iş parçacığı yok
 
         // Kilit gerektiren log sistemi (stdout)
         s_ConsoleSink = std::make_shared<ConsoleSink<std::mutex>>();
+        if (s_Config.UseAsyncLogger)
             spdlog::init_thread_pool(config.AsyncQueueSize, config.AsyncNumThreads);
 
         std::vector<spdlog::sink_ptr> logSinks;
@@ -280,7 +284,7 @@ namespace Conqueror
         logSinks.push_back(ring_buffer_sink);
 
         // Logger Nesnelerini Oluşturma
-        if (config.UseAsyncLogger)
+        if (s_Config.UseAsyncLogger)
         {
             s_CoreLogger = std::make_shared<spdlog::async_logger>("CORE", begin(logSinks), end(logSinks), spdlog::thread_pool(), spdlog::async_overflow_policy::block);
             s_ClientLogger = std::make_shared<spdlog::async_logger>("APP", begin(logSinks), end(logSinks), spdlog::thread_pool(), spdlog::async_overflow_policy::block);
@@ -297,7 +301,7 @@ namespace Conqueror
         SetGlobalLevel(LogLevel::Trace);
         SetCurrentThreadName("MainThread");
         
-        CQ_CORE_INFO("Advanced Logging System Initialized (Async: {0})", config.UseAsyncLogger);
+        CQ_CORE_INFO("Advanced Logging System Initialized (Async: {0})", s_Config.UseAsyncLogger);
     }
 
     void Log::Shutdown()
@@ -968,6 +972,8 @@ namespace Conqueror
         std::string url = s_Config.DiscordWebhookURL;
         std::string safeMessage = message; 
         
+        if constexpr (!Threads::Available)
+            return;   // Web: süreç / kabuk yok
         std::thread([url, safeMessage]() {
             std::string payload = "{\"content\": \"**[Conqueror Engine Alert]** " + safeMessage + "\"}";
             std::string curlCmd = "curl -s -H \"Content-Type: application/json\" -X POST -d '" + payload + "' " + url + " > /dev/null 2>&1";

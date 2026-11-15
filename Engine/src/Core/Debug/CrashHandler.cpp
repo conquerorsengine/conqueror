@@ -1,4 +1,5 @@
 #include "CrashHandler.h"
+#include "Core/Utils/Threads.h"
 
 #include "Core/Logging/Log.h"
 #include "Core/Utils/Platform.h"
@@ -412,7 +413,10 @@ namespace Conqueror
         if (kind == "throw")
         {
             // İş parçacığından kaçan istisna -> std::terminate (yakalayan bir çağıran olsa bile)
-            std::thread([] { throw std::runtime_error("test exception from CrashHandler::TriggerTestCrash"); }).join();
+            if constexpr (Threads::Available)
+                std::thread([] { throw std::runtime_error("test exception from CrashHandler::TriggerTestCrash"); }).join();
+            else
+                std::terminate();
         }
         if (kind == "fpe")
         {

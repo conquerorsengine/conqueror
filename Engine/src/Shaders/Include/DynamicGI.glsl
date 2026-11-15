@@ -19,6 +19,20 @@ uniform vec4 u_GIVolume2;
 #define CQ_GI_V2 CQ_Frame.GIVolume2
 #endif
 
+#ifdef CQ_TEXTURE_BUDGET_16
+// 16 doku sınırlı GPU'lar (WebGPU varsayılanı, WebGL 2 / mobil): dinamik GI örneklenmez (3 doku daha az)
+vec3 CQ_GIIrradianceVis(vec3 P, vec3 N, vec3 V, out float coverage, out float skyVisibility)
+{
+    coverage = 0.0;
+    skyVisibility = 1.0;
+    return vec3(0.0);
+}
+vec3 CQ_GIIrradiance(vec3 P, vec3 N, vec3 V, out float coverage)
+{
+    coverage = 0.0;
+    return vec3(0.0);
+}
+#else
 uniform sampler2D u_GIIrradiance;   // ışınım atlası (oktahedral, karekök kodlu; a: gökyüzü görünürlüğü)
 uniform sampler2D u_GIDistance;     // uzaklık atlası (ortalama, kare ortalaması)
 uniform sampler2D u_GIProbeData;    // prob başına: xyz kayma (m), w durum (0 boş, 1 etkin, 2 geometri içinde)
@@ -157,3 +171,4 @@ vec3 CQ_GIIrradiance(vec3 P, vec3 N, vec3 V, out float coverage)
     float vis;
     return CQ_GIIrradianceVis(P, N, V, coverage, vis);
 }
+#endif

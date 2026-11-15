@@ -57,6 +57,49 @@ jobs:
       - name: Build
         run: cmake --build build-arm64 --target ConquerorRuntime --parallel
 
+  linux-cross:
+    name: Linux ${{ matrix.arch }} player (cross-compiled from x86_64 with clang, Tools/Linux)
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [armhf, i386, riscv64, ppc64el, loong64]
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y ninja-build clang lld
+      - name: Sysroot (Debian ${{ matrix.arch }} packages)
+        run: Tools/Linux/make-linux-sysroot.sh ${{ matrix.arch }} $HOME/sysroot
+      - name: Configure
+        run: >
+          cmake -S . -B build-cross -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=Tools/Linux/linux-cross.toolchain.cmake
+          -DCQ_LINUX_ARCH=${{ matrix.arch }} -DCQ_LINUX_SYSROOT=$HOME/sysroot -DCQ_RUNTIME_ONLY=ON -DGLFW_BUILD_WAYLAND=OFF
+      - name: Build
+        run: cmake --build build-cross --target ConquerorRuntime --parallel
+
+  web:
+    name: Web player (Emscripten, WebAssembly + WebGL 2, single thread and threads)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - name: Emscripten SDK
+        run: |
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git $HOME/emsdk
+          $HOME/emsdk/emsdk install 6.0.13
+          $HOME/emsdk/emsdk activate 6.0.13
+      - name: Build (single thread)
+        run: |
+          source $HOME/emsdk/emsdk_env.sh
+          emcmake cmake -S . -B build-web -G Ninja -DCMAKE_BUILD_TYPE=Release -DCQ_WEB_THREADS=OFF
+          cmake --build build-web --target ConquerorRuntime --parallel
+      - name: Build (threads)
+        run: |
+          source $HOME/emsdk/emsdk_env.sh
+          emcmake cmake -S . -B build-web-mt -G Ninja -DCMAKE_BUILD_TYPE=Release -DCQ_WEB_THREADS=ON
+          cmake --build build-web-mt --target ConquerorRuntime --parallel
+
   linux-embedded:
     name: Linux player for AGL / Yocto (Wayland only, OpenGL ES default)
     runs-on: ubuntu-24.04
@@ -94,7 +137,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Configure
-        run: cmake -S . -B build -G "Visual Studio 17 2022" -A ARM64
+        # Görüntüdeki en yeni Visual Studio (windows-11-arm'da 2022 yok) CMake'in kendi seçimiyle
+        run: cmake -S . -B build -A ARM64
       - name: Build
         run: cmake --build build --config Release --parallel 2 -- '/clp:ErrorsOnly;Summary' /v:minimal
 
@@ -159,8 +203,9 @@ jobs:
           prepare: |
             /usr/sbin/pkg_add pkgin || true
             pkgin -y install cmake ninja-build
+            pkgin -y install libX11 libXrandr libXinerama libXcursor libXi libXext xorgproto || true
           run: |
-            cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCQ_RUNTIME_ONLY=ON
+            cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCQ_RUNTIME_ONLY=ON "-DCMAKE_PREFIX_PATH=/usr/X11R7;/usr/pkg"
             cmake --build build --target ConquerorRuntime
 
   hurd:

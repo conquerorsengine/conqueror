@@ -13,6 +13,9 @@
 #include "Scene/CameraRenderTarget.h"
 #include <cstring>
 #include "Application.h"
+#if defined(__EMSCRIPTEN__)
+    #include <emscripten/emscripten.h>
+#endif
 #include "Core/Input/InputGlyphs.h"
 #include "Core/Logging/Log.h"
 #include "Core/Input/Input.h"
@@ -155,7 +158,18 @@ namespace Conqueror
 
     void Application::Run()
     {
+#if defined(__EMSCRIPTEN__)
+        // Tarayıcıda engelleyen döngü olamaz: her kare requestAnimationFrame ile çağrılır (ekran tazeleme hızında). Bu çağrı
+        // geri dönmez (yığın açılır); oyun kapanınca döngü RunFrame içinde iptal edilir
+        emscripten_set_main_loop_arg([](void* app) { static_cast<Application*>(app)->RunFrame(); }, this, 0, true);
+#else
         while (m_Running)
+            RunFrame();
+#endif
+    }
+
+    void Application::RunFrame()
+    {
         {
             // Sayı biçimlemesi/ayrıştırması "C" yerel ayarına bağlıdır ("1.5"). Bazı kütüphaneler
             // (GTK dosya iletişim kutusu, JVM) setlocale(LC_ALL, "") çağırır: her karede geri al.
@@ -207,7 +221,9 @@ namespace Conqueror
                     for (Layer* layer : m_LayerStack)
                         layer->OnUpdate(timestep);
                 }
+#if !defined(__EMSCRIPTEN__)
                 std::this_thread::sleep_for(std::chrono::milliseconds(16));
+#endif
             }
 
             {
@@ -229,13 +245,24 @@ namespace Conqueror
             {
                 const double frameTime = 1.0 / (double)target;
                 const double elapsed = glfwGetTime() - (double)time;
+#if !defined(__EMSCRIPTEN__)
                 if (elapsed < frameTime)
                     std::this_thread::sleep_for(std::chrono::duration<double>(frameTime - elapsed));
+#else
+                (void)elapsed;   // tarayıcı kareleri ekran tazeleme hızında verir
+#endif
             }
             Profiling::FrameProfiler::EndFrame();
 
             if (Automation::WantsQuit())
                 m_Running = false;
+#if defined(__EMSCRIPTEN__)
+            if (!m_Running)
+            {
+                CQ_CORE_INFO("Game closed");
+                emscripten_cancel_main_loop();
+            }
+#endif
         }
     }
 

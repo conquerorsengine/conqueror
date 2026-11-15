@@ -13,6 +13,10 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <unistd.h>
+#if defined(__APPLE__)
+// MODIFIED by Conqueror's Engine: macOS semaphores come from Grand Central Dispatch (see semaphore below)
+#include <dispatch/dispatch.h>
+#endif
 
 namespace crnlib {
 // g_number_of_processors defaults to 1. Will be higher on multicore machines.
@@ -71,7 +75,12 @@ class semaphore {
   bool wait(uint32 milliseconds = cUINT32_MAX);
 
  private:
+#if defined(__APPLE__)
+  // MODIFIED by Conqueror's Engine: macOS has no unnamed POSIX semaphores (sem_init fails with ENOSYS) and no sem_timedwait
+  dispatch_semaphore_t m_sem;
+#else
   sem_t m_sem;
+#endif
 };
 
 class spinlock {
@@ -83,7 +92,12 @@ class spinlock {
   void unlock();
 
  private:
+#if defined(__APPLE__)
+  // MODIFIED by Conqueror's Engine: macOS has no pthread spinlocks (pthread_spinlock_t); a mutex keeps the same semantics
+  pthread_mutex_t m_spinlock;
+#else
   pthread_spinlock_t m_spinlock;
+#endif
 };
 
 class scoped_spinlock {

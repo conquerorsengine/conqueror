@@ -47,7 +47,12 @@ namespace Conqueror
 
         uint32_t GetPrefilteredID() const { return m_Prefiltered; }
         float GetPrefilteredMaxMip() const { return (float)(m_PrefilteredMips - 1); }
-        const std::array<glm::vec3, 9>& GetIrradianceSH() const { return m_SH; }
+        const std::array<glm::vec3, 9>& GetIrradianceSH() const
+        {
+            if (m_SHRetries > 0)
+                RetrySH();
+            return m_SH;
+        }
         // Prosedürel gökyüzünde skybox olarak çizilecek küp (yoksa 0)
         uint32_t GetSkyCubemapID() const { return m_OwnedSky; }
 
@@ -56,12 +61,17 @@ namespace Conqueror
 
     private:
         EnvironmentMap() = default;
-        void ComputeSH(uint32_t cubemapID, uint32_t resolution);
+        // false: okuma henüz veri getirmedi (web'de WebGPU geri okuması eşzamansızdır, sonuç bir iki kare sonra gelir)
+        bool ComputeSH(uint32_t cubemapID, uint32_t resolution);
+        void RetrySH() const;
         void Prefilter(uint32_t cubemapID, uint32_t resolution);
 
         uint32_t m_Prefiltered = 0;
         int m_PrefilteredMips = 1;
         uint32_t m_OwnedSky = 0;
         std::array<glm::vec3, 9> m_SH{};
+        // Eşzamansız geri okumada SH, veri gelene kadar sonraki karelerde yeniden hesaplanır
+        mutable int m_SHRetries = 0;
+        uint32_t m_SHSource = 0, m_SHResolution = 0;
     };
 }

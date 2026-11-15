@@ -44,6 +44,12 @@
     // sysinfo ve /proc ayrıntıları ile tanımsız PATH_MAX CQ_PLATFORM_HURD ile ayrıca korunur.
     #define CQ_PLATFORM_HURD
     #define CQ_PLATFORM_LINUX
+#elif defined(__EMSCRIPTEN__)
+    // Web (WebAssembly, Emscripten): POSIX benzeri libc (musl) + bellek içi dosya sistemi (MEMFS), pencere ve girdi tarayıcı
+    // tuvali üzerinden GLFW, grafik WebGL 2 (OpenGL ES 3.0). Linux yolları ortak; Linux'a özgü /proc, sysinfo, dlopen ve
+    // süreç işlevleri CQ_PLATFORM_WEB ile ayrıca korunur.
+    #define CQ_PLATFORM_WEB
+    #define CQ_PLATFORM_LINUX
 #elif defined(__linux__)
     #define CQ_PLATFORM_LINUX
 #else

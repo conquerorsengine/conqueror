@@ -8,9 +8,10 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
 
 # GLFW
-if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "QNX")
+if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "QNX" OR EMSCRIPTEN)
     # Android / QNX'te GLFW yok: motor aynı API'yi Engine/src/Platform/Android/GLFWAndroid.cpp (NativeActivity + EGL) ve
-    # Engine/src/Platform/QNX/GLFWQnx.cpp (Screen + EGL) ile sağlar
+    # Engine/src/Platform/QNX/GLFWQnx.cpp (Screen + EGL) ile sağlar. Web: Emscripten'in GLFW 3 uygulaması (contrib.glfw3,
+    # tarayıcı tuvali) bağlanır, başlıklar aynı
     add_library(glfw INTERFACE)
     target_include_directories(glfw INTERFACE glfw/include)
 else()
@@ -204,7 +205,7 @@ endif()
 
 # NFD (Native File Dialog) — yalnızca editör/başlatıcı kullanır; oyuncuda dosya iletişim kutusu yok (Android, QNX ve
 # yalnız oyuncu derlemelerinde GTK / X11 bağımlılığı gelmesin)
-if(ANDROID OR CQ_RUNTIME_ONLY OR CMAKE_SYSTEM_NAME STREQUAL "QNX")
+if(ANDROID OR CQ_RUNTIME_ONLY OR CMAKE_SYSTEM_NAME STREQUAL "QNX" OR EMSCRIPTEN)
     add_library(nfd INTERFACE)
     target_include_directories(nfd INTERFACE nativefiledialog-extended/src/include)
 else()
@@ -288,8 +289,10 @@ else()
     message(WARNING "zstd not found - using system zstd")
 endif()
 
-# ENet (Networking)
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/enet/CMakeLists.txt)
+# ENet (Networking). Web: tarayıcıda UDP soketi yok (çok oyunculu Web için WebSocket / WebRTC gerekir), ENet derlenmez
+if(EMSCRIPTEN)
+    message(STATUS "Web: ENet (UDP) and NAT traversal are not available in browsers")
+elseif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/enet/CMakeLists.txt)
     add_subdirectory(enet)
 else()
     message(WARNING "ENet not found in External/enet - Networking will not be available")
@@ -323,7 +326,9 @@ else()
 endif()
 
 # miniupnpc (NAT Traversal)
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/miniupnpc/CMakeLists.txt)
+if(EMSCRIPTEN)
+    # tarayıcıda UPnP yok
+elseif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/miniupnpc/CMakeLists.txt)
     set(UPNPC_BUILD_TESTS OFF CACHE BOOL "" FORCE)
     set(UPNPC_BUILD_SAMPLE OFF CACHE BOOL "" FORCE)
     set(UPNPC_BUILD_SHARED OFF CACHE BOOL "" FORCE)

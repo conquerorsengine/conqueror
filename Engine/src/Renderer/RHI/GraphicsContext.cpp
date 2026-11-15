@@ -8,6 +8,9 @@
 #ifdef CQ_METAL_ENABLED
     #include "Renderer/GraphicsAPIs/Metal/MetalContext.h"
 #endif
+#ifdef CQ_WEBGPU_ENABLED
+    #include "Renderer/GraphicsAPIs/WebGPU/WebGPUContext.h"
+#endif
 #ifdef CQ_D3D12_ENABLED
     #include "Renderer/GraphicsAPIs/DirectX/D3D12/D3D12Context.h"
 #endif
@@ -31,6 +34,10 @@ namespace Conqueror
 #ifdef CQ_METAL_ENABLED
                 if (RendererAPI::GetBackend() == RendererAPI::Backend::Metal)
                     return new MetalContext(static_cast<GLFWwindow*>(window));
+#endif
+#ifdef CQ_WEBGPU_ENABLED
+                if (RendererAPI::GetBackend() == RendererAPI::Backend::WebGPU)
+                    return new WebGPUContext(static_cast<GLFWwindow*>(window));
 #endif
 #ifdef CQ_D3D12_ENABLED
                 if (RendererAPI::GetBackend() == RendererAPI::Backend::Direct3D12)

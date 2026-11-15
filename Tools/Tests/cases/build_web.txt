@@ -1,0 +1,13 @@
+# template: basic3d
+# requires: CQ_TEST_WEB
+# Build Settings > Web: oyun WebAssembly + WebGL 2 web sitesi olarak paketlenir (index.html + Build/conqueror.wasm + game.data);
+# ilk derlemede oyuncu Emscripten ile derlenir (emsdk gerekir; bağlama + wasm-opt birkaç dakika). Gerçek build/bin'den ve uzun
+# süreli çalıştırıcıyla çalıştırın (Tools/Web gerekir; editör en az 40 dakika açık kalabilmeli).
+timeout 2400
+wait 30
+build output Builds/Web
+build platform Web
+build start
+wait_until 5400000 build expect_done
+build expect_success
+quit

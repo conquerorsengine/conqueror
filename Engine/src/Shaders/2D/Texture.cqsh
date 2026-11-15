@@ -37,7 +37,13 @@ in vec2 v_TexCoord;
 in flat int v_TexIndex;
 in float v_TilingFactor;
 
+#ifdef CQ_TEXTURE_BUDGET_16
+// Aşama başına 16 doku sınırı (WebGPU, WebGL 2, birçok mobil GPU): 14 ayrı örnekleyici + ışık dokusu. WGSL'de örnekleyici dizisi
+// yoktur; Renderer2D bu kipte u_Tex0..u_Tex13'ü kurar
+uniform sampler2D u_Tex0, u_Tex1, u_Tex2, u_Tex3, u_Tex4, u_Tex5, u_Tex6, u_Tex7, u_Tex8, u_Tex9, u_Tex10, u_Tex11, u_Tex12, u_Tex13;
+#else
 uniform sampler2D u_Textures[31];
+#endif
 uniform int u_OutputMode = -1;   // -1 kare ayarına göre, 0 sRGB (UI üst katmanı), 1 doğrusal
 // Light 2D: ekran boyutlu ışık birikim dokusu (doğrusal HDR); sprite rengi bununla çarpılır
 uniform sampler2D u_LightTex;
@@ -50,6 +56,22 @@ vec4 SampleTexture(int index, vec2 uv)
 {
     switch (index)
     {
+#ifdef CQ_TEXTURE_BUDGET_16
+        case 0: return texture(u_Tex0, uv);
+        case 1: return texture(u_Tex1, uv);
+        case 2: return texture(u_Tex2, uv);
+        case 3: return texture(u_Tex3, uv);
+        case 4: return texture(u_Tex4, uv);
+        case 5: return texture(u_Tex5, uv);
+        case 6: return texture(u_Tex6, uv);
+        case 7: return texture(u_Tex7, uv);
+        case 8: return texture(u_Tex8, uv);
+        case 9: return texture(u_Tex9, uv);
+        case 10: return texture(u_Tex10, uv);
+        case 11: return texture(u_Tex11, uv);
+        case 12: return texture(u_Tex12, uv);
+        case 13: return texture(u_Tex13, uv);
+#else
         case 0: return texture(u_Textures[0], uv);
         case 1: return texture(u_Textures[1], uv);
         case 2: return texture(u_Textures[2], uv);
@@ -81,8 +103,13 @@ vec4 SampleTexture(int index, vec2 uv)
         case 28: return texture(u_Textures[28], uv);
         case 29: return texture(u_Textures[29], uv);
         case 30: return texture(u_Textures[30], uv);
+#endif
     }
+#ifdef CQ_TEXTURE_BUDGET_16
+    return texture(u_Tex0, uv);
+#else
     return texture(u_Textures[0], uv);
+#endif
 }
 
 void main()

@@ -1,4 +1,17 @@
 #include "CQSJit.h"
+
+#if defined(__EMSCRIPTEN__) || defined(__i386__) || defined(_M_IX86)
+// WebAssembly çalışma anında makine kodu üretemez (sayfa yeni kod yükleyemez); 32 bit x86'da değerler 16 bayt değil (JIT düzeni
+// 16 bayt varsayar): ConquerorScript yorumlayıcıyla çalışır
+namespace Conqueror::CQS
+{
+    bool CQSJit::IsSupported() { return false; }
+    const char* CQSJit::GetTargetName() { return "WebAssembly (interpreter)"; }
+    bool CQSJit::Compile(CQSVM*, CQSFunctionObject*) { return false; }
+    bool CQSJit::Run(CQSVM*, CQSFrame*, int) { return false; }
+    void CQSJit::FreeCode(void*) {}
+}
+#else
 #include "CQSVM.h"
 
 #include "sljitLir.h"
@@ -1161,3 +1174,4 @@ namespace Conqueror::CQS
             sljit_free_code(code, nullptr);
     }
 }
+#endif

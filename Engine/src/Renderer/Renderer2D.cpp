@@ -6,6 +6,7 @@
 #include "RHI/VertexArray.h"
 #include "RHI/Shader.h"
 #include "RHI/RenderCommand.h"
+#include "ShaderCompiler/ShaderCompiler.h"
 #include "Scene/Components.h"
 #include "Font.h"
 
@@ -35,7 +36,10 @@ namespace Conqueror
         static constexpr uint32_t MaxVertices = MaxQuads * 4;
         static constexpr uint32_t MaxIndices = MaxQuads * 6;
         static constexpr uint32_t MaxTextureSlots = 31;   // 31. birim: 2D ışık dokusu
-        static constexpr uint32_t LightTextureSlot = 31;
+        // Aşama başına 16 doku sınırlı GPU (WebGPU, WebGL 2, birçok mobil GPU): 14 yuva + ışık dokusu (Texture.cqsh CQ_TEXTURE_BUDGET_16)
+        static constexpr uint32_t BudgetTextureSlots = 14;
+        uint32_t SlotCount = MaxTextureSlots;
+        uint32_t LightTextureSlot = MaxTextureSlots;
 
         std::shared_ptr<Shader> TextureShader;
         // Özel shader (UI Image > Material) ve ek uniform'ları; boşsa TextureShader
@@ -61,18 +65,33 @@ namespace Conqueror
 
     static Renderer2DData s_Data;
 
+    // Doku yuvası örnekleyicileri: normalde u_Textures[0..30], 16 doku sınırında ayrı u_Tex0..u_Tex13 (WGSL'de dizi yok)
+    static void SetSamplerUniforms(Shader& shader)
+    {
+        if (s_Data.SlotCount < Renderer2DData::MaxTextureSlots)
+        {
+            for (uint32_t i = 0; i < s_Data.SlotCount; ++i)
+                shader.SetInt("u_Tex" + std::to_string(i), (int)i);
+            return;
+        }
+        int32_t samplers[Renderer2DData::MaxTextureSlots];
+        for (int32_t i = 0; i < (int32_t)Renderer2DData::MaxTextureSlots; ++i)
+            samplers[i] = i;
+        shader.SetIntArray("u_Textures", samplers, Renderer2DData::MaxTextureSlots);
+    }
+
     void Renderer2D::Init()
     {
         s_Data.WhiteTexture = Texture2D::Create(1, 1);
         uint32_t whiteTextureData = 0xffffffff;
         s_Data.WhiteTexture->SetData(&whiteTextureData, sizeof(uint32_t));
 
+        const bool budget = ShaderCompiler::IsTextureBudget16();
+        s_Data.SlotCount = budget ? Renderer2DData::BudgetTextureSlots : Renderer2DData::MaxTextureSlots;
+        s_Data.LightTextureSlot = s_Data.SlotCount;
         s_Data.TextureShader = Shader::Create("Engine/src/Shaders/2D/Texture.cqsh");
         s_Data.TextureShader->Bind();
-        int32_t samplers[Renderer2DData::MaxTextureSlots];
-        for (int32_t i = 0; i < (int32_t)Renderer2DData::MaxTextureSlots; ++i)
-            samplers[i] = i;
-        s_Data.TextureShader->SetIntArray("u_Textures", samplers, Renderer2DData::MaxTextureSlots);
+        SetSamplerUniforms(*s_Data.TextureShader);
 
         s_Data.QuadVertexArray = VertexArray::Create();
         s_Data.QuadVertexBuffer = VertexBuffer::Create(Renderer2DData::MaxVertices * sizeof(QuadVertex));
@@ -183,20 +202,15 @@ namespace Conqueror
         Shader& shader = s_Data.CustomShader ? *s_Data.CustomShader : *s_Data.TextureShader;
         shader.Bind();
         if (s_Data.CustomShader)
-        {
-            int32_t samplers[Renderer2DData::MaxTextureSlots];
-            for (int32_t i = 0; i < (int32_t)Renderer2DData::MaxTextureSlots; ++i)
-                samplers[i] = i;
-            shader.SetIntArray("u_Textures", samplers, Renderer2DData::MaxTextureSlots);
-        }
+            SetSamplerUniforms(shader);
         shader.SetMat4("u_ViewProjection", s_Data.ViewProjection);
         shader.SetInt("u_OutputMode", s_Data.OutputMode);
         const bool lit = s_Data.Lit && s_Data.LightTexture != 0;
         shader.SetInt("u_Lit", lit ? 1 : 0);
         if (lit)
         {
-            glBindTextureUnit(Renderer2DData::LightTextureSlot, s_Data.LightTexture);
-            shader.SetInt("u_LightTex", (int)Renderer2DData::LightTextureSlot);
+            glBindTextureUnit(s_Data.LightTextureSlot, s_Data.LightTexture);
+            shader.SetInt("u_LightTex", (int)s_Data.LightTextureSlot);
             shader.SetFloat2("u_LightOrigin", s_Data.LightOrigin);
         }
         if (s_Data.CustomShader && s_Data.CustomUniforms)
@@ -291,7 +305,7 @@ namespace Conqueror
         for (uint32_t i = 1; i < s_Data.TextureSlotIndex; ++i)
             if (s_Data.TextureSlots[i] == texture || (s_Data.TextureSlots[i] && s_Data.TextureSlots[i]->GetRendererID() == texture->GetRendererID()))
                 return (float)i;
-        if (s_Data.TextureSlotIndex >= Renderer2DData::MaxTextureSlots)
+        if (s_Data.TextureSlotIndex >= s_Data.SlotCount)
             Renderer2D::Flush();
         uint32_t slot = s_Data.TextureSlotIndex++;
         s_Data.TextureSlots[slot] = texture;

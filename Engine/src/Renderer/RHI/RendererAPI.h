@@ -43,7 +43,8 @@ namespace Conqueror
             Vulkan = 1,
             Direct3D11 = 2,
             Direct3D12 = 3,
-            Metal = 4
+            Metal = 4,
+            WebGPU = 5
         };
         static Backend GetBackend() { return s_Backend; }
         static void SetBackend(Backend backend) { s_Backend = backend; }

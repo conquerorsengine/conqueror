@@ -43,6 +43,7 @@ namespace Conqueror
         struct Inst { glm::vec4 W0, W1, W2; glm::vec4 I0, I1, I2; glm::ivec4 Info; };
         static_assert(sizeof(Inst) == 112, "Inst must match std430");
 
+        // MSVC tek dize sabitinde en çok 16380 bayt kabul eder (C2026): metin iki bitişik ham dizeye bölündü
         const char* kCommonGLSL = R"(
 struct Tri { vec4 V0, V1, V2, N0, N1, N2; };
 struct Node { vec4 Min, Max; };
@@ -279,7 +280,8 @@ vec3 ambient(vec3 d)
         return u_AmbientSky.rgb * u_AmbientSky.a;
     float up = d.y;
     vec3 c = up >= 0.0 ? mix(u_AmbientEquator, u_AmbientSky.rgb, smoothstep(0.0, 1.0, up)) : mix(u_AmbientEquator, u_AmbientGround, smoothstep(0.0, 1.0, -up));
-    return c * u_AmbientSky.a;
+)"
+            R"(    return c * u_AmbientSky.a;
 }
 
 vec3 background(vec3 d)
