@@ -1,0 +1,25 @@
+# template: fps
+# 235: Snapdragon GSR 2 (Qualcomm, zamansal yükseltici, yalnız parça gölgelendiricisi): %50 iç çözünürlükte sahne doğru ölçekte
+# çizilir (TAAU ile aynı görüntüye yakın), duran kamerada görüntü oturur (titremez), oyuncu yürürken de görüntü bozulmaz
+wait 40
+focus Game
+wait 60
+cvar r.ScreenPercentage 50
+cvar r.Upscaler 4
+wait 120
+game_region_change mark 0.05 0.05 0.95 0.95
+cvar r.Upscaler 15
+wait 120
+game_region_change expect 0.05 0.05 0.95 0.95 <6
+game_region 0.1 0.1 0.9 0.9 lum mean >40
+game_region_change mark 0.05 0.05 0.95 0.95
+wait 30
+game_region_change expect 0.05 0.05 0.95 0.95 <1.5
+play
+wait 40
+script call Player@FirstPersonShooter SetTestInput 0 0 0 1
+wait 90
+game_region 0.1 0.1 0.9 0.9 lum mean >40
+stop
+cvar r.ResetOverrides
+quit

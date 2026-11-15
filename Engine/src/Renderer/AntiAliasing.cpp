@@ -77,6 +77,7 @@ namespace Conqueror::AntiAliasing
             { U::NearestNeighbor, "Nearest", "Nearest-Neighbor Scaling",               "Blocky pixel upscaling for pixel art (Unity URP Upscaling Filter: Nearest-Neighbor).", false },
             { U::Lanczos, "Lanczos", "Lanczos-2 Scaling",                               "Sharp 4x4 Lanczos upscaling with ringing suppression (Unreal secondary spatial upscaler, Godot).", false },
             { U::SGSR,    "SGSR",    "Snapdragon Game Super Resolution 1 (Qualcomm)",   "Spatial upscaler: edge-directed 12-tap Lanczos on edges only, single pass (open source, any GPU).", false },
+            { U::SGSR2,   "SGSR 2",  "Snapdragon Game Super Resolution 2 (Qualcomm)",   "Temporal upscaler made for mobile GPUs: jittered frames, depth and motion vectors; 5-tap Lanczos plus a variance-clipped history in two fragment-shader passes (open source, any GPU, no compute shaders: also WebGL 2 / WebGPU).", true },
         };
         static_assert(sizeof(s_Upscalers) / sizeof(s_Upscalers[0]) == (size_t)UpscalerMode::Count, "Upscaler table out of sync");
 

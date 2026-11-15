@@ -123,6 +123,7 @@ namespace Conqueror
         NearestNeighbor,// Unity URP Upscaling Filter: en yakın komşu (piksel sanatı)
         Lanczos,        // Unreal r.Upscale.Quality / Godot: Lanczos-2 (halka bastırmalı)
         SGSR,           // Qualcomm Snapdragon Game Super Resolution 1 (uzamsal, açık kaynak)
+        SGSR2,          // Qualcomm Snapdragon Game Super Resolution 2 (zamansal, açık kaynak, yalnız parça gölgelendiricisi)
         Count
     };
 

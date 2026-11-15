@@ -1,0 +1,101 @@
+#language GLSL
+// Snapdragon Game Super Resolution 2 (Qualcomm SGSR 2, 2-pass-fs), Convert geçişi. Kaynak: SnapdragonStudios/snapdragon-gsr
+// sgsr/v2/include/glsl_2_pass_fs/sgsr2_convert.fs, Copyright (c) 2024 Qualcomm Innovation Center, Inc., BSD-3-Clause
+// (Include/ThirdParty/sgsr/LICENSE). Motora uyarlama: hareket, motorun nesne hız arabelleğinden (xy uv, x > 5000: yok) ya da
+// kamera yeniden izdüşümünden (TAAU ile aynı: titreşimli ters matris + önceki karenin titreşimsiz matrisi) gelir; OpenGL derinliği
+// (0 yakın, 1 uzak). Çıktı (iç çözünürlük, RGBA16F): xy = NDC hareketi (şimdiki - önceki), z = derinlik kırpma ağırlığı.
+#type vertex
+#version 450 core
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+out vec2 v_UV;
+void main()
+{
+    v_UV = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+#include "Include/GatherCompat.glsl"
+layout(location = 0) out vec4 MotionDepthClipAlphaBuffer;
+in vec2 v_UV;
+
+uniform sampler2D u_Depth;
+uniform sampler2D u_Velocity;
+uniform int u_HasVelocity = 0;
+uniform int u_CameraStill = 0;
+uniform mat4 u_InvViewProj;      // bu karenin titreşimli ters matrisi
+uniform mat4 u_PrevViewProj;     // önceki karenin titreşimsiz matrisi
+uniform vec2 u_RenderSize;
+uniform vec2 u_RenderSizeRcp;
+uniform vec2 u_JitterUV;         // bu karenin titreşimi (uv)
+uniform float u_CameraFovAngleHor;   // tan(dikey görüş açısı / 2) * en / boy
+
+void main()
+{
+    vec2 texCoord = v_UV;
+    ivec2 InputPos = ivec2(texCoord * u_RenderSize);
+    vec2 gatherCoord = texCoord - vec2(0.5) * u_RenderSizeRcp;
+
+    // 4x4 bloğun en yakın derinliği (dört gather)
+    //      a  b  c  d
+    //      e  f  g  h
+    //      i  j  k  l
+    //      m  n  o  p
+    vec4 btmLeft = textureGather(u_Depth, gatherCoord, 0);
+    vec2 v10 = vec2(u_RenderSizeRcp.x * 2.0, 0.0);
+    vec4 btmRight = textureGather(u_Depth, gatherCoord + v10, 0);
+    vec2 v12 = vec2(0.0, u_RenderSizeRcp.y * 2.0);
+    vec4 topLeft = textureGather(u_Depth, gatherCoord + v12, 0);
+    vec2 v14 = vec2(u_RenderSizeRcp.x * 2.0, u_RenderSizeRcp.y * 2.0);
+    vec4 topRight = textureGather(u_Depth, gatherCoord + v14, 0);
+    float maxC = min(min(min(btmLeft.z, btmRight.w), topLeft.y), topRight.x);
+    float btmLeft4 = min(min(min(btmLeft.y, btmLeft.x), btmLeft.z), btmLeft.w);
+    float btmLeftMax9 = min(topLeft.x, min(min(maxC, btmLeft4), btmRight.x));
+
+    float depthclip = 0.0;
+    if (maxC < 1.0 - 1.0e-05)
+    {
+        float btmRight4 = min(min(min(btmRight.y, btmRight.x), btmRight.z), btmRight.w);
+        float topLeft4 = min(min(min(topLeft.y, topLeft.x), topLeft.z), topLeft.w);
+        float topRight4 = min(min(min(topRight.y, topRight.x), topRight.z), topRight.w);
+
+        float Wdepth = 0.0;
+        float Ksep = 1.37e-05;
+        float Kfov = u_CameraFovAngleHor;
+        float diagonal_length = length(u_RenderSize);
+        float Ksep_Kfov_diagonal = Ksep * Kfov * diagonal_length;
+
+        float Depthsep = Ksep_Kfov_diagonal * (1.0 - maxC);
+        float EPSILON = 1.19e-07;
+        Wdepth += clamp(Depthsep / (abs(maxC - btmLeft4) + EPSILON), 0.0, 1.0);
+        Wdepth += clamp(Depthsep / (abs(maxC - btmRight4) + EPSILON), 0.0, 1.0);
+        Wdepth += clamp(Depthsep / (abs(maxC - topLeft4) + EPSILON), 0.0, 1.0);
+        Wdepth += clamp(Depthsep / (abs(maxC - topRight4) + EPSILON), 0.0, 1.0);
+        depthclip = clamp(1.0 - Wdepth * 0.25, 0.0, 1.0);
+    }
+
+    // Hareket (uv): nesne hızı varsa o, yoksa en yakın derinlikle kamera yeniden izdüşümü
+    vec2 velocity = vec2(0.0);
+    bool objectVelocity = false;
+    if (u_HasVelocity == 1)
+    {
+        vec4 ov = texelFetch(u_Velocity, InputPos, 0);
+        if (ov.x < 5000.0)
+        {
+            velocity = ov.xy;
+            objectVelocity = true;
+        }
+    }
+    if (!objectVelocity && u_CameraStill == 0)
+    {
+        vec4 world = u_InvViewProj * vec4(texCoord * 2.0 - 1.0, btmLeftMax9 * 2.0 - 1.0, 1.0);
+        world /= world.w;
+        vec4 prevClip = u_PrevViewProj * world;
+        if (prevClip.w > 0.0)
+            velocity = (texCoord - u_JitterUV) - (prevClip.xy / prevClip.w * 0.5 + 0.5);
+    }
+    // SGSR 2 hareketi NDC biriminde (Upscale: PrevUV = uv - 0.5 * motion)
+    MotionDepthClipAlphaBuffer = vec4(velocity * 2.0, depthclip, 0.0);
+}

@@ -23,7 +23,9 @@ Guides and generated reference pages are in [Docs/](Docs/README.md): [getting st
 - HDR PBR forward renderer with cascaded shadow atlas, image-based lighting (prefiltered environment + L2 irradiance),
   reflection probes, adaptive probe volumes, lightmaps, fog, SSAO, bloom, tonemapping
 - Anti-aliasing: FXAA, SMAA (and SMAA T2X), TAA, MSAA, SSAA, CMAA2, MLAA and more (some need vendor OpenGL extensions);
-  upscaling: FSR 1, FSR 2.2, NVIDIA Image Scaling, TAAU, Snapdragon GSR 1, Lanczos, Bilinear and Nearest-Neighbor, plus CAS sharpening
+  upscaling: FSR 1, FSR 2.2, NVIDIA Image Scaling, TAAU, Snapdragon GSR 1 and 2, Lanczos, Bilinear and Nearest-Neighbor, plus CAS sharpening
+- Each method is selectable only when the GPU can run it (checked on the GPU and its driver); Debug > Rendering > Simulate GPU
+  previews the menus for other GPUs and Run Upscaler Self-Test writes a report of every method on this GPU
 - DLSS, XeSS, MetalFX and PSSR appear in the editor but are **not integrated** (their SDKs need Vulkan/DirectX, Windows,
   Apple or console toolchains); the editor shows the reason next to each one
 - Batched 2D renderer, sprite sheets and sprite editor, tilemaps (square/hex), text (FreeType), particles, ribbons/trails, terrain

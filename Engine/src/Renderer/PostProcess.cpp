@@ -34,6 +34,9 @@ namespace Conqueror
 {
     namespace
     {
+        // Ton eşlenmiş LDR karede (RunFinal) çözülen zamansal yükselticiler: TAA çözümünün yerini alır, kendi geçmişlerini tutar
+        bool IsLDRTemporalUpscaler(UpscalerMode mode) { return mode == UpscalerMode::TAAU || mode == UpscalerMode::SGSR2; }
+
         std::unordered_map<std::string, std::shared_ptr<Shader>> s_Shaders;
         std::shared_ptr<VertexArray> s_QuadVA;
         std::shared_ptr<VertexBuffer> s_QuadVB;
@@ -120,6 +123,8 @@ namespace Conqueror
         LoadShader("SMAABlend", "Engine/src/Shaders/PostProcess/SMAA_Blend.cqsh");
         LoadShader("SMAAT2xResolve", "Engine/src/Shaders/PostProcess/SMAA_T2xResolve.cqsh");
         LoadShader("TAAU", "Engine/src/Shaders/PostProcess/TAAU.cqsh");
+        LoadShader("SGSR2_Convert", "Engine/src/Shaders/PostProcess/SGSR2_Convert.cqsh");
+        LoadShader("SGSR2_Upscale", "Engine/src/Shaders/PostProcess/SGSR2_Upscale.cqsh");
         LoadShader("MotionVectors", "Engine/src/Shaders/PostProcess/MotionVectors.cqsh");
         LoadShader("GBAAResolve", "Engine/src/Shaders/PostProcess/GBAA_Resolve.cqsh");
         LoadShader("SRAAResolve", "Engine/src/Shaders/PostProcess/SRAA_Resolve.cqsh");
@@ -227,6 +232,9 @@ namespace Conqueror
         DestroyTarget(m_T2xHistory[1]);
         DestroyTarget(m_TAAUHistory[0]);
         DestroyTarget(m_TAAUHistory[1]);
+        DestroyTarget(m_SGSR2Motion);
+        DestroyTarget(m_SGSR2History[0]);
+        DestroyTarget(m_SGSR2History[1]);
         if (m_PrevDepth)
         {
             glDeleteTextures(1, &m_PrevDepth);
@@ -702,6 +710,7 @@ namespace Conqueror
         m_HasPrevViewProj = false;
         m_FSR2Valid = false;
         m_TAAUValid = false;
+        m_SGSR2Valid = false;
         m_T2xValid = false;
         m_StabValid = false;
         m_GIHistoryValid = false;
@@ -1128,7 +1137,7 @@ namespace Conqueror
         if (!AntiAliasing::IsSupersampling(aa))
             m_Upscaler = AntiAliasing::ResolveUpscalerForThisSystem(plan.Upscaler);
         // Ortografik kamerada titreşim yok: zamansal yükseltici yerine uzamsal FSR 1
-        if (camera.Orthographic && (m_Upscaler == UpscalerMode::TAAU || m_Upscaler == UpscalerMode::FSR2))
+        if (camera.Orthographic && (IsLDRTemporalUpscaler(m_Upscaler) || m_Upscaler == UpscalerMode::FSR2))
             m_Upscaler = UpscalerMode::FSR1;
         // FSR 2 bağlamı kurulamadıysa (gölgelendirici / sürücü): yükseltici FSR 1, FSR AA yerine TAA
         if (m_FSR2 && m_FSR2->HasFailed())
@@ -1740,6 +1749,72 @@ namespace Conqueror
             }
         }
 
+        auto sgsrConvert = PostProcess::GetShader("SGSR2_Convert");
+        auto sgsrUpscale = PostProcess::GetShader("SGSR2_Upscale");
+        if (up == UpscalerMode::SGSR2 && m_JitterActive && Valid(sgsrConvert) && Valid(sgsrUpscale) && Valid(sharpen))
+        {
+            // Snapdragon GSR 2 (2 geçiş, parça gölgelendiricisi): Convert iç çözünürlükte hareket + derinlik kırpma, Upscale çıktı
+            // çözünürlüğünde yükseltme + geçmiş; sonra TAAU gibi çıktıya keskinleştirerek
+            const glm::vec2 renderSize((float)m_Width, (float)m_Height), outputSize((float)outW, (float)outH);
+            m_SGSR2StillFrames = m_CameraStill ? m_SGSR2StillFrames + 1 : 0;
+            EnsureTarget(m_SGSR2Motion, m_Width, m_Height, GL_RGBA16F);
+            glBindFramebuffer(GL_FRAMEBUFFER, m_SGSR2Motion.Framebuffer);
+            glViewport(0, 0, (GLsizei)m_Width, (GLsizei)m_Height);
+            sgsrConvert->Bind();
+            sgsrConvert->SetInt("u_Depth", 0);
+            sgsrConvert->SetInt("u_Velocity", 1);
+            sgsrConvert->SetInt("u_HasVelocity", m_FinalHasVelocity ? 1 : 0);
+            sgsrConvert->SetInt("u_CameraStill", m_CameraStill ? 1 : 0);
+            sgsrConvert->SetMat4("u_InvViewProj", m_FinalInvViewProj);
+            sgsrConvert->SetMat4("u_PrevViewProj", m_PrevViewProj);
+            sgsrConvert->SetFloat2("u_RenderSize", renderSize);
+            sgsrConvert->SetFloat2("u_RenderSizeRcp", 1.0f / renderSize);
+            sgsrConvert->SetFloat2("u_JitterUV", m_JitterNDC * 0.5f);
+            sgsrConvert->SetFloat("u_CameraFovAngleHor", std::tan(m_FinalFovY * 0.5f) * renderSize.x / renderSize.y);
+            BindTexture(0, GetSceneDepthTexture());
+            BindTexture(1, m_FinalHasVelocity ? m_Velocity.Texture : 0);
+            PostProcess::DrawFullscreenQuad();
+
+            const int ni = 1 - m_SGSR2Index;
+            EnsureTarget(m_SGSR2History[0], outW, outH, GL_RGBA16F);
+            EnsureTarget(m_SGSR2History[1], outW, outH, GL_RGBA16F);
+            const bool historyOk = m_SGSR2Valid && m_HasPrevViewProj && m_SGSR2History[m_SGSR2Index].Width == outW && m_SGSR2History[m_SGSR2Index].Height == outH;
+            glBindFramebuffer(GL_FRAMEBUFFER, m_SGSR2History[ni].Framebuffer);
+            glViewport(0, 0, (GLsizei)outW, (GLsizei)outH);
+            sgsrUpscale->Bind();
+            sgsrUpscale->SetInt("u_PrevOutput", 0);
+            sgsrUpscale->SetInt("u_MotionDepthClipAlphaBuffer", 1);
+            sgsrUpscale->SetInt("u_InputColor", 2);
+            sgsrUpscale->SetFloat2("u_RenderSize", renderSize);
+            sgsrUpscale->SetFloat2("u_OutputSize", outputSize);
+            sgsrUpscale->SetFloat2("u_RenderSizeRcp", 1.0f / renderSize);
+            sgsrUpscale->SetFloat2("u_JitterOffset", m_JitterNDC * 0.5f * renderSize);
+            // Qualcomm'un örneğindeki değerler: çıktı / iç genişlik ve alan oranının küpü (en çok 20)
+            const float areaRatio = (outputSize.x * outputSize.y) / std::max(1.0f, renderSize.x * renderSize.y);
+            sgsrUpscale->SetFloat2("u_ScaleRatio", glm::vec2(outputSize.x / renderSize.x, std::min(20.0f, areaRatio * areaRatio * areaRatio)));
+            sgsrUpscale->SetFloat("u_MinLerpContribution", m_SGSR2StillFrames > 5 ? 0.3f : 0.0f);
+            sgsrUpscale->SetFloat("u_Reset", historyOk ? 0.0f : 1.0f);
+            BindTexture(0, m_SGSR2History[m_SGSR2Index].Texture);
+            BindTexture(1, m_SGSR2Motion.Texture);
+            BindTexture(2, cur);
+            PostProcess::DrawFullscreenQuad();
+            m_SGSR2Index = ni;
+            m_SGSR2Valid = true;
+
+            toOutput();
+            sharpen->Bind();
+            sharpen->SetInt("u_ScreenTexture", 0);
+            sharpen->SetFloat2("u_InverseScreenSize", glm::vec2(1.0f / (float)outW, 1.0f / (float)outH));
+            sharpen->SetFloat("u_Amount", std::min(0.5f * upSharp + ((settings.Sharpen && !m_CASSharpen) ? settings.SharpenAmount : 0.0f), 1.0f));
+            sharpen->SetInt("u_HasMotionState", m_CameraStill ? 0 : 2);
+            sharpen->SetFloat("u_MotionAmount", kTAAMotionSharpen);
+            BindTexture(0, m_SGSR2History[ni].Texture);
+            PostProcess::DrawFullscreenQuad();
+            sharpen->SetInt("u_HasMotionState", 0);
+            Renderer::GetStats().PostProcessPasses += 3;
+            return;
+        }
+
         auto taau = PostProcess::GetShader("TAAU");
         if (up == UpscalerMode::TAAU && m_JitterActive && Valid(taau) && Valid(sharpen))
         {
@@ -2061,6 +2136,7 @@ namespace Conqueror
                 m_HistoryValid = false;
                 m_FSR2Valid = false;
                 m_TAAUValid = false;
+                m_SGSR2Valid = false;
                 m_T2xValid = false;
                 m_StabValid = false;
             }
@@ -2073,13 +2149,13 @@ namespace Conqueror
             RunSceneEffects(settings, camera, time);
         m_TAAResolved = false;
         // TAAU seçiliyken zamansal kenar yumuşatma TAAU'nun kendisidir (Unreal'daki gibi zamansal yükseltici TAA'nın yerini alır)
-        if (fx && UsesTAAResolve(m_AAMode, settings) && !camera.Orthographic && m_Upscaler != UpscalerMode::TAAU && !m_UseFSR2)
+        if (fx && UsesTAAResolve(m_AAMode, settings) && !camera.Orthographic && !IsLDRTemporalUpscaler(m_Upscaler) && !m_UseFSR2)
             RunTAA(settings, camera);
         else
             m_HistoryValid = false;
         // SMAA T2x / TAAU: çözüm RunFinal'da (LDR); hız vektörleri ve bu karenin titreşimli ters matrisi şimdi
         const bool t2xSeparate = m_AAMode == AntiAliasingMode::SMAA_T2X && !UsesTAAResolve(m_AAMode, settings);
-        if (fx && (t2xSeparate || m_Upscaler == UpscalerMode::TAAU || m_UseFSR2) && !camera.Orthographic && m_JitterActive)
+        if (fx && (t2xSeparate || IsLDRTemporalUpscaler(m_Upscaler) || m_UseFSR2) && !camera.Orthographic && m_JitterActive)
         {
             m_FinalHasVelocity = RenderObjectVelocity(camera);
             m_FinalInvViewProj = glm::inverse(JitteredProjection(camera) * camera.View);
@@ -2098,6 +2174,8 @@ namespace Conqueror
                 m_T2xValid = false;
             if (m_Upscaler != UpscalerMode::TAAU)
                 m_TAAUValid = false;
+            if (m_Upscaler != UpscalerMode::SGSR2)
+                m_SGSR2Valid = false;
             if (!m_UseFSR2)
                 m_FSR2Valid = false;
             // FSR 2 kamera bilgisi (OpenGL perspektif matrisinden)
@@ -2110,6 +2188,7 @@ namespace Conqueror
         {
             m_T2xValid = false;
             m_TAAUValid = false;
+            m_SGSR2Valid = false;
             m_FSR2Valid = false;
         }
         // Tek kare yöntemlerinde zamansal kararlılık (RunFinal'da, kenar yumuşatmasından sonra): nesne hareket vektörleri, bu
@@ -2213,7 +2292,7 @@ namespace Conqueror
             const AntiAliasingMode next = m_AAMode;
             const bool temporal = fx && !camera.Orthographic && UsesTAAResolve(next, settings);
             const bool t2x = fx && !camera.Orthographic && next == AntiAliasingMode::SMAA_T2X && !temporal;
-            const bool taau = fx && !camera.Orthographic && m_Upscaler == UpscalerMode::TAAU;
+            const bool taau = fx && !camera.Orthographic && IsLDRTemporalUpscaler(m_Upscaler);
             const bool fsr2 = fx && m_UseFSR2;
             m_WantTAA = temporal || t2x || taau || fsr2;   // titreşim (+ hareket bayrağı için normal eki)
             m_WantTXAA = temporal && next == AntiAliasingMode::TXAA && !fsr2;

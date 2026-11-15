@@ -196,6 +196,12 @@ namespace Conqueror
         RenderTarget m_TAAUHistory[2];
         int m_TAAUIndex = 0;
         bool m_TAAUValid = false;
+        // Snapdragon GSR 2: hareket + derinlik kırpma (iç çözünürlük) ve çıktı çözünürlüğünde geçmiş (RGBA16F, LDR)
+        RenderTarget m_SGSR2Motion;
+        RenderTarget m_SGSR2History[2];
+        int m_SGSR2Index = 0;
+        bool m_SGSR2Valid = false;
+        int m_SGSR2StillFrames = 0;
         glm::mat4 m_FinalViewProj{ 1.0f };   // bu karenin titreşimsiz görüş-izdüşümü (TAAU açılma testi)
         // Önceki karenin sahne derinliği (kare sonunda kopyalanır): TAA / TAAU açılma testi. Pikselin kendi noktası önceki karede
         // daha yakın bir yüzeyin arkasındaysa ve o yüzey uzaklaştıysa geçmiş o örtücünündür (arka kenarda iz / çentik)
