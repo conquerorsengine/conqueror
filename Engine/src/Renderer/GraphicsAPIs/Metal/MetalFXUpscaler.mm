@@ -7,6 +7,10 @@
 #include "Core/Logging/Log.h"
 #include "Renderer/RHI/RendererAPI.h"
 
+#include <TargetConditionals.h>
+
+// iOS Simülatöründe MetalFX yok (SDK'da başlığı da yok): orada yer tutucu (aşağıda); CMake de simülatörde MetalFX'e bağlamaz
+#if __has_include(<MetalFX/MetalFX.h>) && !TARGET_OS_SIMULATOR
 #import <MetalFX/MetalFX.h>
 
 namespace Conqueror
@@ -133,5 +137,28 @@ namespace Conqueror
         return false;
     }
 }
+
+#else
+
+namespace Conqueror
+{
+    struct MetalFXUpscaler::State
+    {
+    };
+
+    MetalFXUpscaler::MetalFXUpscaler() : m_State(std::make_unique<State>()) {}
+    MetalFXUpscaler::~MetalFXUpscaler() = default;
+    bool MetalFXUpscaler::Dispatch(const Params&) { return false; }
+    void MetalFXUpscaler::Destroy() {}
+    bool MetalFXUpscaler::HasFailed() const { return true; }
+
+    bool MetalFXUpscaler::IsAvailable(std::string& reason)
+    {
+        reason = "MetalFX is not part of this SDK (the iOS Simulator has no MetalFX).";
+        return false;
+    }
+}
+
+#endif // MetalFX
 
 #endif
