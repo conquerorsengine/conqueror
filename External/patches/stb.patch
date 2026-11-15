@@ -1,0 +1,11 @@
+diff --git b/External/stb/stb_image_impl.cpp b/External/stb/stb_image_impl.cpp
+new file mode 100644
+index 0000000..d5fe3d9
+--- /dev/null
++++ b/External/stb/stb_image_impl.cpp
+@@ -0,0 +1,5 @@
++#define STB_IMAGE_IMPLEMENTATION
++#include "stb_image.h"
++
++#define STB_IMAGE_RESIZE_IMPLEMENTATION
++#include "stb_image_resize2.h"

@@ -1,0 +1,2 @@
+# Yamalar bayt bayt aynı kalmalı: crunch / ImGuiColorTextEdit parçaları upstream dosyalarının CRLF satır sonlarını taşır
+*.patch -text

@@ -1,0 +1,211 @@
+diff --git a/External/ImGuiColorTextEdit/TextEditor.cpp b/External/ImGuiColorTextEdit/TextEditor.cpp
+index 28145d7..d548357 100644
+--- a/External/ImGuiColorTextEdit/TextEditor.cpp
++++ b/External/ImGuiColorTextEdit/TextEditor.cpp
+@@ -756,7 +756,7 @@ void TextEditor::HandleKeyboardInputs()
+ 			Cut();
+ 		else if (ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGuiKey_A))
+ 			SelectAll();
+-		else if (!IsReadOnly() && !ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGuiKey_Enter))
++		else if (!IsReadOnly() && !ctrl && !shift && !alt && (ImGui::IsKeyPressed(ImGuiKey_Enter) || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter)))
+ 			EnterCharacter('\n', false);
+ 		else if (!IsReadOnly() && !ctrl && !alt && ImGui::IsKeyPressed(ImGuiKey_Tab))
+ 			EnterCharacter('\t', shift);
+@@ -766,8 +766,11 @@ void TextEditor::HandleKeyboardInputs()
+ 			for (int i = 0; i < io.InputQueueCharacters.Size; i++)
+ 			{
+ 				auto c = io.InputQueueCharacters[i];
+-				if (c != 0 && (c == '\n' || c >= 32))
++				if (c != 0 && (c == '\n' || c == '\r' || c >= 32))
++				{
++					if (c == '\r') c = '\n';
+ 					EnterCharacter(c, shift);
++				}
+ 			}
+ 			io.InputQueueCharacters.resize(0);
+ 		}
+@@ -877,6 +880,7 @@ void TextEditor::Render()
+ 	}
+ 
+ 	ImVec2 cursorScreenPos = ImGui::GetCursorScreenPos();
++	mCursorOnScreen = false;
+ 	auto scrollX = ImGui::GetScrollX();
+ 	auto scrollY = ImGui::GetScrollY();
+ 
+@@ -938,13 +942,15 @@ void TextEditor::Render()
+ 			if (errorIt != mErrorMarkers.end())
+ 			{
+ 				auto end = ImVec2(lineStartScreenPos.x + contentSize.x + 2.0f * scrollX, lineStartScreenPos.y + mCharAdvance.y);
+-				drawList->AddRectFilled(start, end, mPalette[(int)PaletteIndex::ErrorMarker]);
++				// Conqueror: yalnızca uyarı içeren satırlar sarı/amber
++				const bool warningOnly = errorIt->second.rfind("Warning:", 0) == 0 && errorIt->second.find("Error:") == std::string::npos;
++				drawList->AddRectFilled(start, end, warningOnly ? IM_COL32(150, 110, 20, 90) : mPalette[(int)PaletteIndex::ErrorMarker]);
+ 
+ 				if (ImGui::IsMouseHoveringRect(lineStartScreenPos, end))
+ 				{
+ 					ImGui::BeginTooltip();
+-					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
+-					ImGui::Text("Error at line %d:", errorIt->first);
++					ImGui::PushStyleColor(ImGuiCol_Text, warningOnly ? ImVec4(1.0f, 0.75f, 0.25f, 1.0f) : ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
++					ImGui::Text(warningOnly ? "Warning at line %d:" : "Error at line %d:", errorIt->first);
+ 					ImGui::PopStyleColor();
+ 					ImGui::Separator();
+ 					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.2f, 1.0f));
+@@ -962,6 +968,8 @@ void TextEditor::Render()
+ 
+ 			if (mState.mCursorPosition.mLine == lineNo)
+ 			{
++				mCursorScreenPos = ImVec2(textScreenPos.x + TextDistanceToLineStart(mState.mCursorPosition), lineStartScreenPos.y);
++				mCursorOnScreen = true;
+ 				auto focused = ImGui::IsWindowFocused();
+ 
+ 				// Highlight the current line (where the cursor is)
+@@ -1126,7 +1134,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
+ 	ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::ColorConvertU32ToFloat4(mPalette[(int)PaletteIndex::Background]));
+ 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
+ 	if (!mIgnoreImGuiChild)
+-		ImGui::BeginChild(aTitle, aSize, aBorder, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_NoMove);
++		ImGui::BeginChild(aTitle, aSize, aBorder, ImGuiWindowFlags_NoMove);
+ 
+ 	if (mHandleKeyboardInputs)
+ 	{
+@@ -3157,3 +3165,110 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::Lua()
+ 	}
+ 	return langDef;
+ }
++
++
++// ── Conqueror eklemeleri ──
++static bool CqIsIdentChar(char c)
++{
++	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || ((unsigned char)c & 0x80);
++}
++
++std::string TextEditor::GetWordBeforeCursor() const
++{
++	auto pos = GetActualCursorCoordinates();
++	if (pos.mLine < 0 || pos.mLine >= (int)mLines.size())
++		return "";
++	auto& line = mLines[pos.mLine];
++	int ci = GetCharacterIndex(pos);
++	int s = ci;
++	while (s > 0 && CqIsIdentChar(line[s - 1].mChar))
++		--s;
++	std::string word;
++	for (int i = s; i < ci && i < (int)line.size(); ++i)
++		word += line[i].mChar;
++	return word;
++}
++
++char TextEditor::GetCharBeforeWord() const
++{
++	auto pos = GetActualCursorCoordinates();
++	if (pos.mLine < 0 || pos.mLine >= (int)mLines.size())
++		return 0;
++	auto& line = mLines[pos.mLine];
++	int s = GetCharacterIndex(pos);
++	while (s > 0 && CqIsIdentChar(line[s - 1].mChar))
++		--s;
++	return s > 0 ? line[s - 1].mChar : 0;
++}
++
++void TextEditor::ReplaceWordBeforeCursor(const std::string& aText)
++{
++	if (mReadOnly)
++		return;
++	auto pos = GetActualCursorCoordinates();
++	if (pos.mLine < 0 || pos.mLine >= (int)mLines.size())
++		return;
++	auto& line = mLines[pos.mLine];
++	int ci = GetCharacterIndex(pos);
++	int s = ci;
++	while (s > 0 && CqIsIdentChar(line[s - 1].mChar))
++		--s;
++	Coordinates start(pos.mLine, GetCharacterColumn(pos.mLine, s));
++
++	UndoRecord u;
++	u.mBefore = mState;
++	if (start != pos)
++	{
++		u.mRemoved = GetText(start, pos);
++		u.mRemovedStart = start;
++		u.mRemovedEnd = pos;
++		DeleteRange(start, pos);
++	}
++	Coordinates where = start;
++	u.mAddedStart = start;
++	int lines = InsertTextAt(where, aText.c_str());
++	u.mAdded = aText;
++	u.mAddedEnd = where;
++	SetSelection(where, where);
++	SetCursorPosition(where);
++	Colorize(start.mLine - 1, lines + 3);
++	u.mAfter = mState;
++	AddUndo(u);
++	mTextChanged = true;
++}
++
++void TextEditor::ScrollToLine(int aLine)
++{
++	Coordinates c(std::max(0, std::min(aLine, (int)mLines.size() - 1)), 0);
++	SetSelection(c, c);
++	SetCursorPosition(c);
++	EnsureCursorVisible();
++}
++
++void TextEditor::ReplaceSelection(const std::string& aText)
++{
++	if (mReadOnly)
++		return;
++	UndoRecord u;
++	u.mBefore = mState;
++	Coordinates start = mState.mSelectionStart, end = mState.mSelectionEnd;
++	if (start > end) std::swap(start, end);
++	if (start != end)
++	{
++		u.mRemoved = GetText(start, end);
++		u.mRemovedStart = start;
++		u.mRemovedEnd = end;
++		DeleteRange(start, end);
++	}
++	Coordinates where = start;
++	u.mAddedStart = start;
++	int lines = InsertTextAt(where, aText.c_str());
++	u.mAdded = aText;
++	u.mAddedEnd = where;
++	SetSelection(where, where);
++	SetCursorPosition(where);
++	Colorize(start.mLine - 1, lines + 3);
++	u.mAfter = mState;
++	AddUndo(u);
++	mTextChanged = true;
++}
+diff --git a/External/ImGuiColorTextEdit/TextEditor.h b/External/ImGuiColorTextEdit/TextEditor.h
+index bd52e13..2e126e2 100644
+--- a/External/ImGuiColorTextEdit/TextEditor.h
++++ b/External/ImGuiColorTextEdit/TextEditor.h
+@@ -210,6 +210,15 @@ public:
+ 	void SetReadOnly(bool aValue);
+ 	bool IsReadOnly() const { return mReadOnly; }
+ 	bool IsTextChanged() const { return mTextChanged; }
++	// Conqueror eklemeleri: otomatik tamamlama ve teşhis için
++	ImVec2 GetCursorScreenPos() const { return mCursorScreenPos; }
++	bool IsCursorOnScreen() const { return mCursorOnScreen; }
++	float GetLineHeight() const { return mCharAdvance.y; }
++	std::string GetWordBeforeCursor() const;
++	char GetCharBeforeWord() const;
++	void ReplaceWordBeforeCursor(const std::string& aText);
++	void ReplaceSelection(const std::string& aText);
++	void ScrollToLine(int aLine);
+ 	bool IsCursorPositionChanged() const { return mCursorPositionChanged; }
+ 
+ 	bool IsColorizerEnabled() const { return mColorizerEnabled; }
+@@ -381,6 +390,8 @@ private:
+ 	Breakpoints mBreakpoints;
+ 	ErrorMarkers mErrorMarkers;
+ 	ImVec2 mCharAdvance;
++	ImVec2 mCursorScreenPos = ImVec2(0, 0);
++	bool mCursorOnScreen = false;
+ 	Coordinates mInteractiveStart, mInteractiveEnd;
+ 	std::string mLineBuffer;
+ 	uint64_t mStartTime;

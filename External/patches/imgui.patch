@@ -1,0 +1,47 @@
+diff --git a/External/imgui/backends/imgui_impl_glfw.cpp b/External/imgui/backends/imgui_impl_glfw.cpp
+index d0d21d3..136dc5e 100644
+--- a/External/imgui/backends/imgui_impl_glfw.cpp
++++ b/External/imgui/backends/imgui_impl_glfw.cpp
+@@ -132,6 +132,15 @@
+ #else
+ #define GLFW_HAS_WAYLAND    0
+ #endif
++// MODIFIED by Conqueror's Engine: no Cocoa on iOS / iPadOS (the GLFW functions come from Engine/src/Platform/iOS/GLFWiOS.mm)
++#if defined(__APPLE__)
++#include <TargetConditionals.h>
++#endif
++#if defined(__APPLE__) && !TARGET_OS_IPHONE
++#define IMGUI_GLFW_COCOA 1
++#else
++#define IMGUI_GLFW_COCOA 0
++#endif
+ #include <GLFW/glfw3.h>
+ #ifdef _WIN32
+ #undef APIENTRY
+@@ -139,7 +148,7 @@
+ #define GLFW_EXPOSE_NATIVE_WIN32
+ #endif
+ #include <GLFW/glfw3native.h>
+-#elif defined(__APPLE__)
++#elif IMGUI_GLFW_COCOA
+ #ifndef GLFW_EXPOSE_NATIVE_COCOA    // for glfwGetCocoaWindow()
+ #define GLFW_EXPOSE_NATIVE_COCOA
+ #endif
+@@ -793,7 +802,7 @@ static bool ImGui_ImplGlfw_Init(GLFWwindow* window, bool install_callbacks, Glfw
+     main_viewport->PlatformHandle = (void*)bd->Window;
+ #ifdef _WIN32
+     main_viewport->PlatformHandleRaw = glfwGetWin32Window(bd->Window);
+-#elif defined(__APPLE__)
++#elif IMGUI_GLFW_COCOA
+     main_viewport->PlatformHandleRaw = (void*)glfwGetCocoaWindow(bd->Window);
+ #else
+     IM_UNUSED(main_viewport);
+@@ -1370,7 +1379,7 @@ static void ImGui_ImplGlfw_CreateWindow(ImGuiViewport* viewport)
+ #ifdef _WIN32
+     viewport->PlatformHandleRaw = glfwGetWin32Window(vd->Window);
+     ::SetPropA((HWND)viewport->PlatformHandleRaw, "IMGUI_BACKEND_DATA", bd);
+-#elif defined(__APPLE__)
++#elif IMGUI_GLFW_COCOA
+     viewport->PlatformHandleRaw = (void*)glfwGetCocoaWindow(vd->Window);
+ #endif
+     glfwSetWindowPos(vd->Window, (int)viewport->Pos.x, (int)viewport->Pos.y);
