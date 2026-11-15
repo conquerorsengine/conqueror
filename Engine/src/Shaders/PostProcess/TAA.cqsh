@@ -410,6 +410,7 @@ void main()
     // geçmişe yazılmaz: eskiden geçmiş alevle yükseltilip alev sönünce indiriliyordu; iki yöndeki oran hatası ateş edince zeminin
     // çizgilerini beyaz kenarlı, benekli ve 1-2 saniye soluk bırakıyordu
     bool freezeHistory = false;
+    bool skyFreeze = false;           // gökyüzünü gören piksel (gökyüzü ya da gökyüzüne bakan kenar) duman / alev altında korundu
     bool healed = false;              // geçmişi aynı yüzeydeki işaretsiz komşu texelden onarıldı
     vec3 healColor = vec3(0.0);       // onarımın kaynak texelinin rengi (doğrusal)
     float healStateW = 0.0;
@@ -417,6 +418,27 @@ void main()
     if (!movingNow && (reactiveNow > 0.003 || u_LightingFreeze == 1))
     {
         freezeHistory = sameSurface && !movedBefore;
+        // Gökyüzünü gören piksel (3x3'te gökyüzü: gökyüzünün kendisi ya da gökyüzüne bakan kenar): geçmişi gökyüzüne ya da kenarın
+        // yüzeyine aitse ve kenarla arkası arasındaki kayma (paralaks) yarım pikselden azsa (kamera dönüşü: geri tepme, nişan) geçmiş
+        // korunur, işaret bırakılmaz. Eskiden gökyüzünün üstündeki duman donamadığı için hareket eden sayılıp işaret bırakıyor, işaret
+        // kare kare küplerin gökyüzüne bakan kenarlarına yayılıyor, alev ışığı ve duman o kenarların geçmişine giriyordu: çok ateş edince
+        // üst küplerin üst ve sol kenarlarında beyazımsı çizgi ve tırtıklı köşeler kalıyordu. Yürürken (paralaks büyük) eski davranış:
+        // açılan arka plan eski kenar rengiyle dondurulmaz
+        if (!freezeHistory && farDepth >= 1.0)
+        {
+            bool skyHistory = storedW > 0.5 * ViewW(v_UV, 1.0);
+            float parallaxEdge = 0.0;
+            if (closestDepth < 1.0)
+            {
+                vec4 qa = u_InvViewProj * vec4(closestUV * 2.0 - 1.0, closestDepth * 2.0 - 1.0, 1.0);
+                vec4 qb = u_InvViewProj * vec4(farUV * 2.0 - 1.0, farDepth * 2.0 - 1.0, 1.0);
+                vec4 pa = u_PrevViewProj * (qa / qa.w);
+                vec4 pb = u_PrevViewProj * (qb / qb.w);
+                parallaxEdge = length(((closestUV - (pa.xy / pa.w * 0.5 + 0.5)) - (farUV - (pb.xy / pb.w * 0.5 + 0.5))) / u_Texel);
+            }
+            skyFreeze = closestDepth >= 1.0 ? skyHistory : ((sameSurface || skyHistory) && parallaxEdge < 0.5);
+            freezeHistory = skyFreeze;
+        }
         // Duman altında geçmişi kullanılamayan iç piksel (2x2 ayak izinde hareket işareti var: silahın kenarı, kamera kıpırdayınca
         // küpün kenarı) eskiden hareket eden sayılıp kendini de işaretliyordu: işaret duman sürdükçe her karede bir piksel yayılıyor,
         // o bölgede duman geçmişe yazılıyor, bölge arpacığın çevresinde ve küpün kenarı boyunca keskin kenarlı açık leke olarak
@@ -1023,7 +1045,8 @@ void main()
             for (int y = -1; y <= 1; ++y)
             for (int x = -1; x <= 1; ++x)
                 histBox += RGBToYCoCg(Compress(max(texelFetch(u_History, clamp(hn + ivec2(x, y), ivec2(0), histSize - 1), 0).rgb, vec3(0.0))));
-            float showCurrent = u_LightingChanged == 1 ? 1.0 : smoothstep(0.3, 0.8, reactiveNow);
+            // Gökyüzünü gören korunan pikselde alev karesinde de dumanın katkısıyla (ham titreşimli kare kenarı tırtıklı gösteriyordu)
+            float showCurrent = (u_LightingChanged == 1 && !skyFreeze) ? 1.0 : smoothstep(0.3, 0.8, reactiveNow);
             vec3 base = rawHistory, curMean = boxMean, histMean = histBox / 9.0;
             if (healed)
             {
