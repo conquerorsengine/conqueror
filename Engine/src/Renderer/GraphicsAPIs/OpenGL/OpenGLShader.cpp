@@ -17,6 +17,31 @@
 
 namespace Conqueror
 {
+    namespace
+    {
+        std::vector<std::pair<std::string, std::string>> s_ShaderFailures;
+    }
+
+    void RecordShaderFailure(const std::string& name, const std::string& reason)
+    {
+        for (auto& f : s_ShaderFailures)
+            if (f.first == name)
+            {
+                f.second = reason;
+                return;
+            }
+        s_ShaderFailures.push_back({ name, reason });
+    }
+
+    const std::vector<std::pair<std::string, std::string>>& GetShaderFailures() { return s_ShaderFailures; }
+
+    // Yeniden derleme / yedek yol başarılı: kayıt silinir
+    static void ClearShaderFailure(const std::string& name)
+    {
+        s_ShaderFailures.erase(std::remove_if(s_ShaderFailures.begin(), s_ShaderFailures.end(), [&](const auto& f) { return f.first == name; }),
+                               s_ShaderFailures.end());
+    }
+
     static GLenum ShaderTypeFromString(const std::string& rawType)
     {
         std::string type = rawType;
@@ -335,6 +360,7 @@ namespace Conqueror
 
                 m_LastError += std::string("[") + ShaderStageName(type) + "] " + infoLog.data() + "\n";
                 CQ_CORE_ERROR("Shader '{0}' ({1}) compile error:\n{2}", m_Name, ShaderStageName(type), infoLog.data());
+                RecordShaderFailure(m_Name, std::string(ShaderStageName(type)) + ": " + infoLog.data());
                 failed = true;
                 continue;
             }
@@ -383,6 +409,7 @@ namespace Conqueror
             if (m_FromSPIRV)
                 return retryWithoutSPIRV();
             CQ_CORE_ERROR("Shader '{0}' link error:\n{1}", m_Name, infoLog.data());
+            RecordShaderFailure(m_Name, infoLog.data());
             return false;
         }
 
@@ -393,6 +420,7 @@ namespace Conqueror
         }
 
         ApplyLinkDirectives(program, finalSources);
+        ClearShaderFailure(m_Name);
         m_RendererID = program;
         m_UniformLocationCache.clear();
         return true;

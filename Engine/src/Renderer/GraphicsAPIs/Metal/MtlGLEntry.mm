@@ -4,6 +4,7 @@
 
 #include "MtlGL.h"
 #include "Core/Logging/Log.h"
+#include "Renderer/ShaderCompiler/ShaderCompiler.h"
 
 #include <algorithm>
 #include <array>
@@ -128,6 +129,10 @@ namespace Conqueror::MtlGL
         s_Limits.MaxTextureSize = 16384;
         s_Limits.MaxCubeMapSize = 16384;
         s_Limits.MaxTextureUnits = 31;
+        // Metal aşama başına en çok 16 örnekleyici bağlar (argüman arabelleksiz): PBR / Terrain / 2B toplu çizim 16'dan fazla birleşik
+        // örnekleyici istediği için bağlanamıyordu (yalnız gökyüzü çiziliyordu). WebGPU'daki gibi 16 dokuluk bütçe: yansıtma probu gökyüzü
+        // yansımasını kullanır, APV / dinamik GI / düzlemsel yansıma örneklenmez, 2B toplu çizim 14 yuva
+        ShaderCompiler::SetTextureBudget16(true);
         s_Limits.MaxVertexAttribs = 16;
         s_Limits.MaxUniformBufferBindings = MTL::kMaxConstantBuffers;
         s_Limits.MaxUniformBlockSize = 65536;

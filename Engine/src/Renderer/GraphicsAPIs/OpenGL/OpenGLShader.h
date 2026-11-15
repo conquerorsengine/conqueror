@@ -3,12 +3,19 @@
 #include "Renderer/RHI/Shader.h"
 #include "Renderer/ShaderCompiler/ShaderCompiler.h"
 #include <glm/glm.hpp>
+#include <string>
+#include <utility>
+#include <vector>
 
 // TODO: REMOVE!
 typedef unsigned int GLenum;
 
 namespace Conqueror
 {
+    // Derlenemeyen / bağlanamayan gölgelendiriciler (ad, neden): otomasyon "gpu expect_shaders_ok" bunlara bakar
+    void RecordShaderFailure(const std::string& name, const std::string& reason);
+    CQ_API const std::vector<std::pair<std::string, std::string>>& GetShaderFailures();
+
     class OpenGLShader : public Shader
     {
     public:

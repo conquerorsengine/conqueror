@@ -117,6 +117,7 @@
 #include <sstream>
 #include "Renderer/AntiAliasing.h"
 #include "Renderer/UpscalerSelfTest.h"
+#include "Renderer/GraphicsAPIs/OpenGL/OpenGLShader.h"
 #include "Renderer/RHI/RendererAPI.h"
 
 #ifdef CQ_PLATFORM_LINUX
@@ -6050,6 +6051,23 @@ namespace Conqueror::Editor
             };
             if (a.size() < 2) { err = "gpu simulate|expect_aa|expect_upscaler|self_test|self_test_done|expect_report|report_has_no ..."; return false; }
             const std::string sub = a[1];
+            if (sub == "expect_shaders_ok")
+            {
+                // Çizim gölgelendiricilerinin hepsi bu arka uçta bağlandı mı (arka ucun bilinen eksikleri hariç: hesaplama gölgelendiricisi,
+                // çok örnekli doku). Metal'de PBR / Terrain 16 örnekleyici sınırını aşıp yalnız gökyüzü çiziliyordu
+                std::string bad;
+                for (const auto& [name, reason] : GetShaderFailures())
+                {
+                    const bool known = reason.find("Only vertex and fragment shaders") != std::string::npos ||
+                                       reason.find("sampler2DMS") != std::string::npos || reason.find("Multisample textures") != std::string::npos ||
+                                       reason.find("compute") != std::string::npos || reason.find("Compute") != std::string::npos;
+                    Automation::Report(std::string("SHADER ") + (known ? "unsupported here: " : "FAILED: ") + name + " (" + reason.substr(0, 160) + ")");
+                    if (!known)
+                        bad += (bad.empty() ? "" : ", ") + name;
+                }
+                if (!bad.empty()) { err = "shaders failed: " + bad; return false; }
+                return true;
+            }
             if (sub == "expect_backend" && a.size() > 2)
             {
                 // gpu expect_backend <OpenGL|Vulkan|Metal|...>: editörün gerçekten o grafik API'siyle çizdiği (CI: macOS'ta Metal)
