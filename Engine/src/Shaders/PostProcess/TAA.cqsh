@@ -113,6 +113,10 @@ vec3 SampleHistory(vec2 uv)
         wx[i] = Lanczos3(float(i - 2) - f.x);
         wy[i] = Lanczos3(float(i - 2) - f.y);
     }
+    // Örnekleme sıkıştırılmış (ekrandaki parlaklığa yakın) uzayda yapılır, sonuç doğrusala geri açılır. Doğrusal HDR'de parlak gökyüzü
+    // ile koyu duvarın karışımı ekranda gökyüzüne çok yakın görünür: hareket ederken her karedeki yeniden örnekleme kenarı koyu yüzeyin
+    // içine doğru aydınlatıyor, bu birikip koşarken koyu duvarların gökyüzüne bakan üst kenarında beyaz bir çizgi bırakıyordu (durunca
+    // gidiyordu). Kamera dururken (tam texel konumu) sonuç aynıdır
     vec3 sum = vec3(0.0);
     float wsum = 0.0;
     ivec2 b = ivec2(base);
@@ -120,7 +124,7 @@ vec3 SampleHistory(vec2 uv)
     for (int i = 0; i < 6; ++i)
     {
         float w = wx[i] * wy[j];
-        sum += texelFetch(u_History, clamp(b + ivec2(i - 2, j - 2), ivec2(0), hsz - 1), 0).rgb * w;
+        sum += Compress(max(texelFetch(u_History, clamp(b + ivec2(i - 2, j - 2), ivec2(0), hsz - 1), 0).rgb, vec3(0.0))) * w;
         wsum += w;
     }
     // Halka önleme: eksi loblar keskin kenarda (duvar üstü / gökyüzü) alt / üst taşma üretir; sonuç bilineer ayak izindeki
@@ -130,11 +134,11 @@ vec3 SampleHistory(vec2 uv)
     for (int j = 1; j <= 4; ++j)
     for (int i = 1; i <= 4; ++i)
     {
-        vec3 t = texelFetch(u_History, clamp(b + ivec2(i - 2, j - 2), ivec2(0), hsz - 1), 0).rgb;
+        vec3 t = Compress(max(texelFetch(u_History, clamp(b + ivec2(i - 2, j - 2), ivec2(0), hsz - 1), 0).rgb, vec3(0.0)));
         lo = min(lo, t);
         hi = max(hi, t);
     }
-    return clamp(max(sum / max(wsum, 1e-4), vec3(0.0)), lo, hi);
+    return Expand(clamp(max(sum / max(wsum, 1e-4), vec3(0.0)), lo, hi));
 }
 
 // Derinlik tamponu değerinden görüş uzaklığı (kırpma uzayı w)
