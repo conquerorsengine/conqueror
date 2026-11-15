@@ -60,8 +60,8 @@ endif()
 
 # sljit: ConquerorScript JIT arka ucu (x86-32/64, ARM32/64, RISC-V, PPC, s390x, LoongArch, MIPS)
 set(CQ_SLJIT_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/../External/sljit/sljit_src/sljitLir.c)
-# Web: WebAssembly makine kodu üretemez, JIT derlenmez (CQSJit.cpp yorumlayıcıya bırakır)
-if(NOT EMSCRIPTEN)
+# Web: WebAssembly makine kodu üretemez; iOS çalıştırılabilir bellek vermez: JIT derlenmez (CQSJit.cpp yorumlayıcıya bırakır)
+if(NOT EMSCRIPTEN AND NOT IOS)
     target_sources(${PROJECT_NAME} PRIVATE ${CQ_SLJIT_SOURCE})
 endif()
 set_source_files_properties(${CQ_SLJIT_SOURCE} PROPERTIES
@@ -153,8 +153,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE CQ_LUAU_ENABLED)
 # ── Vulkan arka ucu ── (GL -> Vulkan 1.2/1.3 çeviri katmanı; --vulkan / CQ_RENDERER=vulkan / Player Settings ile seçilir)
 # Başlıklar External/Vulkan-Headers'da; yükleyici çalışma anında açılır (VulkanLoader): Vulkan SDK gerekmez ve
 # yürütülebilir dosya vulkan-1.dll / libvulkan olmadan da açılır (OpenGL / D3D11'e düşer).
-if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "QNX" OR EMSCRIPTEN)
-    # Android / QNX: OpenGL ES 3.x (EGL). Vulkan arka ucu GLFW yüzeyi kullandığı için şimdilik kapalı. Web: WebGL 2 / WebGPU
+if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "QNX" OR EMSCRIPTEN OR IOS)
+    # Android / QNX: OpenGL ES 3.x (EGL). Vulkan arka ucu GLFW yüzeyi kullandığı için şimdilik kapalı. Web: WebGL 2 / WebGPU. iOS: Metal
     option(CQ_ENABLE_VULKAN "Build the Vulkan backend" OFF)
 else()
     option(CQ_ENABLE_VULKAN "Build the Vulkan backend" ON)
@@ -238,7 +238,19 @@ if(APPLE)
     target_sources(${PROJECT_NAME} PRIVATE ${CQ_METAL_SOURCES})
     # Önderlenmiş başlık ARC olmadan C++ için derlenir; ARC açık Objective-C++ dosyaları onu kullanamaz
     set_source_files_properties(${CQ_METAL_SOURCES} PROPERTIES COMPILE_FLAGS "-fobjc-arc" SKIP_PRECOMPILE_HEADERS ON)
-    target_link_libraries(${PROJECT_NAME} PUBLIC "-framework Metal" "-framework QuartzCore" "-framework Cocoa")
+    if(IOS)
+        # iOS / iPadOS: UIKit penceresi + girdi (GLFW işlevleri), oyun kumandaları; ses (miniaudio) AVAudioSession ile
+        file(GLOB CQ_IOS_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/Platform/iOS/*.mm")
+        target_sources(${PROJECT_NAME} PRIVATE ${CQ_IOS_SOURCES})
+        set_source_files_properties(${CQ_IOS_SOURCES} PROPERTIES COMPILE_FLAGS "-fobjc-arc" SKIP_PRECOMPILE_HEADERS ON)
+        # miniaudio iOS'ta AVFoundation'ı (Objective-C başlığı) içerir: ses motoru Objective-C++ olarak derlenir
+        set_source_files_properties(src/Core/Audio/AudioEngine.cpp PROPERTIES COMPILE_FLAGS "-x objective-c++" SKIP_PRECOMPILE_HEADERS ON)
+        target_link_libraries(${PROJECT_NAME} PUBLIC "-framework Metal" "-framework QuartzCore" "-framework UIKit" "-framework Foundation"
+                              "-framework GameController" "-framework AVFoundation" "-framework AudioToolbox" "-framework CoreAudio"
+                              "-framework CoreFoundation")
+    else()
+        target_link_libraries(${PROJECT_NAME} PUBLIC "-framework Metal" "-framework QuartzCore" "-framework Cocoa")
+    endif()
     target_compile_definitions(${PROJECT_NAME} PUBLIC CQ_METAL_ENABLED)
     message(STATUS "Conqueror: Metal backend enabled")
 endif()
@@ -259,10 +271,10 @@ if(CQ_DEFAULT_GL_PROFILE)
 endif()
 
 # Python (CPython gömme): geliştirme dosyaları bulunursa (Android'de ana makinenin Python'u kullanılamaz)
-if(NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX" AND NOT EMSCRIPTEN)
+if(NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX" AND NOT EMSCRIPTEN AND NOT IOS)
     find_package(Python3 COMPONENTS Development.Embed QUIET)
 endif()
-if(Python3_Development.Embed_FOUND AND NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX")
+if(Python3_Development.Embed_FOUND AND NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX" AND NOT IOS)
     get_target_property(_cq_engine_type ${PROJECT_NAME} TYPE)
     if(_cq_engine_type STREQUAL "SHARED_LIBRARY" AND NOT WIN32)
         # Python ayrı modül (libCQPython.so): motor onu gerektiğinde açar. Derlenen oyun Python kurulu olmayan
@@ -288,10 +300,10 @@ if(Python3_Development.Embed_FOUND AND NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STR
 endif()
 
 # Java (JNI): yalnızca başlıklar; libjvm çalışma anında yüklenir (JAVA_HOME)
-if(NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX" AND NOT EMSCRIPTEN)
+if(NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX" AND NOT EMSCRIPTEN AND NOT IOS)
     find_package(JNI QUIET COMPONENTS JVM)
 endif()
-if(JNI_INCLUDE_DIRS AND NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX")
+if(JNI_INCLUDE_DIRS AND NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX" AND NOT IOS)
     target_include_directories(${PROJECT_NAME} PRIVATE ${JNI_INCLUDE_DIRS})
     target_compile_definitions(${PROJECT_NAME} PRIVATE CQ_JAVA_ENABLED)
     message(STATUS "ConquerorEngine: Java scripting enabled")
@@ -376,6 +388,10 @@ elseif(EMSCRIPTEN)
         -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 -sFULL_ES3=1 -sGL_ENABLE_GET_PROC_ADDRESS=1
         -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=268435456 -sMAXIMUM_MEMORY=4294967296 -sSTACK_SIZE=8388608
         -sFORCE_FILESYSTEM=1 -lidbfs.js)
+elseif(IOS)
+    # iOS / iPadOS: çerçeveler Metal bölümünde; X11 / D-Bus yok
+    find_package(Threads REQUIRED)
+    target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads)
 else()
     if(CMAKE_SYSTEM_NAME MATCHES "BSD|DragonFly")
         # BSD: GL işlevleri glad'dan; glfw3.h sistemde olmayabilecek GL/gl.h başlığını aramasın

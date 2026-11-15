@@ -85,7 +85,7 @@ SPIRV-Cross and compiled with `d3dcompiler_47` (shared code in `.../DirectX/Comm
 | Vulkan 1.3 (or 1.2 + `VK_KHR_dynamic_rendering` / `VK_EXT_extended_dynamic_state`) | `--vulkan` | loader opened at runtime (no SDK needed to build, no hard dependency on `vulkan-1.dll` / `libvulkan`); MoltenVK portability supported |
 | Direct3D 11 (feature level 11_0) | `--d3d11`, default on Windows | own mip generation, depth resolve via shader, large sampler arrays split for the 16-sampler limit |
 | Direct3D 12 (feature level 11_0, Windows 10+) | `--d3d12` | `d3d12.dll` opened at runtime; one root signature (12 root CBVs + SRV/sampler tables), pipeline state cache, per-resource state tracking, 3 frames in flight; falls back to Direct3D 11 if unavailable |
-| Metal (macOS 10.15+) | `--metal`, default on macOS | shaders SPIR-V -> MSL (SPIRV-Cross) compiled at runtime; constant buffers at buffer index 16+; falls back to Vulkan/MoltenVK. **Written on Linux and not yet compiled on a Mac** (checked in the macOS CI build) |
+| Metal (macOS 10.15+) | `--metal`, default on macOS | shaders SPIR-V -> MSL (SPIRV-Cross) compiled at runtime; constant buffers at buffer index 16+; falls back to Vulkan/MoltenVK. Built in the macOS CI, where the editor renders a 3D template with it; uses the 16-texture shader budget (Metal binds 16 samplers per stage) |
 
 Selection priority: command line (`--opengl`, `--vulkan`, `--d3d11`, `--d3d12`, `--metal`, `--renderer <name>`) > `CQ_RENDERER` environment
 variable > Project Settings > Player > Rendering > Graphics API ("Auto" = platform default). If the chosen backend cannot be
@@ -100,12 +100,14 @@ Debugging: `CQ_VK_VALIDATION=1` enables the Vulkan validation layer, `CQ_VK_DEVI
 |----------|--------|
 | Linux (x86-64) | primary platform; full automated test suite passes on OpenGL and on Vulkan (with validation layers) |
 | Windows (x64) | builds with MSVC or MinGW (clang/gcc); the cross-compiled build was tested under Wine on OpenGL, Vulkan, Direct3D 11 and Direct3D 12 |
-| macOS | platform code paths, the Metal backend and the Vulkan/MoltenVK backend exist, but this build has **not** been compiled or tested on a Mac |
+| macOS | editor, player and hub build on Apple Silicon in CI (Xcode); the CI opens a 3D template in the editor with the Metal backend and checks the image; not tested on a physical Mac here |
+| iOS / iPadOS | player app (UIKit, Metal) built on a Mac with Xcode, from Build Settings or `Tools/iOS/package_ios.py`; in CI the editor builds a 3D template for the iOS Simulator and the app runs and renders there; device builds compile and are signed with the team's certificate (not tested on a device) |
+| Web | WebAssembly player (WebGL 2 or WebGPU) built with Emscripten; tested in headless Chromium |
 | Android 8.0+ (arm64-v8a, x86_64) | player only (NativeActivity, OpenGL ES 3); APKs built from the editor or `Tools/Android/package_apk.py`; tested on the Android 15 emulator |
 | Android Automotive OS | same APK with the automotive feature; tested on the Android 14 Automotive emulator |
 | Automotive Grade Linux / Yocto | Yocto layer in `Tools/AGL/meta-conqueror` (Wayland, OpenGL ES 3.2, player only); the configuration is tested on desktop Linux, not in a real AGL image |
 | QNX 7.1 / 8.0 | Screen + EGL platform layer and toolchain file; **not compiled** (needs the QNX SDP) |
-| FreeBSD 14 (x86-64) | engine + player cross-compiled and linked for FreeBSD 14.5 (clang, FreeBSD sysroot); not run on a FreeBSD machine yet. OpenBSD / NetBSD / DragonFly code paths exist but were not compiled |
+| FreeBSD, OpenBSD, NetBSD (x86-64) | players built in CI inside FreeBSD / OpenBSD / NetBSD virtual machines and cross-compiled from Linux; not run on a BSD desktop yet |
 
 See [Docs/Automotive.md](Docs/Automotive.md) for Android, Android Automotive, AGL and QNX.
 

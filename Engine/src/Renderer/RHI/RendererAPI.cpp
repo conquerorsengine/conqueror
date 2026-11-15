@@ -168,9 +168,15 @@ namespace Conqueror
             chosen = Backend::OpenGL;
 #endif
         }
+#if defined(CQ_PLATFORM_IOS)
+        // iOS / iPadOS: OpenGL ES Apple'da kullanımdan kalktı; yalnız Metal
+        (void)decided;
+        return Backend::Metal;
+#else
         if (!IsBackendCompiled(chosen))
             chosen = Backend::OpenGL;
         return chosen;
+#endif
     }
 
     std::unique_ptr<RendererAPI> RendererAPI::Create()

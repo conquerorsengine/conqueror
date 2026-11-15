@@ -356,7 +356,7 @@ namespace Conqueror::Editor
             { "ChromeOS", ICON_FA_LAPTOP, "Chromebook APK (Android apps on ChromeOS): resizable window, keyboard, mouse and touchpad; the Linux build also runs in ChromeOS Linux." },
             { "Android XR", ICON_FA_VR_CARDBOARD, "Android XR headsets such as Samsung Galaxy XR (arm64): OpenXR in Full Space with the bundled Khronos loader; same tools as Android." },
             { "Meta Quest", ICON_FA_VR_CARDBOARD, "Meta Quest 2 / Pro / 3 / 3S APK (arm64): OpenXR with the bundled Khronos loader, the game starts in VR; same tools as Android." },
-            { "iOS", ICON_FA_TABLET_SCREEN_BUTTON, "Not buildable yet: the iOS player is not part of this engine version (it needs a Mac with Xcode)." },
+            { "iOS", ICON_FA_TABLET_SCREEN_BUTTON, "iPhone / iPad app (Metal) built on a Mac with Xcode: without a Team ID for the iOS Simulator, with a Team ID signed for devices (.app + .ipa)." },
             { "tvOS", ICON_FA_TV, "Not buildable yet: the Apple TV player is not part of this engine version (it needs a Mac with Xcode)." },
             { "visionOS", ICON_FA_VR_CARDBOARD, "Not buildable yet: the Apple Vision Pro player is not part of this engine version (it needs a Mac with Xcode)." },
             { "Web", ICON_FA_GLOBE, "WebAssembly + WebGL 2 for browsers (Chrome, Edge, Firefox, Safari 15+): the player is compiled with Emscripten (emsdk) the first time, the game is packaged as a static web site (index.html + Build/)." },
@@ -720,7 +720,9 @@ namespace Conqueror::Editor
                 crossTarget = &t;
         // Web: oyuncu Emscripten ile derlenir (Tools/Web/package_web.py --build), oyun dosyaları tek veri dosyasına paketlenir
         const bool web = platform == "Web";
-        const bool packaged = android || web;   // oyuncu ikilisi oyun klasörüne kopyalanmaz, paketleyici ekler
+        // iOS / iPadOS: oyuncu Xcode'un iOS SDK'sıyla derlenir (Tools/iOS/package_ios.py), oyun dosyaları .app/game'e girer
+        const bool ios = platform == "iOS";
+        const bool packaged = android || web || ios;   // oyuncu ikilisi oyun klasörüne kopyalanmaz, paketleyici ekler
         const bool cross = !packaged && platform != HostPlatform() && crossTarget;
         {
             const PlatformModules::Module module = PlatformModules::Detect(platform);
@@ -832,7 +834,7 @@ namespace Conqueror::Editor
         std::string error;
         const std::string product = SanitizeName(o.Config.Name);
         // Android: oyun dosyaları APK'ya girmeden önce burada toplanır (masaüstünde oyun klasörünün kendisi)
-        const fs::path dataDir = android ? o.OutputDir / "AndroidData" : web ? o.OutputDir / "WebData" : o.OutputDir;
+        const fs::path dataDir = android ? o.OutputDir / "AndroidData" : web ? o.OutputDir / "WebData" : ios ? o.OutputDir / "iOSData" : o.OutputDir;
         if (packaged)
             fs::create_directories(dataDir, ec);
 
@@ -1216,6 +1218,82 @@ namespace Conqueror::Editor
             report.Executable = o.OutputDir / "index.html";
         }
 
+        // 11) iOS / iPadOS: oyuncu (ilk derlemede bütün motor iOS için) + .app; Team ID varsa aygıt için imzalı .app + .ipa
+        if (ios)
+        {
+            step(0.92f, "Packaging the iOS app (the first build compiles the iOS player with Xcode, this takes a while)");
+            fs::path script;
+            for (fs::path probe = o.EngineBinDir; !probe.empty(); probe = probe.parent_path())
+            {
+                if (fs::exists(probe / "Tools" / "iOS" / "package_ios.py", ec))
+                {
+                    script = probe / "Tools" / "iOS" / "package_ios.py";
+                    break;
+                }
+                if (!probe.has_parent_path() || probe.parent_path() == probe)
+                    break;
+            }
+            if (script.empty())
+                return fail("iOS packager (Tools/iOS/package_ios.py) not found near " + o.EngineBinDir.string());
+            const fs::path engineSource = script.parent_path().parent_path().parent_path();
+            auto safe = [](const std::string& v) { return v.find('"') == std::string::npos; };
+            const fs::path app = o.OutputDir / (product + ".app");
+            if (!safe(dataDir.string()) || !safe(app.string()))
+                return fail("The output folder path must not contain quotes");
+            const auto& ip = o.Config.Player.IOS;
+            std::string bundleId = ip.BundleIdentifier;
+            if (bundleId.empty())
+            {
+                // Varsayılan kimlik (com.<şirket>.<ürün>): iOS paket kimliğinde alt çizgi ve boşluk olamaz
+                bundleId = DefaultIdentifier(o.Config);
+                for (char& c : bundleId)
+                    if (!std::isalnum((unsigned char)c) && c != '.')
+                        c = '-';
+            }
+            if (bundleId.find('.') == std::string::npos ||
+                !std::all_of(bundleId.begin(), bundleId.end(), [](char c) { return std::isalnum((unsigned char)c) || c == '.' || c == '-'; }))
+                return fail("iOS bundle identifier \"" + bundleId + "\" is not valid (letters, digits, - and at least one dot, e.g. com.company.game).");
+            // Oyuncu derleme klasörü: CQ_IOS_BUILD_ROOT ya da motor kökünde build-ios/
+            const char* buildRootEnv = std::getenv("CQ_IOS_BUILD_ROOT");
+            const fs::path buildRoot = buildRootEnv && *buildRootEnv ? fs::path(buildRootEnv) : engineSource / "build-ios";
+            std::string cmd = "python3 \"" + script.string() + "\" \"" + dataDir.string() + "\" --out \"" + app.string() + "\" --build-root \"" +
+                              buildRoot.string() + "\" --bundle-id " + bundleId;
+            if (safe(o.Config.Name) && !o.Config.Name.empty())
+                cmd += " --name \"" + o.Config.Name + "\"";
+            if (!o.Config.Version.empty() && safe(o.Config.Version))
+                cmd += " --version \"" + o.Config.Version + "\"";
+            if (!ip.BuildNumber.empty() && safe(ip.BuildNumber))
+                cmd += " --build-number \"" + ip.BuildNumber + "\"";
+            static const char* devices[] = { "universal", "iphone", "ipad" };
+            static const char* orientations[] = { "landscape", "portrait", "all" };
+            cmd += std::string(" --devices ") + devices[std::clamp(ip.TargetDevice, 0, 2)] + " --orientation " + orientations[std::clamp(ip.Orientation, 0, 2)];
+            // Oyuncu Metal 3 / iOS 16 API'lerini kullanır: en düşük sürüm 16.0'dan küçük olamaz
+            const std::string minIos = (!ip.MinimumVersion.empty() && std::atof(ip.MinimumVersion.c_str()) >= 16.0 && safe(ip.MinimumVersion)) ? ip.MinimumVersion : "16.0";
+            cmd += " --min-ios " + minIos;
+            const bool device = !ip.TeamID.empty();
+            if (device)
+            {
+                if (!std::all_of(ip.TeamID.begin(), ip.TeamID.end(), [](char c) { return std::isalnum((unsigned char)c); }))
+                    return fail("iOS Team ID \"" + ip.TeamID + "\" is not valid (10 letters and digits from the Apple Developer account).");
+                cmd += " --team " + ip.TeamID;
+            }
+            else
+                cmd += " --simulator";
+            if (!ip.CameraUsage.empty() && safe(ip.CameraUsage))
+                cmd += " --camera-usage \"" + ip.CameraUsage + "\"";
+            const fs::path icon = !o.Config.Player.Icon.empty() ? o.ProjectDir / o.Config.Player.Icon : root / "Resources" / "Logo" / "AppIcon" / "conqueror_256.png";
+            if (fs::exists(icon, ec) && safe(icon.string()))
+                cmd += " --icon \"" + icon.string() + "\"";
+            if (o.RunAfterBuild)
+                cmd += " --install --run";
+            const int rc = RunCommand(cmd, log);
+            if (rc != 0 || !fs::exists(app / "Info.plist", ec))
+                return fail("iOS packaging failed (exit code " + std::to_string(rc) + "), see the log. Xcode with the iOS platform is required" +
+                            std::string(device ? "; device builds also need the team's signing certificate and provisioning profile." : "."));
+            fs::remove_all(dataDir, ec);   // geçici oyun klasörü: uygulamaya girdi
+            report.Executable = app;
+        }
+
         report.Success = true;
         report.Files = stats.Files;
         report.Bytes = stats.Bytes;
@@ -1225,7 +1303,7 @@ namespace Conqueror::Editor
                 std::to_string((int)(report.Seconds * 1000.0)) + " ms -> " + report.Executable.string());
         step(1.0f, "Done");
 
-        if (o.RunAfterBuild && !android)
+        if (o.RunAfterBuild && !android && !ios)
         {
             // Web: yerel sunucu (Tools/Web/serve.py, COOP / COEP) + varsayılan tarayıcı
             std::string launchError;

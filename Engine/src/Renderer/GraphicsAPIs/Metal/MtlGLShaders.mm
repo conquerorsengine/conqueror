@@ -26,7 +26,11 @@ namespace Conqueror::MtlGL
             {
                 spirv_cross::CompilerMSL comp(std::move(words));
                 spirv_cross::CompilerMSL::Options mo;
+#if defined(CQ_PLATFORM_IOS)
+                mo.platform = spirv_cross::CompilerMSL::Options::iOS;
+#else
                 mo.platform = spirv_cross::CompilerMSL::Options::macOS;
+#endif
                 mo.set_msl_version(2, 1);
                 mo.enable_decoration_binding = true;   // SPIR-V Binding = Metal dizini
                 comp.set_msl_options(mo);

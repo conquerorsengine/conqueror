@@ -1,4 +1,5 @@
 #include "AIManager.h"
+#include "Core/Utils/ShellCompat.h"
 #include "Core/Utils/Threads.h"
 #include "AIPromptContext.h"
 #include "AITools.h"
@@ -441,13 +442,13 @@ namespace Conqueror::AI
 
 #ifdef CQ_PLATFORM_LINUX
                 std::string cmd = "xdg-open \"" + verificationUri + "\" &";
-                system(cmd.c_str());
+                Conqueror::RunShell(cmd.c_str());
 #elif defined(CQ_PLATFORM_WINDOWS)
                 std::string cmd = "start \"" + verificationUri + "\"";
-                system(cmd.c_str());
+                Conqueror::RunShell(cmd.c_str());
 #else
                 std::string cmd = "open \"" + verificationUri + "\"";
-                system(cmd.c_str());
+                Conqueror::RunShell(cmd.c_str());
 #endif
 
                 int expiresIn = 900;

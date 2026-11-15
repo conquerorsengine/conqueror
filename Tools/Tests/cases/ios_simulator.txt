@@ -1,0 +1,13 @@
+# template: basic3d
+# requires: CQ_TEST_IOS
+# 106: Build Settings > iOS (Team ID yok: iOS Simülatörü için): oyuncu Xcode'un iOS SDK'sıyla derlenir (ilk derlemede bütün motor),
+# oyun dosyaları .app/game'e girer, uygulama ad-hoc imzalanır. CI (macOS) sonra Tools/iOS/simulator_test.py ile simülatöre kurar,
+# başlatır ve ekran görüntüsünde sahnenin çizildiğini denetler. Yalnız macOS + Xcode.
+timeout 5400
+wait 30
+build output Builds/iOS
+build platform iOS
+build start
+wait_until 5400000 build expect_done
+build expect_success
+quit

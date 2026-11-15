@@ -178,6 +178,43 @@ jobs:
           cat ~/.cache/cq-build/regression/_Reg_metal_smoke.txt.result.txt || true
           grep -E "Metal|ERROR|CRITICAL|Graphics" build/bin/Conqueror.log | tail -40 || true
           exit 1
+      - name: iOS Simulator test (the editor builds the 3D template for iOS without a Team ID; the player is compiled with Xcode for the simulator, installed, started and its screen checked)
+        timeout-minutes: 150
+        run: |
+          set +e
+          CQ_TEST_IOS=1 CQ_IOS_BUILD_ROOT="$PWD/build-ios" python3 Tools/Tests/regression.py ios_simulator
+          if [ $? -ne 0 ]; then
+            cat ~/.cache/cq-build/regression/_Reg_ios_simulator.txt.result.txt
+            grep -E "package_ios|error:|Error|FAILED|iOS" build/bin/Conqueror.log | tail -150
+            exit 1
+          fi
+          app=$(ls -d ~/.cache/cq-build/regression/Reg_ios_simulator/Builds/iOS/*.app | head -1)
+          python3 Tools/iOS/simulator_test.py "$app" --screenshot ios_simulator.png --wait 45
+      - name: Upload the iOS Simulator screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator-screenshot
+          path: ios_simulator.png
+          if-no-files-found: ignore
+
+  ios:
+    name: iOS / iPadOS player (${{ matrix.sdk }}, Xcode)
+    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        sdk: [iphonesimulator, iphoneos]
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install dependencies
+        run: brew install ninja
+      - name: Configure
+        run: >
+          cmake -S . -B build-ios -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=${{ matrix.sdk }}
+          -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_OSX_DEPLOYMENT_TARGET=16.0 -DCQ_RUNTIME_ONLY=ON
+      - name: Build
+        run: cmake --build build-ios --target ConquerorRuntime --parallel
 
   freebsd:
     name: FreeBSD (player, in a VM)

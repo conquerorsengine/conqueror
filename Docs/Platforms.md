@@ -33,7 +33,7 @@ was found and what to install:
 | Android, Android Automotive | Android SDK (build-tools, a platform), NDK, JDK | any desktop |
 | Web | Emscripten SDK (emsdk) + Python 3, or a prebuilt web player (`CQ_WEB_RUNTIME`) | any desktop |
 | Linux ARM (32-bit), x86 (32-bit), RISC-V, PowerPC, LoongArch | clang + lld + a Debian sysroot (`Tools/Linux/make-linux-sysroot.sh <arch>`, `CQ_LINUX_<ARCH>_SYSROOT`) | Linux |
-| iOS | not available yet | — |
+| iOS | Xcode with the iOS platform + CMake + Python 3 (`Tools/iOS/package_ios.py`) | a Mac |
 | QNX | QNX SDP (`QNX_HOST`, `QNX_TARGET`); built from the command line | Linux, Windows |
 
 Cross builds (Windows and FreeBSD from Linux) compile the player from the engine source the first time (several
@@ -47,13 +47,13 @@ Linux is started with Wine by **Build And Run** when Wine is installed.
 |--------|-----------|--------|
 | Linux x86-64 | Linux | primary platform; full automated test suite; also runs inside the Steam Linux Runtime (Steam Deck) |
 | Windows x64 | Windows (MSVC / MinGW) or Linux (MinGW cross toolchain, `Tools/Windows`; also from the editor's Build Settings) | cross build tested under Wine on OpenGL, Vulkan, Direct3D 11 and Direct3D 12 |
-| macOS | macOS | Metal and Vulkan/MoltenVK backends written; not yet compiled on a Mac (CI) |
+| macOS | macOS | editor, player and hub built on Apple Silicon in CI; the CI renders a 3D template in the editor with the Metal backend (test metal_smoke) |
 | Android (phone / tablet) | Linux with the Android NDK | APK built and signed without Gradle (`Tools/Android/package_apk.py`); tested on the emulator (GL ES 3) |
 | Android Automotive | same | tested on the AAOS emulator ([Automotive](Automotive.md)) |
 | Automotive Grade Linux | Yocto layer `Tools/AGL/meta-conqueror` | Wayland-only player build tested |
 | FreeBSD | Linux (cross, `Tools/BSD`) or FreeBSD | cross build links; runtime not yet tested on BSD |
 | QNX | QNX SDP (`Tools/QNX`) | compile-checked against stub headers only |
-| iOS | — | not available yet: the iOS player is not part of this version (it needs a Mac with Xcode) |
+| iOS / iPadOS | a Mac with Xcode (`Tools/iOS/package_ios.py`, also from Build Settings) | UIKit + Metal player app; without a Team ID built for the iOS Simulator, with a Team ID signed for devices (.app + .ipa). Tested in CI: the editor builds the 3D template, the app is installed on the iOS Simulator, runs and renders (test ios_simulator, `Tools/iOS/simulator_test.py`); not tested on a device |
 | Web (WebAssembly) | any desktop with emsdk (`Tools/Web/package_web.py`, also from the editor's Build Settings) | WebGL 2 and WebGPU players tested in headless Chromium (the FPS template); a static site: `index.html` + `Build/` (gzip / brotli, data cached in the browser, saves in IndexedDB); single-thread by default, multithreaded with SharedArrayBuffer (`coi-serviceworker.js` for hosts without COOP / COEP); WebGPU backend with a Dawn source tree (`CQ_DAWN_DIR`) |
 | Linux ARM (32-bit), x86 (32-bit), RISC-V 64, PowerPC 64 LE, LoongArch 64 | Linux (cross, `Tools/Linux/linux-cross.toolchain.cmake`) | players cross-built; RISC-V player runs under qemu-user up to window creation |
 | Steam Deck | Linux build | 1280×800 borderless, Deck button glyphs, on-screen keyboard |
@@ -83,7 +83,7 @@ built. The values are saved in the project file.
 | macOS | bundle identifier, build number, minimum macOS, category, camera / microphone usage texts | `Info.plist` written into the build folder |
 | Linux, FreeBSD | display server: automatic, Wayland or X11 | the player at start (if the chosen one is missing it falls back to automatic); the `CQ_DISPLAY_SERVER` environment variable (`wayland` / `x11`) overrides it |
 | Android | package name, version code, orientation, target architectures (ARM64, x86-64), keystore and key alias | the APK packager (`Tools/Android/package_apk.py`); minimum API 26, target API 36 (Automotive 34) |
-| iOS | bundle identifier, build number, devices, minimum iOS, orientation, team ID, camera usage, ARKit, status bar | saved for the iOS player (not available yet) |
+| iOS | bundle identifier, build number, devices, minimum iOS, orientation, team ID, camera usage, ARKit, status bar | the iOS packager (`Tools/iOS/package_ios.py`): minimum iOS is at least 16 (Metal 3 APIs); Team ID selects device signing; the status bar is always hidden; ARKit is not available yet |
 | Web | WebGL 2 or WebGPU, page template, compression, initial memory, multithreading, data caching | `Tools/Web/package_web.py` (page template, compression, threads player, caching) and the page loader (WebGPU device request with WebGL 2 fallback) |
 | QNX | SDP version, architecture, fill display, Screen app id | architecture: `-DCQ_QNX_ARCH` of the toolchain (the tab shows the command); fill display and app id: the player at start (`CQ_QNX_WINDOWED`, `CQ_APP_ID` override them) |
 

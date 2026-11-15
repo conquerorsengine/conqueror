@@ -1,5 +1,8 @@
 // Unity build for ImGui
 // GL işlevleri glad üzerinden: Vulkan arka ucunda glad göstericileri GL->Vulkan katmanına (VkGL) bağlıdır
+#if defined(__APPLE__)
+    #include <TargetConditionals.h>
+#endif
 #ifdef __ANDROID__
     // Android: ImGui'nin OpenGL ES 3 yolu (GLES3/gl3.h, libGLESv3). Motorun glad göstericileri de aynı sürücüden yüklenir.
 #elif defined(__EMSCRIPTEN__)
@@ -7,6 +10,13 @@
     // ucunda GL -> WebGPU katmanına gider (WebGPU'da WebGL bağlamı yoktur). GLES başlığı glad'dan önce: bildirimler çakışmasın
     #define IMGUI_IMPL_OPENGL_ES3
     #include <GLES3/gl3.h>
+    #include <glad/glad.h>
+#elif defined(__APPLE__) && TARGET_OS_IPHONE
+    // iOS / iPadOS: ImGui iOS'u kendiliğinden OpenGL ES 3 sayar; çağrılar glad göstericilerinden GL -> Metal katmanına gider
+    // (OpenGL ES bağlamı yok, OpenGLES çerçevesi bağlanmaz). GLES başlığı glad'dan önce: bildirimler çakışmasın
+    #define IMGUI_IMPL_OPENGL_ES3
+    #define GLES_SILENCE_DEPRECATION
+    #include <OpenGLES/ES3/gl.h>
     #include <glad/glad.h>
 #else
     #define IMGUI_IMPL_OPENGL_LOADER_CUSTOM

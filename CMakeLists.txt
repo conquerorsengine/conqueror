@@ -101,7 +101,8 @@ add_subdirectory(Engine)
 # görüntüleri (AGL, Yocto: -DCQ_RUNTIME_ONLY=ON). Editör, başlatıcı ve komut satırı araçları masaüstü uygulamalarıdır.
 # APK paketleme: Tools/Android/package_apk.py, AGL katmanı: Tools/AGL/meta-conqueror
 option(CQ_RUNTIME_ONLY "Build only the engine and the game player (embedded / automotive images)" OFF)
-if(ANDROID OR CQ_RUNTIME_ONLY OR CMAKE_SYSTEM_NAME STREQUAL "QNX")
+# iOS / iPadOS (CMAKE_SYSTEM_NAME=iOS, Tools/iOS/package_ios.py): yalnız oyuncu uygulaması (.app)
+if(ANDROID OR CQ_RUNTIME_ONLY OR CMAKE_SYSTEM_NAME STREQUAL "QNX" OR IOS)
     add_subdirectory(Runtime)
     return()
 endif()
