@@ -1,0 +1,12 @@
+# template: empty
+# 268: Unity gibi malzeme seçilince Inspector'ın altında önizleme küresi: malzemenin kendi gölgelendiricisiyle, güneş ışığında
+# çizilir (kırmızı malzeme kırmızı, yeşil malzeme yeşil küre); başka malzeme seçilince küre o malzemeye geçer
+wait 40
+focus Inspector
+select_asset {dir}/assets/matpreview/PreviewRed.cqmat
+wait 20
+material_preview dominant r
+select_asset {dir}/assets/matpreview/PreviewGreen.cqmat
+wait 20
+material_preview dominant g
+quit

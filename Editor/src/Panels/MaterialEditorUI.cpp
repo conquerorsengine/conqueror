@@ -1,4 +1,5 @@
 #include "MaterialEditorUI.h"
+#include "Assets/MaterialPreview.h"
 
 #include "Core/Logging/Log.h"
 #include "Core/Project/Project.h"
@@ -547,9 +548,16 @@ namespace Conqueror::Editor::MaterialEditorUI
             return;
         }
         auto& mat = *component.MaterialInstance;
-        ImGui::TextColored(UI::Colors::Accent, ICON_FA_CIRCLE_HALF_STROKE);
+        // Unity gibi malzeme başlığında küçük küre (malzemenin kendisiyle çizilir, değişiklikler hemen görünür)
+        const std::string thumbKey = isAsset ? component.MaterialPath : "instance:" + std::to_string((uintptr_t)component.MaterialInstance.get());
+        const float thumb = ImGui::GetFrameHeight() * 1.6f;
+        if (!MaterialPreview::Thumbnail(component.MaterialInstance, thumbKey, thumb))
+            ImGui::TextColored(UI::Colors::Accent, ICON_FA_CIRCLE_HALF_STROKE);
         ImGui::SameLine();
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + std::max(0.0f, (thumb - ImGui::GetTextLineHeight()) * 0.5f));
         ImGui::TextUnformatted(isAsset ? fs::path(component.MaterialPath).filename().string().c_str() : mat.Name.c_str());
+        ImGui::SameLine();
+        ImGui::TextDisabled("(Material)");
         if (!mat.GraphNodes.empty() && mat.GraphInitialized && mat.MaterialShader)
             UI::InfoBox("Shader Graph material: inputs wired in the graph override these values.", UI::InfoType::Info);
         if (packaged)
@@ -628,5 +636,8 @@ namespace Conqueror::Editor::MaterialEditorUI
         }
         else if (DrawProperties(*mat))
             MarkDirty(mat, path);
+        // Unity gibi Inspector'ın altında malzeme önizlemesi (küre; küp / silindir / düzlem seçilebilir, sürükleyince döner)
+        if (fs::path(path).extension() == MaterialAsset::Extension)
+            MaterialPreview::Draw(path);
     }
 }
