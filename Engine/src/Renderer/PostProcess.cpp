@@ -285,6 +285,23 @@ namespace Conqueror
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rt.Texture, 0);
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             CQ_CORE_ERROR("PostProcess: incomplete render target {0}x{1}", rt.Width, rt.Height);
+        else
+        {
+            // Yeni doku GPU belleğinde önceden kalan içerikle başlar (eski karelerin, başka dokuların parçaları; AMD'de 32x32 bloklar):
+            // oluşturulur oluşturulmaz sıfırlanır. Temizlenmeden okunan bir hedef (TAA geçmişi / durumu, tepki maskesi, hareket
+            // vektörü) oyunda nadiren küplerin üstünde bloklar halinde başka bir görüntü (dama tahtası, saydam görünüm) gösterebiliyordu.
+            // Sıfır geçmişin uzaklığı 0'dır: TAA onu hiçbir yüzeyle eşleştirmez. Kırpma ve renk maskesi o an ne olursa olsun tamamı yazılır
+            const GLboolean scissor = glIsEnabled(GL_SCISSOR_TEST);
+            GLboolean mask[4] = { GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE };
+            glGetBooleanv(GL_COLOR_WRITEMASK, mask);
+            glDisable(GL_SCISSOR_TEST);
+            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+            const float zero[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+            glClearBufferfv(GL_COLOR, 0, zero);
+            glColorMask(mask[0], mask[1], mask[2], mask[3]);
+            if (scissor)
+                glEnable(GL_SCISSOR_TEST);
+        }
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
@@ -316,14 +333,10 @@ namespace Conqueror
             m_HasAlbedo == wantAlbedo && m_HasShadowMask == wantShadowMask && coverageOk)
             return;
 
-        if (m_Width != width || m_Height != height)
-        {
-            m_HistoryValid = false;
-            m_StabValid = false;
-            m_HasPrevViewProj = false;
-            m_GIHistoryValid = false;
-            m_CloudHistoryValid = false;
-        }
+        // Sahne hedefleri yeniden kuruluyor (boyut, örnek sayısı ya da ek değişti): zamansal geçmişler eski hedeflere aittir, hepsi baştan
+        // başlar. Eskiden yalnız boyut değişince sıfırlanıyordu: aynı boyutta ek / örnek değişince TAA, SSGI ve bulut geçmişi geçerli
+        // sayılıp yeni hedeflerle uyuşmayan eski içeriği okuyabiliyordu
+        ResetTemporalHistory();
         m_Width = width;
         m_Height = height;
         m_Samples = samples;
