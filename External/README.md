@@ -147,7 +147,7 @@ These are kept out of the repository because their license forbids it or because
 | NVIDIA DLSS SDK (DLSS / DLAA) | `Tools/DLSS/fetch-dlss-sdk.sh <folder> --accept-nvidia-license` (tag `v310.9.16`), then `-DCQ_DLSS_SDK_DIR=<folder>` | The NVIDIA RTX SDKs license forbids distributing it under an open-source license. **Never commit the SDK**; keep the folder outside this repository |
 | Intel XeSS runtime (`libxess.dll`, Windows) | `Tools/XeSS/fetch-xess.sh <folder>` (commit `de0fb9c`); put the DLL next to the editor | Binary under the Intel Simplified Software License (`xess/LICENSE-binaries.txt`) |
 | Dawn (Tint shader translator for the WebGPU backend) | `Tools/WebGPU/fetch-dawn.sh <folder>` (pinned `12c86c40d485500ec13385b48a5224bbd3ce0f34`, override with `CQ_DAWN_REV`), then `-DCQ_DAWN_DIR=<folder>`; without it the WebGPU backend is not built | About 1.3 GB with its dependencies (BSD-3-Clause / Apache-2.0) |
-| FFmpeg | `Tools/FFmpeg/fetch-ffmpeg.sh` (added in a separate change) | Size and license, see the script |
+| FFmpeg (Recorder) | `Tools/FFmpeg/fetch-ffmpeg.sh` (Linux: static build checked against its MD5; macOS: evermeet / Homebrew), `Tools/FFmpeg/fetch-ffmpeg.ps1` (Windows: gyan.dev build checked against its SHA-256) | ~80 MB and GPL; the engine runs it as a separate program through a pipe |
 | OpenXR loader for Android, Google ARCore | Downloaded by `Tools/Android/package_apk.py` when packaging an APK (`openxr_loader_for_android` 1.1.47 from Maven Central, ARCore 1.57.0 from Google Maven, both SHA-256 pinned) | Binary packages; ARCore has its own terms of service |
 
 Loaded at run time and never downloaded by the build: the MuJoCo library (`libmujoco`), the desktop OpenXR loader, the
