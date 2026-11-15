@@ -12,9 +12,9 @@ gpu expect_upscaler DLSS unavailable Requires an NVIDIA RTX GPU
 gpu expect_aa DLAA unavailable Requires an NVIDIA RTX GPU
 gpu expect_aa CSAA unavailable
 gpu expect_upscaler FSR1 available
-# RTX 4090: tensor çekirdekli kart, NGX var; DLSS tümleştirmesi bu derlemede yok (dürüst neden), CSAA NVIDIA'da var, EQAA yok
+# RTX 4090: tensor çekirdekli kart, NGX var; DLSS eklentisi derlendiyse seçilebilir, değilse "eklenti yok" nedeniyle gri; CSAA var, EQAA yok
 gpu simulate rtx4090
-gpu expect_upscaler DLSS unavailable does not include the NVIDIA DLSS SDK integration
+gpu expect_dlss_rtx
 gpu expect_aa CSAA available
 gpu expect_aa EQAA unavailable
 # GTX 1080: NVIDIA ama tensor çekirdeği yok

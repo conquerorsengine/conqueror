@@ -26,8 +26,9 @@ Guides and generated reference pages are in [Docs/](Docs/README.md): [getting st
   upscaling: FSR 1, FSR 2.2, NVIDIA Image Scaling, TAAU, Snapdragon GSR 1 and 2, Lanczos, Bilinear and Nearest-Neighbor, plus CAS sharpening
 - Each method is selectable only when the GPU can run it (checked on the GPU and its driver); Debug > Rendering > Simulate GPU
   previews the menus for other GPUs and Run Upscaler Self-Test writes a report of every method on this GPU
-- DLSS, XeSS, MetalFX and PSSR appear in the editor but are **not integrated** (their SDKs need Vulkan/DirectX, Windows,
-  Apple or console toolchains); the editor shows the reason next to each one
+- DLSS (optional plugin built with NVIDIA's SDK, `Tools/DLSS/fetch-dlss-sdk.sh`), XeSS (Windows, `libxess.dll`) and MetalFX (Metal)
+  are connected through OpenGL <-> Vulkan image sharing or the Metal backend, but were **not run on RTX, Intel or Apple GPUs yet**;
+  PSSR (PlayStation) is not available; the editor shows the reason next to each method a GPU cannot run
 - Batched 2D renderer, sprite sheets and sprite editor, tilemaps (square/hex), text (FreeType), particles, ribbons/trails, terrain
 - Shader pipeline: GLSL -> SPIR-V (glslang) -> GLSL / HLSL / MSL (SPIRV-Cross) with a disk cache, plus a Shader Graph editor
 - Graphics backends: OpenGL 4.6, Vulkan 1.2/1.3, Direct3D 11, Direct3D 12, Metal (see [Graphics backends](#graphics-backends))

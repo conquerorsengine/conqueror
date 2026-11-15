@@ -165,6 +165,39 @@ if(CQ_ENABLE_VULKAN)
     message(STATUS "Conqueror: Vulkan backend enabled (runtime-loaded)")
 endif()
 
+# Intel XeSS: başlıklar External/xess (MIT); libxess.dll (yalnız Windows) çalışma anında açılır (Upscalers/XeSSUpscaler.cpp)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../External/xess/include)
+
+# ── NVIDIA DLSS (isteğe bağlı eklenti) ── NVIDIA'nın DLSS SDK'sı (NVIDIA RTX SDKs lisansı: açık kaynak dağıtıma girmez) depoda değil:
+# Tools/DLSS/fetch-dlss-sdk.sh <klasör> --accept-nvidia-license ile indirilir, -DCQ_DLSS_SDK_DIR=<klasör> (ya da aynı adlı ortam
+# değişkeni) verilince Upscalers/DLSSUpscaler.cpp NGX ile derlenir ve DLSS çalışma zamanı kitaplığı oyuncunun yanına kopyalanır.
+# Motor OpenGL ile çizer; DLSS NGX'in Vulkan yolundan, OpenGL <-> Vulkan görüntü paylaşımıyla (VkGLInterop) çalışır: Vulkan gerekir.
+set(CQ_DLSS_SDK_DIR "$ENV{CQ_DLSS_SDK_DIR}" CACHE PATH "NVIDIA DLSS SDK folder (Tools/DLSS/fetch-dlss-sdk.sh); empty = build without DLSS")
+if(CQ_DLSS_SDK_DIR AND EXISTS "${CQ_DLSS_SDK_DIR}/include/nvsdk_ngx.h" AND CQ_ENABLE_VULKAN
+   AND (WIN32 OR (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")))
+    # Yalnız DLSS dosyası NGX başlıklarını görür (motorun geri kalanı SDK'dan bağımsız; tanım değişince her şey yeniden derlenmesin)
+    set_source_files_properties(src/Renderer/Upscalers/DLSSUpscaler.cpp PROPERTIES
+        COMPILE_DEFINITIONS CQ_DLSS_ENABLED INCLUDE_DIRECTORIES "${CQ_DLSS_SDK_DIR}/include" SKIP_PRECOMPILE_HEADERS ON)
+    if(WIN32)
+        target_link_libraries(${PROJECT_NAME} PUBLIC "${CQ_DLSS_SDK_DIR}/lib/Windows_x86_64/x64/nvsdk_ngx_d.lib")
+        set(_cq_dlss_runtime "${CQ_DLSS_SDK_DIR}/lib/Windows_x86_64/rel/nvngx_dlss.dll")
+    else()
+        target_link_libraries(${PROJECT_NAME} PUBLIC "${CQ_DLSS_SDK_DIR}/lib/Linux_x86_64/libnvsdk_ngx.a" ${CMAKE_DL_LIBS})
+        file(GLOB _cq_dlss_runtime "${CQ_DLSS_SDK_DIR}/lib/Linux_x86_64/rel/libnvidia-ngx-dlss.so.*")
+    endif()
+    # NGX DLSS kitaplığını oyunun yanında arar: editörün / oyuncunun derleme klasörüne (derlenen oyunlara Build Settings kopyalar)
+    if(_cq_dlss_runtime)
+        file(COPY ${_cq_dlss_runtime} DESTINATION ${CMAKE_BINARY_DIR}/bin)
+        # Linux: derlenen oyunlar lib/ klasörünü alır (NGX oyunun yanına ve lib/'e bakar)
+        if(NOT WIN32)
+            file(COPY ${_cq_dlss_runtime} DESTINATION ${CMAKE_BINARY_DIR}/lib)
+        endif()
+    endif()
+    message(STATUS "Conqueror: NVIDIA DLSS plugin enabled (${CQ_DLSS_SDK_DIR})")
+elseif(CQ_DLSS_SDK_DIR)
+    message(WARNING "CQ_DLSS_SDK_DIR is set but no usable DLSS SDK was found there (or this platform has no DLSS): building without DLSS")
+endif()
+
 # ── WebGPU arka ucu ── (GL -> WebGPU çeviri katmanı, Metal / Vulkan katmanlarıyla aynı ön yüz; Player Settings > Graphics API,
 # --webgpu ya da CQ_RENDERER=webgpu). Gölgelendiriciler SPIR-V -> WGSL Google Tint ile: Dawn kaynak ağacı gerekir
 # (Tools/WebGPU/fetch-dawn.sh <klasör>, CQ_DAWN_DIR). Masaüstünde WebGPU uygulaması (Dawn / wgpu-native) çalışma anında açılır;
@@ -250,6 +283,11 @@ if(APPLE)
                               "-framework CoreFoundation")
     else()
         target_link_libraries(${PROJECT_NAME} PUBLIC "-framework Metal" "-framework QuartzCore" "-framework Cocoa")
+    endif()
+    # MetalFX (Upscaling > MetalFX): macOS 13 / iOS 16 ve sonrası; zayıf bağlantı, eski sistemde oyun açılır, MetalFX gri kalır
+    # iOS Simülatörü SDK'sında MetalFX yok (MetalFXUpscaler.mm orada yer tutucu derler)
+    if(NOT CMAKE_OSX_SYSROOT MATCHES "[Ss]imulator")
+        target_link_libraries(${PROJECT_NAME} PUBLIC "-weak_framework MetalFX")
     endif()
     target_compile_definitions(${PROJECT_NAME} PUBLIC CQ_METAL_ENABLED)
     message(STATUS "Conqueror: Metal backend enabled")

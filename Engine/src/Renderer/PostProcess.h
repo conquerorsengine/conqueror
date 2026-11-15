@@ -10,7 +10,7 @@
 #include <memory>
 #include <vector>
 
-namespace Conqueror { class FSR2Upscaler; }
+namespace Conqueror { class FSR2Upscaler; class DLSSUpscaler; class XeSSUpscaler; class MetalFXUpscaler; }
 
 namespace Conqueror
 {
@@ -178,6 +178,21 @@ namespace Conqueror
         glm::mat4 m_FinalInvViewProj{ 1.0f };
         // AMD FSR 2 (Upscaling > FSR 2, Anti-Aliasing > FSR AA): bağlam, tam ekran hareket vektörleri, çıktı ve kamera bilgisi
         std::unique_ptr<FSR2Upscaler> m_FSR2;
+        // NVIDIA DLSS / DLAA (isteğe bağlı eklenti, Upscalers/DLSSUpscaler): FSR 2 ile aynı girdiler
+        std::unique_ptr<DLSSUpscaler> m_DLSS;
+        RenderTarget m_DLSSOutput;
+        bool m_UseDLSS = false;
+        bool m_DLSSValid = false;
+        // Intel XeSS / XeSS AA (Windows, libxess.dll; Upscalers/XeSSUpscaler)
+        std::unique_ptr<XeSSUpscaler> m_XeSS;
+        RenderTarget m_XeSSOutput;
+        bool m_UseXeSS = false;
+        bool m_XeSSValid = false;
+        // Apple MetalFX (Metal arka ucu; Upscalers/MetalFXUpscaler)
+        std::unique_ptr<MetalFXUpscaler> m_MetalFX;
+        RenderTarget m_MetalFXOutput;
+        bool m_UseMetalFX = false;
+        bool m_MetalFXValid = false;
         RenderTarget m_MotionVectors;
         RenderTarget m_FSR2Reactive;    // FSR 2 tepki maskesi: m_Reactive + hareket eden nesnelerin gölge hacimleri (R8)
         RenderTarget m_FSR2PrevShadow;  // önceki karenin güneş gölgesi (FSR 2 tepki maskesi: gölgesi değişen pikseller)

@@ -14,6 +14,9 @@
 #include "Renderer/Utilities/Renderer3D/Renderer3D.h"
 #include "Renderer/AntiAliasing.h"
 #include "Renderer/FSR2/FSR2Upscaler.h"
+#include "Renderer/Upscalers/DLSSUpscaler.h"
+#include "Renderer/Upscalers/XeSSUpscaler.h"
+#include "Renderer/Upscalers/MetalFXUpscaler.h"
 #include "Scene/Scene.h"
 
 #include <glad/glad.h>
@@ -244,6 +247,12 @@ namespace Conqueror
         DestroyTarget(m_MotionVectors);
         DestroyTarget(m_FSR2Output);
         m_FSR2.reset();
+        DestroyTarget(m_DLSSOutput);
+        m_DLSS.reset();
+        DestroyTarget(m_XeSSOutput);
+        m_XeSS.reset();
+        DestroyTarget(m_MetalFXOutput);
+        m_MetalFX.reset();
         DestroyTarget(m_GBAAEdges);
         if (m_GeometryFramebuffer) glDeleteFramebuffers(1, &m_GeometryFramebuffer);
         DestroySRAATargets();
@@ -709,6 +718,9 @@ namespace Conqueror
         m_HistoryValid = false;
         m_HasPrevViewProj = false;
         m_FSR2Valid = false;
+        m_DLSSValid = false;
+        m_XeSSValid = false;
+        m_MetalFXValid = false;
         m_TAAUValid = false;
         m_SGSR2Valid = false;
         m_T2xValid = false;
@@ -1109,6 +1121,9 @@ namespace Conqueror
         m_CASSharpen = false;
         m_CASStrength = 0.0f;
         m_UseFSR2 = false;
+        m_UseDLSS = false;
+        m_UseXeSS = false;
+        m_UseMetalFX = false;
         if (m_PointUpscale)
         {
             m_AAMode = AntiAliasingMode::None;
@@ -1124,7 +1139,7 @@ namespace Conqueror
                 aa = AntiAliasingMode::MSAA;
             else if (aa == AntiAliasingMode::TAA || aa == AntiAliasingMode::TAA_FXAA || aa == AntiAliasingMode::TSAA || aa == AntiAliasingMode::TSSAA)
                 aa = AntiAliasingMode::FXAA;
-            else if (aa == AntiAliasingMode::SMAA_T2X || aa == AntiAliasingMode::FSRAA)
+            else if (aa == AntiAliasingMode::SMAA_T2X || aa == AntiAliasingMode::FSRAA || aa == AntiAliasingMode::DLAA || aa == AntiAliasingMode::XeSSAA)
                 aa = AntiAliasingMode::SMAA;   // titreşim yok: yalnız SMAA 1x
         }
         // Saf 2D sahne (yalnız sprite, düz arka plan): varsayılan FXAA sprite içindeki ince ayrıntıyı bulandırır, yumuşatılacak 3B kenar yok
@@ -1137,7 +1152,8 @@ namespace Conqueror
         if (!AntiAliasing::IsSupersampling(aa))
             m_Upscaler = AntiAliasing::ResolveUpscalerForThisSystem(plan.Upscaler);
         // Ortografik kamerada titreşim yok: zamansal yükseltici yerine uzamsal FSR 1
-        if (camera.Orthographic && (IsLDRTemporalUpscaler(m_Upscaler) || m_Upscaler == UpscalerMode::FSR2))
+        if (camera.Orthographic && (IsLDRTemporalUpscaler(m_Upscaler) || m_Upscaler == UpscalerMode::FSR2 || m_Upscaler == UpscalerMode::DLSS ||
+                                    m_Upscaler == UpscalerMode::XeSS || m_Upscaler == UpscalerMode::MetalFX))
             m_Upscaler = UpscalerMode::FSR1;
         // FSR 2 bağlamı kurulamadıysa (gölgelendirici / sürücü): yükseltici FSR 1, FSR AA yerine TAA
         if (m_FSR2 && m_FSR2->HasFailed())
@@ -1148,6 +1164,26 @@ namespace Conqueror
                 m_AAMode = AntiAliasingMode::TAA;
         }
         m_UseFSR2 = !camera.Orthographic && (m_Upscaler == UpscalerMode::FSR2 || m_AAMode == AntiAliasingMode::FSRAA);
+        // DLSS çalışırken hata verdiyse (NGX, sürücü): yükseltici FSR 1, DLAA yerine TAA
+        if (m_DLSS && m_DLSS->HasFailed())
+        {
+            if (m_Upscaler == UpscalerMode::DLSS)
+                m_Upscaler = UpscalerMode::FSR1;
+            if (m_AAMode == AntiAliasingMode::DLAA)
+                m_AAMode = AntiAliasingMode::TAA;
+        }
+        m_UseDLSS = !camera.Orthographic && (m_Upscaler == UpscalerMode::DLSS || m_AAMode == AntiAliasingMode::DLAA);
+        if (m_XeSS && m_XeSS->HasFailed())
+        {
+            if (m_Upscaler == UpscalerMode::XeSS)
+                m_Upscaler = UpscalerMode::FSR1;
+            if (m_AAMode == AntiAliasingMode::XeSSAA)
+                m_AAMode = AntiAliasingMode::TAA;
+        }
+        m_UseXeSS = !camera.Orthographic && (m_Upscaler == UpscalerMode::XeSS || m_AAMode == AntiAliasingMode::XeSSAA);
+        if (m_MetalFX && m_MetalFX->HasFailed() && m_Upscaler == UpscalerMode::MetalFX)
+            m_Upscaler = UpscalerMode::FSR1;
+        m_UseMetalFX = !camera.Orthographic && m_Upscaler == UpscalerMode::MetalFX;
         m_CASSharpen = plan.CASSharpen;
         m_CASStrength = std::clamp(AntiAliasing::IsLegacyUpscaler(settings.AntiAliasing) ? settings.UpscaleSharpness : settings.SharpenAmount, 0.0f, 1.0f);
     }
@@ -1639,6 +1675,142 @@ namespace Conqueror
         const float upSharp = std::clamp(settings.UpscaleSharpness, 0.0f, 1.0f);
 
         auto motion = PostProcess::GetShader("MotionVectors");
+        // Üretici yükselticileri (DLSS, XeSS) ve FSR 2'nin ortak girdisi: tam ekran hareket vektörleri (iç çözünürlük, uv, önceki - şimdiki)
+        auto renderMotionVectors = [&]()
+        {
+            EnsureTarget(m_MotionVectors, m_Width, m_Height, GL_RG16F);
+            glBindFramebuffer(GL_FRAMEBUFFER, m_MotionVectors.Framebuffer);
+            glViewport(0, 0, (GLsizei)m_Width, (GLsizei)m_Height);
+            motion->Bind();
+            motion->SetInt("u_Depth", 0);
+            motion->SetInt("u_Velocity", 1);
+            motion->SetInt("u_HasVelocity", m_FinalHasVelocity ? 1 : 0);
+            motion->SetInt("u_CameraStill", m_CameraStill ? 1 : 0);
+            motion->SetMat4("u_InvViewProj", m_FinalInvViewProj);
+            motion->SetMat4("u_PrevViewProj", m_PrevViewProj);
+            motion->SetFloat2("u_JitterUV", m_JitterNDC * 0.5f);
+            BindTexture(0, GetSceneDepthTexture());
+            BindTexture(1, m_FinalHasVelocity ? m_Velocity.Texture : 0);
+            PostProcess::DrawFullscreenQuad();
+        };
+        // Üretici yükselticisinin çıktısı (çıktı çözünürlüğünde) -> çıktıya keskinleştirerek kopya
+        auto presentVendorOutput = [&](uint32_t texture, bool native)
+        {
+            toOutput();
+            sharpen->Bind();
+            sharpen->SetInt("u_ScreenTexture", 0);
+            sharpen->SetFloat2("u_InverseScreenSize", glm::vec2(1.0f / (float)outW, 1.0f / (float)outH));
+            sharpen->SetFloat("u_Amount", std::min((native ? settings.TAASharpness : 0.5f * upSharp) +
+                                                   ((settings.Sharpen && !m_CASSharpen) ? settings.SharpenAmount : 0.0f), 1.0f));
+            sharpen->SetInt("u_HasMotionState", 0);
+            BindTexture(0, texture);
+            PostProcess::DrawFullscreenQuad();
+            Renderer::GetStats().PostProcessPasses += 2;
+        };
+        if (m_UseMetalFX && m_JitterActive && Valid(motion) && Valid(sharpen) && !(m_MetalFX && m_MetalFX->HasFailed()))
+        {
+            // Apple MetalFX (Metal arka ucu): FSR 2 ile aynı girdiler -> MetalFX zamansal yükseltici -> çıktıya kopya
+            renderMotionVectors();
+            EnsureTarget(m_MetalFXOutput, outW, outH, GL_RGBA8);
+            if (!m_MetalFX)
+                m_MetalFX = std::make_unique<MetalFXUpscaler>();
+            MetalFXUpscaler::Params prm;
+            prm.Color = cur;
+            prm.Depth = GetSceneDepthTexture();
+            prm.Motion = m_MotionVectors.Texture;
+            prm.Output = m_MetalFXOutput.Texture;
+            prm.RenderWidth = m_Width;
+            prm.RenderHeight = m_Height;
+            prm.DisplayWidth = outW;
+            prm.DisplayHeight = outH;
+            prm.JitterPixels = m_JitterNDC * 0.5f * glm::vec2((float)m_Width, (float)m_Height);
+            prm.Reset = !m_MetalFXValid;
+            if (m_MetalFX->Dispatch(prm))
+            {
+                m_MetalFXValid = true;
+                presentVendorOutput(m_MetalFXOutput.Texture, false);
+                return;
+            }
+        }
+        if (m_UseXeSS && m_JitterActive && Valid(motion) && Valid(sharpen) && !(m_XeSS && m_XeSS->HasFailed()))
+        {
+            // Intel XeSS / XeSS AA (Windows): FSR 2 ile aynı girdiler -> XeSS (çıktı çözünürlüğünde) -> çıktıya kopya
+            renderMotionVectors();
+            EnsureTarget(m_XeSSOutput, outW, outH, GL_RGBA8);
+            if (!m_XeSS)
+                m_XeSS = std::make_unique<XeSSUpscaler>();
+            XeSSUpscaler::Params prm;
+            prm.Color = cur;
+            prm.Depth = GetSceneDepthTexture();
+            prm.Motion = m_MotionVectors.Texture;
+            prm.Output = m_XeSSOutput.Texture;
+            prm.RenderWidth = m_Width;
+            prm.RenderHeight = m_Height;
+            prm.DisplayWidth = outW;
+            prm.DisplayHeight = outH;
+            prm.JitterPixels = m_JitterNDC * 0.5f * glm::vec2((float)m_Width, (float)m_Height);
+            prm.Quality = (int)settings.UpscaleQuality;
+            const bool nativeXeSS = m_AAMode == AntiAliasingMode::XeSSAA && outW == m_Width && outH == m_Height;
+            prm.Native = nativeXeSS;
+            prm.Reset = !m_XeSSValid;
+            if (m_XeSS->Dispatch(prm))
+            {
+                m_XeSSValid = true;
+                presentVendorOutput(m_XeSSOutput.Texture, nativeXeSS);
+                return;
+            }
+        }
+        if (m_UseDLSS && m_JitterActive && Valid(motion) && Valid(sharpen) && !(m_DLSS && m_DLSS->HasFailed()))
+        {
+            // NVIDIA DLSS / DLAA: FSR 2 ile aynı hareket vektörleri (iç çözünürlük) -> DLSS (çıktı çözünürlüğünde) -> çıktıya kopya
+            EnsureTarget(m_MotionVectors, m_Width, m_Height, GL_RG16F);
+            glBindFramebuffer(GL_FRAMEBUFFER, m_MotionVectors.Framebuffer);
+            glViewport(0, 0, (GLsizei)m_Width, (GLsizei)m_Height);
+            motion->Bind();
+            motion->SetInt("u_Depth", 0);
+            motion->SetInt("u_Velocity", 1);
+            motion->SetInt("u_HasVelocity", m_FinalHasVelocity ? 1 : 0);
+            motion->SetInt("u_CameraStill", m_CameraStill ? 1 : 0);
+            motion->SetMat4("u_InvViewProj", m_FinalInvViewProj);
+            motion->SetMat4("u_PrevViewProj", m_PrevViewProj);
+            motion->SetFloat2("u_JitterUV", m_JitterNDC * 0.5f);
+            BindTexture(0, GetSceneDepthTexture());
+            BindTexture(1, m_FinalHasVelocity ? m_Velocity.Texture : 0);
+            PostProcess::DrawFullscreenQuad();
+            EnsureTarget(m_DLSSOutput, outW, outH, GL_RGBA8);
+            if (!m_DLSS)
+                m_DLSS = std::make_unique<DLSSUpscaler>();
+            DLSSUpscaler::Params prm;
+            prm.Color = cur;
+            prm.Depth = GetSceneDepthTexture();
+            prm.Motion = m_MotionVectors.Texture;
+            prm.Output = m_DLSSOutput.Texture;
+            prm.RenderWidth = m_Width;
+            prm.RenderHeight = m_Height;
+            prm.DisplayWidth = outW;
+            prm.DisplayHeight = outH;
+            prm.JitterPixels = m_JitterNDC * 0.5f * glm::vec2((float)m_Width, (float)m_Height);
+            prm.Quality = (int)settings.UpscaleQuality;
+            const bool nativeDLSS = m_AAMode == AntiAliasingMode::DLAA && outW == m_Width && outH == m_Height;
+            prm.Native = nativeDLSS;
+            prm.Reset = !m_DLSSValid;
+            prm.FrameTimeMs = m_DeltaTime * 1000.0f;
+            if (m_DLSS->Dispatch(prm))
+            {
+                m_DLSSValid = true;
+                toOutput();
+                sharpen->Bind();
+                sharpen->SetInt("u_ScreenTexture", 0);
+                sharpen->SetFloat2("u_InverseScreenSize", glm::vec2(1.0f / (float)outW, 1.0f / (float)outH));
+                sharpen->SetFloat("u_Amount", std::min((nativeDLSS ? settings.TAASharpness : 0.5f * upSharp) +
+                                                       ((settings.Sharpen && !m_CASSharpen) ? settings.SharpenAmount : 0.0f), 1.0f));
+                sharpen->SetInt("u_HasMotionState", 0);
+                BindTexture(0, m_DLSSOutput.Texture);
+                PostProcess::DrawFullscreenQuad();
+                Renderer::GetStats().PostProcessPasses += 2;
+                return;
+            }
+        }
         if (m_UseFSR2 && m_JitterActive && Valid(motion) && Valid(sharpen) && !(m_FSR2 && m_FSR2->HasFailed()))
         {
             // FSR 2: tam ekran hareket vektörleri (iç çözünürlük) -> FSR 2 (çıktı çözünürlüğünde görüntü) -> çıktıya kopya
@@ -2135,6 +2307,9 @@ namespace Conqueror
             {
                 m_HistoryValid = false;
                 m_FSR2Valid = false;
+                m_DLSSValid = false;
+                m_XeSSValid = false;
+                m_MetalFXValid = false;
                 m_TAAUValid = false;
                 m_SGSR2Valid = false;
                 m_T2xValid = false;
@@ -2149,13 +2324,13 @@ namespace Conqueror
             RunSceneEffects(settings, camera, time);
         m_TAAResolved = false;
         // TAAU seçiliyken zamansal kenar yumuşatma TAAU'nun kendisidir (Unreal'daki gibi zamansal yükseltici TAA'nın yerini alır)
-        if (fx && UsesTAAResolve(m_AAMode, settings) && !camera.Orthographic && !IsLDRTemporalUpscaler(m_Upscaler) && !m_UseFSR2)
+        if (fx && UsesTAAResolve(m_AAMode, settings) && !camera.Orthographic && !IsLDRTemporalUpscaler(m_Upscaler) && !m_UseFSR2 && !m_UseDLSS && !m_UseXeSS && !m_UseMetalFX)
             RunTAA(settings, camera);
         else
             m_HistoryValid = false;
         // SMAA T2x / TAAU: çözüm RunFinal'da (LDR); hız vektörleri ve bu karenin titreşimli ters matrisi şimdi
         const bool t2xSeparate = m_AAMode == AntiAliasingMode::SMAA_T2X && !UsesTAAResolve(m_AAMode, settings);
-        if (fx && (t2xSeparate || IsLDRTemporalUpscaler(m_Upscaler) || m_UseFSR2) && !camera.Orthographic && m_JitterActive)
+        if (fx && (t2xSeparate || IsLDRTemporalUpscaler(m_Upscaler) || m_UseFSR2 || m_UseDLSS || m_UseXeSS || m_UseMetalFX) && !camera.Orthographic && m_JitterActive)
         {
             m_FinalHasVelocity = RenderObjectVelocity(camera);
             m_FinalInvViewProj = glm::inverse(JitteredProjection(camera) * camera.View);
@@ -2178,6 +2353,12 @@ namespace Conqueror
                 m_SGSR2Valid = false;
             if (!m_UseFSR2)
                 m_FSR2Valid = false;
+            if (!m_UseDLSS)
+                m_DLSSValid = false;
+            if (!m_UseXeSS)
+                m_XeSSValid = false;
+            if (!m_UseMetalFX)
+                m_MetalFXValid = false;
             // FSR 2 kamera bilgisi (OpenGL perspektif matrisinden)
             const glm::mat4& P = camera.Projection;
             m_FinalFovY = 2.0f * std::atan(1.0f / std::max(std::abs(P[1][1]), 1e-6f));
@@ -2190,6 +2371,9 @@ namespace Conqueror
             m_TAAUValid = false;
             m_SGSR2Valid = false;
             m_FSR2Valid = false;
+            m_DLSSValid = false;
+            m_XeSSValid = false;
+            m_MetalFXValid = false;
         }
         // Tek kare yöntemlerinde zamansal kararlılık (RunFinal'da, kenar yumuşatmasından sonra): nesne hareket vektörleri, bu
         // karenin (titreşimsiz) ters matrisi ve kameranın kıpırdayıp kıpırdamadığı şimdi
@@ -2293,7 +2477,8 @@ namespace Conqueror
             const bool temporal = fx && !camera.Orthographic && UsesTAAResolve(next, settings);
             const bool t2x = fx && !camera.Orthographic && next == AntiAliasingMode::SMAA_T2X && !temporal;
             const bool taau = fx && !camera.Orthographic && IsLDRTemporalUpscaler(m_Upscaler);
-            const bool fsr2 = fx && m_UseFSR2;
+            // DLSS de FSR 2'nin titreşim dizisini kullanır (Halton 2,3; evre sayısı 8 x ölçek², NVIDIA'nın önerisi)
+            const bool fsr2 = fx && (m_UseFSR2 || m_UseDLSS || m_UseXeSS || m_UseMetalFX);
             m_WantTAA = temporal || t2x || taau || fsr2;   // titreşim (+ hareket bayrağı için normal eki)
             m_WantTXAA = temporal && next == AntiAliasingMode::TXAA && !fsr2;
             // Temporal Stability: çoklu örnekli yöntemlerde de titreşim sahneye uygulanır (TXAA gibi); uygulanmayınca TAA olmayan bir
