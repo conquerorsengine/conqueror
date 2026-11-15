@@ -24,6 +24,10 @@ namespace Conqueror::Editor
         const std::string& Status() const { return m_Status; }
 
     private:
+        // Object sekmesi (Unity): sahne süzgeci (All / Renderers / Occlusion Areas) ile nesne listesi, seçili Mesh Renderer'ın
+        // Static / Occluder Static / Occludee Static ayarı, seçili Occlusion Area / Portal'ın boyutları, yeni Occlusion Area
+        void DrawObjectTab();
+        int m_ObjectFilter = 0;   // 0 All, 1 Renderers, 2 Occlusion Areas
         Scene* m_Context = nullptr;
         Scene* m_BakeScene = nullptr;
         OcclusionBaker m_Baker;

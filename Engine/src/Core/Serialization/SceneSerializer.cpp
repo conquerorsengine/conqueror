@@ -1307,6 +1307,8 @@ namespace Conqueror
             out << YAML::Key << "Tag" << YAML::Value << tag.Tag;
             out << YAML::Key << "GameTag" << YAML::Value << tag.GameTag;
             out << YAML::Key << "IsStatic" << YAML::Value << tag.IsStatic;
+            if (tag.StaticFlags != TagComponent::kDefaultStaticFlags)
+                out << YAML::Key << "StaticFlags" << YAML::Value << tag.StaticFlags;
 
             out << YAML::EndMap;
         }
@@ -2464,6 +2466,8 @@ namespace Conqueror
                     tag.GameTag = tagComponent["GameTag"].as<std::string>();
                     if (tagComponent["IsStatic"])
                         tag.IsStatic = tagComponent["IsStatic"].as<bool>();
+                    if (tagComponent["StaticFlags"])
+                        tag.StaticFlags = tagComponent["StaticFlags"].as<uint32_t>();
                 }
 
                 auto activeComponent = entity["ActiveComponent"];

@@ -47,6 +47,12 @@ namespace Conqueror
         std::string Tag;
         std::string GameTag = "Untagged";
         bool IsStatic = false;
+        // Unity StaticEditorFlags (aynı bit değerleri): Static işaretliyken hangi sistemler nesneyi statik sayar.
+        // Occluder Static: başka nesneleri gizler; Occludee Static: arkada kalınca gizlenebilir (Occlusion Culling > Object)
+        static constexpr uint32_t kOccluderStatic = 2u;
+        static constexpr uint32_t kOccludeeStatic = 16u;
+        static constexpr uint32_t kDefaultStaticFlags = kOccluderStatic | kOccludeeStatic;
+        uint32_t StaticFlags = kDefaultStaticFlags;
 
         TagComponent() = default;
         TagComponent(const TagComponent&) = default;

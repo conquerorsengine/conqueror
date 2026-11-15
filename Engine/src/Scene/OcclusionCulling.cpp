@@ -37,6 +37,14 @@ flat in uint v_ID;
 layout(location = 0) out uint o_ID;
 void main() { o_ID = gl_FrontFacing ? v_ID : 0xFFFFFFFFu; }
 )";
+        // Occluder Static kapalı (yalnız Occludee) nesneler: engel olmadıklarından derinlik yazmazlar; engellerin derinliğini geçen
+        // her ön yüz parçası nesneyi doğrudan görünür işaretler (üst üste binen iki böyle nesne birbirini gizlemez)
+        const char* kMarkFS = R"(#version 450 core
+layout(early_fragment_tests) in;
+flat in uint v_ID;
+layout(std430, binding = 1) buffer Vis { uint data[]; };
+void main() { if (gl_FrontFacing) atomicOr(data[1u + (v_ID >> 5u)], 1u << (v_ID & 31u)); }
+)";
         // Kimlik görüntüsündeki her pikselin nesnesini görünür işaretle; arka yüzleri say (örnek nokta bir nesnenin içindeyse atılır)
         const char* kGatherCS = R"(#version 450 core
 layout(local_size_x = 8, local_size_y = 8) in;
@@ -222,10 +230,12 @@ void main()
         bool Running = false;
         std::chrono::steady_clock::time_point Start;
 
-        GLuint DrawProgram = 0, GatherProgram = 0;
+        GLuint DrawProgram = 0, GatherProgram = 0, MarkProgram = 0;
         GLuint Fbo = 0, IdTex = 0, Depth = 0, Ssbo = 0;
         GLuint Vao = 0, Vbo = 0;
         GLsizei SceneVerts = 0;
+        GLint MarkFirst = 0;                 // yalnız Occludee nesnelerin VBO'daki başlangıcı
+        GLsizei MarkVerts = 0;
         std::vector<GLint> PortalFirst;     // portal kutularının VBO'daki başlangıcı (36 köşe)
         int Res = 64;
         uint32_t Words = 1;
@@ -239,13 +249,14 @@ void main()
         {
             if (DrawProgram) glDeleteProgram(DrawProgram);
             if (GatherProgram) glDeleteProgram(GatherProgram);
+            if (MarkProgram) glDeleteProgram(MarkProgram);
             if (Fbo) glDeleteFramebuffers(1, &Fbo);
             if (IdTex) glDeleteTextures(1, &IdTex);
             if (Depth) glDeleteRenderbuffers(1, &Depth);
             if (Ssbo) glDeleteBuffers(1, &Ssbo);
             if (Vbo) glDeleteBuffers(1, &Vbo);
             if (Vao) glDeleteVertexArrays(1, &Vao);
-            DrawProgram = GatherProgram = Fbo = IdTex = Depth = Ssbo = Vbo = Vao = 0;
+            DrawProgram = GatherProgram = MarkProgram = Fbo = IdTex = Depth = Ssbo = Vbo = Vao = 0;
         }
 
         // Bir hücrenin bir geçişi: tüm örnek noktalarından 6 yön; arka yüzü çok gören (bir nesnenin içinde kalan) noktalar atılır
@@ -283,8 +294,21 @@ void main()
                     glDrawArrays(GL_TRIANGLES, 0, SceneVerts);
                     if (pass > 0 && pass - 1 < (int)PortalFirst.size())
                         glDrawArrays(GL_TRIANGLES, PortalFirst[(size_t)pass - 1], 36);
+                    if (MarkVerts > 0)
+                    {
+                        // Engellerin derinliğine karşı, derinlik / renk yazmadan
+                        glUseProgram(MarkProgram);
+                        glUniformMatrix4fv(glGetUniformLocation(MarkProgram, "u_VP"), 1, GL_FALSE, &vp[0][0]);
+                        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, Ssbo);
+                        glDepthMask(GL_FALSE);
+                        glColorMaski(0, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+                        glDrawArrays(GL_TRIANGLES, MarkFirst, MarkVerts);
+                        glColorMaski(0, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                        glDepthMask(GL_TRUE);
+                        glUseProgram(DrawProgram);
+                    }
                 }
-                glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+                glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT);
                 glUseProgram(GatherProgram);
                 glBindImageTexture(0, IdTex, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
                 glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, Ssbo);
@@ -328,8 +352,9 @@ void main()
         auto& reg = scene.m_Registry;
         auto data = std::make_shared<OcclusionData>();
 
-        // Statik nesneler (Unity Occluder / Occludee Static): hem engeller hem gizlenebilir
-        std::vector<float> verts;
+        // Statik nesneler (Unity Occluder / Occludee Static): Occluder başka nesneleri gizler (derinlik yazar), Occludee gizlenebilir
+        // (kimliği vardır). Yalnız Occluder: kimlik 0 (hiç gizlenmez), yalnız Occludee: ayrı aralık (markVerts, derinlik yazmaz)
+        std::vector<float> verts, markVerts;
         glm::vec3 sceneMin(1e30f), sceneMax(-1e30f);
         for (auto e : reg.view<TransformComponent, MeshRendererComponent>())
         {
@@ -338,31 +363,38 @@ void main()
             const auto* tag = reg.try_get<TagComponent>(e);
             if (!tag || !tag->IsStatic || !reg.all_of<IDComponent>(e))
                 continue;
+            const bool occluder = (tag->StaticFlags & TagComponent::kOccluderStatic) != 0;
+            const bool occludee = (tag->StaticFlags & TagComponent::kOccludeeStatic) != 0;
+            if (!occluder && !occludee)
+                continue;
             const auto& mr = reg.get<MeshRendererComponent>(e);
             const glm::mat4& w = reg.get<TransformComponent>(e).WorldTransform;
-            const float id = (float)(data->Renderers.size() + 1);
-            const size_t before = verts.size();
+            const float id = occludee ? (float)(data->Renderers.size() + 1) : 0.0f;
+            std::vector<float>& out = occluder ? verts : markVerts;
+            const size_t before = out.size();
             if (mr.IsModel())
             {
                 if (mr.ModelData)
                     for (const auto& mesh : mr.ModelData->Meshes)
-                        AppendMesh(mesh, w, id, verts);
+                        AppendMesh(mesh, w, id, out);
             }
             else
-                AppendMesh(mr.CustomMesh ? mr.CustomMesh : PrimitiveMesh(mr.Type), w, id, verts);
-            if (verts.size() == before)
+                AppendMesh(mr.CustomMesh ? mr.CustomMesh : PrimitiveMesh(mr.Type), w, id, out);
+            if (out.size() == before)
                 continue;
-            for (size_t i = before; i < verts.size(); i += 4)
+            for (size_t i = before; i < out.size(); i += 4)
             {
-                const glm::vec3 p(verts[i], verts[i + 1], verts[i + 2]);
+                const glm::vec3 p(out[i], out[i + 1], out[i + 2]);
                 sceneMin = glm::min(sceneMin, p);
                 sceneMax = glm::max(sceneMax, p);
             }
-            data->Renderers.push_back((uint64_t)reg.get<IDComponent>(e).ID);
+            if (occludee)
+                data->Renderers.push_back((uint64_t)reg.get<IDComponent>(e).ID);
         }
         if (data->Renderers.empty())
         {
-            error = "No static objects: mark the objects that block and can be hidden as Static.";
+            error = verts.empty() ? "No static objects: mark the objects that block and can be hidden as Static."
+                                  : "No Occludee Static objects: nothing could be hidden (Occlusion Culling > Object).";
             return false;
         }
         const GLsizei sceneVerts = (GLsizei)(verts.size() / 4);
@@ -377,6 +409,11 @@ void main()
             AppendBox(scene.ComputeWorldMatrix(e), pc.Center, pc.Size, 0.0f, verts);
             data->Portals.push_back((uint64_t)reg.get<IDComponent>(e).ID);
         }
+
+        // Yalnız Occludee nesneler en sonda (portallardan sonra)
+        const GLint markFirst = (GLint)(verts.size() / 4);
+        const GLsizei markCount = (GLsizei)(markVerts.size() / 4);
+        verts.insert(verts.end(), markVerts.begin(), markVerts.end());
 
         // Görünüm hacimleri: Occlusion Area'lar (yoksa statik nesnelerin kapsadığı alan)
         std::vector<std::pair<glm::vec3, glm::vec3>> volumes;
@@ -424,7 +461,10 @@ void main()
         m->DrawProgram = fs ? LinkProgram({ vs, fs }, err) : 0;
         GLuint cs = m->DrawProgram ? CompileShader(GL_COMPUTE_SHADER, kGatherCS, err) : 0;
         m->GatherProgram = cs ? LinkProgram({ cs }, err) : 0;
-        if (!m->DrawProgram || !m->GatherProgram)
+        GLuint mvs = m->GatherProgram ? CompileShader(GL_VERTEX_SHADER, kDrawVS, err) : 0;
+        GLuint mfs = mvs ? CompileShader(GL_FRAGMENT_SHADER, kMarkFS, err) : 0;
+        m->MarkProgram = mfs ? LinkProgram({ mvs, mfs }, err) : 0;
+        if (!m->DrawProgram || !m->GatherProgram || !m->MarkProgram)
         {
             error = "Occlusion bake shaders failed: " + err;
             m->Release();
@@ -457,6 +497,8 @@ void main()
         glCreateBuffers(1, &m->Ssbo);
         glNamedBufferStorage(m->Ssbo, (GLsizeiptr)((m->Words + 1) * 4), nullptr, GL_DYNAMIC_STORAGE_BIT);
         m->SceneVerts = sceneVerts;
+        m->MarkFirst = markFirst;
+        m->MarkVerts = markCount;
         m->PortalFirst = portalFirst;
         m->Raw.assign(total, {});
         m->Next = 0;
