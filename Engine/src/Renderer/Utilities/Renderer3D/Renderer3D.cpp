@@ -943,10 +943,14 @@ namespace Conqueror
                 }
             }
         }
-        // Açılan alan: nesnelerin önceki konumları (bu karenin kamerasıyla) yalnız w kanalına 2 olarak işaretlenir, derinlik
-        // testi yok. Hareketsiz duran nesne kıpırdamaya başladığı ilk karede eski yeri "önceki karede hareket etti" sayılmıyor,
-        // geçmişte orada kalan görüntüsü (yerde yatan hedef levhası) açılan zeminde bir süre iz bırakıyordu
-        glDisable(GL_DEPTH_TEST);
+        // Açılan alan: nesnelerin önceki konumları (bu karenin kamerasıyla) yalnız w kanalına 2 olarak işaretlenir. Hareketsiz duran
+        // nesne kıpırdamaya başladığı ilk karede eski yeri "önceki karede hareket etti" sayılmıyor, geçmişte orada kalan görüntüsü
+        // (yerde yatan hedef levhası) açılan zeminde bir süre iz bırakıyordu. Derinlik testiyle (LEQUAL, öne çekilmiş): eski yer yalnız
+        // şimdi arkasındaki yüzeyin göründüğü piksellerde işaretlenir. Testsizken önünde başka nesne olan hareketli nesne (piramidin
+        // arkasındaki hedef) eski silüetini öndeki küplerin üstüne işaretliyordu: TAA o şeklin içini açılan alan sayıp dumanın ve namlu
+        // alevinin dışında bırakıyor, uzaktan nişan alıp ateş edince küplerde hedef şeklinde keskin kenarlı açık lekeler kalıyordu
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LEQUAL);
         glDisable(GL_CULL_FACE);
         glColorMaski(0, GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
         if (s_VelocityShader && s_VelocityShader->IsValid())
@@ -974,8 +978,6 @@ namespace Conqueror
             }
             // Önceki karede çizilip bu karede çizilmeyen (silinen / gizlenen) opak nesnelerin eski yeri. Derinlik testiyle: yalnız
             // şimdi arkasındaki yüzeyin göründüğü pikseller (önünde başka nesne olan, örtülme kırpmasıyla gizlenen nesnenin yeri işaretlenmez)
-            glEnable(GL_DEPTH_TEST);
-            glDepthFunc(GL_LEQUAL);
             for (const auto& [key, f] : it->second.PrevFoot)
             {
                 if (it->second.Cur.count(key) || !f.MeshRef || !f.MeshRef->GetVertexArray())
@@ -995,7 +997,6 @@ namespace Conqueror
                 RenderCommand::DrawIndexed(f.MeshRef->GetVertexArray(), f.MeshRef->GetIndexCount());
                 drew = true;
             }
-            glDisable(GL_DEPTH_TEST);
             sh->SetInt("u_PrevCoverage", 0);
         }
         if (s_VelocitySkinnedShader && s_VelocitySkinnedShader->IsValid())
