@@ -40,7 +40,7 @@ Conqueror::Application* Conqueror::CreateApplication(ApplicationCommandLineArgs 
             std::exit(0);
         }
     ApplicationSpecification spec;
-    spec.Name = "Conqueror Engine Editor";
+    spec.Name = "Conqueror's Engine";
     spec.CommandLineArgs = args;
     spec.WorkingDirectory = "";  // Empty - use exe directory
     spec.Width = 1920;
