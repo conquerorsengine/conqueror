@@ -826,10 +826,8 @@ namespace Conqueror::Editor
                     }
                     else if (ext == ".cqprefab" && m_ActiveScene)
                     {
-                        // Çift tık: kameranın odak noktasına örnekle
-                        glm::vec3 at = m_ViewportPanel ? m_ViewportPanel->GetEditorCamera().GetFocalPoint() : glm::vec3(0.0f);
-                        if (Entity e = AssetActions::SpawnFromAsset(m_ActiveScene.get(), path.string(), {}, &at))
-                            SelectEntityEverywhere(e);
+                        // Çift tık: Unity gibi Prefab Mode (prefab kendi aşamasında düzenlenir). Sahneye koymak: sürükle-bırak
+                        OpenPrefabMode(path);
                     }
                     else if (ext == ".cqcont")
                     {
@@ -1596,6 +1594,7 @@ namespace Conqueror::Editor
             ImGui::EndPopup();
         }
 
+        UpdatePrefabStage(ImGui::GetIO().DeltaTime);
         SetupDockspace();
         RenderMenuBar();
         RenderToolbar();
@@ -1948,7 +1947,8 @@ namespace Conqueror::Editor
                 dl->AddText(ImVec2(p.x + 13.0f, p.y + (22.0f - ts.y) * 0.5f), ImGui::GetColorU32(active ? ImGuiCol_Text : ImGuiCol_TextDisabled), tabs[i]);
             }
             // Sağ: sahne adı
-            std::string sceneName = m_CurrentScenePath.empty() ? std::string("Untitled") : m_CurrentScenePath.stem().string();
+            std::string sceneName = m_PrefabStage.Active ? m_PrefabStage.Path.stem().string() + " (Prefab)"
+                                  : m_CurrentScenePath.empty() ? std::string("Untitled") : m_CurrentScenePath.stem().string();
             ImVec2 ns = ImGui::CalcTextSize(sceneName.c_str());
             dl->AddText(ImVec2(p0.x + ImGui::GetContentRegionAvail().x - ns.x - 8.0f, p0.y + 4.0f), ImGui::GetColorU32(ImGuiCol_TextDisabled), sceneName.c_str());
             dl->AddLine(ImVec2(p0.x - 6.0f, p0.y + 22.0f), ImVec2(p0.x + ImGui::GetWindowWidth(), p0.y + 22.0f), ImGui::GetColorU32(ImGuiCol_Separator));
@@ -2516,7 +2516,9 @@ namespace Conqueror::Editor
         HierarchyPanel::UpdateCreateDrag();
         if (m_ShowHierarchy && m_HierarchyPanel)
         {
-            m_HierarchyPanel->SetSceneName(m_CurrentScenePath.empty() ? std::string("Untitled") : m_CurrentScenePath.stem().string());
+            // Prefab Mode'da kök satırı prefab'in adı (Unity)
+            m_HierarchyPanel->SetSceneName(m_PrefabStage.Active ? m_PrefabStage.Path.stem().string()
+                                           : m_CurrentScenePath.empty() ? std::string("Untitled") : m_CurrentScenePath.stem().string());
             m_HierarchyPanel->OnImGuiRender();
         }
 
@@ -2672,6 +2674,9 @@ namespace Conqueror::Editor
     void EditorLayer::OnPlayButtonPressed()
     {
         auto& editorState = EditorState::Get();
+        // Prefab Mode açıkken Play: prefab kaydedilir, sahneye dönülür, sonra oynatılır
+        if (m_PrefabStage.Active && editorState.IsEditing())
+            ClosePrefabMode(true);
         
         if (editorState.IsEditing())
         {
@@ -3427,6 +3432,7 @@ namespace Conqueror::Editor
 
     void EditorLayer::NewScene()
     {
+        ClosePrefabMode(true);   // Prefab Mode açıksa önce prefab kaydedilip sahneye dönülür
         m_ActiveScene = std::make_shared<Scene>();
         m_EditorScene = m_ActiveScene;
         m_CurrentScenePath.clear();
@@ -3453,6 +3459,7 @@ namespace Conqueror::Editor
 
     bool EditorLayer::OpenScene(const std::filesystem::path& path)
     {
+        ClosePrefabMode(true);   // Prefab Mode açıksa önce prefab kaydedilip sahneye dönülür (sahne kaybolmasın)
         if (!std::filesystem::exists(path))
         {
             CQ_CORE_ERROR("Scene not found: {0}", path.string());
@@ -3487,8 +3494,237 @@ namespace Conqueror::Editor
         return true;
     }
 
+    // ---------------------------------------------------------------- 218: Prefab Mode (Unity)
+    // Prefab'e çift tıklayınca sahne bir kenara konur, prefab boş bir aşama sahnesinde açılır (sahnenin ışık / gökyüzü ayarlarıyla).
+    // Hierarchy'nin üstünde yol çubuğu: geri (sahneye dön), prefab adı, Auto Save, Save. Auto Save açıkken her değişiklik yarım saniye
+    // içinde prefab dosyasına yazılır; kapalıyken çıkarken sorulur. Geri alma geçmişi sahneninkinden ayrıdır. Çıkınca sahnedeki, prefab'den
+    // farkı olmayan kopyalar yeni prefab'le yenilenir (konum / ad korunur); farklı (override'lı) kopyalar olduğu gibi kalır
+    namespace
+    {
+        std::string ReadWholeFile(const std::filesystem::path& p)
+        {
+            std::ifstream in(p, std::ios::binary);
+            return std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+        }
+        std::filesystem::path StageTempFile()
+        {
+            static const std::string id = std::to_string((uint64_t)(uintptr_t)&id ^ (uint64_t)std::chrono::steady_clock::now().time_since_epoch().count());
+            return std::filesystem::temp_directory_path() / ("cq_prefab_stage_" + id + ".cqprefab");
+        }
+    }
+
+    bool EditorLayer::OpenPrefabMode(const std::filesystem::path& path)
+    {
+        if (!EditorState::Get().IsEditing())
+        {
+            CQ_CORE_WARN("Stop Play mode before opening a prefab.");
+            return false;
+        }
+        if (m_PrefabStage.Active)
+        {
+            if (m_PrefabStage.Path == path)
+                return true;
+            ClosePrefabMode(true);
+        }
+        auto stage = std::make_shared<Scene>();
+        if (m_ActiveScene)
+            stage->GetRenderSettings() = m_ActiveScene->GetRenderSettings();
+        Entity root = PrefabSerializer::Deserialize(stage, path);
+        if (!root)
+        {
+            CQ_CORE_ERROR("Prefab Mode: cannot open {0}", path.string());
+            return false;
+        }
+        PrefabStage& s = m_PrefabStage;
+        s = PrefabStage{};
+        s.Active = true;
+        s.Path = path;
+        s.SavedScene = m_ActiveScene;
+        s.SavedScenePath = m_CurrentScenePath;
+        s.RootID = (uint64_t)root.GetComponent<IDComponent>().ID;
+        s.SavedText = ReadWholeFile(path);
+        // Sahnedeki, prefab'den farkı olmayan kopyalar (çıkınca yenilenecek)
+        if (m_ActiveScene)
+        {
+            const std::string rel = PrefabSerializer::ToProjectPath(path);
+            m_ActiveScene->m_Registry.view<PrefabInstanceComponent, IDComponent>().each([&](auto e, PrefabInstanceComponent& pi, IDComponent& id) {
+                if (pi.Prefab != rel && PrefabSerializer::Resolve(pi.Prefab) != path)
+                    return;
+                Entity inst{ e, m_ActiveScene.get() };
+                if (PrefabSerializer::FindInstanceRoot(inst) == inst && !PrefabSerializer::HasOverrides(inst))
+                    s.CleanInstances.push_back((uint64_t)id.ID);
+            });
+        }
+        if (m_ViewportPanel)
+        {
+            auto& cam = m_ViewportPanel->GetEditorCamera();
+            s.SavedFocal = cam.GetFocalPoint();
+            s.SavedDistance = cam.GetDistance();
+            s.SavedPitch = cam.GetPitch();
+            s.SavedYaw = cam.GetYaw();
+        }
+        UndoRedoManager::Get().SwapStacks(s.SavedUndo, s.SavedRedo);
+        m_ActiveScene = stage;
+        m_EditorScene = stage;
+        m_CurrentScenePath.clear();
+        RefreshAllPanels();
+        stage->UpdateWorldTransforms();
+        SelectEntityEverywhere(root);
+        if (m_ViewportPanel)
+            m_ViewportPanel->FrameSelected();
+        HierarchyPanel::s_DrawStageHeader = [this]() { DrawPrefabStageHeader(); };
+        CQ_CORE_INFO("Prefab Mode: {0}", path.string());
+        return true;
+    }
+
+    bool EditorLayer::SavePrefabStage()
+    {
+        PrefabStage& s = m_PrefabStage;
+        if (!s.Active || !m_ActiveScene)
+            return false;
+        Entity root = m_ActiveScene->FindEntityByUUID(s.RootID);
+        if (!root)
+        {
+            CQ_CORE_ERROR("Prefab Mode: the prefab root was deleted; nothing saved");
+            return false;
+        }
+        if (!PrefabSerializer::Serialize(root, s.Path))
+            return false;
+        PrefabSerializer::ClearCache();
+        s.SavedText = ReadWholeFile(s.Path);
+        s.Dirty = false;
+        ++s.Saves;
+        return true;
+    }
+
+    void EditorLayer::UpdatePrefabStage(float dt)
+    {
+        PrefabStage& s = m_PrefabStage;
+        if (!s.Active || !m_ActiveScene)
+            return;
+        s.CheckTimer += dt;
+        if (s.CheckTimer < 0.5f)
+            return;
+        s.CheckTimer = 0.0f;
+        // Değişiklik: aşamanın şimdiki hali dosyadakinden farklı mı (her tür düzenleme: Inspector, gizmo, ekleme / silme)
+        Entity root = m_ActiveScene->FindEntityByUUID(s.RootID);
+        if (!root)
+            return;
+        const std::filesystem::path tmp = StageTempFile();
+        if (!PrefabSerializer::Serialize(root, tmp))
+            return;
+        const std::string now = ReadWholeFile(tmp);
+        std::error_code ec;
+        std::filesystem::remove(tmp, ec);
+        s.Dirty = now != s.SavedText;
+        if (s.Dirty && s.AutoSave)
+            SavePrefabStage();
+    }
+
+    void EditorLayer::ClosePrefabMode(bool save)
+    {
+        PrefabStage& s = m_PrefabStage;
+        if (!s.Active)
+            return;
+        if (save)
+        {
+            UpdatePrefabStage(1.0f);   // son değişiklikleri de algıla
+            if (s.Dirty)
+                SavePrefabStage();
+        }
+        PrefabSerializer::ClearCache();
+        UndoRedoManager::Get().SwapStacks(s.SavedUndo, s.SavedRedo);
+        EditorState::Get().ClearSelection();
+        m_ActiveScene = s.SavedScene;
+        m_EditorScene = s.SavedScene;
+        m_CurrentScenePath = s.SavedScenePath;
+        HierarchyPanel::s_DrawStageHeader = nullptr;
+        // Sahnedeki değiştirilmemiş kopyalar yeni prefab'le
+        int refreshed = 0;
+        if (m_ActiveScene && save)
+            for (uint64_t id : s.CleanInstances)
+                if (Entity inst = m_ActiveScene->FindEntityByUUID(id))
+                    if (PrefabSerializer::RevertInstance(inst))
+                        ++refreshed;
+        RefreshAllPanels();
+        if (m_ViewportPanel)
+        {
+            auto& cam = m_ViewportPanel->GetEditorCamera();
+            cam.SetFocalPoint(s.SavedFocal);
+            cam.SetDistance(s.SavedDistance);
+            cam.SetPitch(s.SavedPitch);
+            cam.SetYaw(s.SavedYaw);
+        }
+        CQ_CORE_INFO("Prefab Mode closed ({0}); {1} scene instance(s) updated", s.Path.filename().string(), refreshed);
+        s = PrefabStage{};
+    }
+
+    void EditorLayer::DrawPrefabStageHeader()
+    {
+        PrefabStage& s = m_PrefabStage;
+        if (!s.Active)
+            return;
+        // Unity'nin yol çubuğu: geri ok, sahne > prefab adı; sağda Auto Save ve (kapalıyken) Save
+        const ImVec2 start = ImGui::GetCursorScreenPos();
+        const float h = ImGui::GetFrameHeight() + 6.0f;
+        ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(start.x - 8.0f, start.y - 2.0f), ImVec2(start.x + ImGui::GetContentRegionAvail().x + 8.0f, start.y + h),
+                                                  IM_COL32(40, 70, 120, 255));
+        ImGui::SetCursorScreenPos(ImVec2(start.x, start.y + 1.0f));
+        if (ImGui::SmallButton(ICON_FA_ARROW_LEFT "##prefabback"))
+        {
+            if (s.Dirty && !s.AutoSave)
+                s.ConfirmExit = true;
+            else
+                ClosePrefabMode(true);
+        }
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
+            ImGui::SetTooltip("Back to the scene");
+        if (!s.Active)
+            return;
+        ImGui::SameLine();
+        const std::string scene = s.SavedScenePath.empty() ? std::string("Scene") : s.SavedScenePath.stem().string();
+        ImGui::TextDisabled("%s  " ICON_FA_CHEVRON_RIGHT, scene.c_str());
+        ImGui::SameLine();
+        ImGui::Text(ICON_FA_CUBES_STACKED "  %s%s", s.Path.stem().string().c_str(), s.Dirty ? " *" : "");
+        const float right = ImGui::GetWindowContentRegionMax().x + ImGui::GetWindowPos().x;
+        const float saveW = s.AutoSave ? 0.0f : ImGui::CalcTextSize("Save").x + 16.0f;
+        ImGui::SameLine(0.0f, 0.0f);
+        ImGui::SetCursorScreenPos(ImVec2(right - saveW - ImGui::CalcTextSize("Auto Save").x - ImGui::GetFrameHeight() - 14.0f, start.y + 1.0f));
+        ImGui::Checkbox("Auto Save", &s.AutoSave);
+        if (!s.AutoSave)
+        {
+            ImGui::SameLine();
+            ImGui::BeginDisabled(!s.Dirty);
+            if (ImGui::SmallButton("Save"))
+                SavePrefabStage();
+            ImGui::EndDisabled();
+        }
+        ImGui::SetCursorScreenPos(ImVec2(start.x, start.y + h + 2.0f));
+        if (s.ConfirmExit)
+        {
+            ImGui::OpenPopup("##PrefabUnsaved");
+            s.ConfirmExit = false;
+        }
+        if (ImGui::BeginPopupModal("##PrefabUnsaved", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar))
+        {
+            ImGui::Text("Prefab '%s' has unsaved changes.", s.Path.stem().string().c_str());
+            if (ImGui::Button("Save")) { ImGui::CloseCurrentPopup(); ClosePrefabMode(true); }
+            ImGui::SameLine();
+            if (ImGui::Button("Discard")) { ImGui::CloseCurrentPopup(); ClosePrefabMode(false); }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+        }
+    }
+
     void EditorLayer::SaveScene()
     {
+        // Prefab Mode'da Ctrl+S prefab'i kaydeder (Unity)
+        if (m_PrefabStage.Active)
+        {
+            SavePrefabStage();
+            return;
+        }
         // Oyun modunda sahne kopyası çalışır: kaydetmek çalışma zamanı durumunu sahne dosyasına yazardı (Unity gibi engelle)
         if (!EditorState::Get().IsEditing())
         {
@@ -3946,6 +4182,8 @@ namespace Conqueror::Editor
 
     bool EditorLayer::OnCloseRequested()
     {
+        // Prefab Mode açıkken kapatma: prefab kaydedilir, sahneye dönülür; sonra sahnenin kaydedilmemiş değişiklikleri sorulur
+        ClosePrefabMode(true);
         if (m_CloseConfirmed || Automation::IsActive() || !HasUnsavedChanges())
             return true;
         m_PendingAction = PendingSceneAction::Close;
@@ -8342,6 +8580,33 @@ namespace Conqueror::Editor
             if (a.size() > 2 && a[1] == "expect" && draws < std::atoi(a[2].c_str())) { err = "loading screen drawn only " + std::to_string(draws) + " times"; return false; }
             if (a.size() > 2 && a[1] == "expect" && LoadingScreen::LastFraction() < 0.999f) { err = "loading screen did not reach 100%"; return false; }
             return true;
+        });
+        // prefab_mode open <yol> | close [discard] | autosave on|off | expect_active <0|1> | expect_saves <n> (218)
+        Automation::RegisterCommand("prefab_mode", [this](const Args& a, std::string& err) {
+            if (a.size() < 2) { err = "prefab_mode open <path> | close [discard] | autosave on|off | expect_active <0|1> | expect_saves <n>"; return false; }
+            if (a[1] == "open" && a.size() > 2)
+            {
+                std::filesystem::path p(a[2]);
+                if (p.is_relative() && Project::GetActive()) p = Project::GetActiveProjectDirectory() / p;
+                return OpenPrefabMode(p) || (err = "cannot open " + p.string(), false);
+            }
+            if (a[1] == "close") { ClosePrefabMode(!(a.size() > 2 && a[2] == "discard")); return true; }
+            if (a[1] == "autosave" && a.size() > 2) { m_PrefabStage.AutoSave = a[2] == "on"; return true; }
+            if (a[1] == "expect_active" && a.size() > 2)
+            {
+                const bool want = a[2] == "1";
+                Automation::Report(std::string("prefab mode ") + (m_PrefabStage.Active ? "active" : "closed"));
+                if (m_PrefabStage.Active != want) { err = std::string("prefab mode is ") + (m_PrefabStage.Active ? "active" : "closed"); return false; }
+                return true;
+            }
+            if (a[1] == "expect_saves" && a.size() > 2)
+            {
+                Automation::Report("prefab mode saves " + std::to_string(m_PrefabStage.Saves));
+                if (m_PrefabStage.Saves < std::atoi(a[2].c_str())) { err = "only " + std::to_string(m_PrefabStage.Saves) + " saves"; return false; }
+                return true;
+            }
+            err = "unknown prefab_mode command";
+            return false;
         });
         // layout_settled: açılış örtüsü kalktı mı (259)
         Automation::RegisterCommand("layout_settled", [this](const Args&, std::string& err) {

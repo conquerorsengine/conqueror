@@ -29,6 +29,13 @@ namespace Conqueror::Editor
         void Clear();
         // Her Execute / Undo / Redo / Clear'da artar: bu karede bir komut işlendi mi (oluşturma algılayıcısı)
         uint64_t GetVersion() const { return m_Version; }
+        // Prefab Mode (218): sahnenin geri alma geçmişi prefab düzenlenirken saklanır, çıkınca geri gelir
+        void SwapStacks(std::vector<std::shared_ptr<EditorCommand>>& undo, std::vector<std::shared_ptr<EditorCommand>>& redo)
+        {
+            m_UndoStack.swap(undo);
+            m_RedoStack.swap(redo);
+            ++m_Version;
+        }
 
     private:
         UndoRedoManager() = default;

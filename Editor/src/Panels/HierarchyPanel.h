@@ -33,6 +33,8 @@ namespace Conqueror::Editor
         // Oluşturma menüsü (Hierarchy "+" düğmesi, sağ tık ve GameObject menüsü paylaşır).
         // parent geçerliyse yeni nesne onun çocuğu olur. Oluşturulan varlığı döndürür.
         static Entity DrawCreateMenuItems(Scene* scene, Entity parent);
+        // Prefab Mode (218): Hierarchy'nin üstünde yol çubuğu (geri, prefab adı, Auto Save, Save); boşsa çizilmez
+        static inline std::function<void()> s_DrawStageHeader;
         // Create menüsündeki arama kutusunun bulacağı girişler ("3D Object / Cube"), testler için
         static std::vector<std::string> SearchCreateEntries(const std::string& query);
         // Create girişini Viewport'a sürükleyip bırakma (Unreal Place Actors gibi). Preview: sürüklerken önizleme imlecin altındaki yüzeye

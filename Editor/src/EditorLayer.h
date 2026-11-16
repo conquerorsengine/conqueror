@@ -91,6 +91,31 @@ namespace Conqueror::Editor
         void HandleKeyboardShortcuts();
         // 259: açılışta düzen oturana kadar kareler ekrana gönderilmez (örtü yok), pencere ilk kez oturmuş haliyle görünür
         void UpdateStartupPresent();
+        // 218: Prefab Mode (Unity): prefab kendi sahne aşamasında düzenlenir, değişiklikler prefab dosyasına yazılır
+        struct PrefabStage
+        {
+            bool Active = false;
+            std::filesystem::path Path;
+            std::shared_ptr<Scene> SavedScene;
+            std::filesystem::path SavedScenePath;
+            std::vector<std::shared_ptr<EditorCommand>> SavedUndo, SavedRedo;
+            std::vector<uint64_t> CleanInstances;   // açılırken prefab'den farkı olmayan sahne kopyaları: çıkınca güncellenir
+            uint64_t RootID = 0;
+            bool AutoSave = true;
+            bool Dirty = false;
+            bool ConfirmExit = false;
+            float CheckTimer = 0.0f;
+            std::string SavedText;
+            glm::vec3 SavedFocal{ 0.0f };
+            float SavedDistance = 10.0f, SavedPitch = 0.0f, SavedYaw = 0.0f;
+            int Saves = 0;
+        };
+        PrefabStage m_PrefabStage;
+        bool OpenPrefabMode(const std::filesystem::path& path);
+        void ClosePrefabMode(bool save);
+        bool SavePrefabStage();
+        void UpdatePrefabStage(float dt);
+        void DrawPrefabStageHeader();
         bool m_StartupSettled = false;
         int m_StartupFrames = 0, m_StartupStableFrames = 0, m_StartupLayoutFrame = -1;
         float m_StartupLastW = 0.0f, m_StartupLastH = 0.0f;

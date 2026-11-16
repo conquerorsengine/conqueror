@@ -269,6 +269,8 @@ namespace Conqueror::Editor
             ImGui::End();
             return;
         }
+        if (s_DrawStageHeader)
+            s_DrawStageHeader();
 
         if (!m_Context)
         {

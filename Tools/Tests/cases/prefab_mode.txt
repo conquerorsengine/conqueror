@@ -1,0 +1,26 @@
+# template: basic3d
+# 218: Unity gibi Prefab Mode: prefab kendi aşamasında açılır (sahnenin nesneleri görünmez), değişiklikler Auto Save ile prefab dosyasına
+# yazılır, geri dönünce sahnedeki değiştirilmemiş kopyalar yeni prefab'le yenilenir; Auto Save kapalıyken "discard" ile çıkmak dosyayı
+# değiştirmez
+wait 40
+create_primitive Cube Box 0 0.5 0
+prefab save Box Assets/Box.cqprefab
+prefab expect_instance Box Box.cqprefab
+prefab_mode open Assets/Box.cqprefab
+prefab_mode expect_active 1
+expect_selected Box
+comp add Box PointLightComponent
+wait 45
+prefab_mode expect_saves 1
+prefab_mode close
+prefab_mode expect_active 0
+comp expect Box PointLightComponent Intensity >0
+prefab expect_instance Box Box.cqprefab
+prefab_mode open Assets/Box.cqprefab
+prefab_mode autosave off
+comp remove Box PointLightComponent
+wait 45
+prefab_mode close discard
+prefab_mode expect_active 0
+comp expect Box PointLightComponent Intensity >0
+quit
