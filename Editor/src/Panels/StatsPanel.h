@@ -12,7 +12,7 @@ namespace Conqueror::Editor
     class StatsPanel
     {
     public:
-        bool IsShowingFPS() const { return m_Ready && m_ShownFPS > 0.0f; }
+        bool IsShowingFPS() const { return (m_Ready && m_ShownFPS > 0.0f) || m_EstimateHz > 0.0f; }
         float GetShownFPS() const { return m_ShownFPS; }
         StatsPanel() = default;
         ~StatsPanel() = default;
@@ -26,6 +26,9 @@ namespace Conqueror::Editor
 
         void SetStats(const RendererStats& stats);
         void SetFPS(float fps, float frameTime);
+        // Ölçüm hazır olana kadar gösterilen tahmin (ekranın yenileme hızı; dikey eşitlemeyle editör bu hızda döner): Stats ilk
+        // karesinde de boş görünmez (259)
+        void SetEstimate(float refreshHz) { m_EstimateHz = refreshHz; }
         void SetEntityCount(uint32_t count) { m_EntityCount = count; }
 
     private:
@@ -40,6 +43,7 @@ namespace Conqueror::Editor
         int m_AccumFrames = 0, m_GoodFrames = 0;
         float m_GoodMs = 0.0f, m_PrevFrameMs = 0.0f;   // açılış: art arda düzenli karelerin toplamı / önceki kare
         bool m_Ready = false;
+        float m_EstimateHz = 0.0f;
         uint32_t m_EntityCount = 0;
 
         std::array<float, 120> m_FrameHistory{};

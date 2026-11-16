@@ -82,7 +82,9 @@ namespace Conqueror
         GLProfile::SetRequested(GLProfile::Resolve(m_Specification.CommandLineArgs.Count, m_Specification.CommandLineArgs.Args));
         RendererAPI::SetBackend(RendererAPI::ResolveBackend(m_Specification.CommandLineArgs.Count, m_Specification.CommandLineArgs.Args,
                                                             m_Specification.GraphicsBackend));
-        m_Window = Scope<Window>(Window::Create(WindowProps(m_Specification.Name, m_Specification.Width, m_Specification.Height)));
+        WindowProps windowProps(m_Specification.Name, m_Specification.Width, m_Specification.Height);
+        windowProps.Maximized = m_Specification.Maximized;
+        m_Window = Scope<Window>(Window::Create(windowProps));
         m_Window->SetEventCallback(CQ_BIND_EVENT_FN(Application::OnEvent));
 
         Renderer::Init();

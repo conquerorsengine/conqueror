@@ -162,6 +162,8 @@ namespace Conqueror
 
     namespace { bool s_SkipPresent = false; }
 
+    void ImGuiLayer::RequestSkipPresent() { s_SkipPresent = true; }
+
     bool ImGuiLayer::ConsumeSkipPresent()
     {
         const bool skip = s_SkipPresent;

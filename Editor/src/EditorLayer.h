@@ -89,12 +89,11 @@ namespace Conqueror::Editor
 
         // Edit operations
         void HandleKeyboardShortcuts();
-        // 259: açılışta düzen oturana kadar pencereyi örter, oturmuş düzen tek seferde görünür
-        void DrawStartupCover();
+        // 259: açılışta düzen oturana kadar kareler ekrana gönderilmez (örtü yok), pencere ilk kez oturmuş haliyle görünür
+        void UpdateStartupPresent();
         bool m_StartupSettled = false;
-        int m_StartupFrames = 0, m_StartupStableFrames = 0;
+        int m_StartupFrames = 0, m_StartupStableFrames = 0, m_StartupLayoutFrame = -1;
         float m_StartupLastW = 0.0f, m_StartupLastH = 0.0f;
-        double m_StartupBegin = 0.0;
         void EditCopy();
         void EditCut();
         void EditPaste();

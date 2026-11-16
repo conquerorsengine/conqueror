@@ -33,6 +33,8 @@ namespace Conqueror
         // Pencere bu kareyi göstermesin mi (bir kez okunur). ImGui ilk karesinde paneller henüz görünmez (yalnız menü çubuğu, gerisi
         // siyah): o kare ekrana verilmez, pencere ilk kez tam yerleşimle görünür (238)
         static bool ConsumeSkipPresent();
+        // Bu kare ekrana gönderilmez (editör açılırken düzen oturana kadar)
+        static void RequestSkipPresent();
 
     private:
         void LoadFonts();

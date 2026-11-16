@@ -30,6 +30,8 @@ namespace Conqueror
         uint32_t Width = 1920;
         uint32_t Height = 1080;
         std::string GraphicsBackend = "Auto";   // "Auto" / "OpenGL" / "Vulkan" (komut satırı ve CQ_RENDERER önceliklidir)
+        // Pencere büyütülmüş açılır (editör): pencere yöneticisi ilk karede son boyutu verir, düzen bir kez doğru boyutta kurulur (259)
+        bool Maximized = false;
     };
 
     class CQ_API Application

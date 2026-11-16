@@ -18,6 +18,7 @@
 #include "Assets/SceneTemplate.h"
 #include "Assets/MaterialPreview.h"
 #include "Core/Utils/ProcessRunner.h"
+#include "Core/ImGui/ImGuiLayer.h"
 #include "stb_image_write.h"
 #include <thread>
 #include "Renderer/GameViewModes.h"
@@ -648,6 +649,10 @@ namespace Conqueror::Editor
             m_AIPanel = std::make_unique<AIPanel>();
             m_AIPanel->SetContext(m_ActiveScene);
             m_StatsPanel = std::make_unique<StatsPanel>();
+            // Ölçüm hazır olana kadar ekranın yenileme hızı (dikey eşitlemeyle editör bu hızda döner): Stats ilk karede boş değil (259)
+            if (GLFWmonitor* monitor = glfwGetPrimaryMonitor())
+                if (const GLFWvidmode* mode = glfwGetVideoMode(monitor); mode && mode->refreshRate > 0)
+                    m_StatsPanel->SetEstimate((float)mode->refreshRate);
             if (m_ViewportPanel)
                 m_ViewportPanel->SetStatsPanel(m_StatsPanel.get(), &m_ShowStats);
             if (m_GamePanel)
@@ -1439,6 +1444,19 @@ namespace Conqueror::Editor
     void EditorLayer::OnImGuiRender()
     {
         GameInput::CaptureImGuiFrameInput();
+        // 259: açılışta pencere boyutu kaç karedir aynı (düzen boyut sabitlenince kurulur)
+        if (!m_StartupSettled)
+        {
+            const ImVec2 size = ImGui::GetMainViewport()->Size;
+            if (size.x == m_StartupLastW && size.y == m_StartupLastH)
+                ++m_StartupStableFrames;
+            else
+            {
+                m_StartupStableFrames = 0;
+                m_StartupLastW = size.x;
+                m_StartupLastH = size.y;
+            }
+        }
         // 263: sağ ya da orta tuşla Viewport'ta gezinip (uçma, kaydırma) imleç başka bir panelin (Hierarchy, Inspector ...) üstünde
         // bırakılınca o panelin sağ tık menüsü açılmaz: bırakma, basmanın başladığı pencereye aittir (Unity / Unreal gibi)
         {
@@ -1565,7 +1583,7 @@ namespace Conqueror::Editor
         RenderToolbar();
         RenderPanels();
         HandleKeyboardShortcuts();
-        DrawStartupCover();
+        UpdateStartupPresent();
     }
 
     namespace
@@ -1595,32 +1613,24 @@ namespace Conqueror::Editor
         }
     }
 
-    // 259: editör ilk açıldığında ilk karelerde yerleşim oturmamış görünüyordu (Stats boş, sekme başlıkları yok, alt paneller büyük;
-    // pencere son boyutuna gelirken ImGui yerleşimi ve sekme çubukları birkaç kare sürüyor). Düzen oturana kadar (pencere boyutu 4 kare
-    // sabit, en az 5 kare geçmiş, Stats FPS'i hazır) tüm pencere editörün arka plan rengiyle örtülür; oturmuş düzen tek seferde görünür.
-    // En geç 1.5 s sonra açılır.
-    void EditorLayer::DrawStartupCover()
+    // 259: editör açılırken ilk karelerde yerleşim oturmamış görünüyordu (Stats boş, sekme başlıkları yok, alt paneller büyük). Nedenleri:
+    // pencere 1920x1080 isteniyor, ekran / çalışma alanı küçükse pencere yöneticisi onu ilk karelerden sonra küçültüyordu ve düzen ilk
+    // karedeki boyutla kurulduğu için alt / yan paneller büyük kalıyordu; ImGui yeni pencereleri ilk karelerinde boyutlarını ölçmek
+    // için gizliyor; Stats ölçüm düzene girene kadar sayı yazmıyordu. Şimdi: pencere büyütülmüş açılır (EditorApp), düzen pencere
+    // boyutu sabitlenince kurulur (SetupDockspace), o kareye ve panellerin gizli ilk karelerine kadar hiçbir kare ekrana gönderilmez
+    // (örtü yok: pencere ilk kez oturmuş haliyle görünür), Stats ilk karede ekranın yenileme hızını gösterir. En geç 40 kare beklenir
+    void EditorLayer::UpdateStartupPresent()
     {
         if (m_StartupSettled)
             return;
-        ImGuiViewport* vp = ImGui::GetMainViewport();
-        const double now = ImGui::GetTime();
-        if (m_StartupFrames++ == 0)
-            m_StartupBegin = now;
-        if (vp->Size.x == m_StartupLastW && vp->Size.y == m_StartupLastH)
-            ++m_StartupStableFrames;
-        else
-        {
-            m_StartupStableFrames = 0;
-            m_StartupLastW = vp->Size.x;
-            m_StartupLastH = vp->Size.y;
-        }
+        ++m_StartupFrames;
+        const bool layoutReady = m_StartupLayoutFrame >= 0 && m_StartupFrames - m_StartupLayoutFrame >= 3;
         const bool statsReady = !m_StatsPanel || m_StatsPanel->IsShowingFPS();
-        const double elapsed = now - m_StartupBegin;
-        if ((m_StartupStableFrames >= 4 && m_StartupFrames >= 5 && statsReady) || elapsed > 1.5)
+        if ((layoutReady && m_StartupStableFrames >= 2 && statsReady) || m_StartupFrames > 40)
         {
             m_StartupSettled = true;
-            CQ_CORE_INFO("[Editor] Layout settled after {0} frames ({1:.2f} s, stats {2})", m_StartupFrames, elapsed, statsReady ? "ready" : "not ready");
+            CQ_CORE_INFO("[Editor] First frame shown after {0} frames (layout built at frame {1}, window {2}x{3})", m_StartupFrames,
+                         m_StartupLayoutFrame, (int)m_StartupLastW, (int)m_StartupLastH);
             if (Automation::IsActive())
                 Automation::AddFrameCheck("startup reveal snapshot", 1, [](uint32_t fbw, uint32_t fbh, std::string&) {
                     SnapshotBackbuffer(fbw, fbh, StartupRevealSnapshot(), StartupRevealW(), StartupRevealH());
@@ -1628,15 +1638,7 @@ namespace Conqueror::Editor
                 });
             return;
         }
-        ImDrawList* dl = ImGui::GetForegroundDrawList(vp);
-        ImVec4 bg = ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
-        bg.w = 1.0f;
-        dl->AddRectFilled(vp->Pos, ImVec2(vp->Pos.x + vp->Size.x, vp->Pos.y + vp->Size.y), ImGui::GetColorU32(bg));
-        const char* title = "Conqueror's Engine";
-        const float size = ImGui::GetFontSize() * 1.6f;
-        const ImVec2 ts = ImGui::GetFont()->CalcTextSizeA(size, FLT_MAX, 0.0f, title);
-        dl->AddText(ImGui::GetFont(), size, ImVec2(vp->Pos.x + (vp->Size.x - ts.x) * 0.5f, vp->Pos.y + (vp->Size.y - ts.y) * 0.5f),
-                    ImGui::GetColorU32(ImGuiCol_TextDisabled), title);
+        ImGuiLayer::RequestSkipPresent();
     }
 
     void EditorLayer::OnEvent(Event& e)
@@ -1693,8 +1695,12 @@ namespace Conqueror::Editor
             ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 
             static auto first_time = true;
-            if (first_time || m_ResetLayout)
+            // İlk kurulum pencere boyutu iki kare sabit kalınca (büyütme / pencere yöneticisinin küçültmesi bitince); en geç 30. karede
+            const bool sizeSettled = m_StartupSettled || m_StartupStableFrames >= 2 || m_StartupFrames >= 30;
+            if ((first_time && sizeSettled) || m_ResetLayout)
             {
+                if (first_time)
+                    m_StartupLayoutFrame = m_StartupFrames;
                 if (m_ResetLayout)
                     m_PendingFocusWindow = "Viewport";   // varsayılan yerleşimde Viewport sekmesi önde (Game arkasında)
                 first_time = false;

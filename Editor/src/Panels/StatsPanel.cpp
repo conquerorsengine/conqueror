@@ -69,14 +69,17 @@ namespace Conqueror::Editor
     void StatsPanel::DrawOverlay(const char* id, const ImVec2& anchor, bool alignRight, bool& expanded, float maxHeight)
     {
         const float width = expanded ? 250.0f : 0.0f;
-        const bool ready = m_Ready && m_ShownFPS > 0.0f;
+        const bool measured = m_Ready && m_ShownFPS > 0.0f;
+        const bool ready = measured || m_EstimateHz > 0.0f;
+        const float shownFPS = measured ? m_ShownFPS : m_EstimateHz;
+        const float shownMs = measured ? m_ShownFrameTime : (m_EstimateHz > 0.0f ? 1000.0f / m_EstimateHz : 0.0f);
         const ImVec4 fpsColor = !ready ? ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled)
-                              : m_ShownFPS >= 55.0f ? UI::Colors::Success : (m_ShownFPS >= 30.0f ? UI::Colors::Warning : UI::Colors::Error);
+                              : shownFPS >= 55.0f ? UI::Colors::Success : (shownFPS >= 30.0f ? UI::Colors::Warning : UI::Colors::Error);
 
         char header[96];
         if (ready)
             snprintf(header, sizeof(header), "%s  Stats   %.0f FPS  %.2f ms",
-                     expanded ? ICON_FA_CHEVRON_DOWN : ICON_FA_CHEVRON_RIGHT, m_ShownFPS, m_ShownFrameTime);
+                     expanded ? ICON_FA_CHEVRON_DOWN : ICON_FA_CHEVRON_RIGHT, shownFPS, shownMs);
         else
             snprintf(header, sizeof(header), "%s  Stats", expanded ? ICON_FA_CHEVRON_DOWN : ICON_FA_CHEVRON_RIGHT);
         const ImGuiStyle& style = ImGui::GetStyle();
@@ -117,7 +120,9 @@ namespace Conqueror::Editor
         float maxFrame = 1.0f;
         for (float f : m_FrameHistory) maxFrame = std::max(maxFrame, f);
         char overlay[48];
-        snprintf(overlay, sizeof(overlay), "%.1f FPS  (%.2f ms)", m_ShownFPS, m_ShownFrameTime);
+        const bool measured = m_Ready && m_ShownFPS > 0.0f;
+        const float fps = measured ? m_ShownFPS : m_EstimateHz;
+        snprintf(overlay, sizeof(overlay), "%.1f FPS  (%.2f ms)", fps, measured ? m_ShownFrameTime : (fps > 0.0f ? 1000.0f / fps : 0.0f));
         ImGui::PushStyleColor(ImGuiCol_PlotLines, UI::Colors::Accent);
         ImGui::PlotLines("##frametime", m_FrameHistory.data(), (int)m_FrameHistory.size(), m_HistoryOffset,
                          overlay, 0.0f, maxFrame * 1.2f, ImVec2(-1.0f, 42.0f));

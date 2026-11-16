@@ -138,6 +138,7 @@ namespace Conqueror
         {
             glfwDefaultWindowHints();
             ApplyIdentityHints();
+            glfwWindowHint(GLFW_MAXIMIZED, props.Maximized ? GLFW_TRUE : GLFW_FALSE);
             glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
             m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, m_Data.Title.c_str(), nullptr, nullptr);
             m_Context = m_Window ? GraphicsContext::Create(m_Window) : nullptr;
@@ -158,6 +159,7 @@ namespace Conqueror
         {
             glfwDefaultWindowHints();
             ApplyIdentityHints();
+            glfwWindowHint(GLFW_MAXIMIZED, props.Maximized ? GLFW_TRUE : GLFW_FALSE);
             // Hata ayıklama bağlamı: Debug derlemede her zaman, diğerlerinde CQ_GL_DEBUG=1 ile (sürücü uyarılarını görmek için)
             #if defined(CQ_DEBUG)
                 glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);

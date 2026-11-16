@@ -13,6 +13,7 @@ namespace Conqueror
         std::string Title;
         uint32_t Width;
         uint32_t Height;
+        bool Maximized = false;
 
         WindowProps(const std::string& title = "Conqueror Engine",
                    uint32_t width = 1920,
