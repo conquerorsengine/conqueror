@@ -5,6 +5,7 @@
 #include "Scene/StatusIndicator.h"
 #include "UI/UIControls.h"
 #include "UI/UIToolkit.h"
+#include "UI/UIWidget.h"
 #include "AISystem/BehaviorTree/BehaviorTreeAsset.h"
 #include "Scene/AssetRuntime.h"
 #include "Scene/Foliage.h"
@@ -142,6 +143,7 @@ namespace Conqueror
             RegisterCharacterCustomizerComponents();
             RegisterSignalComponents();
             UIToolkit::RegisterComponents();
+            UIWidgets::RegisterComponents();   // 199
             UIExtras::RegisterComponents();
             BehaviorTrees::RegisterComponents();
             AssetRuntime::RegisterComponents();

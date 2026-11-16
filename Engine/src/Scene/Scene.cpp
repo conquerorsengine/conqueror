@@ -103,6 +103,7 @@
 #include "Core/Audio/AudioMixer.h"
 #include "Terrain/Terrain.h"
 #include "UI/UISystem.h"
+#include "UI/UIWidget.h"
 #include "Core/Audio/AudioSource.h"
 #include "Core/Audio/AudioFilter.h"
 #include "Core/Audio/AudioOneShots.h"
@@ -246,6 +247,8 @@ namespace Conqueror
 
     void Scene::OnRuntimeStart(bool newPlaySession)
     {
+        // 199: UI Widget'lar (.cqwidget) betiklerden önce kurulur: betikler öğeleri adıyla bulur
+        UIWidgets::InstantiateAll(*this);
         // Native Script .cpp kaynakları: değiştiyse derlenir, modül yüklenir, sınıf bağlanır (oyunda hazır kitaplık)
         {
             CQ_PROFILE_SAMPLE("RuntimeStart.NativeScripts", Scripts);

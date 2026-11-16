@@ -29,6 +29,7 @@
 #include "Renderer/Utilities/Renderer3D/MaterialAsset.h"
 #include "Renderer/Utilities/Renderer3D/Material.h"
 #include "ContentBrowserPanel.h"
+#include "UI/UIWidget.h"
 #include "VersionControl/VersionControl.h"
 #include "NodeAssetPanel.h"
 #include "Assets/AssetPreview.h"
@@ -184,6 +185,7 @@ namespace Conqueror::Editor
         if (ext == ".cqtimeline") return { ICON_FA_FILM, IM_COL32(240, 190, 90, 255), "Timeline" };
         if (ext == ".cqscene") return { ICON_FA_CLAPPERBOARD, IM_COL32(90, 170, 255, 255), "Scene" };
         if (ext == ".cqscenetemplate") return { ICON_FA_CLAPPERBOARD, IM_COL32(150, 200, 255, 255), "Scene Template" };
+        if (ext == ".cqwidget") return { ICON_FA_OBJECT_GROUP, IM_COL32(110, 210, 230, 255), "UI Widget" };
         if (ext == ".cqprefab")
             return IsPrefabVariantCached(path) ? AssetTypeInfo{ ICON_FA_CUBES_STACKED, IM_COL32(170, 140, 255, 255), "Prefab Variant" }
                                                      : AssetTypeInfo{ ICON_FA_CUBES_STACKED, IM_COL32(110, 175, 255, 255), "Prefab" };
@@ -1928,6 +1930,12 @@ namespace Conqueror::Editor
                 if (!EnvQuery::Save(path.string(), desc))
                     path.clear();
             }
+            else if (kind == "uiwidget")
+            {
+                path = MakeUniquePath(dir / (std::string("New UI Widget") + UIWidgets::Extension));
+                if (!UIWidgets::CreateFile(path))
+                    path.clear();
+            }
             else if (kind == "uidocument" || kind == "uistyle")
             {
                 const bool document = kind == "uidocument";
@@ -2272,7 +2280,7 @@ namespace Conqueror::Editor
             return;
         static const char* internal[] = { ".cpp", ".h", ".hpp", ".c", ".cs", ".cqs", ".cqsh", ".glsl", ".cqcont", ".cqscene",
                                           ".lua", ".luaq", ".py", ".java", ".txt", ".md", ".json", ".yaml", ".yml", ".ini",
-                                          ".cqprefab", ".cqgraph", ".cqmontage", ".cqinputactions", ".cqanim" };
+                                          ".cqprefab", ".cqgraph", ".cqmontage", ".cqinputactions", ".cqanim", ".cqwidget" };
         for (const char* e : internal)
         {
             if (ext == e && m_FileOpenCallback)

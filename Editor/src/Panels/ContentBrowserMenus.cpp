@@ -397,6 +397,8 @@ namespace Conqueror::Editor
             "+ Mapping Context). Double-click to edit; assign it to a Player Input component's Actions slot.");
 
         add("AI", "", "Environment Query", ICON_FA_LOCATION_CROSSHAIRS, "eqs", "Finds the best spots or objects around an AI. Run it from a Behavior Tree task or EQSRunAsset().");
+        add("UI", "", "UI Widget", ICON_FA_OBJECT_GROUP, "uiwidget",
+            "A HUD or menu in its own file (.cqwidget), designed in the UI Editor (Unreal Widget Blueprint). Show it in any scene with a UI Widget component.");
         add("UI", "UI Toolkit", "UI Document", ICON_FA_WINDOW_MAXIMIZE, "uidocument", "UI layout in a text file (.cquxml). Show it with a UI Document component.");
         add("UI", "UI Toolkit", "Style Sheet", ICON_FA_FILE_LINES, "uistyle", "Selectors and properties (.cquss) for UI Documents.");
 

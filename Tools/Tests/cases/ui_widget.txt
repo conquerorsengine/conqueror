@@ -1,0 +1,36 @@
+# template: basic3d
+# 199: UI kendi dosyasında (UI Widget .cqwidget, Unreal Widget Blueprint gibi): sahnedeki canvas "Save as UI Widget" ile dosyaya
+# taşınır, sahnede aynı adlı UI Widget bileşenli varlık kalır; Play'de widget'ın öğeleri betiklerden önce kurulur (adla bulunur);
+# widget çift tıklanınca kendi aşamasında (Prefab Mode) UI Editor'de açılır, değişiklik dosyaya yazılır; geri alma canvas'ı geri getirir
+wait 30
+uieditor new_canvas HUD
+uieditor add Button 400 300
+entity rename Button StartButton
+uieditor save_widget HUD Assets/UI/HUD.cqwidget
+comp expect HUD UIWidgetComponent Widget Assets/UI/HUD.cqwidget
+undo
+wait 3
+entity expect_active StartButton true
+redo
+wait 3
+play
+wait 20
+entity expect_active StartButton true
+stop
+wait 10
+uieditor open_widget Assets/UI/HUD.cqwidget
+prefab_mode expect_active 1
+uieditor expect_open 1
+uieditor pick 400 300
+uieditor expect_selected StartButton
+uieditor move 100 0
+wait 45
+prefab_mode expect_saves 1
+prefab_mode close
+wait 5
+play
+wait 20
+uieditor open StartButton
+uieditor expect_rect StartButton 380 268 240 64 3
+stop
+quit

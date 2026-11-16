@@ -2149,8 +2149,17 @@ namespace Conqueror::Editor
         {
             // 199: ekran üstü canvas'lar UI Editor'de tasarlanır (sahne görünümünde çizilmezler)
             if (component.Mode != CanvasComponent::RenderMode::WorldSpace && HierarchyPanel::s_OpenInUIEditor)
-                if (ImGui::Button(ICON_FA_OBJECT_GROUP "  Open UI Editor", ImVec2(-1, 0)))
+            {
+                const float w = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) * 0.5f;
+                if (ImGui::Button(ICON_FA_OBJECT_GROUP "  Open UI Editor", ImVec2(w, 0)))
                     HierarchyPanel::s_OpenInUIEditor(entity);
+                ImGui::SameLine();
+                if (ImGui::Button(ICON_FA_FLOPPY_DISK "  Save as UI Widget", ImVec2(-1, 0)) && s_SaveCanvasAsWidget)
+                    s_SaveCanvasAsWidget(entity);
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
+                    ImGui::SetTooltip("Move this canvas into its own .cqwidget file (Assets/UI) and show it here with a UI Widget component,\n"
+                                      "so the same HUD can be used in every scene (Unreal Widget Blueprint)");
+            }
             const char* renderModes[] = { "Screen Space - Overlay", "Screen Space - Camera", "World Space" };
             int currentMode = (int)component.Mode;
             if (ImGui::Combo("Render Mode", &currentMode, renderModes, 3))

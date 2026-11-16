@@ -113,6 +113,8 @@ namespace Conqueror::Editor
         };
         PrefabStage m_PrefabStage;
         bool OpenPrefabMode(const std::filesystem::path& path);
+        bool OpenWidget(const std::filesystem::path& path);
+        bool ConvertCanvasToWidget(Entity canvas, const std::string& file = {});
         void ClosePrefabMode(bool save);
         bool SavePrefabStage();
         void UpdatePrefabStage(float dt);

@@ -30,6 +30,7 @@ namespace Conqueror::Editor
         static std::function<void(const std::string&)> s_OpenCodeEditor;
         // Geri alma komutlarının tuttuğu sahne (EditorLayer bağlar)
         static std::function<std::shared_ptr<class Scene>()> s_SharedScene;
+        static inline std::function<void(Entity)> s_SaveCanvasAsWidget;   // 199: canvas -> UI Widget dosyası
         void SetSelectedEntity(Entity entity);
         Entity GetSelectedEntity() const { return m_SelectionContext; }
         void SetContext(class Scene* scene) 

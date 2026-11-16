@@ -21,6 +21,7 @@
 #include "Core/Utils/LoadingProgress.h"
 #include "LoadingScreen.h"
 #include "Panels/ModuleInstaller.h"
+#include "UI/UIWidget.h"
 #include "Panels/PaletteCategories.h"
 #include "UndoRedo/EntitySnapshotCommand.h"
 #include "Build/AndroidSigning.h"
@@ -656,6 +657,7 @@ namespace Conqueror::Editor
                     return m_ShowTilePalette && m_TilePalettePanel && m_TilePalettePanel->OnViewportTool(ctx);
                 });
             InspectorPanel::s_SharedScene = [this]() { return m_ActiveScene; };
+            InspectorPanel::s_SaveCanvasAsWidget = [this](Entity canvas) { ConvertCanvasToWidget(canvas); };
             InspectorPanel::s_OpenCodeEditor = [this](const std::string& path) {
                 if (std::filesystem::path(path).extension() != ".cqgraph" && OpenInExternalEditor(path))
                     return;
@@ -874,6 +876,8 @@ namespace Conqueror::Editor
                         // Çift tık: Unity gibi Prefab Mode (prefab kendi aşamasında düzenlenir). Sahneye koymak: sürükle-bırak
                         OpenPrefabMode(path);
                     }
+                    else if (ext == UIWidgets::Extension && m_ActiveScene)
+                        OpenWidget(path);   // 199: widget kendi aşamasında, UI Editor'de
                     else if (ext == ".cqcont")
                     {
                         if (m_AnimatorPanel)
@@ -3614,6 +3618,52 @@ namespace Conqueror::Editor
             static const std::string id = std::to_string((uint64_t)(uintptr_t)&id ^ (uint64_t)std::chrono::steady_clock::now().time_since_epoch().count());
             return std::filesystem::temp_directory_path() / ("cq_prefab_stage_" + id + ".cqprefab");
         }
+    }
+
+    // 199: sahnedeki canvas'ı UI Widget dosyasına çevir: dosya yazılır, canvas yerine aynı adlı, UI Widget bileşenli bir varlık kalır
+    // (geri alınabilir). Betikler öğeleri oyun başında yine adlarıyla bulur
+    bool EditorLayer::ConvertCanvasToWidget(Entity canvas, const std::string& file)
+    {
+        if (!m_ActiveScene || !canvas || !canvas.HasComponent<CanvasComponent>())
+            return false;
+        const std::filesystem::path project = Project::GetActiveProjectDirectory();
+        std::filesystem::path path = file.empty() ? project / "Assets" / "UI" / (canvas.GetComponent<TagComponent>().Tag + UIWidgets::Extension) : std::filesystem::path(file);
+        if (path.is_relative())
+            path = project / path;
+        std::error_code ec;
+        std::filesystem::create_directories(path.parent_path(), ec);
+        const std::string before = SceneSnapshotCommand::Capture(m_ActiveScene);
+        if (!UIWidgets::SaveCanvas(canvas, path))
+            return false;
+        const std::string name = canvas.GetComponent<TagComponent>().Tag;
+        Entity parent = canvas.GetParent();
+        if (m_UIEditorPanel && m_UIEditorPanel->GetCanvas() == (uint64_t)canvas.GetComponent<IDComponent>().ID)
+            m_UIEditorPanel->Close();
+        EditorState::Get().ClearSelection();
+        m_ActiveScene->DestroyEntity(canvas);
+        Entity host = m_ActiveScene->CreateEntity(name);
+        if (parent)
+            host.SetParent(parent);
+        host.AddComponent<UIWidgetComponent>().Widget = std::filesystem::relative(path, project, ec).generic_string();
+        UndoRedoManager::Get().Execute(std::make_shared<SceneSnapshotCommand>(m_ActiveScene, before, SceneSnapshotCommand::Capture(m_ActiveScene),
+                                                                              "Save Canvas as UI Widget", [this]() { RefreshAllPanels(); }));
+        SelectEntityEverywhere(host);
+        CQ_CORE_INFO("[UI Widget] {0} -> {1}", name, path.string());
+        return true;
+    }
+
+    // 199: UI Widget dosyası: Prefab Mode aşaması (Hierarchy widget'ın ağacını gösterir) + UI Editor kök canvas'ta
+    bool EditorLayer::OpenWidget(const std::filesystem::path& path)
+    {
+        if (!OpenPrefabMode(path))
+            return false;
+        if (m_UIEditorPanel && m_ActiveScene)
+            if (Entity root = m_ActiveScene->FindEntityByUUID(m_PrefabStage.RootID))
+            {
+                m_UIEditorPanel->Open(root);
+                SelectEntityEverywhere(root);
+            }
+        return true;
     }
 
     bool EditorLayer::OpenPrefabMode(const std::filesystem::path& path)
@@ -8730,6 +8780,21 @@ namespace Conqueror::Editor
                 return true;
             }
             if (c == "close") { p.Close(); return true; }
+            // save_widget <canvas> <dosya>: canvas'ı widget dosyasına çevir (sahnede UI Widget bileşenli bir varlık kalır)
+            if (c == "save_widget" && a.size() > 3)
+            {
+                Entity canvas = findByName(a[2]);
+                if (!canvas || !ConvertCanvasToWidget(canvas, a[3])) { err = "could not save " + a[2] + " as a UI widget"; return false; }
+                return true;
+            }
+            if (c == "open_widget" && a.size() > 2)
+            {
+                std::filesystem::path wp(a[2]);
+                if (wp.is_relative()) wp = Project::GetActiveProjectDirectory() / wp;
+                if (!OpenWidget(wp)) { err = "cannot open " + a[2]; return false; }
+                Automation::WaitFrames(3);
+                return true;
+            }
             // palette expect_category <ui|blueprint|shader|tiles> | category <ad> | add <öğe> | expect_open <0|1> (199)
             if (c == "palette" && a.size() > 3)
             {
