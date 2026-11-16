@@ -9,6 +9,7 @@
 #include <IconsFontAwesome6.h>
 #include "Core/Base/Version.h"
 #include "Core/Project/ProjectSerializer.h"
+#include "Core/Project/EditorInstalls.h"
 #include "Core/Project/PlatformModules.h"
 #include "Core/Utils/DynamicLibrary.h"
 #include "Scripting/NativeScriptCompiler.h"
@@ -751,7 +752,15 @@ namespace Conqueror::Editor
         const bool targetWindows = platform == "Windows";
         fs::path playerBinDir = o.EngineBinDir;     // oyuncu ve DLL / dylib'leri
         fs::path playerLibDir;                      // Linux / FreeBSD paylaşımlı kitaplıkları (lib/)
-        if (cross)
+        // 47: Hub'dan kurulan platform modülünün hazır derlenmiş oyuncusu (kullanıcı araç zinciri kurmaz, kaynaktan derlenmez)
+        const fs::path prebuiltPlayer = cross ? Installs::PrebuiltPlayerDir(o.EngineBinDir, platform) : fs::path();
+        if (!prebuiltPlayer.empty())
+        {
+            playerBinDir = prebuiltPlayer / "bin";
+            playerLibDir = prebuiltPlayer / "lib";
+            if (log) log("Using the prebuilt " + platform + " player of the " + Installs::PlatformModuleId(platform) + " module: " + prebuiltPlayer.string());
+        }
+        else if (cross)
         {
             // Motor kaynak ağacı (araç zinciri dosyası) editör ikilisinin klasöründen yukarı doğru aranır
             const char* toolchainRel = crossTarget->Toolchain;

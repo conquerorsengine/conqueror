@@ -1,6 +1,7 @@
 #include "ProjectSerializer.h"
 #include "Core/PhysicsSystem/PhysicsSettings.h"
 #include "ProjectSettings.h"
+#include "Core/Base/Version.h"
 #include <algorithm>
 #include <fstream>
 #include <yaml-cpp/yaml.h>
@@ -22,6 +23,8 @@ namespace Conqueror {
         out << YAML::Key << "Name" << YAML::Value << config.Name;
         out << YAML::Key << "Organization" << YAML::Value << config.Organization;
         out << YAML::Key << "Version" << YAML::Value << config.Version;
+        // Projeyi son kaydeden editör (Hub bu sürümün editörüyle açar, Unity'nin ProjectVersion.txt'si gibi) (47)
+        out << YAML::Key << "EditorVersion" << YAML::Value << CQ_ENGINE_VERSION;
         out << YAML::Key << "TargetPlatform" << YAML::Value << config.TargetPlatform;
         out << YAML::Key << "StartScene" << YAML::Value << config.StartScene;
         out << YAML::Key << "AssetDirectory" << YAML::Value << config.AssetDirectory;

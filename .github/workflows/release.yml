@@ -1,0 +1,196 @@
+name: Release
+
+# 47: Hub > Installs için sürüm yayımlama. "v*" etiketi = GitHub Release (etikette "-" varsa Pre-release), main'e her push =
+# ConquerorX kanalı (tek "conquerorx" ön sürümü her commit'te yenilenir; kuruluysa Hub her açılışta ona günceller).
+# Her sürüm: işletim sistemi başına editör arşivi + modül arşivleri (hazır derlenmiş oyuncular, dil araç zincirleri, belgeler) +
+# conqueror-release.json (boyut, SHA-256). Arşivler Tools/Release/package.py, bildirim make_manifest.py ile yapılır.
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  CHANNEL: ${{ startsWith(github.ref, 'refs/tags/v') && (contains(github.ref_name, '-') && 'prerelease' || 'official') || 'conquerorx' }}
+
+jobs:
+  editor-linux:
+    name: Editor + Linux player (x86_64)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build g++-14 libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
+            libxkbcommon-dev libwayland-dev wayland-protocols libgtk-3-dev libgl-dev python3-dev
+      - name: Build
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc-14 -DCMAKE_CXX_COMPILER=g++-14
+          cmake --build build --parallel
+      - name: Package
+        run: |
+          python3 Tools/Release/package.py editor --bin build/bin --host linux-x86_64 --out dist --channel $CHANNEL
+          python3 Tools/Release/package.py module linux --host any --out dist --add build/bin/ConquerorRuntime=player/linux/bin/ConquerorRuntime --add build/lib=player/linux/lib
+          python3 Tools/Release/package.py module server --host any --out dist --add build/bin/ConquerorRuntime=player/dedicated-server/bin/ConquerorRuntime --add build/lib=player/dedicated-server/lib
+          python3 Tools/Release/package.py module docs --host any --out dist --add Docs=docs
+      - uses: actions/upload-artifact@v4
+        with: { name: dist-linux, path: dist, retention-days: 3 }
+
+  editor-linux-arm64:
+    name: Editor + Linux player (ARM64)
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build g++-14 libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
+            libxkbcommon-dev libwayland-dev wayland-protocols libgtk-3-dev libgl-dev python3-dev
+      - name: Build
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc-14 -DCMAKE_CXX_COMPILER=g++-14
+          cmake --build build --parallel
+      - name: Package
+        run: |
+          python3 Tools/Release/package.py editor --bin build/bin --host linux-arm64 --out dist --channel $CHANNEL
+          python3 Tools/Release/package.py module linux-arm64 --host any --out dist --add build/bin/ConquerorRuntime=player/linux-arm64/bin/ConquerorRuntime --add build/lib=player/linux-arm64/lib
+      - uses: actions/upload-artifact@v4
+        with: { name: dist-linux-arm64, path: dist, retention-days: 3 }
+
+  editor-windows:
+    name: Editor + Windows player (x64)
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build
+        run: |
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+          cmake --build build --config Release --parallel 2 -- '/clp:ErrorsOnly;Summary' /v:minimal
+      - name: Package
+        shell: bash
+        run: |
+          BIN=build/bin; [ -d build/bin/Release ] && BIN=build/bin/Release
+          python Tools/Release/package.py editor --bin $BIN --host windows-x86_64 --out dist --channel $CHANNEL
+          mkdir -p player/bin && cp $BIN/ConquerorRuntime.exe player/bin/ && cp $BIN/*.dll player/bin/ 2>/dev/null || true
+          python Tools/Release/package.py module windows --host any --out dist --add player=player/windows
+      - uses: actions/upload-artifact@v4
+        with: { name: dist-windows, path: dist, retention-days: 3 }
+
+  editor-macos:
+    name: Editor + Mac player (Apple Silicon)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build
+        run: |
+          brew install ninja || true
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel
+      - name: Package
+        run: |
+          python3 Tools/Release/package.py editor --bin build/bin --host macos-arm64 --out dist --channel $CHANNEL
+          python3 Tools/Release/package.py module macos --host any --out dist --add build/bin/ConquerorRuntime=player/macos/bin/ConquerorRuntime
+      - uses: actions/upload-artifact@v4
+        with: { name: dist-macos, path: dist, retention-days: 3 }
+
+  web:
+    name: Web player module
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build
+        run: |
+          sudo apt-get update && sudo apt-get install -y ninja-build
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git $HOME/emsdk
+          $HOME/emsdk/emsdk install 6.0.13 && $HOME/emsdk/emsdk activate 6.0.13
+          source $HOME/emsdk/emsdk_env.sh
+          emcmake cmake -S . -B build-web -G Ninja -DCMAKE_BUILD_TYPE=Release -DCQ_WEB_THREADS=OFF
+          cmake --build build-web --target ConquerorRuntime --parallel
+      - name: Package
+        run: python3 Tools/Release/package.py module web --host any --out dist --add build-web/bin=player/web
+      - uses: actions/upload-artifact@v4
+        with: { name: dist-web, path: dist, retention-days: 3 }
+
+  android:
+    name: Android player module
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build
+        run: |
+          sudo apt-get update && sudo apt-get install -y ninja-build
+          cmake -S . -B build-android -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_LATEST_HOME/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-26 -DANDROID_STL=c++_static
+          cmake --build build-android --target conqueror --parallel
+      - name: Package
+        run: |
+          SO=$(find build-android -name 'libconqueror.so' | head -1)
+          python3 Tools/Release/package.py module android --host any --out dist --add $SO=player/android/arm64-v8a/libconqueror.so --add Tools/Android=player/android/tools
+      - uses: actions/upload-artifact@v4
+        with: { name: dist-android, path: dist, retention-days: 3 }
+
+  languages:
+    name: Language modules (${{ matrix.host }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [linux-x86_64, linux-arm64, windows-x86_64, macos-arm64]
+    steps:
+      - uses: actions/checkout@v5
+      - name: Fetch bundled toolchains (checksums verified)
+        run: |
+          python3 Tools/Release/fetch_toolchain.py zig ${{ matrix.host }} tc/zig
+          python3 Tools/Release/fetch_toolchain.py jdk ${{ matrix.host }} tc/jdk
+          python3 Tools/Release/fetch_toolchain.py dotnet ${{ matrix.host }} tc/dotnet
+          if [ "${{ matrix.host }}" = "windows-x86_64" ]; then python3 Tools/Release/fetch_toolchain.py llvm-mingw ${{ matrix.host }} tc/llvm-mingw; fi
+      - name: Package
+        run: |
+          H=${{ matrix.host }}
+          python3 Tools/Release/package.py module zig --host $H --out dist --add tc/zig=zig --add Resources/Scripting/Zig=sdk --bundles zig
+          python3 Tools/Release/package.py module java --host $H --out dist --add tc/jdk=jdk --add Resources/Scripting/Java=sdk --bundles jdk
+          python3 Tools/Release/package.py module csharp --host $H --out dist --add tc/dotnet=dotnet --add Resources/Scripting/CSharp=sdk --bundles dotnet
+          if [ "$H" = "windows-x86_64" ]; then
+            python3 Tools/Release/package.py module cpp --host $H --out dist --add tc/llvm-mingw=llvm-mingw --add Resources/Scripting/Cpp=sdk --bundles cpp-compiler
+            python3 Tools/Release/package.py module c --host $H --out dist --add tc/llvm-mingw=llvm-mingw --add Resources/Scripting/C=sdk --bundles c-compiler
+          else
+            python3 Tools/Release/package.py module cpp --host $H --out dist --add Resources/Scripting/Cpp=sdk
+            python3 Tools/Release/package.py module c --host $H --out dist --add Resources/Scripting/C=sdk
+          fi
+          python3 Tools/Release/package.py module rust --host $H --out dist --add Resources/Scripting/Rust=sdk
+      - uses: actions/upload-artifact@v4
+        with: { name: dist-languages-${{ matrix.host }}, path: dist, retention-days: 3 }
+
+  publish:
+    name: Publish (${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'ConquerorX' }})
+    needs: [editor-linux, editor-linux-arm64, editor-windows, editor-macos, web, android, languages]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with: { path: dist, pattern: dist-*, merge-multiple: true }
+      - name: Manifest
+        run: python3 Tools/Release/make_manifest.py --dist dist --channel $CHANNEL --commit $GITHUB_SHA
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          FILES="dist/*.tar.gz dist/conqueror-release.json"
+          if [ "$CHANNEL" = "conquerorx" ]; then
+            # Tek kayan ön sürüm: eskisi (etiketiyle) silinir, bu commit'le yeniden yayımlanır
+            gh release delete conquerorx --yes --cleanup-tag || true
+            gh release create conquerorx $FILES --prerelease --target $GITHUB_SHA --title "ConquerorX ${GITHUB_SHA::8}" \
+              --notes "Built from commit $GITHUB_SHA. Installed from the Hub, ConquerorX updates itself to the newest commit each time the Hub starts."
+          else
+            PRE=""; [ "$CHANNEL" = "prerelease" ] && PRE="--prerelease"
+            gh release create "$GITHUB_REF_NAME" $FILES $PRE --title "Conqueror's Engine ${GITHUB_REF_NAME#v}" --generate-notes
+          fi

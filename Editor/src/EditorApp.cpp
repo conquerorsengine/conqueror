@@ -3,8 +3,13 @@
 #include "Core/Project/Project.h"
 #include "Core/Project/ProjectSerializer.h"
 
+#include "Core/Base/Version.h"
+#include "Core/Project/EditorInstalls.h"
 #include "Core/Utils/FileSystem.h"
 
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <filesystem>
 
 namespace Conqueror::Editor
@@ -14,6 +19,8 @@ namespace Conqueror::Editor
     {
         // Pencere / görev çubuğu simgesi (X11, Windows; Wayland'de uygulama kimliği + .desktop dosyası)
         GetWindow().SetIcon(FileSystem::ResolveResourcePath("Resources/Logo/AppIcon/conqueror_256.png"));
+        // Bu kurulumun modüllerindeki araçlar (paketlenmiş JDK, .NET, Zig, Rust ...) PATH'e (47)
+        Installs::ApplyModuleToolPaths(std::filesystem::current_path());
         PushLayer(new EditorLayer());
     }
 
@@ -24,6 +31,14 @@ namespace Conqueror::Editor
 
 Conqueror::Application* Conqueror::CreateApplication(ApplicationCommandLineArgs args)
 {
+    // --version: pencere açmadan sürümü yazar (Hub'ın Locate'i ve betikler için) (47)
+    for (int i = 1; i < args.Count; ++i)
+        if (std::strcmp(args.Args[i], "--version") == 0)
+        {
+            std::printf("Conqueror's Engine %s\n", CQ_ENGINE_VERSION);
+            std::fflush(stdout);
+            std::exit(0);
+        }
     ApplicationSpecification spec;
     spec.Name = "Conqueror Engine Editor";
     spec.CommandLineArgs = args;

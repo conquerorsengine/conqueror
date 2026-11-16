@@ -13,7 +13,12 @@ Cases:
                       # env: K=V K2=V2                 extra environment for the editor of this case
                       # matrix: VAR=v1 v2 ...          runs the case once per value as <name>@<value> with VAR=<value>;
                                                        "{matrix}" in the script is replaced by the value
-                  "{dir}" in the script is replaced by Tools/Tests/cases (checks/*.cqs live there). A check script
+                      # hub                            the script runs in the hub (ConquerorLauncher) with its own fresh
+                                                       config folder instead of in the editor (no project is made)
+                      # setup: <command>               runs before the case (e.g. a fixture generator from cases/assets)
+                      # teardown: <command>            runs after the case, also when it failed ("{bin}": the binaries)
+                  "{dir}" in the script is replaced by Tools/Tests/cases (checks/*.cqs live there), "{work}" by the
+                  regression work folder. A check script
                   creates an entity named RegressionCheckOK when its condition holds; the case then expects it.
 
 Every case must end with "DONE failures=0" and the editor must exit with code 0 (a crash while shutting down, e.g. a
@@ -27,6 +32,7 @@ your own saves).
 """
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -96,10 +102,32 @@ def run_editor(script, project, env=None):
     return code, result
 
 
+def run_hub(script, name, env=None):
+    # Hub testleri: her test kendi boş ayar klasörüyle (kullanıcının ve diğer testlerin listesine dokunmaz)
+    if os.path.exists(script + ".result.txt"):
+        os.remove(script + ".result.txt")
+    cfg = os.path.join(WORK, f"_hubcfg_{name}")
+    if os.path.isdir(cfg) and os.path.basename(cfg).startswith("_hubcfg_"):
+        shutil.rmtree(cfg)
+    os.makedirs(cfg)
+    with open(os.path.join(cfg, "hub.yaml"), "w") as f:
+        f.write(f'Settings:\n  DefaultLocation: "{WORK}"\nProjects: []\n')
+    env = dict(env or os.environ, CQ_HUB_CONFIG_DIR=cfg)
+    runner = os.environ.get("CQ_HUB_RUNNER")
+    if runner:
+        code, out = run(["bash", runner, script], env=env)
+        m = re.search(r"HUB_EXIT=(\d+)", out)
+        code = int(m.group(1)) if m else code
+    else:
+        code, out = run([os.path.join(BIN, "ConquerorLauncher")], env=dict(env, CQ_AUTOMATION=script, CQ_AUDIO_NULL="1"), cwd=BIN)
+    result = open(script + ".result.txt").read() if os.path.exists(script + ".result.txt") else ""
+    return code, result
+
+
 def case_script(name):
     text = open(os.path.join(CASES, name + ".txt"), encoding="utf-8").read()
     m = re.search(r"^#\s*template:\s*(\S+)", text, re.M)
-    return (m.group(1) if m else "empty"), text.replace("{dir}", CASES)
+    return (m.group(1) if m else "empty"), text.replace("{dir}", CASES).replace("{work}", WORK).replace("{bin}", BIN)
 
 
 def template_script():
@@ -123,6 +151,15 @@ def is_serial(case):
 
 
 def run_case(case, env=None):
+    result = run_case_inner(case, env)
+    if not case.startswith("template:"):
+        _, text = case_script(case.partition("@")[0])
+        for cmd in re.findall(r"^#\s*teardown:\s*(.+)$", text, re.M):
+            run(shlex.split(cmd), env=env)
+    return result
+
+
+def run_case_inner(case, env=None):
     start = time.time()
     if case.startswith("template:"):
         tid = case.split(":", 1)[1]
@@ -142,6 +179,26 @@ def run_case(case, env=None):
         if extra:
             env = dict(env or os.environ, **extra)
     name = "Reg_" + re.sub(r"[^A-Za-z0-9_]", "_", case)
+    if not case.startswith("template:"):
+        # Hazırlık komutları (depodaki betikler, ör. sahte sürüm düzeneği)
+        for cmd in re.findall(r"^#\s*setup:\s*(.+)$", text, re.M):
+            code, out = run(shlex.split(cmd), env=env)
+            if code != 0:
+                return False, f"setup failed: {cmd}: {out.strip()[-200:]}", time.time() - start
+        if re.search(r"^#\s*hub\b", text, re.M):
+            script = os.path.join(WORK, f"_{name}.txt")
+            with open(script, "w", encoding="utf-8") as f:
+                f.write(text)
+            code, result = run_hub(script, name, env)
+            fails = [l for l in result.splitlines() if " FAIL " in l or l.startswith("FAIL")]
+            done = re.search(r"DONE failures=(\d+)", result)
+            if not done:
+                return False, "hub automation did not finish (crash or timeout)", time.time() - start
+            if int(done.group(1)) != 0:
+                return False, "; ".join(fails)[:300] or f"{done.group(1)} failures", time.time() - start
+            if code != 0:
+                return False, f"hub exit code {code}", time.time() - start
+            return True, "", time.time() - start
     project = make_project(tid, name, env)
     if not project:
         return False, f"hub could not create a '{tid}' project", time.time() - start

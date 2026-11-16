@@ -1,0 +1,13 @@
+# template: basic3d
+# setup: python3 -I {dir}/assets/installs/fake_player_module.py {bin} create
+# teardown: python3 -I {dir}/assets/installs/fake_player_module.py {bin} remove
+# 47: Hub'dan kurulmuş bir platform modülünün hazır derlenmiş oyuncusu varsa Build o oyuncuyu kullanır (kullanıcı araç zinciri
+# kurmaz, oyuncu kaynaktan derlenmez): Windows için sahte "Windows Build Support" modülüyle Linux'tan Windows derlemesi
+wait 30
+build output Builds/PrebuiltWindows
+build platform Windows
+build start
+wait_until 600000 build expect_done
+build expect_success
+build expect_log "Using the prebuilt Windows player of the windows module"
+quit

@@ -1,0 +1,43 @@
+# hub
+# setup: python3 -I {dir}/assets/installs/make_fixture.py {work}/installs_fixture
+# env: CQ_INSTALLS_DIR={work}/installs_fixture/root CQ_RELEASES_API=file://{work}/installs_fixture/releases.json
+# 47: Hub > Installs (Unity Hub gibi). Sahte GitHub Releases (file://): Official / Pre-release / ConquerorX sürümleri listelenir (taslak
+# atlanır); editör + modüllerle kurulum (.tar.gz, GNU uzun ad, sembolik bağlantı, çalıştırma izni), sonradan modül ekleme, bozuk
+# indirmenin (SHA-256) reddi, ConquerorX'in yeni commit'e kendiliğinden güncellenmesi (modüller korunur), Locate, projenin kendi
+# sürümündeki editörle açılması ve kaldırma
+wait 20
+hub page installs
+installs refresh
+wait_until 5000 installs releases_loaded
+installs expect_releases 1 official
+installs expect_releases 1 prerelease
+installs expect_releases 1 conquerorx
+installs install 0.575.3 android,java
+wait_until 30000 installs jobs_done
+installs expect_installed 0.575.3 android java
+installs add_modules 0.575.3 web
+wait_until 30000 installs jobs_done
+installs expect_installed 0.575.3 android java web
+installs add_modules 0.575.3 docs
+wait_until 30000 installs jobs_done
+installs expect_status damaged
+installs install 0.577.3-rc1
+wait_until 30000 installs jobs_done
+installs expect_installed 0.577.3-rc1
+installs install conquerorx
+wait_until 30000 installs jobs_done
+installs expect_commit conquerorx aaaa1111
+installs api file://{work}/installs_fixture/releases_x2.json
+installs check_updates
+wait_until 5000 installs releases_loaded
+wait 5
+wait_until 30000 installs jobs_done
+installs expect_commit conquerorx bbbb2222
+installs locate {work}/installs_fixture/located
+installs expect_installed 0.571.3
+installs add_project {work}/installs_fixture/Proj575
+installs expect_project_editor Proj575 installs_fixture/root/0.575.3/ConquerorEngine
+installs uninstall 0.575.3
+installs expect_not_installed 0.575.3
+installs expect_project_editor Proj575 bin/ConquerorEngine
+quit

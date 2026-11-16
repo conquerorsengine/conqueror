@@ -73,7 +73,7 @@ namespace Conqueror::Editor
         }
 
         // .cqproj içinden ad ve başlangıç sahnesi
-        bool ReadProjectFile(const fs::path& dir, std::string& name, std::string& startScene)
+        bool ReadProjectFile(const fs::path& dir, std::string& name, std::string& startScene, std::string* editorVersion = nullptr)
         {
             std::error_code ec;
             if (!fs::is_directory(dir, ec))
@@ -87,6 +87,7 @@ namespace Conqueror::Editor
                     YAML::Node n = YAML::LoadFile(entry.path().string());
                     if (n["Project"] && n["Project"]["Name"]) name = n["Project"]["Name"].as<std::string>();
                     if (n["Project"] && n["Project"]["StartScene"]) startScene = n["Project"]["StartScene"].as<std::string>();
+                    if (editorVersion && n["Project"] && n["Project"]["EditorVersion"]) *editorVersion = n["Project"]["EditorVersion"].as<std::string>();
                 }
                 catch (...)
                 {
@@ -220,7 +221,12 @@ namespace Conqueror::Editor
         if (fs::exists(logoPath, ec))
             m_LogoTexture = Texture2D::Create(logoPath.string());
         RegisterAutomation();
-        CQ_CORE_INFO("[Hub] {0} projects, config {1}", m_Projects.size(), m_ConfigFile.string());
+        RegisterInstallsAutomation();
+        // Installs (47): kurulu editörler; ConquerorX kuruluysa her açılışta en son commit yapısına güncellenir
+        ReloadInstalls();
+        if (std::any_of(m_Installs.begin(), m_Installs.end(), [](const Installs::Install& i) { return i.Kind == Installs::Channel::ConquerorX && !i.Bundled; }))
+            FetchReleases(false);
+        CQ_CORE_INFO("[Hub] {0} projects, {1} editor install(s), config {2}", m_Projects.size(), m_Installs.size(), m_ConfigFile.string());
     }
 
     Texture2D* ProjectHub::TemplateThumbnail(const std::string& id)
@@ -247,7 +253,7 @@ namespace Conqueror::Editor
 
     ProjectHub::~ProjectHub()
     {
-        for (const char* cmd : { "hub" })
+        for (const char* cmd : { "hub", "installs" })
             Automation::UnregisterCommand(cmd);
     }
 
@@ -272,6 +278,8 @@ namespace Conqueror::Editor
                 if (s["ShowMissing"]) m_ShowMissing = s["ShowMissing"].as<bool>();
                 if (s["GridView"]) m_GridView = s["GridView"].as<bool>();
                 if (s["SortMode"]) m_SortMode = std::clamp(s["SortMode"].as<int>(), 0, 2);
+                if (s["InstallsLocation"] && !s["InstallsLocation"].as<std::string>().empty())
+                    Installs::SetInstallRoot(s["InstallsLocation"].as<std::string>());
             }
             auto list = n["Projects"] ? n["Projects"] : n["RecentProjects"];
             if (list && list.IsSequence())
@@ -307,6 +315,7 @@ namespace Conqueror::Editor
         out << YAML::Key << "ShowMissing" << YAML::Value << m_ShowMissing;
         out << YAML::Key << "GridView" << YAML::Value << m_GridView;
         out << YAML::Key << "SortMode" << YAML::Value << m_SortMode;
+        out << YAML::Key << "InstallsLocation" << YAML::Value << Installs::InstallRoot().string();
         out << YAML::EndMap;
         out << YAML::Key << "Projects" << YAML::Value << YAML::BeginSeq;
         for (const auto& p : m_Projects)
@@ -347,7 +356,7 @@ namespace Conqueror::Editor
         for (auto& p : m_Projects)
         {
             std::string name, scene;
-            p.Missing = !ReadProjectFile(p.Path, name, scene);
+            p.Missing = !ReadProjectFile(p.Path, name, scene, &p.EditorVersion);
             if (!name.empty())
                 p.Name = name;
             p.StartScene = scene;
@@ -413,11 +422,10 @@ namespace Conqueror::Editor
         if (m_ProjectOpenCallback)
             m_ProjectOpenCallback(project);
 
-        std::string enginePath = (fs::current_path() / "ConquerorEngine").string();
-#ifdef CQ_PLATFORM_WINDOWS
-        enginePath += ".exe";
-#endif
-        if (fs::exists(enginePath, ec))
+        // Projeyi son kaydeden sürüm kuruluysa o editörle (Unity Hub gibi), değilse bu Hub'ın editörüyle; "Open with" seçimi bir kez geçerli
+        std::string enginePath = EditorForProject(project).string();
+        m_OpenWithEditor.clear();
+        if (!enginePath.empty() && fs::exists(enginePath, ec))
             m_LaunchCommand = "\"" + enginePath + "\" \"" + project.Path.string() + "\"";
         else
             CQ_CORE_ERROR("[Hub] ConquerorEngine not found at {0}", enginePath);
@@ -480,6 +488,7 @@ namespace Conqueror::Editor
 
     void ProjectHub::OnImGuiRender()
     {
+        PollInstalls();
         if (!m_PointerMoved)
         {
             const ImGuiIO& io = ImGui::GetIO();
@@ -510,6 +519,7 @@ namespace Conqueror::Editor
             case Page::Learn: DrawLearnPage(); break;
             case Page::Addons: DrawAddonsPage(); break;
             case Page::Settings: DrawSettingsPage(); break;
+            case Page::Installs: DrawInstallsPage(); break;
         }
         ImGui::EndChild();
         ImGui::PopStyleVar();
@@ -540,7 +550,7 @@ namespace Conqueror::Editor
         struct Item { const char* Icon; const char* Label; Page P; };
         const Item items[] = {
             { ICON_FA_FOLDER_OPEN, "Projects", Page::Projects }, { ICON_FA_SQUARE_PLUS, "New Project", Page::NewProject },
-            { ICON_FA_GRADUATION_CAP, "Learn", Page::Learn }, { ICON_FA_PUZZLE_PIECE, "Addons", Page::Addons },
+            { ICON_FA_CUBES, "Installs", Page::Installs }, { ICON_FA_GRADUATION_CAP, "Learn", Page::Learn }, { ICON_FA_PUZZLE_PIECE, "Addons", Page::Addons },
             { ICON_FA_GEAR, "Settings", Page::Settings },
         };
         for (const auto& it : items)
@@ -677,6 +687,22 @@ namespace Conqueror::Editor
         ImGui::Separator();
         if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN "  Open", nullptr, false, !project.Missing))
             OpenProject(project);
+        if (ImGui::BeginMenu(ICON_FA_CUBES "  Open with", !project.Missing))
+        {
+            for (const auto& inst : m_Installs)
+            {
+                const fs::path exe = Installs::EditorExecutable(inst.Path);
+                if (exe.empty())
+                    continue;
+                const std::string label = "Conqueror's Engine " + inst.Version + "  (" + Installs::ChannelName(inst.Kind) + (inst.Bundled ? ", this Hub" : "") + ")";
+                if (ImGui::MenuItem(label.c_str(), nullptr, inst.Version == project.EditorVersion))
+                {
+                    m_OpenWithEditor = exe;
+                    OpenProject(project);
+                }
+            }
+            ImGui::EndMenu();
+        }
         if (ImGui::MenuItem(project.Favorite ? ICON_FA_STAR "  Unpin" : ICON_FA_STAR "  Pin to Top"))
         {
             project.Favorite = !project.Favorite;
@@ -772,6 +798,18 @@ namespace Conqueror::Editor
         ImVec2 ws = ImGui::CalcTextSize(when.c_str());
         dl->AddText(ImVec2(a.x + w - ws.x - 16, a.y + (h - ws.y) * 0.5f), project.Missing ? IM_COL32(255, 120, 110, 255) : IM_COL32(150, 154, 162, 255),
                     when.c_str());
+        // Editör sürümü sütunu (Unity Hub): kurulu değilse uyarı, proje bu Hub'ın editörüyle açılır
+        if (!project.Missing)
+        {
+            const bool known = !project.EditorVersion.empty();
+            const bool installed = known && std::any_of(m_Installs.begin(), m_Installs.end(), [&](const Installs::Install& i) { return i.Version == project.EditorVersion; });
+            const std::string ver = !known ? std::string("-") : installed ? project.EditorVersion : std::string(ICON_FA_TRIANGLE_EXCLAMATION " ") + project.EditorVersion;
+            const ImVec2 vs = ImGui::CalcTextSize(ver.c_str());
+            dl->AddText(ImVec2(a.x + w - 200.0f * m_UIScale - vs.x, a.y + (h - vs.y) * 0.5f), installed || !known ? IM_COL32(150, 154, 162, 255) : IM_COL32(250, 185, 70, 255), ver.c_str());
+            if (hovered && known && !installed && m_PointerMoved && ImGui::IsMouseHoveringRect(ImVec2(a.x + w - 200.0f * m_UIScale - vs.x, a.y), ImVec2(a.x + w - 200.0f * m_UIScale, a.y + h)))
+                ImGui::SetTooltip("Editor %s is not installed: the project opens with this Hub's editor (%s). Install it from Installs.",
+                                  project.EditorVersion.c_str(), EngineVersion);
+        }
         if (clicked && !project.Missing)
             OpenProject(project);
         ImGui::Dummy(ImVec2(0, 4));
@@ -1165,8 +1203,8 @@ namespace Conqueror::Editor
             if (a.size() < 2) { err = "hub page|template|create|expect_projects|search|learn|view"; return false; }
             if (a[1] == "page" && a.size() > 2)
             {
-                static const char* names[] = { "projects", "new", "learn", "addons", "settings" };
-                for (int i = 0; i < 5; ++i)
+                static const char* names[] = { "projects", "new", "learn", "addons", "settings", "installs" };
+                for (int i = 0; i < 6; ++i)
                     if (a[2] == names[i]) { m_Page = (Page)i; return true; }
                 err = "unknown page";
                 return false;

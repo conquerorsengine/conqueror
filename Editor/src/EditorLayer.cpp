@@ -8148,6 +8148,15 @@ namespace Conqueror::Editor
                 if (sub == "expect_success" && !r.Success) { err = r.Error; return false; }
                 return true;
             }
+            // expect_log <metin>: derleme günlüğünde geçiyor mu (ör. hazır oyuncu modülü kullanıldı, 47)
+            if (sub == "expect_log" && a.size() > 2)
+            {
+                for (const auto& line : pipeline.GetLog())
+                    if (line.find(a[2]) != std::string::npos)
+                        return true;
+                err = "build log has no '" + a[2] + "'";
+                return false;
+            }
             err = "unknown build command " + sub;
             return false;
         });
