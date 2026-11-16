@@ -38,6 +38,8 @@
 #include "XR/OpenXR.h"
 #include "XR/ARCore.h"
 #include "Scripting/Visual/VisualGraph.h"
+#include "CQSEngine.h"
+#include "CQSVM.h"
 
 #include <algorithm>
 #include <cmath>
@@ -259,6 +261,78 @@ namespace Conqueror::CQS
         }
 
         ParticleSystemComponent* Particles(Entity e) { return Get<ParticleSystemComponent>(e); }
+
+        // Görsel betik değişken kapsamları (Unity Object / Scene / Application): VM global sözlüğünde (GC kökü; VM oyun başında
+        // yeniden kurulunca sıfırlanır: Application değişkenleri oyun boyunca yaşar)
+        CQSMapObject* VisualVariableStore(const std::string& scope)
+        {
+            CQSVM* vm = CQSEngine::GetVM();
+            if (!vm)
+                return nullptr;
+            Value root;
+            if (!vm->GetGlobal("__vs_vars", root) || !root.IsMap())
+            {
+                root = Value::MakeObject(new CQSMapObject());
+                vm->DefineGlobal("__vs_vars", root);
+            }
+            const std::string key = scope == "object" ? "o" + std::to_string(ScriptContext::GetCurrentEntity())
+                                  : scope == "scene" ? "s" + std::to_string((uintptr_t)ActiveScene())
+                                                     : std::string("a");
+            auto& entries = root.AsMap()->Entries;
+            auto it = entries.find(key);
+            if (it != entries.end() && it->second.IsMap())
+                return it->second.AsMap();
+            Value m = Value::MakeObject(new CQSMapObject());
+            entries[key] = m;
+            return m.AsMap();
+        }
+
+        // Saved kapsamı: PlayerPrefs "VS.<ad>" anahtarında türü işaretli metin (b:, n:, s:, z:, j: JSON)
+        void StoreSavedVariable(const std::string& name, const Value& v)
+        {
+            std::string enc;
+            if (v.IsBool()) enc = std::string("b:") + (v.AsBool() ? "1" : "0");
+            else if (v.IsNumber())
+            {
+                char buf[64];
+                std::snprintf(buf, sizeof(buf), "n:%.17g", v.ToNumber());
+                enc = buf;
+            }
+            else if (v.IsString()) enc = "s:" + v.AsString()->Value;
+            else if (v.IsNull()) enc = "z:";
+            else if (const auto* fn = Scripting::NativeRegistry::Get().Find("JSONStringify"))
+            {
+                Value arg = v;
+                enc = "j:" + Text(fn->Function(1, &arg));
+            }
+            PlayerPrefs::SetString("VS." + name, enc);
+        }
+
+        Value LoadSavedVariable(const std::string& name, const Value& def)
+        {
+            const std::string key = "VS." + name;
+            if (!PlayerPrefs::HasKey(key))
+                return def;
+            const std::string enc = PlayerPrefs::GetString(key);
+            if (enc.size() < 2 || enc[1] != ':')
+                return def;
+            const std::string body = enc.substr(2);
+            switch (enc[0])
+            {
+                case 'b': return Value::MakeBool(body == "1");
+                case 'n': return Value::MakeFloat(std::strtod(body.c_str(), nullptr));
+                case 's': return Value::MakeString(body);
+                case 'z': return Value::MakeNull();
+                case 'j':
+                    if (const auto* fn = Scripting::NativeRegistry::Get().Find("JSONParse"))
+                    {
+                        Value arg = Value::MakeString(body);
+                        return fn->Function(1, &arg);
+                    }
+                    break;
+            }
+            return def;
+        }
 
         const glm::mat4& WorldOf(Entity e) { return e.GetComponent<TransformComponent>().WorldTransform; }
     }
@@ -1028,6 +1102,88 @@ namespace Conqueror::CQS
             if (argc >= 2 && args[0].IsString())
                 Visual::Debugger::Trace(args[0].AsString()->Value, (int)args[1].ToNumber());
             return Value::MakeNull();
+        }, 2);
+
+        // VSWatch("Sınıf", düğüm, "pin", değer) -> değer: hata ayıklayıcıya canlı pin değeri (Unity Values / Unreal Watch)
+        vm->DefineNative("VSWatch", [](int argc, Value* args) -> Value {
+            if (argc < 4) return Value::MakeNull();
+            if (Visual::Debugger::IsCapturingValues())
+                Visual::Debugger::RecordValue(Text(args[0]), (int)args[1].ToNumber(), Text(args[2]), args[3].ToString());
+            return args[3];
+        }, 4);
+        // VSGetVar("object" | "scene" | "application" | "saved", "ad", varsayılan) / VSSetVar(kapsam, "ad", değer)
+        vm->DefineNative("VSGetVar", [](int argc, Value* args) -> Value {
+            if (argc < 2) return Value::MakeNull();
+            const std::string scope = Text(args[0]), name = Text(args[1]);
+            const Value def = argc > 2 ? args[2] : Value::MakeNull();
+            if (scope == "saved")
+                return LoadSavedVariable(name, def);
+            CQSMapObject* store = VisualVariableStore(scope);
+            if (!store) return def;
+            auto it = store->Entries.find(name);
+            if (it != store->Entries.end()) return it->second;
+            store->Entries[name] = def;
+            return def;
+        }, 3);
+        vm->DefineNative("VSSetVar", [](int argc, Value* args) -> Value {
+            if (argc < 3) return Value::MakeNull();
+            const std::string scope = Text(args[0]), name = Text(args[1]);
+            if (scope == "saved")
+                StoreSavedVariable(name, args[2]);
+            else if (CQSMapObject* store = VisualVariableStore(scope))
+                store->Entries[name] = args[2];
+            return args[2];
+        }, 3);
+        // Event Dispatcher (Unreal): VSDispatchBind(hedef, "Dağıtıcı", "Yöntem"), VSDispatchCall("Dağıtıcı", değer) -> çalışan sayısı
+        vm->DefineNative("VSDispatchBind", [](int argc, Value* args) -> Value {
+            if (argc < 3) return Value::MakeBool(false);
+            Entity owner = Target(args[0]), self = Current();
+            if (!owner || !self) return Value::MakeBool(false);
+            Visual::DispatcherRegistry::Bind((uint32_t)owner, Text(args[1]), (uint32_t)self, Text(args[2]));
+            return Value::MakeBool(true);
+        }, 3);
+        vm->DefineNative("VSDispatchUnbind", [](int argc, Value* args) -> Value {
+            if (argc < 3) return Value::MakeBool(false);
+            Entity owner = Target(args[0]), self = Current();
+            if (!owner || !self) return Value::MakeBool(false);
+            Visual::DispatcherRegistry::Unbind((uint32_t)owner, Text(args[1]), (uint32_t)self, Text(args[2]));
+            return Value::MakeBool(true);
+        }, 3);
+        vm->DefineNative("VSDispatchUnbindAll", [](int argc, Value* args) -> Value {
+            if (argc < 2) return Value::MakeBool(false);
+            Entity owner = Target(args[0]);
+            if (!owner) return Value::MakeBool(false);
+            Visual::DispatcherRegistry::UnbindAll((uint32_t)owner, Text(args[1]));
+            return Value::MakeBool(true);
+        }, 2);
+        vm->DefineNative("VSDispatchCall", [](int argc, Value* args) -> Value {
+            if (argc < 1) return Value::MakeInt(0);
+            Entity owner = Current();
+            if (!owner) return Value::MakeInt(0);
+            std::vector<Value> payload;
+            payload.push_back(argc > 1 ? args[1] : Value::MakeNull());
+            int handled = 0;
+            for (auto& b : Visual::DispatcherRegistry::Get((uint32_t)owner, Text(args[0])))
+                if (Entity e = EntityFromId(b.Entity))
+                    handled += SendTo(ScriptsOf(e), b.Method, payload);
+            return Value::MakeInt(handled);
+        }, 2);
+        // VSImplements(hedef, "Arayüz"): hedefin bir betiği arayüzü uyguluyor mu (Blueprint Interface)
+        vm->DefineNative("VSImplements", [](int argc, Value* args) -> Value {
+            if (argc < 2) return Value::MakeBool(false);
+            const std::string marker = "_cqi_" + Text(args[1]);
+            for (auto& [runtime, instance] : ScriptsOf(Target(args[0])))
+                if (!Scripting::ScriptRuntimes::IsRetired(instance) && runtime->HasMethod(instance, marker))
+                    return Value::MakeBool(true);
+            return Value::MakeBool(false);
+        }, 2);
+        // VSDictMerge(a, b) -> yeni sözlük (b'deki anahtarlar üstün)
+        vm->DefineNative("VSDictMerge", [](int argc, Value* args) -> Value {
+            auto* m = new CQSMapObject();
+            for (int i = 0; i < argc && i < 2; ++i)
+                if (args[i].IsMap())
+                    for (auto& [k, v] : args[i].AsMap()->Entries) m->Entries[k] = v;
+            return Value::MakeObject(m);
         }, 2);
 
         // ================================================================ Betikler arası

@@ -1,6 +1,8 @@
 #include "VisualScriptPanel.h"
+#include "Core/Automation/Automation.h"
 #include "Core/ImGui/ImGuiLayer.h"
 #include "Core/Logging/Log.h"
+#include "Core/Project/Project.h"
 #include "Scripting/ConquerorScript/CQSEngine.h"
 #include "Scripting/NativeRegistry.h"
 #include "UI/EditorUI.h"
@@ -37,6 +39,7 @@ namespace Conqueror::Editor
                 case PinType::String: return IM_COL32(230, 115, 220, 255);
                 case PinType::Vector: return IM_COL32(245, 200, 70, 255);
                 case PinType::List: return IM_COL32(85, 200, 235, 255);
+                case PinType::Dictionary: return IM_COL32(60, 120, 230, 255);
                 default: return IM_COL32(165, 165, 175, 255);
             }
         }
@@ -142,10 +145,12 @@ namespace Conqueror::Editor
         ImNodes::GetIO().LinkDetachWithModifierClick.Modifier = &ImGui::GetIO().KeyCtrl;
         ImNodes::GetIO().MultipleSelectModifier.Modifier = &ImGui::GetIO().KeyShift;
         if (previous) ImNodes::SetCurrentContext(previous);
+        RegisterAutomation();
     }
 
     VisualScriptPanel::~VisualScriptPanel()
     {
+        Automation::UnregisterCommand("vsx");
         if (m_Context)
             ImNodes::DestroyContext(m_Context);
     }
@@ -170,6 +175,8 @@ namespace Conqueror::Editor
         if (!name.empty() && !m_Graph.FindMacro(name))
             m_EditMacro.clear();
         m_PositionsDirty = true;
+        m_ReachableDirty = true;
+        m_SelectedBox = 0;
         if (m_Context)
         {
             ImNodes::SetCurrentContext(m_Context);
@@ -204,6 +211,13 @@ namespace Conqueror::Editor
         m_UndoStack.clear();
         m_RedoStack.clear();
         m_LastEdit = 0.0;
+        m_ReachableDirty = true;
+        m_SelectedBox = 0;
+        m_AutoAlias.clear();
+        m_Diff.clear();
+        m_DiffAdded.clear();
+        m_DiffChanged.clear();
+        m_DiffMoved.clear();
         CQ_CORE_INFO("Visual Script: opened {0} ({1} nodes)", path.filename().string(), m_Graph.Nodes.size());
     }
 
@@ -229,6 +243,7 @@ namespace Conqueror::Editor
         m_NeedsCompile = true;
         m_LastEdit = Now();
         m_PositionsDirty = true;
+        m_ReachableDirty = true;
     }
 
     int VisualScriptPanel::GetErrorCount() const
@@ -312,11 +327,13 @@ namespace Conqueror::Editor
         MarkEdited();
     }
 
-    void VisualScriptPanel::CreateNodeAt(const std::string& type, const ImVec2& gridPos)
+    void VisualScriptPanel::CreateNodeAt(const std::string& type, const ImVec2& gridPos, const std::vector<std::pair<std::string, std::string>>& props)
     {
         PushUndo();
         int id = G().AddNode(type, gridPos.x, gridPos.y);
         if (!id) return;
+        // Özellikler bağlamadan önce (pinleri özelliklere bağlı düğümler: değişken, makro, yapı ...)
+        for (auto& [k, v] : props) G().FindNode(id)->Properties[k] = v;
         // Bırakılan bağlantıdan açıldıysa uyumlu ilk pine bağla
         if (m_PendingLinkAttribute >= 0)
         {
@@ -349,7 +366,18 @@ namespace Conqueror::Editor
     void VisualScriptPanel::DeleteSelection()
     {
         int nl = ImNodes::NumSelectedLinks(), nn = ImNodes::NumSelectedNodes();
-        if (nl == 0 && nn == 0) return;
+        if (nl == 0 && nn == 0)
+        {
+            // Seçili yorum kutusu / not
+            if (m_SelectedBox && G().FindNode(m_SelectedBox))
+            {
+                PushUndo();
+                G().RemoveNode(m_SelectedBox);
+                m_SelectedBox = 0;
+                MarkEdited();
+            }
+            return;
+        }
         PushUndo();
         if (nl > 0)
         {
@@ -434,8 +462,8 @@ namespace Conqueror::Editor
         ImNodes::SetCurrentContext(m_Context);
         for (auto& n : G().Nodes)
         {
-            // Gerçek düğüm boyutu (son çizimden), yoksa tahmin
-            ImVec2 dims = ImNodes::GetNodeDimensions(n.Id);
+            // Gerçek düğüm boyutu (son çizimden), yoksa tahmin; yorum kutuları kendi boyutuyla
+            ImVec2 dims = IsBoxNode(n) ? ImVec2(n.Width * m_Zoom, n.Height * m_Zoom) : NodeDimensions(n.Id);
             float w = dims.x > 1.0f ? dims.x / m_Zoom : 220.0f;
             float h = dims.y > 1.0f ? dims.y / m_Zoom : 120.0f;
             minX = std::min(minX, n.X);
@@ -505,6 +533,10 @@ namespace Conqueror::Editor
     {
         if (!m_IsOpen)
             return;
+        // Unity: kilit kapalıyken seçili varlığın görsel betiği açılır
+        FollowSelection();
+        // Canlı değerler yalnız gösterilirken metne çevrilir (Values, izlenen pinler, Watches sekmesi)
+        Debugger::SetCaptureValues(m_ShowValues || !G().Watches.empty() || !m_Graph.Watches.empty() || (m_ShowBottom && m_BottomTab == 2));
         ImGui::SetNextWindowSize(ImVec2(1100, 680), ImGuiCond_FirstUseEver);
         std::string title = std::string(ICON_FA_DIAGRAM_PROJECT "  Visual Script") + (m_Path.empty() ? "" : " - " + m_Path.filename().string() + (m_Dirty ? " *" : "")) + "###VisualScript";
         if (m_RequestFocus)
@@ -529,16 +561,32 @@ namespace Conqueror::Editor
             Recompile();
 
         RenderToolbar();
+        RenderSecondToolbar();
         float sidebarW = 250.0f;
         ImGui::BeginChild("##vs_sidebar", ImVec2(sidebarW, 0), true);
         RenderSidebar();
         ImGui::EndChild();
         ImGui::SameLine();
-        ImGui::BeginGroup();
-        float codeW = m_ShowCode ? std::min(420.0f, ImGui::GetContentRegionAvail().x * 0.4f) : 0.0f;
-        ImGui::BeginChild("##vs_canvas", ImVec2(ImGui::GetContentRegionAvail().x - codeW - (m_ShowCode ? ImGui::GetStyle().ItemSpacing.x : 0.0f), 0), false,
-                          ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-        RenderCanvas();
+        const float spacing = ImGui::GetStyle().ItemSpacing.x;
+        const float availW = ImGui::GetContentRegionAvail().x;
+        float codeW = m_ShowCode ? std::min(420.0f, availW * 0.35f) : 0.0f;
+        float inspectorW = m_ShowInspector ? std::min(290.0f, availW * 0.3f) : 0.0f;
+        const float centerW = availW - (m_ShowCode ? codeW + spacing : 0.0f) - (m_ShowInspector ? inspectorW + spacing : 0.0f);
+        ImGui::BeginChild("##vs_center", ImVec2(centerW, 0), false, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+        {
+            // Alt panel (Find Results / Call Stack / Watches / Diff) tuvalin altında
+            const float bottomH = m_ShowBottom ? std::min(220.0f, ImGui::GetContentRegionAvail().y * 0.45f) : 0.0f;
+            ImGui::BeginChild("##vs_canvas", ImVec2(0, m_ShowBottom ? ImGui::GetContentRegionAvail().y - bottomH - ImGui::GetStyle().ItemSpacing.y : 0.0f), false,
+                              ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+            RenderCanvas();
+            ImGui::EndChild();
+            if (m_ShowBottom)
+            {
+                ImGui::BeginChild("##vs_bottom", ImVec2(0, 0), true);
+                RenderBottomPanel();
+                ImGui::EndChild();
+            }
+        }
         ImGui::EndChild();
         if (m_ShowCode)
         {
@@ -547,7 +595,13 @@ namespace Conqueror::Editor
             RenderCodeView();
             ImGui::EndChild();
         }
-        ImGui::EndGroup();
+        if (m_ShowInspector)
+        {
+            ImGui::SameLine();
+            ImGui::BeginChild("##vs_inspector", ImVec2(inspectorW, 0), true);
+            RenderGraphInspector();
+            ImGui::EndChild();
+        }
         ImGui::End();
     }
 
@@ -563,6 +617,7 @@ namespace Conqueror::Editor
     {
         m_BreakHitNode = node;
         m_IsOpen = true;
+        m_RequestFocus = true;   // Unreal: kesme noktasında grafik öne gelir
         FocusNode(node);
     }
 
@@ -647,10 +702,35 @@ namespace Conqueror::Editor
 
     void VisualScriptPanel::RenderSidebar()
     {
-        // ── Değişkenler ──
+        // ── Değişkenler (Unity Blackboard kapsam sekmeleri + Unreal yerel değişkenleri) ──
         ImGui::TextColored(UI::Colors::Accent, ICON_FA_TAG "  Variables");
-        ImGui::SameLine(ImGui::GetContentRegionAvail().x - 16.0f);
-        if (ImGui::SmallButton(ICON_FA_PLUS "##addvar"))
+        static const char* kScopeTabs[] = { "Graph", "Object", "Scene", "App", "Saved", "Local" };
+        static const char* kScopeTips[] = { "Graph: this graph instance (public ones appear in the Inspector)",
+                                            "Object: shared by every graph on the same entity",
+                                            "Scene: shared by every graph in the scene",
+                                            "Application: kept for the whole play session",
+                                            "Saved: kept between runs (PlayerPrefs)",
+                                            "Local: exists only while its function runs" };
+        // Kapsam sekmeleri (dar kenar çubuğunda tam adlar sığsın diye sıkı düğmeler)
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(3, 2));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(2, 2));
+        for (int t = 0; t < 6; ++t)
+        {
+            const bool active = m_Variablescope == t;
+            int count = 0;
+            for (auto& v : m_Graph.Variables)
+                if ((int)v.Scope == t) ++count;
+            ImGui::PushStyleColor(ImGuiCol_Button, active ? ImGui::GetStyleColorVec4(ImGuiCol_TabSelected) : ImGui::GetStyleColorVec4(ImGuiCol_Tab));
+            if (ImGui::SmallButton((std::string(kScopeTabs[t]) + "##scope" + std::to_string(t)).c_str())) m_Variablescope = t;
+            ImGui::PopStyleColor();
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort)) ImGui::SetTooltip("%s (%d)", kScopeTips[t], count);
+            if (t < 5) ImGui::SameLine();
+        }
+        ImGui::PopStyleVar(2);
+        std::vector<std::string> functionNames;
+        for (auto& n : m_Graph.Nodes)
+            if (n.Type == "event.function") functionNames.push_back(n.Properties.count("Name") ? n.Properties.at("Name") : std::string());
+        if (ImGui::SmallButton(ICON_FA_PLUS " Add Variable##addvar"))
         {
             PushUndo();
             std::string base = "newVar";
@@ -660,13 +740,19 @@ namespace Conqueror::Editor
             v.Name = name;
             v.Type = PinType::Number;
             v.Default = "0";
+            v.Scope = (VariableScope)m_Variablescope;
+            if (v.Scope == VariableScope::Local && !functionNames.empty()) v.Function = functionNames.front();
             m_Graph.Variables.push_back(v);
             MarkEdited();
         }
         int removeIndex = -1;
+        int shownVariables = 0;
         for (size_t i = 0; i < m_Graph.Variables.size(); ++i)
         {
             Variable& v = m_Graph.Variables[i];
+            if ((int)v.Scope != m_Variablescope)
+                continue;
+            ++shownVariables;
             ImGui::PushID((int)i);
             ImGui::Separator();
             // Değişkeni tuvale sürükle: Get düğümü (Ctrl ile Set)
@@ -701,21 +787,57 @@ namespace Conqueror::Editor
             }
             ImGui::SameLine();
             if (ImGui::SmallButton(ICON_FA_XMARK)) removeIndex = (int)i;
-            const char* types[] = { "number", "bool", "string", "vector", "list", "any" };
-            PinType typeValues[] = { PinType::Number, PinType::Bool, PinType::String, PinType::Vector, PinType::List, PinType::Any };
-            int current = 5;
-            for (int t = 0; t < 6; ++t) if (typeValues[t] == v.Type) current = t;
+            // Tür: temel türler, projedeki yapı (.cqstruct) ve sayım (.cqenum) varlıkları
+            const std::string typeLabel = v.TypeAsset.empty() ? std::string(PinTypeName(v.Type)) : UserTypes::DisplayName(v.TypeAsset);
             ImGui::SetNextItemWidth(84.0f);
-            if (ImGui::Combo("##type", &current, types, 6))
+            if (ImGui::BeginCombo("##type", typeLabel.c_str(), ImGuiComboFlags_HeightLarge))
             {
-                PushUndo();
-                v.Type = typeValues[current];
-                v.Default = v.Type == PinType::Number ? "0" : v.Type == PinType::Bool ? "false" : "";
-                MarkEdited();
+                const PinType typeValues[] = { PinType::Number, PinType::Bool, PinType::String, PinType::Vector, PinType::List, PinType::Dictionary, PinType::Any };
+                for (PinType t : typeValues)
+                    if (ImGui::Selectable(PinTypeName(t), v.TypeAsset.empty() && v.Type == t))
+                    {
+                        PushUndo();
+                        v.Type = t;
+                        v.TypeAsset.clear();
+                        v.Default = v.Type == PinType::Number ? "0" : v.Type == PinType::Bool ? "false" : "";
+                        MarkEdited();
+                    }
+                for (auto& path : UserTypes::FindAssets(".cqstruct"))
+                    if (ImGui::Selectable(("Struct: " + UserTypes::DisplayName(path) + "##" + path).c_str(), v.TypeAsset == path))
+                    {
+                        PushUndo();
+                        v.Type = PinType::Dictionary;
+                        v.TypeAsset = path;
+                        v.Default.clear();
+                        MarkEdited();
+                    }
+                for (auto& path : UserTypes::FindAssets(".cqenum"))
+                    if (ImGui::Selectable(("Enum: " + UserTypes::DisplayName(path) + "##" + path).c_str(), v.TypeAsset == path))
+                    {
+                        PushUndo();
+                        v.Type = PinType::Number;
+                        v.TypeAsset = path;
+                        const EnumAsset* ea = UserTypes::LoadEnum(path);
+                        v.Default = ea && !ea->Entries.empty() ? ea->Entries.front() : "";
+                        MarkEdited();
+                    }
+                ImGui::EndCombo();
             }
             ImGui::SameLine();
-            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 58.0f);
-            if (v.Type == PinType::Number)
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - (v.Scope == VariableScope::Graph ? 58.0f : 30.0f));
+            const EnumAsset* enumType = v.TypeAsset.empty() ? nullptr : UserTypes::LoadEnum(v.TypeAsset);
+            if (enumType && v.TypeAsset.find(".cqenum") != std::string::npos)
+            {
+                if (ImGui::BeginCombo("##def", v.Default.c_str()))
+                {
+                    for (auto& e : enumType->Entries)
+                        if (ImGui::Selectable(e.c_str(), e == v.Default)) { v.Default = e; MarkEdited(); }
+                    ImGui::EndCombo();
+                }
+            }
+            else if (!v.TypeAsset.empty())
+                ImGui::TextDisabled("struct");
+            else if (v.Type == PinType::Number)
             {
                 float f = (float)std::atof(v.Default.c_str());
                 if (ImGui::DragFloat("##def", &f, 0.1f)) { char b[32]; std::snprintf(b, sizeof(b), "%g", f); v.Default = b; MarkEdited(); }
@@ -733,22 +855,38 @@ namespace Conqueror::Editor
             }
             else
                 ImGui::TextDisabled("-");
-            ImGui::SameLine();
-            if (ImGui::Checkbox("##pub", &v.Public)) MarkEdited();
-            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort)) ImGui::SetTooltip("Public: shown in the Inspector");
+            if (v.Scope == VariableScope::Graph)
+            {
+                ImGui::SameLine();
+                if (ImGui::Checkbox("##pub", &v.Public)) MarkEdited();
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort)) ImGui::SetTooltip("Public: shown in the Inspector");
+            }
+            if (v.Scope == VariableScope::Local)
+            {
+                ImGui::TextDisabled("Function");
+                ImGui::SameLine();
+                ImGui::SetNextItemWidth(-1);
+                if (ImGui::BeginCombo("##fn", v.Function.empty() ? "(select)" : v.Function.c_str()))
+                {
+                    for (auto& f : functionNames)
+                        if (ImGui::Selectable(f.c_str(), f == v.Function)) { PushUndo(); v.Function = f; MarkEdited(); }
+                    ImGui::EndCombo();
+                }
+            }
             ImGui::PopID();
         }
         if (removeIndex >= 0)
         {
             PushUndo();
-            std::string name = m_Graph.Variables[(size_t)removeIndex].Name;
             m_Graph.Variables.erase(m_Graph.Variables.begin() + removeIndex);
             MarkEdited();
-            (void)name;
         }
-        if (m_Graph.Variables.empty())
-            ImGui::TextDisabled("No variables. Public variables appear in the Inspector.");
+        if (shownVariables == 0)
+            ImGui::TextDisabled(m_Variablescope == 0 ? "No graph variables. Public ones appear in the Inspector."
+                                : m_Variablescope == 5 ? "No local variables. They belong to a function." : "No variables in this scope.");
 
+        RenderDispatchersAndInterfaces();
+        RenderUserTypes();
         // ── Makrolar (Unreal Blueprint Macro) ──
         ImGui::Spacing();
         ImGui::Separator();
@@ -960,12 +1098,19 @@ namespace Conqueror::Editor
                 ImGui::EndCombo();
             }
         }
-        else if (node.Type == "comment")
+        else if (node.Type == "comment" || node.Type == "stickynote")
         {
             std::string& v = node.Properties["Text"];
             char buf[1024] = {};
             std::strncpy(buf, v.c_str(), sizeof(buf) - 1);
             if (ImGui::InputTextMultiline("##text", buf, sizeof(buf), ImVec2(Z(220.0f), Z(70.0f)))) { v = buf; changed = true; }
+        }
+        else if (node.Type == "math.formula")
+        {
+            propText("Formula", 150.0f, "a + b");
+            int count = std::clamp(std::atoi(node.Properties["Inputs"].c_str()), 1, 10);
+            ImGui::SetNextItemWidth(Z(60.0f));
+            if (ImGui::SliderInt("##inputs", &count, 1, 10, "%d in")) { node.Properties["Inputs"] = std::to_string(count); changed = true; }
         }
         else if (const NodeDef* base = NodeLibrary::Find(node.Type))
         {
@@ -997,6 +1142,18 @@ namespace Conqueror::Editor
                         ImGui::EndCombo();
                     }
                 }
+                else if (key == "Function" && (node.Type == "event.interface" || node.Type == "interface.call"))
+                {
+                    // Seçili arayüzün fonksiyonları
+                    ImGui::SetNextItemWidth(Z(130.0f));
+                    if (ImGui::BeginCombo("##if", v.empty() ? "(select)" : v.c_str()))
+                    {
+                        if (const InterfaceAsset* ia = UserTypes::LoadInterface(node.Properties["Interface"]))
+                            for (auto& f : ia->Functions)
+                                if (ImGui::Selectable(f.Name.c_str(), v == f.Name)) { v = f.Name; changed = true; }
+                        ImGui::EndCombo();
+                    }
+                }
                 else if (key == "Function")
                 {
                     ImGui::SetNextItemWidth(Z(130.0f));
@@ -1008,6 +1165,51 @@ namespace Conqueror::Editor
                             const std::string name = other.Properties["Name"];
                             if (ImGui::Selectable(name.c_str(), v == name)) { v = name; changed = true; }
                         }
+                        ImGui::EndCombo();
+                    }
+                }
+                else if (key == "Dispatcher" || key == "Event")
+                {
+                    // Event Dispatcher: grafiğin dağıtıcıları; Event: bu grafiğin özel olayları
+                    std::vector<std::string> names;
+                    if (key == "Dispatcher")
+                        names = m_Graph.Dispatchers;
+                    else
+                        for (auto& other : m_Graph.Nodes)
+                            if (other.Type == "event.custom") names.push_back(other.Properties["Name"]);
+                    ImGui::SetNextItemWidth(Z(120.0f));
+                    if (ImGui::BeginCombo("##d", v.empty() ? "(select)" : v.c_str()))
+                    {
+                        for (auto& n : names)
+                            if (ImGui::Selectable(n.c_str(), v == n)) { v = n; changed = true; }
+                        ImGui::EndCombo();
+                    }
+                }
+                else if (key == "Interface" || key == "Struct" || key == "Enum" || key == "Graph")
+                {
+                    // Proje varlıkları (Graph: alt grafik olarak kullanılacak .cqgraph, açık dosya hariç)
+                    const char* ext = key == "Interface" ? ".cqinterface" : key == "Struct" ? ".cqstruct" : key == "Enum" ? ".cqenum" : ".cqgraph";
+                    ImGui::SetNextItemWidth(Z(130.0f));
+                    if (ImGui::BeginCombo("##a", v.empty() ? "(select)" : UserTypes::DisplayName(v).c_str(), ImGuiComboFlags_HeightLarge))
+                    {
+                        std::error_code ec;
+                        for (auto& path : UserTypes::FindAssets(ext))
+                        {
+                            if (key == "Graph" && std::filesystem::equivalent(UserTypes::ResolvePath(path), m_Path, ec)) continue;
+                            if (ImGui::Selectable((UserTypes::DisplayName(path) + "##" + path).c_str(), v == path)) { v = path; changed = true; }
+                            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", path.c_str());
+                        }
+                        ImGui::EndCombo();
+                    }
+                }
+                else if (key == "Value" && node.Type == "enum.literal")
+                {
+                    ImGui::SetNextItemWidth(Z(110.0f));
+                    if (ImGui::BeginCombo("##ev", v.empty() ? "(select)" : v.c_str()))
+                    {
+                        if (const EnumAsset* ea = UserTypes::LoadEnum(node.Properties["Enum"]))
+                            for (auto& e : ea->Entries)
+                                if (ImGui::Selectable(e.c_str(), v == e)) { v = e; changed = true; }
                         ImGui::EndCombo();
                     }
                 }
@@ -1030,107 +1232,221 @@ namespace Conqueror::Editor
         const bool executed = Debugger::LastExecuted(debugKey, node.Id) >= 0.0 && executedAgo < 0.4;
         const bool breakpoint = Debugger::HasBreakpoint(debugKey, node.Id);
         const bool breakHit = m_BreakHitNode == node.Id && EditorState::Get().IsPaused();
-        ImNodes::PushColorStyle(ImNodesCol_TitleBar, title);
-        ImNodes::PushColorStyle(ImNodesCol_TitleBarHovered, Brighten(title, 1.15f));
-        ImNodes::PushColorStyle(ImNodesCol_TitleBarSelected, Brighten(title, 1.3f));
+        // Unity Dim: olaylardan ulaşılamayan düğümler soluk; Unreal: devre dışı düğüm soluk
+        const bool dimmed = IsDimmed(node.Id) || node.Disabled;
+        const bool running = !EditorState::Get().IsEditing();
+        auto dim = [&](ImU32 c) {
+            if (!dimmed) return c;
+            ImVec4 v = ImGui::ColorConvertU32ToFloat4(c);
+            v.w *= 0.38f;
+            return ImGui::ColorConvertFloat4ToU32(v);
+        };
+        // Fark (Unreal Diff) vurgusu: eklenen yeşil, değişen turuncu, taşınan mavi
+        const ImU32 diffColor = m_DiffAdded.count(node.Id) ? IM_COL32(80, 220, 110, 255) : m_DiffChanged.count(node.Id) ? IM_COL32(255, 160, 60, 255)
+                              : m_DiffMoved.count(node.Id) ? IM_COL32(90, 160, 255, 255) : 0;
+        ImNodes::PushColorStyle(ImNodesCol_TitleBar, dim(title));
+        ImNodes::PushColorStyle(ImNodesCol_TitleBarHovered, dim(Brighten(title, 1.15f)));
+        ImNodes::PushColorStyle(ImNodesCol_TitleBarSelected, dim(Brighten(title, 1.3f)));
         ImNodes::PushColorStyle(ImNodesCol_NodeOutline, hasError ? IM_COL32(255, 70, 70, 255)
                                                       : breakHit ? IM_COL32(255, 60, 60, 255)
                                                       : executed ? IM_COL32(255, 214, 90, (int)(255.0 * (1.0 - executedAgo / 0.4)))
+                                                      : diffColor ? diffColor
                                                                  : IM_COL32(18, 18, 22, 255));
-        const bool thick = hasError || breakHit || executed;
+        ImNodes::PushColorStyle(ImNodesCol_NodeBackground, dim(IM_COL32(38, 40, 46, 245)));
+        ImNodes::PushColorStyle(ImNodesCol_NodeBackgroundHovered, dim(IM_COL32(44, 46, 53, 245)));
+        ImNodes::PushColorStyle(ImNodesCol_NodeBackgroundSelected, dim(IM_COL32(48, 51, 60, 245)));
+        const bool thick = hasError || breakHit || executed || diffColor;
         if (thick) ImNodes::PushStyleVar(ImNodesStyleVar_NodeBorderThickness, 2.5f);
+        const bool reroute = node.Type == "reroute";
+        if (reroute) ImNodes::PushStyleVar(ImNodesStyleVar_NodePadding, ImVec2(Z(3.0f), Z(3.0f)));
+        if (dimmed) ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
 
+        auto& pins = m_PinScreens[node.Id];
+        pins.clear();
         ImNodes::BeginNode(node.Id);
-        ImNodes::BeginNodeTitleBar();
-        if (breakpoint)
-        {
-            ImGui::TextColored(ImVec4(1.0f, 0.25f, 0.25f, 1.0f), ICON_FA_CIRCLE);
-            if (ImGui::IsItemHovered()) ImGui::SetTooltip("Breakpoint (F9): play pauses when this node runs (at the end of that frame).");
-            ImGui::SameLine();
-        }
-        ImGui::TextUnformatted(KindIcon(def));
-        ImGui::SameLine();
-        ImGui::TextUnformatted(def.Title.c_str());
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal) && !def.Description.empty())
-            ImGui::SetTooltip("%s", def.Description.c_str());
-        if (const uint64_t hits = Debugger::HitCount(debugKey, node.Id); hits > 0 && !EditorState::Get().IsEditing())
-        {
-            ImGui::SameLine();
-            ImGui::TextDisabled("x%llu", (unsigned long long)hits);
-        }
-        ImNodes::EndNodeTitleBar();
-
+        const ImVec2 nodeTop = ImGui::GetCursorScreenPos();
         bool changed = false;
-        // Düğüm özellikleri
-        if (!def.Properties.empty() || node.Type == "var.get" || node.Type == "var.set" || def.Kind == NodeKind::Literal || node.Type == "comment")
+        if (reroute)
         {
-            ImNodes::BeginStaticAttribute(node.Id * 1024 + 1023); // pin olmayan, düğüme özgü kimlik
-            changed |= DrawNodeProperties(node);
-            ImNodes::EndStaticAttribute();
+            // Reroute: başlıksız küçük düğüm (tek giriş / tek çıkış)
+            const PinType t = def.Inputs[0].Type;
+            const bool exec = t == PinType::Exec;
+            const bool inLinked = G().FindInputLink(node.Id, "In") != nullptr, outLinked = !G().FindOutputLinks(node.Id, "Out").empty();
+            ImNodes::PushColorStyle(ImNodesCol_Pin, dim(PinColor(t)));
+            ImNodes::BeginInputAttribute(AttributeId(node.Id, 0, false), exec ? (inLinked ? ImNodesPinShape_TriangleFilled : ImNodesPinShape_Triangle)
+                                                                              : (inLinked ? ImNodesPinShape_CircleFilled : ImNodesPinShape_Circle));
+            const ImVec2 rowPos = ImGui::GetCursorScreenPos();
+            ImGui::Dummy(ImVec2(Z(4.0f), Z(10.0f)));
+            ImNodes::EndInputAttribute();
+            pins.push_back({ ImVec2(rowPos.x, rowPos.y + Z(5.0f)), t, "In", false });
+            ImGui::SameLine(0, 0);
+            ImNodes::BeginOutputAttribute(AttributeId(node.Id, 0, true), exec ? (outLinked ? ImNodesPinShape_TriangleFilled : ImNodesPinShape_Triangle)
+                                                                              : (outLinked ? ImNodesPinShape_CircleFilled : ImNodesPinShape_Circle));
+            ImGui::Dummy(ImVec2(Z(4.0f), Z(10.0f)));
+            ImNodes::EndOutputAttribute();
+            pins.push_back({ ImVec2(ImGui::GetItemRectMax().x, rowPos.y + Z(5.0f)), t, "Out", true });
+            ImNodes::PopColorStyle();
+            m_PinOffsets[0][node.Id]["In"] = Z(5.0f) / m_Zoom;
+            m_PinOffsets[1][node.Id]["Out"] = Z(5.0f) / m_Zoom;
+        }
+        else
+        {
+            ImNodes::BeginNodeTitleBar();
+            if (breakpoint)
+            {
+                ImGui::TextColored(ImVec4(1.0f, 0.25f, 0.25f, 1.0f), ICON_FA_CIRCLE);
+                if (ImGui::IsItemHovered()) ImGui::SetTooltip("Breakpoint (F9): play pauses when this node runs (at the end of that frame).");
+                ImGui::SameLine();
+            }
+            ImGui::TextUnformatted(node.Disabled ? ICON_FA_BAN : KindIcon(def));
+            ImGui::SameLine();
+            ImGui::TextUnformatted(def.Title.c_str());
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal) && !def.Description.empty())
+                ImGui::SetTooltip("%s", def.Description.c_str());
+            if (node.Disabled)
+            {
+                ImGui::SameLine();
+                ImGui::TextDisabled("(Disabled)");
+            }
+            if (const uint64_t hits = Debugger::HitCount(debugKey, node.Id); hits > 0 && running)
+            {
+                ImGui::SameLine();
+                ImGui::TextDisabled("x%llu", (unsigned long long)hits);
+            }
+            ImNodes::EndNodeTitleBar();
+
+            // Düğüm özellikleri
+            if (!def.Properties.empty() || node.Type == "var.get" || node.Type == "var.set" || def.Kind == NodeKind::Literal)
+            {
+                ImNodes::BeginStaticAttribute(node.Id * 1024 + 1023); // pin olmayan, düğüme özgü kimlik
+                changed |= DrawNodeProperties(node);
+                ImNodes::EndStaticAttribute();
+            }
+
+            // Girişler (sol) ve çıkışlar (sağ) yan yana
+            size_t rows = std::max(def.Inputs.size(), def.Outputs.size());
+            float outWidth = 0.0f;
+            for (auto& o : def.Outputs) outWidth = std::max(outWidth, ImGui::CalcTextSize(o.Name.c_str()).x);
+            const float lineH = ImGui::GetTextLineHeight();
+            for (size_t r = 0; r < rows; ++r)
+            {
+                float startX = ImGui::GetCursorPosX();
+                const ImVec2 rowPos = ImGui::GetCursorScreenPos();
+                if (r < def.Inputs.size())
+                {
+                    const PinDef& in = def.Inputs[r];
+                    ImNodes::PushColorStyle(ImNodesCol_Pin, dim(PinColor(in.Type)));
+                    ImNodes::PushColorStyle(ImNodesCol_PinHovered, Brighten(PinColor(in.Type), 1.3f));
+                    bool connected = G().FindInputLink(node.Id, in.Name) != nullptr;
+                    ImNodesPinShape shape = in.Type == PinType::Exec ? (connected ? ImNodesPinShape_TriangleFilled : ImNodesPinShape_Triangle)
+                                                                     : (connected ? ImNodesPinShape_CircleFilled : ImNodesPinShape_Circle);
+                    ImNodes::BeginInputAttribute(AttributeId(node.Id, (int)r, false), shape);
+                    if (in.Type != PinType::Exec || def.Inputs.size() > 1 || in.Name != "In")
+                    {
+                        ImGui::TextUnformatted(in.Type == PinType::Exec && in.Name == "In" ? "" : in.Name.c_str());
+                        if (!connected && in.Type != PinType::Exec && in.Type != PinType::List && in.Type != PinType::Dictionary)
+                        {
+                            ImGui::SameLine();
+                            changed |= DrawInputDefault(node, in);
+                        }
+                    }
+                    else
+                        ImGui::Dummy(ImVec2(Z(10.0f), ImGui::GetTextLineHeight()));
+                    ImNodes::EndInputAttribute();
+                    ImNodes::PopColorStyle();
+                    ImNodes::PopColorStyle();
+                    pins.push_back({ ImVec2(rowPos.x, rowPos.y + lineH * 0.5f), in.Type, in.Name, false });
+                    m_PinOffsets[0][node.Id][in.Name] = (rowPos.y + lineH * 0.5f - nodeTop.y) / m_Zoom;
+                }
+                if (r < def.Outputs.size())
+                {
+                    const PinDef& out = def.Outputs[r];
+                    if (r < def.Inputs.size()) ImGui::SameLine();
+                    float inputRight = ImGui::GetCursorPosX();
+                    float target = std::max(inputRight, startX + Z(120.0f));
+                    ImGui::SetCursorPosX(target);
+                    ImNodes::PushColorStyle(ImNodesCol_Pin, dim(PinColor(out.Type)));
+                    ImNodes::PushColorStyle(ImNodesCol_PinHovered, Brighten(PinColor(out.Type), 1.3f));
+                    bool connected = !G().FindOutputLinks(node.Id, out.Name).empty();
+                    ImNodesPinShape shape = out.Type == PinType::Exec ? (connected ? ImNodesPinShape_TriangleFilled : ImNodesPinShape_Triangle)
+                                                                      : (connected ? ImNodesPinShape_CircleFilled : ImNodesPinShape_Circle);
+                    ImNodes::BeginOutputAttribute(AttributeId(node.Id, (int)r, true), shape);
+                    float w = ImGui::CalcTextSize(out.Name.c_str()).x;
+                    ImGui::Indent(outWidth - w);
+                    ImGui::TextUnformatted(out.Type == PinType::Exec && out.Name == "Then" ? " " : out.Name.c_str());
+                    const float outRight = ImGui::GetItemRectMax().x;
+                    ImGui::Unindent(outWidth - w);
+                    ImNodes::EndOutputAttribute();
+                    ImNodes::PopColorStyle();
+                    ImNodes::PopColorStyle();
+                    pins.push_back({ ImVec2(outRight, rowPos.y + lineH * 0.5f), out.Type, out.Name, true });
+                    m_PinOffsets[1][node.Id][out.Name] = (rowPos.y + lineH * 0.5f - nodeTop.y) / m_Zoom;
+                }
+            }
+            if (rows == 0)
+                ImGui::Dummy(ImVec2(Z(80.0f), Z(4.0f)));
         }
 
-        // Girişler (sol) ve çıkışlar (sağ) yan yana
-        size_t rows = std::max(def.Inputs.size(), def.Outputs.size());
-        float outWidth = 0.0f;
-        for (auto& o : def.Outputs) outWidth = std::max(outWidth, ImGui::CalcTextSize(o.Name.c_str()).x);
-        for (size_t r = 0; r < rows; ++r)
+        // Unity Relations: düğüm içindeki pin ilişkileri (exec girişi -> exec çıkışları, veri girişleri -> exec girişi / veri çıkışları)
+        if (m_ShowRelations && !reroute)
         {
-            float startX = ImGui::GetCursorPosX();
-            if (r < def.Inputs.size())
+            ImDrawList* dl = ImGui::GetWindowDrawList();
+            const ImU32 rel = IM_COL32(150, 160, 190, dimmed ? 60 : 130);
+            const PinScreen* firstExecIn = nullptr;
+            for (auto& p : pins)
+                if (!p.Output && p.Type == PinType::Exec) { firstExecIn = &p; break; }
+            for (auto& a : pins)
             {
-                const PinDef& in = def.Inputs[r];
-                ImNodes::PushColorStyle(ImNodesCol_Pin, PinColor(in.Type));
-                ImNodes::PushColorStyle(ImNodesCol_PinHovered, Brighten(PinColor(in.Type), 1.3f));
-                bool connected = G().FindInputLink(node.Id, in.Name) != nullptr;
-                ImNodesPinShape shape = in.Type == PinType::Exec ? (connected ? ImNodesPinShape_TriangleFilled : ImNodesPinShape_Triangle)
-                                                                 : (connected ? ImNodesPinShape_CircleFilled : ImNodesPinShape_Circle);
-                ImNodes::BeginInputAttribute(AttributeId(node.Id, (int)r, false), shape);
-                if (in.Type != PinType::Exec || def.Inputs.size() > 1 || in.Name != "In")
+                if (a.Output) continue;
+                const float inLabel = a.Type == PinType::Exec && a.Name == "In" ? Z(8.0f) : ImGui::CalcTextSize(a.Name.c_str()).x + Z(4.0f);
+                for (auto& b : pins)
                 {
-                    ImGui::TextUnformatted(in.Type == PinType::Exec && in.Name == "In" ? "" : in.Name.c_str());
-                    if (!connected && in.Type != PinType::Exec && in.Type != PinType::List)
-                    {
-                        ImGui::SameLine();
-                        changed |= DrawInputDefault(node, in);
-                    }
+                    if (!b.Output) continue;
+                    const bool related = a.Type == PinType::Exec ? b.Type == PinType::Exec : (firstExecIn == nullptr && b.Type != PinType::Exec);
+                    if (!related) continue;
+                    const float labelW = b.Type == PinType::Exec && b.Name == "Then" ? 0.0f : ImGui::CalcTextSize(b.Name.c_str()).x;
+                    const ImVec2 p0(a.Pos.x + inLabel, a.Pos.y), p1(b.Pos.x - labelW - Z(4.0f), b.Pos.y);
+                    const float dx = std::max(Z(12.0f), (p1.x - p0.x) * 0.45f);
+                    dl->AddBezierCubic(p0, ImVec2(p0.x + dx, p0.y), ImVec2(p1.x - dx, p1.y), p1, rel, std::max(1.0f, Z(1.2f)));
                 }
-                else
-                    ImGui::Dummy(ImVec2(Z(10.0f), ImGui::GetTextLineHeight()));
-                ImNodes::EndInputAttribute();
-                ImNodes::PopColorStyle();
-                ImNodes::PopColorStyle();
-            }
-            if (r < def.Outputs.size())
-            {
-                const PinDef& out = def.Outputs[r];
-                if (r < def.Inputs.size()) ImGui::SameLine();
-                float inputRight = ImGui::GetCursorPosX();
-                float target = std::max(inputRight, startX + Z(120.0f));
-                ImGui::SetCursorPosX(target);
-                ImNodes::PushColorStyle(ImNodesCol_Pin, PinColor(out.Type));
-                ImNodes::PushColorStyle(ImNodesCol_PinHovered, Brighten(PinColor(out.Type), 1.3f));
-                bool connected = !G().FindOutputLinks(node.Id, out.Name).empty();
-                ImNodesPinShape shape = out.Type == PinType::Exec ? (connected ? ImNodesPinShape_TriangleFilled : ImNodesPinShape_Triangle)
-                                                                  : (connected ? ImNodesPinShape_CircleFilled : ImNodesPinShape_Circle);
-                ImNodes::BeginOutputAttribute(AttributeId(node.Id, (int)r, true), shape);
-                float w = ImGui::CalcTextSize(out.Name.c_str()).x;
-                ImGui::Indent(outWidth - w);
-                ImGui::TextUnformatted(out.Type == PinType::Exec && out.Name == "Then" ? " " : out.Name.c_str());
-                ImGui::Unindent(outWidth - w);
-                ImNodes::EndOutputAttribute();
-                ImNodes::PopColorStyle();
-                ImNodes::PopColorStyle();
+                if (a.Type != PinType::Exec && firstExecIn)
+                {
+                    // Gereksinim: veri girişi akış girişinde okunur
+                    const ImVec2 p0(a.Pos.x + Z(6.0f), a.Pos.y), p1(firstExecIn->Pos.x + Z(6.0f), firstExecIn->Pos.y);
+                    dl->AddBezierCubic(p0, ImVec2(p0.x + Z(18.0f), p0.y), ImVec2(p1.x + Z(18.0f), p1.y), p1, rel, std::max(1.0f, Z(1.2f)));
+                }
             }
         }
-        if (rows == 0 && def.Kind != NodeKind::Comment)
-            ImGui::Dummy(ImVec2(Z(80.0f), Z(4.0f)));
+
+        // Unity Values / Unreal Watch: oyun sırasında çıkış pinlerinin son değeri
+        if (running && !pins.empty())
+        {
+            ImDrawList* dl = ImGui::GetWindowDrawList();
+            for (auto& p : pins)
+            {
+                if (!p.Output || p.Type == PinType::Exec) continue;
+                const bool watched = IsWatched(node.Id, p.Name);
+                if (!m_ShowValues && !watched) continue;
+                std::string value;
+                if (!Debugger::GetValue(debugKey, node.Id, p.Name, value))
+                {
+                    if (!watched) continue;
+                    value = "(not run yet)";
+                }
+                const std::string text = (watched ? std::string(ICON_FA_EYE " ") : std::string()) + value;
+                const ImVec2 ts = ImGui::CalcTextSize(text.c_str());
+                const ImVec2 a(p.Pos.x + Z(14.0f), p.Pos.y - ts.y * 0.5f - Z(2.0f));
+                dl->AddRectFilled(a, ImVec2(a.x + ts.x + Z(8.0f), a.y + ts.y + Z(4.0f)), watched ? IM_COL32(70, 55, 20, 235) : IM_COL32(20, 22, 28, 225), Z(3.0f));
+                dl->AddRect(a, ImVec2(a.x + ts.x + Z(8.0f), a.y + ts.y + Z(4.0f)), watched ? IM_COL32(255, 200, 80, 255) : PinColor(p.Type), Z(3.0f));
+                dl->AddText(ImVec2(a.x + Z(4.0f), a.y + Z(2.0f)), IM_COL32(235, 235, 240, 255), text.c_str());
+            }
+        }
         ImNodes::EndNode();
 
+        if (dimmed) ImGui::PopStyleVar();
+        if (reroute) ImNodes::PopStyleVar();
         if (thick) ImNodes::PopStyleVar();
-        ImNodes::PopColorStyle();
-        ImNodes::PopColorStyle();
-        ImNodes::PopColorStyle();
-        ImNodes::PopColorStyle();
+        for (int i = 0; i < 7; ++i) ImNodes::PopColorStyle();
         if (changed)
         {
             if (!m_EditingNodeValue)
@@ -1169,15 +1485,23 @@ namespace Conqueror::Editor
         if (m_PositionsDirty)
         {
             for (auto& n : G().Nodes)
-                ImNodes::SetNodeGridSpacePos(n.Id, ImVec2(n.X * m_Zoom, n.Y * m_Zoom));
+                if (!IsBoxNode(n))
+                    ImNodes::SetNodeGridSpacePos(n.Id, ImVec2(n.X * m_Zoom, n.Y * m_Zoom));
             m_PositionsDirty = false;
         }
+        // Yorum kutuları / yapışkan notlar düğümlerin altında (taban kanalda) çizilir
+        RenderBoxes();
         // Düğüm içeriği (yazı, boşluklar) zoom ile ölçeklenir
         ImGui::PushFont(nullptr, GImGui->FontSizeBase * m_Zoom);
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x * m_Zoom, ImGui::GetStyle().ItemSpacing.y * m_Zoom));
         ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(ImGui::GetStyle().ItemInnerSpacing.x * m_Zoom, ImGui::GetStyle().ItemInnerSpacing.y * m_Zoom));
+        m_RenderedNodes.clear();
         for (auto& n : G().Nodes)
-            RenderNode(n);
+            if (!IsBoxNode(n))
+            {
+                RenderNode(n);
+                m_RenderedNodes.insert(n.Id);
+            }
         ImGui::PopStyleVar(2);
         ImGui::PopFont();
         // Bağlantılar (kaynak pin rengiyle)
@@ -1215,29 +1539,58 @@ namespace Conqueror::Editor
         if (!m_PendingSelect.empty())
         {
             ImNodes::ClearNodeSelection();
-            for (int id : m_PendingSelect) ImNodes::SelectNode(id);
+            for (int id : m_PendingSelect)
+                if (m_RenderedNodes.count(id)) ImNodes::SelectNode(id);
             m_PendingSelect.clear();
         }
         if (m_FocusNode)
         {
             ImNodes::ClearNodeSelection();
-            ImNodes::SelectNode(m_FocusNode);
+            if (m_RenderedNodes.count(m_FocusNode)) ImNodes::SelectNode(m_FocusNode);
             FocusNode(m_FocusNode);
             m_FocusNode = 0;
         }
 
         // Konumları geri oku (imnodes ızgara konumu / zoom = grafik konumu)
         bool moved = false;
+        std::map<int, ImVec2> dragDeltas;
         for (auto& n : G().Nodes)
         {
+            if (IsBoxNode(n)) continue;
             ImVec2 p = ImNodes::GetNodeGridSpacePos(n.Id);
             p = ImVec2(p.x / m_Zoom, p.y / m_Zoom);
             if (std::fabs(p.x - n.X) > 0.5f || std::fabs(p.y - n.Y) > 0.5f)
             {
+                dragDeltas[n.Id] = ImVec2(std::round(p.x) - n.X, std::round(p.y) - n.Y);
                 n.X = std::round(p.x);
                 n.Y = std::round(p.y);
                 moved = true;
             }
+        }
+        // Unity Carry: sürüklenen düğümün bağlı alt düğümleri de taşınır
+        if (moved && m_Carry && ImGui::IsMouseDown(ImGuiMouseButton_Left))
+        {
+            std::map<int, ImVec2> carried;
+            for (auto& [id, d] : dragDeltas) carried[id] = ImVec2(0, 0);   // zaten taşındı
+            for (auto& [id, d] : dragDeltas)
+            {
+                std::vector<int> stack{ id };
+                std::set<int> seen{ id };
+                while (!stack.empty())
+                {
+                    const int cur = stack.back();
+                    stack.pop_back();
+                    for (auto& l : G().Links)
+                        if (l.FromNode == cur && seen.insert(l.ToNode).second)
+                        {
+                            stack.push_back(l.ToNode);
+                            if (!carried.count(l.ToNode)) carried[l.ToNode] = d;
+                        }
+                }
+            }
+            for (auto& [id, d] : carried)
+                if ((d.x != 0.0f || d.y != 0.0f) && !dragDeltas.count(id))
+                    if (Node* n = G().FindNode(id)) { n->X += d.x; n->Y += d.y; m_PositionsDirty = true; }
         }
         if (moved)
         {
@@ -1311,10 +1664,29 @@ namespace Conqueror::Editor
         ImVec2 pan = ImNodes::EditorContextGetPanning();
         ImVec2 mouseGrid = ImVec2((io.MousePos.x - m_CanvasOrigin.x - pan.x) / m_Zoom, (io.MousePos.y - m_CanvasOrigin.y - pan.y) / m_Zoom);
         const ImVec2 rightDrag = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right, 0.0f);
-        if (hovered && ImGui::IsMouseReleased(ImGuiMouseButton_Right) && rightDrag.x * rightDrag.x + rightDrag.y * rightDrag.y < 36.0f)
+        int hoveredNodeNow = 0, hoveredPinNow = -1;
+        const bool nodeHoveredNow = ImNodes::IsNodeHovered(&hoveredNodeNow);
+        const bool pinHoveredNow = ImNodes::IsPinHovered(&hoveredPinNow);
+        m_LastHoveredNode = nodeHoveredNow ? hoveredNodeNow : 0;
+        if (hovered && ImGui::IsMouseReleased(ImGuiMouseButton_Right) && rightDrag.x * rightDrag.x + rightDrag.y * rightDrag.y < 36.0f && !ImGui::IsAnyItemHovered())
         {
-            int hoveredNode = 0;
-            if (!ImNodes::IsNodeHovered(&hoveredNode))
+            if (pinHoveredNow)
+            {
+                // Unreal pin menüsü: Watch, Promote to Variable, Break Links
+                m_ContextPinAttr = hoveredPinNow;
+                m_OpenPinContext = true;
+            }
+            else if (nodeHoveredNow)
+            {
+                m_ContextNode = hoveredNodeNow;
+                if (!ImNodes::IsNodeSelected(hoveredNodeNow))
+                {
+                    ImNodes::ClearNodeSelection();
+                    ImNodes::SelectNode(hoveredNodeNow);
+                }
+                m_OpenNodeContext = true;
+            }
+            else
             {
                 m_OpenSearch = true;
                 m_SearchScreenPos = io.MousePos;
@@ -1322,6 +1694,36 @@ namespace Conqueror::Editor
                 m_PendingLinkAttribute = -1;
             }
         }
+        // Bağlantıya çift tık: reroute düğümü ekle (Unreal)
+        int hoveredLink = 0;
+        if (hovered && !nodeHoveredNow && !pinHoveredNow && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && ImNodes::IsLinkHovered(&hoveredLink))
+        {
+            PushUndo();
+            if (G().InsertReroute(hoveredLink, mouseGrid.x - 8.0f, mouseGrid.y - 8.0f))
+                MarkEdited();
+            else
+                m_UndoStack.pop_back();
+        }
+        // Oyun sırasında pin üzerinde canlı değer (Unreal: debug sırasında pin ipucu)
+        if (pinHoveredNow && !EditorState::Get().IsEditing())
+        {
+            int pn, pi;
+            bool po;
+            DecodeAttribute(hoveredPinNow, pn, pi, po);
+            if (const Node* node = G().FindNode(pn))
+            {
+                const NodeDef d = G().ResolveDef(*node);
+                std::string value;
+                if (po && pi < (int)d.Outputs.size() && Debugger::GetValue(DebugKey(), pn, d.Outputs[(size_t)pi].Name, value))
+                    ImGui::SetTooltip("%s = %s", d.Outputs[(size_t)pi].Name.c_str(), value.c_str());
+                else if (!po && pi < (int)d.Inputs.size())
+                    if (const Link* l = G().FindInputLink(pn, d.Inputs[(size_t)pi].Name); l && Debugger::GetValue(DebugKey(), l->FromNode, l->FromPin, value))
+                        ImGui::SetTooltip("%s = %s", d.Inputs[(size_t)pi].Name.c_str(), value.c_str());
+            }
+        }
+        // Boş tuvale tıklama yorum kutusu seçimini kaldırır
+        if (hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::IsAnyItemHovered())
+            m_SelectedBox = 0;
         if (m_OpenSearch && m_PendingLinkAttribute >= 0)
             m_SearchGridPos = mouseGrid;
         if (canvasFocused && !ImGui::IsAnyItemActive())
@@ -1335,6 +1737,23 @@ namespace Conqueror::Editor
             if (ctrl && ImGui::IsKeyPressed(ImGuiKey_Y, false)) Redo();
             if (ctrl && ImGui::IsKeyPressed(ImGuiKey_S, false)) Save();
             if (!ctrl && ImGui::IsKeyPressed(ImGuiKey_F, false)) FrameAll();
+            // Unreal: C = seçimi yorum kutusuna al, Q = bağlantıları düzleştir; Ctrl+F / Ctrl+Shift+F bul
+            if (!ctrl && ImGui::IsKeyPressed(ImGuiKey_C, false) && ImNodes::NumSelectedNodes() > 0) AddCommentAround(SelectedNodes(), "Comment");
+            if (!ctrl && ImGui::IsKeyPressed(ImGuiKey_Q, false) && ImNodes::NumSelectedNodes() > 0) StraightenNodes(SelectedNodes());
+            if (ctrl && ImGui::IsKeyPressed(ImGuiKey_F, false))
+            {
+                m_ShowBottom = true;
+                m_BottomTab = 0;
+                m_FindAll = io.KeyShift;
+            }
+            // Unreal yer imleri: Ctrl+1..9 kaydet, Shift+1..9 git
+            for (int k = 0; k < 9; ++k)
+                if (ImGui::IsKeyPressed((ImGuiKey)(ImGuiKey_1 + k), false))
+                {
+                    const std::string name = std::to_string(k + 1);
+                    if (ctrl) AddBookmark(name);
+                    else if (io.KeyShift) JumpToBookmark(name);
+                }
             if (ImGui::IsKeyPressed(ImGuiKey_F9, false))
             {
                 const int selected = ImNodes::NumSelectedNodes();
@@ -1368,9 +1787,28 @@ namespace Conqueror::Editor
                 G().Nodes.back().Properties["Variable"] = name;
                 MarkEdited();
             }
+            // İçerik tarayıcısından: .cqgraph -> alt grafik, .cqenum -> sayım sabiti, .cqstruct -> Make Struct
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+            {
+                std::filesystem::path dropped((const char*)payload->Data);
+                const std::filesystem::path project = Project::GetActiveProjectDirectory();
+                std::error_code ec;
+                if (dropped.is_relative() && !project.empty()) dropped = project / dropped;
+                const std::string rel = project.empty() ? dropped.generic_string() : std::filesystem::relative(dropped, project, ec).generic_string();
+                const std::string ext = dropped.extension().string();
+                const char* type = ext == ".cqgraph" ? "subgraph.instance" : ext == ".cqenum" ? "enum.literal" : ext == ".cqstruct" ? "struct.make" : nullptr;
+                if (type && !(ext == ".cqgraph" && std::filesystem::equivalent(dropped, m_Path, ec)))
+                {
+                    CreateNodeAt(type, mouseGrid);
+                    G().Nodes.back().Properties[ext == ".cqgraph" ? "Graph" : ext == ".cqenum" ? "Enum" : "Struct"] = rel;
+                    MarkEdited();
+                }
+            }
             ImGui::EndDragDropTarget();
         }
         RenderSearchPopup();
+        RenderNodeContextMenu();
+        RenderPinContextMenu();
 
         // Bildirim
         if (!m_Toast.empty() && Now() - m_ToastTime < 3.0)
@@ -1430,7 +1868,7 @@ namespace Conqueror::Editor
                 if (p < (int)pins.size()) { linkType = pins[(size_t)p].Type; linkFromOutput = out; hasLink = true; }
             }
         }
-        struct Entry { std::string Type, Label, Category, Desc, Variable; int Score; std::string Macro; };
+        struct Entry { std::string Type, Label, Category, Desc, Variable; int Score; std::string Macro; std::vector<std::pair<std::string, std::string>> Props; };
         std::vector<Entry> entries;
         auto compatible = [&](const NodeDef& d) {
             if (!hasLink) return true;
@@ -1445,11 +1883,15 @@ namespace Conqueror::Editor
             if (d.Id == "var.get" || d.Id == "var.set") continue;
             // Makro düğümü adlarıyla aşağıda; tüneller yalnız makro gövdesinde; olaylar makroda olmaz
             if (d.Id == "macro.instance") continue;
-            if ((d.Id == "macro.inputs" || d.Id == "macro.outputs") && !inMacro) continue;
+            // Varlığa bağlı düğümler aşağıda varlık adlarıyla (Make <Struct>, Call <Dispatcher> ...)
+            if (d.Id.rfind("dispatcher.", 0) == 0 || d.Id.rfind("struct.", 0) == 0 || d.Id.rfind("enum.", 0) == 0 || d.Id == "flow.switchenum"
+                || d.Id == "event.interface" || d.Id == "interface.call" || d.Id == "interface.implements" || d.Id == "subgraph.instance")
+                continue;
+            // Tüneller makroda ve alt grafik olarak kullanılacak grafikte (Unity Subgraph Input / Output)
             if (inMacro && d.Kind == NodeKind::Event) continue;
             if (!compatible(d)) continue;
             int s = std::max(Score(d.Title, filter), Score(d.Category, filter) > 2 ? 1 : 0);
-            if (s > 0) entries.push_back({ d.Id, d.Title, d.Category, d.Description, "", s });
+            if (s > 0) entries.push_back({ d.Id, d.Title, d.Category, d.Description, "", s, "", {} });
         }
         // Makro düğümleri (açık makronun kendisi hariç: kendini çağıran makro)
         for (auto& m : m_Graph.Macros)
@@ -1459,7 +1901,62 @@ namespace Conqueror::Editor
             Graph::MacroPins(*m.Body, d.Inputs, d.Outputs);
             if (!compatible(d)) continue;
             int s = Score(m.Name, filter);
-            if (filter.empty() || s > 0) entries.push_back({ "macro.instance", m.Name, "Macros", "Macro of this graph (placed inline).", "", std::max(s, 1) + 1, m.Name });
+            if (filter.empty() || s > 0) entries.push_back({ "macro.instance", m.Name, "Macros", "Macro of this graph (placed inline).", "", std::max(s, 1) + 1, m.Name, {} });
+        }
+        // Varlığa bağlı düğümler (Unreal Event Dispatcher / Interface, kullanıcı türleri, Unity Subgraph)
+        auto addDynamic = [&](const std::string& type, const std::string& label, const std::string& category, const std::string& desc,
+                              std::vector<std::pair<std::string, std::string>> props) {
+            const NodeDef* base = NodeLibrary::Find(type);
+            if (!base) return;
+            Node probe;
+            probe.Type = type;
+            for (auto& [k, v] : props) probe.Properties[k] = v;
+            if (!compatible(G().ResolveDef(probe))) return;
+            const int s = std::max(Score(label, filter), Score(category, filter) > 2 ? 1 : 0);
+            if (s > 0) entries.push_back({ type, label, category, desc, "", s + 1, "", std::move(props) });
+        };
+        if (!inMacro)
+            for (auto& disp : m_Graph.Dispatchers)
+            {
+                addDynamic("dispatcher.call", "Call " + disp, "Event Dispatchers", "Broadcast the dispatcher: every bound event runs.", { { "Dispatcher", disp } });
+                addDynamic("dispatcher.bind", "Bind Event to " + disp, "Event Dispatchers", "Bind a custom event of this graph.", { { "Dispatcher", disp } });
+                addDynamic("dispatcher.unbind", "Unbind Event from " + disp, "Event Dispatchers", "", { { "Dispatcher", disp } });
+                addDynamic("dispatcher.unbindall", "Unbind All from " + disp, "Event Dispatchers", "", { { "Dispatcher", disp } });
+            }
+        for (auto& path : UserTypes::FindAssets(".cqinterface"))
+        {
+            const InterfaceAsset* ia = UserTypes::LoadInterface(path);
+            if (!ia) continue;
+            const bool implemented = std::find(m_Graph.Interfaces.begin(), m_Graph.Interfaces.end(), path) != m_Graph.Interfaces.end();
+            for (auto& f : ia->Functions)
+            {
+                if (implemented && !inMacro)
+                    addDynamic("event.interface", "Event " + f.Name + " (" + ia->Name + ")", "Interfaces", "Implement this interface function.", { { "Interface", path }, { "Function", f.Name } });
+                addDynamic("interface.call", "Message " + f.Name + " (" + ia->Name + ")", "Interfaces", "Call the interface function on a target.", { { "Interface", path }, { "Function", f.Name } });
+            }
+            addDynamic("interface.implements", "Does Implement " + ia->Name, "Interfaces", "", { { "Interface", path } });
+        }
+        for (auto& path : UserTypes::FindAssets(".cqstruct"))
+        {
+            const std::string n = UserTypes::DisplayName(path);
+            addDynamic("struct.make", "Make " + n, "Structs", "", { { "Struct", path } });
+            addDynamic("struct.break", "Break " + n, "Structs", "", { { "Struct", path } });
+            addDynamic("struct.set", "Set Members in " + n, "Structs", "", { { "Struct", path } });
+        }
+        for (auto& path : UserTypes::FindAssets(".cqenum"))
+        {
+            const std::string n = UserTypes::DisplayName(path);
+            const EnumAsset* ea = UserTypes::LoadEnum(path);
+            addDynamic("enum.literal", n + " Literal", "Enums", "", { { "Enum", path }, { "Value", ea && !ea->Entries.empty() ? ea->Entries.front() : "" } });
+            addDynamic("flow.switchenum", "Switch on " + n, "Enums", "", { { "Enum", path } });
+            addDynamic("enum.tostring", n + " To String", "Enums", "", { { "Enum", path } });
+        }
+        {
+            std::error_code ec;
+            for (auto& path : UserTypes::FindAssets(".cqgraph"))
+                if (!std::filesystem::equivalent(UserTypes::ResolvePath(path), m_Path, ec))
+                    addDynamic("subgraph.instance", "Subgraph: " + UserTypes::DisplayName(path), "Subgraphs", "Use this graph asset as a node (its Inputs / Outputs are the ports).",
+                               { { "Graph", path } });
         }
         // Değişken düğümleri
         for (auto& v : m_Graph.Variables)
@@ -1472,7 +1969,7 @@ namespace Conqueror::Editor
                 for (auto& p : d.Outputs) if (p.Name == "Value") p.Type = v.Type;
                 if (!compatible(d)) continue;
                 int s = Score(label, filter);
-                if (s > 0) entries.push_back({ set ? "var.set" : "var.get", label, "Variables", "", v.Name, s + 1 });
+                if (s > 0) entries.push_back({ set ? "var.set" : "var.get", label, "Variables", "", v.Name, s + 1, "", {} });
             }
         }
         std::stable_sort(entries.begin(), entries.end(), [&](const Entry& a, const Entry& b) {
@@ -1480,7 +1977,8 @@ namespace Conqueror::Editor
             if (filter.empty() && a.Category != b.Category)
             {
                 // Sık kullanılanlar önce
-                static const char* order[] = { "Events", "Flow", "Functions", "Variables", "Debug", "Math", "Logic", "Vector", "Text", "Literals", "Collections" };
+                static const char* order[] = { "Events", "Flow", "Time", "Functions", "Variables", "Debug", "Math", "Logic", "Vector", "Text", "Literals", "Collections",
+                                               "Event Dispatchers", "Interfaces", "Structs", "Enums", "Subgraphs", "Macros", "Utility" };
                 constexpr int kOrderCount = (int)(sizeof(order) / sizeof(order[0]));
                 auto rank = [&](const std::string& c) { for (int i = 0; i < kOrderCount; ++i) if (c == order[i]) return i; return kOrderCount; };
                 int ra = rank(a.Category), rb = rank(b.Category);
@@ -1548,17 +2046,10 @@ namespace Conqueror::Editor
         if (chosen >= 0)
         {
             const Entry& e = entries[(size_t)chosen];
-            CreateNodeAt(e.Type, m_SearchGridPos);
-            if (!e.Variable.empty())
-            {
-                G().Nodes.back().Properties["Variable"] = e.Variable;
-                MarkEdited();
-            }
-            if (!e.Macro.empty() && !G().Nodes.empty() && G().Nodes.back().Type == "macro.instance")
-            {
-                G().Nodes.back().Properties["Macro"] = e.Macro;
-                MarkEdited();
-            }
+            std::vector<std::pair<std::string, std::string>> props = e.Props;
+            if (!e.Variable.empty()) props.push_back({ "Variable", e.Variable });
+            if (!e.Macro.empty()) props.push_back({ "Macro", e.Macro });
+            CreateNodeAt(e.Type, m_SearchGridPos, props);
             ImGui::CloseCurrentPopup();
         }
         if (ImGui::IsKeyPressed(ImGuiKey_Escape))

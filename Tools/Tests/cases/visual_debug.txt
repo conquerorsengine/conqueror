@@ -1,0 +1,50 @@
+# template: empty
+# Blueprint hata ayıklayıcısı: Work fonksiyonundaki Print düğümünde kesme noktası; On Update -> Call Work. Duraklayınca çağrı yığını
+# (Unreal Call Stack) Print [Function: Work] -> Call Work [On Update] -> On Update olmalı; izlenen pin (Watch) ve olay çıkışı canlı
+# değerleri (Unity Values) kaydedilmiş olmalı.
+wait 40
+vs new Assets/Scripts/Dbg.cqgraph
+vsx var Count number 0
+vsx node fn event.function
+vsx prop fn Name Work
+vsx prop fn Inputs X
+vsx node printW action.print
+vsx link fn Then printW In
+vsx link fn X printW Message
+vsx node upd event.update
+vsx node getC var.get
+vsx prop getC Variable Count
+vsx node addC math.add
+vsx link getC Value addC A
+vsx default addC B 1
+vsx node setC var.set
+vsx prop setC Variable Count
+vsx link upd Then setC In
+vsx link addC Result setC Value
+vsx node getC2 var.get
+vsx prop getC2 Variable Count
+vsx node callW action.callfunction
+vsx prop callW Function Work
+vsx link setC Then callW In
+vsx link getC2 Value callW X
+vsx node dtOut action.print
+vsx link callW Then dtOut In
+vsx link upd "Delta Time" dtOut Message
+vs save
+vs expect_errors 0
+vsx watch addC Result
+create_primitive sphere Ball 0 3 0
+script add Ball Assets/Scripts/Dbg.cqgraph
+vsx breakpoint printW on
+play
+wait 30
+vs expect_paused true
+vsx expect_callstack Call\sWork 3
+vsx expect_callstack On\sUpdate
+vsx expect_callstack Function:\sWork
+vsx expect_value addC Result 1
+vsx expect_value upd Delta\sTime 0.
+vsx expect_hits printW 1
+stop
+vsx breakpoint printW off
+quit

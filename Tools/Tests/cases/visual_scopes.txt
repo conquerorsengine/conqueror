@@ -1,0 +1,160 @@
+# template: empty
+# Unity değişken kapsamları ve Unreal yerel değişkenleri: Object (aynı varlıktaki grafikler paylaşır, başka varlık görmez), Scene
+# (sahnedeki tüm grafikler), Application (oyun boyunca; Play durunca sıfırlanır), Saved (PlayerPrefs: iki Play arasında kalır),
+# Local (yalnız fonksiyonunda; dışarıda kullanılınca derleme hatası). İki grafik, iki varlık, iki Play turu.
+wait 40
+vs new Assets/Scripts/ScopeA.cqgraph
+vsx saved_clear Runs
+vsx var Shared number 0 object
+vsx var Total number 0 scene
+vsx var Runs number 0 saved
+vsx var Boots number 0 application
+vsx var RunsSeen number 0
+vsx var BootsSeen number 0
+vsx var LocalResult number 0
+vsx var Tmp number 0 local Twice
+vsx node start event.start
+vsx node setShared var.set
+vsx prop setShared Variable Shared
+vsx default setShared Value 5
+vsx link start Then setShared In
+vsx node getTotal var.get
+vsx prop getTotal Variable Total
+vsx node addTotal math.add
+vsx link getTotal Value addTotal A
+vsx default addTotal B 1
+vsx node setTotal var.set
+vsx prop setTotal Variable Total
+vsx link setShared Then setTotal In
+vsx link addTotal Result setTotal Value
+vsx node getRuns var.get
+vsx prop getRuns Variable Runs
+vsx node addRuns math.add
+vsx link getRuns Value addRuns A
+vsx default addRuns B 1
+vsx node setRuns var.set
+vsx prop setRuns Variable Runs
+vsx link setTotal Then setRuns In
+vsx link addRuns Result setRuns Value
+vsx node getBoots var.get
+vsx prop getBoots Variable Boots
+vsx node addBoots math.add
+vsx link getBoots Value addBoots A
+vsx default addBoots B 1
+vsx node setBoots var.set
+vsx prop setBoots Variable Boots
+vsx link setRuns Then setBoots In
+vsx link addBoots Result setBoots Value
+# Fonksiyon + yerel değişken: Twice(X) { Tmp = X * 2; return Tmp; }
+vsx node fn event.function
+vsx prop fn Name Twice
+vsx prop fn Inputs X
+vsx node mul math.mul
+vsx link fn X mul A
+vsx default mul B 2
+vsx node setTmp var.set
+vsx prop setTmp Variable Tmp
+vsx link fn Then setTmp In
+vsx link mul Result setTmp Value
+vsx node getTmp var.get
+vsx prop getTmp Variable Tmp
+vsx node ret flow.returnvalue
+vsx link setTmp Then ret In
+vsx link getTmp Value ret Value
+vsx node call action.callfunction
+vsx prop call Function Twice
+vsx default call X 21
+vsx link setBoots Then call In
+vsx node setLocal var.set
+vsx prop setLocal Variable LocalResult
+vsx link call Then setLocal In
+vsx link call Result setLocal Value
+vsx node upd event.update
+vsx node getRuns2 var.get
+vsx prop getRuns2 Variable Runs
+vsx node setRunsSeen var.set
+vsx prop setRunsSeen Variable RunsSeen
+vsx link upd Then setRunsSeen In
+vsx link getRuns2 Value setRunsSeen Value
+vsx node getBoots2 var.get
+vsx prop getBoots2 Variable Boots
+vsx node setBootsSeen var.set
+vsx prop setBootsSeen Variable BootsSeen
+vsx link setRunsSeen Then setBootsSeen In
+vsx link getBoots2 Value setBootsSeen Value
+vs expect_errors 0
+vs expect_code VSSetVar(
+vs expect_code var\s_l_Tmp
+# Yerel değişken fonksiyonun dışında: hata
+vsx node badGet var.get
+vsx prop badGet Variable Tmp
+vsx node badPrint action.print
+vsx link setBootsSeen Then badPrint In
+vsx link badGet Value badPrint Message
+vs expect_errors 1
+vsx remove badPrint
+vsx remove badGet
+vs expect_errors 0
+vs save
+vs new Assets/Scripts/ScopeB.cqgraph
+vsx var Shared number 0 object
+vsx var Total number 0 scene
+vsx var SeenShared number -1
+vsx var SeenTotal number -1
+vsx node start event.start
+vsx node getTotal var.get
+vsx prop getTotal Variable Total
+vsx node addTotal math.add
+vsx link getTotal Value addTotal A
+vsx default addTotal B 1
+vsx node setTotal var.set
+vsx prop setTotal Variable Total
+vsx link start Then setTotal In
+vsx link addTotal Result setTotal Value
+vsx node upd event.update
+vsx node getShared var.get
+vsx prop getShared Variable Shared
+vsx node setSeen var.set
+vsx prop setSeen Variable SeenShared
+vsx link upd Then setSeen In
+vsx link getShared Value setSeen Value
+vsx node getTotal2 var.get
+vsx prop getTotal2 Variable Total
+vsx node setSeenTotal var.set
+vsx prop setSeenTotal Variable SeenTotal
+vsx link setSeen Then setSeenTotal In
+vsx link getTotal2 Value setSeenTotal Value
+vs save
+vs expect_errors 0
+create_primitive sphere Ball 0 3 0
+script add Ball Assets/Scripts/ScopeA.cqgraph
+script add Ball Assets/Scripts/ScopeB.cqgraph
+create_primitive cube Cube 3 3 0
+script add Cube Assets/Scripts/ScopeB.cqgraph
+play
+wait 30
+script expect Ball@ScopeB SeenShared >4.99
+script expect Ball@ScopeB SeenShared <5.01
+script expect Cube@ScopeB SeenShared <0.01
+script expect Cube@ScopeB SeenShared >-0.01
+script expect Ball@ScopeB SeenTotal >2.99
+script expect Ball@ScopeB SeenTotal <3.01
+script expect Cube@ScopeB SeenTotal >2.99
+script expect Ball@ScopeA RunsSeen >0.99
+script expect Ball@ScopeA RunsSeen <1.01
+script expect Ball@ScopeA BootsSeen >0.99
+script expect Ball@ScopeA BootsSeen <1.01
+script expect Ball@ScopeA LocalResult >41.99
+script expect Ball@ScopeA LocalResult <42.01
+stop
+wait 10
+play
+wait 30
+script expect Ball@ScopeA RunsSeen >1.99
+script expect Ball@ScopeA RunsSeen <2.01
+script expect Ball@ScopeA BootsSeen >0.99
+script expect Ball@ScopeA BootsSeen <1.01
+script expect Ball@ScopeB SeenTotal >2.99
+script expect Ball@ScopeB SeenTotal <3.01
+stop
+quit
