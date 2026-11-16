@@ -30,6 +30,13 @@
     // Platform/Android katmanında (NativeActivity), grafik OpenGL ES 3.x
     #define CQ_PLATFORM_ANDROID
     #define CQ_PLATFORM_LINUX
+#elif defined(__OHOS__)
+    // HarmonyOS / OpenHarmony (HarmonyOS 5+ PC "2in1" ve tablet): Linux çekirdeği + musl libc, uygulama HAP içindeki paylaşımlı
+    // kitaplıktır. POSIX yolları Linux ile ortak; pencere, girdi ve EGL bağlamı Platform/OHOS katmanında (ArkTS XComponent +
+    // OHNativeWindow, NAPI modülü), grafik OpenGL ES 3.x. Ayrı süreç başlatma (hub, araçlar) ve Linux masaüstüne özgü yollar
+    // CQ_PLATFORM_OHOS ile ayrılır
+    #define CQ_PLATFORM_OHOS
+    #define CQ_PLATFORM_LINUX
 #elif defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__DragonFly__)
     // BSD (FreeBSD, OpenBSD, NetBSD, DragonFly): POSIX + GLFW (X11 / Wayland), Linux ile aynı yollar. Linux'a özgü
     // /proc ve sysinfo kullanımları CQ_PLATFORM_BSD ile ayrıca korunur.

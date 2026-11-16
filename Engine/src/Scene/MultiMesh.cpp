@@ -575,7 +575,8 @@ namespace Conqueror
                         visible += r.second;
                     Renderer::GetStats().CulledObjects += batch.Count - std::min(visible, batch.Count);
                 }
-                auto drawRanges = [&](const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, bool doubleSided) {
+                // Yapılandırılmış bağlama (c) başlatıcılı yakalamayla: clang 15 (OpenHarmony NDK) onu doğrudan yakalayamaz
+                auto drawRanges = [&, &c = c](const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, bool doubleSided) {
                     if (material && material->MaterialShader && material->MaterialShader->IsValid())
                     {
                         Renderer3D::DrawMeshInstanced(mesh, world, batch.Buffer, batch.Count, material, &c.Transforms, doubleSided);

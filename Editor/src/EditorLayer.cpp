@@ -129,7 +129,17 @@
 #include "Renderer/GraphicsAPIs/OpenGL/GLProfile.h"
 #include "Renderer/RHI/RendererAPI.h"
 
-#ifdef CQ_PLATFORM_LINUX
+#if defined(CQ_PLATFORM_OHOS)
+#include <unistd.h>
+#include <sys/wait.h>
+#include "Platform/OHOS/OHOSPlatform.h"
+
+// HarmonyOS: uygulama süreç başlatamaz; adres ArkTS tarafında (context.openLink) açılır
+static void OpenURL(const std::string& url)
+{
+    Conqueror::OHOS::OpenURL(url);
+}
+#elif defined(CQ_PLATFORM_LINUX)
 #include <unistd.h>
 #include <sys/wait.h>
 

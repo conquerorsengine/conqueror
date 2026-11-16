@@ -36,7 +36,13 @@ namespace Conqueror
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         // Çoklu viewport ek GL bağlamları ister; çeviri katmanlı arka uçlarda (Vulkan / D3D11) platform pencereleri kapalı
         const bool translated = RendererAPI::GetBackend() != RendererAPI::Backend::OpenGL;
-        if (!translated)
+#if defined(CQ_PLATFORM_OHOS)
+        // HarmonyOS: tek pencere (XComponent yüzeyi), ek platform penceresi açılamaz; panel ana pencere dışına sürüklenmesin
+        constexpr bool singleWindow = true;
+#else
+        constexpr bool singleWindow = false;
+#endif
+        if (!translated && !singleWindow)
             io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
         CQ_CORE_INFO("ImGui: Loading fonts...");

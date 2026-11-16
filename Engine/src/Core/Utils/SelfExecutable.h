@@ -15,6 +15,7 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <string>
 
 namespace Conqueror
@@ -36,6 +37,12 @@ namespace Conqueror
 #elif defined(__OpenBSD__)
         (void)buffer;
         return {};
+#elif defined(__OHOS__)
+        // HarmonyOS: süreç sistemin uygulama başlatıcısıdır (appspawn), /proc/self/exe onu gösterir. Motorun "yürütülebilir
+        // dosya klasörü" HAP içeriğinin çıkarıldığı klasördür (Platform/OHOS modülü CQ_OHOS_EXECUTABLE ile bildirir)
+        (void)buffer;
+        const char* exe = std::getenv("CQ_OHOS_EXECUTABLE");
+        return exe && *exe ? std::string(exe) : std::string();
 #elif defined(__QNX__)
         std::FILE* f = std::fopen("/proc/self/exefile", "r");
         if (!f)

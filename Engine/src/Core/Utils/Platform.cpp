@@ -91,6 +91,8 @@ namespace Conqueror
         {
 #if defined(CQ_PLATFORM_ANDROID)
             return "Android";
+#elif defined(CQ_PLATFORM_OHOS)
+            return "HarmonyOS";
 #elif defined(CQ_PLATFORM_QNX)
             return "QNX";
 #elif defined(CQ_PLATFORM_LINUX)

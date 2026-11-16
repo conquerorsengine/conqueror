@@ -968,7 +968,7 @@ namespace Conqueror::GridSystem
                     uvMin = glm::vec2((float)(index % atlas.x) * uvSize.x, 1.0f - (float)(index / atlas.x + 1) * uvSize.y);
                 }
             }
-            auto uvOf = [&](const glm::vec2& p) {
+            auto uvOf = [&, &cell = cell](const glm::vec2& p) {   // bağlama başlatıcılı yakalamayla (clang 15)
                 glm::vec2 t = (p - mn) / glm::max(mx - mn, glm::vec2(1e-5f));
                 // Hücre dönüşümü (fırçanın [ ] / Shift+[ ] ile verdiği döndürme / aynalama)
                 t = ApplyTileTransform(cell.Transform, t);

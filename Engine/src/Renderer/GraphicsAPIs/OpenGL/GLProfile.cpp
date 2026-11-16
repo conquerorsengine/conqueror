@@ -1131,8 +1131,8 @@ namespace Conqueror::GLProfile
         if (Parse(CQ_DEFAULT_GL_PROFILE, kind))
             return kind;
 #endif
-#if defined(__ANDROID__) || defined(__QNX__)
-        // Android / QNX: her zaman OpenGL ES (bağlam 3.2 -> 3.1 -> 3.0 sırasıyla denenir, sürüm bağlamdan okunur)
+#if defined(__ANDROID__) || defined(__QNX__) || defined(__OHOS__)
+        // Android / QNX / HarmonyOS: her zaman OpenGL ES (bağlam 3.2 -> 3.1 -> 3.0 sırasıyla denenir, sürüm bağlamdan okunur)
         return Kind::GLES32;
 #else
         return Kind::Auto;

@@ -1,0 +1,6 @@
+{
+  "name": "lib@CQ_LIBRARY@.so",
+  "types": "./Index.d.ts",
+  "version": "@CQ_VERSION_NAME@",
+  "description": "Conqueror Engine native module (prebuilt lib@CQ_LIBRARY@.so in entry/libs/<abi>)"
+}
