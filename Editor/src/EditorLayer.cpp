@@ -21,6 +21,7 @@
 #include "Core/Utils/LoadingProgress.h"
 #include "LoadingScreen.h"
 #include "Panels/ModuleInstaller.h"
+#include "Build/AndroidSigning.h"
 #include "Core/ImGui/ImGuiLayer.h"
 #include "stb_image_write.h"
 #include <thread>
@@ -8103,6 +8104,12 @@ namespace Conqueror::Editor
             if (sub == "clear_scenes") { build.Scenes.clear(); return true; }
             if (sub == "add_scene" && a.size() > 2) { build.Scenes.push_back({ a[2], true }); return true; }
             if (sub == "output" && a.size() > 2) { build.OutputDirectory = a[2]; return true; }
+            // android_app_bundle on|off: Player Settings > Android > Build App Bundle (47)
+            if (sub == "android_app_bundle" && a.size() > 2 && project)
+            {
+                project->GetConfig().Player.Android.AppBundle = a[2] == "on";
+                return true;
+            }
             if (sub == "platform" && a.size() > 2)
             {
                 // build platform <Linux|Windows|macOS|Android|Android Automotive|host>
@@ -8618,6 +8625,7 @@ namespace Conqueror::Editor
             return true;
         });
         ModuleInstaller::RegisterAutomation();   // 47: Build Settings > Install module
+        AndroidSigning::RegisterAutomation();    // 47: Android yayın anahtarı (Keystore Manager)
         // prefab_mode open <yol> | close [discard] | autosave on|off | expect_active <0|1> | expect_saves <n> (218)
         Automation::RegisterCommand("prefab_mode", [this](const Args& a, std::string& err) {
             if (a.size() < 2) { err = "prefab_mode open <path> | close [discard] | autosave on|off | expect_active <0|1> | expect_saves <n>"; return false; }

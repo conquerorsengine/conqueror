@@ -113,9 +113,25 @@ def llvm_mingw(host, dest):
     sys.exit("llvm-mingw ucrt-x86_64 zip not found")
 
 
+def bundletool(host, dest):
+    rel = json.loads(get("https://api.github.com/repos/google/bundletool/releases/latest"))
+    for a in rel["assets"]:
+        if a["name"].startswith("bundletool-all-") and a["name"].endswith(".jar"):
+            digest = a.get("digest") or ""
+            if not digest.startswith("sha256:"):
+                sys.exit("bundletool asset has no SHA-256 digest; refusing to bundle an unverified download")
+            data = get(a["browser_download_url"])
+            verify(data, "sha256", digest.split(":", 1)[1])
+            os.makedirs(dest, exist_ok=True)
+            with open(os.path.join(dest, "bundletool.jar"), "wb") as f:
+                f.write(data)
+            return f"bundletool {rel['tag_name']} (Apache-2.0)"
+    sys.exit("bundletool jar not found")
+
+
 def main():
     tool, host, dest = sys.argv[1], sys.argv[2], os.path.abspath(sys.argv[3])
-    what = {"zig": zig, "jdk": jdk, "dotnet": dotnet, "llvm-mingw": llvm_mingw}[tool](host, dest)
+    what = {"zig": zig, "jdk": jdk, "dotnet": dotnet, "llvm-mingw": llvm_mingw, "bundletool": bundletool}[tool](host, dest)
     with open(os.path.join(dest, "BUNDLED.txt"), "w") as f:
         f.write(f"{what} for {host}, bundled by Conqueror's Engine (see the tool's own license file in this folder).\n")
     print(f"{tool}: {what} -> {dest}")

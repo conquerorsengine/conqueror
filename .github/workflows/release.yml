@@ -142,8 +142,10 @@ jobs:
       - name: Package
         run: |
           SO=$(find build-android -name 'libconqueror.so' | head -1)
+          # bundletool (Apache-2.0): App Bundle (.aab) paketleme
+          python3 Tools/Release/fetch_toolchain.py bundletool any tc/bundletool
           for m in android meta-quest android-xr; do
-            python3 Tools/Release/package.py module $m --host any --out dist --add $SO=player/android/arm64-v8a/libconqueror.so
+            python3 Tools/Release/package.py module $m --host any --out dist --add $SO=player/android/arm64-v8a/libconqueror.so --add tc/bundletool=bundletool
           done
       - uses: actions/upload-artifact@v4
         with: { name: dist-android, path: dist, retention-days: 3 }

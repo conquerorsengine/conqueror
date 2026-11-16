@@ -81,6 +81,7 @@ namespace Conqueror {
         out << YAML::Key << "X86_64" << YAML::Value << player.Android.X86_64;
         out << YAML::Key << "Keystore" << YAML::Value << player.Android.Keystore;
         out << YAML::Key << "KeyAlias" << YAML::Value << player.Android.KeyAlias;
+        out << YAML::Key << "AppBundle" << YAML::Value << player.Android.AppBundle;
         out << YAML::EndMap;
         out << YAML::Key << "iOS" << YAML::Value << YAML::BeginMap;
         out << YAML::Key << "BundleIdentifier" << YAML::Value << player.IOS.BundleIdentifier;
@@ -279,6 +280,7 @@ namespace Conqueror {
                 readBool(n, "X86_64", p.Android.X86_64);
                 readStr(n, "Keystore", p.Android.Keystore);
                 readStr(n, "KeyAlias", p.Android.KeyAlias);
+                readBool(n, "AppBundle", p.Android.AppBundle);
             }
             if (auto n = player["iOS"]; n && n.IsMap())
             {

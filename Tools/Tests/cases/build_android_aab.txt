@@ -1,0 +1,16 @@
+# template: basic3d
+# requires: CQ_TEST_ANDROID
+# env: CQ_ANDROID_BUILD_ROOT={work}/.. CQ_ANDROID_KEYSTORE_PASS=regression-pass CQ_ENGINE_SOURCE_DIR={dir}/../../..
+# 47: Android yayını motorun içinden: Player Settings > Android > Create Keystore (Unity'nin Keystore Manager'ı, keytool) ile yeni
+# yayın anahtarı ve "Build App Bundle (Google Play)" ile o anahtarla imzalı .aab (bundletool + jarsigner). Android SDK + JDK ister
+# (CQ_TEST_ANDROID=1 ile çalışır)
+wait 30
+android_keystore create Android/release.keystore release regression-pass
+build output Builds/AndroidAAB
+build platform Android
+build android_app_bundle on
+build start
+wait_until 900000 build expect_done
+build expect_success
+build expect_log "App Bundle ready"
+quit

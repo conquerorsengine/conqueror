@@ -6,6 +6,10 @@
 #include "EditorState.h"
 #include "Scene/Scene.h"
 #include "Core/Project/Project.h"
+#include "Build/AndroidSigning.h"
+#include "Core/Utils/ProcessRunner.h"
+#include "Core/Utils/Platform.h"
+#include "Core/Project/PlatformModules.h"
 #include "Core/Project/SplashLayout.h"
 #include "Renderer/RHI/Texture.h"
 #include "Core/Project/ProjectSettings.h"
@@ -22,6 +26,8 @@
 #include "UI/EditorUI.h"
 #include "Build/BuildPipeline.h"
 
+#include <chrono>
+#include <thread>
 #include <IconsFontAwesome6.h>
 #include <imgui.h>
 
@@ -220,6 +226,54 @@ namespace Conqueror::Editor
     }
 
     // Platform sekmeleri (Unity Player Settings): her platformun kendi ayarları ve nasıl derlendiği. Konsollar yok.
+    namespace
+    {
+        namespace fs = std::filesystem;
+        // Player Settings > Android > Create Keystore (Unity'nin Keystore Manager'ı): JDK keytool ile RSA 2048 yayın anahtarı.
+        // Parola diske ve komut satırına yazılmaz (keytool -storepass:env); oluşan dosya ve takma ad ayarlara yazılır
+        bool DrawCreateKeystorePopup(AndroidPlayerSettings& a)
+        {
+            static char path[512] = "Android/release.keystore", alias[128] = "release", pass[128] = "", pass2[128] = "", owner[256] = "";
+            static int years = 25;
+            static std::string message;
+            bool changed = false;
+            if (!ImGui::BeginPopupModal("Create Keystore##android", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+                return false;
+            ImGui::TextUnformatted("New release keystore (keep it and its password safe: Google Play needs the same key for every update).");
+            ImGui::InputText("File (in the project)", path, sizeof(path));
+            ImGui::InputText("Key alias", alias, sizeof(alias));
+            ImGui::InputText("Password", pass, sizeof(pass), ImGuiInputTextFlags_Password);
+            ImGui::InputText("Confirm password", pass2, sizeof(pass2), ImGuiInputTextFlags_Password);
+            ImGui::InputText("Name or company", owner, sizeof(owner));
+            ImGui::SliderInt("Valid for (years)", &years, 1, 100);
+            if (!message.empty())
+                ImGui::TextWrapped("%s", message.c_str());
+            if (ImGui::Button("Create"))
+            {
+                if (std::strcmp(pass, pass2) != 0)
+                    message = "The passwords do not match.";
+                else if (AndroidSigning::CreateKeystore(Project::GetActiveProjectDirectory() / path, alias, pass, owner, years, message))
+                {
+                    a.Keystore = path;
+                    a.KeyAlias = alias;
+                    changed = true;
+                    message.clear();
+                    ImGui::CloseCurrentPopup();
+                }
+                std::memset(pass, 0, sizeof(pass));
+                std::memset(pass2, 0, sizeof(pass2));
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel"))
+            {
+                message.clear();
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+            return changed;
+        }
+    }
+
     void ProjectSettingsPanel::DrawPlatformSettings()
     {
         auto& config = Project::GetActive()->GetConfig();
@@ -333,6 +387,12 @@ namespace Conqueror::Editor
             m_Dirty |= UI::InputText("Key Alias", a.KeyAlias, "Key inside the keystore. Empty: androiddebugkey.");
             UI::InfoBox("The keystore password is never saved in the project: set CQ_ANDROID_KEYSTORE_PASS before building with a release key.",
                         UI::InfoType::Info);
+            // Keystore Manager (Unity gibi): yeni yayın anahtarı oluşturur (JDK'nın keytool'u; parola yalnız bu işlem için ortamda)
+            if (ImGui::Button(ICON_FA_KEY "  Create Keystore..."))
+                ImGui::OpenPopup("Create Keystore##android");
+            m_Dirty |= DrawCreateKeystorePopup(a);
+            m_Dirty |= UI::Checkbox("Build App Bundle (Google Play)", a.AppBundle,
+                                    "Builds an .aab for the Play Store (signed with the keystore above) instead of an .apk. Build And Run always makes an .apk.");
             ImGui::EndTabItem();
         }
         if (tab(ICON_FA_TABLET_SCREEN_BUTTON, "iOS"))

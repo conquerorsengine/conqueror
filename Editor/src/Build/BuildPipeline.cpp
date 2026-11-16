@@ -674,6 +674,10 @@ namespace Conqueror::Editor
         const auto start = std::chrono::steady_clock::now();
         BuildReport report;
         std::error_code ec;
+        // Paketleyiciler / araç zinciri dosyaları editörün klasöründen yukarı doğru aranır; derleme klasörü kaynak ağacının dışındaysa
+        // CQ_ENGINE_SOURCE_DIR kaynak kökünü verir (Hub'dan kurulan editörde Tools/ zaten kurulumun içinde)
+        const char* sourceEnv = std::getenv("CQ_ENGINE_SOURCE_DIR");
+        const fs::path sourceProbe = sourceEnv && *sourceEnv ? fs::path(sourceEnv) : o.EngineBinDir;
         auto step = [&](float p, const std::string& s) {
             if (progress) progress(p, s);
             if (log) log("== " + s);
@@ -765,7 +769,7 @@ namespace Conqueror::Editor
             // Motor kaynak ağacı (araç zinciri dosyası) editör ikilisinin klasöründen yukarı doğru aranır
             const char* toolchainRel = crossTarget->Toolchain;
             fs::path source;
-            for (fs::path probe = o.EngineBinDir; !probe.empty(); probe = probe.parent_path())
+            for (fs::path probe = sourceProbe; !probe.empty(); probe = probe.parent_path())
             {
                 if (fs::exists(probe / toolchainRel, ec) && fs::exists(probe / "CMakeLists.txt", ec))
                 {
@@ -1085,7 +1089,7 @@ namespace Conqueror::Editor
             step(0.92f, "Packaging the Android APK (first build compiles the player with the NDK, this takes a while)");
             // Paketleyici motor kaynak ağacında (Tools/Android): editör ikilisinin klasöründen yukarı doğru aranır
             fs::path script;
-            for (fs::path probe = o.EngineBinDir; !probe.empty(); probe = probe.parent_path())
+            for (fs::path probe = sourceProbe; !probe.empty(); probe = probe.parent_path())
             {
                 if (fs::exists(probe / "Tools" / "Android" / "package_apk.py", ec))
                 {
@@ -1098,7 +1102,9 @@ namespace Conqueror::Editor
             if (script.empty())
                 return fail("Android packager (Tools/Android/package_apk.py) not found near " + o.EngineBinDir.string());
             const fs::path engineSource = script.parent_path().parent_path().parent_path();
-            const fs::path apk = o.OutputDir / (product + ".apk");
+            // Google Play: App Bundle (.aab, bundletool + jarsigner), yoksa doğrudan kurulabilen APK
+            const bool appBundle = o.Config.Player.Android.AppBundle && !o.RunAfterBuild;
+            const fs::path apk = o.OutputDir / (product + (appBundle ? ".aab" : ".apk"));
 #ifdef _WIN32
             const std::string python = "python";
 #else
@@ -1176,6 +1182,8 @@ namespace Conqueror::Editor
                 cmd += " --release";
             if (o.RunAfterBuild)
                 cmd += " --install --run";
+            if (appBundle)
+                cmd += " --aab";
             const int rc = RunCommand(cmd, log);
             if (rc != 0 || !fs::exists(apk, ec))
                 return fail("Android packaging failed (exit code " + std::to_string(rc) +
@@ -1188,7 +1196,7 @@ namespace Conqueror::Editor
         {
             step(0.92f, "Packaging for the web (the first build compiles the web player with Emscripten, this takes a while)");
             fs::path script;
-            for (fs::path probe = o.EngineBinDir; !probe.empty(); probe = probe.parent_path())
+            for (fs::path probe = sourceProbe; !probe.empty(); probe = probe.parent_path())
             {
                 if (fs::exists(probe / "Tools" / "Web" / "package_web.py", ec))
                 {
@@ -1246,7 +1254,7 @@ namespace Conqueror::Editor
         {
             step(0.92f, "Packaging the iOS app (the first build compiles the iOS player with Xcode, this takes a while)");
             fs::path script;
-            for (fs::path probe = o.EngineBinDir; !probe.empty(); probe = probe.parent_path())
+            for (fs::path probe = sourceProbe; !probe.empty(); probe = probe.parent_path())
             {
                 if (fs::exists(probe / "Tools" / "iOS" / "package_ios.py", ec))
                 {

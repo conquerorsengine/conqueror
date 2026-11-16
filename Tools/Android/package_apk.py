@@ -288,6 +288,39 @@ def openxr_loader(abi, cache_dir):
     return out
 
 
+def bundletool_jar(cache_dir):
+    """bundletool (Google, Apache-2.0): Android modülüyle gelir; yoksa GitHub'dan indirilir (SHA-256 GitHub'ın kaydından)"""
+    env = os.environ.get("CQ_BUNDLETOOL")
+    if env and Path(env).is_file():
+        return Path(env)
+    bundled = Path(__file__).resolve().parents[2] / "Modules" / "android" / "bundletool" / "bundletool.jar"
+    if bundled.is_file():
+        return bundled
+    cache = Path(cache_dir) / "bundletool"
+    found = sorted(cache.glob("bundletool-all-*.jar"))
+    if found:
+        return found[-1]
+    import json
+    import urllib.request
+    req = urllib.request.Request("https://api.github.com/repos/google/bundletool/releases/latest", headers={"User-Agent": "conqueror"})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        rel = json.loads(r.read())
+    asset = next((a for a in rel["assets"] if a["name"].startswith("bundletool-all-") and a["name"].endswith(".jar")), None)
+    if not asset or not (asset.get("digest") or "").startswith("sha256:"):
+        fail("bundletool: no verifiable download found (set CQ_BUNDLETOOL to a bundletool-all.jar)")
+    log(f"downloading {asset['name']} (bundletool, Apache-2.0) from GitHub")
+    cache.mkdir(parents=True, exist_ok=True)
+    tmp = cache / (asset["name"] + ".part")
+    with urllib.request.urlopen(asset["browser_download_url"], timeout=300) as r, open(tmp, "wb") as f:
+        shutil.copyfileobj(r, f)
+    if hashlib.sha256(tmp.read_bytes()).hexdigest() != asset["digest"].split(":", 1)[1]:
+        tmp.unlink()
+        fail("bundletool download does not match its SHA-256 (not used)")
+    out = cache / asset["name"]
+    tmp.rename(out)
+    return out
+
+
 def arcore_aar(cache_dir):
     """ARCore SDK .aar (Google Maven; ARCore Additional Terms of Service)"""
     out = Path(cache_dir) / f"arcore-{ARCORE_VERSION}" / f"core-{ARCORE_VERSION}.aar"
@@ -439,6 +472,7 @@ def main():
     ap.add_argument("--banner", help="Android TV banner .png (320x180); default: made from --icon")
     ap.add_argument("--icon", help="launcher icon .png (square, 192 px or larger)")
     ap.add_argument("--release", action="store_true", help="not debuggable")
+    ap.add_argument("--aab", action="store_true", help="Android App Bundle (.aab) for Google Play instead of an APK (bundletool + jarsigner)")
     ap.add_argument("--keystore", help="signing keystore (default: ~/.android/debug.keystore, created if missing)")
     ap.add_argument("--ks-pass", default="android")
     ap.add_argument("--key-alias", default="androiddebugkey")
@@ -457,7 +491,7 @@ def main():
         safe = "g" + safe
     package = args.package or f"com.conqueror.{safe.lower()}"
     label = (args.label or name).replace("&", "&amp;").replace("\"", "&quot;").replace("<", "&lt;")
-    out = Path(args.out).resolve() if args.out else game_dir.parent / f"{safe}.apk"
+    out = Path(args.out).resolve() if args.out else game_dir.parent / f"{safe}.{'aab' if args.aab else 'apk'}"
     xr = args.quest or args.androidxr
     abis = args.abi or (["arm64-v8a"] if xr else DEFAULT_ABIS)
     build_root = Path(args.build_root).resolve()
@@ -536,7 +570,8 @@ def main():
         base = tmp / "base.apk"
         run([aapt2, "link", "-o", base, "-I", platform / "android.jar", "--manifest", tmp / "AndroidManifest.xml",
              "--min-sdk-version", str(MIN_SDK),
-             "--target-sdk-version", str(AUTOMOTIVE_TARGET_SDK if args.automotive else TARGET_SDK)] + res_flags)
+             "--target-sdk-version", str(AUTOMOTIVE_TARGET_SDK if args.automotive else TARGET_SDK)] + res_flags +
+            (["--proto-format"] if args.aab else []))
 
         # ARCore'un Java tarafı: AAR classes.jar + R sınıfları -> classes.dex (javac + d8; NativeActivity kodsuz kalır)
         dex = None
@@ -551,6 +586,45 @@ def main():
             run([d8, "--release", "--min-api", str(MIN_SDK), "--lib", platform / "android.jar", "--output", tmp / "dex",
                  arcore_dir / "classes.jar"] + classes)
             dex = tmp / "dex" / "classes.dex"
+        if args.aab:
+            # App Bundle: base modülü (manifest/, res/, resources.pb, assets/, lib/, dex/) -> bundletool -> jarsigner
+            module = tmp / "base.zip"
+            with zipfile.ZipFile(base) as pz, zipfile.ZipFile(module, "w", zipfile.ZIP_DEFLATED) as z:
+                for info in pz.infolist():
+                    data = pz.read(info.filename)
+                    if info.filename == "AndroidManifest.xml":
+                        z.writestr("manifest/AndroidManifest.xml", data)
+                    elif info.filename == "resources.pb" or info.filename.startswith("res/"):
+                        z.writestr(info.filename, data)
+                    else:
+                        z.writestr("root/" + info.filename, data)
+                z.writestr("assets/cq_files.txt", stamp + "\n" + "\n".join(files) + "\n")
+                for rel in files:
+                    z.write(game_dir / rel, "assets/" + rel)
+                for abi, lib in libs.items():
+                    z.write(strip_library(lib, tmp / abi, sdk, args.ndk), f"lib/{abi}/libconqueror.so")
+                    if xr:
+                        z.write(openxr_loader(abi, build_root), f"lib/{abi}/libopenxr_loader.so")
+                    if arcore_dir is not None:
+                        for name in ("libarcore_sdk_c.so", "libarcore_sdk_jni.so"):
+                            z.write(arcore_dir / "jni" / abi / name, f"lib/{abi}/{name}")
+                if dex is not None:
+                    z.write(dex, "dex/classes.dex")
+            java = shutil.which("java") or fail("java not found (install a JDK)")
+            jarsigner = shutil.which("jarsigner") or fail("jarsigner not found (install a JDK)")
+            bundletool = bundletool_jar(build_root)
+            out.parent.mkdir(parents=True, exist_ok=True)
+            run([java, "-jar", bundletool, "build-bundle", f"--modules={module}", f"--output={out}", "--overwrite"])
+            keystore = Path(args.keystore) if args.keystore else Path.home() / ".android" / "debug.keystore"
+            if not args.keystore:
+                keytool = shutil.which("keytool") or fail("keytool not found (install a JDK)")
+                ensure_keystore(keystore, keytool)
+            # Google Play yükleme anahtarı imzası (v1 / JAR): SHA-256 + RSA
+            run([jarsigner, "-keystore", keystore, "-storepass", args.ks_pass, "-keypass", args.ks_pass,
+                 "-sigalg", "SHA256withRSA", "-digestalg", "SHA-256", out, args.key_alias])
+            log(f"App Bundle ready: {out} ({out.stat().st_size // (1024 * 1024)} MB)")
+            return
+
         # aapt2'nin varlık süzgeci ("_" ile başlayan klasörler, "." dosyaları) oyun dosyalarını atmasın: zipfile ile ekle
         unaligned = tmp / "unaligned.apk"
         shutil.copyfile(base, unaligned)

@@ -35,6 +35,7 @@ namespace Conqueror {
         bool X86_64 = true;                           // emülatör, Chromebook
         std::string Keystore;                         // boşsa hata ayıklama anahtarı (~/.android/debug.keystore)
         std::string KeyAlias;                         // parola projede tutulmaz: CQ_ANDROID_KEYSTORE_PASS
+        bool AppBundle = false;                       // Google Play: .aab (bundletool + jarsigner) yerine .apk değil (47)
     };
     struct IOSPlayerSettings
     {
