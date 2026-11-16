@@ -1,0 +1,12 @@
+# template: basic3d
+# check: python3 -I {dir}/assets/package/run_player.py {bin} {work}/Reg_build_portable_package/Builds/Portable
+# 264: taşınabilir oyun paketi (.cqspace, LÖVE .love / Godot .pck gibi): Build Settings > "Portable Game (.cqspace)" tek dosya yazar;
+# oyuncu (ConquerorRuntime <oyun>.cqspace) paketi önbelleğe çözüp başlangıç sahnesini açar; daha yeni motor isteyen paketi açık bir
+# mesajla reddeder
+wait 30
+build output Builds/Portable
+build platform "Portable Game (.cqspace)"
+build start
+wait_until 600000 build expect_done
+build expect_success
+quit

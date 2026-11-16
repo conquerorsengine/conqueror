@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Conqueror Player
+GenericName=Game Player
+Comment=Play Conqueror's Engine games (.cqspace)
+Exec=ConquerorRuntime %f
+Icon=conqueror-engine
+Terminal=false
+Categories=Game;
+MimeType=application/x-cqspace;

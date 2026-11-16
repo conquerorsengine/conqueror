@@ -121,6 +121,18 @@ namespace Conqueror::Runtime
                 if (found != want) { err = a[2] + (want ? " missing" : " still present"); return false; }
                 return true;
             }
+            // expect_refuses_engine <sürüm> <metin>: açık paketin bildirimi o motor sürümünü isteseydi oyuncu reddeder miydi
+            if (a[1] == "expect_refuses_engine" && a.size() > 3)
+            {
+                if (m_PackagePath.empty()) { err = "no package is open"; return false; }
+                GamePackage::Manifest m = m_Manifest;
+                m.EngineVersion = a[2];
+                std::string reason;
+                if (GamePackage::CheckCompatible(m, reason)) { err = "a package needing " + a[2] + " was accepted"; return false; }
+                Automation::Report("GAME refuses: " + reason);
+                if (reason.find(a[3]) == std::string::npos) { err = "reason: " + reason; return false; }
+                return true;
+            }
             if (a[1] == "report")
             {
                 auto& window = Application::Get().GetWindow();

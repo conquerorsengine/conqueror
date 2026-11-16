@@ -7,6 +7,7 @@
 
 #include "Core/Application.h"
 #include "Core/Logging/Log.h"
+#include "Core/Project/GamePackage.h"
 #include "Platform/iOS/iOSPlatform.h"
 
 #import <UIKit/UIKit.h>
@@ -46,6 +47,26 @@
     Conqueror::Application* app = Conqueror::CreateApplication({ 2, argv });
     Conqueror::iOS::RunFrameLoop(app);
     return YES;
+}
+
+// .cqspace (Dosyalar uygulaması, AirDrop, "Open in"): uygulamanın önbelleğine kopyalanır, oyuncu açılış ekranından açar (264)
+- (BOOL)application:(UIApplication*)application openURL:(NSURL*)url options:(NSDictionary<UIApplicationOpenURLOptionsKey, id>*)options
+{
+    if (![[url.pathExtension lowercaseString] isEqualToString:@"cqspace"])
+        return NO;
+    const BOOL scoped = [url startAccessingSecurityScopedResource];
+    NSString* caches = [NSString stringWithUTF8String:Conqueror::iOS::CachesDirectory().c_str()];
+    NSString* dest = [caches stringByAppendingPathComponent:[url lastPathComponent]];
+    [[NSFileManager defaultManager] removeItemAtPath:dest error:nil];
+    NSError* error = nil;
+    const BOOL ok = [[NSFileManager defaultManager] copyItemAtURL:url toURL:[NSURL fileURLWithPath:dest] error:&error];
+    if (scoped)
+        [url stopAccessingSecurityScopedResource];
+    if (ok)
+        Conqueror::GamePackage::RequestOpen(dest.UTF8String);
+    else
+        NSLog(@"[Conqueror] Could not open %@: %@", url, error);
+    return ok;
 }
 
 @end

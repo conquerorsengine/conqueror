@@ -17,6 +17,8 @@ Cases:
                                                        config folder instead of in the editor (no project is made)
                       # setup: <command>               runs before the case (e.g. a fixture generator from cases/assets)
                       # teardown: <command>            runs after the case, also when it failed ("{bin}": the binaries)
+                      # check: <command>               runs after a passing case; a non-zero exit fails the case
+                                                       (e.g. start the built game with the player)
                   "{dir}" in the script is replaced by Tools/Tests/cases (checks/*.cqs live there), "{work}" by the
                   regression work folder. A check script
                   creates an entity named RegressionCheckOK when its condition holds; the case then expects it.
@@ -214,6 +216,10 @@ def run_case_inner(case, env=None):
         return False, "; ".join(fails)[:300] or f"{done.group(1)} failures", time.time() - start
     if code != 0:
         return False, f"editor exit code {code} (crash at shutdown?)", time.time() - start
+    for cmd in re.findall(r"^#\s*check:\s*(.+)$", text, re.M):
+        ccode, cout = run(shlex.split(cmd), env=env)
+        if ccode != 0:
+            return False, f"check failed: {cout.strip()[-300:]}", time.time() - start
     return True, "", time.time() - start
 
 

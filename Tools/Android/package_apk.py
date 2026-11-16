@@ -340,7 +340,7 @@ def arcore_aar(cache_dir):
 
 
 def manifest_xml(package, label, version_code, version_name, orientation, automotive, debuggable, icon=False, variant="phone",
-                 banner=False, arcore=False):
+                 banner=False, arcore=False, player=False):
     automotive_feature = ('    <uses-feature android:name="android.hardware.type.automotive" android:required="true"/>\n'
                           if automotive else "")
     # Android TV: TV başlatıcısı (leanback), kumanda / gamepad; aynı APK telefonda da çalışır (required=false)
@@ -399,6 +399,17 @@ def manifest_xml(package, label, version_code, version_name, orientation, automo
     icon_attr = ' android:icon="@mipmap/ic_launcher"' if icon else ""
     if banner:
         icon_attr += ' android:banner="@drawable/banner"'
+    # Conqueror Player (264): .cqspace dosyaları "Aç" ile bu uygulamada açılır (dosya yöneticisi, indirmeler, paylaşım)
+    player_filter = ("""            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="content"/>
+                <data android:scheme="file"/>
+                <data android:mimeType="application/x-cqspace"/>
+                <data android:mimeType="application/octet-stream"/>
+            </intent-filter>
+""" if player else "")
     tv_category = '                <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>\n' if variant == "tv" else ""
     if variant == "quest":
         tv_category = ('                <category android:name="com.oculus.intent.category.VR"/>\n'
@@ -428,6 +439,7 @@ def manifest_xml(package, label, version_code, version_name, orientation, automo
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
 {tv_category}            </intent-filter>
+{player_filter}
         </activity>
     </application>
 </manifest>
@@ -445,7 +457,8 @@ def ensure_keystore(path, keytool):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("game_dir", help="built game folder (or project folder) containing the .cqproj")
+    ap.add_argument("game_dir", nargs="?", help="built game folder (or project folder) containing the .cqproj; not needed with --player")
+    ap.add_argument("--player", action="store_true", help="Conqueror Player app without a game: opens .cqspace files (264)")
     ap.add_argument("--out", help="output .apk (default: <game_dir>/../<Name>.apk)")
     ap.add_argument("--abi", action="append", help=f"target ABI (repeatable; default {' '.join(DEFAULT_ABIS)})")
     ap.add_argument("--lib-dir", help="folder with <abi>/libconqueror.so")
@@ -482,10 +495,17 @@ def main():
     ap.add_argument("--run", action="store_true", help="start the game after installing")
     args = ap.parse_args()
 
-    game_dir = Path(args.game_dir).resolve()
-    if not game_dir.is_dir():
-        fail(f"{game_dir} is not a folder")
-    project_file, name, version_name = read_project(game_dir)
+    if args.player:
+        game_dir = Path(tempfile.mkdtemp(prefix="cq_player_"))
+        name, version_name = "Conqueror Player", "1.0"
+        args.package = args.package or "com.conqueror.player"
+    else:
+        if not args.game_dir:
+            fail("give the game folder (or use --player)")
+        game_dir = Path(args.game_dir).resolve()
+        if not game_dir.is_dir():
+            fail(f"{game_dir} is not a folder")
+        project_file, name, version_name = read_project(game_dir)
     safe = re.sub(r"[^A-Za-z0-9_]", "", name.replace(" ", "_")) or "game"
     if safe[0].isdigit():
         safe = "g" + safe
@@ -565,7 +585,7 @@ def main():
         orientation = "unspecified" if args.chromeos else "landscape" if xr else args.orientation
         (tmp / "AndroidManifest.xml").write_text(manifest_xml(package, label, args.version_code, version_name,
                                                               orientation, args.automotive, not args.release, has_icon,
-                                                              variant, has_banner, args.arcore),
+                                                              variant, has_banner, args.arcore, args.player),
                                                  encoding="utf-8")
         base = tmp / "base.apk"
         run([aapt2, "link", "-o", base, "-I", platform / "android.jar", "--manifest", tmp / "AndroidManifest.xml",

@@ -18,6 +18,32 @@ The output folder must be empty or a previous build of the same project.
 **Build All Ready Platforms** builds every platform whose module is ready on this computer, one after another, into
 `Builds/<Platform>` (or `<output folder>/<Platform>`), and lists the result of each.
 
+## Installs and modules (Hub)
+
+Like Unity Hub, the hub's **Installs** page lists the editor versions on this computer (tabs All / Official releases /
+Pre-releases, Search, **Locate** for an editor you built yourself, **Install Editor**). Versions come from the engine's
+GitHub Releases: normal releases are *Official*, GitHub pre-releases are *Pre-release*, and the *ConquerorX* channel is
+rebuilt by CI from every commit on `main` — when it is installed, the hub updates it to the newest commit each time it
+starts. Versions older than the first published release are not downloadable; **Install Editor > Archive** shows how to
+build them from source. A project opens with the editor version that last saved it (`EditorVersion` in the `.cqproj`);
+**Open with** picks another one.
+
+Modules are chosen when installing (or later with **Manage > Add modules**):
+
+* **Platforms** — a prebuilt player for the platform, so building for it needs no toolchain (Linux x86_64 / ARM64 /
+  other CPUs, Windows, macOS, Web, Dedicated Server, Android (also TV, Automotive, ChromeOS), Meta Quest, Android XR,
+  FreeBSD / OpenBSD / NetBSD, GNU/Hurd). Apple platforms still need Xcode on a Mac and QNX the QNX SDP: their licenses
+  do not allow anything else.
+* **Languages** — every scripting language is its own module (LuaQ, ConquerorScript and Visual Scripting are always
+  included; C++, C, Rust, Zig, C#, Java, Python). Each module lists what it needs on this computer (JDK 17+, .NET 8,
+  a C/C++ compiler, Rust, Python), shows what was found and how to install the rest; tools whose license allows it come
+  with the module (Zig, Eclipse Temurin JDK, .NET SDK, llvm-mingw on Windows).
+* **Documentation** — an offline copy of the manual.
+
+**Build Settings** offers **Install <module>** for the selected platform when its prebuilt player is missing.
+Releases are made by `.github/workflows/release.yml` (`Tools/Release/package.py`, `make_manifest.py`,
+`fetch_toolchain.py`): every archive is listed in `conqueror-release.json` with its size and SHA-256, which the hub checks.
+
 ## Platform modules
 
 Each platform needs its own toolchain on the computer that builds it (Unity Hub calls these modules). The hub's
@@ -59,6 +85,28 @@ Linux is started with Wine by **Build And Run** when Wine is installed.
 | Web (WebAssembly) | any desktop with emsdk (`Tools/Web/package_web.py`, also from the editor's Build Settings) | WebGL 2 and WebGPU players tested in headless Chromium (the FPS template); a static site: `index.html` + `Build/` (gzip / brotli, data cached in the browser, saves in IndexedDB); single-thread by default, multithreaded with SharedArrayBuffer (`coi-serviceworker.js` for hosts without COOP / COEP); WebGPU backend with a Dawn source tree (`CQ_DAWN_DIR`) |
 | Linux ARM (32-bit), x86 (32-bit), RISC-V 64, PowerPC 64 LE, LoongArch 64 | Linux (cross, `Tools/Linux/linux-cross.toolchain.cmake`) | players cross-built; RISC-V player runs under qemu-user up to window creation |
 | Steam Deck | Linux build | 1280×800 borderless, Deck button glyphs, on-screen keyboard |
+
+## Portable game package (.cqspace)
+
+**Build Settings > Portable Game (.cqspace)** writes one file, `Builds/<Game>.cqspace`, that the Conqueror player opens
+on every platform it runs on (like LÖVE's `.love`, a Java `.jar` or Godot's `.pck`). The file holds the project file,
+`Assets/`, `Packages/` and a manifest (game name and version, start scene, scripting languages, needed engine features,
+the engine version that made it); engine resources come with the player. A package that needs a newer engine is refused
+with a clear message. Scripts compiled to machine code (C++, C, Rust, Zig) cannot run from a portable package: the build
+names the scripts that block it.
+
+* Desktop: `ConquerorRuntime <Game>.cqspace`, or open the file directly. Without a game, the player shows
+  *Open a .cqspace* with the recently opened games. File association: `Tools/Linux/register-cqspace.sh <bin folder>`
+  (MIME type + `.desktop` entry), `Tools/Windows/register-cqspace.ps1 <bin folder>` (per user, no admin rights).
+* Web: a player site without a game (`Tools/Web/package_web.py --player --out <folder>`) opens `?game=<url of the
+  .cqspace>` or a file picker.
+* Android: `Tools/Android/package_apk.py --player` makes the *Conqueror Player* app that opens `.cqspace` files from
+  the file manager, downloads or sharing.
+* iOS / iPadOS: `Tools/iOS/package_ios.py --player` declares the `.cqspace` document type; files arrive from Files,
+  AirDrop or *Open in*. (iOS App Store rules limit apps that run downloaded games.)
+
+Tested: the package is built in the editor and opened by the desktop player (test `build_portable_package`). The web,
+Android and iOS openers are compiled in CI but were not run on those platforms yet.
 
 ## Splash screen and icons
 

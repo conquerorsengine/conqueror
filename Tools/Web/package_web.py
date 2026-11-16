@@ -206,7 +206,9 @@ def write_data(game_dir, files, build_dir):
 
 def main():
     ap = argparse.ArgumentParser(description="Package a built Conqueror game for the web (WebAssembly + WebGL 2)")
-    ap.add_argument("game", help="built game folder (or project folder)")
+    ap.add_argument("game", nargs="?", help="built game folder (or project folder); not needed with --player")
+    ap.add_argument("--player", action="store_true",
+                    help="web player site without a game (264): opens a .cqspace from ?game=<url> or a file picker")
     ap.add_argument("--out", required=True, help="output folder (a static web site)")
     ap.add_argument("--runtime", help="folder with conqueror.js + conqueror.wasm (prebuilt web player)")
     ap.add_argument("--build", action="store_true", help="build the web player with Emscripten first")
@@ -221,10 +223,16 @@ def main():
                     help="serve the result locally after packaging (COOP / COEP headers)")
     args = ap.parse_args()
 
-    game_dir = Path(args.game).resolve()
-    if not game_dir.is_dir():
-        fail(f"{game_dir} is not a folder")
-    _, name, version, web, width, height = read_project(game_dir)
+    if args.player:
+        game_dir = Path(args.out).resolve() / "_no_game"
+        name, version, web, width, height = "Conqueror Player", "", {}, 1280, 720
+    else:
+        if not args.game:
+            fail("give the game folder (or use --player)")
+        game_dir = Path(args.game).resolve()
+        if not game_dir.is_dir():
+            fail(f"{game_dir} is not a folder")
+        _, name, version, web, width, height = read_project(game_dir)
     threads = args.threads if args.threads is not None else web.get("Threads", "false").lower() in ("true", "1", "yes")
     comp_idx = {"0": "none", "1": "gzip", "2": "brotli"}
     compression = args.compression or comp_idx.get(str(web.get("Compression", "1")), "gzip")
@@ -249,11 +257,15 @@ def main():
         shutil.rmtree(build_dir)
     build_dir.mkdir(parents=True)
 
-    files = collect_game_files(game_dir)
-    if not files:
-        fail("no game files found")
-    log(f"{name} {version}: {len(files)} files, {'threads' if threads else 'single thread'}, compression {compression}")
-    manifest = write_data(game_dir, files, build_dir)
+    if args.player:
+        manifest = {"hash": ""}
+        log(f"web player site (no game; opens a .cqspace), {'threads' if threads else 'single thread'}")
+    else:
+        files = collect_game_files(game_dir)
+        if not files:
+            fail("no game files found")
+        log(f"{name} {version}: {len(files)} files, {'threads' if threads else 'single thread'}, compression {compression}")
+        manifest = write_data(game_dir, files, build_dir)
 
     # Player Settings > Web > Graphics API: WebGPU (oyuncu WebGPU arka ucuyla derlendiyse; tarayıcıda yoksa WebGL 2'ye düşülür)
     framework = (runtime / "conqueror.js").read_text(encoding="utf-8", errors="replace")
@@ -272,12 +284,13 @@ def main():
         return h.hexdigest()[:16]
     # Önbellek anahtarları dosya başına: oyuncu ya da veri değişince tarayıcı eskisini kullanmaz
     wasm_hash = file_hash(wasm)
-    data_name = compress(build_dir / "game.data", compression).name
+    data_name = "" if args.player else compress(build_dir / "game.data", compression).name
     wasm_name = compress(wasm, compression).name
-    (build_dir / "game.json").write_text(json.dumps(manifest, separators=(",", ":")), encoding="utf-8")
+    if not args.player:
+        (build_dir / "game.json").write_text(json.dumps(manifest, separators=(",", ":")), encoding="utf-8")
 
     config = {
-        "name": name, "version": version, "dataUrl": "Build/" + data_name, "manifestUrl": "Build/game.json",
+        "name": name, "version": version, "dataUrl": "Build/" + data_name if data_name else "", "manifestUrl": "" if args.player else "Build/game.json",
         "wasmUrl": "Build/" + wasm_name, "frameworkUrl": "Build/conqueror.js", "threads": threads,
         "webgpu": want_webgpu and runtime_webgpu, "caching": caching, "dataHash": manifest["hash"], "wasmHash": wasm_hash, "width": width, "height": height, "memoryMB": memory_mb,
     }

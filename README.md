@@ -110,6 +110,7 @@ Debugging: `CQ_VK_VALIDATION=1` enables the Vulkan validation layer, `CQ_VK_DEVI
 | QNX 7.1 / 8.0 | Screen + EGL platform layer and toolchain file; **not compiled** (needs the QNX SDP) |
 | HarmonyOS 5+ PC (2in1) and tablet (arm64-v8a, x86_64) | editor and player as native libraries of a HAP app (ArkTS XComponent + EGL, OpenGL ES 3, system file picker); both compile and link with the OpenHarmony 6.0 native SDK (CI job), HAP project template and packager in `Tools/HarmonyOS`; **not run yet** (no HarmonyOS device or emulator was available) |
 | FreeBSD, OpenBSD, NetBSD (x86-64) | players built in CI inside FreeBSD / OpenBSD / NetBSD virtual machines and cross-compiled from Linux; not run on a BSD desktop yet |
+| Portable game (`.cqspace`) | one file that the player opens on every platform ([Docs/Platforms.md](Docs/Platforms.md#portable-game-package-cqspace)); tested with the desktop player |
 
 See [Docs/Automotive.md](Docs/Automotive.md) for Android, Android Automotive, AGL and QNX, and
 [Docs/Platforms.md](Docs/Platforms.md#harmonyos-pc-and-tablet) for HarmonyOS.

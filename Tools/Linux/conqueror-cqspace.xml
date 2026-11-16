@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Taşınabilir oyun paketi (.cqspace, 264): shared-mime-info türü (xdg-mime install ile kurulur) -->
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-cqspace">
+    <comment>Conqueror game</comment>
+    <glob pattern="*.cqspace"/>
+    <magic priority="50">
+      <match type="string" value="CQAB" offset="0"/>
+    </magic>
+    <icon name="conqueror-engine"/>
+  </mime-type>
+</mime-info>

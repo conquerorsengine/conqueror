@@ -2,6 +2,7 @@
 #include "Core/Project/Project.h"
 #include "Core/Utils/Platform.h"
 #include "Core/Project/ProjectSerializer.h"
+#include "Core/Project/GamePackage.h"
 #include "Core/Utils/DynamicLibrary.h"
 #include "RuntimeLayer.h"
 #include "Scripting/ScriptRuntime.h"
@@ -18,10 +19,10 @@ namespace Conqueror::Runtime
     class RuntimeApp : public Application
     {
     public:
-        RuntimeApp(const ApplicationSpecification& spec, const std::filesystem::path& projectPath)
+        RuntimeApp(const ApplicationSpecification& spec, const std::filesystem::path& projectPath, const std::filesystem::path& packagePath = {})
             : Application(spec)
         {
-            PushLayer(new RuntimeLayer(projectPath));
+            PushLayer(new RuntimeLayer(projectPath, packagePath));
         }
 
         ~RuntimeApp()
@@ -52,7 +53,11 @@ namespace Conqueror::Runtime
             for (const auto& entry : std::filesystem::directory_iterator(exeDir, ec))
                 if (entry.path().extension() == ".cqproj")
                     return exeDir;
-            return std::filesystem::current_path();
+            const auto cwd = std::filesystem::current_path(ec);
+            for (const auto& entry : std::filesystem::directory_iterator(cwd, ec))
+                if (entry.path().extension() == ".cqproj")
+                    return cwd;
+            return {};   // oyun yok: oyuncunun açılış ekranı ("Open a .cqspace" + son açılanlar)
         }
     }
 }
@@ -66,16 +71,39 @@ Conqueror::Application* Conqueror::CreateApplication(ApplicationCommandLineArgs 
     spec.Width = 1280;
     spec.Height = 720;
 
-    const std::filesystem::path projectPath = Conqueror::Runtime::FindProjectPath(args);
-
-    // Pencere başlığı ve boyutu proje ayarlarından (Player Settings)
+    std::filesystem::path projectPath = Conqueror::Runtime::FindProjectPath(args);
+    // Taşınabilir oyun paketi (264): ConquerorRuntime <oyun>.cqspace ya da dosya ilişkilendirmesiyle çift tık
+    std::filesystem::path packagePath;
     std::error_code ec;
-    for (const auto& entry : std::filesystem::directory_iterator(projectPath, ec))
+    if (Conqueror::GamePackage::IsPackagePath(projectPath.string()) && std::filesystem::is_regular_file(projectPath, ec))
     {
-        if (entry.path().extension() != ".cqproj")
-            continue;
+        packagePath = std::filesystem::absolute(projectPath, ec);
+        projectPath.clear();
+    }
+
+    // Pencere başlığı ve boyutu proje ayarlarından (Player Settings): oyunun klasöründeki ya da paketin içindeki .cqproj
+    for (int once = 0; once < 1; ++once)
+    {
         auto project = std::make_shared<Project>();
-        if (ProjectSerializer(project).Deserialize(entry.path()))
+        bool loaded = false;
+        if (!packagePath.empty())
+        {
+            Conqueror::GamePackage::Manifest manifest;
+            std::string text;
+            if (Conqueror::GamePackage::ReadManifest(packagePath.string(), manifest) &&
+                Conqueror::GamePackage::ReadFile(packagePath.string(), manifest.ProjectFile, text))
+                loaded = ProjectSerializer(project).DeserializeText(text, packagePath.parent_path() / manifest.ProjectFile);
+        }
+        else if (!projectPath.empty())
+        {
+            for (const auto& entry : std::filesystem::directory_iterator(projectPath, ec))
+                if (entry.path().extension() == ".cqproj")
+                {
+                    loaded = ProjectSerializer(project).Deserialize(entry.path());
+                    break;
+                }
+        }
+        if (loaded)
         {
             const auto& cfg = project->GetConfig();
             if (!cfg.Name.empty())
@@ -129,7 +157,7 @@ Conqueror::Application* Conqueror::CreateApplication(ApplicationCommandLineArgs 
         spec.Height = 800;
     }
 
-    return new Conqueror::Runtime::RuntimeApp(spec, projectPath);
+    return new Conqueror::Runtime::RuntimeApp(spec, projectPath, packagePath);
 }
 
 // Masaüstü main() ve Android android_main() (AndroidMain.cpp) ortak gövdesi

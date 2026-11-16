@@ -101,6 +101,15 @@ def write_info_plist(app: Path, args, simulator: bool):
     info["UISupportedInterfaceOrientations~ipad"] = orientations
     if args.camera_usage:
         info["NSCameraUsageDescription"] = args.camera_usage
+    if getattr(args, "player", False):
+        # Conqueror Player (264): .cqspace oyunlarını Dosyalar / AirDrop / "Open in" ile açar
+        info["CFBundleDocumentTypes"] = [{"CFBundleTypeName": "Conqueror game", "CFBundleTypeRole": "Viewer",
+                                          "LSHandlerRank": "Owner", "LSItemContentTypes": ["com.conqueror.cqspace"]}]
+        info["UTExportedTypeDeclarations"] = [{"UTTypeIdentifier": "com.conqueror.cqspace", "UTTypeDescription": "Conqueror game",
+                                               "UTTypeConformsTo": ["public.data"],
+                                               "UTTypeTagSpecification": {"public.filename-extension": ["cqspace"],
+                                                                          "public.mime-type": ["application/x-cqspace"]}}]
+        info["LSSupportsOpeningDocumentsInPlace"] = False
     if args.icon:
         info["CFBundleIcons"] = {"CFBundlePrimaryIcon": {"CFBundleIconFiles": ["AppIcon60x60", "AppIcon76x76", "AppIcon83.5x83.5"]}}
         info["CFBundleIcons~ipad"] = info["CFBundleIcons"]
@@ -208,6 +217,7 @@ def main():
     ap.add_argument("--orientation", choices=["landscape", "portrait", "all"], default="landscape")
     ap.add_argument("--devices", choices=["universal", "iphone", "ipad"], default="universal")
     ap.add_argument("--camera-usage", default="", help="NSCameraUsageDescription (AR)")
+    ap.add_argument("--player", action="store_true", help="Conqueror Player app: opens .cqspace games (give an empty game folder)")
     ap.add_argument("--icon", type=Path)
     ap.add_argument("--build-root", type=Path, default=ENGINE_ROOT / "build-ios")
     ap.add_argument("--jobs", type=int, default=os.cpu_count() or 4)

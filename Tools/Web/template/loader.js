@@ -104,10 +104,37 @@
     return bytes;
   }
 
+  // Taşınabilir oyun paketi (.cqspace, 264): ?game=<adres> ile ya da oyun verisi olmayan oyuncu sitesinde dosya seçiciyle
+  function pickPackage() {
+    return new Promise((resolve) => {
+      status("Open a Conqueror game (.cqspace)");
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = ".cqspace";
+      input.style.cssText = "display:block;margin:16px auto;font-size:16px";
+      input.addEventListener("change", async () => {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        input.remove();
+        resolve(new Uint8Array(await file.arrayBuffer()));
+      });
+      ($("status") || document.body).after(input);
+    });
+  }
+
   async function start() {
+    const gameUrl = new URLSearchParams(location.search).get("game");
+    let packageBytes = null;
+    if (gameUrl) {
+      status("Downloading the game...");
+      packageBytes = await download(new URL(gameUrl, location.href).href, 0.45, 0.45, "pkg");
+    } else if (!cfg.dataUrl) {
+      packageBytes = await pickPackage();
+    }
     status("Downloading " + cfg.name + "...");
-    const manifest = await (await fetch(cfg.manifestUrl, { cache: "no-cache" })).json();
-    const [wasmBytes, dataBytes] = await Promise.all([download(cfg.wasmUrl, 0.45, 0, cfg.wasmHash), download(cfg.dataUrl, 0.45, 0.45, cfg.dataHash)]);
+    const manifest = packageBytes ? { dirs: [], files: [] } : await (await fetch(cfg.manifestUrl, { cache: "no-cache" })).json();
+    const [wasmBytes, dataBytes] = await Promise.all([download(cfg.wasmUrl, 0.45, 0, cfg.wasmHash),
+                                                      packageBytes ? Promise.resolve(new Uint8Array(0)) : download(cfg.dataUrl, 0.45, 0.45, cfg.dataHash)]);
     status("Starting...");
     await new Promise((resolve, reject) => {
       const s = document.createElement("script");
@@ -153,7 +180,7 @@
     const Module = {
       canvas: canvas,
       preinitializedWebGPUDevice: gpuDevice,
-      arguments: ["/game"],
+      arguments: packageBytes ? ["/game.cqspace"] : ["/game"],
       locateFile: (path) => "Build/" + path,
       print: (t) => console.log(t),
       printErr: (t) => console.warn(t),
@@ -165,7 +192,8 @@
       onAbort: (what) => showError("The game stopped: " + what),
       preRun: [(M) => {
         const FS = M.FS || Module.FS;
-        // Oyun dosyaları
+        // Oyun dosyaları (ya da tek .cqspace paketi: oyuncu onu açar)
+        if (packageBytes) FS.writeFile("/game.cqspace", packageBytes, { canOwn: true });
         FS.mkdirTree("/game");
         for (const d of manifest.dirs) FS.mkdirTree("/game/" + d);
         for (const [path, offset, size] of manifest.files)
