@@ -236,6 +236,10 @@ namespace Conqueror::PlatformModules
     {
         const std::string host = HostName();
         std::error_code ec;
+        // Taşınabilir oyun paketi (.cqspace): derleyici / SDK gerekmez, editör tek dosya yazar; oyuncu her platformda açar
+        if (platform == "Portable Game (.cqspace)")
+            return Make(platform, Status::Ready, "Engine only (no compiler or SDK needed)",
+                        "Writes Builds/<Game>.cqspace, which the Conqueror player (ConquerorRuntime) opens on every platform it runs on");
         if (platform == "Windows")
         {
             if (host == "Windows")
@@ -446,7 +450,8 @@ namespace Conqueror::PlatformModules
         for (const char* p : { "Windows", "Windows ARM64", "macOS", "Linux", "Linux ARM64", "Linux ARM (32-bit)", "Linux x86 (32-bit)",
                                "Linux RISC-V", "Linux PowerPC", "Linux LoongArch", "Dedicated Server", "Embedded Linux", "FreeBSD",
                                "OpenBSD", "NetBSD", "GNU Hurd", "Android", "Android Automotive", "Android TV", "ChromeOS", "Meta Quest",
-                               "Android XR", "iOS", "tvOS", "visionOS", "Web", "Universal Windows Platform", "QNX" })
+                               "Android XR", "iOS", "tvOS", "visionOS", "Web", "Universal Windows Platform", "QNX",
+                               "Portable Game (.cqspace)" })
             list.push_back(Detect(p));
         return list;
     }

@@ -77,8 +77,21 @@ namespace Conqueror::Editor
         static std::string DefaultIdentifier(const ProjectConfig& config);
         // Editör ikilisinin yanından motor kaynak kökünü bulur (Resources/ ve Engine/src/Shaders)
         static std::filesystem::path FindEngineRoot(const std::filesystem::path& binDir);
-        // Derlenmiş oyunu ayrı süreç olarak başlatır
+        // Derlenmiş oyunu ayrı süreç olarak başlatır (.cqspace: editörün yanındaki ConquerorRuntime ile)
         static bool Launch(const std::filesystem::path& executable, std::string* error = nullptr);
+
+        // Taşınabilir oyun paketi (.cqspace): tek dosya, motorun oyuncusu her platformda açar (Builds/<Oyun>.cqspace)
+        static constexpr const char* PortablePlatform = "Portable Game (.cqspace)";
+        static bool IsPortable(const std::string& platform) { return platform == PortablePlatform; }
+        // Paketin yolu: <çıktı klasörü>/<ürün adı>.cqspace
+        static std::filesystem::path PortablePackagePath(const std::filesystem::path& outputDir, const ProjectConfig& config);
+        // Taşınabilir pakete giremeyen betikler: makine koduna derlenen diller (C++, C, Rust, Zig) — proje göreli yol + dil adı
+        struct PortableBlocker
+        {
+            std::string Path;
+            std::string Language;
+        };
+        static std::vector<PortableBlocker> FindPortableBlockers(const std::filesystem::path& projectDir);
 
     private:
         BuildPipeline() = default;

@@ -4,6 +4,7 @@
 #include "Core/Base/Version.h"
 #include <algorithm>
 #include <fstream>
+#include <iterator>
 #include <yaml-cpp/yaml.h>
 
 namespace Conqueror {
@@ -14,6 +15,13 @@ namespace Conqueror {
     }
 
     bool ProjectSerializer::Serialize(const std::filesystem::path& filepath)
+    {
+        std::ofstream fout(filepath);
+        fout << SerializeText();
+        return true;
+    }
+
+    std::string ProjectSerializer::SerializeText()
     {
         const auto& config = m_Project->GetConfig();
 
@@ -140,6 +148,8 @@ namespace Conqueror {
             out << YAML::Key << "WaitForDebugger" << YAML::Value << true;
         if (build.ExcludeBundledAssets)
             out << YAML::Key << "ExcludeBundledAssets" << YAML::Value << true;
+        if (build.PortableSkipNativeScripts)
+            out << YAML::Key << "PortableSkipNativeScripts" << YAML::Value << true;
         out << YAML::Key << "Scenes" << YAML::Value << YAML::BeginSeq;
         for (const auto& scene : build.Scenes)
         {
@@ -154,18 +164,24 @@ namespace Conqueror {
         PhysicsSettings::Get().Serialize(out);
         ProjectSettings::Serialize(out);
         out << YAML::EndMap;
-
-        std::ofstream fout(filepath);
-        fout << out.c_str();
-        return true;
+        return out.c_str();
     }
 
     bool ProjectSerializer::Deserialize(const std::filesystem::path& filepath)
     {
+        std::ifstream in(filepath, std::ios::binary);
+        if (!in)
+            return false;
+        const std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+        return DeserializeText(text, filepath);
+    }
+
+    bool ProjectSerializer::DeserializeText(const std::string& text, const std::filesystem::path& filepath)
+    {
         YAML::Node data;
         try
         {
-            data = YAML::LoadFile(filepath.string());
+            data = YAML::Load(text);
         }
         catch (YAML::ParserException e)
         {
@@ -342,6 +358,7 @@ namespace Conqueror {
                 config.Build.ScriptDebugging = build["ScriptDebugging"] && build["ScriptDebugging"].as<bool>();
                 config.Build.WaitForDebugger = build["WaitForDebugger"] && build["WaitForDebugger"].as<bool>();
                 config.Build.ExcludeBundledAssets = build["ExcludeBundledAssets"] && build["ExcludeBundledAssets"].as<bool>();
+                config.Build.PortableSkipNativeScripts = build["PortableSkipNativeScripts"] && build["PortableSkipNativeScripts"].as<bool>();
                 if (auto scenes = build["Scenes"]; scenes && scenes.IsSequence())
                     for (const auto& s : scenes)
                     {

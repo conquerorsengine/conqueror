@@ -11,6 +11,8 @@
 #include "Core/Project/ProjectSerializer.h"
 #include "Core/Project/EditorInstalls.h"
 #include "Core/Project/PlatformModules.h"
+#include "Core/Project/GamePackage.h"
+#include "Scripting/ScriptRuntime.h"
 #include "Core/Utils/DynamicLibrary.h"
 #include "Scripting/NativeScriptCompiler.h"
 #include "Core/Logging/Log.h"
@@ -69,7 +71,8 @@ namespace Conqueror::Editor
         std::set<std::string> s_BundledAssets;
         fs::path s_BundleProjectDir;
 
-        bool SkipEntry(const fs::path& p)
+        // Ada göre atlanan klasör / dosyalar (paketlenmiş varlık listesine bakmaz: derleme sürerken arayüzden de güvenle çağrılır)
+        bool SkipName(const fs::path& p)
         {
             const std::string name = p.filename().string();
             // AssetBundles: Build AssetBundles çıktısı (paketler oyunla ayrı dağıtılır), UserSettings: kullanıcıya özel editör ayarları
@@ -77,6 +80,14 @@ namespace Conqueror::Editor
             for (const char* s : kSkip)
                 if (name == s)
                     return true;
+            const std::string ext = p.extension().string();
+            return ext == ".log" || ext == ".tmp";
+        }
+
+        bool SkipEntry(const fs::path& p)
+        {
+            if (SkipName(p))
+                return true;
             const std::string ext = p.extension().string();
             if (!s_BundledAssets.empty())
             {
@@ -284,6 +295,236 @@ namespace Conqueror::Editor
             else std::snprintf(buf, sizeof(buf), "%.1f KB", (double)bytes / 1024.0);
             return buf;
         }
+
+        // Uzantıdan betik dili (betik çalışma zamanları kurulmamışsa da): yerel diller pakete giremez, diğerleri bildirime yazılır
+        struct LanguageInfo { const char* Ext; const char* Id; const char* Name; };
+        const LanguageInfo kScriptLanguages[] = {
+            { ".cpp", "cpp", "C++" }, { ".cc", "cpp", "C++" }, { ".cxx", "cpp", "C++" }, { ".c", "c", "C" }, { ".rs", "rust", "Rust" },
+            { ".zig", "zig", "Zig" }, { ".cqs", "cqs", "ConquerorScript" }, { ".luaq", "luaq", "LuaQ" }, { ".cqgraph", "graph", "Visual Script" },
+            { ".cqstategraph", "stategraph", "State Graph" }, { ".py", "py", "Python" }, { ".cs", "cs", "C#" }, { ".java", "java", "Java" },
+        };
+
+        const LanguageInfo* ScriptLanguageOf(const fs::path& p)
+        {
+            std::string ext = p.extension().string();
+            for (char& c : ext)
+                c = (char)std::tolower((unsigned char)c);
+            if (Scripting::ScriptRuntime* rt = Scripting::ScriptRuntimes::ForPath(p.string()))
+            {
+                // Kayıtlı çalışma zamanı önceliklidir (uzantı listesi değişirse de doğru dil)
+                for (const auto& l : kScriptLanguages)
+                    if (std::strcmp(l.Id, rt->GetLanguageId()) == 0)
+                        return &l;
+            }
+            for (const auto& l : kScriptLanguages)
+                if (ext == l.Ext)
+                    return &l;
+            return nullptr;
+        }
+
+        // Proje içeriği (SkipEntry kurallarıyla, normal derlemenin kopyaladığı dosyalar): (proje göreli yol, tam yol)
+        bool CollectFiles(const fs::path& projectDir, const fs::path& sub, const std::set<std::string>& skip,
+                          std::vector<std::pair<std::string, std::string>>& out, std::string& error, const std::atomic<bool>* cancel)
+        {
+            std::error_code ec;
+            const fs::path src = projectDir / sub;
+            if (!fs::exists(src, ec))
+                return true;
+            for (auto it = fs::recursive_directory_iterator(src, fs::directory_options::skip_permission_denied, ec);
+                 it != fs::recursive_directory_iterator(); it.increment(ec))
+            {
+                if (ec)
+                {
+                    error = "Cannot read " + src.string() + ": " + ec.message();
+                    return false;
+                }
+                if (cancel && cancel->load())
+                {
+                    error = "Cancelled";
+                    return false;
+                }
+                const fs::path& p = it->path();
+                if (SkipEntry(p))
+                {
+                    if (it->is_directory(ec))
+                        it.disable_recursion_pending();
+                    continue;
+                }
+                if (!it->is_regular_file(ec))
+                    continue;
+                const std::string rel = fs::relative(p, projectDir, ec).generic_string();
+                if (ec || rel.empty() || rel.rfind("..", 0) == 0 || skip.count(rel))
+                    continue;
+                out.emplace_back(rel, p.string());
+            }
+            return true;
+        }
+
+        // Taşınabilir oyun paketi (.cqspace): oyuncu ikilisi ve motor kaynakları yok (oyuncu getirir); proje dosyası, Assets/, Packages/
+        // ve bildirim tek dosyada. Doku Crunch'ı (DXT blokları: masaüstü GPU biçimi) uygulanmaz; paket zstd ile sıkıştırılır
+        BuildReport RunPortableBuild(const BuildOptions& o, const std::function<void(float, const std::string&)>& progress,
+                                     const std::function<void(const std::string&)>& log, const std::atomic<bool>* cancel)
+        {
+            const auto start = std::chrono::steady_clock::now();
+            BuildReport report;
+            std::error_code ec;
+            auto step = [&](float p, const std::string& s) {
+                if (progress) progress(p, s);
+                if (log) log("== " + s);
+            };
+            auto warn = [&](const std::string& w) {
+                report.Warnings.push_back(w);
+                if (log) log("WARNING: " + w);
+            };
+            auto fail = [&](const std::string& error) {
+                report.Success = false;
+                report.Error = error;
+                if (log) log("ERROR: " + error);
+                report.Seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+                return report;
+            };
+
+            step(0.02f, "Validating project");
+            const auto scenes = o.Config.GetBuildScenes();
+            if (scenes.empty())
+                return fail("No scenes in Build Settings. Add the open scene with \"Add Open Scenes\".");
+            for (const auto& s : scenes)
+                if (!fs::exists(o.ProjectDir / s, ec))
+                    return fail("Scene missing: " + s);
+            if (o.OutputDir.empty())
+                return fail("No output folder");
+            const fs::path outCanon = fs::weakly_canonical(o.OutputDir, ec);
+            const fs::path projCanon = fs::weakly_canonical(o.ProjectDir, ec);
+            if (outCanon == projCanon || outCanon.string().rfind((projCanon / "Assets").string(), 0) == 0 ||
+                outCanon.string().rfind((projCanon / "Packages").string(), 0) == 0)
+                return fail("The output folder cannot be the project, its Assets or its Packages folder");
+
+            // Makine koduna derlenen betikler (C++, C, Rust, Zig) her platform için ayrı derlenir: pakete giremez
+            step(0.05f, "Checking scripts");
+            std::set<std::string> skip;
+            const auto blockers = BuildPipeline::FindPortableBlockers(o.ProjectDir);
+            if (!blockers.empty())
+            {
+                std::string list;
+                for (const auto& b : blockers)
+                    list += "\n  " + b.Path + " (" + b.Language + ")";
+                if (!o.Config.Build.PortableSkipNativeScripts)
+                    return fail(std::to_string(blockers.size()) + " script(s) compile to native machine code for one platform and cannot run from a "
+                                "portable game package:" + list + "\nRemove them or rewrite them in ConquerorScript, LuaQ, Visual Script, Python, C# "
+                                "or Java, or turn on \"Skip Native Scripts\" in Build Settings to build the package without them.");
+                warn("Skip Native Scripts: " + std::to_string(blockers.size()) + " native script(s) are left out of the package; objects that use "
+                     "them run without these scripts:" + list);
+                for (const auto& b : blockers)
+                    skip.insert(b.Path);
+            }
+            if (fs::is_directory(o.ProjectDir / "Plugins", ec))
+                warn("Plugins/ (native libraries such as steam_api) is not included: portable packages contain no machine code");
+            if (cancel && cancel->load())
+                return fail("Cancelled");
+
+            // Proje içeriği (Leave AssetBundle Assets Out: paketlere atanmış varlıklar alınmaz)
+            step(0.1f, "Collecting Assets and Packages");
+            s_BundledAssets.clear();
+            s_BundleProjectDir = o.ProjectDir;
+            if (o.Config.Build.ExcludeBundledAssets)
+                for (const auto& name : AssetBundleBuilder::GetAllBundleNames())
+                    for (const auto& f : AssetBundleBuilder::GetAssetsInBundle(name))
+                        s_BundledAssets.insert(f);
+            std::vector<std::pair<std::string, std::string>> files;
+            std::string error;
+            const bool collected = CollectFiles(o.ProjectDir, "Assets", skip, files, error, cancel) &&
+                                   CollectFiles(o.ProjectDir, "Packages", skip, files, error, cancel);
+            if (!s_BundledAssets.empty())
+                CQ_CORE_INFO("[Build] {0} asset(s) left out (in AssetBundles)", s_BundledAssets.size());
+            s_BundledAssets.clear();
+            if (!collected)
+                return fail(error);
+            std::sort(files.begin(), files.end());
+
+            // Bildirim: betik dilleri ve oyuncunun kurulu yazılım isteyen özellikleri
+            std::set<std::string> languages, features;
+            std::set<std::string> languageNames;
+            for (const auto& [rel, abs] : files)
+                if (const LanguageInfo* l = ScriptLanguageOf(abs); l && !GamePackage::IsNativeLanguage(l->Id))
+                {
+                    languages.insert(l->Id);
+                    languageNames.insert(l->Name);
+                    if (const std::string f = GamePackage::FeatureForLanguage(l->Id); !f.empty())
+                        features.insert(f);
+                }
+            if (o.Config.XR.InitializeOnStartup && o.Config.XR.OpenXR)
+                features.insert("openxr");
+            if (features.count("python"))
+                warn("The game uses Python scripts: players need Python 3 (the web player cannot run them)");
+            if (features.count("dotnet"))
+                warn("The game uses C# scripts: players need the .NET SDK installed (the web and mobile players cannot run them)");
+            if (features.count("java"))
+                warn("The game uses Java scripts: players need a JDK installed (the web and mobile players cannot run them)");
+            if (log)
+            {
+                std::string names;
+                for (const auto& n : languageNames)
+                    names += (names.empty() ? "" : ", ") + n;
+                log("Script languages: " + (names.empty() ? std::string("none") : names));
+            }
+
+            // Proje dosyası: başlangıç sahnesi = ilk derleme sahnesi, hedef platform boş (oyuncunun çalıştığı platform)
+            const std::string product = SanitizeName(o.Config.Name);
+            const std::string projectFile = o.ProjectFile.empty() ? product + ".cqproj" : o.ProjectFile.filename().string();
+            std::string projectText;
+            {
+                auto project = std::make_shared<Project>();
+                project->GetConfig() = o.Config;
+                project->GetConfig().StartScene = scenes.front();
+                project->GetConfig().TargetPlatform.clear();
+                projectText = ProjectSerializer(project).SerializeText();
+            }
+            files.erase(std::remove_if(files.begin(), files.end(), [&](const auto& f) { return f.first == projectFile; }), files.end());
+
+            GamePackage::Manifest manifest;
+            manifest.Name = o.Config.Name;
+            manifest.Version = o.Config.Version;
+            manifest.Company = o.Config.Organization;
+            manifest.ProjectFile = projectFile;
+            manifest.StartScene = scenes.front();
+            manifest.Scenes = scenes;
+            manifest.ScriptLanguages.assign(languages.begin(), languages.end());
+            manifest.Features.assign(features.begin(), features.end());
+            manifest.Development = o.Config.Build.DevelopmentBuild;
+
+            fs::create_directories(o.OutputDir, ec);
+            if (ec)
+                return fail("Cannot create the output folder: " + ec.message());
+            const fs::path package = BuildPipeline::PortablePackagePath(o.OutputDir, o.Config);
+            step(0.15f, "Writing " + package.filename().string() + " (" + std::to_string(files.size() + 1) + " files)");
+            GamePackage::Manifest written;
+            const bool ok = GamePackage::Write(package.string(), manifest, files, { { projectFile, projectText } }, &error,
+                                               [&](size_t done, size_t total) {
+                                                   if (progress && total > 0)
+                                                       progress(0.15f + 0.8f * (float)done / (float)total, "Writing " + package.filename().string());
+                                                   return !(cancel && cancel->load());
+                                               }, &written);
+            if (!ok)
+                return fail(error == "Cancelled" ? error : "Cannot write " + package.string() + ": " + error);
+
+            report.Success = true;
+            report.Executable = package;
+            report.Files = (size_t)written.Files;
+            report.Bytes = (uint64_t)fs::file_size(package, ec);
+            report.Seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+            if (log)
+                log("Build succeeded: " + package.string() + " (" + FormatBytes(report.Bytes) + ", " + std::to_string(written.Files) + " files, " +
+                    FormatBytes(written.Size) + " unpacked, needs Conqueror Engine " + written.EngineVersion + " or newer) in " +
+                    std::to_string((int)(report.Seconds * 1000.0)) + " ms");
+            step(1.0f, "Done");
+            if (o.RunAfterBuild)
+            {
+                std::string launchError;
+                if (!BuildPipeline::Launch(package, &launchError) && log)
+                    log("Could not start the game: " + launchError);
+            }
+            return report;
+        }
     }
 
     BuildPipeline& BuildPipeline::Get()
@@ -335,6 +576,10 @@ namespace Conqueror::Editor
     const std::vector<BuildPipeline::PlatformInfo>& BuildPipeline::Platforms()
     {
         static const std::vector<PlatformInfo> s_Platforms = {
+            { PortablePlatform, ICON_FA_BOX_ARCHIVE, "One file (Builds/<Game>.cqspace) that the Conqueror player opens on Windows, macOS, Linux, "
+              "Android and the web, like a .love or .jar file: scenes, assets and scripts in ConquerorScript, LuaQ, Visual Script, State Graph, "
+              "Python, C# or Java. Native scripts (C++, C, Rust, Zig) are compiled per platform and cannot be in it. Needs a player of the same "
+              "or a newer engine version." },
             { "Windows", ICON_FA_DESKTOP, "Built on Windows (MSVC / MinGW) or cross-built from Linux with MinGW (Tools/Windows)." },
             { "Windows ARM64", ICON_FA_DESKTOP, "Windows on ARM (Snapdragon X laptops, Surface Pro): built on Windows with Visual Studio's ARM64 tools." },
             { "macOS", ICON_FA_LAPTOP, "Built on a Mac. Bundle identifier, version, minimum macOS and privacy texts are written to Info.plist." },
@@ -394,6 +639,40 @@ namespace Conqueror::Editor
         return "com." + part(config.Organization, "conqueror") + "." + part(config.Name, "game");
     }
 
+    fs::path BuildPipeline::PortablePackagePath(const fs::path& outputDir, const ProjectConfig& config)
+    {
+        return outputDir / (SanitizeName(config.Name) + GamePackage::Extension);
+    }
+
+    std::vector<BuildPipeline::PortableBlocker> BuildPipeline::FindPortableBlockers(const fs::path& projectDir)
+    {
+        std::vector<PortableBlocker> list;
+        std::error_code ec;
+        for (const char* sub : { "Assets", "Packages" })
+        {
+            const fs::path root = projectDir / sub;
+            if (!fs::is_directory(root, ec))
+                continue;
+            for (auto it = fs::recursive_directory_iterator(root, fs::directory_options::skip_permission_denied, ec);
+                 !ec && it != fs::recursive_directory_iterator(); it.increment(ec))
+            {
+                const fs::path& p = it->path();
+                if (SkipName(p))
+                {
+                    if (it->is_directory(ec))
+                        it.disable_recursion_pending();
+                    continue;
+                }
+                if (!it->is_regular_file(ec))
+                    continue;
+                if (const LanguageInfo* l = ScriptLanguageOf(p); l && GamePackage::IsNativeLanguage(l->Id))
+                    list.push_back({ fs::relative(p, projectDir, ec).generic_string(), l->Name });
+            }
+        }
+        std::sort(list.begin(), list.end(), [](const PortableBlocker& a, const PortableBlocker& b) { return a.Path < b.Path; });
+        return list;
+    }
+
     fs::path BuildPipeline::FindEngineRoot(const fs::path& binDir)
     {
         std::error_code ec;
@@ -411,6 +690,57 @@ namespace Conqueror::Editor
 
     bool BuildPipeline::Launch(const fs::path& executable, std::string* error)
     {
+        // Taşınabilir oyun paketi: editörün yanındaki oyuncu (ConquerorRuntime <paket>)
+        if (executable.extension() == GamePackage::Extension)
+        {
+            std::error_code ec;
+#ifdef _WIN32
+            const fs::path runtime = DynamicLibrary::ExecutableDirectory() / "ConquerorRuntime.exe";
+#else
+            const fs::path runtime = DynamicLibrary::ExecutableDirectory() / "ConquerorRuntime";
+#endif
+            if (!fs::exists(runtime, ec))
+            {
+                if (error) *error = "The Conqueror player (" + runtime.string() + ") was not found next to the editor";
+                return false;
+            }
+#ifdef _WIN32
+            std::wstring cmd = L"\"" + runtime.wstring() + L"\" \"" + executable.wstring() + L"\"";
+            const std::wstring dir = runtime.parent_path().wstring();
+            STARTUPINFOW si{};
+            si.cb = sizeof(si);
+            PROCESS_INFORMATION pi{};
+            if (!CreateProcessW(nullptr, cmd.data(), nullptr, nullptr, FALSE, DETACHED_PROCESS, nullptr, dir.c_str(), &si, &pi))
+            {
+                if (error) *error = "CreateProcess failed";
+                return false;
+            }
+            CloseHandle(pi.hThread);
+            CloseHandle(pi.hProcess);
+            return true;
+#else
+            const std::string exe = runtime.string(), pkg = executable.string(), dir = runtime.parent_path().string();
+            const pid_t pid = fork();
+            if (pid < 0)
+            {
+                if (error) *error = "fork failed";
+                return false;
+            }
+            if (pid == 0)
+            {
+                if (fork() != 0)
+                    _exit(0);
+                setsid();
+                if (chdir(dir.c_str()) != 0)
+                    _exit(127);
+                execl(exe.c_str(), exe.c_str(), pkg.c_str(), (char*)nullptr);
+                _exit(127);
+            }
+            int status = 0;
+            waitpid(pid, &status, 0);
+            return true;
+#endif
+        }
         // Web derlemesi (index.html): file:// ile açılmaz; motorun Tools/Web/serve.py sunucusu yerelde açar ve tarayıcıyı başlatır
         if (executable.extension() == ".html")
         {
@@ -608,7 +938,8 @@ namespace Conqueror::Editor
                 const std::string& platform = platforms[i];
                 BuildOptions o = base;
                 o.Config.TargetPlatform = platform;
-                o.OutputDir = base.OutputDir / platform;
+                // Taşınabilir paket tek dosyadır: Builds/<Oyun>.cqspace (platform klasörü yok)
+                o.OutputDir = IsPortable(platform) ? base.OutputDir : base.OutputDir / platform;
                 o.RunAfterBuild = false;
                 {
                     std::lock_guard<std::mutex> lock(m_Mutex);
@@ -692,8 +1023,10 @@ namespace Conqueror::Editor
         auto cancelled = [&]() { return cancel && cancel->load(); };
 
         // 1) Doğrulama
-        step(0.02f, "Validating project");
         const std::string platform = o.Config.TargetPlatform.empty() ? HostPlatform() : o.Config.TargetPlatform;
+        if (IsPortable(platform))
+            return RunPortableBuild(o, progress, log, cancel);
+        step(0.02f, "Validating project");
         // Android / Android Automotive: oyuncu NDK ile her masaüstünden derlenir, APK Tools/Android/package_apk.py ile paketlenir
         const bool android = platform == "Android" || platform == "Android Automotive" || platform == "Android TV" || platform == "ChromeOS" ||
                              platform == "Meta Quest" || platform == "Android XR";

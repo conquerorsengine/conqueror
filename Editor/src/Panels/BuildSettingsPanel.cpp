@@ -74,6 +74,9 @@ namespace Conqueror::Editor
             fs::path p(cfg.Build.OutputDirectory);
             return p.is_absolute() ? p : project->GetProjectDirectory() / p;
         }
+        // Taşınabilir paket tek dosyadır: Builds/<Oyun>.cqspace
+        if (BuildPipeline::IsPortable(cfg.TargetPlatform))
+            return project->GetProjectDirectory() / "Builds";
         return project->GetProjectDirectory() / "Builds" / (cfg.TargetPlatform.empty() ? BuildPipeline::HostPlatform() : cfg.TargetPlatform);
     }
 
@@ -459,7 +462,11 @@ namespace Conqueror::Editor
             }
         }
         UI::EndProperty();
-        UI::Text("Build Location", "%s", DefaultOutputDir().string().c_str());
+        const bool portable = BuildPipeline::IsPortable(cfg.TargetPlatform);
+        if (portable)
+            UI::Text("Build Location", "%s", BuildPipeline::PortablePackagePath(DefaultOutputDir(), cfg).string().c_str());
+        else
+            UI::Text("Build Location", "%s", DefaultOutputDir().string().c_str());
         if (UI::Checkbox("Development Build", cfg.Build.DevelopmentBuild, "Keeps the log file and console output in the build."))
             MarkDirty();
         // Unity: Script Debugging / Wait For Managed Debugger (yalnız Development Build ile); Unreal: DebugGame yapılandırması
@@ -476,6 +483,39 @@ namespace Conqueror::Editor
         if (UI::Checkbox("Leave AssetBundle Assets Out", cfg.Build.ExcludeBundledAssets,
                          "Assets with an AssetBundle name are not copied into the game; they arrive in their bundles (Build > Build AssetBundles, LoadAssetBundle)"))
             MarkDirty();
+        if (portable)
+        {
+            // Makine koduna derlenen betikler pakete giremez: hangileri olduğu derlemeden önce görünür, istenirse dışarıda bırakılır
+            const double now = ImGui::GetTime();
+            if (now - m_PortableScanTime > 3.0 && !running)
+            {
+                m_PortableScanTime = now;
+                m_PortableBlockers.clear();
+                for (const auto& b : BuildPipeline::FindPortableBlockers(Project::GetActiveProjectDirectory()))
+                    m_PortableBlockers.emplace_back(b.Path, b.Language);
+            }
+            if (UI::Checkbox("Skip Native Scripts", cfg.Build.PortableSkipNativeScripts,
+                             "C++, C, Rust and Zig scripts are compiled to machine code for one platform, so they cannot run from a portable "
+                             "package. On: the package is built without them (objects that use them run without these scripts). Off: the build "
+                             "stops and lists them."))
+                MarkDirty();
+            if (!m_PortableBlockers.empty())
+            {
+                std::string text = std::to_string(m_PortableBlockers.size()) + " native script(s) cannot run from a portable package" +
+                                   (cfg.Build.PortableSkipNativeScripts ? " and will be left out:" : " and block the build:");
+                const size_t shown = std::min<size_t>(m_PortableBlockers.size(), 8);
+                for (size_t i = 0; i < shown; ++i)
+                    text += "\n  " + m_PortableBlockers[i].first + " (" + m_PortableBlockers[i].second + ")";
+                if (m_PortableBlockers.size() > shown)
+                    text += "\n  ... and " + std::to_string(m_PortableBlockers.size() - shown) + " more";
+                if (!cfg.Build.PortableSkipNativeScripts)
+                    text += "\nRewrite them in ConquerorScript, LuaQ, Visual Script, Python, C# or Java, or turn on Skip Native Scripts.";
+                UI::InfoBox(text.c_str(), cfg.Build.PortableSkipNativeScripts ? UI::InfoType::Warning : UI::InfoType::Error);
+            }
+            else
+                UI::InfoBox("The package runs on every Conqueror player of this engine version or newer: "
+                            "ConquerorRuntime <Game>.cqspace, or open the file directly.", UI::InfoType::Info);
+        }
 
         ImGui::Spacing();
         const bool canBuild = BuildPipeline::CanBuild(cfg.TargetPlatform);
@@ -506,7 +546,8 @@ namespace Conqueror::Editor
             ImGui::EndDisabled();
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled | ImGuiHoveredFlags_DelayShort))
             {
-                std::string tip = "Builds every platform whose module is ready on this computer, one after another, into Builds/<Platform>:";
+                std::string tip = "Builds every platform whose module is ready on this computer, one after another, into Builds/<Platform> "
+                                  "(the portable package into Builds/<Game>.cqspace):";
                 for (const auto& p : ready)
                     tip += "\n  " + p;
                 ImGui::SetTooltip("%s", tip.c_str());
