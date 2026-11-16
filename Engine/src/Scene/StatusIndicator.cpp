@@ -32,6 +32,10 @@
     #endif
     #include <windows.h>
     #include <shellapi.h>
+#elif defined(CQ_PLATFORM_MACOS) && !defined(CQ_PLATFORM_IOS)
+    // macOS: menü çubuğu (NSStatusItem, StatusIndicatorMac.mm). iOS / iPadOS'ta menü çubuğu da sistem tepsisi de yok
+    #define CQ_STATUS_MAC 1
+    #include "Scene/StatusIndicatorMac.h"
 #endif
 
 namespace Conqueror
@@ -948,12 +952,127 @@ namespace Conqueror
     }
 #endif
 
+#if defined(CQ_STATUS_MAC)
+    // ================================================================ macOS: menü çubuğu (NSStatusBar / NSStatusItem)
+    namespace
+    {
+        struct MacItem
+        {
+            StatusIndicatorMac::Item* Native = nullptr;
+            std::string Tooltip, IconPath;
+            bool Visible = true;
+            std::vector<std::string> Menu;
+            std::vector<PendingEvent> Events;
+        };
+
+        // Test (otomasyon): "getall" izlenecek öğeyi seçer; değerler her expect'te AppKit'ten yeniden okunur
+        MacItem* s_ProbeItem = nullptr;
+        std::map<std::string, std::string> s_ProbeValues;
+
+        void SetIcon(MacItem& item, const std::string& path)
+        {
+            const IconImage icon = LoadIcon(path);
+            StatusIndicatorMac::SetIcon(item.Native, icon.Rgba.data(), icon.Width, icon.Height);
+        }
+
+        MacItem* CreateItem(const StatusIndicatorComponent& c)
+        {
+            if (!StatusIndicatorMac::IsMainThread())
+            {
+                static bool warned = false;
+                if (!warned) CQ_CORE_WARN("[Status Indicator] The menu bar can only be changed from the main thread; the icon is not shown");
+                warned = true;
+                return nullptr;
+            }
+            StatusIndicatorMac::Item* native = StatusIndicatorMac::Create();
+            if (!native)
+            {
+                static bool warned = false;
+                if (!warned) CQ_CORE_WARN("[Status Indicator] The macOS menu bar did not accept a status item; the icon is not shown");
+                warned = true;
+                return nullptr;
+            }
+            auto* item = new MacItem();
+            item->Native = native;
+            item->Tooltip = c.Tooltip;
+            item->Visible = c.Visible;
+            item->Menu = c.MenuItems;
+            item->IconPath = c.Icon;
+            StatusIndicatorMac::SetTooltip(native, c.Tooltip);
+            SetIcon(*item, c.Icon);
+            StatusIndicatorMac::SetMenu(native, c.MenuItems);
+            StatusIndicatorMac::SetVisible(native, c.Visible);
+            return item;
+        }
+
+        void DestroyItem(MacItem* item)
+        {
+            if (!item)
+                return;
+            if (s_ProbeItem == item)
+                s_ProbeItem = nullptr;
+            StatusIndicatorMac::Destroy(item->Native);
+            delete item;
+        }
+
+        void Pump(MacItem& item, StatusIndicatorComponent& c)
+        {
+            if (c.Tooltip != item.Tooltip)
+            {
+                item.Tooltip = c.Tooltip;
+                StatusIndicatorMac::SetTooltip(item.Native, c.Tooltip);
+            }
+            if (c.Visible != item.Visible)
+            {
+                item.Visible = c.Visible;
+                StatusIndicatorMac::SetVisible(item.Native, c.Visible);
+            }
+            if (c.Icon != item.IconPath)
+            {
+                item.IconPath = c.Icon;
+                SetIcon(item, c.Icon);
+            }
+            if (c.MenuItems != item.Menu)
+            {
+                item.Menu = c.MenuItems;
+                StatusIndicatorMac::SetMenu(item.Native, c.MenuItems);
+            }
+            // Tıklamalar ve menü seçimleri ana döngüde (glfwPollEvents -> NSApp) birikti
+            for (const auto& ev : StatusIndicatorMac::TakeEvents(item.Native))
+            {
+                PendingEvent e;
+                e.Kind = ev.Kind;
+                e.Button = ev.Button;
+                e.X = ev.X;
+                e.Y = ev.Y;
+                e.Item = ev.Index;
+                item.Events.push_back(e);
+            }
+            c.Registered = StatusIndicatorMac::InStatusBar(item.Native);
+        }
+
+        void ReadProbe()
+        {
+            if (!s_ProbeItem)
+                return;
+            const StatusIndicatorMac::State st = StatusIndicatorMac::Read(s_ProbeItem->Native);
+            s_ProbeValues["ToolTipTitle"] = st.Tooltip;
+            s_ProbeValues["Status"] = st.Visible ? "Active" : "Passive";   // Linux'taki StatusNotifierItem adlarıyla
+            s_ProbeValues["InStatusBar"] = st.InStatusBar ? "1" : "0";
+            s_ProbeValues["StatusWindow"] = st.Window;
+            s_ProbeValues["IconWidth"] = std::to_string(st.IconPixels);
+        }
+    }
+#endif
+
     namespace
     {
 #if defined(CQ_STATUS_SNI)
         using NativeItem = SniItem;
 #elif defined(CQ_STATUS_WIN32)
         using NativeItem = WinItem;
+#elif defined(CQ_STATUS_MAC)
+        using NativeItem = MacItem;
 #endif
         std::vector<Scene*>& Scenes()
         {
@@ -968,7 +1087,7 @@ namespace Conqueror
         {
 #if defined(CQ_STATUS_SNI)
             return Api().Ok;
-#elif defined(CQ_STATUS_WIN32)
+#elif defined(CQ_STATUS_WIN32) || defined(CQ_STATUS_MAC)
             return true;
 #else
             return false;
@@ -982,7 +1101,7 @@ namespace Conqueror
                 return;
             if (std::find(Scenes().begin(), Scenes().end(), &scene) == Scenes().end())
                 Scenes().push_back(&scene);
-#if defined(CQ_STATUS_SNI) || defined(CQ_STATUS_WIN32)
+#if defined(CQ_STATUS_SNI) || defined(CQ_STATUS_WIN32) || defined(CQ_STATUS_MAC)
             std::vector<std::pair<uint32_t, PendingEvent>> events;
             for (auto e : view)
             {
@@ -1032,7 +1151,13 @@ namespace Conqueror
 #else
             static bool warned = false;
             if (!warned)
+            {
+#if defined(CQ_PLATFORM_IOS)
+                CQ_CORE_WARN("[Status Indicator] iOS and iPadOS have no menu bar or system tray; the status indicator is not shown");
+#else
                 CQ_CORE_WARN("[Status Indicator] Tray icons are not supported on this platform yet");
+#endif
+            }
             warned = true;
 #endif
         }
@@ -1043,7 +1168,7 @@ namespace Conqueror
             if (it == Scenes().end())
                 return;
             Scenes().erase(it);
-#if defined(CQ_STATUS_SNI) || defined(CQ_STATUS_WIN32)
+#if defined(CQ_STATUS_SNI) || defined(CQ_STATUS_WIN32) || defined(CQ_STATUS_MAC)
             auto view = scene->m_Registry.view<StatusIndicatorComponent>();
             for (auto e : view)
             {
@@ -1111,6 +1236,29 @@ namespace Conqueror
             A.dbus_connection_flush(p.Conn);
             p.Pending[serial] = request;
             return true;
+#elif defined(CQ_STATUS_MAC)
+            // Gerçek AppKit yolları: düğmenin hedef / eylemi (performClick), NSMenuItem eylemi; durum NSStatusItem'dan okunur
+            const entt::entity e = (entt::entity)entity;
+            auto* c = scene.m_Registry.valid(e) ? scene.m_Registry.try_get<StatusIndicatorComponent>(e) : nullptr;
+            auto* item = c ? static_cast<MacItem*>(c->Native) : nullptr;
+            if (!item)
+                return false;
+            if (request == "getall")
+            {
+                s_ProbeItem = item;
+                ReadProbe();
+                return true;
+            }
+            if (request == "layout")
+            {
+                s_ProbeValues["MenuItems"] = std::to_string(StatusIndicatorMac::Read(item->Native).MenuItems);
+                return true;
+            }
+            if (request == "activate" || request == "context" || request == "secondary")
+                return StatusIndicatorMac::Click(item->Native, request == "activate" ? 1 : request == "context" ? 2 : 3);
+            if (request == "menu")
+                return StatusIndicatorMac::ChooseMenuItem(item->Native, argument);
+            return false;
 #else
             (void)scene; (void)entity; (void)request; (void)argument;
             return false;
@@ -1123,6 +1271,13 @@ namespace Conqueror
             PumpProbe();
             auto it = Probe().Values.find(key);
             if (it == Probe().Values.end())
+                return false;
+            out = it->second;
+            return true;
+#elif defined(CQ_STATUS_MAC)
+            ReadProbe();
+            auto it = s_ProbeValues.find(key);
+            if (it == s_ProbeValues.end())
                 return false;
             out = it->second;
             return true;
@@ -1142,7 +1297,8 @@ namespace Conqueror
             .Describe("Godot StatusIndicator: an icon in the system tray (notification area) while the game runs, with a tooltip and a "
                       "menu. A click emits pressed (button 1 left, 2 right, 3 middle, x, y) and calls OnStatusIndicatorPressed; a menu "
                       "item emits menu_item_pressed (index) and calls OnStatusMenuItemPressed. Linux / BSD: StatusNotifierItem (KDE, "
-                      "XFCE, LXQt; GNOME with the AppIndicator extension); Windows: notification area. Unity and Unreal have no equivalent.")
+                      "XFCE, LXQt; GNOME with the AppIndicator extension); Windows: notification area; macOS: menu bar (right-click "
+                      "or Control-click opens the menu). iOS has no menu bar. Unity and Unreal have no equivalent.")
             .Field("Icon", "Icon", &C::Icon, FieldKind::Asset).Filter(".png;.jpg;.jpeg;.tga;.bmp")
             .Field("Tooltip", "Tooltip", &C::Tooltip)
             .Field("Visible", "Visible", &C::Visible)
