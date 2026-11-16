@@ -28,6 +28,7 @@
 #include "Renderer/TextureSlots.h"
 
 #include <algorithm>
+#include <map>
 #include <cmath>
 #include <cstring>
 #include <cstdlib>
@@ -162,6 +163,7 @@ namespace Conqueror
         LoadShader("Stabilize", "Engine/src/Shaders/PostProcess/Stabilize.cqsh");
         LoadShader("RejectMix", "Engine/src/Shaders/PostProcess/RejectMix.cqsh");
         LoadShader("FSR2Reactive", "Engine/src/Shaders/PostProcess/FSR2Reactive.cqsh");
+        LoadShader("FSR2Hold", "Engine/src/Shaders/PostProcess/FSR2Hold.cqsh");
         LoadShader("DepthOfField", "Engine/src/Shaders/PostProcess/DepthOfField.cqsh");
         LoadShader("MotionBlur", "Engine/src/Shaders/PostProcess/MotionBlur.cqsh");
         LoadShader("AutoExposure", "Engine/src/Shaders/PostProcess/AutoExposure.cqsh");
@@ -246,6 +248,16 @@ namespace Conqueror
         m_PrevDepthValid = false;
         DestroyTarget(m_MotionVectors);
         DestroyTarget(m_FSR2Output);
+        DestroyTarget(m_FSR2Hold);
+        DestroyTarget(m_FSR2HoldState[0]);
+        DestroyTarget(m_FSR2HoldState[1]);
+        for (uint32_t& fb : m_FSR2HoldFramebuffer)
+        {
+            if (fb)
+                glDeleteFramebuffers(1, &fb);
+            fb = 0;
+        }
+        m_FSR2HoldValid = false;
         m_FSR2.reset();
         DestroyTarget(m_DLSSOutput);
         m_DLSS.reset();
@@ -660,7 +672,7 @@ namespace Conqueror
             else if (m_TAAVariant == 4)
             {
                 // FSR 2: SDK'nın titreşim dizisi (evre sayısı 8 x (çıktı / iç)²)
-                pixel = FSR2Upscaler::JitterOffset(m_FrameIndex, m_Width, std::max(m_OutputWidth, m_Width));
+                pixel = FSR2Upscaler::JitterOffset(m_FrameIndex, m_Width, m_FSR2AtRenderRes ? m_Width : std::max(m_OutputWidth, m_Width));
             }
             else
             {
@@ -718,6 +730,7 @@ namespace Conqueror
         m_HistoryValid = false;
         m_HasPrevViewProj = false;
         m_FSR2Valid = false;
+        m_FSR2HoldValid = false;
         m_DLSSValid = false;
         m_XeSSValid = false;
         m_MetalFXValid = false;
@@ -1164,6 +1177,12 @@ namespace Conqueror
                 m_AAMode = AntiAliasingMode::TAA;
         }
         m_UseFSR2 = !camera.Orthographic && (m_Upscaler == UpscalerMode::FSR2 || m_AAMode == AntiAliasingMode::FSRAA);
+        {
+            const bool temporalUpscaler = IsLDRTemporalUpscaler(m_Upscaler) || m_Upscaler == UpscalerMode::FSR2 || m_Upscaler == UpscalerMode::DLSS
+                                       || m_Upscaler == UpscalerMode::XeSS || m_Upscaler == UpscalerMode::MetalFX || m_Upscaler == UpscalerMode::PSSR
+                                       || m_Upscaler == UpscalerMode::TSR;
+            m_FSR2AtRenderRes = m_UseFSR2 && m_AAMode == AntiAliasingMode::FSRAA && m_Upscaler != UpscalerMode::None && !temporalUpscaler;
+        }
         // DLSS çalışırken hata verdiyse (NGX, sürücü): yükseltici FSR 1, DLAA yerine TAA
         if (m_DLSS && m_DLSS->HasFailed())
         {
@@ -1813,7 +1832,9 @@ namespace Conqueror
         }
         if (m_UseFSR2 && m_JitterActive && Valid(motion) && Valid(sharpen) && !(m_FSR2 && m_FSR2->HasFailed()))
         {
-            // FSR 2: tam ekran hareket vektörleri (iç çözünürlük) -> FSR 2 (çıktı çözünürlüğünde görüntü) -> çıktıya kopya
+            // FSR 2: tam ekran hareket vektörleri (iç çözünürlük) -> FSR 2 (çıktı çözünürlüğünde görüntü) -> çıktıya kopya.
+            // FSR AA + uzamsal yükseltici: FSR 2 iç çözünürlükte (kenar yumuşatma), büyütme aşağıdaki uzamsal yükselticide
+            const uint32_t fsrW = m_FSR2AtRenderRes ? m_Width : outW, fsrH = m_FSR2AtRenderRes ? m_Height : outH;
             EnsureTarget(m_MotionVectors, m_Width, m_Height, GL_RG16F);
             glBindFramebuffer(GL_FRAMEBUFFER, m_MotionVectors.Framebuffer);
             glViewport(0, 0, (GLsizei)m_Width, (GLsizei)m_Height);
@@ -1828,7 +1849,7 @@ namespace Conqueror
             BindTexture(0, GetSceneDepthTexture());
             BindTexture(1, m_FinalHasVelocity ? m_Velocity.Texture : 0);
             PostProcess::DrawFullscreenQuad();
-            EnsureTarget(m_FSR2Output, outW, outH, GL_RGBA8);
+            EnsureTarget(m_FSR2Output, fsrW, fsrH, GL_RGBA8);
             if (!m_FSR2)
                 m_FSR2 = std::make_unique<FSR2Upscaler>();
             FSR2Upscaler::Params prm;
@@ -1890,8 +1911,8 @@ namespace Conqueror
             prm.OutputFormat = GL_RGBA8;
             prm.RenderWidth = m_Width;
             prm.RenderHeight = m_Height;
-            prm.DisplayWidth = outW;
-            prm.DisplayHeight = outH;
+            prm.DisplayWidth = fsrW;
+            prm.DisplayHeight = fsrH;
             prm.JitterPixels = m_JitterNDC * 0.5f * glm::vec2((float)m_Width, (float)m_Height);
             prm.Near = m_FinalNear;
             prm.Far = m_FinalFar;
@@ -1900,12 +1921,63 @@ namespace Conqueror
             prm.Reset = !m_FSR2Valid;
             // FSR AA (yerel çözünürlük): RCAS birikmiş görüntüdeki ince çizgileri (duvar ızgarası, uzak kenar) noktalı / benekli
             // keskinleştiriyordu; yerel çözünürlükte keskinlik TAA'nınkiyle aynı (TAA Sharpness + hareket ederken artış)
-            const bool nativeFSR = m_AAMode == AntiAliasingMode::FSRAA && outW == m_Width && outH == m_Height;
+            const bool nativeFSR = m_AAMode == AntiAliasingMode::FSRAA && fsrW == m_Width && fsrH == m_Height;
             prm.Sharpen = !nativeFSR && upSharp > 0.0f;
             prm.Sharpness = upSharp;
             if (m_FSR2->Dispatch(prm))
             {
                 m_FSR2Valid = true;
+                // 260: FSR AA'da kamera dururken ince boşluklar (küplerin arası) jitter yüzünden yanıp sönüyordu (FSR 2 boşluktaki
+                // derinlik değişimini açığa çıkan yüzey sayıp geçmişi atıyor). Derinlik kesintili, durağan piksellerde FSR çıktısının zamansal
+                // ortalaması; hareket eden ya da gerçekten değişen pikseller dokunulmadan geçer (FSR2Hold.cqsh). Kamera hareket ederken
+                // geçiş yalnız durumu yeniler
+                uint32_t fsrResult = m_FSR2Output.Texture;
+                auto hold = PostProcess::GetShader("FSR2Hold");
+                if (nativeFSR && Valid(hold))
+                {
+                    const uint32_t next = 1u - m_FSR2HoldIndex;
+                    EnsureTarget(m_FSR2Hold, fsrW, fsrH, GL_RGBA8);
+                    EnsureTarget(m_FSR2HoldState[0], fsrW, fsrH, GL_RGBA16F);
+                    EnsureTarget(m_FSR2HoldState[1], fsrW, fsrH, GL_RGBA16F);
+                    if (!m_FSR2HoldFramebuffer[next])
+                        glCreateFramebuffers(1, &m_FSR2HoldFramebuffer[next]);
+                    const GLenum buffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+                    glNamedFramebufferDrawBuffers(m_FSR2HoldFramebuffer[next], 2, buffers);
+                    glNamedFramebufferTexture(m_FSR2HoldFramebuffer[next], GL_COLOR_ATTACHMENT0, m_FSR2Hold.Texture, 0);
+                    glNamedFramebufferTexture(m_FSR2HoldFramebuffer[next], GL_COLOR_ATTACHMENT1, m_FSR2HoldState[next].Texture, 0);
+                    glBindFramebuffer(GL_FRAMEBUFFER, m_FSR2HoldFramebuffer[next]);
+                    glViewport(0, 0, (GLsizei)fsrW, (GLsizei)fsrH);
+                    hold->Bind();
+                    hold->SetInt("u_Current", 0);
+                    hold->SetInt("u_State", 1);
+                    hold->SetInt("u_Depth", 2);
+                    hold->SetInt("u_Motion", 3);
+                    hold->SetInt("u_Reactive", 4);
+                    hold->SetInt("u_HasReactive", fsrReactive ? 1 : 0);
+                    hold->SetInt("u_Hold", ((m_CameraStill || m_CameraNearlyStill) && m_FSR2HoldValid && !prm.Reset) ? 1 : 0);
+                    hold->SetFloat2("u_Texel", glm::vec2(1.0f / (float)fsrW, 1.0f / (float)fsrH));
+                    hold->SetFloat("u_Near", m_FinalNear);
+                    hold->SetFloat("u_Far", m_FinalFar);
+                    BindTexture(0, m_FSR2Output.Texture);
+                    BindTexture(1, m_FSR2HoldState[m_FSR2HoldIndex].Texture);
+                    BindTexture(2, GetSceneDepthTexture());
+                    BindTexture(3, m_MotionVectors.Texture);
+                    BindTexture(4, fsrReactive);
+                    PostProcess::DrawFullscreenQuad();
+                    Renderer::GetStats().PostProcessPasses++;
+                    m_FSR2HoldIndex = next;
+                    m_FSR2HoldValid = true;
+                    fsrResult = m_FSR2Hold.Texture;
+                }
+                else
+                    m_FSR2HoldValid = false;
+                if (fsrW != outW || fsrH != outH)
+                {
+                    // FSR AA + uzamsal yükseltici: kenar yumuşatılmış iç çözünürlük görüntüsü aşağıda büyütülür (NIS / FSR 1 / CAS ...)
+                    cur = fsrResult;
+                    Renderer::GetStats().PostProcessPasses++;
+                    goto spatialUpscale;
+                }
                 toOutput();
                 sharpen->Bind();
                 sharpen->SetInt("u_ScreenTexture", 0);
@@ -1913,7 +1985,7 @@ namespace Conqueror
                 sharpen->SetFloat("u_Amount", std::min((nativeFSR ? settings.TAASharpness : 0.0f) + ((settings.Sharpen && !m_CASSharpen) ? settings.SharpenAmount : 0.0f), 1.0f));
                 sharpen->SetInt("u_HasMotionState", (nativeFSR && !m_CameraStill) ? 2 : 0);
                 sharpen->SetFloat("u_MotionAmount", kTAAMotionSharpen);
-                BindTexture(0, m_FSR2Output.Texture);
+                BindTexture(0, fsrResult);
                 PostProcess::DrawFullscreenQuad();
                 sharpen->SetInt("u_HasMotionState", 0);
                 Renderer::GetStats().PostProcessPasses += 2;
@@ -1921,6 +1993,7 @@ namespace Conqueror
             }
         }
 
+        spatialUpscale:
         auto sgsrConvert = PostProcess::GetShader("SGSR2_Convert");
         auto sgsrUpscale = PostProcess::GetShader("SGSR2_Upscale");
         if (up == UpscalerMode::SGSR2 && m_JitterActive && Valid(sgsrConvert) && Valid(sgsrUpscale) && Valid(sharpen))
@@ -2345,6 +2418,25 @@ namespace Conqueror
                         break;
                     }
             m_CameraStill = still;
+            // Görüntü köşeleri ve ortası uzak düzlemde: bu ve önceki karenin matrisiyle ekrandaki kayma (piksel)
+            {
+                float maxShift = m_HasPrevViewProj ? 0.0f : 1e9f;
+                if (m_HasPrevViewProj)
+                {
+                    const glm::mat4 invNow = glm::inverse(now);
+                    const glm::vec2 half(0.5f * (float)m_Width, 0.5f * (float)m_Height);
+                    for (const glm::vec2 c : { glm::vec2(-1.0f, -1.0f), glm::vec2(1.0f, -1.0f), glm::vec2(-1.0f, 1.0f), glm::vec2(1.0f, 1.0f), glm::vec2(0.0f) })
+                    {
+                        glm::vec4 w = invNow * glm::vec4(c, 0.999f, 1.0f);
+                        w /= w.w;
+                        glm::vec4 q = m_PrevViewProj * w;
+                        if (std::abs(q.w) < 1e-6f) { maxShift = 1e9f; break; }
+                        q /= q.w;
+                        maxShift = std::max(maxShift, glm::length((glm::vec2(q) - c) * half));
+                    }
+                }
+                m_CameraNearlyStill = maxShift < 0.02f;
+            }
             if (m_AAMode != AntiAliasingMode::SMAA_T2X)
                 m_T2xValid = false;
             if (m_Upscaler != UpscalerMode::TAAU)

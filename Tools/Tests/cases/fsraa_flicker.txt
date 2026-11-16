@@ -1,0 +1,23 @@
+# template: fps
+# 260: FSR AA'da (FSR 2 yerel çözünürlükte) mavi küplerin arasındaki ince boşluklar kamera dururken jitter yüzünden yanıp sönüyordu;
+# FSR AA + NIS'te FSR 2 kendisi büyütüp RCAS ile keskinleştirdiği için çok daha belirgindi (piksellerin %1.7'si 8 birimden fazla
+# oynuyordu). Şimdi: FSR AA'da ince boşluk tutucu (FSR2Hold), FSR AA + uzamsal yükselticide FSR 2 iç çözünürlükte kenar yumuşatır,
+# büyütmeyi NIS yapar. Ölçü: 120 karede piksel parlaklık aralığı (silahsız bölge, oyuncu küplerin önünde durur)
+wait 40
+entity move Player -2 0.9 5.5
+focus Game
+play
+wait 30
+script set Player@FirstPersonShooter yaw float 0
+script set Player@FirstPersonShooter pitch float -8
+cvar r.AntiAliasing 26
+wait 200
+game_flicker 120 0.0 0.3 0.55 0.95 max8% 0.12 max% 0.04
+wait 125
+cvar r.Upscaler 3
+wait 90
+game_flicker 120 0.0 0.3 0.55 0.95 max8% 1.0 max% 0.1
+wait 125
+script_errors expect 0
+stop
+quit

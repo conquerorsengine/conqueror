@@ -1,0 +1,85 @@
+#language GLSL
+// FSR AA (FSR 2 yerel çözünürlükte) kamera dururken ince boşluk tutucu (260). Jitter yüzünden piksel altı ince boşluklarda (yan yana
+// küplerin arası) derinlik her karede yakın / uzak arasında değişiyor; FSR 2 bunu açığa çıkan yüzey sayıp geçmişi atıyor, boşluk
+// yanıp sönüyordu. Yalnız derinlik kesintisi olan, hareket vektörü sıfır ve tepki maskesi boş piksellerde FSR çıktısının zamansal
+// ortalaması gösterilir: piksel son karelerdeki salınım aralığının dışına çıkarsa (gerçek değişiklik: mermi izi, ışık açılması) geçmiş
+// hemen bırakılır. Yüzeydeki kasıtlı yanıp sönmeler (derinlik kesintisi yok) ve hareket eden her şey dokunulmadan geçer.
+// Çıktı 0: gösterilen renk; çıktı 1: durum (rgb ortalama, a parlaklık varyansı)
+#type vertex
+#version 450 core
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+out vec2 v_UV;
+void main()
+{
+    v_UV = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}
+
+#type fragment
+#version 450 core
+layout(location = 0) out vec4 o_Color;
+layout(location = 1) out vec4 o_State;
+in vec2 v_UV;
+uniform sampler2D u_Current;    // FSR 2 çıktısı (LDR)
+uniform sampler2D u_State;      // önceki karenin durumu
+uniform sampler2D u_Depth;      // sahne derinliği (iç çözünürlük = çıktı çözünürlüğü)
+uniform sampler2D u_Motion;     // FSR 2 hareket vektörleri (uv)
+uniform sampler2D u_Reactive;
+uniform int u_HasReactive = 0;
+uniform int u_Hold = 0;         // 1: kamera duruyor ve durum geçerli
+uniform vec2 u_Texel;
+uniform float u_Near = 0.1;
+uniform float u_Far = 1000.0;
+
+float LinearDepth(float d)
+{
+    float z = d * 2.0 - 1.0;
+    return 2.0 * u_Near * u_Far / max(u_Far + u_Near - z * (u_Far - u_Near), 1e-6);
+}
+
+float Luma(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
+
+void main()
+{
+    vec3 cur = texture(u_Current, v_UV).rgb;
+    vec4 state = texture(u_State, v_UV);
+    if (u_Hold == 0)
+    {
+        o_Color = vec4(cur, 1.0);
+        o_State = vec4(cur, 0.0);
+        return;
+    }
+    // Derinlik kesintisi (3x3, doğrusal derinlik oranı): yalnız nesne kenarları / aralıkları
+    float zMin = 1e30, zMax = 0.0;
+    for (int y = -1; y <= 1; ++y)
+        for (int x = -1; x <= 1; ++x)
+        {
+            float z = LinearDepth(texture(u_Depth, v_UV + vec2(x, y) * u_Texel).r);
+            zMin = min(zMin, z);
+            zMax = max(zMax, z);
+        }
+    bool edge = zMax > zMin * 1.08 + 0.02;
+    vec2 mv = texture(u_Motion, v_UV).xy / u_Texel;   // piksel
+    float reactive = u_HasReactive == 1 ? texture(u_Reactive, v_UV).r : 0.0;
+    if (!edge || dot(mv, mv) > 0.01 || reactive > 0.02)
+    {
+        o_Color = vec4(cur, 1.0);
+        o_State = vec4(cur, 0.0);
+        return;
+    }
+    float d = Luma(cur) - Luma(state.rgb);
+    float sigma = sqrt(max(state.a, 0.0));
+    if (abs(d) > 3.0 * sigma + 0.02)
+    {
+        // Salınım aralığının dışında: gerçek değişiklik ya da ilk sıçrama. Görüntü hemen yeni değer; varyans sıçramayı öğrenir
+        // (yalnız geri dönerse ortalama başlar, kalıcı değişiklikte varyans birkaç karede söner)
+        o_Color = vec4(cur, 1.0);
+        o_State = vec4(cur, d * d);
+        return;
+    }
+    vec3 mean = mix(state.rgb, cur, 0.1);
+    float variance = mix(state.a, d * d, 0.1);
+    o_Color = vec4(mean, 1.0);
+    o_State = vec4(mean, variance);
+}

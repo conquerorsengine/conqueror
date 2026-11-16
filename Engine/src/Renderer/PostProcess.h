@@ -197,6 +197,17 @@ namespace Conqueror
         RenderTarget m_FSR2Reactive;    // FSR 2 tepki maskesi: m_Reactive + hareket eden nesnelerin gölge hacimleri (R8)
         RenderTarget m_FSR2PrevShadow;  // önceki karenin güneş gölgesi (FSR 2 tepki maskesi: gölgesi değişen pikseller)
         RenderTarget m_FSR2Output;
+        // FSR AA kamera dururken ince boşluk tutucu (260): gösterilen renk + durum (ortalama, varyans), iki durum dönüşümlü
+        RenderTarget m_FSR2Hold;
+        RenderTarget m_FSR2HoldState[2];
+        uint32_t m_FSR2HoldFramebuffer[2] = { 0, 0 };
+        uint32_t m_FSR2HoldIndex = 0;
+        bool m_FSR2HoldValid = false;
+        // Ekranda 0.02 pikselden az kayan kamera (oyundaki karakter denetleyicisinin kayan nokta kıpırtısı katı m_CameraStill'i bozar)
+        bool m_CameraNearlyStill = false;
+        // FSR AA + uzamsal yükseltici (NIS, FSR 1, CAS ...): FSR 2 iç çözünürlükte kenar yumuşatır, büyütmeyi seçilen yükseltici yapar
+        // (TAA + NIS gibi). Eskiden FSR 2 kendisi büyütüp RCAS ile keskinleştiriyor, seçilen yükseltici hiç çalışmıyordu (260)
+        bool m_FSR2AtRenderRes = false;
         bool m_UseFSR2 = false;
         // GBAA / SRAA geometri geçişi
         bool m_WantGeometry = false;      // sonraki kare için istek

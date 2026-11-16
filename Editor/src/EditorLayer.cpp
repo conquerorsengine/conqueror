@@ -18,6 +18,7 @@
 #include "Assets/SceneTemplate.h"
 #include "Assets/MaterialPreview.h"
 #include "Core/Utils/ProcessRunner.h"
+#include "stb_image_write.h"
 #include <thread>
 #include "Renderer/GameViewModes.h"
 #include <yaml-cpp/yaml.h>
@@ -6220,6 +6221,79 @@ namespace Conqueror::Editor
         });
         // game_region_change mark <u0 v0 u1 v1> | expect <u0 v0 u1 v1> <v | >v | <v>: Game görünümündeki bölgenin işaretlenen
         // andan bu yana piksel başına ortalama değişimi (0-255, RGB ortalaması). Hareket / salınım / durağanlık denetimi
+        // game_flicker <kare> [u0 v0 u1 v1] [max% <yüzde>] [max8% <yüzde>] [save <png>]: kamera dururken sonraki N karede Game görüntüsünün her pikselinin
+        // parlaklık aralığı (en büyük - en küçük, 0-255): yanıp sönme / titreşim ölçüsü (260). Rapor: ortalama aralık, aralığı 8 ve 16'yı
+        // geçen piksellerin yüzdesi; max% verilirse 16'yı geçenler bu yüzdeyi aşınca FAIL
+        Automation::RegisterCommand("game_flicker", [this](const Args& a, std::string& err) {
+            if (a.size() < 2 || !m_GamePanel || !m_GamePanel->GetFramebuffer()) { err = "game_flicker <frames> [u0 v0 u1 v1] [max% p]"; return false; }
+            const int frames = std::max(2, std::atoi(a[1].c_str()));
+            float u0 = 0.0f, v0 = 0.0f, u1 = 1.0f, v1 = 1.0f, maxPercent = -1.0f, max8Percent = -1.0f;
+            std::string heatmap;   // save <png>: aralık ısı haritası (inceleme için)
+            size_t k = 2;
+            if (a.size() >= 6 && a[2] != "max%" && a[2] != "max8%" && a[2] != "save") { u0 = std::stof(a[2]); v0 = std::stof(a[3]); u1 = std::stof(a[4]); v1 = std::stof(a[5]); k = 6; }
+            for (; k + 1 < a.size(); k += 2)
+            {
+                if (a[k] == "max%") maxPercent = std::stof(a[k + 1]);
+                else if (a[k] == "max8%") max8Percent = std::stof(a[k + 1]);
+                else if (a[k] == "save") heatmap = a[k + 1];
+            }
+            struct Acc { std::vector<uint8_t> Lo, Hi; int W = 0, H = 0, Seen = 0; };
+            auto acc = std::make_shared<Acc>();
+            Automation::AddFrameCheck("game flicker", frames, [this, acc, frames, u0, v0, u1, v1, maxPercent, max8Percent, heatmap](uint32_t, uint32_t, std::string& e) {
+                const auto& fb = m_GamePanel->GetFramebuffer();
+                if (!fb) { e = "no game image"; return false; }
+                const auto& spec = fb->GetSpecification();
+                const int x0 = (int)(u0 * spec.Width), y0 = (int)(v0 * spec.Height);
+                const int w = std::max(1, (int)((u1 - u0) * spec.Width)), h = std::max(1, (int)((v1 - v0) * spec.Height));
+                std::vector<uint8_t> px((size_t)w * h * 4);
+                glGetTextureSubImage(fb->GetColorAttachmentRendererID(0), 0, x0, y0, 0, w, h, 1, GL_RGBA, GL_UNSIGNED_BYTE, (GLsizei)px.size(), px.data());
+                if (acc->W != w || acc->H != h) { acc->W = w; acc->H = h; acc->Lo.assign((size_t)w * h, 255); acc->Hi.assign((size_t)w * h, 0); acc->Seen = 0; }
+                for (size_t i = 0; i < (size_t)w * h; ++i)
+                {
+                    const uint8_t l = (uint8_t)((px[i * 4] * 54 + px[i * 4 + 1] * 183 + px[i * 4 + 2] * 19) >> 8);
+                    acc->Lo[i] = std::min(acc->Lo[i], l);
+                    acc->Hi[i] = std::max(acc->Hi[i], l);
+                }
+                if (++acc->Seen < frames)
+                    return true;
+                double sum = 0.0;
+                size_t over8 = 0, over16 = 0;
+                const size_t n = acc->Lo.size();
+                for (size_t i = 0; i < n; ++i)
+                {
+                    const int r = acc->Hi[i] - acc->Lo[i];
+                    sum += r;
+                    over8 += r > 8;
+                    over16 += r > 16;
+                }
+                const double p16 = 100.0 * (double)over16 / (double)std::max<size_t>(1, n);
+                char line[200];
+                std::snprintf(line, sizeof(line), "FLICKER %d frames: mean range %.3f, >8: %.3f%%, >16: %.3f%%", frames, sum / std::max<size_t>(1, n),
+                              100.0 * (double)over8 / (double)std::max<size_t>(1, n), p16);
+                Automation::Report(line);
+                if (!heatmap.empty())
+                {
+                    // Gri: görüntü (en büyük parlaklık), kırmızı: aralık x4; GL satırları alttan üste
+                    std::vector<uint8_t> img((size_t)acc->W * acc->H * 3);
+                    for (int y = 0; y < acc->H; ++y)
+                        for (int x = 0; x < acc->W; ++x)
+                        {
+                            const size_t s = (size_t)(acc->H - 1 - y) * acc->W + x, d = ((size_t)y * acc->W + x) * 3;
+                            const int r = std::min(255, (acc->Hi[s] - acc->Lo[s]) * 4);
+                            const int g = acc->Hi[s] / 3;
+                            img[d] = (uint8_t)std::max(r, g);
+                            img[d + 1] = (uint8_t)g;
+                            img[d + 2] = (uint8_t)g;
+                        }
+                    stbi_write_png(heatmap.c_str(), acc->W, acc->H, 3, img.data(), acc->W * 3);
+                }
+                if (maxPercent >= 0.0f && p16 > maxPercent) { e = std::string("flicker over the limit: ") + line; return false; }
+                const double p8 = 100.0 * (double)over8 / (double)std::max<size_t>(1, n);
+                if (max8Percent >= 0.0f && p8 > max8Percent) { e = std::string("flicker over the limit: ") + line; return false; }
+                return true;
+            });
+            return true;
+        });
         Automation::RegisterCommand("game_region_change", [this](const Args& a, std::string& err) {
             static std::vector<uint8_t> s_Marked;
             static int s_W = 0, s_H = 0;
