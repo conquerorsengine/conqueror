@@ -32,6 +32,8 @@ namespace Conqueror
         std::string GraphicsBackend = "Auto";   // "Auto" / "OpenGL" / "Vulkan" (komut satırı ve CQ_RENDERER önceliklidir)
         // Pencere büyütülmüş açılır (editör): pencere yöneticisi ilk karede son boyutu verir, düzen bir kez doğru boyutta kurulur (259)
         bool Maximized = false;
+        // Ana pencere gizli başlar (editör: proje yüklenirken ayrı açılış penceresi görünür, ilk karede gösterilir) (270)
+        bool StartHidden = false;
     };
 
     class CQ_API Application

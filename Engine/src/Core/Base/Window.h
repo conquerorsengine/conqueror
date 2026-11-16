@@ -14,6 +14,7 @@ namespace Conqueror
         uint32_t Width;
         uint32_t Height;
         bool Maximized = false;
+        bool Visible = true;   // false: pencere gizli oluşturulur (editör: proje yüklenirken yalnız açılış penceresi görünür, 270)
 
         WindowProps(const std::string& title = "Conqueror Engine",
                    uint32_t width = 1920,

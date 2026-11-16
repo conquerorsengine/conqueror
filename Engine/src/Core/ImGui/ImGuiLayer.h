@@ -35,6 +35,10 @@ namespace Conqueror
         static bool ConsumeSkipPresent();
         // Bu kare ekrana gönderilmez (editör açılırken düzen oturana kadar)
         static void RequestSkipPresent();
+        // Açılış penceresi (270): sonraki Begin'de ImGui ekran boyutu bu olur (ana pencere yerine); EndInto kareyi o pencereye
+        // (ana bağlamla paylaşımlı OpenGL bağlamı) çizer ve gösterir, sonra ana bağlama döner
+        static void OverrideNextDisplaySize(float width, float height, float fbScaleX, float fbScaleY);
+        void EndInto(void* nativeWindow, float clearR, float clearG, float clearB, float clearA);
 
     private:
         void LoadFonts();

@@ -31,6 +31,7 @@ Conqueror::Application* Conqueror::CreateApplication(ApplicationCommandLineArgs 
     spec.Width = 1920;
     spec.Height = 1080;
     spec.Maximized = true;   // Unity / Unreal editörü gibi tüm ekran (görev çubuğu hariç); düzen ilk karede son boyutla kurulur (259)
+    spec.StartHidden = true;   // proje yüklenirken yalnız ayrı açılış penceresi görünür; editör ilk karesinde gösterilir (270)
 
     // Projenin grafik API ayarı (Player Settings > Rendering) pencere oluşturulmadan önce okunur
     if (args.Count > 1 && args[1])

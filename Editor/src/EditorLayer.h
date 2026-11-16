@@ -119,6 +119,7 @@ namespace Conqueror::Editor
         bool m_StartupSettled = false;
         int m_StartupFrames = 0, m_StartupStableFrames = 0, m_StartupLayoutFrame = -1;
         float m_StartupLastW = 0.0f, m_StartupLastH = 0.0f;
+        int m_StartupSplashCloseIn = 0;   // 270: editör göründükten sonra açılış penceresini kapatmak için kare sayacı
         void EditCopy();
         void EditCut();
         void EditPaste();

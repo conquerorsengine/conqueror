@@ -999,6 +999,7 @@ namespace Conqueror::Editor
 
     void EditorLayer::OnDetach()
     {
+        LoadingScreen::Finish();
         UpscalerSelfTest::Cancel();
         UpscalerSelfTest::SetImageReader(nullptr);
         // Düzgün kapanış: kurtarma kopyası yalnızca çökmeler içindir
@@ -1639,13 +1640,27 @@ namespace Conqueror::Editor
     void EditorLayer::UpdateStartupPresent()
     {
         if (m_StartupSettled)
+        {
+            // Editörün ilk karesi ekrana verildi: açılış penceresi iki kare sonra kapanır (arada boş ekran görünmesin) (270)
+            if (m_StartupSplashCloseIn > 0 && --m_StartupSplashCloseIn == 0)
+                LoadingScreen::Finish();
             return;
+        }
+        // Ana pencere gizli başlar (proje yüklenirken yalnız açılış penceresi görünür): ilk karede gösterilir; kareler düzen
+        // oturana kadar ekrana verilmez
+        if (m_StartupFrames == 0)
+        {
+            GLFWwindow* window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
+            if (!glfwGetWindowAttrib(window, GLFW_VISIBLE))
+                glfwShowWindow(window);
+        }
         ++m_StartupFrames;
         const bool layoutReady = m_StartupLayoutFrame >= 0 && m_StartupFrames - m_StartupLayoutFrame >= 3;
         const bool statsReady = !m_StatsPanel || m_StatsPanel->IsShowingFPS();
         if ((layoutReady && m_StartupStableFrames >= 2 && statsReady) || m_StartupFrames > 40)
         {
             m_StartupSettled = true;
+            m_StartupSplashCloseIn = 2;
             CQ_CORE_INFO("[Editor] First frame shown after {0} frames (layout built at frame {1}, window {2}x{3})", m_StartupFrames,
                          m_StartupLayoutFrame, (int)m_StartupLastW, (int)m_StartupLastH);
             if (Automation::IsActive())
@@ -8574,9 +8589,20 @@ namespace Conqueror::Editor
         });
         // stats_ready: Stats başlığında FPS sayısı görünüyor mu (wait_until ile: açılıştan kaç kare sonra göründüğü)
         // loading_screen [expect <en az çizim sayısı>]: proje açılırken yükleme penceresi kaç kez çizildi, son yüzde (270)
+        // Ayrıca: ayrı açılış penceresiydi, başlık çubuğu (düğmeleri) yoktu, editör penceresi yüklerken gizliydi, şimdi kapalı
         Automation::RegisterCommand("loading_screen", [](const Args& a, std::string& err) {
             const int draws = LoadingScreen::DrawCount();
-            Automation::Report("loading screen: drawn " + std::to_string(draws) + " times, last " + std::to_string((int)(LoadingScreen::LastFraction() * 100.0f)) + "%");
+            Automation::Report("loading screen: drawn " + std::to_string(draws) + " times, last " + std::to_string((int)(LoadingScreen::LastFraction() * 100.0f)) + "%"
+                               + ", splash window " + std::to_string(LoadingScreen::SplashWidth()) + "x" + std::to_string(LoadingScreen::SplashHeight())
+                               + (LoadingScreen::SplashDecorated() ? " decorated" : " borderless") + (LoadingScreen::SplashOpen() ? ", still open" : ", closed")
+                               + (LoadingScreen::MainVisibleWhileLoading() ? ", editor window visible while loading" : ", editor window hidden while loading"));
+            if (a.size() > 2 && a[1] == "expect")
+            {
+                if (!LoadingScreen::HadSplashWindow()) { err = "no separate splash window"; return false; }
+                if (LoadingScreen::SplashDecorated()) { err = "splash window has a title bar"; return false; }
+                if (LoadingScreen::MainVisibleWhileLoading()) { err = "editor window was visible while loading"; return false; }
+                if (LoadingScreen::SplashOpen()) { err = "splash window still open after the editor appeared"; return false; }
+            }
             if (a.size() > 2 && a[1] == "expect" && draws < std::atoi(a[2].c_str())) { err = "loading screen drawn only " + std::to_string(draws) + " times"; return false; }
             if (a.size() > 2 && a[1] == "expect" && LoadingScreen::LastFraction() < 0.999f) { err = "loading screen did not reach 100%"; return false; }
             return true;

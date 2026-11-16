@@ -9,6 +9,8 @@
 #include "Core/Utils/FileSystem.h"
 #include "Renderer/RHI/RendererAPI.h"
 
+#include <glad/glad.h>
+
 #include <filesystem>
 
 #include <imgui.h>
@@ -156,10 +158,50 @@ namespace Conqueror
         }
     }
 
+    namespace
+    {
+        bool s_DisplayOverride = false;
+        ImVec2 s_OverrideSize, s_OverrideScale;
+    }
+
+    void ImGuiLayer::OverrideNextDisplaySize(float width, float height, float fbScaleX, float fbScaleY)
+    {
+        s_DisplayOverride = true;
+        s_OverrideSize = ImVec2(width, height);
+        s_OverrideScale = ImVec2(fbScaleX, fbScaleY);
+    }
+
+    void ImGuiLayer::EndInto(void* nativeWindow, float clearR, float clearG, float clearB, float clearA)
+    {
+        ImGui::Render();
+        GLFWwindow* target = static_cast<GLFWwindow*>(nativeWindow);
+        GLFWwindow* previous = glfwGetCurrentContext();
+        glfwMakeContextCurrent(target);
+        int fbw = 0, fbh = 0;
+        glfwGetFramebufferSize(target, &fbw, &fbh);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(0, 0, fbw, fbh);
+        glDisable(GL_SCISSOR_TEST);
+        glClearColor(clearR, clearG, clearB, clearA);
+        glClear(GL_COLOR_BUFFER_BIT);
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        glfwSwapBuffers(target);
+        glfwMakeContextCurrent(previous);
+        if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+            ImGui::UpdatePlatformWindows();
+    }
+
     void ImGuiLayer::Begin()
     {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
+        if (s_DisplayOverride)
+        {
+            ImGuiIO& io = ImGui::GetIO();
+            io.DisplaySize = s_OverrideSize;
+            io.DisplayFramebufferScale = s_OverrideScale;
+            s_DisplayOverride = false;
+        }
         Automation::InjectImGuiInput();
         Automation::BeforeImGuiNewFrame();
         ImGui::NewFrame();

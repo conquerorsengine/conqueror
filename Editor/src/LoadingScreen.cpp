@@ -5,11 +5,13 @@
 #include "Core/ImGui/ImGuiLayer.h"
 #include "Core/Logging/Log.h"
 #include "Core/Utils/LoadingProgress.h"
+#include "Renderer/RHI/RendererAPI.h"
 #include "Renderer/RHI/Texture.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui.h>
+#include <imgui_internal.h>
 
 #include <algorithm>
 #include <chrono>
@@ -33,7 +35,31 @@ namespace Conqueror::Editor::LoadingScreen
             std::shared_ptr<Texture2D> Logo;     // beyaz yazılı logo
             std::chrono::steady_clock::time_point LastDraw{};
             int Draws = 0;
+            // Ayrı açılış penceresi (Unity gibi): başlık çubuğu ve düğmeleri yok; editörün ana penceresi yükleme boyunca gizli
+            GLFWwindow* Splash = nullptr;
+            bool Transparent = false;   // köşeler yuvarlak + gölge; Wayland'de pencere ekranı kaplar, yalnız kart görünür
+            bool FullArea = false;      // Wayland: istemci pencereyi konumlandıramaz, kart ekranın ortasında kalsın diye
+            bool Decorated = false;
+            bool MainVisibleWhileLoading = false;
+            int SplashW = 0, SplashH = 0;
         };
+
+        constexpr float kCardW = 760.0f;
+        constexpr float kShadow = 24.0f;   // saydam pencerede kartın çevresindeki gölge payı
+
+        float BaseFontSize()
+        {
+            const ImGuiStyle& style = ImGui::GetStyle();
+            float fs = style.FontSizeBase > 0.0f ? style.FontSizeBase : 0.0f;
+            if (fs <= 0.0f && ImGui::GetIO().FontDefault)
+                fs = ImGui::GetIO().FontDefault->LegacySize;
+            if (fs <= 0.0f && !ImGui::GetIO().Fonts->Fonts.empty())
+                fs = ImGui::GetIO().Fonts->Fonts[0]->LegacySize;
+            return (fs > 0.0f ? fs : 16.0f) * (style.FontScaleMain > 0.0f ? style.FontScaleMain : 1.0f);
+        }
+
+        float CardArtH(float cardW) { return std::round(cardW * 9.0f / 16.0f * 0.92f); }
+        float CardH(float cardW, float fs) { return CardArtH(cardW) + std::round(fs * 6.2f); }
 
         State& S()
         {
@@ -87,21 +113,98 @@ namespace Conqueror::Editor::LoadingScreen
             return "...";
         }
 
+        // Açılış penceresi: ana pencereyle paylaşımlı OpenGL bağlamı (dokular, ImGui font atlası ortak). Başlık çubuğu yok
+        // (çarpı / küçült / büyüt düğmesi de yok). Wayland'de istemci pencereyi ortalayamadığı için pencere çalışma alanını kaplar,
+        // tamamen saydamdır ve tıklamaları alttaki pencerelere geçirir: ekranda yalnız ortadaki kart görünür. Diğer sistemlerde
+        // kart boyunda, ekranın ortasında, her zaman üstte
+        void CreateSplash()
+        {
+            State& s = S();
+            if (RendererAPI::GetBackend() != RendererAPI::Backend::OpenGL)
+                return;
+            GLFWwindow* main = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
+            bool wayland = false;
+#if defined(GLFW_PLATFORM_WAYLAND)
+            wayland = glfwGetPlatform() == GLFW_PLATFORM_WAYLAND;
+#endif
+            const float fs = BaseFontSize();
+            const int cardW = (int)kCardW, cardH = (int)CardH(kCardW, fs);
+            int wx = 0, wy = 0, ww = 0, wh = 0;
+            if (GLFWmonitor* mon = glfwGetPrimaryMonitor())
+                glfwGetMonitorWorkarea(mon, &wx, &wy, &ww, &wh);
+            int w = cardW + 2 * (int)kShadow, h = cardH + 2 * (int)kShadow;
+            if (wayland && ww > 0 && wh > 0)
+            {
+                w = ww;
+                h = wh;
+            }
+            glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+            glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+            glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+            glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
+            glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
+            glfwWindowHint(GLFW_MAXIMIZED, wayland ? GLFW_TRUE : GLFW_FALSE);
+            glfwWindowHint(GLFW_MOUSE_PASSTHROUGH, wayland ? GLFW_TRUE : GLFW_FALSE);
+            glfwWindowHint(GLFW_FLOATING, wayland ? GLFW_FALSE : GLFW_TRUE);
+            s.Splash = glfwCreateWindow(w, h, "Conqueror's Engine", nullptr, main);
+            if (!s.Splash)
+            {
+                glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_FALSE);
+                glfwWindowHint(GLFW_MAXIMIZED, GLFW_FALSE);
+                glfwWindowHint(GLFW_MOUSE_PASSTHROUGH, GLFW_FALSE);
+                s.Splash = glfwCreateWindow(cardW, cardH, "Conqueror's Engine", nullptr, main);
+            }
+            // İpuçları varsayılana: sonraki pencereler (dışarı sürüklenen paneller) bunları devralmasın
+            glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
+            glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
+            glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+            glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_FALSE);
+            glfwWindowHint(GLFW_MAXIMIZED, GLFW_FALSE);
+            glfwWindowHint(GLFW_MOUSE_PASSTHROUGH, GLFW_FALSE);
+            glfwWindowHint(GLFW_FLOATING, GLFW_FALSE);
+            if (!s.Splash)
+            {
+                CQ_CORE_WARN("[Loading] Could not open the splash window; the editor opens without it");
+                return;
+            }
+            s.Transparent = glfwGetWindowAttrib(s.Splash, GLFW_TRANSPARENT_FRAMEBUFFER) == GLFW_TRUE;
+            s.FullArea = wayland && s.Transparent;
+            if (!s.Transparent)
+            {
+                // Saydamlık yok (bileştiricisiz X11): kart boyunda düz pencere; Wayland'de büyütme de kaldırılır
+                glfwRestoreWindow(s.Splash);
+                glfwSetWindowSize(s.Splash, cardW, cardH);
+                w = cardW;
+                h = cardH;
+            }
+            if (!wayland && ww > 0 && wh > 0)
+                glfwSetWindowPos(s.Splash, wx + (ww - w) / 2, wy + (wh - h) / 2);
+            glfwShowWindow(s.Splash);
+            GLFWwindow* previous = glfwGetCurrentContext();
+            glfwMakeContextCurrent(s.Splash);
+            glfwSwapInterval(0);   // yükleme vsync beklemesin
+            glfwMakeContextCurrent(previous);
+            s.Decorated = glfwGetWindowAttrib(s.Splash, GLFW_DECORATED) == GLFW_TRUE;
+            glfwGetWindowSize(s.Splash, &s.SplashW, &s.SplashH);
+            CQ_CORE_INFO("[Loading] Splash window {0}x{1} ({2})", s.SplashW, s.SplashH,
+                         s.FullArea ? "transparent, covers the work area" : s.Transparent ? "transparent" : "opaque");
+        }
+
         void Draw()
         {
             State& s = S();
-            Application& app = Application::Get();
-            GLFWwindow* window = static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow());
-            int fbw = 0, fbh = 0;
-            glfwGetFramebufferSize(window, &fbw, &fbh);
-            if (fbw <= 0 || fbh <= 0)
+            if (!s.Splash)
                 return;
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            glViewport(0, 0, fbw, fbh);
-            glDisable(GL_SCISSOR_TEST);
-            glClearColor(0.055f, 0.06f, 0.07f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT);
-
+            Application& app = Application::Get();
+            glfwPollEvents();
+            int ww = 0, wh = 0, fbw = 0, fbh = 0;
+            glfwGetWindowSize(s.Splash, &ww, &wh);
+            glfwGetFramebufferSize(s.Splash, &fbw, &fbh);
+            if (ww <= 0 || wh <= 0 || fbw <= 0 || fbh <= 0)
+                return;
+            s.SplashW = ww;
+            s.SplashH = wh;
+            ImGuiLayer::OverrideNextDisplaySize((float)ww, (float)wh, (float)fbw / (float)ww, (float)fbh / (float)wh);
             ImGuiLayer* imgui = app.GetImGuiLayer();
             imgui->Begin();
             ImGuiViewport* vp = ImGui::GetMainViewport();
@@ -112,26 +215,38 @@ namespace Conqueror::Editor::LoadingScreen
                 bold = regular;
             const float fs = ImGui::GetFontSize();
 
-            // Kart: 16:9 resim + alt şerit (Unity'nin açılış penceresi oranında), pencereye sığar
-            const float cardW = std::min(760.0f, vp->Size.x - 80.0f);
-            const float artH = std::round(cardW * 9.0f / 16.0f * 0.92f);
-            const float footH = fs * 6.2f;
-            const float cardH = artH + footH;
+            // Kart: 16:9 resim + alt şerit (Unity'nin açılış penceresi oranında). Kart boyundaki pencerede pencereyi (gölge payı
+            // dışında) doldurur; Wayland'deki ekranı kaplayan saydam pencerede ortadadır
+            const float margin = s.FullArea ? 0.0f : (s.Transparent ? kShadow : 0.0f);
+            const float cardW = s.FullArea ? std::min(kCardW, vp->Size.x - 80.0f) : vp->Size.x - 2.0f * margin;
+            const float artH = CardArtH(cardW);
+            const float cardH = s.FullArea ? artH + std::round(fs * 6.2f) : vp->Size.y - 2.0f * margin;
+            const float rounding = s.Transparent ? 10.0f : 0.0f;
             const ImVec2 a(std::round(vp->Pos.x + (vp->Size.x - cardW) * 0.5f), std::round(vp->Pos.y + (vp->Size.y - cardH) * 0.5f));
             const ImVec2 b(a.x + cardW, a.y + cardH);
-            for (int i = 1; i <= 6; ++i)   // yumuşak gölge
-                dl->AddRectFilled(ImVec2(a.x - i * 2.0f, a.y - i * 2.0f + 6.0f), ImVec2(b.x + i * 2.0f, b.y + i * 2.0f + 6.0f),
-                                  IM_COL32(0, 0, 0, 14), 10.0f + i * 2.0f);
-            dl->AddRectFilled(a, b, IM_COL32(22, 24, 29, 255), 10.0f);
+            if (s.Transparent)
+                for (int i = 1; i <= 6; ++i)   // yumuşak gölge
+                    dl->AddRectFilled(ImVec2(a.x - i * 2.0f, a.y - i * 2.0f + 6.0f), ImVec2(b.x + i * 2.0f, b.y + i * 2.0f + 6.0f),
+                                      IM_COL32(0, 0, 0, 22), rounding + i * 2.0f);
+            dl->AddRectFilled(a, b, IM_COL32(22, 24, 29, 255), rounding);
 
             // Resim alanı
             const ImVec2 artB(b.x, a.y + artH);
             if (s.Art)
-                ImageCover(dl, s.Art, a, artB, 10.0f, ImDrawFlags_RoundCornersTop);
+                ImageCover(dl, s.Art, a, artB, rounding, ImDrawFlags_RoundCornersTop);
             else
             {
-                dl->AddRectFilledMultiColor(a, artB, IM_COL32(38, 60, 118, 255), IM_COL32(58, 42, 112, 255), IM_COL32(18, 20, 32, 255),
-                                            IM_COL32(16, 22, 40, 255));
+            {
+                // Dört köşeli degrade; yuvarlak üst köşeler için en üstteki ince şerit yuvarlatılmış ve yatay degradeyle boyanır
+                const ImU32 tl = IM_COL32(38, 60, 118, 255), tr = IM_COL32(58, 42, 112, 255);
+                dl->AddRectFilledMultiColor(ImVec2(a.x, a.y + rounding), artB, tl, tr, IM_COL32(18, 20, 32, 255), IM_COL32(16, 22, 40, 255));
+                if (rounding > 0.0f)
+                {
+                    const int v0 = dl->VtxBuffer.Size;
+                    dl->AddRectFilled(a, ImVec2(b.x, a.y + rounding + 2.0f), IM_COL32_WHITE, rounding, ImDrawFlags_RoundCornersTop);
+                    ImGui::ShadeVertsLinearColorGradientKeepAlpha(dl, v0, dl->VtxBuffer.Size, a, ImVec2(b.x, a.y), tl, tr);
+                }
+            }
                 if (s.Emblem)
                 {
                     const float e = artH * 0.42f;
@@ -170,8 +285,11 @@ namespace Conqueror::Editor::LoadingScreen
             const ImVec2 vt = bold->CalcTextSizeA(fs * 1.05f, FLT_MAX, 0.0f, version);
             dl->AddText(bold, fs * 1.05f, ImVec2(b.x - pad - vt.x, b.y - pad - vt.y), IM_COL32(236, 238, 242, 255), version);
 
-            imgui->End();
-            app.GetWindow().OnUpdate();   // olayları işle + ekrana ver
+            // Saydam pencerede kartın dışı tamamen saydam; değilse kartın rengi
+            if (s.Transparent)
+                imgui->EndInto(s.Splash, 0.0f, 0.0f, 0.0f, 0.0f);
+            else
+                imgui->EndInto(s.Splash, 22.0f / 255.0f, 24.0f / 255.0f, 29.0f / 255.0f, 1.0f);
             s.LastDraw = std::chrono::steady_clock::now();
             ++s.Draws;
         }
@@ -186,6 +304,11 @@ namespace Conqueror::Editor::LoadingScreen
         s.Detail.clear();
         s.Fraction = 0.0f;
         s.Draws = 0;
+        GLFWwindow* main = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
+        CreateSplash();
+        if (!s.Splash)
+            glfwShowWindow(main);   // açılış penceresi yoksa editör penceresi yükleme boyunca görünür kalsın
+        s.MainVisibleWhileLoading = glfwGetWindowAttrib(main, GLFW_VISIBLE) == GLFW_TRUE;
         // Projenin Hub'daki küçük resmi; yoksa amblem. Logo motorla gelir
         s.Art = TryLoad(projectDir / "Library" / "thumbnail.png");
         if (!s.Art)
@@ -204,8 +327,6 @@ namespace Conqueror::Editor::LoadingScreen
                 return;
             Draw();
         });
-        // İlk iki kare: ImGui'nin ilk karesi ekrana verilmez (ImGuiLayer), ikincisi kartı gösterir
-        Draw();
         Draw();
         CQ_CORE_INFO("[Loading] Opening '{0}'", projectName);
     }
@@ -222,13 +343,34 @@ namespace Conqueror::Editor::LoadingScreen
         Draw();
         LoadingProgress::SetHandler(nullptr);
         s.Active = false;
+        GLFWwindow* main = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
+        s.MainVisibleWhileLoading = s.MainVisibleWhileLoading || glfwGetWindowAttrib(main, GLFW_VISIBLE) == GLFW_TRUE;
         CQ_CORE_INFO("[Loading] Done ({0} frames drawn)", s.Draws);
         s.Art.reset();
         s.Emblem.reset();
         s.Logo.reset();
     }
 
+    void Finish()
+    {
+        State& s = S();
+        if (!s.Splash)
+            return;
+        GLFWwindow* main = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
+        if (glfwGetCurrentContext() == s.Splash)
+            glfwMakeContextCurrent(main);
+        glfwDestroyWindow(s.Splash);
+        s.Splash = nullptr;
+        CQ_CORE_INFO("[Loading] Splash window closed");
+    }
+
     bool IsActive() { return S().Active; }
+    bool HadSplashWindow() { return S().SplashW > 0; }
+    bool SplashDecorated() { return S().Decorated; }
+    bool SplashOpen() { return S().Splash != nullptr; }
+    bool MainVisibleWhileLoading() { return S().MainVisibleWhileLoading; }
+    int SplashWidth() { return S().SplashW; }
+    int SplashHeight() { return S().SplashH; }
     int DrawCount() { return S().Draws; }
     float LastFraction() { return S().Fraction; }
 }
