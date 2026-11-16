@@ -40,6 +40,9 @@
 #include <imgui.h>
 #include <cstdio>
 #include <ctime>
+#if !defined(_WIN32)
+#include <sys/wait.h>   // WIFEXITED / WEXITSTATUS (BSD'de stdlib.h getirmez)
+#endif
 #if defined(CQ_PLAYER_NFD)
     #include <nfd.h>
 #endif
