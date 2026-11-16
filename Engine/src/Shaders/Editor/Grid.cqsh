@@ -46,6 +46,7 @@ uniform int u_LinearOutput = 1;
 uniform int u_Orthographic = 0;
 uniform vec3 u_MinorColor = vec3(0.86);
 uniform vec3 u_MajorColor = vec3(1.0);
+uniform int u_DepthPass = 0;          // 1: yalnız derinlik (belirgin çizgi pikselleri ızgara düzleminin derinliğini yazar; TAA doğru yeniden izdüşürür)
 uniform int u_Background = 0;         // 1: arka plan katmanı (2D görünüm; her şey ızgaranın önünde)
 uniform float u_DepthErrorQuad = 0.0;   // derinlik kuantalamasının mesafe hatası: d² · bu (perspektif)
 uniform float u_DepthErrorConst = 0.0;  // ortografik: sabit
@@ -166,7 +167,7 @@ void main()
     }
 
     alpha *= u_Opacity;
-    if (alpha < 0.002)
+    if (alpha < (u_DepthPass == 1 ? 0.25 : 0.002))
         discard;
 
     if (u_LinearOutput == 1)

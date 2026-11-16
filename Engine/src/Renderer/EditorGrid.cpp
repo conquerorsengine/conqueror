@@ -89,8 +89,22 @@ namespace Conqueror
         s_GridShader->SetFloat("u_DepthErrorQuad", camera.Orthographic ? 0.0f : 1.0f / (nearClip * steps));
         s_GridShader->SetFloat("u_DepthErrorConst", camera.Orthographic ? glm::max(camera.FarClip - camera.NearClip, 0.0f) / steps : 0.0f);
 
+        s_GridShader->SetInt("u_DepthPass", 0);
         glBindVertexArray(s_EmptyVAO);
         glDrawArrays(GL_TRIANGLES, 0, 3);
+        // 273b: belirgin çizgi pikselleri ızgara düzleminin derinliğini de yazar (renk yazılmaz). Derinlik yazılmayınca fotoğrafın
+        // önündeki ızgara pikseli TAA'da arkasındaki fotoğrafın derinliğiyle yeniden izdüşülüyor, kamera dönerken çizgilerin geçmişi
+        // yanlış yerden alınıp toz gibi kayık kopyalar kalıyordu (durunca düzeliyordu). Arka plan (2D) ızgarası derinlik yazmaz
+        if (!background && PostProcessStack::WantsMotionData())
+        {
+            s_GridShader->SetInt("u_DepthPass", 1);
+            glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+            glDepthMask(GL_TRUE);
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+            glDepthMask(GL_FALSE);
+            Renderer::GetStats().DrawCalls++;
+        }
         glBindVertexArray(0);
         Renderer::GetStats().DrawCalls++;
 

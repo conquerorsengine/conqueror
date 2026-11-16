@@ -148,6 +148,7 @@ namespace Conqueror
             glm::vec4 Look{ 0.0f };      // renk
             glm::vec4 Bounds{ 0.0f };    // yerel sınırlar (en küçük xy, en büyük xy)
             const void* Texture = nullptr;
+            glm::vec3 Lo{ 0.0f }, Hi{ 0.0f };   // son çizimdeki dünya kutusu (silinince / gizlenince eski yeri işaretlenir)
             uint64_t Serial = 0;
         };
         struct SpriteMotionView
@@ -179,6 +180,22 @@ namespace Conqueror
             s_SpriteMotionCur = &v;
         }
 
+        // Görünümün 2D çizimi bitti: önceki karede çizilip bu karede çizilmeyen (silinen, gizlenen) sprite'ın eski yeri bu karede
+        // hareketli işaretlenir; işaretlenmeyince TAA silinen fotoğrafın oturmuş geçmişini bir saniye kadar iz olarak söndürüyordu
+        void SpriteMotionEndView()
+        {
+            if (!s_SpriteMotionCur)
+                return;
+            SpriteMotionView& v = *s_SpriteMotionCur;
+            for (auto& [key, st] : v.Items)
+                if (st.Serial == v.Prev && st.Hi.x >= st.Lo.x)
+                {
+                    Renderer3D::MarkMovingBounds((st.Lo + st.Hi) * 0.5f, (st.Hi - st.Lo) * 0.5f + glm::vec3(0.01f));
+                    st.Serial = 0;   // bir kez
+                }
+            s_SpriteMotionCur = nullptr;
+        }
+
         void SpriteMotionTrack(uint64_t key, const glm::mat4& transform, const SpriteRendererComponent& sprite)
         {
             if (!s_SpriteMotionCur)
@@ -204,6 +221,8 @@ namespace Conqueror
                     hi = glm::max(hi, glm::vec3(p));
                 }
                 Renderer3D::MarkMovingBounds((lo + hi) * 0.5f, (hi - lo) * 0.5f + glm::vec3(0.01f));
+                st.Lo = lo;
+                st.Hi = hi;
             }
             st.Transform = transform;
             st.Look = sprite.Color;
@@ -1887,6 +1906,7 @@ namespace Conqueror
 
             Renderer2D::EndScene();
             TextRenderer::EndScene();
+            SpriteMotionEndView();
             Lighting2D::EndPass(*this, viewProjection2D);
         }
     }
@@ -2703,6 +2723,7 @@ namespace Conqueror
         }
         Renderer2D::EndScene();
         TextRenderer::EndScene();
+        SpriteMotionEndView();
         Lighting2D::EndPass(*this, viewProjection2D);
         Renderer2D::BeginScene(camera, true);
         TextRenderer::BeginScene(camera, true);
