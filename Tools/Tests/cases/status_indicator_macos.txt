@@ -1,0 +1,38 @@
+# template: basic3d
+# requires: CQ_TEST_MACOS_TRAY
+# 25 (Godot StatusIndicator), macOS CI: oyunda simge NSStatusItem olarak gerçekten menü çubuğunda (öğe görünür, düğmesinin
+# penceresi ekranda), ipucu / simge / NSMenu bileşenden gelir ve değişince güncellenir; düğmenin hedef / eylemi (performClick)
+# "pressed" sinyalini, NSMenuItem eylemi menu_item_pressed'i verir; Visible kapanınca öğe menü çubuğundan çekilir
+wait 40
+entity create Tray 0 0 0
+comp add Tray StatusIndicatorComponent
+comp set Tray StatusIndicatorComponent Tooltip "My Game Tray"
+comp data Tray StatusIndicatorComponent "{MenuItems: [Show, '-', Quit]}"
+play
+wait 10
+status_indicator send Tray getall
+wait_until 3000 status_indicator expect InStatusBar 1
+status_indicator expect StatusWindow shown
+status_indicator expect ToolTipTitle "My Game Tray"
+status_indicator expect Status Active
+status_indicator expect IconWidth 64
+wait_until 3000 comp expect Tray StatusIndicatorComponent Registered true
+comp set Tray StatusIndicatorComponent Tooltip "Changed Tip"
+wait_until 3000 status_indicator expect ToolTipTitle "Changed Tip"
+status_indicator send Tray layout
+wait_until 3000 status_indicator expect MenuItems 3
+status_indicator send Tray activate
+wait_until 3000 comp expect Tray StatusIndicatorComponent Presses 1
+comp expect Tray StatusIndicatorComponent LastButton 1
+status_indicator send Tray secondary
+wait_until 3000 comp expect Tray StatusIndicatorComponent Presses 2
+comp expect Tray StatusIndicatorComponent LastButton 3
+status_indicator send Tray menu 2
+wait_until 3000 comp expect Tray StatusIndicatorComponent LastMenuItem 2
+comp set Tray StatusIndicatorComponent Visible false
+wait 5
+wait_until 3000 status_indicator expect Status Passive
+wait_until 3000 status_indicator expect InStatusBar 0
+wait_until 3000 comp expect Tray StatusIndicatorComponent Registered false
+stop
+quit

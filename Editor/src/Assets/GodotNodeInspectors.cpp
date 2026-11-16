@@ -141,6 +141,6 @@ namespace Conqueror::Editor::GodotNodeInspectors
         if (ImGui::Button(ICON_FA_PLUS "  Add Menu Item"))
             c.MenuItems.push_back("Item " + std::to_string(c.MenuItems.size()));
         if (!StatusIndicators::Supported())
-            UI::InfoBox("Tray icons need libdbus-1 on Linux / BSD (or Windows); this system has neither.", UI::InfoType::Warning);
+            UI::InfoBox("Tray icons need libdbus-1 on Linux / BSD (Windows and macOS have them built in); this system has none.", UI::InfoType::Warning);
     }
 }

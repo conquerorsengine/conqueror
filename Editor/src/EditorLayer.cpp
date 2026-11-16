@@ -8347,7 +8347,9 @@ namespace Conqueror::Editor
             return false;
         });
         // status_indicator send <entity> getall|activate|context|secondary|layout|menu [n] | expect <key> <value>: tepsi simgesinin
-        // D-Bus hizmetine ayrı bir bağlantıdan istek (gerçek gidiş-dönüş); expect wait_until ile yanıt gelene kadar
+        // D-Bus hizmetine ayrı bir bağlantıdan istek (gerçek gidiş-dönüş); expect wait_until ile yanıt gelene kadar. macOS'ta
+        // NSStatusItem düğmesine / menü öğesine AppKit ile basılır, getall'dan sonra değerler (InStatusBar: öğe gerçekten menü
+        // çubuğunda) her expect'te yeniden okunur
         Automation::RegisterCommand("status_indicator", [this, findByName](const Args& a, std::string& err) {
             if (a.size() >= 4 && a[1] == "send")
             {

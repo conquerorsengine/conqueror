@@ -11,7 +11,8 @@
 // Status Indicator (Godot 4.3 StatusIndicator; Unity / Unreal'da yok): oyun çalışırken sistem tepsisinde (bildirim alanı) simge.
 // Simge, ipucu ve menü öğeleri; tıklayınca "pressed" sinyali (düğme, konum) ve betiklerde OnStatusIndicatorPressed, menü öğesi
 // seçilince "menu_item_pressed" ve OnStatusMenuItemPressed. Linux / BSD: D-Bus StatusNotifierItem + com.canonical.dbusmenu
-// (KDE, XFCE, LXQt, GNOME'da AppIndicator eklentisi), Windows: Shell_NotifyIcon. libdbus çalışma zamanında yüklenir.
+// (KDE, XFCE, LXQt, GNOME'da AppIndicator eklentisi), Windows: Shell_NotifyIcon, macOS: menü çubuğunda NSStatusItem
+// (StatusIndicatorMac.mm). libdbus çalışma zamanında yüklenir. iOS / iPadOS'ta menü çubuğu ve tepsi yok (desteklenmez).
 namespace Conqueror
 {
     class Scene;
@@ -37,7 +38,8 @@ namespace Conqueror
         CQ_API void Update(Scene& scene);
         CQ_API void ForgetScene(Scene* scene);
         CQ_API bool Supported();
-        // Test (otomasyon): kendi hizmetimize ayrı bir D-Bus bağlantısından istek gönderir; yanıtlar sonraki karelerde okunur
+        // Test (otomasyon): Linux'ta kendi hizmetimize ayrı bir D-Bus bağlantısından istek gönderir, yanıtlar sonraki karelerde
+        // okunur; macOS'ta düğmeye / menü öğesine AppKit üzerinden basar, değerleri NSStatusItem'dan okur
         CQ_API bool ProbeSend(Scene& scene, uint32_t entity, const std::string& request, int argument = 0);
         CQ_API bool ProbeValue(const std::string& key, std::string& out);
     }
