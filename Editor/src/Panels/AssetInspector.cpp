@@ -1,6 +1,7 @@
 #include "AssetInspector.h"
 #include "Core/Audio/InteractiveMusic.h"
 #include "VersionControl/VersionControl.h"
+#include "Panels/VersionControlPanel.h"
 #include "Build/AssetBundleBuilder.h"
 #include "ContentBrowserPanel.h"
 #include "NodeAssetPanel.h"
@@ -952,6 +953,18 @@ namespace Conqueror::Editor::AssetInspector
                     ImGui::SameLine();
                     if (ImGui::Button(ICON_FA_ROTATE_LEFT "  Revert"))
                         VC::Revert(path, &s_Message);
+                    // Window > Version Control'ün Diff penceresi (çalışma kopyası / HEAD ya da sahip olunan sürüm)
+                    ImGui::SameLine();
+                    if (ImGui::Button(ICON_FA_CODE_COMPARE "  Diff"))
+                        VersionControlPanel::Get().ShowDiff(path);
+                }
+                if (st.Status != VC::State::Added)
+                {
+                    ImGui::SameLine();
+                    if (ImGui::Button(ICON_FA_CLOCK_ROTATE_LEFT "  History"))
+                        VersionControlPanel::Get().ShowHistory(path);
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+                        ImGui::SetTooltip("Commits that changed this asset (Window > Version Control)");
                 }
             }
             ImGui::SameLine();

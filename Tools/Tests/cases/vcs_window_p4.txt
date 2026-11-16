@@ -1,0 +1,73 @@
+# template: basic3d
+# 251 Window > Version Control (Perforce, sahte p4 ile: Tools/Tests/cases/assets/vcs/fake_p4.sh): çalışma alanı / akış, Changes (default
+# liste), Submit (seçili dosyalar için yeni numaralı liste), Shelve (numaralı liste; rafı olan liste gönderilirken önce raftan inilir),
+# History (p4 changes, p4 describe, tek dosyanın geçmişi p4 filelog), Diff (p4 diff -du, p4 diff2 -du), Get Latest (p4 sync), Revert
+wait 40
+content_drop "{dir}/assets/loc/flag_red.png" "{dir}/assets/vcs/fake_p4.sh"
+wait 10
+vcs mode perforce
+vcs p4exe Assets/fake_p4.sh
+vcsui open sync
+vcsui expect_workspace test_ws
+vcsui expect_stream //stream/main
+# ---- Changes + Submit
+vcsui test_write Assets/notes.txt first line
+vcs add Assets/notes.txt
+vcs checkout Assets/flag_red.png
+vcsui expect_changes 2
+vcsui expect_change Assets/notes.txt Added
+vcsui expect_change Assets/flag_red.png Modified
+vcsui diff Assets/notes.txt
+vcsui expect_diff added first line
+vcsui message First submit
+vcsui commit
+vcsui expect_status submitted
+vcsui expect_changes 0
+# ---- History
+vcsui history
+vcsui expect_history 1
+vcsui expect_commit 0 First submit
+vcsui expect_author 0 tester
+vcsui select_commit 0
+vcsui expect_commit_files 2
+vcsui expect_commit_file Assets/notes.txt Added
+# ---- Düzenleme, fark, Shelve, rafı olan listenin Submit'i
+vcs checkout Assets/notes.txt
+vcsui test_write Assets/notes.txt second line
+vcsui diff Assets/notes.txt
+vcsui expect_diff counts 1 0
+vcsui expect_diff added second line
+vcsui message Work in progress
+vcsui shelve
+vcsui expect_status Shelved
+vcsui expect_changelists 1
+vcsui expect_changes 0
+vcsui changelist 2
+vcsui expect_changes 1
+vcsui message Second submit
+vcsui commit
+vcsui expect_status submitted
+vcsui changelist default
+vcsui expect_changelists 0
+vcsui history Assets/notes.txt
+vcsui expect_history 2
+vcsui expect_commit 0 Second submit
+vcsui diff_commit 0 Assets/notes.txt
+vcsui expect_diff counts 1 0
+vcsui expect_diff added second line
+vcsui history
+vcsui expect_history 2
+# ---- Get Latest: sahte sunucudan gelen yeni dosya
+vcsui test_write .fakep4incoming/Assets/remote.txt from the server
+vcsui get_latest
+vcsui expect_status 1 file(s) updated
+# ---- Revert
+vcs checkout Assets/flag_red.png
+vcsui expect_changes 1
+vcsui select none
+vcsui select Assets/flag_red.png
+vcsui revert_selected
+vcsui expect_changes 0
+vcsui close
+vcs mode none
+quit

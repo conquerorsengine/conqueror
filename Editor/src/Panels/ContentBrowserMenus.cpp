@@ -14,6 +14,8 @@
 #include "AssetActions.h"
 #include "EditorState.h"
 #include "Panels/AssetInspector.h"
+#include "Panels/VersionControlPanel.h"
+#include "VersionControl/VersionControl.h"
 #include "UI/EditorUI.h"
 
 #include "Addons/AddonManager.h"
@@ -700,6 +702,18 @@ namespace Conqueror::Editor
                 s_OpenImportActivity(ProjectRelative(target));
         }, hasTarget && (bool)s_OpenImportActivity);
         add("Properties...", ICON_FA_CUBE, "Alt+P", [this, target]() { OpenProperties(target); }, hasTarget && !isDirectory);
+
+        // Sürüm denetimi (Unity Version Control / Unreal Source Control sağ tık menüsü): geçmiş ve fark Window > Version Control'de
+        if (VersionControl::IsEnabled())
+        {
+            // Alt menünün simgesi ilk girişinki
+            add("Show History", ICON_FA_CODE_BRANCH, "", [target]() { VersionControlPanel::Get().ShowHistory(target.string()); }, hasTarget, true,
+                "Version Control", "Commits that changed this asset or folder");
+            add("Diff Against Latest", ICON_FA_CODE_COMPARE, "", [target]() { VersionControlPanel::Get().ShowDiff(target.string()); }, hasTarget && !isDirectory,
+                false, "Version Control", "Local changes against the last commit (Git HEAD / Perforce have revision)");
+            add("Open Version Control Window", ICON_FA_CODE_BRANCH, "", []() { VersionControlPanel::Get().Open(VersionControlPanel::Tab::Changes); }, true, false,
+                "Version Control");
+        }
         return v;
     }
 

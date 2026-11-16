@@ -1,0 +1,117 @@
+# template: basic3d
+# 251 Window > Version Control (Git, gerçek git): Changes (durum, dahil kutusu, Commit, seçili dosyada Revert), History (git log,
+# kaydın dosyaları, tek varlığın geçmişi), Diff (çalışma kopyası / HEAD, geçmiş kayıt / ebeveyni, ikili dosyada boyutlar), Sync (proje
+# içindeki yerel çıplak depo origin olur, ağ yok: Push, Fetch, Pull rebase, Pull merge çakışması + Use Mine + Continue, ileride / geride
+# sayıları), dallar (Create / Switch kaydedilmemiş değişiklikle reddedilir / Delete, birleştirilmemiş dal Force ister)
+wait 40
+content_drop "{dir}/assets/loc/flag_red.png"
+wait 10
+vcs mode git
+vcs init_git
+vcsui test_identity Tester tester@localhost
+vcsui open
+vcsui branch create trunk switch
+vcsui expect_branch trunk
+# ---- Changes + Commit
+vcsui test_write Assets/notes.txt line one
+vcsui expect_change Assets/notes.txt Not versioned
+vcsui diff Assets/notes.txt
+vcsui expect_diff added line one
+vcsui check_all off
+vcsui check Assets/notes.txt on
+vcsui message Add notes
+vcsui commit
+vcsui expect_status Committed
+vcsui expect_change Assets/notes.txt none
+# ---- History
+vcsui history
+vcsui expect_history 2
+vcsui expect_commit 0 Add notes
+vcsui expect_author 0 Tester
+vcsui select_commit 0
+vcsui expect_commit_files 1
+vcsui expect_commit_file Assets/notes.txt Added
+# ---- Diff: değişen metin dosyası, ikili dosya (boyutlar)
+vcsui test_write Assets/notes.txt line two
+vcsui expect_change Assets/notes.txt Modified
+vcsui diff Assets/notes.txt
+vcsui expect_diff counts 1 0
+vcsui expect_diff added line two
+vcsui test_append_bytes Assets/flag_red.png 100
+vcsui diff Assets/flag_red.png
+vcsui expect_diff binary grew
+# Revert: seçili dosya HEAD'e döner
+vcsui select none
+vcsui select Assets/flag_red.png
+vcsui revert_selected
+vcsui expect_change Assets/flag_red.png none
+vcsui check_all off
+vcsui check Assets/notes.txt on
+vcsui message Second line
+vcsui commit
+vcsui history Assets/notes.txt
+vcsui expect_history 2
+vcsui diff_commit 0 Assets/notes.txt
+vcsui expect_diff counts 1 0
+vcsui expect_diff added line two
+# ---- Sync: yerel çıplak depo origin
+vcsui test_remote_init
+vcsui remote_add origin .vcstest/remote.git
+vcsui push
+vcsui expect_ahead 0 0
+vcsui test_remote_commit Assets/notes.txt remote line
+vcsui fetch
+vcsui expect_ahead 0 1
+vcsui pull rebase
+vcsui expect_ahead 0 0
+vcsui history
+vcsui expect_commit 0 Remote change to Assets/notes.txt
+vcsui expect_author 0 Other
+# Çakışma: iki taraf da dosyanın sonuna satır ekler
+vcsui test_remote_commit Assets/notes.txt theirs line
+vcsui test_write Assets/notes.txt mine line
+vcsui check_all off
+vcsui check Assets/notes.txt on
+vcsui message Mine
+vcsui commit
+vcsui fetch
+vcsui expect_ahead 1 1
+vcsui expect_fail pull merge
+vcsui expect_status conflicts
+vcsui expect_operation merge
+vcsui expect_conflicts 1
+vcsui resolve Assets/notes.txt mine
+vcsui expect_conflicts 0
+vcsui continue
+vcsui expect_operation none
+vcsui expect_ahead 2 0
+vcsui push
+vcsui expect_ahead 0 0
+# ---- Dallar
+vcsui branch create feature switch
+vcsui expect_branch feature
+vcsui test_write Assets/notes.txt uncommitted
+vcsui expect_fail branch switch trunk
+vcsui expect_status uncommitted changes
+vcsui expect_branch feature
+vcsui select none
+vcsui select Assets/notes.txt
+vcsui revert_selected
+vcsui branch switch trunk
+vcsui expect_branch trunk
+vcsui branch delete feature
+vcsui expect_branch_exists feature no
+vcsui branch create topic switch
+vcsui test_write Assets/topic.txt topic work
+vcsui check_all off
+vcsui check Assets/topic.txt on
+vcsui message Topic work
+vcsui commit
+vcsui branch switch trunk
+vcsui expect_fail branch delete topic
+vcsui expect_branch_exists topic
+vcsui branch delete topic force
+vcsui expect_branch_exists topic no
+vcsui close
+vcs mode none
+quit

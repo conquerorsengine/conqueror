@@ -82,6 +82,7 @@
 #include "Scripting/ConquerorScript/CQSValue.h"
 #include "Scripting/ScriptRuntime.h"
 #include "VersionControl/VersionControl.h"
+#include "Panels/VersionControlPanel.h"
 #include "Build/AssetBundleBuilder.h"
 #include "Core/Assets/AssetBundle.h"
 #include <fstream>
@@ -756,6 +757,9 @@ namespace Conqueror::Editor
             m_TestRunnerPanel = std::make_unique<TestRunnerPanel>();
             m_TestRunnerPanel->OnEnterPlay = [this]() { if (EditorState::Get().IsEditing()) OnPlayButtonPressed(); };
             m_TestRunnerPanel->OnOpenScript = [](const std::string& path) { if (InspectorPanel::s_OpenCodeEditor) InspectorPanel::s_OpenCodeEditor(path); };
+            // Window > Version Control: Pull / Switch / Revert açık sahnenin dosyasını değiştirirse "Reload Scene"
+            VersionControlPanel::Get().CurrentScenePath = [this]() { return m_CurrentScenePath.string(); };
+            VersionControlPanel::Get().ReloadScene = [this]() { if (!m_CurrentScenePath.empty()) OpenScene(m_CurrentScenePath); };
             SimpleAssetInspector::RegisterExtra("PhysicsAsset", [](const std::string& path, SimpleAssets::Data& data) {
                 if (ImGui::Button(ICON_FA_PERSON_FALLING "  Generate Bodies From Preview Model"))
                 {
@@ -2590,6 +2594,7 @@ namespace Conqueror::Editor
             m_NodeAssetPanel->OnImGuiRender();
         if (m_TestRunnerPanel && m_TestRunnerPanel->GetIsOpen())
             m_TestRunnerPanel->OnImGuiRender();
+        VersionControlPanel::Get().OnImGuiRender();   // kapalıyken de arka plan işlerinin sonuçlarını alır
 
         if (m_InputActionsEditor)
             m_InputActionsEditor->OnImGuiRender();
@@ -3092,6 +3097,7 @@ namespace Conqueror::Editor
                 ImGui::MenuItem("Graph Editor", nullptr, &m_NodeAssetPanel->GetIsOpen());
             if (m_TestRunnerPanel)
                 ImGui::MenuItem("Test Runner", nullptr, &m_TestRunnerPanel->GetIsOpen());
+            ImGui::MenuItem("Version Control", nullptr, &VersionControlPanel::Get().GetIsOpen());
             ImGui::MenuItem("AI Assistant", nullptr, &m_ShowAIPanel);
             ImGui::MenuItem("Stats", nullptr, &m_ShowStats);
             // Unity Window > General > Scene / Game gibi: açar ve öne getirir (başka sekmenin arkasında kalmışsa da görünür olur)
@@ -7048,6 +7054,7 @@ namespace Conqueror::Editor
             if (!ok) err = message;
             return ok;
         });
+        VersionControlPanel::Get().RegisterAutomation();   // "vcsui": Version Control penceresi
         Automation::RegisterCommand("select_asset", [](const Args& a, std::string& err) {
             if (a.size() < 2) { err = "select_asset <path>"; return false; }
             std::string p = a[1];

@@ -1,4 +1,5 @@
 #include "VersionControl.h"
+#include "VersionControlDetail.h"
 
 #include "Core/Logging/Log.h"
 #include "Core/Project/Project.h"
@@ -8,6 +9,8 @@
 #include <chrono>
 #include <cstdio>
 #include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <mutex>
 #include <sstream>
 #include <thread>
@@ -42,42 +45,8 @@ namespace Conqueror::Editor::VersionControl
             return cache;
         }
 
-        std::string Quote(const std::string& s)
-        {
-#if defined(_WIN32)
-            return "\"" + s + "\"";
-#else
-            std::string out = "'";
-            for (char c : s)
-                out += c == '\'' ? std::string("'\\''") : std::string(1, c);
-            return out + "'";
-#endif
-        }
-
-        // Komutu dir klasöründe çalıştırır; çıktı (stdout + stderr) ve çıkış kodu
-        int Run(const std::string& dir, const std::string& command, std::string& output)
-        {
-            output.clear();
-#if defined(_WIN32)
-            const std::string full = "cd /d " + Quote(dir) + " && " + command + " 2>&1";
-            FILE* pipe = _popen(full.c_str(), "r");
-#else
-            const std::string full = "cd " + Quote(dir) + " && " + command + " 2>&1";
-            FILE* pipe = popen(full.c_str(), "r");
-#endif
-            if (!pipe)
-                return -1;
-            char buffer[4096];
-            size_t n;
-            while ((n = fread(buffer, 1, sizeof(buffer), pipe)) > 0)
-                output.append(buffer, n);
-#if defined(_WIN32)
-            return _pclose(pipe);
-#else
-            const int status = pclose(pipe);
-            return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-#endif
-        }
+        using Detail::Quote;
+        using Detail::Run;
 
         std::string ProjectDir()
         {
@@ -106,23 +75,7 @@ namespace Conqueror::Editor::VersionControl
             return rel.generic_string();
         }
 
-        std::string P4Command(const VersionControlSettings& s)
-        {
-            std::string exe = s.P4Executable.empty() ? std::string("p4") : s.P4Executable;
-            // Proje göreli yol (ör. Tools/p4) projeye göre çözülür; yalnız ad PATH'te aranır
-            if (exe.find('/') != std::string::npos || exe.find('\\') != std::string::npos)
-            {
-                fs::path p(exe);
-                if (p.is_relative())
-                    p = fs::path(ProjectDir()) / p;
-                exe = Quote(p.string());
-            }
-            std::string cmd = exe;
-            if (!s.P4Port.empty()) cmd += " -p " + Quote(s.P4Port);
-            if (!s.P4User.empty()) cmd += " -u " + Quote(s.P4User);
-            if (!s.P4Client.empty()) cmd += " -c " + Quote(s.P4Client);
-            return cmd;
-        }
+        std::string P4Command(const VersionControlSettings& s) { return Detail::P4Command(s, ProjectDir()); }
 
         // ---- Git
         void RefreshGit(const std::string& project, std::unordered_map<std::string, FileStatus>& files, std::unordered_set<std::string>& tracked)
@@ -154,7 +107,8 @@ namespace Conqueror::Editor::VersionControl
                     }
             }
             // Değişiklikler: XY yol (porcelain v1, depo köküne göre)
-            if (Run(root.string(), "git status --porcelain=v1 -uall -z", out) == 0)
+            // --no-optional-locks: arka plan durumu index.lock almasın (Version Control penceresinin git commit / pull'u çakışmasın)
+            if (Run(root.string(), "git --no-optional-locks status --porcelain=v1 -uall -z", out) == 0)
             {
                 size_t i = 0;
                 while (i + 3 < out.size())
@@ -342,6 +296,116 @@ namespace Conqueror::Editor::VersionControl
         }
     }
 
+    // ------------------------------------------------------------------ Detail (VersionControlOps.cpp ile ortak)
+    namespace Detail
+    {
+        std::string Quote(const std::string& s)
+        {
+#if defined(_WIN32)
+            return "\"" + s + "\"";
+#else
+            std::string out = "'";
+            for (char c : s)
+                out += c == '\'' ? std::string("'\\''") : std::string(1, c);
+            return out + "'";
+#endif
+        }
+
+        std::string Trim(std::string s)
+        {
+            while (!s.empty() && (s.back() == '\n' || s.back() == '\r' || s.back() == ' ' || s.back() == '\t'))
+                s.pop_back();
+            size_t i = 0;
+            while (i < s.size() && (s[i] == '\n' || s[i] == '\r' || s[i] == ' ' || s[i] == '\t'))
+                ++i;
+            return s.substr(i);
+        }
+
+        namespace
+        {
+            // cd dir && (komut) </dev/null 2>hedef: zincirli komutların (a && b) hepsinin stderr'i yakalanır, stdin boş. LC_ALL=C: git / p4
+            // iletileri İngilizce (arayüz İngilizce; "not fully merged", "rejected" gibi iletiler yerel dilde aranamaz)
+            int RunShell(const std::string& dir, const std::string& command, const std::string& stderrTarget, std::string& output)
+            {
+                output.clear();
+#if defined(_WIN32)
+                const std::string full = "cd /d " + Quote(dir) + " && set LC_ALL=C&& set GIT_TERMINAL_PROMPT=0&& (" + command + ") <NUL 2>" + stderrTarget;
+                FILE* pipe = _popen(full.c_str(), "r");
+#else
+                const std::string full = "cd " + Quote(dir) + " && (GIT_TERMINAL_PROMPT=0; LC_ALL=C; export GIT_TERMINAL_PROMPT LC_ALL; " + command + "\n) </dev/null 2>" +
+                                         stderrTarget;
+                FILE* pipe = popen(full.c_str(), "r");
+#endif
+                if (!pipe)
+                    return -1;
+                char buffer[4096];
+                size_t n;
+                while ((n = fread(buffer, 1, sizeof(buffer), pipe)) > 0)
+                    output.append(buffer, n);
+#if defined(_WIN32)
+                return _pclose(pipe);
+#else
+                const int status = pclose(pipe);
+                return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+#endif
+            }
+
+            std::string TempPath()
+            {
+                static std::atomic<unsigned> s_Counter{ 0 };
+                const auto stamp = (unsigned long long)std::chrono::steady_clock::now().time_since_epoch().count();
+                std::error_code ec;
+                fs::path dir = fs::temp_directory_path(ec);
+                if (ec)
+                    dir = ".";
+                return (dir / ("cq_vcs_" + std::to_string(stamp) + "_" + std::to_string(++s_Counter) + ".tmp")).string();
+            }
+        }
+
+        int Run(const std::string& dir, const std::string& command, std::string& output) { return RunShell(dir, command, "&1", output); }
+
+        int RunSplit(const std::string& dir, const std::string& command, std::string& out, std::string& err)
+        {
+            const TempFile errFile("");
+            const int code = RunShell(dir, command, Quote(errFile.Path), out);
+            err.clear();
+            std::ifstream in(errFile.Path, std::ios::binary);
+            if (in)
+                err.assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+            return code;
+        }
+
+        std::string P4Command(const VersionControlSettings& s, const std::string& projectDir)
+        {
+            std::string exe = s.P4Executable.empty() ? std::string("p4") : s.P4Executable;
+            // Proje göreli yol (ör. Tools/p4) projeye göre çözülür; yalnız ad PATH'te aranır
+            if (exe.find('/') != std::string::npos || exe.find('\\') != std::string::npos)
+            {
+                fs::path p(exe);
+                if (p.is_relative())
+                    p = fs::path(projectDir) / p;
+                exe = Quote(p.string());
+            }
+            std::string cmd = exe;
+            if (!s.P4Port.empty()) cmd += " -p " + Quote(s.P4Port);
+            if (!s.P4User.empty()) cmd += " -u " + Quote(s.P4User);
+            if (!s.P4Client.empty()) cmd += " -c " + Quote(s.P4Client);
+            return cmd;
+        }
+
+        TempFile::TempFile(const std::string& content) : Path(TempPath())
+        {
+            std::ofstream out(Path, std::ios::binary);
+            out.write(content.data(), (std::streamsize)content.size());
+        }
+
+        TempFile::~TempFile()
+        {
+            std::error_code ec;
+            fs::remove(Path, ec);
+        }
+    }
+
     int Mode()
     {
         const VersionControlSettings* s = Settings();
@@ -349,6 +413,15 @@ namespace Conqueror::Editor::VersionControl
     }
 
     bool IsEnabled() { return Mode() != 0; }
+
+    Context CurrentContext()
+    {
+        Context ctx;
+        ctx.ProjectDir = ProjectDir();
+        if (const VersionControlSettings* s = Settings())
+            ctx.Settings = *s;
+        return ctx;
+    }
 
     const char* ModeName()
     {
