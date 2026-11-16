@@ -167,3 +167,29 @@ and in the code editor.
 `FindEntity("Name")`, `FindEntitiesWithTag`, `FindEntitiesWithScript`, `GetComponentField("Component", "Field")` /
 `EntityGetComponentField(entity, ...)`, `SetComponentField(...)`, `InvokeMethod(...)`, Signals (`SignalConnect` / `SignalEmit`) and console access (`CVarGet` / `CVarSet` / `ConsoleCommand`)
 cover most cases. See the [Scripting API](Reference/ScriptingAPI.md) for the full list.
+
+## Visual Scripts
+
+A `.cqgraph` is compiled to ConquerorScript when it is saved (toolbar: **Show Generated Code**), so every node also works in
+builds. The editor combines the Unity Visual Scripting and Unreal Blueprint workflows:
+
+- **Variables** have Unity scopes: *Graph* (this instance, public ones in the Inspector), *Object* (shared by the graphs on one
+  entity), *Scene*, *App* (whole play session) and *Saved* (kept between runs in PlayerPrefs), plus Unreal *Local* variables
+  that exist only inside one function. A variable can also use a struct or enum asset as its type.
+- **Toolbar**: Relations (port dependencies inside nodes), Values (live port values while playing), Dim (fades nodes no event
+  reaches), Carry (dragging moves the connected children), Align, Distribute, Lock (keeps the graph when the selection changes;
+  unlocked, selecting an entity opens its visual script), Graph Inspector (ports, settings, documentation of the selection),
+  Find (this graph or every graph, Ctrl+F / Ctrl+Shift+F), Bookmarks (Ctrl+1..9 set, Shift+1..9 jump), Diff (against the saved
+  file or the Git HEAD version; added / changed / moved nodes are outlined) and Debug (Call Stack and Watches).
+- **Unity nodes**: Formula (`a * 2 + b`, graph variables by name), Try Catch and Throw, Cooldown, Timer, Wait Until / Wait While /
+  Wait For Next Frame, Toggle Flow, Toggle Value, Cache, Null Check, Null Coalesce, dictionary nodes, Approximately, Comparison,
+  the Numeric option of the comparison nodes, and Subgraphs: any graph with Inputs / Outputs nodes can be used as a node in
+  another graph (search "Subgraph" or drop the file on the canvas); each use has its own graph variables.
+- **Unreal tools**: reroute nodes (double-click a connection), Collapse to Function (a selection without execution pins becomes
+  a pure function) and Collapse to Macro, right-click a pin for Watch this value / Promote to Variable / Break Links, Straighten
+  Connections (Q), Disable Node (it does nothing and the execution passes through), comment boxes (C: around the selection; moving
+  one moves the nodes inside) and sticky notes, Event Dispatchers (Call / Bind / Unbind / Unbind All, also across entities),
+  Blueprint Interfaces (`.cqinterface`: Interface Event, Interface Message, Does Implement Interface) and user-defined structs
+  (`.cqstruct`: Make / Break / Set Members) and enums (`.cqenum`: literal, To String, Switch on Enum), created under **User Types**.
+- **Debugging**: F9 sets a breakpoint; when play stops there the graph comes to the front, the Call Stack shows the node, its
+  function and the caller chain, and Watches lists the watched pins and the live graph variables.

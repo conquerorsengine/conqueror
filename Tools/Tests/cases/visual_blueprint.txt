@@ -1,0 +1,195 @@
+# template: empty
+# Unreal Blueprint araçları oyunda: exec ve veri reroute düğümleri, Disable Node (akış geçer), Collapse to Function (dış veri girişi
+# fonksiyon girişi olur), saf düğümü Collapse to Function (Pure çağrı), Collapse to Macro, Promote to Variable, yapı (Make / Break /
+# Set Members, yapı türünde değişken) ve sayım (Literal, To String, Switch on Enum) varlıkları. Sonuçlar değişkenlerden denetlenir.
+wait 40
+vs new Assets/Scripts/BP.cqgraph
+vsx struct Assets/Types/Item.cqstruct Name:string=Sword;Count:number=3
+vsx enum Assets/Types/Color.cqenum Red,Green,Blue
+vsx var A number 0
+vsx var C number 0
+vsx var D number 0
+vsx var Base number 10
+vsx var Total number 0
+vsx var M number 0
+vsx var P number 0
+vsx var X number 0
+vsx var ItemCount number 0
+vsx var ItemCount2 number 0
+vsx var HeroCount number 0
+vsx var EnumIdx number 0
+vsx var SwitchHit number 0
+vsx var EnumName string none
+vsx var ItemVar dictionary x
+vsx var Hero dictionary x
+vsx type_asset Hero Assets/Types/Item.cqstruct
+# Reroute (exec + veri)
+vsx node start event.start
+vsx node lit7 literal.number
+vsx prop lit7 Value 7
+vsx node setA var.set
+vsx prop setA Variable A
+vsx link start Then setA In
+vsx link lit7 Value setA Value
+vsx reroute r1 start Then setA In
+vsx reroute r2 lit7 Value setA Value
+vsx expect_type_count reroute 2
+# Disable Node: C = 1, (devre dışı: C = 2), D = 3
+vsx node setC var.set
+vsx prop setC Variable C
+vsx default setC Value 1
+vsx link setA Then setC In
+vsx node setC2 var.set
+vsx prop setC2 Variable C
+vsx default setC2 Value 2
+vsx link setC Then setC2 In
+vsx node setD var.set
+vsx prop setD Variable D
+vsx default setD Value 3
+vsx link setC2 Then setD In
+vsx disable setC2 on
+# Collapse to Function: Total = Base + 5
+vsx node getBase var.get
+vsx prop getBase Variable Base
+vsx node addT math.add
+vsx link getBase Value addT A
+vsx default addT B 5
+vsx node setTotal var.set
+vsx prop setTotal Variable Total
+vsx link setD Then setTotal In
+vsx link addT Result setTotal Value
+vsx node printT action.print
+vsx default printT Message collapsed
+vsx link setTotal Then printT In
+vsx collapse_function call1 AddFive setTotal addT
+vsx expect_type_count event.function 1
+vsx expect_type_count action.callfunction 1
+vs expect_errors 0
+# Collapse to Macro: M = Base * 3
+vsx node getBase2 var.get
+vsx prop getBase2 Variable Base
+vsx node mulM math.mul
+vsx link getBase2 Value mulM A
+vsx default mulM B 3
+vsx node setM var.set
+vsx prop setM Variable M
+vsx link printT Then setM In
+vsx link mulM Result setM Value
+# Promote to Variable: P = 4 * Factor (Factor = 5)
+vsx node mulP math.mul
+vsx default mulP A 4
+vsx default mulP B 5
+vsx node setP var.set
+vsx prop setP Variable P
+vsx link setM Then setP In
+vsx link mulP Result setP Value
+vsx collapse_macro mac1 TimesThree setM mulM
+vsx expect_macro TimesThree
+vsx promote getF mulP B in Factor
+vsx expect_variable Factor number
+vs expect_errors 0
+# Yapı ve sayım
+vsx node mk struct.make
+vsx prop mk Struct Assets/Types/Item.cqstruct
+vsx default mk Count 5
+vsx node setItem var.set
+vsx prop setItem Variable ItemVar
+vsx link setP Then setItem In
+vsx link mk Struct setItem Value
+vsx node getItem var.get
+vsx prop getItem Variable ItemVar
+vsx node brk struct.break
+vsx prop brk Struct Assets/Types/Item.cqstruct
+vsx link getItem Value brk Struct
+vsx node setIC var.set
+vsx prop setIC Variable ItemCount
+vsx link setItem Then setIC In
+vsx link brk Count setIC Value
+vsx node sm struct.set
+vsx prop sm Struct Assets/Types/Item.cqstruct
+vsx link getItem Value sm Struct
+vsx default sm Count 9
+vsx link setIC Then sm In
+vsx node brk2 struct.break
+vsx prop brk2 Struct Assets/Types/Item.cqstruct
+vsx link sm Struct brk2 Struct
+vsx node setIC2 var.set
+vsx prop setIC2 Variable ItemCount2
+vsx link sm Then setIC2 In
+vsx link brk2 Count setIC2 Value
+vsx node el enum.literal
+vsx prop el Enum Assets/Types/Color.cqenum
+vsx prop el Value Blue
+vsx node setEI var.set
+vsx prop setEI Variable EnumIdx
+vsx link setIC2 Then setEI In
+vsx link el Value setEI Value
+vsx node ets enum.tostring
+vsx prop ets Enum Assets/Types/Color.cqenum
+vsx default ets Value 1
+vsx node setEN var.set
+vsx prop setEN Variable EnumName
+vsx link setEI Then setEN In
+vsx link ets Name setEN Value
+vsx node sw flow.switchenum
+vsx prop sw Enum Assets/Types/Color.cqenum
+vsx node getEI var.get
+vsx prop getEI Variable EnumIdx
+vsx link getEI Value sw Selection
+vsx link setEN Then sw In
+vsx node setSH var.set
+vsx prop setSH Variable SwitchHit
+vsx default setSH Value 1
+vsx link sw Blue setSH In
+vsx node getHero var.get
+vsx prop getHero Variable Hero
+vsx node brk3 struct.break
+vsx prop brk3 Struct Assets/Types/Item.cqstruct
+vsx link getHero Value brk3 Struct
+vsx node setHC var.set
+vsx prop setHC Variable HeroCount
+vsx link setSH Then setHC In
+vsx link brk3 Count setHC Value
+# Saf seçimi Collapse to Function: X = PureMul(Base) = Base * 2
+vsx node getBase3 var.get
+vsx prop getBase3 Variable Base
+vsx node mulX math.mul
+vsx link getBase3 Value mulX A
+vsx default mulX B 2
+vsx node setX var.set
+vsx prop setX Variable X
+vsx link setHC Then setX In
+vsx link mulX Result setX Value
+vsx collapse_function pc PureMul mulX
+vs save
+vs expect_errors 0
+vs expect_code PureMul(Base)
+create_primitive sphere Ball 0 3 0
+script add Ball Assets/Scripts/BP.cqgraph
+play
+wait 20
+script expect Ball A >6.99
+script expect Ball A <7.01
+script expect Ball C >0.99
+script expect Ball C <1.01
+script expect Ball D >2.99
+script expect Ball Total >14.99
+script expect Ball Total <15.01
+script expect Ball M >29.99
+script expect Ball M <30.01
+script expect Ball P >19.99
+script expect Ball P <20.01
+script expect Ball ItemCount >4.99
+script expect Ball ItemCount <5.01
+script expect Ball ItemCount2 >8.99
+script expect Ball ItemCount2 <9.01
+script expect Ball HeroCount >2.99
+script expect Ball HeroCount <3.01
+script expect Ball EnumIdx >1.99
+script expect Ball EnumIdx <2.01
+script expect Ball SwitchHit >0.99
+script expect Ball EnumName Green
+script expect Ball X >19.99
+script expect Ball X <20.01
+stop
+quit

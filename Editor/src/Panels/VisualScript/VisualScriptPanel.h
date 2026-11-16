@@ -6,8 +6,10 @@
 
 #include <filesystem>
 #include <functional>
+#include <map>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 struct ImNodesContext;
@@ -46,7 +48,51 @@ namespace Conqueror::Editor
         // Kaydedildiğinde çağrılır (oynatma sırasında sıcak yeniden yükleme)
         std::function<void(const std::filesystem::path&)> OnFileSaved;
 
+        // ── Unity araç çubuğu / Unreal araçları (VisualScriptPanelTools.cpp) ──
+        enum class AlignMode { Left, Center, Right, Top, Middle, Bottom };
+        void AlignNodes(const std::vector<int>& ids, AlignMode mode);
+        void DistributeNodes(const std::vector<int>& ids, bool horizontal);
+        void StraightenNodes(const std::vector<int>& ids);
+        // Düğümleri taşı; Carry açıksa bağlı alt düğümler de (Unity Carry)
+        void MoveNodes(const std::map<int, ImVec2>& deltas);
+        int CollapseToFunction(const std::vector<int>& ids, const std::string& name);
+        int CollapseToMacro(const std::vector<int>& ids, const std::string& name);
+        int PromoteToVariable(int node, const std::string& pin, bool output, const std::string& name);
+        void ToggleWatch(int node, const std::string& pin);
+        bool IsWatched(int node, const std::string& pin) const;
+        void SetNodeDisabled(int node, bool disabled);
+        int AddCommentAround(const std::vector<int>& ids, const std::string& text);
+        // Bul (Unreal Find in Blueprints): allGraphs = projedeki tüm .cqgraph dosyaları
+        struct FindResult { std::filesystem::path Path; std::string Macro; int Node = 0; std::string Text; };
+        const std::vector<FindResult>& RunFind(const std::string& text, bool allGraphs);
+        // Fark (Unreal Diff): "saved" (diskteki sürüm) ya da "head" (git HEAD)
+        bool RunDiff(const std::string& against, std::string* error = nullptr);
+        const std::vector<Visual::DiffEntry>& GetDiff() const { return m_Diff; }
+        void AddBookmark(const std::string& name);
+        bool JumpToBookmark(const std::string& name);
+        // Çağrı yığını (kesme noktasında): üstten alta çerçeveler
+        std::vector<std::string> BuildCallStack() const;
+        bool IsDimmed(int node);
+        int RelationCount(int node) const;
+        bool& Toggle(const std::string& name);
+        bool IsLocked() const { return m_Locked; }
+        // Son karede imnodes'a verilmiş düğümün boyutu (ekran); verilmemişse (yeni / yorum kutusu) 0 — imnodes bilinmeyen kimlikte çöker
+        ImVec2 NodeDimensions(int id) const;
+
     private:
+        void RenderSecondToolbar();
+        void RenderGraphInspector();
+        void RenderBottomPanel();
+        void RenderBoxes();
+        void RenderPinContextMenu();
+        void RenderNodeContextMenu();
+        void RenderUserTypes();
+        void RenderDispatchersAndInterfaces();
+        void RegisterAutomation();
+        void FollowSelection();
+        std::vector<int> SelectedNodes() const;
+        bool IsBoxNode(const Visual::Node& n) const;
+        Visual::Graph* GraphForMacro(const std::string& macro);
         void RenderToolbar();
         void RenderSidebar();
         void RenderCanvas();
@@ -56,7 +102,7 @@ namespace Conqueror::Editor
         bool DrawInputDefault(Visual::Node& node, const Visual::PinDef& pin);
         bool DrawNodeProperties(Visual::Node& node);
 
-        void CreateNodeAt(const std::string& type, const ImVec2& gridPos);
+        void CreateNodeAt(const std::string& type, const ImVec2& gridPos, const std::vector<std::pair<std::string, std::string>>& props = {});
         void DeleteSelection();
         void CopySelection();
         void Paste(const ImVec2& gridPos);
@@ -140,5 +186,52 @@ namespace Conqueror::Editor
         bool m_EditingNodeValue = false;
         std::string m_DragSnapshot;
         std::string m_PreFrameSnapshot;
+
+        // Unity araç çubuğu anahtarları
+        bool m_ShowRelations = false;
+        bool m_ShowValues = true;
+        bool m_Dim = true;
+        bool m_Carry = false;
+        bool m_Locked = false;
+        bool m_ShowInspector = true;
+        // Dim: ulaşılabilir düğümler (düzenlemeden sonra yeniden hesaplanır)
+        std::set<int> m_Reachable;
+        bool m_ReachableDirty = true;
+        // Pin konumları (son çizim; ekran) ve düğüm başına pin satır ofsetleri (grafik birimi; Straighten)
+        struct PinScreen { ImVec2 Pos; Visual::PinType Type; std::string Name; bool Output; };
+        std::unordered_map<int, std::vector<PinScreen>> m_PinScreens;
+        std::unordered_map<int, std::map<std::string, float>> m_PinOffsets[2];   // [0] giriş, [1] çıkış: pin -> düğüm üstünden y
+        int m_LastHoveredNode = 0;
+        std::set<int> m_RenderedNodes;      // son karede çizilen düğümler (imnodes havuzunda olanlar)
+        // Bağlam menüleri
+        int m_ContextNode = 0;
+        int m_ContextPinAttr = -1;
+        bool m_OpenNodeContext = false;
+        bool m_OpenPinContext = false;
+        // Yorum kutuları / yapışkan notlar
+        int m_SelectedBox = 0;
+        int m_EditBox = 0;
+        int m_DragBox = 0;
+        std::vector<int> m_BoxContents;
+        std::string m_BoxSnapshot;
+        bool m_BoxMoved = false;
+        bool m_OpenBoxEdit = false;
+        std::map<int, std::string> m_EntityGraphCache;
+        // Alt panel: Find Results / Call Stack / Watches / Diff
+        bool m_ShowBottom = false;
+        int m_BottomTab = 0;
+        char m_FindBuffer[128] = {};
+        bool m_FindAll = true;
+        std::vector<FindResult> m_FindResults;
+        std::vector<Visual::DiffEntry> m_Diff;
+        std::string m_DiffAgainst;
+        std::string m_DiffError;
+        std::set<int> m_DiffAdded, m_DiffChanged, m_DiffMoved;
+        char m_BookmarkName[64] = {};
+        // Seçimi izleme (kilit kapalıyken seçili varlığın görsel betiği açılır)
+        uint64_t m_LastSelection = ~0ull;
+        // Otomasyon takma adları (vsx komutu)
+        std::map<std::string, int> m_AutoAlias;
+        int m_Variablescope = 0;   // kenar çubuğu kapsam sekmesi
     };
 }

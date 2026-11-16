@@ -1,0 +1,126 @@
+# template: empty
+# Unreal Event Dispatcher ve Blueprint Interface iki varlık arasında: Listener, Caller'ın OnPing dağıtıcısına iki özel olay bağlar ve
+# birini çözer (Unbind); Caller her 0.1 sn OnPing'i Value=7 ile çağırır. Listener Damageable arayüzünü uygular (TakeDamage, dönüş
+# değeri); Caller Interface Message ile çağırır, Does Implement Interface hedefte true, kendisinde false olmalı.
+wait 40
+vs new Assets/Scripts/Listener.cqgraph
+vsx interface Assets/Types/Damageable.cqinterface TakeDamage|Amount|true
+vsx implement Assets/Types/Damageable.cqinterface
+vsx var Pinged number 0
+vsx var Pinged2 number 0
+vsx var PingValue number 0
+vsx var Health number 100
+vsx node start event.start
+vsx node bind dispatcher.bind
+vsx prop bind Dispatcher OnPing
+vsx prop bind Event HandlePing
+vsx default bind Target Caller
+vsx link start Then bind In
+vsx node bind2 dispatcher.bind
+vsx prop bind2 Dispatcher OnPing
+vsx prop bind2 Event HandlePing2
+vsx default bind2 Target Caller
+vsx link bind Then bind2 In
+vsx node unbind dispatcher.unbind
+vsx prop unbind Dispatcher OnPing
+vsx prop unbind Event HandlePing2
+vsx default unbind Target Caller
+vsx link bind2 Then unbind In
+vsx node ev event.custom
+vsx prop ev Name HandlePing
+vsx node getP var.get
+vsx prop getP Variable Pinged
+vsx node incP math.add
+vsx link getP Value incP A
+vsx default incP B 1
+vsx node setP var.set
+vsx prop setP Variable Pinged
+vsx link ev Then setP In
+vsx link incP Result setP Value
+vsx node setPV var.set
+vsx prop setPV Variable PingValue
+vsx link setP Then setPV In
+vsx link ev Value setPV Value
+vsx node ev2 event.custom
+vsx prop ev2 Name HandlePing2
+vsx node setP2 var.set
+vsx prop setP2 Variable Pinged2
+vsx default setP2 Value 1
+vsx link ev2 Then setP2 In
+vsx node ie event.interface
+vsx prop ie Interface Assets/Types/Damageable.cqinterface
+vsx prop ie Function TakeDamage
+vsx node getH var.get
+vsx prop getH Variable Health
+vsx node sub math.sub
+vsx link getH Value sub A
+vsx link ie Amount sub B
+vsx node setH var.set
+vsx prop setH Variable Health
+vsx link ie Then setH In
+vsx link sub Result setH Value
+vsx node getH2 var.get
+vsx prop getH2 Variable Health
+vsx node ret flow.returnvalue
+vsx link setH Then ret In
+vsx link getH2 Value ret Value
+vs save
+vs expect_errors 0
+vs expect_code _cqi_Damageable
+vs new Assets/Scripts/Caller.cqgraph
+vsx dispatcher OnPing
+vsx var Reply number 0
+vsx var Impl number 0
+vsx var SelfImpl number 5
+vsx node tick event.timer
+vsx prop tick Interval 0.1
+vsx node call dispatcher.call
+vsx prop call Dispatcher OnPing
+vsx default call Value 7
+vsx link tick Then call In
+vsx node upd event.update
+vsx node once flow.doonce
+vsx link upd Then once In
+vsx node msg interface.call
+vsx prop msg Interface Assets/Types/Damageable.cqinterface
+vsx prop msg Function TakeDamage
+vsx default msg Target Listener
+vsx default msg Amount 30
+vsx link once Then msg In
+vsx node setR var.set
+vsx prop setR Variable Reply
+vsx link msg Then setR In
+vsx link msg Result setR Value
+vsx node impl interface.implements
+vsx prop impl Interface Assets/Types/Damageable.cqinterface
+vsx default impl Target Listener
+vsx node setI var.set
+vsx prop setI Variable Impl
+vsx link setR Then setI In
+vsx link impl Result setI Value
+vsx node impl2 interface.implements
+vsx prop impl2 Interface Assets/Types/Damageable.cqinterface
+vsx node setS var.set
+vsx prop setS Variable SelfImpl
+vsx link setI Then setS In
+vsx link impl2 Result setS Value
+vs save
+vs expect_errors 0
+create_primitive sphere Listener 0 3 0
+script add Listener Assets/Scripts/Listener.cqgraph
+create_primitive cube Caller 3 3 0
+script add Caller Assets/Scripts/Caller.cqgraph
+play
+wait 60
+script expect Listener Pinged >0.99
+script expect Listener PingValue >6.99
+script expect Listener PingValue <7.01
+script expect Listener Pinged2 <0.01
+script expect Listener Health >69.99
+script expect Listener Health <70.01
+script expect Caller Reply >69.99
+script expect Caller Reply <70.01
+script expect Caller Impl >0.99
+script expect Caller SelfImpl <0.01
+stop
+quit

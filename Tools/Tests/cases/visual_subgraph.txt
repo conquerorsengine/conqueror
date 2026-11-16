@@ -1,0 +1,61 @@
+# template: empty
+# Unity Subgraph: ayrı bir .cqgraph dosyası (Inputs / Outputs düğümleri) başka grafikte düğüm olarak iki kez kullanılır; her kullanım
+# satır içi açılır ve kendi grafik değişkenine sahiptir (_sg<düğüm>_ önekli). Add10: Result = X + 10, Calls sayacı.
+wait 40
+vs new Assets/Scripts/Add10.cqgraph
+vsx var Calls number 0
+vsx node in macro.inputs
+vsx prop in Pins In:exec,\sX:number
+vsx node out macro.outputs
+vsx prop out Pins Out:exec,\sResult:number
+vsx node add math.add
+vsx link in X add A
+vsx default add B 10
+vsx link add Result out Result
+vsx node getCalls var.get
+vsx prop getCalls Variable Calls
+vsx node inc math.add
+vsx link getCalls Value inc A
+vsx default inc B 1
+vsx node setCalls var.set
+vsx prop setCalls Variable Calls
+vsx link in In setCalls In
+vsx link inc Result setCalls Value
+vsx link setCalls Then out Out
+vs save
+vs new Assets/Scripts/SubMain.cqgraph
+vsx var R1 number 0
+vsx var R2 number 0
+vsx node start event.start
+vsx node s1 subgraph.instance
+vsx prop s1 Graph Assets/Scripts/Add10.cqgraph
+vsx default s1 X 5
+vsx link start Then s1 In
+vsx node setR1 var.set
+vsx prop setR1 Variable R1
+vsx link s1 Out setR1 In
+vsx link s1 Result setR1 Value
+vsx node s2 subgraph.instance
+vsx prop s2 Graph Assets/Scripts/Add10.cqgraph
+vsx node getR1 var.get
+vsx prop getR1 Variable R1
+vsx link getR1 Value s2 X
+vsx link setR1 Then s2 In
+vsx node setR2 var.set
+vsx prop setR2 Variable R2
+vsx link s2 Out setR2 In
+vsx link s2 Result setR2 Value
+vs save
+vs expect_errors 0
+vs expect_code _Calls\s=
+vs expect_code private\sfloat\s_sg
+create_primitive sphere Ball 0 3 0
+script add Ball Assets/Scripts/SubMain.cqgraph
+play
+wait 20
+script expect Ball R1 >14.99
+script expect Ball R1 <15.01
+script expect Ball R2 >24.99
+script expect Ball R2 <25.01
+stop
+quit

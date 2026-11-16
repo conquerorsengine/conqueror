@@ -1,0 +1,309 @@
+# template: empty
+# Unity Visual Scripting düğümleri: Formula (girişler + grafik değişkeni), Try Catch + Throw + Finally, Cooldown, Timer, Wait Until,
+# Wait While, Wait For Next Frame, Toggle Flow, Toggle Value, Cache, Null Check, Null Coalesce, sözlük düğümleri (Create / Set /
+# Add / Remove / Count / Get / Contains Key / Keys / Merge), Exclusive Or, Approximately, Comparison ve Numeric Equal. Üretilen kod derlenir ve oyunda her düğümün sonucu değişkenlerden denetlenir.
+wait 40
+vs new Assets/Scripts/UnityNodes.cqgraph
+vsx var F1 number 0
+vsx var F2 number 0
+vsx var Bonus number 5
+vsx var Caught number 0
+vsx var Msg string none
+vsx var Fin number 0
+vsx var ReadyCount number 0
+vsx var CdDone number 0
+vsx var TimerDone number 0
+vsx var WaitDone number 0
+vsx var TurnedOff number 0
+vsx var FlowOff number 0
+vsx var TV number 0
+vsx var Cached number 0
+vsx var NC number 0
+vsx var DCount number 0
+vsx var DA number 0
+vsx var DHas number 5
+vsx var Approx number 0
+vsx var Less number 0
+vsx var NumEq number 0
+vsx var Dict dictionary x
+vsx var KeysCount number 0
+vsx var MergeCount number 0
+vsx var XorV number 0
+vsx var NullHit number 0
+vsx var WW number 0
+vsx var WF number 0
+# Formula
+vsx node start event.start
+vsx node f1 math.formula
+vsx prop f1 Formula a\s*\s2\s+\sb
+vsx default f1 a 3
+vsx default f1 b 4
+vsx node setF1 var.set
+vsx prop setF1 Variable F1
+vsx link start Then setF1 In
+vsx link f1 Result setF1 Value
+vsx node f2 math.formula
+vsx prop f2 Formula a\s+\sBonus
+vsx prop f2 Inputs 1
+vsx default f2 a 1
+vsx node setF2 var.set
+vsx prop setF2 Variable F2
+vsx link setF1 Then setF2 In
+vsx link f2 Result setF2 Value
+vsx node seq flow.sequence
+vsx link setF2 Then seq In
+# Try / Catch / Finally
+vsx node try flow.trycatch
+vsx link seq "Then 0" try In
+vsx node throw flow.throw
+vsx default throw Message boom
+vsx link try Try throw In
+vsx node setCaught var.set
+vsx prop setCaught Variable Caught
+vsx default setCaught Value 1
+vsx link try Catch setCaught In
+vsx node setMsg var.set
+vsx prop setMsg Variable Msg
+vsx link setCaught Then setMsg In
+vsx link try Exception setMsg Value
+vsx node setFin var.set
+vsx prop setFin Variable Fin
+vsx default setFin Value 1
+vsx link try Finally setFin In
+# Timer + Wait Until
+vsx node timer flow.timer
+vsx default timer Duration 0.2
+vsx link seq "Then 1" timer Start
+vsx node setTimer var.set
+vsx prop setTimer Variable TimerDone
+vsx default setTimer Value 1
+vsx link timer Completed setTimer In
+vsx node wu flow.waituntil
+vsx link timer Started wu In
+vsx node getTimer var.get
+vsx prop getTimer Variable TimerDone
+vsx node gt compare.gt
+vsx link getTimer Value gt A
+vsx default gt B 0.5
+vsx link gt Result wu Condition
+vsx node setWait var.set
+vsx prop setWait Variable WaitDone
+vsx default setWait Value 1
+vsx link wu Then setWait In
+# Toggle Flow / Toggle Value / Cache
+vsx node seqB flow.sequence
+vsx link seq "Then 2" seqB In
+vsx node tflow flow.toggleflow
+vsx link seqB "Then 0" tflow Off
+vsx node setTO var.set
+vsx prop setTO Variable TurnedOff
+vsx default setTO Value 1
+vsx link tflow "Turned Off" setTO In
+vsx link seqB "Then 1" tflow In
+vsx node setFO var.set
+vsx prop setFO Variable FlowOff
+vsx default setFO Value 1
+vsx link tflow Off setFO In
+vsx node tval flow.togglevalue
+vsx default tval "On Value" 7
+vsx default tval "Off Value" 3
+vsx link seqB "Then 2" tval Toggle
+vsx node setTV var.set
+vsx prop setTV Variable TV
+vsx link tval "Turned Off" setTV In
+vsx link tval Value setTV Value
+vsx node cache flow.cache
+vsx default cache Input 42
+vsx link seqB "Then 3" cache In
+vsx node setCached var.set
+vsx prop setCached Variable Cached
+vsx link cache Then setCached In
+vsx link cache Output setCached Value
+# Null Coalesce, sözlük, karşılaştırmalar
+vsx node nc logic.nullcoalesce
+vsx default nc Fallback 5
+vsx node setNC var.set
+vsx prop setNC Variable NC
+vsx link seq "Then 3" setNC In
+vsx link nc Result setNC Value
+vsx node dcreate dict.create
+vsx node setDict var.set
+vsx prop setDict Variable Dict
+vsx link setNC Then setDict In
+vsx link dcreate Dictionary setDict Value
+vsx node getDict var.get
+vsx prop getDict Variable Dict
+vsx node dset dict.set
+vsx default dset Key a
+vsx default dset Value 1
+vsx link getDict Value dset Dictionary
+vsx link setDict Then dset In
+vsx node dadd dict.add
+vsx default dadd Key b
+vsx default dadd Value 2
+vsx link getDict Value dadd Dictionary
+vsx link dset Then dadd In
+vsx node dadd2 dict.add
+vsx default dadd2 Key a
+vsx default dadd2 Value 99
+vsx link getDict Value dadd2 Dictionary
+vsx link dadd Then dadd2 In
+vsx node drem dict.remove
+vsx default drem Key b
+vsx link getDict Value drem Dictionary
+vsx link dadd2 Then drem In
+vsx node dcount dict.count
+vsx link getDict Value dcount Dictionary
+vsx node setDCount var.set
+vsx prop setDCount Variable DCount
+vsx link drem Then setDCount In
+vsx link dcount Count setDCount Value
+vsx node dget dict.get
+vsx default dget Key a
+vsx link getDict Value dget Dictionary
+vsx node setDA var.set
+vsx prop setDA Variable DA
+vsx link setDCount Then setDA In
+vsx link dget Value setDA Value
+vsx node dhas dict.containskey
+vsx default dhas Key b
+vsx link getDict Value dhas Dictionary
+vsx node setDHas var.set
+vsx prop setDHas Variable DHas
+vsx link setDA Then setDHas In
+vsx link dhas Result setDHas Value
+vsx node sum math.add
+vsx default sum A 0.1
+vsx default sum B 0.2
+vsx node approx compare.approx
+vsx link sum Result approx A
+vsx default approx B 0.3
+vsx node setApprox var.set
+vsx prop setApprox Variable Approx
+vsx link setDHas Then setApprox In
+vsx link approx Result setApprox Value
+vsx node cmpall compare.all
+vsx default cmpall A 2
+vsx default cmpall B 3
+vsx node setLess var.set
+vsx prop setLess Variable Less
+vsx link setApprox Then setLess In
+vsx link cmpall "A < B" setLess Value
+vsx node eqn compare.eq
+vsx prop eqn Numeric true
+vsx link sum Result eqn A
+vsx default eqn B 0.3
+vsx node setNumEq var.set
+vsx prop setNumEq Variable NumEq
+vsx link setLess Then setNumEq In
+vsx link eqn Result setNumEq Value
+# Keys / Merge / Exclusive Or / Null Check / Wait While / Wait For Next Frame
+vsx node keys dict.keys
+vsx link getDict Value keys Dictionary
+vsx node kcount list.count
+vsx link keys Keys kcount List
+vsx node setKeys var.set
+vsx prop setKeys Variable KeysCount
+vsx link setNumEq Then setKeys In
+vsx link kcount Count setKeys Value
+vsx node merge dict.merge
+vsx link getDict Value merge A
+vsx link getDict Value merge B
+vsx node mcount dict.count
+vsx link merge Dictionary mcount Dictionary
+vsx node setMerge var.set
+vsx prop setMerge Variable MergeCount
+vsx link setKeys Then setMerge In
+vsx link mcount Count setMerge Value
+vsx node xor logic.xor
+vsx default xor A true
+vsx default xor B false
+vsx node setXor var.set
+vsx prop setXor Variable XorV
+vsx link setMerge Then setXor In
+vsx link xor Result setXor Value
+vsx node nchk flow.nullcheck
+vsx link setXor Then nchk In
+vsx node setNull var.set
+vsx prop setNull Variable NullHit
+vsx default setNull Value 1
+vsx link nchk Null setNull In
+vsx node ww flow.waitwhile
+vsx node getTimer2 var.get
+vsx prop getTimer2 Variable TimerDone
+vsx node lt compare.lt
+vsx link getTimer2 Value lt A
+vsx default lt B 0.5
+vsx link lt Result ww Condition
+vsx link setNull Then ww In
+vsx node setWW var.set
+vsx prop setWW Variable WW
+vsx default setWW Value 1
+vsx link ww Then setWW In
+vsx node wf flow.waitframe
+vsx link setWW Then wf In
+vsx node setWF var.set
+vsx prop setWF Variable WF
+vsx default setWF Value 1
+vsx link wf Then setWF In
+# Cooldown (her karede girilir: hazır oldukça Ready)
+vsx node upd event.update
+vsx node cd flow.cooldown
+vsx default cd Duration 0.25
+vsx link upd Then cd Enter
+vsx node getRC var.get
+vsx prop getRC Variable ReadyCount
+vsx node addRC math.add
+vsx link getRC Value addRC A
+vsx default addRC B 1
+vsx node setRC var.set
+vsx prop setRC Variable ReadyCount
+vsx link cd Ready setRC In
+vsx link addRC Result setRC Value
+vsx node setCd var.set
+vsx prop setCd Variable CdDone
+vsx default setCd Value 1
+vsx link cd Completed setCd In
+vs save
+vs expect_errors 0
+vs expect_code try
+create_primitive sphere Ball 0 3 0
+script add Ball Assets/Scripts/UnityNodes.cqgraph
+play
+wait 120
+script expect Ball F1 >9.99
+script expect Ball F1 <10.01
+script expect Ball F2 >5.99
+script expect Ball F2 <6.01
+script expect Ball Caught >0.99
+script expect Ball Msg boom
+script expect Ball Fin >0.99
+script expect Ball TimerDone >0.99
+script expect Ball WaitDone >0.99
+script expect Ball TurnedOff >0.99
+script expect Ball FlowOff >0.99
+script expect Ball TV >2.99
+script expect Ball TV <3.01
+script expect Ball Cached >41.99
+script expect Ball NC >4.99
+script expect Ball NC <5.01
+script expect Ball DCount >0.99
+script expect Ball DCount <1.01
+script expect Ball DA >0.99
+script expect Ball DA <1.01
+script expect Ball DHas <0.01
+script expect Ball Approx >0.99
+script expect Ball Less >0.99
+script expect Ball NumEq >0.99
+script expect Ball KeysCount >0.99
+script expect Ball KeysCount <1.01
+script expect Ball MergeCount >0.99
+script expect Ball MergeCount <1.01
+script expect Ball XorV >0.99
+script expect Ball NullHit >0.99
+script expect Ball WW >0.99
+script expect Ball WF >0.99
+script expect Ball ReadyCount >1.99
+script expect Ball CdDone >0.99
+stop
+quit

@@ -1,0 +1,103 @@
+# template: empty
+# Unity araç çubuğu ve Unreal düzenleme araçları (oyunsuz): Dim (olaya bağlı olmayan düğüm soluk), Relations sayısı, Align (sol /
+# üst), Distribute (yatay), Straighten Connections, Carry (alt düğümler birlikte taşınır), yorum kutusu içindekilerle taşınır,
+# yer imleri, Find in Blueprints (bu grafik / tüm grafikler), Diff (kayıtlı sürüm ve Git HEAD), Lock (seçim değişince grafik
+# değişmez; kilit açıkken seçili varlığın grafiği açılır).
+wait 40
+vs new Assets/Scripts/Other.cqgraph
+vsx node p action.print
+vsx default p Message needle-other
+vs save
+vs new Assets/Scripts/Tools.cqgraph
+vsx node start event.start 0 0
+vsx node print1 action.print 256 0
+vsx default print1 Message needle-main
+vsx link start Then print1 In
+vsx node lone action.print 0 640
+vsx node br flow.branch 512 640
+vsx node add math.add 768 640
+wait 3
+vsx expect_dim lone true
+vsx expect_dim print1 false
+vsx toggle dim off
+vsx expect_dim lone false
+vsx toggle dim on
+vsx expect_relations br 3
+vsx expect_relations add 2
+# Align / Distribute
+vsx node n1 action.print 0 960
+vsx node n2 action.print 96 1008
+vsx node n3 action.print 400 1088
+wait 3
+vsx align top n1 n2 n3
+vsx expect_pos n2 96 960
+vsx expect_pos n3 400 960
+vsx align left n1 n2 n3
+vsx expect_pos n3 0 960
+vsx node d1 action.print 0 1280
+vsx node d2 action.print 64 1280
+vsx node d3 action.print 800 1280
+wait 3
+vsx distribute h d1 d2 d3
+vsx expect_pos d2 400 1280 2
+# Straighten: b, a'nın Then çıkışıyla aynı hizaya iner
+vsx node a action.print 0 1600
+vsx node b action.print 320 1737
+vsx link a Then b In
+wait 3
+vsx straighten b
+vsx expect_pos b 320 1600 1
+# Carry
+vsx node par action.print 0 1920
+vsx node kid action.print 320 1920
+vsx link par Then kid In
+vsx toggle carry on
+vsx move par 32 16
+vsx expect_pos kid 352 1936
+vsx toggle carry off
+vsx move par 32 0
+vsx expect_pos kid 352 1936
+# Yorum kutusu içindekilerle taşınır; yapışkan not
+vsx node inner action.print 1200 64
+wait 3
+vsx comment cb 1150 0 400 260 Group
+vsx move_box cb 100 0
+vsx expect_pos inner 1300 64
+vsx expect_pos cb 1250 0
+vsx node note stickynote 1700 0
+vsx prop note Text Remember\sto\stest
+# Yer imleri
+vsx bookmark Home
+vsx expect_bookmarks 1
+vsx jump Home
+# Find
+vsx find needle 1 this
+vsx find needle 2 all
+# Diff: kayıtlı sürüme göre 1 eklenen, 1 değişen; Git HEAD'e göre 1 eklenen, 1 kaldırılan, 1 değişen
+vs save
+vsx node extra action.print 0 2400
+vsx default print1 Message changed
+vsx diff saved 1 0 1
+vcs init_git
+vsx remove lone
+vsx diff head 1 1 1
+vsx expect_bottom_tab 3
+vs expect_errors 0
+vs save
+# Lock: kilitliyken seçim grafiği değiştirmez; açıkken seçili varlığın görsel betiği açılır
+create_primitive sphere Holder 0 3 0
+script add Holder Assets/Scripts/Other.cqgraph
+create_primitive cube Empty 3 3 0
+select Empty
+wait 3
+vsx toggle lock on
+select Holder
+wait 3
+vsx expect_path Tools.cqgraph
+vsx toggle lock off
+select Empty
+wait 3
+select Holder
+wait 3
+vsx expect_path Other.cqgraph
+quit
