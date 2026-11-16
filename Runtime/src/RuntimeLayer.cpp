@@ -35,12 +35,33 @@
 #include "Renderer/RHI/Texture.h"
 #include "Core/Utils/FileSystem.h"
 #include "Renderer/GameViewModes.h"
+#include "Core/Base/Version.h"
+#include "Scripting/ScriptRuntime.h"
+#include <imgui.h>
+#include <cstdio>
+#include <ctime>
+#if defined(CQ_PLAYER_NFD)
+    #include <nfd.h>
+#endif
+
+// Masaüstü oyuncusu (pencere boyutu değiştirilebilir, dosya iletişim kutusu, sürükle-bırak)
+#if !defined(__ANDROID__) && !defined(__EMSCRIPTEN__) && !defined(CQ_PLATFORM_IOS) && !defined(CQ_PLATFORM_QNX)
+    #define CQ_RUNTIME_DESKTOP 1
+#endif
 
 namespace Conqueror::Runtime
 {
-    RuntimeLayer::RuntimeLayer(const std::filesystem::path& projectPath)
-        : Layer("RuntimeLayer"), m_ProjectPath(projectPath)
+    RuntimeLayer::RuntimeLayer(const std::filesystem::path& projectPath, const std::filesystem::path& packagePath)
+        : Layer("RuntimeLayer"), m_ProjectPath(projectPath), m_PackagePath(packagePath)
     {
+    }
+
+    RuntimeLayer::~RuntimeLayer()
+    {
+        // Çözme sürüyorsa iptal edilir (yarım klasör sonraki açılışta yeniden çözülür)
+        m_UnpackCancel = true;
+        if (m_UnpackThread.joinable())
+            m_UnpackThread.join();
     }
 
     void RuntimeLayer::OnAttach()
@@ -49,8 +70,42 @@ namespace Conqueror::Runtime
         ConsoleSystem::SetSceneProvider([this]() { return m_ActiveScene.get(); });
         // Derlenmiş oyun testi için otomasyon komutları (CQ_AUTOMATION ile)
         // game expect_scene <name> | expect_entity <name> [present|absent] | report
+        // Taşınabilir paket / oyuncu açılış ekranı: game mode <launcher|unpacking|project|error> | expect_error <metin> | open <paket.cqspace>
         Automation::RegisterCommand("game", [this](const Automation::CommandArgs& a, std::string& err) {
-            if (a.size() < 2) { err = "game <expect_scene|expect_entity|report>"; return false; }
+            if (a.size() < 2) { err = "game <expect_scene|expect_entity|mode|expect_error|open|report>"; return false; }
+            auto modeName = [this]() {
+                switch (m_Mode)
+                {
+                    case Mode::Launcher: return "launcher";
+                    case Mode::Unpacking: return "unpacking";
+                    case Mode::Error: return "error";
+                    default: return "project";
+                }
+            };
+            if (a[1] == "mode" && a.size() > 2)
+            {
+                if (a[2] != modeName()) { err = std::string("mode is '") + modeName() + "'" + (m_ErrorText.empty() ? "" : ": " + m_ErrorText); return false; }
+                return true;
+            }
+            if (a[1] == "expect_error" && a.size() > 2)
+            {
+                std::string want = a[2];
+                for (size_t i = 3; i < a.size(); ++i)
+                    want += " " + a[i];
+                if (m_Mode != Mode::Error) { err = std::string("mode is '") + modeName() + "'"; return false; }
+                if (m_ErrorText.find(want) == std::string::npos) { err = "error text is '" + m_ErrorText + "'"; return false; }
+                return true;
+            }
+            if (a[1] == "open" && a.size() > 2)
+            {
+                std::string path = a[2];
+                for (size_t i = 3; i < a.size(); ++i)
+                    path += " " + a[i];
+                if (m_Mode != Mode::Launcher && m_Mode != Mode::Error) { err = "a game is already open"; return false; }
+                m_FromLauncher = true;
+                BeginOpenPackage(path);
+                return true;
+            }
             if (a[1] == "expect_scene" && a.size() > 2)
             {
                 const std::string name = SceneManager::GetActiveSceneName();
@@ -70,28 +125,68 @@ namespace Conqueror::Runtime
             {
                 auto& window = Application::Get().GetWindow();
                 Automation::Report("GAME scene=" + SceneManager::GetActiveSceneName() + " index=" + std::to_string(SceneManager::GetActiveSceneIndex()) +
-                                   " window=" + std::to_string(window.GetWidth()) + "x" + std::to_string(window.GetHeight()));
+                                   " window=" + std::to_string(window.GetWidth()) + "x" + std::to_string(window.GetHeight()) + " mode=" + modeName() +
+                                   (m_PackagePath.empty() ? std::string() : " package=" + m_PackagePath.string() + " game=" + m_Manifest.Name + " " +
+                                                                            m_Manifest.Version));
                 return true;
             }
             err = "unknown game command " + a[1];
             return false;
         });
 
+        // Taşınabilir oyun paketi (komut satırı / dosya ilişkilendirmesi) ya da hiçbir oyun yok: oyuncunun açılış ekranı
+        if (!m_PackagePath.empty())
+        {
+            BeginOpenPackage(m_PackagePath);
+            return;
+        }
+        if (m_ProjectPath.empty())
+        {
+            ShowLauncher();
+            return;
+        }
+        StartProject();
+    }
+
+    void RuntimeLayer::StartProject()
+    {
+        m_Mode = Mode::Project;
+        m_LoadError.clear();
         SetupSplash();
         if (m_SplashActive)
             return;   // proje, logo tam görünür olunca OnUpdate'te yüklenir
+        m_ProjectLoaded = true;
         if (!LoadProject())
-        {
-            CQ_CORE_ERROR("Failed to load project at runtime!");
-            Application::Get().Close();
-        }
+            ProjectLoadFailed();
         else
         {
-            m_ProjectLoaded = true;
             uint32_t width = Application::Get().GetWindow().GetWidth();
             uint32_t height = Application::Get().GetWindow().GetHeight();
             RenderCommand::SetViewport(0, 0, width, height);
         }
+    }
+
+    void RuntimeLayer::ProjectLoadFailed()
+    {
+        CQ_CORE_ERROR("Failed to load project at runtime!");
+        m_SplashActive = false;
+        m_ProjectLoaded = false;
+        if (m_ActiveScene)
+        {
+            m_ActiveScene->OnRuntimeStop();
+            m_ActiveScene->StopAllAudio();
+            m_ActiveScene.reset();
+        }
+        // Bağımsız derleme (oyun klasörü): eskisi gibi kapanır. Paketten açılan oyun: hata ekranı (başka oyun açılabilir)
+        if (m_PackagePath.empty())
+        {
+            Application::Get().Close();
+            return;
+        }
+        if (Project::GetActive())
+            Project::SetActive(nullptr);
+        ShowError("\"" + (m_Manifest.Name.empty() ? m_PackagePath.filename().string() : m_Manifest.Name) + "\" could not be started",
+                  m_LoadError.empty() ? std::string("The game's start scene could not be loaded. See the log for details.") : m_LoadError);
     }
 
     void RuntimeLayer::SetupSplash()
@@ -218,9 +313,7 @@ namespace Conqueror::Runtime
                 m_ProjectLoaded = true;
                 if (!LoadProject())
                 {
-                    CQ_CORE_ERROR("Failed to load project at runtime!");
-                    Application::Get().Close();
-                    m_SplashActive = false;
+                    ProjectLoadFailed();
                     return;
                 }
             }
@@ -232,6 +325,20 @@ namespace Conqueror::Runtime
                 m_SplashBackgroundImage.reset();
                 CQ_CORE_INFO("Splash screen finished");
             }
+            return;
+        }
+        // Oyuncunun kendi ekranları (açılış, paket çözülürken, hata): yalnız arayüz (OnImGuiRender)
+        if (m_Mode == Mode::Unpacking)
+        {
+            if (m_UnpackDone)
+                FinishOpenPackage();
+            ClearScreen();
+            return;
+        }
+        if (m_Mode == Mode::Launcher || m_Mode == Mode::Error)
+        {
+            PollOpenRequests();
+            ClearScreen();
             return;
         }
         if (!m_ActiveScene)
@@ -382,6 +489,22 @@ namespace Conqueror::Runtime
                 m_ActiveScene->OnViewportResize(ev.GetWidth(), ev.GetHeight());
             return false;
         });
+        // Açılış / hata ekranında pencereye bırakılan .cqspace açılır
+        dispatcher.Dispatch<WindowFileDropEvent>([this](WindowFileDropEvent& ev)
+        {
+            if (m_Mode != Mode::Launcher && m_Mode != Mode::Error)
+                return false;
+            for (const auto& p : ev.GetPaths())
+                if (GamePackage::IsPackagePath(p))
+                {
+                    m_FromLauncher = true;
+                    BeginOpenPackage(p);
+                    return true;
+                }
+            if (!ev.GetPaths().empty())
+                m_LauncherMessage = std::filesystem::path(ev.GetPaths().front()).filename().string() + " is not a Conqueror game (.cqspace).";
+            return true;
+        });
     }
 
     bool RuntimeLayer::LoadProject()
@@ -403,17 +526,31 @@ namespace Conqueror::Runtime
         if (projectFilePath.empty() || !serializer.Deserialize(projectFilePath))
         {
             CQ_CORE_ERROR("Could not find or deserialize project in {0}", m_ProjectPath.string());
+            m_LoadError = "The game's project file could not be read.";
             return false;
         }
 
         Project::SetActive(project);
         Localization::SetRemapsActive(true);   // dile göre doku / ses / yazı tipi karşılıkları (Project Settings > Localization > Remaps)
 
+        // Taşınabilir paket: betik dillerinin çalışma zamanları bu oyuncuda var mı (Python, .NET SDK, JDK); betik motoru artık kurulu
+        if (!m_PackagePath.empty())
+        {
+            std::string reason;
+            if (!GamePackage::CheckFeaturesAvailable(m_Manifest, reason))
+            {
+                CQ_CORE_ERROR("[GamePackage] {0}", reason);
+                m_LoadError = reason;
+                return false;
+            }
+        }
+
         std::filesystem::path startScenePath = project->GetProjectDirectory() / project->GetConfig().StartScene;
         
         if (!std::filesystem::exists(startScenePath))
         {
             CQ_CORE_ERROR("Start scene missing: {0}", startScenePath.string());
+            m_LoadError = "The start scene " + project->GetConfig().StartScene + " is missing.";
             return false;
         }
 
@@ -422,6 +559,8 @@ namespace Conqueror::Runtime
         if (!sceneSerializer.Deserialize(startScenePath))
         {
             CQ_CORE_ERROR("Failed to load start scene: {0}", startScenePath.string());
+            m_LoadError = "The start scene " + project->GetConfig().StartScene + " could not be loaded.";
+            m_ActiveScene.reset();
             return false;
         }
 
@@ -475,5 +614,426 @@ namespace Conqueror::Runtime
         m_ActiveScene->OnViewportResize(Application::Get().GetWindow().GetWidth(), Application::Get().GetWindow().GetHeight());
         SceneManager::SetActiveScenePath(path);
         CQ_CORE_INFO("Loaded scene {0}", path.filename().string());
+    }
+
+    // ---- Taşınabilir oyun paketi ve oyuncunun açılış ekranı ----
+
+    void RuntimeLayer::ClearScreen()
+    {
+        auto& window = Application::Get().GetWindow();
+        RenderCommand::SetViewport(0, 0, std::max(window.GetWidth(), 1u), std::max(window.GetHeight(), 1u));
+        RenderCommand::SetClearColor({ 0.067f, 0.071f, 0.086f, 1.0f });
+        RenderCommand::Clear();
+    }
+
+    void RuntimeLayer::BeginOpenPackage(const std::filesystem::path& package)
+    {
+        if (m_UnpackThread.joinable())
+            m_UnpackThread.join();
+        std::error_code ec;
+        std::filesystem::path abs = std::filesystem::absolute(package, ec);
+        m_PackagePath = ec ? package : abs.lexically_normal();
+        m_Mode = Mode::Unpacking;
+        m_LauncherMessage.clear();
+        m_UnpackDone = false;
+        m_UnpackCancel = false;
+        m_UnpackProgress = 0.0f;
+        m_UnpackOk = false;
+        m_UnpackError.clear();
+        m_Manifest = {};
+        CQ_CORE_INFO("[GamePackage] Opening {0}", m_PackagePath.string());
+        // Bildirim, uyumluluk (motor sürümü, özellikler) ve ilk açılışta önbelleğe çözme arka planda: büyük oyunda pencere donmasın
+        const std::string file = m_PackagePath.string();
+        m_UnpackThread = std::thread([this, file]() {
+            GamePackage::Manifest manifest;
+            std::filesystem::path dir;
+            std::string error;
+            const bool ok = GamePackage::Open(file, manifest, dir, error, [this](float p) {
+                m_UnpackProgress = p;
+                return !m_UnpackCancel.load();
+            });
+            m_Manifest = manifest;
+            m_UnpackedDir = dir;
+            m_UnpackError = error;
+            m_UnpackOk = ok;
+            m_UnpackDone = true;   // ana iş parçacığı bunu gördükten sonra (join ile) alanları okur
+        });
+    }
+
+    void RuntimeLayer::FinishOpenPackage()
+    {
+        if (m_UnpackThread.joinable())
+            m_UnpackThread.join();
+        if (!m_UnpackOk)
+        {
+            const std::string name = m_Manifest.Name.empty() ? m_PackagePath.filename().string() : m_Manifest.Name;
+            ShowError("\"" + name + "\" cannot be opened", m_UnpackError);
+            return;
+        }
+        GamePackage::AddRecent(m_PackagePath.string(), m_Manifest);
+        m_ProjectPath = m_UnpackedDir;
+        CQ_CORE_INFO("[GamePackage] {0} {1} (made with {2}, needs engine {3}+), scripts: {4}", m_Manifest.Name, m_Manifest.Version,
+                     m_Manifest.CreatedBy, m_Manifest.EngineVersion, m_Manifest.ScriptLanguages.empty() ? std::string("none") : [&]() {
+                         std::string s;
+                         for (const auto& l : m_Manifest.ScriptLanguages)
+                             s += (s.empty() ? "" : ", ") + l;
+                         return s;
+                     }());
+        // Açılış ekranından açılan oyun: pencere başlığı, boyutu ve betik hata ayıklaması burada (komut satırında RuntimeApp yapar)
+        if (m_FromLauncher)
+        {
+            std::string text;
+            auto project = std::make_shared<Project>();
+            if (GamePackage::ReadFile(m_PackagePath.string(), m_Manifest.ProjectFile, text) &&
+                ProjectSerializer(project).DeserializeText(text, m_UnpackedDir / m_Manifest.ProjectFile))
+            {
+                const auto& cfg = project->GetConfig();
+                auto& window = Application::Get().GetWindow();
+                window.SetTitle(cfg.Name.empty() ? m_Manifest.Name : cfg.Name);
+                if (cfg.Build.DevelopmentBuild && cfg.Build.ScriptDebugging)
+                    Scripting::ScriptDebugMode() = true;
+#if defined(CQ_RUNTIME_DESKTOP)
+                if (cfg.Player.Width > 0 && cfg.Player.Height > 0 && cfg.Player.FullscreenMode == 0)
+                    glfwSetWindowSize(static_cast<GLFWwindow*>(window.GetNativeWindow()), cfg.Player.Width, cfg.Player.Height);
+#endif
+                if (!cfg.Player.GraphicsAPI.empty() && cfg.Player.GraphicsAPI != "Auto")
+                    CQ_CORE_WARN("[GamePackage] {0} asks for the {1} graphics API; opened from the player's start screen it uses the current one "
+                                 "(open the .cqspace file directly to use {1})", m_Manifest.Name, cfg.Player.GraphicsAPI);
+            }
+        }
+        StartProject();
+    }
+
+    void RuntimeLayer::ShowError(const std::string& title, const std::string& message)
+    {
+        m_Mode = Mode::Error;
+        m_ErrorTitle = title;
+        m_ErrorText = message;
+        CQ_CORE_ERROR("[GamePackage] {0}: {1}", title, message);
+        std::fprintf(stderr, "%s\n%s\n", title.c_str(), message.c_str());
+        Application::Get().GetWindow().SetTitle("Conqueror Player");
+    }
+
+    void RuntimeLayer::ShowLauncher()
+    {
+        m_Mode = Mode::Launcher;
+        m_Recent = GamePackage::LoadRecent();
+        m_FoundGames.clear();
+        std::error_code ec;
+        for (const auto& folder : GamePackage::GameFolders())
+            for (const auto& entry : std::filesystem::directory_iterator(folder, ec))
+                if (entry.is_regular_file(ec) && GamePackage::IsPackagePath(entry.path().string()))
+                    m_FoundGames.push_back(entry.path());
+        std::sort(m_FoundGames.begin(), m_FoundGames.end());
+        Application::Get().GetWindow().SetTitle("Conqueror Player");
+    }
+
+    void RuntimeLayer::PollOpenRequests()
+    {
+        // Platform katmanından gelen istek (iOS belge açma ...)
+        std::string request;
+        if (GamePackage::TakeOpenRequest(request))
+        {
+            m_FromLauncher = true;
+            BeginOpenPackage(request);
+            return;
+        }
+        // Linux dosya iletişim kutusunun sonucu
+        std::string picked, error;
+        {
+            std::lock_guard lock(m_Dialog->Mutex);
+            if (m_Dialog->Done)
+            {
+                m_Dialog->Done = false;
+                picked = m_Dialog->Result;
+                error = m_Dialog->Error;
+            }
+        }
+        if (!error.empty())
+            m_LauncherMessage = error;
+        if (!picked.empty())
+        {
+            m_FromLauncher = true;
+            BeginOpenPackage(picked);
+        }
+    }
+
+    void RuntimeLayer::OpenFileDialog()
+    {
+        m_LauncherMessage.clear();
+#if defined(CQ_PLAYER_NFD)
+        // Windows / macOS: sistemin dosya iletişim kutusu (kalıcı pencere, ana iş parçacığında)
+        if (NFD_Init() != NFD_OKAY)
+        {
+            m_LauncherMessage = std::string("The file dialog could not be opened: ") + (NFD_GetError() ? NFD_GetError() : "unknown error");
+            return;
+        }
+        nfdu8char_t* out = nullptr;
+        nfdu8filteritem_t filters[1] = { { "Conqueror Game", "cqspace" } };
+        const nfdresult_t result = NFD_OpenDialogU8(&out, filters, 1, nullptr);
+        std::string path;
+        if (result == NFD_OKAY && out)
+        {
+            path = out;
+            NFD_FreePathU8(out);
+        }
+        else if (result == NFD_ERROR)
+            m_LauncherMessage = std::string("The file dialog could not be opened: ") + (NFD_GetError() ? NFD_GetError() : "unknown error");
+        NFD_Quit();
+        if (!path.empty())
+        {
+            m_FromLauncher = true;
+            BeginOpenPackage(path);
+        }
+#elif defined(CQ_RUNTIME_DESKTOP) && !defined(_WIN32) && !defined(__APPLE__)
+        // Linux / BSD: zenity ya da kdialog alt süreci (oyuncu GTK / Qt'ye bağlanmaz); kareler sürsün diye ayrı iş parçacığında
+        {
+            std::lock_guard lock(m_Dialog->Mutex);
+            if (m_Dialog->Running)
+                return;
+            m_Dialog->Running = true;
+            m_Dialog->Done = false;
+            m_Dialog->Result.clear();
+            m_Dialog->Error.clear();
+        }
+        std::thread([state = m_Dialog]() {
+            const char* command =
+                "if command -v zenity >/dev/null 2>&1; then zenity --file-selection --title='Open a Conqueror game' "
+                "--file-filter='Conqueror games (*.cqspace) | *.cqspace' --file-filter='All files | *' 2>/dev/null; "
+                "elif command -v kdialog >/dev/null 2>&1; then kdialog --title 'Open a Conqueror game' --getopenfilename \"$HOME\" "
+                "'*.cqspace|Conqueror games (*.cqspace)' 2>/dev/null; else exit 127; fi";
+            std::string output;
+            int code = -1;
+            if (FILE* pipe = popen(command, "r"))
+            {
+                char buffer[4096];
+                size_t n = 0;
+                while ((n = std::fread(buffer, 1, sizeof(buffer), pipe)) > 0)
+                    output.append(buffer, n);
+                const int status = pclose(pipe);
+                code = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+            }
+            while (!output.empty() && (output.back() == '\n' || output.back() == '\r'))
+                output.pop_back();
+            std::lock_guard lock(state->Mutex);
+            state->Running = false;
+            state->Done = true;
+            if (code == 127)
+                state->Error = "No file dialog is available on this computer (install zenity or kdialog). Type the path of the .cqspace file "
+                               "below or drop it on this window.";
+            else if (code == 0)
+                state->Result = output;
+        }).detach();
+#else
+        m_LauncherMessage = "Open a .cqspace file with the Conqueror player from your file manager, browser or Files app.";
+#endif
+    }
+
+    void RuntimeLayer::OnImGuiRender()
+    {
+        if (m_Mode == Mode::Launcher)
+            DrawLauncher();
+        else if (m_Mode == Mode::Unpacking)
+            DrawUnpacking();
+        else if (m_Mode == Mode::Error)
+            DrawError();
+    }
+
+    namespace
+    {
+        // Oyuncunun ekranları: ana pencereyi dolduran, kaydedilmeyen pencere; içerik ortada en fazla 760 px genişlikte
+        bool BeginPlayerScreen(const char* id, float& column)
+        {
+            const ImGuiViewport* vp = ImGui::GetMainViewport();
+            ImGui::SetNextWindowPos(vp->WorkPos);
+            ImGui::SetNextWindowSize(vp->WorkSize);
+            ImGui::SetNextWindowViewport(vp->ID);
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.067f, 0.071f, 0.086f, 1.0f));
+            const bool open = ImGui::Begin(id, nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
+                                                        ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoDocking);
+            ImGui::PopStyleColor();
+            column = std::min(760.0f, std::max(200.0f, vp->WorkSize.x - 32.0f));
+            const float indent = std::max(16.0f, (vp->WorkSize.x - column) * 0.5f);
+            ImGui::SetCursorPosY(std::max(24.0f, vp->WorkSize.y * 0.08f));
+            ImGui::Indent(indent);
+            return open;
+        }
+
+        void Heading(const char* text, float scale)
+        {
+            ImGui::SetWindowFontScale(scale);
+            ImGui::TextUnformatted(text);
+            ImGui::SetWindowFontScale(1.0f);
+        }
+
+        std::string FormatAge(int64_t when)
+        {
+            const int64_t now = (int64_t)std::time(nullptr);
+            const int64_t d = std::max<int64_t>(0, now - when);
+            if (when <= 0)
+                return {};
+            if (d < 120)
+                return "just now";
+            if (d < 7200)
+                return std::to_string(d / 60) + " minutes ago";
+            if (d < 172800)
+                return std::to_string(d / 3600) + " hours ago";
+            return std::to_string(d / 86400) + " days ago";
+        }
+    }
+
+    void RuntimeLayer::DrawLauncher()
+    {
+        float column = 0.0f;
+        BeginPlayerScreen("##ConquerorPlayer", column);
+        Heading("Conqueror Player", 1.8f);
+        ImGui::TextDisabled("Conqueror Engine %s - plays portable games (.cqspace) made with this engine version or older", CQ_ENGINE_VERSION);
+        ImGui::Dummy(ImVec2(0.0f, 12.0f));
+
+        bool dialogRunning = false;
+        {
+            std::lock_guard lock(m_Dialog->Mutex);
+            dialogRunning = m_Dialog->Running;
+        }
+#if defined(CQ_PLAYER_NFD) || (defined(CQ_RUNTIME_DESKTOP) && !defined(_WIN32) && !defined(__APPLE__))
+        ImGui::BeginDisabled(dialogRunning);
+        if (ImGui::Button(dialogRunning ? "Waiting for the file dialog..." : "Open a .cqspace...", ImVec2(260.0f, 40.0f)))
+            OpenFileDialog();
+        ImGui::EndDisabled();
+#else
+        (void)dialogRunning;
+        ImGui::TextWrapped("Open a .cqspace file with the Conqueror player from your file manager, browser or Files app.");
+#endif
+        ImGui::Dummy(ImVec2(0.0f, 4.0f));
+        ImGui::SetNextItemWidth(std::max(120.0f, column - 90.0f));
+        const bool enter = ImGui::InputTextWithHint("##path", "or type the path of a .cqspace file", m_PathInput, sizeof(m_PathInput),
+                                                    ImGuiInputTextFlags_EnterReturnsTrue);
+        ImGui::SameLine();
+        if ((ImGui::Button("Open", ImVec2(80.0f, 0.0f)) || enter) && m_PathInput[0])
+        {
+            std::string path = m_PathInput;
+            while (!path.empty() && (path.back() == ' ' || path.back() == '"' || path.back() == '\''))
+                path.pop_back();
+            while (!path.empty() && (path.front() == ' ' || path.front() == '"' || path.front() == '\''))
+                path.erase(path.begin());
+            m_FromLauncher = true;
+            BeginOpenPackage(path);
+            ImGui::End();
+            return;
+        }
+#if defined(CQ_RUNTIME_DESKTOP)
+        ImGui::TextDisabled("You can also drop a .cqspace file on this window.");
+#endif
+        if (!m_LauncherMessage.empty())
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.78f, 0.35f, 1.0f));
+            ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + column);
+            ImGui::TextWrapped("%s", m_LauncherMessage.c_str());
+            ImGui::PopTextWrapPos();
+            ImGui::PopStyleColor();
+        }
+
+        // Son açılan oyunlar ve oyun klasörlerinde bulunanlar: tıklayınca açılır
+        std::string open;
+        int remove = -1;
+        auto gameRow = [&](const std::string& path, const std::string& name, const std::string& detail, int index) {
+            std::error_code ec;
+            const bool exists = std::filesystem::is_regular_file(path, ec);
+            ImGui::PushID(path.c_str());
+            const float rowWidth = column - (index >= 0 ? 90.0f : 0.0f);
+            ImGui::BeginDisabled(!exists);
+            if (ImGui::Selectable("##game", false, ImGuiSelectableFlags_AllowOverlap, ImVec2(rowWidth, ImGui::GetTextLineHeight() * 2.4f)))
+                open = path;
+            ImGui::EndDisabled();
+            const ImVec2 min = ImGui::GetItemRectMin();
+            ImDrawList* dl = ImGui::GetWindowDrawList();
+            dl->AddText(ImVec2(min.x + 8.0f, min.y + 3.0f), ImGui::GetColorU32(exists ? ImGuiCol_Text : ImGuiCol_TextDisabled), name.c_str());
+            const std::string sub = exists ? detail : detail + " (file not found)";
+            dl->AddText(ImVec2(min.x + 8.0f, min.y + 3.0f + ImGui::GetTextLineHeightWithSpacing()), ImGui::GetColorU32(ImGuiCol_TextDisabled),
+                        sub.c_str());
+            if (index >= 0)
+            {
+                ImGui::SameLine();
+                if (ImGui::Button("Remove", ImVec2(80.0f, 0.0f)))
+                    remove = index;
+            }
+            ImGui::PopID();
+        };
+        ImGui::Dummy(ImVec2(0.0f, 12.0f));
+        Heading("Recent games", 1.25f);
+        ImGui::Separator();
+        if (m_Recent.empty())
+            ImGui::TextDisabled("No games opened yet.");
+        for (int i = 0; i < (int)m_Recent.size(); ++i)
+        {
+            const auto& r = m_Recent[(size_t)i];
+            std::string detail = r.Path;
+            if (const std::string age = FormatAge(r.LastOpened); !age.empty())
+                detail += "  -  " + age;
+            gameRow(r.Path, (r.Name.empty() ? std::filesystem::path(r.Path).stem().string() : r.Name) + (r.Version.empty() ? "" : "  " + r.Version),
+                    detail, i);
+        }
+        if (!m_FoundGames.empty())
+        {
+            ImGui::Dummy(ImVec2(0.0f, 12.0f));
+            Heading("Games in the player's folders", 1.25f);
+            ImGui::Separator();
+            for (const auto& g : m_FoundGames)
+                gameRow(g.string(), g.stem().string(), g.parent_path().string(), -1);
+        }
+        ImGui::End();
+        if (remove >= 0 && remove < (int)m_Recent.size())
+        {
+            GamePackage::RemoveRecent(m_Recent[(size_t)remove].Path);
+            m_Recent = GamePackage::LoadRecent();
+        }
+        if (!open.empty())
+        {
+            m_FromLauncher = true;
+            BeginOpenPackage(open);
+        }
+    }
+
+    void RuntimeLayer::DrawUnpacking()
+    {
+        float column = 0.0f;
+        BeginPlayerScreen("##ConquerorPlayerOpening", column);
+        Heading("Conqueror Player", 1.8f);
+        ImGui::Dummy(ImVec2(0.0f, 12.0f));
+        ImGui::Text("Opening %s ...", m_PackagePath.filename().string().c_str());
+        ImGui::SetNextItemWidth(column);
+        ImGui::ProgressBar(std::clamp(m_UnpackProgress.load(), 0.0f, 1.0f), ImVec2(column, 0.0f));
+        ImGui::TextDisabled("The first start unpacks the game once; later starts are immediate.");
+        ImGui::End();
+    }
+
+    void RuntimeLayer::DrawError()
+    {
+        float column = 0.0f;
+        BeginPlayerScreen("##ConquerorPlayerError", column);
+        Heading("Conqueror Player", 1.8f);
+        ImGui::Dummy(ImVec2(0.0f, 12.0f));
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.45f, 0.4f, 1.0f));
+        Heading(m_ErrorTitle.c_str(), 1.25f);
+        ImGui::PopStyleColor();
+        ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + column);
+        ImGui::TextWrapped("%s", m_ErrorText.c_str());
+        if (!m_PackagePath.empty())
+            ImGui::TextDisabled("%s", m_PackagePath.string().c_str());
+        ImGui::PopTextWrapPos();
+        ImGui::Dummy(ImVec2(0.0f, 12.0f));
+        bool launcher = ImGui::Button("Open Another Game", ImVec2(200.0f, 36.0f));
+#if defined(CQ_RUNTIME_DESKTOP)
+        ImGui::SameLine();
+        if (ImGui::Button("Quit", ImVec2(120.0f, 36.0f)))
+            Application::Get().Close();
+#endif
+        ImGui::End();
+        if (launcher)
+        {
+            m_PackagePath.clear();
+            m_Manifest = {};
+            ShowLauncher();
+        }
     }
 }

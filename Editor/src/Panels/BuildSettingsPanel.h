@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <functional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace Conqueror::Editor
@@ -40,5 +41,8 @@ namespace Conqueror::Editor
         bool m_ShowLog = false;
         int m_DragFrom = -1;
         std::string m_Message;
+        // Taşınabilir paket (.cqspace) hedefi: pakete giremeyen yerel betikler (birkaç saniyede bir yeniden taranır)
+        std::vector<std::pair<std::string, std::string>> m_PortableBlockers;
+        double m_PortableScanTime = -100.0;
     };
 }

@@ -128,6 +128,8 @@ namespace Conqueror {
         bool WaitForDebugger = false;
         // AssetBundle'a atanmış varlıklar oyun klasörüne kopyalanmaz (pakette gelir; Unity'de derleme yalnız sahnelerin kullandığını alır)
         bool ExcludeBundledAssets = false;
+        // Taşınabilir oyun paketi (.cqspace): makine koduna derlenen betikler (C++, C, Rust, Zig) derlemeyi durdurmak yerine dışarıda bırakılır
+        bool PortableSkipNativeScripts = false;
     };
 
     // Unity Project Settings > Version Control: Git (Git LFS kilitleri) ya da Perforce (Helix Core). Inspector başlığındaki Check Out /
