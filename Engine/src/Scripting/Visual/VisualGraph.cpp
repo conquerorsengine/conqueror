@@ -29,6 +29,7 @@ namespace Conqueror::Visual
             case PinType::String: return "string";
             case PinType::Vector: return "vector";
             case PinType::List: return "list";
+            case PinType::Dictionary: return "dictionary";
         }
         return "any";
     }
@@ -41,7 +42,32 @@ namespace Conqueror::Visual
         if (n == "string") return PinType::String;
         if (n == "vector") return PinType::Vector;
         if (n == "list") return PinType::List;
+        if (n == "dictionary" || n == "dict" || n == "map" || n == "struct") return PinType::Dictionary;
         return PinType::Any;
+    }
+
+    const char* VariableScopeName(VariableScope s)
+    {
+        switch (s)
+        {
+            case VariableScope::Graph: return "graph";
+            case VariableScope::Object: return "object";
+            case VariableScope::Scene: return "scene";
+            case VariableScope::Application: return "application";
+            case VariableScope::Saved: return "saved";
+            case VariableScope::Local: return "local";
+        }
+        return "graph";
+    }
+
+    VariableScope VariableScopeFromName(const std::string& n)
+    {
+        if (n == "object") return VariableScope::Object;
+        if (n == "scene") return VariableScope::Scene;
+        if (n == "application" || n == "app") return VariableScope::Application;
+        if (n == "saved") return VariableScope::Saved;
+        if (n == "local") return VariableScope::Local;
+        return VariableScope::Graph;
     }
 
     bool PinsCompatible(PinType from, PinType to)
@@ -184,8 +210,9 @@ namespace Conqueror::Visual
                 add(d);
             }
             {
-                NodeDef d = Make("action.callfunction", "Call Function", "Functions", A, { ExecIn() }, { ExecOut(), Out("Result", X) }, "", "Calls a function of this graph and gives its return value.");
-                d.Properties = { { "Function", "MyFunction" } };
+                NodeDef d = Make("action.callfunction", "Call Function", "Functions", A, { ExecIn() }, { ExecOut(), Out("Result", X) }, "",
+                                 "Calls a function of this graph and gives its return value. Pure: no execution pins, called where its value is used (Unreal pure function).");
+                d.Properties = { { "Function", "MyFunction" }, { "Pure", "false" } };
                 add(d);
             }
 
@@ -234,6 +261,127 @@ namespace Conqueror::Visual
                                  { ExecOut("Update"), ExecOut("Finished"), Out("Value", N), Out("Time", N) }, "",
                                  "Plays a float track over time (Unreal Timeline): Update fires every frame while playing, Finished at the end. Keys: time:value pairs.");
                 d.Properties = { { "Length", "1" }, { "Keys", "0:0, 1:1" }, { "Loop", "false" } };
+                add(d);
+            }
+
+            // ── Unity Visual Scripting: kontrol ve zaman düğümleri ──
+            const PinType EX = PinType::Exec, D = PinType::Dictionary;
+            add(Make("flow.trycatch", "Try Catch", "Flow", F, { ExecIn() }, { ExecOut("Try"), ExecOut("Catch"), ExecOut("Finally"), Out("Exception", S) }, "",
+                     "Runs Try; if it throws, Catch runs (Exception: the message); Finally always runs last."));
+            add(Make("flow.throw", "Throw", "Flow", F, { ExecIn(), In("Message", S, "Error") }, {}, "", "Throws an exception with the message (caught by Try Catch)."));
+            add(Make("flow.cooldown", "Cooldown", "Time", F, { { "Enter", EX, "" }, { "Reset", EX, "" }, In("Duration", N, "1"), In("Unscaled", B, "false") },
+                     { ExecOut("Ready"), ExecOut("Not Ready"), ExecOut("Tick"), ExecOut("Completed"), Out("Remaining", N), Out("Remaining %", N) }, "",
+                     "Enter passes to Ready when the cooldown is over and restarts it, otherwise to Not Ready; Tick fires every frame while cooling down, Completed when it ends. Reset makes it ready."));
+            add(Make("flow.timer", "Timer", "Time", F, { { "Start", EX, "" }, { "Pause", EX, "" }, { "Resume", EX, "" }, { "Toggle", EX, "" }, In("Duration", N, "1"), In("Unscaled", B, "false") },
+                     { ExecOut("Started"), ExecOut("Tick"), ExecOut("Completed"), Out("Elapsed", N), Out("Elapsed %", N), Out("Remaining", N), Out("Remaining %", N) }, "",
+                     "Counts Duration seconds: Started, Tick every frame while running, Completed at the end. Pause / Resume / Toggle (pause or resume)."));
+            add(Make("flow.waituntil", "Wait Until", "Time", F, { ExecIn(), In("Condition", B, "false") }, { ExecOut() }, "", "Latent: continues once the condition is true (checked every frame)."));
+            add(Make("flow.waitwhile", "Wait While", "Time", F, { ExecIn(), In("Condition", B, "true") }, { ExecOut() }, "", "Latent: continues once the condition is false (checked every frame)."));
+            add(Make("flow.waitframe", "Wait For Next Frame", "Time", F, { ExecIn() }, { ExecOut() }, "", "Latent: continues on the next frame."));
+            {
+                NodeDef d = Make("flow.toggleflow", "Toggle Flow", "Flow", F, { ExecIn(), { "On", EX, "" }, { "Off", EX, "" }, { "Toggle", EX, "" } },
+                                 { ExecOut("On"), ExecOut("Off"), ExecOut("Turned On"), ExecOut("Turned Off"), Out("Is On", B) }, "",
+                                 "In passes to On or Off by the state; On / Off / Toggle change the state (Turned On / Turned Off fire when it changes).");
+                d.Properties = { { "Start On", "true" } };
+                add(d);
+            }
+            {
+                NodeDef d = Make("flow.togglevalue", "Toggle Value", "Flow", F, { { "On", EX, "" }, { "Off", EX, "" }, { "Toggle", EX, "" }, In("On Value", X, "1"), In("Off Value", X, "0") },
+                                 { ExecOut("Turned On"), ExecOut("Turned Off"), Out("Is On", B), Out("Value", X) }, "",
+                                 "Value is On Value while on, Off Value while off; On / Off / Toggle change the state.");
+                d.Properties = { { "Start On", "true" } };
+                add(d);
+            }
+            add(Make("flow.cache", "Cache", "Flow", F, { ExecIn(), In("Input", X) }, { ExecOut(), Out("Output", X) }, "",
+                     "Evaluates Input once when entered and keeps the result in Output (an expensive value is not recomputed by every reader)."));
+            add(Make("flow.nullcheck", "Null Check", "Flow", F, { ExecIn(), In("Input", X) }, { ExecOut("Not Null"), ExecOut("Null") }, "", "Branches on whether the input is null."));
+
+            // ── Unreal: yeniden yönlendirme, alt grafik ──
+            add(Make("reroute", "Reroute", "Utility", P, { In("In", X) }, { Out("Out", X, "{0}") }, "",
+                     "Reroute node: bends a connection (execution or data); its type follows what is connected. Double-click a connection to add one."));
+            {
+                NodeDef d = Make("subgraph.instance", "Subgraph", "Subgraphs", F, {}, {}, "",
+                                 "Runs a reusable graph asset (Unity Subgraph): its Inputs / Outputs nodes are this node's ports; each use has its own graph variables.");
+                d.Properties = { { "Graph", "" } };
+                add(d);
+            }
+
+            // ── Unreal Event Dispatcher ──
+            {
+                NodeDef d = Make("dispatcher.call", "Call Dispatcher", "Event Dispatchers", A, { ExecIn(), In("Value", X) }, { ExecOut() }, "",
+                                 "Broadcasts this entity's event dispatcher: every bound custom event runs (with Value).");
+                d.Properties = { { "Dispatcher", "" } };
+                add(d);
+            }
+            {
+                NodeDef d = Make("dispatcher.bind", "Bind Event to Dispatcher", "Event Dispatchers", A, { ExecIn(), In("Target", X) }, { ExecOut() }, "",
+                                 "Binds a custom event of this graph to the dispatcher of Target (empty: this entity).");
+                d.Properties = { { "Dispatcher", "" }, { "Event", "" } };
+                add(d);
+            }
+            {
+                NodeDef d = Make("dispatcher.unbind", "Unbind Event from Dispatcher", "Event Dispatchers", A, { ExecIn(), In("Target", X) }, { ExecOut() }, "",
+                                 "Removes the binding of a custom event of this graph from the dispatcher of Target.");
+                d.Properties = { { "Dispatcher", "" }, { "Event", "" } };
+                add(d);
+            }
+            {
+                NodeDef d = Make("dispatcher.unbindall", "Unbind All Events from Dispatcher", "Event Dispatchers", A, { ExecIn(), In("Target", X) }, { ExecOut() }, "",
+                                 "Removes every binding from the dispatcher of Target.");
+                d.Properties = { { "Dispatcher", "" } };
+                add(d);
+            }
+
+            // ── Unreal Blueprint Interface ──
+            {
+                NodeDef d = Make("event.interface", "Interface Event", "Interfaces", E, {}, { ExecOut() }, "",
+                                 "Implements a function of an interface this graph implements (Graph Inspector > Interfaces); return a value with Return Value.");
+                d.Properties = { { "Interface", "" }, { "Function", "" } };
+                add(d);
+            }
+            {
+                NodeDef d = Make("interface.call", "Interface Message", "Interfaces", A, { ExecIn(), In("Target", X) }, { ExecOut(), Out("Result", X) }, "",
+                                 "Calls an interface function on Target; nothing happens if Target does not implement it.");
+                d.Properties = { { "Interface", "" }, { "Function", "" } };
+                add(d);
+            }
+            {
+                NodeDef d = Make("interface.implements", "Does Implement Interface", "Interfaces", P, { In("Target", X) }, { Out("Result", B) }, "",
+                                 "True when a script of Target implements the interface.");
+                d.Properties = { { "Interface", "" } };
+                add(d);
+            }
+
+            // ── Kullanıcı türleri: yapı ve sayım (Unreal User Defined Struct / Enum) ──
+            {
+                NodeDef d = Make("struct.make", "Make Struct", "Structs", P, {}, { Out("Struct", D) }, "", "Builds a struct value (a dictionary with the struct's fields).");
+                d.Properties = { { "Struct", "" } };
+                add(d);
+            }
+            {
+                NodeDef d = Make("struct.break", "Break Struct", "Structs", P, { In("Struct", D) }, {}, "", "Reads every field of a struct value.");
+                d.Properties = { { "Struct", "" } };
+                add(d);
+            }
+            {
+                NodeDef d = Make("struct.set", "Set Members in Struct", "Structs", A, { ExecIn(), In("Struct", D) }, { ExecOut(), Out("Struct", D) }, "",
+                                 "Changes the connected (or edited) fields of a struct value in place.");
+                d.Properties = { { "Struct", "" } };
+                add(d);
+            }
+            {
+                NodeDef d = Make("enum.literal", "Enum Literal", "Enums", P, {}, { Out("Value", N) }, "", "An entry of an enum asset (its index).");
+                d.Properties = { { "Enum", "" }, { "Value", "" } };
+                add(d);
+            }
+            {
+                NodeDef d = Make("enum.tostring", "Enum To String", "Enums", P, { In("Value", N, "0") }, { Out("Name", S) }, "", "The name of an enum entry.");
+                d.Properties = { { "Enum", "" } };
+                add(d);
+            }
+            {
+                NodeDef d = Make("flow.switchenum", "Switch on Enum", "Enums", F, { ExecIn(), In("Selection", N, "0") }, {}, "", "Runs the output of the selected enum entry.");
+                d.Properties = { { "Enum", "" } };
                 add(d);
             }
 
@@ -298,10 +446,19 @@ namespace Conqueror::Visual
             add(Make("math.random", "Random Range", "Math", P, { In("Min", N, "0"), In("Max", N, "1") }, { Out("Result", N, "random(float({0}), float({1}))") }));
             add(Make("math.randomint", "Random Integer", "Math", P, { In("Min", N, "0"), In("Max", N, "10") }, { Out("Result", N, "random(int({0}), int({1}))") }, "", "Integer in [Min, Max)."));
             add(Make("math.toint", "To Integer", "Math", P, { In("Value", X, "0") }, { Out("Result", N, "int({0})") }));
+            {
+                NodeDef d = Make("math.formula", "Formula", "Math", P, {}, { Out("Result", X) }, "",
+                                 "Evaluates an expression of the inputs a, b, c ... (and graph variables by name), e.g. \"a * 2 + b\"; functions: abs, sin, cos, tan, sqrt, pow, min, max, round, floor, ceil, log, exp; and, or, not.");
+                d.Properties = { { "Formula", "a + b" }, { "Inputs", "2" } };
+                add(d);
+            }
 
             // ── Karşılaştırma / mantık ──
+            // Numeric (Unity): sayı pinleri; Equal / Not Equal yaklaşık karşılaştırır (Mathf.Approximately)
             auto cmp = [&](const char* id, const char* title, const char* op) {
-                add(Make(std::string("compare.") + id, title, "Logic", P, { In("A", X, "0"), In("B", X, "0") }, { Out("Result", B, std::string("({0} ") + op + " {1})") }));
+                NodeDef d = Make(std::string("compare.") + id, title, "Logic", P, { In("A", X, "0"), In("B", X, "0") }, { Out("Result", B, std::string("({0} ") + op + " {1})") });
+                d.Properties = { { "Numeric", "false" } };
+                add(d);
             };
             cmp("eq", "Equal", "==");
             cmp("ne", "Not Equal", "!=");
@@ -313,6 +470,15 @@ namespace Conqueror::Visual
             add(Make("logic.or", "Or", "Logic", P, { In("A", B, "false"), In("B", B, "false") }, { Out("Result", B, "({0} || {1})") }));
             add(Make("logic.not", "Not", "Logic", P, { In("Value", B, "false") }, { Out("Result", B, "(!{0})") }));
             add(Make("logic.isnull", "Is Null", "Logic", P, { In("Value", X) }, { Out("Result", B, "({0} == null)") }));
+            add(Make("compare.approx", "Approximately", "Logic", P, { In("A", N, "0"), In("B", N, "0"), In("Tolerance", N, "0.00001") },
+                     { Out("Result", B, "(MathAbs({0} - {1}) <= {2})") }, "", "True when A and B differ by at most Tolerance (float comparison)."));
+            add(Make("compare.all", "Comparison", "Logic", P, { In("A", N, "0"), In("B", N, "0") },
+                     { Out("A < B", B, "({0} < {1})"), Out("A <= B", B, "({0} <= {1})"), Out("A == B", B, "(MathAbs({0} - {1}) < 0.00001)"),
+                       Out("A != B", B, "(MathAbs({0} - {1}) >= 0.00001)"), Out("A >= B", B, "({0} >= {1})"), Out("A > B", B, "({0} > {1})") }, "",
+                     "Every numeric comparison of A and B at once."));
+            add(Make("logic.xor", "Exclusive Or", "Logic", P, { In("A", B, "false"), In("B", B, "false") }, { Out("Result", B, "({0} != {1})") }));
+            add(Make("logic.nullcoalesce", "Null Coalesce", "Logic", P, { In("Input", X), In("Fallback", X) }, { Out("Result", X, "({0} != null ? {0} : {1})") }, "",
+                     "Input when it is not null, otherwise Fallback."));
 
             // ── Vektör ──
             add(Make("vector.make", "Make Vector", "Vector", P, { In("X", N, "0"), In("Y", N, "0"), In("Z", N, "0") }, { Out("Vector", V, "Vector3({0}, {1}, {2})") }));
@@ -337,12 +503,32 @@ namespace Conqueror::Visual
             add(Make("list.count", "Count", "Collections", P, { In("List", L) }, { Out("Count", N, "len({0})") }));
             add(Make("list.contains", "List Contains", "Collections", P, { In("List", L), In("Item", X) }, { Out("Result", B, "({0}).Contains({1})") }));
 
+            // ── Sözlükler (Unity Collections/Dictionaries; anahtarlar metne çevrilir) ──
+            const PinType DI = PinType::Dictionary;
+            const std::string DC = "Collections/Dictionaries";
+            add(Make("dict.create", "Create Dictionary", DC, P, {}, { Out("Dictionary", DI, "{}") }, "", "A new empty dictionary (keys are text)."));
+            add(Make("dict.get", "Get Dictionary Item", DC, P, { In("Dictionary", DI), In("Key", S, "") }, { Out("Value", X, "MapGet({0}, str({1}))") }, "", "The value of the key (null if missing)."));
+            add(Make("dict.set", "Set Dictionary Item", DC, A, { ExecIn(), In("Dictionary", DI), In("Key", S, ""), In("Value", X) }, { ExecOut() }, "MapSet({0}, str({1}), {2})",
+                     "Sets the value of the key (adds it when missing)."));
+            add(Make("dict.add", "Add Dictionary Item", DC, A, { ExecIn(), In("Dictionary", DI), In("Key", S, ""), In("Value", X) }, { ExecOut() }, "",
+                     "Adds the key with the value; does nothing when the key already exists."));
+            add(Make("dict.remove", "Remove Dictionary Item", DC, A, { ExecIn(), In("Dictionary", DI), In("Key", S, "") }, { ExecOut() }, "MapRemove({0}, str({1}))"));
+            add(Make("dict.clear", "Clear Dictionary", DC, A, { ExecIn(), In("Dictionary", DI) }, { ExecOut() }, "MapClear({0})"));
+            add(Make("dict.containskey", "Dictionary Contains Key", DC, P, { In("Dictionary", DI), In("Key", S, "") }, { Out("Result", B, "MapHasKey({0}, str({1}))") }));
+            add(Make("dict.count", "Count Items", DC, P, { In("Dictionary", DI) }, { Out("Count", N, "MapSize({0})") }));
+            add(Make("dict.keys", "Dictionary Keys", DC, P, { In("Dictionary", DI) }, { Out("Keys", L, "MapKeys({0})") }));
+            add(Make("dict.values", "Dictionary Values", DC, P, { In("Dictionary", DI) }, { Out("Values", L, "MapValues({0})") }));
+            add(Make("dict.merge", "Merge Dictionaries", DC, P, { In("A", DI), In("B", DI) }, { Out("Dictionary", DI, "VSDictMerge({0}, {1})") }, "",
+                     "A new dictionary with the items of A and B (B wins on equal keys)."));
+
             // ── nativebridge: tüm motor fonksiyonları ──
             std::unordered_set<std::string> covered = { "print", "LogInfo", "VSTrace" };
+            // VS* yardımcıları üretilen koda aittir (VSWatch, VSGetVar ...): düğüm kitaplığında gösterilmez
             const auto& docs = Scripting::GetNativeDocs();
             for (const auto& f : Scripting::NativeRegistry::Get().GetFunctions())
             {
                 if (covered.count(f.Name)) continue;
+                if (f.Name.size() > 2 && f.Name[0] == 'V' && f.Name[1] == 'S' && std::isupper((unsigned char)f.Name[2])) continue;
                 bool valid = !f.Name.empty() && (std::isalpha((unsigned char)f.Name[0]) || f.Name[0] == '_');
                 for (char c : f.Name) if (!std::isalnum((unsigned char)c) && c != '_') valid = false;
                 if (!valid) continue;
@@ -433,8 +619,11 @@ namespace Conqueror::Visual
                 lib.push_back(std::move(d));
             }
 
-            lib.push_back(Make("comment", "Comment", "Utility", NodeKind::Comment, {}, {}, "", "A resizable comment box."));
-            lib.back().Properties = { { "Text", "Comment" } };
+            lib.push_back(Make("comment", "Comment", "Utility", NodeKind::Comment, {}, {}, "",
+                               "Comment box (Unreal): a titled, resizable, colored region behind nodes; moving it moves the nodes inside."));
+            lib.back().Properties = { { "Text", "Comment" }, { "Color", "Gray" } };
+            lib.push_back(Make("stickynote", "Sticky Note", "Utility", NodeKind::Comment, {}, {}, "", "Sticky note (Unity): a resizable note with a title and text."));
+            lib.back().Properties = { { "Title", "Note" }, { "Text", "" }, { "Theme", "Classic" } };
             return lib;
         }
 
@@ -486,6 +675,22 @@ namespace Conqueror::Visual
         return nullptr;
     }
 
+    const Variable* Graph::FindVariable(const std::string& name) const
+    {
+        for (auto& v : Variables) if (v.Name == name) return &v;
+        return nullptr;
+    }
+
+    bool Graph::NeedsExpansion() const
+    {
+        if (!Macros.empty())
+            return true;
+        for (auto& n : Nodes)
+            if (n.Type == "subgraph.instance" || n.Type == "macro.instance")
+                return true;
+        return false;
+    }
+
     int Graph::AddNode(const std::string& type, float x, float y)
     {
         const NodeDef* def = NodeLibrary::Find(type);
@@ -496,7 +701,11 @@ namespace Conqueror::Visual
         n.X = x;
         n.Y = y;
         for (auto& [k, v] : def->Properties) n.Properties[k] = v;
-        if (def->Kind == NodeKind::Comment) { n.Width = 320.0f; n.Height = 180.0f; }
+        if (def->Kind == NodeKind::Comment)
+        {
+            n.Width = type == "stickynote" ? 220.0f : 320.0f;
+            n.Height = type == "stickynote" ? 150.0f : 180.0f;
+        }
         Nodes.push_back(n);
         return n.Id;
     }
@@ -522,6 +731,57 @@ namespace Conqueror::Visual
                     out.push_back(part.substr(a, b - a + 1));
             }
             return out;
+        }
+
+        // CQS metin sabiti (ResolveDef ifadeleri için; { } de kaçırılır: metin içi ifade sözdizimi)
+        std::string QuoteCqs(const std::string& s)
+        {
+            std::string out = "\"";
+            for (char c : s)
+            {
+                switch (c)
+                {
+                    case '"': out += "\\\""; break;
+                    case '\\': out += "\\\\"; break;
+                    case '\n': out += "\\n"; break;
+                    case '{': out += "\\{"; break;
+                    case '}': out += "\\}"; break;
+                    default: out += c; break;
+                }
+            }
+            return out + "\"";
+        }
+
+        // Reroute düğümünün türü: girişine bağlı kaynaktan, yoksa çıkışının hedeflerinden (zincirler dahil)
+        PinType RerouteTypeDown(const Graph& g, int id, int depth)
+        {
+            if (depth > 32) return PinType::Any;
+            for (const Link* l : g.FindOutputLinks(id, "Out"))
+                if (const Node* dst = g.FindNode(l->ToNode))
+                {
+                    if (dst->Type == "reroute")
+                    {
+                        const PinType t = RerouteTypeDown(g, dst->Id, depth + 1);
+                        if (t != PinType::Any) return t;
+                        continue;
+                    }
+                    for (auto& in : g.ResolveDef(*dst).Inputs)
+                        if (in.Name == l->ToPin) return in.Type;
+                }
+            return PinType::Any;
+        }
+
+        PinType RerouteType(const Graph& g, int id, int depth)
+        {
+            if (depth > 32) return PinType::Any;
+            if (const Link* l = g.FindInputLink(id, "In"))
+                if (const Node* src = g.FindNode(l->FromNode))
+                {
+                    if (src->Type == "reroute") return RerouteType(g, src->Id, depth + 1);
+                    for (auto& o : g.ResolveDef(*src).Outputs)
+                        if (o.Name == l->FromPin) return o.Type;
+                }
+            return RerouteTypeDown(g, id, depth);
         }
     }
 
@@ -599,6 +859,12 @@ namespace Conqueror::Visual
                     break;
                 }
                 d.Expression = SanitizeIdentifier(fn) + "(" + args + ")";
+                if (prop("Pure", "false") == "true")
+                {
+                    d.Kind = NodeKind::Pure;
+                    d.Inputs.erase(d.Inputs.begin());
+                    d.Outputs = { { "Result", PinType::Any, d.Expression } };
+                }
             }
             else if (node.Type == "macro.inputs" || node.Type == "macro.outputs")
             {
@@ -625,6 +891,157 @@ namespace Conqueror::Visual
                 d.Title = name.empty() ? std::string("Macro (none)") : name;
                 if (const MacroDef* m = FindMacro(name); m && m->Body)
                     MacroPins(*m->Body, d.Inputs, d.Outputs);
+            }
+            else if (node.Type == "reroute")
+            {
+                const PinType t = RerouteType(*this, node.Id, 0);
+                d.Inputs[0].Type = t;
+                d.Outputs[0].Type = t;
+                if (t == PinType::Exec)
+                {
+                    d.Kind = NodeKind::Flow;
+                    d.Outputs[0].Default.clear();
+                }
+            }
+            else if (node.Type == "subgraph.instance")
+            {
+                const std::string path = prop("Graph", "");
+                d.Title = path.empty() ? std::string("Subgraph (none)") : "Subgraph: " + UserTypes::DisplayName(path);
+                if (auto sg = UserTypes::LoadSubgraph(path))
+                    MacroPins(*sg, d.Inputs, d.Outputs);
+                else if (!path.empty())
+                    d.Title += " (missing)";
+            }
+            else if (node.Type == "math.formula")
+            {
+                const int count = std::clamp(std::atoi(prop("Inputs", "2").c_str()), 1, 10);
+                for (int i = 0; i < count; ++i)
+                    d.Inputs.push_back({ std::string(1, (char)('a' + i)), PinType::Any, "0" });
+                std::string f = prop("Formula", "");
+                if (f.size() > 28) f = f.substr(0, 25) + "...";
+                d.Title = "Formula: " + f;
+            }
+            else if (node.Type.rfind("compare.", 0) == 0 && prop("Numeric", "false") == "true")
+            {
+                for (auto& p : d.Inputs) p.Type = PinType::Number;
+                if (node.Type == "compare.eq") d.Outputs[0].Default = "(MathAbs({0} - {1}) < 0.00001)";
+                else if (node.Type == "compare.ne") d.Outputs[0].Default = "(MathAbs({0} - {1}) >= 0.00001)";
+                d.Title += " (Numeric)";
+            }
+            else if (node.Type.rfind("dispatcher.", 0) == 0)
+            {
+                const std::string disp = prop("Dispatcher", "");
+                const std::string shown = disp.empty() ? std::string("(dispatcher)") : disp;
+                if (node.Type == "dispatcher.call") d.Title = "Call " + shown;
+                else if (node.Type == "dispatcher.bind") d.Title = "Bind " + prop("Event", "?") + " to " + shown;
+                else if (node.Type == "dispatcher.unbind") d.Title = "Unbind " + prop("Event", "?") + " from " + shown;
+                else d.Title = "Unbind All from " + shown;
+            }
+            else if (node.Type == "event.interface" || node.Type == "interface.call" || node.Type == "interface.implements")
+            {
+                const std::string iface = prop("Interface", "");
+                const std::string fn = prop("Function", "");
+                const InterfaceAsset* ia = UserTypes::LoadInterface(iface);
+                const std::string iname = ia && !ia->Name.empty() ? ia->Name : UserTypes::DisplayName(iface);
+                const InterfaceFunction* f = nullptr;
+                if (ia)
+                    for (auto& fun : ia->Functions)
+                        if (fun.Name == fn) f = &fun;
+                if (node.Type == "interface.implements")
+                {
+                    d.Title = "Does Implement " + (iname.empty() ? std::string("(interface)") : iname);
+                    d.Outputs[0].Default = "VSImplements({0}, " + QuoteCqs(SanitizeIdentifier(iname)) + ")";
+                }
+                else if (node.Type == "event.interface")
+                {
+                    d.Title = "Event " + (fn.empty() ? std::string("(function)") : fn) + (iname.empty() ? "" : " (" + iname + ")");
+                    if (f)
+                        for (auto& in : f->Inputs) d.Outputs.push_back({ in, PinType::Any, "" });
+                }
+                else
+                {
+                    d.Title = "Message " + (fn.empty() ? std::string("(function)") : fn) + (iname.empty() ? "" : " (" + iname + ")");
+                    std::string args = "InvokeMethod({0}, " + QuoteCqs(SanitizeIdentifier(fn));
+                    int idx = 1;
+                    if (f)
+                        for (auto& in : f->Inputs)
+                        {
+                            d.Inputs.push_back({ in, PinType::Any, "" });
+                            args += ", {" + std::to_string(idx++) + "}";
+                        }
+                    d.Expression = args + ")";
+                    if (f && !f->HasReturn)
+                        d.Outputs.pop_back();
+                }
+            }
+            else if (node.Type == "struct.make" || node.Type == "struct.break" || node.Type == "struct.set")
+            {
+                const std::string path = prop("Struct", "");
+                const StructAsset* sa = UserTypes::LoadStruct(path);
+                const std::string sname = sa && !sa->Name.empty() ? sa->Name : UserTypes::DisplayName(path);
+                const std::string shown = sname.empty() ? std::string("Struct") : sname;
+                if (node.Type == "struct.make")
+                {
+                    d.Title = "Make " + shown;
+                    std::string expr = "{";
+                    int idx = 0;
+                    if (sa)
+                        for (auto& f : sa->Fields)
+                        {
+                            d.Inputs.push_back({ f.Name, f.Type, f.Default });
+                            expr += (idx ? ", " : "") + QuoteCqs(f.Name) + ": {" + std::to_string(idx) + "}";
+                            ++idx;
+                        }
+                    d.Outputs[0].Default = expr + "}";
+                }
+                else if (node.Type == "struct.break")
+                {
+                    d.Title = "Break " + shown;
+                    if (sa)
+                        for (auto& f : sa->Fields)
+                            d.Outputs.push_back({ f.Name, f.Type, "MapGet({0}, " + QuoteCqs(f.Name) + ")" });
+                }
+                else
+                {
+                    d.Title = "Set Members in " + shown;
+                    if (sa)
+                        for (auto& f : sa->Fields)
+                            d.Inputs.push_back({ f.Name, f.Type, f.Default });
+                }
+            }
+            else if (node.Type == "enum.literal" || node.Type == "enum.tostring" || node.Type == "flow.switchenum")
+            {
+                const std::string path = prop("Enum", "");
+                const EnumAsset* ea = UserTypes::LoadEnum(path);
+                const std::string ename = ea && !ea->Name.empty() ? ea->Name : UserTypes::DisplayName(path);
+                if (node.Type == "enum.literal")
+                {
+                    const std::string value = prop("Value", "");
+                    int index = 0;
+                    if (ea)
+                        for (size_t i = 0; i < ea->Entries.size(); ++i)
+                            if (ea->Entries[i] == value) index = (int)i;
+                    d.Title = (ename.empty() ? std::string("Enum") : ename) + "::" + (value.empty() ? std::string("?") : value);
+                    d.Outputs[0].Default = std::to_string(index) + ".0";
+                }
+                else if (node.Type == "enum.tostring")
+                {
+                    d.Title = (ename.empty() ? std::string("Enum") : ename) + " To String";
+                    std::string list = "[";
+                    if (ea)
+                        for (size_t i = 0; i < ea->Entries.size(); ++i)
+                            list += (i ? ", " : "") + QuoteCqs(ea->Entries[i]);
+                    const std::string n = std::to_string(ea ? ea->Entries.size() : 0) + ".0";
+                    d.Outputs[0].Default = "((int({0}) >= 0 && {0} < " + n + ") ? " + list + "][int({0})] : \"\")";
+                }
+                else
+                {
+                    d.Title = "Switch on " + (ename.empty() ? std::string("Enum") : ename);
+                    if (ea)
+                        for (auto& e : ea->Entries)
+                            d.Outputs.push_back({ e, PinType::Exec, "" });
+                    d.Outputs.push_back({ "Default", PinType::Exec, "" });
+                }
             }
             else if (node.Type == "flow.switchint" || node.Type == "flow.switchstring")
             {
@@ -670,12 +1087,15 @@ namespace Conqueror::Visual
             if (error) *error = "unknown pin";
             return false;
         }
-        if (!PinsCompatible(out->Type, in->Type))
+        // Henüz türü belli olmayan reroute düğümü her türü kabul eder (türü bağlantıdan alır)
+        const bool freeReroute = (b->Type == "reroute" && RerouteTypeDown(*this, b->Id, 0) == PinType::Any)
+                              || (a->Type == "reroute" && !FindInputLink(a->Id, "In") && in->Type != PinType::Any);
+        if (!PinsCompatible(out->Type, in->Type) && !freeReroute)
         {
             if (error) *error = std::string("cannot connect ") + PinTypeName(out->Type) + " to " + PinTypeName(in->Type);
             return false;
         }
-        if (out->Type == PinType::Exec)
+        if (out->Type == PinType::Exec || in->Type == PinType::Exec)
         {
             // Exec çıkışı tek hedefe gider; exec girişi birden çok kaynaktan gelebilir
             Links.erase(std::remove_if(Links.begin(), Links.end(), [&](const Link& l) { return l.FromNode == fromNode && l.FromPin == fromPin; }), Links.end());
@@ -720,6 +1140,9 @@ namespace Conqueror::Visual
             m["default"] = Value::MakeString(v.Default);
             m["public"] = Value::MakeBool(v.Public);
             m["tooltip"] = Value::MakeString(v.Tooltip);
+            if (v.Scope != VariableScope::Graph) m["scope"] = Value::MakeString(VariableScopeName(v.Scope));
+            if (!v.Function.empty()) m["function"] = Value::MakeString(v.Function);
+            if (!v.TypeAsset.empty()) m["typeAsset"] = Value::MakeString(v.TypeAsset);
             vars.push_back(Value::MakeMap(m));
         }
         root["variables"] = Value::MakeList(vars);
@@ -732,6 +1155,7 @@ namespace Conqueror::Visual
             m["x"] = Value::MakeNumber(std::round(n.X));
             m["y"] = Value::MakeNumber(std::round(n.Y));
             if (n.Width > 0) { m["w"] = Value::MakeNumber(n.Width); m["h"] = Value::MakeNumber(n.Height); }
+            if (n.Disabled) m["disabled"] = Value::MakeBool(true);
             std::unordered_map<std::string, Value> props, defs;
             for (auto& [k, v] : n.Properties) props[k] = Value::MakeString(v);
             for (auto& [k, v] : n.InputDefaults) defs[k] = Value::MakeString(v);
@@ -764,6 +1188,40 @@ namespace Conqueror::Visual
                 macros.push_back(Value::MakeMap(mm));
             }
             root["macros"] = Value::MakeList(macros);
+        }
+        auto strings = [](const std::vector<std::string>& list) {
+            std::vector<Value> out;
+            for (auto& s : list) out.push_back(Value::MakeString(s));
+            return Value::MakeList(out);
+        };
+        if (!Dispatchers.empty()) root["dispatchers"] = strings(Dispatchers);
+        if (!Interfaces.empty()) root["interfaces"] = strings(Interfaces);
+        if (!Watches.empty())
+        {
+            std::vector<Value> watches;
+            for (auto& [node, pin] : Watches)
+            {
+                std::unordered_map<std::string, Value> m;
+                m["node"] = Value::MakeNumber(node);
+                m["pin"] = Value::MakeString(pin);
+                watches.push_back(Value::MakeMap(m));
+            }
+            root["watches"] = Value::MakeList(watches);
+        }
+        if (!Bookmarks.empty())
+        {
+            std::vector<Value> marks;
+            for (auto& b : Bookmarks)
+            {
+                std::unordered_map<std::string, Value> m;
+                m["name"] = Value::MakeString(b.Name);
+                m["macro"] = Value::MakeString(b.Macro);
+                m["x"] = Value::MakeNumber(b.X);
+                m["y"] = Value::MakeNumber(b.Y);
+                m["zoom"] = Value::MakeNumber(b.Zoom);
+                marks.push_back(Value::MakeMap(m));
+            }
+            root["bookmarks"] = Value::MakeList(marks);
         }
         return JSON::Stringify(Value::MakeMap(root));
     }
@@ -799,6 +1257,9 @@ namespace Conqueror::Visual
                 auto pub = v.MapVal.find("public");
                 var.Public = pub == v.MapVal.end() || pub->second.BoolVal;
                 var.Tooltip = str(v, "tooltip");
+                var.Scope = VariableScopeFromName(str(v, "scope", "graph"));
+                var.Function = str(v, "function");
+                var.TypeAsset = str(v, "typeAsset");
                 Variables.push_back(var);
             }
         int maxId = 0;
@@ -812,6 +1273,7 @@ namespace Conqueror::Visual
                 n.Y = (float)num(v, "y");
                 n.Width = (float)num(v, "w");
                 n.Height = (float)num(v, "h");
+                if (auto d = v.MapVal.find("disabled"); d != v.MapVal.end()) n.Disabled = d->second.BoolVal;
                 if (auto p = v.MapVal.find("properties"); p != v.MapVal.end())
                     for (auto& [k, pv] : p->second.MapVal) n.Properties[k] = pv.StringVal;
                 if (auto p = v.MapVal.find("defaults"); p != v.MapVal.end())
@@ -844,6 +1306,27 @@ namespace Conqueror::Visual
                 m.Body->Name = m.Name;
                 m.Body->MacroScope = this;
                 Macros.push_back(std::move(m));
+            }
+        Dispatchers.clear();
+        Interfaces.clear();
+        Watches.clear();
+        Bookmarks.clear();
+        if (auto it = root.MapVal.find("dispatchers"); it != root.MapVal.end())
+            for (auto& v : it->second.ListVal) Dispatchers.push_back(v.StringVal);
+        if (auto it = root.MapVal.find("interfaces"); it != root.MapVal.end())
+            for (auto& v : it->second.ListVal) Interfaces.push_back(v.StringVal);
+        if (auto it = root.MapVal.find("watches"); it != root.MapVal.end())
+            for (auto& v : it->second.ListVal) Watches.push_back({ (int)num(v, "node"), str(v, "pin") });
+        if (auto it = root.MapVal.find("bookmarks"); it != root.MapVal.end())
+            for (auto& v : it->second.ListVal)
+            {
+                Bookmark b;
+                b.Name = str(v, "name");
+                b.Macro = str(v, "macro");
+                b.X = (float)num(v, "x");
+                b.Y = (float)num(v, "y");
+                b.Zoom = (float)num(v, "zoom", 1.0);
+                Bookmarks.push_back(b);
             }
         return true;
     }
@@ -902,35 +1385,105 @@ namespace Conqueror::Visual
         std::unordered_map<int, int> owner, depth;
         for (;;)
         {
-            auto it = std::find_if(flat.Nodes.begin(), flat.Nodes.end(), [](const Node& n) { return n.Type == "macro.instance"; });
+            auto it = std::find_if(flat.Nodes.begin(), flat.Nodes.end(), [](const Node& n) { return n.Type == "macro.instance" || n.Type == "subgraph.instance"; });
             if (it == flat.Nodes.end())
                 break;
             const Node inst = *it;
             const int topInstance = owner.count(inst.Id) ? owner[inst.Id] : inst.Id;
             const int d = depth.count(inst.Id) ? depth[inst.Id] : 0;
-            auto propIt = inst.Properties.find("Macro");
+            const bool isSubgraph = inst.Type == "subgraph.instance";
+            auto propIt = inst.Properties.find(isSubgraph ? "Graph" : "Macro");
             const std::string macroName = propIt != inst.Properties.end() ? propIt->second : "";
-            const MacroDef* macro = FindMacro(macroName);
-            if (!macro || !macro->Body || d >= 16)
+            if (inst.Disabled)
             {
-                messages.push_back({ topInstance, !macro || !macro->Body ? "Unknown macro '" + macroName + "'." : "Macro '" + macroName + "' uses itself (recursive macro).", false });
+                // Devre dışı makro / alt grafik: ilk exec girişinden ilk exec çıkışına geçiş
+                const NodeDef idef = ResolveDef(inst);
+                std::string inPin, outPin;
+                for (auto& p : idef.Inputs) if (p.Type == PinType::Exec && inPin.empty()) inPin = p.Name;
+                for (auto& p : idef.Outputs) if (p.Type == PinType::Exec && outPin.empty()) outPin = p.Name;
+                std::vector<Link> srcs, dsts;
+                for (auto& l : flat.Links)
+                {
+                    if (l.ToNode == inst.Id && l.ToPin == inPin) srcs.push_back(l);
+                    if (l.FromNode == inst.Id && l.FromPin == outPin) dsts.push_back(l);
+                }
                 flat.RemoveNode(inst.Id);
+                for (auto& sl : srcs)
+                    for (auto& dl : dsts)
+                    {
+                        Link l;
+                        l.Id = flat.NextId++;
+                        l.FromNode = sl.FromNode;
+                        l.FromPin = sl.FromPin;
+                        l.ToNode = dl.ToNode;
+                        l.ToPin = dl.ToPin;
+                        flat.Links.push_back(l);
+                    }
                 continue;
             }
-            const Graph& body = *macro->Body;
+            // Alt grafik: dosyadan, kendi makroları / alt grafikleri önce düzleştirilmiş; grafik değişkenleri örneğe özgü adlarla
+            // (Unity: her alt grafik örneğinin kendi grafik değişkenleri vardır)
+            std::shared_ptr<Graph> subBody;
+            const MacroDef* macro = nullptr;
+            if (isSubgraph)
+            {
+                static int s_SubgraphDepth = 0;
+                auto sg = UserTypes::LoadSubgraph(macroName);
+                if (!sg || d >= 16 || s_SubgraphDepth >= 8)
+                {
+                    messages.push_back({ topInstance, !sg ? "Unknown subgraph '" + macroName + "'." : "Subgraph '" + macroName + "' uses itself (recursive subgraph).", false });
+                    flat.RemoveNode(inst.Id);
+                    continue;
+                }
+                std::vector<CompileMessage> subMessages;
+                ++s_SubgraphDepth;
+                subBody = std::make_shared<Graph>(sg->NeedsExpansion() ? sg->ExpandMacros(subMessages) : *sg);
+                --s_SubgraphDepth;
+                for (auto& m : subMessages)
+                    messages.push_back({ topInstance, "Subgraph '" + UserTypes::DisplayName(macroName) + "': " + m.Text, m.IsWarning });
+                std::unordered_map<std::string, std::string> renamed;
+                for (auto& v : subBody->Variables)
+                {
+                    Variable copy = v;
+                    if (v.Scope == VariableScope::Graph || v.Scope == VariableScope::Local)
+                    {
+                        copy.Name = "_sg" + std::to_string(inst.Id) + "_" + SanitizeIdentifier(v.Name);
+                        copy.Public = false;
+                        renamed[v.Name] = copy.Name;
+                        flat.Variables.push_back(copy);
+                    }
+                    else if (!flat.FindVariable(v.Name))
+                        flat.Variables.push_back(copy);
+                }
+                for (auto& n : subBody->Nodes)
+                    if (n.Type == "var.get" || n.Type == "var.set")
+                        if (auto r = renamed.find(n.Properties["Variable"]); r != renamed.end())
+                            n.Properties["Variable"] = r->second;
+            }
+            else
+            {
+                macro = FindMacro(macroName);
+                if (!macro || !macro->Body || d >= 16)
+                {
+                    messages.push_back({ topInstance, !macro || !macro->Body ? "Unknown macro '" + macroName + "'." : "Macro '" + macroName + "' uses itself (recursive macro).", false });
+                    flat.RemoveNode(inst.Id);
+                    continue;
+                }
+            }
+            const Graph& body = isSubgraph ? *subBody : *macro->Body;
             int inputsNode = 0, outputsNode = 0;
             for (auto& n : body.Nodes)
             {
                 if (n.Type == "macro.inputs" && !inputsNode) inputsNode = n.Id;
                 else if (n.Type == "macro.outputs" && !outputsNode) outputsNode = n.Id;
-                else if (n.Type.rfind("event.", 0) == 0)
+                else if (n.Type.rfind("event.", 0) == 0 && !isSubgraph)
                     messages.push_back({ topInstance, "Macro '" + macroName + "' contains an event node; events belong in the graph, not in macros.", false });
             }
             // 1) Gövde düğümlerinin kopyaları (tüneller hariç), yeni kimliklerle
             std::unordered_map<int, int> map;
             for (auto& n : body.Nodes)
             {
-                if (n.Id == inputsNode || n.Id == outputsNode || n.Type == "comment")
+                if (n.Id == inputsNode || n.Id == outputsNode || n.Type == "comment" || n.Type == "stickynote")
                     continue;
                 Node c = n;
                 c.Id = flat.NextId++;
@@ -1099,6 +1652,7 @@ namespace Conqueror::Visual
                     return buf;
                 }
                 case PinType::List: return "[]";
+                case PinType::Dictionary: return "{}";
                 default:
                     if (raw.empty()) return "null";
                     if (raw == "true" || raw == "false") return raw;
@@ -1144,6 +1698,13 @@ namespace Conqueror::Visual
                 std::set<std::string> names;
                 for (auto& v : m_Graph.Variables)
                 {
+                    // Yalnız grafik kapsamı sınıf alanıdır; Object / Scene / Application / Saved VSGetVar / VSSetVar ile, Local fonksiyonda
+                    if (v.Scope != VariableScope::Graph)
+                    {
+                        if (v.Scope == VariableScope::Local && v.Function.empty())
+                            Error(0, "Local variable '" + v.Name + "' has no function.");
+                        continue;
+                    }
                     std::string id = SanitizeIdentifier(v.Name);
                     if (!names.insert(id).second)
                     {
@@ -1154,10 +1715,10 @@ namespace Conqueror::Visual
                     if (!v.Tooltip.empty()) Line("    [Tooltip(" + QuoteString(v.Tooltip) + ")]", 0);
                     switch (v.Type)
                     {
-                        case PinType::Number: decl += "float " + id + " = " + LiteralFor(v.Type, v.Default) + ";"; break;
-                        case PinType::Bool: decl += "bool " + id + " = " + LiteralFor(v.Type, v.Default) + ";"; break;
-                        case PinType::String: decl += "string " + id + " = " + LiteralFor(v.Type, v.Default) + ";"; break;
-                        default: decl += "var " + id + " = " + LiteralFor(v.Type, v.Default) + ";"; break;
+                        case PinType::Number: decl += "float " + id + " = " + VariableDefault(v) + ";"; break;
+                        case PinType::Bool: decl += "bool " + id + " = " + VariableDefault(v) + ";"; break;
+                        case PinType::String: decl += "string " + id + " = " + VariableDefault(v) + ";"; break;
+                        default: decl += "var " + id + " = " + VariableDefault(v) + ";"; break;
                     }
                     Line(decl, 0);
                 }
@@ -1195,6 +1756,149 @@ namespace Conqueror::Visual
             std::set<std::string> m_HiddenNumberFields;
             std::set<std::pair<int, std::string>> m_ExecStack;   // (düğüm, giriş pini): Gate Exit -> Close gibi bağlantılar döngü değildir
             std::set<int> m_DataStack;
+            std::string m_CurrentFunction;                        // üretilen fonksiyon (yerel değişkenler için; olaylarda boş)
+
+            // Değişken varsayılanı: yapı türü -> alan varsayılanlarıyla sözlük, sayım türü -> girdinin sırası
+            std::string VariableDefault(const Variable& v)
+            {
+                if (!v.TypeAsset.empty())
+                {
+                    if (const StructAsset* sa = UserTypes::LoadStruct(v.TypeAsset); sa && v.TypeAsset.find(".cqstruct") != std::string::npos)
+                    {
+                        std::string expr = "{";
+                        for (size_t i = 0; i < sa->Fields.size(); ++i)
+                            expr += (i ? ", " : "") + QuoteString(sa->Fields[i].Name) + ": " + LiteralFor(sa->Fields[i].Type, sa->Fields[i].Default);
+                        return expr + "}";
+                    }
+                    if (const EnumAsset* ea = UserTypes::LoadEnum(v.TypeAsset); ea && v.TypeAsset.find(".cqenum") != std::string::npos)
+                    {
+                        for (size_t i = 0; i < ea->Entries.size(); ++i)
+                            if (ea->Entries[i] == v.Default) return std::to_string(i) + ".0";
+                        return LiteralFor(PinType::Number, v.Default);
+                    }
+                }
+                return LiteralFor(v.Type, v.Default);
+            }
+
+            // Değişken okuma / yazma kapsamına göre
+            std::string VarRead(const std::string& name, int node)
+            {
+                const Variable* v = m_Graph.FindVariable(name);
+                if (!v || v->Scope == VariableScope::Graph)
+                    return SanitizeIdentifier(name);
+                if (v->Scope == VariableScope::Local)
+                {
+                    if (v->Function != m_CurrentFunction)
+                        Error(node, "Local variable '" + name + "' belongs to function '" + v->Function + "'; it cannot be used here.");
+                    return "_l_" + SanitizeIdentifier(name);
+                }
+                return std::string("VSGetVar(\"") + VariableScopeName(v->Scope) + "\", " + QuoteString(name) + ", " + VariableDefault(*v) + ")";
+            }
+
+            std::string VarWrite(const std::string& name, const std::string& value, int node)
+            {
+                const Variable* v = m_Graph.FindVariable(name);
+                if (!v || v->Scope == VariableScope::Graph || v->Scope == VariableScope::Local)
+                    return VarRead(name, node) + " = " + value + ";";
+                return std::string("VSSetVar(\"") + VariableScopeName(v->Scope) + "\", " + QuoteString(name) + ", " + value + ");";
+            }
+
+            // Hata ayıklayıcı (editör): değeri pin değeri olarak kaydeden sarmalayıcı (Unity Values, Unreal Watch)
+            std::string Watch(int node, const std::string& pin, const std::string& expr) const
+            {
+                if (!m_Trace)
+                    return expr;
+                return "VSWatch(" + QuoteString(m_ClassName) + ", " + std::to_string(node) + ", " + QuoteString(pin) + ", " + expr + ")";
+            }
+
+            const PinDef* FindIn(const NodeDef& def, const std::string& name) const
+            {
+                for (auto& p : def.Inputs)
+                    if (p.Name == name) return &p;
+                return nullptr;
+            }
+
+            std::string In(const Node& n, const NodeDef& def, const std::string& name)
+            {
+                const PinDef* p = FindIn(def, name);
+                return p ? InputExpr(n, *p) : std::string("null");
+            }
+
+            // Cooldown / Timer: Unscaled girişine göre kare süresi
+            std::string DeltaExpr(const Node& n, const NodeDef& def)
+            {
+                const std::string u = In(n, def, "Unscaled");
+                if (u == "false" || u == "null") return "dt";
+                if (u == "true") return "GetUnscaledDeltaTime()";
+                return "(" + u + " ? GetUnscaledDeltaTime() : dt)";
+            }
+
+            std::string ToggleIsOn(const Node& n, const std::string& field) const
+            {
+                return Prop(n, "Start On", "true") == "true" ? "(" + field + " != false)" : "(" + field + " == true)";
+            }
+
+            // Unity Formula: a, b, c ... girişler; bilinen fonksiyonlar Math* karşılıklarına; and / or / not; tek '=' karşılaştırma
+            std::string FormulaExpr(const Node& n, const NodeDef& def)
+            {
+                const std::vector<std::string> args = InputExprs(n, def);
+                const std::string f = Prop(n, "Formula", "");
+                if (f.find_first_not_of(" \t") == std::string::npos)
+                {
+                    Error(n.Id, "Formula is empty.");
+                    return "null";
+                }
+                static const std::unordered_map<std::string, std::string> functions = {
+                    { "abs", "MathAbs" }, { "sin", "MathSin" }, { "cos", "MathCos" }, { "tan", "MathTan" }, { "asin", "MathAsin" }, { "acos", "MathAcos" },
+                    { "atan", "MathAtan" }, { "atan2", "MathAtan2" }, { "sqrt", "MathSqrt" }, { "pow", "MathPow" }, { "min", "MathMin" }, { "max", "MathMax" },
+                    { "round", "MathRound" }, { "floor", "MathFloor" }, { "ceil", "MathCeil" }, { "ceiling", "MathCeil" }, { "log", "MathLog" },
+                    { "exp", "MathExp" }, { "sign", "MathSign" }, { "clamp", "MathClamp" }, { "lerp", "MathLerp" } };
+                std::string out;
+                for (size_t i = 0; i < f.size();)
+                {
+                    const char c = f[i];
+                    if (std::isalpha((unsigned char)c) || c == '_')
+                    {
+                        size_t j = i;
+                        while (j < f.size() && (std::isalnum((unsigned char)f[j]) || f[j] == '_')) ++j;
+                        const std::string word = f.substr(i, j - i);
+                        std::string lower = word;
+                        for (char& ch : lower) ch = (char)std::tolower((unsigned char)ch);
+                        size_t k = j;
+                        while (k < f.size() && f[k] == ' ') ++k;
+                        const bool call = k < f.size() && f[k] == '(';
+                        if (word.size() == 1 && word[0] >= 'a' && (size_t)(word[0] - 'a') < args.size() && !call)
+                            out += "(" + args[(size_t)(word[0] - 'a')] + ")";
+                        else if (call && functions.count(lower))
+                            out += functions.at(lower);
+                        else if (lower == "and") out += "&&";
+                        else if (lower == "or") out += "||";
+                        else if (lower == "not") out += "!";
+                        else if (!call && m_Graph.FindVariable(word))
+                            out += VarRead(word, n.Id);
+                        else
+                            out += word;
+                        i = j;
+                        continue;
+                    }
+                    if (c == '\'')
+                    {
+                        const size_t j = f.find('\'', i + 1);
+                        out += QuoteString(f.substr(i + 1, (j == std::string::npos ? f.size() : j) - i - 1));
+                        i = j == std::string::npos ? f.size() : j + 1;
+                        continue;
+                    }
+                    if (c == '=' && (i == 0 || std::string("=!<>").find(f[i - 1]) == std::string::npos) && (i + 1 >= f.size() || f[i + 1] != '='))
+                    {
+                        out += "==";
+                        ++i;
+                        continue;
+                    }
+                    out += c;
+                    ++i;
+                }
+                return "(" + out + ")";
+            }
 
             void Line(const std::string& text, int node) { m_Out.emplace_back(text, node); }
             void Error(int node, const std::string& msg) { m_Messages.push_back({ node, msg, false }); }
@@ -1237,13 +1941,42 @@ namespace Conqueror::Visual
                     {
                         std::string var = Prop(n, "Variable");
                         if (var.empty()) { Error(n.Id, "Get node has no variable selected."); return "null"; }
-                        return SanitizeIdentifier(var);
+                        return VarRead(var, n.Id);
                     }
                     case NodeKind::Action:
                     case NodeKind::Flow:
                     {
                         if (n.Type == "var.set")
-                            return SanitizeIdentifier(Prop(n, "Variable"));
+                            return VarRead(Prop(n, "Variable"), n.Id);
+                        if (n.Type == "flow.trycatch" && pin == "Exception") { m_HiddenFields.insert(Field("ex", n.Id)); return Field("ex", n.Id); }
+                        if (n.Type == "flow.cache" && pin == "Output") { m_HiddenFields.insert(Field("ch", n.Id)); return Field("ch", n.Id); }
+                        if (n.Type == "flow.cooldown")
+                        {
+                            const std::string r = Field("cdr", n.Id), d = Field("cdd", n.Id);
+                            m_HiddenNumberFields.insert(r);
+                            m_HiddenNumberFields.insert(d);
+                            if (pin == "Remaining") return r;
+                            if (pin == "Remaining %") return "(" + d + " > 0.0 ? " + r + " / " + d + " : 0.0)";
+                        }
+                        if (n.Type == "flow.timer")
+                        {
+                            const std::string e = Field("tme", n.Id), d = Field("tmd", n.Id);
+                            m_HiddenNumberFields.insert(e);
+                            m_HiddenNumberFields.insert(d);
+                            if (pin == "Elapsed") return e;
+                            if (pin == "Elapsed %") return "(" + d + " > 0.0 ? " + e + " / " + d + " : 0.0)";
+                            if (pin == "Remaining") return "MathMax(" + d + " - " + e + ", 0.0)";
+                            if (pin == "Remaining %") return "(" + d + " > 0.0 ? 1.0 - " + e + " / " + d + " : 0.0)";
+                        }
+                        if ((n.Type == "flow.toggleflow" || n.Type == "flow.togglevalue") && (pin == "Is On" || pin == "Value"))
+                        {
+                            const std::string f = Field(n.Type == "flow.toggleflow" ? "tf" : "tv", n.Id);
+                            m_HiddenFields.insert(f);
+                            if (pin == "Is On") return ToggleIsOn(n, f);
+                            return "(" + ToggleIsOn(n, f) + " ? " + In(n, def, "On Value") + " : " + In(n, def, "Off Value") + ")";
+                        }
+                        if (n.Type == "struct.set" && pin == "Struct")
+                            return In(n, def, "Struct");
                         if (n.Type == "flow.for" && pin == "Index") { m_HiddenNumberFields.insert(Field("i", n.Id)); return Field("i", n.Id); }
                         if (n.Type == "flow.foreach" && pin == "Index") { m_HiddenNumberFields.insert(Field("i", n.Id)); return Field("i", n.Id); }
                         if (n.Type == "flow.foreach" && pin == "Element") { m_HiddenFields.insert(Field("el", n.Id)); return Field("el", n.Id); }
@@ -1268,6 +2001,23 @@ namespace Conqueror::Visual
                         {
                             Error(n.Id, "Data loop: this node's output feeds back into its own input.");
                             return "null";
+                        }
+                        if (n.Disabled)
+                        {
+                            // Devre dışı saf düğüm: aynı türdeki ilk girişi geçirir, yoksa türün varsayılanı
+                            PinType outType = PinType::Any;
+                            for (auto& o : def.Outputs) if (o.Name == pin) outType = o.Type;
+                            std::string r = LiteralFor(outType, "");
+                            for (auto& in : def.Inputs)
+                                if (in.Type != PinType::Exec && PinsCompatible(in.Type, outType)) { r = InputExpr(n, in); break; }
+                            m_DataStack.erase(n.Id);
+                            return r;
+                        }
+                        if (n.Type == "math.formula")
+                        {
+                            std::string r = FormulaExpr(n, def);
+                            m_DataStack.erase(n.Id);
+                            return r;
                         }
                         std::string tmpl = def.Expression;
                         for (auto& o : def.Outputs)
@@ -1302,7 +2052,7 @@ namespace Conqueror::Visual
                         Error(n.Id, "Input '" + in.Name + "' is connected to a missing node.");
                         return "null";
                     }
-                    std::string expr = OutputExpr(*src, l->FromPin);
+                    std::string expr = Watch(src->Id, l->FromPin, OutputExpr(*src, l->FromPin));
                     // Örtük dönüşümler (PinsCompatible ile izin verilenler)
                     PinType from = PinType::Any;
                     for (auto& o : m_Graph.ResolveDef(*src).Outputs)
@@ -1380,6 +2130,84 @@ namespace Conqueror::Visual
             // Delay / Timeline: Update başında geri sayım ve devam akışı
             void EmitLatentTick(const Node& n)
             {
+                const NodeDef def = m_Graph.ResolveDef(n);
+                if (n.Type == "flow.cooldown")
+                {
+                    const std::string r = Field("cdr", n.Id);
+                    m_HiddenNumberFields.insert(r);
+                    m_HiddenNumberFields.insert(Field("cdd", n.Id));
+                    Line("        if (" + r + " > 0.0)", n.Id);
+                    Line("        {", n.Id);
+                    Line("            " + r + " -= " + DeltaExpr(n, def) + ";", n.Id);
+                    Line("            if (" + r + " <= 0.0)", n.Id);
+                    Line("            {", n.Id);
+                    Line("                " + r + " = 0.0;", n.Id);
+                    FollowExec(n, "Completed", 4);
+                    Line("            }", n.Id);
+                    if (!m_Graph.FindOutputLinks(n.Id, "Tick").empty())
+                    {
+                        Line("            else", n.Id);
+                        Line("            {", n.Id);
+                        FollowExec(n, "Tick", 4);
+                        Line("            }", n.Id);
+                    }
+                    Line("        }", n.Id);
+                    return;
+                }
+                if (n.Type == "flow.timer")
+                {
+                    const std::string a = Field("tma", n.Id), p = Field("tmp", n.Id), e = Field("tme", n.Id), d = Field("tmd", n.Id);
+                    m_HiddenFields.insert(a);
+                    m_HiddenFields.insert(p);
+                    m_HiddenNumberFields.insert(e);
+                    m_HiddenNumberFields.insert(d);
+                    Line("        if (" + a + " == true && " + p + " != true)", n.Id);
+                    Line("        {", n.Id);
+                    Line("            " + e + " += " + DeltaExpr(n, def) + ";", n.Id);
+                    Line("            if (" + e + " >= " + d + ")", n.Id);
+                    Line("            {", n.Id);
+                    Line("                " + e + " = " + d + ";", n.Id);
+                    Line("                " + a + " = false;", n.Id);
+                    FollowExec(n, "Completed", 4);
+                    Line("            }", n.Id);
+                    if (!m_Graph.FindOutputLinks(n.Id, "Tick").empty())
+                    {
+                        Line("            else", n.Id);
+                        Line("            {", n.Id);
+                        FollowExec(n, "Tick", 4);
+                        Line("            }", n.Id);
+                    }
+                    Line("        }", n.Id);
+                    return;
+                }
+                if (n.Type == "flow.waituntil" || n.Type == "flow.waitwhile")
+                {
+                    const std::string w = Field("wu", n.Id);
+                    m_HiddenFields.insert(w);
+                    const std::string cond = In(n, def, "Condition");
+                    Line("        if (" + w + " == true)", n.Id);
+                    Line("        {", n.Id);
+                    Line("            if (" + (n.Type == "flow.waituntil" ? cond : "!(" + cond + ")") + ")", n.Id);
+                    Line("            {", n.Id);
+                    Line("                " + w + " = false;", n.Id);
+                    TraceNode(n, 4);
+                    FollowExec(n, "Then", 4);
+                    Line("            }", n.Id);
+                    Line("        }", n.Id);
+                    return;
+                }
+                if (n.Type == "flow.waitframe")
+                {
+                    const std::string w = Field("wf", n.Id);
+                    m_HiddenNumberFields.insert(w);
+                    Line("        if (" + w + " > 0.0)", n.Id);
+                    Line("        {", n.Id);
+                    Line("            " + w + " = 0.0;", n.Id);
+                    TraceNode(n, 3);
+                    FollowExec(n, "Then", 3);
+                    Line("        }", n.Id);
+                    return;
+                }
                 if (n.Type == "flow.timeline")
                 {
                     const std::string p = Field("tlp", n.Id), dir = Field("tld", n.Id), t = Field("tlt", n.Id), v = Field("tlv", n.Id), fin = Field("tlf", n.Id);
@@ -1452,6 +2280,18 @@ namespace Conqueror::Visual
                 }
                 NodeDef def = m_Graph.ResolveDef(n);
                 const std::string ind = Indent(indent);
+                if (n.Disabled)
+                {
+                    // Unreal Disable Node: düğüm çalışmaz, akış ilk exec çıkışından devam eder
+                    for (auto& o : def.Outputs)
+                        if (o.Type == PinType::Exec)
+                        {
+                            FollowExec(n, o.Name, indent);
+                            break;
+                        }
+                    m_ExecStack.erase({ n.Id, inPin });
+                    return;
+                }
                 TraceNode(n, indent);
                 if (n.Type == "flow.doonce" && inPin == "Reset")
                 {
@@ -1593,9 +2433,11 @@ namespace Conqueror::Visual
                         Line(ind + "}", n.Id);
                     }
                 }
-                else if (n.Type == "flow.switchint" || n.Type == "flow.switchstring")
+                else if (n.Type == "flow.switchint" || n.Type == "flow.switchstring" || n.Type == "flow.switchenum")
                 {
-                    const bool isInt = n.Type == "flow.switchint";
+                    const bool isEnum = n.Type == "flow.switchenum";
+                    const bool isInt = n.Type == "flow.switchint" || isEnum;
+                    int enumIndex = 0;
                     const std::string f = Field("sw", n.Id);
                     m_HiddenFields.insert(f);
                     Line(ind + f + " = " + (isInt ? "float(int(" + InputExpr(n, def.Inputs[1]) + "))" : "str(" + InputExpr(n, def.Inputs[1]) + ")") + ";", n.Id);
@@ -1603,12 +2445,13 @@ namespace Conqueror::Visual
                     for (auto& o : def.Outputs)
                     {
                         if (o.Type != PinType::Exec || o.Name == "Default") continue;
-                        if (isInt && !IsNumber(o.Name))
+                        const std::string caseValue = isEnum ? std::to_string(enumIndex++) : o.Name;
+                        if (isInt && !IsNumber(caseValue))
                         {
                             Warning(n.Id, "Case '" + o.Name + "' is not a number.");
                             continue;
                         }
-                        Line(ind + (first ? "if (" : "else if (") + f + " == " + (isInt ? FloatLiteral(o.Name) : QuoteString(o.Name)) + ")", n.Id);
+                        Line(ind + (first ? "if (" : "else if (") + f + " == " + (isInt ? FloatLiteral(caseValue) : QuoteString(o.Name)) + ")", n.Id);
                         Line(ind + "{", n.Id);
                         FollowExec(n, o.Name, indent + 1);
                         Line(ind + "}", n.Id);
@@ -1651,6 +2494,201 @@ namespace Conqueror::Visual
                 else if (n.Type == "action.callfunction" && Prop(n, "Function").empty())
                 {
                     Error(n.Id, "Call Function has no function selected.");
+                    FollowExec(n, "Then", indent);
+                }
+                else if (n.Type == "reroute")
+                    FollowExec(n, "Out", indent);
+                else if (n.Type == "flow.trycatch")
+                {
+                    const std::string ex = Field("ex", n.Id), var = "_x" + std::to_string(n.Id);
+                    m_HiddenFields.insert(ex);
+                    Line(ind + "try", n.Id);
+                    Line(ind + "{", n.Id);
+                    FollowExec(n, "Try", indent + 1);
+                    Line(ind + "}", n.Id);
+                    Line(ind + "catch (" + var + ")", n.Id);
+                    Line(ind + "{", n.Id);
+                    Line(ind + "    " + ex + " = " + Watch(n.Id, "Exception", "str(" + var + ")") + ";", n.Id);
+                    FollowExec(n, "Catch", indent + 1);
+                    Line(ind + "}", n.Id);
+                    if (!m_Graph.FindOutputLinks(n.Id, "Finally").empty())
+                    {
+                        Line(ind + "finally", n.Id);
+                        Line(ind + "{", n.Id);
+                        FollowExec(n, "Finally", indent + 1);
+                        Line(ind + "}", n.Id);
+                    }
+                }
+                else if (n.Type == "flow.throw")
+                    Line(ind + "throw str(" + In(n, def, "Message") + ");", n.Id);
+                else if (n.Type == "flow.cooldown")
+                {
+                    const std::string r = Field("cdr", n.Id), d = Field("cdd", n.Id);
+                    m_HiddenNumberFields.insert(r);
+                    m_HiddenNumberFields.insert(d);
+                    if (inPin == "Reset")
+                        Line(ind + r + " = 0.0;", n.Id);
+                    else
+                    {
+                        Line(ind + "if (" + r + " <= 0.0)", n.Id);
+                        Line(ind + "{", n.Id);
+                        Line(ind + "    " + d + " = MathMax(" + In(n, def, "Duration") + ", 0.0);", n.Id);
+                        Line(ind + "    " + r + " = " + d + ";", n.Id);
+                        FollowExec(n, "Ready", indent + 1);
+                        Line(ind + "}", n.Id);
+                        if (!m_Graph.FindOutputLinks(n.Id, "Not Ready").empty())
+                        {
+                            Line(ind + "else", n.Id);
+                            Line(ind + "{", n.Id);
+                            FollowExec(n, "Not Ready", indent + 1);
+                            Line(ind + "}", n.Id);
+                        }
+                    }
+                }
+                else if (n.Type == "flow.timer")
+                {
+                    const std::string a = Field("tma", n.Id), p = Field("tmp", n.Id), e = Field("tme", n.Id), d = Field("tmd", n.Id);
+                    m_HiddenFields.insert(a);
+                    m_HiddenFields.insert(p);
+                    m_HiddenNumberFields.insert(e);
+                    m_HiddenNumberFields.insert(d);
+                    if (inPin == "Pause") Line(ind + p + " = true;", n.Id);
+                    else if (inPin == "Resume") Line(ind + p + " = false;", n.Id);
+                    else if (inPin == "Toggle")
+                    {
+                        Line(ind + "if (" + a + " == true)", n.Id);
+                        Line(ind + "{", n.Id);
+                        Line(ind + "    " + p + " = (" + p + " != true);", n.Id);
+                        Line(ind + "}", n.Id);
+                    }
+                    else
+                    {
+                        Line(ind + e + " = 0.0;", n.Id);
+                        Line(ind + d + " = MathMax(" + In(n, def, "Duration") + ", 0.0);", n.Id);
+                        Line(ind + a + " = true;", n.Id);
+                        Line(ind + p + " = false;", n.Id);
+                        FollowExec(n, "Started", indent);
+                    }
+                }
+                else if (n.Type == "flow.waituntil" || n.Type == "flow.waitwhile")
+                {
+                    m_HiddenFields.insert(Field("wu", n.Id));
+                    Line(ind + Field("wu", n.Id) + " = true;", n.Id);
+                }
+                else if (n.Type == "flow.waitframe")
+                {
+                    m_HiddenNumberFields.insert(Field("wf", n.Id));
+                    Line(ind + Field("wf", n.Id) + " = 1.0;", n.Id);
+                }
+                else if (n.Type == "flow.toggleflow" || n.Type == "flow.togglevalue")
+                {
+                    const bool flow = n.Type == "flow.toggleflow";
+                    const std::string f = Field(flow ? "tf" : "tv", n.Id), on = ToggleIsOn(n, f);
+                    m_HiddenFields.insert(f);
+                    auto turn = [&](bool toOn, int depth) {
+                        Line(Indent(depth) + f + " = " + (toOn ? "true" : "false") + ";", n.Id);
+                        FollowExec(n, toOn ? "Turned On" : "Turned Off", depth);
+                    };
+                    if (inPin == "In" && flow)
+                    {
+                        Line(ind + "if " + on, n.Id);
+                        Line(ind + "{", n.Id);
+                        FollowExec(n, "On", indent + 1);
+                        Line(ind + "}", n.Id);
+                        Line(ind + "else", n.Id);
+                        Line(ind + "{", n.Id);
+                        FollowExec(n, "Off", indent + 1);
+                        Line(ind + "}", n.Id);
+                    }
+                    else if (inPin == "On" || inPin == "Off")
+                    {
+                        Line(ind + "if (" + on + " " + (inPin == "On" ? "!= true" : "== true") + ")", n.Id);
+                        Line(ind + "{", n.Id);
+                        turn(inPin == "On", indent + 1);
+                        Line(ind + "}", n.Id);
+                    }
+                    else
+                    {
+                        Line(ind + "if " + on, n.Id);
+                        Line(ind + "{", n.Id);
+                        turn(false, indent + 1);
+                        Line(ind + "}", n.Id);
+                        Line(ind + "else", n.Id);
+                        Line(ind + "{", n.Id);
+                        turn(true, indent + 1);
+                        Line(ind + "}", n.Id);
+                    }
+                }
+                else if (n.Type == "flow.cache")
+                {
+                    m_HiddenFields.insert(Field("ch", n.Id));
+                    Line(ind + Field("ch", n.Id) + " = " + Watch(n.Id, "Output", In(n, def, "Input")) + ";", n.Id);
+                    FollowExec(n, "Then", indent);
+                }
+                else if (n.Type == "flow.nullcheck")
+                {
+                    Line(ind + "if (" + In(n, def, "Input") + " != null)", n.Id);
+                    Line(ind + "{", n.Id);
+                    FollowExec(n, "Not Null", indent + 1);
+                    Line(ind + "}", n.Id);
+                    if (!m_Graph.FindOutputLinks(n.Id, "Null").empty())
+                    {
+                        Line(ind + "else", n.Id);
+                        Line(ind + "{", n.Id);
+                        FollowExec(n, "Null", indent + 1);
+                        Line(ind + "}", n.Id);
+                    }
+                }
+                else if (n.Type == "dict.add")
+                {
+                    const std::string dict = In(n, def, "Dictionary"), key = "str(" + In(n, def, "Key") + ")";
+                    Line(ind + "if (!MapHasKey(" + dict + ", " + key + "))", n.Id);
+                    Line(ind + "{", n.Id);
+                    Line(ind + "    MapSet(" + dict + ", " + key + ", " + In(n, def, "Value") + ");", n.Id);
+                    Line(ind + "}", n.Id);
+                    FollowExec(n, "Then", indent);
+                }
+                else if (n.Type == "struct.set")
+                {
+                    if (Prop(n, "Struct").empty()) Error(n.Id, "Set Members has no struct selected.");
+                    const std::string target = In(n, def, "Struct");
+                    for (auto& in : def.Inputs)
+                    {
+                        if (in.Type == PinType::Exec || in.Name == "Struct") continue;
+                        if (!m_Graph.FindInputLink(n.Id, in.Name) && !n.InputDefaults.count(in.Name)) continue;
+                        Line(ind + "MapSet(" + target + ", " + QuoteString(in.Name) + ", " + InputExpr(n, in) + ");", n.Id);
+                    }
+                    FollowExec(n, "Then", indent);
+                }
+                else if (n.Type.rfind("dispatcher.", 0) == 0)
+                {
+                    const std::string disp = Prop(n, "Dispatcher");
+                    if (disp.empty())
+                        Error(n.Id, "No event dispatcher selected.");
+                    else
+                    {
+                        const std::string name = QuoteString(SanitizeIdentifier(disp));
+                        const std::string event = QuoteString(SanitizeIdentifier(Prop(n, "Event")));
+                        if ((n.Type == "dispatcher.bind" || n.Type == "dispatcher.unbind") && Prop(n, "Event").empty())
+                            Error(n.Id, "No custom event selected to bind.");
+                        if (n.Type == "dispatcher.call")
+                        {
+                            if (std::find(m_Graph.Dispatchers.begin(), m_Graph.Dispatchers.end(), disp) == m_Graph.Dispatchers.end())
+                                Warning(n.Id, "Event dispatcher '" + disp + "' is not declared in this graph.");
+                            Line(ind + "VSDispatchCall(" + name + ", " + In(n, def, "Value") + ");", n.Id);
+                        }
+                        else if (n.Type == "dispatcher.bind")
+                            Line(ind + "VSDispatchBind(" + In(n, def, "Target") + ", " + name + ", " + event + ");", n.Id);
+                        else if (n.Type == "dispatcher.unbind")
+                            Line(ind + "VSDispatchUnbind(" + In(n, def, "Target") + ", " + name + ", " + event + ");", n.Id);
+                        else
+                            Line(ind + "VSDispatchUnbindAll(" + In(n, def, "Target") + ", " + name + ");", n.Id);
+                    }
+                    FollowExec(n, "Then", indent);
+                }
+                else if (n.Type == "interface.call" && (Prop(n, "Interface").empty() || Prop(n, "Function").empty()))
+                {
+                    Error(n.Id, "Interface Message has no interface function selected.");
                     FollowExec(n, "Then", indent);
                 }
                 else if (n.Type == "flow.branch")
@@ -1738,7 +2776,7 @@ namespace Conqueror::Visual
                     if (var.empty())
                         Error(n.Id, "Set node has no variable selected.");
                     else
-                        Line(ind + SanitizeIdentifier(var) + " = " + InputExpr(n, def.Inputs[1]) + ";", n.Id);
+                        Line(ind + VarWrite(var, Watch(n.Id, "Value", InputExpr(n, def.Inputs[1])), n.Id), n.Id);
                     FollowExec(n, "Then", indent);
                 }
                 else if (def.Kind == NodeKind::Action)
@@ -1750,7 +2788,7 @@ namespace Conqueror::Visual
                     {
                         std::string f = Field("o", n.Id, "Result");
                         m_HiddenFields.insert(f);
-                        Line(ind + f + " = " + call + ";", n.Id);
+                        Line(ind + f + " = " + Watch(n.Id, "Result", call) + ";", n.Id);
                     }
                     else
                         Line(ind + call + ";", n.Id);
@@ -1768,7 +2806,7 @@ namespace Conqueror::Visual
                 {
                     std::string f = Field("e", n.Id, pin);
                     m_HiddenFields.insert(f);
-                    Line(Indent(indent) + f + " = " + param + ";", n.Id);
+                    Line(Indent(indent) + f + " = " + Watch(n.Id, pin, param) + ";", n.Id);
                 }
             }
 
@@ -1779,8 +2817,13 @@ namespace Conqueror::Visual
                 std::map<std::string, std::vector<const Node*>> custom, physics;
                 for (auto& n : m_Graph.Nodes)
                 {
-                    if (n.Type == "flow.delay" || n.Type == "flow.retriggerabledelay" || n.Type == "flow.timeline")
+                    const bool isLatent = n.Type == "flow.delay" || n.Type == "flow.retriggerabledelay" || n.Type == "flow.timeline" || n.Type == "flow.cooldown"
+                                       || n.Type == "flow.timer" || n.Type == "flow.waituntil" || n.Type == "flow.waitwhile" || n.Type == "flow.waitframe";
+                    if (isLatent && !n.Disabled)
                         latent.push_back(&n);
+                    // Devre dışı olay hiç çalışmaz (fonksiyon girişleri çağrılabilir kalır)
+                    if (n.Disabled && n.Type.rfind("event.", 0) == 0 && n.Type != "event.function" && n.Type != "event.interface")
+                        continue;
                     if (n.Type == "event.collision" || n.Type == "event.trigger")
                     {
                         std::string phase = Prop(n, "Phase", "Enter");
@@ -1792,7 +2835,7 @@ namespace Conqueror::Visual
                         physics[std::string(n.Type == "event.collision" ? "OnCollision" : "OnTrigger") + phase + (Prop(n, "Physics", "3D") == "2D" ? "2D" : "")].push_back(&n);
                     }
                     else if (n.Type == "event.inputaction") perFrame.push_back(&n);
-                    else if (n.Type == "event.function") functions.push_back(&n);
+                    else if (n.Type == "event.function" || n.Type == "event.interface") functions.push_back(&n);
                     else if (n.Type == "event.start") start.push_back(&n);
                     else if (n.Type == "event.awake") awake.push_back(&n);
                     else if (n.Type == "event.update") update.push_back(&n);
@@ -1923,13 +2966,27 @@ namespace Conqueror::Visual
                 std::set<std::string> functionNames;
                 for (const Node* n : functions)
                 {
-                    const std::string name = SanitizeIdentifier(Prop(*n, "Name", "MyFunction"));
+                    const bool isInterface = n->Type == "event.interface";
+                    const std::string rawName = isInterface ? Prop(*n, "Function", "") : Prop(*n, "Name", "MyFunction");
+                    if (isInterface && rawName.empty())
+                    {
+                        Error(n->Id, "Interface Event has no interface function selected.");
+                        continue;
+                    }
+                    const std::string name = SanitizeIdentifier(rawName);
                     if (reserved.count(name) || custom.count(name) || physics.count(name) || !functionNames.insert(name).second)
                     {
                         Error(n->Id, "Function name '" + name + "' is already used by another event or function.");
                         continue;
                     }
-                    const auto inputs = SplitList(Prop(*n, "Inputs", ""));
+                    std::vector<std::string> inputs;
+                    if (isInterface)
+                    {
+                        for (auto& o : m_Graph.ResolveDef(*n).Outputs)
+                            if (o.Type != PinType::Exec) inputs.push_back(o.Name);
+                    }
+                    else
+                        inputs = SplitList(Prop(*n, "Inputs", ""));
                     std::string signature;
                     std::vector<std::pair<std::string, std::string>> params;
                     for (size_t i = 0; i < inputs.size(); ++i)
@@ -1941,9 +2998,30 @@ namespace Conqueror::Visual
                     Line("", 0);
                     Line("    func " + name + "(" + signature + ")", n->Id);
                     Line("    {", 0);
+                    // Unreal yerel değişkenleri: yalnız bu fonksiyonda (her çağrıda varsayılandan)
+                    m_CurrentFunction = rawName;
+                    for (auto& v : m_Graph.Variables)
+                        if (v.Scope == VariableScope::Local && v.Function == rawName)
+                            Line("        var _l_" + SanitizeIdentifier(v.Name) + " = " + VariableDefault(v) + ";", n->Id);
                     EmitEventPrologue(*n, params, 2);
                     TraceNode(*n, 2);
                     FollowExec(*n, "Then", 2);
+                    m_CurrentFunction.clear();
+                    Line("    }", 0);
+                }
+                // Blueprint Interface: uygulanan her arayüz için işaret yöntemi (Does Implement Interface / VSImplements)
+                std::set<std::string> interfaces(m_Graph.Interfaces.begin(), m_Graph.Interfaces.end());
+                for (const Node* n : functions)
+                    if (n->Type == "event.interface" && !Prop(*n, "Interface").empty()) interfaces.insert(Prop(*n, "Interface"));
+                for (auto& path : interfaces)
+                {
+                    const InterfaceAsset* ia = UserTypes::LoadInterface(path);
+                    const std::string iname = SanitizeIdentifier(ia && !ia->Name.empty() ? ia->Name : UserTypes::DisplayName(path));
+                    if (!ia) Warning(0, "Interface asset '" + path + "' not found.");
+                    Line("", 0);
+                    Line("    func _cqi_" + iname + "()", 0);
+                    Line("    {", 0);
+                    Line("        return true;", 0);
                     Line("    }", 0);
                 }
                 for (auto& [name, nodes] : custom)
@@ -1973,7 +3051,7 @@ namespace Conqueror::Visual
 
     std::string Graph::Transpile(const std::string& className, std::vector<CompileMessage>& messages, std::vector<int>* lineToNode, bool trace) const
     {
-        if (Macros.empty())
+        if (!NeedsExpansion())
         {
             Transpiler t(*this, messages, trace);
             return t.Run(SanitizeIdentifier(className), lineToNode);
@@ -2009,6 +3087,14 @@ namespace Conqueror::Visual
             bool BreakPending = false;
             std::string BreakGraph;
             int BreakNode = 0;
+            // Düzenleyici paneli her karede günceller; panel henüz çizilmeden oyun başlarsa da (otomasyon) değerler yakalansın
+            bool CaptureValues = true;
+            // Canlı pin değerleri: grafik -> (düğüm, pin) -> (değer, zaman)
+            std::unordered_map<std::string, std::map<std::pair<int, std::string>, std::pair<std::string, double>>> Values;
+            // Son yürütülen düğümler (halka) ve kesme noktasındaki anlık görüntüsü (çağrı yığını)
+            std::vector<std::pair<std::string, int>> Trail;
+            size_t TrailHead = 0;
+            std::vector<std::pair<std::string, int>> BreakTrail;
         };
         DebugState& D() { static auto& d = *new DebugState(); return d; }
     }
@@ -2037,6 +3123,14 @@ namespace Conqueror::Visual
         auto& hit = d.Hits[graph][node];
         hit.first = Now();
         ++hit.second;
+        constexpr size_t kTrail = 256;
+        if (d.Trail.size() < kTrail)
+            d.Trail.emplace_back(graph, node);
+        else
+        {
+            d.Trail[d.TrailHead] = { graph, node };
+            d.TrailHead = (d.TrailHead + 1) % kTrail;
+        }
         if (!d.BreakPending)
         {
             auto it = d.Breakpoints.find(graph);
@@ -2045,9 +3139,38 @@ namespace Conqueror::Visual
                 d.BreakPending = true;
                 d.BreakGraph = graph;
                 d.BreakNode = node;
+                d.BreakTrail.clear();
+                for (size_t i = 0; i < d.Trail.size(); ++i)
+                    d.BreakTrail.push_back(d.Trail[(d.TrailHead + i) % d.Trail.size()]);
             }
         }
     }
+
+    void Debugger::SetCaptureValues(bool capture) { D().CaptureValues = capture; }
+    bool Debugger::IsCapturingValues() { return D().Enabled && D().CaptureValues; }
+
+    void Debugger::RecordValue(const std::string& graph, int node, const std::string& pin, const std::string& value)
+    {
+        DebugState& d = D();
+        if (!d.Enabled)
+            return;
+        auto& slot = d.Values[graph][{ node, pin }];
+        slot.first = value.size() > 160 ? value.substr(0, 157) + "..." : value;
+        slot.second = Now();
+    }
+
+    bool Debugger::GetValue(const std::string& graph, int node, const std::string& pin, std::string& value, double* time)
+    {
+        auto g = D().Values.find(graph);
+        if (g == D().Values.end()) return false;
+        auto it = g->second.find({ node, pin });
+        if (it == g->second.end()) return false;
+        value = it->second.first;
+        if (time) *time = it->second.second;
+        return true;
+    }
+
+    std::vector<std::pair<std::string, int>> Debugger::GetBreakTrail() { return D().BreakTrail; }
 
     double Debugger::LastExecuted(const std::string& graph, int node)
     {
@@ -2068,6 +3191,9 @@ namespace Conqueror::Visual
     void Debugger::ClearHits()
     {
         D().Hits.clear();
+        D().Values.clear();
+        D().Trail.clear();
+        D().TrailHead = 0;
         D().BreakPending = false;
     }
 
@@ -2093,4 +3219,43 @@ namespace Conqueror::Visual
         node = d.BreakNode;
         return true;
     }
+}
+
+namespace Conqueror::Visual
+{
+    namespace
+    {
+        // (sahip varlık, dağıtıcı) -> bağlı (varlık, yöntem) listesi
+        std::map<std::pair<uint32_t, std::string>, std::vector<DispatcherRegistry::Binding>>& Bindings()
+        {
+            static auto& b = *new std::map<std::pair<uint32_t, std::string>, std::vector<DispatcherRegistry::Binding>>();
+            return b;
+        }
+    }
+
+    void DispatcherRegistry::Bind(uint32_t owner, const std::string& dispatcher, uint32_t entity, const std::string& method)
+    {
+        auto& list = Bindings()[{ owner, dispatcher }];
+        for (auto& b : list)
+            if (b.Entity == entity && b.Method == method) return;
+        list.push_back({ entity, method });
+    }
+
+    void DispatcherRegistry::Unbind(uint32_t owner, const std::string& dispatcher, uint32_t entity, const std::string& method)
+    {
+        auto it = Bindings().find({ owner, dispatcher });
+        if (it == Bindings().end()) return;
+        auto& list = it->second;
+        list.erase(std::remove_if(list.begin(), list.end(), [&](const Binding& b) { return b.Entity == entity && b.Method == method; }), list.end());
+    }
+
+    void DispatcherRegistry::UnbindAll(uint32_t owner, const std::string& dispatcher) { Bindings().erase({ owner, dispatcher }); }
+
+    std::vector<DispatcherRegistry::Binding> DispatcherRegistry::Get(uint32_t owner, const std::string& dispatcher)
+    {
+        auto it = Bindings().find({ owner, dispatcher });
+        return it == Bindings().end() ? std::vector<Binding>() : it->second;
+    }
+
+    void DispatcherRegistry::Clear() { Bindings().clear(); }
 }

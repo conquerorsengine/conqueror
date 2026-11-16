@@ -47,6 +47,13 @@ namespace Conqueror::Scripting
         std::vector<std::string> GetExtensions() const override { return { ".cqgraph" }; }
 
         void EndFrame() override {}
+        // Event Dispatcher bağları oyun oturumuna aittir; alt grafik / kullanıcı türü dosyaları yeniden okunur
+        void OnPlayStart() override
+        {
+            Visual::DispatcherRegistry::Clear();
+            Visual::UserTypes::ClearCache();
+        }
+        void OnPlayStop() override { Visual::DispatcherRegistry::Clear(); }
 
         bool LoadScript(const std::string& path, std::string* error) override
         {
@@ -81,6 +88,12 @@ namespace Conqueror::Scripting
         bool Invoke(void* instance, const std::string& method, const CQS::Value* args, int argc) override
         {
             return CQS::CQSEngine::InvokeMethod(instance, method, args, argc);
+        }
+
+        // InvokeMethod / Interface Message: fonksiyonun (Return Value) dönüş değeri
+        bool InvokeWithResult(void* instance, const std::string& method, const CQS::Value* args, int argc, CQS::Value* result) override
+        {
+            return CQS::CQSEngine::InvokeMethod(instance, method, args, argc, result);
         }
 
         bool SetField(void* instance, const std::string& field, const ScriptValue& value) override
@@ -121,7 +134,8 @@ namespace Conqueror::Scripting
                 return false;
             for (auto& v : graph.Variables)
             {
-                if (!v.Public) continue;
+                // Inspector'da yalnız grafik kapsamındaki açık değişkenler (diğer kapsamlar sınıf alanı değildir)
+                if (!v.Public || v.Scope != Visual::VariableScope::Graph) continue;
                 ScriptFieldInfo info;
                 info.Name = Visual::SanitizeIdentifier(v.Name);
                 info.HasDefault = true;
