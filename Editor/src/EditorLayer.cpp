@@ -20,6 +20,7 @@
 #include "Core/Utils/ProcessRunner.h"
 #include "Core/Utils/LoadingProgress.h"
 #include "LoadingScreen.h"
+#include "Panels/ModuleInstaller.h"
 #include "Core/ImGui/ImGuiLayer.h"
 #include "stb_image_write.h"
 #include <thread>
@@ -8616,6 +8617,7 @@ namespace Conqueror::Editor
             if (a.size() > 2 && a[1] == "expect" && LoadingScreen::LastFraction() < 0.999f) { err = "loading screen did not reach 100%"; return false; }
             return true;
         });
+        ModuleInstaller::RegisterAutomation();   // 47: Build Settings > Install module
         // prefab_mode open <yol> | close [discard] | autosave on|off | expect_active <0|1> | expect_saves <n> (218)
         Automation::RegisterCommand("prefab_mode", [this](const Args& a, std::string& err) {
             if (a.size() < 2) { err = "prefab_mode open <path> | close [discard] | autosave on|off | expect_active <0|1> | expect_saves <n>"; return false; }

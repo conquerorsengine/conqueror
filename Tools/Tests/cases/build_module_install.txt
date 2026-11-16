@@ -1,0 +1,12 @@
+# template: basic3d
+# 47: Build Settings > platform: o platformun Hub modülü kurulu değilse "Install <modül>" düğmesi bu editör sürümünün modülünü
+# GitHub Releases'tan indirir. Kaynaktan derlenmiş editörde (conqueror-install.json yok) yayımlanmış modül olamaz: düğme bunu açıkça
+# söyler ve Build oyuncuyu kaynaktan derlemeye devam eder
+wait 30
+build open
+build platform Windows
+wait 5
+module_install start Windows
+wait_until 3000 module_install busy
+module_install expect_status built from source
+quit

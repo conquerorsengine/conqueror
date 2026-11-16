@@ -226,12 +226,31 @@ namespace Conqueror::Installs
 
     // Kurulum düzeni: <kök>/bin (editör, Hub, oyuncu), <kök>/lib (paylaşımlı kitaplıklar), <kök>/Modules, <kök>/Tools,
     // <kök>/conqueror-install.json. Editör ve Hub kendi klasörünü (bin) verir: modüller bir üstte
-    static fs::path InstallRootOf(const fs::path& dir)
+    fs::path InstallRootOf(const fs::path& dir)
     {
         std::error_code ec;
         if (dir.filename() == "bin" && (fs::exists(dir.parent_path() / "conqueror-install.json", ec) || fs::is_directory(dir.parent_path() / "Modules", ec)))
             return dir.parent_path();
         return dir;
+    }
+
+    fs::path HubConfigDirectory()
+    {
+        if (const std::string o = Env("CQ_HUB_CONFIG_DIR"); !o.empty())
+            return fs::path(o);
+#if defined(_WIN32)
+        if (const std::string a = Env("APPDATA"); !a.empty())
+            return fs::path(a) / "ConquerorEngine";
+#elif defined(__APPLE__)
+        if (const std::string h = Env("HOME"); !h.empty())
+            return fs::path(h) / "Library" / "Application Support" / "ConquerorEngine";
+#else
+        if (const std::string x = Env("XDG_CONFIG_HOME"); !x.empty())
+            return fs::path(x) / "ConquerorEngine";
+        if (const std::string h = Env("HOME"); !h.empty())
+            return fs::path(h) / ".config" / "ConquerorEngine";
+#endif
+        return fs::current_path();
     }
 
     // ------------------------------------------------------------------ kanallar

@@ -104,6 +104,10 @@ namespace Conqueror::Installs
     CQ_API void ApplyModuleToolPaths(const std::filesystem::path& installDir);
     // Platform modülünün hazır derlenmiş oyuncusu: <kurulum>/Modules/<modül>/player/<platform>/ (bin/ConquerorRuntime, lib/);
     // yoksa boş (Build, oyuncuyu kaynaktan derler)
+    // Hub'ın ayar klasörü (installs.yaml burada; editör de aynı listeyi günceller): CQ_HUB_CONFIG_DIR ya da kullanıcı ayarları
+    CQ_API std::filesystem::path HubConfigDirectory();
+    // Kurulum kökü: editörün kendi klasörü (bin) verilirse bir üstü (Modules, Tools, conqueror-install.json orada)
+    CQ_API std::filesystem::path InstallRootOf(const std::filesystem::path& dir);
     CQ_API std::filesystem::path PrebuiltPlayerDir(const std::filesystem::path& installDir, const std::string& platform);
     CQ_API std::string PlatformModuleId(const std::string& platform);
 

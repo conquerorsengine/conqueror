@@ -1,5 +1,6 @@
 #include "ObjectPicker.h"
 #include "BuildSettingsPanel.h"
+#include "ModuleInstaller.h"
 #include "Build/BuildPipeline.h"
 #include "UI/EditorUI.h"
 #include "Core/Project/Project.h"
@@ -335,6 +336,12 @@ namespace Conqueror::Editor
         }
         if (current)
         {
+            // 47: Hub modülü (hazır derlenmiş oyuncu) kuruluysa araç zinciri gerekmez; değilse Install düğmesi
+            if (ModuleInstaller::Draw(current->Name))
+            {
+                ImGui::TextDisabled("Platform specific settings: Project Settings > Player > Platform Settings.");
+                return;
+            }
             // Platform modülü: bu bilgisayarda gereken araç zinciri (Unity Hub "Modules")
             const PlatformModules::Module module = PlatformModules::Detect(current->Name);
             const bool ready = module.State == PlatformModules::Status::Ready;
