@@ -743,6 +743,22 @@ namespace Conqueror
         m_PrevDepthValid = false;
     }
 
+    void PostProcessStack::SetHoldTemporalHistory(bool hold)
+    {
+        if (hold == m_HoldTemporalHistory)
+            return;
+        m_HoldTemporalHistory = hold;
+        m_FSR2Valid = false;
+        m_FSR2HoldValid = false;
+        m_DLSSValid = false;
+        m_XeSSValid = false;
+        m_MetalFXValid = false;
+        m_TAAUValid = false;
+        m_SGSR2Valid = false;
+        m_T2xValid = false;
+        m_StabValid = false;
+    }
+
     float PostProcessStack::GetCurrentTextureLodBias()
     {
         if (!s_Current || !s_Current->m_SceneFramebuffer)
@@ -2397,7 +2413,9 @@ namespace Conqueror
             RunSceneEffects(settings, camera, time);
         m_TAAResolved = false;
         // TAAU seçiliyken zamansal kenar yumuşatma TAAU'nun kendisidir (Unreal'daki gibi zamansal yükseltici TAA'nın yerini alır)
-        if (fx && UsesTAAResolve(m_AAMode, settings) && !camera.Orthographic && !IsLDRTemporalUpscaler(m_Upscaler) && !m_UseFSR2 && !m_UseDLSS && !m_UseXeSS && !m_UseMetalFX)
+        if (m_HoldTemporalHistory)
+            ;   // hata ayıklama görünümü: TAA çalışmaz, geçmiş son ışıklı karede kalır
+        else if (fx && UsesTAAResolve(m_AAMode, settings) && !camera.Orthographic && !IsLDRTemporalUpscaler(m_Upscaler) && !m_UseFSR2 && !m_UseDLSS && !m_UseXeSS && !m_UseMetalFX)
             RunTAA(settings, camera);
         else
             m_HistoryValid = false;
@@ -2503,8 +2521,13 @@ namespace Conqueror
             }
         m_UseAutoExposure = false;
         if (fx && settings.AutoExposure)
-            RunAutoExposure(settings, deltaTime);
-        else
+        {
+            if (m_HoldTemporalHistory && m_AdaptValid)
+                m_UseAutoExposure = true;   // donmuş: son uyum değeri (m_Adapt[m_AdaptIndex]) aynen kullanılır
+            else
+                RunAutoExposure(settings, deltaTime);
+        }
+        else if (!m_HoldTemporalHistory)
             m_AdaptValid = false;
 
         if (settings.Enabled && settings.Bloom && quality.EnableBloom)
@@ -2558,10 +2581,14 @@ namespace Conqueror
         }
 
         // Sonraki karenin TAA / TAAU açılma testi için bu karenin derinliği (bütün geçişlerden sonra)
-        SavePrevDepth(fx && !camera.Orthographic && m_JitterActive);
-        // Sonraki kare için: titreşimsiz görüş-izdüşüm (TAA / hareket bulanıklığı yeniden izdüşümü), istekler
-        m_PrevViewProj = camera.Projection * camera.View;
-        m_HasPrevViewProj = true;
+        // Hata ayıklama görünümünde önceki kare derinliği ve matrisi son ışıklı karede kalır (donmuş TAA / GI geçmişiyle eşleşir)
+        if (!m_HoldTemporalHistory)
+        {
+            SavePrevDepth(fx && !camera.Orthographic && m_JitterActive);
+            // Sonraki kare için: titreşimsiz görüş-izdüşüm (TAA / hareket bulanıklığı yeniden izdüşümü), istekler
+            m_PrevViewProj = camera.Projection * camera.View;
+            m_HasPrevViewProj = true;
+        }
         ++m_FrameIndex;
         {
             // Kenar yumuşatma istekleri (sonraki karenin sahne hedefi ve titreşimi)
@@ -2571,7 +2598,7 @@ namespace Conqueror
             const bool taau = fx && !camera.Orthographic && IsLDRTemporalUpscaler(m_Upscaler);
             // DLSS de FSR 2'nin titreşim dizisini kullanır (Halton 2,3; evre sayısı 8 x ölçek², NVIDIA'nın önerisi)
             const bool fsr2 = fx && (m_UseFSR2 || m_UseDLSS || m_UseXeSS || m_UseMetalFX);
-            m_WantTAA = temporal || t2x || taau || fsr2;   // titreşim (+ hareket bayrağı için normal eki)
+            m_WantTAA = (temporal || t2x || taau || fsr2) && !m_HoldTemporalHistory;   // titreşim (+ hareket bayrağı için normal eki)
             m_WantTXAA = temporal && next == AntiAliasingMode::TXAA && !fsr2;
             // Temporal Stability: çoklu örnekli yöntemlerde de titreşim sahneye uygulanır (TXAA gibi); uygulanmayınca TAA olmayan bir
             // titreşimi geri alıyor, görüntüyü yarım piksel oynatıp yumuşatıyordu
@@ -2605,7 +2632,7 @@ namespace Conqueror
         const bool ssgi = settings.ScreenSpaceGI && !settings.RayTracedGI;   // Ray Traced GI açıkken ekran izli GI yok
         m_WantNormals = fx && (settings.ScreenSpaceReflections || ssgi) && !camera.Orthographic;
         m_WantAlbedo = fx && ssgi && !camera.Orthographic;
-        if (!m_WantAlbedo)
+        if (!m_WantAlbedo && !m_HoldTemporalHistory)
             m_GIHistoryValid = false;
 
         glActiveTexture(GL_TEXTURE0);

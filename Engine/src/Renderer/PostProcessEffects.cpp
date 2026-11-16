@@ -208,8 +208,12 @@ namespace Conqueror
                 BindTexture(3, m_GITemp.Texture);
                 BindTexture(4, m_GIHistory[m_GIHistoryIndex].Texture);
                 PostProcess::DrawFullscreenQuad();
-                m_GIHistoryIndex = next;
-                m_GIHistoryValid = true;
+                // Hata ayıklama görünümünde (tel kafes) bu karenin birikimi yalnız gösterilir, geçmiş son ışıklı karede kalır (275)
+                if (!m_HoldTemporalHistory)
+                {
+                    m_GIHistoryIndex = next;
+                    m_GIHistoryValid = true;
+                }
                 // 3) Uzamsal süzgeç
                 glBindFramebuffer(GL_FRAMEBUFFER, m_GI.Framebuffer);
                 shader->SetInt("u_Mode", 2);

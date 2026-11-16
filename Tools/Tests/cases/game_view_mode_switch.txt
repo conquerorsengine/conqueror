@@ -1,0 +1,42 @@
+# template: archviz
+# 275: F1-F4 görünüm modu anında değişir (eski modun TAA geçmişi yeni moda karışıp saydam sönmez, tel kafes pozlamayı / GI'yi kirletmez);
+# 276: Esc ile fare bırakılıp başka panele tıklandıktan sonra Game görünümüne sağ / orta tıkla dönünce F1-F4 çalışır
+wait 60
+focus Game
+play
+wait 120
+game_view_mode expect Lit
+game_region_change mark 0.1 0.1 0.9 0.9
+wait 64
+game_region_change expect 0.1 0.1 0.9 0.9 <1.0
+game_region_change mark 0.1 0.1 0.9 0.9
+key F1
+wait 30
+game_view_mode expect Wireframe
+game_region_change expect 0.1 0.1 0.9 0.9 >5
+key F3
+wait 2
+game_view_mode expect Lit
+game_region_change expect 0.1 0.1 0.9 0.9 <0.5
+wait 30
+game_region_change expect 0.1 0.1 0.9 0.9 <0.6
+key Escape
+wait 6
+focus Hierarchy
+wait 6
+rclick 920 450
+wait 10
+key F1
+wait 10
+game_view_mode expect Wireframe
+key Escape
+wait 6
+focus Hierarchy
+wait 6
+click 920 450 middle
+wait 10
+key F3
+wait 10
+game_view_mode expect Lit
+stop
+quit

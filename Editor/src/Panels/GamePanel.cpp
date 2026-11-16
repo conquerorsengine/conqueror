@@ -3,6 +3,7 @@
 #include "Core/Math/Math.h"
 #include "Renderer/RHI/RenderCommand.h"
 #include "Renderer/PostProcess.h"
+#include "Core/Input/Input.h"
 #include "Renderer/Utilities/Renderer3D/Renderer3D.h"
 #include "Core/Time/TimeManager.h"
 #include "Core/Recording/Recorder.h"
@@ -107,8 +108,10 @@ namespace Conqueror::Editor
             // Unreal gibi oynarken F1 tel kafes / F2 ışıksız / F3 ışıklı / F4 yalnız ışık (266); oyun durunca normal görünüm
             if (!isPlaying)
                 GameViewModes::Set(GameViewModes::Mode::Lit);
-            else if (!renderOnly && m_ViewportFocused)
+            else if (!renderOnly && (m_ViewportFocused || Input::GetAppliedCursorMode() != 0))
                 GameViewModes::HandleHotkeys();
+            // F1-F4 görünüm modu anında değişir (275): hata ayıklama görünümünde zamansal geçmişler son ışıklı karede donar
+            m_PostStack.SetHoldTemporalHistory(GameViewModes::Current() != GameViewModes::Mode::Lit);
             GameViewModes::BeginScene();
             if (m_Context && isPlaying && !renderOnly)
             {
@@ -374,6 +377,11 @@ namespace Conqueror::Editor
         }
         ImGui::PopStyleVar();
         m_TabVisible = visible;
+        if (m_FocusRequested)
+        {
+            m_FocusRequested = false;
+            ImGui::SetWindowFocus();
+        }
 
         if (!visible)
         {

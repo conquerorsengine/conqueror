@@ -409,6 +409,8 @@ namespace Conqueror::Runtime
             GameViewModes::HandleHotkeys();
         else
             GameViewModes::Set(GameViewModes::Mode::Lit);
+        // Görünüm modu anında değişir (275): hata ayıklama görünümünde zamansal geçmişler son ışıklı karede donar
+        post.SetHoldTemporalHistory(GameViewModes::Current() != GameViewModes::Mode::Lit);
         GameViewModes::BeginScene();
         m_ActiveScene->OnUpdateRuntime(ts);
         GameViewModes::EndScene();

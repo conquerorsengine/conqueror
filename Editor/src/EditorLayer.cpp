@@ -1401,6 +1401,7 @@ namespace Conqueror::Editor
                 {
                     Input::RecaptureCursor();
                     GameInput::ConsumeHeldButtons();
+                    m_GamePanel->RequestFocus();
                 }
             }
             // Oyun kilit istiyor, kullanıcı bırakmadı ama kilit uygulanmamış (odaksız başlangıç): odak gelince kilitle

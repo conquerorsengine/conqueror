@@ -45,6 +45,8 @@ namespace Conqueror::Editor
         bool IsTabVisible() const { return m_TabVisible; }
         bool IsMaximized() const;
         bool IsViewportFocused() const { return m_ViewportFocused; }
+        // Fare oyuna geri kilitlendi (276): Game penceresi odak alır; sağ / orta tık ImGui'de odak vermez, F1-F4 ve oyun tuşları ölürdü
+        void RequestFocus() { m_FocusRequested = true; }
         bool IsViewportHovered() const { return m_ViewportHovered; }
         // Oyun görüntüsünün ortası (ImGui ekran koordinatı)
         glm::vec2 GetViewportCenter() const { return (m_ViewportBounds[0] + m_ViewportBounds[1]) * 0.5f; }
@@ -71,6 +73,7 @@ namespace Conqueror::Editor
         bool m_HasOverlayUI = false;
 
         PostProcessStack m_PostStack;
+        bool m_FocusRequested = false;
         bool m_ScreenshotRequested = false;
 
         void DrawToolbar();

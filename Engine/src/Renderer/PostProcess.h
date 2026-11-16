@@ -63,6 +63,12 @@ namespace Conqueror
         // Bütün zamansal geçmişler (TAA, TAAU, FSR 2, SMAA T2x, kararlılık, GI, bulutlar) yeniden başlar: görüntünün bir kısmı birden
         // değişti (editörde ızgara / gizmo kapatıldı) ya da görünüm bir süre çizilmedi
         void ResetTemporalHistory();
+        // Hata ayıklama görünümü (oyunda F1 tel kafes / F2 ışıksız / F4 yalnız ışık, 275): TAA geçmişi, önceki karenin matrisi ve derinliği,
+        // otomatik pozlama ve ekran uzayı GI geçmişi son ışıklı karedeki halinde donar (TAA ve titreşim kapalı). F3'e dönünce görüntü
+        // oturmuş haliyle anında gelir: eski mod yeni moda karışıp saydam sönmez, sıfırlanan geçmiş de saniyelerce yeniden yakınsamaz.
+        // Kamera bu arada çok oynadıysa kamera kesmesi denetimi geçmişi sıfırlar. Dondurulamayan zamansal yükselticiler (TAAU, FSR 2,
+        // DLSS, XeSS, MetalFX, SGSR 2, SMAA T2x, kararlılık) giriş ve çıkışta yeniden başlar
+        void SetHoldTemporalHistory(bool hold);
 
         // Renderer3D: şu an bu görünümün sahne hedefine çiziliyorsa Temporal AA alt piksel titreşimi (NDC)
         static bool GetCurrentJitter(glm::vec2& outNDC);
@@ -323,6 +329,7 @@ namespace Conqueror
         int m_AdaptIndex = 0;
         bool m_AdaptValid = false;
         bool m_UseAutoExposure = false;
+        bool m_HoldTemporalHistory = false;
         bool m_TAAResolved = false;
     };
 
