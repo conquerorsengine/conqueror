@@ -36,6 +36,10 @@ namespace Conqueror::Net
     };
     struct NetMapEntry
     {
+        // emplace_back(anahtar, değer) için açık kurucu: parantezli küme başlatmayı (C++20) clang 15 (OpenHarmony NDK) bilmiyor
+        NetMapEntry() = default;
+        NetMapEntry(std::string key, NetValue value) : first(std::move(key)), second(std::move(value)) {}
+
         std::string first;
         NetValue second;
         bool operator==(const NetMapEntry& o) const { return first == o.first && second == o.second; }

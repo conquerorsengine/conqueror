@@ -8,6 +8,8 @@
 #include <spdlog/sinks/rotating_file_sink.h>
 #ifdef __ANDROID__
     #include <spdlog/sinks/android_sink.h>
+#elif defined(__OHOS__)
+    #include "Platform/OHOS/HilogSink.h"
 #endif
 #include <fstream>
 #include <ctime>
@@ -239,6 +241,11 @@ namespace Conqueror
             auto logcat_sink = std::make_shared<spdlog::sinks::android_sink_mt>("Conqueror");
             logcat_sink->set_pattern("[%n] %v");
             logSinks.push_back(logcat_sink);
+#elif defined(__OHOS__)
+            // HarmonyOS'ta stdout görünmez: günlükler hilog'a ("hdc shell hilog -T Conqueror")
+            auto hilog_sink = std::make_shared<HilogSinkMt>("Conqueror");
+            hilog_sink->set_pattern("[%n] %v");
+            logSinks.push_back(hilog_sink);
 #endif
         }
 

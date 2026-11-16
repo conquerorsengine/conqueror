@@ -42,15 +42,15 @@ endif()
 
 # Linux: shared libEngine.so is easy to shadow with another copy on LD_LIBRARY_PATH / ld.so cache.
 # Static linking ships all renderer code inside the executable so you always run what you compiled.
-if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX" AND NOT EMSCRIPTEN)
+if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX" AND NOT EMSCRIPTEN AND NOT CMAKE_SYSTEM_NAME STREQUAL "OHOS")
     option(CQ_LINUX_ENGINE_CORE_STATIC "Build Engine as static on Linux (avoids wrong libEngine.so at runtime)" OFF)
 else()
     set(CQ_LINUX_ENGINE_CORE_STATIC OFF)
 endif()
 
 # Windows/macOS: motor çekirdeği statik. C++ betik DLL'leri motorla yalnızca C ABI üzerinden konuşur (CQHostApi),
-# bu yüzden DLL dışa aktarım listesine (her sınıfa CQ_API) gerek kalmaz.
-if(CQ_LINUX_ENGINE_CORE_STATIC OR WIN32 OR APPLE OR ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "QNX" OR EMSCRIPTEN)
+# bu yüzden DLL dışa aktarım listesine (her sınıfa CQ_API) gerek kalmaz. HarmonyOS: editör / oyuncu .so'su motoru içinde taşır.
+if(CQ_LINUX_ENGINE_CORE_STATIC OR WIN32 OR APPLE OR ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "QNX" OR EMSCRIPTEN OR CMAKE_SYSTEM_NAME STREQUAL "OHOS")
     add_library(${PROJECT_NAME} STATIC ${ENGINE_SOURCES})
 else()
     add_library(${PROJECT_NAME} SHARED ${ENGINE_SOURCES})
@@ -153,8 +153,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE CQ_LUAU_ENABLED)
 # ── Vulkan arka ucu ── (GL -> Vulkan 1.2/1.3 çeviri katmanı; --vulkan / CQ_RENDERER=vulkan / Player Settings ile seçilir)
 # Başlıklar External/Vulkan-Headers'da; yükleyici çalışma anında açılır (VulkanLoader): Vulkan SDK gerekmez ve
 # yürütülebilir dosya vulkan-1.dll / libvulkan olmadan da açılır (OpenGL / D3D11'e düşer).
-if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "QNX" OR EMSCRIPTEN OR IOS)
-    # Android / QNX: OpenGL ES 3.x (EGL). Vulkan arka ucu GLFW yüzeyi kullandığı için şimdilik kapalı. Web: WebGL 2 / WebGPU. iOS: Metal
+if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "QNX" OR EMSCRIPTEN OR IOS OR CMAKE_SYSTEM_NAME STREQUAL "OHOS")
+    # Android / QNX / HarmonyOS: OpenGL ES 3.x (EGL). Vulkan arka ucu GLFW yüzeyi kullandığı için şimdilik kapalı. Web: WebGL 2 / WebGPU. iOS: Metal
     option(CQ_ENABLE_VULKAN "Build the Vulkan backend" OFF)
 else()
     option(CQ_ENABLE_VULKAN "Build the Vulkan backend" ON)
@@ -203,7 +203,7 @@ endif()
 # (Tools/WebGPU/fetch-dawn.sh <klasör>, CQ_DAWN_DIR). Masaüstünde WebGPU uygulaması (Dawn / wgpu-native) çalışma anında açılır;
 # Web'de tarayıcının WebGPU'su (emdawnwebgpu). Dawn yoksa arka uç derlenmez, istek OpenGL'e düşer.
 set(CQ_DAWN_DIR "$ENV{CQ_DAWN_DIR}" CACHE PATH "Dawn source tree for the WebGPU backend's shader translator (Tools/WebGPU/fetch-dawn.sh)")
-if(CQ_DAWN_DIR AND EXISTS "${CQ_DAWN_DIR}/src/tint" AND NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX")
+if(CQ_DAWN_DIR AND EXISTS "${CQ_DAWN_DIR}/src/tint" AND NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX" AND NOT CMAKE_SYSTEM_NAME STREQUAL "OHOS")
     foreach(_opt DAWN_BUILD_SAMPLES DAWN_BUILD_TESTS DAWN_USE_GLFW DAWN_ENABLE_VULKAN DAWN_ENABLE_DESKTOP_GL DAWN_ENABLE_OPENGLES
                  DAWN_ENABLE_NULL DAWN_ENABLE_D3D11 DAWN_ENABLE_D3D12 DAWN_ENABLE_METAL DAWN_ENABLE_SPIRV_VALIDATION DAWN_USE_X11
                  DAWN_USE_WAYLAND TINT_BUILD_GLSL_WRITER TINT_BUILD_GLSL_VALIDATOR TINT_BUILD_HLSL_WRITER TINT_BUILD_MSL_WRITER
@@ -308,11 +308,11 @@ if(CQ_DEFAULT_GL_PROFILE)
     target_compile_definitions(${PROJECT_NAME} PRIVATE CQ_DEFAULT_GL_PROFILE="${CQ_DEFAULT_GL_PROFILE}")
 endif()
 
-# Python (CPython gömme): geliştirme dosyaları bulunursa (Android'de ana makinenin Python'u kullanılamaz)
-if(NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX" AND NOT EMSCRIPTEN AND NOT IOS)
+# Python (CPython gömme): geliştirme dosyaları bulunursa (Android / HarmonyOS'ta ana makinenin Python'u kullanılamaz)
+if(NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX" AND NOT EMSCRIPTEN AND NOT IOS AND NOT CMAKE_SYSTEM_NAME STREQUAL "OHOS")
     find_package(Python3 COMPONENTS Development.Embed QUIET)
 endif()
-if(Python3_Development.Embed_FOUND AND NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX" AND NOT IOS)
+if(Python3_Development.Embed_FOUND AND NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX" AND NOT IOS AND NOT CMAKE_SYSTEM_NAME STREQUAL "OHOS")
     get_target_property(_cq_engine_type ${PROJECT_NAME} TYPE)
     if(_cq_engine_type STREQUAL "SHARED_LIBRARY" AND NOT WIN32)
         # Python ayrı modül (libCQPython.so): motor onu gerektiğinde açar. Derlenen oyun Python kurulu olmayan
@@ -337,11 +337,11 @@ if(Python3_Development.Embed_FOUND AND NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STR
     endif()
 endif()
 
-# Java (JNI): yalnızca başlıklar; libjvm çalışma anında yüklenir (JAVA_HOME)
-if(NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX" AND NOT EMSCRIPTEN AND NOT IOS)
+# Java (JNI): yalnızca başlıklar; libjvm çalışma anında yüklenir (JAVA_HOME). HarmonyOS'ta JVM yok
+if(NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX" AND NOT EMSCRIPTEN AND NOT IOS AND NOT CMAKE_SYSTEM_NAME STREQUAL "OHOS")
     find_package(JNI QUIET COMPONENTS JVM)
 endif()
-if(JNI_INCLUDE_DIRS AND NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX" AND NOT IOS)
+if(JNI_INCLUDE_DIRS AND NOT ANDROID AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX" AND NOT IOS AND NOT CMAKE_SYSTEM_NAME STREQUAL "OHOS")
     target_include_directories(${PROJECT_NAME} PRIVATE ${JNI_INCLUDE_DIRS})
     target_compile_definitions(${PROJECT_NAME} PRIVATE CQ_JAVA_ENABLED)
     message(STATUS "ConquerorEngine: Java scripting enabled")
@@ -417,6 +417,13 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "QNX")
     # QNX: Screen (pencere / girdi) + EGL + OpenGL ES; soketler libsocket'te, dlopen libc'de (libdl yok)
     target_compile_definitions(${PROJECT_NAME} PUBLIC GLFW_INCLUDE_NONE _QNX_SOURCE)
     target_link_libraries(${PROJECT_NAME} PUBLIC screen EGL GLESv2 socket m)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "OHOS")
+    # HarmonyOS (OpenHarmony NDK, API 12+): XComponent yüzeyi (ace_ndk) + OHNativeWindow + EGL + OpenGL ES 3.x, NAPI modülü
+    # (ace_napi), hilog günlüğü, HAP içi dosyalar (rawfile), ekran yoğunluğu (native_display_manager). API 13+ işlevleri
+    # (pano) çalışma anında dlopen ile açılır: uygulama HarmonyOS 5.0 (API 12) cihazlarda da yüklenir
+    target_compile_definitions(${PROJECT_NAME} PUBLIC GLFW_INCLUDE_NONE)
+    target_link_libraries(${PROJECT_NAME} PUBLIC ace_napi.z ace_ndk.z native_window EGL GLESv3 hilog_ndk.z rawfile.z
+                          native_display_manager dl m)
 elseif(EMSCRIPTEN)
     # Web: GLFW (contrib.glfw3: tarayıcı tuvali, HiDPI, oyun kumandası), WebGL 2 (OpenGL ES 3.0; glad işlevleri
     # glfwGetProcAddress ile), büyüyebilen bellek, dosya sistemi (oyun dosyaları açılışta belleğe yazılır)

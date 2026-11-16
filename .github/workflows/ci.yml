@@ -309,3 +309,56 @@ jobs:
           -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-26 -DANDROID_STL=c++_static
       - name: Build
         run: cmake --build build-android --target conqueror --parallel
+
+  harmonyos:
+    name: HarmonyOS PC / tablet (OpenHarmony NDK, editor + player, ${{ matrix.arch }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [arm64-v8a, x86_64]
+    env:
+      # OpenHarmony 6.0 Release public SDK (API 20) from the official mirror; the app targets API 12+ (HarmonyOS 5.0)
+      OHOS_SDK_URL: https://repo.huaweicloud.com/openharmony/os/6.0-Release/ohos-sdk-windows_linux-public.tar.gz
+      OHOS_SDK_SHA256: a315834ac133625efc912bd078f3e2b2550868d04aef1b5aa4f9679c8b3c9d8e
+      OHOS_NATIVE_ZIP: linux/native-linux-x64-6.0.0.47-Beta1.zip
+      OHOS_NATIVE_SHA256: 19ffd1a3f0001536f6826a9ef507afd36a1e050cc27ecb85f4e6c284c546c0af
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y ninja-build unzip
+      - name: Cache the OpenHarmony native SDK
+        id: ohos-sdk
+        uses: actions/cache@v4
+        with:
+          path: ~/ohos-sdk
+          key: ohos-native-sdk-${{ env.OHOS_NATIVE_SHA256 }}
+      - name: Download the OpenHarmony native SDK (checksum-verified)
+        if: steps.ohos-sdk.outputs.cache-hit != 'true'
+        run: |
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/ohos-sdk.tar.gz" "$OHOS_SDK_URL"
+          echo "$OHOS_SDK_SHA256  $RUNNER_TEMP/ohos-sdk.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/ohos-sdk.tar.gz" -C "$RUNNER_TEMP" "$OHOS_NATIVE_ZIP"
+          rm "$RUNNER_TEMP/ohos-sdk.tar.gz"
+          echo "$OHOS_NATIVE_SHA256  $RUNNER_TEMP/$OHOS_NATIVE_ZIP" | sha256sum -c -
+          mkdir -p ~/ohos-sdk
+          unzip -q "$RUNNER_TEMP/$OHOS_NATIVE_ZIP" -d ~/ohos-sdk
+      - name: Configure
+        run: >
+          cmake -S . -B build-ohos -G Ninja -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_TOOLCHAIN_FILE=$HOME/ohos-sdk/native/build/cmake/ohos.toolchain.cmake
+          -DOHOS_ARCH=${{ matrix.arch }} -DOHOS_PLATFORM=OHOS -DOHOS_STL=c++_static
+      - name: Build (libConquerorEditor.so + libconqueror.so)
+        run: cmake --build build-ohos --target ConquerorEngine conqueror --parallel
+      - name: Check the libraries and package the HAP project (no hvigor on the runner)
+        run: |
+          for lib in libConquerorEditor.so libconqueror.so; do
+            f=build-ohos/lib/${{ matrix.arch }}/$lib
+            ls -l "$f"
+            # NAPI module registration and the GLFW layer must be inside; only system libraries may be needed at run time
+            ~/ohos-sdk/native/llvm/bin/llvm-nm -D --defined-only "$f" | grep -E "CQ_Register|glfwCreateWindow|NFD_OpenDialogU8"
+            ~/ohos-sdk/native/llvm/bin/llvm-readelf -d "$f" | grep NEEDED
+          done
+          python3 Tools/HarmonyOS/package_hap.py --out build-hap --build-dir build-ohos
+          test -f build-hap/entry/libs/${{ matrix.arch }}/libConquerorEditor.so
+          test -f build-hap/entry/src/main/resources/rawfile/cq_files.txt

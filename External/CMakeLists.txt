@@ -8,10 +8,10 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
 
 # GLFW
-if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "QNX" OR EMSCRIPTEN OR IOS)
+if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "QNX" OR EMSCRIPTEN OR IOS OR CMAKE_SYSTEM_NAME STREQUAL "OHOS")
     # iOS / iPadOS: Engine/src/Platform/iOS/GLFWiOS.mm (UIKit + CAMetalLayer). Android / QNX'te GLFW yok: motor aynı API'yi Engine/src/Platform/Android/GLFWAndroid.cpp (NativeActivity + EGL) ve
     # Engine/src/Platform/QNX/GLFWQnx.cpp (Screen + EGL) ile sağlar. Web: Emscripten'in GLFW 3 uygulaması (contrib.glfw3,
-    # tarayıcı tuvali) bağlanır, başlıklar aynı
+    # tarayıcı tuvali) bağlanır, başlıklar aynı. HarmonyOS: Engine/src/Platform/OHOS/GLFWOhos.cpp (XComponent + EGL)
     add_library(glfw INTERFACE)
     target_include_directories(glfw INTERFACE glfw/include)
 else()
@@ -204,8 +204,9 @@ if(MINGW AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 # NFD (Native File Dialog) — yalnızca editör/başlatıcı kullanır; oyuncuda dosya iletişim kutusu yok (Android, QNX ve
-# yalnız oyuncu derlemelerinde GTK / X11 bağımlılığı gelmesin)
-if(ANDROID OR CQ_RUNTIME_ONLY OR CMAKE_SYSTEM_NAME STREQUAL "QNX" OR EMSCRIPTEN OR IOS)
+# yalnız oyuncu derlemelerinde GTK / X11 bağımlılığı gelmesin). HarmonyOS editöründe NFD işlevleri sistemin belge seçicisine
+# (ArkTS DocumentViewPicker) bağlanır: Engine/src/Platform/OHOS/NFDOhos.cpp
+if(ANDROID OR CQ_RUNTIME_ONLY OR CMAKE_SYSTEM_NAME STREQUAL "QNX" OR EMSCRIPTEN OR IOS OR CMAKE_SYSTEM_NAME STREQUAL "OHOS")
     add_library(nfd INTERFACE)
     target_include_directories(nfd INTERFACE nativefiledialog-extended/src/include)
 else()
@@ -287,6 +288,10 @@ elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zstd/lib/zstd.h")
     message(STATUS "zstd build/cmake missing - using External/zstd/lib fallback (libzstd_static)")
 else()
     message(WARNING "zstd not found - using system zstd")
+endif()
+# HarmonyOS musl'ünde qsort_r yok (zstd __linux__ görünce GNU qsort_r'ı seçiyor): sözlük oluşturucu standart qsort ile
+if(CMAKE_SYSTEM_NAME STREQUAL "OHOS" AND TARGET libzstd_static)
+    target_compile_definitions(libzstd_static PRIVATE ZDICT_QSORT=0)
 endif()
 
 # ENet (Networking). Web: tarayıcıda UDP soketi yok (çok oyunculu Web için WebSocket / WebRTC gerekir), ENet derlenmez

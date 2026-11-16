@@ -231,7 +231,8 @@ namespace Conqueror
                         bmx = glm::max(bmx, w);
                     }
                     const glm::vec2 half = c.Size * 0.5f + glm::vec2(c.EdgeRadius);
-                    MarkShape(g, blocked, bmn, bmx, [&](const glm::vec2& p) {
+                    // Yapılandırılmış bağlama (c) lambdaya başlatıcılı yakalamayla: clang 15 (OpenHarmony NDK) onu doğrudan yakalayamaz
+                    MarkShape(g, blocked, bmn, bmx, [&, &c = c](const glm::vec2& p) {
                         const glm::vec2 l = ToWorld(inv, p) - c.Offset;
                         return std::abs(l.x) <= half.x && std::abs(l.y) <= half.y;
                     });
@@ -264,7 +265,7 @@ namespace Conqueror
                         bmn = glm::min(bmn, w);
                         bmx = glm::max(bmx, w);
                     }
-                    MarkShape(g, blocked, bmn, bmx, [&](const glm::vec2& p) {
+                    MarkShape(g, blocked, bmn, bmx, [&, &c = c](const glm::vec2& p) {
                         const glm::vec2 l = ToWorld(inv, p) - c.Offset;
                         return SegmentDistance(l, -axis, axis) <= r;
                     });
@@ -274,7 +275,7 @@ namespace Conqueror
                     if (c.IsTrigger || !StaticBody(scene, e) || !scene.IsEntityActive(e) || c.Points.size() < 3)
                         continue;
                     const glm::mat4 m = scene.ComputeWorldMatrix(e);
-                    auto addPath = [&](const std::vector<glm::vec2>& pts) {
+                    auto addPath = [&, &c = c](const std::vector<glm::vec2>& pts) {
                         if (pts.size() < 3)
                             return;
                         std::vector<glm::vec2> poly;

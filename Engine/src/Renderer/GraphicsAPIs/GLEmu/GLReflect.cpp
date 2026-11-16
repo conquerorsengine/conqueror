@@ -322,7 +322,7 @@ namespace Conqueror::GLEmu
                     p.GlobalsSize = size;
                 }
             }
-            auto addImage = [&](const spirv_cross::Resource& r, Pending::Kind kind) {
+            auto addImage = [&, &stage = stage](const spirv_cross::Resource& r, Pending::Kind kind) {   // bağlama başlatıcılı yakalamayla (clang 15)
                 int idx = findRes(r.name);
                 if (idx < 0)
                 {

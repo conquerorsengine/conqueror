@@ -146,8 +146,9 @@ int CQ_RuntimeMain(int argc, char** argv)
     return 0;
 }
 
-// iOS / iPadOS: main() UIKit'i başlatır (iOSMain.mm), motor application:didFinishLaunching içinde kurulur
-#if !defined(__ANDROID__) && !defined(CQ_PLATFORM_IOS)
+// iOS / iPadOS: main() UIKit'i başlatır (iOSMain.mm), motor application:didFinishLaunching içinde kurulur. HarmonyOS: oyuncu HAP'in
+// yüklediği paylaşımlı kitaplıktır, giriş NAPI modülünden (OhosMain.cpp)
+#if !defined(__ANDROID__) && !defined(CQ_PLATFORM_IOS) && !defined(__OHOS__)
 int main(int argc, char** argv)
 {
     return CQ_RuntimeMain(argc, argv);

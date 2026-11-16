@@ -193,7 +193,7 @@ namespace Conqueror::Editor
 
         ImGui::Columns(2);
         ImGui::SetColumnWidth(0, columnWidth);
-        ImGui::Text(label.c_str());
+        ImGui::TextUnformatted(label.c_str());
         ImGui::NextColumn();
 
         ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
@@ -3034,7 +3034,7 @@ namespace Conqueror::Editor
                 ImGui::Separator();
                 
                 ImGui::PushID((void*)&script);
-                bool open = ImGui::TreeNodeEx((void*)&script, treeNodeFlags, nativeName.c_str());
+                bool open = ImGui::TreeNodeEx((void*)&script, treeNodeFlags, "%s", nativeName.c_str());
                 ImGui::PopStyleVar();
                 
                 ImGui::SameLine(contentRegionAvailable.x - lineHeight * 0.5f);

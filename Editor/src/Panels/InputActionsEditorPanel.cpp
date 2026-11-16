@@ -1706,9 +1706,10 @@ namespace Conqueror::Editor
                 remove = i;
             // Parametreler (katalogdaki varsayılanlar + dosyadakiler)
             std::vector<std::pair<std::string, float>> params = info ? info->Defaults : std::vector<std::pair<std::string, float>>{};
-            for (const auto& [k, v] : spec.Params)
-                if (std::none_of(params.begin(), params.end(), [&](const auto& p) { return p.first == k; }))
-                    params.push_back({ k, v });
+            // Yapılandırılmış bağlama lambda'da yakalanmaz (C++17 / eski clang: OpenHarmony araç zinciri)
+            for (const auto& entry : spec.Params)
+                if (std::none_of(params.begin(), params.end(), [&](const auto& p) { return p.first == entry.first; }))
+                    params.push_back({ entry.first, entry.second });
             for (const auto& [key, def] : params)
             {
                 float value = spec.Get(key, def);

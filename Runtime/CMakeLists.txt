@@ -37,6 +37,18 @@ elseif(IOS)
         MACOSX_BUNDLE_BUNDLE_NAME "Conqueror"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "${CMAKE_PROJECT_VERSION}"
         MACOSX_BUNDLE_BUNDLE_VERSION "1")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "OHOS")
+    # HarmonyOS: oyuncu HAP'in yüklediği paylaşımlı kitaplıktır: lib/<OHOS_ARCH>/libconqueror.so (NAPI modülü "conqueror",
+    # XComponent libraryname). Oyun dosyaları HAP'in rawfile klasöründe (Tools/HarmonyOS/package_hap.py --player)
+    add_library(conqueror SHARED ${RUNTIME_SOURCES})
+    target_include_directories(conqueror PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/../Engine/src)
+    target_link_libraries(conqueror PRIVATE Engine)
+    set_target_properties(conqueror PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/${OHOS_ARCH})
+    foreach(_cfg RELEASE DEBUG RELWITHDEBINFO MINSIZEREL)
+        set_target_properties(conqueror PROPERTIES LIBRARY_OUTPUT_DIRECTORY_${_cfg} ${CMAKE_BINARY_DIR}/lib/${OHOS_ARCH})
+    endforeach()
 elseif(RUNTIME_SOURCES)
     add_executable(${PROJECT_NAME} ${RUNTIME_SOURCES})
     if(WIN32 AND CQ_APP_ICON_RC)

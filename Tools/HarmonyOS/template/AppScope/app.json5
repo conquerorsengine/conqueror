@@ -1,0 +1,10 @@
+{
+  "app": {
+    "bundleName": "@CQ_BUNDLE_NAME@",
+    "vendor": "@CQ_VENDOR@",
+    "versionCode": @CQ_VERSION_CODE@,
+    "versionName": "@CQ_VERSION_NAME@",
+    "icon": "$media:app_icon",
+    "label": "$string:app_name"
+  }
+}
