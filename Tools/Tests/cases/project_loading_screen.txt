@@ -1,0 +1,8 @@
+# template: archviz
+# 270: proje açılırken yükleme penceresi (Unity'nin açılış ekranı gibi, kendi görselimizle): kart, ilerleme çubuğu, yüklenen sahne öğesi /
+# model / doku, proje adı, logo ve sürüm. Archviz yüklenirken kart birkaç kez yeniden çizilir ve %100'e ulaşır; editörün ilk oturmuş
+# karesi gelene kadar ekranda kalır
+wait_until 3000 layout_settled
+loading_screen expect 3
+wait 2
+quit

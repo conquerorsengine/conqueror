@@ -18,6 +18,8 @@
 #include "Assets/SceneTemplate.h"
 #include "Assets/MaterialPreview.h"
 #include "Core/Utils/ProcessRunner.h"
+#include "Core/Utils/LoadingProgress.h"
+#include "LoadingScreen.h"
 #include "Core/ImGui/ImGuiLayer.h"
 #include "stb_image_write.h"
 #include <thread>
@@ -930,6 +932,10 @@ namespace Conqueror::Editor
                     if (entry.path().extension() == ".cqproj")
                     {
                         CQ_CORE_INFO("[AutoLoad] Found cqproj: {0}", entry.path().string());
+                        // 270: proje açılırken yükleme penceresi (Unity'nin açılış ekranı gibi); bu blok bitince (hata da olsa) kapanır
+                        LoadingScreen::Begin(entry.path().stem().string(), projectPath);
+                        struct LoadingEnd { ~LoadingEnd() { LoadingScreen::End(); } } loadingEnd;
+                        LoadingProgress::Report("Reading project", entry.path().filename().string(), 0.05f);
                         auto loadedProject = std::make_shared<Project>();
                         ProjectSerializer projSerializer(loadedProject);
                         if (projSerializer.Deserialize(entry.path()))
@@ -945,6 +951,8 @@ namespace Conqueror::Editor
 
                             if (!m_CurrentScenePath.empty() && std::filesystem::is_regular_file(m_CurrentScenePath))
                             {
+                                LoadingProgress::Report("Loading scene", startScene, 0.12f);
+                                LoadingProgress::SetRange(0.12f, 0.97f);
                                 m_ActiveScene = std::make_shared<Scene>();
                                 m_EditorScene = m_ActiveScene;
                                 SceneSerializer sceneSerializer(m_ActiveScene);
@@ -8327,6 +8335,14 @@ namespace Conqueror::Editor
             return shownCheck(a, err, [this]() -> const glm::vec2* { return m_GamePanel ? m_GamePanel->GetImageBounds() : nullptr; }, "game_shown");
         });
         // stats_ready: Stats başlığında FPS sayısı görünüyor mu (wait_until ile: açılıştan kaç kare sonra göründüğü)
+        // loading_screen [expect <en az çizim sayısı>]: proje açılırken yükleme penceresi kaç kez çizildi, son yüzde (270)
+        Automation::RegisterCommand("loading_screen", [](const Args& a, std::string& err) {
+            const int draws = LoadingScreen::DrawCount();
+            Automation::Report("loading screen: drawn " + std::to_string(draws) + " times, last " + std::to_string((int)(LoadingScreen::LastFraction() * 100.0f)) + "%");
+            if (a.size() > 2 && a[1] == "expect" && draws < std::atoi(a[2].c_str())) { err = "loading screen drawn only " + std::to_string(draws) + " times"; return false; }
+            if (a.size() > 2 && a[1] == "expect" && LoadingScreen::LastFraction() < 0.999f) { err = "loading screen did not reach 100%"; return false; }
+            return true;
+        });
         // layout_settled: açılış örtüsü kalktı mı (259)
         Automation::RegisterCommand("layout_settled", [this](const Args&, std::string& err) {
             if (!m_StartupSettled) { err = "the editor layout has not settled yet"; return false; }

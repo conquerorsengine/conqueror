@@ -1,4 +1,5 @@
 #include "SceneSerializer.h"
+#include "Core/Utils/LoadingProgress.h"
 #include "Grid/GridComponents.h"
 #include "Core/Assets/AssetBundle.h"
 #include "Scene/LevelStreaming.h"
@@ -2444,8 +2445,19 @@ namespace Conqueror
         auto entities = data["Entities"];
         if (entities)
         {
+            // Proje açılış ekranı (270): varlık başına ilerleme (yüklenen modellerin / dokuların adı ayrıntıda)
+            const size_t loadTotal = std::max<size_t>(entities.size(), 1);
+            size_t loadIndex = 0;
             for (auto entity : entities)
             {
+                if (LoadingProgress::Active())
+                {
+                    std::string what;
+                    if (auto tc = entity["TagComponent"]; tc && tc["Tag"])
+                        what = tc["Tag"].as<std::string>();
+                    LoadingProgress::ReportPart("Loading scene", what, (float)loadIndex / (float)loadTotal);
+                }
+                ++loadIndex;
                 // Bozuk/eksik bir alan tüm sahneyi düşürmesin: entity bazında koruma
                 try
                 {

@@ -1,6 +1,7 @@
 #include "ModelLoader.h"
 #include "Core/Logging/Log.h"
 #include "Core/Utils/ImportActivity.h"
+#include "Core/Utils/LoadingProgress.h"
 #include <fstream>
 #include <yaml-cpp/yaml.h>
 #include "Core/Serialization/SceneSerializer.h"
@@ -533,6 +534,8 @@ namespace Conqueror
         }
 
         const auto importStart = std::chrono::steady_clock::now();
+        if (LoadingProgress::Active())   // proje açılış ekranı (270)
+            LoadingProgress::Report("", "Importing " + std::filesystem::path(path).filename().string());
         Assimp::Importer importer;
         // FBX PreRotation/PostRotation/Pivots'ı ara node olarak tutma,
         // bunları hem node transform'a hem animasyon keyframe'lerine bake et.

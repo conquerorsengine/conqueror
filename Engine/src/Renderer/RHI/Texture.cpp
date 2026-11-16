@@ -1,6 +1,7 @@
 #include "Renderer/CustomRenderTexture.h"
 #include "Texture.h"
 #include "Core/Utils/ImportActivity.h"
+#include "Core/Utils/LoadingProgress.h"
 #include "Core/Localization/Localization.h"
 #include "Renderer/RenderTargetRegistry.h"
 #include <chrono>
@@ -30,6 +31,8 @@ namespace Conqueror
 
     std::shared_ptr<Texture2D> Texture2D::Create(const std::string& path)
     {
+        if (LoadingProgress::Active())   // proje açılış ekranı (270)
+            LoadingProgress::Report("", "Loading " + std::filesystem::path(path).filename().string());
         // "rt://Ad": kamera render hedefi (SubViewport)
         if (std::string target; RenderTargetRegistry::ParsePath(path, target))
             return RenderTargetRegistry::Acquire(target);
