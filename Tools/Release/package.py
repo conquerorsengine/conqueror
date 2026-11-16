@@ -17,8 +17,9 @@ import sys
 import tarfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SKIP_DIRS = {"Library", "Logs", "logs", "Temp", "regression", "__pycache__", ".cache"}
-SKIP_FILES = re.compile(r"(\.log|\.pdb|\.ilk|\.exp|\.lib|\.a|imgui\.ini|\.result\.txt)$", re.I)
+SKIP_DIRS = {"Library", "Logs", "logs", "Temp", "regression", "__pycache__", ".cache", "Cache", "Modules"}
+# Günlükler, hata ayıklama dosyaları, yerel önbellek / kara kutu; NVIDIA DLSS çalışma zamanı ASLA dağıtılmaz (ayrı lisans)
+SKIP_FILES = re.compile(r"(\.log|\.pdb|\.ilk|\.exp|\.lib|\.a|imgui\.ini|\.result\.txt|blackbox\.bin|\.log\.\d+)$|^libnvidia-ngx|^nvngx", re.I)
 
 
 def engine_version():
@@ -34,7 +35,12 @@ def tar_filter(info):
     return info
 
 
+NEVER = re.compile(r"^(libnvidia-ngx|nvngx)", re.I)   # NVIDIA DLSS: her durumda dışarıda
+
+
 def add_tree(tar, src, arc, skip=True):
+    if NEVER.search(os.path.basename(src)):
+        return 0
     if os.path.isfile(src) or os.path.islink(src):
         tar.add(src, arcname=arc, recursive=False, filter=tar_filter)
         return os.path.getsize(src) if os.path.isfile(src) else 0
@@ -42,7 +48,7 @@ def add_tree(tar, src, arc, skip=True):
     for dirpath, dirnames, filenames in os.walk(src):
         dirnames[:] = sorted(d for d in dirnames if not (skip and d in SKIP_DIRS))
         for name in sorted(filenames):
-            if skip and SKIP_FILES.search(name):
+            if (skip and SKIP_FILES.search(name)) or NEVER.search(name):
                 continue
             p = os.path.join(dirpath, name)
             rel = os.path.relpath(p, src)
@@ -63,6 +69,7 @@ def main():
     ap.add_argument("kind", choices=["editor", "module"])
     ap.add_argument("id", nargs="?")
     ap.add_argument("--bin")
+    ap.add_argument("--lib", help="shared libraries for lib/ (only .so / .dylib files are taken)")
     ap.add_argument("--host", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--channel", default="official")
@@ -79,7 +86,18 @@ def main():
         path = os.path.join(args.out, name)
         info = json.dumps({"version": version, "commit": args.commit, "channel": args.channel}, indent=1).encode()
         with tarfile.open(path, "w:gz", compresslevel=9, format=tarfile.GNU_FORMAT) as tar:
-            size = add_tree(tar, args.bin, "")
+            # Düzen: bin/ (editör, Hub, oyuncu; RUNPATH $ORIGIN/../lib) + lib/ (paylaşımlı kitaplıklar)
+            size = add_tree(tar, args.bin, "bin")
+            if args.lib and os.path.isdir(args.lib):
+                for lib in sorted(os.listdir(args.lib)):
+                    p = os.path.join(args.lib, lib)
+                    if (".so" in lib or lib.endswith(".dylib")) and not SKIP_FILES.search(lib) and (os.path.isfile(p) or os.path.islink(p)):
+                        size += add_tree(tar, p, os.path.join("lib", lib))
+            # Paketleyiciler (Build, betikleri editörün klasöründen yukarı doğru arar): Tools/<platform>
+            for tool in ("Android", "Web", "iOS", "HarmonyOS", "Linux", "Windows", "macOS", "QNX", "Hurd", "FFmpeg"):
+                src = os.path.join(ROOT, "Tools", tool)
+                if os.path.isdir(src):
+                    size += add_tree(tar, src, os.path.join("Tools", tool))
             ti = tarfile.TarInfo("conqueror-install.json")
             ti.size = len(info)
             ti.mode = 0o644

@@ -6,9 +6,15 @@ name: Release
 # conqueror-release.json (boyut, SHA-256). Arşivler Tools/Release/package.py, bildirim make_manifest.py ile yapılır.
 on:
   push:
-    branches: [main]
+    # ci/release-*: deneme (her şey derlenir ve paketlenir, yayımlanmaz; dosyalar iş akışı çıktısı olarak kalır)
+    branches: [main, "ci/release-*"]
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish the release (false: only build and keep the files as a workflow artifact)"
+        type: boolean
+        default: true
 
 concurrency:
   group: release-${{ github.ref }}
@@ -37,9 +43,10 @@ jobs:
           cmake --build build --parallel
       - name: Package
         run: |
-          python3 Tools/Release/package.py editor --bin build/bin --host linux-x86_64 --out dist --channel $CHANNEL
-          python3 Tools/Release/package.py module linux --host any --out dist --add build/bin/ConquerorRuntime=player/linux/bin/ConquerorRuntime --add build/lib=player/linux/lib
-          python3 Tools/Release/package.py module server --host any --out dist --add build/bin/ConquerorRuntime=player/dedicated-server/bin/ConquerorRuntime --add build/lib=player/dedicated-server/lib
+          mkdir -p sharedlib && cp -a build/lib/*.so* sharedlib/
+          python3 Tools/Release/package.py editor --bin build/bin --lib build/lib --host linux-x86_64 --out dist --channel $CHANNEL
+          python3 Tools/Release/package.py module linux --host any --out dist --add build/bin/ConquerorRuntime=player/linux/bin/ConquerorRuntime --add sharedlib=player/linux/lib
+          python3 Tools/Release/package.py module server --host any --out dist --add build/bin/ConquerorRuntime=player/dedicated-server/bin/ConquerorRuntime --add sharedlib=player/dedicated-server/lib
           python3 Tools/Release/package.py module docs --host any --out dist --add Docs=docs
       - uses: actions/upload-artifact@v4
         with: { name: dist-linux, path: dist, retention-days: 3 }
@@ -60,8 +67,9 @@ jobs:
           cmake --build build --parallel
       - name: Package
         run: |
-          python3 Tools/Release/package.py editor --bin build/bin --host linux-arm64 --out dist --channel $CHANNEL
-          python3 Tools/Release/package.py module linux-arm64 --host any --out dist --add build/bin/ConquerorRuntime=player/linux-arm64/bin/ConquerorRuntime --add build/lib=player/linux-arm64/lib
+          mkdir -p sharedlib && cp -a build/lib/*.so* sharedlib/
+          python3 Tools/Release/package.py editor --bin build/bin --lib build/lib --host linux-arm64 --out dist --channel $CHANNEL
+          python3 Tools/Release/package.py module linux-arm64 --host any --out dist --add build/bin/ConquerorRuntime=player/linux-arm64/bin/ConquerorRuntime --add sharedlib=player/linux-arm64/lib
       - uses: actions/upload-artifact@v4
         with: { name: dist-linux-arm64, path: dist, retention-days: 3 }
 
@@ -96,7 +104,7 @@ jobs:
           cmake --build build --parallel
       - name: Package
         run: |
-          python3 Tools/Release/package.py editor --bin build/bin --host macos-arm64 --out dist --channel $CHANNEL
+          python3 Tools/Release/package.py editor --bin build/bin --lib build/lib --host macos-arm64 --out dist --channel $CHANNEL
           python3 Tools/Release/package.py module macos --host any --out dist --add build/bin/ConquerorRuntime=player/macos/bin/ConquerorRuntime
       - uses: actions/upload-artifact@v4
         with: { name: dist-macos, path: dist, retention-days: 3 }
@@ -134,9 +142,141 @@ jobs:
       - name: Package
         run: |
           SO=$(find build-android -name 'libconqueror.so' | head -1)
-          python3 Tools/Release/package.py module android --host any --out dist --add $SO=player/android/arm64-v8a/libconqueror.so --add Tools/Android=player/android/tools
+          for m in android meta-quest android-xr; do
+            python3 Tools/Release/package.py module $m --host any --out dist --add $SO=player/android/arm64-v8a/libconqueror.so
+          done
       - uses: actions/upload-artifact@v4
         with: { name: dist-android, path: dist, retention-days: 3 }
+
+  linux-extra:
+    name: Linux ${{ matrix.arch }} player (module linux-extra)
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: armhf, key: linux-arm-32-bit }
+          - { arch: i386, key: linux-x86-32-bit }
+          - { arch: riscv64, key: linux-risc-v }
+          - { arch: ppc64el, key: linux-powerpc }
+          - { arch: loong64, key: linux-loongarch }
+    steps:
+      - uses: actions/checkout@v5
+      - name: Toolchain
+        run: |
+          sudo apt-get update && sudo apt-get install -y ninja-build
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc > /dev/null
+          echo "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-21 main" | sudo tee /etc/apt/sources.list.d/llvm-21.list
+          sudo apt-get update && sudo apt-get install -y clang-21 lld-21
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/ld.lld-21 /usr/local/bin/ld.lld
+      - name: Build
+        run: |
+          Tools/Linux/make-linux-sysroot.sh ${{ matrix.arch }} $HOME/sysroot
+          cmake -S . -B build-cross -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=Tools/Linux/linux-cross.toolchain.cmake \
+            -DCQ_LINUX_ARCH=${{ matrix.arch }} -DCQ_LINUX_SYSROOT=$HOME/sysroot -DCQ_RUNTIME_ONLY=ON -DGLFW_BUILD_WAYLAND=OFF
+          cmake --build build-cross --target ConquerorRuntime --parallel
+          mkdir -p raw/player/${{ matrix.key }}/bin && cp build-cross/bin/ConquerorRuntime raw/player/${{ matrix.key }}/bin/
+          mkdir -p raw/player/${{ matrix.key }}/lib && cp -a build-cross/lib/*.so* raw/player/${{ matrix.key }}/lib/ 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: raw-linux-extra-${{ matrix.arch }}
+          path: raw
+          retention-days: 3
+
+  hurd:
+    name: GNU/Hurd player (module hurd)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Toolchain
+        run: |
+          sudo apt-get update && sudo apt-get install -y ninja-build
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc > /dev/null
+          echo "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-21 main" | sudo tee /etc/apt/sources.list.d/llvm-21.list
+          sudo apt-get update && sudo apt-get install -y clang-21 lld-21
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/ld.lld-21 /usr/local/bin/ld.lld
+      - name: Build
+        run: |
+          Tools/Hurd/make-sysroot.sh $HOME/hurd-sysroot
+          cmake -S . -B build-hurd -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=Tools/Hurd/hurd-cross.toolchain.cmake \
+            -DCQ_HURD_SYSROOT=$HOME/hurd-sysroot -DCQ_RUNTIME_ONLY=ON -DGLFW_BUILD_WAYLAND=OFF
+          cmake --build build-hurd --target ConquerorRuntime --parallel
+          python3 Tools/Release/package.py module hurd --host any --out dist --add build-hurd/bin/ConquerorRuntime=player/gnu-hurd/bin/ConquerorRuntime
+      - uses: actions/upload-artifact@v4
+        with: { name: dist-hurd, path: dist, retention-days: 3 }
+
+  freebsd:
+    name: FreeBSD player (module bsd)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v5
+      - uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          mem: 12288
+          prepare: |
+            pkg install -y cmake ninja pkgconf python3 xorgproto libX11 libXrandr libXinerama libXcursor libXi libXext \
+              libxkbcommon wayland wayland-protocols evdev-proto
+          run: |
+            cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCQ_RUNTIME_ONLY=ON
+            cmake --build build --target ConquerorRuntime
+      - name: Collect
+        run: |
+          mkdir -p raw/player/freebsd/bin && cp build/bin/ConquerorRuntime raw/player/freebsd/bin/
+          mkdir -p raw/player/freebsd/lib && cp -a build/lib/*.so* raw/player/freebsd/lib/ 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        with: { name: raw-bsd-freebsd, path: raw, retention-days: 3 }
+
+  openbsd:
+    name: OpenBSD player (module bsd)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v5
+      - uses: vmactions/openbsd-vm@v1
+        with:
+          mem: 12288
+          prepare: |
+            pkg_add -I cmake ninja
+          run: |
+            cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCQ_RUNTIME_ONLY=ON
+            cmake --build build --target ConquerorRuntime
+      - name: Collect
+        run: |
+          mkdir -p raw/player/openbsd/bin && cp build/bin/ConquerorRuntime raw/player/openbsd/bin/
+          mkdir -p raw/player/openbsd/lib && cp -a build/lib/*.so* raw/player/openbsd/lib/ 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        with: { name: raw-bsd-openbsd, path: raw, retention-days: 3 }
+
+  netbsd:
+    name: NetBSD player (module bsd)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v5
+      - uses: vmactions/netbsd-vm@v1
+        with:
+          mem: 12288
+          prepare: |
+            /usr/sbin/pkg_add pkgin || true
+            pkgin -y install cmake ninja-build
+            for set in xbase xcomp; do
+              ftp -o - "https://cdn.netbsd.org/pub/NetBSD/NetBSD-$(uname -r)/$(uname -m)/binary/sets/$set.tar.xz" | tar -xJpf - -C /
+            done
+          run: |
+            cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCQ_RUNTIME_ONLY=ON "-DCMAKE_PREFIX_PATH=/usr/X11R7;/usr/pkg"
+            cmake --build build --target ConquerorRuntime
+      - name: Collect
+        run: |
+          mkdir -p raw/player/netbsd/bin && cp build/bin/ConquerorRuntime raw/player/netbsd/bin/
+          mkdir -p raw/player/netbsd/lib && cp -a build/lib/*.so* raw/player/netbsd/lib/ 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        with: { name: raw-bsd-netbsd, path: raw, retention-days: 3 }
 
   languages:
     name: Language modules (${{ matrix.host }})
@@ -168,19 +308,35 @@ jobs:
           fi
           python3 Tools/Release/package.py module rust --host $H --out dist --add Resources/Scripting/Rust=sdk
       - uses: actions/upload-artifact@v4
-        with: { name: dist-languages-${{ matrix.host }}, path: dist, retention-days: 3 }
+        with:
+          name: dist-languages-${{ matrix.host }}
+          path: dist
+          retention-days: 3
 
   publish:
     name: Publish (${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'ConquerorX' }})
-    needs: [editor-linux, editor-linux-arm64, editor-windows, editor-macos, web, android, languages]
+    needs: [editor-linux, editor-linux-arm64, editor-windows, editor-macos, web, android, languages, linux-extra, hurd, freebsd, openbsd, netbsd]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
       - uses: actions/download-artifact@v4
         with: { path: dist, pattern: dist-*, merge-multiple: true }
+      - uses: actions/download-artifact@v4
+        with: { path: raw-linux-extra, pattern: raw-linux-extra-*, merge-multiple: true }
+      - uses: actions/download-artifact@v4
+        with: { path: raw-bsd, pattern: raw-bsd-*, merge-multiple: true }
+      - name: Multi-player modules
+        run: |
+          python3 Tools/Release/package.py module linux-extra --host any --out dist --add raw-linux-extra/player=player
+          python3 Tools/Release/package.py module bsd --host any --out dist --add raw-bsd/player=player
       - name: Manifest
         run: python3 Tools/Release/make_manifest.py --dist dist --channel $CHANNEL --commit $GITHUB_SHA
+      - name: Keep the files (dry run)
+        if: ${{ startsWith(github.ref, 'refs/heads/ci/') || (github.event_name == 'workflow_dispatch' && !inputs.publish) }}
+        uses: actions/upload-artifact@v4
+        with: { name: release-dry-run, path: dist, retention-days: 3 }
       - name: Publish
+        if: ${{ !startsWith(github.ref, 'refs/heads/ci/') && (github.event_name != 'workflow_dispatch' || inputs.publish) }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

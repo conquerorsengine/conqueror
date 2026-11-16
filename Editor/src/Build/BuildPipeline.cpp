@@ -1107,8 +1107,16 @@ namespace Conqueror::Editor
             // NDK derleme klasörleri: CQ_ANDROID_BUILD_ROOT (CI / paylaşılan önbellek) ya da motor kökünde build-android/
             const char* buildRootEnv = std::getenv("CQ_ANDROID_BUILD_ROOT");
             const fs::path buildRoot = buildRootEnv && *buildRootEnv ? fs::path(buildRootEnv) : engineSource / "build-android";
-            std::string cmd = python + " \"" + script.string() + "\" \"" + dataDir.string() + "\" --out \"" + apk.string() +
-                              "\" --build --build-root \"" + buildRoot.string() + "\"";
+            std::string cmd = python + " \"" + script.string() + "\" \"" + dataDir.string() + "\" --out \"" + apk.string() + "\"";
+            // 47: Hub'dan kurulan Android modülünün hazır oyuncusu (NDK gerekmez); yoksa NDK ile derlenir
+            const fs::path androidPlayer = Installs::PrebuiltPlayerDir(o.EngineBinDir, platform);
+            if (!androidPlayer.empty())
+            {
+                cmd += " --lib-dir \"" + androidPlayer.string() + "\" --abi arm64-v8a";
+                if (log) log("Using the prebuilt Android player of the " + Installs::PlatformModuleId(platform) + " module: " + androidPlayer.string());
+            }
+            else
+                cmd += " --build --build-root \"" + buildRoot.string() + "\"";
             if (platform == "Android Automotive")
                 cmd += " --automotive";
             else if (platform == "Android TV")
@@ -1206,8 +1214,14 @@ namespace Conqueror::Editor
             const fs::path buildRoot = buildRootEnv && *buildRootEnv ? fs::path(buildRootEnv) : engineSource / "build-web";
             std::string cmd = python + " \"" + script.string() + "\" \"" + dataDir.string() + "\" --out \"" + o.OutputDir.string() +
                               "\" --build-root \"" + buildRoot.string() + "\"" + (o.Config.Player.Web.Threads ? " --threads" : " --no-threads");
-            // Emscripten kuruluysa oyuncu her derlemede güncellenir (yalnız değişenler); yoksa önceden derlenmiş oyuncu (CQ_WEB_RUNTIME)
-            if (const std::string emsdk = PlatformModules::FindEmsdk(); !emsdk.empty())
+            // Hub'dan kurulan Web modülünün hazır oyuncusu (47) önce; yoksa Emscripten kuruluysa oyuncu her derlemede güncellenir
+            // (yalnız değişenler); o da yoksa önceden derlenmiş oyuncu (CQ_WEB_RUNTIME)
+            if (const fs::path webPlayer = Installs::PrebuiltPlayerDir(o.EngineBinDir, "Web"); !webPlayer.empty() && safe(webPlayer.string()))
+            {
+                cmd += " --runtime \"" + webPlayer.string() + "\"";
+                if (log) log("Using the prebuilt Web player of the web module: " + webPlayer.string());
+            }
+            else if (const std::string emsdk = PlatformModules::FindEmsdk(); !emsdk.empty())
             {
                 if (!safe(emsdk))
                     return fail("The Emscripten SDK path must not contain quotes");

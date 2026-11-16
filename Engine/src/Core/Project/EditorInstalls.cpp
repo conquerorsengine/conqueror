@@ -224,6 +224,16 @@ namespace Conqueror::Installs
         }
     }
 
+    // Kurulum düzeni: <kök>/bin (editör, Hub, oyuncu), <kök>/lib (paylaşımlı kitaplıklar), <kök>/Modules, <kök>/Tools,
+    // <kök>/conqueror-install.json. Editör ve Hub kendi klasörünü (bin) verir: modüller bir üstte
+    static fs::path InstallRootOf(const fs::path& dir)
+    {
+        std::error_code ec;
+        if (dir.filename() == "bin" && (fs::exists(dir.parent_path() / "conqueror-install.json", ec) || fs::is_directory(dir.parent_path() / "Modules", ec)))
+            return dir.parent_path();
+        return dir;
+    }
+
     // ------------------------------------------------------------------ kanallar
     const char* ChannelName(Channel channel)
     {
@@ -432,7 +442,7 @@ namespace Conqueror::Installs
     {
         std::vector<std::string> out;
         std::error_code ec;
-        const fs::path dir = installDir / "Modules";
+        const fs::path dir = InstallRootOf(installDir) / "Modules";
         if (fs::is_directory(dir, ec))
             for (const auto& e : fs::directory_iterator(dir, ec))
             {
@@ -447,7 +457,7 @@ namespace Conqueror::Installs
     std::string ReadInstallVersion(const fs::path& installDir, std::string* commit, Channel* channel)
     {
         std::error_code ec;
-        const fs::path info = installDir / "conqueror-install.json";
+        const fs::path info = InstallRootOf(installDir) / "conqueror-install.json";
         if (fs::exists(info, ec))
         {
             try
@@ -491,7 +501,7 @@ namespace Conqueror::Installs
         std::vector<fs::path> bins;
         for (const std::string& id : InstalledModules(installDir))
         {
-            const fs::path dir = installDir / "Modules" / id;
+            const fs::path dir = InstallRootOf(installDir) / "Modules" / id;
             if (fs::is_directory(dir / "bin", ec))
                 bins.push_back(dir / "bin");
             // Paketlenmiş araç zincirleri: Modules/<id>/<araç>/bin (jdk/bin, dotnet, zig, rust/bin ...)
@@ -541,12 +551,28 @@ namespace Conqueror::Installs
 
     fs::path PrebuiltPlayerDir(const fs::path& installDir, const std::string& platform)
     {
+        // "Linux ARM (32-bit)" -> "linux-arm-32-bit", "GNU Hurd" -> "gnu-hurd"
         std::string key;
         for (char c : platform)
-            key += c == ' ' ? '-' : (char)std::tolower((unsigned char)c);
-        const fs::path dir = installDir / "Modules" / PlatformModuleId(platform) / "player" / key;
+        {
+            if (std::isalnum((unsigned char)c))
+                key += (char)std::tolower((unsigned char)c);
+            else if (!key.empty() && key.back() != '-')
+                key += '-';
+        }
+        while (!key.empty() && key.back() == '-')
+            key.pop_back();
+        const std::string id = PlatformModuleId(platform);
+        // Android ailesi (TV, Automotive, ChromeOS, Quest, Android XR) aynı ARM64 oyuncuyu kullanır: player/android
+        if (id == "android" || id == "meta-quest" || id == "android-xr")
+            key = "android";
+        const fs::path dir = InstallRootOf(installDir) / "Modules" / id / "player" / key;
         const bool windows = platform.rfind("Windows", 0) == 0;
         std::error_code ec;
+        if (id == "web")
+            return fs::is_regular_file(dir / "conqueror.wasm", ec) ? dir : fs::path();
+        if (key == "android")
+            return fs::is_regular_file(dir / "arm64-v8a" / "libconqueror.so", ec) ? dir : fs::path();
         return fs::is_regular_file(dir / "bin" / (windows ? "ConquerorRuntime.exe" : "ConquerorRuntime"), ec) ? dir : fs::path();
     }
 
@@ -626,7 +652,7 @@ namespace Conqueror::Installs
         Requirement r;
         r.Id = id;
         std::error_code ec;
-        const fs::path modules = installDir.empty() ? fs::path() : installDir / "Modules";
+        const fs::path modules = installDir.empty() ? fs::path() : InstallRootOf(installDir) / "Modules";
         auto found = [&](const std::string& detail) { r.Found = true; r.Detail = detail; };
 
         if (id == "jdk")
