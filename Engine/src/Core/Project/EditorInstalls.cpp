@@ -557,9 +557,9 @@ namespace Conqueror::Installs
         static const std::pair<const char*, const char*> table[] = {
             { "Windows", "windows" }, { "Windows ARM64", "windows-arm64" }, { "Linux", "linux" }, { "Linux ARM64", "linux-arm64" },
             { "macOS", "macos" }, { "FreeBSD", "bsd" }, { "OpenBSD", "bsd" }, { "NetBSD", "bsd" }, { "GNU Hurd", "hurd" },
-            { "Embedded Linux", "embedded-linux" }, { "Dedicated Server", "server" }, { "Web", "web" }, { "Android", "android" },
+            { "Embedded Linux", "embedded-linux" }, { "Web", "web" }, { "Android", "android" },
             { "Android TV", "android" }, { "Android Automotive", "android" }, { "ChromeOS", "android" }, { "Meta Quest", "meta-quest" },
-            { "Android XR", "android-xr" }, { "iOS", "ios" }, { "tvOS", "tvos" }, { "visionOS", "visionos" }, { "QNX", "qnx" },
+            { "Android XR", "android-xr" }, { "iOS", "ios" }, { "QNX", "qnx" },
             { "HarmonyOS", "harmonyos" },
         };
         for (const auto& [name, id] : table)
@@ -622,20 +622,18 @@ namespace Conqueror::Installs
             add("windows-arm64", "Windows Build Support (ARM64)", "Platforms", "Prebuilt player for Windows on ARM.", {});
             add("macos", "Mac Build Support", "Platforms", "Prebuilt player for macOS (Apple Silicon). Signing and notarization need Xcode on a Mac.", {});
             add("web", "Web Build Support", "Platforms", "Prebuilt WebAssembly + WebGL 2 player; runs in any modern browser.", {});
-            add("server", "Dedicated Server Build Support", "Platforms", "Headless player for Linux and Windows game servers.", {});
             add("android", "Android Build Support", "Platforms",
                 "Prebuilt ARM64 player, APK / AAB packaging and signing. Also Android TV, ChromeOS and Android Automotive.", { "jdk", "android-sdk" });
             add("meta-quest", "Meta Quest Build Support", "Platforms", "OpenXR player for Meta Quest headsets (Android based).", { "jdk", "android-sdk" });
             add("android-xr", "Android XR Build Support", "Platforms", "OpenXR player for Android XR headsets.", { "jdk", "android-sdk" });
-            add("ios", "iOS Build Support", "Platforms", "Xcode project with the prebuilt iOS / iPadOS player. Building and signing need Xcode (Apple's license allows it only on a Mac).",
-                { "xcode" }, { "macos" });
-            add("tvos", "tvOS Build Support", "Platforms", "Apple TV player (Xcode on a Mac).", { "xcode" }, { "macos" });
-            add("visionos", "visionOS Build Support", "Platforms", "Apple Vision Pro player (Xcode on a Mac).", { "xcode" }, { "macos" });
+            // Apple ve QNX / HarmonyOS: paketleyiciler editörle gelir (Tools/), üreticinin SDK'sı lisans gereği kullanıcıda olmalı
+            add("ios", "iOS Build Support", "Platforms", "Xcode project and packager for the iOS / iPadOS player (comes with the editor). Building and signing need Xcode, which Apple's license allows only on a Mac.",
+                { "xcode" }, { "macos" }, true);
             add("bsd", "BSD Build Support", "Platforms", "Prebuilt players for FreeBSD, OpenBSD and NetBSD (x86_64).", {});
             add("hurd", "GNU/Hurd Build Support", "Platforms", "Prebuilt player for GNU/Hurd (x86_64).", {});
-            add("embedded-linux", "Embedded Linux Build Support", "Platforms", "Wayland / OpenGL ES player for Automotive Grade Linux, Yocto and other embedded boards.", {});
-            add("qnx", "QNX Build Support", "Platforms", "Player sources and build scripts for QNX 8. Needs the QNX Software Development Platform (commercial license).", { "qnx-sdp" });
-            add("harmonyos", "HarmonyOS Build Support", "Platforms", "OpenHarmony / HarmonyOS NEXT player (x86_64 + ARM64) and HAP packaging.", { "ohos-sdk" });
+            add("embedded-linux", "Embedded Linux Build Support", "Platforms", "Prebuilt ARM64 Wayland / OpenGL ES player for Yocto, Buildroot and Automotive Grade Linux boards.", {});
+            add("qnx", "QNX Build Support", "Platforms", "Player build scripts for QNX 8 (come with the editor). Needs the QNX Software Development Platform (commercial license).", { "qnx-sdp" }, {}, true);
+            add("harmonyos", "HarmonyOS Build Support", "Platforms", "OpenHarmony / HarmonyOS NEXT player project and HAP packager (come with the editor). Needs the OpenHarmony native SDK.", { "ohos-sdk" }, {}, true);
             // Diller: her betik dili ayrı modül
             add("luaq", "LuaQ", "Languages", "The engine's main scripting language. Always included.", {}, {}, true, true);
             add("conquerorscript", "ConquerorScript", "Languages", "Small built-in scripting language. Always included.", {}, {}, true, true);

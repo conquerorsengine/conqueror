@@ -31,9 +31,10 @@ build them from source. A project opens with the editor version that last saved 
 Modules are chosen when installing (or later with **Manage > Add modules**):
 
 * **Platforms** — a prebuilt player for the platform, so building for it needs no toolchain (Linux x86_64 / ARM64 /
-  other CPUs, Windows, macOS, Web, Dedicated Server, Android (also TV, Automotive, ChromeOS), Meta Quest, Android XR,
-  FreeBSD / OpenBSD / NetBSD, GNU/Hurd). Apple platforms still need Xcode on a Mac and QNX the QNX SDP: their licenses
-  do not allow anything else.
+  other CPUs, Windows, macOS, Web, Android (also TV, Automotive, ChromeOS), Meta Quest, Android XR, FreeBSD / OpenBSD /
+  NetBSD, GNU/Hurd, Embedded Linux ARM64). A dedicated server is the normal build started with `--server`. iOS, QNX and
+  HarmonyOS packagers come with the editor but need the vendor's SDK (Xcode on a Mac, the QNX SDP, the OpenHarmony SDK):
+  their licenses do not allow shipping them.
 * **Languages** — every scripting language is its own module (LuaQ, ConquerorScript and Visual Scripting are always
   included; C++, C, Rust, Zig, C#, Java, Python). Each module lists what it needs on this computer (JDK 17+, .NET 8,
   a C/C++ compiler, Rust, Python), shows what was found and how to install the rest; tools whose license allows it come

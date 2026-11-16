@@ -1062,13 +1062,17 @@ namespace Conqueror::Editor
         const bool ios = platform == "iOS";
         const bool packaged = android || web || ios;   // oyuncu ikilisi oyun klasörüne kopyalanmaz, paketleyici ekler
         const bool cross = !packaged && platform != HostPlatform() && crossTarget;
+        // Hub modülünün hazır oyuncusu varsa araç zinciri gerekmez (47); Android paketlemesi yine SDK ister
+        const bool prebuiltReady = !android && platform != HostPlatform() && !Installs::PrebuiltPlayerDir(o.EngineBinDir, platform).empty();
+        if (!prebuiltReady)
         {
             const PlatformModules::Module module = PlatformModules::Detect(platform);
             if (module.State != PlatformModules::Status::Ready)
                 return fail(platform + " cannot be built on this computer: " + module.Detail +
                             (module.Install.empty() ? std::string(".") : ". Install: " + module.Install));
         }
-        if (!packaged && !cross && platform != HostPlatform())
+        // Kaynaktan derlenemeyen hedefler (Embedded Linux ...) Hub modülünün hazır oyuncusuyla derlenir (47)
+        if (!packaged && !cross && platform != HostPlatform() && Installs::PrebuiltPlayerDir(o.EngineBinDir, platform).empty())
             return fail("Target platform " + platform + " cannot be built on " + HostPlatform() + ".");
         const auto scenes = o.Config.GetBuildScenes();
         if (scenes.empty())
@@ -1090,7 +1094,7 @@ namespace Conqueror::Editor
         fs::path playerBinDir = o.EngineBinDir;     // oyuncu ve DLL / dylib'leri
         fs::path playerLibDir;                      // Linux / FreeBSD paylaşımlı kitaplıkları (lib/)
         // 47: Hub'dan kurulan platform modülünün hazır derlenmiş oyuncusu (kullanıcı araç zinciri kurmaz, kaynaktan derlenmez)
-        const fs::path prebuiltPlayer = cross ? Installs::PrebuiltPlayerDir(o.EngineBinDir, platform) : fs::path();
+        const fs::path prebuiltPlayer = !packaged && platform != HostPlatform() ? Installs::PrebuiltPlayerDir(o.EngineBinDir, platform) : fs::path();
         if (!prebuiltPlayer.empty())
         {
             playerBinDir = prebuiltPlayer / "bin";
@@ -1203,9 +1207,9 @@ namespace Conqueror::Editor
                     if (!CopyTree(entry.path(), o.OutputDir / entry.path().filename(), stats, error, cancel))
                         return fail(error);
         }
-        else if (cross)
+        else if (cross || !prebuiltPlayer.empty())
         {
-            // FreeBSD / OpenBSD / NetBSD / GNU Hurd: motorun paylaşımlı kitaplıkları lib/ altında (Linux düzeni)
+            // FreeBSD / OpenBSD / NetBSD / GNU Hurd / hazır oyuncu modülü: oyuncunun paylaşımlı kitaplıkları lib/ altında (Linux düzeni)
             for (const auto& entry : fs::directory_iterator(playerLibDir, ec))
                 if (entry.path().filename().string().find(".so") != std::string::npos)
                     if (!CopyTree(fs::canonical(entry.path(), ec), o.OutputDir / "lib" / entry.path().filename(), stats, error, cancel))

@@ -46,7 +46,6 @@ jobs:
           mkdir -p sharedlib && cp -a build/lib/*.so* sharedlib/
           python3 Tools/Release/package.py editor --bin build/bin --lib build/lib --host linux-x86_64 --out dist --channel $CHANNEL
           python3 Tools/Release/package.py module linux --host any --out dist --add build/bin/ConquerorRuntime=player/linux/bin/ConquerorRuntime --add sharedlib=player/linux/lib
-          python3 Tools/Release/package.py module server --host any --out dist --add build/bin/ConquerorRuntime=player/dedicated-server/bin/ConquerorRuntime --add sharedlib=player/dedicated-server/lib
           python3 Tools/Release/package.py module docs --host any --out dist --add Docs=docs
       - uses: actions/upload-artifact@v4
         with: { name: dist-linux, path: dist, retention-days: 3 }
@@ -108,6 +107,29 @@ jobs:
           python3 Tools/Release/package.py module macos --host any --out dist --add build/bin/ConquerorRuntime=player/macos/bin/ConquerorRuntime
       - uses: actions/upload-artifact@v4
         with: { name: dist-macos, path: dist, retention-days: 3 }
+
+  embedded-linux:
+    name: Embedded Linux player (ARM64, Wayland, OpenGL ES)
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build g++-14 libxkbcommon-dev libwayland-dev wayland-protocols
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc-14 -DCMAKE_CXX_COMPILER=g++-14 \
+            -DCQ_RUNTIME_ONLY=ON -DCQ_DEFAULT_GL_PROFILE=es3.2 -DCQ_ENABLE_VULKAN=OFF -DCQ_LINUX_ENGINE_CORE_STATIC=ON \
+            -DGLFW_BUILD_X11=OFF -DGLFW_BUILD_WAYLAND=ON
+          cmake --build build --target ConquerorRuntime --parallel
+      - name: Package
+        run: |
+          mkdir -p sharedlib && cp -a build/lib/*.so* sharedlib/ 2>/dev/null || true
+          python3 Tools/Release/package.py module embedded-linux --host any --out dist --add build/bin/ConquerorRuntime=player/embedded-linux/bin/ConquerorRuntime --add sharedlib=player/embedded-linux/lib
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-embedded-linux
+          path: dist
+          retention-days: 3
 
   web:
     name: Web player module
@@ -317,7 +339,7 @@ jobs:
 
   publish:
     name: Publish (${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'ConquerorX' }})
-    needs: [editor-linux, editor-linux-arm64, editor-windows, editor-macos, web, android, languages, linux-extra, hurd, freebsd, openbsd, netbsd]
+    needs: [editor-linux, editor-linux-arm64, editor-windows, editor-macos, embedded-linux, web, android, languages, linux-extra, hurd, freebsd, openbsd, netbsd]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5

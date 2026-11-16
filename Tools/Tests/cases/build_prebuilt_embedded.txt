@@ -1,0 +1,13 @@
+# template: basic3d
+# setup: python3 -I {dir}/assets/installs/fake_player_module.py {bin} create embedded-linux embedded-linux ConquerorRuntime
+# teardown: python3 -I {dir}/assets/installs/fake_player_module.py {bin} remove embedded-linux
+# 47: kaynaktan derlenemeyen Embedded Linux hedefi, Hub'dan kurulan "Embedded Linux Build Support" modülünün hazır oyuncusuyla
+# editörden derlenir (sahte modül: oyuncu ve lib/ kitaplıkları oyunun yanına kopyalanır)
+wait 30
+build output Builds/Embedded
+build platform "Embedded Linux"
+build start
+wait_until 600000 build expect_done
+build expect_success
+build expect_log "Using the prebuilt Embedded Linux player of the embedded-linux module"
+quit
