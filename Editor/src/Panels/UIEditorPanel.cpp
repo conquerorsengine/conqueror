@@ -1,6 +1,7 @@
 #include "UIEditorPanel.h"
 
 #include "EditorState.h"
+#include "Core/Serialization/PrefabSerializer.h"
 #include "Renderer/RHI/RenderCommand.h"
 #include "Scene/Components.h"
 #include "UI/UIComponents.h"
@@ -276,7 +277,11 @@ namespace Conqueror::Editor
                                       parent.HasComponent<UIInputFieldComponent>() || parent.HasComponent<UIDropdownComponent>() ||
                                       parent.HasComponent<UIScrollbarComponent>()))
             parent = parent.GetParent() ? parent.GetParent() : canvas;
-        Entity e = UISystem::CreateElement(*m_Context, type, parent);
+        Entity e;
+        if (type.rfind("prefab:", 0) == 0)
+            e = PrefabSerializer::Instantiate(*m_Context, type.substr(7), parent);   // kullanıcının UI prefab'i (Palette > User Created)
+        else
+            e = UISystem::CreateElement(*m_Context, type, parent);
         if (!e)
             return {};
         if (p.x >= 0.0f && e.HasComponent<RectTransformComponent>())

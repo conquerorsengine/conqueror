@@ -28,6 +28,9 @@ namespace Conqueror::Editor
         void Open(const std::filesystem::path& path);
         bool Save();
         bool& GetIsOpen() { return m_IsOpen; }
+        // Palette (199): düğüm ekle (tuvalin ortasına, bir sonraki çizimde); grafik açık mı
+        void QueuePaletteNode(const std::string& type) { m_PalettePending.push_back(type); }
+        bool HasOpenGraph() const { return m_IsOpen && !m_Path.empty(); }
         const std::filesystem::path& GetPath() const { return m_Path; }
 
         // Otomasyon / testler
@@ -135,6 +138,7 @@ namespace Conqueror::Editor
         void EditMacro(const std::string& name);
         std::filesystem::path m_Path;
         bool m_IsOpen = false;
+        std::vector<std::string> m_PalettePending;
         bool m_Dirty = false;
         bool m_PositionsDirty = true;      // grafik yüklendi: düğüm konumlarını imnodes'a uygula
         ImNodesContext* m_Context = nullptr;

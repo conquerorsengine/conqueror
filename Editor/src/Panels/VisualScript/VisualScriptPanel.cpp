@@ -1663,6 +1663,19 @@ namespace Conqueror::Editor
         const bool hovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows);
         ImVec2 pan = ImNodes::EditorContextGetPanning();
         ImVec2 mouseGrid = ImVec2((io.MousePos.x - m_CanvasOrigin.x - pan.x) / m_Zoom, (io.MousePos.y - m_CanvasOrigin.y - pan.y) / m_Zoom);
+        // Palette'ten tıklanan düğümler: görünen tuvalin ortasına (üst üste binmesin diye kaydırarak)
+        if (!m_PalettePending.empty())
+        {
+            const ImVec2 avail = ImGui::GetWindowSize();
+            float offset = 0.0f;
+            for (const auto& type : m_PalettePending)
+            {
+                CreateNodeAt(type, ImVec2((avail.x * 0.5f - pan.x) / m_Zoom + offset, (avail.y * 0.5f - pan.y) / m_Zoom + offset));
+                offset += 24.0f;
+            }
+            m_PalettePending.clear();
+            MarkEdited();
+        }
         const ImVec2 rightDrag = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right, 0.0f);
         int hoveredNodeNow = 0, hoveredPinNow = -1;
         const bool nodeHoveredNow = ImNodes::IsNodeHovered(&hoveredNodeNow);
@@ -1788,6 +1801,11 @@ namespace Conqueror::Editor
                 MarkEdited();
             }
             // İçerik tarayıcısından: .cqgraph -> alt grafik, .cqenum -> sayım sabiti, .cqstruct -> Make Struct
+            if (const ImGuiPayload* node = ImGui::AcceptDragDropPayload("VS_PALETTE_NODE"))
+            {
+                CreateNodeAt(std::string((const char*)node->Data), mouseGrid);
+                MarkEdited();
+            }
             if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
             {
                 std::filesystem::path dropped((const char*)payload->Data);

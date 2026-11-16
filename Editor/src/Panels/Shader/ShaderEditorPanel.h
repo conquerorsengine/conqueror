@@ -20,6 +20,11 @@ namespace Conqueror::Editor
     public:
         ShaderEditorPanel();
         ~ShaderEditorPanel();
+        // Palette (199): düğüm türlerinin adları; düğüm ekle (açık grafiğin ortasına, bir sonraki çizimde)
+        static const char* NodeTypeName(int type);
+        static int NodeTypeCount();
+        void QueuePaletteNode(int type) { m_PalettePending.push_back(type); }
+        bool HasOpenGraph() const { return m_HadMaterial; }
 
         void SetContext(class Scene* scene);
         void SetSelectedEntity(Entity entity);
@@ -65,6 +70,8 @@ namespace Conqueror::Editor
         Entity m_SelectedEntity;
         int m_SelectedMaterialIndex = 0;
         std::string m_MaterialAssetPath;
+        std::vector<int> m_PalettePending;
+        bool m_HadMaterial = false;
         ImVec2 m_GraphRectMin{ 0, 0 }, m_GraphRectMax{ 0, 0 };   // düğüm ekleme menüsü yalnız bu alanda
         std::shared_ptr<Conqueror::Material> m_AssetMaterial;
     };

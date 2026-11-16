@@ -230,6 +230,9 @@ namespace Conqueror::Editor
             CQ_CORE_WARN("Shader Graph: material '{0}' could not be opened", path);
     }
 
+    const char* ShaderEditorPanel::NodeTypeName(int type) { return ShaderNodeTypeToString((ShaderGraphNodeType)type); }
+    int ShaderEditorPanel::NodeTypeCount() { return (int)ShaderGraphNodeType::CustomExpression + 1; }
+
     void ShaderEditorPanel::OnImGuiRender()
     {
         ImNodes::SetCurrentContext(m_NodesContext);
@@ -353,11 +356,26 @@ namespace Conqueror::Editor
         }
 
     haveMaterial:
+        m_HadMaterial = material != nullptr;
         if (!material)
         {
             ImGui::TextUnformatted("No material selected.");
             ImGui::End();
             return;
+        }
+        // Palette'ten tıklanan düğümler: görünen grafiğin ortasına
+        if (!m_PalettePending.empty())
+        {
+            const ImVec2 panning = ImNodes::EditorContextGetPanning();
+            const ImVec2 size = ImGui::GetContentRegionAvail();
+            float offset = 0.0f;
+            for (int type : m_PalettePending)
+            {
+                const glm::vec2 pos(size.x * 0.4f - panning.x + offset, size.y * 0.5f - panning.y + offset);
+                material->GraphNodes.emplace_back(material->NextGraphNodeID++, (ShaderGraphNodeType)type, glm::vec2(std::max(0.0f, pos.x), std::max(0.0f, pos.y)));
+                offset += 24.0f;
+            }
+            m_PalettePending.clear();
         }
 
         if (!material->GraphInitialized)

@@ -36,6 +36,18 @@ uieditor expect_nav Play up Quit
 uieditor expect_nav Play right none
 uieditor navmode Play automatic
 uieditor nav on
+# Evrensel Palette: UI Editor açılınca UI kategorisinde açıktı; tıklanan öğe seçili kabın (canvas) altına eklenir
+uieditor palette expect_open 1
+uieditor palette expect_category ui
+uieditor pick 100 1000
+uieditor palette add Slider
+uieditor expect_selected Slider
+uieditor palette category tiles
+uieditor palette expect_category tiles
+uieditor close
+wait 3
+uieditor palette expect_open 0
+uieditor open HUD
 uieditor safe 1
 wait 5
 quit

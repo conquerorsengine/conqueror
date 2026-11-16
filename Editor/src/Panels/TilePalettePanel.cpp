@@ -1,5 +1,6 @@
 #include "ObjectPicker.h"
 #include "TilePalettePanel.h"
+#include "PaletteCategories.h"
 #include "EditorState.h"
 #include "Scene/Scene.h"
 #include "Scene/Components.h"
@@ -1312,8 +1313,15 @@ namespace Conqueror::Editor
 
     void TilePalettePanel::OnImGuiRender(bool* open)
     {
-        if (!ImGui::Begin(ICON_FA_TABLE_CELLS " Tile Palette###TilePalette", open))
+        if (!ImGui::Begin(ICON_FA_SWATCHBOOK " Palette###TilePalette", open))
         {
+            ImGui::End();
+            return;
+        }
+        // 199: evrensel Palette (UI | Blueprint | Shader | Tiles); Tiles eski karo paleti
+        if (!Palette::DrawCategoryBar())
+        {
+            Palette::DrawCategory();
             ImGui::End();
             return;
         }

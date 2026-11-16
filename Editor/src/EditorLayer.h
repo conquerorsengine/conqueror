@@ -222,6 +222,7 @@ namespace Conqueror::Editor
         std::unique_ptr<ViewportPanel> m_ViewportPanel;
         std::unique_ptr<GamePanel> m_GamePanel;
         std::unique_ptr<UIEditorPanel> m_UIEditorPanel;   // 199
+        bool m_UIEditorWasOpen = false, m_PaletteOpenedByUIEditor = false;
         std::unique_ptr<LightingPanel> m_LightingPanel;
         std::unique_ptr<class OcclusionPanel> m_OcclusionPanel;
         std::unique_ptr<AudioMixerPanel> m_AudioMixerPanel;

@@ -21,6 +21,7 @@
 #include "Core/Utils/LoadingProgress.h"
 #include "LoadingScreen.h"
 #include "Panels/ModuleInstaller.h"
+#include "Panels/PaletteCategories.h"
 #include "UndoRedo/EntitySnapshotCommand.h"
 #include "Build/AndroidSigning.h"
 #include "Core/ImGui/ImGuiLayer.h"
@@ -448,7 +449,17 @@ namespace Conqueror::Editor
             m_TilePalettePanel = std::make_unique<TilePalettePanel>();
             m_TilePalettePanel->SetContext(m_ActiveScene.get());
             m_TilePalettePanel->SetSceneRef(m_ActiveScene);
-            TilePalettePanel::s_OpenPanel = [this]() { m_ShowTilePalette = true; m_PendingFocusWindow = "###TilePalette"; };
+            TilePalettePanel::s_OpenPanel = [this]() { m_ShowTilePalette = true; Palette::SetCategory(Palette::Tiles); m_PendingFocusWindow = "###TilePalette"; };
+            // 199: evrensel Palette'in düzenleyicilere bağlantısı
+            {
+                auto& hooks = Palette::GetHooks();
+                hooks.UIEditorOpen = [this]() { return m_UIEditorPanel && m_UIEditorPanel->IsOpen() && m_UIEditorPanel->GetCanvasEntity(); };
+                hooks.AddUI = [this](const std::string& item) { if (m_UIEditorPanel) m_UIEditorPanel->AddElement(item); };
+                hooks.BlueprintOpen = [this]() { return m_VisualScriptPanel && m_VisualScriptPanel->HasOpenGraph(); };
+                hooks.AddBlueprintNode = [this](const std::string& id) { if (m_VisualScriptPanel) m_VisualScriptPanel->QueuePaletteNode(id); };
+                hooks.ShaderOpen = [this]() { return m_ShaderEditorPanel && m_ShaderEditorPanel->HasOpenGraph(); };
+                hooks.AddShaderNode = [this](int type) { if (m_ShaderEditorPanel) m_ShaderEditorPanel->QueuePaletteNode(type); };
+            }
             AudioAssetsInspector::SetOpenMixerWindow([this]() { m_ShowAudioMixer = true; });
             if (auto* receiverInfo = ComponentRegistry::Find("SignalReceiverComponent"))
                 receiverInfo->ExtraInspector = &SignalReceiverInspector::Draw;
@@ -1822,7 +1833,8 @@ namespace Conqueror::Editor
                 ImGui::DockBuilderDockWindow("###UI Editor", dockspace_id);
                 ImGui::DockBuilderDockWindow("Animator", dockspace_id);
                 ImGui::DockBuilderDockWindow("###Terrain", dock_id_left_bottom);
-                ImGui::DockBuilderDockWindow("###TilePalette", dock_id_left_bottom);
+                // 199: Palette, Hierarchy'nin yanında sekme (UI Editor açılınca açılır, kapanınca kapanır)
+                ImGui::DockBuilderDockWindow("###TilePalette", dock_id_left);
                 ImGui::DockBuilderDockWindow("###Audio Mixer", dockspace_id);
                 ImGui::DockBuilderDockWindow("###Sprite Editor", dockspace_id);
                 ImGui::DockBuilderDockWindow("Shader Graph Editor", dockspace_id);
@@ -2205,7 +2217,12 @@ namespace Conqueror::Editor
                     return TilePalettePanel::CreateTilemap(m_ActiveScene.get(), GridLayout::HexagonPointyTop, GridPlane::XZ, true);
                 });
                 ImGui::SameLine();
-                if (RibbonButton(ICON_FA_TABLE_CELLS, "Tiles", "Open the Tile Palette", m_ShowTilePalette)) { m_ShowTilePalette = true; m_PendingFocusWindow = "###TilePalette"; }
+                if (RibbonButton(ICON_FA_TABLE_CELLS, "Tiles", "Open the Palette on Tiles", m_ShowTilePalette))
+                {
+                    m_ShowTilePalette = true;
+                    Palette::SetCategory(Palette::Tiles);
+                    m_PendingFocusWindow = "###TilePalette";
+                }
                 ImGui::SameLine();
                 if (RibbonButton(ICON_FA_SUN, "Lighting", "Open the Lighting window", m_ShowLighting)) { m_ShowLighting = true; m_PendingFocusWindow = "Lighting"; }
                 EndRibbonGroup(g, top);
@@ -2638,6 +2655,24 @@ namespace Conqueror::Editor
 
         if (m_ShowTilePalette && m_TilePalettePanel)
             m_TilePalettePanel->OnImGuiRender(&m_ShowTilePalette);
+        // 199: UI Editor açılınca Palette (UI kategorisi) Hierarchy'nin yanında açılır, kapanınca onunla kapanır
+        if (m_UIEditorPanel)
+        {
+            const bool uiOpen = m_UIEditorPanel->IsOpen();
+            if (uiOpen && !m_UIEditorWasOpen)
+            {
+                m_PaletteOpenedByUIEditor = !m_ShowTilePalette;
+                m_ShowTilePalette = true;
+                Palette::SetCategory(Palette::UI);
+            }
+            if (!uiOpen && m_UIEditorWasOpen && m_PaletteOpenedByUIEditor)
+            {
+                m_ShowTilePalette = false;
+                m_PaletteOpenedByUIEditor = false;
+            }
+            m_UIEditorWasOpen = uiOpen;
+        }
+        Palette::FollowFocus();
 
         if (m_ShowAddonManager && m_AddonManagerPanel)
             m_AddonManagerPanel->OnImGuiRender(&m_ShowAddonManager);
@@ -8695,6 +8730,30 @@ namespace Conqueror::Editor
                 return true;
             }
             if (c == "close") { p.Close(); return true; }
+            // palette expect_category <ui|blueprint|shader|tiles> | category <ad> | add <öğe> | expect_open <0|1> (199)
+            if (c == "palette" && a.size() > 3)
+            {
+                static const char* names[] = { "ui", "blueprint", "shader", "tiles" };
+                if (a[2] == "expect_category")
+                {
+                    const int cat = Palette::GetCategory();
+                    Automation::Report(std::string("UIEDITOR palette category ") + names[std::clamp(cat, 0, 3)]);
+                    if (a[3] != names[std::clamp(cat, 0, 3)]) { err = std::string("palette shows ") + names[std::clamp(cat, 0, 3)]; return false; }
+                    return true;
+                }
+                if (a[2] == "category")
+                {
+                    for (int i = 0; i < 4; ++i)
+                        if (a[3] == names[i]) Palette::SetCategory(i);
+                    return true;
+                }
+                if (a[2] == "add") { Palette::GetHooks().AddUI(a[3]); Palette::NoteUsed(a[3]); Automation::WaitFrames(2); return true; }
+                if (a[2] == "expect_open")
+                {
+                    if (m_ShowTilePalette != (a[3] == "1")) { err = std::string("palette is ") + (m_ShowTilePalette ? "open" : "closed"); return false; }
+                    return true;
+                }
+            }
             if (c == "new_canvas")
             {
                 Entity canvas = UISystem::CreateCanvas(*m_ActiveScene, a.size() > 2 ? a[2] : "Canvas");
