@@ -6,6 +6,8 @@
 #include "Scene/Components.h"
 #include "UI/UIComponents.h"
 #include "UI/UISystem.h"
+#include "Core/Project/Project.h"
+#include "UI/UIToolkit.h"
 #include "UndoRedo/EntitySnapshotCommand.h"
 #include "UndoRedo/UndoRedoManager.h"
 
@@ -16,6 +18,7 @@
 #include "stb_image_write.h"
 
 #include <algorithm>
+#include <filesystem>
 #include <cmath>
 #include <cstdio>
 #include <vector>
@@ -374,6 +377,36 @@ namespace Conqueror::Editor
         static const char* safe[] = { "No safe zone", "TV title safe (90%)", "Phone notch" };
         ImGui::Combo("##uisafe", &m_SafeZone, safe, 3);
         ImGui::SameLine();
+        // Tema (Style / Theme, 199): GUI Skin (.cqguiskin) canvas'ın UI Skin bileşeniyle oyunda uygulanır
+        if (canvas)
+        {
+            const std::string skin = canvas.HasComponent<UISkinComponent>() ? canvas.GetComponent<UISkinComponent>().Skin : std::string();
+            ImGui::SetNextItemWidth(140.0f);
+            const std::string label = ICON_FA_PALETTE "  " + (skin.empty() ? std::string("No theme") : std::filesystem::path(skin).stem().string());
+            if (ImGui::BeginCombo("##uitheme", label.c_str()))
+            {
+                if (ImGui::Selectable("No theme", skin.empty()) && canvas.HasComponent<UISkinComponent>())
+                    canvas.RemoveComponent<UISkinComponent>();
+                const std::filesystem::path project = Project::GetActiveProjectDirectory();
+                std::error_code ec;
+                if (std::filesystem::is_directory(project / "Assets", ec))
+                    for (auto it = std::filesystem::recursive_directory_iterator(project / "Assets", ec); it != std::filesystem::recursive_directory_iterator(); it.increment(ec))
+                        if (!ec && it->path().extension() == ".cqguiskin")
+                        {
+                            const std::string rel = std::filesystem::relative(it->path(), project, ec).generic_string();
+                            if (ImGui::Selectable(it->path().stem().string().c_str(), rel == skin))
+                            {
+                                if (!canvas.HasComponent<UISkinComponent>())
+                                    canvas.AddComponent<UISkinComponent>();
+                                canvas.GetComponent<UISkinComponent>().Skin = rel;
+                            }
+                        }
+                ImGui::EndCombo();
+            }
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
+                ImGui::SetTooltip("Theme: a GUI Skin (Content Browser > Create > UI) styles every element of this canvas when the game plays");
+            ImGui::SameLine();
+        }
         ImGui::Checkbox("Anchors", &m_ShowAnchors);
         ImGui::SameLine();
         ImGui::Checkbox("Navigation", &m_ShowNavigation);

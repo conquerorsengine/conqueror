@@ -2,6 +2,7 @@
 #include "UI/UIExtras.h"
 #include "Core/Localization/Localization.h"
 #include "UISystem.h"
+#include "UI/UIBinding.h"
 #include "Core/Serialization/SceneSerializer.h"
 #include <unordered_map>
 #include "UI/UIToolkit.h"
@@ -2088,6 +2089,7 @@ namespace Conqueror
     void UISystem::Update(Scene& scene, const glm::vec2& screenSize, const UIInputState& rawInput, float dt)
     {
         UIToolkit::Update(scene);
+        UIBindings::Update(scene);   // 199: Property Binding (yerleşimden önce)
         // Touch Interface: ekran denetimleri fare / dokunuşla sanal kumandayı sürer
         if (auto& controls = AssetRuntime::ActiveTouchControls(); !controls.empty())
         {

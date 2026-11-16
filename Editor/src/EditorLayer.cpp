@@ -382,6 +382,7 @@ namespace Conqueror::Editor
             m_UIEditorPanel = std::make_unique<UIEditorPanel>();
             m_UIEditorPanel->SetContext(m_ActiveScene);
             m_UIEditorPanel->OnSelect = [this](Entity e) { SelectEntityEverywhere(e); };
+            m_UIDebuggerPanel.OnSelect = [this](Entity e) { SelectEntityEverywhere(e); };
             m_UIEditorPanel->OnDeleteSelected = [this]() { EditDelete(); };
             m_UIEditorPanel->OnOpenAnimations = [this]() { m_ShowTimeline = true; };
             m_UIEditorPanel->OnOpenGraph = [this](Entity canvas) {
@@ -1837,8 +1838,9 @@ namespace Conqueror::Editor
                 ImGui::DockBuilderDockWindow("###UI Editor", dockspace_id);
                 ImGui::DockBuilderDockWindow("Animator", dockspace_id);
                 ImGui::DockBuilderDockWindow("###Terrain", dock_id_left_bottom);
-                // 199: Palette, Hierarchy'nin yanında sekme (UI Editor açılınca açılır, kapanınca kapanır)
+                // 199: Palette ve Bind Widgets, Hierarchy'nin yanında sekme (UI Editor açılınca açılır, kapanınca kapanır)
                 ImGui::DockBuilderDockWindow("###TilePalette", dock_id_left);
+                ImGui::DockBuilderDockWindow("###BindWidgets", dock_id_left);
                 ImGui::DockBuilderDockWindow("###Audio Mixer", dockspace_id);
                 ImGui::DockBuilderDockWindow("###Sprite Editor", dockspace_id);
                 ImGui::DockBuilderDockWindow("Shader Graph Editor", dockspace_id);
@@ -2304,6 +2306,9 @@ namespace Conqueror::Editor
                     else if (!m_UIEditorPanel->Open(EditorState::Get().GetSelectedEntity()))
                         m_UIEditorPanel->Show();
                 }
+                ImGui::SameLine();
+                if (RibbonButton(ICON_FA_BUG, "UI Debug", "UI Debugger: live UI tree, states and events (Widget Reflector)", m_ShowUIDebugger))
+                    m_ShowUIDebugger = !m_ShowUIDebugger;
                 EndRibbonGroup(g, top);
                 if (m_ViewportPanel)
                 {
@@ -2667,15 +2672,26 @@ namespace Conqueror::Editor
             {
                 m_PaletteOpenedByUIEditor = !m_ShowTilePalette;
                 m_ShowTilePalette = true;
+                m_ShowBindWidgets = true;
                 Palette::SetCategory(Palette::UI);
             }
-            if (!uiOpen && m_UIEditorWasOpen && m_PaletteOpenedByUIEditor)
+            if (!uiOpen && m_UIEditorWasOpen)
             {
-                m_ShowTilePalette = false;
+                m_ShowBindWidgets = false;
+                if (m_PaletteOpenedByUIEditor)
+                    m_ShowTilePalette = false;
                 m_PaletteOpenedByUIEditor = false;
             }
             m_UIEditorWasOpen = uiOpen;
+            if (m_ShowBindWidgets)
+                m_BindWidgetsPanel.OnImGuiRender(&m_ShowBindWidgets, m_UIEditorPanel->GetCanvasEntity());
         }
+        // 199: UI Debugger (Widget Reflector)
+        m_UIDebuggerPanel.SetContext(m_ActiveScene);
+        if (!EditorState::Get().IsEditing())
+            m_UIDebuggerPanel.CollectEvents();
+        if (m_ShowUIDebugger)
+            m_UIDebuggerPanel.OnImGuiRender(&m_ShowUIDebugger);
         Palette::FollowFocus();
 
         if (m_ShowAddonManager && m_AddonManagerPanel)
@@ -2783,6 +2799,22 @@ namespace Conqueror::Editor
         // Prefab Mode açıkken Play: prefab kaydedilir, sahneye dönülür, sonra oynatılır
         if (m_PrefabStage.Active && editorState.IsEditing())
             ClosePrefabMode(true);
+        // 199: Bind Widgets — betiklerin adıyla beklediği zorunlu UI öğeleri eksikse oynatılmaz (Unreal'deki derleme hatası gibi)
+        if (editorState.IsEditing() && m_ActiveScene)
+        {
+            std::vector<std::string> missing;
+            for (auto h : m_ActiveScene->m_Registry.view<CanvasComponent>())
+                for (const auto& m : BindWidgetsPanel::MissingRequired(Entity{ h, m_ActiveScene.get() }))
+                    missing.push_back(m);
+            if (!missing.empty())
+            {
+                for (const auto& m : missing)
+                    CQ_CORE_ERROR("Bind Widgets: {0}", m);
+                CQ_CORE_ERROR("Play stopped: {0} required UI element(s) are missing (see the Bind Widgets panel)", missing.size());
+                m_ShowBindWidgets = true;
+                return;
+            }
+        }
         
         if (editorState.IsEditing())
         {
@@ -8780,6 +8812,29 @@ namespace Conqueror::Editor
                 return true;
             }
             if (c == "close") { p.Close(); return true; }
+            // expect_binding <canvas> <ad> <bound|missing|wrongtype> | expect_bindings <canvas> <n> | debugger on|off | expect_events <n>
+            if (c == "expect_binding" && a.size() > 4)
+            {
+                const auto list = BindWidgetsPanel::Scan(findByName(a[2]));
+                for (const auto& b : list)
+                    if (b.Name == a[3])
+                    {
+                        static const char* names[] = { "bound", "missing", "wrongtype" };
+                        Automation::Report("UIEDITOR binding " + b.Name + " (" + b.Type + ") " + names[b.Status]);
+                        if (a[4] != names[b.Status]) { err = b.Name + " is " + names[b.Status]; return false; }
+                        return true;
+                    }
+                err = "no binding " + a[3] + " (" + std::to_string(list.size()) + " found)";
+                return false;
+            }
+            if (c == "debugger" && a.size() > 2) { m_ShowUIDebugger = a[2] == "on"; return true; }
+            if (c == "expect_events" && a.size() > 2)
+            {
+                Automation::Report("UIEDITOR debugger events " + std::to_string(m_UIDebuggerPanel.EventCount()) +
+                                   (m_UIDebuggerPanel.Events().empty() ? std::string() : ": " + m_UIDebuggerPanel.Events().front()));
+                if ((int)m_UIDebuggerPanel.EventCount() < std::atoi(a[2].c_str())) { err = "only " + std::to_string(m_UIDebuggerPanel.EventCount()) + " events"; return false; }
+                return true;
+            }
             // save_widget <canvas> <dosya>: canvas'ı widget dosyasına çevir (sahnede UI Widget bileşenli bir varlık kalır)
             if (c == "save_widget" && a.size() > 3)
             {

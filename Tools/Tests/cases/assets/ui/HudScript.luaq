@@ -1,0 +1,7 @@
+-- Bind Widgets testi (199): bu betik canvas'tan adıyla öğeler bekler
+-- @bind Button StartButton
+-- @bind Text ScoreText
+-- @bind? Image Icon
+
+function OnCreate()
+end

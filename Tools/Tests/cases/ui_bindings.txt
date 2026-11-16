@@ -1,0 +1,40 @@
+# template: basic3d
+# 199: Bind Widgets (betiğin adıyla beklediği öğeler: bağlı / eksik / tür yanlış; eksik zorunlu öğe Play'i durdurur, Unreal'deki derleme
+# hatası gibi), Property Binding (UI Binding bileşeni: yazı başka bir varlığın bileşen alanını her karede gösterir) ve UI Debugger
+# (oyun sırasındaki UI olayları)
+wait 30
+content_drop "{dir}/assets/ui/HudScript.luaq"
+wait 10
+uieditor new_canvas HUD
+script add HUD Assets/HudScript.luaq
+uieditor add Button 400 300
+entity rename Button StartButton
+uieditor expect_binding HUD StartButton bound
+uieditor expect_binding HUD ScoreText missing
+uieditor expect_binding HUD Icon missing
+play
+wait 10
+expect_state edit
+uieditor pick 100 1000
+uieditor add Image 800 300
+entity rename Image ScoreText
+uieditor expect_binding HUD ScoreText wrongtype
+entity delete ScoreText
+uieditor pick 100 1000
+uieditor add Text 800 300
+entity rename Text ScoreText
+uieditor expect_binding HUD ScoreText bound
+comp add ScoreText UIBindingComponent
+comp set ScoreText UIBindingComponent Text "Directional Light.Directional Light.Intensity"
+comp set ScoreText UIBindingComponent Format "Light: {0}"
+comp set "Directional Light" DirectionalLightComponent Intensity 2.5
+uieditor debugger on
+play
+wait 20
+expect_state play
+comp expect ScoreText UITextComponent Text "Light: 2.5"
+ui click StartButton
+wait 5
+uieditor expect_events 1
+stop
+quit
