@@ -123,6 +123,7 @@ namespace Conqueror
         bool PostEffects = true;
         bool Sprites2D = true;     // sprite/görsel/yazı
         bool UI = true;            // ekran üstü canvas'lar (sahne görünümü)
+        bool ScreenUIInScene = false;   // 199: HUD canvas'ları sahne görünümünde de çiz (varsayılan kapalı: UI Editor'de tasarlanır)
         bool Colliders = true;     // seçili varlıkların çarpıştırıcı/eklem/karakter gizmo'ları
         bool AllColliders = false; // tüm çarpıştırıcılar (fizik hata ayıklama)
         // Unreal "Realtime" / Unity "Always Refresh": tüm parçacıklar ve zamana bağlı malzemeler düzenleyicide canlı.

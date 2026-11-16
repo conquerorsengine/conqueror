@@ -645,7 +645,8 @@ namespace Conqueror::Editor
             HandleRowClick(entity);
         if (rowDoubleClicked && !renaming)
         {
-            if (m_FrameCallback)
+            // 199: ekran üstü canvas (ya da içindeki öğe) UI Editor'de açılır; diğerleri Viewport'ta çerçevelenir
+            if (!(s_OpenInUIEditor && s_OpenInUIEditor(entity)) && m_FrameCallback)
                 m_FrameCallback(entity);
         }
 

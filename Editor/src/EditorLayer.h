@@ -34,6 +34,7 @@
 #include "Panels/CodeEditorPanel.h"
 #include "Panels/AIPanel.h"
 #include "UndoRedo/UndoRedoManager.h"
+#include "Panels/UIEditorPanel.h"
 #include "Scene/Scene.h"
 
 #include <memory>
@@ -220,6 +221,7 @@ namespace Conqueror::Editor
         std::unique_ptr<ContentBrowserPanel> m_ContentBrowserPanel;
         std::unique_ptr<ViewportPanel> m_ViewportPanel;
         std::unique_ptr<GamePanel> m_GamePanel;
+        std::unique_ptr<UIEditorPanel> m_UIEditorPanel;   // 199
         std::unique_ptr<LightingPanel> m_LightingPanel;
         std::unique_ptr<class OcclusionPanel> m_OcclusionPanel;
         std::unique_ptr<AudioMixerPanel> m_AudioMixerPanel;

@@ -2629,9 +2629,9 @@ namespace Conqueror
             if (m_EditorViewOptions.Grid && !camera.Is2D())
                 EditorGrid::Render(RenderCamera::FromEditorCamera(camera, vpW, vpH), false, true);
 
-            // Ekran üstü canvas'lar sahne görünümünde de görünür (Unity sahne görünümü gibi: seçim çerçevesi ile içerik
-            // birlikte). 2D'de ızgaranın üstünde; 3D'de dünya içinde derinlik testiyle (nesnelerin arkasında kalan kısım gizlenir)
-            if (m_EditorViewOptions.UI)
+            // 199: ekran üstü (HUD) canvas'lar sahne görünümünde çizilmez (Unreal UMG / Godot gibi): UI Editor sekmesinde
+            // tasarlanır; dünya uzayı canvas'lar sahnede kalır. Eski davranış için View > Screen UI in Scene
+            if (m_EditorViewOptions.UI && m_EditorViewOptions.ScreenUIInScene)
             {
                 Renderer2D::Flush();
                 {

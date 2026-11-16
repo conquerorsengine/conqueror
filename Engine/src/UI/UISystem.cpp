@@ -433,13 +433,24 @@ namespace Conqueror
             }
         }
 
+        uint64_t s_SoloCanvas = 0;   // UI Editor: yalnız bu canvas
+
         std::vector<Entity> SortedCanvases(Scene& scene)
         {
             std::vector<Entity> canvases;
             auto view = scene.m_Registry.view<CanvasComponent>();
             for (auto e : view)
+            {
+                if (s_SoloCanvas != 0)
+                {
+                    Entity c{ e, &scene };
+                    if ((uint64_t)c.GetComponent<IDComponent>().ID == s_SoloCanvas)
+                        canvases.push_back(c);   // tasarlanan canvas etkin olmasa da görünür
+                    continue;
+                }
                 if (scene.IsEntityActive(e))
                     canvases.push_back(Entity{ e, &scene });
+            }
             std::stable_sort(canvases.begin(), canvases.end(), [](Entity a, Entity b) {
                 return a.GetComponent<CanvasComponent>().SortOrder < b.GetComponent<CanvasComponent>().SortOrder;
             });
@@ -2715,6 +2726,22 @@ namespace Conqueror
                             dd.HoveredOption = std::clamp((dd.HoveredOption < 0 ? dd.Value : dd.HoveredOption) - dir.y, 0, count - 1);
                         consumed = true;
                     }
+                    // Gezinme ayarı (199): None hiç gitmez, Horizontal / Vertical yalnız o eksende, Explicit belirtilen hedefe
+                    if (!consumed)
+                    {
+                        const UISelectableState* cs = GetSelectable(cur);
+                        const int mode = cs ? cs->NavigationMode : 0;
+                        if (mode == 3 || (mode == 1 && dir.x == 0) || (mode == 2 && dir.y == 0))
+                            consumed = true;
+                        else if (mode == 4)
+                        {
+                            const uint64_t target = dir.y > 0 ? cs->SelectOnUp : dir.y < 0 ? cs->SelectOnDown : dir.x < 0 ? cs->SelectOnLeft : cs->SelectOnRight;
+                            for (auto& c : candidates)
+                                if (target && (uint64_t)c.E.GetComponent<IDComponent>().ID == target)
+                                    select(c.E);
+                            consumed = true;
+                        }
+                    }
                     if (!consumed)
                     {
                         // Uzamsal: yön boyunca en yakın, yana sapması az olan öğe
@@ -2887,6 +2914,63 @@ namespace Conqueror
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)prevFbo);
         glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
     }
+
+    bool UISystem::IsSelectable(Entity e) { return e && GetSelectable(e) != nullptr; }
+    UISelectableState* UISystem::GetSelectableState(Entity e) { return e ? GetSelectable(e) : nullptr; }
+
+    Entity UISystem::NavigationTarget(Scene& scene, Entity from, const glm::ivec2& dir)
+    {
+        const UISelectableState* s = GetSelectable(from);
+        if (!s || dir == glm::ivec2(0))
+            return {};
+        const int mode = s->NavigationMode;
+        if (mode == 3 || (mode == 1 && dir.x == 0) || (mode == 2 && dir.y == 0))
+            return {};
+        if (mode == 4)
+        {
+            const uint64_t target = dir.y > 0 ? s->SelectOnUp : dir.y < 0 ? s->SelectOnDown : dir.x < 0 ? s->SelectOnLeft : s->SelectOnRight;
+            return target ? scene.FindEntityByUUID(target) : Entity{};
+        }
+        // Aynı canvas'taki seçilebilirler, yerleşimin dikdörtgen merkezleriyle (çalışma zamanının uzamsal kuralı)
+        Entity canvas = from;
+        while (canvas && !canvas.HasComponent<CanvasComponent>())
+            canvas = canvas.GetParent();
+        if (!canvas)
+            return {};
+        auto center = [](Entity e) {
+            const glm::vec4 r = e.GetComponent<RectTransformComponent>().ComputedRect;
+            return glm::vec2(r.x + r.z * 0.5f, r.y + r.w * 0.5f);
+        };
+        const glm::vec2 c0 = center(from), d((float)dir.x, (float)dir.y);
+        Entity best;
+        float bestScore = 1e30f;
+        std::vector<Entity> stack = canvas.GetChildren();
+        while (!stack.empty())
+        {
+            Entity e = stack.back();
+            stack.pop_back();
+            for (Entity c : e.GetChildren())
+                stack.push_back(c);
+            if (e == from || !e.HasComponent<RectTransformComponent>() || !scene.IsEntityActive(e))
+                continue;
+            const UISelectableState* o = GetSelectable(e);
+            if (!o || !o->Interactable)
+                continue;
+            const glm::vec2 v = center(e) - c0;
+            const float along = glm::dot(v, d);
+            if (along <= 1.0f)
+                continue;
+            const float score = along + std::fabs(v.x * d.y - v.y * d.x) * 2.0f;
+            if (score < bestScore)
+            {
+                bestScore = score;
+                best = e;
+            }
+        }
+        return best;
+    }
+
+    void UISystem::SetSoloCanvas(uint64_t canvasUUID) { s_SoloCanvas = canvasUUID; }
 
     void UISystem::RenderScreenSpace(Scene& scene, const glm::vec2& screenSize)
     {

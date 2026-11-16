@@ -91,6 +91,9 @@ namespace Conqueror
         glm::vec4 PressedColor{ 0.75f, 0.75f, 0.75f, 1.0f };
         glm::vec4 DisabledColor{ 0.78f, 0.78f, 0.78f, 0.5f };
         float FadeDuration = 0.1f;
+        // Klavye / gamepad gezinmesi (Unity Selectable.Navigation, 199): 0 Automatic, 1 Horizontal, 2 Vertical, 3 None, 4 Explicit
+        int NavigationMode = 0;
+        uint64_t SelectOnUp = 0, SelectOnDown = 0, SelectOnLeft = 0, SelectOnRight = 0;   // Explicit: hedef öğelerin UUID'si
         // Çalışma zamanı
         bool GroupInteractable = true;          // üstteki Canvas Group etkileşimi kapatabilir
         bool Selected = false;                  // klavye/gamepad gezinmesiyle seçili

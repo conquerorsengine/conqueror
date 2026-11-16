@@ -682,6 +682,14 @@ namespace Conqueror
         out << YAML::Key << "Selectable" << YAML::BeginMap;
         CQ_O(s, Interactable); CQ_OE(s, Transition); CQ_O(s, NormalColor); CQ_O(s, HighlightedColor); CQ_O(s, PressedColor);
         CQ_O(s, DisabledColor); CQ_O(s, FadeDuration);
+        if (s.NavigationMode != 0)
+        {
+            CQ_O(s, NavigationMode);
+            if (s.NavigationMode == 4)
+            {
+                CQ_O(s, SelectOnUp); CQ_O(s, SelectOnDown); CQ_O(s, SelectOnLeft); CQ_O(s, SelectOnRight);
+            }
+        }
         out << YAML::EndMap;
     }
     static void DeserializeSelectable(const YAML::Node& n, UISelectableState& s)
@@ -689,6 +697,8 @@ namespace Conqueror
         if (!n) return;
         CQ_I(n, s, Interactable, bool); CQ_IE(n, s, Transition, UITransition); CQ_I(n, s, NormalColor, glm::vec4); CQ_I(n, s, HighlightedColor, glm::vec4);
         CQ_I(n, s, PressedColor, glm::vec4); CQ_I(n, s, DisabledColor, glm::vec4); CQ_I(n, s, FadeDuration, float);
+        CQ_I(n, s, NavigationMode, int); CQ_I(n, s, SelectOnUp, uint64_t); CQ_I(n, s, SelectOnDown, uint64_t);
+        CQ_I(n, s, SelectOnLeft, uint64_t); CQ_I(n, s, SelectOnRight, uint64_t);
         s.CurrentTint = s.NormalColor;
     }
 

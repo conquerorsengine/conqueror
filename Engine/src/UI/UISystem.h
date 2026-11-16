@@ -94,6 +94,13 @@ namespace Conqueror
 
         static void Shutdown();
 
+        // UI Editor (199): yalnız bu canvas yerleşir / çizilir (0: hepsi). Tasarım yüzeyi kendi framebuffer'ına çizerken kullanır
+        static void SetSoloCanvas(uint64_t canvasUUID);
+        // Klavye / gamepad gezinmesi (UI Editor'ün okları): öğe seçilebilir mi, bir yönde hangi öğeye gidilir
+        static bool IsSelectable(Entity e);
+        static struct UISelectableState* GetSelectableState(Entity e);
+        static Entity NavigationTarget(Scene& scene, Entity from, const glm::ivec2& dir);
+
     private:
         static void RenderCanvasesInWorld(Scene& scene, const glm::mat4& viewProjection, bool includeWorld, bool includeOverlay, const glm::vec2& editorScreenSize,
                                           bool depthTest = false);

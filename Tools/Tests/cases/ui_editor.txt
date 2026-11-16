@@ -1,0 +1,41 @@
+# template: basic3d
+# 199: UI Editor (Unreal UMG Designer gibi): ekran üstü canvas Viewport / Game'in yanındaki sekmede kendi çözünürlüğünde tasarlanır;
+# öğe ekleme (bırakılan noktaya), tıklayıp seçme, taşıma (geri alınabilir), kulpla boyutlandırma, klavye / gamepad gezinmesi
+# (otomatik ve Explicit) ve tasarım yüzeyinin görüntüsü; HUD canvas'ı sahne görünümünde çizilmez
+wait 30
+uieditor new_canvas HUD
+uieditor resolution 1920 1080
+uieditor add Button 400 300
+entity rename Button Play
+uieditor add Button 1200 300
+entity rename Button Quit
+uieditor expect_rect Play 280 268 240 64 3
+uieditor pick 100 1000
+uieditor expect_selected HUD
+uieditor pick 1200 300
+uieditor expect_selected Quit
+uieditor pick 1200 300
+uieditor expect_selected Text
+uieditor pick 100 1000
+uieditor pick 1200 300
+uieditor expect_selected Quit
+uieditor move 100 50
+uieditor expect_rect Quit 1180 318 240 64 3
+undo
+wait 3
+uieditor expect_rect Quit 1080 268 240 64 3
+uieditor resize 3 40 0
+uieditor expect_rect Quit 1080 268 280 64 3
+uieditor expect_nav Play right Quit
+uieditor expect_nav Quit left Play
+uieditor expect_nav Play up none
+uieditor navmode Play none
+uieditor expect_nav Play right none
+uieditor navmode Play explicit Quit - - -
+uieditor expect_nav Play up Quit
+uieditor expect_nav Play right none
+uieditor navmode Play automatic
+uieditor nav on
+uieditor safe 1
+wait 5
+quit

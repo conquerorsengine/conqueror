@@ -2145,8 +2145,12 @@ namespace Conqueror::Editor
             }
         });
 
-        DrawComponent<CanvasComponent>("Canvas", entity, [](auto& component)
+        DrawComponent<CanvasComponent>("Canvas", entity, [entity](auto& component)
         {
+            // 199: ekran üstü canvas'lar UI Editor'de tasarlanır (sahne görünümünde çizilmezler)
+            if (component.Mode != CanvasComponent::RenderMode::WorldSpace && HierarchyPanel::s_OpenInUIEditor)
+                if (ImGui::Button(ICON_FA_OBJECT_GROUP "  Open UI Editor", ImVec2(-1, 0)))
+                    HierarchyPanel::s_OpenInUIEditor(entity);
             const char* renderModes[] = { "Screen Space - Overlay", "Screen Space - Camera", "World Space" };
             int currentMode = (int)component.Mode;
             if (ImGui::Combo("Render Mode", &currentMode, renderModes, 3))
@@ -2256,6 +2260,39 @@ namespace Conqueror::Editor
                 UI::Color4("Disabled", s.DisabledColor);
             }
             UI::DragFloat("Fade Duration", s.FadeDuration, 0.01f, 0.0f, 2.0f, "%.2f s");
+            // Klavye / gamepad gezinmesi (Unity: Navigation + Visualize; UI Editor > Navigation okları gösterir)
+            const char* navModes[] = { "Automatic", "Horizontal", "Vertical", "None", "Explicit" };
+            UI::Combo("Navigation", s.NavigationMode, navModes, 5);
+            if (s.NavigationMode == 4)
+            {
+                auto target = [](const char* label, uint64_t& id) {
+                    UI::BeginProperty(label, "Element selected when this direction is pressed. Drop a UI element from the Hierarchy.");
+                    std::string name = "None";
+                    Scene* scene = EditorState::Get().GetSelectedEntity().GetScene();
+                    if (id && scene)
+                        if (Entity e = scene->FindEntityByUUID(id))
+                            name = e.GetComponent<TagComponent>().Tag;
+                    ImGui::Button((name + "##" + label).c_str(), ImVec2(-28.0f, 0));
+                    if (ImGui::BeginDragDropTarget())
+                    {
+                        if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("ENTITY_NODE"))
+                        {
+                            Entity e = *(const Entity*)p->Data;
+                            if (e && e.HasComponent<IDComponent>())
+                                id = (uint64_t)e.GetComponent<IDComponent>().ID;
+                        }
+                        ImGui::EndDragDropTarget();
+                    }
+                    ImGui::SameLine();
+                    if (ImGui::SmallButton((std::string(ICON_FA_XMARK "##clr") + label).c_str()))
+                        id = 0;
+                    UI::EndProperty();
+                };
+                target("Select On Up", s.SelectOnUp);
+                target("Select On Down", s.SelectOnDown);
+                target("Select On Left", s.SelectOnLeft);
+                target("Select On Right", s.SelectOnRight);
+            }
         };
         auto textureField = [](const char* label, std::string& path) {
             UI::BeginProperty(label, "Drag an image from the Content Browser");

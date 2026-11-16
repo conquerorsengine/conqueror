@@ -21,6 +21,7 @@
 #include "Core/Utils/LoadingProgress.h"
 #include "LoadingScreen.h"
 #include "Panels/ModuleInstaller.h"
+#include "UndoRedo/EntitySnapshotCommand.h"
 #include "Build/AndroidSigning.h"
 #include "Core/ImGui/ImGuiLayer.h"
 #include "stb_image_write.h"
@@ -375,6 +376,33 @@ namespace Conqueror::Editor
             CQ_CORE_INFO("EditorLayer: Creating GamePanel...");
             m_GamePanel = std::make_unique<GamePanel>();
             m_GamePanel->SetContext(m_ActiveScene);
+            // 199: UI Editor (UMG Designer gibi): Viewport / Game'in yanında sekme
+            m_UIEditorPanel = std::make_unique<UIEditorPanel>();
+            m_UIEditorPanel->SetContext(m_ActiveScene);
+            m_UIEditorPanel->OnSelect = [this](Entity e) { SelectEntityEverywhere(e); };
+            m_UIEditorPanel->OnDeleteSelected = [this]() { EditDelete(); };
+            m_UIEditorPanel->OnOpenAnimations = [this]() { m_ShowTimeline = true; };
+            m_UIEditorPanel->OnOpenGraph = [this](Entity canvas) {
+                // Canvas'ın görsel betiği (.cqgraph): Visual Script bileşenindeki grafik; yoksa Visual Script penceresi açılır
+                if (!m_VisualScriptPanel)
+                    return;
+                if (canvas.HasComponent<ConquerorScriptComponent>())
+                    for (const auto& s : canvas.GetComponent<ConquerorScriptComponent>().Scripts)
+                        if (std::filesystem::path(s.ScriptPath).extension() == ".cqgraph")
+                        {
+                            const std::filesystem::path p = std::filesystem::path(s.ScriptPath).is_absolute() ? std::filesystem::path(s.ScriptPath)
+                                                                                                                : Project::GetActiveProjectDirectory() / s.ScriptPath;
+                            m_VisualScriptPanel->Open(p);
+                            break;
+                        }
+                m_VisualScriptPanel->GetIsOpen() = true;
+            };
+            HierarchyPanel::s_OpenInUIEditor = [this](Entity e) {
+                if (!m_UIEditorPanel || !m_UIEditorPanel->Open(e))
+                    return false;
+                SelectEntityEverywhere(e);
+                return true;
+            };
             CQ_CORE_INFO("EditorLayer: GamePanel created");
         }
         catch (const std::exception& e)
@@ -1442,6 +1470,11 @@ namespace Conqueror::Editor
             m_GamePanel->OnUpdate(m_StepFrame && !editorState.IsPlaying() ? Timestep(1.0f / 60.0f) : ts, advance);
             m_StepFrame = false;
         }
+        if (m_UIEditorPanel)
+        {
+            m_UIEditorPanel->SetContext(m_ActiveScene);
+            m_UIEditorPanel->OnRender();
+        }
 
         // Betik istekleri: QuitGame -> Play durur, LoadScene -> oyun içi sahne geçişi (karenin sonunda)
         if (!editorState.IsEditing())
@@ -1786,6 +1819,7 @@ namespace Conqueror::Editor
                 ImGui::DockBuilderDockWindow("###AnimationWindow", dock_id_down);   // Unity: Animation alt bölmede (Project / Console yanında)
                 ImGui::DockBuilderDockWindow("Viewport", dockspace_id);
                 ImGui::DockBuilderDockWindow("Game", dockspace_id);
+                ImGui::DockBuilderDockWindow("###UI Editor", dockspace_id);
                 ImGui::DockBuilderDockWindow("Animator", dockspace_id);
                 ImGui::DockBuilderDockWindow("###Terrain", dock_id_left_bottom);
                 ImGui::DockBuilderDockWindow("###TilePalette", dock_id_left_bottom);
@@ -2240,6 +2274,15 @@ namespace Conqueror::Editor
                 ImGui::SameLine();
                 if (m_VisualScriptPanel && RibbonButton(ICON_FA_DIAGRAM_PROJECT, "Visual", "Visual Script editor", m_VisualScriptPanel->GetIsOpen()))
                     m_VisualScriptPanel->GetIsOpen() = !m_VisualScriptPanel->GetIsOpen();
+                ImGui::SameLine();
+                // 199: UI Editor (seçili canvas ya da UI öğesi açılır)
+                if (m_UIEditorPanel && RibbonButton(ICON_FA_OBJECT_GROUP, "UI", "UI Editor: design Screen Space canvases (HUD, menus)", m_UIEditorPanel->IsOpen()))
+                {
+                    if (m_UIEditorPanel->IsOpen())
+                        m_UIEditorPanel->Close();
+                    else if (!m_UIEditorPanel->Open(EditorState::Get().GetSelectedEntity()))
+                        m_UIEditorPanel->Show();
+                }
                 EndRibbonGroup(g, top);
                 if (m_ViewportPanel)
                 {
@@ -2686,6 +2729,8 @@ namespace Conqueror::Editor
             m_GamePanel->OnImGuiRender();
         else if (m_GamePanel)
             m_GamePanel->MarkHidden();
+        if (m_UIEditorPanel)
+            m_UIEditorPanel->OnImGuiRender();
 
         if (m_ShowViewport && m_ViewportPanel)
             m_ViewportPanel->OnImGuiRender();
@@ -7838,6 +7883,7 @@ namespace Conqueror::Editor
             else if (a[1] == "post") o.PostEffects = on;
             else if (a[1] == "sprites") o.Sprites2D = on;
             else if (a[1] == "ui") o.UI = on;
+            else if (a[1] == "screen_ui") o.ScreenUIInScene = on;
             else if (a[1] == "colliders") o.Colliders = on;
             else if (a[1] == "all_colliders") o.AllColliders = on;
             else if (a[1] == "realtime") o.Realtime = on;
@@ -8632,6 +8678,133 @@ namespace Conqueror::Editor
             return true;
         });
         ModuleInstaller::RegisterAutomation();   // 47: Build Settings > Install module
+        // uieditor open <canvas> | close | resolution <w> <h> | safe <0..2> | nav on|off | pick <x> <y> | expect_selected <ad>
+        //   | move <dx> <dy> | resize <kulp 0..7> <dx> <dy> | add <tür> [x y] | expect_rect <ad> <x> <y> <w> <h> [tolerans]
+        //   | expect_nav <ad> <right|left|up|down> <hedef|none> | shot <png> | expect_open <0|1> (199)
+        Automation::RegisterCommand("uieditor", [this, findByName](const Args& a, std::string& err) {
+            if (!m_UIEditorPanel || a.size() < 2) { err = "uieditor <subcommand>"; return false; }
+            auto& p = *m_UIEditorPanel;
+            const std::string& c = a[1];
+            auto num = [&](size_t i) { return i < a.size() ? (float)std::atof(a[i].c_str()) : 0.0f; };
+            if (c == "open" && a.size() > 2)
+            {
+                Entity e = findByName(a[2]);
+                if (!e || !p.Open(e)) { err = "cannot open " + a[2] + " in the UI Editor"; return false; }
+                SelectEntityEverywhere(e);
+                Automation::WaitFrames(3);
+                return true;
+            }
+            if (c == "close") { p.Close(); return true; }
+            if (c == "new_canvas")
+            {
+                Entity canvas = UISystem::CreateCanvas(*m_ActiveScene, a.size() > 2 ? a[2] : "Canvas");
+                if (!p.Open(canvas)) { err = "could not open the new canvas"; return false; }
+                SelectEntityEverywhere(canvas);
+                Automation::WaitFrames(3);
+                return true;
+            }
+            if (c == "expect_open" && a.size() > 2)
+            {
+                if (p.IsOpen() != (a[2] == "1")) { err = std::string("UI Editor is ") + (p.IsOpen() ? "open" : "closed"); return false; }
+                return true;
+            }
+            if (c == "resolution" && a.size() > 3) { p.SetResolution(std::atoi(a[2].c_str()), std::atoi(a[3].c_str())); Automation::WaitFrames(2); return true; }
+            if (c == "safe" && a.size() > 2) { p.SetSafeZone(std::atoi(a[2].c_str())); return true; }
+            if (c == "nav" && a.size() > 2) { p.SetShowNavigation(a[2] == "on"); return true; }
+            if (c == "pick" && a.size() > 3)
+            {
+                p.Relayout();
+                Entity e = p.PickForClick({ num(2), num(3) });
+                if (!e)
+                    e = p.GetCanvasEntity();   // boş alan: canvas seçilir (tasarım yüzeyindeki gibi)
+                Automation::Report("UIEDITOR pick " + (e ? e.GetComponent<TagComponent>().Tag : std::string("(none)")));
+                if (e) SelectEntityEverywhere(e);
+                return true;
+            }
+            if (c == "expect_selected" && a.size() > 2)
+            {
+                Entity e = EditorState::Get().GetSelectedEntity();
+                const std::string name = e ? e.GetComponent<TagComponent>().Tag : std::string("(none)");
+                if (name != a[2]) { err = "selected " + name; return false; }
+                return true;
+            }
+            if (c == "move" && a.size() > 3)
+            {
+                Entity e = EditorState::Get().GetSelectedEntity();
+                auto before = e ? EntitySnapshotCommand::Capture(e) : nullptr;
+                if (!p.MoveSelected({ num(2), num(3) })) { err = "nothing to move"; return false; }
+                UndoRedoManager::Get().Execute(std::make_shared<EntitySnapshotCommand>(m_ActiveScene, (uint64_t)e.GetComponent<IDComponent>().ID, before,
+                                                                                      EntitySnapshotCommand::Capture(e), "Move UI Element"));
+                Automation::WaitFrames(2);
+                return true;
+            }
+            if (c == "resize" && a.size() > 4)
+            {
+                if (!p.ResizeSelected(std::atoi(a[2].c_str()), { num(3), num(4) })) { err = "nothing to resize"; return false; }
+                Automation::WaitFrames(2);
+                return true;
+            }
+            if (c == "add" && a.size() > 2)
+            {
+                Entity e = a.size() > 4 ? p.AddElement(a[2], { num(3), num(4) }) : p.AddElement(a[2]);
+                if (!e) { err = "could not add " + a[2]; return false; }
+                Automation::WaitFrames(2);
+                return true;
+            }
+            if (c == "expect_rect" && a.size() > 6)
+            {
+                Entity e = findByName(a[2]);
+                if (!e || !e.HasComponent<RectTransformComponent>()) { err = "no UI element " + a[2]; return false; }
+                p.Relayout();
+                const glm::vec4 r = p.ElementRect(e);
+                const float tol = a.size() > 7 ? num(7) : 2.0f;
+                char buf[160];
+                const auto& rtc = e.GetComponent<RectTransformComponent>();
+                std::snprintf(buf, sizeof(buf), "UIEDITOR rect %s = %.1f %.1f %.1f %.1f (anchored %.1f %.1f, size %.1f %.1f)", a[2].c_str(), r.x, r.y, r.z, r.w,
+                              rtc.AnchoredPosition.x, rtc.AnchoredPosition.y, rtc.SizeDelta.x, rtc.SizeDelta.y);
+                Automation::Report(buf);
+                if (std::fabs(r.x - num(3)) > tol || std::fabs(r.y - num(4)) > tol || std::fabs(r.z - num(5)) > tol || std::fabs(r.w - num(6)) > tol)
+                {
+                    err = buf;
+                    return false;
+                }
+                return true;
+            }
+            // navmode <öğe> <automatic|horizontal|vertical|none|explicit> [up down left right hedef adları, "-" boş]
+            if (c == "navmode" && a.size() > 3)
+            {
+                UISelectableState* s = UISystem::GetSelectableState(findByName(a[2]));
+                if (!s) { err = a[2] + " is not selectable"; return false; }
+                static const char* modes[] = { "automatic", "horizontal", "vertical", "none", "explicit" };
+                for (int i = 0; i < 5; ++i)
+                    if (a[3] == modes[i]) s->NavigationMode = i;
+                uint64_t* targets[] = { &s->SelectOnUp, &s->SelectOnDown, &s->SelectOnLeft, &s->SelectOnRight };
+                for (size_t i = 0; i < 4 && 4 + i < a.size(); ++i)
+                {
+                    Entity t = a[4 + i] == "-" ? Entity{} : findByName(a[4 + i]);
+                    *targets[i] = t ? (uint64_t)t.GetComponent<IDComponent>().ID : 0;
+                }
+                return true;
+            }
+            if (c == "expect_nav" && a.size() > 4)
+            {
+                Entity e = findByName(a[2]);
+                const glm::ivec2 dir = a[3] == "right" ? glm::ivec2(1, 0) : a[3] == "left" ? glm::ivec2(-1, 0) : a[3] == "up" ? glm::ivec2(0, 1) : glm::ivec2(0, -1);
+                p.Relayout();
+                Entity t = e ? UISystem::NavigationTarget(*m_ActiveScene, e, dir) : Entity{};
+                const std::string got = t ? t.GetComponent<TagComponent>().Tag : std::string("none");
+                Automation::Report("UIEDITOR nav " + a[2] + " " + a[3] + " -> " + got);
+                if (got != a[4]) { err = "navigation goes to " + got; return false; }
+                return true;
+            }
+            if (c == "shot" && a.size() > 2)
+            {
+                if (!p.SaveImage(a[2])) { err = "could not write " + a[2]; return false; }
+                return true;
+            }
+            err = "unknown uieditor command " + c;
+            return false;
+        });
         AndroidSigning::RegisterAutomation();    // 47: Android yayın anahtarı (Keystore Manager)
         // prefab_mode open <yol> | close [discard] | autosave on|off | expect_active <0|1> | expect_saves <n> (218)
         Automation::RegisterCommand("prefab_mode", [this](const Args& a, std::string& err) {

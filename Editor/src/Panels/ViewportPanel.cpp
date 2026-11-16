@@ -633,7 +633,9 @@ namespace Conqueror::Editor
                 ImGui::Checkbox("Shadows", &m_ViewOptions.Shadows);
                 ImGui::Checkbox("Post Processing", &m_ViewOptions.PostEffects);
                 ImGui::Checkbox("2D Sprites / Text", &m_ViewOptions.Sprites2D);
-                ImGui::Checkbox("UI (Screen Canvases)", &m_ViewOptions.UI);
+                // 199: HUD (ekran üstü) canvas'ları UI Editor'de tasarlanır; isteyen sahne görünümünde de görebilir
+                // (dünya uzayı canvas'lar her zaman sahnede)
+                ImGui::Checkbox("Screen UI in Scene", &m_ViewOptions.ScreenUIInScene);
                 ImGui::Separator();
                 ImGui::Checkbox("Realtime (Always Refresh)", &m_ViewOptions.Realtime);
                 ImGui::EndPopup();
